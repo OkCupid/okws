@@ -298,11 +298,15 @@ fast_log_t::flush ()
 {
   oklog_fast_arg_t arg;
   int ai, ei;
-  access.to_str (&arg.access, &ai);
-  error.to_str (&arg.error, &ei);
-  ptr<bool> res = New refcounted<bool>;
-  h->call (OKLOG_FAST, &arg, res, 
-	   wrap (this, &fast_log_t::flushed, ai, ei, res));
+  if (access.to_str (&arg.access, &ai) || error.to_str (&arg.error, &ei)) {
+    ptr<bool> res = New refcounted<bool>;
+    h->call (OKLOG_FAST, &arg, res, 
+	     wrap (this, &fast_log_t::flushed, ai, ei, res));
+  } else {
+    // no data to send!
+    access.unlock (ai);
+    error.unlock (ei);
+  }
 }
 
 void

@@ -91,7 +91,7 @@ logbuf_t::lock ()
   return i;
 }
 
-void
+int
 logbuf_t::to_str (str *s, int *i)
 {
   if (!cmbuf) {
@@ -103,6 +103,7 @@ logbuf_t::to_str (str *s, int *i)
     cmbuf->restore ();          // brings us back from the dead!
     *i = lock ();
   }
+  return (s->len ());
 }
 
 
