@@ -444,3 +444,21 @@ free_argv (char *const *argv)
     delete [] *p;
   delete [] argv;
 }
+
+void
+ls (const str &d)
+{
+
+  DIR *dir = opendir (d);
+  if (!d) {
+    warn << "ls (" << d << "): failed\n";
+    return;
+  }
+  warn << "ls (" << d << "):\n";
+
+  struct dirent *ent;
+  while ((ent = readdir (dir))) 
+    warn << ent->d_name << "\n";
+  closedir (dir);
+}
+

@@ -31,6 +31,7 @@
 #include "ihash.h"
 #include "xpub.h"
 #include "qhash.h"
+#include <dirent.h>
 
 
 #ifndef HAVE_SFS_CLOCK_T
@@ -194,5 +195,8 @@ struct ok_grp_t : public ok_idpair_t {
   bool resolve () const { return ((id = gname2gid (name)) >= 0); }
   str typ () const { return "group"; }
 };
+
+// debug function
+void ls (const str &s);
 
 #endif /* _LIBPUB_PUBUTIL_H */
