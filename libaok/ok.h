@@ -256,6 +256,7 @@ public:
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
 
   ~oksrvc_t () ;
+
   void init (int argc, char *argv[]);
   void shutdown ();
   void connect ();

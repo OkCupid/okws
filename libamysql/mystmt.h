@@ -70,8 +70,8 @@ public:
   sth_prepared_t (MYSQL_STMT *s, const str &q) 
     : mystmt_t (), sth (s), bnds (NULL), qry (q) {}
   ~sth_prepared_t ();
-  static ptr<sth_prepared_t> alloc (MYSQL_STMT *s)
-  { return New refcounted<sth_prepared_t> (s); }
+  static ptr<sth_prepared_t> alloc (MYSQL_STMT *s, const str &q)
+  { return New refcounted<sth_prepared_t> (s, q); }
   adb_status_t fetch2 (bool bnd = false);
 protected:
   bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);

@@ -34,7 +34,7 @@ sth_prepared_t::~sth_prepared_t ()
 }
 
 str
-sth_prepared_t::dump (mbyind_param_t **arr, u_int n) 
+sth_prepared_t::dump (mybind_param_t **arr, u_int n) 
 {
   strbuf b;
   b << " q-> " << qry << "\n";
