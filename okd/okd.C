@@ -381,8 +381,8 @@ okd_t::parseconfig ()
     errors = true;
   }
 
-  if (ok_svc_max_fds > 0 && 
-      (ok_svc_fds_high_wat == 0 || ok_svc_fds_high_wat > ok_svc_max_fds)) {
+  if (ok_svc_fds_high_wat > 0 && 
+      (ok_svc_fds_low_wat == 0 || ok_svc_fds_low_wat > ok_svc_fds_high_wat)) {
     warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
     errors = true;
   }

@@ -106,9 +106,9 @@ extern u_int ok_resurrect_delay_ms;            // in nanoseconds
 extern u_int ok_chld_startup_time;             // how long startup takes
 extern u_int ok_filter_cgi;                    // filter XSS stuff from cgi[]
 extern u_int okd_fds_high_wat;                 // max FDs okd has outstanding
-extern u_int okd_fds_low_wat;                  // below high wat turn accept on
-extern u_int ok_svc_max_fds;                   // max FDs a svc has out
-extern u_int ok_svc_fds_high_wat;              // below high wat turn accept on
+extern u_int okd_fds_low_wat;                  // below low wat turn accept on
+extern u_int ok_svc_fds_high_wat;              // max FDs a svc has out
+extern u_int ok_svc_fds_low_wat;               // below low wat turn accept on
 extern bool okd_accept_msgs;                   // display messages re: accept()
 extern bool ok_svc_accept_msgs;                // display messages re: accept()
 extern u_int ok_ssdi;                          // syscall stat dump interval
