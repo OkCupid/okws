@@ -232,6 +232,7 @@ okd_t::parseconfig ()
     .ignore ("GzipMemLevel")
     .ignore ("UnsafeMode")
     .ignore ("SvcLog")
+    .ignore ("FilterCGI")
     .ignore ("ChannelLimit");
 
 

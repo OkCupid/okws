@@ -24,6 +24,11 @@ const char *ok_okd_uname = "www";     // unprivileged service user
 const char *ok_okd_gname = "www";     // unprivileged service group
 
 //
+// pub constants
+//
+const char *ok_pubobjname = "pub";
+
+//
 // port constants
 //
 u_int ok_mgr_port = 11277;
@@ -46,7 +51,7 @@ u_int ok_db_retries_delay = 3;
 // okd constants
 //
 u_int ok_con_queue_max = 40;        // number of req's to queue up
-u_int ok_listen_queue_max = 2048;    // arguement to listen (fd, X)
+u_int ok_listen_queue_max = 2048;   // arguement to listen (fd, X)
 u_int ok_crashes_max = 30;          // number of allowed crashes
 u_int ok_csi = 50;                  // crash sampling interval
 const char *ok_version = VERSION;
@@ -55,6 +60,7 @@ u_int ok_dport = 80;                // okd port listen to
 u_int ok_resurrect_delay = 3;
 u_int ok_resurrect_delay_ms = 500;
 u_int ok_chld_startup_time = 10;    // startup time in seconds....
+u_int ok_filter_cgi = XSSFILT_NONE; // filter XSS metacharacters
 
 //
 // helper processes constants

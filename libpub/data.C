@@ -811,15 +811,33 @@ pfile_g_include_t::add (ptr<arglist_t> l)
   if (l->size () < 1) {
     PWARN("Wrong number of arguments to include");
     err = true;
-  } else if (!(pubobj = (*l)[0]->eval ()) || pubobj.len () <= 0) {
-    PWARN("Bad first argument to include");
-    err = true;
   } else {
-    l->pop_front ();
-    bool ret = pfile_g_ctinclude_t::add (l);
-    if (ret)
-      PFILE->add_ifile (fn);
-    return ret;
+    
+    // true if the last element is an associate array
+    bool last_aa = (*l)[l->size () - 1]->to_aarr ();
+
+    if ((last_aa && l->size () == 4) || (!last_aa && l->size () == 3)) {
+      if (!(pubobj = (*l)[0]->eval ()) || pubobj.len () <= 0) {
+	PWARN("Bad first argument to include; pub object expected");
+	err = true;
+      } else {
+	l->pop_front ();
+      }
+    } else {
+
+      //
+      // no first arg was given (which corresponds to the name of the 
+      // publishing object); thus, we'll just assume the default name.
+      //
+      pubobj = str (ok_pubobjname);
+    }
+
+    if (!err) {
+      bool ret = pfile_g_ctinclude_t::add (l);
+      if (ret)
+	PFILE->add_ifile (fn);
+      return ret;
+    }
   }
   return (!err);
 }

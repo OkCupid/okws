@@ -14,7 +14,7 @@ class oksrvc_sha_t : public oksrvc_t {
 public:
   oksrvc_sha_t (int argc, char *argv[]) : oksrvc_t (argc, argv) 
   {
-    shadb = add_db ("-", SHAD_PORT, sha_prog_1);
+    shadb = add_db ("rael.lcs.mit.edu", SHAD_PORT, sha_prog_1);
   }
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
   void init_publist () { /*o init_publist (); o*/ }
@@ -63,14 +63,14 @@ public:
     s = s ? str (strbuf ("<font face=helvetica color=blue size=+1>") 
       << s << "</font><br><hr>") :  str ("");
     /*o
-      include (pub, out, "/sha.html", { S => @{s} });
+      include (out, "/sha.html", { S => @{s} });
     o*/
     output (out);
   }
 
   void error_page (str s) 
-  { output_page (strbuf ("<font color=red>Error: ") << s << "</font>"); }
-
+  { output_page (strbuf ("<font color=red>Error[") << cgi["x"] <<
+		 "]: " << s << "</font>"); }
   void success_page (str s)
   { output_page (strbuf ("SHA-1(\"") << cgi["x"] << "\"): " << s); }
 

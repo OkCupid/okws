@@ -31,7 +31,7 @@ dnl
 dnl ADD NEW CGI Scripts HERE!  (use the cgimk () macro )
 dnl
 cgimk(sha)
-dnl cgimk(sha2)
+cgimk(sha2)
 cgimk(google)
 dnl cgimk(pt1)
 cgimk(upload)

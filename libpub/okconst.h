@@ -27,6 +27,8 @@
 
 #include "async.h"
 
+enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
+
 //
 // hard-coded upper and lower variable limits
 //
@@ -65,6 +67,11 @@ extern u_int ok_pubd_port;
 extern u_int ok_mgr_port;
 
 //
+// pub constatns
+//
+extern const char *ok_pubobjname;
+
+//
 // configfile constants
 //
 extern const char *ok_pub_config;
@@ -97,6 +104,7 @@ extern const char *ok_service_bin;             // where service exes live
 extern u_int ok_resurrect_delay;               // when a child dies..
 extern u_int ok_resurrect_delay_ms;            // in nanoseconds
 extern u_int ok_chld_startup_time;             // how long startup takes
+extern u_int ok_filter_cgi;                    // filter XSS stuff from cgi[]
 
 //
 // helper constants

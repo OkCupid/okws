@@ -8,6 +8,11 @@
 #include "parseopt.h"
 #include "clist.h"
 
+// max buf of 256K
+#define XSS_MAX_BUF 0x40000  
+str xss_filter (const str &in);
+str xss_filter (const char *in, u_int l);
+
 struct encode_t {
   encode_t (strbuf *o, char *s = NULL, size_t l = 0)
     : out (o), scratch (s), len (l), first (true) {}
@@ -104,7 +109,9 @@ template<class C> str
 pairtab_t<C>::safe_lookup (const str &key) const
 {
   const str &s = lookup (key);
-  return (s ? s : empty);
+  if (s && ok_filter_cgi == XSSFILT_SOME) return xss_filter (s);
+  else if (s) return s;
+  else return empty;
 }
 
 template<class C> bool

@@ -352,7 +352,10 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
       *r = NULL;
       ret =  ABUF_OVERFLOW;
     } else {
-      *r = str (scratch, pcp - scratch);
+      if (ok_filter_cgi == XSSFILT_ALL)
+	*r = xss_filter (scratch, pcp - scratch);
+      else
+	*r = str (scratch, pcp - scratch);
     }
     pcp = scratch; // reset for next time
   }

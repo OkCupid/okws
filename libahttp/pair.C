@@ -58,3 +58,58 @@ pair_t::to_int (int64_t *v) const
   return false;
 }
 
+char *xss_buf = NULL;
+size_t xss_buflen = 0x1000;
+
+str xss_filter (const str &s) { return xss_filter (s.cstr (), s.len ()); }
+
+str
+xss_filter (const char *in, u_int inlen)
+{
+  int maxseqlen = 5;
+
+  size_t biggest = maxseqlen * inlen;
+  if (xss_buflen < biggest && xss_buflen != XSS_MAX_BUF && xss_buf) {
+    delete [] xss_buf;
+    xss_buf = NULL;
+  }
+  if (!xss_buf) {
+    while (xss_buflen < biggest && xss_buflen < XSS_MAX_BUF)
+      xss_buflen = (xss_buflen << 1);
+    xss_buflen = min<size_t> (xss_buflen, XSS_MAX_BUF);
+    xss_buf = New char[xss_buflen];
+  }
+
+  char *op = xss_buf;
+  size_t outlen = 0;
+  size_t inc;
+  const char *end = in + inlen;
+  for (const char *cp = in; 
+       cp < end && maxseqlen + outlen < xss_buflen; 
+       cp++) {
+    switch (*cp) {
+    case '<':
+      inc = sprintf (op, "&lt;");
+      break;
+    case '>':
+      inc = sprintf (op, "&gt;");
+      break;
+    case '(':
+      inc = sprintf (op, "&#40;");
+      break;
+    case '&':
+      inc = sprintf (op, "&#38;");
+      break;
+    case '#':
+      inc = sprintf (op, "&#35;");
+      break;
+    default:
+      *op = *cp;
+      inc = 1;
+      break;
+    }
+    outlen += inc;
+    op += inc;
+  }
+  return str (xss_buf, outlen);
+}

@@ -95,6 +95,7 @@ okld_t::parseconfig (const str &cf)
     .add ("OklogdGroup", &logd_parms.group)
     .add ("UnsafeMode", &unsafe_mode)
     .add ("SafeStartup", &safe_startup_fl)
+    .add ("FilterCGI", &ok_filter_cgi, XSSFILT_NONE, XSSFILT_ALL)
     .add ("OkdUser", &okd_un)
     .add ("OkdGroup", &okd_gr)
     
@@ -173,7 +174,8 @@ okld_t::encode_env ()
     .insert ("logtick", ok_log_tick)
     .insert ("logprd", ok_log_period)
     .insert ("clito", ok_clnt_timeout)
-    .insert ("reqszlimit", ok_reqsize_limit);
+    .insert ("reqszlimit", ok_reqsize_limit)
+    .insert ("filtercgi", ok_filter_cgi ? 1 : 0);
 }
 
 
