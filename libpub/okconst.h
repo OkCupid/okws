@@ -111,6 +111,7 @@ extern u_int hlpr_max_qlen;                    // maximum # to q
 //
 extern u_int ok_log_tick;                       // how often log timer ticks
 extern u_int ok_log_period;                     // how many ticks to a flush
+extern str ok_syslog_priority;                  // syslog section
 
 //
 // service/client constants
@@ -136,5 +137,6 @@ extern int ok_svc_uid_high;
 // OK Web Client params
 //
 extern int okwc_def_contlen;                     // when servers don't give it
+
 
 #endif /* _LIBPUB_OKCONST_H */

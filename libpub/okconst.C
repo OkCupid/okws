@@ -80,6 +80,7 @@ const char *ok_service_bin = "";
 //
 u_int ok_log_tick = 500;             // in milliseconds
 u_int ok_log_period = 8;             // log flushed every 4 seconds
+str   okc_syslog_priority = "local3.info";
 
 //
 // service/client constants
