@@ -7,7 +7,10 @@ libpub_la_SOURCES = xpub.C data.C scan.ll parse.yy pubutil.C pub.C xdr.C \
 	slave.C rclient.C proxy.C zstr.C okconst.C pvalw.C jail.C fd_prot.C \
 	authtok.C lbalance.C
 
-okwsinclude_HEADERS = pub.h pubutil.h xpub.h
+okwsinclude_HEADERS = pub.h pubutil.h xpub.h okconst.h axprtfd.h \
+	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
+	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
+	pslave.h
 
 YDEBUG = @YDEBUG@
 LDEEBUG = @LDEBUG@
