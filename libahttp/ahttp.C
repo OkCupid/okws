@@ -510,7 +510,7 @@ http_accept (listencb_t lcb, int fd)
   bzero (sin, sinlen);
   int nfd = accept (fd, reinterpret_cast<sockaddr *> (sin), &sinlen);
   if (nfd >= 0) {
-    warn ("accepting connection from %s\n", inet_ntoa (sin->sin_addr));
+    //warn ("accepting connection from %s\n", inet_ntoa (sin->sin_addr));
     tcp_nodelay (nfd);
     ref<ahttpcon> x = ahttpcon::alloc (nfd, sin);
     (*lcb) (x);
