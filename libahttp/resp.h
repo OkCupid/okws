@@ -95,8 +95,9 @@ private:
 
 class http_resp_header_redirect_t : public http_resp_header_t {
 public:
-  http_resp_header_redirect_t (const str &loc, htpv_t v = 0)
-    : http_resp_header_t (HTTP_REDIRECT, v) { fill (loc); }
+  http_resp_header_redirect_t (const str &loc, htpv_t v = 0, 
+			       int ht = HTTP_MOVEDPERM)
+    : http_resp_header_t (ht, v) { fill (loc); }
   void fill (const str &loc);
 };
 

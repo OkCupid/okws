@@ -503,7 +503,7 @@ main (int argc, char *argv[])
 
   // normdist (mean, std-dev, "precision")
   if (use_latencies)
-    dist = New normdist_t (75,25);
+    dist = New normdist_t (200,25);
 
   switch (mode) {
   case SEDA:

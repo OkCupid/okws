@@ -459,9 +459,9 @@ okclnt_t::http_parse_cb (int status)
 }
 
 void
-okclnt_t::redirect (const str &l)
+okclnt_t::redirect (const str &l, int ht)
 {
-  rsp = New refcounted<http_response_redirect_t> (l, hdr.get_vers());
+  rsp = New refcounted<http_response_redirect_t> (l, hdr.get_vers(), ht);
   send (rsp);
 }
 
