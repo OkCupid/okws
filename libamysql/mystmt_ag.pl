@@ -101,7 +101,7 @@ public:
   bool execute () { 
      return execute ((MYSQL_BIND *)NULL, (mybind_param_t **)NULL, 0);
   }
-  str get_last_qry() const { return last_qry; }
+  virtual str get_last_qry () const { return NULL; }
 protected:
   virtual bool execute (MYSQL_BIND *b, mybind_param_t **arr, u_int n) = 0;
   void alloc_res_arr (u_int n);
@@ -111,7 +111,6 @@ protected:
   u_int res_n;
   str err;
   unsigned int errno_n;
-  str last_qry;
 
 public:
 $stuff
