@@ -3,6 +3,7 @@
 
 #include "pslave.h"
 #include "stllike.h"
+#include "axprtfd.h"
 
 static int
 _pub_accept (int pubfd, sockaddr_in *sin)

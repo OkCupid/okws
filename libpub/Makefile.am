@@ -4,7 +4,7 @@ $(PROGRAMS): $(LDEPS)
 sfslib_LTLIBRARIES = libpub.la
 
 libpub_la_SOURCES = xpub.C data.C scan.ll parse.yy pubutil.C pub.C xdr.C \
-	slave.C rclient.C proxy.C zstr.C okconst.C pvalw.C
+	slave.C rclient.C proxy.C zstr.C okconst.C pvalw.C fd_prot.C
 
 sfsinclude_HEADERS = pub.h pubutil.h xpub.h
 
@@ -21,6 +21,14 @@ xpub.C:	$(srcdir)/xpub.x xpub.h
 xpub.h:	$(srcdir)/xpub.x
 	@rm -f $@
 	-$(RPCC) -h $(srcdir)/xpub.x || rm -f $@
+
+fd_prot.h: $(srcdir)/fd_prot.x
+	@rm -f $@
+	-$(RPCC) -h $(srcdir)/fd_prot.x || rm -f $@
+
+fd_prot.C: $(srcdir)/fd_prot.x fd_prot.h
+	@rm -f $@
+	-$(RPCC) -c $(srcdir)/fd_prot.x || rm -f $@
 
 scan.cc: scan.ll
 	$(LEX) $(AM_FLAGS) $(LFLAGS) $(srcdir)/scan.ll 		\
@@ -64,7 +72,7 @@ xdrclean:
 sourceclean: parseclean xdrclean
 
 
-BUILT_SOURCES = parse.cc parse.h scan.cc
+BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h
 
 CLEANFILES = core *.core *~ *.rpo 
 EXTRA_DIST = .cvsignore
