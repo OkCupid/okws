@@ -159,7 +159,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {TPRFX}com(ment)?	{ yy_push_state (HCOM); }
 }
 
-<GH,H,WH,WGH,EC,WEC,JS,PSTR,GSEC,PTAG,ECCODE>{
+<GH,H,WH,WGH,EC,WEC,JS,PSTR,GSEC,PTAG,ECCODE,HTAG>{
 "@{"		{ yy_push_state (GCODE); return T_BGCODE; }
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
 "%{"		{ yy_push_state (GCODE); return T_BGCCE; }
@@ -227,7 +227,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {HNAM}		{ yylval.str = yytext; return T_HNAM; }
 {HVAL}		{ yylval.str = yytext; return T_HVAL; }
 =		{ return (yytext[0]); }
-.		{ yyerror ("illegal token found"); }
+.		{ yyerror ("illegal token found in parsed HTAG"); }
 }
 
 <SSTR,STR>\n	{ PLINC; addch ('\n', -1); }
