@@ -3,6 +3,7 @@
 
 #include "okld.h"
 #include <sys/types.h>
+#include <grp.h>
 #include <unistd.h>
 #include "parseopt.h"
 #include "sfsmisc.h"
@@ -209,35 +210,57 @@ okld_t::fix_uids ()
   nxtuid = ok_svc_uid_low;
   int lim = svcs.size ();
   bhash<u_int> uids_in_use;
+  bhash<u_int> owners;
   if (lim > ok_svc_uid_high - ok_svc_uid_low && !unsafe_mode) {
     warn << "too many services / ran out of UIDs\n";
     return false;
   }
 
-  struct passwd *pw;
+  // struct passwd *pw;
+  // struct group *gr;
   okld_ch_t *svc;
   for (int i = 0; i < lim; i++) {
     svc = svcs[i];
-    // only assign uid if not given in config file
-    if (!svc->usr ()) {
-      int ueuid = svc->get_exec_uid ();
-      if (!unsafe_mode && 
-	  (ueuid < ok_svc_uid_low || ueuid > ok_svc_uid_high || 
-	   uids_in_use[ueuid])) {
-	while ((pw = getpwuid (nxtuid)))
-	  warn << "UID=" << nxtuid++ << " is in use; refusing to use it.\n";
-	ueuid = nxtuid++;
-	uids_in_use.insert (ueuid);
-	if (!svc->chown (ueuid, svc_grp.getid ()))
-	  ret = false;
-      }
-      svc->assign_uid (ueuid);
+
+    int ueuid_own = svc->get_exec_uid ();
+    int uegid = svc->get_exec_gid ();
+
+    if (unsafe_mode) {
+      svc->assign_uid (ueuid_own);
+      continue;
     }
-    // XXX - this might break gmake install for web developers;
-    // not sure yet.
-    if (!svc->chmod (0700))
+
+    while ((getpwuid (uegid) ||  getgrgid (uegid) ||
+	    uids_in_use[uegid] || owners[uegid]) && uegid <= ok_svc_uid_high) {
+      warn << "UID/GID=" << uegid
+	   << " is in use; refusing to use it.\n";
+      uegid = ++nxtuid;
+    }
+
+    if (uegid > ok_svc_uid_high) {
+      warn << "too many services / ran out of UIDs\n";
+      return false;
+    }
+
+    uids_in_use.insert (uegid);
+
+    if (uids_in_use[ueuid_own]) {
+      warn << svc->loc () << ": UID " << ueuid_own
+	   << " in use / changing ownership on file to root\n";
+      ueuid_own = 0;
+    } 
+
+    owners.insert (ueuid_own);
+    if (!svc->chown (ueuid_own, uegid))
       ret = false;
+
+    // owner cannot exec this script; group -- only -- can
+    if (!svc->chmod (0450))
+      ret = false;
+    svc->assign_uid (uegid);
+
   }
+  endgrent ();
   endpwent ();
   return ret;
 }

@@ -37,8 +37,10 @@ public:
 
   void assign_uid (int u);
   ok_usr_t *usr () { return uid; }
+  str loc () const { return cfgfile_loc; }
   void set_svc_ids ();
   int get_exec_uid ();
+  int get_exec_gid ();
   bool can_exec (bool chrt);
   void chldcb (int status);
   bool chmod (int mode);

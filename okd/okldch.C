@@ -48,6 +48,13 @@ okld_ch_t::get_exec_uid ()
   return ustat.st_uid;
 }
 
+int 
+okld_ch_t::get_exec_gid ()
+{
+  assert (have_ustat);
+  return ustat.st_gid;
+}
+
 bool
 okld_ch_t::chown (int uid, int gid)
 {
@@ -56,8 +63,8 @@ okld_ch_t::chown (int uid, int gid)
     return false;
   }
   warn << "Changing owner of executable " 
-       << execpath << "; UID:" << ustat.st_uid 
-       << " --> " << uid << "\n";
+       << execpath << "; UID/GID:" << ustat.st_uid << "/" 
+       << ustat.st_gid << " --> " << uid << "/" << gid <<  "\n";
   return true;
 }
 
