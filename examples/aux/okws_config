@@ -11,7 +11,7 @@
 ##   tells okd which IP address to bind to, and which port to listen on.
 ##   Default port is 80.
 ##  	
-BindAddr 	18.26.4.239 80
+BindAddr 	18.26.4.238 8081
 
 ##
 ## JailDir <dir>
@@ -24,23 +24,17 @@ BindAddr 	18.26.4.239 80
 ##      /var/okws/modules/<name>/<version>/<tag>/run
 ##   
 ##   by default.  We recommend at first that you compile with 
-##   debug mode, so in the above, name=samples, version=0.0,
+##   debug mode, so in the above, name=example, version=0.1,
 ##   and tag=debug.
 ##
-JailDir 	/var/okws/modules/samples/0.0/debug/run
+JailDir 	/var/okws/modules/example/0.1/debug/run
 
 ##
 ## ServiceBin <dir>
 ##
 ##   Directory within JailDir, in which to find the OKWS service
 ##   executables.  In cluster setting, might actually be
-##   an NFS mount point. The default value here is the empty string ---
-##   that is, by default, service executables are assumed to be in 
-##   the top level runtime jail directory.  This is not much of a 
-##   security concern, as services will be forced into mode 0700,
-##   and owned by whoever is running them.  Thus, if okd or any
-##   of the services is compromised, they should not be able to
-##   examine the executables of other services.
+##   an NFS mount point. 
 ##
 ServiceBin	svc
 
@@ -50,12 +44,12 @@ ServiceBin	svc
 ##	read local named UNIX sockets. For instance, if the
 ##	the following configuration is specified:
 ##
-##		JailDir		/var/okws/modules/samples/0.0/debug/run
+##		JailDir		/var/okws/modules/example/0.1/debug/run
 ##		SocketDir	/sockets
 ##
 ##	then the final socket directory will live:
 ##
-##		/var/okws/modules/samples/0.0/debug/run/sockets
+##		/var/okws/modules/example/0.1/debug/run/sockets
 ##
 ##	on the physical, unjailed file system.
 ##
@@ -110,7 +104,7 @@ OkdGroup	www
 ##   The parent directory for OKWS standard executables, such as 
 ##   okd, pubd, and oklogd.
 ##
-TopDir /usr/local/lib/okws/debug
+TopDir /usr/local/lib/okws
 
 ##
 ## PubdExecPath <path>
@@ -193,9 +187,18 @@ OklogdGroup	www
 ##   JailDir.  The second parameter is the HTTP URI that should map to this
 ##   service.
 ##
-Service 	/sha /sha
-Service 	/sha2 /sha2
-Service 	/google /google
+##   If the jailed path <path> is given with leading '/', then it will
+##   be completed as:
+##
+##      <JailDir>/<path>
+##
+##   Withouth leading front slash, the path to the executable will
+##   be completed as:
+##
+##      <JailDir>/<ServiceBin>/<path>
+##
+Service 	google 	/google
+Service		pt1	/pt1
 
 ##
 ## Gzip Compression Configuration
@@ -283,3 +286,9 @@ FilterCGI 0
 ##
 #ErrorDoc	404	/404.html
 #ErrorDoc	500	/500.html
+
+##-----------------------------------------------------------------------
+## Other Miscellaneous Options
+##
+
+
