@@ -278,7 +278,7 @@ okd_t::newserv (int fd)
     close_on_exec (nfd);
     tcp_nodelay (nfd);
     ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
-    warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
+    //warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
     x->setccb (wrap (this, &okd_t::sclone, x));
   }
   else if (errno != EAGAIN)
