@@ -29,46 +29,12 @@ $1_SOURCES = $2 $1.C
 $1.C: $1.g
 ]]changequote)dnl
 
-define(`rpcmk_xfiles',)dnl
-define(`rpcmk_headers',)dnl
-define(`rpcmk_sources',)dnl
-define(`rpcmk_built', `rpcmk_headers rpcmk_sources')dnl
-define(`rpcmk',
-changequote([[, ]])dnl
-[[dnl
-define(`rpcmk_xfiles', rpcmk_xfiles $1.x)dnl
-define(`rpcmk_headers', rpcmk_headers $1.h)dnl
-define(`rpcmk_sources', rpcmk_sources $1.C)dnl
-$1.h: $1.x
-$1.C: $1.x
-$1.o: $1.h
-$1.lo: $1.h
-]]changequote)dnl
-
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 
 cgimk(cgiscript1)
-dnl cgimk(cgiscript2)
-dnl cgimk(cgiscript3)
-dnl cgimk(cgiscript4)
-dnl cgimk(example)
-dnl cgimk(t1, t1_prot.C)
-dnl rpcmk(simple_prot)
-dnl rpcmk(t1_prot)
 
-noinst_PROGRAMS = cgi_exes  dnl tst simple simpled t1d
-simpled_SOURCES = simple_prot.C simpled.C
-simpled_LDADD = $(LDADD_AMT) $(LDADD_THR)
-simple_SOURCES = simple_prot.C simple.C
-t1d_LDADD = $(LDADD_AMYSQL)
-t1d_SOURCES = t1_prot.C t1d.C
-LDFLAGS = -all-static
-tst_SOURCES = tst.C
-
-dnl t1d.C: t1_prot.h
-dnl simpled.C: simple_prot.h
-dnl simple.C: simple_prot.h
+noinst_PROGRAMS = cgi_exes 
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore
