@@ -41,7 +41,8 @@ public:
 	    int rcvlmt = -1)
     : fd (f), rcbset (false), wcbset (false), bytes_recv (0), bytes_sent (0),
       eof (false), destroyed (false), out (suio_alloc ()), sin (s),
-      recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt)
+      recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
+      overflow_flag (false)
   {
     make_async (fd);
     close_on_exec (fd);
@@ -70,6 +71,7 @@ public:
 			      int mb = SUIOLITE_DEF_BUFLEN)
   { return New refcounted<ahttpcon> (fd, s, mb); }
   bool closed () const { return fd < 0; }
+  bool overflow () const { return overflow_flag; }
 
 protected:
   void set_remote_ip ();
@@ -81,6 +83,7 @@ protected:
   virtual void fail2 () {} 
   void input ();
   bool enable_selread ();
+  void disable_selread ();
 
   int fd;
   cbi::ptr rcb;
@@ -93,6 +96,7 @@ protected:
   sockaddr_in *sin;
   str remote_ip;
   int recv_limit;
+  bool overflow_flag;
 };
 
 // for parent dispatcher, which will send fd's

@@ -127,6 +127,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("logtick", &ok_log_tick);
     t->lookup ("logprd", &ok_log_period);
     t->lookup ("clito", &ok_clnt_timeout);
+    t->lookup ("reqszlimit", &ok_reqsize_limit);
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
 

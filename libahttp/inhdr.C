@@ -121,6 +121,9 @@ http_inhdr_t::parse_guts ()
   case ABUF_OVERFLOW:
     status = HTTP_REQ_TOO_BIG;
     break;
+  case ABUF_EOF:
+    if (abuf->overflow ())
+      status = HTTP_REQ_TOO_BIG;
   default:
     break;
   }

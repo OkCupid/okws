@@ -19,6 +19,10 @@
 #define HTTP_PARSE_BUFLEN 0x4000
 #define HTTP_PARSE_BUFLEN2 0x1000
 
+//
+// http_parser_base_t -- high level parsing object for HTTP requests;
+// parses the headers, and then the bodies appropriately
+//
 class http_parser_base_t {
 public:
   http_parser_base_t (ptr<ahttpcon> xx, u_int to) 
@@ -89,8 +93,6 @@ public:
   void v_parse_cb1 (int status);
   void finish2 (int s1, int s2);
   void enable_file_upload () { mpfd_flag = true; }
-
-  bool mpfd_parse (cbi::ptr pcb);
 
 protected:
   size_t buflen2;

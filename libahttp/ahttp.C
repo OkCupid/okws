@@ -188,6 +188,7 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
 
 ahttpcon::~ahttpcon ()
 { 
+  warn << "~ahttpcon called\n"; // debug
   destroyed = true;
   fail ();
   if (sin) xfree (sin);
@@ -198,6 +199,7 @@ ahttpcon::~ahttpcon ()
 void
 ahttpcon::fail ()
 {
+  warn << "ahttpcon::fail called\n"; // debug
   if (fd >= 0) {
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
@@ -254,6 +256,13 @@ ahttpcon::enable_selread ()
     rcbset = true;
   }
   return true;
+}
+
+void
+ahttpcon::disable_selread ()
+{
+  fdcb (fd, selread, NULL);
+  rcbset = false;
 }
 
 void
@@ -350,8 +359,9 @@ ahttpcon::input ()
     warnx << "\n";
 
     eof = true;
-    fail ();
-    return;
+    disable_selread ();
+    overflow_flag = true;
+    n = 0;
   }
 
   recvd_bytes (n);

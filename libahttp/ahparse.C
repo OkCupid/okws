@@ -82,7 +82,17 @@ http_parser_cgi_t::v_parse_cb1 (int status)
     abuf.setlim (hdr.contlen);
 
     cbi::ptr pcb = wrap (this, &http_parser_cgi_t::finish2, status);
-    if (!mpfd_parse (pcb)) 
+    str boundary;
+    if (cgi_mpfd_t::match (hdr, &boundary)) {
+      if (mpfd_flag) {
+	mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
+	cgi = mpfd;
+	mpfd->parse (pcb);
+      } else {
+	warn << "file upload attempted when not permitted\n";
+	finish (HTTP_NOT_ALLOWED);
+      }
+    } else 
       post.parse (pcb);
   } else if (hdr.mthd == HTTP_MTHD_GET) {
     cgi = &url;
@@ -90,23 +100,6 @@ http_parser_cgi_t::v_parse_cb1 (int status)
   } else {
     finish (HTTP_NOT_ALLOWED);
   }
-}
-
-bool
-http_parser_cgi_t::mpfd_parse (cbi::ptr pcb)
-{
-  str boundary;
-  if (cgi_mpfd_t::match (hdr, &boundary)) {
-    if (mpfd_flag) {
-      mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
-      cgi = mpfd;
-      mpfd->parse (pcb);
-    } else {
-      warn << "file upload attempted when not permitted\n";
-    }
-    return true;
-  }
-  return false;
 }
 
 void

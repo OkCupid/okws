@@ -177,7 +177,6 @@ okd_t::parseconfig ()
     .add ("MaxConQueueSize", &ok_con_queue_max, OK_QMIN, OK_QMAX)
     .add ("OkMgrPort", &ok_mgr_port, OK_PORT_MIN, OK_PORT_MAX)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
-    .add ("ChannelLimit", &ok_reqsize_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
 
     .add ("PubdUnix", wrap (this, &okd_t::got_pubd_unix))
     .add ("PubdInet", wrap (this, &okd_t::got_pubd_inet))
@@ -218,7 +217,8 @@ okd_t::parseconfig ()
     .ignore ("GzipCacheSize")
     .ignore ("GzipMemLevel")
     .ignore ("UnsafeMode")
-    .ignore ("SvcLog");
+    .ignore ("SvcLog")
+    .ignore ("ChannelLimit");
 
 
   while (pa.getline (&av, &line)) {

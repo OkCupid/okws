@@ -34,20 +34,27 @@ public:
   virtual void rembytes (int nbytes) = 0;
   virtual void finish () = 0;
   virtual void cancel () {}
-  virtual ~abuf_src_t () {}
+  virtual ~abuf_src_t () 
+  { warn << "~abuf_src_t called\n"; } // debug
+  virtual bool overflow () const { return false; }
 };
 
 class abuf_con_t : public abuf_src_t {
 public:
   abuf_con_t (ptr<ahttpcon> xx) 
     : x (xx), in (x->uio ()), eof (x->ateof ()) {}
-  ~abuf_con_t () { finish (); }
+  ~abuf_con_t () 
+  { 
+    warn << "~abuf_con_t called\n"; // debug
+    finish (); 
+  }
   void init (cbv c);
   void readcb (int n);
   abuf_indata_t getdata ();
   void rembytes (int n) { in->rembytes (n); }
   void finish () {  x->setrcb (NULL); }
   void cancel () { cb = NULL; }
+  bool overflow () const { return x->overflow (); }
 
 private:
   ptr<ahttpcon> x;
@@ -63,7 +70,18 @@ public:
     len (0), erc (ABUF_OK), delsrc (d), spcs (0),
     lim (-1), ccnt (0), mirror_base (NULL), mirror_p (NULL),
     mirror_end (NULL) {}
-  ~abuf_t () { if (delsrc && src) delete src; }
+
+  ~abuf_t () 
+  { 
+    warn ("~abuf_t called (delsrc: %d, src: %p)\n", 
+	  delsrc ? 1 : 0, src); // debug;
+    if (delsrc && src) {
+      delsrc = false;
+      delete src; 
+      src = NULL;
+    }
+  }
+
   inline int get ();
   inline int peek ();
   inline void unget () { bc = true; }
@@ -81,6 +99,7 @@ public:
   str end_mirror ();
   str end_mirror2 (int sublen = 0); // slightly different CRLF semantics
   str mirror_debug ();
+  bool overflow () const { return src->overflow (); }
 
   void reset () 
   {

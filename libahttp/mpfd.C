@@ -268,7 +268,6 @@ cgi_mpfd_t::match_boundary (str *dat)
   }
 
   int ch;
-  str debug;
   bool flag = true;
   while (flag) {
     ch = abuf->get ();
@@ -276,23 +275,14 @@ cgi_mpfd_t::match_boundary (str *dat)
       flag = false;
     } else {
       if (cbm->match (ch)) {
-	if (dat) {
+	if (dat)
 	  *dat = abuf->end_mirror2 (cbm->len ());
-	  warn << "match data output:\n++++++++++++++++++++++++\n"
-	       << *dat << "\n++++++++++++++++++++++++++++++++\n";
-	}
 	match_ended = true;
 	return ABUF_OK;
       }
     }
-    debug = abuf->mirror_debug (); // XXX for access in GDB
   }
-
-  if (dat)
-    warn << "mirror debug:\n++++++++++++++++++++++++++++\n"
-	 << abuf->mirror_debug () << "\n++++++++++++++++++++++++\n";
   if (ch == ABUF_WAITCHAR) {
-    warn << "received waitchar in match\n"; // XXX debug
     return ABUF_WAIT; 
   } else {
     match_ended = true;

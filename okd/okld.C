@@ -110,6 +110,7 @@ okld_t::parseconfig (const str &cf)
     .add ("GzipCacheMax", &ok_gzip_cache_maxstr, 0, 0x1000000)
     .add ("GzipCacheSize", &ok_gzip_cache_storelimit, 0, 0x10000000)
     .add ("GzipMemLevel", &ok_gzip_mem_level, 0, 9)
+    .add ("ChannelLimit", &ok_reqsize_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
 
     .ignore ("Alias")
     .ignore ("MaxConQueueSize")
@@ -117,8 +118,7 @@ okld_t::parseconfig (const str &cf)
     .ignore ("OkMgrPort")
     .ignore ("OkdUser")
     .ignore ("OkdGroup")
-    .ignore ("PubdExecPath")
-    .ignore ("ChannelLimit");
+    .ignore ("PubdExecPath");
 
 
   if (grp) svc_grp = ok_grp_t (grp);
@@ -167,7 +167,8 @@ okld_t::encode_env ()
     .insert ("gzipcsl", ok_gzip_cache_storelimit)
     .insert ("logtick", ok_log_tick)
     .insert ("logprd", ok_log_period)
-    .insert ("clito", ok_clnt_timeout);
+    .insert ("clito", ok_clnt_timeout)
+    .insert ("reqszlimit", ok_reqsize_limit);
 }
 
 
