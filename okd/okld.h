@@ -123,7 +123,8 @@ public:
       okd_dumpdir ("/tmp"), 
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
-      used_primary_port (false) {}
+      used_primary_port (false),
+      okdenv (NULL){}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -219,6 +220,7 @@ private:
   u_int launchp;
 
   bool used_primary_port;
+  char *const *okdenv;
 };
 
 #endif /* _OKD_OKD_H */

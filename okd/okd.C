@@ -597,6 +597,8 @@ main (int argc, char *argv[])
   str cdd;  // core dump dir
   okws1_port_t port = ok_dport;
 
+  set_debug_flags ();
+  
   int ch;
   while ((ch = getopt (argc, argv, "f:l:D:c:p:")) != -1)
     switch (ch) {

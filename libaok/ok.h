@@ -359,6 +359,8 @@ inline void do_syscall_stats ()
   }
 }
 
+void set_debug_flags ();
+
 //
 // XXX - hack - this is used by both okch_t and okld_ch_t - just happens
 // that they have similar internal variables; the might be put into a 

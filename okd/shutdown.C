@@ -26,6 +26,7 @@
 #include "pslave.h"
 #include "okprot.h"
 #include "xpub.h"
+#include "okdbg.h"
 
 static void shutdown_srvc (oksig_t g, okd_t *d, okch_t *s) 
 { s->shutdown (g, wrap (d, &okd_t::kill_srvcs_cb)); }
@@ -38,12 +39,20 @@ okd_t::shutdown (int sig)
   if (sdflag)
     return;
 
-  warn << "commencing shutdown sequence with signal=" << sig << "\n";
+  if (OKDBG2(OKD_SHUTDOWN)) {
+    strbuf b;
+    b << "commencing shutdown sequence with signal=" << sig ;
+    okdbg_warn (CHATTER, b);
+  }
 
   sdflag = true;
   sd2 = false;
   stop_listening ();
-  warn << "sending soft KILL to all services.\n";
+
+  if (OKDBG2(OKD_SHUTDOWN)) {
+    okdbg_warn (CHATTER, "sending soft KILL to all services");
+  }
+
   kill_srvcs (OK_SIG_SOFTKILL);
 }
 
@@ -53,7 +62,13 @@ okd_t::kill_srvcs (oksig_t sig)
   u_int i = servtab.size ();
   if (i > 0) {
     servtab.traverse (wrap (shutdown_srvc, sig, this));
-    warn << "debug: setting shutdown timer: " << ok_shutdown_timeout << "\n";
+    
+    if (OKDBG2(OKD_SHUTDOWN)) {
+      strbuf b;
+      b << "debug: setting shutdown timer: " << ok_shutdown_timeout ;
+      okdbg_warn (CHATTER, b);
+    }
+
     dcb = delaycb (ok_shutdown_timeout, 0, 
 		   wrap (this, &okd_t::shutdown_retry));
   } else {

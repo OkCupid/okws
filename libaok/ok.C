@@ -175,10 +175,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
 
-  str df = getenv ("OKWS_DEBUG_OPTIONS");
-  if (df && !convertint (df, &okws_debug_flags)) {
-    SVCWARN("XXX invalid debug flags: " << df);
-  }
+  set_debug_flags ();
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -823,4 +820,15 @@ ok_base_t::fix_uri (const str &in) const
   //warn << "fix_uri: " << in << " --> " << out << "\n";
 
   return out;
+}
+
+void
+set_debug_flags ()
+{
+  str df = getenv ("OKWS_DEBUG_OPTIONS");
+  if (df && !convertint (df, &okws_debug_flags)) {
+    warn << "invalid debug flags given: " << df << "\n";
+  }
+  if (okws_debug_flags)
+    warn ("OKWS debug flags set: 0x%qx\n", okws_debug_flags);
 }

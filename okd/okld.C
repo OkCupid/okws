@@ -75,6 +75,39 @@ okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
   return true;
 }
 
+void
+okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
+{
+  //
+  // pop off "OkdExec"
+  //
+  s.pop_front ();
+  vec<str> env;
+  while (s.size () && strchr (s[0].cstr (), '='))
+    env.push_back (s.pop_front ());
+
+  if (s.size () != 1)
+    goto usage;
+  
+  okdexecpath = s.pop_front ();
+
+  if (!is_safe (okdexecpath)) {
+    warn << loc << ": Service path (" << okdexecpath
+	 << ") contains unsafe substrings\n";
+    goto err;
+  }
+  
+  if (env.size ()) 
+    okdenv = to_argv (env, NULL, environ);
+
+  return;
+
+ usage:
+    warn << loc << ": usage: OkdExecPath [<ENV>] <okd-execpath>\n";
+ err:
+    *errp = true;
+}
+
 
 void
 okld_t::got_service (vec<str> s, str loc, bool *errp)
@@ -304,7 +337,7 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceHighUid", &ok_svc_uid_high, OK_UID_MIN, OK_UID_MAX)
     .add ("ServiceMode", &ok_svc_mode, 0, 0777)
     .add ("ServiceGroup", &grp)
-    .add ("OkdExecPath", &okdexecpath)
+    .add ("OkdExecPath", wrap (this, &okld_t::got_okd_exec))
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
@@ -626,7 +659,7 @@ okld_t::launch_okd (int logfd)
   }
 
   // launch okd synchronously; no point in us running if okd puked.
-  ptr<axprt_unix> x = axprt_unix_spawnv (prog, argv, 0, NULL, false);
+  ptr<axprt_unix> x = axprt_unix_spawnv (prog, argv, 0, NULL, okdenv);
   if (!x)
     return false;
 
