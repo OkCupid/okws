@@ -1214,7 +1214,7 @@ public:
     void remove (pfile_t *f);
     void remove (const pbinding_t *bnd, pfile_t *f);
     void insert (bpfcp_t bpf);
-    bpfcp_t getfile (const pfnm_t &nm) const;
+    bpfcp_t getfile (const pfnm_t &nm, const set_t *backup = NULL) const;
     pbinding_t *to_binding (const pfnm_t &fn, const pfnm_t &rfn, 
 			    bool rebind, bool toplev = false);
     pbinding_t *alloc (const pfnm_t &fn, phashp_t h, bool toplev = false);
@@ -1222,6 +1222,8 @@ public:
     bindtab_t  bindings;                // expands filenames to hashes
     pfile_map_t files;                  // expands hashes to files
   };
+
+  virtual const set_t *get_backup_set () const { return NULL; }
 
   vec<str> rootfiles;    // all pub rootfiles
   bhash<str> rfbh;       // rootfile bhash
@@ -1240,6 +1242,7 @@ public:
   pub_client_t () : pub_t (), nset (NULL) {}
   void explore (const pfnm_t &fn) const;
   static pub_client_t *alloc ();
+  virtual const set_t *get_backup_set () const { return nset; }
   set_t *nset;
 };
 

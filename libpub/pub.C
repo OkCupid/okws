@@ -257,11 +257,15 @@ pub_parser_t::init (const str &fn)
 
 
 bpfcp_t
-pub_t::set_t::getfile (const pfnm_t &nm) const
+pub_t::set_t::getfile (const pfnm_t &nm, const pub_t::set_t *backup) const
 {
   const pbinding_t *b = bindings[nm];
   if (!b) return NULL;
   pfile_t *f = files[b->hash ()];
+  if (!f && backup) {
+    f = backup->files[b->hash ()];
+    warn << "REPUB: used backup file for filename: " << nm << "\n";
+  }
   assert (f);
   return bound_pfile_t::alloc (b, f);
 }
@@ -423,7 +427,10 @@ pub_client_t::alloc ()
 bpfcp_t
 pub_t::getfile (const pfnm_t &fn) const
 {
-  bpfcp_t bpf = set->getfile (fn);
+  // if we're repubbing at this time, then maybe we need to access
+  // the new set of published files. this is because a file can
+  // only be in either the new set or the old at one time
+  bpfcp_t bpf = set->getfile (fn, get_backup_set ());
   if (!bpf) {
     warn << "File lookup failed for filename: " << fn << "\n";
   }
