@@ -27,9 +27,17 @@
 #include "pub.h"
 #include "xpub.h"
 #include "svq.h"
+#include "okdbg.h"
 
 #define LDCH_WARN(x) \
   warn << servpath << ":" << pid << ": " << x << "\n";
+
+#define CH_CHATTER(x)                          \
+{                                              \
+  strbuf b;                                    \
+  b << servpath << ":" << pid << ": " << x ;   \
+  okdbg_warn (CHATTER, b);                     \
+}
 
 okch_t::okch_t (okd_t *o, const str &s)
   : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
@@ -96,8 +104,15 @@ okch_t::shutdown (oksig_t g, cbv cb)
       kill ();
       (*cb) ();
     } else {
+      if (OKDBG2(OKD_SHUTDOWN)) {
+	CH_CHATTER ("sending OKCTL_KILL to client");
+      }
+	
       clnt->seteofcb (wrap (this, &okch_t::shutdown_cb1, cb));
       clnt->call (OKCTL_KILL, &g, NULL, aclnt_cb_null);
+
+      // don't answer any more pub messages
+      state = OKC_STATE_KILLING;
     }
   } else {
     shutdown_cb1 (cb);
@@ -200,6 +215,9 @@ okch_t::got_new_x_fd (int fd, int p)
 void
 okch_t::shutdown_cb1 (cbv cb)
 {
+  if (OKDBG2(OKD_SHUTDOWN)) {
+    CH_CHATTER ("in shutdown_cb1");
+  }
   delete this;
   (*cb) ();
 }
@@ -218,6 +236,14 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     return ;
   }
   u_int p = sbp->proc ();
+
+  if (state == OKC_STATE_KILLING) {
+    if (OKDBG2(OKD_SHUTDOWN))
+      CH_CHATTER ("ignore RPC sent after child killed");
+    sbp->ignore ();
+    return;
+  }
+
   switch (p) {
   case OKCTL_PUBCONF:
     myokd->pubconf (sbp);

@@ -32,7 +32,7 @@
 #include "xpub.h"
 #include "qhash.h"
 #include <dirent.h>
-#include "okdbg.h"
+#include "okdbg-int.h"
 
 
 #ifndef HAVE_SFS_CLOCK_T

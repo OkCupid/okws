@@ -23,64 +23,15 @@
  *
  */
 
-#ifndef _LIBPUB_DEBUG_H
-#define _LIBPUB_DEBUG_H 1
+#ifndef _LIBPUB_OKDBG2_H
+#define _LIBPUB_OKDBG2_H 1
 
-#include "okconst.h"
+#include "okdbg-int.h"
 
 #define OKWS_DEBUG_PUB_BINDTAB_INSERT             (1 << 0)
 #define OKWS_DEBUG_PUB_BINDTAB_ACCESS             (1 << 1)
 #define OKWS_DEBUG_PUB_BINDTAB_INSERTS            (1 << 2)
 #define OKWS_DEBUG_PUB_ERRORS                     (1 << 3)
+#define OKWS_DEBUG_OKD_SHUTDOWN                   (1 << 4)
 
-typedef enum {
-  CHATTER = 0,
-  ERROR = 1,
-  FATAL_ERROR = 2,
-} okdbg_lev_t;
-
-
-#define OKDBG(x) \
-  (okws_debug_flags & (x))
-
-#define OKDBG2(x) \
-  (okws_debug_flags & (OKWS_DEBUG_##x))
-
-inline void
-okdbg_warn (okdbg_lev_t l, const str &s)
-{
-  switch (l) {
-  case CHATTER:
-    warn << "++ ";
-    break;
-  case ERROR:
-    warn << "** ";
-    break;
-  case FATAL_ERROR:
-    warn << "XX ";
-    break;
-  default:
-    warn << "";
-    break;
-  }
-  warnx << s;
-  if (s[s.len () - 1] != '\n')
-    warnx << "\n";
-}
-
-
-class okdbg_dumpable_t {
-public:
-  virtual void okdbg_dump_vec (vec<str> *s) const = 0;
-  virtual void okdbg_dump (okdbg_lev_t l = CHATTER) const 
-  {
-    vec<str> v;
-    okdbg_dump_vec (&v);
-    for (u_int i = 0; i < v.size () ; i++) {
-      okdbg_warn (l, v[i]);
-    }
-  }
-
-};
-
-#endif /* _LIBPUB_DEBUG_H */
+#endif /* _LIBPUB_OKDEBUG_H */

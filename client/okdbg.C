@@ -10,6 +10,7 @@ usage ()
 	<< "\t -a pub subsystem: dump bind table after all inserts\n"
 	<< "\t -B pub subsystem: dump bind table before access\n"
 	<< "\t -E pub subsystem: complain about errors\n"
+	<< "\t -s pub subsystem: display shutdown status messages\n"
     ;
   exit (1);
 }
@@ -21,7 +22,7 @@ main (int argc, char *argv[])
   int ch;
   int64_t res = 0;
 setprogname (argv[0]);
-  while ((ch = getopt (argc, argv, "abBE")) != -1) {
+  while ((ch = getopt (argc, argv, "abBEs")) != -1) {
     switch (ch) {
     case 'a':
       res = res | OKWS_DEBUG_PUB_BINDTAB_INSERTS;
@@ -34,6 +35,9 @@ setprogname (argv[0]);
       break;
     case 'E':
       res = res | OKWS_DEBUG_PUB_ERRORS;
+      break;
+    case 's':
+      res = res | OKWS_DEBUG_OKD_SHUTDOWN;
       break;
     default:
       usage ();

@@ -10,7 +10,7 @@ libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
-	pslave.h txa.h okdbg.h
+	pslave.h txa.h okdbg.h okdbg-int.h
 
 YDEBUG = @YDEBUG@
 LDEEBUG = @LDEBUG@
