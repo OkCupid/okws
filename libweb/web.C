@@ -129,6 +129,8 @@ okdate_t::strip_zero(const str& s) const
 void
 okdate_t::set (time_t t)
 {
+  time_t_val = t;
+  time_t_set = true;
   struct tm *stm = gmtime (&t);
   if (!stm)
     err = true;
@@ -265,7 +267,11 @@ time_t
 okdate_t::to_time_t () const
 {
   set_stm ();
-  return timegm (&stm);
+  if (!time_t_set) {
+    time_t_val = timegm (&stm);
+    time_t_set = true;
+  }
+  return time_t_val;
 }
 
 bool
