@@ -41,6 +41,8 @@ typedef enum { SFS_CLOCK_GETTIME = 0,
 
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);
+char *const *to_argv (const vec<str> &v, u_int *c = NULL);
+void free_argv (char *const *argv);
 bool str_split (vec<str> *r, const str &s, bool quoted, int sz = 50);
 str suffix_sub (const char *s, const char *sfx1, const char *sfx2);
 int myopen (const char *arg, u_int mode = 0444);

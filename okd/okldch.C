@@ -28,11 +28,12 @@
 #include <dirent.h>
 
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-		      ok_usr_t *u)
-  : rexecpath (e), servpath (s), 
-    okld (o), cfgfile_loc (cfl), uid (u), state (OKC_STATE_NONE), rcb (NULL),
+		      ok_usr_t *u, char *const *env_in)
+  : rexecpath (e), servpath (s), okld (o), cfgfile_loc (cfl), uid (u), 
+  state (OKC_STATE_NONE), rcb (NULL),
   have_ustat (false), startup_time (0), 
-  exec_uid (-1), exec_gid (-1), mode (-1)
+  exec_uid (-1), exec_gid (-1), mode (-1),
+  env (env_in)
 {
   o->insert (this);
 }
@@ -170,7 +171,7 @@ okld_ch_t::launch_cb (int logfd)
   int fd, ctlfd;
   fd = ahttpcon_aspawn (execpath, argv, 
 			wrap (this, &okld_ch_t::set_svc_ids), 
-			&ctlfd);
+			&ctlfd, env);
 
   pid = ahttpcon_spawn_pid;
   close (logfd);

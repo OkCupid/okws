@@ -57,10 +57,5 @@ main (int argc, char *argv[])
 {
   oksrvc_t *oksrvc = New oksrvc_google_t (argc, argv);
   oksrvc->launch ();
-  char *c = getenv ("DMALLOC_OPTIONS");
-  if (getenv)
-    warn << "dmalloc options: " << c << "\n";
-  else
-    warn << "no dmalloc option var specified\n";
   amain ();
 }

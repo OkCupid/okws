@@ -567,13 +567,14 @@ ahttpcon_clone::delimit (int dummy)
 }
 
 ptr<ahttpcon>
-ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx)
+ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx,
+		 char *const *env)
 {
   vec<str> v;
   v.push_back (execpath);
   int ctlfd, fd;
   ptr<ahttpcon> x;
-  fd = ahttpcon_spawn (execpath, v, postforkcb, true, NULL, 
+  fd = ahttpcon_spawn (execpath, v, postforkcb, true, env,
 		       ctlx ? &ctlfd : NULL);
   if (fd < 0)
     return NULL;
@@ -585,9 +586,9 @@ ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx)
 
 int
 ahttpcon_aspawn (str execpath, const vec<str> &v, cbv::ptr pfcb,
-		 int *ctlx)
+		 int *ctlx, char *const *env)
 {
-  return ahttpcon_spawn (execpath, v, pfcb, true, NULL, ctlx);
+  return ahttpcon_spawn (execpath, v, pfcb, true, env, ctlx);
 }
 
 int

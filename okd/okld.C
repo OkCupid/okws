@@ -44,37 +44,81 @@ okld_t::set_signals ()
 void
 okld_t::got_service (vec<str> s, str loc, bool *errp)
 {
-  if (s.size () != 3 && s.size () != 4) {
-    warn << loc << ": usage: Service <exec-path> <URI> [<uid>]\n";
-    *errp = true;
-    return;
-  }
-  if (!is_safe (s[1])) {
-    warn << loc << ": Service path (" << s[1] 
-	 << ") contains unsafe substrings\n";
-    *errp = true;
-    return;
-  }
-
   int svc_uid = -1;
   ok_usr_t *u = NULL;
-  if (s.size () == 4) {
-    if (convertint (s[3], &svc_uid)) {
-      u = New ok_usr_t (svc_uid);
-    } else {
-      u = New ok_usr_t (s[3]);
-      if (!*u) {
-	warn << loc << ": cannot find user " << s[3] << "\n";
-	*errp = true;
-	delete u;
-	return;
-      }
-    }
+
+  str bin;
+  str uri;
+  vec<str> env;
+  str exe, httppath;
+
+  u_int argc;
+  char *const *argv = NULL;
+  int ch;
+
+  //
+  // pop off "Service"
+  //
+  s.pop_front ();
+
+  if (s.size () < 2) 
+    goto usage;
+
+  while (s.size () && strchr (s[0].cstr (), '='))
+    env.push_back (s.pop_front ());
+
+  if (!s.size ()) 
+    goto usage;
+
+  bin = s.pop_front ();
+
+  if (!is_safe (bin)) {
+    warn << loc << ": Service path (" << bin
+	 << ") contains unsafe substrings\n";
+    goto err;
   }
-  str exe = apply_container_dir (service_bin, s[1]);
-  str httppath = re_fslash (s[2].cstr ());
+
+  argv = to_argv (s, &argc);
+  while ((ch = getopt (argc, argv, "u:")) != -1) {
+    switch (ch) {
+    case 'u':
+      if (u) {
+	warn << loc << ": -u option specified more than once!\n";
+	goto err;
+      } else if (convertint (optarg, &svc_uid)) {
+	u = New ok_usr_t (svc_uid);
+      } else {
+	u = New ok_usr_t (optarg);
+	if (!*u) {
+	  warn << loc << ": cannot find user " << optarg << "\n";
+	  goto err;
+	}
+      }
+      break;
+    default:
+      warn << loc << ": unrecognized option given\n";
+      goto err;
+      break;
+    }
+    s.pop_front ();
+  }
+
+  if (s.size () != 1) 
+    goto usage;
+  uri = s[0];
+
+  exe = apply_container_dir (service_bin, bin);
+  httppath = re_fslash (uri);
   warn << "Service: URI(" << httppath << ") --> unix(" << exe << ")\n";
-  vNew okld_ch_t (exe, httppath, this, loc, u);
+  vNew okld_ch_t (exe, httppath, this, loc, u, to_argv (env));
+  return;
+
+ usage:
+  warn << loc << ": usage: Service [<env>] <exec-path> [<options>] <URI>\n";
+ err:
+  *errp = true;
+  if (argv) free_argv (argv);
+  if (u) delete u;
 }
 
 void

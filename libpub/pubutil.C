@@ -406,3 +406,25 @@ is_safe (const str &d)
     return false;
   return true;;
 }
+
+char *const *
+to_argv (const vec<str> &v, u_int *c)
+{
+  size_t sz = v.size ();
+  char **argv = New (char *)[sz+1];
+  argv[sz] = NULL;
+  if (c) *c = sz;
+  for (u_int i = 0; i < sz; i++) {
+    argv[i] = New char[v[i].len () + 1];
+    memcpy (argv[i], v[i].cstr (), v[i].len () + 1);
+  }
+  return argv;
+}
+
+void
+free_argv (char *const *argv)
+{
+  for (char *const *p = argv; *p; p++) 
+    delete [] *p;
+  delete [] argv;
+}

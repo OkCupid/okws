@@ -46,8 +46,8 @@ class okld_t;
 class okld_ch_t { // OK Launch Daemon Child Handle
 public:
   okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-	     ok_usr_t *u = NULL);
-  ~okld_ch_t () { if (uid) delete (uid); }
+	     ok_usr_t *u = NULL, char *const *e = NULL) ;
+  ~okld_ch_t () { if (uid) delete (uid); if (env) free_argv (env); }
   void launch ();
   void sig_chld_cb (int status);
 
@@ -99,6 +99,8 @@ private:
 
   int exec_uid, exec_gid;
   int mode;
+
+  char *const *env;
 };
 
 class okld_t : public ok_base_t 

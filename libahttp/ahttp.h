@@ -233,11 +233,12 @@ private:
 };
 
 ptr<ahttpcon> 
-ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx);
+ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx,
+		 char *const *env);
 
 int
 ahttpcon_aspawn (str execpath, const vec<str> &arv, cbv::ptr pfcb,
-		 int *ctlx);
+		 int *ctlx, char *const *env);
 
 int
 ahttpcon_spawn (str execpath, const vec<str> &avs, 
