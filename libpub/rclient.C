@@ -221,13 +221,18 @@ pub_rclient_t::explore (const pfnm_t &fn) const
       return;
     }
     f = set->files[b->hash ()];
-    assert (f);
-
-    // note that we should always remove before inserting; it's very
-    // bad to have the same thing in two different hash tables, as their
-    // hash link pointers will get crossed otherwise.
-    set->remove (b, f);        
-    nset->insert (b, f);
+    if (f) { 
+      // note that we should always remove before inserting; it's very
+      // bad to have the same thing in two different hash tables, as their
+      // hash link pointers will get crossed otherwise.
+      set->remove (b, f);        
+      nset->insert (b, f);
+      
+    } else {
+      // maybe this file was already moved over by a previous walk down
+      // the tree. if this is the case, then assert it's still here.
+      assert (nset->files[b->hash ()]);
+    }
   }
   f->explore (EXPLORE_FNCALL);
 }

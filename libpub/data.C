@@ -929,6 +929,9 @@ pfile_switch_t::explore (pub_exploremode_t mode) const
   }
   if (def && (fn = def->filename ()))
     ::explore (mode, fn);
+
+  if (nullcase && (fn = nullcase->filename ()))
+    ::explore (mode, fn);
 }
 
 void
