@@ -55,8 +55,8 @@ extern u_int   ok_gzip_mem_level;
 //
 extern const char *ok_uname;
 extern const char *ok_gname;
-extern const char *ok_svc_uname;
-extern const char *ok_svc_gname;
+extern const char *ok_okd_uname;
+extern const char *ok_okd_gname;
 
 //
 // port constants

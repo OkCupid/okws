@@ -79,18 +79,21 @@ private:
 class okd_t : public ok_httpsrv_t 
 {
 public:
-  okd_t (const str &cf, int logfd_in, int okldfd_in) : 
+  okd_t (const str &cf, int logfd_in, int okldfd_in, const str &cdd) : 
     ok_httpsrv_t (NULL, logfd_in),
-    okd_usr (ok_uname), okd_grp (ok_gname),
+    okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
     pubd (NULL), 
     configfile (cf),
     okldfd (okldfd_in),
     pprox (New pub_proxy_t ()),
     sdflag (false), sd2 (false), dcb (NULL), listenfd (-1), sdattempt (0),
-    cntr (0)
+    cntr (0),
+    coredumpdir (cdd)
   {}
 
   ~okd_t ();
+
+  void abort ();
 
   void insert (okch_t *c) { servtab.insert (c); }
   void remove (okch_t *c) { servtab.remove (c); }
@@ -182,6 +185,7 @@ private:
   int cntr;
 
   ptr<fdsource_t<okws_fd_t> > okldx;
+  str coredumpdir;
 };
 
 class okd_mgrsrv_t 

@@ -25,10 +25,17 @@ common_404_t::common_404_t ()
 common_404_t common_404;
 
 void
+okd_t::abort ()
+{
+  panic ("could ABORT signal\n");
+}
+
+void
 okd_t::set_signals ()
 {
   sigcb (SIGTERM, wrap (this, &okd_t::shutdown, SIGTERM));
   sigcb (SIGINT,  wrap (this, &okd_t::shutdown, SIGINT));
+  sigcb (SIGABRT, wrap (this, &okd_t::abort));
 }
 
 okd_t::~okd_t ()
@@ -247,12 +254,17 @@ void
 okd_t::strip_privileges ()
 {
   if (!uid) {
+
+    if (!chroot ())
+      fatal << "startup aborted due to failed chroot call\n";
     if (setgid (okd_grp.getid ()) != 0) 
       fatal << "could not setgid for " << okd_grp.getname () << "\n";
     if (setuid (okd_usr.getid ()) != 0)
       fatal << "could not setuid for " << okd_usr.getname () << "\n";
-    if (!chroot ())
-      fatal << "startup aborted due to failed chroot call\n";
+    assert (coredumpdir);
+    if (coredumpdir && chdir (coredumpdir.cstr ()) != 0)
+      fatal << "startup aborted; could not chdir to coredump dir ("
+	    << coredumpdir << ")\n";
   }
 }
 
@@ -330,14 +342,14 @@ usage ()
 }
 
 static void
-main2 (str cf, int logfd)
+main2 (str cf, int logfd, str cdd)
 {
   sfsconst_init ();
   if (!cf)
     cf = sfsconst_etcfile_required ("okd_config");
 
   warn ("version %s, pid %d\n", VERSION, int (getpid ()));
-  okd_t *okd = New okd_t (cf, logfd, 0);
+  okd_t *okd = New okd_t (cf, logfd, 0, cdd);
   okd->set_signals ();
   okd->launch ();
 }
@@ -349,9 +361,10 @@ main (int argc, char *argv[])
   int logfd = -1;
   setprogname (argv[0]);
   str debug_stallfile;
+  str cdd;  // core dump dir
 
   int ch;
-  while ((ch = getopt (argc, argv, "f:l:D:")) != -1)
+  while ((ch = getopt (argc, argv, "f:l:D:c:")) != -1)
     switch (ch) {
     case 'D':
       debug_stallfile = optarg;
@@ -364,6 +377,9 @@ main (int argc, char *argv[])
     case 'l':
       if (!convertint (optarg, &logfd))
 	usage ();
+      break;
+    case 'c':
+      cdd = optarg;
       break;
     case '?':
     default:
@@ -383,9 +399,9 @@ main (int argc, char *argv[])
 
   // for debugging, we'll stall until the given file is touched.
   if (debug_stallfile) {
-    stall (debug_stallfile, wrap (main2, cf, logfd));
+    stall (debug_stallfile, wrap (main2, cf, logfd, cdd));
   } else {
-    main2 (cf, logfd);
+    main2 (cf, logfd, cdd);
   }
   amain ();
 }

@@ -20,8 +20,8 @@ u_int ok_gzip_mem_level = 9;                 // zlib max
 //
 const char *ok_uname = "oku";         // runas user for okd, pubd, oklogd
 const char *ok_gname = "oku";         // runas grp  for okd, pubd, oklogd
-const char *ok_svc_uname = "www";     // unprivileged service user
-const char *ok_svc_gname = "www";     // unprivileged service group
+const char *ok_okd_uname = "www";     // unprivileged service user
+const char *ok_okd_gname = "www";     // unprivileged service group
 
 //
 // port constants

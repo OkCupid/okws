@@ -84,10 +84,12 @@ protected:
   void input ();
   bool enable_selread ();
   void disable_selread ();
+  void call_drained_cb ();
 
   int fd;
   cbi::ptr rcb;
   cbv::ptr eofcb;
+  cbv::ptr drained_cb;
   bool rcbset, wcbset;
   suiolite *in;
   int bytes_recv, bytes_sent;

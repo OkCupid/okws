@@ -43,9 +43,10 @@ public:
   void set_run_dir (const str &d) { rundir = d; }
   int get_exec_uid ();
   int get_exec_gid ();
+  int get_exec_mode ();
   bool can_exec (bool chrt);
   void chldcb (int status);
-  bool chmod ();
+  bool chmod (int m);
   bool chown ();
   void clean_dumps ();
 
@@ -82,11 +83,13 @@ class okld_t : public ok_base_t
 {
 public:
   okld_t () 
-    : svc_grp (ok_svc_gname),
+    : svc_grp (ok_okd_gname),
       nxtuid (ok_svc_uid_low), logexc (NULL), 
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), okd_pid (-1),
       sdflag (false), service_bin (ok_service_bin),
-      unsafe_mode (false), safe_startup_fl (true) {}
+      unsafe_mode (false), safe_startup_fl (true),
+      okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
+      okd_dumpdir ("/tmp") {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -145,6 +148,10 @@ private:
   bool safe_startup_fl;  // allows bad children to keep restarting 
 
   str root_coredir;      // privileged core directory
+
+  ok_usr_t okd_usr;
+  ok_grp_t okd_grp;
+  str okd_dumpdir;
 };
 
 #endif /* _OKD_OKD_H */

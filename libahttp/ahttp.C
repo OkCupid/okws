@@ -97,9 +97,18 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
   } else {
     out->copyv (iov, cnt, 0);
   }
-  if (cb)
-    out->iovcb (cb);
+  drained_cb = cb;
   output ();
+}
+
+void
+ahttpcon::call_drained_cb ()
+{
+  cbv::ptr c = drained_cb;
+  if (c) {
+    drained_cb = NULL;
+    (*c) ();
+  }
 }
 
 void
@@ -125,6 +134,11 @@ ahttpcon::output ()
     wcbset = false;
     fdcb (fd, selwrite, NULL);
   }
+
+  if (!out->resid () && drained_cb) {
+    call_drained_cb ();
+  }
+  
 }
 
 void
@@ -206,10 +220,13 @@ ahttpcon::fail ()
   fd = -1;
   if (!destroyed) {
     ref<ahttpcon> hold (mkref (this));
-    if (rcb)
+    if (rcb) 
       (*rcb) (0);
     else if (eofcb)
       (*eofcb) ();
+    else if (drained_cb) {
+      call_drained_cb ();
+    }
     fail2 ();
   }
 }

@@ -46,6 +46,13 @@ okld_ch_t::can_exec (bool chrted)
 }
 
 int
+okld_ch_t::get_exec_mode ()
+{
+  assert (have_ustat);
+  return ustat.st_mode;
+}
+
+int
 okld_ch_t::get_exec_uid ()
 {
   assert (have_ustat);
@@ -97,8 +104,11 @@ okld_ch_t::launch ()
 }
 
 bool
-okld_ch_t::chmod ()
+okld_ch_t::chmod (int currmode)
 {
+  if ((currmode & 07777) == mode)
+    return true;
+
   assert (mode >= 0);
   if (::chmod (execpath.cstr (), mode) != 0) {
     warn << cfgfile_loc << ": cannot chmod binary: " << execpath << "\n";
@@ -255,7 +265,7 @@ okld_ch_t::fix_exec (bool jail)
   if ((get_exec_uid () != exec_uid || get_exec_gid () != exec_gid) && 
       !chown ())
     return false;
-  if (((ustat.st_mode & 07777) != mode) && !chmod ())
+  if (!chmod (get_exec_mode ()))
     return false;
   return true;
 }

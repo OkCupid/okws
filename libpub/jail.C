@@ -7,7 +7,8 @@ bool
 jailable_t::chroot ()
 {
   if (jaildir && !uid && isdir (jaildir)) {
-    ::chroot (jaildir.cstr ());
+    if (::chroot (jaildir.cstr ()) != 0)
+      return false;
     jailed = true;
     return true;
   }
@@ -60,7 +61,7 @@ bool
 jailable_t::jail_mkdir (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g)
 {
   if (uid) {
-    warn << "can't call run jail_mkdir as root\n";
+    warn << "can't call run jail_mkdir unless root\n";
     return false;
   }
   assert (d);
@@ -83,6 +84,7 @@ jailable_t::jail_mkdir (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g)
 	   << ": could not STAT directory even though mkdir succeeded.\n";
       return false;
     }
+    warn << "made jail directory: " << dir << "\n";
   }
   if (!S_ISDIR (sb.st_mode)) {
     warn << dir << ": file exists and is not a directory\n";

@@ -69,6 +69,7 @@ okld_t::parseconfig (const str &cf)
 
   conftab ct;
   str grp;
+  str okd_gr, okd_un;
   ct.add ("Service", wrap (this, &okld_t::got_service))
     .add ("TopDir", wrap (got_dir, &topdir))
     .add ("JailDir", wrap (got_dir, &jaildir))
@@ -94,6 +95,8 @@ okld_t::parseconfig (const str &cf)
     .add ("OklogdGroup", &logd_parms.group)
     .add ("UnsafeMode", &unsafe_mode)
     .add ("SafeStartup", &safe_startup_fl)
+    .add ("OkdUser", &okd_un)
+    .add ("OkdGroup", &okd_gr)
     
     .add ("OkdName", &reported_name)
     .add ("OkdVersion", &version)
@@ -118,12 +121,12 @@ okld_t::parseconfig (const str &cf)
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
     .ignore ("OkMgrPort")
-    .ignore ("OkdUser")
-    .ignore ("OkdGroup")
     .ignore ("PubdExecPath");
 
 
   if (grp) svc_grp = ok_grp_t (grp);
+  if (okd_un) okd_usr = ok_usr_t (okd_un);
+  if (okd_gr) okd_grp = ok_grp_t (okd_gr);
 
   while (pa.getline (&av, &line)) {
     if (!ct.match (av, cf, line, &errors)) {
@@ -229,6 +232,7 @@ okld_t::fix_uids ()
     int ueuid_own = ueuid_orig;
     int uegid_orig = svc->get_exec_gid ();
     int uegid = uegid_orig;
+    int mode = svc->get_exec_mode ();
 
     if (unsafe_mode) {
       svc->assign_uid (ueuid_own);
@@ -262,7 +266,7 @@ okld_t::fix_uids ()
 
     // owner cannot exec this script; group -- only -- can
     svc->assign_mode (00450);
-    if (!svc->chmod ())
+    if (!svc->chmod (mode))
       ret = false;
     svc->assign_uid (uegid);
     svc->assign_gid (uegid);
@@ -306,6 +310,9 @@ okld_t::launch_okd (int logfd)
   argv.push_back (configfile);
   argv.push_back ("-l");
   argv.push_back (strbuf () << logfd);
+  argv.push_back ("-c");
+  argv.push_back (okd_dumpdir);
+		  
   if (debug_stallfile) {
     argv.push_back ("-D");
     argv.push_back (strbuf (debug_stallfile) << ".okd");
@@ -477,12 +484,35 @@ okld_t::init_jaildir ()
     ret = false;
 
   u_int lim = svcs.size ();
-  if (!svc_grp)
+  if (!svc_grp) {
+    warn << "cannot find service group (" << svc_grp.getname () 
+	 << " does not exist)\n";
     return false;
+  }
+
+  if (!okd_usr) {
+    warn << "cannot find a user for okd (" << okd_usr.getname () 
+	 << " does not exist)\n";
+    return false;
+  }
+
+  if (!okd_grp) {
+    warn << "cannot find group for okd (" << okd_grp.getname ()
+	 << "does not exist)\n";
+    return false;
+  }
+
+  okd_dumpdir = apply_container_dir (coredumpdir, 
+				     strbuf () << okd_usr.getid ());
+  if (!jail_mkdir (okd_dumpdir, 0700, &okd_usr, &okd_grp)) {
+    warn << "cannot allocate jail directory for okd\n";
+    return false;
+  }
 
   // separate coredump directory for each service UID
   for (u_int i = 0; i < lim; i++) {
-    str d = strbuf (coredumpdir) << "/" << svcs[i]->usr ()->getid ();
+    str d = apply_container_dir (coredumpdir, 
+				 strbuf () << svcs[i]->usr ()->getid ());
     svcs[i]->set_run_dir (d);
     if (!jail_mkdir (d, 0700, svcs[i]->usr (), &svc_grp))
       ret = false;
