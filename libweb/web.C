@@ -147,7 +147,7 @@ okdate_t::set (const x_okdate_time_t &x)
   sec = x.sec;
   min = x.min;
   hour = x.hour;
-  dt_tm = OK_TIME;
+  dt_tm |= OK_TIME;
 }
 
 void
