@@ -249,3 +249,37 @@ ClientTimeout	60
 ##   DOS attacks on memory. Specified in bytes.
 ##
 ChannelLimit 	262144     # 256k
+
+##
+## FilterCGI
+##
+##   Filter out those characters that might lead to XSS attacks.
+##   In particular, use the following tranlsations:
+##	
+##	'<'	-->	"&lt;"
+##	'>'	-->	"&gt;"
+##	'('	-->	"&#40;"
+##	'#'	-->	"&#35;"
+##	'&'	-->	"&#38;"
+##
+##   Depending on the value given to the FilterCGI option, OKWS will
+##   behave in the following manners:
+##
+##	0 - No XSS filtering
+##	1 - Filter only the output of safe_lookup (and therefore cgi[]).
+##	2 - Filter everything inserted into the CGI table.
+##  
+##   Obviously, 0 is the most lenient level, while 2 is the strictest.
+##   Other levels might be introduced in future updates.
+##
+FilterCGI 0
+
+##
+## ErrorDoc
+##
+##   Specify custom error documents (in regular PUB file format).
+##   Custom error documents might have variable expansions for the 
+##   variables: ${STATUS}, ${SERVINFO}, ${AUXSTR}
+##
+#ErrorDoc	404	/404.html
+#ErrorDoc	500	/500.html

@@ -64,7 +64,7 @@ static void pair_trav (callback<void, const pair_t &>::ref cb, pair_t *p)
 template<class C = pair_t>
 class pairtab_t {
 public:
-  pairtab_t () : empty ("") {}
+  pairtab_t (bool f = false) : empty (""), filter (f) {}
   virtual ~pairtab_t () { tab.deleteall (); }
   inline str lookup (const str &key) const;
   inline bool lookup (const str &key, str *r) const;
@@ -102,6 +102,7 @@ protected:
   str empty;
   ihash<str, pair_t, &pair_t::key, &pair_t::hlink> tab;
   clist_t<pair_t, &pair_t::lnk> lst;
+  bool filter;
 };
 
 
@@ -109,7 +110,7 @@ template<class C> str
 pairtab_t<C>::safe_lookup (const str &key) const
 {
   const str &s = lookup (key);
-  if (s && ok_filter_cgi == XSSFILT_SOME) return xss_filter (s);
+  if (s && filter && ok_filter_cgi == XSSFILT_SOME) return xss_filter (s);
   else if (s) return s;
   else return empty;
 }
