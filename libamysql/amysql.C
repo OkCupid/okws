@@ -59,7 +59,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
 	<< q << "): " << mysql_error (&mysql);
       return NULL;
     }
-    r = sth_prepared_t::alloc (s, q);
+    r = sth_prepared_t::alloc (s, q, l_opts);
 #endif // HAVE_MYSQL_BINDFUNCS && HAVE_MYSQL_BIND
   } else {
     ptr<sth_parsed_t> r2 = sth_parsed_t::alloc (&mysql, q, l_opts);

@@ -33,6 +33,17 @@ sth_prepared_t::~sth_prepared_t ()
   if (sth) mysql_stmt_close (sth);
 }
 
+void
+sth_prepared_t::clearfetch ()
+{
+  // clear out all fetches if we're STORING results but haven't
+  // fetch any records, or if we're not storing results and there
+  // are more records left to fetch
+  if (state == AMYSQL_EXEC ||
+      (state == AMYSQL_FETCH && (opts & AMYSQL_USERES))) 
+    while (fetch2 (true) == ADB_OK) ;
+}
+
 str
 sth_prepared_t::dump (mybind_param_t **arr, u_int n) 
 {
@@ -51,6 +62,11 @@ sth_prepared_t::dump (mybind_param_t **arr, u_int n)
 bool
 sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 {
+  // will clear any pending fetch()'s or any unused rows in
+  // the case of mysql_use_result
+  //
+  clearfetch ();
+
   if (b && arr && n) {
     bind (b, arr, n);
     if (mysql_stmt_bind_param (sth, b)) {
@@ -61,9 +77,11 @@ sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
   }
   if (mysql_stmt_execute (sth)) {
     err = strbuf ("execute error: ") << mysql_stmt_error (sth);
-	errno_n = mysql_stmt_errno (sth);
+    errno_n = mysql_stmt_errno (sth);
+    state = AMYSQL_NONE;
     return false;
   }
+  state = AMYSQL_EXEC;
   return true;
 }
 
@@ -93,12 +111,33 @@ sth_prepared_t::bind (MYSQL_BIND *b, mybind_param_t **a, u_int n)
 adb_status_t
 sth_prepared_t::fetch2 (bool bnd)
 {
+  // state machine update
+  if (state == AMYSQL_EXEC) {
+    state = AMYSQL_FETCH;
+    if (!(opts & AMYSQL_USERES)) {
+      int rc = mysql_stmt_store_result (sth);
+      if (rc != 0) {
+	err = strbuf ("stmt_store error (") << rc << "): " 
+					    << mysql_stmt_error (sth);
+	errno_n = mysql_stmt_errno (sth);
+	state = AMYSQL_NONE;
+	return ADB_ERROR;
+      }
+    }
+  }
+
   if (bnd && !bind_result ())
     return ADB_BIND_ERROR;
-  if (mysql_stmt_fetch (sth) == MYSQL_NO_DATA) {
+
+  int rc = mysql_stmt_fetch (sth);
+  if (rc == MYSQL_NO_DATA) {
+    state = AMYSQL_FETCH_DONE;
+    return ADB_NOT_FOUND;
+  } else if (rc != 0) {
     err = strbuf("fetch error:  ") << mysql_stmt_error (sth);
     errno_n = mysql_stmt_errno (sth);
-    return ADB_NOT_FOUND;
+    state = AMYSQL_NONE;
+    return ADB_ERROR;
   }
   assign ();
   return ADB_OK;
@@ -140,6 +179,7 @@ mystmt_t::execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
   return rc;
 }
 
+
 void
 sth_parsed_t::clearfetch ()
 {
@@ -175,7 +215,8 @@ sth_parsed_t::fetch2 (bool bnd)
       my_res_n = mysql_num_fields (myres);
     else {
       err = strbuf ("MySQL result error: ") << mysql_error (mysql);
-	  errno_n = mysql_errno (mysql);
+      errno_n = mysql_errno (mysql);
+      state = AMYSQL_NONE;
       return ADB_ERROR;
     }
   }
