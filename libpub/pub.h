@@ -103,6 +103,8 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PPSTR      parser->pstr
 #define PARR       parser->parr
 
+#define PUB_SWITCH_MATCH_NULL "NULL"
+
 
 //
 // static xdr <--> zstr functions

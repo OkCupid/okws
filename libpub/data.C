@@ -358,20 +358,32 @@ void
 pfile_switch_t::output (output_t *o, penv_t *e) const
 {
   str v;
-  if (!key || !(v = key->eval (e, EVAL_INTERNAL))) {
-    if (!nulldef) 
+  pswitch_env_t *pse = NULL;
+  if (key)
+    v = key->eval (e, EVAL_INTERNAL);
+
+  if (!v) {
+    pse = cases[PUB_SWITCH_MATCH_NULL];
+    if (!pse) pse = def;
+
+    if (!pse && !nulldef) 
       o->output_err (e, strbuf ("switch: cannot evaluate key value (")
 		     << key->name () << ")", lineno);
-    return;
-  }
-  pswitch_env_t *pse = cases[v];
-  if (!pse && !(pse = def)) {
-    if (!(nulldef && v.len () == 0))
+    if (!pse)
+      return;
+  } else {
+    pse = cases[v];
+    if (!pse) pse = def;
+
+    if (!pse && (v.len () != 0 || !nulldef)) 
       o->output_err (e, strbuf ("switch: no case when ") << key->name ()  
 		     << " = " << v, lineno);
-  } else {
+  } 
+
+  // we might have given switch an empty file (so as to allow 
+  // the default to catch more stuff, for instance).
+  if (pse && pse->fn)
     include (o, e, pse->env (), pse->fn);
-  }
 }
 
 void
@@ -763,6 +775,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   ptr<aarr_arg_t> env;
   phashp_t ph;
   str ckey;
+  str fn;
 
   if (!err) {
     if (l->size () == 1) {
@@ -774,9 +787,6 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
 	  nulldef = true;
 	  return (true);
 	}
-      } else {
-	PWARN ("Wrong number of arguments in switch case");
-	err = true;
       }
     } else if (l->size () == 3) {
       if (!(env = (*l)[2]->to_aarr ())) {
@@ -788,17 +798,25 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
       err = true;
     }
   }
+
+  if (l->size () > 1 && !(fn = (*l)[1]->eval ())) {
+    PWARN ("Bad filename in case declaration");
+    err = true;
+  }
+
+  //
+  // treat zero-length file names as NULL file names.
+  //
+  if (fn && fn.len () == 0) 
+    fn = NULL;
+    
   
-  str fn;
   pbinding_t *b;
   if (!err) {
     if (!(*l)[0]->is_null () && !(ckey = (*l)[0]->eval ())) {
       PWARN("Cannot determine case key");
       err = true;
-    } else if (!(fn = (*l)[1]->eval ()) || fn.len () <= 0) {
-      PWARN("Bad filename in case declaration");
-      err = true;
-    } else if (!(b = parser->to_binding (fn))) {
+    } else if (fn && !(b = parser->to_binding (fn))) {
       PWARN(fn << ": cannot access file");
       err = true;
     } else {
@@ -817,7 +835,8 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
       else {
 	cases.insert (se);
       }
-      files.push_back (fn);
+      if (fn)
+	files.push_back (fn);
     }
   }
   return (!err);
