@@ -5,10 +5,11 @@
 #include "stdlib.h"
 #include "time.h"
 
-typedef struct {
+struct exit_pair_t {
+  exit_pair_t (int q, int t) : qsz (q), tm (t) {}
   int qsz;
   int tm;
-} exit_pair_t;
+};
 
 static rxx hostport ("([^:]+)(:(\\d+))?");
 int nreq;
@@ -173,7 +174,7 @@ do_exit (int c)
     warnx << latencies[i] << "\n";
   sz = exits.size ();
   for (u_int i = 0; i < sz; i++)
-    warnx << exits[i].qsz << "," exits[i].tm << "\n";
+    warnx << exits[i].qsz << "," << exits[i].tm << "\n";
   exit (c);
 }
 
