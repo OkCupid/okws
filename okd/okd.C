@@ -373,16 +373,19 @@ void
 okd_t::sclone (ref<ahttpcon_clone> x, str s, int status)
 {
   if (status != HTTP_OK) {
+    x->declone ();
     error (x, status);
   } else if (!s) {
+    x->declone ();
     error (x, HTTP_BAD_REQUEST);
   } else {
     str *s2 = aliases[s];
     if (!s2) s2 = &s;
     okch_t *c = servtab[*s2];
-    if (!c)
+    if (!c) {
+      x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
-    else {
+    } else {
       c->clone (x);
     }
   }

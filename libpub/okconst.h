@@ -126,6 +126,7 @@ extern str ok_syslog_priority;                  // syslog section
 //
 extern u_int ok_clnt_timeout;                   // user timeout
 extern u_int ok_reqsize_limit;                  // maximum client req size
+extern u_int ok_hdrsize_limit;                  // biggest HTTP header allowed
 
 //
 // Async-Multi-Threaded stuff

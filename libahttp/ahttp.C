@@ -195,7 +195,7 @@ ahttpcon_dispatch::dowritev (int cnt)
 ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml) 
   : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), 
     found (false), delimit_state (0), delimit_status (HTTP_OK),
-    delimit_start (NULL), bytes_scanned (0)
+    delimit_start (NULL), bytes_scanned (0), decloned (false)
 {
   in->setpeek ();
 }
@@ -392,13 +392,28 @@ ahttpcon::recvd_bytes (int n)
 void
 ahttpcon_clone::recvd_bytes (int n)
 {
+  if (decloned) {
+    ahttpcon::recvd_bytes (n);
+    return;
+  }
   str s = delimit (n);
   if (s || delimit_status != HTTP_OK) {
     if (ccb) {
       (*ccb) (s, delimit_status);
       ccb = NULL;
     }
-    end_read ();
+    if (s)
+      end_read ();
+    else {
+      //
+      // if it was an error, we still need to parse the rest of the
+      // headers, and for that, we'll need to keep reading on this
+      // ahttpcon_clone connection
+      //
+      // we should only parse the header here, and therefore should
+      // read much less data
+      recv_limit = ok_hdrsize_limit;
+    }
   }
 }
 
@@ -409,6 +424,13 @@ ahttpcon_clone::end_read ()
     fdcb (fd, selread, NULL);
     found = true;
   }
+}
+
+void
+ahttpcon_clone::declone ()
+{
+  decloned = true;
+  in->setpeek (false);
 }
 
 str

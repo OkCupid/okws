@@ -191,6 +191,9 @@ okld_ch_t::launch_cb (int logfd)
 void
 okld_ch_t::set_svc_ids ()
 {
+  // after fork, we need to set our PID
+  pid = getpid ();
+
   if (!okld->is_superuser ())
     return;
 

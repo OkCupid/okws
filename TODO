@@ -66,27 +66,27 @@ HTTP Issues
       str s = (*r)[0];
       int i = (*r)[1];
    }
- - autoconf for mysql is broken; don't support prepared statements for
+ X autoconf for mysql is broken; don't support prepared statements for
    earlier versions of mysql
  - ok children should request pub information -- maybe up rclient init?
- - test timeout functionality; maybe fine-tune parameters?
+ X test timeout functionality; maybe fine-tune parameters?
  - ct_include evaluation of variables is broken. also, jailed files
    aren't handled properly.
  - autoconf anonymous web user, and check for oku
  - more accurate access (X_OK) check on startup (seteuid if root...)
  - kill everything nicely if the logd dies.  if the pubd dies, just cannot
    update templates. make lots of noise
- - install scripts that set appropriate permissions on services 
+ X install scripts that set appropriate permissions on services 
    (mode=750, owner = (max|patrick..), group = okd).
- - check for permissions of jaildirectory, and do not allow startup
+ X check for permissions of jaildirectory, and do not allow startup
    unless they check out.
- - aclnt pooling class
- - picture uploads
+ X aclnt pooling class
+ X picture uploads
  - strange service restart problems -- due to browser?
  X okd runs away during really heavy-duty tests; might be some sort of
    OS-issue that is only shown under strain;
  - profile and optimize 
- - standard setuid / chroot / setgid function across all processes; perhaps
+ X standard setuid / chroot / setgid function across all processes; perhaps
    even set it up in helper_t. maybe standardize parameter passing and
    jailing functions, too.
  - okmgr restart has buggy error messages;
@@ -141,7 +141,7 @@ TODO
  - fix bug in nested include statements in config files.
  X zbuf's in aarr_t and concatenatable.
  X rename repository to okws1
- - deal with permissions using setuid stuff
+ X deal with permissions using setuid stuff
  - implement authorization codes for the RPC-db protocol.
  X multiple okd's running on the same machine -- need to be able
    to specify the various ports
@@ -163,15 +163,15 @@ TODO
    i'm not thrilled with this idea, as we might have a small strbuf compiled
    into a zstr that is similar across all users.
  X crash under heavy load when a connection aborts
- - OKD still runs away in some tests. 
- - for linux, might make sense to change FD-descriptor passing scheme;
+ X OKD still runs away in some tests. 
+ X for linux, might make sense to change FD-descriptor passing scheme;
    different ordering guarantees.  perhaps it's easier just to call
    getpeername on the other end, although it is an extra syscall
  X cgiscript2.g does not compile; in fact, pub coredumps.  for some reason,
    a null binding is being put onto the parsequeue
  X oklogd shutdown -- perhaps by explicit kill signal.
  X compile time generation of secret keys for kill signals.
- - Multipart posts / file uploads
+ X Multipart posts / file uploads
 
 Security
 --------
@@ -208,8 +208,8 @@ OKD v0.2
    root -- that way compromised webserv can't put files there.
  - jail directory problems for oklogd -- use jailable_t -- also, need
    to copy over /etc/resolv.conf -- is this secure?
- - dynamic library copying and build directory setup....
- - build okws and services with dynamically-linked-libraries /
+ X dynamic library copying and build directory setup....
+ X build okws and services with dynamically-linked-libraries /
    fix automake/autoconf system so that it can install properly
    into a prefix'ed sandbox.
  X coredump rotation system from okld -- that way many coredumps can
@@ -246,12 +246,13 @@ OKD v0.2
  - still have spurious dmalloc free problems on file uploads.  weird.
  - byacc breaks everything due to unitialized memory, and used of
    xmalloc for C++ objects.
- - pubb'ed error docs
+ X pubb'ed error docs
  - boot up OkD with apache running on 80.  problems with "ErrorDocInit"
  - cannot sth prepare after init...
  - auth tokens
  - debug load balancer class (load avg stuff)
  - fix RPCC autoconf stuff
- - better interface for different file content types
+ X better interface for different file content types
  - bug in file upload -- hangs if channel limit exceeded.
  - clean up nasty pub global variables
+ - bugs when logging reqs that are too big

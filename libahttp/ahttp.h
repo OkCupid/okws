@@ -146,6 +146,8 @@ public:
   alloc (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE) 
   { return New refcounted<ahttpcon_clone> (f, s, ml); }
 
+  void declone ();
+
 protected:
   void recvd_bytes (int n);
   virtual void fail2 ();
@@ -163,6 +165,7 @@ private:
   char *delimit_start;
 
   u_int bytes_scanned;
+  bool decloned;
 };
 
 ptr<ahttpcon> 

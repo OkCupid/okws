@@ -93,6 +93,7 @@ str   ok_syslog_priority = "local3.info";
 //
 u_int ok_clnt_timeout = 60;          // in seconds
 u_int ok_reqsize_limit = 2097152;    // 2MB
+u_int ok_hdrsize_limit = 0x2000;     // 8K
 
 //
 // libamt

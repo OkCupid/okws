@@ -26,7 +26,7 @@ public:
   void clear ();
   void recycle (cbv::ptr s = NULL) { setscb (s); }
 
-  void setpeek () { peek = true; }
+  void setpeek (bool b = true) { peek = b; }
   void setscb (cbv::ptr c) { scb = c; }
   ssize_t input (int fd, int *nfd = NULL);
   ssize_t resid () const { return (dep[1] - rp) + (dep[0] - buf); }
