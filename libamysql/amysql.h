@@ -5,7 +5,7 @@
 #ifndef _LIBAMYSQL_AMYSQL_H
 #define _LIBAMYSQL_AMYSQL_H
 
-#include "acgiconf.h"
+#include "okwsconf.h"
 #include "async.h"
 
 #include "mysql.h"
