@@ -7,13 +7,20 @@
 
 static rxx hostport ("([^:]+)(:(\\d+))?");
 int nreq;
+int nreq_fixed;
 int nconcur;
 int nrunning;
 bool sdflag;
 bool noisy;
 
+timespec startt;
+
 typedef enum { OKWS = 1, PHP = 2, SEDA = 3 } pt1cli_mode_t;
 pt1cli_mode_t mode;
+
+void do_exit (int rc);
+int stop_timer (const timespec &t);
+vec<int> latencies;
 
 class hclient_t {
 public:
@@ -35,6 +42,7 @@ private:
   void writewait ();
   void cexit (int rc);
 
+  timespec cli_start;
   char buf[4096];
   str host;
   int port;
@@ -68,8 +76,9 @@ hclient_t::cexit (int c)
     q.pop_front ()->run ();
   }
   if (!--nreq && sdflag)
-    exit (c);
+    do_exit (c);
   if (noisy) warn << "done: " << id << " (nreq: " << nreq << ")\n";
+  latencies.push_back ((fd > 0) ? stop_timer (cli_start) : -1);
   delete this;
   return;
 }
@@ -123,8 +132,10 @@ hclient_t::connected (int f)
       if (noisy) warn << "cannot connect to host\n";
       cexit (-1);
       return;
-    } else
-      fatal << "cannot connect to host\n";
+    } else {
+      warn << "cannot connect to host\n";
+      do_exit (2);
+    }
   }
   suio *uio = b.tosuio ();
   while (uio->resid ()) {
@@ -133,6 +144,26 @@ hclient_t::connected (int f)
       fatal << "write error\n";
   }
   fdcb (fd, selread, wrap (this, &hclient_t::canread));
+}
+
+void
+do_exit (int c)
+{
+  int total_tm = stop_timer (startt);
+  warnx << nreq_fixed << "," << total_tm << "\n";
+  u_int sz = latencies.size ();
+  for (u_int i = 0; i < sz; i++) 
+    warnx << latencies[i] << "\n";
+  exit (c);
+}
+
+int
+stop_timer (const timespec &tm)
+{
+  int ret = (tsnow.tv_nsec - tm.tv_nsec) / 1000;
+  u_int tmp = tsnow.tv_sec - tm.tv_sec;
+  ret += tmp;
+  return ret;
 }
 
 void
@@ -147,6 +178,7 @@ hclient_t::run ()
   nrunning++;
   if (noisy) warn << "running: " << id << " (nrunning: " << nrunning << ")\n";
   if (noisy) warn << "connecting to: " << host << "\n";
+  cli_start = tsnow;
   tcpconnect (host, port, wrap (this, &hclient_t::connected));
 }
 
@@ -233,6 +265,8 @@ main (int argc, char *argv[])
   nrunning = 0;
   sdflag = true;
   nreq = n;
+  nreq_fixed = n;
+  startt = tsnow;
   for (int i = 0; i < n; i++) {
     hclient_t *h = New hclient_t (host, port, in, i);
     h->run ();
