@@ -27,8 +27,8 @@ void
 lblnc_node_t::activate ()
 {
   active = true;
-  get_load_avg ();
-  set_timer ();
+//  get_load_avg ();
+//  set_timer ();
 }
 
 void
@@ -85,6 +85,7 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
 		  int port) 
   : helper_base_t (), name (nm), prog (rp), dcb (NULL)
 {
+  srandomdev();
   u_int sz = (*pub)[nm].size ();
   if (sz <= 0) {
     warn << nm << ": no DB array found\n";
@@ -115,7 +116,7 @@ lblnc_t::getname () const
 lblnc_node_t::lblnc_node_t (u_int i, const rpc_program &rp, 
 			    const str &hn, u_int p, lblnc_t *l, 
 			    bool a, u_int o) 
-  : id (i), hlp (rp, hn, p, o), active (a), dcb (NULL)
+  : id (i), hlp (rp, hn, p, o), active (a), load_avg(LOAD_AVG_MAX), dcb (NULL)
 {
   hlp.set_status_cb (wrap (l, &lblnc_t::status_change, id));
 }
@@ -230,12 +231,13 @@ lblnc_t::pick_node () const
   } else if (nact == 1) {
     id = 0;
   } else {
-    int i1 = random () % nact;
-    int i2 = random () % nact;
-    if (i1 == i2)
-      i2 = (i2 + 1) % nact;
-    assert (i1 != i2);
-    id = (tab[i1]->load_avg < tab[i2]->load_avg) ? i1 : i2;
+//     int i1 = random () % nact;
+//     int i2 = random () % nact;
+//     if (i1 == i2)
+//       i2 = (i2 + 1) % nact;
+//     assert (i1 != i2);
+//     id = (tab[i1]->load_avg < tab[i2]->load_avg) ? i1 : i2;
+    id = random () % nact;
   }
   return id;
 }
