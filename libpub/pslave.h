@@ -53,7 +53,6 @@ typedef enum { HLP_STATUS_NONE = 0,
 #define HLP_MAX_QLEN    1000
 
 #define HELPER_KILL     999 
-#define OK_DEFPS        4*(1024)*(1024)  // for now
 
 typedef callback<void, ptr<axprt_stream> >::ref pubserv_cb;
 typedef callback<void, hlp_status_t>::ref status_cb_t;

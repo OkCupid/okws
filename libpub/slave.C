@@ -42,7 +42,7 @@ pub_accept (pubserv_cb cb, int pubfd)
   if (fd >= 0) {
     warn ("accepting connection from %s\n", inet_ntoa (sin.sin_addr));
     tcp_nodelay (fd);
-    ref<axprt_stream> x = axprt_stream::alloc (fd, OK_DEFPS);
+    ref<axprt_stream> x = axprt_stream::alloc (fd, ok_axprt_ps);
     (*cb) (x);
   } else if (errno != EAGAIN)
     warn ("accept in pub_accept: %m\n");
@@ -54,7 +54,7 @@ pub_accept_unix (pubserv_cb cb, int pubfd)
   sockaddr_in sin;
   int fd = _pub_accept (pubfd, &sin);
   if (fd >= 0) {
-    ref<axprt_stream> x = axprt_unix::alloc (fd, OK_DEFPS);
+    ref<axprt_stream> x = axprt_unix::alloc (fd, ok_axprt_ps);
     (*cb) (x);
   } else if (errno != EAGAIN)
     warn ("accept in pub_accept_unix: %m\n");
@@ -75,7 +75,7 @@ pub_slave_fd (pubserv_cb cb, int fd, pslave_status_t *s)
   if (!isunixsocket (fd))
     return false;
   if (s) *s = PSLAVE_SLAVE;
-  ref<axprt_stream> x = axprt_stream::alloc (fd, OK_DEFPS);
+  ref<axprt_stream> x = axprt_stream::alloc (fd, ok_axptr_ps);
   (*cb) (x);
   return true;
 }
@@ -196,7 +196,7 @@ helper_unix_t::launch (cbb c)
     return;
   }
   close_on_exec (fd);
-  x = axprt_unix::alloc (fd, OK_DEFPS);
+  x = axprt_unix::alloc (fd, ok_axptr_ps);
   mkclnt ();
   ping (c);
 }
@@ -207,7 +207,7 @@ helper_fd_t::launch (cbb cb)
   if (fd < 0 || !isunixsocket (fd)) {
     (*cb) (false);
   }
-  x = axprt_stream::alloc (fd, OK_DEFPS);
+  x = axprt_stream::alloc (fd, ok_axptr_ps);
   mkclnt ();
   ping (cb);
 }
@@ -230,7 +230,7 @@ helper_inet_t::launch_cb (cbb c, int f)
   } else {
     fd = f;
     close_on_exec (fd);
-    if (!(x = axprt_stream::alloc (fd, OK_DEFPS)) || !mkclnt ())
+    if (!(x = axprt_stream::alloc (fd, ok_axptr_ps)) || !mkclnt ())
       ret = false;
   }
   if (!ret)
