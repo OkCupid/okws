@@ -20,6 +20,13 @@ LOGS="access_log error_log"
 LOGUSER=oklogd
 LOGGROUP=oklogd
 OKMGR=/usr/local/bin/okmgr
+OKWS_PIDFILE=/var/run/okld.pid
+
+#
+# set movedir if you'd like to move these things to a different
+# directory.
+#
+MOVEDIR=
 
 #
 # Reset permissions and ownerships so there are no unexpected
@@ -27,7 +34,7 @@ OKMGR=/usr/local/bin/okmgr
 #
 chown -R oklogd /var/okws/log
 chgrp -R oklogd /var/okws/log
-find /var/okws/log -type -f -exec chmod 0644 {} \;
+find /var/okws/log -type f -exec chmod 0644 {} \;
 
 #
 # Timestamp the log with the rotation time, so that way nothing is
@@ -35,10 +42,10 @@ find /var/okws/log -type -f -exec chmod 0644 {} \;
 #
 DATE=`date '+%Y%m%d%H%M%S'`
 
-for $l in $LOGS
+for l in $LOGS
 do
     LOG=$LOGDIR/$l
-    OUTLOG=$LOG-$DATE
+    OUTLOG=$LOG.$DATE
     if [ -f $LOG ]
     then
 	mv $LOG $OUTLOG
@@ -46,9 +53,16 @@ do
     fi
 done
 
-$OKMGR -t
+if [ -r $OKWS_PIDFILE ]
+then
+    $OKMGR -t
+fi
 
 for l in $OUTLOGS
 do
     bzip2 $l
+    if [ "$MOVEDIR" -a -d "$MOVEDIR" ]
+    then
+	mv $l.bz2 $MOVEDIR
+    fi
 done
