@@ -31,6 +31,7 @@
 #include "ihash.h"
 #include "xpub.h"
 #include "qhash.h"
+#include "litetime.h"
 
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);
@@ -43,6 +44,7 @@ str re_fslash (const char *cp);
 str can_exec (const str &p);
 bool dir_security_check (const str &p);
 str apply_container_dir (const str &d, const str &e);
+void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
 
 struct phash_t {

@@ -321,6 +321,35 @@ got_dir (str *out, vec<str> s, str loc, bool *errp)
   *out = dir_standardize (s[1]);
 }
 
+sfs_clock_t
+char2sfsclock (char c)
+{
+  switch (c) {
+  case 'm':
+    return SFS_CLOCK_MMAP;
+  case 't':
+    return SFS_CLOCK_TIMER;
+    break;
+  case 'd':
+    return SFS_CLOCK_GETTIME;
+  default:
+    warn << "unknow SFS clock type: " << c << "\n";
+    return SFS_CLOCK_GETTIME;
+  }
+}
+
+void
+got_clock_mode (sfs_clock_t *out, vec<str> s, str loc, bool *errp)
+{
+  if (s.size () != 2) {
+    warn << loc << ": usage: " << s[0] << " (m|t|d)\n";
+    *errp = true;
+    return;
+  }
+  *out = char2sfsclock (s[1][0]);
+}
+
+
 str 
 re_fslash (const char *cp)
 {

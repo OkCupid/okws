@@ -74,6 +74,7 @@ private:
 
   okc_state_t state;
   ptr<bool> destroyed;
+  bool srv_disabled;
 };
 
 class okd_t : public ok_httpsrv_t 
@@ -88,8 +89,10 @@ public:
     pprox (pub_proxy_t::alloc ()),
     sdflag (false), sd2 (false), dcb (NULL), listenfd (-1), sdattempt (0),
     cntr (0),
-    coredumpdir (cdd)
-  {}
+    coredumpdir (cdd),
+    nfd_in_xit (0)
+  {
+  }
 
   ~okd_t ();
 
@@ -155,6 +158,13 @@ public:
 
   void send_errdoc_set (svccb *sbp);
 
+  void closed_fd ();
+
+protected:
+  // queueing stuff
+  void enable_accept_guts ();
+  void disable_accept_guts ();
+
 private:
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();
@@ -172,6 +182,7 @@ private:
   void req_err_docs_2 (ptr<pub_res_t> res);
   void req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err);
   void req_err_docs_4 (bool rc);
+
 
 
   void got_chld_fd (int fd, ptr<okws_fd_t> desc);
@@ -199,6 +210,8 @@ private:
   ptr<fdsource_t<okws_fd_t> > okldx;
   str coredumpdir;
   xpub_errdoc_set_t xeds;
+
+  int nfd_in_xit;       // number of FDs in transit
 };
 
 class okd_mgrsrv_t 

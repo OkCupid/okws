@@ -96,6 +96,7 @@ void
 fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		 const str &aux)
 {
+  tmr.enable ();
   int s = res->get_status ();
   if (s != HTTP_OK && s != HTTP_REDIRECT)
     add_error (x, req, res, aux);
@@ -256,6 +257,7 @@ logd_parms_t::encode () const
 void
 log_timer_t::set_timer ()
 {
+
   dcb = delaycb (0, tm_tick * 1000000, 
 		 wrap (this, &log_timer_t::timer_cb, destroyed));
 }
@@ -270,6 +272,25 @@ log_timer_t::stop_timer ()
 }
 
 void
+log_timer_t::disable ()
+{
+  disable_pending = true;
+}
+
+void
+log_timer_t::enable ()
+{
+  if (in_timer_cb) {
+    if (disable_pending) disable_pending = false;
+  } else {
+    if (!dcb) {
+      timestamp ();
+      set_timer ();
+    }
+  }
+}
+
+void
 log_timer_t::timer_cb (ptr<bool> dstry)
 {
   if (*dstry)
@@ -278,12 +299,18 @@ log_timer_t::timer_cb (ptr<bool> dstry)
   if (dcb) 
     dcb = NULL;
   
+  in_timer_cb = true;
   if (++counter == tm_prd) {
     (*fcb) ();
     counter = 0;
   }
+  in_timer_cb = false;
+
   timestamp ();
-  set_timer ();
+  if (disable_pending) {
+    disable_pending = false;
+  } else
+    set_timer ();
 }
 
 void
@@ -308,7 +335,9 @@ fast_log_t::flush ()
     ptr<bool> res = New refcounted<bool>;
     h->call (OKLOG_FAST, &arg, res, 
 	     wrap (this, &fast_log_t::flushed, ai, ei, res));
-  } 
+  } else {
+    tmr.disable ();
+  }
 }
 
 void

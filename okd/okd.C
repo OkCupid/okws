@@ -1,3 +1,4 @@
+
 /* $Id$ */
 
 #include <sys/types.h>
@@ -286,10 +287,16 @@ okd_t::parseconfig ()
     .add ("OkMgrPort", &ok_mgr_port, OK_PORT_MIN, OK_PORT_MAX)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
 
+    .add ("OkdMaxFDs", &okd_max_fds, 0, 10240)
+    .add ("OkdFDHighWat", &okd_fds_high_wat, 0, 10000)
+    .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
+    .add ("OkdAcceptMessages", &accept_msgs)
+
     .add ("PubdUnix", wrap (this, &okd_t::got_pubd_unix))
     .add ("PubdInet", wrap (this, &okd_t::got_pubd_inet))
     .add ("PubdExecPath", wrap (this, &okd_t::got_pubd_exec))
     .add ("ErrorDoc", wrap (this, &okd_t::got_err_doc))
+    .add ("SendSockAddrIn", &ok_send_sin)
 
     .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
 
@@ -298,6 +305,11 @@ okd_t::parseconfig ()
     .add ("OkdUser", &un)
     .add ("OkdGroup", &gn)
 
+    .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
+    .add ("MmapClockFile", &mmc_file)
+    .add ("OkdChildSelectDisable", &okd_child_sel_disable)
+
+    .ignore ("MmapClockDaemon")
     .ignore ("Service")
     .ignore ("CrashSamplingInterval")
     .ignore ("MaxCrahsedProcesses")
@@ -331,7 +343,11 @@ okd_t::parseconfig ()
     .ignore ("SafeStartup")
     .ignore ("SvcLog")
     .ignore ("FilterCGI")
-    .ignore ("ChannelLimit");
+    .ignore ("ChannelLimit")
+
+    .ignore ("ServiceMaxFDs")
+    .ignore ("ServiceFDHighWat")
+    .ignore ("ServiceAcceptMessages");
 
 
   while (pa.getline (&av, &line)) {
@@ -340,6 +356,20 @@ okd_t::parseconfig ()
       errors = true;
     }
   }
+
+  if (okd_fds_high_wat > okd_max_fds) {
+    warn << "OkdMaxFDs needs to be greater than OkdFDHighWat\n";
+    errors = true;
+  }
+
+  if (ok_svc_max_fds > 0 && 
+      (ok_svc_fds_high_wat == 0 || ok_svc_fds_high_wat > ok_svc_max_fds)) {
+    warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
+    errors = true;
+  }
+
+  init_syscall_stats ();
+
   if (un) okd_usr = ok_usr_t (un);
   if (gn) okd_grp = ok_grp_t (gn);
 
@@ -347,6 +377,14 @@ okd_t::parseconfig ()
     hostname = myname ();
   if (errors)
     exit (1);
+}
+
+void
+okd_t::closed_fd ()
+{
+  nfd_in_xit --;
+  if (nfd_in_xit < int (okd_fds_high_wat) && !accept_enabled)
+    enable_accept ();
 }
 
 void
@@ -401,18 +439,23 @@ okd_t::newserv (int fd)
   bzero (sin, sinlen);
   int nfd = accept (fd, (sockaddr *) sin, &sinlen);
   if (nfd >= 0) {
+    nfd_in_xit ++;  // keep track of the number of FDs in transit
     close_on_exec (nfd);
     tcp_nodelay (nfd);
     ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
+
+    //
+    // when this file descriptor is closed on our end, we need
+    // to decrement nfd_in_xit
+    //
+    x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
+
     //warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
     x->setccb (wrap (this, &okd_t::sclone, x));
 
-    /*
-    cntr ++;
-    if (cntr % 100 == 0) {
-      warnx << "Counter: " << cntr << "\n";
+    if (nfd_in_xit > int (okd_max_fds) && accept_enabled) {
+      disable_accept ();
     }
-    */
   }
   else if (errno != EAGAIN)
     warn ("accept: %m\n");
@@ -430,6 +473,9 @@ okd_t::launch3 ()
   listen (fd, ok_listen_queue_max);
   strip_privileges ();
 
+  // once jailed, we can access the mmap'ed clock file (if necessary)
+  init_sfs_clock (mmc_file);
+
   //
   // debug stuff 
   // rats!
@@ -439,7 +485,19 @@ okd_t::launch3 ()
   warn << "working directory: " << path << "\n";
 
   warn << "listening on " << listenaddr_str << ":" << listenport << "\n";
-  fdcb (fd, selread, wrap (this, &okd_t::newserv, fd));
+  enable_accept ();
+}
+
+void
+okd_t::disable_accept_guts ()
+{
+  fdcb (listenfd, selread, NULL);
+}
+
+void
+okd_t::enable_accept_guts ()
+{
+  fdcb (listenfd, selread, wrap (this, &okd_t::newserv, listenfd));
 }
 
 void
@@ -583,6 +641,11 @@ okd_t::got_chld_fd (int fd, ptr<okws_fd_t> desc)
     if (!(ch = servtab[desc->ctlx->name])) {
       ch = New okch_t (this, desc->ctlx->name);
     }
+
+    // XXX - debug
+    // will need this to debug missing file descriptors
+    // warn << "got CTL fd: " << desc->ctlx->pid << "\n";
+
     ch->got_new_ctlx_fd (fd, desc->ctlx->pid);
     break;
   default:

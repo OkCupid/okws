@@ -23,6 +23,17 @@
 #endif /* HAVE_PTHREAD */
 
 #ifdef HAVE_PTH
+
+//
+// Pth Requires an FD_SETSIZE < 1024
+//
+#ifdef FD_SETSIZE
+# if FD_SETSIZE > 1024
+#  undef FD_SETSIZE
+#  define FD_SETSIZE 1024
+# endif
+#endif
+
 #include <pth.h>
 #endif /* HAVE_PTH */
 

@@ -89,7 +89,8 @@ public:
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
       okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
-      okd_dumpdir ("/tmp") {}
+      okd_dumpdir ("/tmp"), clock_mode (SFS_CLOCK_GETTIME),
+      mmcd (ok_mmcd), mmcd_pid (-1), launchp (0) {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -121,6 +122,7 @@ public:
 private:
   bool fix_uids ();
   bool config_jaildir ();
+  void init_clock_daemon ();
 
   void launch_logd ();
   void launch_logd_cb (bool err);
@@ -152,6 +154,11 @@ private:
   ok_usr_t okd_usr;
   ok_grp_t okd_grp;
   str okd_dumpdir;
+  sfs_clock_t clock_mode;
+  str mmc_file;
+  str mmcd;
+  pid_t mmcd_pid;
+  u_int launchp;
 };
 
 #endif /* _OKD_OKD_H */

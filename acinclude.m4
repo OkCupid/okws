@@ -1601,3 +1601,19 @@ LDADD="$LDEPS "'$(LIBGMP)'
 AC_SUBST(LDEPS)
 AC_SUBST(LDADD)
 ])
+
+AC_DEFUN(SFS_SET_CLOCK,
+[AC_CACHE_CHECK(for sfs_set_clock, sfs_cv_set_clock,
+[
+CC_REAL=$CC
+CC=$CXX
+AC_TRY_COMPILE([ #include "async.h" ], sfs_set_clock (SFS_CLOCK_TIMER);,
+	 	sfs_cv_set_clock=yes)
+CC=$CC_REAL
+])
+if test "$sfs_cv_set_clock" = "yes"
+then
+	AC_DEFINE(HAVE_SFS_SET_CLOCK, 1, Toggle SFS core clock)
+fi
+])
+

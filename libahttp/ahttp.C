@@ -13,17 +13,19 @@ vec<suio *> recycled_suios;
 vec<suiolite *> recycled_suiolites;
 vec<suiolite *> recycled_suiolites_small;
 
-
+syscall_stats_t *global_syscall_stats = NULL;
+time_t global_ssd_last = 0;
 int ahttpcon_spawn_pid;
+int n_ahttpcon = 0;
 
 void
-ahttpcon::clone (ref<ahttpcon_clone> xc)
+ahttpcon::clone (ref<ahttpcon_clone> xc, cbv::ptr cb)
 {
   assert (!xc->ateof ());
   sockaddr_in *sin_tmp;
-  if ((sin_tmp = xc->get_sin ()))
+  if (ok_send_sin && (sin_tmp = xc->get_sin ()))
     out->copy ((void *)sin_tmp, sizeof (*sin_tmp));
-  sendfd (xc->takefd ());
+  sendfd (xc->takefd (), true, xc->get_close_fd_cb ());
 }
 
 /*
@@ -38,9 +40,9 @@ ahttpcon::stopread ()
 */
 
 void
-ahttpcon::sendfd (int sfd, bool closeit)
+ahttpcon::sendfd (int sfd, bool closeit, ptr<cbv_countdown_t> cb)
 {
-  fdsendq.push_back (fdtosend (sfd, closeit));
+  fdsendq.push_back (fdtosend (sfd, closeit, cb));
   wrsync ();
   output ();
 }
@@ -85,9 +87,9 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
   }
   bytes_sent += len;
   if (!out->resid () && cnt < min (16, UIO_MAXIOV)) {
+    if (ss) ss->n_writev ++;
     ssize_t skip = writev (fd, iov, cnt);
     if (skip < 0 && errno != EAGAIN) {
-      warn ("error in ahttpcon::sendv: %m\n"); // XXX debug
       fail ();
       // still need to signal done sending....
       if (cb) (*cb) ();
@@ -123,14 +125,14 @@ ahttpcon::output ()
       : int (syncpts.front () - out->iovno ());
   } while ((n = dowritev (cnt)) > 0);
 
+  bool more_to_write = out->resid () || !fdsendq.empty ();
   if (n < 0) {
-    warn ("error in ahttpcon::output: %m\n"); // XXX -- debug
     fail ();
-  } else if (out->resid () && !wcbset) {
+  } else if (more_to_write && !wcbset) {
     wcbset = true;
     fdcb (fd, selwrite, wrap (this, &ahttpcon::output));
   }
-  else if (!out->resid () && wcbset) {
+  else if (!more_to_write && wcbset) {
     wcbset = false;
     fdcb (fd, selwrite, NULL);
   }
@@ -176,18 +178,29 @@ ahttpcon_dispatch::dowritev (int cnt)
     return out->output (fd, cnt);
 
   static timeval ztv;
-  if (!fdwait (fd, selwrite, &ztv))
+  if (!fdwait (fd, selwrite, &ztv)) {
     return 0;
+  }
 
   if (cnt < 0)
     cnt = out->iovcnt ();
   if (cnt > UIO_MAXIOV)
     cnt = UIO_MAXIOV;
+  if (ss) ss->n_writevfd ++ ;
+  bool ignore_err = (out->resid () == 0);
   ssize_t n = writevfd (fd, out->iov (), cnt, fdsendq.front ().fd);
-  if (n < 0)
+
+  //
+  // no need to report an error if writevd returned -1 due to no
+  // data to send aside from the FD
+  //
+  if (n < 0 && (!ignore_err || errno != EAGAIN)) {
     return errno == EAGAIN ? 0 : -1;
+  }
+
   fdsendq.pop_front ();
-  out->rembytes (n);
+  if (n >= 0)
+    out->rembytes (n);
   return 1;
 }
 
@@ -202,9 +215,14 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
 
 ahttpcon::~ahttpcon ()
 { 
+  // 
+  // bookeeping for debug purposes.
+  //
+  --n_ahttpcon;
+
   destroyed = true;
   fail ();
-  if (sin) xfree (sin);
+  if (sin && sin_alloced) xfree (sin);
   recycle (in);
   recycle (out);
 }
@@ -283,18 +301,38 @@ ahttpcon::disable_selread ()
 void
 ahttpcon_listen::setlcb (listencb_t c)
 {
-  if (enable_selread ())
+  if (enable_selread ()) {
+    fd_accept_enabled = true;
     lcb = c;
-  else
+  } else
     (*c) (NULL);
+}
+
+void
+ahttpcon_listen::disable_fd_accept ()
+{
+  ahttpcon::disable_selread ();
+  fd_accept_enabled = false;
+}
+
+void
+ahttpcon_listen::enable_fd_accept ()
+{
+  ahttpcon::enable_selread ();
+  fd_accept_enabled = true;
 }
 
 ssize_t
 ahttpcon_listen::doread (int fd)
 {
+  if (!fd_accept_enabled) {
+    errno = EAGAIN;
+    return -1;
+  }
+
   int tnfd = -1;
   assert (!in->resid ());
-  ssize_t n = in->input (fd, &tnfd);
+  ssize_t n = in->input (fd, &tnfd, ss);
   bool sin_used = false;
   sockaddr_in *sin2 = NULL;
   if (n == sizeof (sockaddr_in)) {
@@ -313,11 +351,28 @@ ahttpcon_listen::doread (int fd)
   } else if (n > 0) {
     in->rembytes (n);
     warn ("random junk received on FD listen socket");
+
   }
+ 
+  /*
+  else if ((n == 0 || n == -1) && tnfd >= 0 && !ok_send_sin) {
+    socklen_t sinlen;
+    sin2 = (sockaddr_in *) xmalloc (sizeof (sockaddr_in));
+    if (getpeername (tnfd, (struct sockaddr *)sin2, &sinlen) != 0) {
+      warn ("getpeername on socket %d failed: %m\n", tnfd);
+      close (tnfd);
+      tnfd = -1;
+      xfree (sin2);
+      sin2 = NULL;
+    } else if (sinlen != sizeof (sockaddr_in)) {
+      warn ("weird sockaddr_in returned from getpeername; wrong size\n");
+    }
+  }
+  */
 
   if (tnfd >= 0) 
     if (lcb) {
-      (*lcb) (New refcounted<ahttpcon> (tnfd, sin2));
+      (*lcb) (New refcounted<ahttpcon> (tnfd, sin2, -1, -1, false));
       sin_used = true;
     } else {
       close (tnfd);
@@ -333,10 +388,10 @@ ahttpcon_listen::doread (int fd)
 ssize_t
 ahttpcon::doread (int fd)
 {
-  ssize_t s = in->input (fd);
+  ssize_t s = in->input (fd, NULL, ss);
   return s;
 }
-
+ 
 void
 ahttpcon::input ()
 {
@@ -351,8 +406,8 @@ ahttpcon::input ()
   ssize_t n = doread (fd);
   if (n < 0) {
     if (errno != EAGAIN) {
-      warn ("error in ahttpcon::input: %m\n"); // XXX debug      
-      fail ();
+      warn ("nfds=%d; error in ahttpcon::input: %m\n", n_ahttpcon);
+      //fail ();
     }
     return;
   }
@@ -556,9 +611,23 @@ ahttpcon_spawn (str path, const vec<str> &avs,
 void
 ahttpcon::set_remote_ip ()
 {
+  if (!sin && !ok_send_sin) {
+    socklen_t sinlen;
+    if (getpeername (fd, (struct sockaddr *)&sin3, &sinlen) != 0) {
+      warn ("getpeername failed on socket %d: %m\n", fd);
+    } else if (sinlen != sizeof (sockaddr_in)) {
+      warn ("getpeername returned strange sockaddr, sized: %d\n", sinlen);
+    } else {
+      sin = &sin3;
+    }
+  }
+
   if (sin) 
     remote_ip = inet_ntoa (sin->sin_addr);
+  else
+    remote_ip = "0.0.0.0";
 }
+
 
 static void
 http_server_fd (cbv cb, int fd)

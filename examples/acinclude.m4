@@ -1568,7 +1568,7 @@ case $with_mode in
 		CXXDEBUG=-g
 		with_dmalloc=yes
 		;;
-	"shared" )
+	shopt|shared )
 		sfstag=$with_mode
 		okwstag=$with_mode
 		okmtag=$with_mode
@@ -1738,4 +1738,21 @@ fi
 AC_SUBST(SVC_LDFLAGS)
 AM_CONDITIONAL(DLINKED_SERVICES, test $shared_tmp -eq 1)
 ])
+
+
+AC_DEFUN(SFS_SET_CLOCK,
+[AC_CACHE_CHECK(for sfs_set_clock, sfs_cv_set_clock,
+[
+CC_REAL=$CC
+CC=$CXX
+AC_TRY_COMPILE([ #include "async.h" ], sfs_set_clock (SFS_CLOCK_TIMER);,
+	 	sfs_cv_set_clock=yes)
+CC=$CC_REAL
+])
+if test "$sfs_cv_set_clock" = "yes"
+then
+	AC_DEFINE(HAVE_SFS_SET_CLOCK, 1, Toggle SFS core clock)
+fi
+])
+
 

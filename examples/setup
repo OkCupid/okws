@@ -13,7 +13,6 @@
 
 opt_c=
 opt_f=
-opt_n=
 
 for arg in "$@"; do
 case "$arg" in
@@ -26,19 +25,39 @@ case "$arg" in
 	    ;;
     -f)
 	    opt_f='--force'
-	    ;;
-    -n)
-	    WANT_AUTOCONF_2_5=1
-	    export WANT_AUTOCONF_2_5
-	    WANT_AUTOMAKE_1_6=1
-	    export WANT_AUTOMAKE_1_6
-	    opt_n=yes
+	    rm -f depcomp install-sh missing mkinstalldirs
+	    rm -f libtool ltconfig ltmain.sh
+	    rm -f config.guess config.sub 
 	    ;;
     *)
 	    echo setup: unknown option "$arg"
 	    ;;
 esac
 done
+
+if test -z "${AUTOCONF+set}"; then
+	AUTOCONF=autoconf
+	export AUTOCONF
+fi
+if test -z "${AUTOCONF_VERSION+set}"; then
+    for acv in 2.59 2.58 2.57 2.54 2.52 2.13; do
+	for dir in /usr/local/bin /usr/bin; do
+	if test -x ${dir}/autoconf-${acv}; then
+	    #AUTOCONF=${dir}/autoconf-${acv}
+	    #export AUTOCONF
+	    AUTOCONF_VERSION=$acv
+	    export AUTOCONF_VERSION
+	    echo "Using AUTOCONF_VERSION $AUTOCONF_VERSION"
+	    break 2
+	fi
+	done
+    done
+fi
+
+if test -z "${SETUP_TOP_PID}"; then
+    SETUP_TOP_PID=$$
+    export SETUP_TOP_PID
+fi
 
 if test ! -f configure.in; then
 	echo Must run this from source directory >&2
@@ -50,6 +69,15 @@ $M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 || M4=gnum4
 $M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 || M4=m4
 $M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 \
     || (echo Cannot locate GNU m4 >&2; exit 1)
+
+if test "${LIBTOOLIZE+set}" != "set"; then
+    LIBTOOLIZE=libtoolize
+    if test ! -x /usr/local/bin/libtoolize \
+		-a ! -x /usr/bin/libtoolize \
+		-a -x /usr/bin/glibtoolize; then
+	LIBTOOLIZE=glibtoolize
+    fi
+fi
 
 for file in acinclude.m4; do
     if test ! -f $file -a -f ../$file; then
@@ -84,18 +112,23 @@ fi
 
 set -x
 chmod +x setup
-libtoolize $LTI_ARGS
+$LIBTOOLIZE $LTI_ARGS
 aclocal
 autoheader
 automake $AM_ARGS
-if test -x /usr/local/bin/autoconf-new; then
-	autoconf-new
-else
-	autoconf
-fi
+$AUTOCONF
 set +x
 
 if test -f config.status; then
     set -x
     sh config.status
+fi
+set +x
+
+if test "$SETUP_TOP_PID" = "$$"; then
+    echo ""
+    echo "	    *** * * * * * * * * * * * * * * * * ***"
+    echo "	    ***         setup succeeded         ***"
+    echo "	    *** * * * * * * * * * * * * * * * * ***"
+    echo ""
 fi

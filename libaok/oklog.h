@@ -194,11 +194,14 @@ public:
   log_timer_t (cbv f, u_int i = 0, u_int p = 0) 
     : fcb (f), tm_tick (i ? i : ok_log_tick), 
       tm_prd (p ? p : ok_log_period), dcb (NULL), 
-      destroyed (New refcounted<bool> (false)), counter (0) { timestamp (); }
+    destroyed (New refcounted<bool> (false)), counter (0),
+		 in_timer_cb (false), disable_pending (false) { timestamp (); }
   ~log_timer_t () { stop_timer (); *destroyed = true; }
   const char *gettime (u_int *len) const { *len = timelen; return buf; }
   void start () { set_timer (); }
   void reset () { counter = 0; }
+  void enable () ;
+  void disable () ;
 private:
   void set_timer ();
   void timer_cb (ptr<bool> d);
@@ -211,6 +214,7 @@ private:
   u_int counter;
   char buf[LOG_TIMEBUF_SIZE];
   u_int timelen;
+  bool in_timer_cb, disable_pending;
 };
 
 class fast_log_t : public log_t {

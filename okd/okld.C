@@ -70,6 +70,7 @@ okld_t::parseconfig (const str &cf)
   conftab ct;
   str grp;
   str okd_gr, okd_un;
+
   ct.add ("Service", wrap (this, &okld_t::got_service))
     .add ("TopDir", wrap (got_dir, &topdir))
     .add ("JailDir", wrap (got_dir, &jaildir))
@@ -97,6 +98,13 @@ okld_t::parseconfig (const str &cf)
     .add ("UnsafeMode", &unsafe_mode)
     .add ("SafeStartup", &safe_startup_fl)
     .add ("FilterCGI", &ok_filter_cgi, XSSFILT_NONE, XSSFILT_ALL)
+    
+    .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
+    .add ("MmapClockDaemon", &mmcd)
+    .add ("MmapClockFile", &mmc_file)
+
+    .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
+
     .add ("OkdUser", &okd_un)
     .add ("OkdGroup", &okd_gr)
     .add ("ShutdownTimeout", &ok_shutdown_timeout, 0, 1000)
@@ -119,13 +127,22 @@ okld_t::parseconfig (const str &cf)
     .add ("GzipCacheSize", &ok_gzip_cache_storelimit, 0, 0x10000000)
     .add ("GzipMemLevel", &ok_gzip_mem_level, 0, 9)
     .add ("ChannelLimit", &ok_reqsize_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
+    .add ("SendSockAddrIn", &ok_send_sin)
+
+    .add ("ServiceMaxFDs", &ok_svc_max_fds, 0, 10240)
+    .add ("ServiceFDHighWat", &ok_svc_fds_high_wat, 0, 10000)
+    .add ("ServiceAcceptMessages", &ok_svc_accept_msgs)
 
     .ignore ("Alias")
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
     .ignore ("OkMgrPort")
     .ignore ("PubdExecPath")
-    .ignore ("ErrorDoc");
+    .ignore ("ErrorDoc")
+    .ignore ("OkdMaxFDs")
+    .ignore ("OkdFDHighWat")
+    .ignore ("OkdAcceptMessages")
+    .ignore ("OkdChildSelectDisable");
 
 
   if (grp) svc_grp = ok_grp_t (grp);
@@ -178,7 +195,16 @@ okld_t::encode_env ()
     .insert ("logprd", ok_log_period)
     .insert ("clito", ok_clnt_timeout)
     .insert ("reqszlimit", ok_reqsize_limit)
-    .insert ("filtercgi", ok_filter_cgi ? 1 : 0);
+    .insert ("filtercgi", ok_filter_cgi ? 1 : 0)
+    .insert ("ssdi", ok_ssdi)
+    .insert ("sendsin", ok_send_sin ? 1 : 0)
+    .insert ("maxfds", ok_svc_max_fds)
+    .insert ("fdhw", ok_svc_fds_high_wat)
+    .insert ("acmsg", ok_svc_accept_msgs)
+    .insert ("clock", int (clock_mode));
+
+  if (mmc_file)
+    env.insert ("mmcf", mmc_file);
 }
 
 
@@ -298,6 +324,15 @@ okld_t::shutdown2 (int status)
   else
     warn << "caught clean okd exit\n";
   warn << "shutdown complete\n";
+
+  //
+  // this sucks; we should really instrument mmcd so that if it reads
+  // an EOF of stdin, then it (1) unlinks its mmaped file and (2)
+  // shuts down cleanly.  for now, we'll be down and dirty
+  //
+  if (mmcd_pid > 0) 
+    ::kill (mmcd_pid, SIGTERM);
+
   delete this;
   exit (0);
 }
@@ -421,6 +456,8 @@ okld_t::launch (const str &cf)
   configfile = cf;
   parseconfig (cf);
 
+  init_clock_daemon ();
+
   encode_env ();
   if (!(checkservices () && fix_uids () && init_jaildir ()))
     exit (1);
@@ -463,9 +500,32 @@ okld_t::launch2 (int logfd)
 void
 okld_t::launchservices ()
 {
+  if (sdflag) { 
+    warn << "not launching due to shutdown flag\n";
+    return;
+  }
+
+  warn << "launching services (" << launchp << ")\n";
+
   u_int lim = svcs.size ();
-  for (u_int i = 0; i < lim; i++) {
-    svcs[i]->launch ();
+  for (u_int i = 0; i < 30 && launchp < lim; i++) {
+    svcs[launchp++]->launch ();
+  }
+
+  //
+  // XXX - hack for now; there is a problem when we launch too many
+  // services at once, in that we lose file descriptors around the
+  // 128th FD is sent.  this is probably not a coincindence, and is
+  // most likely limited to some kernel limit as to the number of
+  // outstanding FDs allowed.  Note that **okd** is failing to 
+  // retrieve the 128th file descriptor. Some small changes
+  // to david's libraries might be able to fix this. For now,
+  // we'll hack in a timeout to let okd catch up, if possible.
+  //
+  if (launchp < lim) {
+    // XXX - should be configurable, too (as should the hard
+    // coded limit of 30, as given above).
+    delaycb (1, 0, wrap (this, &okld_t::launchservices));
   }
 }
 
@@ -530,3 +590,29 @@ okld_t::init_jaildir ()
   return ret;
 }
 
+
+void
+okld_t::init_clock_daemon ()
+{
+  if (clock_mode == SFS_CLOCK_MMAP) {
+
+    //
+    // second argument false; we haven't jailed yet.
+    //
+    str f = jail2real (ok_mmc_file, false);
+    const char *args[] = { mmcd.cstr (), f.cstr (), NULL };
+
+    // note that we're running the clock daemon as root.
+    // this should be fine. 
+    warn << "*unstable: launching mmcd: " << args[0] << " " << args[1] << "\n";
+    mmcd_pid = spawn (args[0], args);
+    if (mmcd_pid < 0) {
+      warn ("cannot start mmcd %s: %m\n", args[0]);
+      clock_mode = SFS_CLOCK_GETTIME;
+    }
+
+    // okld does not change its clock type, since it's mainly idle.
+    // therefore, we're also not going to catch the chldcb of the 
+    // clock daemon should it die.
+  }
+}

@@ -89,7 +89,10 @@ protected:
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
   ok_httpsrv_t (const str &h = NULL, int fd = -1) 
-    : ok_con_t (), ok_base_t (h, fd), svclog (true) {}
+    : ok_con_t (), ok_base_t (h, fd), svclog (true),
+      accept_enabled (false), accept_msgs (true),
+      clock_mode (SFS_CLOCK_GETTIME),
+      mmc_file (ok_mmc_file) {}
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
   inline bool add_errdoc (int n, const str &f);
   void add_errdocs (const xpub_errdoc_set_t &eds);
@@ -103,6 +106,13 @@ public:
 		    const str &s = NULL)
     const { if (svclog && logd) logd->log (x, req, res, s); }
 
+  void enable_accept ();
+  void disable_accept ();
+  void malloc_init (); // init malloc.3
+
+  // toggle clock modes for SFS
+  void init_sfs_clock (const str &f); 
+
 protected:
   void error2 (ref<ahttpcon> x, int n, str s, cbv::ptr c, http_inhdr_t *h) 
     const;
@@ -111,10 +121,19 @@ protected:
   void error_cb2 (ptr<ahttpcon> x, ptr<http_response_t> e, cbv::ptr c) 
     const { if (c) (*c) (); }
 
+  virtual void enable_accept_guts () = 0;
+  virtual void disable_accept_guts () = 0;
+
   ihash<int, errdoc_t, &errdoc_t::status, &errdoc_t::lnk> errdocs;
   mutable str si;
   str logfmt;
   bool svclog;
+  bool accept_enabled;
+  bool accept_msgs;
+
+  // stuff for dealing with okws's clock mode
+  sfs_clock_t clock_mode;
+  str mmc_file;
 };
 
 #define OKCLNT_BUFLEN 0x10400
@@ -185,9 +204,10 @@ public:
 class oksrvc_t : public ok_httpsrv_t { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
-    : nclients (0), sdflag (false), pid (getpid ())
+    : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0)
   { 
     init (argc, argv);
+    accept_msgs = ok_svc_accept_msgs;
   }
 
   virtual void launch ();
@@ -222,6 +242,9 @@ public:
   pval_w_t operator[] (const str &s) const { return (*rpcli)[s]; }
 
 protected:
+  void closed_fd ();
+  void enable_accept_guts ();
+  void disable_accept_guts ();
 
   void pubbed (cbb cb, ptr<pub_res_t> res);
 
@@ -257,6 +280,7 @@ protected:
   int pid;
 
   vec<str> authtoks;
+  int n_fd_out;
 };
 
 class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
@@ -281,6 +305,17 @@ oksrvc_t::cfg (const str &n, u_int i, T *p) const
 }
   
 str okws_exec (const str &x);
+void init_syscall_stats ();
+
+inline void do_syscall_stats ()
+{
+  if (ok_ssdi > 0 && int (timenow - global_ssd_last) > int (ok_ssdi)) {
+    time_t diff = timenow - global_ssd_last;
+    global_ssd_last = timenow;
+    global_syscall_stats->dump (diff);
+    global_syscall_stats->clear ();
+  }
+}
 
 //
 // XXX - hack - this is used by both okch_t and okld_ch_t - just happens

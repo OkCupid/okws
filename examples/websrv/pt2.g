@@ -45,7 +45,7 @@ public:
       out << id << "Error querying database \n";
     } else {
       /*o 
-	include (pub, out, "/pt1.html", 
+	include (pub, out, "/pt2.html", 
 	{ sha => @{res.out->sha1}, rid => @{res.out->id}, id => @{id}} ); 
 	o*/
     }

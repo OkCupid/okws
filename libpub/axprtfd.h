@@ -106,23 +106,86 @@ private:
 
   void recv_cb (const char *pkt, ssize_t len, const sockaddr *)
   {
-    int fd;
-    if (pkt && (fd = x->recvfd ()) >= 0 && len > 0) {
+    int fd = x->recvfd ();
+    ptr<T> t = New refcounted<T> ();
+    bool rpc_trav_succ = false;
+
+    //
+    // first deal with EOF condition;
+    //
+    if (len <= 0) {
+
+      if (fd >= 0) {
+	warn << "fdsource: EOF received with a file descriptor!\n";
+	close (fd);
+      }
+
+      //
+      // might be a little bit too noisy; will make it quieter
+      // once we find the appropriate bugs.
+      //
+      /*
+       * disable error reporting for now.
+       *
+      if (len == 0) {
+	warn << "fdsource: received EOF\n";
+      } else {
+	warn << "fdsource: received failure signal\n";
+      }
+      */
+
+      // send EOF signal to listener
+      goto sendeof;
+    }
+
+    //
+    // decode the packet that came in (if there was one)
+    if (pkt) {
       xdrmem xx (pkt, len);
       XDR *xp = &xx;
-      ptr<T> t = New refcounted<T> ();
-      if (rpc_traverse (xp, *t)) {
-	(*cb) (fd, t);
-	return;
-      } else {
-	warn << "rpc_traverse failed\n";
-	close (fd);
-	return;
-      }
+      rpc_trav_succ = rpc_traverse (xp, *t);
     }
-    // send EOF signal to listener
+
+    if (fd < 0) {
+      if (t && rpc_trav_succ) {
+	strbuf sb;
+	rpc_print (sb, *t);
+	warn << "fdsource: No FD received, but got XDR structure:\n"
+	     << sb << "\n";
+	warn << "fdsource: known bug; no fix yet avaiable\n"
+	     << "fdsource: please retry and hope for the best\n"
+	     << "fdsource: sorry for the inconvenience\n";
+	goto sendeof;
+	
+      } else if (pkt) {
+	warn << "fdsource: No FD received, with bad XDR packet\n";
+      } else {
+	warn << "fdsource: No FD received / no DATA received\n";
+      }
+      return;
+    }
+
+    if (!pkt) {
+      warn << "received an FD with an XDR; closing it!\n";
+      close (fd);
+      return;
+    }
+
+    if (!rpc_trav_succ && pkt) {
+      warn << "rpc_traverse failed\n";
+      close (fd);
+      return;
+    }
+
+    if (rpc_trav_succ && fd >= 0) {
+      (*cb) (fd, t);
+    }
+    return;
+
+  sendeof:
     x->setrcb (NULL);
     (*cb) (-1, NULL);
+    return;
   }
 
   ref<axprt_unix> x;

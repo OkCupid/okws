@@ -11,6 +11,13 @@
 #define AHTTP_MAXLINE 1024
 
 //
+// global objects for keeping track of nunmber of syscalls
+//
+extern syscall_stats_t *global_syscall_stats;
+extern time_t global_ssd_last;
+extern int n_ahttpcon;
+
+//
 // memory recycling code hacked in for now....
 //
 #define RECYCLE_LIMIT 2048
@@ -19,13 +26,29 @@ void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
 suio *suio_alloc ();
 
+class cbv_countdown_t : public virtual refcount {
+public:
+  cbv_countdown_t (cbv::ptr c) : cb (c) {}
+  ~cbv_countdown_t () { (*cb) (); }
+private:
+  cbv cb;
+};
+
+//
+// fdtosend is set up to be stack allocated, i presume, as an optimization;
+// this should really be changed to be heap allocated, and to have some
+// simple story for recyling. would be much cleaner, and less error
+// prone.  this is future work.
+//
 struct fdtosend {
   const int fd;
   mutable bool closeit;
-  fdtosend (int f, bool c) : fd (f), closeit (c) {}
+  fdtosend (int f, bool c, ptr<cbv_countdown_t> b = NULL)
+    : fd (f), closeit (c), cb (b) {}
   ~fdtosend () { if (closeit) close (fd); }
-  fdtosend (const fdtosend &f) : fd (f.fd), closeit (f.closeit)
+  fdtosend (const fdtosend &f) : fd (f.fd), closeit (f.closeit), cb (f.cb)
   { f.closeit = false; }
+  ptr<cbv_countdown_t> cb;
 };
 
 class ahttpcon_clone;
@@ -37,15 +60,22 @@ protected:
   vec<fdtosend> fdsendq;
 
 public:
-  ahttpcon (int f, sockaddr_in *s = NULL, int mb = SUIOLITE_DEF_BUFLEN,
-	    int rcvlmt = -1)
+  ahttpcon (int f, sockaddr_in *s = NULL, int mb = -1,
+	    int rcvlmt = -1, bool coe = true)
     : fd (f), rcbset (false), wcbset (false), bytes_recv (0), bytes_sent (0),
       eof (false), destroyed (false), out (suio_alloc ()), sin (s),
       recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
-      overflow_flag (false)
+      overflow_flag (false), ss (global_syscall_stats),
+      sin_alloced (s != NULL)
   {
+    //
+    // bookkeeping for debugging purposes;
+    //
+    n_ahttpcon++;
+
     make_async (fd);
-    close_on_exec (fd);
+    if (coe) close_on_exec (fd);
+    if (mb == -1) mb = SUIOLITE_DEF_BUFLEN;
     in = suiolite_alloc (mb, wrap (this, &ahttpcon::spacecb));
     set_remote_ip ();
   }
@@ -53,11 +83,11 @@ public:
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
   virtual ~ahttpcon ();
-  void sendfd (int sfd, bool closeit = true);
+  void sendfd (int sfd, bool closeit = true, ptr<cbv_countdown_t> cb = NULL);
   // void stopread ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
-  void clone (ref<ahttpcon_clone> xc);
+  void clone (ref<ahttpcon_clone> xc, cbv::ptr cb = NULL);
   void output ();
   void spacecb ();
   void error (int ec);
@@ -66,6 +96,10 @@ public:
   void copyv (const iovec *iov, int cnt);
   suiolite *uio () const { return in; }
   u_int get_bytes_sent () const { return bytes_sent; }
+
+  void set_close_fd_cb (cbv::ptr cb) 
+  { cbcd = New refcounted<cbv_countdown_t> (cb); }
+  ptr<cbv_countdown_t> get_close_fd_cb () { return cbcd; }
 
   static ptr<ahttpcon> alloc (int fd, sockaddr_in *s = NULL, 
 			      int mb = SUIOLITE_DEF_BUFLEN)
@@ -99,6 +133,11 @@ protected:
   str remote_ip;
   int recv_limit;
   bool overflow_flag;
+  syscall_stats_t *ss;
+  struct sockaddr_in sin3;
+  const bool sin_alloced;
+
+  ptr<cbv_countdown_t> cbcd;
 };
 
 // for parent dispatcher, which will send fd's
@@ -118,7 +157,7 @@ typedef callback<void, ptr<ahttpcon> >::ref listencb_t;
 class ahttpcon_listen : public ahttpcon 
 {
 public:
-  ahttpcon_listen (int f) : ahttpcon (f) 
+  ahttpcon_listen (int f) : ahttpcon (f), fd_accept_enabled (false)
   { 
     // XXX - don't want to stop listening to okd! there should be no
     // channel limit here; setting recv_limit = 0 should achieve this.
@@ -127,10 +166,13 @@ public:
   void setlcb (listencb_t c);
   static ptr<ahttpcon_listen> alloc (int f) 
   { return New refcounted<ahttpcon_listen> (f); }
+  void disable_fd_accept ();
+  void enable_fd_accept ();
 protected:
   virtual ssize_t doread (int fd);
   virtual void fail2 ();
   listencb_t::ptr lcb;
+  bool fd_accept_enabled;
 };
 
 // for server process to peek () and then pass of the fd
@@ -141,6 +183,7 @@ public:
   ahttpcon_clone (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE);
   void setccb (clonecb_t cb);
   int takefd ();
+
   
   static ptr<ahttpcon_clone> 
   alloc (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE) 

@@ -7,6 +7,21 @@
 #include "pubutil.h"
 #include "parseopt.h"
 #include "resp.h"
+#include <stdlib.h>
+
+void
+init_syscall_stats ()
+{
+  if (ok_ssdi > 0) {
+    global_syscall_stats = New syscall_stats_t ();
+    global_ssd_last = timenow;
+  }
+}
+
+void
+ok_httpsrv_t::malloc_init ()
+{
+}
 
 
 okclnt_t::~okclnt_t () 
@@ -103,6 +118,20 @@ usage ()
 }
 */
 
+void
+ok_httpsrv_t::init_sfs_clock (const str &f)
+{
+  if (clock_mode != SFS_CLOCK_GETTIME) {
+#ifdef HAVE_SFS_SET_CLOCK
+    warn << "*unstable: switching SFS core clock to mode: " 
+	 << int (clock_mode) << "\n";
+    sfs_set_clock (clock_mode, f);
+#else
+    warn << "Cannot disable SFS clock; this version of SFS does not "
+	 << "support it\n";
+#endif /* HAVE_SFS_CLOCKMODE */
+  }
+}
 
 void
 oksrvc_t::init (int argc, char *argv[])
@@ -112,6 +141,8 @@ oksrvc_t::init (int argc, char *argv[])
 
   SVCWARN ("starting up; OKD version " << VERSION <<
 	   "; running as (" << getuid () << ", " << geteuid () << ")");
+
+  str mmc_file = ok_mmc_file;
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -130,10 +161,21 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("logprd", &ok_log_period);
     t->lookup ("clito", &ok_clnt_timeout);
     t->lookup ("reqszlimit", &ok_reqsize_limit);
+    t->lookup ("ssdi", &ok_ssdi);
+    t->lookup ("maxfds", &ok_svc_max_fds);
+    t->lookup ("fdhw", &ok_svc_fds_high_wat);
+    t->lookup ("mmcf", &mmc_file);
+    ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
+    ok_send_sin = t->blookup ("sendsin");
 
+    int tmp;
+    if (t->lookup ("clock", &tmp))
+      clock_mode = static_cast<sfs_clock_t> (tmp);
   }
+  init_syscall_stats ();
+  init_sfs_clock (mmc_file);
 
   zinit (ok_gzip, ok_gzip_compress_level);
 }
@@ -241,7 +283,21 @@ oksrvc_t::connect ()
   ctlx = axprt_unix::alloc (1);
   x = ahttpcon_listen::alloc (0);
   ctlcon (wrap (this, &oksrvc_t::ctldispatch));
+
+  //
+  // setting the listen callback on this ahttpcon_listen object 
+  // will turn on its ability to read data from upstream.
+  //
   x->setlcb (wrap (this, &oksrvc_t::newclnt));
+
+  //
+  // must be called after setlcb; this will turn on our own 
+  // accept_enabled flag; it will also wind up calling enable_selread
+  // on the underlying object (for the second time!) but this will 
+  // simply be a no-op, since the enable_selread is idempotent 
+  // in the world of ahttpcon_listen and associated objects.
+  //
+  enable_accept ();
 }
 
 void
@@ -412,17 +468,74 @@ oksrvc_t::launch5 (clnt_stat err)
 }
 
 void
+ok_httpsrv_t::disable_accept ()
+{
+  if (!accept_enabled) {
+    if (accept_msgs)
+      warn << "accept already disabled\n";
+  } else {
+    if (accept_msgs)
+      warn << "disabling accept\n";
+    accept_enabled = false;
+    disable_accept_guts ();
+  }
+}
+
+void
+ok_httpsrv_t::enable_accept ()
+{
+  if (accept_enabled) {
+    if (accept_msgs)
+      warn << "accept already enabled\n";
+  } else {
+    accept_enabled = true;
+    if (accept_msgs)
+      warn << "enabling accept\n";
+    enable_accept_guts ();
+  }
+}
+
+
+void
+oksrvc_t::enable_accept_guts ()
+{
+  x->enable_fd_accept ();
+}
+
+void
+oksrvc_t::disable_accept_guts ()
+{
+  x->disable_fd_accept ();
+}
+
+void
+oksrvc_t::closed_fd ()
+{
+  n_fd_out --;
+  if (n_fd_out < int (ok_svc_fds_high_wat) && !accept_enabled)
+    enable_accept ();
+}
+
+void
 oksrvc_t::newclnt (ptr<ahttpcon> lx)
 {
-  if (sdflag) {
-    error (lx, HTTP_UNAVAILABLE, NULL);
-  } else if (!lx) {
+  if (!lx) { 
     warn << "oksrvc_t::newclnt: NULL request encountered\n";
   } else {
-    okclnt_t *c = make_newclnt (lx);
-    c->serve ();
-    add (c);
+    n_fd_out ++;
+    lx->set_close_fd_cb (wrap (this, &oksrvc_t::closed_fd));
+    if (sdflag) {
+      error (lx, HTTP_UNAVAILABLE, NULL);
+    } else {
+      okclnt_t *c = make_newclnt (lx);
+      c->serve ();
+      add (c);
+    }
+    if (ok_svc_max_fds != 0 && n_fd_out >= int (ok_svc_max_fds)) {
+      disable_accept ();
+    }
   }
+  do_syscall_stats ();
 }
 
 void

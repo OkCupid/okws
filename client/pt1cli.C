@@ -29,6 +29,7 @@ str host;
 int port;
 str inreq;
 str inqry;
+str suffix;
 int rand_modulus;
 int hclient_id;
 int latency_gcf;
@@ -125,7 +126,7 @@ private:
   }
     
   timespec cli_start;
-  char buf[4096];
+  char buf[8192];
   str host;
   int port;
   str req;
@@ -232,8 +233,19 @@ hclient_t::then_read_damnit ()
       uio.output (1);
     }
   } else {
+
+    //
+    // for SEDA, we've had to parse the header and cut off the
+    // connection, since it doesn't support closed connections
+    // as we've asked.
+    //
     rc = uio.copyout (bp);
+    uio.rembytes (rc);
     bp += rc;
+
+    //
+    // reqsz < 0 if we haven't found a field yet in the header
+    //
     if (reqsz < 0) {
       if (sz_rxx.search (buf)) {
 	if (!convertint (sz_rxx[1], &reqsz)) {
@@ -244,6 +256,11 @@ hclient_t::then_read_damnit ()
     }
     if (!body) 
       body = strstr (buf, "\r\n\r\n");
+
+    //
+    // if we've seen the required number of bytes (as given by
+    // the header) then we're ready to close (or rock!)
+    //
     if (body && (bp - body >= reqsz)) {
       write (1, buf, bp - buf);
       if (noisy) warn ("ok, closing up!\n");
@@ -290,7 +307,7 @@ hclient_t::sched_write (ptr<bool> d_local)
   strbuf b;
   int id = random() % rand_modulus;
   int v = zippity ? 1 : 0;
-  b << "GET /" << req << get_svc_id (id) << qry << id  
+  b << "GET /" << req << suffix << get_svc_id (id) << qry << id  
     << " HTTP/1." << v << "\r\n";
   if (zippity) 
     b << "Accept: */*\r\n"
@@ -362,7 +379,7 @@ hclient_t::run ()
 void
 hclient_t::timed_out (ptr<bool> d_local) 
 {
-  if (*destroyed) {
+  if (*d_local) {
     warn << "unexpected timeout -- XXX\n";
     return;
   }
@@ -425,10 +442,22 @@ main (int argc, char *argv[])
   use_latencies = false;
   num_services = 1;
   tpt_sample_freq = 1;
+  int lat_stddv = 25;
+  int lat_mean = 75;
+  suffix = "";
 
-
-  while ((ch = getopt (argc, argv, "zspofdc:n:t:r:v:l")) != -1) {
+  while ((ch = getopt (argc, argv, "x:zspofdc:n:t:r:v:lS:M:")) != -1) {
     switch (ch) {
+    case 'S':
+      if (!convertint (optarg, &lat_stddv))
+        usage ();
+      if (noisy) warn << "Standard dev. of latency: " << lat_stddv << "\n";
+      break;
+    case 'M':
+      if (!convertint (optarg, &lat_mean))
+        usage ();
+      if (noisy) warn << "Mean of latencies: " << lat_mean << "\n";
+      break;
     case 'r':
       if (!convertint (optarg, &rand_modulus))
 	usage ();
@@ -442,6 +471,9 @@ main (int argc, char *argv[])
     case 'l':
       use_latencies = true;
       if (noisy) warn << "Using Latencies\n";
+      break;
+    case 'x':
+      suffix = optarg;
       break;
     case 'd':
       noisy = true;

@@ -13,7 +13,8 @@
 
 okch_t::okch_t (okd_t *o, const str &s)
   : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
-    destroyed (New refcounted<bool> (false)) 
+    destroyed (New refcounted<bool> (false)),
+    srv_disabled (false)
 {
   myokd->insert (this);
 }
@@ -34,16 +35,23 @@ okch_t::clone (ref<ahttpcon_clone> xc)
 	conqueue.size () > ok_con_queue_max) {
       myokd->error (xc, 500, make_generic_http_req (servpath));
     } else {
+      //warn << "queued con\n"; // XX debug
       conqueue.push_back (xc);
     }
   } else {
-    x->clone (xc);
+    x->clone (xc, wrap (myokd, &okd_t::closed_fd));
   }
 }
 
 void
 okch_t::shutdown (oksig_t g, cbv cb)
 {
+  if (okd_child_sel_disable && srv_disabled) {
+    warn << "*broken: restarting stopped ASRV for child\n";
+    srv_disabled = false;
+    xhinfo::xon (ctlx, true);
+  }
+
   if (clnt) {
     // note that no authentication needed for this kill signal.
     if (g == OK_SIG_ABORT) {
@@ -81,7 +89,25 @@ okch_t::start_chld ()
     state = OKC_STATE_SERVE;
     while (conqueue.size ())
       x->clone (conqueue.pop_front ());
+
+    //
+    // XXX - this doesn't work yet.  To make it work, we need to do the
+    // following:
+    //
+    //    - renable the server upon new publication pushes.
+    //    - handle EOF conditions wisely; meaning, if we get a new 
+    //      child for the same service, then we should assume an EOF;
+    //      if we're not selecting on the FD, we might not see the
+    //      EOF messages come in.
+    //
+    if (okd_child_sel_disable) {
+      // disable the read on this socket.
+      warn << "*broken: turning of child select on CTL socket\n";
+      srv_disabled = true;
+      ctlx->setrcb (NULL);
+    }
   }
+    
 }
 
 void

@@ -35,7 +35,8 @@ dnl
 cgimk(sha)
 cgimk(sha2)
 cgimk(google)
-dnl cgimk(pt1)
+cgimk(pt1)
+dnl cgimk(pt2)
 cgimk(upload)
 
 dnl

@@ -70,7 +70,7 @@ scan.o: parse.o scan.cc
 parseclean:
 	rm -f $(srcdir)/parse.cc $(srcdir)/parse.h $(srcdir)/scan.cc
 
-BUILT_SOURCES = parse.cc parse.h scan.cc
+BUILT_SOURCES = parse.cc scan.cc
 
 CLEANFILES = core *.core *~ *.rpo
 

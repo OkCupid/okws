@@ -13,6 +13,25 @@
 
 #include "async.h"
 
+struct syscall_stats_t {
+  syscall_stats_t () : n_recvmsg (0), n_readvfd (0), n_readv (0),
+		       n_writev (0), n_writevfd (0) {}
+  void clear () 
+  { n_recvmsg = n_readvfd = n_readv = n_writev = n_writevfd = 0; }
+
+  void dump (int tm)
+  { warn ("syscalls[%d]: recvmsg:%d readvfd:%d readv:%d writev:%d "
+	  "writevfd:%d\n", tm, n_recvmsg, n_readvfd, n_readv,
+	  n_writev, n_writevfd); 
+  }
+
+  int n_recvmsg;
+  int n_readvfd;
+  int n_readv;
+  int n_writev;
+  int n_writevfd;
+};
+
 class suiolite {
 public:
   suiolite (int l = SUIOLITE_DEF_BUFLEN, cbv::ptr s = NULL) 
@@ -23,12 +42,13 @@ public:
   }
   ~suiolite () { xfree (buf); }
 
+
   void clear ();
   void recycle (cbv::ptr s = NULL) { setscb (s); }
 
   void setpeek (bool b = true) { peek = b; }
   void setscb (cbv::ptr c) { scb = c; }
-  ssize_t input (int fd, int *nfd = NULL);
+  ssize_t input (int fd, int *nfd = NULL, syscall_stats_t *ss = NULL);
   ssize_t resid () const { return (dep[1] - rp) + (dep[0] - buf); }
   bool full () const { return (resid () == len); }
   char *getdata (ssize_t *nbytes) const { *nbytes = dep[1] - rp; return rp; }
