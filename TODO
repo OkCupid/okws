@@ -216,3 +216,5 @@ OKD v0.2
  - testing when an RPC hangs, what the user sees.
  - statistics?  might be useful.  as in, number of current clients,
    and how long they've been active for.
+ - packet buffer overrun in logging when there are lots of errors
+   all at once.
