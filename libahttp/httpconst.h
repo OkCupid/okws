@@ -13,7 +13,6 @@
 #define HTTP_TIMEOUT     408
 #define HTTP_NOT_IMPLEMENTED 502
 #define HTTP_UNAVAILABLE 503
-#define HTTP_CLIENT_EOF  600
 #define HTTP_REQ_TOO_BIG 413
 #define HTTP_UNEXPECTED_EOF 417
 
@@ -22,6 +21,12 @@
 #define HTTP_MOVEDTEMP   302
 #define HTTP_SEEOTHER    303
 #define HTTP_USEPROXY    305
+
+//
+// these are not in the standard, but are here for convenience.
+//
+#define HTTP_CLIENT_EOF  600
+#define HTTP_CONNECTION_FAILED 601
 
 #define OKD_SERVER_ID "OKD/"VERSION
 

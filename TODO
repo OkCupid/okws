@@ -245,3 +245,5 @@ OKD v0.2
    we're hitting the channel limit?
  - better story for /etc/localtime.
  - still have spurious dmalloc free problems on file uploads.  weird.
+ - byacc breaks everything due to unitialized memory, and used of
+   xmalloc for C++ objects.

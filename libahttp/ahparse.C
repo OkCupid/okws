@@ -41,7 +41,7 @@ http_parser_base_t::finish (int status)
 
   // XXX -- we (stupidly) have a cyclic data structure here; that is,
   // we might have a refcounted this wrapped in the callback given.
-  // this, if we haven't be destroyed, we'll need to set the CB equal 
+  // thus, if we haven't be destroyed, we'll need to set the CB equal 
   // to NULL.  in some cases, so doing will cause the object to be 
   // destroyed.
   ptr<bool> local_destroyed = destroyed;
@@ -107,8 +107,7 @@ http_parser_base_t::clnt_timeout ()
 {
   tocb = NULL;
   v_cancel ();
-  stop_abuf ();
-  (*cb) (HTTP_TIMEOUT);
+  finish (HTTP_TIMEOUT);
 }
 
 
