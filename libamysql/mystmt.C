@@ -193,6 +193,7 @@ sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
     b << qry_parts[i];
 
   str q = b;
+//  warn << "query:  " << q << "\n";
   if (mysql_real_query (mysql, q.cstr (), q.len ())) {
     err = strbuf ("Query execution error: ") << mysql_error (mysql) << "\n";
 	errno_n = mysql_errno (mysql);
