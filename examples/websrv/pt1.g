@@ -32,11 +32,13 @@
 #include "pt1_prot.h"
 #include "amysql.h"
 
+#define DB "farley.lcs.mit.edu"
+
 class oksrvc_pt1_t : public oksrvc_t {
 public:
   oksrvc_pt1_t (int argc, char *argv[]) : oksrvc_t (argc, argv) 
   {
-    db = add_db ("10.1.1.20", PT1_PORT, pt1_prog_1);
+    db = add_db (DB, PT1_PORT, pt1_prog_1);
   }
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
   void init_publist () { /*o init_publist (); o*/ }
