@@ -63,7 +63,9 @@ public:
 
 class http_resp_header_t {
 public:
-  http_resp_header_t (int c, htpv_t v = 0) : status (c), vers (v) {}
+  http_resp_header_t (int c, htpv_t v = 0) 
+    : status (c), vers (v), cachecontrol ("no-store"), 
+    contenttype ("text/html") {}
   virtual ~http_resp_header_t () {}
   const http_resp_header_t & add (const http_hdr_field_t &f)
   { fields.push_back (f); return *this; }
@@ -79,9 +81,13 @@ public:
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", OKD_SERVER_ID); }
   void add_closed () { add ("Connection", "close"); }
+  void set_cache_control (const str &s) { cachecontrol = s; }
+  void set_content_type (const str &s) { contenttype = s; }
 private:
   int status;
   htpv_t vers;
+  str cachecontrol;
+  str contenttype;
   vec<http_hdr_field_t> fields;
 };
 
@@ -112,6 +118,9 @@ public:
   inline int get_nbytes () const { return nbytes; }
   inline void gzip () { header.gzip (); }
   http_resp_header_t header;
+
+  void set_cache_control (const str &s) { header.set_cache_control (s); }
+  void set_content_type (const str &s) { header.set_content_type (s); }
 
   inline void set_uid (u_int64_t i) { uid = i; }
   inline u_int64_t get_uid () const { return uid; }

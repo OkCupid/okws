@@ -6,6 +6,7 @@
 #include "okerr.h"
 #include "pubutil.h"
 #include "parseopt.h"
+#include "resp.h"
 
 
 okclnt_t::~okclnt_t () 
@@ -463,10 +464,12 @@ okclnt_t::output (zbuf &b)
     return;
   }
 
-  bool gz = hdr.takes_gzip () && ok_gzip;
+  bool gz = hdr.takes_gzip () && ok_gzip && rsp_gzip;
   const strbuf &sb = b.to_strbuf (gz);
     
   rsp = New refcounted<http_response_ok_t> (sb, hdr.get_vers (), gz);
+  if (cachecontrol) rsp->set_cache_control (cachecontrol);
+  if (contenttype) rsp->set_content_type (contenttype);
   if (uid_set) rsp->set_uid (uid);
   send (rsp);
 }
