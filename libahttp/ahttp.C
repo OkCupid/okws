@@ -334,6 +334,13 @@ ahttpcon::input ()
 
   // stop DOS attacks?
   if (recv_limit > 0 && bytes_recv > recv_limit) {
+
+    warn << "Channel limit exceded ";
+    set_remote_ip ();
+    if (remote_ip)
+      warn << remote_ip;
+    warn << "\n";
+
     eof = true;
     fail ();
     return;
