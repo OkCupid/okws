@@ -226,6 +226,17 @@ okwc_http_t::parsed_chunk_hdr (int status)
   }
 }
 
+static bool
+convertint16 (const str &s, u_int *i)
+{
+  char *end;
+  u_int res = strtoi64 (s.cstr (), &end, 16);
+  if (*end)
+    return false;
+  *i = res;
+  return true;
+}
+
 void
 okwc_chunker_t::parse_guts ()
 {
@@ -236,7 +247,7 @@ okwc_chunker_t::parse_guts ()
       {
 	str sz_str;
 	r = delimit_word (&sz_str);
-	if (r == ABUF_OK && !convertint (sz_str, &sz, 16))
+	if (r == ABUF_OK && !convertint16 (sz_str, &sz))
 	  r = ABUF_PARSE_ERR;
 	break;
       }
@@ -271,18 +282,11 @@ okwc_http_t::body_parse_continue ()
 }
 
 void
-okwc_http_t::puke (abuf_stat_t s)
-{
-  finish (HTTP_SRV_ERROR);
-}
-
-void
 okwc_http_t::body_chunk_finish ()
 {
   finished_meal ();
   finish (HTTP_OK);
 }
-
 
 void
 okwc_http_bigstr_t::ate_chunk (str bod)
@@ -319,7 +323,7 @@ okwc_http_bigstr_t::finish2 (int status)
 }
 
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
-			  int v, cgi_t *ock, cgi_t *incook)
+			  int v, cgi_t *ock, okwc_cookie_set_t *incook)
   : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
     hdr (&abuf, incook ? incook : &resp->cookies, OKWC_SCRATCH_SZ, scratch),

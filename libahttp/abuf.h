@@ -32,7 +32,7 @@
 
 typedef enum { ABUF_OK = 0, ABUF_PARSE_ERR = 1, ABUF_EOF = 2, 
 	       ABUF_OVERFLOW = 3, ABUF_WAIT = 4, ABUF_NOMATCH = 5,
-	       ABUF_CONTINUE = 6 } abuf_stat_t;
+	       ABUF_CONTINUE = 6, ABUF_COMPLETE = 7 } abuf_stat_t;
 
 #define ABUF_EOFCHAR  -0xffff0
 #define ABUF_WAITCHAR -0xffff1

@@ -103,6 +103,7 @@ public:
       noins (false) {}
 
   int get_contlen () const { return contlen; }
+  bool is_chunked () const ;
 
 protected:
   void parse_guts ();
@@ -110,7 +111,6 @@ protected:
   bool is_set_cookie () const 
   { return (key && key.len () == 10 && mystrlcmp (key, "set-cookie")); }
   void ext_parse_cb (int status);
-  bool is_chunked () const ;
 
 private:
   okwc_cookie_set_t *cookie;
@@ -140,8 +140,10 @@ private:
 		 DONE = 4 } state_t;
 public: 
   okwc_chunker_t (abuf_t *a, size_t bfln, char *b)
-    : http_hdr_t (a, bfln, b), sz (0), state (START), {}
-  size_t get_sz ();
+    : http_hdr_t (a, bfln, b), sz (0), state (START) {}
+  size_t get_sz () const { return sz; }
+protected:
+  void parse_guts ();
 private:
   size_t sz;
   state_t state;
@@ -155,7 +157,7 @@ public:
 		 OKWC_HTTP_BODY = 3 } state_t;
 		 
   okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, 
-	       int v, cgi_t *ock, cgi_t *incook = NULL);
+	       int v, cgi_t *ock, okwc_cookie_set_t *incook = NULL);
   virtual ~okwc_http_t () {}
 
   void make_req ();
@@ -167,13 +169,15 @@ protected:
 
   void body_parse ();
   void body_parse_continue ();
-  void body_parse_done ();
-
+  void body_chunk_finish ();
   void parsed_chunk_hdr (int status);
-
+  void start_chunker ();
   void finish (int status);
-  virtual void finish2 (int status) = 0;
-  virtual void cancel2 () = 0;
+
+  virtual void finish2 (int status) = 0;    // finish a body prase
+  virtual void cancel2 () = 0;              // cancel current body parse
+  virtual void eat_chunk (size_t s) = 0;    // process a chunk of body
+  virtual void finished_meal () = 0;        // after done eating chunk
 
   ptr<ahttpcon> x;
   str filename;
@@ -190,7 +194,6 @@ protected:
   state_t state;
   ptr<bool> cancel_flag;
   okwc_chunker_t *chunker;
-  okwc_req_t *req;
 };
 
 //
@@ -200,7 +203,7 @@ protected:
 //
 class okwc_http_bigstr_t : public okwc_http_t {
 public:
-  okwc_http_bigstr_t (okwc_req_t *r, ptr<ahttpcon> xx, const str &f, 
+  okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f, 
 		      const str &h, okwc_cb_t c, int v, cgi_t *ock);
 
 protected:
@@ -208,6 +211,9 @@ protected:
   void body_parsed (str bod);
   void finish2 (int status);
   void cancel2 ();
+  void eat_chunk (size_t s);
+  void ate_chunk (str s);
+  void finished_meal ();
 
 private:
   async_dumper_t body;
