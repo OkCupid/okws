@@ -656,7 +656,8 @@ if test "$with_mysql" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
 	cdirs="$with_mysql ${prefix} ${prefix}/mysql /usr /usr/local"
-	dirs="$cdirs /usr/local/include/mysql /usr/local/mysql/include "
+	dirs="$cdirs /usr/local/include/mysql /usr/local/mysql/include \
+               /usr/include/mysql "
 	AC_CACHE_CHECK(for mysql.h, sfs_cv_mysql_h,
 	[for dir in " " $dirs; do
 		case $dir in
@@ -675,7 +676,8 @@ if test "$with_mysql" != "no"; then
 		sfs_cv_mysql_h=" "
 	fi
 	if test "${sfs_cv_mysql_h+set}"; then
-		dirs="$cdirs /usr/local/lib/mysql /usr/local/mysql/lib "
+		dirs="$cdirs /usr/local/lib/mysql /usr/local/mysql/lib \
+                      /usr/lib/mysql "
 		AC_CACHE_CHECK(for libmysqlclient, sfs_cv_libmysqlclient,
 		[for dir in "" " " $dirs; do
 			case $dir in
