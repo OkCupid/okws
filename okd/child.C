@@ -66,14 +66,16 @@ okch_t::clone (ref<ahttpcon_clone> xc)
       //warn << "queued con\n"; // XX debug
       conqueue.push_back (xc);
     }
-  } else if (per_svc_nfd_in_xit > int (ok_svc_fd_quota)) {
+  } else if (ok_svc_fd_quota && per_svc_nfd_in_xit > int (ok_svc_fd_quota)) {
     // warn << "debug: fail: " << per_svc_nfd_in_xit << "\n";
     warn << "**WARNING: Service " << servpath << " appears unresponsive!\n";
     myokd->error (xc, HTTP_UNAVAILABLE, make_generic_http_req (servpath));
   } else {
-    // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
-    per_svc_nfd_in_xit ++;
-    xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd));
+    if (ok_svc_fd_quota) {
+      // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
+      per_svc_nfd_in_xit ++;
+      xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd));
+    }
     x->clone (xc);
   }
 }

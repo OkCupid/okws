@@ -408,16 +408,32 @@ is_safe (const str &d)
 }
 
 char *const *
-to_argv (const vec<str> &v, u_int *c)
+to_argv (const vec<str> &v, u_int *c, char *const *seed)
 {
   size_t sz = v.size ();
+
+  //
+  // seed the output with the contents of "seed", if it was
+  // specified;  thus, we need to allocate space for it.
+  //
+  if (seed) 
+    for (char *const *s = seed; *s; s++) sz++;
   char **argv = New (char *)[sz+1];
   argv[sz] = NULL;
-  if (c) *c = sz;
+  char **argvp = argv;
+
+  //
+  // fill in the seeded content
+  if (seed)
+    for (char *const *s = seed; *s; s++) 
+      *(argvp++) = *s;
+
   for (u_int i = 0; i < sz; i++) {
-    argv[i] = New char[v[i].len () + 1];
-    memcpy (argv[i], v[i].cstr (), v[i].len () + 1);
+    *argvp = New char[v[i].len () + 1];
+    memcpy (*(argvp++), v[i].cstr (), v[i].len () + 1);
   }
+
+  if (c) *c = sz;
   return argv;
 }
 

@@ -37,6 +37,8 @@ svcmk(sha2)
 svcmk(google)
 svcmk(pt1)
 dnl svcmk(pt2)
+svcmk(pt3)
+svcmk(pt4)
 svcmk(upload)
 svcmk(bomb)
 

@@ -34,6 +34,8 @@
 #include "pubutil.h"
 #include "okconst.h"
 
+extern char * const * environ;
+
 void
 okld_t::set_signals ()
 {
@@ -54,6 +56,7 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
 
   u_int argc;
   char *const *argv = NULL;
+  char *const *envp = NULL;
   int ch;
 
   //
@@ -118,7 +121,11 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   exe = apply_container_dir (service_bin, bin);
   httppath = re_fslash (uri);
   warn << "Service: URI(" << httppath << ") --> unix(" << exe << ")\n";
-  vNew okld_ch_t (exe, httppath, this, loc, u, to_argv (env));
+
+  if (env.size ()) 
+    envp = to_argv (env, NULL, environ);
+
+  vNew okld_ch_t (exe, httppath, this, loc, u, envp);
   return;
 
  usage:
@@ -244,7 +251,7 @@ okld_t::parseconfig (const str &cf)
   }
 
   if (ok_svc_fd_quota > okd_fds_low_wat) {
-    warn << "SvcFDQuota must be less than OkdFDLowWat\n";
+    warn << "ServiceFDQuota must be less than OkdFDLowWat\n";
     errors = true;
   }
 
