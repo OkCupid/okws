@@ -92,6 +92,12 @@ sth_prepared_t::fetch2 (bool bnd)
 void
 mystmt_t::alloc_res_arr (u_int n)
 {
+  // reallocate if the old array is not big enough.
+  if (res_n < n && res_arr) {
+    delete [] res_arr;
+    res_arr = NULL;
+  }
+
   res_n = n;
   if (!res_arr)
     res_arr = New mybind_res_t[n];
