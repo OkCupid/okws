@@ -213,7 +213,6 @@ new_threadv (void *av)
   arg->mtd->new_thread (arg);
 }
 
-#ifdef (HAVE_PTHREADS || HAVE_PTH)
 static void *
 vnew_threadv (void *av)
 {
@@ -221,7 +220,6 @@ vnew_threadv (void *av)
   new_threadv (av);
   return (NULL);
 }
-#endif
 
 static int
 inew_threadv (void *av)
@@ -229,6 +227,15 @@ inew_threadv (void *av)
   warn << "inew_threadv called.\n";  // debug
   new_threadv (av);
   return 0;
+}
+
+//
+// blah blah blah XXXX blah blah
+void foo ()
+{
+  new_threadv (NULL);
+  vnew_threadv (NULL);
+  inew_threadv (NULL);
 }
 
 mtd_thread_t *
