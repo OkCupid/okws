@@ -57,7 +57,7 @@ dir_security_check (const str &dir)
 }
 
 bool
-jailable_t::jail_mkdir (const str &d, int mode, ok_usr_t *u, ok_grp_t *g)
+jailable_t::jail_mkdir (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g)
 {
   if (uid) {
     warn << "can't call run jail_mkdir as root\n";
@@ -97,7 +97,7 @@ jailable_t::jail_mkdir (const str &d, int mode, ok_usr_t *u, ok_grp_t *g)
 
 static rxx slash ("/+");
 bool
-jailable_t::jail_mkdir_p (const str &d, int mode, ok_usr_t *u, ok_grp_t *g)
+jailable_t::jail_mkdir_p (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g)
 {
   vec<str> subdirs;
   int rc;
@@ -120,7 +120,7 @@ jailable_t::jail_mkdir_p (const str &d, int mode, ok_usr_t *u, ok_grp_t *g)
 }
 
 bool
-jailable_t::fix_stat (const str &d, int mode, ok_usr_t *u, ok_grp_t *g,
+jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g,
 		      const struct stat &sb)
 {
   if (uid)
@@ -173,7 +173,7 @@ jailable_t::fix_stat (const str &d, int mode, ok_usr_t *u, ok_grp_t *g,
 #define JAIL_CP_BUFSIZE 1024
 
 bool
-jailable_t::jail_cp (const str &fn, int mode, ok_usr_t *u, ok_grp_t *g)
+jailable_t::jail_cp (const str &fn, mode_t mode, ok_usr_t *u, ok_grp_t *g)
 {
   if (!will_jail ())
     return true;

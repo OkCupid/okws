@@ -727,7 +727,7 @@ dirs="$cdirs /usr/local/include/pth /usr/local/include "
 AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
 [for dir in " " $dirs; do
 	case $dir in 
-		" ") iflags="-I" ;;
+		" ") iflags=" " ;;
 		*) iflags="-I${dir}" ;;
 	esac
 	CFLAGS="${ac_save_CFLAGS} $iflags"
@@ -757,9 +757,8 @@ if test "${sfs_cv_pth_h+set}"; then
 	dirs=`echo $sfs_cv_pth_h | sed 's/include/lib/' `
 	dirs=`echo $dirs | sed 's/^-I//' `
 	AC_CACHE_CHECK(for libpth, sfs_cv_libpth,
-	[for dir in "" " " $dirs; do
+	[for dir in " " $dirs; do
 		case $dir in
-			"") lflags=" " ;;
 			" ") lflags="-lpth" ;;
 			*) lflags="-L${dir} -lpth" ;;
 		esac
@@ -767,6 +766,17 @@ if test "${sfs_cv_pth_h+set}"; then
 		AC_TRY_LINK([#include <pth.h>],
 			pth_init ();, 
 			sfs_cv_libpth=$lflags; break)
+
+		dnl
+		dnl Linux seems to require linking against -ldl in
+		dnl certain cases.  May as well give it a try
+		dnl
+                lflags="$lflags -ldl";
+		LIBS="$ac_save_LIBS $lflags"
+		AC_TRY_LINK([#include <pth.h>],
+			pth_init ();, 
+			sfs_cv_libpth=$lflags; break)
+                
 	done
 	if test -z ${sfs_cv_libpth+set}; then
 		sfs_cv_libpth="no"

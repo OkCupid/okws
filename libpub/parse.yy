@@ -55,13 +55,13 @@
 %token T_BGCCE
 %token T_INIT_PDL
 
-%token T_INT_ARR;
-%token T_UINT_ARR;
-%token T_CHAR_ARR;
-%token T_INT16_ARR;
-%token T_UINT16_ARR;
-%token T_INT64_ARR;
-%token T_UINT64_ARR;
+%token T_INT_ARR
+%token T_UINT_ARR
+%token T_CHAR_ARR
+%token T_INT16_ARR
+%token T_UINT16_ARR
+%token T_INT64_ARR
+%token T_UINT64_ARR
 
 %type <str> var str1 bname 
 %type <num> number

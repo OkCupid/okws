@@ -7,6 +7,9 @@
 
 #include "pub.h"
 
+#define INT64_MAX   0x7fffffffffffffffLL 
+#define INT64_MIN (-0x7fffffffffffffffLL - 1)
+
 class parr_int_t;
 class parr_char_t;
 class parr_int16_t;
@@ -214,9 +217,9 @@ public:
 
 class parr_int64_t : public parr_ival_tmplt_t<int64_t> {
 public:
-  parr_int64_t () : parr_ival_tmplt_t<int64_t> (LLONG_MIN, LLONG_MAX) {}
+  parr_int64_t () : parr_ival_tmplt_t<int64_t> (INT64_MIN, INT64_MAX) {}
   parr_int64_t (const xpub_parr_int64_t &x) 
-    : parr_ival_tmplt_t<int64_t> (LLONG_MIN, LLONG_MAX) { fill (x); }
+    : parr_ival_tmplt_t<int64_t> (INT64_MIN, INT64_MAX) { fill (x); }
   ptr<parr_int64_t> to_int64 () { return mkref (this); }
   int64_t operator[] (u_int i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;

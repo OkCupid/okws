@@ -39,13 +39,13 @@ public:
   str jail2real (const str &fn, bool chrt = true) const;
   str nest_jails (const str &path) const;
   bool will_jail () const { return (jailed || (jaildir && !uid)); }
-  bool jail_mkdir (const str &d, int mode, ok_usr_t *u, ok_grp_t *g);
-  bool jail_mkdir_p (const str &d, int mode, ok_usr_t *u, ok_grp_t *g);
-  bool jail_cp (const str &fn, int mode, ok_usr_t *u, ok_grp_t *g);
+  bool jail_mkdir (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g);
+  bool jail_mkdir_p (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g);
+  bool jail_cp (const str &fn, mode_t  mode, ok_usr_t *u, ok_grp_t *g);
   bool is_superuser () const { return uid == 0; }
   int get_uid () const { return uid; }
 protected:
-  bool fix_stat (const str &d, int mode, ok_usr_t *u, ok_grp_t *g,
+  bool fix_stat (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g,
 		 const struct stat &sb);
   str jaildir;
   bool jailed;
