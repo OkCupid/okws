@@ -150,7 +150,7 @@ pub_parser_t::parse2 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t t)
       pf->add_section ();
     pop_file ();
     
-    if (pf->err) 
+    if (pf->err != PUBSTAT_OK) 
       goto parse_fail;
 
     r->close ();
@@ -163,8 +163,7 @@ pub_parser_t::parse2 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t t)
 
  parse_fail:
   PWARN(fn << ": parse failed");
-  delete pf;
-  if (ss) delete ss;
+  delete pf; // this will delete ss, too
   return NULL;
   
 }

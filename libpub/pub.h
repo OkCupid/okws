@@ -60,7 +60,8 @@ typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_WEC = 6,
                PFILE_TYPE_CONF = 7 } pfile_type_t;
 
-typedef enum { PUBSTAT_OK = 0, PUBSTAT_FNF = 1 } pubstat_t;
+typedef enum { PUBSTAT_OK = 0, PUBSTAT_FNF = 1, 
+	       PUBSTAT_PARSE_ERROR = 3 } pubstat_t;
 
 typedef enum { EXPLORE_PARSE = 0, EXPLORE_FNCALL = 1,
 	       EXPLORE_CONF = 2 } pub_exploremode_t;
@@ -87,8 +88,8 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 
 /* shortcut macros for common operations on the global pub object */
 #define PWARN(x)   parser->pwarn (strbuf () << x)
-#define PARSEFAIL  parser->parseerr = false
 #define PFILE      parser->bpf->file
+#define PARSEFAIL  PFILE->err = PUBSTAT_PARSE_ERROR;
 #define PLINC      PFILE->inc_lineno ()
 #define PLINENO    (PFILE->get_lineno ())
 #define PSECTION   PFILE->section
@@ -1285,7 +1286,7 @@ class pub_parser_t : public pub_t
 {
 public:
   pub_parser_t () : pub_t (), gvars (NULL), tag (NULL), 
-		    lasttag (NULL), parseerr (false),
+		    lasttag (NULL), 
 		    space_flag (false), xset_collect (false), 
 		    jaildir (""), jailed (false), jm (JAIL_NONE) {}
 
@@ -1325,7 +1326,6 @@ public:
   pfile_func_t *func;
   pfile_html_tag_t *tag, *lasttag;
 
-  bool parseerr;
   bool space_flag;
   int last_tok;
 

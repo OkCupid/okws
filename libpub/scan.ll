@@ -375,7 +375,8 @@ yyerror (str msg)
   if (!msg) 
     msg = "bailing out due to earlier warnings";
   PWARN(msg);
-  exit (1);
+  PARSEFAIL;	
+  yyterminate ();
   return 0;
 }
 

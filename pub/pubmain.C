@@ -157,8 +157,10 @@ main (int argc, char *argv[])
     warn << infile << ": bailing out due to parse errors\n";
     err = true;
   } else {
+    /*
     if (ppt->parseerr)
       err = true;
+    */
 #ifdef PDEBUG 
     dumper_t d;
     bnd->dump (&d);

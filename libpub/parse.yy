@@ -402,11 +402,13 @@ guy_func: guy_funcname
 	}
 	'(' arglist ')' ';'
 	{
-	  if (!$1->add (ARGLIST))
+	  if (!$1->add (ARGLIST)) {
 	    PARSEFAIL;
-	  $1->explore (EXPLORE_PARSE);
-	  if (!$1->validate ())
-	    PARSEFAIL;
+          } else {
+	    $1->explore (EXPLORE_PARSE);
+	    if (!$1->validate ())
+	      PARSEFAIL;
+          }
 	  ARGLIST = NULL;
 	  $$ = $1;
 	}
