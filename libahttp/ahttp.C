@@ -402,7 +402,12 @@ ahttpcon_clone::recvd_bytes (int n)
       (*ccb) (s, delimit_status);
       ccb = NULL;
     }
-    if (s)
+
+    // Tricky! Need to check decloned flag again, because it might
+    // have been set from within (*ccb). If the header is more than
+    // one packet, then we should not be turning off reads, since the
+    // header needs to be parsed for logging purposes
+    if (s && !decloned)
       end_read ();
     else {
       //
