@@ -56,7 +56,7 @@ private:
 class okmgr_logturn_t : public okmgr_clnt_t {
 public:
   okmgr_logturn_t (const vec<str> &h) ;
-  void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> x)
+  void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> x);
 };
 
 class okmgr_launch_t : public okmgr_clnt_t {

@@ -1493,9 +1493,9 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     dnl LIBSFS=${with_sfs}/libsfs/libsfs.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
     RPCC=${with_sfs}/rpcc/rpcc
-elif test -f ${with_sfs}/include/sfs/autoconf.h \
+elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
 	-a -f ${with_sfs}/lib/sfs${sfstagdir}/libasync.la; then
-    sfsincludedir="${with_sfs}/include/sfs"
+    sfsincludedir="${with_sfs}/include/sfs${sfstagdir}"
     sfslibdir=${with_sfs}/lib/sfs${sfstagdir}
     if egrep '#define DMALLOC' ${sfsincludedir}/autoconf.h > /dev/null; then
 	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes

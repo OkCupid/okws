@@ -146,7 +146,7 @@ public:
   void relaunch (const ok_progs_t &x, okrescb cb);
 
   void turnlog (okrescb cb);
-  void turnlog_cb (ptr<bool> s, okrescb cb);
+  void turnlog_cb (ptr<bool> s, okrescb cb, clnt_stat err);
 
   void strip_privileges ();
 
