@@ -63,14 +63,14 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
 void
 okd_mgrsrv_t::relaunch (svccb *sbp)
 {
-  ok_progs_t *p = sbp->template getarg<ok_progs_t> ();
+  ok_progs_t *p = sbp->Xtmpl getarg<ok_progs_t> ();
   myokd->relaunch (*p, wrap (replystatus, sbp));
 }
 
 void
 okd_mgrsrv_t::repub (svccb *sbp)
 {
-  xpub_fnset_t *r = sbp->template getarg<xpub_fnset_t> ();
+  xpub_fnset_t *r = sbp->Xtmpl getarg<xpub_fnset_t> ();
   myokd->repub (*r, wrap (replystatus, sbp));
 }
 

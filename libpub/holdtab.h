@@ -33,12 +33,12 @@ template<class C, class A>
 class holdvec_t : public vec<C> {
 public:
   holdvec_t () {}
-  ~holdvec_t () { clear (); }
+  ~holdvec_t () { vec<C>::clear (); }
 
   void finish (A a)
   {
-    while (size ())
-      (* pop_front ()) (a);
+    while (vec<C>::size ())
+      (* vec<C>::pop_front ()) (a);
   }
 };
 

@@ -510,6 +510,11 @@ okd_t::newserv (int fd)
 void
 okd_t::launch3 ()
 {
+  if (allports.size () == 0) {
+    warn << "No listen addr/ports specified; assuming *:80\n";
+    allports.push_back (listenport);
+  }
+
   for (u_int i = 0; i < allports.size () ; i++) {
     int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
     if (fd < 0)
@@ -790,7 +795,7 @@ s_custom1_cb (ok_custom_data_t data, okch_t *ch)
 void
 okd_t::custom1_in (svccb *sbp)
 {
-  ok_custom_arg_t *c = sbp->template getarg<ok_custom_arg_t> ();
+  ok_custom_arg_t *c = sbp->Xtmpl getarg<ok_custom_arg_t> ();
   custom1_in (*c, wrap (replystatus, sbp));
 }
 

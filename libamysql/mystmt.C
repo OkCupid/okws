@@ -182,7 +182,7 @@ void
 sth_parsed_t::alloc_bufs ()
 {
   if (!bufs && n_iparam) {
-    bufs = New (char *)[n_iparam];
+    bufs = New char *[n_iparam];
     memset ((void *)bufs, 0, sizeof (char *) * n_iparam);
     lens = New u_int[n_iparam];
     memset ((void *)lens, 0, sizeof (int) * n_iparam);

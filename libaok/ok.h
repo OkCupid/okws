@@ -26,10 +26,11 @@
 #define _LIBAOK_OK_H
 
 #include "arpc.h"
+#include "pub.h"
+#include "parr.h"
 #include "ahttp.h"
 #include "cgi.h"
 #include "resp.h"
-#include "pub.h"
 #include "okprot.h"
 #include "inhdr.h"
 #include "pslave.h"
@@ -79,6 +80,7 @@ public:
   ok_base_t (const str &h = NULL, int fd = -1)
     : jailable_t (ok_jaildir_top), version (ok_version),
       listenport (ok_dport),
+      listenaddr_str ("*"),
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
       reported_name (ok_wsname),

@@ -21,9 +21,9 @@
  *
  */
 
+#include "async.h"
 #include "amysql.h"
 #include "mystmt.h"
-#include "async.h"
 
 bool 
 mysql_t::connect (const str &db, const str &u, const str &h,

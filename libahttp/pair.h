@@ -25,6 +25,7 @@
 #ifndef _LIBAHTTP_PAIR_H
 #define _LIBAHTTP_PAIR_H
 
+#include "okconst.h"
 #include "parseopt.h"
 #include "clist.h"
 

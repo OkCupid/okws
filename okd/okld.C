@@ -21,10 +21,11 @@
  *
  */
 
-#include "okld.h"
 #include <sys/types.h>
 #include <grp.h>
 #include <unistd.h>
+#include "okconst.h"
+#include "okld.h"
 #include "parseopt.h"
 #include "sfsmisc.h"
 #include "okprot.h"
@@ -32,7 +33,6 @@
 #include "pub.h"
 #include "xpub.h"
 #include "pubutil.h"
-#include "okconst.h"
 #include "rxx.h"
 
 extern char * const * environ;
@@ -321,7 +321,7 @@ okld_t::parseconfig (const str &cf)
     .add ("OklogdGroup", &logd_parms.group)
     .add ("UnsafeMode", &unsafe_mode)
     .add ("SafeStartup", &safe_startup_fl)
-    .add ("FilterCGI", &ok_filter_cgi, XSSFILT_NONE, XSSFILT_ALL)
+    .add ("FilterCGI", &ok_filter_cgi, int (XSSFILT_NONE), int (XSSFILT_ALL))
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockDaemon", &mmcd)
     .add ("MmapClockFile", &mmc_file)
@@ -409,6 +409,12 @@ okld_t::parseconfig (const str &cf)
       (ok_svc_fds_low_wat == 0 || ok_svc_fds_low_wat > ok_svc_fds_high_wat)) {
     warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
     errors = true;
+  }
+
+  if (allports.size () == 0) {
+    warn << "No listen ports given; assuming default port (80)\n";
+    allports.push_back (listenport);
+    allports_map.insert (listenport);
   }
 
   if (!check_services_and_aliases () || !check_ports () 

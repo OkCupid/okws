@@ -224,7 +224,8 @@ phash_t::to_xdr (xpubhash_t *x) const
 }
 
 pbinding_t::pbinding_t (const xpub_pbinding_t &x) 
-  : fn (x.fn), hsh (New refcounted<phash_t> (x.hash.base ())) {}
+  : fn (x.fn), hsh (New refcounted<phash_t> (x.hash.base ())), 
+		      toplev (false) {}
 
 void
 bindtab_t::unbind (const pbinding_t *p)
@@ -418,7 +419,7 @@ to_argv (const vec<str> &v, u_int *c, char *const *seed)
   //
   if (seed) 
     for (char *const *s = seed; *s; s++) sz++;
-  char **argv = New (char *)[sz+1];
+  char **argv = New char * [sz+1];
   argv[sz] = NULL;
   char **argvp = argv;
 

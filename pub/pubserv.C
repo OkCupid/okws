@@ -86,7 +86,7 @@ pubserv_t::getfile (svccb *sbp)
 {
   str err;
   xpub_getfile_res_t res (XPUB_STATUS_OK);
-  xpubhash_t *r = sbp->template getarg<xpubhash_t> ();
+  xpubhash_t *r = sbp->Xtmpl getarg<xpubhash_t> ();
   phashp_t hsh = phash_t::alloc (*r);
   pfile_t *f = parser->getfile (hsh);
   if (!f) res.set_status (XPUB_STATUS_NOENT);
@@ -97,7 +97,7 @@ pubserv_t::getfile (svccb *sbp)
 void
 pubserv_t::lookup (svccb *sbp)
 {
-  xpub_fn_t *x = sbp->template getarg<xpub_fn_t> ();
+  xpub_fn_t *x = sbp->Xtmpl getarg<xpub_fn_t> ();
   pbinding_t *bnd = parser->to_binding (*x);
   xpub_lookup_res_t res (XPUB_STATUS_OK);
   bpfcp_t bpf;
@@ -116,7 +116,7 @@ pubserv_t::lookup (svccb *sbp)
 void
 pubserv_t::pubfiles (svccb *sbp)
 {
-  xpub_fnset_t *f =  sbp->template getarg<xpub_fnset_t> ();
+  xpub_fnset_t *f =  sbp->Xtmpl getarg<xpub_fnset_t> ();
   u_int lim = f->files.size ();
   pub_res_t res;
   xpub_result_t pres;

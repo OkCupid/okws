@@ -256,3 +256,9 @@ OKD v0.2
  - bug in file upload -- hangs if channel limit exceeded.
  - clean up nasty pub global variables
  - bugs when logging reqs that are too big
+
+ - bug: when a service crashes, and okd queues up connections, those 
+   connections might be bad by the time the service comes back up.  in 
+   this case, okd should not send failed connections, or the service should 
+   not call fail if a bad file descriptor was received.
+

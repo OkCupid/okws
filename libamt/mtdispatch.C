@@ -502,7 +502,7 @@ ssrv_client_t::dispatch (svccb *s)
   else {
     u_int32_t procno = s->proc ();
     if (txa_prog && txa_prog->get_login_rpc () == procno) {
-	txa_login_arg_t *arg = s->template getarg<txa_login_arg_t> ();
+	txa_login_arg_t *arg = s->Xtmpl getarg<txa_login_arg_t> ();
 	authtoks.clear ();
 	for (u_int i = 0; i < arg->size (); i++) {
 	  str tok ((*arg)[i].base (), (*arg)[i].size ());

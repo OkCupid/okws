@@ -27,6 +27,7 @@
 #include "pubutil.h"
 #include "parseopt.h"
 #include "resp.h"
+#include "rxx.h"
 #include <stdlib.h>
 
 
@@ -251,7 +252,7 @@ oksrvc_t::ctldispatch (svccb *v)
 void
 oksrvc_t::update (svccb *sbp)
 {
-  xpub_fnset_t *s = sbp->template getarg <xpub_fnset_t> ();
+  xpub_fnset_t *s = sbp->Xtmpl getarg <xpub_fnset_t> ();
   rpcli->publish (*s, wrap (this, &oksrvc_t::update_cb, sbp));
 }
 
@@ -273,7 +274,7 @@ oksrvc_t::remove (okclnt_t *c)
 void
 oksrvc_t::kill (svccb *v)
 {
-  oksig_t *sig = v->template getarg<oksig_t> ();
+  oksig_t *sig = v->Xtmpl getarg<oksig_t> ();
   switch (*sig) {
   case OK_SIG_HARDKILL:
     SVCWARN ("caught hard KILL signal; exitting immediately");
@@ -694,25 +695,47 @@ ok_base_t::okws_exec (const str &s) const
 void
 ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
 {
-  in_addr addr;
-  if (s.size () < 2 || s.size () > 3 ||
-      !inet_aton (s[1], &addr) ||
-      (s.size () == 3 && !convertint (s[2], &listenport))) {
-    warn << loc << ": usage: BindAddr addr [port]\n";
-    *errp = true;
-    return;
-  }
-  if (allports_map[listenport]) {
-    warn << loc << ": repeated port #: " << listenport << "\n";
-    *errp = true;
-    return;
-  }
-  allports.push_back (listenport);
-  allports_map.insert (listenport);
+  static rxx addr_rxx ("(\\*|[0-9.]+)(:([0-9]+))?");
 
-  listenaddr_str = s[1];
-  listenaddr = ntohl (addr.s_addr);
-  bind_addr_set = true;
+  in_addr addr;
+  if (s.size () == 3) {
+    if (!inet_aton (s[1], &addr) || !convertint (s[2], &listenport) ||
+	listenport > OK_PORT_MAX) {
+      warn << loc << ": usage: BindAddr addr [port]\n";
+      *errp = true;
+    } else {
+      listenaddr_str = s[1];
+      listenaddr = ntohl (addr.s_addr);
+    }
+  } else if (s.size () == 2) {
+    if (!addr_rxx.match (s[1]) || 
+	(addr_rxx[3] && (!convertint (addr_rxx[3], &listenport) || 
+			 listenport > OK_PORT_MAX)) ||
+	(addr_rxx[1] != "*" && !inet_aton (addr_rxx[1], &addr))) {
+      warn << loc << ": usage: BindAddr (<addr>|*)(:<port>)?\n";
+      *errp = true;
+    } else {
+      if (addr_rxx[1] != "*") {
+	listenaddr_str = addr_rxx[1];
+	warn << "addr: " << listenaddr_str << "\n";
+	listenaddr = ntohl (addr.s_addr);
+      }
+    }
+  } else {
+    warn << loc << ": usage: BindAddr (<addr>|*)(:<port>)?\n";
+    *errp = true;
+  }
+  if (!*errp) {
+    if (allports_map[listenport]) {
+      warn << loc << ": repeated port #: " << listenport << "\n";
+      *errp = true;
+      return;
+    }
+    allports.push_back (listenport);
+    allports_map.insert (listenport);
+    
+    bind_addr_set = true;
+  }
 }
 
 void

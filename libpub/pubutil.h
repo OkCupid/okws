@@ -90,7 +90,7 @@ template<> struct equals<phashp_t> {
 };
 
 struct pbinding_t { // binds filenames to content-hashes
-  pbinding_t () {}
+  pbinding_t () : toplev (false) {}
   pbinding_t (const pfnm_t &f, const phashp_t &h, bool tl = false) 
     : fn (f), hsh (h), toplev (tl) {}
   pbinding_t (const xpub_pbinding_t &x);

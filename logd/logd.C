@@ -478,7 +478,7 @@ void
 logd_t::fastlog (svccb *sbp)
 {
   bool ret = true;
-  oklog_fast_arg_t *fa = sbp->template getarg<oklog_fast_arg_t> ();
+  oklog_fast_arg_t *fa = sbp->Xtmpl getarg<oklog_fast_arg_t> ();
   assert (access);
   assert (error);
   access->flush (fa->access);
@@ -490,7 +490,7 @@ void
 logd_t::log (svccb *sbp)
 {
   bool ret = true;
-  oklog_arg_t *la = sbp->template getarg<oklog_arg_t> ();
+  oklog_arg_t *la = sbp->Xtmpl getarg<oklog_arg_t> ();
   switch (la->typ) {
   case OKLOG_OK:
     ret = access_log (*la->ok);

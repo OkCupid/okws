@@ -215,12 +215,15 @@ typedef ihash<const str, nvpair_t, &nvpair_t::nm, &nvpair_t::hlink> nvtab_t;
 
 class pval_w_t {
 public:
-  pval_w_t () : val (NULL), env (NULL), ival_flag (false) {}
+  pval_w_t () : val (NULL), int_err (INT_MIN), env (NULL), ival_flag (false),
+		ival (0) {}
   pval_w_t (pval_t *v, penv_t *e) 
-    : val (v), int_err (INT_MIN), env (e), ival_flag (false) {}
+    : val (v), int_err (INT_MIN), env (e), ival_flag (false), ival (0) {}
   pval_w_t (const str &n, penv_t *e)
-    : val (NULL), name (n), int_err (INT_MIN), env (e), ival_flag (false) {}
-  pval_w_t (int i) : val (NULL), env (NULL), ival_flag (true), ival (i) {}
+    : val (NULL), name (n), int_err (INT_MIN), env (e), ival_flag (false),
+      ival (0){}
+  pval_w_t (int i) : 
+    val (NULL), int_err (INT_MIN), env (NULL), ival_flag (true), ival (i) {}
 
   inline operator int() const { return to_int (); }
   inline operator str() const { return to_str () ; }
@@ -471,11 +474,11 @@ struct publist_t
 {
   void output (output_t *o, penv_t *en) const
   {
-    for (T *e = first; e; e = next (e)) e->output (o, en); 
+    for (T *e = clist_t<T,field>::first; e; e = next (e)) e->output (o, en); 
   }
   void dump (dumper_t *d) const
   {
-    for (T *e = first; e; e = next (e)) e->dump (d);
+    for (T *e = clist_t<T,field>::first; e; e = next (e)) e->dump (d);
   }
 };
 

@@ -259,7 +259,7 @@ okd_t::pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err)
 void
 okd_t::lookup (svccb *sbp)
 {
-  xpub_fn_t *x = sbp->template getarg<xpub_fn_t> ();
+  xpub_fn_t *x = sbp->Xtmpl getarg<xpub_fn_t> ();
   xpub_lookup_res_t res;
   if (pprox->lookup (*x, &res)) 
     sbp->replyref (res);
@@ -310,7 +310,7 @@ okch_t::repub_cb (ptr<ok_repub_t> rpb, clnt_stat err)
 void
 okd_t::getfile (svccb *sbp)
 {
-  xpubhash_t *xh = sbp->template getarg<xpubhash_t> ();
+  xpubhash_t *xh = sbp->Xtmpl getarg<xpubhash_t> ();
   phashp_t hsh = phash_t::alloc (*xh);
   xpub_getfile_res_t res;
   if (pprox->getfile (hsh, &res)) 

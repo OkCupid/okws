@@ -678,6 +678,8 @@ case $with_mode in
 		sfstag=$with_mode
 		okwstag=$with_mode
 		enable_shared=yes
+		DEBUG='-g -O'
+		CXXDEBUG='-g -O'
 		;;
 
 	"shared" )
@@ -699,13 +701,15 @@ case $with_mode in
 
 	"optmz" )
 		sfstag=lite
+		DEBUG='-g -O'
+		CXXDEBUG='-g -O'
 		;;
 
 	"profile" )
 		sfstag=$with_mode
 		okwstag=$with_mode
-		DEBUG='-g -pg -O2'
-		CXXDEBUG='-g -pg -O2'
+		DEBUG='-g -pg -O'
+		CXXDEBUG='-g -pg -O'
 		;;
 
 	* )
