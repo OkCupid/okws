@@ -63,6 +63,7 @@ class mybind_date_xassign_t {
 public:
   mybind_date_xassign_t () {}
   virtual void assign (const MYSQL_TIME &tm, okdatep_t d) = 0;
+  virtual void assign (okdatep_t d) = 0;
   virtual ~mybind_date_xassign_t () {}
 };
 
@@ -72,6 +73,7 @@ public:
   mbdxat_t (C *p) : mybind_date_xassign_t (), pntr (p) {}
   void assign (const MYSQL_TIME &tm, okdatep_t d) 
   { mysql_to_xdr (tm, pntr); d->set (*pntr); }
+  void assign (okdatep_t d) { d->to_xdr (pntr); }
 private:
   C *pntr;
 };
@@ -82,20 +84,37 @@ public:
 
   mybind_date_t (const x_okdate_t &d);
   mybind_date_t (const x_okdate_time_t &t) 
-    : mybind_t (MYSQL_TYPE_TIME), datep (okdate_t::alloc (t)), pntr (NULL) {}
+    : mybind_t (MYSQL_TYPE_TIME), datep (okdate_t::alloc (t)), pntr (NULL),
+      parsed (false) {}
   mybind_date_t (const x_okdate_date_t &d) 
-    : mybind_t (MYSQL_TYPE_DATE), datep (okdate_t::alloc (d)), pntr (NULL) {}
+    : mybind_t (MYSQL_TYPE_DATE), datep (okdate_t::alloc (d)), pntr (NULL),
+      parsed (false) {}
 
   mybind_date_t (x_okdate_t *d)
-    : mybind_t (MYSQL_TYPE_DATETIME), pntr (New mbdxat_t<x_okdate_t> (d)) {}
+    : mybind_t (MYSQL_TYPE_DATETIME), 
+      datep (New refcounted<okdate_t> ()), 
+      pntr (New mbdxat_t<x_okdate_t> (d)),
+      parsed (false) {}
   mybind_date_t (x_okdate_time_t *t)
-    : mybind_t (MYSQL_TYPE_TIME), pntr (New mbdxat_t<x_okdate_time_t> (t)) {}
+    : mybind_t (MYSQL_TYPE_TIME), 
+      datep (New refcounted<okdate_t> ()), 
+      pntr (New mbdxat_t<x_okdate_time_t> (t)),
+      parsed (false) {}
   mybind_date_t (x_okdate_date_t *d)
-    : mybind_t (MYSQL_TYPE_DATE), pntr (New mbdxat_t<x_okdate_date_t> (d)) {}
+    : mybind_t (MYSQL_TYPE_DATE), 
+      datep (New refcounted<okdate_t> ()), 
+      pntr (New mbdxat_t<x_okdate_date_t> (d)),
+      parsed (false) {}
 
   ~mybind_date_t () {}
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
-  void assign () { pntr->assign (tm, datep); }
+
+  void assign () 
+  { 
+    if (parsed) pntr->assign (datep);
+    else pntr->assign (tm, datep); 
+  }
+
   operator okdatep_t () const 
   { return isnull () ? static_cast<okdatep_t> (NULL) : datep; }
   bool read_str (const char *c, unsigned long l);
@@ -105,6 +124,7 @@ private:
   okdatep_t datep;
   mybind_date_xassign_t *pntr;
   u_long len;
+  bool parsed;
 };
 
 class mybind_str_t : public mybind_t {

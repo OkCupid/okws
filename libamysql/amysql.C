@@ -123,9 +123,10 @@ to_mysql_typ (const x_okdate_t &x)
 }
 
 mybind_date_t::mybind_date_t (okdatep_t d) 
-  : mybind_t (to_mysql_typ (*d)), datep (d), pntr (NULL) {}
+  : mybind_t (to_mysql_typ (*d)), datep (d), pntr (NULL), parsed (false) {}
 mybind_date_t::mybind_date_t (const x_okdate_t &d)
-  : mybind_t (to_mysql_typ (d)), datep (okdate_t::alloc (d)), pntr (NULL) {}
+  : mybind_t (to_mysql_typ (d)), datep (okdate_t::alloc (d)), pntr (NULL),
+    parsed (false) {}
 
 void
 mybind_date_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
@@ -171,6 +172,7 @@ mysql_to_xdr (const MYSQL_TIME &tm, x_okdate_date_t*x)
 bool
 mybind_date_t::read_str (const char *c, unsigned long)
 {
+  parsed = true;
   datep->set (c);
   return (!datep->err);
 }

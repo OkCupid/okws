@@ -74,21 +74,21 @@ okdate_t::set (const str &s)
     return;
   }
   err = false;
-
+  
   if (date_rxx[1]) {
     dt_tm |= OK_DATE;
-
+    
     assert (convertint (strip_zero(date_rxx[2]), &year) &&
-			convertint (strip_zero(date_rxx[3]), &mon) &&
-			convertint (strip_zero(date_rxx[4]), &mday));
+	    convertint (strip_zero(date_rxx[3]), &mon) &&
+	    convertint (strip_zero(date_rxx[4]), &mday));
   }
-
+  
   if (date_rxx[5]) {
     dt_tm |= OK_TIME;
-
+    
     assert (convertint (strip_zero(date_rxx[6]), &hour) &&
-			convertint (strip_zero(date_rxx[7]), &min) &&
-			convertint (strip_zero(date_rxx[8]), &sec));
+	    convertint (strip_zero(date_rxx[7]), &min) &&
+	    convertint (strip_zero(date_rxx[8]), &sec));
   }
 }
 
@@ -99,7 +99,7 @@ str
 okdate_t::strip_zero(const str& s) const
 {
   if (s[0] == '0') {
-	return substr(s, 1, s.len() - 1);
+    return substr(s, 1, s.len() - 1);
   }
 
   return s;
@@ -251,7 +251,7 @@ okdate_t::valid() const
   bool result = true;
   
   if (mon <= 0 || mon > 12) {
-	result = false;
+    result = false;
   }
 
   if (mday <= 0 || mday > 31) {
@@ -259,15 +259,15 @@ okdate_t::valid() const
   }
 
   if (mon == 2 && mday > 29) {
-	result = false;
+    result = false;
   }
-
+  
   if (mon == 4 || mon == 6 || mon == 9 || mon == 11) {
-	if (mday > 30) {
-	  result = false;
-	}
+    if (mday > 30) {
+      result = false;
+    }
   }
-
+  
   if (year <= 0 || year > 9999) {
     result = false;
   }
@@ -275,14 +275,14 @@ okdate_t::valid() const
   // leap year
   //
   if (mon == 2 && mday == 29) {
-	  // if not divisible by 4, then not a leap year
-	  //
-	  if (year % 4 != 0) {
-		  result = false;
-	  }
-	  else if ((year % 100 == 0) && (year % 400 != 0)) {
-		  result = false;
-	  }
+    // if not divisible by 4, then not a leap year
+    //
+    if (year % 4 != 0) {
+      result = false;
+    }
+    else if ((year % 100 == 0) && (year % 400 != 0)) {
+      result = false;
+    }
   }
   
   return result;
