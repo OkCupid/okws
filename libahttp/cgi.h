@@ -142,6 +142,9 @@ private:
 
 str expire_in (int d, int h, int m, int s);
 
+//
+// cookie_t is for setting OUTGOING cookies only.
+//
 class cookie_t : protected cgi_t
 {
 public:
@@ -152,8 +155,12 @@ public:
 							       
   cookie_t &add (const str &k, const str &v) 
   { insert (k, v, false); return (*this); }
+
+  // not sure why this isn't templated...
   cookie_t &add (const str &k, u_int i) { insert (k, i); return (*this); }
   cookie_t &add (const str &k, int i) { insert (k, i); return (*this); }
+  cookie_t &add (const str &k, u_int64_t i) { insert (k, i); return (*this); }
+  cookie_t &add (const str &k, int64_t i) { insert (k, i); return (*this); }
 
   cookie_t &set_expires (int d, int h, int m, int s)
   { return set_expires (expire_in (d, h, m, s)); }
