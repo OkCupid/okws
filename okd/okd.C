@@ -262,9 +262,13 @@ okd_t::strip_privileges ()
     if (setuid (okd_usr.getid ()) != 0)
       fatal << "could not setuid for " << okd_usr.getname () << "\n";
     assert (coredumpdir);
-    if (coredumpdir && chdir (coredumpdir.cstr ()) != 0)
+    if (coredumpdir && chdir (coredumpdir.cstr ()) != 0) {
       fatal << "startup aborted; could not chdir to coredump dir ("
 	    << coredumpdir << ")\n";
+    } else {
+      // debug code
+      warn << "changed to cumpdir: " << coredumpdir << "\n";
+    }
   }
 }
 
@@ -323,6 +327,15 @@ okd_t::launch3 ()
   close_on_exec (fd);
   listen (fd, ok_listen_queue_max);
   strip_privileges ();
+
+  //
+  // debug stuff 
+  // rats!
+  //
+  char path[MAXPATHLEN];
+  getcwd (path, MAXPATHLEN);
+  warn << "working directory: " << path << "\n";
+
   warn << "listening on " << listenaddr_str << ":" << listenport << "\n";
   fdcb (fd, selread, wrap (this, &okd_t::newserv, fd));
 }
