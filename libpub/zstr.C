@@ -317,6 +317,8 @@ zbuf::inflated_len () const
   u_int lim = zs.size ();
   for (u_int i = 0; i < lim; i++) 
     len += zs[i].to_str ().len ();
+
+  // add the stuff also in the buf that hasn't been compressed yet.
   len += f.tosuio ()->resid ();
   return len;
 }

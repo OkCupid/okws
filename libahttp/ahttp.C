@@ -840,8 +840,6 @@ suiolite_alloc (int mb, cbv::ptr s)
   return ret;
 }
 
-
-
 void
 ahttp_tab_t::reg (ahttpcon *a, ptr<bool> d)
 {

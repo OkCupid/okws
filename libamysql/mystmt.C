@@ -23,7 +23,8 @@
 
 #include "mystmt.h"
 
-#ifdef HAVE_MYSQL_BIND
+#if defined(HAVE_MYSQL_BINDFUNCS) && defined(HAVE_MYSQL_BIND)
+
 sth_prepared_t::~sth_prepared_t ()
 {
   if (bnds) delete [] bnds;
@@ -35,13 +36,13 @@ sth_prepared_t::execute (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 {
   if (b && arr && n) {
     bind (b, arr, n);
-    if (mysql_bind_param (sth, b)) {
+    if (mysql_stmt_bind_param (sth, b)) {
       err = strbuf ("bind error: ") << mysql_stmt_error (sth);
 	  errno_n = mysql_stmt_errno (sth);
       return false;
     }
   }
-  if (mysql_execute (sth)) {
+  if (mysql_stmt_execute (sth)) {
     err = strbuf ("execute error: ") << mysql_stmt_error (sth);
 	errno_n = mysql_stmt_errno (sth);
     return false;
@@ -57,7 +58,7 @@ sth_prepared_t::bind_result ()
   assert (res_arr);
   for (u_int i = 0; i < res_n; i++)
     res_arr[i].bind (&bnds[i]);
-  if (mysql_bind_result (sth, bnds)) {
+  if (mysql_stmt_bind_result (sth, bnds)) {
     err = strbuf ("bind failed: ") << mysql_stmt_error (sth);
 	errno_n = mysql_stmt_errno (sth);
     return false;
@@ -77,7 +78,7 @@ sth_prepared_t::fetch2 (bool bnd)
 {
   if (bnd && !bind_result ())
     return ADB_BIND_ERROR;
-  if (mysql_fetch (sth) == MYSQL_NO_DATA) {
+  if (mysql_stmt_fetch (sth) == MYSQL_NO_DATA) {
     err = strbuf("fetch error:  ") << mysql_stmt_error (sth);
     errno_n = mysql_stmt_errno (sth);
     return ADB_NOT_FOUND;
@@ -220,6 +221,7 @@ sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
 
   str q = b;
 //  warn << "query:  " << q << "\n";
+  last_qry = q;
   if (mysql_real_query (mysql, q.cstr (), q.len ())) {
     err = strbuf ("Query execution error: ") << mysql_error (mysql) << "\n";
 	errno_n = mysql_errno (mysql);

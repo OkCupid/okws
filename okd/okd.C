@@ -475,8 +475,6 @@ okd_t::newserv (int fd)
     
     xtab.reg (x, x->destroyed_p);
 
-    
-
     //
     // when this file descriptor is closed on our end, we need
     // to decrement nfd_in_xit

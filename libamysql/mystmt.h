@@ -57,7 +57,7 @@ protected:
   u_int my_res_n;
 };
 
-#ifdef HAVE_MYSQL_BIND
+#if defined(HAVE_MYSQL_BIND) && defined(HAVE_MYSQL_BINDFUNCS)
 class sth_prepared_t : public mystmt_t 
 {
 public:
