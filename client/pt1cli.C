@@ -5,6 +5,11 @@
 #include "stdlib.h"
 #include "time.h"
 
+typedef struct {
+  int qsz;
+  int tm;
+} exit_pair_t;
+
 static rxx hostport ("([^:]+)(:(\\d+))?");
 int nreq;
 int nreq_fixed;
@@ -12,8 +17,10 @@ int nconcur;
 int nrunning;
 bool sdflag;
 bool noisy;
+bool exited;
 
 timespec startt;
+timespec lastexit;
 
 typedef enum { OKWS = 1, PHP = 2, SEDA = 3 } pt1cli_mode_t;
 pt1cli_mode_t mode;
@@ -21,6 +28,7 @@ pt1cli_mode_t mode;
 void do_exit (int rc);
 int stop_timer (const timespec &t);
 vec<int> latencies;
+vec<exit_pair_t> exits;
 
 class hclient_t {
 public:
@@ -71,6 +79,14 @@ void
 hclient_t::cexit (int c)
 {
   if (noisy) warn << "at cexit: " << id << "\n";
+
+  if (exited) {
+    exits.push_back (exit_pair_t (nconcur - nrunning, stop_timer (lastexit)));
+    lastexit = tsnow;
+  } else {
+    exited = true;
+  }
+
   --nrunning;
   while (nrunning < nconcur && q.size ()) {
     if (noisy) warn << "launched queued req: " << id << "\n";
@@ -155,6 +171,9 @@ do_exit (int c)
   u_int sz = latencies.size ();
   for (u_int i = 0; i < sz; i++) 
     warnx << latencies[i] << "\n";
+  sz = exits.size ();
+  for (u_int i = 0; i < sz; i++)
+    warnx << exits[i].qsz << "," exits[i].tm << "\n";
   exit (c);
 }
 
@@ -211,6 +230,7 @@ main (int argc, char *argv[])
   bool delay = false;
   timespec startat;
   startat.tv_nsec = 0;
+  exited = false;
 
   while ((ch = getopt (argc, argv, "dc:n:spot:")) != -1) {
     switch (ch) {
