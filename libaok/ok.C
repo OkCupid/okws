@@ -205,6 +205,9 @@ oksrvc_t::init (int argc, char *argv[])
     int tmp;
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
+
+    if (getenv ("ARG_DEBUG"))
+      t->dump1 ();
   }
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
