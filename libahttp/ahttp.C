@@ -18,6 +18,7 @@ ahttpcon::clone (ref<ahttpcon_clone> xc)
   sendfd (xc->takefd ());
 }
 
+/*
 void
 ahttpcon::stopread () 
 {
@@ -26,6 +27,7 @@ ahttpcon::stopread ()
     rcbset = false;
   }
 }
+*/
 
 void
 ahttpcon::sendfd (int sfd, bool closeit)
@@ -116,13 +118,16 @@ ahttpcon::output ()
 void
 ahttpcon::setrcb (cbi::ptr cb)
 {
+  if (!cb) {
+    rcb = NULL;
+    return;
+  }
+    
   if (enable_selread ()) {
     rcb = cb;
-    if (rcb) {
-      int i = in->resid ();
-      if (i)
-	(*rcb) (i);
-    }
+    int i = in->resid ();
+    if (i)
+      (*rcb) (i);
   } else {
     (*cb) (0);
   }

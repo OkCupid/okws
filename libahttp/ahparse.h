@@ -39,6 +39,7 @@ protected:
   void parse_cb1 (int status);
   void finish (int status);
   void clnt_timeout ();
+  void stop_abuf ();
 
   ptr<ahttpcon> x;
   abuf_t abuf;

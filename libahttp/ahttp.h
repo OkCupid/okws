@@ -41,7 +41,7 @@ public:
   inline const str & get_remote_ip () const { return remote_ip; }
   virtual ~ahttpcon ();
   void sendfd (int sfd, bool closeit = true);
-  void stopread ();
+  // void stopread ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
   void clone (ref<ahttpcon_clone> xc);

@@ -34,9 +34,20 @@ http_parser_base_t::finish (int status)
     timecb_remove (tocb);
     tocb = NULL;
   }
+  // If we don't stop the abuf, we might be fooled into parsing
+  // again on an EOF.
+  stop_abuf ();
+
   // XXX - it's crucial not to touch anything inside the class after
   // this CB, since the cb might destroy this object
   (*cb) (status);
+}
+
+void
+http_parser_base_t::stop_abuf ()
+{
+  abuf.set_ignore_finish (false);
+  abuf.finish ();
 }
 
 void
@@ -62,5 +73,6 @@ http_parser_base_t::clnt_timeout ()
 {
   tocb = NULL;
   v_cancel ();
+  stop_abuf ();
   (*cb) (HTTP_TIMEOUT);
 }

@@ -42,7 +42,7 @@ public:
   void readcb (int n);
   abuf_indata_t getdata ();
   void rembytes (int n) { in->rembytes (n); }
-  void finish () {  x->stopread (); }
+  void finish () {  x->setrcb (NULL); }
   void cancel () { cb = NULL; }
 
 private:
