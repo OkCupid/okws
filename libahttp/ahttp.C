@@ -535,3 +535,46 @@ http_server (listencb_t lcb, int port)
   return true;
 }
 
+void
+recycle (suio *s)
+{
+  if (recycled_suios.size () < RECYCLE_LIMIT) {
+    s->clear ();
+    recycled_suios.push_back (s);
+  } else {
+    delete s;
+  }
+}
+
+void
+recycle (suiolite *s)
+{
+  if (recycled_suiolites.size () < RECYCLE_LIMIT  &&
+      s->getlen () == SUIOLITE_DEF_BUFLEN) {
+    s->clear ();
+    recycled_suiolites.push_back (s);
+  } else {
+    delete s;
+  }
+}
+
+suio *
+suio_alloc ()
+{
+  if (recycled_suios.size ()) 
+    return recycled_suios.pop_front ();
+  else 
+    return New suio ();
+}
+
+suiolite *
+suiolite_alloc (int mb, cbv::ptr s)
+{
+  suiolite *ret;
+  if (recycled_suiolites.size () && mb == SUIOLITE_DEF_BUFLEN) {
+    ret = recycled_suiolites.pop_front ();
+    ret->recycle (s);
+  } else {
+    return New suiolite (mb, s);
+  }
+}

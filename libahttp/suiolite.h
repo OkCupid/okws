@@ -23,6 +23,9 @@ public:
   }
   ~suiolite () { xfree (buf); }
 
+  void clear ();
+  void recycle (cbv::ptr s = NULL) { setscb (s); }
+
   void setpeek () { peek = true; }
   void setscb (cbv::ptr c) { scb = c; }
   ssize_t input (int fd, int *nfd = NULL);
@@ -30,9 +33,10 @@ public:
   bool full () const { return (resid () == len); }
   char *getdata (ssize_t *nbytes) const { *nbytes = dep[1] - rp; return rp; }
   void rembytes (ssize_t nbytes);
+  int getlen () const { return len; }
 
 private:
-  int len;
+  const int len;
   char *buf;
   char *bep;     // buffer end pointer
   char *rp;      // read pointer

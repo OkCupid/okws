@@ -10,6 +10,17 @@
 
 #define AHTTP_MAXLINE 1024
 
+//
+// memory recycling code hacked in for now....
+//
+#define RECYCLE_LIMIT 2048
+vec<suio *> recycled_suios;
+vec<suiolite *> recycled_suiolites;
+void recycle (suio *s);
+void recycle (suiolite *s);
+suiolite *suiolite_alloc (int mb, cbv::ptr cb);
+suiolite *suio_alloc ();
+
 struct fdtosend {
   const int fd;
   mutable bool closeit;
