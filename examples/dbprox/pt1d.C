@@ -41,10 +41,11 @@ public:
 protected:
   void insert (svccb *sbp);
   void lookup (svccb *sbp);
+  void times_tab (svccb *sbp);
   adb_status_t lookup (int id, ptr<mystmt_t> sth, mybind_param_t p);
 private:
   sth_t q_em, q_nm, q_id, ins;
-  sth_t qry;
+  sth_t qry, tt;
   bool err;
 };
 
@@ -57,6 +58,9 @@ pt1_srv_t::init ()
   }
   if(!(qry = PREP("SELECT * FROM sha1_tab WHERE x = ?")))
      return false;
+
+  if (!(tt = PREP("SELECT * FROM times_tab LIMIT 60")))
+    return false;
 
   return true;
 }
@@ -74,9 +78,31 @@ pt1_srv_t::dispatch (svccb *sbp)
   case PT1_QUERY:
     lookup (sbp);
     break;
+  case PT1_TIMES_TAB:
+    times_tab (sbp);
+    break;
   default:
     reject ();
   }
+}
+
+void
+pt1_srv_t::times_tab (svccb *b)
+{
+  TWARN("got req");
+  ptr<pt1_times_tab_res_t> u = 
+    New refcounted<pt1_times_tab_res_t> (ADB_EXECUTE_ERROR);
+  str err;
+  if (tt->execute ()) {
+    u->set_status (ADB_OK);
+    for (int i = 0; i < TT_ROWS; i++) {
+      u_int32_t *b = (*u->tab)[i].base ();
+      tt->fetch (b, b+1, b+2, b+3, b+4, b+5, b+6, b+7, b+8, b+9 );
+    }
+  }
+  if ((err = tt->error ()))
+    TWARN(err);
+  reply (u);
 }
 
 void

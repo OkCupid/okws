@@ -428,7 +428,7 @@ to_argv (const vec<str> &v, u_int *c, char *const *seed)
     for (char *const *s = seed; *s; s++) 
       *(argvp++) = *s;
 
-  for (u_int i = 0; i < sz; i++) {
+  for (u_int i = 0; i < v.size (); i++) {
     *argvp = New char[v[i].len () + 1];
     memcpy (*(argvp++), v[i].cstr (), v[i].len () + 1);
   }

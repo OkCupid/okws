@@ -35,6 +35,29 @@ foobar (int *i)
   (*i)++;
 }
 
+char buf[7*25*25];
+
+
+static
+void foo ()
+{
+  char *bp = buf;
+  for (int i = 0; i < 25; i++) {
+    for (int j = 0; j < 25; j++) {
+      bp += sprintf (bp, " %d\n", i*j);
+    }
+  }
+  *bp = 0;
+}
+
+int 
+main (int argc, char *argv[])
+{
+  for (int k = 0; k <  50000; k++)
+    foo ();
+}
+
+/*
 int
 main (int argc, char *argv[])
 {
@@ -55,3 +78,4 @@ main (int argc, char *argv[])
   t = stopt ();
   warn ("callback call: %d iter in %d usec\n", iter, t);
 }
+*/
