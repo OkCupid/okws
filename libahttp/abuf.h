@@ -34,8 +34,7 @@ public:
   virtual void rembytes (int nbytes) = 0;
   virtual void finish () = 0;
   virtual void cancel () {}
-  virtual ~abuf_src_t () 
-  { warn << "~abuf_src_t called\n"; } // debug
+  virtual ~abuf_src_t () {}
   virtual bool overflow () const { return false; }
 };
 
@@ -43,11 +42,7 @@ class abuf_con_t : public abuf_src_t {
 public:
   abuf_con_t (ptr<ahttpcon> xx) 
     : x (xx), in (x->uio ()), eof (x->ateof ()) {}
-  ~abuf_con_t () 
-  { 
-    warn << "~abuf_con_t called\n"; // debug
-    finish (); 
-  }
+  ~abuf_con_t () { finish (); }
   void init (cbv c);
   void readcb (int n);
   abuf_indata_t getdata ();
@@ -73,8 +68,6 @@ public:
 
   ~abuf_t () 
   { 
-    warn ("~abuf_t called (delsrc: %d, src: %p)\n", 
-	  delsrc ? 1 : 0, src); // debug;
     if (delsrc && src) {
       delsrc = false;
       delete src; 
