@@ -329,7 +329,7 @@ b_js_tag: T_BJST
 	{ 
 	  PFILE->push_section (New pfile_html_sec_t (PLINENO));
 	  PFILE->push_section (New pfile_html_tag_t (PLINENO, $1));
-	  PSECTION->add ($1);
+	  /* PSECTION->add ($1); */
 	} 
 	htag_list T_ETAG
 	{  
