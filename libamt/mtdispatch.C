@@ -24,7 +24,7 @@
 #include "amt.h"
 #include "txa_prot.h"
 
-#define LONG_REPLY_TIME   5
+#define LONG_REPLY_TIME   2
 
 mtd_thread_t::mtd_thread_t (mtd_thread_arg_t *a)
   : tid (a->tid), readied (false), fdin (a->fdin), fdout (a->fdout), 
