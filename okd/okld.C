@@ -125,12 +125,24 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   if (env.size ()) 
     envp = to_argv (env, NULL, environ);
 
-  vNew okld_ch_t (exe, httppath, this, loc, u, envp);
+  if (services_tmp[httppath]) {
+    warn << loc << ": doubly-specified Service URI: " << httppath << "\n";
+    goto err;
+  }
+
+  if (exes_tmp[exe]) {
+    warn << loc << ": doubly-specified service executable: " << exe << "\n";
+    goto err;
+  }
 
   //
   // accounting for error-checking aliases table.
   //
   services_tmp.insert (httppath);
+  exes_tmp.insert (exe);
+
+  vNew okld_ch_t (exe, httppath, this, loc, u, envp);
+
 
   return;
 
@@ -165,6 +177,10 @@ okld_t::check_aliases ()
       ret = false;
     } else if (aliases_bmap[a.from]) {
       warn << a.loc << ": Doubly-specified alias for URI " << a.from  << "\n";
+      ret = false;
+    } else if (services_tmp[a.from]) {
+      warn << a.loc << ": Alias URI is already taken by a service: " 
+	   << a.from << "\n";
       ret = false;
     } else {
       aliases_bmap.insert (a.from);
@@ -607,6 +623,11 @@ okld_t::launch (const str &cf)
   encode_env ();
   if (!(checkservices () && fix_uids () && init_jaildir ()))
     exit (1);
+
+  // these tables were needed for initialization-time sanity-checking
+  exes_tmp.clear ();
+  services_tmp.clear ();
+
   if (jaildir)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
   launch_logd (wrap (this, &okld_t::launch_logd_cb));

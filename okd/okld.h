@@ -155,7 +155,8 @@ private:
     const str loc;
   };
   vec<alias_t> aliases_tmp;
-  bhash<str> services_tmp;
+  bhash<str> services_tmp, exes_tmp;
+  
   bool check_aliases ();
   void got_alias (vec<str> s, str loc, bool *errp);
 
