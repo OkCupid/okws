@@ -289,10 +289,12 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
   int ch;
   bool flag = true;
   abuf_stat_t ret = ABUF_OK;
+  abuf_stat_t rc;
 
   if (inhex) {
-    if (parse_hexchar (&pcp, endp) == ABUF_WAIT)
-      return ABUF_WAIT;
+    rc = parse_hexchar (&pcp, endp);
+    if (rc == ABUF_WAIT || rc == ABUF_EOF)
+      return rc;
     else
       inhex = false;
   }
@@ -345,8 +347,9 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
       break;
     case CGI_HEXCHAR:
       inhex = true;
-      if (parse_hexchar (&pcp, endp) == ABUF_WAIT) {
-	ret = ABUF_WAIT;
+      rc = parse_hexchar (&pcp, endp);
+      if (rc == ABUF_WAIT || rc == ABUF_EOF) {
+	ret = rc;
       } else
 	inhex = false;
       break;
@@ -392,6 +395,8 @@ cgi_t::parse_hexchar (char **pp, char *end)
     ch = abuf->get ();
     if (ch == ABUF_WAITCHAR)
       return ABUF_WAIT;
+    if (ch == ABUF_EOFCHAR)
+      return ABUF_EOF;
     if ((t = char_to_hex (ch)) < 0) {
       abuf->unget ();
       break;

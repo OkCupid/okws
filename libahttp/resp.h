@@ -168,12 +168,12 @@ public:
   inline int get_nbytes () const { return nbytes; }
   inline size_t get_inflated_len () const { return inflated_len; }
   inline void gzip () { header.gzip (); }
-  http_resp_header_t header;
 
   void set_inflated_len (size_t l) { inflated_len = l; }
-        
   inline void set_uid (u_int64_t i) { uid = i; }
   inline u_int64_t get_uid () const { return uid; }
+
+  http_resp_header_t header;
 protected:
   strbuf body;
   u_int nbytes;
