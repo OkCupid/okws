@@ -278,12 +278,12 @@ okch_t::launch_cb (ptr<bool> dfp, int logfd)
   x = ahttpcon_aspawn (execpath, argv, 
 		       wrap (myokd, &okd_t::set_svc_ids), &ctlx);
   pid = ahttpcon_spawn_pid;
+  close (logfd);
   if (!x || !ctlx) {
     warn << "Cannot launch server: (" << servpath << "," << execpath << ")\n";
     state = OKC_STATE_HOSED;
     return;
   }
-  close (logfd);
   ctlcon (wrap (this, &okch_t::dispatch, destroyed));
   x->seteofcb (wrap (this, &okch_t::fdcon_eof, destroyed));
  
