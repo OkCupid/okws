@@ -277,5 +277,6 @@ OKD v0.2
  - bug with including a file in itself.
  - pub command line jailing is mess up W.R.T. runtime jail.
  - fix servername/serveralabel mess
+ - need a decompress function for zstr
 
 
