@@ -777,7 +777,10 @@ AC_DEFUN(SFS_FIND_PTH,
 --with-pth=DIR		  Specify location of GNU Pth library)
 ac_save_CFLAGS=$CFLAGS
 ac_save_LIBS=$LIBS
-cdirs="$with_pth ${prefix} ${prefix}/pth"
+cdirs="$with_pth"
+if test "${prefix}" != "NONE"; then
+	cdirs="$cdirs ${prefix} ${prefix}/pth"
+fi
 dirs="$cdirs /usr/local/include/pth /usr/local/include "
 AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
 [for dir in $dirs " " ; do
