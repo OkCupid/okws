@@ -61,8 +61,10 @@ okwc_req_t::finish (int status)
 
 okwc_req_t::~okwc_req_t ()
 {
-  if (http)
+  if (http) {
     delete http;
+    http = NULL;
+  }
   if (timer) {
     timecb_remove (timer);
     timer = NULL;
@@ -96,12 +98,134 @@ okwc_http_t::hdr_parsed (int status)
   if (status != HTTP_OK) {
     finish (status);
   } else {
-    body.parse (resp, hdr.contlen, wrap (this, &okwc_http_t::body_parsed));
+    body.dump (hdr.contlen, wrap (this, &okwc_http_t::body_parsed));
   }
 }
 
 void
-okwc_http_t::body_parsed (int status)
+okwc_http_t::body_parsed (str bod)
 {
-  finish (status);
+  resp->body = bod;
+  finish (HTTP_OK);
+}
+
+void
+okwc_http_t::finish (int status)
+{
+  resp->status = status;
+  (*okwc_cb) (status);
+}
+
+okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, okwc_cb_t c)
+  : x (xx), filename (f), abuf (New abuf_con_t (xx), true),
+    resp (okwc_resp_t::alloc (abuf, OKWC_SCRATCH_SZ, scratch)),
+    hdr (&abuf, resp->cookies, OKWC_SCRATCH_SZ, scratch),
+    body (&abuf),
+    cb (c)
+{}
+
+void
+okwc_http_hdr_t::ext_parse_cb (int status)
+{
+  state = ret_state;
+  resume ();
+}
+
+//
+// XXX - eventually we should merge this in with
+// http_inhdr_t::parse_guts -- there are many similarities.
+//
+void
+okwc_http_hdr_t::parse_guts ()
+{
+  abuf_stat_t r = ABUF_OK;
+  bool inc;
+  int status_parse = HTTP_BAD_REQUEST;
+
+  while (r == ABUF_OK) {
+    inc = true;
+    switch (state) {
+    case OKWC_HDR_START:
+      r = delimit_word (&vers);
+      break;
+    case OKWC_HDR_SPC1:
+      r = abuf->skip_hws (1);
+      break;
+    case OKWC_HDR_STATUS_NUM: 
+      {
+	str status_str;
+	r = delimit_word (&status_str);
+	if (r == ABUF_OK && !convert_int (status_str, &status))
+	  r = ABUF_PARSE_ERR;
+	break;
+      }
+    case OKWC_HDR_SPC2:
+      r = abuf->skip_hws (1);
+      break;
+    case OKWC_HDR_STATUS_DESC:
+      r = eol ();
+      if (r == ABUF_NOMATCH) 
+	r = delimit_word (&status_desc);
+      break;
+    case OKWC_HDR_EOL1:
+      r = require_crlf ();
+      break;
+    case OKWC_HDR_KEY:
+      r = gobble_crlf ();
+      if (r == ABUF_OK) {
+	status_parse = HTTP_OK;
+	r = ABUF_EOF;
+      } else if (r == ABUF_NOMATCH)
+	r = delimit_key (&key);
+      break;
+    case OKWC_HDR_SPC3:
+      r = abuf->skip_hws (1);
+      break;
+    case OKWC_HDR_VALUE:
+      if (is_set_cookie ()) {
+	noins = true;
+	cgi_t *cookie = ck->push_back_new ();
+	ret_state = OKWC_HDR_EOL2A;
+	cookie->parse (wrap (this, &okwc_http_hdr_t::ext_parse_cb));
+	return;
+      } 
+      r = delimit_val (&val);
+      break;
+    case OKWC_HDR_EOL2A:
+      if (noins)
+	noins = false;
+      else if (key)
+	insert (key, val);
+      else 
+	r = ABUF_PARSE_ERR;
+      key = val = NULL;
+      break;
+    case OKWC_HDR_EOL2B:
+      r = require_crlf ();
+      if (r == ABUF_OK) {
+	state = OKWC_HDR_KEY;
+	inc = false;
+      }
+      break;
+    default:
+      r = ABUF_PARSE_ERR;
+      break;
+    }
+    if (r == ABUF_OK && inc)
+      state = static_cast<state_t> (state + 1);
+  }
+  if (r != ABUF_WAIT) {
+    if (status_parse != HTTP_OK)
+      status = status_parse;
+    if (status == HTTP_OK)
+      fixup ();
+    finish_parse (status);
+  }
+}
+
+void
+okwc_http_hdr_t::fixup ()
+{
+  if (!lookup ("content-length", &contlen))
+    contlen = -1;
 }

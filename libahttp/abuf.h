@@ -93,6 +93,8 @@ public:
   str end_mirror2 (int sublen = 0); // slightly different CRLF semantics
   str mirror_debug ();
   bool overflow () const { return src->overflow (); }
+  size_t flush (char *c, size_t l); // flushes buffered data to buffer.
+  ssize_t dump (char *buf, size_t len);
 
   void reset () 
   {

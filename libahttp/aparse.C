@@ -50,4 +50,27 @@ async_parser_t::finish_parse (int r)
     (*pcb) (r);
 }
 
+void
+async_dumper_t::dump (size_t len, cbs c)
+{
+  buf = New mstr (len);
+  bp = buf->cstr ();
+  endp = bp + len;
 
+  dump_cb = c;
+  parse (wrap (this, &async_dumper_t::parse_done_cb));
+}
+
+void
+async_dumper_t::parse_guts ()
+{
+  size_t rc = 0;
+  while (bp < endp) {
+    rc = abuf->dump (bp, endp - bp);
+    if (rc < 0)
+      break; // EOF
+    bp += rc;
+  }
+  if (bp == endp || rc < 0)
+      finish_parse (0);
+}

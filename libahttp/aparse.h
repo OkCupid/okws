@@ -46,4 +46,19 @@ private:
   bool dataready;
 };
 
+class async_dumper_t : public async_parser_t {
+public:
+  async_dumper_t (abuf_t *a) : async_parser_t (a), buf (NULL) {}
+  ~async_dumper_t () { if (buf) delete buf; }
+
+  void dump (size_t len, cbs c);
+protected:
+  void parse_guts ();
+  void parse_done_cb (int dummy) { (*dump_cb) (*buf); dump_cb = NULL; }
+
+  mstr *buf;
+  char *bp, *endp;
+  cbs::ptr dump_cb;
+};
+
 #endif

@@ -113,3 +113,56 @@ abuf_t::end_mirror2 (int sublen)
   mirror_base = mirror_p = mirror_end = NULL;
   return r;
 }
+
+size_t
+abuf_t::flush (char *buf, size_t len)
+{
+  assert (len >= 0);
+
+  if (len == 0 || cp == endp)
+      return 0;
+
+  if (bc) {
+    *buf++ = lch;
+    len--;
+  }
+    
+  size_t readlen = min<size_t> (len, endp - cp);
+  memcpy (buf, cp, readlen);
+  cp += readlen;
+  ccnt += readlen;
+  
+  // add the buffered char to the tally
+  readlen += (bc ? 1 : 0);
+  bc = false;
+
+  return readlen;
+}
+
+ssize_t
+abuf_t::dump (char *buf, size_t len)
+{
+  if (erc == ABUF_EOF)
+    return -1;
+
+  ssize_t ret = 0;
+  char *buf_p = buf;
+
+  ssize_t slen = len;
+
+  //
+  // XXX:  involves some extra memcopies, but this will have to do for now.
+  //
+  while (ret != slen && erc == ABUF_OK) {
+    size_t rc = flush (buf_p, slen);
+    ret += rc;
+    if (ret == slen)
+      return ret;
+    assert (ret < slen);
+    buf_p += ret;
+    moredata ();
+  }
+  
+  return ret;
+}
+
