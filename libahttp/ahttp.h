@@ -135,7 +135,7 @@ protected:
   virtual void recvd_bytes (int n);
   inline void wrsync ();
   virtual void fail ();
-  virtual void fail3 () { fail (); }
+  virtual void too_many_fds () { fail (); }
   virtual void fail2 () {} 
   void input ();
   bool enable_selread ();
@@ -193,7 +193,7 @@ public:
 protected:
   virtual ssize_t doread (int fd);
   virtual void fail2 ();
-  void fail3 () {}
+  void too_many_fds () {}
   listencb_t::ptr lcb;
   bool fd_accept_enabled;
 };

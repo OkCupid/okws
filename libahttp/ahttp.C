@@ -425,9 +425,13 @@ ahttpcon::input ()
   }
   ssize_t n = doread (fd);
   if (n < 0) {
-    if (errno != EAGAIN) {
-      warn ("nfds=%d; error in ahttpcon::input: %m\n", n_ahttpcon);
-      fail3 ();
+
+    if (errno == EMSGSIZE) {
+      warn ("Too many fds (%d) in ahttpcon::input: %m\n", n_ahttpcon);
+      too_many_fds ();
+    } else if (errno != EAGAIN) {
+      warn ("nfs=%d; Error in ahttpcon::input: %m\n", n_ahttpcon);
+      fail ();
     }
     return;
   }
