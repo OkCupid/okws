@@ -26,6 +26,9 @@ dnl
 dbpmk(shad)
 dbpmk(pt1d)
 
+dnl can sett per-proxy flags (such as LD flags) too
+pt1d_LDFLAGS = -all-static
+
 dnl
 dnl End of the Part the you Need to Edit
 dnl
@@ -35,6 +38,7 @@ dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 okmdbp_PROGRAMS = dbp_exes
 
 LDADD = $(LDADD_PRX)
+
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore Makefile.am.m4

@@ -89,7 +89,6 @@ pt1_srv_t::dispatch (svccb *sbp)
 void
 pt1_srv_t::times_tab (svccb *b)
 {
-  TWARN("got req");
   ptr<pt1_times_tab_res_t> u = 
     New refcounted<pt1_times_tab_res_t> (ADB_EXECUTE_ERROR);
   str err;

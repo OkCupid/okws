@@ -740,13 +740,27 @@ AC_DEFUN(SFS_FIND_PTH,
 --with-pth=DIR		  Specify location of GNU Pth library)
 ac_save_CFLAGS=$CFLAGS
 ac_save_LIBS=$LIBS
-cdirs="$with_pth"
+dirs0="${with_pth} ${with_pth}/include"
 if test "${prefix}" != "NONE"; then
-	cdirs="$cdirs ${prefix} ${prefix}/pth"
+	dirs0="$dirs0 ${prefix} ${prefix}/pth"
 fi
-dirs="$cdirs /usr/local/include/pth /usr/local/include "
+
+dirs1="$dirs0 /usr/local/include/pth /usr/local/include "
+dirs2=""
+
+dnl
+dnl only consider those directories that actually have a pth.h
+dnl in them; otherwise, we'll get false positives.
+dnl
+for dir in $dirs1
+do
+    if test -r ${dir}/pth.h ; then
+	dirs2="$dirs2 $dir"
+    fi
+done
+
 AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
-[for dir in $dirs " "; do
+[for dir in $dirs2 " " ; do
 	case $dir in 
 		" ") iflags=" " ;;
 		*) iflags="-I${dir}" ;;
@@ -754,10 +768,10 @@ AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
 	CFLAGS="${ac_save_CFLAGS} $iflags"
 	AC_TRY_COMPILE([#include <pth.h>], [
 #if !defined(PTH_SYSCALL_HARD) || PTH_SYSCALL_HARD == 0
-XXX // ** HARD SYSTEM CALLS ARE REQUIRED  **
+#error "HARD SYSTEM CALLS ARE REQUIRED"
 #endif
 #if PTH_SYSCALL_SOFT
-XXX // **  SOFT SYSTEM CALLS WILL BREAK LIBASYNC **
+#error "SOFT SYSTEM CALLS WILL BREAK LIBASYNC"
 #endif
 	],
 	 sfs_cv_pth_h="${iflags}"; break)
@@ -793,11 +807,11 @@ if test "${sfs_cv_pth_h+set}"; then
 		dnl certain cases.  May as well give it a try
 		dnl
                 lflags="$lflags -ldl";
-                LIBS="$ac_save_LIBS $lflags"
-                AC_TRY_LINK([#include <pth.h>],
-                        pth_init ();,
-                        sfs_cv_libpth=$lflags; break)
-
+		LIBS="$ac_save_LIBS $lflags"
+		AC_TRY_LINK([#include <pth.h>],
+			pth_init ();, 
+			sfs_cv_libpth=$lflags; break)
+                
 	done
 	if test -z ${sfs_cv_libpth+set}; then
 		sfs_cv_libpth="no"
@@ -813,6 +827,8 @@ fi
 LIBS=$ac_save_LIBS
 CFLAGS=$ac_save_CFLAGS
 ])
+
+
 dnl
 dnl Find pthreads
 dnl

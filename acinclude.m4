@@ -821,13 +821,27 @@ AC_DEFUN(SFS_FIND_PTH,
 --with-pth=DIR		  Specify location of GNU Pth library)
 ac_save_CFLAGS=$CFLAGS
 ac_save_LIBS=$LIBS
-cdirs="$with_pth"
+dirs0="${with_pth} ${with_pth}/include"
 if test "${prefix}" != "NONE"; then
-	cdirs="$cdirs ${prefix} ${prefix}/pth"
+	dirs0="$dirs0 ${prefix} ${prefix}/pth"
 fi
-dirs="$cdirs /usr/local/include/pth /usr/local/include "
+
+dirs1="$dirs0 /usr/local/include/pth /usr/local/include "
+dirs2=""
+
+dnl
+dnl only consider those directories that actually have a pth.h
+dnl in them; otherwise, we'll get false positives.
+dnl
+for dir in $dirs1
+do
+    if test -r ${dir}/pth.h ; then
+	dirs2="$dirs2 $dir"
+    fi
+done
+
 AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
-[for dir in $dirs " " ; do
+[for dir in $dirs2 " " ; do
 	case $dir in 
 		" ") iflags=" " ;;
 		*) iflags="-I${dir}" ;;
