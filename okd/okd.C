@@ -324,7 +324,6 @@ okd_t::parseconfig ()
     .add ("OkdVersion", &version)
     .add ("OkdUser", &un)
     .add ("OkdGroup", &gn)
-
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockFile", &mmc_file)
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)

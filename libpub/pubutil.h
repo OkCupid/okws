@@ -32,6 +32,13 @@
 #include "xpub.h"
 #include "qhash.h"
 
+
+#ifndef HAVE_SFS_SET_CLOCK
+typedef enum { SFS_CLOCK_GETTIME = 0, 
+	       SFS_CLOCK_MMAP = 1, 
+	       SFS_CLOCK_TIMER = 2 } sfs_clock_t;
+#endif
+
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);
 bool str_split (vec<str> *r, const str &s, bool quoted, int sz = 50);

@@ -118,7 +118,6 @@ okld_t::parseconfig (const str &cf)
     .add ("UnsafeMode", &unsafe_mode)
     .add ("SafeStartup", &safe_startup_fl)
     .add ("FilterCGI", &ok_filter_cgi, XSSFILT_NONE, XSSFILT_ALL)
-    
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockDaemon", &mmcd)
     .add ("MmapClockFile", &mmc_file)
@@ -476,7 +475,9 @@ okld_t::launch (const str &cf)
   configfile = cf;
   parseconfig (cf);
 
+#ifdef HAVE_SFS_SET_CLOCK
   init_clock_daemon ();
+#endif
 
   encode_env ();
   if (!(checkservices () && fix_uids () && init_jaildir ()))
@@ -611,13 +612,19 @@ okld_t::init_jaildir ()
 }
 
 void
-okld_t::relaunch_clock_daemon (int sig)
+okld_t::clock_daemon_died (int sig)
 {
   warn << "mmcd died with status=" << sig << "\n";
   assert (mmcd_pid > 0);
   chldcb (mmcd_pid, NULL);
   mmcd_pid = -1;
 
+}
+
+void
+okld_t::relaunch_clock_daemon (int sig)
+{
+  clock_daemon_died (sig);
   init_clock_daemon ();
 }
 
@@ -656,10 +663,17 @@ okld_t::init_clock_daemon ()
     }
 
     if (ok) {
+
       // okld does not change its clock type, since it's mainly idle.
-      // therefore, we're also not going to catch the chldcb of the 
-      // clock daemon should it die.
-      chldcb (mmcd_pid, wrap (this, &okld_t::relaunch_clock_daemon));
+      chldcb (mmcd_pid, wrap (this, &okld_t::clock_daemon_died));
+      
+      // okld will not be relaunching the clock daemon if it crashes;
+      // to do so, it would have to copy it into the chroot jail;
+      // this is easy enough to do, but i can't imagine a case in which 
+      // the clock daemon would actually die, so it's just not worth it.
+      //
+      //chldcb (mmcd_pid, wrap (this, &okld_t::relaunch_clock_daemon));
+
     } else {
       clock_mode = SFS_CLOCK_GETTIME;
     }
