@@ -46,11 +46,19 @@ fi
 if test -z "$LINKER_HINTS" ; then
     LINKER_HINTS='/var/run/ld-elf.so.hints /var/run/ld.so.hints'
 fi
-    
-LIBS=`$LDD $* | \
+
+# Only consider executable files and non-directories
+for i in $*
+do
+    if test -x $i -a ! -d $i
+    then
+	FILES="$FILES $i"
+    fi
+done
+
+LIBS=`$LDD $FILES | \
       $PERL -ne '{ print "$1\n" if /=>\s*(\S+)/; }' | \
       sort | uniq | xargs `
-
 
 for lib in $LIBS $LINKER $LINKER_HINTS
 do
