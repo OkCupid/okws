@@ -243,4 +243,5 @@ OKD v0.2
  - fix config 
  - benjie reports no dice when receiving big file uploads -- maybe
    we're hitting the channel limit?
+ - better story for /etc/localtime.
  - still have spurious dmalloc free problems on file uploads.  weird.
