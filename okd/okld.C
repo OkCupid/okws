@@ -344,13 +344,10 @@ okld_t::shutdown2 (int status)
     warn << "caught clean okd exit\n";
   warn << "shutdown complete\n";
 
-  //
-  // this sucks; we should really instrument mmcd so that if it reads
-  // an EOF of stdin, then it (1) unlinks its mmaped file and (2)
-  // shuts down cleanly.  for now, we'll be down and dirty
-  //
-  if (mmcd_pid > 0) 
-    ::kill (mmcd_pid, SIGTERM);
+  // turn of the clock daemon cleanly. not entirely necessary.
+  if (mmcd_pid > 0) {
+    close (mmcd_ctl_fd);
+  }
 
   delete this;
   exit (0);
@@ -475,9 +472,7 @@ okld_t::launch (const str &cf)
   configfile = cf;
   parseconfig (cf);
 
-#ifdef HAVE_SFS_SET_CLOCK
   init_clock_daemon ();
-#endif
 
   encode_env ();
   if (!(checkservices () && fix_uids () && init_jaildir ()))
@@ -618,7 +613,6 @@ okld_t::clock_daemon_died (int sig)
   assert (mmcd_pid > 0);
   chldcb (mmcd_pid, NULL);
   mmcd_pid = -1;
-
 }
 
 void
@@ -657,6 +651,8 @@ okld_t::init_clock_daemon ()
 	warn ("cannot start mmcd %s: %m\n", args[0]);
       } else {
 	mmcd_ctl_fd = fds[0];
+	str foo ("foorbad adsfi qoewirj oiasjdf oijqweroijqweorijqwer\n");
+	write (mmcd_ctl_fd, foo.cstr (), foo.len ());
 	ok = true;
       }
       close (fds[1]);

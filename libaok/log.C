@@ -64,7 +64,8 @@ log_primary_t::connect_cb3 ()
 {
   int fd = he->get_sock ();
   assert (fd >= 0);
-  fdcb (fd, selread, wrap (this, &log_primary_t::got_cloned_fd, fd));
+  fdsrc 
+    = fdsource_t<u_int32_t>::alloc (fd, wrap (this, &log_primary_t::gotfd));
 }
 
 void
@@ -74,10 +75,8 @@ fast_log_t::connect_cb3 ()
 }
 
 void
-log_primary_t::got_cloned_fd (int fdfd)
+log_primary_t::gotfd (int nfd, ptr<u_int32_t> id)
 {
-  int nfd;
-  readvfd (fdfd, 0, NULL, &nfd);
   if (nfd >= 0) {
     fds.push_back (nfd);
   }

@@ -28,6 +28,7 @@
 #include "okerr.h"
 #include "okprot.h"
 #include "list.h"
+#include "axprtfd.h"
 
 class logfile_t {
 public:
@@ -135,9 +136,10 @@ class logd_t {
 public:
   logd_t (const str &in, int f = -1) 
     : tmr (wrap (this, &logd_t::flush)), 
-      parms (in), logset (0), dcb (NULL), fdfd (f), 
-      uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
-      injail (false) {}
+    parms (in), logset (0), dcb (NULL), fdfd (f), 
+    uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
+    fdseqno (0), injail (false) {}
+
   void launch ();
   void remove (logd_client_t *c) { lst.remove (c); }
   void newclnt (bool p, ptr<axprt_stream> x);
@@ -164,6 +166,7 @@ private:
   bool access_log (const oklog_ok_t &x);
   bool error_log (const oklog_arg_t &x);
   void close_fdfd ();
+  void fdfd_eofcb ();
 
   tailq<logd_client_t, &logd_client_t::lnk> lst;
   vec<logd_fmt_el_t *> fmt_els;
@@ -177,8 +180,12 @@ private:
   ok_grp_t grp;
   bool running;
 
+  u_int32_t fdseqno;
+  ptr<fdsink_t> fdsnk;
+
   vec<fdtosend> fdsendq;
   bool injail;
+  
 };
 
 class logd_fmt_time_t : public logd_fmt_el_t {

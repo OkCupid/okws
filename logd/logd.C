@@ -231,6 +231,13 @@ logd_t::parse_fmt ()
   }
 }
 
+void
+logd_t::fdfd_eofcb ()
+{
+  warn << "EOF on FD channel; sink is stopped up\n";
+  fdsnk = NULL;
+}
+
 bool
 logd_t::fdfd_setup ()
 {
@@ -238,12 +245,20 @@ logd_t::fdfd_setup ()
     warn << "no socket setup for file descriptor passing!\n";
     return false;
   }
+  fdsnk = fdsink_t::alloc (axprt_unix::alloc (fdfd),
+			   wrap (this, &logd_t::fdfd_eofcb));
   return true;
 }
 
 void
 logd_t::clonefd (svccb *b)
 {
+  if (!fdsnk) {
+    warn << "FD requested after sink was stopped up!\n";
+    b->replyref (false);
+    return;
+  }
+
   bool ret = true;
   int fds[2];
   int rc = socketpair (AF_UNIX, SOCK_STREAM, 0, fds);
@@ -252,8 +267,7 @@ logd_t::clonefd (svccb *b)
     ret = false;
   } else {
     newclnt (false, axprt_unix::alloc (fds[0]));
-    fdsendq.push_back (fdtosend (fds[1], true));
-    fdcb (fdfd, selwrite, wrap (this, &logd_t::writefd));
+    fdsnk->send (fds[1], fdseqno++);
   }
   b->replyref (ret);
 }

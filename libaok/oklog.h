@@ -31,6 +31,7 @@
 #include "ahttp.h"
 #include "resp.h"
 #include "okerr.h"
+#include "axprtfd.h"
 
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800    // must be at least 2wice maxwrite
@@ -201,11 +202,12 @@ public:
   log_primary_t (helper_exec_t *hh) : rpc_log_t (hh), he (hh) {}
   void clone (cbi cb);
 private:
-  void got_cloned_fd (int fdfd);
+  void gotfd (int fdfd, ptr<u_int32_t> id);
   void connect_cb3 ();
   void clone_cb (ptr<bool> b, cbi cb, clnt_stat err);
   vec<cbi> cbq;
   vec<int> fds;
+  ptr<fdsource_t<u_int32_t> > fdsrc;
   helper_exec_t *he;
 };
 
