@@ -232,9 +232,21 @@ pub_rclient_t::explore (const pfnm_t &fn) const
       // maybe this file was already moved over by a previous walk down
       // the tree. if this is the case, then assert it's still here.
       assert (nset->files[b->hash ()]);
+
+      // this insert (1) binds the filename given to the file's
+      // current hash and (2) insert the file, key by its hash.
+      // at this point, we need mapping (1) but not mapping (2)
+      // since the mapping of hash to file is already there.
+      // luckily, this function will do the right thing here.
+      //
+      nset->insert (b, f);
+     
     }
   }
-  f->explore (EXPLORE_FNCALL);
+  // if file was previously explored, this f will be NULL, but
+  // no need to reexplore.
+  if (f)
+    f->explore (EXPLORE_FNCALL);
 }
 
 pub_rclient_t *
