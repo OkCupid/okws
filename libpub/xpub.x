@@ -100,9 +100,11 @@ union xpub_parr_t switch (xpub_int_typ_t typ)
  case XPUB_CHAR:
    xpub_parr_char_t chararr;
  case XPUB_INT:
- case XPUB_INT16:
- case XPUB_UINT16:
    xpub_parr_int_t intarr;
+ case XPUB_INT16:
+   xpub_parr_int_t int16arr;
+ case XPUB_UINT16:
+   xpub_parr_int_t uint16arr;
  case XPUB_UINT:
    xpub_parr_uint_t uintarr;
  case XPUB_INT64:
