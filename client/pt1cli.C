@@ -10,16 +10,19 @@ int nreq;
 int nconcur;
 int nrunning;
 bool sdflag;
+bool seda;
 
 class hclient_t {
 public:
   hclient_t (str h, int p, str r, int i) 
-    : host (h), port (p), req (r), id (i) {}
+    : host (h), port (p), req (r), id (i), bp (buf), reqsz (-1), body (NULL) {}
   ~hclient_t () 
   {
-    fdcb (fd, selread, NULL);
-   // close (fd);
-    tcp_abort (fd);
+    if (fd >= 0) {
+      fdcb (fd, selread, NULL);
+      // close (fd);
+      tcp_abort (fd);
+    }
   }
   void run ();
 
@@ -29,11 +32,16 @@ private:
   void writewait ();
   void cexit (int rc);
 
+  char buf[4096];
   str host;
   int port;
   str req;
   int fd;
   int id;
+  char *bp;
+  int reqsz;
+  char *body;
+  suio uio;
 };
 
 vec<hclient_t *> q;
@@ -63,21 +71,41 @@ hclient_t::cexit (int c)
   return;
 }
 
+static rxx sz_rxx ("[C|c]ontent-[l|L]ength: (\\d+)\\r\\n");
 void
 hclient_t::canread ()
 {
-  suio uio;
   int rc = uio.input (fd);
   if (rc == 0) {
     cexit (0);
     return;
   }
-  if (rc == -1 && errno != EAGAIN) {
-    warn ("read error: %m\n");
-    cexit (-1);
+  if (!seda) {
+    if (rc == -1 && errno != EAGAIN) {
+      warn ("read error: %m\n");
+      cexit (-1);
+    }
+    while (uio.resid ()) 
+      uio.output (1);
+  } else {
+    rc = uio.copyout (bp);
+    bp += rc;
+    if (reqsz < 0) {
+      if (sz_rxx.search (buf)) {
+	if (!convertint (sz_rxx[1], &reqsz)) {
+	  warn ("invalid length: %s\n", sz_rxx[1].cstr ());
+	  cexit (-1);
+	}
+      }
+    }
+    if (!body) 
+      body = strstr (buf, "\r\n\r\n");
+    if (body && (bp - body >= reqsz)) {
+      write (1, buf, bp - buf);
+      warn ("ok, closing up!\n");
+      cexit (0);
+    }
   }
-  while (uio.resid ()) 
-    uio.output (1);
 }
 
 void 
@@ -86,10 +114,15 @@ hclient_t::connected (int f)
   fd = f;
   strbuf b (req);
   int id = random() % 30000;
-  b << id << " HTTP/1.0";
-  b << "\r\n\r\n\r\n";
-  if (fd < 0)
-    fatal << "cannot connect to host\n";
+  b << id <<" HTTP/1.0\r\nConnection: close\r\n\r\n";
+  if (fd < 0) {
+    if (seda) {
+      warn << "cannot connect to host\n";
+      cexit (-1);
+      return;
+    } else
+      fatal << "cannot connect to host\n";
+  }
   suio *uio = b.tosuio ();
   while (uio->resid ()) {
     writewait ();
@@ -117,12 +150,13 @@ hclient_t::run ()
 static void
 usage ()
 {
-  fatal << "usage: hcli host[:port] infile <nreq>\n";
+  fatal << "usage: ptcli host[:port] infile <nreq>\n";
 }
 
 int 
 main (int argc, char *argv[])
 {
+  seda = false;
   srandom(time(0));
   setprogname (argv[0]);
   if (argc < 3 || argc > 5)
@@ -138,9 +172,12 @@ main (int argc, char *argv[])
   //str in = file2str (argv[2]);
   str in;
   if (argv[2][0] == 'p') 
-     in = "GET /test.php?id=";
-  else
-     in = "GET /pt1?id=";
+    in = "GET /test.php?id=";
+  else if (argv[2][0] == 's') {
+    seda = true;
+    in = "GET /test?x=";
+  } else
+    in = "GET /pt1?id=";
  
   if (!in)
     fatal << "Cannot open file: " << argv[2] << "\n";
