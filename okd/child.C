@@ -124,7 +124,11 @@ okch_t::start_chld ()
 {
   if (state == OKC_STATE_LAUNCH_SEQ_2 && x) {
     state = OKC_STATE_SERVE;
-    while (conqueue.size ())
+
+    // need to check that x is still here every time through the 
+    // loop; the service might have crashed as we were servicing
+    // queued connections.
+    while (conqueue.size () && x)
       x->clone (conqueue.pop_front ());
 
     //
