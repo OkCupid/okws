@@ -194,12 +194,6 @@ private:
   int listenfd;
   helper_exec_t *lexc;
   bool jailed;
-
-  // proxy hostname config values
-  str sessionsrv;
-  str usersrv;
-  str unamesrv;
-  str unamefrontsrv;
 };
 
 class okd_mgrsrv_t 

@@ -286,12 +286,7 @@ okd_t::parseconfig (const str &cf)
     .add ("LogTick", &ok_log_tick, 1, 4000)
     .add ("LogPeriod", &ok_log_period, 1, 100)
 
-    .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
-
-    .add ("SessionSrv", &sessionsrv)
-    .add ("UnameSrv", &unamesrv)
-    .add ("UnameFrontSrv", &unamefrontsrv)
-    .add ("UserSrv", &usersrv);
+    .add ("ClientTimeout", &ok_clnt_timeout, 1, 400);
 
   while (pa.getline (&av, &line)) {
     if (!ct.match (av, cf, line, &errors)) {
@@ -518,11 +513,7 @@ okd_t::encode_env ()
     .insert ("gzipcsl", ok_gzip_cache_storelimit)
     .insert ("logtick", ok_log_tick)
     .insert ("logprd", ok_log_period)
-    .insert ("clito", ok_clnt_timeout)
-    .insert ("sessionsrv", sessionsrv)
-    .insert ("unamesrv", unamesrv)
-    .insert ("unamefrontsrv", unamefrontsrv)
-    .insert ("usersrv", usersrv);
+    .insert ("clito", ok_clnt_timeout);
 }
 
 void
