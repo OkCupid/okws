@@ -1,0 +1,69 @@
+$Id$
+
+Here's a quick overview of what's here:
+
+(1) libpub -- A library used for publishing in the templating system.
+
+(2) pub -- publishing executables.  pub is run on the command line when
+either (a) templating static content (.html files) or (b) preprocessing
+HTML-ified C++ code into C++ code.  there is also a pubd background
+daemon that is launched by the webserver on boot, that serves
+all HTML templates.
+
+(3) libahttp -- library for HTTP transport, header parsing, CGI
+variable parsing, and response generation.
+
+(4) libaok -- Library that web developers should link against to create
+new CGI services.
+
+(5) okd -- okd is the leader process that listens on port 80.  it send
+file descriptors to the child processes based on a specified configuration
+file.  it also will have a control port open, through which the user can
+send "reload" messages.
+
+(6) samples -- sample processes.  cgiscript1.g is a sample okd child process,
+which actually serves basic web pages.
+
+(7) client -- a simple HTML test client
+
+(8) etc --  sample configuration files
+
+(9) html -- sample HTML files exhibiting switches, includes, and also
+    run-time variable resolutions.
+
+(10) libamysql -- a libasync interface to mysql.  
+
+(11) libamt -- async / multithread bridge.  allows ARPC to interface
+     with threaded user libraries.
+
+(12) blrplt -- Makes a boiler plate Okd build directory, in which you
+     can write all your own Ok Services.  To use this feature, run 
+     bld.sh <dir> in a new directory, and it will copy all of the 
+     relevant files over. (currently the build scripts generated
+     are a bit out of date; I'm working on fixing these)
+
+(13) etc -- some configuration file exmaples.
+
+(14) libaz - Instead of using strbufs and strs, OKD uses
+     zbufs and zstrs, respecivtely. This provides a smart
+     caching GZip filter, for chunked, compressed gzip.
+
+(15) logd -- the external logging program. all services log to
+     one central location, handled by this logger.
+
+Compile Notes:
+
+ - My autoconf scripts are somewhat broken, and I haven't had time to 
+   fix them.  You should also have on your system the following to
+   get all of the library to compile:
+
+	- Pth -- GNU portable thread library. Make sure you enable
+	  "hard system calls" when you compile.  Soft system calls
+          do a load of pre-processor macro subtitutions that break
+          libasync -- especially that for "select," which means something
+          very different in the world of ARPC.
+
+	- Mysql client 4.1
+
+   Eventually I'll have some nice portable solutions here, but for now,
+   this is what I have.

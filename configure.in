@@ -1,0 +1,120 @@
+dnl $Id$
+dnl
+dnl Process this file with autoconf to produce a configure script.
+dnl
+
+AC_INIT(config.h.in)
+AM_INIT_AUTOMAKE(acgi, 0.0)
+AM_CONFIG_HEADER(config.h)
+
+AC_SUBST(PUB)
+
+AC_CANONICAL_HOST
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_CXX
+AC_PROG_YACC
+SFS_WFLAGS
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PATH_PROG(PERL, perl, perl)
+AC_PATH_PROGS(M4, gm4 gnum4 m4, '$(top_srcdir)/missing')
+AC_PATH_PROGS(UPTIME, uptime, '$(top_srcdir)/missing')
+
+dnl
+dnl make sure that some type of threading is available.
+dnl
+SFS_REQUIRE_THREADS
+
+test "$PUB" || PUB='$(top_builddir)/pub/pub'
+
+# XXX - next line seems to be required for some autoconf/-make/libtool versions
+test -z "$target" && target=NONE
+AC_DISABLE_SHARED
+AM_PROG_LIBTOOL
+AM_PROG_LEX
+
+AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
+
+SFS_SFS
+SFS_FIND_RESOLV
+ACGI_LIBS
+SFS_MYSQL
+
+AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
+
+AC_CHECK_FUNCS(rfork clone)
+
+SFS_CFLAGS
+
+CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'
+
+dnl
+dnl for .x files, need header in build directory
+dnl
+for lib in libpub libaok libweb libamysql; do
+    CPPFLAGS="$CPPFLAGS -I"'$(top_builddir)'"/$lib"
+done
+
+dnl
+dnl library directories
+dnl
+for lib in libpub libahttp libaok libamt libamysql libweb; do
+    CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
+done
+
+dnl
+dnl when compiling the PUB program, do not link againgst libahttp
+dnl
+LIBPUB='$(top_builddir)/libpub/libpub.la'
+LIBAHTTP='$(top_builddir)/libahttp/libahttp.la'
+LIBAOK='$(top_builddir)/libaok/libaok.la'
+LIBAMT='$(top_builddir)/libamt/libamt.la'
+LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
+LIBWEB='$(top_builddir)/libweb/libweb.la'
+LDADD_PUB='$(LIBPUB) '"$LDADD"
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB) '"$LDADD"
+LDADD_AMT='$(LIBAMT) '"$LDADD"
+if test "$enable_shared" = yes; then
+   LDEPS=
+   LDEPS_PUB=
+   LDEPS_AMT=
+else
+   LDEPS_PUB='$(LIBPUB) '"$LDEPS"
+   LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB) '"$LDEPS"
+   LDEPS_AMT='$(LIBAMT) '"$LDEPS"
+   LDEPS_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDEPS"
+fi
+LDADD_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
+
+
+ETAGS_ARGS='-C /dev/null'
+
+ACGI_SET_VERSION
+
+AC_SUBST(OK_VERSION)
+AC_SUBST(ACGI_VERSION)
+AC_SUBST(LIBPUB)
+AC_SUBST(LIBAHTTP)
+AC_SUBST(LIBAOK)
+AC_SUBST(LIBAMT)
+AC_SUBST(LIBWEB)
+AC_SUBST(LIBAMYSQL)
+AC_SUBST(LDADD_PUB)
+AC_SUBST(LDEPS_PUB)
+AC_SUBST(LDADD_AMT)
+AC_SUBST(LDADD_AMYSQL)
+AC_SUBST(LDEPS_AMT)
+AC_SUBST(LDEPS_AMYSQL)
+AC_SUBST(ETAGS_ARGS)
+
+PUB_PDEBUG
+PUBFLAGS='-rF'
+AC_SUBST(PUBFLAGS)
+
+AC_OUTPUT(libpub/Makefile test/Makefile pub/Makefile okd/Makefile 
+	  libahttp/Makefile libaok/Makefile samples/Makefile 
+	  client/Makefile libamt/Makefile libamysql/Makefile 
+	  libweb/Makefile logd/Makefile Makefile)

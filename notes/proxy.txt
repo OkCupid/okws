@@ -1,0 +1,98 @@
+
+SYNC/ASYNC Proxy Service
+------------------------
+ - Generic layer between synchronous libraries and asynchronous CGI servers.
+
+Overview
+--------
+ - A main process will be running that is akin to sfssd.  An RPC proxy
+server. RPC packets will have roughly 2 arguments -- service ID, and
+opaque data that represents the query payload to the target service.
+ - Will maintain a central table with open servers; will forward to
+an fd to an open server if possible;  if not, it will fork off a new
+one and then forward request.  This should be configurable like apache --
+to have a minimal pool, parameters that specify when servers close and
+open, and maximal pool size.
+ - Questions -- how many buffer copies per request?
+ - What about calling xdr2bytes and bytes2xdr, etc.. will that
+be expensive, and will they entail additional buffer copies? Is there a way
+to have the target service respond directly to the caller?  This would save
+some buffer copies, and will also lower the load of the central server.
+In this case, we'd send the response out to the caller, and then RPC the
+central server that we've completed out request, so we can be inserted
+back into the idlers queue.
+	- Could this be achieved through file descriptor passing?
+ - Service registration, via configuration file:
+	- service ID
+	- executable location
+ - Sevice packet might be a union; therefore, we'de recompile the master
+server every time we added new services.  This might be fine. In practice,
+everytime we wanted to add a new database interface our amysql service,
+we'd have to recompile acgi-bridge?  Not sure if this is the best idea.
+ - Note that this assumes no network bottleneck between the server and
+the proxy.  This is probably reasonable, since they will be connected
+by fast ethernet.  We're going to be overlapping -- instead -- internet
+network latency and MySQL disk latency.
+ - It's probably best to send opaque data -- that way we don't need to
+hard-reboot the acgi-bridge on recompile of service.
+ - Could we write out responses to shared memory, that way, we can save
+a buffer copy.  Then we'd need a shared memory block for each service
+process we run. Let's make an estimate on the number of service processes
+we will have running:
+
+	- Average mysql access: 3ms --> 333 requests / second
+	- Chris wants 3000 services per second? About 5 DBs should
+	  suffice, given that not all of those requests will need 
+	  DB -- hopefully most of those will hit the cache.
+
+ - Queing Theory: Arrive rate is a, departure rate is b. p = a/b.
+   AQL (average queue lenght) = p/(1-p). Server serves 100 hits
+   per second, DB servers 333 requests / second --> p = 1/3.
+   AQL = 1/3 / 2/3 = 1/2.  If we bump it up to 222 requests / second,
+   then p = 2/3, and AQL = 2. 
+ - We don't expect to have too many instances of each service processes,
+so maybe it's ok to allocate a shared memory pool for IPC between the service
+process and the central server -- or, better yet, have the service send
+the response directly back to the web server.  This does not alleviate the
+problem for large writes to the database, as will be the case with message
+compisition, statement composition, and perhaps jpg queuing -- this
+obviously needs to be worked out.
+ - If we allocate 64K per server, and we have on average 10 servers running,
+we're doing OK -- 640K of shared memory needed, which is fine.  We'll have
+shared memory accesses for most requests, for those very large requests,
+we'll do regular memory copies.  Of course, this will hurt the most, but
+hopefully they will be rare.  Clearly, we'll enable parameter tuning to 
+support memory segment sizes per service. 
+ - Needed benchmarks:
+	- Memory copy, 10K.
+	- Shmget 
+	- Shmat
+   In other words, it might be faster to copy then the deal with shared
+memory.
+ - In the case of shared memory, here is what will happen:
+
+	- Central server receives request from web server. Parses RPC
+	  header into two components: (1) service number and (2)
+	  opaque data / payload / request information.
+	- Central server checks its server pool.  If a server exists,
+	  it will copy payload into that server's shared memory segment,
+	  and will send an RPC to that server to check it's segment.
+	- If no available server exists, and there are resources
+	  available, central server will fork off new service server.
+	  Will allocate a new memory pool and will have a given key,
+	  probably related to the process ID. Doesn't matter so 
+	  long as it's unique to the process.  Will then load the payload
+	  into the shared memory.  Will send an RPC call to the new server,
+	  with also with the shared memory key, so the service server 
+	  knows how to attach.
+	- After the service server has finished its request, it replies
+	  to the server's RPC.  It will put its result into shared memory
+	  at an offset either at 0x0 -- where the server put its payload;
+	  or at the next available shared memory location.  Not sure 
+	  yet what to do about this.
+
+
+
+
+
+

@@ -1,0 +1,69 @@
+$Id$
+
+Setting Up Okd To Run on FreeBSD
+--------------------------------
+
+1. User IDs and Groups
+----------------------
+
+OkD should be configured with 2 user/groups:
+
+	okd - user for running all helper services such as logging
+	      and pub. should have some privileges to access the file
+	      system for reading and for writing.
+
+	www - user for running web services -- should only have access
+	      to the file system for writine core files.
+
+FreeBSD already has www/www. For OKD, add the user okd/okd:
+
+	/etc/passwd:
+
+		okd:*:90:90:OK Daemon User:/nonexistant:/sbin/nologin
+
+	/etc/group:
+
+		okd:*:90:
+
+Thus, in your /etc/sfs/okd_config file, you might have something like:
+
+	ServiceUser	www
+	ServiceGroup	www
+	OkdUser		okd
+	OkdGroup	okd
+
+
+2. Coredumps
+-------------
+
+Getting your broken OK services to dump core is a bit tricky, since they
+will be running in a chroot jail, without write or read privileges. The
+easiest way I've found around this is to do the following:
+
+	a. Change the system-wide coredump location.  In a startup file
+	   add the line:
+	
+		sysctl kern.corefile="/var/coredumps/%U/%N.core"
+	   
+           This will tell the kernel to dump core in the given directory,
+	   where %U is substituted with the user's ID.  Note that this
+  	   directory must exist, and must be writable by the user, or
+   	   else the kernel won't dump core there.
+
+	b. You need to make the appropriate directories available in your
+ 	   chroot jail.  That is, cd into your chroot jail:
+
+		mkdir -p var/coredumps
+	        cd var/coredumps
+		mkdir 80 90
+		chown 80 80
+		chown 90 90
+
+3. Syslogging
+-------------
+
+	When run as root and in the background, all messages sent to 
+	standard error will be redirected to the syslogger.  To do
+	this, introduce the following rule in /etc/syslog.conf:
+
+		local3.*	/var/log/okd

@@ -1,0 +1,492 @@
+
+#include "amt.h"
+
+mtd_thread_t::mtd_thread_t (mtd_thread_arg_t *a)
+  : tid (a->tid), fdin (a->fdin), fdout (a->fdout), 
+    cell (a->cell), mtd (a->mtd) {}
+
+static int
+msg_recv (int fd, mtd_msg_t *msg)
+{
+  int rc;
+  ssize_t sz = sizeof (mtd_msg_t);
+  do {
+    rc = read (fd, (void *)msg, sz);
+    if (rc == sz)
+      return rc;
+    else if (rc > 0) {
+      errno = EIO;
+      return -1;
+    }
+  } while (rc < 0 && errno == EAGAIN);
+  return rc;
+}
+
+static int
+msg_send (int fd, mtd_msg_t *msg)
+{
+  char *buf = reinterpret_cast<char *> (msg);
+  ssize_t sz = sizeof (mtd_msg_t);
+  int bs = 0;
+  int rc;
+
+  while (bs < sz) {
+    rc = write (fd, buf + bs, sz - bs);
+    if (rc < 0 && errno != EAGAIN)
+      return rc;
+    bs += rc;
+  }
+  return sz;
+}
+
+mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s)
+  : num (n), shmem (New mtd_shmem_t (n)), ntcb (c), maxq (m),
+    nalive (n), sdflag (false), ssrv (s) {}
+
+mtdispatch_t::~mtdispatch_t ()
+{
+  delete shmem;
+}
+
+bool
+mtdispatch_t::async_serv (svccb *b)
+{
+  u_int p = b->proc ();
+  u_int la;
+  switch (p) {
+  case AMT_LOAD_AVG_RPC:
+    la = ssrv ? ssrv->get_load_avg () : UINT_MAX;
+    b->replyref (la);
+    return true;
+  default:
+    return false;
+  }
+}
+
+void
+mtdispatch_t::dispatch (svccb *b)
+{
+  if (sdflag || queue.size () >= maxq)
+    b->reject (PROC_UNAVAIL);
+  else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b)))
+    queue.push_back (b);
+}
+
+bool
+mtdispatch_t::send_svccb (svccb *b)
+{
+  if (readyq.size () > 0) {
+    int i = readyq.pop_front ();
+    assert (shmem->arr[i].status == MTD_READY);
+    shmem->arr[i].status = MTD_WORKING;
+    shmem->arr[i].sbp = b;
+    if (msg_send (i, MTD_CONTINUE) < 0)
+      warn ("mtdispatch::send_svccb: msg_send failed: %m\n");
+    return true;
+  } else {
+    return false;
+  }
+}
+
+int
+mtdispatch_t::msg_send (int tid, mtd_status_t s)
+{
+  mtd_msg_t msg (tid, s);
+  return ::msg_send (shmem->arr[tid].fdout, &msg);
+}
+
+void
+mtdispatch_t::chld_msg ()
+{
+  mtd_msg_t msg;
+  int rc = msg_recv (fdin, &msg);
+  if (rc < 0) {
+    warn ("Bad receive message: %m\n");
+    return;
+  }
+  warn << "Received message from child: " << msg << "\n"; // debug
+  switch (msg.status) {
+  case MTD_READY:
+    if (sdflag) shutdown ();
+    chld_ready (msg.tid);
+    break;
+  case MTD_REPLY:
+    if (sdflag) shutdown ();
+    chld_reply (msg.tid);
+    break;
+  case MTD_SHUTDOWN:
+    warn << "Lost a child!\n";
+    // XXX - recover?
+    break;
+  default:
+    warn << "Unknown message received: " << msg << "\n";
+  }
+}
+
+void
+mtdispatch_t::shutdown ()
+{
+  sdflag = true;
+  if (queue.size ())
+    return;
+
+  for (u_int i = 0; i < num; i++) 
+    if (shmem->arr[i].status == MTD_WORKING)
+      return;
+  warn << "Shutdown complete.\n";
+  exit (0);
+}
+
+void
+mtdispatch_t::chld_reply (int i)
+{
+  mtd_shmem_cell_t *c = &(shmem->arr[i]);
+  svccb *sbp = c->sbp;
+  switch (c->rstat) {
+  case MTD_RPC_NULL:
+    ssrv->post_db_call (sbp, NULL);
+    sbp->reply (NULL);
+    break;
+  case MTD_RPC_DATA:
+    ssrv->post_db_call (sbp, c->rsp);
+    sbp->reply (c->rsp);
+    break;
+  case MTD_RPC_REJECT:
+    sbp->reject (PROC_UNAVAIL);
+    break;
+  }
+  c->sbp = NULL;
+  c->status = MTD_READY;
+  c->rsp = NULL;
+  chld_ready (i);
+}
+
+void
+mtdispatch_t::chld_ready (int i)
+{
+  readyq.push_back (i);
+  while (queue.size () && readyq.size ()) 
+    send_svccb (queue.pop_front ());
+}
+
+void 
+mtdispatch_t::init ()
+{
+  int fds[2];
+  if (pipe (fds) < 0)
+    fatal << "mtdispatch::init: cannot open pipe\n";
+  fdin = fds[0];
+  make_async (fdin);
+  fdcb (fdin, selread, wrap (this, &mtdispatch_t::chld_msg));
+  for (u_int i = 0; i < num; i++) {
+    launch (i, fds[1]);
+  }
+  //close (fds[1]);
+}
+
+static void
+new_threadv (void *av)
+{
+  mtd_thread_arg_t *arg = static_cast<mtd_thread_arg_t *> (av);
+  arg->mtd->new_thread (arg);
+}
+
+static void *
+vnew_threadv (void *av)
+{
+  warn << "vnew_threadv called.\n"; // debug
+  new_threadv (av);
+  return (NULL);
+}
+
+static int
+inew_threadv (void *av)
+{
+  warn << "inew_threadv called.\n";  // debug
+  new_threadv (av);
+  return 0;
+}
+
+mtd_thread_t *
+mtdispatch_t::new_thread (mtd_thread_arg_t *a) const
+{
+  warn << "New thread called: " << a->tid << "\n"; // debug
+  mtd_thread_t *t = (*ntcb) (a);
+  t->run (); 
+  delete a;
+  return t;
+}
+
+void
+mtd_thread_t::run ()
+{ 
+  mtd_status_t rc;
+  if (!init ()) {
+    TWARN ("thread could not initialize");
+    msg_send (MTD_SHUTDOWN);
+    delete this;
+    return;
+  }
+
+  become_ready ();
+  do {
+    take_svccb ();
+    rc = msg_recv ();
+  } while (rc == MTD_CONTINUE);
+  
+  cell->status = MTD_SHUTDOWN;
+  msg_send (MTD_SHUTDOWN);
+  return;
+}
+
+mtd_status_t 
+mtd_thread_t::msg_recv ()
+{
+  mtd_msg_t msg;
+  int rc = ::msg_recv (fdin, &msg);
+  if (rc < 0) {
+    warn ("mtd_thread_t::msg_recv: bad read: %m\n");
+    return MTD_ERROR;
+  }
+  return msg.status;
+}
+
+int
+mtd_thread_t::msg_send (mtd_status_t s)
+{
+  mtd_msg_t msg (tid, s);
+  return ::msg_send (fdout, &msg);
+}
+
+void
+mtd_thread_t::take_svccb ()
+{
+  svccb *s = cell->sbp;
+  if (s) 
+    dispatch (s);
+}
+
+void
+mtd_thread_t::become_ready ()
+{
+  TWARN ("called become_ready ()"); // debug
+  cell->status = MTD_READY;
+  msg_send (MTD_READY);
+}
+
+void
+mtd_thread_t::replynull ()
+{
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_NULL;
+  msg_send (MTD_REPLY);
+}
+
+void
+mtd_thread_t::reject ()
+{
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_REJECT;
+  msg_send (MTD_REPLY);
+}
+
+void
+mtd_thread_t::reply (ptr<void> d)
+{
+  cell->rsp = d;
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_DATA;
+  msg_send (MTD_REPLY);
+}
+
+mtd_thread_arg_t *
+mtdispatch_t::launch_init (int i, int fdout, int *closeit)
+{
+  int fds[2];
+  if (pipe (fds) < 0)
+    fatal << "mtdispatch::launch: cannot open pipe\n";
+  make_async ((shmem->arr[i].fdout = fds[1]));
+  mtd_thread_arg_t *arg = New mtd_thread_arg_t (i, fds[0], fdout, 
+						&shmem->arr[i], this);
+  *closeit = fds[0];
+  return arg;
+}
+
+#ifdef HAVE_PTH
+void
+mgt_dispatch_t::init ()
+{
+  if (pth_init () != TRUE) {
+    if (errno == EPERM)
+      warn << "Pth library has already been initialized.\n";
+    else
+      fatal << "Cannot initialize GNU Pth library\n";
+  }
+  mtdispatch_t::init ();
+}
+
+void
+mgt_dispatch_t::launch (int i, int fdout)
+{
+  warn << "mgt_dispatch_t::launch: " << i << "\n"; // debug
+  int closeit;
+  mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
+
+  pth_attr_t attr = pth_attr_new ();
+  names[i] = strbuf ("dispatch thread ") << i;
+  pth_attr_set (attr, PTH_ATTR_NAME, names[i].cstr ());
+  pth_attr_set (attr, PTH_ATTR_STACK_SIZE, MTD_STACKSIZE);
+  pth_attr_set (attr, PTH_ATTR_JOINABLE, FALSE);
+  if (!(gts[i] = pth_spawn (attr, vnew_threadv, static_cast<void *> (arg))))
+    fatal << "mtdispatch::launch: pth_spawn failed\n";
+}
+#endif /* HAVE_PTH */
+
+#ifdef HAVE_PTHREADS
+void
+mpt_dispatch_t::launch (int i, int fdout)
+{
+  warn << "mpt_dispatch_t::launch: " << i << "\n"; // debug
+  int closeit;
+  mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
+
+  if (pthread_create (&pts[i], NULL, vnew_threadv, 
+		      static_cast<void *> (arg)) < 0)
+    fatal << "mtdispatch::launch: pthread_create failed\n";
+
+  //close (closeit);
+}
+#endif /* HAVE_PTHREADS */
+
+#ifdef HAVE_KTHREADS
+void
+mkt_dispatch_t::launch (int i, int fdout)
+{
+  warn << "mkt_dispatch_t::launch: " << i << "\n"; // debug
+
+  int closeit;
+  mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
+#ifdef HAVE_RFORK_THREAD
+  shmem->arr[i].stkp = (void *) xmalloc (MTD_STACKSIZE);
+  int rc = rfork_thread (MTD_STACKSIZE, shmem->arr[i].stkp, inew_threadv,
+			 static_cast<void *> (arg));
+  if (rc < 0) {
+    warn ("mtdispatch::launch: rfork failed: %m\n");
+    exit (1);
+  }
+  shmem->arr[i].pid = rc;
+
+#else
+# ifdef HAVE_RFORK
+  int rc = rfork (RFPROC);
+  warn << "rfork returned: " << rc << "\n"; // debug
+  if (rc == 0) {
+    new_thread (arg);
+    return;
+  } else if (rc < 0) {
+    warn ("mtdispatch::launch: rfork failed: %m\n");
+    exit (1);
+  }
+# else
+#  ifdef HAVE_CLONE
+  shmem->arr[i].stkp = (void *) xmalloc (MTD_STACKSIZE);
+  int rc = clone (inew_threadv, shmem->arr[i].stkp, 
+		  CLONE_FS|CLONE_FILES|CLONE_VM,
+		  static_cast<void *> (arg));
+  if (rc < 0)
+    fatal << "mtdispatch::launch: clone failed\n";
+#else
+  assert (false);
+#endif
+#endif
+#endif
+  //close (closeit);
+}
+#endif /* HAVE_KTHREADS */
+
+void
+ssrv_t::accept (ptr<axprt_stream> x)
+{
+  if (!x)
+    fatal << "listen port closed.\n";
+  vNew ssrv_client_t (this, prog, x);
+}
+
+ssrv_client_t::ssrv_client_t (ssrv_t *s, const rpc_program *const p, 
+			      ptr<axprt> x) : ssrv (s)
+{
+  ssrv->insert (this);
+  srv = asrv::alloc (x, *p, wrap (this, &ssrv_client_t::dispatch));
+}
+
+void
+ssrv_client_t::dispatch (svccb *s)
+{
+  if (!s)
+    delete this;
+  else if (!ssrv->skip_db_call (s)) {
+    ssrv->req_made ();
+    ssrv->mtd->dispatch (s);
+  }
+}
+
+ssrv_client_t::~ssrv_client_t () { ssrv->remove (this); }
+
+ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p, 
+		mtd_thread_typ_t typ, int n, int m) 
+  : mtd (NULL), prog (&p), load_avg (0)
+{
+  switch (typ) {
+  case MTD_KTHREADS:
+#ifdef HAVE_KTHREADS 
+    mtd = New mkt_dispatch_t (c, n, m, this);
+#endif
+    break;
+  case MTD_PTH:
+#ifdef HAVE_PTH
+    assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
+    mtd = New mgt_dispatch_t (c, n, m, this);
+#endif
+    break;
+  case MTD_PTHREADS:
+#ifdef HAVE_PTHREADS
+    mtd = New mpt_dispatch_t (c, n, m, this);
+#endif
+    break;
+  default:
+    break;
+  }
+  if (!mtd) {
+#ifdef HAVE_PTH
+    warn << "Requested thread type not availabe: using GNU Pth\n";
+    mtd = New mgt_dispatch_t (c, n, m, this);
+#else
+# ifdef HAVE_PTHREADS
+    warn << "Requested thread type not availabe: using POSIX pthreads\n";
+    mtd = New mpt_dispatch_t (c, n, m, this);
+# else
+    warn << "Requested thread type not availabe: using kernel threads\n";
+    mtd = New mkt_dispatch_t (c, n, m, this);
+# endif
+#endif
+  }
+  mtd->init (); 
+}
+
+static bool
+tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff)
+{
+  long sd = ts2.tv_sec - ts1.tv_sec;
+  return (sd > diff || (sd == diff && ts2.tv_nsec > ts1.tv_nsec));
+}
+
+void
+ssrv_t::req_made ()
+{
+  reqtimes.push_back (tsnow);
+  while (reqtimes.size () && tsdiff (reqtimes[0], tsnow, ok_amt_lasi))
+    reqtimes.pop_front ();
+  load_avg = reqtimes.size ();
+}
+       
+  

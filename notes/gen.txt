@@ -1,0 +1,23 @@
+
+1. Self-referential resolutions: From stack level N, can only evaluate
+   a variable at level N-1, including from mutually refential variables.
+
+2. Resolve vs. output.  Resolving needs to happen to figure out case
+   switch statements.  Need complete resolution.  However, when output
+   happens at compile time, no need to resolve gvars -- can output those
+   via C++ output statements.
+
+	solution: rpvar_t struct -- intermediate data type -- sequence
+	of gvars and then strings -- very close to pvar_t, in fact can
+	be implemented as one?
+
+3. switch syntax. we should probably change it because the key and case
+   labels have to be determed at compile time:
+
+<!--#switch ("k1"), ("k1v", { "k1" => "v1" }), ("k2v", { "k1" => "v2" }) -->
+
+4. Actually switch all switch/includes so that filename and key are evident
+from syntax, not from the associative arrays. 
+
+5. What are we going to do about quotation marks in C++ ct_includes?
+   Maybe this is a reason not to have these beasts.

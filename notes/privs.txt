@@ -1,0 +1,10 @@
+
+ideally, we'd like to have okd running as user X, and all services
+running as user Y.  X will have privileges to read and execute the
+services, but will run the service as group Y.
+
+ - Heres how this might work.
+
+ - /jail is X.X 0600
+ - /jail/svc_Y is Y.X --Sr-x--
+ - Y is not in group X.

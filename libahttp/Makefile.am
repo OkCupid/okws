@@ -1,0 +1,28 @@
+
+
+$(PROGRAMS): $(LDEPS)
+
+sfslib_LTLIBRARIES = libahttp.la
+
+libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
+	pair.C inhdr.C parse.C
+
+sfsinclude_HEADERS = cgi.h ahttp.h httpconst.h abuf.h pair.h inhdr.h
+
+SUFFIXES = .g .C
+.g.C:
+	@rm -f $@
+	-$(PUB) $(PUBFLAGS) -o $@ $< || rm -f $@
+
+EXTRA_DIST = .cvsignore
+CLEANFILES = core *.core *~ *.rpo
+
+.PHONY: sourceclean
+sourceclean:
+	@rm -f $(srcdir)/err.C
+
+MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
+	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
+	stamp-h.in 
+
+BUILT_SOURCES = err.g

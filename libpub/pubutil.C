@@ -1,0 +1,296 @@
+
+#include "pubutil.h"
+#include "sha1.h"
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+#include <ctype.h>
+
+bool
+mystrcmp (const char *a, const char *b)
+{
+  while (*a && *b) {
+    if (*a != *b) return false;
+    a++;
+    b++;
+  }
+  if (*a || *b)
+    return false;
+  return true;
+}
+
+bool
+cicmp (const str &s1, const char *c2)
+{
+  const char *c1 = s1.cstr ();
+  while (*c1 && *c2) {
+    if (tolower (*c1) != tolower (*c2))
+      return false;
+    c1++;
+    c2++;
+  }
+  if (*c1 || *c2)
+    return false;
+  return true;
+}
+
+bool 
+cicmp (const str &s1, const char *c2, u_int l)
+{
+  if (s1.len () != l)
+    return false;
+  const char *c1 = s1.cstr ();
+  for (u_int i = 0; i < l; i++)
+    if (tolower (c1[i]) != tolower (c2[i]))
+      return false;
+  return true;
+}
+
+int
+myopen (const char *arg, u_int mode)
+{
+  struct stat sb;
+  if (stat (arg, &sb) == 0)
+    if (!S_ISREG (sb.st_mode)) 
+      fatal << arg << ": file exists but is not a regular file\n";
+    else if (unlink (arg) < 0 || stat (arg, &sb) == 0)
+      fatal << arg << ": could not remove file\n";
+ 
+  int fd = open (arg, O_CREAT|O_WRONLY, mode);
+  if (!fd)
+    fatal << arg << ": could not open file for writing\n";
+  return fd;
+}
+
+str
+suffix_sub (const char *s, const char *sfx1, const char *sfx2)
+{
+  if (!s)
+    return NULL;
+  int len0, len1;
+  len0 = strlen (s);
+  len1 = strlen (sfx1);
+  if (len0 < len1 || !mystrcmp (s + len0 - len1, sfx1))
+    return NULL;
+  return (strbuf (str (s, len0 - len1)) << sfx2);
+}
+
+str
+c_escape (const str &s, bool addq)
+{
+  if (!s) return s;
+
+  const char *p1 = s.cstr ();
+  const char *p2 = NULL;
+  char *buf = New char[2 * s.len () + 3];
+  char *dp = buf;
+  size_t span;
+
+  if (addq)
+    *dp++ = '"';
+
+  char c;
+  while ((p2 = strpbrk (p1, "\\\"\n"))) {
+    span = p2 - p1;
+    strncpy (dp, p1, span);
+    dp += span;
+    *dp++ = '\\';
+    c = (*p2 == '\n') ? 'n' : *p2;
+    *dp++ = c;
+    p2++;
+    p1 = p2;
+  }
+  int len = strlen (p1);
+  memcpy (dp, p1, len);
+  dp += len;
+  if (addq) 
+    *dp++ = '"';
+  *dp = 0;
+  str r (buf);
+  
+  delete [] buf;
+  return r;
+}
+
+bool
+str_split (vec<str> *r, const str &s, bool quoted, int sz)
+{
+  int len = s.len ();
+  if (!len || sz <= 0)
+    return false;
+  const char *bp = s.cstr ();
+  while (len > 0) {
+    int i = min (len, sz);
+    str s (bp, i);
+    r->push_back (quoted ? c_escape (s, true) : s);
+    len -= i;
+    bp += i;
+  }
+  return true;
+}
+
+bool
+phash_t::operator== (const phash_t &p2) const
+{
+  return (!memcmp ((void *)val, (void *)p2.val, PUBHASHSIZE));
+}
+
+bool 
+phash_t::operator== (const xpubhash_t &ph) const
+{
+  return (!memcmp ((void *)val, (void *)ph.base (), PUBHASHSIZE));
+}
+
+hash_t
+phash_t::hash_hash () const
+{
+  u_int *p = (u_int *)val;
+  const char *end_c = val + PUBHASHSIZE;
+  u_int *end_i = (u_int *)end_c;
+  u_int r = 0;
+  while (p < end_i)
+    r = r ^ *p++;
+  return r;
+}
+
+#define BUFSIZE 4096
+
+bool
+file2hash (const str &fn, phash_t *h)
+{
+  char buf[BUFSIZE];
+  struct stat sb;
+  if (access (fn.cstr (), F_OK | R_OK) != 0)
+    return false;
+  if (stat (fn.cstr (), &sb) != 0 || !S_ISREG (sb.st_mode))
+    return false;
+  int fd = open (fn.cstr (), O_RDONLY);
+  if (fd < 0)
+    return false;
+  size_t n;
+  sha1ctx sc;
+  while ((n = read (fd, buf, BUFSIZE))) {
+    sc.update (buf, n);
+  }
+  sc.final (h);
+  close (fd);
+  return true;
+}
+
+ptr<phash_t>
+file2hash (const str &fn)
+{
+  ptr<phash_t> p = New refcounted<phash_t> ();
+  if (!file2hash (fn, p))
+    return NULL;
+  return p;
+}
+
+void
+pbinding_t::to_xdr (xpub_pbinding_t *x) const
+{
+  x->fn = fn;
+  hsh->to_xdr (&x->hash);
+}
+
+void
+phash_t::to_xdr (xpubhash_t *x) const
+{
+  memcpy (x->base (), val, PUBHASHSIZE);
+}
+
+pbinding_t::pbinding_t (const xpub_pbinding_t &x) 
+  : fn (x.fn), hsh (New refcounted<phash_t> (x.hash.base ())) {}
+
+void
+bindtab_t::bind (const pbinding_t *p)
+{
+  pbinding_t *p2;
+  if ((p2 = (*this)[p->filename ()])) {
+    dec (p2->hash ());
+    remove (p2);
+    delete p2;
+  }
+  inc (p->hash ());
+  insert (const_cast<pbinding_t *> (p));
+}
+
+void
+bindtab_t::inc (phashp_t h)
+{
+  u_int *i = cnt[h];
+  if (i) *i++;
+  else cnt.insert (h, 1);
+}
+
+void
+bindtab_t::dec (phashp_t h)
+{
+  u_int *i = cnt[h];
+  assert (i);
+  if (!--(*i)) {
+    if (delcb)
+      (*delcb) (h);
+    cnt.remove (h);
+  }
+}
+
+int
+uname2uid (const str &n)
+{
+  struct passwd *pw;
+  int ret = -1;
+  if ((pw = getpwnam (n))) {
+    ret = pw->pw_uid;
+  }
+  endpwent ();
+  return ret;
+}
+
+str
+uid2uname (int i)
+{
+  struct passwd *pw;
+  str ret;
+  if ((pw = getpwuid (i))) 
+    ret = pw->pw_name;
+  endpwent ();
+  return ret;
+}
+
+int
+gname2gid (const str &g)
+{
+  struct group *gr;
+  int ret = -1;
+  if ((gr = getgrnam (g))) {
+    ret = gr->gr_gid;
+  }
+  endgrent ();
+  return ret;
+}
+
+bool
+isdir (const str &d)
+{
+  struct stat sb;
+  return (!stat (d, &sb) && (sb.st_mode & S_IFDIR) && !access (d, X_OK|R_OK));
+}
+
+int my_log_10 (int64_t in)
+{
+  int i = 0;
+  while ((in = in / 10)) i++;
+  return i;
+}
+
+str 
+dir_standardize (const str &s)
+{
+  const char *bp = s.cstr ();
+  const char *ep = bp + s.len () - 1;
+  for ( ; bp <= ep && *ep == '/'; ep--) ;
+  ep++;
+  return str (bp, ep - bp);
+}
+

@@ -1,0 +1,156 @@
+##
+## $Id$
+##
+## This is the primary okd configuration file, which is typcially placed
+## in /etc/sfs.
+##
+
+##
+## BindAddr <ip-addr> <port>
+##
+##   tells okd which IP address to bind to, and which port to listen on.
+##   Default port is 80.
+##  	
+BindAddr 	216.254.112.36 2000
+
+##
+## JailDir <dir>
+##
+##   All services run by okd will be in a chroot jail, assuming that okd
+##   is started as root.  Specify where this chroot jail is with the
+##   jaildir parameter
+##
+JailDir 	/disk/max/cupid
+
+##
+## ServiceUser <user>
+## ServiceGroup <user>
+##
+##   Specify the user and group that services launch by okd should run as.
+##   Note that this user/group should have very few privileges, if any.
+##   Services need not read from or write to any files on the file system,
+##   with the possible execption of the log socket -- this is still being
+##   worked out.
+##
+ServiceUser	www		
+ServiceGroup	www	
+
+##
+## OkdUser <user>
+## OkdGroup <group>
+##
+##   Specify the user/group that okd should run as.  If launched by root,
+##   okd will drop down to the user/group specified after binding to the
+##   appropriate listen port. The user/group must be able to read and
+##   execute services, in case they need to be restarted.
+##
+OkdUser		okd
+OkdGroup	okd
+
+##
+## PubdExecPath <path>
+##
+##   Tell okd where the Publishing Daemon (pubd) can be launched from.  Okd
+##   will launch pubd prior to calling chroot, so the path should be relative
+##   to the real top of the filesystem (/).
+##
+## PubdInet <ip-addr> <port>
+##
+##   Alternatively, okd can connect to pubd over a TCP socket at the given
+##   IP address and port.
+##
+## PubdUnix <path>
+##
+##   Alternatively, okd can connect to pubd over a Unix domain socket. This
+##   path is relative to the real top of the file system, and not the 
+##   chroot jail.
+##
+PubdExecPath	/disk/max/acgi/pub/pubd
+
+##
+## OkdlogdExecPath <path>
+##
+##   Tell okd where to find "oklogd", the RPC-based logging daemon.  The
+##   path should be relative to real root of the file system.
+##
+OklogdExecPath	/disk/max/acgi/logd/oklogd
+
+##
+## AcessLog <path>
+## ErrorLog <path>
+## AccessLogFmt <fmt-string>
+##
+##   These parameters are passed to okdlogd, telling it where and how to
+##   log access and error requests. The AcessLog and ErrorLog are given
+##   as relative paths to the top logging directory.  If launched as root,
+##   oklogd will chroot to the LogDir given.
+##
+LogDir		/var/run/okd/log
+AccessLog	/access_log
+ErrorLog	/error_log
+AccessLogFmt	ivt1sbU
+
+##
+## OklogdUser <user>
+## OklogdGroup <group>
+##
+##   The username and group the RPC-based logger should run as.  Can usually
+##   be the same as okd itself.
+##
+OklogdUser	okd
+OklogdGroup	okd
+
+##
+## Service <jailed-path> <URI-path>
+##
+##   Tells okd to launch and route to particular services.  The first argument
+##   should be the path of the service, relative to the root given by 
+##   JailDir.  The second parameter is the HTTP URI that should map to this
+##   service.
+##
+Service 	/websrv/t1 /t1
+Service		/websrv/t0 /t0
+
+##
+## Gzip Compression Configuration
+##
+##   Gzip'ping is on by default, with a compression level of 2 on the 
+##   server side (note that pubd automatically publishes with compression
+##   level 9).  Turn it off by specifying "Gzip 0".  Compress level can
+##   be set between 0 and 9.
+##
+Gzip 		1           # on
+GzipLevel 	2           # fast gzipping
+GzipSmallStrLen	0x200       # smaller strings are smushed together
+GzipCacheMin	0x200       # minimum size for a cached string
+GzipCacheMax	0x1000000   # 16M - maximum size of string to cache
+GzipMemLevel	9	    # maximum memory utilization
+
+##
+## Aliases
+##
+##   You can alias one URI to another rather easily.  In the following
+##   example, a user requesting http://foo.com/test1 will be internally
+##   redirected to http://foo.com/t1, and will be serviced by the 
+##   okservice at /websrv/t1
+##
+#Alias    /test1   /t1
+
+##
+## Log Timing
+##
+##   In each OK service, a log timer will go off every X milliseconds
+##   to update a timestamp.  Every Y of those timer events, a the log
+##   will be flushed to the external logging daemon. (LogTick = X, and
+##   LogPeriod = Y).  The default numbers are given below.
+##
+LogTick		500
+LogPeriod	8
+
+##
+## Client Timeout
+##
+##   Time the remote client's request out after a fixed amount of time --
+##   this value is given in seconds.
+##
+ClientTimeout	60

@@ -1,0 +1,101 @@
+#! /bin/sh -e
+# $Id$
+#
+# This script builds the files necessary to configure this package for
+# development.  Once you run this script, you will need GNU make,
+# autoconf, and automake to build the software.  You must run "make
+# dist" if you the wish to create a source tree that can be built
+# without these tools.
+#
+# You should generally only need to run this script if you just
+# checked sfs out of a CVS repository, or else somehow badly mangled
+# the Makefile.
+
+opt_c=
+opt_f=
+opt_n=
+
+for arg in "$@"; do
+case "$arg" in
+    -cf|-fc)
+	    opt_c='--copy'
+	    opt_f='--force'
+	    ;;
+    -c)
+	    opt_c='--copy'
+	    ;;
+    -f)
+	    opt_f='--force'
+	    ;;
+    -n)
+	    WANT_AUTOCONF_2_5=1
+	    export WANT_AUTOCONF_2_5
+	    WANT_AUTOMAKE_1_6=1
+	    export WANT_AUTOMAKE_1_6
+	    opt_n=yes
+	    ;;
+    *)
+	    echo setup: unknown option "$arg"
+	    ;;
+esac
+done
+
+if test ! -f configure.in; then
+	echo Must run this from source directory >&2
+	exit 1
+fi
+
+M4=gm4
+$M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 || M4=gnum4
+$M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 || M4=m4
+$M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 \
+    || (echo Cannot locate GNU m4 >&2; exit 1)
+
+for file in acinclude.m4; do
+    if test ! -f $file -a -f ../$file; then
+	echo "+ ln -f -s ../$file $file"
+	ln -f -s ../$file $file 
+    fi
+done
+
+for file in Makefile.am.m4 */Makefile.am.m4; do
+    if test -f $file; then
+	out=`echo $file | sed -e 's/\.m4$//'`
+	echo "+ $M4 $file > $out"
+	rm -f $out~
+	$M4 $file > $out~
+	mv -f $out~ $out
+    fi
+done
+
+for dir in *; do
+    if test -r ${dir}/setup; then
+	echo "+ ${dir}/setup $*";
+	(cd ${dir} && chmod +x ./setup && ./setup "$@")
+    fi
+done
+
+if test -z "${AM_ARGS:+set}"; then
+    AM_ARGS="--add-missing $opt_c $opt_f"
+fi
+if test -z "${LTI_ARGS:+set}"; then
+    LTI_ARGS="$opt_c $opt_f"
+fi
+
+set -x
+chmod +x setup
+libtoolize $LTI_ARGS
+aclocal
+autoheader
+automake $AM_ARGS
+if test -x /usr/local/bin/autoconf-new; then
+	autoconf-new
+else
+	autoconf
+fi
+set +x
+
+if test -f config.status; then
+    set -x
+    sh config.status
+fi

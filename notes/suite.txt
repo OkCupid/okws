@@ -1,0 +1,55 @@
+-----------------------------------------------------------------------
+$Id$
+-----------------------------------------------------------------------
+
+Necessary Components
+--------------------
+(1) CGI library (non-leaky).  Can possibly be built on top of my old
+    cgi.c / cgi.h.  Not entirely sure.
+(2) pub system:
+	- command line interface
+	- async CGI interface w/ cached parsed files?
+	- C++ source interface that compiles included files directly into
+	  code and provides output to the appropriate socket -- i.e. to the
+	  fd for the remote client.
+(3) html2c++ system; As in old spark, except we will need to output via
+    write or perhaps scatter-gather I/O.
+(4) CGI central dispatcher:
+	- Will accept connections on port 80.
+	- Will map file request to a persistent handler; most likely an
+	  external process, connections via UDP/ unix sockets.
+	- Perhaps will do CGI parsing and then give an NV-table to 
+	  the server, or better yet via shared memory -- depending on the
+	  size of the incoming data.
+	- Special service will then respond directly to the client, we hope.
+	- Needs 2 sockets to client: CTL, and HTTP; the former accepts
+	  XDR requests, the latter obviously HTTP/1.1 requests.
+(5) Sync-To-Async Bridge
+	- See proxy.notes. 
+
+Child Spawn Protocol
+
+(1) OKD_CTL message: from CTL process to leader process:
+	OKD_CTL_SPAWN (exec-path, CGI-name)
+(2) Leader process spawns exec-path, keeps open pipe to stdin of child
+(3) Child process opens CTL socket of leader:
+	/var/run/okd/leader-ctl.socket
+
+- Leader sends HTML requests along stdin of child.
+- Sends CTL messages along CTL channel (via XDR)
+- Need to look out for crashes; who reconnects, and how.
+
+How does a CTL process effect changes?
+(1) Requests from leader process, and Leader forwards messages to child;
+    might consider FD passing for this, too.  Also, what if the server
+    is sending the same message to all children?  might be redundant
+    files not needed - perhaps the leader process will produce the table
+
+	(a) leader queries children, making a root files set.
+	(b) leader spawns off parser process.
+	(c) when parser returns, leader notifies children it is done,
+	    perhaps sending file information for root files.
+	(d) clients recursively query leader for needed files.
+
+
+

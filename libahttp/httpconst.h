@@ -1,0 +1,20 @@
+
+// -*-c++-*-
+/* $Id$ */
+
+#ifndef _LIBAHTTP_HTTPCONST
+#define _LIBAHTTP_HTTPCONST
+
+#define HTTP_OK          200
+#define HTTP_URI_TOO_BIG 414
+#define HTTP_BAD_REQUEST 400
+#define HTTP_NOT_FOUND   404
+#define HTTP_NOT_ALLOWED 405
+#define HTTP_TIMEOUT     408
+#define HTTP_NOT_IMPLEMENTED 502
+#define HTTP_UNAVAILABLE 503
+#define HTTP_REDIRECT    301
+
+#define OKD_SERVER_ID "OKD/"VERSION
+
+#endif /* _LIBAHTTP_HTTPCONST */

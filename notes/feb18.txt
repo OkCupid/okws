@@ -1,0 +1,22 @@
+
+
+thoughts about EmbedC++ File Structure:
+
+pfile_t (sections:)
+  pfile_ec_header_t
+  pfile_ec_sec_t (cannot output HTML!)
+    pfile_ec_ccode_t 
+    pfile_html_sec_t (reenable HTML outputting!)
+    pfile_ec_gs_t
+  pfile_ec_main_t
+    pfile_html_sec_t
+    pfile_ec_code_t
+    pfile_ec_gs_t
+  pfile_ec_sec_t (etc...)
+
+
+problems: we need a way to have nested sections; i'm not sure we currently
+have this.  perhaps pfile_sec_t::add (pfile_el_t, false) will do it.
+
+
+  

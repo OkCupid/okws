@@ -1,0 +1,13 @@
+
+Outputting Cookies
+------------------------
+
+   From within an okclnt_t (or a subclass thereof...)
+
+   cookie_t *c = add_cookie (".okcupid.com");
+   c->expires (1,2,3,4)       // expires in 1 day, 2 hours, 3 min, 4 seconds
+      .add ("username", "patrick")
+      .add ("loginid", 111);
+
+  If you don't set the expires field, it will use the HTTP default -- 
+  expire at the end of the browser session.
