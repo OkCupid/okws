@@ -137,6 +137,7 @@ public:
   { return New refcounted<ahttpcon> (fd, s, mb); }
   bool closed () const { return fd < 0; }
   bool overflow () const { return overflow_flag; }
+  int set_lowwat (int sz);
 
 protected:
   void set_remote_ip ();
@@ -223,6 +224,7 @@ public:
   { return New refcounted<ahttpcon_clone> (f, s, ml); }
 
   void declone ();
+  static u_int maxscan () { return 10 + OK_MAX_URI_LEN; }
 
 protected:
   void recvd_bytes (int n);
@@ -242,6 +244,7 @@ private:
 
   u_int bytes_scanned;
   bool decloned;
+  int trickle_state;
 };
 
 ptr<ahttpcon> 

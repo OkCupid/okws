@@ -105,7 +105,15 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
 
   if (s.size () != 1) 
     goto usage;
+
   uri = s[0];
+
+  if (uri.len () > OK_MAX_URI_LEN) {
+    warn << loc << ": service URI (" << uri 
+	 << ") exceeds maximum allowable length (" << OK_MAX_URI_LEN
+	 << ")\n";
+    goto err;
+  }
 
   exe = apply_container_dir (service_bin, bin);
   httppath = re_fslash (uri);

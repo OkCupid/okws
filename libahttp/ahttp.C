@@ -232,7 +232,9 @@ ahttpcon_dispatch::dowritev (int cnt)
 ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml) 
   : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), 
     found (false), delimit_state (0), delimit_status (HTTP_OK),
-    delimit_start (NULL), bytes_scanned (0), decloned (false)
+    delimit_start (NULL), bytes_scanned (0), decloned (false),
+    trickle_state (0)
+
 {
   in->setpeek ();
 }
@@ -488,6 +490,13 @@ ahttpcon_clone::recvd_bytes (int n)
   }
   str s = delimit (n);
   if (s || delimit_status != HTTP_OK) {
+
+    // if we're going to keep looking at this connection, then
+    // let's reset the lowwater mark to a more reasonable 1 byte
+    // (as it is by default).
+    if (delimit_status == HTTP_OK && trickle_state > 0)
+      set_lowwat (1);
+      
     if (ccb) {
       (*ccb) (s, delimit_status);
       ccb = NULL;
@@ -578,7 +587,46 @@ ahttpcon_clone::delimit (int dummy)
     }
     in->rembytes (i);
   }
+
+  if (bytes_scanned > max_scan ()) {
+    delimit_status = HTTP_NOT_FOUND;
+    return NULL;
+  }
+
+  // at this point, we the client is "trickling" out data --
+  // 
+
+  switch (trickle_state) {
+  case 0: 
+    if (set_lowwat (max_scan ()) < 0) {
+      warn ("Cannot reset LoWat on socket: %m\n");
+      delimit_status = HTTP_SRV_ERROR;
+      return (NULL);
+    }
+    reset_delimit_state ();
+    break;
+  case 1:
+    delimit_status = HTTP_URI_TOO_BIG;
+    break;
+  default:
+    assert (false);
+    break;
+  }
+
   return (NULL);
+}
+
+int
+ahttpcon::set_lowwat (int lev)
+{
+  return setsockopt (fd, SOL_SOCKET, SO_RCVLOWAT, (char *)&lev, sizeof (lev));
+}
+
+void
+ahttpcon_clone::reset_delimit_state ()
+{
+  delimit_state = 0;
+  bytes_scanned = 0;
 }
 
 ptr<ahttpcon>
