@@ -132,7 +132,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   }
 
-  zinit ();
+  zinit (gzip, gziplev);
 }
 
 bool
