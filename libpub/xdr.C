@@ -2,11 +2,14 @@
 #include "pub.h"
 #include "parr.h"
 
+#define DISABLE_GZIP -2
+
 void
 zstr_to_xdr (const zstr &z, xpub_zstr_t *x, int l)
 {
   x->s = z.to_str ();
-  x->zs = z.compress (l);
+  if (l != DISABLE_GZIP)
+    x->zs = z.compress (l);
   x->clev = l;
 }
 

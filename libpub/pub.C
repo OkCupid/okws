@@ -337,7 +337,8 @@ pub_parser_t::parse_config (const str &fn, bool init)
     run_config (mcf);
     defconf = New refcounted<xpub_getfile_res_t> ();
     defconf->set_status (XPUB_STATUS_OK);
-    f->file->to_xdr (defconf->file);
+    if (exporter)
+      f->file->to_xdr (defconf->file);
   }
   return f;
 }
@@ -376,9 +377,9 @@ pub_proxy_t::alloc ()
 }
 
 pub_parser_t *
-pub_parser_t::alloc ()
+pub_parser_t::alloc (bool exp)
 {
-  parser = New pub_parser_t ();
+  parser = New pub_parser_t (exp);
   pub = parser;
   pcli = NULL;
   pubincluder = pub;

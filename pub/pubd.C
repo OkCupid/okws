@@ -69,8 +69,11 @@ main (int argc, char *argv[])
   /* need this call to setup global gzip table */
   zinit ();
 
-  /* set up global pub variables */
-  pub_parser_t *ppt = pub_parser_t::alloc ();
+  /* 
+   * set up global pub variables 
+   * arg true = this pubd is an exporter.
+   */
+  pub_parser_t *ppt = pub_parser_t::alloc (true);
 
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;

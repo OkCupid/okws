@@ -1188,7 +1188,7 @@ public:
   void set_opts (u_int o) { opts = o; }
   u_int get_opts () const { return opts; }
   void set_homedir (const str &d) { homedir = dir_standardize (d); }
-  inline pfnm_t apply_homedir (const pfnm_t &n) const;
+  pfnm_t apply_homedir (const pfnm_t &n) const;
 
   str cfg (const str &n) const;
   bool cfg (const str &n, pval_t **v) const;
@@ -1325,12 +1325,13 @@ private:
 class pub_parser_t : public pub_t 
 {
 public:
-  pub_parser_t () : pub_t (), gvars (NULL), tag (NULL), 
-		    lasttag (NULL), 
-		    space_flag (false), xset_collect (false), 
-		    jaildir (""), jailed (false), jm (JAIL_NONE) {}
-
-  static pub_parser_t *alloc ();
+  pub_parser_t (bool exp = false) 
+    : pub_t (), gvars (NULL), tag (NULL), 
+    lasttag (NULL), 
+    space_flag (false), xset_collect (false), 
+    jaildir (""), jailed (false), jm (JAIL_NONE), exporter (exp) {}
+  
+  static pub_parser_t *alloc (bool exp = false);
   bool init (const str &fn);
   bpfcp_t parse_config (const str &fn, bool init = true);
   bpfcp_t parse (const pbinding_t *bnd, pfile_type_t t);
@@ -1382,6 +1383,7 @@ private:
   bool jailed;
   jail_mode_t jm;
   vec<ptr<parr_t> > parr_stack;
+  bool exporter;  // on if this pub_parser_t exports files via XDR
 
 };
 
