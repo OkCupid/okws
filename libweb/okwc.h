@@ -47,10 +47,9 @@ public:
   okwc_cookie_set_t (abuf_t *a, size_t l, char *b)
     : abuf (a), bflen (l), buf (b) {}
 
-  ~okwc_cookie_set_t ()
-  {
-    while (size ()) delete pop_back ();
-  }
+  void reset () { while (size ()) delete pop_back (); }
+
+  ~okwc_cookie_set_t () { reset (); }
 
   cgi_t *push_back_new () 
   { return push_back (New cgi_t (abuf, true, bflen, buf)); }
@@ -111,6 +110,7 @@ protected:
   bool is_set_cookie () const 
   { return (key && key.len () == 10 && mystrlcmp (key, "set-cookie")); }
   void ext_parse_cb (int status);
+  bool is_chunked () const ;
 
 private:
   okwc_cookie_set_t *cookie;
@@ -119,9 +119,32 @@ private:
   str vers, status_desc;
   int status;
   bool noins;
+  bool chunked;
 
   str key, val;
   
+};
+
+//
+// okwc_chunker_t
+//
+//   reads chunked HTTP bodies
+//
+class okwc_http_t;
+class okwc_chunker_t : public http_hdr_t {
+private:
+  typedef enum { START  = 0,
+		 SPC1 = 1,
+		 EOL1 = 2,
+		 EOL2 = 3,
+		 DONE = 4 } state_t;
+public: 
+  okwc_chunker_t (abuf_t *a, size_t bfln, char *b)
+    : http_hdr_t (a, bfln, b), sz (0), state (START), {}
+  size_t get_sz ();
+private:
+  size_t sz;
+  state_t state;
 };
 
 class okwc_http_t {
@@ -130,9 +153,9 @@ public:
 		 OKWC_HTTP_REQ = 1,
 		 OKWC_HTTP_HDR = 2,
 		 OKWC_HTTP_BODY = 3 } state_t;
-
+		 
   okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, 
-	       int v, cgi_t *ock);
+	       int v, cgi_t *ock, cgi_t *incook = NULL);
   virtual ~okwc_http_t () {}
 
   void make_req ();
@@ -141,7 +164,13 @@ public:
 protected:
   void parse (ptr<bool> cf);
   void hdr_parsed (int status);
-  virtual void body_parse () = 0;
+
+  void body_parse ();
+  void body_parse_continue ();
+  void body_parse_done ();
+
+  void parsed_chunk_hdr (int status);
+
   void finish (int status);
   virtual void finish2 (int status) = 0;
   virtual void cancel2 () = 0;
@@ -160,6 +189,8 @@ protected:
   strbuf reqbuf;
   state_t state;
   ptr<bool> cancel_flag;
+  okwc_chunker_t *chunker;
+  okwc_req_t *req;
 };
 
 //
@@ -169,8 +200,8 @@ protected:
 //
 class okwc_http_bigstr_t : public okwc_http_t {
 public:
-  okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f, const str &h,
-		      okwc_cb_t c, int v, cgi_t *ock);
+  okwc_http_bigstr_t (okwc_req_t *r, ptr<ahttpcon> xx, const str &f, 
+		      const str &h, okwc_cb_t c, int v, cgi_t *ock);
 
 protected:
   void body_parse ();
@@ -180,6 +211,7 @@ protected:
 
 private:
   async_dumper_t body;
+  vec<str> chunks;
   okwc_cb_t okwc_cb;
 };
 
@@ -225,27 +257,6 @@ protected:
   okwc_cb_t okwc_cb;
 };
 
-enum okwc_token_status_t { OKWC_TOKEN_OK = 0,
-			   OKWC_TOKEN_EOF = 1,
-			   OKWC_TOKEN_OVERFLOW = 2 };
-
-class okwc_token_t {
-public:
-  str token;
-  okwc_token_status_t status;
-};
-
-class okwc_token_accepter_t {
-public:
-  okwc_token_accepter_t (size_t tl) : toklim (tl) {}
-private:
-  size_t toklim;
-
-};
-
-
-
-
 
 okwc_req_t *
 okwc_request (const str &h, u_int16_t port, const str &fn, 
@@ -255,10 +266,5 @@ okwc_request (const str &h, u_int16_t port, const str &fn,
 void
 okwc_cancel (okwc_req_t *req);
 
-okwc_req_t *
-owkc_request (const str &h, u_int16_t port, const str &uri, 
-	      okwc_token_accepter_t *tok, int vers = 0, int timeout = -1,
-	      cgi_t *outcook = NULL);
-		
 
 #endif
