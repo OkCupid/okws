@@ -277,7 +277,7 @@ okld_ch_t::clean_dumps ()
       warn ("could not move file %s: %m\n", from.cstr ());
     else if (unlink (from.cstr ()) != 0)
       warn ("unlink failed for file %s: %m\n", from.cstr ());
-    if (chown (to.cstr (), 0, 0) != 0)
+    if (::chown (to.cstr (), 0, 0) != 0)
       warn ("chown failed for file %s: %m\n", to.cstr ());
     if (::chmod (to.cstr (), 0400) != 0)
       warn ("chmod failed for file %s: %m\n", to.cstr ());
