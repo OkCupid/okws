@@ -65,8 +65,9 @@ okwc_req_t::tcpcon_cb (int f)
   }
   fd = f;
   x = ahttpcon::alloc (fd);
-  http = New okwc_http_t (x, filename, 
-			  wrap (this, &okwc_req_t::http_cb), outcookie);
+  http = New okwc_http_t (x, filename,  hostname,
+			  wrap (this, &okwc_req_t::http_cb), vers,
+	                  outcookie);
   http->make_req ();
 }
 
@@ -132,8 +133,8 @@ okwc_http_t::make_req ()
   reqbuf << "GET " << filename << " HTTP/1." << vers << HTTP_CRLF;
   if (vers == 1) {
     reqbuf << "Connection: close" << HTTP_CRLF
-	   << "Server: " << hostname << CRLF
-	   << "Agent: okwc/" << VERSION << CRLF;
+	   << "Host: " << hostname << HTTP_CRLF
+	   << "User-agent: okwc/" << VERSION << HTTP_CRLF;
   }
   if (outcook) {
     reqbuf << "Cookie: ";
@@ -182,12 +183,12 @@ okwc_http_t::finish (int status)
   (*okwc_cb) (resp);
 }
 
-okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, 
-			  okwc_cb_t c, cgi_t *ock)
-  : x (xx), filename (f), abuf (New abuf_con_t (xx), true),
+okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
+			  okwc_cb_t c, int v, cgi_t *ock)
+  : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
     hdr (&abuf, &resp->cookies, OKWC_SCRATCH_SZ, scratch),
-    body (&abuf), outcook (ock), okwc_cb (c), state (OKWC_HTTP_NONE)
+    body (&abuf), okwc_cb (c), vers (v), outcook (ock), state (OKWC_HTTP_NONE)
 {}
 
 void

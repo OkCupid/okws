@@ -134,8 +134,8 @@ public:
 		 OKWC_HTTP_HDR = 2,
 		 OKWC_HTTP_BODY = 3 } state_t;
 
-  okwc_http_t (ptr<ahttpcon> xx, const str &f, okwc_cb_t c,
-	       cgi_t *ock);
+  okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, okwc_cb_t c,
+	       int v, cgi_t *ock);
 
   void make_req ();
   void cancel ();
@@ -149,15 +149,17 @@ protected:
 private:
   ptr<ahttpcon> x;
   str filename;
+  str hostname;
   abuf_t abuf;
   char scratch[OKWC_SCRATCH_SZ];
 
   ptr<okwc_resp_t> resp;
   okwc_http_hdr_t hdr;
   async_dumper_t body;
+  okwc_cb_t okwc_cb;
+  int vers;
   cgi_t *outcook; // cookie sending out to the server
 
-  okwc_cb_t okwc_cb;
   strbuf reqbuf;
   state_t state;
   ptr<bool> cancel_flag;
