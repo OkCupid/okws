@@ -55,10 +55,11 @@ AC_CHECK_FUNCS(rfork clone)
 
 if test -z "$okwslibdir"; then
    okwslibdirp='${pkglibdir}-${VERSION}'
-   okwslibdir='${pkglibdir}-${VERSION}${$okwstagdir}'
+   okwslibdir='${pkglibdir}-${VERSION}${okwstagdir}'
 fi
 if test -z "$okwsincludedir"; then
-   okwsincludedir='${pkgincludedir}-${VERSION}'
+   okwsincludedirp='${pkgincludedir}-${VERSION}'
+   okwsincludedir='${pkgincludedir}-${VERSION}${okwstagdir}'
 fi
 okwsexecdir="$okwslibdir"
 CPPFLAG="$CPPFLAGS -DEXECDIR="'\"$(okwsexecdir)\"'
@@ -69,6 +70,7 @@ else
 	okwsbindir="$okwslibdir"
 fi  
 AC_SUBST(okwsincludedir)
+AC_SUBST(okwsincludedirp)
 AC_SUBST(okwslibdir)
 AC_SUBST(okwsbindir)
 AC_SUBST(okwslibdirp)

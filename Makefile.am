@@ -42,12 +42,12 @@ dist-hook:
 	cd $(distdir) && chmod -x setup
 
 install-data-local:
-	-src=$(DESTDIR)$(okwsincludedir); dst=$(DESTDIR)$(pkgincludedir); \
+	-src=$(DESTDIR)$(okwsincludedirp); dst=$(DESTDIR)$(pkgincludedir); \
 	rm -f $$dst; \
 	if test "`dirname $$src`" = "`dirname $$dst`"; then \
 		ln -s "`basename $$src`" $$dst; \
 	else \
-		ln -s $(okwsincludedir) $$dst; \
+		ln -s $(okwsincludedirp) $$dst; \
 	fi
 
 install-exec-local:

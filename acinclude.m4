@@ -653,7 +653,7 @@ AC_DEFUN(OKWS_TAG,
 [AC_ARG_WITH(tag,
 --with-tag=TAG	    	Specify a custom OKWS build tag)
 AC_ARG_WITH(mode,
---with-mode=[debug|optmz]   Specify a build mode for OKWS)
+--with-mode=[(debug|optmz)]   Specify a build mode for OKWS)
 if test "$with_tag" != "no"; then
 	okwstag=$with_tag
 fi
@@ -663,11 +663,14 @@ case $with_mode in
 		okwstag=$with_mode
 		DEBUG=-g
 		CXXDEBUG=-g
+		with_dmalloc=yes
 		;;
 	"optmz" )
 		;;
 	* )
-		AC_MSG_ERROR([Unrecognized build mode specified])
+		if test "${with_mode+set}" = "set" ; then
+			AC_MSG_ERROR([Unrecognized build mode specified])
+		fi
 		;;
 esac
 
