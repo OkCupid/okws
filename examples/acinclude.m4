@@ -659,6 +659,7 @@ if test $sfs_cv_large_sock_buf = yes; then
 	AC_DEFINE(SFS_ALLOW_LARGE_BUFFER, 1,
 		  Define if SO_SNDBUF/SO_RCVBUF can exceed 64K.)
 fi])
+
 dnl
 dnl Find Mysql
 dnl
@@ -671,7 +672,7 @@ if test "$with_mysql" != "no"; then
 	cdirs="${with_mysql}/include ${with_mysql}/include/mysql \
 	       ${prefix}/include ${prefix}/include/mysql"
 	dirs="$cdirs /usr/local/include/mysql /usr/local/mysql/include \
-	      /usr/include/mysql "
+               /usr/include/mysql "
 	AC_CACHE_CHECK(for mysql.h, sfs_cv_mysql_h,
 	[for dir in " " $dirs; do
 		case $dir in
@@ -693,7 +694,7 @@ if test "$with_mysql" != "no"; then
 		cdirs="${with_mysql}/lib ${with_mysql}/lib/mysql \
 		       ${prefix}/lib ${prefix}/lib/mysql"
 		dirs="$cdirs /usr/local/lib/mysql /usr/local/mysql/lib \
-			/usr/lib/mysql "
+                      /usr/lib/mysql "
 		AC_CACHE_CHECK(for libmysqlclient, sfs_cv_libmysqlclient,
 		[for dir in "" " " $dirs; do
 			case $dir in
@@ -701,9 +702,6 @@ if test "$with_mysql" != "no"; then
 				" ") lflags="-lmysqlclient -lm" ;;
 				*) lflags="-L${dir} -lmysqlclient -lm" ;;
 			esac
-  	 		if test "$ac_cv_lib_z" != "yes"; then
-				lflags="$lflags -lz"
-			fi
 			LIBS="$ac_save_LIBS $lflags"
 			AC_TRY_LINK([#include "mysql.h"],
 				mysql_real_connect (0,0,0,0,0,0,0,0);, 
@@ -712,19 +710,40 @@ if test "$with_mysql" != "no"; then
 		if test -z ${sfs_cv_libmysqlclient+set}; then
 			sfs_cv_libmysqlclient="no"
 		fi
-	])
+		])
 	fi
 	if test "${sfs_cv_libmysqlclient+set}" && \
 	   test "$sfs_cv_libmysqlclient" != "no"; then
+
+		AC_CACHE_CHECK(for MYSQL bind support, sfs_cv_mysqlbind,
+		[
+		sfs_cv_mysqlbind=no
+ 		AC_TRY_COMPILE([#include "mysql.h"], 
+			MYSQL_BIND bnd;,
+			BIND_INC=yes)
+		if test "$BIND_INC" = "yes"; then
+			AC_TRY_LINK([#include "mysql.h"],
+				mysql_stmt_bind (0,0);,	
+				sfs_cv_mysqlbind=yes)
+		fi
+		])
+
+		if test "$sfs_cv_mysqlbind" = "yes"; then
+			AC_DEFINE(HAVE_MYSQL_BIND, 1, MySQL Prepared Stuff)
+		fi
 		CPPFLAGS="$CPPFLAGS $sfs_cv_mysql_h"
 		AC_DEFINE(HAVE_MYSQL, 1, Have the MySQL C client library )
 		LDADD_MYSQL="$sfs_cv_libmysqlclient"
+  	 	if test "$ac_cv_lib_z" != "yes"; then
+			LDADD_MYSQL="$LDADD_MYSQL -lz"
+		fi
 	fi
 	AC_SUBST(LDADD_MYSQL)
 	LIBS=$ac_save_LIBS
 	CFLAGS=$ac_save_CFLAGS
 fi
 ])
+
 dnl
 dnl Version Hack
 dnl
