@@ -29,6 +29,22 @@ int hclient_id;
 int num_latencies;
 int latency_gcf;
 int num_services;
+int timeout;
+
+//
+// used for sample throughput
+//
+struct tpt_pair_t {
+  tpt_pair_t (int d, int t) : nreq (d), tm (t) {}
+  int nreq;
+  int tm;
+};
+
+timespec tpt_last_sample;
+int tpt_last_nreq;
+vec<tpt_pair_t> tpt_samples;
+int tpt_sample_freq;
+void tpt_do_sample (bool last);
 
 timespec startt;
 timespec lastexit;
@@ -44,13 +60,16 @@ vec<exit_pair_t> exits;
 int
 get_cli_read_delay (int id)
 {
-  return ((id % num_latencies) * latency_gcf);
+  if (num_latencies == 0)
+    return 0;
+  int ret = ((id % num_latencies) * latency_gcf);
+  return ret;
 }
 
 int
-get_svc_id ()
+get_svc_id (int id)
 {
-  return (random () % num_services);
+  return ((id  % num_services) + 1);
 }
 
 class hclient_t {
@@ -58,24 +77,46 @@ public:
   hclient_t (str h, int p, str r, str q) 
     : host (h), port (p), req (r), id (hclient_id++), 
       bp (buf), reqsz (-1), body (NULL), 
-      cli_read_delay (get_cli_read_delay (id)), qry (q) {}
+    cli_read_delay (get_cli_read_delay (id)), qry (q), success (false),
+    output_stuff (false), selread_on (true), tcb (NULL) {}
   ~hclient_t () 
   {
-    if (fd >= 0) {
-      fdcb (fd, selread, NULL);
-      // close (fd);
-      tcp_abort (fd);
-    }
+    close ();
   }
+
   void run ();
+  void timed_out ();
 
 private:
   void launch_others ();
   void connected (int f);
   void canread ();
   void then_read_damnit ();
+  void then_exit_damnit (int c);
   void writewait ();
   void cexit (int rc);
+
+  void turn_off ()
+  {
+    if (selread_on && fd >= 0) {
+      fdcb (fd, selread, NULL);
+      selread_on = false;
+      success = true;
+    } else {
+      success = false;
+    }
+  }
+
+  void close ()
+  {
+    if (fd >= 0) {
+      turn_off ();
+      // close (fd);
+      tcp_abort (fd);
+      fd = -1;
+    }
+  }
+    
 
   timespec cli_start;
   char buf[4096];
@@ -88,8 +129,12 @@ private:
   int reqsz;
   char *body;
   suio uio;
-  const int cli_read_delay;
+  int cli_read_delay;
   str qry;
+  bool success;
+  bool output_stuff;
+  bool selread_on;
+  timecb_t *tcb;
 };
 
 vec<hclient_t *> q;
@@ -123,21 +168,44 @@ hclient_t::writewait ()
 void
 hclient_t::cexit (int c)
 {
+  if (tcb) {
+    timecb_remove (tcb);
+    tcb = NULL;
+  }
+    
   if (noisy) warn << "at cexit: " << id << "\n";
+  turn_off ();
+  if (cli_read_delay == 0)
+    then_exit_damnit (c);
+  else {
+    if (noisy)
+      warn << "delaying exit for " << cli_read_delay << "\n";
+    delaycb (cli_read_delay / 1000, (cli_read_delay % 1000) * 1000000, 
+	     wrap (this, &hclient_t::then_exit_damnit, c));
+  }
+}
 
+void
+hclient_t::then_exit_damnit (int c)
+{
+  if (noisy) warn << "at cexit2: " << id << "\n";
+
+  /* disable broken throughput measurement
   if (exited) {
     exits.push_back (exit_pair_t (nconcur - nrunning, stop_timer (lastexit)));
     lastexit = tsnow;
   } else {
     exited = true;
   }
+  */
 
   --nrunning;
   launch_others ();
+  if (noisy) warn << "done: " << id << " (nreq: " << nreq << ")\n";
+  if (success)
+    latencies.push_back (stop_timer (cli_start));
   if (!--nreq && sdflag)
     do_exit (c);
-  if (noisy) warn << "done: " << id << " (nreq: " << nreq << ")\n";
-  latencies.push_back ((fd > 0) ? stop_timer (cli_start) : -1);
   delete this;
   return;
 }
@@ -147,18 +215,16 @@ static rxx sz_rxx ("[C|c]ontent-[l|L]ength: (\\d+)\\r\\n");
 void
 hclient_t::canread ()
 {
-  if (cli_read_delay == 0)
-    then_read_damnit ();
-  else
-    delaycb (0, cli_read_delay, wrap (this, &hclient_t::then_read_damnit ));
+  then_read_damnit ();
 }
-
 
 void
 hclient_t::then_read_damnit ()
 {
   int rc = uio.input (fd);
   if (rc == 0) {
+    if (!output_stuff)
+      warn ("no content before EOF\n");
     cexit (0);
     return;
   }
@@ -167,8 +233,10 @@ hclient_t::then_read_damnit ()
       warn ("read error: %m\n");
       cexit (-1);
     }
-    while (uio.resid ()) 
+    while (uio.resid ()) {
+      output_stuff = true;
       uio.output (1);
+    }
   } else {
     rc = uio.copyout (bp);
     bp += rc;
@@ -196,17 +264,23 @@ hclient_t::connected (int f)
   fd = f;
   strbuf b;
   int id = random() % rand_modulus;
-  b << "GET /" << req << get_svc_id () << qry << id << " HTTP/1.0\r\n"
-    << " HTTP/1.0\r\nConnection: close\r\n\r\n";
+  b << "GET /" << req << get_svc_id (id) << qry << id << " HTTP/1.0\r\n"
+    << "Connection: close\r\n\r\n";
+
+  // this might qualify as "deafening"
+  if (noisy) warn << b << "\n";
+
   if (fd < 0) {
-    if (mode != OKWS) {
-      if (noisy) warn << "cannot connect to host\n";
-      cexit (-1);
-      return;
+    /* if (mode != OKWS) { */
+    warn << "connection rejected\n";
+    cexit (-1);
+    return;
+      /*
     } else {
       warn << "cannot connect to host\n";
       do_exit (2);
     }
+      */
   }
   suio *uio = b.tosuio ();
   while (uio->resid ()) {
@@ -214,6 +288,7 @@ hclient_t::connected (int f)
     if (uio->output (fd) < 0)
       fatal << "write error\n";
   }
+  selread_on = true;
   fdcb (fd, selread, wrap (this, &hclient_t::canread));
 }
 
@@ -225,9 +300,10 @@ do_exit (int c)
   u_int sz = latencies.size ();
   for (u_int i = 0; i < sz; i++) 
     warnx << latencies[i] << "\n";
-  sz = exits.size ();
+  tpt_do_sample (true);
+  sz = tpt_samples.size ();
   for (u_int i = 0; i < sz; i++)
-    warnx << exits[i].qsz << "," << exits[i].tm << "\n";
+    warnx << tpt_samples[i].nreq << "," << tpt_samples[i].tm << "\n";
   exit (c);
 }
 
@@ -253,7 +329,17 @@ hclient_t::run ()
   if (noisy) warn << "running: " << id << " (nrunning: " << nrunning << ")\n";
   if (noisy) warn << "connecting to: " << host << "\n";
   cli_start = tsnow;
+  tcb = delaycb (timeout, 0, wrap (this, (&hclient_t::timed_out)));
   tcpconnect (host, port, wrap (this, &hclient_t::connected));
+}
+
+void
+hclient_t::timed_out ()
+{
+  warn << "client timed out: " << id << "\n";
+  tcb = NULL;
+  cli_read_delay = 0;
+  cexit (-1);
 }
 
 static void
@@ -262,20 +348,37 @@ usage ()
   fatal << "usage: ptcli [-d] [-{s|p|o}] [-c <concur>] [-n <num>] <host>\n";
 }
 
+void
+tpt_do_sample (bool last)
+{
+  int diff = stop_timer (tpt_last_sample);
+  int num = tpt_last_nreq - nreq;
+  tpt_samples.push_back (tpt_pair_t (diff, num));
+  tpt_last_sample = tsnow;
+  tpt_last_nreq = nreq;
+  if (!last)
+    delaycb (tpt_sample_freq, 0, wrap (tpt_do_sample, false));
+}
+
 static void
 main2 (int n)
 {
   startt = tsnow;
   nleft = n - nconcur;
+  
+  tpt_last_sample = tsnow;
+  delaycb (tpt_sample_freq, 0, wrap (tpt_do_sample, false));
   for (int i = 0; i < nconcur; i++) {
     hclient_t *h = New hclient_t (host, port, inreq, inqry);
     h->run ();
   }
 }
 
+
 int 
 main (int argc, char *argv[])
 {
+  timeout = 180;
   noisy = false;
   srandom(time(0));
   setprogname (argv[0]);
@@ -291,6 +394,7 @@ main (int argc, char *argv[])
   latency_gcf = 50;
   num_latencies = 0;
   num_services = 1;
+  tpt_sample_freq = 1;
 
   while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l:L:")) != -1) {
     switch (ch) {
@@ -377,7 +481,7 @@ main (int argc, char *argv[])
     break;
   case OKWS:
     inreq = "pt";
-    inrqry = "?id=";
+    inqry = "?id=";
     if (noisy) warn << "In OKWS mode\n";
     break;
   case PHP:
@@ -386,7 +490,7 @@ main (int argc, char *argv[])
     if (noisy) warn << "In PHP mode\n";
     break;
   case FLASH:
-    inreq = "/cgi-bin/d_reg";
+    inreq = "cgi-bin/d_reg";
     inqry = "?";
     if (noisy) warn << "In FLASH mode\n";
     break;
@@ -415,6 +519,7 @@ main (int argc, char *argv[])
   sdflag = true;
   nreq = n;
   nreq_fixed = n;
+  tpt_last_nreq = nreq;
 
   if (delay) {
     timecb (startat, wrap (main2, n));

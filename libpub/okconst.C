@@ -46,7 +46,7 @@ u_int ok_db_retries_delay = 3;
 // okd constants
 //
 u_int ok_con_queue_max = 40;        // number of req's to queue up
-u_int ok_listen_queue_max = 200;    // arguement to listen (fd, X)
+u_int ok_listen_queue_max = 2048;    // arguement to listen (fd, X)
 u_int ok_crashes_max = 30;          // number of allowed crashes
 u_int ok_csi = 50;                  // crash sampling interval
 const char *ok_version = VERSION;

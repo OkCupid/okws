@@ -281,6 +281,13 @@ okd_t::newserv (int fd)
     ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
     //warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
     x->setccb (wrap (this, &okd_t::sclone, x));
+
+    /*
+    cntr ++;
+    if (cntr % 100 == 0) {
+      warnx << "Counter: " << cntr << "\n";
+    }
+    */
   }
   else if (errno != EAGAIN)
     warn ("accept: %m\n");

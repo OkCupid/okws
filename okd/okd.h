@@ -85,7 +85,8 @@ public:
     configfile (cf),
     okldfd (okldfd_in),
     pprox (New pub_proxy_t ()),
-    sdflag (false), sd2 (false), dcb (NULL), listenfd (-1), sdattempt (0)
+    sdflag (false), sd2 (false), dcb (NULL), listenfd (-1), sdattempt (0),
+    cntr (0)
   {}
 
   ~okd_t ();
@@ -177,6 +178,7 @@ private:
   int listenfd;
   bool jailed;
   int sdattempt;
+  int cntr;
 
   ptr<fdsource_t<okws_fd_t> > okldx;
 };
