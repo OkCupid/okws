@@ -126,6 +126,12 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
     envp = to_argv (env, NULL, environ);
 
   vNew okld_ch_t (exe, httppath, this, loc, u, envp);
+
+  //
+  // accounting for error-checking aliases table.
+  //
+  services_tmp.insert (httppath);
+
   return;
 
  usage:
@@ -135,6 +141,38 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   if (argv) free_argv (argv);
   if (u) delete u;
 }
+
+void
+okld_t::got_alias (vec<str> s, str loc, bool *errp)
+{
+  if (s.size () != 3) {
+    warn << loc << ": usage: Alias <to-URI> <from-URI>\n";
+    *errp = true;
+    return;
+  }
+  aliases_tmp.push_back (alias_t (s[1], s[2], loc));
+}
+
+bool
+okld_t::check_aliases ()
+{
+  bool ret = true;
+  bhash<str> aliases_bmap;
+  while (aliases_tmp.size ()) {
+    alias_t a = aliases_tmp.pop_front ();
+    if (!services_tmp[a.to]) {
+      warn << a.loc << ": No service found for alias: " << a.to_str () << "\n";
+      ret = false;
+    } else if (aliases_bmap[a.from]) {
+      warn << a.loc << ": Doubly-specified alias for URI " << a.from  << "\n";
+      ret = false;
+    } else {
+      aliases_bmap.insert (a.from);
+    }
+  }
+  return ret;
+}
+
 
 void
 okld_t::parseconfig (const str &cf)
@@ -151,6 +189,7 @@ okld_t::parseconfig (const str &cf)
   str okd_gr, okd_un;
 
   ct.add ("Service", wrap (this, &okld_t::got_service))
+    .add ("Alias", wrap (this, &okld_t::got_alias))
     .add ("TopDir", wrap (got_dir, &topdir))
     .add ("JailDir", wrap (got_dir, &jaildir))
     .add ("ServiceBin", wrap (got_dir, &service_bin))
@@ -220,7 +259,6 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceFDQuota", &ok_svc_fd_quota, 
 	  OK_SVC_FD_QUOTA_LL, OK_SVC_FD_QUOTA_UL)
 
-    .ignore ("Alias")
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
     .ignore ("OkMgrPort")
@@ -263,6 +301,9 @@ okld_t::parseconfig (const str &cf)
     warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
     errors = true;
   }
+
+  if (!check_aliases ()) 
+    errors = true;
 
   if (!hostname)
     hostname = myname ();

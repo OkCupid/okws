@@ -387,8 +387,6 @@ okd_t::parseconfig ()
     }
   }
 
-  init_syscall_stats ();
-
   if (un) okd_usr = ok_usr_t (un);
   if (gn) okd_grp = ok_grp_t (gn);
 
@@ -396,6 +394,8 @@ okd_t::parseconfig ()
     hostname = myname ();
   if (errors)
     exit (1);
+
+  init_syscall_stats ();
 }
 
 void

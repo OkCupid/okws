@@ -145,6 +145,20 @@ public:
   bool safe_startup () const { return safe_startup_fl ;}
 
 private:
+
+  struct alias_t {
+    alias_t (const str &t, const str &f, const str &l)
+      : to (t), from (f), loc (l) {}
+    str to_str () const { strbuf b; b << from << " -> " << to; return b; }
+    const str to;
+    const str from;
+    const str loc;
+  };
+  vec<alias_t> aliases_tmp;
+  bhash<str> services_tmp;
+  bool check_aliases ();
+  void got_alias (vec<str> s, str loc, bool *errp);
+
   bool fix_uids ();
   bool config_jaildir ();
   void init_clock_daemon ();

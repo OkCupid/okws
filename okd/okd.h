@@ -120,6 +120,7 @@ public:
   {
   }
 
+
   ~okd_t ();
 
   void abort ();
@@ -192,6 +193,7 @@ protected:
   void disable_accept_guts ();
 
 private:
+
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();
 
