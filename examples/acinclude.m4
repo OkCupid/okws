@@ -1692,5 +1692,6 @@ dnl if not shared executables, then we'll need to compile
 dnl services statically (due to jailing...)
 dnl
 AM_CONDITIONAL(LDFLAGS_ALL_STATIC, test -z "$enable_shared" )
+AM_CONDITIONAL(DLINKED_SERVICES, test "$enable_shared")
 ])
 

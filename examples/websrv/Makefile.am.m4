@@ -66,3 +66,8 @@ $(srcdir)/Makefile.am: $(srcdir)/Makefile.am.m4
 	@rm -f $(srcdir)/Makefile.am~
 	$(M4) $(srcdir)/Makefile.am.m4 > $(srcdir)/Makefile.am~
 	mv -f $(srcdir)/Makefile.am~ $(srcdir)/Makefile.am
+
+.PHONY: jail
+jail:
+	PERL=$(PERL) LDD=$(LDD) MKDIR='$(mkinstalldirs)' DIFF=$(DIFF) \
+		$(jailsh) $(okmjaildir) $(DESTDIR)$(okmsvcdir)/*

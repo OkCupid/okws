@@ -19,27 +19,31 @@ JAILDIR=$1
 shift
 
 
-if test -z $LDD ; then
+if test -z "$LDD" ; then
     LDD=ldd
 fi
 
-if test -z $PERL ; then
+if test -z "$PERL" ; then
     PERL=perl
 fi
 
-if test -z $INSTALL ; then
+if test -z "$INSTALL" ; then
     INSTALL=install
 fi
 
-if test -z $DIFF ; then
+if test -z "$DIFF" ; then
     DIFF=diff
 fi
 
-if test -z $LINKER ; then
+if test -z "$LINKER" ; then
     LINKER=/usr/libexec/ld-elf.so.1
 fi
 
-if test -z $LINKER_HINTS ; then
+if test -z "$MKDIR" ; then
+    MKDIR='mkdir -p'
+fi
+
+if test -z "$LINKER_HINTS" ; then
     LINKER_HINTS='/var/run/ld-elf.so.hints /var/run/ld.so.hints'
 fi
     
