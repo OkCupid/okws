@@ -32,7 +32,7 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 //
 // hard-coded upper and lower variable limits
 //
-#define OK_QMIN 1
+#define OK_QMIN 0
 #define OK_QMAX 8192
 #define OK_PORT_MIN 10
 #define OK_PORT_MAX 65000
