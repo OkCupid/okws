@@ -55,7 +55,7 @@ http_resp_header_t::fill (bool gz)
   add_date ();
   add ("Content-Type", "text/html");
   add_closed ();
-  add ("Cache-control", "private");
+  add ("Cache-control", "no-store");
   add_server ();
   if (gz) gzip ();
 }
