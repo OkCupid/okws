@@ -45,7 +45,7 @@ okld_t::set_signals ()
 }
 
 bool
-okld_t::check_uri (const str &loc, const str &in, port_t *port) const
+okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 {
   u_int32_t t;
   if (port)
@@ -92,7 +92,7 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   char *const *argv = NULL;
   char *const *envp = NULL;
   int ch;
-  port_t port;
+  okws1_port_t port;
 
   //
   // pop off "Service"
@@ -189,7 +189,7 @@ okld_t::got_alias (vec<str> s, str loc, bool *errp)
     return;
   }
 
-  port_t port;
+  okws1_port_t port;
   if (!check_uri (loc, s[1]) || !check_uri (loc, s[2], &port)) {
     *errp = true;
     return;
@@ -266,7 +266,7 @@ okld_t::check_ports ()
 {
   bool ret = true;
   while (allports.size ()) {
-    port_t p = allports.pop_front ();
+    okws1_port_t p = allports.pop_front ();
     if (!(used_ports[p] || (p == listenport && used_primary_port))) {
       warn << "OKD will listen on port " << p << ", but no "
 	   << "services will be using it!\n";
@@ -300,8 +300,8 @@ okld_t::parseconfig (const str &cf)
 
     .add ("CrashSamplingInterval", &ok_csi, 1, 60)
     .add ("MaxCrashedProcesses", &ok_crashes_max, 1, 200)
-    .add ("ServiceLowUid", &ok_svc_uid_low, UID_MIN, UID_MAX)
-    .add ("ServiceHighUid", &ok_svc_uid_high, UID_MIN, UID_MAX)
+    .add ("ServiceLowUid", &ok_svc_uid_low, OK_UID_MIN, OK_UID_MAX)
+    .add ("ServiceHighUid", &ok_svc_uid_high, OK_UID_MIN, OK_UID_MAX)
     .add ("ServiceMode", &ok_svc_mode, 0, 0777)
     .add ("ServiceGroup", &grp)
     .add ("OkdExecPath", &okdexecpath)
@@ -638,7 +638,7 @@ okld_t::check_service_ports ()
   bool ret = true;
   u_int lim = svcs.size ();
   for (u_int i = 0; i < lim; i++) {
-    port_t p = svcs[i]->get_port ();
+    okws1_port_t p = svcs[i]->get_port ();
     if (p && ! allports_map[p]) {
       warn << svcs[i]->loc () 
 	   << ": service uses a port (" << p << ") that OKD does not "

@@ -435,7 +435,7 @@ okd_t::strip_privileges ()
 }
 
 void
-okd_t::sclone (ref<ahttpcon_clone> x, port_t port, str s, int status)
+okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
 {
   if (status != HTTP_OK) {
     x->declone ();
@@ -572,7 +572,7 @@ usage ()
 }
 
 static void
-main2 (str cf, int logfd, str cdd, port_t port)
+main2 (str cf, int logfd, str cdd, okws1_port_t port)
 {
   sfsconst_init ();
   if (!cf) {
@@ -596,7 +596,7 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   str debug_stallfile;
   str cdd;  // core dump dir
-  port_t port;
+  okws1_port_t port;
 
   int ch;
   while ((ch = getopt (argc, argv, "f:l:D:c:p:")) != -1)

@@ -11,6 +11,12 @@
 
 #define DEF_MEM_LEVEL 9
 
+static unsigned long
+min (unsigned a, unsigned b)
+{
+  return (a > b ? b : a);
+}
+
 static void
 usage ()
 {

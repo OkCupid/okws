@@ -59,7 +59,7 @@ struct errdoc_t {
   ihash_entry<errdoc_t> lnk;
 };
 
-typedef u_int16_t port_t;
+typedef u_int16_t okws1_port_t;
 #define PORT_MAX USHRT_MAX
 
 class ok_con_t {
@@ -97,7 +97,7 @@ public:
   // necessary now, but mabye down the road......
   str version;
   str hostname;
-  port_t listenport;
+  okws1_port_t listenport;
   str listenaddr_str;
   u_int32_t listenaddr;
   str topdir;
@@ -105,8 +105,8 @@ public:
   str debug_stallfile;
   str server_id;
 
-  vec<port_t> allports;
-  bhash<port_t> allports_map;
+  vec<okws1_port_t> allports;
+  bhash<okws1_port_t> allports_map;
 
 
 protected:

@@ -105,7 +105,7 @@ class okd_t : public ok_httpsrv_t
 {
 public:
   okd_t (const str &cf, int logfd_in, int okldfd_in, const str &cdd, 
-	 port_t p) : 
+	 okws1_port_t p) : 
     ok_httpsrv_t (NULL, logfd_in),
     okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
     pubd (NULL), 
@@ -158,7 +158,7 @@ public:
   void launch_pubd_cb (bool err);
 
   void parseconfig ();
-  void sclone (ref<ahttpcon_clone> x, port_t port, str s, int status);
+  void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
   void newserv (int fd);
   void shutdown (int sig);
 
@@ -243,7 +243,7 @@ private:
   u_int reqid;
   ahttp_tab_t xtab;
 
-  qhash<int, port_t> portmap;
+  qhash<int, okws1_port_t> portmap;
   vec<int> listenfds;
 };
 

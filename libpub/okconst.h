@@ -36,8 +36,8 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_QMAX 8192
 #define OK_PORT_MIN 10
 #define OK_PORT_MAX 65000
-#define UID_MIN 100
-#define UID_MAX 65000
+#define OK_UID_MIN 100
+#define OK_UID_MAX 65000
 #define OK_RQSZLMT_MIN  1024
 #define OK_RQSZLMT_MAX  32*1024*1024
 

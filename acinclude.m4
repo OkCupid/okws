@@ -1606,8 +1606,11 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
     LIBSFSCRYPT=${sfslibdir}/libsfscrypt.la
     LIBSFSMISC=${sfslibdir}/libsfsmisc.la
     MALLOCK=${sfslibdir}/mallock.o
-    dnl SFS_PATH_PROG(txarpcc, ${with_okws}/lib/sfs${okwstagdir}:${with_okws}/bin)
-    dnl RPCC="$PATH_RPCC"
+    SFS_PATH_PROG(rpcc, ${sfslibdir})
+    if test "$PATH_RPCC" -a -x "$PATH_RPCC" 
+    then
+	RPCC="$PATH_RPCC"
+    fi
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi

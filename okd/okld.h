@@ -46,7 +46,7 @@ class okld_t;
 class okld_ch_t { // OK Launch Daemon Child Handle
 public:
   okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-	     ok_usr_t *u = NULL, char *const *e = NULL, port_t p = 0) ;
+	     ok_usr_t *u = NULL, char *const *e = NULL, okws1_port_t p = 0) ;
   ~okld_ch_t () { if (uid) delete (uid); if (env) free_argv (env); }
   void launch ();
   void sig_chld_cb (int status);
@@ -77,7 +77,7 @@ public:
   void assign_exec_ownership (int u, int g);
   void assign_mode (int m) { mode = m; }
 
-  port_t get_port () const { return port; }
+  okws1_port_t get_port () const { return port; }
 private:
   bool fix_exec (bool jail);
   void resurrect ();
@@ -105,7 +105,7 @@ private:
   int mode;
 
   char *const *env;
-  port_t port;
+  okws1_port_t port;
 
 };
 
@@ -152,18 +152,18 @@ public:
 private:
 
   struct alias_t {
-    alias_t (const str &t, const str &f, const str &l, port_t p)
+    alias_t (const str &t, const str &f, const str &l, okws1_port_t p)
       : to (t), from (f), loc (l), port (p) {}
     str to_str () const { strbuf b; b << from << " -> " << to; return b; }
     str to;
     str from;
     const str loc;
-    const port_t port;
+    const okws1_port_t port;
   };
 
   // 
   vec<alias_t> aliases_tmp;
-  bhash<port_t> used_ports; // ports specified with services, etc..
+  bhash<okws1_port_t> used_ports; // ports specified with services, etc..
 
   bool check_exes ();
   bool check_services_and_aliases ();
@@ -176,7 +176,7 @@ private:
   void init_clock_daemon ();
   void relaunch_clock_daemon (int sig);
   void clock_daemon_died (int sig);
-  bool check_uri (const str &loc, const str &uri, port_t *port = NULL) 
+  bool check_uri (const str &loc, const str &uri, okws1_port_t *port = NULL) 
     const;
 
   void launch_logd ();

@@ -718,7 +718,7 @@ ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
   str cmd = s.pop_front ();
   while (s.size ()) {
     u_int32_t t;
-    port_t port;
+    okws1_port_t port;
     if (!convertint (s.pop_front (), &t) || !(port = t)) {
       warn << loc << ": usage: " << cmd << " <ports>\n";
       *errp = true;
@@ -744,10 +744,10 @@ ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
 // into an integer port (returned) and path, which is output
 // via the second pointer argument.
 
-static port_t
+static okws1_port_t
 split_uri (str in, str *out)
 {
-  port_t port;
+  okws1_port_t port;
   const char *p = in;
   if (p[0] == ':') {
     const char *e = strchr (p, '/');
@@ -767,7 +767,7 @@ str
 ok_base_t::fix_uri (const str &in) const
 {
   str out;
-  port_t p = split_uri (in, &out);
+  okws1_port_t p = split_uri (in, &out);
   out = (p == 0 || p != listenport) ? in : out;
 
   //debug
