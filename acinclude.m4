@@ -1680,6 +1680,7 @@ AC_DEFUN(AC_PROG_INSTALL_C,
 AC_PROG_INSTALL
 AC_CACHE_CHECK(for install -C, ac_cv_path_install_c,
 [
+ac_cv_path_install_c="no"
 echo $INSTALL | grep -e '/install -c' >/dev/null
 if [ test $? -eq 0 ]
 then
@@ -1694,11 +1695,14 @@ then
    diff $TMP1 $TMP2 > /dev/null 2>&1
    if test $? -eq 0 
    then
-	INSTALL=$INSTALL_C
-	AC_SUBST(INSTALL)
+	ac_cv_path_install_c=$INSTALL_C
    fi
    rm -f $TMP1 $TMP2 > /dev/null 2>&1
 fi
-ac_cv_path_install_c=$INSTALL
 ])
+if test "${ac_cv_path_install_c+set}" = "set" -a "$ac_cv_path_install_c" != "no"
+then
+    INSTALL="$ac_cv_path_install_c"
+    AC_SUBST(INSTALL)
+fi
 ])
