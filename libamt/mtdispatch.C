@@ -3,7 +3,7 @@
 #include "txa_prot.h"
 
 mtd_thread_t::mtd_thread_t (mtd_thread_arg_t *a)
-  : tid (a->tid), fdin (a->fdin), fdout (a->fdout), 
+  : tid (a->tid), readied (false), fdin (a->fdin), fdout (a->fdout), 
     cell (a->cell), mtd (a->mtd) {}
 
 static int
@@ -300,6 +300,7 @@ mtd_thread_t::take_svccb ()
 void
 mtd_thread_t::become_ready ()
 {
+  readied = true;
   TWARN ("called become_ready ()"); // debug
   cell->status = MTD_READY;
   msg_send (MTD_READY);

@@ -98,6 +98,7 @@ private:
   mtd_status_t msg_recv ();
 protected:
   int tid;
+  bool readied;
 private:
   int fdin;
   int fdout;

@@ -69,6 +69,12 @@ mysql_t::prepare (const str &q, u_int l_opts)
 sth_t
 amysql_thread_t::prepare (const str &q, u_int o)
 {
+  if (readied) {
+    TWARN ("security precaustion: cannot prepare queries "
+	   "after servicing requests\n");
+    return NULL;
+  }
+	   
   sth_t r = mysql.prepare (q, o);
   if (!r) 
     TWARN (mysql.error ());
