@@ -651,8 +651,6 @@ okld_t::init_clock_daemon ()
 	warn ("cannot start mmcd %s: %m\n", args[0]);
       } else {
 	mmcd_ctl_fd = fds[0];
-	str foo ("foorbad adsfi qoewirj oiasjdf oijqweroijqweorijqwer\n");
-	write (mmcd_ctl_fd, foo.cstr (), foo.len ());
 	ok = true;
       }
       close (fds[1]);
