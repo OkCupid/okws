@@ -7,6 +7,7 @@ http_parser_base_t::~http_parser_base_t ()
     timecb_remove (tocb);
     tocb = NULL;
   }
+  *destroyed = true;
 }
 
 void
@@ -40,7 +41,13 @@ http_parser_base_t::finish (int status)
 
   // XXX - it's crucial not to touch anything inside the class after
   // this CB, since the cb might destroy this object
+  // XXX - BUT! -- there is a bug here. the cb might contain a reference
+  // to a refcounted this pointer, and hence it will never be deleted!
+  // we'll need to figure something out here....
+  ptr<bool> local_destroyed = destroyed;
   (*cb) (status);
+  if (!*local_destroyed)
+    cb = NULL;
 }
 
 void

@@ -23,7 +23,8 @@ public:
   http_parser_base_t (ptr<ahttpcon> xx, u_int to) 
     : x (xx), abuf (New abuf_con_t (xx), true),
       timeout (to ? to : ok_clnt_timeout),
-      buflen (HTTP_PARSE_BUFLEN), tocb (NULL) {}
+      buflen (HTTP_PARSE_BUFLEN), tocb (NULL), 
+      destroyed (New refcounted<http_parse_base_t> (false)) {}
   virtual ~http_parser_base_t ();
 
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }
@@ -48,6 +49,7 @@ protected:
   char scratch[HTTP_PARSE_BUFLEN];
   timecb_t *tocb;
   cbi::ptr cb;
+  ptr<bool> destroyed;
 };
 
 class http_parser_raw_t : public http_parser_base_t {
