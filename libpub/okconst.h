@@ -136,6 +136,7 @@ extern const char *ok_mmc_file;                // mmap'ed clock file
 extern bool okd_child_sel_disable;             // disable child selects
 extern const char *okws_server_label;          // advertised server label
 extern u_int okd_debug_msg_freq;               // =0 for no debug messages
+extern int64_t okws_debug_flags;               // OKWS debug flags
 
 //
 // okld constants

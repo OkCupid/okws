@@ -22,6 +22,7 @@
  */
 
 #include "pub.h"
+#include "okdbg.h"
 
 void
 pub_rclient_t::publish (const xpub_fnset_t &files, pubrescb c)
@@ -177,6 +178,7 @@ pub_rclient_t::finish_req ()
 void
 pub_rclient_t::finish_publish ()
 {
+  bool newtab = true;
   if (!init) {
     init = true;
     nset = NULL;
@@ -187,9 +189,19 @@ pub_rclient_t::finish_publish ()
     nset = NULL;
     run_configs ();
   } else {
+    if (OKDBG2 (PUB_ERRORS)) {
+      okdbg_warn (ERROR, "finish_publish did not install new binding set");
+    }
+    newtab = false;
     delete nset;
     nset = NULL;
   }
+
+  if (newtab && OKDBG2 (PUB_BINDTAB_INSERTS)) {
+    okdbg_warn (CHATTER, "PUB bind table installed:");
+    set->bindings.okdbg_dump (CHATTER);
+  }
+
   (*cb) (res);
   running = false;
   waiter_t *w;

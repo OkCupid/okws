@@ -463,3 +463,37 @@ ls (const str &d)
   closedir (dir);
 }
 
+static void
+okdbg_dump_iterator (vec<str> *b, const pbinding_t &x)
+{
+  x.okdbg_dump_vec (b);
+}
+
+
+void
+bindtab_t::okdbg_dump_vec (vec<str> *s) const 
+{
+  strbuf b;
+  b.fmt ("===================== Begin Bindtab Dump (%p) "
+	 "=====================\n",
+	 this);
+  s->push_back (b);
+  traverse (wrap (okdbg_dump_iterator, s));
+  b.tosuio ()->clear ();
+  b.fmt ("===================== End Bindtab Dump (%p) "
+	 "=====================\n",
+	 this);
+  s->push_back (b);
+}
+
+void
+pbinding_t::okdbg_dump_vec (vec<str> *s) const 
+{
+  if (!fn) {
+    s->push_back ("** EMPTY PBINDING **");
+  } else {
+    strbuf b;
+    b << fn << " -> " << hsh->to_str () << " (" << (toplev ? 1 : 0) << ")\n";
+    s->push_back (b);
+  }
+}

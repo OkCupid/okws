@@ -32,6 +32,7 @@
 #include "xpub.h"
 #include "qhash.h"
 #include <dirent.h>
+#include "okdbg.h"
 
 
 #ifndef HAVE_SFS_CLOCK_T
@@ -89,8 +90,10 @@ template<> struct equals<phashp_t> {
   { return (*s1 == *s2); }
 };
 
-struct pbinding_t { // binds filenames to content-hashes
+// binds filenames to content-hashes
+struct pbinding_t : public okdbg_dumpable_t { 
   pbinding_t () : toplev (false) {}
+  virtual ~pbinding_t () {}
   pbinding_t (const pfnm_t &f, const phashp_t &h, bool tl = false) 
     : fn (f), hsh (h), toplev (tl) {}
   pbinding_t (const xpub_pbinding_t &x);
@@ -103,6 +106,8 @@ struct pbinding_t { // binds filenames to content-hashes
   bool operator== (const phash_t &ph) { return *hsh == ph; }
   bool operator!= (const phash_t &ph) { return !(*hsh == ph); }
 
+  void okdbg_dump_vec (vec<str> *s) const;
+
   const pfnm_t fn;
   const phashp_t hsh;
   const bool toplev;
@@ -114,12 +119,14 @@ typedef ihash<const pfnm_t, pbinding_t, &pbinding_t::fn,
 
 typedef callback<void, pbinding_t *>::ref bindcb;
 
-struct bindtab_t : public _bindmap_t {
+struct bindtab_t : public _bindmap_t , public okdbg_dumpable_t {
 public:
   bindtab_t (phash_cb::ptr cb = NULL) : _bindmap_t () , delcb (cb) {}
+  virtual ~bindtab_t () {}
   void bind (const pbinding_t *p);
   void unbind (const pbinding_t *p);
   void clear2 () { cnt.clear (); clear (); }
+  void okdbg_dump_vec (vec<str> *s) const;
 private:
   phash_cb::ptr delcb;
   inline void inc (phashp_t h);

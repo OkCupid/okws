@@ -175,6 +175,11 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
 
+  str df = getenv ("OKWS_DEBUG_OPTIONS");
+  if (df && !convertint (df, &okws_debug_flags)) {
+    SVCWARN("XXX invalid debug flags: " << df);
+  }
+
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
     t->lookup ("jaildir", &jaildir);

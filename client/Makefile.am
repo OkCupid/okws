@@ -3,6 +3,11 @@ $(PROGRAMS): $(LDEPS)
 
 noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2
 
+okwsbin_PROGRAMS = okdbg
+
+okdbg_SOURCES = okdbg.C
+okdbg_LDADD = $(LIBASYNC)
+
 hcli_SOURCES = hcli.C
 
 okwc_SOURCES = okwcmain.C
