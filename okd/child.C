@@ -68,6 +68,7 @@ okch_t::clone (ref<ahttpcon_clone> xc)
     }
   } else if (per_svc_nfd_in_xit > int (ok_svc_fd_quota)) {
     // warn << "debug: fail: " << per_svc_nfd_in_xit << "\n";
+    warn << "**WARNING: Service " << servpath << " appears unresponsive!\n";
     myokd->error (xc, HTTP_UNAVAILABLE, make_generic_http_req (servpath));
   } else {
     // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
@@ -335,7 +336,7 @@ okd_t::send_errdoc_set (svccb *sbp)
 void
 okch_t::kill ()
 {
-  warn << servpath << ": killing child (pid " << pid << ")\n";
+  warn << servpath << ": disconnecting from child (pid " << pid << ")\n";
   x->seteofcb (cbv_null);
   x = NULL;
   ctlx = NULL;
