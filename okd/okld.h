@@ -45,10 +45,14 @@ public:
   int get_exec_gid ();
   bool can_exec (bool chrt);
   void chldcb (int status);
-  bool chmod (int mode);
-  bool chown (int uid, int gid);
+  bool chmod ();
+  bool chown ();
   void clean_dumps ();
+
+  void assign_exec_ownership (int u, int g);
+  void assign_mode (int m) { mode = m; }
 private:
+  bool fix_exec (bool jail);
   void resurrect ();
   void relaunch ();
   bool get_unix_stat (bool chrt);
@@ -69,6 +73,9 @@ private:
   time_t startup_time;
   str rundir;
   int gid;
+
+  int exec_uid, exec_gid;
+  int mode;
 };
 
 class okld_t : public ok_base_t 

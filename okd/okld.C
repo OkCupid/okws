@@ -256,12 +256,13 @@ okld_t::fix_uids ()
     } 
 
     owners.insert (ueuid_own);
-    if ((ueuid_own != ueuid_orig || uegid_orig != uegid) && 
-	!svc->chown (ueuid_own, uegid))
+    svc->assign_exec_ownership (ueuid_own, uegid);
+    if ((ueuid_own != ueuid_orig || uegid_orig != uegid) && !svc->chown ())
       ret = false;
 
     // owner cannot exec this script; group -- only -- can
-    if (!svc->chmod (0450))
+    svc->assign_mode (00450);
+    if (!svc->chmod ())
       ret = false;
     svc->assign_uid (uegid);
     svc->assign_gid (uegid);

@@ -9,7 +9,8 @@ okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl,
 		      ok_usr_t *u)
   : rexecpath (e), servpath (s), 
     okld (o), cfgfile_loc (cfl), uid (u), state (OKC_STATE_NONE), rcb (NULL),
-    have_ustat (false), startup_time (0)
+  have_ustat (false), startup_time (0), 
+  exec_uid (-1), exec_gid (-1), mode (-1)
 {
   o->insert (this);
 }
@@ -58,16 +59,24 @@ okld_ch_t::get_exec_gid ()
   return ustat.st_gid;
 }
 
-bool
-okld_ch_t::chown (int uid, int gid)
+void
+okld_ch_t::assign_exec_ownership (int u, int g)
 {
-  if (::chown (execpath.cstr (), uid, gid) != 0) {
+  exec_uid = u;
+  exec_gid = g;
+}
+
+bool
+okld_ch_t::chown ()
+{
+  assert (exec_uid >= 0 && exec_gid >= 0);
+  if (::chown (execpath.cstr (), exec_uid, exec_gid) != 0) {
     warn << cfgfile_loc << ": cannot chown binary: " << execpath << "\n";
     return false;
   }
   warn << "Changing owner of executable " 
        << execpath << "; UID/GID:" << ustat.st_uid << "/" 
-       << ustat.st_gid << " --> " << uid << "/" << gid <<  "\n";
+       << ustat.st_gid << " --> " << exec_uid << "/" << exec_gid <<  "\n";
   return true;
 }
 
@@ -88,16 +97,18 @@ okld_ch_t::launch ()
 }
 
 bool
-okld_ch_t::chmod (int mode)
+okld_ch_t::chmod ()
 {
+  assert (mode >= 0);
   if (::chmod (execpath.cstr (), mode) != 0) {
     warn << cfgfile_loc << ": cannot chmod binary: " << execpath << "\n";
     return false;
   }
+  char buf[100];
+  warn ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
+	execpath.cstr (), ustat.st_mode & 07777, mode);
   return true;
 }
-
-str foo;
 
 void
 okld_ch_t::launch_cb (int logfd)
@@ -126,7 +137,6 @@ okld_ch_t::launch_cb (int logfd)
   okld->env.remove ("logfd");
 
   int fd, ctlfd;
-  foo = execpath;
   fd = ahttpcon_aspawn (execpath, argv, 
 			wrap (this, &okld_ch_t::set_svc_ids), 
 			&ctlfd);
@@ -193,7 +203,7 @@ okld_ch_t::set_svc_ids ()
     if (chdir (d) != 0)
       warn ("change dir failed: %m\n");
     else {
-      warn <<  "changing directories to " << d << "\n";
+      CH_WARN (  "changing directories to " << d  );
     }
   }
 }
@@ -236,6 +246,20 @@ secdiff (struct timeval *tv0, struct timeval *tv1, int diff)
   return (sd > diff || (sd == diff && tv1->tv_usec > tv0->tv_usec));
 }
 
+bool
+okld_ch_t::fix_exec (bool jail)
+{
+  have_ustat = false;
+  if (!get_unix_stat (jail))
+    return false;
+  if ((get_exec_uid () != exec_uid || get_exec_gid () != exec_gid) && 
+      !chown ())
+    return false;
+  if (((ustat.st_mode & 07777) != mode) && !chmod ())
+    return false;
+  return true;
+}
+
 void
 okld_ch_t::resurrect ()
 {
@@ -252,7 +276,12 @@ okld_ch_t::resurrect ()
   if (timevals.size () > ok_crashes_max) {
     state = OKC_STATE_HOSED;
   } else {
-    launch ();
+    if (!fix_exec (true)) {
+      CH_WARN ("failed to fix permissions on executable during relaunch");
+      state = OKC_STATE_HOSED;
+    } else {
+      launch ();
+    }
   }
 }
 
