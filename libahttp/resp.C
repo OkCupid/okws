@@ -99,12 +99,12 @@ http_resp_header_t::to_strbuf () const
   b << status;
   if (status == HTTP_OK)
     b << " OK";
-  b << "\r\n";
+  b << HTTP_CRLF;
   int lim = fields.size ();
   for (int i = 0; i < lim; i++) {
-    b << fields[i].name << ": " << fields[i].val << "\r\n";
+    b << fields[i].name << ": " << fields[i].val << HTTP_CRLF;
   }
-  b << "\r\n";
+  b << HTTP_CRLF;
   return b;
 }
 

@@ -18,4 +18,6 @@
 
 #define OKD_SERVER_ID "OKD/"VERSION
 
+#define HTTP_CRLF "\r\n"
+
 #endif /* _LIBAHTTP_HTTPCONST */
