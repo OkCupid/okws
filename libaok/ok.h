@@ -65,12 +65,14 @@ typedef u_int16_t okws1_port_t;
 class ok_con_t {
 public:
   ok_con_t () {}
+  // can be used by custom oksrvc_t's that have
+  // want to send CUSTOM RPCs other services.
+  ptr<aclnt> clnt; 
 protected:
   void ctlcon (callback<void, svccb *>::ref cb);
   void ctlclose ();
 
   ptr<axprt_unix> ctlx;
-  ptr<aclnt> clnt;
   ptr<asrv> srv;
 };
 
