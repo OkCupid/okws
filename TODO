@@ -222,3 +222,7 @@ OKD v0.2
    just ignore and keep going. it means that our web server has too
    many file descriptors open. perhaps have a messenging system
    to tell okd to stop sending requests in this case.
+ - bugs: RPC too big crashes whatever is running it; outstanding issues:
+   first of all, why was the coredump not in the jailed /var/coredumps?
+   second issue, why did this happen?  i thought all sockets were set 
+   with a 4M socketsize? maybe it's a UDP restriction.
