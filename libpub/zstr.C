@@ -225,17 +225,11 @@ zbuf::compress (strbuf *p, int level)
   str s;
   u_int len;
 
-  // XXX -- debug code
-  vec<int> debugvec;
-
   // first time through the loop add the gzip header; see zinit ()
   // for what that header actually looks like
   for (u_int i = 0; i < lim; i++) {
     str z = zs[i].compress (level);
     
-    // XXX -- debug code
-    debugvec.push_back (i);
-
     if (!z)
       goto compress_err;
     len = (i == 0) ? zhdr.len () + z.len () : z.len ();
@@ -268,12 +262,6 @@ zbuf::compress (strbuf *p, int level)
   (*p) << s << "\r\n0\r\n\r\n";
   return;
 
-  // XXX - debug code
-  for (u_int i = 0; i < debugvec.size (); i++) {
-    warn << debugvec[i] << ",";
-  }
-  warn << "\n";
-	  
  compress_err:
   p->tosuio ()->clear ();
 }
