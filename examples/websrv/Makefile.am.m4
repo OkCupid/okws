@@ -42,6 +42,7 @@ svcmk(pt4)
 svcmk(pt5)
 svcmk(upload)
 svcmk(bomb)
+svcmk(random)
 
 dnl
 dnl End of the Part the you Need to Edit

@@ -147,6 +147,14 @@ ztab_cache_t::remove (zstr *z)
   if (!z) z = q.first;
   tot -= z->len ();
   q.remove (z);
+  tab.remove (z);
+
+  u_int scc_p; // scc_p = static const char pointer
+  if ((scc_p = z->get_scc_p ())) {
+    assert (cptab[scc_p]);
+    cptab.remove (scc_p);
+  }
+
   delete z;
 }
 
@@ -190,8 +198,10 @@ ztab_cache_t::lookup (const char *p, size_t l)
   if (zp) { 
     if ((*zp)->len () == l && !memcmp ((*zp)->cstr (), p, l)) 
       ret = *zp;
-    else
+    else {
+      (*zp)->set_scc_p (0);
       cptab.remove (ip); 
+    }
   }
   return ret;
 }
@@ -211,6 +221,7 @@ ztab_cache_t::alloc (const char *p, size_t l, bool lkp)
     make_room (l);
     z = New zstr (p, l);
     insert (z);
+    z->set_scc_p (ip);
     cptab.insert (ip, z);
     return *z;
   } else {
@@ -306,6 +317,7 @@ zbuf::inflated_len () const
   u_int lim = zs.size ();
   for (u_int i = 0; i < lim; i++) 
     len += zs[i].to_str ().len ();
+  len += f.tosuio ()->resid ();
   return len;
 }
 

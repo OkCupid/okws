@@ -59,14 +59,17 @@ private:
 
 class zstr {
 public:
-  zstr () {}
-  zstr (const str &s) : b (New refcounted<zstrobj> (s)) {}
+  zstr () : _scc_p (0) {}
+  zstr (const str &s) : b (New refcounted<zstrobj> (s)), _scc_p (0) {}
   zstr (const str &s, const str &z, int l) : 
-    b (New refcounted<zstrobj> (s, z, l)) { }
-  zstr (const zstr &z) : b (z.b) {}
-  zstr (const char *p) : b (p ? New refcounted<zstrobj> (p) : NULL) {}
-  zstr (const char *p, size_t l) : b (New refcounted<zstrobj> (str (p, l))) {}
-  zstr (const strbuf &bb) : b (New refcounted<zstrobj> (bb)) {}
+    b (New refcounted<zstrobj> (s, z, l)), _scc_p (0) { }
+  zstr (const zstr &z) : b (z.b) , _scc_p (0) {}
+  zstr (const char *p) : 
+    b (p ? New refcounted<zstrobj> (p) : NULL), _scc_p (0) {}
+  zstr (const char *p, size_t l) : 
+    b (New refcounted<zstrobj> (str (p, l))), _scc_p (0) {}
+  zstr (const strbuf &bb) : 
+    b (New refcounted<zstrobj> (bb)), _scc_p (0) {}
 
   zstr &operator= (const zstr &z) { b = z.b; return *this; }
   zstr &operator= (const char *p) 
@@ -102,11 +105,18 @@ public:
   const str &compress (int l = -1) const { return b->to_zstr (l); }
   inline bool compressed () const { return b->compressed (); }
   inline uLong crc32 (uLong in) const { return b->crc32 (in); }
+
+  // static const char * pointers (for compiled-in strings) --
+  // to make caching hints.
+  inline void set_scc_p (u_int i) { _scc_p = i ; }
+  inline u_int get_scc_p () const { return _scc_p; }
+
 private:
   friend class ztab_cache_t;
   ihash_entry<zstr> hlnk;
   tailq_entry<zstr> qlnk;
   ptr<zstrobj> b;
+  u_int _scc_p;
 };
 
 class zbuf {
@@ -294,13 +304,15 @@ zbuf::strbuf_add (const str &s, bool cp)
 zbuf &
 zbuf::cat (const char *c, size_t l, bool cp)
 {
-  zstr *zp = ztab->lookup (c, l);
-  if (zp) {
-    zs.push_back (*zp);
-  } else if (l <= minstrsize) {
+  if (l <= minstrsize) { 
     copy_small_str (c, l);
   } else {
-    zs.push_back (ztab->alloc (c, l,false));
+    zstr *zp = ztab->lookup (c, l);
+    if (zp) {
+      zs.push_back (*zp);
+    } else {
+      zs.push_back (ztab->alloc (c, l,false));
+    }
   }
   return (*this);
 }

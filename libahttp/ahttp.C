@@ -248,7 +248,6 @@ ahttpcon_clone::~ahttpcon_clone ()
     dcb = NULL;
   }
   *destroyed_p = true;
-  warn << "destroyed cloner\n";
 }
       
 
@@ -481,7 +480,6 @@ ahttpcon::input ()
   if (recv_limit > 0 && bytes_recv > recv_limit) {
 
     warn << "Channel limit exceded ";
-    set_remote_ip ();
     if (remote_ip)
       warnx << "(" << remote_ip << ")";
     warnx << "\n";
@@ -615,7 +613,6 @@ ahttpcon_clone::delimit (int dummy)
   switch (trickle_state) {
   case 0: 
 
-    set_remote_ip ();
     warn << "slow trickle client";
     if (remote_ip)
       warnx << ": " << remote_ip;
@@ -863,7 +860,10 @@ ahttp_tab_t::run ()
     if (* n->_destroyed_p ) {
       unreg (n);
     } else if (int (timenow - n->_a->start) > int (ok_demux_timeout)) {
-      warn << "XXX: removing deadbeat http connection\n"; //debug
+
+      warn << "removing deadbeat http connection: "
+	   <<  n->_a->get_remote_ip () << "\n";
+
       n->_a->timed_out ();
       unreg (n);
     } else {

@@ -32,9 +32,9 @@
 
 #define DB "10.1.1.20"
 
-class oksrvc_pt4_t : public oksrvc_t {
+class oksrvc_pt5_t : public oksrvc_t {
 public:
-  oksrvc_pt4_t (int argc, char *argv[]) : oksrvc_t (argc, argv)  
+  oksrvc_pt5_t (int argc, char *argv[]) : oksrvc_t (argc, argv)  
   {
     db = add_db (DB, PT1_PORT, pt1_prog_1);
   }
@@ -43,16 +43,16 @@ public:
   dbcon_t *db;
 };
 
-class okclnt_pt4_t : public okclnt_t {
+class okclnt_pt5_t : public okclnt_t {
 public:
-  okclnt_pt4_t (ptr<ahttpcon> x, oksrvc_pt4_t *o) 
-      : okclnt_t (x, o), ok_pt4 (o) {}
-  ~okclnt_pt4_t () {}
-  inline dbcon_t *db () const { return ok_pt4->db; }
+  okclnt_pt5_t (ptr<ahttpcon> x, oksrvc_pt5_t *o) 
+      : okclnt_t (x, o), ok_pt5 (o) {}
+  ~okclnt_pt5_t () {}
+  inline dbcon_t *db () const { return ok_pt5->db; }
   void process ()
   {
     db ()->call (PT1_TIMES_TAB, NULL, &res, 
-		 wrap (this, &okclnt_pt4_t::tt_cb));
+		 wrap (this, &okclnt_pt5_t::tt_cb));
   }
 
   void tt_cb (clnt_stat err)
@@ -91,14 +91,14 @@ EOF
     output (out);
   }
   int id; // make id global for qry_cb()
-  oksrvc_pt4_t *ok_pt4;
+  oksrvc_pt5_t *ok_pt5;
   pt1_times_tab_res_t res;
 };
 
 okclnt_t *
-oksrvc_pt4_t::make_newclnt (ptr<ahttpcon> x)
+oksrvc_pt5_t::make_newclnt (ptr<ahttpcon> x)
 { 
-  return New okclnt_pt4_t (x, this); 
+  return New okclnt_pt5_t (x, this); 
 }
 
 int
@@ -106,7 +106,7 @@ main (int argc, char *argv[])
 {
   //hlpr_max_qlen = 10000;
   hlpr_max_calls = 2000;
-  oksrvc_t *oksrvc = New oksrvc_pt4_t (argc, argv);
+  oksrvc_t *oksrvc = New oksrvc_pt5_t (argc, argv);
   oksrvc->launch ();
   amain ();
 }
