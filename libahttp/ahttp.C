@@ -73,6 +73,12 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
     // because an error message is at least attempted to be sent
     // back to the browser.
     panic ("ahttpcon::sendv: called after an EOF\n");
+  if (eof) 
+    // XXX -- if this panic fails, then we should think more
+    // carefully about the right ordering of operations here;
+    // i think things might be running away when trying to write
+    // to a dead socket.
+    panic ("ahttpcon::sendv: called after an EOF (flag set)\n");
   bytes_sent += len;
   if (!out->resid () && cnt < min (16, UIO_MAXIOV)) {
     ssize_t skip = writev (fd, iov, cnt);
