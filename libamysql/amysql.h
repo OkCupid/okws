@@ -444,6 +444,7 @@ public:
   str error () const { return err; }
   ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
   u_int64_t insert_id () { return mysql_insert_id (&mysql); }
+  u_int64_t affected_rows() { return mysql_affected_rows(&mysql);}
 
   u_int opts;
   str err;
