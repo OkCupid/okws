@@ -67,6 +67,7 @@ class ssrv_t;
 class mtd_thread_t { // Abstract class for Child threads
 public:
   mtd_thread_t (mtd_thread_arg_t *a);
+  virtual ~mtd_thread_t () {}
   void run ();
   virtual void dispatch (svccb *sbp) = 0;
   virtual bool init () { return true; }
