@@ -144,7 +144,7 @@ void
 okld_ch_t::launch_cb (int logfd)
 {
   if (logfd < 0) {
-    warn << "Cannot connect to oklogd for server: (" << servpath << ","
+    warn << "HOSED: Cannot connect to oklogd for server: (" << servpath << ","
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
     return; 
@@ -152,7 +152,7 @@ okld_ch_t::launch_cb (int logfd)
 
   if (okld->in_shutdown ()) {
     close (logfd);
-    warn << "shutdown received while relaunching service: ("
+    warn << "HOSED: shutdown received while relaunching service: ("
 	 << servpath << "," << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
     return;
@@ -174,7 +174,7 @@ okld_ch_t::launch_cb (int logfd)
   pid = ahttpcon_spawn_pid;
   close (logfd);
   if (fd < 0 || ctlfd < 0) {
-    warn << "Cannot launch service: (" << servpath << "," 
+    warn << "HOSED: Cannot launch service: (" << servpath << "," 
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
     return;
@@ -189,7 +189,7 @@ okld_ch_t::launch_cb (int logfd)
   if (!okld->okdx->send (ctlfd, fdx)) {
     close (ctlfd);
     close (fd);
-    warn << "Cannot clone CTL file descriptor: (" << servpath << ")\n";
+    warn << "HOSED: Cannot clone CTL file descriptor: (" << servpath << ")\n";
     state = OKC_STATE_HOSED;
     return;
   }
@@ -201,7 +201,7 @@ okld_ch_t::launch_cb (int logfd)
     close (ctlfd);
     close (fd);
     state = OKC_STATE_HOSED;
-    warn << "Cannot clone HTTP file descriptor: (" << servpath << ")\n";
+    warn << "HOSED: Cannot clone HTTP file descriptor: (" << servpath << ")\n";
     return;
   }
 
@@ -253,18 +253,19 @@ okld_ch_t::chldcb (int status)
 
   // child chrashing at boot-up is a bad thing; nothing to do here
   if (state != OKC_STATE_SERVE) {
+    CH_WARN ("HOSED: child found in wrong state (" << state << ")");
     state = OKC_STATE_HOSED;
     return;
   }
   if (okld->safe_startup () && 
       (timenow - startup_time < int (ok_chld_startup_time))) {
-    CH_WARN ("not restarting due to crash directly after startup");
+    CH_WARN ("HOSED: not restarting due to crash directly after startup");
     state = OKC_STATE_HOSED;
     return;
   }
   state = OKC_STATE_DELAY;
 
-  if (status == 0)
+  if (status == 0 && timevals.size () <= (ok_crashes_max/2 + 2) )
     resurrect ();
   else {
     rcb = delaycb (ok_resurrect_delay, ok_resurrect_delay_ms * 1000000,
@@ -308,9 +309,12 @@ okld_ch_t::resurrect ()
   timevals.push_back (tp);
   if (timevals.size () > ok_crashes_max) {
     state = OKC_STATE_HOSED;
+    CH_WARN ("HOSED: execeeded maximum number of crashes; "
+	     "will no longer restart!");
   } else {
     if (okld->will_jail () && !fix_exec (true)) {
-      CH_WARN ("failed to fix permissions on executable during relaunch");
+      CH_WARN ("HOSED: failed to fix permissions on executable "
+	       "during relaunch");
       state = OKC_STATE_HOSED;
     } else {
       launch ();
