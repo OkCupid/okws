@@ -6,6 +6,7 @@
 #define _LIBAHTTP_HTTPCONST
 
 #define HTTP_OK          200
+#define HTTP_PARTIAL_CONTENT 206
 #define HTTP_URI_TOO_BIG 414
 #define HTTP_BAD_REQUEST 400
 #define HTTP_NOT_FOUND   404

@@ -14,7 +14,7 @@ http_status_set_t::http_status_set_t ()
   add (203, "Non-Authoratative Information");
   add (204, "No Content");
   add (205, "Resent Content");
-  add (206, "Partial Content");
+  add (HTTP_PARTIAL_CONTENT, "Partial Content");
   add (300, "Multiple  Choices");
   add (HTTP_REDIRECT, "Moved Permanently");
   add (HTTP_MOVEDTEMP, "Found"); 
