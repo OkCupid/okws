@@ -1581,8 +1581,14 @@ case $with_mode in
 		enable_shared=yes
 		DEBUG=-g
 		CXXDEBUG=-g
-		sfstag=$with_mode
 		with_dmalloc=yes
+		;;
+	"profile" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		okmtag=$with_mode
+		DEBUG='-g -pg -O2'
+		CXXDEBUG='-g -pg -O2'
 		;;
 	"optmz" )
 		sfstag=lite
