@@ -65,7 +65,7 @@ okch_t::got_new_ctlx_fd (int fd, int p)
   pid = p;
   ctlx = axprt_unix::alloc (fd);
   ctlcon (wrap (this, &okch_t::dispatch, destroyed));
-  state == OKC_STATE_LAUNCH_SEQ_1;
+  state = OKC_STATE_LAUNCH_SEQ_1;
 }
 
 //
