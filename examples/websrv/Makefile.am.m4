@@ -50,6 +50,16 @@ LDADD = $(LDADD_SRV)
 coredump_SOURCES = coredump.C
 
 okmsvc_PROGRAMS = cgi_exes coredump
+dnl
+dnl If you want to install in a subdir of $(okmsvcdir), you can
+dnl do something like:
+dnl
+dnl foodir = $(okmsvcdir)/foo
+dnl foo_PROGRAMS = cgi_exes coredump
+dnl
+dnl Or whatever it is you please...
+dnl
+
 
 BUILT_SOURCES = cgi_sources
 
@@ -71,3 +81,9 @@ $(srcdir)/Makefile.am: $(srcdir)/Makefile.am.m4
 jail:
 	PERL=$(PERL) LDD=$(LDD) MKDIR='$(mkinstalldirs)' DIFF=$(DIFF) \
 		$(jailsh) $(okmjaildir) $(DESTDIR)$(okmsvcdir)/*
+dnl 
+dnl  or if installing under subdirectory "foo", then simply:
+dnl
+dnl		$(jailsh) $(okmjaildir) $(DESTDIR)$(okmsvcdir)/foo/*
+dnl
+dnl                   
