@@ -1,0 +1,10 @@
+
+- benchmark with threads responding directly to external clients, not
+  by going through the master thread.
+- getusage/time to see how much time was spent in the kernel, to see
+  if system calls are indeed hosing us.
+- pentium cache counters.  man pctr
+- user level TCP connections? (via Raw sockets?)
+- specialized TCP?
+- cache misses?
+- cat 2 gzip files together to prevent re-CRC-ing.

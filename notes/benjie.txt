@@ -1,0 +1,10 @@
+
+Bugs in Configure
+-----------------
+- --with-mysql doesn't find mysql
+- broken samples
+- segfault in SHA
+- augment layout file to show where some things are.
+- logger permissions when starting in a fresh logging directory: can't write
+  a new log file, etc...
+- do same stuff as we have now with ok-services.
