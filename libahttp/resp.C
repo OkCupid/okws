@@ -19,7 +19,7 @@ http_status_set_t::http_status_set_t ()
   add (HTTP_REDIRECT, "Moved Permanently");
   add (HTTP_MOVEDTEMP, "Found"); 
   add (HTTP_SEEOTHER, "See Other");
-  add (304, "Not Modified");
+  add (HTTP_NOT_MODIFIED, "Not Modified");
   add (HTTP_USEPROXY, "Use Proxy");
   add (307, "Temporary Redirect");
   add (HTTP_BAD_REQUEST, "Bad Request");
