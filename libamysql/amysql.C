@@ -46,7 +46,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
 
   sth_t r = NULL;
   if (l_opts & AMYSQL_PREPARED) {
-#ifdef MYSQL_HAVE_BIND
+#ifdef HAVE_MYSQL_BIND
     MYSQL_STMT *s = mysql_stmt_init (&mysql);
     if (!s) {
       err = stbuf ("MySQL ran out of memory on statment init: ")

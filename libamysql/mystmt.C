@@ -87,7 +87,7 @@ sth_prepared_t::fetch2 (bool bnd)
   return ADB_OK;
 }
 
-#endif
+#endif //  HAVE_MYSQL_BINDFUNCS && HAVE_MYSQL_BIND
 
 void
 mystmt_t::alloc_res_arr (u_int n)
