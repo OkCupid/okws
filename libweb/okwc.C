@@ -33,11 +33,19 @@ okwc_request (const str &host, u_int16_t port, const str &fn,
   req->launch ();
   return req;
 }
-
 void
 okwc_cancel (okwc_req_t *req)
 {
   req->cancel (HTTP_CLIENT_EOF);
+}
+
+bool
+okwc_http_hdr_t::is_chunked () const
+{
+  str v;
+  return (lookup ("transfer-encoding", &v) &&
+	  v.len () == 7 &&
+	  mystrlcmp (v, "chunked"));
 }
 
 okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 
@@ -181,17 +189,130 @@ okwc_http_t::hdr_parsed (int status)
 }
 
 void
-okwc_http_bigstr_t::body_parse ()
+okwc_http_bigstr_t::eat_chunk (size_t s)
 {
-  body.dump (hdr.get_contlen (), 
-	     wrap (this, &okwc_http_bigstr_t::body_parsed));
+  body.dump (s, wrap (this, &okwc_http_bigstr_t::ate_chunk));
 }
 
 void
-okwc_http_bigstr_t::body_parsed (str bod)
+okwc_http_t::start_chunker ()
 {
-  resp->body = bod;
+  chunker = New okwc_body_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch, this);
+  chunker->parse (wrap (this, &okwc_http_t::parsed_chunk_hdr));
+}
+
+
+void
+okwc_http_t::body_parse ()
+{
+  if (hdr.is_chunked ()) {
+    start_chunker ();
+  } else {
+    eat_chunk (hdr.get_contlen ());
+  }
+}
+
+void
+okwc_http_t::parsed_chunk_hdr (int status)
+{
+  if (status == HTTP_OK) {
+    size_t sz = chunker->get_sz ();
+    if (sz == 0) {
+      body_chunk_finish ();
+    } else {
+      eat_chunk (sz);
+    }
+  } else {
+    finish (sz);
+  }
+}
+
+void
+okwc_http_t::eat (size_t s)
+{
+  if (s == 0) {
+    body_chunk_finish ();
+  } else {
+    eat_chunk (s);
+  }
+}
+
+void
+okwc_chunker_t::parse_guts ()
+{
+  abuf_stat_t r = ABUF_OK;
+  while (r == ABUF_OK) {
+    switch (state) {
+    case START: 
+      {
+	str sz_str;
+	r = delimit_word (&sz_str);
+	if (r == ABUF_OK && !convertint (sz_str, &sz, 16))
+	  r = ABUF_PARSE_ERR;
+	break;
+      }
+    case SPC1:
+      r = abuf->skip_hws (0);
+      break;
+    case EOL1:
+      r = require_crlf ();
+      break;
+    case EOL2:
+      r = require_crlf ();
+      break;
+    default:
+      r = ABUF_COMPLETE;
+      break;
+    }
+    if (r == ABUF_OK)
+      state = static_cast<state_t> (state + 1);
+  }
+
+  if (r != ABUF_WAIT) 
+    finish_parse (r == ABUF_COMPLETE ? HTTP_OK : HTTP_SRV_ERROR);
+}
+
+void
+okwc_http_t::body_parse_continue ()
+{
+  if (hdr.is_chunked ())
+    start_chunker ();
+  else
+    body_chunk_finish ();
+}
+
+void
+okwc_http_t::puke (abuf_stat_t s)
+{
+  finish (HTTP_SRV_ERROR);
+}
+
+void
+okwc_http_t::body_chunk_finish ()
+{
+  finished_meal ();
   finish (HTTP_OK);
+}
+
+
+void
+okwc_http_bigstr_t::ate_chunk (str bod)
+{
+  chunks.push_back (bod);
+  body_parse_continue ();
+}
+
+void
+okwc_http_bigstr_t::finished_meal ()
+{
+  if (chunks.size () == 1) {
+    resp->body = chunks[0];
+  } else if (chunks.size () > 1) {
+    strbuf b;
+    while (chunks.size ())
+      b << chunks.pop_front ();
+    resp->body = b;
+  }
 }
 
 void
@@ -209,11 +330,11 @@ okwc_http_bigstr_t::finish2 (int status)
 }
 
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
-			  int v, cgi_t *ock)
+			  int v, cgi_t *ock, cgi_t *incook)
   : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
-    hdr (&abuf, &resp->cookies, OKWC_SCRATCH_SZ, scratch),
-    vers (v), outcook (ock), state (OKWC_HTTP_NONE)
+    hdr (&abuf, incook ? incook : &resp->cookies, OKWC_SCRATCH_SZ, scratch),
+    vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL)
 {}
 
 okwc_http_bigstr_t::okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f,
@@ -351,3 +472,4 @@ okwc_http_bigstr_t::cancel2 ()
 {
   body.cancel ();
 }
+
