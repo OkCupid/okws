@@ -1384,9 +1384,12 @@ void
 pfile_sec_t::hadd (pfile_sec_t *s)
 {
   if (s->is_tag ()) {
-    if (etag_flag && parser->space_flag &&
-	(PLASTHTAG && (PLASTHTAG->open || !PHTAG->open)))
-      parser->space_flag = false;
+    //
+    // MK - 11.10.2003 we're going to be conservative here...
+    //
+    // if (etag_flag && parser->space_flag &&
+    //(PLASTHTAG && (PLASTHTAG->open || !PHTAG->open)))
+    // parser->space_flag = false;
     etag_flag = true;
   }
   apply_space ();
