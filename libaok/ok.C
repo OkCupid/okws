@@ -429,7 +429,12 @@ void
 okclnt_t::http_parse_cb (int status)
 {
   if (status == HTTP_OK)
-    process ();
+    if (process_flag)
+      fatal << "duplicate process called!\n";
+    else {
+      process_flag = true;
+      process ();
+    }
   else
     error (status);
 }
