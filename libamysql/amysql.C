@@ -174,5 +174,6 @@ mybind_date_t::read_str (const char *c, unsigned long)
 {
   parsed = true;
   datep->set (c);
+  assign();
   return (!datep->err);
 }
