@@ -29,6 +29,12 @@ inline int stopt ()
 	   (tv2.tv_usec - tv.tv_usec)) ;
 }
 
+void
+foobar (int *i)
+{
+  (*i)++;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -39,5 +45,13 @@ main (int argc, char *argv[])
     b.foo ();
   }
   int t = stopt ();
-  warn ("%d iter in %d usec: %f\n", iter, t, (double)t / (double)iter);
+  cbi cb  = wrap (foobar);
+  warn ("virtual function call: %d iter in %d usec\n", iter, t);
+  int v = 0;
+  startt ();
+  for (int i = 0; i < iter; i++) {
+    (*cb) (&v);
+  }
+  int t = stopt ();
+  warn ("callback call: %d iter in %d usec\n", iter, t);
 }
