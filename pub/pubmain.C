@@ -29,7 +29,7 @@
 static void
 usage ()
 {
-  fatal << "usage: [-wrF] [-g | -h | -e] [-o <outfile>] <infile>\n";
+  fatal << "usage: [-wr] [-g|-h|-e] [-F|-f<config>] [-o <outfile>] <infile>\n";
 }
 
 int
@@ -79,7 +79,7 @@ main (int argc, char *argv[])
       readonly_out = true;
       break;
     case 'g':
-      if (!m) usage ();
+      if (m) usage ();
       m = PFILE_TYPE_CODE;
     case 'I':
       iinfo = false;
@@ -97,11 +97,11 @@ main (int argc, char *argv[])
        break;
      }
     case 'h':
-      if (!m) usage ();
+      if (m) usage ();
       m = PFILE_TYPE_H;
       break;
     case 'E':
-      if (!m) usage ();
+      if (m) usage ();
       m = PFILE_TYPE_EC;
       break;
     case 'o':

@@ -54,6 +54,8 @@
 %token T_BGCODE
 %token T_BGCCE
 %token T_INIT_PDL
+%token T_EJS_SILENT
+%token T_BJS_SILENT
 
 %token T_INT_ARR
 %token T_UINT_ARR
@@ -296,9 +298,12 @@ ptag_func: T_PTINCLUDE	{ PFUNC = New pfile_include_t (PLINENO); }
 	| T_PTINCLIST	{ PFUNC = New pfile_inclist_t (PLINENO); }
 	;
 
-javascript: b_js_tag js_code T_EJS 
+e_js_tag: T_EJS		{ PSECTION->add ($1); }
+	| T_EJS_SILENT	{}
+	;
+
+javascript: b_js_tag js_code e_js_tag
 	{
-	  PSECTION->add ($3);
 	  $$ = PSECTION;
 	  PFILE->pop_section ();
 	}
@@ -336,6 +341,13 @@ b_js_tag: T_BJST
 	{  
  	  PSECTION->add ($4);
 	}
+	| T_BJS_SILENT 
+	{
+	  /* we still need this here, even though it will most
+	   * likely be empty
+ 	   */
+	  PFILE->push_section (New pfile_html_sec_t (PLINENO));
+        }
 	;
 
 js_code: /* empty */ 

@@ -24,6 +24,7 @@ int yy_wss_nl;
 int yywss;
 int yyesc;
 int yy_oldesc;
+int yy_pt_com;  /* pass-throgh comment! */
 char str_buf[YY_STR_BUFLEN];
 int sbi;
 char *eof_tok;
@@ -42,6 +43,7 @@ WS	[ \t]
 WSN	[ \t\n]
 EOL	[ \t]*\n?
 TPRFX	"<!--#"[ \t]*
+TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 %x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE EC WEC CCODE
 %x ECCODE ECF GCODE PRE
@@ -158,6 +160,11 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
 {TPRFX}"#"	    	|
 {TPRFX}com(ment)?	{ yy_push_state (HCOM); }
+{TPRFX}[Rr][Ee][Mm]	{ 
+			  yy_pt_com = 1; 
+ 			  begin_STR (HCOM, 0);
+			  addstr ("<!--", 4);
+	  		}
 }
 
 <GH,H,WH,WGH,EC,WEC,JS,PSTR,GSEC,PTAG,ECCODE,HTAG>{
@@ -178,16 +185,17 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 \\		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
-<WH,WGH,WEC>{
-\<!--		{ yy_push_state (HCOM); }
-}
-
 
 <WH,WGH,WEC>{	
 {WSN}+		{ nlcount (); return (' '); }
 [<][/]?		{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
 \<{ST}/[ \t\n>]	{ yy_push_state (JS); yy_push_state (HTAG); 
 	          yylval.str = yytext; return T_BJST; }
+
+{TPRFX}{ST}{TCLOSE} { yy_push_state (JS); return T_BJS_SILENT; }
+
+\<!--		{ yy_pt_com = 0; yy_push_state (HCOM); }
+
 
 \<{PRET}{WSN}*\> { yy_push_state (PRE); nlcount (); yylval.str = yytext; 
 	          return T_BPRE; }
@@ -201,15 +209,25 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <JS>{
 "</"{ST}{WS}*\>	{ yy_pop_state (); yylval.str = yytext; return T_EJS; }
+{TPRFX}"/"{ST}{TCLOSE} { yy_pop_state (); return T_EJS_SILENT; }
 [$@<\\]		{ yylval.ch = yytext[0]; return T_CH; }
 [^\\$@<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 }
 
 <HCOM>{
-\n		PLINC;
---\>		{ yy_pop_state (); }
-[^-\n]*		/* discard */ ;
--		/* discard */ ;
+\n		{ PLINC; if (yy_pt_com) { addch (yytext[0], -1); } }
+--\>		{ 
+		   if (yy_pt_com) {
+			addstr (yytext, yyleng);
+			end_STR (); /* calls yy_pop_state (); */
+			return T_HTML;
+		   } else {
+			yy_pop_state ();
+		   }
+		}
+
+[^-\n]*		{ if (yy_pt_com) { addstr (yytext, yyleng); } }
+-		{ if (yy_pt_com) { addch (yytext[0], -1); } }
 }
 
 <WH,WGH,WEC>{
@@ -327,13 +345,14 @@ begin_STR (int s, int e)
   yy_ssln = PLINENO;
 }
 
+
 int
 end_STR ()
 {
   str_buf[sbi] = '\0';
-  yy_pop_state ();
   yylval.str = str_buf;
   yyesc = yy_oldesc;
+  yy_pop_state ();
   return T_STR;
 }
 
