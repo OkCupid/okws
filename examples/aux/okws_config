@@ -18,22 +18,79 @@ BindAddr 	18.26.4.239 80
 ##
 ##   All services run by okd will be in a chroot jail, assuming that okd
 ##   is started as root.  Specify where this chroot jail is with the
-##   jaildir parameter
+##   jaildir parameter.  Note that after you install your services,
+##   they will be in a directory given by:
 ##
-JailDir 	/disk/rael/max/okrun/websrv
+##      /var/okws/modules/<name>/<version>/<tag>/run
+##   
+##   by default.  We recommend at first that you compile with 
+##   debug mode, so in the above, name=samples, version=0.0,
+##   and tag=debug.
+##
+JailDir 	/var/okws/modules/samples/0.0/debug/run
 
 ##
-## ServiceUser <user>
-## ServiceGroup <user>
+## ServiceBin <dir>
 ##
-##   Specify the user and group that services launch by okd should run as.
-##   Note that this user/group should have very few privileges, if any.
-##   Services need not read from or write to any files on the file system,
-##   with the possible execption of the log socket -- this is still being
-##   worked out.
+##   Directory within JailDir, in which to find the OKWS service
+##   executables.  In cluster setting, might actually be
+##   an NFS mount point. The default value here is the empty string ---
+##   that is, by default, service executables are assumed to be in 
+##   the top level runtime jail directory.  This is not much of a 
+##   security concern, as services will be forced into mode 0700,
+##   and owned by whoever is running them.  Thus, if okd or any
+##   of the services is compromised, they should not be able to
+##   examine the executables of other services.
 ##
-ServiceUser	www		
-ServiceGroup	www	
+ServiceBin	svc
+
+## SocketDir 	<dir>
+##
+##	Within the JailDir, where OKWS services should go to
+##	read local named UNIX sockets. For instance, if the
+##	the following configuration is specified:
+##
+##		JailDir		/var/okws/modules/samples/0.0/debug/run
+##		SocketDir	/sockets
+##
+##	then the final socket directory will live:
+##
+##		/var/okws/modules/samples/0.0/debug/run/sockets
+##
+##	on the physical, unjailed file system.
+##
+SocketDir	/sockets
+
+##
+## CoreDumpDir <dir>
+##
+##   Relative to JailDir, where the services will dump core should
+##   they crash.  okld will make the appropriate parent directories
+##   on boot for these coredump files.  If okld is run as non-root,
+##   then services will dump to whichever directory they were booted
+##   into. Note that you will need to enable setgid coredumps on your
+##   system, which is sometime turned off for security reasons.  
+##   On FreeBSD, for instance:
+##
+##	 sysctl kern.sugid_coredump=1
+##       sysctl kern.coredump=1
+##
+##   
+CoreDumpDir 	/var/coredumps
+
+##
+## ServiceLowUid <uid>
+## ServiceHighUid <gid>
+##
+##   When run as root, okld will assign each service a unique UID,
+##   so that the different services will not be able to inspect each
+##   others executables, or ptrace each other. The UIDs will be picked
+##   the following ranges, unless explicitly given in a "Service"
+##   configuration line. Specifying a range small than the number
+##   of Services will result in a configuration error.
+##
+ServiceLowUid	51000
+ServiceHighUid	52000
 
 ##
 ## OkdUser <user>
@@ -44,15 +101,24 @@ ServiceGroup	www
 ##   appropriate listen port. The user/group must be able to read and
 ##   execute services, in case they need to be restarted.
 ##
-OkdUser		sfs
-OkdGroup	sfs
+OkdUser		www
+OkdGroup	www
+
+##
+## TopDir <dir>
+##
+##   The parent directory for OKWS standard executables, such as 
+##   okd, pubd, and oklogd.
+##
+TopDir /usr/local/lib/okws/debug
 
 ##
 ## PubdExecPath <path>
 ##
 ##   Tell okd where the Publishing Daemon (pubd) can be launched from.  Okd
 ##   will launch pubd prior to calling chroot, so the path should be relative
-##   to the real top of the filesystem (/).
+##   to "TopDir". Note this must come in the config file before all
+##   of the configuration directives that call upon it.
 ##
 ## PubdInet <ip-addr> <port>
 ##
@@ -65,7 +131,7 @@ OkdGroup	sfs
 ##   path is relative to the real top of the file system, and not the 
 ##   chroot jail.
 ##
-PubdExecPath	/disk/rael/max/acgi/pub/pubd -w
+PubdExecPath	pubd -w
 
 ##
 ## OkdlogdExecPath <path>
@@ -73,7 +139,14 @@ PubdExecPath	/disk/rael/max/acgi/pub/pubd -w
 ##   Tell okd where to find "oklogd", the RPC-based logging daemon.  The
 ##   path should be relative to real root of the file system.
 ##
-OklogdExecPath	/disk/rael/max/acgi/logd/oklogd
+OklogdExecPath	oklogd
+
+##
+## OkdExecPath <path>
+##
+##   Tell okld where to find okd. The path should be relative to "TopDir"
+##
+OkdExecPath 	okd
 
 ##
 ## AcessLog <path>
@@ -83,9 +156,10 @@ OklogdExecPath	/disk/rael/max/acgi/logd/oklogd
 ##   These parameters are passed to okdlogd, telling it where and how to
 ##   log access and error requests. The AcessLog and ErrorLog are given
 ##   as relative paths to the top logging directory.  If launched as root,
-##   oklogd will chroot to the LogDir given.
+##   oklogd will chroot to the JailLogDir given, and take these log
+##   file locations as relative to there.
 ##
-LogDir		/var/run/okd/log
+LogDir		/var/okws/log
 AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU
@@ -97,8 +171,19 @@ AccessLogFmt	ivt1sbU
 ##   The username and group the RPC-based logger should run as.  Can usually
 ##   be the same as okd itself.
 ##
-OklogdUser	sfs
-OklogdGroup	sfs
+OklogdUser	www
+OklogdGroup	www
+
+##
+## UnsafeMode <0|1>
+##
+##   In unsafe mode, okld does not enforce that every service is run
+##   by a unique UID; nor does it change the ownership of service
+##   executables.  Rather, it will accept the current, possibly
+##   unsafe service configuration.  This flag is clearly off by
+##   default.
+##
+#UnsafeMode 0
 
 ##
 ## Service <jailed-path> <URI-path>
@@ -111,7 +196,6 @@ OklogdGroup	sfs
 Service 	/sha /sha
 Service 	/sha2 /sha2
 Service 	/google /google
-#Service	/websrv/t0 /t0
 
 ##
 ## Gzip Compression Configuration
@@ -148,6 +232,7 @@ GzipMemLevel	9	    # maximum memory utilization
 ##
 LogTick		500
 LogPeriod	8
+SvcLog		1
 
 ##
 ## Client Timeout
@@ -156,3 +241,11 @@ LogPeriod	8
 ##   this value is given in seconds.
 ##
 ClientTimeout	60
+
+##
+## ChannelLimit
+##
+##   Limits amounts of data that a client is allowed to send; to stop
+##   DOS attacks on memory. Specified in bytes.
+##
+ChannelLimit 	262144     # 256k
