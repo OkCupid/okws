@@ -70,7 +70,7 @@ sth_t
 amysql_thread_t::prepare (const str &q, u_int o)
 {
   if (readied) {
-    TWARN ("security precaustion: cannot prepare queries "
+    TWARN ("security precaution: cannot prepare queries "
 	   "after servicing requests\n");
     return NULL;
   }
