@@ -36,7 +36,7 @@ class oksrvc_random_t : public oksrvc_t {
 public:
   oksrvc_random_t (int argc, char *argv[]) : oksrvc_t (argc, argv)  
   {
-    db = add_db (DB, PT1_PORT, pt1_prog_1);
+    //db = add_db (DB, PT1_PORT, pt1_prog_1);
   }
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
   void init_publist () { /*o init_publist (); o*/ }
