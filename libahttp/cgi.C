@@ -39,9 +39,9 @@ cookie_t::encode (strbuf *b) const
   encode_t *e = New encode_t (b, scratch, buflen);
   pairtab_t<cgi_pair_t>::encode (e);
   str sep = get_sep ();
-  domain.encode (e, sep);
-  path.encode (e, sep);
   expires.encode (e, sep);
+  path.encode (e, sep);
+  domain.encode (e, sep);
   delete e;
 }
 
@@ -410,7 +410,7 @@ expire_in (int d, int h, int m, int s)
   time_t t = timenow + s;
   mstr out (40);
   struct tm *stm = gmtime (&t);
-  size_t l = strftime (out.cstr (), 40, "%a, %b-%d-%Y %T GMT", stm);
+  size_t l = strftime (out.cstr (), 40, "%A, %d-%b-%Y %T GMT", stm);
   out.setlen (l);
   return out;
 }
