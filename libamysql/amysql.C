@@ -44,7 +44,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
   sth_t *rp = cache[q];
   if (rp) return (*rp);
 
-  sth_t r;
+  sth_t r = NULL;
   if (l_opts & AMYSQL_PREPARED) {
 #ifdef MYSQL_HAVE_BIND
     MYSQL_STMT *s = mysql_stmt_init (&mysql);
