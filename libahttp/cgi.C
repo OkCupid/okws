@@ -62,6 +62,8 @@ cookie_t::encode (strbuf *b) const
   expires.encode (e, sep);
   path.encode (e, sep);
   domain.encode (e, sep);
+  if (secure)
+    *e->out << sep << "secure";
   delete e;
 }
 
