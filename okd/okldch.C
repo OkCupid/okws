@@ -273,9 +273,12 @@ okld_ch_t::clean_dumps ()
     str from = apply_container_dir (rundir, corefile);
     str to = apply_container_dir (okld->get_root_coredir (), 
 				  strbuf (corefile) << "." << timenow);
-    link (from.cstr (), to.cstr ());
-    unlink (from.cstr ());
-    ::chmod (to.cstr (), 0600);
+    if (link (from.cstr (), to.cstr ()) != 0) 
+      warn ("could not move file %s: %m\n", from.cstr ());
+    else if (unlink (from.cstr ()) != 0)
+      warn ("unlink failed for file %s: $m\n", from.cstr ());
+    chown (to.cstr (), 0, 0);
+    ::chmod (to.cstr (), 0400);
   }
 }
 
