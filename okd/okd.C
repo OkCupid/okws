@@ -17,6 +17,13 @@
 static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
 static void srelaunch (ptr<ok_res_t> res, okch_t *ch) { ch->kill (); }
 
+common_404_t::common_404_t ()
+{
+  tab.insert ("/favicon.ico");
+}
+
+common_404_t common_404;
+
 void
 okd_t::set_signals ()
 {

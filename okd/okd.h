@@ -196,4 +196,11 @@ private:
   okd_t *myokd;
 };
 
+class common_404_t {
+public:
+  common_404_t ();
+  bool operator[] (const str &s) { return tab[s]; }
+  bhash<str> tab;
+};
+
 #endif /* _OKD_OKD_H */

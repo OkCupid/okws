@@ -353,7 +353,7 @@ ahttpcon::input ()
     warn << "Channel limit exceded ";
     set_remote_ip ();
     if (remote_ip)
-      warnx << remote_ip;
+      warnx << "(" << remote_ip << ")";
     warnx << "\n";
 
     eof = true;
@@ -368,7 +368,7 @@ ahttpcon::input ()
 void 
 ahttpcon::recvd_bytes (int n)
 {
-  if (rcb) // XXX -- what is this??  // && ((n && !in->resid ()) || !n)) 
+  if (rcb) 
     (*rcb) (n);
 }
 
