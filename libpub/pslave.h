@@ -210,6 +210,11 @@ public:
   helper_inet_t (const rpc_program &rp, const str &hn, u_int p, u_int o = 0) 
     : helper_t (rp, o), hostname (hn), port (p) {}
   virtual str getname () const { return (strbuf (hostname) << ":" << port); }
+  void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
+	     time_t duration = 600) {
+    helper_t::call(procno, in, out, cb, duration);
+  }
+        
 protected:
   void launch (cbb c);
   void launch_cb (cbb c, int fd);
