@@ -658,6 +658,7 @@ if test "$with_tag" != "no"; then
 	okwstag=$with_tag
 fi
 case $with_mode in
+
 	"debug" )
 		sfstag=$with_mode
 		okwstag=$with_mode
@@ -665,11 +666,29 @@ case $with_mode in
 		CXXDEBUG=-g
 		with_dmalloc=yes
 		;;
+
+	"std" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		DEBUG=-g
+		CXXDEBUG=-g
+		;;
+
+	"shopt" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		okmtag=$with_mode
+		enable_shared=yes
+		;;
+
 	"shared" )
 		sfstag=$with_mode
 		okwstag=$with_mdoe
 		enable_shared=yes
+		DEBUG=-g
+		CXXDEBUG=-g
 		;;
+
 	"shdbg"  )
 		sfstag=$with_mode
 		okwstag=$with_mode
@@ -679,8 +698,10 @@ case $with_mode in
 		sfstag=$with_mode
 		with_dmalloc=yes
 		;;
+
 	"optmz" )
 		;;
+
 	* )
 		if test "${with_mode+set}" = "set" ; then
 			AC_MSG_ERROR([Unrecognized build mode specified])
