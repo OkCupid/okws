@@ -14,6 +14,17 @@
 BindAddr 	18.26.4.238 8081
 
 ##
+## ListenPorts <ports>
+##
+##   One might want okd to listen for incoming HTTP connections on
+##   more than one port.  Specify those ports here.  Note that
+##   the port given in "BindAddr" above will still be the implicit
+##   (and primary) port that okd listens on.
+##
+ListenPorts 80 8080 8011
+
+
+##
 ## JailDir <dir>
 ##
 ##   All services run by okd will be in a chroot jail, assuming that okd
@@ -215,8 +226,13 @@ OklogdGroup	www
 ##
 ##      <JailDir>/<ServiceBin>/<path>
 ##
-Service 	google 	/google
-Service		pt1	/pt1
+##   If one has specified mutliple ListenPorts above, then prepend
+##   a ":" and a port # to the URI-path. An example is given below
+## 
+##
+Service 	google 	/google        # listen port=8081
+Service		pt1	/pt1           # listen port=8081
+Service 	pt2 	:8080/pt2      # listen port=8080
 
 ##
 ## Gzip Compression Configuration
@@ -234,14 +250,22 @@ GzipCacheMax	0x10000     # maximum size of string to cache
 GzipMemLevel	9	    # maximum memory utilization
 
 ##
-## Aliases
+## Aliases <To-URI> <From-URI>
 ##
-##   You can alias one URI to another rather easily.  In the following
-##   example, a user requesting http://foo.com/test1 will be internally
-##   redirected to http://foo.com/t1, and will be serviced by the 
-##   okservice at /websrv/t1
+##   You can alias one URI to another rather easily using this
+##   directive.
 ##
-#Alias    /test1   /t1
+##   Note that as above with services, ports can be specified
+##   with aliases.  In this way, it is possible to have the same
+##   service available simultaneously on two different ports.
+##
+##   For the examples below, recall that we've set the **default port**
+##   to 8081 via the "BindAddr" directive above.
+##
+##
+Alias	/t1	/test1		# http://x.cc:8081/test1 -> http://x.cc:8081/t1
+Alias	:80/t1	:8080/test2	# http://x.cc:8080/test2 -> http://x.cc/t1
+Alias	/t1	:80/test3	# http://x.cc/test3 -> http://x.cc:8081/t1
 
 ##
 ## Log Timing

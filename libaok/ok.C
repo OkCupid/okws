@@ -698,6 +698,79 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
     *errp = true;
     return;
   }
+  if (allports_map[listenport]) {
+    warn << loc << ": repeated port #: " << listenport << "\n";
+    *errp = true;
+    return;
+  }
+  allports.push_back (listenport);
+  allports_map.insert (listenport);
+
   listenaddr_str = s[1];
   listenaddr = ntohl (addr.s_addr);
+  bind_addr_set = true;
+}
+
+void
+ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
+{
+  str cmd = s.pop_front ();
+  while (s.size ()) {
+    u_int32_t t;
+    port_t port;
+    if (!convertint (s.pop_front (), &t) || !(port = t)) {
+      warn << loc << ": usage: " << cmd << " <ports>\n";
+      *errp = true;
+    } else if (t > PORT_MAX) {
+      warn << loc << ": port out of range: " << t << "\n";
+      *errp = true;
+    } else if (allports_map[port]) {
+      warn << loc << ": repeated port #: " << t << "\n";
+      *errp = true;
+    } else {
+      allports.push_back (port);
+      allports_map.insert (port);
+    }
+  }
+}
+
+
+//
+// splits a URI of the form
+//
+//   <port>:/<path>
+//
+// into an integer port (returned) and path, which is output
+// via the second pointer argument.
+
+static port_t
+split_uri (str in, str *out)
+{
+  port_t port;
+  const char *p = in;
+  if (p[0] == ':') {
+    const char *e = strchr (p, '/');
+    assert (e && e > p);
+    assert (convertint (str (p + 1, e - p - 1), &port));
+    *out = str (e, in.len () - (e-p));
+  } else {
+    *out = in;
+  }
+  return port;
+}
+
+//
+// 80:/foo --> /foo if listening on port 80 already...
+//
+str
+ok_base_t::fix_uri (const str &in) const
+{
+  str out;
+  port_t p = split_uri (in, &out);
+  out = (p == 0 || p != listenport) ? in : out;
+
+  //debug
+  //warn << "fix_uri: " << in << " --> " << out << "\n";
+
+  return out;
 }

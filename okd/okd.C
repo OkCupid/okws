@@ -42,6 +42,7 @@ common_404_t::common_404_t ()
   tab.insert ("/favicon.ico");
 }
 
+
 common_404_t common_404;
 
 void
@@ -263,7 +264,7 @@ okd_t::got_alias (vec<str> s, str loc, bool *errp)
     *errp = true;
     return;
   }
-  aliases.insert (s[2], s[1]);
+  aliases.insert (fix_uri (s[2]), fix_uri (s[1]));
 }
 
 void
@@ -298,6 +299,8 @@ okd_t::parseconfig ()
   conftab ct;
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
+    .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
+			       &ok_base_t::got_ports))
     .add ("Alias", wrap (this, &okd_t::got_alias))
     .add ("JailDir", wrap (got_dir, &jaildir))
     .add ("TopDir", &topdir)
@@ -328,7 +331,6 @@ okd_t::parseconfig ()
 
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
-
     // as reported in HTTP response headers
     .add ("ServerNameHTTP", &global_okws_server_label)
     .add ("HostName", &hostname)
@@ -426,13 +428,13 @@ okd_t::strip_privileges ()
 	    << coredumpdir << ")\n";
     } else {
       // debug code
-      warn << "changed to cumpdir: " << coredumpdir << "\n";
+      warn << "changed to core dump directory: " << coredumpdir << "\n";
     }
   }
 }
 
 void
-okd_t::sclone (ref<ahttpcon_clone> x, str s, int status)
+okd_t::sclone (ref<ahttpcon_clone> x, port_t port, str s, int status)
 {
   if (status != HTTP_OK) {
     x->declone ();
@@ -441,6 +443,15 @@ okd_t::sclone (ref<ahttpcon_clone> x, str s, int status)
     x->declone ();
     error (x, HTTP_BAD_REQUEST);
   } else {
+
+    // for services not on the default port, rewrite the request
+    // URL with the port explictly mentioned
+    if (port != listenport) {
+      strbuf b (":");
+      b << port << s;
+      s = b;
+    }
+
     str *s2 = aliases[s];
     if (!s2) s2 = &s;
     okch_t *c = servtab[*s2];
@@ -482,7 +493,7 @@ okd_t::newserv (int fd)
     x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
 
     //warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
-    x->setccb (wrap (this, &okd_t::sclone, x));
+    x->setccb (wrap (this, &okd_t::sclone, x, *portmap[fd]));
 
     if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
       disable_accept ();
@@ -496,12 +507,17 @@ okd_t::newserv (int fd)
 void
 okd_t::launch3 ()
 {
-  int fd = inetsocket (SOCK_STREAM, listenport, listenaddr);
-  listenfd = fd;
-  if (fd < 0)
-    fatal ("could not bind TCP port %d: %m\n", listenport);
-  close_on_exec (fd);
-  listen (fd, ok_listen_queue_max);
+  for (u_int i = 0; i < allports.size () ; i++) {
+    int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
+    if (fd < 0)
+      fatal ("could not bind TCP port %d: %m\n", allports[i]);
+    close_on_exec (fd);
+    listen (fd, ok_listen_queue_max);
+    listenfds.push_back (fd);
+    portmap.insert (fd, allports[i]);
+    warn << "listening on " << listenaddr_str << ":" << allports[i] << "\n";
+  }
+
   strip_privileges ();
 
   // once jailed, we can access the mmap'ed clock file (if necessary)
@@ -511,31 +527,37 @@ okd_t::launch3 ()
   // debug stuff 
   // rats!
   //
-  char path[MAXPATHLEN];
-  getcwd (path, MAXPATHLEN);
-  warn << "working directory: " << path << "\n";
+  //char path[MAXPATHLEN];
+  //getcwd (path, MAXPATHLEN);
+  //warn << "working directory: " << path << "\n";
 
-  warn << "listening on " << listenaddr_str << ":" << listenport << "\n";
   enable_accept ();
 }
 
 void
 okd_t::disable_accept_guts ()
 {
-  fdcb (listenfd, selread, NULL);
+  u_int sz = listenfds.size ();
+  for (u_int i = 0; i < sz; i++) 
+    fdcb (listenfds[i], selread, NULL);
 }
 
 void
 okd_t::enable_accept_guts ()
 {
-  fdcb (listenfd, selread, wrap (this, &okd_t::newserv, listenfd));
+  u_int sz = listenfds.size ();
+  for (u_int i = 0; i < sz; i++) 
+    fdcb (listenfds[i], selread, wrap (this, &okd_t::newserv, listenfds[i]));
 }
 
 void
 okd_t::stop_listening ()
 {
-  fdcb (listenfd, selread, NULL);
-  close (listenfd);
+  u_int sz = listenfds.size ();
+  for (u_int i = 0; i < sz; i++) {
+    fdcb (listenfds[i], selread, NULL);
+    close (listenfds[i]);
+  }
 }
 
 static void
@@ -546,7 +568,7 @@ usage ()
 }
 
 static void
-main2 (str cf, int logfd, str cdd)
+main2 (str cf, int logfd, str cdd, port_t port)
 {
   sfsconst_init ();
   if (!cf) {
@@ -557,7 +579,7 @@ main2 (str cf, int logfd, str cdd)
 
   zinit ();
   warn ("version %s, pid %d\n", VERSION, int (getpid ()));
-  okd_t *okd = New okd_t (cf, logfd, 0, cdd);
+  okd_t *okd = New okd_t (cf, logfd, 0, cdd, port);
   okd->set_signals ();
   okd->launch ();
 }
@@ -570,9 +592,10 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   str debug_stallfile;
   str cdd;  // core dump dir
+  port_t port;
 
   int ch;
-  while ((ch = getopt (argc, argv, "f:l:D:c:")) != -1)
+  while ((ch = getopt (argc, argv, "f:l:D:c:p:")) != -1)
     switch (ch) {
     case 'D':
       debug_stallfile = optarg;
@@ -588,6 +611,10 @@ main (int argc, char *argv[])
       break;
     case 'c':
       cdd = optarg;
+      break;
+    case 'p':
+      if (!convertint (optarg, &port))
+	usage ();
       break;
     case '?':
     default:
@@ -607,9 +634,9 @@ main (int argc, char *argv[])
 
   // for debugging, we'll stall until the given file is touched.
   if (debug_stallfile) {
-    stall (debug_stallfile, wrap (main2, cf, logfd, cdd));
+    stall (debug_stallfile, wrap (main2, cf, logfd, cdd, port));
   } else {
-    main2 (cf, logfd, cdd);
+    main2 (cf, logfd, cdd, port);
   }
   amain ();
 }
@@ -660,17 +687,21 @@ void
 okd_t::got_chld_fd (int fd, ptr<okws_fd_t> desc)
 {
   okch_t *ch;
+  str uri;
   switch (desc->fdtyp) {
   case OKWS_SVC_X:
-    if (!(ch = servtab[desc->x->name])) {
+    uri = fix_uri (desc->x->name);
+    if (!(ch = servtab[uri])) {
       warn << "received service FDs out of order!\n";
       close (fd);
     }
     ch->got_new_x_fd (fd, desc->x->pid);
     break;
   case OKWS_SVC_CTL_X:
-    if (!(ch = servtab[desc->ctlx->name])) {
-      ch = New okch_t (this, desc->ctlx->name);
+    uri = fix_uri (desc->ctlx->name);
+    if (!(ch = servtab[uri])) {
+      // calling New will insert the object into the table
+      ch = New okch_t (this, uri);
     }
 
     // XXX - debug

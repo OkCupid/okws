@@ -59,6 +59,9 @@ struct errdoc_t {
   ihash_entry<errdoc_t> lnk;
 };
 
+typedef u_int16_t port_t;
+#define PORT_MAX USHRT_MAX
+
 class ok_con_t {
 public:
   ok_con_t () {}
@@ -79,12 +82,14 @@ public:
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
       reported_name (ok_wsname),
-      logd (NULL), logfd (fd)
+      logd (NULL), logfd (fd),
+      bind_addr_set (false)
       //jaildir_run (ok_jaildir_run) 
   {}
 
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
+  void got_ports (vec<str> s, str loc, bool *errp);
   str okws_exec (const str &path) const;
   //str doubly_jail_rundir () const { return nest_jails (jaildir_run); }
 
@@ -92,7 +97,7 @@ public:
   // necessary now, but mabye down the road......
   str version;
   str hostname;
-  u_int16_t listenport;
+  port_t listenport;
   str listenaddr_str;
   u_int32_t listenaddr;
   str topdir;
@@ -100,11 +105,17 @@ public:
   str debug_stallfile;
   str server_id;
 
+  vec<port_t> allports;
+  bhash<port_t> allports_map;
+
 
 protected:
+  str fix_uri (const str &in) const;
+
   log_t *logd;
   int logfd;
   //str jaildir_run;  // nested jaildir for okd and services
+  bool bind_addr_set; // called after got_bindaddr;
 };
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
@@ -141,6 +152,7 @@ protected:
 		  int s2) const;
   void error_cb2 (ptr<ahttpcon> x, ptr<http_response_t> e, cbv::ptr c) 
     const { if (c) (*c) (); }
+
 
   virtual void enable_accept_guts () = 0;
   virtual void disable_accept_guts () = 0;

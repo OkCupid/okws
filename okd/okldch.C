@@ -28,15 +28,13 @@
 #include <dirent.h>
 
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-		      ok_usr_t *u, char *const *env_in)
+		      ok_usr_t *u, char *const *env_in, u_int16_t p)
   : rexecpath (e), servpath (s), okld (o), cfgfile_loc (cfl), uid (u), 
   state (OKC_STATE_NONE), rcb (NULL),
   have_ustat (false), startup_time (0), 
   exec_uid (-1), exec_gid (-1), mode (-1),
-  env (env_in)
-{
-  o->insert (this);
-}
+  env (env_in), port (p)
+{}
 
 bool
 okld_ch_t::get_unix_stat (bool chrted)

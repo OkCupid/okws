@@ -46,21 +46,23 @@ class okld_t;
 class okld_ch_t { // OK Launch Daemon Child Handle
 public:
   okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-	     ok_usr_t *u = NULL, char *const *e = NULL) ;
+	     ok_usr_t *u = NULL, char *const *e = NULL, port_t p = 0) ;
   ~okld_ch_t () { if (uid) delete (uid); if (env) free_argv (env); }
   void launch ();
   void sig_chld_cb (int status);
 
   int pid;
   const str rexecpath;      // execpath relative to jaildir (starts with '/')
-  const str servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
+
+  // no longer const -- can change after we get the listen port
+  str servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
 
   str execpath;             // temporary variable
 
   void assign_uid (int u);
   void assign_gid (int u) { gid = u; }
   ok_usr_t *usr () { return uid; }
-  str loc () const { return cfgfile_loc; }
+  const str &loc () const { return cfgfile_loc; }
   void set_svc_ids ();
   void set_run_dir (const str &d) { rundir = d; }
   int get_exec_uid ();
@@ -74,6 +76,8 @@ public:
 
   void assign_exec_ownership (int u, int g);
   void assign_mode (int m) { mode = m; }
+
+  port_t get_port () const { return port; }
 private:
   bool fix_exec (bool jail);
   void resurrect ();
@@ -101,6 +105,8 @@ private:
   int mode;
 
   char *const *env;
+  port_t port;
+
 };
 
 class okld_t : public ok_base_t 
@@ -115,11 +121,11 @@ public:
       okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
       okd_dumpdir ("/tmp"), 
       clock_mode (SFS_CLOCK_GETTIME),
-      mmcd (ok_mmcd), mmcd_pid (-1), launchp (0) {}
+      mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
+      used_primary_port (false) {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
-  void insert (okld_ch_t *c) { svcs.push_back (c); }
   void got_service (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
@@ -127,7 +133,6 @@ public:
   void launch (const str &cf);
   void launch_logd (cbb cb);
   bool launch_okd (int logfd);
-  bool checkservices ();
 
   void parseconfig (const str &cf);
   void set_signals ();
@@ -147,17 +152,23 @@ public:
 private:
 
   struct alias_t {
-    alias_t (const str &t, const str &f, const str &l)
-      : to (t), from (f), loc (l) {}
+    alias_t (const str &t, const str &f, const str &l, port_t p)
+      : to (t), from (f), loc (l), port (p) {}
     str to_str () const { strbuf b; b << from << " -> " << to; return b; }
-    const str to;
-    const str from;
+    str to;
+    str from;
     const str loc;
+    const port_t port;
   };
+
+  // 
   vec<alias_t> aliases_tmp;
-  bhash<str> services_tmp, exes_tmp;
-  
-  bool check_aliases ();
+  bhash<port_t> used_ports; // ports specified with services, etc..
+
+  bool check_exes ();
+  bool check_services_and_aliases ();
+  bool check_service_ports ();
+  bool check_ports ();
   void got_alias (vec<str> s, str loc, bool *errp);
 
   bool fix_uids ();
@@ -165,6 +176,8 @@ private:
   void init_clock_daemon ();
   void relaunch_clock_daemon (int sig);
   void clock_daemon_died (int sig);
+  bool check_uri (const str &loc, const str &uri, port_t *port = NULL) 
+    const;
 
   void launch_logd ();
   void launch_logd_cb (bool err);
@@ -203,6 +216,8 @@ private:
   pid_t mmcd_pid;
   int mmcd_ctl_fd;
   u_int launchp;
+
+  bool used_primary_port;
 };
 
 #endif /* _OKD_OKD_H */

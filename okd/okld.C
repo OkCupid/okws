@@ -33,6 +33,7 @@
 #include "xpub.h"
 #include "pubutil.h"
 #include "okconst.h"
+#include "rxx.h"
 
 extern char * const * environ;
 
@@ -43,9 +44,42 @@ okld_t::set_signals ()
   sigcb (SIGINT,  wrap (this, &okld_t::shutdown, SIGINT));
 }
 
+bool
+okld_t::check_uri (const str &loc, const str &in, port_t *port) const
+{
+  u_int32_t t;
+  if (port)
+    *port = 0;
+  static rxx uri_spec ("((:(\\d+))?/)?([a-zA-Z0-9/._~-]+)");
+
+  if (in.len () > OK_MAX_URI_LEN) {
+    warn << loc << ": service URI (" << in
+	 << ") exceeds maximum allowable length (" << OK_MAX_URI_LEN
+	 << ")\n";
+    return false;
+  }
+
+  if (!uri_spec.match (in)) {
+    warn << loc << ": malformed service URI: " << in << "\n";
+    return false;
+  }
+
+  if (uri_spec[3]) {
+    if (!convertint (uri_spec[3], &t) && t > PORT_MAX) {
+      warn << loc << ": port out of range: " << uri_spec[3] << "\n";
+      return false;
+    }
+    if (port)
+      *port = t;
+  }
+  return true;
+}
+
+
 void
 okld_t::got_service (vec<str> s, str loc, bool *errp)
 {
+
   int svc_uid = -1;
   ok_usr_t *u = NULL;
 
@@ -58,6 +92,7 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   char *const *argv = NULL;
   char *const *envp = NULL;
   int ch;
+  port_t port;
 
   //
   // pop off "Service"
@@ -111,38 +146,29 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
 
   uri = s[0];
 
-  if (uri.len () > OK_MAX_URI_LEN) {
-    warn << loc << ": service URI (" << uri 
-	 << ") exceeds maximum allowable length (" << OK_MAX_URI_LEN
-	 << ")\n";
+  if (!check_uri (loc, uri, &port))
     goto err;
-  }
 
   exe = apply_container_dir (service_bin, bin);
-  httppath = re_fslash (uri);
+
+  //
+  // if a port was specified for this URI, then there is no need
+  // to prepend it with a leading slash.
+  //
+  if (port) {
+    httppath = uri;
+    used_ports.insert (port);
+  } else {
+    httppath = re_fslash (uri);
+    used_primary_port = true;
+  }
+
   warn << "Service: URI(" << httppath << ") --> unix(" << exe << ")\n";
 
   if (env.size ()) 
     envp = to_argv (env, NULL, environ);
 
-  if (services_tmp[httppath]) {
-    warn << loc << ": doubly-specified Service URI: " << httppath << "\n";
-    goto err;
-  }
-
-  if (exes_tmp[exe]) {
-    warn << loc << ": doubly-specified service executable: " << exe << "\n";
-    goto err;
-  }
-
-  //
-  // accounting for error-checking aliases table.
-  //
-  services_tmp.insert (httppath);
-  exes_tmp.insert (exe);
-
-  vNew okld_ch_t (exe, httppath, this, loc, u, envp);
-
+  svcs.push_back (New okld_ch_t (exe, httppath, this, loc, u, envp, port));
 
   return;
 
@@ -162,30 +188,92 @@ okld_t::got_alias (vec<str> s, str loc, bool *errp)
     *errp = true;
     return;
   }
-  aliases_tmp.push_back (alias_t (s[1], s[2], loc));
+
+  port_t port;
+  if (!check_uri (loc, s[1]) || !check_uri (loc, s[2], &port)) {
+    *errp = true;
+    return;
+  }
+  if (port)
+    used_ports.insert (port);
+  else
+    used_primary_port = true;
+
+  aliases_tmp.push_back (alias_t (s[1], s[2], loc, port));
 }
 
 bool
-okld_t::check_aliases ()
+okld_t::check_services_and_aliases ()
 {
-  bool ret = true;
+  bhash<str> exetab;
+  bhash<str> svctab;
   bhash<str> aliases_bmap;
+  bool ret = true;
+
+  // first perform sanity check among services
+  u_int sz = svcs.size ();
+  for (u_int i = 0; i < sz; i++) {
+    okld_ch_t *svc = svcs[i];
+    str s = fix_uri (svc->servpath);
+    str loc = svc->loc ();
+    if (svctab[s]) {
+      warn << loc << ": service (" << s << ") specified more than once\n";
+      ret = false;
+    } else {
+      svctab.insert (s);
+    }
+    svc->servpath = s;
+
+    s = svc->rexecpath;
+    if (exetab[s]) {
+      warn << loc << ": executable (" << s << ") specified more than once\n";
+    } else {
+      exetab.insert (s);
+    }
+  }
+
+
   while (aliases_tmp.size ()) {
+
     alias_t a = aliases_tmp.pop_front ();
-    if (!services_tmp[a.to]) {
+    a.to = fix_uri (a.to);
+    a.from = fix_uri (a.from);
+
+    if (!svctab[a.to]) {
       warn << a.loc << ": No service found for alias: " << a.to_str () << "\n";
       ret = false;
     } else if (aliases_bmap[a.from]) {
       warn << a.loc << ": Doubly-specified alias for URI " << a.from  << "\n";
       ret = false;
-    } else if (services_tmp[a.from]) {
+    } else if (svctab[a.from]) {
       warn << a.loc << ": Alias URI is already taken by a service: " 
 	   << a.from << "\n";
+      ret = false;
+    } else if (a.port && !allports_map[a.port]) {
+      warn << a.loc << ": alias uses port (" << a.port << ") that OKD "
+	   << "does not listen on\n";
       ret = false;
     } else {
       aliases_bmap.insert (a.from);
     }
   }
+
+  return ret;
+}
+
+bool
+okld_t::check_ports ()
+{
+  bool ret = true;
+  while (allports.size ()) {
+    port_t p = allports.pop_front ();
+    if (!(used_ports[p] || (p == listenport && used_primary_port))) {
+      warn << "OKD will listen on port " << p << ", but no "
+	   << "services will be using it!\n";
+      ret = false;
+    }
+  }
+
   return ret;
 }
 
@@ -221,6 +309,8 @@ okld_t::parseconfig (const str &cf)
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
+    .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
+			       &ok_base_t::got_ports))
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
@@ -318,7 +408,8 @@ okld_t::parseconfig (const str &cf)
     errors = true;
   }
 
-  if (!check_aliases ()) 
+  if (!check_services_and_aliases () || !check_ports () 
+      || !check_service_ports ()) 
     errors = true;
 
   if (!hostname)
@@ -514,6 +605,8 @@ okld_t::launch_okd (int logfd)
   argv.push_back (strbuf () << logfd);
   argv.push_back ("-c");
   argv.push_back (okd_dumpdir);
+  argv.push_back ("-p");
+  argv.push_back (strbuf () << listenport);
 		  
   if (debug_stallfile) {
     argv.push_back ("-D");
@@ -537,7 +630,24 @@ okld_t::launch_okd (int logfd)
 }
 
 bool
-okld_t::checkservices ()
+okld_t::check_service_ports ()
+{
+  bool ret = true;
+  u_int lim = svcs.size ();
+  for (u_int i = 0; i < lim; i++) {
+    port_t p = svcs[i]->get_port ();
+    if (p && ! allports_map[p]) {
+      warn << svcs[i]->loc () 
+	   << ": service uses a port (" << p << ") that OKD does not "
+	   << "listen on!!\n";
+      ret = false;
+    }
+  }
+  return ret;
+}
+
+bool
+okld_t::check_exes ()
 {
   if (!will_jail ())
     return true;
@@ -621,12 +731,10 @@ okld_t::launch (const str &cf)
   init_clock_daemon ();
 
   encode_env ();
-  if (!(checkservices () && fix_uids () && init_jaildir ()))
+  if (!(check_exes () && fix_uids () && init_jaildir ()))
     exit (1);
 
-  // these tables were needed for initialization-time sanity-checking
-  exes_tmp.clear ();
-  services_tmp.clear ();
+  used_ports.clear ();
 
   if (jaildir)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
