@@ -40,7 +40,7 @@ OKWS_TAG
 # XXX - next line seems to be required for some autoconf/-make/libtool versions
 test -z "$target" && target=NONE
 AC_DISABLE_SHARED
-dnl AM_PROG_LIBTOOL
+AM_PROG_LIBTOOL
 AM_PROG_LEX
 
 AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)

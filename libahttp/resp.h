@@ -147,8 +147,9 @@ public:
 
 class http_response_redirect_t : public http_response_t {
 public:
-  http_response_redirect_t (const str &s, htpv_t v = 0) :
-    http_response_t (http_resp_header_redirect_t (s, v)) {}
+  http_response_redirect_t (const str &s, htpv_t v = 0, 
+	int ht = HTTP_MOVEDPERM) :
+    http_response_t (http_resp_header_redirect_t (s, v, ht)) {}
 };
 
 class http_error_t : public http_response_t {
