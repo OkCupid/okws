@@ -29,9 +29,9 @@ endif
 	@echo "********************** Jailed Install **********************"
 	@echo OKWS Jail Directory:
 	@echo
-	@echo "   "$(okmjaildir)
+	@echo JailDir $(okmjaildir)
 if DLINKED_SERVICES
 	@echo
-	@echo Jailed Dirctory outfitted with shared objects!
+	@echo Jailed Directory outfitted with shared objects!
 endif
 	@echo "************************************************************"
