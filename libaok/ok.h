@@ -94,7 +94,8 @@ class okclnt_t
   : public http_parser_cgi_t { // One for each external HTTP client
 public:
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
-    http_parser_cgi_t (xx, to), x (xx), oksrvc (o)
+    http_parser_cgi_t (xx, to), x (xx), oksrvc (o),
+    process_flag (false)
   {}
 
   virtual ~okclnt_t ();
@@ -120,6 +121,7 @@ protected:
   zbuf out;
   ptr<http_response_t> rsp;
   vec<cookie_t *> outcookies;
+  bool process_flag;
 };
 
 typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
