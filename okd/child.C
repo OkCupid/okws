@@ -135,7 +135,7 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     break;
   case OKCTL_READY:
     if (state == OKC_STATE_LAUNCH_SEQ_1) {
-      state == OKC_STATE_LAUNCH_SEQ_2;
+      state = OKC_STATE_LAUNCH_SEQ_2;
       start_chld ();
     } else {
       CH_WARN ("Cannot process READY message; in wrong state: " << state);
