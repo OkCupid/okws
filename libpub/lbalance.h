@@ -31,6 +31,7 @@
 
 #define LOAD_AVG_MAX      UINT_MAX
 #define LOAD_AVG_RPC      100
+#define Q_LEN_RPC         101
 
 class lblnc_t;
 class lblnc_node_t {

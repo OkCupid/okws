@@ -85,6 +85,13 @@ mtdispatch_t::async_serv (svccb *b)
     b->replyref (la);
     return true;
     break;
+  case Q_LEN_RPC: 
+    {
+      u_int ql = queue.size ();
+      b->replyref (ql);
+      return true;
+      break;
+    }
   default:
     return false;
     break;
