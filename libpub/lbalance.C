@@ -85,7 +85,6 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
 		  int port) 
   : helper_base_t (), name (nm), prog (rp), dcb (NULL)
 {
-  srandomdev();
   u_int sz = (*pub)[nm].size ();
   if (sz <= 0) {
     warn << nm << ": no DB array found\n";
@@ -98,6 +97,7 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
       warn << "invalid DB specified: " << s << "\n";
       continue;
     } 
+    warn << "db[" << i << "]: " << 
     int p;
     if (host_and_port[2]) {
       assert (convertint (host_and_port[2], &p));
