@@ -144,6 +144,10 @@ public:
   void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
 
   void relaunch (const ok_progs_t &x, okrescb cb);
+
+  void turnlog (okrescb cb);
+  void turnlog_cb (ptr<bool> s, okrescb cb);
+
   void strip_privileges ();
 
   void kill_srvcs_cb ();
@@ -196,6 +200,7 @@ public:
 private:
   void repub (svccb *b);
   void relaunch (svccb *b);
+  void turnlog (svccb *b);
   ptr<asrv> srv;
   ptr<axprt_stream> x;
   okd_t *myokd;

@@ -741,7 +741,13 @@ if test "$with_mysql" != "no"; then
 	fi
 	if test "${sfs_cv_libmysqlclient+set}" && \
 	   test "$sfs_cv_libmysqlclient" != "no"; then
-		CPPFLAGS="$CPPFLAGS $sfs_cv_mysql_h"
+		AC_TRY_COMPILE([#include "mysql.h"], 
+			MYSQL_BIND bnd;,
+			sfs_cv_mysqlbind=yes)
+		if test "$sfs_cv_mysqlbind" = "yes"; then
+			AC_DEFINE(HAVE_MYSQL_BIND, 1, MySQL Prepared Stuff)
+		fi
+		CPPFLAGS="$sfs_cv_mysql_h $CPPFLAGS"
 		AC_DEFINE(HAVE_MYSQL, 1, Have the MySQL C client library )
 		LDADD_MYSQL="$sfs_cv_libmysqlclient"
   	 	if test "$ac_cv_lib_z" != "yes"; then
@@ -779,10 +785,10 @@ AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
 	CFLAGS="${ac_save_CFLAGS} $iflags"
 	AC_TRY_COMPILE([#include <pth.h>], [
 #if !defined(PTH_SYSCALL_HARD) || PTH_SYSCALL_HARD == 0
-XXX // ** HARD SYSTEM CALLS ARE REQUIRED  **
+#error "HARD SYSTEM CALLS ARE REQUIRED"
 #endif
 #if PTH_SYSCALL_SOFT
-XXX // **  SOFT SYSTEM CALLS WILL BREAK LIBASYNC **
+#error "SOFT SYSTEM CALLS WILL BREAK LIBASYNC"
 #endif
 	],
 	 sfs_cv_pth_h="${iflags}"; break)
@@ -1504,7 +1510,6 @@ elif test -f ${with_sfs}/include/sfs/autoconf.h \
     dnl LIBSVC=${sfslibdir}/libsvc.la
     dnl LIBSFS=${with_sfs}/lib/libsfs.a
     MALLOCK=${sfslibdir}/mallock.o
-	echo "${with_sfs}/lib/sfs${sfstagdir}:${with_sfs}/bin"
     SFS_PATH_PROG(rpcc, ${with_sfs}/lib/sfs${sfstagdir}:${with_sfs}/bin)
     RPCC="$PATH_RPCC"
 else

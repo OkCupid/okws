@@ -28,6 +28,8 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_RELAUNCH:
     relaunch (sbp);
     break;
+  case OKMGR_TURNLOG:
+    turnlog (sbp);
   default:
     sbp->reject (PROC_UNAVAIL);
     break;
@@ -52,5 +54,11 @@ okd_mgrsrv_t::repub (svccb *sbp)
 {
   xpub_fnset_t *r = sbp->template getarg<xpub_fnset_t> ();
   myokd->repub (*r, wrap (replystatus, sbp));
+}
+
+void
+okd_mgrsrv_t::turnlog (svccb *sbp)
+{
+  myokd->turnlog (wrap (replystatus, sbp));
 }
 

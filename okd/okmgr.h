@@ -11,7 +11,8 @@
 #include "vec.h"
 #include "arpc.h"
 
-typedef enum { CTL_MODE_PUB = 0, CTL_MODE_LAUNCH = 1 } ctl_mode_t;
+typedef enum { CTL_MODE_PUB = 0, CTL_MODE_LAUNCH = 1,
+	       CTL_MODE_LOGTURN = 2 } ctl_mode_t;
 
 class okmgr_host_t {
 public:
@@ -50,6 +51,12 @@ public:
   void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s);
 private:
   xpub_fnset_t fns;
+};
+
+class okmgr_logturn_t : public okmgr_clnt_t {
+public:
+  okmgr_logturn_t (const vec<str> &h) ;
+  void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> x)
 };
 
 class okmgr_launch_t : public okmgr_clnt_t {

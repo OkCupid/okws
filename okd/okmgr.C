@@ -82,6 +82,9 @@ okmgr_launch_t::okmgr_launch_t (const vec<str> &h, const vec<str> &f,
   }
 }
 
+okmgr_logturn_t::okmgr_logturn_t (const vec<str> &h)
+  : okmgr_clnt_t (h) {}
+
 
 okmgr_pub_t::okmgr_pub_t (const vec<str> &h, const vec<str> &f)
   : okmgr_clnt_t (h)
@@ -131,6 +134,15 @@ okmgr_pub_t::do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s)
 }
 
 void
+okmgr_logturn_t::do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s)
+{
+  h->cli ()->call (OKMGR_TURNLOG, NULL, s,
+		   wrap ((okmgr_clnt_t *)this, &okmgr_clnt_t::did_host,
+			 h, s));
+}
+
+
+void
 okmgr_launch_t::do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s)
 {
   h->cli ()->call (OKMGR_RELAUNCH, &progs, s,
@@ -159,6 +171,9 @@ main (int argc, char *argv[])
   ok_set_typ_t set_typ = OK_SET_SOME;
   while ((ch = getopt (argc, argv, "alph:?")) != -1)
     switch (ch) {
+    case 't':
+      m = CTL_MODE_LOGTURN;
+      break;
     case 'l':
       m = CTL_MODE_LAUNCH;
       break;
@@ -194,6 +209,8 @@ main (int argc, char *argv[])
   case CTL_MODE_LAUNCH:
     t = New okmgr_launch_t (hosts, files, set_typ);
     break;
+  case CTL_MODE_LOGTURN:
+    t = New okmgr_logturn_t (hosts);
   default:
     usage ();
   }

@@ -516,6 +516,23 @@ ok_repub_t::set_new_fnset ()
 }
 
 void
+okd_t::turnlog_cb (ptr<bool> b, okrescb cb)
+{
+  ptr<ok_res_t> res = New refcounted<ok_res_t> ();
+  if (!*b) 
+    res->add ("Log rotation failed");
+  (*cb) (res);
+}
+
+void
+okd_t::turnlog (okrescb cb)
+{
+  ptr<bool> b = New refcounted<bool> (true);
+  logd->call (OKLOG_TURN, NULL, b,
+	      wrap (this, okd_t::turnlog_cb, b, cb));
+}
+
+void
 okd_t::relaunch (const ok_progs_t &x, okrescb cb)
 {
   ptr<ok_res_t> res = New refcounted<ok_res_t> ();
