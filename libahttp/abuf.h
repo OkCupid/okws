@@ -128,7 +128,7 @@ private:
   void moredata ();
 
   abuf_src_t *src;
-  bool bc;
+  bool bc;   // flag that's on if a char is buffered (due to unget ())
   int lch;
   const char *buf, *endp, *cp;
   int len;

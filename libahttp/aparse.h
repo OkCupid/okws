@@ -74,7 +74,7 @@ public:
   void dump (size_t len, cbs c);
 protected:
   void parse_guts ();
-  void parse_done_cb (int dummy) { (*dump_cb) (*buf); dump_cb = NULL; }
+  void parse_done_cb (int dummy);
 
   mstr *buf;
   char *bp, *endp;

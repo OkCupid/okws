@@ -97,3 +97,12 @@ async_dumper_t::parse_guts ()
     finish_parse (0);
   // otherwise, we're waiting
 }
+
+void
+async_dumper_t::parse_done_cb (int dummy)
+{
+  if (dummy == 0)
+    buf->setlen (bp - buf->cstr ());
+  (*dump_cb) (*buf);
+  dump_cb = NULL;
+}

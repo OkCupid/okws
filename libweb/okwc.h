@@ -225,6 +225,27 @@ protected:
   okwc_cb_t okwc_cb;
 };
 
+enum okwc_token_status_t { OKWC_TOKEN_OK = 0,
+			   OKWC_TOKEN_EOF = 1,
+			   OKWC_TOKEN_OVERFLOW = 2 };
+
+class okwc_token_t {
+public:
+  str token;
+  okwc_token_status_t status;
+};
+
+class owkc_token_accepter_t {
+public:
+
+private:
+
+};
+
+
+
+
+
 okwc_req_t *
 okwc_request (const str &h, u_int16_t port, const str &fn, 
 	      okwc_cb_t cb, int vers = 0, int timeout = -1, 
@@ -232,6 +253,11 @@ okwc_request (const str &h, u_int16_t port, const str &fn,
 
 void
 okwc_cancel (okwc_req_t *req);
+
+okwc_req_t *
+owkc_request (const str &h, u_int16_t port, const str &uri, 
+	      okwc_token_accepter_t *tok, int vers = 0, int timeout = -1,
+	      cgi_t *outcook = NULL);
 		
 
 #endif
