@@ -252,3 +252,5 @@ OKD v0.2
  - auth tokens
  - debug load balancer class (load avg stuff)
  - fix RPCC autoconf stuff
+ - better interface for different file content types
+ - bug in file upload -- hangs if channel limit exceeded.
