@@ -1,3 +1,4 @@
+/* $Id */
 
 %#include "amysql_prot.h"
 %#include "web_prot.h"

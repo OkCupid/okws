@@ -4,6 +4,7 @@
 /*
  *
  * Copyright (C) 1998 David Mazieres (dm@uun.org)
+ *   updated for OKWS in 2003-4 by Maxwell Krohn (max@okcupid.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
