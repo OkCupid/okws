@@ -57,7 +57,7 @@ http_inhdr_t::parse_guts ()
       if (r == ABUF_NOMATCH) { // No EOL found
 	r = delimit_word (&vers);
 	// XXX will only work for versions 1.0 and 1.1
-	if (vers && vers.len () >= 0) { 
+	if (vers && vers.len () > 0) { 
 	  char c = vers[vers.len () - 1];
 	  if (c >= '0' && c <= '9') nvers = c - '0';
 	}
