@@ -61,8 +61,8 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 {
   if (hdr.mthd == HTTP_MTHD_POST) {
     cgi = &post;
-    if (hdr.reqsize >= 0)
-      abuf.setlim (hdr.reqsize);
+    if (hdr.contlen >= 0)
+      abuf.setlim (hdr.contlen);
     post.parse (wrap (static_cast<http_parser_base_t *> (this),
 		      &http_parser_base_t::finish, status));
   } else if (hdr.mthd == HTTP_MTHD_GET) {

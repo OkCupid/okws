@@ -6,80 +6,8 @@
 
 methodmap_t methodmap;
 
-abuf_stat_t
-http_inhdr_t::delimit_word (str *wrd, bool qms)
-{
-  int ch;
-  abuf_stat_t ret = ABUF_OK;
-  bool flag = true;
-  for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
-    ch = abuf->get ();
-    switch (ch) {
-    case ABUF_WAITCHAR:
-      ret = ABUF_WAIT;
-      flag = false;
-      break;
-    case '?':
-      if (qms) {
-	ret = ABUF_OK;
-	flag = false;
-      } else {
-	*pcp = ch;
-      }
-      break;
-    case ABUF_EOFCHAR:
-    case ' ':
-    case '\t':
-    case '\n':
-    case '\r':
-      ret = ABUF_OK;
-      flag = false;
-      break;
-    default:
-      *pcp = ch;
-      break;
-    }
-  }
-  if (pcp == endp)
-    ret = ABUF_OVERFLOW;
-  if (ret == ABUF_OK) {
-    *wrd = str (scratch, pcp - scratch);
-    pcp = scratch;
-    abuf->unget ();
-  }
-  return ret;
-}
-
-void
-http_inhdr_t::parse (cbi::ptr c)
-{
-  assert (!parsing);
-  abuf->init (wrap (this, &http_inhdr_t::can_read_cb));
-  parsing = true;
-  pcb = c;
-  if (dataready)
-    _parse ();
-}
-
-void
-http_inhdr_t::cancel ()
-{
-  abuf->cancel ();
-  pcb = NULL;
-}
-
-void
-http_inhdr_t::can_read_cb ()
-{
-  abuf->can_read ();
-  if (parsing)
-    _parse ();
-  else
-    dataready = true;
-}
-
 #define INC_STATE \
-   state = static_cast<hdrst_t> (state + 1);
+   state = static_cast<inhdrst_t> (state + 1);
 
 void
 http_inhdr_t::ext_parse_cb ()
@@ -94,19 +22,19 @@ http_inhdr_t::_parse ()
   abuf_stat_t r = ABUF_OK;
   while (r == ABUF_OK && !hdrend) {
     switch (state) {
-    case HDRST_START:
+    case INHDRST_START:
       abuf->mirror (scr2, SCR2_LEN);
       r = delimit_word (&tmthd);
       break;
-    case HDRST_SPC1:
+    case INHDRST_SPC1:
       r = abuf->skip_hws (1);
       break;
-    case HDRST_TARGET:
+    case INHDRST_TARGET:
       r = delimit_word (&target, uri ? true : false);
       if (!uri && r == ABUF_OK)
-	INC_STATE; // skip past HDRST_URIDAT
+	INC_STATE; // skip past INHDRST_URIDAT
       break;
-    case HDRST_URIDAT:
+    case INHDRST_URIDAT:
       if (abuf->expectchar ('?') == ABUF_OK) {
 	parsing = false;
 	uri->set_uri_mode (true);
@@ -114,10 +42,10 @@ http_inhdr_t::_parse ()
 	return;
       }
       break;
-    case HDRST_SPC2:
+    case INHDRST_SPC2:
       r = abuf->skip_hws (1);
       break;
-    case HDRST_OPTPARAM:
+    case INHDRST_OPTPARAM:
       if (!eol ()) r = delimit_word (&vers);
       if (vers) { // XXX will only work for versions 1.0 and 1.1
 	char c = vers[vers.len () - 1];
@@ -125,21 +53,21 @@ http_inhdr_t::_parse ()
       }
       line1 = abuf->end_mirror ();
       break;
-    case HDRST_EOL1:
+    case INHDRST_EOL1:
       if (!gobble_eol ())
 	r = ABUF_PARSE_ERR;
       break;
-    case HDRST_KEY:
+    case INHDRST_KEY:
       if (gobble_eol ()) {
 	hdrend = true;
 	break;
       }
       r = delimit_key (&key);
       break;
-    case HDRST_SPC3:
+    case INHDRST_SPC3:
       r = abuf->skip_hws (1);
       break;
-    case HDRST_VALUE:
+    case INHDRST_VALUE:
       if (cookie && iscookie ()) {
 	parsing = false;
 	noins = true;
@@ -148,7 +76,7 @@ http_inhdr_t::_parse ()
       }
       r = delimit_val (&val);
       break;
-    case HDRST_EOL2:
+    case INHDRST_EOL2:
       if (noins)
 	noins = false;
       else if (key)
@@ -158,7 +86,7 @@ http_inhdr_t::_parse ()
       key = val = NULL;
       if (!gobble_eol ())
 	r = ABUF_PARSE_ERR;
-      state = HDRST_EOL1; // = HDRST_KEY - 1
+      state = INHDRST_EOL1; // = INHDRST_KEY - 1
       break;
     default:
       r = ABUF_PARSE_ERR;
@@ -171,7 +99,7 @@ http_inhdr_t::_parse ()
   int status;
   switch (r) {
   case ABUF_EOF:
-    if (state == HDRST_KEY) {
+    if (state == INHDRST_KEY) {
       status = HTTP_OK;
       break;
     }
@@ -191,111 +119,9 @@ http_inhdr_t::_parse ()
 void
 http_inhdr_t::fixup () 
 {
+  http_hdr_t::fixup ();
+
   mthd = methodmap.lookup (tmthd);
-  if (!lookup ("content-length", &reqsize))
-    reqsize = -1;
-}
-
-bool
-http_inhdr_t::iscookie () const
-{
-  return (key && key.len () == 6 && mystrlcmp (key, "cookie"));
-}
-
-bool
-http_inhdr_t::eol ()
-{
-  int ch = abuf->peek ();
-  return (ch == '\r' || ch == '\n');
-}
-
-bool
-http_inhdr_t::gobble_eol ()
-{
-  int ch = abuf->get ();
-  if (ch == '\n') return true;
-  else if (ch == '\r') return (abuf->get () == '\n');
-
-  abuf->unget (); // XXX doesn't unget the '\r' in certain cases.. oh well!
-  return false;
-}
-
-abuf_stat_t
-http_inhdr_t::delimit_val (str *v)
-{
-  abuf_stat_t ret = ABUF_OK;
-  int ch;
-  bool flag = true;
-  for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
-    ch = abuf->get ();
-    switch (ch) {
-    case ABUF_WAITCHAR:
-      ret = ABUF_WAIT;
-      flag = false;
-      break;
-    case ABUF_EOFCHAR:
-      ret = ABUF_EOF;
-      flag = false;
-      break;
-    case '\r':
-    case '\n':
-      abuf->unget ();
-      flag = false;
-      break;
-    default:
-      *pcp = ch;
-      break;
-    }
-  }
-  if (pcp == endp)
-    ret = ABUF_OVERFLOW;
-  if (ret == ABUF_OK) {
-    *v = str (scratch, pcp - scratch);
-    pcp = scratch;
-  }
-  return ret;
-}
-
-abuf_stat_t
-http_inhdr_t::delimit_key (str *k)
-{
-  abuf_stat_t ret = ABUF_OK;
-  int ch;
-  bool flag = true;
-  for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
-    ch = abuf->get ();
-    switch (ch) {
-    case ABUF_WAITCHAR:
-      ret = ABUF_WAIT;
-      flag = false;
-      break;
-    case ':':
-      ret = ABUF_OK;
-      flag = false;
-      break;
-    case ABUF_EOFCHAR:
-      ret = ABUF_EOF;
-      flag = false;
-      break;
-    case ' ':
-    case '\t':
-    case '\n':
-    case '\r':
-      ret = ABUF_PARSE_ERR;
-      flag = false;
-      break;
-    default:
-      *pcp = tolower (ch);
-      break;
-    }
-  }
-  if (pcp == endp)
-    ret = ABUF_OVERFLOW;
-  if (ret == ABUF_OK) {
-    *k = str (scratch, pcp - scratch);
-    pcp = scratch;
-  }
-  return ret;
 }
 
 methodmap_t::methodmap_t ()
@@ -324,3 +150,4 @@ http_inhdr_t::takes_gzip () const
   return (get_vers () > 0 && lookup ("accept-encoding", &s) 
 	  && gzip_rxx.search (s));
 }
+
