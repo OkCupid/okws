@@ -141,13 +141,14 @@ TODO
  - mybind_res for rpc_bytes<T> * values.
  - fix bug in nested include statements..
  X zbuf's in aarr_t and concatenatable.
- - rename repository to okws1
+ X rename repository to okws1
  - deal with permissions using setuid stuff
  - implement authorization codes for the RPC-db protocol.
  X multiple okd's running on the same machine -- need to be able
    to specify the various ports
- - get CVS ignore right when doing the boilerplate stuff
+ X get CVS ignore right when doing the boilerplate stuff
  - services should fail if their templates are not available.
  - mem leak in pt1 -- still; weird.
  - test with more than 1024 FDs.
  - better zbuf caching scheme.
+ - crash under heavy load when a connection aborts
