@@ -84,13 +84,13 @@ public:
   inline logbuf_t &copy (const char *c, u_int len);
 
   inline logbuf_t &copy (const str &s) 
-  { return copy (s ? s.cstr () : NULL, s.len ()); }
+  { return copy (s ? s.cstr () : NULL, s ? s.len () : 0); }
   inline logbuf_t &hcpy (const str &s) 
-  { return hcpy (s ? s.cstr () : NULL, s.len ()); }
+  { return hcpy (s ? s.cstr () : NULL, s ? s.len () : 0); }
   inline logbuf_t &qcpy (const str &s) 
-  { return qcpy (s ? s.cstr () : NULL, s.len ()); }
+  { return qcpy (s ? s.cstr () : NULL, s ? s.len () : 0); }
   inline logbuf_t &bcpy (const str &s) 
-  { return bcpy (s ? s.cstr () : NULL, s.len()); }
+  { return bcpy (s ? s.cstr () : NULL, s ? s.len () : 0); }
 
   inline logbuf_t &hcpy (const char *c, u_int len);
   inline logbuf_t &put (u_int64_t i);
