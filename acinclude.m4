@@ -647,6 +647,34 @@ if test $sfs_cv_large_sock_buf = yes; then
 		  Define if SO_SNDBUF/SO_RCVBUF can exceed 64K.)
 fi])
 dnl
+dnl Set OKWS tag
+dnl
+AC_DEFUN(OKWS_TAG,
+[AC_ARG_WITH(okws_tag,
+--with-okws-tag=TAG	    Specify a custom OKWS build tag)
+AC_ARG_WITH(mode,
+--with-mode=[debug|optmz]   Specify a build mode for OKWS)
+if test "$with_okws_tag" != "no"; then
+	okwstag=$with_okws_tag
+fi
+case $with_mode in
+	"debug" )
+		sfs_build_tag=$with_mode
+		okwstag=$with_mode
+		DEBUG=-g
+		;;
+	"optmz" )
+		DEBUG='-g -O2'
+		okwstag=$with_mode
+		;;
+esac
+
+if test "$okwstag"; then
+	okwstagdir="/$okwstag"
+fi	
+sfs_build_tag=""
+])
+dnl
 dnl Find Mysql
 dnl
 AC_DEFUN(SFS_MYSQL,
@@ -1407,8 +1435,9 @@ AC_DEFUN(SFS_SFS,
 --with-sfs[[=PATH]]         specify location of SFS libraries)
 if test "$with_sfs" = yes -o "$with_sfs" = ""; then
     for dir in "$prefix" /usr/local /usr; do
-	if test -f $dir/lib/sfs/libasync.la; then
+	if test -f $dir/lib/sfs${sfs_build_tag}/libasync.la; then
 	    with_sfs=$dir
+	    echo $with_sfs
 	    break
 	fi
     done
@@ -1444,9 +1473,9 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
     RPCC=${with_sfs}/rpcc/rpcc
 elif test -f ${with_sfs}/include/sfs/autoconf.h \
-	-a -f ${with_sfs}/lib/sfs/libasync.la; then
+	-a -f ${with_sfs}/lib/sfs${sfs_build_tag}/libasync.la; then
     sfsincludedir="${with_sfs}/include/sfs"
-    sfslibdir=${with_sfs}/lib/sfs
+    sfslibdir=${with_sfs}/lib/sfs${sfs_build_tag}
     if egrep '#define DMALLOC' ${sfsincludedir}/autoconf.h > /dev/null; then
 	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
     else

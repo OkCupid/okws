@@ -1,13 +1,13 @@
 
 $(PROGRAMS): $(LDEPS) 
 
-sfslib_LTLIBRARIES = libamysql.la
+okwslib_LTLIBRARIES = libamysql.la
 
 libamysql_la_SOURCES = amysql_prot.C amysql.C mystmt_ag.C mystmt.C
 
 mystmt_ag.C: mystmt.h
 
-sfsinclude_HEADERS = amysql_prot.h amysql.h mystmt_ag.h
+okwsinclude_HEADERS = amysql_prot.h amysql.h mystmt_ag.h
 
 amysql.C: amysql_prot.h mystmt.h
 

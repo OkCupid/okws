@@ -1,11 +1,11 @@
 
 $(PROGRAMS): $(LDEPS)
 
-sfslib_LTLIBRARIES = libamt.la
+okwslib_LTLIBRARIES = libamt.la
 
 libamt_la_SOURCES = mtdispatch.C
 
-sfsinclude_HEADERS = amt.h
+okwsinclude_HEADERS = amt.h
 
 EXTRA_DIST = .cvsignore
 CLEANFILES = core *.core *~ *.rpo

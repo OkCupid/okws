@@ -97,7 +97,6 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
       warn << "invalid DB specified: " << s << "\n";
       continue;
     } 
-    warn << "db[" << i << "]: " << 
     int p;
     if (host_and_port[2]) {
       assert (convertint (host_and_port[2], &p));

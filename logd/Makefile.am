@@ -1,7 +1,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-bin_PROGRAMS = oklogd
+okwsexec_PROGRAMS = oklogd
 oklogd_SOURCES = logd.C
 
 CLEANFILES = core *.core *~

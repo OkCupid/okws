@@ -2,12 +2,12 @@
 
 $(PROGRAMS): $(LDEPS)
 
-sfslib_LTLIBRARIES = libahttp.la
+okwslib_LTLIBRARIES = libahttp.la
 
 libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 	pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C
 
-sfsinclude_HEADERS = cgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h
+okwsinclude_HEADERS = cgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h
 
 SUFFIXES = .g .C
 .g.C:

@@ -1,11 +1,11 @@
 
 $(PROGRAMS): $(LDEPS)
 
-sfslib_LTLIBRARIES = libaok.la
+okwslib_LTLIBRARIES = libaok.la
 
 libaok_la_SOURCES = okprot.C ok.C log.C logbuf.C
 
-sfsinclude_HEADERS = ok.h okprot.h
+okwsinclude_HEADERS = ok.h okprot.h
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@

@@ -22,7 +22,7 @@ MAINTAINERCLEANFILES = 				\
 	ltconfig ltmain.sh \
 	INSTALL COPYING Makefile.in stamp-h.in
 
-sfsinclude_HEADERS = okwsconf.h
+okwsinclude_HEADERS = okwsconf.h
 BUILT_SOURCES = okwsconf.h
 DISTCLEANFILES = okwsconf.h stamp-auto-h autom4te*.cache
 all-recursive install-recursive: okwsconf.h
