@@ -44,10 +44,19 @@ http_parser_base_t::finish (int status)
   // thus, if we haven't be destroyed, we'll need to set the CB equal 
   // to NULL.  in some cases, so doing will cause the object to be 
   // destroyed.
-  ptr<bool> local_destroyed = destroyed;
-  (*cb) (status);
-  if (!*local_destroyed)
-    cb = NULL;
+  //
+  // this seems to be the safest way to go about this. we'll have cleared
+  // cb before we make the (potentially destructive) call to tcbi.
+  // when tcbi goes out of scope as the function returns, this might
+  // cause this object to be deleted. 
+
+  cbi tcb = cb;
+  cb = NULL;
+  (*tcb) (status);
+
+  // for those who add more code to this function ....bad idea; 
+  // the call to (*tcb) might have very well deleted us; it's crucial
+  // not to touch class variables after the (*tcb) call.
 }
 
 void
