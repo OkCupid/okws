@@ -606,7 +606,7 @@ okclnt_t::redirect (const str &l, int ht)
 }
 
 void
-okclnt_t::output (zbuf &b)
+okclnt_t::output (compressible_t &b)
 {
   // client might have cancelled as we were waiting for DB
   if (x->closed ()) {

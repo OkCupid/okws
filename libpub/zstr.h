@@ -119,9 +119,18 @@ private:
   u_int _scc_p;
 };
 
-class zbuf {
+class compressible_t {
+public:
+  virtual ~compressible_t () {}
+  virtual const strbuf &to_strbuf (bool gz) = 0;
+  virtual void to_strbuf (strbuf *b, bool gz) = 0;
+  virtual size_t inflated_len () const = 0;
+};
+
+class zbuf : public compressible_t {
 public:
   zbuf () : endbuf (ZSTR_ENDBUF_SIZE), minstrsize (ok_gzip_smallstr) {} 
+  ~zbuf () {}
   inline zbuf &cat (const zbuf &zb2);
   inline zbuf &cat (const str &s, bool cp = false);
   inline zbuf &cat (const zstr &z, bool cp = false);
@@ -131,17 +140,20 @@ public:
   inline zbuf &cat (const strbuf &b) { f << b; return (*this); }
   template<typename T> inline zbuf &cat (T i) { f << i; return (*this); }
 
+  // implement the compressible contract
+  inline const strbuf &to_strbuf (bool gz) {to_strbuf (&out, gz); return out;} 
+  inline void to_strbuf (strbuf *b, bool gz) 
+  { if (gz) compress (b); else output (b); }
+  size_t inflated_len () const;
+
+
   void clear ();
   const strbuf &output () { output (&out); return out; }
   const strbuf &compress (int l = -1) { compress (&out); return out; }
-  inline const strbuf &to_strbuf (bool gz) {to_strbuf (&out, gz); return out;} 
 
-  size_t inflated_len () const;
 
   void output (strbuf *b);
   void compress (strbuf *b, int l = -1);
-  inline void to_strbuf (strbuf *b, bool gz) 
-  { if (gz) compress (b); else output (b); }
 
   int output (int fd, bool gz = false);
   void to_zstr_vec (vec<zstr> *zs);

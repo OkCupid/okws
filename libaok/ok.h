@@ -186,7 +186,7 @@ public:
   virtual void error (int n, const str &s = NULL);
   virtual void process () = 0;
   virtual void parse ();
-  virtual void output (zbuf &b);
+  virtual void output (compressible_t &b);
   virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
   virtual void send (ptr<http_response_t> rsp);
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
