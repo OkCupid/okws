@@ -65,7 +65,7 @@ program OKCTL_PROGRAM {
 		OKCTL_PUBCONF (void) = 6;
 
 		void
-		OKCTL_KILL (oksig_t) = 999;
+		OKCTL_KILL (oksig_t) = 99;
 
 	} = 1;
 } = 11279;
@@ -145,7 +145,7 @@ program OKLOG_PROGRAM {
 		OKLOG_CLONE (void) = 5;
 		
 		void
-		OKLOG_KILL (ok_killsig_t) = 999;
+		OKLOG_KILL (ok_killsig_t) = 99;
 	} = 1;
 } = 11281;
 

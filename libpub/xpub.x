@@ -288,7 +288,7 @@ program PUB_PROGRAM {
 		PUB_LOOKUP (xpub_fn_t) = 4;
 
 		void
-		PUB_KILL (ok_killsig_t) = 999;
+		PUB_KILL (ok_killsig_t) = 99;
 
 	} = 1;
 } = 11277;
