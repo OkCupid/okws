@@ -63,7 +63,7 @@ const char *ok_pub_config = "/etc/sfs/pub_config";
 //
 // default packet size for all axprts
 //
-u_int ok_axptr_ps = 0x1000000;   // 16MB -- big for now
+u_int ok_axprt_ps = 0x1000000;   // 16MB -- big for now
 
 //
 // timeouts

@@ -72,7 +72,7 @@ extern const char *ok_okd_gname;
 //
 // default packet size for all axprts
 //
-extern u_int ok_axptr_ps;
+extern u_int ok_axprt_ps;
 
 //
 // port constants

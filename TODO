@@ -1,3 +1,4 @@
+$Id$
 
 Commands
 -----------
@@ -256,9 +257,25 @@ OKD v0.2
  - bug in file upload -- hangs if channel limit exceeded.
  - clean up nasty pub global variables
  - bugs when logging reqs that are too big
-
  - bug: when a service crashes, and okd queues up connections, those 
    connections might be bad by the time the service comes back up.  in 
    this case, okd should not send failed connections, or the service should 
    not call fail if a bad file descriptor was received.
+ - memory leak in DB proxies; clean up threads so that dmalloc reports
+   are more informative.
+ - simplify publishing protocol; right now, the repub commands breaks
+   since it sends collections of include file, and therefore might 
+   overrun a smaller maximum XDR packet size.
+ - strip out EC stuff
+ - fix bug where queued connections might abort and therefore cause a
+   new child to freak out. remember, temporary fix is to not queue
+   connections.
+ - OK_MON rpc needed for proxies, to show Q len.
+ - OK_MON rpc needed for services to show activity, like the apache
+   server-status page.
+ - write-up performance how-to
+ - bug with including a file in itself.
+ - pub command line jailing is mess up W.R.T. runtime jail.
+ - fix servername/serveralabel mess
+
 
