@@ -74,8 +74,7 @@ ssrv_client_t::authorized (u_int32_t procno)
 {
   bool *b = authcache[procno];
   if (b) {
-    if (!*b) return false;
-    else return true;
+    return (*b);
   } else {
     bool ans = txa_prog->authorized (authtoks, procno);
     authcache.insert (procno, ans);
