@@ -213,7 +213,7 @@ new_threadv (void *av)
   arg->mtd->new_thread (arg);
 }
 
-#ifdef HAVE_PTHREADS || HAVE_PTH
+#ifdef (HAVE_PTHREADS || HAVE_PTH)
 static void *
 vnew_threadv (void *av)
 {
