@@ -222,8 +222,10 @@ okld_t::fix_uids ()
   for (int i = 0; i < lim; i++) {
     svc = svcs[i];
 
-    int ueuid_own = svc->get_exec_uid ();
-    int uegid = svc->get_exec_gid ();
+    int ueuid_orig = svc->get_exec_uid ();
+    int ueuid_own = ueuid_orig;
+    int uegid_orig = svc->get_exec_gid ();
+    int uegid = uegid_orig;
 
     if (unsafe_mode) {
       svc->assign_uid (ueuid_own);
@@ -251,13 +253,15 @@ okld_t::fix_uids ()
     } 
 
     owners.insert (ueuid_own);
-    if (!svc->chown (ueuid_own, uegid))
+    if ((ueuid_own != ueuid_orig || uegid_orig != uegid) && 
+	!svc->chown (ueuid_own, uegid))
       ret = false;
 
     // owner cannot exec this script; group -- only -- can
     if (!svc->chmod (0450))
       ret = false;
     svc->assign_uid (uegid);
+    svc->assign_gid (uegid);
 
   }
   endgrent ();
@@ -457,10 +461,13 @@ okld_t::init_jaildir ()
     return false;
   }
 
+  root_coredir = apply_container_dir (coredumpdir, "0");
+
   int ret = true;
   if (!jail_mkdir ("/etc/", 0755, &root, &wheel) ||  
       !jail_cp ("/etc/resolv.conf", 0644, &root, &wheel) || 
       !jail_mkdir_p (coredumpdir, 0755, &root, &wheel) ||
+      !jail_mkdir (root_coredir, 0700, &root, &wheel) ||
       !jail_mkdir_p (sockdir, 0755, &root, &wheel)) 
     ret = false;
 

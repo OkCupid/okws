@@ -36,6 +36,7 @@ public:
   str execpath;             // temporary variable
 
   void assign_uid (int u);
+  void assign_gid (int u) { gid = u; }
   ok_usr_t *usr () { return uid; }
   str loc () const { return cfgfile_loc; }
   void set_svc_ids ();
@@ -46,6 +47,7 @@ public:
   void chldcb (int status);
   bool chmod (int mode);
   bool chown (int uid, int gid);
+  void clean_dumps ();
 private:
   void resurrect ();
   void relaunch ();
@@ -66,6 +68,7 @@ private:
   struct stat ustat;
   time_t startup_time;
   str rundir;
+  int gid;
 };
 
 class okld_t : public ok_base_t 
@@ -96,6 +99,7 @@ public:
   void shutdown2 (int status);
   bool init_jaildir ();
   bool in_shutdown () const { return sdflag; }
+  str get_root_coredir () const { return root_coredir; }
 
   logd_parms_t logd_parms;
 
@@ -130,6 +134,8 @@ private:
 
   str service_bin;       // directory where service exes are kept
   bool unsafe_mode;      // for lazy bastards
+
+  str root_coredir;      // privileged core directory
 };
 
 #endif /* _OKD_OKD_H */

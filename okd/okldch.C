@@ -1,6 +1,9 @@
 
 #include "okld.h"
 #include "fd_prot.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		      ok_usr_t *u)
@@ -94,6 +97,8 @@ okld_ch_t::chmod (int mode)
   return true;
 }
 
+str foo;
+
 void
 okld_ch_t::launch_cb (int logfd)
 {
@@ -119,8 +124,9 @@ okld_ch_t::launch_cb (int logfd)
   okld->env.insert ("logfd", logfd, false);
   argv.push_back (okld->env.encode ());
   okld->env.remove ("logfd");
-  
+
   int fd, ctlfd;
+  foo = execpath;
   fd = ahttpcon_aspawn (execpath, argv, 
 			wrap (this, &okld_ch_t::set_svc_ids), 
 			&ctlfd);
@@ -169,29 +175,34 @@ okld_ch_t::set_svc_ids ()
   if (!okld->is_superuser ())
     return;
 
-  // no need to chroot; okld should have already done that for us
-
   // unsubscribe from all groups
   setgroups (0, NULL);
 
-  if (setgid (okld->svc_grp.getid ()) != 0) {
-    CH_WARN ("could not change gid to " << okld->svc_grp.getname ());
+  if (setgid (gid) != 0) {
+    CH_WARN ("could not change gid to " << gid);
     exit (1);
   }
+
   if (setuid (uid->getid ()) != 0) {
     CH_WARN ("could not change uid to " << uid->getname ());
     exit (1);
   }
+
   if (rundir) {
     str d = okld->jail2real (rundir, true);
-    chdir (d);
-    warn << "changing directories to " << d << "\n";
+    if (chdir (d) != 0)
+      warn ("change dir failed: %m\n");
+    else {
+      warn <<  "changing directories to " << d << "\n";
+    }
   }
 }
 
 void
 okld_ch_t::chldcb (int status)
 {
+  if (status != 0)
+    clean_dumps ();
   if (okld->in_shutdown ())
     return;
 
@@ -211,9 +222,10 @@ okld_ch_t::chldcb (int status)
 
   if (status == 0)
     resurrect ();
-  else 
+  else {
     rcb = delaycb (ok_resurrect_delay, ok_resurrect_delay_ms * 1000000,
 		   wrap (this, &okld_ch_t::resurrect));
+  }
 }
 
 static inline bool
@@ -240,6 +252,30 @@ okld_ch_t::resurrect ()
     state = OKC_STATE_HOSED;
   } else {
     launch ();
+  }
+}
+
+void
+okld_ch_t::clean_dumps ()
+{
+  if (!rundir)
+    return;
+  DIR *dirp =  opendir (rundir.cstr ());
+  if (!dirp) {
+    warn << "Cannot clean out coredump directory: " << rundir << "\n";
+    return;
+  }
+  struct dirent *de;
+  while ((de = readdir (dirp))) {
+    if (de->d_type != DT_REG)
+      continue;
+    str corefile = de->d_name;
+    str from = apply_container_dir (rundir, corefile);
+    str to = apply_container_dir (okld->get_root_coredir (), 
+				  strbuf (corefile) << "." << timenow);
+    link (from.cstr (), to.cstr ());
+    unlink (from.cstr ());
+    ::chmod (to.cstr (), 0600);
   }
 }
 
