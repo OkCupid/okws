@@ -10,6 +10,7 @@
 #include "arpc.h"
 #include "ahttp.h"
 #include "resp.h"
+#include "okerr.h"
 
 #define LOG_FMT_DEFAULT    "ivt1sb"
 #define LOG_TIMEBUF_SIZE   64
@@ -151,9 +152,11 @@ public:
 		    const str &s) = 0;
   int getfd () const { return h->getfd (); }
   virtual void clone (cbi cb) { (*cb) (-1); }
+  virtual void turn (okrescb cb);
   void kill (cbv c, ptr<okauthtok_t> tok, 
 	     oksig_t s = OK_SIG_KILL) { h->kill (c, tok, s); }
 protected:
+  void turn_cb (ptr<bool> b, okrescb cb, clnt_stat err);
   virtual void connect_cb1 (cbb cb, bool c);
   virtual void connect_cb3 () {}
   helper_t *h;

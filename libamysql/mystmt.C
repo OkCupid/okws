@@ -1,6 +1,32 @@
 
 #include "mystmt.h"
 
+#ifdef HAVE_MYSQL_BIND
+sth_prepared_t::~sth_prepared_t ()
+{
+  if (bnds) delete [] bnds;
+  if (sth) mysql_stmt_close (sth);
+}
+
+bool
+sth_prepared_t::execute (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
+{
+  if (b && arr && n) {
+    bind (b, arr, n);
+    if (mysql_bind_param (sth, b)) {
+      err = strbuf ("bind error: ") << mysql_stmt_error (sth);
+	  errno_n = mysql_stmt_errno (sth);
+      return false;
+    }
+  }
+  if (mysql_execute (sth)) {
+    err = strbuf ("execute error: ") << mysql_stmt_error (sth);
+	errno_n = mysql_stmt_errno (sth);
+    return false;
+  }
+  return true;
+}
+
 bool
 sth_prepared_t::bind_result ()
 {
@@ -24,14 +50,6 @@ sth_prepared_t::bind (MYSQL_BIND *b, mybind_param_t **a, u_int n)
     a[i]->bind (&b[i]);
 }
 
-void
-mystmt_t::alloc_res_arr (u_int n)
-{
-  res_n = n;
-  if (!res_arr)
-    res_arr = New mybind_res_t[n];
-}
-
 adb_status_t
 sth_prepared_t::fetch2 (bool bnd)
 {
@@ -44,6 +62,16 @@ sth_prepared_t::fetch2 (bool bnd)
   }
   assign ();
   return ADB_OK;
+}
+
+#endif
+
+void
+mystmt_t::alloc_res_arr (u_int n)
+{
+  res_n = n;
+  if (!res_arr)
+    res_arr = New mybind_res_t[n];
 }
 
 adb_status_t 
@@ -86,35 +114,11 @@ mystmt_t::assign ()
     res_arr[i].assign ();
 }
 
-bool
-sth_prepared_t::execute (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
-{
-  if (b && arr && n) {
-    bind (b, arr, n);
-    if (mysql_bind_param (sth, b)) {
-      err = strbuf ("bind error: ") << mysql_stmt_error (sth);
-	  errno_n = mysql_stmt_errno (sth);
-      return false;
-    }
-  }
-  if (mysql_execute (sth)) {
-    err = strbuf ("execute error: ") << mysql_stmt_error (sth);
-	errno_n = mysql_stmt_errno (sth);
-    return false;
-  }
-  return true;
-}
-
 mystmt_t::~mystmt_t ()
 {
   if (res_arr) delete [] res_arr;
 }
 
-sth_prepared_t::~sth_prepared_t ()
-{
-  if (bnds) delete [] bnds;
-  if (sth) mysql_stmt_close (sth);
-}
 
 sth_parsed_t::~sth_parsed_t ()
 {

@@ -309,6 +309,26 @@ fast_log_t::flush ()
 }
 
 void
+log_t::turn_cb (ptr<bool> b, okrescb cb, clnt_stat err)
+{
+  ptr<ok_res_t> res = New refcounted<ok_res_t> ();
+  if (err) {
+    *res << (strbuf ("RPC Error: ") << err);
+  } else if (!*b) {
+    *res << strbuf ("logger failed to turn over logs");
+  }
+  (*cb) (res);
+}
+
+void
+log_t::turn (okrescb cb)
+{
+  ptr<bool> b = New refcounted<bool> ();
+  h->call (OKLOG_TURN, NULL, b,
+	   wrap (this, &log_t::turn_cb, b, cb));
+}
+
+void
 fast_log_t::flushed (int ai, int ei, ptr<bool> r, clnt_stat err)
 {
   if (err) {

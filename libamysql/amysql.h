@@ -21,6 +21,39 @@
 TYPE2STRUCT(, unsigned long long);
 TYPE2STRUCT(, long long);
 
+// hack a workaround mysql compatibility changes
+#ifndef HAVE_MYSQL_BIND
+
+typedef char MYSQL_BIND;
+#define MYSQL_TYPE_DECIMAL     FIELD_TYPE_DECIMAL
+#define MYSQL_TYPE_TINY        FIELD_TYPE_TINY
+#define MYSQL_TYPE_SHORT       FIELD_TYPE_SHORT
+#define MYSQL_TYPE_LONG        FIELD_TYPE_LONG
+#define MYSQL_TYPE_FLOAT       FIELD_TYPE_FLOAT
+#define MYSQL_TYPE_DOUBLE      FIELD_TYPE_DOUBLE
+#define MYSQL_TYPE_NULL        FIELD_TYPE_NULL
+#define MYSQL_TYPE_TIMESTAMP   FIELD_TYPE_TIMESTAMP
+#define MYSQL_TYPE_LONGLONG    FIELD_TYPE_LONGLONG
+#define MYSQL_TYPE_INT24       FIELD_TYPE_INT24
+#define MYSQL_TYPE_DATE        FIELD_TYPE_DATE
+#define MYSQL_TYPE_TIME        FIELD_TYPE_TIME
+#define MYSQL_TYPE_DATETIME    FIELD_TYPE_DATETIME
+#define MYSQL_TYPE_YEAR        FIELD_TYPE_YEAR
+#define MYSQL_TYPE_NEWDATE     FIELD_TYPE_NEWDATE
+#define MYSQL_TYPE_ENUM        FIELD_TYPE_ENUM
+#define MYSQL_TYPE_SET         FIELD_TYPE_SET
+#define MYSQL_TYPE_TINY_BLOB   FIELD_TYPE_TINY_BLOB
+#define MYSQL_TYPE_MEDIUM_BLOB FIELD_TYPE_MEDIUM_BLOB
+#define MYSQL_TYPE_LONG_BLOB   FIELD_TYPE_LONG_BLOB
+#define MYSQL_TYPE_BLOB        FIELD_TYPE_BLOB
+#define MYSQL_TYPE_VAR_STRING  FIELD_TYPE_VAR_STRING
+#define MYSQL_TYPE_STRING      FIELD_TYPE_STRING
+#define MYSQL_TYPE_CHAR        FIELD_TYPE_TINY
+#define MYSQL_TYPE_INTERVAL    FIELD_TYPE_ENUM
+#define MYSQL_TYPE_GEOMETRY    FIELD_TYPE_GEOMETRY
+
+#endif
+
 #define BIND_BUF_MIN 256
 
 u_int next2pow (u_int i);
@@ -45,7 +78,9 @@ class mybind_t {
 public:
   mybind_t (eft_t t) : ft (t), nullfl (0) {}
   virtual ~mybind_t () {}
+#ifdef HAVE_MYSQL_BIND
   virtual void bind (MYSQL_BIND *bind, bool param) = 0;
+#endif
   virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) = 0;
   virtual bool isnull () const { return nullfl; }
   virtual void assign () {}
@@ -55,15 +90,19 @@ protected:
   my_bool nullfl;
 };
 
+#ifdef HAVE_MYSQL_BIND
 void mysql_to_xdr (const MYSQL_TIME &tm, x_okdate_t *x);
 void mysql_to_xdr (const MYSQL_TIME &tm, x_okdate_date_t *x);
 void mysql_to_xdr (const MYSQL_TIME &tm, x_okdate_time_t *x);
+#endif
 
 class mybind_date_xassign_t {
 public:
   mybind_date_xassign_t () {}
+#ifdef HAVE_MYSQL_BIND
   virtual void assign (const MYSQL_TIME &tm, okdatep_t d) = 0;
-  virtual void assign (okdatep_t d) = 0;
+#endif
+  virtual void parsed_assign (okdatep_t d) = 0;
   virtual ~mybind_date_xassign_t () {}
 };
 
@@ -71,9 +110,15 @@ template<class C> // MyBind Date Xassign Template
 class mbdxat_t : public mybind_date_xassign_t {
 public:
   mbdxat_t (C *p) : mybind_date_xassign_t (), pntr (p) {}
+#ifdef HAVE_MYSQL_BIND
   void assign (const MYSQL_TIME &tm, okdatep_t d) 
   { mysql_to_xdr (tm, pntr); d->set (*pntr); }
-  void assign (okdatep_t d) { d->to_xdr (pntr); }
+#endif
+
+  // special "assign" function for parsed queries; usually
+  // not need (can be handled by read_str, which parses
+  // responses
+  void parsed_assign (okdatep_t d) { d->to_xdr (pntr); }
 private:
   C *pntr;
 };
@@ -110,20 +155,25 @@ public:
   ~mybind_date_t () { if (palloced && pntr) delete pntr; }
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
 
-  void assign () 
-  {
-    if (pntr) {
-      if (parsed) pntr->assign (datep);
-      else pntr->assign (tm, datep);
-    }
-  }
-
   operator okdatep_t () const 
   { return isnull () ? static_cast<okdatep_t> (NULL) : datep; }
   bool read_str (const char *c, unsigned long l);
+
+#ifdef HAVE_MYSQL_BIND
+  // only call assign as part of binding operations; no need
+  // in parsed representation....
+  void assign () 
+  {
+    if (pntr) 
+      pntr->assign (tm, datep);
+  }
+
   void bind (MYSQL_BIND *bind, bool param);
 private:
   MYSQL_TIME tm;
+#endif
+
+private:
   okdatep_t datep;
   mybind_date_xassign_t *pntr;
   u_long len;
@@ -152,7 +202,9 @@ public:
     pntr (p) {}
   
   ~mybind_str_t () { if (balloced) delete [] buf; }
+#ifdef HAVE_MYSQL_BIND
   void bind (MYSQL_BIND *bnd, bool param);
+#endif
   virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
   virtual void assign () { *pntr = str (buf, len); }
   operator str () const { return isnull () ? sNULL : str (buf, len); }
@@ -175,7 +227,9 @@ public:
   mybind_rpcstr_t (const rpc_bytes<n> &in)
     : mybind_t (MYSQL_TYPE_STRING), 
       mys (str (in.base (), in.size ()), MYSQL_TYPE_STRING, true) {}
+#ifdef HAVE_MYSQL_BIND
   void bind (MYSQL_BIND *bind, bool param) { mys.bind (bind, param); }
+#endif
   void to_qry (MYSQL *m, strbuf *b, char **ss, u_int *l)
   { mys.to_qry (m, b, ss, l); }
   void assign () { mys.assign (); *pntr = s; }
@@ -221,6 +275,7 @@ public:
   mybind_num_t (eft_t t, ptr<T> *p) : mybind_t (t), pntr (NULL), ppntr (p) {}
   operator str () const { return isnull () ? NULL : strbuf () << n; }
   virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) { *b << n; }
+#ifdef HAVE_MYSQL_BIND
   virtual void bind (MYSQL_BIND *bnd, bool param)
   {
     mysql_n = n;
@@ -230,6 +285,7 @@ public:
     bnd->length = param ? 0 : &mysql_blows;
     bnd->buffer_length = sizeof (mysql_n);
   }
+#endif
   
   inline void pntr_assign ()
   {
@@ -383,7 +439,9 @@ public:
 
 class mybindable_t {
 public:
+#ifdef HAVE_MYSQL_BIND
   virtual void bind (MYSQL_BIND *b) = 0;
+#endif
 };
 
 class mybind_res_t : public mybindable_t {
@@ -420,7 +478,9 @@ public:
   mybind_res_t (rpc_bytes<n> *r) 
   { p = New refcounted<mybind_rpcstr_t<n> > (r); }
 
+#ifdef HAVE_MYSQL_BIND
   void bind (MYSQL_BIND *bnd) { if (p) p->bind (bnd, false); }
+#endif
   void assign () { if (p) p->assign (); }
   bool read_str (const char *c, unsigned long l) 
   { return (p ? p->read_str (c, l) : false); }
@@ -488,7 +548,9 @@ public:
     p = New refcounted<mybind_str_t> (s); return (*this);
   }
   
+#ifdef HAVE_MYSQL_BIND
   void bind (MYSQL_BIND *bnd) { p->bind (bnd, true); }
+#endif
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) 
   { p->to_qry (m, b, s, l); }
   ptr<mybind_t> p;
@@ -506,7 +568,9 @@ public:
   ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
   u_int64_t insert_id () { return mysql_insert_id (&mysql); }
   u_int64_t affected_rows() { return mysql_affected_rows(&mysql);}
+#ifdef HAVE_MYSQL_BIND
   u_int64_t warning_count() { return mysql_warning_count(&mysql);}
+#endif
   
   u_int opts;
   str err;

@@ -37,6 +37,7 @@ protected:
   u_int my_res_n;
 };
 
+#ifdef HAVE_MYSQL_BIND
 class sth_prepared_t : public mystmt_t 
 {
 public:
@@ -52,6 +53,7 @@ protected:
   MYSQL_STMT *sth;
   MYSQL_BIND *bnds;
 };
+#endif
 
 
 #endif /* _LIBAMYSQL_STMTS_H */

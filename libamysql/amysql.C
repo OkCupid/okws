@@ -24,6 +24,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
 
   sth_t r;
   if (l_opts & AMYSQL_PREPARED) {
+#ifdef MYSQL_HAVE_BIND
     MYSQL_STMT *s = mysql_prepare (&mysql, q, q.len ());
     if (!s) {
       err = strbuf ("could not prepare query (") 
@@ -31,6 +32,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
       return NULL;
     }
     r = sth_prepared_t::alloc (s);
+#endif
   } else {
     ptr<sth_parsed_t> r2 = sth_parsed_t::alloc (&mysql, q, l_opts);
     if (!r2->parse ())
@@ -51,6 +53,7 @@ amysql_thread_t::prepare (const str &q, u_int o)
   return r;
 }
 
+#ifdef HAVE_MYSQL_BIND
 void
 mybind_str_t::bind (MYSQL_BIND *bnd, bool param)
 {
@@ -60,6 +63,7 @@ mybind_str_t::bind (MYSQL_BIND *bnd, bool param)
   bnd->length = param ? &bnd->buffer_length : &len;
   bnd->is_null = param ? 0 : &nullfl;
 }
+#endif
 
 void
 mybind_str_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
@@ -136,6 +140,7 @@ mybind_date_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
   datep->to_strbuf (b, true);
 }
 
+#ifdef HAVE_MYSQL_BIND
 void
 mybind_date_t::bind (MYSQL_BIND *bnd, bool param)
 {
@@ -170,12 +175,14 @@ mysql_to_xdr (const MYSQL_TIME &tm, x_okdate_date_t*x)
   x->mon = tm.month;
   x->year = tm.year;
 }
+#endif
 
 bool
 mybind_date_t::read_str (const char *c, unsigned long)
 {
   parsed = true;
   datep->set (c);
-  assign();
+  if (pntr)
+    pntr->parsed_assign (datep);
   return (!datep->err);
 }

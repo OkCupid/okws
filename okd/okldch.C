@@ -114,7 +114,6 @@ okld_ch_t::chmod (int currmode)
     warn << cfgfile_loc << ": cannot chmod binary: " << execpath << "\n";
     return false;
   }
-  char buf[100];
   warn ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
 	execpath.cstr (), ustat.st_mode & 07777, mode);
   return true;
