@@ -1610,6 +1610,7 @@ case $with_mode in
 		okmtag=$with_mode
 		;;
 	* )
+		okmtag=std
 		if test "${with_mode+set}" = "set"; then
 			AC_MSG_ERROR([Unrecognized build mode specified])
 		fi
