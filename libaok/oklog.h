@@ -104,7 +104,7 @@ public:
   bool ok () const { return okfl; }
   int lock ();
   void unlock (int i) { if (i >= 0) bufs.unlock (i); }
-  int to_str (str *s, int *i);
+  bool to_str (str *s, int *i);
   inline bool past_high_water () const { return ((cp - buf) > int (hwat)); }
 private:
   bool getbuf ();

@@ -91,19 +91,19 @@ logbuf_t::lock ()
   return i;
 }
 
-int
+bool
 logbuf_t::to_str (str *s, int *i)
 {
   if (!cmbuf) {
     *i = -1;
-    *s = "";
+    return false;
   } else {
     cmbuf->setlen (cp - buf);
     *s = *cmbuf;                // sets cmbuf->b = NULL
     cmbuf->restore ();          // brings us back from the dead!
     *i = lock ();
   }
-  return (s->len ());
+  return true;
 }
 
 

@@ -104,7 +104,7 @@ mtdispatch_t::chld_msg ()
     warn ("Bad receive message: %m\n");
     return;
   }
-  warn << "Received message from child: " << msg << "\n"; // debug
+  //warn << "Received message from child: " << msg << "\n"; // debug
   switch (msg.status) {
   case MTD_READY:
     if (sdflag) shutdown ();

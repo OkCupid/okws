@@ -151,7 +151,7 @@ void
 do_exit (int c)
 {
   int total_tm = stop_timer (startt);
-  warnx << nreq_fixed << "," << total_tm << "\n";
+  warnx << nconcur << "," << nreq_fixed << "," << total_tm << "\n";
   u_int sz = latencies.size ();
   for (u_int i = 0; i < sz; i++) 
     warnx << latencies[i] << "\n";
