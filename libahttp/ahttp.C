@@ -411,7 +411,7 @@ ahttpcon::doread (int fd)
   ssize_t s = in->input (fd, NULL, ss);
   return s;
 }
- 
+
 void
 ahttpcon::input ()
 {
@@ -427,7 +427,7 @@ ahttpcon::input ()
   if (n < 0) {
     if (errno != EAGAIN) {
       warn ("nfds=%d; error in ahttpcon::input: %m\n", n_ahttpcon);
-      //fail ();
+      fail3 ();
     }
     return;
   }
