@@ -263,7 +263,7 @@ ahttpcon_listen::doread (int fd)
   int tnfd = -1;
   assert (!in->resid ());
   ssize_t n = in->input (fd, &tnfd);
-
+  bool sin_used = false;
   sockaddr_in *sin2 = NULL;
   if (n == sizeof (sockaddr_in)) {
     sin2 = (sockaddr_in *) xmalloc (n);
@@ -286,10 +286,15 @@ ahttpcon_listen::doread (int fd)
   if (tnfd >= 0) 
     if (lcb) {
       (*lcb) (New refcounted<ahttpcon> (tnfd, sin2));
+      sin_used = true;
     } else {
       close (tnfd);
       warn ("ahttpcon_listen: no one listening to claim file descriptor\n");
     }
+  
+  if (sin2 && !sin_used)
+    xfree (sin2);
+
   return n;
 }
 
