@@ -665,6 +665,20 @@ case $with_mode in
 		CXXDEBUG=-g
 		with_dmalloc=yes
 		;;
+	"shared" )
+		sfstag=$with_mode
+		okwstag=$with_mdoe
+		enable_shared=yes
+		;;
+	"shdbg"  )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		enable_shared=yes
+		DEBUG=-g
+		CXXDEBUG=-g
+		sfstag=$with_mode
+		with_dmalloc=yes
+		;;
 	"optmz" )
 		;;
 	* )

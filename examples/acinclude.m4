@@ -1539,7 +1539,7 @@ dnl   exist
 dnl
 AC_DEFUN(OKWS_TAGS,
 [AC_ARG_WITH(mode,
---with-mode=[debug|optmz] 	Specify OKWS/SFS build mode)
+--with-mode=MODE 	Specify OKWS/SFS build mode (debug|shared|shdbg|optmz))
 AC_ARG_WITH(okwstag,
 --with-okwstag=TAG		Specify a custom OKWS build tag)
 AC_ARG_WITH(sfstag,
@@ -1553,6 +1553,22 @@ case $with_mode in
 		okmtag=$with_mode
 		DEBUG=-g
 		CXXDEBUG=-g
+		with_dmalloc=yes
+		;;
+	"shared" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		okmtag=$with_mode
+		enable_shared=yes
+		;;
+	"shdbg"  )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		okmtag=$with_mode
+		enable_shared=yes
+		DEBUG=-g
+		CXXDEBUG=-g
+		sfstag=$with_mode
 		with_dmalloc=yes
 		;;
 	"optmz" )
