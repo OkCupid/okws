@@ -67,8 +67,8 @@ do
     diff=$?
     pdir=`echo $jlib | sed -ne 's/\/[^/]*$//p' `
     if test ! -d $pdir; then
-	echo mkdir -pv $pdir
-	mkdir -pv $pdir
+	echo "making directory: $pdir"
+	$MKDIR $pdir
     fi
     if test ! -f $jlib -o ! $diff = 0
     then
