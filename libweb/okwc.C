@@ -329,7 +329,10 @@ okwc_chunker_t::parse_guts ()
       r = require_crlf ();
       break;
     case EOL2:
-      r = require_crlf ();
+      // seems as if this second CRLF is optional ?!?!?!
+      r = gobble_crlf ();
+      if (r == ABUF_NOMATCH) 
+	r = ABUF_OK;
       break;
     default:
       r = ABUF_COMPLETE;
