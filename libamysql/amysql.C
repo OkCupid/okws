@@ -47,8 +47,14 @@ mysql_t::prepare (const str &q, u_int l_opts)
   sth_t r;
   if (l_opts & AMYSQL_PREPARED) {
 #ifdef MYSQL_HAVE_BIND
-    MYSQL_STMT *s = mysql_prepare (&mysql, q, q.len ());
+    MYSQL_STMT *s = mysql_stmt_init (&mysql);
     if (!s) {
+      err = stbuf ("MySQL ran out of memory on statment init: ")
+	<< mysql_error (&mysql);
+      return NULL;
+    }
+
+    if (mysql_stmt_prepare (s, q, q.len ()) {
       err = strbuf ("could not prepare query (") 
 	<< q << "): " << mysql_error (&mysql);
       return NULL;

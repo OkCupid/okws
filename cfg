@@ -1,11 +1,26 @@
 #!/bin/sh
 
+#
+# CFG ORIGINAL FILE -- do not delete this line
+#
+#  $Id$
+
 CFG=cfg
 
 if [ -f $CFG -a ! -w $CFG ]
 then
     echo "Not writing over cfg because it's read only."
     exit 1
+fi
+
+if [ -f $CFG ]
+then
+    grep "CFG ORIGINAL FILE" $CFG > /dev/null 2>&1
+    if [ $? -eq 0 ]
+    then
+	echo "Please run ./cfg in your build (and not your source!) directory."
+	exit 1
+    fi
 fi
 
 if [ -f $CFG ]

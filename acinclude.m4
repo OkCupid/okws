@@ -1684,10 +1684,13 @@ echo $INSTALL | grep -e '/install -c' >/dev/null
 if [ test $? -eq 0 ]
 then
    INSTALL_C=`echo $INSTALL | sed -e 's/install -c/install -C/' `
-   TMP1=`mktemp -t cfg-install`
-   TMP2=`mktemp -t cfg-install`
+   TMP1=/tmp/tmp.okws1
+   TMP2=/tmp/tmp.okws2
+   if test -f $TMP2; then
+	rm -f $TMP2
+   fi
    echo "foobar city" > $TMP1
-   $INSTALL_C $TMP1 $TMP2
+   $INSTALL_C $TMP1 $TMP2 > /dev/null 2>&1
    diff $TMP1 $TMP2 > /dev/null 2>&1
    if test $? -eq 0 
    then
@@ -1699,4 +1702,3 @@ fi
 ac_cv_path_install_c=$INSTALL
 ])
 ])
-
