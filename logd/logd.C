@@ -170,7 +170,7 @@ void
 logd_t::parse_fmt ()
 {
   const char *fmt = parms.accesslog_fmt 
-    ? parms.accesslog_fmt.cstr () : LOG_FMT_DEFAULT;
+    ? parms.accesslog_fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *fp;
   for (fp = fmt; *fp; fp++) {
     logd_fmt_el_t *el = NULL;

@@ -4,7 +4,6 @@
 #include "pslave.h"
 #include "okprot.h"
 #include "xpub.h"
-#include "authtok.h"
 
 static void shutdown_srvc (oksig_t g, okd_t *d, okch_t *s) 
 { s->shutdown (g, wrap (d, &okd_t::kill_srvcs_cb)); }

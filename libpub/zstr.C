@@ -256,6 +256,16 @@ zbuf::output (strbuf *p)
   }
 }
 
+size_t
+zbuf::inflated_len () const
+{
+  size_t len = 0;
+  u_int lim = zs.size ();
+  for (u_int i = 0; i < lim; i++) 
+    len += zs[i].to_str ().len ();
+  return len;
+}
+
 void zinit (bool cache, int lev)
 {
   zinitted = true;

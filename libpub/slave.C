@@ -323,7 +323,6 @@ helper_t::finish_connect (cbb::ptr cb, ptr<bool> df, bool b)
 void
 helper_t::login (cbb::ptr cb, ptr<bool> df)
 {
-  warn << "in login\n"; //debug
   txa_login_arg_t arg;
   arg.setsize (authtoks->size ());
   for (u_int i = 0; i < authtoks->size (); i++) {

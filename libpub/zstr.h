@@ -106,6 +106,8 @@ public:
   const strbuf &compress (int l = -1) { compress (&out); return out; }
   inline const strbuf &to_strbuf (bool gz) {to_strbuf (&out, gz); return out;} 
 
+  size_t inflated_len () const;
+
   void output (strbuf *b);
   void compress (strbuf *b, int l = -1);
   inline void to_strbuf (strbuf *b, bool gz) 

@@ -5,7 +5,7 @@ okwslib_LTLIBRARIES = libpub.la
 
 libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
-	pvalw.C jail.C fd_prot.C authtok.C lbalance.C 
+	pvalw.C jail.C fd_prot.C lbalance.C 
 
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \

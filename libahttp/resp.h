@@ -109,18 +109,21 @@ public:
 class http_response_t {
 public:
   http_response_t (const http_resp_header_t &h) 
-    : header (h), nbytes (0), uid (0) {}
+    : header (h), nbytes (0), uid (0), inflated_len (0) {}
   http_response_t (const http_resp_header_t &h, const strbuf &b)
-    : header (h), body (b), nbytes (b.tosuio ()->resid ()), uid (0) {}
+    : header (h), body (b), nbytes (b.tosuio ()->resid ()), uid (0),
+      inflated_len (0) {}
   strbuf to_strbuf () const { return (header.to_strbuf () << body); }
   u_int send (ptr<ahttpcon> x, cbv::ptr cb) ;
   inline int get_status () const { return header.get_status (); }
   inline int get_nbytes () const { return nbytes; }
+  inline size_t get_inflated_len () const { return inflated_len; }
   inline void gzip () { header.gzip (); }
   http_resp_header_t header;
 
   void set_cache_control (const str &s) { header.set_cache_control (s); }
   void set_content_type (const str &s) { header.set_content_type (s); }
+  void set_inflated_len (size_t l) { inflated_len = l; }
 
   inline void set_uid (u_int64_t i) { uid = i; }
   inline u_int64_t get_uid () const { return uid; }
@@ -128,6 +131,7 @@ protected:
   strbuf body;
   u_int nbytes;
   u_int64_t uid;
+  size_t inflated_len;
 };
 
 class http_response_ok_t : public http_response_t {

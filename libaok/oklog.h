@@ -12,7 +12,6 @@
 #include "resp.h"
 #include "okerr.h"
 
-#define LOG_FMT_DEFAULT    "ivt1sb"
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800    // must be at least 2wice maxwrite
 #define LOG_BUF_DEFSIZE    0x10000
@@ -79,6 +78,7 @@ public:
   inline logbuf_t &status_long (u_int st)
   { return put (st).spc ().copy (http_status[st]); }
   inline logbuf_t &uid (u_int64_t i) { return put (i); }
+  inline logbuf_t &inflated_len (size_t l) { return put (l); }
 
   inline logbuf_t &bcpy (const char *c, u_int len);
   inline logbuf_t &qcpy (const char *c, u_int len);

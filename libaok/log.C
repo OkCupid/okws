@@ -139,7 +139,7 @@ void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
 			http_response_t *res)
 {
-  const char *fmp = fmt ? fmt.cstr () : LOG_FMT_DEFAULT;
+  const char *fmp = fmt ? fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *p;
   for (p = fmp; *p; p++) {
     switch (*p) {
@@ -169,6 +169,9 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       break;
     case 'U':
       access.uid (res->get_uid ());
+      break;
+    case 'z':
+      access.inflated_len (res->get_inflated_len ());
       break;
     default:
       access.cchar (*p);

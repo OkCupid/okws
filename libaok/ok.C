@@ -387,10 +387,7 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 {
   dbcon_t *d = New dbcon_t (p, host, port);
   if (authtoks.size () > 0 && l > 0) {
-    warn << "calling set_txa\n"; // debug
     d->set_txa (l, &authtoks);
-  } else {
-    warn << "not calling set_txa\n"; // debug
   }
 
   dbs.push_back (d);
@@ -477,13 +474,17 @@ okclnt_t::output (zbuf &b)
     return;
   }
 
+  ssize_t prelen = -1;
   bool gz = hdr.takes_gzip () && ok_gzip && rsp_gzip;
+  if (gz) 
+    prelen = b.inflated_len ();
   const strbuf &sb = b.to_strbuf (gz);
     
   rsp = New refcounted<http_response_ok_t> (sb, hdr.get_vers (), gz);
   if (cachecontrol) rsp->set_cache_control (cachecontrol);
   if (contenttype) rsp->set_content_type (contenttype);
   if (uid_set) rsp->set_uid (uid);
+  if (prelen > 0) rsp->set_inflated_len (prelen);
   send (rsp);
 }
 
