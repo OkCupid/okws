@@ -72,7 +72,7 @@
 %type <sec> guy_print htag htag_list javascript pre b_js_tag
 %type <el> ptag guy_vars guy_func
 %type <func> guy_funcname
-%type <pstr> pstr
+%type <pstr> pstr pstr_sq
 %type <arg> arg aarr
 %type <parr> i_arr_open
 
@@ -394,6 +394,12 @@ htag_name: T_HNAM
 htag_val: T_HNAM   { PSECTION->add ($1); }
 	| T_HVAL   { PSECTION->add ($1); }
 	| evar     { PSECTION->add (New pfile_var_t ($1, PLINENO)); }
+	| pstr_sq
+	{
+ 	   PSECTION->add ('\'');
+	   PSECTION->add (New pfile_pstr_t ($1)); 
+ 	   PSECTION->add ('\'');
+	}
 	| pstr     
 	{ 
  	   PSECTION->add ('"');
@@ -534,6 +540,17 @@ pstr: '"'
 	  PPSTR = New refcounted<pstr_t> ();
 	}
 	pstr_list '"'
+	{
+   	  $$ = PPSTR;
+	  PPSTR = NULL;
+	}
+	;
+
+pstr_sq: '\'' 
+	{
+	  PPSTR = New refcounted<pstr_t> ();
+	}
+	pstr_list '\''
 	{
    	  $$ = PPSTR;
 	  PPSTR = NULL;

@@ -1,4 +1,3 @@
-// -*-c++-*-
 /* $Id$ */
 
 /*
@@ -114,7 +113,9 @@ public:
     sdflag (false), sd2 (false), dcb (NULL), listenfd (-1), sdattempt (0),
     cntr (0),
     coredumpdir (cdd),
-    nfd_in_xit (0)
+    nfd_in_xit (0),
+    reqid (0),
+    xtab (2)
   {
   }
 
@@ -234,6 +235,8 @@ private:
   xpub_errdoc_set_t xeds;
 
   int nfd_in_xit;       // number of FDs in transit
+  u_int reqid;
+  ahttp_tab_t xtab;
 };
 
 class okd_mgrsrv_t 

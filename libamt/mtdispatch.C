@@ -2,6 +2,8 @@
 #include "amt.h"
 #include "txa_prot.h"
 
+#define LONG_REPLY_TIME   5
+
 mtd_thread_t::mtd_thread_t (mtd_thread_arg_t *a)
   : tid (a->tid), readied (false), fdin (a->fdin), fdout (a->fdout), 
     cell (a->cell), mtd (a->mtd) {}
@@ -88,7 +90,7 @@ mtdispatch_t::dispatch (svccb *b)
     warn << "XXX: rejecting / queue overflow\n"; // debug
     b->reject (PROC_UNAVAIL);
   } else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b))) {
-    //warn << "XXX: queuing: " << queue.size () << "\n"; // debug
+    warn << "XXX: queuing: " << queue.size () << "\n"; // debug
     queue.push_back (b);
   }
 }
@@ -293,8 +295,10 @@ void
 mtd_thread_t::take_svccb ()
 {
   svccb *s = cell->sbp;
-  if (s) 
+  if (s) {
+    start = timenow;
     dispatch (s);
+  }
 }
 
 void
@@ -309,14 +313,30 @@ mtd_thread_t::become_ready ()
 void
 mtd_thread_t::replynull ()
 {
+  did_reply ();
   cell->status = MTD_REPLY;
   cell->rstat = MTD_RPC_NULL;
   msg_send (MTD_REPLY);
 }
 
 void
+mtd_thread_t::did_reply ()
+{
+  time_t tm = timenow - start;
+  if (tm > LONG_REPLY_TIME) {
+    if (cell->sbp) {
+      TWARN ("long service time (" << tm << " secs) for PROC=" 
+	     << cell->sbp->proc ());
+    } else {
+      TWARN ("long service time (" << tm  << " secs); no procno given");
+    }
+  }
+}
+
+void
 mtd_thread_t::reject ()
 {
+  did_reply ();
   cell->status = MTD_REPLY;
   cell->rstat = MTD_RPC_REJECT;
   msg_send (MTD_REPLY);
@@ -325,6 +345,7 @@ mtd_thread_t::reject ()
 void
 mtd_thread_t::reply (ptr<void> d)
 {
+  did_reply ();
   cell->rsp = d;
   cell->status = MTD_REPLY;
   cell->rstat = MTD_RPC_DATA;

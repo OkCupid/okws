@@ -334,6 +334,7 @@ okd_t::parseconfig ()
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockFile", &mmc_file)
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)
+    .add ("DemuxTimeout", &ok_demux_timeout, 0, 30)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -455,11 +456,22 @@ okd_t::newserv (int fd)
   socklen_t sinlen = sizeof (sockaddr_in);
   bzero (sin, sinlen);
   int nfd = accept (fd, (sockaddr *) sin, &sinlen);
+  int freq = 1000;
   if (nfd >= 0) {
+    reqid ++;
+
+    // debug messaging
+    if ((reqid % freq) == 0) 
+      warn << "nfd_in_xit=" << nfd_in_xit << "\n";
+
     nfd_in_xit ++;  // keep track of the number of FDs in transit
     close_on_exec (nfd);
     tcp_nodelay (nfd);
     ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
+    
+    xtab.reg (x, x->destroyed_p);
+
+    
 
     //
     // when this file descriptor is closed on our end, we need

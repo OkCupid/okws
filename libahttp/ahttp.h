@@ -28,6 +28,7 @@
 #include "arpc.h"
 #include "suiolite.h"
 #include "okconst.h"
+#include "httpconst.h"
 
 #define AHTTP_MAXLINE 1024
 
@@ -86,11 +87,14 @@ protected:
 public:
   ahttpcon (int f, sockaddr_in *s = NULL, int mb = -1,
 	    int rcvlmt = -1, bool coe = true)
-    : fd (f), rcbset (false), wcbset (false), bytes_recv (0), bytes_sent (0),
-      eof (false), destroyed (false), out (suio_alloc ()), sin (s),
-      recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
-      overflow_flag (false), ss (global_syscall_stats),
-      sin_alloced (s != NULL)
+    : 
+    start (timenow), fd (f), rcbset (false), 
+    wcbset (false), bytes_recv (0), bytes_sent (0),
+    eof (false), destroyed (false), out (suio_alloc ()), sin (s),
+    recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
+		  overflow_flag (false), ss (global_syscall_stats),
+    sin_alloced (s != NULL),
+    destroyed_p (New refcounted<bool> (false))
   {
     //
     // bookkeeping for debugging purposes;
@@ -138,6 +142,8 @@ public:
   bool closed () const { return fd < 0; }
   bool overflow () const { return overflow_flag; }
   int set_lowwat (int sz);
+  
+  const time_t start;
 
 protected:
   void set_remote_ip ();
@@ -145,9 +151,9 @@ protected:
   virtual ssize_t doread (int fd);
   virtual void recvd_bytes (int n);
   inline void wrsync ();
-  virtual void fail ();
+  virtual void fail (int s = HTTP_BAD_REQUEST);
   virtual void too_many_fds () { fail (); }
-  virtual void fail2 () {} 
+  virtual void fail2 (int s) {}
   void input ();
   bool enable_selread ();
   void disable_selread ();
@@ -171,6 +177,10 @@ protected:
   const bool sin_alloced;
 
   ptr<cbv_countdown_t> cbcd;
+
+public:
+  ptr<bool> destroyed_p;
+  void timed_out () { fail (HTTP_TIMEOUT); }
 };
 
 // for parent dispatcher, which will send fd's
@@ -203,7 +213,7 @@ public:
   void enable_fd_accept ();
 protected:
   virtual ssize_t doread (int fd);
-  virtual void fail2 ();
+  void fail2 (int s);
   void too_many_fds () {}
   listencb_t::ptr lcb;
   bool fd_accept_enabled;
@@ -228,7 +238,7 @@ public:
 
 protected:
   void recvd_bytes (int n);
-  virtual void fail2 ();
+  void fail2 (int s);
 
 private:
   void end_read ();
@@ -247,9 +257,35 @@ private:
   u_int bytes_scanned;
   bool decloned;
   int trickle_state;
-  ptr<bool> destroyed_p;
   timecb_t *dcb;
 };
+
+struct ahttp_tab_node_t {
+  ahttp_tab_node_t (ahttpcon *a, ptr<bool> d)
+    : _a (a), _destroyed_p (d) {}
+
+  ahttpcon *_a;
+  ptr<bool> _destroyed_p;
+  tailq_entry<ahttp_tab_node_t> _qent;
+};
+
+
+class ahttp_tab_t {
+public:
+  ahttp_tab_t (int i) : interval (i), dcb (NULL) { sched (); }
+  ~ahttp_tab_t () { if (dcb) timecb_remove (dcb); }
+  
+  void unreg (ahttp_tab_node_t *n);
+  void reg (ahttpcon *a, ptr<bool> destroyed);
+  void run ();
+  void sched ();
+
+private:
+  const int interval;
+  timecb_t *dcb;
+  tailq<ahttp_tab_node_t, &ahttp_tab_node_t::_qent> q;
+};
+
 
 ptr<ahttpcon> 
 ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx,

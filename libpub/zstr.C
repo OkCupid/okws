@@ -235,21 +235,20 @@ zbuf::compress (strbuf *p, int level)
   str s;
   u_int len;
 
-
-  // first time through the loop add the gzip header; see zinit ()
-  // for what that header actually looks like
   if (zdebug)
     warn << "zbuf::compress: ";
 
   for (u_int i = 0; i < lim; i++) {
     str z = zs[i].compress (level);
     
-    // XXX -- debug code
     if (zdebug)
       warnx << zs[i].len () << "," ;
 
     if (!z)
       goto compress_err;
+
+    // first time through the loop add the gzip header; see zinit ()
+    // for what that header actually looks like
     len = (i == 0) ? zhdr.len () + z.len () : z.len ();
     p->fmt ("%x\r\n", len);
     if (i == 0)  

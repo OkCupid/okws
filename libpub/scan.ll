@@ -8,7 +8,7 @@
 
 static int end_GH ();
 static int begin_GH ();
-static void begin_PSTR (int i);
+static void begin_PSTR (int i, int mode);
 static void end_PSTR ();
 static void begin_STR (int i, int j);
 static int  end_STR ();
@@ -36,7 +36,7 @@ char *eof_tok;
 
 VAR	[a-zA-Z_][a-zA-Z_0-9]*
 HNAM	[a-zA-Z_][a-zA-Z_0-9-]*
-HVAL	[a-zA-Z0-9_#%-]+
+HVAL	[a-zA-Z0-9_#%/:?+@-]+
 ST	[Ss][Cc][Rr][Ii][Pp][Tt]
 PRET    [Pp][Rr][Ee]
 WS	[ \t]
@@ -46,7 +46,7 @@ TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 %x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE EC WEC CCODE
-%x ECCODE ECF GCODE PRE
+%x ECCODE ECF GCODE PRE PSTR_SQ
 
 %%
 
@@ -141,7 +141,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [+-]?[0-9]+	|
 [+-]?0x[0-9]+	{ yylval.str = yytext; return T_NUM; }
 
-\"		{ begin_PSTR (1); return (yytext[0]); }
+\"		{ begin_PSTR (1, PSTR); return (yytext[0]); }
 
 "//".*$		/* discard */ ;
 
@@ -167,7 +167,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  		}
 }
 
-<GH,H,WH,WGH,EC,WEC,JS,PSTR,GSEC,PTAG,ECCODE,HTAG>{
+<GH,H,WH,WGH,EC,WEC,JS,PSTR,GSEC,PTAG,ECCODE,HTAG,PSTR_SQ>{
 "@{"		{ yy_push_state (GCODE); return T_BGCODE; }
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
 "%{"		{ yy_push_state (GCODE); return T_BGCCE; }
@@ -237,8 +237,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <HTAG>{
 \n		{ PLINC; }
-\"		{ begin_PSTR (0); return ('"'); }
-\'		{ begin_STR (SSTR, 0); }	
+["]		{ begin_PSTR (0, PSTR); return (yytext[0]); }
+[']		{ begin_PSTR (0, PSTR_SQ); return (yytext[0]); }
 
 "/>"		|
 \>		{ yy_pop_state (); yylval.str = yytext; return T_ETAG; }
@@ -268,14 +268,24 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <PSTR>{
 \n		{ yyerror ("unterminated parsed string"); }
-\\[\\"tn]	{ if (yyesc) { yylval.ch = yytext[1]; return T_CH; }
+\\[\\"'tn]	{ if (yyesc) { yylval.ch = yytext[1]; return T_CH; }
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ yyerror ("illegal escape sequence"); }
 \"		{ end_PSTR (); return (yytext[0]); }
 [^"\\$@%]+	{ yylval.str = yytext; return T_STR; }
 }
 
-<STR,PSTR,SSTR>{
+<PSTR_SQ>{
+\n		{ yyerror ("unterminated parsed string"); }
+\\[\\'"tn]	{ if (yyesc) { yylval.ch = yytext[1]; return T_CH; }
+	  	  else { yylval.str = yytext; return T_STR; } }
+\\.		{ yyerror ("illegal escape sequence"); }
+\'		{ end_PSTR (); return (yytext[0]); }
+[^'\\$@%]+	{ yylval.str = yytext; return T_STR; }
+}
+
+
+<STR,PSTR,SSTR,PSTR_SQ>{
 <<EOF>>		{ yyerror (strbuf ("EOF found in str started on line %d", 
 			           yy_ssln)); 
 		}
@@ -320,11 +330,11 @@ begin_GH ()
 }
 
 void
-begin_PSTR (int i)
+begin_PSTR (int i, int state)
 {
   yy_oldesc = yyesc;
   yyesc = i;
-  yy_push_state (PSTR);
+  yy_push_state (state);
   yy_ssln = PLINENO;
 }
 

@@ -97,9 +97,11 @@ private:
   int msg_send (mtd_status_t s);
   mtd_status_t msg_recv ();
 protected:
+  virtual void did_reply () ;
   int tid;
   bool readied;
 private:
+  time_t start;
   int fdin;
   int fdout;
   mtd_shmem_cell_t *cell;

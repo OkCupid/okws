@@ -93,7 +93,7 @@ extern u_int ok_shutdown_timeout;
 extern u_int ok_shutdown_retries;
 extern u_int ok_db_retries_max;
 extern u_int ok_db_retry_delay;
-extern u_int ok_slowcli_timeout;
+extern u_int ok_demux_timeout;
 
 //
 // okd constants

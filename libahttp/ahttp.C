@@ -137,6 +137,9 @@ ahttpcon::call_drained_cb ()
 void
 ahttpcon::output ()
 {
+  if (fd < 0)
+    return;
+
   ssize_t n = 0;
   int cnt = 0;
   do {
@@ -229,12 +232,11 @@ ahttpcon_dispatch::dowritev (int cnt)
 }
 
 
-ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml) 
+ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
   : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), 
   found (false), delimit_state (0), delimit_status (HTTP_OK),
   delimit_start (NULL), bytes_scanned (0), decloned (false),
-  trickle_state (0), destroyed_p (New refcounted<bool> (false)),
-				    dcb (NULL)
+  trickle_state (0), dcb (NULL)
 {
   in->setpeek ();
 }
@@ -246,6 +248,7 @@ ahttpcon_clone::~ahttpcon_clone ()
     dcb = NULL;
   }
   *destroyed_p = true;
+  warn << "destroyed cloner\n";
 }
       
 
@@ -257,6 +260,7 @@ ahttpcon::~ahttpcon ()
   --n_ahttpcon;
 
   destroyed = true;
+  *destroyed_p = true;
   fail ();
   if (sin && sin_alloced) xfree (sin);
   recycle (in);
@@ -264,7 +268,7 @@ ahttpcon::~ahttpcon ()
 }
 
 void
-ahttpcon::fail ()
+ahttpcon::fail (int s)
 {
   if (fd >= 0) {
     fdcb (fd, selread, NULL);
@@ -281,22 +285,29 @@ ahttpcon::fail ()
     else if (drained_cb) {
       call_drained_cb ();
     }
-    fail2 ();
+    fail2 (s);
   }
 }
 
 void
-ahttpcon_listen::fail2 ()
+ahttpcon_listen::fail2 (int dummy)
 {
   if (lcb) 
     (*lcb) (NULL);
 }
 
 void
-ahttpcon_clone::fail2 ()
+ahttpcon_clone::fail2 (int s)
 {
-  if (ccb)
-    (*ccb) (NULL, HTTP_BAD_REQUEST);
+  if (ccb) {
+    // we're being paranoid since the hold in fail2 should cover
+    // us, but in case anything changes in the future, we should
+    // assume that settint ccb = NULL causes this object to be
+    // destroyed.
+    clonecb_t::ptr c = ccb;
+    ccb = NULL;
+    (*c) (NULL, s);
+  }
 }
 
 void
@@ -306,7 +317,7 @@ ahttpcon_clone::setccb (clonecb_t c)
   if (enable_selread ()) 
     ccb = c;
   else
-    (*ccb) (NULL, HTTP_BAD_REQUEST);
+    fail2 (HTTP_BAD_REQUEST);
 }
 
 void
@@ -453,7 +464,7 @@ ahttpcon::input ()
       warn ("Too many fds (%d) in ahttpcon::input: %m\n", n_ahttpcon);
       too_many_fds ();
     } else if (errno != EAGAIN) {
-      warn ("nfs=%d; Error in ahttpcon::input: %m\n", n_ahttpcon);
+      warn ("nfds=%d; Error in ahttpcon::input: %m\n", n_ahttpcon);
       fail ();
     }
     return;
@@ -597,9 +608,10 @@ ahttpcon_clone::delimit (int dummy)
     return NULL;
   }
 
-  // at this point, we the client is "trickling" out data --
+  // at this point, the client is "trickling" out data --
   // 
 
+  u_int to;
   switch (trickle_state) {
   case 0: 
 
@@ -609,11 +621,17 @@ ahttpcon_clone::delimit (int dummy)
       warnx << ": " << remote_ip;
     warnx << "\n";
 
-    dcb = delaycb (ok_slowcli_timeout, 0,
-                   wrap (this, &ahttpcon_clone::trickle_cb, destroyed_p));
-    disable_selread ();
-    reset_delimit_state ();
-    break;
+    to = ok_demux_timeout / 2;
+    if (to) {
+      dcb = delaycb (to, 0,
+		     wrap (this, &ahttpcon_clone::trickle_cb, destroyed_p));
+      disable_selread ();
+      reset_delimit_state ();
+      break;
+    } else {
+      trickle_state = 1;
+      //fall through to next case in switch statement
+    }
   case 1:
 
     warnx << "abandoning slow trickle client";
@@ -621,7 +639,7 @@ ahttpcon_clone::delimit (int dummy)
       warnx << ": " << remote_ip;
     warnx << "\n";
 
-    delimit_status = HTTP_URI_TOO_BIG;
+    delimit_status = HTTP_TIMEOUT;
     break;
   default:
     assert (false);
@@ -823,4 +841,48 @@ suiolite_alloc (int mb, cbv::ptr s)
     ret = New suiolite (mb, s);
   }
   return ret;
+}
+
+
+
+void
+ahttp_tab_t::reg (ahttpcon *a, ptr<bool> d)
+{
+  ahttp_tab_node_t *n = New ahttp_tab_node_t (a, d);
+  q.insert_tail (n);
+}
+
+void
+ahttp_tab_t::run ()
+{
+  dcb = NULL;
+  ahttp_tab_node_t *n;
+
+  bool flag = true;
+  while ((n = q.first) && flag) {
+    if (* n->_destroyed_p ) {
+      unreg (n);
+    } else if (int (timenow - n->_a->start) > int (ok_demux_timeout)) {
+      warn << "XXX: removing deadbeat http connection\n"; //debug
+      n->_a->timed_out ();
+      unreg (n);
+    } else {
+      flag = false;
+    }
+  }
+  sched ();
+}
+
+
+void
+ahttp_tab_t::unreg (ahttp_tab_node_t *n)
+{
+  q.remove (n);
+  delete n;
+}
+
+void
+ahttp_tab_t::sched ()
+{
+  dcb = delaycb (interval, 0, wrap (this, &ahttp_tab_t::run));
 }
