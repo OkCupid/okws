@@ -97,6 +97,14 @@ okld_ch_t::launch_cb (int logfd)
     return; 
   }
 
+  if (okld->in_shutdown ()) {
+    close (logfd);
+    warn << "shutdown received while relaunching service: ("
+	 << servpath << "," << rexecpath << ")\n";
+    state = OKC_STATE_HOSED;
+    return;
+  }
+
   vec<str> argv;
   execpath = okld->jail2real (rexecpath, true);
   argv.push_back (execpath);
