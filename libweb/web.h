@@ -50,7 +50,8 @@ public:
     s.tm_sec = sec;
     set(s);
   }
-  okdate_t () : err (false), dt_tm (0), stm_set (false) {}
+  okdate_t () : 
+        sec (0), min (0), hour (0), err (false), dt_tm (0), stm_set (false) {}
 
   template<class C> static ptr<okdate_t> alloc (C x)
   { return New refcounted<okdate_t> (x); }

@@ -138,7 +138,9 @@ okdate_t::set (const x_okdate_date_t &x)
   mon = x.mon;
   year = x.year;
   dt_tm |= OK_DATE;
-
+  sec = 0;
+  min = 0;
+  hour = 0;
 }
 
 void
