@@ -82,14 +82,14 @@ u_int ok_resurrect_delay = 3;
 u_int ok_resurrect_delay_ms = 500;
 u_int ok_chld_startup_time = 10;    // startup time in seconds....
 u_int ok_filter_cgi = XSSFILT_NONE; // filter XSS metacharacters
-u_int okd_max_fds = 1010;           // a little bit less than 1024 for now.
-u_int okd_fds_high_wat = 900;       // below high wat, turn accept back on.
-u_int ok_svc_max_fds = 0;           // a little bit less thatn 1024 for now.
-u_int ok_svc_fds_high_wat = 0;      // below high wat, turn accept back on.
+u_int okd_max_fds = 100;            // turn off accept above this
+u_int okd_fds_high_wat = 50;        // below high wat, turn accept back on.
+u_int ok_svc_max_fds = 1000;        // a little bit less thatn 1024 for now.
+u_int ok_svc_fds_high_wat = 950;    // below high wat, turn accept back on.
 bool okd_accept_msgs = true;        // display messages about accept()
 bool ok_svc_accept_msgs = true;     // display messages about accept()
 u_int ok_ssdi = 0;                  // syscall stat dump interval
-bool ok_send_sin = false;           // send sin's over FD chan?
+bool ok_send_sin = true;            // send sin's over FD chan?
 bool okd_child_sel_disable = false; // disable read sel on child
 
 // location of the memory-mapped clock daemon
