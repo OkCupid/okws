@@ -1507,10 +1507,26 @@ AC_DEFUN(SFS_SFS,
 --with-sfs[[=PATH]]         specify location of SFS libraries)
 if test "$with_sfs" = yes -o "$with_sfs" = ""; then
     for dir in "$prefix" /usr/local /usr; do
-	if test -f $dir/lib/sfs${sfstagdir}/libasync.la; then
-	    with_sfs=$dir
+
+	dnl
+	dnl sfs${sfstagdir} in there for bkwds comptability
+	dnl
+	sfsprefixes="sfslite${sfstagdir} sfs${sfstagdir} sfs"
+
+	BREAKOUT=0
+	for sfsprfx in $sfsprefixes
+	do
+	    if test -f $dir/lib/${sfsprfx}/libasync.la; then
+		with_sfs=$dir
+		BREAKOUT=1
+		break
+	    fi
+	done
+
+	if test $BREAKOUT -eq 1; then
 	    break
 	fi
+
     done
 fi
 case "$with_sfs" in
@@ -1539,13 +1555,11 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     LIBARPC=${with_sfs}/arpc/libarpc.la
     LIBSFSCRYPT=${with_sfs}/crypt/libsfscrypt.la
     LIBSFSMISC=${with_sfs}/sfsmisc/libsfsmisc.la
-    dnl LIBSVC=${with_sfs}/svc/libsvc.la
-    dnl LIBSFS=${with_sfs}/libsfs/libsfs.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
-elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
-	-a -f ${with_sfs}/lib/sfs${sfstagdir}/libasync.la; then
-    sfsincludedir="${with_sfs}/include/sfs${sfstagdir}"
-    sfslibdir=${with_sfs}/lib/sfs${sfstagdir}
+elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
+	-a -f ${with_sfs}/lib/${sfsprfx}/libasync.la; then
+    sfsincludedir="${with_sfs}/include/${sfsprfx}"
+    sfslibdir=${with_sfs}/lib/${sfsprfx}
     if egrep '#define DMALLOC' ${sfsincludedir}/autoconf.h > /dev/null; then
 	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
     else
@@ -1556,8 +1570,6 @@ elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
     LIBARPC=${sfslibdir}/libarpc.la
     LIBSFSCRYPT=${sfslibdir}/libsfscrypt.la
     LIBSFSMISC=${sfslibdir}/libsfsmisc.la
-    dnl LIBSVC=${sfslibdir}/libsvc.la
-    dnl LIBSFS=${with_sfs}/lib/libsfs.a
     MALLOCK=${sfslibdir}/mallock.o
     dnl SFS_PATH_PROG(txarpcc, ${with_okws}/lib/sfs${okwstagdir}:${with_okws}/bin)
     dnl RPCC="$PATH_RPCC"

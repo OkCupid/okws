@@ -1426,8 +1426,23 @@ AC_DEFUN(SFS_SFS,
 --with-sfs[[=PATH]]         specify location of SFS libraries)
 if test "$with_sfs" = yes -o "$with_sfs" = ""; then
     for dir in "$prefix" /usr/local /usr; do
-	if test -f $dir/lib/sfs${sfstagdir}/libasync.la; then
-	    with_sfs=$dir
+	
+	dnl
+	dnl sfs${sfstagdir} in there for bkwds comptability
+	dnl
+	sfsprefixes="sfslite${sfstagdir} sfs${sfstagdir} sfs"
+
+	BREAKOUT=0
+	for sfsprfx in $sfsprefixes
+	do
+	    if test -f $dir/lib/${sfsprfx}/libasync.la; then
+		with_sfs=$dir
+		BREAKOUT=1
+		break
+	    fi
+	done
+
+	if test $BREAKOUT -eq 1; then
 	    break
 	fi
     done
@@ -1460,10 +1475,10 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     LIBSFSMISC=${with_sfs}/sfsmisc/libsfsmisc.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
     RPCC=${with_sfs}/rpcc/rpcc
-elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
-	-a -f ${with_sfs}/lib/sfs${sfstagdir}/libasync.la; then
-    sfsincludedir="${with_sfs}/include/sfs${sfstagdir}"
-    sfslibdir=${with_sfs}/lib/sfs${sfstagdir}
+elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
+	-a -f ${with_sfs}/lib/${sfsprfx}/libasync.la; then
+    sfsincludedir="${with_sfs}/include/${sfsprfx}"
+    sfslibdir=${with_sfs}/lib/${sfsprfx}
     if egrep '#define DMALLOC' ${sfsincludedir}/autoconf.h > /dev/null; then
 	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
     else
@@ -1476,7 +1491,7 @@ elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
     LIBSFSMISC=${sfslibdir}/libsfsmisc.la
     MALLOCK=${sfslibdir}/mallock.o
     dnl RPCC=${with_sfs}/bin/rpcc
-    SFS_PATH_PROG(rpcc, ${with_sfs}/lib/sfs${sfstagdir}:${with_sfs}/bin)
+    SFS_PATH_PROG(rpcc, ${with_sfs}/lib/${sfsprfx}:${with_sfs}/bin)
     RPCC="$PATH_RPCC"
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
@@ -1687,7 +1702,7 @@ elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
     LIBAMYSQL=${okwslibdir}/libamysql.la
 
     dnl
-    dnl hack because AC_PATH_PROG is fucked
+    dnl hack because AC_PATH_PROG is rocked
     dnl
     OKWS_PATH_PROG(pub)
     PUB="$RES"
