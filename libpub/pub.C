@@ -317,6 +317,7 @@ pub_parser_t::parse (const pbinding_t *bnd, pfile_type_t t)
 bool
 pub_t::add_rootfile (const pfnm_t &rf, bool conf)
 {
+  // warn << "add_rootfile1: " << rf << "\n"; // debug
   if (conf && !crfbh[rf]) {
     cfgfiles.push_back (rf);
     crfbh.insert (rf);

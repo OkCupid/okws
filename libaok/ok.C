@@ -203,11 +203,8 @@ oksrvc_t::init (int argc, char *argv[])
 bool
 ok_httpsrv_t::add_errdoc (int n, const str &f)
 {
-  // debug code
-  warn << "add errdoc1: " << n << "," << f << "\n";
   if (errdocs[n])
     return false;
-  warn << "add errdoc2: " << n << "," << f << "\n";
   errdocs.insert (New errdoc_t (n, f));
   add_pubfile (f);
   return true;
@@ -655,6 +652,7 @@ oksrvc_t::add_pubfiles (const char *arr[], bool c)
 void
 oksrvc_t::add_pubfile (const str &s, bool c)
 {
+  // warn << "add_pubfile:" << s << "\n"; // debug
   rpcli->add_rootfile (s, c);
 }
 

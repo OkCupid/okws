@@ -50,7 +50,9 @@ pub_rclient_t::publish (const vec<str> &files, pubrescb c)
   nset = init ? New pub_t::set_t () : set;
   cb = c;
   bool call = false;
-  for (u_int i = 0; i < sz; i++) 
+  for (u_int i = 0; i < sz; i++) {
+
+    //warn << "publish: " << files[i] << "\n"; //
 
     //
     // before we're initialized, we want to publish all files given to us;
@@ -62,6 +64,7 @@ pub_rclient_t::publish (const vec<str> &files, pubrescb c)
       call = true;
       getfile (files[i]);
     }
+  }
 
   if (!call) 
     (*c) (New refcounted<pub_res_t> ());

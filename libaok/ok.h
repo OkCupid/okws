@@ -116,7 +116,7 @@ public:
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
   inline bool add_errdoc (int n, const str &f);
   void add_errdocs (const xpub_errdoc_set_t &eds);
-  virtual void add_pubfile (const str &s) {}
+  virtual void add_pubfile (const str &s, bool conf = false) {}
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
 		      http_inhdr_t *h = NULL) const;
