@@ -463,7 +463,7 @@ ahttpcon::input ()
       warn ("Too many fds (%d) in ahttpcon::input: %m\n", n_ahttpcon);
       too_many_fds ();
     } else if (errno != EAGAIN) {
-      warn ("nfds=%d; Error in ahttpcon::input: %m\n", n_ahttpcon);
+      warn ("nfds=%d; Error in ahttpcon::input: %m (%d)\n", n_ahttpcon, errno);
       fail ();
     }
     return;
