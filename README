@@ -67,3 +67,13 @@ Compile Notes:
 
    Eventually I'll have some nice portable solutions here, but for now,
    this is what I have.
+
+Further Documentation
+---------------------
+See http://www.okws.org for further documentation about the OKWS system.
+The documentation is still in need of much work, including tutorials.
+
+License
+-------
+OKWS is distributed under GPLv2.  Please see ./COPYING for a full
+description of the license.
