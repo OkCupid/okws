@@ -37,6 +37,17 @@ public:
 	s.tm_sec = 0;
 	set(s);
   }
+  okdate_t (int month, int day, int year, int hour, int min, int sec) : err(false), dt_tm(0), stm_set(false)
+  {
+	struct tm s;
+    s.tm_year = year - 1900;
+    s.tm_mon = month - 1;
+	s.tm_mday = day;
+	s.tm_hour = hour;
+	s.tm_min = min;
+	s.tm_sec = sec;
+	set(s);
+  }
   okdate_t () : err (false), dt_tm (0), stm_set (false) {}
 
   template<class C> static ptr<okdate_t> alloc (C x)
