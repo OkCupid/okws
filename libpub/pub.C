@@ -41,6 +41,13 @@ pub_t::set_t::remove (pfile_t *f)
 }
 
 void
+pub_t::set_t::remove (const pbinding_t *bnd, pfile_t *f)
+{
+  bindings.unbind (bnd);
+  remove (f);
+}
+
+void
 pub_t::set_t::insert (const pbinding_t *bnd, const pfile_t *f)
 {
   bindings.bind (bnd);
@@ -285,8 +292,8 @@ pub_t::add_rootfile (const pfnm_t &rf, bool conf)
   if (conf && !crfbh[rf]) {
     cfgfiles.push_back (rf);
     crfbh.insert (rf);
-  }
-  
+  } 
+
   if (!rfbh[rf]) {
     rfbh.insert (rf);
     rootfiles.push_back (rf);

@@ -104,6 +104,7 @@ struct bindtab_t : public _bindmap_t {
 public:
   bindtab_t (phash_cb::ptr cb = NULL) : _bindmap_t () , delcb (cb) {}
   void bind (const pbinding_t *p);
+  void unbind (const pbinding_t *p);
   void clear2 () { cnt.clear (); clear (); }
 private:
   phash_cb::ptr delcb;

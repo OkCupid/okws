@@ -48,7 +48,7 @@ pub_rclient_t::publish (const vec<str> &files, pubrescb c)
 void
 pub_rclient_t::getfile (const pfnm_t &fn)
 {
-  //warn << "getfile: " << fn << "\n"; // debug
+  // warn << "getfile: " << fn << "\n"; // debug
   nreq++;
   lookup (fn, wrap (this, &pub_rclient_t::getfile_lookedup));
 }

@@ -1,4 +1,6 @@
 
+/* $Id$ */
+
 #include "pubutil.h"
 #include "sha1.h"
 #include <sys/types.h>
@@ -202,6 +204,13 @@ phash_t::to_xdr (xpubhash_t *x) const
 
 pbinding_t::pbinding_t (const xpub_pbinding_t &x) 
   : fn (x.fn), hsh (New refcounted<phash_t> (x.hash.base ())) {}
+
+void
+bindtab_t::unbind (const pbinding_t *p)
+{
+  dec (p->hash ());
+  remove (const_cast<pbinding_t *> (p));
+}
 
 void
 bindtab_t::bind (const pbinding_t *p)

@@ -1178,6 +1178,7 @@ public:
     void insert (const pbinding_t *bnd, const pfile_t *f = NULL);
     void insert (const pfile_t *f);
     void remove (pfile_t *f);
+    void remove (const pbinding_t *bnd, pfile_t *f);
     void insert (bpfcp_t bpf);
     bpfcp_t getfile (const pfnm_t &nm) const;
     pbinding_t *to_binding (const pfnm_t &fn, const pfnm_t &rfn, 
