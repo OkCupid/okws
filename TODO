@@ -254,3 +254,4 @@ OKD v0.2
  - fix RPCC autoconf stuff
  - better interface for different file content types
  - bug in file upload -- hangs if channel limit exceeded.
+ - clean up nasty pub global variables

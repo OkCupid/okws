@@ -9,8 +9,15 @@
 pub_t *pub;
 pub_parser_t *parser;
 pub_client_t *pcli;
+pub_base_t *pubincluder;
 
 char dwarnbuf[1024];
+
+bound_pfile_t::~bound_pfile_t ()
+{
+  if (file && delfile)
+    delete file;
+}
 
 pbinding_t *
 pub_t::set_t::alloc (const pfnm_t &fn, phashp_t h, bool jailed)
@@ -239,19 +246,18 @@ pub_t::set_t::getfile (const pfnm_t &nm) const
 
 
 bool
-pub_t::include (zbuf *b, const pfnm_t &fn, u_int opt, aarr_t *a) const
+pub_base_t::include (zbuf *b, const pfnm_t &fn, u_int opt, aarr_t *a) const
 {
   bpfcp_t f;
-  if (!(f = set->getfile (apply_homedir (fn))))
+  if (!(f = v_getfile (fn)))
     return false;
   return include (b, f, opt, a);
 }
 
 bool
-pub_t::include (zbuf *b, bpfcp_t f, u_int opt, aarr_t *a) const
+pub_base_t::include (zbuf *b, bpfcp_t f, u_int opt, aarr_t *a) const
 {
   output_std_t o (b, f->file);
-
   penv_state_t *st = genv.start_output (a, fixopts (opts));
   f->output (&o, &genv, f);
   return genv.finish_output (st);
@@ -329,7 +335,9 @@ pub_parser_t::parse_config (const str &fn, bool init)
   if (init) {
     mcf = f->file;
     run_config (mcf);
-    defconf = f;
+    defconf = New refcounted<xpub_getfile_res_t> ();
+    defconf->set_status (XPUB_STATUS_OK);
+    f->file->to_xdr (defconf->file);
   }
   return f;
 }
@@ -356,12 +364,24 @@ pub_parser_t::export_set (xpub_set_t *out)
   xset_collect = false;
 }
 
+pub_proxy_t *
+pub_proxy_t::alloc ()
+{
+  pub_proxy_t *r = New pub_proxy_t ();
+  pub = NULL;
+  pubincluder = r;
+  pcli = NULL;
+  parser = NULL;
+  return r;
+}
+
 pub_parser_t *
 pub_parser_t::alloc ()
 {
   parser = New pub_parser_t ();
   pub = parser;
   pcli = NULL;
+  pubincluder = pub;
   return parser;
 }
 
@@ -371,17 +391,10 @@ pub_client_t::alloc ()
   parser = NULL;
   pcli = New pub_client_t ();
   pub = pcli;
+  pubincluder = pub;
   return pcli;
 }
 
-pub_rclient_t *
-pub_rclient_t::alloc (ptr<aclnt> c, int lm, int gm, int cm, u_int am, u_int om)
-{
-  parser = NULL;
-  pub_rclient_t *rc = New pub_rclient_t (c, lm, gm, cm, am, om);
-  pub = pcli = rc;
-  return rc;
-}
 
 bpfcp_t
 pub_t::getfile (const pfnm_t &fn) const
@@ -477,7 +490,7 @@ pub_t::apply_homedir (const pfnm_t &n) const
 }
 
 bool
-pub_t::run_configs ()
+pub_base_t::run_configs ()
 {
   genv.clear ();
   run_config (mcf);
@@ -490,10 +503,10 @@ pub_t::run_configs ()
 }
 
 bool
-pub_t::run_config (str s)
+pub_base_t::run_config (str s)
 {
   bpfcp_t f;
-  if (!(f = set->getfile (apply_homedir (s))))
+  if (!(f = v_getfile (s)))
     return false;
   output_conf_t o (true);  // descend recursively = true
   f->output (&o, &genv, f);
@@ -501,7 +514,7 @@ pub_t::run_config (str s)
 }
 
 bool
-pub_t::run_config (pfile_t *f)
+pub_base_t::run_config (pfile_t *f)
 {
   if (f) {
     output_conf_t o (false);  // recursive descent = off
@@ -536,3 +549,30 @@ getenvval (const char *s)
   while (isspace (*p++)) ;
   return p;
 }
+
+void
+pub_base_t::r_config (pubrescb c, int mtd, ptr<aclnt> clnt)
+{
+  ptr<xpub_getfile_res_t> xr = New refcounted<xpub_getfile_res_t> ();
+  clnt->call (mtd, NULL, xr, wrap (this, &pub_base_t::configed, xr, c));
+}
+
+void
+pub_base_t::configed (ptr<xpub_getfile_res_t> xr, pubrescb c, clnt_stat err)
+{
+  ptr<pub_res_t> res = New refcounted<pub_res_t> ();
+  if (err) {
+    res->add (err);
+  } else if (xr->status == XPUB_STATUS_NOENT) {
+    res->add ("no default configuration available");
+  } else if (xr->status == XPUB_STATUS_ERR) {
+    res->add (strbuf ("pub config file: ") << *xr->error);
+  } else if (xr->status != XPUB_STATUS_OK) {
+    res->add ("pub config file: unexpected error");
+  } else {
+    run_config ((mcf = New pfile_t (*xr->file)));
+    v_config_cb (*xr->file);
+  }
+  (*c) (res);
+}
+

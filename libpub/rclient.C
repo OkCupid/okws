@@ -207,29 +207,12 @@ pub_rclient_t::explore (const pfnm_t &fn) const
   f->explore (EXPLORE_FNCALL);
 }
 
-void
-pub_rclient_t::config (pubrescb c)
+pub_rclient_t *
+pub_rclient_t::alloc (ptr<aclnt> c, int lm, int gm, int cm, u_int am, u_int om)
 {
-  ptr<xpub_getfile_res_t> xr = New refcounted<xpub_getfile_res_t> ();
-  clnt->call (pubconf_mthd, NULL, xr,
-	      wrap (this, &pub_rclient_t::configed, xr, c));
+  parser = NULL;
+  pub_rclient_t *rc = New pub_rclient_t (c, lm, gm, cm, am, om);
+  pub = pcli = rc;
+  pubincluder = rc;
+  return rc;
 }
-
-void
-pub_rclient_t::configed (ptr<xpub_getfile_res_t> xr, pubrescb c, clnt_stat err)
-{
-  ptr<pub_res_t> res = New refcounted<pub_res_t> ();
-  if (err) {
-    res->add (err);
-  } else if (xr->status == XPUB_STATUS_NOENT) {
-    res->add ("no default configuration available");
-  } else if (xr->status == XPUB_STATUS_ERR) {
-    res->add (strbuf ("pub config file: ") << *xr->error);
-  } else if (xr->status != XPUB_STATUS_OK) {
-    res->add ("pub config file: unexpected error");
-  } else {
-    run_config ((mcf = New pfile_t (*xr->file)));
-  }
-  (*c) (res);
-}
-

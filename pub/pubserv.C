@@ -52,15 +52,13 @@ pubserv_t::dispatch (svccb *sbp)
 void
 pubserv_t::config (svccb *sbp)
 {
-  xpub_getfile_res_t x;
-  bpfcp_t fp;
-  if (pub->defconf) {
-    x.set_status (XPUB_STATUS_OK);
-    pub->defconf->file->to_xdr (x.file);
+  if (parser->defconf) {
+    sbp->reply (parser->defconf);
   } else {
+    xpub_getfile_res_t x;
     x.set_status (XPUB_STATUS_NOENT);
+    sbp->replyref (x);
   }
-  sbp->replyref (x);
 }
 
 void

@@ -99,6 +99,7 @@ public:
   void hwarn (const str &s) const;
   void retry ();
   void d_retry ();
+  ptr<aclnt> get_clnt () const { return clnt; }
   virtual void kill (cbv cb, ptr<okauthtok_t> auth, 
 		     oksig_t s = OK_SIG_KILL) { (*cb) (); }
   bool can_retry () const { return true; }

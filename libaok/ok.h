@@ -103,8 +103,6 @@ public:
 		    const str &s = NULL)
     const { if (svclog && logd) logd->log (x, req, res, s); }
 
-  pub_t pub;
-
 protected:
   void error2 (ref<ahttpcon> x, int n, str s, cbv::ptr c, http_inhdr_t *h) 
     const;

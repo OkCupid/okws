@@ -143,7 +143,7 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     sbp->reply (NULL);
     break;
   case OKCTL_REQ_ERRDOCS:
-    myokd->req_errdocs (sbp);
+    myokd->send_errdoc_set (sbp);
     break;
   case OKCTL_GETFILE:
     myokd->getfile (sbp);
@@ -262,11 +262,9 @@ okd_t::gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> res, clnt_stat err)
 }
 
 void
-okd_t::req_errdocs (svccb *sbp)
+okd_t::send_errdoc_set (svccb *sbp)
 {
-  // XXX - return empty set for now
-  xpub_errdoc_set_t eds;
-  sbp->replyref (eds);
+  sbp->replyref (xeds);
 }
 
 void

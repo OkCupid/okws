@@ -62,6 +62,21 @@ okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
 }
 
 void
+okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
+{
+  int status;
+  if (s.size () != 3 || !convertint (s[1], &status)) {
+    warn << loc << ": usage: ErrorDoc <status> <pub-path>\n";
+    *errp = true;
+  } else if (errdocs[status]) {
+    warn << loc << ": duplicate ErrorDoc ID: " << status << "\n";
+    *errp = true;
+  } else {
+    errdocs.insert (New errdoc_t (status, s[2]));
+  }
+}
+
+void
 okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
   if (s.size () <= 1) {
@@ -117,6 +132,86 @@ okd_t::launch_pubd_cb (bool rc)
     warn << "launch of pub daemon (pubd) failed.\n";
     exit (1);
   }
+  req_err_docs ();
+}
+
+static void
+errdoc_load_fnset (xpub_fnset_t *f, int *p, errdoc_t *e)
+{
+  f->files[(*p)++] = e->fn;
+}
+
+void
+okd_t::req_err_docs ()
+{
+  if (errdocs.size () == 0) {
+    req_err_docs_4 (true);
+  } else {
+    pprox->r_config (wrap (this, &okd_t::req_err_docs_2), PUB_CONFIG, 
+		     pubd->get_clnt ());
+  }
+}
+
+void
+okd_t::req_err_docs_2 (ptr<pub_res_t> res)
+{
+  // do not quit on error; web server should still boot up with
+  // standard error documents
+  if (!*res) {
+    warn << "cannot retrieve pubd configuration: " << res->to_str () << "\n";
+    req_err_docs_4 (false);
+    return;
+  }
+
+  xpub_fnset_t f;
+  int i =0;
+  f.files.setsize (errdocs.size ());
+  errdocs.traverse (wrap (errdoc_load_fnset, &f, &i));
+  ptr<xpub_result_t> r = New refcounted<xpub_result_t> ();
+  pubd->call (PUB_FILES, &f, r, 
+	      wrap (this, &okd_t::req_err_docs_3, r));
+}
+
+void
+okd_t::req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err)
+{
+  if (err) {
+    warn << ": failed to pub error docs: " << err << "\n";
+    exit (1);
+  }
+  bool ret = true;
+  if (res->status.status != XPUB_STATUS_OK) {
+    warn << ": pub returned failure status on error doc pub:  "
+	 << *res->status.error << "\n";
+    ret = false;
+  } else {
+    pprox->cache (res->set);
+  }
+  req_err_docs_4 (ret);
+}
+
+static void
+fill_xeds (int *i, xpub_errdoc_set_t *x, errdoc_t *ed)
+{
+  x->docs[*i].status = ed->status;
+  x->docs[*i].fn = ed->fn;
+  (*i)++;
+}
+
+void
+okd_t::req_err_docs_4 (bool rc)
+{
+  if (!rc) {
+    // maybe we don't want to have to reboot in order to bail us out.
+    //errdocs.clear ();
+    warn << "could not retrieve custom error documents; clearing them\n";
+  } else {
+    int i = 0;
+    xeds.docs.setsize (errdocs.size ());  // x errdoc set
+    errdocs.traverse (wrap (fill_xeds, &i, &xeds));
+  }
+		       
+
   if (!--launches)
     launch2 ();
 }
@@ -195,6 +290,7 @@ okd_t::parseconfig ()
     .add ("PubdUnix", wrap (this, &okd_t::got_pubd_unix))
     .add ("PubdInet", wrap (this, &okd_t::got_pubd_inet))
     .add ("PubdExecPath", wrap (this, &okd_t::got_pubd_exec))
+    .add ("ErrorDoc", wrap (this, &okd_t::got_err_doc))
 
     .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
 
@@ -365,6 +461,7 @@ main2 (str cf, int logfd, str cdd)
       cf = sfsconst_etcfile_required ("okd_config");
   }
 
+  zinit ();
   warn ("version %s, pid %d\n", VERSION, int (getpid ()));
   okd_t *okd = New okd_t (cf, logfd, 0, cdd);
   okd->set_signals ();

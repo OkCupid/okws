@@ -153,15 +153,15 @@ public:
 
 class http_pub_t : public http_response_t {
 public:
-  http_pub_t (int n, const pub_t &p, const str &fn, aarr_t *env = NULL,
+  http_pub_t (int n, const pub_base_t &p, const str &fn, aarr_t *env = NULL,
 	      htpv_t v = 0, bool gz = false) 
     : http_response_t (http_resp_header_t (n, v)), zb (),
       err (!p.include (&zb, fn, 0, env))
-  { zb.to_strbuf (&body, v > 0 && gz); }
+  { if (!err) zb.to_strbuf (&body, v > 0 && gz); }
      
   zbuf zb;
   bool err;
-  static ptr<http_pub_t> alloc (int n, const pub_t &p, const str &fn,
+  static ptr<http_pub_t> alloc (int n, const pub_base_t &p, const str &fn,
 				aarr_t *env = NULL, htpv_t v = 0);
 };
 

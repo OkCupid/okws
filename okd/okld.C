@@ -122,7 +122,8 @@ okld_t::parseconfig (const str &cf)
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
     .ignore ("OkMgrPort")
-    .ignore ("PubdExecPath");
+    .ignore ("PubdExecPath")
+    .ignore ("ErrorDoc");
 
 
   if (grp) svc_grp = ok_grp_t (grp);

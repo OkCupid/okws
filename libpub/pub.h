@@ -423,12 +423,14 @@ private:
 
 struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
   bound_pfile_t (const pbinding_t *b, pfile_t *f = NULL, 
-		 const pfnm_t &r = NULL) : bnd (b), file (f), rfn (r) {}
-  bound_pfile_t (pfile_t *f = NULL) : bnd (NULL), file (f) {}
+		 const pfnm_t &r = NULL, bool del = false) 
+    : bnd (b), file (f), rfn (r), delfile (del) {}
+  bound_pfile_t (pfile_t *f = NULL) : bnd (NULL), file (f), delfile (false) {}
+  ~bound_pfile_t ();
 
   static bpfmp_t alloc (const pbinding_t *b, pfile_t *f = NULL, 
-			const pfnm_t &r = NULL)
-  { return New refcounted<bound_pfile_t> (b, f, r); }
+			const pfnm_t &r = NULL, bool del = false)
+  { return New refcounted<bound_pfile_t> (b, f, r, del); }
 
   static bpfmp_t alloc (pfile_t *f = NULL)
   { return New refcounted<bound_pfile_t> (f); }
@@ -447,6 +449,7 @@ struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
   const pbinding_t *const bnd;
   pfile_t *const file;
   const pfnm_t rfn; // used only when publishing 
+  bool delfile;
 };
 
 class pbuf_t;
@@ -1140,21 +1143,47 @@ public:
 };
 
 /* in pub.C  -- high level pub datatypes */
-class pub_t {
+
+class pub_base_t {
 public:
-  pub_t () 
-    : set (New set_t ()), wss (false), opts (0), rebind (false), mcf (NULL) {}
-  virtual ~pub_t () { delete set; if (mcf) delete mcf; }
+  pub_base_t () : wss (false), opts (0), mcf (NULL) {}
+  virtual ~pub_base_t () { if (mcf) delete mcf; }
+  
+  bool run_configs ();
+  bool run_config (pfile_t *f);
+  bool run_config (str nm);
+
+  virtual bpfcp_t v_getfile (const pfnm_t &n) const = 0;
+  virtual u_int fixopts (u_int in) const { return in; }
 
   bool include (zbuf *b, const pfnm_t &fn, u_int opts = 0, 
 		aarr_t *env = NULL) const;
   bool include (zbuf *b, bpfcp_t f, u_int o = 0, aarr_t *e = NULL) const;
+  void r_config (pubrescb c, int mthd, ptr<aclnt> c);
+  void configed (ptr<xpub_getfile_res_t> x, pubrescb c, clnt_stat e);
+  virtual void v_config_cb (const xpub_file_t &x) {}
+
+  bool wss;
+protected:
+  u_int opts;
+  vec<str> cfgfiles;     // all root cfg files
+  pfile_t *mcf; // master config file
+  mutable penv_t genv;   // global eval env
+
+private:
+};
+
+
+class pub_t : public pub_base_t {
+public:
+  pub_t () : pub_base_t (), set (New set_t ()),  rebind (false) {}
+  virtual ~pub_t () { delete set; }
+
   bpfcp_t getfile (const pfnm_t &nm) const ;
   pfile_t *getfile (phashp_t hsh) const;
   bool add_rootfile (const str &fn, bool conf = false);
   void queue_hfile (const pfnm_t &n) { parsequeue.push_back (n); }
   virtual void explore (const str &fn) const { assert (false); }
-  virtual u_int fixopts (u_int in) const { return in; }
   virtual str jail2real (const str &n) const { return n; }
   void set_opts (u_int o) { opts = o; }
   u_int get_opts () const { return opts; }
@@ -1167,10 +1196,8 @@ public:
   template<typename T> bool cfg (const str &n, T *v) const;
   pval_w_t operator[] (const str &s) const { return genv[s]; }
 
-  bool run_configs ();
-  bool run_config (pfile_t *f);
-  bool run_config (str nm);
-
+  bpfcp_t v_getfile (const pfnm_t &n) const
+  { return set->getfile (apply_homedir (n)); }
 
   struct set_t {
     set_t () {}
@@ -1191,19 +1218,13 @@ public:
 
   vec<str> rootfiles;    // all pub rootfiles
   bhash<str> rfbh;       // rootfile bhash
-  vec<str> cfgfiles;     // all root cfg files
   bhash<str> crfbh;      // config rootfile bhash
   set_t *set;
-  mutable penv_t genv;   // global eval env
   vec<pfnm_t> parsequeue;
 
-  bool wss;
-  u_int opts;
   bool rebind;
-  bpfcp_t defconf;
   
   str homedir;
-  pfile_t *mcf;         // master config file
 };
 
 class pub_client_t : public pub_t 
@@ -1229,7 +1250,7 @@ public:
   void publish (pubrescb c) { publish (rootfiles, c); }
   void publish (const vec<str> &files, pubrescb c);
   void publish (const xpub_fnset_t &files, pubrescb c);
-  void config (pubrescb c);
+  void config (pubrescb c) { r_config (c, pubconf_mthd, clnt); }
   static pub_rclient_t *alloc (ptr<aclnt> c, int lm, int gm, int cm,
 			       u_int am = ~0, u_int = 0);
 
@@ -1240,6 +1261,7 @@ public:
     pubrescb cb;
   };
   u_int fixopts (u_int in) const { return ((in & andmask) | ormask); }
+
 private:
 
   void getfile (const pfnm_t &fn);
@@ -1252,7 +1274,6 @@ private:
   void finish_publish ();
   bool new_set ();
   void explore (const pfnm_t &fn) const;
-  void configed (ptr<xpub_getfile_res_t> xr, pubrescb c, clnt_stat err);
 
   ptr<aclnt> clnt;
   const int lookup_mthd;
@@ -1270,10 +1291,12 @@ private:
   u_int ormask;
 };
 
-class pub_proxy_t 
+class pub_proxy_t : public pub_base_t 
 {
 public:
-  pub_proxy_t () : bindings (wrap (this, &pub_proxy_t::remove)) {}
+  pub_proxy_t () 
+    : pub_base_t (), bindings (wrap (this, &pub_proxy_t::remove)) {}
+  static pub_proxy_t *alloc ();
   bool lookup (const xpub_fn_t &f, xpub_lookup_res_t *res);
   bool getfile (const phashp_t &h, xpub_getfile_res_t *res);
   void cache (const xpub_set_t &st);
@@ -1285,11 +1308,18 @@ public:
   ptr<xpub_file_t> get_pubconf () const { return pconf; }
   void clear ();
   void remove (phashp_t h);
+  bpfcp_t v_getfile (const pfnm_t &nm) const;
+
+protected:
+  void v_config_cb (const xpub_file_t &x) { cache_pubconf (x); }
+
+
 private:
   bindtab_t bindings;
   ptr<xpub_file_t> pconf;
   qhash<phashp_t, ptr<xpub_file_t> > files;
   qhash<phashp_t, ptr<xpub_file_t> > recycle;
+  mutable qhash<pfnm_t, bpfcp_t> my_cache;
 };
 
 class pub_parser_t : public pub_t 
@@ -1340,6 +1370,7 @@ public:
   bool space_flag;
   int last_tok;
 
+  ptr<xpub_getfile_res_t> defconf;
 private:
   bpfcp_t parse1 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t);
   bpfcp_t parse2 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t);
@@ -1351,6 +1382,7 @@ private:
   bool jailed;
   jail_mode_t jm;
   vec<ptr<parr_t> > parr_stack;
+
 };
 
 class cfgw_t {
@@ -1364,6 +1396,7 @@ private:
 extern pub_parser_t *parser;
 extern pub_t *pub;
 extern pub_client_t *pcli;
+extern pub_base_t *pubincluder;
 
 #define TEE(b,s)  b << s; warn << s;
   

@@ -85,7 +85,7 @@ public:
     pubd (NULL), 
     configfile (cf),
     okldfd (okldfd_in),
-    pprox (New pub_proxy_t ()),
+    pprox (pub_proxy_t::alloc ()),
     sdflag (false), sd2 (false), dcb (NULL), listenfd (-1), sdattempt (0),
     cntr (0),
     coredumpdir (cdd)
@@ -102,13 +102,13 @@ public:
   void got_pubd_unix (vec<str> s, str loc, bool *errp);
   void got_pubd_inet (vec<str> s, str loc, bool *errp);
   void got_pubd_exec (vec<str> s, str loc, bool *errp);
+  void got_err_doc (vec<str> s, str loc, bool *errp);
 
   void gotfd (int fd, ptr<okws_fd_t> desc);
 
   void pubconf (svccb *sbp);
   void getfile (svccb *sbp);
   void lookup (svccb *sbp);
-  void req_errdocs (svccb *sbp);
 
   void pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err);
   void lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err);
@@ -153,6 +153,8 @@ public:
   bool in_shutdown () const { return sdflag; }
   void set_signals ();
 
+  void send_errdoc_set (svccb *sbp);
+
 private:
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();
@@ -164,6 +166,13 @@ private:
   void shutdown2 ();
   void shutdown3 ();
   void shutdown_cb1 ();
+
+  // request error document set chain
+  void req_err_docs ();
+  void req_err_docs_2 (ptr<pub_res_t> res);
+  void req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err);
+  void req_err_docs_4 (bool rc);
+
 
   void got_chld_fd (int fd, ptr<okws_fd_t> desc);
 
@@ -189,6 +198,7 @@ private:
 
   ptr<fdsource_t<okws_fd_t> > okldx;
   str coredumpdir;
+  xpub_errdoc_set_t xeds;
 };
 
 class okd_mgrsrv_t 

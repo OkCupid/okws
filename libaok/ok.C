@@ -54,7 +54,7 @@ ok_httpsrv_t::geterr (int n, str s, htpv_t v) const
       .add ("SERVINFO", servinfo ());
     if (s)
       ar.add ("AUXSTR", s);
-    ret = http_pub_t::alloc (n, pub, e->fn, &ar, v);
+    ret = http_pub_t::alloc (n, *pubincluder, e->fn, &ar, v);
   }
   if (!ret)
     ret = New refcounted<http_error_t> (n, servinfo (), s, v);
@@ -327,6 +327,10 @@ oksrvc_t::launch_pub_cb1 (ptr<xpub_errdoc_set_t> xd, clnt_stat err)
     SVCWARN ("ErrorDocInitError: " << err);
     exit (1);
   }
+
+  //
+  // will add error documents to the pub file list
+  //
   add_errdocs (*xd);
   init_publist ();
   pubfiles (wrap (this, &oksrvc_t::launch_pub_cb2));
