@@ -178,8 +178,9 @@ sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
     myres = NULL;
   }
   if (n != n_iparam) {
-	  err = strbuf("cannot prepare query: wrong number of input parameters (n = ") <<
-		  n << ", n_iparam = " << n_iparam << ")";
+	  err = strbuf("cannot prepare query: wrong number of "
+		       "input parameters (n = ") 
+			 << n << ", n_iparam = " << n_iparam << ")";
     return false;
   }
   alloc_bufs ();
