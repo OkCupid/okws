@@ -23,9 +23,11 @@ usage ()
 void
 reqcb (ptr<okwc_resp_t> res)
 {
-  aout << "status: " << res->status << "\n\n";
-  if (res->body)
-    aout << "body: " << res->body << "\n";
+  aout << "status: " << res->status << "\n";
+  if (res->status == HTTP_MOVEDTEMP || res->status == HTTP_MOVEDPERM) {
+    aout << "Redirect to: " << (* res->hdr () )["location"] << "\n";
+  } else if (res->body)
+    aout << "\nbody: " << res->body << "\n";
   exit (0);
 }
 

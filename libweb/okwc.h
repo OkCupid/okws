@@ -138,9 +138,11 @@ private:
 struct okwc_resp_t {
   okwc_resp_t (abuf_t *a, size_t bfln, char *b, okwc_cookie_set_t *incook)
     : status (HTTP_OK), cookies (a, bfln, b), 
-    _hdr (a, incook ? incook : cookies, bfln, b) {}
+    _hdr (New okwc_http_hdr_t (a, incook ? incook : &cookies, bfln, b)) {}
 
-  okwc_resp_t (int s) : status (s) {}
+  ~okwc_resp_t () { if (_hdr) delete _hdr; }
+
+  okwc_resp_t (int s) : status (s), _hdr (NULL) {}
 
   static ptr<okwc_resp_t> alloc (abuf_t *a, size_t bfln, char *b, 
 				 okwc_cookie_set_t *incook)
@@ -149,12 +151,12 @@ struct okwc_resp_t {
   static ptr<okwc_resp_t> alloc (int s) 
   { return New refcounted<okwc_resp_t> (s); }
 
-  okwc_http_hdr_t *hdr () { return &_hdr; }
+  okwc_http_hdr_t *hdr () { return _hdr; }
 
   str body;
   int status;
   okwc_cookie_set_t cookies;
-  okwc_http_hdr_t _hdr;
+  okwc_http_hdr_t *_hdr;
 };
 
 typedef callback<void, ptr<okwc_resp_t> >::ref okwc_cb_t;
@@ -223,7 +225,6 @@ protected:
   char scratch[OKWC_SCRATCH_SZ];
 
   ptr<okwc_resp_t> resp;
-  okwc_http_hdr_t hdr;
   int vers;
   cgi_t *outcook; // cookie sending out to the server
 
