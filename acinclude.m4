@@ -1695,7 +1695,7 @@ then
    if test $? -eq 0 
    then
 	INSTALL=$INSTALL_C
-	AC_SUBST($INSTALL)
+	AC_SUBST(INSTALL)
    fi
    rm -f $TMP1 $TMP2 > /dev/null 2>&1
 fi
