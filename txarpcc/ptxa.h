@@ -22,7 +22,6 @@
  *
  */
 
-#include "rpcc.h"
 /*
  * ptxa.h
  *

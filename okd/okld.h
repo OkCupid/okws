@@ -145,6 +145,7 @@ private:
   bool fix_uids ();
   bool config_jaildir ();
   void init_clock_daemon ();
+  void relaunch_clock_daemon (int sig);
 
   void launch_logd ();
   void launch_logd_cb (bool err);
@@ -180,6 +181,7 @@ private:
   str mmc_file;
   str mmcd;
   pid_t mmcd_pid;
+  int mmcd_ctl_fd;
   u_int launchp;
 };
 

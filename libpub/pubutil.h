@@ -31,7 +31,6 @@
 #include "ihash.h"
 #include "xpub.h"
 #include "qhash.h"
-#include "litetime.h"
 
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);

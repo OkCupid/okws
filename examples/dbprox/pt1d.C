@@ -20,8 +20,6 @@
  * USA
  *
  */
-
-#include "rpcc.h"
 #include "pt1_prot.h"
 #include "pslave.h"
 

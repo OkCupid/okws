@@ -22,8 +22,6 @@
  *
  */
 
-#include "rpcc.h"
-
 #include "ok.h"
 #include "cgi.h"
 #include "pub.h"

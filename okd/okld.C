@@ -610,10 +610,23 @@ okld_t::init_jaildir ()
   return ret;
 }
 
+void
+okld_t::relaunch_clock_daemon (int sig)
+{
+  warn << "mmcd died with status=" << sig << "\n";
+  assert (mmcd_pid > 0);
+  chldcb (mmcd_pid, NULL);
+  mmcd_pid = -1;
+
+  init_clock_daemon ();
+}
+
 
 void
 okld_t::init_clock_daemon ()
 {
+  assert (mmcd_pid < 0);
+
   if (clock_mode == SFS_CLOCK_MMAP) {
 
     //
@@ -625,14 +638,31 @@ okld_t::init_clock_daemon ()
     // note that we're running the clock daemon as root.
     // this should be fine. 
     warn << "*unstable: launching mmcd: " << args[0] << " " << args[1] << "\n";
-    mmcd_pid = spawn (args[0], args);
-    if (mmcd_pid < 0) {
-      warn ("cannot start mmcd %s: %m\n", args[0]);
-      clock_mode = SFS_CLOCK_GETTIME;
+
+    int fds[2];
+    bool ok = false;
+    if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) { 
+      warn ("cannot created socketpair: %m\n");
+    } else {
+      close_on_exec (fds[0]);
+      if ((mmcd_pid = spawn (args[0], args, fds[1])) < 0) {
+	close (fds[0]);
+	warn ("cannot start mmcd %s: %m\n", args[0]);
+      } else {
+	mmcd_ctl_fd = fds[0];
+	ok = true;
+      }
+      close (fds[1]);
     }
 
-    // okld does not change its clock type, since it's mainly idle.
-    // therefore, we're also not going to catch the chldcb of the 
-    // clock daemon should it die.
+    if (ok) {
+      // okld does not change its clock type, since it's mainly idle.
+      // therefore, we're also not going to catch the chldcb of the 
+      // clock daemon should it die.
+      chldcb (mmcd_pid, wrap (this, &okld_t::relaunch_clock_daemon));
+    } else {
+      clock_mode = SFS_CLOCK_GETTIME;
+    }
   }
+
 }

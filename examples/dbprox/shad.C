@@ -22,9 +22,7 @@
  *
  */
 
-#include "rpcc.h"
 #include "pslave.h"
-
 #include "okwsconf.h"
 #include "amysql.h"
 #include "mystmt.h"

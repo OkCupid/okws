@@ -1745,7 +1745,7 @@ AC_DEFUN(SFS_SET_CLOCK,
 [
 CC_REAL=$CC
 CC=$CXX
-AC_TRY_COMPILE([ #include "async.h" ], sfs_set_clock (SFS_CLOCK_TIMER);,
+AC_TRY_COMPILE([#include "async.h"], sfs_set_clock (SFS_CLOCK_TIMER);,
 	 	sfs_cv_set_clock=yes)
 CC=$CC_REAL
 ])
@@ -1754,5 +1754,4 @@ then
 	AC_DEFINE(HAVE_SFS_SET_CLOCK, 1, Toggle SFS core clock)
 fi
 ])
-
 

@@ -152,12 +152,17 @@ helper_exec_t::launch (cbb c)
   vec<str> argv2;
   if (n_add_socks > MAX_SOCKPAIRS) n_add_socks = MAX_SOCKPAIRS;
   for (u_int i = 0; i < n_add_socks; i++) {
-    if (socketpair (AF_UNIX, SOCK_DGRAM, 0, sps[i])) {
+    if (socketpair (AF_UNIX, SOCK_STREAM, 0, sps[i])) {
       warn ("sockpair: %m\n");
       (*c) (false); // XXX -- we're leaking already opened sockets
       return;
     }
     close_on_exec (sps[i][0]);
+
+    //
+    // tell the child about the new sockets FDs on the command
+    // line (with the -s<sockfd> command line flags)
+    //
     argv2.push_back ("-s");
     argv2.push_back (strbuf () << sps[i][1]);
   }

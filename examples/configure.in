@@ -5,7 +5,7 @@ dnl Process this file with autoconf to produce configure script
 dnl
 
 AC_INIT(config.h.in)
-AM_INIT_AUTOMAKE(example, 0.0)
+AM_INIT_AUTOMAKE(example, 0.1)
 AM_CONFIG_HEADER(config.h)
 
 AC_CANONICAL_HOST
