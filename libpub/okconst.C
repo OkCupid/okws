@@ -109,5 +109,6 @@ u_int ok_lblnc_launch_timeout = 15;  // wait before timeout in secs
 //
 int ok_svc_uid_low = 51000;
 int ok_svc_uid_high = 52000;
+int ok_svc_mode = 0410;
 
 int okwc_def_contlen = 0x20000;      // 128K 

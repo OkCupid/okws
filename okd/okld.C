@@ -79,6 +79,7 @@ okld_t::parseconfig (const str &cf)
     .add ("MaxCrashedProcesses", &ok_crashes_max, 1, 200)
     .add ("ServiceLowUid", &ok_svc_uid_low, UID_MIN, UID_MAX)
     .add ("ServiceHighUid", &ok_svc_uid_high, UID_MIN, UID_MAX)
+    .add ("ServiceMode", &ok_svc_mode, 0, 0777)
     .add ("ServiceGroup", &grp)
     .add ("OkdExecPath", &okdexecpath)
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
@@ -268,7 +269,7 @@ okld_t::fix_uids ()
       ret = false;
 
     // owner cannot exec this script; group -- only -- can
-    svc->assign_mode (00450);
+    svc->assign_mode (ok_svc_mode);
     if (!svc->chmod (mode))
       ret = false;
     svc->assign_uid (uegid);

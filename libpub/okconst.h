@@ -142,6 +142,7 @@ extern u_int ok_lblnc_launch_timeout;           // launch timeout
 //
 extern int ok_svc_uid_low;
 extern int ok_svc_uid_high;
+extern int ok_svc_mode;
 
 //
 // OK Web Client params
