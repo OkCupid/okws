@@ -149,7 +149,7 @@ public:
   mybind_rpcstr_t (rpc_bytes<n> *rr) 
     : mybind_t (MYSQL_TYPE_STRING), pntr (rr), mys (&s) {}
   mybind_rpcstr_t (const rpc_bytes<n> &in)
-    : mybind_t (t), 
+    : mybind_t (MYSQL_TYPE_STRING), 
       mys (str (in.base (), in.size ()), MYSQL_TYPE_STRING, true) {}
   void bind (MYSQL_BIND *bind, bool param) { mys.bind (bind, param); }
   void to_qry (MYSQL *m, strbuf *b, char **ss, u_int *l)
