@@ -1,4 +1,6 @@
 
+/* $Id$ */
+
 %#define PUBHASHSIZE 20
 %#define OKAUTHTOKSIZE 20
 

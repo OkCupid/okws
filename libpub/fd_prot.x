@@ -1,4 +1,4 @@
-
+/* $Id$ */
 
 enum okws_fd_typ_t {
   OKWS_PUBD = 1,

@@ -1,3 +1,4 @@
+/* $Id$ */
 
 %#include "xpub.h"
 
