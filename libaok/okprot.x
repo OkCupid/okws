@@ -73,9 +73,12 @@ program OKCTL_PROGRAM {
 
 		xpub_getfile_res_t
 		OKCTL_PUBCONF (void) = 6;
+
+		ok_xstatus_t
+		OKCTL_CUSTOM_1_IN (ok_custom_arg_t) = 7;
 	
 		ok_xstatus_t 
-		OKCTL_CUSTOM_1 (ok_custom_data_t) = 7;
+		OKCTL_CUSTOM_1_OUT (ok_custom_data_t) = 8;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;

@@ -218,6 +218,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
   case OKCTL_LOOKUP:
     myokd->lookup (sbp);
     break;
+  case OKCTL_CUSTOM_1_IN: 
+    myokd->custom1_in (sbp);
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;
@@ -351,12 +354,15 @@ okch_t::kill ()
   state = OKC_STATE_NONE;
 }
 
+//
+// route a CUSTOM1 message out to the appropriate child
+//
 void
-okch_t::custom1 (const ok_custom_data_t &x)
+okch_t::custom1_out (const ok_custom_data_t &x)
 {
   // XXX want to collect success information and so on from this guy
   // (as in repub)
-  clnt->call (OKCTL_CUSTOM_1, &x, NULL, aclnt_cb_null);
+  clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
 }
 
 void

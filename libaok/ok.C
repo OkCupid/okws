@@ -239,7 +239,7 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_KILL:
     kill (v);
     break;
-  case OKCTL_CUSTOM_1:
+  case OKCTL_CUSTOM_1_OUT:
     custom1_rpc (v);
     break;
   default:

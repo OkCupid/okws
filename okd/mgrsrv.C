@@ -52,7 +52,7 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
     turnlog (sbp);
     break;
   case OKMGR_CUSTOM_1:
-    custom1 (sbp);
+    myokd->custom1_in (sbp);
     break;
   default:
     sbp->reject (PROC_UNAVAIL);
@@ -60,24 +60,11 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   }
 }
 
-static void 
-replystatus (svccb *s, ptr<ok_res_t> res) 
-{ 
-  s->replyref (res->to_xdr ()); 
-}
-
 void
 okd_mgrsrv_t::relaunch (svccb *sbp)
 {
   ok_progs_t *p = sbp->template getarg<ok_progs_t> ();
   myokd->relaunch (*p, wrap (replystatus, sbp));
-}
-
-void
-okd_mgrsrv_t::custom1 (svccb *sbp)
-{
-  ok_custom_arg_t *c = sbp->template getarg<ok_custom_arg_t> ();
-  myokd->custom1 (*c, wrap (replystatus, sbp));
 }
 
 void

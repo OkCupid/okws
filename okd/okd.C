@@ -783,11 +783,19 @@ okd_t::relaunch (const ok_progs_t &x, okrescb cb)
 static void
 s_custom1_cb (ok_custom_data_t data, okch_t *ch) 
 { 
-  ch->custom1 (data); 
+  ch->custom1_out (data); 
+}
+
+// receive and handle an incoming CUSTOM1 RPC request
+void
+okd_t::custom1_in (svccb *sbp)
+{
+  ok_custom_arg_t *c = sbp->template getarg<ok_custom_arg_t> ();
+  custom1_in (*c, wrap (replystatus, sbp));
 }
 
 void
-okd_t::custom1 (const ok_custom_arg_t &x, okrescb cb)
+okd_t::custom1_in (const ok_custom_arg_t &x, okrescb cb)
 {
   ptr<ok_res_t> res = New refcounted<ok_res_t> ();
   apply_to_children (x.progs, wrap (s_custom1_cb, x.data), res);

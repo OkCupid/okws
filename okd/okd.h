@@ -83,7 +83,7 @@ public:
 
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
-  void custom1 (const ok_custom_data_t &x);
+  void custom1_out (const ok_custom_data_t &x);
   void chld_eof (ptr<bool> dfp);
   
   okd_t *myokd;
@@ -182,7 +182,8 @@ public:
   void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
 
   void relaunch (const ok_progs_t &x, okrescb cb);
-  void custom1 (const ok_custom_arg_t &x, okrescb cb);
+  void custom1_in (const ok_custom_arg_t &x, okrescb cb);
+  void custom1_in (svccb *sbp);
 
   void turnlog (okrescb cb);
 
@@ -265,7 +266,6 @@ private:
   void repub (svccb *b);
   void relaunch (svccb *b);
   void turnlog (svccb *b);
-  void custom1 (svccb *b);
   ptr<asrv> srv;
   ptr<axprt_stream> x;
   okd_t *myokd;
@@ -278,6 +278,10 @@ public:
   bhash<str> tab;
 };
 
-
+inline void 
+replystatus (svccb *s, ptr<ok_res_t> res) 
+{ 
+  s->replyref (res->to_xdr ()); 
+}
 
 #endif /* _OKD_OKD_H */
