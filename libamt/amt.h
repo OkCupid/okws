@@ -176,6 +176,7 @@ public:
   virtual bool async_serv (svccb *b);
   ssrv_t *get_ssrv () { return ssrv; }
   ssrv_t *get_ssrv () const { return ssrv; }
+  str which_procs (); // debugging function
 
   template<class T> void thread_apply (typename callback<void, T *>::ref cb) 
   {

@@ -119,9 +119,43 @@ mtdispatch_t::dispatch (svccb *b)
     warn << "XXX: rejecting / queue overflow\n"; // debug
     b->reject (PROC_UNAVAIL);
   } else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b))) {
-    warn << "XXX: queuing: " << queue.size () << "\n"; // debug
+    warn << "Queuing (" << queue.size () << ")";
+    size_t s = queue.size ();
+    if (ok_amt_report_q_freq > 0 &&
+	(s < ok_amt_report_q_freq || (s % (s/ok_amt_report_q_freq) == 0)))
+      warnx << ": " << which_procs ();
+    warnx << "\n";
     queue.push_back (b);
   }
+}
+
+static void
+which_procs_trav (strbuf *b, bool *f, const u_int &k, u_int *v)
+{
+  if (!*f)
+    *b << ",";
+  *f = false;
+  *b << k << ":" << *v ;
+}
+
+str
+mtdispatch_t::which_procs ()
+{
+  qhash<u_int, u_int> h;
+  for (u_int i = 0; i < num; i++) {
+    if (shmem->arr[i].status == MTD_WORKING && shmem->arr[i].sbp) {
+      u_int proc = shmem->arr[i].sbp->proc ();
+      u_int *n;
+      if ((n = h[proc])) (*n) ++;
+      else h.insert (proc, i);
+    }
+  }
+  strbuf b;
+  bool first = true;
+  b << "<";
+  h.traverse (wrap (which_procs_trav, &b, &first));
+  b << ">";
+  return b;
 }
 
 bool

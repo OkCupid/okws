@@ -168,6 +168,7 @@ extern u_int ok_amt_lasi;                       // load avg sampling interval
 extern u_int ok_ldavg_rpc_timeout;              // load avg RPC timeout
 extern u_int ok_ldavg_ping_interval;            // how often to qry for loadavg
 extern u_int ok_lblnc_launch_timeout;           // launch timeout
+extern u_int ok_amt_report_q_freq;              // report q frequency
 
 //
 // Service UID Ranges
