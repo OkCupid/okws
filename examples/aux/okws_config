@@ -306,11 +306,17 @@ ServiceFDHighWat	1000
 
 ##
 ## OkdFDLowWat
+## ServiceFDHighWat
 ##
 ##   After OKD has turned off accept, it lets FDs drain before to the low
 ##   water mark befor turning accept back on.  This stops flip-flop
 ##   beavhior.
 ##
+##   Similarly, number of open file descripts to drop below before
+##   reallowing requests
+##
+##
 OkdFDLowWat	50
+ServiceFDLowWat	950
 
 
