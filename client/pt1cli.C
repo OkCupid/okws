@@ -23,7 +23,12 @@ int nleft;
 str host;
 int port;
 str inreq;
+str inqry;
 int rand_modulus;
+int hclient_id;
+int num_latencies;
+int latency_gcf;
+int num_services;
 
 timespec startt;
 timespec lastexit;
@@ -36,10 +41,24 @@ int stop_timer (const timespec &t);
 vec<int> latencies;
 vec<exit_pair_t> exits;
 
+int
+get_cli_read_delay (int id)
+{
+  return ((id % num_latencies) * latency_gcf);
+}
+
+int
+get_svc_id ()
+{
+  return (random () % num_services);
+}
+
 class hclient_t {
 public:
-  hclient_t (str h, int p, str r, int i) 
-    : host (h), port (p), req (r), id (i), bp (buf), reqsz (-1), body (NULL) {}
+  hclient_t (str h, int p, str r, str q) 
+    : host (h), port (p), req (r), id (hclient_id++), 
+      bp (buf), reqsz (-1), body (NULL), 
+      cli_read_delay (get_cli_read_delay (id)), qry (q) {}
   ~hclient_t () 
   {
     if (fd >= 0) {
@@ -54,6 +73,7 @@ private:
   void launch_others ();
   void connected (int f);
   void canread ();
+  void then_read_damnit ();
   void writewait ();
   void cexit (int rc);
 
@@ -68,7 +88,8 @@ private:
   int reqsz;
   char *body;
   suio uio;
-  int shit;
+  const int cli_read_delay;
+  str qry;
 };
 
 vec<hclient_t *> q;
@@ -82,7 +103,7 @@ hclient_t::launch_others ()
       if (noisy) warn << "launched queued req: " << id << "\n";
       h = q.pop_front ();
     } else {
-      h = New hclient_t (host, port, inreq, nreq_fixed - nleft);
+      h = New hclient_t (host, port, inreq, inqry);
       if (noisy) warn << "alloc/launch new req: " << id << "\n";
       nleft --;
     }
@@ -122,8 +143,19 @@ hclient_t::cexit (int c)
 }
 
 static rxx sz_rxx ("[C|c]ontent-[l|L]ength: (\\d+)\\r\\n");
+
 void
 hclient_t::canread ()
+{
+  if (cli_read_delay == 0)
+    then_read_damnit ();
+  else
+    delaycb (0, cli_read_delay, wrap (this, &hclient_t::then_read_damnit ));
+}
+
+
+void
+hclient_t::then_read_damnit ()
 {
   int rc = uio.input (fd);
   if (rc == 0) {
@@ -162,9 +194,10 @@ void
 hclient_t::connected (int f)
 {
   fd = f;
-  strbuf b (req);
+  strbuf b;
   int id = random() % rand_modulus;
-  b << id <<" HTTP/1.0\r\nConnection: close\r\n\r\n";
+  b << "GET /" << req << get_svc_id () << qry << id << " HTTP/1.0\r\n"
+    << " HTTP/1.0\r\nConnection: close\r\n\r\n";
   if (fd < 0) {
     if (mode != OKWS) {
       if (noisy) warn << "cannot connect to host\n";
@@ -235,7 +268,7 @@ main2 (int n)
   startt = tsnow;
   nleft = n - nconcur;
   for (int i = 0; i < nconcur; i++) {
-    hclient_t *h = New hclient_t (host, port, inreq, i);
+    hclient_t *h = New hclient_t (host, port, inreq, inqry);
     h->run ();
   }
 }
@@ -254,13 +287,32 @@ main (int argc, char *argv[])
   startat.tv_nsec = 0;
   exited = false;
   rand_modulus = 30000;
+  hclient_id = 1;
+  latency_gcf = 50;
+  num_latencies = 0;
+  num_services = 1;
 
-  while ((ch = getopt (argc, argv, "spofdc:n:t:r:")) != -1) {
+  while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l:L:")) != -1) {
     switch (ch) {
     case 'r':
       if (!convertint (optarg, &rand_modulus))
 	usage ();
       if (noisy) warn << "Random modulus: " << rand_modulus << "\n";
+      break;
+    case 'v':
+      if (!convertint (optarg, &num_services))
+	usage ();
+      if (noisy) warn << "Num Services: " << num_services << "\n";
+      break;
+    case 'l':
+      if (!convertint (optarg, &num_latencies))
+	usage ();
+      if (noisy) warn << "Num Latencies: " << num_latencies << "\n";
+      break;
+    case 'L':
+      if (!convertint (optarg, &latency_gcf))
+	usage ();
+      if (noisy) warn << "Latency GCF: " << latency_gcf << "\n";
       break;
     case 'd':
       noisy = true;
@@ -319,19 +371,23 @@ main (int argc, char *argv[])
 
   switch (mode) {
   case SEDA:
-    inreq = "GET /test?x=";
+    inreq = "test";
+    inqry = "?id=";
     if (noisy) warn << "In SEDA mode\n";
     break;
   case OKWS:
-    inreq = "GET /pt1?id=";
+    inreq = "pt";
+    inrqry = "?id=";
     if (noisy) warn << "In OKWS mode\n";
     break;
   case PHP:
-    inreq = "GET /pt1.php?id=";
+    inreq = "pt";
+    inqry = ".php?id=";
     if (noisy) warn << "In PHP mode\n";
     break;
   case FLASH:
-    inreq = "GET /cgi-bin/d_reg?=";
+    inreq = "/cgi-bin/d_reg";
+    inqry = "?";
     if (noisy) warn << "In FLASH mode\n";
     break;
   default:
