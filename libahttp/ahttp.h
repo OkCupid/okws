@@ -94,6 +94,7 @@ public:
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
 		  overflow_flag (false), ss (global_syscall_stats),
     sin_alloced (s != NULL),
+    _timed_out (false),
     destroyed_p (New refcounted<bool> (false))
   {
     //
@@ -107,6 +108,7 @@ public:
     in = suiolite_alloc (mb, wrap (this, &ahttpcon::spacecb));
     set_remote_ip ();
   }
+  int getfd () const { return fd; }
   bool ateof () const { return eof; }
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
@@ -142,6 +144,7 @@ public:
   bool closed () const { return fd < 0; }
   bool overflow () const { return overflow_flag; }
   int set_lowwat (int sz);
+  bool timed_out () const { return _timed_out; }
   
   const time_t start;
 
@@ -177,10 +180,15 @@ protected:
   const bool sin_alloced;
 
   ptr<cbv_countdown_t> cbcd;
+  bool _timed_out;
 
 public:
   ptr<bool> destroyed_p;
-  void timed_out () { fail (HTTP_TIMEOUT); }
+  void hit_timeout () 
+  { 
+    _timed_out = true;
+    fail (HTTP_TIMEOUT); 
+  }
 };
 
 // for parent dispatcher, which will send fd's

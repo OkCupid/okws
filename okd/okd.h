@@ -72,6 +72,7 @@ public:
   ~okch_t ();
   void launch ();
   void clone (ref<ahttpcon_clone> xc);
+  void send_con_to_service (ref<ahttpcon_clone> xc);
   void shutdown (oksig_t sig, cbv cb);
 
   void got_new_ctlx_fd (int fd, int p);
@@ -85,6 +86,10 @@ public:
   void kill ();
   void custom1_out (const ok_custom_data_t &x);
   void chld_eof (ptr<bool> dfp, bool debug = false);
+
+  inline int get_n_sent () const { return _n_sent; }
+  inline void reset_n_sent () { _n_sent = 0; }
+  inline int inc_n_sent () { return (_n_sent ++) ; }
   
   okd_t *myokd;
   int pid;
@@ -104,6 +109,7 @@ private:
   ptr<bool> destroyed;
   bool srv_disabled;
   int per_svc_nfd_in_xit;  // per service number FD in transit
+  int _n_sent;             // N sent since reboot
 };
 
 class okd_t : public ok_httpsrv_t 

@@ -106,6 +106,7 @@ private:
 
   char *const *env;
   okws1_port_t port;
+  int nsent;
 
 };
 

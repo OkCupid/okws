@@ -859,8 +859,9 @@ ahttp_tab_t::run ()
     if (* n->_destroyed_p ) {
       unreg (n);
     } else if (int (timenow - n->_a->start) > int (ok_demux_timeout)) {
-      warn << "XXX: removing deadbeat http connection\n"; //debug
-      n->_a->timed_out ();
+      warn << "XXX: removing deadbeat http connection (fd="
+	   << n->_a->getfd () << ")\n";
+      n->_a->hit_timeout ();
       unreg (n);
     } else {
       flag = false;

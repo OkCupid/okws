@@ -60,7 +60,7 @@ okch_t::clone (ref<ahttpcon_clone> xc)
 {
   if (!x || x->ateof () || state != OKC_STATE_SERVE) {
     if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED || 
-	conqueue.size () > ok_con_queue_max) {
+	conqueue.size () >= ok_con_queue_max) {
       myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
     } else {
       //warn << "queued con\n"; // XX debug
@@ -76,7 +76,7 @@ okch_t::clone (ref<ahttpcon_clone> xc)
       per_svc_nfd_in_xit ++;
       xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd));
     }
-    x->clone (xc);
+    send_con_to_service (xc);
   }
 }
 
@@ -113,6 +113,17 @@ okch_t::got_new_ctlx_fd (int fd, int p)
   state = OKC_STATE_LAUNCH_SEQ_1;
 }
 
+void
+okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
+{
+  inc_n_sent ();
+  if (xc->timed_out ()) {
+    CH_WARN ("Connection timed out (fd=" << xc->getfd () 
+	     << "): not forwarding to child");
+  } else 
+    x->clone (xc);
+}
+
 //
 // Need two things before we can start dispatching connections
 // (and set state == OKC_STATE_SERVE):
@@ -129,11 +140,13 @@ okch_t::start_chld ()
     
     state = OKC_STATE_SERVE;
 
+    reset_n_sent ();
+
     // need to check that x is still here every time through the 
     // loop; the service might have crashed as we were servicing
     // queued connections.
     while (conqueue.size () && x) 
-      x->clone (conqueue.pop_front ());
+      send_con_to_service (conqueue.pop_front ());
 
     //
     // XXX - this doesn't work yet.  To make it work, we need to do the

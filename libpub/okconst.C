@@ -73,7 +73,7 @@ u_int ok_shutdown_timeout = 10;     // seconds
 u_int ok_shutdown_retries = 3;      // n retries before giving up
 u_int ok_db_retries_max = 100;
 u_int ok_db_retries_delay = 3;
-u_int ok_demux_timeout = 30;        // clients have 30 secs to make a REQ
+u_int ok_demux_timeout = 15;        // clients have 15 secs to make a REQ
 
 //
 // okd constants
