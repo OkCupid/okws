@@ -178,6 +178,11 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
     x->swtch->defcase.alloc ();
     def->to_xdr (x->swtch->defcase);
   }
+  if (nullcase) {
+    x->swtch->nullcase.alloc ();
+    nullcase->to_xdr (x->swtch->nullcase);
+  }
+
   u_int i = 0;
   x->swtch->cases.setsize (cases.size ());
   cases.traverse (wrap (&case_to_xdr, x, &i));
@@ -187,18 +192,27 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
 }
 
 pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
-  pfile_func_t (x.lineno), err (false), def (NULL),
-  key (New refcounted<pvar_t> (x.key)), nulldef (x.nulldef)
+  pfile_func_t (x.lineno), err (false), def (NULL), 
+  key (New refcounted<pvar_t> (x.key)), nulldef (x.nulldef),
+  nullcase (NULL)
 {
   u_int lim = x.cases.size ();
   if (x.defcase) {
     def = New pswitch_env_t (*x.defcase);
-    files.push_back (def->fn);
+    if (def->fn)
+      files.push_back (def->fn);
   }
+  if (x.nullcase) {
+    nullcase = New pswitch_env_t (*x.nullcase);
+    if (nullcase->fn)
+      files.push_back (nullcase->fn);
+  }
+
   for (u_int i = 0; i < lim; i++) {
     pswitch_env_t *e = New pswitch_env_t (x.cases[i]);
     cases.insert (e);
-    files.push_back (e->fn);
+    if (e->fn)
+      files.push_back (e->fn);
   }
 }
 

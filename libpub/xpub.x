@@ -206,6 +206,7 @@ struct xpub_switch_t {
   int lineno;
   xpub_switch_env_t cases<>;
   xpub_switch_env_t *defcase;
+  xpub_switch_env_t *nullcase;
   xpub_var_t key;
   bool nulldef;
 };

@@ -38,6 +38,7 @@ public:
   { return New refcounted<sth_parsed_t> (m, q, o); }
   bool parse ();
   adb_status_t fetch2 (bool bnd = false);
+  str get_last_qry () const { return last_qry; }
 protected:
   bool execute (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
 
@@ -55,6 +56,7 @@ protected:
   MYSQL_RES *myres;
   unsigned long *length_arr;
   u_int my_res_n;
+  str last_qry;
 };
 
 #if defined(HAVE_MYSQL_BIND) && defined(HAVE_MYSQL_BINDFUNCS)
