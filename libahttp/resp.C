@@ -40,7 +40,7 @@ http_status_set_t::http_status_set_t ()
   add (415, "Unsupported Media Type");
   add (416, "Requested range not satisfied");
   add (HTTP_UNEXPECTED_EOF, "Expectation Failed");
-  add (500, "Internal Server Error");
+  add (HTTP_SRV_ERROR, "Internal Server Error");
   add (HTTP_NOT_IMPLEMENTED, "Not Implemented");
   add (502, "Bad Gateway");
   add (HTTP_UNAVAILABLE, "Service Unavailable");

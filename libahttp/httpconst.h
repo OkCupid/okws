@@ -21,6 +21,7 @@
 #define HTTP_MOVEDTEMP   302
 #define HTTP_SEEOTHER    303
 #define HTTP_USEPROXY    305
+#define HTTP_SRV_ERROR   500
 
 //
 // these are not in the standard, but are here for convenience.
