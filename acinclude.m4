@@ -702,7 +702,8 @@ AC_DEFUN(SFS_MYSQL,
 if test "$with_mysql" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
-	cdirs="$with_mysql ${prefix} ${prefix}/mysql /usr /usr/local"
+	cdirs="${with_mysql}/include ${with_mysql}/include/mysql \
+	       ${prefix}/include ${prefix}/include/mysql"
 	dirs="$cdirs /usr/local/include/mysql /usr/local/mysql/include \
                /usr/include/mysql "
 	AC_CACHE_CHECK(for mysql.h, sfs_cv_mysql_h,
@@ -723,6 +724,8 @@ if test "$with_mysql" != "no"; then
 		sfs_cv_mysql_h=" "
 	fi
 	if test "${sfs_cv_mysql_h+set}"; then
+		cdirs="${with_mysql}/lib ${with_mysql}/lib/mysql \
+		       ${prefix}/lib ${prefix}/lib/mysql"
 		dirs="$cdirs /usr/local/lib/mysql /usr/local/mysql/lib \
                       /usr/lib/mysql "
 		AC_CACHE_CHECK(for libmysqlclient, sfs_cv_libmysqlclient,
@@ -750,7 +753,7 @@ if test "$with_mysql" != "no"; then
 		if test "$sfs_cv_mysqlbind" = "yes"; then
 			AC_DEFINE(HAVE_MYSQL_BIND, 1, MySQL Prepared Stuff)
 		fi
-		CPPFLAGS="$sfs_cv_mysql_h $CPPFLAGS"
+		CPPFLAGS="$CPPFLAGS $sfs_cv_mysql_h"
 		AC_DEFINE(HAVE_MYSQL, 1, Have the MySQL C client library )
 		LDADD_MYSQL="$sfs_cv_libmysqlclient"
   	 	if test "$ac_cv_lib_z" != "yes"; then

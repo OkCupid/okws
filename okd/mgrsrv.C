@@ -30,6 +30,7 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
     break;
   case OKMGR_TURNLOG:
     turnlog (sbp);
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;

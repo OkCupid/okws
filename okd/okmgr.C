@@ -9,7 +9,8 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [-l | -p] [-a?] [-h <host>] <file1> <file2> ...\n";
+  warnx << "usage: okmgr [-l | -p | -t] [-a?] "
+	<< "[-h <host>] <file1> <file2> ...\n";
   exit (1);
 }
 
@@ -169,7 +170,7 @@ main (int argc, char *argv[])
   vec<str> files;
   ctl_mode_t m = CTL_MODE_PUB;
   ok_set_typ_t set_typ = OK_SET_SOME;
-  while ((ch = getopt (argc, argv, "alph:?")) != -1)
+  while ((ch = getopt (argc, argv, "alpth:?")) != -1)
     switch (ch) {
     case 't':
       m = CTL_MODE_LOGTURN;
@@ -211,6 +212,7 @@ main (int argc, char *argv[])
     break;
   case CTL_MODE_LOGTURN:
     t = New okmgr_logturn_t (hosts);
+    break;
   default:
     usage ();
   }
