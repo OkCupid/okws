@@ -12,8 +12,9 @@ void
 ahttpcon::clone (ref<ahttpcon_clone> xc)
 {
   assert (!xc->ateof ());
-  if ((sin = xc->get_sin ()))
-    out->copy ((void *)sin, sizeof (*sin));
+  sockaddr_in *sin_tmp;
+  if ((sin_tmp = xc->get_sin ()))
+    out->copy ((void *)sin_tmp, sizeof (*sin_tmp));
   sendfd (xc->takefd ());
 }
 
