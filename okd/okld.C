@@ -116,7 +116,7 @@ okld_t::parseconfig (const str &cf)
     .ignore ("OkdUser")
     .ignore ("OkdGroup")
     .ignore ("PubdExecPath")
-    .ignore ("ReqSizeLimit");
+    .ignore ("ChannelLimit");
 
 
   if (grp) svc_grp = ok_grp_t (grp);

@@ -297,8 +297,9 @@ oksrvc_t::launch_log_cb (bool rc)
 void
 oksrvc_t::launch3 ()
 {
-  if (!--lnum)
+  if (!--lnum) {
     custom_init (wrap (this, &oksrvc_t::launch4));
+  }
 }
 
 void
