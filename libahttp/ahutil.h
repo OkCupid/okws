@@ -31,7 +31,7 @@ typedef u_char htpv_t;
 
 str getdate ();
 bool mystrlcmp (const str &s, const char *b);
-str tolower (const str &in);
+str tolower_s (const str &in);
 
 inline 
 int char_at (const str &s, int i)

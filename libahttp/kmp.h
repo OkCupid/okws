@@ -41,7 +41,7 @@ class kmp_matcher_t {
 public:
   kmp_matcher_t (const str &s, bool case_insensitive = true) 
     : _ci (case_insensitive),
-      _pattern (_ci ? str (tolower (s)) : s), 
+      _pattern (_ci ? str (tolower_s (s)) : s), 
       _PP (_pattern.cstr ()), _len (_pattern.len ()),
       _pi (new u_int[_len]), _q (0) 
   { preproc (); }

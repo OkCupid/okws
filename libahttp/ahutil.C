@@ -48,7 +48,7 @@ mystrlcmp (const str &s, const char *b)
 }
 
 str
-tolower (const str &s)
+tolower_s (const str &s)
 {
   mstr m (s.len ());
   char *cp;
