@@ -292,6 +292,19 @@ FilterCGI 0
 ##
 
 ##
+## ServiceFDQuota
+##
+##   The maximum number of FDs that can be backed up when sending 
+##   to a service.  If a service is not receiving FDs, it's probably
+##   stuck in a bad loop, and therefore, okd should not waste additional
+##   FDs on it.  Eventually, OKWS can run out.
+##
+##   Note that ServiceFDQuote must be set **less* than 
+##   OkdFDLowWat.
+##
+ServiceFDQuota		500
+
+##
 ## OkdFDHighWat
 ## ServiceFDHighWat
 ##
@@ -301,7 +314,7 @@ FilterCGI 0
 ##   Similarly, number of open file descriptors a service can have before
 ##   rejecting requests.
 ##
-OkdFDHighWat		100
+OkdFDHighWat		900
 ServiceFDHighWat	1000
 
 ##
@@ -316,7 +329,7 @@ ServiceFDHighWat	1000
 ##   reallowing requests
 ##
 ##
-OkdFDLowWat	50
+OkdFDLowWat	800
 ServiceFDLowWat	950
 
 
