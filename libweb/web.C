@@ -69,7 +69,7 @@ static rxx date_rxx ("(([0-9]{4})-([0-9]{2})-([0-9]{2}))?"
 void
 okdate_t::set (const str &s)
 {
-  if (!date_rxx.match (s)) {
+  if (!s || !date_rxx.match (s)) {
     err = true;
     return;
   }
