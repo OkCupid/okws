@@ -35,7 +35,6 @@
 #include "axprtfd.h"
 
 static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
-static void srelaunch (ptr<ok_res_t> res, okch_t *ch) { ch->kill (); }
 
 common_404_t::common_404_t ()
 {
@@ -770,21 +769,47 @@ okd_t::turnlog (okrescb cb)
   logd->turn (cb);
 }
 
+static void 
+s_relaunch_cb (okch_t *ch) { ch->kill (); }
+
 void
 okd_t::relaunch (const ok_progs_t &x, okrescb cb)
 {
   ptr<ok_res_t> res = New refcounted<ok_res_t> ();
+  apply_to_children (x, wrap (s_relaunch_cb), res);
+  (*cb) (res);
+}
+
+static void
+s_custom1_cb (ok_custom_data_t data, okch_t *ch) 
+{ 
+  ch->custom1 (data); 
+}
+
+void
+okd_t::custom1 (const ok_custom_arg_t &x, okrescb cb)
+{
+  ptr<ok_res_t> res = New refcounted<ok_res_t> ();
+  apply_to_children (x.progs, wrap (s_custom1_cb, x.data), res);
+  (*cb) (res);
+}
+
+void
+okd_t::apply_to_children (const ok_progs_t &x, cb_okch_t apply_cb,
+			  ptr<ok_res_t> res)
+{
   if (x.typ == OK_SET_ALL) {
-    servtab.traverse (wrap (srelaunch, res));
+    servtab.traverse (apply_cb);
   } else if (x.typ == OK_SET_SOME) {
     u_int lim = x.progs->size ();
     for (u_int j = 0; j < lim; j++) {
       str prog = (*x.progs)[j];
       okch_t *o = servtab[prog];
-      if (!o) *res << (strbuf ("cannot find program: ") << prog);
-      else o->kill ();
+      if (!o) 
+	*res << (strbuf ("cannot find program: ") << prog);
+      else 
+	(*apply_cb) (o);
     }
   }
-  (*cb) (res);
 }
 

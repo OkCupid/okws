@@ -239,6 +239,9 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_KILL:
     kill (v);
     break;
+  case OKCTL_CUSTOM_1:
+    custom1_rpc (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;

@@ -48,6 +48,10 @@ typedef enum { OKD_JAILED_NEVER = 0,
 	       OKD_JAILED_DEPENDS = 1,
 	       OKD_JAILED_ALWAYS = 2 } okd_jailtyp_t;
 
+class okch_t;
+typedef callback<void, okch_t *>::ref cb_okch_t;
+typedef callback<cb_okch_t, ptr<ok_res_t> >::ref okch_apply_cb_t;
+
 struct ok_repub_t {
   ok_repub_t (const xpub_fnset_t &f, okrescb c)
     : fnset (f), cb (c), res (New refcounted<ok_res_t> ()) {}
@@ -79,6 +83,7 @@ public:
 
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
+  void custom1 (const ok_custom_data_t &x);
   void chld_eof (ptr<bool> dfp);
   
   okd_t *myokd;
@@ -177,6 +182,7 @@ public:
   void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
 
   void relaunch (const ok_progs_t &x, okrescb cb);
+  void custom1 (const ok_custom_arg_t &x, okrescb cb);
 
   void turnlog (okrescb cb);
 
@@ -196,6 +202,9 @@ protected:
   void disable_accept_guts ();
 
 private:
+
+  void apply_to_children (const ok_progs_t &x, cb_okch_t acb,
+			  ptr<ok_res_t> res);
 
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();
@@ -256,6 +265,7 @@ private:
   void repub (svccb *b);
   void relaunch (svccb *b);
   void turnlog (svccb *b);
+  void custom1 (svccb *b);
   ptr<asrv> srv;
   ptr<axprt_stream> x;
   okd_t *myokd;
@@ -267,5 +277,7 @@ public:
   bool operator[] (const str &s) { return tab[s]; }
   bhash<str> tab;
 };
+
+
 
 #endif /* _OKD_OKD_H */

@@ -250,6 +250,8 @@ public:
   virtual u_int get_ormask () const { return 0; }
   virtual void custom_init (cbv cb) { (*cb) (); }
 
+  virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
+
   ~oksrvc_t () {}
   void init (int argc, char *argv[]);
   void shutdown ();

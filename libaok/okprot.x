@@ -26,6 +26,15 @@ union ok_progs_t switch (ok_set_typ_t typ) {
    void;
 };
 
+struct ok_custom_data_t {
+   opaque data<>;
+};
+
+struct ok_custom_arg_t {
+  ok_progs_t progs;
+  ok_custom_data_t data;
+};
+
 enum ok_xstatus_typ_t {
   OK_STATUS_OK = 0,
   OK_STATUS_PUBERR = 1,
@@ -64,6 +73,9 @@ program OKCTL_PROGRAM {
 
 		xpub_getfile_res_t
 		OKCTL_PUBCONF (void) = 6;
+	
+		ok_xstatus_t 
+		OKCTL_CUSTOM_1 (ok_custom_data_t) = 7;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;
@@ -164,6 +176,10 @@ program OKMGR_PROGRAM {
 
 		ok_xstatus_t
 		OKMGR_TURNLOG (void) = 3;
+
+		ok_xstatus_t
+		OKMGR_CUSTOM_1 (ok_custom_arg_t) = 4;
+
 	} = 1;
 } = 11278;
 

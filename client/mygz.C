@@ -11,12 +11,6 @@
 
 #define DEF_MEM_LEVEL 9
 
-static unsigned long
-min (unsigned a, unsigned b)
-{
-  return (a > b ? b : a);
-}
-
 static void
 usage ()
 {
@@ -76,7 +70,7 @@ main (int argc, char *argv[])
     fatal << "deflate init error: " << err << "\n";
 
   for (p = 0; p <= s.len (); p += chnk) {
-    len = min (chnk, (s.len () - p));
+    len = min<u_int> (chnk, (s.len () - p));
     inb = const_cast<Bytef *> (reinterpret_cast<const Bytef *> 
 			       (s.cstr () + p));
     stream.next_in = inb;

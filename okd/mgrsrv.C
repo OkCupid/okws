@@ -51,6 +51,9 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_TURNLOG:
     turnlog (sbp);
     break;
+  case OKMGR_CUSTOM_1:
+    custom1 (sbp);
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;
@@ -68,6 +71,13 @@ okd_mgrsrv_t::relaunch (svccb *sbp)
 {
   ok_progs_t *p = sbp->template getarg<ok_progs_t> ();
   myokd->relaunch (*p, wrap (replystatus, sbp));
+}
+
+void
+okd_mgrsrv_t::custom1 (svccb *sbp)
+{
+  ok_custom_arg_t *c = sbp->template getarg<ok_custom_arg_t> ();
+  myokd->custom1 (*c, wrap (replystatus, sbp));
 }
 
 void

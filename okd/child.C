@@ -352,6 +352,14 @@ okch_t::kill ()
 }
 
 void
+okch_t::custom1 (const ok_custom_data_t &x)
+{
+  // XXX want to collect success information and so on from this guy
+  // (as in repub)
+  clnt->call (OKCTL_CUSTOM_1, &x, NULL, aclnt_cb_null);
+}
+
+void
 okch_t::chld_eof (ptr<bool> dfp)
 {
   if (*dfp) {
