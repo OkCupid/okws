@@ -12,6 +12,7 @@ int nreq;
 int nconcur;
 int nrunning;
 bool sdflag;
+bool trickle;
 
 class hclient_t {
 public:
@@ -90,10 +91,27 @@ hclient_t::connected (int f)
   if (fd < 0)
     fatal << "cannot connect to host\n";
   suio *uio = b.tosuio ();
+  char c;
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = 500000;
+
   while (uio->resid ()) {
     writewait ();
-    if (uio->output (fd) < 0)
-      fatal << "write error\n";
+
+    if (trickle) {
+
+      // 1 byte at a time
+      uio->copyout (&c, 1);
+      if (write (fd, &c, 1)  == 1)
+	uio->rembytes (1);
+      select (0, NULL, NULL, NULL, &tv);
+      warn ("trickle: %c\n", c);
+
+    } else {
+      if (uio->output (fd) < 0)
+	fatal << "write error\n";
+    }
   }
   fdcb (fd, selread, wrap (this, &hclient_t::canread));
 }
@@ -122,17 +140,34 @@ int
 main (int argc, char *argv[])
 {
   setprogname (argv[0]);
-  if (argc != 3 && argc != 4)
+  trickle = false;
+
+  int ch;
+  while ((ch = getopt (argc, argv, "t")) != -1) {
+    switch (ch) {
+    case 't':
+      trickle = true;
+      break;
+    default:
+      usage ();
+    }
+  }
+  argc -= optind;
+  argv += optind;
+
+   
+
+  if (argc != 2 && argc != 3)
     usage ();
 
   int n = 1;
-  if (argc == 4 && !convertint (argv[3], &n)) 
+  if (argc == 3 && !convertint (argv[2], &n)) 
     usage ();
     
-  str in = file2str (argv[2]);
+  str in = file2str (argv[1]);
   if (!in)
-    fatal << "Cannot open file: " << argv[2] << "\n";
-  if (!hostport.match (argv[1])) 
+    fatal << "Cannot open file: " << argv[1] << "\n";
+  if (!hostport.match (argv[0])) 
     usage ();
   str host = hostport[1];
   str port_s = hostport[3];
