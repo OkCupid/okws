@@ -34,20 +34,29 @@
 
 class okdate_t {
 public:
-  okdate_t (const x_okdate_t &x) : err (false), dt_tm (0), stm_set (false) 
+  okdate_t (const x_okdate_t &x) : err (false), dt_tm (0), stm_set (false),
+				   time_t_set (false)
   { set (x); }
-  okdate_t (const x_okdate_time_t &x) : err (false), dt_tm (OK_TIME), 
-    stm_set (false) { set (x); }
-  okdate_t (const x_okdate_date_t &x) : err (false), dt_tm (OK_DATE), 
-    stm_set (false) { set (x); }
 
-  okdate_t (const struct tm &s) : err (false), dt_tm (0), stm_set (false) 
+  okdate_t (const x_okdate_time_t &x) : err (false), dt_tm (OK_TIME), 
+    stm_set (false), time_t_set (false) { set (x); }
+  okdate_t (const x_okdate_date_t &x) : err (false), dt_tm (OK_DATE), 
+    stm_set (false), time_t_set (false) { set (x); }
+
+  okdate_t (const struct tm &s) 
+    : err (false), dt_tm (0), stm_set (false), time_t_set (false)
   { set (s); }
-  okdate_t (time_t tm) : err (false), dt_tm (0), stm_set (false) { set (tm); }
-  okdate_t (const str &s) : err (false), dt_tm (0), stm_set (false) 
+
+  okdate_t (time_t tm) 
+    : err (false), dt_tm (0), stm_set (false), time_t_set (true) 
+  { set (tm); }
+
+  okdate_t (const str &s) 
+    : err (false), dt_tm (0), stm_set (false), time_t_set (false)
   { set (s); }
+
   okdate_t (int month, int day, int year) 
-    : err(false), dt_tm(0), stm_set(false)
+    : err(false), dt_tm(0), stm_set (false), time_t_set (false)
   {
     struct tm s;
     s.tm_year = year - 1900;
@@ -59,7 +68,7 @@ public:
     set(s);
   }
   okdate_t (int month, int day, int year, int hour, int min, int sec) 
-    : err(false), dt_tm(0), stm_set(false)
+    : err(false), dt_tm(0), stm_set(false), time_t_set (false)
   {
     struct tm s;
     s.tm_year = year - 1900;
@@ -71,7 +80,8 @@ public:
     set(s);
   }
   okdate_t () : 
-        sec (0), min (0), hour (0), err (false), dt_tm (0), stm_set (false) {}
+    sec (0), min (0), hour (0), err (false), dt_tm (0), stm_set (false),
+    time_t_set (false) {}
 
   template<class C> static ptr<okdate_t> alloc (C x)
   { return New refcounted<okdate_t> (x); }
@@ -82,6 +92,8 @@ public:
   void set (const struct tm &s);
   void set (time_t t);
   void set (const str &s);
+
+  operator time_t () const { return to_time_t (); }
 
   virtual str to_str () const;
   void to_xdr (x_okdate_t *x) const;
@@ -105,6 +117,8 @@ public:
   mutable struct tm stm; // used for date arithmetic
   u_int dt_tm;
   mutable bool stm_set;  // if the above is set;
+  mutable bool time_t_set;
+  mutable time_t time_t_val;
 
 private:
   str strip_zero(const str& s) const;
