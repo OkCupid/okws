@@ -36,7 +36,21 @@ if test -z "$DIFF" ; then
 fi
 
 if test -z "$LINKER" ; then
-    LINKER=/usr/libexec/ld-elf.so.1
+    prfxs='/ /usr'
+    name=libexec/ld-elf.so.1
+    for d in $prfxs
+    do
+	LINKER=$d/$name
+	if [ -f $LINKER ]
+	then
+	    break
+	fi
+    done
+    if [ ! -f $LINKER ]
+    then
+	echo "Cannot find linker: $name"
+	exit 128
+    fi
 fi
 
 if test -z "$MKDIR" ; then
