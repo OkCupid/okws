@@ -6,6 +6,7 @@
 #define _LIBAHTTP_PAIR_H
 
 #include "parseopt.h"
+#include "list.h"
 
 struct encode_t {
   encode_t (strbuf *o, char *s = NULL, size_t l = 0)
@@ -41,12 +42,15 @@ struct pair_t {
   mutable iv_state_t is;
   mutable vec<int64_t> ivals;
   ihash_entry<pair_t> hlink;
+  tailq_entry<pair_t> lnk;
   bool encflag;
 };
 
 static void pair_dump1 (const pair_t &p) { p.dump1 (); }
 static void pair_encode (encode_t *e, str sep, const pair_t &p)
 { p.encode (e, sep); }
+static void pair_trav (callback<void, const pair_t &>::ref cb, pair_t *p)
+{ (*cb) (*p); }
 
 template<class C = pair_t>
 class pairtab_t {
@@ -72,10 +76,13 @@ public:
   inline bool exists (const str &k) const 
   { return safe_lookup (k).len () > 0; }
   inline bool remove (const str &k);
+  inline void traverse (callback<void, const pair_t &>::ref cb)
+  { lst.traverse (wrap (pair_trav, cb)); }
     
 protected:
   str empty;
   ihash<str, pair_t, &pair_t::key, &pair_t::hlink> tab;
+  tailq<pair_t, &pair_t::lnk> lst;
 };
 
 
@@ -159,6 +166,7 @@ pairtab_t<C>::remove (const str &k)
   pair_t *p = tab[k];
   if (p) {
     tab.remove (p);
+    lst.remove (p);
     delete p;
     return true;
   } else {
@@ -183,6 +191,7 @@ pairtab_t<C>::insert (const str &key, const str &val, bool append, bool encode)
   } else if (!p) {
     p = New C (key, val, encode);
     tab.insert (p);
+    lst.insert_tail (p);
   }
   return *this;
 }

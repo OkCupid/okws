@@ -74,6 +74,8 @@ public:
   inline str get_target () const { return target; }
   inline htpv_t get_vers () const { return nvers; }
   bool takes_gzip () const;
+  inline str get_mthd_str () const { return tmthd; }
+  inline str get_vers_str () const { return vers; }
 
   http_method_t mthd;  // method code
   int reqsize;         // request size
