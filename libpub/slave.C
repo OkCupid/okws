@@ -44,7 +44,7 @@ static void
 pub_server_fd (cbv cb, int fd)
 {
   close_on_exec (fd);
-  listen (fd, 20);
+  listen (fd, 200);
   fdcb (fd, selread, cb);
 }
 
