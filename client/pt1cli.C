@@ -192,6 +192,7 @@ usage ()
 static void
 main2 (str host, int port, str in, int n)
 {
+  startt = tsnow;
   for (int i = 0; i < n; i++) {
     hclient_t *h = New hclient_t (host, port, in, i);
     h->run ();
@@ -305,7 +306,6 @@ main (int argc, char *argv[])
   sdflag = true;
   nreq = n;
   nreq_fixed = n;
-  startt = tsnow;
 
   if (delay) {
     timecb (startat, wrap (main2, host, port, in, n));
