@@ -42,7 +42,9 @@ dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 
-LDFLAGS = -all-static
+if LDFLAGS_ALL_STATIC
+	LDFLAGS = -all-static
+endif
 LDADD = $(LDADD_SRV)
 
 coredump_SOURCES = coredump.C
