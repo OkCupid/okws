@@ -57,13 +57,10 @@ if test -z "$okwslibdir"; then
    okwslibdirp='${pkglibdir}-${VERSION}'
    okwslibdir='${pkglibdir}-${VERSION}${$okwstagdir}'
 fi
-AC_SUBST(okwsincludedir)
 if test -z "$okwsincludedir"; then
    okwsincludedir='${pkgincludedir}-${VERSION}'
 fi
-AC_SUBST(okwslibdir)
 okwsexecdir="$okwslibdir"
-AC_SUBST(okwsexecdir)
 CPPFLAG="$CPPFLAGS -DEXECDIR="'\"$(okwsexecdir)\"'
 
 if test -z "$okwstag" -o "${okws_systembin+set}" = "set" ; then
@@ -71,7 +68,11 @@ if test -z "$okwstag" -o "${okws_systembin+set}" = "set" ; then
 else
 	okwsbindir="$okwslibdir"
 fi  
+AC_SUBST(okwsincludedir)
+AC_SUBST(okwslibdir)
 AC_SUBST(okwsbindir)
+AC_SUBST(okwslibdirp)
+AC_SUBST(okwsexecdir)
 
 SFS_CFLAGS
 
