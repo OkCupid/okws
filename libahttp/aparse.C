@@ -64,13 +64,14 @@ async_dumper_t::dump (size_t len, cbs c)
 void
 async_dumper_t::parse_guts ()
 {
-  size_t rc = 0;
+  int rc = 0;
   while (bp < endp) {
     rc = abuf->dump (bp, endp - bp);
     if (rc < 0)
       break; // EOF
     bp += rc;
   }
-  if (bp == endp || rc < 0)
-      finish_parse (0);
+  if (bp == endp || rc == ABUF_EOFCHAR)
+    finish_parse (0);
+  // otherwise, we're waiting
 }

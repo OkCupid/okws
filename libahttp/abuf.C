@@ -120,8 +120,8 @@ abuf_t::flush (char *buf, size_t len)
   assert (len >= 0);
 
   if (len == 0 || cp == endp)
-      return 0;
-
+    return 0;
+  
   if (bc) {
     *buf++ = lch;
     len--;
@@ -142,8 +142,14 @@ abuf_t::flush (char *buf, size_t len)
 ssize_t
 abuf_t::dump (char *buf, size_t len)
 {
-  if (erc == ABUF_EOF)
-    return -1;
+  switch (erc) {
+  case ABUF_EOF:
+    return ABUF_EOFCHAR;
+  case ABUF_WAIT:
+    return ABUF_WAITCHAR;
+  default:
+    break;
+  }
 
   ssize_t ret = 0;
   char *buf_p = buf;

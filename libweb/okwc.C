@@ -92,6 +92,22 @@ okwc_req_t::~okwc_req_t ()
 void
 okwc_http_t::make_req ()
 {
+  int len;
+  if (!filename || (len = filename.len ()) == 0) {
+    // empty file names --> "/"
+    filename = "/";
+  } else if (filename[0] != '/') {
+    // insert leading slash if not there.
+    filename = strbuf ("/") << filename;
+  } else {
+    // trunc all but the first leading slash
+    const char *fn = filename.cstr ();
+    const char *cp;
+    for (cp = fn; *cp == '/'; cp++)  ;
+    cp--;
+    filename = str (cp, len - (cp - fn)); 
+  }
+
   reqbuf << "GET " << filename << " HTTP/1.0" << HTTP_CRLF;
   if (outcook) {
     reqbuf << "Cookie: ";
@@ -99,12 +115,18 @@ okwc_http_t::make_req ()
     reqbuf << HTTP_CRLF;
   }
   reqbuf << HTTP_CRLF;
-  x->send (reqbuf, wrap (this, &okwc_http_t::parse));
+  state = OKWC_HTTP_REQ;
+  cancel_flag = New refcounted<bool> (false);
+  x->send (reqbuf, wrap (this, &okwc_http_t::parse, cancel_flag));
 }
 
 void
-okwc_http_t::parse ()
+okwc_http_t::parse (ptr<bool> local_cancel_flag)
 {
+  if (*local_cancel_flag)
+    return;
+  cancel_flag = NULL; // will dealloc cancel_flag at return
+  state = OKWC_HTTP_HDR;
   hdr.parse (wrap (this, &okwc_http_t::hdr_parsed));
 }
 
@@ -114,6 +136,7 @@ okwc_http_t::hdr_parsed (int status)
   if (status != HTTP_OK) {
     finish (status);
   } else {
+    state = OKWC_HTTP_BODY;
     body.dump (hdr.get_contlen (), wrap (this, &okwc_http_t::body_parsed));
   }
 }
@@ -128,6 +151,7 @@ okwc_http_t::body_parsed (str bod)
 void
 okwc_http_t::finish (int status)
 {
+  state = OKWC_HTTP_NONE;
   resp->status = status;
   (*okwc_cb) (resp);
 }
@@ -137,7 +161,7 @@ okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f,
   : x (xx), filename (f), abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
     hdr (&abuf, &resp->cookies, OKWC_SCRATCH_SZ, scratch),
-    body (&abuf), outcook (ock), okwc_cb (c)
+    body (&abuf), outcook (ock), okwc_cb (c), state (OKWC_HTTP_NONE)
 {}
 
 void
@@ -243,7 +267,24 @@ void
 okwc_http_hdr_t::fixup ()
 {
   if (!lookup ("content-length", &contlen))
-    contlen = -1;
+    contlen = okwc_def_contlen;
 }
 
+void
+okwc_http_t::cancel ()
+{
+  switch (state) {
+  case OKWC_HTTP_REQ:
+    *cancel_flag = true;
+    break;
+  case OKWC_HTTP_HDR:
+    hdr.cancel ();
+    break;
+  case OKWC_HTTP_BODY:
+    body.cancel ();
+    break;
+  default:
+    break;
+  }
+}
 

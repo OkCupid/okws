@@ -1,9 +1,11 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = hcli hsrv degz mygz pt1cli
+noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc
 
 hcli_SOURCES = hcli.C
+
+okwc_SOURCES = okwcmain.C
 
 pt1cli_SOURCES = pt1cli.C normdist.C
 

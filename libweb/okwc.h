@@ -28,8 +28,7 @@ public:
 
   ~okwc_cookie_set_t ()
   {
-    cgi_t *c;
-    while ((c = pop_back ())) delete c;
+    while (size ()) delete pop_back ();
   }
 
   cgi_t *push_back_new () 
@@ -109,6 +108,11 @@ private:
 //
 class okwc_http_t {
 public:
+  typedef enum { OKWC_HTTP_NONE = 0,
+		 OKWC_HTTP_REQ = 1,
+		 OKWC_HTTP_HDR = 2,
+		 OKWC_HTTP_BODY = 3 } state_t;
+
   okwc_http_t (ptr<ahttpcon> xx, const str &f, okwc_cb_t c,
 	       cgi_t *ock);
 
@@ -116,7 +120,7 @@ public:
   void cancel ();
 
 protected:
-  void parse ();
+  void parse (ptr<bool> cf);
   void hdr_parsed (int status);
   void body_parsed (str bod);
   void finish (int status);
@@ -134,6 +138,8 @@ private:
 
   okwc_cb_t okwc_cb;
   strbuf reqbuf;
+  state_t state;
+  ptr<bool> cancel_flag;
 };
 
 class okwc_req_t {
@@ -166,7 +172,7 @@ private:
 };
 
 okwc_req_t *
-okwc_request (const str &h, int port, const str &fn, 
+okwc_request (const str &h, u_int16_t port, const str &fn, 
 	      okwc_cb_t cb, int timeout = -1, cgi_t *outcook = NULL );
 
 void
