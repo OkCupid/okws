@@ -123,10 +123,12 @@ to_mysql_typ (const x_okdate_t &x)
 }
 
 mybind_date_t::mybind_date_t (okdatep_t d) 
-  : mybind_t (to_mysql_typ (*d)), datep (d), pntr (NULL), parsed (false) {}
+  : mybind_t (to_mysql_typ (*d)), datep (d), pntr (NULL), parsed (false),
+    palloced (false) {}
+
 mybind_date_t::mybind_date_t (const x_okdate_t &d)
   : mybind_t (to_mysql_typ (d)), datep (okdate_t::alloc (d)), pntr (NULL),
-    parsed (false) {}
+    parsed (false), palloced (false) {}
 
 void
 mybind_date_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)

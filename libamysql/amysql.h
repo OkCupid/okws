@@ -85,28 +85,29 @@ public:
   mybind_date_t (const x_okdate_t &d);
   mybind_date_t (const x_okdate_time_t &t) 
     : mybind_t (MYSQL_TYPE_TIME), datep (okdate_t::alloc (t)), pntr (NULL),
-      parsed (false) {}
+      parsed (false), palloced (false) {}
   mybind_date_t (const x_okdate_date_t &d) 
     : mybind_t (MYSQL_TYPE_DATE), datep (okdate_t::alloc (d)), pntr (NULL),
-      parsed (false) {}
+      parsed (false), palloced (false) {}
 
   mybind_date_t (x_okdate_t *d)
-    : mybind_t (MYSQL_TYPE_DATETIME), 
-      datep (New refcounted<okdate_t> ()), 
-      pntr (New mbdxat_t<x_okdate_t> (d)),
-      parsed (false) {}
-  mybind_date_t (x_okdate_time_t *t)
+    : mybind_t (MYSQL_TYPE_DATETIME), datep (New refcounted<okdate_t> ()), 
+       pntr (New mbdxat_t<x_okdate_t> (d)), parsed (false), 
+	       palloced (true) {}
+
+ mybind_date_t (x_okdate_time_t *t)
     : mybind_t (MYSQL_TYPE_TIME), 
       datep (New refcounted<okdate_t> ()), 
       pntr (New mbdxat_t<x_okdate_time_t> (t)),
-      parsed (false) {}
+      parsed (false), palloced (true) {}
+
   mybind_date_t (x_okdate_date_t *d)
     : mybind_t (MYSQL_TYPE_DATE), 
       datep (New refcounted<okdate_t> ()), 
       pntr (New mbdxat_t<x_okdate_date_t> (d)),
-      parsed (false) {}
+      parsed (false), palloced (true) {}
 
-  ~mybind_date_t () {}
+  ~mybind_date_t () { if (palloced && pntr) delete pntr; }
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
 
   void assign () 
@@ -127,6 +128,7 @@ private:
   mybind_date_xassign_t *pntr;
   u_long len;
   bool parsed;
+  bool palloced;
 };
 
 class mybind_str_t : public mybind_t {
