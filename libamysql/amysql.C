@@ -46,7 +46,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
 
   sth_t r = NULL;
   if (l_opts & AMYSQL_PREPARED) {
-#ifdef HAVE_MYSQL_BIND
+#if defined(HAVE_MYSQL_BINDFUNCS) && defined(HAVE_MYSQL_BIND)
     MYSQL_STMT *s = mysql_stmt_init (&mysql);
     if (!s) {
       err = strbuf ("MySQL ran out of memory on statment init: ")
@@ -60,7 +60,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
       return NULL;
     }
     r = sth_prepared_t::alloc (s);
-#endif
+#endif // HAVE_MYSQL_BINDFUNCS && HAVE_MYSQL_BIND
   } else {
     ptr<sth_parsed_t> r2 = sth_parsed_t::alloc (&mysql, q, l_opts);
     if (!r2->parse ())
