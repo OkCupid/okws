@@ -93,17 +93,21 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
   }
   for (u_int i = 0 ; i < sz ; i++) {
     str s = (*pub)[nm][i];
+    str host = s;
     if (!host_and_port.match (s) || (!host_and_port[2] && port <= 0)) {
       warn << "invalid DB specified: " << s << "\n";
       continue;
     } 
     int p;
-    if (host_and_port[2]) 
+    if (host_and_port[2]) {
       assert (convertint (host_and_port[2], &p));
-    else 
+      host = host_and_port[1];
+    } else 
       p = port;
-
-    tab.add (New lblnc_node_t (i, rp, host_and_port[1], p, this));
+   
+    // XXX: debug info 
+    warn << "db[" << i << "]: " << host << ":" << p << "\n";
+    tab.add (New lblnc_node_t (i, rp, host, p, this));
   }
 }
 
