@@ -1,4 +1,3 @@
-<<<<<<< acinclude.m4
 dnl $Id$
 dnl
 dnl Find full path to program

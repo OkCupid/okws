@@ -45,6 +45,7 @@ protected:
   void dealloc_bufs ();
   void alloc_bufs ();
   void row_to_res (MYSQL_ROW *r);
+  void clearfetch ();
 
   MYSQL *mysql;
   const str qry;

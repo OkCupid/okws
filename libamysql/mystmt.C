@@ -97,10 +97,34 @@ mystmt_t::alloc_res_arr (u_int n)
     res_arr = New mybind_res_t[n];
 }
 
+void
+sth_parsed_t::clearfetch ()
+{
+  if (state == AMYSQL_EXEC) {
+    assert (!myres);
+    myres = (opts & AMYSQL_USERES) ? mysql_use_result (mysql)
+      : mysql_store_result (mysql);
+    if (myres) 
+      warn << "exec() called without fetch() on query: " << last_qry << "\n";
+    state = AMYSQL_FETCH;
+  }
+  if (state == AMYSQL_FETCH && (opts & AMYSQL_USERES)) 
+    while (mysql_fetch_row (myres)) ;
+
+  if (myres) {
+    mysql_free_result (myres);
+    myres = NULL;
+  }
+
+  if (state == AMYSQL_FETCH)
+    state = AMYSQL_FETCH_DONE;
+}
+
 adb_status_t 
 sth_parsed_t::fetch2 (bool bnd)
 {
   if (!myres) {
+    state = AMYSQL_FETCH;
     myres = (opts & AMYSQL_USERES) ? mysql_use_result (mysql) :
       mysql_store_result (mysql);
 
@@ -113,8 +137,10 @@ sth_parsed_t::fetch2 (bool bnd)
     }
   }
   MYSQL_ROW row = mysql_fetch_row (myres);
-  if (!row) 
+  if (!row) {
+    state = AMYSQL_FETCH_DONE;
     return ADB_NOT_FOUND;
+  }
   length_arr = mysql_fetch_lengths (myres);
 
   row_to_res (&row);
@@ -200,10 +226,15 @@ sth_parsed_t::parse ()
 bool
 sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
 {
-  if (myres) {
-    mysql_free_result (myres);
-    myres = NULL;
-  }
+
+  //
+  // will clear any pending fetch()'s or any unused rows in the
+  // case of mysql_use_result.
+  //
+  // will also clear and free myres.
+  //
+  clearfetch ();
+
   if (n != n_iparam) {
     err = strbuf("cannot prepare query: wrong number of "
 		 "input parameters (n = ") 
@@ -220,12 +251,13 @@ sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
     b << qry_parts[i];
 
   str q = b;
-//  warn << "query:  " << q << "\n";
   last_qry = q;
   if (mysql_real_query (mysql, q.cstr (), q.len ())) {
     err = strbuf ("Query execution error: ") << mysql_error (mysql) << "\n";
-	errno_n = mysql_errno (mysql);
+    errno_n = mysql_errno (mysql);
+    state = AMYSQL_NONE;
     return false;
   }
+  state = AMYSQL_EXEC;
   return true;
 }

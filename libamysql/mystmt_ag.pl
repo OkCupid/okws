@@ -91,9 +91,14 @@ print <<EOF;
 
 #include "amysql.h"
 
+typedef enum { 
+    AMYSQL_NONE = 0, AMYSQL_EXEC = 1, AMYSQL_FETCH = 2,
+    AMYSQL_FETCH_DONE = 3
+} amysql_state_t;
+
 class mystmt_t {
 public:
-  mystmt_t () : res_arr (NULL), errno_n (0) {}
+  mystmt_t () : res_arr (NULL), errno_n (0), state (AMYSQL_NONE) {}
   virtual ~mystmt_t () ;
   virtual adb_status_t fetch2 (bool bnd = false) = 0;
   str error () const { return err; }
@@ -111,6 +116,7 @@ protected:
   u_int res_n;
   str err;
   unsigned int errno_n;
+  amysql_state_t state;
 
 public:
 $stuff

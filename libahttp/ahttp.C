@@ -858,10 +858,7 @@ ahttp_tab_t::run ()
     if (* n->_destroyed_p ) {
       unreg (n);
     } else if (int (timenow - n->_a->start) > int (ok_demux_timeout)) {
-
-      warn << "removing deadbeat http connection: "
-	   <<  n->_a->get_remote_ip () << "\n";
-
+      warn << "XXX: removing deadbeat http connection\n"; //debug
       n->_a->timed_out ();
       unreg (n);
     } else {
@@ -870,7 +867,6 @@ ahttp_tab_t::run ()
   }
   sched ();
 }
-
 
 void
 ahttp_tab_t::unreg (ahttp_tab_node_t *n)
@@ -884,4 +880,3 @@ ahttp_tab_t::sched ()
 {
   dcb = delaycb (interval, 0, wrap (this, &ahttp_tab_t::run));
 }
-

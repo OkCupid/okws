@@ -328,7 +328,8 @@ okd_t::parseconfig ()
 
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
-    // as reported in HTTP resposne headers
+
+    // as reported in HTTP response headers
     .add ("ServerNameHTTP", &global_okws_server_label)
     .add ("HostName", &hostname)
 
@@ -338,7 +339,6 @@ okd_t::parseconfig ()
     .add ("MmapClockFile", &mmc_file)
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)
     .add ("DemuxTimeout", &ok_demux_timeout, 0, 30)
-    .add ("ServerLabel", &global_okws_server_label)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
