@@ -19,6 +19,10 @@ int nrunning;
 bool sdflag;
 bool noisy;
 bool exited;
+int nleft;
+str host;
+int port;
+str inreq;
 
 timespec startt;
 timespec lastexit;
@@ -46,6 +50,7 @@ public:
   void run ();
 
 private:
+  void launch_others ();
   void connected (int f);
   void canread ();
   void writewait ();
@@ -66,6 +71,23 @@ private:
 };
 
 vec<hclient_t *> q;
+
+void
+hclient_t::launch_others ()
+{
+  hclient_t *h;
+  while (nrunning < nconcur && nleft) {
+    if (q.size ()) {
+      if (noisy) warn << "launched queued req: " << id << "\n";
+      h = q.pop_front ();
+    } else {
+      h = New hclient_t (host, port, inreq, nreq_fixed - nleft);
+      if (noisy) warn << "alloc/launch new req: " << id << "\n";
+      nleft --;
+    }
+    h->run ();
+  }
+}
 
 void
 hclient_t::writewait ()
@@ -89,10 +111,7 @@ hclient_t::cexit (int c)
   }
 
   --nrunning;
-  while (nrunning < nconcur && q.size ()) {
-    if (noisy) warn << "launched queued req: " << id << "\n";
-    q.pop_front ()->run ();
-  }
+  launch_others ();
   if (!--nreq && sdflag)
     do_exit (c);
   if (noisy) warn << "done: " << id << " (nreq: " << nreq << ")\n";
@@ -210,11 +229,12 @@ usage ()
 }
 
 static void
-main2 (str host, int port, str in, int n)
+main2 (int n)
 {
   startt = tsnow;
-  for (int i = 0; i < n; i++) {
-    hclient_t *h = New hclient_t (host, port, in, i);
+  nleft = n - nconcur;
+  for (int i = 0; i < nconcur; i++) {
+    hclient_t *h = New hclient_t (host, port, inreq, i);
     h->run ();
   }
 }
@@ -287,18 +307,17 @@ main (int argc, char *argv[])
 
   str dest = argv[0];
 
-  str in;
   switch (mode) {
   case SEDA:
-    in = "GET /test?x=";
+    inreq = "GET /test?x=";
     if (noisy) warn << "In SEDA mode\n";
     break;
   case OKWS:
-    in = "GET /pt1?id=";
+    inreq = "GET /pt1?id=";
     if (noisy) warn << "In OKWS mode\n";
     break;
   case PHP:
-    in = "GET /pt1.php?id=";
+    inreq = "GET /pt1.php?id=";
     if (noisy) warn << "In PHP mode\n";
     break;
   default:
@@ -309,9 +328,8 @@ main (int argc, char *argv[])
 
   if (!hostport.match (dest)) 
     usage ();
-  str host = hostport[1];
+  host = hostport[1];
   str port_s = hostport[3];
-  int port;
   if (port_s) {
     if (!convertint (port_s, &port)) usage ();
   } else {
@@ -329,9 +347,9 @@ main (int argc, char *argv[])
   nreq_fixed = n;
 
   if (delay) {
-    timecb (startat, wrap (main2, host, port, in, n));
+    timecb (startat, wrap (main2, n));
   } else {
-    main2 (host, port, in, n);
+    main2 (n);
   }
   amain ();
 }
