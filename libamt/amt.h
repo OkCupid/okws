@@ -177,6 +177,13 @@ public:
   ssrv_t *get_ssrv () { return ssrv; }
   ssrv_t *get_ssrv () const { return ssrv; }
 
+  template<class T> void thread_apply (typename callback<void, T *>::ref cb) 
+  {
+    for (u_int i = 0; i < num; i++) {
+      (*cb) (dynamic_cast<T *> (shmem->arr[i].thr));
+    }
+  }
+  
 protected:
   mtd_thread_arg_t *launch_init (int i, int fdout, int *closeit);
   virtual void launch (int i, int fd) = 0;
@@ -232,6 +239,9 @@ public:
         virtual ~ssrv_t () { warn << "in ~ssrv_t()\n"; delete mtd; }
   void req_made (); // called for accounting purposes
   u_int get_load_avg () const { return load_avg; }
+
+  template<class T> void thread_apply (typename callback<void, T *>::ref cb)
+  { mtd->thread_apply<T> (cb); }
 
   mtdispatch_t *mtd;
 private:

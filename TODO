@@ -156,6 +156,9 @@ OKD v0.2
  - pub command line jailing is mess up W.R.T. runtime jail.
  - fix servername/serveralabel mess
  - need a decompress function for zstr
+ - debug and fix prepared statement handles on mysql. need to change
+   the state machine so that it corresponds with the parsed query 
+   state machine.
 
 Documentation
 ------------

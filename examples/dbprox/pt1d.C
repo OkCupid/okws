@@ -38,6 +38,7 @@ public:
   bool init ();
   static mtd_thread_t *alloc (mtd_thread_arg_t *arg) 
   { return New pt1_srv_t (arg); }
+  void pairset (str s, u_int i) { _s = s; _i = i; }
 protected:
   void insert (svccb *sbp);
   void lookup (svccb *sbp);
@@ -47,7 +48,13 @@ private:
   sth_t q_em, q_nm, q_id, ins;
   sth_t qry, tt;
   bool err;
+  
+  // test a new feature
+  str _s;
+  int _i;
 };
+
+static void apply_test (str s, u_int i, pt1_srv_t *t) { t->pairset (s, i); }
 
 bool
 pt1_srv_t::init ()
@@ -135,6 +142,10 @@ main (int argc, char *argv[])
     cnt = tmp;
   ssrv_t *s = New ssrv_t (wrap (&pt1_srv_t::alloc), pt1_prog_1, MTD_PTH, 
 			  cnt, maxq);
+  str foo = "foo";
+  // apply a function to all threads
+  s->thread_apply<pt1_srv_t> (wrap (apply_test, foo, 10));
+
   if (!pub_server (wrap (s, &ssrv_t::accept), PT1_PORT))
     fatal << "Cannot bind to port " << PT1_PORT << "\n";
   amain ();

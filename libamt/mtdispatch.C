@@ -71,7 +71,7 @@ mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
 
 mtdispatch_t::~mtdispatch_t ()
 {
-    warn << "in ~mtdispatch_t\n";
+  warn << "in ~mtdispatch_t\n";
   delete shmem;
 }
 
