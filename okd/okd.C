@@ -592,7 +592,7 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   str debug_stallfile;
   str cdd;  // core dump dir
-  okws1_port_t port;
+  okws1_port_t port = ok_dport;
 
   int ch;
   while ((ch = getopt (argc, argv, "f:l:D:c:p:")) != -1)

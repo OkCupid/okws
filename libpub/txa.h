@@ -119,7 +119,7 @@ public:
     stack[1] = (*tab)[proc_id];
 
     int rc = 0;
-    for (u_int i = RPC_LEVELS - 1; i >= 0; i--) {
+    for (int i = RPC_LEVELS - 1; i >= 0; i--) {
       if (stack[i]) {
 	bool reject = false;
 	for (u_int j = 0; j < toks.size (); j++) {
