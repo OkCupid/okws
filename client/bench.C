@@ -5,7 +5,7 @@ class A {
 public:
   A () : v (0) {}
   virtual ~A () {}
-  virtual foo () = 0;
+  virtual void foo () = 0;
 protected:
   u_int64_t v;
 };
@@ -39,5 +39,5 @@ main (int argc, char *argv[])
     b.foo ();
   }
   int t = stopt ();
-  warn ("%d iter in %d usec: %g\n", iter, t, (double)t / (double)iter);
+  warn ("%d iter in %d usec: %f\n", iter, t, (double)t / (double)iter);
 }
