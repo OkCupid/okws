@@ -677,7 +677,6 @@ case $with_mode in
 	"shopt" )
 		sfstag=$with_mode
 		okwstag=$with_mode
-		okmtag=$with_mode
 		enable_shared=yes
 		;;
 
