@@ -220,7 +220,7 @@ void
 okch_t::repub (ptr<ok_repub_t> rpb)
 {
   if (!clnt) {
-    *rbp->res << (strbuf ("Cannot repub; client not yet initialized: ")
+    *rpb->res << (strbuf ("Cannot repub; client not yet initialized: ")
 		  << servpath);
   } else {
     clnt->call (OKCTL_UPDATE, &rpb->new_fnset, &rpb->xst,
