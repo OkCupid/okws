@@ -114,6 +114,10 @@ TopDir /usr/local/lib/okws
 ##   to "TopDir". Note this must come in the config file before all
 ##   of the configuration directives that call upon it.
 ##
+##   Note that it's possible to give command line options to pub here.
+##   Specify the "-w" option, for instance, turns on White-space-stripping
+##   which results in pretty good space savings.
+##
 ## PubdInet <ip-addr> <port>
 ##
 ##   Alternatively, okd can connect to pubd over a TCP socket at the given
@@ -152,6 +156,20 @@ OkdExecPath 	okd
 ##   as relative paths to the top logging directory.  If launched as root,
 ##   oklogd will chroot to the JailLogDir given, and take these log
 ##   file locations as relative to there.
+##
+##   The possible values for format string are as follows:
+##
+##     i - remote IP address of client.
+##     v - service Name
+##     t - time of request
+##     1 - first line of the HTTP headers in the request
+##     s - status of the reply (e.g., 200 or 404)
+##     b - number of bytes sent over the wire.
+##     U - userID (64-bit integer; 0 if none)
+##     r - Referer
+##     z - length of inflated content (if gzipped, 0 if not)
+## 
+##   These values are subject to change with future releases.
 ##
 LogDir		/var/okws/log
 AccessLog	/access_log
@@ -273,9 +291,10 @@ ChannelLimit 	262144     # 256k
 ##	2 - Filter everything inserted into the CGI table.
 ##  
 ##   Obviously, 0 is the most lenient level, while 2 is the strictest.
-##   Other levels might be introduced in future updates.
+##   Other levels might be introduced in future updates. The default
+##   value is 2.
 ##
-FilterCGI 0
+FilterCGI 2
 
 ##
 ## ErrorDoc
@@ -299,7 +318,7 @@ FilterCGI 0
 ##   stuck in a bad loop, and therefore, okd should not waste additional
 ##   FDs on it.  Eventually, OKWS can run out.
 ##
-##   Note that ServiceFDQuote must be set **less* than 
+##   Note that ServiceFDQuote must be set **less** than 
 ##   OkdFDLowWat.
 ##
 ServiceFDQuota		500
