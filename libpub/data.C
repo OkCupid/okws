@@ -796,6 +796,9 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
 	  nulldef = true;
 	  return (true);
 	}
+      } else {
+	PWARN ("Invalid case statement with no key.");
+	err = true;
       }
     } else if (l->size () == 3) {
       if (!(env = (*l)[2]->to_aarr ())) {
