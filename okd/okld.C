@@ -391,8 +391,11 @@ main (int argc, char *argv[])
     usage ();
 
   sfsconst_init ();
-  if (!cf)
-    cf = sfsconst_etcfile_required ("okd_config");
+  if (!cf) {
+    cf = sfsconst_etcfile ("okws_config");
+    if (!cf)
+      cf = sfsconst_etcfile_required ("okd_config");
+  }
 
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
@@ -416,6 +419,8 @@ okld_t::launch (const str &cf)
   encode_env ();
   if (!(checkservices () && fix_uids () && init_jaildir ()))
     exit (1);
+  if (jaildir)
+    warn ("JailDirectory: %s\n", jaildir.cstr ());
   launch_logd (wrap (this, &okld_t::launch_logd_cb));
 }
 

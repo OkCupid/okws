@@ -345,8 +345,11 @@ static void
 main2 (str cf, int logfd, str cdd)
 {
   sfsconst_init ();
-  if (!cf)
-    cf = sfsconst_etcfile_required ("okd_config");
+  if (!cf) {
+    cf = sfsconst_etcfile ("okws_config");
+    if (!cf)
+      cf = sfsconst_etcfile_required ("okd_config");
+  }
 
   warn ("version %s, pid %d\n", VERSION, int (getpid ()));
   okd_t *okd = New okd_t (cf, logfd, 0, cdd);
