@@ -28,7 +28,8 @@ okwc_req_t *
 okwc_request (const str &host, u_int16_t port, const str &fn,
 	      okwc_cb_t cb, int vrs, int timeout, cgi_t *outcook)
 {
-  okwc_req_t *req = New okwc_req_t (host, port, fn, cb, vrs, timeout, outcook);
+  okwc_req_t *req = 
+    New okwc_req_bigstr_t (host, port, fn, cb, vrs, timeout, outcook);
   req->launch ();
   return req;
 }
@@ -40,9 +41,9 @@ okwc_cancel (okwc_req_t *req)
 }
 
 okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 
-			okwc_cb_t c, int v, int to, cgi_t *ock)
+			int v, int to, cgi_t *ock)
   : hostname (h), port (p), filename (f),
-    okwc_cb (c), vers (v), timeout (to), outcookie (ock),
+    vers (v), timeout (to), outcookie (ock),
     tcpcon (NULL), fd (-1), http (NULL), timer (NULL) {}
 
 void
@@ -65,14 +66,20 @@ okwc_req_t::tcpcon_cb (int f)
   }
   fd = f;
   x = ahttpcon::alloc (fd);
-  http = New okwc_http_t (x, filename,  hostname,
-			  wrap (this, &okwc_req_t::http_cb), vers,
-	                  outcookie);
+  http = okwc_http_alloc ();
   http->make_req ();
 }
 
+okwc_http_t *
+okwc_req_bigstr_t::okwc_http_alloc () 
+{
+  return New okwc_http_bigstr_t (x, filename,  hostname,
+				 wrap (this, &okwc_req_bigstr_t::http_cb), 
+				 vers, outcookie);
+}
+
 void
-okwc_req_t::http_cb (ptr<okwc_resp_t> res)
+okwc_req_bigstr_t::http_cb (ptr<okwc_resp_t> res)
 {
   (*okwc_cb) (res);
   delete this;
@@ -92,7 +99,7 @@ okwc_req_t::cancel (int status)
 }
 
 void
-okwc_req_t::req_fail (int status)
+okwc_req_bigstr_t::req_fail (int status)
 {
   (*okwc_cb) (okwc_resp_t::alloc (status));
   delete this;
@@ -169,12 +176,19 @@ okwc_http_t::hdr_parsed (int status)
     finish (status);
   } else {
     state = OKWC_HTTP_BODY;
-    body.dump (hdr.get_contlen (), wrap (this, &okwc_http_t::body_parsed));
+    body_parse ();
   }
 }
 
 void
-okwc_http_t::body_parsed (str bod)
+okwc_http_bigstr_t::body_parse ()
+{
+  body.dump (hdr.get_contlen (), 
+	     wrap (this, &okwc_http_bigstr_t::body_parsed));
+}
+
+void
+okwc_http_bigstr_t::body_parsed (str bod)
 {
   resp->body = bod;
   finish (HTTP_OK);
@@ -184,16 +198,28 @@ void
 okwc_http_t::finish (int status)
 {
   state = OKWC_HTTP_NONE;
+  finish2 (status);
+}
+
+void
+okwc_http_bigstr_t::finish2 (int status)
+{
   resp->status = status;
   (*okwc_cb) (resp);
 }
 
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
-			  okwc_cb_t c, int v, cgi_t *ock)
+			  int v, cgi_t *ock)
   : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
     hdr (&abuf, &resp->cookies, OKWC_SCRATCH_SZ, scratch),
-    body (&abuf), okwc_cb (c), vers (v), outcook (ock), state (OKWC_HTTP_NONE)
+    vers (v), outcook (ock), state (OKWC_HTTP_NONE)
+{}
+
+okwc_http_bigstr_t::okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f,
+					const str &h, okwc_cb_t cb,
+					int v, cgi_t *okc)
+  : okwc_http_t (xx,f,h,v,okc), body (&abuf), okwc_cb (cb)
 {}
 
 void
@@ -313,10 +339,15 @@ okwc_http_t::cancel ()
     hdr.cancel ();
     break;
   case OKWC_HTTP_BODY:
-    body.cancel ();
+    cancel2 ();
     break;
   default:
     break;
   }
 }
 
+void
+okwc_http_bigstr_t::cancel2 ()
+{
+  body.cancel ();
+}

@@ -124,9 +124,6 @@ private:
   
 };
 
-//
-// application level HTTP object
-//
 class okwc_http_t {
 public:
   typedef enum { OKWC_HTTP_NONE = 0,
@@ -134,8 +131,9 @@ public:
 		 OKWC_HTTP_HDR = 2,
 		 OKWC_HTTP_BODY = 3 } state_t;
 
-  okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, okwc_cb_t c,
+  okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, 
 	       int v, cgi_t *ock);
+  virtual ~okwc_http_t () {}
 
   void make_req ();
   void cancel ();
@@ -143,10 +141,11 @@ public:
 protected:
   void parse (ptr<bool> cf);
   void hdr_parsed (int status);
-  void body_parsed (str bod);
+  virtual void body_parse () = 0;
   void finish (int status);
+  virtual void finish2 (int status) = 0;
+  virtual void cancel2 () = 0;
 
-private:
   ptr<ahttpcon> x;
   str filename;
   str hostname;
@@ -155,8 +154,6 @@ private:
 
   ptr<okwc_resp_t> resp;
   okwc_http_hdr_t hdr;
-  async_dumper_t body;
-  okwc_cb_t okwc_cb;
   int vers;
   cgi_t *outcook; // cookie sending out to the server
 
@@ -165,24 +162,45 @@ private:
   ptr<bool> cancel_flag;
 };
 
+//
+// returns the body of the HTTP response as a big string, malloced
+// in a big buffer. this is the simplest, but is wasteful
+// of memory if the response is going to be parsed line-by-line.
+//
+class okwc_http_bigstr_t : public okwc_http_t {
+public:
+  okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f, const str &h,
+		      okwc_cb_t c, int v, cgi_t *ock);
+
+protected:
+  void body_parse ();
+  void body_parsed (str bod);
+  void finish2 (int status);
+  void cancel2 ();
+
+private:
+  async_dumper_t body;
+  okwc_cb_t okwc_cb;
+};
+
 class okwc_req_t {
 public:
-  okwc_req_t (const str &h, u_int16_t p, const str &fn,
-	      okwc_cb_t cb, int vers, int timeout, cgi_t *ock);
-  ~okwc_req_t ();
+  okwc_req_t (const str &ht, u_int16_t p, const str &fn,
+	      int vers, int timeout, cgi_t *ock);
+  virtual ~okwc_req_t ();
 
   void launch ();
   void cancel (int status);
 
-private:
+protected:
+  virtual okwc_http_t *okwc_http_alloc () = 0;
+
   void tcpcon_cb (int fd);
-  void req_fail (int status);
-  void http_cb (ptr<okwc_resp_t> res);
+  virtual void req_fail (int status) = 0;
 
   const str hostname;
   const u_int16_t port;
   const str filename;
-  okwc_cb_t okwc_cb;
   int vers;         // 0=>HTTP/1.0;  1=>HTTP/1.1
   int timeout;
   cgi_t *outcookie; // cookies client is sending to server
@@ -193,6 +211,18 @@ private:
   ptr<ahttpcon> x;
   okwc_http_t *http;
   timecb_t *timer;
+};
+
+class okwc_req_bigstr_t : public okwc_req_t {
+public:
+  okwc_req_bigstr_t (const str &ht, u_int16_t p, const str &fn,
+		     okwc_cb_t cb, int vers, int timeout, cgi_t *ock)
+    : okwc_req_t (ht, p, fn, vers, timeout, ock), okwc_cb (cb) {}
+protected:
+  virtual void req_fail (int status);
+  void http_cb (ptr<okwc_resp_t> res);
+  okwc_http_t *okwc_http_alloc () ;
+  okwc_cb_t okwc_cb;
 };
 
 okwc_req_t *
