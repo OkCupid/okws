@@ -34,12 +34,12 @@
 #include "axprtfd.h"
 
 #define LOG_TIMEBUF_SIZE   64
-#define LOG_BUF_MINSIZE    0x800    // must be at least 2wice maxwrite
+#define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
 #define LOG_BUF_DEFSIZE    0x10000
 #define LOG_BUF_MAXWRITE   0x400
 #define LOG_BUF_MAXLEN     0x800000
 #define LOG_BUF_TINYLEN    32
-#define LOG_BUF_HIGHWAT    65000
+#define LOG_BUF_HIGHWAT    0x7e00   // 2^15 - 512
 
 // Unlike regular mstr class, mstr2 can be assigned to a str and still
 // retain its data.  this allows us to reuse the malloc'ed memory, as
