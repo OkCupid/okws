@@ -92,6 +92,7 @@ okld_t::parseconfig (const str &cf)
     .add ("OklogdUser", &logd_parms.user)
     .add ("OklogdGroup", &logd_parms.group)
     .add ("UnsafeMode", &unsafe_mode)
+    .add ("SafeStartup", &safe_startup_fl)
     
     .add ("OkdName", &reported_name)
     .add ("OkdVersion", &version)

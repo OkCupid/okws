@@ -213,13 +213,12 @@ okld_ch_t::chldcb (int status)
     state = OKC_STATE_HOSED;
     return;
   }
-  /*
-  if (timenow - startup_time < int (ok_chld_startup_time)) {
+  if (okld->safe_startup () && 
+      (timenow - startup_time < int (ok_chld_startup_time))) {
     CH_WARN ("not restarting due to crash directly after startup");
     state = OKC_STATE_HOSED;
     return;
   }
-  */
   state = OKC_STATE_DELAY;
 
   if (status == 0)

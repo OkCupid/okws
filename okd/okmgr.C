@@ -176,11 +176,12 @@ main (int argc, char *argv[])
       break;
     }
 
-  if ((set_typ == OK_SET_ALL) && (m != CTL_MODE_LAUNCH || files.size ()))
-    usage ();
-
   for (int i = optind; i < argc; i++) 
     files.push_back (argv[i]);
+
+
+  if ((set_typ == OK_SET_ALL) && (m != CTL_MODE_LAUNCH || files.size ()))
+    usage ();
 
   if (!hosts.size ())
     hosts.push_back ("-");

@@ -64,6 +64,7 @@ public:
   const str servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
   ihash_entry<okch_t> lnk;
 protected:
+  void start_chld ();
 private:
   void shutdown_cb1 (cbv cb);
 

@@ -65,6 +65,23 @@ okch_t::got_new_ctlx_fd (int fd, int p)
   pid = p;
   ctlx = axprt_unix::alloc (fd);
   ctlcon (wrap (this, &okch_t::dispatch, destroyed));
+  state == OKC_STATE_LAUNCH_SEQ_1;
+}
+
+//
+// Need two things before we can start dispatching connections
+// (and set state == OKC_STATE_SERVE):
+//    (1) ptr<ahttpcon> x  to be handed to us by okld.
+//    (2) the child to call OKCLNT_READY
+//
+void
+okch_t::start_chld ()
+{
+  if (state == OKC_STATE_LAUNCH_SEQ_2 && x) {
+    state == OKC_STATE_SERVE;
+    while (conqueue.size ())
+      x->clone (conqueue.pop_front ());
+  }
 }
 
 void
@@ -80,13 +97,10 @@ okch_t::got_new_x_fd (int fd, int p)
     goto xfail;
   }
 
-  state = OKC_STATE_SERVE;
-
   x = ahttpcon_dispatch::alloc (fd);
   x->seteofcb (wrap (this, &okch_t::chld_eof, destroyed));
 
-  while (conqueue.size ())
-    x->clone (conqueue.pop_front ());
+  start_chld ();
 
   return;
 
@@ -120,7 +134,12 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     myokd->pubconf (sbp);
     break;
   case OKCTL_READY:
-    state = OKC_STATE_SERVE;
+    if (state == OKC_STATE_LAUNCH_SEQ_1) {
+      state == OKC_STATE_LAUNCH_SEQ_2;
+      start_chld ();
+    } else {
+      CH_WARN ("Cannot process READY message; in wrong state");
+    }
     sbp->reply (NULL);
     break;
   case OKCTL_REQ_ERRDOCS:

@@ -79,7 +79,7 @@ public:
       nxtuid (ok_svc_uid_low), logexc (NULL), 
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), okd_pid (-1),
       sdflag (false), service_bin (ok_service_bin),
-      unsafe_mode (false) {}
+      unsafe_mode (false), safe_startup_fl (true) {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -106,6 +106,7 @@ public:
   cgi_t env;    // execution environment
   ptr<fdsink_t> okdx;
   ok_grp_t svc_grp;
+  bool safe_startup () const { return safe_startup_fl ;}
 
 private:
   bool fix_uids ();
@@ -134,6 +135,7 @@ private:
 
   str service_bin;       // directory where service exes are kept
   bool unsafe_mode;      // for lazy bastards
+  bool safe_startup_fl;  // allows bad children to keep restarting 
 
   str root_coredir;      // privileged core directory
 };

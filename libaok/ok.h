@@ -25,7 +25,9 @@ typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_SERVE = 2,
 	       OKC_STATE_HOSED = 3,
 	       OKC_STATE_CRASH = 4,
-	       OKC_STATE_DELAY = 5 } okc_state_t;
+	       OKC_STATE_DELAY = 5,
+	       OKC_STATE_LAUNCH_SEQ_1 = 6,
+	       OKC_STATE_LAUNCH_SEQ_2 = 7 } okc_state_t;
 
 #define SVCWARN(x) \
   warn << "pid " << pid << ": " << x << "\n";

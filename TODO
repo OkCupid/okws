@@ -42,7 +42,6 @@ Memory
 
 HTTP Issues
 -----------
- - Finish up pubb'ed error docs
  - either #define OK_SERVER_ID, or use okdname/version but not both,
    as we're doing now...
  - multiple instances of each process on a SMP.  we'll also need something
@@ -229,7 +228,7 @@ OKD v0.2
    first of all, why was the coredump not in the jailed /var/coredumps?
    second issue, why did this happen?  i thought all sockets were set 
    with a 4M socketsize? maybe it's a UDP restriction.
- - update sfslite
+ X update sfslite
  - clean up recyling code.
  X merge michael's code...
  X paper stuff - 0550 / gid / coredump situation
@@ -247,3 +246,4 @@ OKD v0.2
  - still have spurious dmalloc free problems on file uploads.  weird.
  - byacc breaks everything due to unitialized memory, and used of
    xmalloc for C++ objects.
+-  pubb'ed error docs
