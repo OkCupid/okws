@@ -67,7 +67,7 @@
 %type <num> number
 %type <pvar> pvar evar gcode
 %type <pval> bvalue arr i_arr g_arr
-%type <sec> guy_print htag htag_list javascript pre
+%type <sec> guy_print htag htag_list javascript pre b_js_tag
 %type <el> ptag guy_vars guy_func
 %type <func> guy_funcname
 %type <pstr> pstr
@@ -266,7 +266,7 @@ html_part: T_HTML 	{ PSECTION->hadd ($1); }
 	| T_CH		{ PSECTION->hadd ($1); }
 	| htag		{ PSECTION->hadd ($1); PLASTHTAG = PHTAG; }
 	| ' ' 		{ PSECTION->hadd_space (); }
-	| javascript	{ PSECTION->hadd ($1); }
+	| javascript	{ PSECTION->hadd ($1); } 
 	| ptag		{ PSECTION->hadd ($1); }
 	| pre		{ PSECTION->hadd ($1); }
 	;
@@ -327,15 +327,14 @@ pre_part: T_CH		{ PSECTION->add ($1); }
 		
 b_js_tag: T_BJST 
 	{ 
-	  PFILE->push_section (New pfile_html_sec_t (PLINENO));
-	  PFILE->push_section (New pfile_html_tag_t (PLINENO, $1));
-  	  PSECTION->htag_space ();
-	  /* PSECTION->add ($1); */
+ 	  /* as a hack, we won't treat JavaScript section as explicit tags */
+ 	  PFILE->push_section (New pfile_html_sec_t (PLINENO));
+	  PSECTION->add ($1);
+  	  /* PSECTION->htag_space (); */
 	} 
 	htag_list T_ETAG
 	{  
  	  PSECTION->add ($4);
-	  PFILE->add_section2 ();
 	}
 	;
 
