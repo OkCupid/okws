@@ -31,7 +31,8 @@
 
 class shad_dbprox_t : public amysql_thread_t {
 public:
-  shad_dbprox_t (mtd_thread_arg_t *a) : amysql_thread_t (a), err (false) {}
+  shad_dbprox_t (mtd_thread_arg_t *a) 
+    : amysql_thread_t (a, AMYSQL_PREPARED), err (false) {}
   void dispatch (svccb *sbp);
   bool init ();
   static mtd_thread_t *alloc (mtd_thread_arg_t *arg) 
@@ -85,7 +86,7 @@ int
 main (int argc, char *argv[])
 {
   ssrv_t *s = New ssrv_t (wrap (&shad_dbprox_t::alloc), 
-			  sha_prog_1, MTD_PTH, 3, MTD_MAXQ,
+			  sha_prog_1, MTD_PTH, 1, MTD_MAXQ,
 			  New sha_prog_1_txa_t ());
   if (!pub_server (wrap (s, &ssrv_t::accept), SHAD_PORT))
     fatal << "Cannot bind to port " << SHAD_PORT << "\n";

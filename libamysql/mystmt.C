@@ -69,13 +69,13 @@ sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 
   if (b && arr && n) {
     bind (b, arr, n);
-    if (mysql_stmt_bind_param (sth, b)) {
+    if (mysql_stmt_bind_param (sth, b) != 0) {
       err = strbuf ("bind error: ") << mysql_stmt_error (sth);
 	  errno_n = mysql_stmt_errno (sth);
       return false;
     }
   }
-  if (mysql_stmt_execute (sth)) {
+  if (mysql_stmt_execute (sth) != 0) {
     err = strbuf ("execute error: ") << mysql_stmt_error (sth);
     errno_n = mysql_stmt_errno (sth);
     state = AMYSQL_NONE;
@@ -93,7 +93,7 @@ sth_prepared_t::bind_result ()
   assert (res_arr);
   for (u_int i = 0; i < res_n; i++)
     res_arr[i].bind (&bnds[i]);
-  if (mysql_stmt_bind_result (sth, bnds)) {
+  if (mysql_stmt_bind_result (sth, bnds) != 0) {
     err = strbuf ("bind failed: ") << mysql_stmt_error (sth);
 	errno_n = mysql_stmt_errno (sth);
     return false;
@@ -343,7 +343,7 @@ sth_parsed_t::execute2 (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
   str q = make_query (aarr, n);
 
   last_qry = q;
-  if (mysql_real_query (mysql, q.cstr (), q.len ())) {
+  if (mysql_real_query (mysql, q.cstr (), q.len ()) != 0) {
     err = strbuf ("Query execution error: ") << mysql_error (mysql) << "\n";
     errno_n = mysql_errno (mysql);
     state = AMYSQL_NONE;
