@@ -18,11 +18,19 @@ public:
 		lblnc_t *l, bool a = false, u_int o = 0) ;
   void get_load_avg ();
   void got_load_avg (clnt_stat st);
+  void activate ();
+  void deactivate ();
+
   u_int id;
   ihash_entry<lblnc_node_t> hlnk;
   helper_inet_t hlp;
   bool active;
   u_int load_avg;
+
+private:
+  void set_timer ();
+  void timer_event ();
+  timecb_t *dcb;
 };
 
 class lblnc_tab_t {

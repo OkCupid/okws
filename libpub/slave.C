@@ -285,7 +285,7 @@ helper_t::connect (cbb::ptr cb)
 }
 
 void
-helper_t::connected (cbb cb, ptr<bool> df, bool b)
+helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
 {
   if (*df) {
     if (cb)

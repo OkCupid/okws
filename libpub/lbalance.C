@@ -9,7 +9,7 @@ lblnc_tab_t::activate (u_int i)
   lblnc_node_t *n = tab[i];
   if (n->active)
     return;
-  n->active = true;
+  n->activate ();
   rebuild ();
 }
 
@@ -19,8 +19,41 @@ lblnc_tab_t::deactivate (u_int i)
   lblnc_node_t *n = tab[i];
   if (!n->active)
     return;
-  n->active = false;
+  n->deactivate ();
   rebuild ();
+}
+
+void
+lblnc_node_t::activate ()
+{
+  active = true;
+  get_load_avg ();
+  set_timer ();
+}
+
+void
+lblnc_node_t::set_timer ()
+{
+  assert (!dcb);
+  dcb = delaycb (ok_ldavg_ping_interval, 0, 
+		 wrap (this, &lblnc_node_t::timer_event));
+}
+
+void
+lblnc_node_t::timer_event ()
+{
+  dcb = NULL;
+  get_load_avg ();
+  set_timer ();
+}
+
+void
+lblnc_node_t::deactivate ()
+{
+  if (dcb) 
+    timecb_remove (dcb);
+  dcb = NULL;
+  active = false;
 }
 
 void
@@ -76,7 +109,7 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
 lblnc_node_t::lblnc_node_t (u_int i, const rpc_program &rp, 
 			    const str &hn, u_int p, lblnc_t *l, 
 			    bool a, u_int o) 
-  : id (i), hlp (rp, hn, p, o), active (a) 
+  : id (i), hlp (rp, hn, p, o), active (a), dcb (NULL)
 {
   hlp.set_status_cb (wrap (l, &lblnc_t::status_change, id));
 }

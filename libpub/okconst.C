@@ -92,6 +92,7 @@ u_int ok_reqsize_limit = 2097152;    // 2MB
 //
 u_int ok_amt_lasi = 20;              // load avg sampling interval in secs
 u_int ok_ldavg_rpc_timeout = 10;     // load avg RPC timeout in secs
+u_int ok_ldavg_ping_interval = 2;    // load avg ping interval in secs
 
 //
 // OK Service UID limits
