@@ -493,4 +493,8 @@ ssrv_t::req_made ()
   load_avg = reqtimes.size ();
 }
        
-  
+ssrv_t *
+mtd_thread_t::get_ssrv ()
+{
+  return mtd->get_ssrv ();
+}

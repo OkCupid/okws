@@ -63,6 +63,7 @@ typedef enum { MTD_RPC_NULL = 0,
 	       MTD_RPC_DATA = 1,
 	       MTD_RPC_REJECT = 2 } mtd_rpc_t;
 
+class ssrv_t;
 class mtd_thread_t { // Abstract class for Child threads
 public:
   mtd_thread_t (mtd_thread_arg_t *a);
@@ -75,6 +76,7 @@ public:
   void reject ();
   void reply (ptr<void> d);
   int getid () const { return tid; }
+  ssrv_t *get_ssrv ();
 private:
   void become_ready ();
   void take_svccb ();
@@ -126,7 +128,6 @@ struct mtd_shmem_t {
   mtd_shmem_cell_t *arr;
 };
 
-class ssrv_t;
 class mtdispatch_t { // Multi-Thread Dispatch
 public:
   mtdispatch_t (newthrcb_t c, u_int nthr, u_int mq, ssrv_t *s);
@@ -135,6 +136,7 @@ public:
   virtual ~mtdispatch_t ();
   virtual void init ();
   virtual bool async_serv (svccb *b);
+  ssrv_t *get_ssrv () { return ssrv; }
 
 protected:
   mtd_thread_arg_t *launch_init (int i, int fdout, int *closeit);
