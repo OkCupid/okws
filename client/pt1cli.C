@@ -189,6 +189,15 @@ usage ()
   fatal << "usage: ptcli [-d] [-{s|p|o}] [-c <concur>] [-n <num>] <host>\n";
 }
 
+static void
+main2 (str host, int port, str in, int n)
+{
+  for (int i = 0; i < n; i++) {
+    hclient_t *h = New hclient_t (host, port, in, i);
+    h->run ();
+  }
+}
+
 int 
 main (int argc, char *argv[])
 {
@@ -198,8 +207,11 @@ main (int argc, char *argv[])
   int ch;
   int n = 1000;
   nconcur = 500; 
+  bool delay = false;
+  timespec startat;
+  startat.tv_nsec = 0;
 
-  while ((ch = getopt (argc, argv, "dc:n:spo")) != -1) {
+  while ((ch = getopt (argc, argv, "dc:n:spot:")) != -1) {
     switch (ch) {
     case 'd':
       noisy = true;
@@ -223,6 +235,24 @@ main (int argc, char *argv[])
     case 'o':
       mode = OKWS;
       break;
+    case 't': 
+      {
+	if (!convertint (optarg, &startat.tv_sec))
+	  usage ();
+	delay = true;
+	if (noisy) warn << "Delaying start until time=" 
+			<< startat.tv_sec << "\n";
+	time_t mytm = time (NULL);
+	int tmp =  startat.tv_sec - mytm;
+	if (tmp < 0) {
+	  warn << "time stamp alreached (it's " << mytm << " right now)!\n";
+	  usage ();
+	}
+	if (noisy) {
+	  warn << "Starting in T minus " << tmp << " seconds\n";
+	}
+	break;
+      }
     default:
       usage ();
     }
@@ -276,9 +306,12 @@ main (int argc, char *argv[])
   nreq = n;
   nreq_fixed = n;
   startt = tsnow;
-  for (int i = 0; i < n; i++) {
-    hclient_t *h = New hclient_t (host, port, in, i);
-    h->run ();
+
+  if (delay) {
+    timecb (startat, wrap (main2, host, port, in, n));
+  } else {
+    main2 (host, port, in, n);
   }
   amain ();
 }
+
