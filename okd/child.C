@@ -34,7 +34,7 @@
 okch_t::okch_t (okd_t *o, const str &s)
   : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
     destroyed (New refcounted<bool> (false)),
-    srv_disabled (false)
+    srv_disabled (false), per_svc_nfd_in_xit (0)
 {
   myokd->insert (this);
 }
@@ -42,9 +42,17 @@ okch_t::okch_t (okd_t *o, const str &s)
 okch_t::~okch_t ()
 {
   while (conqueue.size ()) 
-    myokd->error (conqueue.pop_front (), 500);
+    myokd->error (conqueue.pop_front (), HTTP_SRV_ERROR);
   myokd->remove (this);
   *destroyed = true;
+}
+
+void
+okch_t::closed_fd ()
+{
+  // warn << "debug: dec:  " << per_svc_nfd_in_xit << "\n";
+  per_svc_nfd_in_xit --;
+  myokd->closed_fd ();
 }
 
 void
@@ -53,13 +61,19 @@ okch_t::clone (ref<ahttpcon_clone> xc)
   if (!x || x->ateof () || state != OKC_STATE_SERVE) {
     if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED || 
 	conqueue.size () > ok_con_queue_max) {
-      myokd->error (xc, 500, make_generic_http_req (servpath));
+      myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
     } else {
       //warn << "queued con\n"; // XX debug
       conqueue.push_back (xc);
     }
+  } else if (per_svc_nfd_in_xit > int (ok_svc_fd_quota)) {
+    // warn << "debug: fail: " << per_svc_nfd_in_xit << "\n";
+    myokd->error (xc, HTTP_UNAVAILABLE, make_generic_http_req (servpath));
   } else {
-    x->clone (xc, wrap (myokd, &okd_t::closed_fd));
+    // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
+    per_svc_nfd_in_xit ++;
+    xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd));
+    x->clone (xc);
   }
 }
 

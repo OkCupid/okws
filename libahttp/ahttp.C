@@ -39,7 +39,7 @@ int ahttpcon_spawn_pid;
 int n_ahttpcon = 0;
 
 void
-ahttpcon::clone (ref<ahttpcon_clone> xc, cbv::ptr cb)
+ahttpcon::clone (ref<ahttpcon_clone> xc)
 {
   assert (!xc->ateof ());
   sockaddr_in *sin_tmp;
@@ -55,6 +55,7 @@ ahttpcon::stopread ()
   if (rcbset) {
     fdcb (fd, selread, NULL);
     rcbset = false;
+
   }
 }
 */
@@ -206,7 +207,10 @@ ahttpcon_dispatch::dowritev (int cnt)
     cnt = out->iovcnt ();
   if (cnt > UIO_MAXIOV)
     cnt = UIO_MAXIOV;
+
+  // statistics collection
   if (ss) ss->n_writevfd ++ ;
+
   bool ignore_err = (out->resid () == 0);
   ssize_t n = writevfd (fd, out->iov (), cnt, fdsendq.front ().fd);
 
@@ -375,6 +379,13 @@ ahttpcon_listen::doread (int fd)
   }
  
   /*
+   * not using the getpeername technique, since okd must send data
+   * over the channel with the FD, so it may as well send the sockaddr
+   * information
+   *
+   * this code to be deleted...
+   *
+   *
   else if ((n == 0 || n == -1) && tnfd >= 0 && !ok_send_sin) {
     socklen_t sinlen;
     sin2 = (sockaddr_in *) xmalloc (sizeof (sockaddr_in));

@@ -53,6 +53,7 @@ okd_t::kill_srvcs (oksig_t sig)
   u_int i = servtab.size ();
   if (i > 0) {
     servtab.traverse (wrap (shutdown_srvc, sig, this));
+    warn << "debug: setting shutdown timer: " << ok_shutdown_timeout << "\n";
     dcb = delaycb (ok_shutdown_timeout, 0, 
 		   wrap (this, &okd_t::shutdown_retry));
   } else {
@@ -71,7 +72,7 @@ void
 okd_t::shutdown_retry ()
 {
   dcb = NULL;
-  if (++sdattempt > 3) {
+  if (++sdattempt > int (ok_shutdown_retries)) {
     warn << "aborting all unresponsive services\n";
     kill_srvcs (OK_SIG_ABORT);
   } else {

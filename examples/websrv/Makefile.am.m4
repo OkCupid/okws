@@ -38,6 +38,7 @@ svcmk(google)
 svcmk(pt1)
 dnl svcmk(pt2)
 svcmk(upload)
+svcmk(bomb)
 
 dnl
 dnl End of the Part the you Need to Edit

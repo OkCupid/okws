@@ -41,6 +41,13 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_RQSZLMT_MIN  1024
 #define OK_RQSZLMT_MAX  32*1024*1024
 
+#define OKD_FDS_HIGH_WAT_LL  0
+#define OKD_FDS_HIGH_WAT_UL  10240
+#define OKD_FDS_LOW_WAT_LL  0
+#define OKD_FDS_LOW_WAT_UL  10000
+#define OK_SVC_FD_QUOTA_LL 50
+#define OK_SVC_FD_QUOTA_UL 500
+
 //
 // gzip parameters (see zstr.h)
 //
@@ -81,6 +88,7 @@ extern const char *ok_pub_config;
 //
 extern u_int ok_connect_wait;
 extern u_int ok_shutdown_timeout;
+extern u_int ok_shutdown_retries;
 extern u_int ok_db_retries_max;
 extern u_int ok_db_retry_delay;
 
@@ -110,6 +118,7 @@ extern u_int okd_fds_high_wat;                 // max FDs okd has outstanding
 extern u_int okd_fds_low_wat;                  // below low wat turn accept on
 extern u_int ok_svc_fds_high_wat;              // max FDs a svc has out
 extern u_int ok_svc_fds_low_wat;               // below low wat turn accept on
+extern u_int ok_svc_fd_quota;                  // FD quota for svc
 extern bool okd_accept_msgs;                   // display messages re: accept()
 extern bool ok_svc_accept_msgs;                // display messages re: accept()
 extern u_int ok_ssdi;                          // syscall stat dump interval

@@ -47,9 +47,12 @@ void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
 suio *suio_alloc ();
 
+
+
 class cbv_countdown_t : public virtual refcount {
 public:
-  cbv_countdown_t (cbv::ptr c) : cb (c) {}
+  cbv_countdown_t (cbv c) : cb (c) {}
+  void reset (cbv c) { cb = c; }
   ~cbv_countdown_t () { (*cb) (); }
 private:
   cbv cb;
@@ -108,7 +111,7 @@ public:
   // void stopread ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
-  void clone (ref<ahttpcon_clone> xc, cbv::ptr cb = NULL);
+  void clone (ref<ahttpcon_clone> xc);
   void output ();
   void spacecb ();
   void error (int ec);
@@ -118,8 +121,15 @@ public:
   suiolite *uio () const { return in; }
   u_int get_bytes_sent () const { return bytes_sent; }
 
-  void set_close_fd_cb (cbv::ptr cb) 
-  { cbcd = New refcounted<cbv_countdown_t> (cb); }
+  void set_close_fd_cb (cbv cb) 
+  { assert (!cbcd); cbcd = New refcounted<cbv_countdown_t> (cb); }
+
+  void reset_close_fd_cb (cbv cb)
+  {
+    assert (cbcd); 
+    cbcd->reset (cb);
+  }
+
   ptr<cbv_countdown_t> get_close_fd_cb () { return cbcd; }
 
   static ptr<ahttpcon> alloc (int fd, sockaddr_in *s = NULL, 

@@ -89,6 +89,7 @@ protected:
   void start_chld ();
 private:
   void shutdown_cb1 (cbv cb);
+  void closed_fd ();
 
   ptr<ahttpcon> x;
 
@@ -97,6 +98,7 @@ private:
   okc_state_t state;
   ptr<bool> destroyed;
   bool srv_disabled;
+  int per_svc_nfd_in_xit;  // per service number FD in transit
 };
 
 class okd_t : public ok_httpsrv_t 
@@ -204,8 +206,6 @@ private:
   void req_err_docs_2 (ptr<pub_res_t> res);
   void req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err);
   void req_err_docs_4 (bool rc);
-
-
 
   void got_chld_fd (int fd, ptr<okws_fd_t> desc);
 

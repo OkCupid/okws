@@ -30,6 +30,7 @@ int port;
 str inreq;
 str inqry;
 str suffix;
+str static_url;
 int rand_modulus;
 int hclient_id;
 int latency_gcf;
@@ -78,12 +79,36 @@ get_svc_id (int id)
 
 class hclient_t {
 public:
+  hclient_t (str h, int p, str u)
+    : host (h), port (p), url (u), 
+    cli_write_delay (get_cli_write_delay (id))
+  {
+    init ();
+  }
+
+  void init ()
+  {
+    id = hclient_id++;
+    bp = buf; 
+    reqsz = -1;
+    body = NULL;
+    success = false;
+    output_stuff  = false;
+    selread_on  = true;
+    tcb  = NULL ;
+    wcb  = NULL;
+    destroyed  = New refcounted<bool> (false);
+  }
+
+
   hclient_t (str h, int p, str r, str q) 
-    : host (h), port (p), req (r), id (hclient_id++), 
-      bp (buf), reqsz (-1), body (NULL), 
-      cli_write_delay (get_cli_write_delay (id)), qry (q), success (false),
-      output_stuff (false), selread_on (true), tcb (NULL), wcb (NULL),
-      destroyed (New refcounted<bool> (false)) {}
+    : host (h), port (p), req (r),
+      cli_write_delay (get_cli_write_delay (id)),
+      qry (q)
+  {
+    init ();
+  }
+
   ~hclient_t () 
   {
     close ();
@@ -130,6 +155,7 @@ private:
   str host;
   int port;
   str req;
+  str url;
   int fd;
   int id;
   char *bp;
@@ -156,7 +182,11 @@ hclient_t::launch_others ()
       if (noisy) warn << "launched queued req: " << id << "\n";
       h = q.pop_front ();
     } else {
-      h = New hclient_t (host, port, inreq, inqry);
+      if (static_url) {
+	h = New hclient_t (host, port, static_url);
+      } else {
+	h = New hclient_t (host, port, inreq, inqry);
+      }
       if (noisy) warn << "alloc/launch new req: " << id << "\n";
       nleft --;
     }
@@ -307,8 +337,13 @@ hclient_t::sched_write (ptr<bool> d_local)
   strbuf b;
   int id = random() % rand_modulus;
   int v = zippity ? 1 : 0;
-  b << "GET /" << req << suffix << get_svc_id (id) << qry << id  
-    << " HTTP/1." << v << "\r\n";
+
+  if (url) 
+    b << "GET " << url << " HTTP/1." << v << "\r\n";
+  else 
+    b << "GET /" << req << suffix << get_svc_id (id) << qry << id  
+      << " HTTP/1." << v << "\r\n";
+
   if (zippity) 
     b << "Accept: */*\r\n"
  	<< "Accept-Languge: en-us\r\n"
@@ -416,7 +451,12 @@ main2 (int n)
   tpt_last_sample = tsnow;
   delaycb (tpt_sample_freq, 0, wrap (tpt_do_sample, false));
   for (int i = 0; i < nconcur; i++) {
-    hclient_t *h = New hclient_t (host, port, inreq, inqry);
+    hclient_t *h;
+    if (static_url) {
+      h = New hclient_t (host, port, static_url);
+    } else {
+      h = New hclient_t (host, port, inreq, inqry);
+    }
     h->run ();
   }
 }
@@ -446,8 +486,11 @@ main (int argc, char *argv[])
   int lat_mean = 75;
   suffix = "";
 
-  while ((ch = getopt (argc, argv, "x:zspofdc:n:t:r:v:lS:M:")) != -1) {
+  while ((ch = getopt (argc, argv, "x:zspofdc:n:t:r:v:lS:M:u:")) != -1) {
     switch (ch) {
+    case 'u':
+      static_url = optarg;
+      break;
     case 'S':
       if (!convertint (optarg, &lat_stddv))
         usage ();

@@ -170,7 +170,6 @@ okld_t::parseconfig (const str &cf)
 
     .add ("OkdUser", &okd_un)
     .add ("OkdGroup", &okd_gr)
-    .add ("ShutdownTimeout", &ok_shutdown_timeout, 0, 1000)
     
     .add ("OkdName", &reported_name)
     .add ("OkdVersion", &version)
@@ -196,16 +195,23 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceFDLowWat", &ok_svc_fds_low_wat, 0, 10000)
     .add ("ServiceAcceptMessages", &ok_svc_accept_msgs)
 
+    .add ("OkdFDHighWat", &okd_fds_high_wat, 
+	  OKD_FDS_HIGH_WAT_LL, OKD_FDS_HIGH_WAT_UL)
+    .add ("OkdFDLowWat", &okd_fds_low_wat, 
+	  OKD_FDS_LOW_WAT_LL, OKD_FDS_HIGH_WAT_UL)
+    .add ("ServiceFDQuota", &ok_svc_fd_quota, 
+	  OK_SVC_FD_QUOTA_LL, OK_SVC_FD_QUOTA_UL)
+
     .ignore ("Alias")
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
     .ignore ("OkMgrPort")
     .ignore ("PubdExecPath")
     .ignore ("ErrorDoc")
-    .ignore ("OkdFDLowWat")
-    .ignore ("OkdFDHighWat")
     .ignore ("OkdAcceptMessages")
-    .ignore ("OkdChildSelectDisable");
+    .ignore ("OkdChildSelectDisable")
+    .ignore ("ShutdownRetries")
+    .ignore ("ShutdownTimeout");
 
 
   if (grp) svc_grp = ok_grp_t (grp);
@@ -219,6 +225,26 @@ okld_t::parseconfig (const str &cf)
     }
   }
   nxtuid = ok_svc_uid_low;
+
+  //
+  // perform checks for okd to make shutdown cleaner in the
+  // case of bad parameters specified.
+  //
+  if (okd_fds_low_wat > okd_fds_high_wat) {
+    warn << "OkdFDHighWat needs to be greater than OkdFDLowWat\n";
+    errors = true;
+  }
+
+  if (ok_svc_fd_quota > okd_fds_low_wat) {
+    warn << "SvcFDQuota must be less than OkdFDLowWat\n";
+    errors = true;
+  }
+
+  if (ok_svc_fds_high_wat > 0 && 
+      (ok_svc_fds_low_wat == 0 || ok_svc_fds_low_wat > ok_svc_fds_high_wat)) {
+    warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
+    errors = true;
+  }
 
   if (!hostname)
     hostname = myname ();

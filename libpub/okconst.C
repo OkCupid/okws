@@ -65,6 +65,7 @@ const char *ok_pub_config = "/etc/sfs/pub_config";
 //
 u_int ok_connect_wait = 4;          // seconds
 u_int ok_shutdown_timeout = 10;     // seconds
+u_int ok_shutdown_retries = 3;      // n retries before giving up
 u_int ok_db_retries_max = 100;
 u_int ok_db_retries_delay = 3;
 
@@ -83,10 +84,11 @@ u_int ok_resurrect_delay = 3;
 u_int ok_resurrect_delay_ms = 500;
 u_int ok_chld_startup_time = 10;    // startup time in seconds....
 u_int ok_filter_cgi = XSSFILT_NONE; // filter XSS metacharacters
-u_int okd_fds_high_wat = 100;       // turn off accept above this
-u_int okd_fds_low_wat = 50;         // below low wat, turn accept back on.
+u_int okd_fds_high_wat = 500;       // turn off accept above this
+u_int okd_fds_low_wat = 450;        // below low wat, turn accept back on.
 u_int ok_svc_fds_high_wat = 1000;   // a little bit less thatn 1024 for now.
 u_int ok_svc_fds_low_wat = 950;     // below low wat, turn accept back on.
+u_int ok_svc_fd_quota = 100;        // quota for SVC fds.
 bool okd_accept_msgs = true;        // display messages about accept()
 bool ok_svc_accept_msgs = true;     // display messages about accept()
 u_int ok_ssdi = 0;                  // syscall stat dump interval

@@ -307,8 +307,13 @@ okd_t::parseconfig ()
     .add ("OkMgrPort", &ok_mgr_port, OK_PORT_MIN, OK_PORT_MAX)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
 
-    .add ("OkdFDHighWat", &okd_fds_high_wat, 0, 10240)
-    .add ("OkdFDLowWat", &okd_fds_low_wat, 0, 10000)
+    .add ("OkdFDHighWat", &okd_fds_high_wat, 
+	  OKD_FDS_HIGH_WAT_LL, OKD_FDS_HIGH_WAT_UL)
+    .add ("OkdFDLowWat", &okd_fds_low_wat, 
+	  OKD_FDS_LOW_WAT_LL, OKD_FDS_HIGH_WAT_UL)
+    .add ("ServiceFDQuota", &ok_svc_fd_quota, 
+	  OK_SVC_FD_QUOTA_LL, OK_SVC_FD_QUOTA_UL)
+
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
     .add ("OkdAcceptMessages", &accept_msgs)
 
@@ -319,6 +324,8 @@ okd_t::parseconfig ()
     .add ("SendSockAddrIn", &ok_send_sin)
 
     .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
+    .add ("ShutdownRetries", &ok_shutdown_retries, 1, 10)
+    .add ("ShutdownTimeout", &ok_shutdown_timeout, 1, 200)
 
     .add ("OkdName", &reported_name)
     .add ("OkdVersion", &version)
@@ -349,7 +356,6 @@ okd_t::parseconfig ()
     .ignore ("CoreDumpDir")
     .ignore ("SocketDir")
     .ignore ("ServiceBin")
-    .ignore ("ShutdownTimeout")
 
     .ignore ("Gzip")
     .ignore ("GzipLevel")
@@ -376,17 +382,6 @@ okd_t::parseconfig ()
     }
   }
 
-  if (okd_fds_low_wat > okd_fds_high_wat) {
-    warn << "OkdFDHighWat needs to be greater than OkdFDLowWat\n";
-    errors = true;
-  }
-
-  if (ok_svc_fds_high_wat > 0 && 
-      (ok_svc_fds_low_wat == 0 || ok_svc_fds_low_wat > ok_svc_fds_high_wat)) {
-    warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
-    errors = true;
-  }
-
   init_syscall_stats ();
 
   if (un) okd_usr = ok_usr_t (un);
@@ -402,6 +397,9 @@ void
 okd_t::closed_fd ()
 {
   nfd_in_xit --;
+
+  //warn << "debug/global: dec: " << nfd_in_xit << "\n";
+
   if (nfd_in_xit < int (okd_fds_low_wat) && !accept_enabled)
     enable_accept ();
 }
