@@ -1710,8 +1710,9 @@ dnl
 shared_tmp=1
 if test -z "$enable_shared" -o "$enable_shared" = "no"; then
 	shared_tmp=0
+	SVC_LDFLAGS=-all-static
 fi
-AM_CONDITIONAL(LDFLAGS_ALL_STATIC, test $shared_tmp -eq 0 )
+AC_SUBST(SVC_LDFLAGS)
 AM_CONDITIONAL(DLINKED_SERVICES, test $shared_tmp -eq 1)
 ])
 

@@ -12,6 +12,8 @@ SUFFIXES = .g .C
 	@rm -f $@
 	-$(PUB) $(PUBFLAGS) -o $@ $< || rm -f $@
 
+LDFLAGS = $(SVC_LDFLAGS)
+
 define(`cgi_sources',)dnl
 define(`cgi_gfiles',)dnl
 define(`cgi_exes',)dnl
@@ -42,9 +44,6 @@ dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 
-if LDFLAGS_ALL_STATIC
-	LDFLAGS = -all-static
-endif
 LDADD = $(LDADD_SRV)
 
 coredump_SOURCES = coredump.C
@@ -59,6 +58,7 @@ dnl foo_PROGRAMS = cgi_exes coredump
 dnl
 dnl Or whatever it is you please...
 dnl
+
 
 
 BUILT_SOURCES = cgi_sources
@@ -87,3 +87,4 @@ dnl
 dnl		$(jailsh) $(okmjaildir) $(DESTDIR)$(okmsvcdir)/foo/*
 dnl
 dnl                   
+
