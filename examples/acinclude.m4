@@ -706,7 +706,7 @@ if test "$with_mysql" != "no"; then
 			fi
 			LIBS="$ac_save_LIBS $lflags"
 			AC_TRY_LINK([#include "mysql.h"],
-				mysql_bind_param (0, 0);, 
+				mysql_real_connect (0,0,0,0,0,0,0,0);, 
 				sfs_cv_libmysqlclient=$lflags; break)
 		done
 		if test -z ${sfs_cv_libmysqlclient+set}; then

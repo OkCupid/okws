@@ -307,8 +307,8 @@ okd_t::parseconfig ()
     .add ("OkMgrPort", &ok_mgr_port, OK_PORT_MIN, OK_PORT_MAX)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
 
-    .add ("OkdMaxFDs", &okd_max_fds, 0, 10240)
-    .add ("OkdFDHighWat", &okd_fds_high_wat, 0, 10000)
+    .add ("OkdFDHighWat", &okd_fds_high_wat, 0, 10240)
+    .add ("OkdFDLowWat", &okd_fds_low_wat, 0, 10000)
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
     .add ("OkdAcceptMessages", &accept_msgs)
 
@@ -364,8 +364,8 @@ okd_t::parseconfig ()
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
 
-    .ignore ("ServiceMaxFDs")
     .ignore ("ServiceFDHighWat")
+    .ignore ("ServiceFDLowWat")
     .ignore ("ServiceAcceptMessages");
 
 
@@ -376,8 +376,8 @@ okd_t::parseconfig ()
     }
   }
 
-  if (okd_fds_high_wat > okd_max_fds) {
-    warn << "OkdMaxFDs needs to be greater than OkdFDHighWat\n";
+  if (okd_fds_low_wat > okd_fds_high_wat) {
+    warn << "OkdFDHighWat needs to be greater than OkdFDLowWat\n";
     errors = true;
   }
 
@@ -402,7 +402,7 @@ void
 okd_t::closed_fd ()
 {
   nfd_in_xit --;
-  if (nfd_in_xit < int (okd_fds_high_wat) && !accept_enabled)
+  if (nfd_in_xit < int (okd_fds_low_wat) && !accept_enabled)
     enable_accept ();
 }
 
@@ -472,7 +472,7 @@ okd_t::newserv (int fd)
     //warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
     x->setccb (wrap (this, &okd_t::sclone, x));
 
-    if (nfd_in_xit > int (okd_max_fds) && accept_enabled) {
+    if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
       disable_accept ();
     }
   }

@@ -291,4 +291,26 @@ FilterCGI 0
 ## Other Miscellaneous Options
 ##
 
+##
+## OkdFDHighWat
+## ServiceFDHighWat
+##
+##   Number of file descriptors that OKD can have open before turning
+##   off accept.
+##
+##   Similarly, number of open file descriptors a service can have before
+##   rejecting requests.
+##
+OkdFDHighWat		100
+ServiceFDHighWat	1000
+
+##
+## OkdFDLowWat
+##
+##   After OKD has turned off accept, it lets FDs drain before to the low
+##   water mark befor turning accept back on.  This stops flip-flop
+##   beavhior.
+##
+OkdFDLowWat	50
+
 

@@ -182,7 +182,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("clito", &ok_clnt_timeout);
     t->lookup ("reqszlimit", &ok_reqsize_limit);
     t->lookup ("ssdi", &ok_ssdi);
-    t->lookup ("maxfds", &ok_svc_max_fds);
+    t->lookup ("fdlw", &ok_svc_fds_low_wat);
     t->lookup ("fdhw", &ok_svc_fds_high_wat);
     t->lookup ("mmcf", &mmc_file);
     ok_svc_accept_msgs = t->blookup ("acmsg");
@@ -532,7 +532,7 @@ void
 oksrvc_t::closed_fd ()
 {
   n_fd_out --;
-  if (n_fd_out < int (ok_svc_fds_high_wat) && !accept_enabled)
+  if (n_fd_out < int (ok_svc_fds_low_wat) && !accept_enabled)
     enable_accept ();
 }
 
@@ -551,7 +551,7 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
       c->serve ();
       add (c);
     }
-    if (ok_svc_max_fds != 0 && n_fd_out >= int (ok_svc_max_fds)) {
+    if (ok_svc_fds_high_wat != 0 && n_fd_out >= int (ok_svc_fds_high_wat)) {
       disable_accept ();
     }
   }
