@@ -212,8 +212,10 @@ cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
 cgi_t::~cgi_t ()
 {
   tab.deleteall ();
-  if (bufalloc && scratch)
+  if (bufalloc && scratch) {
     xfree (scratch);
+    scratch = NULL;
+  }
 }
 
 void
@@ -222,10 +224,6 @@ cgi_t::parse_guts ()
   abuf_stat_t rc;
   do { rc = parse_key_or_val (); } while (rc != ABUF_EOF && rc != ABUF_WAIT);
   if (rc == ABUF_EOF) {
-    if (bufalloc) {
-      xfree (scratch);
-      scratch = NULL;
-    }
     finish_parse (HTTP_OK);
   }
 }
