@@ -45,18 +45,23 @@ struct encode_t {
 class cgi_mpfd_pair_t;
 typedef enum { IV_ST_NONE = 0, IV_ST_FAIL = 1, IV_ST_OK = 2 } iv_state_t;
 struct pair_t {
-  pair_t (const str &k) : key (k), is (IV_ST_NONE), encflag (true) {}
+  pair_t (const str &k) : key (k), is (IV_ST_NONE), uis (IV_ST_NONE),
+			  encflag (true) {}
 
   pair_t (const str &k, const str &val, bool e = true) 
-    : key (k), is (IV_ST_NONE), encflag (e) 
+    : key (k), is (IV_ST_NONE), uis (IV_ST_NONE), encflag (e) 
   { if (val) vals.push_back (val); }
 
   pair_t (const str &k, int64_t i) 
-    : key (k), is (IV_ST_OK), encflag (true) { ivals.push_back (i); }
+    : key (k), is (IV_ST_OK), uis (IV_ST_NONE),
+      encflag (true) { ivals.push_back (i); }
   virtual ~pair_t () {}
 
   bool to_int (int64_t *v) const;
+  bool to_uint64 (u_int64_t *v) const;
   vec<int64_t> *to_int () const;
+  vec<u_int64_t> *to_uint64 () const;
+
   void dump1 () const;
   virtual void encode (encode_t *e, const str &s) const {} 
   inline bool hasdata () const { return vals.size () > 0; }
@@ -68,8 +73,9 @@ struct pair_t {
   str key;
   vec<str> vals;
   
-  mutable iv_state_t is;
+  mutable iv_state_t is, uis;
   mutable vec<int64_t> ivals;
+  mutable vec<u_int64_t> uivals;
   ihash_entry<pair_t> hlink;
   clist_entry<pair_t> lnk;
   bool encflag;
@@ -91,6 +97,7 @@ public:
   inline bool lookup (const str &key, vec<str> *v) const;
   inline bool blookup (const str &key) const;
   inline vec<int64_t> *ivlookup (const str &key) const;
+  inline bool lookup (const str &key, u_int64_t *v) const;
   template<typename T> inline bool lookup (const str &key, T *v) const;
   pairtab_t<C> &insert (const str &key, const str &val = NULL, 
 			bool append = true, bool encode = true);
@@ -169,6 +176,18 @@ pairtab_t<C>::lookup (const str &key) const
   if (p && p->vals.size () >= 1)
     return p->vals[0];
   return NULL;
+}
+
+template<class C> bool
+pairtab_t<C>::lookup (const str &key, u_int64_t *v) const
+{
+  assert (key && v);
+  u_int64_t ret;
+  pair_t *p = tab[key];
+  if (!p || !p->to_uint64 (&ret))
+    return false;
+  *v = ret;
+  return true;
 }
 
 template<class C> bool

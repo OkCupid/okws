@@ -66,9 +66,15 @@ public:
 
   void process ()
   {
-    set_expires ("shitcan");
-    set_content_type ("doggie-doodie");
-    p2 ();
+    char buf[100];
+    u_int64_t u;
+    int64_t s;
+    if (!cgi.lookup ("u", &u) || !cgi.lookup ("s", &s)) {
+      out << "fucked it up\n";
+    } else {
+      out << "signed: " << s << "\nunsigned: " << u << "\n";
+    }
+    output (out);
   }
 
   void hdr () {

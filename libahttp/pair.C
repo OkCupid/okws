@@ -38,17 +38,70 @@ pair_t::dump1 () const
   warnx << "\n";
 }
 
+//
+// XXX - todo -- fold this and the following into one function
+//
+vec<u_int64_t> *
+pair_t::to_uint64 () const
+{
+  vec<u_int64_t> *ret = NULL;
+  const char *nptr;
+  char *endptr;
+  size_t s;
+
+  switch (uis) {
+  case IV_ST_NONE:
+    s = vals.size ();
+    uivals.setsize (s);
+    for (u_int i = 0; i < s; i++) {
+
+      nptr = vals[i];
+      endptr = NULL;
+
+      errno = 0;
+      uivals[i] = strtoull (nptr, &endptr, 0);
+      if (*endptr || endptr == nptr) {
+	uis = IV_ST_FAIL;
+	break;
+      }
+    }
+    if (uis != IV_ST_FAIL) {
+      uis = IV_ST_OK;
+      ret = &uivals;
+    }
+    break;
+  case IV_ST_OK:
+    ret = &uivals;
+    break;
+  case IV_ST_FAIL:
+  default:
+    break;
+  }
+
+  return ret;
+}
+
 vec<int64_t> *
 pair_t::to_int () const
 {
   vec<int64_t> *ret = NULL;
+  const char *nptr;
+  char *endptr;
+  size_t s;
+
   switch (is) {
   case IV_ST_NONE:
     {
-      size_t s = vals.size ();
+      s = vals.size ();
       ivals.setsize (s);
       for (u_int i = 0; i < s; i++) {
-	if (!convertint (vals[i], &ivals[i])) {
+
+	nptr = vals[i];
+	endptr = NULL;
+
+	errno = 0;
+	ivals[i] = strtoll (nptr, &endptr, 0);
+	if (*endptr || endptr == nptr || errno == ERANGE) {
 	  is = IV_ST_FAIL;
 	  break;
 	}
@@ -77,6 +130,17 @@ pair_t::to_int (int64_t *v) const
     *v = (*p)[0];
     return true;
   } 
+  return false;
+}
+
+bool
+pair_t::to_uint64 (u_int64_t *v) const
+{
+  vec<u_int64_t> *p = to_uint64 ();
+  if (p && p->size () > 0) {
+    *v = (*p)[0];
+    return true;
+  }
   return false;
 }
 
