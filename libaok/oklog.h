@@ -45,7 +45,13 @@ public:
   }
 
   ~mstrs () { while (bufs.size ()) delete bufs.pop_front (); }
-  void unlock (u_int i) { frlst.push_back (i); bufs[i]->fullsize (); }
+  void unlock (int i) 
+  { 
+    if (i >= 0) {
+      frlst.push_back (i);
+      bufs[i]->fullsize (); 
+    }
+  }
   mstr2 *get (int *i);
 
 private:
