@@ -165,8 +165,10 @@ Documentation
 - OKWS wiki?
 - add OKWS results / pics to HTML web site
 
+sfslite
+-------
+ - don't need sfsgroup/sfsuser
+
 Show-Stoppers
 -------------
- - Launch, Remove deadbeat, Ready, die cycle on startup
  - when FDs don't make it, okd panics.
- - Ihash's getting smashed in new release.. need dmalloc on the scene.
