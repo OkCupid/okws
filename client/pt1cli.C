@@ -27,10 +27,10 @@ str inreq;
 str inqry;
 int rand_modulus;
 int hclient_id;
-int num_latencies;
 int latency_gcf;
 int num_services;
 int timeout;
+bool use_latencies;
 
 //
 // used for sample throughput
@@ -62,9 +62,7 @@ normdist_t *dist;
 int
 get_cli_write_delay (int id)
 {
-  if (num_latencies == 0)
-    return 0;
-  return dist->sample ();
+  return use_latencies ? dist->sample () : 0;
 }
 
 int
@@ -402,17 +400,15 @@ main (int argc, char *argv[])
   exited = false;
   rand_modulus = 30000;
   hclient_id = 1;
-  latency_gcf = 50;
-  num_latencies = 0;
+  use_latencies = true;
   num_services = 1;
   tpt_sample_freq = 1;
 
   // normdist (mean, std-dev, "precision")
-  dist = New normdist_t (100,35);
-  dist->dump ();
-  exit (0);
+  if (use_latencies)
+    dist = New normdist_t (100,35);
 
-  while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l:L:")) != -1) {
+  while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l")) != -1) {
     switch (ch) {
     case 'r':
       if (!convertint (optarg, &rand_modulus))
@@ -425,14 +421,8 @@ main (int argc, char *argv[])
       if (noisy) warn << "Num Services: " << num_services << "\n";
       break;
     case 'l':
-      if (!convertint (optarg, &num_latencies))
-	usage ();
-      if (noisy) warn << "Num Latencies: " << num_latencies << "\n";
-      break;
-    case 'L':
-      if (!convertint (optarg, &latency_gcf))
-	usage ();
-      if (noisy) warn << "Latency GCF: " << latency_gcf << "\n";
+      use_latencies = true;
+      if (noisy) warn << "Using Latencies\n";
       break;
     case 'd':
       noisy = true;
