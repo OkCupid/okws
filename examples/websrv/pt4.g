@@ -60,8 +60,8 @@ EOF
     mstr m (sz);
     char *bp = m.cstr ();
     int i,j;
-    for (i = 1; i <= 0; i++) {
-      for (j = 1; j <= 25; j++) {
+    for (i = 1; i <= 60; i++) {
+      for (j = 1; j <= 10; j++) {
 	bp += sprintf (bp, " %d\n", i*j);
       }
     }
