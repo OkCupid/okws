@@ -34,7 +34,7 @@ okwc_dnscache_entry_t::lookup (cbhent cb)
     return;
   }
 
-  if (!init || timenow > expires) {
+  if (!init || timenow > expires || err != 0) {
     resolving = true;
     cbq.push_back (cb);
     dnsp = dns_hostbyname (hostname, 
@@ -48,6 +48,8 @@ okwc_dnscache_entry_t::lookup (cbhent cb)
 void
 okwc_dnscache_entry_t::name_cb (ptr<hostent> h, int e)
 {
+  if (e || !h) 
+    warn << hostname << ": DNS lookup failed with error=" << e << "\n";
   init = true;
   err = e;
   he = h;
