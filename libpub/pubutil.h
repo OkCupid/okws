@@ -77,7 +77,8 @@ template<> struct equals<phashp_t> {
 
 struct pbinding_t { // binds filenames to content-hashes
   pbinding_t () {}
-  pbinding_t (const pfnm_t &f, const phashp_t &h) : fn (f), hsh (h) {}
+  pbinding_t (const pfnm_t &f, const phashp_t &h, bool tl = false) 
+    : fn (f), hsh (h), toplev (tl) {}
   pbinding_t (const xpub_pbinding_t &x);
 
   void to_xdr (xpub_pbinding_t *x) const;
@@ -90,6 +91,7 @@ struct pbinding_t { // binds filenames to content-hashes
 
   const pfnm_t fn;
   const phashp_t hsh;
+  const bool toplev;
   mutable ihash_entry<pbinding_t> hlink;
 };
 

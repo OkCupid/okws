@@ -185,7 +185,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <WH,WGH,WEC>{	
 {WSN}+		{ nlcount (); return (' '); }
 [<][/]?		{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
-\<{ST}/[ \t\n>]	{ yy_push_state (JS); yy_push_state (HTAG); return T_BJST; }
+\<{ST}/[ \t\n>]	{ yy_push_state (JS); yy_push_state (HTAG); 
+	          yylval.str = yytext; return T_BJST; }
 
 \<{PRET}{WSN}*\> { yy_push_state (PRE); nlcount (); yylval.str = yytext; 
 	          return T_BPRE; }

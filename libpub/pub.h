@@ -1172,8 +1172,9 @@ public:
     void remove (pfile_t *f);
     void insert (bpfcp_t bpf);
     bpfcp_t getfile (const pfnm_t &nm) const;
-    pbinding_t *to_binding (const pfnm_t &fn, const pfnm_t &rfn, bool rebind);
-    pbinding_t *alloc (const pfnm_t &fn, phashp_t h);
+    pbinding_t *to_binding (const pfnm_t &fn, const pfnm_t &rfn, 
+			    bool rebind, bool toplev = false);
+    pbinding_t *alloc (const pfnm_t &fn, phashp_t h, bool toplev = false);
 
     bindtab_t  bindings;                // expands filenames to hashes
     pfile_map_t files;                  // expands hashes to files
@@ -1311,7 +1312,8 @@ public:
   void grant_conjugal_visit () { if (!(opts & P_DAEMON)) jailed = false; }
   bool behind_bars () const { return (opts & P_DAEMON) || jailed; }
 
-  pbinding_t *to_binding (const pfnm_t &fn, set_t *s = NULL);
+  pbinding_t *to_binding (const pfnm_t &fn, set_t *s = NULL, 
+			  bool toplev = false);
   void push_parr (ptr<parr_t> a);
   ptr<parr_t> pop_parr ();
 

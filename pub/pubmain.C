@@ -150,7 +150,7 @@ main (int argc, char *argv[])
   bpfcp_t bnd;
   const pbinding_t *i;
 
-  if (!(i = ppt->to_binding (infile))) {
+  if (!(i = ppt->to_binding (infile, NULL, true))) {
     warn << infile << ": cannot open file\n";
     err = true;
   } else if (!(bnd = ppt->parse (i, m))) {

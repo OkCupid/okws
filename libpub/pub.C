@@ -13,9 +13,9 @@ pub_client_t *pcli;
 char dwarnbuf[1024];
 
 pbinding_t *
-pub_t::set_t::alloc (const pfnm_t &fn, phashp_t h)
+pub_t::set_t::alloc (const pfnm_t &fn, phashp_t h, bool jailed)
 {
-  pbinding_t *r = New pbinding_t (fn, h);
+  pbinding_t *r = New pbinding_t (fn, h, jailed);
   insert (r);
   return r;
 }
@@ -80,28 +80,29 @@ pub_parser_t::jail2real (const str &n) const
 }
   
 pbinding_t *
-pub_parser_t::to_binding (const pfnm_t &fn, set_t *s)
+pub_parser_t::to_binding (const pfnm_t &fn, set_t *s, bool toplev)
 {
   if (!s) s = set;
   pfnm_t fn2 = complete_fn (fn);
   if (!fn2) return NULL;
-  return s->to_binding (fn2, jail2real (fn2), rebind);
+  return s->to_binding (fn2, jail2real (fn2), rebind, toplev);
 }
 
 pbinding_t *
-pub_t::set_t::to_binding (const pfnm_t &fn, const pfnm_t &rfn, bool rebind)
+pub_t::set_t::to_binding (const pfnm_t &fn, const pfnm_t &rfn, bool rebind,
+			  bool toplev)
 {
   pbinding_t *r = NULL;
   if (rebind) {
     phashp_t h = file2hash (rfn);
     if (h) {
       if (!(r = bindings[fn]) || *r != *h)
-	r = alloc (fn, h);
+	r = alloc (fn, h, toplev);
     }
   } else {
     if (!(r = bindings[fn])) {
       phashp_t h = file2hash (rfn);
-      if (h) r = alloc (fn, h);
+      if (h) r = alloc (fn, h, toplev);
     }
   }
   return r;
@@ -256,7 +257,8 @@ pub_parser_t::parse (const pbinding_t *bnd, pfile_type_t t)
   yywss = wss ? 1 : 0;
   switch (t) {
   case PFILE_TYPE_H:
-    send_up_the_river ();
+    if (!bnd->toplev) 
+      send_up_the_river ();
     if (wss) t = PFILE_TYPE_WH;
     sec = New pfile_html_sec_t (0);
     break;
