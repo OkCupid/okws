@@ -79,6 +79,7 @@ public:
   void reply (ptr<void> d);
   int getid () const { return tid; }
   ssrv_t *get_ssrv ();
+  ssrv_t *get_ssrv () const;
 private:
   void become_ready ();
   void take_svccb ();
@@ -141,6 +142,7 @@ public:
   virtual void init ();
   virtual bool async_serv (svccb *b);
   ssrv_t *get_ssrv () { return ssrv; }
+  ssrv_t *get_ssrv () const { return ssrv; }
 
 protected:
   mtd_thread_arg_t *launch_init (int i, int fdout, int *closeit);

@@ -532,3 +532,9 @@ mtd_thread_t::get_ssrv ()
 {
   return mtd->get_ssrv ();
 }
+
+ssrv_t *
+mtd_thread_t::get_ssrv () const
+{
+  return mtd->get_ssrv ();
+}

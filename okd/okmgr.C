@@ -55,8 +55,15 @@ okmgr_host_t::connect (cbb c)
 void
 okmgr_host_t::hostwarn (const str &s, bool nl) const
 {
-  warn << hostname << ":" << port << ": " << s;
-  if (nl) warn << "\n";
+  if (s) {
+    warn << hostname << ":" << port << ": " << s;
+    if (nl) warn << "\n";
+  }
+  else {
+    warn << "okmgr_host_t::hostwarn called w/ null s (" << hostname
+         << ":" << port << ")";
+    if (nl) warn << "\n";
+  }
 }
 
 void
