@@ -53,6 +53,7 @@ private:
   int reqsz;
   char *body;
   suio uio;
+  int shit;
 };
 
 vec<hclient_t *> q;
@@ -161,7 +162,7 @@ int
 stop_timer (const timespec &tm)
 {
   int ret = (tsnow.tv_nsec - tm.tv_nsec) / 1000;
-  u_int tmp = tsnow.tv_sec - tm.tv_sec;
+  int tmp = (tsnow.tv_sec - tm.tv_sec) * 1000000;
   ret += tmp;
   return ret;
 }
@@ -185,7 +186,7 @@ hclient_t::run ()
 static void
 usage ()
 {
-  fatal << "usage: ptcli host[:port] infile <nreq>\n";
+  fatal << "usage: ptcli [-d] [-{s|p|o}] [-c <concur>] [-n <num>] <host>\n";
 }
 
 int 
@@ -198,7 +199,7 @@ main (int argc, char *argv[])
   int n = 1000;
   nconcur = 500; 
 
-  while ((ch = getopt (argc, argv, "d:c:n:spo")) != -1)
+  while ((ch = getopt (argc, argv, "dc:n:spo")) != -1) {
     switch (ch) {
     case 'd':
       noisy = true;
@@ -225,6 +226,7 @@ main (int argc, char *argv[])
     default:
       usage ();
     }
+  }
   argc -= optind;
   argv += optind;
 
@@ -244,10 +246,12 @@ main (int argc, char *argv[])
     if (noisy) warn << "In OKWS mode\n";
     break;
   case PHP:
-    in = "GET /test.php?id=";
+    in = "GET /pt1.php?id=";
     if (noisy) warn << "In PHP mode\n";
     break;
   default:
+    warnx << "no operation mode selected\n";
+    usage ();
     break;
   }
 
@@ -261,6 +265,11 @@ main (int argc, char *argv[])
   } else {
     port = 80;
   }
+
+  // unless we don this, shit won't be initialized, and i'll
+  // starting ripping my hair out as to why all of the timestamps
+  // are negative
+  clock_gettime (CLOCK_REALTIME, &tsnow);
 
   nrunning = 0;
   sdflag = true;
