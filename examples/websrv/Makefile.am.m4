@@ -14,15 +14,15 @@ SUFFIXES = .g .C
 
 LDFLAGS = $(SVC_LDFLAGS)
 
-define(`cgi_sources',)dnl
-define(`cgi_gfiles',)dnl
-define(`cgi_exes',)dnl
-define(`cgimk',
+define(`svc_sources',)dnl
+define(`svc_gfiles',)dnl
+define(`svc_exes',)dnl
+define(`svcmk',
 changequote([[,]])dnl
 [[dnl
-define(`cgi_sources', cgi_sources $1.C)dnl
-define(`cgi_gfiles', cgi_gfiles $1.g)dnl
-define(`cgi_exes', cgi_exes $1)dnl
+define(`svc_sources', svc_sources $1.C)dnl
+define(`svc_gfiles', svc_gfiles $1.g)dnl
+define(`svc_exes', svc_exes $1)dnl
 $1_SOURCES = $2 $1.C
 $1.C: $1.g
 ]]changequote)dnl
@@ -30,14 +30,14 @@ $1.C: $1.g
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 dnl
-dnl ADD NEW CGI Scripts HERE!  (use the cgimk () macro )
+dnl ADD NEW CGI Scripts HERE!  (use the svcmk () macro )
 dnl
-cgimk(sha)
-cgimk(sha2)
-cgimk(google)
-cgimk(pt1)
-dnl cgimk(pt2)
-cgimk(upload)
+svcmk(sha)
+svcmk(sha2)
+svcmk(google)
+svcmk(pt1)
+dnl svcmk(pt2)
+svcmk(upload)
 
 dnl
 dnl End of the Part the you Need to Edit
@@ -49,20 +49,20 @@ LDADD = $(LDADD_SRV)
 
 coredump_SOURCES = coredump.C
 
-okmsvc_PROGRAMS = cgi_exes coredump
+okmsvc_PROGRAMS = svc_exes coredump
 dnl
 dnl If you want to install in a subdir of $(okmsvcdir), you can
 dnl do something like:
 dnl
 dnl foodir = $(okmsvcdir)/foo
-dnl foo_PROGRAMS = cgi_exes coredump
+dnl foo_PROGRAMS = svc_exes coredump
 dnl
 dnl Or whatever it is you please...
 dnl
 
 
 
-BUILT_SOURCES = cgi_sources
+BUILT_SOURCES = svc_sources
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore
@@ -71,7 +71,7 @@ MAINTAINERCLEANFILES = Makefile.in Makefile.am
 
 .PHONY: srcclean
 srcclean:
-	@rm -f cgi_exes rpcmk_built
+	@rm -f svc_exes rpcmk_built
 
 $(srcdir)/Makefile.am: $(srcdir)/Makefile.am.m4
 	@rm -f $(srcdir)/Makefile.am~
