@@ -571,7 +571,7 @@ ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p,
   mtd->init (); 
 }
 
-static bool
+bool
 tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff)
 {
   long sd = ts2.tv_sec - ts1.tv_sec;

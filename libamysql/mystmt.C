@@ -33,6 +33,21 @@ sth_prepared_t::~sth_prepared_t ()
   if (sth) mysql_stmt_close (sth);
 }
 
+str
+sth_prepared_t::dump (mbyind_param_t **arr, u_int n) 
+{
+  strbuf b;
+  b << " q-> " << qry << "\n";
+  b << " p-> ";
+  for (u_int i = 0; i < n; i++) {
+    if (i != 0)
+      b << ", ";
+    b << arr[i]->to_str ();
+  }
+  return b;
+}
+
+
 bool
 sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 {
@@ -111,31 +126,18 @@ mystmt_t::execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
   struct timeval t1;
   if (lqt) 
     gettimeofday (&t1, NULL);
-  execute2 (b, arr, n);
+  bool rc = execute2 (b, arr, n);
   if (lqt) {
     struct timeval t2;
     gettimeofday (&t2, NULL);
     long sd = (t2.tv_sec - t1.tv_sec) * 1000;
     sd += (t2.tv_usec - t1.tv_usec) / 1000;
-    if (sd > lqt) {
-      warn << "Long Query: " << sd << "ms\n";
-      warn << " q-> " << dump (arr, n) << "\n";
+    if (sd > long (lqt)) {
+      warn << "* Long Query: " << sd << "ms\n";
+      warn << "**  " << dump (arr, n) << "\n";
     }
   }
-}
-
-str
-sth_prepared_t::dump (mbyind_param_t **arr, u_int n) const 
-{
-  strbuf b;
-  b << " q-> " << qry << "\n";
-  b << " p-> ";
-  for (u_int i = 0; i < n; i++) {
-    if (i != 0)
-      b << ", ";
-    b << arr[i]->to_str ();
-  }
-  return b;
+  return rc;
 }
 
 void

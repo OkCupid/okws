@@ -41,6 +41,9 @@ public:
   str get_last_qry () const { return last_qry; }
 protected:
   bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
+  str dump (mybind_param_t **aarr, u_int n);
+  str make_query (mybind_param_t **aarr, u_int n);
+  
 
   void dealloc_bufs ();
   void alloc_bufs ();
@@ -72,6 +75,7 @@ public:
   adb_status_t fetch2 (bool bnd = false);
 protected:
   bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
+  str dump (mybind_param_t **aarr, u_int n);
   void bind (MYSQL_BIND *b, mybind_param_t **arr, u_int n);
   bool bind_result ();
   MYSQL_STMT *sth;

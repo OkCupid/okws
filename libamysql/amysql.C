@@ -124,10 +124,12 @@ mybind_sex_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 }
 
 str 
-mybind_set_t::to_str () const 
+mybind_sex_t::to_str () const 
 {
-  buf[1] = sex_to_char (sx);
-  return str (buf, 3);
+  char b[2];
+  b[1] = 0;
+  b[0] = sex_to_char (sx);
+  return str (b, 2);
 }
 
 
@@ -183,7 +185,7 @@ mybind_date_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
   datep->to_strbuf (b, true);
 }
 
-void
+str
 mybind_date_t::to_str () const 
 {
   strbuf b;

@@ -104,10 +104,10 @@ public:
   str error () const { return err; }
   unsigned int errnum () const { return errno_n; }
   bool execute () { 
-     return execute ((MYSQL_BIND *)NULL, (mybind_param_t **)NULL, 0);
+     return execute1 ((MYSQL_BIND *)NULL, (mybind_param_t **)NULL, 0);
   }
   virtual str get_last_qry () const { return NULL; }
-  void set_long_query_timer (u_int m) : lqt (m);
+  void set_long_query_timer (u_int m) { lqt = m ;}
 protected:
   virtual bool execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n) = 0;
   bool execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n);
