@@ -43,6 +43,20 @@ public:
       : okclnt_t (x, o), ok_pt4 (o) {}
   ~okclnt_pt4_t () {}
   dbcon_t *db () const { return ok_pt4->db; }
+
+  inline void docell (int v)
+  {
+    out << "<td>" << v << "</td>\n";
+  }
+
+  inline void dorow (int i) 
+  {
+    out << "<tr>";
+    for (int j = 1; j <= 10; j++) 
+      docell (i * j);
+    out << "</tr>\n";
+  }
+
   void process ()
   {
     /*o
@@ -56,18 +70,16 @@ public:
 EOF
     o*/
 
-    size_t sz = 7 * 25 * 25;
-    mstr m (sz);
-    char *bp = m.cstr ();
-    int i,j;
-    for (i = 1; i <= 60; i++) {
-      for (j = 1; j <= 10; j++) {
-	bp += sprintf (bp, " %d\n", i*j);
-      }
-    }
-    m.setlen (bp - m.cstr ());
-    out << str (m) << "</table>\n</body>\n</html>\n";
+    for (int i = 1; i <= 30; i++)
+      dorow (i);
 
+    /*o
+      print (out) <<EOF;
+</table>
+</body>
+</html>
+EOF
+      o*/
     output (out);
   }
   int id; // make id global for qry_cb()
