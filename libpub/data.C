@@ -1080,18 +1080,17 @@ aarr_t::add (const str &n, zbuf *z)
 }
 
 aarr_t &
-aarr_t::add (const str &n, const str &v)
+aarr_t::add (const str &n, ptr<zbuf> zb)
 {
-  add (New nvpair_t (n, New refcounted<pstr_t> (v)));
+  add (New nvpair_t (n, New refcounted<pval_zbuf_t> (zb))) ;
   return (*this);
 }
 
 aarr_t &
-aarr_t::add (const str &n, int64_t i)
+aarr_t::add (const str &n, const str &v)
 {
-  strbuf b;
-  b << i;
-  return add (n, b);
+  add (New nvpair_t (n, New refcounted<pstr_t> (v)));
+  return (*this);
 }
 
 void

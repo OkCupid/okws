@@ -247,9 +247,17 @@ public:
   virtual ~aarr_t () { aar.deleteall (); }
   void add (nvpair_t *p);
   aarr_t &add (const str &n, const str &v);
-  aarr_t &add (const str &n, int64_t i);
   aarr_t &add (const str &n, zbuf *b);
-  //  aarr_t &add (const str &n, ptr<zbuf> zb);
+  aarr_t &add (const str &n, ptr<zbuf> zb);
+
+  template<class T>
+  aarr_t &add (const str &n, T i) {
+    strbuf b;
+    b << i;
+    add (New nvpair_t (n, New refcounted<pstr_t> (b)));
+    return (*this);
+  }
+        
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
   void output (output_t *o, penv_t *e) const;
