@@ -2,7 +2,7 @@
 #include <normdist.h>
 #include <math.h>
 
-static int round (double d)
+static int iround (double d)
 {
   int i = int (d);
   if (d - i >= .5) i++;
@@ -34,7 +34,7 @@ normdist_t::construct ()
   // create uniformly samplable equivalent
   for (int i = 0; i < arrsz; i++) arr[i] = 1;
   for (int i = 0; i < prec; i++) {
-    int k = round (F[i] * arrsz);
+    int k = iround (F[i] * arrsz);
     for (int j = k; j < arrsz; j++)
       arr[j] ++;
   }
