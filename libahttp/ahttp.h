@@ -215,10 +215,10 @@ class ahttpcon_clone : public ahttpcon
 {
 public:
   ahttpcon_clone (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE);
+  ~ahttpcon_clone () ;
   void setccb (clonecb_t cb);
   int takefd ();
 
-  
   static ptr<ahttpcon_clone> 
   alloc (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE) 
   { return New refcounted<ahttpcon_clone> (f, s, ml); }
@@ -234,6 +234,7 @@ private:
   void end_read ();
   str delimit (int n);
   void reset_delimit_state ();
+  void trickle_cb (ptr<bool> destroyed_local);
 
   const size_t maxline;
   clonecb_t::ptr ccb;
@@ -246,6 +247,8 @@ private:
   u_int bytes_scanned;
   bool decloned;
   int trickle_state;
+  ptr<bool> destroyed_p;
+  timecb_t *dcb;
 };
 
 ptr<ahttpcon> 

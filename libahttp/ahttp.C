@@ -231,13 +231,23 @@ ahttpcon_dispatch::dowritev (int cnt)
 
 ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml) 
   : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), 
-    found (false), delimit_state (0), delimit_status (HTTP_OK),
-    delimit_start (NULL), bytes_scanned (0), decloned (false),
-    trickle_state (0)
-
+  found (false), delimit_state (0), delimit_status (HTTP_OK),
+  delimit_start (NULL), bytes_scanned (0), decloned (false),
+  trickle_state (0), destroyed_p (New refcounted<bool> (false)),
+				    dcb (NULL)
 {
   in->setpeek ();
 }
+
+ahttpcon_clone::~ahttpcon_clone ()
+{
+  if (dcb) {
+    timecb_remove (dcb);
+    dcb = NULL;
+  }
+  *destroyed_p = true;
+}
+      
 
 ahttpcon::~ahttpcon ()
 { 
@@ -491,14 +501,6 @@ ahttpcon_clone::recvd_bytes (int n)
   str s = delimit (n);
   if (s || delimit_status != HTTP_OK) {
 
-     warn << "delimit returned (" << delimit_status << ")\n"; // debug
-
-    // if we're going to keep looking at this connection, then
-    // let's reset the lowwater mark to a more reasonable 1 byte
-    // (as it is by default).
-    if (delimit_status == HTTP_OK && trickle_state > 0)
-      set_lowwat (1);
-      
     if (ccb) {
       (*ccb) (s, delimit_status);
       ccb = NULL;
@@ -600,16 +602,25 @@ ahttpcon_clone::delimit (int dummy)
 
   switch (trickle_state) {
   case 0: 
-    warn << "trickle state 0->1\n"; // debug
-    if (set_lowwat (maxscan ()) < 0) {
-      warn ("Cannot reset LoWat on socket: %m\n");
-      delimit_status = HTTP_SRV_ERROR;
-      return (NULL);
-    }
+
+    set_remote_ip ();
+    warn << "slow trickle client";
+    if (remote_ip)
+      warn << ": " << remote_ip;
+    warn << "\n";
+
+    dcb = delaycb (ok_slowcli_timeout, 0,
+                   wrap (this, &ahttpcon_clone::trickle_cb, destroyed_p));
+    disable_selread ();
     reset_delimit_state ();
     break;
   case 1:
-    warn << "trickle state 1->2 (bs=" << bytes_scanned << ")\n"; // debug
+
+    warn << "abandoning slow trickle client";
+    if (remote_ip)
+      warn << ": " << remote_ip;
+    warn << "\n";
+
     delimit_status = HTTP_URI_TOO_BIG;
     break;
   default:
@@ -618,6 +629,15 @@ ahttpcon_clone::delimit (int dummy)
   }
   trickle_state ++;
   return (NULL);
+}
+
+void
+ahttpcon_clone::trickle_cb (ptr<bool> destroyed_local)
+{
+  if (*destroyed_local) 
+    return;
+  dcb = NULL;
+  enable_selread ();
 }
 
 int
