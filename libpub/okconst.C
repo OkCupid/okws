@@ -95,6 +95,7 @@ bool ok_svc_accept_msgs = true;     // display messages about accept()
 u_int ok_ssdi = 0;                  // syscall stat dump interval
 bool ok_send_sin = true;            // send sin's over FD chan?
 bool okd_child_sel_disable = false; // disable read sel on child
+u_int okd_debug_msg_freq = 0;       // disable okd debug messages
 
 // location of the memory-mapped clock daemon
 const char *ok_mmcd = "/usr/local/lib/sfs/lite/mmcd";

@@ -341,6 +341,7 @@ okd_t::parseconfig ()
     .add ("MmapClockFile", &mmc_file)
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)
     .add ("DemuxTimeout", &ok_demux_timeout, 0, 30)
+    .add ("OkdDebugMsgFreq", &okd_debug_msg_freq, 0, 0x10000)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -471,12 +472,12 @@ okd_t::newserv (int fd)
   socklen_t sinlen = sizeof (sockaddr_in);
   bzero (sin, sinlen);
   int nfd = accept (fd, (sockaddr *) sin, &sinlen);
-  int freq = 1000;
+  u_int freq = okd_debug_msg_freq;
   if (nfd >= 0) {
     reqid ++;
 
     // debug messaging
-    if ((reqid % freq) == 0) {
+    if (freq > 0 && (reqid % freq) == 0) {
       warn << "nfd_in_xit=" << nfd_in_xit << "; " 
 	   << "xtab.nent=" << xtab.n_entries () << "; "
 	   << "nfds=" << n_ahttpcon << "\n";

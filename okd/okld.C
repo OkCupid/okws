@@ -375,7 +375,8 @@ okld_t::parseconfig (const str &cf)
     .ignore ("OkdAcceptMessages")
     .ignore ("OkdChildSelectDisable")
     .ignore ("ShutdownRetries")
-    .ignore ("ShutdownTimeout");
+    .ignore ("ShutdownTimeout")
+    .ignore ("OkdDebugMsgFreq");
 
 
   if (grp) svc_grp = ok_grp_t (grp);
