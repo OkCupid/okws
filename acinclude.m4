@@ -650,12 +650,12 @@ dnl
 dnl Set OKWS tag
 dnl
 AC_DEFUN(OKWS_TAG,
-[AC_ARG_WITH(okws_tag,
---with-okws-tag=TAG	    Specify a custom OKWS build tag)
+[AC_ARG_WITH(tag,
+--with-tag=TAG	    	Specify a custom OKWS build tag)
 AC_ARG_WITH(mode,
 --with-mode=[debug|optmz]   Specify a build mode for OKWS)
-if test "$with_okws_tag" != "no"; then
-	okwstag=$with_okws_tag
+if test "$with_tag" != "no"; then
+	okwstag=$with_tag
 fi
 case $with_mode in
 	"debug" )
@@ -669,10 +669,17 @@ case $with_mode in
 		;;
 esac
 
-if test "$okwstag"; then
+AC_ARG_WITH(sfstag,
+--with-sfstag=TAG	Specify an SFS build tag other than default)
+if test "{$with_sfstag+set}" = "set" ; then
+	sfs_build_tag=$with_sfstag
+fi
+
+if test "${okwstag+set}" = "set" ; then
 	okwstagdir="/$okwstag"
 fi	
-sfs_build_tag=""
+AC_SUBST(okwstagdir)
+AC_SUBST(okwstag)
 ])
 dnl
 dnl Find Mysql

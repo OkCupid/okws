@@ -42,26 +42,26 @@ dist-hook:
 	cd $(distdir) && chmod -x setup
 
 install-data-local:
-	-src=$(DESTDIR)$(sfsincludedir); dst=$(DESTDIR)$(pkgincludedir); \
+	-src=$(DESTDIR)$(okwsincludedir); dst=$(DESTDIR)$(pkgincludedir); \
 	rm -f $$dst; \
 	if test "`dirname $$src`" = "`dirname $$dst`"; then \
 		ln -s "`basename $$src`" $$dst; \
 	else \
-		ln -s $(sfsincludedir) $$dst; \
+		ln -s $(okwsincludedir) $$dst; \
 	fi
 
 install-exec-local:
-	-src=$(DESTDIR)$(sfslibdir); dst=$(DESTDIR)$(pkglibdir); \
+	-src=$(DESTDIR)$(okwslibdir); dst=$(DESTDIR)$(pkglibdir); \
 	rm -f $$dst; \
 	if test "`dirname $$src`" = "`dirname $$dst`"; then \
 		ln -s "`basename $$src`" $$dst; \
 	else \
-		ln -s $(sfslibdir) $$dst; \
+		ln -s $(okwslibdir) $$dst; \
 	fi
 
 uninstall-local:
 	-rm -f $(DESTDIR)$(pkglibdir) $(DESTDIR)$(pkgincludedir)
-	-rmdir $(DESTDIR)$(sfslibdir) $(DESTDIR)$(sfsincludedir) \
+	-rmdir $(DESTDIR)$(okwslibdir) $(DESTDIR)$(owksincludedir) \
 		$(DESTDIR)$(confdir)
 
 all-recursive-am: aux-all
