@@ -29,17 +29,24 @@ main (int argc, char *argv[])
   bool nodebug = false;
   // setup global gzip table
   zinit ();
+  bool evalmode = false;
 
   // Initialize global pub variables
   pub_parser_t *ppt = pub_parser_t::alloc ();
 
   setprogname (argv[0]);
 
+  vec<str> cfgs;
+  bhash<str> cfg_bmap;
+
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;
   
-  while ((ch = getopt (argc, argv, "DFIcwrgvheo:f:j:J")) != -1) {
+  while ((ch = getopt (argc, argv, "DFIcwrgvhEeo:f:j:J")) != -1) {
     switch (ch) {
+    case 'e':
+      evalmode = true;
+      break;
     case 'F':
       noconfig = true;
       break;
@@ -55,14 +62,23 @@ main (int argc, char *argv[])
     case 'I':
       iinfo = false;
       break;
-    case 'f':
-      configfile = optarg;
-      break;
+    case 'f': 
+     {
+       str f = optarg;
+       if (f == "-") f = ok_pub_config;
+       if (cfg_bmap[f]) {
+         warn << optarg << ": duplicate file; skipping\n";
+       } else {
+         cfg_bmap.insert (f); 
+         cfgs.push_back (f);
+       }
+       break;
+     }
     case 'h':
       if (!m) usage ();
       m = PFILE_TYPE_H;
       break;
-    case 'e':
+    case 'E':
       if (!m) usage ();
       m = PFILE_TYPE_EC;
       break;
@@ -89,8 +105,8 @@ main (int argc, char *argv[])
     usage ();
   if (jaildir && nojail)
     usage ();
-  if (!noconfig && !configfile)
-    configfile = ok_pub_config;
+  if (!noconfig && cfgs.size () == 0)
+    cfgs.push_back (ok_pub_config);
 
   if (!nodebug)
     opts |= P_DEBUG;
@@ -99,9 +115,25 @@ main (int argc, char *argv[])
 #ifdef PDEBUG
   yydebug = 1;
 #endif /* PDEBUG */
+  
+  bool cfg_succ = false;
+  for (u_int i = 0; i < cfgs.size (); i++)
+    if (ppt->parse_config (cfgs[i]))
+      cfg_succ = true;
 
-  if (configfile && !ppt->parse_config (configfile)) 
+  if (configfile && !cfg_succ)
     warn << "pub running without default variable bindings\n";
+
+  if (evalmode) {
+    bool noisy = (optind < argc - 1);
+    for (int i = optind; i < argc; i++) {
+      str s = ppt->cfg (argv[i]);
+      if (noisy) printf ("(%s) -> ", argv[i]);
+      if (s) printf ("%s", s.cstr ());
+      if (noisy || (s && *s)) printf ("\n");
+    }
+    exit (0);
+  }
 
 
   if (optind != argc - 1)
@@ -110,7 +142,8 @@ main (int argc, char *argv[])
   if (!outfile || !m) {
     pfile_type_t m2 = PFILE_TYPE_NONE;
     str out2;
-    if ((out2 = suffix_sub (infile, ".shtml", ".html"))) {
+    if ((out2 = suffix_sub (infile, ".shtml", ".html")) ||
+	(out2 = suffix_sub (infile, ".pphp", ".php"))) {
       m2 = PFILE_TYPE_H;
     } else if ((out2 = suffix_sub (infile, ".g", ".C")) ||
 	       (out2 = suffix_sub (infile, ".ok", ".C"))) {
@@ -165,16 +198,6 @@ main (int argc, char *argv[])
     dumper_t d;
     bnd->dump (&d);
 #endif /* PDEBUG */
-
-    /*
-     * debug code
-     *
-    xpub_file_t x;
-    bnd->file->to_xdr (&x);
-    strbuf bbb;
-    rpc_print (bbb, x);
-    warn << "FOO: " << bbb << "\n";
-    */
 
     zbuf b;
     if (!ppt->include (&b, bnd, opts) || (b.output (fd) < 0))

@@ -235,3 +235,4 @@ OKD v0.2
  - DGRAM -> STREAM (on all RPC connections)
  - uid is hacked into logging system ; de-hack it
  - (display post-gzip size content)
+ - config file recursive decent?
