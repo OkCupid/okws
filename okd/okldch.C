@@ -182,6 +182,11 @@ okld_ch_t::set_svc_ids ()
     CH_WARN ("could not change uid to " << uid->getname ());
     exit (1);
   }
+  if (rundir) {
+    str d = okld->jail2real (rundir, true);
+    chdir (d);
+    warn << "changing directories to " << d << "\n";
+  }
 }
 
 void

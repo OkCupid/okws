@@ -471,6 +471,7 @@ okld_t::init_jaildir ()
   // separate coredump directory for each service UID
   for (u_int i = 0; i < lim; i++) {
     str d = strbuf (coredumpdir) << "/" << svcs[i]->usr ()->getid ();
+    svcs[i]->set_run_dir (d);
     if (!jail_mkdir (d, 0700, svcs[i]->usr (), &svc_grp))
       ret = false;
   }

@@ -39,6 +39,7 @@ public:
   ok_usr_t *usr () { return uid; }
   str loc () const { return cfgfile_loc; }
   void set_svc_ids ();
+  void set_run_dir (const str &d) { rundir = d; }
   int get_exec_uid ();
   int get_exec_gid ();
   bool can_exec (bool chrt);
@@ -64,6 +65,7 @@ private:
   bool have_ustat;
   struct stat ustat;
   time_t startup_time;
+  str rundir;
 };
 
 class okld_t : public ok_base_t 
