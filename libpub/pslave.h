@@ -29,6 +29,8 @@
 #include "async.h"
 #include "xpub.h"
 #include "okconst.h"
+#include "txa.h"
+#include "txa_prot.h"
 
 typedef enum { PSLAVE_ERR = 0,
 	       PSLAVE_SLAVE = 1,
@@ -62,7 +64,7 @@ pslave_status_t pub_slave  (pubserv_cb cb, u_int port = 0,
 
 class helper_base_t {
 public:
-  helper_base_t () {}
+  helper_base_t () : txa_login_rpc (0), authtoks (NULL) {}
   virtual ~helper_base_t () {}
   virtual void connect (cbb::ptr c = NULL) = 0;
   virtual void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
@@ -71,6 +73,18 @@ public:
 		     aclnt_cb cb, time_t duration = 0) 
   { call (procno, in, out, cb, duration); }
   virtual str getname () const = 0;
+  void hwarn (const str &s) const;
+
+  void set_txa (u_int32_t rpc, vec<str> *v) 
+  { 
+    txa_login_rpc = rpc; authtoks = v; 
+  }
+
+protected:
+
+  u_int32_t txa_login_rpc;
+  vec<str> *authtoks;
+  
 };
 
 class helper_t : public helper_base_t {
@@ -80,8 +94,7 @@ public:
       rdelay (hlpr_retry_delay),
       max_qlen (hlpr_max_qlen), max_calls (hlpr_max_calls),
       retries (0), calls (0), status (HLP_STATUS_NONE), 
-      opts (o), destroyed (New refcounted<bool> (false))
-      {}
+      opts (o), destroyed (New refcounted<bool> (false)) {}
 
   virtual ~helper_t ();
   virtual vec<str> *get_argv () { return NULL; }
@@ -90,13 +103,13 @@ public:
   void set_retry_delay (u_int i) { rdelay = i; }
   void set_max_qlen (u_int i) { max_qlen = i; }
   void set_max_calls (u_int i) { max_calls = i; }
+
   virtual int get_axprt (u_int i = 0) { return -1; }
 
   void connect (cbb::ptr c = NULL);
   void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
 	     time_t duration = 0);
 
-  void hwarn (const str &s) const;
   void retry ();
   void d_retry ();
   ptr<aclnt> get_clnt () const { return clnt; }
@@ -118,10 +131,17 @@ protected:
   void retried (bool b);
   void connected (cbb::ptr cb, ptr<bool> df, bool b);
 
+
   void process_queue ();
   void docall (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
 	     time_t duration = 0);
   void didcall (aclnt_cb cb, clnt_stat st);
+
+  void login (cbb::ptr cb, ptr<bool> df);
+  void logged_in (cbb::ptr cb, ptr<bool> df, ptr<txa_login_res_t> res, 
+		  clnt_stat s);
+  void finish_connect_2 (cbb::ptr cb, bool b);
+  void finish_connect (cbb::ptr cb, ptr<bool> df, bool b);
 
   const rpc_program rpcprog;
   ptr<axprt> x;

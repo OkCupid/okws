@@ -700,6 +700,7 @@ case $with_mode in
 		;;
 
 	"optmz" )
+		sfstag=lite
 		;;
 
 	* )
@@ -1536,7 +1537,6 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     dnl LIBSVC=${with_sfs}/svc/libsvc.la
     dnl LIBSFS=${with_sfs}/libsfs/libsfs.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
-    RPCC=${with_sfs}/rpcc/rpcc
 elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
 	-a -f ${with_sfs}/lib/sfs${sfstagdir}/libasync.la; then
     sfsincludedir="${with_sfs}/include/sfs${sfstagdir}"
@@ -1554,8 +1554,8 @@ elif test -f ${with_sfs}/include/sfs${sfstagdir}/autoconf.h \
     dnl LIBSVC=${sfslibdir}/libsvc.la
     dnl LIBSFS=${with_sfs}/lib/libsfs.a
     MALLOCK=${sfslibdir}/mallock.o
-    SFS_PATH_PROG(rpcc, ${with_sfs}/lib/sfs${sfstagdir}:${with_sfs}/bin)
-    RPCC="$PATH_RPCC"
+    dnl SFS_PATH_PROG(txarpcc, ${with_okws}/lib/sfs${okwstagdir}:${with_okws}/bin)
+    dnl RPCC="$PATH_RPCC"
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi

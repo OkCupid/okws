@@ -265,6 +265,12 @@ helper_t::ping (cbb cb)
 void
 helper_t::ping_cb (cbb c, ptr<bool> df, clnt_stat err)
 {
+  //
+  // callback c will bring us to helper_t::connected;
+  // thus, if the ping failed, no need to call d_retry(), since
+  // helper_t::connected will do that for us.  don't want to 
+  // call it twice, after all.
+  //
   if (*df) {
     (*c) (false);
     return;
@@ -273,7 +279,6 @@ helper_t::ping_cb (cbb c, ptr<bool> df, clnt_stat err)
     hwarn (strbuf ("ping failed: " ) << err);
     (*c) (false);
     status = HLP_STATUS_ERR;
-    d_retry ();
   } else 
     (*c) (true);
 }
@@ -302,6 +307,54 @@ helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
     status = HLP_STATUS_OK;
     process_queue ();
   }
+
+  finish_connect (cb, df, b);
+}
+
+void
+helper_t::finish_connect (cbb::ptr cb, ptr<bool> df, bool b)
+{
+  if (b && authtoks && txa_login_rpc > 0) 
+    login (cb, df);
+  else
+    finish_connect_2 (cb, b);
+}
+
+void
+helper_t::login (cbb::ptr cb, ptr<bool> df)
+{
+  warn << "in login\n"; //debug
+  txa_login_arg_t arg;
+  arg.setsize (authtoks->size ());
+  for (u_int i = 0; i < authtoks->size (); i++) {
+    arg[i] = (*authtoks)[i];
+  }
+  ptr<txa_login_res_t> res = New refcounted<txa_login_res_t> ();
+  call (txa_login_rpc, &arg, res, 
+	wrap (this, &helper_t::logged_in, cb, df, res));
+}
+
+void
+helper_t::logged_in (cbb::ptr cb, ptr<bool> df, ptr<txa_login_res_t> res, 
+		     clnt_stat err)
+{
+  bool b = false;
+  if (*df) {
+    (*cb) (false);
+    return;
+  } else if (err) {
+    hwarn (strbuf ("login failed: ") <<  err);
+  } else if (!*res) {
+    hwarn ("server rejected login tokens\n");
+  } else {
+    b = true;
+  }
+  finish_connect_2 (cb, b);
+}
+
+void
+helper_t::finish_connect_2 (cbb::ptr cb, bool b)
+{
   if (cb)
     (*cb) (b);
   call_status_cb ();
@@ -318,7 +371,7 @@ helper_t::process_queue ()
 }
 
 void
-helper_t::hwarn (const str &s) const
+helper_base_t::hwarn (const str &s) const
 {
   warn << getname () << ": " << s << "\n";
 }

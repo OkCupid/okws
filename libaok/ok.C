@@ -382,9 +382,17 @@ oksrvc_t::launch4 ()
 }
 
 dbcon_t *
-oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p)
+oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
+		  int32_t l)
 {
   dbcon_t *d = New dbcon_t (p, host, port);
+  if (authtoks.size () > 0 && l > 0) {
+    warn << "calling set_txa\n"; // debug
+    d->set_txa (l, &authtoks);
+  } else {
+    warn << "not calling set_txa\n"; // debug
+  }
+
   dbs.push_back (d);
   return d;
 }

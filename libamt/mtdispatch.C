@@ -1,5 +1,6 @@
 
 #include "amt.h"
+#include "txa_prot.h"
 
 mtd_thread_t::mtd_thread_t (mtd_thread_arg_t *a)
   : tid (a->tid), fdin (a->fdin), fdout (a->fdout), 
@@ -39,9 +40,10 @@ msg_send (int fd, mtd_msg_t *msg)
   return sz;
 }
 
-mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s)
+mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
+			    const txa_prog_t *x)
   : num (n), shmem (New mtd_shmem_t (n)), ntcb (c), maxq (m),
-    nalive (n), sdflag (false), ssrv (s) {}
+    nalive (n), sdflag (false), ssrv (s), txa_prog (x) {}
 
 mtdispatch_t::~mtdispatch_t ()
 {
@@ -58,8 +60,24 @@ mtdispatch_t::async_serv (svccb *b)
     la = ssrv ? ssrv->get_load_avg () : UINT_MAX;
     b->replyref (la);
     return true;
+    break;
   default:
     return false;
+    break;
+  }
+}
+
+bool
+ssrv_client_t::authorized (u_int32_t procno)
+{
+  bool *b = authcache[procno];
+  if (b) {
+    if (!*b) return false;
+    else return true;
+  } else {
+    bool ans = txa_prog->authorized (authtoks, procno);
+    authcache.insert (procno, ans);
+    return ans;
   }
 }
 
@@ -413,11 +431,12 @@ ssrv_t::accept (ptr<axprt_stream> x)
 {
   if (!x)
     fatal << "listen port closed.\n";
-  vNew ssrv_client_t (this, prog, x);
+  vNew ssrv_client_t (this, prog, x, txa_prog);
 }
 
 ssrv_client_t::ssrv_client_t (ssrv_t *s, const rpc_program *const p, 
-			      ptr<axprt> x) : ssrv (s)
+			      ptr<axprt> x, const txa_prog_t *t) 
+  : ssrv (s), txa_prog (t)
 {
   ssrv->insert (this);
   srv = asrv::alloc (x, *p, wrap (this, &ssrv_client_t::dispatch));
@@ -428,33 +447,49 @@ ssrv_client_t::dispatch (svccb *s)
 {
   if (!s)
     delete this;
-  else if (!ssrv->skip_db_call (s)) {
-    ssrv->req_made ();
-    ssrv->mtd->dispatch (s);
+  else {
+    u_int32_t procno = s->proc ();
+    if (txa_prog && txa_prog->get_login_rpc () == procno) {
+	txa_login_arg_t *arg = s->template getarg<txa_login_arg_t> ();
+	authtoks.clear ();
+	for (u_int i = 0; i < arg->size (); i++) {
+	  str tok ((*arg)[i].base (), (*arg)[i].size ());
+	  warn << "adding token: " << armor64 (tok) << "\n"; // debug
+	  authtoks.push_back (tok);
+	}
+	s->replyref (true);
+    } else if (txa_prog && !authorized (procno)) {
+      // XXX better debug message needed
+      warn << "RPC rejected due to insufficient credentials!\n";
+      s->reject (PROC_UNAVAIL);
+    } else if (!ssrv->skip_db_call (s)) {
+      ssrv->req_made ();
+      ssrv->mtd->dispatch (s);
+    }
   }
 }
 
 ssrv_client_t::~ssrv_client_t () { ssrv->remove (this); }
 
 ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p, 
-		mtd_thread_typ_t typ, int n, int m) 
-  : mtd (NULL), prog (&p), load_avg (0)
+		mtd_thread_typ_t typ, int n, int m, const txa_prog_t *x) 
+  : mtd (NULL), prog (&p), load_avg (0), txa_prog (x)
 {
   switch (typ) {
   case MTD_KTHREADS:
 #ifdef HAVE_KTHREADS 
-    mtd = New mkt_dispatch_t (c, n, m, this);
+    mtd = New mkt_dispatch_t (c, n, m, this, x);
 #endif
     break;
   case MTD_PTH:
 #ifdef HAVE_PTH
     assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
-    mtd = New mgt_dispatch_t (c, n, m, this);
+    mtd = New mgt_dispatch_t (c, n, m, this, x);
 #endif
     break;
   case MTD_PTHREADS:
 #ifdef HAVE_PTHREADS
-    mtd = New mpt_dispatch_t (c, n, m, this);
+    mtd = New mpt_dispatch_t (c, n, m, this, x);
 #endif
     break;
   default:
@@ -463,14 +498,14 @@ ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p,
   if (!mtd) {
 #ifdef HAVE_PTH
     warn << "Requested thread type not availabe: using GNU Pth\n";
-    mtd = New mgt_dispatch_t (c, n, m, this);
+    mtd = New mgt_dispatch_t (c, n, m, this, x);
 #else
 # ifdef HAVE_PTHREADS
     warn << "Requested thread type not availabe: using POSIX pthreads\n";
-    mtd = New mpt_dispatch_t (c, n, m, this);
+    mtd = New mpt_dispatch_t (c, n, m, this, x);
 # else
     warn << "Requested thread type not availabe: using kernel threads\n";
-    mtd = New mkt_dispatch_t (c, n, m, this);
+    mtd = New mkt_dispatch_t (c, n, m, this, x);
 # endif
 #endif
   }

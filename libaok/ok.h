@@ -175,6 +175,8 @@ class dbcon_t : public helper_inet_t {
 public:
   dbcon_t (const rpc_program &g, const str &h, u_int p)
     : helper_inet_t (g, h, p, 0) {}
+
+
   str getname () const { return strbuf ("database: ") << 
 			   helper_inet_t::getname () ;}
 };
@@ -212,7 +214,8 @@ public:
   { return rpcli->cfg (n, v); }
   template<typename T> parr_err_t cfg (const str &n, u_int i, T *p) const;
   void pubfiles (cbb cb);
-  dbcon_t *add_db (const str &host, u_int port, const rpc_program &p);
+  dbcon_t *add_db (const str &host, u_int port, const rpc_program &p,
+		   int32_t txa_login_rpc = -1);
   lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
 
   pval_w_t operator[] (const str &s) const { return (*rpcli)[s]; }
@@ -251,6 +254,8 @@ protected:
   u_int dbl;
   u_int lnum;
   int pid;
+
+  vec<str> authtoks;
 };
 
 class oksrvcw_t : public oksrvc_t { // OK Service Wrapped

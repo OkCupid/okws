@@ -39,7 +39,9 @@ void
 shad_dbprox_t::dispatch (svccb *sbp)
 {
   u_int p = sbp->proc ();
+
   switch (p) {
+  case SHA_QUERY2:
   case SHA_QUERY:
     query (sbp);
     break;
@@ -63,7 +65,8 @@ int
 main (int argc, char *argv[])
 {
   ssrv_t *s = New ssrv_t (wrap (&shad_dbprox_t::alloc), 
-			  sha_prog_1, MTD_PTH, 3);
+			  sha_prog_1, MTD_PTH, 3, MTD_MAXQ,
+			  New sha_prog_1_txa_t ());
   if (!pub_server (wrap (s, &ssrv_t::accept), SHAD_PORT))
     fatal << "Cannot bind to port " << SHAD_PORT << "\n";
   amain ();

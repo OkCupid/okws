@@ -17,6 +17,7 @@ AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_YACC
 SFS_WFLAGS
+SFS_PATH_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PATH_PROG(PERL, perl, perl)
@@ -29,6 +30,7 @@ dnl
 SFS_REQUIRE_THREADS
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
+test "$RPCC" || RPCC='$(top_builddir)/txarpcc/txarpcc'
 dnl
 dnl OKWS_TAG might set "with_sfs", so it should come before
 dnl SFS_SFS, which will reset it if needs be
@@ -143,7 +145,7 @@ PUB_PDEBUG
 PUBFLAGS='-rF'
 AC_SUBST(PUBFLAGS)
 
-AC_OUTPUT(libpub/Makefile test/Makefile pub/Makefile okd/Makefile 
-	  libahttp/Makefile libaok/Makefile samples/Makefile 
+AC_OUTPUT(txarpcc/Makefile libpub/Makefile test/Makefile pub/Makefile 
+	  okd/Makefile libahttp/Makefile libaok/Makefile samples/Makefile 
 	  client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile)

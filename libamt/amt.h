@@ -7,6 +7,7 @@
 
 #include "okwsconf.h"
 #include "lbalance.h"
+#include "txa.h"
 
 #ifdef HAVE_CLONE
 # include <sched.h>
@@ -129,9 +130,11 @@ struct mtd_shmem_t {
   mtd_shmem_cell_t *arr;
 };
 
+class ssrv_client_t;
 class mtdispatch_t { // Multi-Thread Dispatch
 public:
-  mtdispatch_t (newthrcb_t c, u_int nthr, u_int mq, ssrv_t *s);
+  mtdispatch_t (newthrcb_t c, u_int nthr, u_int mq, ssrv_t *s, 
+		const txa_prog_t *x);
   void dispatch (svccb *b);
   mtd_thread_t *new_thread (mtd_thread_arg_t *a) const;
   virtual ~mtdispatch_t ();
@@ -161,23 +164,31 @@ protected:
   vec<svccb *> queue;      // queue of waiting connections
   vec<int> readyq;         // ready threads
   ssrv_t *ssrv;            // synchronous server pointer
+
+  const txa_prog_t * const txa_prog; // for Thin XDR Authentication
 };
 
 class ssrv_client_t {
 public:
-  ssrv_client_t (ssrv_t *s, const rpc_program *const p, ptr<axprt> x);
+  ssrv_client_t (ssrv_t *s, const rpc_program *const p, ptr<axprt> x,
+		 const txa_prog_t *t);
   ~ssrv_client_t ();
   void dispatch (svccb *s);
   list_entry<ssrv_client_t> lnk;
+  bool authorized (u_int32_t procno) ;
 private:
   ssrv_t *ssrv;
   ptr<asrv> srv;
+  const txa_prog_t *const txa_prog;
+  vec<str> authtoks;
+  qhash<u_int32_t, bool> authcache;
 };
 
 class ssrv_t { // Synchronous Server (I.e. its threads can block)
 public:
   ssrv_t (newthrcb_t c, const rpc_program &p, mtd_thread_typ_t typ = MTD_PTH, 
-	  int nthr = MTD_NTHREADS, int mq = MTD_MAXQ);
+	  int nthr = MTD_NTHREADS, int mq = MTD_MAXQ, 
+	  const txa_prog_t *tx = NULL);
   void accept (ptr<axprt_stream> x);
   void insert (ssrv_client_t *c) { lst.insert_head (c); }
   void remove (ssrv_client_t *c) { lst.remove (c); }
@@ -193,14 +204,16 @@ private:
   list<ssrv_client_t, &ssrv_client_t::lnk> lst;
   vec<struct timespec> reqtimes;
   u_int load_avg;
+  const txa_prog_t *const txa_prog;
 };
 
 #ifdef HAVE_KTHREADS
 class mkt_dispatch_t : public mtdispatch_t  // Kernel Threads
 {
 public:
-  mkt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s) 
-    : mtdispatch_t (c, n, m, s) {}
+  mkt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
+		  const txa_prog_t *x) 
+    : mtdispatch_t (c, n, m, s, x) {}
   void launch (int i, int fdout);
 };
 #endif /* HAVE_KTHREADS */
@@ -209,8 +222,9 @@ public:
 class mpt_dispatch_t : public mtdispatch_t // Posix Threads
 {
 public:
-  mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s) :
-    mtdispatch_t (c, n, m, s), pts (New pthread_t [n]) {}
+  mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
+		  const txa_prog_t *x) :
+    mtdispatch_t (c, n, m, s, x), pts (New pthread_t [n]) {}
 
   ~mpt_dispatch_t () { delete [] pts; } 
   void launch (int i, int fdout);
@@ -223,8 +237,9 @@ protected:
 class mgt_dispatch_t : public mtdispatch_t  // Pth Threads
 {
 public:
-  mgt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s) :
-    mtdispatch_t (c, n, m, s), names (New str [n]), gts (New pth_t [n]) {}
+  mgt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s, 
+		  const txa_prog_t *x) :
+    mtdispatch_t (c, n, m, s, x), names (New str [n]), gts (New pth_t [n]) {}
   ~mgt_dispatch_t () { delete [] names; delete [] gts; }
   void init ();
   void launch (int i, int fdout);

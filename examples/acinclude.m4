@@ -10,6 +10,19 @@ if test "$PATH_[]translit($1, [a-z], [A-Z])"; then
 		       "$PATH_[]translit($1, [a-z], [A-Z])",
 			Full path of $1 command)
 fi])
+
+dnl
+dnl majorly ghetto but it works (unlike the ohter PATH_PROGS)
+dnl
+AC_DEFUN(OKWS_PATH_PROG,
+[ for dir in ${okwslibdir} ${with_okws}/bin /usr/local/bin /usr/bin /bin
+    do
+      if test -x $dir/$1 ; then
+	 RES="$dir/$1"
+	 break;
+      fi
+    done
+])
 dnl
 dnl File path to cpp
 dnl
@@ -1572,6 +1585,7 @@ case $with_mode in
 		with_dmalloc=yes
 		;;
 	"optmz" )
+		sfstag=lite
 		okmtag=$with_mode
 		;;
 	* )
@@ -1669,14 +1683,17 @@ elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
     dnl
     dnl hack because AC_PATH_PROG is fucked
     dnl
-    PUB=pub
-    for dir in ${okwslibdir} ${with_okws}/bin /usr/local/bin /usr/bin /bin
-    do
-      if test -x $dir/pub; then
-	 PUB="$dir/pub"
-	 break;
-      fi
-    done
+    OKWS_PATH_PROG(pub)
+    PUB="$RES"
+    if test -z $PUB; then
+	PUB=pub
+    fi
+    RES=
+    OKWS_PATH_PROG(txarpcc)
+    RPCC="$RES"
+    if test -z $RPCC; then
+	RPCC=rpcc
+    fi
 else
     AC_MSG_ERROR("Can\'t find OKWS libraries")
 fi

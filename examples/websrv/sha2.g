@@ -14,7 +14,9 @@ class oksrvc_sha_t : public oksrvc_t {
 public:
   oksrvc_sha_t (int argc, char *argv[]) : oksrvc_t (argc, argv) 
   {
-    shadb = add_db ("rael.lcs.mit.edu", SHAD_PORT, sha_prog_1);
+    authtoks.push_back (BAR_TOK);
+    shadb = add_db ("rael.lcs.mit.edu", SHAD_PORT, sha_prog_1,
+		    SHA_PROG_SHA_VERS_TXA_LOGIN);
   }
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
   void init_publist () { /*o init_publist (); o*/ }
@@ -34,7 +36,7 @@ public:
 	error_page ("Error: no input given!");
       else {
 	ptr<sha_query_res_t> res = New refcounted<sha_query_res_t> ();
-	ok_sha->shadb->call (SHA_QUERY, &x, res,
+	ok_sha->shadb->call (x[0] == 'a' ? SHA_QUERY2 : SHA_QUERY, &x, res,
 			     wrap (this, &okclnt_sha_t::cb, res));
       }
     } else {

@@ -3,14 +3,14 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libpub.la
 
-libpub_la_SOURCES = xpub.C data.C scan.ll parse.yy pubutil.C pub.C xdr.C \
-	slave.C rclient.C proxy.C zstr.C okconst.C pvalw.C jail.C fd_prot.C \
-	authtok.C lbalance.C
+libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
+	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
+	pvalw.C jail.C fd_prot.C authtok.C lbalance.C 
 
-okwsinclude_HEADERS = pub.h pubutil.h xpub.h okconst.h axprtfd.h \
+okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
-	pslave.h
+	pslave.h txa.h 
 
 YDEBUG = @YDEBUG@
 LDEEBUG = @LDEBUG@
@@ -33,6 +33,15 @@ fd_prot.C:	$(srcdir)/fd_prot.x fd_prot.h
 fd_prot.h:	$(srcdir)/fd_prot.x
 	@rm -f $@
 	-$(RPCC) -h $(srcdir)/fd_prot.x || rm -f $@
+
+txa_prot.h:	$(srcdir)/txa_prot.x
+	@rm -f $@
+	-$(RPCC) -h $(srcdir)/txa_prot.x || rm -f $@
+
+txa_prot.C:	$(srcdir)/txa_prot.x txa_prot.h
+	@rm -f $@
+	-$(RPCC) -c $(srcdir)/txa_prot.x || rm -f $@
+
 
 scan.cc: scan.ll
 	$(LEX) $(AM_FLAGS) $(LFLAGS) $(srcdir)/scan.ll 		\
@@ -85,7 +94,8 @@ xdrclean:
 sourceclean: parseclean xdrclean
 
 
-BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h
+BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h fd_prot.C fd_prot.h \
+	txa_prot.h txa_prot.C
 
 CLEANFILES = core *.core *~ *.rpo 
 EXTRA_DIST = .cvsignore

@@ -9,7 +9,7 @@
 #include "pub.h"
 
 #define LOAD_AVG_MAX      UINT_MAX
-#define LOAD_AVG_RPC      998
+#define LOAD_AVG_RPC      100
 
 class lblnc_t;
 class lblnc_node_t {
