@@ -94,7 +94,7 @@ logbuf_t::lock ()
 bool
 logbuf_t::to_str (str *s, int *i)
 {
-  if (!cmbuf) {
+  if (!cmbuf || cp == buf) {
     *i = -1;
     return false;
   } else {
