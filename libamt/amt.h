@@ -229,7 +229,7 @@ public:
   void remove (ssrv_client_t *c) { lst.remove (c); }
   virtual bool skip_db_call (svccb *c) { return false; }
   virtual void post_db_call (svccb *c, ptr<void> resp) {}
-  virtual ~ssrv_t () { delete mtd; }
+        virtual ~ssrv_t () { warn << "in ~ssrv_t()\n"; delete mtd; }
   void req_made (); // called for accounting purposes
   u_int get_load_avg () const { return load_avg; }
 
@@ -261,7 +261,7 @@ public:
 		  const txa_prog_t *x) :
     mtdispatch_t (c, n, m, s, x), pts (New pthread_t [n]) {}
 
-  ~mpt_dispatch_t () { delete [] pts; } 
+        ~mpt_dispatch_t () { warn << "in ~mpt_dispatch_t\n"; delete [] pts; } 
   void launch (int i, int fdout);
 protected:
   pthread_t *pts;
@@ -275,7 +275,7 @@ public:
   mgt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s, 
 		  const txa_prog_t *x) :
     mtdispatch_t (c, n, m, s, x), names (New str [n]), gts (New pth_t [n]) {}
-  ~mgt_dispatch_t () { delete [] names; delete [] gts; }
+        ~mgt_dispatch_t () { warn << "in ~mgt_dispatch_t\n"; delete [] names; delete [] gts; }
   void init ();
   void launch (int i, int fdout);
 protected:
