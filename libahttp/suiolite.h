@@ -84,7 +84,7 @@ private:
   iovec iov[2];
   cbv::ptr scb;  // space CB -- callback if space is available in the uio
   bool peek;
-  bool bytes_read;
+  u_int bytes_read;
 };
 
 #endif /* _LIBAHTTP_SUIOLITE_H */
