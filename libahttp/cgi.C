@@ -395,9 +395,9 @@ cgi_t::parse_hexchar (char **pp, char *end)
     ch = abuf->get ();
     if (ch == ABUF_WAITCHAR)
       return ABUF_WAIT;
-    if (ch == ABUF_EOFCHAR)
+    else if (ch == ABUF_EOFCHAR)
       return ABUF_EOF;
-    if ((t = char_to_hex (ch)) < 0) {
+    else if ((t = char_to_hex (ch)) < 0) {
       abuf->unget ();
       break;
     }
