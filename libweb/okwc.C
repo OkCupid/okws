@@ -150,7 +150,7 @@ okwc_http_t::make_req ()
   // requests, and parse chunked content returns. for now, we'll do
   // this instead.
   //
-  reqbuf << "GET " << filename << " HTTP/1.0"  << HTTP_CRLF;
+  reqbuf << "GET " << filename << " HTTP/1." << vers  << HTTP_CRLF;
   if (vers == 1) {
     reqbuf << "Connection: close" << HTTP_CRLF
 	   << "Host: " << hostname << HTTP_CRLF
@@ -197,7 +197,6 @@ okwc_http_bigstr_t::eat_chunk (size_t s)
 void
 okwc_http_t::start_chunker ()
 {
-  chunker = New okwc_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch);
   chunker->parse (wrap (this, &okwc_http_t::parsed_chunk_hdr));
 }
 
@@ -205,6 +204,8 @@ void
 okwc_http_t::body_parse ()
 {
   if (hdr.is_chunked ()) {
+    assert (!chunker);
+    chunker = New okwc_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch);
     start_chunker ();
   } else {
     eat_chunk (hdr.get_contlen ());
@@ -243,11 +244,14 @@ okwc_chunker_t::parse_guts ()
   abuf_stat_t r = ABUF_OK;
   while (r == ABUF_OK) {
     switch (state) {
+    case FINISH_PREV:
+      r = require_crlf ();
+      break;
     case START: 
       {
 	str sz_str;
 	r = delimit_word (&sz_str);
-	if (r == ABUF_OK && !convertint16 (sz_str, &sz))
+	if (r == ABUF_OK && (!sz_str.len () || !convertint16 (sz_str, &sz)))
 	  r = ABUF_PARSE_ERR;
 	break;
       }
@@ -275,9 +279,10 @@ okwc_chunker_t::parse_guts ()
 void
 okwc_http_t::body_parse_continue ()
 {
-  if (hdr.is_chunked ())
+  if (hdr.is_chunked ()) {
+    chunker->next_chunk ();
     start_chunker ();
-  else
+  } else
     body_chunk_finish ();
 }
 

@@ -133,15 +133,17 @@ private:
 class okwc_http_t;
 class okwc_chunker_t : public http_hdr_t {
 private:
-  typedef enum { START  = 0,
-		 SPC1 = 1,
-		 EOL1 = 2,
-		 EOL2 = 3,
-		 DONE = 4 } state_t;
+  typedef enum { FINISH_PREV = 0,
+		 START  = 1,
+		 SPC1 = 2,
+		 EOL1 = 3,
+		 EOL2 = 4,
+		 DONE = 5 } state_t;
 public: 
   okwc_chunker_t (abuf_t *a, size_t bfln, char *b)
-    : http_hdr_t (a, bfln, b), sz (0), state (START) {}
+    : async_parser_t (a), http_hdr_t (a, bfln, b), sz (0), state (START) {}
   size_t get_sz () const { return sz; }
+  void next_chunk () { sz = 0; state = FINISH_PREV; }
 protected:
   void parse_guts ();
 private:
@@ -158,7 +160,7 @@ public:
 		 
   okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, 
 	       int v, cgi_t *ock, okwc_cookie_set_t *incook = NULL);
-  virtual ~okwc_http_t () {}
+  virtual ~okwc_http_t () { if (chunker) delete (chunker); }
 
   void make_req ();
   void cancel ();
