@@ -93,6 +93,7 @@ extern u_int ok_crashes_max;
 extern u_int ok_csi;                           // crash sampling interval
 extern const char *ok_version;
 extern const char *ok_dname;                   // okd name == okd, usually
+extern const char *ok_wsname;                  // okws name == okws, usually
 extern u_int ok_dport;                         // okd port listen to
 extern const char *ok_jaildir_top;             // for okld
 extern const char *ok_topdir;                  // okws executables

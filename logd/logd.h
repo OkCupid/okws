@@ -136,7 +136,8 @@ class logd_t {
 public:
   logd_t (const str &in, int f = -1) 
     : tmr (wrap (this, &logd_t::flush)), 
-    parms (in), logset (0), dcb (NULL), fdfd (f), 
+    parms (in), logset (0), error (NULL), access (NULL),
+    dcb (NULL), fdfd (f), 
     uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
     fdseqno (0), injail (false) {}
 
@@ -159,7 +160,8 @@ private:
   bool setup ();
   bool slave_setup ();
   bool fdfd_setup ();
-  bool logfile_setup ();
+  bool logfile_setup () ;
+  bool logfile_setup (logfile_t **f, const str &l, const str &t);
   bool perms_setup ();
   void close_logfiles ();
   void parse_fmt ();
@@ -172,7 +174,7 @@ private:
   vec<logd_fmt_el_t *> fmt_els;
   logd_parms_t parms;
   u_int logset;
-  logfile_t error, access;
+  logfile_t *error, *access;
   timecb_t *dcb;
   int fdfd;
   int uid;

@@ -78,7 +78,7 @@ public:
       listenport (ok_dport),
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
-      reported_name (ok_dname),
+      reported_name (ok_wsname),
       logd (NULL), logfd (fd)
       //jaildir_run (ok_jaildir_run) 
   {}

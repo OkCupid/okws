@@ -121,20 +121,38 @@ logd_t::slave_setup ()
 }
 
 bool
-logd_t::logfile_setup ()
+logd_t::logfile_setup (logfile_t **f, const str &log, const str &typ)
 {
   str prfx;
   if (!injail)
     prfx = parms.logdir;
-  return (access.open_verbose (parms.accesslog, "access", prfx) &&
-	  error.open_verbose (parms.errorlog, "error", prfx));
+
+  assert (!*f);
+  *f = New logfile_t ();
+  if ((*f)->open_verbose (log, typ, prfx)) {
+    return true;
+  } else {
+    delete *f;
+    *f = NULL;
+    return false;
+  }
 }
+
+bool
+logd_t::logfile_setup ()
+{
+  return (logfile_setup (&access, parms.accesslog, "access") &&
+	  logfile_setup (&error, parms.errorlog, "error"));
+}
+
 
 void
 logd_t::close_logfiles ()
 {
-  error.close ();
-  access.close ();
+  delete access;
+  delete error;
+  access = NULL;
+  error = NULL;
 }
 
 void
@@ -349,8 +367,10 @@ void
 logd_t::flush ()
 {
   if (running) {
-    error.flush ();
-    access.flush ();
+    assert (error);
+    assert (access);
+    error->flush ();
+    access->flush ();
   }
 }
 
@@ -396,7 +416,8 @@ bool
 logd_t::access_log (const oklog_ok_t &x)
 {
   u_int lim = fmt_els.size ();
-  logbuf_t *lb = access.getbuf ();
+  assert (access);
+  logbuf_t *lb = access->getbuf ();
   for (u_int i = 0; i < lim; i++) {
     if (i != 0) lb->spc ();
     fmt_els[i]->log (lb, x);
@@ -408,7 +429,8 @@ logd_t::access_log (const oklog_ok_t &x)
 bool
 logd_t::error_log (const oklog_arg_t &x)
 {
-  logbuf_t *lb = error.getbuf ();
+  assert (error);
+  logbuf_t *lb = error->getbuf ();
   (*lb) << tmr << ' ' << x.typ << ' ';
   switch (x.typ) {
   case OKLOG_ERR_NOTICE:
@@ -430,13 +452,26 @@ logd_t::error_log (const oklog_arg_t &x)
 void
 logd_t::turn (svccb *sbp)
 {
-  bool ret = true;
-  close_logfiles ();
-  if (!logfile_setup ()) 
-    ret = false;
+  bool ret = false;
+
+  logfile_t *access2 = NULL;
+  logfile_t *error2 = NULL;
+
+  if (logfile_setup (&access2, parms.accesslog, "access")) {
+    if (logfile_setup (&error2, parms.errorlog, "error")) {
+      ret = true;
+      close_logfiles ();
+      access = access2;
+      error = error2;
+    } else {
+      delete access2;
+    }
+  } // else access2 autodeleted
+
+  if (!ret) 
+    warn << "flush of logfiles failed; no changes made\n";
+
   sbp->replyref (ret);
-  if (!ret)
-    fatal << "flush of logfiles failed\n";
 }
 
 void
@@ -444,8 +479,10 @@ logd_t::fastlog (svccb *sbp)
 {
   bool ret = true;
   oklog_fast_arg_t *fa = sbp->template getarg<oklog_fast_arg_t> ();
-  access.flush (fa->access);
-  error.flush (fa->error);
+  assert (access);
+  assert (error);
+  access->flush (fa->access);
+  error->flush (fa->error);
   sbp->replyref (&ret);
 }
 

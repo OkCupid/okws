@@ -77,6 +77,7 @@ u_int ok_crashes_max = 30;          // number of allowed crashes
 u_int ok_csi = 50;                  // crash sampling interval
 const char *ok_version = VERSION;
 const char *ok_dname = "okd";       // okd name == okd, usually
+const char *ok_wsname = "okws";     // okws name == okws, usually
 u_int ok_dport = 80;                // okd port listen to
 u_int ok_resurrect_delay = 3;
 u_int ok_resurrect_delay_ms = 500;

@@ -162,7 +162,7 @@ program OKMGR_PROGRAM {
 		ok_xstatus_t
 		OKMGR_RELAUNCH (ok_progs_t) = 2;
 
-		bool
+		ok_xstatus_t
 		OKMGR_TURNLOG (void) = 3;
 	} = 1;
 } = 11278;
