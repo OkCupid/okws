@@ -476,8 +476,11 @@ okd_t::newserv (int fd)
     reqid ++;
 
     // debug messaging
-    if ((reqid % freq) == 0) 
-      warn << "nfd_in_xit=" << nfd_in_xit << "\n";
+    if ((reqid % freq) == 0) {
+      warn << "nfd_in_xit=" << nfd_in_xit << "; " 
+	   << "xtab.nent=" << xtab.n_entries () << "; "
+	   << "nfds=" << n_ahttpcon << "\n";
+    }
 
     nfd_in_xit ++;  // keep track of the number of FDs in transit
     close_on_exec (nfd);

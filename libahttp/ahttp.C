@@ -845,6 +845,7 @@ ahttp_tab_t::reg (ahttpcon *a, ptr<bool> d)
 {
   ahttp_tab_node_t *n = New ahttp_tab_node_t (a, d);
   q.insert_tail (n);
+  nent++;
 }
 
 void
@@ -873,6 +874,7 @@ ahttp_tab_t::unreg (ahttp_tab_node_t *n)
 {
   q.remove (n);
   delete n;
+  nent--;
 }
 
 void

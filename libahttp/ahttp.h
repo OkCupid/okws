@@ -272,18 +272,20 @@ struct ahttp_tab_node_t {
 
 class ahttp_tab_t {
 public:
-  ahttp_tab_t (int i) : interval (i), dcb (NULL) { sched (); }
+  ahttp_tab_t (int i) : interval (i), dcb (NULL), nent (0) { sched (); }
   ~ahttp_tab_t () { if (dcb) timecb_remove (dcb); }
   
   void unreg (ahttp_tab_node_t *n);
   void reg (ahttpcon *a, ptr<bool> destroyed);
   void run ();
   void sched ();
+  inline size_t n_entries () const { return nent; }
 
 private:
   const int interval;
   timecb_t *dcb;
   tailq<ahttp_tab_node_t, &ahttp_tab_node_t::_qent> q;
+  size_t nent;
 };
 
 
