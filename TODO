@@ -210,3 +210,5 @@ OKD v0.2
    to copy over /etc/resolv.conf -- is this secure?
  - dynamic library copying and build directory setup....
  - build okws and services with dynamically-linked-libraries.
+ - coredump rotation system from okld -- that way many coredumps can
+   be saved (with timestamp....)
