@@ -130,7 +130,12 @@ okwc_http_t::make_req ()
     filename = str (cp, len - (cp - fn)); 
   }
 
-  reqbuf << "GET " << filename << " HTTP/1." << vers << HTTP_CRLF;
+  //
+  // hacked in for now -- eventually we should be asking for HTTP/1.1
+  // requests, and parse chunked content returns. for now, we'll do
+  // this instead.
+  //
+  reqbuf << "GET " << filename << " HTTP/1.0"  << HTTP_CRLF;
   if (vers == 1) {
     reqbuf << "Connection: close" << HTTP_CRLF
 	   << "Host: " << hostname << HTTP_CRLF

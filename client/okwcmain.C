@@ -32,6 +32,7 @@ reqcb (ptr<okwc_resp_t> res)
 int 
 main (int argc, char *argv [])
 {
+  okwc_def_contlen *= 10;
   if (argc != 2) 
     usage ();
   if (!url_rxx.match (argv[1])) 
