@@ -56,6 +56,9 @@ http_resp_header_t::fill (bool gz)
   add ("Content-Type", contenttype);
   add_closed ();
   add ("Cache-control", cachecontrol);
+  if (expires) {
+      add ("Expires", expires);
+  }
   add_server ();
   if (gz) gzip ();
 }

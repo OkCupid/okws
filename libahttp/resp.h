@@ -64,8 +64,8 @@ public:
 class http_resp_header_t {
 public:
   http_resp_header_t (int c, htpv_t v = 0) 
-    : status (c), vers (v), cachecontrol ("no-store"), 
-    contenttype ("text/html") {}
+    : status (c), vers (v), cachecontrol ("private"), 
+    contenttype ("text/html"), expires("0") {}
   virtual ~http_resp_header_t () {}
   const http_resp_header_t & add (const http_hdr_field_t &f)
   { fields.push_back (f); return *this; }
@@ -83,11 +83,13 @@ public:
   void add_closed () { add ("Connection", "close"); }
   void set_cache_control (const str &s) { cachecontrol = s; }
   void set_content_type (const str &s) { contenttype = s; }
+  void set_expires (const str &s) { expires = s; }
 private:
   int status;
   htpv_t vers;
   str cachecontrol;
   str contenttype;
+  str expires;
   vec<http_hdr_field_t> fields;
 };
 
@@ -124,7 +126,8 @@ public:
   void set_cache_control (const str &s) { header.set_cache_control (s); }
   void set_content_type (const str &s) { header.set_content_type (s); }
   void set_inflated_len (size_t l) { inflated_len = l; }
-
+  void set_expires (const str &s) { header.set_expires (s); }
+        
   inline void set_uid (u_int64_t i) { uid = i; }
   inline u_int64_t get_uid () const { return uid; }
 protected:

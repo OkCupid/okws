@@ -483,6 +483,7 @@ okclnt_t::output (zbuf &b)
   rsp = New refcounted<http_response_ok_t> (sb, hdr.get_vers (), gz);
   if (cachecontrol) rsp->set_cache_control (cachecontrol);
   if (contenttype) rsp->set_content_type (contenttype);
+  if (expires) rsp->set_expires (expires);
   if (uid_set) rsp->set_uid (uid);
   if (prelen > 0) rsp->set_inflated_len (prelen);
   send (rsp);
