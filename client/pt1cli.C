@@ -10,7 +10,10 @@ int nreq;
 int nconcur;
 int nrunning;
 bool sdflag;
-bool seda;
+bool noisy;
+
+typedef enum { OKWS = 1, PHP = 2, SEDA = 3 } pt1cli_mode_t;
+pt1cli_mode_t mode;
 
 class hclient_t {
 public:
@@ -58,15 +61,15 @@ hclient_t::writewait ()
 void
 hclient_t::cexit (int c)
 {
-  warn << "at cexit: " << id << "\n";
+  if (noisy) warn << "at cexit: " << id << "\n";
   --nrunning;
   while (nrunning < nconcur && q.size ()) {
-    warn << "launched queued req: " << id << "\n";
+    if (noisy) warn << "launched queued req: " << id << "\n";
     q.pop_front ()->run ();
   }
   if (!--nreq && sdflag)
     exit (c);
-  warn << "done: " << id << " (nreq: " << nreq << ")\n";
+  if (noisy) warn << "done: " << id << " (nreq: " << nreq << ")\n";
   delete this;
   return;
 }
@@ -80,7 +83,7 @@ hclient_t::canread ()
     cexit (0);
     return;
   }
-  if (!seda) {
+  if (mode != SEDA) {
     if (rc == -1 && errno != EAGAIN) {
       warn ("read error: %m\n");
       cexit (-1);
@@ -102,7 +105,7 @@ hclient_t::canread ()
       body = strstr (buf, "\r\n\r\n");
     if (body && (bp - body >= reqsz)) {
       write (1, buf, bp - buf);
-      warn ("ok, closing up!\n");
+      if (noisy) warn ("ok, closing up!\n");
       cexit (0);
     }
   }
@@ -116,8 +119,8 @@ hclient_t::connected (int f)
   int id = random() % 30000;
   b << id <<" HTTP/1.0\r\nConnection: close\r\n\r\n";
   if (fd < 0) {
-    if (seda) {
-      warn << "cannot connect to host\n";
+    if (mode == SEDA) {
+      if (noisy) warn << "cannot connect to host\n";
       cexit (-1);
       return;
     } else
@@ -135,15 +138,15 @@ hclient_t::connected (int f)
 void
 hclient_t::run ()
 {
-  warn << "run: " << id << "\n";
+  if (noisy) warn << "run: " << id << "\n";
   if (nrunning >= nconcur) {
-    warn << "queuing: " << id << "\n";
+    if (noisy) warn << "queuing: " << id << "\n";
     q.push_back (this);
     return;
   }
   nrunning++;
-  warn << "running: " << id << " (nrunning: " << nrunning << ")\n";
-  warn << "connecting to: " << host << "\n";
+  if (noisy) warn << "running: " << id << " (nrunning: " << nrunning << ")\n";
+  if (noisy) warn << "connecting to: " << host << "\n";
   tcpconnect (host, port, wrap (this, &hclient_t::connected));
 }
 
@@ -156,32 +159,67 @@ usage ()
 int 
 main (int argc, char *argv[])
 {
-  seda = false;
+  bool noisy = false;
   srandom(time(0));
   setprogname (argv[0]);
-  if (argc < 3 || argc > 5)
+  int ch;
+  int n = 1000;
+  nconcur = 500; 
+
+  while ((ch = getopt (argc, argv, "d:c:n:spo")) != -1)
+    switch (ch) {
+    case 'd':
+      noisy = true;
+      break;
+    case 'c':
+      if (!convertint (optarg, &nconcur))
+	usage ();
+      if (noisy) warn << "Concurrency factor: " << nconcur << "\n";
+      break;
+    case 'n':
+      if (!convertint (optarg, &n))
+	usage ();
+      if (noisy) warn << "Number of requests: " << n << "\n";
+      break;
+    case 's':
+      mode = SEDA;
+      break;
+    case 'p':
+      mode = PHP;
+      break;
+    case 'o':
+      mode = OKWS;
+      break;
+    default:
+      usage ();
+    }
+  argc -= optind;
+  argv += optind;
+
+  if (argc != 1)
     usage ();
 
-  int n = 1;
-  nconcur = 500; 
-  if (argc >= 4 && !convertint (argv[3], &n)) 
-    usage ();
-  if (argc == 5 && !convertint (argv[4], &nconcur)) 
-    usage ();
-    
-  //str in = file2str (argv[2]);
+  str dest = argv[0];
+
   str in;
-  if (argv[2][0] == 'p') 
-    in = "GET /test.php?id=";
-  else if (argv[2][0] == 's') {
-    seda = true;
+  switch (mode) {
+  case SEDA:
     in = "GET /test?x=";
-  } else
+    if (noisy) warn << "In SEDA mode\n";
+    break;
+  case OKWS:
     in = "GET /pt1?id=";
- 
-  if (!in)
-    fatal << "Cannot open file: " << argv[2] << "\n";
-  if (!hostport.match (argv[1])) 
+    if (noisy) warn << "In OKWS mode\n";
+    break;
+  case PHP:
+    in = "GET /test.php?id=";
+    if (noisy) warn << "In PHP mode\n";
+    break;
+  default:
+    break;
+  }
+
+  if (!hostport.match (dest)) 
     usage ();
   str host = hostport[1];
   str port_s = hostport[3];
@@ -191,9 +229,10 @@ main (int argc, char *argv[])
   } else {
     port = 80;
   }
+
   nrunning = 0;
-  nreq = n;
   sdflag = true;
+  nreq = n;
   for (int i = 0; i < n; i++) {
     hclient_t *h = New hclient_t (host, port, in, i);
     h->run ();
