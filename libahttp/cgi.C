@@ -56,7 +56,7 @@ str
 cgi_encode (const str &in)
 {
   strbuf b;
-  size_t s = cgi_encode (in, &b, cgi_static_scratch, CGISS_SIZE, true);
+  cgi_encode (in, &b, cgi_static_scratch, CGISS_SIZE, true);
   return b;
 }
 

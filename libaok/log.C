@@ -55,7 +55,7 @@ void
 log_primary_t::got_cloned_fd (int fdfd)
 {
   int nfd;
-  ssize_t rc = readvfd (fdfd, 0, NULL, &nfd);
+  readvfd (fdfd, 0, NULL, &nfd);
   if (nfd >= 0) {
     fds.push_back (nfd);
   }

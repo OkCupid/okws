@@ -12,7 +12,7 @@ http_inhdr_t::delimit_word (str *wrd, bool qms)
   int ch;
   abuf_stat_t ret = ABUF_OK;
   bool flag = true;
-  for ( ; pcp < endp && flag; flag && pcp++) {
+  for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
     ch = abuf->get ();
     switch (ch) {
     case ABUF_WAITCHAR:
@@ -229,7 +229,7 @@ http_inhdr_t::delimit_val (str *v)
   abuf_stat_t ret = ABUF_OK;
   int ch;
   bool flag = true;
-  for ( ; pcp < endp && flag; flag && pcp++) {
+  for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
     ch = abuf->get ();
     switch (ch) {
     case ABUF_WAITCHAR:
@@ -265,7 +265,7 @@ http_inhdr_t::delimit_key (str *k)
   abuf_stat_t ret = ABUF_OK;
   int ch;
   bool flag = true;
-  for ( ; pcp < endp && flag; flag && pcp++) {
+  for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
     ch = abuf->get ();
     switch (ch) {
     case ABUF_WAITCHAR:

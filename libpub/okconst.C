@@ -1,6 +1,6 @@
 
 #include "okconst.h"
-#include "acgiconf.h"
+#include "okwsconf.h"
 
 
 //

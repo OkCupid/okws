@@ -275,10 +275,6 @@ okdate_t::valid() const
   // leap year
   //
   if (mon == 2 && mday == 29) {
-	  int div4 = year % 4;
-	  int div100 = year % 100;
-	  int div400 = year % 400;
-
 	  // if not divisible by 4, then not a leap year
 	  //
 	  if (year % 4 != 0) {

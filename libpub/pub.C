@@ -333,7 +333,6 @@ pub_parser_t::export_set (xpub_set_t *out)
   vec<const pfile_t *> files_tmp;
   u_int lim = xset.size ();
   out->bindings.setsize (lim);
-  u_int j = 0;
   for (u_int i = 0; i < lim; i++) {
     xset[i]->bnd->to_xdr (&out->bindings[i]);
     if (!hits[xset[i]->bnd->hsh]) {

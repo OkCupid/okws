@@ -220,8 +220,6 @@ protected:
   str buf;
 };
 
-static void foo () { ptr<u_int64_t> t = New refcounted<u_int64_t> (); }
-
 class mybind_u64_t : public mybind_num_t<u_int64_t, unsigned long long> {
 public:
   mybind_u64_t (u_int64_t i) :

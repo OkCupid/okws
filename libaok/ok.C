@@ -94,11 +94,13 @@ ok_base_t::error2 (ref<ahttpcon> x, int n, str s,
   }
 }
 
+/*
 static void
 usage ()
 {
   fatal << "usage: <oksrvc> <cgi-encoded-args>\n";
 }
+*/
 
 
 void

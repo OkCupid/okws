@@ -24,7 +24,6 @@ pair_t::to_int () const
   case IV_ST_NONE:
     {
       size_t s = vals.size ();
-      int64_t tmp;
       ivals.setsize (s);
       for (u_int i = 0; i < s; i++) {
 	if (!convertint (vals[i], &ivals[i])) {

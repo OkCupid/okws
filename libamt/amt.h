@@ -5,7 +5,7 @@
 #ifndef _LIBAMT_AMT_H
 #define _LIBAMT_AMT_H
 
-#include "acgiconf.h"
+#include "okwsconf.h"
 
 #ifdef HAVE_CLONE
 # include <sched.h>

@@ -82,7 +82,6 @@ main (int argc, char *argv[])
   uLong outlen = 100000;
   int rc = -1;
   u_int i;
-  int j;
   Bytef b2[100000];
   Bytef *bp = b2;
   u_int t = 0;

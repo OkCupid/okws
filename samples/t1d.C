@@ -2,7 +2,7 @@
 #include "t1_prot.h"
 #include "pslave.h"
 
-#include "acgiconf.h"
+#include "okwsconf.h"
 #ifdef HAVE_MYSQL
 #include "amysql.h"
 #include "mystmt.h"

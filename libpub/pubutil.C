@@ -219,7 +219,7 @@ void
 bindtab_t::inc (phashp_t h)
 {
   u_int *i = cnt[h];
-  if (i) *i++;
+  if (i) (*i)++;
   else cnt.insert (h, 1);
 }
 
