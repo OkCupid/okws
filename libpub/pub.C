@@ -1,3 +1,4 @@
+stty: stdin isn't a terminal
 /* $Id$ */
 
 /*
@@ -264,7 +265,10 @@ pub_t::set_t::getfile (const pfnm_t &nm, const pub_t::set_t *backup) const
   pfile_t *f = files[b->hash ()];
   if (!f && backup) {
     f = backup->files[b->hash ()];
-    warn << "REPUB: used backup file for filename: " << nm << "\n";
+    if (f)
+      warn << "REPUB: used backup file for filename: " << nm << "\n";
+    else
+      warn << "XXX: backup file failed during repub: " << nm << "\n";
   }
   assert (f);
   return bound_pfile_t::alloc (b, f);
