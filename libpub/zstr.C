@@ -113,8 +113,10 @@ zstrobj::compress (int l) const
 const str &
 zstrobj::to_zstr (int l) const
 {
-  if (zs && clev >= l)
+  if (zs && clev >= l) {
+    warn << "compress saved,sz=" << len () << "\n"; // debug
     return zs;
+  }
   compress (l);
   return zs;
 }
@@ -160,8 +162,10 @@ zstr
 ztab_cache_t::alloc (const str &s, bool lkp)
 {
   zstr *z;
-  if (lkp && (z = lookup (s)))
+  if (lkp && (z = lookup (s))) {
+    warn << "cache hit, sz=" << s.len () << "\n"; // debug
     return *z;
+  }
   size_t l = s.len ();
   if (l >= minz && l <= maxz && maxtot) {
     make_room (l);
@@ -193,8 +197,10 @@ zstr
 ztab_cache_t::alloc (const char *p, size_t l, bool lkp)
 {
   zstr *z;
-  if (lkp && (z = lookup (p, l)))
+  if (lkp && (z = lookup (p, l))) {
+    warn << "cache hit, sz=" << l << "\n"; // debug
     return *z;
+  }
 
   u_int ip = reinterpret_cast<u_int> (p);
   if (l >= minz && l <= maxz) {
@@ -234,7 +240,7 @@ zbuf::compress (strbuf *p, int level)
     str z = zs[i].compress (level);
     
     // XXX -- debug code
-    debugvec.push_back (i);
+    debugvec.push_back (zs[i].len ());
 
     if (!z)
       goto compress_err;
@@ -266,14 +272,15 @@ zbuf::compress (strbuf *p, int level)
   endbuf.setlen (dlui);
   s = endbuf;
   (*p) << s << "\r\n0\r\n\r\n";
-  return;
 
   // XXX - debug code
   for (u_int i = 0; i < debugvec.size (); i++) {
-    warn << debugvec[i] << ",";
+    warnx << debugvec[i] << ",";
   }
-  warn << "\n";
+  warnx << "\n";
 	  
+  return;
+
  compress_err:
   p->tosuio ()->clear ();
 }

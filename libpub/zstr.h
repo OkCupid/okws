@@ -249,13 +249,15 @@ zbuf::cat (const zbuf &zb2)
 zbuf &
 zbuf::cat (const str &s, bool cp)
 {
-  zstr *z = ztab->lookup (s);
-  if (z) {
-    push_zstr (*z);
-  } else if (s.len () <= minstrsize) {
+  if (s.len () <= minstrsize) {
     strbuf_add (s, cp);
   } else {
-    push_str2zstr (s, false);
+    zstr *z = ztab->lookup (s);
+    if (z) {
+      push_zstr (*z);
+    } else {
+      push_str2zstr (s, false);
+    }
   }
   return (*this);
 }
@@ -263,13 +265,15 @@ zbuf::cat (const str &s, bool cp)
 zbuf &
 zbuf::cat (const zstr &z, bool cp)
 {
-  zstr *zp = ztab->lookup (z);
-  if (zp) {
-    push_zstr (*zp);
-  } else if (z.compressed () || z.len () > minstrsize) {
-    push_zstr (z);
-  } else {
+  if (z.len () <= minstrsize) { 
     strbuf_add (z, cp);
+  } else { 
+    zstr *zp = ztab->lookup (z);
+    if (zp) {
+      push_zstr (*zp);
+    } else {
+      push_zstr (z);
+    }
   }
   return (*this);
 }

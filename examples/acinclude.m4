@@ -1772,6 +1772,11 @@ AM_CONDITIONAL(DLINKED_SERVICES, test $shared_tmp -eq 1)
 ])
 
 
+dnl
+dnl SFS_SET_CLOCK
+dnl
+dnl   sfslite extensions for different types of SFS clocks.
+dnl
 AC_DEFUN(SFS_SET_CLOCK,
 [AC_CACHE_CHECK(for sfs_set_clock, sfs_cv_set_clock,
 [
