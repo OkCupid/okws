@@ -665,8 +665,6 @@ case $with_mode in
 		CXXDEBUG=-g
 		;;
 	"optmz" )
-		DEBUG='-g -O2'
-		okwstag=$with_mode
 		;;
 	* )
 		AC_MSG_ERROR([Unrecognized build mode specified])
@@ -675,7 +673,7 @@ esac
 
 AC_ARG_WITH(sfstag,
 --with-sfstag=TAG	Specify an SFS build tag other than default)
-if test "{$with_sfstag+set}" = "set" ; then
+if test "${with_sfstag+set}" = "set" ; then
 	sfstag=$with_sfstag
 fi
 if test "${okwstag+set}" = "set" ; then
@@ -683,6 +681,11 @@ if test "${okwstag+set}" = "set" ; then
 fi	
 if test "${sfstag+set}" = "set" ; then
 	sfstagdir="/$sfstag"
+fi
+AC_ARG_ENABLE(systembin,
+--enable-systembin	Install execs to systemwide bin despite tag)
+if test "${enable_systembin+set}" = "set" ; then
+	okws_systembin=yes
 fi
 AC_SUBST(okwstagdir)
 AC_SUBST(okwstag)
@@ -1501,8 +1504,9 @@ elif test -f ${with_sfs}/include/sfs/autoconf.h \
     dnl LIBSVC=${sfslibdir}/libsvc.la
     dnl LIBSFS=${with_sfs}/lib/libsfs.a
     MALLOCK=${sfslibdir}/mallock.o
-    AC_PATH_PROG(RPCC, rpcc,
- 		 "${with_sfs}/lib/sfs${sfstagdir}" "${with_sfs}/bin")
+	echo "${with_sfs}/lib/sfs${sfstagdir}:${with_sfs}/bin"
+    SFS_PATH_PROG(rpcc, ${with_sfs}/lib/sfs${sfstagdir}:${with_sfs}/bin)
+    RPCC="$PATH_RPCC"
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi
