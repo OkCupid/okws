@@ -1,0 +1,93 @@
+dnl
+dnl $Id$
+dnl
+dnl Process this file with autoconf to produce configure script
+dnl
+
+AC_INIT(config.h.in)
+AM_INIT_AUTOMAKE(oksamples, 0.0)
+AM_CONFIG_HEADER(config.h)
+
+AC_CANONICAL_HOST
+
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_CXX
+AC_PROG_YACC
+SFS_WFLAGS
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PATH_PROG(PERL, perl, perl)
+AC_PATH_PROGS(M4, gm4 gnum4 m4, '$(top_srcdir)/missing')
+
+# XXX - need for some autoconf/-make/libtool versions?
+test -z "$target" && target=NONE
+SFS_REQUIRE_THREADS
+AC_DISABLE_SHARED
+AM_PROG_LIBTOOL
+AM_PROG_LEX
+
+OKWS_TAGS
+OKWS_MODULE
+
+AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
+
+SFS_SFS
+SFS_FIND_RESOLV
+SFS_DMALLOC
+SFS_MYSQL
+OKWS_OKWS
+
+okmtopdir=${okm_prefix}/${okm_name}/${VERSION}/${okmtag}
+okmlibdir='${okmtopdir}/lib'
+okmincludedir='${okmtopdir}/include'
+okmsvcdir='${okmtopdir}/run/svc'
+okmdbpdir='${okmtopdir}/dbprox'
+
+AC_SUBST(okmtopdir)
+AC_SUBST(okmlibdir)
+AC_SUBST(okmincludedir)
+AC_SUBST(okmsvcdir)
+AC_SUBST(okmdbpdir)
+
+SFS_CFLAGS
+
+CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'
+
+dnl
+dnl for .x files, need header in build directory
+dnl
+for lib in libprot; do
+    CPPFLAGS="$CPPFLAGS -I"'$(top_builddir)'"/$lib"
+done
+
+dnl
+dnl Library directories
+dnl
+for lib in libprot; do
+    CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
+done
+
+LIBPROT='$(top_builddir)/libprot/libprot.la'
+if test "$enable_shared" = yes; then
+   LDEPS_SRV=
+   LDEPS_PRX=
+else
+   LDEPS_SRV='$(LIBPROT) '"$LDEPS"
+   LDEPS_PRX='$(LIBPROT) '"$LDEPS_DB"
+fi
+LDADD_SRV='$(LIBPROT) '"$LDEPS"
+LDADD_PRX='$(LIBPROT) '"$LDEPS_DB"' $(LDADD_THR) $(LDADD_MYSQL)'
+
+ETAGS_ARGS='-C /dev/null'
+
+PUBFLAGS='-r'
+AC_SUBST(PUBFLAGS)
+AC_SUBST(LIBPROT)
+AC_SUBST(LDADD_SRV)
+AC_SUBST(LDADD_PRX)
+AC_SUBST(LDEPS_SRV)
+AC_SUBST(LDEPS_PRX)
+
+AC_OUTPUT(websrv/Makefile dbprox/Makefile libprot/Makefile Makefile)
+	 

@@ -1,0 +1,26 @@
+#!/bin/sh
+
+CFG=cfg
+
+if [ -f $CFG ]
+then
+    rm $CFG
+fi
+
+touch $CFG
+if [ $DEBUG ]
+then
+    echo "export DEBUG=$DEBUG" >> $CFG
+fi
+if [ $CC ]
+then
+    echo "export CC=$CC" >> $CFG
+fi
+if [ $CXX ]
+then
+    echo "export CXX=$CXX" >> $CFG
+fi
+CONFIGURE=`echo $0 | sed 's/cfg/configure/' `
+echo "$CONFIGURE $*" >> $CFG
+chmod u+x $CFG
+sh -x $CFG

@@ -1,0 +1,51 @@
+
+$Id$
+
+oksamples
+---------
+Here are some trivial server examples that can run with OKD to create
+webservers.  Here are the relevent files:
+
+ websrv/sha.g -- This is the front end of a web service that takes
+   input from the user, and then queries a database for the SHA-1
+   hash of that word.  The database contains all words in 
+   /usr/share/dict/ on FreeBSD 4.8. More comments can be found
+   in that file.  Note especially that regions inside the C++ comment
+   sequence /*o ... o*/  are interpreted by the pub filter; commands
+   here are transformed into less readable, and less manageable
+   C++ commands.
+
+ webserv/sha2.g -- Does the same as above, but uses the runtime templating
+   system to output HTML code.  The template can be found in
+   ~max/web/sha.html. Because the publishing daemon is being run
+   with white-space stripping enabled, all unncessary white space
+   is stripped out of the HTML source.
+
+ libprot/sha_prot.x -- An RPC file describing the protocol that
+   the two above programs use to talk to the shad database proxy.
+
+ dbprox/shad.C -- a simple database proxy, that speaks both SQL
+   and RPC.  The SQL interface is designed specifically for libasync,
+   but should look pretty similar to Perl DBI.  The dispatch ()
+   function is not the typical ASRV dispatch.  Rather, it's running
+   inside a thread, so that its database calls won't block the 
+   proxy.  The "reply" function merely puts the RPC result into
+   a memory region common to the child and parent thread; it then
+   sends a message over a pipe to the parent thread that the result
+   is ready.  The parent threads then responds to the RPC request
+   as normal.
+  
+
+ websrv/google.C -- one last web service; a redirect to www.google.com.
+
+
+In case you require the use of these very useful web-services,
+they're currently running on my machine:
+
+	http://rael.lcs.mit.edu/sha
+ 	http://rael.lcs.mit.edu/sha2
+	http://rael.lcs.mit.edu/google
+
+
+
+
