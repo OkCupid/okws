@@ -201,7 +201,7 @@ OKD v0.2
    of the particular executable. first 2 checks can happen when process
    is booting up.  maybe special flag in config file can suppress these
    checks.
- - get rid of eofcb stuff in ahttp.C; also try to clean up and
+ X get rid of eofcb stuff in ahttp.C; also try to clean up and
    better understand that code. -- remember the bug -- read 0 bytes =>
    infinite select loop
  - enforce that jail directory and parents is not writable by any one but
@@ -211,7 +211,7 @@ OKD v0.2
  - dynamic library copying and build directory setup....
  - build okws and services with dynamically-linked-libraries.
  - coredump rotation system from okld -- that way many coredumps can
-   be saved (with timestamp....)
+   be saved (or mabye just attach pid's...)
  - callback hooks for updating config files
  - testing when an RPC hangs, what the user sees.
  - statistics?  might be useful.  as in, number of current clients,
@@ -226,3 +226,5 @@ OKD v0.2
    first of all, why was the coredump not in the jailed /var/coredumps?
    second issue, why did this happen?  i thought all sockets were set 
    with a 4M socketsize? maybe it's a UDP restriction.
+ - update sfslite
+ - clean up recyling code.
