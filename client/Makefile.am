@@ -1,7 +1,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr
+noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench
 
 hcli_SOURCES = hcli.C
 
@@ -16,6 +16,8 @@ degz_SOURCES = degz.C
 mygz_SOURCES = mygz.C
 
 tmr_SOURCES = tmr.C
+
+bench_SOURCES = bench.C
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore
