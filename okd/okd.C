@@ -531,14 +531,6 @@ okd_t::launch3 ()
   // once jailed, we can access the mmap'ed clock file (if necessary)
   init_sfs_clock (mmc_file);
 
-  //
-  // debug stuff 
-  // rats!
-  //
-  //char path[MAXPATHLEN];
-  //getcwd (path, MAXPATHLEN);
-  //warn << "working directory: " << path << "\n";
-
   enable_accept ();
 }
 
