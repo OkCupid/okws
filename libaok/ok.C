@@ -167,6 +167,7 @@ oksrvc_t::ctldispatch (svccb *v)
     break;
   case OKCTL_KILL:
     kill (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
@@ -392,6 +393,8 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
 {
   if (sdflag) {
     error (lx, HTTP_UNAVAILABLE, NULL);
+  } else if (!lx) {
+    warn << "oksrvc_t::newclnt: NULL request encountered\n";
   } else {
     okclnt_t *c = make_newclnt (lx);
     c->serve ();
