@@ -44,7 +44,7 @@ main (int argc, char *argv [])
     assert (convertint (port_str, &port));
   str filename = url_rxx[4];
 
-  okwc_request (hostname, port, filename, wrap (reqcb), 100);
+  okwc_request (hostname, port, filename, wrap (reqcb), 1, 100);
   amain ();
 }
 
