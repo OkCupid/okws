@@ -384,7 +384,7 @@ bool
 parr_int_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_INT);
-  return parr_ival_tmplt_t<int>::to_xdr (&(x->intarr));
+  return parr_ival_tmplt_t<int>::to_xdr (x->intarr.addr ());
 }
 
 bool
@@ -403,27 +403,27 @@ bool
 parr_int16_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_INT16);
-  return parr_ival_tmplt_t<int16_t>::to_xdr (&(x->int16arr));
+  return parr_ival_tmplt_t<int16_t>::to_xdr (x->int16arr.addr ());
 }
 
 bool
 parr_uint16_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_UINT16);
-  return parr_ival_tmplt_t<u_int16_t>::to_xdr (&(x->uint16arr));
+  return parr_ival_tmplt_t<u_int16_t>::to_xdr (x->uint16arr.addr ());
 }
 
 bool
 parr_uint_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_UINT);
-  return parr_ival_tmplt_t<u_int>::to_xdr (&(x->uintarr));
+  return parr_ival_tmplt_t<u_int>::to_xdr (x->uintarr.addr ());
 }
 
 bool
 parr_int64_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_INT64);
-  return parr_ival_tmplt_t<int64_t>::to_xdr (&(x->hyperarr));
+  return parr_ival_tmplt_t<int64_t>::to_xdr (x->hyperarr.addr ());
 }
 

@@ -95,11 +95,11 @@ public:
   virtual bool to_xdr (xpub_parr_t *x) const = 0;
 
   template<typename R> 
-  bool to_xdr (union_entry<rpc_vec<R, RPC_INFINITY> > *x) const
+  bool to_xdr (rpc_vec<R, RPC_INFINITY> *x) const
   {
     u_int lim = v.size ();
-    (*x)->setsize (lim);
-    for (u_int i = 0; i < lim; i++) (**x)[i] = static_cast<R> (v[i]);
+    x->setsize (lim);
+    for (u_int i = 0; i < lim; i++) (*x)[i] = static_cast<R> (v[i]);
     return true;
   }
 

@@ -166,6 +166,16 @@ main (int argc, char *argv[])
     bnd->dump (&d);
 #endif /* PDEBUG */
 
+    /*
+     * debug code
+     *
+    xpub_file_t x;
+    bnd->file->to_xdr (&x);
+    strbuf bbb;
+    rpc_print (bbb, x);
+    warn << "FOO: " << bbb << "\n";
+    */
+
     zbuf b;
     if (!ppt->include (&b, bnd, opts) || (b.output (fd) < 0))
       err = true;

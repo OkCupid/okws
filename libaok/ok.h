@@ -125,7 +125,7 @@ class okclnt_t
 public:
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
     http_parser_cgi_t (xx, to), x (xx), oksrvc (o),
-    process_flag (false)
+    process_flag (false), uid_set (false)
   {}
 
   virtual ~okclnt_t ();
@@ -137,6 +137,7 @@ public:
   virtual void redirect (const str &s);
   virtual void send (ptr<http_response_t> rsp);
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
+  void set_uid (u_int64_t i) { uid = i; uid_set = true; }
 
   list_entry<okclnt_t> lnk;
 protected:
@@ -152,6 +153,8 @@ protected:
   ptr<http_response_t> rsp;
   vec<cookie_t *> outcookies;
   bool process_flag;
+  u_int64_t uid; // hacked in for now;
+  bool uid_set;
 };
 
 typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;

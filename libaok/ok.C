@@ -458,6 +458,7 @@ okclnt_t::output (zbuf &b)
   const strbuf &sb = b.to_strbuf (gz);
     
   rsp = New refcounted<http_response_ok_t> (sb, hdr.get_vers (), gz);
+  if (uid_set) rsp->set_uid (uid);
   send (rsp);
 }
 

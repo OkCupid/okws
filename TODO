@@ -233,3 +233,5 @@ OKD v0.2
  - runtime prepare checks.
  - aut tok's
  - DGRAM -> STREAM (on all RPC connections)
+ - uid is hacked into logging system ; de-hack it
+ - (display post-gzip size content)
