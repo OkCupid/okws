@@ -354,6 +354,17 @@ public:
   mybind_int_t (ptr<int> *i) : mybind_num_t<int, long> (MYSQL_TYPE_LONG, i) {}
 };
 
+class mybind_time_t : public mybind_num_t<time_t, long> {
+public:
+  mybind_time_t (time_t t) : mybind_num_t<time_t, long> (MYSQL_TYPE_LONG, i) {}
+  mybind_time_t (time_t *t) 
+    : mybind_num_t<time_t, long> (MYSQL_TYPE_LONG, i) 
+  {}
+  mybind_time_t () : mybind_num_t<time_t, long> (MYSQL_TYPE_LONG) {}
+  mybind_time_t (ptr<time_t> *t) 
+    : mybind_time_t<time_t, long> (MYSQL_TYPE_LONG, i) {}
+};
+
 class mybind_hyper_t : public mybind_num_t<int64_t, long long> {
 public:
   mybind_hyper_t (int64_t i) : 
@@ -454,6 +465,7 @@ public:
   mybind_res_t (int64_t *i) { p = New refcounted<mybind_hyper_t> (i); }
   mybind_res_t (ptr<int64_t> *i) { p = New refcounted<mybind_hyper_t> (i); }
   mybind_res_t (int *i) { p = New refcounted<mybind_int_t> (i); }
+  mybind_res_t (time_t *t) { p = New refcounted<mybind_time_t> (t); }
   mybind_res_t (u_int32_t *i) { p = New refcounted<mybind_u32_t> (i); }
   mybind_res_t (ptr<u_int32_t> *i) { p = New refcounted<mybind_u32_t> (i); }
   mybind_res_t (sex_t *s) { p = New refcounted<mybind_sex_t> (s); }
