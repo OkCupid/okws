@@ -319,6 +319,7 @@ okd_t::parseconfig ()
     .ignore ("CoreDumpDir")
     .ignore ("SocketDir")
     .ignore ("ServiceBin")
+    .ignore ("ShutdownTimeout")
 
     .ignore ("Gzip")
     .ignore ("GzipLevel")

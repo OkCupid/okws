@@ -99,6 +99,7 @@ okld_t::parseconfig (const str &cf)
     .add ("FilterCGI", &ok_filter_cgi, XSSFILT_NONE, XSSFILT_ALL)
     .add ("OkdUser", &okd_un)
     .add ("OkdGroup", &okd_gr)
+    .add ("ShutdownTimeout", &ok_shutdown_timeout, 0, 1000)
     
     .add ("OkdName", &reported_name)
     .add ("OkdVersion", &version)
