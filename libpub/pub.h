@@ -378,7 +378,7 @@ public:
   virtual str switch_class (const str &nc) { return NULL; }
   virtual str get_class () const { return NULL; }
   virtual bool descend () const { return true; }
-  virtual bool stack_restore () const { return false; }
+  virtual bool stack_restore () const { return true; }
 
   pfile_type_t mode;
 };

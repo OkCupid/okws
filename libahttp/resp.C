@@ -51,7 +51,7 @@ http_status_set_t::http_status_set_t ()
   add (HTTP_BAD_REQUEST, "Bad Request");
   add (401, "Unauthorized");
   add (402, "Payment Required");
-  add (403, "Forbidden");
+  add (HTTP_FORBIDDEN, "Forbidden");
   add (HTTP_NOT_FOUND, "Not Found");
   add (HTTP_NOT_ALLOWED, "Method Not Allowed");
   add (406, "Not Acceptable");
