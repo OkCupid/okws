@@ -1601,7 +1601,7 @@ pvar_t::dump2 (dumper_t *d) const
 void
 pswitch_env_t::dump2 (dumper_t *d) const
 {
-  DUMP(d, "key: " << key << "; fn: " << fn );
+  DUMP(d, "key: " << key << "; fn: " << (fn ? fn : str ("no file given")));
   if (aarr) aarr->dump (d);
 }
 
