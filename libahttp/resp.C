@@ -32,8 +32,11 @@ str global_okws_server_label = okws_server_label;
 
 http_status_set_t::http_status_set_t ()
 {
+  // 100 series
   add (100, "Continue");
   add (101, "Switching Protocols");
+
+  // 200 series
   add (HTTP_OK, "OK");
   add (201, "Created");
   add (202, "Accepted");
@@ -41,6 +44,8 @@ http_status_set_t::http_status_set_t ()
   add (204, "No Content");
   add (205, "Resent Content");
   add (HTTP_PARTIAL_CONTENT, "Partial Content");
+
+  // 300 series
   add (300, "Multiple  Choices");
   add (HTTP_REDIRECT, "Moved Permanently");
   add (HTTP_MOVEDTEMP, "Found"); 
@@ -49,6 +54,8 @@ http_status_set_t::http_status_set_t ()
   add (HTTP_USEPROXY, "Use Proxy");
   add (307, "Temporary Redirect");
   add (HTTP_BAD_REQUEST, "Bad Request");
+
+  // 400 series
   add (401, "Unauthorized");
   add (402, "Payment Required");
   add (HTTP_FORBIDDEN, "Forbidden");
@@ -58,7 +65,7 @@ http_status_set_t::http_status_set_t ()
   add (407, "Proxy Authentication Required");
   add (HTTP_TIMEOUT, "Request Time-out");
   add (409, "Conflict");
-  add (410, "Gone");
+  add (HTTP_GONE, "Gone");
   add (411, "Length Required");
   add (412, "Precondition Failed");
   add (HTTP_REQ_TOO_BIG, "Request Entity Too Large");
@@ -66,6 +73,8 @@ http_status_set_t::http_status_set_t ()
   add (415, "Unsupported Media Type");
   add (416, "Requested range not satisfied");
   add (HTTP_UNEXPECTED_EOF, "Expectation Failed");
+
+  // 500 series
   add (HTTP_SRV_ERROR, "Internal Server Error");
   add (HTTP_NOT_IMPLEMENTED, "Not Implemented");
   add (502, "Bad Gateway");
