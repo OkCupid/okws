@@ -81,6 +81,7 @@ EOF
       size_t nrows  = res.tab->size ();
       for (u_int i = 0; i < nrows; i++) {
 	for (u_int j = 0; j < (*res.tab)[i].size (); j++) {
+	  if (n >= sz) break;
 	  n += snprintf (base + n, sz - n, " %d\n", (*res.tab)[i][j]);
 	}
       }

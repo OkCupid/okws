@@ -74,11 +74,11 @@ void
 http_resp_header_t::fill (bool gz)
 {
   add_date ();
-  add ("Content-Type", contenttype);
+  add ("Content-Type", attributes.get_content_type ());
   add_closed ();
-  add ("Cache-control", cachecontrol);
-  if (expires) {
-      add ("Expires", expires);
+  add ("Cache-control", attributes.get_cache_control ());
+  if (attributes.get_expires ()) {
+    add ("Expires", attributes.get_expires ());
   }
   add_server ();
   if (gz) gzip ();
@@ -112,7 +112,7 @@ http_resp_header_t::to_strbuf () const
 {
   strbuf b;
   b << "HTTP/";
-  switch (vers) {
+  switch (attributes.get_version ()) {
   case 1:
     b << "1.1 ";
     break;
@@ -120,6 +120,7 @@ http_resp_header_t::to_strbuf () const
     b << "1.0 ";
     break;
   }
+  u_int status = attributes.get_status ();
   b << status;
   if (status == HTTP_OK)
     b << " OK";

@@ -82,11 +82,39 @@ public:
   http_hdr_cookie_t (const str &v) : http_hdr_field_t ("Set-Cookie", v) {}
 };
 
+class http_resp_attributes_t {
+public:
+  http_resp_attributes_t (u_int s, htpv_t v) : 
+    _status (s), _version (v), _content_type ("text/html"), 
+    _cache_control ("private"), 
+    _gzip (false) {}
+
+  u_int get_status () const { return _status; }
+  htpv_t get_version () const { return _version; }
+  str get_content_type () const { return _content_type; }
+  str get_cache_control () const { return _cache_control; }
+  str get_expires () const { return _expires; }
+  bool get_gzip () const { return _gzip; }
+
+  void set_version (htpv_t v) { _version = v; }
+  void set_content_type (str s) { _content_type = s; }
+  void set_cache_control (str s) { _cache_control = s; }
+  void set_expires (str s) { _expires = s; }
+  void set_gzip (bool b) { _gzip = b; }
+
+  u_int _status;
+  htpv_t _version;
+  str _content_type;
+  str _cache_control;
+  str _expires;
+  bool _gzip;
+
+};
+
 class http_resp_header_t {
 public:
-  http_resp_header_t (int c, htpv_t v = 0) 
-    : status (c), vers (v), cachecontrol ("private"), 
-    contenttype ("text/html"), expires("0") {}
+  http_resp_header_t (const http_resp_attributes_t &a) : attributes (a) {}
+  http_resp_header_t (u_int s, htpv_t v) : attributes (s, v) {}
   virtual ~http_resp_header_t () {}
   const http_resp_header_t & add (const http_hdr_field_t &f)
   { fields.push_back (f); return *this; }
@@ -97,37 +125,29 @@ public:
   virtual void fill (bool gz = false);
   void fill (bool gz, int len);
   strbuf to_strbuf () const;
-  inline int get_status () const { return status; } 
+  inline int get_status () const { return attributes.get_status (); }
   void gzip ();
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", OKD_SERVER_ID); }
   void add_closed () { add ("Connection", "close"); }
-  void set_cache_control (const str &s) { cachecontrol = s; }
-  void set_content_type (const str &s) { contenttype = s; }
-  void set_expires (const str &s) { expires = s; }
 private:
-  int status;
-  htpv_t vers;
-  str cachecontrol;
-  str contenttype;
-  str expires;
+  http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;
 };
 
 class http_resp_header_redirect_t : public http_resp_header_t {
 public:
-  http_resp_header_redirect_t (const str &loc, htpv_t v = 0, 
-			       int ht = HTTP_MOVEDPERM)
-    : http_resp_header_t (ht, v) { fill (loc); }
+  http_resp_header_redirect_t (const str &loc, const http_resp_attributes_t &a)
+    : http_resp_header_t (a) { fill (loc); }
   void fill (const str &loc);
 };
 
 class http_resp_header_ok_t : public http_resp_header_t {
 public:
-  http_resp_header_ok_t (htpv_t v = 0, bool gz = false) 
-    : http_resp_header_t (HTTP_OK, v) { fill (gz); }
-  http_resp_header_ok_t (u_int s, htpv_t v = 0, bool gz = false) 
-    : http_resp_header_t (HTTP_OK, v) { fill (gz, s); }
+  http_resp_header_ok_t (const http_resp_attributes_t &a)
+    : http_resp_header_t (a) { fill (a.get_gzip ()); }
+  http_resp_header_ok_t (u_int s, const http_resp_attributes_t &a)
+    : http_resp_header_t (a) { fill (a.get_gzip (), s); }
 };
 
 class http_response_t {
@@ -145,10 +165,7 @@ public:
   inline void gzip () { header.gzip (); }
   http_resp_header_t header;
 
-  void set_cache_control (const str &s) { header.set_cache_control (s); }
-  void set_content_type (const str &s) { header.set_content_type (s); }
   void set_inflated_len (size_t l) { inflated_len = l; }
-  void set_expires (const str &s) { header.set_expires (s); }
         
   inline void set_uid (u_int64_t i) { uid = i; }
   inline u_int64_t get_uid () const { return uid; }
@@ -161,16 +178,15 @@ protected:
 
 class http_response_ok_t : public http_response_t {
 public:
-  http_response_ok_t (const strbuf &b, htpv_t v = 0, bool gz = false) : 
-    http_response_t (http_resp_header_ok_t (b.tosuio ()->resid (), v, gz), b) 
+  http_response_ok_t (const strbuf &b, const http_resp_attributes_t &a) :
+    http_response_t (http_resp_header_ok_t (b.tosuio ()->resid (), a), b) 
   {}
 };
 
 class http_response_redirect_t : public http_response_t {
 public:
-  http_response_redirect_t (const str &s, htpv_t v = 0, 
-	int ht = HTTP_MOVEDPERM) :
-    http_response_t (http_resp_header_redirect_t (s, v, ht)) {}
+  http_response_redirect_t (const str &s, const http_resp_attributes_t &a) :
+    http_response_t (http_resp_header_redirect_t (s, a)) {}
 };
 
 class http_error_t : public http_response_t {

@@ -44,21 +44,32 @@ public:
   ~okclnt_pt4_t () {}
   dbcon_t *db () const { return ok_pt4->db; }
 
-  inline void docell (int v)
+  inline void docell1 (int v)
   {
     out << "<td>" << v << "</td>\n";
   }
 
-  inline void dorow (int i) 
+  inline void dorow1 (int i) 
   {
     out << "<tr>";
     for (int j = 1; j <= 10; j++) 
-      docell (i * j);
+      docell1 (i * j);
     out << "</tr>\n";
   }
 
+  inline void dorow2 (int i)
+  {
+
+
+  }
+
+
   void process ()
   {
+    p2 ();
+  }
+
+  void hdr () {
     /*o
 	print (out) <<EOF;
 <html>
@@ -69,10 +80,9 @@ public:
  <table>
 EOF
     o*/
+  }
 
-    for (int i = 1; i <= 30; i++)
-      dorow (i);
-
+  void ftr () {
     /*o
       print (out) <<EOF;
 </table>
@@ -80,8 +90,17 @@ EOF
 </html>
 EOF
       o*/
+  }
+
+  void p2 ()
+  {
+    hdr ();
+    for (int i = 1; i <= 30; i++)
+      dorow2 (i);
+    ftr ();
     output (out);
   }
+
   int id; // make id global for qry_cb()
   oksrvc_pt4_t *ok_pt4;
 };

@@ -594,7 +594,8 @@ okclnt_t::http_parse_cb (int status)
 void
 okclnt_t::redirect (const str &l, int ht)
 {
-  rsp = New refcounted<http_response_redirect_t> (l, hdr.get_vers(), ht);
+  http_resp_attributes_t hra (ht, hdr.get_vers ());
+  rsp = New refcounted<http_response_redirect_t> (l, hra);
   send (rsp);
 }
 
@@ -612,11 +613,15 @@ okclnt_t::output (zbuf &b)
   if (gz) 
     prelen = b.inflated_len ();
   const strbuf &sb = b.to_strbuf (gz);
+
+  http_resp_attributes_t hra (HTTP_OK, hdr.get_vers ());
+
+  hra.set_gzip (gz);
+  if (cachecontrol) hra.set_cache_control (cachecontrol);
+  if (contenttype) hra.set_content_type (contenttype);
+  if (expires) hra.set_expires (expires);
     
-  rsp = New refcounted<http_response_ok_t> (sb, hdr.get_vers (), gz);
-  if (cachecontrol) rsp->set_cache_control (cachecontrol);
-  if (contenttype) rsp->set_content_type (contenttype);
-  if (expires) rsp->set_expires (expires);
+  rsp = New refcounted<http_response_ok_t> (sb, hra);
   if (uid_set) rsp->set_uid (uid);
   if (prelen > 0) rsp->set_inflated_len (prelen);
   send (rsp);

@@ -35,6 +35,9 @@ class oksrvc_sha_t : public oksrvc_t {
 public:
   oksrvc_sha_t (int argc, char *argv[]) : oksrvc_t (argc, argv) 
   {
+    // adds a capability; according to sha_prot.x, BAR_TOK
+    // enables sha2.g to access SHA_QUERY2, but not
+    // SHA_QUERY.
     authtoks.push_back (BAR_TOK);
     shadb = add_db ("rael.lcs.mit.edu", SHAD_PORT, sha_prog_1,
 		    SHA_PROG_SHA_VERS_TXA_LOGIN);
