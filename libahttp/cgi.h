@@ -11,6 +11,7 @@
 #include "ahttp.h"
 #include "abuf.h"
 #include "pair.h"
+#include "aparse.h"
 
 #define CGI_DEF_SCRATCH  0x10000
 #define CGI_MAX_SCRATCH  0x40000
@@ -28,12 +29,23 @@
 typedef enum { CGI_KEY = 1, CGI_VAL = 2, 
 	       CGI_CKEY = 3, CGI_CVAL = 4, CGI_NONE = 5 } cgi_var_t;
 
+class cgi_file_t {
+public:
+  cgi_file_t (const str &n, const str &t, const str &d) 
+    : filename (n), type (t), dat (d) {}
+  str filename;
+  str type;
+  str dat;
+};
+typedef vec<cgi_file_t> cgi_files_t;
 
 class cgi_pair_t : public pair_t {
 public:
   cgi_pair_t (const str &k) : pair_t (k) {}
-  cgi_pair_t (const str &k, const str &v, bool e = true) : pair_t (k, v, e) {}
-  cgi_pair_t (const str &k, int64_t i) : pair_t (k, i) {}
+  cgi_pair_t (const str &k, const str &v, bool e = true) 
+    : pair_t (k, v, e) {}
+  cgi_pair_t (const str &k, int64_t i) 
+    : pair_t (k, i) {}
 
   void encode (encode_t *e, const str &sep) const;
 };
@@ -43,7 +55,8 @@ size_t cgi_encode (const str &in, strbuf *out, char *scratch = NULL,
 str cgi_encode (const str &in);
 str cgi_decode (const str &in);
 
-class cgi_t : public pairtab_t<cgi_pair_t> {
+class cgi_t : public virtual async_parser_t,
+	      public pairtab_t<cgi_pair_t> {
 public:
   cgi_t (abuf_src_t *s = NULL, bool ck = false, 
 	 u_int bfln = CGI_DEF_SCRATCH, char *buf = NULL);
@@ -51,32 +64,23 @@ public:
 	 char *buf = NULL);
   ~cgi_t ();
 
-  void parse (cbv::ptr c = NULL);
-
   virtual void encode (strbuf *b) const;
   virtual str encode () const;
   
-  void can_read_cb (); // call if there is data available to read
+  static ptr<cgi_t> str_parse (const str &s);
 
-  static ptr<cgi_t> parse (const str &s);
   void set_uri_mode (bool b) { uri_mode = b; }
-  void cancel () { if (abuf) abuf->cancel (); pcb = NULL; }
-
   abuf_stat_t parse_key_or_val ();
   abuf_stat_t parse_key_or_val (str *r, cgi_var_t vt);
 
+  virtual bool flookup (const str &k, cgi_files_t **v) { return false; }
 private:
   void init (char *buf);
-
-  void _parse ();
+  virtual void parse_guts ();
   abuf_stat_t parse_hexchar (char **pp, char *end);
 
-  abuf_t *abuf;
-  bool nwabuf;
   bool cookie;
   bool bufalloc;    // on if we alloced this buf; off if we're borrowing it
-  bool parsing;
-  bool dataready;
 
   bool inhex;       // inhex when forced to wait
   cgi_var_t pstate; // parse state
@@ -87,9 +91,7 @@ private:
   int hex_lch;      // last char in parse_hexchar
   str key;          // key used in parsing key/val pairs
 
-  cbv::ptr pcb;     // callback one parse is over
   bool uri_mode;    // on if parsing within a URI
-
 protected:
   char *scratch;    // buffer for parse / scratch
   u_int buflen;
@@ -112,6 +114,7 @@ public:
   template<typename T> cgiw_t & insert (const str &k, T v, bool ap = true) 
   { c->insert (k, v, ap); return (*this); }
   cgi_t *cgi () const { return c; }
+  bool flookup (const str &k, cgi_files_t **v) { return c->flookup (k,v); }
   
 private:
   cgi_t *c;
@@ -144,5 +147,6 @@ public:
   cgi_pair_t path;
   cgi_pair_t expires;
 };
+
 
 #endif /* _LIBAHTTP_CGI_H */

@@ -113,7 +113,7 @@ oksrvc_t::init (int argc, char *argv[])
 	   "; running as (" << getuid () << ", " << geteuid () << ")");
 
   if (argc == 2) {
-    ptr<cgi_t> t (cgi_t::parse (argv[1]));
+    ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
     t->lookup ("jaildir", &jaildir);
     t->lookup ("version", &version);
     t->lookup ("hostname", &hostname);

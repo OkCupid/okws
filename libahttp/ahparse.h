@@ -2,8 +2,8 @@
 // -*-c++-*-
 /* $Id$ */
 
-#ifndef _LIBAHTTP_PARSE_H
-#define _LIBAHTTP_PARSE_H
+#ifndef _LIBAHTTP_AHPARSE_H
+#define _LIBAHTTP_AHPARSE_H
 
 #include "httpconst.h"
 #include "arpc.h"
@@ -14,6 +14,7 @@
 #include "inhdr.h"
 #include "pslave.h"
 #include "pubutil.h"
+#include "mpfd.h"
 
 #define HTTP_PARSE_BUFLEN 0x4000
 #define HTTP_PARSE_BUFLEN2 0x1000
@@ -75,13 +76,21 @@ public:
       cookie (&abuf, true, buflen2, scratch2),
       url (&abuf, false, buflen2, scratch2),
       post (&abuf, false, buflen, scratch),
-      hdr (&abuf, &url, &cookie, buflen, scratch) {}
+      mpfd (NULL),
+      mpfd_flag (false),
+      hdr (&abuf, &url, &cookie, buflen, scratch) 
+  {}
+  ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
 
   http_inhdr_t * hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
 
   void v_cancel () { hdr.cancel (); post.cancel (); }
   void v_parse_cb1 (int status);
+  void finish2 (int s1, int s2);
+  void enable_file_upload () { mpfd_flag = true; }
+
+  bool mpfd_parse (cbi::ptr pcb);
 
 protected:
   size_t buflen2;
@@ -89,11 +98,16 @@ protected:
   cgi_t cookie;
   cgi_t url;
   cgi_t post;
+  cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
   char scratch2[HTTP_PARSE_BUFLEN2];
 
+private:
+  bool mpfd_flag;
+
 public:
   http_inhdr_t hdr;
+
 };
 
 #endif

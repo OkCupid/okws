@@ -35,11 +35,11 @@ http_status_set_t::http_status_set_t ()
   add (410, "Gone");
   add (411, "Length Required");
   add (412, "Precondition Failed");
-  add (413, "Request Entity Too Large");
+  add (HTTP_REQ_TOO_BIG, "Request Entity Too Large");
   add (HTTP_URI_TOO_BIG, "Request-URI Too Large");
   add (415, "Unsupported Media Type");
   add (416, "Requested range not satisfied");
-  add (417, "Expectation Failed");
+  add (HTTP_UNEXPECTED_EOF, "Expectation Failed");
   add (500, "Internal Server Error");
   add (HTTP_NOT_IMPLEMENTED, "Not Implemented");
   add (502, "Bad Gateway");

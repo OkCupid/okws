@@ -20,13 +20,18 @@ typedef enum { INHDRST_START = 0,
 	       INHDRST_KEY = 7,
 	       INHDRST_SPC3 = 8,
 	       INHDRST_VALUE = 9,
-	       INHDRST_EOL2 = 10 } inhdrst_t;
+	       INHDRST_EOL2A = 10,
+	       INHDRST_EOL2B = 11 } inhdrst_t;
 
 typedef enum { HTTP_MTHD_NONE = 0,
 	       HTTP_MTHD_POST = 1,
 	       HTTP_MTHD_PUT = 2,
 	       HTTP_MTHD_DELETE = 3,
                HTTP_MTHD_GET = 4 } http_method_t;
+
+typedef enum { POST_MTHD_NONE = 0,
+	       POST_MTHD_URLENCODED = 1,
+	       POST_MTHD_MULTIPART_FORM = 2 } post_method_t;
 
 class methodmap_t {
 public:
@@ -36,15 +41,22 @@ private:
   qhash<str,http_method_t> map;
 };
 
+class post_methodmap_t {
+public:
+  post_methodmap_t ();
+  post_method_t lookup (const str &s) const;
+private:
+  qhash<str,post_method_t> map;
+};
+
 extern methodmap_t methodmap;
 
-class http_inhdr_t : public http_hdr_t {
+class http_inhdr_t : public http_hdr_t, public pairtab_t<> {
 public:
   http_inhdr_t (abuf_t *a, cgi_t *u = NULL, cgi_t *c = NULL, 
 		size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
-    : http_hdr_t (a, bfln, b), 
-      uri (u), cookie (c), state (INHDRST_START)
-  {}
+    : async_parser_t (a), http_hdr_t (a, bfln, b),
+      uri (u), cookie (c), state (INHDRST_START) {}
 
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
@@ -53,10 +65,11 @@ public:
   inline str get_vers_str () const { return vers; }
 
   http_method_t mthd;  // method code
+  int contlen;     // content-length size
 
 protected:
-  virtual void _parse ();
-  virtual void ext_parse_cb ();
+  void parse_guts ();
+  virtual void ext_parse_cb (int dummy);
   virtual void fixup ();
 
   cgi_t *uri;

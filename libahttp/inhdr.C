@@ -10,17 +10,21 @@ methodmap_t methodmap;
    state = static_cast<inhdrst_t> (state + 1);
 
 void
-http_inhdr_t::ext_parse_cb ()
+http_inhdr_t::ext_parse_cb (int status)
 {
   INC_STATE;
-  parse (pcb);
+  resume ();
 }
 
 void
-http_inhdr_t::_parse ()
+http_inhdr_t::parse_guts ()
 {
   abuf_stat_t r = ABUF_OK;
-  while (r == ABUF_OK && !hdrend) {
+  bool inc;
+  int status = HTTP_BAD_REQUEST;
+
+  while (r == ABUF_OK) {
+    inc = true;
     switch (state) {
     case INHDRST_START:
       abuf->mirror (scr2, SCR2_LEN);
@@ -31,52 +35,60 @@ http_inhdr_t::_parse ()
       break;
     case INHDRST_TARGET:
       r = delimit_word (&target, uri ? true : false);
-      if (!uri && r == ABUF_OK)
-	INC_STATE; // skip past INHDRST_URIDAT
+      if (!uri && r == ABUF_OK) {
+	state = INHDRST_SPC2;
+	inc = false;
+      }
       break;
     case INHDRST_URIDAT:
-      if (abuf->expectchar ('?') == ABUF_OK) {
-	parsing = false;
+      r = abuf->expectchar ('?');
+      if (r == ABUF_OK) {
 	uri->set_uri_mode (true);
 	uri->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
-      }
+      } else if (r == ABUF_NOMATCH)
+	r = ABUF_OK;
       break;
     case INHDRST_SPC2:
       r = abuf->skip_hws (1);
       break;
     case INHDRST_OPTPARAM:
-      if (!eol ()) r = delimit_word (&vers);
-      if (vers) { // XXX will only work for versions 1.0 and 1.1
-	char c = vers[vers.len () - 1];
-	if (c >= '0' && c <= '9') nvers = c - '0';
-      }
-      line1 = abuf->end_mirror ();
+      r = eol ();
+      if (r == ABUF_NOMATCH) { // No EOL found
+	r = delimit_word (&vers);
+	// XXX will only work for versions 1.0 and 1.1
+	if (vers && vers.len () >= 0) { 
+	  char c = vers[vers.len () - 1];
+	  if (c >= '0' && c <= '9') nvers = c - '0';
+	}
+      } 
       break;
     case INHDRST_EOL1:
-      if (!gobble_eol ())
-	r = ABUF_PARSE_ERR;
+      line1 = abuf->end_mirror ();
+      r = require_crlf ();
       break;
     case INHDRST_KEY:
-      if (gobble_eol ()) {
-	hdrend = true;
+      r = gobble_crlf ();
+      if (r == ABUF_OK) {
+	status = HTTP_OK;
+	r = ABUF_EOF;
 	break;
-      }
-      r = delimit_key (&key);
+      } else if (r == ABUF_NOMATCH) // found non-EOL
+	r = delimit_key (&key);
+      // else we're waiting or found EOF or found stray '\r' in hdr
       break;
     case INHDRST_SPC3:
       r = abuf->skip_hws (1);
       break;
     case INHDRST_VALUE:
       if (cookie && iscookie ()) {
-	parsing = false;
 	noins = true;
 	cookie->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
       }
       r = delimit_val (&val);
       break;
-    case INHDRST_EOL2:
+    case INHDRST_EOL2A:
       if (noins)
 	noins = false;
       else if (key)
@@ -84,43 +96,45 @@ http_inhdr_t::_parse ()
       else
 	r = ABUF_PARSE_ERR;
       key = val = NULL;
-      if (!gobble_eol ())
-	r = ABUF_PARSE_ERR;
-      state = INHDRST_EOL1; // = INHDRST_KEY - 1
+      break;
+    case INHDRST_EOL2B:
+      r = require_crlf ();
+      if (r == ABUF_OK) {
+	state = INHDRST_KEY;
+	inc = false;
+      }
       break;
     default:
       r = ABUF_PARSE_ERR;
+      break;
     }
-    if (r == ABUF_OK)
+    if (r == ABUF_OK && inc)
       INC_STATE;
   }
 
-  // do sanity checks here?
-  int status;
+  // on ABUF_WAIT, we still need more data.  on any other value for
+  // r (such as ABUF_EOF, ABUF_PARSE_ERR, ABUF_NOMATCH), we need to stop
+  // HTTP header parsing.
   switch (r) {
-  case ABUF_EOF:
-    if (state == INHDRST_KEY) {
-      status = HTTP_OK;
-      break;
-    }
-  case ABUF_PARSE_ERR:
-    status = HTTP_BAD_REQUEST;
-    break;
   case ABUF_WAIT:
-    return; // wait for a Callback (we hope)
+    return;
+  case ABUF_OVERFLOW:
+    status = HTTP_REQ_TOO_BIG;
+    break;
   default:
-    status = HTTP_OK;
+    break;
   }
-  fixup ();
-  if (pcb) 
-    (*pcb) (status);
+
+  if (status == HTTP_OK)
+    fixup ();
+  finish_parse (status);
 }
 
 void
 http_inhdr_t::fixup () 
 {
-  http_hdr_t::fixup ();
-
+  if (!lookup ("content-length", &contlen))
+    contlen = -1;
   mthd = methodmap.lookup (tmthd);
 }
 
@@ -130,6 +144,12 @@ methodmap_t::methodmap_t ()
   map.insert ("POST", HTTP_MTHD_POST);
   map.insert ("PUT", HTTP_MTHD_PUT);
   map.insert ("DELETE", HTTP_MTHD_DELETE);
+}
+
+post_methodmap_t::post_methodmap_t ()
+{
+  map.insert ("application/x-www-form-urlencoded", POST_MTHD_URLENCODED);
+  map.insert ("multipart/form-data", POST_MTHD_MULTIPART_FORM);
 }
 
 http_method_t

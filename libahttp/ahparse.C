@@ -57,20 +57,56 @@ http_parser_base_t::stop_abuf ()
 }
 
 void
+http_parser_cgi_t::finish2 (int s1, int s2)
+{
+  if (s1 != HTTP_OK)
+    finish (s1);
+  else if (s2 != HTTP_OK)
+    finish (s2);
+  else
+    finish (HTTP_OK);
+}
+
+void
 http_parser_cgi_t::v_parse_cb1 (int status)
 {
   if (hdr.mthd == HTTP_MTHD_POST) {
     cgi = &post;
-    if (hdr.contlen >= 0)
-      abuf.setlim (hdr.contlen);
-    post.parse (wrap (static_cast<http_parser_base_t *> (this),
-		      &http_parser_base_t::finish, status));
+
+    if (hdr.contlen > int (ok_reqsize_limit)) {
+      finish (HTTP_NOT_ALLOWED);
+      return;
+    } else if (hdr.contlen < 0)
+      hdr.contlen = ok_reqsize_limit -1;
+
+    abuf.setlim (hdr.contlen);
+
+    cbi::ptr pcb = wrap (this, &http_parser_cgi_t::finish2, status);
+    if (!mpfd_parse (pcb)) 
+      post.parse (pcb);
   } else if (hdr.mthd == HTTP_MTHD_GET) {
     cgi = &url;
     finish (status);
   } else {
     finish (HTTP_NOT_ALLOWED);
   }
+}
+
+bool
+http_parser_cgi_t::mpfd_parse (cbi::ptr pcb)
+{
+  str boundary;
+  if (cgi_mpfd_t::match (hdr, &boundary)) {
+    if (mpfd_flag) {
+      mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
+      cgi = mpfd;
+      mpfd->parse (pcb);
+    } else {
+      warn << "file upload attempted when not permitted\n";
+    }
+    return true;
+  }
+  return false;
 }
 
 void
@@ -81,3 +117,6 @@ http_parser_base_t::clnt_timeout ()
   stop_abuf ();
   (*cb) (HTTP_TIMEOUT);
 }
+
+
+

@@ -236,3 +236,4 @@ OKD v0.2
  - uid is hacked into logging system ; de-hack it
  - (display post-gzip size content)
  - config file recursive decent?
+ - write / test with slow-drip client

@@ -1,5 +1,7 @@
 
 #include "abuf.h"
+#include "httpconst.h"
+#include "pubutil.h"
 
 void
 abuf_t::moredata ()
@@ -88,6 +90,25 @@ abuf_t::end_mirror ()
   while ((mirror_p > mirror_base) && 
 	 (mirror_p[-1] == '\r' || mirror_p[-1] == '\n'))
     mirror_p--;
+  str r = str (mirror_base, mirror_p - mirror_base);
+  mirror_base = mirror_p = mirror_end = NULL;
+  return r;
+}
+
+str
+abuf_t::mirror_debug ()
+{
+  return str (mirror_base, mirror_p - mirror_base);
+}
+
+str 
+abuf_t::end_mirror2 (int sublen)
+{
+  assert (mirror_p - mirror_base >= sublen);
+  mirror_p -= sublen;
+  *mirror_p = 0;
+  if (mirror_p >= mirror_base + 2 && mystrcmp (mirror_p - 2, HTTP_CRLF))
+    mirror_p -= 2;
   str r = str (mirror_base, mirror_p - mirror_base);
   mirror_base = mirror_p = mirror_end = NULL;
   return r;

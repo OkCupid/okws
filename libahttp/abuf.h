@@ -9,10 +9,14 @@
 #include "ahttp.h"
 
 typedef enum { ABUF_OK = 0, ABUF_PARSE_ERR = 1, ABUF_EOF = 2, 
-	       ABUF_OVERFLOW = 3, ABUF_WAIT = 4, ABUF_NOCHAR = 5 } abuf_stat_t;
+	       ABUF_OVERFLOW = 3, ABUF_WAIT = 4, ABUF_NOMATCH = 5,
+	       ABUF_CONTINUE = 6 } abuf_stat_t;
 
-#define ABUF_EOFCHAR -1
-#define ABUF_WAITCHAR -2
+#define ABUF_EOFCHAR  -0xffff0
+#define ABUF_WAITCHAR -0xffff1
+
+#define IS_CONTROL_CHAR(x) \
+ ((x) <= ABUF_EOFCHAR)
 
 struct abuf_indata_t {
   abuf_indata_t (abuf_stat_t e = ABUF_EOF, const char *b = NULL, int l = 0)
@@ -66,6 +70,7 @@ public:
   inline abuf_stat_t skip_ws ();
   inline abuf_stat_t skip_hws (int mn = 0);
   inline abuf_stat_t expectchar (char c);
+  inline abuf_stat_t requirechar (char c);
   void finish ();
   inline void can_read () { erc = ABUF_OK; }
   abuf_src_t *getsrc () const { return src; }
@@ -74,6 +79,14 @@ public:
   void cancel () { if (src) src->cancel (); }
   void mirror (char *p, u_int len);
   str end_mirror ();
+  str end_mirror2 (int sublen = 0); // slightly different CRLF semantics
+  str mirror_debug ();
+
+  void reset () 
+  {
+    spcs = 0;
+    mirror_p = NULL;
+  }
 
 private:
   void moredata ();
@@ -121,10 +134,15 @@ abuf_t::skip_ws ()
 {
   int ch;
   do { ch = get (); } while (ch > 0 && isspace (ch));
-  if (ch == ABUF_WAITCHAR)
+  switch (ch) {
+  case ABUF_WAITCHAR:
     return ABUF_WAIT;
-  unget ();
-  return ABUF_OK;
+  case ABUF_EOFCHAR:
+    return ABUF_EOF;
+  default:
+    unget ();
+    return ABUF_OK;
+  }
 }
 
 abuf_stat_t
@@ -149,14 +167,22 @@ abuf_t::expectchar (char ch)
   int c = get ();
   if (ch == c) return ABUF_OK;
   unget ();
-  switch (ch) {
+  switch (c) {
   case ABUF_WAITCHAR:
     return ABUF_WAIT;
   case ABUF_EOFCHAR:
     return ABUF_EOF;
   default:
-    return ABUF_NOCHAR;
+    return ABUF_NOMATCH;
   }
+}
+
+abuf_stat_t
+abuf_t::requirechar (char ch)
+{
+  abuf_stat_t r = expectchar (ch);
+  if (r == ABUF_NOMATCH) r = ABUF_PARSE_ERR;
+  return r;
 }
 
 #define ABUF_T_GET_GOT_CHAR                   \

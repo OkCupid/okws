@@ -6,7 +6,7 @@
 #define _LIBAHTTP_PAIR_H
 
 #include "parseopt.h"
-#include "list.h"
+#include "clist.h"
 
 struct encode_t {
   encode_t (strbuf *o, char *s = NULL, size_t l = 0)
@@ -17,6 +17,7 @@ struct encode_t {
   bool first;
 };
 
+class cgi_mpfd_pair_t;
 typedef enum { IV_ST_NONE = 0, IV_ST_FAIL = 1, IV_ST_OK = 2 } iv_state_t;
 struct pair_t {
   pair_t (const str &k) : key (k), is (IV_ST_NONE), encflag (true) {}
@@ -36,13 +37,16 @@ struct pair_t {
   inline bool hasdata () const { return vals.size () > 0; }
   void addval (const str &v) { vals.push_back (v); }
 
+  // terrible kludge; should come up with someting better
+  virtual cgi_mpfd_pair_t *to_cgi_mpfd_pair () { return NULL; }
+
   str key;
   vec<str> vals;
   
   mutable iv_state_t is;
   mutable vec<int64_t> ivals;
   ihash_entry<pair_t> hlink;
-  tailq_entry<pair_t> lnk;
+  clist_entry<pair_t> lnk;
   bool encflag;
 };
 
@@ -65,6 +69,7 @@ public:
   template<typename T> inline bool lookup (const str &key, T *v) const;
   pairtab_t<C> &insert (const str &key, const str &val = NULL, 
 			bool append = true, bool encode = true);
+  void insert (pair_t *p);
   template<typename T> pairtab_t<C> 
   &insert (const str &key, T v, bool append = true, bool encode = true);
   void dump1 () const { tab.traverse (wrap (&pair_dump1)); }
@@ -78,11 +83,20 @@ public:
   inline bool remove (const str &k);
   inline void traverse (callback<void, const pair_t &>::ref cb)
   { lst.traverse (wrap (pair_trav, cb)); }
+
+  void reset ()
+  {
+    tab.deleteall ();
+    lst.clear ();
+  }
     
 protected:
+  virtual pair_t *alloc_pair (const str &k, const str &v, bool e = true) const
+  { return New C (k, v, e); }
+
   str empty;
   ihash<str, pair_t, &pair_t::key, &pair_t::hlink> tab;
-  tailq<pair_t, &pair_t::lnk> lst;
+  clist_t<pair_t, &pair_t::lnk> lst;
 };
 
 
@@ -189,11 +203,16 @@ pairtab_t<C>::insert (const str &key, const str &val, bool append, bool encode)
       p->vals.push_back (val);
     }
   } else if (!p) {
-    p = New C (key, val, encode);
-    tab.insert (p);
-    lst.insert_tail (p);
+    insert (alloc_pair (key, val, encode));
   }
   return *this;
+}
+
+template<class C> void
+pairtab_t<C>::insert (pair_t *p)
+{
+  tab.insert (p);
+  lst.insert_tail (p);
 }
 
 #endif /* _LIBAHTTP_PAIR_H */

@@ -225,7 +225,7 @@ rpc_log_t::logged (ptr<bool> b, clnt_stat err)
 void
 logd_parms_t::decode (const str &p)
 {
-  ptr<cgi_t> t (cgi_t::parse (p));
+  ptr<cgi_t> t (cgi_t::str_parse (p));
   t->lookup ("logdir",    &logdir);
   t->lookup ("accesslog", &accesslog);
   t->lookup ("errorlog",  &errorlog);

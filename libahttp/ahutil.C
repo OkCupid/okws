@@ -24,6 +24,17 @@ mystrlcmp (const str &s, const char *b)
   return true;
 }
 
+str
+tolower (const str &s)
+{
+  mstr m (s.len ());
+  char *cp;
+  const char *cp2;
+  for (cp = m.cstr (), cp2 = s.cstr (); *cp2; cp++, cp2++)
+    *cp = tolower (*cp2);
+  return m;
+}
+
 static void
 stallcb1 (int sig, cbv c)
 {

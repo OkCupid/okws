@@ -3,6 +3,7 @@
 
 #include "cgi.h"
 #include "parseopt.h"
+#include "httpconst.h"
 
 static const int HEXVALTAB[] = {
     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 
@@ -154,11 +155,21 @@ cgi_t::init (char *buf)
   pcp = scratch;
   endp = scratch + buflen;
 }
+
+/*
+ * XXX - should fix this 
+ *
+void
+cgi_t::reset ()
+{
+  pairtab_t<cgi_pair_t>::reset ();
+  async_parser_t::reset ();
+}
+*/
     
 cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
-  : abuf (a), nwabuf (false), cookie (ck),
-    bufalloc (false),
-    parsing (false), inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
+  : async_parser_t (a), cookie (ck), bufalloc (false),
+    inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
     hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
     buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
 {
@@ -166,11 +177,11 @@ cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
 }
 
 cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
-  : abuf (New abuf_t (s)), nwabuf (true), cookie (ck), 
-    bufalloc (false),
-    parsing (false), inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
-    hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
+  : async_parser_t (s), pairtab_t<cgi_pair_t> (),
+  cookie (ck), bufalloc (false),
+  inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
+  hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
+  buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
 {
   init (buf);
 }
@@ -180,45 +191,19 @@ cgi_t::~cgi_t ()
   tab.deleteall ();
   if (bufalloc && scratch)
     xfree (scratch);
-  if (nwabuf)
-    delete abuf;
 }
 
 void
-cgi_t::can_read_cb ()
-{
-  abuf->can_read ();
-  if (parsing)
-    _parse ();
-  else
-    dataready = true;
-}
-
-void
-cgi_t::parse (cbv::ptr c)
-{
-  assert (!parsing);
-  // this call might set dataready
-  abuf->init (wrap (this, &cgi_t::can_read_cb));
-  parsing = true;
-  pcb = c;
-  if (dataready)
-    _parse ();
-}
-
-void
-cgi_t::_parse ()
+cgi_t::parse_guts ()
 {
   abuf_stat_t rc;
   do { rc = parse_key_or_val (); } while (rc != ABUF_EOF && rc != ABUF_WAIT);
   if (rc == ABUF_EOF) {
-    parsing = false;
     if (bufalloc) {
       xfree (scratch);
       scratch = NULL;
     }
-    if (pcb)
-      (*pcb) ();
+    finish_parse (HTTP_OK);
   }
 }
 
@@ -408,11 +393,11 @@ cgi_t::parse_hexchar (char **pp, char *end)
 }
 
 ptr<cgi_t>
-cgi_t::parse (const str &s)
+cgi_t::str_parse (const str &s)
 {
   abuf_str_t cgis (s);
-  ptr<cgi_t> r = New refcounted<cgi_t> (&cgis);
-  r->parse ();
+  ptr<cgi_t> r = New refcounted<cgi_t, vbase> (&cgis);
+  r->parse (NULL);
   return r;
 }
 
