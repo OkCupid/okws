@@ -14,12 +14,10 @@
 // memory recycling code hacked in for now....
 //
 #define RECYCLE_LIMIT 2048
-vec<suio *> recycled_suios;
-vec<suiolite *> recycled_suiolites;
 void recycle (suio *s);
 void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
-suiolite *suio_alloc ();
+suio *suio_alloc ();
 
 struct fdtosend {
   const int fd;
@@ -42,12 +40,12 @@ public:
   ahttpcon (int f, sockaddr_in *s = NULL, int mb = SUIOLITE_DEF_BUFLEN,
 	    int rcvlmt = -1)
     : fd (f), rcbset (false), wcbset (false), bytes_recv (0), bytes_sent (0),
-      eof (false), destroyed (false), out (New suio ()), sin (s),
+      eof (false), destroyed (false), out (suio_alloc ()), sin (s),
       recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt)
   {
     make_async (fd);
     close_on_exec (fd);
-    in = New suiolite (mb, wrap (this, &ahttpcon::spacecb));
+    in = suiolite_alloc (mb, wrap (this, &ahttpcon::spacecb));
     set_remote_ip ();
   }
   bool ateof () const { return eof; }

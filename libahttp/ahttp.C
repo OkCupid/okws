@@ -6,6 +6,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+//
+// hacked in here for now...
+//
+vec<suio *> recycled_suios;
+vec<suiolite *> recycled_suiolites;
+
+
 int ahttpcon_spawn_pid;
 
 void
@@ -183,8 +190,8 @@ ahttpcon::~ahttpcon ()
   destroyed = true;
   fail ();
   if (sin) xfree (sin);
-  delete in;
-  delete out;
+  recycle (in);
+  recycle (out);
 }
 
 void
@@ -561,10 +568,13 @@ recycle (suiolite *s)
 suio *
 suio_alloc ()
 {
-  if (recycled_suios.size ()) 
+  if (recycled_suios.size ()) {
+    warn << "suio recycle\n";
     return recycled_suios.pop_front ();
-  else 
+  } else {
+    warn << "suio alloc\n";
     return New suio ();
+  }
 }
 
 suiolite *
@@ -574,7 +584,9 @@ suiolite_alloc (int mb, cbv::ptr s)
   if (recycled_suiolites.size () && mb == SUIOLITE_DEF_BUFLEN) {
     ret = recycled_suiolites.pop_front ();
     ret->recycle (s);
+    warn << "suiolite recycle\n";
   } else {
+    warn << "suiolite alloc\n";
     return New suiolite (mb, s);
   }
 }

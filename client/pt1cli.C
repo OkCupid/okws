@@ -390,7 +390,7 @@ main2 (int n)
 int 
 main (int argc, char *argv[])
 {
-  timeout = 180;
+  timeout = 60;
   noisy = false;
   srandom(time(0));
   setprogname (argv[0]);
@@ -403,13 +403,10 @@ main (int argc, char *argv[])
   exited = false;
   rand_modulus = 30000;
   hclient_id = 1;
-  use_latencies = true;
+  use_latencies = false;
   num_services = 1;
   tpt_sample_freq = 1;
 
-  // normdist (mean, std-dev, "precision")
-  if (use_latencies)
-    dist = New normdist_t (100,35);
 
   while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l")) != -1) {
     switch (ch) {
@@ -481,6 +478,10 @@ main (int argc, char *argv[])
     usage ();
 
   str dest = argv[0];
+
+  // normdist (mean, std-dev, "precision")
+  if (use_latencies)
+    dist = New normdist_t (75,25);
 
   switch (mode) {
   case SEDA:

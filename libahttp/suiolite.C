@@ -7,7 +7,7 @@ suiolite::clear ()
   scb = NULL;
   bep = buf + len;
   rp = buf;
-  peek (false);
+  peek = false;
   bytes_read = 0;
 }
 
