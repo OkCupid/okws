@@ -682,7 +682,7 @@ case $with_mode in
 
 	"shared" )
 		sfstag=$with_mode
-		okwstag=$with_mdoe
+		okwstag=$with_mode
 		enable_shared=yes
 		DEBUG=-g
 		CXXDEBUG=-g
