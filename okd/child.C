@@ -116,12 +116,15 @@ okch_t::got_new_ctlx_fd (int fd, int p)
 void
 okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
 {
-  inc_n_sent ();
   if (xc->timed_out ()) {
     CH_WARN ("Connection timed out (fd=" << xc->getfd () 
 	     << "): not forwarding to child");
-  } else 
+  } else if (xc->getfd () < 0) {
+    CH_WARN ("XXX: Dead file descriptor encountered");
+  } else {
+    inc_n_sent ();
     x->clone (xc);
+  }
 }
 
 //
