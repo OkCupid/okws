@@ -46,6 +46,7 @@ http_status_set_t::http_status_set_t ()
   add (HTTP_UNAVAILABLE, "Service Unavailable");
   add (504, "Gateway Time-out");
   add (505, "HTTP Version not supported");
+  add (HTTP_CLIENT_EOF, "Client EOF before response sent.");
 }
 
 void

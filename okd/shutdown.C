@@ -4,6 +4,7 @@
 #include "pslave.h"
 #include "okprot.h"
 #include "xpub.h"
+#include "authtok.h"
 
 static void shutdown_srvc (oksig_t g, okd_t *d, okch_t *s) 
 { s->shutdown (g, wrap (d, &okd_t::kill_srvcs_cb)); }
@@ -11,6 +12,13 @@ static void shutdown_srvc (oksig_t g, okd_t *d, okch_t *s)
 void
 okd_t::shutdown (int sig)
 {
+  // child can get parent's SIGTERM signal as well as parent's 
+  // EOF on the fdsource
+  if (sdflag)
+    return;
+
+  warn << "commencing shutdown sequence with signal=" << sig << "\n";
+
   sdflag = true;
   sd2 = false;
   stop_listening ();
@@ -42,8 +50,13 @@ void
 okd_t::shutdown_retry ()
 {
   dcb = NULL;
-  warn << "shutdown timeout; sending hard KILL to all services.\n";
-  kill_srvcs (OK_SIG_HARDKILL);
+  if (++sdattempt > 3) {
+    warn << "aborting all unresponsive services\n";
+    kill_srvcs (OK_SIG_ABORT);
+  } else {
+    warn << "shutdown timeout; sending hard KILL to all services.\n";
+    kill_srvcs (OK_SIG_HARDKILL);
+  }
 }
 
 void
@@ -55,27 +68,8 @@ okd_t::shutdown2 ()
     dcb = NULL;
   }
 
-  sdcbcnt = 0;
-  if (pubd) sdcbcnt++;
-  if (logd) sdcbcnt++;
-
-  if (logd) logd->kill (wrap (this, &okd_t::shutdown_cb1));
-  if (pubd) pubd->kill (wrap (this, &okd_t::shutdown_cb1));
-
-  if (!sdcbcnt)
-    shutdown_cb1 ();
-}
-
-void
-okd_t::shutdown_cb1 ()
-{
-  if (!--sdcbcnt) 
-    shutdown3 ();
-}
-
-void
-okd_t::shutdown3 ()
-{
+  // no need to disconnect from oklogd or pubd explicitly/ that will
+  // happen when we delete this.
   delete this;
   warn << "shutdown complete\n";
   exit (0);

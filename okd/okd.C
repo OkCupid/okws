@@ -12,16 +12,16 @@
 #include "pub.h"
 #include "xpub.h"
 #include "pubutil.h"
+#include "axprtfd.h"
 
 static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
-static void srelaunch (ptr<ok_res_t> res, okch_t *ch) { ch->relaunch (res); }
-static void launchservice (okch_t *s) { s->launch (); }
+static void srelaunch (ptr<ok_res_t> res, okch_t *ch) { ch->kill (); }
 
-static void
-set_signals (okd_t *okd)
+void
+okd_t::set_signals ()
 {
-  sigcb (SIGTERM, wrap (okd, &okd_t::shutdown, SIGTERM));
-  sigcb (SIGINT,  wrap (okd, &okd_t::shutdown, SIGINT));
+  sigcb (SIGTERM, wrap (this, &okd_t::shutdown, SIGTERM));
+  sigcb (SIGINT,  wrap (this, &okd_t::shutdown, SIGINT));
 }
 
 okd_t::~okd_t ()
@@ -32,26 +32,15 @@ okd_t::~okd_t ()
 }
 
 void
-okd_t::got_bindaddr (vec<str> s, str loc, bool *errp)
-{
-  in_addr addr;
-  if (s.size () < 2 || s.size () > 3 ||
-      !inet_aton (s[1], &addr) ||
-      (s.size () == 3 && !convertint (s[2], &listenport))) {
-    warn << loc << ": usage: BindAddr addr [port]\n";
-    *errp = true;
-    return;
-  }
-  listenaddr_str = s[1];
-  listenaddr = ntohl (addr.s_addr);
-}
-
-void
 okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
 {
   str name;
   if (s.size () != 2 || access (s[1], R_OK) != 0) {
     warn << loc << ": usage: PubdUnix <socketpath>\n";
+    *errp = true;
+  } else if (!is_safe (s[1])) {
+    warn << loc << ": Pubd socket path (" << s[1]
+	 << ") contains unsafe substrings\n";
     *errp = true;
   } else {
     pubd = New helper_unix_t (pub_program_1, s[1]);
@@ -61,28 +50,27 @@ okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
-  if (s.size () <= 1 || access (s[1], X_OK) != 0) {
+  if (s.size () <= 1) {
     warn << loc << ": usage: PubdExecPath <path-to-pubd>\n";
+    *errp = true;
+    return;
+  } else if (!is_safe (s[1])) {
+    warn << loc << ": pubd exec path (" << s[1] 
+	 << ") contains unsafe substrings\n";
+    *errp = true;
+    return;
+  }
+  str prog = okws_exec (s[1]);
+  str err = can_exec (prog);
+  if (err) {
+    warn << loc << ": cannot open pubd: " << err << "\n";
     *errp = true;
   } else {
     s.pop_front ();
+    s[0] = prog;
     pubd = New helper_exec_t (pub_program_1, s);
   }
 }
-
-void
-okd_t::got_logd_exec (vec<str> s, str loc, bool *errp)
-{
-  if (s.size () <= 1 || access (s[1], X_OK) != 0) {
-    warn << loc << ": usage: OklogdExecPath <path-to-oklogd>\n";
-    *errp = true;
-  } else {
-    s.pop_front ();
-    lexc = New helper_exec_t (oklog_program_1, s, 1,
-			      HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY);
-  }
-}
-      
 
 void
 okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
@@ -105,32 +93,7 @@ okd_t::launch_pubd ()
 {
   if (!pubd) 
     pubd = New helper_exec_t (pub_program_1, "pubd");
-
-  vec<str> *s = pubd->get_argv ();
-  if (s && pdjdir) {
-    str jd;
-    if (pdjdir[0] == '/' || !jaildir) {
-      jd = pdjdir;
-    } else {
-      jd = strbuf (jaildir) << "/" << pdjdir;
-    }
-    s->push_back ("-j");
-    s->push_back (jd);
-  }
   pubd->connect (wrap (this, &okd_t::launch_pubd_cb));
-}
-
-void
-okd_t::launch_logd ()
-{
-  if (!lexc) 
-    lexc = New helper_exec_t (oklog_program_1, "oklogd", 1,
-			      HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY);
-  vec<str> *argv = lexc->get_argv ();
-  assert (argv);
-  argv->push_back (logd_parms.encode ());
-  logd = New log_primary_t (lexc);
-  logd->connect (wrap (this, &okd_t::launch_logd_cb));
 }
 
 void
@@ -145,6 +108,14 @@ okd_t::launch_pubd_cb (bool rc)
 }
 
 void
+okd_t::launch_logd ()
+{
+  assert (logfd > 0);
+  logd = New fast_log_t (logfd, logfmt);
+  logd->connect (wrap (this, &okd_t::launch_logd_cb));
+}
+
+void
 okd_t::launch_logd_cb (bool rc)
 {
   if (!rc) {
@@ -153,52 +124,6 @@ okd_t::launch_logd_cb (bool rc)
   }
   if (!--launches)
     launch2 ();
-}
-
-static void
-got_dir (str *out, vec<str> s, str loc, bool *errp)
-{
-  if (s.size () != 2) {
-    warn << loc << ": usage: " << s[0] << " <path>\n";
-    *errp = true;
-    return;
-  }
-  *out = dir_standardize (s[1]);
-}
-
-str
-okd_t::make_execpath (const str &exe, bool chrt)
-{
-  if (chrt && ((!uid && jaildir) || jailed)) return exe;
-  else {
-    strbuf b (jaildir);
-    if (exe[0] != '/') b << "/";
-    b << exe;
-    return b;
-  }
-}
-
-static str 
-re_fslash (const char *cp)
-{
-  while (*cp == '/' && *cp) cp++;
-  return strbuf ("/") << cp;
-}
-
-
-void
-okd_t::got_cgiserver (vec<str> s, str loc, bool *errp)
-{
-  if (s.size () != 3) {
-    warn << loc << ": usage: Service <exec-path> <URI>\n";
-    *errp = true;
-    return;
-  }
-  str exe = re_fslash (s[1].cstr ());
-  str execpath = make_execpath (exe, false);
-
-  str cgipath = re_fslash (s[2].cstr ());
-  vNew okch_t (exe, cgipath, this, loc);
 }
 
 void
@@ -230,8 +155,9 @@ okd_t::newmgrsrv (ptr<axprt_stream> x)
 }
 
 void
-okd_t::parseconfig (const str &cf)
+okd_t::parseconfig ()
 {
+  const str &cf = configfile;
   warn << "using config file: " << cf << "\n";
   parseargs pa (cf);
   bool errors = false;
@@ -239,54 +165,60 @@ okd_t::parseconfig (const str &cf)
   int line;
   vec<str> av;
 
+  str un, gn;
   conftab ct;
-  ct.add ("BindAddr", wrap (this, &okd_t::got_bindaddr))
-    .add ("CGIServer", wrap (this, &okd_t::got_cgiserver))
-    .add ("Service", wrap (this, &okd_t::got_cgiserver))
+  ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
+			    &ok_base_t::got_bindaddr))
     .add ("Alias", wrap (this, &okd_t::got_alias))
     .add ("JailDir", wrap (got_dir, &jaildir))
     .add ("HostName", &hostname)
     .add ("TopDir", &topdir)
-    .add ("MaxConQSize", &ok_con_queue_max, OK_QMIN, OK_QMAX)
-    .add ("CrashSamplingInterval", &ok_csi, 1, 60)
-    .add ("MaxCrashedProcesses", &ok_crashes_max, 1, 200)
+
+    .add ("MaxConQueueSize", &ok_con_queue_max, OK_QMIN, OK_QMAX)
     .add ("OkMgrPort", &ok_mgr_port, OK_PORT_MIN, OK_PORT_MAX)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
+    .add ("ReqSizeLimit", &ok_reqsize_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
 
     .add ("PubdUnix", wrap (this, &okd_t::got_pubd_unix))
     .add ("PubdInet", wrap (this, &okd_t::got_pubd_inet))
-    .add ("PubdJaildir", wrap (got_dir, &pdjdir))
     .add ("PubdExecPath", wrap (this, &okd_t::got_pubd_exec))
 
-    .add ("OklogdExecPath", wrap (this, &okd_t::got_logd_exec))
-    .add ("OklogdSockname", &logd_parms.sockname)
-    .add ("LogDir", &logd_parms.logdir)
-    .add ("AccessLog", &logd_parms.accesslog)
-    .add ("ErrorLog", &logd_parms.errorlog)
-    .add ("AccessLogFmt", &logd_parms.accesslog_fmt)
-    .add ("OklogdUser", &logd_parms.user)
-    .add ("OklogdGroup", &logd_parms.group)
+    .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
 
-    .add ("OkdName", &okdname)
+    .add ("OkdName", &reported_name)
     .add ("OkdVersion", &version)
-    .add ("OkdUser", &okd_usr.name)
-    .add ("OkdGroup", &okd_grp.name)
-    .add ("ServiceUser", &svc_usr.name)
-    .add ("ServiceGroup", &svc_grp.name)
+    .add ("OkdUser", &un)
+    .add ("OkdGroup", &gn)
 
-    .add ("Gzip", &ok_gzip)
-    .add ("GzipLevel", &ok_gzip_compress_level, Z_NO_COMPRESSION,
-	  Z_BEST_COMPRESSION)
-    .add ("GzipSmallStrLen", &ok_gzip_smallstr, 0, 0x8000)
-    .add ("GzipCacheMin", &ok_gzip_cache_minstr, 0, 0x10000)
-    .add ("GzipCacheMax", &ok_gzip_cache_maxstr, 0, 0x1000000)
-    .add ("GzipCacheSize", &ok_gzip_cache_storelimit, 0, 0x10000000)
-    .add ("GzipMemLevel", &ok_gzip_mem_level, 0, 9)
+    .ignore ("Service")
+    .ignore ("CrashSamplingInterval")
+    .ignore ("MaxCrahsedProcesses")
+    .ignore ("ServiceLowUid")
+    .ignore ("ServiceHighUid")
+    .ignore ("ServiceGroup")
+    .ignore ("OkdExecPath")
+    .ignore ("OklogdExecPath")
+    .ignore ("LogDir")
+    .ignore ("AccessLog")
+    .ignore ("ErrorLog")
+    .ignore ("AccessLogFmt")
+    .ignore ("OklogdUser")
+    .ignore ("OklogdGroup")
+    .ignore ("LogTick")
+    .ignore ("LogPeriod")
+    .ignore ("CoreDumpDir")
+    .ignore ("SocketDir")
+    .ignore ("ServiceBin")
 
-    .add ("LogTick", &ok_log_tick, 1, 4000)
-    .add ("LogPeriod", &ok_log_period, 1, 100)
+    .ignore ("Gzip")
+    .ignore ("GzipLevel")
+    .ignore ("GzipSmallStrLen")
+    .ignore ("GzipCacheMin")
+    .ignore ("GzipCacheMax")
+    .ignore ("GzipCacheSize")
+    .ignore ("GzipMemLevel")
+    .ignore ("UnsafeMode");
 
-    .add ("ClientTimeout", &ok_clnt_timeout, 1, 400);
 
   while (pa.getline (&av, &line)) {
     if (!ct.match (av, cf, line, &errors)) {
@@ -294,6 +226,9 @@ okd_t::parseconfig (const str &cf)
       errors = true;
     }
   }
+  if (un) okd_usr = ok_usr_t (un);
+  if (gn) okd_grp = ok_grp_t (gn);
+
   if (!hostname)
     hostname = myname ();
   if (errors)
@@ -301,32 +236,17 @@ okd_t::parseconfig (const str &cf)
 }
 
 void
-okd_t::chroot ()
-{
-  if (jaildir && !uid) {
-    ::chroot (jaildir);
-    jailed = true;
-  }
-}
-
-void
-okd_t::set_svc_ids ()
+okd_t::strip_privileges ()
 {
   if (!uid) {
-    setgid (svc_grp.id);
-    setuid (svc_usr.id);
+    if (setgid (okd_grp.getid ()) != 0) 
+      fatal << "could not setgid for " << okd_grp.getname () << "\n";
+    if (setuid (okd_usr.getid ()) != 0)
+      fatal << "could not setuid for " << okd_usr.getname () << "\n";
+    if (!chroot ())
+      fatal << "startup aborted due to failed chroot call\n";
   }
 }
-
-void
-okd_t::set_okd_ids ()
-{
-  if (!uid) {
-    setgid (okd_grp.id);
-    setuid (okd_usr.id);
-  }
-}
-
 
 void
 okd_t::sclone (ref<ahttpcon_clone> x, str s, int status)
@@ -367,25 +287,17 @@ okd_t::newserv (int fd)
 
 
 void
-okd_t::launchservices ()
+okd_t::launch3 ()
 {
   int fd = inetsocket (SOCK_STREAM, listenport, listenaddr);
   listenfd = fd;
-  encode_env ();
   if (fd < 0)
     fatal ("could not bind TCP port %d: %m\n", listenport);
   close_on_exec (fd);
   listen (fd, ok_listen_queue_max);
+  strip_privileges ();
   warn << "listening on " << listenaddr_str << ":" << listenport << "\n";
   fdcb (fd, selread, wrap (this, &okd_t::newserv, fd));
-
-  chroot ();
-  set_svc_ids (); // used to be set_okd_ids
-
-  chkcnt = servtab.size ();
-  if (chkcnt == 0)
-    fatal << "no Services specified in configuration file.\n";
-  servtab.traverse (wrap (this, &okd_t::checkservice));
 }
 
 void
@@ -395,47 +307,48 @@ okd_t::stop_listening ()
   close (listenfd);
 }
 
-void
-okd_t::checkservice (okch_t *s)
-{
-  if (!s->can_exec ())
-    bdlnch = true;
-  if (!--chkcnt)
-    launchservices2 ();
-}
-
-void
-okd_t::launchservices2 ()
-{
-  if (bdlnch)
-    fatal << "did not have permission to launch all servers\n";
-  servtab.traverse (wrap (launchservice));
-}
-
 static void
 usage ()
 {
-  warnx << "usage: okd [-q?] [-f <configfile>]\n";
+  warnx << "usage: okd [-D <dbg-file>] -l <logfd> -f <configfile>\n";
   exit (1);
+}
+
+static void
+main2 (str cf, int logfd)
+{
+  sfsconst_init ();
+  if (!cf)
+    cf = sfsconst_etcfile_required ("okd_config");
+
+  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
+  okd_t *okd = New okd_t (cf, logfd, 0);
+  okd->set_signals ();
+  okd->launch ();
 }
 
 int
 main (int argc, char *argv[])
 {
-  bool opt_daemon = false;
   str cf;
+  int logfd = -1;
   setprogname (argv[0]);
+  str debug_stallfile;
 
   int ch;
-  while ((ch = getopt (argc, argv, "qf:?")) != -1)
+  while ((ch = getopt (argc, argv, "f:l:D:")) != -1)
     switch (ch) {
+    case 'D':
+      debug_stallfile = optarg;
+      break;
     case 'f':
       if (cf)
 	usage ();
       cf = optarg;
       break;
-    case 'q':
-      opt_daemon = true;
+    case 'l':
+      if (!convertint (optarg, &logfd))
+	usage ();
       break;
     case '?':
     default:
@@ -447,28 +360,26 @@ main (int argc, char *argv[])
 
   if (argc > 1)
     usage ();
-
-  sfsconst_init ();
-  if (!cf)
-    cf = sfsconst_etcfile_required ("okd_config");
-
-  if (opt_daemon) {
-    syslog_priority = "local3.info";
-    daemonize ();
+  if (logfd < 0 || !isunixsocket (logfd)) {
+    warn << "no log FD passed to okd or the given FD is not a socket\n";
+    warn << "check that okd was launched by okld\n";
+    exit (1);
   }
 
-  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
-  okd_t *okd = New okd_t ();
-  set_signals (okd);
-  okd->launch (cf);
+  // for debugging, we'll stall until the given file is touched.
+  if (debug_stallfile) {
+    stall (debug_stallfile, wrap (main2, cf, logfd));
+  } else {
+    main2 (cf, logfd);
+  }
   amain ();
 }
 
 void
-okd_t::launch (const str &cf)
+okd_t::launch ()
 {
-  parseconfig (cf);
-  get_runas (cf);
+  parseconfig ();
+  check_runas ();
   open_mgr_socket ();
 
   launches = 2;
@@ -479,41 +390,67 @@ okd_t::launch (const str &cf)
 void
 okd_t::launch2 ()
 {
-  launchservices ();
+  okldx = fdsource_t<okws_fd_t>::alloc (okldfd, wrap (this, &okd_t::gotfd));
+  assert (okldx);
+  launch3 ();
 }
 
 void
-okd_t::get_runas (const str &cf)
+okd_t::gotfd (int fd, ptr<okws_fd_t> desc)
+{
+  if (fd < 0) {
+    shutdown (0);
+    return;
+  }
+
+  assert (fd >= 0 && desc);
+
+  switch (desc->fdtyp) {
+  case OKWS_SVC_X:
+  case OKWS_SVC_CTL_X:
+    got_chld_fd (fd, desc);
+    break;
+  default:
+    warn << "unknown FD type received from okld\n";
+    break;
+  }
+  return;
+}
+
+void
+okd_t::got_chld_fd (int fd, ptr<okws_fd_t> desc)
+{
+  okch_t *ch;
+  switch (desc->fdtyp) {
+  case OKWS_SVC_X:
+    if (!(ch = servtab[desc->x->name])) {
+      warn << "received service FDs out of order!\n";
+      close (fd);
+    }
+    ch->got_new_x_fd (fd, desc->x->pid);
+    break;
+  case OKWS_SVC_CTL_X:
+    if (!(ch = servtab[desc->ctlx->name])) {
+      ch = New okch_t (this, desc->ctlx->name);
+    }
+    ch->got_new_ctlx_fd (fd, desc->ctlx->pid);
+    break;
+  default:
+    assert (false);
+  }
+}
+
+void
+okd_t::check_runas ()
 {
   if (uid)
     return;
-
   if (!okd_usr)
-    fatal << cf << ": please specify a valid username for \"OkdUser\"\n";
+    fatal << configfile 
+	  << ": please specify a valid username for \"OkdUser\"\n";
   if (!okd_grp)
-    fatal << cf << ": please specify a valid group for \"OkdGroup\"\n";
-  if (!svc_usr)
-    fatal << cf << ": please specify a valid username for \"ServiceUser\"\n";
-  if (!svc_grp)
-    fatal << cf << ": please specify a valid groupname for \"ServiceGroup\"\n";
-}
-
-void
-okd_t::encode_env ()
-{
-  env.insert ("hostname", hostname)
-    .insert ("jaildir", jaildir)
-    .insert ("version", version)
-    .insert ("listenport", listenport)
-    .insert ("okdname", okdname)
-    .insert ("jailed", int (jaildir && !uid))
-    .insert ("logfmt", logd_parms.accesslog_fmt)
-    .insert ("gzip", ok_gzip ? 1 : 0)
-    .insert ("gziplev", ok_gzip_compress_level)
-    .insert ("gzipcsl", ok_gzip_cache_storelimit)
-    .insert ("logtick", ok_log_tick)
-    .insert ("logprd", ok_log_period)
-    .insert ("clito", ok_clnt_timeout);
+    fatal << configfile 
+	  << ": please specify a valid group for \"OkdGroup\"\n";
 }
 
 void
@@ -559,7 +496,7 @@ okd_t::relaunch (const ok_progs_t &x, okrescb cb)
       str prog = (*x.progs)[j];
       okch_t *o = servtab[prog];
       if (!o) *res << (strbuf ("cannot find program: ") << prog);
-      else o->relaunch (res);
+      else o->kill ();
     }
   }
   (*cb) (res);

@@ -28,6 +28,7 @@
 #include "arpc.h"
 #include "async.h"
 #include "xpub.h"
+#include "okconst.h"
 
 typedef enum { PSLAVE_ERR = 0,
 	       PSLAVE_SLAVE = 1,
@@ -62,17 +63,20 @@ pslave_status_t pub_slave  (pubserv_cb cb, u_int port = 0,
 class helper_t {
 public:
   helper_t (const rpc_program &rp, u_int o = 0) 
-    : rpcprog (rp), max_retries (HLP_MAX_RETRIES), rdelay (HLP_RETRY_DELAY),
-      max_qlen (HLP_MAX_QLEN), retries (0), status (HLP_STATUS_NONE), 
-      opts (o), destroyed (New refcounted<bool> (false)) {}
+    : rpcprog (rp), max_retries (hlpr_max_retries), rdelay (hlpr_retry_delay),
+      max_qlen (hlpr_max_qlen), max_calls (hlpr_max_calls),
+      retries (0), calls (0), status (HLP_STATUS_NONE), 
+      opts (o), destroyed (New refcounted<bool> (false))
+      {}
 
   virtual str getname () const = 0;
-  virtual ~helper_t () { *destroyed = true; }
+  virtual ~helper_t ();
   virtual vec<str> *get_argv () { return NULL; }
   int getfd () const { return fd; }
   void set_max_retries (u_int i) { max_retries = i; }
   void set_retry_delay (u_int i) { rdelay = i; }
   void set_max_qlen (u_int i) { max_qlen = i; }
+  void set_max_calls (u_int i) { max_calls = i; }
   virtual int get_axprt (u_int i = 0) { return -1; }
 
   void connect (cbb c);
@@ -82,7 +86,8 @@ public:
   void hwarn (const str &s) const;
   void retry ();
   void d_retry ();
-  virtual void kill (cbv cb, oksig_t s = OK_SIG_KILL) { (*cb) (); }
+  virtual void kill (cbv cb, ptr<okauthtok_t> auth, 
+		     oksig_t s = OK_SIG_KILL) { (*cb) (); }
   bool can_retry () const { return true; }
   void set_status_cb (status_cb_t c) { stcb = c; }
 
@@ -95,6 +100,11 @@ protected:
   void eofcb ();
   void retried (bool b);
   void connected (cbb cb, ptr<bool> df, bool b);
+
+  void process_queue ();
+  void docall (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
+	     time_t duration = 0);
+  void didcall (aclnt_cb cb, clnt_stat st);
 
   const rpc_program rpcprog;
   ptr<axprt> x;
@@ -117,7 +127,9 @@ private:
   u_int max_retries;
   u_int rdelay;
   u_int max_qlen;
+  u_int max_calls;
   u_int retries;
+  u_int calls;
   hlp_status_t status;
   vec<queued_call_t *> queue;
 
@@ -151,7 +163,7 @@ public:
 
   vec<str> *get_argv () { return &argv; }
   str getname () const { return (argv[0]); }
-  void kill (cbv cb, oksig_t s = OK_SIG_KILL);
+  void kill (cbv cb, ptr<okauthtok_t> authtok, oksig_t s = OK_SIG_KILL);
   void add_socks (u_int i) { n_add_socks += i; }
   int get_sock (u_int i = 0) const 
   { return (i < socks.size () ? socks[i] : -1); }

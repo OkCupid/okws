@@ -39,11 +39,11 @@ http_parser_base_t::finish (int status)
   // again on an EOF.
   stop_abuf ();
 
-  // XXX - it's crucial not to touch anything inside the class after
-  // this CB, since the cb might destroy this object
-  // XXX - BUT! -- there is a bug here. the cb might contain a reference
-  // to a refcounted this pointer, and hence it will never be deleted!
-  // we'll need to figure something out here....
+  // XXX -- we (stupidly) have a cyclic data structure here; that is,
+  // we might have a refcounted this wrapped in the callback given.
+  // this, if we haven't be destroyed, we'll need to set the CB equal 
+  // to NULL.  in some cases, so doing will cause the object to be 
+  // destroyed.
   ptr<bool> local_destroyed = destroyed;
   (*cb) (status);
   if (!*local_destroyed)

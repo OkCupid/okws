@@ -8,9 +8,12 @@
 #include "xpub.h"
 #include "svq.h"
 
-okch_t::okch_t (const str &e, const str &s, okd_t *o, const str &l)
-  : pid (-1), rexecpath (e), servpath (s), state (OKC_STATE_NONE), myokd (o),
-    cfgfile_loc (l), destroyed (New refcounted<bool> (false)), rcb (NULL) 
+#define LDCH_WARN(x) \
+  warn << servpath << ":" << pid << ": " << x << "\n";
+
+okch_t::okch_t (okd_t *o, const str &s)
+  : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
+    destroyed (New refcounted<bool> (false)) 
 {
   myokd->insert (this);
 }
@@ -27,7 +30,7 @@ void
 okch_t::clone (ref<ahttpcon_clone> xc)
 {
   if (!x || x->ateof () || state != OKC_STATE_SERVE) {
-    if (state == OKC_STATE_HOSED || state == OKC_STATE_DELAY || 
+    if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED || 
 	conqueue.size () > ok_con_queue_max) {
       myokd->error (xc, 500, make_generic_http_req (servpath));
     } else {
@@ -42,11 +45,55 @@ void
 okch_t::shutdown (oksig_t g, cbv cb)
 {
   if (clnt) {
-    clnt->seteofcb (wrap (this, &okch_t::shutdown_cb1, cb));
-    clnt->call (OKCTL_KILL, &g, NULL, aclnt_cb_null);
+    // note that no authentication needed for this kill signal.
+    if (g == OK_SIG_ABORT) {
+      CH_WARN ("aborting unresponsive child\n");
+      kill ();
+      (*cb) ();
+    } else {
+      clnt->seteofcb (wrap (this, &okch_t::shutdown_cb1, cb));
+      clnt->call (OKCTL_KILL, &g, NULL, aclnt_cb_null);
+    }
   } else {
     shutdown_cb1 (cb);
   }
+}
+
+void
+okch_t::got_new_ctlx_fd (int fd, int p)
+{
+  pid = p;
+  ctlx = axprt_unix::alloc (fd);
+  ctlcon (wrap (this, &okch_t::dispatch, destroyed));
+}
+
+void
+okch_t::got_new_x_fd (int fd, int p)
+{
+  if (pid != p) {
+    warn << "mismatching process IDs; hosed child: " << servpath << "\n";
+    goto xfail;
+  }
+
+  if (!ctlx) {
+    warn << "improper connection status; hosed child: " << servpath << "\n";
+    goto xfail;
+  }
+
+  state = OKC_STATE_SERVE;
+
+  x = ahttpcon_dispatch::alloc (fd);
+  x->seteofcb (wrap (this, &okch_t::chld_eof, destroyed));
+
+  while (conqueue.size ())
+    x->clone (conqueue.pop_front ());
+
+  return;
+
+ xfail:
+  state = OKC_STATE_HOSED;
+  close (fd);
+  chld_eof (destroyed);
 }
 
 void
@@ -54,49 +101,6 @@ okch_t::shutdown_cb1 (cbv cb)
 {
   delete this;
   (*cb) ();
-}
-
-static inline bool
-secdiff (struct timeval *tv0, struct timeval *tv1, int diff)
-{
-  long sd = tv1->tv_sec - tv0->tv_sec;
-  return (sd > diff || (sd == diff && tv1->tv_usec > tv0->tv_usec));
-}
-
-void
-okch_t::resurrect ()
-{
-  rcb = NULL;
-  if (state == OKC_STATE_LAUNCH)
-    return;
-
-  struct timeval *tp = (struct timeval *) xmalloc (sizeof (struct timeval));
-  gettimeofday (tp, NULL);
-
-  // myokd->csi = crash sampling interval
-  // myokd->max_cp = max crashed processes
-  while (timevals.size () && secdiff (timevals[0], tp, ok_csi))
-    xfree (timevals.pop_front ());
-  timevals.push_back (tp);
-  if (timevals.size () > ok_crashes_max) {
-    state = OKC_STATE_HOSED;
-  } else {
-    launch ();
-  }
-}
-
-void
-okch_t::relaunch (ptr<ok_res_t> res)
-{
-  str execpath = myokd->make_execpath (rexecpath, true);
-  if (access (execpath.cstr (), X_OK) != 0) {
-    *res << (strbuf (execpath) << ": cannot access for execution");
-    return;
-  }
-  if (state == OKC_STATE_LAUNCH)
-    return;
-  kill ();
-  launch ();
 }
 
 void
@@ -107,8 +111,7 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     return;
   }
   if (!sbp) {
-    fdcon_eof (destroyed);
-    x = NULL;
+    chld_eof (destroyed);
     return ;
   }
   u_int p = sbp->proc ();
@@ -248,50 +251,6 @@ okd_t::req_errdocs (svccb *sbp)
 }
 
 void
-okch_t::launch ()
-{
-  state = OKC_STATE_LAUNCH;
-  myokd->get_logd ()->clone (wrap (this, &okch_t::launch_cb, destroyed));
-}
-
-void
-okch_t::launch_cb (ptr<bool> dfp, int logfd)
-{
-  if (*dfp) {
-    warn << "child killed before it could even launch\n";
-    return;
-  }
-  if (logfd < 0) {
-    warn << "Cannot connect to oklogd for server: (" << servpath << "," 
-	 << rexecpath << ")\n";
-    state = OKC_STATE_HOSED;
-    return;
-  }
-  vec<str> argv;
-  str execpath = myokd->make_execpath (rexecpath, true);
-  argv.push_back (execpath);
-
-  myokd->env.insert ("logfd", logfd, false);
-  argv.push_back (myokd->env.encode ());
-  myokd->env.remove ("logfd");
-
-  x = ahttpcon_aspawn (execpath, argv, 
-		       wrap (myokd, &okd_t::set_svc_ids), &ctlx);
-  pid = ahttpcon_spawn_pid;
-  close (logfd);
-  if (!x || !ctlx) {
-    warn << "Cannot launch server: (" << servpath << "," << execpath << ")\n";
-    state = OKC_STATE_HOSED;
-    return;
-  }
-  ctlcon (wrap (this, &okch_t::dispatch, destroyed));
-  x->seteofcb (wrap (this, &okch_t::fdcon_eof, destroyed));
- 
-  while (conqueue.size ())
-    x->clone (conqueue.pop_front ());
-}
-
-void
 okch_t::kill ()
 {
   warn << servpath << ": killing child (pid " << pid << ")\n";
@@ -299,11 +258,12 @@ okch_t::kill ()
   x = NULL;
   ctlx = NULL;
   clnt = NULL;
+  srv = NULL;
   state = OKC_STATE_NONE;
 }
 
 void
-okch_t::fdcon_eof (ptr<bool> dfp)
+okch_t::chld_eof (ptr<bool> dfp)
 {
   if (*dfp) {
     warn << "destroyed child process died\n";
@@ -313,24 +273,10 @@ okch_t::fdcon_eof (ptr<bool> dfp)
   ctlx = NULL;
   srv = NULL;
   clnt = NULL;
+  x = NULL;
   if (myokd && !myokd->in_shutdown ()) {
-    state = OKC_STATE_DELAY;
-    rcb = delaycb (ok_resurrect_delay, ok_resurrect_delay_ms * 1000000, 
-		   wrap (this, &okch_t::resurrect));
+    state = OKC_STATE_CRASH;
   } else 
     state = OKC_STATE_NONE;
 }
 
-bool
-okch_t::can_exec ()
-{
-  str execpath = myokd->make_execpath (rexecpath, true);
-  if (access (execpath.cstr (), R_OK)) {
-    warn << cfgfile_loc << ": cannot access service (" << execpath << ")\n";
-    return false;
-  } else if (access (execpath.cstr (), X_OK)) {
-    warn << cfgfile_loc << ": cannot execute service (" << execpath << ")\n";
-    return false;
-  }
-  return true;
-}

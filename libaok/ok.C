@@ -30,20 +30,20 @@ okclnt_t::error (int n, const str &s)
 }
 
 str
-ok_base_t::servinfo () const
+ok_httpsrv_t::servinfo () const
 {
   if (si)
     return si;
 
   strbuf b;
-  b << okdname << "/" << version << " Server at " << hostname << " Port " 
-    << listenport;
+  b << reported_name << "/" << version << " Server at " << hostname 
+    << " Port " << listenport;
   
   return (si = b);
 }
 
 ptr<http_response_t>
-ok_base_t::geterr (int n, str s, htpv_t v) const
+ok_httpsrv_t::geterr (int n, str s, htpv_t v) const
 {
   errdoc_t *e = errdocs[n];
   ptr<http_response_t> ret;
@@ -61,27 +61,26 @@ ok_base_t::geterr (int n, str s, htpv_t v) const
 }
 
 void
-ok_base_t::error (ref<ahttpcon> x, int n, str s, 
-		  cbv::ptr c, http_inhdr_t *h) const
+ok_httpsrv_t::error (ref<ahttpcon> x, int n, str s, 
+		     cbv::ptr c, http_inhdr_t *h) const
 {
   if (h || x->closed ()) 
     error2 (x, n, s, c, h);
   else {
     ptr<http_parser_raw_t> prs = http_parser_raw_t::alloc (x);
-    prs->parse (wrap (this, &ok_base_t::error_cb1, prs, n, s, c));
-
+    prs->parse (wrap (this, &ok_httpsrv_t::error_cb1, prs, n, s, c));
   }
 }
 
 void
-ok_base_t::error_cb1 (ptr<http_parser_raw_t> prs, int n, str s,
+ok_httpsrv_t::error_cb1 (ptr<http_parser_raw_t> prs, int n, str s,
 		      cbv::ptr c, int s2) const
 {
   error2 (prs->get_x (), n, s, c, prs->hdr_p ());
 }
 
 void
-ok_base_t::error2 (ref<ahttpcon> x, int n, str s, 
+ok_httpsrv_t::error2 (ref<ahttpcon> x, int n, str s, 
 		   cbv::ptr c, http_inhdr_t *h) const
 {
   htpv_t v = h ? h->get_vers () : 0;
@@ -90,7 +89,7 @@ ok_base_t::error2 (ref<ahttpcon> x, int n, str s,
   if (x->closed ()) {
     if (c) (*c) ();
   } else {
-    e->send (x, wrap (this, &ok_base_t::error_cb2, x, e, c));
+    e->send (x, wrap (this, &ok_httpsrv_t::error_cb2, x, e, c));
   }
 }
 
@@ -118,7 +117,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("version", &version);
     t->lookup ("hostname", &hostname);
     t->lookup ("listenport", &listenport);
-    t->lookup ("okdname", &okdname);
+    t->lookup ("okdname", &reported_name);
     t->lookup ("logfd", &logfd);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &ok_gzip);
@@ -133,15 +132,8 @@ oksrvc_t::init (int argc, char *argv[])
   zinit ();
 }
 
-str
-ok_base_t::jail2real (const str &fn) const
-{
-  if (jaildir && !jailed) return strbuf (jaildir) << fn;
-  else return fn;
-}
-
 bool
-ok_base_t::add_errdoc (int n, const str &f)
+ok_httpsrv_t::add_errdoc (int n, const str &f)
 {
   if (errdocs[n])
     return false;
@@ -151,7 +143,7 @@ ok_base_t::add_errdoc (int n, const str &f)
 }
 
 void 
-ok_base_t::add_errdocs (const xpub_errdoc_set_t &eds)
+ok_httpsrv_t::add_errdocs (const xpub_errdoc_set_t &eds)
 {
   u_int lim = eds.docs.size ();
   for (u_int i = 0; i < lim; i++)
@@ -449,6 +441,12 @@ okclnt_t::redirect (const str &l)
 void
 okclnt_t::output (zbuf &b)
 {
+  // client might have cancelled as we were waiting for DB
+  if (x->closed ()) {
+    error (HTTP_CLIENT_EOF);
+    return;
+  }
+
   bool gz = hdr.takes_gzip () && ok_gzip;
   const strbuf &sb = b.to_strbuf (gz);
     
@@ -459,10 +457,12 @@ okclnt_t::output (zbuf &b)
 void
 okclnt_t::send (ptr<http_response_t> rsp)
 {
+
   // do cookies
   for (u_int i = 0; i < outcookies.size(); i++) {
     rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
   }
+
 
   oksrvc->log (x, &hdr, rsp);
   rsp->send (x, wrap (this, &okclnt_t::delcb));
@@ -505,4 +505,24 @@ oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
   (*cb) (true);
 }
 
+str
+ok_base_t::okws_exec (const str &s) const
+{
+  return (s[0] == '/' ? s : str (strbuf (topdir) << "/" << s));
+}
 
+// configuration parsing helper routine.
+void
+ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
+{
+  in_addr addr;
+  if (s.size () < 2 || s.size () > 3 ||
+      !inet_aton (s[1], &addr) ||
+      (s.size () == 3 && !convertint (s[2], &listenport))) {
+    warn << loc << ": usage: BindAddr addr [port]\n";
+    *errp = true;
+    return;
+  }
+  listenaddr_str = s[1];
+  listenaddr = ntohl (addr.s_addr);
+}

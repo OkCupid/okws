@@ -5,6 +5,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <ctype.h>
+#include "rxx.h"
 
 bool
 mystrcmp (const char *a, const char *b)
@@ -294,3 +295,55 @@ dir_standardize (const str &s)
   return str (bp, ep - bp);
 }
 
+void
+got_dir (str *out, vec<str> s, str loc, bool *errp)
+{
+  if (s.size () != 2) {
+    warn << loc << ": usage: " << s[0] << " <path>\n";
+    *errp = true;
+    return;
+  }
+  if (!is_safe (s[1])) {
+    warn << loc << ": directory (" << s[1] 
+	 << ") contains unsafe substrings\n";
+    *errp = true;
+    return;
+  }
+  *out = dir_standardize (s[1]);
+}
+
+str 
+re_fslash (const char *cp)
+{
+  while (*cp == '/' && *cp) cp++;
+  return strbuf ("/") << cp;
+}
+
+str
+can_exec (const str &p)
+{
+  if (access (p.cstr (), R_OK)) 
+    return ("cannot read executable");
+  else if (access (p.cstr (), X_OK)) 
+    return ("cannot execute");
+  return NULL;
+}
+
+str
+apply_container_dir (const str &d, const str &f)
+{
+  if (f[0] == '/' || !d)
+    return re_fslash (f.cstr ());
+  else 
+    return (strbuf (d) << "/" << f);
+}
+
+static rxx safe_rxx ("(/\\.|\\./)");
+
+bool
+is_safe (const str &d)
+{
+  if (!d || d[0] == '.' || d[d.len () - 1] == '.' || safe_rxx.search (d))
+    return false;
+  return true;;
+}

@@ -106,7 +106,7 @@ private:
   mybind_date_xassign_t *pntr;
   u_long len;
 };
- 
+
 class mybind_str_t : public mybind_t {
 public:
   mybind_str_t (const str &s, eft_t t = MYSQL_TYPE_STRING, bool hld = false) :
@@ -141,6 +141,30 @@ protected:
   u_long len;
   bool balloced;
   str *pntr;
+};
+
+template<size_t n>
+class mybind_rpcstr_t :  public mybind_t {
+public:
+  mybind_rpcstr_t (rpc_bytes<n> *rr) 
+    : mybind_t (MYSQL_TYPE_STRING), pntr (rr), mys (&s) {}
+  mybind_rpcstr_t (const rpc_bytes<n> &in)
+    : mybind_t (t), 
+      mys (str (in.base (), in.size ()), MYSQL_TYPE_STRING, true) {}
+  void bind (MYSQL_BIND *bind, bool param) { mys.bind (bind, param); }
+  void to_qry (MYSQL *m, strbuf *b, char **ss, u_int *l)
+  { mys.to_qry (m, b, ss, l); }
+  void assign () { mys.assign (); *pntr = s; }
+  bool read_str (const char *c, unsigned long l) 
+  {
+    if (!mys.read_str (c, l)) return false;
+    *pntr = s;
+    return true;
+  }
+protected:
+  rpc_bytes<n> *pntr;
+  str s;
+  mybind_str_t mys;
 };
 
 class mybind_sex_t : public mybind_str_t {
@@ -355,6 +379,10 @@ public:
   template<class C>
   mybind_res_t (union_entry<C> &u) { *this = mybind_res_t ((C *)u); }
 
+  template<size_t n>
+  mybind_res_t (rpc_bytes<n> *r) 
+  { p = New refcounted<mybind_rpcstr_t<n> > (r); }
+
   void bind (MYSQL_BIND *bnd) { if (p) p->bind (bnd, false); }
   void assign () { if (p) p->assign (); }
   bool read_str (const char *c, unsigned long l) 
@@ -380,10 +408,7 @@ public:
 
   template<size_t n>
   mybind_param_t (const rpc_bytes<n> &b)
-  {
-    str s (b.base (), b.size ());
-    p = New refcounted<mybind_str_t> (s);
-  }
+  { p = New refcounted<mybind_rpcstr_t<n> > (b); }
 
   mybind_param_t (const x_okdate_t &x) 
   { p = New refcounted<mybind_date_t> (x); }
@@ -425,7 +450,6 @@ public:
     str s (b.base (), b.len ());
     p = New refcounted<mybind_str_t> (s); return (*this);
   }
-
   
   void bind (MYSQL_BIND *bnd) { p->bind (bnd, true); }
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) 

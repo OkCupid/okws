@@ -23,7 +23,7 @@ public:
   http_parser_base_t (ptr<ahttpcon> xx, u_int to) 
     : x (xx), abuf (New abuf_con_t (xx), true),
       timeout (to ? to : ok_clnt_timeout),
-      buflen (HTTP_PARSE_BUFLEN), tocb (NULL), 
+      buflen (HTTP_PARSE_BUFLEN), tocb (NULL),
       destroyed (New refcounted<bool> (false)) {}
   virtual ~http_parser_base_t ();
 

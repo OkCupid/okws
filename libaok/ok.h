@@ -17,7 +17,14 @@
 #include "oklog.h"
 #include "zstr.h"
 #include "ahparse.h"
+#include "pjail.h"
 
+typedef enum { OKC_STATE_NONE = 0,
+	       OKC_STATE_LAUNCH = 1,
+	       OKC_STATE_SERVE = 2,
+	       OKC_STATE_HOSED = 3,
+	       OKC_STATE_CRASH = 4,
+	       OKC_STATE_DELAY = 5 } okc_state_t;
 
 #define SVCWARN(x) \
   warn << "pid " << pid << ": " << x << "\n";
@@ -41,13 +48,46 @@ protected:
   ptr<asrv> srv;
 };
 
-class ok_base_t : public ok_con_t { 
+class ok_base_t : public jailable_t {
 public:
-  ok_base_t (const str &h = NULL) : 
-    jaildir (ok_jaildir), version (ok_version), hostname (h),
-    listenport (ok_dport), topdir (ok_topdir), okdname (ok_dname),
-    jailed (false), logd (NULL), logfd (-1) {}
-  virtual ~ok_base_t () { errdocs.deleteall (); }
+  ok_base_t (const str &h = NULL, int fd = -1)
+    : jailable_t (ok_jaildir_top), version (ok_version),
+      listenport (ok_dport),
+      listenaddr (INADDR_ANY),
+      topdir (ok_topdir),
+      reported_name (ok_dname),
+      logd (NULL), logfd (fd)
+      //jaildir_run (ok_jaildir_run) 
+  {}
+
+  log_t *get_logd () { return logd; }
+  void got_bindaddr (vec<str> s, str loc, bool *errp);
+  str okws_exec (const str &path) const;
+  //str doubly_jail_rundir () const { return nest_jails (jaildir_run); }
+
+  // copies of system-wide constants local to this instantiation; not
+  // necessary now, but mabye down the road......
+  str version;
+  str hostname;
+  u_int16_t listenport;
+  str listenaddr_str;
+  u_int32_t listenaddr;
+  str topdir;
+  str reported_name; // name reported in HTTP headers and ERR docs
+  str debug_stallfile;
+
+
+protected:
+  log_t *logd;
+  int logfd;
+  //str jaildir_run;  // nested jaildir for okd and services
+};
+
+class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
+public:
+  ok_httpsrv_t (const str &h = NULL, int fd = -1) 
+    : ok_con_t (), ok_base_t (h, fd) {}
+  virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
   inline bool add_errdoc (int n, const str &f);
   void add_errdocs (const xpub_errdoc_set_t &eds);
   virtual void add_pubfile (const str &s) {}
@@ -56,19 +96,10 @@ public:
 		      http_inhdr_t *h = NULL) const;
   virtual str servinfo () const;
   virtual ptr<http_response_t> geterr (int n, str s, htpv_t v) const;
-  virtual str jail2real (const str &fn) const;
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		    const str &s = NULL)
     const { if (logd) logd->log (x, req, res, s); }
-  log_t *get_logd () { return logd; }
 
-  str jaildir;
-  str version;
-  str hostname;
-  u_int16_t listenport;
-  str topdir;
-  str okdname;
-  bool jailed;
   pub_t pub;
 
 protected:
@@ -81,8 +112,6 @@ protected:
 
   ihash<int, errdoc_t, &errdoc_t::status, &errdoc_t::lnk> errdocs;
   mutable str si;
-  log_t *logd;
-  int logfd;
   str logfmt;
 };
 
@@ -134,7 +163,7 @@ public:
 			   helper_inet_t::getname () ;}
 };
 
-class oksrvc_t : public ok_base_t { // OK Service
+class oksrvc_t : public ok_httpsrv_t { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ())
@@ -216,36 +245,6 @@ private:
   nclntcb_t nccb;
 }; 
 
-struct ok_idpair_t {
-  ok_idpair_t (const str &n) : name (n), id (-1) {}
-  virtual ~ok_idpair_t () {}
-  virtual bool resolve () const = 0;
-
-  operator bool () const
-  { 
-    bool ret = name && resolve (); 
-    if (name && !ret)
-      warn << "Could not find " << typ () << " \"" << name << "\"\n";
-    return ret;
-  }
-  virtual str typ () const = 0;
-
-  str name;
-  mutable int id;
-};
-
-struct ok_usr_t : public ok_idpair_t {
-  ok_usr_t (const str &n) : ok_idpair_t (n) {}
-  bool resolve () const { return ((id = uname2uid (name)) >= 0); }
-  str typ () const { return "user"; }
-};
-
-struct ok_grp_t : public ok_idpair_t {
-  ok_grp_t (const str &n) : ok_idpair_t (n) {}
-  bool resolve () const { return ((id = gname2gid (name)) >= 0); }
-  str typ () const { return "group"; }
-};
-
 template<typename T> parr_err_t 
 oksrvc_t::cfg (const str &n, u_int i, T *p) const
 {
@@ -258,5 +257,14 @@ oksrvc_t::cfg (const str &n, u_int i, T *p) const
   return arr->val (i, p);
 }
   
+str okws_exec (const str &x);
+
+//
+// XXX - hack - this is used by both okch_t and okld_ch_t - just happens
+// that they have similar internal variables; the might be put into a 
+// class tree, but they share little functionality in common.
+//
+#define CH_WARN(x) \
+  warn << servpath << ":" << pid << ": " << x << "\n";
 
 #endif /* _LIBAOK_OKBASE_H */

@@ -1,9 +1,10 @@
 
 $(PROGRAMS): $(LDEPS)
 
-bin_PROGRAMS = okd okmgr
+bin_PROGRAMS = okld okd okmgr
 okd_SOURCES = okd.C mgrsrv.C child.C shutdown.C
 okmgr_SOURCES = okmgr.C
+okld_SOURCES = okld.C okldch.C
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore

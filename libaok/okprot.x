@@ -145,7 +145,7 @@ program OKLOG_PROGRAM {
 		OKLOG_CLONE (void) = 5;
 		
 		void
-		OKLOG_KILL (oksig_t) = 999;
+		OKLOG_KILL (ok_killsig_t) = 999;
 	} = 1;
 } = 11281;
 

@@ -6,6 +6,7 @@
 
 #include "arpc.h"
 #include "suiolite.h"
+#include "okconst.h"
 
 #define AHTTP_MAXLINE 1024
 
@@ -27,9 +28,11 @@ protected:
   vec<fdtosend> fdsendq;
 
 public:
-  ahttpcon (int f, sockaddr_in *s = NULL, int mb = SUIOLITE_DEF_BUFLEN)
+  ahttpcon (int f, sockaddr_in *s = NULL, int mb = SUIOLITE_DEF_BUFLEN,
+	    int rcvlmt = -1)
     : fd (f), rcbset (false), wcbset (false), bytes_recv (0), bytes_sent (0),
-      eof (false), destroyed (false), out (New suio ()), sin (s)
+      eof (false), destroyed (false), out (New suio ()), sin (s),
+      recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt)
   {
     make_async (fd);
     close_on_exec (fd);
@@ -80,6 +83,7 @@ protected:
   suio *out;
   sockaddr_in *sin;
   str remote_ip;
+  int recv_limit;
 };
 
 // for parent dispatcher, which will send fd's
@@ -143,14 +147,15 @@ private:
 
 ptr<ahttpcon> 
 ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx);
-ptr<ahttpcon>
-ahttpcon_aspawn (str execpath, const vec<str> &arv, cbv::ptr pfcb,
-		 ptr<axprt_unix> *ctlx);
 
-ptr<ahttpcon>
-ahttpcon_spawn (str execpath, const vec<str> &avs, size_t ps,
+int
+ahttpcon_aspawn (str execpath, const vec<str> &arv, cbv::ptr pfcb,
+		 int *ctlx);
+
+int
+ahttpcon_spawn (str execpath, const vec<str> &avs, 
 		cbv::ptr postforkcb, bool async, char *const *env,
-		ptr<axprt_unix> *ctlcon);
+		int *ctlx);
 
 extern int ahttpcon_spawn_pid;
 

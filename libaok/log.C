@@ -226,8 +226,6 @@ void
 logd_parms_t::decode (const str &p)
 {
   ptr<cgi_t> t (cgi_t::parse (p));
-  t->lookup ("sockname",  &sockname);
-  t->lookup ("sockpath",  &sockpath);
   t->lookup ("logdir",    &logdir);
   t->lookup ("accesslog", &accesslog);
   t->lookup ("errorlog",  &errorlog);
@@ -242,9 +240,7 @@ logd_parms_t::encode () const
   if (enc)
     return enc;
   cgi_t ct;
-  ct.insert ("sockname",  sockname)
-    .insert ("sockpath",  sockpath)
-    .insert ("logdir",    logdir)
+  ct.insert ("logdir",    logdir)
     .insert ("accesslog", accesslog)
     .insert ("errorlog",  errorlog)
     .insert ("alfmt",     accesslog_fmt)

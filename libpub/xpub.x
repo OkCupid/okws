@@ -1,5 +1,6 @@
 
 %#define PUBHASHSIZE 20
+%#define OKAUTHTOKSIZE 20
 
 enum xpub_obj_typ_t {
   XPUB_NONE = 0,
@@ -13,11 +14,20 @@ enum xpub_obj_typ_t {
   XPUB_INCLIST = 8
 };
 
+typedef opaque xpubhash_t[PUBHASHSIZE];
+typedef opaque okauthtok_t[OKAUTHTOKSIZE];
+
 enum oksig_t {
   OK_SIG_NONE = 0,
   OK_SIG_HARDKILL = 1,
   OK_SIG_SOFTKILL = 2,
-  OK_SIG_KILL = 3
+  OK_SIG_KILL = 3,
+  OK_SIG_ABORT = 4 
+};
+
+struct ok_killsig_t {
+  oksig_t sig;
+  okauthtok_t authtok;
 };
 
 enum xpub_sec_typ_t {
@@ -49,7 +59,6 @@ typedef string xpub_var_t <>;
 typedef string xpub_str_t <>;
 typedef string xpub_key_t <>;
 typedef string xpub_fn_t  <>;
-typedef opaque xpubhash_t[PUBHASHSIZE];
 
 struct xpub_pbinding_t {
   xpub_fn_t fn;
@@ -277,7 +286,7 @@ program PUB_PROGRAM {
 		PUB_LOOKUP (xpub_fn_t) = 4;
 
 		void
-		PUB_KILL (oksig_t) = 999;
+		PUB_KILL (ok_killsig_t) = 999;
 
 	} = 1;
 } = 11277;

@@ -54,13 +54,26 @@ const char *ok_dname = "okd";       // okd name == okd, usually
 u_int ok_dport = 80;                // okd port listen to
 u_int ok_resurrect_delay = 3;
 u_int ok_resurrect_delay_ms = 500;
+u_int ok_chld_startup_time = 10;    // startup time in seconds....
+
+//
+// helper processes constants
+//
+u_int hlpr_max_calls = 1000;               // max outstanding calls
+u_int hlpr_max_retries = 100;              // ... before giving up
+u_int hlpr_retry_delay = 4;                // delay between retries.
+u_int hlpr_max_qlen = 1000;                // maximum # to q
 
 //
 // path constants -- we should maybe make these relative to a 
 // central okd directory
 //
-const char *ok_jaildir = "/usr/local/okd/run";
-const char *ok_topdir = "/usr/local/okd";
+const char *ok_jaildir_top = "/var/okws";
+const char *ok_topdir = "/usr/local/sbin";
+const char *ok_coredumpdir = "/var/coredumps";
+const char *ok_sockdir = "/var/run";
+const char *ok_jaildir_run = "var/run";
+const char *ok_service_bin = "";
 
 //
 // log constants for timing
@@ -72,8 +85,15 @@ u_int ok_log_period = 8;             // log flushed every 4 seconds
 // service/client constants
 //
 u_int ok_clnt_timeout = 60;          // in seconds
+u_int ok_reqsize_limit = 2097152;    // 2MB
 
 //
 // libamt
 //
 u_int ok_amt_lasi = 20;              // load avg sampling interval in secs
+
+//
+// OK Service UID limits
+//
+int ok_svc_uid_low = 51000;
+int ok_svc_uid_high = 52000;

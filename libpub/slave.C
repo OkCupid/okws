@@ -218,7 +218,7 @@ void
 helper_t::call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
 		time_t duration)
 {
-  if (status != HLP_STATUS_OK) {
+  if (status != HLP_STATUS_OK || calls >= max_calls) {
     if ((opts & HLP_OPT_QUEUE) && (status != HLP_STATUS_HOSED) && 
 	queue.size () < max_qlen) {
       queue.push_back (New queued_call_t (procno, in, out, cb, duration));
@@ -228,11 +228,29 @@ helper_t::call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
       return;
     }
   }
+  docall (procno, in, out, cb, duration);
+}
+
+void
+helper_t::docall (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
+		  time_t duration)
+{
+  calls++;
   assert (clnt);
   if (duration)
-    clnt->timedcall (duration, procno, in, out, cb);
+    clnt->timedcall (duration, procno, in, out, 
+		     wrap (this, &helper_t::didcall, cb));
   else
-    clnt->call (procno, in, out, cb);
+    clnt->call (procno, in, out, 
+		wrap (this, &helper_t::didcall, cb));
+}
+
+void
+helper_t::didcall (aclnt_cb cb, clnt_stat stat)
+{
+  calls--;
+  process_queue ();
+  (*cb) (stat);
 }
 
 void
@@ -281,14 +299,20 @@ helper_t::connected (cbb cb, ptr<bool> df, bool b)
     assert (clnt);
     clnt->seteofcb (wrap (this, &helper_t::eofcb));
     status = HLP_STATUS_OK;
-    while (queue.size ()) {
-      queued_call_t *qc = queue.pop_front ();
-      qc->call (this);
-      delete qc;
-    }
+    process_queue ();
   }
   (*cb) (b);
   call_status_cb ();
+}
+
+void
+helper_t::process_queue ()
+{
+  while (calls < max_calls && queue.size () && status == HLP_STATUS_OK) {
+    queued_call_t *qc = queue.pop_front ();
+    qc->call (this);
+    delete qc;
+  }
 }
 
 void
@@ -309,6 +333,13 @@ helper_t::eofcb ()
   else if (can_retry ())
     retry ();
   call_status_cb ();
+}
+
+helper_t::~helper_t ()
+{
+  *destroyed = true;
+  x = NULL;
+  clnt = NULL;
 }
 
 void
@@ -344,11 +375,14 @@ helper_t::retried (bool b)
 }
 
 void
-helper_exec_t::kill (cbv cb, oksig_t s)
+helper_exec_t::kill (cbv cb, ptr<okauthtok_t> t, oksig_t s)
 {
   if (clnt) {
+    ok_killsig_t ks;
+    ks.authtok = *t;
+    ks.sig = s;
     clnt->seteofcb (cb);
-    clnt->call (HELPER_KILL, &s, NULL, aclnt_cb_null);
+    clnt->call (HELPER_KILL, &ks, NULL, aclnt_cb_null);
   } else {
     (*cb) ();
   }

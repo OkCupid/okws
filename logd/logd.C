@@ -20,8 +20,8 @@ usage ()
 void
 logd_t::newclnt (bool p, ptr<axprt_stream> x)
 {
-  if (!x && p)
-    fatal ("EOF from parent process.\n");
+  if (!x && p) 
+    fatal ("Unexpected EOF from parent process.\n");
   lst.insert_tail (New logd_client_t (x, this, p));
 }
 
@@ -37,7 +37,7 @@ logd_client_t::dispatch (svccb *sbp)
 {
   if (!sbp) {
     if (primary) {
-      warn << "fatal: EOF received from parent/master process\n";
+      warn << "EOF received from parent/master process\n";
       logd->shutdown ();
     } else {
       delete this;
@@ -52,7 +52,7 @@ logd_t::shutdown ()
 {
   close_fdfd ();
   delete this;
-  exit (1);
+  exit (0);
 }
 
 void
@@ -299,8 +299,14 @@ logd_t::perms_setup ()
       }
       injail = true;
     }
-    setgid (usr.id);
-    setuid (grp.id);
+    if (setgid (grp.getid ()) != 0) {
+      warn << "could not setgid to group: t" << grp.getname () << "\n";
+      return false;
+    }
+    if (setuid (usr.getid ()) != 0) {
+      warn << "could not setuid to user: " << usr.getname () << "\n";
+      return false;
+    }
   }
   return true;
 }

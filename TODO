@@ -84,7 +84,7 @@ HTTP Issues
  - aclnt pooling class
  - picture uploads
  - strange service restart problems -- due to browser?
- - okd runs away during really heavy-duty tests; might be some sort of
+ X okd runs away during really heavy-duty tests; might be some sort of
    OS-issue that is only shown under strain;
  - profile and optimize 
  - standard setuid / chroot / setgid function across all processes; perhaps
@@ -138,7 +138,7 @@ FreeBsd 4.8 Bugs
 
 TODO
 ----
- - mybind_res for rpc_bytes<T> * values.
+ X mybind_res for rpc_bytes<T> * values.
  - fix bug in nested include statements in config files.
  X zbuf's in aarr_t and concatenatable.
  X rename repository to okws1
@@ -153,15 +153,60 @@ TODO
  - better zbuf caching scheme; have .g files compile into
 
 	out.cache (0x1294819ff1212398592, 
-	 	   "blah blah blah here is my string blah blah blah "
+	 	   "blah blah blah here is my string blah blah- blah "
 		   "and so on blah blah blah blah blah ")
 	   .cache (0x9182938571038491034,
 		   "more shit and more shit and more and more shit");
 
-   and then don't cache anything else!
-
+   and then don't cache anything else
+ - better yet, all we'd have to do is have specific caching flags enabled
+   in OKWS at pub-time.  then we'd cache things by their static pointers.
+   i'm not thrilled with this idea, as we might have a small strbuf compiled
+   into a zstr that is similar across all users.
  X crash under heavy load when a connection aborts
  - OKD still runs away in some tests. 
  - for linux, might make sense to change FD-descriptor passing scheme;
    different ordering guarantees.  perhaps it's easier just to call
    getpeername on the other end, although it is an extra syscall
+ X cgiscript2.g does not compile; in fact, pub coredumps.  for some reason,
+   a null binding is being put onto the parsequeue
+ X oklogd shutdown -- perhaps by explicit kill signal.
+ X compile time generation of secret keys for kill signals.
+ - Multipart posts / file uploads
+
+Security
+--------
+ - check that config is owned by root, mode 0644
+ - check that okws uids are not in use by anything else.
+ - DOS attacks on okd -- slow data trickle.  should not block on demux?
+   also need to think about error case.
+
+OKD v0.2
+--------
+ - debug running as root.
+ - debug okmgr; fix annoying things now once and for all.
+ X new shutdown sequence.  okld closes connection to okd, but does not
+   shutdown.  rather, it waits for a childcb from okd, and then kills
+   the logger.
+ X likewise, okd should stop pubd immediately on shutdown, but closing
+   its connection.  no explicit kill signal should be needed.
+ X make sure that executables in the jail directory cannot be read
+   by the web services themselves
+ X test for more ".." type directories in config file.  we should
+   probably be paranoid and never allow "."'s in any paths.
+ - add better auth token support for DBs
+ X fix new (broken) jailing scheme
+ X new scheme: (1) check that all services are UID in the correct range
+   and (2) check that they don't overlap and then (3) setuid to the owner
+   of the particular executable. first 2 checks can happen when process
+   is booting up.  maybe special flag in config file can suppress these
+   checks.
+ - get rid of eofcb stuff in ahttp.C; also try to clean up and
+   better understand that code. -- remember the bug -- read 0 bytes =>
+   infinite select loop
+ - enforce that jail directory and parents is not writable by any one but
+   root -- that way compromised webserv can't put files there.
+ - jail directory problems for oklogd -- use jailable_t -- also, need
+   to copy over /etc/resolv.conf -- is this secure?
+ - dynamic library copying and build directory setup....
+ - build okws and services with dynamically-linked-libraries.

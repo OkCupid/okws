@@ -29,58 +29,99 @@
 #include "async.h"
 #include "callback.h"
 
-class axprt_fd_t : public axprt_unix {
+// send FD's down into the sink through this object. usually,
+// an FD source has an FD sink object to send into.
+class fdsink_t : public virtual refcount {
 public:
-  axprt_fd_t (int f, size_t ps, size_t bs = 0)
-    : axprt_unix (f, ps, bs) {}
+  fdsink_t (ptr<axprt_unix> xx, cbv::ptr ec) 
+    : ux (xx), eofcb (ec), eof (ux->ateof ()) 
+  {
+    ux->setrcb (wrap (this, &fdsink_t::rcb));
+  }
 
-  static ptr<axprt_fd_t> alloc (int f, size_t ps = axprt_stream::defps)
-  { return New refcounted<axprt_fd_t> (f, ps); }
+  static ptr<fdsink_t> alloc (ptr<axprt_unix> xx, cbv::ptr ec)
+  { return New refcounted<fdsink_t> (xx, ec); }
 
   // send the file descriptor, along with an RPC data packet.
-  template<class T> bool clone (int fd, const T &t)
+  template<class T> bool send (int fd, const T &t)
   {
+    if (eof)
+      return false;
+
     xdrsuio x (XDR_ENCODE);
     XDR *xp = &x;
     if (!rpc_traverse (xp, const_cast<T &> (t)))
       return false;
     
-    sendfd (fd);
-    sendv (x.uio ()->iov (), x.uio ()->iovcnt ());
+    ux->sendfd (fd);
+    ux->sendv (x.uio ()->iov (), x.uio ()->iovcnt ());
     
     return true;
   }
 
+  void 
+  rcb (const char *, ssize_t s, const sockaddr *)
+  {
+    if (s == 0 || ux->ateof ()) {
+      eof = true;
+      if (eofcb) {
+	(*eofcb) ();
+	eofcb = NULL;
+      }
+      ux->setrcb (NULL);
+    } else if (s < 0) {
+      if (errno != EAGAIN)
+	warn ("read error in fdsink_t: %m\n");
+    } else {
+      warn << "data sent to fdsink_t ignored (" << s << " bytes)\n";
+    }
+  }
+
+  ptr<axprt_unix> ux;
+  cbv::ptr eofcb;
+  bool eof;
 };
 
 template<typename T>
-class fdsink_t {
+class fdsource_t : public virtual refcount {
 public:
-  fdsink_t (int f, 
-	    typename callback<void, int, ptr<T> >::ptr c, 
-	    size_t ps = axprt_stream::defps) 
+  fdsource_t (int f, 
+	      typename callback<void, int, ptr<T> >::ptr c, 
+	      size_t ps = axprt_stream::defps) 
     :  x (axprt_unix::alloc (f, ps)), cb (c), fd (f)
   {
-    x->setrcb (wrap (this, &fdsink_t::recv_cb));
+    x->setrcb (wrap (this, &fdsource_t<T>::recv_cb));
+  }
+
+  static ptr<fdsource_t<T> > 
+  alloc (int f, typename callback<void, int, ptr<T> >::ptr c)
+  { 
+    if (!isunixsocket (f))
+      return NULL;
+    else
+      return New refcounted<fdsource_t<T> > (f, c); 
   }
   
 private:
 
   void recv_cb (const char *pkt, ssize_t len, const sockaddr *)
   {
-    if (pkt) {
-      fd = x->recvfd ();
-      if (fd) {
-	xdrmem xx (pkt, len);
-	XDR *xp = &xx;
-	ptr<T> t = New refcounted<T> ();
-	if (rpc_traverse (xp, *t)) {
-	  (*cb) (fd, t);
-	  return;
-	}
-      } else 
-	x->setrcb (NULL);
+    int fd;
+    if (pkt && (fd = x->recvfd ()) >= 0 && len > 0) {
+      xdrmem xx (pkt, len);
+      XDR *xp = &xx;
+      ptr<T> t = New refcounted<T> ();
+      if (rpc_traverse (xp, *t)) {
+	(*cb) (fd, t);
+	return;
+      } else {
+	warn << "rpc_traverse failed\n";
+	close (fd);
+	return;
+      }
     }
+    // send EOF signal to listener
+    x->setrcb (NULL);
     (*cb) (-1, NULL);
   }
 

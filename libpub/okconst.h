@@ -34,6 +34,10 @@
 #define OK_QMAX 8192
 #define OK_PORT_MIN 10
 #define OK_PORT_MAX 65000
+#define UID_MIN 100
+#define UID_MAX 65000
+#define OK_RQSZLMT_MIN  1024
+#define OK_RQSZLMT_MAX  32*1024*1024
 
 //
 // gzip parameters (see zstr.h)
@@ -79,14 +83,28 @@ extern u_int ok_db_retry_delay;
 extern u_int ok_listen_queue_max;
 extern u_int ok_con_queue_max;
 extern u_int ok_crashes_max;
-extern u_int ok_csi;                            // crash sampling interval
+extern u_int ok_csi;                           // crash sampling interval
 extern const char *ok_version;
-extern const char *ok_dname;                    // okd name == okd, usually
-extern u_int ok_dport;                          // okd port listen to
-extern const char *ok_jaildir;
-extern const char *ok_topdir;
+extern const char *ok_dname;                   // okd name == okd, usually
+extern u_int ok_dport;                         // okd port listen to
+extern const char *ok_jaildir_top;             // for okld
+extern const char *ok_topdir;                  // okws executables
+extern const char *ok_coredumpdir;             // where to put coredumps
+extern const char *ok_sockdir;                 // unix sockets available..
+extern const char *ok_okdexecpath;             // where okd lives
+extern const char *ok_jaildir_run;             // service rundir
+extern const char *ok_service_bin;             // where service exes live
 extern u_int ok_resurrect_delay;               // when a child dies..
 extern u_int ok_resurrect_delay_ms;            // in nanoseconds
+extern u_int ok_chld_startup_time;             // how long startup takes
+
+//
+// helper constants
+//
+extern u_int hlpr_max_calls;                   // max outstanding calls
+extern u_int hlpr_max_retries;                 // ... before giving up
+extern u_int hlpr_retry_delay;                 // delay between retries.
+extern u_int hlpr_max_qlen;                    // maximum # to q
 
 //
 // log constants
@@ -98,10 +116,17 @@ extern u_int ok_log_period;                     // how many ticks to a flush
 // service/client constants
 //
 extern u_int ok_clnt_timeout;                   // user timeout
+extern u_int ok_reqsize_limit;                  // maximum client req size
 
 //
 // Async-Multi-Threaded stuff
 //
 extern u_int ok_amt_lasi;                       // load avg sampling interval
+
+//
+// Service UID Ranges
+//
+extern int ok_svc_uid_low;
+extern int ok_svc_uid_high;
 
 #endif /* _LIBPUB_OKCONST_H */

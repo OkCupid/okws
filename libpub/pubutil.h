@@ -38,6 +38,12 @@ bool str_split (vec<str> *r, const str &s, bool quoted, int sz = 50);
 str suffix_sub (const char *s, const char *sfx1, const char *sfx2);
 int myopen (const char *arg, u_int mode = 0444);
 str dir_standardize (const str &s);
+void got_dir (str *out, vec<str> s, str loc, bool *errp);
+str re_fslash (const char *cp);
+str can_exec (const str &p);
+bool dir_security_check (const str &p);
+str apply_container_dir (const str &d, const str &e);
+bool is_safe (const str &s);
 
 struct phash_t {
   phash_t () {}
@@ -120,5 +126,57 @@ bool cicmp (const str &s1, const char *c2);
 bool cicmp (const str &s2, const char *c2, u_int len);
 inline bool cicmp (const str &s1, const str &s2)
 { return cicmp (s1, s2.cstr (), s2.len ()); }
+
+// uid / gid stuff
+
+struct ok_idpair_t {
+  ok_idpair_t (const str &n) : name (n), id (-1) {}
+  ok_idpair_t (int i) : id (i) {}
+  virtual ~ok_idpair_t () {}
+  virtual bool resolve () const = 0;
+
+  operator bool () const
+  { 
+    // for anyonomous users/groups
+    if (!name && id > 0) return true;
+
+    // for standard users/groups that appear in /etc/(passwd|group)
+    bool ret = name && resolve (); 
+    if (name && !ret)
+      warn << "Could not find " << typ () << " \"" << name << "\"\n";
+    return ret;
+  }
+  virtual str typ () const = 0;
+
+  str getname () const
+  {
+    if (name) return name;
+    else return (strbuf () << id);
+  }
+  
+  int getid () const 
+  {
+    if (id >= 0) return id;
+    else if (!*this) return -1;
+    else return id;
+  }
+protected:
+  str name;
+  mutable int id;
+};
+
+struct ok_usr_t : public ok_idpair_t {
+  ok_usr_t (const str &n) : ok_idpair_t (n) {}
+  ok_usr_t (int i) : ok_idpair_t (i) {}
+  bool resolve () const { return ((id = uname2uid (name)) >= 0); }
+  str typ () const { return "user"; }
+};
+
+struct ok_grp_t : public ok_idpair_t {
+  ok_grp_t (const str &n) : ok_idpair_t (n) {}
+  ok_grp_t (int i) : ok_idpair_t (i) {}
+  bool resolve () const { return ((id = gname2gid (name)) >= 0); }
+  str typ () const { return "group"; }
+};
 
 #endif /* _LIBPUB_PUBUTIL_H */

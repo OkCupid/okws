@@ -68,23 +68,21 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
 {
   assert (!destroyed);
   u_int32_t len = iovsize (iov, cnt);
-  if (fd < 0)
-    // XXX - will be triggered after receiving HTTP_BAD_REQUEST
-    // because an error message is at least attempted to be sent
-    // back to the browser.
-    panic ("ahttpcon::sendv: called after an EOF\n");
-  if (eof) 
-    // XXX -- if this panic fails, then we should think more
-    // carefully about the right ordering of operations here;
-    // i think things might be running away when trying to write
-    // to a dead socket.
-    panic ("ahttpcon::sendv: called after an EOF (flag set)\n");
+  if (fd < 0) {
+    // if an EOF happened after the read but before the send,
+    // we'll wind up here.
+    warn ("write not possible due to EOF\n");
+    if (cb) (*cb) ();
+    return;
+  }
   bytes_sent += len;
   if (!out->resid () && cnt < min (16, UIO_MAXIOV)) {
     ssize_t skip = writev (fd, iov, cnt);
     if (skip < 0 && errno != EAGAIN) {
       warn ("error in ahttpcon::sendv: %m\n"); // XXX debug
       fail ();
+      // still need to signal done sending....
+      if (cb) (*cb) ();
       return;
     } else
       out->copyv (iov, cnt, max<ssize_t> (skip, 0));
@@ -321,16 +319,22 @@ ahttpcon::input ()
     }
     return;
   }
-  if (n == 0) 
+  if (n == 0) {
     eof = true;
+    fail ();
+    return;
+  }
 
   bytes_recv += n;
 
-  if (n == 0 && eofcb) {
-    (*eofcb) ();
-    eofcb = NULL;
-  } else
-    recvd_bytes (n);
+  // stop DOS attacks?
+  if (recv_limit > 0 && bytes_recv > recv_limit) {
+    eof = true;
+    fail ();
+    return;
+  }
+
+  recvd_bytes (n);
 }
 
 void 
@@ -420,25 +424,32 @@ ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx)
 {
   vec<str> v;
   v.push_back (execpath);
-  return ahttpcon_spawn (execpath, v, 0, postforkcb, true, NULL, ctlx);
+  int ctlfd, fd;
+  ptr<ahttpcon> x;
+  fd = ahttpcon_spawn (execpath, v, postforkcb, true, NULL, 
+		       ctlx ? &ctlfd : NULL);
+  if (fd < 0)
+    return NULL;
+  if (ctlx)
+    *ctlx = axprt_unix::alloc (ctlfd, axprt_unix::defps);
+
+  return ahttpcon::alloc (fd);
 }
 
-ptr<ahttpcon>
+int
 ahttpcon_aspawn (str execpath, const vec<str> &v, cbv::ptr pfcb,
-		 ptr<axprt_unix> *ctlx)
+		 int *ctlx)
 {
-  return ahttpcon_spawn (execpath, v, 0, pfcb, true, NULL, ctlx);
+  return ahttpcon_spawn (execpath, v, pfcb, true, NULL, ctlx);
 }
 
-ptr<ahttpcon>
-ahttpcon_spawn (str path, const vec<str> &avs, size_t ps,
+int
+ahttpcon_spawn (str path, const vec<str> &avs,
 		cbv::ptr postforkcb, bool async, char *const *env,
-		ptr<axprt_unix> *ctlx)
+		int *ctlx)
 {
   ahttpcon_spawn_pid = -1;
   vec<const char *> av;
-  if (!ps)
-    ps = axprt_stream::defps;
 
   for (const str *s = avs.base (), *e = avs.lim (); s < e; s++) 
     av.push_back (s->cstr ());
@@ -448,7 +459,7 @@ ahttpcon_spawn (str path, const vec<str> &avs, size_t ps,
   for (int i = 0; i < 2; i++) {
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds[i])) {
       warn ("socketpair: %m\n");
-      return NULL;
+      return -1;
     }
     close_on_exec (fds[i][0]);
   }
@@ -463,11 +474,11 @@ ahttpcon_spawn (str path, const vec<str> &avs, size_t ps,
   if (pid < 0) {
     for (int i = 0; i < 2; i++)
       close (fds[i][0]);
-    return NULL;
+    return -1;
   }
   if (ctlx)
-    *ctlx = axprt_unix::alloc (fds[1][0], ps);
-  return ahttpcon_dispatch::alloc (fds[0][0]);
+    *ctlx = fds[1][0];
+  return fds[0][0];
 }
 
 void

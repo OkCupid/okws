@@ -45,10 +45,10 @@ public:
   }
 
   ~mstrs () { while (bufs.size ()) delete bufs.pop_front (); }
-  void unlock (int i) 
-  { 
+  void unlock (int i)
+  {
     if (i >= 0) {
-      frlst.push_back (i);
+      frlst.push_back (i); 
       bufs[i]->fullsize (); 
     }
   }
@@ -131,8 +131,6 @@ public:
   void decode (const str &p);
   str encode () const;
   
-  str sockname;
-  str sockpath;
   str logdir;
   str accesslog;
   str errorlog;
@@ -152,7 +150,8 @@ public:
 		    const str &s) = 0;
   int getfd () const { return h->getfd (); }
   virtual void clone (cbi cb) { (*cb) (-1); }
-  void kill (cbv c, oksig_t s = OK_SIG_KILL) { h->kill (c, s); }
+  void kill (cbv c, ptr<okauthtok_t> tok, 
+	     oksig_t s = OK_SIG_KILL) { h->kill (c, tok, s); }
 protected:
   virtual void connect_cb1 (cbb cb, bool c);
   virtual void connect_cb3 () {}

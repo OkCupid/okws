@@ -14,7 +14,8 @@ pubserv_t::dispatch (svccb *sbp)
 {
   if (!sbp) {
     if (primary) {
-      fatal << "EOF received; shutting down.\n";
+      warn << "EOF received; shutting down.\n";
+      exit (0);
     } else {
       delete this;
       return;
