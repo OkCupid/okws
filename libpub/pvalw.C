@@ -71,5 +71,5 @@ pval_w_t::size () const
 {
   const pval_t *v = get_pval ();
   const parr_t *a = v->to_arr ();
-  return (a ?  a->size () : 0);
+  return (a ? a->size () : 0);
 }

@@ -79,7 +79,7 @@ public:
   void set_max_calls (u_int i) { max_calls = i; }
   virtual int get_axprt (u_int i = 0) { return -1; }
 
-  void connect (cbb c);
+  void connect (cbb::ptr c = NULL);
   void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
 	     time_t duration = 0);
 
@@ -89,6 +89,9 @@ public:
   virtual void kill (cbv cb, ptr<okauthtok_t> auth, 
 		     oksig_t s = OK_SIG_KILL) { (*cb) (); }
   bool can_retry () const { return true; }
+
+  // status cb will be called whenevr a slave (or helper)
+  // changes status
   void set_status_cb (status_cb_t c) { stcb = c; }
 
 protected:
@@ -99,7 +102,7 @@ protected:
   bool mkclnt () { return (clnt = aclnt::alloc (x, rpcprog)); }
   void eofcb ();
   void retried (bool b);
-  void connected (cbb cb, ptr<bool> df, bool b);
+  void connected (cbb::ptr cb, ptr<bool> df, bool b);
 
   void process_queue ();
   void docall (u_int32_t procno, const void *in, void *out, aclnt_cb cb,

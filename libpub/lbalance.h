@@ -8,15 +8,21 @@
 #include "pslave.h"
 #include "pub.h"
 
+#define LOAD_AVG_MAX      UINT_MAX
+#define LOAD_AVG_RPC      998
+
+class lblnc_t;
 class lblnc_node_t {
 public:
   lblnc_node_t (u_int i, const rpc_program &rp, const str &hn, u_int p, 
-		bool a, u_int o = 0) 
-    : id (i), hlp (rp, hn, p, o), active (a) {}
+		lblnc_t *l, bool a = false, u_int o = 0) ;
+  void get_load_avg ();
+  void got_load_avg (clnt_stat st);
   u_int id;
   ihash_entry<lblnc_node_t> hlnk;
   helper_inet_t hlp;
   bool active;
+  u_int load_avg;
 };
 
 class lblnc_tab_t {
@@ -24,10 +30,12 @@ public:
   lblnc_tab_t () {}
   ~lblnc_tab_t () {}
   lblnc_node_t *operator[] (u_int i) const { return tab[i]; }
-  void add (lblnc_node_t *n)
+  int nactive () const { return alive.size (); }
+  void add (lblnc_node_t *n);
   void activate (u_int i);
   void deactivate (u_int i);
   void add_alive_if_active (lblnc_node_t *n);
+  void launch ();
 private:
   void rebuild ();
   vec<lblnc_node_t *> alive;
@@ -36,26 +44,31 @@ private:
 
 class lblnc_t {
 public:
-  lblnc_t (pub_t *pub, const str &i, const rpc_program &rp) ;
-  void launch (cbb bool);
+  lblnc_t (pub_t *pub, const str &i, const rpc_program &rp, int port = -1) ;
+  virtual ~lblnc_t () {}
+  void launch (cbv::ptr c);
 
-  //
   // ask the load balancer to find the best-suited remote server
-  //
-  int call (u_int32_t procno, const void *in, const void *out, aclnt_cb cb,
-	    time_t duration = 0);
+  void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
+	     time_t duration = 0);
 
-  //
   // tell the load balancer which remote server to use
-  //
-  int call (u_int32_t procno, u_int n, const void *in, const void *out,
+  void call (u_int32_t procno, u_int n, const void *in, void *out,
 	    aclnt_cb cb, time_t duration = 0);
+
+  void status_change (int i, hlp_status_t st);
+
+protected:
+  virtual int pick_node () const;
 
 private:
   void activate (u_int i);
-  void deactivate (u_int i);
+  void deactivate (u_int i) { tab.deactivate (i); }
 
-  const rpc_progname prog;
+  const rpc_program prog;
+  lblnc_tab_t tab;
+
+  cbv::ptr first_ready_cb;
 };
 
 #endif /* _LIBPUB_LBALANCE_H */

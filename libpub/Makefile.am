@@ -5,7 +5,7 @@ sfslib_LTLIBRARIES = libpub.la
 
 libpub_la_SOURCES = xpub.C data.C scan.ll parse.yy pubutil.C pub.C xdr.C \
 	slave.C rclient.C proxy.C zstr.C okconst.C pvalw.C jail.C fd_prot.C \
-	authtok.C
+	authtok.C lbalance.C
 
 sfsinclude_HEADERS = pub.h pubutil.h xpub.h
 

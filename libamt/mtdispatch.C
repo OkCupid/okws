@@ -54,7 +54,7 @@ mtdispatch_t::async_serv (svccb *b)
   u_int p = b->proc ();
   u_int la;
   switch (p) {
-  case AMT_LOAD_AVG_RPC:
+  case LOAD_AVG_RPC:
     la = ssrv ? ssrv->get_load_avg () : UINT_MAX;
     b->replyref (la);
     return true;

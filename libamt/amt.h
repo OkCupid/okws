@@ -6,6 +6,7 @@
 #define _LIBAMT_AMT_H
 
 #include "okwsconf.h"
+#include "lbalance.h"
 
 #ifdef HAVE_CLONE
 # include <sched.h>
@@ -32,7 +33,6 @@
 #define MTD_MAXQ        1000
 #define MTD_STACKSIZE   0x100000
 
-#define AMT_LOAD_AVG_RPC    998
 
 #define TWARN(x) \
   warn << "thread " << tid << ": " << x << "\n"

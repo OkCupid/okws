@@ -122,6 +122,7 @@ extern u_int ok_reqsize_limit;                  // maximum client req size
 // Async-Multi-Threaded stuff
 //
 extern u_int ok_amt_lasi;                       // load avg sampling interval
+extern u_int ok_ldavg_rpc_timeout;              // load avg RPC timeout
 
 //
 // Service UID Ranges

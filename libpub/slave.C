@@ -279,7 +279,7 @@ helper_t::ping_cb (cbb c, ptr<bool> df, clnt_stat err)
 }
 
 void
-helper_t::connect (cbb cb)
+helper_t::connect (cbb::ptr cb)
 {
   launch (wrap (this, &helper_t::connected, cb, destroyed));
 }
@@ -288,7 +288,8 @@ void
 helper_t::connected (cbb cb, ptr<bool> df, bool b)
 {
   if (*df) {
-    (*cb) (false);
+    if (cb)
+      (*cb) (false);
     return;
   }
   if (!b) {
@@ -301,7 +302,8 @@ helper_t::connected (cbb cb, ptr<bool> df, bool b)
     status = HLP_STATUS_OK;
     process_queue ();
   }
-  (*cb) (b);
+  if (cb)
+    (*cb) (b);
   call_status_cb ();
 }
 
