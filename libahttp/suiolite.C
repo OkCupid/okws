@@ -9,6 +9,8 @@ suiolite::clear ()
   rp = buf;
   peek = false;
   bytes_read = 0;
+
+  for (int i = 0; i < 2; i++) dep[i] = buf;
 }
 
 

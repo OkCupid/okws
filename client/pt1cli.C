@@ -89,11 +89,11 @@ public:
   }
 
   void run ();
-  void timed_out ();
+  void timed_out (ptr<bool> d);
 
 private:
   void launch_others ();
-  void connected (int f);
+  void connected (ptr<bool> d_local, int f);
   void canread ();
   void then_read_damnit ();
   void then_exit_damnit (int c);
@@ -252,11 +252,16 @@ hclient_t::then_read_damnit ()
 }
 
 void 
-hclient_t::connected (int f)
+hclient_t::connected (ptr<bool> d_local, int f)
 {
+  if (*d_local) {
+    if (f > 0)
+      ::close (f);
+    warn << "timed out before connect succeeded\n";
+    return;
+  }
+
   fd = f;
-
-
 
   if (fd < 0) {
     warn << "connection rejected\n";
@@ -264,20 +269,19 @@ hclient_t::connected (int f)
     return;
   }
 
-  ptr<bool> destroyed2 = destroyed;
   if (cli_write_delay == 0)
-    sched_write (destroyed2);
+    sched_write (destroyed);
   else {
     wcb = delaycb (cli_write_delay / 1000, (cli_write_delay % 1000) * 1000000, 
-		   wrap (this, &hclient_t::sched_write, destroyed2));
+		   wrap (this, &hclient_t::sched_write, destroyed));
   }
 }
 
 void
-hclient_t::sched_write (ptr<bool> destroyed2)
+hclient_t::sched_write (ptr<bool> d_local)
 {
   wcb = NULL;
-  if (*destroyed2) {
+  if (*d_local) {
     warn << "destroyed before writing possible\n";
     return;
   }
@@ -342,13 +346,18 @@ hclient_t::run ()
   if (noisy) warn << "running: " << id << " (nrunning: " << nrunning << ")\n";
   if (noisy) warn << "connecting to: " << host << "\n";
   cli_start = tsnow;
-  tcb = delaycb (timeout, 0, wrap (this, (&hclient_t::timed_out)));
-  tcpconnect (host, port, wrap (this, &hclient_t::connected));
+  tcb = delaycb (timeout, 0, wrap (this, &hclient_t::timed_out, destroyed));
+  tcpconnect (host, port, wrap (this, &hclient_t::connected, destroyed));
 }
 
 void
-hclient_t::timed_out ()
+hclient_t::timed_out (ptr<bool> d_local) 
 {
+  if (*destroyed) {
+    warn << "unexpected timeout -- XXX\n";
+    return;
+  }
+
   warn << "client timed out: " << id << "\n";
   tcb = NULL;
   cexit (-1);
@@ -390,7 +399,7 @@ main2 (int n)
 int 
 main (int argc, char *argv[])
 {
-  timeout = 60;
+  timeout = 120;
   noisy = false;
   srandom(time(0));
   setprogname (argv[0]);

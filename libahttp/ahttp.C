@@ -11,6 +11,7 @@
 //
 vec<suio *> recycled_suios;
 vec<suiolite *> recycled_suiolites;
+vec<suiolite *> recycled_suiolites_small;
 
 
 int ahttpcon_spawn_pid;
@@ -556,8 +557,12 @@ recycle (suio *s)
 void
 recycle (suiolite *s)
 {
-  if (recycled_suiolites.size () < RECYCLE_LIMIT  &&
-      s->getlen () == SUIOLITE_DEF_BUFLEN) {
+  if (s->getlen () == AHTTP_MAXLINE &&
+      recycled_suiolites_small.size () < RECYCLE_LIMIT) {
+    s->clear ();
+    recycled_suiolites_small.push_back (s);
+  } else if (s->getlen () == SUIOLITE_DEF_BUFLEN &&
+	     recycled_suiolites.size () < RECYCLE_LIMIT) {
     s->clear ();
     recycled_suiolites.push_back (s);
   } else {
@@ -569,10 +574,8 @@ suio *
 suio_alloc ()
 {
   if (recycled_suios.size ()) {
-    warn << "suio recycle\n";
     return recycled_suios.pop_front ();
   } else {
-    warn << "suio alloc\n";
     return New suio ();
   }
 }
@@ -584,9 +587,11 @@ suiolite_alloc (int mb, cbv::ptr s)
   if (recycled_suiolites.size () && mb == SUIOLITE_DEF_BUFLEN) {
     ret = recycled_suiolites.pop_front ();
     ret->recycle (s);
-    warn << "suiolite recycle\n";
+  } else if (recycled_suiolites_small.size () && mb == AHTTP_MAXLINE) {
+    ret = recycled_suiolites_small.pop_front ();
+    ret->recycle (s);
   } else {
-    warn << "suiolite alloc\n";
-    return New suiolite (mb, s);
+    ret = New suiolite (mb, s);
   }
+  return ret;
 }
