@@ -147,7 +147,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	                   "environment"); }
 }
 
-<WGH,GH>^{VAR}/\n	{ if (end_GH ()) return T_EGH; else return T_HTML; }
+<WGH,GH>^{VAR}/\n	{ if (end_GH ()) return T_EGH; 
+		          else { yylval.str = yytext; return T_HTML; } }
 <H,GH,EC>\n		{ PLINC; return (yytext[0]); }
 
 <H,WH>{
