@@ -31,6 +31,11 @@
 #include "ihash.h"
 #include "pub.h"
 
+//
+// this global variable can be set to whatever the user wants.
+//
+extern str global_okws_server_label;
+
 class http_status_t {
 public:
   http_status_t (int n, const str &sd, const str &ld)
@@ -128,7 +133,7 @@ public:
   inline int get_status () const { return attributes.get_status (); }
   void gzip ();
   void add_date () { add (http_hdr_date_t ()); }
-  void add_server () { add ("Server", OKD_SERVER_ID); }
+  void add_server () { add ("Server", global_okws_server_label); }
   void add_closed () { add ("Connection", "close"); }
 private:
   http_resp_attributes_t attributes;

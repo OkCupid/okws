@@ -101,6 +101,11 @@ const char *ok_mmcd = "/usr/local/lib/sfs/lite/mmcd";
 
 // location of mmcd's memory mapped file
 const char *ok_mmc_file = "/var/run/mmcd.mmf";
+
+// what OKWS reports it is in HTTP responses
+const char *okws_server_label = "OKWS/"VERSION;
+
+
 //
 // helper processes constants
 //

@@ -129,6 +129,7 @@ extern bool ok_send_sin;                       // send sins over the fdchan?
 extern const char *ok_mmcd;                    // path to the mmcd
 extern const char *ok_mmc_file;                // mmap'ed clock file
 extern bool okd_child_sel_disable;             // disable child selects
+extern const char *okws_server_label;          // advertised server label
 
 
 //

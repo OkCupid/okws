@@ -29,6 +29,7 @@
 #include "resp.h"
 #include <stdlib.h>
 
+
 void
 init_syscall_stats ()
 {
@@ -170,7 +171,8 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("version", &version);
     t->lookup ("hostname", &hostname);
     t->lookup ("listenport", &listenport);
-    t->lookup ("okdname", &reported_name);
+    t->lookup ("okwsname", &reported_name);
+    t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &ok_gzip);

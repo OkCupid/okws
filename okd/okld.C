@@ -186,9 +186,11 @@ okld_t::parseconfig (const str &cf)
     .add ("OkdUser", &okd_un)
     .add ("OkdGroup", &okd_gr)
     
-    .add ("OkdName", &reported_name)
-    .add ("OkdVersion", &version)
+    .add ("ServerName", &reported_name)
+    .add ("ServerVersion", &version)
     .add ("HostName", &hostname)
+    // as reported in HTTP headers
+    .add ("ServerNameHTTP", &global_okws_server_label) 
 
     .add ("LogTick", &ok_log_tick, 1, 4000)
     .add ("LogPeriod", &ok_log_period, 1, 100)
@@ -209,6 +211,7 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceFDHighWat", &ok_svc_fds_high_wat, 0, 10240)
     .add ("ServiceFDLowWat", &ok_svc_fds_low_wat, 0, 10000)
     .add ("ServiceAcceptMessages", &ok_svc_accept_msgs)
+
 
     .add ("OkdFDHighWat", &okd_fds_high_wat, 
 	  OKD_FDS_HIGH_WAT_LL, OKD_FDS_HIGH_WAT_UL)
@@ -288,7 +291,8 @@ okld_t::encode_env ()
     .insert ("jaildir", jaildir)
     .insert ("version", version)
     .insert ("listenport", listenport)
-    .insert ("okdname", reported_name)
+    .insert ("okwsname", reported_name)
+    .insert ("server", global_okws_server_label)
     .insert ("jailed", int (jaildir && !uid))
     .insert ("logfmt", logd_parms.accesslog_fmt)
     .insert ("svclog", int (logd_parms.svclog))
@@ -757,5 +761,4 @@ okld_t::init_clock_daemon ()
       clock_mode = SFS_CLOCK_GETTIME;
     }
   }
-
 }

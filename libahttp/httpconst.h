@@ -52,8 +52,6 @@
 #define HTTP_CLIENT_EOF  600
 #define HTTP_CONNECTION_FAILED 601
 
-#define OKD_SERVER_ID "OKD/"VERSION
-
 #define HTTP_CRLF "\r\n"
 
 #endif /* _LIBAHTTP_HTTPCONST */

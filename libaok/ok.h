@@ -98,6 +98,7 @@ public:
   str topdir;
   str reported_name; // name reported in HTTP headers and ERR docs
   str debug_stallfile;
+  str server_id;
 
 
 protected:

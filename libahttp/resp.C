@@ -24,6 +24,11 @@
 #include "httpconst.h"
 
 http_status_set_t http_status;
+//
+// what this OKWS is called when sending responses back to clients;
+// we can get sneaky here and call ourselves apache, for instance.
+//
+str global_okws_server_label = okws_server_label;
 
 http_status_set_t::http_status_set_t ()
 {
