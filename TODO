@@ -212,3 +212,7 @@ OKD v0.2
  - build okws and services with dynamically-linked-libraries.
  - coredump rotation system from okld -- that way many coredumps can
    be saved (with timestamp....)
+ - callback hooks for updating config files
+ - testing when an RPC hangs, what the user sees.
+ - statistics?  might be useful.  as in, number of current clients,
+   and how long they've been active for.
