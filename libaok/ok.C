@@ -461,6 +461,9 @@ oksrvc_t::launch2 (bool b)
 void
 oksrvc_t::launch4 ()
 {
+  // debug code
+  SVCWARN ("calling READY RPC to okd");
+
   clnt->call (OKCTL_READY, NULL, NULL, wrap (this, &oksrvc_t::launch5));
 }
 
@@ -488,6 +491,9 @@ oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
 void
 oksrvc_t::launch5 (clnt_stat err)
 {
+  // debug code
+  SVCWARN ("Servided readied");
+
   if (err) {
     SVCWARN ("OK Child Initialization: " << err);
     exit (1);
