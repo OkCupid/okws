@@ -454,7 +454,6 @@ ssrv_client_t::dispatch (svccb *s)
 	authtoks.clear ();
 	for (u_int i = 0; i < arg->size (); i++) {
 	  str tok ((*arg)[i].base (), (*arg)[i].size ());
-	  warn << "adding token: " << armor64 (tok) << "\n"; // debug
 	  authtoks.push_back (tok);
 	}
 	s->replyref (true);
