@@ -65,15 +65,13 @@ typedef u_int16_t okws1_port_t;
 class ok_con_t {
 public:
   ok_con_t () {}
-  // can be used by custom oksrvc_t's that have
-  // want to send CUSTOM RPCs other services.
-  ptr<aclnt> clnt; 
 protected:
   void ctlcon (callback<void, svccb *>::ref cb);
   void ctlclose ();
 
   ptr<axprt_unix> ctlx;
   ptr<asrv> srv;
+  ptr<aclnt> clnt; 
 };
 
 class ok_base_t : public jailable_t {
@@ -203,6 +201,7 @@ public:
   void set_expires (const str &s) { expires = s; }
   void disable_gzip () { rsp_gzip = false; }
 
+
   list_entry<okclnt_t> lnk;
 protected:
   void http_parse_cb (int status);
@@ -277,6 +276,8 @@ public:
   lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
 
   pval_w_t operator[] (const str &s) const { return (*rpcli)[s]; }
+
+  ptr<aclnt> get_okd_aclnt () { return clnt; }
 
 protected:
   void closed_fd ();
