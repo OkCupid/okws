@@ -187,12 +187,14 @@ methodmap_t::lookup (const str &s) const
 }
 
 static rxx gzip_rxx ("gzip(,|\\s*$)");
+static rxx netscape4_rxx ("Mozilla/4.0[678]");
 
 bool
 http_inhdr_t::takes_gzip () const
 {
-  str s;
+  str s, ua;
   return (get_vers () > 0 && lookup ("accept-encoding", &s) 
-	  && gzip_rxx.search (s));
+	  && gzip_rxx.search (s) && lookup ("user-agent", &ua) 
+	  && !netscape4_rxx.search (ua));
 }
 
