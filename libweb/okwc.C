@@ -243,7 +243,7 @@ okwc_http_t::parse (ptr<bool> local_cancel_flag)
     return;
   cancel_flag = NULL; // will dealloc cancel_flag at return
   state = OKWC_HTTP_HDR;
-  hdr.parse (wrap (this, &okwc_http_t::hdr_parsed));
+  hdr ()->parse (wrap (this, &okwc_http_t::hdr_parsed));
 }
 
 void
@@ -272,12 +272,12 @@ okwc_http_t::start_chunker ()
 void
 okwc_http_t::body_parse ()
 {
-  if (hdr.is_chunked ()) {
+  if (hdr ()->is_chunked ()) {
     assert (!chunker);
     chunker = New okwc_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch);
     start_chunker ();
   } else {
-    eat_chunk (hdr.get_contlen ());
+    eat_chunk (hdr ()->get_contlen ());
   }
 }
 
@@ -351,7 +351,7 @@ okwc_chunker_t::parse_guts ()
 void
 okwc_http_t::body_parse_continue ()
 {
-  if (hdr.is_chunked ()) {
+  if (hdr ()->is_chunked ()) {
     chunker->next_chunk ();
     start_chunker ();
   } else
@@ -402,8 +402,7 @@ okwc_http_bigstr_t::finish2 (int status)
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
 			  int v, cgi_t *ock, okwc_cookie_set_t *incook)
   : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
-    resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
-    hdr (&abuf, incook ? incook : &resp->cookies, OKWC_SCRATCH_SZ, scratch),
+    resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch, incook)),
     vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL)
 {}
 
@@ -527,7 +526,7 @@ okwc_http_t::cancel ()
     *cancel_flag = true;
     break;
   case OKWC_HTTP_HDR:
-    hdr.cancel ();
+    hdr ()->cancel ();
     break;
   case OKWC_HTTP_BODY:
     cancel2 ();

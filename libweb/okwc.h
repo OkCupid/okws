@@ -90,24 +90,6 @@ private:
 };
 
 
-struct okwc_resp_t {
-  okwc_resp_t (abuf_t *a, size_t bfln, char *b) 
-    : status (HTTP_OK), cookies (a, bfln, b) {}
-
-  okwc_resp_t (int s) : status (s) {}
-
-  static ptr<okwc_resp_t> alloc (abuf_t *a, size_t bfln, char *b)
-  { return New refcounted<okwc_resp_t> (a, bfln, b); }
-
-  static ptr<okwc_resp_t> alloc (int s) 
-  { return New refcounted<okwc_resp_t> (s); }
-
-  str body;
-  int status;
-  okwc_cookie_set_t cookies;
-};
-
-typedef callback<void, ptr<okwc_resp_t> >::ref okwc_cb_t;
 
 #define OKWC_SCRATCH_SZ 4096
 
@@ -151,8 +133,31 @@ private:
   bool chunked;
 
   str key, val;
-  
 };
+
+struct okwc_resp_t {
+  okwc_resp_t (abuf_t *a, size_t bfln, char *b, okwc_cookie_set_t *incook)
+    : status (HTTP_OK), cookies (a, bfln, b), 
+    _hdr (a, incook ? incook : cookies, bfln, b) {}
+
+  okwc_resp_t (int s) : status (s) {}
+
+  static ptr<okwc_resp_t> alloc (abuf_t *a, size_t bfln, char *b, 
+				 okwc_cookie_set_t *incook)
+  { return New refcounted<okwc_resp_t> (a, bfln, b, incook); }
+
+  static ptr<okwc_resp_t> alloc (int s) 
+  { return New refcounted<okwc_resp_t> (s); }
+
+  okwc_http_hdr_t *hdr () { return &_hdr; }
+
+  str body;
+  int status;
+  okwc_cookie_set_t cookies;
+  okwc_http_hdr_t _hdr;
+};
+
+typedef callback<void, ptr<okwc_resp_t> >::ref okwc_cb_t;
 
 //
 // okwc_chunker_t
@@ -193,6 +198,7 @@ public:
 
   void make_req ();
   void cancel ();
+  okwc_http_hdr_t *hdr () { return resp->hdr (); }
 
 protected:
   void parse (ptr<bool> cf);
