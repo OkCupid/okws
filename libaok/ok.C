@@ -85,7 +85,8 @@ ok_httpsrv_t::error2 (ref<ahttpcon> x, int n, str s,
 {
   htpv_t v = h ? h->get_vers () : 0;
   ptr<http_response_t> e = geterr (n, s, v);
-  log (x, h, e, s);
+  if (svclog)
+    log (x, h, e, s);
   if (x->closed ()) {
     if (c) (*c) ();
   } else {

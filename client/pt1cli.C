@@ -23,6 +23,7 @@ int nleft;
 str host;
 int port;
 str inreq;
+int rand_modulus;
 
 timespec startt;
 timespec lastexit;
@@ -162,7 +163,7 @@ hclient_t::connected (int f)
 {
   fd = f;
   strbuf b (req);
-  int id = random() % 30000;
+  int id = random() % rand_modulus;
   b << id <<" HTTP/1.0\r\nConnection: close\r\n\r\n";
   if (fd < 0) {
     if (mode != OKWS) {
@@ -252,9 +253,15 @@ main (int argc, char *argv[])
   timespec startat;
   startat.tv_nsec = 0;
   exited = false;
+  rand_modulus = 30000;
 
-  while ((ch = getopt (argc, argv, "spofdc:n:t:")) != -1) {
+  while ((ch = getopt (argc, argv, "spofdc:n:t:r:")) != -1) {
     switch (ch) {
+    case 'r':
+      if (!convertint (optarg, &rand_modulus))
+	usage ();
+      if (noisy) warn << "Random modulus: " << rand_modulus << "\n";
+      break;
     case 'd':
       noisy = true;
       break;

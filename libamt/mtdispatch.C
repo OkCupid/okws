@@ -66,10 +66,13 @@ mtdispatch_t::async_serv (svccb *b)
 void
 mtdispatch_t::dispatch (svccb *b)
 {
-  if (sdflag || queue.size () >= maxq)
+  if (sdflag || queue.size () >= maxq) {
+    warn << "XXX: rejecting / queue overflow\n"; // debug
     b->reject (PROC_UNAVAIL);
-  else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b)))
+  } else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b))) {
+    warn << "XXX: queuing: " << queue.size () << "\n"; // debug
     queue.push_back (b);
+  }
 }
 
 bool
@@ -152,6 +155,7 @@ mtdispatch_t::chld_reply (int i)
     sbp->reply (c->rsp);
     break;
   case MTD_RPC_REJECT:
+    warn << "XXX: rejected by MTD_RPC_REJECT\n"; // DEBUG
     sbp->reject (PROC_UNAVAIL);
     break;
   }

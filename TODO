@@ -218,3 +218,6 @@ OKD v0.2
    and how long they've been active for.
  - packet buffer overrun in logging when there are lots of errors
    all at once.
+ - kernel bug ?? in ahttpcon::input when too many serviced connections
+   at once.  message: ahttpcon::input: Message too long.  Not sure
+   what is going on here at all. :(
