@@ -16,9 +16,10 @@ abuf_t::moredata ()
 void 
 abuf_t::finish ()
 {
-  if (!ignfn) {
+  if (!ignfn && !finished) {
     src->rembytes (cp - buf);
     src->finish ();
+    finished = true;
   }
 }
 

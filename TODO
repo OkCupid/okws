@@ -162,3 +162,6 @@ TODO
 
  X crash under heavy load when a connection aborts
  - OKD still runs away in some tests. 
+ - for linux, might make sense to change FD-descriptor passing scheme;
+   different ordering guarantees.  perhaps it's easier just to call
+   getpeername on the other end, although it is an extra syscall

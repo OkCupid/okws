@@ -58,7 +58,7 @@ public:
     : src (s), bc (false), lch (0), buf (NULL), endp (NULL), cp (NULL), 
       len (0), erc (ABUF_OK), ignfn (false), delsrc (d), spcs (0),
       lim (-1), ccnt (0), mirror_base (NULL), mirror_p (NULL),
-      mirror_end (NULL) {}
+      mirror_end (NULL), finished (false) {}
   ~abuf_t () { if (delsrc && src) delete src; }
   inline int get ();
   inline int peek ();
@@ -94,6 +94,8 @@ private:
   char *mirror_base;
   char *mirror_p;
   char *mirror_end;
+
+  bool finished;  // should only call finish once
 };
 
 class abuf_str_t : public abuf_src_t {
