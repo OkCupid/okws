@@ -29,6 +29,11 @@ dnl
 SFS_REQUIRE_THREADS
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
+dnl
+dnl OKWS_TAG might set "with_sfs", so it should come before
+dnl SFS_SFS, which will reset it if needs be
+dnl
+OKWS_TAG
 
 # XXX - next line seems to be required for some autoconf/-make/libtool versions
 test -z "$target" && target=NONE
@@ -38,11 +43,6 @@ AM_PROG_LEX
 
 AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
 
-dnl
-dnl OKWS_TAG might set "with_sfs", so it should come before
-dnl SFS_SFS, which will reset it if needs be
-dnl
-OKWS_TAG
 
 SFS_SFS
 SFS_FIND_RESOLV
