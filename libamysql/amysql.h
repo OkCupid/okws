@@ -345,6 +345,18 @@ public:
   operator u_char () const { return isnull () ? 0 : n ; }
 };
 
+class mybind_bool_t : public mybind_num_t<bool, bool> {
+public:
+  mybind_bool_t (bool b)
+    : mybind_num_t<bool, bool> (MYSQL_TYPE_TINY, b) {}
+  mybind_bool_t () : mybind_num_t<bool, bool> (MYSQL_TYPE_TINY) {}
+  mybind_bool_t (bool *b)
+    : mybind_num_t<bool, bool> (MYSQL_TYPE_TINY, b) {}
+  mybind_bool_t (ptr<bool> *b)
+    : mybind_num_t<bool, bool> (MYSQL_TYPE_TINY, b) {}
+  operator bool () const { return isnull () ? false : n > 0; }
+};
+
 class mybindable_t {
 public:
   virtual void bind (MYSQL_BIND *b) = 0;
@@ -375,7 +387,8 @@ public:
   mybind_res_t (x_okdate_t *x) { p = New refcounted<mybind_date_t> (x); }
   mybind_res_t (x_okdate_time_t *x) { p = New refcounted<mybind_date_t> (x); }
   mybind_res_t (x_okdate_date_t *x) { p = New refcounted<mybind_date_t> (x); }
-
+  mybind_res_t (bool *b) { p = New refcounted<mybind_bool_t> (b); }
+        
   template<class C>
   mybind_res_t (union_entry<C> &u) { *this = mybind_res_t ((C *)u); }
 
