@@ -249,3 +249,5 @@ OKD v0.2
  - pubb'ed error docs
  - boot up OkD with apache running on 80.  problems with "ErrorDocInit"
  - cannot sth prepare after init...
+ - auth tokens
+ - debug load balancer class
