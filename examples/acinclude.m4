@@ -1707,7 +1707,11 @@ dnl
 dnl if not shared executables, then we'll need to compile
 dnl services statically (due to jailing...)
 dnl
-AM_CONDITIONAL(LDFLAGS_ALL_STATIC, test -z "$enable_shared" )
-AM_CONDITIONAL(DLINKED_SERVICES, test "$enable_shared")
+shared_tmp=1
+if test -z "$enable_shared" -o "$enable_shared" = "no"; then
+	shared_tmp=0
+fi
+AM_CONDITIONAL(LDFLAGS_ALL_STATIC, test $shared_tmp -eq 0 )
+AM_CONDITIONAL(DLINKED_SERVICES, test $shared_tmp -eq 1)
 ])
 
