@@ -325,7 +325,7 @@ okld_ch_t::clean_dumps ()
 {
   if (!rundir)
     return;
-  DIR *dirp =  opendir (rundir.cstr ());
+  DIR *dirp = opendir (rundir.cstr ());
   if (!dirp) {
     warn << "Cannot clean out coredump directory: " << rundir << "\n";
     return;
@@ -347,5 +347,7 @@ okld_ch_t::clean_dumps ()
     if (::chmod (to.cstr (), 0400) != 0)
       warn ("chmod failed for file %s: %m\n", to.cstr ());
   }
+  if (closedir (dirp) != 0) {
+    warn ("close directory failed for %s: %m\n", rundir.cstr ());
 }
 
