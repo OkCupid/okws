@@ -320,6 +320,7 @@ okld_ch_t::resurrect ()
   }
 }
 
+
 void
 okld_ch_t::clean_dumps ()
 {
@@ -349,5 +350,6 @@ okld_ch_t::clean_dumps ()
   }
   if (closedir (dirp) != 0) {
     warn ("close directory failed for %s: %m\n", rundir.cstr ());
+  }
 }
 

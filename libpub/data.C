@@ -346,12 +346,12 @@ evalable_t::eval_to_pbuf (penv_t *e, pub_evalmode_t m) const
 }
 
 str
-evalable_t::eval (penv_t *e, pub_evalmode_t m) const 
+evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const 
 {
   if (m == EVAL_SIMPLE || !e) 
     return eval_simple ();
   ptr<pbuf_t> st = eval_to_pbuf (e, m);
-  return st->to_str (m);
+  return st->to_str (m, allownull);
 }
 
 void
@@ -360,17 +360,18 @@ pfile_switch_t::output (output_t *o, penv_t *e) const
   str v;
   pswitch_env_t *pse = NULL;
   if (key)
-    v = key->eval (e, EVAL_INTERNAL);
+    // treading lightly here; adding the "allownull" hack because
+    // i'm not sure what kind of semantics people are currently 
+    // using.
+    v = key->eval (e, EVAL_INTERNAL, true);
 
   if (!v) {
-    pse = cases[PUB_SWITCH_MATCH_NULL];
+    pse = nullcase;
     if (!pse) pse = def;
 
     if (!pse && !nulldef) 
       o->output_err (e, strbuf ("switch: cannot evaluate key value (")
 		     << key->name () << ")", lineno);
-    if (!pse)
-      return;
   } else {
     pse = cases[v];
     if (!pse) pse = def;
@@ -530,12 +531,17 @@ _eval (pbuf_t *s, penv_t *e, u_int d, pstr_el_t *el)
 void
 pstr_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
-  els.traverse (wrap (_eval, ps, e, d));
+  if (els.first) 
+    els.traverse (wrap (_eval, ps, e, d));
+  else
+    ps->add ("");
 }
 
 str
 pstr_t::eval_simple () const
 {
+  if (n == 0)
+    return "";
   if (n != 1)
     return NULL;
   str r;
@@ -775,7 +781,10 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   ptr<aarr_arg_t> env;
   phashp_t ph;
   str ckey;
-  str fn;
+
+  // fn1 is what's provided in the given file; fn2 is
+  // the output from the the to_binding call to get the jailed filename
+  str fn1, fn2;  
 
   if (!err) {
     if (l->size () == 1) {
@@ -799,7 +808,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
     }
   }
 
-  if (l->size () > 1 && !(fn = (*l)[1]->eval ())) {
+  if (l->size () > 1 && !(*l)[1]->is_null () && !(fn1 = (*l)[1]->eval ())) {
     PWARN ("Bad filename in case declaration");
     err = true;
   }
@@ -807,36 +816,41 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   //
   // treat zero-length file names as NULL file names.
   //
-  if (fn && fn.len () == 0) 
-    fn = NULL;
-    
+  if (fn1 && fn1.len () == 0) 
+    fn1 = NULL;
   
-  pbinding_t *b;
+  pbinding_t *b = NULL;
   if (!err) {
     if (!(*l)[0]->is_null () && !(ckey = (*l)[0]->eval ())) {
       PWARN("Cannot determine case key");
       err = true;
-    } else if (fn && !(b = parser->to_binding (fn))) {
-      PWARN(fn << ": cannot access file");
+    } else if (fn1 && !(b = parser->to_binding (fn1))) {
+      PWARN(fn1 << ": cannot access file");
       err = true;
-    } else {
-      fn = b->fn;
+    } else if (b) {
+      fn2 = b->fn;
     }
   }
 
   if (!err) {
-    if ((!ckey && def) || (ckey && cases[ckey])) {
+    bool nullkey = (ckey && ckey == PUB_NULL_CASE) ;
+    if ((!ckey && def) || (ckey && cases[ckey]) || (nullkey && nullcase)) {
       PWARN("Doubly-defined case statement in switch");
       err = true;
     } else {
-      pswitch_env_t *se = New pswitch_env_t (ckey, fn, env);
-      if (!ckey) 
+      if (nullkey) ckey = NULL;
+      pswitch_env_t *se = New pswitch_env_t (ckey, fn2, env);
+
+      if (nullkey)
+	nullcase = se;
+      else if (!ckey) 
 	def = se;
-      else {
+      else 
 	cases.insert (se);
-      }
-      if (fn)
-	files.push_back (fn);
+
+      // might have a NULL file if none was requested
+      if (fn2)
+	files.push_back (fn2);
     }
   }
   return (!err);
@@ -908,10 +922,13 @@ pfile_g_ctinclude_t::add (ptr<arglist_t> l)
 void
 pfile_switch_t::explore (pub_exploremode_t mode) const
 {
-  for (u_int i = 0; i < files.size (); i++)
-    ::explore (mode, files[i]);
-  if (def)
-    ::explore (mode, def->filename ());
+  str fn;
+  for (u_int i = 0; i < files.size (); i++) {
+    fn = files[i];
+    if (fn) ::explore (mode, fn);
+  }
+  if (def && (fn = def->filename ()))
+    ::explore (mode, fn);
 }
 
 void
@@ -1254,7 +1271,7 @@ pbuf_t::output (output_t *o, penv_t *e) const
 }
 
 str
-pbuf_t::to_str (pub_evalmode_t m) const 
+pbuf_t::to_str (pub_evalmode_t m, bool allownull) const 
 {
   strbuf b;
   str s;
@@ -1262,7 +1279,12 @@ pbuf_t::to_str (pub_evalmode_t m) const
     return els.first->to_str_2 (m);
   if (m == EVAL_COMPILE)
     b << "strbuf ()";
-  for (pbuf_el_t *e = els.first; e; e = els.next (e))
+  pbuf_el_t *e = els.first;
+
+  if (!e && allownull)
+    return NULL;
+
+  for ( ; e; e = els.next (e))
     if ((s = e->to_str_2 (m))) {
       if (m == EVAL_COMPILE)
 	b << " << ";

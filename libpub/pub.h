@@ -103,8 +103,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PPSTR      parser->pstr
 #define PARR       parser->parr
 
-#define PUB_SWITCH_MATCH_NULL "NULL"
-
+#define PUB_NULL_CASE "NULL"
 
 //
 // static xdr <--> zstr functions
@@ -457,7 +456,8 @@ struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
 class pbuf_t;
 class evalable_t {
 public:
-  virtual str eval (penv_t *e, pub_evalmode_t m = EVAL_FULL) const;
+  str eval (penv_t *e, pub_evalmode_t m = EVAL_FULL, 
+	    bool allownull = false) const;
   str eval () const { return eval (NULL, EVAL_SIMPLE); }
   ptr<pbuf_t> eval_to_pbuf (penv_t *e, pub_evalmode_t m) const;
   virtual void eval_obj (pbuf_t *s, penv_t *e, u_int d) const = 0;
@@ -570,7 +570,7 @@ public:
   bool to_xdr (xpub_pstr_t *x) const;
   bool to_xdr (xpub_val_t *x) const;
 protected:
-  int n;
+  int n; // number of elements in the list (since it's a list)
   publist_t<pstr_el_t, &pstr_el_t::lnk> els;
 };
 
@@ -990,7 +990,7 @@ typedef ihash<const str, pswitch_env_t, &pswitch_env_t::key,
 class pfile_switch_t : public pfile_func_t {
 public:
   pfile_switch_t (int l) : pfile_func_t (l), err (false), def (NULL), 
-			   key (NULL), nulldef (false) {}
+			   key (NULL), nulldef (false), nullcase (false) {}
   pfile_switch_t (const xpub_switch_t &x);
   ~pfile_switch_t () { if (def) delete def; cases.deleteall (); }
   void output (output_t *o, penv_t *e) const;
@@ -1010,6 +1010,7 @@ private:
   pswitch_env_t *def;
   ptr<pvar_t> key;
   bool nulldef;
+  pswitch_env_t *nullcase;
 };
 
 class aarr_arg_t : public aarr_t, public arg_t {
@@ -1081,7 +1082,7 @@ public:
   pbuf_t () : n (0) {}
   ~pbuf_t () { els.deleteall (); }
   void output (output_t *o, penv_t *e) const;
-  str to_str (pub_evalmode_t m = EVAL_FULL) const;
+  str to_str (pub_evalmode_t m = EVAL_FULL, bool allownull = false) const;
   void add (pbuf_el_t *v);
   void add (const str &s);
   void add (zbuf *z);
