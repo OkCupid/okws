@@ -63,7 +63,6 @@ public:
 
   }
 
-
   void process ()
   {
     char buf[100];

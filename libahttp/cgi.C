@@ -254,7 +254,7 @@ cgi_t::parse_key_or_val ()
   str s;
   abuf_stat_t rc = parse_key_or_val (&s, pstate);
   switch (rc) {
-  case ABUF_PARSE_ERR:
+  case ABUF_SEPARATOR:
     assert (KEY_STATE (pstate));
     insert (s);
     rc = ABUF_OK;
@@ -273,6 +273,9 @@ cgi_t::parse_key_or_val ()
       insert (s);
     else 
       insert (key, s);
+    break;
+  case ABUF_PARSE_ERR:
+    panic ("Unexpected ABUF_PARSE_ERR return in CGI parse routines\n");
     break;
   default:
     break;
@@ -294,12 +297,12 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
       inhex = false;
   }
     
-  while ( pcp < endp && flag ) {
+  while ( pcp < endp && flag && ret == ABUF_OK) {
     ch = abuf->get ();
     switch (ch) {
     case CGI_SEPCHAR:
       if (vt == CGI_KEY)
-	ret = ABUF_PARSE_ERR;
+	ret = ABUF_SEPARATOR;
       else if (vt == CGI_VAL)
 	flag = false;
       else
@@ -313,7 +316,7 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
       break;
     case CGI_CVALEND:
       if (vt == CGI_CKEY)
-	ret = ABUF_PARSE_ERR;
+	ret = ABUF_SEPARATOR;
       else if (vt == CGI_CVAL)
 	flag = false;
       else
@@ -322,7 +325,6 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
     case CGI_CRCHAR:
       if (uri_mode) {
 	ret = ABUF_EOF;
-	flag = false;
       } else if (!COOKIE_STATE (vt)) {
 	*pcp++ = ch;
       }
@@ -331,24 +333,20 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
       if (COOKIE_STATE (vt) || uri_mode) {
 	abuf->unget ();
 	ret = ABUF_EOF;
-	flag = false;
       } else {
 	*pcp++ = ch;
       }
       break;
     case ABUF_EOFCHAR:
       ret = ABUF_EOF;
-      flag = false;
       break;
     case ABUF_WAITCHAR:
       ret = ABUF_WAIT;
-      flag = false;
       break;
     case CGI_HEXCHAR:
       inhex = true;
       if (parse_hexchar (&pcp, endp) == ABUF_WAIT) {
 	ret = ABUF_WAIT;
-	flag = false;
       } else
 	inhex = false;
       break;
@@ -360,15 +358,16 @@ cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
       if (uri_mode) {
 	abuf->unget ();
 	ret = ABUF_EOF;
-	flag = false;
 	break;
       } // otherwise fall through to default
     default:
       *pcp++ = ch;
+      break;
     }
   }
 
   if (ret != ABUF_WAIT) {
+    assert (ret == ABUF_OK || ret == ABUF_SEPARATOR || ret == ABUF_EOF);
     if (pcp >= endp) {
       *r = NULL;
       ret =  ABUF_OVERFLOW;

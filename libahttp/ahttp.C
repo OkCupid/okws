@@ -885,4 +885,3 @@ ahttp_tab_t::sched ()
   dcb = delaycb (interval, 0, wrap (this, &ahttp_tab_t::run));
 }
 
-
