@@ -801,7 +801,7 @@ if test "$with_mysql" != "no"; then
 		[
 		sfs_cv_mysqlbind_fn=no
 		AC_TRY_LINK([#include "mysql.h"],
-			mysql_stmt_bind (0,0);,	
+			mysql_stmt_bind_param (0,0);,	
 			sfs_cv_mysqlbind_fn=yes)
 		])
 

@@ -715,22 +715,31 @@ if test "$with_mysql" != "no"; then
 	if test "${sfs_cv_libmysqlclient+set}" && \
 	   test "$sfs_cv_libmysqlclient" != "no"; then
 
-		AC_CACHE_CHECK(for MYSQL bind support, sfs_cv_mysqlbind,
+
+		AC_CACHE_CHECK(for MYSQL bind types, sfs_cv_mysqlbind,
 		[
 		sfs_cv_mysqlbind=no
  		AC_TRY_COMPILE([#include "mysql.h"], 
 			MYSQL_BIND bnd;,
-			BIND_INC=yes)
-		if test "$BIND_INC" = "yes"; then
-			AC_TRY_LINK([#include "mysql.h"],
-				mysql_stmt_bind (0,0);,	
-				sfs_cv_mysqlbind=yes)
-		fi
+			sfs_cv_mysqlbind=yes)
 		])
+
+		AC_CACHE_CHECK(for MYSQL bind functions, sfs_cv_mysqlbind_fn,
+		[
+		sfs_cv_mysqlbind_fn=no
+		AC_TRY_LINK([#include "mysql.h"],
+			mysql_stmt_bind_param (0,0);,	
+			sfs_cv_mysqlbind_fn=yes)
+		])
+
+		if test "$sfs_cv_mysqlbind_fn" = "yes"; then
+		    AC_DEFINE(HAVE_MYSQL_BINDFUNCS, 1, MySQL Bind Functions)
+		fi
 
 		if test "$sfs_cv_mysqlbind" = "yes"; then
 			AC_DEFINE(HAVE_MYSQL_BIND, 1, MySQL Prepared Stuff)
 		fi
+
 		CPPFLAGS="$CPPFLAGS $sfs_cv_mysql_h"
 		AC_DEFINE(HAVE_MYSQL, 1, Have the MySQL C client library )
 		LDADD_MYSQL="$sfs_cv_libmysqlclient"

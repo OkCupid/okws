@@ -66,6 +66,8 @@ public:
 
   void process ()
   {
+    set_expires ("shitcan");
+    set_content_type ("doggie-doodie");
     p2 ();
   }
 
@@ -96,7 +98,7 @@ EOF
   {
     hdr ();
     for (int i = 1; i <= 30; i++)
-      dorow2 (i);
+      dorow1 (i);
     ftr ();
     output (out);
   }
