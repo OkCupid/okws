@@ -102,6 +102,14 @@ bool ok_send_sin = true;            // send sin's over FD chan?
 bool okd_child_sel_disable = false; // disable read sel on child
 u_int okd_debug_msg_freq = 0;       // disable okd debug messages
 
+//
+// okld constants
+//
+u_int okld_startup_batch_size = 25;        // number in each batch
+u_int okld_startup_batch_wait = 3;         // n secs to wait between batch
+
+
+
 // location of the memory-mapped clock daemon
 const char *ok_mmcd = "/usr/local/lib/sfs/lite/mmcd";
 

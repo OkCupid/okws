@@ -137,6 +137,12 @@ extern bool okd_child_sel_disable;             // disable child selects
 extern const char *okws_server_label;          // advertised server label
 extern u_int okd_debug_msg_freq;               // =0 for no debug messages
 
+//
+// okld constants
+//
+extern u_int okld_startup_batch_size;          // number in each batch
+extern u_int okld_startup_batch_wait;          // n secs to wait between batch
+
 
 //
 // helper constants

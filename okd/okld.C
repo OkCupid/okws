@@ -365,6 +365,9 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceFDQuota", &ok_svc_fd_quota, 
 	  OK_SVC_FD_QUOTA_LL, OK_SVC_FD_QUOTA_UL)
 
+    .add ("StartupBatchSize", &okld_startup_batch_size, 0, 128)
+    .add ("StartupBatchWait", &okld_startup_batch_wait, 0, 128)
+
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
     .ignore ("OkMgrPort")
@@ -792,7 +795,7 @@ okld_t::launchservices ()
   warn << "launching services (" << launchp << ")\n";
 
   u_int lim = svcs.size ();
-  for (u_int i = 0; i < 30 && launchp < lim; i++) {
+  for (u_int i = 0; i < okld_startup_batch_size && launchp < lim; i++) {
     svcs[launchp++]->launch ();
   }
 
@@ -809,7 +812,8 @@ okld_t::launchservices ()
   if (launchp < lim) {
     // XXX - should be configurable, too (as should the hard
     // coded limit of 30, as given above).
-    delaycb (1, 0, wrap (this, &okld_t::launchservices));
+    delaycb (okld_startup_batch_wait, 0, 
+	     wrap (this, &okld_t::launchservices));
   }
 }
 

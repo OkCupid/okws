@@ -377,6 +377,9 @@ okd_t::parseconfig ()
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
 
+    .ignore ("StartupBatchSize")
+    .ignore ("StartupBatchWait")
+
     .ignore ("ServiceFDHighWat")
     .ignore ("ServiceFDLowWat")
     .ignore ("ServiceAcceptMessages");
