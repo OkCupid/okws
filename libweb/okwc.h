@@ -35,10 +35,39 @@
 #include <time.h>
 #include "httpconst.h"
 #include "async.h"
+#include "dns.h"
 
 //
 // okwc = OK Web Client
 //
+
+class okwc_dnscache_entry_t : public virtual refcount {
+public:
+  okwc_dnscache_entry_t (const str &h, int t = 60) : 
+    hostname (h), expires (0), resolving (false), ttl (t), err (0), 
+    init (false) {}
+  void lookup (cbhent cb);
+private:
+  void name_cb (ptr<hostent> h, int e);
+  str hostname;
+  ptr<hostent> he;
+  time_t expires;
+  bool resolving;
+  int ttl;
+  int err;
+  dnsreq_t *dnsp;
+  bool init;
+
+  vec<cbhent> cbq;
+};
+
+class okwc_dnscache_t {
+public:
+  okwc_dnscache_t () {}
+  void lookup (const str &n, cbhent cb);
+private:
+  qhash<str, ptr<okwc_dnscache_entry_t> > cache;
+};
 
 class okwc_cookie_set_t : public vec<cgi_t *> 
 {
@@ -230,10 +259,11 @@ public:
   virtual ~okwc_req_t ();
 
   void launch ();
-  void cancel (int status);
+  void cancel (int status, bool from_dcb = false);
 
 protected:
   virtual okwc_http_t *okwc_http_alloc () = 0;
+  void dns_cb (ptr<hostent> he, int err);
 
   void tcpcon_cb (int fd);
   virtual void req_fail (int status) = 0;
@@ -246,6 +276,7 @@ protected:
   cgi_t *outcookie; // cookies client is sending to server
 
   tcpconnect_t *tcpcon;
+  bool waiting_for_dns;
 
   int fd;
   ptr<ahttpcon> x;

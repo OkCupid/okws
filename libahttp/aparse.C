@@ -103,6 +103,11 @@ async_dumper_t::parse_done_cb (int dummy)
 {
   if (dummy == 0)
     buf->setlen (bp - buf->cstr ());
-  (*dump_cb) (*buf);
+
+  cbs tcb = dump_cb;
   dump_cb = NULL;
+
+  // calling this callback might cause us to be deleted, so let's not
+  // touch any class variables afterwards.
+  (*tcb) (*buf);
 }

@@ -174,24 +174,20 @@ abuf_t::dump (char *buf, size_t len)
     break;
   }
 
-  ssize_t ret = 0;
   char *buf_p = buf;
-
-  ssize_t slen = len;
 
   //
   // XXX:  involves some extra memcopies, but this will have to do for now.
   //
-  while (ret != slen && erc == ABUF_OK) {
-    size_t rc = flush (buf_p, slen);
-    ret += rc;
-    if (ret == slen)
-      return ret;
-    assert (ret < slen);
-    buf_p += ret;
-    moredata ();
+  ssize_t spaceleft = len;
+  while (spaceleft > 0 && erc == ABUF_OK) {
+    size_t rc = flush (buf_p, spaceleft);
+    spaceleft -= rc;
+    buf_p += rc;
+    if (spaceleft > 0) 
+      moredata ();
   }
-  
-  return ret;
+  assert (spaceleft >= 0);
+  return (buf_p - buf);
 }
 

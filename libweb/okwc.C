@@ -24,6 +24,56 @@
 #include "httpconst.h"
 #include "parseopt.h"
 
+okwc_dnscache_t dnscache;
+
+void
+okwc_dnscache_entry_t::lookup (cbhent cb)
+{
+  if (resolving) {
+    cbq.push_back (cb);
+    return;
+  }
+
+  if (!init || timenow > expires) {
+    resolving = true;
+    cbq.push_back (cb);
+    dnsp = dns_hostbyname (hostname, 
+			   wrap (this, &okwc_dnscache_entry_t::name_cb), 
+			   false);
+  } else {
+    (*cb) (he, err);
+  }
+}
+
+void
+okwc_dnscache_entry_t::name_cb (ptr<hostent> h, int e)
+{
+  init = true;
+  err = e;
+  he = h;
+  resolving = false;
+  expires = timenow + ttl;
+  cbhent::ptr c;
+  while (cbq.size ()) {
+    c = cbq.pop_front ();
+    (*c) (he, err);
+  }
+}
+
+void
+okwc_dnscache_t::lookup (const str &n, cbhent cb)
+{
+  ptr<okwc_dnscache_entry_t> *entp = cache[n];
+  ptr<okwc_dnscache_entry_t> ent;
+  if (entp) {
+    ent = *entp;
+  } else {
+    ent = New refcounted<okwc_dnscache_entry_t> (n);
+    cache.insert (n, ent);
+  } 
+  ent->lookup (cb);
+}
+
 okwc_req_t *
 okwc_request (const str &host, u_int16_t port, const str &fn,
 	      okwc_cb_t cb, int vrs, int timeout, cgi_t *outcook)
@@ -52,15 +102,29 @@ okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f,
 			int v, int to, cgi_t *ock)
   : hostname (h), port (p), filename (f),
     vers (v), timeout (to), outcookie (ock),
-    tcpcon (NULL), fd (-1), http (NULL), timer (NULL) {}
+    tcpcon (NULL), waiting_for_dns (false), fd (-1), 
+    http (NULL), timer (NULL) {}
 
 void
 okwc_req_t::launch ()
 {
-  tcpcon = tcpconnect (hostname, port, wrap (this, &okwc_req_t::tcpcon_cb));
   if (timeout > 0) 
     timer = delaycb (timeout, 0, 
-		     wrap (this, &okwc_req_t::cancel, HTTP_TIMEOUT));
+		     wrap (this, &okwc_req_t::cancel, HTTP_TIMEOUT, true));
+  waiting_for_dns = true;
+  dnscache.lookup (hostname, wrap (this, &okwc_req_t::dns_cb));
+}
+
+void
+okwc_req_t::dns_cb (ptr<hostent> he, int err)
+{
+  waiting_for_dns = false;
+  if (err) {
+    req_fail (HTTP_CONNECTION_FAILED);
+    return;
+  }
+  tcpcon = tcpconnect (*(in_addr *)he->h_addr, port, 
+		       wrap (this, &okwc_req_t::tcpcon_cb));
 }
 
 void
@@ -94,13 +158,16 @@ okwc_req_bigstr_t::http_cb (ptr<okwc_resp_t> res)
 }
 
 void
-okwc_req_t::cancel (int status)
+okwc_req_t::cancel (int status, bool from_dcb)
 {
+  if (from_dcb) 
+    timer = NULL;
+
   if (tcpcon) {
     tcpconnect_cancel (tcpcon);
     tcpcon = NULL;
     assert (!http);
-  } else {
+  } else if (!waiting_for_dns) {
     http->cancel ();
   }
   req_fail (status);
