@@ -228,3 +228,8 @@ OKD v0.2
    with a 4M socketsize? maybe it's a UDP restriction.
  - update sfslite
  - clean up recyling code.
+ - merge michael's code...
+ - paper stuff - 0550 / gid / coredump situation
+ - runtime prepare checks.
+ - aut tok's
+ - DGRAM -> STREAM (on all RPC connections)
