@@ -4,6 +4,7 @@
 #include "vec.h"
 #include "stdlib.h"
 #include "time.h"
+#include "normdist.h"
 
 struct exit_pair_t {
   exit_pair_t (int q, int t) : qsz (q), tm (t) {}
@@ -56,14 +57,14 @@ void do_exit (int rc);
 int stop_timer (const timespec &t);
 vec<int> latencies;
 vec<exit_pair_t> exits;
+normdist_t *dist;
 
 int
-get_cli_read_delay (int id)
+get_cli_write_delay (int id)
 {
   if (num_latencies == 0)
     return 0;
-  int ret = ((id % num_latencies) * latency_gcf);
-  return ret;
+  return dist->sample ();
 }
 
 int
@@ -77,11 +78,13 @@ public:
   hclient_t (str h, int p, str r, str q) 
     : host (h), port (p), req (r), id (hclient_id++), 
       bp (buf), reqsz (-1), body (NULL), 
-    cli_read_delay (get_cli_read_delay (id)), qry (q), success (false),
-    output_stuff (false), selread_on (true), tcb (NULL) {}
+      cli_write_delay (get_cli_write_delay (id)), qry (q), success (false),
+      output_stuff (false), selread_on (true), tcb (NULL), wcb (NULL),
+      destroyed (New refcounted<bool> (false)) {}
   ~hclient_t () 
   {
     close ();
+    *destroyed = true;
   }
 
   void run ();
@@ -95,6 +98,8 @@ private:
   void then_exit_damnit (int c);
   void writewait ();
   void cexit (int rc);
+  void sched_read ();
+  void sched_write (ptr<bool> d);
 
   void turn_off ()
   {
@@ -117,7 +122,6 @@ private:
     }
   }
     
-
   timespec cli_start;
   char buf[4096];
   str host;
@@ -129,12 +133,13 @@ private:
   int reqsz;
   char *body;
   suio uio;
-  int cli_read_delay;
+  const int cli_write_delay;
   str qry;
   bool success;
   bool output_stuff;
   bool selread_on;
-  timecb_t *tcb;
+  timecb_t *tcb, *wcb;
+  ptr<bool> destroyed;
 };
 
 vec<hclient_t *> q;
@@ -172,33 +177,20 @@ hclient_t::cexit (int c)
     timecb_remove (tcb);
     tcb = NULL;
   }
-    
+  if (wcb) {
+    timecb_remove (wcb);
+    wcb = NULL;
+  }
+
   if (noisy) warn << "at cexit: " << id << "\n";
   turn_off ();
-  if (cli_read_delay == 0)
-    then_exit_damnit (c);
-  else {
-    if (noisy)
-      warn << "delaying exit for " << cli_read_delay << "\n";
-    delaycb (cli_read_delay / 1000, (cli_read_delay % 1000) * 1000000, 
-	     wrap (this, &hclient_t::then_exit_damnit, c));
-  }
+  then_exit_damnit (c);
 }
 
 void
 hclient_t::then_exit_damnit (int c)
 {
   if (noisy) warn << "at cexit2: " << id << "\n";
-
-  /* disable broken throughput measurement
-  if (exited) {
-    exits.push_back (exit_pair_t (nconcur - nrunning, stop_timer (lastexit)));
-    lastexit = tsnow;
-  } else {
-    exited = true;
-  }
-  */
-
   --nrunning;
   launch_others ();
   if (noisy) warn << "done: " << id << " (nreq: " << nreq << ")\n";
@@ -262,32 +254,52 @@ void
 hclient_t::connected (int f)
 {
   fd = f;
+
+
+
+  if (fd < 0) {
+    warn << "connection rejected\n";
+    cexit (-1);
+    return;
+  }
+
+  ptr<bool> destroyed2 = destroyed;
+  if (cli_write_delay == 0)
+    sched_write (destroyed2);
+  else {
+    wcb = delaycb (cli_write_delay / 1000, (cli_write_delay % 1000) * 1000000, 
+		   wrap (this, &hclient_t::sched_write, destroyed2));
+  }
+}
+
+void
+hclient_t::sched_write (ptr<bool> destroyed2)
+{
+  wcb = NULL;
+  if (*destroyed2) {
+    warn << "destroyed before writing possible\n";
+    return;
+  }
+
   strbuf b;
   int id = random() % rand_modulus;
   b << "GET /" << req << get_svc_id (id) << qry << id << " HTTP/1.0\r\n"
     << "Connection: close\r\n\r\n";
-
   // this might qualify as "deafening"
   if (noisy) warn << b << "\n";
 
-  if (fd < 0) {
-    /* if (mode != OKWS) { */
-    warn << "connection rejected\n";
-    cexit (-1);
-    return;
-      /*
-    } else {
-      warn << "cannot connect to host\n";
-      do_exit (2);
-    }
-      */
-  }
   suio *uio = b.tosuio ();
   while (uio->resid ()) {
     writewait ();
     if (uio->output (fd) < 0)
       fatal << "write error\n";
   }
+  sched_read ();
+}
+
+void
+hclient_t::sched_read ()
+{
   selread_on = true;
   fdcb (fd, selread, wrap (this, &hclient_t::canread));
 }
@@ -338,7 +350,6 @@ hclient_t::timed_out ()
 {
   warn << "client timed out: " << id << "\n";
   tcb = NULL;
-  cli_read_delay = 0;
   cexit (-1);
 }
 
@@ -395,6 +406,11 @@ main (int argc, char *argv[])
   num_latencies = 0;
   num_services = 1;
   tpt_sample_freq = 1;
+
+  // normdist (mean, std-dev, "precision")
+  dist = New normdist_t (100,35);
+  dist->dump ();
+  exit (0);
 
   while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l:L:")) != -1) {
     switch (ch) {

@@ -5,7 +5,7 @@ noinst_PROGRAMS = hcli hsrv degz mygz pt1cli
 
 hcli_SOURCES = hcli.C
 
-pt1cli_SOURCES = pt1cli.C
+pt1cli_SOURCES = pt1cli.C normdist.C
 
 hsrv_SOURCES = hsrv.C
 
