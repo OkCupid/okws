@@ -606,8 +606,8 @@ ahttpcon_clone::delimit (int dummy)
     set_remote_ip ();
     warn << "slow trickle client";
     if (remote_ip)
-      warn << ": " << remote_ip;
-    warn << "\n";
+      warnx << ": " << remote_ip;
+    warnx << "\n";
 
     dcb = delaycb (ok_slowcli_timeout, 0,
                    wrap (this, &ahttpcon_clone::trickle_cb, destroyed_p));
@@ -616,10 +616,10 @@ ahttpcon_clone::delimit (int dummy)
     break;
   case 1:
 
-    warn << "abandoning slow trickle client";
+    warnx << "abandoning slow trickle client";
     if (remote_ip)
-      warn << ": " << remote_ip;
-    warn << "\n";
+      warnx << ": " << remote_ip;
+    warnx << "\n";
 
     delimit_status = HTTP_URI_TOO_BIG;
     break;
