@@ -22,6 +22,9 @@ AC_PATH_PROGS(M4, gm4 gnum4 m4, '$(top_srcdir)/missing')
 AC_PATH_PROGS(LDD, ldd, ldd)
 AC_PATH_PROGS(DIFF, diff, diff)
 
+OKWS_TAGS
+OKWS_MODULE
+
 # XXX - need for some autoconf/-make/libtool versions?
 test -z "$target" && target=NONE
 SFS_REQUIRE_THREADS
@@ -29,8 +32,6 @@ AC_DISABLE_SHARED
 AM_PROG_LIBTOOL
 AM_PROG_LEX
 
-OKWS_TAGS
-OKWS_MODULE
 
 AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
 
