@@ -8,6 +8,7 @@ ztab_t *ztab = NULL;    // external ztab object
 z_stream zm;            // global zstream object
 str zhdr;               // Gzip Hdr (10 chars long!)
 int zlev;               // deflation level
+bool zinitted = false;  // protect against stupid bugs
 
 static int
 zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
@@ -17,6 +18,13 @@ zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
   zm.avail_in = slen;
   zm.next_out = reinterpret_cast<Bytef *> (dest);
   zm.avail_out = dlen;
+
+  if (!zinitted) {
+     warn << "OKWS says: you forgot to call zinit()! i'm doing it for you\n";
+     zinit (false);
+  }
+  assert (zinitted);
+    
 
   if (lev == -1)
     lev = ok_gzip_compress_level;
@@ -250,6 +258,7 @@ zbuf::output (strbuf *p)
 
 void zinit (bool cache, int lev)
 {
+  zinitted = true;
   ztab = cache ? New ztab_cache_t () : New ztab_t ();
   zm.zalloc = (alloc_func)0;
   zm.zfree = (free_func)0;
