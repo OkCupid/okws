@@ -990,7 +990,7 @@ typedef ihash<const str, pswitch_env_t, &pswitch_env_t::key,
 class pfile_switch_t : public pfile_func_t {
 public:
   pfile_switch_t (int l) : pfile_func_t (l), err (false), def (NULL), 
-			   key (NULL), nulldef (false), nullcase (false) {}
+			   key (NULL), nulldef (false), nullcase (NULL) {}
   pfile_switch_t (const xpub_switch_t &x);
   ~pfile_switch_t () { if (def) delete def; cases.deleteall (); }
   void output (output_t *o, penv_t *e) const;
