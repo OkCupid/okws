@@ -220,7 +220,7 @@ oksrvc_t::shutdown ()
 {
   SVCWARN ("caught shutdown signal");
   sdflag = true;
-  ctlclose ();
+  clnt = NULL; // don't ctlclose -- we might still need more messages.
   if (!nclients) 
     end_program ();
 }
@@ -257,10 +257,7 @@ ok_con_t::ctlclose ()
 {
   clnt = NULL;
   srv = NULL;
-
-  // XXX - I think this is causing weird xhinfo warning on shutdown
-  //  -- MK 1.12.04
-  //ctlx = NULL; 
+  ctlx = NULL; 
 }
 
 void
