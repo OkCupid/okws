@@ -241,3 +241,5 @@ OKD v0.2
  - config file recursive decent?
  - write / test with slow-drip client
  - fix config 
+ - benjie reports no dice when receiving big file uploads -- maybe
+   we're hitting the channel limit?

@@ -257,7 +257,10 @@ ok_con_t::ctlclose ()
 {
   clnt = NULL;
   srv = NULL;
-  ctlx = NULL;
+
+  // XXX - I think this is causing weird xhinfo warning on shutdown
+  //  -- MK 1.12.04
+  //ctlx = NULL; 
 }
 
 void

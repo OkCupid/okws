@@ -21,6 +21,7 @@ int nreq_fixed;
 int nconcur;
 int nrunning;
 bool sdflag;
+bool zippity;
 bool noisy;
 bool exited;
 int nleft;
@@ -288,8 +289,16 @@ hclient_t::sched_write (ptr<bool> d_local)
 
   strbuf b;
   int id = random() % rand_modulus;
-  b << "GET /" << req << get_svc_id (id) << qry << id << " HTTP/1.0\r\n"
-    << "Connection: close\r\n\r\n";
+  int v = zippity ? 1 : 0;
+  b << "GET /" << req << get_svc_id (id) << qry << id  
+    << " HTTP/1." << v << "\r\n";
+  if (zippity) 
+    b << "Accept: */*\r\n"
+ 	<< "Accept-Languge: en-us\r\n"
+     << "Accept-Encoding: gzip, deflate\r\n"
+      << "User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.0.3705)\r\n"
+      << "Host: " << host << "\r\n";
+    b << "Connection: close\r\n\r\n";
   // this might qualify as "deafening"
   if (noisy) warn << b << "\n";
 
@@ -401,6 +410,7 @@ main (int argc, char *argv[])
 {
   timeout = 120;
   noisy = false;
+  zippity = false;
   srandom(time(0));
   setprogname (argv[0]);
   int ch;
@@ -417,7 +427,7 @@ main (int argc, char *argv[])
   tpt_sample_freq = 1;
 
 
-  while ((ch = getopt (argc, argv, "spofdc:n:t:r:v:l")) != -1) {
+  while ((ch = getopt (argc, argv, "zspofdc:n:t:r:v:l")) != -1) {
     switch (ch) {
     case 'r':
       if (!convertint (optarg, &rand_modulus))
@@ -451,6 +461,9 @@ main (int argc, char *argv[])
       break;
     case 'p':
       mode = PHP;
+      break;
+    case 'z':
+      zippity = true;
       break;
     case 'o':
       mode = OKWS;
