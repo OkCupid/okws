@@ -17,10 +17,10 @@ http_status_set_t::http_status_set_t ()
   add (206, "Partial Content");
   add (300, "Multiple  Choices");
   add (HTTP_REDIRECT, "Moved Permanently");
-  add (302, "Found");
-  add (303, "See Other");
+  add (HTTP_MOVEDTEMP, "Found"); 
+  add (HTTP_SEEOTHER, "See Other");
   add (304, "Not Modified");
-  add (305, "Use Proxy");
+  add (HTTP_USEPROXY, "Use Proxy");
   add (307, "Temporary Redirect");
   add (HTTP_BAD_REQUEST, "Bad Request");
   add (401, "Unauthorized");
