@@ -250,6 +250,7 @@ public:
   aarr_t &add (const str &n, const str &v);
   aarr_t &add (const str &n, zbuf *b);
   aarr_t &add (const str &n, ptr<zbuf> zb);
+  aarr_t &add (const str &n, const strbuf &b) { return add (n, str (b)); }
 
   template<class T>
   aarr_t &add (const str &n, T i) {
