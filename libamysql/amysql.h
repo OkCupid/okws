@@ -110,9 +110,11 @@ public:
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
 
   void assign () 
-  { 
-    if (parsed) pntr->assign (datep);
-    else pntr->assign (tm, datep); 
+  {
+    if (pntr) {
+      if (parsed) pntr->assign (datep);
+      else pntr->assign (tm, datep);
+    }
   }
 
   operator okdatep_t () const 
