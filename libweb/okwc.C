@@ -197,10 +197,9 @@ okwc_http_bigstr_t::eat_chunk (size_t s)
 void
 okwc_http_t::start_chunker ()
 {
-  chunker = New okwc_body_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch, this);
+  chunker = New okwc_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch);
   chunker->parse (wrap (this, &okwc_http_t::parsed_chunk_hdr));
 }
-
 
 void
 okwc_http_t::body_parse ()
@@ -223,17 +222,7 @@ okwc_http_t::parsed_chunk_hdr (int status)
       eat_chunk (sz);
     }
   } else {
-    finish (sz);
-  }
-}
-
-void
-okwc_http_t::eat (size_t s)
-{
-  if (s == 0) {
-    body_chunk_finish ();
-  } else {
-    eat_chunk (s);
+    finish (status);
   }
 }
 
