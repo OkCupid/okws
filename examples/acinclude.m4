@@ -1610,7 +1610,7 @@ AC_ARG_WITH(sfstag,
 AC_ARG_WITH(tag,
 --with-tag=TAG			Specify a custom tag for this build)
 case $with_mode in
-	"debug" )
+	debug )
 		sfstag=$with_mode
 		okwstag=$with_mode
 		okmtag=$with_mode
@@ -1618,7 +1618,7 @@ case $with_mode in
 		CXXDEBUG=-g
 		with_dmalloc=yes
 		;;
-	"std" )
+	std )
 		sfstag=$with_mode
 		okwstag=$with_mode
 		okmtag=$with_mode
@@ -1639,7 +1639,7 @@ case $with_mode in
 		okmtag=$with_mode
 		enable_shared=yes
 		;;
-	"shdbg"  )
+	shdbg )
 		sfstag=$with_mode
 		okwstag=$with_mode
 		okmtag=$with_mode
@@ -1648,18 +1648,19 @@ case $with_mode in
 		CXXDEBUG=-g
 		with_dmalloc=yes
 		;;
-	"profile" )
+	profile )
 		sfstag=$with_mode
 		okwstag=$with_mode
 		okmtag=$with_mode
 		DEBUG='-g -pg -O2'
 		CXXDEBUG='-g -pg -O2'
 		;;
-	"optmz" )
+	optmz)
 		sfstag=lite
 		okmtag=$with_mode
 		;;
 	* )
+		sfstag=lite
 		okmtag=optmz
 		if test "${with_mode+set}" = "set"; then
 			AC_MSG_ERROR([Unrecognized build mode specified])
