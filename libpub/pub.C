@@ -1,4 +1,3 @@
-stty: stdin isn't a terminal
 /* $Id$ */
 
 /*

@@ -84,7 +84,7 @@ public:
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
   void custom1_out (const ok_custom_data_t &x);
-  void chld_eof (ptr<bool> dfp);
+  void chld_eof (ptr<bool> dfp, bool debug = false);
   
   okd_t *myokd;
   int pid;

@@ -165,7 +165,7 @@ okch_t::got_new_x_fd (int fd, int p)
   }
 
   x = ahttpcon_dispatch::alloc (fd);
-  x->seteofcb (wrap (this, &okch_t::chld_eof, destroyed));
+  x->seteofcb (wrap (this, &okch_t::chld_eof, destroyed, true));
 
   start_chld ();
 
@@ -192,6 +192,8 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     return;
   }
   if (!sbp) {
+    // need to track down a bug, so adding code instrumentation
+    warn << "calling okch_t::chld_eof from okch_t::dispatch\n";
     chld_eof (destroyed);
     return ;
   }
@@ -372,8 +374,11 @@ okch_t::custom1_out (const ok_custom_data_t &x)
 }
 
 void
-okch_t::chld_eof (ptr<bool> dfp)
+okch_t::chld_eof (ptr<bool> dfp, bool debug)
 {
+  if (debug) {
+    warn << "okch_t::chld_eof called from ahttpcon/eofcb\n";
+  }
   if (*dfp) {
     warn << "destroyed child process died\n";
     return;
