@@ -27,7 +27,7 @@ str inreq;
 timespec startt;
 timespec lastexit;
 
-typedef enum { OKWS = 1, PHP = 2, SEDA = 3 } pt1cli_mode_t;
+typedef enum { OKWS = 1, PHP = 2, SEDA = 3, FLASH = 4 } pt1cli_mode_t;
 pt1cli_mode_t mode;
 
 void do_exit (int rc);
@@ -165,7 +165,7 @@ hclient_t::connected (int f)
   int id = random() % 30000;
   b << id <<" HTTP/1.0\r\nConnection: close\r\n\r\n";
   if (fd < 0) {
-    if (mode == SEDA) {
+    if (mode != OKWS) {
       if (noisy) warn << "cannot connect to host\n";
       cexit (-1);
       return;
@@ -242,7 +242,7 @@ main2 (int n)
 int 
 main (int argc, char *argv[])
 {
-  bool noisy = false;
+  noisy = false;
   srandom(time(0));
   setprogname (argv[0]);
   int ch;
@@ -253,7 +253,7 @@ main (int argc, char *argv[])
   startat.tv_nsec = 0;
   exited = false;
 
-  while ((ch = getopt (argc, argv, "dc:n:spot:")) != -1) {
+  while ((ch = getopt (argc, argv, "spofdc:n:t:")) != -1) {
     switch (ch) {
     case 'd':
       noisy = true;
@@ -276,6 +276,9 @@ main (int argc, char *argv[])
       break;
     case 'o':
       mode = OKWS;
+      break;
+    case 'f':
+      mode = FLASH;
       break;
     case 't': 
       {
@@ -319,6 +322,10 @@ main (int argc, char *argv[])
   case PHP:
     inreq = "GET /pt1.php?id=";
     if (noisy) warn << "In PHP mode\n";
+    break;
+  case FLASH:
+    inreq = "GET /cgi-bin/d_reg?=";
+    if (noisy) warn << "In FLASH mode\n";
     break;
   default:
     warnx << "no operation mode selected\n";

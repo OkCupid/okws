@@ -125,7 +125,7 @@ private:
 
 class logd_parms_t {
 public:
-  logd_parms_t () {}
+  logd_parms_t () : svclog (true) {}
   logd_parms_t (const str &p) { decode (p); }
 
   void decode (const str &p);
@@ -137,6 +137,7 @@ public:
   str accesslog_fmt;
   str user;
   str group;
+  bool svclog;
 private:
   mutable str enc;
 };

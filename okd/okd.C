@@ -217,7 +217,8 @@ okd_t::parseconfig ()
     .ignore ("GzipCacheMax")
     .ignore ("GzipCacheSize")
     .ignore ("GzipMemLevel")
-    .ignore ("UnsafeMode");
+    .ignore ("UnsafeMode")
+    .ignore ("SvcLog");
 
 
   while (pa.getline (&av, &line)) {

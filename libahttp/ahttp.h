@@ -103,7 +103,12 @@ typedef callback<void, ptr<ahttpcon> >::ref listencb_t;
 class ahttpcon_listen : public ahttpcon 
 {
 public:
-  ahttpcon_listen (int f) : ahttpcon (f) {}
+  ahttpcon_listen (int f) : ahttpcon (f) 
+  { 
+    // XXX - don't want to stop listening to okd! there should be no
+    // channel limit here; setting recv_limit = 0 should achieve this.
+    recv_limit = 0; 
+  }
   void setlcb (listencb_t c);
   static ptr<ahttpcon_listen> alloc (int f) 
   { return New refcounted<ahttpcon_listen> (f); }

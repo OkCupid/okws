@@ -126,7 +126,9 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("logtick", &ok_log_tick);
     t->lookup ("logprd", &ok_log_period);
     t->lookup ("clito", &ok_clnt_timeout);
+    svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
+
   }
 
   zinit ();
@@ -466,7 +468,6 @@ okclnt_t::send (ptr<http_response_t> rsp)
   for (u_int i = 0; i < outcookies.size(); i++) {
     rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
   }
-
 
   oksrvc->log (x, &hdr, rsp);
   rsp->send (x, wrap (this, &okclnt_t::delcb));

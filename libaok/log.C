@@ -245,7 +245,8 @@ logd_parms_t::encode () const
     .insert ("errorlog",  errorlog)
     .insert ("alfmt",     accesslog_fmt)
     .insert ("user",      user)
-    .insert ("group",     group);
+    .insert ("group",     group)
+    .insert ("svclog",    svclog);
   return ((enc = ct.encode ()));
 }
 

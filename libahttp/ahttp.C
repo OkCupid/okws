@@ -338,8 +338,8 @@ ahttpcon::input ()
     warn << "Channel limit exceded ";
     set_remote_ip ();
     if (remote_ip)
-      warn << remote_ip;
-    warn << "\n";
+      warnx << remote_ip;
+    warnx << "\n";
 
     eof = true;
     fail ();

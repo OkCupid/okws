@@ -86,7 +86,7 @@ protected:
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
   ok_httpsrv_t (const str &h = NULL, int fd = -1) 
-    : ok_con_t (), ok_base_t (h, fd) {}
+    : ok_con_t (), ok_base_t (h, fd), svclog (true) {}
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
   inline bool add_errdoc (int n, const str &f);
   void add_errdocs (const xpub_errdoc_set_t &eds);
@@ -98,7 +98,7 @@ public:
   virtual ptr<http_response_t> geterr (int n, str s, htpv_t v) const;
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		    const str &s = NULL)
-    const { if (logd) logd->log (x, req, res, s); }
+    const { if (svclog && logd) logd->log (x, req, res, s); }
 
   pub_t pub;
 
@@ -113,6 +113,7 @@ protected:
   ihash<int, errdoc_t, &errdoc_t::status, &errdoc_t::lnk> errdocs;
   mutable str si;
   str logfmt;
+  bool svclog;
 };
 
 #define OKCLNT_BUFLEN 0x10400
