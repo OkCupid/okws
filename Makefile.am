@@ -22,23 +22,23 @@ MAINTAINERCLEANFILES = 				\
 	ltconfig ltmain.sh \
 	INSTALL COPYING Makefile.in stamp-h.in
 
-sfsinclude_HEADERS = acgiconf.h
-BUILT_SOURCES = acgiconf.h
-DISTCLEANFILES = acgiconf.h stamp-auto-h autom4te*.cache
-all-recursive install-recursive: acgiconf.h
+sfsinclude_HEADERS = okwsconf.h
+BUILT_SOURCES = okwsconf.h
+DISTCLEANFILES = okwsconf.h stamp-auto-h autom4te*.cache
+all-recursive install-recursive: okwsconf.h
 
-acgiconf.h: stamp-auto-h
+okwsconf.h: stamp-auto-h
 	@:
 
 stamp-auto-h: $(srcdir)/autoconf.sed $(CONFIG_HEADER)
 	@rm -f autoconf.h~
 	sed -f $(srcdir)/autoconf.sed $(CONFIG_HEADER) > autoconf.h~
-	cmp autoconf.h~ acgiconf.h || mv -f autoconf.h~ acgiconf.h
+	cmp autoconf.h~ okwsconf.h || mv -f autoconf.h~ okwsconf.h
 	@rm -f autoconf.h~
 	@echo timepstamp > stamp-auto-h
 
 dist-hook:
-	cd $(distdir) && rm -f acgiconf.h
+	cd $(distdir) && rm -f okwsconf.h
 	cd $(distdir) && chmod -x setup
 
 install-data-local:

@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 
 AC_INIT(config.h.in)
-AM_INIT_AUTOMAKE(acgi, 0.0)
+AM_INIT_AUTOMAKE(okws, 0.0)
 AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(PUB)
@@ -40,7 +40,7 @@ AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
 
 SFS_SFS
 SFS_FIND_RESOLV
-ACGI_LIBS
+OKWS_LIBS
 SFS_MYSQL
 
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
@@ -92,10 +92,10 @@ LDADD_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
 
 ETAGS_ARGS='-C /dev/null'
 
-ACGI_SET_VERSION
+OKWS_SET_VERSION
 
 AC_SUBST(OK_VERSION)
-AC_SUBST(ACGI_VERSION)
+AC_SUBST(OKWS_VERSION)
 AC_SUBST(LIBPUB)
 AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBAOK)

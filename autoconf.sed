@@ -1,11 +1,11 @@
 # $Id$
 
 1i\
-#ifndef _ACGI_ARPCCONF_H_\
-#define _ACGI_ARPCCONF_H_ 1
+#ifndef _OKWS_ARPCCONF_H_\
+#define _OKWS_ARPCCONF_H_ 1
 $a\
 \
-#endif /* !_ACGI_ARPCCONF_H_ */
+#endif /* !_OKWS_ARPCCONF_H_ */
 
 /^#define inline/b skip
 /^#define xdr_ops_t/b skip
@@ -67,7 +67,7 @@ $a\
 / HAVE_KTHREADS/b pdefine
 / HAVE_PTHREADS/b pdefine
 / OK_VERSION/b pdefine
-/ ACGI_VERSION/b pdefine
+/ OKWS_VERSION/b pdefine
 
 :skip
 d

@@ -710,9 +710,9 @@ fi
 dnl
 dnl Version Hack
 dnl
-AC_DEFUN(ACGI_SET_VERSION,
+AC_DEFUN(OKWS_SET_VERSION,
 [
-AC_DEFINE_UNQUOTED(ACGI_VERSION, "$VERSION", ACGI Library Version)
+AC_DEFINE_UNQUOTED(OKWS_VERSION, "$VERSION", OKWS Library Version)
 ])
 dnl
 dnl Find pth
@@ -1376,9 +1376,9 @@ AC_EGREP_HEADER([xdr_ops *\* *x_ops;], rpc/xdr.h,
 AC_DEFINE_UNQUOTED(xdr_ops_t, $sfs_cv_xdr_ops_t,
 	[The C++ type name of the x_ops field in struct XDR.])])
 dnl
-dnl Find ACGI libraries (only need -lz for now)
+dnl Find OKWS libraries (only need -lz for now)
 dnl
-AC_DEFUN(ACGI_LIBS,
+AC_DEFUN(OKWS_LIBS,
 [AC_CHECK_LIB(z, deflate)
 if test $ac_cv_lib_z_deflate = no; then
   AC_MSG_ERROR([Could not find zlib!])
