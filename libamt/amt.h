@@ -284,4 +284,7 @@ protected:
 };
 #endif /* HAVE_PTH */
 
+bool
+tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff);
+
 #endif /* _LIBAMT_AMT_H */

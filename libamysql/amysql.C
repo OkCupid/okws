@@ -59,7 +59,7 @@ mysql_t::prepare (const str &q, u_int l_opts)
 	<< q << "): " << mysql_error (&mysql);
       return NULL;
     }
-    r = sth_prepared_t::alloc (s);
+    r = sth_prepared_t::alloc (s, q);
 #endif // HAVE_MYSQL_BINDFUNCS && HAVE_MYSQL_BIND
   } else {
     ptr<sth_parsed_t> r2 = sth_parsed_t::alloc (&mysql, q, l_opts);
@@ -114,11 +114,20 @@ mybind_str_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
   b->buf (*s, rlen + 2);
 }
 
+str mybind_str_t::to_str () const { return str (buf, size); }
+
 void
 mybind_sex_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 {
   buf[1] = sex_to_char (sx);
   b->buf (buf, 3);
+}
+
+str 
+mybind_set_t::to_str () const 
+{
+  buf[1] = sex_to_char (sx);
+  return str (buf, 3);
 }
 
 
@@ -173,6 +182,15 @@ mybind_date_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 {
   datep->to_strbuf (b, true);
 }
+
+void
+mybind_date_t::to_str () const 
+{
+  strbuf b;
+  datep->to_strbuf (&b, true);
+  return b;
+}
+
 
 #ifdef HAVE_MYSQL_BIND
 void

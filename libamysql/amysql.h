@@ -105,6 +105,7 @@ public:
   virtual bool isnull () const { return nullfl; }
   virtual void assign () {}
   virtual bool read_str (const char *c, unsigned long l) = 0;
+  virtual str to_str () const = 0;
 protected:
   eft_t ft;
   my_bool nullfl;
@@ -174,6 +175,7 @@ public:
 
   ~mybind_date_t () { if (palloced && pntr) delete pntr; }
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
+  str to_str () const;
 
   operator okdatep_t () const 
   { return isnull () ? static_cast<okdatep_t> (NULL) : datep; }
@@ -226,6 +228,7 @@ public:
   void bind (MYSQL_BIND *bnd, bool param);
 #endif
   virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
+  virtual str to_str  () const;
   virtual void assign () { *pntr = str (buf, len); }
   operator str () const { return isnull () ? sNULL : str (buf, len); }
   bool read_str (const char *c, unsigned long l) 
@@ -252,6 +255,7 @@ public:
 #endif
   void to_qry (MYSQL *m, strbuf *b, char **ss, u_int *l)
   { mys.to_qry (m, b, ss, l); }
+  str to_str () const { return mys.to_str (); }
   void assign () { mys.assign (); *pntr = s; }
   bool read_str (const char *c, unsigned long l) 
   {
@@ -271,6 +275,7 @@ public:
   mybind_sex_t (sex_t s) : mybind_str_t (s), sx (s) 
   { sprintf (buf, "\'%c\'", sex_to_char (sx)); }
   virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
+  virtual str to_str () const;
   virtual void assign ()
   {
     *pntr = size ? str_to_sex (str (buf, size)) : NOSEX;
@@ -295,6 +300,7 @@ public:
   mybind_num_t (eft_t t, ptr<T> *p) : mybind_t (t), pntr (NULL), ppntr (p) {}
   operator str () const { return isnull () ? NULL : strbuf () << n; }
   virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) { *b << n; }
+  virtual str to_str () const { strbuf b; b << n; return b; }
 #ifdef HAVE_MYSQL_BIND
   virtual void bind (MYSQL_BIND *bnd, bool param)
   {
@@ -584,6 +590,7 @@ public:
 #endif
   void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) 
   { p->to_qry (m, b, s, l); }
+  str to_str () const { return p->to_str (); }
   ptr<mybind_t> p;
 };
 

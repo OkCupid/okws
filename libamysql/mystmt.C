@@ -22,6 +22,8 @@
  */
 
 #include "mystmt.h"
+#include <sys/time.h>
+#include <time.h>
 
 #if defined(HAVE_MYSQL_BINDFUNCS) && defined(HAVE_MYSQL_BIND)
 
@@ -32,7 +34,7 @@ sth_prepared_t::~sth_prepared_t ()
 }
 
 bool
-sth_prepared_t::execute (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
+sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 {
   if (b && arr && n) {
     bind (b, arr, n);
@@ -101,6 +103,39 @@ mystmt_t::alloc_res_arr (u_int n)
   res_n = n;
   if (!res_arr)
     res_arr = New mybind_res_t[n];
+}
+
+bool
+mystmt_t::execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
+{
+  struct timeval t1;
+  if (lqt) 
+    gettimeofday (&t1, NULL);
+  execute2 (b, arr, n);
+  if (lqt) {
+    struct timeval t2;
+    gettimeofday (&t2, NULL);
+    long sd = (t2.tv_sec - t1.tv_sec) * 1000;
+    sd += (t2.tv_usec - t1.tv_usec) / 1000;
+    if (sd > lqt) {
+      warn << "Long Query: " << sd << "ms\n";
+      warn << " q-> " << dump (arr, n) << "\n";
+    }
+  }
+}
+
+str
+sth_prepared_t::dump (mbyind_param_t **arr, u_int n) const 
+{
+  strbuf b;
+  b << " q-> " << qry << "\n";
+  b << " p-> ";
+  for (u_int i = 0; i < n; i++) {
+    if (i != 0)
+      b << ", ";
+    b << arr[i]->to_str ();
+  }
+  return b;
 }
 
 void
@@ -229,8 +264,23 @@ sth_parsed_t::parse ()
   return true;
 }
 
+str
+sth_parsed_t::make_query (mybind_param_t **aarr, u_int n)
+{
+  alloc_bufs ();
+  strbuf b;
+  for (u_int i = 0; i < n; i++) {
+    b << qry_parts[i];
+    aarr[i]->to_qry (mysql, &b, &bufs[i], &lens[i]);
+  }
+  for (u_int i = n; i < qry_parts.size (); i++)
+    b << qry_parts[i];
+
+  return b;
+}
+
 bool
-sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
+sth_parsed_t::execute2 (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
 {
 
   //
@@ -247,16 +297,8 @@ sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
 		   << n << ", n_iparam = " << n_iparam << ")";
     return false;
   }
-  alloc_bufs ();
-  strbuf b;
-  for (u_int i = 0; i < n; i++) {
-    b << qry_parts[i];
-    aarr[i]->to_qry (mysql, &b, &bufs[i], &lens[i]);
-  }
-  for (u_int i = n; i < qry_parts.size (); i++)
-    b << qry_parts[i];
+  str q = make_query (aarr, n);
 
-  str q = b;
   last_qry = q;
   if (mysql_real_query (mysql, q.cstr (), q.len ())) {
     err = strbuf ("Query execution error: ") << mysql_error (mysql) << "\n";
@@ -266,4 +308,10 @@ sth_parsed_t::execute (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
   }
   state = AMYSQL_EXEC;
   return true;
+}
+
+str
+sth_parsed_t::dump (mybind_param_t **aarr, u_int n)
+{
+  return make_query (aarr, n);
 }

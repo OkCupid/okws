@@ -49,7 +49,7 @@ sub execute {
     $s .= ("\n{\n" .
            "  MYSQL_BIND bnd[" . "$n];\n" .
 	   "  " . make_arr ($n, "mybind_param_t") .  "\n" .
-	   "  return execute (bnd, arr, $n);\n" .
+	   "  return execute1 (bnd, arr, $n);\n" .
 	   "}\n");
     return $s;
 }
@@ -98,7 +98,7 @@ typedef enum {
 
 class mystmt_t {
 public:
-  mystmt_t () : res_arr (NULL), errno_n (0), state (AMYSQL_NONE) {}
+  mystmt_t () : res_arr (NULL), errno_n (0), state (AMYSQL_NONE), lqt (0) {}
   virtual ~mystmt_t () ;
   virtual adb_status_t fetch2 (bool bnd = false) = 0;
   str error () const { return err; }
@@ -107,8 +107,11 @@ public:
      return execute ((MYSQL_BIND *)NULL, (mybind_param_t **)NULL, 0);
   }
   virtual str get_last_qry () const { return NULL; }
+  void set_long_query_timer (u_int m) : lqt (m);
 protected:
-  virtual bool execute (MYSQL_BIND *b, mybind_param_t **arr, u_int n) = 0;
+  virtual bool execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n) = 0;
+  bool execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n);
+  virtual str dump (mybind_param_t **aarr, u_int n) = 0;
   void alloc_res_arr (u_int n);
   void assign ();
 
@@ -117,6 +120,7 @@ protected:
   str err;
   unsigned int errno_n;
   amysql_state_t state;
+  u_int lqt;  // long query timer (in milliseconds)
 
 public:
 $stuff

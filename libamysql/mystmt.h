@@ -40,7 +40,7 @@ public:
   adb_status_t fetch2 (bool bnd = false);
   str get_last_qry () const { return last_qry; }
 protected:
-  bool execute (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
+  bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
 
   void dealloc_bufs ();
   void alloc_bufs ();
@@ -64,17 +64,19 @@ protected:
 class sth_prepared_t : public mystmt_t 
 {
 public:
-  sth_prepared_t (MYSQL_STMT *s) : mystmt_t (), sth (s), bnds (NULL) {}
+  sth_prepared_t (MYSQL_STMT *s, const str &q) 
+    : mystmt_t (), sth (s), bnds (NULL), qry (q) {}
   ~sth_prepared_t ();
   static ptr<sth_prepared_t> alloc (MYSQL_STMT *s)
   { return New refcounted<sth_prepared_t> (s); }
   adb_status_t fetch2 (bool bnd = false);
 protected:
-  bool execute (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
+  bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
   void bind (MYSQL_BIND *b, mybind_param_t **arr, u_int n);
   bool bind_result ();
   MYSQL_STMT *sth;
   MYSQL_BIND *bnds;
+  const str q;
 };
 #endif
 
