@@ -727,7 +727,7 @@ ac_save_LIBS=$LIBS
 cdirs="$with_pth ${prefix} ${prefix}/pth"
 dirs="$cdirs /usr/local/include/pth /usr/local/include "
 AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
-[for dir in " " $dirs; do
+[for dir in $dirs " " ; do
 	case $dir in 
 		" ") iflags=" " ;;
 		*) iflags="-I${dir}" ;;

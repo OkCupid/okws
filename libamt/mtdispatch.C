@@ -70,7 +70,7 @@ mtdispatch_t::dispatch (svccb *b)
     warn << "XXX: rejecting / queue overflow\n"; // debug
     b->reject (PROC_UNAVAIL);
   } else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b))) {
-    warn << "XXX: queuing: " << queue.size () << "\n"; // debug
+    //warn << "XXX: queuing: " << queue.size () << "\n"; // debug
     queue.push_back (b);
   }
 }
