@@ -233,6 +233,7 @@ protected:
 private:
   void end_read ();
   str delimit (int n);
+  void reset_delimit_state ();
 
   const size_t maxline;
   clonecb_t::ptr ccb;

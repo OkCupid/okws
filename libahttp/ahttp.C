@@ -491,6 +491,8 @@ ahttpcon_clone::recvd_bytes (int n)
   str s = delimit (n);
   if (s || delimit_status != HTTP_OK) {
 
+     warn << "delimit returned (" << delimit_status << ")\n"; // debug
+
     // if we're going to keep looking at this connection, then
     // let's reset the lowwater mark to a more reasonable 1 byte
     // (as it is by default).
@@ -588,7 +590,7 @@ ahttpcon_clone::delimit (int dummy)
     in->rembytes (i);
   }
 
-  if (bytes_scanned > max_scan ()) {
+  if (bytes_scanned > maxscan ()) {
     delimit_status = HTTP_NOT_FOUND;
     return NULL;
   }
@@ -598,7 +600,8 @@ ahttpcon_clone::delimit (int dummy)
 
   switch (trickle_state) {
   case 0: 
-    if (set_lowwat (max_scan ()) < 0) {
+    warn << "trickle state 0->1\n"; // debug
+    if (set_lowwat (maxscan ()) < 0) {
       warn ("Cannot reset LoWat on socket: %m\n");
       delimit_status = HTTP_SRV_ERROR;
       return (NULL);
@@ -606,13 +609,14 @@ ahttpcon_clone::delimit (int dummy)
     reset_delimit_state ();
     break;
   case 1:
+    warn << "trickle state 1->2 (bs=" << bytes_scanned << ")\n"; // debug
     delimit_status = HTTP_URI_TOO_BIG;
     break;
   default:
     assert (false);
     break;
   }
-
+  trickle_state ++;
   return (NULL);
 }
 
