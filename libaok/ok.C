@@ -251,7 +251,7 @@ ok_con_t::ctlcon (callback<void, svccb *>::ref cb)
   srv = asrv::alloc (ctlx, okctl_program_1, cb);
   clnt = aclnt::alloc (ctlx, okctl_program_1);
   if (!srv || !clnt) {
-    warn << "Control file descriptor 0 is not a socket\n";
+    warn << "Control file descriptor 1 is not a socket\n";
     fatal << "check that child is launched by okd.\n";
   }
 }
