@@ -219,8 +219,13 @@ okd_t::lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err)
 void
 okch_t::repub (ptr<ok_repub_t> rpb)
 {
-  clnt->call (OKCTL_UPDATE, &rpb->new_fnset, &rpb->xst,
-	      wrap (this, &okch_t::repub_cb, rpb));
+  if (!clnt) {
+    *rbp->res << (strbuf ("Cannot repub; client not yet initialized: ")
+		  << servpath);
+  } else {
+    clnt->call (OKCTL_UPDATE, &rpb->new_fnset, &rpb->xst,
+		wrap (this, &okch_t::repub_cb, rpb));
+  }
 }
 
 void
