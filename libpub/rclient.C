@@ -201,7 +201,7 @@ pub_rclient_t::explore (const pfnm_t &fn) const
     // note that we should always remove before inserting; it's very
     // bad to have the same thing in two different hash tables, as their
     // hash link pointers will get crossed otherwise.
-    set->remove (f);        
+    set->remove (b, f);        
     nset->insert (b, f);
   }
   f->explore (EXPLORE_FNCALL);
