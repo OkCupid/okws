@@ -85,7 +85,6 @@ void
 http_inhdr_t::ext_parse_cb ()
 {
   INC_STATE;
-  abuf->set_ignore_finish (false);
   parse (pcb);
 }
 
@@ -109,7 +108,6 @@ http_inhdr_t::_parse ()
       break;
     case HDRST_URIDAT:
       if (abuf->expectchar ('?') == ABUF_OK) {
-	abuf->set_ignore_finish (true);
 	parsing = false;
 	uri->set_uri_mode (true);
 	uri->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
@@ -144,7 +142,6 @@ http_inhdr_t::_parse ()
     case HDRST_VALUE:
       if (cookie && iscookie ()) {
 	parsing = false;
-	abuf->set_ignore_finish (true);
 	noins = true;
 	cookie->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;

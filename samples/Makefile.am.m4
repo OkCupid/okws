@@ -57,7 +57,7 @@ dnl cgimk(t1, t1_prot.C)
 dnl rpcmk(simple_prot)
 dnl rpcmk(t1_prot)
 
-noinst_PROGRAMS = cgi_exes tst simple simpled t1d
+noinst_PROGRAMS = cgi_exes  dnl tst simple simpled t1d
 simpled_SOURCES = simple_prot.C simpled.C
 simpled_LDADD = $(LDADD_AMT) $(LDADD_THR)
 simple_SOURCES = simple_prot.C simple.C
@@ -66,9 +66,9 @@ t1d_SOURCES = t1_prot.C t1d.C
 LDFLAGS = -all-static
 tst_SOURCES = tst.C
 
-t1d.C: t1_prot.h
-simpled.C: simple_prot.h
-simple.C: simple_prot.h
+dnl t1d.C: t1_prot.h
+dnl simpled.C: simple_prot.h
+dnl simple.C: simple_prot.h
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore

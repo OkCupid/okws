@@ -212,7 +212,6 @@ cgi_t::_parse ()
   abuf_stat_t rc;
   do { rc = parse_key_or_val (); } while (rc != ABUF_EOF && rc != ABUF_WAIT);
   if (rc == ABUF_EOF) {
-    abuf->finish ();
     parsing = false;
     if (bufalloc) {
       xfree (scratch);

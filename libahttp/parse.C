@@ -46,7 +46,6 @@ http_parser_base_t::finish (int status)
 void
 http_parser_base_t::stop_abuf ()
 {
-  abuf.set_ignore_finish (false);
   abuf.finish ();
 }
 
@@ -55,7 +54,6 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 {
   if (hdr.mthd == HTTP_MTHD_POST) {
     cgi = &post;
-    abuf.set_ignore_finish (false);
     if (hdr.reqsize >= 0)
       abuf.setlim (hdr.reqsize);
     post.parse (wrap (static_cast<http_parser_base_t *> (this),

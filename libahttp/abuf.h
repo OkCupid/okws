@@ -56,9 +56,9 @@ class abuf_t {
 public:
   abuf_t (abuf_src_t *s, bool d = false)
     : src (s), bc (false), lch (0), buf (NULL), endp (NULL), cp (NULL), 
-      len (0), erc (ABUF_OK), ignfn (false), delsrc (d), spcs (0),
-      lim (-1), ccnt (0), mirror_base (NULL), mirror_p (NULL),
-      mirror_end (NULL), finished (false) {}
+    len (0), erc (ABUF_OK), delsrc (d), spcs (0),
+    lim (-1), ccnt (0), mirror_base (NULL), mirror_p (NULL),
+    mirror_end (NULL) {}
   ~abuf_t () { if (delsrc && src) delete src; }
   inline int get ();
   inline int peek ();
@@ -67,7 +67,6 @@ public:
   inline abuf_stat_t skip_hws (int mn = 0);
   inline abuf_stat_t expectchar (char c);
   void finish ();
-  void set_ignore_finish (bool i) { ignfn = i; }
   inline void can_read () { erc = ABUF_OK; }
   abuf_src_t *getsrc () const { return src; }
   void init (cbv c) { src->init (c); }
@@ -85,7 +84,6 @@ private:
   const char *buf, *endp, *cp;
   int len;
   abuf_stat_t erc;
-  bool ignfn;
   bool delsrc;
   int spcs;  // spaces;
   int lim;
@@ -95,7 +93,6 @@ private:
   char *mirror_p;
   char *mirror_end;
 
-  bool finished;  // should only call finish once
 };
 
 class abuf_str_t : public abuf_src_t {
