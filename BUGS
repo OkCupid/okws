@@ -1,0 +1,3 @@
+$Id$
+
+- libamt+mysqlclient+pth crashes with gcc 2.95.4
