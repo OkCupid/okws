@@ -362,7 +362,13 @@ okch_t::custom1_out (const ok_custom_data_t &x)
 {
   // XXX want to collect success information and so on from this guy
   // (as in repub)
-  clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
+  if (clnt) {
+    clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
+  } else {
+    warn << servpath << ": child in state=" << state << 
+      " (pid=" << pid << 
+      "); swallowing OKCTL_CUSTOM_1_OUT RPC.\n";
+  }
 }
 
 void
