@@ -29,6 +29,7 @@ z_stream zm;            // global zstream object
 str zhdr;               // Gzip Hdr (10 chars long!)
 int zlev;               // deflation level
 bool zinitted = false;  // protect against stupid bugs
+bool zdebug = false;    // debug messages
 
 static int
 zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
@@ -114,7 +115,8 @@ const str &
 zstrobj::to_zstr (int l) const
 {
   if (zs && clev >= l) {
-    warn << "compress saved,sz=" << len () << "\n"; // debug
+    if (zdebug)
+      warn << "compress saved,sz=" << len () << "\n"; // debug
     return zs;
   }
   compress (l);
@@ -163,7 +165,8 @@ ztab_cache_t::alloc (const str &s, bool lkp)
 {
   zstr *z;
   if (lkp && (z = lookup (s))) {
-    warn << "cache hit, sz=" << s.len () << "\n"; // debug
+    if (zdebug)
+      warn << "cache hit, sz=" << s.len () << "\n"; // debug
     return *z;
   }
   size_t l = s.len ();
@@ -198,7 +201,8 @@ ztab_cache_t::alloc (const char *p, size_t l, bool lkp)
 {
   zstr *z;
   if (lkp && (z = lookup (p, l))) {
-    warn << "cache hit, sz=" << l << "\n"; // debug
+    if (zdebug)
+      warn << "cache hit, sz=" << l << "\n"; // debug
     return *z;
   }
 
@@ -231,16 +235,18 @@ zbuf::compress (strbuf *p, int level)
   str s;
   u_int len;
 
-  // XXX -- debug code
-  vec<int> debugvec;
 
   // first time through the loop add the gzip header; see zinit ()
   // for what that header actually looks like
+  if (zdebug)
+    warn << "zbuf::compress: ";
+
   for (u_int i = 0; i < lim; i++) {
     str z = zs[i].compress (level);
     
     // XXX -- debug code
-    debugvec.push_back (zs[i].len ());
+    if (zdebug)
+      warnx << zs[i].len () << "," ;
 
     if (!z)
       goto compress_err;
@@ -252,6 +258,9 @@ zbuf::compress (strbuf *p, int level)
     crc = zs[i].crc32 (crc);
     ilen += zs[i].len ();
   }
+
+  if (zdebug)
+    warnx << "\n";
 
   //
   // Gzip File Trailer:
@@ -273,11 +282,6 @@ zbuf::compress (strbuf *p, int level)
   s = endbuf;
   (*p) << s << "\r\n0\r\n\r\n";
 
-  // XXX - debug code
-  for (u_int i = 0; i < debugvec.size (); i++) {
-    warnx << debugvec[i] << ",";
-  }
-  warnx << "\n";
 	  
   return;
 
@@ -313,6 +317,7 @@ void zinit (bool cache, int lev)
   zm.zalloc = (alloc_func)0;
   zm.zfree = (free_func)0;
   zm.opaque = (voidpf )0;
+  zdebug = getenv ("GZIP_DEBUG");
   int err = deflateInit2 (&zm, lev, Z_DEFLATED, -MAX_WBITS, 
 			  ok_gzip_mem_level, Z_DEFAULT_STRATEGY);
   if (err != Z_OK)
