@@ -166,7 +166,7 @@ private:
 class okwc_req_t {
 public:
   okwc_req_t (const str &h, u_int16_t p, const str &fn,
-	      okwc_cb_t cb, int timeout, cgi_t *ock);
+	      okwc_cb_t cb, int vers, int timeout, cgi_t *ock);
   ~okwc_req_t ();
 
   void launch ();
@@ -181,6 +181,7 @@ private:
   const u_int16_t port;
   const str filename;
   okwc_cb_t okwc_cb;
+  int vers;         // 0=>HTTP/1.0;  1=>HTTP/1.1
   int timeout;
   cgi_t *outcookie; // cookies client is sending to server
 
@@ -194,7 +195,8 @@ private:
 
 okwc_req_t *
 okwc_request (const str &h, u_int16_t port, const str &fn, 
-	      okwc_cb_t cb, int timeout = -1, cgi_t *outcook = NULL );
+	      okwc_cb_t cb, int vers = 0, int timeout = -1, 
+	      cgi_t *outcook = NULL );
 
 void
 okwc_cancel (okwc_req_t *req);

@@ -26,9 +26,9 @@
 
 okwc_req_t *
 okwc_request (const str &host, u_int16_t port, const str &fn,
-	      okwc_cb_t cb, int timeout, cgi_t *outcook)
+	      okwc_cb_t cb, int vrs, int timeout, cgi_t *outcook)
 {
-  okwc_req_t *req = New okwc_req_t (host, port, fn, cb, timeout, outcook);
+  okwc_req_t *req = New okwc_req_t (host, port, fn, cb, vrs, timeout, outcook);
   req->launch ();
   return req;
 }
@@ -40,9 +40,9 @@ okwc_cancel (okwc_req_t *req)
 }
 
 okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 
-			okwc_cb_t c, int to, cgi_t *ock)
+			okwc_cb_t c, int v, int to, cgi_t *ock)
   : hostname (h), port (p), filename (f),
-    okwc_cb (c), timeout (to), outcookie (ock),
+    okwc_cb (c), vers (v), timeout (to), outcookie (ock),
     tcpcon (NULL), fd (-1), http (NULL), timer (NULL) {}
 
 void
@@ -129,7 +129,12 @@ okwc_http_t::make_req ()
     filename = str (cp, len - (cp - fn)); 
   }
 
-  reqbuf << "GET " << filename << " HTTP/1.0" << HTTP_CRLF;
+  reqbuf << "GET " << filename << " HTTP/1." << vers << HTTP_CRLF;
+  if (vers == 1) {
+    reqbuf << "Connection: close" << HTTP_CRLF
+	   << "Server: " << hostname << CRLF
+	   << "Agent: okwc/" << VERSION << CRLF;
+  }
   if (outcook) {
     reqbuf << "Cookie: ";
     outcook->encode (&reqbuf);
