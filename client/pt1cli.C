@@ -370,14 +370,35 @@ hclient_t::sched_read ()
   fdcb (fd, selread, wrap (this, &hclient_t::canread));
 }
 
+// output all measurements in pretty cryptic formats.  we detail those
+// formats inline.
 void
 do_exit (int c)
 {
   int total_tm = stop_timer (startt);
+
+  // output the command line parameters used for this experiment
+  // (the number of concurrent clients, the number of total requests,
+  // and the time it takes to run the whole experiment).  note that
+  // the total time can be misleading, since there might be timeouts
+  // (which default to 120 seconds if the server does not respond)
   warnx << nconcur << "," << nreq_fixed << "," << total_tm << "\n";
+
+  // first print out the latencies.  there is one line here for each
+  // request.  the value is the number of microseeconds it takes for the
+  // request to complete.
   u_int sz = latencies.size ();
   for (u_int i = 0; i < sz; i++) 
     warnx << latencies[i] << "\n";
+
+  // after we're done outputting the latencies, we output the throughputs
+  // measured throught the experiment.  we sample throughput once per
+  // second, and output the number of requests served in that second.
+  // the output is one pair (on a line) per sample.  
+  // the first part of the pair is the number of requests completed
+  // in the sample interval.
+  // the second part of the pair is the number of microsends in the 
+  // sample (since we'll never have a 1 second sample exactly).
   tpt_do_sample (true);
   sz = tpt_samples.size ();
   for (u_int i = 0; i < sz; i++)
