@@ -224,6 +224,7 @@ void
 oksrvc_t::ctldispatch (svccb *v)
 {
   if (!v) {
+    warn << "oksrvc_t::ctldispatch: NULL RPC received (shutdown)\n";
     shutdown ();
     return;
   }
