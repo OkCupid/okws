@@ -183,8 +183,9 @@ Security
 
 OKD v0.2
 --------
- - debug running as root.
- - debug okmgr; fix annoying things now once and for all.
+ X debug running as root.
+ X debug okmgr; fix annoying things now once and for all.
+ - tweak okmgr -- get "all" feature to work
  X new shutdown sequence.  okld closes connection to okd, but does not
    shutdown.  rather, it waits for a childcb from okd, and then kills
    the logger.
@@ -209,8 +210,10 @@ OKD v0.2
  - jail directory problems for oklogd -- use jailable_t -- also, need
    to copy over /etc/resolv.conf -- is this secure?
  - dynamic library copying and build directory setup....
- - build okws and services with dynamically-linked-libraries.
- - coredump rotation system from okld -- that way many coredumps can
+ - build okws and services with dynamically-linked-libraries /
+   fix automake/autoconf system so that it can install properly
+   into a prefix'ed sandbox.
+ X coredump rotation system from okld -- that way many coredumps can
    be saved (or mabye just attach pid's...)
  - callback hooks for updating config files
  - testing when an RPC hangs, what the user sees.
@@ -228,7 +231,7 @@ OKD v0.2
    with a 4M socketsize? maybe it's a UDP restriction.
  - update sfslite
  - clean up recyling code.
- - merge michael's code...
+ X merge michael's code...
  X paper stuff - 0550 / gid / coredump situation
  - runtime prepare checks.
  - aut tok's
@@ -237,3 +240,4 @@ OKD v0.2
  - (display post-gzip size content)
  - config file recursive decent?
  - write / test with slow-drip client
+ - fix config 
