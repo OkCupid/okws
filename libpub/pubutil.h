@@ -33,10 +33,12 @@
 #include "qhash.h"
 
 
-#ifndef HAVE_SFS_SET_CLOCK
+#ifndef HAVE_SFS_CLOCK_T
+# ifndef HAVE_SFS_SET_CLOCK
 typedef enum { SFS_CLOCK_GETTIME = 0, 
 	       SFS_CLOCK_MMAP = 1, 
 	       SFS_CLOCK_TIMER = 2 } sfs_clock_t;
+# endif
 #endif
 
 str c_escape (const str &s, bool addq = true);

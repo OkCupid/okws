@@ -1614,6 +1614,12 @@ AC_SUBST(LDEPS)
 AC_SUBST(LDADD)
 ])
 
+dnl
+dnl SFS_SET_CLOCK
+dnl
+dnl  Check for function in sfs that allows different types of clocks
+dnl  to be set.
+dnl
 AC_DEFUN(SFS_SET_CLOCK,
 [AC_CACHE_CHECK(for sfs_set_clock, sfs_cv_set_clock,
 [
@@ -1627,5 +1633,35 @@ if test "$sfs_cv_set_clock" = "yes"
 then
 	AC_DEFINE(HAVE_SFS_SET_CLOCK, 1, Toggle SFS core clock)
 fi
+])
+
+dnl
+dnl AC_PROG_INSTALL_C
+dnl
+dnl  checks for install -C; uses it instead of install -c
+dnl
+AC_DEFUN(AC_PROG_INSTALL_C,
+[
+AC_PROG_INSTALL
+AC_CACHE_CHECK(for install -C, ac_cv_path_install_c,
+[
+echo $INSTALL | grep -e '/install -c' >/dev/null
+if [ test $? -eq 0 ]
+then
+   INSTALL_C=`echo $INSTALL | sed -e 's/install -c/install -C/' `
+   TMP1=`mktemp -t cfg-install`
+   TMP2=`mktemp -t cfg-install`
+   echo "foobar city" > $TMP1
+   $INSTALL_C $TMP1 $TMP2
+   diff $TMP1 $TMP2 > /dev/null 2>&1
+   if test $? -eq 0 
+   then
+	INSTALL=$INSTALL_C
+	AC_SUBST($INSTALL)
+   fi
+   rm -f $TMP1 $TMP2 > /dev/null 2>&1
+fi
+ac_cv_path_install_c=$INSTALL
+])
 ])
 
