@@ -24,7 +24,7 @@ public:
     : x (xx), abuf (New abuf_con_t (xx), true),
       timeout (to ? to : ok_clnt_timeout),
       buflen (HTTP_PARSE_BUFLEN), tocb (NULL), 
-      destroyed (New refcounted<http_parse_base_t> (false)) {}
+      destroyed (New refcounted<bool> (false)) {}
   virtual ~http_parser_base_t ();
 
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }

@@ -85,7 +85,7 @@ hclient_t::connected (int f)
 {
   fd = f;
   strbuf b (req);
-  int id = random() % 3000000;
+  int id = random() % 30000;
   b << id << " HTTP/1.0";
   b << "\r\n\r\n\r\n";
   if (fd < 0)
