@@ -49,13 +49,13 @@ dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
 
 cgimk(cgiscript1)
-cgimk(cgiscript2)
-cgimk(cgiscript3)
-cgimk(cgiscript4)
-cgimk(example)
-cgimk(t1, t1_prot.C)
-rpcmk(simple_prot)
-rpcmk(t1_prot)
+dnl cgimk(cgiscript2)
+dnl cgimk(cgiscript3)
+dnl cgimk(cgiscript4)
+dnl cgimk(example)
+dnl cgimk(t1, t1_prot.C)
+dnl rpcmk(simple_prot)
+dnl rpcmk(t1_prot)
 
 noinst_PROGRAMS = cgi_exes tst simple simpled t1d
 simpled_SOURCES = simple_prot.C simpled.C
