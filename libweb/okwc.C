@@ -9,6 +9,7 @@ okwc_request (const str &host, u_int16_t port, const str &fn,
 {
   okwc_req_t *req = New okwc_req_t (host, port, fn, cb, timeout, outcook);
   req->launch ();
+  return req;
 }
 
 void
