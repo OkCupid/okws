@@ -35,7 +35,7 @@ aarr_t *pswitch_env_t::env () const { return aarr; }
 void bound_pfile_t::explore (pub_exploremode_t m) const
 { if (file) file->explore (m); }
 str penv_t::loc (int l) const { return file->loc (); }
-str penv_t::filename () const { return file->bnd->filename (); }
+pfnm_t penv_t::filename () const { return file->bnd->filename (); }
 void bound_pfile_t::close () { file->close (); }
 output_std_t::output_std_t (zbuf *o, const pfile_t *t) :
   output_t (t ? t->type () : PFILE_TYPE_H), out (o), osink_open (false) {}
@@ -807,7 +807,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   }
 
   if (!err) {
-    if ((!ckey && def) || cases[ckey]) {
+    if ((!ckey && def) || (ckey && cases[ckey])) {
       PWARN("Doubly-defined case statement in switch");
       err = true;
     } else {
@@ -891,6 +891,8 @@ pfile_switch_t::explore (pub_exploremode_t mode) const
 {
   for (u_int i = 0; i < files.size (); i++)
     ::explore (mode, files[i]);
+  if (def)
+    ::explore (mode, def->filename ());
 }
 
 void

@@ -311,7 +311,7 @@ public:
   void eval_pop (const str &n);
   void set_evalmode (pub_evalmode_t m) { evm = m; }
   inline str loc (int l = -1) const;
-  inline str filename () const;
+  inline pfnm_t filename () const;
   bool output_info () const { return (opts & P_IINFO); }
 
   void push_file (bpfcp_t f);
@@ -442,7 +442,7 @@ struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
 
   str loc (int i = -1) const;
   phashp_t hash () const { return bnd->hash (); }
-  str filename () const { return bnd->filename (); }
+  pfnm_t filename () const { return bnd->filename (); }
   operator bool() const { return (bnd && file); }
   void output (output_t *o, penv_t *e, bpfcp_t kludge) const;
   void explore (pub_exploremode_t m) const; 
@@ -963,7 +963,7 @@ public:
   pswitch_env_t (const xpub_switch_env_t &x);
   virtual ~pswitch_env_t () {}
   aarr_t *env () const;
-  str filename () { return fn; }
+  pfnm_t filename () { return fn; }
 
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "pswitch_env_t"; }
