@@ -203,8 +203,11 @@ oksrvc_t::init (int argc, char *argv[])
 bool
 ok_httpsrv_t::add_errdoc (int n, const str &f)
 {
+  // debug code
+  warn << "add errdoc1: " << n << "," << f << "\n";
   if (errdocs[n])
     return false;
+  warn << "add errdoc2: " << n << "," << f << "\n";
   errdocs.insert (New errdoc_t (n, f));
   add_pubfile (f);
   return true;
