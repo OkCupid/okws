@@ -235,10 +235,11 @@ public:
   okwc_token_status_t status;
 };
 
-class owkc_token_accepter_t {
+class okwc_token_accepter_t {
 public:
-
+  okwc_token_accepter_t (size_t tl) : toklim (tl) {}
 private:
+  size_t toklim;
 
 };
 

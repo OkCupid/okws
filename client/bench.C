@@ -45,13 +45,13 @@ main (int argc, char *argv[])
     b.foo ();
   }
   int t = stopt ();
-  cbi cb  = wrap (foobar);
+  callback<void, int *>::ref cb  = wrap (foobar);
   warn ("virtual function call: %d iter in %d usec\n", iter, t);
   int v = 0;
   startt ();
   for (int i = 0; i < iter; i++) {
     (*cb) (&v);
   }
-  int t = stopt ();
+  t = stopt ();
   warn ("callback call: %d iter in %d usec\n", iter, t);
 }
