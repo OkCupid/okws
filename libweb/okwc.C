@@ -1,11 +1,26 @@
 
 #include "okwc.h"
 #include "httpconst.h"
+#include "parseopt.h"
 
-okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, cgi_t *inc,
-			okwc_cb_t c, int to)
+okwc_req_t *
+okwc_request (const str &host, u_int16_t port, const str &fn,
+	      okwc_cb_t cb, int timeout, cgi_t *outcook)
+{
+  okwc_req_t *req = New okwc_req_t (host, port, fn, cb, timeout, outcook);
+  req->launch ();
+}
+
+void
+okwc_cancel (okwc_req_t *req)
+{
+  req->cancel (HTTP_CLIENT_EOF);
+}
+
+okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 
+			okwc_cb_t c, int to, cgi_t *ock)
   : hostname (h), port (p), filename (f),
-    incookie (inc), okwc_cb (c), timeout (to),
+    okwc_cb (c), timeout (to), outcookie (ock),
     tcpcon (NULL), fd (-1), http (NULL), timer (NULL) {}
 
 void
@@ -13,7 +28,8 @@ okwc_req_t::launch ()
 {
   tcpcon = tcpconnect (hostname, port, wrap (this, &okwc_req_t::tcpcon_cb));
   if (timeout > 0) 
-    timer = delaycb (timeout, 0, wrap (this, &okwc_req_t::timeout_cb));
+    timer = delaycb (timeout, 0, 
+		     wrap (this, &okwc_req_t::cancel, HTTP_TIMEOUT));
 }
 
 void
@@ -22,24 +38,25 @@ okwc_req_t::tcpcon_cb (int f)
   tcpcon = NULL;
 
   if (f < 0) {
-    finish (HTTP_CONNECTION_FAILED);
+    req_fail (HTTP_CONNECTION_FAILED);
     return;
   }
   fd = f;
   x = ahttpcon::alloc (fd);
-  http = New okwc_http_t (x, filename, wrap (this, &okwc_req_t::http_cb));
+  http = New okwc_http_t (x, filename, 
+			  wrap (this, &okwc_req_t::http_cb), outcookie);
   http->make_req ();
 }
 
 void
-okcw_req_t::http_cb (ptr<okwc_resp_t> res)
+okwc_req_t::http_cb (ptr<okwc_resp_t> res)
 {
   (*okwc_cb) (res);
   delete this;
 }
 
 void
-okwc_req_t::timeout_cb ()
+okwc_req_t::cancel (int status)
 {
   if (tcpcon) {
     tcpconnect_cancel (tcpcon);
@@ -48,12 +65,11 @@ okwc_req_t::timeout_cb ()
   } else {
     http->cancel ();
   }
-  finish (HTTP_TIMEOUT);
-
+  req_fail (status);
 }
 
 void
-okwc_req_t::finish (int status)
+okwc_req_t::req_fail (int status)
 {
   (*okwc_cb) (okwc_resp_t::alloc (status));
   delete this;
@@ -76,9 +92,9 @@ void
 okwc_http_t::make_req ()
 {
   reqbuf << "GET " << filename << " HTTP/1.0" << HTTP_CRLF;
-  if (cookie) {
+  if (outcook) {
     reqbuf << "Cookie: ";
-    cookie->encode (&reqbuf);
+    outcook->encode (&reqbuf);
     reqbuf << HTTP_CRLF;
   }
   reqbuf << HTTP_CRLF;
@@ -88,8 +104,7 @@ okwc_http_t::make_req ()
 void
 okwc_http_t::parse ()
 {
-  resp = okwc_resp_t::alloc (HTTP_OK);
-  hdr.parse (resp, wrap (this, &okwc_http_t::hdr_parsed));
+  hdr.parse (wrap (this, &okwc_http_t::hdr_parsed));
 }
 
 void
@@ -98,7 +113,7 @@ okwc_http_t::hdr_parsed (int status)
   if (status != HTTP_OK) {
     finish (status);
   } else {
-    body.dump (hdr.contlen, wrap (this, &okwc_http_t::body_parsed));
+    body.dump (hdr.get_contlen (), wrap (this, &okwc_http_t::body_parsed));
   }
 }
 
@@ -113,15 +128,15 @@ void
 okwc_http_t::finish (int status)
 {
   resp->status = status;
-  (*okwc_cb) (status);
+  (*okwc_cb) (resp);
 }
 
-okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, okwc_cb_t c)
+okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, 
+			  okwc_cb_t c, cgi_t *ock)
   : x (xx), filename (f), abuf (New abuf_con_t (xx), true),
-    resp (okwc_resp_t::alloc (abuf, OKWC_SCRATCH_SZ, scratch)),
-    hdr (&abuf, resp->cookies, OKWC_SCRATCH_SZ, scratch),
-    body (&abuf),
-    cb (c)
+    resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch)),
+    hdr (&abuf, &resp->cookies, OKWC_SCRATCH_SZ, scratch),
+    body (&abuf), outcook (ock), okwc_cb (c)
 {}
 
 void
@@ -155,7 +170,7 @@ okwc_http_hdr_t::parse_guts ()
       {
 	str status_str;
 	r = delimit_word (&status_str);
-	if (r == ABUF_OK && !convert_int (status_str, &status))
+	if (r == ABUF_OK && !convertint (status_str, &status))
 	  r = ABUF_PARSE_ERR;
 	break;
       }
@@ -184,9 +199,9 @@ okwc_http_hdr_t::parse_guts ()
     case OKWC_HDR_VALUE:
       if (is_set_cookie ()) {
 	noins = true;
-	cgi_t *cookie = ck->push_back_new ();
+	cgi_t *ck = cookie->push_back_new ();
 	ret_state = OKWC_HDR_EOL2A;
-	cookie->parse (wrap (this, &okwc_http_hdr_t::ext_parse_cb));
+	ck->parse (wrap (this, &okwc_http_hdr_t::ext_parse_cb));
 	return;
       } 
       r = delimit_val (&val);
@@ -229,3 +244,5 @@ okwc_http_hdr_t::fixup ()
   if (!lookup ("content-length", &contlen))
     contlen = -1;
 }
+
+

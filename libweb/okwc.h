@@ -6,13 +6,14 @@
 #define _LIBWEB_OKWC_H
 
 #include "cgi.h"
-#include "abug.h"
+#include "abuf.h"
 #include "aparse.h"
 #include "hdr.h"
 #include "str.h"
 #include "web_prot.h"
 #include "async.h"
 #include <time.h>
+#include "httpconst.h"
 
 //
 // okwc = OK Web Client
@@ -21,6 +22,7 @@
 class okwc_cookie_set_t : public vec<cgi_t *> 
 {
 public:
+  okwc_cookie_set_t () : abuf (NULL), bflen (0), buf (NULL) {}
   okwc_cookie_set_t (abuf_t *a, size_t l, char *b)
     : abuf (a), bflen (l), buf (b) {}
 
@@ -35,18 +37,22 @@ public:
 
 private:
   abuf_t *abuf;
-  size_t buflen;
+  size_t bflen;
   char *buf;
 };
 
 
 struct okwc_resp_t {
   okwc_resp_t (abuf_t *a, size_t bfln, char *b) 
-    : status (HTTP_OK),
-      cookies (abuf, buflen, b) {}
+    : status (HTTP_OK), cookies (a, bfln, b) {}
 
-  static ptr<okwd_resp_t> alloc (abuf_t *a, size_t bfln, char *b)
+  okwc_resp_t (int s) : status (s) {}
+
+  static ptr<okwc_resp_t> alloc (abuf_t *a, size_t bfln, char *b)
   { return New refcounted<okwc_resp_t> (a, bfln, b); }
+
+  static ptr<okwc_resp_t> alloc (int s) 
+  { return New refcounted<okwc_resp_t> (s); }
 
   str body;
   int status;
@@ -70,12 +76,14 @@ public:
 		 OKWC_HDR_SPC3 = 8,
 		 OKWC_HDR_VALUE = 9,
 		 OKWC_HDR_EOL2A = 10,
-		 OWKC_HDR_EOL2B = 11 } state_t;
+		 OKWC_HDR_EOL2B = 11 } state_t;
   
   okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, size_t bflen, char *b)
     : async_parser_t (a), http_hdr_t (a, bflen, b),
       cookie (ck), state (OKWC_HDR_START), status (HTTP_BAD_REQUEST),
       noins (false) {}
+
+  int get_contlen () const { return contlen; }
 
 protected:
   void parse_guts ();
@@ -85,7 +93,7 @@ protected:
   void ext_parse_cb (int status);
 
 private:
-  okwc_cookie_set_t *ck;
+  okwc_cookie_set_t *cookie;
   state_t state, ret_state;
   int contlen;
   str vers, status_desc;
@@ -101,16 +109,17 @@ private:
 //
 class okwc_http_t {
 public:
-  okwc_http_t (ptr<ahttpcon> xx, const str &f, okwc_cb_t c);
+  okwc_http_t (ptr<ahttpcon> xx, const str &f, okwc_cb_t c,
+	       cgi_t *ock);
 
   void make_req ();
+  void cancel ();
 
 protected:
   void parse ();
   void hdr_parsed (int status);
   void body_parsed (str bod);
   void finish (int status);
-  void cancel ();
 
 private:
   ptr<ahttpcon> x;
@@ -121,29 +130,32 @@ private:
   ptr<okwc_resp_t> resp;
   okwc_http_hdr_t hdr;
   async_dumper_t body;
+  cgi_t *outcook; // cookie sending out to the server
 
   okwc_cb_t okwc_cb;
+  strbuf reqbuf;
 };
 
 class okwc_req_t {
 public:
-  okwc_req_t (const str &h, u_int16_t p, const str &fn, cgi_t *incook,
-	      okwc_cb_t cb, int timeout);
+  okwc_req_t (const str &h, u_int16_t p, const str &fn,
+	      okwc_cb_t cb, int timeout, cgi_t *ock);
   ~okwc_req_t ();
 
   void launch ();
+  void cancel (int status);
 
 private:
   void tcpcon_cb (int fd);
-  void timeout_cb ();
-  void finish ();
+  void req_fail (int status);
+  void http_cb (ptr<okwc_resp_t> res);
 
   const str hostname;
   const u_int16_t port;
   const str filename;
-  cgi_t *incookie;
   okwc_cb_t okwc_cb;
   int timeout;
+  cgi_t *outcookie; // cookies client is sending to server
 
   tcpconnect_t *tcpcon;
 
@@ -154,8 +166,9 @@ private:
 };
 
 okwc_req_t *
-okwc_request (const str &h, int port, const str &fn, cgi_t *incook,
-	      okwc_cb_t cb, int timeout);
+okwc_request (const str &h, int port, const str &fn, 
+	      okwc_cb_t cb, int timeout = -1, cgi_t *outcook = NULL );
+
 void
 okwc_cancel (okwc_req_t *req);
 		
