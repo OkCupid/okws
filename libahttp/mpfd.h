@@ -84,8 +84,8 @@ class cgi_mpfd_t : public cgi_t, public http_hdr_t {
 public:
   cgi_mpfd_t (abuf_t *a, u_int len, char *b)
     : async_parser_t (a),
-      cgi_t (a, false, len, buf),
-      http_hdr_t (a,len, buf),
+      cgi_t (a, false, len, b),
+      http_hdr_t (a, len, b),
       cdp (a, len, b),
       cdm ("content-disposition", true),
       cbm (NULL), buf (b), buflen (len), state (MPFD_START),
