@@ -1,7 +1,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-bin_PROGRAMS = okld okmgr
+okwsbin_PROGRAMS = okld okmgr
 okwsexec_PROGRAMS =  okd
 okd_SOURCES = okd.C mgrsrv.C child.C shutdown.C
 okmgr_SOURCES = okmgr.C

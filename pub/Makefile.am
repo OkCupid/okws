@@ -1,7 +1,7 @@
 
 $(PROGRAMS): $(LDEPS_PUB)
 
-bin_PROGRAMS = pub 
+okwsbin_PROGRAMS = pub 
 okwsexec_PROGRAMS = pubd
 pub_SOURCES = pubmain.C
 pub_LDADD = $(LDADD_PUB)

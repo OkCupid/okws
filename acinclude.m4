@@ -659,25 +659,31 @@ if test "$with_tag" != "no"; then
 fi
 case $with_mode in
 	"debug" )
-		sfs_build_tag=$with_mode
+		sfstag=$with_mode
 		okwstag=$with_mode
 		DEBUG=-g
+		CXXDEBUG=-g
 		;;
 	"optmz" )
 		DEBUG='-g -O2'
 		okwstag=$with_mode
+		;;
+	* )
+		AC_MSG_ERROR([Unrecognized build mode specified])
 		;;
 esac
 
 AC_ARG_WITH(sfstag,
 --with-sfstag=TAG	Specify an SFS build tag other than default)
 if test "{$with_sfstag+set}" = "set" ; then
-	sfs_build_tag=$with_sfstag
+	sfstag=$with_sfstag
 fi
-
 if test "${okwstag+set}" = "set" ; then
 	okwstagdir="/$okwstag"
 fi	
+if test "${sfstag+set}" = "set" ; then
+	sfstagdir="/$sfstag"
+fi
 AC_SUBST(okwstagdir)
 AC_SUBST(okwstag)
 ])
@@ -1442,9 +1448,8 @@ AC_DEFUN(SFS_SFS,
 --with-sfs[[=PATH]]         specify location of SFS libraries)
 if test "$with_sfs" = yes -o "$with_sfs" = ""; then
     for dir in "$prefix" /usr/local /usr; do
-	if test -f $dir/lib/sfs${sfs_build_tag}/libasync.la; then
+	if test -f $dir/lib/sfs${sfstagdir}/libasync.la; then
 	    with_sfs=$dir
-	    echo $with_sfs
 	    break
 	fi
     done
@@ -1480,9 +1485,9 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
     RPCC=${with_sfs}/rpcc/rpcc
 elif test -f ${with_sfs}/include/sfs/autoconf.h \
-	-a -f ${with_sfs}/lib/sfs${sfs_build_tag}/libasync.la; then
+	-a -f ${with_sfs}/lib/sfs${sfstagdir}/libasync.la; then
     sfsincludedir="${with_sfs}/include/sfs"
-    sfslibdir=${with_sfs}/lib/sfs${sfs_build_tag}
+    sfslibdir=${with_sfs}/lib/sfs${sfstagdir}
     if egrep '#define DMALLOC' ${sfsincludedir}/autoconf.h > /dev/null; then
 	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
     else
@@ -1496,7 +1501,8 @@ elif test -f ${with_sfs}/include/sfs/autoconf.h \
     dnl LIBSVC=${sfslibdir}/libsvc.la
     dnl LIBSFS=${with_sfs}/lib/libsfs.a
     MALLOCK=${sfslibdir}/mallock.o
-    RPCC=${with_sfs}/bin/rpcc
+    AC_PATH_PROG(RPCC, rpcc,
+ 		 "${with_sfs}/lib/sfs${sfstagdir}" "${with_sfs}/bin")
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi

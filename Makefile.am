@@ -51,12 +51,12 @@ install-data-local:
 	fi
 
 install-exec-local:
-	-src=$(DESTDIR)$(okwslibdir); dst=$(DESTDIR)$(pkglibdir); \
+	-src=$(DESTDIR)$(okwslibdirp); dst=$(DESTDIR)$(pkglibdir); \
 	rm -f $$dst; \
 	if test "`dirname $$src`" = "`dirname $$dst`"; then \
 		ln -s "`basename $$src`" $$dst; \
 	else \
-		ln -s $(okwslibdir) $$dst; \
+		ln -s $(okwslibdirp) $$dst; \
 	fi
 
 uninstall-local:
