@@ -1469,6 +1469,7 @@ else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi
 
+
 if test "$enable_static" = yes -a -z "${NOPAGING+set}"; then
     case "$host_os" in
 	openbsd*)
@@ -1685,5 +1686,11 @@ AC_SUBST(LDEPS)
 AC_SUBST(LDADD)
 AC_SUBST(LDADD_DB)
 AC_SUBST(LDEPS_DB)
+
+dnl
+dnl if not shared executables, then we'll need to compile
+dnl services statically (due to jailing...)
+dnl
+AM_CONDITIONAL(LDFLAGS_ALL_STATIC, test -z "$enable_shared" )
 ])
 
