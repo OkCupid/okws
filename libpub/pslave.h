@@ -60,16 +60,29 @@ int pub_server (pubserv_cb cb, const str &path);
 pslave_status_t pub_slave  (pubserv_cb cb, u_int port = 0, 
 			    pslave_status_t *s = NULL);
 
-class helper_t {
+class helper_base_t {
+public:
+  helper_base_t () {}
+  virtual ~helper_base_t () {}
+  virtual void connect (cbb::ptr c = NULL) = 0;
+  virtual void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
+		     time_t duration = 0) = 0;
+  virtual void call (u_int32_t procno, u_int id, const void *in, void *out, 
+		     aclnt_cb cb, time_t duration = 0) 
+  { call (procno, in, out, cb, duration); }
+  virtual str getname () const = 0;
+};
+
+class helper_t : public helper_base_t {
 public:
   helper_t (const rpc_program &rp, u_int o = 0) 
-    : rpcprog (rp), max_retries (hlpr_max_retries), rdelay (hlpr_retry_delay),
+    : helper_base_t (), rpcprog (rp), max_retries (hlpr_max_retries), 
+      rdelay (hlpr_retry_delay),
       max_qlen (hlpr_max_qlen), max_calls (hlpr_max_calls),
       retries (0), calls (0), status (HLP_STATUS_NONE), 
       opts (o), destroyed (New refcounted<bool> (false))
       {}
 
-  virtual str getname () const = 0;
   virtual ~helper_t ();
   virtual vec<str> *get_argv () { return NULL; }
   int getfd () const { return fd; }

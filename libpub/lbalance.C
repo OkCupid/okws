@@ -82,8 +82,8 @@ lblnc_tab_t::add (lblnc_node_t *n)
 static rxx host_and_port ("[^:]+(:\\d{1,6})?");
 
 lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
-		  int port) :
-  prog (rp) 
+		  int port) 
+  : helper_base_t (), name (nm), prog (rp), dcb (NULL)
 {
   u_int sz = (*pub)[nm].size ();
   if (sz <= 0) {
@@ -106,6 +106,12 @@ lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
   }
 }
 
+str
+lblnc_t::getname () const 
+{
+  return strbuf ("load balanced DB cluster: ") << name;
+}
+
 lblnc_node_t::lblnc_node_t (u_int i, const rpc_program &rp, 
 			    const str &hn, u_int p, lblnc_t *l, 
 			    bool a, u_int o) 
@@ -114,12 +120,47 @@ lblnc_node_t::lblnc_node_t (u_int i, const rpc_program &rp,
   hlp.set_status_cb (wrap (l, &lblnc_t::status_change, id));
 }
 
-
 void
 lblnc_t::launch (cbv::ptr c)
 {
   first_ready_cb = c;
   tab.launch ();
+}
+
+void
+lblnc_t::connect (cbb::ptr c)
+{
+  connect_cb = c;
+  dcb = delaycb (ok_lblnc_launch_timeout, 0, 
+		 wrap (this, &lblnc_t::connect_cb_fail));
+  launch (wrap (this, &lblnc_t::connect_cb_success));
+}
+
+void
+lblnc_t::connect_cb_success ()
+{
+  if (dcb) {
+    timecb_remove (dcb);
+    dcb = NULL;
+  }
+  call_connect_cb (true);
+}
+
+void
+lblnc_t::call_connect_cb (bool arg)
+{
+  cbb::ptr c = connect_cb;
+  if (c) {
+    connect_cb = NULL;
+    (*c) (arg);
+  }
+}
+
+void
+lblnc_t::connect_cb_fail ()
+{
+  dcb = NULL;
+  call_connect_cb (false);
 }
 
 static void

@@ -229,10 +229,10 @@ OKD v0.2
  - update sfslite
  - clean up recyling code.
  - merge michael's code...
- - paper stuff - 0550 / gid / coredump situation
+ X paper stuff - 0550 / gid / coredump situation
  - runtime prepare checks.
  - aut tok's
- - DGRAM -> STREAM (on all RPC connections)
+ X DGRAM -> STREAM (on all RPC connections)
  - uid is hacked into logging system ; de-hack it
  - (display post-gzip size content)
  - config file recursive decent?

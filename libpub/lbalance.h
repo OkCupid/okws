@@ -50,11 +50,13 @@ private:
   ihash <u_int, lblnc_node_t, &lblnc_node_t::id, &lblnc_node_t::hlnk> tab;
 };
 
-class lblnc_t {
+class lblnc_t : public helper_base_t {
 public:
   lblnc_t (pub_t *pub, const str &i, const rpc_program &rp, int port = -1) ;
   virtual ~lblnc_t () {}
   void launch (cbv::ptr c);
+  void connect (cbb::ptr c);
+  str getname () const;
 
   // ask the load balancer to find the best-suited remote server
   void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
@@ -72,11 +74,17 @@ protected:
 private:
   void activate (u_int i);
   void deactivate (u_int i) { tab.deactivate (i); }
+  void connect_cb_success ();
+  void connect_cb_fail ();
+  void call_connect_cb (bool arg);
 
+  str name;
   const rpc_program prog;
   lblnc_tab_t tab;
 
   cbv::ptr first_ready_cb;
+  cbb::ptr connect_cb;
+  timecb_t *dcb;
 };
 
 #endif /* _LIBPUB_LBALANCE_H */

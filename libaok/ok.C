@@ -382,6 +382,14 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p)
   return d;
 }
 
+lblnc_t *
+oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
+{
+  lblnc_t *l = New lblnc_t (rpcli, i, p, port);
+  dbs.push_back (l);
+  return l;
+}
+
 void
 oksrvc_t::launch5 (clnt_stat err)
 {

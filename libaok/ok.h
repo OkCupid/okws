@@ -18,6 +18,7 @@
 #include "zstr.h"
 #include "ahparse.h"
 #include "pjail.h"
+#include "lbalance.h"
 
 typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH = 1,
@@ -201,6 +202,7 @@ public:
   template<typename T> parr_err_t cfg (const str &n, u_int i, T *p) const;
   void pubfiles (cbb cb);
   dbcon_t *add_db (const str &host, u_int port, const rpc_program &p);
+  lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
 
   pval_w_t operator[] (const str &s) const { return (*rpcli)[s]; }
 
@@ -233,7 +235,7 @@ protected:
   bool sdflag;
   pub_rclient_t *rpcli;
 
-  vec<dbcon_t *> dbs;
+  vec<helper_base_t *> dbs;
   bool dbstatus;
   u_int dbl;
   u_int lnum;
