@@ -38,9 +38,9 @@ sth_prepared_t::fetch2 (bool bnd)
   if (bnd && !bind_result ())
     return ADB_BIND_ERROR;
   if (mysql_fetch (sth) == MYSQL_NO_DATA) {
-	  err = strbuf("fetch error:  ") << mysql_stmt_error (sth);
-	  errno_n = mysql_stmt_errno (sth);
-	  return ADB_NOT_FOUND;
+    err = strbuf("fetch error:  ") << mysql_stmt_error (sth);
+    errno_n = mysql_stmt_errno (sth);
+    return ADB_NOT_FOUND;
   }
   assign ();
   return ADB_OK;

@@ -246,4 +246,6 @@ OKD v0.2
  - still have spurious dmalloc free problems on file uploads.  weird.
  - byacc breaks everything due to unitialized memory, and used of
    xmalloc for C++ objects.
--  pubb'ed error docs
+ - pubb'ed error docs
+ - boot up OkD with apache running on 80.  problems with "ErrorDocInit"
+ - cannot sth prepare after init...
