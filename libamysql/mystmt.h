@@ -80,7 +80,7 @@ protected:
   bool bind_result ();
   MYSQL_STMT *sth;
   MYSQL_BIND *bnds;
-  const str q;
+  const str qry;
 };
 #endif
 
