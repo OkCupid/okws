@@ -1,4 +1,6 @@
 
+/* $Id */
+
 enum sex_t {
   NOSEX = 0,
   MALE = 1,

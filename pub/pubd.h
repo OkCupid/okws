@@ -4,7 +4,7 @@
 
 /*
  *
- * Copyright (C) 2003 Max Krohn (max@scs.cs.nyu.edu)
+ * Copyright (C) 2003 Max
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
