@@ -286,7 +286,7 @@ okld_ch_t::resurrect ()
   if (timevals.size () > ok_crashes_max) {
     state = OKC_STATE_HOSED;
   } else {
-    if (!fix_exec (true)) {
+    if (okld->will_jail () && !fix_exec (true)) {
       CH_WARN ("failed to fix permissions on executable during relaunch");
       state = OKC_STATE_HOSED;
     } else {

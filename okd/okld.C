@@ -395,8 +395,7 @@ main (int argc, char *argv[])
     cf = sfsconst_etcfile_required ("okd_config");
 
   if (opt_daemon) {
-//    syslog_priority = ok_syslog_priority;
-    syslog_priority = "local3.info";
+    syslog_priority = ok_syslog_priority;
     daemonize ();
   }
 
