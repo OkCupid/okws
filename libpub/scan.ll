@@ -243,7 +243,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 "/>"		|
 \>		{ yy_pop_state (); yylval.str = yytext; return T_ETAG; }
 
-{WSN}+		/* discard */;
+{WS}+		/* discard */;
 {HNAM}		{ yylval.str = yytext; return T_HNAM; }
 {HVAL}		{ yylval.str = yytext; return T_HVAL; }
 =		{ return (yytext[0]); }
