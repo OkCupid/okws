@@ -78,7 +78,7 @@ void
 okch_t::start_chld ()
 {
   if (state == OKC_STATE_LAUNCH_SEQ_2 && x) {
-    state == OKC_STATE_SERVE;
+    state = OKC_STATE_SERVE;
     while (conqueue.size ())
       x->clone (conqueue.pop_front ());
   }
