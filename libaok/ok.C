@@ -157,9 +157,11 @@ ok_httpsrv_t::init_sfs_clock (const str &f)
 
 oksrvc_t::~oksrvc_t ()
 {
-  okclnt_t *h;
-  while ((h = clients.first))
-    delete clients.remove (h);
+  okclnt_t *n, *p;
+  for (p = clients.first; p; p = n) {
+    n = clients.next (p);
+    delete p;
+  }
 }
 
 void
