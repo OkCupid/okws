@@ -382,7 +382,8 @@ okd_t::parseconfig ()
 
     .ignore ("ServiceFDHighWat")
     .ignore ("ServiceFDLowWat")
-    .ignore ("ServiceAcceptMessages");
+    .ignore ("ServiceAcceptMessages")
+    .ignore ("DangerousZbufs");
 
 
   while (pa.getline (&av, &line)) {

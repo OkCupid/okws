@@ -102,6 +102,7 @@ bool ok_send_sin = true;            // send sin's over FD chan?
 bool okd_child_sel_disable = false; // disable read sel on child
 u_int okd_debug_msg_freq = 0;       // disable okd debug messages
 int64_t okws_debug_flags = 0;       // no debug on at first
+bool ok_dangerous_zbufs = false;    // only for experts if true.
 
 //
 // okld constants

@@ -137,6 +137,7 @@ extern bool okd_child_sel_disable;             // disable child selects
 extern const char *okws_server_label;          // advertised server label
 extern u_int okd_debug_msg_freq;               // =0 for no debug messages
 extern int64_t okws_debug_flags;               // OKWS debug flags
+extern bool ok_dangerous_zbufs;                // zbufs that don't hold str's.
 
 //
 // okld constants

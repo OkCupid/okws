@@ -358,6 +358,7 @@ okld_t::parseconfig (const str &cf)
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockDaemon", &mmcd)
     .add ("MmapClockFile", &mmc_file)
+    .add ("DangerousZbufs", &ok_dangerous_zbufs)
 
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
 
@@ -502,6 +503,7 @@ okld_t::encode_env ()
     .insert ("fdlw", ok_svc_fds_low_wat)
     .insert ("fdhw", ok_svc_fds_high_wat)
     .insert ("acmsg", ok_svc_accept_msgs)
+    .insert ("dz", ok_dangerous_zbufs ? 1 : 0)
     .insert ("clock", int (clock_mode));
 
   if (mmc_file)

@@ -199,6 +199,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("fdlw", &ok_svc_fds_low_wat);
     t->lookup ("fdhw", &ok_svc_fds_high_wat);
     t->lookup ("mmcf", &mmc_file);
+    t->lookup ("dz", &ok_dangerous_zbufs);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");

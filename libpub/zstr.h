@@ -170,6 +170,7 @@ private:
   inline void strbuf_add (const str &s, bool cp);
 
   vec<zstr> zs;
+  vec<str> hold_strings; // eliminate programmer bugs unless dangerous is set!
   strbuf f;
   strbuf out;
   mstr endbuf;
@@ -310,7 +311,11 @@ void
 zbuf::strbuf_add (const str &s, bool cp)
 {
   if (cp) copy_small_str (s);
-  else f << s;
+  else {
+    f << s;
+    if (!ok_dangerous_zbufs)
+      hold_strings.push_back (s);
+  }
 }
 
 zbuf &
