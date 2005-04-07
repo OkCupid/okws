@@ -581,7 +581,7 @@ protected:
 class pval_zbuf_t : public pval_t {
 public:
   // note no to_xdr function
-  // pval_zbuf_t (ptr<zbuf> *z) : pval_t (), zb (z), zb_rcp (z) {}
+  pval_zbuf_t (ptr<zbuf> z) : pval_t (), zb (z), zb_hold (z) {}
   pval_zbuf_t (zbuf *z) : pval_t (), zb (z) {}
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "p_zbuf_val_t"; }
@@ -589,7 +589,7 @@ public:
   str eval_simple () const { return zb->output (); }
 private:
   zbuf *zb;
-  //ptr<zbuf> zb_zcp;
+  ptr<zbuf> zb_hold;
 };
 
 class pfile_sec_t : public pfile_el_t {
