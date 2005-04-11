@@ -15,5 +15,9 @@ example1: example1.C
 	$(CXX) -g -I$(PYINC) $(SFSINC) -c example1.C
 	$(CXX) -shared example1.o $(SLIBS) -o example1.so
 
+example3: example3.x
+	rpcc -c -o example3.C example3.x
+	rpcc -h -o example3.h example3.x
+
 clean:	
 	rm -f *.o *.pyc *.so *.core *_wrap.cxx
