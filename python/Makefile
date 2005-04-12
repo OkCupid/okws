@@ -18,6 +18,7 @@ example1: example1.C
 example3: example3.x
 	rpcc -c -o example3.C example3.x
 	rpcc -h -o example3.h example3.x
+	rpcc -python -o example3.py example3.x
 
 clean:	
 	rm -f *.o *.pyc *.so *.core *_wrap.cxx
