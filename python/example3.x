@@ -24,3 +24,14 @@ union baz_t switch (baz_typ_t typ)
 	default:
 		void;
 };
+
+program FOO_PROG {
+	version FOO_VERS {
+
+		void	
+		FOO_NULL (void) = 0;
+
+		foo_t	
+		FOO_FUNC (baz_t) = 1;
+	} = 1;
+} = 2999;

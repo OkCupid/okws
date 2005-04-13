@@ -20,5 +20,18 @@ example3: example3.x
 	rpcc -h -o example3.h example3.x
 	rpcc -python -o example3.py example3.x
 
+noddy3.so:	noddy3.o
+	gcc -shared -o noddy3.so noddy3.o
+noddy3.o:	noddy3.c
+	gcc -c -g -I$(PYINC) -o noddy3.o noddy3.c
+
+noddy2.so:	noddy2.o
+	gcc -shared -o noddy2.so noddy2.o
+noddy2.o:	noddy2.c
+	gcc -c -g -I$(PYINC) -o noddy2.o noddy2.c
+
+example5:	example5.x
+	/disk/rael/max/d33/sfs/rpcc/rpcc -q -o example5.C example5.x
+
 clean:	
 	rm -f *.o *.pyc *.so *.core *_wrap.cxx
