@@ -11,7 +11,7 @@ program FOO_PROG {
 		void
 		FOO_NULL(void) = 0;
 	
-		int
+		unsigned
 		FOO_FUNC (foo_t) = 1;
 	} = 1;
 } = 100;

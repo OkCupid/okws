@@ -5,6 +5,8 @@ SFSINC=		-I/usr/local/include/sfslite/dbg33 -I/usr/local/include
 SLIBS = 	-L/usr/local/lib/sfslite/dbg33 -lasync \
 		-Xlinker -rpath /usr/local/lib/sfslite/dbg33
 
+RPCC =	/disk/rael/max/d33/sfs/rpcc/rpcc
+
 example0: example0.i example0.C
 	swig -c++ -python example0.i
 	$(CXX) -g -I$(PYINC) -c example0.C
@@ -30,8 +32,14 @@ noddy2.so:	noddy2.o
 noddy2.o:	noddy2.c
 	gcc -c -g -I$(PYINC) -o noddy2.o noddy2.c
 
-example5:	example5.x
-	/disk/rael/max/d33/sfs/rpcc/rpcc -q -o example5.C example5.x
+example5.C:	example5.x $(RPCC)
+	$(RPCC) -q -o example5.C example5.x
+
+example5.so:	example5.C py_rpctypes.C
+	$(CXX) -g -I$(PYINC) $(SFSINC) -c example5.C
+	$(CXX) -g -I$(PYINC) $(SFSINC) -c py_rpctypes.C
+	$(CXX) -shared example5.o py_rpctypes.o $(SLIBS) -o example5.so
+
 
 clean:	
 	rm -f *.o *.pyc *.so *.core *_wrap.cxx
