@@ -5,6 +5,7 @@
 
 #include <Python.h>
 #include "structmember.h"
+#include "arpc.h"
 
 class py_rpc_base_t {
 public:
@@ -48,11 +49,11 @@ class py_rpc_str : public py_rpc_base_t
 public:
   virtual ~py_rpc_str () {}
 
-  char *get (size_t *sz)
+  char *get (size_t *sz) const
   {
     char *ret;
     int i;
-    if ( PyString_AsStringAndSize (_obj, &ret, &i) <= 0) {
+    if ( PyString_AsStringAndSize (_obj, &ret, &i) < 0) {
       return NULL;
     }
     *sz = i;
@@ -62,6 +63,11 @@ public:
       *sz = max;
     }
     return ret;
+  }
+
+  const char * get () const 
+  {
+    return PyString_AsString (_obj);
   }
 
   bool set (char *buf, size_t len)
@@ -81,16 +87,13 @@ class py_u_int32_t : public py_rpc_base_t
 public:
   virtual ~py_u_int32_t () {}
   // XXX not sure about signed issues yet
-  u_int32_t get () { return (PyInt_AsLong (_obj)); }
+  u_int32_t get () const { return (PyInt_AsLong (_obj)); }
   bool set (u_int32_t i) {
     Py_XDECREF (_obj);
     return (_obj = PyInt_FromLong (i));
   }
 };
-
 bool rpc_traverse (XDR *xdrs, py_u_int32_t &obj);
-void *py_u_int32_t_alloc ();
-bool xdr_py_u_int32_t (XDR *xdrs, void *objp);
 
 template<size_t n> inline void *
 py_rpc_str_alloc ()
@@ -130,5 +133,48 @@ xdr_py_rpc_str (XDR *xdrs, void *objp)
 {
   return rpc_traverse (xdrs, *static_cast<py_rpc_str<n> *> (objp));
 }
+
+#define PY_RPC_TYPE2STR_DECL(T)			\
+template<> struct rpc_type2str<py_##T> {	\
+  static const char *type () { return #T; }	\
+};
+
+#if 0
+template<size_t n> struct rpc_namedecl<py_rpc_str_<n> > {
+  static str decl (const char *name) {
+    return rpc_namedecl<rpc_str<n> >::decl (name);
+  }
+};
+#endif 
+
+template<size_t n> const strbuf &
+rpc_print (const strbuf &sb, const py_rpc_str<n> &pyobj,
+	   int recdepth = RPC_INFINITY,
+	   const char *name = NULL, const char *prefix = NULL)
+{
+  const char *obj = pyobj.get ();
+  if (prefix)
+    sb << prefix;
+  if (name)
+    sb << rpc_namedecl<rpc_str<n> >::decl (name) << " = ";
+  if (obj)
+    sb << "\"" << obj << "\"";	// XXX should map " to \" in string
+  else
+    sb << "NULL";
+  if (prefix)
+    sb << ";\n";
+  return sb;
+}
+
+#define DECLXDR(type)				\
+extern BOOL xdr_##type (XDR *, void *);		\
+extern void *type##_alloc ();
+
+DECLXDR(py_u_int32_t)
+PY_RPC_TYPE2STR_DECL (u_int32_t)
+RPC_PRINT_TYPE_DECL (py_u_int32_t)
+RPC_PRINT_DECL (py_u_int32_t)
+
+
 
 #endif
