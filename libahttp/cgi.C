@@ -92,12 +92,14 @@ cgi_decode (const str &in)
   return (c.parse_key_or_val (&s, CGI_NONE) == ABUF_EOF ? s : (str )NULL);
 }
 
+#define MAX_EXPAND_FACTOR 3
+
 size_t
 cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
 {
   bool freeit = false;
   size_t inlen = in.len ();
-  size_t needlen = inlen * 3;
+  size_t needlen = inlen * MAX_EXPAND_FACTOR;
 
   // XXX: some check here?
   if (inlen > needlen) {
@@ -110,6 +112,7 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
   const char *inp = in.cstr ();
   const char *ep = inp + in.len ();
   int inc;
+  int chars_out;
   for ( ; inp < ep; inp++) {
     
     // use unsigned characters to not output crap on 
@@ -128,7 +131,12 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
       else if (inc == ' ')
 	*op++ = '+';
       else {
-	op += sprintf (op, "%%%02x", inc);
+	chars_out = sprintf (op, "%%%02x", inc);
+	if (chars_out > MAX_EXPAND_FACTOR) {
+	  warn << "Printing %-style CGI-escape sequence took "
+	       << "too many characters! (" << chars_out << ")\n";
+	} else
+	  op += chars_out;
       }
     } else {
       if (inc == ';') 
