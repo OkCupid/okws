@@ -1,7 +1,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2
+noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2 enctst
 
 okwsbin_PROGRAMS = okdbg
 
@@ -23,6 +23,8 @@ mygz_SOURCES = mygz.C
 tmr_SOURCES = tmr.C
 
 bench_SOURCES = bench.C
+
+enctst_SOURCES = enctst.C
 
 mygz2_SOURCES = mygz2.C
 #mygz2_LDADD = $(LIBASYNC)
