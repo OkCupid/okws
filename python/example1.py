@@ -15,7 +15,7 @@ def print_j ():
 def foo (i):
     print time.ctime (time.time ())
     print "i: ", i
-    example1.delaycb (1, lambda : foo (i+1))
+    example1.delaycb (1, 0, lambda : foo (i+1))
 
 
 import example1;

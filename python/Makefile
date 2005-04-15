@@ -1,9 +1,12 @@
 
-CXX =		g++
-#CXX =		/usr/local/gcc33/bin/g++
-PRFX =		/usr
-SFSTAG =	shdbg
-RPCC =		/disk/max/d/sfslite/rpcc/rpcc
+#CXX =		g++
+CXX =		/usr/local/gcc33/bin/g++
+#PRFX =		/usr
+PRFX =		/usr/local
+#SFSTAG =	shdbg
+SFSTAG	=	dbg33
+#RPCC =		/disk/max/d/sfslite/rpcc/rpcc
+RPCC =		/disk/rael/max/d33/sfs/rpcc/rpcc
 
 
 PYINC =		-I$(PRFX)/include/python2.3

@@ -111,7 +111,17 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
   const char *ep = inp + in.len ();
   int inc;
   for ( ; inp < ep; inp++) {
-    inc = *inp;
+    
+    // use unsigned characters to not output crap on 
+    // international characters
+    inc = (unsigned char)*inp; 
+
+    // should probably do something more severe.
+    if (inc < 0) {
+      warn << "Unexpected character < 0: " << inc << "\n";
+      continue;
+    }
+
     if (e) {
       if (inc >= '0' && inc <= 'z' && REGCHARTAB[inc - '0']) 
 	*op++ = inc;

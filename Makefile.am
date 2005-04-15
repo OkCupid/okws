@@ -8,7 +8,7 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1) $(SBD2) okd logd client samples 
+SUBDIRS = $(SBD1) $(SBD2) okd logd client samples python
 
 #test
 

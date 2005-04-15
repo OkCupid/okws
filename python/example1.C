@@ -31,11 +31,12 @@ static PyObject *
 Example_delaycb (PyObject *self, PyObject *args)
 {
   PyObject *handler;
-  int d;
-  PyArg_Parse (args, "(iO)", &d, &handler);
+  int s, us;
+  if (!PyArg_Parse (args, "(iiO)", &s, &us, &handler))
+    return NULL;
   Py_XINCREF (handler);
-  printf ("delay CB with args: %d, %p, %p\n", d, self, handler);
-  delaycb  (d, 0, wrap (Example_delaycb_cb, handler));
+  printf ("delay CB with args: %d, %d,, %p, %p\n", s, us, self, handler);
+  delaycb  (s, us, wrap (Example_delaycb_cb, handler));
   Py_INCREF (Py_None);
   return Py_None;
 }
