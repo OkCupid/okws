@@ -125,7 +125,7 @@ mtdispatch_t::dispatch (svccb *b)
 	(s < ok_amt_report_q_freq || (s % (s/ok_amt_report_q_freq) == 0)))
       warnx << ": " << which_procs ();
     warnx << "\n";
-    queue.push_back (b);
+    enqueue (b);
   }
 }
 
@@ -252,8 +252,18 @@ void
 mtdispatch_t::chld_ready (int i)
 {
   readyq.push_back (i);
-  while (queue.size () && readyq.size ()) 
-    send_svccb (queue.pop_front ());
+  queue_el_t el;
+  while (queue.size () && readyq.size ()) {
+    el = queue.pop_front ();
+    int diff = timenow - el.timein;
+    if (diff > int (ok_amt_q_timeout)) {
+      warn << "Timeout for object in queue (wait time=" 
+	   << diff << "s)\n";
+      el.sbp->reject (PROC_UNAVAIL);
+    } else {
+      send_svccb (el.sbp);
+    }
+  }
 }
 
 void 

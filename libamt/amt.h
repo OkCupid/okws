@@ -164,6 +164,13 @@ struct mtd_shmem_t {
   mtd_shmem_cell_t *arr;
 };
 
+struct queue_el_t {
+  queue_el_t () {}
+  queue_el_t (svccb *s, time_t t) : sbp (s), timein (t) {}
+  svccb *sbp;
+  time_t timein;
+};
+
 class ssrv_client_t;
 class mtdispatch_t { // Multi-Thread Dispatch
 public:
@@ -183,6 +190,11 @@ public:
     for (u_int i = 0; i < num; i++) {
       (*cb) (dynamic_cast<T *> (shmem->arr[i].thr));
     }
+  }
+
+  void enqueue (svccb *b) 
+  {
+    queue.push_back (queue_el_t (b, timenow));
   }
   
 protected:
@@ -204,7 +216,7 @@ protected:
   int nalive;              // number of children alive
   bool sdflag;             // shutdown flag
   
-  vec<svccb *> queue;      // queue of waiting connections
+  vec<queue_el_t> queue;      // queue of waiting connections
   vec<int> readyq;         // ready threads
   ssrv_t *ssrv;            // synchronous server pointer
 
