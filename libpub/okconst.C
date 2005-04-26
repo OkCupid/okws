@@ -165,6 +165,7 @@ u_int ok_ldavg_ping_interval = 2;    // load avg ping interval in secs
 u_int ok_lblnc_launch_timeout = 15;  // wait before timeout in secs
 u_int ok_amt_report_q_freq = 0;      // disable reporting by default
 u_int ok_amt_q_timeout = 60;         // timeout RPCs longer than 1 minute
+u_int ok_amt_stat_freq = 60;         // statistics frequency
 
 //
 // OK Service UID limits

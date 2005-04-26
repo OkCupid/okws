@@ -178,6 +178,7 @@ extern u_int ok_ldavg_ping_interval;            // how often to qry for loadavg
 extern u_int ok_lblnc_launch_timeout;           // launch timeout
 extern u_int ok_amt_report_q_freq;              // report q frequency
 extern u_int ok_amt_q_timeout;                  // timeout RPCs sitting in Q
+extern u_int ok_amt_stat_freq;                  // statistics sampling freq
 
 //
 // Service UID Ranges

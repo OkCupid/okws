@@ -94,6 +94,35 @@ typedef enum { MTD_RPC_NULL = 0,
 	       MTD_RPC_DATA = 1,
 	       MTD_RPC_REJECT = 2 } mtd_rpc_t;
 
+
+struct epoch_t {
+  epoch_t () : len_msec (0) {}
+  int in;
+  int out;
+  int rejects;
+  int queued;
+  int async_serv;
+  int len_msec;
+};
+
+struct mtd_stats_t {
+  mtd_stats_t () : start_sample (tsnow) {}
+
+  inline void in () { sample.in ++ ; total.in ++; }
+  inline void out () { sample.out ++ ; total.out ++; }
+  inline void rej () { sample.rejects ++ ; total.rejects ++; }
+  inline void q () { sample.queued ++ ; total.queued ++; }
+  inline void async_serv () { sample.async_serv ++; total.async_serv ++; }
+
+  epoch_t new_epoch ();
+  epoch_t get_total () { return total; }
+  void report ();
+
+  struct timespec start_sample;
+  epoch_t sample;
+  epoch_t total;
+};
+
 class ssrv_t;
 class mtd_thread_t { // Abstract class for Child threads
 public:
@@ -220,6 +249,8 @@ protected:
   vec<int> readyq;         // ready threads
   ssrv_t *ssrv;            // synchronous server pointer
 
+  mtd_stats_t  g_stats;    // global stats
+
   const txa_prog_t * const txa_prog; // for Thin XDR Authentication
 };
 
@@ -298,7 +329,12 @@ public:
   mgt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s, 
 		  const txa_prog_t *x) :
     mtdispatch_t (c, n, m, s, x), names (New str [n]), gts (New pth_t [n]) {}
-        ~mgt_dispatch_t () { warn << "in ~mgt_dispatch_t\n"; delete [] names; delete [] gts; }
+  ~mgt_dispatch_t () 
+  { 
+    warn << "in ~mgt_dispatch_t\n"; 
+    delete [] names; 
+    delete [] gts; 
+  }
   void init ();
   void launch (int i, int fdout);
 protected:

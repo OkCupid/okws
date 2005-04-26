@@ -115,18 +115,50 @@ ssrv_client_t::authorized (u_int32_t procno)
 void
 mtdispatch_t::dispatch (svccb *b)
 {
+  if (ok_amt_stat_freq > 0)
+    g_stats.report ();
+
+
+  // if shutting down or there is a queue overflow, then
+  // we need to reject the incoming request
   if (sdflag || queue.size () >= maxq) {
     warn << "XXX: rejecting / queue overflow\n"; // debug
+    g_stats.rej ();
     b->reject (PROC_UNAVAIL);
-  } else if (!async_serv (b) && (queue.size () > 0 || !send_svccb (b))) {
+  } 
+
+  // this request might be immediately answerable by the async
+  // wrapper class
+  else if (async_serv (b)) {
+    g_stats.async_serv ();
+  } 
+
+  // if there are elements in the queue, then this RPC needs
+  // to go in the queue, also.  if there are no free worker
+  // threads, then send_svccb will fail, and we need to 
+  // queue
+  else if (queue.size () > 0 || !send_svccb (b)) {
+    g_stats.q ();
     warn << "Queuing (" << queue.size () << ")";
     size_t s = queue.size ();
+
+    // this is a neat function to toggle reporting frequency
+    // of which threads are actually working.  for low queue sizes,
+    // it will say something every time.  for higher queue sizes,
+    // it will try to conserve CPU and not 
     if (ok_amt_report_q_freq > 0 &&
 	(s < ok_amt_report_q_freq || (s % (s/ok_amt_report_q_freq) == 0)))
       warnx << ": " << which_procs ();
     warnx << "\n";
     enqueue (b);
+  } 
+
+  // default case is that send_svccb returned true, and everything
+  // is happy
+  else {
+    g_stats.in ();
   }
+
 }
 
 static void
@@ -147,7 +179,7 @@ mtdispatch_t::which_procs ()
       u_int proc = shmem->arr[i].sbp->proc ();
       u_int *n;
       if ((n = h[proc])) (*n) ++;
-      else h.insert (proc, i);
+      else h.insert (proc, 0);
     }
   }
   strbuf b;
@@ -246,6 +278,7 @@ mtdispatch_t::chld_reply (int i)
   c->status = MTD_READY;
   c->rsp = NULL;
   chld_ready (i);
+  g_stats.out ();
 }
 
 void
@@ -623,6 +656,17 @@ tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff)
 }
 
 void
+mtd_stats_t::report ()
+{
+  if (ok_amt_stat_freq == 0 ||
+      !tsdiff (start_sample, tsnow, ok_amt_stat_freq))
+    return;
+  epoch_t e = new_epoch ();
+  warn ("STATS: i=%d;o=%d;r=%d;q=%d;a=%d;l=%d\n",
+	e.in, e.out, e.rejects, e.queued, e.async_serv, e.len_msec);
+}
+
+void
 ssrv_t::req_made ()
 {
   reqtimes.push_back (tsnow);
@@ -641,4 +685,19 @@ ssrv_t *
 mtd_thread_t::get_ssrv () const
 {
   return mtd->get_ssrv ();
+}
+
+epoch_t
+mtd_stats_t::new_epoch ()
+{
+  epoch_t e = sample;
+
+  e.len_msec = (tsnow.tv_sec - start_sample.tv_sec) * 1000
+    + (tsnow.tv_nsec - start_sample.tv_nsec) / 1000000;
+
+  start_sample = tsnow;
+  sample.in = 0;
+  sample.out = 0;
+
+  return e;
 }
