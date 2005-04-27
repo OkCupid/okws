@@ -351,6 +351,7 @@ mtdispatch_t::new_thread (mtd_thread_arg_t *a) const
 {
   warn << "New thread called: " << a->tid << "\n"; // debug
   mtd_thread_t *t = (*ntcb) (a);
+  arg->cell->thr = t;
   t->run (); 
   delete a;
   return t;
