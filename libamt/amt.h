@@ -227,6 +227,7 @@ public:
   }
 
   void set_max_q (u_int32_t q) { maxq = min<u_int> (q, MTD_MAXQ); }
+  u_int32_t get_max_q () const { return maxq; }
   
 protected:
   mtd_thread_arg_t *launch_init (int i, int fdout, int *closeit);
@@ -287,6 +288,7 @@ public:
   u_int get_load_avg () const { return load_avg; }
 
   void set_max_q (u_int32_t q) { mtd->set_max_q (q); }
+  u_int32_t get_max_q () const { return mtd->get_max_q (); }
 
   template<class T> void thread_apply (typename callback<void, T *>::ref cb)
   { mtd->thread_apply<T> (cb); }
