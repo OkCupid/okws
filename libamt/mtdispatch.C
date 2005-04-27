@@ -324,7 +324,7 @@ new_threadv (void *av)
 static void *
 vnew_threadv (void *av)
 {
-  warn << "vnew_threadv called.\n"; // debug
+  // warn << "vnew_threadv called.\n"; // debug
   new_threadv (av);
   return (NULL);
 }
@@ -332,7 +332,7 @@ vnew_threadv (void *av)
 static int
 inew_threadv (void *av)
 {
-  warn << "inew_threadv called.\n";  // debug
+  // warn << "inew_threadv called.\n";  // debug
   new_threadv (av);
   return 0;
 }
@@ -349,7 +349,7 @@ void foo ()
 mtd_thread_t *
 mtdispatch_t::new_thread (mtd_thread_arg_t *a) const
 {
-  warn << "New thread called: " << a->tid << "\n"; // debug
+  //  warn << "New thread called: " << a->tid << "\n"; // debug
   mtd_thread_t *t = (*ntcb) (a);
   arg->cell->thr = t;
   t->run (); 
@@ -488,7 +488,7 @@ mgt_dispatch_t::init ()
 void
 mgt_dispatch_t::launch (int i, int fdout)
 {
-  warn << "mgt_dispatch_t::launch: " << i << "\n"; // debug
+  // warn << "mgt_dispatch_t::launch: " << i << "\n"; // debug
   int closeit;
   mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
 
@@ -506,7 +506,7 @@ mgt_dispatch_t::launch (int i, int fdout)
 void
 mpt_dispatch_t::launch (int i, int fdout)
 {
-  warn << "mpt_dispatch_t::launch: " << i << "\n"; // debug
+  // warn << "mpt_dispatch_t::launch: " << i << "\n"; // debug
   int closeit;
   mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
 
@@ -522,7 +522,7 @@ mpt_dispatch_t::launch (int i, int fdout)
 void
 mkt_dispatch_t::launch (int i, int fdout)
 {
-  warn << "mkt_dispatch_t::launch: " << i << "\n"; // debug
+  // warn << "mkt_dispatch_t::launch: " << i << "\n"; // debug
 
   int closeit;
   mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
