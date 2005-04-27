@@ -225,6 +225,8 @@ public:
   {
     queue.push_back (queue_el_t (b, timenow));
   }
+
+  void set_max_q (u_int32_t q) { maxq = min<u_int> (q, MTD_MAXQ); }
   
 protected:
   mtd_thread_arg_t *launch_init (int i, int fdout, int *closeit);
@@ -283,6 +285,8 @@ public:
         virtual ~ssrv_t () { warn << "in ~ssrv_t()\n"; delete mtd; }
   void req_made (); // called for accounting purposes
   u_int get_load_avg () const { return load_avg; }
+
+  void set_max_q (u_int32_t q) { mtd->set_max_q (q); }
 
   template<class T> void thread_apply (typename callback<void, T *>::ref cb)
   { mtd->thread_apply<T> (cb); }
