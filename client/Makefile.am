@@ -1,8 +1,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2 ascli \
-	enctest
+noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2 enctest
 
 okwsbin_PROGRAMS = okdbg
 
