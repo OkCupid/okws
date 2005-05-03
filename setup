@@ -73,11 +73,46 @@ $M4 --version < /dev/null 2>&1 | grep GNU >/dev/null 2>&1 \
 if test "${LIBTOOLIZE+set}" != "set"; then
     LIBTOOLIZE=libtoolize
     if test ! -x /usr/local/bin/libtoolize \
-		-a ! -x /usr/bin/libtoolize \
-		-a -x /usr/bin/glibtoolize; then
-	LIBTOOLIZE=glibtoolize
+		-a ! -x /usr/bin/libtoolize; then
+        if test -x /usr/bin/glibtoolize; then
+	    LIBTOOLIZE=glibtoolize
+        elif test -x /usr/local/bin/libtoolize15; then
+	    LIBTOOLIZE=libtoolize15
+echo $LIBTOOLIZE
+	fi
     fi
 fi
+
+if test "${ACLOCAL+set}" != "set"; then
+    ACLOCAL=aclocal
+    if test ! -x /usr/local/bin/aclocal \
+		-a ! -x /usr/bin/aclocal; then
+        if test -x /usr/local/bin/aclocal15; then
+	    ACLOCAL=aclocal15
+	fi
+    fi
+fi
+
+if test "${AUTOHEADER+set}" != "set"; then
+    AUTOHEADER=autoheader
+    if test ! -x /usr/local/bin/autoheader \
+		-a ! -x /usr/bin/autoheader; then
+        if test -x /usr/local/bin/autoheader259; then
+	    AUTOHEADER=autoheader259
+	fi
+    fi
+fi
+
+if test "${AUTOMAKE+set}" != "set"; then
+    AUTOMAKE=automake
+    if test ! -x /usr/local/bin/automake \
+		-a ! -x /usr/bin/automake; then
+        if test -x /usr/local/bin/automake15; then
+	    AUTOMAKE=automake15
+	fi
+    fi
+fi
+
 
 for file in acinclude.m4; do
     if test ! -f $file -a -f ../$file; then
@@ -113,9 +148,9 @@ fi
 set -x
 chmod +x setup
 $LIBTOOLIZE $LTI_ARGS
-aclocal
-autoheader
-automake $AM_ARGS
+$ACLOCAL
+$AUTOHEADER
+$AUTOMAKE $AM_ARGS
 $AUTOCONF
 set +x
 
