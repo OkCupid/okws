@@ -92,7 +92,7 @@ http_resp_header_t::fill (bool gz)
   add_closed ();
   add ("Cache-control", attributes.get_cache_control ());
   str tmp;
-  if ((tmp = attributes.get_exipres ()))  
+  if ((tmp = attributes.get_expires ()))  
     add ("Expires", tmp);
   if ((tmp = attributes.get_content_disposition ()))  
     add ("Content-Disposition", tmp);
