@@ -91,9 +91,11 @@ http_resp_header_t::fill (bool gz)
   add ("Content-Type", attributes.get_content_type ());
   add_closed ();
   add ("Cache-control", attributes.get_cache_control ());
-  if (attributes.get_expires ()) {
-    add ("Expires", attributes.get_expires ());
-  }
+  str tmp;
+  if ((tmp = attributes.get_exipres ()))  
+    add ("Expires", tmp);
+  if ((tmp = attributes.get_content_disposition ()))  
+    add ("Content-Disposition", tmp);
   add_server ();
   if (gz) gzip ();
 }

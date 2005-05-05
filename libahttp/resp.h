@@ -99,19 +99,22 @@ public:
   str get_content_type () const { return _content_type; }
   str get_cache_control () const { return _cache_control; }
   str get_expires () const { return _expires; }
+  str get_content_disposition () const { return _contdisp; }
   bool get_gzip () const { return _gzip; }
 
   void set_version (htpv_t v) { _version = v; }
-  void set_content_type (str s) { _content_type = s; }
-  void set_cache_control (str s) { _cache_control = s; }
-  void set_expires (str s) { _expires = s; }
+  void set_content_type (const str &s) { _content_type = s; }
+  void set_cache_control (const str &s) { _cache_control = s; }
+  void set_expires (const str &s) { _expires = s; }
   void set_gzip (bool b) { _gzip = b; }
+  void set_content_disposition (const str s) { _contdisp = s; }
 
   u_int _status;
   htpv_t _version;
   str _content_type;
   str _cache_control;
   str _expires;
+  str _contdisp;
   bool _gzip;
 
 };

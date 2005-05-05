@@ -648,6 +648,7 @@ okclnt_t::output (compressible_t &b)
   if (cachecontrol) hra.set_cache_control (cachecontrol);
   if (contenttype) hra.set_content_type (contenttype);
   if (expires) hra.set_expires (expires);
+  if (contdisp) hra.set_content_disposition (contdisp);
     
   rsp = New refcounted<http_response_ok_t> (sb, hra);
   if (uid_set) rsp->set_uid (uid);

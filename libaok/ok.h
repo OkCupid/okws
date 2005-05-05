@@ -202,6 +202,7 @@ public:
   void set_content_type (const str &s) { contenttype = s; }
   void set_cache_control (const str &s) { cachecontrol = s; }
   void set_expires (const str &s) { expires = s; }
+  void set_content_disposition (const str &s) { contdisp = s; }
   void disable_gzip () { rsp_gzip = false; }
 
 
@@ -222,7 +223,7 @@ protected:
   u_int64_t uid; // hacked in for now;
   bool uid_set;
 
-  str contenttype, cachecontrol, expires;
+  str contenttype, cachecontrol, expires, contdisp;
   bool rsp_gzip;
 };
 
