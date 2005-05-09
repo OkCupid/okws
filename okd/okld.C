@@ -35,7 +35,7 @@
 #include "pubutil.h"
 #include "rxx.h"
 
-extern char * const * environ;
+extern char ** environ;
 
 void
 okld_t::set_signals ()
