@@ -5,7 +5,7 @@ LDADD = $(LIBSFSMISC) $(LIBARPC) $(LIBSFSCRYPT) $(LIBASYNC) $(LIBGMP)
 
 okwsbin_PROGRAMS = txarpcc
 
-noinst_HEADERS = rpcc.h parse.h
+noinst_HEADERS = rpcc.h parse.h ptxa.h
 
 txarpcc_SOURCES = genheader.C gencfile.C genpython.C parse.yy scan.ll \
 	rpcc.C ptxa.C
