@@ -365,6 +365,9 @@ htag: T_BTAG
 	}
   	htag_name htag_list T_ETAG
 	{
+	  if ($5[0] != '>') {
+	    PSECTION->htag_space ();
+ 	  }
 	  PSECTION->add ($5);
 	  $$ = PSECTION;
 	  PFILE->pop_section ();

@@ -188,7 +188,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <WH,WGH,WEC>{	
 {WSN}+		{ nlcount (); return (' '); }
-[<][/]?		{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
+[<][/?%]?	{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
 \<{ST}/[ \t\n>]	{ yy_push_state (JS); yy_push_state (HTAG); 
 	          yylval.str = yytext; return T_BJST; }
 
@@ -240,8 +240,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 ["]		{ begin_PSTR (0, PSTR); return (yytext[0]); }
 [']		{ begin_PSTR (0, PSTR_SQ); return (yytext[0]); }
 
-"/>"		|
-\>		{ yy_pop_state (); yylval.str = yytext; return T_ETAG; }
+[%?/]?">" 	{ yy_pop_state (); yylval.str = yytext; return T_ETAG; }
 
 {WS}+		/* discard */;
 {HNAM}		{ yylval.str = yytext; return T_HNAM; }

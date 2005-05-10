@@ -159,11 +159,13 @@ OKD v0.2
  X debug and fix prepared statement handles on mysql. need to change
    the state machine so that it corresponds with the parsed query 
    state machine.
+ - pub -w pukes on <?php ?> tags
 
 Documentation
 ------------
 - OKWS wiki?
 - add OKWS results / pics to HTML web site
+- add mention of /etc/sfslog.conf -> local3.info stuff
 
 sfslite
 -------
