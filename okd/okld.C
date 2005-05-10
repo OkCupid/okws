@@ -81,6 +81,7 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
   //
   // pop off "OkdExec"
   //
+  str es;
   s.pop_front ();
   vec<str> env;
   while (s.size () && strchr (s[0].cstr (), '='))
@@ -92,8 +93,14 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
   okdexecpath = s.pop_front ();
 
   if (!is_safe (okdexecpath)) {
-    warn << loc << ": Service path (" << okdexecpath
+    warn << loc << ": okd path (" << okdexecpath
 	 << ") contains unsafe substrings\n";
+    goto err;
+  }
+
+  es = can_exec (okws_exec (okdexecpath));
+  if (es) {
+    warn << loc << ": cannot exec okd: " << es <<"\n";
     goto err;
   }
   
