@@ -410,7 +410,7 @@ okch_t::custom1_out (const ok_custom_data_t &x)
 {
   // XXX want to collect success information and so on from this guy
   // (as in repub)
-  if (clnt) {
+  if (clnt && !clnt->xprt ()->ateof ()) {
     clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
   } else {
     warn << servpath << ": child in state=" << state << 
