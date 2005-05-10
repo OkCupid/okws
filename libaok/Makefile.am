@@ -5,7 +5,7 @@ okwslib_LTLIBRARIES = libaok.la
 
 libaok_la_SOURCES = okprot.C ok.C log.C logbuf.C
 
-okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h
+okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h okprot.x
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@

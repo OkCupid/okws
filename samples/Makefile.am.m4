@@ -36,8 +36,10 @@ cgimk(cgiscript1)
 
 noinst_PROGRAMS = cgi_exes 
 
+noinst_HEADERS = cgiscript1.g
+
 CLEANFILES = core *.core *~
-EXTRA_DIST = .cvsignore
+EXTRA_DIST = .cvsignore Makefile.am.m4
 MAINTAINERCLEANFILES = Makefile.in Makefile.am
 
 .PHONY: gclean

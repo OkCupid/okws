@@ -3,6 +3,8 @@ $(PROGRAMS): $(LDEPS)
 
 noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2 enctst
 
+noinst_HEADERS = normdist.h
+
 okwsbin_PROGRAMS = okdbg
 
 okdbg_SOURCES = okdbg.C

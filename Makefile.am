@@ -2,13 +2,13 @@
 ## $Id$
 
 
-SBD1 = txarpcc libpub pub libahttp libaok libamt libweb 
+SBD1 = txarpcc libpub pub libahttp libaok libamt libweb  
 
 if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1) $(SBD2) okd logd client samples 
+SUBDIRS = $(SBD1) $(SBD2) okd logd client samples test
 
 #test
 

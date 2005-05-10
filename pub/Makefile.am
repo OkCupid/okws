@@ -1,6 +1,8 @@
 
 $(PROGRAMS): $(LDEPS_PUB)
 
+noinst_HEADERS = pubd.h
+
 okwsbin_PROGRAMS = pub 
 okwsexec_PROGRAMS = pubd
 pub_SOURCES = pubmain.C
