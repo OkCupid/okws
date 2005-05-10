@@ -416,16 +416,17 @@ okld_t::parseconfig (const str &cf)
     .ignore ("OkdDebugMsgFreq");
 
 
-  if (grp) svc_grp = ok_grp_t (grp);
-  if (okd_un) okd_usr = ok_usr_t (okd_un);
-  if (okd_gr) okd_grp = ok_grp_t (okd_gr);
-
   while (pa.getline (&av, &line)) {
     if (!ct.match (av, cf, line, &errors)) {
       warn << cf << ":" << line << ": unknown config parameter\n";
       errors = true;
     }
   }
+
+  if (grp) svc_grp = ok_grp_t (grp);
+  if (okd_un) okd_usr = ok_usr_t (okd_un);
+  if (okd_gr) okd_grp = ok_grp_t (okd_gr);
+
   nxtuid = ok_svc_uid_low;
 
   //
