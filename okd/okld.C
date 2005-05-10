@@ -36,6 +36,7 @@
 #include "rxx.h"
 
 extern char ** environ;
+extern int optind;
 
 void
 okld_t::set_signals ()
@@ -157,6 +158,7 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   }
 
   argv = to_argv (s, &argc);
+  optind = 0;
   while ((ch = getopt (argc, argv, "u:")) != -1) {
     switch (ch) {
     case 'u':
@@ -180,6 +182,11 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
     }
     s.pop_front ();
   }
+
+  // make sure we clean up after ourselves; we didn't use to do this
+  // so we might find some weird corner cases here.
+  free_argv (argv);
+  argv = NULL;        // set to NULL in case we have an error later
 
   if (s.size () != 1) 
     goto usage;
