@@ -10,7 +10,7 @@ libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
-	pslave.h txa.h okdbg.h okdbg-int.h
+	pslave.h txa.h okdbg.h okdbg-int.h xpub.x fd_prot.x txa_prot.x
 
 YDEBUG = @YDEBUG@
 LDEEBUG = @LDEBUG@
@@ -89,6 +89,8 @@ parse.o: parse.cc parse.h
 .PHONY: xdrclean
 xdrclean:
 	rm -f $(srcdir)/xpub.C $(srcdir)/xpub.h
+	rm -f $(srcdir)/fd_prot.C $(srcdir)/fd_prot.h
+	rm -f $(srcdir)/txa_prot.C $(srcdir)/txa_prot.h
 
 .PHONY: sourceclean
 sourceclean: parseclean xdrclean
