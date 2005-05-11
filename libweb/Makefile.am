@@ -7,6 +7,8 @@ libweb_la_SOURCES = web_prot.C form.C inputcheck.C web.C email.C okwc.C
 
 okwsinclude_HEADERS = web_prot.h web.h form.h email.h okwc.h web_prot.x
 
+noinst_HEADERS = web_prot.x
+
 web_prot.C: $(srcdir)/web_prot.x web_prot.h
 	@rm -f $@
 	-$(RPCC) -c $(srcdir)/web_prot.x || rm -f $@

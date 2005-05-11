@@ -7,9 +7,9 @@ libamysql_la_SOURCES = amysql_prot.C amysql.C mystmt_ag.C mystmt.C
 
 mystmt_ag.C: mystmt.h
 
-okwsinclude_HEADERS = amysql_prot.h amysql.h mystmt_ag.h mystmt.h amysql_prot.x
+okwsinclude_HEADERS = amysql_prot.h amysql.h mystmt_ag.h mystmt.h
 
-noinst_HEADERS = mystmt_ag.pl 
+noinst_HEADERS = mystmt_ag.pl amysql_prot.x
 
 amysql.C: amysql_prot.h mystmt.h
 
