@@ -101,7 +101,7 @@ public:
   str get_expires () const { return _expires; }
   str get_content_disposition () const { return _contdisp; }
   bool get_gzip () const { return _gzip; }
-  void get_others (vec<http_hdr_field_t> *output);
+  bool get_others (vec<http_hdr_field_t> *output);
 
   void get_others (cbs cb);
 
@@ -127,8 +127,10 @@ public:
 
 class http_resp_header_t {
 public:
-  http_resp_header_t (const http_resp_attributes_t &a) : attributes (a) {}
-  http_resp_header_t (u_int s, htpv_t v) : attributes (s, v) {}
+  http_resp_header_t (const http_resp_attributes_t &a) 
+    : attributes (a), cleanme (false) {}
+  http_resp_header_t (u_int s, htpv_t v) 
+    : attributes (s, v), cleanme (false) {}
   virtual ~http_resp_header_t () {}
   const http_resp_header_t & add (const http_hdr_field_t &f)
   { fields.push_back (f); return *this; }
@@ -147,6 +149,7 @@ public:
 private:
   http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;
+  bool cleanme;
 };
 
 class http_resp_header_redirect_t : public http_resp_header_t {

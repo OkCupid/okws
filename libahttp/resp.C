@@ -102,7 +102,7 @@ http_resp_header_t::fill (bool gz)
 
   // anything else the user might have added; takes precedence
   // over anything put above
-  attributes.get_others (&fields);
+  cleanme = attributes.get_others (&fields);
 }
 
 void
@@ -131,6 +131,7 @@ http_resp_header_t::gzip ()
 strbuf
 http_resp_header_t::to_strbuf () const
 {
+  vec<bool> output_me;
   strbuf b;
   b << "HTTP/";
   switch (attributes.get_version ()) {
@@ -151,26 +152,25 @@ http_resp_header_t::to_strbuf () const
   // 2 of the same field in, last in wins;
   // eventually, some fields might allow multiple winners;
   // this would be pretty easy to set up.
-  bhash<str> winner_hsh;
-  bool *output_me = New bool[lim];
-
-  for (int i = lim - 1; i >= 0; i--) {
-    str n = mytolower (fields[i].name);
-    if (winner_hsh[n]) {
-      output_me[i] = false;
-    } else {
-      winner_hsh.insert (n);
-      output_me[i] = true;
+  if (cleanme) {
+    output_me.setsize (lim);
+    bhash<str> winner_hsh;
+    for (int i = lim - 1; i >= 0; i--) {
+      str n = mytolower (fields[i].name);
+      if (winner_hsh[n]) {
+	output_me[i] = false;
+      } else {
+	winner_hsh.insert (n);
+	output_me[i] = true;
+      }
     }
   }
 
   for (int i = 0; i < lim; i++) {
-    if (output_me[i])
+    if (!cleanme || output_me[i])
       b << fields[i].name << ": " << fields[i].val << HTTP_CRLF;
   }
   b << HTTP_CRLF;
-
-  delete [] output_me;
 
   return b;
 }
@@ -205,13 +205,15 @@ http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
   return ret;
 }
 
-void
+bool
 http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
 {
   if (_others) {
     for (u_int i = 0; i < _others->size (); i++) {
       out->push_back ((*_others)[i]);
     }
+    return true;
   }
+  return false;
 }
 
