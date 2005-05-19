@@ -159,7 +159,8 @@ OKD v0.2
  X debug and fix prepared statement handles on mysql. need to change
    the state machine so that it corresponds with the parsed query 
    state machine.
- - pub -w pukes on <?php ?> tags
+ - be smarter about disabling gzip (if the user changes the content
+   type and so on...)
 
 Documentation
 ------------
