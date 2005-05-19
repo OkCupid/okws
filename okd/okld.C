@@ -882,6 +882,12 @@ okld_t::init_jaildir ()
 
   root_coredir = apply_container_dir (coredumpdir, "0");
 
+  if (!svc_grp) {
+    warn << "cannot find service group (" << svc_grp.getname () 
+	 << " does not exist)\n";
+    return false;
+  }
+
   int ret = true;
   if (!jail_mkdir ("/etc/", 0755, &root, &wheel) ||  
       !jail_cp ("/etc/resolv.conf", 0644, &root, &wheel) || 
@@ -891,12 +897,6 @@ okld_t::init_jaildir ()
     ret = false;
 
   u_int lim = svcs.size ();
-  if (!svc_grp) {
-    warn << "cannot find service group (" << svc_grp.getname () 
-	 << " does not exist)\n";
-    return false;
-  }
-
   if (!okd_usr) {
     warn << "cannot find a user for okd (" << okd_usr.getname () 
 	 << " does not exist)\n";

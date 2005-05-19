@@ -101,6 +101,9 @@ public:
   str get_expires () const { return _expires; }
   str get_content_disposition () const { return _contdisp; }
   bool get_gzip () const { return _gzip; }
+  void get_others (vec<http_hdr_field_t> *output);
+
+  void get_others (cbs cb);
 
   void set_version (htpv_t v) { _version = v; }
   void set_content_type (const str &s) { _content_type = s; }
@@ -108,6 +111,7 @@ public:
   void set_expires (const str &s) { _expires = s; }
   void set_gzip (bool b) { _gzip = b; }
   void set_content_disposition (const str s) { _contdisp = s; }
+  void set_others (ptr<vec<http_hdr_field_t> > p ) { _others = p; }
 
   u_int _status;
   htpv_t _version;
@@ -116,6 +120,8 @@ public:
   str _expires;
   str _contdisp;
   bool _gzip;
+
+  ptr<vec<http_hdr_field_t> > _others;
 
 };
 

@@ -649,6 +649,9 @@ okclnt_t::output (compressible_t &b)
   if (contenttype) hra.set_content_type (contenttype);
   if (expires) hra.set_expires (expires);
   if (contdisp) hra.set_content_disposition (contdisp);
+
+  // set anything else you want
+  hra.set_others (hdr_fields);
     
   rsp = New refcounted<http_response_ok_t> (sb, hra);
   if (uid_set) rsp->set_uid (uid);
@@ -834,3 +837,12 @@ set_debug_flags ()
   if (okws_debug_flags)
     warn ("OKWS debug flags set: 0x%qx\n", okws_debug_flags);
 }
+
+void
+okclnt_t::set_hdr_field (const str &k, const str &v)
+{
+  if (!hdr_fields)
+    hdr_fields = New refcounted<vec<http_hdr_field_t> > ();
+  hdr_fields->push_back (http_hdr_field_t (k,v));
+}
+

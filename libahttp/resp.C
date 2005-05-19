@@ -22,6 +22,7 @@
 
 #include "resp.h"
 #include "httpconst.h"
+#include "parseopt.h" 
 
 http_status_set_t http_status;
 //
@@ -98,6 +99,10 @@ http_resp_header_t::fill (bool gz)
     add ("Content-Disposition", tmp);
   add_server ();
   if (gz) gzip ();
+
+  // anything else the user might have added; takes precedence
+  // over anything put above
+  attributes.get_others (&fields);
 }
 
 void
@@ -142,10 +147,31 @@ http_resp_header_t::to_strbuf () const
     b << " OK";
   b << HTTP_CRLF;
   int lim = fields.size ();
+
+  // 2 of the same field in, last in wins;
+  // eventually, some fields might allow multiple winners;
+  // this would be pretty easy to set up.
+  bhash<str> winner_hsh;
+  bool *output_me = New bool[lim];
+
+  for (int i = lim - 1; i >= 0; i--) {
+    str n = mytolower (fields[i].name);
+    if (winner_hsh[n]) {
+      output_me[i] = false;
+    } else {
+      winner_hsh.insert (n);
+      output_me[i] = true;
+    }
+  }
+
   for (int i = 0; i < lim; i++) {
-    b << fields[i].name << ": " << fields[i].val << HTTP_CRLF;
+    if (output_me[i])
+      b << fields[i].name << ": " << fields[i].val << HTTP_CRLF;
   }
   b << HTTP_CRLF;
+
+  delete [] output_me;
+
   return b;
 }
 
@@ -177,5 +203,15 @@ http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
   u_int ret = b.tosuio ()->resid ();
   x->send (b, cb); 
   return ret;
+}
+
+void
+http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
+{
+  if (_others) {
+    for (u_int i = 0; i < _others->size (); i++) {
+      out->push_back ((*_others)[i]);
+    }
+  }
 }
 

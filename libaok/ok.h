@@ -205,6 +205,7 @@ public:
   void set_content_disposition (const str &s) { contdisp = s; }
   void disable_gzip () { rsp_gzip = false; }
 
+  void set_hdr_field (const str &k, const str &v);
 
   list_entry<okclnt_t> lnk;
 protected:
@@ -225,6 +226,7 @@ protected:
 
   str contenttype, cachecontrol, expires, contdisp;
   bool rsp_gzip;
+  ptr<vec<http_hdr_field_t> > hdr_fields;
 };
 
 typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
