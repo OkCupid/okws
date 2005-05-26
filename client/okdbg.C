@@ -5,12 +5,14 @@
 static void
 usage ()
 {
-  warnx << "usage: " << progname  << " [-abB]\n"
+  warnx << "usage: " << progname  << " [-abBEsS]\n"
 	<< "\t -b pub subsystem: dump bind table after each insert\n"
 	<< "\t -a pub subsystem: dump bind table after all inserts\n"
 	<< "\t -B pub subsystem: dump bind table before access\n"
 	<< "\t -E pub subsystem: complain about errors\n"
-	<< "\t -s pub subsystem: display shutdown status messages\n"
+	<< "\t -S okd subsystem: display shutdown status messages\n"
+	<< "\t -s okd subsystem: display startup status messages\n"
+	<< "\t -c okd subsystem: noisy output about new connections\n"
     ;
   exit (1);
 }
@@ -21,7 +23,7 @@ main (int argc, char *argv[])
 {
   int ch;
   int64_t res = 0;
-setprogname (argv[0]);
+  setprogname (argv[0]);
   while ((ch = getopt (argc, argv, "abBEs")) != -1) {
     switch (ch) {
     case 'a':
@@ -36,8 +38,14 @@ setprogname (argv[0]);
     case 'E':
       res = res | OKWS_DEBUG_PUB_ERRORS;
       break;
-    case 's':
+    case 'S':
       res = res | OKWS_DEBUG_OKD_SHUTDOWN;
+      break;
+    case 's':
+      res = res | OKWS_DEBUG_OKD_STARTUP;
+      break;
+    case 'c':
+      res = res | OKWS_DEBUG_OKD_NOISY_CONNECTIONS;
       break;
     default:
       usage ();
@@ -45,7 +53,7 @@ setprogname (argv[0]);
     }
   }
 
-  printf ("OKWS_DEBUG_OPTIONS=0x%qx\n", res);
+  printf ("%s=0x%qx\n", OKWS_DEBUG_OPTIONS, res);
   return 0;
 }
 

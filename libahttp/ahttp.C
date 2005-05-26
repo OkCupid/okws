@@ -83,9 +83,9 @@ ahttpcon_clone::takefd ()
 }
 
 void
-ahttpcon::send (const strbuf &b, cbv::ptr cb)
+ahttpcon::send (const strbuf &b, cbv::ptr drained, cbv::ptr sent)
 {
-  return sendv (b.iov (), b.iovcnt (), cb);
+  return sendv (b.iov (), b.iovcnt (), drained, sent);
 }
 
 void
@@ -95,7 +95,8 @@ ahttpcon::copyv (const iovec *iov, int cnt)
 }
 
 void
-ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
+ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr drained,
+		 cbv::ptr sent)
 {
   assert (!destroyed);
   u_int32_t len = iovsize (iov, cnt);
@@ -103,7 +104,8 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
     // if an EOF happened after the read but before the send,
     // we'll wind up here.
     warn ("write not possible due to EOF\n");
-    if (cb) (*cb) ();
+    if (sent) (*sent) ();
+    if (drained) (*drained) ();
     return;
   }
   bytes_sent += len;
@@ -113,14 +115,17 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr cb)
     if (skip < 0 && errno != EAGAIN) {
       fail ();
       // still need to signal done sending....
-      if (cb) (*cb) ();
+      if (sent) (*sent) ();
+      if (drained) (*drained) ();
       return;
     } else
       out->copyv (iov, cnt, max<ssize_t> (skip, 0));
   } else {
     out->copyv (iov, cnt, 0);
   }
-  drained_cb = cb;
+  drained_cb = drained;
+  if (sent)
+    out->iovcb (sent);
   output ();
 }
 
@@ -131,6 +136,19 @@ ahttpcon::call_drained_cb ()
   if (c) {
     drained_cb = NULL;
     (*c) ();
+  }
+}
+
+void
+ahttpcon::set_drained_cb (cbv cb)
+{
+  if (!out->resid () || fd < 0)
+    (*cb) ();
+  else {
+    // hold onto the current drained_cb until after we access
+    // this (by setting a new drained_cb)
+    cbv::ptr c = drained_cb;
+    drained_cb = cb;
   }
 }
 

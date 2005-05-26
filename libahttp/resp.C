@@ -115,10 +115,11 @@ http_resp_header_redirect_t::fill (const str &s)
 }
 
 void
-http_resp_header_t::fill (bool gz, int len)
+http_resp_header_t::fill (bool gz, ssize_t len)
 {
   fill (gz);
-  if (!gz) add (http_hdr_size_t (len));
+  if (!gz and len >= 0) 
+    add (http_hdr_size_t (len));
 }
 
 void

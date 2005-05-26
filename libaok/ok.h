@@ -51,8 +51,6 @@ typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH_SEQ_2 = 7,
                OKC_STATE_KILLING = 8 } okc_state_t;
 
-#define SVCWARN(x) \
-  warn << "pid " << pid << ": " << x << "\n";
 
 struct errdoc_t {
   errdoc_t (int n, const str &f) : status (n), fn (f) {}
@@ -179,9 +177,17 @@ class oksrvc_t;
 class okclnt_t 
   : public http_parser_cgi_t { // One for each external HTTP client
 public:
+
+  typedef enum { ALL_AT_ONCE = 0, 
+		 STREAMING_HDRS = 1, // piece-meal
+		 STREAMING_BODY = 2,
+		 DONE = 3,
+		 CLIENT_EOF = 4 } output_state_t;
+  
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
     http_parser_cgi_t (xx, to), x (xx), oksrvc (o),
-    process_flag (false), uid_set (false), rsp_gzip (true)
+    process_flag (false), uid_set (false), rsp_gzip (true),
+    output_state (ALL_AT_ONCE)
   {}
 
   virtual ~okclnt_t ();
@@ -191,9 +197,14 @@ public:
   virtual void parse ();
   virtual void output (compressible_t &b);
   virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
-  virtual void send (ptr<http_response_t> rsp);
+  virtual void send (ptr<http_response_t> rsp, cbv::ptr cb);
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
+
+  // stuff for piecemeal output
+  bool output_hdr (ssize_t sz = -1);
+  bool output_fragment (str s);
+  bool output_done ();
 
   //
   // set these for different HTTP response configurations;
@@ -210,7 +221,8 @@ public:
   list_entry<okclnt_t> lnk;
 protected:
   void http_parse_cb (int status);
-  void delcb () { delete this; }
+  virtual void delcb () { delete this; }
+  void set_attributes (http_resp_attributes_t *hra);
 		
   cbv::ptr cb;
   ref<ahttpcon> x;
@@ -227,6 +239,8 @@ protected:
   str contenttype, cachecontrol, expires, contdisp;
   bool rsp_gzip;
   ptr<vec<http_hdr_field_t> > hdr_fields;
+
+  output_state_t output_state;
 };
 
 typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
@@ -369,7 +383,28 @@ void set_debug_flags ();
 // that they have similar internal variables; the might be put into a 
 // class tree, but they share little functionality in common.
 //
-#define CH_WARN(x) \
-  warn << servpath << ":" << pid << ": " << x << "\n";
+
+  
+#define CH_MSG(M,x)                            \
+do {                                           \
+  strbuf b;                                    \
+  b << servpath << ":" << pid << ": " << x ;   \
+  okdbg_warn (M, b);                           \
+} while (0)
+
+#define CH_CHATTER(x) CH_MSG(CHATTER, x)
+#define CH_ERROR(x)    CH_MSG(ERROR, x)
+
+#define SVC_MSG(M,x)                           \
+do {                                           \
+  strbuf b;                                    \
+  b << "pid " << pid << ": " << x << "\n";     \
+  okdbg_warn (M, b);                           \
+} while (0)                                    \
+
+#define SVC_ERROR(x) SVC_MSG(ERROR, x)
+#define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
+#define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
+
 
 #endif /* _LIBAOK_OKBASE_H */

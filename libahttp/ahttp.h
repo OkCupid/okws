@@ -121,8 +121,9 @@ public:
   void output ();
   void spacecb ();
   void error (int ec);
-  void send (const strbuf &b, cbv::ptr cb);
-  void sendv (const iovec *iov, int cnt, cbv::ptr cb = NULL);
+  void send (const strbuf &b, cbv::ptr drained, cbv::ptr sent = NULL);
+  void sendv (const iovec *iov, int cnt, cbv::ptr drained = NULL,
+	      cbv::ptr sent = NULL);
   void copyv (const iovec *iov, int cnt);
   suiolite *uio () const { return in; }
   u_int get_bytes_sent () const { return bytes_sent; }
@@ -145,6 +146,7 @@ public:
   bool overflow () const { return overflow_flag; }
   int set_lowwat (int sz);
   bool timed_out () const { return _timed_out; }
+  void set_drained_cb (cbv cb);
   
   const time_t start;
 

@@ -85,8 +85,29 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
   str es;
   s.pop_front ();
   vec<str> env;
-  while (s.size () && strchr (s[0].cstr (), '='))
+
+  static rxx envsep ("=");
+
+  bool fnd_dbg = false;
+
+  while (s.size () && strchr (s[0].cstr (), '=')) {
+    vec<str> tmp;
+    assert (split (&tmp, envsep, s[0]));
+    if (tmp[0] == OKWS_DEBUG_OPTIONS) 
+      fnd_dbg = true;
     env.push_back (s.pop_front ());
+  }
+
+  // 
+  // if our options were on, but none were passed to okd, then
+  // we turn it on here
+  //
+  str opts = getenv (OKWS_DEBUG_OPTIONS);
+  if (!fnd_dbg && opts) {
+    strbuf b;
+    b.fmt ("%s=%s", OKWS_DEBUG_OPTIONS, opts.cstr ());
+    env.push_back (b);
+  }
 
   if (s.size () != 1)
     goto usage;
@@ -739,6 +760,8 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   str dbf;
 
+  set_debug_flags ();
+
   int ch;
   while ((ch = getopt (argc, argv, "qf:D:?")) != -1)
     switch (ch) {
@@ -965,7 +988,7 @@ okld_t::init_clock_daemon ()
     int fds[2];
     bool ok = false;
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) { 
-      warn ("cannot created socketpair: %m\n");
+      warn ("cannot create socketpair: %m\n");
     } else {
       close_on_exec (fds[0]);
       if ((mmcd_pid = spawn (args[0], args, fds[1])) < 0) {

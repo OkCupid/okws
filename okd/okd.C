@@ -33,6 +33,7 @@
 #include "xpub.h"
 #include "pubutil.h"
 #include "axprtfd.h"
+#include "okdbg.h"
 
 static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
 
@@ -432,7 +433,11 @@ okd_t::strip_privileges ()
 	    << coredumpdir << ")\n";
     } else {
       // debug code
-      warn << "changed to core dump directory: " << coredumpdir << "\n";
+      if (OKDBG2(OKD_STARTUP)) {
+	strbuf b;
+	b << "changed to core dump directory: " << coredumpdir << "\n";
+	okdbg_warn (CHATTER, b);
+      }
     }
   }
 }
@@ -481,9 +486,11 @@ okd_t::newserv (int fd)
 
     // debug messaging
     if (freq > 0 && (reqid % freq) == 0) {
-      warn << "nfd_in_xit=" << nfd_in_xit << "; " 
-	   << "xtab.nent=" << xtab.n_entries () << "; "
-	   << "nfds=" << n_ahttpcon << "\n";
+      strbuf b;
+      b << "nfd_in_xit=" << nfd_in_xit << "; " 
+	<< "xtab.nent=" << xtab.n_entries () << "; "
+	<< "nfds=" << n_ahttpcon << "\n";
+      okdbg_warn (CHATTER, b);
     }
 
     nfd_in_xit ++;  // keep track of the number of FDs in transit
@@ -499,7 +506,11 @@ okd_t::newserv (int fd)
     //
     x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
 
-    //warn ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
+    if (OKDBG2(OKD_NOISY_CONNECTIONS)) {
+      strbuf b;
+      b.fmt ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
+      okdbg_warn (CHATTER, b);
+    }
     x->setccb (wrap (this, &okd_t::sclone, x, *portmap[fd]));
 
     if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
@@ -507,7 +518,7 @@ okd_t::newserv (int fd)
     }
   }
   else if (errno != EAGAIN)
-    warn ("accept: %m\n");
+    warn ("** accept error: %m\n");
 }
 
 
@@ -683,7 +694,7 @@ okd_t::gotfd (int fd, ptr<okws_fd_t> desc)
     got_chld_fd (fd, desc);
     break;
   default:
-    warn << "unknown FD type received from okld\n";
+    okdbg_warn (ERROR, "unknown FD type received from okld\n");
     break;
   }
   return;

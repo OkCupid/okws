@@ -144,7 +144,7 @@ main (int argc, char *argv[])
 			  cnt, maxq);
   str foo = "foo";
   // apply a function to all threads
-  s->thread_apply<pt1_srv_t> (wrap (apply_test, foo, 10));
+  //s->thread_apply<pt1_srv_t> (wrap (apply_test, foo, 10));
 
   if (!pub_server (wrap (s, &ssrv_t::accept), PT1_PORT))
     fatal << "Cannot bind to port " << PT1_PORT << "\n";

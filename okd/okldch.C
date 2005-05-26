@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include "okdbg.h"
 
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		      ok_usr_t *u, char *const *env_in, u_int16_t p)
@@ -222,21 +223,22 @@ okld_ch_t::set_svc_ids ()
   setgroups (0, NULL);
 
   if (setgid (gid) != 0) {
-    CH_WARN ("could not change gid to " << gid);
+    CH_ERROR ("could not change gid to " << gid);
     exit (1);
   }
 
   if (setuid (uid->getid ()) != 0) {
-    CH_WARN ("could not change uid to " << uid->getname ());
+    CH_ERROR ("could not change uid to " << uid->getname ());
     exit (1);
   }
 
   if (rundir) {
     str d = okld->jail2real (rundir, true);
     if (chdir (d) != 0)
-      warn ("change dir failed: %m\n");
+      CH_ERROR ("change dir failed: %m\n");
     else {
-      CH_WARN (  "changing directories to " << d  );
+      if (OKDBG2(OKD_STARTUP))
+	CH_CHATTER ("changing directories to " << d  );
     }
   }
 }
@@ -249,17 +251,17 @@ okld_ch_t::chldcb (int status)
   if (okld->in_shutdown ())
     return;
 
-  CH_WARN ("child process died with status=" << status);
+  CH_ERROR ("child process died with status=" << status);
 
   // child chrashing at boot-up is a bad thing; nothing to do here
   if (state != OKC_STATE_SERVE) {
-    CH_WARN ("HOSED: child found in wrong state (" << state << ")");
+    CH_ERROR ("HOSED: child found in wrong state (" << state << ")");
     state = OKC_STATE_HOSED;
     return;
   }
   if (okld->safe_startup () && 
       (timenow - startup_time < int (ok_chld_startup_time))) {
-    CH_WARN ("HOSED: not restarting due to crash directly after startup");
+    CH_ERROR ("HOSED: not restarting due to crash directly after startup");
     state = OKC_STATE_HOSED;
     return;
   }
@@ -309,12 +311,12 @@ okld_ch_t::resurrect ()
   timevals.push_back (tp);
   if (timevals.size () > ok_crashes_max) {
     state = OKC_STATE_HOSED;
-    CH_WARN ("HOSED: execeeded maximum number of crashes; "
-	     "will no longer restart!");
+    CH_ERROR ("HOSED: execeeded maximum number of crashes; "
+	      "will no longer restart!");
   } else {
     if (okld->will_jail () && !fix_exec (true)) {
-      CH_WARN ("HOSED: failed to fix permissions on executable "
-	       "during relaunch");
+      CH_ERROR ("HOSED: failed to fix permissions on executable "
+		"during relaunch");
       state = OKC_STATE_HOSED;
     } else {
       launch ();

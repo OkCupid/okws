@@ -125,6 +125,7 @@ public:
   virtual const strbuf &to_strbuf (bool gz) = 0;
   virtual void to_strbuf (strbuf *b, bool gz) = 0;
   virtual size_t inflated_len () const = 0;
+  virtual void clear () = 0;
 };
 
 class zbuf : public compressible_t {

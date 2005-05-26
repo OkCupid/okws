@@ -28,10 +28,13 @@
 
 #include "okdbg-int.h"
 
+
 #define OKWS_DEBUG_PUB_BINDTAB_INSERT             (1 << 0)
 #define OKWS_DEBUG_PUB_BINDTAB_ACCESS             (1 << 1)
 #define OKWS_DEBUG_PUB_BINDTAB_INSERTS            (1 << 2)
 #define OKWS_DEBUG_PUB_ERRORS                     (1 << 3)
 #define OKWS_DEBUG_OKD_SHUTDOWN                   (1 << 4)
+#define OKWS_DEBUG_OKD_STARTUP                    (1 << 5)
+#define OKWS_DEBUG_OKD_NOISY_CONNECTIONS          (1 << 6)
 
 #endif /* _LIBPUB_OKDEBUG_H */

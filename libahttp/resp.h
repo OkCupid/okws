@@ -79,7 +79,7 @@ public:
 
 class http_hdr_size_t : public http_hdr_field_t {
 public:
-  http_hdr_size_t (int s) : http_hdr_field_t ("Content-Length", s) {}
+  http_hdr_size_t (ssize_t s) : http_hdr_field_t ("Content-Length", s) {}
 };
 
 class http_hdr_cookie_t : public http_hdr_field_t {
@@ -139,7 +139,7 @@ public:
   const http_resp_header_t & add (const str &n, int64_t i) 
   { fields.push_back (http_hdr_field_t (n, i)); return *this; }
   virtual void fill (bool gz = false);
-  void fill (bool gz, int len);
+  void fill (bool gz, ssize_t len);
   strbuf to_strbuf () const;
   inline int get_status () const { return attributes.get_status (); }
   void gzip ();
@@ -163,7 +163,7 @@ class http_resp_header_ok_t : public http_resp_header_t {
 public:
   http_resp_header_ok_t (const http_resp_attributes_t &a)
     : http_resp_header_t (a) { fill (a.get_gzip ()); }
-  http_resp_header_ok_t (u_int s, const http_resp_attributes_t &a)
+  http_resp_header_ok_t (ssize_t s, const http_resp_attributes_t &a)
     : http_resp_header_t (a) { fill (a.get_gzip (), s); }
 };
 
@@ -198,6 +198,10 @@ public:
   http_response_ok_t (const strbuf &b, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_ok_t (b.tosuio ()->resid (), a), b) 
   {}
+  
+  // for piece-meal output mode
+  http_response_ok_t (size_t s, const http_resp_attributes_t &a) :
+    http_response_t (http_resp_header_ok_t (s, a)) {}
 };
 
 class http_response_redirect_t : public http_response_t {

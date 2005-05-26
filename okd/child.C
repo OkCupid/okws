@@ -29,15 +29,9 @@
 #include "svq.h"
 #include "okdbg.h"
 
-#define LDCH_WARN(x) \
+#define LDCH_ERROR(x) \
   warn << servpath << ":" << pid << ": " << x << "\n";
 
-#define CH_CHATTER(x)                          \
-{                                              \
-  strbuf b;                                    \
-  b << servpath << ":" << pid << ": " << x ;   \
-  okdbg_warn (CHATTER, b);                     \
-}
 
 okch_t::okch_t (okd_t *o, const str &s)
   : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
@@ -100,7 +94,7 @@ okch_t::shutdown (oksig_t g, cbv cb)
   if (clnt) {
     // note that no authentication needed for this kill signal.
     if (g == OK_SIG_ABORT) {
-      CH_WARN ("aborting unresponsive child\n");
+      CH_ERROR ("aborting unresponsive child\n");
       kill ();
       (*cb) ();
     } else {
@@ -132,10 +126,10 @@ void
 okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
 {
   if (xc->timed_out ()) {
-    CH_WARN ("Connection timed out (fd=" << xc->getfd () 
+    CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
 	     << "): not forwarding to child");
   } else if (xc->getfd () < 0) {
-    CH_WARN ("XXX: Dead file descriptor encountered");
+    CH_ERROR ("Dead file descriptor encountered");
   } else {
     inc_n_sent ();
     x->clone (xc);
@@ -154,7 +148,9 @@ okch_t::start_chld ()
   if (state == OKC_STATE_LAUNCH_SEQ_2 && x) {
 
     // debug messages
-    CH_WARN ("child changed to serve status; conQsize=" << conqueue.size ());
+    if (OKDBG2 (OKD_STARTUP))
+      CH_CHATTER ("child changed to serve status; conQsize=" 
+		  << conqueue.size ());
     
     state = OKC_STATE_SERVE;
 
@@ -190,12 +186,16 @@ void
 okch_t::got_new_x_fd (int fd, int p)
 {
   if (pid != p) {
-    warn << "mismatching process IDs; hosed child: " << servpath << "\n";
+    strbuf b;
+    b << "mismatching process IDs; hosed child: " << servpath << "\n";
+    okdbg_warn (FATAL_ERROR, b);
     goto xfail;
   }
 
   if (!ctlx) {
-    warn << "improper connection status; hosed child: " << servpath << "\n";
+    strbuf b;
+    b << "improper connection status; hosed child: " << servpath << "\n";
+    okdbg_warn (FATAL_ERROR, b);
     goto xfail;
   }
 
@@ -226,12 +226,11 @@ void
 okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
 {
   if (*dfp) {
-    warn << "dispatch function ignored for destroyed child\n";
+    okdbg_warn (ERROR, "dispatch function ignored for destroyed child\n");
     return;
   }
+  
   if (!sbp) {
-    // need to track down a bug, so adding code instrumentation
-    warn << "calling okch_t::chld_eof from okch_t::dispatch\n";
     chld_eof (destroyed);
     return ;
   }
@@ -253,7 +252,7 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
       state = OKC_STATE_LAUNCH_SEQ_2;
       start_chld ();
     } else {
-      CH_WARN ("Cannot process READY message; in wrong state: " << state);
+      CH_ERROR ("Cannot process READY message; in wrong state: " << state);
     }
     sbp->reply (NULL);
     break;
@@ -393,7 +392,7 @@ okd_t::send_errdoc_set (svccb *sbp)
 void
 okch_t::kill ()
 {
-  warn << servpath << ": disconnecting from child (pid " << pid << ")\n";
+  CH_CHATTER ("disconnecting from child");
   x->seteofcb (cbv_null);
   x = NULL;
   ctlx = NULL;
@@ -413,9 +412,8 @@ okch_t::custom1_out (const ok_custom_data_t &x)
   if (clnt && !clnt->xprt ()->ateof ()) {
     clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
   } else {
-    warn << servpath << ": child in state=" << state << 
-      " (pid=" << pid << 
-      "); swallowing OKCTL_CUSTOM_1_OUT RPC.\n";
+    CH_ERROR ("child in state=" << state << 
+	     "swallowing OKCTL_CUSTOM_1_OUT RPC.");
   }
 }
 
@@ -423,10 +421,10 @@ void
 okch_t::chld_eof (ptr<bool> dfp, bool debug)
 {
   if (debug) {
-    warn << "okch_t::chld_eof called from ahttpcon/eofcb\n";
+    CH_ERROR ("okch_t::chld_eof called from ahttpcon/eofcb");
   }
   if (*dfp) {
-    warn << "destroyed child process died\n";
+    CH_ERROR ("destroyed child process died");
     return;
   }
   warn << servpath << ": child process died (pid " << pid << ")\n";

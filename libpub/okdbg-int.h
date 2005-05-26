@@ -78,4 +78,7 @@ public:
 
 };
 
+// environment variable name
+#define OKWS_DEBUG_OPTIONS "OKWS_DEBUG_OPTIONS"
+
 #endif /* _LIBPUB_DEBUG_H */

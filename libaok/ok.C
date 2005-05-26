@@ -29,6 +29,7 @@
 #include "resp.h"
 #include "rxx.h"
 #include <stdlib.h>
+#include "okdbg.h"
 
 
 void
@@ -170,8 +171,9 @@ oksrvc_t::init (int argc, char *argv[])
   setprogname (argv[0]);
   name = argv[0];
 
-  SVCWARN ("starting up; OKD version " << VERSION <<
-	   "; running as (" << getuid () << ", " << geteuid () << ")");
+  if (OKDBG2(OKD_STARTUP))
+    SVC_CHATTER ("starting up; OKD version " << VERSION <<
+		 "; running as (" << getuid () << ", " << geteuid () << ")");
 
   str mmc_file = ok_mmc_file;
 
@@ -240,7 +242,7 @@ void
 oksrvc_t::ctldispatch (svccb *v)
 {
   if (!v) {
-    warn << "oksrvc_t::ctldispatch: NULL RPC received (shutdown)\n";
+    okdbg_warn (ERROR, "oksrvc_t::ctldispatch: NULL RPC received (shutdown)");
     shutdown ();
     return;
   }
@@ -292,7 +294,7 @@ oksrvc_t::kill (svccb *v)
   oksig_t *sig = v->Xtmpl getarg<oksig_t> ();
   switch (*sig) {
   case OK_SIG_HARDKILL:
-    SVCWARN ("caught hard KILL signal; exitting immediately");
+    SVC_ERROR ("caught hard KILL signal; exitting immediately");
     end_program ();
     break;
   default:
@@ -305,7 +307,9 @@ oksrvc_t::kill (svccb *v)
 void
 oksrvc_t::shutdown ()
 {
-  SVCWARN ("caught shutdown signal");
+  if (OKDBG2(OKD_SHUTDOWN))
+    SVC_CHATTER ("caught shutdown signal");
+
   sdflag = true;
   clnt = NULL; // don't ctlclose -- we might still need more messages.
   if (!nclients) 
@@ -315,7 +319,7 @@ oksrvc_t::shutdown ()
 void
 oksrvc_t::end_program ()
 {
-  SVCWARN ("shutting down");
+  SVC_CHATTER ("shutting down");
   exit (0);
 }
 
@@ -393,7 +397,7 @@ void
 oksrvc_t::launch_log_cb (bool rc)
 {
   if (!rc) {
-    SVCWARN ("Connection to log service failed");
+    SVC_FATAL_ERROR ("Connection to log service failed");
     exit (1);
   }
   launch3 ();
@@ -411,7 +415,7 @@ void
 oksrvc_t::launch_pub_cb0 (ptr<pub_res_t> pr)
 {
   if (!*pr) 
-    SVCWARN (pr->to_str ());
+    SVC_ERROR (pr->to_str ());
 
   ptr<xpub_errdoc_set_t> xd = New refcounted<xpub_errdoc_set_t> ();
   clnt->call (OKCTL_REQ_ERRDOCS, NULL, xd, 
@@ -422,7 +426,7 @@ void
 oksrvc_t::launch_pub_cb1 (ptr<xpub_errdoc_set_t> xd, clnt_stat err)
 {
   if (err) {
-    SVCWARN ("ErrorDocInitError: " << err);
+    SVC_ERROR ("ErrorDocInitError: " << err);
     exit (1);
   }
 
@@ -469,15 +473,15 @@ void
 oksrvc_t::launch2 (bool b)
 {
   if (!b)
-    SVCWARN ("not all databases properly initalized");
+    SVC_ERROR ("not all databases properly initalized");
   launch3 ();
 }
 
 void
 oksrvc_t::launch4 ()
 {
-  // debug code
-  SVCWARN ("calling READY RPC to okd");
+  if (OKDBG2 (OKD_STARTUP))
+    SVC_ERROR ("calling READY RPC to okd");
 
   clnt->call (OKCTL_READY, NULL, NULL, wrap (this, &oksrvc_t::launch5));
 }
@@ -506,11 +510,11 @@ oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
 void
 oksrvc_t::launch5 (clnt_stat err)
 {
-  // debug code
-  SVCWARN ("Servided readied");
+  SVC_CHATTER ("service readied; OKD version " << VERSION <<
+	       "; running as (" << getuid () << ", " << geteuid () << ")");
 
   if (err) {
-    SVCWARN ("OK Child Initialization: " << err);
+    SVC_ERROR ("OK Child Initialization: " << err);
     exit (1);
   }
 }
@@ -520,10 +524,10 @@ ok_httpsrv_t::disable_accept ()
 {
   if (!accept_enabled) {
     if (accept_msgs)
-      warn << "accept already disabled\n";
+      okdbg_warn (ERROR, "accept already disabled");
   } else {
     if (accept_msgs)
-      warn << "disabling accept\n";
+      okdbg_warn (ERROR, "disabling accept");
     accept_enabled = false;
     disable_accept_guts ();
   }
@@ -534,11 +538,11 @@ ok_httpsrv_t::enable_accept ()
 {
   if (accept_enabled) {
     if (accept_msgs)
-      warn << "accept already enabled\n";
+      okdbg_warn (ERROR, "accept already enabled");
   } else {
     accept_enabled = true;
     if (accept_msgs)
-      warn << "enabling accept\n";
+      okdbg_warn (CHATTER, "enabling accept");
     enable_accept_guts ();
   }
 }
@@ -624,12 +628,81 @@ okclnt_t::redirect (const str &l, int ht)
 {
   http_resp_attributes_t hra (ht, hdr.get_vers ());
   rsp = New refcounted<http_response_redirect_t> (l, hra);
-  send (rsp);
+  send (rsp, wrap (this, &okclnt_t::delcb));
+}
+
+void
+okclnt_t::set_attributes (http_resp_attributes_t *hra)
+{
+  if (cachecontrol) hra->set_cache_control (cachecontrol);
+  if (contenttype) hra->set_content_type (contenttype);
+  if (expires) hra->set_expires (expires);
+  if (contdisp) hra->set_content_disposition (contdisp);
+
+  // set anything else you want
+  hra->set_others (hdr_fields);
+}
+
+bool
+okclnt_t::output_hdr (ssize_t len)
+{
+  assert (output_state == ALL_AT_ONCE);
+  output_state = STREAMING_HDRS;
+
+  if (x->closed ()) {
+    output_state = CLIENT_EOF;
+    return false;
+  }
+
+  http_resp_attributes_t hra (HTTP_OK, hdr.get_vers ());
+  set_attributes (&hra);
+  hra.set_gzip (false);
+  rsp = New refcounted<http_response_ok_t> (len, hra);
+  send (rsp, NULL);
+  return true;
+}
+
+static void hold_str (str s) {}
+
+bool
+okclnt_t::output_fragment (str s)
+{
+  if (output_state == CLIENT_EOF)
+    return false;
+
+  assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
+  output_state = STREAMING_BODY;
+
+  if (x->closed ()) {
+    output_state = CLIENT_EOF;
+    return false;
+  }
+
+  strbuf b (s);
+  x->send (b, NULL, wrap (hold_str, s));
+
+  return true;
+}
+
+bool
+okclnt_t::output_done ()
+{
+  if (output_state == CLIENT_EOF) {
+    error (HTTP_CLIENT_EOF);
+    return false;
+  }
+  assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
+  output_state = DONE;
+  x->set_drained_cb (wrap (this, &okclnt_t::delcb));
+  return true;
 }
 
 void
 okclnt_t::output (compressible_t &b)
 {
+  assert (output_state == ALL_AT_ONCE);
+  output_state = DONE;
+
   // client might have cancelled as we were waiting for DB
   if (x->closed ()) {
     error (HTTP_CLIENT_EOF);
@@ -643,24 +716,18 @@ okclnt_t::output (compressible_t &b)
   const strbuf &sb = b.to_strbuf (gz);
 
   http_resp_attributes_t hra (HTTP_OK, hdr.get_vers ());
+  set_attributes (&hra);
 
   hra.set_gzip (gz);
-  if (cachecontrol) hra.set_cache_control (cachecontrol);
-  if (contenttype) hra.set_content_type (contenttype);
-  if (expires) hra.set_expires (expires);
-  if (contdisp) hra.set_content_disposition (contdisp);
-
-  // set anything else you want
-  hra.set_others (hdr_fields);
     
   rsp = New refcounted<http_response_ok_t> (sb, hra);
   if (uid_set) rsp->set_uid (uid);
   if (prelen > 0) rsp->set_inflated_len (prelen);
-  send (rsp);
+  send (rsp, wrap (this, &okclnt_t::delcb));
 }
 
 void
-okclnt_t::send (ptr<http_response_t> rsp)
+okclnt_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
 
   // do cookies
@@ -669,7 +736,7 @@ okclnt_t::send (ptr<http_response_t> rsp)
   }
 
   oksrvc->log (x, &hdr, rsp);
-  rsp->send (x, wrap (this, &okclnt_t::delcb));
+  rsp->send (x, cb);
 }
 
 void
@@ -703,7 +770,7 @@ void
 oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
 {
   if (!*res) {
-    SVCWARN ("Pub of Rootfiles Failed");
+    SVC_ERROR ("Pub of Rootfiles Failed");
     res->cluck ();
     (*cb) (false);
   }
@@ -830,7 +897,7 @@ ok_base_t::fix_uri (const str &in) const
 void
 set_debug_flags ()
 {
-  str df = getenv ("OKWS_DEBUG_OPTIONS");
+  str df = getenv (OKWS_DEBUG_OPTIONS);
   if (df && !convertint (df, &okws_debug_flags)) {
     warn << "invalid debug flags given: " << df << "\n";
   }
