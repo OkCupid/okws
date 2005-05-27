@@ -118,7 +118,7 @@ void
 http_resp_header_t::fill (bool gz, ssize_t len)
 {
   fill (gz);
-  if (!gz and len >= 0) 
+  if (!gz && len >= 0) 
     add (http_hdr_size_t (len));
 }
 
