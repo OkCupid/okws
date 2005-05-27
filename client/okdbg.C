@@ -13,6 +13,7 @@ usage ()
 	<< "\t -S okd subsystem: display shutdown status messages\n"
 	<< "\t -s okd subsystem: display startup status messages\n"
 	<< "\t -c okd subsystem: noisy output about new connections\n"
+	<< "\t -h hlp subsystem: noisy output about helper connections\n"
     ;
   exit (1);
 }
@@ -24,7 +25,7 @@ main (int argc, char *argv[])
   int ch;
   int64_t res = 0;
   setprogname (argv[0]);
-  while ((ch = getopt (argc, argv, "abBEs")) != -1) {
+  while ((ch = getopt (argc, argv, "abBEsSch")) != -1) {
     switch (ch) {
     case 'a':
       res = res | OKWS_DEBUG_PUB_BINDTAB_INSERTS;
@@ -46,6 +47,9 @@ main (int argc, char *argv[])
       break;
     case 'c':
       res = res | OKWS_DEBUG_OKD_NOISY_CONNECTIONS;
+      break;
+    case 'h':
+      res = res | OKWS_DEBUG_HLP_STATUS;
       break;
     default:
       usage ();

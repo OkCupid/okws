@@ -36,5 +36,6 @@
 #define OKWS_DEBUG_OKD_SHUTDOWN                   (1 << 4)
 #define OKWS_DEBUG_OKD_STARTUP                    (1 << 5)
 #define OKWS_DEBUG_OKD_NOISY_CONNECTIONS          (1 << 6)
+#define OKWS_DEBUG_HLP_STATUS                     (1 << 7)
 
 #endif /* _LIBPUB_OKDEBUG_H */

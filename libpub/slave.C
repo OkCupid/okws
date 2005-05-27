@@ -24,6 +24,7 @@
 #include "pslave.h"
 #include "stllike.h"
 #include "axprtfd.h"
+#include "okdbg.h"
 
 static int
 _pub_accept (int pubfd, sockaddr_in *sin)
@@ -225,7 +226,8 @@ void
 helper_inet_t::launch_cb (cbb c, ptr<bool> df, int f)
 {
   if (*df) {
-    hwarn ("object destroyed before helper_inet_t::launch_cb returned");
+    if (OKDBG2 (HLP_STATUS))
+      warn ("helper object destroyed before launch_cb returned\n");
     (*c) (false);
     return;
   }
@@ -304,7 +306,8 @@ helper_t::ping_cb (cbb c, ptr<bool> df, clnt_stat err)
   // call it twice, after all.
   //
   if (*df) {
-    hwarn ("helper object destroyed before ping returned");
+    if (OKDBG2(HLP_STATUS))
+	warn ("helper object destroyed before ping returned\n");
     (*c) (false);
     return;
   }
@@ -326,7 +329,8 @@ void
 helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
 {
   if (*df) {
-    hwarn ("helper object destroyed before connect returned");
+    if (OKDBG2(HLP_STATUS))
+      warn ("helper object destroyed before connect returned\n");
     if (cb)
       (*cb) (false);
     return;
@@ -414,7 +418,8 @@ void
 helper_t::eofcb (ptr<bool> df)
 {
   if (*df) {
-    hwarn ("helper object destroyed before eofcb");
+    if (OKDBG2 (HLP_STATUS))
+      warn ("helper object destroyed before eofcb\n");
     return;
   }
 
@@ -456,7 +461,8 @@ void
 helper_t::retry (ptr<bool> df)
 {
   if (*df) {
-    hwarn ("helper object destroyed while attempting to retry");
+    if (OKDBG2 (HLP_STATUS))
+      warn ("helper object destroyed while attempting to retry\n");
     return;
   }
 
@@ -470,7 +476,8 @@ void
 helper_t::retried (ptr<bool> df, bool b)
 {
   if (*df) {
-    hwarn ("helper object destroyed while attempting connection during retry");
+    if (OKDBG2 (HLP_STATUS))
+      warn ("helper object destroyed while attempting retry connection\n");
     return;
   }
 
