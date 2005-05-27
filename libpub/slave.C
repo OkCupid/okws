@@ -217,12 +217,19 @@ helper_inet_t::launch (cbb c)
 {
   if (!hostname || hostname == "-")
     hostname = "localhost";
-  tcpconnect (hostname, port, wrap (this, &helper_inet_t::launch_cb, c));
+  tcpconnect (hostname, port, wrap (this, &helper_inet_t::launch_cb, c,
+				    destroyed));
 }
 
 void
-helper_inet_t::launch_cb (cbb c, int f)
+helper_inet_t::launch_cb (cbb c, ptr<bool> df, int f)
 {
+  if (*df) {
+    hwarn ("object destroyed before helper_inet_t::launch_cb returned");
+    (*c) (false);
+    return;
+  }
+
   bool ret = true;
   if (f < 0) {
     hwarn ("could not connect to host"); 
@@ -297,13 +304,14 @@ helper_t::ping_cb (cbb c, ptr<bool> df, clnt_stat err)
   // call it twice, after all.
   //
   if (*df) {
+    hwarn ("helper object destroyed before ping returned");
     (*c) (false);
     return;
   }
   if (err) {
     hwarn (strbuf ("ping failed: " ) << err);
     (*c) (false);
-    status = HLP_STATUS_ERR;
+    status_change (HLP_STATUS_ERR);
   } else 
     (*c) (true);
 }
@@ -318,6 +326,7 @@ void
 helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
 {
   if (*df) {
+    hwarn ("helper object destroyed before connect returned");
     if (cb)
       (*cb) (false);
     return;
@@ -325,11 +334,12 @@ helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
   if (!b) {
     if (!(opts & HLP_OPT_CNCT1) && status != HLP_STATUS_RETRY)
       d_retry ();
-    status = HLP_STATUS_ERR;
+    status_change (HLP_STATUS_ERR);
   } else {
     assert (clnt);
-    clnt->seteofcb (wrap (this, &helper_t::eofcb));
-    status = HLP_STATUS_OK;
+    clnt->seteofcb (wrap (this, &helper_t::eofcb, destroyed));
+
+    status_change (HLP_STATUS_OK);
     process_queue ();
   }
 
@@ -401,17 +411,31 @@ helper_base_t::hwarn (const str &s) const
 }
 
 void
-helper_t::eofcb ()
+helper_t::eofcb (ptr<bool> df)
 {
+  if (*df) {
+    hwarn ("helper object destroyed before eofcb");
+    return;
+  }
+
   x = NULL;
   clnt = NULL;
   fd = -1;
   hwarn ("connection dropped");
   if ((opts & HLP_OPT_NORETRY))
-    status = HLP_STATUS_HOSED;
+    status_change (HLP_STATUS_HOSED);
   else if (can_retry ())
-    retry ();
-  call_status_cb ();
+    retry (destroyed);
+}
+
+void
+helper_t::status_change (hlp_status_t new_status)
+{
+  hlp_status_t old_status = status;
+  status = new_status;
+
+  if (new_status != old_status) 
+    call_status_cb ();
 }
 
 helper_t::~helper_t ()
@@ -425,24 +449,34 @@ void
 helper_t::d_retry ()
 {
   if (can_retry () && !(opts & HLP_OPT_NORETRY)) 
-    delaycb (rdelay, 0, wrap (this, &helper_t::retry));
+    delaycb (rdelay, 0, wrap (this, &helper_t::retry, destroyed));
 }
 
 void
-helper_t::retry ()
+helper_t::retry (ptr<bool> df)
 {
+  if (*df) {
+    hwarn ("helper object destroyed while attempting to retry");
+    return;
+  }
+
   hwarn ("attempting to reconnect");
-  status = HLP_STATUS_RETRY;
+  status_change (HLP_STATUS_RETRY);
   retries = 0;
-  connect (wrap (this, &helper_t::retried));
+  connect (wrap (this, &helper_t::retried, destroyed));
 }
 
 void
-helper_t::retried (bool b)
+helper_t::retried (ptr<bool> df, bool b)
 {
+  if (*df) {
+    hwarn ("helper object destroyed while attempting connection during retry");
+    return;
+  }
+
   if (!b) {
     if (++retries > max_retries) {
-      status = HLP_STATUS_HOSED;
+      status_change (HLP_STATUS_HOSED);
     } else {
       d_retry ();
     }

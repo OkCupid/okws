@@ -109,7 +109,7 @@ public:
   void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
 	     time_t duration = 0);
 
-  void retry ();
+  void retry (ptr<bool> df);
   void d_retry ();
   ptr<aclnt> get_clnt () const { return clnt; }
   virtual void kill (cbv cb, ptr<okauthtok_t> auth, 
@@ -121,13 +121,14 @@ public:
   void set_status_cb (status_cb_t c) { stcb = c; }
 
 protected:
+  void status_change (hlp_status_t ns);
   void call_status_cb () { if (stcb) (*stcb) (status); }
   virtual void launch (cbb c) = 0;
   void ping (cbb c);
   void ping_cb (cbb c, ptr<bool> df, clnt_stat err);
   bool mkclnt () { return (clnt = aclnt::alloc (x, rpcprog)); }
-  void eofcb ();
-  void retried (bool b);
+  void eofcb (ptr<bool> df);
+  void retried (ptr<bool> df, bool b);
   void connected (cbb::ptr cb, ptr<bool> df, bool b);
 
 
@@ -237,7 +238,7 @@ public:
         
 protected:
   void launch (cbb c);
-  void launch_cb (cbb c, int fd);
+  void launch_cb (cbb c, ptr<bool> df, int fd);
 private:
   str hostname;
   u_int port;
