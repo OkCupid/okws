@@ -21,6 +21,7 @@
  *
  */
 
+#include <limits.h>
 #include "okconst.h"
 
 
@@ -126,7 +127,7 @@ const char *okws_server_label = "OKWS/"VERSION;
 // helper processes constants
 //
 u_int hlpr_max_calls = 1000;               // max outstanding calls
-u_int hlpr_max_retries = 100;              // ... before giving up
+u_int hlpr_max_retries = UINT_MAX;         // ... before giving up
 u_int hlpr_retry_delay = 4;                // delay between retries.
 u_int hlpr_max_qlen = 1000;                // maximum # to q
 

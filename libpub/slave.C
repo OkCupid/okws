@@ -468,7 +468,6 @@ helper_t::retry (ptr<bool> df)
 
   hwarn ("attempting to reconnect");
   status_change (HLP_STATUS_RETRY);
-  retries = 0;
   connect (wrap (this, &helper_t::retried, destroyed));
 }
 

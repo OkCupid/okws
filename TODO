@@ -48,9 +48,7 @@ HTTP Issues
  - kill everything nicely if the logd dies.  if the pubd dies, just cannot
    update templates. make lots of noise
  - strange service restart problems -- due to browser?
- - profile and optimize 
  - okmgr restart has buggy error messages;
- - combine svq and holdtab in an awesome way
  - better error messages / more robust okmgr repub stuff
  - Autoconf for zstr stuff
  - Document (1) debugging (2) library stuff
@@ -69,8 +67,6 @@ BUGS
    is eventually put back on a free list. of course, we need to watch
    out for DOS possibilities here.
  - template iterators....
- - if the pubd is still churning when a request comes in, i don't
-   think that request is ever serviced (on startup).
 
 TODO
 ----
@@ -117,10 +113,6 @@ OKD v0.2
  - runtime prepare checks.
  - aut tok's
  - uid is hacked into logging system ; de-hack it
- - (display post-gzip size content)
- - config file recursive decent?
- - write / test with slow-drip client
- - fix config 
  - benjie reports no dice when receiving big file uploads -- maybe
    we're hitting the channel limit?
  - better story for /etc/localtime.
@@ -134,20 +126,12 @@ OKD v0.2
  - fix RPCC autoconf stuff
  - bug in file upload -- hangs if channel limit exceeded.
  - clean up nasty pub global variables
- - bugs when logging reqs that are too big
- - bug: when a service crashes, and okd queues up connections, those 
-   connections might be bad by the time the service comes back up.  in 
-   this case, okd should not send failed connections, or the service should 
-   not call fail if a bad file descriptor was received.
  - memory leak in DB proxies; clean up threads so that dmalloc reports
    are more informative.
  - simplify publishing protocol; right now, the repub commands breaks
    since it sends collections of include file, and therefore might 
    overrun a smaller maximum XDR packet size.
  - strip out EC stuff
- - fix bug where queued connections might abort and therefore cause a
-   new child to freak out. remember, temporary fix is to not queue
-   connections.
  - OK_MON rpc needed for proxies, to show Q len.
  - OK_MON rpc needed for services to show activity, like the apache
    server-status page.
@@ -155,7 +139,12 @@ OKD v0.2
  - bug with including a file in itself.
  - pub command line jailing is mess up W.R.T. runtime jail.
  - fix servername/serveralabel mess
+
+Features
+--------
  - need a decompress function for zstr
+ - regex matching for service names
+ - config file recursive decent?
  X debug and fix prepared statement handles on mysql. need to change
    the state machine so that it corresponds with the parsed query 
    state machine.
@@ -175,3 +164,19 @@ sfslite
 Show-Stoppers
 -------------
  - when FDs don't make it, okd panics.
+
+Solved
+------
+ X write / test with slow-drip client
+ X if the pubd is still churning when a request comes in, i don't
+   think that request is ever serviced (on startup).
+ X debug and fix prepared statement handles on mysql. need to change
+   the state machine so that it corresponds with the parsed query 
+   state machine.
+ X bug: when a service crashes, and okd queues up connections, those 
+   connections might be bad by the time the service comes back up.  in 
+   this case, okd should not send failed connections, or the service should 
+   not call fail if a bad file descriptor was received.
+ X fix bug where queued connections might abort and therefore cause a
+   new child to freak out. remember, temporary fix is to not queue
+   connections.
