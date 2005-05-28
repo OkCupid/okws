@@ -171,13 +171,14 @@ oksrvc_t::init (int argc, char *argv[])
   setprogname (argv[0]);
   name = argv[0];
 
+  set_debug_flags ();
+
   if (OKDBG2(OKD_STARTUP))
     SVC_CHATTER ("starting up; OKD version " << VERSION <<
 		 "; running as (" << getuid () << ", " << geteuid () << ")");
 
   str mmc_file = ok_mmc_file;
 
-  set_debug_flags ();
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -211,7 +212,7 @@ oksrvc_t::init (int argc, char *argv[])
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
 
-    if (getenv ("ARG_DEBUG"))
+    if (OKDBG2 (SVC_ARGS))
       t->dump1 ();
   }
   init_syscall_stats ();

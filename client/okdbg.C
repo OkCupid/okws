@@ -14,6 +14,7 @@ usage ()
 	<< "\t -s okd subsystem: display startup status messages\n"
 	<< "\t -c okd subsystem: noisy output about new connections\n"
 	<< "\t -h hlp subsystem: noisy output about helper connections\n"
+	<< "\t -A svc subsystem: dump argument list on startup\n"
     ;
   exit (1);
 }
@@ -50,6 +51,9 @@ main (int argc, char *argv[])
       break;
     case 'h':
       res = res | OKWS_DEBUG_HLP_STATUS;
+      break;
+    case 'A':
+      res = res | OKWS_DEBUG_SVC_ARGS;
       break;
     default:
       usage ();
