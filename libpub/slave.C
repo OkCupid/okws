@@ -426,7 +426,10 @@ helper_t::eofcb (ptr<bool> df)
   x = NULL;
   clnt = NULL;
   fd = -1;
+
+  // always warn when a connection was dropped
   hwarn ("connection dropped");
+
   if ((opts & HLP_OPT_NORETRY))
     status_change (HLP_STATUS_HOSED);
   else if (can_retry ())
@@ -465,8 +468,9 @@ helper_t::retry (ptr<bool> df)
       warn ("helper object destroyed while attempting to retry\n");
     return;
   }
+  if (OKDBG2 (HLP_STATUS))
+    hwarn ("attempting to reconnect");
 
-  hwarn ("attempting to reconnect");
   status_change (HLP_STATUS_RETRY);
   connect (wrap (this, &helper_t::retried, destroyed));
 }
@@ -486,9 +490,15 @@ helper_t::retried (ptr<bool> df, bool b)
     } else {
       d_retry ();
     }
-    hwarn ("reconnect attempt failed");
+
+    if (OKDBG2 (HLP_STATUS))
+      hwarn ("reconnect attempt failed");
+
   } else {
-    hwarn ("reconnect succeded");
+    
+    // always print a success out!
+    hwarn ("reconnect succeded (retries=%d)", retries);
+
     retries = 0;
   }
 }
