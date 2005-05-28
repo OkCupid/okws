@@ -497,7 +497,9 @@ helper_t::retried (ptr<bool> df, bool b)
   } else {
     
     // always print a success out!
-    hwarn ("reconnect succeded (retries=%d)", retries);
+    strbuf b;
+    b.fmt ("reconnect succeded (retries=%d)", retries);
+    hwarn (b);
 
     retries = 0;
   }
