@@ -299,18 +299,19 @@ helper_t::ping (cbb cb)
 void
 helper_t::ping_cb (cbb c, ptr<bool> df, clnt_stat err)
 {
-  //
-  // callback c will bring us to helper_t::connected;
-  // thus, if the ping failed, no need to call d_retry(), since
-  // helper_t::connected will do that for us.  don't want to 
-  // call it twice, after all.
-  //
   if (*df) {
     if (OKDBG2(HLP_STATUS))
 	warn ("helper object destroyed before ping returned\n");
     (*c) (false);
     return;
   }
+
+  //
+  // callback c will bring us to helper_t::connected;
+  // thus, if the ping failed, no need to call d_retry(), since
+  // helper_t::connected will do that for us.  don't want to 
+  // call it twice, after all.
+  //
   if (err) {
     hwarn (strbuf ("ping failed: " ) << err);
     (*c) (false);
@@ -328,39 +329,51 @@ helper_t::connect (cbb::ptr cb)
 void
 helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
 {
+  // object was destroyed before we got done with the connection
   if (*df) {
     if (OKDBG2(HLP_STATUS))
       warn ("helper object destroyed before connect returned\n");
-    if (cb)
+    if (cb) 
       (*cb) (false);
     return;
   }
+
+  // the connection failed!
   if (!b) {
+
+    // for the first failed connection, check to see if we should
+    // enter the retry loop.  we know if it's the first failed connection
+    // because if it is, we will **not** be in state HLP_STATUS_RETRY;
+    // we know to enter the retry loop if the option HLP_OPT_CNCT1
+    // is not set.
     if (!(opts & HLP_OPT_CNCT1) && status != HLP_STATUS_RETRY)
       d_retry ();
-    status_change (HLP_STATUS_ERR);
-  } else {
-    assert (clnt);
-    clnt->seteofcb (wrap (this, &helper_t::eofcb, destroyed));
 
-    status_change (HLP_STATUS_OK);
-    process_queue ();
+    // Even if we're going to retry, we set to status HLP_STATUS_ERR
+    // temporarily.
+    status_change (HLP_STATUS_ERR);
+
+    // the cb is fired after the first connection attempt; whoever
+    // called connect will always get an answer after the first attempt,
+    // even if there are more restarts scheduled.
+    if (cb)
+      (*cb) (b);
+
+    return;
   }
 
-  finish_connect (cb, df, b);
-}
+  // successfull connect
+  assert (clnt);
+  clnt->seteofcb (wrap (this, &helper_t::eofcb, destroyed));
 
-void
-helper_t::finish_connect (cbb::ptr cb, ptr<bool> df, bool b)
-{
-  if (b && authtoks && txa_login_rpc > 0) 
-    login (cb, df);
+  if (authtoks && txa_login_rpc > 0) 
+    login (cb);
   else
-    finish_connect_2 (cb, b);
+    connect_success (cb);
 }
 
 void
-helper_t::login (cbb::ptr cb, ptr<bool> df)
+helper_t::login (cbb::ptr cb)
 {
   txa_login_arg_t arg;
   arg.setsize (authtoks->size ());
@@ -369,7 +382,7 @@ helper_t::login (cbb::ptr cb, ptr<bool> df)
   }
   ptr<txa_login_res_t> res = New refcounted<txa_login_res_t> ();
   call (txa_login_rpc, &arg, res, 
-	wrap (this, &helper_t::logged_in, cb, df, res));
+	wrap (this, &helper_t::logged_in, cb, destroyed, res));
 }
 
 void
@@ -387,15 +400,39 @@ helper_t::logged_in (cbb::ptr cb, ptr<bool> df, ptr<txa_login_res_t> res,
   } else {
     b = true;
   }
-  finish_connect_2 (cb, b);
+
+  if (b) {
+    connect_success (cb);
+  } else {
+    status_change (HLP_STATUS_DENIED);
+    if (cb)
+      (*cb) (false);
+  }
+
 }
 
 void
-helper_t::finish_connect_2 (cbb::ptr cb, bool b)
+helper_t::connect_success (cbb::ptr cb)
 {
+  status = HLP_STATUS_OK;
+  ptr<bool> df = destroyed;
+
+  // keep in mind all callbacks might potentially delete us!
+  // therefore, we need to be extra careful with accessing
+  // members after calling a callback.
   if (cb)
-    (*cb) (b);
-  call_status_cb ();
+    (*cb) (true);
+
+  if (!*df) {
+    if (status == HLP_STATUS_OK)
+      call_status_cb ();
+  }
+
+  // check df again! its value might have changed after
+  // call_status_cb!
+  if (!*df) {
+    process_queue ();
+  }
 }
 
 void
@@ -430,9 +467,9 @@ helper_t::eofcb (ptr<bool> df)
   // always warn when a connection was dropped
   hwarn ("connection dropped");
 
-  if ((opts & HLP_OPT_NORETRY))
+  if ((opts & HLP_OPT_NORETRY) || !can_retry ())
     status_change (HLP_STATUS_HOSED);
-  else if (can_retry ())
+  else 
     retry (destroyed);
 }
 
@@ -441,6 +478,9 @@ helper_t::status_change (hlp_status_t new_status)
 {
   hlp_status_t old_status = status;
   status = new_status;
+
+  if (new_status == HLP_STATUS_HOSED) 
+    hwarn ("giving up connection, and changing to failed state");
 
   if (new_status != old_status) 
     call_status_cb ();
@@ -472,7 +512,10 @@ helper_t::retry (ptr<bool> df)
     hwarn ("attempting to reconnect");
 
   status_change (HLP_STATUS_RETRY);
-  connect (wrap (this, &helper_t::retried, destroyed));
+
+  // calling status change might have deleted us, so let's be extra careful!
+  if (!*df) 
+    connect (wrap (this, &helper_t::retried, destroyed));
 }
 
 void
@@ -485,22 +528,19 @@ helper_t::retried (ptr<bool> df, bool b)
   }
 
   if (!b) {
+
     if (++retries > max_retries) {
       status_change (HLP_STATUS_HOSED);
     } else {
+      if (OKDBG2 (HLP_STATUS))
+	hwarn ("reconnect attempt failed");
       d_retry ();
     }
-
-    if (OKDBG2 (HLP_STATUS))
-      hwarn ("reconnect attempt failed");
 
   } else {
     
     // always print a success out!
-    strbuf b;
-    b.fmt ("reconnect succeded (retries=%d)", retries);
-    hwarn (b);
-
+    hwarn (strbuf ("reconnect succeded (retries=%d)", retries));
     retries = 0;
   }
 }

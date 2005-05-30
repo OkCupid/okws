@@ -41,7 +41,8 @@ typedef enum { HLP_STATUS_NONE = 0,
 	       HLP_STATUS_CONNECTING = 2,
 	       HLP_STATUS_ERR = 3,
 	       HLP_STATUS_RETRY = 4,
-	       HLP_STATUS_HOSED = 5 } hlp_status_t;
+	       HLP_STATUS_HOSED = 5,
+	       HLP_STATUS_DENIED = 6 } hlp_status_t;
 
 #define HLP_OPT_QUEUE   (1 << 0)        // queue requests if error
 #define HLP_OPT_PING    (1 << 1)        // ping helper on startup
@@ -137,11 +138,10 @@ protected:
 	     time_t duration = 0);
   void didcall (aclnt_cb cb, clnt_stat st);
 
-  void login (cbb::ptr cb, ptr<bool> df);
+  void login (cbb::ptr cb);
   void logged_in (cbb::ptr cb, ptr<bool> df, ptr<txa_login_res_t> res, 
 		  clnt_stat s);
-  void finish_connect_2 (cbb::ptr cb, bool b);
-  void finish_connect (cbb::ptr cb, ptr<bool> df, bool b);
+  void connect_success (cbb::ptr cb);
 
   const rpc_program rpcprog;
   ptr<axprt> x;
