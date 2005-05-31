@@ -59,6 +59,9 @@ install-exec-local:
 		ln -s $(okwslibdirp) $$dst; \
 	fi
 
+install-data-hook:
+	$(INSTALL_DATA) libpub/env.mk $(DESTDIR)$(okwslibdir)
+
 uninstall-local:
 	-rm -f $(DESTDIR)$(pkglibdir) $(DESTDIR)$(pkgincludedir)
 	-rmdir $(DESTDIR)$(okwslibdir) $(DESTDIR)$(owksincludedir) \

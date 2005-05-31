@@ -12,7 +12,7 @@ okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
 	pslave.h txa.h okdbg.h okdbg-int.h     
 
-noinst_HEADERS =  xpub.x fd_prot.x txa_prot.x
+noinst_HEADERS =  xpub.x fd_prot.x txa_prot.x env.mk
 
 YDEBUG = @YDEBUG@
 LDEEBUG = @LDEBUG@
@@ -96,6 +96,19 @@ xdrclean:
 
 .PHONY: sourceclean
 sourceclean: parseclean xdrclean
+
+#
+# include Makefile flags and options for pysfs1 
+#
+env.mk: Makefile
+	@rm -f env.mk~
+	echo "# Makefile fragment generated " `date` > env.mk~
+	echo "CC = $(CC)" >> env.mk~
+	echo "CXX = $(CXX)" >> env.mk~
+	echo "CFLAGS = $(CFLAGS)" >> env.mk~
+	echo "CXXFLAGS = $(CXXFLAGS)" >> env.mk~
+	echo "LIBS = $(LIBS)" >> env.mk~
+	mv -f env.mk~ env.mk
 
 
 BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h fd_prot.C fd_prot.h \
