@@ -164,6 +164,13 @@ okld_ch_t::launch_cb (int logfd)
   argv.push_back (execpath);
 
   okld->env.insert ("logfd", logfd, false);
+
+  // for Service2-style command lands, we can have many arguments
+  // here specified in okws_config.  make sure to add the encoded
+  // parameters last
+  for (u_int i = 0; i < args.size (); i++)
+    argv.push_back (args[i]);
+
   argv.push_back (okld->env.encode ());
   okld->env.remove ("logfd");
 

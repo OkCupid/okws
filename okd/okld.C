@@ -45,6 +45,13 @@ okld_t::set_signals ()
   sigcb (SIGINT,  wrap (this, &okld_t::shutdown, SIGINT));
 }
 
+void
+okld_ch_t::add_args (const vec<str> &v)
+{
+  for (u_int i = 0; i < v.size (); i++) 
+    args.push_back (v[i]);
+}
+
 bool
 okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 {
@@ -137,12 +144,48 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
     *errp = true;
 }
 
+static bool
+parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc)
+{
+  int svc_uid = -1;
+  char *const *argv = NULL;
+  u_int argc;
+  optind = 0;
+  bool rc = true;
+  int ch;
+
+  argv = to_argv (*v, &argc);
+  while ((ch = getopt (argc, argv, "u:")) != -1 && rc) {
+    switch (ch) {
+    case 'u':
+      if (u) {
+	warn << loc << ": -u option specified more than once!\n";
+	rc = false;
+      } else if (convertint (optarg, &svc_uid)) {
+	*u = New ok_usr_t (svc_uid);
+      } else {
+	*u = New ok_usr_t (optarg);
+	if (!**u) {
+	  warn << loc << ": cannot find user " << optarg << "\n";
+	  rc = false;
+	}
+      }
+      break;
+    default:
+      warn << loc << ": unrecognized option given\n";
+      rc = false;
+      break;
+    }
+    v->pop_front ();
+  }
+  free_argv (argv);
+  return rc;
+}
+
 
 void
-okld_t::got_service (vec<str> s, str loc, bool *errp)
+okld_t::got_service2 (vec<str> s, str loc, bool *errp)
 {
-
-  int svc_uid = -1;
   ok_usr_t *u = NULL;
 
   str bin;
@@ -150,10 +193,85 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   vec<str> env;
   str exe, httppath;
 
-  u_int argc;
-  char *const *argv = NULL;
   char *const *envp = NULL;
-  int ch;
+  okws1_port_t port;
+  okld_ch_t *chld;
+
+  //
+  // pop off "Service2"
+  //
+  s.pop_front ();
+
+  if (s.size () < 2) 
+    goto usage;
+
+  while (s.size () && strchr (s[0].cstr (), '='))
+    env.push_back (s.pop_front ());
+
+  if (!s.size ()) 
+    goto usage;
+
+  uri = s.pop_front ();
+  if (!check_uri (loc, uri, &port))
+    goto err;
+
+  if (!parse_service_options (&s, &u, loc))
+    goto err;
+
+  if (s.size () < 1)
+    goto usage;
+
+  bin = s.pop_front ();
+  if (!is_safe (bin)) {
+    warn << loc << ": Service path (" << bin 
+	 << ") contains unsafe substrings\n";
+    goto err;
+  }
+  
+  exe = apply_container_dir (service_bin, bin);
+  //
+  // if a port was specified for this URI, then there is no need
+  // to prepend it with a leading slash.
+  //
+  if (port) {
+    httppath = uri;
+    used_ports.insert (port);
+  } else {
+    httppath = re_fslash (uri);
+    used_primary_port = true;
+  }
+  
+  warn << "Service2: URI(" << httppath << ") --> unix(" << exe;
+  for (u_int i = 0; i < s.size (); i++) 
+    warnx << " " << s[i];
+  warnx << ")\n";
+ 
+  if (env.size ()) 
+    envp = to_argv (env, NULL, environ);
+  chld = New okld_ch_t (exe, httppath, this, loc, u, envp, port);
+  chld->add_args (s);
+
+  svcs.push_back (chld);
+  return;
+
+ usage:
+  warn << loc << ": usage: Service2 [<env>] <URI> [<options>] [<exec>]\n";
+ err:
+  *errp = true;
+  if (u) delete u;
+}
+
+void
+okld_t::got_service (vec<str> s, str loc, bool *errp)
+{
+  ok_usr_t *u = NULL;
+
+  str bin;
+  str uri;
+  vec<str> env;
+  str exe, httppath;
+
+  char *const *envp = NULL;
   okws1_port_t port;
 
   //
@@ -178,36 +296,8 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
     goto err;
   }
 
-  argv = to_argv (s, &argc);
-  optind = 0;
-  while ((ch = getopt (argc, argv, "u:")) != -1) {
-    switch (ch) {
-    case 'u':
-      if (u) {
-	warn << loc << ": -u option specified more than once!\n";
-	goto err;
-      } else if (convertint (optarg, &svc_uid)) {
-	u = New ok_usr_t (svc_uid);
-      } else {
-	u = New ok_usr_t (optarg);
-	if (!*u) {
-	  warn << loc << ": cannot find user " << optarg << "\n";
-	  goto err;
-	}
-      }
-      break;
-    default:
-      warn << loc << ": unrecognized option given\n";
-      goto err;
-      break;
-    }
-    s.pop_front ();
-  }
-
-  // make sure we clean up after ourselves; we didn't use to do this
-  // so we might find some weird corner cases here.
-  free_argv (argv);
-  argv = NULL;        // set to NULL in case we have an error later
+  if (!parse_service_options (&s, &u, loc))
+    goto err;
 
   if (s.size () != 1) 
     goto usage;
@@ -244,8 +334,9 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   warn << loc << ": usage: Service [<env>] <exec-path> [<options>] <URI>\n";
  err:
   *errp = true;
-  if (argv) free_argv (argv);
   if (u) delete u;
+
+  // XXX memory leak -- envp ??
 }
 
 void
@@ -361,6 +452,7 @@ okld_t::parseconfig (const str &cf)
   str okd_gr, okd_un;
 
   ct.add ("Service", wrap (this, &okld_t::got_service))
+    .add ("Service2", wrap (this, &okld_t::got_service2))
     .add ("Alias", wrap (this, &okld_t::got_alias))
     .add ("TopDir", wrap (got_dir, &topdir))
     .add ("JailDir", wrap (got_dir, &jaildir))

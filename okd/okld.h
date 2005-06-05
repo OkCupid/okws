@@ -73,11 +73,16 @@ public:
   bool chmod (int m);
   bool chown ();
   void clean_dumps ();
+  void add_args (const vec<str> &a);
 
   void assign_exec_ownership (int u, int g);
   void assign_mode (int m) { mode = m; }
 
   okws1_port_t get_port () const { return port; }
+
+  // add more arguments as we can parse for more options
+  //bool parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc);
+
 private:
   bool fix_exec (bool jail);
   void resurrect ();
@@ -108,6 +113,8 @@ private:
   okws1_port_t port;
   int nsent;
 
+  // arguments given to the executable (such as 'python filename')
+  vec<str> args;
 };
 
 class okld_t : public ok_base_t 
@@ -129,6 +136,7 @@ public:
   ~okld_t () { if (logexc) delete logexc; }
 
   void got_service (vec<str> s, str loc, bool *errp);
+  void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
 
