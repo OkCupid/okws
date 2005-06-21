@@ -800,6 +800,12 @@ s_custom1_cb (ok_custom_data_t data, okch_t *ch)
   ch->custom1_out (data); 
 }
 
+static void
+s_custom2_cb (ptr<ok_custom2_trig_t> trig, ok_custom_data_t data, okch_t *ch)
+{
+  ch->custom2_out (trig, data);
+}
+
 // receive and handle an incoming CUSTOM1 RPC request
 void
 okd_t::custom1_in (svccb *sbp)
@@ -808,17 +814,45 @@ okd_t::custom1_in (svccb *sbp)
   custom1_in (*c, wrap (replystatus, sbp));
 }
 
+static void
+replytrig (svccb *sbp, ptr<ok_custom_res_t> res)
+{
+  sbp->reply (res);
+}
+
+static void
+s_notfound_cb (ptr<ok_custom2_trig_t> trig, str s)
+{
+  trig->add_err (s, OK_STATUS_NOSUCHCHILD);
+}
+
+void
+okd_t::custom2_in (svccb *sbp)
+{
+  ok_custom_arg_t *c = sbp->Xtmpl getarg<ok_custom_arg_t> ();
+
+  ptr<ok_custom2_trig_t> trig = New refcounted<ok_custom2_trig_t> ();
+
+  // when the trig counts down to 0, this cb will be called,
+  // which will send a reply back to the caller
+  trig->setcb (wrap (replytrig, sbp, trig->get_custom_res ()));
+
+  apply_to_children (c->progs, 
+		     wrap (s_custom2_cb, trig, c->data), 
+		     trig->get_ok_res (),
+		     wrap (s_notfound_cb, trig));
+}
+
 void
 okd_t::custom1_in (const ok_custom_arg_t &x, okrescb cb)
 {
   ptr<ok_res_t> res = New refcounted<ok_res_t> ();
   apply_to_children (x.progs, wrap (s_custom1_cb, x.data), res);
-  (*cb) (res);
 }
 
 void
 okd_t::apply_to_children (const ok_progs_t &x, cb_okch_t apply_cb,
-			  ptr<ok_res_t> res)
+			  ptr<ok_res_t> res, cbs::ptr notfoundcb)
 {
   if (x.typ == OK_SET_ALL) {
     servtab.traverse (apply_cb);
@@ -827,11 +861,31 @@ okd_t::apply_to_children (const ok_progs_t &x, cb_okch_t apply_cb,
     for (u_int j = 0; j < lim; j++) {
       str prog = (*x.progs)[j];
       okch_t *o = servtab[prog];
-      if (!o) 
+      if (!o) {
 	*res << (strbuf ("cannot find program: ") << prog);
-      else 
+	if (notfoundcb)
+	  (*notfoundcb) (prog);
+      } else 
 	(*apply_cb) (o);
     }
   }
 }
 
+void
+ok_custom2_trig_t::add_err (const str &svc, ok_xstatus_typ_t t)
+{
+  ok_custom_res_el_t el;
+  el.prog = svc;
+  el.status = t;
+  _custom_res->results.push_back (el);
+}
+
+void
+ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
+{
+  ok_custom_res_el_t el;
+  el.prog = svc;
+  el.status = OK_STATUS_OK;
+  el.dat = d;
+  _custom_res->results.push_back (el);
+}

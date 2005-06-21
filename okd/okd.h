@@ -65,6 +65,24 @@ struct ok_repub_t {
   ok_xstatus_t xst;
 };
 
+class ok_custom2_trig_t {
+public:
+  ok_custom2_trig_t () :
+    _ok_res (New refcounted<ok_res_t> ()),
+    _custom_res (New refcounted<ok_custom_res_t> ()) {}
+
+  void add_err (const str &svc, ok_xstatus_typ_t t);
+  void add_succ (const str &svc, const ok_custom_data_t &dat);
+  ~ok_custom2_trig_t () { _cb (); }
+  ptr<ok_res_t> get_ok_res () { return _ok_res; }
+  ptr<ok_custom_res_t> get_custom_res () { return _custom_res; }
+  void setcb (cbv c) { _cb = c; }
+private:
+  cbv::ptr _cb;
+  ptr<ok_res_t> _ok_res;
+  ptr<ok_custom_res_t> _custom_res;
+};
+
 class okd_t;
 class okch_t : public ok_con_t {  // OK Child Handle
 public:
@@ -85,7 +103,11 @@ public:
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
   void custom1_out (const ok_custom_data_t &x);
+  void custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x);
   void chld_eof (ptr<bool> dfp, bool debug = false);
+  void custom2_out_cb (ptr<ok_custom2_trig_t> trig, 
+		       ptr<ok_custom_data_t> res,
+		       clnt_stat err);
 
   inline int get_n_sent () const { return _n_sent; }
   inline void reset_n_sent () { _n_sent = 0; }
@@ -189,6 +211,7 @@ public:
 
   void relaunch (const ok_progs_t &x, okrescb cb);
   void custom1_in (const ok_custom_arg_t &x, okrescb cb);
+  void custom2_in (svccb *sbp);
   void custom1_in (svccb *sbp);
 
   void turnlog (okrescb cb);
@@ -211,7 +234,7 @@ protected:
 private:
 
   void apply_to_children (const ok_progs_t &x, cb_okch_t acb,
-			  ptr<ok_res_t> res);
+			  ptr<ok_res_t> res, cbs::ptr notfoundcb = NULL);
 
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();

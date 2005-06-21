@@ -261,6 +261,9 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_CUSTOM_1_OUT:
     custom1_rpc (v);
     break;
+  case OKCTL_CUSTOM_2_OUT:
+    custom2_rpc (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;

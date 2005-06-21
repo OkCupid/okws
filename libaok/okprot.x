@@ -11,6 +11,8 @@ struct xpub_errdoc_set_t {
   xpub_errdoc_t docs<>;
 };
 
+// BAD nomenclature; ok_prog_t should be ok_service_t; each
+// prog corresponds to a separate OK service
 typedef string ok_prog_t <>;
 
 enum ok_set_typ_t {
@@ -39,7 +41,18 @@ enum ok_xstatus_typ_t {
   OK_STATUS_OK = 0,
   OK_STATUS_PUBERR = 1,
   OK_STATUS_NOSUCHCHILD = 2,
-  OK_STATUS_ERR = 3
+  OK_STATUS_ERR = 3,
+  OK_STATUS_DEADCHILD = 4
+};
+
+struct ok_custom_res_el_t {
+  ok_prog_t        prog;
+  ok_xstatus_typ_t status;
+  ok_custom_data_t dat;
+};
+
+struct ok_custom_res_t {
+  ok_custom_res_el_t results<>;
 };
 
 union ok_xstatus_t switch (ok_xstatus_typ_t status) 
@@ -79,6 +92,12 @@ program OKCTL_PROGRAM {
 	
 		ok_xstatus_t 
 		OKCTL_CUSTOM_1_OUT (ok_custom_data_t) = 8;
+
+		ok_custom_res_t
+		OKCTL_CUSTOM_2_IN (ok_custom_arg_t) = 9;
+
+		ok_custom_data_t
+		OKCTL_CUSTOM_2_OUT (ok_custom_data_t) = 9;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;
@@ -183,6 +202,8 @@ program OKMGR_PROGRAM {
 		ok_xstatus_t
 		OKMGR_CUSTOM_1 (ok_custom_arg_t) = 4;
 
+		ok_custom_res_t
+		OKMGR_CUSTOM_2 (ok_custom_arg_t) = 5;
 	} = 1;
 } = 11278;
 

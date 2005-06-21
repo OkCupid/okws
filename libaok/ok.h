@@ -272,6 +272,7 @@ public:
   virtual void custom_init (cbv cb) { (*cb) (); }
 
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
+  virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
 
   ~oksrvc_t () ;
 

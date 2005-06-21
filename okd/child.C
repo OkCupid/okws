@@ -268,6 +268,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
   case OKCTL_CUSTOM_1_IN: 
     myokd->custom1_in (sbp);
     break;
+  case OKCTL_CUSTOM_2_IN:
+    myokd->custom2_in (sbp);
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;
@@ -399,6 +402,31 @@ okch_t::kill ()
   clnt = NULL;
   srv = NULL;
   state = OKC_STATE_NONE;
+}
+
+void
+okch_t::custom2_out_cb (ptr<ok_custom2_trig_t> trig,
+			ptr<ok_custom_data_t> res, clnt_stat err)
+{
+  if (err)
+    trig->add_err (servpath, OK_STATUS_ERR);
+  else
+    trig->add_succ (servpath, *res);
+}
+
+void
+okch_t::custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x)
+{
+  ptr<ok_custom_data_t> resp = New refcounted<ok_custom_data_t> ();
+  
+  if (clnt && !clnt->xprt ()->ateof ()) {
+    clnt->call (OKCTL_CUSTOM_2_OUT, &x, resp, 
+		wrap (this, &okch_t::custom2_out_cb, trig, resp));
+  } else {
+    trig->add_err (servpath, OK_STATUS_DEADCHILD);
+    CH_ERROR ("child in state=" << state << 
+	     "swallowing OKCTL_CUSTOM_1_OUT RPC.");
+  }
 }
 
 //
