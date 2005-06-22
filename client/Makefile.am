@@ -8,7 +8,7 @@ noinst_HEADERS = normdist.h
 okwsbin_PROGRAMS = okdbg
 
 okdbg_SOURCES = okdbg.C
-okdbg_LDADD = $(LIBASYNC)
+okdbg_LDADD = $(LIBASYNC) $(LIBPY)
 
 hcli_SOURCES = hcli.C
 

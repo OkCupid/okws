@@ -705,6 +705,28 @@ case $with_mode in
 		CXXDEBUG='-g -O'
 		;;
 
+	"pydbg" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		DEBUG='-g'
+		CXXDEBUG='-g'
+		with_python=yes
+		enable_shared=yes
+		with_dmalloc=no
+		SFS_PYTHON
+		;;
+
+	"python" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		with_python=yes
+		enable_shared=yes
+		with_dmalloc=no
+		DEBUG='-g -O'
+		CXXDEBUG='-g -O'
+		SFS_PYTHON
+		;;
+
 	"profile" )
 		sfstag=$with_mode
 		okwstag=$with_mode
@@ -1660,7 +1682,7 @@ SFS_DMALLOC
 
 dnl LDEPS='$(LIBSFSMISC) $(LIBSVC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
 LDEPS='$(LIBSFSMISC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
-LDADD="$LDEPS "'$(LIBGMP)'
+LDADD="$LDEPS "'$(LIBGMP) $(LIBPY)'
 AC_SUBST(LDEPS)
 AC_SUBST(LDADD)
 ])
@@ -1720,5 +1742,75 @@ if test "${ac_cv_path_install_c+set}" = "set" -a "$ac_cv_path_install_c" != "no"
 then
     INSTALL="$ac_cv_path_install_c"
     AC_SUBST(INSTALL)
+fi
+])
+
+dnl
+dnl Check to find Python Headers
+dnl
+dnl SFS_PYTHON(vers)
+dnl
+AC_DEFUN([SFS_PYTHON],
+[
+AC_ARG_WITH(python,
+--with-python[=prog]        specify a Python interpreter )
+if test "${with_python+set}"
+then
+	ac_save_CFLAGS=$CFLAGS
+	ac_save_LIBS=$LIBS
+	ac_save_CC=$CC
+	ac_save_CXX=$CXX
+
+	AC_CACHE_CHECK(for python memory allocation, sfs_cv_pymalloc,
+	[
+	if test "$with_python" = yes; then
+		py=python
+	else
+		py=$with_python
+	fi
+
+	pyfull=`which $py`
+	if test $? -ne 0; then
+		AC_MSG_ERROR(Cannot find path for Python interpreter)
+	fi
+	cfg="${srcdir}/py/configure.py"
+
+	inc=-I`$pyfull $cfg -I`
+	lib=`$pyfull $cfg -l`
+	CC=`$pyfull $cfg -c`
+	CXX=`$pyfull $cfg -x`
+
+
+	CFLAGS="${ac_save_CFLAGS} $inc"
+	LIBS="$lib ${ac_save_LIBS}"
+
+	sfs_cv_pymalloc="no"
+
+	AC_TRY_LINK([#include <Python.h>
+                    ],
+                    [(void )PyMem_Malloc (0); 
+		    PyMem_Free ((void *)0); 
+		    PyMem_Realloc ((void *)0, 0);
+                    ], sfs_cv_pymalloc="yes" )
+	])
+	if test "$sfs_cv_pymalloc" = "yes"
+	then
+		CPPFLAGS="$CPPFLAGS $inc"
+		LIBPY="$lib"
+		AC_DEFINE(PYMALLOC, 1, Use Python memory alloc funcs)
+
+		dnl clear out configure's cache
+		unset ac_cv_prog_CC
+		unset ac_cv_prog_ac_ct_CC
+		AC_PROG_CC
+		AC_PROG_CPP
+		AC_PROG_CXX
+	else
+		CC=$ac_save_CC
+		CXX=$ac_save_CXX
+	fi
+	AC_SUBST(LIBPY)
+	LIBS=$ac_save_LIBS
+	CFLAGS=$ac_save_CFLAGS
 fi
 ])
