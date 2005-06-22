@@ -1,0 +1,100 @@
+Custom RPCs
+-----------
+
+In any service where you want it, implement the method:
+
+ void custom2_rpc (svccb *sbp);
+
+the argument and return result of this RPC are both
+
+    ok_custom_data_t
+
+types, which are just wrapper structs around opaque bytes.  in
+otherwords, the contents of this payload is opaque to OKWS, since it
+can't know how different usages of this RPC will happen.
+
+here's an example of how i might use this.  in some .x file in the
+cupcore or cupid tree, i might have some definitions such as:
+
+struct alfred_control_arg_t {
+  bool flush_cache;
+  unsigned new_cache_size;
+};
+
+strut alfred_control_res_t {
+  unsigned hit_ratio;
+  unsigned cache_size;
+};
+
+
+then, in your service, do something like this:
+
+class my_service : public oksrvc_t {
+
+  void custom2_rpc (svccb *b)
+  {
+    alfred_control_arg_t arg;
+    alfred_control_res_t res;
+    ok_custom_data_t *d = b->Xtmpl getarg<ok_custom_data_t> ();
+    bytes2xdr (arg, d->data);
+
+    bool flush_cache = arg.flush_cache;
+    u_int32_t new_chace_size = arg.new_cache_size;
+
+    // do some stuff here
+
+    res.hit_ratio = 400;
+    res.cache_size = 10000000000000;
+
+    b->reply (&res);
+  }
+}
+
+That's the server side of things.  What about the client?  Basically,
+you have two options.  First, a client might be a web service, but I
+don't think that's what you want.  Second, a client can be any old
+program making an RPC to port 11277.  This is probably for you. Then
+you can do this in your client program:
+
+ok_custom_arg_t arg;
+ptr<ok_custom_res_set_t> res = New refcounted<ok_custom_res_set_t> ();
+alfred_control_arg_t c;
+
+// to send a command to ALL services
+arg.progs.set_typ (OK_SET_ALL);
+
+// or -- to send to only some:
+arg.progs.set_typ (OK_SET_SOME);
+arg.progs.progs->push_back ("/splash");
+arg.progs.progs->push_back ("/profile");
+
+// now load up your command
+c.flush_cache = true;
+c.new_cache_size = 1000;
+
+// now pickle your command and make it opaque data to send in the
+// RPC
+xdr2bytes (arg.data.data, c);
+
+clnt->call (OKMGR_CUSTOM_2, &arg, res, wrap (mycb, res));
+
+void mycb (ptr<ok_custom_res_set_t> set, clnt_stat err)
+{
+  assert (!err);
+  for (u_int i = 0; i < set->size; i++) {
+    warn << "service name:   " << (*set)[i].prog;
+    warn << "service status: " << (*set)[i].res.status;
+    if ((*set)[i].res.status == OK_STATUS_OK) {
+      alfred_custom_res_t res;
+      bytes2xdr (res, *((*set)[i].res.dat) );
+      warn << "hit ratio: " << res.hit_ratio;
+      warn << "cache size: " << res.cache_size;
+    }
+  }
+}
+
+This is the general idea.  I'm checking this code in now.  It compiles
+but I haven't run it, so we might run into some bugs as we use it.
+Should be what you need though.  I might change the ok_custom_res_t
+so that the data field is in an switch/union, but need to run out now.
+
