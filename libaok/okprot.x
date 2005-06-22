@@ -45,14 +45,20 @@ enum ok_xstatus_typ_t {
   OK_STATUS_DEADCHILD = 4
 };
 
-struct ok_custom_res_el_t {
-  ok_prog_t        prog;
-  ok_xstatus_typ_t status;
-  ok_custom_data_t dat;
+union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
+  case OK_STATUS_OK:
+    ok_custom_data_t dat;
+  default:
+    void;
 };
 
 struct ok_custom_res_t {
-  ok_custom_res_el_t results<>;
+  ok_prog_t                prog;
+  ok_custom_res_union_t    res;
+};
+
+struct ok_custom_res_set_t {
+  ok_custom_res_t results<>;
 };
 
 union ok_xstatus_t switch (ok_xstatus_typ_t status) 
@@ -93,7 +99,7 @@ program OKCTL_PROGRAM {
 		ok_xstatus_t 
 		OKCTL_CUSTOM_1_OUT (ok_custom_data_t) = 8;
 
-		ok_custom_res_t
+		ok_custom_res_set_t
 		OKCTL_CUSTOM_2_IN (ok_custom_arg_t) = 9;
 
 		ok_custom_data_t

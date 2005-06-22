@@ -815,7 +815,7 @@ okd_t::custom1_in (svccb *sbp)
 }
 
 static void
-replytrig (svccb *sbp, ptr<ok_custom_res_t> res)
+replytrig (svccb *sbp, ptr<ok_custom_res_set_t> res)
 {
   sbp->reply (res);
 }
@@ -874,18 +874,18 @@ okd_t::apply_to_children (const ok_progs_t &x, cb_okch_t apply_cb,
 void
 ok_custom2_trig_t::add_err (const str &svc, ok_xstatus_typ_t t)
 {
-  ok_custom_res_el_t el;
+  ok_custom_res_t el;
   el.prog = svc;
-  el.status = t;
+  el.set_status = t;
   _custom_res->results.push_back (el);
 }
 
 void
 ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
 {
-  ok_custom_res_el_t el;
+  ok_custom_res_t el;
   el.prog = svc;
-  el.status = OK_STATUS_OK;
-  el.dat = d;
+  el.set_status (OK_STATUS_OK);
+  *el.dat = d;
   _custom_res->results.push_back (el);
 }

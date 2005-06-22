@@ -75,12 +75,12 @@ public:
   void add_succ (const str &svc, const ok_custom_data_t &dat);
   ~ok_custom2_trig_t () { _cb (); }
   ptr<ok_res_t> get_ok_res () { return _ok_res; }
-  ptr<ok_custom_res_t> get_custom_res () { return _custom_res; }
+  ptr<ok_custom_res_set_t> get_custom_res () { return _custom_res; }
   void setcb (cbv c) { _cb = c; }
 private:
   cbv::ptr _cb;
   ptr<ok_res_t> _ok_res;
-  ptr<ok_custom_res_t> _custom_res;
+  ptr<ok_custom_res_set_t> _custom_res;
 };
 
 class okd_t;
