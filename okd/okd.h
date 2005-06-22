@@ -69,7 +69,7 @@ class ok_custom2_trig_t {
 public:
   ok_custom2_trig_t () :
     _ok_res (New refcounted<ok_res_t> ()),
-    _custom_res (New refcounted<ok_custom_res_t> ()) {}
+    _custom_res (New refcounted<ok_custom_res_set_t> ()) {}
 
   void add_err (const str &svc, ok_xstatus_typ_t t);
   void add_succ (const str &svc, const ok_custom_data_t &dat);

@@ -876,7 +876,7 @@ ok_custom2_trig_t::add_err (const str &svc, ok_xstatus_typ_t t)
 {
   ok_custom_res_t el;
   el.prog = svc;
-  el.set_status = t;
+  el.res.set_status (t);
   _custom_res->results.push_back (el);
 }
 
@@ -885,7 +885,7 @@ ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
 {
   ok_custom_res_t el;
   el.prog = svc;
-  el.set_status (OK_STATUS_OK);
-  *el.dat = d;
+  el.res.set_status (OK_STATUS_OK);
+  *el.res.dat = d;
   _custom_res->results.push_back (el);
 }
