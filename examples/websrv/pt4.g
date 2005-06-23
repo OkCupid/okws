@@ -66,7 +66,7 @@ public:
 
   void process ()
   {
-    char buf[100];
+    //char buf[100];
     u_int64_t u;
     int64_t s;
     if (!cgi.lookup ("u", &u) || !cgi.lookup ("s", &s)) {

@@ -345,6 +345,7 @@ okd_t::parseconfig ()
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
+    .ignore ("Service2")
     .ignore ("CrashSamplingInterval")
     .ignore ("MaxCrahsedProcesses")
     .ignore ("ServiceLowUid")

@@ -54,7 +54,7 @@ private:
   int _i;
 };
 
-static void apply_test (str s, u_int i, pt1_srv_t *t) { t->pairset (s, i); }
+//static void apply_test (str s, u_int i, pt1_srv_t *t) { t->pairset (s, i); }
 
 bool
 pt1_srv_t::init ()
@@ -115,7 +115,7 @@ void
 pt1_srv_t::lookup (svccb *b)
 {
   ptr<pt1_query_res_t> u = New refcounted<pt1_query_res_t> (ADB_ERROR);
-  int *arg = b->template getarg<int> ();
+  int *arg = b->Xtmpl getarg<int> ();
   str err;
   adb_status_t rc = ADB_OK;
   u->set_status (ADB_OK);

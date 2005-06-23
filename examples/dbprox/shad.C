@@ -75,7 +75,7 @@ void
 shad_dbprox_t::query (svccb *b)
 {
   ptr<sha_query_res_t> r = New refcounted<sha_query_res_t> (ADB_OK);
-  sha_query_arg_t *arg = b->template getarg<sha_query_arg_t> ();
+  sha_query_arg_t *arg = b->Xtmpl getarg<sha_query_arg_t> ();
   adb_status_t err_rc = ADB_EXECUTE_ERROR;
   if (!qry->execute (*arg) || (err_rc = qry->fetch (r->res)) != ADB_OK) 
     r->set_status (err_rc);
