@@ -309,7 +309,7 @@ int
 end_GH ()
 {
   if (mystrcmp (eof_tok, yytext)) {
-    free (eof_tok);
+    xfree (eof_tok);
     yy_pop_state ();
     return 1;
   } else {
@@ -321,7 +321,7 @@ int
 begin_GH ()
 {
   int strlen = yyleng - 3;
-  eof_tok = (char *)malloc (strlen + 1);
+  eof_tok = (char *)xmalloc (strlen + 1);
   memcpy (eof_tok, yytext + 2, strlen);
   eof_tok[strlen] = 0;
   yy_push_state (yywss ? WGH : GH);

@@ -196,6 +196,7 @@ public:
   virtual void process () = 0;
   virtual void parse ();
   virtual void output (compressible_t &b);
+  virtual void output (compressible_t *b);
   virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
   virtual void send (ptr<http_response_t> rsp, cbv::ptr cb);
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
@@ -223,6 +224,7 @@ protected:
   void http_parse_cb (int status);
   virtual void delcb () { delete this; }
   void set_attributes (http_resp_attributes_t *hra);
+  bool do_gzip () const;
 		
   cbv::ptr cb;
   ref<ahttpcon> x;

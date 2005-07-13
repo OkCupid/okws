@@ -701,6 +701,18 @@ okclnt_t::output_done ()
   return true;
 }
 
+bool
+okclnt_t::do_gzip () const
+{
+  return hdr.takes_gzip () && ok_gzip && rsp_gzip;
+}
+
+void
+okclnt_t::output (compressible_t *b)
+{
+  output (*b);
+}
+
 void
 okclnt_t::output (compressible_t &b)
 {
@@ -714,7 +726,7 @@ okclnt_t::output (compressible_t &b)
   }
 
   ssize_t prelen = -1;
-  bool gz = hdr.takes_gzip () && ok_gzip && rsp_gzip;
+  bool gz = do_gzip ();
   if (gz) 
     prelen = b.inflated_len ();
   const strbuf &sb = b.to_strbuf (gz);
