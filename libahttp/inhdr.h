@@ -26,7 +26,7 @@
 #define _LIBAHTTP_INHDR_H
 
 #include "hdr.h"
-#include "cgi.h"
+#include "okcgi.h"
 #include "qhash.h"
 
 typedef enum { INHDRST_START = 0,

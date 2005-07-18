@@ -9,7 +9,7 @@ libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 
 # noinst_HEADERS = err.g
 
-okwsinclude_HEADERS = cgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
+okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
 	suiolite.h ahparse.h
 

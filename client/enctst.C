@@ -1,5 +1,5 @@
 
-#include "cgi.h"
+#include "okcgi.h"
 
 
 int

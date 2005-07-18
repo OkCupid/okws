@@ -29,7 +29,7 @@
 #include "httpconst.h"
 #include "arpc.h"
 #include "ahttp.h"
-#include "cgi.h"
+#include "okcgi.h"
 #include "resp.h"
 #include "pub.h"
 #include "inhdr.h"

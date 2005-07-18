@@ -29,7 +29,7 @@
 #include "pub.h"
 #include "parr.h"
 #include "ahttp.h"
-#include "cgi.h"
+#include "okcgi.h"
 #include "resp.h"
 #include "okprot.h"
 #include "inhdr.h"

@@ -1,7 +1,7 @@
 
 /* $Id$ */
 
-#include "cgi.h"
+#include "okcgi.h"
 
 void
 usage ()

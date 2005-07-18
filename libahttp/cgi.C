@@ -21,7 +21,7 @@
  *
  */
 
-#include "cgi.h"
+#include "okcgi.h"
 #include "parseopt.h"
 #include "httpconst.h"
 

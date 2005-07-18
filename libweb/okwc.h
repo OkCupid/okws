@@ -25,7 +25,7 @@
 #ifndef _LIBWEB_OKWC_H
 #define _LIBWEB_OKWC_H
 
-#include "cgi.h"
+#include "okcgi.h"
 #include "abuf.h"
 #include "aparse.h"
 #include "hdr.h"

@@ -10,7 +10,7 @@
 /* $Id$ */
 
 #include "ok.h"
-#include "cgi.h"
+#include "okcgi.h"
 #include "pub.h"
 #include <unistd.h>
 

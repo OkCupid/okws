@@ -29,7 +29,7 @@
 #include "async.h"
 #include "arpc.h"
 #include "ahttp.h"
-#include "cgi.h"
+#include "okcgi.h"
 #include "resp.h"
 #include "ok.h"
 #include "pslave.h"

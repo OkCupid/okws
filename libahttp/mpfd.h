@@ -26,7 +26,7 @@
 // mpfd = Multi Part Form Data
 //
 
-#include "cgi.h"
+#include "okcgi.h"
 #include "inhdr.h"
 #include "kmp.h"
 

@@ -27,7 +27,7 @@
 #define _LIBWEB_FORM_H
 
 #include "str.h"
-#include "cgi.h"
+#include "okcgi.h"
 #include "pubutil.h"
 #include "web.h"
 #include "parseopt.h"
