@@ -84,7 +84,7 @@ wfel_menu_t::output_field ()
 }
 
 void
-wfel_menu_t::readval (cgi_t *c)
+wfel_menu_t::getval (cgi_t *c)
 {
   wf_menu_pair_t *p = NULL;
   if (!c->lookup (name, &sval) || !sval || !(p = tab[sval]))
@@ -128,7 +128,7 @@ wf_menu_pair_t::output (strbuf &b, bool hasval)
 }
 
 void
-wfel_int_t::readval (cgi_t *c)
+wfel_int_t::getval (cgi_t *c)
 {
   ival_ok = c->lookup (name, &ival);
 }
@@ -167,7 +167,7 @@ wfel_t::add_error (const str &i)
 }
 
 void
-wfel_text_t::readval (cgi_t *c)
+wfel_text_t::getval (cgi_t *c)
 {
   c->lookup (wfel_ival_t::name, &sval);
   set_ival ();
@@ -339,7 +339,7 @@ webform_t::readvals (bool exclude_submits)
   u_int lim = els.size ();
   for (u_int i = 0; i < lim; i++) 
     if (!exclude_submits || !els[i]->is_submit ())
-      els[i]->readval (cgip);
+      els[i]->getval (cgip);
 }
 
 bool
@@ -347,7 +347,7 @@ webform_t::submitted () const
 {
   u_int lim = submits.size ();
   for (u_int i = 0; i < lim; i++) {
-    submits[i]->readval (cgip);
+    submits[i]->getval (cgip);
     if (submits[i]->submitted ())
       return true;
   }

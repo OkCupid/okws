@@ -50,7 +50,7 @@ public:
   virtual bool getval (vec<str> *v) const { return false; }
   virtual void setval (const str &s) {}
   virtual void setval (int64_t i) {}
-  virtual void readval (cgi_t *c) = 0;
+  virtual void getval (cgi_t *c) = 0;
   virtual str add_error (const str &in);
   virtual void clear () {}
   virtual void fill (aarr_t *a);
@@ -90,7 +90,7 @@ public:
   str process () { return NULL; }
   str output_field () { str s; return getval (&s) ? s : sNULL; }
   str output_label () { return NULL; }
-  void readval (cgi_t *c) {}
+  void getval (cgi_t *c) {}
 };
 
 typedef callback<str, wfel_t *>::ref wfpcb_t;
@@ -101,7 +101,7 @@ public:
 	       wfpcb_t c, int s = -1, int ml = -1)
     : wfel_ival_t (w, n, l), pcb (c), size (s), maxlen (ml) {}
   virtual ~wfel_text_t () {}
-  virtual void readval (cgi_t *c);
+  virtual void getval (cgi_t *c);
   str output_field ();
   str process () { return add_error ((*pcb) (this)); }
 protected:
@@ -117,7 +117,7 @@ public:
     : wfel_ival_t (w, n, l), minval (mn), maxval (mx), 
       size (s < 0 ? my_log_10 (max (abs (mn), abs (mx)) + 2) : s) {}
 
-  virtual void readval (cgi_t *c);
+  virtual void getval (cgi_t *c);
   virtual bool getval (str *s) const;
   virtual void setval (const str &s) { ival_ok = convertint (s, &ival);}
   virtual void setval (int64_t i) { ival = i; ival_ok = true; }
@@ -150,7 +150,7 @@ public:
   { insert (New wf_menu_pair_t (v, l, sel)); if (sel) def = v;}
 
   str output_field ();
-  virtual void readval (cgi_t *c);
+  virtual void getval (cgi_t *c);
   virtual str process ();
   void clear ();
   void set_select (const str &v, bool b);
@@ -167,7 +167,7 @@ public:
   wfel_submit_t (webform_t *w, const str &n, const str &v)
     : wfel_t (w, n, NULL), value (v), sbmt_flag (false) {}
   str output_field ();
-  void readval (cgi_t *c) { sbmt_flag = ((*c)[name] == value); }
+  void getval (cgi_t *c) { sbmt_flag = ((*c)[name] == value); }
   bool submitted () const { return sbmt_flag; }
   str process () { return NULL; }
   void clear () { sbmt_flag = false; }
