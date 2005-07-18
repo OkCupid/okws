@@ -88,7 +88,7 @@ public:
   wfel_ivar_t (webform_t *w, const str &n, T v)
     : wfel_ival_t (w, n, NULL) { setval (v); }
   str process () { return NULL; }
-  str output_field () { str s; return getval (&s) ? s : sNULL; }
+  str output_field () { str s; return wfel_ival_t::getval (&s) ? s : sNULL; }
   str output_label () { return NULL; }
   void getval (cgi_t *c) {}
 };
