@@ -12,8 +12,8 @@ static void begin_PSTR (int i, int mode);
 static void end_PSTR ();
 static void begin_STR (int i, int j);
 static int  end_STR ();
-static void addch (int c1, int c2);
-static void addstr (char *c, int l);
+static int addch (int c1, int c2);
+static int addstr (char *c, int l);
 static void nlcount (int m = 0);
 static void pop_ECF ();
 static void push_ECF ();
@@ -77,7 +77,7 @@ TCLOSE	[ \t]*[;]?[ \t]*"-->"
 <ECF>{
 \n		{ PLINC; }
 {WS}+		/* ignore */ ;
-.		yyerror ("illegal token found in HTML-free zone");
+.		{ return yyerror ("illegal token found in HTML-free zone"); }
 }
 
 <CCODE>{
@@ -108,7 +108,7 @@ print		return T_PRINT;
 ct_include	return T_CTINCLUDE;
 include		return T_INCLUDE;
 init_publist	return T_INIT_PDL;
-<<EOF>>		{ yyerror ("unterminated GUY mode in file"); }
+<<EOF>>		{ return yyerror ("unterminated GUY mode in file"); }
 }
 
 <PTAG>{
@@ -145,7 +145,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 "//".*$		/* discard */ ;
 
-.		{ yyerror ("illegal token found in GUY/PTAG/EC++ "
+.		{ return yyerror ("illegal token found in GUY/PTAG/EC++ "
 	                   "environment"); }
 }
 
@@ -246,7 +246,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {HNAM}		{ yylval.str = yytext; return T_HNAM; }
 {HVAL}		{ yylval.str = yytext; return T_HVAL; }
 =		{ return (yytext[0]); }
-.		{ yyerror ("illegal token found in parsed HTAG"); }
+.		{ return yyerror ("illegal token found in parsed HTAG"); }
 }
 
 <SSTR,STR>\n	{ PLINC; addch ('\n', -1); }
@@ -266,26 +266,27 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <SSTR>[^\\\n\']+	addstr (yytext, yyleng);
 
 <PSTR>{
-\n		{ yyerror ("unterminated parsed string"); }
+\n		{ return yyerror ("unterminated parsed string"); }
 \\[\\"'tn]	{ if (yyesc) { yylval.ch = yytext[1]; return T_CH; }
 	  	  else { yylval.str = yytext; return T_STR; } }
-\\.		{ yyerror ("illegal escape sequence"); }
+\\.		{ return yyerror ("illegal escape sequence"); }
 \"		{ end_PSTR (); return (yytext[0]); }
 [^"\\$@%]+	{ yylval.str = yytext; return T_STR; }
 }
 
 <PSTR_SQ>{
-\n		{ yyerror ("unterminated parsed string"); }
+\n		{ return yyerror ("unterminated parsed string"); }
 \\[\\'"tn]	{ if (yyesc) { yylval.ch = yytext[1]; return T_CH; }
 	  	  else { yylval.str = yytext; return T_STR; } }
-\\.		{ yyerror ("illegal escape sequence"); }
+\\.		{ return yyerror ("illegal escape sequence"); }
 \'		{ end_PSTR (); return (yytext[0]); }
 [^'\\$@%]+	{ yylval.str = yytext; return T_STR; }
 }
 
 
 <STR,PSTR,SSTR,PSTR_SQ>{
-<<EOF>>		{ yyerror (strbuf ("EOF found in str started on line %d", 
+<<EOF>>		{ return 
+		  yyerror (strbuf ("EOF found in str started on line %d", 
 			           yy_ssln)); 
 		}
 }
@@ -293,16 +294,16 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <GCODE>{
 [}]		{ yy_pop_state (); return (yytext[0]); }
 [^{};]+		{ yylval.str = yytext; return T_GCODE; }
-.		{ yyerror ("illegal token found in @{..}"); }
+.		{ return yyerror ("illegal token found in @{..}"); }
 }
 
 <PVAR>{
 {VAR}		{ yylval.str = yytext; return T_VAR; }
 \}		{ yy_pop_state (); return (yytext[0]); }
-.		{ yyerror ("illegal token found in ${..}"); }
+.		{ return yyerror ("illegal token found in ${..}"); }
 }
 
-.		{ yyerror ("illegal token found in input"); }
+.		{ return yyerror ("illegal token found in input"); }
 
 %%
 int
@@ -365,25 +366,27 @@ end_STR ()
   return T_STR;
 }
 
-void
+int
 addch (int c1, int c2)
 {
   int len = (yyesc || c2 < 0) ? 1 : 2;
   if (sbi >= YY_STR_BUFLEN - len)
-    yyerror ("string buffer overflow");
+    return yyerror ("string buffer overflow");
   if (yyesc || c2 < 0)
     str_buf[sbi++] = c1;
   else
     sbi += sprintf (str_buf + sbi, "\\%c", c2);
+  return 1;
 }
 
-void
+int
 addstr (char *s, int l)
 {
   if (sbi + l >= YY_STR_BUFLEN - 1)
-    yyerror ("string buffer overflow");
+    return yyerror ("string buffer overflow");
   memcpy (str_buf + sbi, s, l);
   sbi += l;
+  return 1;
 }
 
 void

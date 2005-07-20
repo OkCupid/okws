@@ -145,11 +145,9 @@ Features
  - need a decompress function for zstr
  - regex matching for service names
  - config file recursive decent?
- X debug and fix prepared statement handles on mysql. need to change
-   the state machine so that it corresponds with the parsed query 
-   state machine.
  - be smarter about disabling gzip (if the user changes the content
    type and so on...)
+ - OKWS should be more proactive when it notices a stuck process
 
 Documentation
 ------------
@@ -180,3 +178,6 @@ Solved
  X fix bug where queued connections might abort and therefore cause a
    new child to freak out. remember, temporary fix is to not queue
    connections.
+ X debug and fix prepared statement handles on mysql. need to change
+   the state machine so that it corresponds with the parsed query 
+   state machine.
