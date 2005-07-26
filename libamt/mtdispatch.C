@@ -293,6 +293,7 @@ mtdispatch_t::chld_ready (int i)
       warn << "Timeout for object in queue (wait time=" 
 	   << diff << "s)\n";
       el.sbp->reject (PROC_UNAVAIL);
+      g_stats.to (); // report timeout to stats
     } else {
       send_svccb (el.sbp);
     }
@@ -599,7 +600,9 @@ ssrv_client_t::dispatch (svccb *s)
       // XXX better debug message needed
       warn << "RPC rejected due to insufficient credentials!\n";
       s->reject (PROC_UNAVAIL);
-    } else if (!ssrv->skip_db_call (s)) {
+    } else if (ssrv->skip_db_call (s)) {
+      ssrv->mtd->g_stats.async_serv ();
+    } else {
       ssrv->req_made ();
       ssrv->mtd->dispatch (s);
     }
@@ -663,8 +666,8 @@ mtd_stats_t::report ()
       !tsdiff (start_sample, tsnow, ok_amt_stat_freq))
     return;
   epoch_t e = new_epoch ();
-  warn ("STATS: i=%d;o=%d;r=%d;q=%d;a=%d;l=%d\n",
-	e.in, e.out, e.rejects, e.queued, e.async_serv, e.len_msec);
+  warn ("STATS: i=%d;o=%d;r=%d;q=%d;a=%d;t=%d;l=%d\n",
+	e.in, e.out, e.rejects, e.queued, e.async_serv, e.to, e.len_msec);
 }
 
 void
@@ -699,6 +702,10 @@ mtd_stats_t::new_epoch ()
   start_sample = tsnow;
   sample.in = 0;
   sample.out = 0;
+  sample.rejects = 0;
+  sample.queued = 0;
+  sample.async_serv = 0;
+  sample.to = 0;
 
   return e;
 }

@@ -103,6 +103,7 @@ struct epoch_t {
   int queued;
   int async_serv;
   int len_msec;
+  int to; // time outs!
 };
 
 struct mtd_stats_t {
@@ -113,6 +114,7 @@ struct mtd_stats_t {
   inline void rej () { sample.rejects ++ ; total.rejects ++; }
   inline void q () { sample.queued ++ ; total.queued ++; }
   inline void async_serv () { sample.async_serv ++; total.async_serv ++; }
+  inline void to () { sample.to ++; total.to ++; }
 
   epoch_t new_epoch ();
   epoch_t get_total () { return total; }
@@ -252,8 +254,10 @@ protected:
   vec<int> readyq;         // ready threads
   ssrv_t *ssrv;            // synchronous server pointer
 
+public:
   mtd_stats_t  g_stats;    // global stats
 
+protected:
   const txa_prog_t * const txa_prog; // for Thin XDR Authentication
 };
 
