@@ -3,23 +3,16 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libamysql.la
 
-libamysql_la_SOURCES = amysql_prot.C amysql.C mystmt_ag.C mystmt.C
+libamysql_la_SOURCES = amysql.C mystmt_ag.C mystmt.C
 
 mystmt_ag.C: mystmt.h
 
-okwsinclude_HEADERS = amysql_prot.h amysql.h mystmt_ag.h mystmt.h
+okwsinclude_HEADERS = amysql.h mystmt_ag.h mystmt.h
 
 #noinst_HEADERS = mystmt_ag.pl amysql_prot.x
 
-amysql.C: amysql_prot.h mystmt.h
+amysql.C: mystmt.h
 
-amysql_prot.C: $(srcdir)/amysql_prot.x amysql_prot.h
-	@rm -f $@
-	-$(RPCC) -c $(srcdir)/amysql_prot.x || rm -f $@
-
-amysql_prot.h: $(srcdir)/amysql_prot.x
-	@rm -f $@
-	-$(RPCC) -h $(srcdir)/amysql_prot.x || rm -f $@
 
 mystmt_ag.h: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
