@@ -31,7 +31,6 @@
 #include "mysql.h"
 #include "str.h"
 #include "amt.h"
-#include "amysql_prot.h"
 #include "web_prot.h"
 #include "web.h"
 #include "qhash.h"
