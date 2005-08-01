@@ -318,7 +318,7 @@ public:
       *pntr = n;
     if (ppntr) {
       if (nullfl) *ppntr = NULL;
-      else *ppntr = New refcounted<T> (n);
+      else *ppntr = New refcounted<T, scalar> (n);
     }
   }
 
