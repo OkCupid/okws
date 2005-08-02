@@ -1,6 +1,5 @@
 /* $Id */
 
-%#include "amysql_prot.h"
 %#include "web_prot.h"
 
 SEED (xf44e29342e19389sdzza341239f8sdf8gqwiiu123098asd45);

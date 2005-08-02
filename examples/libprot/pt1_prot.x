@@ -1,6 +1,5 @@
 /* $Id$ */
 
-%#include "amysql_prot.h"
 %#include "web_prot.h"
 
 %#define TT_ROWS 60
