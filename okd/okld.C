@@ -486,6 +486,7 @@ okld_t::parseconfig (const str &cf)
     .add ("MmapClockDaemon", &mmcd)
     .add ("MmapClockFile", &mmc_file)
     .add ("DangerousZbufs", &ok_dangerous_zbufs)
+    .add ("SyslogPriority", &ok_syslog_priority)
 
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
 

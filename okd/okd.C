@@ -328,6 +328,7 @@ okd_t::parseconfig ()
     .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
     .add ("ShutdownRetries", &ok_shutdown_retries, 1, 10)
     .add ("ShutdownTimeout", &ok_shutdown_timeout, 1, 200)
+    .add ("SyslogPriority", &ok_syslog_priority)
 
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
