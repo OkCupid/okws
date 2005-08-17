@@ -7,7 +7,7 @@ import os.path
 mf = get_makefile_filename ()
 d = parse_makefile (mf)
 
-optlist, args = getopt.getopt (sys.argv[1:], "Ivlcx")
+optlist, args = getopt.getopt (sys.argv[1:], "IvlcxF")
 for o in optlist:
     opt = o[0]
     if opt == '-I':
@@ -26,5 +26,7 @@ for o in optlist:
         print d['CC']
     elif opt == '-x':
         print d['CXX']
+    elif opt == '-F':
+        print d['LDFLAGS']
     
         

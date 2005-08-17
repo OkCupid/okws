@@ -1760,6 +1760,7 @@ then
 	ac_save_LIBS=$LIBS
 	ac_save_CC=$CC
 	ac_save_CXX=$CXX
+	ac_save_LDFLAGS=$LDFLAGS
 
 	AC_CACHE_CHECK(for python memory allocation, sfs_cv_pymalloc,
 	[
@@ -1779,6 +1780,7 @@ then
 	lib=`$pyfull $cfg -l`
 	CC=`$pyfull $cfg -c`
 	CXX=`$pyfull $cfg -x`
+	LDFLAGS=`$pyfull $cfg -F`
 
 
 	CFLAGS="${ac_save_CFLAGS} $inc"
@@ -1802,12 +1804,15 @@ then
 		dnl clear out configure's cache
 		unset ac_cv_prog_CC
 		unset ac_cv_prog_ac_ct_CC
+		unset ac_cv_prog_LDFLAGS
+		unset ac_cv_prog_at_ct_LDFLAGS
 		AC_PROG_CC
 		AC_PROG_CPP
 		AC_PROG_CXX
 	else
 		CC=$ac_save_CC
 		CXX=$ac_save_CXX
+		LDFLAGS=$ac_save_LDFLAGS
 	fi
 	AC_SUBST(LIBPY)
 	LIBS=$ac_save_LIBS
