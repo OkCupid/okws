@@ -67,6 +67,7 @@ BUGS
    is eventually put back on a free list. of course, we need to watch
    out for DOS possibilities here.
  - template iterators....
+ - starting w/o pub_config is a bit deadly (cases pubd to crash)
 
 TODO
 ----
@@ -121,7 +122,7 @@ OKD v0.2
    xmalloc for C++ objects.
  - boot up OkD with apache running on 80.  problems with "ErrorDocInit"
  - cannot sth prepare after init...
- - auth tokens
+ - auth tokens for python
  - debug load balancer class (load avg stuff)
  - fix RPCC autoconf stuff
  - bug in file upload -- hangs if channel limit exceeded.
