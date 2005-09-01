@@ -36,7 +36,7 @@ char *eof_tok;
 
 VAR	[a-zA-Z_][a-zA-Z_0-9]*
 HNAM	[a-zA-Z_][a-zA-Z_0-9-]*
-HVAL	[a-zA-Z0-9_#%/:?+@-]*[a-zA-Z0-9_#%:?+@-]
+HVAL	[^ \t\n\r"'>=]*[^ \t\n\r/"'>=]
 ST	[Ss][Cc][Rr][Ii][Pp][Tt]
 PRET    [Pp][Rr][Ee]
 WS	[ \t]
@@ -46,7 +46,7 @@ TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 %x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE EC WEC CCODE
-%x ECCODE ECF GCODE PRE PSTR_SQ
+%x ECCODE ECF GCODE PRE PSTR_SQ 
 
 %%
 
@@ -188,6 +188,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <WH,WGH,WEC>{	
 {WSN}+		{ nlcount (); return (' '); }
+"<!"		{ yylval.str = yytext; return T_HTML; }
 [<][/?%]?	{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
 \<{ST}/[ \t\n>]	{ yy_push_state (JS); yy_push_state (HTAG); 
 	          yylval.str = yytext; return T_BJST; }
