@@ -36,7 +36,7 @@ char *eof_tok;
 
 VAR	[a-zA-Z_][a-zA-Z_0-9]*
 HNAM	[a-zA-Z_][a-zA-Z_0-9-]*
-HVAL	[^ \t\n\r"'>=]*[^ \t\n\r/"'>=]
+HVAL	[^ \t\n\r"'>=$]*[^ \t\n\r/"'>=$]
 ST	[Ss][Cc][Rr][Ii][Pp][Tt]
 PRET    [Pp][Rr][Ee]
 WS	[ \t]
