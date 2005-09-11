@@ -203,6 +203,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("fdhw", &ok_svc_fds_high_wat);
     t->lookup ("mmcf", &mmc_file);
     t->lookup ("dz", &ok_dangerous_zbufs);
+    t->lookup ("rsl", &ok_recycle_suio_limit);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
@@ -324,7 +325,7 @@ void
 oksrvc_t::end_program ()
 {
   SVC_CHATTER ("shutting down");
-  exit (0);
+  call_exit (0);
 }
 
 void

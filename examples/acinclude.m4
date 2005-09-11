@@ -1664,12 +1664,34 @@ case $with_mode in
 		DEBUG='-g -pg -O2'
 		CXXDEBUG='-g -pg -O2'
 		;;
+	"pydbg" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		DEBUG='-g'
+		CXXDEBUG='-g'
+		with_python=yes
+		enable_shared=yes
+		with_dmalloc=no
+		SFS_PYTHON
+		;;
+	"python" )
+		sfstag=$with_mode
+		okwstag=$with_mode
+		with_python=yes
+		enable_shared=yes
+		with_dmalloc=no
+		DEBUG='-g -O'
+		CXXDEBUG='-g -O'
+		SFS_PYTHON
+		;;
 	optmz)
-		sfstag=lite
+		## install in the parent dir if no tag
+		## sfstag=lite
 		okmtag=$with_mode
 		;;
 	* )
-		sfstag=lite
+		## install in parent dir if no tag
+		## sfstag=lite
 		okmtag=optmz
 		if test "${with_mode+set}" = "set"; then
 			AC_MSG_ERROR([Unrecognized build mode specified])
@@ -1700,6 +1722,80 @@ AC_SUBST(sfstagdir)
 AC_SUBST(sfstag)
 ])
 
+dnl
+dnl Check to find Python Headers
+dnl
+dnl SFS_PYTHON(vers)
+dnl
+AC_DEFUN([SFS_PYTHON],
+[
+AC_ARG_WITH(python,
+--with-python[=prog]        specify a Python interpreter )
+if test "${with_python+set}"
+then
+	ac_save_CFLAGS=$CFLAGS
+	ac_save_LIBS=$LIBS
+	ac_save_CC=$CC
+	ac_save_CXX=$CXX
+	ac_save_LDFLAGS=$LDFLAGS
+
+	AC_CACHE_CHECK(for python memory allocation, sfs_cv_pymalloc,
+	[
+	if test "$with_python" = yes; then
+		py=python
+	else
+		py=$with_python
+	fi
+
+	pyfull=`which $py`
+	if test $? -ne 0; then
+		AC_MSG_ERROR(Cannot find path for Python interpreter)
+	fi
+	cfg="${srcdir}/py/configure.py"
+
+	inc=-I`$pyfull $cfg -I`
+	lib=`$pyfull $cfg -l`
+	CC=`$pyfull $cfg -c`
+	CXX=`$pyfull $cfg -x`
+	LDFLAGS=`$pyfull $cfg -F`
+
+
+	CFLAGS="${ac_save_CFLAGS} $inc"
+	LIBS="$lib ${ac_save_LIBS}"
+
+	sfs_cv_pymalloc="no"
+
+	AC_TRY_LINK([#include <Python.h>
+                    ],
+                    [(void )PyMem_Malloc (0); 
+		    PyMem_Free ((void *)0); 
+		    PyMem_Realloc ((void *)0, 0);
+                    ], sfs_cv_pymalloc="yes" )
+	])
+	if test "$sfs_cv_pymalloc" = "yes"
+	then
+		CPPFLAGS="$CPPFLAGS $inc"
+		LIBPY="$lib"
+		AC_DEFINE(PYMALLOC, 1, Use Python memory alloc funcs)
+
+		dnl clear out configure's cache
+		unset ac_cv_prog_CC
+		unset ac_cv_prog_ac_ct_CC
+		unset ac_cv_prog_LDFLAGS
+		unset ac_cv_prog_at_ct_LDFLAGS
+		AC_PROG_CC
+		AC_PROG_CPP
+		AC_PROG_CXX
+	else
+		CC=$ac_save_CC
+		CXX=$ac_save_CXX
+		LDFLAGS=$ac_save_LDFLAGS
+	fi
+	AC_SUBST(LIBPY)
+	LIBS=$ac_save_LIBS
+	CFLAGS=$ac_save_CFLAGS
+fi
+])
 dnl
 dnl Find installed OkCupid OKWS Libraries
 dnl This is not for OKWS, but for other packages that use OKWS

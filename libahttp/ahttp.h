@@ -42,7 +42,6 @@ extern int n_ahttpcon;
 //
 // memory recycling code hacked in for now....
 //
-#define RECYCLE_LIMIT 2048
 void recycle (suio *s);
 void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
@@ -85,36 +84,27 @@ protected:
   vec<fdtosend> fdsendq;
 
 public:
+  /**
+   * Analogous to axprt in SFS, this is a wrapper around a remote
+   * HTTP connection object.
+   *
+   * @brief allocate a new HTTP connection wrapper object
+   * @param f the file descriptor of the socket
+   * @param s the sockaddr that came with accept()
+   * @param mb input buffer size (-1 means use the default)
+   * @param rcvlmt maximum bytes we can read before giving up (-1 for default)
+   * @param coe call close_on_exec() on f
+   * @param ma call make_async() on f
+   */
   ahttpcon (int f, sockaddr_in *s = NULL, int mb = -1,
-	    int rcvlmt = -1, bool coe = true)
-    : 
-    start (timenow), fd (f), rcbset (false), 
-    wcbset (false), bytes_recv (0), bytes_sent (0),
-    eof (false), destroyed (false), out (suio_alloc ()), sin (s),
-    recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
-		  overflow_flag (false), ss (global_syscall_stats),
-    sin_alloced (s != NULL),
-    _timed_out (false),
-    destroyed_p (New refcounted<bool> (false))
-  {
-    //
-    // bookkeeping for debugging purposes;
-    //
-    n_ahttpcon++;
+	    int rcvlmt = -1, bool coe = true, bool ma = true) ;
 
-    make_async (fd);
-    if (coe) close_on_exec (fd);
-    if (mb == -1) mb = SUIOLITE_DEF_BUFLEN;
-    in = suiolite_alloc (mb, wrap (this, &ahttpcon::spacecb));
-    set_remote_ip ();
-  }
   int getfd () const { return fd; }
   bool ateof () const { return eof; }
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
   virtual ~ahttpcon ();
   void sendfd (int sfd, bool closeit = true, ptr<cbv_countdown_t> cb = NULL);
-  // void stopread ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
   void clone (ref<ahttpcon_clone> xc);
@@ -140,8 +130,9 @@ public:
   ptr<cbv_countdown_t> get_close_fd_cb () { return cbcd; }
 
   static ptr<ahttpcon> alloc (int fd, sockaddr_in *s = NULL, 
-			      int mb = SUIOLITE_DEF_BUFLEN)
-  { return New refcounted<ahttpcon> (fd, s, mb); }
+			      int mb = -1, int rcvlimit = -1, 
+			      bool coe = true, bool ma = true)
+  { return New refcounted<ahttpcon> (fd, s, mb, coe, ma); }
   bool closed () const { return fd < 0; }
   bool overflow () const { return overflow_flag; }
   int set_lowwat (int sz);

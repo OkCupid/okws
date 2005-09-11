@@ -678,8 +678,8 @@ case $with_mode in
 		sfstag=$with_mode
 		okwstag=$with_mode
 		enable_shared=yes
-		DEBUG='-g -O'
-		CXXDEBUG='-g -O'
+		DEBUG='-g -O2'
+		CXXDEBUG='-g -O2'
 		;;
 
 	"shared" )
@@ -700,9 +700,10 @@ case $with_mode in
 		;;
 
 	"optmz" )
-		sfstag=lite
-		DEBUG='-g -O'
-		CXXDEBUG='-g -O'
+		dnl default build mode; dump as usual
+		dnl sfstag=lite
+		DEBUG='-g -O2'
+		CXXDEBUG='-g -O2'
 		;;
 
 	"pydbg" )
@@ -730,8 +731,8 @@ case $with_mode in
 	"profile" )
 		sfstag=$with_mode
 		okwstag=$with_mode
-		DEBUG='-g -pg -O'
-		CXXDEBUG='-g -pg -O'
+		DEBUG='-g -pg -O2'
+		CXXDEBUG='-g -pg -O2'
 		;;
 
 	* )

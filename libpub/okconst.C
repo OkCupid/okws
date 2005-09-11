@@ -111,10 +111,8 @@ bool ok_dangerous_zbufs = false;    // only for experts if true.
 u_int okld_startup_batch_size = 25;        // number in each batch
 u_int okld_startup_batch_wait = 3;         // n secs to wait between batch
 
-
-
 // location of the memory-mapped clock daemon
-const char *ok_mmcd = "/usr/local/lib/sfs/lite/mmcd";
+const char *ok_mmcd = "/usr/local/lib/sfslite/mmcd";
 
 // location of mmcd's memory mapped file
 const char *ok_mmc_file = "/var/run/mmcd.mmf";
@@ -174,5 +172,20 @@ u_int ok_amt_stat_freq = 60;         // statistics frequency
 int ok_svc_uid_low = 51000;
 int ok_svc_uid_high = 52000;
 int ok_svc_mode = 0410;
+int ok_interpreter_mode = 0550;
+int ok_script_mode = 0440;
 
 int okwc_def_contlen = 0x20000;      // 128K 
+
+//
+// for freebsd this works, but no on planetlab, etc..
+//
+const char *ok_root = "root";
+const char *ok_wheel = "wheel";
+
+//
+// Turn off SUIO recyling by default.  This is a trick to save time in
+// malloc, but for production OKWS, we need memory more than CPU time;
+// of course, we can turn this on via okws_config.
+//
+u_int ok_recycle_suio_limit = 0;

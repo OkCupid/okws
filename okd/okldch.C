@@ -28,24 +28,33 @@
 #include <dirent.h>
 #include "okdbg.h"
 
+extern char ** environ;
+
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-		      ok_usr_t *u, char *const *env_in, u_int16_t p)
-  : rexecpath (e), servpath (s), okld (o), cfgfile_loc (cfl), uid (u), 
-  state (OKC_STATE_NONE), rcb (NULL),
-  have_ustat (false), startup_time (0), 
-  exec_uid (-1), exec_gid (-1), mode (-1),
-  env (env_in), port (p)
+		      ok_usr_t *u, vec<str> env_in, u_int16_t p)
+  : okld_jailed_exec_t (e, o, cfl),
+    servpath (s), uid (u), gid (-1),
+    state (OKC_STATE_NONE), rcb (NULL),
+    startup_time (0), 
+    env (env_in), port (p)
 {}
 
+str
+okld_jailed_exec_t::get_execpath () const
+{
+  return okld->jail2real (rexecpath);
+}
+
 bool
-okld_ch_t::get_unix_stat (bool chrted)
+okld_jailed_exec_t::get_unix_stat ()
 {
   if (have_ustat)
-    return false;
-  execpath = okld->jail2real (rexecpath, chrted);
-  if (stat (execpath.cstr (), &ustat) != 0) {
-    warn << cfgfile_loc << ": cannot access service binary: "
-	 << execpath << "\n";
+    return true;
+  if (stat (get_execpath ().cstr (), &ustat) != 0) {
+    strbuf b;
+    b << cfgfile_loc << ": cannot access service binary: "
+      << get_execpath () << "\n";
+    okdbg_warn (ERROR, b);
     return false;
   }
   have_ustat = true;
@@ -53,59 +62,64 @@ okld_ch_t::get_unix_stat (bool chrted)
 }
 
 bool
-okld_ch_t::can_exec (bool chrted)
+okld_ch_t::can_exec ()
 {
-  if (!get_unix_stat (chrted))
+  if (!get_unix_stat ())
     return false;
   if (!uid)
     return true;
-  str err = ::can_exec (execpath);
+  str err = ::can_exec (get_execpath ());
   if (err) {
-    warn << cfgfile_loc << ": " << err << " (" << execpath << ")\n";
+    warn << cfgfile_loc << ": " << err << " (" << get_execpath () << ")\n";
     return false;
   }
   return true;
 }
 
 int
-okld_ch_t::get_exec_mode ()
+okld_jailed_exec_t::get_exec_mode ()
 {
   assert (have_ustat);
   return ustat.st_mode;
 }
 
 int
-okld_ch_t::get_exec_uid ()
+okld_jailed_exec_t::get_exec_uid ()
 {
   assert (have_ustat);
   return ustat.st_uid;
 }
 
 int 
-okld_ch_t::get_exec_gid ()
+okld_jailed_exec_t::get_exec_gid ()
 {
   assert (have_ustat);
   return ustat.st_gid;
 }
 
 void
-okld_ch_t::assign_exec_ownership (int u, int g)
+okld_jailed_exec_t::assign_exec_ownership (int u, int g)
 {
   exec_uid = u;
   exec_gid = g;
 }
 
 bool
-okld_ch_t::chown ()
+okld_jailed_exec_t::chown ()
 {
   assert (exec_uid >= 0 && exec_gid >= 0);
-  if (::chown (execpath.cstr (), exec_uid, exec_gid) != 0) {
-    warn << cfgfile_loc << ": cannot chown binary: " << execpath << "\n";
+  if (::chown (get_execpath ().cstr (), exec_uid, exec_gid) != 0) {
+    strbuf b;
+    b << cfgfile_loc << ": cannot chown binary: " 
+      << get_execpath () << "\n";
+    okdbg_warn (FATAL_ERROR, b);
     return false;
   }
-  warn << "Changing owner of executable " 
-       << execpath << "; UID/GID:" << ustat.st_uid << "/" 
-       << ustat.st_gid << " --> " << exec_uid << "/" << exec_gid <<  "\n";
+  strbuf b;
+  b << "Changing owner of executable " 
+    << get_execpath () << "; UID/GID:" << ustat.st_uid << "/" 
+    << ustat.st_gid << " --> " << exec_uid << "/" << exec_gid <<  "\n";
+  okdbg_warn (CHATTER, b);
   return true;
 }
 
@@ -126,18 +140,21 @@ okld_ch_t::launch ()
 }
 
 bool
-okld_ch_t::chmod (int currmode)
+okld_jailed_exec_t::chmod (int currmode)
 {
   if ((currmode & 07777) == mode)
     return true;
 
   assert (mode >= 0);
-  if (::chmod (execpath.cstr (), mode) != 0) {
-    warn << cfgfile_loc << ": cannot chmod binary: " << execpath << "\n";
+  if (::chmod (get_execpath ().cstr (), mode) != 0) {
+    strbuf b;
+    b << cfgfile_loc << ": cannot chmod binary: " << get_execpath () << "\n";
+    okdbg_warn (FATAL_ERROR, b);
     return false;
   }
-  warn ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
-	execpath.cstr (), ustat.st_mode & 07777, mode);
+  strbuf b ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
+	    get_execpath ().cstr (), ustat.st_mode & 07777, mode);
+  okdbg_warn (CHATTER, b);
   return true;
 }
 
@@ -145,23 +162,39 @@ void
 okld_ch_t::launch_cb (int logfd)
 {
   if (logfd < 0) {
-    warn << "HOSED: Cannot connect to oklogd for server: (" << servpath << ","
-	 << rexecpath << ")\n";
+    strbuf b;
+    b << "HOSED: Cannot connect to oklogd for server: (" << servpath << ","
+      << rexecpath << ")\n";
+    okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
     return; 
   }
 
   if (okld->in_shutdown ()) {
     close (logfd);
-    warn << "HOSED: shutdown received while relaunching service: ("
-	 << servpath << "," << rexecpath << ")\n";
+    strbuf b;
+    b << "HOSED: shutdown received while relaunching service: ("
+      << servpath << "," << rexecpath << ")\n";
+    okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
     return;
   }
 
   vec<str> argv;
-  execpath = okld->jail2real (rexecpath, true);
-  argv.push_back (execpath);
+
+  // the first argument to aspawn ()...
+  str exe = get_execpath ();
+
+  // only do something in the case of a script; true => we are now
+  // chrooted
+  str i = get_interpreter ();
+  if (i) {
+    exe = i;
+    argv.push_back (i);
+  }
+
+  // pass true signifying that we've been jailed (if we are to be jailed)
+  argv.push_back (get_execpath ());
 
   okld->env.insert ("logfd", logfd, false);
 
@@ -174,10 +207,14 @@ okld_ch_t::launch_cb (int logfd)
   argv.push_back (okld->env.encode ());
   okld->env.remove ("logfd");
 
+  argv_t env_tmp;
+  if (env.size ()) 
+    env_tmp.init (env, environ);
+
   int fd, ctlfd;
-  fd = ahttpcon_aspawn (execpath, argv, 
+  fd = ahttpcon_aspawn (exe, argv, 
 			wrap (this, &okld_ch_t::set_svc_ids), 
-			&ctlfd, env);
+			&ctlfd, env_tmp);
 
   pid = ahttpcon_spawn_pid;
   close (logfd);
@@ -290,10 +327,11 @@ secdiff (struct timeval *tv0, struct timeval *tv1, int diff)
 }
 
 bool
-okld_ch_t::fix_exec (bool jail)
+okld_jailed_exec_t::fix_exec ()
 {
+  // force a redo in the case of resurrecting a new service!
   have_ustat = false;
-  if (!get_unix_stat (jail))
+  if (!get_unix_stat ())
     return false;
   if ((get_exec_uid () != exec_uid || get_exec_gid () != exec_gid) && 
       !chown ())
@@ -321,7 +359,7 @@ okld_ch_t::resurrect ()
     CH_ERROR ("HOSED: execeeded maximum number of crashes; "
 	      "will no longer restart!");
   } else {
-    if (okld->will_jail () && !fix_exec (true)) {
+    if (okld->will_jail () && !fix_exec ()) {
       CH_ERROR ("HOSED: failed to fix permissions on executable "
 		"during relaunch");
       state = OKC_STATE_HOSED;
@@ -363,4 +401,31 @@ okld_ch_t::clean_dumps ()
     warn ("close directory failed for %s: %m\n", rundir.cstr ());
   }
 }
+
+bool
+okld_jailed_exec_t::fixup (int uid_new, int gid_new, int new_mode)
+{
+  assign_exec_ownership (uid_new, gid_new);
+  assign_mode (new_mode);
+
+  // XXX might issue an additional stat() system call, but doesn't
+  // really matter....
+  return fix_exec ();
+}
+
+bool
+okld_ch_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
+			int gid_new, int mode_orig)
+{
+  if (!fixup (uid_new, gid_new, get_desired_execfile_mode ()))
+    return false;
+
+  // DO NOT run as the owner of the file!! that's the whole
+  // point of this!
+  assign_uid (gid_new);
+  assign_gid (gid_new);
+
+  return true;
+}
+
 

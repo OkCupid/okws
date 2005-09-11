@@ -45,9 +45,6 @@ typedef enum { SFS_CLOCK_GETTIME = 0,
 
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);
-char *const *to_argv (const vec<str> &v, u_int *c = NULL, 
-                      char *const *seed = NULL);
-void free_argv (char *const *argv);
 bool str_split (vec<str> *r, const str &s, bool quoted, int sz = 50);
 str suffix_sub (const char *s, const char *sfx1, const char *sfx2);
 int myopen (const char *arg, u_int mode = 0444);
@@ -59,6 +56,24 @@ bool dir_security_check (const str &p);
 str apply_container_dir (const str &d, const str &e);
 void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
+
+class argv_t {
+public:
+  argv_t ();
+  argv_t (const vec<str> &v, const char *const *seed = NULL);
+  void init (const vec<str> &v, const char *const *seed = NULL);
+  ~argv_t ();
+  size_t size () const { return _v.size (); }
+
+  // BOOOOO; but getopt and everyone else seem to use char *const *
+  // and not const char * const * as i suspect they should.
+  operator char* const* () const 
+  { return const_cast<char *const *> (_v.base ()); }
+
+private:
+  vec<const char *> _v;
+  vec<const char *> _free_me;
+};
 
 struct phash_t {
   phash_t () {}

@@ -215,6 +215,7 @@ public:
   ssrv_t *get_ssrv () { return ssrv; }
   ssrv_t *get_ssrv () const { return ssrv; }
   str which_procs (); // debugging function
+  void set_quiet (bool q) { quiet = q; }
 
   template<class T> void thread_apply (typename callback<void, T *>::ref cb) 
   {
@@ -254,11 +255,13 @@ protected:
   vec<int> readyq;         // ready threads
   ssrv_t *ssrv;            // synchronous server pointer
 
+
 public:
   mtd_stats_t  g_stats;    // global stats
 
 protected:
   const txa_prog_t * const txa_prog; // for Thin XDR Authentication
+  bool quiet;              // on if should make no noise
 };
 
 class ssrv_client_t {

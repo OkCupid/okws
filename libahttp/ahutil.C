@@ -26,14 +26,22 @@
 #include <stdio.h>
 #include "ahutil.h"
 
+static str timestr;
+static time_t timestr_time = 0;
+
 str
 getdate ()
 {
-  const time_t t1 = time (NULL);
+  const time_t t1 = timenow;
+  if (t1 == timestr_time && timestr)
+    return timestr;
+
+  timestr_time = t1;
+
   struct tm *t2 = gmtime (&t1);
   static char buf[100];
   size_t n = strftime (buf, 100, "%a, %d %b %Y %T %Z", t2);
-  return str (buf, n);
+  return (timestr = str (buf, n));
 }
 
 bool

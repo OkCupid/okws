@@ -276,7 +276,7 @@ public:
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
 
-  ~oksrvc_t () ;
+  virtual ~oksrvc_t () ;
 
   void init (int argc, char *argv[]);
   void shutdown ();
@@ -284,7 +284,7 @@ public:
   void ctldispatch (svccb *c);
   void remove (okclnt_t *c);
   void add (okclnt_t *c);
-  void end_program ();
+  void end_program (); 
 
   void add_pubfiles (const char *arr[], u_int sz, bool conf = false);
   void add_pubfiles (const char *arr[], bool conf = false);
@@ -302,11 +302,15 @@ public:
   pval_w_t operator[] (const str &s) const { return (*rpcli)[s]; }
 
   ptr<aclnt> get_okd_aclnt () { return clnt; }
+  pub_rclient_t *get_rpcli () { return rpcli; }
 
 protected:
   void closed_fd ();
   void enable_accept_guts ();
   void disable_accept_guts ();
+
+  virtual void call_exit (int rc) 
+	{ exit (rc); } // Python needs to override this
 
   void pubbed (cbb cb, ptr<pub_res_t> res);
 

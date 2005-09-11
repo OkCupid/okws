@@ -67,7 +67,9 @@ msg_send (int fd, mtd_msg_t *msg)
 mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
 			    const txa_prog_t *x)
   : num (n), shmem (New mtd_shmem_t (n)), ntcb (c), maxq (m),
-    nalive (n), sdflag (false), ssrv (s), txa_prog (x) {}
+    nalive (n), sdflag (false), ssrv (s), txa_prog (x),
+    quiet (false)
+{}
 
 mtdispatch_t::~mtdispatch_t ()
 {
@@ -139,17 +141,19 @@ mtdispatch_t::dispatch (svccb *b)
   // queue
   else if (queue.size () > 0 || !send_svccb (b)) {
     g_stats.q ();
-    warn << "Queuing (" << queue.size () << ")";
-    size_t s = queue.size ();
+    if (!quiet) {
+      warn << "Queuing (" << queue.size () << ")";
+      size_t s = queue.size ();
 
-    // this is a neat function to toggle reporting frequency
-    // of which threads are actually working.  for low queue sizes,
-    // it will say something every time.  for higher queue sizes,
-    // it will try to conserve CPU and not 
-    if (ok_amt_report_q_freq > 0 &&
-	(s < ok_amt_report_q_freq || (s % (s/ok_amt_report_q_freq) == 0)))
-      warnx << ": " << which_procs ();
-    warnx << "\n";
+      // this is a neat function to toggle reporting frequency
+      // of which threads are actually working.  for low queue sizes,
+      // it will say something every time.  for higher queue sizes,
+      // it will try to conserve CPU and not 
+      if (ok_amt_report_q_freq > 0 &&
+	  (s < ok_amt_report_q_freq || (s % (s/ok_amt_report_q_freq) == 0)))
+	warnx << ": " << which_procs ();
+      warnx << "\n";
+    }
     enqueue (b);
   } 
 

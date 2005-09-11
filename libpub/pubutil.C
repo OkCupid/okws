@@ -408,42 +408,41 @@ is_safe (const str &d)
   return true;;
 }
 
-char *const *
-to_argv (const vec<str> &v, u_int *c, char *const *seed)
+argv_t::argv_t ()
 {
-  size_t sz = v.size ();
+  _v.push_back (NULL);
+}
 
-  //
-  // seed the output with the contents of "seed", if it was
-  // specified;  thus, we need to allocate space for it.
-  //
-  if (seed) 
-    for (char *const *s = seed; *s; s++) sz++;
-  char **argv = New char * [sz+1];
-  argv[sz] = NULL;
-  char **argvp = argv;
-
-  //
-  // fill in the seeded content
-  if (seed)
-    for (char *const *s = seed; *s; s++) 
-      *(argvp++) = *s;
-
-  for (u_int i = 0; i < v.size (); i++) {
-    *argvp = New char[v[i].len () + 1];
-    memcpy (*(argvp++), v[i].cstr (), v[i].len () + 1);
-  }
-
-  if (c) *c = sz;
-  return argv;
+argv_t::argv_t (const vec<str> &in, const char *const *seed)
+{
+  init (in, seed);
 }
 
 void
-free_argv (char *const *argv)
+argv_t::init (const vec<str> &in, const char *const *seed)
 {
-  for (char *const *p = argv; *p; p++) 
-    delete [] *p;
-  delete [] argv;
+  if (_v.size ())
+    _v.clear ();
+
+  if (seed)
+    for (const char *const *s = seed; *s; s++) 
+      _v.push_back (*s);
+
+  for (u_int i = 0; i < in.size (); i++) {
+    size_t len = in[i].len () + 1;
+    char *n = New char[len];
+    memcpy (n, in[i].cstr (), len);
+    _free_me.push_back (n);
+    _v.push_back (n);
+  }
+  _v.push_back (NULL);
+}
+
+argv_t::~argv_t ()
+{
+  const char *tmp;
+  while (_free_me.size () && (tmp = _free_me.pop_front ()))
+    delete [] tmp;
 }
 
 void

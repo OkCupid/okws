@@ -38,6 +38,30 @@ time_t global_ssd_last = 0;
 int ahttpcon_spawn_pid;
 int n_ahttpcon = 0;
 
+
+ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
+		    bool ma)
+  : start (timenow), fd (f), rcbset (false), 
+    wcbset (false), bytes_recv (0), bytes_sent (0),
+    eof (false), destroyed (false), out (suio_alloc ()), sin (s),
+    recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
+    overflow_flag (false), ss (global_syscall_stats),
+    sin_alloced (s != NULL),
+    _timed_out (false),
+    destroyed_p (New refcounted<bool> (false))
+{
+  //
+  // bookkeeping for debugging purposes;
+  //
+  n_ahttpcon++;
+  
+  if (ma) make_async (fd);
+  if (coe) close_on_exec (fd);
+  if (mb < 0) mb = SUIOLITE_DEF_BUFLEN;
+  in = suiolite_alloc (mb, wrap (this, &ahttpcon::spacecb));
+  set_remote_ip ();
+}
+
 void
 ahttpcon::clone (ref<ahttpcon_clone> xc)
 {
@@ -48,17 +72,6 @@ ahttpcon::clone (ref<ahttpcon_clone> xc)
   sendfd (xc->takefd (), true, xc->get_close_fd_cb ());
 }
 
-/*
-void
-ahttpcon::stopread () 
-{
-  if (rcbset) {
-    fdcb (fd, selread, NULL);
-    rcbset = false;
-
-  }
-}
-*/
 
 void
 ahttpcon::sendfd (int sfd, bool closeit, ptr<cbv_countdown_t> cb)
@@ -415,35 +428,19 @@ ahttpcon_listen::doread (int fd)
   } else if (n > 0) {
     in->rembytes (n);
     warn ("random junk received on FD listen socket");
-
   }
  
-  /*
-   * not using the getpeername technique, since okd must send data
-   * over the channel with the FD, so it may as well send the sockaddr
-   * information
-   *
-   * this code to be deleted...
-   *
-   *
-  else if ((n == 0 || n == -1) && tnfd >= 0 && !ok_send_sin) {
-    socklen_t sinlen;
-    sin2 = (sockaddr_in *) xmalloc (sizeof (sockaddr_in));
-    if (getpeername (tnfd, (struct sockaddr *)sin2, &sinlen) != 0) {
-      warn ("getpeername on socket %d failed: %m\n", tnfd);
-      close (tnfd);
-      tnfd = -1;
-      xfree (sin2);
-      sin2 = NULL;
-    } else if (sinlen != sizeof (sockaddr_in)) {
-      warn ("weird sockaddr_in returned from getpeername; wrong size\n");
-    }
-  }
-  */
-
   if (tnfd >= 0) 
     if (lcb) {
-      (*lcb) (New refcounted<ahttpcon> (tnfd, sin2, -1, -1, false));
+
+      // tnfd -- the new file descriptor
+      // sin2 -- the sockaddr info
+      // -1   -- use SUIOLITE_DEF_BUFLEN for length of incoming buffer
+      // -1   -- use default receive channel limit
+      // false-- no close on exec
+      // true -- reset the socket flags 
+      (*lcb) (ahttpcon::alloc (tnfd, sin2, -1, -1, false, true));
+
       sin_used = true;
     } else {
       close (tnfd);
@@ -808,7 +805,8 @@ http_server (listencb_t lcb, int port)
 void
 recycle (suio *s)
 {
-  if (recycled_suios.size () < RECYCLE_LIMIT) {
+  if (ok_recycle_suio_limit &&
+      recycled_suios.size () < ok_recycle_suio_limit) {
     s->clear ();
     recycled_suios.push_back (s);
   } else {
@@ -819,12 +817,14 @@ recycle (suio *s)
 void
 recycle (suiolite *s)
 {
-  if (s->getlen () == AHTTP_MAXLINE &&
-      recycled_suiolites_small.size () < RECYCLE_LIMIT) {
+  if (ok_recycle_suio_limit &&
+      s->getlen () == AHTTP_MAXLINE &&
+      recycled_suiolites_small.size () < ok_recycle_suio_limit) {
     s->clear ();
     recycled_suiolites_small.push_back (s);
-  } else if (s->getlen () == SUIOLITE_DEF_BUFLEN &&
-	     recycled_suiolites.size () < RECYCLE_LIMIT) {
+  } else if (ok_recycle_suio_limit &&
+	     s->getlen () == SUIOLITE_DEF_BUFLEN &&
+	     recycled_suiolites.size () < ok_recycle_suio_limit) {
     s->clear ();
     recycled_suiolites.push_back (s);
   } else {

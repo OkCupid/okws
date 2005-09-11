@@ -33,7 +33,7 @@
 class pt1_srv_t : public amysql_thread_t {
 public:
  pt1_srv_t (mtd_thread_arg_t *a) 
-   : amysql_thread_t (a), err (false) {}
+   : amysql_thread_t (a, AMYSQL_PREPARED), err (false) {}
   void dispatch (svccb *sbp);
   bool init ();
   static mtd_thread_t *alloc (mtd_thread_arg_t *arg) 
@@ -66,9 +66,10 @@ pt1_srv_t::init ()
   if(!(qry = PREP("SELECT * FROM sha1_tab WHERE x = ?")))
      return false;
 
+	/*
   if (!(tt = PREP("SELECT * FROM times_tab LIMIT 60")))
     return false;
-
+	*/
   return true;
 }
 
@@ -135,16 +136,16 @@ int
 main (int argc, char *argv[])
 {
 #ifdef HAVE_MYSQL
-  int cnt = 30;
+  int cnt = 50;
   int maxq = 10000;
   int tmp;
   if (argc > 1 && convertint (argv[1], &tmp))
     cnt = tmp;
   ssrv_t *s = New ssrv_t (wrap (&pt1_srv_t::alloc), pt1_prog_1, MTD_PTH, 
 			  cnt, maxq);
-  str foo = "foo";
-  // apply a function to all threads
-  //s->thread_apply<pt1_srv_t> (wrap (apply_test, foo, 10));
+
+  // turn off all warning messages
+  s->mtd->set_quiet (true);
 
   if (!pub_server (wrap (s, &ssrv_t::accept), PT1_PORT))
     fatal << "Cannot bind to port " << PT1_PORT << "\n";

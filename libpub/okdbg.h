@@ -38,5 +38,6 @@
 #define OKWS_DEBUG_OKD_NOISY_CONNECTIONS          (1 << 6)
 #define OKWS_DEBUG_HLP_STATUS                     (1 << 7)
 #define OKWS_DEBUG_SVC_ARGS                       (1 << 8)
+#define OKWS_DEBUG_OKD_JAIL                       (1 << 9)
 
 #endif /* _LIBPUB_OKDEBUG_H */

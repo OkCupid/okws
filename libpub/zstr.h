@@ -233,6 +233,15 @@ private:
 
 extern ztab_t *ztab;
 
+inline ztab_t *
+get_ztab()
+{
+  if (!ztab)
+    ztab = New ztab_t ();
+  return ztab;
+}
+
+
 void
 zbuf::push_str (const str &s, bool clr)
 {
@@ -250,7 +259,7 @@ zbuf::push_zstr (const zstr &z, bool clr)
 void 
 zbuf::push_str2zstr (const str &s, bool lkp, bool clr) 
 { 
-  push_zstr (ztab->alloc (s, lkp), clr);
+  push_zstr (get_ztab ()->alloc (s, lkp), clr);
 }
 
 zbuf &
@@ -276,7 +285,7 @@ zbuf::cat (const str &s, bool cp)
   if (s.len () <= minstrsize) {
     strbuf_add (s, cp);
   } else {
-    zstr *z = ztab->lookup (s);
+    zstr *z = get_ztab ()->lookup (s);
     if (z) {
       push_zstr (*z);
     } else {
@@ -292,7 +301,7 @@ zbuf::cat (const zstr &z, bool cp)
   if (z.len () <= minstrsize) { 
     strbuf_add (z, cp);
   } else { 
-    zstr *zp = ztab->lookup (z);
+    zstr *zp = get_ztab ()->lookup (z);
     if (zp) {
       push_zstr (*zp);
     } else {
@@ -325,11 +334,11 @@ zbuf::cat (const char *c, size_t l, bool cp)
   if (l <= minstrsize) { 
     copy_small_str (c, l);
   } else {
-    zstr *zp = ztab->lookup (c, l);
+    zstr *zp = get_ztab ()->lookup (c, l);
     if (zp) {
       zs.push_back (*zp);
     } else {
-      zs.push_back (ztab->alloc (c, l,false));
+      zs.push_back (get_ztab ()->alloc (c, l,false));
     }
   }
   return (*this);

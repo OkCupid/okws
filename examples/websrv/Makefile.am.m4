@@ -10,7 +10,7 @@ SUFFIXES = .g .C
 
 .g.C:
 	@rm -f $@
-	-$(PUB) $(PUBFLAGS) -o $@ $< || rm -f $@
+	-$(PUB) $(PUBFLAGS) -w -o $@ $< || rm -f $@
 
 LDFLAGS = $(SVC_LDFLAGS)
 
@@ -37,6 +37,7 @@ svcmk(sha2)
 svcmk(google)
 svcmk(pt1)
 dnl svcmk(pt2)
+svcmk(mt1)
 svcmk(pt3)
 svcmk(pt4)
 svcmk(pt5)

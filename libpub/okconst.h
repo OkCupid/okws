@@ -48,7 +48,9 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OKD_FDS_LOW_WAT_LL  0
 #define OKD_FDS_LOW_WAT_UL  10000
 #define OK_SVC_FD_QUOTA_LL 0
-#define OK_SVC_FD_QUOTA_UL 500
+#define OK_SVC_FD_QUOTA_UL 10240
+#define OK_RSL_LL 0
+#define OK_RSL_UL 10240
 
 //
 // gzip parameters (see zstr.h)
@@ -186,11 +188,25 @@ extern u_int ok_amt_stat_freq;                  // statistics sampling freq
 extern int ok_svc_uid_low;
 extern int ok_svc_uid_high;
 extern int ok_svc_mode;
+extern int ok_interpreter_mode;
+extern int ok_script_mode;
 
 //
 // OK Web Client params
 //
 extern int okwc_def_contlen;                     // when servers don't give it
+
+//
+// On most platforms these are 'root' and 'wheel' but not all!
+//
+extern const char *ok_root;
+extern const char *ok_wheel;
+
+//
+// recycle suios and suiolites for performance (0 => no recycle)
+//
+extern u_int ok_recycle_suio_limit ;
+
 
 
 #endif /* _LIBPUB_OKCONST_H */

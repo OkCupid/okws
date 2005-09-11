@@ -24,6 +24,7 @@
 #include "pjail.h"
 #include <unistd.h>
 #include "rxx.h"
+#include "okdbg.h"
 
 bool
 jailable_t::chroot ()
@@ -38,20 +39,37 @@ jailable_t::chroot ()
 }
 
 str
-jailable_t::jail2real (const str &exe, bool chrt) const
+jailable_t::jail2real (const str &exe, bool force) const
 {
-  if (chrt && ((!uid && jaildir) || jailed)) 
+  // if we're jailed, the we don't really want to have the option
+  // of seeing the actual directory, relative to the real root;
+  // but, we can fake getting the directory relative to the jail
+  // if we give the 'force' flag
+  
+  str ret;
+  if (force || jailed) {
     if (exe[0] == '/')
-      return exe;
-    else 
-      return strbuf ("/") << exe;
-  else {
+      ret = exe;
+    else {
+      strbuf b ("/");
+      b << exe;
+      ret = b;
+    }
+  } else {
     if (!jaildir) return exe;
     strbuf b (jaildir);
     if (exe[0] != '/') b << "/";
     b << exe;
-    return b;
+    ret = b;
   }
+
+  if (OKDBG2 (OKD_JAIL)) {
+    strbuf b;
+    b << "jail2real (" << exe << ", " << (force ? "True" : "False")
+      << ") -> " << ret << "\n";
+    okdbg_warn (CHATTER, b);
+  }
+  return ret;
 }
 
 str 
@@ -94,7 +112,7 @@ jailable_t::jail_mkdir (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g)
   }
 
   // pass false; we haven't chrooted yet
-  str dir = jail2real (d, false);
+  str dir = jail2real (d);
   struct stat sb;
   if (stat (dir.cstr (), &sb) != 0) {
     if (mkdir (dir.cstr (), mode != 0)) {
@@ -167,8 +185,10 @@ jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g,
   }
 
   if (u) {
-    if (!*u)
+    if (!*u) {
+      warn ("%s: no such user!\n", u->getname ().cstr ());
       return false;
+    }
     else if (u->getid () != newuid) {
       newuid = u->getid ();
       chownit = true;
@@ -176,9 +196,10 @@ jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g,
   }
  
   if (g) {
-    if (!*g)
+    if (!*g) {
+      warn ("%s: no such group!\n", g->getname ().cstr ());
       return false;
-    else if (g->getid () != newgid) {
+    } else if (g->getid () != newgid) {
       newgid = g->getid ();
       chownit = true;
     }
@@ -197,23 +218,13 @@ jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g,
 #define JAIL_CP_BUFSIZE 1024
 
 bool
-jailable_t::jail_cp (const str &fn, mode_t mode, ok_usr_t *u, ok_grp_t *g)
+okws_cp (const str &src, const str &dest, int mode)
 {
-  if (!will_jail ())
-    return true;
-
+  bool ret = true;
   char buf[JAIL_CP_BUFSIZE];
-  struct stat sb;
-
-  // false argument --> we haven't chrooted yet.
-  str dest = jail2real (fn, false);
-  if (fn == dest) {
-    warn << "refusing to copy file to itself: " << dest << "\n";
-    return false;
-  }
-  int infd = open (fn.cstr (), O_RDONLY);
+  int infd = open (src.cstr (), O_RDONLY);
   if (infd < 0) {
-    warn ("%s: cannot access file: %m\n", fn.cstr ());
+    warn ("%s: cannot access file: %m\n", src.cstr ());
     return false;
   }
   int outfd = open (dest.cstr (), O_CREAT | O_TRUNC | O_WRONLY, mode);
@@ -222,25 +233,44 @@ jailable_t::jail_cp (const str &fn, mode_t mode, ok_usr_t *u, ok_grp_t *g)
     return false;
   }
 
-  int rc, rc2;
-  while ((rc = read (infd, buf, JAIL_CP_BUFSIZE)) > 0) {
+  int rc = 0, rc2 = 0;
+  while (ret && (rc = read (infd, buf, JAIL_CP_BUFSIZE)) > 0) {
     if ((rc2 = write (outfd, buf, rc)) < 0) {
       warn ("%s: bad write: %m\n", dest.cstr ());
-      goto write_error;
+      ret = false;
     } else if (rc2 < rc) {
       warn ("%s: short write: %m\n", dest.cstr ());
-      goto write_error;
+      ret = false;
     }
   }
   if (rc < 0) {
-    warn ("%s: read error: %m\n", fn.cstr ());
+    warn ("%s: read error: %m\n", src.cstr ());
     close (outfd);
     return false;
   }
 
   close (outfd);
   close (infd);
-  
+  return ret;
+}
+
+bool
+jailable_t::jail_cp (const str &fn, mode_t mode, ok_usr_t *u, ok_grp_t *g)
+{
+  if (!will_jail ())
+    return true;
+
+  struct stat sb;
+
+  // false argument --> we haven't chrooted yet.
+  str dest = jail2real (fn);
+  if (fn == dest) {
+    warn << "refusing to copy file to itself: " << dest << "\n";
+    return false;
+  }
+  if (!okws_cp (fn, dest, mode))
+    return false;
+
   if (will_jail ()) {
     if (stat (dest.cstr (), &sb) != 0) {
       warn ("%s: cannot access newly copied file\n", dest.cstr ());
@@ -250,9 +280,4 @@ jailable_t::jail_cp (const str &fn, mode_t mode, ok_usr_t *u, ok_grp_t *g)
       return false;
   }
   return true;
-    
- write_error:
-  close (outfd);
-  close (infd);
-  return (false);
 }

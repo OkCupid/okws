@@ -36,7 +36,11 @@ class oksrvc_pt1_t : public oksrvc_t {
 public:
   oksrvc_pt1_t (int argc, char *argv[]) : oksrvc_t (argc, argv) 
   {
-    db = add_db (DB, PT1_PORT, pt1_prog_1);
+    const char *c;
+    str dbs (DB);
+    if ((c = getenv ("DB_HOST")))
+      dbs = c;
+    db = add_db (dbs, PT1_PORT, pt1_prog_1);
   }
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
   void init_publist () { /*o init_publist (); o*/ }
@@ -66,6 +70,21 @@ public:
       out << id << "Connection to DB failed \n";
     } else if (res.status == ADB_EXECUTE_ERROR) {
       out << id << "Error querying database \n";
+    } else if (cgi.blookup ("notmpl")) {
+
+      /*o
+	print (out) <<EOF;
+<html>
+ <head>
+  <title>PT1 Test Result</title>
+ </head>
+<body>
+RES @{id} @{res.out->id} @{res.out->sha1}
+</body>
+</html>
+EOF
+      o*/
+
     } else {
       /*o 
 	include (pub, out, "/pt1.html", 

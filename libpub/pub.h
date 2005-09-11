@@ -1202,6 +1202,7 @@ public:
   bool cfg (const str &n, str *v) const;
   template<typename T> bool cfg (const str &n, T *v) const;
   pval_w_t operator[] (const str &s) const { return genv[s]; }
+  penv_t *get_env () const { return &genv; }
 
   bpfcp_t v_getfile (const pfnm_t &n) const
   { return set->getfile (apply_homedir (n)); }

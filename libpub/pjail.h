@@ -36,7 +36,7 @@ public:
   jailable_t (const str &j = NULL, int uid = -1) : 
     jaildir (j), jailed (false), uid (uid >= 0 ? uid : getuid ()) {}
   bool chroot ();
-  str jail2real (const str &fn, bool chrt = true) const;
+  str jail2real (const str &fn, bool force = false) const;
   str nest_jails (const str &path) const;
   bool will_jail () const { return (jailed || (jaildir && !uid)); }
   bool jail_mkdir (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g);
@@ -51,5 +51,7 @@ protected:
   bool jailed;
   int uid;
 };
+
+bool okws_cp (const str &src, const str &dest, int mode);
 
 #endif /* _LIBPUB_PJAIL_H */

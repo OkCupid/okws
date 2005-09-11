@@ -45,6 +45,14 @@ okld_t::set_signals ()
   sigcb (SIGINT,  wrap (this, &okld_t::shutdown, SIGINT));
 }
 
+static void
+get_env_params (vec<str> *in, vec<str> *out)
+{
+  while (in->size () && strchr ((*in)[0].cstr (), '='))
+    out->push_back (in->pop_front ());
+}
+
+
 void
 okld_ch_t::add_args (const vec<str> &v)
 {
@@ -134,7 +142,7 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
   }
   
   if (env.size ()) 
-    okdenv = to_argv (env, NULL, environ);
+    okdenv.init (env, environ);
 
   return;
 
@@ -148,14 +156,12 @@ static bool
 parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc)
 {
   int svc_uid = -1;
-  char *const *argv = NULL;
-  u_int argc;
   optind = 0;
   bool rc = true;
   int ch;
 
-  argv = to_argv (*v, &argc);
-  while ((ch = getopt (argc, argv, "u:")) != -1 && rc) {
+  argv_t argv (*v);
+  while ((ch = getopt (argv.size (), argv, "u:")) != -1 && rc) {
     switch (ch) {
     case 'u':
       if (u) {
@@ -178,9 +184,52 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc)
     }
     v->pop_front ();
   }
-  free_argv (argv);
   return rc;
 }
+
+void
+okld_t::got_interpreter (vec<str> s, str loc, bool *errp)
+{
+  // pop off "Interpreter"
+  str cmd = s.pop_front ();
+
+  str name, group, path;
+  vec<str> env, args;
+  okld_interpreter_t *ipret = NULL;
+  str errstr;
+
+  if (!s.size ()) goto usage;
+  name = s.pop_front ();
+
+  get_env_params (&s, &env);
+  if (!s.size ())
+    goto usage;
+  path = s.pop_front ();
+
+  // remaining are args to exe
+  args = s;
+
+  if (interpreters[name]) {
+    warn << loc << ": " << name << ": interpreter keyword already in use\n";
+    goto err;
+  }
+
+  ipret = New okld_interpreter_t (name, ok_root, ok_wheel, env, path, args, 
+				  this, loc);
+  interpreters.insert (ipret);
+
+  if (!ipret->check (&errstr)) {
+    warn << loc << ": " << errstr;
+    goto err;
+  }
+  return;
+
+ usage:
+  warn << loc << ": usage: " << cmd << " <shortname> <exe>\n";
+ err:
+  *errp = true;
+}
+
 
 
 void
@@ -193,7 +242,6 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   vec<str> env;
   str exe, httppath;
 
-  char *const *envp = NULL;
   okws1_port_t port;
   okld_ch_t *chld;
 
@@ -205,8 +253,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (s.size () < 2) 
     goto usage;
 
-  while (s.size () && strchr (s[0].cstr (), '='))
-    env.push_back (s.pop_front ());
+  get_env_params (&s, &env);
 
   if (!s.size ()) 
     goto usage;
@@ -246,9 +293,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
     warnx << " " << s[i];
   warnx << ")\n";
  
-  if (env.size ()) 
-    envp = to_argv (env, NULL, environ);
-  chld = New okld_ch_t (exe, httppath, this, loc, u, envp, port);
+  chld = New okld_ch_t (exe, httppath, this, loc, u, env, port);
   chld->add_args (s);
 
   svcs.push_back (chld);
@@ -262,7 +307,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
 }
 
 void
-okld_t::got_service (vec<str> s, str loc, bool *errp)
+okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
 {
   ok_usr_t *u = NULL;
 
@@ -270,44 +315,60 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
   str uri;
   vec<str> env;
   str exe, httppath;
-
-  char *const *envp = NULL;
+  str cmd;
   okws1_port_t port;
+  okld_interpreter_t *ipret = NULL;
+  str ipret_str;
+  okld_ch_t *ch = NULL;
 
   //
-  // pop off "Service"
+  // pop off "Service" or "Script"
   //
-  s.pop_front ();
+  cmd = s.pop_front ();
 
-  if (s.size () < 2) 
-    goto usage;
+  // now get environmental parameters (if any)
+  get_env_params (&s, &env);
 
-  while (s.size () && strchr (s[0].cstr (), '='))
-    env.push_back (s.pop_front ());
+  // now get the interpreter to run if the command specified was "Script"
+  if (script) {
+    if (!s.size ())
+      goto usage;
+    ipret_str = s.pop_front ();
+    if (!(ipret = interpreters[ipret_str])) {
+      warn << loc << ": interpreter '" << ipret_str << "' is not defined!\n";
+      goto err;
+    }
+    // need to add the 
+    vec<str> tmp = ipret->get_env ();
+    for (u_int i = 0; i < env.size (); i++) 
+      tmp.push_back (env[i]);
+    env = tmp;
+  }
 
+  // now get the executable or the script, as the case may be
   if (!s.size ()) 
     goto usage;
-
   bin = s.pop_front ();
-
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin
 	 << ") contains unsafe substrings\n";
     goto err;
   }
 
+  // there might be a -u option specified (and others TK)
   if (!parse_service_options (&s, &u, loc))
     goto err;
 
-  if (s.size () != 1) 
+  if (!s.size ())
     goto usage;
-
   uri = s[0];
-
   if (!check_uri (loc, uri, &port))
     goto err;
 
-  exe = apply_container_dir (service_bin, bin);
+  if (script)
+    exe = bin;
+  else
+    exe = apply_container_dir (service_bin, bin);
 
   //
   // if a port was specified for this URI, then there is no need
@@ -321,22 +382,24 @@ okld_t::got_service (vec<str> s, str loc, bool *errp)
     used_primary_port = true;
   }
 
-  warn << "Service: URI(" << httppath << ") --> unix(" << exe << ")\n";
+  warn << cmd << ": URI(" << httppath << ") --> unix(" << exe << ")\n";
+  if (script)
+    ch = New okld_ch_script_t (exe, httppath, this, loc, ipret, u, env, port);
+  else
+    ch = New okld_ch_t (exe, httppath, this, loc, u, env, port);
 
-  if (env.size ()) 
-    envp = to_argv (env, NULL, environ);
-
-  svcs.push_back (New okld_ch_t (exe, httppath, this, loc, u, envp, port));
+  svcs.push_back (ch);
 
   return;
 
  usage:
-  warn << loc << ": usage: Service [<env>] <exec-path> [<options>] <URI>\n";
+  warn << loc << ": usage: " << cmd << " [<env>] ";
+  if (script)
+    warnx << "<interpreter> ";
+  warnx << "<exec-path> [<options>] <URI>\n";
  err:
   *errp = true;
   if (u) delete u;
-
-  // XXX memory leak -- envp ??
 }
 
 void
@@ -383,14 +446,13 @@ okld_t::check_services_and_aliases ()
     }
     svc->servpath = s;
 
-    s = svc->rexecpath;
+    s = svc->get_execpath_relative_to_chroot ();
     if (exetab[s]) {
       warn << loc << ": executable (" << s << ") specified more than once\n";
     } else {
       exetab.insert (s);
     }
   }
-
 
   while (aliases_tmp.size ()) {
 
@@ -450,9 +512,12 @@ okld_t::parseconfig (const str &cf)
   conftab ct;
   str grp;
   str okd_gr, okd_un;
+  str root, wheel;
 
-  ct.add ("Service", wrap (this, &okld_t::got_service))
+  ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
+    .add ("Interpreter", wrap (this, &okld_t::got_interpreter))
+    .add ("Script", wrap (this, &okld_t::got_service, true))
     .add ("Alias", wrap (this, &okld_t::got_alias))
     .add ("TopDir", wrap (got_dir, &topdir))
     .add ("JailDir", wrap (got_dir, &jaildir))
@@ -488,6 +553,9 @@ okld_t::parseconfig (const str &cf)
     .add ("DangerousZbufs", &ok_dangerous_zbufs)
     .add ("SyslogPriority", &ok_syslog_priority)
 
+    .add ("RootUser", &root)
+    .add ("RootGroup", &wheel)
+
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
 
     .add ("OkdUser", &okd_un)
@@ -514,6 +582,7 @@ okld_t::parseconfig (const str &cf)
     .add ("GzipMemLevel", &ok_gzip_mem_level, 0, 9)
     .add ("ChannelLimit", &ok_reqsize_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
     .add ("SendSockAddrIn", &ok_send_sin)
+    .add ("RecycleSuioLimit", &ok_recycle_suio_limit, OK_RSL_LL, OK_RSL_UL)
 
     .add ("ServiceFDHighWat", &ok_svc_fds_high_wat, 0, 10240)
     .add ("ServiceFDLowWat", &ok_svc_fds_low_wat, 0, 10000)
@@ -551,6 +620,10 @@ okld_t::parseconfig (const str &cf)
     }
   }
 
+  // allow these to be set
+  if (root) ok_root = root;
+  if (wheel) ok_wheel = wheel;
+
   if (grp) svc_grp = ok_grp_t (grp);
   if (okd_un) okd_usr = ok_usr_t (okd_un);
   if (okd_gr) okd_grp = ok_grp_t (okd_gr);
@@ -573,7 +646,7 @@ okld_t::parseconfig (const str &cf)
 
   if (ok_svc_fds_high_wat > 0 && 
       (ok_svc_fds_low_wat == 0 || ok_svc_fds_low_wat > ok_svc_fds_high_wat)) {
-    warn << "ServiceMaxFDs needs to be great than ServiceFDHighWat\n";
+    warn << "ServiceMaxFDs needs to be greater than ServiceFDHighWat\n";
     errors = true;
   }
 
@@ -591,7 +664,7 @@ okld_t::parseconfig (const str &cf)
     hostname = myname ();
 
   if (errors)
-    exit (1);
+    okld_exit (1);
 }
 
 void
@@ -625,6 +698,7 @@ okld_t::encode_env ()
     .insert ("logtick", ok_log_tick)
     .insert ("logprd", ok_log_period)
     .insert ("clito", ok_clnt_timeout)
+    .insert ("rsl", ok_recycle_suio_limit)
     .insert ("reqszlimit", ok_reqsize_limit)
     .insert ("filtercgi", ok_filter_cgi)
     .insert ("ssdi", ok_ssdi)
@@ -716,24 +790,23 @@ okld_t::fix_uids ()
 
     uids_in_use.insert (uegid);
 
+    // because we check after the previous insert, we won't be able to
+    // use a GID/UID pair in its entirety; this is precisely by design
     if (uids_in_use[ueuid_own]) {
       warn << svc->loc () << ": UID " << ueuid_own
 	   << " in use / changing ownership on file to root\n";
-      ueuid_own = 0;
+      ueuid_own = ok_usr_t (ok_root).getid ();
     } 
 
     owners.insert (ueuid_own);
-    svc->assign_exec_ownership (ueuid_own, uegid);
-    if ((ueuid_own != ueuid_orig || uegid_orig != uegid) && !svc->chown ())
-      ret = false;
 
-    // owner cannot exec this script; group -- only -- can
-    svc->assign_mode (ok_svc_mode);
-    if (!svc->chmod (mode))
+    // fixup ownership and permissions, and who to exec as
+    // based on the old and new gid.uid pairs (and also the old mode).
+    // note that scripts will do something different here from
+    // compiled executables (some combination of making new copies
+    // of the interpreter and fiddling bits).
+    if (!svc->fixup_doall (ueuid_orig, ueuid_own, uegid_orig, uegid, mode))
       ret = false;
-    svc->assign_uid (uegid);
-    svc->assign_gid (uegid);
-
   }
   endgrent ();
   endpwent ();
@@ -757,14 +830,21 @@ okld_t::shutdown2 (int status)
     warn << "caught clean okd exit\n";
   warn << "shutdown complete\n";
 
+  okld_exit (status);
+
+}
+
+void
+okld_t::okld_exit (int code)
+{
   // turn of the clock daemon cleanly. not entirely necessary.
   if (mmcd_pid > 0) {
-    close (mmcd_ctl_fd);
+    kill (mmcd_pid, SIGTERM);
   }
-
   delete this;
-  exit (0);
+  exit (code);
 }
+
 
 bool
 okld_t::launch_okd (int logfd)
@@ -832,7 +912,7 @@ okld_t::check_exes ()
   u_int lim = svcs.size ();
   for (u_int i = 0; i < lim; i++) {
     // at this point in the boot process, we have not called chroot yet
-    if (!svcs[i]->can_exec (false))
+    if (!svcs[i]->can_exec ())
       ret = false;
   }
   return ret;
@@ -909,8 +989,9 @@ okld_t::launch (const str &cf)
   init_clock_daemon ();
 
   encode_env ();
-  if (!(check_exes () && fix_uids () && init_jaildir ()))
-    exit (1);
+  if (!(check_exes () && fix_uids () && init_jaildir () 
+	&& init_interpreters ()))
+    okld_exit (1);
 
   used_ports.clear ();
 
@@ -924,7 +1005,7 @@ okld_t::launch_logd_cb (bool rc)
 {
   if (!rc) {
     warn << "launch of log daemon (oklogd) failed\n";
-    exit (1);
+    okld_exit (1);
   }
   logd->clone (wrap (this, &okld_t::launch_logd_cb2));
 
@@ -935,7 +1016,7 @@ okld_t::launch_logd_cb2 (int logfd)
 {
   if (logfd < 0) {
     warn << "oklogd did not send a file descriptor; aborting\n";
-    exit (1);
+    okld_exit (1);
   }
   launch2 (logfd);
 }
@@ -944,7 +1025,7 @@ void
 okld_t::launch2 (int logfd)
 {
   if (!launch_okd (logfd))
-    exit (1);
+    okld_exit (1);
   
   chroot ();
   launchservices ();
@@ -988,8 +1069,8 @@ okld_t::init_jaildir ()
 {
   if (!will_jail ())
     return true;
-  ok_usr_t root ("root");
-  ok_grp_t wheel ("wheel");
+  ok_usr_t root (ok_root);
+  ok_grp_t wheel (ok_wheel);
 
   if (!root || !wheel) {
     warn << "cannot access root.wheel in /etc/passwd\n";
@@ -1071,43 +1152,40 @@ okld_t::init_clock_daemon ()
     //
     // second argument false; we haven't jailed yet.
     //
-    str f = jail2real (ok_mmc_file, false);
+    str f = jail2real (ok_mmc_file);
     const char *args[] = { mmcd.cstr (), f.cstr (), NULL };
 
     // note that we're running the clock daemon as root.
     // this should be fine. 
     warn << "*unstable: launching mmcd: " << args[0] << " " << args[1] << "\n";
-
-    int fds[2];
-    bool ok = false;
-    if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) { 
-      warn ("cannot create socketpair: %m\n");
-    } else {
-      close_on_exec (fds[0]);
-      if ((mmcd_pid = spawn (args[0], args, fds[1])) < 0) {
-	close (fds[0]);
-	warn ("cannot start mmcd %s: %m\n", args[0]);
-      } else {
-	mmcd_ctl_fd = fds[0];
-	ok = true;
-      }
-      close (fds[1]);
-    }
-
-    if (ok) {
-
-      // okld does not change its clock type, since it's mainly idle.
-      chldcb (mmcd_pid, wrap (this, &okld_t::clock_daemon_died));
-      
-      // okld will not be relaunching the clock daemon if it crashes;
-      // to do so, it would have to copy it into the chroot jail;
-      // this is easy enough to do, but i can't imagine a case in which 
-      // the clock daemon would actually die, so it's just not worth it.
-      //
-      //chldcb (mmcd_pid, wrap (this, &okld_t::relaunch_clock_daemon));
-
-    } else {
+    if ((mmcd_pid = spawn (args[0], args)) < 0) {
+      warn ("cannot start mmcd %s: %m\n", args[0]);
       clock_mode = SFS_CLOCK_GETTIME;
+    } else {
+      // okld does not change its clock type, since it's mainly idle.
+      // but it should know when the clock daemon dies, so it knows
+      // not to kill it on shutdown
+      chldcb (mmcd_pid, wrap (this, &okld_t::clock_daemon_died));
     }
   }
+}
+
+static void
+init_interpreter (bool *ok, okld_interpreter_t *i)
+{
+  if (!i->base_init ())
+    *ok = false;
+}
+
+bool
+okld_t::init_interpreters ()
+{
+  if (!will_jail ())
+    return true;
+  bool ok = true;
+  interpreters.traverse (wrap (init_interpreter, &ok));
+  if (!ok)
+    return false;
+
+  return true;
 }
