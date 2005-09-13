@@ -1265,12 +1265,15 @@ AC_ARG_ENABLE(pthreads,
 if test "$enable_pth" != "no" || test -n "$with_pth"; then
 	SFS_FIND_PTH	
 fi
-if test -z "$sfs_have_threads" &&
-	(test "$enable_pthreads" != "no" || test -n $with_pthreads); 
-then
-	SFS_FIND_PTHREADS
-fi
-SFS_FIND_KTHREADS
+dnl
+dnl For now, require PTH!
+dnl
+dnl if test -z "$sfs_have_threads" &&
+dnl 	(test "$enable_pthreads" != "no" || test -n $with_pthreads); 
+dnl then
+dnl 	SFS_FIND_PTHREADS
+dnl fi
+dnl SFS_FIND_KTHREADS
 if test -z "$sfs_have_threads"; then
 	AC_MSG_ERROR(No threading packages available; cannot procede.)
 fi
