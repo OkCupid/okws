@@ -9,8 +9,6 @@ mystmt_ag.C: mystmt.h
 
 okwsinclude_HEADERS = amysql.h mystmt_ag.h mystmt.h
 
-#noinst_HEADERS = mystmt_ag.pl amysql_prot.x
-
 amysql.C: mystmt.h
 
 
@@ -22,7 +20,7 @@ mystmt_ag.C: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
 	-$(PERL) $(srcdir)/mystmt_ag.pl -c > mystmt_ag.C || rm -f $@
 
-EXTRA_DIST = .cvsignore mystmt_ag.pl amysql_prot.x
+EXTRA_DIST = .cvsignore mystmt_ag.pl
 CLEANFILES = core *.core *~ *.rpo
 
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
