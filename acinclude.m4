@@ -739,6 +739,12 @@ case $with_mode in
 		if test "${with_mode+set}" = "set" ; then
 			AC_MSG_ERROR([Unrecognized build mode specified])
 		fi
+		dnl
+		dnl Shared libraries are on by default...
+		dnl but dump libraries into /usr/local/lib/okws/ 
+		dnl without a TAG specification...
+		dnl
+		enable_shared=yes
 		;;
 esac
 
