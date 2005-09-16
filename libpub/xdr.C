@@ -221,20 +221,16 @@ pswitch_env_t::to_xdr (xpub_switch_env_t *x) const
 {
   if (aarr)
     aarr->to_xdr (&x->aarr);
-  if (x->key)
-    x->key = key;
-  else
-    x->key = "";
-  if (x->fn)
-    x->fn = fn; 
-  else
-    x->fn = "";
+
+  x->key = key ? key : str ("");
+  x->fn = fn ? fn : str ("");
+
   return true;
 }
 
 pswitch_env_t::pswitch_env_t (const xpub_switch_env_t &x)
   : key (x.key.len () == 0 ? sNULL : str (x.key)),
-    fn (x.fn.len () == ? sNULL : str (x.fn)), 
+    fn (x.fn.len () == 0 ? sNULL : str (x.fn)), 
     aarr (New refcounted<aarr_arg_t> (x.aarr)) {}
 
 static void
