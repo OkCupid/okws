@@ -225,13 +225,17 @@ pswitch_env_t::to_xdr (xpub_switch_env_t *x) const
     x->key = key;
   else
     x->key = "";
-  x->fn = fn; 
+  if (x->fn)
+    x->fn = fn; 
+  else
+    x->fn = "";
   return true;
 }
 
 pswitch_env_t::pswitch_env_t (const xpub_switch_env_t &x)
-  : key (x.key.len () == 0 ? sNULL : x.key), 
-    fn (x.fn), aarr (New refcounted<aarr_arg_t> (x.aarr)) {}
+  : key (x.key.len () == 0 ? sNULL : str (x.key)),
+    fn (x.fn.len () == ? sNULL : str (x.fn)), 
+    aarr (New refcounted<aarr_arg_t> (x.aarr)) {}
 
 static void
 nvpair_to_xdr (xpub_aarr_t *x, u_int *i, const nvpair_t &n) 
