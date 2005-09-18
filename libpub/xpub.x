@@ -192,8 +192,8 @@ struct xpub_file_var_t {
 };
 
 struct xpub_switch_env_t {
-  xpub_key_t key;
-  xpub_fn_t fn;
+  xpub_key_t *key;
+  xpub_fn_t *fn;
   xpub_aarr_t aarr;
 };
 
