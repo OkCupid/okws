@@ -235,8 +235,8 @@ pswitch_env_t::to_xdr (xpub_switch_env_t *x) const
 }
 
 pswitch_env_t::pswitch_env_t (const xpub_switch_env_t &x)
-  : key (x.key ? sNULL : str (*x.key)),
-    fn (x.fn ? sNULL : str (*x.fn)), 
+  : key (x.key ? str (*x.key) : sNULL),
+    fn (x.fn ? str (*x.fn) : sNULL), 
     aarr (New refcounted<aarr_arg_t> (x.aarr)) {}
 
 static void
