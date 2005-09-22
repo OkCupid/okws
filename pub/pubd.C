@@ -100,11 +100,16 @@ main (int argc, char *argv[])
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;
 
-  while ((ch = getopt (argc, argv, "vp:wj:u:g:f:")) != -1)
+  while ((ch = getopt (argc, argv, "vp:wj:u:g:f:s:")) != -1)
     switch (ch) {
     case 'p':
       if (!convertint (optarg, &port))
 	usage ();
+      break;
+    case 's':
+      if (!convertint (optarg, &ok_axprt_ps))
+	usage ();
+      break;
     case 'w':
       ppt->wss = true;
       break;

@@ -110,6 +110,11 @@ okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
     *errp = true;
     return;
   }
+
+  // push back the packet size
+  s.push_back ("-s");
+  s.push_back (strbuf("0x%x", ok_axprt_ps));
+
   str prog = okws_exec (s[1]);
   str err = can_exec (prog);
   if (err) {
@@ -344,6 +349,7 @@ okd_t::parseconfig ()
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)
     .add ("DemuxTimeout", &ok_demux_timeout, 0, 30)
     .add ("OkdDebugMsgFreq", &okd_debug_msg_freq, 0, 0x10000)
+    .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")

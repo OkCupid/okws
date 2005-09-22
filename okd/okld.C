@@ -552,6 +552,7 @@ okld_t::parseconfig (const str &cf)
     .add ("MmapClockFile", &mmc_file)
     .add ("DangerousZbufs", &ok_dangerous_zbufs)
     .add ("SyslogPriority", &ok_syslog_priority)
+    .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
 
     .add ("RootUser", &root)
     .add ("RootGroup", &wheel)
@@ -707,6 +708,7 @@ okld_t::encode_env ()
     .insert ("fdhw", ok_svc_fds_high_wat)
     .insert ("acmsg", ok_svc_accept_msgs)
     .insert ("dz", ok_dangerous_zbufs ? 1 : 0)
+    .insert ("ps", ok_axprt_ps)
     .insert ("clock", int (clock_mode));
 
   if (mmc_file)
