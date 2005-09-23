@@ -308,7 +308,7 @@ public:
   okd_mgrsrv_t (ptr<axprt_stream> xx, okd_t *o);
   void dispatch (svccb *b);
 private:
-  void repub (svccb *b);
+  void repub (svccb *b, int v);
   void relaunch (svccb *b);
   void turnlog (svccb *b);
   ptr<asrv> srv;

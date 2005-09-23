@@ -67,10 +67,11 @@ private:
 
 class okmgr_pub_t : public okmgr_clnt_t {
 public:
-  okmgr_pub_t (const vec<str> &h, const vec<str> &f);
+  okmgr_pub_t (const vec<str> &h, const vec<str> &f, int v);
   void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s);
 private:
   xpub_fnset_t fns;
+  int version;
 };
 
 class okmgr_logturn_t : public okmgr_clnt_t {

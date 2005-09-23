@@ -43,7 +43,10 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
     sbp->reply (NULL);
     break;
   case OKMGR_REPUB:
-    repub (sbp);
+    repub (sbp, 1);  // version # == 1
+    break;
+  case OKMGR_REPUB2:
+    repub (sbp, 2);  // version # == 2
     break;
   case OKMGR_RELAUNCH:
     relaunch (sbp);
@@ -71,10 +74,13 @@ okd_mgrsrv_t::relaunch (svccb *sbp)
 }
 
 void
-okd_mgrsrv_t::repub (svccb *sbp)
+okd_mgrsrv_t::repub (svccb *sbp, int v)
 {
   xpub_fnset_t *r = sbp->Xtmpl getarg<xpub_fnset_t> ();
-  myokd->repub (*r, wrap (replystatus, sbp));
+  if (v == 1) 
+    myokd->repub (*r, wrap (replystatus, sbp));
+  else
+    myokd->repub2 (*r, wrap (replystatus, sbp));
 }
 
 void
