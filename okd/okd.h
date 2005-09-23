@@ -38,6 +38,7 @@
 #include "okconst.h"
 #include "axprtfd.h"
 #include "fd_prot.h"
+#include "arpc.h"
 
 #define OK_LQ_SIZE_D    100
 #define OK_LQ_SIZE_LL   5
@@ -68,6 +69,7 @@ struct ok_repub_t {
   xpub_cookie_t cookie;           // "session cookie" during repub
   u_int nfiles;                   // the number of files we need to fetch
   xpub_result2_t xpr2;            // put the initial result in here
+  vec<xpub_getfile_res_t> cache;  // temp array to stick solutions into
 };
 
 class ok_custom2_trig_t {
@@ -210,18 +212,12 @@ public:
 
   void open_mgr_socket ();
 
+  // functions for the OKMGR interface
   void repub (const xpub_fnset_t &x, okrescb cb);
   void repub2 (const xpub_fnset_t &x, okrescb cb);
-  void repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
-  void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
-  void repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
-  void repub2_getfiles (ptr<ok_repub_t> rpb);
-
   void relaunch (const ok_progs_t &x, okrescb cb);
-  void custom1_in (const ok_custom_arg_t &x, okrescb cb);
-  void custom2_in (svccb *sbp);
   void custom1_in (svccb *sbp);
-
+  void custom2_in (svccb *sbp);
   void turnlog (okrescb cb);
 
   void strip_privileges ();
@@ -240,6 +236,18 @@ protected:
   void disable_accept_guts ();
 
 private:
+  // Callbacks for Repub, Version 1
+  void repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
+  void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
+
+  // Callbacks for Repub, Version 2
+  void repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
+  void repub2_getfiles (ptr<ok_repub_t> rpb);
+  bool repub2_getfile (ptr<ok_repub_t> rpb, int i, aclnt_cb cb);
+  bool repub2_gotfile (ptr<ok_repub_t> rpb, int i, clnt_stat err);
+  void repub2_done (ptr<ok_repub_t> rpb, bool rc);
+
+  void custom1_in (const ok_custom_arg_t &x, okrescb cb);
 
   void apply_to_children (const ok_progs_t &x, cb_okch_t acb,
 			  ptr<ok_res_t> res, cbs::ptr notfoundcb = NULL);
