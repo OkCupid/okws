@@ -207,9 +207,15 @@ okd_t::req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err)
     exit (1);
   }
   bool ret = true;
-  if (res->status.status != XPUB_STATUS_OK) {
-    warn << ": pub returned failure status on error doc pub:  "
-	 << *res->status.error << "\n";
+  int rc = res->status.status;
+  if (rc != XPUB_STATUS_OK) {
+    strbuf sb;
+    sb << ": pub returned failure status " << rc << " on error doc pub";
+    if (rc == XPUB_STATUS_ERR) {
+      sb << ": " << *res->status.error ;
+    }
+    sb << "\n";
+    okdbg_warn (ERROR, sb);
     ret = false;
   } else {
     pprox->cache (res->set);
@@ -835,15 +841,19 @@ okd_t::repub2_gotfile (ptr<ok_repub_t> rpb, int i, clnt_stat err)
     sb << "Repub RPC error for filenumber " << i << ": " << err;
     rpb->res->pub_res_t::add (sb);
     okdbg_warn (ERROR, sb) ;
-  } else if (rpb->cache[i].status != XPUB_STATUS_OK) {
-    strbuf sb;
-    sb << "Pubd error for filenumber " << i << ": " << 
-      *(rpb->cache[i].error );
-    okdbg_warn (ERROR, sb);
-    rpb->res->pub_res_t::add (sb);
   } else {
-    rpb->xpr.set.files[i] = *(rpb->cache[i].file);
-    ret = true;
+    int rc = rpb->cache[i].status;
+    if (rc != XPUB_STATUS_OK) {
+      strbuf sb;
+      sb << "Pubd error " << rc << " for filenumber " << i ;
+      if (rc == XPUB_STATUS_ERR)
+	sb << ": " << *rpb->cache[i].error;
+      okdbg_warn (ERROR, sb);
+      rpb->res->pub_res_t::add (sb);
+    } else {
+      rpb->xpr.set.files[i] = *(rpb->cache[i].file);
+      ret = true;
+    }
   }
   return ret;
 }

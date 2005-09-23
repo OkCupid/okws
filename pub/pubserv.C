@@ -163,7 +163,7 @@ pubserv_t::pubfiles2_getfile (svccb *sbp)
   ptr<xpub_result_t> *pres = sessions[arg->cookie];
   if (!pres) {
     res.set_status (XPUB_STATUS_NOENT);
-  } else if ((*pres)->set.files.size () >= arg->fileno) {
+  } else if ((*pres)->set.files.size () <= arg->fileno) {
     res.set_status (XPUB_STATUS_OOB);
   } else {
     *res.file = (*pres)->set.files[arg->fileno];
