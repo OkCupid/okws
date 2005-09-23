@@ -25,6 +25,9 @@
 #ifndef _LIBPUB_RPCWINDOW_H
 #define _LIBPUB_RPCWINDOW_H 1
 
+#include "async.h"
+#include "arpc.h"
+
 /**
  * Type of callback that the windower calls to actually do an RPC
  * call.  The windower passes the calling code the callback that it
@@ -75,10 +78,10 @@ public:
    * @param done callback for when all RPCs are done or abort signaled.
    */
   rpc_windower_t (int n, int w, do_cb_t do_call, did_cb_t did_call, 
-		  cbb_t done) :
+		  cbb done) :
     _n_calls (n), _i (0), _n_out (0), _n_done (0), _n_issued (0), 
     _abort (false), _window_sz (w), _do_call_cb (do_call), 
-    _did_call_cb (did_call), _done_cb (c) {}
+    _did_call_cb (did_call), _done_cb (done) {}
 
 
   /**
@@ -106,3 +109,5 @@ private:
   did_cb_t _did_call_cb;  // signal that a call was done
   cbb::ptr _done_cb;      // cb to call when done (true = SUCC, false = FAIL)
 };
+
+#endif /* _LIBPUB_RPCWINDOW_H */
