@@ -1,6 +1,15 @@
 
 #include "rpcwindow.h"
 
+void
+rpc_windower_t::done ()
+{
+  // in case we get recursively deleted from calling cb, we cautiously
+  // blank the callback in the structure before calling it.
+  cbb_t cb = _done_cb;
+  _done_cb = NULL;
+  (*cb) (!_abort);
+}
 
 void
 rpc_windower_t::run ()
