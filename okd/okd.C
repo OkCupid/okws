@@ -805,6 +805,7 @@ okd_t::repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
     rpb->nfiles = rpb->xpr2.set.nfiles;
     rpb->cache.setsize (rpb->nfiles);
     rpb->cookie = rpb->xpr2.set.cookie;
+    rpb->xpr.set.files.setsize (rpb->nfiles);
     repub2_getfiles (rpb);
   }
 }
