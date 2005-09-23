@@ -54,7 +54,7 @@ typedef callback<cb_okch_t, ptr<ok_res_t> >::ref okch_apply_cb_t;
 
 struct ok_repub_t {
   ok_repub_t (const xpub_fnset_t &f, okrescb c)
-    : fnset (f), cb (c), res (New refcounted<ok_res_t> ()) {}
+    : fnset (f), cb (c), res (New refcounted<ok_res_t> ()), cookie (0) {}
   ~ok_repub_t () { (*cb) (res); } 
   void set_new_fnset ();
   const xpub_fnset_t &fnset;
@@ -63,6 +63,16 @@ struct ok_repub_t {
   ptr<ok_res_t> res;
   xpub_result_t xpr;
   ok_xstatus_t xst;
+
+  // for use with the second version of the repub protocol
+  u_int cookie;                   // "session cookie" during repub
+  u_int nfiles;                   // the number of files we need to fetch
+  xpub_result2_t xpr2;            // put the initial result in here
+  u_int n_out;                    // number of RPCs out
+  u_int n_last;                   // last filereq issues
+  bool repub2_err;                // if err, do not finish
+  u_int n_done;                   // when = nfiles, done...
+  u_int n_issued;                 // number issued
 };
 
 class ok_custom2_trig_t {
@@ -206,6 +216,7 @@ public:
   void open_mgr_socket ();
 
   void repub (const xpub_fnset_t &x, okrescb cb);
+  void repub2 (const xpub_fnset_t &x, okrescb cb);
   void repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
   void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
 

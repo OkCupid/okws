@@ -236,7 +236,8 @@ enum xpub_status_typ_t {
   XPUB_STATUS_OK = 0,
   XPUB_STATUS_ERR = 1,
   XPUB_STATUS_NOCHANGE = 2,
-  XPUB_STATUS_NOENT = 3
+  XPUB_STATUS_NOENT = 3,
+  XPUB_STATUS_OOB = 4                 /* out of bounds */
 };
 
 union xpub_status_t switch (xpub_status_typ_t status)
@@ -250,6 +251,20 @@ union xpub_status_t switch (xpub_status_typ_t status)
 struct xpub_result_t {
   xpub_status_t status;
   xpub_set_t set;
+};
+
+typedef u_int32_t xpub_cookie_t;
+struct xpub_set_summary_t {
+   xpub_pbinding_t bindings<>;
+   u_int nfiles;
+   xpub_cookie_t cookie;
+};
+
+// In the PUBFILES v2 protocol, there is an idea of a session, so that way
+// the files can be served over in packets, not a huge, massive message.
+struct xpub_result2_t {
+   xpub_status_t status;
+   xpub_set_summary_t set;
 };
 
 union xpub_lookup_res_t switch (xpub_status_typ_t status)
@@ -272,6 +287,12 @@ union xpub_getfile_res_t switch (xpub_status_typ_t status)
    void;
 };
 
+
+struct xpub_files2_getfile_arg_t {
+  xpub_cookie_t cookie;
+  u_int fileno;
+};
+
 program PUB_PROGRAM {
 	version PUB_VERS {
 
@@ -289,6 +310,22 @@ program PUB_PROGRAM {
 
 		xpub_lookup_res_t
 		PUB_LOOKUP (xpub_fn_t) = 4;
+
+		/*
+ 		 * PUB_FILES the original version gave all files as a 
+		 * massive packet, that was often too big to suck in all
+		 * at once.  PUB_FILES2 is a bit friendlier, and allows
+	         * the client to suck over one file at a time. The next
+		 * three RPCs allow this..
+		 */
+		xpub_result2_t 
+		PUB_FILES2 (xpub_fnset_t) = 5;
+	
+		xpub_getfile_res_t 
+		PUB_FILES2_GETFILE (xpub_files2_getfile_arg_t) = 6;
+
+		xpub_status_typ_t
+		PUB_FILES2_CLOSE(xpub_cookie_t) = 7;
 
 		void
 		PUB_KILL (ok_killsig_t) = 99;

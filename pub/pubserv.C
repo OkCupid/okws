@@ -24,7 +24,7 @@
 #include "puberr.h"
 
 pubserv_t::pubserv_t (ptr<axprt_stream> xx, bool p)
-  : x (xx), primary (p)
+  : x (xx), primary (p), this_cookie (0)
 {
   srv = asrv::alloc (x, pub_program_1, wrap (this, &pubserv_t::dispatch));
 }
@@ -57,6 +57,15 @@ pubserv_t::dispatch (svccb *sbp)
     break;
   case PUB_LOOKUP:
     lookup (sbp);
+    break;
+  case PUB_FILES2:
+    pubfiles2 (sbp);
+    break;
+  case PUB_FILES2_GETFILE:
+    pubfiles2_getfile (sbp);
+    break;
+  case PUB_FILES2_CLOSE:
+    pubfiles2_close (sbp);
     break;
   case PUB_KILL:
     warn << "Caught kill RPC; shutting down\n";
@@ -114,12 +123,68 @@ pubserv_t::lookup (svccb *sbp)
 }
 
 void
+pubserv_t::pubfiles2 (svccb *sbp)
+{
+  xpub_cookie_t cookie = next_session_cookie ();
+  ptr<xpub_result_t> pres = New refcounted<xpub_result_t> ();
+  xpub_result2_t pres2;
+  pubfiles (sbp, pres);
+
+  pres2.status = pres->status;
+  if (pres->status.status == XPUB_STATUS_OK) {
+    sessions.insert (cookie, pres);
+    pres2.set.bindings = pres->set.bindings;
+    pres2.set.nfiles = pres->set.files.size ();
+    pres2.set.cookie = cookie;
+  }
+  sbp->replyref (pres2);
+}
+
+void
+pubserv_t::pubfiles2_close (svccb *sbp)
+{
+  xpub_cookie_t *cookie = sbp->Xtmpl getarg<xpub_cookie_t> ();
+  xpub_status_typ_t t = XPUB_STATUS_OK;
+  if (sessions[*cookie]) {
+    sessions.remove (*cookie);
+  } else {
+    t = XPUB_STATUS_NOENT;
+  }
+  sbp->replyref (&t);
+}
+
+
+void
+pubserv_t::pubfiles2_getfile (svccb *sbp)
+{
+  xpub_getfile_res_t res (XPUB_STATUS_OK);
+  xpub_files2_getfile_arg_t *arg = 
+    sbp->Xtmpl getarg<xpub_files2_getfile_arg_t> ();
+  ptr<xpub_result_t> *pres = sessions[arg->cookie];
+  if (!pres) {
+    res.set_status (XPUB_STATUS_NOENT);
+  } else if ((*pres)->set.files.size () >= arg->fileno) {
+    res.set_status (XPUB_STATUS_OOB);
+  } else {
+    *res.file = (*pres)->set.files[arg->fileno];
+  }
+  sbp->replyref (res);
+}
+
+void
 pubserv_t::pubfiles (svccb *sbp)
+{
+  xpub_result_t pres;
+  pubfiles (sbp, &pres);
+  sbp->replyref (pres);
+}
+
+void
+pubserv_t::pubfiles (svccb *sbp, xpub_result_t *pres)
 {
   xpub_fnset_t *f =  sbp->Xtmpl getarg<xpub_fnset_t> ();
   u_int lim = f->files.size ();
   pub_res_t res;
-  xpub_result_t pres;
   parser->init_set ();
   bool rebind_orig = parser->rebind;
   parser->rebind = f->rebind;
@@ -132,8 +197,7 @@ pubserv_t::pubfiles (svccb *sbp)
     else if (!parser->parse (bnd, PFILE_TYPE_H))
       res << (strbuf ("Parse error in file: ") << fn);
   }
-  parser->export_set (&pres.set);
+  parser->export_set (&pres->set);
   parser->rebind = rebind_orig;
-  res.to_xdr (&pres.status);
-  sbp->replyref (pres);
+  res.to_xdr (&pres->status);
 }

@@ -757,6 +757,42 @@ okd_t::check_runas ()
 }
 
 void
+okd_t::repub2 (const xpub_fnset_t &f, okrescb cb)
+{}
+
+/*
+  ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
+  pubd->call (PUB_FILES2, &f, &rpb->xpr2, wrap (this, okd_t::repub2_cb1, rpb));
+}
+
+void
+okd_t::repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
+{
+  if (err || rpb->xpr2.status.status != XPUB_STATUS_OK) {
+    repub_cb1 (rpc, err);
+  } else {
+    rpb->xpr.bindings = rpb->xpr2.set.bindings;
+    rpb->nfiles = xpr2.set.nfiles;
+    rpb->cookie = xpr2.set.cookie;
+    repub2_getfiles (rpb);
+  }
+}
+
+#define REPUB2_WINDOW 10
+
+void
+okd_t::repub2_getfiles (ptr<ok_repub_t> rpb)
+{
+  while (rpb->n_out < REPUB2_WINDOW && rpb->n_issued < rpb->nfiles ) {
+    xpub_files2_getfile_arg_t a;
+    a.fileno = rbp->
+    rpb->n_out ++;
+    pubd->call (PUB_FILE2_GETFILE
+
+}
+*/
+
+void
 okd_t::repub (const xpub_fnset_t &f, okrescb cb)
 {
   ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
