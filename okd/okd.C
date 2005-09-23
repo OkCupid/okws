@@ -759,7 +759,6 @@ okd_t::check_runas ()
 void
 okd_t::repub2 (const xpub_fnset_t &f, okrescb cb)
 {}
-
 /*
   ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
   pubd->call (PUB_FILES2, &f, &rpb->xpr2, wrap (this, okd_t::repub2_cb1, rpb));
@@ -778,17 +777,14 @@ okd_t::repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
   }
 }
 
-#define REPUB2_WINDOW 10
-
 void
 okd_t::repub2_getfiles (ptr<ok_repub_t> rpb)
 {
-  while (rpb->n_out < REPUB2_WINDOW && rpb->n_issued < rpb->nfiles ) {
-    xpub_files2_getfile_arg_t a;
-    a.fileno = rbp->
-    rpb->n_out ++;
-    pubd->call (PUB_FILE2_GETFILE
-
+  rpc_windower_t *w = 
+    New rpc_windower_t (rpb->n_files, 30, 
+			wrap (this, &okd_t::repub2_getfile, rpb),
+			wrap (this, &okd_t::repub2_gotfile, rpb),
+			wrap (this, &okd_t::repub2_done, rpb));
 }
 */
 

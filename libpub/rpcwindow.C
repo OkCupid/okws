@@ -12,6 +12,9 @@ rpc_windower_t::done ()
 
   _done_cb = NULL;
   (*cb) (succ);
+
+  // after done, don't use this object anymore...
+  delete this;
 }
 
 void

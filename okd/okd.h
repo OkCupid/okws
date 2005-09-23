@@ -65,14 +65,9 @@ struct ok_repub_t {
   ok_xstatus_t xst;
 
   // for use with the second version of the repub protocol
-  u_int cookie;                   // "session cookie" during repub
+  xpub_cookie_t cookie;           // "session cookie" during repub
   u_int nfiles;                   // the number of files we need to fetch
   xpub_result2_t xpr2;            // put the initial result in here
-  u_int n_out;                    // number of RPCs out
-  u_int n_last;                   // last filereq issues
-  bool repub2_err;                // if err, do not finish
-  u_int n_done;                   // when = nfiles, done...
-  u_int n_issued;                 // number issued
 };
 
 class ok_custom2_trig_t {
@@ -219,6 +214,8 @@ public:
   void repub2 (const xpub_fnset_t &x, okrescb cb);
   void repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
   void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
+  void repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
+  void repub2_getfiles (ptr<ok_repub_t> rpb);
 
   void relaunch (const ok_progs_t &x, okrescb cb);
   void custom1_in (const ok_custom_arg_t &x, okrescb cb);
