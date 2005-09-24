@@ -126,10 +126,10 @@ pub_proxy_t::cache (const xpub_file_t &f)
   phashp_t hsh = phash_t::alloc (f.hsh);
   bool do_insert = true;
   if (!files[hsh]) {
-    int *c = orphan[hsh];
+    int *c = orphans[hsh];
     if (c) {
       warn << "* Orphan with count (" << *c << "): " 
-	   << hsh->to_cstr () << "\n";
+	   << hsh->to_str () << "\n";
       if (*c) {
 	warn << "---> No insert / orphan euthanized\n";
 	(*c) -- ;
