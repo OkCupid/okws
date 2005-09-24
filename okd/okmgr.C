@@ -31,7 +31,7 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [-l | -p | -t | -2] [-a?] "
+  warnx << "usage: okmgr [-l | -p | -t | -1] [-a?] "
 	<< "[-h <host>] <file1> <file2> ...\n";
   exit (1);
 }
@@ -200,11 +200,11 @@ main (int argc, char *argv[])
   vec<str> files;
   ctl_mode_t m = CTL_MODE_PUB;
   ok_set_typ_t set_typ = OK_SET_SOME;
-  int version = 1;
-  while ((ch = getopt (argc, argv, "a2lpth:?")) != -1)
+  int version = 2; // Version 2 of pub protocol by default
+  while ((ch = getopt (argc, argv, "1alpth:?")) != -1)
     switch (ch) {
-    case '2':
-      version = 2;
+    case '1':
+      version = 1;
       break;
     case 't':
       m = CTL_MODE_LOGTURN;
