@@ -140,9 +140,12 @@ void
 pub_proxy_t::remove (phashp_t hsh)
 {
   ptr<xpub_file_t> *f = files[hsh];
-  assert (f);
-  recycle.insert (hsh, *f);
-  files.remove (hsh);
+  if (f) {
+    recycle.insert (hsh, *f);
+    files.remove (hsh);
+  } else {
+    warn << "* Possibly orphaned file: " << hsh->to_str () << "\n";
+  }
 }
 
 void
