@@ -1330,7 +1330,6 @@ private:
   ptr<xpub_file_t> pconf;
   qhash<phashp_t, ptr<xpub_file_t> > files;
   qhash<phashp_t, ptr<xpub_file_t> > recycle;
-  qhash<phashp_t, int> orphans;
   mutable qhash<pfnm_t, bpfcp_t> my_cache;
 };
 

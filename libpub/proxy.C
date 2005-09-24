@@ -125,22 +125,7 @@ pub_proxy_t::cache (const xpub_file_t &f)
 {
   phashp_t hsh = phash_t::alloc (f.hsh);
   bool do_insert = true;
-  if (!files[hsh]) {
-    int *c = orphans[hsh];
-    if (c) {
-      warn << "* Orphan with count (" << *c << "): " 
-	   << hsh->to_str () << "\n";
-      if (*c) {
-	warn << "---> No insert / orphan euthanized\n";
-	(*c) -- ;
-	do_insert = false;
-      } else {
-	warn << "---> Refcount drop to 0; orphan adopted\n";
-	orphans.remove (hsh);
-      }
-    }
-  }
-  if (do_insert)
+  if (!files[hsh]) 
     files.insert (hsh, New refcounted<xpub_file_t> (f));
 }
 
@@ -159,16 +144,6 @@ pub_proxy_t::remove (phashp_t hsh)
   if (f) {
     recycle.insert (hsh, *f);
     files.remove (hsh);
-  } else {
-    warn << "* Possibly orphaned file: " << hsh->to_str () << "\n";
-    int *c  = orphans[hsh];
-    if (c) {
-      (*c) ++ ;
-      warn << "--> Incref to " << *c << "\n";
-    } else {
-      orphans.insert (hsh, 1);
-      warn << "--> New insertion at level 1\n";
-    }
   }
 }
 
