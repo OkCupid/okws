@@ -146,7 +146,7 @@ private:
   phash_cb::ptr delcb;
   inline void inc (phashp_t h);
   inline void dec (phashp_t h);
-  qhash<phashp_t, u_int> cnt;
+  bhash<phashp_t, u_int> cnt;
 };
 
 
