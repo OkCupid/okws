@@ -96,6 +96,36 @@ pub_proxy_t::cache (const xpub_set_t &st)
     cache (f);
   }
   recycle.clear ();
+
+  // garbage collect the orphaned files
+  gc_orphans ();
+}
+
+static void
+gc_bindtab_iterator (bhash<phashp_t> *tab, const pbinding_t &x)
+{
+  tab->insert (x.hash ());
+}
+
+void
+pub_proxy_t::gc_files_iterator (bhash<phashp_t> *in_use, 
+				const phashp_t &key,
+				ptr<xpub_file_t> *dummy)
+{
+  if (!(*in_use)[key]) {
+    warn << "* Euthanizing orphan: " << key->to_str () << "\n";
+    files.remove (key);
+  }
+}
+
+void
+pub_proxy_t::gc_orphans ()
+{
+  bhash<phashp_t> in_use;
+  const bindtab_t &b = bindings;
+  b.traverse (wrap (gc_bindtab_iterator, &in_use));
+  //  const qhash<phashp_t, ptr<xpub_file_t> > &f = files;
+  files.traverse (wrap (this, &pub_proxy_t::gc_files_iterator, &in_use));
 }
 
 void
@@ -124,7 +154,6 @@ void
 pub_proxy_t::cache (const xpub_file_t &f)
 {
   phashp_t hsh = phash_t::alloc (f.hsh);
-  bool do_insert = true;
   if (!files[hsh]) 
     files.insert (hsh, New refcounted<xpub_file_t> (f));
 }

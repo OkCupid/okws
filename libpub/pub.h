@@ -1320,6 +1320,9 @@ public:
   void clear ();
   void remove (phashp_t h);
   bpfcp_t v_getfile (const pfnm_t &nm) const;
+  void gc_orphans ();
+  void gc_files_iterator (bhash<phashp_t> *in_use, const phashp_t &key,
+			  ptr<xpub_file_t> *dummy);
 
 protected:
   void v_config_cb (const xpub_file_t &x) { cache_pubconf (x); }
