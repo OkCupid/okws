@@ -43,6 +43,14 @@ make_port()
     sudo make makesum
 }
 
+py_do_make_dist()
+{
+    cd $SRC/$1
+    rm dist/*.tar.gz
+    python setup.py sdist
+    scp -q dist/*.tar.gz $DIST
+}
+
 
 # SFSLITE
 ac_do_make_dist sfslite1
@@ -57,3 +65,11 @@ for p in okws okws-dbg okws-noopt
 do
   make_port okws1/dist/freebsd-port/$p www/$p
 done
+
+# Py-SFS
+py_do_make_dist pysfs1
+make_port pysfs1/dist/freebsd-port devel/py-sfs
+
+# Py-OKWS
+py_do_make_dist pyokws1
+make_port pyokws1/dist/freebsd-port www/py-okws

@@ -72,6 +72,7 @@ OKWS_HTDOCS_DIR?=	${OKWS_DATA_DIR}/htdocs
 OKWS_MODULE_DIR?=	${OKWS_DATA_DIR}/modules
 
 post-extract:
+	mkdir -p ${FILESDIR}
 	cat ${WRKSRC}/etc/freebsd/okld.sh.in			|\
 		${SED} -e "s=%%EXE_BIN%%=${EXE_BIN}=g"  	|\
 		${SED} -e "s=%%PREFIX%%=${PREFIX}=g"    	>\
