@@ -857,7 +857,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   //       fn2 == NULL !!
   //
   if (!err) {
-    if (ckey == "*") ckey = NULL;
+    if (ckey && ckey == "*") ckey = NULL;
     bool nullkey = (ckey && ckey == PUB_NULL_CASE) ;
     if ((!ckey && def) || (ckey && cases[ckey]) || (nullkey && nullcase)) {
       PWARN("Doubly-defined case statement in switch");
