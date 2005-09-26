@@ -19,10 +19,14 @@ PORTS=/usr/ports
 ac_do_make_dist()
 {
     cd $SRC/$1
-    ./setup
+    if [ ! -f configure ]; then
+	./setup
+    fi
     mkdir -p $BUILD/dist/$1
     cd $BUILD/dist/$1
-    $SRC/$1/cfg
+    if [ ! -f Makefile ] ; then
+	$SRC/$1/cfg
+    fi
     rm -f *.tar.gz
     gmake
     gmake dist
@@ -51,12 +55,14 @@ py_do_make_dist()
     scp -q dist/*.tar.gz $DIST
 }
 
+LIST=""
 
 # SFSLITE
 ac_do_make_dist sfslite1
 for p in sfslite sfslite-dbg sfslite-noopt
 do
   make_port sfslite1/dist/freebsd-port/$p devel/$p
+  LIST="$LIST devel/$p"
 done
 
 # OKWS
@@ -64,12 +70,26 @@ ac_do_make_dist okws1
 for p in okws okws-dbg okws-noopt
 do
   make_port okws1/dist/freebsd-port/$p www/$p
+  LIST="$LIST www/$p"
 done
 
 # Py-SFS
 py_do_make_dist pysfs1
 make_port pysfs1/dist/freebsd-port devel/py-sfs
+LIST="$LIST devel/py-sfs"
 
 # Py-OKWS
 py_do_make_dist pyokws1
 make_port pyokws1/dist/freebsd-port www/py-okws
+LIST="$LIST www/py-okws"
+
+for p in $LIST
+do
+  LIST2="$LIST $PORTS/$p"
+done
+
+SHAR_OUT=$DIST/okws-ports.shar
+
+shar `find $LIST2` > $SHAR_OUT
+
+echo "Wrote shell-archive: $SHAR_OUT"
