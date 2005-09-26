@@ -49,6 +49,11 @@ LIB_DEPENDS+=   async:${PORTSDIR}/devel/${SFSLITE_PORT}
 LIB_DEPENDS+=   pth:${PORTSDIR}/devel/pth
 
 #
+# RPCC for compiling .x files...
+#
+BUILD_DEPENDS+=	${LOCALBASE}/${EXE_BIN}/rpcc:${PORTSDIR}/devel/${SFSLITE_PORT}
+
+#
 # Do not add LDCONFIG dirs, since we want SFS to link to its own
 # libraries, and not our (lite) ones...
 #

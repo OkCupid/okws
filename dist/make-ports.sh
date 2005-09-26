@@ -93,5 +93,6 @@ done
 SHAR_OUT=$BUILD/okws-ports.shar
 
 shar `find $LIST2` > $SHAR_OUT
+scp -q $SHAR_OUT $DIST
 
 echo "Wrote shell-archive: $SHAR_OUT"
