@@ -149,4 +149,5 @@ AC_SUBST(PUBFLAGS)
 AC_OUTPUT(txarpcc/Makefile libpub/Makefile test/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  client/Makefile libamt/Makefile libamysql/Makefile 
-	  libweb/Makefile logd/Makefile Makefile)
+	  libweb/Makefile logd/Makefile Makefile etc/Makefile
+	  etc/freebsd/Makefile)

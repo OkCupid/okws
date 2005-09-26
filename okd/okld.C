@@ -963,11 +963,8 @@ main (int argc, char *argv[])
     usage ();
 
   sfsconst_init ();
-  if (!cf) {
-    cf = sfsconst_etcfile ("okws_config");
-    if (!cf)
-      cf = sfsconst_etcfile_required ("okd_config");
-  }
+  if (!cf) 
+    cf = get_okws_config ();
 
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;

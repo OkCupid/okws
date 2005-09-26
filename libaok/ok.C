@@ -30,6 +30,7 @@
 #include "rxx.h"
 #include <stdlib.h>
 #include "okdbg.h"
+#include "sfsmisc.h"
 
 
 void
@@ -931,3 +932,11 @@ okclnt_t::set_hdr_field (const str &k, const str &v)
   hdr_fields->push_back (http_hdr_field_t (k,v));
 }
 
+str 
+get_okws_config ()
+{
+  str cf = sfsconst_etcfile ("okws_config");
+  if (!cf)
+    cf = sfsconst_etcfile_required ("okd_config");
+  return cf;
+}

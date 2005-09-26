@@ -23,6 +23,7 @@
 
 #include <limits.h>
 #include "okconst.h"
+#include "sfsmisc.h"
 
 
 //
@@ -59,7 +60,11 @@ u_int ok_pubd_port = 11278;
 //
 // configuration file constants
 //
-const char *ok_pub_config = "/etc/sfs/pub_config";
+const char *ok_pub_config = "pub_config";
+const char *ok_etc_dir1 = "/usr/local/etc/okws";
+const char *ok_etc_dir2 = "/etc/okws";
+const char *ok_okws_config = "okws_config";
+const char *ok_okd_config = "okd_config";
 
 //
 // default packet size for all axprts
@@ -189,3 +194,15 @@ const char *ok_wheel = "wheel";
 // of course, we can turn this on via okws_config.
 //
 u_int ok_recycle_suio_limit = 0;
+
+//
+// various paths to look through, in order
+//
+const char *ok_cfg_path[] = { ok_etc_dir1, ok_etc_dir2, 
+			      etc1dir, etc2dir, etc3dir,
+			      NULL };
+
+str okws_etcfile (const char *f) 
+{ return sfsconst_etcfile (f, ok_cfg_path); }
+str okws_etcfile_required (const char *f) 
+{ return sfsconst_etcfile_required (f, ok_cfg_path); }

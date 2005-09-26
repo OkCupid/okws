@@ -91,6 +91,14 @@ extern const char *ok_pubobjname;
 // configfile constants
 //
 extern const char *ok_pub_config;
+extern const char *ok_etc_dir1;
+extern const char *ok_etc_dir2;
+extern const char *ok_okws_config;
+extern const char *ok_okd_config;
+
+// all dirs to search when looking for CFG files
+extern const char *ok_cfg_path[];
+
 
 //
 // timeouts
@@ -206,6 +214,22 @@ extern const char *ok_wheel;
 // recycle suios and suiolites for performance (0 => no recycle)
 //
 extern u_int ok_recycle_suio_limit ;
+
+
+/**
+ * Find an OKWS configuration file in the standard config file search path
+ *
+ * @param f the file to find.
+ */
+str okws_etcfile (const char *f);
+
+/**
+ * Find an OKWS configuration file in the standard config file search path
+ * and puke / call fatal if not found.
+ *
+ * @param f the file to find.
+ */
+str okws_etcfile_required (const char *f);
 
 
 

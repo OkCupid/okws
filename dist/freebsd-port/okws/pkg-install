@@ -1,0 +1,112 @@
+#!/bin/sh
+
+if [ -n "${PACKAGE_BUILDING}" ]; then
+	exit 0
+fi
+
+ROOT=root
+WHEEL=wheel
+WWW_USER=www
+WWW_GROUP=www
+LOG_USER=oklog
+LOG_GROUP=oklog
+WWW_UID=80
+WWW_GID=80
+WWW_COM='World Wide Web Owner'
+LOG_UID=170
+LOG_GID=170
+LOG_COM='OKWS Log Owner'
+PW=/usr/sbin/pw
+
+#
+# arg $1 - the directory to create / operate on
+# arg $2 - the user:group pair to chown it to
+# arg $3 - english description of the directory
+#
+create_dir()
+{
+    echo -n "Checking for $3 directory ($1)... "
+    if [ -d "$1" ]; then
+	echo "alread exists."
+    else
+	echo -n "creating... "
+	if mkdir $1; then
+	    echo "success."
+	else
+	    echo "FAILED!"
+	    exit 1
+	fi
+    fi
+
+    if ! chmod 750 $1; then
+	echo "chmod 750 $1 FAILED!"
+	exit 1
+    fi
+
+    if ! chown $2 $1; then
+	echo "chown $2 $1 FAILED!"
+	exit 1
+    fi
+}
+
+#
+# arg $1 - user / group
+# arg $2 - numerical ID
+# arg $3 - name
+# arg $4 - (for users only -- comment field)
+# arg $5 - (for users only -- group)
+#
+create_user_group ()
+{
+    echo -n "Checking for $1 '$3' ..."
+    if ! ${PW} ${name}show $3 >/dev/null 2>&1 ; then
+	echo -n "doesn't exist, adding ..."
+	case "$1" in
+	    "user" )
+		if ${PW} useradd $3 -u $2 -c "$4" -d /nonexistent \
+		    -g $5 -s /sbin/nologin -h -; then
+		    echo "success."
+		else
+		    echo "FAILED!"
+		fi
+		;;
+
+	    "group" )
+		if ${PW} groupadd $3 -g $2 ; then
+		    echo "success."
+		else
+		    echo "FAILED!"
+		    exit 1
+		fi
+		;;
+	    *)
+		echo "BAD ARGUMENT to create_user_group ()"
+		exit 1
+		;;
+	esac
+
+    else
+	echo "exists."
+    fi
+}
+
+
+if [ "$2" = "PRE-INSTALL" ]; then
+
+    create_user_group "group" ${WWW_GROUP} ${WWW_GID} 
+    create_user_group "user" ${WWW_USER} ${WWW_UID} ${WWW_COM} ${WWW_GROUP}
+    create_user_group "group" ${LOG_GROUP} ${LOG_GID} 
+    create_user_group "user" ${LOG_USER} ${LOG_UID} ${LOG_COM} ${LOG_GROUP}
+
+fi
+
+if [ "$2" = "POST-INSTALL" ] ; then
+
+    create_dir $OKWS_CONFIG_DIR ${ROOT}:${WHEEL}         "OKWS config"
+    create_dir $OKWS_LOG_DIR    ${LOG_USER}:${LOG_GROUP} "OKWS log"
+    create_dir $OKWS_DATA_DIR   ${ROOT}:${WHEEL}         "OKWS Data directory"
+    create_dir $OKWS_HTDOCS_DIR ${ROOT}:${WHEEL}         "OKWS Docs directory"
+    create_dir $OKWS_MODULE_DIR ${ROOT}:${WHEEL}     "OKWS modules directory"
+
+fi
+exit 0

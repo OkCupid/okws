@@ -835,7 +835,29 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
     }
   }
 
+  // Here are some example cases:
+  //
+  //   ( 1, "/foo.html", { "a" => 10 } )
+  //       ckey = "1", fn2 = "/foo.html" and the AARR is as above;
+  //
+  //   ( , "/xxx.html" )
+  //       ckey = NULL, meaning, this is the default case, and will match
+  //       anything.
+  //
+  //   (* , "/default.html" )
+  //       ckey = *, and will be turned into ckey = NULL, 
+  //       meaning, this is the default case, and will match
+  //       anything that doesn't match something else.
+  //
+  //   (NULL, "/key-null.html" )
+  //       ckey = "NULL", meaning, the key had a null value.
+  //
+  //   (1, )
+  //       ckey = "1", if so, don't include anything. in this case,
+  //       fn2 == NULL !!
+  //
   if (!err) {
+    if (ckey == "*") ckey = NULL;
     bool nullkey = (ckey && ckey == PUB_NULL_CASE) ;
     if ((!ckey && def) || (ckey && cases[ckey]) || (nullkey && nullcase)) {
       PWARN("Doubly-defined case statement in switch");

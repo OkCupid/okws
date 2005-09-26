@@ -414,4 +414,12 @@ do {                                           \
 #define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
 
 
+/**
+ * get_okws_config ()
+ * 
+ * look for either okws_config or okd_config in the given etc directories,
+ * or call fatal if not.
+ */
+str get_okws_config ();
+
 #endif /* _LIBAOK_OKBASE_H */

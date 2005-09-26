@@ -2,7 +2,9 @@
 ## $Id$
 ##
 ## This is the primary okd configuration file, which is typcially placed
-## in /etc/sfs.
+## in /usr/local/etc/okws.  This file needs to be editted before your
+## OKWS will work.  By default, currently, OKWS does not come with any
+## compiled modules, though in future versions, it might....
 ##
 
 ##
@@ -11,7 +13,7 @@
 ##   tells okd which IP address to bind to, and which port to listen on.
 ##   Default port is 80.
 ##  	
-BindAddr 	18.26.4.238 8081
+BindAddr 	0.0.0.0 8081
 
 ##
 ## ListenPorts <ports>
@@ -32,13 +34,13 @@ ListenPorts 80 8080 8011
 ##   jaildir parameter.  Note that after you install your services,
 ##   they will be in a directory given by:
 ##
-##      /var/okws/modules/<name>/<version>/<tag>/run
+##      /usr/local/okws/modules/<name>/<version>/<tag>/run
 ##   
 ##   by default.  We recommend at first that you compile with 
 ##   debug mode, so in the above, name=example, version=0.1,
 ##   and tag=debug.
 ##
-JailDir 	/var/okws/modules/example/0.1/debug/run
+JailDir 	/usr/local/okws/modules/example/0.1/debug/run
 
 ##
 ## ServiceBin <dir>
@@ -182,7 +184,7 @@ OkdExecPath 	okd
 ## 
 ##   These values are subject to change with future releases.
 ##
-LogDir		/var/okws/log
+LogDir		/var/log/okws
 AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU
@@ -191,11 +193,11 @@ AccessLogFmt	ivt1sbU
 ## OklogdUser <user>
 ## OklogdGroup <group>
 ##
-##   The username and group the RPC-based logger should run as.  Can usually
-##   be the same as okd itself.
+##   The username and group the RPC-based logger should run as.  Should
+##   probably be a UID not in use in other parts of the OKWS system.
 ##
-OklogdUser	www
-OklogdGroup	www
+OklogdUser	oklog
+OklogdGroup	oklog
 
 ##
 ## UnsafeMode <0|1>
@@ -233,6 +235,14 @@ OklogdGroup	www
 Service 	google 	/google        # listen port=8081
 Service		pt1	/pt1           # listen port=8081
 Service 	pt2 	:8080/pt2      # listen port=8080
+
+##
+##   With the Service directive, it is also possible to pass 
+##   environment variables specific to the particular service.
+##   In the following example, we're telling the dmalloc library
+##   to turn on runtime debug checks for only the login service:
+##
+Service	DMALLOC_OPTIONS=debug=0x4f4ed03,inter=100 login /login
 
 ##
 ## Gzip Compression Configuration
@@ -330,7 +340,33 @@ FilterCGI 2
 #ErrorDoc	404	/404.html
 #ErrorDoc	500	/500.html
 
-##-----------------------------------------------------------------------
+
+##=======================================================================
+## Support For Python Scripts
+##
+##   If you have installed py-OKWS, then the following types of directives
+##   are needed to tell OKWS where to find your interpreter, and where
+##   to find your Python scripts.
+## 
+
+##
+## Interpreter <local-name> <path>
+##
+##   Chose an interpreter, and assign it a name local to this OKWS
+##   configuration that can be used in other places in this file.
+##
+#Interpreter PY /usr/local/bin/python
+
+##
+## Script <jailed-path> <URI>
+##
+##   Follows the exact template as the 'Service' directive above,
+##   with the added ability to specify that the given script must be
+##   run with the given interpreter.
+##
+Script PY /py-svc/users.py /users
+
+##=======================================================================
 ## Other Miscellaneous Options
 ##
 
@@ -375,4 +411,5 @@ ServiceFDHighWat	1000
 OkdFDLowWat	800
 ServiceFDLowWat	950
 
-
+##
+##=======================================================================

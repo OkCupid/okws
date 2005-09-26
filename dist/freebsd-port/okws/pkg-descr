@@ -1,0 +1,8 @@
+A secure, high-performance, lightweight Web Server, called OKWS.  Exposes
+the SFS asynchronous programming libraries to Web programmers, for developing
+safe Web services in C++.
+
+WWW: http://www.okws.org
+
+- Max Krohn
+ports@okws.org

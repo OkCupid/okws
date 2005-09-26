@@ -1,4 +1,3 @@
-
 /* $Id$ */
 
 %#define PUBHASHSIZE 20
@@ -192,8 +191,8 @@ struct xpub_file_var_t {
 };
 
 struct xpub_switch_env_t {
-  xpub_key_t *key;
-  xpub_fn_t *fn;
+  xpub_key_t *key; // Can be NULL in the case of a default case
+  xpub_fn_t *fn;   // Can be NULL => do not include a file
   xpub_aarr_t aarr;
 };
 

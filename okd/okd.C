@@ -604,11 +604,8 @@ static void
 main2 (str cf, int logfd, str cdd, okws1_port_t port)
 {
   sfsconst_init ();
-  if (!cf) {
-    cf = sfsconst_etcfile ("okws_config");
-    if (!cf)
-      cf = sfsconst_etcfile_required ("okd_config");
-  }
+  if (!cf) 
+    cf = get_okws_config ();
 
   zinit ();
   warn ("version %s, pid %d\n", VERSION, int (getpid ()));
@@ -887,8 +884,6 @@ okd_t::repub2_done (ptr<ok_repub_t> rpb, bool rc)
 // End Repub v2
 //
 //=======================================================================
-
-
 
 void
 okd_t::repub (const xpub_fnset_t &f, okrescb cb)

@@ -764,6 +764,7 @@ AC_ARG_ENABLE(systembin,
 if test "${enable_systembin+set}" = "set" ; then
 	okws_systembin=yes
 fi
+AC_SUBST(okws_systembin)
 AC_SUBST(okwstagdir)
 AC_SUBST(okwstag)
 ])

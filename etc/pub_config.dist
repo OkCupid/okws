@@ -6,8 +6,8 @@
 //
 // pub_config
 //
-//   This is a configuration file for okd's Publishing Daemon (pubd).
-//   pubd is normally launched during the okd startup process.  
+//   This is a configuration file for OKWS's Publishing Daemon (pubd).
+//   pubd is normally launched during the OKWS startup process.  
 //
 //   The following parameters should be set in this file (and note
 //   that parameter names **are case-sensitive**:
@@ -29,16 +29,16 @@
 //   Variables set here will be treated as global defaults for all
 //   documents published by this particular pubd.
 //
-//   This file should be placed into /etc/sfs by default.
+//   This file should be placed into /usr/local/etc/okws by default.
 //	
 -->
 
 <!--#set ({
 
 PORT 		=> 	2003,  		 	// PORT must be in caps
-HomeDir		=>	"/home/u1/web",		// Not necessary 
-JailDir		=> 	${HomeDir},		// Pubd variable
-RunAsUser	=>	"www",			// likewise
-RunAsGroup	=>	${RunAsUser}		// ditto
+OkwsData	=>	"/usr/local/okws",      // Not necessary 
+JailDir		=> 	"${OkwsData}/htdocs",	// Pubd Required variable
+RunAsUser	=>	"www",			// Pubd Required variable
+RunAsGroup	=>	${RunAsUser}		// Pubd Required variable
 
 }) -->

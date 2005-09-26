@@ -60,6 +60,7 @@ main (int argc, char *argv[])
 
   vec<str> cfgs;
   bhash<str> cfg_bmap;
+  bool use_default_cfg = false;
 
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;
@@ -87,8 +88,9 @@ main (int argc, char *argv[])
     case 'f': 
      {
        str f = optarg;
-       if (f == "-") f = ok_pub_config;
-       if (cfg_bmap[f]) {
+       if (f == "-") {
+	 use_default_cfg = true;
+       } else if (cfg_bmap[f]) {
          warn << optarg << ": duplicate file; skipping\n";
        } else {
          cfg_bmap.insert (f); 
@@ -127,8 +129,12 @@ main (int argc, char *argv[])
     usage ();
   if (jaildir && nojail)
     usage ();
-  if (!noconfig && cfgs.size () == 0)
-    cfgs.push_back (ok_pub_config);
+
+  if ((!noconfig && cfgs.size () == 0) || use_default_cfg) {
+    str f = okws_etcfile (ok_pub_config);
+    if (f)
+      cfgs.push_back (f);
+  }
 
   if (!nodebug)
     opts |= P_DEBUG;
