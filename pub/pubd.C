@@ -83,7 +83,7 @@ main (int argc, char *argv[])
   str jaildir;
   str uname;
   str gname;
-  str configfile = ok_pub_config;
+  str configfile;
   u_int opts = P_DAEMON;
   primary = true;
   const char *e, *v;
@@ -133,7 +133,10 @@ main (int argc, char *argv[])
     }
   ppt->set_opts (opts);
 
-  if (!ppt->parse_config (configfile))
+  if (!configfile) 
+    configfile = okws_etcfile (ok_pub_config);
+
+  if (!configfile || !ppt->parse_config (configfile))
     warn << "pubd running without default variable bindings\n";
 
   if (port == ok_pubd_port) {
