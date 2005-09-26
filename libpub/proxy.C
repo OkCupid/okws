@@ -98,7 +98,7 @@ pub_proxy_t::cache (const xpub_set_t &st)
   recycle.clear ();
 
   // garbage collect the orphaned files
-  gc_orphans ();
+  //gc_orphans ();
 }
 
 static void
