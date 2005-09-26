@@ -5,6 +5,8 @@
 # and ulitimately to make a shell archive with the most up-to-date 
 # OKWS ports nonsense.
 #
+# Assumes devel/sfslite and devel/py-sfs have already been installed!
+#
 # Author: Maxwell Krohn
 #   ports@okws.org
 #
@@ -53,9 +55,17 @@ py_do_make_dist()
 {
     cd $SRC/$1
     rm -f dist/*.tar.gz
-    python setup.py sdist
+
+    # Need to regenerate local file
+    python setup.py -Tshopt -G sdist
     scp -q dist/*.tar.gz $DIST
 }
+
+if [ ! -f /usr/local/bin/rpcc -o ! -f /usr/local/lib/sfslite/shopt/env.mk ]
+    then
+    echo "Must have devel/sfslite and devel/py-sfs already installed!"
+    exit 1
+fi
 
 LIST=""
 
