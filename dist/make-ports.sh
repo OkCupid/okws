@@ -44,13 +44,15 @@ make_port()
       fi
     done
     cd $PORTS/$2
+    sudo rm -f distinfo
+    sudo make distclean
     sudo make makesum
 }
 
 py_do_make_dist()
 {
     cd $SRC/$1
-    rm dist/*.tar.gz
+    rm -f dist/*.tar.gz
     python setup.py sdist
     scp -q dist/*.tar.gz $DIST
 }
@@ -85,10 +87,10 @@ LIST="$LIST www/py-okws"
 
 for p in $LIST
 do
-  LIST2="$LIST $PORTS/$p"
+  LIST2="$LIST2 $PORTS/$p"
 done
 
-SHAR_OUT=$DIST/okws-ports.shar
+SHAR_OUT=$BUILD/okws-ports.shar
 
 shar `find $LIST2` > $SHAR_OUT
 
