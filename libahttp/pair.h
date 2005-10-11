@@ -98,6 +98,7 @@ public:
   inline bool lookup (const str &key, vec<str> *v) const;
   inline bool blookup (const str &key) const;
   inline vec<int64_t> *ivlookup (const str &key) const;
+  inline vec<u_int64_t> *uivlookup (const str &key) const;
   inline bool lookup (const str &key, u_int64_t *v) const;
   template<typename T> inline bool lookup (const str &key, T *v) const;
   pairtab_t<C> &insert (const str &key, const str &val = NULL, 
@@ -168,6 +169,15 @@ pairtab_t<C>::ivlookup (const str &key) const
   if (!p) return NULL;
   return p->to_int ();
 }
+
+template<class C> vec<u_int64_t> *
+pairtab_t<C>::uivlookup (const str &key) const
+{
+  pair_t *p = tab[key];
+  if (!p) return NULL;
+  return p->to_uint64 ();
+}
+  
 
 template<class C> str
 pairtab_t<C>::lookup (const str &key) const

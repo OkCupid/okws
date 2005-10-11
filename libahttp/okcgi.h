@@ -127,6 +127,8 @@ public:
   inline bool lookup (const str &k, str *r) const { return c->lookup (k,r); }
   inline bool blookup (const str &k) const { return c->blookup (k); }
   inline vec<int64_t> *ivlookup (const str &k) const { return c->ivlookup (k);}
+  inline vec<u_int64_t> *uivlookup (const str &k) const 
+  { return c->uivlookup (k); }
   inline bool lookup (const str &k, vec<str> *v) const 
   { return c->lookup (k, v); }
   template<typename T> bool lookup (const str &k, T *v) const
