@@ -92,6 +92,7 @@ u_int
 pval_w_t::size () const
 {
   const pval_t *v = get_pval ();
+  if (!v) return 0;
   const parr_t *a = v->to_arr ();
   return (a ? a->size () : 0);
 }
