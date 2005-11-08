@@ -49,7 +49,7 @@ common_404_t common_404;
 void
 okd_t::abort ()
 {
-  panic ("could ABORT signal\n");
+  panic ("cought ABORT signal\n");
 }
 
 void
