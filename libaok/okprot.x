@@ -103,7 +103,7 @@ program OKCTL_PROGRAM {
 		OKCTL_CUSTOM_2_IN (ok_custom_arg_t) = 9;
 
 		ok_custom_data_t
-		OKCTL_CUSTOM_2_OUT (ok_custom_data_t) = 9;
+		OKCTL_CUSTOM_2_OUT (ok_custom_data_t) = 10;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;
