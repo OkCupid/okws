@@ -988,6 +988,7 @@ okd_t::custom1_in (const ok_custom_arg_t &x, okrescb cb)
 {
   ptr<ok_res_t> res = New refcounted<ok_res_t> ();
   apply_to_children (x.progs, wrap (s_custom1_cb, x.data), res);
+  (*cb) (res);
 }
 
 void

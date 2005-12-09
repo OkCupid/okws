@@ -15,7 +15,7 @@ okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 noinst_HEADERS =  xpub.x fd_prot.x txa_prot.x env.mk
 
 YDEBUG = @YDEBUG@
-LDEEBUG = @LDEBUG@
+LDEBUG = @LDEBUG@
 
 YFLAGS = -d $(YDEBUG)
 LFLAGS = $(LDEBUG)
