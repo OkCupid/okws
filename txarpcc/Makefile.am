@@ -18,7 +18,7 @@ txarpcc_LDADD = $(LDADD)
 txarpcc_DEPENDENCIES =
 endif
 
-YFLAGS = -d
+AM_YFLAGS = -d
 
 parse.h:
 	@:

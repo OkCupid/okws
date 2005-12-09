@@ -17,8 +17,8 @@ noinst_HEADERS =  xpub.x fd_prot.x txa_prot.x env.mk
 YDEBUG = @YDEBUG@
 LDEBUG = @LDEBUG@
 
-YFLAGS = -d $(YDEBUG)
-LFLAGS = $(LDEBUG)
+AM_YFLAGS = -d $(YDEBUG)
+AM_LFLAGS = $(LDEBUG)
 
 xpub.C:	$(srcdir)/xpub.x xpub.h
 	@rm -f $@
@@ -46,7 +46,7 @@ txa_prot.C:	$(srcdir)/txa_prot.x txa_prot.h
 
 
 scan.cc: scan.ll
-	$(LEX) $(AM_FLAGS) $(LFLAGS) $(srcdir)/scan.ll 		\
+	$(LEX) $(AM_LFLAGS) $(LFLAGS) $(srcdir)/scan.ll 		\
 	&& mv $(LEX_OUTPUT_ROOT).c $(srcdir)/scan.cc
 
 parse.h:
