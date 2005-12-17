@@ -17,12 +17,13 @@ SRC=~
 BUILD=~/build
 DIST=rael.lcs.mit.edu:okdist/dist
 PORTS=/usr/ports
+PATH=/usr/local/gnu-autotools/bin:$PATH
 
 ac_do_make_dist()
 {
     cd $SRC/$1
     if [ ! -f configure ]; then
-	./setup
+	autoreconf -f -i -s
     fi
     mkdir -p $BUILD/dist/$1
     cd $BUILD/dist/$1
