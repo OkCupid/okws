@@ -129,6 +129,7 @@ private:
 class dumpable_t {
 public:
   dumpable_t () {}
+  virtual ~dumpable_t () {}
   virtual void dump (dumper_t *d) const;
   virtual void dump2 (dumper_t *d) const {}
   virtual str get_obj_name () const = 0;
@@ -460,6 +461,7 @@ struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
 class pbuf_t;
 class evalable_t {
 public:
+  virtual ~evalable_t () {}
   str eval (penv_t *e, pub_evalmode_t m = EVAL_FULL, 
 	    bool allownull = false) const;
   str eval () const { return eval (NULL, EVAL_SIMPLE); }

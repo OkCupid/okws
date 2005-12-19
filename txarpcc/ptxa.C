@@ -48,6 +48,13 @@ tokdump1 (str prfx, const str &s, bool *b)
   tokdump2 (prfx, s, *b);
 }
 
+static void
+tokdump3 (ptr<ptxa_tokset_t> tokset, const str &s, bool *b)
+{
+  if (!tokset || tokset->access (s) != -1)
+    tokdump2 ("    ", s, true);
+}
+
 void
 ptxa_tokset_t::dump (const str &prfx) const
 {
@@ -55,7 +62,7 @@ ptxa_tokset_t::dump (const str &prfx) const
 }
 
 void
-ptxa_tokset_t::trav (callback<void, const str &, bool *>::ref cb) const
+ptxa_tokset_t::trav (callback<void, const str& , bool *>::ref cb) const
 {
   qhash<str, bool> *tp = const_cast<qhash<str, bool> *> (&tokens);
   tp->traverse (cb);
@@ -66,13 +73,6 @@ rpc_proc::dump (const str &prfx) const
 {
   if (tokset)
     tokset->dump (str (strbuf (prfx) << "[" << id << "]."));
-}
-
-void
-rpc_vers::tokdump (const str &s, bool *b) const
-{
-  if (!tokset || tokset->access (s) != -1)
-    tokdump2 ("    ", s, true);
 }
 
 void
@@ -87,7 +87,7 @@ rpc_vers::dump (const rpc_program_p *prog) const
        << "  " << classname << " () : " << basename << " () {\n";
 
   if (prog->tokset) 
-    prog->tokset->trav (wrap (this, &rpc_vers::tokdump));
+    prog->tokset->trav (wrap (tokdump3, tokset));
   if (tokset)
     tokset->dump ("    ");
 

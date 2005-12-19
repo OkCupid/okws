@@ -66,6 +66,7 @@ okdbg_warn (okdbg_lev_t l, const str &s)
 
 class okdbg_dumpable_t {
 public:
+  virtual ~okdbg_dumpable_t () {}
   virtual void okdbg_dump_vec (vec<str> *s) const = 0;
   virtual void okdbg_dump (okdbg_lev_t l = CHATTER) const 
   {

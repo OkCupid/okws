@@ -164,7 +164,6 @@ struct rpc_vers : public rpc_txa_base_t {
   rpc_vers () : rpc_txa_base_t () {}
   void dump (const rpc_program_p *p) const;
   bool has_positive_toks () const;
-  void tokdump (const str &s, bool *b) const;
   vec<rpc_proc> procs;
   u_int32_t max_proc_id;
   str txa_rpc;
