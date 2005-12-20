@@ -15,7 +15,7 @@ hcli_SOURCES = hcli.C
 okwc_SOURCES = okwcmain.C
 
 pt1cli_SOURCES = pt1cli.C normdist.C
-pt1cli_LDFLAGS = -all-static
+#pt1cli_LDFLAGS = -all-static
 
 hsrv_SOURCES = hsrv.C
 

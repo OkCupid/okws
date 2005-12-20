@@ -11,8 +11,9 @@ struct xpub_errdoc_set_t {
   xpub_errdoc_t docs<>;
 };
 
-// BAD nomenclature; ok_prog_t should be ok_service_t; each
-// prog corresponds to a separate OK service
+/* BAD nomenclature; ok_prog_t should be ok_service_t; each
+ * prog corresponds to a separate OK service
+ */
 typedef string ok_prog_t <>;
 
 enum ok_set_typ_t {

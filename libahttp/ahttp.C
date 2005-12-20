@@ -568,7 +568,7 @@ ahttpcon_clone::declone ()
 str
 ahttpcon_clone::delimit (int dummy)
 {
-  int nbytes;
+  ssize_t nbytes;
   int i;
   while (in->resid ()) {
     i = 0;

@@ -47,7 +47,7 @@ struct abuf_indata_t {
   abuf_indata_t (suiolite *in);
   abuf_stat_t erc;
   const char *bp;
-  int len;
+  ssize_t len;
 };
 
 class abuf_src_t {
@@ -132,7 +132,7 @@ private:
   bool bc;   // flag that's on if a char is buffered (due to unget ())
   int lch;
   const char *buf, *endp, *cp;
-  int len;
+  ssize_t len;
   abuf_stat_t erc;
   bool delsrc;
   int spcs;  // spaces;

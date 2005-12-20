@@ -22,7 +22,8 @@ readcb (ptr<ahttpcon> x, int i)
     x->setrcb (NULL);
     return;
   }
-  int len, rc;
+  int rc;
+  ssize_t len;
   suiolite *uio = x->uio ();
   const char *bp;
   do {

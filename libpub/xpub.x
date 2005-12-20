@@ -191,8 +191,8 @@ struct xpub_file_var_t {
 };
 
 struct xpub_switch_env_t {
-  xpub_key_t *key; // Can be NULL in the case of a default case
-  xpub_fn_t *fn;   // Can be NULL => do not include a file
+  xpub_key_t *key; /* Can be NULL in the case of a default case */
+  xpub_fn_t *fn;   /* Can be NULL => do not include a file */
   xpub_aarr_t aarr;
 };
 
@@ -259,8 +259,9 @@ struct xpub_set_summary_t {
    xpub_cookie_t cookie;
 };
 
-// In the PUBFILES v2 protocol, there is an idea of a session, so that way
-// the files can be served over in packets, not a huge, massive message.
+/* In the PUBFILES v2 protocol, there is an idea of a session, so that way
+ * the files can be served over in packets, not a huge, massive message.
+ */
 struct xpub_result2_t {
    xpub_status_t status;
    xpub_set_summary_t set;

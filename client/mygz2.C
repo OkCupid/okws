@@ -76,7 +76,7 @@ go (const str &s, mstr *m, u_int out_avail)
 
   u_int p;
   for (p = 0; p <= s.len (); p += chnk) {
-    len = min (chnk, (s.len () - p));
+    len = min (chnk, static_cast<u_int> ((s.len () - p)));
     inb = const_cast<Bytef *> (reinterpret_cast<const Bytef *> 
 			       (s.cstr () + p));
     stream.next_in = inb;

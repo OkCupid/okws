@@ -318,10 +318,12 @@ okwc_chunker_t::parse_guts ()
       break;
     case START: 
       {
+	u_int tmp = 0;
 	str sz_str;
 	r = delimit_word (&sz_str);
-	if (r == ABUF_OK && (!sz_str.len () || !convertint16 (sz_str, &sz)))
+	if (r == ABUF_OK && (!sz_str.len () || !convertint16 (sz_str, &tmp)))
 	  r = ABUF_PARSE_ERR;
+	sz = tmp;
 	break;
       }
     case SPC1:

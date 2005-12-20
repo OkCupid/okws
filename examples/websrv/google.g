@@ -25,6 +25,7 @@
 #include "ok.h"
 #include "okcgi.h"
 #include "pub.h"
+#include <stdio.h>
 #include <unistd.h>
 
 class oksrvc_google_t : public oksrvc_t {
