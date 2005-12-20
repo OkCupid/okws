@@ -1023,114 +1023,74 @@ dnl Find GMP
 dnl
 AC_DEFUN([SFS_GMP],
 [AC_ARG_WITH(gmp,
---with-gmp[[=/usr/local]]   specify path for gmp)
+--with-gmp[[[=/usr/local]]]   specify path for gmp)
 AC_SUBST(GMP_DIR)
 AC_SUBST(LIBGMP)
 AC_MSG_CHECKING([for GMP library])
-test "$with_gmp" = "no" && unset with_gmp
-if test -z "$with_gmp"; then
-    if test -z "$GMP_DIR"; then
-	for dir in `cd $srcdir && echo gmp*`; do
-	    if test -d "$srcdir/$dir"; then
-		GMP_DIR=$dir
-		break
-	    fi
+if test "$with_gmp" != "no"; then
+	ac_save_CPPFLAGS=$CPPFLAGS
+	ac_save_LIBS=$LIBS
+	cdirs="${with_gmp}/include ${prefix}/include"
+	dirs="$cdirs /usr/local/include /usr/include"
+	AC_CACHE_CHECK(for gmp.h, sfs_cv_gmp_h,
+	[for dir in " " $dirs; do
+		case $dir in
+			" ") iflags=" " ;;
+			*) iflags="-I${dir}" ;;
+		esac
+		CPPFLAGS="${ac_save_CPPFLAGS} $iflags"
+		AC_TRY_COMPILE([#include "gmp.h"], 0,
+		 sfs_cv_gmp_h="${iflags}"; break)
 	done
-    fi
-    if test "${with_gmp+set}" != set \
-		-a "$GMP_DIR" -a -d "$srcdir/$GMP_DIR"; then
-	GMP_DIR=`echo $GMP_DIR | sed -e 's!/$!!'`
-	if test -f "$srcdir/$GMP_DIR/gmp-h.in"; then
-	    CPPFLAGS="$CPPFLAGS "'-I$(top_builddir)/'"$GMP_DIR"
-	else
-	    CPPFLAGS="$CPPFLAGS "'-I$(top_srcdir)/'"$GMP_DIR"
+	if test "$sfs_cv_gmp_h" = " "; then
+		sfs_cv_gmp_h="yes"
 	fi
-	#LDFLAGS="$LDFLAGS "'-L$(top_builddir)/'"$GMP_DIR"
-    else
-	GMP_DIR=
-	for dir in "$prefix" /usr/local /usr; do
-	    if test \( -f $dir/lib/libgmp.a -o -f $dir/lib/libgmp.la \) \
-		-a \( -f $dir/include/gmp.h -o -f $dir/include/gmp3/gmp.h \
-			-o -f $dir/include/gmp2/gmp.h \); then
-		    with_gmp=$dir
-		    break
-	    fi
-	done
-	if test -z "$with_gmp"; then
-	    AC_MSG_ERROR([Could not find GMP library])
+	])
+	if test "$sfs_cv_gmp_h" = "yes"; then
+		sfs_cv_gmp_h=" "
 	fi
-	test "$with_gmp" = /usr -a -f /usr/include/gmp.h && unset with_gmp
-    fi
+	if test "${sfs_cv_gmp_h+set}"; then
+		cdirs="${with_gmp}/lib ${prefix}/lib"
+		dirs="$cdirs /usr/local/lib /usr/lib"
+		AC_CACHE_CHECK(for libgmp, sfs_cv_libgmp,
+		[for dir in "" " " $dirs; do
+			case $dir in
+				"") lflags=" " ;;
+				" ") lflags="-lgmp" ;;
+				*) lflags="-L${dir} -lgmp" ;;
+			esac
+			LIBS="$ac_save_LIBS $lflags"
+			AC_TRY_LINK([#include "gmp.h"],
+				MP_INT i; mpz_init (&i);,
+				sfs_cv_libgmp=$lflags;  \
+				LDFLAGS="$LDFLAGS -L${dir}" ; \
+				LIBGMP="-lgmp" ; break)
+		done
+		if test -z ${sfs_cv_libgmp+set}; then
+			AC_MSG_ERROR([Could not find gmp library])
+			sfs_cv_libgmp="no"
+		fi
+		])
+		LIBS="$ac_save_LIBS"
+	else	
+		AC_MSG_ERROR([Could not find gmp.h header])
+	fi
 fi
-if test "$with_gmp"; then
-    unset GMP_DIR
-    if test -f ${with_gmp}/include/gmp.h; then
-	test "${with_gmp}" = /usr \
-	    || CPPFLAGS="$CPPFLAGS -I${with_gmp}/include"
-    elif test -f ${with_gmp}/include/gmp3/gmp.h; then
-	CPPFLAGS="$CPPFLAGS -I${with_gmp}/include/gmp3"
-    elif test -f ${with_gmp}/include/gmp2/gmp.h; then
-	CPPFLAGS="$CPPFLAGS -I${with_gmp}/include/gmp2"
-    else
-	AC_MSG_ERROR([Could not find gmp.h header])
-    fi
-
-    #LDFLAGS="$LDFLAGS -L${with_gmp}/lib"
-    #LIBGMP=-lgmp
-    if test -f "${with_gmp}/lib/libgmp.la"; then
-	LIBGMP="${with_gmp}/lib/libgmp.la"
-    else
-	LIBGMP="${with_gmp}/lib/libgmp.a"
-    fi
-    AC_MSG_RESULT([$LIBGMP])
-elif test "$GMP_DIR"; then
-    export GMP_DIR
-    AC_MSG_RESULT([using distribution in $GMP_DIR subdirectory])
-    LIBGMP='$(top_builddir)/'"$GMP_DIR/libgmp.la"
-else
-    AC_MSG_RESULT(yes)
-    if test -f /usr/lib/libgmp.la; then
-	LIBGMP=/usr/lib/libgmp.la
-    elif test -f /usr/lib/libgmp.a; then
-	# FreeBSD (among others) has a broken gmp shared library
-	LIBGMP=/usr/lib/libgmp.a
-    else
-	LIBGMP=-lgmp
-    fi
-fi
-
-AC_CONFIG_SUBDIRS($GMP_DIR)
-
 ac_save_CFLAGS="$CFLAGS"
-if test "$GMP_DIR"; then
-    if test -f "${srcdir}/${GMP_DIR}"/gmp-h.in; then
-	CFLAGS="$CFLAGS -I${srcdir}/${GMP_DIR}"
-    else
-	CFLAGS="$CFLAGS -I${builddir}/${GMP_DIR}"
-    fi
-fi
-
 AC_CACHE_CHECK(for overloaded C++ operators in gmp.h, sfs_cv_gmp_cxx_ops,
-    if test -f "${srcdir}/${GMP_DIR}"/gmp-h.in; then
-	# More recent versions of GMP all have this
-	sfs_cv_gmp_cxx_ops=yes
-    else
 	AC_EGREP_CPP(operator<<,
 [#define __cplusplus 1
 #include <gmp.h>
 ],
-		sfs_cv_gmp_cxx_ops=yes, sfs_cv_gmp_cxx_ops=no)
-    fi)
+	sfs_cv_gmp_cxx_ops=yes, sfs_cv_gmp_cxx_ops=no)
+    )
 test "$sfs_cv_gmp_cxx_ops" = "yes" && AC_DEFINE([HAVE_GMP_CXX_OPS], 1,
 	[Define if gmp.h overloads C++ operators])
 
 AC_CACHE_CHECK(for mpz_xor, sfs_cv_have_mpz_xor,
 unset sfs_cv_have_mpz_xor
-if test "$GMP_DIR"; then
-	sfs_cv_have_mpz_xor=yes
-else
-	AC_EGREP_HEADER(mpz_xor, [gmp.h], sfs_cv_have_mpz_xor=yes)
-fi)
+AC_EGREP_HEADER(mpz_xor, [gmp.h], sfs_cv_have_mpz_xor=yes)
+)
 test "$sfs_cv_have_mpz_xor" && AC_DEFINE([HAVE_MPZ_XOR], 1,
 	[Define if you have mpz_xor in your GMP library.])
 
@@ -1148,7 +1108,6 @@ test "$sfs_cv_mp_limb_t_size" = no \
     && AC_MSG_ERROR(Could not determine size of mp_limb_t.)
 AC_DEFINE_UNQUOTED(GMP_LIMB_SIZE, $sfs_cv_mp_limb_t_size,
 		   Define to be the size of GMP's mp_limb_t type.)])
-
 dnl
 dnl Find BekeleyDB 3
 dnl

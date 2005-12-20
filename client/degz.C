@@ -81,7 +81,7 @@ main (int argc, char *argv[])
   Bytef outbuf[100000];
   uLong outlen = 100000;
   int rc = -1;
-  u_int i;
+  u_int i = 0;
   Bytef b2[100000];
   Bytef *bp = b2;
   u_int t = 0;

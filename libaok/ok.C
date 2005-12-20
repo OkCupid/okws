@@ -211,7 +211,7 @@ oksrvc_t::init (int argc, char *argv[])
     jailed = t->blookup ("jailed");
     ok_send_sin = t->blookup ("sendsin");
 
-    int tmp;
+    int tmp = 0;
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
 
@@ -855,7 +855,7 @@ ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
   str cmd = s.pop_front ();
   while (s.size ()) {
     u_int32_t t;
-    okws1_port_t port;
+    okws1_port_t port = 0;
     if (!convertint (s.pop_front (), &t) || !(port = t)) {
       warn << loc << ": usage: " << cmd << " <ports>\n";
       *errp = true;

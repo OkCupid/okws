@@ -477,6 +477,7 @@ public:
 
 class mybindable_t {
 public:
+  virtual ~mybindable_t () {}
 #ifdef HAVE_MYSQL_BIND
   virtual void bind (MYSQL_BIND *b) = 0;
 #endif
