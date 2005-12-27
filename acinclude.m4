@@ -1055,16 +1055,16 @@ if test "$with_gmp" != "no"; then
 		AC_CACHE_CHECK(for libgmp, sfs_cv_libgmp,
 		[for dir in "" " " $dirs; do
 			case $dir in
-				"") lflags=" " ;;
-				" ") lflags="-lgmp" ;;
-				*) lflags="-L${dir} -lgmp" ;;
+				"") lflags=" "; Lflags="" ;;
+				" ") lflags="-lgmp"; Lflags="" ;;
+				*) Lflags="-L{$dir}" ;lflags="-lgmp" ;;
 			esac
-			LIBS="$ac_save_LIBS $lflags"
+			LIBS="$ac_save_LIBS $Lflags $lflags"
 			AC_TRY_LINK([#include "gmp.h"],
 				MP_INT i; mpz_init (&i);,
 				sfs_cv_libgmp=$lflags;  \
-				LDFLAGS="$LDFLAGS -L${dir}" ; \
-				LIBGMP="-lgmp" ; break)
+				LDFLAGS="$LDFLAGS $Lflags" ; \
+				LIBGMP="$lflags" ; break)
 		done
 		if test -z ${sfs_cv_libgmp+set}; then
 			AC_MSG_ERROR([Could not find gmp library])
