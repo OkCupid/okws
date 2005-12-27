@@ -26,8 +26,8 @@ dnl
 dbpmk(shad)
 dbpmk(pt1d)
 
-dnl can sett per-proxy flags (such as LD flags) too
-pt1d_LDFLAGS = -all-static
+dnl can set per-proxy flags (such as LD flags) too
+dnl pt1d_LDFLAGS = -all-static
 
 dnl
 dnl End of the Part the you Need to Edit
