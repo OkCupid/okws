@@ -1057,7 +1057,7 @@ if test "$with_gmp" != "no"; then
 			case $dir in
 				"") lflags=" "; Lflags="" ;;
 				" ") lflags="-lgmp"; Lflags="" ;;
-				*) Lflags="-L{$dir}" ;lflags="-lgmp" ;;
+				*) Lflags="-L{$dir}"; lflags="-lgmp" ;;
 			esac
 			LIBS="$ac_save_LIBS $Lflags $lflags"
 			AC_TRY_LINK([#include "gmp.h"],
