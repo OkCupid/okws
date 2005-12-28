@@ -33,7 +33,7 @@ AM_PROG_LIBTOOL
 AM_PROG_LEX
 
 
-AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
+AM_CONDITIONAL(STATIC, test "$enable_shared" != "yes")
 
 SFS_SFS
 SFS_SET_CLOCK

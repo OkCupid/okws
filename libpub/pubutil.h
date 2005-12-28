@@ -63,7 +63,7 @@ public:
   argv_t (const vec<str> &v, const char *const *seed = NULL);
   void init (const vec<str> &v, const char *const *seed = NULL);
   ~argv_t ();
-  size_t size () const { return _v.size (); }
+  size_t size () const { return _v.size () - 1; }
 
   // BOOOOO; but getopt and everyone else seem to use char *const *
   // and not const char * const * as i suspect they should.

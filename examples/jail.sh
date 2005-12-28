@@ -36,11 +36,10 @@ if test -z "$DIFF" ; then
 fi
 
 if test -z "$LINKER" ; then
-    prfxs='/ /usr'
     name=libexec/ld-elf.so.1
-    for d in $prfxs
+    linkers="/$name /usr/$name /lib/ld-linux.so.2"
+    for LINKER in $linkers
     do
-	LINKER=$d/$name
 	if [ -f $LINKER ]
 	then
 	    break
@@ -58,7 +57,7 @@ if test -z "$MKDIR" ; then
 fi
 
 if test -z "$LINKER_HINTS" ; then
-    LINKER_HINTS='/var/run/ld-elf.so.hints /var/run/ld.so.hints'
+    LINKER_HINTS='/var/run/ld-elf.so.hints /var/run/ld.so.hints /etc/ld.so.cache'
 fi
 
 # Only consider executable files and non-directories
