@@ -1241,7 +1241,7 @@ dnl 	SFS_FIND_PTHREADS
 dnl fi
 dnl SFS_FIND_KTHREADS
 if test -z "$sfs_have_threads"; then
-	AC_MSG_ERROR(No threading packages available; cannot procede.)
+	AC_MSG_ERROR(No threading packages available; cannot proceed.)
 fi
 AC_SUBST(LDADD_THR)
 ])
