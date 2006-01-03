@@ -23,7 +23,7 @@
  */
 
 //
-// Knutt-Morris-Pratt String Matching Algorithm
+// Knuth-Morris-Pratt String Matching Algorithm
 //   as presented in CLR (Second Edition) Section 32.4
 //  
 // trying a different coding style here on for size; using
