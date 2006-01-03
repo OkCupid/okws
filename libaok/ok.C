@@ -935,8 +935,8 @@ okclnt_t::set_hdr_field (const str &k, const str &v)
 str 
 get_okws_config ()
 {
-  str cf = sfsconst_etcfile ("okws_config");
+  str cf = okws_etcfile ("okws_config");
   if (!cf)
-    cf = sfsconst_etcfile_required ("okd_config");
+    cf = okws_etcfile_required ("okd_config");
   return cf;
 }
