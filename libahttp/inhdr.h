@@ -76,7 +76,7 @@ public:
   http_inhdr_t (abuf_t *a, cgi_t *u = NULL, cgi_t *c = NULL, 
 		size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
     : async_parser_t (a), http_hdr_t (a, bfln, b),
-      uri (u), cookie (c), state (INHDRST_START) {}
+      contlen (-1), uri (u), cookie (c), state (INHDRST_START) {}
 
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
