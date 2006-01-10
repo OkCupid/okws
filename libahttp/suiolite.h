@@ -58,12 +58,13 @@ struct syscall_stats_t {
 // Can be in one of two configurations, as shown.  In the following
 // diagrams:
 //
-//   D = "good data waiting to be read"
-//   - = "old data that can be written over"
+//   + = "good data waiting to be read"
+//   1,2 = "old data that can be written over"
 // 
 // Configuration 1:
 //
-//   [DDDDDDDDDDDDD------------------DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD]
+//                     
+//   [+++++++++++++111111111111111111++++++++++++++++++++++++++++++++]
 //  buf          dep[0]             rp                             bep
 //                                                                dep[1]
 //
@@ -71,10 +72,11 @@ struct syscall_stats_t {
 //    - data is only read from the region from rp to bep
 //    - calling rembytes on bep-rp bytes will transition to configuration
 //      2.
+//    - region 2 is non-existent
 //
 // Configuration 2:
-//   
-//   [-------------DDDDDDDDDDDDDDDDDDDDDDDDDDD----------------------]
+//
+//   [11111111111111+++++++++++++++++++++++++++2222222222222222222222]
 //  buf            rp                        dep[1]                 bep
 //  dep[0]
 //

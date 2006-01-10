@@ -35,7 +35,6 @@ suiolite::clear ()
   for (int i = 0; i < 2; i++) dep[i] = buf;
 }
 
-
 ssize_t
 suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
 {
@@ -67,6 +66,21 @@ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
     return n;
   bytes_read += n;
   ssize_t tn = n;
+
+  //
+  // we've read in n bytes, which may have been into the two
+  // regions of the buffer.  Thus, we need to increment the
+  // two data-end-pointers (dep[]) to reflect that there is
+  // more data in those regions.  But do this in REVERSE order
+  // since we loaded the iovec first with region 2 and then
+  // with region 1.
+  //
+  // alternate implementation (maybe should change...)
+  //
+  //  int len = min<int> (n, iov[0].iov_len);
+  //  dep[1] += len;
+  //  dep[0] += (n - len);
+  //
   for (int i = 0; i < 2; i++) {
     int len = min<int> (tn, iov[i].iov_len);
     dep[1 - i] += len;
