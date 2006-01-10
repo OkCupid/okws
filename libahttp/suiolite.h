@@ -89,6 +89,10 @@ struct syscall_stats_t {
 //  getdata() twice in a row without a call to rembytes() in between
 //  will return the same thing.
 //  
+// Invariants:
+//   - Either dep[1] == bep OR dep[0] == buf.
+//   - The first case is configration 1, the second case is configuration 2.
+//  
 
 class suiolite {
 public:
