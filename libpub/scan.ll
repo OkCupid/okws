@@ -159,7 +159,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {TPRFX}set		{ yy_push_state (PTAG); return T_PTSET; }
 {TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
 {TPRFX}"#"	    	|
-{TPRFX}com(ment)?	{ yy_push_state (HCOM); }
+{TPRFX}com(ment)?	{ yy_pt_com = 0; yy_push_state (HCOM); }
 {TPRFX}[Rr][Ee][Mm]	{ 
 			  yy_pt_com = 1; 
  			  begin_STR (HCOM, 0);
