@@ -52,6 +52,42 @@ struct syscall_stats_t {
   int n_writevfd;
 };
 
+//
+// How suiolite works:
+//
+// Can be in one of two configurations, as shown.  In the following
+// diagrams:
+//
+//   D = "good data waiting to be read"
+//   - = "old data that can be written over"
+// 
+// Configuration 1:
+//
+//   [DDDDDDDDDDDDD------------------DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD]
+//  buf          dep[0]             rp                             bep
+//                                                                dep[1]
+//
+//    - data is only input into the region from dep[0] to rp
+//    - data is only read from the region from rp to bep
+//    - calling rembytes on bep-rp bytes will transition to configuration
+//      2.
+//
+// Configuration 2:
+//   
+//   [-------------DDDDDDDDDDDDDDDDDDDDDDDDDDD----------------------]
+//  buf            rp                        dep[1]                 bep
+//  dep[0]
+//
+//    - data is input first into the region from dep[1] to bep, and then
+//      from dep[0] to rp.
+//    - data is read out of the suiolite from rp to dep[1]
+//    - data is removed only from rp to dep[1]
+//
+//  The rp pointer is only bumped once rembytes() is called, so calling
+//  getdata() twice in a row without a call to rembytes() in between
+//  will return the same thing.
+//  
+
 class suiolite {
 public:
   suiolite (int l = SUIOLITE_DEF_BUFLEN, cbv::ptr s = NULL) 
