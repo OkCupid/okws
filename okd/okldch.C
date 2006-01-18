@@ -242,7 +242,9 @@ okld_ch_t::launch_cb (int logfd)
   fdx.set_fdtyp (OKWS_SVC_X);
   fdx.x->pid = pid;
   fdx.x->name = servpath;
-  if (!okld->okdx->send (fd, fdx)) {
+
+  // if we're shutting down, okld->okdx will be NULL
+  if (!okld->okdx || !okld->okdx->send (fd, fdx)) {
     close (ctlfd);
     close (fd);
     state = OKC_STATE_HOSED;
