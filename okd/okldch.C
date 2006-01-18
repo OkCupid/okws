@@ -231,7 +231,9 @@ okld_ch_t::launch_cb (int logfd)
 
   fdx.ctlx->pid = pid;
   fdx.ctlx->name = servpath;
-  if (!okld->okdx->send (ctlfd, fdx)) {
+
+  // if we're shutting down, okld->okdx will be NULL
+  if (!okld->okdx || !okld->okdx->send (ctlfd, fdx)) {
     close (ctlfd);
     close (fd);
     warn << "HOSED: Cannot clone CTL file descriptor: (" << servpath << ")\n";
