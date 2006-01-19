@@ -105,6 +105,7 @@ extern const char *ok_cfg_path[];
 //
 extern u_int ok_connect_wait;
 extern u_int ok_shutdown_timeout;
+extern u_int ok_shutdown_timeout_fast;
 extern u_int ok_shutdown_retries;
 extern u_int ok_db_retries_max;
 extern u_int ok_db_retry_delay;
@@ -148,6 +149,8 @@ extern const char *okws_server_label;          // advertised server label
 extern u_int okd_debug_msg_freq;               // =0 for no debug messages
 extern int64_t okws_debug_flags;               // OKWS debug flags
 extern bool ok_dangerous_zbufs;                // zbufs that don't hold str's.
+extern int ok_svc_life_reqs;                   // Upper limit on Reqs per life
+extern int ok_svc_life_time;                   // Upper limit on Svc lifetime
 
 //
 // okld constants

@@ -206,6 +206,8 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("mmcf", &mmc_file);
     t->lookup ("dz", &ok_dangerous_zbufs);
     t->lookup ("rsl", &ok_recycle_suio_limit);
+    t->lookup ("lifetime", &ok_svc_life_time);
+    t->lookup ("lifereqs", &ok_svc_life_reqs);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
@@ -291,6 +293,11 @@ void
 oksrvc_t::remove (okclnt_t *c)
 {
   clients.remove (c);
+
+  if (ok_svc_life_reqs > 0 && ++n_reqs > u_int (ok_svc_life_reqs))
+    internal_reliable_shutdown ("service number of requests served",
+				ok_shutdown_timeout_fast);
+
   if (!--nclients && sdflag)
     end_program ();
 }
@@ -309,6 +316,14 @@ oksrvc_t::kill (svccb *v)
     v->reply (NULL);
     break;
   }
+}
+
+void
+oksrvc_t::internal_reliable_shutdown (str s, int t)
+{
+  SVC_CHATTER ("Internal Shutdown Initiated: " << s);
+  delaycb (t, 0, wrap (this, &oksrvc_t::end_program));
+  shutdown ();
 }
 
 void
@@ -519,6 +534,13 @@ oksrvc_t::launch5 (clnt_stat err)
 {
   SVC_CHATTER ("service readied; OKD version " << VERSION <<
 	       "; running as (" << getuid () << ", " << geteuid () << ")");
+
+  if (ok_svc_life_time > 0) {
+    delaycb (ok_svc_life_time, 0,
+	     wrap (this, &oksrvc_t::internal_reliable_shutdown,
+		   "service lifetime expired", 
+		   ok_shutdown_timeout_fast));
+  }
 
   if (err) {
     SVC_ERROR ("OK Child Initialization: " << err);

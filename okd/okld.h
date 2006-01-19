@@ -200,6 +200,19 @@ public:
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
 
+  void set_svc_life_reqs (int i) { svc_life_reqs = i; }
+  void set_svc_life_time (int i) { svc_life_time = i; }
+
+protected:
+
+  // service-specific options
+  //
+  // < 0   =>   no value set (default)
+  // = 0   =>   value set, but unlimited
+  // > 0   =>   value set, but limited by provided value
+  int svc_life_reqs;
+  int svc_life_time;
+
 private:
   void resurrect ();
   void relaunch ();

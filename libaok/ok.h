@@ -260,7 +260,7 @@ public:
 class oksrvc_t : public ok_httpsrv_t { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
-    : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0)
+    : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -309,6 +309,8 @@ protected:
   void enable_accept_guts ();
   void disable_accept_guts ();
 
+  void internal_reliable_shutdown (str s, int t);
+
   virtual void call_exit (int rc) 
 	{ exit (rc); } // Python needs to override this
 
@@ -347,6 +349,7 @@ protected:
 
   vec<str> authtoks;
   int n_fd_out;
+  u_int n_reqs; // total number of requests served
 };
 
 class oksrvcw_t : public oksrvc_t { // OK Service Wrapped

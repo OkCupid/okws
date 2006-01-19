@@ -76,6 +76,7 @@ u_int ok_axprt_ps = 0x1000000;   // 16MB -- big for now
 //
 u_int ok_connect_wait = 4;          // seconds
 u_int ok_shutdown_timeout = 10;     // seconds
+u_int ok_shutdown_timeout_fast = 3; // seconds
 u_int ok_shutdown_retries = 3;      // n retries before giving up
 u_int ok_db_retries_max = 100;
 u_int ok_db_retries_delay = 3;
@@ -109,6 +110,8 @@ bool okd_child_sel_disable = false; // disable read sel on child
 u_int okd_debug_msg_freq = 0;       // disable okd debug messages
 int64_t okws_debug_flags = 0;       // no debug on at first
 bool ok_dangerous_zbufs = false;    // only for experts if true.
+int ok_svc_life_reqs = 0;           // Upper limit on # of Reqs per Lifetime
+int ok_svc_life_time = 0;           // Upper limit on service lifetime
 
 //
 // okld constants

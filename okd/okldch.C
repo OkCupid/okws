@@ -34,6 +34,7 @@ okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl,
 		      ok_usr_t *u, vec<str> env_in, u_int16_t p)
   : okld_jailed_exec_t (e, o, cfl),
     servpath (s), uid (u), gid (-1),
+    svc_life_reqs (-1), svc_life_time (-1),
     state (OKC_STATE_NONE), rcb (NULL),
     startup_time (0), 
     env (env_in), port (p)
@@ -204,8 +205,19 @@ okld_ch_t::launch_cb (int logfd)
   for (u_int i = 0; i < args.size (); i++)
     argv.push_back (args[i]);
 
+  // per-service options might override global options here
+  if (svc_life_reqs < 0) svc_life_reqs = ok_svc_life_reqs;
+  if (svc_life_time < 0) svc_life_time = ok_svc_life_time;
+
+  okld->env.insert ("lifereqs", svc_life_reqs, false);
+  okld->env.insert ("lifetime", svc_life_time, false);
+
   argv.push_back (okld->env.encode ());
+
+  // undo all of the damage
   okld->env.remove ("logfd");
+  okld->env.remove ("lifetime");
+  okld->env.remove ("lifereqs");
 
   argv_t env_tmp;
   if (env.size ()) 

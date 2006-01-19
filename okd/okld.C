@@ -153,7 +153,8 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 }
 
 static bool
-parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc)
+parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
+		       int *svc_reqs, int *svc_time)
 {
   int svc_uid = -1;
   optind = 0;
@@ -161,7 +162,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc)
   int ch;
 
   argv_t argv (*v);
-  while ((ch = getopt (argv.size (), argv, "u:")) != -1 && rc) {
+  while ((ch = getopt (argv.size (), argv, "u:r:t:")) != -1 && rc) {
     switch (ch) {
     case 'u':
       if (u) {
@@ -175,6 +176,18 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc)
 	  warn << loc << ": cannot find user " << optarg << "\n";
 	  rc = false;
 	}
+      }
+      break;
+    case 't':
+      if (!convertint (optarg, svc_time)) {
+	warn << loc << ": -t expects an integer argument\n";
+	rc = false;
+      }
+      break;
+    case 'r':
+      if (!convertint (optarg, svc_reqs)) {
+	warn << loc << ": -r expects an integer argument\n";
+	rc = false;
       }
       break;
     default:
@@ -241,6 +254,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   str uri;
   vec<str> env;
   str exe, httppath;
+  int svc_reqs = -1, svc_time = -1;
 
   okws1_port_t port;
   okld_ch_t *chld;
@@ -262,7 +276,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (!check_uri (loc, uri, &port))
     goto err;
 
-  if (!parse_service_options (&s, &u, loc))
+  if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
     goto err;
 
   if (s.size () < 1)
@@ -296,6 +310,9 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   chld = New okld_ch_t (exe, httppath, this, loc, u, env, port);
   chld->add_args (s);
 
+  if (svc_time >= 0) chld->set_svc_life_time (svc_time); 
+  if (svc_reqs >= 0) chld->set_svc_life_reqs (svc_reqs);
+
   svcs.push_back (chld);
   return;
 
@@ -320,6 +337,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   okld_interpreter_t *ipret = NULL;
   str ipret_str;
   okld_ch_t *ch = NULL;
+  int svc_reqs = -1, svc_time = -1;
 
   //
   // pop off "Service" or "Script"
@@ -355,8 +373,9 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     goto err;
   }
 
+
   // there might be a -u option specified (and others TK)
-  if (!parse_service_options (&s, &u, loc))
+  if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
     goto err;
 
   if (!s.size ())
@@ -387,6 +406,9 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     ch = New okld_ch_script_t (exe, httppath, this, loc, ipret, u, env, port);
   else
     ch = New okld_ch_t (exe, httppath, this, loc, u, env, port);
+
+  if (svc_reqs >= 0) ch->set_svc_life_reqs (svc_reqs);
+  if (svc_time >= 0) ch->set_svc_life_time (svc_time);
 
   svcs.push_back (ch);
 
@@ -553,6 +575,9 @@ okld_t::parseconfig (const str &cf)
     .add ("DangerousZbufs", &ok_dangerous_zbufs)
     .add ("SyslogPriority", &ok_syslog_priority)
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
+    
+    .add ("ServiceLifeRequests", &ok_svc_life_reqs, 0, INT_MAX)
+    .add ("ServiceLifeTime", &ok_svc_life_time, 0, INT_MAX)
 
     .add ("RootUser", &root)
     .add ("RootGroup", &wheel)
