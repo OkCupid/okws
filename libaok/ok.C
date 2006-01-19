@@ -294,8 +294,8 @@ oksrvc_t::remove (okclnt_t *c)
 {
   clients.remove (c);
 
-  if (ok_svc_life_reqs > 0 && ++n_reqs > u_int (ok_svc_life_reqs))
-    internal_reliable_shutdown ("service number of requests served",
+  if (ok_svc_life_reqs > 0 && ++n_reqs >= u_int (ok_svc_life_reqs))
+    internal_reliable_shutdown ("served maximum number of requests",
 				ok_shutdown_timeout_fast);
 
   if (!--nclients && sdflag)
