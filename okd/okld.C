@@ -373,7 +373,6 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     goto err;
   }
 
-
   // there might be a -u option specified (and others TK)
   if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
     goto err;
