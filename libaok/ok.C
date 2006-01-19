@@ -175,7 +175,7 @@ oksrvc_t::init (int argc, char *argv[])
   set_debug_flags ();
 
   if (OKDBG2(OKD_STARTUP))
-    SVC_CHATTER ("starting up; OKD version " << VERSION <<
+    SVC_CHATTER ("starting up; OKWS version " << VERSION <<
 		 "; running as (" << getuid () << ", " << geteuid () << ")");
 
   str mmc_file = ok_mmc_file;
