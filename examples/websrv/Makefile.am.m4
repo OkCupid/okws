@@ -12,7 +12,7 @@ SUFFIXES = .g .C
 	@rm -f $@
 	-$(PUB) $(PUBFLAGS) -w -o $@ $< || rm -f $@
 
-LDFLAGS = $(SVC_LDFLAGS)
+AM_LDFLAGS = $(SVC_LDFLAGS)
 
 define(`svc_sources',)dnl
 define(`svc_gfiles',)dnl
