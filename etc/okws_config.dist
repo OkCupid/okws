@@ -245,6 +245,16 @@ Service 	pt2 	:8080/pt2      # listen port=8080
 Service	DMALLOC_OPTIONS=debug=0x4f4ed03,inter=100 login /login
 
 ##
+##   It is also possible to set a per-service limit on requests
+##   served or lifetime, with the -r and -t flags, respectively.
+##   See ServiceLifeRequests and ServiceLifeTime for more details.
+##
+##   In this example, run logout for either 1000 requests, or for
+##   30000 seconds, whichever comes first.
+##
+Service logout -r 1000 -t 30000 /logout
+
+##
 ## Gzip Compression Configuration
 ##
 ##   Gzip'ping is on by default, with a compression level of 2 on the 
@@ -410,6 +420,23 @@ ServiceFDHighWat	1000
 ##
 OkdFDLowWat	800
 ServiceFDLowWat	950
+
+##
+## ServiceLifeRequests
+## ServiceLifeTime
+##
+##   Set the maximum number of requests for each service to serve,
+##   or the maximum amount of time to be alive.  Whichever lifetime
+##   expires first, the service will shut down, and okld will start
+##   a new version.  Useful if your services have memory leaks.
+##
+##   Default value is 0, meaning infinite lifetime.
+##
+##   Can override on a service-by-service basis with the -r and -t
+##   options to Service, for LifeRequests and LifeTime, respectively.
+##
+ServiceLifeRequests 	0
+ServiceLifeTime		0
 
 ##
 ##=======================================================================
