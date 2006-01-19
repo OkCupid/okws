@@ -83,7 +83,7 @@ do
 	echo "making directory: $pdir"
 	$MKDIR $pdir
     fi
-    if test ! -f $jlib -o ! $diff = 0
+    if test '(' ! -f $jlib -o ! $diff = 0 ')' -a -f $lib
     then
 	echo $INSTALL $lib $jlib
 	$INSTALL $lib $jlib
