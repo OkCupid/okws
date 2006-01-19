@@ -396,6 +396,9 @@ okd_t::parseconfig ()
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
 
+    .ignore ("ServiceLifeRequests")
+    .ignore ("ServiceLifeTime")
+
     .ignore ("StartupBatchSize")
     .ignore ("StartupBatchWait")
 
