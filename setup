@@ -131,12 +131,9 @@ for file in Makefile.am.m4 */Makefile.am.m4; do
     fi
 done
 
-for dir in *; do
-    if test -r ${dir}/setup; then
-	echo "+ ${dir}/setup $*";
-	(cd ${dir} && chmod +x ./setup && ./setup "$@")
-    fi
-done
+#
+# removed: recursive setup call
+#
 
 if test -z "${AM_ARGS:+set}"; then
     AM_ARGS="--add-missing $opt_c $opt_f"
