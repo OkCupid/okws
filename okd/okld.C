@@ -165,7 +165,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   while ((ch = getopt (argv.size (), argv, "u:r:t:")) != -1 && rc) {
     switch (ch) {
     case 'u':
-      if (u) {
+      if (*u) {
 	warn << loc << ": -u option specified more than once!\n";
 	rc = false;
       } else if (convertint (optarg, &svc_uid)) {
@@ -195,8 +195,13 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       rc = false;
       break;
     }
+  }
+  
+  // pop off "bin" and also all arguments
+  for (int i = 0; i < optind; i++) {
     v->pop_front ();
   }
+
   return rc;
 }
 
@@ -276,20 +281,22 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (!check_uri (loc, uri, &port))
     goto err;
 
-  if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
-    goto err;
-
   if (s.size () < 1)
     goto usage;
 
-  bin = s.pop_front ();
+  bin = s.front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin 
 	 << ") contains unsafe substrings\n";
     goto err;
   }
-  
   exe = apply_container_dir (service_bin, bin);
+
+  // Pass bin to parse_service_options, and it will eventually pop
+  // it off.  On some platforms, getopt needs the first arg
+  if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
+    goto err;
+  
   //
   // if a port was specified for this URI, then there is no need
   // to prepend it with a leading slash.
@@ -366,7 +373,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   // now get the executable or the script, as the case may be
   if (!s.size ()) 
     goto usage;
-  bin = s.pop_front ();
+  bin = s.front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin
 	 << ") contains unsafe substrings\n";
@@ -374,6 +381,8 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   }
 
   // there might be a -u option specified (and others TK)
+  // pass bin into parse_service_options so it has a first
+  // argument to deal with.
   if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
     goto err;
 
