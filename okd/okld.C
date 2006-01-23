@@ -823,6 +823,12 @@ okld_t::fix_uids ()
 	     << " that you specified for service " << svc->servpath << "\n"
 	     << "\t is in use by another, and I'm refusing to use it.\n";
 	return false;
+      } else if (owners[uegid]) {
+	warn << "The UID " << uegid
+	     << " that you specified for service " << svc->servpath << "\n"
+	     << "\towns the executable of another service, so it's unsafe "
+	     << "to use.\n";
+	return false;
       }
     } else {
       // In this case, we autogenerate a user ID / group ID pair
