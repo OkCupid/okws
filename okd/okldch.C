@@ -127,8 +127,10 @@ okld_jailed_exec_t::chown ()
 void
 okld_ch_t::assign_uid (int new_uid)
 {
-  assert (!uid);
-  uid = New ok_usr_t (new_uid);
+  if (uid)
+    assert (uid->getid () == new_uid);
+  else
+    uid = New ok_usr_t (new_uid);
 }
 
 void
