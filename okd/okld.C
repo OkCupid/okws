@@ -284,7 +284,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (s.size () < 1)
     goto usage;
 
-  bin = s.front ();
+  bin = s.pop_front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin 
 	 << ") contains unsafe substrings\n";
@@ -292,8 +292,6 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   }
   exe = apply_container_dir (service_bin, bin);
 
-  // Pass bin to parse_service_options, and it will eventually pop
-  // it off.  On some platforms, getopt needs the first arg
   if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
     goto err;
   
@@ -373,7 +371,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   // now get the executable or the script, as the case may be
   if (!s.size ()) 
     goto usage;
-  bin = s.front ();
+  bin = s.pop_front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin
 	 << ") contains unsafe substrings\n";
