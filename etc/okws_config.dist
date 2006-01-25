@@ -380,6 +380,39 @@ Script PY /py-svc/users.py /users
 ## Other Miscellaneous Options
 ##
 
+## 
+## Mike Walfish's Comments on the next 5 variables
+##
+## 
+##  ServiceFDQuota: this is the total number of client connections that
+##  can be _in the process of getting handed from okd to the service_,
+##  where 'in the process' means that okd is trying to send the file
+##  descriptor representing the *server* side of a per-client connection
+##  over a socketpair using file descriptor passing.
+##
+##  ServiceFDLowWat / ServiceFDHighWat: these have to do with how many
+##  client connections will be open inside the child's address space.
+##  When the child svc exceeds the high water mark, the svc stops
+##  accepting file descriptors over the socketpair, and eventually the
+##  ServiceFDQuota thing will be triggered.
+##
+##  OkdFDLowWat / OkdFDHighWat: these have to do with how many file
+##  descriptors okd will keep open inside its own space. When the high
+##  water mark is exceeded, Okd turns off accept() on its *external*
+##  interface.
+##
+##  From the perspective of the client, if the service prints 'enabling
+##  accept' or 'disabling accept', that means that the service is or is
+##  no longer accepting the client's FD over the socketpair, which means
+##  that while the TCP connection between client and server (in this
+##  case, the TCP server is okd) is established, the connection won't
+##  make progress because the service will not be reading from the
+##  socket.
+##
+##  If we see the text 'WARNING: Service /thinner appears unresponsive',
+##  it means that ServiceFDQuota has been exceeded, and that okd is no
+##  longer going to pass client FDs to the child service.
+
 ##
 ## ServiceFDQuota
 ##
