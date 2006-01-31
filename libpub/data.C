@@ -289,12 +289,11 @@ pfile_include_t::output (output_t *o, penv_t *genv) const
 void
 bound_pfile_t::output (output_t *o, penv_t *genv, bpfcp_t rct) const
 {
-  genv->push_file (rct);
   if (!genv->i_stack_add (rct))
     o->output_err_stacktrace (genv, "circular include detected", 0);
-  file->output (o, genv);
+  else
+    file->output (o, genv);
   genv->i_stack_remove (rct);
-  genv->pop_file ();
 }
 
 void
