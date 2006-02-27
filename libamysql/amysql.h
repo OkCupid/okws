@@ -37,11 +37,6 @@
 #include "parseopt.h"
 #include "pub.h"
 
-TYPE2STRUCT(, unsigned long long);
-TYPE2STRUCT(, long long);
-TYPE2STRUCT(, u_int16_t);
-TYPE2STRUCT(, int16_t);
-
 // hack a workaround mysql compatibility changes
 #ifndef HAVE_MYSQL_BIND
 
