@@ -25,23 +25,12 @@
 #ifndef _LIBPUB_PUBUTIL_H 
 #define _LIBPUB_PUBUTIL_H 1
 
-#include "amisc.h"
-#include "str.h"
-#include "async.h"
+#include "okws_sfs.h"
 #include "ihash.h"
 #include "xpub.h"
 #include "qhash.h"
 #include <dirent.h>
 #include "okdbg-int.h"
-
-
-#ifndef HAVE_SFS_CLOCK_T
-# ifndef HAVE_SFS_SET_CLOCK
-typedef enum { SFS_CLOCK_GETTIME = 0, 
-	       SFS_CLOCK_MMAP = 1, 
-	       SFS_CLOCK_TIMER = 2 } sfs_clock_t;
-# endif
-#endif
 
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);

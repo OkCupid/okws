@@ -26,10 +26,9 @@
 #define _LIBAMYSQL_AMYSQL_H
 
 #include "okwsconf.h"
-#include "async.h"
+#include "okws_sfs.h"
 
 #include "mysql.h"
-#include "str.h"
 #include "amt.h"
 #include "web_prot.h"
 #include "web.h"

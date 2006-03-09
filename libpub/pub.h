@@ -25,7 +25,7 @@
 #ifndef _LIBPUB_PUB_H
 #define _LIBPUB_PUB_H 1
 
-#include "amisc.h"
+#include "okws_sfs.h"
 #include "vec.h"
 #include "qhash.h"
 #include "clist.h"
@@ -34,8 +34,6 @@
 #include "puberr.h"
 #include "holdtab.h"
 #include "zstr.h"
-
-#define sNULL static_cast<str> (NULL)
 
 extern int yywss;          /* on if in White-space strip mode, off otherwise */
 
