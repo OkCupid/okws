@@ -623,18 +623,24 @@ ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p,
   case MTD_KTHREADS:
 #ifdef HAVE_KTHREADS 
     mtd = New mkt_dispatch_t (c, n, m, this, x);
-#endif
+#else
+    warn << "kthreads are not available with this build!\n";
+#endif /* HAVE_KTHREADS */
     break;
   case MTD_PTH:
 #ifdef HAVE_PTH
     assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
     mtd = New mgt_dispatch_t (c, n, m, this, x);
-#endif
+#else
+    warn << "pth is not available with this build!\n";
+#endif /* HAVE_PTH */
     break;
   case MTD_PTHREADS:
 #ifdef HAVE_PTHREADS
     mtd = New mpt_dispatch_t (c, n, m, this, x);
-#endif
+#else 
+    warn << "pthreads are not available with this build!\n";
+#endif /* HAVE_PTHREADS */
     break;
   default:
     break;
@@ -648,10 +654,14 @@ ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p,
     warn << "Requested thread type not availabe: using POSIX pthreads\n";
     mtd = New mpt_dispatch_t (c, n, m, this, x);
 # else
+#  ifdef HAVE_KTHREADS 
     warn << "Requested thread type not availabe: using kernel threads\n";
     mtd = New mkt_dispatch_t (c, n, m, this, x);
-# endif
-#endif
+#  else
+    panic ("No threading package available!\n");
+#  endif  /* HAVE_KTHREADS */
+# endif   /* HAVE_PTHREADS */
+#endif    /* HAVE_PTH */
   }
   mtd->init (); 
 }

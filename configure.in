@@ -27,7 +27,13 @@ AC_PATH_PROGS(UPTIME, uptime, '$(top_srcdir)/missing')
 dnl
 dnl make sure that some type of threading is available.
 dnl
-SFS_REQUIRE_THREADS
+dnl SFS_REQUIRE_THREADS
+
+dnl
+dnl Since only PTH works, for now just require PTH or nothing
+dnl
+SFS_FIND_PTH
+
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
 test "$RPCC" || RPCC='/usr/local/bin/rpcc'
@@ -53,8 +59,6 @@ OKWS_LIBS
 SFS_MYSQL
 
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
-
-AC_CHECK_FUNCS(rfork clone)
 
 if test -z "$okwslibdir"; then
    okwslibdirp='${pkglibdir}-${VERSION}'

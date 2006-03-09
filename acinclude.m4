@@ -872,94 +872,101 @@ dnl
 AC_DEFUN([SFS_FIND_PTH],
 [AC_ARG_WITH(pth,
 --with-pth=DIR		  Specify location of GNU Pth library)
-ac_save_CFLAGS=$CFLAGS
-ac_save_LIBS=$LIBS
-dirs0="${with_pth} ${with_pth}/include"
-if test "${prefix}" != "NONE"; then
-	dirs0="$dirs0 ${prefix} ${prefix}/pth"
-fi
+if test "$with_pth" != "no"
+then
+	ac_save_CFLAGS=$CFLAGS
+	ac_save_LIBS=$LIBS
+	dirs0="${with_pth} ${with_pth}/include"
+	if test "${prefix}" != "NONE"; then
+		dirs0="$dirs0 ${prefix} ${prefix}/pth"
+	fi
 
-dirs1="$dirs0 /usr/local/include/pth /usr/local/include "
-dirs2=""
+	dirs1="$dirs0 /usr/local/include/pth /usr/local/include "
+	dirs2=""
 
-dnl
-dnl only consider those directories that actually have a pth.h
-dnl in them; otherwise, we'll get false positives.
-dnl
-for dir in $dirs1
-do
-    if test -r ${dir}/pth.h ; then
-	dirs2="$dirs2 $dir"
-    fi
-done
+	dnl
+	dnl only consider those directories that actually have a pth.h
+	dnl in them; otherwise, we'll get false positives.
+	dnl
+	for dir in $dirs1
+	do
+	    if test -r ${dir}/pth.h ; then
+		dirs2="$dirs2 $dir"
+	    fi
+	done
 
-AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
-[for dir in $dirs2 " " ; do
-	case $dir in 
-		" ") iflags=" " ;;
-		*) iflags="-I${dir}" ;;
-	esac
-	CFLAGS="${ac_save_CFLAGS} $iflags"
-	AC_TRY_COMPILE([#include <pth.h>], [
+	AC_CACHE_CHECK(for pth.h, sfs_cv_pth_h,
+	[for dir in $dirs2 " " ; do
+		case $dir in 
+			" ") iflags=" " ;;
+			*) iflags="-I${dir}" ;;
+		esac
+		CFLAGS="${ac_save_CFLAGS} $iflags"
+		AC_TRY_COMPILE([#include <pth.h>], [
 #if !defined(PTH_SYSCALL_HARD) || PTH_SYSCALL_HARD == 0
 #error "HARD SYSTEM CALLS ARE REQUIRED"
 #endif
 #if PTH_SYSCALL_SOFT
 #error "SOFT SYSTEM CALLS WILL BREAK LIBASYNC"
 #endif
-	],
-	 sfs_cv_pth_h="${iflags}"; break)
-done
-if test "$sfs_cv_pth_h" = " "; then
-	sfs_cv_pth_h="yes"
-fi
-])
-if test "$sfs_cv_pth_h" = "yes"; then
-	sfs_cv_pth_h=" "
-fi
-if test "${sfs_cv_pth_h+set}"; then
-	dnl
-	dnl only check the include directory that corresponds
-	dnl to the library directory;  there might be multiple
-	dnl versions of the library around.
-	dnl
-	dirs=`echo $sfs_cv_pth_h | sed 's/include/lib/' `
-	dirs=`echo $dirs | sed 's/^-I//' `
-	AC_CACHE_CHECK(for libpth, sfs_cv_libpth,
-	[for dir in " " $dirs; do
-		case $dir in
-			" ") lflags="-lpth" ;;
-			*) lflags="-L${dir} -lpth" ;;
-		esac
-		LIBS="$ac_save_LIBS $lflags"
-		AC_TRY_LINK([#include <pth.h>],
-			pth_init ();, 
-			sfs_cv_libpth=$lflags; break)
-
-		dnl
-		dnl Linux seems to require linking against -ldl in
-		dnl certain cases.  May as well give it a try
-		dnl
-                lflags="$lflags -ldl";
-		LIBS="$ac_save_LIBS $lflags"
-		AC_TRY_LINK([#include <pth.h>],
-			pth_init ();, 
-			sfs_cv_libpth=$lflags; break)
-                
+		],
+	 	sfs_cv_pth_h="${iflags}"; break)
 	done
-	if test -z ${sfs_cv_libpth+set}; then
-		sfs_cv_libpth="no"
+	if test "$sfs_cv_pth_h" = " "; then
+		sfs_cv_pth_h="yes"
 	fi
-])
+	])
+	if test "$sfs_cv_pth_h" = "yes"; then
+		sfs_cv_pth_h=" "
+	fi
+	if test "${sfs_cv_pth_h+set}"; then
+		dnl
+		dnl only check the include directory that corresponds
+		dnl to the library directory;  there might be multiple
+		dnl versions of the library around.
+		dnl
+		dirs=`echo $sfs_cv_pth_h | sed 's/include/lib/' `
+		dirs=`echo $dirs | sed 's/^-I//' `
+		AC_CACHE_CHECK(for libpth, sfs_cv_libpth,
+		[for dir in " " $dirs; do
+			case $dir in
+				" ") lflags="-lpth" ;;
+				*) lflags="-L${dir} -lpth" ;;
+			esac
+			LIBS="$ac_save_LIBS $lflags"
+			AC_TRY_LINK([#include <pth.h>],
+				pth_init ();, 
+				sfs_cv_libpth=$lflags; break)
+
+			dnl
+			dnl Linux seems to require linking against -ldl in
+			dnl certain cases.  May as well give it a try
+			dnl
+			lflags="$lflags -ldl";
+			LIBS="$ac_save_LIBS $lflags"
+			AC_TRY_LINK([#include <pth.h>],
+				pth_init ();, 
+				sfs_cv_libpth=$lflags; break)
+
+		done
+		if test -z ${sfs_cv_libpth+set}; then
+			sfs_cv_libpth="no"
+		fi
+	])
+	fi
+	if test "${sfs_cv_libpth+set}" && test "$sfs_cv_libpth" != "no"; then
+		echo "XXXXXXXXXXXXXXXX"
+		CPPFLAGS="$CPPFLAGS $sfs_cv_pth_h"
+		AC_DEFINE(HAVE_PTH, 1, Allow libamt to use the GNU Pth library)
+		sfs_have_threads=yes
+		LDADD_THR=$sfs_cv_libpth
+	else
+		AC_MSG_ERROR("Pth failed. To disable Pth use --without-pth")
+	fi
+	LIBS=$ac_save_LIBS
+	CFLAGS=$ac_save_CFLAGS
 fi
-if test "${sfs_cv_libpth+set}" && test "$sfs_cv_libpth" != "no"; then
-	CPPFLAGS="$CPPFLAGS $sfs_cv_pth_h"
-	AC_DEFINE(HAVE_PTH, 1, Allow libamt to use the GNU Pth library)
-	sfs_have_threads=yes
-	LDADD_THR=$sfs_cv_libpth
-fi
-LIBS=$ac_save_LIBS
-CFLAGS=$ac_save_CFLAGS
+AC_SUBST(LDADD_THR)
 ])
 
 
@@ -1224,25 +1231,24 @@ dnl Check that some threading exists
 dnl
 AC_DEFUN([SFS_REQUIRE_THREADS],
 [
-AC_ARG_ENABLE(pth,
---disable-pth		  Disable GNU Pth library, [])
-AC_ARG_ENABLE(pthreads,
---disable-pthreads	  Disable POSIX pthreads library, [])
-if test "$enable_pth" != "no" || test -n "$with_pth"; then
-	SFS_FIND_PTH	
-fi
+dnl AC_ARG_ENABLE(pthreads,
+dnl --disable-pthreads	  Disable POSIX pthreads library, [])
+
 dnl
-dnl For now, require PTH!
+dnl Either PTH, or nothing, since the other threading doesn't currently
+dnl work.
 dnl
+SFS_FIND_PTH	
+
 dnl if test -z "$sfs_have_threads" &&
 dnl 	(test "$enable_pthreads" != "no" || test -n $with_pthreads); 
 dnl then
 dnl 	SFS_FIND_PTHREADS
 dnl fi
 dnl SFS_FIND_KTHREADS
-if test -z "$sfs_have_threads"; then
-	AC_MSG_ERROR(No threading packages available; cannot proceed.)
-fi
+dnl if test -z "$sfs_have_threads"; then
+dnl 	AC_MSG_ERROR(No threading packages available; cannot proceed.)
+dnl fi
 AC_SUBST(LDADD_THR)
 ])
 dnl
@@ -1377,9 +1383,9 @@ case $host_os in
 	sfs_gnu_CXXWFLAGS="$sfs_gnu_WFLAGS"
 	;;
 esac
-expr "$DEBUG" : '.*-O' > /dev/null \
+expr -- "$DEBUG" : '.*-O' > /dev/null \
     || sfs_gnu_WFLAGS="$sfs_gnu_WFLAGS -Wno-unused"
-expr "$CXXDEBUG" : '.*-O' > /dev/null \
+expr -- "$CXXDEBUG" : '.*-O' > /dev/null \
     || sfs_gnu_CXXWFLAGS="$sfs_gnu_CXXWFLAGS -Wno-unused"
 NW='-w'
 test "$GCC" = yes -a -z "${WFLAGS+set}" && WFLAGS="$sfs_gnu_WFLAGS"
@@ -1387,11 +1393,11 @@ test "$GXX" = yes -a -z "${CXXWFLAGS+set}" && CXXWFLAGS="$sfs_gnu_CXXWFLAGS"
 CXXNOERR=
 test "$GXX" = yes && CXXNOERR='-Wno-error'
 # Temporarily set CFLAGS to ansi so tests for things like __inline go correctly
-if expr "$DEBUG $WFLAGS $ECFLAGS" : '.*-ansi' > /dev/null; then
+if expr -- "$DEBUG $WFLAGS $ECFLAGS" : '.*-ansi' > /dev/null; then
 	CFLAGS="$CFLAGS -ansi"
 	ac_cpp="$ac_cpp -ansi"
 fi
-expr "$CXXDEBUG $CXXWFLAGS $ECXXFLAGS" : '.*-ansi' > /dev/null \
+expr -- "$CXXDEBUG $CXXWFLAGS $ECXXFLAGS" : '.*-ansi' > /dev/null \
     && CXXFLAGS="$CXXFLAGS -ansi"
 ])
 dnl
