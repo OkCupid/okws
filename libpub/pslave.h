@@ -62,6 +62,8 @@ int pub_server (pubserv_cb cb, const str &path);
 pslave_status_t pub_slave  (pubserv_cb cb, u_int port = 0, 
 			    pslave_status_t *s = NULL);
 
+str status2str (hlp_status_t);
+
 class helper_base_t {
 public:
   helper_base_t () : txa_login_rpc (0), authtoks (NULL) {}

@@ -559,3 +559,21 @@ helper_exec_t::kill (cbv cb, ptr<okauthtok_t> t, oksig_t s)
   }
 }
 
+str
+status2str (hlp_status_t st)
+{
+#define D(x) case x: return #x;
+  switch (st) {
+    D(HLP_STATUS_NONE);
+    D(HLP_STATUS_OK);
+    D(HLP_STATUS_CONNECTING);
+    D(HLP_STATUS_ERR);
+    D(HLP_STATUS_RETRY);
+    D(HLP_STATUS_HOSED);
+    D(HLP_STATUS_DENIED);
+  default:
+    return "HLP_STATUS_UNKNOWN";
+  }
+#undef D
+}
+

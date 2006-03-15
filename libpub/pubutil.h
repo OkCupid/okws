@@ -45,6 +45,7 @@ bool dir_security_check (const str &p);
 str apply_container_dir (const str &d, const str &e);
 void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
+inline time_t okwstime () { return timenow ? timenow : time (NULL); }
 
 class argv_t {
 public:
