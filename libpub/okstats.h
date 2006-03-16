@@ -25,6 +25,13 @@
 #ifndef _LIBPUB_STATS_H
 #define _LIBPUB_STATS_H 1
 
+//
+// Work-in-progress for making RPC stats for okws servers talking to
+// OKWS DB proxies or RPC servers.  Making histograms for displaying
+// distributions of RPC times over the last XX hours and some smart
+// historying functions.
+//
+
 #include "limits.h"
 #include "vec.h"
 #include "pubutil.h"

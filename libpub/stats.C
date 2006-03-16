@@ -1,6 +1,7 @@
 
 #include "okstats.h"
 
+
 void
 histogram_t::compile (const dataset_t &d)
 {
