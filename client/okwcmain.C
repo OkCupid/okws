@@ -16,7 +16,7 @@ static rxx url_rxx ("http://([^:/]+)(:(\\d+)/)?(.*)");
 void
 usage ()
 {
-  warn << "usage: okwc <url>\n";
+  warn << "usage: okwc <url> <post>\n";
   exit (1);
 }
 
@@ -35,10 +35,17 @@ int
 main (int argc, char *argv [])
 {
   okwc_def_contlen *= 10;
-  if (argc != 2) 
+  str post;
+  str typ;
+  if (argc != 2 && argc != 3) 
     usage ();
   if (!url_rxx.match (argv[1])) 
     usage ();
+
+  if (argc == 3) {
+    post = argv[2];
+    typ = "application/x-www-form-urlencoded";
+  }
 
   str hostname = url_rxx[1];
   u_int16_t port = 80;
@@ -47,7 +54,8 @@ main (int argc, char *argv [])
     assert (convertint (port_str, &port));
   str filename = url_rxx[4];
 
-  okwc_request (hostname, port, filename, wrap (reqcb), 1, 100);
+  okwc_request (hostname, port, filename, wrap (reqcb), 1, 100,
+		NULL, post, typ);
   amain ();
 }
 

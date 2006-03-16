@@ -78,10 +78,12 @@ okwc_dnscache_t::lookup (const str &n, cbhent cb)
 
 okwc_req_t *
 okwc_request (const str &host, u_int16_t port, const str &fn,
-	      okwc_cb_t cb, int vrs, int timeout, cgi_t *outcook)
+	      okwc_cb_t cb, int vrs, int timeout, cgi_t *outcook,
+	      const str &body, const str &type)
 {
   okwc_req_t *req = 
-    New okwc_req_bigstr_t (host, port, fn, cb, vrs, timeout, outcook);
+    New okwc_req_bigstr_t (host, port, fn, cb, vrs, timeout, outcook,
+			   body, type);
   req->launch ();
   return req;
 }
@@ -101,11 +103,13 @@ okwc_http_hdr_t::is_chunked () const
 }
 
 okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 
-			int v, int to, cgi_t *ock)
+			int v, int to, cgi_t *ock, const str &post,
+			const str &t)
   : hostname (h), port (p), filename (f),
     vers (v), timeout (to), outcookie (ock),
     tcpcon (NULL), waiting_for_dns (false), fd (-1), 
-    http (NULL), timer (NULL) {}
+    http (NULL), timer (NULL),
+    _post (post), _type (t) {}
 
 void
 okwc_req_t::launch ()
@@ -149,7 +153,7 @@ okwc_req_bigstr_t::okwc_http_alloc ()
 {
   return New okwc_http_bigstr_t (x, filename,  hostname,
 				 wrap (this, &okwc_req_bigstr_t::http_cb), 
-				 vers, outcookie);
+				 vers, outcookie, _post, _type);
 }
 
 void
@@ -219,7 +223,9 @@ okwc_http_t::make_req ()
   // requests, and parse chunked content returns. for now, we'll do
   // this instead.
   //
-  reqbuf << "GET " << filename << " HTTP/1." << vers  << HTTP_CRLF;
+  str mth = _post ? "POST" : "GET";
+
+  reqbuf << mth << " " << filename << " HTTP/1." << vers  << HTTP_CRLF;
   if (vers == 1) {
     reqbuf << "Connection: close" << HTTP_CRLF
 	   << "Host: " << hostname << HTTP_CRLF
@@ -230,7 +236,17 @@ okwc_http_t::make_req ()
     outcook->encode (&reqbuf);
     reqbuf << HTTP_CRLF;
   }
+  if (_type) {
+    reqbuf << "Content-Type: " << _type << HTTP_CRLF;
+  }
+  if (_post) {
+    reqbuf << "Content-Length: " << _post.len () << HTTP_CRLF;
+  }
+
   reqbuf << HTTP_CRLF;
+  if (_post) {
+    reqbuf << _post;
+  }
   state = OKWC_HTTP_REQ;
   cancel_flag = New refcounted<bool> (false);
   x->send (reqbuf, wrap (this, &okwc_http_t::parse, cancel_flag));
@@ -402,16 +418,19 @@ okwc_http_bigstr_t::finish2 (int status)
 }
 
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
-			  int v, cgi_t *ock, okwc_cookie_set_t *incook)
+			  int v, cgi_t *ock, okwc_cookie_set_t *incook,
+			  const str &p, const str &t)
   : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch, incook)),
-    vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL)
+    vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL),
+    _post (p), _type (t)
 {}
 
 okwc_http_bigstr_t::okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f,
 					const str &h, okwc_cb_t cb,
-					int v, cgi_t *okc)
-  : okwc_http_t (xx,f,h,v,okc), body (&abuf), okwc_cb (cb)
+					int v, cgi_t *okc, const str &p,
+					const str &t)
+  : okwc_http_t (xx,f,h,v,okc,NULL,p,t), body (&abuf), okwc_cb (cb)
 {}
 
 void

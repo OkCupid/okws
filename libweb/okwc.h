@@ -195,7 +195,8 @@ public:
 		 OKWC_HTTP_BODY = 3 } state_t;
 		 
   okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, 
-	       int v, cgi_t *ock, okwc_cookie_set_t *incook = NULL);
+	       int v, cgi_t *ock, okwc_cookie_set_t *incook = NULL,
+	       const str &post = NULL, const str &type = NULL);
   virtual ~okwc_http_t () { if (chunker) delete (chunker); }
 
   void make_req ();
@@ -232,6 +233,7 @@ protected:
   state_t state;
   ptr<bool> cancel_flag;
   okwc_chunker_t *chunker;
+  const str _post, _type;
 };
 
 //
@@ -242,7 +244,8 @@ protected:
 class okwc_http_bigstr_t : public okwc_http_t {
 public:
   okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f, 
-		      const str &h, okwc_cb_t c, int v, cgi_t *ock);
+		      const str &h, okwc_cb_t c, int v, cgi_t *ock,
+		      const str &post, const str &type);
 
 protected:
   void body_parse ();
@@ -262,7 +265,8 @@ private:
 class okwc_req_t {
 public:
   okwc_req_t (const str &ht, u_int16_t p, const str &fn,
-	      int vers, int timeout, cgi_t *ock);
+	      int vers, int timeout, cgi_t *ock,
+	      const str &post, const str &type);
   virtual ~okwc_req_t ();
 
   void launch ();
@@ -289,13 +293,17 @@ protected:
   ptr<ahttpcon> x;
   okwc_http_t *http;
   timecb_t *timer;
+  
+  const str _post;
+  const str _type;
 };
 
 class okwc_req_bigstr_t : public okwc_req_t {
 public:
   okwc_req_bigstr_t (const str &ht, u_int16_t p, const str &fn,
-		     okwc_cb_t cb, int vers, int timeout, cgi_t *ock)
-    : okwc_req_t (ht, p, fn, vers, timeout, ock), okwc_cb (cb) {}
+		     okwc_cb_t cb, int vers, int timeout, cgi_t *ock,
+		     const str &post, const str &type)
+    : okwc_req_t (ht, p, fn, vers, timeout, ock, post, type), okwc_cb (cb) {}
 protected:
   virtual void req_fail (int status);
   void http_cb (ptr<okwc_resp_t> res);
@@ -307,7 +315,8 @@ protected:
 okwc_req_t *
 okwc_request (const str &h, u_int16_t port, const str &fn, 
 	      okwc_cb_t cb, int vers = 0, int timeout = -1, 
-	      cgi_t *outcook = NULL );
+	      cgi_t *outcook = NULL, const str &post = NULL,
+	      const str &type = NULL);
 
 void
 okwc_cancel (okwc_req_t *req);
