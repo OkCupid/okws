@@ -132,7 +132,7 @@ public:
   static ptr<ahttpcon> alloc (int fd, sockaddr_in *s = NULL, 
 			      int mb = -1, int rcvlimit = -1, 
 			      bool coe = true, bool ma = true)
-  { return New refcounted<ahttpcon> (fd, s, mb, coe, ma); }
+  { return New refcounted<ahttpcon> (fd, s, mb, rcvlimit, coe, ma); }
   bool closed () const { return fd < 0; }
   bool overflow () const { return overflow_flag; }
   int set_lowwat (int sz);
