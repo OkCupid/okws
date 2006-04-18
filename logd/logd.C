@@ -284,7 +284,7 @@ logd_t::clonefd (svccb *b)
     warn ("socketpair: %m\n");
     ret = false;
   } else {
-    newclnt (false, axprt_unix::alloc (fds[0]));
+    newclnt (false, axprt_unix::alloc (fds[0], ok_axprt_ps));
     fdsnk->send (fds[1], fdseqno++);
   }
   b->replyref (ret);

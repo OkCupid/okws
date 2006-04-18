@@ -111,10 +111,12 @@ pubserv_t::lookup (svccb *sbp)
   xpub_lookup_res_t res (XPUB_STATUS_OK);
   bpfcp_t bpf;
   if (!bnd) {
+    warn << "Cannot find file: " << *x << "\n";
     res.set_status (XPUB_STATUS_NOENT);
   } else if ((bpf = parser->parse (bnd, PFILE_TYPE_H))) {
     bnd->hash ()->to_xdr (res.hash);
   } else {
+    warn << "Parse error in file: " << *x << "\n";
     str err = strbuf ("Parse error in file: ") << *x << "\n";
     res.set_status (XPUB_STATUS_ERR);
     *res.error = err;

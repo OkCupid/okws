@@ -173,7 +173,7 @@ helper_exec_t::launch (cbb c)
 
   argv[0] = prog;
   ptr<axprt_unix> ux = 
-    axprt_unix_aspawnv (prog, argv, 0, 
+    axprt_unix_aspawnv (prog, argv, ok_axprt_ps,
 			wrap (this, &helper_exec_t::setprivs));
   fd = ux->getfd ();
   x = ux;

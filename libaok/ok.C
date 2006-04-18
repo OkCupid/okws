@@ -348,7 +348,7 @@ oksrvc_t::end_program ()
 void
 oksrvc_t::connect ()
 {
-  ctlx = axprt_unix::alloc (1);
+  ctlx = axprt_unix::alloc (1, ok_axprt_ps);
   x = ahttpcon_listen::alloc (0);
   ctlcon (wrap (this, &oksrvc_t::ctldispatch));
 
