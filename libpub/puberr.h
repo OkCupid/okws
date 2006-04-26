@@ -41,6 +41,7 @@ public:
     status = false; 
     errbuf << s;
     if (s[s.len () - 1] != '\n') errbuf << "\n";
+    hold.push_back (s);
   }
   
   void add (const xpub_lookup_res_t &x, const str &fn);
@@ -64,6 +65,7 @@ public:
 
   bool status;
   strbuf errbuf;
+  vec<str> hold;
 };
 
 template<class C> void
@@ -73,6 +75,7 @@ pub_res_t::add_xdr_res (const C &x, const str &nm)
   case XPUB_STATUS_NOENT:
     status = false;
     errbuf << nm << ": file not found";
+    hold.push_back (nm);
     break;
   case XPUB_STATUS_ERR:
     status = false;

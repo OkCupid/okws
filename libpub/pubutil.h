@@ -31,6 +31,7 @@
 #include "qhash.h"
 #include <dirent.h>
 #include "okdbg-int.h"
+#include "okws_sfs.h"
 
 str c_escape (const str &s, bool addq = true);
 bool mystrcmp (const char *a, const char *b);
@@ -45,7 +46,14 @@ bool dir_security_check (const str &p);
 str apply_container_dir (const str &d, const str &e);
 void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
+int nfs_safe_stat (const char *f, struct stat *sb);
 inline time_t okwstime () { return timenow ? timenow : time (NULL); }
+
+// Given in, put the directory component in d, and the basename component
+// in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL
+// if no directory.  b set to NULL if no filename (i.e., ends in '/').
+// Dirname is normalized (i.e., double '/'s are mapped to one '/').
+bool basename_dirname (const str &in, str *d, str *b);
 
 class argv_t {
 public:
@@ -76,6 +84,8 @@ struct phash_t {
   hash_t hash_hash () const;
   bool operator== (const phash_t &ph) const;
   bool operator== (const xpubhash_t &ph) const;
+  bool operator!= (const xpubhash_t &ph) const;
+  bool operator!= (const phash_t &ph) const;
   void to_xdr (xpubhash_t *ph) const;
 };
 
@@ -140,8 +150,8 @@ private:
 };
 
 
-bool file2hash (const str &fn, phash_t *ph);
-phashp_t file2hash (const str &fn);
+bool file2hash (const str &fn, phash_t *ph, struct stat *sbp = NULL);
+phashp_t file2hash (const str &fn, struct stat *sbp = NULL);
 int uname2uid (const str &un);
 str uid2uname (int i);
 int gname2gid (const str &gn);

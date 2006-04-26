@@ -165,6 +165,16 @@ phash_t::operator== (const xpubhash_t &ph) const
   return (!memcmp ((void *)val, (void *)ph.base (), PUBHASHSIZE));
 }
 
+bool phash_t::operator!= (const xpubhash_t &ph) const
+{
+  return !(*this == ph);
+}
+
+bool phash_t::operator!= (const phash_t &p2) const
+{
+  return !(*this == p2);
+}
+
 hash_t
 phash_t::hash_hash () const
 {
@@ -180,13 +190,15 @@ phash_t::hash_hash () const
 #define BUFSIZE 4096
 
 bool
-file2hash (const str &fn, phash_t *h)
+file2hash (const str &fn, phash_t *h, struct stat *sbp)
 {
   char buf[BUFSIZE];
   struct stat sb;
+  if (!sbp)
+    sbp = &sb;
   if (access (fn.cstr (), F_OK | R_OK) != 0)
     return false;
-  if (stat (fn.cstr (), &sb) != 0 || !S_ISREG (sb.st_mode))
+  if (stat (fn.cstr (), sbp) != 0 || !S_ISREG (sbp->st_mode))
     return false;
   int fd = open (fn.cstr (), O_RDONLY);
   if (fd < 0)
@@ -202,10 +214,10 @@ file2hash (const str &fn, phash_t *h)
 }
 
 ptr<phash_t>
-file2hash (const str &fn)
+file2hash (const str &fn, struct stat *sbp)
 {
   ptr<phash_t> p = New refcounted<phash_t> ();
-  if (!file2hash (fn, p))
+  if (!file2hash (fn, p, sbp))
     return NULL;
   return p;
 }
@@ -495,4 +507,53 @@ pbinding_t::okdbg_dump_vec (vec<str> *s) const
     b << fn << " -> " << hsh->to_str () << " (" << (toplev ? 1 : 0) << ")\n";
     s->push_back (b);
   }
+}
+
+int
+nfs_safe_stat (const char *fn, struct stat *sb)
+{
+  int fd;
+  int rc;
+  if ((fd = open (fn, O_RDONLY)) < 0)
+    return fd;
+  if ((rc = fstat (fd, sb)) < 0)
+    return rc;
+  close (fd);
+  return rc;
+}
+
+bool
+basename_dirname (const str &in, str *d, str *b)
+{
+  size_t l = in.len ();
+
+  if (l == 0) {
+    *d = *b = NULL;
+    return false;
+  }
+
+  bool ret = (in[0] == '/');
+  const char *bp = in.cstr ();
+  const char *ep = bp + l - 1;
+  const char *p;
+  for ( p = ep; p >= bp && *p != '/'; p--) ;
+
+  // Set the basename if possible
+  if (p == ep) {
+    *b = NULL;
+  } else {
+    *b = str (p + 1);
+  }
+
+  // if there were multiple slashes keep backing up
+  for ( ; p >= bp && *p == '/' ; p-- );
+
+  if (p >= bp) {
+    assert (*p != '/');
+    *d = str (bp, p - bp + 1);
+  } else {
+    *d = NULL;
+  }
+  
+  return ret;
 }

@@ -1,2 +1,6 @@
 Makefile.in
 Makefile
+cache2.C
+pubserv2.C
+pubd.C
+treestat.C

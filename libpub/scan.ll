@@ -15,8 +15,6 @@ static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (char *c, int l);
 static void nlcount (int m = 0);
-static void pop_ECF ();
-static void push_ECF ();
 static void eos_plinc ();
 
 int yy_ssln;
@@ -28,6 +26,7 @@ int yy_pt_com;  /* pass-throgh comment! */
 char str_buf[YY_STR_BUFLEN];
 int sbi;
 char *eof_tok;
+int yy_d_brace =0;
 
 %}
 
@@ -45,8 +44,8 @@ EOL	[ \t]*\n?
 TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
-%x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE EC WEC CCODE
-%x ECCODE ECF GCODE PRE PSTR_SQ 
+%x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE 
+%x GCODE PRE PSTR_SQ 
 
 %%
 
@@ -60,34 +59,6 @@ TCLOSE	[ \t]*[;]?[ \t]*"-->"
 [^/]+		{ yylval.str = yytext; nlcount (); return T_CODE; }
 }
 
-<EC,WEC,ECF>{
-"<%ec"{WSN}*	{ yy_push_state (ECCODE); nlcount (); return T_EC_EC; }
-"<%c"{WSN}+	{ pop_ECF (); yy_push_state (CCODE); 
-	          nlcount (); return T_EC_C; }
-"<%"(p|g){WSN}+	{ yy_push_state (GSEC); nlcount (); return T_EC_G; }
-"<%v"{WSN}+ 	{ yy_push_state (ECCODE); nlcount (); return T_EC_V; }
-"<%uv"{WSN}+	{ yy_push_state (ECCODE); nlcount (); return T_EC_UV; }
-"<%cf"{WSN}+	{ push_ECF (); yy_push_state (CCODE);
-		  nlcount (); return T_EC_CF; }
-"<%m%>"{EOL}	{ pop_ECF (); nlcount (); return T_EC_M; }
-"<%/m%>"{EOL}	{ push_ECF (); nlcount (); return T_EC_EM; }
-\\+"<%"[a-z]	{ yylval.str = yytext + 1; return T_HTML; }
-}
-
-<ECF>{
-\n		{ PLINC; }
-{WS}+		/* ignore */ ;
-.		{ return yyerror ("illegal token found in HTML-free zone"); }
-}
-
-<CCODE>{
-"%>"{EOL}	{ yy_pop_state (); nlcount (); return T_EC_CLOSE; }
-\\+"%>"		{ yylval.str = yytext + 1; return T_CODE; }
-[^%\\]+		{ yylval.str = yytext; nlcount (); return T_CODE; }
-[%\\]		{ yylval.ch = yytext[0]; return T_CH; }
-}
-
-
 <GSEC>{
 \n		{ PLINC; }
 {WS}+		/* ignore */ ;
@@ -97,8 +68,6 @@ TCLOSE	[ \t]*[;]?[ \t]*"-->"
 "</"(guy|pub)">*/"{WS}*\n? 	{ yy_pop_state (); 
 	                          if (yytext[yyleng - 1] == '\n') PLINC; 
 	                          return T_EGUY; }
-
-"%>"		{ yy_pop_state ();  return T_EC_CLOSE; }
 
 "<<"{VAR};	{ eos_plinc (); return begin_GH (); }
 "//".*$		/* discard */;
@@ -115,16 +84,20 @@ init_publist	return T_INIT_PDL;
 "-->"		{ yy_pop_state (); return T_EPTAG; }
 }
 
-<ECCODE>{
-"%>"{EOL}	{ yy_pop_state (); nlcount (); return T_EC_CLOSE; }
-}
-
-<GSEC,PTAG,ECCODE>{
+<GSEC,PTAG>{
 {WS}+		/* discard */ ;
 \n		{ PLINC; }
 
+"{{"		{ 
+   	     	   yy_d_brace ++; 
+		   yy_push_state (yywss ? WH : H);
+	 	   return T_2L_BRACE; 
+		}
+
 =>		|
 [(),{}=;]	return yytext[0];
+
+
 
 
 int(32(_t)?)?[(]	return T_INT_ARR; 
@@ -145,13 +118,13 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 "//".*$		/* discard */ ;
 
-.		{ return yyerror ("illegal token found in GUY/PTAG/EC++ "
-	                   "environment"); }
+.		{ return yyerror ("illegal token found in GUY/PTAG "
+	                          "environment"); }
 }
 
 <WGH,GH>^{VAR}/\n	{ if (end_GH ()) return T_EGH; 
 		          else { yylval.str = yytext; return T_HTML; } }
-<H,GH,EC>\n		{ PLINC; return (yytext[0]); }
+<H,GH>\n		{ PLINC; return (yytext[0]); }
 
 <H,WH>{
 {TPRFX}include		{ yy_push_state (PTAG); return T_PTINCLUDE; }
@@ -167,26 +140,36 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  		}
 }
 
-<GH,H,WH,WGH,EC,WEC,JS,PSTR,GSEC,PTAG,ECCODE,HTAG,PSTR_SQ>{
+<GH,H,WH,WGH,JS,PSTR,GSEC,PTAG,HTAG,PSTR_SQ>{
 "@{"		{ yy_push_state (GCODE); return T_BGCODE; }
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
 "%{"		{ yy_push_state (GCODE); return T_BGCCE; }
-\\+[$@%]"{"	{ yylval.str = yytext + 1; return T_HTML; }
-[$@%]		{ yylval.ch = yytext[0]; return T_CH; }
+
+\\+[$@%]"{"|\\"}}"	        { yylval.str = yytext + 1; return T_HTML; }
+
+"}}"		{ if (yy_d_brace > 0) {
+		     yy_d_brace -- ;
+		     yy_pop_state ();
+                     return T_2R_BRACE; 
+	          } else {
+	 	     yylval.str = yytext; return T_HTML;
+	          } 
+                } 
+[$@%}]		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
-<GH>[^$@%\\\n]+	{ yylval.str = yytext; return T_HTML; }
-<H,EC>{
-[^$@%\\<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+<GH>[^$@%}\\\n]+	{ yylval.str = yytext; return T_HTML; }
+<H>{
+[^$@%}\\<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 "<"		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
-<H,GH,EC>{
+<H,GH>{
 \\		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
 
-<WH,WGH,WEC>{	
+<WH,WGH>{	
 {WSN}+		{ nlcount (); return (' '); }
 "<!"		{ yylval.str = yytext; return T_HTML; }
 [<][/?%]?	{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
@@ -211,8 +194,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <JS>{
 "</"{ST}{WS}*\>	{ yy_pop_state (); yylval.str = yytext; return T_EJS; }
 {TPRFX}"/"{ST}{TCLOSE} { yy_pop_state (); return T_EJS_SILENT; }
-[$@<\\]		{ yylval.ch = yytext[0]; return T_CH; }
-[^\\$@<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[}$@<\\]	{ yylval.ch = yytext[0]; return T_CH; }
+[^\\$@<}]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 }
 
 <HCOM>{
@@ -231,8 +214,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 -		{ if (yy_pt_com) { addch (yytext[0], -1); } }
 }
 
-<WH,WGH,WEC>{
-[^$@\\<\n\t ]+ 	{ yylval.str = yytext; return T_HTML; }
+<WH,WGH>{
+[^$@\\<\n\t} ]+	{ yylval.str = yytext; return T_HTML; }
 \\		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
@@ -272,7 +255,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \"		{ end_PSTR (); return (yytext[0]); }
-[^"\\$@%]+	{ yylval.str = yytext; return T_STR; }
+[^"\\$@%}]+	{ yylval.str = yytext; return T_STR; }
 }
 
 <PSTR_SQ>{
@@ -281,7 +264,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \'		{ end_PSTR (); return (yytext[0]); }
-[^'\\$@%]+	{ yylval.str = yytext; return T_STR; }
+[^'\\$@%}]+	{ yylval.str = yytext; return T_STR; }
 }
 
 
@@ -438,31 +421,9 @@ yy_push_pubstate (pfile_type_t t)
   case PFILE_TYPE_WH:
     yy_push_state (WH);
     break;
-  case PFILE_TYPE_EC:
-    yy_push_state (EC);
-    yy_push_state (ECF);
-    break;
-  case PFILE_TYPE_WEC:
-    yy_push_state (WEC);
-    yy_push_state (ECF);
-    break;
   default:
     fatal << "unknown lexer state\n";
   }
-}
-
-void
-pop_ECF ()
-{
-  if (YY_START == ECF)
-    yy_pop_state ();
-}
-
-void
-push_ECF ()
-{
-  if (YY_START != ECF)
-    yy_push_state (ECF);
 }
 
 void
@@ -515,7 +476,5 @@ gcc_hack_use_static_functions ()
 //   WGH - White-space-stripped G-HTML
 //   HCOM - HTML Comment
 //   JS - JavaScript
-//   EC - Embedded C
-//   WEC - White-space-stripped Embedded C
 //
 */

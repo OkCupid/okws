@@ -1,3 +1,5 @@
+//-*-c++-*-
+
 /* $Id$ */
 /*
  *
@@ -218,3 +220,34 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
   return false;
 }
 
+TAMED void
+http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
+		      cbb::ptr callercv, aarr_t *env, htpv_t v,
+		      bool gz)
+{
+  VARS {
+    zbuf b;
+    bool rc;
+  }
+  BLOCK { p->run (&b, fn, @(rc), env, P_WSS); }
+  if (rc) {
+    b.to_strbuf (&body, v > 0 && gz);
+  }
+  if (gz) gzip ();
+  SIGNAL (rc);
+}
+
+typedef ptr<callback<void, ptr<http_pub2_t> > > http_pub2_cb_t;
+
+TAMED static void
+http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
+		    http_pub2_cb_t callercv,
+		    aarr_t *env, htpv_t v, bool gz)
+{
+  VARS {
+    ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (n, v)); 
+    bool rc;
+  }
+  BLOCK { ret->publish (p, fn, @(rc), env, v, gz); }
+  SIGNAL (rc ? ret : NULL);
+}

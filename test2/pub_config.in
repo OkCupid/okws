@@ -1,0 +1,44 @@
+
+<!--##
+//-----------------------------------------------------------------------
+// $Id$
+// -----------------------------------------------------------------------
+//
+// pub_config
+//
+//   This is a configuration file for okd's Publishing Daemon (oklogd).
+//   pubd is normally launched during the okd startup process.  
+//
+//   The following parameters should be set in this file (and note
+//   that parameter names **are case-sensitive**:
+//
+//	PORT 
+//	  - which port to listen on for remote TCP connections
+//
+//	JailDir
+//	  - If run as root, pubd will chroot itself to the given directory.
+//
+//	RunAsUser
+//	  - Setuid to this user after chroot'ing.
+//
+//	RunAsGroup
+//	  - Setgid to this user after chroot'ing.
+//
+//   Other variables can be supplied here, as well as including other
+//   configuration files with a "<!--#include .. ->" statement.  The
+//   Variables set here will be treated as global defaults for all
+//   documents published by this particular pubd.
+//
+//   This file should be placed into /etc/sfs by default.
+//
+-->
+
+<!--#set ({
+
+PORT 		=> 	2003,  		 	// PORT must be in caps
+HomeDir		=>	"@@TEST2_SRC@@",	// Not necessary 
+JailDir		=> 	"${HomeDir}/htdocs",	// Pubd variable
+RunAsUser	=>	"www",			// likewise
+RunAsGroup	=>	${RunAsUser}		// ditto
+
+}) -->

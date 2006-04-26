@@ -47,6 +47,7 @@ public:
   const parr_t *to_arr () const { return this; }
 };
 
+/* integer-valued array! */
 class parr_ival_t : public parr_t {
 public:
   parr_ival_t () {}
@@ -68,6 +69,7 @@ public:
   virtual parr_err_t val (u_int i, u_int16_t *p) const { return PARR_BAD_TYPE;}
 
   static ptr<parr_ival_t> alloc (const xpub_parr_t &x);
+  virtual ptr<pval_t> flatten (penv_t *e) { return mkref (this); }
 };
 
 template<typename T, typename P> static parr_err_t 
@@ -266,6 +268,8 @@ public:
 
   str eval_simple () const;
   void eval_obj (pbuf_t *p, penv_t *e, u_int d) const;
+
+  ptr<pval_t> flatten (penv_t *e) ;
 
 private:
   vec<ptr<pval_t> > v;

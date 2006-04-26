@@ -37,6 +37,7 @@ SFS_FIND_PTH
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
 test "$RPCC" || RPCC='/usr/local/bin/rpcc'
+test "$TAME" || TAME='/usr/local/bin/tame'
 dnl
 dnl OKWS_TAG might set "with_sfs", so it should come before
 dnl SFS_SFS, which will reset it if needs be
@@ -154,4 +155,4 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile test/Makefile pub/Makefile
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile etc/Makefile
-	  etc/freebsd/Makefile)
+	  etc/freebsd/Makefile test2/Makefile )

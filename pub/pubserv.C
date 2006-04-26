@@ -26,7 +26,8 @@
 pubserv_t::pubserv_t (ptr<axprt_stream> xx, bool p)
   : x (xx), primary (p), this_cookie (0)
 {
-  srv = asrv::alloc (x, pub_program_1, wrap (this, &pubserv_t::dispatch));
+  srv = asrv_delayed_eof::alloc (x, pub_program_1, 
+				 wrap (this, &pubserv_t::dispatch));
 }
 
 void

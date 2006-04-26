@@ -30,6 +30,7 @@
 #include "ahttp.h"
 #include "ihash.h"
 #include "pub.h"
+#include "pub2.h"
 
 //
 // this global variable can be set to whatever the user wants.
@@ -230,6 +231,22 @@ public:
   bool err;
   static ptr<http_pub_t> alloc (int n, const pub_base_t &p, const str &fn,
 				aarr_t *env = NULL, htpv_t v = 0);
+};
+
+class http_pub2_t : public http_response_t {
+public:
+  http_pub2_t (int n, htpv_t v = 0)
+    : http_response_t (http_resp_header_t (n, v)) {} 
+
+  void publish (ptr<pub2::remote_publisher_t> p, str fn,
+		cbb::ptr coordvar, aarr_t *env = NULL,
+		htpv_t v = 0, bool gz = false, CLOSURE);
+
+  static void
+  alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
+	 callback<void, ptr<http_pub2_t> >::ptr coordvar,
+	 aarr_t *env = NULL, htpv_t v = 0, bool gz = false, CLOSURE);
+
 };
 
 

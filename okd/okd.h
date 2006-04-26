@@ -39,6 +39,8 @@
 #include "axprtfd.h"
 #include "fd_prot.h"
 #include "arpc.h"
+#include "rxx.h"
+#include "tame.h"
 
 #define OK_LQ_SIZE_D    100
 #define OK_LQ_SIZE_LL   5
@@ -145,8 +147,8 @@ class okd_t : public ok_httpsrv_t
 {
 public:
   okd_t (const str &cf, int logfd_in, int okldfd_in, const str &cdd, 
-	 okws1_port_t p) : 
-    ok_httpsrv_t (NULL, logfd_in),
+	 okws1_port_t p, int pub2fd_in) : 
+    ok_httpsrv_t (NULL, logfd_in, pub2fd_in),
     okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
     pubd (NULL), 
     configfile (cf),
@@ -172,6 +174,7 @@ public:
   void remove (okch_t *c) { servtab.remove (c); }
 
   void got_alias (vec<str> s, str loc, bool *errp);
+  void got_regex_alias (vec<str> s, str loc, bool *errp);
   void got_pubd_unix (vec<str> s, str loc, bool *errp);
   void got_pubd_inet (vec<str> s, str loc, bool *errp);
   void got_pubd_exec (vec<str> s, str loc, bool *errp);
@@ -188,14 +191,10 @@ public:
   void gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> r, clnt_stat err);
 
   // Well, no one ever said event-driven programming was pretty
-  void launch ();
-  void launch2 ();
-  void launch3 ();
+  void launch (CLOSURE);
 
-  void launch_logd ();
-  void launch_pubd ();
-  void launch_logd_cb (bool rc);
-  void launch_pubd_cb (bool err);
+  void launch_logd (cbb::ptr cb, CLOSURE);
+  void launch_pubd (cbb::ptr cb, CLOSURE);
 
   void parseconfig ();
   void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
@@ -204,6 +203,14 @@ public:
 
   ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab;
   qhash<str, str> aliases;
+
+  struct regex_alias_t {
+    regex_alias_t (str t, const rxx &x) : _target (t), _rxx (x) {}
+    const str _target;
+    rxx _rxx;
+  };
+
+  vec<regex_alias_t> regex_aliases;
 
   ok_usr_t okd_usr; 
   ok_grp_t okd_grp;
@@ -227,6 +234,7 @@ public:
   void set_signals ();
 
   void send_errdoc_set (svccb *sbp);
+  void req_errdoc_set_2 (svccb *sbp);
 
   void closed_fd ();
 
@@ -263,12 +271,6 @@ private:
   void shutdown3 ();
   void shutdown_cb1 ();
 
-  // request error document set chain
-  void req_err_docs ();
-  void req_err_docs_2 (ptr<pub_res_t> res);
-  void req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err);
-  void req_err_docs_4 (bool rc);
-
   void got_chld_fd (int fd, ptr<okws_fd_t> desc);
 
   str configfile;
@@ -280,7 +282,6 @@ private:
   svqtab_t<pfnm_t, ptr<xpub_lookup_res_t> >     luq;  // lookup Q
   svqtab_t<phashp_t, ptr<xpub_getfile_res_t> >  gfq;  // Getfile Q
 
-  u_int launches;
   bool bdlnch;
   u_int chkcnt;
   u_int sdcbcnt;

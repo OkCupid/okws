@@ -137,6 +137,7 @@ public:
   { c->insert (k, v, ap); return (*this); }
   cgi_t *cgi () const { return c; }
   bool flookup (const str &k, cgi_files_t **v) { return c->flookup (k,v); }
+  void load_aarr (aarr_t *a) const { return c->load_aarr (a); }
   
 private:
   cgi_t *c;

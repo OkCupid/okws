@@ -28,6 +28,7 @@
 #include "okconst.h"
 #include "parseopt.h"
 #include "clist.h"
+#include "pub.h"
 
 // max buf of 256K
 #define XSS_MAX_BUF 0x40000  
@@ -117,6 +118,18 @@ public:
   inline bool remove (const str &k);
   inline void traverse (callback<void, const pair_t &>::ref cb)
   { lst.traverse (wrap (pair_trav, cb)); }
+  const pair_t * first () const { return tab.first (); }
+  const pair_t * next (const pair_t *n) const { return tab.next (n); }
+
+  void load_aarr (aarr_t *in) const
+  {
+    const pair_t *p;
+    for (p = lst.first; p; p = lst.cnext (p)) {
+      if (p->vals.size ()) {
+	in->add (p->key, p->vals.back ());
+      }
+    }
+  }
 
   void reset ()
   {

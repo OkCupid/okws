@@ -160,11 +160,18 @@ helper_exec_t::launch (cbb c)
     }
     close_on_exec (sps[i][0]);
 
+    if (OKDBG2(OKLD_FD_PASSING)) {
+      strbuf b;
+      b << "for " << prog << ": socket: " << sps[i][0] 
+	<< " <-> " << sps[i][1];
+      okdbg_warn (CHATTER, b);
+    }
+
     //
     // tell the child about the new sockets FDs on the command
     // line (with the -s<sockfd> command line flags)
     //
-    argv2.push_back ("-s");
+    argv2.push_back (_command_line_flag);
     argv2.push_back (strbuf () << sps[i][1]);
   }
 
@@ -173,8 +180,9 @@ helper_exec_t::launch (cbb c)
 
   argv[0] = prog;
   ptr<axprt_unix> ux = 
-    axprt_unix_aspawnv (prog, argv, ok_axprt_ps,
-			wrap (this, &helper_exec_t::setprivs));
+    axprt_unix_aspawnv (prog, argv, ok_axprt_ps, 
+			wrap (this, &helper_exec_t::setprivs),
+			_env ? *_env : static_cast<char *const *> (NULL));
   fd = ux->getfd ();
   x = ux;
 

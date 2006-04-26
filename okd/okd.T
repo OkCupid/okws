@@ -1,6 +1,8 @@
+// -*-c++-*-
 /* $Id$ */
 
 /*
+ *
  *
  * Copyright (C) 2002-2004 Maxwell Krohn (max@okcupid.com)
  *
@@ -94,6 +96,14 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
     warn << loc << ": duplicate ErrorDoc ID: " << status << "\n";
     *errp = true;
   } else {
+
+    // for pub v2
+    xpub_errdoc_t ed;
+    ed.status = status;
+    ed.fn = s[2];
+    errdocs_x.docs.push_back (ed);
+    
+    // for pub v1
     errdocs.insert (New errdoc_t (status, s[2]));
   }
 }
@@ -144,128 +154,36 @@ okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
   pubd = New helper_inet_t (pub_program_1, name, port);
 }
 
-void
-okd_t::launch_pubd ()
+TAMED void 
+okd_t::launch_pubd (coordvar_bool_t callercv)
 {
+  VARS {
+    bool rc;
+  }
   if (!pubd) 
     pubd = New helper_exec_t (pub_program_1, "pubd");
-  pubd->connect (wrap (this, &okd_t::launch_pubd_cb));
-}
-
-void
-okd_t::launch_pubd_cb (bool rc)
-{
+  BLOCK { pubd->connect (@(rc)); }
   if (!rc) {
     warn << "launch of pub daemon (pubd) failed.\n";
-    exit (1);
   }
-  req_err_docs ();
+  RESUME (rc);
 }
 
-static void
-errdoc_load_fnset (xpub_fnset_t *f, int *p, errdoc_t *e)
-{
-  f->files[(*p)++] = e->fn;
-}
 
 void
-okd_t::req_err_docs ()
+okd_t::req_errdoc_set_2 (svccb *sbp)
 {
-  if (errdocs.size () == 0) {
-    req_err_docs_4 (true);
-  } else {
-    pprox->r_config (wrap (this, &okd_t::req_err_docs_2), PUB_CONFIG, 
-		     pubd->get_clnt ());
-  }
+  sbp->replyref (errdocs_x);
 }
 
-void
-okd_t::req_err_docs_2 (ptr<pub_res_t> res)
+TAMED void 
+okd_t::launch_logd (coordvar_bool_t callercv)
 {
-  // do not quit on error; web server should still boot up with
-  // standard error documents
-  if (!*res) {
-    warn << "cannot retrieve pubd configuration: " << res->to_str () << "\n";
-    req_err_docs_4 (false);
-    return;
-  }
-
-  xpub_fnset_t f;
-  int i =0;
-  f.files.setsize (errdocs.size ());
-  errdocs.traverse (wrap (errdoc_load_fnset, &f, &i));
-  ptr<xpub_result_t> r = New refcounted<xpub_result_t> ();
-  pubd->call (PUB_FILES, &f, r, 
-	      wrap (this, &okd_t::req_err_docs_3, r));
-}
-
-void
-okd_t::req_err_docs_3 (ptr<xpub_result_t> res, clnt_stat err)
-{
-  if (err) {
-    warn << ": failed to pub error docs: " << err << "\n";
-    exit (1);
-  }
-  bool ret = true;
-  int rc = res->status.status;
-  if (rc != XPUB_STATUS_OK) {
-    strbuf sb;
-    sb << ": pub returned failure status " << rc << " on error doc pub";
-    if (rc == XPUB_STATUS_ERR) {
-      sb << ": " << *res->status.error ;
-    }
-    sb << "\n";
-    okdbg_warn (ERROR, sb);
-    ret = false;
-  } else {
-    pprox->cache (res->set);
-  }
-  req_err_docs_4 (ret);
-}
-
-static void
-fill_xeds (int *i, xpub_errdoc_set_t *x, errdoc_t *ed)
-{
-  x->docs[*i].status = ed->status;
-  x->docs[*i].fn = ed->fn;
-  (*i)++;
-}
-
-void
-okd_t::req_err_docs_4 (bool rc)
-{
-  if (!rc) {
-    // maybe we don't want to have to reboot in order to bail us out.
-    //errdocs.clear ();
-    warn << "could not retrieve custom error documents; clearing them\n";
-  } else {
-    int i = 0;
-    xeds.docs.setsize (errdocs.size ());  // x errdoc set
-    errdocs.traverse (wrap (fill_xeds, &i, &xeds));
-  }
-		       
-
-  if (!--launches)
-    launch2 ();
-}
-
-void
-okd_t::launch_logd ()
-{
+  VARS { bool rc; }
   assert (logfd > 0);
   logd = New fast_log_t (logfd, logfmt);
-  logd->connect (wrap (this, &okd_t::launch_logd_cb));
-}
-
-void
-okd_t::launch_logd_cb (bool rc)
-{
-  if (!rc) {
-    warn << "launch of log daemon (oklogd) failed.\n";
-    exit (1);
-  }
-  if (!--launches)
-    launch2 ();
+  BLOCK { logd->connect (@(rc)); }
+  RESUME (rc);
 }
 
 void
@@ -277,6 +195,24 @@ okd_t::got_alias (vec<str> s, str loc, bool *errp)
     return;
   }
   aliases.insert (fix_uri (s[2]), fix_uri (s[1]));
+}
+
+void
+okd_t::got_regex_alias (vec<str> s, str loc, bool *errp)
+{
+  if (s.size () != 3 && s.size () != 4) {
+    warn << loc << ": usage: RegexAlias <to-URI> <regex> [<opts>]\n";
+    *errp = true;
+    return;
+  }
+  const char *opts = s.size () == 4 ? s[3].cstr () : "";
+  rrxx x;
+  if (!x.compile (s[2].cstr (), opts)) {
+    warn << loc << ": error compiling regex: " << x.geterr () << "\n";
+    *errp = true;
+    return;
+  }
+  regex_aliases.push_back (regex_alias_t (fix_uri (s[1]), x));
 }
 
 void
@@ -314,6 +250,7 @@ okd_t::parseconfig ()
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
 			       &ok_base_t::got_ports))
     .add ("Alias", wrap (this, &okd_t::got_alias))
+    .add ("RegexAlias", wrap (this, &okd_t::got_regex_alias))
     .add ("JailDir", wrap (got_dir, &jaildir))
     .add ("TopDir", &topdir)
 
@@ -395,6 +332,11 @@ okd_t::parseconfig ()
     .ignore ("SvcLog")
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
+    .ignore ("Pubd2ExecPath")
+    .ignore ("Pub2WSS")
+    .ignore ("Pub2Caching")
+    .ignore ("Pub2VisibleErrors")
+    .ignore ("Pub2SvcNegCacheTimeout")
 
     .ignore ("ServiceLifeRequests")
     .ignore ("ServiceLifeTime")
@@ -454,11 +396,8 @@ okd_t::strip_privileges ()
 	    << coredumpdir << ")\n";
     } else {
       // debug code
-      if (OKDBG2(OKD_STARTUP)) {
-	strbuf b;
-	b << "changed to core dump directory: " << coredumpdir << "\n";
-	okdbg_warn (CHATTER, b);
-      }
+      OKDBG4(OKD_STARTUP, CHATTER, 
+	     "changed to core dump directory: %s\n", coredumpdir.cstr ());
     }
   }
 }
@@ -482,9 +421,29 @@ okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
       s = b;
     }
 
+    // first check the aliases table
     str *s2 = aliases[s];
+    
+    // if no alias, then maybe the real name was used
     if (!s2) s2 = &s;
+
     okch_t *c = servtab[*s2];
+
+    // check the regex table, as a last resort, if no
+    // child was found
+    for (u_int i = 0; !c && i < regex_aliases.size (); i++) {
+      regex_alias_t &ra = regex_aliases[i];
+      if (ra._rxx.match (s)) {
+	c = servtab[ra._target];
+	if (!c) {
+	  strbuf b;
+	  b << "Expected a service " << ra._target 
+	    << " but couldn't find it!\n";
+	  okdbg_warn (ERROR, b);
+	}
+      }
+    }
+    
     if (!c) {
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
@@ -527,11 +486,10 @@ okd_t::newserv (int fd)
     //
     x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
 
-    if (OKDBG2(OKD_NOISY_CONNECTIONS)) {
-      strbuf b;
-      b.fmt ("accepted connection from %s\n", x->get_remote_ip ().cstr ());
-      okdbg_warn (CHATTER, b);
-    }
+
+    OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
+	   "accepted connection from %s\n", x->get_remote_ip ().cstr ());
+
     x->setccb (wrap (this, &okd_t::sclone, x, *portmap[fd]));
 
     if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
@@ -543,32 +501,6 @@ okd_t::newserv (int fd)
 }
 
 
-void
-okd_t::launch3 ()
-{
-  if (allports.size () == 0) {
-    warn << "No listen addr/ports specified; assuming *:80\n";
-    allports.push_back (listenport);
-  }
-
-  for (u_int i = 0; i < allports.size () ; i++) {
-    int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
-    if (fd < 0)
-      fatal ("could not bind TCP port %d: %m\n", allports[i]);
-    close_on_exec (fd);
-    listen (fd, ok_listen_queue_max);
-    listenfds.push_back (fd);
-    portmap.insert (fd, allports[i]);
-    warn << "listening on " << listenaddr_str << ":" << allports[i] << "\n";
-  }
-
-  strip_privileges ();
-
-  // once jailed, we can access the mmap'ed clock file (if necessary)
-  init_sfs_clock (mmc_file);
-
-  enable_accept ();
-}
 
 void
 okd_t::disable_accept_guts ()
@@ -599,38 +531,29 @@ okd_t::stop_listening ()
 static void
 usage ()
 {
-  warnx << "usage: okd [-D <dbg-file>] -l <logfd> -f <configfile>\n";
+  warnx << "usage: okd [-D <dbg-file>] [-x <pub2fd>] "
+	<< " -l <logfd> -f <configfile>\n";
   exit (1);
 }
 
-static void
-main2 (str cf, int logfd, str cdd, okws1_port_t port)
+TAMED static 
+void start_okd (int argc, char **argv)
 {
-  sfsconst_init ();
-  if (!cf) 
-    cf = get_okws_config ();
+  VARS {
+    str cf;
+    int logfd  (-1);
+    int pub2fd (-1);
+    str debug_stallfile;
+    str cdd;  // core dump dir
+    okws1_port_t port (ok_dport);
+    okd_t *okd;
+  }
 
-  zinit ();
-  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
-  okd_t *okd = New okd_t (cf, logfd, 0, cdd, port);
-  okd->set_signals ();
-  okd->launch ();
-}
-
-int
-main (int argc, char *argv[])
-{
-  str cf;
-  int logfd = -1;
   setprogname (argv[0]);
-  str debug_stallfile;
-  str cdd;  // core dump dir
-  okws1_port_t port = ok_dport;
-
   set_debug_flags ();
   
   int ch;
-  while ((ch = getopt (argc, argv, "f:l:D:c:p:")) != -1)
+  while ((ch = getopt (argc, argv, "f:l:D:c:p:x:")) != -1)
     switch (ch) {
     case 'D':
       debug_stallfile = optarg;
@@ -651,6 +574,10 @@ main (int argc, char *argv[])
       if (!convertint (optarg, &port))
 	usage ();
       break;
+    case 'x':
+      if (!convertint (optarg, &pub2fd))
+	usage ();
+      break;
     case '?':
     default:
       usage ();
@@ -668,32 +595,75 @@ main (int argc, char *argv[])
   }
 
   // for debugging, we'll stall until the given file is touched.
-  if (debug_stallfile) {
-    stall (debug_stallfile, wrap (main2, cf, logfd, cdd, port));
-  } else {
-    main2 (cf, logfd, cdd, port);
-  }
-  amain ();
+  if (debug_stallfile) 
+    BLOCK { stall (debug_stallfile, @()); }
+
+  sfsconst_init ();
+  if (!cf) 
+    cf = get_okws_config ();
+
+  zinit ();
+  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
+  okd = New okd_t (cf, logfd, 0, cdd, port, pub2fd);
+  okd->set_signals ();
+  okd->launch ();
 }
 
-void
+TAMED void 
 okd_t::launch ()
 {
+  VARS {
+    bool pubd_rc, logd_rc, pub2_rc (true);
+  }
   parseconfig ();
   check_runas ();
   open_mgr_socket ();
+  init_pub2 ();
 
-  launches = 2;
-  launch_pubd ();
-  launch_logd ();
-}
+  BLOCK {
+    launch_pubd (@(pubd_rc));
+    launch_logd (@(logd_rc));
+    launch_pub2 (@(pub2_rc));
+  }
 
-void
-okd_t::launch2 ()
-{
+  if (!pubd_rc) {
+    warn << "Pubd, version 1, failed to launch: aborting\n";
+    exit (1);
+  }
+  if (!logd_rc) {
+    warn << "failed to connect to oklogd; aborting\n";
+    exit (1);
+  }
+  if (!pub2_rc) {
+    warn << "failed to launch pub2, for setup that requires it; aborting\n";
+    exit (1);
+  }
+
   okldx = fdsource_t<okws_fd_t>::alloc (okldfd, wrap (this, &okd_t::gotfd));
   assert (okldx);
-  launch3 ();
+
+  if (allports.size () == 0) {
+    warn << "No listen addr/ports specified; assuming *:80\n";
+    allports.push_back (listenport);
+  }
+
+  for (u_int i = 0; i < allports.size () ; i++) {
+    int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
+    if (fd < 0)
+      fatal ("could not bind TCP port %d: %m\n", allports[i]);
+    close_on_exec (fd);
+    listen (fd, ok_listen_queue_max);
+    listenfds.push_back (fd);
+    portmap.insert (fd, allports[i]);
+    warn << "listening on " << listenaddr_str << ":" << allports[i] << "\n";
+  }
+
+  strip_privileges ();
+
+  // once jailed, we can access the mmap'ed clock file (if necessary)
+  init_sfs_clock (mmc_file);
+
+  enable_accept ();
 }
 
 void
@@ -703,7 +673,6 @@ okd_t::gotfd (int fd, ptr<okws_fd_t> desc)
     shutdown (0);
     return;
   }
-
   assert (fd >= 0 && desc);
 
   switch (desc->fdtyp) {
@@ -1032,4 +1001,11 @@ ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
   el.res.set_status (OK_STATUS_OK);
   *el.res.dat = d;
   _custom_res->results.push_back (el);
+}
+
+int
+main (int argc, char *argv[])
+{
+  start_okd (argc, argv);
+  amain ();
 }

@@ -197,11 +197,14 @@ main (int argc, char *argv[])
   }
 
   if (wss) 
-    ppt->wss = true;
+    opts |= P_WSS;
   else if (iinfo)
     opts |= P_IINFO;
   if (m != PFILE_TYPE_H)
     opts |= P_COMPILE;
+  
+  // P_WSS needs to be a parser option, so reset the options here.
+  ppt->set_opts (opts);
 
   int fd = myopen (outfile, readonly_out ? 0444 : 0644);
   if (fd < 0)

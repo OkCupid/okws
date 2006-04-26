@@ -27,6 +27,7 @@
 #define _LIBPUB_DEBUG_H 1
 
 #include "okconst.h"
+#include "rxx.h"
 
 typedef enum {
   CHATTER = 0,
@@ -41,28 +42,20 @@ typedef enum {
 #define OKDBG2(x) \
   (okws_debug_flags & (OKWS_DEBUG_##x))
 
-inline void
-okdbg_warn (okdbg_lev_t l, const str &s)
-{
-  switch (l) {
-  case CHATTER:
-    warn << "++ ";
-    break;
-  case ERROR:
-    warn << "** ";
-    break;
-  case FATAL_ERROR:
-    warn << "XX ";
-    break;
-  default:
-    warn << "";
-    break;
-  }
-  warnx << s;
-  if (s[s.len () - 1] != '\n')
-    warnx << "\n";
-}
+#define OKDBG3(o,l,s) \
+do { if (OKDBG2(o)) { okdbg_warn (l,s); } } while (0)
 
+#define OKDBG4(o,l,f,...) \
+do { if (OKDBG2(o)) { okdbg_warn (l,f,__VA_ARGS__); } } while (0)
+
+void okdbg_warn (okdbg_lev_t l, const str &s);
+
+//
+// provide __attribute__((format)) so that the compiler does sanity
+// checking on the varargs lists, as it would for printf.
+//
+void okdbg_warn (okdbg_lev_t l, const char *fmt, ...)
+  __attribute__ ((format (printf, 2, 3)));
 
 class okdbg_dumpable_t {
 public:
@@ -81,5 +74,7 @@ public:
 
 // environment variable name
 #define OKWS_DEBUG_OPTIONS "OKWS_DEBUG_OPTIONS"
+
+void set_debug_flags ();
 
 #endif /* _LIBPUB_DEBUG_H */

@@ -259,6 +259,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
   case OKCTL_REQ_ERRDOCS:
     myokd->send_errdoc_set (sbp);
     break;
+  case OKCTL_REQ_ERRDOCS_2:
+    myokd->req_errdoc_set_2 (sbp);
+    break;
   case OKCTL_GETFILE:
     myokd->getfile (sbp);
     break;

@@ -49,9 +49,7 @@ okd_t::shutdown (int sig)
   sd2 = false;
   stop_listening ();
 
-  if (OKDBG2(OKD_SHUTDOWN)) {
-    okdbg_warn (CHATTER, "sending soft KILL to all services");
-  }
+  OKDBG3(OKD_SHUTDOWN, CHATTER, "sending soft KILL to all services");
 
   kill_srvcs (OK_SIG_SOFTKILL);
 }
@@ -63,11 +61,9 @@ okd_t::kill_srvcs (oksig_t sig)
   if (i > 0) {
     servtab.traverse (wrap (shutdown_srvc, sig, this));
     
-    if (OKDBG2(OKD_SHUTDOWN)) {
-      strbuf b;
-      b << "debug: setting shutdown timer: " << ok_shutdown_timeout ;
-      okdbg_warn (CHATTER, b);
-    }
+    OKDBG4(OKD_SHUTDOWN, CHATTER,
+	   "debug: setting shutdown timer: %d\n", 
+	   ok_shutdown_timeout);
 
     dcb = delaycb (ok_shutdown_timeout, 0, 
 		   wrap (this, &okd_t::shutdown_retry));

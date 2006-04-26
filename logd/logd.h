@@ -28,7 +28,7 @@
 #include "okerr.h"
 #include "okprot.h"
 #include "list.h"
-#include "axprtfd.h"
+#include "okclone.h"
 
 class logfile_t {
 public:
@@ -132,14 +132,15 @@ private:
   bool primary;
 };
 
-class logd_t {
+class logd_t : public clone_server_t {
 public:
   logd_t (const str &in, int f = -1) 
-    : tmr (wrap (this, &logd_t::flush)), 
-    parms (in), logset (0), error (NULL), access (NULL),
-    dcb (NULL), fdfd (f), 
-    uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
-    fdseqno (0), injail (false) {}
+    : clone_server_t (f),
+      tmr (wrap (this, &logd_t::flush)), 
+      parms (in), logset (0), error (NULL), access (NULL),
+      dcb (NULL), 
+      uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
+      injail (false) {}
 
   void launch ();
   void remove (logd_client_t *c) { lst.remove (c); }
@@ -149,17 +150,19 @@ public:
 
   log_timer_t tmr;
 
+protected:
+
+  // need to implement this to be a clone server
+  void register_newclient (ptr<axprt_stream> x) { newclnt (false, x); }
+
 private:
   void turn (svccb *sbp);
   void log (svccb *sbp);
-  void clonefd (svccb *sbp);
   void fastlog (svccb *sbp);
   void flush ();
-  void writefd ();
   void timer_setup () { tmr.start (); }
   bool setup ();
   bool slave_setup ();
-  bool fdfd_setup ();
   bool logfile_setup () ;
   bool logfile_setup (logfile_t **f, const str &l, const str &t);
   bool perms_setup ();
@@ -167,8 +170,6 @@ private:
   void parse_fmt ();
   bool access_log (const oklog_ok_t &x);
   bool error_log (const oklog_arg_t &x);
-  void close_fdfd ();
-  void fdfd_eofcb ();
 
   tailq<logd_client_t, &logd_client_t::lnk> lst;
   vec<logd_fmt_el_t *> fmt_els;
@@ -176,16 +177,11 @@ private:
   u_int logset;
   logfile_t *error, *access;
   timecb_t *dcb;
-  int fdfd;
   int uid;
   ok_usr_t usr;
   ok_grp_t grp;
   bool running;
 
-  u_int32_t fdseqno;
-  ptr<fdsink_t> fdsnk;
-
-  vec<fdtosend> fdsendq;
   bool injail;
   
 };

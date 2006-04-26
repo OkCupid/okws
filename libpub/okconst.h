@@ -66,10 +66,12 @@ extern u_int   ok_gzip_mem_level;
 //
 // user/group constants
 //
-extern const char *ok_uname;
-extern const char *ok_gname;
+extern const char *ok_pubd_uname;
+extern const char *ok_pubd_gname;
 extern const char *ok_okd_uname;
 extern const char *ok_okd_gname;
+extern const char *ok_logd_uname;
+extern const char *ok_logd_gname;
 
 //
 // default packet size for all axprts
@@ -98,6 +100,12 @@ extern const char *ok_okd_config;
 
 // all dirs to search when looking for CFG files
 extern const char *ok_cfg_path[];
+
+//
+// command line flag to use (by default) when passing an FDFD to
+// a child. An FDFD is an FD used for sending other FDs over.
+//
+extern const char *ok_fdfd_command_line_flag;
 
 
 //
@@ -217,6 +225,23 @@ extern const char *ok_wheel;
 // recycle suios and suiolites for performance (0 => no recycle)
 //
 extern u_int ok_recycle_suio_limit ;
+
+//
+// pub2 constants
+//
+extern int ok_pub2_wss;
+extern int ok_pub2_refresh_min;
+extern int ok_pub2_refresh_max;
+extern int ok_pub2_refresh_incr;
+extern int ok_pub2_caching;
+extern int ok_pub2_viserr;
+extern int ok_pub2_neg_cache_timeout;
+extern int ok_pub2_clean_cache_interval;
+extern int ok_pub2_svc_neg_cache_timeout;
+extern int ok_pub2_getfile_object_lifetime;
+extern int ok_pub2_treestat_interval;
+extern const char *ok_pub2_treestat_sentinel;
+extern const char *ok_pub2_treestat_heartbeat;
 
 
 /**

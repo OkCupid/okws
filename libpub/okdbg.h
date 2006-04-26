@@ -39,5 +39,7 @@
 #define OKWS_DEBUG_HLP_STATUS                     (1 << 7)
 #define OKWS_DEBUG_SVC_ARGS                       (1 << 8)
 #define OKWS_DEBUG_OKD_JAIL                       (1 << 9)
+#define OKWS_DEBUG_OKLD_FD_PASSING                (1 << 10)
+#define OKWS_DEBUG_PUB2_CACHE                     (1 << 11)
 
 #endif /* _LIBPUB_OKDEBUG_H */

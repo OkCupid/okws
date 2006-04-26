@@ -27,7 +27,8 @@
 okd_mgrsrv_t::okd_mgrsrv_t (ptr<axprt_stream> xx, okd_t *p) : 
   x (xx), myokd (p)
 {
-  srv = asrv::alloc (x, okmgr_program_1, wrap (this, &okd_mgrsrv_t::dispatch));
+  srv = asrv_delayed_eof::alloc (x, okmgr_program_1, 
+				 wrap (this, &okd_mgrsrv_t::dispatch));
 }
 
 void

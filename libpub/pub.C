@@ -111,7 +111,7 @@ pub_parser_t::jail2real (const str &n) const
       break;
     }
   }
-  if (opts & P_VERBOSE)
+  if (be_verbose ()) 
     warn << "jail2real: " << n << " --> " << ret << "\n";
   return ret;
 }
@@ -122,7 +122,11 @@ pub_parser_t::to_binding (const pfnm_t &fn, set_t *s, bool toplev)
   if (!s) s = set;
   pfnm_t fn2 = complete_fn (fn);
   if (!fn2) return NULL;
-  return s->to_binding (fn2, jail2real (fn2), rebind, toplev);
+
+  if (!do_explore ()) 
+    return New pbinding_t (fn2, NULL);
+  else 
+    return s->to_binding (fn2, jail2real (fn2), rebind, toplev);
 }
 
 pbinding_t *
@@ -154,7 +158,7 @@ pub_parser_t::parse1 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t t)
   while (parsequeue.size ()) {
     const pbinding_t *bnd = to_binding (parsequeue.pop_front ());
     parse2 (bnd, New pfile_html_sec_t (0), 
-	   wss ? PFILE_TYPE_WH : PFILE_TYPE_H);
+	   do_wss () ? PFILE_TYPE_WH : PFILE_TYPE_H);
   }
   return r;
 }
@@ -238,7 +242,7 @@ pub_parser_t::complete_fn (const pfnm_t &fn) const
       ret = strbuf (pdir) << s1;
     }
   } 
-  if (opts & P_VERBOSE) 
+  if (be_verbose ())
     warn << "complete_fn: " << fn << " --> " << (ret ? ret : str ("(null)"))
 	 << "\n"; // debug
   return ret;
@@ -294,8 +298,8 @@ bool
 pub_base_t::include (zbuf *b, bpfcp_t f, u_int opt, aarr_t *a) const
 {
   output_std_t o (b, f->file);
-  penv_state_t *st = genv.start_output (a, fixopts (opts));
-  f->output (&o, &genv, f);
+  penv_state_t *st = genv.start_output (a, fixopts (get_opts ()));
+  f->output (&o, &genv);
   return genv.finish_output (st);
 }
 
@@ -303,12 +307,12 @@ bpfcp_t
 pub_parser_t::parse (const pbinding_t *bnd, pfile_type_t t)
 {
   pfile_sec_t *sec = NULL;
-  yywss = wss ? 1 : 0;
+  yywss = do_wss () ? 1 : 0;
   switch (t) {
   case PFILE_TYPE_H:
     if (!bnd->toplev) 
-      send_up_the_river ();
-    if (wss) t = PFILE_TYPE_WH;
+      lock_in_jail ();
+    if (do_wss ()) t = PFILE_TYPE_WH;
     sec = New pfile_html_sec_t (0);
     break;
   case PFILE_TYPE_CONF:
@@ -318,13 +322,13 @@ pub_parser_t::parse (const pbinding_t *bnd, pfile_type_t t)
     sec = New pfile_code_t (0);
     break;
   case PFILE_TYPE_EC:
-    if (wss) t = PFILE_TYPE_WEC;
+    if (do_wss ()) t = PFILE_TYPE_WEC;
     break;
   default:
     fatal << "Unrecognized file format given to pub_t::parse\n";
   }
   bpfcp_t r = parse1 (bnd, sec, t);
-  grant_conjugal_visit ();
+  free_from_jail ();
   return r;
 }
 
@@ -374,7 +378,7 @@ pub_parser_t::parse_config (const str &fn, bool init)
     run_config (mcf);
     defconf = New refcounted<xpub_getfile_res_t> ();
     defconf->set_status (XPUB_STATUS_OK);
-    if (exporter)
+    if (is_exporter ())
       f->file->to_xdr (defconf->file);
   }
   return f;
@@ -479,7 +483,7 @@ pub_parser_t::setjail (str jd, bool permissive)
     if (jd != "." && chroot (jd))
       fatal << jd << ": cannot chroot\n";
   }
-  if (jd != "." && (opts & P_VERBOSE))
+  if (jd != "." && be_verbose ())
     warn << "Top (Jail) Directory is: " << jd << "\n";
   jaildir = jd;
 }
@@ -487,16 +491,25 @@ pub_parser_t::setjail (str jd, bool permissive)
 void
 pub_parser_t::setprivs (str jd, str un, str gn)
 {
-  if (!un && !(un = cfg ("RunAsUser"))) un = ok_uname;
-  if (!gn && !(gn = cfg ("RunAsGroup"))) gn = ok_gname;
-
-  // need to call this before chroot'ing! otherwise, we can't open /etc/passwd
   int uid, gid;
-  if ((uid = uname2uid (un)) < 0) fatal << un << ": no such user\n";
-  if ((gid = gname2gid (gn)) < 0) fatal << gn << ": no such group\n";
+  if (!getuid ()) {
+    if (!un) {
+      un = ok_pubd_uname;
+      warn << "No pub username given; defaulting to '" <<  un << "'\n";
+    }
+    if (!gn) {
+      gn = ok_pubd_gname;
+      warn << "No pub groupname given; defaulting to '" <<  gn << "'\n";
+    }
+    
+    // need to call this before chroot'ing! otherwise, 
+    // we can't open /etc/passwd
+    if ((uid = uname2uid (un)) < 0) fatal << un << ": no such user\n";
+    if ((gid = gname2gid (gn)) < 0) fatal << gn << ": no such group\n";
+  }
 
   setjail (jd, false);
-  send_up_the_river ();
+  lock_in_jail ();
 
   if (!getuid ()) {
     setgid (gid);
@@ -505,22 +518,22 @@ pub_parser_t::setprivs (str jd, str un, str gn)
 }
 
 str 
-pub_t::cfg (const str &n) const
+pub_config_iface_t::cfg (const str &n, bool allownull) const
 {
   ref<pvar_t> v (New refcounted<pvar_t> (n));
-  return v->eval (&genv, EVAL_INTERNAL);
+  return v->eval (get_env (), EVAL_INTERNAL, allownull);
 }
 
 bool
-pub_t::cfg (const str &n, pval_t **v) const
+pub_config_iface_t::cfg (const str &n, pval_t **v) const
 {
-  return ((*v = genv.lookup (n, false)));
+  return ((*v = get_env ()->lookup (n, false)));
 }
 
 bool
-pub_t::cfg (const str &n, str *s) const
+pub_config_iface_t::cfg (const str &n, str *s, bool allownull) const
 {
-  return ((*s = cfg (n)));
+  return ((*s = cfg (n, allownull)));
 }
 
 pfnm_t 
@@ -550,7 +563,7 @@ pub_base_t::run_config (str s)
   if (!(f = v_getfile (s)))
     return false;
   output_conf_t o (true);  // descend recursively = true
-  f->output (&o, &genv, f);
+  f->output (&o, &genv);
   return true;
 }
 
@@ -617,3 +630,67 @@ pub_base_t::configed (ptr<xpub_getfile_res_t> xr, pubrescb c, clnt_stat err)
   (*c) (res);
 }
 
+
+// new parsing routine for pub2
+ptr<bound_pfile2_t>
+pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, bool wss, pubstat_t *err,
+			 str *err_msg)
+{
+  bpfmp_t r;
+  const str &fn = bnd->filename ();
+  pfile_type_t t = wss ? PFILE_TYPE_WH : PFILE_TYPE_H;
+  pfile_sec_t *ss = New pfile_html_sec_t (0);
+  ptr<bound_pfile2_t> ret = 
+    New refcounted<bound_pfile2_t> (bnd, jail2real (fn), t);
+  pfile_t *pf = ret->file ();
+  *err = PUBSTAT_OK;
+  int wss_prev = yywss;
+  yywss = wss ? 1 : 0;
+
+  int old_opts = get_opts ();
+  int new_opts = (old_opts | P_INCLUDE_V2 | P_EXPLORE_OFF);
+  set_opts (new_opts);
+
+  r = ret->nonconst_bpf ();
+  if (!r->open ()) {
+    PWARN (fn << ": failed to open file");
+    ret = NULL;
+  } else {
+    pub_parser_t *old_parser = parser;
+    pub_t *old_pub = pub;
+    pub = this;
+    
+    parser = this;
+    push_file (r);
+    pf->push_section (ss);
+    pf->lex_activate (t);
+    yyparse ();
+    pf->add_section (ss);
+    pop_file ();
+    r->close ();
+    if (pf->err != PUBSTAT_OK) {
+      PWARN (fn << ": parse failed");
+      *err = pf->err;
+      *err_msg = pf->err_msg;
+      ret = NULL;
+    }
+    pub = old_pub;
+    parser = old_parser;
+  }
+  set_opts (old_opts);
+  yywss = wss_prev;
+  return ret;
+}
+
+
+void 
+pub_parser_t::pwarn (const strbuf &b) 
+{ 
+  strbuf msg;
+  if (bpf) 
+    msg << bpf->loc () << ": "; 
+  msg << b;
+  if (bpf && bpf->file)
+    bpf->file->err_msg = msg;
+  warn << msg << "\n";
+}

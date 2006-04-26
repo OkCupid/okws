@@ -34,7 +34,8 @@ void pfile_set_func_t::dump2 (dumper_t *d) const { if (aarr) aarr->dump (d); }
 aarr_t *pswitch_env_t::env () const { return aarr; }
 void bound_pfile_t::explore (pub_exploremode_t m) const
 { if (file) file->explore (m); }
-str penv_t::loc (int l) const { return file->loc (); }
+str penv_t::loc (int l) const 
+{ return file ? file->loc (l) : str("at top level"); }
 pfnm_t penv_t::filename () const { return file->bnd->filename (); }
 void bound_pfile_t::close () { file->close (); }
 output_std_t::output_std_t (zbuf *o, const pfile_t *t) :
@@ -103,30 +104,6 @@ pfile_var_t::output (output_t *o, penv_t *e) const
   e->setlineno (lineno);
   var->output (o, e);
   e->unsetlineno ();
-}
-
-void
-pfile_ec_header_t::output (output_t *o, penv_t *e) const
-{
-  str oc = o->switch_class (classname);
-  str oo = o->switch_osink (bufmem);
-}
-
-void
-pfile_ec_main_t::output (output_t *o, penv_t *e) const
-{
-  pfile_type_t om = o->switch_mode (PFILE_TYPE_CODE);
-  o->output (e, strbuf () << "\nvoid\n" << o->get_class ()
-	     << "::ec_main ()\n{\n");
-  o->switch_mode (om);
-  e->needloc = true;
-
-  if (els) els->output (o, e);
-
-  om = o->switch_mode (PFILE_TYPE_CODE);
-  o->output (e, strbuf () << "\n}\n");
-  o->switch_mode (om);
-  e->needloc = true;
 }
 
 void
@@ -267,7 +244,7 @@ pfile_func_t::include (output_t *o, penv_t *g, aarr_t *e, const pfnm_t &nm)
     push_frame (g, e);
     bool tlf = g->set_tlf (false);
     o->output_info (g, strbuf ("include: ") << f->filename (), lineno);
-    f->output (o, g, f);
+    f->output (o, g);
     o->output_info (g, strbuf ("/include: ") << f->filename (), lineno);
     g->set_tlf (tlf);
     pop_frame (o, g);
@@ -287,11 +264,19 @@ pfile_include_t::output (output_t *o, penv_t *genv) const
 }
 
 void
-bound_pfile_t::output (output_t *o, penv_t *genv, bpfcp_t rct) const
+pfile_include2_t::output (output_t *o, penv_t *genv) const
 {
+  o->output_err (genv, "include: can't call output on v2 include file", 
+		 lineno);
+}
+
+void
+bound_pfile_t::output (output_t *o, penv_t *genv) const
+{
+  bpfcp_t rct = mkref (const_cast<bound_pfile_t *> (this));
   if (!genv->i_stack_add (rct))
     o->output_err_stacktrace (genv, "circular include detected", 0);
-  else {
+  else { 
     file->output (o, genv);
     genv->i_stack_remove (rct);
   }
@@ -357,6 +342,30 @@ evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const
 void
 pfile_switch_t::output (output_t *o, penv_t *e) const
 {
+  pswitch_env_t *pse = eval_for_output (o, e);
+  // we might have given switch an empty file (so as to allow 
+  // the default to catch more stuff, for instance).
+  if (pse)
+    if (pse->fn)
+      include (o, e, pse->env (), pse->fn);
+    else if (pse->nested_env ()) {
+      pse->nested_env ()->output (o, e);
+    }
+}
+
+void
+nested_env_t::output (output_t *o, penv_t *e) const
+{
+  // Actually allow set operations to persist past the scope of
+  // this switch.
+  //_frm.mark_frame (e);
+  _sec->output (o, e);
+  //_frm.pop_frame (o, e);
+}
+
+pswitch_env_t *
+pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
+{
   str v;
   pswitch_env_t *pse = NULL;
   if (key)
@@ -380,11 +389,7 @@ pfile_switch_t::output (output_t *o, penv_t *e) const
       o->output_err (e, strbuf ("switch: no case when ") << key->name ()  
 		     << " = " << v, lineno);
   } 
-
-  // we might have given switch an empty file (so as to allow 
-  // the default to catch more stuff, for instance).
-  if (pse && pse->fn)
-    include (o, e, pse->env (), pse->fn);
+  return pse;
 }
 
 void
@@ -439,6 +444,8 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
   if (val) {
     pv = val;
   } else {
+    // second parameter => true by default, therefore there will be
+    // recursion.
     pv = e->lookup (nm);
     popit = true;
   }
@@ -562,17 +569,11 @@ pfile_gs_t::output (output_t *o, penv_t *e) const
 {
   frm.mark_frame (e);
   e->aarr_n = 1;
-  pfile_ec_gs_t::output (o, e);
-  frm.pop_frame (o, e);
-}
-
-void
-pfile_ec_gs_t::output (output_t *o, penv_t *e) const
-{
   pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
   els->output (o, e);
   o->switch_mode (m);
   e->needloc = true;
+  frm.pop_frame (o, e);
 }
 
 pfile_t::pfile_t (const phashp_t &h, pfile_type_t t)
@@ -664,7 +665,7 @@ bool
 pfile_inclist_t::add (ptr<arglist_t> l)
 {
   str fn;
-  pbinding_t *b;
+  pbinding_t *b = NULL;
   if (!err) {
     u_int lim = l->size ();
     for (u_int i = 0; i < lim; i++) {
@@ -676,6 +677,8 @@ pfile_inclist_t::add (ptr<arglist_t> l)
 	err = true;
       } else {
 	files.push_back (b->fn); // use completed filename
+	if (!pub->do_explore ())
+	  delete b;
       }
     }
   }
@@ -694,28 +697,67 @@ pfile_inclist_t::validate ()
 }
 
 bool
+pfile_include2_t::add (ptr<arglist_t> l)
+{
+  // XXX kind of kludgey, but fn should never be set if we're in 
+  // v2 of the include file.
+  assert (!fn);
+  ptr<pstr_t> s;
+  ptr<pval_t> v;
+
+  if (!err) {
+    if (fn_v2) {
+      PWARN("Include tags only take one p-argument");
+      err = true;
+    } else if (!add_base (l)) {
+      err = true;
+    } else if (!(v = (*l)[0]->to_pval ()) || !(s = v->to_pstr ())) {
+      PWARN("Bad filename in include; must be a string!");
+      err = true;
+    } else {
+      assert (s);
+      fn_v2 = s;
+    }
+  }
+  return (!err);
+}
+
+bool
+pfile_include_t::add_base (ptr<arglist_t> l) 
+{
+  if (l->size () <= 0 || l->size () > 2) {
+    PWARN("Wrong number of arguments to include");
+    err = true;
+  } else if (l->size () == 2 && !(env = (*l)[1]->to_aarr ())) {
+    PWARN("Second argument to include must be an associative array");
+    err = true;
+  }
+  return (!err);
+}
+
+bool
 pfile_include_t::add (ptr<arglist_t> l)
 {
-  pbinding_t *b;
+  pbinding_t *b = NULL;
   if (!err) {
     if (fn) {
       PWARN("Include tags only take one p-argument");
       err = true;
-    } else if (l->size () <= 0 || l->size () > 2) {
-      PWARN("Wrong number of arguments to include");
+    } else if (!add_base (l)) {
       err = true;
     } else if (!(fn = (*l)[0]->eval ()) || fn.len () <= 0) {
-      PWARN("Bad filename in include\n");
+      PWARN("Bad filename in include");
       err = true;
     } else if (!(b = parser->to_binding (fn))) {
       PWARN(fn << ": cannot access file");
       err = true;
-    } else if (l->size () == 2 && !(env = (*l)[1]->to_aarr ())) {
-      PWARN("Second argument to include must be an associative array");
-      err = true;
-    } else
+    } else {
       fn = b->fn; // use the completed filename
+      if (!pub->do_explore ())
+	delete b;
+    }
   }
+
   return (!err);
 }
 
@@ -725,7 +767,16 @@ pfile_include_t::validate ()
   if (!fn) {
     PWARN("No file to include");
     err = true;
-    return false;
+  }
+  return (!err);
+}
+
+bool
+pfile_include2_t::validate ()
+{
+  if (!fn_v2 || fn_v2->is_empty ()) {
+    PWARN("No file to include");
+    err = true;
   }
   return (!err);
 }
@@ -784,7 +835,10 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
 
   // fn1 is what's provided in the given file; fn2 is
   // the output from the the to_binding call to get the jailed filename
-  str fn1, fn2;  
+  str fn1, fn2; 
+
+  // a nested environment
+  ptr<nested_env_t> ne;
 
   if (!err) {
     if (l->size () == 1) {
@@ -811,7 +865,14 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
     }
   }
 
-  if (l->size () > 1 && !(*l)[1]->is_null () && !(fn1 = (*l)[1]->eval ())) {
+  if (l->size () > 1 && (ne = (*l)[1]->to_nested_env ())) {
+    if (l->size () != 2) {
+      PWARN ("When using a nested argument with '{{ ... }}', only 2 args "
+	     "expected per case");
+      err = true;
+    }
+  } else if (l->size () > 1 && !(*l)[1]->is_null () && 
+	     !(fn1 = (*l)[1]->eval ())) {
     PWARN ("Bad filename in case declaration");
     err = true;
   }
@@ -832,6 +893,8 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
       err = true;
     } else if (b) {
       fn2 = b->fn;
+      if (!pub->do_explore ())
+	delete b;
     }
   }
 
@@ -864,7 +927,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
       err = true;
     } else {
       if (nullkey) ckey = NULL;
-      pswitch_env_t *se = New pswitch_env_t (ckey, fn2, env);
+      pswitch_env_t *se = New pswitch_env_t (ckey, fn2, env, ne);
 
       if (nullkey)
 	nullcase = se;
@@ -1117,10 +1180,20 @@ output_std_t::output_err (penv_t *e, const str &s, int l)
 {
   switch (mode) {
   case PFILE_TYPE_H:
-  case PFILE_TYPE_WH:
-    output (e, strbuf () << "<!-- " << "Output Error (" << e->loc (l) 
-	    << "): " << s << "-->");
-    break;
+  case PFILE_TYPE_WH: 
+    {
+      strbuf m ("Output error (");
+      m << e->loc (l) << "): " << s;
+      str msg = m;
+      if (_opts & P_VISERR) {
+	output (e, strbuf () << "<font color=red><b>" << m 
+		<< "</b></font><br>\n");
+      } else {
+	output (e, strbuf () << "<!-- " << msg << " --->");
+      }
+      warn << m << "\n";
+      break;
+    }
   case PFILE_TYPE_GUY:
   case PFILE_TYPE_CODE:
   case PFILE_TYPE_EC:
@@ -1494,12 +1567,6 @@ _gvars_t_dump (dumper_t *d, const str &s)
 }
 
 void
-pfile_ec_header_t::dump2 (dumper_t *d) const
-{
-  DUMP(d, "class: " << classname << "; buffer-member: " << bufmem );
-}
-
-void
 gvars_t::dump2 (dumper_t *d) const
 {
   gvtab_t *p = const_cast<gvtab_t *> (&tab);
@@ -1526,6 +1593,17 @@ pfile_include_t::dump2 (dumper_t *d) const
     DUMP (d, "fn: " << fn);
   env->dump (d);
 }
+
+void
+pfile_include2_t::dump2 (dumper_t *d) const
+{
+  if (fn_v2) {
+    DUMP (d, "fn_v2: ");
+    fn_v2->dump2 (d);
+  }
+  env->dump (d) ;
+}
+
 
 void
 pfile_inclist_t::dump2 (dumper_t *d) const
@@ -1729,16 +1807,10 @@ parr_mixed_t::dump2 (dumper_t *d) const
     v[i]->dump (d);
 }
 
-static void
-aarr_add (aarr_t *a, const nvpair_t &p)
-{
-  a->add (New nvpair_t (p));
-}
-
 aarr_t &
 aarr_t::overwrite_with (const aarr_t &a)
 {
-  a.aar.traverse (wrap (aarr_add, this));
+  aar.overwrite_with (a.aar);
   return (*this);
 }
 
@@ -1778,4 +1850,72 @@ pfile_set_func_t::output_config (penv_t *e) const
   env = e;
   if (aarr) env->push (aarr);
 }
+
+xpub_status_typ_t
+pub_stat2status (pubstat_t in)
+{
+  switch (in) {
+  case PUBSTAT_OK:
+    return  (XPUB_STATUS_OK);
+    break;
+  case PUBSTAT_FNF:
+    return (XPUB_STATUS_NOENT);
+    break;
+  case PUBSTAT_PARSE_ERROR:
+    return (XPUB_STATUS_ERR);
+    break;
+  }
+  return XPUB_STATUS_ERR;
+}
+
+void
+nvtab_t::copy (const nvtab_t &in)
+{
+  deleteall ();
+  overwrite_with (in);
+}
+
+void
+nvtab_t::overwrite_with (const nvtab_t &in)
+{
+  for (const nvpair_t *p = in.first (); p; p = in.next (p)) {
+    insert (New nvpair_t (*p));
+  }
+}
+
+void
+pbuf_t::eval_obj (pbuf_t *b, penv_t *e, u_int m) const
+{
+  b->add (New pbuf_connector_t (mkref (const_cast<pbuf_t *> (this))));
+}
+
+//-----------------------------------------------------------------------
+//
+// Code for flattening data objects, as needed when pub2 clients 
+// load in configuration variables and resolve them.
+//
+ptr<pval_t>
+pval_t::flatten (penv_t *e) 
+{
+  return eval_to_pbuf (e, EVAL_FULL);
+}
+
+ptr<pval_t>
+pint_t::flatten (penv_t *e) 
+{
+  return mkref (this); 
+}
+
+ptr<pval_t>
+parr_mixed_t::flatten (penv_t *e) 
+{
+  ptr<parr_mixed_t> n = New refcounted<parr_mixed_t> ();
+  for (size_t s = 0; s < v.size (); s++) {
+    n->add (v[s]->flatten (e));
+  }
+  return n;
+}
+
+//
+//-----------------------------------------------------------------------
 

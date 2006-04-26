@@ -1,3 +1,5 @@
+#define CCEOC_ARGNAME  callercv
+// -*-c++-*-
 /* $Id$ */
 
 /*
@@ -152,9 +154,10 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
     *errp = true;
 }
 
+
 static bool
 parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
-		       int *svc_reqs, int *svc_time)
+		       svc_options_t *so)
 {
   int svc_uid = -1;
   optind = 0;
@@ -162,21 +165,21 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  while ((ch = getopt (argv.size (), argv, "u:r:t:")) != -1 && rc) {
+  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:t:")) != -1 && rc) {
     switch (ch) {
     case 'u':
       if (*u) {
-	warn << loc << ": -u option // specified more than once!\n";
- 	rc = false;
+	warn << loc << ": -u option specified more than once!\n";
+	rc = false;
       } else if (convertint (optarg, &svc_uid)) {
 	*u = New ok_usr_t (svc_uid);
       } else {
 	*u = New ok_usr_t (optarg);
-	
+
 	// only check if user exists if supplying non-integer
- 	// user ID (i.e., a username). In the above case, we don't
- 	// check, since we're allowing random user IDs not in 
- 	// /etc/passwd
+	// user ID (i.e., a username). In the above case, we don't
+	// check, since we're allowing random user IDs not in 
+	// /etc/passwd
 	if (!**u) {
 	  warn << loc << ": cannot find user " << optarg << "\n";
 	  rc = false;
@@ -184,16 +187,34 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       }
       break;
     case 't':
-      if (!convertint (optarg, svc_time)) {
+      if (!convertint (optarg, &so->svc_time)) {
 	warn << loc << ": -t expects an integer argument\n";
 	rc = false;
       }
       break;
     case 'r':
-      if (!convertint (optarg, svc_reqs)) {
+      if (!convertint (optarg, &so->svc_reqs)) {
 	warn << loc << ": -r expects an integer argument\n";
 	rc = false;
       }
+      break;
+    case 'e':
+      so->pub2_viserr = 1;
+      break;
+    case 'E':
+      so->pub2_viserr = 0;
+      break;
+    case 'w':
+      so->wss = 1;
+      break;
+    case 'W':
+      so->wss = 0;
+      break;
+    case 'C':
+      so->pub2_caching = 0;
+      break;
+    case 'c':
+      so->pub2_caching = 1;
       break;
     default:
       warn << loc << ": unrecognized option given\n";
@@ -201,12 +222,10 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       break;
     }
   }
-  
   // pop off "bin" and also all arguments
   for (int i = 0; i < optind; i++) {
     v->pop_front ();
   }
-
   return rc;
 }
 
@@ -264,10 +283,10 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   str uri;
   vec<str> env;
   str exe, httppath;
-  int svc_reqs = -1, svc_time = -1;
 
   okws1_port_t port;
   okld_ch_t *chld;
+  svc_options_t so;
 
   //
   // pop off "Service2"
@@ -286,6 +305,9 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (!check_uri (loc, uri, &port))
     goto err;
 
+  if (!parse_service_options (&s, &u, loc, &so));
+    goto err;
+
   if (s.size () < 1)
     goto usage;
 
@@ -295,11 +317,8 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
 	 << ") contains unsafe substrings\n";
     goto err;
   }
-  exe = apply_container_dir (service_bin, bin);
-
-  if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
-    goto err;
   
+  exe = apply_container_dir (service_bin, bin);
   //
   // if a port was specified for this URI, then there is no need
   // to prepend it with a leading slash.
@@ -319,9 +338,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
  
   chld = New okld_ch_t (exe, httppath, this, loc, u, env, port);
   chld->add_args (s);
-
-  if (svc_time >= 0) chld->set_svc_life_time (svc_time); 
-  if (svc_reqs >= 0) chld->set_svc_life_reqs (svc_reqs);
+  chld->set_service_options (so);
 
   svcs.push_back (chld);
   return;
@@ -347,7 +364,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   okld_interpreter_t *ipret = NULL;
   str ipret_str;
   okld_ch_t *ch = NULL;
-  int svc_reqs = -1, svc_time = -1;
+  svc_options_t so;
 
   //
   // pop off "Service" or "Script"
@@ -384,9 +401,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   }
 
   // there might be a -u option specified (and others TK)
-  // pass bin into parse_service_options so it has a first
-  // argument to deal with.
-  if (!parse_service_options (&s, &u, loc, &svc_reqs, &svc_time))
+  if (!parse_service_options (&s, &u, loc, &so))
     goto err;
 
   if (!s.size ())
@@ -417,9 +432,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     ch = New okld_ch_script_t (exe, httppath, this, loc, ipret, u, env, port);
   else
     ch = New okld_ch_t (exe, httppath, this, loc, u, env, port);
-
-  if (svc_reqs >= 0) ch->set_svc_life_reqs (svc_reqs);
-  if (svc_time >= 0) ch->set_svc_life_time (svc_time);
+  ch->set_service_options (so);
 
   svcs.push_back (ch);
 
@@ -433,6 +446,31 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
  err:
   *errp = true;
   if (u) delete u;
+}
+
+void
+okld_t::got_regex_alias (vec<str> s, str loc, bool *errp)
+{
+  if (s.size () != 3 && s.size () != 4) {
+    warn << loc << ": usage: RegexAlias <to-URI> <regex> [<opts>]\n";
+    *errp = true;
+    return;
+  }
+  if (!check_uri (loc, s[1])) {
+    *errp = true;
+    return;
+  }
+
+  const char *opts = s.size () == 4 ? s[3].cstr () : "";
+
+  rrxx x;
+  if (!x.compile (s[2].cstr (), opts)) {
+    warn << loc << ": error compiling regex: " << x.geterr () << "\n";
+    *errp = true;
+    return;
+  }
+
+  regex_aliases_tmp.push_back (alias_t (s[1], s[2], loc, 0));
 }
 
 void
@@ -512,6 +550,18 @@ okld_t::check_services_and_aliases ()
     }
   }
 
+  while (regex_aliases_tmp.size ()) {
+
+    alias_t a = regex_aliases_tmp.pop_front ();
+    a.to = fix_uri (a.to);
+    
+    if (!svctab[a.to]) {
+      warn << a.loc << ": No service found for RegexAlias: " 
+	   << a.to_str () << "\n";
+      ret = false;
+    }
+  }
+
   return ret;
 }
 
@@ -552,6 +602,7 @@ okld_t::parseconfig (const str &cf)
     .add ("Interpreter", wrap (this, &okld_t::got_interpreter))
     .add ("Script", wrap (this, &okld_t::got_service, true))
     .add ("Alias", wrap (this, &okld_t::got_alias))
+    .add ("RegexAlias", wrap (this, &okld_t::got_regex_alias))
     .add ("TopDir", wrap (got_dir, &topdir))
     .add ("JailDir", wrap (got_dir, &jaildir))
     .add ("ServiceBin", wrap (got_dir, &service_bin))
@@ -570,6 +621,12 @@ okld_t::parseconfig (const str &cf)
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
 			       &ok_base_t::got_ports))
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
+    .add ("Pubd2ExecPath", wrap (this, &okld_t::got_pubd2_exec))
+    .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
+    .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
+    .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
+    .add ("Pub2SvcNegativeCacheTimeout", &ok_pub2_svc_neg_cache_timeout,
+	  0, INT_MAX)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
     .add ("ErrorLog", &logd_parms.errorlog)
@@ -683,7 +740,7 @@ okld_t::parseconfig (const str &cf)
 
   if (ok_svc_fds_high_wat > 0 && 
       (ok_svc_fds_low_wat == 0 || ok_svc_fds_low_wat > ok_svc_fds_high_wat)) {
-    warn << "ServiceMaxFDs needs to be greater than ServiceFDHighWat\n";
+    warn << "ServiceFDHighWat must be greater than ServiceFDLowWat!\n";
     errors = true;
   }
 
@@ -704,17 +761,263 @@ okld_t::parseconfig (const str &cf)
     okld_exit (1);
 }
 
-void
-okld_t::launch_logd (cbb cb)
+class okld_t__launch_pubd2__closure_t : public closure_t {
+public:
+  okld_t__launch_pubd2__closure_t (okld_t *_self,  coordvar_int_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
+  typedef void  (okld_t::*method_type_t) ( coordvar_int_t , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:774: in function okld_t::launchservices", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:783: in function okld_t::launchservices", "callback overcalled!");
+    }
+    if (!--_block2)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( coordvar_int_t callercv) : ret (-1)  {}
+     bool b;
+     int ret;
+  };
+  struct args_t {
+    args_t ( coordvar_int_t callercv) : callercv (callercv) {}
+     coordvar_int_t callercv;
+  };
+  okld_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _block2;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+okld_t::launch_pubd2( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
 {
+    int CCEOC_STACK_SENTINEL;
+  okld_t__launch_pubd2__closure_t *__cls;
+  ptr<okld_t__launch_pubd2__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<okld_t__launch_pubd2__closure_t> (this, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&okld_t::launch_pubd2);
+  } else {
+    __cls =     reinterpret_cast<okld_t__launch_pubd2__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   bool &b = __cls->_stack.b;
+   int &ret = __cls->_stack.ret;
+   coordvar_int_t &callercv = __cls->_args.callercv;
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto okld_t__launch_pubd2__label_1;
+    break;
+  case 2:
+    goto okld_t__launch_pubd2__label_2;
+    break;
+  default:
+    break;
+  }
+
+  assert (pubd2exc);
+  pubd2 = New clone_only_client_t (pubd2exc, PUB2_CLONE);
+
+
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ pubd2->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(b)>, __cls_r, 1, refset_t<TTT(b)> (b))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ okld_t__launch_pubd2__label_1:
+    ;
+
+  if (b) {
+
+    // calling clone_client_t::init() sets up the FD source so we
+    // can accept incoming file descriptors.  the log_primary_t 
+    // class does this implicitly, so we have to do it explicitly
+    // here for pub2
+    assert (pubd2->init ());
+
+      do {
+    __cls->_block2 = 1;
+    __cls->set_jumpto (2);
+ pubd2->clone ((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(ret)>, __cls_r, 2, refset_t<TTT(ret)> (ret))));     if (--__cls->_block2)
+      return;
+  } while (0);
+ okld_t__launch_pubd2__label_2:
+    ;
+
+    if (ret < 0) {
+      warn << "pubd -2 did not send a file descriptor; failing\n";
+    }
+  } else {
+    warn << "cannot connect to pub daemon version 2 (pubd -2)\n";
+  }
+  
+    do {
+    const  coordvar_int_t  __cb_tmp (CCEOC_ARGNAME);
+RESUME ("/home/am8/max/m/okws1/okd/okld.T:791: in function okld_t::launch_pubd2", __cb_tmp, ret); return;   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:792: in function okld_t::launch_pubd2");
+  return;
+}
+
+class okld_t__launch_logd__closure_t : public closure_t {
+public:
+  okld_t__launch_logd__closure_t (okld_t *_self,  coordvar_int_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
+  typedef void  (okld_t::*method_type_t) ( coordvar_int_t , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:810: in function okld_t::launch_pubd2", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:812: in function okld_t::launch_pubd2", "callback overcalled!");
+    }
+    if (!--_block2)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( coordvar_int_t callercv) : ret (-1)  {}
+     vec< str > *argv;
+     bool b;
+     int ret;
+  };
+  struct args_t {
+    args_t ( coordvar_int_t callercv) : callercv (callercv) {}
+     coordvar_int_t callercv;
+  };
+  okld_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _block2;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+okld_t::launch_logd( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
+{
+    int CCEOC_STACK_SENTINEL;
+  okld_t__launch_logd__closure_t *__cls;
+  ptr<okld_t__launch_logd__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<okld_t__launch_logd__closure_t> (this, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&okld_t::launch_logd);
+  } else {
+    __cls =     reinterpret_cast<okld_t__launch_logd__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   vec< str > *&argv = __cls->_stack.argv;
+   bool &b = __cls->_stack.b;
+   int &ret = __cls->_stack.ret;
+   coordvar_int_t &callercv = __cls->_args.callercv;
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto okld_t__launch_logd__label_1;
+    break;
+  case 2:
+    goto okld_t__launch_logd__label_2;
+    break;
+  default:
+    break;
+  }
+
   if (!logexc) 
     logexc = New helper_exec_t (oklog_program_1, "oklogd", 1,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY);
-  vec<str> *argv = logexc->get_argv ();
+  argv = logexc->get_argv ();
   assert (argv);
   argv->push_back (logd_parms.encode ());
   logd = New log_primary_t (logexc);
-  logd->connect (cb);
+
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ logd->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(b)>, __cls_r, 1, refset_t<TTT(b)> (b))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ okld_t__launch_logd__label_1:
+    ;
+
+  if (b) {
+      do {
+    __cls->_block2 = 1;
+    __cls->set_jumpto (2);
+ logd->clone((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(ret)>, __cls_r, 2, refset_t<TTT(ret)> (ret))));     if (--__cls->_block2)
+      return;
+  } while (0);
+ okld_t__launch_logd__label_2:
+    ;
+
+    if (ret < 0) {
+      warn << "oklogd did not send a file descriptor; failing\n";
+    }
+  } else {
+    warn << "cannot connect to launched log daemon (oklogd)\n";
+  }
+
+    do {
+    const  coordvar_int_t  __cb_tmp (CCEOC_ARGNAME);
+RESUME ("/home/am8/max/m/okws1/okd/okld.T:820: in function okld_t::launch_logd", __cb_tmp, ret); return;   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:821: in function okld_t::launch_logd");
+  return;
 }
 
 void
@@ -745,7 +1048,8 @@ okld_t::encode_env ()
     .insert ("acmsg", ok_svc_accept_msgs)
     .insert ("dz", ok_dangerous_zbufs ? 1 : 0)
     .insert ("ps", ok_axprt_ps)
-    .insert ("clock", int (clock_mode));
+    .insert ("clock", int (clock_mode))
+    .insert ("ncto", ok_pub2_svc_neg_cache_timeout);
 
   if (mmc_file)
     env.insert ("mmcf", mmc_file);
@@ -755,29 +1059,70 @@ okld_t::encode_env ()
 void
 okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 {
-  if (s.size () < 1) {
-    warn << loc << ": usage: OklogdExecPath <path-to-oklogd>\n";
-    *errp = true;
-    return;
+  ptr<argv_t> env;
+  if (got_generic_exec (s, loc, errp, &env)) 
+    logexc = New helper_exec_t (oklog_program_1, s, 1,
+				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
+				env);
+}
+
+bool
+okld_t::got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<argv_t> *ep)
+{
+  str cmd, err, prog;
+  vec<str> env;
+
+  assert (s.size () > 0);
+  
+  cmd = s.pop_front ();
+
+  while (s.size () && strchr (s[0].cstr (), '=')) 
+    env.push_back (s.pop_front ());
+
+  if (s.size ()) {
+    *ep = New refcounted<argv_t> (env, environ);
   }
 
-  if (!is_safe (s[1])) {
-    warn << loc << ": Log exec path (" << s[1]
+  if (s.size () < 1) 
+    goto usage;
+
+  prog = s[0];
+  if (!is_safe (prog)) {
+    warn << loc << ": specified program " << prog
 	 << ") contains unsafe substrings\n";
-    *errp = true;
-    return;
+    goto fail;
   }
 
-  str prog = okws_exec (s[1]);
-  str err = can_exec (prog);
+  prog = okws_exec (prog);
+  err = can_exec (prog);
   if (err) {
-    warn << loc << ": cannot open oklogd: " << err << "\n";
+    warn << loc << ": cannot open program '" << prog 
+	 << "': " << err << "\n";
     *errp = true;
   } else {
-    s.pop_front ();
     s[0] = prog;
-    logexc = New helper_exec_t (oklog_program_1, s, 1,
-				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY);
+    return true;
+  }
+
+ usage:
+  warn << loc << ": usage: " << cmd << "[ENV] <path-to-bin> <args>\n";
+ fail:
+  *errp = true;
+  return false;
+}
+
+void
+okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
+{
+  ptr<argv_t> env;
+  if (got_generic_exec (s, loc, errp, &env)) {
+    pubd2exc = New helper_exec_t (pub_program_2, s, 1,
+				  HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
+				  env);
+
+    // pubd already uses -s, so we supply a different command line flag
+    // to pass pubd its end of the Unix domain socket
+    pubd2exc->set_command_line_flag ("-x");
   }
 }
 
@@ -839,15 +1184,15 @@ okld_t::fix_uids ()
 	     << " is in use; refusing to use it.\n";
 	uegid = ++nxtuid;
       }
-
-      if (uegid > ok_svc_uid_high) {
-	warn << "too many services / ran out of UIDs\n";
-	return false;
-      }
     }
-
+      
+    if (uegid > ok_svc_uid_high) {
+      warn << "too many services / ran out of UIDs\n";
+      return false;
+    }
+    
     uids_in_use.insert (uegid);
-
+    
     // because we check after the previous insert, we won't be able to
     // use a GID/UID pair in its entirety; this is precisely by design
     if (uids_in_use[ueuid_own]) {
@@ -855,7 +1200,7 @@ okld_t::fix_uids ()
 	   << " in use / changing ownership on file to root\n";
       ueuid_own = ok_usr_t (ok_root).getid ();
     } 
-
+    
     owners.insert (ueuid_own);
 
     // fixup ownership and permissions, and who to exec as
@@ -905,7 +1250,7 @@ okld_t::okld_exit (int code)
 
 
 bool
-okld_t::launch_okd (int logfd)
+okld_t::launch_okd (int logfd, int pub2fd)
 {
   str prog = okws_exec (okdexecpath);
   str err = can_exec (prog);
@@ -921,6 +1266,8 @@ okld_t::launch_okd (int logfd)
   argv.push_back (okd_dumpdir);
   argv.push_back ("-p");
   argv.push_back (strbuf () << listenport);
+  argv.push_back ("-x");
+  argv.push_back (strbuf () << pub2fd);
 		  
   if (debug_stallfile) {
     argv.push_back ("-D");
@@ -934,6 +1281,7 @@ okld_t::launch_okd (int logfd)
 
   // we've passed this to OKD; don't need it anymore
   close (logfd);
+  close (pub2fd);
 
   // two shutdown events -- first on close of fdsource_t<> on
   // okd.  Second, is okd's actual exit, which we'll wait on.
@@ -1035,9 +1383,81 @@ main (int argc, char *argv[])
   amain ();
 }
 
-void
-okld_t::launch (const str &cf)
-{
+class okld_t__launch__closure_t : public closure_t {
+public:
+  okld_t__launch__closure_t (okld_t *_self,  str cf) : closure_t (false), _self (_self),  _stack (cf), _args (cf), _block1 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
+  typedef void  (okld_t::*method_type_t) ( str , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:1206: in function okld_t::launch_logd", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:1208: in function okld_t::launch_logd", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.cf, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( str cf) {}
+  };
+  struct args_t {
+    args_t ( str cf) : cf (cf) {}
+     str cf;
+  };
+  okld_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+okld_t::launch( str __tame_cf, ptr<closure_t> __cls_g)
+{  okld_t__launch__closure_t *__cls;
+  ptr<okld_t__launch__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<okld_t__launch__closure_t> (this, __tame_cf);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&okld_t::launch);
+  } else {
+    __cls =     reinterpret_cast<okld_t__launch__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   str &cf = __cls->_args.cf;
+   use_reference (cf); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto okld_t__launch__label_1;
+    break;
+  default:
+    break;
+  }
+
   configfile = cf;
   parseconfig (cf);
 
@@ -1052,56 +1472,111 @@ okld_t::launch (const str &cf)
 
   if (jaildir)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
-  launch_logd (wrap (this, &okld_t::launch_logd_cb));
-}
 
-void
-okld_t::launch_logd_cb (bool rc)
-{
-  if (!rc) {
+  pub2fd = -1;
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+
+    launch_logd ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(logfd)>, __cls_r, 1, refset_t<TTT(logfd)> (logfd))));
+    if (pubd2exc)
+      launch_pubd2 ((++__cls->_block1, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(pub2fd)>, __cls_r, 2, refset_t<TTT(pub2fd)> (pub2fd))));
+      if (--__cls->_block1)
+      return;
+  } while (0);
+ okld_t__launch__label_1:
+    ;
+
+
+  if (logfd < 0) {
     warn << "launch of log daemon (oklogd) failed\n";
     okld_exit (1);
   }
-  logd->clone (wrap (this, &okld_t::launch_logd_cb2));
 
-}
-
-void
-okld_t::launch_logd_cb2 (int logfd)
-{
-  if (logfd < 0) {
-    warn << "oklogd did not send a file descriptor; aborting\n";
+  // If specified, pubd2 must succeed in its initalization
+  if (pubd2exc && pub2fd < 0) {
+    warn << "launch of pub daemon (pubd -2) failed\n";
     okld_exit (1);
   }
-  launch2 (logfd);
-}
 
-void
-okld_t::launch2 (int logfd)
-{
-  if (!launch_okd (logfd))
+  if (!launch_okd (logfd, pub2fd))
     okld_exit (1);
   
   chroot ();
   launchservices ();
+  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:1227: in function okld_t::launch");
+  return;
 }
-
-void
-okld_t::launchservices ()
+  
+class okld_t__launchservices__closure_t : public closure_t {
+public:
+  okld_t__launchservices__closure_t (okld_t *_self) : closure_t (false), _self (_self),  _stack (), _args (), _block1 (0), _cb_num_calls1 (0) {}
+  typedef void  (okld_t::*method_type_t) (ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okld.T:1247: in function okld_t::launch", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (mkref (this));
+  }
+  struct stack_t {
+    stack_t () {}
+     u_int i;
+     u_int j;
+  };
+  struct args_t {
+    args_t () {}
+  };
+  okld_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+okld_t::launchservices(ptr<closure_t> __cls_g)
 {
-  if (sdflag) { 
-    warn << "not launching due to shutdown flag\n";
-    return;
+    okld_t__launchservices__closure_t *__cls;
+  ptr<okld_t__launchservices__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<okld_t__launchservices__closure_t> (this);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&okld_t::launchservices);
+  } else {
+    __cls =     reinterpret_cast<okld_t__launchservices__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   u_int &i = __cls->_stack.i;
+   u_int &j = __cls->_stack.j;
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto okld_t__launchservices__label_1;
+    break;
+  default:
+    break;
   }
 
-  warn << "launching services (" << launchp << ")\n";
 
-  u_int lim = svcs.size ();
-  for (u_int i = 0; i < okld_startup_batch_size && launchp < lim; i++) {
-    svcs[launchp++]->launch ();
-  }
-
-  //
   // XXX - hack for now; there is a problem when we launch too many
   // services at once, in that we lose file descriptors around the
   // 128th FD is sent.  this is probably not a coincindence, and is
@@ -1110,13 +1585,29 @@ okld_t::launchservices ()
   // retrieve the 128th file descriptor. Some small changes
   // to david's libraries might be able to fix this. For now,
   // we'll hack in a timeout to let okd catch up, if possible.
-  //
-  if (launchp < lim) {
-    // XXX - should be configurable, too (as should the hard
-    // coded limit of 30, as given above).
-    delaycb (okld_startup_batch_wait, 0, 
-	     wrap (this, &okld_t::launchservices));
+  
+  for (i = 0; i < svcs.size (); i++, j++) {
+    if (okld_startup_batch_size && j >= okld_startup_batch_size) {
+        do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ delaycb (okld_startup_batch_wait, 0, (++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb0, __cls_r, 1)));     if (--__cls->_block1)
+      return;
+  } while (0);
+ okld_t__launchservices__label_1:
+    ;
+
+      j = 0;
+    }
+    if (sdflag) { 
+      warn << "not launching due to shutdown flag\n";
+        END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okld.T:1252: in function okld_t::launchservices");
+return ;
+    }
+    svcs[i]->launch ();
   }
+  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:1256: in function okld_t::launchservices");
+  return;
 }
 
 bool
@@ -1243,4 +1734,14 @@ okld_t::init_interpreters ()
     return false;
 
   return true;
+}
+
+void
+svc_options_t::apply_global_defaults ()
+{
+  if (svc_reqs < 0) svc_reqs = ok_svc_life_reqs;
+  if (svc_time < 0) svc_time = ok_svc_life_time;
+  if (wss < 0) wss = ok_pub2_wss;
+  if (pub2_caching < 0) pub2_caching = ok_pub2_caching;
+  if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
 }

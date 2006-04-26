@@ -62,55 +62,13 @@ rpc_log_t::connect_cb2 (cbb cb, clnt_stat err)
 void
 log_primary_t::connect_cb3 ()
 {
-  int fd = he->get_sock ();
-  assert (fd >= 0);
-  fdsrc 
-    = fdsource_t<u_int32_t>::alloc (fd, wrap (this, &log_primary_t::gotfd));
+  assert (clone_client_t::init ());
 }
 
 void
 fast_log_t::connect_cb3 ()
 {
   tmr.start ();
-}
-
-void
-log_primary_t::gotfd (int nfd, ptr<u_int32_t> id)
-{
-  if (nfd >= 0) {
-    fds.push_back (nfd);
-  }
-  if (cbq.size ()) { 
-    cbi cb = cbq.pop_front ();
-    nfd = fds.size () ? fds.pop_front () : -1;
-    (*cb) (nfd);
-  }
-}
-
-void
-log_primary_t::clone (cbi cb)
-{
-  ptr<bool> b = New refcounted<bool> ();
-  he->call (OKLOG_CLONE, NULL, b, 
-	    wrap (this, &log_primary_t::clone_cb, b, cb));
-}
-
-void
-log_primary_t::clone_cb (ptr<bool> b, cbi cb, clnt_stat err)
-{
-  if (err) {
-    warn << "log clone RPC failed: " << err << "\n";
-    (*cb) (-1);
-    return;
-  } else if (!*b) {
-    warn << "oklogd failed to clone socket connection.\n";
-    (*cb) (-1);
-    return;
-  }
-  if (fds.size ()) 
-    (*cb) (fds.pop_front ());
-  else
-    cbq.push_back (cb);
 }
 
 void

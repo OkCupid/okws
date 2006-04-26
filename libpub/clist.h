@@ -83,6 +83,10 @@ struct clist_t
   static T *next (T *elm) {
     return (elm->*field).next;
   }
+
+  static const T *cnext (const T *elm) {
+    return (elm->*field).next;
+  }
   
   static T *prev (T *elm) {
     return (elm->*field).prev;

@@ -8,7 +8,7 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1) $(SBD2) okd logd client test etc
+SUBDIRS = $(SBD1) $(SBD2) okd logd client test etc test2
 
 #test
 
@@ -84,4 +84,10 @@ aux-all aux-mostlyclean aux-clean aux-distclean aux-maintainer-clean:
 rpcclean:
 	for dir in libpub libweb libamysql libaok; do \
 		(cd $$dir && $(MAKE) rpcclean); \
+	done
+
+.PHONY: tameclean
+tameclean:
+	for dir in libpub libaok okd pub test2 ; do \
+		(cd $$dir && $(MAKE) tameclean); \
 	done

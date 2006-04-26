@@ -1,3 +1,5 @@
+#define CCEOC_ARGNAME  callercv
+// -*-c++-*-
 /* $Id$ */
 
 /*
@@ -82,56 +84,277 @@ ok_httpsrv_t::servinfo () const
   return (si = b);
 }
 
-ptr<http_response_t>
-ok_httpsrv_t::geterr (int n, str s, htpv_t v) const
+class ok_httpsrv_t__geterr_T__closure_t : public closure_t {
+public:
+  ok_httpsrv_t__geterr_T__closure_t (ok_httpsrv_t *_self,  int n,  str s,  htpv_t v,  bool gz,  ok_httpsrv_t::http_resp_cb_t callercv) : closure_t (true), _self (_self),  _stack (n, s, v, gz, callercv), _args (n, s, v, gz, callercv), _block1 (0), _cb_num_calls1 (0) {}
+  typedef void  (ok_httpsrv_t::*method_type_t) ( int ,  str ,  htpv_t ,  bool ,  ok_httpsrv_t::http_resp_cb_t , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:102: in function oksrvc_t::post_launch_pub2_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.n, _args.s, _args.v, _args.gz, _args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( int n,  str s,  htpv_t v,  bool gz,  ok_httpsrv_t::http_resp_cb_t callercv) {}
+     errdoc_t *e;
+     ptr< http_response_t > ret;
+     ptr< http_pub2_t > hp2;
+     aarr_t ar;
+  };
+  struct args_t {
+    args_t ( int n,  str s,  htpv_t v,  bool gz,  ok_httpsrv_t::http_resp_cb_t callercv) : n (n), s (s), v (v), gz (gz), callercv (callercv) {}
+     int n;
+     str s;
+     htpv_t v;
+     bool gz;
+     ok_httpsrv_t::http_resp_cb_t callercv;
+  };
+  ok_httpsrv_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+ok_httpsrv_t::geterr_T( int __tame_n,  str __tame_s,  htpv_t __tame_v,  bool __tame_gz,  ok_httpsrv_t::http_resp_cb_t __tame_callercv, ptr<closure_t> __cls_g)
 {
-  errdoc_t *e = errdocs[n];
-  ptr<http_response_t> ret;
-  if (e) {
-    aarr_t ar;
+    int CCEOC_STACK_SENTINEL;
+  ok_httpsrv_t__geterr_T__closure_t *__cls;
+  ptr<ok_httpsrv_t__geterr_T__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<ok_httpsrv_t__geterr_T__closure_t> (this, __tame_n, __tame_s, __tame_v, __tame_gz, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&ok_httpsrv_t::geterr_T);
+  } else {
+    __cls =     reinterpret_cast<ok_httpsrv_t__geterr_T__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   errdoc_t *&e = __cls->_stack.e;
+   ptr< http_response_t > &ret = __cls->_stack.ret;
+   ptr< http_pub2_t > &hp2 = __cls->_stack.hp2;
+   aarr_t &ar = __cls->_stack.ar;
+   int &n = __cls->_args.n;
+   str &s = __cls->_args.s;
+   htpv_t &v = __cls->_args.v;
+   bool &gz = __cls->_args.gz;
+   ok_httpsrv_t::http_resp_cb_t &callercv = __cls->_args.callercv;
+   use_reference (n); 
+   use_reference (s); 
+   use_reference (v); 
+   use_reference (gz); 
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto ok_httpsrv_t__geterr_T__label_1;
+    break;
+  default:
+    break;
+  }
+
+  e = errdocs[n];
+  if (e && pub2 ()) {
     ar.add ("STATUS", n)
       .add ("SERVINFO", servinfo ());
     if (s)
       ar.add ("AUXSTR", s);
-    ret = http_pub_t::alloc (n, *pubincluder, e->fn, &ar, v);
+      do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ http_pub2_t::alloc (pub2 (), n, e->fn, (++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(hp2)>, __cls_r, 1, refset_t<TTT(hp2)> (hp2))), &ar, v, gz);     if (--__cls->_block1)
+      return;
+  } while (0);
+ ok_httpsrv_t__geterr_T__label_1:
+    ;
+
+    ret = hp2;
   }
   if (!ret)
     ret = New refcounted<http_error_t> (n, servinfo (), s, v);
-  return ret;
+    do {
+    const  ok_httpsrv_t::http_resp_cb_t  __cb_tmp (CCEOC_ARGNAME);
+SIGNAL ("/home/am8/max/m/okws1/libaok/ok.T:107: in function ok_httpsrv_t::geterr_T", __cb_tmp, ret);   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:108: in function ok_httpsrv_t::geterr_T");
+  return;
 }
 
-void
-ok_httpsrv_t::error (ref<ahttpcon> x, int n, str s, 
-		     cbv::ptr c, http_inhdr_t *h) const
-{
-  if (h || x->closed ()) 
-    error2 (x, n, s, c, h);
-  else {
-    ptr<http_parser_raw_t> prs = http_parser_raw_t::alloc (x);
-    prs->parse (wrap (this, &ok_httpsrv_t::error_cb1, prs, n, s, c));
+class ok_httpsrv_t__error_T__closure_t : public closure_t {
+public:
+  ok_httpsrv_t__error_T__closure_t (ok_httpsrv_t *_self,  ref< ahttpcon > x,  int n,  str s,  cbv::ptr c,  http_inhdr_t *h) : closure_t (false), _self (_self),  _stack (x, n, s, c, h), _args (x, n, s, c, h), _block1 (0), _block2 (0), _block3 (0), _cb_num_calls1 (0), _cb_num_calls2 (0), _cb_num_calls3 (0) {}
+  typedef void  (ok_httpsrv_t::*method_type_t) ( ref< ahttpcon > ,  int ,  str ,  cbv::ptr ,  http_inhdr_t *, ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    case 3: cb3(); break;
+    default: panic ("unexpected case");
+    }
   }
-}
-
-void
-ok_httpsrv_t::error_cb1 (ptr<http_parser_raw_t> prs, int n, str s,
-		      cbv::ptr c, int s2) const
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:122: in function ok_httpsrv_t::geterr_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:128: in function ok_httpsrv_t::geterr_T", "callback overcalled!");
+    }
+    if (!--_block2)
+      reenter ();
+  }
+  void cb3 () {
+    if (-- _cb_num_calls3 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:133: in function ok_httpsrv_t::geterr_T", "callback overcalled!");
+    }
+    if (!--_block3)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.x, _args.n, _args.s, _args.c, _args.h, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( ref< ahttpcon > x,  int n,  str s,  cbv::ptr c,  http_inhdr_t *h) {}
+     ptr< http_parser_raw_t > prs;
+     int status2;
+     htpv_t v;
+     ptr< http_response_t > e;
+  };
+  struct args_t {
+    args_t ( ref< ahttpcon > x,  int n,  str s,  cbv::ptr c,  http_inhdr_t *h) : x (x), n (n), s (s), c (c), h (h) {}
+     ref< ahttpcon > x;
+     int n;
+     str s;
+     cbv::ptr c;
+     http_inhdr_t *h;
+  };
+  ok_httpsrv_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _block2;
+  int _block3;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  int _cb_num_calls3;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+ok_httpsrv_t::error_T( ref< ahttpcon > __tame_x,  int __tame_n,  str __tame_s,  cbv::ptr __tame_c,  http_inhdr_t *__tame_h, ptr<closure_t> __cls_g)
 {
-  error2 (prs->get_x (), n, s, c, prs->hdr_p ());
-}
+    ok_httpsrv_t__error_T__closure_t *__cls;
+  ptr<ok_httpsrv_t__error_T__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<ok_httpsrv_t__error_T__closure_t> (this, __tame_x, __tame_n, __tame_s, __tame_c, __tame_h);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&ok_httpsrv_t::error_T);
+  } else {
+    __cls =     reinterpret_cast<ok_httpsrv_t__error_T__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   ptr< http_parser_raw_t > &prs = __cls->_stack.prs;
+   int &status2 = __cls->_stack.status2;
+   htpv_t &v = __cls->_stack.v;
+   ptr< http_response_t > &e = __cls->_stack.e;
+   ref< ahttpcon > &x = __cls->_args.x;
+   int &n = __cls->_args.n;
+   str &s = __cls->_args.s;
+   cbv::ptr &c = __cls->_args.c;
+   http_inhdr_t *&h = __cls->_args.h;
+   use_reference (x); 
+   use_reference (n); 
+   use_reference (s); 
+   use_reference (c); 
+   use_reference (h); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto ok_httpsrv_t__error_T__label_1;
+    break;
+  case 2:
+    goto ok_httpsrv_t__error_T__label_2;
+    break;
+  case 3:
+    goto ok_httpsrv_t__error_T__label_3;
+    break;
+  default:
+    break;
+  }
 
-void
-ok_httpsrv_t::error2 (ref<ahttpcon> x, int n, str s, 
-		   cbv::ptr c, http_inhdr_t *h) const
-{
-  htpv_t v = h ? h->get_vers () : 0;
-  ptr<http_response_t> e = geterr (n, s, v);
+  if (!h && !x->closed ()) {
+    prs = http_parser_raw_t::alloc (x);
+      do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ prs->parse ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(status2)>, __cls_r, 1, refset_t<TTT(status2)> (status2))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ ok_httpsrv_t__error_T__label_1:
+    ;
+
+    if (status2 == HTTP_OK) {
+      h = prs->hdr_p ();
+    }
+  }
+  v = h ? h->get_vers () : 0;
+    do {
+    __cls->_block2 = 1;
+    __cls->set_jumpto (2);
+ geterr (n, s, v, h && h->takes_gzip (), (++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(e)>, __cls_r, 2, refset_t<TTT(e)> (e))));     if (--__cls->_block2)
+      return;
+  } while (0);
+ ok_httpsrv_t__error_T__label_2:
+    ;
+
+  assert (e);
   if (svclog)
     log (x, h, e, s);
-  if (x->closed ()) {
-    if (c) (*c) ();
-  } else {
-    e->send (x, wrap (this, &ok_httpsrv_t::error_cb2, x, e, c));
+  if (!x->closed ()) {
+      do {
+    __cls->_block3 = 1;
+    __cls->set_jumpto (3);
+ e->send (x, (++__cls->_block3, ++__cls->_cb_num_calls3, wrap (__block_cb0, __cls_r, 3)));     if (--__cls->_block3)
+      return;
+  } while (0);
+ ok_httpsrv_t__error_T__label_3:
+    ;
+
   }
+  if (c) 
+    (*c) ();
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:137: in function ok_httpsrv_t::error_T");
+  return;
 }
 
 /*
@@ -190,6 +413,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("okwsname", &reported_name);
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
+    t->lookup ("pub2fd", &pub2fd);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &ok_gzip);
     t->lookup ("filtercgi", &ok_filter_cgi);
@@ -208,6 +432,9 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("rsl", &ok_recycle_suio_limit);
     t->lookup ("lifetime", &ok_svc_life_time);
     t->lookup ("lifereqs", &ok_svc_life_reqs);
+    t->lookup ("wss", &ok_pub2_wss);
+    t->lookup ("caching", &ok_pub2_caching);
+    t->lookup ("ncto", &ok_pub2_svc_neg_cache_timeout);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
@@ -219,29 +446,14 @@ oksrvc_t::init (int argc, char *argv[])
 
     if (OKDBG2 (SVC_ARGS))
       t->dump1 ();
+
   }
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
+  init_pub2 ( (ok_pub2_wss > 0 ? P_WSS : 0) |
+	      (ok_pub2_viserr > 0 ? P_VISERR : 0) );
 
   zinit (ok_gzip, ok_gzip_compress_level);
-}
-
-bool
-ok_httpsrv_t::add_errdoc (int n, const str &f)
-{
-  if (errdocs[n])
-    return false;
-  errdocs.insert (New errdoc_t (n, f));
-  add_pubfile (f);
-  return true;
-}
-
-void 
-ok_httpsrv_t::add_errdocs (const xpub_errdoc_set_t &eds)
-{
-  u_int lim = eds.docs.size ();
-  for (u_int i = 0; i < lim; i++)
-    add_errdoc (eds.docs[i].status, eds.docs[i].fn);
 }
 
 void
@@ -294,11 +506,10 @@ oksrvc_t::remove (okclnt_t *c)
 {
   clients.remove (c);
 
-  if (ok_svc_life_reqs > 0 && ++n_reqs >= u_int (ok_svc_life_reqs))
+  if (ok_svc_life_reqs > 0 && ++n_reqs >= u_int (ok_svc_life_reqs)) {
     internal_reliable_shutdown ("served maximum number of requests",
 				ok_shutdown_timeout_fast);
-
-  if (!--nclients && sdflag)
+  } else if (!--nclients && sdflag)
     end_program ();
 }
 
@@ -371,7 +582,7 @@ oksrvc_t::connect ()
 void
 ok_con_t::ctlcon (callback<void, svccb *>::ref cb)
 {
-  srv = asrv::alloc (ctlx, okctl_program_1, cb);
+  srv = asrv_delayed_eof::alloc (ctlx, okctl_program_1, cb);
   clnt = aclnt::alloc (ctlx, okctl_program_1);
   if (!srv || !clnt) {
     warn << "Control file descriptor 1 is not a socket\n";
@@ -387,19 +598,153 @@ ok_con_t::ctlclose ()
   ctlx = NULL; 
 }
 
-void
-oksrvc_t::launch ()
+class oksrvc_t__launch_T__closure_t : public closure_t {
+public:
+  oksrvc_t__launch_T__closure_t (oksrvc_t *_self) : closure_t (false), _self (_self),  _stack (), _args (), _block1 (0), _block2 (0), _block3 (0), _block4 (0), _block5 (0), _cb_num_calls1 (0), _cb_num_calls2 (0), _cb_num_calls3 (0), _cb_num_calls4 (0), _cb_num_calls5 (0), _cb_num_calls6 (0), _cb_num_calls7 (0) {}
+  typedef void  (oksrvc_t::*method_type_t) (ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    case 3: cb3(); break;
+    case 4: cb4(); break;
+    case 5: cb5(); break;
+    case 6: cb6(); break;
+    case 7: cb7(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:399: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:400: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb3 () {
+    if (-- _cb_num_calls3 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:401: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb4 () {
+    if (-- _cb_num_calls4 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:417: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block2)
+      reenter ();
+  }
+  void cb5 () {
+    if (-- _cb_num_calls5 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:418: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block3)
+      reenter ();
+  }
+  void cb6 () {
+    if (-- _cb_num_calls6 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:419: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block4)
+      reenter ();
+  }
+  void cb7 () {
+    if (-- _cb_num_calls7 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:424: in function ok_httpsrv_t::error_T", "callback overcalled!");
+    }
+    if (!--_block5)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (mkref (this));
+  }
+  struct stack_t {
+    stack_t () : dbs_rc (true), pub2_rc (true)  {}
+     bool pub1_rc;
+     bool logd_rc;
+     bool dbs_rc;
+     bool pub2_rc;
+     clnt_stat err;
+  };
+  struct args_t {
+    args_t () {}
+  };
+  oksrvc_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _block2;
+  int _block3;
+  int _block4;
+  int _block5;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  int _cb_num_calls3;
+  int _cb_num_calls4;
+  int _cb_num_calls5;
+  int _cb_num_calls6;
+  int _cb_num_calls7;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+oksrvc_t::launch_T(ptr<closure_t> __cls_g)
 {
+    oksrvc_t__launch_T__closure_t *__cls;
+  ptr<oksrvc_t__launch_T__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<oksrvc_t__launch_T__closure_t> (this);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&oksrvc_t::launch_T);
+  } else {
+    __cls =     reinterpret_cast<oksrvc_t__launch_T__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   bool &pub1_rc = __cls->_stack.pub1_rc;
+   bool &logd_rc = __cls->_stack.logd_rc;
+   bool &dbs_rc = __cls->_stack.dbs_rc;
+   bool &pub2_rc = __cls->_stack.pub2_rc;
+   clnt_stat &err = __cls->_stack.err;
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto oksrvc_t__launch_T__label_1;
+    break;
+  case 2:
+    goto oksrvc_t__launch_T__label_2;
+    break;
+  case 3:
+    goto oksrvc_t__launch_T__label_3;
+    break;
+  case 4:
+    goto oksrvc_t__launch_T__label_4;
+    break;
+  case 5:
+    goto oksrvc_t__launch_T__label_5;
+    break;
+  default:
+    break;
+  }
+
+
   setsid ();
   connect ();
-  lnum = 2;
-
-  if (dbs.size ()) lnum++;
-
-  // setup and launch Remote Pub Client
-  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
-				OKCTL_PUBCONF, get_andmask (), get_ormask ());
-  rpcli->config (wrap (this, &oksrvc_t::launch_pub_cb0));
 
   // initialization and connect to logging daemon
   if (logfd >= 0) {
@@ -407,106 +752,321 @@ oksrvc_t::launch ()
   } else {
     fatal << "No logging mechanism specified.\n";
   }
-  logd->connect (wrap (this, &oksrvc_t::launch_log_cb));
 
-  // database connections
-  if (dbs.size ()) {
-    launch_dbs (wrap (this, &oksrvc_t::launch2));
-  }
-}
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
 
-void
-oksrvc_t::launch_log_cb (bool rc)
-{
-  if (!rc) {
-    SVC_FATAL_ERROR ("Connection to log service failed");
+    launch_pub2 ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(pub2_rc)>, __cls_r, 1, refset_t<TTT(pub2_rc)> (pub2_rc))));
+    launch_pub1 ((++__cls->_block1, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(pub1_rc)>, __cls_r, 2, refset_t<TTT(pub1_rc)> (pub1_rc))));
+    logd->connect ((++__cls->_block1, ++__cls->_cb_num_calls3, wrap (__block_cb1<TTT(logd_rc)>, __cls_r, 3, refset_t<TTT(logd_rc)> (logd_rc))));
+      if (--__cls->_block1)
+      return;
+  } while (0);
+ oksrvc_t__launch_T__label_1:
+    ;
+
+  if (!pub2_rc) {
+    SVC_FATAL_ERROR ("could not establish connection with pubd version 2");
     exit (1);
   }
-  launch3 ();
-}
-
-void
-oksrvc_t::launch3 ()
-{
-  if (!--lnum) {
-    custom_init (wrap (this, &oksrvc_t::launch4));
+  if (!logd_rc) {
+    SVC_FATAL_ERROR ("Could not establish connection to logd\n");
+    exit (1);
   }
-}
-
-void
-oksrvc_t::launch_pub_cb0 (ptr<pub_res_t> pr)
-{
-  if (!*pr) 
-    SVC_ERROR (pr->to_str ());
-
-  ptr<xpub_errdoc_set_t> xd = New refcounted<xpub_errdoc_set_t> ();
-  clnt->call (OKCTL_REQ_ERRDOCS, NULL, xd, 
-	      wrap (this, &oksrvc_t::launch_pub_cb1, xd));
-}
-
-void
-oksrvc_t::launch_pub_cb1 (ptr<xpub_errdoc_set_t> xd, clnt_stat err)
-{
-  if (err) {
-    SVC_ERROR ("ErrorDocInitError: " << err);
+  if (!pub1_rc) {
+    SVC_FATAL_ERROR ("Launch of legacy publisher (pubd v1) failed\n");
     exit (1);
   }
 
-  //
-  // will add error documents to the pub file list
-  //
-  add_errdocs (*xd);
-  init_publist ();
-  pubfiles (wrap (this, &oksrvc_t::launch_pub_cb2));
-}
+  // Allow work after pub2 init, but before we connect to DBs.
+    do {
+    __cls->_block2 = 1;
+    __cls->set_jumpto (2);
+ custom_init0 ((++__cls->_block2, ++__cls->_cb_num_calls4, wrap (__block_cb0, __cls_r, 4)));     if (--__cls->_block2)
+      return;
+  } while (0);
+ oksrvc_t__launch_T__label_2:
+    ;
 
-void 
-oksrvc_t::launch_pub_cb2 (bool rc)
-{
-  if (!rc) 
-    exit (1);
-  launch3 ();
-}
+    do {
+    __cls->_block3 = 1;
+    __cls->set_jumpto (3);
+ launch_dbs ((++__cls->_block3, ++__cls->_cb_num_calls5, wrap (__block_cb1<TTT(dbs_rc)>, __cls_r, 5, refset_t<TTT(dbs_rc)> (dbs_rc))));     if (--__cls->_block3)
+      return;
+  } while (0);
+ oksrvc_t__launch_T__label_3:
+    ;
 
-void
-oksrvc_t::launch_dbs (cbb cb)
-{
-  dbl = dbs.size ();
-  u_int lim = dbl;
-  dbstatus = true;
+    do {
+    __cls->_block4 = 1;
+    __cls->set_jumpto (4);
+ custom_init ((++__cls->_block4, ++__cls->_cb_num_calls6, wrap (__block_cb0, __cls_r, 6)));     if (--__cls->_block4)
+      return;
+  } while (0);
+ oksrvc_t__launch_T__label_4:
+    ;
 
-  if (!lim)
-    (*cb) (dbstatus);
 
-  for (u_int i = 0; i < lim; i++) 
-    dbs[i]->connect (wrap (this, &oksrvc_t::launch_dbcb, cb, i));
-}
-
-void
-oksrvc_t::launch_dbcb (cbb cb, u_int i, bool r)
-{
-  if (!r) 
-    dbstatus = false;
-  if (!--dbl)
-    (*cb) (dbstatus);
-}
-
-void
-oksrvc_t::launch2 (bool b)
-{
-  if (!b)
-    SVC_ERROR ("not all databases properly initalized");
-  launch3 ();
-}
-
-void
-oksrvc_t::launch4 ()
-{
   if (OKDBG2 (OKD_STARTUP))
-    SVC_ERROR ("calling READY RPC to okd");
+    SVC_CHATTER ("calling READY RPC to okd");
 
-  clnt->call (OKCTL_READY, NULL, NULL, wrap (this, &oksrvc_t::launch5));
+    do {
+    __cls->_block5 = 1;
+    __cls->set_jumpto (5);
+ clnt->call (OKCTL_READY, NULL, NULL, (++__cls->_block5, ++__cls->_cb_num_calls7, wrap (__block_cb1<TTT(err)>, __cls_r, 7, refset_t<TTT(err)> (err))));     if (--__cls->_block5)
+      return;
+  } while (0);
+ oksrvc_t__launch_T__label_5:
+    ;
+
+
+  if (err) {
+    SVC_FATAL_ERROR ("OK Child Initialization: " << err);
+    exit (1);
+  }
+
+  SVC_CHATTER ("service readied; OKWS version " << VERSION <<
+	       "; running as (" << getuid () << ", " << geteuid () << ")");
+
+  if (ok_svc_life_time > 0) {
+    delaycb (ok_svc_life_time, 0,
+	     wrap (this, &oksrvc_t::internal_reliable_shutdown,
+		   "service lifetime expired", 
+		   ok_shutdown_timeout_fast));
+  }
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:440: in function oksrvc_t::launch_T");
+  return;
 }
+
+class oksrvc_t__launch_pub1__closure_t : public closure_t {
+public:
+  oksrvc_t__launch_pub1__closure_t (oksrvc_t *_self,  coordvar_bool_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
+  typedef void  (oksrvc_t::*method_type_t) ( coordvar_bool_t , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:454: in function oksrvc_t::launch_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:464: in function oksrvc_t::launch_T", "callback overcalled!");
+    }
+    if (!--_block2)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( coordvar_bool_t callercv) : res (true)  {}
+     ptr< pub_res_t > pr;
+     bool rc;
+     bool res;
+  };
+  struct args_t {
+    args_t ( coordvar_bool_t callercv) : callercv (callercv) {}
+     coordvar_bool_t callercv;
+  };
+  oksrvc_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _block2;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+oksrvc_t::launch_pub1( coordvar_bool_t __tame_callercv, ptr<closure_t> __cls_g)
+{
+    int CCEOC_STACK_SENTINEL;
+  oksrvc_t__launch_pub1__closure_t *__cls;
+  ptr<oksrvc_t__launch_pub1__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<oksrvc_t__launch_pub1__closure_t> (this, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&oksrvc_t::launch_pub1);
+  } else {
+    __cls =     reinterpret_cast<oksrvc_t__launch_pub1__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   ptr< pub_res_t > &pr = __cls->_stack.pr;
+   bool &rc = __cls->_stack.rc;
+   bool &res = __cls->_stack.res;
+   coordvar_bool_t &callercv = __cls->_args.callercv;
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto oksrvc_t__launch_pub1__label_1;
+    break;
+  case 2:
+    goto oksrvc_t__launch_pub1__label_2;
+    break;
+  default:
+    break;
+  }
+
+  // setup and launch Remote Pub Client
+  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
+				OKCTL_PUBCONF, get_andmask (), get_ormask ());
+
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ rpcli->config ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(pr)>, __cls_r, 1, refset_t<TTT(pr)> (pr))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ oksrvc_t__launch_pub1__label_1:
+    ;
+
+  if (!*pr) {
+    strbuf b;
+    b << "Pub v1: config failed: " << pr->to_str ();
+    str s = b;
+    SVC_ERROR (s);
+  }
+
+  init_publist ();
+  
+    do {
+    __cls->_block2 = 1;
+    __cls->set_jumpto (2);
+ pubfiles ((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(rc)>, __cls_r, 2, refset_t<TTT(rc)> (rc))));     if (--__cls->_block2)
+      return;
+  } while (0);
+ oksrvc_t__launch_pub1__label_2:
+    ;
+
+  if (!rc) res = false;
+
+    do {
+    const  coordvar_bool_t  __cb_tmp (CCEOC_ARGNAME);
+RESUME ("/home/am8/max/m/okws1/libaok/ok.T:467: in function oksrvc_t::launch_pub1", __cb_tmp, res); return;   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:468: in function oksrvc_t::launch_pub1");
+  return;
+}
+
+class oksrvc_t__launch_dbs__closure_t : public closure_t {
+public:
+  oksrvc_t__launch_dbs__closure_t (oksrvc_t *_self,  cbb::ptr callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _cb_num_calls1 (0) {}
+  typedef void  (oksrvc_t::*method_type_t) ( cbb::ptr , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:481: in function oksrvc_t::launch_pub1", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( cbb::ptr callercv) : ret (true)  {}
+     vec< bool > rc;
+     bool ret;
+  };
+  struct args_t {
+    args_t ( cbb::ptr callercv) : callercv (callercv) {}
+     cbb::ptr callercv;
+  };
+  oksrvc_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+oksrvc_t::launch_dbs( cbb::ptr __tame_callercv, ptr<closure_t> __cls_g)
+{
+    int CCEOC_STACK_SENTINEL;
+  oksrvc_t__launch_dbs__closure_t *__cls;
+  ptr<oksrvc_t__launch_dbs__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<oksrvc_t__launch_dbs__closure_t> (this, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&oksrvc_t::launch_dbs);
+  } else {
+    __cls =     reinterpret_cast<oksrvc_t__launch_dbs__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   vec< bool > &rc = __cls->_stack.rc;
+   bool &ret = __cls->_stack.ret;
+   cbb::ptr &callercv = __cls->_args.callercv;
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto oksrvc_t__launch_dbs__label_1;
+    break;
+  default:
+    break;
+  }
+
+
+  rc.setsize (dbs.size ());
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+
+    for (u_int i = 0; i < dbs.size (); i++) 
+      dbs[i]->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(rc[i])>, __cls_r, 1, refset_t<TTT(rc[i])> (rc[i]))));
+      if (--__cls->_block1)
+      return;
+  } while (0);
+ oksrvc_t__launch_dbs__label_1:
+    ;
+
+  for (u_int i = 0; i < dbs.size (); i++) {
+    if (!rc[i])
+      ret = false;
+  }
+  if (!ret) 
+    SVC_ERROR ("not all databases properly initalized");
+    do {
+    const  cbb::ptr  __cb_tmp (CCEOC_ARGNAME);
+RESUME ("/home/am8/max/m/okws1/libaok/ok.T:489: in function oksrvc_t::launch_dbs", __cb_tmp, ret); return;   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:490: in function oksrvc_t::launch_dbs");
+  return;
+}
+
 
 dbcon_t *
 oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
@@ -527,25 +1087,6 @@ oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
   lblnc_t *l = New lblnc_t (rpcli, i, p, port);
   dbs.push_back (l);
   return l;
-}
-
-void
-oksrvc_t::launch5 (clnt_stat err)
-{
-  SVC_CHATTER ("service readied; OKD version " << VERSION <<
-	       "; running as (" << getuid () << ", " << geteuid () << ")");
-
-  if (ok_svc_life_time > 0) {
-    delaycb (ok_svc_life_time, 0,
-	     wrap (this, &oksrvc_t::internal_reliable_shutdown,
-		   "service lifetime expired", 
-		   ok_shutdown_timeout_fast));
-  }
-
-  if (err) {
-    SVC_ERROR ("OK Child Initialization: " << err);
-    exit (1);
-  }
 }
 
 void
@@ -632,15 +1173,81 @@ okclnt_t::serve ()
   parse ();
 }
 
-void
-okclnt_t::parse ()
+class okclnt_t__parse_T__closure_t : public closure_t {
+public:
+  okclnt_t__parse_T__closure_t (okclnt_t *_self) : closure_t (false), _self (_self),  _stack (), _args (), _block1 (0), _cb_num_calls1 (0) {}
+  typedef void  (okclnt_t::*method_type_t) (ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:604: in function oksrvc_t::launch_dbs", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (mkref (this));
+  }
+  struct stack_t {
+    stack_t () {}
+     int status;
+  };
+  struct args_t {
+    args_t () {}
+  };
+  okclnt_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+okclnt_t::parse_T(ptr<closure_t> __cls_g)
 {
-  http_parser_cgi_t::parse (wrap (this, &okclnt_t::http_parse_cb));
-}
+    okclnt_t__parse_T__closure_t *__cls;
+  ptr<okclnt_t__parse_T__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<okclnt_t__parse_T__closure_t> (this);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&okclnt_t::parse_T);
+  } else {
+    __cls =     reinterpret_cast<okclnt_t__parse_T__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   int &status = __cls->_stack.status;
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto okclnt_t__parse_T__label_1;
+    break;
+  default:
+    break;
+  }
 
-void
-okclnt_t::http_parse_cb (int status)
-{
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ http_parser_cgi_t::parse ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(status)>, __cls_r, 1, refset_t<TTT(status)> (status))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ okclnt_t__parse_T__label_1:
+    ;
+
   if (status == HTTP_OK)
     if (process_flag)
       panic ("duplicate process called!\n");
@@ -650,6 +1257,8 @@ okclnt_t::http_parse_cb (int status)
     }
   else
     error (status);
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:614: in function okclnt_t::parse_T");
+  return;
 }
 
 void
@@ -936,17 +1545,6 @@ ok_base_t::fix_uri (const str &in) const
 }
 
 void
-set_debug_flags ()
-{
-  str df = getenv (OKWS_DEBUG_OPTIONS);
-  if (df && !convertint (df, &okws_debug_flags)) {
-    warn << "invalid debug flags given: " << df << "\n";
-  }
-  if (okws_debug_flags)
-    warn ("OKWS debug flags set: 0x%qx\n", okws_debug_flags);
-}
-
-void
 okclnt_t::set_hdr_field (const str &k, const str &v)
 {
   if (!hdr_fields)
@@ -961,4 +1559,238 @@ get_okws_config ()
   if (!cf)
     cf = okws_etcfile_required ("okd_config");
   return cf;
+}
+
+bool
+ok_httpsrv_t::init_pub2 (u_int opts)
+{
+  bool ret = false;
+  if (pub2fd > 0) {
+    ptr<axprt_stream> x (axprt_stream::alloc (pub2fd));
+
+    if (ok_pub2_caching) 
+      _pub2 = New refcounted<pub2::caching_remote_publisher_t> (x, opts);
+    else
+      _pub2 = New refcounted<pub2::remote_publisher_t> (x, opts);
+
+    ret = true;
+  }
+  return ret;
+}
+
+class ok_httpsrv_t__launch_pub2_T__closure_t : public closure_t {
+public:
+  ok_httpsrv_t__launch_pub2_T__closure_t (ok_httpsrv_t *_self,  cbb::ptr callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
+  typedef void  (ok_httpsrv_t::*method_type_t) ( cbb::ptr , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:940: in function okclnt_t::parse_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:942: in function okclnt_t::parse_T", "callback overcalled!");
+    }
+    if (!--_block2)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( cbb::ptr callercv) : rc (false)  {}
+     bool rc;
+  };
+  struct args_t {
+    args_t ( cbb::ptr callercv) : callercv (callercv) {}
+     cbb::ptr callercv;
+  };
+  ok_httpsrv_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _block2;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+ok_httpsrv_t::launch_pub2_T( cbb::ptr __tame_callercv, ptr<closure_t> __cls_g)
+{
+    int CCEOC_STACK_SENTINEL;
+  ok_httpsrv_t__launch_pub2_T__closure_t *__cls;
+  ptr<ok_httpsrv_t__launch_pub2_T__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<ok_httpsrv_t__launch_pub2_T__closure_t> (this, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&ok_httpsrv_t::launch_pub2_T);
+  } else {
+    __cls =     reinterpret_cast<ok_httpsrv_t__launch_pub2_T__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   bool &rc = __cls->_stack.rc;
+   cbb::ptr &callercv = __cls->_args.callercv;
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto ok_httpsrv_t__launch_pub2_T__label_1;
+    break;
+  case 2:
+    goto ok_httpsrv_t__launch_pub2_T__label_2;
+    break;
+  default:
+    break;
+  }
+
+  if (pub2 ()) {
+      do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ pub2 ()->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(rc)>, __cls_r, 1, refset_t<TTT(rc)> (rc))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ ok_httpsrv_t__launch_pub2_T__label_1:
+    ;
+
+    if (rc) {
+        do {
+    __cls->_block2 = 1;
+    __cls->set_jumpto (2);
+ post_launch_pub2 ((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(rc)>, __cls_r, 2, refset_t<TTT(rc)> (rc))));     if (--__cls->_block2)
+      return;
+  } while (0);
+ ok_httpsrv_t__launch_pub2_T__label_2:
+    ;
+
+    }
+    if (!rc) 
+      okdbg_warn (ERROR, "Connection/initialization to pub2 failed!");
+  }
+    do {
+    const  cbb::ptr  __cb_tmp (CCEOC_ARGNAME);
+SIGNAL ("/home/am8/max/m/okws1/libaok/ok.T:947: in function ok_httpsrv_t::launch_pub2_T", __cb_tmp, rc);   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:948: in function ok_httpsrv_t::launch_pub2_T");
+  return;
+}
+
+class oksrvc_t__post_launch_pub2_T__closure_t : public closure_t {
+public:
+  oksrvc_t__post_launch_pub2_T__closure_t (oksrvc_t *_self,  cbb::ptr callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _cb_num_calls1 (0) {}
+  typedef void  (oksrvc_t::*method_type_t) ( cbb::ptr , ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/libaok/ok.T:958: in function ok_httpsrv_t::launch_pub2_T", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (_args.callercv, mkref (this));
+  }
+  struct stack_t {
+    stack_t ( cbb::ptr callercv) : rc (true)  {}
+     clnt_stat s;
+     bool rc;
+  };
+  struct args_t {
+    args_t ( cbb::ptr callercv) : callercv (callercv) {}
+     cbb::ptr callercv;
+  };
+  oksrvc_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+oksrvc_t::post_launch_pub2_T( cbb::ptr __tame_callercv, ptr<closure_t> __cls_g)
+{
+    int CCEOC_STACK_SENTINEL;
+  oksrvc_t__post_launch_pub2_T__closure_t *__cls;
+  ptr<oksrvc_t__post_launch_pub2_T__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<oksrvc_t__post_launch_pub2_T__closure_t> (this, __tame_callercv);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&oksrvc_t::post_launch_pub2_T);
+  } else {
+    __cls =     reinterpret_cast<oksrvc_t__post_launch_pub2_T__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   clnt_stat &s = __cls->_stack.s;
+   bool &rc = __cls->_stack.rc;
+   cbb::ptr &callercv = __cls->_args.callercv;
+   use_reference (callercv); 
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto oksrvc_t__post_launch_pub2_T__label_1;
+    break;
+  default:
+    break;
+  }
+
+  assert (pub2 ());
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ clnt->call (OKCTL_REQ_ERRDOCS_2, NULL, &errdocs_x, (++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(s)>, __cls_r, 1, refset_t<TTT(s)> (s))));     if (--__cls->_block1)
+      return;
+  } while (0);
+ oksrvc_t__post_launch_pub2_T__label_1:
+    ;
+
+  if (s) {
+    strbuf b;
+    b << "In getting error documents: " << s;
+    okdbg_warn (ERROR, b);
+    rc = false;
+  }
+    do {
+    const  cbb::ptr  __cb_tmp (CCEOC_ARGNAME);
+SIGNAL ("/home/am8/max/m/okws1/libaok/ok.T:965: in function oksrvc_t::post_launch_pub2_T", __cb_tmp, rc);   } while (0);
+
+  END_OF_SCOPE("/home/am8/max/m/okws1/libaok/ok.T:966: in function oksrvc_t::post_launch_pub2_T");
+  return;
+}
+
+ptr<pub2::remote_publisher_t>
+okclnt_t::pub2 ()
+{
+  return oksrvc->pub2 ();
 }

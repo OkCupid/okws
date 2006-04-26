@@ -106,6 +106,9 @@ program OKCTL_PROGRAM {
 		ok_custom_data_t
 		OKCTL_CUSTOM_2_OUT (ok_custom_data_t) = 10;
 
+		xpub_errdoc_set_t
+		OKCTL_REQ_ERRDOCS_2 (void) = 11;
+
 		void
 		OKCTL_KILL (oksig_t) = 99;
 

@@ -67,6 +67,15 @@ pfile_html_sec_t::pfile_html_sec_t (const xpub_section_t &x)
     pfile_sec_t::add (pfile_el_t::alloc (x.els[i]));
 }
 
+pfile_sec_t::pfile_sec_t (const xpub_section_t &x)
+  : lineno (x.lineno)
+{
+  // XXX - reconsider this copy and paste
+  u_int lim = x.els.size ();
+  for (u_int i = 0; i < lim; i++) 
+    add (pfile_el_t::alloc (x.els[i]));
+}
+
 pfile_el_t *
 pfile_el_t::alloc (const xpub_obj_t &x) 
 {
@@ -77,6 +86,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_inclist_t (*x.inclist);
   case XPUB_INCLUDE:
     return New pfile_include_t (*x.include);
+  case XPUB_INCLUDE2:
+    return New pfile_include2_t (*x.include);
   case XPUB_FILE_PSTR:
     return New pfile_pstr_t (*x.file_pstr);
   case XPUB_FILE_VAR:
@@ -227,17 +238,29 @@ pswitch_env_t::to_xdr (xpub_switch_env_t *x) const
     (*x->key) = key;
   }
   if (fn) {
-    x->fn.alloc ();
-    (*x->fn) = fn;
+    x->body.set_typ (XPUB_SWITCH_FILE);
+    *x->body.fn = fn;
+  } else if (_nested_env) {
+    x->body.set_typ (XPUB_SWITCH_NESTED_ENV);
+    _nested_env->sec ()->to_xdr (x->body.sec);
+  } else {
+    x->body.set_typ (XPUB_SWITCH_NONE);
   }
-
   return true;
 }
 
 pswitch_env_t::pswitch_env_t (const xpub_switch_env_t &x)
   : key (x.key ? str (*x.key) : sNULL),
-    fn (x.fn ? str (*x.fn) : sNULL), 
-    aarr (New refcounted<aarr_arg_t> (x.aarr)) {}
+    fn (x.body.typ == XPUB_SWITCH_FILE ? str (*x.body.fn) : sNULL), 
+    aarr (New refcounted<aarr_arg_t> (x.aarr)),
+    _nested_env (x.body.typ == XPUB_SWITCH_NESTED_ENV ?
+		 nested_env_t::alloc (*x.body.sec) : NULL) {}
+
+ptr<nested_env_t>
+nested_env_t::alloc (const xpub_section_t &s)
+{
+  return New refcounted<nested_env_t> (New pfile_html_sec_t (s));
+}
 
 static void
 nvpair_to_xdr (xpub_aarr_t *x, u_int *i, const nvpair_t &n) 
@@ -349,14 +372,31 @@ aarr_t::aarr_t (const xpub_aarr_t &x)
   }
 }
 
+void
+pfile_include_t::to_xdr_base (xpub_obj_t *x) const
+{
+  if (env)
+    env->to_xdr (&x->include->env);
+  x->include->lineno = lineno;
+}
+
 bool 
 pfile_include_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB_INCLUDE);
-  if (env)
-    env->to_xdr (&x->include->env);
-  x->include->fn = fn;
-  x->include->lineno = lineno;
+  to_xdr_base (x);
+  x->include->fn.set_vrs (XPUB_V1);
+  *x->include->fn.v1 = fn;
+  return true;
+}
+
+bool
+pfile_include2_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB_INCLUDE2);
+  to_xdr_base (x);
+  x->include->fn.set_vrs (XPUB_V2);
+  if (fn_v2) fn_v2->to_xdr (x->include->fn.v2);
   return true;
 }
 
@@ -372,8 +412,27 @@ pfile_inclist_t::to_xdr (xpub_obj_t *x) const
 }
 
 pfile_include_t::pfile_include_t (const xpub_include_t &x)
-  : pfile_func_t (x.lineno), err (false), fn (x.fn),
-    env (New refcounted<aarr_arg_t> (x.env)) {}
+  : pfile_func_t (x.lineno), err (false),
+    env (New refcounted<aarr_arg_t> (x.env))
+{
+  if (x.fn.vrs == XPUB_V1) {
+    fn = *x.fn.v1;
+  } else {
+    warn << "Got unexpected XDR pfile representation for v1 include.\n";
+    err = true;
+  }
+}
+
+pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
+  : pfile_include_t (x.lineno, New refcounted<aarr_arg_t> (x.env))
+{
+  if (x.fn.vrs == XPUB_V2) {
+    fn_v2 = New refcounted<pstr_t> (*x.fn.v2);
+  } else {
+    warn << "Got unexpected XDR pfile representation for v2 include.\n";
+    err = true;
+  }
+}
 
 pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
   : pfile_func_t (x.lineno), err (false)

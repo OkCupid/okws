@@ -5,17 +5,29 @@ okwslib_LTLIBRARIES = libpub.la
 
 libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
-	pvalw.C jail.C fd_prot.C lbalance.C rpcwindow.C stats.C
+	pvalw.C jail.C fd_prot.C lbalance.C rpcwindow.C pub2.C clone.C \
+	debug.C stats.C
 
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
-	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h okws_sfs.h okstats.h
+	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
+	okws_sfs.h timehash.h okstats.h
 
 noinst_HEADERS =  xpub.x fd_prot.x txa_prot.x env.mk
 
 YDEBUG = @YDEBUG@
 LDEBUG = @LDEBUG@
+
+SUFFIXES = .T .C .h
+
+.T.C:
+	-$(TAME) -c $< || rm -f $@
+
+pub2.o: pub2.C
+pub2.lo: pub2.C
+clone.o: clone.C
+clone.lo: clone.C
 
 AM_YFLAGS = -d $(YDEBUG)
 AM_LFLAGS = $(LDEBUG)
@@ -88,14 +100,17 @@ parse.o: parse.cc parse.h
 #	$(CXXCOMPILE) $(CXXNOERR) -D'__attribute__(x)=' -c $(srcdir)/parse.cc
 	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/parse.cc
 
-.PHONY: xdrclean
+.PHONY: xdrclean tameclean
 xdrclean:
 	rm -f $(srcdir)/xpub.C $(srcdir)/xpub.h
 	rm -f $(srcdir)/fd_prot.C $(srcdir)/fd_prot.h
 	rm -f $(srcdir)/txa_prot.C $(srcdir)/txa_prot.h
 
+tameclean:
+	rm -f $(srcdir)/pub2.C $(srcdir)/clone.C
+
 .PHONY: sourceclean
-sourceclean: parseclean xdrclean
+sourceclean: parseclean xdrclean tameclean
 
 #
 # include Makefile flags and options for pysfs1 
@@ -112,10 +127,10 @@ env.mk: Makefile
 
 
 BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h fd_prot.C fd_prot.h \
-	txa_prot.h txa_prot.C
+	txa_prot.h txa_prot.C pub2.C clone.C
 
 CLEANFILES = core *.core *~ *.rpo 
-EXTRA_DIST = .cvsignore
+EXTRA_DIST = .cvsignore 
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in  parse.cc parse.h scan.cc

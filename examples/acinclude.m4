@@ -1478,6 +1478,7 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     LIBSFSMISC=${with_sfs}/sfsmisc/libsfsmisc.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
     RPCC=${with_sfs}/rpcc/rpcc
+    TAME=${with_sfs}/tame/tame
 elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
 	-a -f ${with_sfs}/lib/${sfsprfx}/libasync.la; then
     sfsincludedir="${with_sfs}/include/${sfsprfx}"
@@ -1493,9 +1494,11 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
     LIBSFSCRYPT=${sfslibdir}/libsfscrypt.la
     LIBSFSMISC=${sfslibdir}/libsfsmisc.la
     MALLOCK=${sfslibdir}/mallock.o
-    dnl RPCC=${with_sfs}/bin/rpcc
+
     SFS_PATH_PROG(rpcc, ${with_sfs}/lib/${sfsprfx}:${with_sfs}/bin)
     RPCC="$PATH_RPCC"
+    SFS_PATH_PROG(tame, ${with_sfs}/lib/${sfsprfx}:${with_sfs}/bin)
+    TAME="$PATH_TAME"
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi
@@ -1523,6 +1526,7 @@ AC_SUBST(LIBARPC)
 AC_SUBST(LIBSFSCRYPT)
 AC_SUBST(LIBSFSMISC)
 AC_SUBST(RPCC)
+AC_SUBST(TAME)
 AC_SUBST(MALLOCK)
 AC_SUBST(NOPAGING)
 
@@ -1831,6 +1835,7 @@ elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
     if test -z $RPCC; then
 	RPCC=rpcc
     fi
+    RES=
 else
     AC_MSG_ERROR("Can\'t find OKWS libraries")
 fi

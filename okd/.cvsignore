@@ -1,2 +1,5 @@
 Makefile.in
 Makefile
+okld.C
+okldch.C
+okd.C

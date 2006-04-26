@@ -17,12 +17,29 @@ okprot.C : $(srcdir)/okprot.x okprot.h
 	@rm -f $@
 	-$(RPCC) -c $(srcdir)/okprot.x || rm -f $@
 
+SUFFIXES = .C .T .h
 
-EXTRA_DIST = .cvsignore
+.T.C:
+	-$(TAME) -c $< || rm -f $@
+
+ok.o:  ok.C
+ok.lo: ok.C
+
+.PHONY: rpcclean tameclean
+
+tameclean:
+	rm -f $(srcdir)/ok.C
+
+rpcclean:
+	rm -f $(srcdir)/okprot.C $(srcdir)/okprot.h
+
+
+
+EXTRA_DIST = .cvsignore 
 CLEANFILES = core *.core *~ *.rpo
 
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in 
 
-BUILT_SOURCES = okprot.C okprot.h
+BUILT_SOURCES = okprot.C okprot.h ok.C

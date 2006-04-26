@@ -1,3 +1,4 @@
 Makefile.in
 Makefile
 Makefile.am
+static.C

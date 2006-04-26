@@ -36,7 +36,8 @@
 #include "okerr.h"
 #include "svq.h"
 #include "okconst.h"
-#include "axprtfd.h"
+#include "okclone.h"
+#include "tame.h"
 
 #define OK_LQ_SIZE_D    100
 #define OK_LQ_SIZE_LL   5
@@ -162,13 +163,40 @@ private:
   vec<str> _args;
 };
 
+struct svc_options_t {
+  svc_options_t () 
+    : svc_reqs (-1), 
+      svc_time (-1), 
+      wss (-1),
+      pub2_caching (-1),
+      pub2_viserr (-1) {}
+
+  void apply_global_defaults ();
+
+  // service-specific options
+  //
+  // < 0   =>   no value set (default)
+  // = 0   =>   value set, but unlimited
+  // > 0   =>   value set, but limited by provided value
+  int svc_reqs;
+  int svc_time;
+
+  // -1 => nothing specified
+  //  0 => OFF
+  //  1 => ON
+  int wss;
+
+  int pub2_caching;
+  int pub2_viserr;
+};
+
 class okld_t;
 class okld_ch_t : public okld_jailed_exec_t { // OK Launch Daemon Child Handle
 public:
   okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 	     ok_usr_t *u, vec<str> env, okws1_port_t p = 0) ;
   virtual ~okld_ch_t () { if (uid) delete uid ;  }
-  void launch ();
+  void launch (CLOSURE);
   void sig_chld_cb (int status);
 
   int pid;
@@ -180,7 +208,6 @@ public:
   ok_usr_t *uid;           // UID of whoever will be running this thing
   int gid;                 // GID of whever will be running this thing
 
-
   void set_svc_ids ();
   void set_run_dir (const str &d) { rundir = d; }
   void chldcb (int status);
@@ -188,6 +215,8 @@ public:
   void add_args (const vec<str> &a);
 
   okws1_port_t get_port () const { return port; }
+  void set_service_options (const svc_options_t &so)
+  { _svc_options = so; }
 
   // add more arguments as we can parse for more options
   //bool parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc);
@@ -200,24 +229,12 @@ public:
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
 
-  void set_svc_life_reqs (int i) { svc_life_reqs = i; }
-  void set_svc_life_time (int i) { svc_life_time = i; }
-
 protected:
-
-  // service-specific options
-  //
-  // < 0   =>   no value set (default)
-  // = 0   =>   value set, but unlimited
-  // > 0   =>   value set, but limited by provided value
-  int svc_life_reqs;
-  int svc_life_time;
+  svc_options_t _svc_options;
 
 private:
   void resurrect ();
   void relaunch ();
-
-  void launch_cb (int logfd);
 
   int xfd;
   int cltxfd;
@@ -260,7 +277,7 @@ class okld_t : public ok_base_t
 public:
   okld_t () 
     : svc_grp (ok_okd_gname),
-      nxtuid (ok_svc_uid_low), logexc (NULL), 
+      nxtuid (ok_svc_uid_low), logexc (NULL), pubd2exc (NULL),
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), okd_pid (-1),
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
@@ -268,7 +285,8 @@ public:
       okd_dumpdir ("/tmp"), 
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
-      used_primary_port (false) {}
+      used_primary_port (false),
+      pubd2 (NULL) {}
       
 
   ~okld_t () { if (logexc) delete logexc; }
@@ -277,13 +295,17 @@ public:
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
+  bool got_generic_exec (vec<str> &s, str log, bool *errp, ptr<argv_t> *ep);
+  void got_pubd2_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
   
   void okld_exit (int rc);
 
-  void launch (const str &cf);
-  void launch_logd (cbb cb);
-  bool launch_okd (int logfd);
+  void launch (str cf, CLOSURE);
+  void launch_logd (cbi::ptr cb, CLOSURE);
+  void launch_pubd2 (cbi::ptr cb, CLOSURE);
+
+  bool launch_okd (int logfd, int pubd);
 
   void parseconfig (const str &cf);
   void set_signals ();
@@ -293,6 +315,8 @@ public:
   bool init_interpreters ();
   bool in_shutdown () const { return sdflag; }
   str get_root_coredir () const { return root_coredir; }
+
+  clone_only_client_t *get_pubd2 () const { return pubd2; }
 
   logd_parms_t logd_parms;
 
@@ -315,6 +339,7 @@ private:
 
   // 
   vec<alias_t> aliases_tmp;
+  vec<alias_t> regex_aliases_tmp;
   bhash<okws1_port_t> used_ports; // ports specified with services, etc..
 
   bool check_exes ();
@@ -322,6 +347,7 @@ private:
   bool check_service_ports ();
   bool check_ports ();
   void got_alias (vec<str> s, str loc, bool *errp);
+  void got_regex_alias (vec<str> s, str loc, bool *errp);
 
   bool fix_uids ();
   bool config_jaildir ();
@@ -336,13 +362,13 @@ private:
   void launch_logd_cb2 (int logfd);
   void encode_env ();
   void launch2 (int fd);
-  void launchservices ();
+  void launchservices (CLOSURE);
 
   vec<okld_ch_t *> svcs;
   int nxtuid;
   str okd_exec;
   str coredump_path;
-  helper_exec_t *logexc;
+  helper_exec_t *logexc, *pubd2exc;
 
   str okdexecpath;
   str coredumpdir;
@@ -375,6 +401,8 @@ private:
   ihash<const str, okld_interpreter_t, 
 	&okld_interpreter_t::_name,
 	&okld_interpreter_t::_link> interpreters;
+
+  clone_only_client_t *pubd2;
 };
 
 #endif /* _OKD_OKD_H */

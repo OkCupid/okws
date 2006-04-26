@@ -67,8 +67,10 @@ pub_rclient_t::publish (const vec<str> &files, pubrescb c)
     }
   }
 
-  if (!call) 
+  if (!call) {
+    cb = NULL;
     (*c) (New refcounted<pub_res_t> ());
+  }
 }
 
 void
@@ -203,6 +205,7 @@ pub_rclient_t::finish_publish ()
   }
 
   (*cb) (res);
+  cb = NULL;
   running = false;
   waiter_t *w;
   if (waiters.size ()) {

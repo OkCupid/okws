@@ -40,6 +40,8 @@
 #include "ahparse.h"
 #include "pjail.h"
 #include "lbalance.h"
+#include "tame.h"
+#include "pub2.h"
 
 typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH = 1,
@@ -76,14 +78,14 @@ protected:
 
 class ok_base_t : public jailable_t {
 public:
-  ok_base_t (const str &h = NULL, int fd = -1)
+  ok_base_t (const str &h = NULL, int lfd = -1, int pfd = -1)
     : jailable_t (ok_jaildir_top), version (ok_version),
       listenport (ok_dport),
       listenaddr_str ("*"),
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
       reported_name (ok_wsname),
-      logd (NULL), logfd (fd),
+      logd (NULL), logfd (lfd), pub2fd (pfd),
       bind_addr_set (false)
       //jaildir_run (ok_jaildir_run) 
   {}
@@ -114,27 +116,35 @@ protected:
   str fix_uri (const str &in) const;
 
   log_t *logd;
+
   int logfd;
+  int pub2fd;
   //str jaildir_run;  // nested jaildir for okd and services
   bool bind_addr_set; // called after got_bindaddr;
 };
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
-  ok_httpsrv_t (const str &h = NULL, int fd = -1) 
-    : ok_con_t (), ok_base_t (h, fd), svclog (true),
+  ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub2fd = -1) 
+    : ok_con_t (), ok_base_t (h, fd, pub2fd), svclog (true),
       accept_enabled (false), accept_msgs (true),
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}
+
+  typedef callback<void, ptr<http_response_t> >::ptr http_resp_cb_t;
+      
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
-  inline bool add_errdoc (int n, const str &f);
-  void add_errdocs (const xpub_errdoc_set_t &eds);
   virtual void add_pubfile (const str &s, bool conf = false) {}
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		      http_inhdr_t *h = NULL) const;
+	      http_inhdr_t *h = NULL)
+  { error_T (x, n, s, c, h); }
+
   virtual str servinfo () const;
-  virtual ptr<http_response_t> geterr (int n, str s, htpv_t v) const;
+  
+  virtual void geterr (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb)
+  { geterr_T (n, s, v, gz, cb); }
+
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		    const str &s = NULL)
     const { if (svclog && logd) logd->log (x, req, res, s); }
@@ -146,19 +156,26 @@ public:
   // toggle clock modes for SFS
   void init_sfs_clock (const str &f); 
 
-protected:
-  void error2 (ref<ahttpcon> x, int n, str s, cbv::ptr c, http_inhdr_t *h) 
-    const;
-  void error_cb1 (ptr<http_parser_raw_t> p, int n, str s, cbv::ptr c,
-		  int s2) const;
-  void error_cb2 (ptr<ahttpcon> x, ptr<http_response_t> e, cbv::ptr c) 
-    const { if (c) (*c) (); }
+  // can overide this on a service-by-service basis
+  virtual bool init_pub2 (u_int opts = 0);
+  virtual void launch_pub2 (cbb::ptr cb) { launch_pub2_T (cb); }
+  virtual void post_launch_pub2 (cbb::ptr cb) { (*cb) (true); }
 
+  virtual ptr<pub2::remote_publisher_t> pub2 () { return _pub2; }
+
+private:
+  void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
+  void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
+		http_inhdr_t *h = NULL, CLOSURE);
+  void launch_pub2_T (cbb::ptr cb, CLOSURE);
+
+protected:
 
   virtual void enable_accept_guts () = 0;
   virtual void disable_accept_guts () = 0;
 
   ihash<int, errdoc_t, &errdoc_t::status, &errdoc_t::lnk> errdocs;
+  xpub_errdoc_set_t errdocs_x;
   mutable str si;
   str logfmt;
   bool svclog;
@@ -168,6 +185,8 @@ protected:
   // stuff for dealing with okws's clock mode
   sfs_clock_t clock_mode;
   str mmc_file;
+
+  ptr<pub2::remote_publisher_t> _pub2;
 };
 
 #define OKCLNT_BUFLEN 0x10400
@@ -194,7 +213,7 @@ public:
   virtual void serve ();
   virtual void error (int n, const str &s = NULL);
   virtual void process () = 0;
-  virtual void parse ();
+  virtual void parse () { parse_T (); }
   virtual void output (compressible_t &b);
   virtual void output (compressible_t *b);
   virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
@@ -218,10 +237,13 @@ public:
   void disable_gzip () { rsp_gzip = false; }
 
   void set_hdr_field (const str &k, const str &v);
+  ptr<pub2::remote_publisher_t> pub2 () ;
 
   list_entry<okclnt_t> lnk;
+private:
+  void parse_T (CLOSURE);
+
 protected:
-  void http_parse_cb (int status);
   virtual void delcb () { delete this; }
   void set_attributes (http_resp_attributes_t *hra);
   bool do_gzip () const;
@@ -266,12 +288,16 @@ public:
     accept_msgs = ok_svc_accept_msgs;
   }
 
-  virtual void launch ();
+  virtual void launch () { launch_T (); }
   virtual okclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
   virtual void init_publist () {}
   virtual u_int get_andmask () const { return 0xffffffff; }
   virtual u_int get_ormask () const { return 0; }
   virtual void custom_init (cbv cb) { (*cb) (); }
+  virtual void custom_init0 (cbv cb) { (*cb) (); }
+
+  virtual void post_launch_pub2 (cbb::ptr cb)
+  { post_launch_pub2_T (cb); }
 
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
@@ -304,6 +330,9 @@ public:
   ptr<aclnt> get_okd_aclnt () { return clnt; }
   pub_rclient_t *get_rpcli () { return rpcli; }
 
+private:
+  void launch_T (CLOSURE);
+
 protected:
   void closed_fd ();
   void enable_accept_guts ();
@@ -316,16 +345,9 @@ protected:
 
   void pubbed (cbb cb, ptr<pub_res_t> res);
 
-  void launch_log_cb (bool rc);
-  void launch2 (bool rc);
-  void launch_pub_cb0 (ptr<pub_res_t> r);
-  void launch_pub_cb1 (ptr<xpub_errdoc_set_t> xd, clnt_stat err);
-  void launch_pub_cb2 (bool rc);
-  void launch3 ();
-  void launch4 ();
-  void launch5 (clnt_stat err);
-  void launch_dbs (cbb b);
-  void launch_dbcb (cbb b, u_int i, bool r);
+  void launch_pub1 (cbb::ptr cb, CLOSURE);  // legacy
+  void launch_dbs (cbb::ptr cb, CLOSURE);
+
 
   void newclnt (ptr<ahttpcon> lx);
   void update (svccb *sbp);
@@ -350,6 +372,9 @@ protected:
   vec<str> authtoks;
   int n_fd_out;
   u_int n_reqs; // total number of requests served
+
+private:
+  void post_launch_pub2_T (cbb::ptr cb, CLOSURE);
 };
 
 class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
@@ -385,8 +410,6 @@ inline void do_syscall_stats ()
     global_syscall_stats->clear ();
   }
 }
-
-void set_debug_flags ();
 
 //
 // XXX - hack - this is used by both okch_t and okld_ch_t - just happens

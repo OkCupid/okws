@@ -41,10 +41,14 @@ u_int ok_gzip_mem_level = 9;                 // zlib max
 //
 // user/group constants
 //
-const char *ok_uname = "oku";         // runas user for okd, pubd, oklogd
-const char *ok_gname = "oku";         // runas grp  for okd, pubd, oklogd
-const char *ok_okd_uname = "www";     // unprivileged service user
-const char *ok_okd_gname = "www";     // unprivileged service group
+const char *ok_okd_uname = "oku";     // unprivileged service user
+const char *ok_okd_gname = "oku";     // unprivileged service group
+
+const char *ok_pubd_uname = "www";    // default runas user for pubd
+const char *ok_pubd_gname = "www";    // default runas group for pubd
+
+const char *ok_logd_uname = "oklog";  // logging role, user
+const char *ok_logd_gname = "oklog";  // logging role, group
 
 //
 // pub constants
@@ -65,6 +69,11 @@ const char *ok_etc_dir1 = "/usr/local/etc/okws";
 const char *ok_etc_dir2 = "/etc/okws";
 const char *ok_okws_config = "okws_config";
 const char *ok_okd_config = "okd_config";
+
+//
+// FDFD default command line arg
+//
+const char *ok_fdfd_command_line_flag = "-s";
 
 //
 // default packet size for all axprts
@@ -190,6 +199,32 @@ int okwc_def_contlen = 0x20000;      // 128K
 //
 const char *ok_root = "root";
 const char *ok_wheel = "wheel";
+
+//
+// pub2 constants
+//
+int ok_pub2_wss = 0;
+int ok_pub2_refresh_max = 60;    // maximum time to wait between refreshes
+int ok_pub2_refresh_min = 5;     // minimum time to wait
+int ok_pub2_refresh_incr = 2;    // value to increment by if inactivity
+int ok_pub2_caching = 1;         // turn caching on by default
+int ok_pub2_viserr = 1;          // pub errors visible by default
+
+// check treestat sentinel every two seconds
+int ok_pub2_treestat_interval = 2;   
+
+// timeout entirs in the negative filename lookup cache
+int ok_pub2_neg_cache_timeout = 360;
+int ok_pub2_svc_neg_cache_timeout = 5;
+
+// clean the cache out every 10 seconds
+int ok_pub2_clean_cache_interval = 10;
+
+// how long a getfile object lives in the cache (1 hour)
+int ok_pub2_getfile_object_lifetime = 3600;
+
+const char *ok_pub2_treestat_sentinel = ".treestat_sentinel";
+const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 
 //
 // Turn off SUIO recyling by default.  This is a trick to save time in

@@ -31,7 +31,7 @@
 #include "ahttp.h"
 #include "resp.h"
 #include "okerr.h"
-#include "axprtfd.h"
+#include "okclone.h"
 
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
@@ -147,8 +147,10 @@ private:
 
 class logd_parms_t {
 public:
-  logd_parms_t () : svclog (true) {}
-  logd_parms_t (const str &p) { decode (p); }
+  logd_parms_t () 
+    : user (ok_logd_uname), group (ok_logd_gname), svclog (true) {}
+  logd_parms_t (const str &p)
+    : user (ok_logd_uname), group (ok_logd_gname) { decode (p); }
 
   void decode (const str &p);
   str encode () const;
@@ -197,17 +199,16 @@ private:
   int logset;
 };
 
-class log_primary_t : public rpc_log_t {
+class log_primary_t : public rpc_log_t, public clone_client_t
+{
 public:
-  log_primary_t (helper_exec_t *hh) : rpc_log_t (hh), he (hh) {}
-  void clone (cbi cb);
+  log_primary_t (helper_exec_t *hh) 
+    : rpc_log_t (hh),
+      clone_client_t (hh, OKLOG_CLONE), 
+      he (hh) {}
+  void clone (cbi cb) { clone_client_t::clone (cb); }
 private:
-  void gotfd (int fdfd, ptr<u_int32_t> id);
   void connect_cb3 ();
-  void clone_cb (ptr<bool> b, cbi cb, clnt_stat err);
-  vec<cbi> cbq;
-  vec<int> fds;
-  ptr<fdsource_t<u_int32_t> > fdsrc;
   helper_exec_t *he;
 };
 

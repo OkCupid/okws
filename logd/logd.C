@@ -46,8 +46,8 @@ logd_t::newclnt (bool p, ptr<axprt_stream> x)
 }
 
 logd_client_t::logd_client_t (ptr<axprt_stream> x, logd_t *d, bool p)
-  : srv (asrv::alloc (x, oklog_program_1, 
-		      wrap (this, &logd_client_t::dispatch))),
+  : srv (asrv_delayed_eof::alloc (x, oklog_program_1, 
+				  wrap (this, &logd_client_t::dispatch))),
     logd (d), primary (p) {}
 
 logd_client_t::~logd_client_t () { logd->remove (this); }
@@ -70,7 +70,7 @@ logd_client_t::dispatch (svccb *sbp)
 void
 logd_t::shutdown ()
 {
-  close_fdfd ();
+  clone_server_t::close ();
   delete this;
   exit (0);
 }
@@ -250,69 +250,6 @@ logd_t::parse_fmt ()
 }
 
 void
-logd_t::fdfd_eofcb ()
-{
-  warn << "EOF on FD channel; sink is stopped up\n";
-  fdsnk = NULL;
-}
-
-bool
-logd_t::fdfd_setup ()
-{
-  if (fdfd < 0) {
-    warn << "no socket setup for file descriptor passing!\n";
-    return false;
-  }
-  fdsnk = fdsink_t::alloc (axprt_unix::alloc (fdfd),
-			   wrap (this, &logd_t::fdfd_eofcb));
-  return true;
-}
-
-void
-logd_t::clonefd (svccb *b)
-{
-  if (!fdsnk) {
-    warn << "FD requested after sink was stopped up!\n";
-    b->replyref (false);
-    return;
-  }
-
-  bool ret = true;
-  int fds[2];
-  int rc = socketpair (AF_UNIX, SOCK_STREAM, 0, fds);
-  if (rc < 0) {
-    warn ("socketpair: %m\n");
-    ret = false;
-  } else {
-    newclnt (false, axprt_unix::alloc (fds[0], ok_axprt_ps));
-    fdsnk->send (fds[1], fdseqno++);
-  }
-  b->replyref (ret);
-}
-
-void
-logd_t::writefd ()
-{
-  ssize_t n = 0;
-  while (fdsendq.size ()) {
-    n = writevfd (fdfd, NULL, 0, fdsendq.front ().fd);
-    if (n < 0)
-      break;
-    fdsendq.pop_front ();
-  }
- 
-  if (n >= 0)
-    fdcb (fdfd, selwrite, NULL);
-}
-
-void
-logd_t::close_fdfd ()
-{
-  if (fdfd >= 0) 
-    close (fdfd);
-}
-
-void
 logd_t::launch ()
 {
   if (!setup ()) 
@@ -324,7 +261,7 @@ logd_t::setup ()
 {
   parse_fmt ();
   if (!(perms_setup () && logfile_setup () && slave_setup () 
-	&& fdfd_setup ())) 
+	&& clone_server_t::setup ())) 
     return false;
   timer_setup ();
   running = true;

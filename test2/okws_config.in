@@ -1,0 +1,21 @@
+
+BindAddr 	0.0.0.0 8081
+JailDir 	@@TOP_BUILD@@
+TopDir 		@@TOP_BUILD@@
+ServiceBin	test2
+
+PubdExecPath	pub/pubd -w -f test2/pub_config
+OklogdExecPath	logd/oklogd
+OkdExecPath	okd/okd
+Pubd2ExecPath	pub/pubd -2 -f test2/pub_config
+
+LogDir		@@TOP_BUILD@@/test2
+AccessLog	/access_log
+ErrorLog	/error_log
+AccessLogFmt	ivt1sbU
+
+Service		static	/static
+Service		configtest /configtest
+RegexAlias	/static	^(:\d+)?/static/.*$
+
+ErrorDoc	404	/err/404.html

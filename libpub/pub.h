@@ -34,6 +34,7 @@
 #include "puberr.h"
 #include "holdtab.h"
 #include "zstr.h"
+#include "tame.h"
 
 extern int yywss;          /* on if in White-space strip mode, off otherwise */
 
@@ -47,7 +48,8 @@ typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1,
 	       PFILE_PSTR = 4, PFILE_CCODE = 5, 
 	       PFILE_GFRAME = 6, PFILE_FILE = 7, 
 	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
-	       PFILE_FUNC = 10, PFILE_INCLIST = 11 } pfile_el_type_t;
+	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
+	       PFILE_INCLUDE2 = 12 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_GUY = 1,
@@ -56,10 +58,13 @@ typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_CODE = 4,
 	       PFILE_TYPE_EC = 5,
 	       PFILE_TYPE_WEC = 6,
-               PFILE_TYPE_CONF = 7 } pfile_type_t;
+               PFILE_TYPE_CONF = 7,
+	       PFILE_TYPE_CONF2 = 8} pfile_type_t;
 
 typedef enum { PUBSTAT_OK = 0, PUBSTAT_FNF = 1, 
 	       PUBSTAT_PARSE_ERROR = 3 } pubstat_t;
+
+xpub_status_typ_t pub_stat2status (pubstat_t in);
 
 typedef enum { EXPLORE_PARSE = 0, EXPLORE_FNCALL = 1,
 	       EXPLORE_CONF = 2 } pub_exploremode_t;
@@ -80,6 +85,13 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_IINFO   1 << 2        /* include info output w/ text */
 #define P_VERBOSE 1 << 3        /* debug messages, etc */
 #define P_DAEMON  1 << 4        /* running as background daemon */
+#define P_VISERR  1 << 5        /* visible HTML errors */
+#define P_WSS     1 << 6        /* white space stripping */
+#define P_CLEAR   1 << 7        /* used to clear all other options */
+
+#define P_EXPLORE_OFF (1 << 8)   // don't explore files after parse
+#define P_INCLUDE_V2  (1 << 9)   // support V2 include semantics
+#define P_EXPORTER    (1 << 10)  // export files via RPC
 
 /* XXX - defaults should be put someplace better */
 #define P_INFINITY   65334
@@ -91,8 +103,8 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PLINC      PFILE->inc_lineno ()
 #define PLINENO    (PFILE->get_lineno ())
 #define PSECTION   PFILE->section
-#define PFUNC      parser->func
-#define ARGLIST    parser->arglist
+#define PFUNC      parser->top_func ()
+#define ARGLIST    PFUNC->arglist
 #define PLASTHTAG  parser->lasttag
 #define PHTAG      parser->tag
 #define PAARR      parser->aarr
@@ -100,6 +112,9 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PSTR1      parser->str1
 #define PPSTR      parser->pstr
 #define PARR       parser->parr
+
+#define PUSH_PFUNC(x) do { parser->push_func (x); } while (0)
+#define POP_PFUNC()   parser->pop_func()
 
 #define PUB_NULL_CASE "NULL"
 
@@ -210,7 +225,14 @@ private:
   const ref<pval_t> val;
 };
 
-typedef ihash<const str, nvpair_t, &nvpair_t::nm, &nvpair_t::hlink> nvtab_t;
+class nvtab_t : 
+  public ihash<const str, nvpair_t, &nvpair_t::nm, &nvpair_t::hlink>
+{
+public:
+  void copy (const nvtab_t &dest);
+  void overwrite_with (const nvtab_t &dest);
+};
+
 
 class pval_w_t {
 public:
@@ -243,10 +265,19 @@ private:
   const int ival;
 };
 
-class aarr_t : public virtual dumpable_t {
+// a generic interface for classes that support the basic PUB output
+// method
+class outputable_t {
+public:
+  virtual ~outputable_t () {}
+  virtual void output (output_t *o, penv_t *e) const = 0;
+};
+
+class aarr_t : public virtual dumpable_t, public virtual outputable_t {
 public:
   aarr_t () {}
   aarr_t (const xpub_aarr_t &x);
+  aarr_t (const aarr_t &in) { aar.copy (in.aar); }
   virtual ~aarr_t () { aar.deleteall (); }
   void add (nvpair_t *p);
   aarr_t &add (const str &n, const str &v);
@@ -261,6 +292,12 @@ public:
     add (New nvpair_t (n, New refcounted<pstr_t> (b)));
     return (*this);
   }
+
+  aarr_t &operator= (const aarr_t &in)
+  {
+    aar.copy (in.aar);
+    return (*this);
+  }
         
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
@@ -269,6 +306,8 @@ public:
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "aarr_t"; }
   bool to_xdr (xpub_aarr_t *x) const;
+  const nvtab_t *nvtab () const { return &aar; }
+  void clear () { aar.clear (); }
 
 protected:
   nvtab_t aar;
@@ -314,8 +353,8 @@ public:
   pub_evalmode_t init_eval (pub_evalmode_t m = EVAL_FULL);
   void eval_pop (const str &n);
   void set_evalmode (pub_evalmode_t m) { evm = m; }
-  inline str loc (int l = -1) const;
-  inline pfnm_t filename () const;
+  str loc (int l = -1) const;
+  pfnm_t filename () const;
   bool output_info () const { return (opts & P_IINFO); }
 
   void push_file (bpfcp_t f);
@@ -363,7 +402,7 @@ private:
 class pfile_set_func_t;
 class output_t {
 public:
-  output_t (pfile_type_t m) : mode (m) {}
+  output_t (pfile_type_t m, u_int o = 0) : mode (m), _opts (o) {}
   virtual ~output_t () {}
 
   virtual void output (penv_t *e, const zstr &s, bool quoted = true) {}
@@ -382,14 +421,17 @@ public:
   virtual str get_class () const { return NULL; }
   virtual bool descend () const { return true; }
   virtual bool stack_restore () const { return true; }
+  virtual u_int opts () const { return _opts; }
+  virtual bool wss () const { return _opts & P_WSS; }
 
   pfile_type_t mode;
+  u_int _opts;
 };
 
 class output_std_t : public output_t {
 public:
-  output_std_t (zbuf *o, pfile_type_t m = PFILE_TYPE_H) 
-    : output_t (m), out (o), osink_open (false) {}
+  output_std_t (zbuf *o, pfile_type_t m = PFILE_TYPE_H, u_int opt = 0) 
+    : output_t (m, opt), out (o), osink_open (false) {}
   output_std_t (zbuf *o, const pfile_t *f = NULL);
   virtual ~output_std_t () {}
 
@@ -425,7 +467,58 @@ private:
   bool dflag;
 };
 
-struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
+
+//-----------------------------------------------------------------------
+// Pub2 Additions - most code for pub2 is in pub2.h, but the minimal
+// amount of glue code is in pub.h
+
+typedef callback<void, xpub_status_t>::ptr xpub_status_cb_t;
+
+// Pub2 Inteface for legacy objects
+class pub2_iface_t {
+public:
+  virtual void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
+			xpub_status_cb_t cb) = 0;
+};
+
+// objects in the object tree need to inherit from this object to
+// make the publishable in pub2.  Eventually we want to change these
+// virtual methods to be abstract.
+class pub2able_t : public virtual outputable_t {
+public:
+  
+  // Try the nonblocking mode of publishing first, to save the
+  // overhead of making and using a callback for simple document
+  // elements.
+  virtual bool publish_nonblock (pub2_iface_t *iface, output_t *o, 
+				 penv_t *env) const 
+  { output (o, env); return true; }
+  
+  // If that fails, the call the blocking version of publish.
+  // Note that to simplify, we're putting a CLOSURE into the
+  // virtual method signature.
+  virtual void publish (pub2_iface_t *iface, output_t *o, penv_t *env,
+			xpub_status_cb_t cb, CLOSURE) const
+  { (*cb) (XPUB_STATUS_NOT_IMPLEMENTED); }
+};
+
+// For those classes that need to access the network, simply
+// dump this macro in
+#define PUBLISH_BLOCKS()                                      \
+   bool publish_nonblock (pub2_iface_t *iface, output_t *o,   \
+			  penv_t *env) const                  \
+   { return false; }
+
+
+
+// end pub2 additional classes
+//-----------------------------------------------------------------------
+
+
+struct bound_pfile_t : public virtual refcount, 
+		       public virtual dumpable_t,
+		       public virtual pub2able_t
+{
   bound_pfile_t (const pbinding_t *b, pfile_t *f = NULL, 
 		 const pfnm_t &r = NULL, bool del = false) 
     : bnd (b), file (f), rfn (r), delfile (del) {}
@@ -435,7 +528,7 @@ struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
   static bpfmp_t alloc (const pbinding_t *b, pfile_t *f = NULL, 
 			const pfnm_t &r = NULL, bool del = false)
   { return New refcounted<bound_pfile_t> (b, f, r, del); }
-
+  
   static bpfmp_t alloc (pfile_t *f = NULL)
   { return New refcounted<bound_pfile_t> (f); }
 
@@ -444,17 +537,24 @@ struct bound_pfile_t : public virtual refcount, public virtual dumpable_t  {
   bool open ();
   void close ();
 
+  // for pub2
+  void publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
+		xpub_status_cb_t cb, CLOSURE) const;
+  PUBLISH_BLOCKS ();
+
   str loc (int i = -1) const;
   phashp_t hash () const { return bnd->hash (); }
   pfnm_t filename () const { return bnd->filename (); }
   operator bool() const { return (bnd && file); }
-  void output (output_t *o, penv_t *e, bpfcp_t kludge) const;
+  void output (output_t *o, penv_t *e) const;
   void explore (pub_exploremode_t m) const; 
   const pbinding_t *const bnd;
   pfile_t *const file;
   const pfnm_t rfn; // used only when publishing 
   bool delfile;
+
 };
+
 
 class pbuf_t;
 class evalable_t {
@@ -464,6 +564,17 @@ public:
 	    bool allownull = false) const;
   str eval () const { return eval (NULL, EVAL_SIMPLE); }
   ptr<pbuf_t> eval_to_pbuf (penv_t *e, pub_evalmode_t m) const;
+
+  /**
+   * eval_obj -- used internally in the eval mechanism.  Takes
+   * as input this object, and evaluates it to the given pbuf_t.
+   * The transformation is that all variables of the form ${VAR}
+   * are resolved into an element suitable for output. The output
+   * is not a regular string but a pbuf_t, since it will keep
+   * gzip'ed information (AKA zbuf's) intact. However, the output
+   * pbuf_t is guaranteed not to have any unresolved ${VAR}s
+   * after the eval completes.
+   */
   virtual void eval_obj (pbuf_t *s, penv_t *e, u_int d) const = 0;
   virtual str eval_simple () const { return NULL; }
 };
@@ -480,6 +591,20 @@ struct publist_t
   {
     for (T *e = clist_t<T,field>::first; e; e = next (e)) e->dump (d);
   }
+
+  // blocking publish interface
+  void publish (pub2_iface_t *iface, output_t *o, penv_t *env,
+		xpub_status_cb_t cb, CLOSURE) const;
+
+  // if we're sure all elements in the list are nonblock elements, then
+  // we can use this, but let's be careful here, so we make aggressive
+  // assertions.
+  void publish_nonblock (pub2_iface_t *iface, output_t *o, penv_t *env) const
+  {
+    for (T *e = clist_t<T,field>::first; e; e = next (e)) 
+      assert (e->publish_nonblock (iface, o, env));
+  }
+
 };
 
 typedef qhash<str, u_int> qhsi_t;
@@ -492,7 +617,7 @@ public:
   void push_frame (penv_t *p, aarr_t *f, const gvars_t *g = NULL) const;
   void pop_frame (output_t *o, penv_t *p) const 
   { if (o->stack_restore ()) p->resize (sss, sgvss); }
-  str get_obj_name () const { return "pfile_frame_t"; }
+  virtual str get_obj_name () const { return "pfile_frame_t"; }
 private:
   mutable int sss;    /* start stack size */
   mutable int sgvss;  /* start gvar stack size */
@@ -501,6 +626,7 @@ private:
 class parr_t;
 class parr_mixed_t;
 class parr_ival_t;
+class nested_env_t;
 
 class arg_t : public virtual refcount, public virtual dumpable_t,
 	      public virtual evalable_t
@@ -509,11 +635,12 @@ public:
   virtual ~arg_t () {}
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
   virtual bool is_null () const { return false; }
-  virtual ptr<pval_t> to_pval () const { return NULL; }
+  virtual ptr<pval_t> to_pval () { return NULL; }
   virtual bool to_int64 (int64_t *i) const { return false; }
   virtual const parr_mixed_t *to_mixed_arr () const { return NULL; }
   virtual const parr_ival_t *to_int_arr () const { return NULL; }
   virtual const parr_t *to_arr () const { return NULL; }
+  virtual ptr<nested_env_t> to_nested_env () { return NULL; }
 };
 
 class pval_t : public arg_t {
@@ -522,9 +649,12 @@ public:
   static ptr<pval_t> alloc (const xpub_val_t &x);
   ptr<pval_t> to_pval () { return mkref (this); }
   virtual bool to_xdr (xpub_val_t *x) const { return false; }
+  virtual ptr<pval_t> flatten(penv_t *e) ;
+  virtual ptr<pstr_t> to_pstr () { return NULL; }
 };
 
-class pfile_el_t : public virtual concatable_t, public virtual dumpable_t {
+class pfile_el_t : public virtual concatable_t, public virtual dumpable_t,
+		   public virtual pub2able_t {
 public:
   virtual void output (output_t *o, penv_t *e) const = 0;
   virtual pfile_el_type_t get_type () const = 0;
@@ -542,7 +672,7 @@ typedef publist_t<pfile_el_t, &pfile_el_t::lnk> pfile_el_lst_t;
 
 class pstr_el_t 
   : public virtual concatable_t, public virtual dumpable_t,
-    public virtual evalable_t {
+    public virtual evalable_t, public virtual pub2able_t {
 public:
   static pstr_el_t * alloc (const xpub_pstr_el_t &x);
   virtual void output (output_t *o, penv_t *e) const = 0;
@@ -554,7 +684,7 @@ public:
 class pvar_t;
 class gcode_t;
 class pstr_var_t;
-class pstr_t : public pval_t {
+class pstr_t : public pval_t, public pub2able_t {
 public:
   pstr_t (ptr<pvar_t> v);
   pstr_t (const str &s);
@@ -573,6 +703,9 @@ public:
   pstr_el_t *shift ();
   bool to_xdr (xpub_pstr_t *x) const;
   bool to_xdr (xpub_val_t *x) const;
+  ptr<pstr_t> to_pstr () { return mkref (this); }
+  bool is_empty () const { return n == 0; }
+
 protected:
   int n; // number of elements in the list (since it's a list)
   publist_t<pstr_el_t, &pstr_el_t::lnk> els;
@@ -597,6 +730,7 @@ public:
   pfile_sec_t (int l, bool ls = true) 
     : els (ls ? New pfile_el_lst_t () : NULL), lineno (l),
       btag_flag (false), etag_flag (false) {}
+  pfile_sec_t (const xpub_section_t &x);
   ~pfile_sec_t () { if (els) delete els; }
   pfile_sec_t *add (pfile_el_t *el, bool combine = true);
   pfile_sec_t *add (pfile_sec_t *s);
@@ -631,6 +765,14 @@ public:
   inline void etag_reset () { etag_flag = true; }
   inline void apply_space ();
 
+  // for pub2
+  void publish (pub2_iface_t *, output_t *, penv_t *, xpub_status_cb_t ,
+		CLOSURE) const;
+
+  // if no elements in this section, can ignore it
+  bool publish_nonblock  (pub2_iface_t *, output_t *, penv_t *) const
+  { return (!els); }
+
   pfile_el_lst_t *els;
 protected:
   int lineno;
@@ -652,7 +794,12 @@ public:
     const;
   virtual pfile_el_type_t get_type () const { return PFILE_FUNC; }
 
+  // for pub2
+  void publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
+		aarr_t *e, pfnm_t fn, xpub_status_cb_t cb, CLOSURE) const;
+
   int get_lineno () const { return lineno; }
+  ptr<arglist_t> arglist;
 protected:
   int lineno;
 };
@@ -678,22 +825,56 @@ protected:
 
 class pfile_include_t : public pfile_func_t {
 public:
-  pfile_include_t (int l) : pfile_func_t (l), err (false) {}
+  pfile_include_t (int l, ptr<aarr_arg_t> e = NULL) : 
+    pfile_func_t (l), err (false), env (e) {}
   pfile_include_t (const xpub_include_t &x);
   virtual ~pfile_include_t () {}
   virtual void output (output_t *o, penv_t *e) const;
   virtual bool add (ptr<arglist_t> l);
   virtual bool validate ();
-  void explore (pub_exploremode_t mode) const;
-  pfile_el_type_t get_type () const { return PFILE_INCLUDE; }
+  virtual void explore (pub_exploremode_t mode) const;
+  virtual pfile_el_type_t get_type () const { return PFILE_INCLUDE; }
 
   virtual void dump2 (dumper_t *d) const;
   virtual str get_obj_name () const { return "pfile_include_t"; }
-  bool to_xdr (xpub_obj_t *x) const;
+  virtual bool to_xdr (xpub_obj_t *x) const;
+  void to_xdr_base (xpub_obj_t *x) const;
+  bool add_base (ptr<arglist_t> l);
+
+  // For pub2
+  virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
+			xpub_status_cb_t , CLOSURE) const;
+  virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
 protected:
   bool err;
   pfnm_t fn;
   ptr<aarr_arg_t> env;
+};
+
+class pfile_include2_t : public pfile_include_t {
+public:
+  pfile_include2_t (int l) : pfile_include_t (l) {}
+  pfile_include2_t (const xpub_include_t &x);
+  virtual ~pfile_include2_t () {}
+  virtual void output (output_t *o, penv_t *e) const;
+  virtual bool add (ptr<arglist_t> l);
+  virtual bool validate ();
+  virtual void explore (pub_exploremode_t mode) const {}
+  pfile_el_type_t get_type () const { return PFILE_INCLUDE2; }
+  virtual str get_obj_name () const { return "pfile_include2_t"; }
+  virtual bool to_xdr (xpub_obj_t *x) const;
+  void dump2 (dumper_t *d) const;
+
+  // For pub2
+  virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
+			xpub_status_cb_t , CLOSURE) const;
+  virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+
+protected:
+  // evaluate filename
+  str eval_fn (penv_t *env) const;
+
+  ptr<pstr_t> fn_v2;
 };
 
 class pfile_g_init_pdl_t : public pfile_func_t {
@@ -833,7 +1014,8 @@ private:
   ref<pstr_t> pstr;
 };
 
-class pfile_t : public virtual dumpable_t {
+class pfile_t : public virtual dumpable_t, 
+		public virtual pub2able_t {
 public:
   pfile_t (const phashp_t &h, pfile_type_t t);
   pfile_t (const xpub_file_t &x);
@@ -866,7 +1048,13 @@ public:
 
   pfile_sec_lst_t secs;
   pubstat_t err;
+  str err_msg;
   const phashp_t hsh;            // all other files don't
+
+  // for pub2
+  void publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
+		xpub_status_cb_t cb, CLOSURE) const;
+  PUBLISH_BLOCKS();
 private:
   int lineno;
   yy_buffer_state *yybs;
@@ -882,39 +1070,13 @@ public:
 typedef ihash<const phashp_t, pfile_t, &pfile_t::hsh, 
 	      &pfile_t::hlink> pfile_map_t;
 
-class pfile_ec_gs_t : public pfile_sec_t {
+class pfile_gs_t : public pfile_sec_t {
 public:
-  pfile_ec_gs_t (int l) : pfile_sec_t (l) {}
+  pfile_gs_t (int l) : pfile_sec_t (l) {}
   virtual void output (output_t *o, penv_t *e) const;
-  virtual str get_obj_name () const { return "pfile_ec_gs_t"; }
-};
-
-class pfile_gs_t : public pfile_ec_gs_t {
-public:
-  pfile_gs_t (int lineno) : pfile_ec_gs_t (lineno) {}
-  void output (output_t *o, penv_t *e) const;
-  str get_obj_name () const { return "pfile_gs_t"; }
+  virtual str get_obj_name () const { return "pfile_gs_t"; }
 private:
   pfile_frame_t frm;
-};
-
-class pfile_ec_header_t : public pfile_sec_t {
-public:
-  pfile_ec_header_t (int l, const str &c, const str &b)
-    : pfile_sec_t (l), classname (c), bufmem (b) {}
-  void output (output_t *o, penv_t *e) const;
-  str get_obj_name () const { return "pfile_ec_header_t"; }
-  void dump2 (dumper_t *d) const;
-private:
-  const str classname;
-  const str bufmem;
-};
-
-class pfile_ec_main_t : public pfile_sec_t {
-public:
-  pfile_ec_main_t (int l) : pfile_sec_t (l) {}
-  void output (output_t *o, penv_t *e) const;
-  str get_obj_name () const { return "pfile_ec_main_t"; }
 };
 
 class pvar_t 
@@ -964,8 +1126,9 @@ private:
 
 class pswitch_env_t : public virtual dumpable_t {
 public:
-  pswitch_env_t (const str &k, const pfnm_t &n, ptr<aarr_arg_t> a)
-    : key (k), fn (n), aarr (a) {}
+  pswitch_env_t (const str &k, const pfnm_t &n, ptr<aarr_arg_t> a,
+		 ptr<nested_env_t> ne)
+    : key (k), fn (n), aarr (a), _nested_env (ne) {}
   pswitch_env_t (const xpub_switch_env_t &x);
   virtual ~pswitch_env_t () {}
   aarr_t *env () const;
@@ -974,12 +1137,14 @@ public:
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "pswitch_env_t"; }
   bool to_xdr (xpub_switch_env_t *e) const;
+  ptr<nested_env_t> nested_env () { return _nested_env; }
 
   const str key;
   ihash_entry<pswitch_env_t> hlink;
   const pfnm_t fn;
 private:
   const ptr<aarr_arg_t> aarr;
+  ptr<nested_env_t> _nested_env;
 };
 
 template<class T> struct keyfn<T, phashp_t> {
@@ -994,10 +1159,15 @@ typedef ihash<const str, pswitch_env_t, &pswitch_env_t::key,
 class pfile_switch_t : public pfile_func_t {
 public:
   pfile_switch_t (int l) : pfile_func_t (l), err (false), def (NULL), 
-			   key (NULL), nulldef (false), nullcase (NULL) {}
+			   key (NULL), nulldef (false), nullcase (NULL),
+			   _cached_eval_res (NULL), 
+			   _eval_cache_flag (false) {}
   pfile_switch_t (const xpub_switch_t &x);
   ~pfile_switch_t () { if (def) delete def; cases.deleteall (); }
   void output (output_t *o, penv_t *e) const;
+
+  pswitch_env_t *eval_for_output (output_t *o, penv_t *e) const;
+
   bool add (ptr<arglist_t> a);
   bool validate ();
   void explore (pub_exploremode_t mode) const;
@@ -1006,6 +1176,11 @@ public:
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "pfile_switch_t"; }
     
+  // For pub2
+  void publish (pub2_iface_t *, output_t *, penv_t *, xpub_status_cb_t ,
+		CLOSURE) const;
+  bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+
 private:
   bool add_case(ptr<arglist_t> l);
   vec<pfnm_t> files;
@@ -1015,6 +1190,8 @@ private:
   ptr<pvar_t> key;
   bool nulldef;
   pswitch_env_t *nullcase;
+  mutable pswitch_env_t *_cached_eval_res;
+  mutable bool _eval_cache_flag;
 };
 
 class aarr_arg_t : public aarr_t, public arg_t {
@@ -1024,6 +1201,31 @@ public:
   ptr<aarr_arg_t> to_aarr () { return mkref (this); }
   str get_obj_name () const { return "aarr_arg_t"; }
   void eval_obj (pbuf_t *, penv_t *, u_int) const {}
+};
+
+class nested_env_t : public arg_t, public pub2able_t
+{
+public:
+  nested_env_t (pfile_sec_t *s) : _sec (s) {}
+  ~nested_env_t () { delete _sec; }
+  str get_obj_name () const { return "nested_env_t"; }
+  void eval_obj (pbuf_t *, penv_t *, u_int) const {}
+  void dump2 (dumper_t *d) const {}
+  ptr<nested_env_t> to_nested_env () { return mkref (this); }
+  const pfile_sec_t *sec () const { return _sec; }
+  void output (output_t *o, penv_t *e) const;
+  static ptr<nested_env_t> alloc (const xpub_section_t &s);
+
+  // For pub2
+  void publish (pub2_iface_t *i, output_t *o, penv_t *g, xpub_status_cb_t cb,
+		CLOSURE) const
+  { _sec->publish (i, o, g, cb); }
+
+  bool publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g) const
+  { return _sec->publish_nonblock (i, o, g); }
+private:
+  pfile_sec_t *_sec;
+  pfile_frame_t _frm;
 };
 
 class pfile_set_func_t : public pfile_func_t {
@@ -1042,6 +1244,7 @@ public:
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "pfile_set_func_t"; }
   bool to_xdr (xpub_obj_t *x) const;
+  ptr<aarr_arg_t> get_aarr () const { return aarr; }
 private:
   bool err;
   ptr<aarr_arg_t> aarr;
@@ -1081,7 +1284,16 @@ public:
   str to_str_2 (pub_evalmode_t m) const;
 };
 
-class pbuf_t {
+/**
+ * A class that is use as an intermediary representation during output;
+ * a buf is roughty a string buffer, but holds onto zbuf compression
+ * information.  pval_t's are evaluated into pbuf_t's, stripping out
+ * all ${VAR}-type instances and replacing them with their 
+ * resolved values.  It's also a pval_t, since we're allowing them
+ * to be stored as pval_t's in aarr_t's, after the aarr_t's have been
+ * flattened for pub2.
+ */
+class pbuf_t : public pval_t {
 public:
   pbuf_t () : n (0) {}
   ~pbuf_t () { els.deleteall (); }
@@ -1090,9 +1302,26 @@ public:
   void add (pbuf_el_t *v);
   void add (const str &s);
   void add (zbuf *z);
+
+  void eval_obj (pbuf_t *b, penv_t *e, u_int m) const ;
+  str get_obj_name () const { return "pbuf_t"; }
+
 private:
   int n;
   publist_t<pbuf_el_t, &pbuf_el_t::lnk> els;
+};
+
+/**
+ * Allows a pbuf to be treated as a pbuf_el_t, and to be inserted into
+ * a pbuf in a nested fashion.
+ */
+class pbuf_connector_t : public pbuf_el_t {
+public:
+  pbuf_connector_t (ptr<const pbuf_t> p) : _pbuf (p) {}
+  str to_str_2 (pub_evalmode_t m) const { return _pbuf->to_str (m); }
+  void output (output_t *o, penv_t *e) const { return _pbuf->output (o,e); }
+private:
+  ptr<const pbuf_t> _pbuf;
 };
 
 class pbuf_zbuf_t : public pbuf_el_t {
@@ -1116,6 +1345,8 @@ public:
   str get_obj_name () const { return "pint_t"; }
   void dump2 (dumper_t *d) const { DUMP(d, "val: " << val); }
   bool to_xdr (xpub_val_t *x) const;
+
+  ptr<pval_t> flatten (penv_t *) ;
 private:
   int val;
 };
@@ -1153,12 +1384,15 @@ public:
 
 class pub_base_t {
 public:
-  pub_base_t () : wss (false), opts (0), mcf (NULL) {}
+  pub_base_t (u_int o = 0) : mcf (NULL), _opts (o) {}
   virtual ~pub_base_t () { if (mcf) delete mcf; }
   
   bool run_configs ();
   bool run_config (pfile_t *f);
   bool run_config (str nm);
+
+  inline void set_opts (u_int o) { _opts = o; }
+  inline u_int get_opts () const { return _opts; }
 
   virtual bpfcp_t v_getfile (const pfnm_t &n) const = 0;
   virtual u_int fixopts (u_int in) const { return in; }
@@ -1170,43 +1404,104 @@ public:
   void configed (ptr<xpub_getfile_res_t> x, pubrescb c, clnt_stat e);
   virtual void v_config_cb (const xpub_file_t &x) {}
 
-  bool wss;
 protected:
-  u_int opts;
   vec<str> cfgfiles;     // all root cfg files
   pfile_t *mcf; // master config file
   mutable penv_t genv;   // global eval env
 
 private:
+  u_int _opts;     // options for publishing!
 };
 
-
-class pub_t : public pub_base_t {
+// A wrapper opbject around bound pfiles, that keeps everything in scope.
+class bound_pfile2_t {
 public:
-  pub_t () : pub_base_t (), set (New set_t ()),  rebind (false) {}
+  bound_pfile2_t (pfnm_t nm, const xpub2_getfile_data_t &data)
+    : _name_in (nm),
+      _name_out (data.stat.fn),
+      _hsh (phash_t::alloc (data.stat.hash)),
+      _binding (New refcounted<pbinding_t> (_name_out, _hsh)),
+      _file (data.file),
+      _bpf (bound_pfile_t::alloc (_binding, &_file, _name_in)),
+      _ctime (data.stat.ctime) {}
+  
+  bound_pfile2_t (ptr<pbinding_t> bnd, pfnm_t jnm, pfile_type_t t)
+    : _name_in (bnd->filename ()),
+      _name_out (bnd->filename ()),
+      _hsh (bnd->hash ()),
+      _binding (bnd),
+      _file (_hsh, t),
+      _bpf (bound_pfile_t::alloc (_binding, &_file, jnm, false)) {}
+      
+  bpfcp_t bpf () const { return _bpf; }
+  bpfmp_t nonconst_bpf () const { return _bpf; }
+  void set_bpf (ptr<bound_pfile_t> b) { _bpf = b; }
+  pfile_t *file () { return &_file; }
+  time_t ctime () const { return _ctime; }
+  phashp_t hash () const { return _hsh; }
+  void set_ctime (time_t t) { _ctime = t; }
+  const str &filename () const { return _name_out; }
+  
+private:
+  const str _name_in;
+  const str _name_out;
+  phashp_t _hsh;
+  ptr<pbinding_t> _binding;
+  pfile_t _file;
+  ptr<bound_pfile_t> _bpf;
+  time_t _ctime;
+};
+
+/*
+ * pubv2: The streamlined interface with the publisher, for accessing
+ * the internal config variables in a publishing after publishing
+ * a config file
+ */
+class pub_config_iface_t {
+public:
+  virtual penv_t * get_env () const = 0;
+  str cfg (const str &n, bool allownull = false) const;
+  bool cfg (const str &n, pval_t **v) const;
+  bool cfg (const str &n, str *v, bool allownull = false) const;
+  template<typename T> bool cfg (const str &n, T *v) const;
+  pval_w_t operator[] (const str &s) const { return (*get_env ())[s]; }
+};
+
+/*
+ * pubv1 cruft: a lot of this stuff can be removed once pub v1 is
+ * phased out.
+ */
+class pub_t : public pub_base_t, public pub_config_iface_t {
+public:
+  pub_t (u_int o = 0) : pub_base_t (o), set (New set_t ()), rebind (false) {}
   virtual ~pub_t () { delete set; }
 
-  bpfcp_t getfile (const pfnm_t &nm) const ;
+  // V1 Only
+  bpfcp_t getfile (const pfnm_t &nm) const ;   
   pfile_t *getfile (phashp_t hsh) const;
   bool add_rootfile (const str &fn, bool conf = false);
   void queue_hfile (const pfnm_t &n) { parsequeue.push_back (n); }
   virtual void explore (const str &fn) const { assert (false); }
-  virtual str jail2real (const str &n) const { return n; }
-  void set_opts (u_int o) { opts = o; }
-  u_int get_opts () const { return opts; }
-  void set_homedir (const str &d) { homedir = dir_standardize (d); }
-  pfnm_t apply_homedir (const pfnm_t &n) const;
-
-  str cfg (const str &n) const;
-  bool cfg (const str &n, pval_t **v) const;
-  bool cfg (const str &n, str *v) const;
-  template<typename T> bool cfg (const str &n, T *v) const;
-  pval_w_t operator[] (const str &s) const { return genv[s]; }
-  penv_t *get_env () const { return &genv; }
-
   bpfcp_t v_getfile (const pfnm_t &n) const
   { return set->getfile (apply_homedir (n)); }
 
+
+  // V1 and V2
+  virtual str jail2real (const str &n) const { return n; }
+  void set_homedir (const str &d) { homedir = dir_standardize (d); }
+  pfnm_t apply_homedir (const pfnm_t &n) const;
+
+  // on for all except version 2 pub_parser_t
+  virtual bool do_explore () const { return true; }
+  virtual xpub_version_t get_version () const { return XPUB_V1; }
+
+  penv_t *get_env () const { return &genv; }
+  const penv_t *get_const_env () const { return &genv; }
+
+  bool do_wss () const { return (get_opts () & P_WSS); }
+  bool be_verbose () const { return (get_opts () & P_VERBOSE); }
+
+  // V1 only
   struct set_t {
     set_t () {}
     ~set_t () { files.deleteall (); }
@@ -1223,20 +1518,19 @@ public:
     bindtab_t  bindings;                // expands filenames to hashes
     pfile_map_t files;                  // expands hashes to files
   };
-
   virtual const set_t *get_backup_set () const { return NULL; }
 
-  vec<str> rootfiles;    // all pub rootfiles
-  bhash<str> rfbh;       // rootfile bhash
-  bhash<str> crfbh;      // config rootfile bhash
-  set_t *set;
-  vec<pfnm_t> parsequeue;
+  vec<str> rootfiles;     // all pub rootfiles (V1)
+  bhash<str> rfbh;        // rootfile bhash (V1)
+  bhash<str> crfbh;       // config rootfile bhash (V1)
+  set_t *set;             // working set of files (V1)
+  vec<pfnm_t> parsequeue; // for synchronous file exploration (V1)
+  bool rebind;            // manage binding tables locally (V1)
 
-  bool rebind;
-  
   str homedir;
 };
 
+// V1 cruft
 class pub_client_t : public pub_t 
 {
 public:
@@ -1247,6 +1541,7 @@ public:
   set_t *nset;
 };
 
+// V1 cruft
 class pub_rclient_t : public pub_client_t
 {
 public:
@@ -1302,6 +1597,7 @@ private:
   u_int ormask;
 };
 
+// V1 cruft
 class pub_proxy_t : public pub_base_t 
 {
 public:
@@ -1327,7 +1623,6 @@ public:
 protected:
   void v_config_cb (const xpub_file_t &x) { cache_pubconf (x); }
 
-
 private:
   bindtab_t bindings;
   ptr<xpub_file_t> pconf;
@@ -1336,25 +1631,30 @@ private:
   mutable qhash<pfnm_t, bpfcp_t> my_cache;
 };
 
+
+// V1 and V2; still useful; interface with lex/yacc and parse incoming
+// pub-formatted files
 class pub_parser_t : public pub_t 
 {
 public:
   pub_parser_t (bool exp = false) 
-    : pub_t (), gvars (NULL), tag (NULL), 
-    lasttag (NULL), 
-    space_flag (false), xset_collect (false), 
-    jaildir (""), jailed (false), jm (JAIL_NONE), exporter (exp) {}
+    : pub_t (exp ? P_EXPORTER : 0), gvars (NULL), tag (NULL), 
+      lasttag (NULL), 
+      space_flag (false), xset_collect (false), 
+      jaildir (""), jailed (false), jm (JAIL_NONE) {}
   
   static pub_parser_t *alloc (bool exp = false);
   bool init (const str &fn);
   bpfcp_t parse_config (const str &fn, bool init = true);
   bpfcp_t parse (const pbinding_t *bnd, pfile_type_t t);
-  void pwarn (const strbuf &b) 
-  { if (bpf) warnx << bpf->loc () << ": "; warnx << b << "\n"; }
+  void pwarn (const strbuf &b) ;
 
   void push_file (bpfmp_t f) { if (bpf) stack.push_back (bpf); bpf = f; }
   void pop_file ();
   void dump_stack ();
+
+  bool do_explore () const { return (!(get_opts () & P_EXPLORE_OFF)); }
+  bool is_exporter () const { return (get_opts () & P_EXPORTER); }
 
   void init_set () { xset.clear (); xset_collect = true; }
   void export_set (xpub_set_t *xs);
@@ -1362,14 +1662,26 @@ public:
   void setjail (str jd, bool permissive = false);
   str jail2real (const str &n) const;
 
-  void send_up_the_river () { jailed = true; }
-  void grant_conjugal_visit () { if (!(opts & P_DAEMON)) jailed = false; }
-  bool behind_bars () const { return (opts & P_DAEMON) || jailed; }
+  void lock_in_jail () { jailed = true; }
+  void free_from_jail () { if (!(get_opts() & P_DAEMON)) jailed = false; }
+  bool behind_bars () const { return (get_opts() & P_DAEMON) || jailed; }
 
   pbinding_t *to_binding (const pfnm_t &fn, set_t *s = NULL, 
 			  bool toplev = false);
   void push_parr (ptr<parr_t> a);
   ptr<parr_t> pop_parr ();
+
+  xpub_version_t get_include_version () const 
+  { return ((get_opts () & P_INCLUDE_V2) ? XPUB_V2 : XPUB_V1); }
+
+  //
+  // manipulate the stack of functions
+  //
+  pfile_func_t *top_func () { return _func_stack.back (); }
+  void push_func (pfile_func_t *f) { _func_stack.push_back (f); }
+  pfile_func_t *pop_func () { return _func_stack.pop_back (); }
+
+  str complete_fn (const str &in) const;
 
   /* global parse variables */
   ptr<pstr_t> pstr;
@@ -1379,17 +1691,20 @@ public:
   concatable_str_t *str1;
   bpfmp_t bpf;
   gvars_t *gvars;
-  pfile_func_t *func;
+  vec<pfile_func_t *> _func_stack;
   pfile_html_tag_t *tag, *lasttag;
 
   bool space_flag;
   int last_tok;
 
+  // for publishing HTML files only, in the world of Pub2
+  ptr<bound_pfile2_t> pub2_parse (ptr<pbinding_t> bnd, bool wss, 
+				  pubstat_t *err, str *errmsg);
+
   ptr<xpub_getfile_res_t> defconf;
 private:
   bpfcp_t parse1 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t);
   bpfcp_t parse2 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t);
-  str complete_fn (const str &in) const;
   vec<bpfmp_t> stack;
   vec<bpfcp_t> xset;
   bool xset_collect;
@@ -1397,8 +1712,6 @@ private:
   bool jailed;
   jail_mode_t jm;
   vec<ptr<parr_t> > parr_stack;
-  bool exporter;  // on if this pub_parser_t exports files via XDR
-
 };
 
 class cfgw_t {
@@ -1457,7 +1770,7 @@ pfile_sec_t::hadd (pfile_sec_t *s)
 }
 
 template<typename T> bool 
-pub_t::cfg (const str &n, T *v) const
+pub_config_iface_t::cfg (const str &n, T *v) const
 {
   str s;
   return (cfg (n, &s) && convertint (s, v));

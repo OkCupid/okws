@@ -12,7 +12,8 @@ enum xpub_obj_typ_t {
   XPUB_FILE_VAR = 5,
   XPUB_SWITCH = 6,
   XPUB_SET_FUNC = 7,
-  XPUB_INCLIST = 8
+  XPUB_INCLIST = 8,
+  XPUB_INCLUDE2 = 9
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -24,6 +25,11 @@ enum oksig_t {
   OK_SIG_SOFTKILL = 2,
   OK_SIG_KILL = 3,
   OK_SIG_ABORT = 4 
+};
+
+enum xpub_version_t {
+  XPUB_V1 =1,
+  XPUB_V2 = 2
 };
 
 struct ok_killsig_t {
@@ -66,6 +72,13 @@ struct xpub_pbinding_t {
   xpubhash_t hash;
 };
 
+struct xpub2_fstat_t {
+  xpub_fn_t  fn;
+  u_int32_t  ctime;
+  xpubhash_t hash;
+};
+
+
 union xpub_pstr_el_t switch (xpub_pstr_el_typ_t typ) {
  case XPUB_PSTR_VAR:
    xpub_var_t var;
@@ -74,6 +87,7 @@ union xpub_pstr_el_t switch (xpub_pstr_el_typ_t typ) {
  default:
    void;
 };
+
 
 struct xpub_pstr_t {
   xpub_pstr_el_t els<>;
@@ -138,9 +152,17 @@ struct xpub_aarr_t {
   xpub_nvpair_t tab<>;
 };
 
+union xpub_include_fn_t switch (xpub_version_t vrs)
+{
+case XPUB_V1:
+  xpub_fn_t v1;
+case XPUB_V2:
+  xpub_pstr_t v2;
+};
+
 struct xpub_include_t {
   int lineno;
-  xpub_fn_t fn;
+  xpub_include_fn_t fn;
   xpub_aarr_t env;
 };
 
@@ -190,9 +212,25 @@ struct xpub_file_var_t {
   xpub_var_t var;
 };
 
+enum switch_case_typ_t {
+  XPUB_SWITCH_NONE = 0,
+  XPUB_SWITCH_FILE = 1,
+  XPUB_SWITCH_NESTED_ENV = 2
+};
+
+union xpub_switch_env_body_t switch (switch_case_typ_t typ)
+{
+case XPUB_SWITCH_FILE:
+  xpub_fn_t fn;
+case XPUB_SWITCH_NESTED_ENV:
+  xpub_section_t sec;
+default:
+ void;
+};
+
 struct xpub_switch_env_t {
   xpub_key_t *key; /* Can be NULL in the case of a default case */
-  xpub_fn_t *fn;   /* Can be NULL => do not include a file */
+  xpub_switch_env_body_t body;
   xpub_aarr_t aarr;
 };
 
@@ -214,6 +252,7 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
  case XPUB_NONE:
    void;
  case XPUB_INCLUDE:
+ case XPUB_INCLUDE2:
    xpub_include_t include;
  case XPUB_SECTION:
    xpub_section_t section;
@@ -236,13 +275,17 @@ enum xpub_status_typ_t {
   XPUB_STATUS_ERR = 1,
   XPUB_STATUS_NOCHANGE = 2,
   XPUB_STATUS_NOENT = 3,
-  XPUB_STATUS_OOB = 4                 /* out of bounds */
+  XPUB_STATUS_OOB = 4,                 /* out of bounds */
+  XPUB_STATUS_NOT_IMPLEMENTED = 5,
+  XPUB_STATUS_RPC_ERR = 6
 };
 
 union xpub_status_t switch (xpub_status_typ_t status)
 {
  case XPUB_STATUS_OK:
    void;
+ case XPUB_STATUS_RPC_ERR:
+   u_int32_t rpc_err;
  default:
    string error<>;
 };
@@ -277,6 +320,16 @@ union xpub_lookup_res_t switch (xpub_status_typ_t status)
    void;
 };
 
+union xpub2_lookup_res_t switch (xpub_status_typ_t status)
+{
+ case XPUB_STATUS_OK:
+   xpub2_fstat_t stat;
+ case XPUB_STATUS_ERR:
+   string error<>;
+ default:
+   void;
+};
+
 union xpub_getfile_res_t switch (xpub_status_typ_t status)
 {
  case XPUB_STATUS_OK:
@@ -287,10 +340,80 @@ union xpub_getfile_res_t switch (xpub_status_typ_t status)
    void;
 };
 
-
 struct xpub_files2_getfile_arg_t {
   xpub_cookie_t cookie;
   u_int fileno;
+};
+
+struct xpub2_getfile_data_t {
+   xpub2_fstat_t stat;
+   xpub_file_t   file;
+};
+
+enum xpub2_freshness_typ_t {
+  XPUB2_FRESH_NONE = 0,
+  XPUB2_FRESH_CTIME = 1,
+  XPUB2_FRESH_HASH = 2
+};
+
+union xpub2_file_freshcheck_t switch (xpub2_freshness_typ_t mode) {
+case XPUB2_FRESH_NONE:
+  void;
+case XPUB2_FRESH_CTIME:
+  u_int32_t ctime;
+case XPUB2_FRESH_HASH:
+  xpubhash_t hash;
+};
+
+struct xpub2_getfile_arg_t {
+  xpub_fn_t               filename;
+  bool                    wss;
+  xpub2_file_freshcheck_t fresh;
+};
+
+union xpub2_getfile_res_t switch (xpub_status_typ_t status) {
+case XPUB_STATUS_OK:
+  xpub2_getfile_data_t data;
+case XPUB_STATUS_ERR:
+  string error<>;
+default:
+  void;
+};
+
+union xpub2_get_root_config_res_t switch (xpub_status_typ_t status) {
+case XPUB_STATUS_OK:
+   xpub_fn_t fn;
+case XPUB_STATUS_ERR:
+   string error<>;
+default:
+   void;
+};
+
+struct xpub2_fstat_set_t {
+   unsigned timestamp;
+   xpub2_fstat_t fstats<>;
+   xpub_fn_t misses<>;
+};
+
+/*
+ * All files in the delta set should be removed from the service's
+ * cache, either because the disappered, or because they were updated.
+ */
+struct xpub2_delta_set_t {
+   hyper serial;
+   unsigned start;
+   unsigned stop;
+   xpub_fn_t files<>;
+};
+
+
+union xpub2_get_fstats_res_t switch (xpub_status_typ_t status) {
+case XPUB_STATUS_OK:
+  xpub2_fstat_set_t stats;
+case XPUB_STATUS_ERR:
+  string error<>;
+default:
+  void;
 };
 
 program PUB_PROGRAM {
@@ -331,4 +454,54 @@ program PUB_PROGRAM {
 		PUB_KILL (ok_killsig_t) = 99;
 
 	} = 1;
+
+	/*
+	 * Version 2 of Pub. Simplified protocol, and a simplified
+	 * server, too.
+	 */
+	version PUB_VERS2 {
+
+		void
+		PUB2_NULL (void) = 0;
+
+		xpub2_get_root_config_res_t
+		PUB2_GET_ROOT_CONFIG (void) = 1;
+
+		xpub2_getfile_res_t
+		PUB2_GETFILE (xpub2_getfile_arg_t) = 2;
+
+		/*
+		 * Input an mtime, and get all changes since that
+		 * mtime (or perhaps all fstat's if there was a mod
+		 * since the given mtime).
+		 */
+		xpub2_get_fstats_res_t
+		PUB2_GET_FSTATS (u_int32_t) = 3;
+
+		/*
+		 * for each service, pubd needs to send a socket pair
+		 * end over a pipe.
+		 */
+ 	  	bool
+		PUB2_CLONE (void) = 4;
+		
+		bool
+		PUB2_PUSH_DELTAS(xpub2_delta_set_t) = 5;	
+
+		bool
+		PUB2_GET_PUSHES (void) = 6;
+
+		/*
+	 	 * Get a file hash, and ctime, but bypass NFS
+		 * so go from pubd<->pubd.
+		 */
+		xpub2_lookup_res_t
+		PUB2_LOOKUP (xpub_fn_t) = 7;
+
+		void
+		PUB2_KILL (ok_killsig_t) = 99;
+	} = 2;
+
 } = 11277;
+
+

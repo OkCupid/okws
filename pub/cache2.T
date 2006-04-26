@@ -1,0 +1,419 @@
+// -*-c++-*-
+/* $Id$ */
+
+#include "pubd2.h"
+#include "xpub.h"
+#include "okdbg.h"
+#include "parseopt.h"
+
+namespace pubserv2 {
+  bool
+  cache_t::lookup (pfnm_t nm, phashp_t *hsh, time_t *ctime)
+  {
+    cached_lookup_obj_t *o;
+    if ((o = _lookup_cache[nm])) {
+      *hsh = o->hash ();
+      *ctime = o->ctime ();
+      return true;
+    } else if (_noent_cache.rejuvenate (nm)) {
+      *hsh = NULL;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  void
+  cache_t::cache_lookup (pfnm_t jfn, pfnm_t rfn, 
+			 phashp_t hsh, time_t ctime, off_t sz)
+  {
+    cached_lookup_obj_t *op = _lookup_cache[jfn];
+    if (hsh) {
+      if (!op || ctime > op->ctime () || sz != op->size () ||
+	  *hsh != *op->hash ()) {
+	_lookup_cache.insert (cached_lookup_obj_t (jfn, rfn, hsh, ctime, sz));
+	
+	// op is true => modification; op false => file being added
+	// for first time, and therefore shouldn't be flushed from
+	// services.
+	if (op)
+	  add_delta (jfn);
+      }
+    } else {
+      
+      if (!_noent_cache[jfn]) {
+	_noent_cache.insert (jailed_file_t (jfn, rfn));
+      }
+      if (op) {
+	_lookup_cache.remove (jfn);
+	add_delta (jfn);
+      }
+    }
+  }
+  
+  void
+  cache_t::expire_old_entries (time_t timeout)
+  {
+    time_t l = okwstime () - timeout;
+    _noent_cache.expire (l);
+    _lookup_cache.expire (l);
+  }
+  
+  void
+  cache_t::trav_key (str k)
+  {
+    struct stat sb;
+    cached_lookup_obj_t *o = _lookup_cache[k];
+    assert (o);
+    const str &rfn = o->real_fn ();
+
+    if (nfs_safe_stat (rfn.cstr (), &sb) < 0) {
+      // a file that used to exist has gone missing
+      _lookup_cache.remove (k);
+      _noent_cache.insert (jailed_file_t (k, rfn));
+      add_delta (k);
+    } else {
+      
+      bool dirty = false;
+      if (o->ctime () < time_t (sb.st_ctime) || o->size () != sb.st_size) {
+	dirty = true;
+      } 
+      // could have been modified twice in the same second;
+      // hack around this by bumping the ctime artificially up on the
+      // cached version of the file.
+      else if (o->ctime () == sb.st_ctime && okwstime () > sb.st_ctime) {
+	phashp_t h = file2hash (rfn);
+	if (!h || *h != *o->hash ()) {
+	  dirty = true;
+	  
+	  // break the tie if possible, so we don't have to keep hashing the
+	  // file over and over
+	} else 
+	  o->inc_ctime ();
+      }
+      
+      if (dirty) {
+	OKDBG4(PUB2_CACHE, CHATTER, "Cached file modified: %s\n", k.cstr ());
+
+	// a file has be modified!
+	_lookup_cache.remove (k);
+	add_delta (k);
+      } 
+    }  
+  }
+  
+  void
+  cache_t::trav_nkey (str k)
+  {
+    struct stat sb;
+    jailed_file_t *o = _noent_cache[k];
+    assert (o);
+    const str &rfn = o->real_fn ();
+    if (nfs_safe_stat (rfn.cstr (), &sb) >= 0) {
+      // a file that used to not exist has now come to exist
+      _noent_cache.remove (k);
+    }
+    
+    /*
+     * Add the following code back if we decide it's a good idea to ship
+     * the negative file lookup cache over to the service.  As of 2/4/06,
+     * I think this is a bad idea, since it could invite DOS'ing the channel
+     * between pub2 and the services.
+     *edit = true;
+     } else {
+     s->misses.push_back (k);
+     }
+    */
+  }
+  
+  static void fill_delta_set (ptr<xpub2_delta_set_t> d, const str &s)
+  {
+    d->files.push_back (s);
+  }
+  
+  TAMED void cache_t::refresh_delta_set (cbb::ptr callercv)
+  {
+    VARS { 
+      bool edit (false);
+      bool dummy;
+      ptr<xpub2_delta_set_t> s;
+    }
+    
+    OKDBG3 (PUB2_CACHE, CHATTER, "Timer fired; calling refresh_delta_set()");
+    
+    _lookup_cache.traverse_keys (wrap (this, &cache_t::trav_key));
+    _noent_cache.traverse_keys (wrap (this, &cache_t::trav_nkey));
+    
+    if (_delta_set.size ()) {
+      s = New refcounted<xpub2_delta_set_t> ();
+      _delta_set.traverse (wrap (fill_delta_set, s));
+      s->start = _last_update;
+      s->stop = okwstime ();
+      s->serial = _delta_id ++;
+      _delta_set.clear ();
+      _last_update = okwstime ();
+      edit = true;
+    }
+    
+    SIGNAL(edit);
+    if (edit)
+      BLOCK { push_deltas (s, @(dummy)); }
+  }
+  
+  TAMED void srv_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb::ptr callercv)
+  {
+    VARS {
+      clnt_stat err;
+      bool rc (true);
+    }
+    if (!_push_deltas) {
+      rc = true;
+    } else if (_push_deltas_lock) {
+      rc = false; 
+    } else {
+      _push_deltas_lock = true;
+      BLOCK { _cli->call (PUB2_PUSH_DELTAS, s, &rc, @(err)); }
+      _push_deltas_lock = false;
+      if (err) {
+	strbuf b;
+	b << "RPC error pushing stats to service: " << err << "\n";
+	okdbg_warn (ERROR, b);
+	rc = false;
+      } else if (!rc) {
+	okdbg_warn (ERROR, "Service unexepectedly rejected stats push!\n");
+      }
+    }
+    RESUME (rc);
+  }
+  
+  TAMED void 
+  cache_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb::ptr callercv)
+  {
+    VARS { 
+      coordgroup_t<ptr<bool> > jg;
+      ptr<bool> b;
+      bool rc (true);
+    }
+    for (srv_t *e = _list.first; e; e = _list.next (e)) {
+      b = New refcounted<bool> ();
+      e->push_deltas (s, @[jg,b](*b));
+    }
+    while (jg.need_join ()) {
+      WAIT (jg, b); 
+      if (!*b) 
+	rc = false; 
+    }
+    RESUME(rc);
+  }
+
+  stamp_status_t
+  stampfile_t::stat (int timeout)
+  {
+    stamp_status_t ret = STAMP_ERROR;
+    str stmp;
+    time_t ct;
+
+    if (!_fn) {
+      ret = STAMP_DISABLED;
+    } 
+
+    // Stamp file should contain the ASCII timestamp of the last
+    // update; best not to trust ctimes over NFS.
+    //
+    // XXX or could use nfs_safe_stat
+    else if (!((stmp = file2str (_fn)) && convertint (stmp, &ct))) {
+      ret = STAMP_FNF;
+    } else if (ct == _last_ctime) {
+      if (timeout > 0 && okwstime () - _last_change_local >= timeout) 
+	ret = _last_change_local ? STAMP_TIMEOUT : STAMP_UNINIT;
+      else
+	ret = STAMP_NOCHANGE;
+    } else {
+      _last_ctime = ct;
+      _last_change_local = okwstime ();
+      ret = STAMP_CHANGED;
+    }
+    return ret;
+  }
+  
+  //
+  // check the sentinel file and the heartbeat message.  if the sentinel
+  // file has changed since the last run, then we need to update our
+  // local ctime cache, so return 1.  If no update, then return 0.
+  // If the heartbeat hasn't fired within the given wait period,
+  // return -1 and do a regular check.  Or, if the interval is negative
+  // or 0, return -1, signalling a regular check is needed.
+  //
+  // Returns:
+  //  a stamp_status_t explaining what happened.
+  // 
+  stamp_status_t
+  cache_t::check_sentinel (int timeout)
+  {
+    stamp_status_t hbt = _tsh.stat (timeout);
+    if (!(hbt == STAMP_CHANGED || hbt == STAMP_NOCHANGE)) {
+
+      if (_tsh.fn () && hbt != STAMP_UNINIT)
+	OKDBG4 (PUB2_CACHE, ERROR,
+		"heartbeat file (%s) failed us, with status: %d",
+		_tsh.fn ().cstr (), int (hbt));
+
+      return hbt;
+    }
+
+    return _tss.stat ();
+  }
+
+  /**
+   * @brief loop for running the refresh timer for refreshing the cache.
+   * @param n the minimum allowable freshness
+   * @param x maximum freshness allowable
+   * @param i move tolerance up by i second increments
+   * @param t if > 0, t gives the interval for checking the tree heartbeats
+   */
+  TAMED ptr<canceller_t>
+  cache_t::run_refresh_timer (u_int n, u_int x, u_int i, u_int t)
+  {
+    VARS {
+      ptr<canceller_t> canceller (New refcounted<canceller_t> ());
+      coordgroup_t<bool> ev;
+      bool run_loop (true);
+      bool edit (false);
+      int tol (n); // tolerance for how fresh
+      time_t last_check (0);
+      stamp_status_t status;
+      bool running_refresh (false);
+      int diff;
+    }
+    DEFAULT_RETURN { return canceller; }
+
+    assert (t <= n);
+    canceller->wait (@[ev,false]());
+
+    while (run_loop) {
+
+      // Always update the freshness tolerance first, since it 
+      // might immediately affect whether we sleep or launch
+      // a new refresh_delta_set operation.
+      if (running_refresh) {
+	int old = tol;
+	if (edit) {
+	  tol = n;
+	} else {
+	  tol += i;
+	  if (tol > int (x)) tol = x;
+	}
+	if (old != tol) 
+	  OKDBG4(PUB2_CACHE,CHATTER, 
+		 "Tolerance at time level %d reset to %d", old, tol);
+
+	running_refresh = false;
+      }
+
+      status = t > 0 ? check_sentinel (tol) : STAMP_DISABLED;
+
+
+      // run the refresh algorithm if the sentinel explicitly tells us
+      // to, or we haven't checked in a while and we haven't be
+      // explicitly told that there wasn't a change! However,
+      // never wait longer than the max time, regardless of 
+      // what then sentinel system says.
+      diff = okwstime () - last_check;
+      if (status == STAMP_CHANGED || 
+	  (status != STAMP_NOCHANGE && diff >= tol) ||
+	  diff > int (x)) {
+
+	if (status == STAMP_CHANGED) 
+	  OKDBG3(PUB2_CACHE, CHATTER, "stamp file changed; refresh forced");
+
+	last_check = okwstime ();
+	running_refresh = true;
+	refresh_delta_set (@[ev,true](edit));
+
+      } else {
+	delaycb (t > 0 ? t : tol, 0, @[ev,true]());
+      }
+      WAIT(ev,run_loop);
+    }
+
+    while (ev.n_vars_left ()) {
+      WAIT (ev, run_loop);
+    }
+  }
+
+  void
+  cache_t::start_timer (u_int n, u_int x, u_int i, u_int c, u_int t)
+  {
+    if (!n) n = ok_pub2_refresh_min;
+    if (!x) x = ok_pub2_refresh_max;
+    if (!i) i = ok_pub2_refresh_incr;
+    if (!c) c = ok_pub2_neg_cache_timeout;
+    if (!t) t = ok_pub2_treestat_interval;
+
+    if (t > n) {
+      okdbg_warn (ERROR,
+		  "Cannot have treestat check interval greater than "
+		  "minimum check interval!\n"
+		  "Disabling treestat checking.\n");
+      t = 0;
+    }
+
+    if (_timer)
+      _timer->cancel ();
+    _timer = run_refresh_timer (n, x, i, t);
+    _noent_cache.set_timeout (c);
+  }
+  
+  
+  bool 
+  cache_t::getfile (ptr<pbinding_t> b, u_int opts,
+		    ptr<bound_pfile2_t> *f, pubstat_t *s,
+		    str *em)
+  {
+    bool ret (false);
+    cache_key_t k (b->hash (), opts);
+    cached_getfile_t *cgf = _getfile_cache[k];
+    if (cgf) {
+      *f = cgf->_file;
+      ret = true;
+    } else {
+      cached_badfile_t *bf = _badfile_cache[k];
+      if (bf) {
+	*s = bf->_stat;
+	*em = bf->_msg;
+	ret = true;
+      }
+    }
+    return ret;
+  }
+
+  void 
+  cache_t::cache_getfile (ptr<pbinding_t> b, u_int opts,
+			  ptr<bound_pfile2_t> f, pubstat_t s,
+			  str em) 
+  {
+    cache_key_t k (b->hash (), opts);
+    if (f) {
+      _badfile_cache.remove (k);
+      _getfile_cache.insert (cached_getfile_t (k, f));
+    } else if (s != PUBSTAT_OK) {
+      _getfile_cache.remove (k);
+      _badfile_cache.insert (cached_badfile_t (k, s, em));
+    } else {
+      panic ("got a file neither good nor bad!\n");
+    }
+  }
+  
+  hash_t 
+  cache_key_t::hash_me () const
+  {
+    struct {
+      char buf[PUBHASHSIZE];
+      int opts;
+    } tmp;
+
+    memcpy (tmp.buf, _filehash->val, PUBHASHSIZE);
+    tmp.opts = _opts;
+    return hash_bytes (reinterpret_cast<const void *> (&tmp), sizeof (tmp));
+  }
+};

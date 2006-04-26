@@ -73,4 +73,8 @@ private:
   xpub_cookie_t this_cookie;
 };
 
+// need an interface by which pubserv2.C can call back into pubd.C,
+// and this is all we really need.
+void client_accept (ptr<axprt_stream> x);
+
 #endif /* _PUB_PUBD_H */

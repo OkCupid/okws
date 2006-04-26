@@ -1,3 +1,5 @@
+#define CCEOC_ARGNAME  callercv
+// -*-c++-*-
 /* $Id$ */
 
 /*
@@ -34,7 +36,6 @@ okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl,
 		      ok_usr_t *u, vec<str> env_in, u_int16_t p)
   : okld_jailed_exec_t (e, o, cfl),
     servpath (s), uid (u), gid (-1),
-    svc_life_reqs (-1), svc_life_time (-1),
     state (OKC_STATE_NONE), rcb (NULL),
     startup_time (0), 
     env (env_in), port (p)
@@ -133,14 +134,6 @@ okld_ch_t::assign_uid (int new_uid)
     uid = New ok_usr_t (new_uid);
 }
 
-void
-okld_ch_t::launch ()
-{
-  if (startup_time == 0)
-    startup_time = timenow;
-  state = OKC_STATE_LAUNCH;
-  okld->get_logd ()->clone (wrap (this, &okld_ch_t::launch_cb));
-}
 
 bool
 okld_jailed_exec_t::chmod (int currmode)
@@ -161,16 +154,123 @@ okld_jailed_exec_t::chmod (int currmode)
   return true;
 }
 
-void
-okld_ch_t::launch_cb (int logfd)
+
+class okld_ch_t__launch__closure_t : public closure_t {
+public:
+  okld_ch_t__launch__closure_t (okld_ch_t *_self) : closure_t (false), _self (_self),  _stack (), _args (), _block1 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
+  typedef void  (okld_ch_t::*method_type_t) (ptr<closure_t>);
+  void set_method_pointer (method_type_t m) { _method = m; }
+  void block_cb_switch (int i) {
+    switch (i) {
+    case 1: cb1(); break;
+    case 2: cb2(); break;
+    default: panic ("unexpected case");
+    }
+  }
+  void cb1 () {
+    if (-- _cb_num_calls1 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okldch.T:172: in function okld_ch_t::launch", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void cb2 () {
+    if (-- _cb_num_calls2 < 0 ) {
+      tame_error ("/home/am8/max/m/okws1/okd/okldch.T:173: in function okld_ch_t::launch", "callback overcalled!");
+    }
+    if (!--_block1)
+      reenter ();
+  }
+  void reenter ()
+  {
+    ((*_self).*_method)  (mkref (this));
+  }
+  struct stack_t {
+    stack_t () : pub2fd (-1)  {}
+     int logfd;
+     int pub2fd;
+     clone_only_client_t *p;
+  };
+  struct args_t {
+    args_t () {}
+  };
+  okld_ch_t *_self;
+  stack_t _stack;
+  args_t _args;
+  method_type_t _method;
+  int _block1;
+  int _cb_num_calls1;
+  int _cb_num_calls2;
+  bool is_onstack (const void *p) const
+  {
+    return (static_cast<const void *> (&_stack) <= p &&
+            static_cast<const void *> (&_stack + 1) > p);
+  }
+};
+void 
+okld_ch_t::launch(ptr<closure_t> __cls_g)
 {
+    okld_ch_t__launch__closure_t *__cls;
+  ptr<okld_ch_t__launch__closure_t > __cls_r;
+  if (!__cls_g) {
+    if (tame_check_leaks ()) start_join_group_collection ();
+    __cls_r = New refcounted<okld_ch_t__launch__closure_t> (this);
+    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
+    __cls = __cls_r;
+    __cls_g = __cls_r;
+    __cls->set_method_pointer (&okld_ch_t::launch);
+  } else {
+    __cls =     reinterpret_cast<okld_ch_t__launch__closure_t *> (static_cast<closure_t *> (__cls_g));
+    __cls_r = mkref (__cls);
+  }
+   int &logfd = __cls->_stack.logfd;
+   int &pub2fd = __cls->_stack.pub2fd;
+   clone_only_client_t *&p = __cls->_stack.p;
+  switch (__cls->jumpto ()) {
+  case 1:
+    goto okld_ch_t__launch__label_1;
+    break;
+  default:
+    break;
+  }
+
+
+  if (startup_time == 0)
+    startup_time = timenow;
+  state = OKC_STATE_LAUNCH;
+  p = okld->get_pubd2 ();
+
+    do {
+    __cls->_block1 = 1;
+    __cls->set_jumpto (1);
+ 
+    okld->get_logd ()->clone ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(logfd)>, __cls_r, 1, refset_t<TTT(logfd)> (logfd))));
+    if (p) p->clone ((++__cls->_block1, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(pub2fd)>, __cls_r, 2, refset_t<TTT(pub2fd)> (pub2fd))));
+      if (--__cls->_block1)
+      return;
+  } while (0);
+ okld_ch_t__launch__label_1:
+    ;
+
+
   if (logfd < 0) {
     strbuf b;
     b << "HOSED: Cannot connect to oklogd for server: (" << servpath << ","
       << rexecpath << ")\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
-    return; 
+      END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:182: in function okld_ch_t::launch");
+return ; 
+  }
+
+  if (p && pub2fd < 0) {
+    strbuf b;
+    b << "HOSED: Cannot connect to pubd -2 for server: (" << servpath << ","
+      << rexecpath << ")\n";
+    okdbg_warn (ERROR, b);
+    state = OKC_STATE_HOSED;
+      END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:191: in function okld_ch_t::launch");
+return ;
   }
 
   if (okld->in_shutdown ()) {
@@ -180,7 +280,8 @@ okld_ch_t::launch_cb (int logfd)
       << servpath << "," << rexecpath << ")\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
-    return;
+      END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:201: in function okld_ch_t::launch");
+return ;
   }
 
   vec<str> argv;
@@ -200,6 +301,7 @@ okld_ch_t::launch_cb (int logfd)
   argv.push_back (get_execpath ());
 
   okld->env.insert ("logfd", logfd, false);
+  okld->env.insert ("pub2fd", pub2fd, false);
 
   // for Service2-style command lands, we can have many arguments
   // here specified in okws_config.  make sure to add the encoded
@@ -208,18 +310,22 @@ okld_ch_t::launch_cb (int logfd)
     argv.push_back (args[i]);
 
   // per-service options might override global options here
-  if (svc_life_reqs < 0) svc_life_reqs = ok_svc_life_reqs;
-  if (svc_life_time < 0) svc_life_time = ok_svc_life_time;
+  _svc_options.apply_global_defaults ();
 
-  okld->env.insert ("lifereqs", svc_life_reqs, false);
-  okld->env.insert ("lifetime", svc_life_time, false);
+  okld->env.insert ("lifereqs", _svc_options.svc_reqs, false);
+  okld->env.insert ("lifetime", _svc_options.svc_time, false);
+  okld->env.insert ("wss", _svc_options.wss, false);
+  okld->env.insert ("caching", _svc_options.pub2_caching, false);
 
   argv.push_back (okld->env.encode ());
 
   // undo all of the damage
   okld->env.remove ("logfd");
+  okld->env.remove ("pub2fd");
   okld->env.remove ("lifetime");
   okld->env.remove ("lifereqs");
+  okld->env.remove ("wss");
+  okld->env.remove ("caching");
 
   argv_t env_tmp;
   if (env.size ()) 
@@ -236,7 +342,8 @@ okld_ch_t::launch_cb (int logfd)
     warn << "HOSED: Cannot launch service: (" << servpath << "," 
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
-    return;
+      END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:262: in function okld_ch_t::launch");
+return ;
   }
 
   ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
@@ -252,7 +359,8 @@ okld_ch_t::launch_cb (int logfd)
     close (fd);
     warn << "HOSED: Cannot clone CTL file descriptor: (" << servpath << ")\n";
     state = OKC_STATE_HOSED;
-    return;
+      END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:278: in function okld_ch_t::launch");
+return ;
   }
 
   fdx.set_fdtyp (OKWS_SVC_X);
@@ -265,10 +373,14 @@ okld_ch_t::launch_cb (int logfd)
     close (fd);
     state = OKC_STATE_HOSED;
     warn << "HOSED: Cannot clone HTTP file descriptor: (" << servpath << ")\n";
-    return;
+      END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:291: in function okld_ch_t::launch");
+return ;
   }
 
   state = OKC_STATE_SERVE;
+    END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okldch.T:295: in function okld_ch_t::launch");
+return ;
+  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okldch.T:296: in function okld_ch_t::launch");
   return;
 }
 

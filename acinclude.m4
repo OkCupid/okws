@@ -1602,6 +1602,7 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     LIBSFSCRYPT=${with_sfs}/crypt/libsfscrypt.la
     LIBSFSMISC=${with_sfs}/sfsmisc/libsfsmisc.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
+    TAME=${with_sfs}/tame/tame
 elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
 	-a -f ${with_sfs}/lib/${sfsprfx}/libasync.la; then
     sfsincludedir="${with_sfs}/include/${sfsprfx}"
@@ -1621,6 +1622,11 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
     if test "$PATH_RPCC" -a -x "$PATH_RPCC" 
     then
 	RPCC="$PATH_RPCC"
+    fi
+    SFS_PATH_PROG(tame, ${sfslibdir})
+    if test "$PATH_TAME" -a -x "$PATH_TAME"
+    then
+	TAME="$PATH_TAME"
     fi
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
@@ -1650,6 +1656,7 @@ AC_SUBST(LIBSFSMISC)
 dnl AC_SUBST(LIBSVC)
 dnl AC_SUBST(LIBSFS)
 AC_SUBST(RPCC)
+AC_SUBST(TAME)
 AC_SUBST(MALLOCK)
 AC_SUBST(NOPAGING)
 
