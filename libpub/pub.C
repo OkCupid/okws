@@ -491,7 +491,7 @@ pub_parser_t::setjail (str jd, bool permissive)
 void
 pub_parser_t::setprivs (str jd, str un, str gn)
 {
-  int uid, gid;
+  int uid = 0, gid = 0;
   if (!getuid ()) {
     if (!un) {
       un = ok_pubd_uname;
