@@ -91,3 +91,6 @@ tameclean:
 	for dir in libpub libaok okd pub test2 ; do \
 		(cd $$dir && $(MAKE) tameclean); \
 	done
+
+.PHONY: buildclean
+buildclean: tameclean rpcclean
