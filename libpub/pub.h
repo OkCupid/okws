@@ -477,6 +477,7 @@ typedef callback<void, xpub_status_t>::ptr xpub_status_cb_t;
 // Pub2 Inteface for legacy objects
 class pub2_iface_t {
 public:
+  virtual ~pub2_iface_t () {}
   virtual void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
 			xpub_status_cb_t cb) = 0;
 };
@@ -1459,6 +1460,7 @@ private:
  */
 class pub_config_iface_t {
 public:
+  virtual ~pub_config_iface_t () {}
   virtual penv_t * get_env () const = 0;
   str cfg (const str &n, bool allownull = false) const;
   bool cfg (const str &n, pval_t **v) const;
