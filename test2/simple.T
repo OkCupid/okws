@@ -29,30 +29,30 @@
 #include "tame.h"
 #include "rxx.h"
 
-class oksrvc_static_t : public oksrvc_t {
+class oksrvc_simple_t : public oksrvc_t {
 public:
-  oksrvc_static_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
+  oksrvc_simple_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
   void post_launch_pub2_T (cbb::ptr callercv,  CLOSURE);
   void post_launch_pub2 (cbb::ptr callercv)
   { post_launch_pub2_T (callercv); }
 };
 
-class okclnt_static_t : public okclnt_t {
+class okclnt_simple_t : public okclnt_t {
 public:
-  okclnt_static_t (ptr<ahttpcon> x, oksrvc_static_t *o)
-    : okclnt_t (x, o), ok_static (o) {}
-  ~okclnt_static_t () {}
+  okclnt_simple_t (ptr<ahttpcon> x, oksrvc_simple_t *o)
+    : okclnt_t (x, o), ok_simple (o) {}
+  ~okclnt_simple_t () {}
 
   void process () { process_T (); }
   void process_T (CLOSURE); 
 
 protected:
-  oksrvc_static_t *ok_static;
+  oksrvc_simple_t *ok_simple;
 };
 
 TAMED void 
-oksrvc_static_t::post_launch_pub2_T (cbb::ptr callercv)
+oksrvc_simple_t::post_launch_pub2_T (cbb::ptr callercv)
 {
   VARS {
     bool res1, res2;
@@ -65,50 +65,47 @@ oksrvc_static_t::post_launch_pub2_T (cbb::ptr callercv)
 }
 
 TAMED void 
-okclnt_static_t::process_T ()
+okclnt_simple_t::process_T ()
 {
   VARS {
-    str ofn;
     aarr_t aarr;
     str in;
     bool rc (true);
     u_int opts (P_IINFO|P_VERBOSE);
+    str file;
   }
-  static rxx x ("^(:\\d+)?/static(/.+)$");
-  in = hdr.get_target ();
+  file = cgi["file"];
 
-  if (x.match (in)) {
-    ofn = x[2];
-    assert (ofn);
+  if (file) {
     cgi.load_aarr (&aarr);
 
-    BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts); }
+    BLOCK { pub2 ()->run (&out, file, @(rc), &aarr, opts); }
 
     if (!rc) {
-      aarr.add ("target", ofn);
-      ofn = "/fnf.html";
+      aarr.add ("target", file);
+      file = "/fnf.html";
     }
   } else {
-    aarr.add ("target", "&lt; <i>no file specified</i> &gt;");
-    ofn = "/fnf.html";
+    aarr.add ("target", "&lt; <i>no <tt>file</tt> specified</i> &gt;");
+    file = "/fnf.html";
     rc = false;
   }
   if (!rc) {
-    BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts|P_VISERR); }
+    BLOCK { pub2 ()->run (&out, file, @(rc), &aarr, opts|P_VISERR); }
   }
   output (out);
 }
 
 okclnt_t *
-oksrvc_static_t::make_newclnt (ptr<ahttpcon> x)
+oksrvc_simple_t::make_newclnt (ptr<ahttpcon> x)
 {
-  return New okclnt_static_t (x, this);
+  return New okclnt_simple_t (x, this);
 }
 
 int
 main (int argc, char *argv[])
 {
-  oksrvc_t *oksrvc = New oksrvc_static_t (argc, argv);
+  oksrvc_t *oksrvc = New oksrvc_simple_t (argc, argv);
   oksrvc->launch ();
   amain ();
 }

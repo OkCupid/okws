@@ -7,9 +7,10 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = static configtest
+noinst_PROGRAMS = static configtest simple
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
+simple_SOURCES = simple.C
 
 
 SUFFIXES = .g .C .T
@@ -20,10 +21,13 @@ static.o:	static.C
 static.lo:	static.C
 configtest.o:	configtest.C
 configtest.lo:	configtest.C
+simple.o:	simple.C
+simple.lo:	simple.C
 
 CLEANFILES = core *.core *~ *_config *_log
-EXTRA_DIST = .cvsignore static.T okws_config.in pub_config.in configtest.T
-BUILT_SOURCES = static.C configtest.C
+EXTRA_DIST = .cvsignore static.T okws_config.in pub_config.in configtest.T \
+	simple.T
+BUILT_SOURCES = static.C configtest.C simple.C
 MAINTAINERCLEANFILES = Makefile.in
 
 
@@ -40,5 +44,5 @@ pub_config: $(srcdir)/pub_config.in
 	sed "s#@@TEST2_SRC@@#$$TEST2_SRC#g" < $< > $@
 
 tameclean:
-	rm -f $(srcdir)/static.C $(srcdir)/configtest.C
+	rm -f $(srcdir)/static.C $(srcdir)/configtest.C $(srcdir)/simple.C
 
