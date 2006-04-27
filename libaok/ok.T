@@ -918,7 +918,7 @@ ok_httpsrv_t::init_pub2 (u_int opts)
 {
   bool ret = false;
   if (pub2fd > 0) {
-    ptr<axprt_stream> x (axprt_stream::alloc (pub2fd));
+    ptr<axprt_stream> x (axprt_stream::alloc (pub2fd, ok_axprt_ps));
 
     if (ok_pub2_caching) 
       _pub2 = New refcounted<pub2::caching_remote_publisher_t> (x, opts);
