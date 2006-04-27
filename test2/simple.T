@@ -33,9 +33,10 @@ class oksrvc_simple_t : public oksrvc_t {
 public:
   oksrvc_simple_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
-  void post_launch_pub2_T (cbb::ptr callercv,  CLOSURE);
   void post_launch_pub2 (cbb::ptr callercv)
   { post_launch_pub2_T (callercv); }
+protected:
+  void post_launch_pub2_T (cbb::ptr callercv,  CLOSURE);
 };
 
 class okclnt_simple_t : public okclnt_t {
@@ -69,7 +70,6 @@ okclnt_simple_t::process_T ()
 {
   VARS {
     aarr_t aarr;
-    str in;
     bool rc (true);
     u_int opts (P_IINFO|P_VERBOSE);
     str file;
