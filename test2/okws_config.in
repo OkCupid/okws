@@ -17,5 +17,6 @@ AccessLogFmt	ivt1sbU
 Service		static	/static
 Service		configtest /configtest
 RegexAlias	/static	^(:\d+)?/static/.*$
+Service		simple	/simple
 
 ErrorDoc	404	/err/404.html

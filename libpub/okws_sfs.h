@@ -30,6 +30,12 @@
 #include "refcnt.h"
 #include "str.h"
 
+#ifdef SFSLITE_PATCHLEVEL
+# if SFSLITE_PATCHLEVEL < 8008002
+#  error "Need sfslite patchlevel of 0.8.8pre2 or greater!"
+# endif
+#endif
+
 //
 // A header file for OKWS changes to SFS. Should be included by most files
 // in OKWS and also anything build with OKWS.
