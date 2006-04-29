@@ -159,7 +159,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
 		       svc_options_t *so)
 {
   int svc_uid = -1;
-  optind = 0;
+  optind = 1;
   bool rc = true;
   int ch;
 
@@ -393,7 +393,6 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   if (!s.size ()) 
     goto usage;
 
-  // don't pop_front here; we'll do that inside ofr parse_service_options
   bin = s.front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin

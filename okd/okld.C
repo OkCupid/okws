@@ -1,4 +1,7 @@
+
+# 1 "/home/am8/max/okws1/okd/okld.T"
 #define CCEOC_ARGNAME  callercv
+# 1 "/home/am8/max/okws1/okd/okld.T"
 // -*-c++-*-
 /* $Id$ */
 
@@ -160,7 +163,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
 		       svc_options_t *so)
 {
   int svc_uid = -1;
-  optind = 0;
+  optind = 1;
   bool rc = true;
   int ch;
 
@@ -305,20 +308,20 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (!check_uri (loc, uri, &port))
     goto err;
 
-  if (!parse_service_options (&s, &u, loc, &so));
-    goto err;
-
   if (s.size () < 1)
     goto usage;
 
-  bin = s.pop_front ();
+  bin = s.front (); // pop it off in parse_serviec_options
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin 
 	 << ") contains unsafe substrings\n";
     goto err;
   }
-  
   exe = apply_container_dir (service_bin, bin);
+
+  if (!parse_service_options (&s, &u, loc, &so));
+    goto err;
+  
   //
   // if a port was specified for this URI, then there is no need
   // to prepend it with a leading slash.
@@ -393,7 +396,8 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   // now get the executable or the script, as the case may be
   if (!s.size ()) 
     goto usage;
-  bin = s.pop_front ();
+
+  bin = s.front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin
 	 << ") contains unsafe substrings\n";
@@ -761,103 +765,29 @@ okld_t::parseconfig (const str &cf)
     okld_exit (1);
 }
 
-class okld_t__launch_pubd2__closure_t : public closure_t {
-public:
-  okld_t__launch_pubd2__closure_t (okld_t *_self,  coordvar_int_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
-  typedef void  (okld_t::*method_type_t) ( coordvar_int_t , ptr<closure_t>);
-  void set_method_pointer (method_type_t m) { _method = m; }
-  void block_cb_switch (int i) {
-    switch (i) {
-    case 1: cb1(); break;
-    case 2: cb2(); break;
-    default: panic ("unexpected case");
-    }
-  }
-  void cb1 () {
-    if (-- _cb_num_calls1 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:774: in function okld_t::launchservices", "callback overcalled!");
-    }
-    if (!--_block1)
-      reenter ();
-  }
-  void cb2 () {
-    if (-- _cb_num_calls2 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:783: in function okld_t::launchservices", "callback overcalled!");
-    }
-    if (!--_block2)
-      reenter ();
-  }
-  void reenter ()
-  {
-    ((*_self).*_method)  (_args.callercv, mkref (this));
-  }
-  struct stack_t {
-    stack_t ( coordvar_int_t callercv) : ret (-1)  {}
-     bool b;
-     int ret;
-  };
-  struct args_t {
-    args_t ( coordvar_int_t callercv) : callercv (callercv) {}
-     coordvar_int_t callercv;
-  };
-  okld_t *_self;
-  stack_t _stack;
-  args_t _args;
-  method_type_t _method;
-  int _block1;
-  int _block2;
-  int _cb_num_calls1;
-  int _cb_num_calls2;
-  bool is_onstack (const void *p) const
-  {
-    return (static_cast<const void *> (&_stack) <= p &&
-            static_cast<const void *> (&_stack + 1) > p);
-  }
-};
+# 764 "/home/am8/max/okws1/okd/okld.T"
+class okld_t__launch_pubd2__closure_t : public closure_t { public:   okld_t__launch_pubd2__closure_t (okld_t *_self,  coordvar_int_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}   typedef void  (okld_t::*method_type_t) ( coordvar_int_t , ptr<closure_t>);   void set_method_pointer (method_type_t m) { _method = m; }   void block_cb_switch (int i) {     switch (i) {     case 1: cb1(); break;     case 2: cb2(); break;     default: panic ("unexpected case");     }   }   void cb1 () {     if (-- _cb_num_calls1 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:775: in function okld_t::launchservices", "callback overcalled!");     }     if (!--_block1)       reenter ();   }   void cb2 () {     if (-- _cb_num_calls2 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:784: in function okld_t::launchservices", "callback overcalled!");     }     if (!--_block2)       reenter ();   }   void reenter ()   {     ((*_self).*_method)  (_args.callercv, mkref (this));   }   struct stack_t {     stack_t ( coordvar_int_t callercv) : ret (-1)  {}      bool b;      int ret;   };   struct args_t {     args_t ( coordvar_int_t callercv) : callercv (callercv) {}      coordvar_int_t callercv;   };   okld_t *_self;   stack_t _stack;   args_t _args;   method_type_t _method;   int _block1;   int _block2;   int _cb_num_calls1;   int _cb_num_calls2;   bool is_onstack (const void *p) const   {     return (static_cast<const void *> (&_stack) <= p &&             static_cast<const void *> (&_stack + 1) > p);   } }; 
+# 764 "/home/am8/max/okws1/okd/okld.T"
 void 
 okld_t::launch_pubd2( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
 {
-    int CCEOC_STACK_SENTINEL;
-  okld_t__launch_pubd2__closure_t *__cls;
-  ptr<okld_t__launch_pubd2__closure_t > __cls_r;
-  if (!__cls_g) {
-    if (tame_check_leaks ()) start_join_group_collection ();
-    __cls_r = New refcounted<okld_t__launch_pubd2__closure_t> (this, __tame_callercv);
-    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
-    __cls = __cls_r;
-    __cls_g = __cls_r;
-    __cls->set_method_pointer (&okld_t::launch_pubd2);
-  } else {
-    __cls =     reinterpret_cast<okld_t__launch_pubd2__closure_t *> (static_cast<closure_t *> (__cls_g));
-    __cls_r = mkref (__cls);
-  }
-   bool &b = __cls->_stack.b;
-   int &ret = __cls->_stack.ret;
-   coordvar_int_t &callercv = __cls->_args.callercv;
-   use_reference (callercv); 
-  switch (__cls->jumpto ()) {
-  case 1:
-    goto okld_t__launch_pubd2__label_1;
-    break;
-  case 2:
-    goto okld_t__launch_pubd2__label_2;
-    break;
-  default:
-    break;
-  }
+  
+# 767 "/home/am8/max/okws1/okd/okld.T"
+  int CCEOC_STACK_SENTINEL;   okld_t__launch_pubd2__closure_t *__cls;   ptr<okld_t__launch_pubd2__closure_t > __cls_r;   if (!__cls_g) {     if (tame_check_leaks ()) start_join_group_collection ();     __cls_r = New refcounted<okld_t__launch_pubd2__closure_t> (this, __tame_callercv);     if (tame_check_leaks ()) __cls_r->collect_join_groups ();     __cls = __cls_r;     __cls_g = __cls_r;     __cls->set_method_pointer (&okld_t::launch_pubd2);   } else {     __cls =     reinterpret_cast<okld_t__launch_pubd2__closure_t *> (static_cast<closure_t *> (__cls_g));     __cls_r = mkref (__cls);   }    bool &b = __cls->_stack.b;    int &ret = __cls->_stack.ret;    coordvar_int_t &callercv = __cls->_args.callercv;    use_reference (callercv);    switch (__cls->jumpto ()) {   case 1:     goto okld_t__launch_pubd2__label_1;     break;   case 2:     goto okld_t__launch_pubd2__label_2;     break;   default:     break;   }
+# 770 "/home/am8/max/okws1/okd/okld.T"
 
   assert (pubd2exc);
   pubd2 = New clone_only_client_t (pubd2exc, PUB2_CLONE);
 
 
-    do {
-    __cls->_block1 = 1;
-    __cls->set_jumpto (1);
- pubd2->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(b)>, __cls_r, 1, refset_t<TTT(b)> (b))));     if (--__cls->_block1)
-      return;
-  } while (0);
- okld_t__launch_pubd2__label_1:
-    ;
+  
+# 775 "/home/am8/max/okws1/okd/okld.T"
+  do {     __cls->_block1 = 1;     __cls->set_jumpto (1); 
+# 775 "/home/am8/max/okws1/okd/okld.T"
+ pubd2->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(b)>, __cls_r, 1, refset_t<TTT(b)> (b)))); 
+# 775 "/home/am8/max/okws1/okd/okld.T"
+    if (--__cls->_block1)       return;   } while (0);  okld_t__launch_pubd2__label_1:     ;
+# 775 "/home/am8/max/okws1/okd/okld.T"
 
   if (b) {
 
@@ -867,14 +797,14 @@ okld_t::launch_pubd2( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
     // here for pub2
     assert (pubd2->init ());
 
-      do {
-    __cls->_block2 = 1;
-    __cls->set_jumpto (2);
- pubd2->clone ((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(ret)>, __cls_r, 2, refset_t<TTT(ret)> (ret))));     if (--__cls->_block2)
-      return;
-  } while (0);
- okld_t__launch_pubd2__label_2:
-    ;
+    
+# 784 "/home/am8/max/okws1/okd/okld.T"
+  do {     __cls->_block2 = 1;     __cls->set_jumpto (2); 
+# 784 "/home/am8/max/okws1/okd/okld.T"
+ pubd2->clone ((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(ret)>, __cls_r, 2, refset_t<TTT(ret)> (ret)))); 
+# 784 "/home/am8/max/okws1/okd/okld.T"
+    if (--__cls->_block2)       return;   } while (0);  okld_t__launch_pubd2__label_2:     ;
+# 784 "/home/am8/max/okws1/okd/okld.T"
 
     if (ret < 0) {
       warn << "pubd -2 did not send a file descriptor; failing\n";
@@ -883,100 +813,26 @@ okld_t::launch_pubd2( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
     warn << "cannot connect to pub daemon version 2 (pubd -2)\n";
   }
   
-    do {
-    const  coordvar_int_t  __cb_tmp (CCEOC_ARGNAME);
-RESUME ("/home/am8/max/m/okws1/okd/okld.T:791: in function okld_t::launch_pubd2", __cb_tmp, ret); return;   } while (0);
+  
+# 792 "/home/am8/max/okws1/okd/okld.T"
+  do {     const  coordvar_int_t  __cb_tmp (CCEOC_ARGNAME); RESUME ("/home/am8/max/okws1/okd/okld.T:792: in function okld_t::launch_pubd2", __cb_tmp, ret); return;   } while (0);
+# 792 "/home/am8/max/okws1/okd/okld.T"
 
-  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:792: in function okld_t::launch_pubd2");
-  return;
+# 793 "/home/am8/max/okws1/okd/okld.T"
+  END_OF_SCOPE("/home/am8/max/okws1/okd/okld.T:793: in function okld_t::launch_pubd2");   return;
+# 793 "/home/am8/max/okws1/okd/okld.T"
 }
 
-class okld_t__launch_logd__closure_t : public closure_t {
-public:
-  okld_t__launch_logd__closure_t (okld_t *_self,  coordvar_int_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
-  typedef void  (okld_t::*method_type_t) ( coordvar_int_t , ptr<closure_t>);
-  void set_method_pointer (method_type_t m) { _method = m; }
-  void block_cb_switch (int i) {
-    switch (i) {
-    case 1: cb1(); break;
-    case 2: cb2(); break;
-    default: panic ("unexpected case");
-    }
-  }
-  void cb1 () {
-    if (-- _cb_num_calls1 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:810: in function okld_t::launch_pubd2", "callback overcalled!");
-    }
-    if (!--_block1)
-      reenter ();
-  }
-  void cb2 () {
-    if (-- _cb_num_calls2 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:812: in function okld_t::launch_pubd2", "callback overcalled!");
-    }
-    if (!--_block2)
-      reenter ();
-  }
-  void reenter ()
-  {
-    ((*_self).*_method)  (_args.callercv, mkref (this));
-  }
-  struct stack_t {
-    stack_t ( coordvar_int_t callercv) : ret (-1)  {}
-     vec< str > *argv;
-     bool b;
-     int ret;
-  };
-  struct args_t {
-    args_t ( coordvar_int_t callercv) : callercv (callercv) {}
-     coordvar_int_t callercv;
-  };
-  okld_t *_self;
-  stack_t _stack;
-  args_t _args;
-  method_type_t _method;
-  int _block1;
-  int _block2;
-  int _cb_num_calls1;
-  int _cb_num_calls2;
-  bool is_onstack (const void *p) const
-  {
-    return (static_cast<const void *> (&_stack) <= p &&
-            static_cast<const void *> (&_stack + 1) > p);
-  }
-};
+# 795 "/home/am8/max/okws1/okd/okld.T"
+class okld_t__launch_logd__closure_t : public closure_t { public:   okld_t__launch_logd__closure_t (okld_t *_self,  coordvar_int_t callercv) : closure_t (true), _self (_self),  _stack (callercv), _args (callercv), _block1 (0), _block2 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}   typedef void  (okld_t::*method_type_t) ( coordvar_int_t , ptr<closure_t>);   void set_method_pointer (method_type_t m) { _method = m; }   void block_cb_switch (int i) {     switch (i) {     case 1: cb1(); break;     case 2: cb2(); break;     default: panic ("unexpected case");     }   }   void cb1 () {     if (-- _cb_num_calls1 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:811: in function okld_t::launch_pubd2", "callback overcalled!");     }     if (!--_block1)       reenter ();   }   void cb2 () {     if (-- _cb_num_calls2 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:813: in function okld_t::launch_pubd2", "callback overcalled!");     }     if (!--_block2)       reenter ();   }   void reenter ()   {     ((*_self).*_method)  (_args.callercv, mkref (this));   }   struct stack_t {     stack_t ( coordvar_int_t callercv) : ret (-1)  {}      vec< str > *argv;      bool b;      int ret;   };   struct args_t {     args_t ( coordvar_int_t callercv) : callercv (callercv) {}      coordvar_int_t callercv;   };   okld_t *_self;   stack_t _stack;   args_t _args;   method_type_t _method;   int _block1;   int _block2;   int _cb_num_calls1;   int _cb_num_calls2;   bool is_onstack (const void *p) const   {     return (static_cast<const void *> (&_stack) <= p &&             static_cast<const void *> (&_stack + 1) > p);   } }; 
+# 795 "/home/am8/max/okws1/okd/okld.T"
 void 
 okld_t::launch_logd( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
 {
-    int CCEOC_STACK_SENTINEL;
-  okld_t__launch_logd__closure_t *__cls;
-  ptr<okld_t__launch_logd__closure_t > __cls_r;
-  if (!__cls_g) {
-    if (tame_check_leaks ()) start_join_group_collection ();
-    __cls_r = New refcounted<okld_t__launch_logd__closure_t> (this, __tame_callercv);
-    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
-    __cls = __cls_r;
-    __cls_g = __cls_r;
-    __cls->set_method_pointer (&okld_t::launch_logd);
-  } else {
-    __cls =     reinterpret_cast<okld_t__launch_logd__closure_t *> (static_cast<closure_t *> (__cls_g));
-    __cls_r = mkref (__cls);
-  }
-   vec< str > *&argv = __cls->_stack.argv;
-   bool &b = __cls->_stack.b;
-   int &ret = __cls->_stack.ret;
-   coordvar_int_t &callercv = __cls->_args.callercv;
-   use_reference (callercv); 
-  switch (__cls->jumpto ()) {
-  case 1:
-    goto okld_t__launch_logd__label_1;
-    break;
-  case 2:
-    goto okld_t__launch_logd__label_2;
-    break;
-  default:
-    break;
-  }
+  
+# 798 "/home/am8/max/okws1/okd/okld.T"
+  int CCEOC_STACK_SENTINEL;   okld_t__launch_logd__closure_t *__cls;   ptr<okld_t__launch_logd__closure_t > __cls_r;   if (!__cls_g) {     if (tame_check_leaks ()) start_join_group_collection ();     __cls_r = New refcounted<okld_t__launch_logd__closure_t> (this, __tame_callercv);     if (tame_check_leaks ()) __cls_r->collect_join_groups ();     __cls = __cls_r;     __cls_g = __cls_r;     __cls->set_method_pointer (&okld_t::launch_logd);   } else {     __cls =     reinterpret_cast<okld_t__launch_logd__closure_t *> (static_cast<closure_t *> (__cls_g));     __cls_r = mkref (__cls);   }    vec< str > *&argv = __cls->_stack.argv;    bool &b = __cls->_stack.b;    int &ret = __cls->_stack.ret;    coordvar_int_t &callercv = __cls->_args.callercv;    use_reference (callercv);    switch (__cls->jumpto ()) {   case 1:     goto okld_t__launch_logd__label_1;     break;   case 2:     goto okld_t__launch_logd__label_2;     break;   default:     break;   }
+# 802 "/home/am8/max/okws1/okd/okld.T"
 
   if (!logexc) 
     logexc = New helper_exec_t (oklog_program_1, "oklogd", 1,
@@ -986,24 +842,24 @@ okld_t::launch_logd( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
   argv->push_back (logd_parms.encode ());
   logd = New log_primary_t (logexc);
 
-    do {
-    __cls->_block1 = 1;
-    __cls->set_jumpto (1);
- logd->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(b)>, __cls_r, 1, refset_t<TTT(b)> (b))));     if (--__cls->_block1)
-      return;
-  } while (0);
- okld_t__launch_logd__label_1:
-    ;
+  
+# 811 "/home/am8/max/okws1/okd/okld.T"
+  do {     __cls->_block1 = 1;     __cls->set_jumpto (1); 
+# 811 "/home/am8/max/okws1/okd/okld.T"
+ logd->connect ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(b)>, __cls_r, 1, refset_t<TTT(b)> (b)))); 
+# 811 "/home/am8/max/okws1/okd/okld.T"
+    if (--__cls->_block1)       return;   } while (0);  okld_t__launch_logd__label_1:     ;
+# 811 "/home/am8/max/okws1/okd/okld.T"
 
   if (b) {
-      do {
-    __cls->_block2 = 1;
-    __cls->set_jumpto (2);
- logd->clone((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(ret)>, __cls_r, 2, refset_t<TTT(ret)> (ret))));     if (--__cls->_block2)
-      return;
-  } while (0);
- okld_t__launch_logd__label_2:
-    ;
+    
+# 813 "/home/am8/max/okws1/okd/okld.T"
+  do {     __cls->_block2 = 1;     __cls->set_jumpto (2); 
+# 813 "/home/am8/max/okws1/okd/okld.T"
+ logd->clone((++__cls->_block2, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(ret)>, __cls_r, 2, refset_t<TTT(ret)> (ret)))); 
+# 813 "/home/am8/max/okws1/okd/okld.T"
+    if (--__cls->_block2)       return;   } while (0);  okld_t__launch_logd__label_2:     ;
+# 813 "/home/am8/max/okws1/okd/okld.T"
 
     if (ret < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
@@ -1012,12 +868,14 @@ okld_t::launch_logd( coordvar_int_t __tame_callercv, ptr<closure_t> __cls_g)
     warn << "cannot connect to launched log daemon (oklogd)\n";
   }
 
-    do {
-    const  coordvar_int_t  __cb_tmp (CCEOC_ARGNAME);
-RESUME ("/home/am8/max/m/okws1/okd/okld.T:820: in function okld_t::launch_logd", __cb_tmp, ret); return;   } while (0);
+  
+# 821 "/home/am8/max/okws1/okd/okld.T"
+  do {     const  coordvar_int_t  __cb_tmp (CCEOC_ARGNAME); RESUME ("/home/am8/max/okws1/okd/okld.T:821: in function okld_t::launch_logd", __cb_tmp, ret); return;   } while (0);
+# 821 "/home/am8/max/okws1/okd/okld.T"
 
-  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:821: in function okld_t::launch_logd");
-  return;
+# 822 "/home/am8/max/okws1/okd/okld.T"
+  END_OF_SCOPE("/home/am8/max/okws1/okd/okld.T:822: in function okld_t::launch_logd");   return;
+# 822 "/home/am8/max/okws1/okd/okld.T"
 }
 
 void
@@ -1383,80 +1241,15 @@ main (int argc, char *argv[])
   amain ();
 }
 
-class okld_t__launch__closure_t : public closure_t {
-public:
-  okld_t__launch__closure_t (okld_t *_self,  str cf) : closure_t (false), _self (_self),  _stack (cf), _args (cf), _block1 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}
-  typedef void  (okld_t::*method_type_t) ( str , ptr<closure_t>);
-  void set_method_pointer (method_type_t m) { _method = m; }
-  void block_cb_switch (int i) {
-    switch (i) {
-    case 1: cb1(); break;
-    case 2: cb2(); break;
-    default: panic ("unexpected case");
-    }
-  }
-  void cb1 () {
-    if (-- _cb_num_calls1 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:1206: in function okld_t::launch_logd", "callback overcalled!");
-    }
-    if (!--_block1)
-      reenter ();
-  }
-  void cb2 () {
-    if (-- _cb_num_calls2 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:1208: in function okld_t::launch_logd", "callback overcalled!");
-    }
-    if (!--_block1)
-      reenter ();
-  }
-  void reenter ()
-  {
-    ((*_self).*_method)  (_args.cf, mkref (this));
-  }
-  struct stack_t {
-    stack_t ( str cf) {}
-  };
-  struct args_t {
-    args_t ( str cf) : cf (cf) {}
-     str cf;
-  };
-  okld_t *_self;
-  stack_t _stack;
-  args_t _args;
-  method_type_t _method;
-  int _block1;
-  int _cb_num_calls1;
-  int _cb_num_calls2;
-  bool is_onstack (const void *p) const
-  {
-    return (static_cast<const void *> (&_stack) <= p &&
-            static_cast<const void *> (&_stack + 1) > p);
-  }
-};
+# 1187 "/home/am8/max/okws1/okd/okld.T"
+class okld_t__launch__closure_t : public closure_t { public:   okld_t__launch__closure_t (okld_t *_self,  str cf) : closure_t (false), _self (_self),  _stack (cf), _args (cf), _block1 (0), _cb_num_calls1 (0), _cb_num_calls2 (0) {}   typedef void  (okld_t::*method_type_t) ( str , ptr<closure_t>);   void set_method_pointer (method_type_t m) { _method = m; }   void block_cb_switch (int i) {     switch (i) {     case 1: cb1(); break;     case 2: cb2(); break;     default: panic ("unexpected case");     }   }   void cb1 () {     if (-- _cb_num_calls1 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:1207: in function okld_t::launch_logd", "callback overcalled!");     }     if (!--_block1)       reenter ();   }   void cb2 () {     if (-- _cb_num_calls2 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:1209: in function okld_t::launch_logd", "callback overcalled!");     }     if (!--_block1)       reenter ();   }   void reenter ()   {     ((*_self).*_method)  (_args.cf, mkref (this));   }   struct stack_t {     stack_t ( str cf) {}   };   struct args_t {     args_t ( str cf) : cf (cf) {}      str cf;   };   okld_t *_self;   stack_t _stack;   args_t _args;   method_type_t _method;   int _block1;   int _cb_num_calls1;   int _cb_num_calls2;   bool is_onstack (const void *p) const   {     return (static_cast<const void *> (&_stack) <= p &&             static_cast<const void *> (&_stack + 1) > p);   } }; 
+# 1187 "/home/am8/max/okws1/okd/okld.T"
 void 
 okld_t::launch( str __tame_cf, ptr<closure_t> __cls_g)
-{  okld_t__launch__closure_t *__cls;
-  ptr<okld_t__launch__closure_t > __cls_r;
-  if (!__cls_g) {
-    if (tame_check_leaks ()) start_join_group_collection ();
-    __cls_r = New refcounted<okld_t__launch__closure_t> (this, __tame_cf);
-    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
-    __cls = __cls_r;
-    __cls_g = __cls_r;
-    __cls->set_method_pointer (&okld_t::launch);
-  } else {
-    __cls =     reinterpret_cast<okld_t__launch__closure_t *> (static_cast<closure_t *> (__cls_g));
-    __cls_r = mkref (__cls);
-  }
-   str &cf = __cls->_args.cf;
-   use_reference (cf); 
-  switch (__cls->jumpto ()) {
-  case 1:
-    goto okld_t__launch__label_1;
-    break;
-  default:
-    break;
-  }
+{
+# 1189 "/home/am8/max/okws1/okd/okld.T"
+  okld_t__launch__closure_t *__cls;   ptr<okld_t__launch__closure_t > __cls_r;   if (!__cls_g) {     if (tame_check_leaks ()) start_join_group_collection ();     __cls_r = New refcounted<okld_t__launch__closure_t> (this, __tame_cf);     if (tame_check_leaks ()) __cls_r->collect_join_groups ();     __cls = __cls_r;     __cls_g = __cls_r;     __cls->set_method_pointer (&okld_t::launch);   } else {     __cls =     reinterpret_cast<okld_t__launch__closure_t *> (static_cast<closure_t *> (__cls_g));     __cls_r = mkref (__cls);   }    str &cf = __cls->_args.cf;    use_reference (cf);    switch (__cls->jumpto ()) {   case 1:     goto okld_t__launch__label_1;     break;   default:     break;   }
+# 1189 "/home/am8/max/okws1/okd/okld.T"
 
   configfile = cf;
   parseconfig (cf);
@@ -1474,18 +1267,18 @@ okld_t::launch( str __tame_cf, ptr<closure_t> __cls_g)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
 
   pub2fd = -1;
-    do {
-    __cls->_block1 = 1;
-    __cls->set_jumpto (1);
+  
+# 1206 "/home/am8/max/okws1/okd/okld.T"
+  do {     __cls->_block1 = 1;     __cls->set_jumpto (1); 
+# 1206 "/home/am8/max/okws1/okd/okld.T"
 
     launch_logd ((++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb1<TTT(logfd)>, __cls_r, 1, refset_t<TTT(logfd)> (logfd))));
     if (pubd2exc)
       launch_pubd2 ((++__cls->_block1, ++__cls->_cb_num_calls2, wrap (__block_cb1<TTT(pub2fd)>, __cls_r, 2, refset_t<TTT(pub2fd)> (pub2fd))));
-      if (--__cls->_block1)
-      return;
-  } while (0);
- okld_t__launch__label_1:
-    ;
+  
+# 1210 "/home/am8/max/okws1/okd/okld.T"
+    if (--__cls->_block1)       return;   } while (0);  okld_t__launch__label_1:     ;
+# 1210 "/home/am8/max/okws1/okd/okld.T"
 
 
   if (logfd < 0) {
@@ -1504,77 +1297,21 @@ okld_t::launch( str __tame_cf, ptr<closure_t> __cls_g)
   
   chroot ();
   launchservices ();
-  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:1227: in function okld_t::launch");
-  return;
+# 1228 "/home/am8/max/okws1/okd/okld.T"
+  END_OF_SCOPE("/home/am8/max/okws1/okd/okld.T:1228: in function okld_t::launch");   return;
+# 1228 "/home/am8/max/okws1/okd/okld.T"
 }
   
-class okld_t__launchservices__closure_t : public closure_t {
-public:
-  okld_t__launchservices__closure_t (okld_t *_self) : closure_t (false), _self (_self),  _stack (), _args (), _block1 (0), _cb_num_calls1 (0) {}
-  typedef void  (okld_t::*method_type_t) (ptr<closure_t>);
-  void set_method_pointer (method_type_t m) { _method = m; }
-  void block_cb_switch (int i) {
-    switch (i) {
-    case 1: cb1(); break;
-    default: panic ("unexpected case");
-    }
-  }
-  void cb1 () {
-    if (-- _cb_num_calls1 < 0 ) {
-      tame_error ("/home/am8/max/m/okws1/okd/okld.T:1247: in function okld_t::launch", "callback overcalled!");
-    }
-    if (!--_block1)
-      reenter ();
-  }
-  void reenter ()
-  {
-    ((*_self).*_method)  (mkref (this));
-  }
-  struct stack_t {
-    stack_t () {}
-     u_int i;
-     u_int j;
-  };
-  struct args_t {
-    args_t () {}
-  };
-  okld_t *_self;
-  stack_t _stack;
-  args_t _args;
-  method_type_t _method;
-  int _block1;
-  int _cb_num_calls1;
-  bool is_onstack (const void *p) const
-  {
-    return (static_cast<const void *> (&_stack) <= p &&
-            static_cast<const void *> (&_stack + 1) > p);
-  }
-};
+# 1230 "/home/am8/max/okws1/okd/okld.T"
+class okld_t__launchservices__closure_t : public closure_t { public:   okld_t__launchservices__closure_t (okld_t *_self) : closure_t (false), _self (_self),  _stack (), _args (), _block1 (0), _cb_num_calls1 (0) {}   typedef void  (okld_t::*method_type_t) (ptr<closure_t>);   void set_method_pointer (method_type_t m) { _method = m; }   void block_cb_switch (int i) {     switch (i) {     case 1: cb1(); break;     default: panic ("unexpected case");     }   }   void cb1 () {     if (-- _cb_num_calls1 < 0 ) {       tame_error ("/home/am8/max/okws1/okd/okld.T:1248: in function okld_t::launch", "callback overcalled!");     }     if (!--_block1)       reenter ();   }   void reenter ()   {     ((*_self).*_method)  (mkref (this));   }   struct stack_t {     stack_t () {}      u_int i;      u_int j;   };   struct args_t {     args_t () {}   };   okld_t *_self;   stack_t _stack;   args_t _args;   method_type_t _method;   int _block1;   int _cb_num_calls1;   bool is_onstack (const void *p) const   {     return (static_cast<const void *> (&_stack) <= p &&             static_cast<const void *> (&_stack + 1) > p);   } }; 
+# 1230 "/home/am8/max/okws1/okd/okld.T"
 void 
 okld_t::launchservices(ptr<closure_t> __cls_g)
 {
-    okld_t__launchservices__closure_t *__cls;
-  ptr<okld_t__launchservices__closure_t > __cls_r;
-  if (!__cls_g) {
-    if (tame_check_leaks ()) start_join_group_collection ();
-    __cls_r = New refcounted<okld_t__launchservices__closure_t> (this);
-    if (tame_check_leaks ()) __cls_r->collect_join_groups ();
-    __cls = __cls_r;
-    __cls_g = __cls_r;
-    __cls->set_method_pointer (&okld_t::launchservices);
-  } else {
-    __cls =     reinterpret_cast<okld_t__launchservices__closure_t *> (static_cast<closure_t *> (__cls_g));
-    __cls_r = mkref (__cls);
-  }
-   u_int &i = __cls->_stack.i;
-   u_int &j = __cls->_stack.j;
-  switch (__cls->jumpto ()) {
-  case 1:
-    goto okld_t__launchservices__label_1;
-    break;
-  default:
-    break;
-  }
+  
+# 1233 "/home/am8/max/okws1/okd/okld.T"
+  okld_t__launchservices__closure_t *__cls;   ptr<okld_t__launchservices__closure_t > __cls_r;   if (!__cls_g) {     if (tame_check_leaks ()) start_join_group_collection ();     __cls_r = New refcounted<okld_t__launchservices__closure_t> (this);     if (tame_check_leaks ()) __cls_r->collect_join_groups ();     __cls = __cls_r;     __cls_g = __cls_r;     __cls->set_method_pointer (&okld_t::launchservices);   } else {     __cls =     reinterpret_cast<okld_t__launchservices__closure_t *> (static_cast<closure_t *> (__cls_g));     __cls_r = mkref (__cls);   }    u_int &i = __cls->_stack.i;    u_int &j = __cls->_stack.j;   switch (__cls->jumpto ()) {   case 1:     goto okld_t__launchservices__label_1;     break;   default:     break;   }
+# 1235 "/home/am8/max/okws1/okd/okld.T"
 
 
   // XXX - hack for now; there is a problem when we launch too many
@@ -1588,26 +1325,30 @@ okld_t::launchservices(ptr<closure_t> __cls_g)
   
   for (i = 0; i < svcs.size (); i++, j++) {
     if (okld_startup_batch_size && j >= okld_startup_batch_size) {
-        do {
-    __cls->_block1 = 1;
-    __cls->set_jumpto (1);
- delaycb (okld_startup_batch_wait, 0, (++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb0, __cls_r, 1)));     if (--__cls->_block1)
-      return;
-  } while (0);
- okld_t__launchservices__label_1:
-    ;
+      
+# 1248 "/home/am8/max/okws1/okd/okld.T"
+  do {     __cls->_block1 = 1;     __cls->set_jumpto (1); 
+# 1248 "/home/am8/max/okws1/okd/okld.T"
+ delaycb (okld_startup_batch_wait, 0, (++__cls->_block1, ++__cls->_cb_num_calls1, wrap (__block_cb0, __cls_r, 1))); 
+# 1248 "/home/am8/max/okws1/okd/okld.T"
+    if (--__cls->_block1)       return;   } while (0);  okld_t__launchservices__label_1:     ;
+# 1248 "/home/am8/max/okws1/okd/okld.T"
 
       j = 0;
     }
     if (sdflag) { 
       warn << "not launching due to shutdown flag\n";
-        END_OF_SCOPE ("/home/am8/max/m/okws1/okd/okld.T:1252: in function okld_t::launchservices");
+      
+# 1253 "/home/am8/max/okws1/okd/okld.T"
+  END_OF_SCOPE ("/home/am8/max/okws1/okd/okld.T:1253: in function okld_t::launchservices");
+# 1253 "/home/am8/max/okws1/okd/okld.T"
 return ;
     }
     svcs[i]->launch ();
   }
-  END_OF_SCOPE("/home/am8/max/m/okws1/okd/okld.T:1256: in function okld_t::launchservices");
-  return;
+# 1257 "/home/am8/max/okws1/okd/okld.T"
+  END_OF_SCOPE("/home/am8/max/okws1/okd/okld.T:1257: in function okld_t::launchservices");   return;
+# 1257 "/home/am8/max/okws1/okd/okld.T"
 }
 
 bool
