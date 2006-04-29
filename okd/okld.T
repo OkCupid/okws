@@ -393,7 +393,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   if (!s.size ()) 
     goto usage;
 
-  bin = s.front ();
+  bin = s.front (); // pop it from s in 'parse_service_options' , below
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin
 	 << ") contains unsafe substrings\n";
