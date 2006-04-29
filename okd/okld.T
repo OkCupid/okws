@@ -304,20 +304,20 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   if (!check_uri (loc, uri, &port))
     goto err;
 
-  if (!parse_service_options (&s, &u, loc, &so));
-    goto err;
-
   if (s.size () < 1)
     goto usage;
 
-  bin = s.pop_front ();
+  bin = s.front (); // pop it off in parse_serviec_options
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin 
 	 << ") contains unsafe substrings\n";
     goto err;
   }
-  
   exe = apply_container_dir (service_bin, bin);
+
+  if (!parse_service_options (&s, &u, loc, &so));
+    goto err;
+  
   //
   // if a port was specified for this URI, then there is no need
   // to prepend it with a leading slash.
@@ -392,7 +392,9 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   // now get the executable or the script, as the case may be
   if (!s.size ()) 
     goto usage;
-  bin = s.pop_front ();
+
+  // don't pop_front here; we'll do that inside ofr parse_service_options
+  bin = s.front ();
   if (!is_safe (bin)) {
     warn << loc << ": Service path (" << bin
 	 << ") contains unsafe substrings\n";
