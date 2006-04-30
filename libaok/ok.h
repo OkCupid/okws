@@ -282,7 +282,8 @@ public:
 class oksrvc_t : public ok_httpsrv_t { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
-    : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0)
+    : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
+      pub1_supported (true)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -316,16 +317,17 @@ public:
   void add_pubfiles (const char *arr[], bool conf = false);
   void add_pubfile (const str &s, bool conf = false);
 
-  str cfg (const str &n) const { return rpcli->cfg (n); }
-  template<class C> bool cfg (const str &n, C *v) const 
-  { return rpcli->cfg (n, v); }
+  str cfg (const str &n) const ;
+  template<class C> bool cfg (const str &n, C *v) const ;
   template<typename T> parr_err_t cfg (const str &n, u_int i, T *p) const;
+
   void pubfiles (cbb cb);
   dbcon_t *add_db (const str &host, u_int port, const rpc_program &p,
 		   int32_t txa_login_rpc = -1);
   lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
 
-  pval_w_t operator[] (const str &s) const { return (*rpcli)[s]; }
+  pval_w_t operator[] (const str &s) const;
+    
 
   ptr<aclnt> get_okd_aclnt () { return clnt; }
   pub_rclient_t *get_rpcli () { return rpcli; }
@@ -372,6 +374,7 @@ protected:
   vec<str> authtoks;
   int n_fd_out;
   u_int n_reqs; // total number of requests served
+  bool pub1_supported;
 
 private:
   void post_launch_pub2_T (cbb::ptr cb, CLOSURE);
@@ -386,17 +389,67 @@ private:
   nclntcb_t nccb;
 }; 
 
+/**
+ * Service-Specific error messages
+ */
+#define SVC_MSG(M,x)                           \
+do {                                           \
+  strbuf b;                                    \
+  b << "pid " << pid << ": " << x << "\n";     \
+  okdbg_warn (M, b);                           \
+} while (0)                                    \
+
+#define SVC_ERROR(x) SVC_MSG(ERROR, x)
+#define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
+#define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
+
+
 template<typename T> parr_err_t 
 oksrvc_t::cfg (const str &n, u_int i, T *p) const
 {
   pval_t *v;
   const parr_ival_t *arr;
+  if (!rpcli) {
+    SVC_ERROR ("Cannot call oksrvc_t::cfg() without Pub v1 support.\n");
+    return PARR_NOT_FOUND;
+  }
   if (!rpcli->cfg (n, &v))
     return PARR_NOT_FOUND;
   if (!(arr = v->to_int_arr ()))
     return PARR_BAD_TYPE;
   return arr->val (i, p);
 }
+
+pval_w_t 
+oksrvc_t::operator[] (const str &s) const 
+{ 
+  if (!rpcli) {
+    SVC_ERROR ("Cannot call operator[] without Pub v1 support.");
+    return pval_w_t ();
+  } 
+  return (*rpcli)[s] ;
+}
+
+template<class C> bool 
+oksrvc_t::cfg (const str &n, C *v) const 
+{ 
+  if (!rpcli) {
+    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
+    return sNULL;
+  }
+  return rpcli->cfg (n, v);
+}
+
+str 
+oksrvc_t::cfg (const str &n) const 
+{ 
+  if (!rpcli) {
+    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
+    return sNULL;
+  }
+  return rpcli->cfg (n);
+}
+
   
 str okws_exec (const str &x);
 void init_syscall_stats ();
@@ -428,16 +481,6 @@ do {                                           \
 #define CH_CHATTER(x) CH_MSG(CHATTER, x)
 #define CH_ERROR(x)    CH_MSG(ERROR, x)
 
-#define SVC_MSG(M,x)                           \
-do {                                           \
-  strbuf b;                                    \
-  b << "pid " << pid << ": " << x << "\n";     \
-  okdbg_warn (M, b);                           \
-} while (0)                                    \
-
-#define SVC_ERROR(x) SVC_MSG(ERROR, x)
-#define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
-#define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
 
 
 /**

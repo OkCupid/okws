@@ -158,13 +158,16 @@ TAMED void
 okd_t::launch_pubd (coordvar_bool_t callercv)
 {
   VARS {
-    bool rc;
+    bool rc (true);
   }
-  if (!pubd) 
-    pubd = New helper_exec_t (pub_program_1, "pubd");
-  BLOCK { pubd->connect (@(rc)); }
-  if (!rc) {
-    warn << "launch of pub daemon (pubd) failed.\n";
+  if (pubd) {
+    BLOCK { pubd->connect (@(rc)); }
+    if (!rc) {
+      warn << "launch of pub daemon (pubd) failed.\n";
+    }
+  } else {
+    warn << "Pub v1 is off since no Pubd was specified; "
+	 << "Pub v1 calls will fail\n";
   }
   RESUME (rc);
 }

@@ -277,7 +277,8 @@ enum xpub_status_typ_t {
   XPUB_STATUS_NOENT = 3,
   XPUB_STATUS_OOB = 4,                 /* out of bounds */
   XPUB_STATUS_NOT_IMPLEMENTED = 5,
-  XPUB_STATUS_RPC_ERR = 6
+  XPUB_STATUS_RPC_ERR = 6,
+  XPUB_UNAVAILABLE = 7                 /* disabled at runtime */
 };
 
 union xpub_status_t switch (xpub_status_typ_t status)

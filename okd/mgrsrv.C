@@ -77,11 +77,16 @@ okd_mgrsrv_t::relaunch (svccb *sbp)
 void
 okd_mgrsrv_t::repub (svccb *sbp, int v)
 {
-  xpub_fnset_t *r = sbp->Xtmpl getarg<xpub_fnset_t> ();
-  if (v == 1) 
-    myokd->repub (*r, wrap (replystatus, sbp));
-  else
-    myokd->repub2 (*r, wrap (replystatus, sbp));
+  if (!myokd->supports_pub1 ()) {
+    warn << "Pub v1 disabled; cannot serve REPUB RPCs.\n";
+    sbp->reject (PROC_UNAVAIL);
+  } else {
+    xpub_fnset_t *r = sbp->Xtmpl getarg<xpub_fnset_t> ();
+    if (v == 1) 
+      myokd->repub (*r, wrap (replystatus, sbp));
+    else
+      myokd->repub2 (*r, wrap (replystatus, sbp));
+  }
 }
 
 void

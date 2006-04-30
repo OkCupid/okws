@@ -182,6 +182,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
 
+  int pub1_tmp;
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -193,6 +194,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
     t->lookup ("pub2fd", &pub2fd);
+    t->lookup ("pub1", &pub1tmp);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &ok_gzip);
     t->lookup ("filtercgi", &ok_filter_cgi);
@@ -222,6 +224,8 @@ oksrvc_t::init (int argc, char *argv[])
     int tmp = 0;
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
+
+    pub1_supported = pub1tmp;
 
     if (OKDBG2 (SVC_ARGS))
       t->dump1 ();
@@ -269,8 +273,13 @@ oksrvc_t::ctldispatch (svccb *v)
 void
 oksrvc_t::update (svccb *sbp)
 {
-  xpub_fnset_t *s = sbp->Xtmpl getarg <xpub_fnset_t> ();
-  rpcli->publish (*s, wrap (this, &oksrvc_t::update_cb, sbp));
+  if (rpcli) {
+    xpub_fnset_t *s = sbp->Xtmpl getarg <xpub_fnset_t> ();
+    rpcli->publish (*s, wrap (this, &oksrvc_t::update_cb, sbp));
+  } else {
+    SVC_ERROR ("Cannot answer UPDATE RPC without Pub v1 support.\n");
+    sbp->reject (PROC_UNAVAIL);
+  }
 }
 
 void
@@ -447,22 +456,27 @@ oksrvc_t::launch_pub1 (coordvar_bool_t callercv)
     bool rc;
     bool res (true);
   }
-  // setup and launch Remote Pub Client
-  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
-				OKCTL_PUBCONF, get_andmask (), get_ormask ());
+  if (pub1_supported) {
+    // setup and launch Remote Pub Client
+    rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
+				  OKCTL_PUBCONF, 
+				  get_andmask (), get_ormask ());
+    
+    BLOCK { rpcli->config (@(pr)); }
+    if (!*pr) {
+      strbuf b;
+      b << "Pub v1: config failed: " << pr->to_str ();
+      str s = b;
+      SVC_ERROR (s);
+    }
 
-  BLOCK { rpcli->config (@(pr)); }
-  if (!*pr) {
-    strbuf b;
-    b << "Pub v1: config failed: " << pr->to_str ();
-    str s = b;
-    SVC_ERROR (s);
+    init_publist ();
+    
+    BLOCK { pubfiles (@(rc)); }
+    if (!rc) res = false;
+  } else {
+    rpcli = NULL;
   }
-
-  init_publist ();
-  
-  BLOCK { pubfiles (@(rc)); }
-  if (!rc) res = false;
 
   RESUME (res);
 }
@@ -506,9 +520,14 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 lblnc_t *
 oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
 {
-  lblnc_t *l = New lblnc_t (rpcli, i, p, port);
-  dbs.push_back (l);
-  return l;
+  if (!rpcli) {
+    SVC_ERROR ("Cannot use load balacned services with Pub v1");
+    return NULL;
+  } else {
+    lblnc_t *l = New lblnc_t (rpcli, i, p, port);
+    dbs.push_back (l);
+    return l;
+  }
 }
 
 void
@@ -759,13 +778,21 @@ void
 oksrvc_t::add_pubfile (const str &s, bool c)
 {
   // warn << "add_pubfile:" << s << "\n"; // debug
-  rpcli->add_rootfile (s, c);
+  if (rpcli)
+    rpcli->add_rootfile (s, c);
+  else {
+    SVC_ERROR ("Cannot call add_pubfile() without Pub v1 support");
+  }
 }
 
 void
 oksrvc_t::pubfiles (cbb cb) 
 {
-  rpcli->publish (wrap (this, &oksrvc_t::pubbed, cb));
+  if (rpcli) {
+    rpcli->publish (wrap (this, &oksrvc_t::pubbed, cb));
+  } else {
+    SVC_ERROR ("Cannot call pubfiles() without Pub v1 support");
+  }
 }
 
 void

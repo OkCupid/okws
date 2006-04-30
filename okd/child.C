@@ -283,6 +283,11 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
 void
 okd_t::pubconf (svccb *sbp)
 {
+  if (!supports_pub1 ()) {
+    warn << "Cannot call PUBCONF with Pub v1 disabled.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
   ptr<xpub_file_t> cf;
   if ((cf = pprox->get_pubconf ())) {
     xpub_getfile_res_t x (XPUB_STATUS_OK);
@@ -312,6 +317,12 @@ okd_t::pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err)
 void
 okd_t::lookup (svccb *sbp)
 {
+  if (!supports_pub1 ()) {
+    warn << "Cannot call LOOKUP without Pub v1 enabled.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
+
   xpub_fn_t *x = sbp->Xtmpl getarg<xpub_fn_t> ();
   xpub_lookup_res_t res;
   if (pprox->lookup (*x, &res)) 
@@ -363,6 +374,11 @@ okch_t::repub_cb (ptr<ok_repub_t> rpb, clnt_stat err)
 void
 okd_t::getfile (svccb *sbp)
 {
+  if (!supports_pub1 ()) {
+    warn << "Cannot call OKCTL_GETFILE without Pub v1 running.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
   xpubhash_t *xh = sbp->Xtmpl getarg<xpubhash_t> ();
   phashp_t hsh = phash_t::alloc (*xh);
   xpub_getfile_res_t res;
@@ -392,6 +408,11 @@ okd_t::gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> res, clnt_stat err)
 void
 okd_t::send_errdoc_set (svccb *sbp)
 {
+  if (!supports_pub1 ()) {
+    warn << "Cannot call REQ_ERRDOCS without Pub v1 enabled.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
   sbp->replyref (xeds);
 }
 

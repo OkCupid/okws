@@ -581,7 +581,6 @@ okld_t::check_ports ()
   return ret;
 }
 
-
 void
 okld_t::parseconfig (const str &cf)
 {
@@ -692,6 +691,10 @@ okld_t::parseconfig (const str &cf)
 
     .add ("StartupBatchSize", &okld_startup_batch_size, 0, 128)
     .add ("StartupBatchWait", &okld_startup_batch_wait, 0, 128)
+
+    .add ("PubdInet", wrap (this, okld_t::got_pubd_v1))
+    .add ("PubUnix", wrap (this, okld_t::got_pubd_v1))
+    .add ("PubdExecPath", wrap (this, okld_t::got_pubd_v1))
 
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
@@ -850,7 +853,8 @@ okld_t::encode_env ()
     .insert ("dz", ok_dangerous_zbufs ? 1 : 0)
     .insert ("ps", ok_axprt_ps)
     .insert ("clock", int (clock_mode))
-    .insert ("ncto", ok_pub2_svc_neg_cache_timeout);
+    .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
+    .insert ("pub1", pub_v1_support ? 1 : 0)
 
   if (mmc_file)
     env.insert ("mmcf", mmc_file);

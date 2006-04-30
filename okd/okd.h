@@ -215,6 +215,8 @@ public:
   ok_usr_t okd_usr; 
   ok_grp_t okd_grp;
 
+  bool supports_pub1 () const { return pubd ? true : false; }
+
   helper_t *pubd;
 
   void open_mgr_socket ();
