@@ -182,7 +182,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
 
-  int pub1_tmp;
+  int pub1tmp;
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -781,7 +781,8 @@ oksrvc_t::add_pubfile (const str &s, bool c)
   if (rpcli)
     rpcli->add_rootfile (s, c);
   else {
-    SVC_ERROR ("Cannot call add_pubfile() without Pub v1 support");
+    SVC_FATAL_ERROR ("Cannot call add_pubfile() without Pub v1 support");
+    exit (1);
   }
 }
 
