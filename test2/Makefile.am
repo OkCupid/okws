@@ -12,7 +12,7 @@ static_SOURCES = static.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
 
-SUBIDRS = htdocs
+SUBDIRS = htdocs
 
 
 SUFFIXES = .g .C .T
