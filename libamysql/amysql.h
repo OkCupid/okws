@@ -595,7 +595,7 @@ class mysql_t {
 public:
   mysql_t (u_int o = 0) : opts (o) { mysql_init (&mysql); }
   ~mysql_t () { mysql_close (&mysql); }
-  ptr<mysql_t> mysql_t::alloc () { return New refcounted<mysql_t> (); }
+  ptr<mysql_t> alloc () { return New refcounted<mysql_t> (); }
   bool connect (const str &d, const str &h = NULL, const str &u = NULL, 
 		const str &pw = NULL, u_int prt = 0, u_long fl = 0);
   str error () const { return err; }
