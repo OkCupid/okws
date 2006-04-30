@@ -420,36 +420,6 @@ oksrvc_t::cfg (const str &n, u_int i, T *p) const
   return arr->val (i, p);
 }
 
-pval_w_t 
-oksrvc_t::operator[] (const str &s) const 
-{ 
-  if (!rpcli) {
-    SVC_ERROR ("Cannot call operator[] without Pub v1 support.");
-    return pval_w_t ();
-  } 
-  return (*rpcli)[s] ;
-}
-
-template<class C> bool 
-oksrvc_t::cfg (const str &n, C *v) const 
-{ 
-  if (!rpcli) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n, v);
-}
-
-str 
-oksrvc_t::cfg (const str &n) const 
-{ 
-  if (!rpcli) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n);
-}
-
   
 str okws_exec (const str &x);
 void init_syscall_stats ();
