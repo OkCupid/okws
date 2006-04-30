@@ -1015,15 +1015,6 @@ oksrvc_t::operator[] (const str &s) const
   return (*rpcli)[s] ;
 }
 
-template<class C> bool 
-oksrvc_t::cfg (const str &n, C *v) const 
-{ 
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n, v);
-}
 
 str 
 oksrvc_t::cfg (const str &n) const 

@@ -421,6 +421,16 @@ oksrvc_t::cfg (const str &n, u_int i, T *p) const
   return arr->val (i, p);
 }
 
+template<class C> bool 
+oksrvc_t::cfg (const str &n, C *v) const 
+{ 
+  if (!supports_pub1 ()) {
+    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
+    return sNULL;
+  }
+  return rpcli->cfg (n, v);
+}
+
   
 str okws_exec (const str &x);
 void init_syscall_stats ();
