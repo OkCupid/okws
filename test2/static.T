@@ -36,6 +36,7 @@ public:
   void post_launch_pub2_T (cbb::ptr callercv,  CLOSURE);
   void post_launch_pub2 (cbb::ptr callercv)
   { post_launch_pub2_T (callercv); }
+  void init_publist () { add_pubfile ("/null.html"); }
 };
 
 class okclnt_static_t : public okclnt_t {

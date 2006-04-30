@@ -263,8 +263,8 @@ main_T (int argc, char **argv)
   if (!gname) gname = cfgparse->cfg ("RunAsGroup", true);
 
 
-  warn ("version %s, pid %d, protocol version %d\n", 
-	VERSION, int (getpid ()), version);
+  warn ("OKWS version %s, Pub v%d, pid %d\n", 
+	VERSION, version, int (getpid ()));
   if ((slave_status = pub_slave (wrap (client_accept), port, &slave_status)) 
       == PSLAVE_ERR) {
     warn << port << ": port already in use / can't bind to port\n";

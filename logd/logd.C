@@ -335,7 +335,7 @@ main (int argc, char *argv[])
     usage ();
 
   setsid ();
-  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
+  warn ("OKWS version %s, pid %d\n", VERSION, int (getpid ()));
   glogd = New logd_t (argv[optind], fdfd);
   glogd->launch ();
   amain ();

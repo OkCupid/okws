@@ -273,7 +273,7 @@ oksrvc_t::ctldispatch (svccb *v)
 void
 oksrvc_t::update (svccb *sbp)
 {
-  if (rpcli) {
+  if (supports_pub1 ()) {
     xpub_fnset_t *s = sbp->Xtmpl getarg <xpub_fnset_t> ();
     rpcli->publish (*s, wrap (this, &oksrvc_t::update_cb, sbp));
   } else {
@@ -456,11 +456,16 @@ oksrvc_t::launch_pub1 (coordvar_bool_t callercv)
     bool rc;
     bool res (true);
   }
+
+  // Still need to allocate this even for Pub v1 disabled, since
+  // otherwise the legacy calls to pub->include will segfault (with
+  // pub unitialized).  When pub v1 phased out, we can remove this.
+  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
+				OKCTL_PUBCONF, 
+				get_andmask (), get_ormask ());
+
   if (pub1_supported) {
     // setup and launch Remote Pub Client
-    rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
-				  OKCTL_PUBCONF, 
-				  get_andmask (), get_ormask ());
     
     BLOCK { rpcli->config (@(pr)); }
     if (!*pr) {
@@ -475,7 +480,9 @@ oksrvc_t::launch_pub1 (coordvar_bool_t callercv)
     BLOCK { pubfiles (@(rc)); }
     if (!rc) res = false;
   } else {
-    rpcli = NULL;
+
+    // Call anyway to force warnings. This function should be empty.
+    init_publist ();
   }
 
   RESUME (res);
@@ -520,13 +527,13 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 lblnc_t *
 oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
 {
-  if (!rpcli) {
-    SVC_ERROR ("Cannot use load balacned services with Pub v1");
-    return NULL;
-  } else {
+  if (supports_pub1 ()) {
     lblnc_t *l = New lblnc_t (rpcli, i, p, port);
     dbs.push_back (l);
     return l;
+  } else {
+    SVC_ERROR ("Cannot use load balacned services with Pub v1");
+    return NULL;
   }
 }
 
@@ -778,22 +785,20 @@ void
 oksrvc_t::add_pubfile (const str &s, bool c)
 {
   // warn << "add_pubfile:" << s << "\n"; // debug
-  if (rpcli)
+  if (supports_pub1 ())
     rpcli->add_rootfile (s, c);
   else {
-    SVC_FATAL_ERROR ("Cannot call add_pubfile() without Pub v1 support");
-    exit (1);
+    SVC_ERROR ("Cannot call add_pubfile() without Pub v1 support");
   }
 }
 
 void
 oksrvc_t::pubfiles (cbb cb) 
 {
-  if (rpcli) {
+  if (supports_pub1 ()) {
     rpcli->publish (wrap (this, &oksrvc_t::pubbed, cb));
   } else {
-    SVC_FATAL_ERROR ("Cannot call pubfiles() without Pub v1 support");
-    exit (1);
+    SVC_ERROR ("Cannot call pubfiles() without Pub v1 support");
   }
 }
 
@@ -1003,7 +1008,7 @@ okclnt_t::pub2 ()
 pval_w_t 
 oksrvc_t::operator[] (const str &s) const 
 { 
-  if (!rpcli) {
+  if (!supports_pub1 ()) {
     SVC_ERROR ("Cannot call operator[] without Pub v1 support.");
     return pval_w_t ();
   } 
@@ -1013,7 +1018,7 @@ oksrvc_t::operator[] (const str &s) const
 template<class C> bool 
 oksrvc_t::cfg (const str &n, C *v) const 
 { 
-  if (!rpcli) {
+  if (!supports_pub1 ()) {
     SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
     return sNULL;
   }
@@ -1023,7 +1028,7 @@ oksrvc_t::cfg (const str &n, C *v) const
 str 
 oksrvc_t::cfg (const str &n) const 
 { 
-  if (!rpcli) {
+  if (!supports_pub1 ()) {
     SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
     return sNULL;
   }

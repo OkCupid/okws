@@ -331,6 +331,7 @@ public:
 
   ptr<aclnt> get_okd_aclnt () { return clnt; }
   pub_rclient_t *get_rpcli () { return rpcli; }
+  bool supports_pub1 () const { return pub1_supported; }
 
 private:
   void launch_T (CLOSURE);
@@ -409,7 +410,7 @@ oksrvc_t::cfg (const str &n, u_int i, T *p) const
 {
   pval_t *v;
   const parr_ival_t *arr;
-  if (!rpcli) {
+  if (!supports_pub1 ()) {
     SVC_ERROR ("Cannot call oksrvc_t::cfg() without Pub v1 support.\n");
     return PARR_NOT_FOUND;
   }
