@@ -36,6 +36,9 @@
 # endif
 #endif
 
+#define OKWS_PATCHLEVEL      001000001
+#define OKWS_PATCHLEVEL_STR  "1.0pre1"
+
 //
 // A header file for OKWS changes to SFS. Should be included by most files
 // in OKWS and also anything build with OKWS.
