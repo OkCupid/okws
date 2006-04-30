@@ -5,7 +5,7 @@
 ##   compile and run out of the box, and should be able to test itself.
 ##
 
-EXTRA_DIST = a1.html b1.html
+EXTRA_DIST = a.html b.html
 MAINTAINERCLEANFILES = Makefile.in
 
 
