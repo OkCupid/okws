@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 
 AC_INIT(config.h.in)
-AM_INIT_AUTOMAKE(okws, 1.0pre3)
+AM_INIT_AUTOMAKE(okws, 1.0pre4)
 AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(PUB)
