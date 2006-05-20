@@ -239,12 +239,12 @@ public:
     : http_response_t (http_resp_header_t (n, v)) {} 
 
   void publish (ptr<pub2::remote_publisher_t> p, str fn,
-		cbb::ptr coordvar, aarr_t *env = NULL,
+		cbb cb, aarr_t *env = NULL,
 		htpv_t v = 0, bool gz = false, CLOSURE);
 
   static void
   alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-	 callback<void, ptr<http_pub2_t> >::ptr coordvar,
+	 callback<void, ptr<http_pub2_t> >::ref cb,
 	 aarr_t *env = NULL, htpv_t v = 0, bool gz = false, CLOSURE);
 
 };

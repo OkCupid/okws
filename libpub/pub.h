@@ -472,7 +472,7 @@ private:
 // Pub2 Additions - most code for pub2 is in pub2.h, but the minimal
 // amount of glue code is in pub.h
 
-typedef callback<void, xpub_status_t>::ptr xpub_status_cb_t;
+typedef callback<void, xpub_status_t>::ref xpub_status_cb_t;
 
 // Pub2 Inteface for legacy objects
 class pub2_iface_t {

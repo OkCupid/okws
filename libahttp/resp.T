@@ -222,7 +222,7 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
 
 TAMED void
 http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
-		      cbb::ptr callercv, aarr_t *env, htpv_t v,
+		      cbb cb, aarr_t *env, htpv_t v,
 		      bool gz)
 {
   VARS {
@@ -234,20 +234,19 @@ http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
     b.to_strbuf (&body, v > 0 && gz);
   }
   if (gz) gzip ();
-  SIGNAL (rc);
+  SIGNAL (cb, rc);
 }
 
-typedef ptr<callback<void, ptr<http_pub2_t> > > http_pub2_cb_t;
+typedef ref<callback<void, ptr<http_pub2_t> > > http_pub2_cb_t;
 
 TAMED static void
 http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-		    http_pub2_cb_t callercv,
-		    aarr_t *env, htpv_t v, bool gz)
+		    http_pub2_cb_t cb, aarr_t *env, htpv_t v, bool gz)
 {
   VARS {
     ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (n, v)); 
     bool rc;
   }
   BLOCK { ret->publish (p, fn, @(rc), env, v, gz); }
-  SIGNAL (rc ? ret : NULL);
+  SIGNAL (cb, rc ? ret : NULL);
 }

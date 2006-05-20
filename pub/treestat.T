@@ -163,8 +163,8 @@ static treestat_t *g_tree;
 static void usage ()
 {
   warn << "usage: " << progname << " [-dvF] [-h <heartbeat file>] "
-       << "[-s <sentinel file>] [-f <configfile>]\n" 
-       << "     [-i <interval>] [-m <mode>] [<directory>]\n"
+       << "[-s <sentinel file>]\n" 
+       << "     [-f <configfile>] [-i <interval>] [-m <mode>] [<directory>]\n"
        << "\n"
        << "  default values:\n"
        << "    -d         false   (debug mode off by default)\n"

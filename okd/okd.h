@@ -193,8 +193,8 @@ public:
   // Well, no one ever said event-driven programming was pretty
   void launch (CLOSURE);
 
-  void launch_logd (cbb::ptr cb, CLOSURE);
-  void launch_pubd (cbb::ptr cb, CLOSURE);
+  void launch_logd (cbb cb, CLOSURE);
+  void launch_pubd (cbb cb, CLOSURE);
 
   void parseconfig ();
   void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);

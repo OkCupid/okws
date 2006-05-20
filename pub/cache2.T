@@ -131,7 +131,7 @@ namespace pubserv2 {
     d->files.push_back (s);
   }
   
-  TAMED void cache_t::refresh_delta_set (cbb::ptr callercv)
+  TAMED void cache_t::refresh_delta_set (cbb cb)
   {
     VARS { 
       bool edit (false);
@@ -155,12 +155,12 @@ namespace pubserv2 {
       edit = true;
     }
     
-    SIGNAL(edit);
+    SIGNAL (cb, edit);
     if (edit)
       BLOCK { push_deltas (s, @(dummy)); }
   }
   
-  TAMED void srv_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb::ptr callercv)
+  TAMED void srv_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
   {
     VARS {
       clnt_stat err;
@@ -183,11 +183,11 @@ namespace pubserv2 {
 	okdbg_warn (ERROR, "Service unexepectedly rejected stats push!\n");
       }
     }
-    RESUME (rc);
+    SIGNAL (cb, rc);
   }
   
   TAMED void 
-  cache_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb::ptr callercv)
+  cache_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
   {
     VARS { 
       coordgroup_t<ptr<bool> > jg;
@@ -203,7 +203,7 @@ namespace pubserv2 {
       if (!*b) 
 	rc = false; 
     }
-    RESUME(rc);
+    SIGNAL (cb, rc);
   }
 
   stamp_status_t

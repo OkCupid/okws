@@ -36,6 +36,7 @@
 # endif
 #endif
 
+
 // Patch Level <major>.<minor>.<pre> (out to 2 places)
 #define OKWS_PATCHLEVEL      1000003
 #define OKWS_PATCHLEVEL_STR  "1.0pre3"
@@ -60,6 +61,15 @@ typedef enum { SFS_CLOCK_GETTIME = 0,
 # endif
 #endif
 
+//
+// Ideally, we could use cb->signal() freely within the code, but it's
+// nice to still be compatible with existing SFS.
+//
+#if defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009001
+#define SIGNAL(cb, ...) (cb)->signal(__VA_ARGS__)
+#else
+#define SIGNAL(cb, ...) (*cb)(__VA_ARGS__)
+#endif
 
 #endif /* LIBPUB_OKWS_SFS_H */
 

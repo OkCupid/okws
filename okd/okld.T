@@ -762,7 +762,7 @@ okld_t::parseconfig (const str &cf)
 }
 
 TAMED void 
-okld_t::launch_pubd2 (coordvar_int_t callercv)
+okld_t::launch_pubd2 (cbi cb)
 {
   VARS {
     bool b;
@@ -788,12 +788,11 @@ okld_t::launch_pubd2 (coordvar_int_t callercv)
   } else {
     warn << "cannot connect to pub daemon version 2 (pubd -2)\n";
   }
-  
-  RESUME (ret);
+  SIGNAL (cb, ret);
 }
 
 TAMED void 
-okld_t::launch_logd (coordvar_int_t callercv)
+okld_t::launch_logd (cbi cb)
 {
   VARS {
     vec<str> *argv;
@@ -817,8 +816,7 @@ okld_t::launch_logd (coordvar_int_t callercv)
   } else {
     warn << "cannot connect to launched log daemon (oklogd)\n";
   }
-
-  RESUME (ret);
+  SIGNAL (cb, ret);
 }
 
 void

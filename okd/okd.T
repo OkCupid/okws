@@ -155,7 +155,7 @@ okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
 }
 
 TAMED void 
-okd_t::launch_pubd (coordvar_bool_t callercv)
+okd_t::launch_pubd (cbb cb)
 {
   VARS {
     bool rc (true);
@@ -169,7 +169,7 @@ okd_t::launch_pubd (coordvar_bool_t callercv)
     warn << "Pub v1 is off since no Pubd was specified; "
 	 << "Pub v1 calls will fail\n";
   }
-  RESUME (rc);
+  SIGNAL (cb, rc);
 }
 
 
@@ -180,13 +180,13 @@ okd_t::req_errdoc_set_2 (svccb *sbp)
 }
 
 TAMED void 
-okd_t::launch_logd (coordvar_bool_t callercv)
+okd_t::launch_logd (cbb cb)
 {
   VARS { bool rc; }
   assert (logfd > 0);
   logd = New fast_log_t (logfd, logfmt);
   BLOCK { logd->connect (@(rc)); }
-  RESUME (rc);
+  SIGNAL (cb, rc);
 }
 
 void

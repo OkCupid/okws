@@ -100,7 +100,7 @@ namespace pubserv2 {
     void getfile (svccb *sbp, CLOSURE) ;
     void config (svccb *sbp) {}
     void get_fstats (svccb *sbp) {}
-    void push_deltas (ptr<xpub2_delta_set_t> s, cbb::ptr cceoc, CLOSURE);
+    void push_deltas (ptr<xpub2_delta_set_t> s, cbb cb, CLOSURE);
     
     void register_newclient (ptr<axprt_stream> x);
     
@@ -247,9 +247,8 @@ namespace pubserv2 {
     void add_delta (pfnm_t nm) { _delta_set.insert (nm); }
 
   protected:
-    virtual void refresh_delta_set (cbb::ptr cceoc, CLOSURE);
-    virtual void push_deltas (ptr<xpub2_delta_set_t> s, 
-			      cbb::ptr cceoc, CLOSURE);
+    virtual void refresh_delta_set (cbb cb, CLOSURE);
+    virtual void push_deltas (ptr<xpub2_delta_set_t> s, cbb cb, CLOSURE);
     void trav_key (str k);
     void trav_nkey (str k);
     

@@ -85,7 +85,7 @@ ok_httpsrv_t::servinfo () const
 
 TAMED void
 ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
-			ok_httpsrv_t::http_resp_cb_t callercv) 
+			ok_httpsrv_t::http_resp_cb_t cb)
 {
   VARS {
     errdoc_t *e;
@@ -104,7 +104,7 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
   }
   if (!ret)
     ret = New refcounted<http_error_t> (n, servinfo (), s, v);
-  SIGNAL (ret);
+  SIGNAL (cb, ret);
 }
 
 TAMED void
@@ -449,7 +449,7 @@ oksrvc_t::launch_T ()
 }
 
 TAMED void 
-oksrvc_t::launch_pub1 (coordvar_bool_t callercv)
+oksrvc_t::launch_pub1 (cbb cb)
 {
   VARS {
     ptr<pub_res_t> pr;
@@ -485,11 +485,11 @@ oksrvc_t::launch_pub1 (coordvar_bool_t callercv)
     init_publist ();
   }
 
-  RESUME (res);
+  SIGNAL (cb, res);
 }
 
 TAMED void 
-oksrvc_t::launch_dbs (cbb::ptr callercv)
+oksrvc_t::launch_dbs (cbb cb)
 {
   VARS { 
     vec<bool> rc; 
@@ -507,7 +507,7 @@ oksrvc_t::launch_dbs (cbb::ptr callercv)
   }
   if (!ret) 
     SVC_ERROR ("not all databases properly initalized");
-  RESUME (ret);
+  SIGNAL (cb, ret);
 }
 
 
@@ -965,7 +965,7 @@ ok_httpsrv_t::init_pub2 (u_int opts)
 }
 
 TAMED void
-ok_httpsrv_t::launch_pub2_T (cbb::ptr callercv)
+ok_httpsrv_t::launch_pub2_T (cbb cb)
 {
   VARS {
     bool rc (false);
@@ -978,11 +978,11 @@ ok_httpsrv_t::launch_pub2_T (cbb::ptr callercv)
     if (!rc) 
       okdbg_warn (ERROR, "Connection/initialization to pub2 failed!");
   }
-  SIGNAL (rc);
+  SIGNAL (cb, rc);
 }
 
 TAMED void
-oksrvc_t::post_launch_pub2_T (cbb::ptr callercv)
+oksrvc_t::post_launch_pub2_T (cbb cb)
 {
   VARS {
     clnt_stat s;
@@ -996,7 +996,7 @@ oksrvc_t::post_launch_pub2_T (cbb::ptr callercv)
     okdbg_warn (ERROR, b);
     rc = false;
   }
-  SIGNAL (rc);
+  SIGNAL (cb, rc);
 }
 
 ptr<pub2::remote_publisher_t>

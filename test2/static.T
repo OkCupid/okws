@@ -33,9 +33,8 @@ class oksrvc_static_t : public oksrvc_t {
 public:
   oksrvc_static_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   okclnt_t *make_newclnt (ptr<ahttpcon> x);
-  void post_launch_pub2_T (cbb::ptr callercv,  CLOSURE);
-  void post_launch_pub2 (cbb::ptr callercv)
-  { post_launch_pub2_T (callercv); }
+  void post_launch_pub2_T (cbb cb, CLOSURE);
+  void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
 };
 
 class okclnt_static_t : public okclnt_t {
@@ -52,7 +51,7 @@ protected:
 };
 
 TAMED void 
-oksrvc_static_t::post_launch_pub2_T (cbb::ptr callercv)
+oksrvc_static_t::post_launch_pub2_T (cbb cb)
 {
   VARS {
     bool res1, res2;
@@ -61,7 +60,7 @@ oksrvc_static_t::post_launch_pub2_T (cbb::ptr callercv)
     oksrvc_t::post_launch_pub2 (@(res1));
     pub2 ()->run_cfg ("conf/intl.conf", @(res2)); 
   }
-  SIGNAL (res1 && res2);
+  SIGNAL (cb, res1 && res2);
 }
 
 TAMED void 

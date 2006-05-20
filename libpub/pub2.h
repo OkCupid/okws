@@ -34,8 +34,8 @@ namespace pub2 {
   typedef xpub_status_t status_t;
 
   // callbacks used for our primitive functions.
-  typedef callback<void, status_t>::ptr status_cb_t;
-  typedef callback<void, status_t, ptr<bound_pfile2_t> >::ptr getfile_cb_t;
+  typedef callback<void, status_t>::ref status_cb_t;
+  typedef callback<void, status_t, ptr<bound_pfile2_t> >::ref getfile_cb_t;
 
   
   /**
@@ -70,7 +70,7 @@ namespace pub2 {
      * this is a simplified version of the above, with a simpler status
      * return message. See above for a description of the parameters.
      */
-    void run (zbuf *b, pfnm_t fn, cbb::ptr cb, aarr_t *a = NULL,
+    void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
 	      u_int opt = 0, penv_t *e = NULL,
 	      CLOSURE);
 
@@ -92,7 +92,7 @@ namespace pub2 {
     void run_cfg_full (pfnm_t nm, status_cb_t cb, aarr_t *dest = NULL, 
 		       CLOSURE);
 
-    void run_cfg (pfnm_t nm, cbb::ptr cb, aarr_t *dest = NULL, CLOSURE);
+    void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
 
 
     /**
@@ -109,10 +109,10 @@ namespace pub2 {
 
   protected:
     // to be filled in by the sub classes
-    virtual void getfile (pfnm_t fn, getfile_cb_t coordvar, u_int o = 0) = 0;
+    virtual void getfile (pfnm_t fn, getfile_cb_t cb, u_int o = 0) = 0;
 
     virtual void publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-			    status_cb_t coordvar, CLOSURE);
+			    status_cb_t cb, CLOSURE);
     
     virtual bool is_remote () const = 0;
 
@@ -200,13 +200,13 @@ namespace pub2 {
     virtual ~local_publisher_t () {}
 
     // read a file off the disk, without any caching
-    void getfile (pfnm_t fn, getfile_cb_t coordvar, u_int o = 0) 
+    void getfile (pfnm_t fn, getfile_cb_t cb, u_int o = 0) 
     {
       xpub2_file_freshcheck_t frsh (XPUB2_FRESH_NONE);
-      getfile (fn, coordvar, frsh, o);
+      getfile (fn, cb, frsh, o);
     }
 
-    void getfile (pfnm_t fn, getfile_cb_t coordvar,
+    void getfile (pfnm_t fn, getfile_cb_t cb,
 		  const xpub2_file_freshcheck_t &fres, u_int o = 0);
 
   protected:
@@ -254,10 +254,10 @@ namespace pub2 {
 
     virtual ~remote_publisher_t () {}
 
-    virtual void connect (coordvar_bool_t cb, CLOSURE);
+    virtual void connect (cbb cb, CLOSURE);
 
-    virtual void getfile (pfnm_t n, getfile_cb_t coordvar, u_int o = 0)
-    { getfile_T (n, coordvar, o); }
+    virtual void getfile (pfnm_t n, getfile_cb_t cb, u_int o = 0)
+    { getfile_T (n, cb, o); }
 
     void dispatch (svccb *sbp);
     virtual void lost_connection () {}
@@ -265,7 +265,7 @@ namespace pub2 {
     
 
   protected:
-    void getfile_T (pfnm_t nm, getfile_cb_t coordvar, u_int o = 0, CLOSURE) ;
+    void getfile_T (pfnm_t nm, getfile_cb_t cb, u_int o = 0, CLOSURE) ;
     bool is_remote () const { return true; }
 
     virtual bool prepare_getfile (const cache_key_t &k, 
@@ -320,7 +320,7 @@ namespace pub2 {
     void cache_getfile (const cache_key_t &k, ptr<bound_pfile2_t> file);
     void cache_noent (pfnm_t nm);
 
-    void connect (coordvar_bool_t coordvar, CLOSURE);
+    void connect (cbb cb, CLOSURE);
     void dispatch (svccb *sbp);
 
     void lost_connection ();

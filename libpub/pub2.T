@@ -17,7 +17,7 @@ namespace pub2 {
 
   TAMED void 
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		   status_cb_t callercv)
+		   status_cb_t cb)
   {
     VARS {
       status_t status (XPUB_STATUS_OK);
@@ -32,7 +32,8 @@ namespace pub2 {
 
     if (files_to_check.size () == 0) {
       status.set_status (XPUB_STATUS_NOENT);
-      RESUME (status);
+      SIGNAL (cb, status);
+      return;
     }
 
     for (i = 0; i < files_to_check.size (); i++) {
@@ -75,21 +76,21 @@ namespace pub2 {
     if (err)
       o->output_err (env, err, lineno);
     
-    RESUME (status);
+    SIGNAL (cb, status);
   }
   
   TAMED void 
-  ap_t::run (zbuf *b, pfnm_t nm, cbb::ptr callercv, aarr_t *a, 
+  ap_t::run (zbuf *b, pfnm_t nm, cbb cb, aarr_t *a, 
 	     u_int op, penv_t *e)
   {
     VARS { status_t status; }
     BLOCK { run_full (b, nm, @(status), a, op, e); }
-    RESUME (status.status == XPUB_STATUS_OK);
+    SIGNAL (cb, status.status == XPUB_STATUS_OK);
   }
 
   
   TAMED void 
-  ap_t::run_full (zbuf *b, pfnm_t nm, status_cb_t callercv,
+  ap_t::run_full (zbuf *b, pfnm_t nm, status_cb_t cb,
 		  aarr_t *a, u_int op, penv_t *env)
   {
     VARS {
@@ -110,11 +111,11 @@ namespace pub2 {
 
     // XXX = ignore output from the following function
     XXX = env->finish_output (st);
-    RESUME(status);
+    SIGNAL (cb, status);
   }
 
   TAMED void 
-  rp_t::connect (coordvar_bool_t callercv)
+  rp_t::connect (cbb cb)
   {
     VARS {
       clnt_stat err;
@@ -125,11 +126,11 @@ namespace pub2 {
       warn << "NULL call to pubd failed: " << err << "\n";
       ret = false;
     }
-    RESUME(ret);
+    SIGNAL (cb, ret);
   }
 
   TAMED void 
-  crp_t::connect (coordvar_bool_t callercv)
+  crp_t::connect (cbb cb)
   {
     VARS { 
       clnt_stat stat;
@@ -142,7 +143,7 @@ namespace pub2 {
     } else if (!_connected) {
       warn << "pubd-2 denied request for file status pushes!\n";
     }
-    RESUME (ret);
+    SIGNAL (cb, ret);
   }
 
   void rp_t::dispatch (svccb *sbp)
@@ -214,7 +215,7 @@ namespace pub2 {
   }
 
   TAMED void 
-  rp_t::getfile_T (pfnm_t nm, getfile_cb_t callercv, u_int opts)
+  rp_t::getfile_T (pfnm_t nm, getfile_cb_t cb, u_int opts)
   {
     VARS {
       clnt_stat err;
@@ -264,7 +265,7 @@ namespace pub2 {
 	}
       }
     }
-    RESUME (status, file);
+    SIGNAL (cb, status, file);
   }
   
   bool crp_t::prepare_getfile (const cache_key_t &k, xpub2_getfile_arg_t *arg,
@@ -333,7 +334,7 @@ namespace pub2 {
   }
 
   TAMED void 
-  ap_t::run_cfg_full (pfnm_t nm, status_cb_t callercv, aarr_t *dp)
+  ap_t::run_cfg_full (pfnm_t nm, status_cb_t cb, aarr_t *dp)
   {
     VARS {
       output_conf2_t o;
@@ -347,15 +348,15 @@ namespace pub2 {
     st = _genv.start_output (NULL, 0);
     BLOCK { publish (&o, nm, &_genv, 0, @(status)); }
     XXX = _genv.finish_output (st);
-    RESUME (status);
+    SIGNAL (cb, status);
   }
 
   TAMED void 
-  ap_t::run_cfg (pfnm_t nm, cbb::ptr callercv, aarr_t *dp)
+  ap_t::run_cfg (pfnm_t nm, cbb cb, aarr_t *dp)
   {
     VARS { status_t status; }
     BLOCK { run_cfg_full (nm, @(status), dp); }
-    RESUME (status.status == XPUB_STATUS_OK);
+    SIGNAL (cb, status.status == XPUB_STATUS_OK);
   }
 
   void
@@ -442,7 +443,7 @@ namespace pub2 {
 
 TAMED void 
 bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
-			penv_t *genv, pub2::status_cb_t callercv) const
+			penv_t *genv, pub2::status_cb_t cb) const
 {
   VARS {
     bpfcp_t rct;
@@ -460,12 +461,12 @@ bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
     genv->i_stack_remove (rct);
   }
 
-  RESUME (status);
+  SIGNAL (cb, status);
 }
 
 TAMED template<class T, clist_entry<T> T::*field> void
 publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
-			     penv_t *env, xpub_status_cb_t callercv) const
+			     penv_t *env, xpub_status_cb_t cb) const
 {
   VARS {
     xpub_status_t status (XPUB_STATUS_OK), status_tmp;
@@ -478,7 +479,7 @@ publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
 	status = status_tmp;
     }
   }
-  RESUME (status);
+  SIGNAL (cb, status);
 }
 					   
 void 
@@ -567,7 +568,7 @@ pfile_include_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
 TAMED void 
 pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
 		       penv_t *g, aarr_t *e, pfnm_t nm,
-		       xpub_status_cb_t callercv) const
+		       xpub_status_cb_t cb) const
 {
   VARS {
     bool tlf;
@@ -583,7 +584,7 @@ pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
     g->set_tlf (tlf);
     pop_frame (o, g);
   }
-  RESUME (status);
+  SIGNAL (cb, status);
 }
 
 bool

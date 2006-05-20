@@ -305,8 +305,8 @@ public:
   void okld_exit (int rc);
 
   void launch (str cf, CLOSURE);
-  void launch_logd (cbi::ptr cb, CLOSURE);
-  void launch_pubd2 (cbi::ptr cb, CLOSURE);
+  void launch_logd (cbi cb, CLOSURE);
+  void launch_pubd2 (cbi cb, CLOSURE);
 
   bool launch_okd (int logfd, int pubd);
 

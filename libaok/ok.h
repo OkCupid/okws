@@ -131,7 +131,7 @@ public:
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}
 
-  typedef callback<void, ptr<http_response_t> >::ptr http_resp_cb_t;
+  typedef callback<void, ptr<http_response_t> >::ref http_resp_cb_t;
       
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
   virtual void add_pubfile (const str &s, bool conf = false) {}
@@ -158,8 +158,8 @@ public:
 
   // can overide this on a service-by-service basis
   virtual bool init_pub2 (u_int opts = 0);
-  virtual void launch_pub2 (cbb::ptr cb) { launch_pub2_T (cb); }
-  virtual void post_launch_pub2 (cbb::ptr cb) { (*cb) (true); }
+  virtual void launch_pub2 (cbb cb) { launch_pub2_T (cb); }
+  virtual void post_launch_pub2 (cbb cb) { (*cb) (true); }
 
   virtual ptr<pub2::remote_publisher_t> pub2 () { return _pub2; }
 
@@ -167,7 +167,7 @@ private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
   void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
 		http_inhdr_t *h = NULL, CLOSURE);
-  void launch_pub2_T (cbb::ptr cb, CLOSURE);
+  void launch_pub2_T (cbb cb, CLOSURE);
 
 protected:
 
@@ -297,8 +297,7 @@ public:
   virtual void custom_init (cbv cb) { (*cb) (); }
   virtual void custom_init0 (cbv cb) { (*cb) (); }
 
-  virtual void post_launch_pub2 (cbb::ptr cb)
-  { post_launch_pub2_T (cb); }
+  virtual void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
 
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
@@ -348,8 +347,8 @@ protected:
 
   void pubbed (cbb cb, ptr<pub_res_t> res);
 
-  void launch_pub1 (cbb::ptr cb, CLOSURE);  // legacy
-  void launch_dbs (cbb::ptr cb, CLOSURE);
+  void launch_pub1 (cbb cb, CLOSURE);  // legacy
+  void launch_dbs (cbb cb, CLOSURE);
 
 
   void newclnt (ptr<ahttpcon> lx);
@@ -378,7 +377,7 @@ protected:
   bool pub1_supported;
 
 private:
-  void post_launch_pub2_T (cbb::ptr cb, CLOSURE);
+  void post_launch_pub2_T (cbb cb, CLOSURE);
 };
 
 class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
