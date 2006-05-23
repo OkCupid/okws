@@ -115,6 +115,9 @@ public:
   void finish2 (int s1, int s2);
   void enable_file_upload () { mpfd_flag = true; }
 
+  static ptr<http_parser_cgi_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
+  { return New refcounted<http_parser_cgi_t> (xx, t); }
+
 protected:
   size_t buflen2;
 

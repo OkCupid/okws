@@ -151,7 +151,8 @@ public:
 
   void enable_accept ();
   void disable_accept ();
-  void malloc_init (); // init malloc.3
+  void m
+alloc_init (); // init malloc.3
 
   // toggle clock modes for SFS
   void init_sfs_clock (const str &f); 
@@ -203,10 +204,16 @@ public:
 		 CLIENT_EOF = 4 } output_state_t;
   
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
-    http_parser_cgi_t (xx, to), x (xx), oksrvc (o),
-    process_flag (false), uid_set (false), rsp_gzip (true),
-    output_state (ALL_AT_ONCE)
+    x (xx), 
+    oksrvc (o),
+    process_flag (false), 
+    uid_set (false), 
+    rsp_gzip (true),
+    output_state (ALL_AT_ONCE),
+    _timeout (to)
   {}
+
+  virtual http_parser_base_t * alloc_parser ();
 
   virtual ~okclnt_t ();
   virtual void serve ();
@@ -264,6 +271,8 @@ protected:
   ptr<vec<http_hdr_field_t> > hdr_fields;
 
   output_state_t output_state;
+  u_int _timeout;
+  ptr<http_parser_base_t> _parser;
 };
 
 typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
