@@ -58,7 +58,7 @@ public:
   virtual const http_inhdr_t &hdr_cr () const = 0;
   ptr<ahttpcon> get_x () const { return x; }
 
-  void parse (cbi cb, CLOSURE);
+  void parse (cbi cb);
 protected:
   virtual void v_parse_cb1 (int status) { finish (status); }
   virtual void v_cancel () {}
