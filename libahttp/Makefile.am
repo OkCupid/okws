@@ -22,8 +22,10 @@ SUFFIXES = .T .g .C
 
 resp.o: resp.C
 resp.lo: resp.C
+ahparse.o: ahparse.C
+ahparse.lo: ahparse.C
 
-EXTRA_DIST = .cvsignore err.g
+EXTRA_DIST = .cvsignore err.g resp.T ahparse.T
 CLEANFILES = core *.core *~ *.rpo
 
 .PHONY: sourceclean
@@ -31,10 +33,10 @@ sourceclean:
 	@rm -f $(srcdir)/err.C
 
 tameclean:
-	rm -f $(srcdir)/resp.C
+	rm -f $(srcdir)/resp.C $(srcdir)/ahparse.C
 
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in 
 
-BUILT_SOURCES = err.g resp.C
+BUILT_SOURCES = err.g resp.C ahparse.C

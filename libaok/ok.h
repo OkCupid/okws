@@ -193,8 +193,7 @@ protected:
 #define OKCLNT_BUFLEN2 0x4000
 
 class oksrvc_t;
-class okclnt_t 
-  : public http_parser_cgi_t { // One for each external HTTP client
+class okclnt_t { // One for each external HTTP client
 public:
 
   typedef enum { ALL_AT_ONCE = 0, 
