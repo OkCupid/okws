@@ -67,7 +67,7 @@ okclnt_base_t::add_cookie (const str &h, const str &p)
 void 
 okclnt_base_t::error (int n, const str &s)
 { 
-  oksrvc->error (x, n, s, wrap (this, &okclnt_base_t::delcb), &hdr);
+  oksrvc->error (x, n, s, wrap (this, &okclnt_base_t::delcb), hdr_p ());
 }
 
 str
@@ -161,7 +161,7 @@ ok_httpsrv_t::init_sfs_clock (const str &f)
 
 oksrvc_t::~oksrvc_t ()
 {
-  okclnt_t *n, *p;
+  okclnt_base_t *n, *p;
   for (p = clients.first; p; p = n) {
     n = clients.next (p);
     delete p;
@@ -290,7 +290,7 @@ oksrvc_t::update_cb (svccb *sbp, ptr<pub_res_t> pr)
 }
 
 void
-oksrvc_t::remove (okclnt_t *c)
+oksrvc_t::remove (okclnt_base_t *c)
 {
   clients.remove (c);
 
@@ -597,7 +597,7 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
     if (sdflag) {
       error (lx, HTTP_UNAVAILABLE, NULL);
     } else {
-      okclnt_t *c = make_newclnt (lx);
+      okclnt_base_t *c = make_newclnt (lx);
       c->serve ();
       add (c);
     }
@@ -609,7 +609,7 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
 }
 
 void
-oksrvc_t::add (okclnt_t *c)
+oksrvc_t::add (okclnt_base_t *c)
 {
   nclients++;
   clients.insert_head (c);
@@ -636,7 +636,7 @@ okclnt_base_t::serve_T ()
 void
 okclnt_base_t::redirect (const str &l, int ht)
 {
-  http_resp_attributes_t hra (ht, hdr.get_vers ());
+  http_resp_attributes_t hra (ht, hdr_cr ().get_vers ());
   rsp = New refcounted<http_response_redirect_t> (l, hra);
   send (rsp, wrap (this, &okclnt_base_t::delcb));
 }
@@ -664,7 +664,7 @@ okclnt_base_t::output_hdr (ssize_t len)
     return false;
   }
 
-  http_resp_attributes_t hra (HTTP_OK, hdr.get_vers ());
+  http_resp_attributes_t hra (HTTP_OK, hdr_cr ().get_vers ());
   set_attributes (&hra);
   hra.set_gzip (false);
   rsp = New refcounted<http_response_ok_t> (len, hra);
@@ -710,7 +710,7 @@ okclnt_base_t::output_done ()
 bool
 okclnt_base_t::do_gzip () const
 {
-  return hdr.takes_gzip () && ok_gzip && rsp_gzip;
+  return hdr_cr ().takes_gzip () && ok_gzip && rsp_gzip;
 }
 
 void
@@ -737,7 +737,7 @@ okclnt_base_t::output (compressible_t &b)
     prelen = b.inflated_len ();
   const strbuf &sb = b.to_strbuf (gz);
 
-  http_resp_attributes_t hra (HTTP_OK, hdr.get_vers ());
+  http_resp_attributes_t hra (HTTP_OK, hdr_cr ().get_vers ());
   set_attributes (&hra);
 
   hra.set_gzip (gz);
@@ -757,7 +757,7 @@ okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
     rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
   }
 
-  oksrvc->log (x, &hdr, rsp);
+  oksrvc->log (x, hdr_p (), rsp);
   rsp->send (x, cb);
 }
 

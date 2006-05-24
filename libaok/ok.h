@@ -151,8 +151,7 @@ public:
 
   void enable_accept ();
   void disable_accept ();
-  void m
-alloc_init (); // init malloc.3
+  void malloc_init (); // init malloc.3
 
   // toggle clock modes for SFS
   void init_sfs_clock (const str &f); 
@@ -204,6 +203,7 @@ class oksrvc_t;
 // a request, by implementing the virtual parse() method.
 //
 class okclnt_base_t {
+public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
     x (xx), 
     oksrvc (o),
@@ -214,7 +214,13 @@ class okclnt_base_t {
     _timeout (to)
   {}
 
-  virtual ~okclnt_t ();
+  typedef enum { ALL_AT_ONCE = 0, 
+		 STREAMING_HDRS = 1, // piece-meal
+		 STREAMING_BODY = 2,
+		 DONE = 3,
+		 CLIENT_EOF = 4 } output_state_t;
+
+  virtual ~okclnt_base_t ();
   virtual void serve () { serve_T (); }
   virtual void error (int n, const str &s = NULL);
   virtual void process () = 0;
@@ -243,7 +249,7 @@ class okclnt_base_t {
   void set_hdr_field (const str &k, const str &v);
   ptr<pub2::remote_publisher_t> pub2 () ;
 
-  list_entry<okclnt_t> lnk;
+  list_entry<okclnt_base_t> lnk;
 private:
   void serve_T (CLOSURE);
 
@@ -251,7 +257,10 @@ protected:
   virtual void delcb () { delete this; }
   void set_attributes (http_resp_attributes_t *hra);
   bool do_gzip () const;
+
   virtual void parse (cbi status) = 0;
+  virtual http_inhdr_t *hdr_p () = 0;
+  virtual const http_inhdr_t &hdr_cr () const = 0;
 		
   cbv::ptr cb;
   ref<ahttpcon> x;
@@ -281,21 +290,16 @@ class okclnt_t : public okclnt_base_t,
 		 public http_parser_cgi_t 
 { 
 public:
-
-  typedef enum { ALL_AT_ONCE = 0, 
-		 STREAMING_HDRS = 1, // piece-meal
-		 STREAMING_BODY = 2,
-		 DONE = 3,
-		 CLIENT_EOF = 4 } output_state_t;
-  
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
     okclnt_base_t (xx, o),
-    http_parser_cgi_t (xx, o) {}
+    http_parser_cgi_t (xx, to) {}
 
   void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
+  http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
+  const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
 };
 
-typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
+typedef callback<okclnt_base_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
 
 class dbcon_t : public helper_inet_t {
 public:
@@ -318,7 +322,7 @@ public:
   }
 
   virtual void launch () { launch_T (); }
-  virtual okclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
+  virtual okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) = 0;
   virtual void init_publist () {}
   virtual u_int get_andmask () const { return 0xffffffff; }
   virtual u_int get_ormask () const { return 0; }
@@ -336,8 +340,8 @@ public:
   void shutdown ();
   void connect ();
   void ctldispatch (svccb *c);
-  void remove (okclnt_t *c);
-  void add (okclnt_t *c);
+  void remove (okclnt_base_t *c);
+  void add (okclnt_base_t *c);
   void end_program (); 
 
   void add_pubfiles (const char *arr[], u_int sz, bool conf = false);
@@ -386,7 +390,7 @@ protected:
   void ready_call (bool rc);
 
   str name;
-  list<okclnt_t, &okclnt_t::lnk> clients;
+  list<okclnt_base_t, &okclnt_base_t::lnk> clients;
   ptr<ahttpcon_listen> x;
 
   u_int nclients;
@@ -412,7 +416,7 @@ class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
 public:
   oksrvcw_t (int argc, char *argv[], nclntcb_t c) : 
     oksrvc_t (argc, argv), nccb (c) {}
-  okclnt_t *make_newclnt (ptr<ahttpcon> lx) { return (*nccb) (lx, this); }
+  okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) { return (*nccb) (lx, this); }
 private:
   nclntcb_t nccb;
 }; 

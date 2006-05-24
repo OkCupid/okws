@@ -32,7 +32,7 @@
 class oksrvc_static_t : public oksrvc_t {
 public:
   oksrvc_static_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
-  okclnt_t *make_newclnt (ptr<ahttpcon> x);
+  okclnt_base_t *make_newclnt (ptr<ahttpcon> x);
   void post_launch_pub2_T (cbb cb, CLOSURE);
   void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
 };
@@ -98,7 +98,7 @@ okclnt_static_t::process_T ()
   output (out);
 }
 
-okclnt_t *
+okclnt_base_t *
 oksrvc_static_t::make_newclnt (ptr<ahttpcon> x)
 {
   return New okclnt_static_t (x, this);
