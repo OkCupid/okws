@@ -194,16 +194,17 @@ protected:
 #define OKCLNT_BUFLEN2 0x4000
 
 class oksrvc_t;
-class okclnt_t { // One for each external HTTP client
-public:
 
-  typedef enum { ALL_AT_ONCE = 0, 
-		 STREAMING_HDRS = 1, // piece-meal
-		 STREAMING_BODY = 2,
-		 DONE = 3,
-		 CLIENT_EOF = 4 } output_state_t;
-  
-  okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
+//
+// There should be one okclnt_base_t per external HTTP request.
+// We've split the logic up between stuff that goes mainly here,
+// and the x-URL-encoded-specific parsing stuff, as seen in 
+// class okclnt_t.  That is, whoever inherits from this class can
+// specify the amount and type of parsing done in response to
+// a request, by implementing the virtual parse() method.
+//
+class okclnt_base_t {
+  okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
     x (xx), 
     oksrvc (o),
     process_flag (false), 
@@ -213,13 +214,10 @@ public:
     _timeout (to)
   {}
 
-  virtual http_parser_base_t * alloc_parser ();
-
   virtual ~okclnt_t ();
-  virtual void serve ();
+  virtual void serve () { serve_T (); }
   virtual void error (int n, const str &s = NULL);
   virtual void process () = 0;
-  virtual void parse () { parse_T (); }
   virtual void output (compressible_t &b);
   virtual void output (compressible_t *b);
   virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
@@ -247,12 +245,13 @@ public:
 
   list_entry<okclnt_t> lnk;
 private:
-  void parse_T (CLOSURE);
+  void serve_T (CLOSURE);
 
 protected:
   virtual void delcb () { delete this; }
   void set_attributes (http_resp_attributes_t *hra);
   bool do_gzip () const;
+  virtual void parse (cbi status) = 0;
 		
   cbv::ptr cb;
   ref<ahttpcon> x;
@@ -272,7 +271,28 @@ protected:
 
   output_state_t output_state;
   u_int _timeout;
-  ptr<http_parser_base_t> _parser;
+};
+
+// 
+// This is the standard okclnt_t, used for parsing regular HTTP requests,
+// with x-URL-encoded GET, POST of mutlipart form data.
+//
+class okclnt_t : public okclnt_base_t, 
+		 public http_parser_cgi_t 
+{ 
+public:
+
+  typedef enum { ALL_AT_ONCE = 0, 
+		 STREAMING_HDRS = 1, // piece-meal
+		 STREAMING_BODY = 2,
+		 DONE = 3,
+		 CLIENT_EOF = 4 } output_state_t;
+  
+  okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
+    okclnt_base_t (xx, o),
+    http_parser_cgi_t (xx, o) {}
+
+  void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
 };
 
 typedef callback<okclnt_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;

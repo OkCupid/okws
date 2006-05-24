@@ -49,7 +49,7 @@ ok_httpsrv_t::malloc_init ()
 }
 
 
-okclnt_t::~okclnt_t () 
+okclnt_base_t::~okclnt_base_t () 
 { 
   oksrvc->remove (this); 
   while (outcookies.size ())
@@ -57,7 +57,7 @@ okclnt_t::~okclnt_t ()
 }
 
 cookie_t *
-okclnt_t::add_cookie (const str &h, const str &p)
+okclnt_base_t::add_cookie (const str &h, const str &p)
 {
   cookie_t *ret = New cookie_t (h, p);
   outcookies.push_back (ret);
@@ -65,9 +65,9 @@ okclnt_t::add_cookie (const str &h, const str &p)
 }
 
 void 
-okclnt_t::error (int n, const str &s)
+okclnt_base_t::error (int n, const str &s)
 { 
-  oksrvc->error (x, n, s, wrap (this, &okclnt_t::delcb), &hdr);
+  oksrvc->error (x, n, s, wrap (this, &okclnt_base_t::delcb), &hdr);
 }
 
 str
@@ -615,19 +615,13 @@ oksrvc_t::add (okclnt_t *c)
   clients.insert_head (c);
 }
 
-void
-okclnt_t::serve ()
-{
-  parse ();
-}
-
 TAMED void
-okclnt_t::parse_T ()
+okclnt_base_t::serve_T ()
 {
   VARS {
     int status;
   }
-  BLOCK { http_parser_cgi_t::parse (@(status)); }
+  BLOCK { parse (@(status)); }
   if (status == HTTP_OK)
     if (process_flag)
       panic ("duplicate process called!\n");
@@ -640,15 +634,15 @@ okclnt_t::parse_T ()
 }
 
 void
-okclnt_t::redirect (const str &l, int ht)
+okclnt_base_t::redirect (const str &l, int ht)
 {
   http_resp_attributes_t hra (ht, hdr.get_vers ());
   rsp = New refcounted<http_response_redirect_t> (l, hra);
-  send (rsp, wrap (this, &okclnt_t::delcb));
+  send (rsp, wrap (this, &okclnt_base_t::delcb));
 }
 
 void
-okclnt_t::set_attributes (http_resp_attributes_t *hra)
+okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
 {
   if (cachecontrol) hra->set_cache_control (cachecontrol);
   if (contenttype) hra->set_content_type (contenttype);
@@ -660,7 +654,7 @@ okclnt_t::set_attributes (http_resp_attributes_t *hra)
 }
 
 bool
-okclnt_t::output_hdr (ssize_t len)
+okclnt_base_t::output_hdr (ssize_t len)
 {
   assert (output_state == ALL_AT_ONCE);
   output_state = STREAMING_HDRS;
@@ -681,7 +675,7 @@ okclnt_t::output_hdr (ssize_t len)
 static void hold_str (str s) {}
 
 bool
-okclnt_t::output_fragment (str s)
+okclnt_base_t::output_fragment (str s)
 {
   if (output_state == CLIENT_EOF)
     return false;
@@ -701,7 +695,7 @@ okclnt_t::output_fragment (str s)
 }
 
 bool
-okclnt_t::output_done ()
+okclnt_base_t::output_done ()
 {
   if (output_state == CLIENT_EOF) {
     error (HTTP_CLIENT_EOF);
@@ -709,24 +703,24 @@ okclnt_t::output_done ()
   }
   assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
   output_state = DONE;
-  x->set_drained_cb (wrap (this, &okclnt_t::delcb));
+  x->set_drained_cb (wrap (this, &okclnt_base_t::delcb));
   return true;
 }
 
 bool
-okclnt_t::do_gzip () const
+okclnt_base_t::do_gzip () const
 {
   return hdr.takes_gzip () && ok_gzip && rsp_gzip;
 }
 
 void
-okclnt_t::output (compressible_t *b)
+okclnt_base_t::output (compressible_t *b)
 {
   output (*b);
 }
 
 void
-okclnt_t::output (compressible_t &b)
+okclnt_base_t::output (compressible_t &b)
 {
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
@@ -751,11 +745,11 @@ okclnt_t::output (compressible_t &b)
   rsp = New refcounted<http_response_ok_t> (sb, hra);
   if (uid_set) rsp->set_uid (uid);
   if (prelen > 0) rsp->set_inflated_len (prelen);
-  send (rsp, wrap (this, &okclnt_t::delcb));
+  send (rsp, wrap (this, &okclnt_base_t::delcb));
 }
 
 void
-okclnt_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
+okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
 
   // do cookies
@@ -931,7 +925,7 @@ ok_base_t::fix_uri (const str &in) const
 }
 
 void
-okclnt_t::set_hdr_field (const str &k, const str &v)
+okclnt_base_t::set_hdr_field (const str &k, const str &v)
 {
   if (!hdr_fields)
     hdr_fields = New refcounted<vec<http_hdr_field_t> > ();
@@ -1000,7 +994,7 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
 }
 
 ptr<pub2::remote_publisher_t>
-okclnt_t::pub2 ()
+okclnt_base_t::pub2 ()
 {
   return oksrvc->pub2 ();
 }

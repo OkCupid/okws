@@ -118,6 +118,13 @@ public:
   static ptr<http_parser_cgi_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
   { return New refcounted<http_parser_cgi_t> (xx, t); }
 
+  cgi_t & get_cookie () { return cookie; }
+  cgi_t & get_url () { return url; }
+  cgi_t & get_post () { return post; }
+  cgi_mpfd_t *get_mpfd () { return mpfd; }
+  http_inhdr_t & get_hdr () { return hdr; }
+  cgiw_t & get_cgi () { return cgi; }
+
 protected:
   size_t buflen2;
 
