@@ -33,6 +33,8 @@
 
 #include <expat.h>
 
+
+
 class xml_req_parser_t : public async_parser_t {
 public:
   xml_req_parser_t (abuf_src *s) 
@@ -43,6 +45,8 @@ public:
   void init (const char *encoding = NULL);
 
   void start_element (const char *name, const char **atts);
+  void end_element (const char *name);
+  void found_data (const char *buf, int len);
 
   ~xml_req_parser_t ();
 private:
