@@ -42,6 +42,8 @@ public:
 
   void init (const char *encoding = NULL);
 
+  void start_element (const char *name, const char **atts);
+
   ~xml_req_parser_t ();
 private:
   virtual void parse_guts ();
