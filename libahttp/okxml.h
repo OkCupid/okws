@@ -29,15 +29,13 @@
 #include <ihash.h>
 #include <ctype.h>
 #include "aparse.h"
-#include "okxml_data.h"
+#include "okxmldata.h"
 
 #include <expat.h>
 
-
-
 class xml_req_parser_t : public async_parser_t {
 public:
-  xml_req_parser_t (abuf_src *s) 
+  xml_req_parser_t (abuf_src_t *s) 
     : async_parser_t (s), _xml_parser_init (false) {}
   xml_req_parser_t (abuf_t *a) 
     : async_parser_t (a), _xml_parser_init (false) {}

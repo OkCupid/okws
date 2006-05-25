@@ -5,7 +5,7 @@
 #include <expat.h>
 
 static void 
-start_element_handler (void *pv, const char *name, const char *atts)
+start_element_handler (void *pv, const char *name, const char **atts)
 {
   xml_req_parser_t *parser = static_cast<xml_req_parser_t *> (pv);
   parser->start_element (name, atts);

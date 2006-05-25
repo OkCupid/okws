@@ -25,6 +25,9 @@
 #ifndef _LIBAHTTP_OKXML_DATA_H
 #define _LIBAHTTP_OKXML_DATA_H
 
+#include "async.h"
+#include "qhash.h"
+
 class xml_struct_t;
 class xml_array_t;
 class xml_int_t;
@@ -34,8 +37,9 @@ class xml_str_t;
 class xml_base64_t;
 class xml_null_t;
 class xml_method_call_t;
+class xml_params_t;
 
-class xml_element_t : public virtual refcnt {
+class xml_element_t : public virtual refcount {
 public:
   xml_element_t () {}
   virtual ~xml_element_t () {} 
@@ -52,11 +56,11 @@ public:
   virtual ptr<xml_params_t> get_params () { return NULL; }
 
   virtual ptr<xml_element_t> get (const str &s) const;
-  virtual ptr<xml_element_t> get (int i) const;
-  virtual ptr<xml_element_t> &get_r (int i);
+  virtual ptr<xml_element_t> get (size_t i) const;
+  virtual ptr<xml_element_t> &get_r (size_t i);
   virtual ptr<xml_element_t> &get_r (const str &s);
   virtual bool put (const str &s, ptr<xml_element_t> el) { return false; }
-  virtual bool put (int i, ptr<xml_element_t> el) { return false; }
+  virtual bool put (size_t i, ptr<xml_element_t> el) { return false; }
 
   virtual size_t size () const { return 0; }
   virtual int to_int () const { return 0; }
@@ -64,10 +68,10 @@ public:
   virtual str to_bool () const { return false; }
   virtual str to_base64 () const { return armor64 (NULL, 0); }
 
-  const ptr<xml_element_t> &operator[] (const str &s) const { return get (s); }
-  const ptr<xml_element_t> &operator[] (int i) const { return get (i); }
-  ptr<xml_element_t> &operator[] (const str &s) { return get_m (s); }
-  ptr<xml_element_t> &operator[] (int i) { return get_m (i); }
+  ptr<xml_element_t> operator[] (const str &s) const { return get (s); }
+  ptr<xml_element_t> operator[] (size_t i) const { return get (i); }
+  ptr<xml_element_t> &operator[] (const str &s) { return get_r (s); }
+  ptr<xml_element_t> &operator[] (size_t i) { return get_r (i); }
 
   operator int () const { return to_int (); }
   operator str () const { return to_str (); }
@@ -82,9 +86,9 @@ public:
   operator str () const { return _el->to_str (); }
   operator bool () const { return _el->to_bool (); }
 
-  const xml_elwrap_t &operator[] (const str &s) const 
+  xml_elwrap_t operator[] (const str &s) const 
   { return xml_elwrap_t (_el->get (s)); }
-  const xml_elwrap_t &operator[] (int i) const 
+  xml_elwrap_t operator[] (size_t i) const 
   { return xml_elwrap_t (_el->get (i)); }
 
   size_t size () const { return _el->size (); }
@@ -96,7 +100,7 @@ private:
 class xml_method_call_t : public xml_element_t {
 public:
   xml_method_call_t (const str &n) : _method_name (n) {}
-  xml_mehtod_call_t () {}
+  xml_method_call_t () {}
 
   str get_method_name () const { return _method_name; }
   void set_method_name (const str &s) { _method_name = s; }
@@ -112,12 +116,12 @@ class xml_param_t {
 public:
   xml_param_t () {}
   void set_value (ptr<xml_element_t> x) { _value = x; }
-  ptr<xml_element_t> get_value () { return x; }
+  ptr<xml_element_t> get_value () { return _value; }
 private:
   ptr<xml_element_t> _value;
 };
 
-class xml_params_t : public vec<ptr<xml_element_t> > {
+class xml_params_t : public vec<ptr<xml_param_t> > {
 public:
   xml_params_t () : vec<ptr<xml_param_t> > () {}
 };
@@ -166,8 +170,8 @@ private:
 
 class xml_struct_t : public xml_element_t {
 public:
-  ptr<xml_element_t> get (int i) const;
-  ptr<xml_element_t> &get_r (int i) ;
+  ptr<xml_element_t> get (const str &s) const;
+  ptr<xml_element_t> &get_r (const str &s) ;
   bool put (const str &s, ptr<xml_element_t> el);
   ptr<xml_struct_t> to_xml_struct () { return mkref (this); }
 private:
@@ -176,9 +180,9 @@ private:
 
 class xml_array_t : public xml_element_t {
 public:
-  ptr<xml_element_t> get (int i) const;
-  ptr<xml_element_t> &get_r (int i);
-  bool put (int i, ptr<xml_element_t> el);
+  ptr<xml_element_t> get (size_t i) const;
+  ptr<xml_element_t> &get_r (size_t i);
+  bool put (size_t i, ptr<xml_element_t> el);
   size_t size () const { return _elements.size (); }
   ptr<xml_array_t> to_xml_array () { return mkref (this); }
 private:
