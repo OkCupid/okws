@@ -31,12 +31,22 @@
 #include "aparse.h"
 #include "okxml_data.h"
 
+#include <expat.h>
+
 class xml_req_parser_t : public async_parser_t {
 public:
-  xml_req_parser_t (abuf_src *s) : async_parser_t (s) {}
-  xml_req_parser_t (abuf_t *a) : async_parser_t (a) {}
+  xml_req_parser_t (abuf_src *s) 
+    : async_parser_t (s), _xml_parser_init (false) {}
+  xml_req_parser_t (abuf_t *a) 
+    : async_parser_t (a), _xml_parser_init (false) {}
+
+  void init (const char *encoding = NULL);
+
+  ~xml_req_parser_t ();
 private:
   virtual void parse_guts ();
+  bool _xml_parser_init;
+  XML_Parser _xml_parser;
 
 };
 

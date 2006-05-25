@@ -33,6 +33,7 @@ class xml_double_t;
 class xml_str_t;
 class xml_base64_t;
 class xml_null_t;
+class xml_method_call_t;
 
 class xml_element_t : public virtual refcnt {
 public:
@@ -47,6 +48,8 @@ public:
   virtual ptr<xml_str_t> to_xml_str () { return NULL; }
   virtual ptr<xml_base64_t> to_xml_base64 () { return NULL; }
   virtual ptr<xml_null_t> to_xml_null () { return NULL; }
+  virtual ptr<xml_method_call_t> to_xml_method_call () { return NULL; }
+  virtual ptr<xml_params_t> get_params () { return NULL; }
 
   virtual ptr<xml_element_t> get (const str &s) const;
   virtual ptr<xml_element_t> get (int i) const;
@@ -88,6 +91,35 @@ public:
 
 private:
   ptr<xml_element_t> _el;
+};
+
+class xml_method_call_t : public xml_element_t {
+public:
+  xml_method_call_t (const str &n) : _method_name (n) {}
+  xml_mehtod_call_t () {}
+
+  str get_method_name () const { return _method_name; }
+  void set_method_name (const str &s) { _method_name = s; }
+  ptr<xml_params_t> get_params () const { return _params; }
+  void set_params (ptr<xml_params_t> p) { _params = p ;}
+  
+private:
+  str _method_name;
+  ptr<xml_params_t> _params;
+};
+
+class xml_param_t {
+public:
+  xml_param_t () {}
+  void set_value (ptr<xml_element_t> x) { _value = x; }
+  ptr<xml_element_t> get_value () { return x; }
+private:
+  ptr<xml_element_t> _value;
+};
+
+class xml_params_t : public vec<ptr<xml_element_t> > {
+public:
+  xml_params_t () : vec<ptr<xml_param_t> > () {}
 };
 
 class xml_null_t : public xml_element_t {
