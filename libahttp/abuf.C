@@ -163,7 +163,7 @@ abuf_t::flush (char *buf, size_t len)
 }
 
 ssize_t
-abuf_t::dump (char *buf, size_t len)
+abuf_t::get_errchar () const
 {
   switch (erc) {
   case ABUF_EOF:
@@ -173,6 +173,14 @@ abuf_t::dump (char *buf, size_t len)
   default:
     break;
   }
+  return 0;
+}
+
+ssize_t
+abuf_t::dump (char *buf, size_t len)
+{
+  ssize_t r;
+  if ((r = get_errchar ()) < 0) return r;
 
   char *buf_p = buf;
 
@@ -189,5 +197,26 @@ abuf_t::dump (char *buf, size_t len)
   }
   assert (spaceleft >= 0);
   return (buf_p - buf);
+}
+
+ssize_t
+abuf_t::stream (char **bp)
+{
+  ssize_t r;
+  if (bc) {
+    *bp = &lch;
+    bc = false;
+    return 1;
+  }
+
+  if ((r = get_errchar ()) < 0) return r;
+  if (endp - cp == 0) {
+    moredata ();
+    if ((r = get_errchar ()) < 0) return r;
+  }
+
+  assert (erc == ABUF_OK);
+  *bp = cp;
+  return endp - cp;
 }
 

@@ -36,8 +36,7 @@ public:
   xml_req_parser_t (abuf_src *s) : async_parser_t (s) {}
   xml_req_parser_t (abuf_t *a) : async_parser_t (a) {}
 private:
-  virtual void parse_guts () { parse_guts_T (); }
-  void parse_guts_T (CLOSURE);
+  virtual void parse_guts ();
 
 };
 

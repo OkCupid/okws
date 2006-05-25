@@ -119,6 +119,9 @@ public:
   size_t flush (char *c, size_t l); // flushes buffered data to buffer.
   ssize_t dump (char *buf, size_t len);
 
+  // stream the data in the buffer out in arbitrary-sized blocks
+  ssize_t stream (char **bp);
+
   void reset () 
   {
     spcs = 0;
@@ -127,6 +130,7 @@ public:
 
 private:
   void moredata ();
+  ssize_t get_errchar () const;
 
   abuf_src_t *src;
   bool bc;   // flag that's on if a char is buffered (due to unget ())
