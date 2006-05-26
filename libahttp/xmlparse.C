@@ -22,9 +22,6 @@
  *
  */
 
-#ifndef _LIBAHTTP_OKXML_DATA_H
-#define _LIBAHTTP_OKXML_DATA_H
-
 #include "okxml.h"
 #include <expat.h>
 

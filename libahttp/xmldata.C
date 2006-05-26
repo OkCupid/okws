@@ -216,3 +216,10 @@ xml_scalar_t::add (const char *b, int i)
   _buf.tosuio ()->copy (b, i);
   return true;
 }
+
+bool
+xml_base64_t::close_tag ()
+{
+  _val = _buf;
+  return true;
+}

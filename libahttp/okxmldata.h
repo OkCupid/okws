@@ -88,7 +88,7 @@ public:
   virtual ptr<xml_element_t> clone (const char *) const
   { return New refcounted<xml_element_t> (); }
   virtual const char *name () const { return NULL; }
-
+  
   // used during parsing
   virtual bool is_a (const char *s) const { return !strcmp (name (), s); }
   virtual bool add (const char *buf, int len) { return false; }
@@ -244,7 +244,6 @@ public:
   str to_str () const { return _val; }
   void set (const str &v) { _val = v; }
   const char *name () const { return "string"; }
-  bool add (const char *c, int l);
   bool close_tag ();
 private:
   str _val;
@@ -263,6 +262,7 @@ public:
   ptr<xml_element_t> clone (const char *) const 
   { return New refcounted<xml_base64_t>(); }
   const char *name () const { return "base64"; }
+  bool close_tag ();
 private:
   str _val;
 };
@@ -313,6 +313,13 @@ public:
   void set_element (ptr<xml_element_t> e) { _e = e; }
   bool add (ptr<xml_element_t> e);
   ptr<xml_value_t> to_xml_value () { return mkref (this); }
+
+  size_t len () const { return _e ? _e->len () : xml_element_t::len (); }
+  int to_int () const { return _e ? _e->to_int () : xml_element_t::to_int (); }
+  str to_str () const { return _e ? _e->to_str () : xml_element_t::to_str (); }
+  str to_base64 () const 
+  { return _e ? _e->to_base64 () : xml_element_t::to_base64(); }
+  
 private:
   ptr<xml_element_t> _e;
 };
