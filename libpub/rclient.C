@@ -249,6 +249,10 @@ pub_rclient_t::explore (const pfnm_t &fn) const
       // the tree. if this is the case, then assert it's still here.
       assert (nset->files[b->hash ()]);
 
+      // Remove the binding from the old set. Does this trigger the refcount
+      // to drop to 0? I hope not...
+      set->bindings.unbind (b);
+
       // this insert (1) binds the filename given to the file's
       // current hash and (2) insert the file, key by its hash.
       // at this point, we need mapping (1) but not mapping (2)

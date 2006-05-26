@@ -266,9 +266,9 @@ pub_t::set_t::getfile (const pfnm_t &nm, const pub_t::set_t *backup) const
 {
   const pbinding_t *b = bindings[nm];
   if (OKDBG2(PUB_BINDTAB_ACCESS)) {
-    str b;
-    b << "PUB bind tab accessed: " << nm << "\n";
-    okdbg_warn (CHATTER, b);
+    strbuf bf;
+    bf << "PUB bind tab accessed: " << nm << "\n";
+    okdbg_warn (CHATTER, str (bf));
     bindings.okdbg_dump (CHATTER);
   }
   if (!b) return NULL;
