@@ -47,7 +47,15 @@ public:
   void found_data (const char *buf, int len);
 
   ~xml_req_parser_t ();
+
+protected:
+  xml_element_t *active_el () { return _stack.back (); }
+  void push_el (ptr<xml_element_t> e) { _stack.push_back (e); }
+  ptr<xml_element_t> pop_el () { return _stack.pop_back (); }
+
 private:
+  vec<ptr<xml_element_t> > _stack;
+
   virtual void parse_guts ();
   bool _xml_parser_init;
   XML_Parser _xml_parser;

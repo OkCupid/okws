@@ -200,11 +200,15 @@ abuf_t::dump (char *buf, size_t len)
 }
 
 ssize_t
-abuf_t::stream (char **bp)
+abuf_t::stream (const char **bp)
 {
+  static char c;
   ssize_t r;
   if (bc) {
-    *bp = &lch;
+    assert (lch >= 0);
+    c = lch;
+    
+    *bp = &c;
     bc = false;
     return 1;
   }

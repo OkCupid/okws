@@ -29,14 +29,14 @@ xml_struct_t::get_r (const str &s)
 ptr<xml_element_t> 
 xml_array_t::get (size_t i) const
 {
-  if (i < _elements.size ()) { return _elements[i]; } 
+  if (i < size ()) { return (*this)[i]; } 
   else { return xml_null_t::alloc (); }
 }
 
 ptr<xml_element_t> & 
 xml_array_t::get_r (size_t i) 
 {
-  if (i < _elements.size ()) { return _elements[i]; } 
+  if (i < size ()) { return (*this)[i]; } 
   else { return _dummy; } 
 }
 
@@ -50,10 +50,9 @@ xml_struct_t::put (const str &s, ptr<xml_element_t> e)
 bool
 xml_array_t::put (size_t i, ptr<xml_element_t> e)
 {
-  if (i >= _elements.size ())
-    _elements.setsize (i + 1);
-  _elements[i] = e;
+  if (i >= size ())
+    setsize (i + 1);
+  (*this)[i] = e;
   return true;
 }
-
 

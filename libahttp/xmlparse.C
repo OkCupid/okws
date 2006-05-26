@@ -4,6 +4,54 @@
 #include "okxml.h"
 #include <expat.h>
 
+class xml_tagtab_t {
+public:
+  xml_tagtab_t ();
+  ptr<xml_element_t> generate (const char *s);
+private:
+  qhash<const char *, ptr<xml_element_t> > _tab;
+};
+
+xml_tagtab_t::xml_tagtab_t ()
+{
+  ptr<xml_element_t> e;
+
+#define I(x)                                \
+  {                                         \
+    e = New refcounted<xml_##x##_t> ();     \
+    _tab.insert (e->name (), e);           \
+  }
+
+  I(struct);
+  I(array);
+  I(int);
+  I(double);
+  I(str);
+  I(base64);
+  I(params);
+  I(param);
+  I(value);
+  I(method_call);
+  I(name);
+  I(member);
+  I(data);
+
+#undef I
+
+  // 'int' has 2 names...
+  e = New refcounted<xml_int_t> ();
+  _tab.insert ("i4", e);
+
+}
+
+ptr<xml_element_t>
+xml_tagtab_t::generate (const char *s)
+{
+  ptr<xml_element_t> *e = _tab[s];
+  if (!e) { return NULL; }
+  else { return (*e)->clone (s); }
+}
+
 static void 
 start_element_handler (void *pv, const char *name, const char **atts)
 {
@@ -33,6 +81,36 @@ xml_req_parser_t::~xml_req_parser_t ()
   }
 }
 
+xml_tagtab_t xmltab;
+
+void
+xml_req_parser_t::start_element (const char *nm, const char **atts)
+{
+  ptr<xml_element_t> el = xmltab.generate (nm);
+  if (el && active_el ()->add (el)) {
+    push_el (el);
+  } else {
+    // handle error condition
+  }
+}
+
+void
+xml_req_parser_t::end_element (const char *nm)
+{
+  if (!active_el ()->is_a (nm)) {
+    // handle error condition
+  }
+  pop_el ();
+}
+
+void
+xml_req_parser_t::found_data (const char *buf, int len)
+{
+  if (! active_el ()->add (buf, len)) {
+    // handle error condition
+  }
+}
+
 void
 xml_req_parser_t::init (const char *encoding)
 {
@@ -42,12 +120,13 @@ xml_req_parser_t::init (const char *encoding)
   XML_SetElementHandler (_xml_parser, start_element_handler, 
 			 end_element_handler);
   XML_SetCharacterDataHandler (_xml_parser, character_data_handler);
+  push_el (New refcounted<xml_top_level_t> ());
 }
 
 void
 xml_req_parser_t::parse_guts ()
 {
-  char *b;
+  const char *b;
   ssize_t sz;
   enum XML_Status xstat;
 
@@ -64,4 +143,27 @@ xml_req_parser_t::parse_guts ()
     }
   } while (sz >= 0);
 
+}
+
+bool
+xml_container_t::add (ptr<xml_element_t> e)
+{
+  bool ret = false;
+  if (can_contain (e)) {
+    push_back (e);
+    ret = true;
+  }
+  return ret;
+}
+
+bool
+xml_method_call_t::add (ptr<xml_element_t> e)
+{
+  return (!_params && (_params = e->to_xml_params ()));
+}
+
+bool
+xml_param_t::add (ptr<xml_element_t> e)
+{
+  return (!_value && (_value = e->to_xml_value ()));
 }

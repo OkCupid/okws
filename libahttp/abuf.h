@@ -120,7 +120,7 @@ public:
   ssize_t dump (char *buf, size_t len);
 
   // stream the data in the buffer out in arbitrary-sized blocks
-  ssize_t stream (char **bp);
+  ssize_t stream (const char **bp);
 
   void reset () 
   {

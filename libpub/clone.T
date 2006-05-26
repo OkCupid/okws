@@ -3,6 +3,7 @@
 
 #include "okclone.h"
 #include "okdbg.h"
+#include "tame.h"
 
 void
 clone_server_t::eofcb ()
