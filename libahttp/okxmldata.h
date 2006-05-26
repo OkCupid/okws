@@ -191,7 +191,16 @@ public:
   const char *name () const { return "null"; }
 };
 
-class xml_double_t : public xml_element_t {
+class xml_scalar_t : public xml_element_t {
+public:
+  xml_scalar_t () {}
+  bool add (const char *b, int s);
+  bool is_value () const { return true; }
+protected:
+  strbuf _buf;
+};
+
+class xml_double_t : public xml_scalar_t {
 public:
   xml_double_t () : _val (0) {}
   ptr<xml_double_t> to_xml_double () { return mkref (this); }
@@ -201,13 +210,13 @@ public:
   ptr<xml_element_t> clone (const char *n) const 
   { return New refcounted<xml_double_t> (); }
 
-  bool is_value () const { return true; }
   const char *name () const { return "double"; }
+  bool close_tag ();
 private:
   double _val;
 };
 
-class xml_int_t : public xml_element_t {
+class xml_int_t : public xml_scalar_t {
 public:
   xml_int_t (const char *tag) : _tag (tag), _val (0) {}
   xml_int_t (int i = 0) : _val (i) {}
@@ -221,12 +230,13 @@ public:
 
   const char *name () const { return "int"; }
   bool is_a (const char *n) const { return !strcmp (_tag.cstr (), n); }
+  bool close_tag ();
 private:
   const str _tag;
   int _val;
 };
 
-class xml_str_t : public xml_element_t {
+class xml_str_t : public xml_scalar_t {
 public:
   xml_str_t (const str &s) : _val (s) {}
   xml_str_t () {}
@@ -234,12 +244,13 @@ public:
   str to_str () const { return _val; }
   void set (const str &v) { _val = v; }
   const char *name () const { return "string"; }
-  bool is_value () const { return true; }
+  bool add (const char *c, int l);
+  bool close_tag ();
 private:
   str _val;
 };
 
-class xml_base64_t : public xml_element_t {
+class xml_base64_t : public xml_scalar_t {
 public:
   xml_base64_t (const str &b) : _val (b) {}
   xml_base64_t () : _val (armor64 (NULL, 0)) {}
@@ -252,7 +263,6 @@ public:
   ptr<xml_element_t> clone (const char *) const 
   { return New refcounted<xml_base64_t>(); }
   const char *name () const { return "base64"; }
-  bool is_value () const { return true; }
 private:
   str _val;
 };
@@ -275,7 +285,7 @@ private:
   qhash<str, ptr<xml_element_t> > _members;
 };
 
-class xml_array_t : public xml_container_t {
+class xml_array_t : public xml_element_t {
 public:
   xml_array_t () {}
   ptr<xml_element_t> get (size_t i) const;
@@ -287,6 +297,10 @@ public:
   { return New refcounted<xml_array_t>(); }
   const char *name () const { return "array"; }
   bool is_value () const { return true; }
+  ptr<xml_data_t> data () { return _data; }
+  bool add (ptr<xml_element_t> e);
+private:
+  ptr<xml_data_t> _data;
 };
 
 class xml_value_t : public xml_element_t {
@@ -333,13 +347,15 @@ private:
   str _value;
 };
 
-class xml_data_t : public xml_element_t {
+class xml_data_t : public xml_container_t {
 public:
   xml_data_t () {}
   ptr<xml_element_t> clone (const char *) const 
   { return New refcounted<xml_data_t> (); }
   const char *name () const { return "data"; }
   ptr<xml_data_t> to_xml_data () { return mkref (this); }
+  bool can_contain (ptr<xml_element_t> e) { return e->to_xml_value (); }
+  static ptr<xml_data_t> alloc () { return New refcounted<xml_data_t> (); }
 };
 
 class xml_method_name_t : public xml_element_t {
@@ -356,14 +372,13 @@ private:
   str _value;
 };
 
-class xml_bool_t : public xml_element_t {
+class xml_bool_t : public xml_scalar_t {
 public:
   xml_bool_t () {}
   ptr<xml_element_t> clone (const char *) const 
   { return New refcounted<xml_bool_t> (); }
   const char *name () const { return "boolean"; }
   ptr<xml_bool_t> to_xml_bool () { return mkref (this); }
-  bool is_value () const { return true; }
 };
 
 

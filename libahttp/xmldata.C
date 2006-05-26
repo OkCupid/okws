@@ -1,5 +1,30 @@
+// -*-c++-*-
+/* $Id: okcgi.h 1682 2006-04-26 19:17:22Z max $ */
+
+/*
+ *
+ * Copyright (C) 2002-2004 Maxwell Krohn (max@okcupid.com)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * USA
+ *
+ */
 
 #include "okxml.h"
+#include "parseopt.h"
+#include <stdlib.h>
 
 ptr<xml_element_t> _dummy;
 
@@ -29,14 +54,14 @@ xml_struct_t::get_r (const str &s)
 ptr<xml_element_t> 
 xml_array_t::get (size_t i) const
 {
-  if (i < size ()) { return (*this)[i]; } 
+  if (_data && i < _data->size ()) { return (*_data)[i]; } 
   else { return xml_null_t::alloc (); }
 }
 
 ptr<xml_element_t> & 
 xml_array_t::get_r (size_t i) 
 {
-  if (i < size ()) { return (*this)[i]; } 
+  if (_data && i < _data->size ()) { return (*_data)[i]; } 
   else { return _dummy; } 
 }
 
@@ -50,9 +75,12 @@ xml_struct_t::put (const str &s, ptr<xml_element_t> e)
 bool
 xml_array_t::put (size_t i, ptr<xml_element_t> e)
 {
-  if (i >= size ())
-    setsize (i + 1);
-  (*this)[i] = e;
+  if (!_data) 
+    _data = xml_data_t::alloc ();
+
+  if (i >= _data->size ())
+    _data->setsize (i + 1);
+  (*_data)[i] = e;
   return true;
 }
 
@@ -111,14 +139,24 @@ xml_member_t::add (ptr<xml_element_t> e)
 {
   ptr<xml_value_t> v;
   ptr<xml_name_t> n;
+  bool ret = true;
   if ((v = e->to_xml_value ())) {
-
+    if (_member_value) {
+      // error, duplicate
+      ret = false;
+    } else {
+      _member_value = v;
+    }
   } else if ((n = e->to_xml_name ())) {
-
+    if (_member_name) {
+      ret = false;
+    } else {
+      _member_name = n;
+    }
   } else {
-
+    ret = false;
   }
-
+  return ret;
 }
 
 
@@ -141,4 +179,40 @@ xml_struct_t::close_tag ()
     }
   }
   return succ;
+}
+
+bool
+xml_array_t::add (ptr<xml_element_t> e)
+{
+  return (!_data && (_data = e->to_xml_data ()));
+}
+
+bool
+xml_int_t::close_tag ()
+{
+  str s (_buf);
+  return convertint (s, &_val);
+}
+
+bool
+xml_str_t::close_tag ()
+{
+  _val = _buf;
+  return true;
+}
+
+bool
+xml_double_t::close_tag ()
+{
+  str s (_buf);
+  char *ep;
+  _val = strtod (s.cstr (), &ep);
+  return (*ep == '\0' && errno != ERANGE);
+}
+
+bool
+xml_scalar_t::add (const char *b, int i)
+{
+  _buf.tosuio ()->copy (b, i);
+  return true;
 }
