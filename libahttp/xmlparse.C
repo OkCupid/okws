@@ -24,7 +24,6 @@ xml_tagtab_t::xml_tagtab_t ()
 
   I(struct);
   I(array);
-  I(int);
   I(double);
   I(str);
   I(base64);
@@ -35,6 +34,9 @@ xml_tagtab_t::xml_tagtab_t ()
   I(name);
   I(member);
   I(data);
+  I(method_name);
+  I(bool);
+  I(int);
 
 #undef I
 
@@ -97,10 +99,10 @@ xml_req_parser_t::start_element (const char *nm, const char **atts)
 void
 xml_req_parser_t::end_element (const char *nm)
 {
-  if (!active_el ()->is_a (nm)) {
+  ptr<xml_element_t> el = pop_el ();
+  if (!el || !active_el ()->is_a (nm)  || !el->close_tag ()) {
     // handle error condition
   }
-  pop_el ();
 }
 
 void
@@ -143,27 +145,4 @@ xml_req_parser_t::parse_guts ()
     }
   } while (sz >= 0);
 
-}
-
-bool
-xml_container_t::add (ptr<xml_element_t> e)
-{
-  bool ret = false;
-  if (can_contain (e)) {
-    push_back (e);
-    ret = true;
-  }
-  return ret;
-}
-
-bool
-xml_method_call_t::add (ptr<xml_element_t> e)
-{
-  return (!_params && (_params = e->to_xml_params ()));
-}
-
-bool
-xml_param_t::add (ptr<xml_element_t> e)
-{
-  return (!_value && (_value = e->to_xml_value ()));
 }
