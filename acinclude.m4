@@ -1802,3 +1802,69 @@ then
 	CFLAGS=$ac_save_CFLAGS
 fi
 ])
+dnl
+dnl Find the expat libraries
+dnl
+AC_DEFUN([OKWS_EXPAT],
+[AC_ARG_WITH(expat,
+--with-expat=DIR      Specify location of expat library)
+if test "$with_expat" != "no"; then
+	ac_save_CFLAGS=$CFLAGS
+	ac_save_LIBS=$LIBS
+	dirs=""
+	if test ${with_expat+set} && "${with_expat}"; then
+		dirs="$dirs ${with_expat} ${with_expat}/include"
+	fi
+	if test "${prefix}" != "NONE"; then
+		dirs="$dirs ${prefix} ${prefix}/include"
+	fi
+	dirs="$dirs /usr/local/include /usr/include"
+	AC_CACHE_CHECK(for expat.h, okws_cv_expat_h,
+	[for dir in " " $dirs ; do
+		case $dir in
+			" ") iflags=" " ;;
+			*)   iflags="-I${dir}" ;; 
+		esac
+		CLFAGS="${ac_save_CFLAGS} $iflags"
+		AC_TRY_COMPILE([#include <expat.h>], [ XML_ParserCreate(0);],
+				okws_cv_expat_h="${iflags}"; break)
+	done
+	if test "$okws_cv_expat_h" = " " ; then
+		okws_cv_expat_h="yes"
+	fi
+	])
+	if test "$okws_cv_expat_h" = "yes"; then
+		okws_cv_expat_h=" "
+	fi
+	if test "${okws_cv_expat_h+set}"; then
+		dirs=`echo $okws_cv_expat_h | sed 's/include/lib/' `
+		dirs=`echo $dirs | sed 's/^-I//' `
+		AC_CACHE_CHECK(for libexpat, okws_cv_libexpat,
+		[for dir in " " $dirs; do
+			case $dir in
+				" ") lflags="-lexpat" ;;
+				*)   lflags="-L${dir} -lexpat" ;;
+			esac
+			LIBS="$ac_save_LIBS $lflags"
+			AC_TRY_LINK([#include <expat.h>],
+				    XML_ParserCreate (0);,
+				    okws_cv_libexpat=$lflags; break)
+		done
+		if test -z ${okws_cv_libexpat+set}; then
+			okws_cv_libexpat="no"
+		fi
+		])
+	fi
+	if test "${okws_cv_expat_h+set}" && test "$okws_cv_libexpat" != "no"
+	then
+		CPPFLAGS="$CPPFLAGS $okws_cv_expat_h"
+		AC_DEFINE(HAVE_EXPAT, 1, Enable XML support with Expat library)
+		LIBEXPAT="$okws_cv_libexpat"
+	else
+		AC_MSG_ERROR("No XML Support! To disable use --without-expat")
+	fi
+	LIBS=$ac_save_LIBS
+	CFLAGS=$ac_save_CFLAGS
+fi
+AC_SUBST(LIBEXPAT)
+])

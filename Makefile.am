@@ -33,7 +33,8 @@ okwsconf.h: stamp-auto-h
 stamp-auto-h: $(srcdir)/autoconf.sed $(CONFIG_HEADER)
 	@rm -f autoconf.h~
 	sed -f $(srcdir)/autoconf.sed $(CONFIG_HEADER) > autoconf.h~
-	cmp autoconf.h~ okwsconf.h || mv -f autoconf.h~ okwsconf.h
+	cmp autoconf.h~ okwsconf.h > /dev/null 2>& 1 \
+	  || mv -f autoconf.h~ okwsconf.h
 	@rm -f autoconf.h~
 	@echo timepstamp > stamp-auto-h
 

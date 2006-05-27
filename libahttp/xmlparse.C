@@ -22,8 +22,10 @@
  *
  */
 
-#include "okxml.h"
-#include <expat.h>
+
+#include "okxmlparse.h"
+#include "config.h"
+#ifdef HAVE_EXPAT
 
 class xml_tagtab_t {
 public:
@@ -167,3 +169,5 @@ xml_req_parser_t::parse_guts ()
   } while (sz >= 0);
 
 }
+
+#endif /* HAVE_EXPAT */

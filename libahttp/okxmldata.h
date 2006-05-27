@@ -27,6 +27,7 @@
 
 #include "async.h"
 #include "qhash.h"
+#include "zstr.h"
 
 class xml_struct_t;
 class xml_array_t;
@@ -81,6 +82,10 @@ public:
   virtual str to_base64 () const { return armor64 (NULL, 0); }
   virtual bool is_value () const { return false; }
 
+  // should it be a strbuf or a zbuf?
+  virtual void dump (zbuf &b, int lev);
+  virtual void dump_data (zbuf &b, int lev) {}
+
   operator int () const { return to_int (); }
   operator str () const { return to_str (); }
   operator bool () const { return to_bool (); }
@@ -106,6 +111,7 @@ public:
   virtual bool add (ptr<xml_element_t> e);
   virtual bool can_contain (ptr<xml_element_t> e) { return false; }
   size_t len () const { return size (); }
+  void dump_data (zbuf &b, int len);
 };
 
 class xml_top_level_t : public xml_container_t {
@@ -149,6 +155,7 @@ public:
   const char *name () const { return "methodCall"; }
 
   bool add (ptr<xml_element_t> e);
+  void dump_data (zbuf &b, int lev);
 private:
   str _method_name;
   ptr<xml_params_t> _params;
@@ -165,6 +172,7 @@ public:
   { return New refcounted<xml_param_t> (); }
   const char *name () const { return "param"; }
   bool add (ptr<xml_element_t> e);
+  void dump_data (zbuf &b, int lev);
 private:
   ptr<xml_value_t> _value;
 };
@@ -212,6 +220,7 @@ public:
 
   const char *name () const { return "double"; }
   bool close_tag ();
+  void dump_data (zbuf &b, int lev);
 private:
   double _val;
 };

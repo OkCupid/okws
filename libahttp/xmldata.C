@@ -240,3 +240,64 @@ xml_base64_t::close_tag ()
   _val = _buf;
   return true;
 }
+
+static void spaces (zbuf &b, int n)
+{
+  for (int i = 0; i < n; i++) {
+    b << " ";
+  }
+}
+
+void
+xml_element_t::dump (zbuf &b, int lev)
+{
+  if (name ()) {
+    spaces (b, lev);
+    b << "<" << name () << ">\n";
+  }
+  dump_data (b, lev + 1);
+  if (name ()) {
+    spaces (b, lev);
+    b << "</" << name () << ">\n";
+  }
+}
+
+void
+xml_container_t::dump_data (zbuf &b, int lev)
+{
+  for (size_t i = 0; i < size (); i++) {
+    (*this)[i]->dump (b, lev);
+  }
+}
+
+void
+xml_method_call_t::dump_data (zbuf &b, int lev)
+{
+  if (_method_name) {
+    spaces (b, lev);
+    b << "<methodName>" << _method_name << "</methodName>\n";
+  }
+  if (_params) {
+    _params->dump (b, lev);
+  }
+}
+
+void
+xml_param_t::dump_data (zbuf &b, int lev)
+{
+  if (_value) { _value->dump (b, lev); }
+}
+
+void
+xml_double_t::dump_data (zbuf &b, int lev)
+{
+#define DOUBLEBUFLEN 0x40
+  static char buf[DOUBLEBUFLEN];
+  int rc = snprintf (buf, DOUBLEBUFLEN, "%g", _val);
+  if (rc < DOUBLEBUFLEN) {
+    b.cat (buf, rc, true);
+  } else {
+    b << "NaN";
+  }
+#undef DOUBLEBUFLEN
+}

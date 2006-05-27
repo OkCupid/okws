@@ -58,6 +58,7 @@ SFS_SET_CLOCK
 SFS_FIND_RESOLV
 OKWS_LIBS
 SFS_MYSQL
+OKWS_EXPAT
 
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
 
@@ -112,7 +113,7 @@ LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB) '"$LDADD"
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
@@ -156,6 +157,6 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile etc/Makefile
 	  etc/freebsd/Makefile test/Makefile test/unit/Makefile
-	  test/full/Makefile test/full/htdocs/Makefile
-	  test/full/htdocs/err/Makefile test/full/htdocs/d1/Makefile
-	  test/full/htdocs/conf/Makefile test/full/htdocs/lang/Makefile )
+	  test/system/Makefile test/system/htdocs/Makefile
+	  test/system/htdocs/err/Makefile test/system/htdocs/d1/Makefile
+	  test/system/htdocs/conf/Makefile test/system/htdocs/lang/Makefile )

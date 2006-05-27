@@ -25,41 +25,7 @@
 #ifndef _LIBAHTTP_OKXML_H
 #define _LIBAHTTP_OKXML_H
 
-#include <async.h>
-#include <ihash.h>
-#include <ctype.h>
-#include "aparse.h"
 #include "okxmldata.h"
-
-#include <expat.h>
-
-class xml_req_parser_t : public async_parser_t {
-public:
-  xml_req_parser_t (abuf_src_t *s) 
-    : async_parser_t (s), _xml_parser_init (false) {}
-  xml_req_parser_t (abuf_t *a) 
-    : async_parser_t (a), _xml_parser_init (false) {}
-
-  void init (const char *encoding = NULL);
-
-  void start_element (const char *name, const char **atts);
-  void end_element (const char *name);
-  void found_data (const char *buf, int len);
-
-  ~xml_req_parser_t ();
-
-protected:
-  xml_element_t *active_el () { return _stack.back (); }
-  void push_el (ptr<xml_element_t> e) { _stack.push_back (e); }
-  ptr<xml_element_t> pop_el () { return _stack.pop_back (); }
-
-private:
-  vec<ptr<xml_element_t> > _stack;
-
-  virtual void parse_guts ();
-  bool _xml_parser_init;
-  XML_Parser _xml_parser;
-
-};
+#include "okxmlparse.h"
 
 #endif /* _LIBAHTTP_OKXML_H */
