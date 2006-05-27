@@ -25,7 +25,7 @@ rcvar=`set_rcvar`
 command="/usr/local/sbin/okld"
 okws_flags="-q"
 pidfile="/var/run/okld.pid"
-required_files="/etc/sfs/okws_config"
+required_files="/usr/local/etc/okws/okws_config"
 extra_command="reload"
 
 load_rc_config $name
