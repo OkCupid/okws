@@ -1,2 +1,0 @@
-
-int fact (int i);
