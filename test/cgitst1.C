@@ -14,6 +14,6 @@ main (int argc, char *argv[])
 {
   if (argc != 2) 
     usage ();
-  ptr<cgi_t> t (cgi_t::parse (argv[1]));
+  ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
   t->dump1 ();
 }
