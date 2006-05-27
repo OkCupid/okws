@@ -386,6 +386,9 @@ public:
   { return New refcounted<xml_bool_t> (); }
   const char *name () const { return "boolean"; }
   ptr<xml_bool_t> to_xml_bool () { return mkref (this); }
+  bool close_tag ();
+private:
+  bool _val;
 };
 
 

@@ -195,6 +195,23 @@ xml_int_t::close_tag ()
 }
 
 bool
+xml_bool_t::close_tag ()
+{
+  str s (_buf);
+  int tmp;
+  if (convertint (s, &tmp)) {
+    _val = tmp;
+  } else if (!strcasecmp (s.cstr (), "true")) {
+    _val = true;
+  } else if (!strcasecmp (s.cstr (), "false")) {
+    _val = false;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool
 xml_str_t::close_tag ()
 {
   _val = _buf;
