@@ -151,10 +151,11 @@ PUB_PDEBUG
 PUBFLAGS='-rF'
 AC_SUBST(PUBFLAGS)
 
-AC_OUTPUT(txarpcc/Makefile libpub/Makefile test/Makefile pub/Makefile 
+AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile etc/Makefile
-	  etc/freebsd/Makefile test2/Makefile test2/htdocs/Makefile
-	  test2/htdocs/err/Makefile test2/htdocs/d1/Makefile
-	  test2/htdocs/conf/Makefile test2/htdocs/lang/Makefile )
+	  etc/freebsd/Makefile test/Makefile test/unit/Makefile
+	  test/full/Makefile test/full/htdocs/Makefile
+	  test/full/htdocs/err/Makefile test/full/htdocs/d1/Makefile
+	  test/full/htdocs/conf/Makefile test/full/htdocs/lang/Makefile )
