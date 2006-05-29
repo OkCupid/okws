@@ -11,7 +11,8 @@ main (int argc, char *argv[])
 {
   zbuf z;
   strbuf b;
-  xml_wrapper_t r (xml_method_response_t::alloc ());
+  ptr<xml_method_response_t> r (xml_method_response_t::alloc ());
+  xml_wrapper_t w (r);
 
   r[0]["a"] = 10;
   r[0]["b"] = "foo";

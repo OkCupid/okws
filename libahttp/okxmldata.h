@@ -117,32 +117,15 @@ public:
   virtual bool can_contain (ptr<xml_element_t> e) { return false; }
   size_t len () const { return size (); }
   void dump_data (zbuf &b, int len);
+
+  ptr<xml_element_t> get (size_t i) const;
+  ptr<xml_element_t> &get_r (size_t i);
 };
 
 class xml_top_level_t : public xml_container_t {
 public:
   const char *name () const { return "topLevel"; }
   bool can_contain (ptr<xml_element_t> e) { return e->to_xml_method_call (); }
-};
-
-
-class xml_wrap_t {
-public:
-  xml_wrap_t (ptr<xml_element_t> e) : _el (e) {}
-
-  operator int () const { return _el->to_int (); }
-  operator str () const { return _el->to_str (); }
-  operator bool () const { return _el->to_bool (); }
-
-  xml_wrap_t operator[] (const str &s) const 
-  { return xml_wrap_t (_el->get (s)); }
-  xml_wrap_t operator[] (size_t i) const 
-  { return xml_wrap_t (_el->get (i)); }
-
-  size_t size () const { return _el->len (); }
-
-private:
-  ptr<xml_element_t> _el;
 };
 
 class xml_method_name_t : public xml_element_t {
@@ -231,6 +214,9 @@ public:
   ptr<xml_method_response_t> to_xml_method_response () { return mkref (this); }
   bool add (ptr<xml_element_t> e);
   void dump_data (zbuf &b, int lev) { if (_params) _params->dump (b, lev); }
+
+  ptr<xml_element_t> get (size_t i) const;
+  ptr<xml_element_t> &get_r (size_t i);
 private:
   ptr<xml_params_t> _params;
 };
@@ -286,6 +272,9 @@ public:
   ptr<xml_element_t> clone (const char *n) const 
   { return New refcounted<xml_int_t> (n); }
 
+  static ptr<xml_int_t> alloc (int i)
+  { return New refcounted<xml_int_t> (i); }
+
   const char *name () const { return "int"; }
   bool is_a (const char *n) const { return !strcmp (_tag.cstr (), n); }
   bool close_tag ();
@@ -307,6 +296,9 @@ public:
   ptr<xml_element_t> clone (const char *n) const 
   { return New refcounted<xml_str_t> (); }
   void dump_data (zbuf &z, int level) { if (_val) z << _val; }
+
+  static ptr<xml_str_t> alloc (const str &s)
+  { return New refcounted<xml_str_t> (s); }
 private:
   str _val;
 };
@@ -325,6 +317,8 @@ public:
   { return New refcounted<xml_base64_t>(); }
   const char *name () const { return "base64"; }
   bool close_tag ();
+  static ptr<xml_base64_t> alloc (const str &s)
+  { return New refcounted<xml_base64_t> (s); }
 private:
   str _val;
 };

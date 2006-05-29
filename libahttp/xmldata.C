@@ -25,6 +25,7 @@
 #include "okxml.h"
 #include "parseopt.h"
 #include <stdlib.h>
+#include "okxmlwrap.h"
 
 ptr<xml_element_t> _dummy;
 
@@ -61,8 +62,8 @@ xml_array_t::get (size_t i) const
 ptr<xml_element_t> & 
 xml_array_t::get_r (size_t i) 
 {
-  if (_data && i < _data->size ()) { return (*_data)[i]; } 
-  else { return _dummy; } 
+  if (!_data) _data = New refcounted<xml_data_t> ();
+  return _data->get_r (i);
 }
 
 bool
@@ -318,7 +319,6 @@ xml_method_name_t::add (const char *buf, int len)
   return true;
 }
 
-
 bool
 has_non_ws (const char *buf, int len)
 {
@@ -328,4 +328,33 @@ has_non_ws (const char *buf, int len)
     }
   }
   return false;
+}
+
+ptr<xml_element_t>
+xml_method_response_t::get (size_t i) const
+{
+  if (_params) { return _params->get (i); }
+  else { return xml_null_t::alloc (); }
+}
+
+ptr<xml_element_t> &
+xml_method_response_t::get_r (size_t i)
+{
+  if (!_params) _params = New refcounted<xml_params_t> ();
+  return _params->get_r (i);
+}
+
+ptr<xml_element_t> &
+xml_container_t::get_r (size_t i)
+{
+  if (i >= size ())
+    setsize (i);
+  return (*this)[i];
+}
+
+ptr<xml_element_t> 
+xml_container_t::get (size_t i) const
+{
+  if (i >= size ()) { return xml_null_t::alloc (); }
+  else return (*this)[i];
 }
