@@ -106,15 +106,19 @@ public:
       _el = New refcounted<xml_struct_t> ();
     return xml_wrap_t (_el->get_r (s)); 
   }
+
+  const xml_wrap_t &set_value (ptr<xml_element_t> e);
   
-  const xml_wrap_t &operator=(bool b)
-  { _el = xml_value_t::alloc (xml_bool_t::alloc (b)); return (*this); }
+  const xml_wrap_t &operator=(bool b) 
+  { return set_value (xml_bool_t::alloc (b)); }
+    
   const xml_wrap_t &operator=(int i) 
-  { _el = xml_value_t::alloc (xml_int_t::alloc (i)); return (*this); }
+  { return set_value (xml_int_t::alloc (i)); }
   const xml_wrap_t &operator=(str s)
-  { _el = xml_value_t::alloc (xml_str_t::alloc (s)); return (*this); }
+  { return set_value (xml_str_t::alloc (s)); }
   const xml_wrap_t &operator=(const base64_str_t &b)
-  { _el = xml_value_t::alloc (xml_base64_t::alloc (b)); return (*this); }
+  { return set_value (xml_base64_t::alloc (b)); }
+
   const xml_wrap_t &operator=(ptr<xml_element_t> e)
   { _el = e; return (*this); }
   const xml_wrap_t &operator=(const xml_wrap_t &w)

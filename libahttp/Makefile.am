@@ -6,7 +6,7 @@ okwslib_LTLIBRARIES = libahttp.la
 
 libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 	abuf_pipe.C pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C \
-	xmlparse.C xmldata.C 
+	xmlparse.C xmldata.C xmlwrap.C
 
 # noinst_HEADERS = err.g
 
