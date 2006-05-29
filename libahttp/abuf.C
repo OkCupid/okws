@@ -53,46 +53,6 @@ abuf_con_t::init (cbv c)
 }
 
 void
-abuf_pipe_t::init (cbv c)
-{
-  cb = c;
-  schedule_read ();
-}
-
-void
-abuf_pipe_t::schedule_read ()
-{
-  if (!_eof) {
-    _read_oustanding = true;
-    _aios->readany (wrap (this, &abuf_pipe_t::readcb));
-  }
-}
-
-void
-abuf_pipe_t::finish ()
-{
-  if (_read_outstanding) {
-    _aios->readcancel ();
-  }
-}
-
-void
-abuf_pipe_t::readcb (str s, int err)
-{
-  _read_oustanding = false;
-  if (!s) {
-    _eof = true;
-  } else {
-    _bufs.push_back (s);
-  }
-
-  ptr<bool> df = _destroyed;
-  if (cb) (*cb) ();
-  if (!*df) schedule_read ();
-}
-
-
-void
 abuf_con_t::readcb (int n)
 {
   if (n == 0) 
@@ -106,38 +66,6 @@ abuf_con_t::getdata ()
 {
   if (eof) return abuf_indata_t ();
   return abuf_indata_t (in);
-}
-
-abuf_indata_t 
-abuf_pipe_t::getdata ()
-{
-  if (_eof) return abuf_indata_t ();
-  else {
-    if (_next_buf < _bufs.size ()) {
-      abuf_indata_t r (ABUF_OK, _bufs[_next_buf].cstr (), 
-		       _bufs[_next_buf].len ());
-      _next_buf ++;
-      return r;
-    } else {
-      return abuf_indata_t (ABUF_WAIT);
-    }
-  }
-}
-
-void
-abuf_pipe_t::rembytes (int nbytes)
-{
-  while (_bufs.size () && _buf_pos + nbytes >= _bufs[0].len ()) {
-    assert (_bufs[0].len () > _buf_pos);
-    nbytes -= (_bufs[0].len () - _buf_pos);
-    _bufs.pop_front ();
-    _next_buf --;
-    _buf_pos = 0;
-  }
-  assert (nbytes <= _buf_pos);
-  assert (_bufs.size () == 0 || _bufs[0].len () > _buf_pos);
-  if (nbytes)
-    _buf_pos -= nbytes;
 }
 
 abuf_indata_t::abuf_indata_t (suiolite *in)
