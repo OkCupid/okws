@@ -27,6 +27,20 @@
 
 class xml_const_wrap_t;
 
+class wrap_index_t {
+public:
+  wrap_index_t (const str &s) : _s (s), _i (0) {}
+  //wrap_index_t (const char *c) : _s (c), _i (0) {}
+  wrap_index_t (size_t i) : _i (i) {}
+  str to_str () const { return _s; }
+  size_t to_int () const { return _i; }
+private:
+  const str _s;
+  const size_t _i;
+};
+
+#define STR(x) str (#x)
+
 class xml_wrap_base_t {
 public:
   xml_wrap_base_t () {}
@@ -37,8 +51,8 @@ public:
   operator bool () const { return el ()->to_bool (); }
   size_t size () const { return el ()->len (); }
 
-  xml_const_wrap_t operator[] (const str &s) const ;
   xml_const_wrap_t operator[] (size_t i) const ;
+  xml_const_wrap_t operator() (const str &s) const ;
 
   virtual ptr<xml_element_t> el () const = 0;
 };
@@ -54,12 +68,16 @@ private:
 };
 
 xml_const_wrap_t
-xml_wrap_base_t::operator[] (const str &s) const
-{ return xml_const_wrap_t (el ()->get (s)); }
+xml_wrap_base_t::operator[] (size_t i) const
+{
+  return xml_const_wrap_t (el ()->get (i)); 
+}
 
-xml_const_wrap_t 
-xml_wrap_base_t::operator[] (size_t i) const 
-{ return xml_const_wrap_t (el ()->get (i)); }
+xml_const_wrap_t
+xml_wrap_base_t::operator() (const str &s) const
+{
+  return xml_const_wrap_t (el ()->get (s)); 
+}
 
 class base64_str_t
 {
@@ -70,22 +88,37 @@ private:
   const str _s;
 };
 
-class xml_wrap_t {
+class xml_wrap_t : public xml_wrap_base_t  {
 public:
   xml_wrap_t (ptr<xml_element_t> &e) : _el (e) {}
   ptr<xml_element_t> el () const { return _el; }
 
-  xml_wrap_t operator[] (const str &s)
-  { return xml_wrap_t (_el->get_r (s)); }
-  xml_wrap_t operator[] (size_t i)
-  { return xml_wrap_t (_el->get_r (i)); }
+  xml_wrap_t operator[] (size_t i) 
+  { 
+    if (!_el || !_el->is_int_indexable ()) 
+      _el = New refcounted<xml_array_t> ();
+    return xml_wrap_t (_el->get_r (i)); 
+  }
 
+  xml_wrap_t operator() (const str &s) 
+  { 
+    if (!_el || !_el->is_str_indexable ())
+      _el = New refcounted<xml_struct_t> ();
+    return xml_wrap_t (_el->get_r (s)); 
+  }
+  
+  const xml_wrap_t &operator=(bool b)
+  { _el = xml_value_t::alloc (xml_bool_t::alloc (b)); return (*this); }
   const xml_wrap_t &operator=(int i) 
-  { _el = xml_int_t::alloc (i); return (*this); }
+  { _el = xml_value_t::alloc (xml_int_t::alloc (i)); return (*this); }
   const xml_wrap_t &operator=(str s)
-  { _el = xml_str_t::alloc (s); return (*this); }
+  { _el = xml_value_t::alloc (xml_str_t::alloc (s)); return (*this); }
   const xml_wrap_t &operator=(const base64_str_t &b)
-  { _el = xml_base64_t::alloc (b); return (*this); }
+  { _el = xml_value_t::alloc (xml_base64_t::alloc (b)); return (*this); }
+  const xml_wrap_t &operator=(ptr<xml_element_t> e)
+  { _el = e; return (*this); }
+  const xml_wrap_t &operator=(const xml_wrap_t &w)
+  { _el = w._el; return (*this); }
 
 private:
   ptr<xml_element_t> &_el;

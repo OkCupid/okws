@@ -9,7 +9,7 @@ SUFFIXES = .C .T .h
 xmltst1.o:	xmltst1.C
 xmltst.lo: 	xmltst1.C
 
-noinst_PROGRAMS = kmptst cgitst1 xmltst1 #pubtst1 pubtst2
+noinst_PROGRAMS = kmptst cgitst1 xmltst1 xmltst2 #pubtst1 pubtst2
 
 # XXX
 # these are broken and should be removed
@@ -21,6 +21,7 @@ cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 
 xmltst1_SOURCES = xmltst1.C
+xmltst2_SOURCES = xmltst2.C
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore

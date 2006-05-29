@@ -25,7 +25,6 @@
 #include "okxml.h"
 #include "parseopt.h"
 #include <stdlib.h>
-#include "okxmlwrap.h"
 
 ptr<xml_element_t> _dummy;
 
@@ -348,8 +347,18 @@ ptr<xml_element_t> &
 xml_container_t::get_r (size_t i)
 {
   if (i >= size ())
-    setsize (i);
+    setsize (i+1);
   return (*this)[i];
+}
+
+ptr<xml_element_t> &
+xml_params_t::get_r (size_t i)
+{
+  ptr<xml_element_t> &r = xml_container_t::get_r (i);
+  if (!r) {
+    r = New refcounted<xml_param_t> ();
+  }
+  return r;
 }
 
 ptr<xml_element_t> 
