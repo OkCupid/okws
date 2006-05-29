@@ -37,14 +37,30 @@
 #include "expat.h"
 #include "okxmldata.h"
 
+typedef enum { XML_PARSE_OK = 0,
+	       XML_PARSE_BAD_NESTING = 1,
+	       XML_PARSE_UNKNOWN_ELEMENT = 2,
+	       XML_PARSE_UNEXPECTED_CHARDATA = 3,
+	       XML_PARSE_UNBALANCED = 4,
+	       XML_PARSE_UNMATCHED = 5,
+	       XML_PARSE_CLOSE_ERROR = 6,
+	       XML_PARSE_EXPAT_ERROR = 7,
+	       XML_PARSE_BAD_CHARDATA = 8 } xml_parse_status_t;
+
 class xml_req_parser_t : public async_parser_t {
 public:
+
   xml_req_parser_t (abuf_src_t *s) 
-    : async_parser_t (s), _xml_parser_init (false),
-      _top_level (New refcounted<xml_top_level_t> ()) {}
+    : async_parser_t (s), 
+      _xml_parser_init (false),
+      _top_level (New refcounted<xml_top_level_t> ()),
+      _status (XML_PARSE_OK) {}
+
   xml_req_parser_t (abuf_t *a) 
-    : async_parser_t (a), _xml_parser_init (false),
-      _top_level (New refcounted<xml_top_level_t> ()) {}
+    : async_parser_t (a), 
+      _xml_parser_init (false),
+      _top_level (New refcounted<xml_top_level_t> ()),
+      _status (XML_PARSE_OK) {}
 
   void init (const char *encoding = NULL);
 
@@ -53,12 +69,17 @@ public:
   void found_data (const char *buf, int len);
   ptr<xml_top_level_t> top_level () { return _top_level; }
 
+  str errmsg () const;
+  xml_parse_status_t errcode () const { return _status; }
+
   ~xml_req_parser_t ();
 
 protected:
   xml_element_t *active_el () { return _stack.back (); }
   void push_el (ptr<xml_element_t> e) { _stack.push_back (e); }
   ptr<xml_element_t> pop_el () { return _stack.pop_back (); }
+
+  void parse_error (xml_parse_status_t s, str m);
 
 private:
   vec<ptr<xml_element_t> > _stack;
@@ -68,6 +89,8 @@ private:
   XML_Parser _xml_parser;
   ptr<xml_top_level_t> _top_level;
 
+  xml_parse_status_t _status;
+  str                _err_msg;
 };
 
 # endif /* HAVE_EXPAT */

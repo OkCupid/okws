@@ -114,7 +114,7 @@ xml_method_call_t::add (ptr<xml_element_t> e)
       // error -- already set
       ret = false;
     } else {
-      _method_name = m->value ();
+      _method_name = m;
     }
   } else {
     ret = false;
@@ -228,9 +228,12 @@ xml_double_t::close_tag ()
 }
 
 bool
-xml_scalar_t::add (const char *b, int i)
+xml_scalar_t::add (const char *b, int len)
 {
-  _buf.tosuio ()->copy (b, i);
+  if (!has_non_ws (b, len))
+    return false;
+
+  _buf.tosuio ()->copy (b, len);
   return true;
 }
 
@@ -253,11 +256,13 @@ xml_element_t::dump (zbuf &b, int lev)
 {
   if (name ()) {
     spaces (b, lev);
-    b << "<" << name () << ">\n";
+    b << "<" << name () << ">";
+    if (!gets_char_data ()) b << "\n";
   }
   dump_data (b, lev + 1);
   if (name ()) {
-    spaces (b, lev);
+    if (!gets_char_data ())
+      spaces (b, lev);
     b << "</" << name () << ">\n";
   }
 }
@@ -273,13 +278,8 @@ xml_container_t::dump_data (zbuf &b, int lev)
 void
 xml_method_call_t::dump_data (zbuf &b, int lev)
 {
-  if (_method_name) {
-    spaces (b, lev);
-    b << "<methodName>" << _method_name << "</methodName>\n";
-  }
-  if (_params) {
-    _params->dump (b, lev);
-  }
+  if (_method_name) _method_name->dump (b, lev);
+  if (_params)      _params->dump (b, lev);
 }
 
 void
@@ -300,4 +300,25 @@ xml_double_t::dump_data (zbuf &b, int lev)
     b << "NaN";
   }
 #undef DOUBLEBUFLEN
+}
+
+bool
+xml_method_name_t::add (const char *buf, int len)
+{
+  if (!has_non_ws (buf, len))
+    return false;
+  _value = str (buf, len);
+  return true;
+}
+
+
+bool
+has_non_ws (const char *buf, int len)
+{
+  for (const char *ep = buf + len, *cp = buf; cp < ep; cp ++) {
+    if (!isspace (*cp)) {
+      return true;
+    }
+  }
+  return false;
 }

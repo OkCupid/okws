@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<methodCall>
+ <methodName>examples.getStateName</methodName>
+ <params>
+  <param>
+   <value><i4>41</i4></value>
+  </param>
+  <param>
+   <value><string>Hello world!</string></value>
+  </param>
+ </params>
+</methodCall>

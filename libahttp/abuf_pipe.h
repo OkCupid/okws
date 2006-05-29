@@ -36,7 +36,7 @@
 
 class abuf_pipe_t : public abuf_src_t {
 public:
-  abuf_pipe_t (ref<aios> s) : _aios (s), _eof (true), 
+  abuf_pipe_t (ref<aios> s) : _aios (s), _eof (false), 
 			      _destroyed (New refcounted<bool> (false)),
 			      _read_outstanding (false),
 			      _buf_pos (0), _next_buf (0) {}

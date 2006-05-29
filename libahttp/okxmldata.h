@@ -98,6 +98,7 @@ public:
   // used during parsing
   virtual bool is_a (const char *s) const { return !strcmp (name (), s); }
   virtual bool add (const char *buf, int len) { return false; }
+  virtual bool gets_char_data () const { return false; }
   virtual bool add (ptr<xml_element_t> e) { return false; }
   virtual bool close_tag () { return true; }
 };
@@ -117,7 +118,7 @@ public:
 
 class xml_top_level_t : public xml_container_t {
 public:
-  const char *name () const { return "top_level"; }
+  const char *name () const { return "topLevel"; }
   bool can_contain (ptr<xml_element_t> e) { return e->to_xml_method_call (); }
 };
 
@@ -141,13 +142,38 @@ private:
   ptr<xml_element_t> _el;
 };
 
+class xml_method_name_t : public xml_element_t {
+public:
+  xml_method_name_t () {}
+  xml_method_name_t (const str &s) : _value (s) {}
+  ptr<xml_element_t> clone (const char *) const 
+  { return New refcounted<xml_method_name_t> (); }
+  const char *name () const { return "methodName"; }
+  str value () const { return _value ; }
+  void set_value (const str &s) { _value = s; }
+  ptr<xml_method_name_t> to_xml_method_name () { return mkref (this); }
+  bool add (const char *buf, int len);
+  bool gets_char_data () const { return true; }
+  static ptr<xml_method_name_t> alloc (const str &s)
+  { return New refcounted<xml_method_name_t> (s); }
+  void dump_data (zbuf &b, int l) { if (_value) b << _value; }
+  
+private:
+  str _value;
+};
+
 class xml_method_call_t : public xml_element_t {
 public:
-  xml_method_call_t (const str &n) : _method_name (n) {}
+  xml_method_call_t (const str &n) 
+    : _method_name (xml_method_name_t::alloc (n)) {}
   xml_method_call_t () {}
 
-  str method_name () const { return _method_name; }
-  void set_method_name (const str &s) { _method_name = s; }
+  str method_name () const 
+  { return _method_name ? _method_name->value () : NULL; }
+
+  void set_method_name (const str &s) 
+  { _method_name = xml_method_name_t::alloc (s); }
+
   ptr<xml_params_t> params () const { return _params; }
   void set_params (ptr<xml_params_t> p) { _params = p ;}
   
@@ -155,10 +181,12 @@ public:
   { return New refcounted<xml_method_call_t> (); }
   const char *name () const { return "methodCall"; }
 
+  ptr<xml_method_call_t> to_xml_method_call () { return mkref (this); }
+
   bool add (ptr<xml_element_t> e);
   void dump_data (zbuf &b, int lev);
 private:
-  str _method_name;
+  ptr<xml_method_name_t> _method_name;
   ptr<xml_params_t> _params;
 };
 
@@ -186,6 +214,7 @@ public:
   { return New refcounted<xml_params_t> (); }
   const char *name () const { return "params"; }
   bool can_contain (ptr<xml_element_t> e) { return e->to_xml_param (); }
+  ptr<xml_params_t> to_xml_params () { return mkref (this); }
 };
 
 class xml_null_t : public xml_element_t {
@@ -204,6 +233,7 @@ class xml_scalar_t : public xml_element_t {
 public:
   xml_scalar_t () {}
   bool add (const char *b, int s);
+  bool gets_char_data () const { return true; }
   bool is_value () const { return true; }
 protected:
   strbuf _buf;
@@ -241,6 +271,7 @@ public:
   const char *name () const { return "int"; }
   bool is_a (const char *n) const { return !strcmp (_tag.cstr (), n); }
   bool close_tag ();
+  void dump_data (zbuf &b, int lev) { b << _val; }
 private:
   const str _tag;
   int _val;
@@ -255,6 +286,9 @@ public:
   void set (const str &v) { _val = v; }
   const char *name () const { return "string"; }
   bool close_tag ();
+  ptr<xml_element_t> clone (const char *n) const 
+  { return New refcounted<xml_str_t> (); }
+  void dump_data (zbuf &z, int level) { if (_val) z << _val; }
 private:
   str _val;
 };
@@ -329,6 +363,7 @@ public:
   str to_str () const { return _e ? _e->to_str () : xml_element_t::to_str (); }
   str to_base64 () const 
   { return _e ? _e->to_base64 () : xml_element_t::to_base64(); }
+  void dump_data (zbuf &b, int level) { if (_e) _e->dump (b, level); }
   
 private:
   ptr<xml_element_t> _e;
@@ -375,20 +410,6 @@ public:
   static ptr<xml_data_t> alloc () { return New refcounted<xml_data_t> (); }
 };
 
-class xml_method_name_t : public xml_element_t {
-public:
-  xml_method_name_t () {}
-  ptr<xml_element_t> clone (const char *) const 
-  { return New refcounted<xml_method_name_t> (); }
-  const char *name () const { return "methodName"; }
-  str value () const { return _value ; }
-  void set_value (const str &s) { _value = s; }
-  ptr<xml_method_name_t> to_xml_method_name () { return mkref (this); }
-  
-private:
-  str _value;
-};
-
 class xml_bool_t : public xml_scalar_t {
 public:
   xml_bool_t () {}
@@ -400,6 +421,8 @@ public:
 private:
   bool _val;
 };
+
+bool has_non_ws (const char *buf, int len);
 
 
 

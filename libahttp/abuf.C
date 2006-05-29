@@ -221,6 +221,8 @@ abuf_t::stream (const char **bp)
 
   assert (erc == ABUF_OK);
   *bp = cp;
-  return endp - cp;
+  ssize_t ret = endp - cp;
+  cp = endp;
+  return ret;
 }
 

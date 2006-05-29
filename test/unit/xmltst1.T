@@ -29,10 +29,15 @@ main_T ()
 
   xrp.init ();
   BLOCK { xrp.parse (@(res)); }
-  top = xrp.top_level ();
-  top->dump (out_z);
-  out_z.to_strbuf (&out, false);
-  out.tosuio ()->output (1);
+  if (res == 0) {
+    top = xrp.top_level ();
+    top->dump (out_z);
+    out_z.to_strbuf (&out, false);
+    out.tosuio ()->output (1);
+  } else {
+    assert (xrp.errcode () != XML_PARSE_OK);
+    warn << "XML parse error: " << xrp.errmsg () << "\n";
+  }
   exit (0);
 }
 
