@@ -5,14 +5,14 @@ $(PROGRAMS): $(LDEPS)
 okwslib_LTLIBRARIES = libahttp.la
 
 libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
-	pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C \
-	xmlparse.C xmldata.C
+	abuf_pipe.C pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C \
+	xmlparse.C xmldata.C 
 
 # noinst_HEADERS = err.g
 
 okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
-	suiolite.h ahparse.h okxml.h okxmldata.h
+	suiolite.h ahparse.h okxml.h okxmldata.h abuf_pipe.h
 
 SUFFIXES = .T .g .C
 .g.C:

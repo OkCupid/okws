@@ -81,6 +81,32 @@ private:
   bool eof;
 };
 
+class abuf_pipe_t : public abuf_src_t {
+public:
+  abuf_pipe_t (ref<aios> s) : _aios (s), _eof (true), 
+			      _destroyed (New refcounted<bool> (false)),
+			      _read_outstanding (false),
+			      _buf_pos (0), _next_buf (0) {}
+  void init (cbv cb);
+  abuf_indata_t getdata ();
+  void rembytes (int nbytes) {}
+  void finish ();
+  void cancel () { _cb = NULL; }
+  ~abuf_src_t () { *_destroyed = true; finish (); }
+  bool overflow () const { return false; }
+private:
+  void schedule_read ();
+  void readcb (str s, int err);
+  ref<aios> _aios;
+  cbv::ptr _cb;
+  vec<str> _bufs;
+  bool _eof;
+  ptr<bool> _destroyed;
+  bool _read_oustanding;
+
+  size_t _buf_pos, _next_buf;
+};
+
 class abuf_t {
 public:
   abuf_t (abuf_src_t *s, bool d = false)
