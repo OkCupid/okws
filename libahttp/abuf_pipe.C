@@ -27,7 +27,7 @@
 void
 abuf_pipe_t::init (cbv c)
 {
-  cb = c;
+  _cb = c;
   schedule_read ();
 }
 
@@ -35,7 +35,7 @@ void
 abuf_pipe_t::schedule_read ()
 {
   if (!_eof) {
-    _read_oustanding = true;
+    _read_outstanding = true;
     _aios->readany (wrap (this, &abuf_pipe_t::readcb));
   }
 }
@@ -51,7 +51,7 @@ abuf_pipe_t::finish ()
 void
 abuf_pipe_t::readcb (str s, int err)
 {
-  _read_oustanding = false;
+  _read_outstanding = false;
   if (!s) {
     _eof = true;
   } else {
@@ -59,7 +59,7 @@ abuf_pipe_t::readcb (str s, int err)
   }
 
   ptr<bool> df = _destroyed;
-  if (cb) (*cb) ();
+  if (_cb) (*_cb) ();
   if (!*df) schedule_read ();
 }
 
@@ -89,7 +89,7 @@ abuf_pipe_t::rembytes (int nbytes)
     _next_buf --;
     _buf_pos = 0;
   }
-  assert (nbytes <= _buf_pos);
+  assert (nbytes <= int (_buf_pos));
   assert (_bufs.size () == 0 || _bufs[0].len () > _buf_pos);
   if (nbytes)
     _buf_pos -= nbytes;

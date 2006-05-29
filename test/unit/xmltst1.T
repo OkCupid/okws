@@ -1,10 +1,39 @@
+// -*-c++-*-
+/* $Id: okcgi.h 1682 2006-04-26 19:17:22Z max $ */
 
 #include "okxml.h"
 #include "abuf_pipe.h"
+#include "okxmlparse.h"
+#include "tame.h"
 
 static void usage (void)
 {
-  fatalx << "usage: " << progname << "\n";
+  warnx << "usage: " << progname << "\n";
+  exit (1);
+}
+
+TAMED static void
+main_T ()
+{
+  VARS {
+    abuf_pipe_t src (ain);
+    xml_req_parser_t xrp (&src);
+    zbuf out_z;
+    strbuf out;
+    int res;
+    ptr<xml_element_t> top;
+  }
+
+  // XXX - workaround
+  use_reference (src);
+
+  xrp.init ();
+  BLOCK { xrp.parse (@(res)); }
+  top = xrp.top_level ();
+  top->dump (out_z);
+  out_z.to_strbuf (&out, false);
+  out.tosuio ()->output (1);
+  exit (0);
 }
 
 int
@@ -14,8 +43,7 @@ main (int argc, char *argv[])
   if (argc != 1) 
     usage ();
 
-  abuf_pipe_t src (ain);
-  abuf_t (&src);
-  
+  main_T ();
+  amain ();
 
 }

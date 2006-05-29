@@ -23,11 +23,16 @@
  *
  */
 
+/*
+ * Warning: including this file will cause stdin,stdout and stderr to
+ * become asynchronous (since including 'aios.h' has that effect.
+ */
 
 #ifndef _LIBAHTTP_ABUF_PIPE_H
 #define _LIBAHTTP_ABUF_PIPE_H
 
 #include "abuf.h"
+#include "aios.h"
 
 class abuf_pipe_t : public abuf_src_t {
 public:
@@ -37,10 +42,10 @@ public:
 			      _buf_pos (0), _next_buf (0) {}
   void init (cbv cb);
   abuf_indata_t getdata ();
-  void rembytes (int nbytes) {}
+  void rembytes (int nbytes);
   void finish ();
   void cancel () { _cb = NULL; }
-  ~abuf_src_t () { *_destroyed = true; finish (); }
+  ~abuf_pipe_t () { *_destroyed = true; finish (); }
   bool overflow () const { return false; }
 private:
   void schedule_read ();
@@ -50,7 +55,7 @@ private:
   vec<str> _bufs;
   bool _eof;
   ptr<bool> _destroyed;
-  bool _read_oustanding;
+  bool _read_outstanding;
 
   size_t _buf_pos, _next_buf;
 };

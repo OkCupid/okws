@@ -40,15 +40,18 @@
 class xml_req_parser_t : public async_parser_t {
 public:
   xml_req_parser_t (abuf_src_t *s) 
-    : async_parser_t (s), _xml_parser_init (false) {}
+    : async_parser_t (s), _xml_parser_init (false),
+      _top_level (New refcounted<xml_top_level_t> ()) {}
   xml_req_parser_t (abuf_t *a) 
-    : async_parser_t (a), _xml_parser_init (false) {}
+    : async_parser_t (a), _xml_parser_init (false),
+      _top_level (New refcounted<xml_top_level_t> ()) {}
 
   void init (const char *encoding = NULL);
 
   void start_element (const char *name, const char **atts);
   void end_element (const char *name);
   void found_data (const char *buf, int len);
+  ptr<xml_top_level_t> top_level () { return _top_level; }
 
   ~xml_req_parser_t ();
 
@@ -63,6 +66,7 @@ private:
   virtual void parse_guts ();
   bool _xml_parser_init;
   XML_Parser _xml_parser;
+  ptr<xml_top_level_t> _top_level;
 
 };
 

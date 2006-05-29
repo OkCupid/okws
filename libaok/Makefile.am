@@ -35,7 +35,7 @@ rpcclean:
 
 
 
-EXTRA_DIST = .cvsignore 
+EXTRA_DIST = .cvsignore ok.T
 CLEANFILES = core *.core *~ *.rpo
 
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \

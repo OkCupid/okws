@@ -85,6 +85,7 @@ public:
   // should it be a strbuf or a zbuf?
   virtual void dump (zbuf &b, int lev);
   virtual void dump_data (zbuf &b, int lev) {}
+  void dump (zbuf &b) { dump (b, 0); }
 
   operator int () const { return to_int (); }
   operator str () const { return to_str (); }

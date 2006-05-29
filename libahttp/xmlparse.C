@@ -145,7 +145,7 @@ xml_req_parser_t::init (const char *encoding)
   XML_SetElementHandler (_xml_parser, start_element_handler, 
 			 end_element_handler);
   XML_SetCharacterDataHandler (_xml_parser, character_data_handler);
-  push_el (New refcounted<xml_top_level_t> ());
+  push_el (_top_level);
 }
 
 void
