@@ -12,7 +12,7 @@ libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 
 okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
-	suiolite.h ahparse.h okxml.h okxmldata.h abuf_pipe.h
+	suiolite.h ahparse.h okxml.h okxmldata.h abuf_pipe.h smartvec.h
 
 SUFFIXES = .T .g .C
 .g.C:

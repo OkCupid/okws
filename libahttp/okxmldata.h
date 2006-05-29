@@ -28,6 +28,7 @@
 #include "async.h"
 #include "qhash.h"
 #include "zstr.h"
+#include "smartvec.h"
 
 class xml_struct_t;
 class xml_array_t;
@@ -45,6 +46,7 @@ class xml_name_t;
 class xml_member_t;
 class xml_data_t;
 class xml_method_name_t;
+class xml_method_response_t;
 
 class xml_element_t : public virtual refcount {
 public:
@@ -67,6 +69,7 @@ public:
   virtual ptr<xml_member_t> to_xml_member () { return NULL; }
   virtual ptr<xml_data_t> to_xml_data () { return NULL; }
   virtual ptr<xml_method_name_t> to_xml_method_name () { return NULL; }
+  virtual ptr<xml_method_response_t> to_xml_method_response () { return NULL; }
 
   virtual ptr<xml_element_t> get (const str &s) const;
   virtual ptr<xml_element_t> get (size_t i) const;
@@ -123,18 +126,18 @@ public:
 };
 
 
-class xml_elwrap_t {
+class xml_wrap_t {
 public:
-  xml_elwrap_t (ptr<xml_element_t> e) : _el (e) {}
+  xml_wrap_t (ptr<xml_element_t> e) : _el (e) {}
 
   operator int () const { return _el->to_int (); }
   operator str () const { return _el->to_str (); }
   operator bool () const { return _el->to_bool (); }
 
-  xml_elwrap_t operator[] (const str &s) const 
-  { return xml_elwrap_t (_el->get (s)); }
-  xml_elwrap_t operator[] (size_t i) const 
-  { return xml_elwrap_t (_el->get (i)); }
+  xml_wrap_t operator[] (const str &s) const 
+  { return xml_wrap_t (_el->get (s)); }
+  xml_wrap_t operator[] (size_t i) const 
+  { return xml_wrap_t (_el->get (i)); }
 
   size_t size () const { return _el->len (); }
 
@@ -215,6 +218,21 @@ public:
   const char *name () const { return "params"; }
   bool can_contain (ptr<xml_element_t> e) { return e->to_xml_param (); }
   ptr<xml_params_t> to_xml_params () { return mkref (this); }
+};
+
+class xml_method_response_t : public xml_element_t {
+public:
+  xml_method_response_t () {}
+  ptr<xml_params_t> params () const { return _params; }
+  void set_params (ptr<xml_params_t> p) { _params = p; }
+  ptr<xml_element_t> clone (const char *) const
+  { return New refcounted<xml_method_response_t> (); }
+  const char *name () const { return "methodReponse"; }
+  ptr<xml_method_response_t> to_xml_method_response () { return mkref (this); }
+  bool add (ptr<xml_element_t> e);
+  void dump_data (zbuf &b, int lev) { if (_params) _params->dump (b, lev); }
+private:
+  ptr<xml_params_t> _params;
 };
 
 class xml_null_t : public xml_element_t {

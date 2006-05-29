@@ -128,6 +128,13 @@ xml_param_t::add (ptr<xml_element_t> e)
   return (!_value && (_value = e->to_xml_value ()));
 }
 
+
+bool 
+xml_method_response_t::add (ptr<xml_element_t> e)
+{
+  return (!_params && (_params = e->to_xml_params ())); 
+}
+
 bool
 xml_value_t::add (ptr<xml_element_t> e)
 {
