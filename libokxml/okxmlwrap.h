@@ -54,6 +54,11 @@ public:
   xml_const_wrap_t operator[] (size_t i) const ;
   xml_const_wrap_t operator() (const str &s) const ;
 
+  ptr<const xml_container_t> to_xml_container_const () const
+  { return el () ? el ()->to_xml_container_const () : NULL; }
+  ptr<const xml_struct_t> to_xml_struct_const () const 
+  { return el () ? el ()->to_xml_struct_const () : NULL; }
+
   virtual ptr<const xml_element_t> el () const = 0;
 };
 
@@ -66,32 +71,6 @@ public:
 private:
   ptr<const xml_element_t> _el;
 };
-
-xml_const_wrap_t
-xml_wrap_base_t::operator[] (size_t i) const
-{
-  ptr<const xml_container_t> c;
-  xml_const_wrap_t r;
-
-  if (el () && (c = el ()->to_xml_container_const ())) 
-    r = xml_const_wrap_t (c->get (i)); 
-  else
-    r = xml_const_wrap_t (xml_null_t::alloc ());
-  return r;
-}
-
-xml_const_wrap_t
-xml_wrap_base_t::operator() (const str &i) const
-{
-  ptr<const xml_struct_t> s;
-  xml_const_wrap_t r;
-
-  if (el () && (s = el ()->to_xml_struct_const ()))
-    r = xml_const_wrap_t (s->get (i));
-  else
-    r = xml_const_wrap_t (xml_null_t::alloc ());
-  return r;
-}
 
 class base64_str_t
 {
