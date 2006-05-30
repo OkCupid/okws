@@ -2,7 +2,7 @@
 ## $Id$
 
 
-SBD1 = txarpcc libpub pub libahttp libaok libamt libweb  
+SBD1 = txarpcc libpub pub libahttp libokxml libaok libamt libweb  
 
 if USE_MYSQL
 SBD2 = libamysql

@@ -99,7 +99,7 @@ done
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libaok libamt libamysql libweb; do
+for lib in libpub libahttp libokxml libaok libamt libamysql libweb; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -108,12 +108,13 @@ dnl when compiling the PUB program, do not link againgst libahttp
 dnl
 LIBPUB='$(top_builddir)/libpub/libpub.la'
 LIBAHTTP='$(top_builddir)/libahttp/libahttp.la'
+LIBOKXML='$(top_builddir)/libokxml/libokxml.la'
 LIBAOK='$(top_builddir)/libaok/libaok.la'
 LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT)'
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
@@ -121,7 +122,7 @@ if test "$enable_shared" = yes; then
    LDEPS_AMT=
 else
    LDEPS_PUB='$(LIBPUB) '"$LDEPS"
-   LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB) '"$LDEPS"
+   LDEPS='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDEPS"
    LDEPS_AMT='$(LIBAMT) '"$LDEPS"
    LDEPS_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDEPS"
 fi
@@ -136,6 +137,7 @@ AC_SUBST(OK_VERSION)
 AC_SUBST(OKWS_VERSION)
 AC_SUBST(LIBPUB)
 AC_SUBST(LIBAHTTP)
+AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAOK)
 AC_SUBST(LIBAMT)
 AC_SUBST(LIBWEB)
@@ -154,9 +156,9 @@ AC_SUBST(PUBFLAGS)
 
 AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
-	  client/Makefile libamt/Makefile libamysql/Makefile 
+	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile etc/Makefile
 	  etc/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile test/system/htdocs/Makefile
 	  test/system/htdocs/err/Makefile test/system/htdocs/d1/Makefile
-	  test/system/htdocs/conf/Makefile test/system/htdocs/lang/Makefile )
+	  test/system/htdocs/conf/Makefile test/system/htdocs/lang/Makefile)

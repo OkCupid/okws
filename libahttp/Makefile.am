@@ -5,15 +5,13 @@ $(PROGRAMS): $(LDEPS)
 okwslib_LTLIBRARIES = libahttp.la
 
 libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
-	abuf_pipe.C pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C \
-	xmlparse.C xmldata.C xmlwrap.C
+	abuf_pipe.C pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C 
 
 # noinst_HEADERS = err.g
 
 okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
-	suiolite.h ahparse.h okxml.h okxmldata.h abuf_pipe.h smartvec.h \
-	okxmlwrap.h
+	suiolite.h ahparse.h abuf_pipe.h
 
 SUFFIXES = .T .g .C
 .g.C:
@@ -28,7 +26,7 @@ resp.lo: resp.C
 EXTRA_DIST = .cvsignore err.g resp.T
 CLEANFILES = core *.core *~ *.rpo
 
-.PHONY: sourceclean
+.PHONY: sourceclean tameclean
 sourceclean:
 	@rm -f $(srcdir)/err.C
 
