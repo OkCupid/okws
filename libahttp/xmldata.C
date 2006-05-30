@@ -30,9 +30,6 @@ ptr<xml_element_t> _dummy;
 
 ptr<xml_element_t> xml_element_t::get (const str &dummy) const
 { return xml_null_t::alloc (); } 
-ptr<xml_element_t> xml_element_t::get (size_t i) const
-{ return xml_null_t::alloc (); }
-ptr<xml_element_t> &xml_element_t::get_r (size_t i) { return _dummy; }
 ptr<xml_element_t> &xml_element_t::get_r (const str &s) { return _dummy; }
 
 ptr<xml_element_t>
@@ -51,18 +48,30 @@ xml_struct_t::get_r (const str &s)
   else { return _dummy; }
 }
 
-ptr<xml_element_t> 
-xml_array_t::get (size_t i) const
-{
-  if (_data && i < _data->size ()) { return (*_data)[i]; } 
-  else { return xml_null_t::alloc (); }
-}
-
-ptr<xml_element_t> & 
-xml_array_t::get_r (size_t i) 
+ptr<xml_container_t>
+xml_array_t::to_xml_container ()
 {
   if (!_data) _data = New refcounted<xml_data_t> ();
-  return _data->get_r (i);
+  return _data;
+}
+
+ptr<xml_container_t>
+xml_param_t::to_xml_container ()
+{
+  if (!_value) 
+    _value = New refcounted<xml_value_t> ();
+  return _value->to_xml_container ();
+}
+
+ptr<xml_container_t>
+xml_value_t::to_xml_container ()
+{
+  ptr<xml_container_t> r;
+  if (!_e || !(r = _e->to_xml_container ())) {
+    _e = New refcounted<xml_array_t> ();
+    r = _e->to_xml_container ();
+  }
+  return r;
 }
 
 bool
@@ -134,6 +143,10 @@ xml_method_response_t::add (ptr<xml_element_t> e)
 {
   return (!_params && (_params = e->to_xml_params ())); 
 }
+
+ptr<const xml_container_t> 
+xml_param_t::to_xml_container_const () const
+{ return _value ? _value->to_xml_container_const () : NULL; }
 
 bool
 xml_value_t::add (ptr<xml_element_t> e)
@@ -259,7 +272,7 @@ static void spaces (zbuf &b, int n)
 }
 
 void
-xml_element_t::dump (zbuf &b, int lev)
+xml_element_t::dump (zbuf &b, int lev) const
 {
   if (name ()) {
     spaces (b, lev);
@@ -275,7 +288,7 @@ xml_element_t::dump (zbuf &b, int lev)
 }
 
 void
-xml_container_t::dump_data (zbuf &b, int lev)
+xml_container_t::dump_data (zbuf &b, int lev) const
 {
   for (size_t i = 0; i < size (); i++) {
     (*this)[i]->dump (b, lev);
@@ -283,20 +296,20 @@ xml_container_t::dump_data (zbuf &b, int lev)
 }
 
 void
-xml_method_call_t::dump_data (zbuf &b, int lev)
+xml_method_call_t::dump_data (zbuf &b, int lev) const
 {
   if (_method_name) _method_name->dump (b, lev);
   if (_params)      _params->dump (b, lev);
 }
 
 void
-xml_param_t::dump_data (zbuf &b, int lev)
+xml_param_t::dump_data (zbuf &b, int lev) const
 {
   if (_value) { _value->dump (b, lev); }
 }
 
 void
-xml_double_t::dump_data (zbuf &b, int lev)
+xml_double_t::dump_data (zbuf &b, int lev) const
 {
 #define DOUBLEBUFLEN 0x40
   static char buf[DOUBLEBUFLEN];
@@ -329,18 +342,11 @@ has_non_ws (const char *buf, int len)
   return false;
 }
 
-ptr<xml_element_t>
-xml_method_response_t::get (size_t i) const
-{
-  if (_params) { return _params->get (i); }
-  else { return xml_null_t::alloc (); }
-}
-
-ptr<xml_element_t> &
-xml_method_response_t::get_r (size_t i)
+ptr<xml_container_t> 
+xml_method_response_t::to_xml_container ()
 {
   if (!_params) _params = New refcounted<xml_params_t> ();
-  return _params->get_r (i);
+  return _params;
 }
 
 ptr<xml_element_t> &
@@ -367,3 +373,7 @@ xml_container_t::get (size_t i) const
   if (i >= size ()) { return xml_null_t::alloc (); }
   else return (*this)[i];
 }
+
+void 
+xml_array_t::dump_data (zbuf &z, int lev) const 
+{ if (_data) _data->dump (z, lev); }

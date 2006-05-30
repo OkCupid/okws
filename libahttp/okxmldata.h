@@ -71,12 +71,13 @@ public:
   virtual ptr<xml_data_t> to_xml_data () { return NULL; }
   virtual ptr<xml_method_name_t> to_xml_method_name () { return NULL; }
   virtual ptr<xml_method_response_t> to_xml_method_response () { return NULL; }
+
   virtual ptr<xml_container_t> to_xml_container () { return NULL; }
+  virtual ptr<const xml_container_t> to_xml_container_const () const 
+  { return NULL; }
   
 
   virtual ptr<xml_element_t> get (const str &s) const;
-  virtual ptr<xml_element_t> get (size_t i) const;
-  virtual ptr<xml_element_t> &get_r (size_t i);
   virtual ptr<xml_element_t> &get_r (const str &s);
   virtual bool put (const str &s, ptr<xml_element_t> el) { return false; }
   virtual bool put (size_t i, ptr<xml_element_t> el) { return false; }
@@ -87,13 +88,12 @@ public:
   virtual str to_bool () const { return false; }
   virtual str to_base64 () const { return armor64 (NULL, 0); }
   virtual bool is_value () const { return false; }
-  virtual bool is_int_indexable () const { return false; }
   virtual bool is_str_indexable () const { return false; }
 
   // should it be a strbuf or a zbuf?
-  virtual void dump (zbuf &b, int lev);
-  virtual void dump_data (zbuf &b, int lev) {}
-  void dump (zbuf &b) { dump (b, 0); }
+  virtual void dump (zbuf &b, int lev) const;
+  virtual void dump_data (zbuf &b, int lev) const {}
+  void dump (zbuf &b) const { dump (b, 0); }
 
   operator int () const { return to_int (); }
   operator str () const { return to_str (); }
@@ -121,12 +121,14 @@ public:
   virtual bool add (ptr<xml_element_t> e);
   virtual bool can_contain (ptr<xml_element_t> e) { return false; }
   size_t len () const { return size (); }
-  void dump_data (zbuf &b, int len);
+  void dump_data (zbuf &b, int len) const;
 
-  virtual ptr<xml_element_t> get (size_t i) const;
   virtual ptr<xml_element_t> &get_r (size_t i);
+  virtual ptr<xml_element_t> get (size_t i) const;
+
   ptr<xml_container_t> to_xml_container () { return mkref (this); }
-  bool is_int_indexable () const { return true; }
+  ptr<const xml_container_t> to_xml_container_const () const 
+  { return mkref (const_cast<xml_container_t *> (this)); }
 };
 
 class xml_top_level_t : public xml_container_t {
@@ -149,7 +151,7 @@ public:
   bool gets_char_data () const { return true; }
   static ptr<xml_method_name_t> alloc (const str &s)
   { return New refcounted<xml_method_name_t> (s); }
-  void dump_data (zbuf &b, int l) { if (_value) b << _value; }
+  void dump_data (zbuf &b, int l) const { if (_value) b << _value; }
   
 private:
   str _value;
@@ -177,7 +179,7 @@ public:
   ptr<xml_method_call_t> to_xml_method_call () { return mkref (this); }
 
   bool add (ptr<xml_element_t> e);
-  void dump_data (zbuf &b, int lev);
+  void dump_data (zbuf &b, int lev) const;
 private:
   ptr<xml_method_name_t> _method_name;
   ptr<xml_params_t> _params;
@@ -194,7 +196,11 @@ public:
   { return New refcounted<xml_param_t> (); }
   const char *name () const { return "param"; }
   bool add (ptr<xml_element_t> e);
-  void dump_data (zbuf &b, int lev);
+  void dump_data (zbuf &b, int lev) const;
+
+  ptr<xml_container_t> to_xml_container ();
+  ptr<const xml_container_t> to_xml_container_const () const;
+
 private:
   ptr<xml_value_t> _value;
 };
@@ -222,15 +228,15 @@ public:
   const char *name () const { return "methodReponse"; }
   ptr<xml_method_response_t> to_xml_method_response () { return mkref (this); }
   bool add (ptr<xml_element_t> e);
-  void dump_data (zbuf &b, int lev) { if (_params) _params->dump (b, lev); }
+  void dump_data (zbuf &b, int lev) const 
+  { if (_params) _params->dump (b, lev); }
 
   static ptr<xml_method_response_t> alloc () 
   { return New refcounted<xml_method_response_t> (); }
   
-
-  ptr<xml_element_t> get (size_t i) const;
-  ptr<xml_element_t> &get_r (size_t i);
-  bool is_int_indexable () const { return true; }
+  ptr<xml_container_t> to_xml_container ();
+  ptr<const xml_container_t> to_xml_container_const () const 
+  { return _params; }
 private:
   ptr<xml_params_t> _params;
 };
@@ -269,7 +275,7 @@ public:
 
   const char *name () const { return "double"; }
   bool close_tag ();
-  void dump_data (zbuf &b, int lev);
+  void dump_data (zbuf &b, int lev) const;
 private:
   double _val;
 };
@@ -292,7 +298,7 @@ public:
   const char *name () const { return "int"; }
   bool is_a (const char *n) const { return !strcmp (_tag.cstr (), n); }
   bool close_tag ();
-  void dump_data (zbuf &b, int lev) { b << _val; }
+  void dump_data (zbuf &b, int lev) const { b << _val; }
 private:
   const str _tag;
   int _val;
@@ -309,7 +315,7 @@ public:
   bool close_tag ();
   ptr<xml_element_t> clone (const char *n) const 
   { return New refcounted<xml_str_t> (); }
-  void dump_data (zbuf &z, int level) { if (_val) z << _val; }
+  void dump_data (zbuf &z, int level) const { if (_val) z << _val; }
 
   static ptr<xml_str_t> alloc (const str &s)
   { return New refcounted<xml_str_t> (s); }
@@ -359,8 +365,7 @@ private:
 class xml_array_t : public xml_element_t {
 public:
   xml_array_t () {}
-  ptr<xml_element_t> get (size_t i) const;
-  ptr<xml_element_t> &get_r (size_t i);
+
   bool put (size_t i, ptr<xml_element_t> el);
   ptr<xml_array_t> to_xml_array () { return mkref (this); }
 
@@ -371,7 +376,9 @@ public:
   ptr<xml_data_t> data () { return _data; }
   bool add (ptr<xml_element_t> e);
 
-  bool is_int_indexable () const { return true; }
+  ptr<xml_container_t> to_xml_container ();
+  ptr<const xml_container_t> to_xml_container_const () const { return _data; }
+  void dump_data (zbuf &z, int lev) const;
 private:
   ptr<xml_data_t> _data;
 };
@@ -393,10 +400,15 @@ public:
   str to_str () const { return _e ? _e->to_str () : xml_element_t::to_str (); }
   str to_base64 () const 
   { return _e ? _e->to_base64 () : xml_element_t::to_base64(); }
-  void dump_data (zbuf &b, int level) { if (_e) _e->dump (b, level); }
+  void dump_data (zbuf &b, int level) const { if (_e) _e->dump (b, level); }
 
   static ptr<xml_value_t> alloc (ptr<xml_element_t> e)
   { return New refcounted<xml_value_t> (e); }
+
+  ptr<xml_container_t> to_xml_container ();
+
+  ptr<const xml_container_t> to_xml_container_const () const 
+  { return _e->to_xml_container_const (); }
   
 private:
   ptr<xml_element_t> _e;
@@ -457,7 +469,7 @@ public:
   static ptr<xml_bool_t> alloc (bool b) 
   { return New refcounted<xml_bool_t> (b); }
 
-  void dump_data (zbuf &b, int lev) { b << (_val ? 1 : 0); }
+  void dump_data (zbuf &b, int lev) const { b << (_val ? 1 : 0); }
 private:
   bool _val;
 };

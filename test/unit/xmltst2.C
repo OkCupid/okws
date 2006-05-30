@@ -16,6 +16,13 @@ main (int argc, char *argv[])
   xml_wrap_t w (r);
 
 
+  w[0][0] = "hi";
+  w[0][1] = 3;
+  w[0][2][0] = "bye";
+  w[0][2][1] = 10;
+  w[0][3] = "yo";
+
+  /*
   xml_wrap_t w1 = w[3];
   w1 = 3;
 
@@ -25,7 +32,11 @@ main (int argc, char *argv[])
   w[1] = w[0];
   w[1]("a") = 12;
   w[2] = false;
-
+  w[4][0] = "hi";
+  w[4][1] = "bye";
+  w[4][2] = "yo";
+  */
+  
   xml_const_wrap_t w2 (r);
   warn << "i=" << int (w2[0]("a")[40]) << "\n";
 

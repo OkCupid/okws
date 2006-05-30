@@ -60,9 +60,9 @@ public:
 class xml_const_wrap_t : public xml_wrap_base_t {
 public:
   xml_const_wrap_t (ptr<xml_element_t> e) : _el (e) {}
+  xml_const_wrap_t () {}
+
   ptr<xml_element_t> el () const { return _el; }
-
-
 private:
   ptr<xml_element_t> _el;
 };
@@ -70,7 +70,14 @@ private:
 xml_const_wrap_t
 xml_wrap_base_t::operator[] (size_t i) const
 {
-  return xml_const_wrap_t (el ()->get (i)); 
+  ptr<const xml_container_t> c;
+  xml_const_wrap_t r;
+
+  if (el () && (c = el ()->to_xml_container_const ())) 
+    r = xml_const_wrap_t (c->get (i)); 
+  else
+    r = xml_const_wrap_t (xml_null_t::alloc ());
+  return r;
 }
 
 xml_const_wrap_t
@@ -95,9 +102,12 @@ public:
 
   xml_wrap_t operator[] (size_t i) 
   { 
-    if (!_el || !_el->is_int_indexable ()) 
+    ptr<xml_container_t> c;
+    if (!_el || !(c = _el->to_xml_container ())) {
       _el = New refcounted<xml_array_t> ();
-    return xml_wrap_t (_el->get_r (i)); 
+      c = _el->to_xml_container ();
+    }
+    return xml_wrap_t (c->get_r (i));
   }
 
   xml_wrap_t operator() (const str &s) 
@@ -111,6 +121,8 @@ public:
   
   const xml_wrap_t &operator=(bool b) 
   { return set_value (xml_bool_t::alloc (b)); }
+  const xml_wrap_t &operator=(const char *s)
+  { return set_value (xml_str_t::alloc (s)); }
     
   const xml_wrap_t &operator=(int i) 
   { return set_value (xml_int_t::alloc (i)); }
