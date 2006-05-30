@@ -49,7 +49,6 @@ public:
   operator int () const { return el ()->to_int (); }
   operator str () const { return el ()->to_str (); }
   operator bool () const { return el ()->to_bool (); }
-  size_t size () const { return el ()->len (); }
 
   xml_const_wrap_t operator[] (size_t i) const ;
   xml_const_wrap_t operator() (const str &s) const ;
@@ -58,6 +57,12 @@ public:
   { return el () ? el ()->to_xml_container_const () : NULL; }
   ptr<const xml_struct_t> to_xml_struct_const () const 
   { return el () ? el ()->to_xml_struct_const () : NULL; }
+  
+  size_t size () const 
+  {
+    ptr<const xml_container_t> c = to_xml_container_const ();
+    return c ? c->size () : 0;
+  }
 
   virtual ptr<const xml_element_t> el () const = 0;
 };

@@ -80,7 +80,6 @@ public:
   virtual bool put (const str &s, ptr<xml_element_t> el) { return false; }
   virtual bool put (size_t i, ptr<xml_element_t> el) { return false; }
 
-  virtual size_t len () const { return 0; }
   virtual int to_int () const { return 0; }
   virtual str to_str () const { return ""; }
   virtual str to_bool () const { return false; }
@@ -117,7 +116,6 @@ public:
 
   virtual bool add (ptr<xml_element_t> e);
   virtual bool can_contain (ptr<xml_element_t> e) { return false; }
-  size_t len () const { return size (); }
   void dump_data (zbuf &b, int len) const;
 
   virtual ptr<xml_element_t> &get_r (size_t i);
@@ -400,7 +398,6 @@ public:
   bool add (ptr<xml_element_t> e);
   ptr<xml_value_t> to_xml_value () { return mkref (this); }
 
-  size_t len () const { return _e ? _e->len () : xml_element_t::len (); }
   int to_int () const { return _e ? _e->to_int () : xml_element_t::to_int (); }
   str to_str () const { return _e ? _e->to_str () : xml_element_t::to_str (); }
   str to_base64 () const 
