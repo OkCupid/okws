@@ -54,17 +54,17 @@ public:
   xml_const_wrap_t operator[] (size_t i) const ;
   xml_const_wrap_t operator() (const str &s) const ;
 
-  virtual ptr<xml_element_t> el () const = 0;
+  virtual ptr<const xml_element_t> el () const = 0;
 };
 
 class xml_const_wrap_t : public xml_wrap_base_t {
 public:
-  xml_const_wrap_t (ptr<xml_element_t> e) : _el (e) {}
+  xml_const_wrap_t (ptr<const xml_element_t> e) : _el (e) {}
   xml_const_wrap_t () {}
 
-  ptr<xml_element_t> el () const { return _el; }
+  ptr<const xml_element_t> el () const { return _el; }
 private:
-  ptr<xml_element_t> _el;
+  ptr<const xml_element_t> _el;
 };
 
 xml_const_wrap_t
@@ -81,9 +81,16 @@ xml_wrap_base_t::operator[] (size_t i) const
 }
 
 xml_const_wrap_t
-xml_wrap_base_t::operator() (const str &s) const
+xml_wrap_base_t::operator() (const str &i) const
 {
-  return xml_const_wrap_t (el ()->get (s)); 
+  ptr<const xml_struct_t> s;
+  xml_const_wrap_t r;
+
+  if (el () && (s = el ()->to_xml_struct_const ()))
+    r = xml_const_wrap_t (s->get (i));
+  else
+    r = xml_const_wrap_t (xml_null_t::alloc ());
+  return r;
 }
 
 class base64_str_t
@@ -98,7 +105,7 @@ private:
 class xml_wrap_t : public xml_wrap_base_t  {
 public:
   xml_wrap_t (ptr<xml_element_t> &e) : _el (e) {}
-  ptr<xml_element_t> el () const { return _el; }
+  ptr<const xml_element_t> el () const { return _el; }
 
   xml_wrap_t operator[] (size_t i) 
   { 
@@ -110,11 +117,14 @@ public:
     return xml_wrap_t (c->get_r (i));
   }
 
-  xml_wrap_t operator() (const str &s) 
+  xml_wrap_t operator() (const str &i) 
   { 
-    if (!_el || !_el->is_str_indexable ())
+    ptr<xml_struct_t> s; 
+    if (!_el || !(s = _el->to_xml_struct ())) {
       _el = New refcounted<xml_struct_t> ();
-    return xml_wrap_t (_el->get_r (s)); 
+      s = _el->to_xml_struct ();
+    }
+    return xml_wrap_t (s->get_r (i));
   }
 
   const xml_wrap_t &set_value (ptr<xml_element_t> e);

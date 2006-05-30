@@ -26,26 +26,56 @@
 #include "parseopt.h"
 #include <stdlib.h>
 
-ptr<xml_element_t> _dummy;
+ptr<xml_null_t> null_element (New refcounted<xml_null_t> ());
+ptr<xml_value_t> null_value (New refcounted<xml_value_t> ());
 
-ptr<xml_element_t> xml_element_t::get (const str &dummy) const
-{ return xml_null_t::alloc (); } 
-ptr<xml_element_t> &xml_element_t::get_r (const str &s) { return _dummy; }
+int xml_data_init::count;
 
-ptr<xml_element_t>
+void
+xml_data_init::start ()
+{
+}
+
+void xml_data_init::stop () {}
+
+ptr<const xml_element_t>
 xml_struct_t::get (const str &s) const
 {
-  const ptr<xml_element_t> *e = _members[s];
-  if (e) { return *e; }
-  else { return xml_null_t::alloc (); }
+  const size_t *i = _members[s];
+  ptr<xml_element_t> e;
+  ptr<xml_member_t> m;
+  ptr<const xml_element_t> v;
+  if (i && (e = (*this)[*i]) && 
+      (m = e->to_xml_member ()) && (v = m->member_value_const ()))
+    return v;
+  else
+    return xml_null_t::alloc ();
 }
 
 ptr<xml_element_t> &
 xml_struct_t::get_r (const str &s) 
 {
-  ptr<xml_element_t> *e = _members[s];
-  if (e) { return *e; }
-  else { return _dummy; }
+  size_t *i = _members[s];
+  ptr<xml_element_t> e;
+  ptr<xml_member_t> m;
+  ptr<xml_value_t> v;
+
+  if (i) { 
+    e = (*this)[*i]; 
+    if (e) {
+      assert ((m = e->to_xml_member ()));
+    } else {
+      _members.remove (s);
+    }
+  }
+
+  if (!m) {
+    m = New refcounted<xml_member_t> (s);
+    push_back (m);
+    _members.insert (s, size () - 1);
+  }
+
+  return m->member_value ();
 }
 
 ptr<xml_container_t>
@@ -63,6 +93,14 @@ xml_param_t::to_xml_container ()
   return _value->to_xml_container ();
 }
 
+ptr<xml_struct_t>
+xml_param_t::to_xml_struct ()
+{
+  if (!_value)
+    _value = New refcounted<xml_value_t> ();
+  return _value->to_xml_struct ();
+}
+
 ptr<xml_container_t>
 xml_value_t::to_xml_container ()
 {
@@ -74,10 +112,21 @@ xml_value_t::to_xml_container ()
   return r;
 }
 
+ptr<xml_struct_t>
+xml_value_t::to_xml_struct ()
+{
+  ptr<xml_struct_t> s;
+  if (!_e || !(s = _e->to_xml_struct ())) {
+    _e = New refcounted<xml_struct_t> ();
+    s = _e->to_xml_struct ();
+  }
+  return s;
+}
+
 bool
 xml_struct_t::put (const str &s, ptr<xml_element_t> e)
 {
-  _members.insert (s, e);
+  get_r (s) = e;
   return true;
 }
 
@@ -148,6 +197,10 @@ ptr<const xml_container_t>
 xml_param_t::to_xml_container_const () const
 { return _value ? _value->to_xml_container_const () : NULL; }
 
+ptr<const xml_struct_t> 
+xml_param_t::to_xml_struct_const () const
+{ return _value ? _value->to_xml_struct_const () : NULL; }
+
 bool
 xml_value_t::add (ptr<xml_element_t> e)
 {
@@ -184,19 +237,14 @@ bool
 xml_struct_t::close_tag ()
 {
   bool succ = true;
-  while (size ()) {
-    ptr<xml_member_t> m = pop_back ()->to_xml_member ();
-    str n;
-    ptr<xml_value_t> v;
+  for (size_t i = 0; i < _members.size (); i++) {
+    ptr<xml_member_t> m = (*this)[i]->to_xml_member ();
     assert (m);
-    if (m->member_name ()) n = m->member_name ()->value ();
-    v = m->member_value ();
-    if (n && v) {
-      _members.insert (n, v);
-    } else {
-      // an error;
-      succ = false;
-    }
+    str n;
+    if (m->member_name ()) {
+      n = m->member_name ()->value ();
+      _members.insert (n, i);
+    } 
   }
   return succ;
 }
@@ -291,7 +339,12 @@ void
 xml_container_t::dump_data (zbuf &b, int lev) const
 {
   for (size_t i = 0; i < size (); i++) {
-    (*this)[i]->dump (b, lev);
+    ptr<xml_element_t> el = (*this)[i];
+    if (el) {
+      el->dump (b, lev);
+    } else {
+      null_value->dump (b, lev);
+    }
   }
 }
 
@@ -300,6 +353,13 @@ xml_method_call_t::dump_data (zbuf &b, int lev) const
 {
   if (_method_name) _method_name->dump (b, lev);
   if (_params)      _params->dump (b, lev);
+}
+
+void
+xml_member_t::dump_data (zbuf &b, int lev) const
+{
+  if (_member_name)  _member_name->dump (b, lev);
+  if (_member_value) _member_value->dump (b, lev);
 }
 
 void
@@ -367,7 +427,7 @@ xml_params_t::get_r (size_t i)
   return r;
 }
 
-ptr<xml_element_t> 
+ptr<const xml_element_t> 
 xml_container_t::get (size_t i) const
 {
   if (i >= size ()) { return xml_null_t::alloc (); }
@@ -377,3 +437,4 @@ xml_container_t::get (size_t i) const
 void 
 xml_array_t::dump_data (zbuf &z, int lev) const 
 { if (_data) _data->dump (z, lev); }
+
