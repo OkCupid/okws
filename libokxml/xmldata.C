@@ -25,6 +25,7 @@
 #include "okxml.h"
 #include "parseopt.h"
 #include <stdlib.h>
+#include "okxmlwrap.h"
 
 ptr<xml_null_t> null_element (New refcounted<xml_null_t> ());
 ptr<xml_value_t> null_value (New refcounted<xml_value_t> ());
@@ -85,20 +86,23 @@ xml_array_t::to_xml_container ()
   return _data;
 }
 
-ptr<xml_container_t>
-xml_param_t::to_xml_container ()
+ptr<xml_value_t>
+xml_value_wrapper_t::mkvalue ()
 {
-  if (!_value) 
-    _value = New refcounted<xml_value_t> ();
-  return _value->to_xml_container ();
+  if (!_value) _value = New refcounted<xml_value_t> ();
+  return _value;
+}
+
+ptr<xml_container_t>
+xml_value_wrapper_t::to_xml_container ()
+{
+  return mkvalue ()->to_xml_container ();
 }
 
 ptr<xml_struct_t>
-xml_param_t::to_xml_struct ()
+xml_value_wrapper_t::to_xml_struct ()
 {
-  if (!_value)
-    _value = New refcounted<xml_value_t> ();
-  return _value->to_xml_struct ();
+  return mkvalue ()->to_xml_struct ();
 }
 
 ptr<xml_container_t>
@@ -181,7 +185,7 @@ xml_method_call_t::add (ptr<xml_element_t> e)
 }
 
 bool
-xml_param_t::add (ptr<xml_element_t> e)
+xml_value_wrapper_t::add (ptr<xml_element_t> e)
 {
   return (!_value && (_value = e->to_xml_value ()));
 }
@@ -190,15 +194,24 @@ xml_param_t::add (ptr<xml_element_t> e)
 bool 
 xml_method_response_t::add (ptr<xml_element_t> e)
 {
-  return (!_params && (_params = e->to_xml_params ())); 
+  ptr<xml_params_t> p;
+  if ((p = e->to_xml_params ())) {
+    p = e->to_xml_params ();
+    _body = e;
+  } else if (e->to_xml_fault ()) {
+    _body = e;
+  } else {
+    return false;
+  }
+  return true;
 }
 
 ptr<const xml_container_t> 
-xml_param_t::to_xml_container_const () const
+xml_value_wrapper_t::to_xml_container_const () const
 { return _value ? _value->to_xml_container_const () : NULL; }
 
 ptr<const xml_struct_t> 
-xml_param_t::to_xml_struct_const () const
+xml_value_wrapper_t::to_xml_struct_const () const
 { return _value ? _value->to_xml_struct_const () : NULL; }
 
 bool
@@ -363,7 +376,7 @@ xml_member_t::dump_data (zbuf &b, int lev) const
 }
 
 void
-xml_param_t::dump_data (zbuf &b, int lev) const
+xml_value_wrapper_t::dump_data (zbuf &b, int lev) const
 {
   if (_value) { _value->dump (b, lev); }
 }
@@ -405,7 +418,10 @@ has_non_ws (const char *buf, int len)
 ptr<xml_container_t> 
 xml_method_response_t::to_xml_container ()
 {
-  if (!_params) _params = New refcounted<xml_params_t> ();
+  if (!_params) {
+    _params = New refcounted<xml_params_t> ();
+    _body = _params;
+  }
   return _params;
 }
 
@@ -438,3 +454,15 @@ void
 xml_array_t::dump_data (zbuf &z, int lev) const 
 { if (_data) _data->dump (z, lev); }
 
+ptr<xml_fault_t>
+xml_fault_t::alloc (int rc, const str &s)
+{
+  ptr<xml_fault_t> f (New refcounted<xml_fault_t> ());
+  ptr<xml_element_t> e = f;
+
+  xml_wrap_t w (e);
+  w("faultCode") = rc;
+  w("faultString") = s;
+
+  return f;
+}

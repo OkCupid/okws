@@ -48,6 +48,7 @@ class xml_data_t;
 class xml_method_name_t;
 class xml_method_response_t;
 class xml_container_t;
+class xml_fault_t;
 
 class xml_element_t : public virtual refcount {
 public:
@@ -70,6 +71,7 @@ public:
   virtual ptr<xml_data_t> to_xml_data () { return NULL; }
   virtual ptr<xml_method_name_t> to_xml_method_name () { return NULL; }
   virtual ptr<xml_method_response_t> to_xml_method_response () { return NULL; }
+  virtual ptr<xml_fault_t> to_xml_fault () { return NULL; }
 
   virtual ptr<xml_container_t> to_xml_container () { return NULL; }
   virtual ptr<const xml_container_t> to_xml_container_const () const 
@@ -85,6 +87,10 @@ public:
   virtual str to_bool () const { return false; }
   virtual str to_base64 () const { return armor64 (NULL, 0); }
   virtual bool is_value () const { return false; }
+
+  // call this to signal that fault happened on the given object;
+  // only does any interesting for methodResponse objects
+  virtual void fault (ptr<xml_fault_t> f) {}
 
   // should it be a strbuf or a zbuf?
   virtual void dump (zbuf &b, int lev) const;
@@ -180,7 +186,23 @@ private:
   ptr<xml_params_t> _params;
 };
 
-class xml_param_t : public xml_element_t {
+class xml_value_wrapper_t : public xml_element_t {
+public:
+  xml_value_wrapper_t () {}
+  
+  ptr<xml_container_t> to_xml_container ();
+  ptr<const xml_container_t> to_xml_container_const () const;
+  ptr<xml_struct_t> to_xml_struct ();
+  ptr<const xml_struct_t> to_xml_struct_const () const;
+  void dump_data (zbuf &b, int lev) const;
+  bool add (ptr<xml_element_t> e);
+  ptr<xml_value_t> mkvalue ();
+
+protected:
+  ptr<xml_value_t> _value;
+};
+
+class xml_param_t : public xml_value_wrapper_t {
 public:
   xml_param_t () {}
   void set_value (ptr<xml_value_t> x) { _value = x; }
@@ -190,16 +212,6 @@ public:
   ptr<xml_element_t> clone (const char *) const 
   { return New refcounted<xml_param_t> (); }
   const char *name () const { return "param"; }
-  bool add (ptr<xml_element_t> e);
-  void dump_data (zbuf &b, int lev) const;
-
-  ptr<xml_container_t> to_xml_container ();
-  ptr<const xml_container_t> to_xml_container_const () const;
-  ptr<xml_struct_t> to_xml_struct ();
-  ptr<const xml_struct_t> to_xml_struct_const () const;
-
-private:
-  ptr<xml_value_t> _value;
 };
 
 class xml_params_t : public xml_container_t {
@@ -215,6 +227,16 @@ public:
   ptr<xml_element_t> &get_r (size_t s) ;
 };
 
+class xml_fault_t : public xml_value_wrapper_t {
+public:
+  xml_fault_t () {}
+  ptr<xml_element_t> clone (const char *) const
+  { return New refcounted<xml_fault_t> (); }
+  const char *name () const { return "fault"; }
+  ptr<xml_fault_t> to_xml_fault () { return mkref (this); }
+  static ptr<xml_fault_t> alloc (int rc, const str &s);
+};
+
 class xml_method_response_t : public xml_element_t {
 public:
   xml_method_response_t () {}
@@ -226,7 +248,7 @@ public:
   ptr<xml_method_response_t> to_xml_method_response () { return mkref (this); }
   bool add (ptr<xml_element_t> e);
   void dump_data (zbuf &b, int lev) const 
-  { if (_params) _params->dump (b, lev); }
+  { if (_body) _body->dump (b, lev); }
 
   static ptr<xml_method_response_t> alloc () 
   { return New refcounted<xml_method_response_t> (); }
@@ -234,8 +256,12 @@ public:
   ptr<xml_container_t> to_xml_container ();
   ptr<const xml_container_t> to_xml_container_const () const 
   { return _params; }
+
+  void fault (int c, const str &s) { fault (xml_fault_t::alloc (c, s)); }
+  void fault (ptr<xml_fault_t> f) { _body = f; }
 private:
   ptr<xml_params_t> _params;
+  ptr<xml_element_t> _body;
 };
 
 INIT(xml_data_init);

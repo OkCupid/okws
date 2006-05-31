@@ -86,6 +86,13 @@ private:
   const str _s;
 };
 
+class xml_fault_wrap_t {
+public:
+  xml_fault_wrap_t (int c, const str &s) : 
+    _fault (xml_fault_t::alloc (c, s)) {}
+  ptr<xml_fault_t> _fault;
+};
+
 class xml_wrap_t : public xml_wrap_base_t  {
 public:
   xml_wrap_t (ptr<xml_element_t> &e) : _el (e) {}
@@ -126,9 +133,11 @@ public:
   { return set_value (xml_base64_t::alloc (b)); }
 
   const xml_wrap_t &operator=(ptr<xml_element_t> e)
-  { _el = e; return (*this); }
+  { _el = e; return *this; }
   const xml_wrap_t &operator=(const xml_wrap_t &w)
-  { _el = w._el; return (*this); }
+  { return (*this = w._el); }
+  const xml_wrap_t &operator=(const xml_fault_wrap_t &w)
+  { _el->fault (w._fault); return *this; }
 
 private:
   ptr<xml_element_t> &_el;
