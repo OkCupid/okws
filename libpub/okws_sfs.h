@@ -38,8 +38,8 @@
 
 
 // Patch Level <major>.<minor>.<pre> (out to 2 places)
-#define OKWS_PATCHLEVEL      1000004
-#define OKWS_PATCHLEVEL_STR  "1.0pre4"
+#define OKWS_PATCHLEVEL      1000005
+#define OKWS_PATCHLEVEL_STR  "1.0pre5"
 
 //
 // A header file for OKWS changes to SFS. Should be included by most files
