@@ -143,4 +143,20 @@ http_parser_base_t::clnt_timeout ()
 }
 
 
+#ifdef HAVE_EXPAT
+
+void
+http_parser_xml_t::v_cancel ()
+{
+
+
+}
+
+void
+http_parser_xml_t::v_parse_cb1 (int status)
+{
+
+}
+
+#endif /* HAVE_EXPAT */
 

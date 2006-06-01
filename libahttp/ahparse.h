@@ -57,6 +57,7 @@ public:
   virtual http_inhdr_t *hdr_p () = 0;
   virtual const http_inhdr_t &hdr_cr () const = 0;
   ptr<ahttpcon> get_x () const { return x; }
+  abuf_t *get_abuf_p () { return &abuf; }
 
   void parse (cbi cb);
 protected:
@@ -155,7 +156,22 @@ protected:
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
 private:
   bool mpfd_flag;
+};
+
+#ifdef HAVE_EXPAT
+#include "okxmlparse.h"
+class http_parser_xml_t : public http_parser_full_t,
+			  public xml_req_parser_t {
+public:
+  http_parser_xml_t (ptr<ahttpcon> xx, int to = 0)
+    : http_parser_full_t (xx, to),
+      xml_req_parser_t (get_abuf_p ()) {}
+  ~http_parser_xml_t () {}
+
+  void v_cancel () ;
+  void v_parse_cb1 (int status) ;
 
 };
+#endif /* HAVE_EXPAT */
 
 #endif
