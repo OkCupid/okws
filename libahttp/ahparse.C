@@ -88,7 +88,7 @@ http_parser_base_t::stop_abuf ()
 }
 
 void
-http_parser_cgi_t::finish2 (int s1, int s2)
+http_parser_full_t::finish2 (int s1, int s2)
 {
   if (s1 != HTTP_OK)
     finish (s1);
@@ -112,7 +112,7 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 
     abuf.setlim (hdr.contlen);
 
-    cbi::ptr pcb = wrap (this, &http_parser_cgi_t::finish2, status);
+    cbi::ptr pcb = wrap (this, &http_parser_full_t::finish2, status);
     str boundary;
     if (cgi_mpfd_t::match (hdr, &boundary)) {
       if (mpfd_flag) {

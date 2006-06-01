@@ -94,52 +94,66 @@ public:
   http_inhdr_t hdr;
 };
 
-class http_parser_cgi_t : public http_parser_base_t {
+/*
+ * Parses the HTTP header, the potentially CGI-encoded URI,
+ * the cookie in the header, and has a hook for parsing
+ * a POST request body.
+ */
+class http_parser_full_t : public http_parser_base_t {
 public:
-  http_parser_cgi_t (ptr<ahttpcon> xx, u_int to = 0)
+  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0)
     : http_parser_base_t (xx, to), buflen2 (HTTP_PARSE_BUFLEN2),
       cookie (&abuf, true, buflen2, scratch2),
       url (&abuf, false, buflen2, scratch2),
-      post (&abuf, false, buflen, scratch),
-      mpfd (NULL),
-      mpfd_flag (false),
       hdr (&abuf, &url, &cookie, buflen, scratch) 
   {}
-  ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
+  virtual ~http_parser_full_t () {}
 
   http_inhdr_t * hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
-
-  void v_cancel () { hdr.cancel (); post.cancel (); }
-  void v_parse_cb1 (int status);
   void finish2 (int s1, int s2);
-  void enable_file_upload () { mpfd_flag = true; }
 
-  static ptr<http_parser_cgi_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
-  { return New refcounted<http_parser_cgi_t> (xx, t); }
 
   cgi_t & get_cookie () { return cookie; }
   cgi_t & get_url () { return url; }
-  cgi_t & get_post () { return post; }
-  cgi_mpfd_t *get_mpfd () { return mpfd; }
   http_inhdr_t & get_hdr () { return hdr; }
-  cgiw_t & get_cgi () { return cgi; }
 
 protected:
   size_t buflen2;
 
   cgi_t cookie;
   cgi_t url;
-  cgi_t post;
-  cgi_mpfd_t *mpfd;
-  cgiw_t cgi;  // wrapper set to either url or post, depending on the method
   char scratch2[HTTP_PARSE_BUFLEN2];
-
-private:
-  bool mpfd_flag;
 
 public:
   http_inhdr_t hdr;
+};
+
+class http_parser_cgi_t : public class http_parser_full_t {
+public:
+  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0) :
+    http_parser_full (xx, to),
+    post (&abuf, false, buflen, scratch),
+    mpfd (NULL),
+    mpfd_flag (false) {}
+  ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
+
+  void v_cancel () { hdr.cancel (); post.cancel (); }
+  void v_parse_cb1 (int status);
+  void enable_file_upload () { mpfd_flag = true; }
+
+  static ptr<http_parser_cgi_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
+  { return New refcounted<http_parser_cgi_t> (xx, t); }
+
+  cgi_t & get_post () { return post; }
+  cgi_mpfd_t *get_mpfd () { return mpfd; }
+  cgiw_t & get_cgi () { return cgi; }
+protected:
+  cgi_mpfd_t *mpfd;
+  cgiw_t cgi;  // wrapper set to either url or post, depending on the method
+  cgi_t post;
+private:
+  bool mpfd_flag;
 
 };
 
