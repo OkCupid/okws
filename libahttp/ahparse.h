@@ -129,10 +129,10 @@ public:
   http_inhdr_t hdr;
 };
 
-class http_parser_cgi_t : public class http_parser_full_t {
+class http_parser_cgi_t : public http_parser_full_t {
 public:
   http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0) :
-    http_parser_full (xx, to),
+    http_parser_full_t (xx, to),
     post (&abuf, false, buflen, scratch),
     mpfd (NULL),
     mpfd_flag (false) {}
@@ -148,10 +148,11 @@ public:
   cgi_t & get_post () { return post; }
   cgi_mpfd_t *get_mpfd () { return mpfd; }
   cgiw_t & get_cgi () { return cgi; }
+
 protected:
+  cgi_t post;
   cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
-  cgi_t post;
 private:
   bool mpfd_flag;
 

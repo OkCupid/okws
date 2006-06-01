@@ -112,7 +112,8 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 
     abuf.setlim (hdr.contlen);
 
-    cbi::ptr pcb = wrap (this, &http_parser_full_t::finish2, status);
+    cbi::ptr pcb = wrap (static_cast<http_parser_full_t *> (this), 
+			 &http_parser_full_t::finish2, status);
     str boundary;
     if (cgi_mpfd_t::match (hdr, &boundary)) {
       if (mpfd_flag) {

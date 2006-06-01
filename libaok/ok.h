@@ -299,6 +299,17 @@ public:
   const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
 };
 
+#ifdef HAVE_EXPAT
+#include "okxmlparse.h"
+class okclnt_xml_t : public okclnt_base_t {
+public:
+  okclnt_xml_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
+    okclnt_base_t (xx, o) {}
+  ~okclnt_xml_t () {}
+
+};
+#endif /* HAVE_EXPAT */
+
 typedef callback<okclnt_base_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
 
 class dbcon_t : public helper_inet_t {
