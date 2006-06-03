@@ -25,13 +25,13 @@
 #ifndef _LIBAOK_OKXMLSRV_H
 #define _LIBAOK_OKXMLSRV_H
 
+# include "ok.h"
+# include "okxmlparse.h"
+# include "okxmlwrap.h"
+
 # ifdef HAVE_EXPAT
-#  include "ok.h"
-#  include "okxmlparse.h"
-#  include "okxmlwrap.h"
 
 
-class oksrvc_xmlrpc_t;
 class okclnt_xmlrpc_base_t : public okclnt_base_t {
 public:
   okclnt_xmlrpc_base_t (ptr<ahttpcon> xx, oksrvc_t *s, u_int to = 0)
@@ -46,15 +46,18 @@ public:
    */
   http_inhdr_t *hdr_p () { return _parser.hdr_p (); }
   const http_inhdr_t &hdr_cr () const { return _parser.hdr_cr (); }
-  ptr<const xml_top_level_t> top_level () const 
-  { return _parser.top_level (); }
   str errmsg () const { return _parser.errmsg (); }
   xml_parse_status_t errcode () const { return _parser.errcode (); }
   cgi_t &cookie () { return _parser.get_cookie (); }
   cgi_t &url () { return _parser.get_url (); }
   http_inhdr_t &hdr () { return _parser.hdr; }
 
-  void respond (xml_resp_t r);
+
+  ptr<xml_top_level_t> top_level () { return _parser.top_level (); }
+  ptr<const xml_top_level_t> top_level_const () const 
+  { return _parser.top_level_const (); }
+
+  void reply (xml_resp_t r);
 protected:
   http_parser_xml_t _parser;
 };
@@ -75,48 +78,62 @@ protected:
   oksrvc_xmlrpc_base_t *_srvc;
 };
 
-typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
+typedef enum { OK_XMLRPC_OK = 0,
+	       OK_XMLRPC_ERR_NO_DATA = 101,
+	       OK_XMLRPC_ERR_NO_METHOD_CALL = 102,
+	       OK_XMLRPC_ERR_NO_METHOD_NAME = 103,
+	       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 104 } ok_xmlprc_err_t;
 
-template<class C>
+template<class C, class S>
 class oksrvc_xmlrpc_t : public oksrvc_xmlrpc_base_t {
 public:
-  typedef void (C::*handler_t) (xml_req_t, xml_resp_cb_t);
+  typedef void (C::*handler_t) (xml_req_t);
+
   oksrvc_xmlrpc_t (int argc, char *argv[]) 
     : oksrvc_xmlrpc_base_t (argc, argv) {}
+
   void handle (okclnt_xmlrpc_base_t *c)
   {
-    C *cli = reinterpret_cast<C *> (c);
     xml_resp_t resp;
-    if (c->errcode () != 0) {
-      resp = xml_fault_t (c->errcode (), c->errmsg ());
+    bool handled = false;
+    ptr<const xml_method_call_t> call;
+    ptr<const xml_top_level_t> e;
+    handler_t *h;
+    str nm;
+
+    C *cli = reinterpret_cast<C *> (c);
+
+    if (c->errcode () != XML_PARSE_OK) {
+      resp = xml_fault_obj_t (c->errcode (), c->errmsg ());
+    } else if (!(e = c->top_level_const ()) || e->size () < 1) {
+      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_NO_DATA), 
+			      "No data given in XML call");
+    } else if (!(call = e->get (0)->to_xml_method_call_const ())) {
+      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_NO_METHOD_CALL), 
+			      "No methdCall given in request");
+    } else if (!(nm = call->method_name ())) {
+      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_NO_METHOD_NAME),
+			      "No method name given");
+    } else if (!(h = _dispatch_table[nm])) {
+      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_METHOD_NOT_FOUND), 
+			      "Method not found");
     } else {
-      ptr<const xml_top_level_t> e = c->top_level ();
-      if (e->size () < 1) {
-	resp = xml_fault_wrap_t (1, "No data given in XML call");
-      } else {
-	ptr<xml_method_call_t> call = e->get (0)->to_xml_method_call ();
-	if (!call) {
-	  resp = xml_fault_wrap_t (2, "No methdCall given in request");
-	} else {
-	  str nm = call->method_name ();
-	  handler_t *h = _dispatch_table[nm];
-	  if (!h) {
-	    resp = xml_fault_wrap_t (3, "Method not found");
-	  } else {
-	    ((*cli).*(*h)) (xml_req_t (call->params ()),
-			    wrap (c, &okclnt_xmlrpc_base_t::respond));
-	    return;
-	  }
-	}
-      }
+      handled = true;
+      ((*cli).*(*h)) (xml_req_t (call->params_const ()));
     }
-    c->respond (resp);
+
+    if (!handled)
+      c->reply (resp);
   }
 
-  okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) { return New C (lx, this); }
+  okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) 
+  { return New C (lx, reinterpret_cast<S *> (this)); }
+
 protected:
   // register a handler
-  void regh (const str &s, xml_handler_t h);
+  void regh (const str &s, handler_t h) { _dispatch_table.insert (s, h); }
+  void regh (const char *s, handler_t h) 
+  { _dispatch_table.insert (str (s), h); }
 private:
   qhash<str, handler_t> _dispatch_table;
 };

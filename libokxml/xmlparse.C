@@ -75,7 +75,7 @@ xml_tagtab_t::generate (const char *s)
 {
   ptr<xml_element_t> *e = _tab[s];
   if (!e) { return NULL; }
-  else { return (*e)->clone (s); }
+  else { return (*e)->generate (s); }
 }
 
 static void 
@@ -261,6 +261,12 @@ xml_req_parser_t::parse_error (xml_parse_status_t s, str m)
 {
   _status = s;
   _err_msg = m;
+  cancel ();
+}
+
+void
+xml_req_parser_t::cancel ()
+{
   XML_StopParser (_xml_parser, 0);
 }
 

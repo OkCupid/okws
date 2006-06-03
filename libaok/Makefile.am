@@ -3,9 +3,9 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libaok.la
 
-libaok_la_SOURCES = okprot.C ok.C log.C logbuf.C
+libaok_la_SOURCES = okprot.C ok.C log.C logbuf.C xmlrpcsrv.C
 
-okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h 
+okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h
 
 noinst_HEADERS = okprot.x
 

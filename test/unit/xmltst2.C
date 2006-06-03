@@ -12,8 +12,7 @@ main (int argc, char *argv[])
 {
   zbuf z;
   strbuf b;
-  ptr<xml_element_t> e (xml_method_response_t::alloc ());
-  xml_wrap_t w (e);
+  xml_resp_t w;
 
 
   w[0][0] = "hi";
@@ -26,13 +25,13 @@ main (int argc, char *argv[])
   w[2]("foo")("bar")("this")("that")[4] = 4;
   w[2]("foo")("biz")[5] = 10;
 
-  xml_const_wrap_t w2 (e);
+  xml_obj_const_t w2 (w);
   warn << "i=" << int (w2[2]("foo")("biz")[5]) << "\n";
 
-  e->dump (z);
+  w.output (z);
   z << "-------------------------------\n";
-  w = xml_fault_wrap_t (10, "Error code #@#$ = 10");
-  e->dump (z);
+  w = xml_fault_obj_t (10, "Error code #@#$ = 10");
+  w.output (z);
 
   z.to_strbuf (&b, false);
   b.tosuio ()->output (1);

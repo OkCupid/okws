@@ -120,8 +120,11 @@ public:
   http_inhdr_t & get_hdr () { return hdr; }
 
 protected:
-  size_t buflen2;
 
+  // called to prepare a parsing of a post body.
+  cbi::ptr prepare_post_parse (int status);
+
+  size_t buflen2;
   cgi_t cookie;
   cgi_t url;
   char scratch2[HTTP_PARSE_BUFLEN2];
@@ -160,16 +163,25 @@ private:
 
 #ifdef HAVE_EXPAT
 #include "okxmlparse.h"
-class http_parser_xml_t : public http_parser_full_t,
-			  public xml_req_parser_t {
+class http_parser_xml_t : public http_parser_full_t {
 public:
   http_parser_xml_t (ptr<ahttpcon> xx, int to = 0)
-    : http_parser_full_t (xx, to),
-      xml_req_parser_t (get_abuf_p ()) {}
+    : http_parser_full_t (xx, to), _xml (&abuf) {}
   ~http_parser_xml_t () {}
 
   void v_cancel () ;
   void v_parse_cb1 (int status) ;
+
+  ptr<xml_top_level_t> top_level () { return _xml.top_level (); }
+
+  ptr<const xml_top_level_t> top_level_const () const 
+  { return _xml.top_level_const (); }
+
+  str errmsg () const { return _xml.errmsg (); }
+  xml_parse_status_t errcode () const { return _xml.errcode (); }
+
+private:
+  xml_req_parser_t _xml;
 
 };
 #endif /* HAVE_EXPAT */

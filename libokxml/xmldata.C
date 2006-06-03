@@ -458,11 +458,24 @@ ptr<xml_fault_t>
 xml_fault_t::alloc (int rc, const str &s)
 {
   ptr<xml_fault_t> f (New refcounted<xml_fault_t> ());
-  ptr<xml_element_t> e = f;
+  xml_obj_t w (f);
 
-  xml_wrap_t w (e);
   w("faultCode") = rc;
   w("faultString") = s;
 
   return f;
 }
+
+ptr<xml_method_call_t>
+xml_method_call_t::clone_typed () const
+{
+  ptr<xml_element_t> nullp;
+  return New refcounted<xml_method_call_t> 
+    ( _method_name ? _method_name->clone ()->to_xml_method_name () : 
+      _method_name,
+      _params ? _params->clone ()->to_xml_params () : _params);
+}
+
+ptr<xml_value_t> 
+xml_value_wrapper_t::cpvalue () const
+{ return _value ? _value->clone ()->to_xml_value () : _value; }

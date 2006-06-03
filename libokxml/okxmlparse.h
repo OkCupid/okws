@@ -67,10 +67,13 @@ public:
   void start_element (const char *name, const char **atts);
   void end_element (const char *name);
   void found_data (const char *buf, int len);
-  ptr<xml_top_level_t> top_level () { return _top_level; }
 
+  ptr<xml_top_level_t> top_level () { return _top_level; }
+  ptr<const xml_top_level_t> top_level_const () const { return _top_level; }
   str errmsg () const;
   xml_parse_status_t errcode () const { return _status; }
+
+  void cancel ();
 
   ~xml_req_parser_t ();
 

@@ -98,22 +98,29 @@ http_parser_full_t::finish2 (int s1, int s2)
     finish (HTTP_OK);
 }
 
+cbi::ptr
+http_parser_full_t::prepare_post_parse (int status)
+{
+  if (hdr.contlen > int (ok_reqsize_limit)) {
+    finish (HTTP_NOT_ALLOWED);
+    return NULL;
+  } else if (hdr.contlen < 0)
+    hdr.contlen = ok_reqsize_limit -1;
+  
+  abuf.setlim (hdr.contlen);
+  return wrap (this, &http_parser_full_t::finish2, status);
+}
+
 void
 http_parser_cgi_t::v_parse_cb1 (int status)
 {
   if (hdr.mthd == HTTP_MTHD_POST) {
     cgi = &post;
-
-    if (hdr.contlen > int (ok_reqsize_limit)) {
-      finish (HTTP_NOT_ALLOWED);
+    
+    cbi::ptr pcb;
+    if (!(pcb = prepare_post_parse (status)))
       return;
-    } else if (hdr.contlen < 0)
-      hdr.contlen = ok_reqsize_limit -1;
 
-    abuf.setlim (hdr.contlen);
-
-    cbi::ptr pcb = wrap (static_cast<http_parser_full_t *> (this), 
-			 &http_parser_full_t::finish2, status);
     str boundary;
     if (cgi_mpfd_t::match (hdr, &boundary)) {
       if (mpfd_flag) {
@@ -148,14 +155,25 @@ http_parser_base_t::clnt_timeout ()
 void
 http_parser_xml_t::v_cancel ()
 {
-
-
+  hdr.cancel ();
+  _xml.cancel ();
 }
 
 void
 http_parser_xml_t::v_parse_cb1 (int status)
 {
+  if (hdr.mthd == HTTP_MTHD_POST) {
 
+    cbi::ptr pcb;
+    if (!(pcb = prepare_post_parse (status)))
+      return;
+    
+    _xml.init ();
+    _xml.parse (pcb);
+
+  } else {
+    finish (HTTP_NOT_ACCEPTABLE);
+  }
 }
 
 #endif /* HAVE_EXPAT */

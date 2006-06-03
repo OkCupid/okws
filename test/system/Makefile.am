@@ -7,10 +7,11 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = static configtest simple
+noinst_PROGRAMS = static configtest simple xmlex
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
+xmlex_SOURCES = xmlex.C
 
 SUBDIRS = htdocs
 
@@ -25,11 +26,13 @@ configtest.o:	configtest.C
 configtest.lo:	configtest.C
 simple.o:	simple.C
 simple.lo:	simple.C
+xmlex.o:	xmlex.C
+xmlex.lo:	xmlex.C
 
 CLEANFILES = core *.core *~ *_config *_log
 EXTRA_DIST = .cvsignore static.T okws_config.in pub_config.in configtest.T \
-	simple.T
-BUILT_SOURCES = static.C configtest.C simple.C
+	simple.T xmlex.T
+BUILT_SOURCES = static.C configtest.C simple.C xmlex.C
 MAINTAINERCLEANFILES = Makefile.in
 
 
@@ -46,5 +49,6 @@ pub_config: $(srcdir)/pub_config.in
 	sed "s#@@TEST2_SRC@@#$$TEST2_SRC#g" < $< > $@
 
 tameclean:
-	rm -f $(srcdir)/static.C $(srcdir)/configtest.C $(srcdir)/simple.C
+	rm -f $(srcdir)/static.C $(srcdir)/configtest.C $(srcdir)/simple.C \
+		$(srcdir)/xmlex.C
 

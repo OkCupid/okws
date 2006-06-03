@@ -22,36 +22,23 @@
  *
  */
 
-#ifndef _LIBAHTTP_OKXML_WRAP_H_
-#define _LIBAHTTP_OKXML_WRAP_H
+#ifndef _LIBAHTTP_OKXMLOBJ_H_
+#define _LIBAHTTP_OKXMLOBJ_H_
 
-class xml_const_wrap_t;
+class xml_obj_const_t;
+class xml_obj_t;
 
-class wrap_index_t {
+class xml_obj_base_t {
 public:
-  wrap_index_t (const str &s) : _s (s), _i (0) {}
-  //wrap_index_t (const char *c) : _s (c), _i (0) {}
-  wrap_index_t (size_t i) : _i (i) {}
-  str to_str () const { return _s; }
-  size_t to_int () const { return _i; }
-private:
-  const str _s;
-  const size_t _i;
-};
-
-#define STR(x) str (#x)
-
-class xml_wrap_base_t {
-public:
-  xml_wrap_base_t () {}
-  virtual ~xml_wrap_base_t () {}
+  xml_obj_base_t () {}
+  virtual ~xml_obj_base_t () {}
 
   operator int () const { return el ()->to_int (); }
   operator str () const { return el ()->to_str (); }
   operator bool () const { return el ()->to_bool (); }
 
-  xml_const_wrap_t operator[] (size_t i) const ;
-  xml_const_wrap_t operator() (const str &s) const ;
+  xml_obj_const_t operator[] (size_t i) const ;
+  xml_obj_const_t operator() (const str &s) const ;
 
   ptr<const xml_container_t> to_xml_container_const () const
   { return el () ? el ()->to_xml_container_const () : NULL; }
@@ -65,12 +52,16 @@ public:
   }
 
   virtual ptr<const xml_element_t> el () const = 0;
+  void output (zbuf &z) { el ()->dump (z); }
+  
+  xml_obj_t clone () const;
 };
 
-class xml_const_wrap_t : public xml_wrap_base_t {
+class xml_obj_const_t : public xml_obj_base_t {
 public:
-  xml_const_wrap_t (ptr<const xml_element_t> e) : _el (e) {}
-  xml_const_wrap_t () {}
+  xml_obj_const_t (ptr<const xml_element_t> e) : _el (e) {}
+  xml_obj_const_t () {}
+  xml_obj_const_t (const xml_obj_base_t &w) : _el (w.el ()) {}
 
   ptr<const xml_element_t> el () const { return _el; }
 private:
@@ -86,62 +77,84 @@ private:
   const str _s;
 };
 
-class xml_fault_wrap_t {
+class xml_fault_obj_t {
 public:
-  xml_fault_wrap_t (int c, const str &s) : 
+  xml_fault_obj_t (int c, const str &s) : 
     _fault (xml_fault_t::alloc (c, s)) {}
   ptr<xml_fault_t> _fault;
 };
 
-class xml_wrap_t : public xml_wrap_base_t  {
+class xml_obj_ref_t : public xml_obj_base_t  {
 public:
-  xml_wrap_t (ptr<xml_element_t> &e) : _el (e) {}
-  ptr<const xml_element_t> el () const { return _el; }
+  xml_obj_ref_t (ptr<xml_element_t> &e) : _el_ref (e) {}
+  ptr<const xml_element_t> el () const { return _el_ref; }
 
-  xml_wrap_t operator[] (size_t i) 
+  xml_obj_ref_t operator[] (size_t i) 
   { 
     ptr<xml_container_t> c;
-    if (!_el || !(c = _el->to_xml_container ())) {
-      _el = New refcounted<xml_array_t> ();
-      c = _el->to_xml_container ();
+    if (!_el_ref || !(c = _el_ref->to_xml_container ())) {
+      _el_ref = New refcounted<xml_array_t> ();
+      c = _el_ref->to_xml_container ();
     }
-    return xml_wrap_t (c->get_r (i));
+    return xml_obj_ref_t (c->get_r (i));
   }
 
-  xml_wrap_t operator() (const str &i) 
+  xml_obj_ref_t operator() (const str &i) 
   { 
     ptr<xml_struct_t> s; 
-    if (!_el || !(s = _el->to_xml_struct ())) {
-      _el = New refcounted<xml_struct_t> ();
-      s = _el->to_xml_struct ();
+    if (!_el_ref || !(s = _el_ref->to_xml_struct ())) {
+      _el_ref = New refcounted<xml_struct_t> ();
+      s = _el_ref->to_xml_struct ();
     }
-    return xml_wrap_t (s->get_r (i));
+    return xml_obj_ref_t (s->get_r (i));
   }
 
-  const xml_wrap_t &set_value (ptr<xml_element_t> e);
+  const xml_obj_ref_t &set_value (ptr<xml_element_t> e);
+  const xml_obj_ref_t &set_fault (const xml_fault_obj_t &w)
+  { _el_ref->fault (w._fault); return *this; }
   
-  const xml_wrap_t &operator=(bool b) 
+  const xml_obj_ref_t &operator=(bool b) 
   { return set_value (xml_bool_t::alloc (b)); }
-  const xml_wrap_t &operator=(const char *s)
+  const xml_obj_ref_t &operator=(const char *s)
   { return set_value (xml_str_t::alloc (s)); }
     
-  const xml_wrap_t &operator=(int i) 
+  const xml_obj_ref_t &operator=(int i) 
   { return set_value (xml_int_t::alloc (i)); }
-  const xml_wrap_t &operator=(str s)
+  const xml_obj_ref_t &operator=(str s)
   { return set_value (xml_str_t::alloc (s)); }
-  const xml_wrap_t &operator=(const base64_str_t &b)
+  const xml_obj_ref_t &operator=(const base64_str_t &b)
   { return set_value (xml_base64_t::alloc (b)); }
+  const xml_obj_ref_t &operator=(ptr<xml_element_t> e)
+  { return set_value (e); }
+  const xml_obj_ref_t &operator=(const xml_obj_ref_t &w)
+  { return set_value (w._el_ref); }
+  const xml_obj_ref_t &operator=(const xml_obj_const_t &w)
+  { return set_value (w.el ()->clone ()); }
+  const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
+  { return set_fault (w); }
 
-  const xml_wrap_t &operator=(ptr<xml_element_t> e)
-  { _el = e; return *this; }
-  const xml_wrap_t &operator=(const xml_wrap_t &w)
-  { return (*this = w._el); }
-  const xml_wrap_t &operator=(const xml_fault_wrap_t &w)
-  { _el->fault (w._fault); return *this; }
-
-private:
-  ptr<xml_element_t> &_el;
+protected:
+  ptr<xml_element_t> &_el_ref;
 
 };
 
-#endif /* _LIBAHTTP_OKXML_WRAP_H */
+class xml_obj_t : public xml_obj_ref_t {
+public:
+  xml_obj_t (ptr<xml_element_t> p) : xml_obj_ref_t (_el), _el (p) {}
+  const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
+  { return set_fault (w); }
+protected:
+  ptr<xml_element_t> _el;
+};
+
+class xml_resp_t : public xml_obj_t {
+public:
+  xml_resp_t () : xml_obj_t (New refcounted<xml_method_response_t> ()) {}
+  const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
+  { return set_fault (w); }
+};
+
+typedef xml_obj_const_t xml_req_t;
+
+
+#endif /* _LIBAHTTP_OKXMLOBJ_H */
