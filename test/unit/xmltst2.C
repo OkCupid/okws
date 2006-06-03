@@ -4,7 +4,7 @@
 #include "okxml.h"
 #include "abuf_pipe.h"
 #include "okxmlparse.h"
-#include "okxmlwrap.h"
+#include "okxmlobj.h"
 #include "tame.h"
 
 int
