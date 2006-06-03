@@ -25,7 +25,7 @@
 #include "okxml.h"
 #include "parseopt.h"
 #include <stdlib.h>
-#include "okxmlwrap.h"
+#include "okxmlobj.h"
 
 ptr<xml_null_t> null_element (New refcounted<xml_null_t> ());
 ptr<xml_value_t> null_value (New refcounted<xml_value_t> ());

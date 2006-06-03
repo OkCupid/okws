@@ -1,6 +1,6 @@
 
 #include "okxml.h"
-#include "okxmlwrap.h"
+#include "okxmlobj.h"
 
 const xml_obj_ref_t &
 xml_obj_ref_t::set_value (ptr<xml_element_t> e)

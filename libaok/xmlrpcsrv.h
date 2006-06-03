@@ -27,7 +27,7 @@
 
 # include "ok.h"
 # include "okxmlparse.h"
-# include "okxmlwrap.h"
+# include "okxmlobj.h"
 
 # ifdef HAVE_EXPAT
 

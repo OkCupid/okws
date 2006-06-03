@@ -4,9 +4,9 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libokxml.la
 
-libokxml_la_SOURCES = xmlparse.C xmldata.C xmlwrap.C
+libokxml_la_SOURCES = xmlparse.C xmldata.C xmlobj.C
 
-okwsinclude_HEADERS = okxml.h okxmldata.h okxmlwrap.h okxmlparse.h
+okwsinclude_HEADERS = okxml.h okxmldata.h okxmlobj.h okxmlparse.h
 
 EXTRA_DIST = .cvsignore
 CLEANFILES = core *.core *~ *.rpo
