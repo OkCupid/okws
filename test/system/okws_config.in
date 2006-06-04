@@ -2,14 +2,14 @@
 BindAddr 	0.0.0.0 8081
 JailDir 	@@TOP_BUILD@@
 TopDir 		@@TOP_BUILD@@
-ServiceBin	test2
+ServiceBin	test/system
 
-PubdExecPath	pub/pubd -w -f test2/pub_config
+PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
 OkdExecPath	okd/okd
-Pubd2ExecPath	pub/pubd -2 -f test2/pub_config
+Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
-LogDir		@@TOP_BUILD@@/test2
+LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU
@@ -18,5 +18,6 @@ Service		static	/static
 Service		configtest /configtest
 RegexAlias	/static	^(:\d+)?/static/.*$
 Service		simple	/simple
+Service		xmlex	/xmlrpc
 
 ErrorDoc	404	/err/404.html

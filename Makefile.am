@@ -93,5 +93,18 @@ tameclean:
 		(cd $$dir && $(MAKE) tameclean); \
 	done
 
+.PHONY: test 
+test:	all
+	for dir in test; do			\
+		(cd $$dir && $(MAKE) test); 	\
+	done
+	@echo =======================================================
+	@echo "   Starting up OKWS in place for testing!"
+	@echo "     - config file: test/system/okws_config"
+	@echo "     - Binding to: Port 8081"
+	@echo "   Hit Control-C to end test."
+	@echo ======================================================= 
+	okd/okld -f test/system/okws_config	
+
 .PHONY: buildclean
 buildclean: tameclean rpcclean

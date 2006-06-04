@@ -36,7 +36,7 @@
 <!--#set ({
 
 PORT 		=> 	2003,  		 	// PORT must be in caps
-HomeDir		=>	"@@TEST2_SRC@@",	// Not necessary 
+HomeDir		=>	"@@TEST_SRC@@",		// Not necessary 
 JailDir		=> 	"${HomeDir}/htdocs",	// Pubd variable
 RunAsUser	=>	"www",			// likewise
 RunAsGroup	=>	${RunAsUser}		// ditto

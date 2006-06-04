@@ -45,8 +45,8 @@ okws_config: $(srcdir)/okws_config.in
 	sed "s#@@TOP_BUILD@@#$$TOP_BUILD#g" < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
-	TEST2_SRC=$(srcdir); \
-	sed "s#@@TEST2_SRC@@#$$TEST2_SRC#g" < $< > $@
+	TEST_SRC=$(srcdir); \
+	sed "s#@@TEST_SRC@@#$$TEST_SRC#g" < $< > $@
 
 tameclean:
 	rm -f $(srcdir)/static.C $(srcdir)/configtest.C $(srcdir)/simple.C \
