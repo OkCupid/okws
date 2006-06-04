@@ -165,6 +165,8 @@ abuf_t::flush (char *buf, size_t len)
 ssize_t
 abuf_t::get_errchar () const
 {
+  if (ccnt == lim) return ABUF_EOFCHAR;
+
   switch (erc) {
   case ABUF_EOF:
     return ABUF_EOFCHAR;
@@ -223,6 +225,7 @@ abuf_t::stream (const char **bp)
   *bp = cp;
   ssize_t ret = endp - cp;
   cp = endp;
+  ccnt += ret;
   return ret;
 }
 
