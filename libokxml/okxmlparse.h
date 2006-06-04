@@ -37,15 +37,15 @@
 #include "expat.h"
 #include "okxmldata.h"
 
-typedef enum { XML_PARSE_OK = 0,
-	       XML_PARSE_BAD_NESTING = 1,
-	       XML_PARSE_UNKNOWN_ELEMENT = 2,
-	       XML_PARSE_UNEXPECTED_CHARDATA = 3,
-	       XML_PARSE_UNBALANCED = 4,
-	       XML_PARSE_UNMATCHED = 5,
-	       XML_PARSE_CLOSE_ERROR = 6,
-	       XML_PARSE_EXPAT_ERROR = 7,
-	       XML_PARSE_BAD_CHARDATA = 8 } xml_parse_status_t;
+// see additional codes in <expat.h>
+enum { XML_PARSE_OK = 0,
+       XML_PARSE_BAD_NESTING = 101,
+       XML_PARSE_UNKNOWN_ELEMENT = 102,
+       XML_PARSE_UNEXPECTED_CHARDATA = 103,
+       XML_PARSE_UNBALANCED = 104,
+       XML_PARSE_UNMATCHED = 105,
+       XML_PARSE_CLOSE_ERROR = 106,
+       XML_PARSE_BAD_CHARDATA = 107 };
 
 class xml_req_parser_t : public async_parser_t {
 public:
@@ -71,7 +71,7 @@ public:
   ptr<xml_top_level_t> top_level () { return _top_level; }
   ptr<const xml_top_level_t> top_level_const () const { return _top_level; }
   str errmsg () const;
-  xml_parse_status_t errcode () const { return _status; }
+  int errcode () const { return _status; }
 
   void cancel ();
 
@@ -82,7 +82,7 @@ protected:
   void push_el (ptr<xml_element_t> e) { _stack.push_back (e); }
   ptr<xml_element_t> pop_el () { return _stack.pop_back (); }
 
-  void parse_error (xml_parse_status_t s, str m);
+  void parse_error (int s, str m);
 
 private:
   vec<ptr<xml_element_t> > _stack;
@@ -92,7 +92,7 @@ private:
   XML_Parser _xml_parser;
   ptr<xml_top_level_t> _top_level;
 
-  xml_parse_status_t _status;
+  int                _status;
   str                _err_msg;
 };
 

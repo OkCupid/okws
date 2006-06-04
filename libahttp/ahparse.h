@@ -178,7 +178,7 @@ public:
   { return _xml.top_level_const (); }
 
   str errmsg () const { return _xml.errmsg (); }
-  xml_parse_status_t errcode () const { return _xml.errcode (); }
+  int errcode () const { return _xml.errcode (); }
 
 private:
   xml_req_parser_t _xml;

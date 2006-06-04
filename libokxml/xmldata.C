@@ -207,12 +207,12 @@ xml_method_response_t::add (ptr<xml_element_t> e)
 }
 
 ptr<const xml_container_t> 
-xml_value_wrapper_t::to_xml_container_const () const
-{ return _value ? _value->to_xml_container_const () : NULL; }
+xml_value_wrapper_t::to_xml_container () const
+{ return _value ? _value->to_xml_container () : NULL; }
 
 ptr<const xml_struct_t> 
-xml_value_wrapper_t::to_xml_struct_const () const
-{ return _value ? _value->to_xml_struct_const () : NULL; }
+xml_value_wrapper_t::to_xml_struct () const
+{ return _value ? _value->to_xml_struct () : NULL; }
 
 bool
 xml_value_t::add (ptr<xml_element_t> e)
@@ -469,13 +469,45 @@ xml_fault_t::alloc (int rc, const str &s)
 ptr<xml_method_call_t>
 xml_method_call_t::clone_typed () const
 {
-  ptr<xml_element_t> nullp;
   return New refcounted<xml_method_call_t> 
-    ( _method_name ? _method_name->clone ()->to_xml_method_name () : 
-      _method_name,
-      _params ? _params->clone ()->to_xml_params () : _params);
+    ( _method_name ? _method_name->clone_typed (): _method_name,
+      _params ? _params->clone_typed () : _params);
 }
 
 ptr<xml_value_t> 
 xml_value_wrapper_t::cpvalue () const
 { return _value ? _value->clone ()->to_xml_value () : _value; }
+
+ptr<xml_method_response_t>
+xml_method_response_t::clone_typed () const
+{
+  return New refcounted<xml_method_response_t>
+    ( _params ? _params->clone_typed () : _params,
+     _body ? _body->clone () : _body );
+}
+
+ptr<xml_member_t>
+xml_member_t::clone_typed () const
+{
+  return New refcounted<xml_member_t> 
+    ( _member_name ? _member_name->clone_typed () : _member_name,
+      _member_value ? _member_value->clone () : _member_value) ;
+}
+
+xml_struct_t::xml_struct_t (const xml_struct_t &s)
+  : xml_container_t (s)
+{
+  ptr<const xml_element_t> e;
+  ptr<const xml_member_t> m;
+  str nm;
+  for (size_t i = 0; i < s.size (); i++) {
+    if ((e = s.xml_container_t::get (i)) && (m = e->to_xml_member ()) &&
+	(nm = m->member_name_str ())) {
+      _members.insert (nm, i);
+    }
+  }
+}
+
+ptr<xml_array_t> 
+xml_array_t::clone_typed () const 
+{ return New refcounted<xml_array_t> (_data ? _data->clone_typed () : _data); }

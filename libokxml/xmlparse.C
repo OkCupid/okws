@@ -193,7 +193,7 @@ xml_req_parser_t::parse_guts ()
   const char *b;
   ssize_t sz;
   enum XML_Status xstat;
-  bool ok = true;
+  bool done = false;
 
   do {
     sz = abuf->stream (&b);
@@ -201,7 +201,7 @@ xml_req_parser_t::parse_guts ()
     if (sz == ABUF_EOFCHAR) {
       warn << "at EOF!\n";
       xstat = XML_Parse (_xml_parser, NULL, 0, 1);
-      finish_parse (0);
+      done = true;
     } else if (sz >= 0) {
       str xx (b, sz);
       warn << "parse this: " << xx << "\n";
@@ -215,18 +215,23 @@ xml_req_parser_t::parse_guts ()
     if (_status != XML_PARSE_OK) {
       xstat = XML_STATUS_ERROR;
     } else if (xstat == XML_STATUS_ERROR) {
-      _status = XML_PARSE_EXPAT_ERROR;
+      _status = XML_GetErrorCode (_xml_parser);
       strbuf bf;
-      bf << "Error code (" << XML_GetErrorCode (_xml_parser) << "): "
+      bf << "Expat parse error: " 
 	 <<  XML_ErrorString (XML_GetErrorCode (_xml_parser));
       _err_msg = bf;
     }
 
-    if (xstat == XML_STATUS_ERROR) {
-      ok = false;
-      finish_parse (int (_status));
-    }
-  } while (sz >= 0 && ok);
+    if (xstat == XML_STATUS_ERROR) 
+      done = true;
+
+  } while (sz >= 0 && !done);
+
+  if (done)
+    // still finish with HTTP_OK, signifying that we can send back
+    // an HTTP 200 to the client; the body, however, will contain
+    // the fault status showing the parse error
+    finish_parse (HTTP_OK);
 
 }
 
@@ -257,7 +262,7 @@ xml_req_parser_t::errmsg () const
 }
 
 void
-xml_req_parser_t::parse_error (xml_parse_status_t s, str m)
+xml_req_parser_t::parse_error (int s, str m)
 {
   _status = s;
   _err_msg = m;

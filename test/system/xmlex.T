@@ -38,8 +38,15 @@ public:
 
   void hello (xml_req_t q) {
     xml_resp_t s;
-    s[0] = q("zero");
-    s[1] = q("one");
+    s("zero") = q[0];
+    s("one") = q[1];
+
+    zbuf z;
+    s.output (z);
+    strbuf b;
+    z.to_strbuf (&b, false);
+    b.tosuio ()->output (2);
+    
     reply (s);
   };
 

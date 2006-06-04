@@ -47,7 +47,7 @@ public:
   http_inhdr_t *hdr_p () { return _parser.hdr_p (); }
   const http_inhdr_t &hdr_cr () const { return _parser.hdr_cr (); }
   str errmsg () const { return _parser.errmsg (); }
-  xml_parse_status_t errcode () const { return _parser.errcode (); }
+  int errcode () const { return _parser.errcode (); }
   cgi_t &cookie () { return _parser.get_cookie (); }
   cgi_t &url () { return _parser.get_url (); }
   http_inhdr_t &hdr () { return _parser.hdr; }
@@ -78,11 +78,12 @@ protected:
   oksrvc_xmlrpc_base_t *_srvc;
 };
 
-typedef enum { OK_XMLRPC_OK = 0,
-	       OK_XMLRPC_ERR_NO_DATA = 101,
-	       OK_XMLRPC_ERR_NO_METHOD_CALL = 102,
-	       OK_XMLRPC_ERR_NO_METHOD_NAME = 103,
-	       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 104 } ok_xmlprc_err_t;
+// See additional codes in "libokxml/okxmlparse.h" and <expat.h>
+enum { OK_XMLRPC_OK = 0,
+       OK_XMLRPC_ERR_NO_DATA = 101,
+       OK_XMLRPC_ERR_NO_METHOD_CALL = 102,
+       OK_XMLRPC_ERR_NO_METHOD_NAME = 103,
+       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 104 };
 
 template<class C, class S>
 class oksrvc_xmlrpc_t : public oksrvc_xmlrpc_base_t {
@@ -103,19 +104,27 @@ public:
 
     C *cli = reinterpret_cast<C *> (c);
 
+    zbuf z;
+    if (c->top_level_const ()) {
+      c->top_level_const ()->dump (z);
+      strbuf b;
+      z.to_strbuf (&b, false);
+      b.tosuio ()->output (2);
+    }
+
     if (c->errcode () != XML_PARSE_OK) {
       resp = xml_fault_obj_t (c->errcode (), c->errmsg ());
     } else if (!(e = c->top_level_const ()) || e->size () < 1) {
-      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_NO_DATA), 
+      resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_DATA, 
 			      "No data given in XML call");
-    } else if (!(call = e->get (0)->to_xml_method_call_const ())) {
-      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_NO_METHOD_CALL), 
-			      "No methdCall given in request");
+    } else if (!(call = e->get (0)->to_xml_method_call ())) {
+      resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_CALL, 
+			      "No methodCall given in request");
     } else if (!(nm = call->method_name ())) {
-      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_NO_METHOD_NAME),
+      resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_NAME,
 			      "No method name given");
     } else if (!(h = _dispatch_table[nm])) {
-      resp = xml_fault_obj_t (int (OK_XMLRPC_ERR_METHOD_NOT_FOUND), 
+      resp = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
 			      "Method not found");
     } else {
       handled = true;

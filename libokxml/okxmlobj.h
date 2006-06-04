@@ -40,14 +40,14 @@ public:
   xml_obj_const_t operator[] (size_t i) const ;
   xml_obj_const_t operator() (const str &s) const ;
 
-  ptr<const xml_container_t> to_xml_container_const () const
-  { return el () ? el ()->to_xml_container_const () : NULL; }
-  ptr<const xml_struct_t> to_xml_struct_const () const 
-  { return el () ? el ()->to_xml_struct_const () : NULL; }
+  ptr<const xml_container_t> to_xml_container () const
+  { return el () ? el ()->to_xml_container () : NULL; }
+  ptr<const xml_struct_t> to_xml_struct () const 
+  { return el () ? el ()->to_xml_struct () : NULL; }
   
   size_t size () const 
   {
-    ptr<const xml_container_t> c = to_xml_container_const ();
+    ptr<const xml_container_t> c = to_xml_container ();
     return c ? c->size () : 0;
   }
 
