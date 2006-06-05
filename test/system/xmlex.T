@@ -36,19 +36,13 @@ class okclnt_xmlex_t : public okclnt_xmlrpc_t {
 public:
   okclnt_xmlex_t (ptr<ahttpcon> x, oksrvc_xmlex_t *s) ;
 
-  void hello (xml_req_t q) {
+  void hello (xml_req_t q, xml_resp_cb_t cb) {
     xml_resp_t s;
     s[0]("zero") = q[0];
     s[0]("one") = q[1];
     s[1] = "<testing><this&that>";
 
-    zbuf z;
-    s.output (z);
-    strbuf b;
-    z.to_strbuf (&b, false);
-    b.tosuio ()->output (2);
-    
-    reply (s);
+    (*cb) (s);
   };
 
 private:

@@ -22,8 +22,12 @@ SUFFIXES = .C .T .h
 .T.C:
 	-$(TAME) -c $< || rm -f $@
 
+xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
+	-$(TAME) -o $@ $< || rm -f $@
+
 ok.o:  ok.C
 ok.lo: ok.C
+xmlrpcsrv.C: xmlrpcsrv.h
 
 .PHONY: rpcclean tameclean
 
@@ -35,11 +39,11 @@ rpcclean:
 
 
 
-EXTRA_DIST = .cvsignore ok.T
+EXTRA_DIST = .cvsignore ok.T xmlrpcsrv.Th
 CLEANFILES = core *.core *~ *.rpo
 
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in 
 
-BUILT_SOURCES = okprot.C okprot.h ok.C
+BUILT_SOURCES = okprot.C okprot.h ok.C xmlrpcsrv.h
