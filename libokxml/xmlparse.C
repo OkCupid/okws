@@ -199,15 +199,17 @@ xml_req_parser_t::parse_guts ()
     sz = abuf->stream (&b);
     xstat = XML_STATUS_OK;
     if (sz == ABUF_EOFCHAR) {
-      warn << "at EOF!\n";
       xstat = XML_Parse (_xml_parser, NULL, 0, 1);
       done = true;
     } else if (sz >= 0) {
+      /*
+       * debug..
+       *
       str xx (b, sz);
       warn << "parse this: " << xx << "\n";
+      */
       xstat = XML_Parse (_xml_parser, b, sz, 0);
     } else {
-      warn << "just waiting!\n";
       assert (sz == ABUF_WAITCHAR);
       // else, we're just waiting...
     }

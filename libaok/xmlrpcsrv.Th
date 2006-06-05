@@ -86,7 +86,9 @@ enum { OK_XMLRPC_OK = 0,
        OK_XMLRPC_ERR_NO_DATA = 101,
        OK_XMLRPC_ERR_NO_METHOD_CALL = 102,
        OK_XMLRPC_ERR_NO_METHOD_NAME = 103,
-       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 104 };
+       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 104,
+       OK_XMLRPC_ERR_RECURSIVE = 105,
+       OK_XMLRPC_ERR_BAD_PARAMS = 106 };
 
 typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
 
@@ -100,9 +102,8 @@ public:
 
   void handle (okclnt_xmlrpc_base_t *c, CLOSURE);
 
-  /*
-  void handle_multicall (ptr<const xml_params_t> p, xml_resp_cb_t cb, CLOSURE);
-  */
+  void handle_multicall (okclnt_xmlrpc_base_t *c,
+			 ptr<const xml_params_t> p, xml_resp_cb_t cb, CLOSURE);
 
   okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) 
   { return New C (lx, reinterpret_cast<S *> (this)); }
@@ -149,10 +150,8 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
   } else if (!(nm = call->method_name ())) {
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_NAME,
 			    "No method name given");
-    /*
-      } else if (nm == MULTICALL) {
-      BLOCK { handle_multicall (call->params (), @(resp) ); }
-    */
+  } else if (nm == MULTICALL) {
+    BLOCK { handle_multicall (c, call->params (), @(resp) ); }
   } else if (!(h = _dispatch_table[nm])) {
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
 			    "Method not found");
@@ -163,33 +162,51 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
   c->reply (resp);
 }
 
-/*
 TAMED template<class C, class S> void
-oksrvc_xmlrpc_t::handle_multicall (ptr<const xml_params_t> p, xml_resp_cb_t cb)
+oksrvc_xmlrpc_t<C,S>::handle_multicall (okclnt_xmlrpc_base_t *c,
+					ptr<const xml_params_t> p, 
+					xml_resp_cb_t cb)
 {
   VARS {
-    size_t s;
+    size_t i;
     str nm;
-    ptr<const xml_param_t> p2;
-    ptr<const xml_value_t> v;
-    ptr<const xml_struct_t> s;
+    xml_obj_const_t w (p);
+    vec<xml_resp_t> r2;
     xml_resp_t r;
+    ptr<const xml_container_t> xc;
+    typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
+    C *cli (reinterpret_cast<C *> (c));
+    vec<size_t> calls;
   }
 
+  r2.setsize (p->size ());
+
   BLOCK {
-    for (s = 0; s < p->size (); s++) {
-      if ((p2 = p->get (s)->to_xml_param ()) &&
-	  (v = p2->value ()) &&
-	  (s = v->to_xml_struct ())) {
-
-
+    for (i = 0; i < w.size (); i++) {
+      if (!(nm = w[i]("methodName"))) {
+	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_CALL,
+			     "No methodCall for mutlicall call");
+      } else if (nm == MULTICALL) {
+	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_RECURSIVE,
+			     "Cannot make recursive multicalls");
+      } else if (!(xc = w[i]("params").to_xml_container ())) {
+	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_BAD_PARAMS,
+				"Bad parameters to mutlicall");
+      } else if (!(h = _dispatch_table[nm])) {
+	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
+				"Method not found");
       } else {
-      
+	calls.push_back (i);
+	((*cli).*(*h)) (xml_req_t (xc), @(r2[i])); 
       }
     }
   }
+
+  for (i = 0; i < calls.size (); i++)
+    r[calls[i]][0] = r2[calls[i]];
+
+  (*cb) (r);
 }
-*/
 
 # endif /* HAVE_EXPAT */
 #endif /* _LIBAOK_OKXMLSRV_H */
