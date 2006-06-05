@@ -38,8 +38,9 @@ public:
 
   void hello (xml_req_t q) {
     xml_resp_t s;
-    s("zero") = q[0];
-    s("one") = q[1];
+    s[0]("zero") = q[0];
+    s[0]("one") = q[1];
+    s[1] = "<testing><this&that>";
 
     zbuf z;
     s.output (z);

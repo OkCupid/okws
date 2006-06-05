@@ -30,24 +30,15 @@
 ptr<xml_null_t> null_element (New refcounted<xml_null_t> ());
 ptr<xml_value_t> null_value (New refcounted<xml_value_t> ());
 
-int xml_data_init::count;
-
-void
-xml_data_init::start ()
-{
-}
-
-void xml_data_init::stop () {}
-
 ptr<const xml_element_t>
 xml_struct_t::get (const str &s) const
 {
   const size_t *i = _members[s];
   ptr<xml_element_t> e;
-  ptr<xml_member_t> m;
+  ptr<const xml_member_t> m;
   ptr<const xml_element_t> v;
-  if (i && (e = (*this)[*i]) && 
-      (m = e->to_xml_member ()) && (v = m->member_value_const ()))
+  if (i && (e = (*this)[*i]) && (m = e->to_xml_member ()) && 
+      (v = m->member_value ()))
     return v;
   else
     return xml_null_t::alloc ();
@@ -426,20 +417,20 @@ xml_method_response_t::to_xml_container ()
 }
 
 ptr<xml_element_t> &
-xml_container_t::get_r (size_t i)
+xml_container_t::get_r (size_t i, bool mk)
 {
   if (i >= size ())
     setsize (i+1);
-  return (*this)[i];
+  ptr<xml_element_t> &r = (*this)[i];
+  if (mk && !r) r = xml_value_t::alloc ();
+  return r;
 }
 
 ptr<xml_element_t> &
-xml_params_t::get_r (size_t i)
+xml_params_t::get_r (size_t i, bool mk)
 {
-  ptr<xml_element_t> &r = xml_container_t::get_r (i);
-  if (!r) {
-    r = New refcounted<xml_param_t> ();
-  }
+  ptr<xml_element_t> &r = xml_container_t::get_r (i, false);
+  if (mk && !r) r = xml_param_t::alloc ();
   return r;
 }
 
@@ -511,3 +502,99 @@ xml_struct_t::xml_struct_t (const xml_struct_t &s)
 ptr<xml_array_t> 
 xml_array_t::clone_typed () const 
 { return New refcounted<xml_array_t> (_data ? _data->clone_typed () : _data); }
+
+bool
+xml_value_wrapper_t::assign_to (ptr<xml_element_t> to)
+{
+  return to->set_pointer_to_me (&_value);
+}
+
+bool
+xml_array_t::assign_to (ptr<xml_element_t> to)
+{
+  return to->set_pointer_to_me (&_data);
+}
+
+bool
+xml_data_t::set_pointer_to_me (ptr<xml_data_t> *d)
+{
+  *d = mkref (this);
+  return true;
+}
+
+bool
+xml_array_t::set_pointer_to_me (ptr<xml_data_t> *d)
+{
+  *d = _data;
+  return true;
+}
+
+bool
+xml_value_t::assign_to (ptr<xml_element_t> to)
+{
+  ptr<xml_value_t> v;
+  if (to->set_pointer_to_me (&v)) {
+    set_element (v->element ());
+    return true;
+  }
+  return false;
+}
+
+bool
+xml_value_wrapper_t::set_pointer_to_me (ptr<xml_value_t> *v)
+{
+  *v = _value;
+  return true;
+}
+
+bool
+xml_value_t::set_pointer_to_me (ptr<xml_value_t> *v)
+{
+  *v = mkref (this);
+  return true;
+}
+
+bool
+xml_scalar_t::set_pointer_to_me (ptr<xml_value_t> *v)
+{
+  *v = xml_value_t::alloc (mkref (this));
+  return true;
+}
+
+
+bool
+xml_struct_t::set_pointer_to_me (ptr<xml_value_t> *v)
+{
+  *v = xml_value_t::alloc (mkref (this));
+  return true;
+}
+
+bool
+xml_array_t::set_pointer_to_me (ptr<xml_value_t> *v)
+{
+  *v = xml_value_t::alloc (mkref (this));
+  return true;
+}
+
+str
+xml_str_t::escape (const str &in)
+{
+  if (!in) return in;
+
+  strbuf b;
+  const char *cp, *p1;
+  for (cp = p1 = in.cstr (); *cp; cp++) {
+    if (*cp == '&' || *cp == '<') {
+      if (cp > p1) b.tosuio ()->copy (p1, cp - p1);
+      b << (*cp == '&' ? "&amp;" : "&lt;");
+      p1 = cp + 1;
+    }
+  }
+
+  if (p1 == in.cstr ())
+    return in;
+  else {
+    if (cp > p1) b.tosuio ()->copy (p1, cp - p1);
+    return b;
+  }
+}

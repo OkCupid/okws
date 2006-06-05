@@ -85,6 +85,12 @@ public:
   virtual bool put (const str &s, ptr<xml_element_t> el) { return false; }
   virtual bool put (size_t i, ptr<xml_element_t> el) { return false; }
 
+  // Assign the 'this' element to the 'to' internally if possible; if not
+  // just use 'to' and discard this (signaled by returning false).
+  virtual bool assign_to (ptr<xml_element_t> to) { return false; }
+  virtual bool set_pointer_to_me (ptr<xml_value_t> *v) { return false; }
+  virtual bool set_pointer_to_me (ptr<xml_data_t> *v) { return false; }
+
   virtual int to_int () const { return 0; }
   virtual str to_str () const { return ""; }
   virtual str to_bool () const { return false; }
@@ -133,7 +139,7 @@ public:
   virtual bool can_contain (ptr<xml_element_t> e) { return false; }
   void dump_data (zbuf &b, int len) const;
 
-  virtual ptr<xml_element_t> &get_r (size_t i);
+  virtual ptr<xml_element_t> &get_r (size_t i, bool mk = true);
   virtual ptr<const xml_element_t> get (size_t i) const;
 
   ptr<xml_container_t> to_xml_container () { return mkref (this); }
@@ -237,6 +243,9 @@ public:
   { return New refcounted<xml_value_wrapper_t> (cpvalue ()); }
   ptr<xml_element_t> clone() const { return clone_typed (); }
 
+  bool assign_to (ptr<xml_element_t> to);
+  bool set_pointer_to_me (ptr<xml_value_t> *v);
+
 protected:
   ptr<xml_value_t> _value;
 };
@@ -252,6 +261,9 @@ public:
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_param_t> (); }
   const char *name () const { return "param"; }
+
+  static ptr<xml_param_t> alloc ()
+  { return New refcounted<xml_param_t> (); }
 
   ptr<xml_param_t> clone_typed () const
   { return New refcounted<xml_param_t> (cpvalue ()); }
@@ -269,7 +281,7 @@ public:
   bool can_contain (ptr<xml_element_t> e) { return e->to_xml_param (); }
   ptr<xml_params_t> to_xml_params () { return mkref (this); }
 
-  ptr<xml_element_t> &get_r (size_t s) ;
+  ptr<xml_element_t> &get_r (size_t s, bool mk = true) ;
 
   ptr<xml_params_t> clone_typed () const
   { return New refcounted<xml_params_t> (*this); }
@@ -323,7 +335,6 @@ private:
   ptr<xml_element_t> _body;
 };
 
-INIT(xml_data_init);
 extern ptr<xml_null_t> null_element;
 extern ptr<xml_value_t> null_value;
 
@@ -346,6 +357,7 @@ public:
   bool add (const char *b, int s);
   bool gets_char_data () const { return true; }
   bool is_value () const { return true; }
+  bool set_pointer_to_me (ptr<xml_value_t> *v);
 protected:
   strbuf _buf;
 };
@@ -415,6 +427,8 @@ public:
   { return New refcounted<xml_str_t> (); }
   void dump_data (zbuf &z, int level) const { if (_val) z << _val; }
 
+  static str escape (const str &in);
+
   static ptr<xml_str_t> alloc (const str &s)
   { return New refcounted<xml_str_t> (s); }
 
@@ -454,7 +468,7 @@ public:
   xml_struct_t () {}
   xml_struct_t (const xml_struct_t &s);
   ptr<const xml_element_t> get (const str &s) const;
-  ptr<xml_element_t> &get_r (const str &s) ;
+  ptr<xml_element_t> &get_r (const str &s);
   bool put (const str &s, ptr<xml_element_t> el);
   ptr<xml_struct_t> to_xml_struct () { return mkref (this); }
   ptr<const xml_struct_t> to_xml_struct () const 
@@ -467,6 +481,8 @@ public:
   bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_member (); }
   bool close_tag ();
 
+  bool set_pointer_to_me (ptr<xml_value_t> *v);
+  
   ptr<xml_struct_t> clone_typed () const
   { return New refcounted<xml_struct_t> (*this); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
@@ -493,6 +509,10 @@ public:
   ptr<xml_container_t> to_xml_container ();
   ptr<const xml_container_t> to_xml_container () const { return _data; }
   void dump_data (zbuf &z, int lev) const;
+
+  bool assign_to (ptr<xml_element_t> to);
+  bool set_pointer_to_me (ptr<xml_data_t> *d);
+  bool set_pointer_to_me (ptr<xml_value_t> *v);
 
   ptr<xml_array_t> clone_typed () const ;
   ptr<xml_element_t> clone () const { return clone_typed (); }
@@ -530,6 +550,9 @@ public:
   { return _e->to_xml_container (); }
   ptr<const xml_struct_t> to_xml_struct () const 
   { return _e->to_xml_struct (); }
+
+  bool assign_to (ptr<xml_element_t> to);
+  bool set_pointer_to_me (ptr<xml_value_t> *v);
 
   ptr<xml_value_t> clone_typed () const
   { return New refcounted<xml_value_t> (_e ? _e->clone () : _e); }
@@ -584,8 +607,7 @@ public:
   str member_name_str () const 
   { return _member_name ? _member_name->value () : sNULL; }
 
-  ptr<const xml_element_t> member_value_const () const 
-  { return _member_value; }
+  ptr<const xml_element_t> member_value () const { return _member_value; }
   ptr<xml_element_t> &member_value () { return _member_value; }
 
   bool add (ptr<xml_element_t> e);
@@ -609,6 +631,8 @@ public:
   ptr<xml_data_t> to_xml_data () { return mkref (this); }
   bool can_contain (ptr<xml_element_t> e) { return e->to_xml_value (); }
   static ptr<xml_data_t> alloc () { return New refcounted<xml_data_t> (); }
+
+  bool set_pointer_to_me (ptr<xml_data_t> *d);
 
   ptr<xml_data_t> clone_typed () const
   { return New refcounted<xml_data_t> (*this); }

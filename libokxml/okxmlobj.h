@@ -89,25 +89,8 @@ public:
   xml_obj_ref_t (ptr<xml_element_t> &e) : _el_ref (e) {}
   ptr<const xml_element_t> el () const { return _el_ref; }
 
-  xml_obj_ref_t operator[] (size_t i) 
-  { 
-    ptr<xml_container_t> c;
-    if (!_el_ref || !(c = _el_ref->to_xml_container ())) {
-      _el_ref = New refcounted<xml_array_t> ();
-      c = _el_ref->to_xml_container ();
-    }
-    return xml_obj_ref_t (c->get_r (i));
-  }
-
-  xml_obj_ref_t operator() (const str &i) 
-  { 
-    ptr<xml_struct_t> s; 
-    if (!_el_ref || !(s = _el_ref->to_xml_struct ())) {
-      _el_ref = New refcounted<xml_struct_t> ();
-      s = _el_ref->to_xml_struct ();
-    }
-    return xml_obj_ref_t (s->get_r (i));
-  }
+  xml_obj_ref_t operator[] (size_t i);
+  xml_obj_ref_t operator() (const str &i);
 
   const xml_obj_ref_t &set_value (ptr<xml_element_t> e);
   const xml_obj_ref_t &set_fault (const xml_fault_obj_t &w)
@@ -116,12 +99,12 @@ public:
   const xml_obj_ref_t &operator=(bool b) 
   { return set_value (xml_bool_t::alloc (b)); }
   const xml_obj_ref_t &operator=(const char *s)
-  { return set_value (xml_str_t::alloc (s)); }
+  { return set_value (xml_str_t::alloc (xml_str_t::escape (s))); }
     
   const xml_obj_ref_t &operator=(int i) 
   { return set_value (xml_int_t::alloc (i)); }
   const xml_obj_ref_t &operator=(str s)
-  { return set_value (xml_str_t::alloc (s)); }
+  { return set_value (xml_str_t::alloc (xml_str_t::escape (s))); }
   const xml_obj_ref_t &operator=(const base64_str_t &b)
   { return set_value (xml_base64_t::alloc (b)); }
   const xml_obj_ref_t &operator=(ptr<xml_element_t> e)

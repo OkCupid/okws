@@ -5,13 +5,8 @@
 const xml_obj_ref_t &
 xml_obj_ref_t::set_value (ptr<xml_element_t> e)
 {
-  ptr<xml_value_t> nv = xml_value_t::alloc (e);
-  ptr<xml_param_t> p;
-  if (_el_ref && (p = _el_ref->to_xml_param ())) {
-    p->set_value (nv);
-  } else {
-    _el_ref = nv;
-  }
+  if (!_el_ref || !_el_ref->assign_to (e))
+    _el_ref = e;
   return (*this);
 }
 
@@ -37,6 +32,31 @@ xml_obj_base_t::operator() (const str &i) const
   return xml_obj_const_t (e);
 }
 
+xml_obj_ref_t 
+xml_obj_ref_t::operator[] (size_t i) 
+{ 
+  ptr<xml_container_t> c;
+  
+  // Coerce object to an array/container if it's not one already
+  if (!_el_ref || !(c = _el_ref->to_xml_container ())) {
+    _el_ref = New refcounted<xml_array_t> ();
+    c = _el_ref->to_xml_container ();
+  }
+  return xml_obj_ref_t (c->get_r (i));
+}
+
+xml_obj_ref_t 
+xml_obj_ref_t::operator() (const str &i) 
+{ 
+  ptr<xml_struct_t> s; 
+
+  // corce object to a struct if not one already
+  if (!_el_ref || !(s = _el_ref->to_xml_struct ())) {
+    _el_ref = New refcounted<xml_struct_t> ();
+    s = _el_ref->to_xml_struct ();
+  }
+  return xml_obj_ref_t (s->get_r (i));
+}
 
 xml_obj_t 
 xml_obj_base_t::clone () const

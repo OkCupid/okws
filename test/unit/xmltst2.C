@@ -28,10 +28,19 @@ main (int argc, char *argv[])
   xml_obj_const_t w2 (w);
   warn << "i=" << int (w2[2]("foo")("biz")[5]) << "\n";
 
+
   w.output (z);
   z << "-------------------------------\n";
   w = xml_fault_obj_t (10, "Error code #@#$ = 10");
   w.output (z);
+
+  xml_resp_t w3;
+  w3[0]("one") = w[0];
+  w3[0]("this") = w[1];
+  w3[1] = "that";
+  w3[2] = false;
+  z << "-------------------------------------\n";
+  w3.output (z);
 
   z.to_strbuf (&b, false);
   b.tosuio ()->output (1);
