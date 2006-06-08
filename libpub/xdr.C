@@ -48,7 +48,7 @@ pfile_html_sec_t::to_xdr (xpub_section_t *x) const
   x->typ = XPUB_HTML_SEC;
   x->lineno = lineno;
   pfile_el_t *e;
-  u_int i;
+  size_t i;
 
   if (els) {
     x->els.setsize (els->size ());
@@ -62,8 +62,8 @@ pfile_html_sec_t::to_xdr (xpub_section_t *x) const
 pfile_html_sec_t::pfile_html_sec_t (const xpub_section_t &x)
   : pfile_sec_t (x.lineno)
 {
-  u_int lim = x.els.size ();
-  for (u_int i = 0; i < lim; i++) 
+  size_t lim = x.els.size ();
+  for (size_t i = 0; i < lim; i++) 
     pfile_sec_t::add (pfile_el_t::alloc (x.els[i]));
 }
 
@@ -71,8 +71,8 @@ pfile_sec_t::pfile_sec_t (const xpub_section_t &x)
   : lineno (x.lineno)
 {
   // XXX - reconsider this copy and paste
-  u_int lim = x.els.size ();
-  for (u_int i = 0; i < lim; i++) 
+  size_t lim = x.els.size ();
+  for (size_t i = 0; i < lim; i++) 
     add (pfile_el_t::alloc (x.els[i]));
 }
 
@@ -96,6 +96,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_switch_t (*x.swtch);
   case XPUB_SET_FUNC:
     return New pfile_set_func_t (*x.set_func);
+  case XPUB_RAW:
+    return New pfile_raw_el_t (*x.raw);
   default:
     return NULL;
   }
@@ -112,7 +114,7 @@ pfile_html_el_t::to_xdr (xpub_obj_t *x) const
 void 
 pfile_t::to_xdr (xpub_file_t *x) const
 {
-  u_int i;
+  size_t i;
   pfile_sec_t *s;
   hsh->to_xdr (&x->hsh);
   x->secs.setsize (secs.size ());
@@ -125,8 +127,8 @@ pfile_t::pfile_t (const xpub_file_t &x)
   : err (PUBSTAT_OK), hsh (phash_t::alloc (x.hsh)), lineno (1), 
     pft (PFILE_TYPE_H), section (NULL)
 {
-  u_int lim = x.secs.size ();
-  for (u_int i = 0; i < lim; i++)
+  size_t lim = x.secs.size ();
+  for (size_t i = 0; i < lim; i++)
     add_section (New pfile_html_sec_t (x.secs[i]));
 }
 
@@ -150,7 +152,7 @@ bool
 pstr_t::to_xdr (xpub_pstr_t *x) const 
 {
   pstr_el_t *e;
-  u_int i;
+  size_t i;
   x->els.setsize (els.size ());
   for (i = 0, e = els.first; e; e = els.next (e)) 
     if (e->to_xdr (&(x->els[i])))
@@ -174,7 +176,7 @@ pfile_pstr_t::to_xdr (xpub_obj_t *x) const
 }
 
 static
-void case_to_xdr (xpub_obj_t *x, u_int *i, const pswitch_env_t &e)
+void case_to_xdr (xpub_obj_t *x, size_t *i, const pswitch_env_t &e)
 {
   if (e.to_xdr (&x->swtch->cases[*i]))
     (*i)++;
@@ -194,7 +196,7 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
     nullcase->to_xdr (x->swtch->nullcase);
   }
 
-  u_int i = 0;
+  size_t i = 0;
   x->swtch->cases.setsize (cases.size ());
   cases.traverse (wrap (&case_to_xdr, x, &i));
   x->swtch->lineno = lineno;
@@ -207,7 +209,7 @@ pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
   key (New refcounted<pvar_t> (x.key)), nulldef (x.nulldef),
   nullcase (NULL)
 {
-  u_int lim = x.cases.size ();
+  size_t lim = x.cases.size ();
   if (x.defcase) {
     def = New pswitch_env_t (*x.defcase);
     if (def->fn)
@@ -219,7 +221,7 @@ pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
       files.push_back (nullcase->fn);
   }
 
-  for (u_int i = 0; i < lim; i++) {
+  for (size_t i = 0; i < lim; i++) {
     pswitch_env_t *e = New pswitch_env_t (x.cases[i]);
     cases.insert (e);
     if (e->fn)
@@ -263,7 +265,7 @@ nested_env_t::alloc (const xpub_section_t &s)
 }
 
 static void
-nvpair_to_xdr (xpub_aarr_t *x, u_int *i, const nvpair_t &n) 
+nvpair_to_xdr (xpub_aarr_t *x, size_t *i, const nvpair_t &n) 
 {
   if (n.to_xdr (&x->tab[*i]))
     (*i)++;
@@ -323,8 +325,8 @@ parr_ival_t::alloc (const xpub_parr_t &x)
 
 parr_mixed_t::parr_mixed_t (const xpub_parr_mixed_t &x)
 {
-  u_int lim = x.size ();
-  for (u_int i = 0; i < lim; i++)
+  size_t lim = x.size ();
+  for (size_t i = 0; i < lim; i++)
     v.push_back (pval_t::alloc (x[i]));
 }
 
@@ -332,9 +334,9 @@ bool
 parr_mixed_t::to_xdr (xpub_val_t *x) const
 {
   x->set_typ (XPUB_VAL_MARR);
-  u_int lim = v.size ();
+  size_t lim = v.size ();
   x->marr->setsize (lim);
-  for (u_int i = 0; i < lim; i++) 
+  for (size_t i = 0; i < lim; i++) 
     v[i]->to_xdr (&((*x->marr)[i]));
   return true;
 }
@@ -358,7 +360,7 @@ pint_t::to_xdr (xpub_val_t *x) const
 bool
 aarr_t::to_xdr (xpub_aarr_t *x) const
 {
-  u_int i = 0;
+  size_t i = 0;
   x->tab.setsize (aar.size ());
   aar.traverse (wrap (&nvpair_to_xdr, x, &i));
   return true;
@@ -366,8 +368,8 @@ aarr_t::to_xdr (xpub_aarr_t *x) const
 
 aarr_t::aarr_t (const xpub_aarr_t &x)
 {
-  u_int lim = x.tab.size ();
-  for (u_int i = 0; i < lim; i++) {
+  size_t lim = x.tab.size ();
+  for (size_t i = 0; i < lim; i++) {
     add (New nvpair_t (x.tab[i]));
   }
 }
@@ -404,9 +406,9 @@ bool
 pfile_inclist_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB_INCLIST);
-  u_int lim = files.size ();
+  size_t lim = files.size ();
   x->inclist->files.setsize (lim);
-  for (u_int i = 0; i < lim; i++) 
+  for (size_t i = 0; i < lim; i++) 
     x->inclist->files[i] = files[i];
   return true;
 }
@@ -437,8 +439,8 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
 pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
   : pfile_func_t (x.lineno), err (false)
 {
-  u_int lim = x.files.size ();
-  for (u_int i = 0; i < lim; i++)
+  size_t lim = x.files.size ();
+  for (size_t i = 0; i < lim; i++)
     files.push_back (x.files[i]);
 }
 
@@ -470,8 +472,8 @@ pfile_var_t::pfile_var_t (const xpub_file_var_t &x)
 
 pstr_t::pstr_t (const xpub_pstr_t &x) : n (0)
 {
-  u_int lim = x.els.size ();
-  for (u_int i = 0; i < lim; i++)
+  size_t lim = x.els.size ();
+  for (size_t i = 0; i < lim; i++)
     add (pstr_el_t::alloc (x.els[i]));
 }
 
@@ -499,9 +501,9 @@ bool
 parr_char_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_CHAR);
-  u_int lim = v.size ();
+  size_t lim = v.size ();
   x->chararr->setsize (lim);
-  for (u_int i = 0; i < lim; i++) {
+  for (size_t i = 0; i < lim; i++) {
     (*x->chararr)[i] = v[i];
   }
   return true;
@@ -535,3 +537,14 @@ parr_int64_t::to_xdr (xpub_parr_t *x) const
   return parr_ival_tmplt_t<int64_t>::to_xdr (x->hyperarr.addr ());
 }
 
+
+bool
+pfile_raw_el_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB_RAW);
+  if (_dat) {
+    x->raw->dat.setsize (_dat.len ());
+    memcpy (x->raw->dat.base (), _dat.cstr (), _dat.len ());
+  }
+  return true;
+}

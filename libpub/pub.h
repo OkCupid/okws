@@ -49,7 +49,7 @@ typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1,
 	       PFILE_GFRAME = 6, PFILE_FILE = 7, 
 	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
 	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
-	       PFILE_INCLUDE2 = 12 } pfile_el_type_t;
+	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_GUY = 1,
@@ -92,6 +92,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_EXPLORE_OFF (1 << 8)   // don't explore files after parse
 #define P_INCLUDE_V2  (1 << 9)   // support V2 include semantics
 #define P_EXPORTER    (1 << 10)  // export files via RPC
+#define P_NOPARSE     (1 << 11)  // don't part file at all
 
 /* XXX - defaults should be put someplace better */
 #define P_INFINITY   65334
@@ -248,12 +249,12 @@ public:
 
   inline operator int() const { return to_int (); }
   inline operator str() const { return to_str () ; }
-  pval_w_t operator[] (u_int i) const { return elem_at (i); }
+  pval_w_t operator[] (size_t i) const { return elem_at (i); }
 
   str to_str () const;
   int to_int () const;
-  pval_w_t elem_at (u_int i) const;
-  u_int size () const;
+  pval_w_t elem_at (size_t i) const;
+  size_t size () const;
 private:
   const pval_t *get_pval () const;
   pval_t *val;
@@ -317,10 +318,10 @@ private:
 };
 
 struct penv_state_t {
-  penv_state_t (u_int o, u_int e, bool f) 
+  penv_state_t (u_int o, size_t e, bool f) 
     : opts (o), estack_size (e), errflag (f) {}
   u_int opts;
-  u_int estack_size;
+  size_t estack_size;
   bool errflag;
 };
 
@@ -340,11 +341,11 @@ public:
   penv_state_t *start_output (aarr_t *a, u_int o);
   bool finish_output (penv_state_t *s);
 
-  void resize (u_int s);
-  void gresize (u_int gvs);
-  void resize (u_int s, u_int gvs) { resize (s); gresize (gvs); }
-  u_int size () const { return estack.size (); }
-  u_int gvsize () const { return gvars.size (); }
+  void resize (size_t s);
+  void gresize (size_t gvs);
+  void resize (size_t s, size_t gvs) { resize (s); gresize (gvs); }
+  size_t size () const { return estack.size (); }
+  size_t gvsize () const { return gvars.size (); }
   void push (aarr_t *a) { estack.insert_tail (a); }
   void remove (aarr_t *a) { estack.remove (a); }
   void push (const gvars_t *g) { gvars.push_back (g); }
@@ -405,6 +406,7 @@ public:
   output_t (pfile_type_t m, u_int o = 0) : mode (m), _opts (o) {}
   virtual ~output_t () {}
 
+  virtual void output_raw (penv_t *e, const str &s) {}
   virtual void output (penv_t *e, const zstr &s, bool quoted = true) {}
   virtual void output (penv_t *e, zbuf *zb, bool quoted = true) {}
   virtual void output_err (penv_t *e, const str &s, int l = -1) = 0;
@@ -435,6 +437,7 @@ public:
   output_std_t (zbuf *o, const pfile_t *f = NULL);
   virtual ~output_std_t () {}
 
+  void output_raw (penv_t *e, const str &s);
   void output (penv_t *e, zbuf *zb, bool quoted = true);
   void output (penv_t *e, const zstr &s, bool quoted = true);
   void output_err (penv_t *e, const str &s, int l = -1);
@@ -536,6 +539,7 @@ struct bound_pfile_t : public virtual refcount,
   str get_obj_name () const { return "bound_pfile_t"; }
   void dump2 (dumper_t *d) const;
   bool open ();
+  str read () const;
   void close ();
 
   // for pub2
@@ -954,6 +958,18 @@ public:
   }
   bool open;
   bool is_tag () const { return true; }
+};
+
+class pfile_raw_el_t : public pfile_el_t {
+public:
+  pfile_raw_el_t (const str &h) : _dat (h) {}
+  pfile_raw_el_t (const xpub_raw_t &r) : _dat (r.dat.base (), r.dat.size ()) {}
+  bool to_xdr (xpub_obj_t *x) const;
+  pfile_el_type_t get_type () const { return PFILE_RAW; }
+  void output (output_t *o, penv_t *e) const;
+  str get_obj_name () const { return "pfile_raw_el_t"; }
+private:
+  str _dat;
 };
 
 class pfile_html_el_t : public pfile_el_t, public concatable_str_t {
@@ -1700,7 +1716,7 @@ public:
   int last_tok;
 
   // for publishing HTML files only, in the world of Pub2
-  ptr<bound_pfile2_t> pub2_parse (ptr<pbinding_t> bnd, bool wss, 
+  ptr<bound_pfile2_t> pub2_parse (ptr<pbinding_t> bnd, int opts,
 				  pubstat_t *err, str *errmsg);
 
   ptr<xpub_getfile_res_t> defconf;

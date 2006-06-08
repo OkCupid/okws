@@ -107,7 +107,7 @@ pfile_var_t::output (output_t *o, penv_t *e) const
 }
 
 void
-penv_t::resize (u_int s)
+penv_t::resize (size_t s)
 {
   assert (s <= estack.size ());
   while (s != estack.size ()) 
@@ -115,7 +115,7 @@ penv_t::resize (u_int s)
 }
 
 void
-penv_t::gresize (u_int gvs)
+penv_t::gresize (size_t gvs)
 {
   assert (gvs <= estack.size ());
   while (gvs != gvars.size ())
@@ -144,6 +144,12 @@ void
 pfile_html_el_t::output (output_t *o, penv_t *e) const
 {
   o->output (e, to_zstr (), true);
+}
+
+void
+pfile_raw_el_t::output (output_t *o, penv_t *e) const
+{
+  o->output (e, _dat, true);
 }
 
 void
@@ -596,6 +602,12 @@ bound_pfile_t::open ()
 }
 
 str
+bound_pfile_t::read () const
+{
+  return file2str (rfn);
+}
+
+str
 bound_pfile_t::loc (int l) const
 {
   strbuf r (filename ());
@@ -1032,6 +1044,12 @@ output_std_t::output_file_loc (penv_t *e, int lineno)
   if (fn)
     output (e, strbuf ("\n#line ") << lineno << " \"" << fn << "\"" << "\n");
   switch_mode (m);
+}
+
+void
+output_std_t::output_raw (penv_t *e, const str &s)
+{
+  out->cat (s);
 }
 
 void

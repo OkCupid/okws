@@ -213,7 +213,7 @@ pub_parser_t::parse2 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t t)
 void
 pub_parser_t::dump_stack ()
 {
-  u_int i = 0;
+  size_t i = 0;
   for (; i < stack.size (); i++) 
     warnx << "\t" << i << ": " << stack[i]->loc ();
   if (bpf)
@@ -389,9 +389,9 @@ pub_parser_t::export_set (xpub_set_t *out)
 {
   bhash<phashp_t> hits;
   vec<const pfile_t *> files_tmp;
-  u_int lim = xset.size ();
+  size_t lim = xset.size ();
   out->bindings.setsize (lim);
-  for (u_int i = 0; i < lim; i++) {
+  for (size_t i = 0; i < lim; i++) {
     xset[i]->bnd->to_xdr (&out->bindings[i]);
     if (!hits[xset[i]->bnd->hsh]) {
       hits.insert (xset[i]->bnd->hsh);
@@ -400,7 +400,7 @@ pub_parser_t::export_set (xpub_set_t *out)
   }
   lim = files_tmp.size ();
   out->files.setsize (lim);
-  for (u_int i = 0; i < lim; i++)
+  for (size_t i = 0; i < lim; i++)
     files_tmp[i]->to_xdr (&out->files[i]);
   xset.clear ();
   xset_collect = false;
@@ -549,8 +549,8 @@ pub_base_t::run_configs ()
   genv.clear ();
   run_config (mcf);
   bool ret = true;
-  u_int lim = cfgfiles.size ();
-  for (u_int i = 0; i < lim; i++) 
+  size_t lim = cfgfiles.size ();
+  for (size_t i = 0; i < lim; i++) 
     if (!run_config (cfgfiles[i]))
       ret = false;
   return ret;
@@ -633,11 +633,12 @@ pub_base_t::configed (ptr<xpub_getfile_res_t> xr, pubrescb c, clnt_stat err)
 
 // new parsing routine for pub2
 ptr<bound_pfile2_t>
-pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, bool wss, pubstat_t *err,
+pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
 			 str *err_msg)
 {
   bpfmp_t r;
   const str &fn = bnd->filename ();
+  bool wss = opts & P_WSS;
   pfile_type_t t = wss ? PFILE_TYPE_WH : PFILE_TYPE_H;
   pfile_sec_t *ss = New pfile_html_sec_t (0);
   ptr<bound_pfile2_t> ret = 
@@ -647,38 +648,50 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, bool wss, pubstat_t *err,
   int wss_prev = yywss;
   yywss = wss ? 1 : 0;
 
-  int old_opts = get_opts ();
-  int new_opts = (old_opts | P_INCLUDE_V2 | P_EXPLORE_OFF);
-  set_opts (new_opts);
-
-  r = ret->nonconst_bpf ();
-  if (!r->open ()) {
-    PWARN (fn << ": failed to open file");
-    ret = NULL;
-  } else {
-    pub_parser_t *old_parser = parser;
-    pub_t *old_pub = pub;
-    pub = this;
-    
-    parser = this;
-    push_file (r);
-    pf->push_section (ss);
-    pf->lex_activate (t);
-    yyparse ();
-    pf->add_section (ss);
-    pop_file ();
-    r->close ();
-    if (pf->err != PUBSTAT_OK) {
-      PWARN (fn << ": parse failed");
-      *err = pf->err;
-      *err_msg = pf->err_msg;
+  if (opts & P_NOPARSE) {
+    str d = ret->bpf ()->read ();
+    if (!d) {
+      PWARN (fn << ": cannot read raw file");
+      delete ss;
       ret = NULL;
+    } else {
+      ss->add (New pfile_raw_el_t (d));
     }
-    pub = old_pub;
-    parser = old_parser;
+  } else {
+    int old_opts = get_opts ();
+    int new_opts = (old_opts | P_INCLUDE_V2 | P_EXPLORE_OFF);
+    set_opts (new_opts);
+    
+    r = ret->nonconst_bpf ();
+    if (!r->open ()) {
+      PWARN (fn << ": failed to open file");
+      delete ss;
+      ret = NULL;
+    } else {
+      pub_parser_t *old_parser = parser;
+      pub_t *old_pub = pub;
+      pub = this;
+      
+      parser = this;
+      push_file (r);
+      pf->push_section (ss);
+      pf->lex_activate (t);
+      yyparse ();
+      pf->add_section (ss);
+      pop_file ();
+      r->close ();
+      if (pf->err != PUBSTAT_OK) {
+	PWARN (fn << ": parse failed");
+	*err = pf->err;
+	*err_msg = pf->err_msg;
+	ret = NULL;
+      }
+      pub = old_pub;
+      parser = old_parser;
+    }
+    set_opts (old_opts);
+    yywss = wss_prev;
   }
-  set_opts (old_opts);
-  yywss = wss_prev;
   return ret;
 }
 

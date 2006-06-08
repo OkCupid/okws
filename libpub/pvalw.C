@@ -67,7 +67,7 @@ pval_w_t::get_pval () const
 }
 
 pval_w_t 
-pval_w_t::elem_at (u_int i) const
+pval_w_t::elem_at (size_t i) const
 {
   const pval_t *v = get_pval ();
   if (!v)
@@ -88,7 +88,7 @@ pval_w_t::elem_at (u_int i) const
   return pval_w_t ();
 }
 
-u_int
+size_t
 pval_w_t::size () const
 {
   const pval_t *v = get_pval ();

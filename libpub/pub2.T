@@ -422,7 +422,7 @@ namespace pub2 {
 
 	  // this might need to go over the network, too,
 	  // if we're bypassing NFS
-	  f = _parser->pub2_parse (bnd, opts & P_WSS, &s, &em);
+	  f = _parser->pub2_parse (bnd, opts & (P_WSS | P_NOPARSE), &s, &em);
 	  f->set_ctime (ctime);
 
 	  _lookup->cache_getfile (bnd, opts, f, s, em);

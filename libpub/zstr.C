@@ -235,7 +235,7 @@ void
 zbuf::compress (strbuf *p, int level)
 {
   strbuf2zstr ();
-  u_int lim = zs.size ();
+  size_t lim = zs.size ();
   p->tosuio ()->clear ();
 
   uLong crc = ::crc32 (0L, Z_NULL, 0);
@@ -250,7 +250,7 @@ zbuf::compress (strbuf *p, int level)
   if (zdebug)
     warn << "zbuf::compress: ";
 
-  for (u_int i = 0; i < lim; i++) {
+  for (size_t i = 0; i < lim; i++) {
     str z = zs[i].compress (level);
     
     if (zdebug)
@@ -304,9 +304,9 @@ void
 zbuf::output (strbuf *p)
 {
   strbuf2zstr ();
-  u_int lim = zs.size ();
+  size_t lim = zs.size ();
   p->tosuio ()->clear ();
-  for (u_int i = 0; i < lim; i++) {
+  for (size_t i = 0; i < lim; i++) {
     (*p) << zs[i].to_str ();
   }
 }
@@ -315,8 +315,8 @@ size_t
 zbuf::inflated_len () const
 {
   size_t len = 0;
-  u_int lim = zs.size ();
-  for (u_int i = 0; i < lim; i++) 
+  size_t lim = zs.size ();
+  for (size_t i = 0; i < lim; i++) 
     len += zs[i].to_str ().len ();
 
   // add the stuff also in the buf that hasn't been compressed yet.
@@ -376,8 +376,8 @@ void
 zbuf::to_zstr_vec (vec<zstr> *zs2)
 {
   strbuf2zstr ();
-  u_int l = zs.size ();
+  size_t l = zs.size ();
   zs2->setsize (l);
-  for (u_int i = 0; i < l; i++)
+  for (size_t i = 0; i < l; i++)
     (*zs2)[i] = zs[i];
 }

@@ -13,7 +13,8 @@ enum xpub_obj_typ_t {
   XPUB_SWITCH = 6,
   XPUB_SET_FUNC = 7,
   XPUB_INCLIST = 8,
-  XPUB_INCLUDE2 = 9
+  XPUB_INCLUDE2 = 9,
+  XPUB_RAW = 10
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -188,6 +189,10 @@ struct xpub_html_el_t {
   xpub_zstr_t data;
 };
 
+struct xpub_raw_t {
+  opaque dat<>;
+};
+
 struct xpub_file_pstr_t {
   xpub_pstr_t pstr;
 };
@@ -268,6 +273,8 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
    xpub_set_func_t set_func;
  case XPUB_INCLIST:
    xpub_inclist_t inclist;
+ case XPUB_RAW:
+   xpub_raw_t raw;
 };
 
 enum xpub_status_typ_t {

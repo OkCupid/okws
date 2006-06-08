@@ -175,7 +175,7 @@ private:
   strbuf f;
   strbuf out;
   mstr endbuf;
-  u_int minstrsize;
+  size_t minstrsize;
 };
 
 template<class C> inline zbuf &operator<< (zbuf &z, C c) { return z.cat (c); }
@@ -265,10 +265,10 @@ zbuf::push_str2zstr (const str &s, bool lkp, bool clr)
 zbuf &
 zbuf::cat (const zbuf &zb2)
 {
-  u_int zb2l = zb2.zs.size ();
+  size_t zb2l = zb2.zs.size ();
   if (zb2l) {
     strbuf2zstr ();
-    for (u_int i = 0; i < zb2l; i++) {
+    for (size_t i = 0; i < zb2l; i++) {
       zs.push_back (zb2.zs[i]);
     }
   }

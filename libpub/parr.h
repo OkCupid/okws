@@ -43,7 +43,7 @@ public:
   virtual ~parr_t () {}
   virtual bool add (int64_t i) = 0;
   virtual bool add (ptr<pval_t> v) { return false; }
-  virtual u_int size () const = 0;
+  virtual size_t size () const = 0;
   const parr_t *to_arr () const { return this; }
 };
 
@@ -61,19 +61,19 @@ public:
   virtual ptr<parr_uint_t> to_uint () { return NULL; }
   virtual ptr<parr_uint16_t> to_uint16 () { return NULL; }
 
-  virtual parr_err_t val (u_int i, int64_t *p) const { return PARR_BAD_TYPE; }
-  virtual parr_err_t val (u_int i, int *p) const { return PARR_BAD_TYPE; }
-  virtual parr_err_t val (u_int i, u_int *p) const { return PARR_BAD_TYPE; }
-  virtual parr_err_t val (u_int i, char *p) const { return PARR_BAD_TYPE; }
-  virtual parr_err_t val (u_int i, int16_t *p) const { return PARR_BAD_TYPE; }
-  virtual parr_err_t val (u_int i, u_int16_t *p) const { return PARR_BAD_TYPE;}
+  virtual parr_err_t val (size_t i, int64_t *p) const { return PARR_BAD_TYPE; }
+  virtual parr_err_t val (size_t i, int *p) const { return PARR_BAD_TYPE; }
+  virtual parr_err_t val (size_t i, u_int *p) const { return PARR_BAD_TYPE; }
+  virtual parr_err_t val (size_t i, char *p) const { return PARR_BAD_TYPE; }
+  virtual parr_err_t val (size_t i, int16_t *p) const { return PARR_BAD_TYPE; }
+  virtual parr_err_t val (size_t i, u_int16_t *p) const { return PARR_BAD_TYPE;}
 
   static ptr<parr_ival_t> alloc (const xpub_parr_t &x);
   virtual ptr<pval_t> flatten (penv_t *e) { return mkref (this); }
 };
 
 template<typename T, typename P> static parr_err_t 
-_val (const vec<T> &v, u_int i, P *p)
+_val (const vec<T> &v, size_t i, P *p)
 {
   if (i < v.size ()) {
     *p = v[i];
@@ -89,12 +89,12 @@ public:
   parr_ival_tmplt_t (int64_t n, int64_t x) : minv (n), maxv (x) {}
   virtual ~parr_ival_tmplt_t () {} 
 
-  parr_err_t val (u_int i, int64_t *p) const { return _val (v, i, p); }
-  virtual parr_err_t val (u_int i, int *p) const { return PARR_OVERFLOW; }
-  virtual parr_err_t val (u_int i, u_int *p) const { return PARR_OVERFLOW; }
-  virtual parr_err_t val (u_int i, char *p) const { return PARR_OVERFLOW; }
-  virtual parr_err_t val (u_int i, int16_t *p) const { return PARR_OVERFLOW; }
-  virtual parr_err_t val (u_int i, u_int16_t *p) const { return PARR_OVERFLOW;}
+  parr_err_t val (size_t i, int64_t *p) const { return _val (v, i, p); }
+  virtual parr_err_t val (size_t i, int *p) const { return PARR_OVERFLOW; }
+  virtual parr_err_t val (size_t i, u_int *p) const { return PARR_OVERFLOW; }
+  virtual parr_err_t val (size_t i, char *p) const { return PARR_OVERFLOW; }
+  virtual parr_err_t val (size_t i, int16_t *p) const { return PARR_OVERFLOW; }
+  virtual parr_err_t val (size_t i, u_int16_t *p) const { return PARR_OVERFLOW;}
 
   bool add (int64_t n) 
   { 
@@ -119,26 +119,26 @@ public:
   template<typename R> 
   bool to_xdr (rpc_vec<R, RPC_INFINITY> *x) const
   {
-    u_int lim = v.size ();
+    size_t lim = v.size ();
     x->setsize (lim);
-    for (u_int i = 0; i < lim; i++) (*x)[i] = static_cast<R> (v[i]);
+    for (size_t i = 0; i < lim; i++) (*x)[i] = static_cast<R> (v[i]);
     return true;
   }
 
   template<typename R> 
   void fill (const rpc_vec<R, RPC_INFINITY> &rpcv)
   {
-    u_int lim = rpcv.size ();
+    size_t lim = rpcv.size ();
     v.setsize (lim);
-    for (u_int i = 0; i < lim; i++) v[i] = static_cast<T> (rpcv[i]);
+    for (size_t i = 0; i < lim; i++) v[i] = static_cast<T> (rpcv[i]);
   }
 
   str eval_simple () const
   {
     strbuf b;
-    u_int lim = v.size ();
+    size_t lim = v.size ();
     b << "ARR=(";
-    for (u_int i = 0; i < lim; i++) {
+    for (size_t i = 0; i < lim; i++) {
       if (i != 0) b << ", ";
       b << v[i];
     }
@@ -174,11 +174,11 @@ public:
   parr_int_t (const xpub_parr_int_t &x) : 
     parr_ival_tmplt_t<int> (INT_MIN, INT_MAX) { fill (x); }
   ptr<parr_int_t> to_int () { return mkref (this); }
-  int operator[] (u_int i) const { return v[i]; }
+  int operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
   str get_obj_name () const { return "parr_int_t"; }
 
-  parr_err_t val (u_int i, int *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
 };
 
 class parr_char_t : public parr_ival_tmplt_t<char> {
@@ -187,13 +187,13 @@ public:
   parr_char_t (const xpub_parr_char_t &x) 
     : parr_ival_tmplt_t<char> (CHAR_MIN, CHAR_MAX) { fill (x); }
   ptr<parr_char_t> to_char () { return mkref (this); }
-  char operator[] (u_int i ) const { return v[i]; }
+  char operator[] (size_t i ) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
   str get_obj_name () const { return "parr_char_t"; }
 
-  parr_err_t val (u_int i, int *p) const { return _val (v, i, p); }
-  parr_err_t val (u_int i, char *p) const { return _val (v, i, p); }
-  parr_err_t val (u_int i, int16_t *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, char *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, int16_t *p) const { return _val (v, i, p); }
 };
 
 class parr_int16_t : public parr_ival_tmplt_t<int16_t> {
@@ -202,12 +202,12 @@ public:
   parr_int16_t (const xpub_parr_int_t &x) 
     : parr_ival_tmplt_t<int16_t> (SHRT_MIN, SHRT_MAX) { fill (x); }
   ptr<parr_int16_t> to_int16 () { return mkref (this); }
-  int16_t operator[] (u_int i) const { return v[i]; }
+  int16_t operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
   str get_obj_name () const { return "parr_int16_t"; }
 
-  parr_err_t val (u_int i, int16_t *p) const { return _val (v, i, p); }
-  parr_err_t val (u_int i, int *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, int16_t *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
 };
 
 class parr_uint_t : public parr_ival_tmplt_t<u_int> {
@@ -216,11 +216,11 @@ public:
   parr_uint_t (const xpub_parr_uint_t &x) 
     : parr_ival_tmplt_t<u_int> (0, UINT_MAX) { fill (x); }
   ptr<parr_uint_t> to_uint () { return mkref (this); }
-  u_int operator[] (u_int i) const { return v[i]; }
+  u_int operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
   str get_obj_name () const { return "parr_uint_t"; }
 
-  parr_err_t val (u_int i, u_int *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, u_int *p) const { return _val (v, i, p); }
 };
 
 class parr_uint16_t : public parr_ival_tmplt_t<u_int16_t> {
@@ -229,12 +229,12 @@ public:
   parr_uint16_t (const xpub_parr_int_t &x) 
     : parr_ival_tmplt_t<u_int16_t> (0, USHRT_MAX) { fill (x); }
   ptr<parr_uint16_t> to_uint16 () { return mkref (this); }
-  u_int16_t operator[] (u_int i) const { return v[i]; }
+  u_int16_t operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
   str get_obj_name () const { return "parr_uint16_t"; }
 
-  parr_err_t val (u_int i, u_int *p) const { return _val (v, i, p); }
-  parr_err_t val (u_int i, u_int16_t *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, u_int *p) const { return _val (v, i, p); }
+  parr_err_t val (size_t i, u_int16_t *p) const { return _val (v, i, p); }
 };
 
 class parr_int64_t : public parr_ival_tmplt_t<int64_t> {
@@ -243,7 +243,7 @@ public:
   parr_int64_t (const xpub_parr_int64_t &x) 
     : parr_ival_tmplt_t<int64_t> (INT64_MIN, INT64_MAX) { fill (x); }
   ptr<parr_int64_t> to_int64 () { return mkref (this); }
-  int64_t operator[] (u_int i) const { return v[i]; }
+  int64_t operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
   str get_obj_name () const { return "parr_int64_t"; }
 };
@@ -256,7 +256,7 @@ public:
 
   const parr_mixed_t *to_mixed_arr () const { return this; }
 
-  ptr<pval_t> operator[] (u_int i) const { return v[i]; }
+  ptr<pval_t> operator[] (size_t i) const { return v[i]; }
   u_int size () const { return v.size (); }
 
   bool add (ptr<pval_t> i) { v.push_back (i); return true;}
