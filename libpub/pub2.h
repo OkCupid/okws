@@ -144,7 +144,7 @@ namespace pub2 {
 
   private:
     // mask in only those options that matter for indexing.
-    static u_int op_mask (u_int in) { return in & (P_WSS); }
+    static u_int op_mask (u_int in) { return in & (P_WSS | P_NOPARSE); }
     hash_t hash_me () const {
       strbuf b (_fn);
       b << ":" << _opts;
@@ -274,7 +274,7 @@ namespace pub2 {
 				  status_t *status)
     { 
       arg->filename = k.fn ();
-      arg->wss = k.opts() & P_WSS;
+      arg->options = k.opts();
       arg->fresh.set_mode (XPUB2_FRESH_NONE);
       return false;
     }

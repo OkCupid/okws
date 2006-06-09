@@ -95,7 +95,7 @@ okclnt_static_t::process_T ()
   VARS {
     str in;
     u_int opts (P_IINFO|P_VERBOSE);
-    mime_type_map_t *mtm;
+    const mime_type_map_t *mtm;
     str sffx;
     str mime_type;
   }
@@ -126,10 +126,14 @@ okclnt_static_t::process_T ()
 	error (ofn);
       
     } else {
-      strbuf b;
-      b << "&lt; <i>no mime-type found for suffix '"
-	<< sffx << "'</i> &gt;";
-      error (b);
+      if (sffx) {
+	strbuf b;
+	b << "&lt; <i>no mime-type found for suffix '"
+	  << sffx << "'</i> &gt;";
+	error (b);
+      } else {
+	error ("&lt; <i>no suffix found on file!</i> &gt;");
+      }
     }
 
   } else {

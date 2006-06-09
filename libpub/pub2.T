@@ -225,6 +225,7 @@ namespace pub2 {
       status_t status (XPUB_STATUS_OK);
       cache_key_t k (nm, opts);
     }
+    warn << "opts = " << opts << "\n";
     if (!prepare_getfile (k, &arg, &file, &status)) {
       BLOCK { _cli->call (PUB2_GETFILE, &arg, &res, @(err)); }
       if (err) {
@@ -389,6 +390,7 @@ namespace pub2 {
     ptr<bound_pfile2_t> f;
     time_t ctime;
     xpub_status_t res (XPUB_STATUS_OK);
+    int opt_mask (P_WSS | P_NOPARSE);
     
     struct stat sb;
     
@@ -422,10 +424,10 @@ namespace pub2 {
 
 	  // this might need to go over the network, too,
 	  // if we're bypassing NFS
-	  f = _parser->pub2_parse (bnd, opts & (P_WSS | P_NOPARSE), &s, &em);
-	  f->set_ctime (ctime);
-
-	  _lookup->cache_getfile (bnd, opts, f, s, em);
+	  if ((f = _parser->pub2_parse (bnd, opts & opt_mask, &s, &em))) {
+	    f->set_ctime (ctime);
+	    _lookup->cache_getfile (bnd, opts, f, s, em);
+	  }
 	}
 	
 	if (!f) {

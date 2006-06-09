@@ -656,6 +656,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
       ret = NULL;
     } else {
       ss->add (New pfile_raw_el_t (d));
+      pf->add_section (ss);
     }
   } else {
     int old_opts = get_opts ();

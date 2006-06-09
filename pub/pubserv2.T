@@ -107,7 +107,7 @@ namespace pubserv2 {
       xpub2_getfile_res_t res (XPUB_STATUS_OK);
       u_int o;
     }
-    o = arg->wss ? P_WSS : 0;
+    o = arg->options;
 
     BLOCK { 
       pub2::local_publisher_t::getfile (arg->filename, @(s,f), arg->fresh, o); 

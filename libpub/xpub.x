@@ -375,7 +375,7 @@ case XPUB2_FRESH_HASH:
 
 struct xpub2_getfile_arg_t {
   xpub_fn_t               filename;
-  bool                    wss;
+  unsigned                options;
   xpub2_file_freshcheck_t fresh;
 };
 
