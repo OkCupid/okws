@@ -8,6 +8,7 @@ mime_type_map_t::mime_type_map_t (const pval_w_t &a)
 
     // Format is:
     //   ("image/jpeg", "jpe", "jpeg", "jpg")
+    //   ("text/html", "html")
     if (a[i].size () >= 2) {
 
       for (size_t j = 1; j < a[i].size (); j++) {
@@ -16,12 +17,9 @@ mime_type_map_t::mime_type_map_t (const pval_w_t &a)
 	       << "' due to illegal "
 	       << "character in suffix.\n";
 	} else {
-	  warn << "inserting (" << str (a[i][j]) << ") => " 
-	       << str (a[i][0]) << "\n";
 	  _table.insert (a[i][j], a[i][0]);
 	}
       }
-
     }
   }
 }

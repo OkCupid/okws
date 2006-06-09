@@ -225,7 +225,6 @@ namespace pub2 {
       status_t status (XPUB_STATUS_OK);
       cache_key_t k (nm, opts);
     }
-    warn << "opts = " << opts << "\n";
     if (!prepare_getfile (k, &arg, &file, &status)) {
       BLOCK { _cli->call (PUB2_GETFILE, &arg, &res, @(err)); }
       if (err) {
