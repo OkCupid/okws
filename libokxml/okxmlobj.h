@@ -116,7 +116,10 @@ public:
   const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
   { return set_fault (w); }
 
+  void setsize (size_t s);
+
 protected:
+  ptr<xml_container_t> coerce_to_container ();
   ptr<xml_element_t> &_el_ref;
 
 };

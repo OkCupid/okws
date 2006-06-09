@@ -32,17 +32,27 @@ xml_obj_base_t::operator() (const str &i) const
   return xml_obj_const_t (e);
 }
 
-xml_obj_ref_t 
-xml_obj_ref_t::operator[] (size_t i) 
-{ 
+ptr<xml_container_t>
+xml_obj_ref_t::coerce_to_container ()
+{
   ptr<xml_container_t> c;
-  
-  // Coerce object to an array/container if it's not one already
   if (!_el_ref || !(c = _el_ref->to_xml_container ())) {
     _el_ref = New refcounted<xml_array_t> ();
     c = _el_ref->to_xml_container ();
   }
-  return xml_obj_ref_t (c->get_r (i));
+  return c;
+}
+
+xml_obj_ref_t 
+xml_obj_ref_t::operator[] (size_t i) 
+{ 
+  return xml_obj_ref_t (coerce_to_container ()->get_r (i));
+}
+
+void
+xml_obj_ref_t::setsize (size_t i)
+{
+  coerce_to_container ()->setsize (i);
 }
 
 xml_obj_ref_t 

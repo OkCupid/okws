@@ -42,8 +42,11 @@ public:
     s[0]("one") = q[1];
     s[1] = "<testing><this&that>";
 
-    (*cb) (s);
+    SIGNAL (cb, s);
   };
+
+  void okws_pub (xml_req_t q, xml_resp_cb_t cb) { okws_pub_T (q, cb); }
+  void okws_pub_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 
 private:
   oksrvc_xmlex_t *_service;
@@ -53,12 +56,43 @@ class oksrvc_xmlex_t : public oksrvc_xmlrpc_t<okclnt_xmlex_t, oksrvc_xmlex_t> {
 public:
   oksrvc_xmlex_t (int argc, char *argv[])
     : oksrvc_xmlrpc_t<okclnt_xmlex_t, oksrvc_xmlex_t> (argc, argv)
-  { regh ("xmlex.Hello", &okclnt_xmlex_t::hello); }
+  { 
+    regh ("xmlex.Hello", &okclnt_xmlex_t::hello); 
+    regh ("okws.pub", &okclnt_xmlex_t::okws_pub);
+  }
+
+  u_int *lookup_opt (const str &s) const { return NULL; }
 
 };
 
 okclnt_xmlex_t::okclnt_xmlex_t (ptr<ahttpcon> x, oksrvc_xmlex_t *s)
   : okclnt_xmlrpc_t (x, s), _service (s) {}
+
+TAMED void
+okclnt_xmlex_t::okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
+{
+  VARS {
+    xml_resp_t r;
+    size_t i, j;
+    str fn;
+    u_int opts, *opt;
+  }
+  BLOCK {
+    r.setsize (q.size ());
+    for (i = 0; i < q.size (); i++) {
+      fn = q[i]("filename");
+
+      opts = 0;
+      for (j = 0; j < q[i]("options").size (); j++) {
+	if ((opt = _service->lookup_opt (q[i]("options")[j])))
+	  opts |= (*opt);
+      }
+
+    }
+  }
+
+  SIGNAL (cb, r);
+}
 
 int
 main (int argc, char *argv[])
