@@ -48,6 +48,7 @@ void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
 int nfs_safe_stat (const char *f, struct stat *sb);
 inline time_t okwstime () { return timenow ? timenow : time (NULL); }
+str errcode2str (const xpub_status_t &e);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL

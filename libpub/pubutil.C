@@ -557,3 +557,27 @@ basename_dirname (const str &in, str *d, str *b)
   
   return ret;
 }
+
+str
+errcode2str (const xpub_status_t &x)
+{
+  str r;
+  switch (x.status) {
+  case XPUB_STATUS_OK:
+    break;
+  case XPUB_STATUS_NOENT:
+    r = "File not found";
+    break;
+  case XPUB_STATUS_RPC_ERR:
+    {
+      strbuf b;
+      b << "RPC Error " << *x.rpc_err;
+      r = b;
+    }
+    break;
+  default:
+    r = *x.error;
+    break;
+  }
+  return r;
+}

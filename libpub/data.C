@@ -654,12 +654,20 @@ pfile_t::push_section (pfile_sec_t *s)
 }
 
 bool
+concatable_str_t::concat (const str &s)
+{
+  sb << s; 
+  hold.push_back (s); 
+  return true; 
+}
+
+bool
 concatable_str_t::concat (concatable_t *l)
 {
   str s = l->to_str ();
   if (!s)
     return false;
-  sb.tosuio ()->copy (s.cstr (), s.len ());
+  concat (s);
   return true;
 }
 

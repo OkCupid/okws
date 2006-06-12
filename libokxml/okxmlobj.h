@@ -53,6 +53,9 @@ public:
 
   virtual ptr<const xml_element_t> el () const = 0;
   void output (zbuf &z) { el ()->dump (z); }
+
+  str name () const;
+  xml_obj_const_t value () const;
   
   xml_obj_t clone () const;
 };
@@ -117,6 +120,7 @@ public:
   { return set_fault (w); }
 
   void setsize (size_t s);
+  xml_obj_ref_t value ();
 
 protected:
   ptr<xml_container_t> coerce_to_container ();

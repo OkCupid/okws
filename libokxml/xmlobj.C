@@ -43,6 +43,37 @@ xml_obj_ref_t::coerce_to_container ()
   return c;
 }
 
+str
+xml_obj_base_t::name () const 
+{
+  ptr<const xml_member_t> m;
+  str r;
+  if ((m = el ()->to_xml_member ())) 
+    r = m->member_name_str ();
+  return r;
+}
+
+xml_obj_const_t
+xml_obj_base_t::value () const
+{
+  ptr<const xml_member_t> m;
+  ptr<const xml_element_t> e;
+  if ((m = el ()->to_xml_member ()) && (e = m->member_value ()))
+    return xml_obj_const_t (e);
+  else
+    return xml_obj_const_t (xml_null_t::alloc ());
+}
+
+xml_obj_ref_t
+xml_obj_ref_t::value ()
+{
+  ptr<xml_member_t> m;
+  if (_el_ref && (m = _el_ref->to_xml_member ()))
+    return xml_obj_ref_t (m->member_value ());
+  else
+    return xml_obj_t (xml_null_t::alloc ());
+}
+
 xml_obj_ref_t 
 xml_obj_ref_t::operator[] (size_t i) 
 { 

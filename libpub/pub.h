@@ -168,8 +168,8 @@ public:
   concatable_str_t (char c) { concat (c); }
   concatable_str_t (const zstr &zz) : z (zz) {}
   ~concatable_str_t () {}
-  bool concat (const str &s) { sb << s; return true; }
-  bool concat (strbuf *s) { sb << *s; return true; }
+  bool concat (const str &s); 
+  // bool concat (strbuf *s) { sb << *s; return true; }
   bool concat (char c) { sb.tosuio ()->copy (&c, 1);  return true; }
   bool concat (concatable_t *l);
   str to_str () const { return sb; }
@@ -177,6 +177,7 @@ public:
 private:
   strbuf sb;
   mutable zstr z;
+  vec<str> hold;
 };
 
 typedef bhash<str> gvtab_t;
