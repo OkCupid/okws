@@ -321,8 +321,10 @@ public:
     accept_msgs = ok_svc_accept_msgs;
   }
 
+  typedef okclnt_base_t newclnt_t;
+
   virtual void launch () { launch_T (); }
-  virtual okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) = 0;
+  virtual newclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
   virtual void init_publist () {}
   virtual u_int get_andmask () const { return 0xffffffff; }
   virtual u_int get_ormask () const { return 0; }
@@ -417,7 +419,7 @@ class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
 public:
   oksrvcw_t (int argc, char *argv[], nclntcb_t c) : 
     oksrvc_t (argc, argv), nccb (c) {}
-  okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) { return (*nccb) (lx, this); }
+  newclnt_t *make_newclnt (ptr<ahttpcon> lx) { return (*nccb) (lx, this); }
 private:
   nclntcb_t nccb;
 }; 

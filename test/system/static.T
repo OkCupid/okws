@@ -35,7 +35,7 @@ public:
   oksrvc_static_t (int argc, char *argv[]) 
     : oksrvc_t (argc, argv), _mtm (NULL) {}
 
-  okclnt_base_t *make_newclnt (ptr<ahttpcon> x);
+  newclnt_t *make_newclnt (ptr<ahttpcon> x);
   void post_launch_pub2_T (cbb cb, CLOSURE);
   void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
   const mime_type_map_t *mime_type_map () const { return _mtm; }
@@ -147,7 +147,7 @@ okclnt_static_t::process_T ()
   output (out);
 }
 
-okclnt_base_t *
+oksrvc_t::newclnt_t *
 oksrvc_static_t::make_newclnt (ptr<ahttpcon> x)
 {
   return New okclnt_static_t (x, this);

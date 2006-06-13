@@ -32,7 +32,7 @@
 class oksrvc_configtest_t : public oksrvc_t {
 public:
   oksrvc_configtest_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
-  okclnt_base_t *make_newclnt (ptr<ahttpcon> x);
+  newclnt_t *make_newclnt (ptr<ahttpcon> x);
 };
 
 class okclnt_configtest_t : public okclnt_t {
@@ -73,7 +73,7 @@ TAMED void okclnt_configtest_t::process_T ()
   output (out);
 }
 
-okclnt_base_t *
+oksrvc_t::newclnt_t *
 oksrvc_configtest_t::make_newclnt (ptr<ahttpcon> x)
 {
   return New okclnt_configtest_t (x, this);

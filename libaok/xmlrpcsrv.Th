@@ -105,7 +105,7 @@ public:
   void handle_multicall (okclnt_xmlrpc_base_t *c,
 			 ptr<const xml_params_t> p, xml_resp_cb_t cb, CLOSURE);
 
-  okclnt_base_t *make_newclnt (ptr<ahttpcon> lx) 
+  newclnt_t *make_newclnt (ptr<ahttpcon> lx) 
   { return New C (lx, reinterpret_cast<S *> (this)); }
 
 protected:
