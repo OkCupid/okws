@@ -127,17 +127,15 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
     typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
     str nm;
     C *cli (reinterpret_cast<C *> (c));
+    zbuf z;
   }
   
-  /*
-  zbuf z;
   if (c->top_level_const ()) {
     c->top_level_const ()->dump (z);
     strbuf b;
     z.to_strbuf (&b, false);
     b.tosuio ()->output (2);
   }
-  */
   
   if (c->errcode () != XML_PARSE_OK) {
     resp = xml_fault_obj_t (c->errcode (), c->errmsg ());
@@ -157,6 +155,14 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
 			    "Method not found");
   } else {
     BLOCK { ((*cli).*(*h)) (xml_req_t (call->params_const ()), @(resp)); }
+  }
+
+  {
+    zbuf z2;
+    resp.output (z2);
+    strbuf b2;
+    z2.to_strbuf (&b2, false);
+    b2.tosuio ()->output (2);
   }
 
   c->reply (resp);

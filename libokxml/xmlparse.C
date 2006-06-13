@@ -240,32 +240,13 @@ xml_req_parser_t::parse_guts ()
 str
 xml_req_parser_t::errmsg () const
 {
-  static char *msgs[] = { NULL,
-			  "Bad tag nesting",
-			  "Unknown element",
-			  "Unexpected character data",
-			  "Unbalanced tags", 
-			  "Unmatched tags",
-			  "Close tag error",
-			  "Expat error",
-			  "Bad character data" };
-			  
-
-  str s;
-  if (_status != XML_PARSE_OK) {
-    strbuf b;
-    b << msgs[_status];
-    if (_err_msg) {
-      b << ": " << _err_msg;
-    }
-    s = b;
-  }
-  return s;
+  return _err_msg;
 }
 
 void
 xml_req_parser_t::parse_error (int s, str m)
 {
+  warn << "parse error: " << m << "\n";
   _status = s;
   _err_msg = m;
   cancel ();

@@ -136,7 +136,7 @@ public:
   virtual ~xml_container_t () {}
 
   virtual bool add (ptr<xml_element_t> e);
-  virtual bool can_contain (ptr<xml_element_t> e) { return false; }
+  virtual bool can_contain (ptr<xml_element_t> e) const { return false; }
   void dump_data (zbuf &b, int len) const;
 
   virtual ptr<xml_element_t> &get_r (size_t i, bool mk = true);
@@ -155,7 +155,8 @@ public:
 class xml_top_level_t : public xml_container_t {
 public:
   const char *name () const { return "topLevel"; }
-  bool can_contain (ptr<xml_element_t> e) { return e->to_xml_method_call (); }
+  bool can_contain (ptr<xml_element_t> e) const 
+  { return e->to_xml_method_call (); }
 
   ptr<xml_top_level_t> clone_typed () const 
   { return New refcounted<xml_top_level_t> (*this); }
@@ -278,7 +279,7 @@ public:
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_params_t> (); }
   const char *name () const { return "params"; }
-  bool can_contain (ptr<xml_element_t> e) { return e->to_xml_param (); }
+  bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_param (); }
   ptr<xml_params_t> to_xml_params () { return mkref (this); }
 
   ptr<xml_element_t> &get_r (size_t s, bool mk = true) ;
@@ -574,8 +575,10 @@ public:
   void set_value (const str &v) { _value = v;}
   static ptr<xml_name_t> alloc (const str &s) 
   { return New refcounted<xml_name_t> (s); }
-  void dump_data (zbuf &z, int lev) const { z << _value; }
+  void dump_data (zbuf &z, int lev) const 
+  { if (_value) z << _value; }
   bool gets_char_data () const { return true; }
+  bool add (const char *s, int l);
 
   ptr<xml_name_t> clone_typed () const 
   { return New refcounted<xml_name_t> (_value); }
@@ -629,7 +632,7 @@ public:
   { return New refcounted<xml_data_t> (); }
   const char *name () const { return "data"; }
   ptr<xml_data_t> to_xml_data () { return mkref (this); }
-  bool can_contain (ptr<xml_element_t> e) { return e->to_xml_value (); }
+  bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_value (); }
   static ptr<xml_data_t> alloc () { return New refcounted<xml_data_t> (); }
 
   bool set_pointer_to_me (ptr<xml_data_t> *d);

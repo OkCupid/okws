@@ -122,6 +122,7 @@ okclnt_xmlex_t::okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     aarr_t aa;
     vec<size_t> calls;
   }
+  warn << "called...\n";
   BLOCK {
     r.setsize (q.size ());
     out.setsize (q.size ());
@@ -149,6 +150,16 @@ okclnt_xmlex_t::okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
       r[j]("data") = base64_str_t (armor64 (b));
     }
   }
+
+  /*
+  zbuf z;
+  r.output (z);
+  strbuf b;
+  z.to_strbuf (&b, false);
+  str s (b);
+  warn << "output: " << s << "\n";
+  */
+
   SIGNAL (cb, r);
 }
 

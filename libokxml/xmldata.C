@@ -37,6 +37,7 @@ xml_struct_t::get (const str &s) const
   ptr<xml_element_t> e;
   ptr<const xml_member_t> m;
   ptr<const xml_element_t> v;
+
   if (i && (e = (*this)[*i]) && (m = e->to_xml_member ()) && 
       (v = m->member_value ()))
     return v;
@@ -241,14 +242,14 @@ bool
 xml_struct_t::close_tag ()
 {
   bool succ = true;
-  for (size_t i = 0; i < _members.size (); i++) {
+  for (size_t i = 0; i < size (); i++) {
     ptr<xml_member_t> m = (*this)[i]->to_xml_member ();
     assert (m);
     str n;
     if (m->member_name ()) {
       n = m->member_name ()->value ();
       _members.insert (n, i);
-    } 
+    }
   }
   return succ;
 }
@@ -391,6 +392,13 @@ xml_method_name_t::add (const char *buf, int len)
 {
   if (!has_non_ws (buf, len))
     return false;
+  _value = str (buf, len);
+  return true;
+}
+
+bool
+xml_name_t::add (const char *buf, int len)
+{
   _value = str (buf, len);
   return true;
 }
