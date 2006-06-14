@@ -26,6 +26,7 @@
 #include "parseopt.h"
 #include <stdlib.h>
 #include "okxmlobj.h"
+#include "rxx.h"
 
 ptr<xml_null_t> null_element (New refcounted<xml_null_t> ());
 ptr<xml_value_t> null_value (New refcounted<xml_value_t> ());
@@ -376,30 +377,43 @@ xml_value_wrapper_t::dump_data (zbuf &b, int lev) const
 void
 xml_double_t::dump_data (zbuf &b, int lev) const
 {
+  int len;
+  const char *cp = to_const_char (&len);
+  b.cat (cp, len, true);
+}
+
+str
+xml_double_t::to_str () const
+{
+  int len;
+  const char *cp = to_const_char (&len);
+  return str (cp, len);
+}
+
+const char *
+xml_double_t::to_const_char (int *rc) const
+{
 #define DOUBLEBUFLEN 0x40
   static char buf[DOUBLEBUFLEN];
-  int rc = snprintf (buf, DOUBLEBUFLEN, "%g", _val);
-  if (rc < DOUBLEBUFLEN) {
-    b.cat (buf, rc, true);
-  } else {
-    b << "NaN";
+  const char *ret = buf;
+  *rc = snprintf (buf, DOUBLEBUFLEN, "%g", _val);
+  if (*rc >= DOUBLEBUFLEN) {
+    ret = "NaN";
+    *rc = strlen (ret);
   }
+  return ret;
 #undef DOUBLEBUFLEN
 }
 
-bool
-xml_method_name_t::add (const char *buf, int len)
-{
-  if (!has_non_ws (buf, len))
-    return false;
-  _value = str (buf, len);
-  return true;
-}
 
 bool
 xml_name_t::add (const char *buf, int len)
 {
-  _value = str (buf, len);
+  static rxx name_rxx ("[a-zA-Z0-9\\._-]+");
+  str s (buf, len);
+  if (!name_rxx.match (s))
+    return false;
+  _value = s;
   return true;
 }
 

@@ -90,15 +90,28 @@ static bool
 load_args (xml_obj_const_t x, const oksrvc_xmlex_t *_service,
 	      str *fn, u_int *opts, aarr_t *a)
 {
-  *fn = x("filename");
-  const u_int *opt;
+  static const char *FN = "filename";
+  static const char *OPTS = "options";
+  static const char *VARS = "variables";
+  
+  *fn = x(FN);
+
   *opts = 0;
-  for (size_t j = 0; j < x("options").size (); j++) {
-    if ((opt = _service->lookup_opt (x("options")[j])))
+  const u_int *opt;
+  str s = x(OPTS);
+  if (s && s.len ()) {
+    if ((opt = _service->lookup_opt (s))) {
       *opts |= (*opt);
+    }
+  } else {
+    for (size_t j = 0; j < x(OPTS).size (); j++) {
+      if ((opt = _service->lookup_opt (x(OPTS)[j]))) {
+	*opts |= (*opt);
+      }
+    }
   }
-  for (size_t j = 0; j < x("variables").size (); j++) {
-    xml_obj_const_t o = x("variables")[j];
+  for (size_t j = 0; j < x(VARS).size (); j++) {
+    xml_obj_const_t o = x(VARS)[j];
     if (o.name () && o.name ().len ()) {
       a->add (o.name (), str (o.value ()));
     }
@@ -122,7 +135,6 @@ okclnt_xmlex_t::okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     aarr_t aa;
     vec<size_t> calls;
   }
-  warn << "called...\n";
   BLOCK {
     r.setsize (q.size ());
     out.setsize (q.size ());
@@ -147,7 +159,7 @@ okclnt_xmlex_t::okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     } else {
       strbuf b ;
       out[j]->to_strbuf (&b, false);
-      r[j]("data") = base64_str_t (armor64 (b));
+      r[j]("data") = base64_str_t (b);
     }
   }
 

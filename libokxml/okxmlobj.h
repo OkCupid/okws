@@ -74,10 +74,12 @@ private:
 class base64_str_t
 {
 public:
-  base64_str_t (const str &s) : _s (s) {}
+  base64_str_t (const str &s, bool e = false) : _s (s), _encoded (e) {}
   operator str() const { return _s; }
+  bool encoded () const { return _encoded; }
 private:
   const str _s;
+  bool _encoded;
 };
 
 class xml_fault_obj_t {
@@ -109,7 +111,7 @@ public:
   const xml_obj_ref_t &operator=(str s)
   { return set_value (xml_str_t::alloc (xml_str_t::escape (s))); }
   const xml_obj_ref_t &operator=(const base64_str_t &b)
-  { return set_value (xml_base64_t::alloc (b)); }
+  { return set_value (xml_base64_t::alloc (b, b.encoded ())); }
   const xml_obj_ref_t &operator=(ptr<xml_element_t> e)
   { return set_value (e); }
   const xml_obj_ref_t &operator=(const xml_obj_ref_t &w)

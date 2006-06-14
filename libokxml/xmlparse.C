@@ -169,9 +169,11 @@ xml_req_parser_t::found_data (const char *buf, int len)
       b << "for element of type '" << el->name () << "'; ";
     }
     str tmp (buf, len);
-    b << "data is: '" << tmp << "'";
+    b << "unexpected character data is: '" << tmp << "'";
     m = b;
     parse_error (XML_PARSE_UNEXPECTED_CHARDATA, m);
+  } else {
+    // just spaces; ignore it
   }
 }
 
