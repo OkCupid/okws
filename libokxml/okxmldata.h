@@ -107,6 +107,7 @@ public:
   // should it be a strbuf or a zbuf?
   virtual void dump (zbuf &b, int lev) const;
   virtual void dump_data (zbuf &b, int lev) const {}
+  virtual bool dump_to_python (strbuf &b) const { return true; }
   void dump (zbuf &b) const { dump (b, 0); }
 
   operator int () const { return to_int (); }
@@ -138,6 +139,7 @@ public:
   virtual bool add (ptr<xml_element_t> e);
   virtual bool can_contain (ptr<xml_element_t> e) const { return false; }
   void dump_data (zbuf &b, int len) const;
+  virtual bool dump_to_python (strbuf &b) const;
 
   virtual ptr<xml_element_t> &get_r (size_t i, bool mk = true);
   virtual ptr<const xml_element_t> get (size_t i) const;
@@ -184,7 +186,7 @@ public:
   ptr<xml_name_t> clone_typed () const 
   { return New refcounted<xml_name_t> (_value); }
   virtual ptr<xml_element_t> clone () const { return clone_typed (); }
-private:
+protected:
   str _value;
 };
 
@@ -202,6 +204,7 @@ public:
   ptr<xml_method_name_t> to_xml_method_name () { return mkref (this); }
 
   const char *name () const { return "methodName"; }
+  bool dump_to_python (strbuf &b) const;
 
   ptr<xml_method_name_t> clone_typed () const
   { return New refcounted<xml_method_name_t> (*this); }
@@ -238,6 +241,7 @@ public:
 
   bool add (ptr<xml_element_t> e);
   void dump_data (zbuf &b, int lev) const;
+  bool dump_to_python (strbuf &b) const;
 
   ptr<xml_method_call_t> clone_typed () const;
   ptr<xml_element_t> clone () const { return clone_typed (); }

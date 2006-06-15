@@ -354,11 +354,48 @@ xml_container_t::dump_data (zbuf &b, int lev) const
   }
 }
 
+bool
+xml_container_t::dump_to_python (strbuf &b) const
+{
+  b << "(";
+  for (size_t i = 0; i < size (); i++) {
+    ptr<xml_element_t> el = (*this)[i];
+    if (i > 0) b << ", ";
+    if (el) { el->dump_to_python (b); }
+    else { b << "None"; }
+  }
+  b << ")";
+  return true;
+}
+
 void
 xml_method_call_t::dump_data (zbuf &b, int lev) const
 {
   if (_method_name) _method_name->dump (b, lev);
   if (_params)      _params->dump (b, lev);
+}
+
+bool
+xml_method_call_t::dump_to_python (strbuf &b) const
+{
+  if (!_method_name  || !_method_name->dump_to_python (b))
+    b << "unknownMethod"; 
+
+  if (!_params || !_params->dump_to_python (b))
+    b << "()";
+  return true;
+}
+
+bool
+xml_method_name_t::dump_to_python (strbuf &b) const
+{
+  bool ret = true;
+  if (_value) {
+    b << _value;
+  } else {
+    ret = false;
+  }
+  return ret;
 }
 
 void

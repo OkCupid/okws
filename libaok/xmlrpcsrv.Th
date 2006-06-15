@@ -34,6 +34,8 @@
 
 #define MULTICALL "system.multicall"
 
+u_int64_t xml_rpc_new_global_id ();
+
 
 class okclnt_xmlrpc_base_t : public okclnt_base_t {
 public:
@@ -128,14 +130,17 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
     str nm;
     C *cli (reinterpret_cast<C *> (c));
     zbuf z;
+    u_int64_t rpc_id (xml_rpc_new_global_id ());
   }
   
   if (c->top_level_const ()) {
+    warn << "XML-RPC Input; ID=" << rpc_id << "\n";
     c->top_level_const ()->dump (z);
     strbuf b;
     z.to_strbuf (&b, false);
     b.tosuio ()->output (2);
   }
+
   
   if (c->errcode () != XML_PARSE_OK) {
     resp = xml_fault_obj_t (c->errcode (), c->errmsg ());
@@ -158,6 +163,7 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
   }
 
   {
+    warn << "XML-RPC Output; ID=" << rpc_id << "\n";
     zbuf z2;
     resp.output (z2);
     strbuf b2;
