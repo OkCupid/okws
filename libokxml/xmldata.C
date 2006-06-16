@@ -410,6 +410,8 @@ xml_method_call_t::dump_data (zbuf &b, int lev) const
 bool
 xml_method_call_t::dump_to_python (strbuf &b) const
 {
+  // Python program should have a variable 'srv'
+  b << "srv.";
   if (!_method_name  || !_method_name->dump_to_python (b))
     b << "unknownMethod"; 
 

@@ -129,15 +129,14 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
     typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
     str nm;
     C *cli (reinterpret_cast<C *> (c));
-    zbuf z;
     u_int64_t rpc_id (xml_rpc_new_global_id ());
   }
   
   if (c->top_level_const ()) {
     warn << "XML-RPC Input; ID=" << rpc_id << "\n";
-    c->top_level_const ()->dump (z);
     strbuf b;
-    z.to_strbuf (&b, false);
+    c->top_level_const ()->dump_to_python (b);
+    b << "\n";
     b.tosuio ()->output (2);
   }
 
@@ -164,11 +163,9 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
 
   {
     warn << "XML-RPC Output; ID=" << rpc_id << "\n";
-    zbuf z2;
-    resp.output (z2);
-    strbuf b2;
-    z2.to_strbuf (&b2, false);
-    b2.tosuio ()->output (2);
+    strbuf b;
+    resp.output_python (b);
+    b << "\n";
   }
 
   c->reply (resp);

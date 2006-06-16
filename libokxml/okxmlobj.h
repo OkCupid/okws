@@ -52,7 +52,8 @@ public:
   }
 
   virtual ptr<const xml_element_t> el () const = 0;
-  void output (zbuf &z) { el ()->dump (z); }
+  void output (zbuf &z) const { el ()->dump (z); }
+  void output_python (strbuf &b) const { el ()->dump_to_python (b); }
 
   str name () const;
   xml_obj_const_t value () const;
