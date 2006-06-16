@@ -152,6 +152,9 @@ public:
   { return New refcounted<xml_container_t> (*this); }
   virtual ptr<xml_element_t> clone () const
   { return clone_typed (); }
+
+  virtual const char * py_open_container () const { return "("; }
+  virtual const char * py_close_container () const { return ")"; }
 };
 
 class xml_top_level_t : public xml_container_t {
@@ -180,6 +183,8 @@ public:
   { return New refcounted<xml_name_t> (s); }
   void dump_data (zbuf &z, int lev) const 
   { if (_value) z << _value; }
+  bool dump_to_python (strbuf &b) const;
+
   bool gets_char_data () const { return true; }
   bool add (const char *s, int l);
 
@@ -261,6 +266,7 @@ public:
   ptr<xml_struct_t> to_xml_struct ();
   ptr<const xml_struct_t> to_xml_struct () const;
   void dump_data (zbuf &b, int lev) const;
+  bool dump_to_python (strbuf &b) const;
   bool add (ptr<xml_element_t> e);
   ptr<xml_value_t> mkvalue ();
   ptr<xml_value_t> cpvalue () const;
@@ -403,6 +409,7 @@ public:
   const char *name () const { return "double"; }
   bool close_tag ();
   void dump_data (zbuf &b, int lev) const;
+  bool dump_to_python (strbuf &b) const;
 
   ptr<xml_double_t> clone_typed () const
   { return New refcounted<xml_double_t> (_val); }
@@ -433,6 +440,7 @@ public:
   bool is_a (const char *n) const { return !strcmp (_tag.cstr (), n); }
   bool close_tag ();
   void dump_data (zbuf &b, int lev) const { b << _val; }
+  bool dump_to_python (strbuf &b) const { b << _val; return true; }
 
   ptr<xml_int_t> clone_typed () const 
   { return New refcounted<xml_int_t> (_tag, _val); }
@@ -496,6 +504,7 @@ public:
   ptr<xml_element_t> clone () const { return clone_typed (); }
   void dump_data (zbuf &z, int lev) const
   { if (_val) z << _val ; }
+  bool dump_to_python (strbuf &b) const;
 private:
   str _val;
 };
@@ -524,6 +533,9 @@ public:
   { return New refcounted<xml_struct_t> (*this); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
 
+  const char * py_open_container () const { return "{"; }
+  const char * py_close_container () const { return "}"; }
+
 private:
   qhash<str, size_t> _members;
 };
@@ -546,6 +558,7 @@ public:
   ptr<xml_container_t> to_xml_container ();
   ptr<const xml_container_t> to_xml_container () const { return _data; }
   void dump_data (zbuf &z, int lev) const;
+  bool dump_to_python (strbuf &b) const;
 
   bool assign_to (ptr<xml_element_t> to);
   bool set_pointer_to_me (ptr<xml_data_t> *d);
@@ -627,6 +640,7 @@ public:
 
   bool add (ptr<xml_element_t> e);
   void dump_data (zbuf &b, int lev) const;
+  bool dump_to_python (strbuf &b) const;
 
   ptr<xml_member_t> clone_typed () const;
   ptr<xml_element_t> clone () const { return clone_typed (); }

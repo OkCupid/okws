@@ -286,6 +286,13 @@ xml_bool_t::close_tag ()
 }
 
 bool
+xml_base64_t::dump_to_python (strbuf &b) const
+{
+
+  return true;
+}
+
+bool
 xml_str_t::close_tag ()
 {
   _val = _buf;
@@ -357,14 +364,14 @@ xml_container_t::dump_data (zbuf &b, int lev) const
 bool
 xml_container_t::dump_to_python (strbuf &b) const
 {
-  b << "(";
+  b << py_open_container ();
   for (size_t i = 0; i < size (); i++) {
     ptr<xml_element_t> el = (*this)[i];
     if (i > 0) b << ", ";
     if (el) { el->dump_to_python (b); }
     else { b << "None"; }
   }
-  b << ")";
+  b << py_close_container ();
   return true;
 }
 
@@ -405,10 +412,29 @@ xml_member_t::dump_data (zbuf &b, int lev) const
   if (_member_value) _member_value->dump (b, lev);
 }
 
+bool
+xml_member_t::dump_to_python (strbuf &b) const
+{
+  if (_member_name)  _member_name->dump_to_python (b);
+  b << " : ";
+  if (!_member_value || !_member_value->dump_to_python (b))
+    b << "None"; 
+  return true;
+}
+
 void
 xml_value_wrapper_t::dump_data (zbuf &b, int lev) const
 {
   if (_value) { _value->dump (b, lev); }
+}
+
+bool
+xml_value_wrapper_t::dump_to_python (strbuf &b) const
+{
+  bool ret = true;
+  if (_value) { _value->dump_to_python (b); }
+  else ret = false;
+  return ret;
 }
 
 void
@@ -425,6 +451,15 @@ xml_double_t::to_str () const
   int len;
   const char *cp = to_const_char (&len);
   return str (cp, len);
+}
+
+bool
+xml_double_t::dump_to_python (strbuf &b) const
+{
+  int len;
+  const char *cp = to_const_char (&len);
+  b.tosuio ()->copy (cp, len);
+  return true;
 }
 
 const char *
@@ -475,6 +510,15 @@ xml_method_response_t::to_xml_container ()
   return _params;
 }
 
+bool
+xml_name_t::dump_to_python (strbuf &b) const
+{
+  bool ret = true;
+  if (_value) b << _value;
+  else ret = false;
+  return ret;
+}
+
 ptr<xml_element_t> &
 xml_container_t::get_r (size_t i, bool mk)
 {
@@ -503,6 +547,12 @@ xml_container_t::get (size_t i) const
 void 
 xml_array_t::dump_data (zbuf &z, int lev) const 
 { if (_data) _data->dump (z, lev); }
+
+bool
+xml_array_t::dump_to_python (strbuf &b) const
+{
+  return (_data ? _data->dump_to_python (b) : false);
+}
 
 ptr<xml_fault_t>
 xml_fault_t::alloc (int rc, const str &s)
