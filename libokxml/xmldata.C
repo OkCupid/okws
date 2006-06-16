@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include "okxmlobj.h"
 #include "rxx.h"
+#include <ctype.h>
 
 ptr<xml_null_t> null_element (New refcounted<xml_null_t> ());
 ptr<xml_value_t> null_value (New refcounted<xml_value_t> ());
@@ -285,11 +286,35 @@ xml_bool_t::close_tag ()
   return true;
 }
 
+static void
+python_str_print (strbuf &b, const str &in)
+{
+  const char *ep = in.cstr () + in.len ();
+  for (const char *cp = in.cstr (); cp < ep; cp++) {
+    if (*cp == '\\') {
+      b << "\\\\";
+    } else if (*cp == '\n') {
+      b << "\\\n";
+    } else if (*cp == '\'') {
+      b << "\\\'";
+    } else if (isprint (*cp)) {
+      b.fmt ("%c", *cp);
+    } else {
+      b.fmt ("\\x%x", *cp);
+    }
+  }
+}
+
 bool
 xml_base64_t::dump_to_python (strbuf &b) const
 {
-
-  return true;
+  if (_val) {
+    b << "Binary('";
+    python_str_print (b, _val);
+    b << "')";
+    return true;
+  }
+  return false;
 }
 
 bool
