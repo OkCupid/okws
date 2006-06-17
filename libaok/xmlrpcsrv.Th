@@ -32,7 +32,8 @@
 
 # ifdef HAVE_EXPAT
 
-#define MULTICALL "system.multicall"
+#define MULTICALL      "system.multicall"
+#define SET_DEBUG_LEV  "system.setDebugLevel"
 
 u_int64_t xml_rpc_new_global_id ();
 
@@ -67,11 +68,21 @@ protected:
   http_parser_xml_t _parser;
 };
 
+typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
+
 class oksrvc_xmlrpc_base_t : public oksrvc_t {
 public:
-  oksrvc_xmlrpc_base_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
+  oksrvc_xmlrpc_base_t (int argc, char *argv[]) : 
+    oksrvc_t (argc, argv), _debug_level (0) {}
   virtual ~oksrvc_xmlrpc_base_t () {}
-  virtual void handle (okclnt_xmlrpc_base_t *b, CLOSURE) = 0;
+  virtual void handle (okclnt_xmlrpc_base_t *b) = 0;
+  virtual void handle (okclnt_xmlrpc_base_t *b, str nm
+		       xml_req_t q, xml_resp_cb_t cb) = 0;
+
+  void set_debug_level ();
+  void set_debug_level (int i);
+protected:
+  int _debug_level;
 };
 
 class okclnt_xmlrpc_t : public okclnt_xmlrpc_base_t {
@@ -79,8 +90,15 @@ public:
   okclnt_xmlrpc_t (ptr<ahttpcon> xx, oksrvc_xmlrpc_base_t *s, u_int to = 0)
     : okclnt_xmlrpc_base_t (xx, s, to), _srvc (s) {}
   void process () { _srvc->handle (this); }
+
+  virtual void handle_mutlicall (xml_req_t q, xml_resp_cb_t cb) 
+  { handle_mutlicall_T (q, cb); }
+  virtual void handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb);
+
 protected:
   oksrvc_xmlrpc_base_t *_srvc;
+private:
+  void handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 };
 
 // See additional codes in "libokxml/okxmlparse.h" and <expat.h>
@@ -92,41 +110,37 @@ enum { OK_XMLRPC_OK = 0,
        OK_XMLRPC_ERR_RECURSIVE = 105,
        OK_XMLRPC_ERR_BAD_PARAMS = 106 };
 
-typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
 
 template<class C, class S>
 class oksrvc_xmlrpc_t : public oksrvc_xmlrpc_base_t {
 public:
   typedef void (C::*handler_t) (xml_req_t, xml_resp_cb_t);
 
+  void handle (okclnt_xmlrpc_base_t *c) { handle_T (c); }
+  
   oksrvc_xmlrpc_t (int argc, char *argv[]) 
     : oksrvc_xmlrpc_base_t (argc, argv) {}
-
-  void handle (okclnt_xmlrpc_base_t *c, CLOSURE);
-
-  void handle_multicall (okclnt_xmlrpc_base_t *c,
-			 ptr<const xml_params_t> p, xml_resp_cb_t cb, CLOSURE);
-
+  
   newclnt_t *make_newclnt (ptr<ahttpcon> lx) 
   { return New C (lx, reinterpret_cast<S *> (this)); }
 
 protected:
   // register a handler
-  void regh (const str &s, handler_t h) 
-  { if (s != MULTICALL) _dispatch_table.insert (s, h); }
-private:
+  void regh (const str &s, handler_t h) { _dispatch_table.insert (s, h); }
   qhash<str, handler_t> _dispatch_table;
+private:
+  void handle_T (okclnt_xmlrpc_base_t *c, CLOSURE);
+  void handle_T (okclnt_xmlrpc_base_t *c, str nm,
+		 xml_req_t q, xml_resp_t cb, CLOSURE);
 };
 
-
 TAMED template<class C, class S> void
-oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
+oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
 {
   VARS {
     xml_resp_t resp;
     ptr<const xml_method_call_t> call;
     ptr<const xml_top_level_t> e;
-    typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
     str nm;
     C *cli (reinterpret_cast<C *> (c));
     u_int64_t rpc_id (xml_rpc_new_global_id ());
@@ -152,13 +166,8 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
   } else if (!(nm = call->method_name ())) {
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_NAME,
 			    "No method name given");
-  } else if (nm == MULTICALL) {
-    BLOCK { handle_multicall (c, call->params (), @(resp) ); }
-  } else if (!(h = _dispatch_table[nm])) {
-    resp = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
-			    "Method not found");
   } else {
-    BLOCK { ((*cli).*(*h)) (xml_req_t (call->params_const ()), @(resp)); }
+    BLOCK { handle (cli, nm, xml_req_t (call->params ()), @(resp)); }
   }
 
   {
@@ -172,49 +181,22 @@ oksrvc_xmlrpc_t<C,S>::handle (okclnt_xmlrpc_base_t *c)
 }
 
 TAMED template<class C, class S> void
-oksrvc_xmlrpc_t<C,S>::handle_multicall (okclnt_xmlrpc_base_t *c,
-					ptr<const xml_params_t> p, 
-					xml_resp_cb_t cb)
+oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c, 
+				str nm, xml_req_t q, xml_resp_cb_t cb)
 {
   VARS {
-    size_t i;
-    str nm;
-    xml_obj_const_t w (p);
-    vec<xml_resp_t> r2;
-    xml_resp_t r;
-    ptr<const xml_container_t> xc;
-    typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
     C *cli (reinterpret_cast<C *> (c));
-    vec<size_t> calls;
+    typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
+    xml_resp_t resp;
+  } 
+
+  if (!(h = _dispatch_table[nm])) {
+    resp = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
+			    "Method not found");
+  } else {
+    BLOCK { ((*cli).*(*h)) (q, @(resp)); }
   }
-
-  r2.setsize (p->size ());
-
-  BLOCK {
-    for (i = 0; i < w.size (); i++) {
-      if (!(nm = w[i]("methodName"))) {
-	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_CALL,
-			     "No methodCall for mutlicall call");
-      } else if (nm == MULTICALL) {
-	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_RECURSIVE,
-			     "Cannot make recursive multicalls");
-      } else if (!(xc = w[i]("params").to_xml_container ())) {
-	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_BAD_PARAMS,
-				"Bad parameters to mutlicall");
-      } else if (!(h = _dispatch_table[nm])) {
-	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
-				"Method not found");
-      } else {
-	calls.push_back (i);
-	((*cli).*(*h)) (xml_req_t (xc), @(r2[i])); 
-      }
-    }
-  }
-
-  for (i = 0; i < calls.size (); i++)
-    r[calls[i]][0] = r2[calls[i]];
-
-  (*cb) (r);
+  (*cb) (resp);
 }
 
 # endif /* HAVE_EXPAT */
