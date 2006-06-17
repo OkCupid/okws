@@ -232,8 +232,8 @@ public:
   void set_method_name (const str &s) 
   { _method_name = xml_method_name_t::alloc (s); }
 
-  ptr<xml_params_t> params () const { return _params; }
-  ptr<const xml_params_t> params_const () const { return _params; }
+  ptr<xml_params_t> params () { return _params; }
+  ptr<const xml_params_t> params () const { return _params; }
   void set_params (ptr<xml_params_t> p) { _params = p ;}
   
   ptr<xml_element_t> generate (const char *) const 

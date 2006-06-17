@@ -1,5 +1,7 @@
+// -*-c++-*-
 
 #include "xmlrpcsrv.h"
+#include "parseopt.h"
 
 #ifdef HAVE_EXPAT
 
@@ -21,30 +23,28 @@ xml_rpc_new_global_id ()
 }
 
 TAMED void
-okclnt_xmlrpc_t::handle_mutlicall (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xmlrpc_t::handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb)
 {
   VARS {
     size_t i;
     str nm;
     vec<xml_resp_t> r2;
     xml_resp_t r;
-    ptr<const xml_container_t> xc;
-    typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
-    C *cli (reinterpret_cast<C *> (c));
     vec<size_t> calls;
+    ptr<const xml_container_t> xc;
   }
 
-  r2.setsize (w.size ());
+  r2.setsize (q.size ());
 
   BLOCK {
-    for (i = 0; i < w.size (); i++) {
-      if (!(nm = w[i]("methodName"))) {
+    for (i = 0; i < q.size (); i++) {
+      if (!(nm = q[i]("methodName"))) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_CALL,
 			     "No methodCall for mutlicall call");
       } else if (nm == MULTICALL) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_RECURSIVE,
 			     "Cannot make recursive multicalls");
-      } else if (!(xc = w[i]("params").to_xml_container ())) {
+      } else if (!(xc = q[i]("params").to_xml_container ())) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_BAD_PARAMS,
 				"Bad parameters to mutlicall");
       } else {
@@ -61,11 +61,49 @@ okclnt_xmlrpc_t::handle_mutlicall (xml_req_t q, xml_resp_cb_t cb)
 }
 
 void
+okclnt_xmlrpc_t::handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb)
+{
+  xml_resp_t r;
+  r[0] = true;
+  int i = q[0];
+  _srvc->set_debug_level (i);
+  (*cb) (r);
+}
+
+void
 oksrvc_xmlrpc_base_t::set_debug_level ()
-{}
+{
+  int lev;
+  const char *e;  
+  if ((e = safegetenv ("XMLRPC_SRV_TRACE")) && convertint (e, &lev)) 
+    set_debug_level (lev);
+}
 
 void
 oksrvc_xmlrpc_base_t::set_debug_level (int i)
-{}
+{
+  _debug_level = i;
+}
+
+void
+oksrvc_xmlrpc_base_t::do_debug (ptr<const xml_element_t> el,
+				const char *m, u_int64_t i)
+{
+  if (_debug_level > 2) {
+    warn << m << "; ID=" << i << "\n";
+    if (_debug_level >= 10) {
+      strbuf b;
+      if (_debug_level >= 20) {
+	zbuf z;
+	el->dump (z);
+	z.to_strbuf (&b, false);
+      } else {
+	el->dump_to_python (b);
+      }
+      b.tosuio ()->output (2);
+      b << "\n";
+    }
+  }
+}
 
 #endif /* HAVE_EXPAT */

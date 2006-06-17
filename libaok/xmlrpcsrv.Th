@@ -73,11 +73,14 @@ typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
 class oksrvc_xmlrpc_base_t : public oksrvc_t {
 public:
   oksrvc_xmlrpc_base_t (int argc, char *argv[]) : 
-    oksrvc_t (argc, argv), _debug_level (0) {}
+    oksrvc_t (argc, argv), _debug_level (10) { set_debug_level (); }
+
   virtual ~oksrvc_xmlrpc_base_t () {}
   virtual void handle (okclnt_xmlrpc_base_t *b) = 0;
-  virtual void handle (okclnt_xmlrpc_base_t *b, str nm
+  virtual void handle (okclnt_xmlrpc_base_t *b, str nm,
 		       xml_req_t q, xml_resp_cb_t cb) = 0;
+
+  void do_debug (ptr<const xml_element_t> e, const char *m, u_int64_t id);
 
   void set_debug_level ();
   void set_debug_level (int i);
@@ -117,6 +120,8 @@ public:
   typedef void (C::*handler_t) (xml_req_t, xml_resp_cb_t);
 
   void handle (okclnt_xmlrpc_base_t *c) { handle_T (c); }
+  void handle (okclnt_xmlrpc_base_t *c, str nm, xml_req_t q, xml_resp_cb_t cb)
+  { handle2_T (c, nm, q, cb); }
   
   oksrvc_xmlrpc_t (int argc, char *argv[]) 
     : oksrvc_xmlrpc_base_t (argc, argv) {}
@@ -130,8 +135,8 @@ protected:
   qhash<str, handler_t> _dispatch_table;
 private:
   void handle_T (okclnt_xmlrpc_base_t *c, CLOSURE);
-  void handle_T (okclnt_xmlrpc_base_t *c, str nm,
-		 xml_req_t q, xml_resp_t cb, CLOSURE);
+  void handle2_T (okclnt_xmlrpc_base_t *c, str nm,
+		  xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 };
 
 TAMED template<class C, class S> void
@@ -145,15 +150,8 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
     C *cli (reinterpret_cast<C *> (c));
     u_int64_t rpc_id (xml_rpc_new_global_id ());
   }
-  
-  if (c->top_level_const ()) {
-    warn << "XML-RPC Input; ID=" << rpc_id << "\n";
-    strbuf b;
-    c->top_level_const ()->dump_to_python (b);
-    b << "\n";
-    b.tosuio ()->output (2);
-  }
 
+  do_debug (c->top_level_const (), "XML-RPC Input", rpc_id);
   
   if (c->errcode () != XML_PARSE_OK) {
     resp = xml_fault_obj_t (c->errcode (), c->errmsg ());
@@ -170,19 +168,14 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
     BLOCK { handle (cli, nm, xml_req_t (call->params ()), @(resp)); }
   }
 
-  {
-    warn << "XML-RPC Output; ID=" << rpc_id << "\n";
-    strbuf b;
-    resp.output_python (b);
-    b << "\n";
-  }
+  do_debug (resp.el (), "XML-RPC Output", rpc_id);
 
   c->reply (resp);
 }
 
 TAMED template<class C, class S> void
-oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c, 
-				str nm, xml_req_t q, xml_resp_cb_t cb)
+oksrvc_xmlrpc_t<C,S>::handle2_T (okclnt_xmlrpc_base_t *c, 
+				 str nm, xml_req_t q, xml_resp_cb_t cb)
 {
   VARS {
     C *cli (reinterpret_cast<C *> (c));
