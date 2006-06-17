@@ -271,6 +271,11 @@ public:
   ptr<xml_value_t> mkvalue ();
   ptr<xml_value_t> cpvalue () const;
 
+  virtual int to_int () const;
+  virtual str to_str () const;
+  virtual str to_base64 () const;
+  
+
   ptr<xml_value_wrapper_t> clone_typed () const
   { return New refcounted<xml_value_wrapper_t> (cpvalue ()); }
   ptr<xml_element_t> clone() const { return clone_typed (); }

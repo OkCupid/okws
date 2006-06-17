@@ -66,6 +66,7 @@ okclnt_xmlrpc_t::handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb)
   xml_resp_t r;
   r[0] = true;
   int i = q[0];
+  warn << "got q[0]= " << i << "\n";
   _srvc->set_debug_level (i);
   (*cb) (r);
 }
@@ -75,13 +76,18 @@ oksrvc_xmlrpc_base_t::set_debug_level ()
 {
   int lev;
   const char *e;  
+  warn << "called...\n";
   if ((e = safegetenv ("XMLRPC_SRV_TRACE")) && convertint (e, &lev)) 
     set_debug_level (lev);
+  
+  if (e) 
+    warn << "got env: " << e << "\n";
 }
 
 void
 oksrvc_xmlrpc_base_t::set_debug_level (int i)
 {
+  warn << "debug level changed to " << i << "\n";
   _debug_level = i;
 }
 
@@ -100,8 +106,8 @@ oksrvc_xmlrpc_base_t::do_debug (ptr<const xml_element_t> el,
       } else {
 	el->dump_to_python (b);
       }
-      b.tosuio ()->output (2);
       b << "\n";
+      b.tosuio ()->output (2);
     }
   }
 }

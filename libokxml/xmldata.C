@@ -208,6 +208,18 @@ ptr<const xml_struct_t>
 xml_value_wrapper_t::to_xml_struct () const
 { return _value ? _value->to_xml_struct () : NULL; }
 
+int
+xml_value_wrapper_t::to_int () const 
+{ return _value ? _value->to_int () : xml_element_t::to_int (); }
+
+str
+xml_value_wrapper_t::to_str () const
+{ return _value ? _value->to_str () : xml_element_t::to_str (); }
+
+str 
+xml_value_wrapper_t::to_base64 () const
+{ return _value ? _value->to_base64 () : xml_element_t::to_base64 (); }
+
 bool
 xml_value_t::add (ptr<xml_element_t> e)
 {

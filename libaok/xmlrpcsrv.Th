@@ -94,7 +94,7 @@ public:
     : okclnt_xmlrpc_base_t (xx, s, to), _srvc (s) {}
   void process () { _srvc->handle (this); }
 
-  virtual void handle_mutlicall (xml_req_t q, xml_resp_cb_t cb) 
+  virtual void handle_multicall (xml_req_t q, xml_resp_cb_t cb) 
   { handle_mutlicall_T (q, cb); }
   virtual void handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb);
 
@@ -124,7 +124,11 @@ public:
   { handle2_T (c, nm, q, cb); }
   
   oksrvc_xmlrpc_t (int argc, char *argv[]) 
-    : oksrvc_xmlrpc_base_t (argc, argv) {}
+    : oksrvc_xmlrpc_base_t (argc, argv) 
+  {
+    regh (MULTICALL,      &okclnt_xmlrpc_t::handle_multicall);
+    regh (SET_DEBUG_LEV,  &okclnt_xmlrpc_t::handle_set_debug_level);
+  }
   
   newclnt_t *make_newclnt (ptr<ahttpcon> lx) 
   { return New C (lx, reinterpret_cast<S *> (this)); }
@@ -132,6 +136,8 @@ public:
 protected:
   // register a handler
   void regh (const str &s, handler_t h) { _dispatch_table.insert (s, h); }
+  void unreg (const str &s) { _dispatch_table.remove (s); }
+
   qhash<str, handler_t> _dispatch_table;
 private:
   void handle_T (okclnt_xmlrpc_base_t *c, CLOSURE);
