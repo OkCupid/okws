@@ -34,6 +34,7 @@
 
 #define MULTICALL      "system.multicall"
 #define SET_DEBUG_LEV  "system.setDebugLevel"
+#define OKWS_PUB       "okws.pub"
 
 u_int64_t xml_rpc_new_global_id ();
 
@@ -73,7 +74,11 @@ typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
 class oksrvc_xmlrpc_base_t : public oksrvc_t {
 public:
   oksrvc_xmlrpc_base_t (int argc, char *argv[]) : 
-    oksrvc_t (argc, argv), _debug_level (10) { set_debug_level (); }
+    oksrvc_t (argc, argv), _debug_level (0) 
+  { 
+    set_debug_level (); 
+    init_optmap ();
+  }
 
   virtual ~oksrvc_xmlrpc_base_t () {}
   virtual void handle (okclnt_xmlrpc_base_t *b) = 0;
@@ -84,24 +89,31 @@ public:
 
   void set_debug_level ();
   void set_debug_level (int i);
+
+  const u_int *lookup_opt (const str &s) const { return _pub_options[s]; }
+  virtual void init_optmap ();
 protected:
   int _debug_level;
+  qhash<str, u_int> _pub_options;
 };
 
 class okclnt_xmlrpc_t : public okclnt_xmlrpc_base_t {
 public:
   okclnt_xmlrpc_t (ptr<ahttpcon> xx, oksrvc_xmlrpc_base_t *s, u_int to = 0)
-    : okclnt_xmlrpc_base_t (xx, s, to), _srvc (s) {}
+    : okclnt_xmlrpc_base_t (xx, s, to), _srvc (s) { }
   void process () { _srvc->handle (this); }
 
   virtual void handle_multicall (xml_req_t q, xml_resp_cb_t cb) 
   { handle_mutlicall_T (q, cb); }
   virtual void handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb);
+  virtual void handle_okws_pub (xml_req_t q, xml_resp_cb_t cb) 
+  { handle_okws_pub_T (q, cb); }
 
 protected:
   oksrvc_xmlrpc_base_t *_srvc;
 private:
   void handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+  void handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 };
 
 // See additional codes in "libokxml/okxmlparse.h" and <expat.h>
@@ -128,6 +140,7 @@ public:
   {
     regh (MULTICALL,      &okclnt_xmlrpc_t::handle_multicall);
     regh (SET_DEBUG_LEV,  &okclnt_xmlrpc_t::handle_set_debug_level);
+    regh (OKWS_PUB,       &okclnt_xmlrpc_t::handle_okws_pub);
   }
   
   newclnt_t *make_newclnt (ptr<ahttpcon> lx) 

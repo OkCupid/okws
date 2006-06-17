@@ -45,9 +45,6 @@ public:
     SIGNAL (cb, s);
   };
 
-  void okws_pub (xml_req_t q, xml_resp_cb_t cb) { okws_pub_T (q, cb); }
-  void okws_pub_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
-
 private:
   oksrvc_xmlex_t *_service;
 };
@@ -59,121 +56,11 @@ public:
   { 
     // Register XML-RPC service methods
     regh ("xmlex.Hello", &okclnt_xmlex_t::hello); 
-    regh ("okws.pub", &okclnt_xmlex_t::okws_pub);
-    
-    init_optmap ();
   }
-
-  void init_optmap ()
-  {
-    const char *options[] = { "debug", "includeInfo", "verbose",
-			      "visibleErrors", "WSS", "raw", NULL };
-    u_int optvals[] = { P_DEBUG, P_IINFO, P_VERBOSE, P_VISERR,
-		      P_WSS, P_NOPARSE };
-    u_int *vp;
-    const char **o;
-    for (o = options, vp = optvals; *o; o++, vp++) {
-      _pub_options.insert (*o, *vp);
-    }
-  }
-
-  const u_int *lookup_opt (const str &s) const { return _pub_options[s]; }
-private:
-  qhash<str, u_int> _pub_options;
-
 };
 
 okclnt_xmlex_t::okclnt_xmlex_t (ptr<ahttpcon> x, oksrvc_xmlex_t *s)
   : okclnt_xmlrpc_t (x, s), _service (s) {}
-
-static bool
-load_args (xml_obj_const_t x, const oksrvc_xmlex_t *_service,
-	      str *fn, u_int *opts, aarr_t *a)
-{
-  static const char *FN = "filename";
-  static const char *OPTS = "options";
-  static const char *VARS = "variables";
-  
-  *fn = x(FN);
-
-  *opts = 0;
-  const u_int *opt;
-  str s = x(OPTS);
-  if (s && s.len ()) {
-    if ((opt = _service->lookup_opt (s))) {
-      *opts |= (*opt);
-    }
-  } else {
-    for (size_t j = 0; j < x(OPTS).size (); j++) {
-      if ((opt = _service->lookup_opt (x(OPTS)[j]))) {
-	*opts |= (*opt);
-      }
-    }
-  }
-  for (size_t j = 0; j < x(VARS).size (); j++) {
-    xml_obj_const_t o = x(VARS)[j];
-    if (o.name () && o.name ().len ()) {
-      a->add (o.name (), str (o.value ()));
-    }
-  }
-  
-  return (*fn && fn->len () > 0);
-}
-
-#define XML_PUB_ARGLOAD_FAILED  101
-
-TAMED void
-okclnt_xmlex_t::okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
-{
-  VARS {
-    xml_resp_t r;
-    size_t i;
-    str fn;
-    u_int opts;
-    vec<ptr<zbuf> > out;
-    vec<xpub_status_t> pub_errc;
-    aarr_t aa;
-    vec<size_t> calls;
-  }
-  BLOCK {
-    r.setsize (q.size ());
-    out.setsize (q.size ());
-    pub_errc.setsize (q.size ());
-    for (i = 0; i < q.size (); i++) {
-      out[i] = New refcounted<zbuf> ();
-      aa.clear ();
-      if (load_args (q[i], _service, &fn, &opts, &aa)) {
-	calls.push_back (i);
-	pub2 ()->run_full (out[i], fn, @(pub_errc[i]), &aa, opts);
-      } else {
-	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
-	r[i]("error")("desc") = "failed to load Pub arguments";
-      }
-    }
-  }
-  for (i = 0; i < calls.size (); i++) {
-    size_t j = calls[i];
-    if (pub_errc[j].status != XPUB_STATUS_OK) {
-      r[j]("error")("code") = int (pub_errc[j].status);
-      r[j]("error")("desc") = errcode2str (pub_errc[j]);
-    } else {
-      strbuf b ;
-      out[j]->to_strbuf (&b, false);
-      r[j]("data") = base64_str_t (b);
-    }
-  }
-
-  /*
-  zbuf z;
-  r.output (z);
-  strbuf b;
-  z.to_strbuf (&b, false);
-  str s (b);
-  warn << "output: " << s << "\n";
-  */
-
-  SIGNAL (cb, r);
-}
 
 int
 main (int argc, char *argv[])
