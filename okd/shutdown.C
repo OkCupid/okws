@@ -101,6 +101,7 @@ okd_t::shutdown2 ()
     dcb = NULL;
   }
 
+
   // no need to disconnect from oklogd or pubd explicitly/ that will
   // happen when we delete this.
   delete this;

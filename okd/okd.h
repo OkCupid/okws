@@ -160,7 +160,9 @@ public:
     coredumpdir (cdd),
     nfd_in_xit (0),
     reqid (0),
-    xtab (2)
+    xtab (2),
+    _socket_filename (okd_mgr_socket),
+    _socket_mode (-1)
   {
     listenport = p;
   }
@@ -303,6 +305,9 @@ private:
 
   qhash<int, okws1_port_t> portmap;
   vec<int> listenfds;
+  str _socket_filename;
+  str _socket_group, _socket_owner;
+  int _socket_mode;
 };
 
 class okd_mgrsrv_t 

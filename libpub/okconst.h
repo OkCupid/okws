@@ -159,6 +159,7 @@ extern int64_t okws_debug_flags;               // OKWS debug flags
 extern bool ok_dangerous_zbufs;                // zbufs that don't hold str's.
 extern int ok_svc_life_reqs;                   // Upper limit on Reqs per life
 extern int ok_svc_life_time;                   // Upper limit on Svc lifetime
+extern const char *okd_mgr_socket;             // okd's management socket
 
 //
 // okld constants

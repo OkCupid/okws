@@ -30,63 +30,44 @@
 #include "okerr.h"
 #include "vec.h"
 #include "arpc.h"
+#include "tame.h"
 
 typedef enum { CTL_MODE_PUB = 0, CTL_MODE_LAUNCH = 1,
 	       CTL_MODE_LOGTURN = 2 } ctl_mode_t;
 
-class okmgr_host_t {
-public:
-  okmgr_host_t (const str &h, u_int p) : hostname (h), port (p) {}
-  void connect (cbb cb);
-  ptr<aclnt> cli () const { return c; }
-  void hostwarn (const str &s, bool nl = true) const;
-private:
-  void connect_cb (cbb c, int i);
-  const str hostname;
-  const u_int port;
-  int fd;
-  ptr<axprt> x;
-  ptr<aclnt> c;
-};
-
 class okmgr_clnt_t {
 public:
-  okmgr_clnt_t (const vec<str> &h);
+  okmgr_clnt_t (const str &s);
   virtual ~okmgr_clnt_t () {}
-  void run ();
-  virtual void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s) = 0;
-  void did_host (okmgr_host_t *h, ptr<ok_xstatus_t> s, clnt_stat err);
-  bool add_host (const str &h);
-  void finish (bool r);
-  void connect_cb (u_int i, bool ok);
+  void run (CLOSURE);
+  virtual void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb) = 0;
 private:
-  bool err;
-  u_int ncli;
-  vec<okmgr_host_t *> hosts;
+  bool _err;
+  const str _sockname;
 };
 
 class okmgr_pub_t : public okmgr_clnt_t {
 public:
-  okmgr_pub_t (const vec<str> &h, const vec<str> &f, int v);
-  void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s);
+  okmgr_pub_t (const str &s, const vec<str> &f, int v);
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
-  xpub_fnset_t fns;
-  int version;
+  xpub_fnset_t _fns;
+  int _version;
 };
 
 class okmgr_logturn_t : public okmgr_clnt_t {
 public:
-  okmgr_logturn_t (const vec<str> &h) ;
-  void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> x);
+  okmgr_logturn_t (const str &s ) ;
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 };
 
 class okmgr_launch_t : public okmgr_clnt_t {
 public:
-  okmgr_launch_t (const vec<str> &h, const vec<str> &f, 
+  okmgr_launch_t (const str &s, const vec<str> &f, 
 		  ok_set_typ_t t = OK_SET_SOME);
-  void do_host (okmgr_host_t *h, ptr<ok_xstatus_t> s);
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
-  ok_progs_t progs;
+  ok_progs_t _progs;
 };
 
 

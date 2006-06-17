@@ -1,5 +1,3 @@
-
-# 1 "/home/am8/max/okws2/1.1/okd/okmgr.T"
 // -*-c++-*-
 /* $Id$ */
 
@@ -107,39 +105,22 @@ parse_config (const str &f)
   return NULL;
 }
 
-# 108 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-class okmgr_clnt_t__run__closure_t : public closure_t { public:   okmgr_clnt_t__run__closure_t (okmgr_clnt_t *_self) : closure_t ("/home/am8/max/okws2/1.1/okd/okmgr.T", "okmgr_clnt_t::run"), _self (_self),  _stack (), _args () {}   typedef void  (okmgr_clnt_t::*method_type_t) (ptr<closure_t>);   void set_method_pointer (method_type_t m) { _method = m; }   void reenter ()   {     ((*_self).*_method)  (mkref (this));   }   struct stack_t {     stack_t () : rc (0)  {}      helper_unix_t *hlp;      bool ok;      int rc;      ok_xstatus_t s;      clnt_stat err;   };   struct args_t {     args_t () {}   };   okmgr_clnt_t *_self;   stack_t _stack;   args_t _args;   method_type_t _method;   bool is_onstack (const void *p) const   {     return (static_cast<const void *> (&_stack) <= p &&             static_cast<const void *> (&_stack + 1) > p);   } }; 
-# 108 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-void 
-okmgr_clnt_t::run(ptr<closure_t> __cls_g)
+TAMED void
+okmgr_clnt_t::run ()
 {
-  
-# 111 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-  okmgr_clnt_t__run__closure_t *__cls;   ptr<okmgr_clnt_t__run__closure_t > __cls_r;   if (!__cls_g) {     if (tame_check_leaks ()) start_join_group_collection ();     __cls_r = New refcounted<okmgr_clnt_t__run__closure_t> (this);     if (tame_check_leaks ()) __cls_r->collect_join_groups ();     __cls = __cls_r;     __cls_g = __cls_r;     __cls->set_method_pointer (&okmgr_clnt_t::run);   } else {     __cls =     reinterpret_cast<okmgr_clnt_t__run__closure_t *> (static_cast<closure_t *> (__cls_g));     __cls_r = mkref (__cls);   }    helper_unix_t *&hlp = __cls->_stack.hlp;    bool &ok = __cls->_stack.ok;    int &rc = __cls->_stack.rc;    ok_xstatus_t &s = __cls->_stack.s;    clnt_stat &err = __cls->_stack.err;   switch (__cls->jumpto ()) {   case 0: break;   case 1:     goto okmgr_clnt_t__run__label_1;     break;   case 2:     goto okmgr_clnt_t__run__label_2;     break;   default:     panic ("unexpected case.\n");     break;   }
-# 117 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-
+  VARS {
+    helper_unix_t *hlp;
+    bool ok;
+    int rc (0);
+    ok_xstatus_t s;
+    clnt_stat err;
+  }
 
   hlp = New helper_unix_t (okmgr_program_1, _sockname);
   
-  
-# 121 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-  do {     __cls->init_block (1, 121);     __cls->set_jumpto (1); 
-# 121 "/home/am8/max/okws2/1.1/okd/okmgr.T"
- hlp->connect (wrap (__cls->make_wrapper (1, 121), &closure_wrapper_t::block_cb1<TTT(ok)>, refset_t<TTT(ok)> (ok))); 
-# 121 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-    if (!__cls->block_dec_count (121))       return;   } while (0);  okmgr_clnt_t__run__label_1:     ;
-# 121 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-
+  BLOCK { hlp->connect (@(ok)); }
   if (ok) {
-    
-# 123 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-  do {     __cls->init_block (2, 123);     __cls->set_jumpto (2); 
-# 123 "/home/am8/max/okws2/1.1/okd/okmgr.T"
- do_host (hlp, &s, wrap (__cls->make_wrapper (2, 123), &closure_wrapper_t::block_cb1<TTT(err)>, refset_t<TTT(err)> (err))); 
-# 123 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-    if (!__cls->block_dec_count (123))       return;   } while (0);  okmgr_clnt_t__run__label_2:     ;
-# 123 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-
+    BLOCK { do_host (hlp, &s, @(err)); }
     rc = -1;
     if (err) warn << "RPC Error: " << err;
     else if (s.status != OK_STATUS_OK) warn << *s.error << "\n";
@@ -150,9 +131,6 @@ okmgr_clnt_t::run(ptr<closure_t> __cls_g)
   }
 
   exit (rc);
-# 134 "/home/am8/max/okws2/1.1/okd/okmgr.T"
-  __cls->end_of_scope_checks (134);   return;
-# 134 "/home/am8/max/okws2/1.1/okd/okmgr.T"
 }
 
 int 

@@ -221,12 +221,45 @@ okd_t::got_regex_alias (vec<str> s, str loc, bool *errp)
 void
 okd_t::open_mgr_socket ()
 {
+  struct stat sb;
   // XXX - not secure; adversary can mount DOS-attacks over this port,
   // assuming he has a machine behind the firewall. better to either 
   // authenticate or to have the manager reachable only via a local
   // unix socket
-  if (!pub_server (wrap (this, &okd_t::newmgrsrv), ok_mgr_port)) 
-    fatal << "Cannot open management port (" << ok_mgr_port << ")\n";
+  if (stat (_socket_filename, &sb) == 0) {
+    warn << "Management socket (" << _socket_filename 
+	 << ") already exists or is in use!\n";
+    exit (NO_SOCKET_ALLOCATED);
+  }
+
+  if (!pub_server (wrap (this, &okd_t::newmgrsrv), _socket_filename)) {
+    warn << "Cannot open management socket (" << _socket_filename << ")\n";
+    exit (NO_SOCKET_ALLOCATED);
+  }
+
+  if (!uid) {
+    ok_usr_t u (_socket_owner);
+    ok_grp_t g (_socket_group);
+
+    if (!_socket_owner) u = okd_usr;
+    if (!_socket_group) g = okd_grp;
+
+    if (!u) fatal << "Cannot find user: " << u.getname () << "\n";
+    if (!g) fatal << "Cannot find group: " << g.getname () << "\n";
+
+    if (chown (_socket_filename.cstr (), u.getid (), g.getid ()) != 0) {
+      fatal << "Failed to chown " << u.getname () << "." << g.getname ()
+	    << "on the management socket '" << _socket_filename << "'\n";
+    }
+  }
+  if (_socket_mode >= 0) {
+    if (chmod (_socket_filename.cstr (), _socket_mode) != 0) {
+      fatal << "Cannot alter permisions on the management socket "
+	    << "'" << _socket_filename << "'\n";
+    }
+  }
+
+  warn << "Using management socket: " << _socket_filename << "\n";
 }
 
 void
@@ -258,7 +291,10 @@ okd_t::parseconfig ()
     .add ("TopDir", &topdir)
 
     .add ("MaxConQueueSize", &ok_con_queue_max, OK_QMIN, OK_QMAX)
-    .add ("OkMgrPort", &ok_mgr_port, OK_PORT_MIN, OK_PORT_MAX)
+    .add ("OkMgrSocket", &_socket_filename)
+    .add ("OkMgrSocketOwner", &_socket_owner)
+    .add ("OkMgrSocketGroup", &_socket_group)
+    .add ("OkMgrSocketAccessMode", &_socket_mode, 0, 0777)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
 
     .add ("OkdFDHighWat", &okd_fds_high_wat, 
@@ -366,7 +402,7 @@ okd_t::parseconfig ()
   if (!hostname)
     hostname = myname ();
   if (errors)
-    exit (1);
+    exit (NO_SOCKET_ALLOCATED);
 
   init_syscall_stats ();
 }
@@ -536,7 +572,7 @@ usage ()
 {
   warnx << "usage: okd [-D <dbg-file>] [-x <pub2fd>] "
 	<< " -l <logfd> -f <configfile>\n";
-  exit (1);
+  exit (NO_SOCKET_ALLOCATED);
 }
 
 TAMED static 
@@ -594,7 +630,7 @@ void start_okd (int argc, char **argv)
   if (logfd < 0 || !isunixsocket (logfd)) {
     warn << "no log FD passed to okd or the given FD is not a socket\n";
     warn << "check that okd was launched by okld\n";
-    exit (1);
+    exit (NO_SOCKET_ALLOCATED);
   }
 
   // for debugging, we'll stall until the given file is touched.
@@ -617,6 +653,7 @@ okd_t::launch ()
 {
   VARS {
     bool pubd_rc, logd_rc, pub2_rc (true);
+    bool do_exit (false);
   }
   parseconfig ();
   check_runas ();
@@ -631,14 +668,18 @@ okd_t::launch ()
 
   if (!pubd_rc) {
     warn << "Pubd, version 1, failed to launch: aborting\n";
-    exit (1);
-  }
+    do_exit = true;
+  } 
   if (!logd_rc) {
     warn << "failed to connect to oklogd; aborting\n";
-    exit (1);
+    do_exit = true;
   }
   if (!pub2_rc) {
     warn << "failed to launch pub2, for setup that requires it; aborting\n";
+    do_exit = true;
+  }
+
+  if (do_exit) {
     exit (1);
   }
 
@@ -652,8 +693,9 @@ okd_t::launch ()
 
   for (u_int i = 0; i < allports.size () ; i++) {
     int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
-    if (fd < 0)
+    if (fd < 0) {
       fatal ("could not bind TCP port %d: %m\n", allports[i]);
+    }
     close_on_exec (fd);
     listen (fd, ok_listen_queue_max);
     listenfds.push_back (fd);

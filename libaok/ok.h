@@ -496,6 +496,7 @@ do {                                           \
 #define CH_CHATTER(x) CH_MSG(CHATTER, x)
 #define CH_ERROR(x)    CH_MSG(ERROR, x)
 
+#define NO_SOCKET_ALLOCATED 7
 
 
 /**
@@ -504,6 +505,7 @@ do {                                           \
  * look for either okws_config or okd_config in the given etc directories,
  * or call fatal if not.
  */
-str get_okws_config ();
+str get_okws_config (bool make_fatal = true);
+
 
 #endif /* _LIBAOK_OKBASE_H */

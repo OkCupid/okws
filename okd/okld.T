@@ -695,10 +695,13 @@ okld_t::parseconfig (const str &cf)
     .add ("PubdInet", wrap (this, &okld_t::got_pubd_v1))
     .add ("PubUnix", wrap (this, &okld_t::got_pubd_v1))
     .add ("PubdExecPath", wrap (this, &okld_t::got_pubd_v1))
+    .add ("OkMgrSocket", &_okd_mgr_socket)
 
+    .ignore ("OkMgrSocketOwner")
+    .ignore ("OkMgrSocketGroup")
+    .ignore ("OkMgrSocketAccessMode")
     .ignore ("MaxConQueueSize")
     .ignore ("ListenQueueSize")
-    .ignore ("OkMgrPort")
     .ignore ("ErrorDoc")
     .ignore ("OkdAcceptMessages")
     .ignore ("OkdChildSelectDisable")
@@ -1027,10 +1030,22 @@ okld_t::shutdown (int sig)
 void
 okld_t::shutdown2 (int status)
 {
+  struct stat sb;
   if (status != 0)
     warn << "okd exitted uncleanly, with status=" << status << "\n";
   else
     warn << "caught clean okd exit\n";
+
+  if (stat (_okd_mgr_socket.cstr (), &sb) == 0) {
+    if (status != (NO_SOCKET_ALLOCATED * 256)) {
+      warn << "Deleting management socket: " << _okd_mgr_socket << "\n";
+      unlink (_okd_mgr_socket);
+    } else {
+      warn << "Leaving management socket (" << _okd_mgr_socket 
+	   << ") since it's likely not ours.\n";
+    }
+  }
+
   warn << "shutdown complete\n";
 
   okld_exit (status);

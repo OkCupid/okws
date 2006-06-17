@@ -933,11 +933,16 @@ okclnt_base_t::set_hdr_field (const str &k, const str &v)
 }
 
 str 
-get_okws_config ()
+get_okws_config (bool fat)
 {
   str cf = okws_etcfile ("okws_config");
   if (!cf)
-    cf = okws_etcfile_required ("okd_config");
+    if (fat) {
+      cf = okws_etcfile_required ("okd_config");
+    } else {
+      cf = okws_etcfile ("okd_config");
+    }
+  
   return cf;
 }
 

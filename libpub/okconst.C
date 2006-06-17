@@ -69,6 +69,7 @@ const char *ok_etc_dir1 = "/usr/local/etc/okws";
 const char *ok_etc_dir2 = "/etc/okws";
 const char *ok_okws_config = "okws_config";
 const char *ok_okd_config = "okd_config";
+const char *okd_mgr_socket = "/var/run/okd.sock=";
 
 //
 // FDFD default command line arg

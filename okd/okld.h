@@ -287,7 +287,8 @@ public:
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
       used_primary_port (false),
       pubd2 (NULL),
-      pub_v1_support (false) {}
+      pub_v1_support (false),
+      _okd_mgr_socket (okd_mgr_socket) {}
       
 
   ~okld_t () { if (logexc) delete logexc; }
@@ -407,6 +408,7 @@ private:
 
   clone_only_client_t *pubd2;
   bool pub_v1_support;
+  str _okd_mgr_socket;
 };
 
 #endif /* _OKD_OKD_H */

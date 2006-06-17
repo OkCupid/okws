@@ -401,6 +401,14 @@ can_exec (const str &p)
   return NULL;
 }
 
+bool
+can_read (const str &f)
+{
+  struct stat sb;
+  return  (f && stat(f.cstr (), &sb) == 0 && S_ISREG (sb.st_mode)
+	   && access (f.cstr(), R_OK) == 0);
+}
+
 str
 apply_container_dir (const str &d, const str &f)
 {

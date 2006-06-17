@@ -42,6 +42,7 @@ str dir_standardize (const str &s);
 void got_dir (str *out, vec<str> s, str loc, bool *errp);
 str re_fslash (const char *cp);
 str can_exec (const str &p);
+bool can_read (const str &f);
 bool dir_security_check (const str &p);
 str apply_container_dir (const str &d, const str &e);
 void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
