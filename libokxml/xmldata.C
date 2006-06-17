@@ -301,18 +301,19 @@ xml_bool_t::close_tag ()
 static void
 python_str_print (strbuf &b, const str &in)
 {
-  const char *ep = in.cstr () + in.len ();
-  for (const char *cp = in.cstr (); cp < ep; cp++) {
+  const u_int8_t *cp = reinterpret_cast<const u_int8_t *> (in.cstr ());
+  const u_int8_t *ep = cp + in.len ();
+  for ( ; cp < ep; cp++) {
     if (*cp == '\\') {
       b << "\\\\";
     } else if (*cp == '\n') {
-      b << "\\\n";
+      b << "\\n";
     } else if (*cp == '\'') {
       b << "\\\'";
     } else if (isprint (*cp)) {
       b.fmt ("%c", *cp);
     } else {
-      b.fmt ("\\x%x", *cp);
+      b.fmt ("\\x%02x", *cp);
     }
   }
 }
@@ -322,7 +323,7 @@ xml_base64_t::dump_to_python (strbuf &b) const
 {
   if (_val) {
     b << "Binary('";
-    python_str_print (b, _val);
+    python_str_print (b, decode ());
     b << "')";
     return true;
   }
@@ -348,9 +349,6 @@ xml_double_t::close_tag ()
 bool
 xml_scalar_t::add (const char *b, int len)
 {
-  if (!has_non_ws (b, len))
-    return false;
-
   _buf.tosuio ()->copy (b, len);
   return true;
 }
@@ -358,8 +356,23 @@ xml_scalar_t::add (const char *b, int len)
 bool
 xml_base64_t::close_tag ()
 {
-  _val = _buf;
-  return true;
+  bool ret = false;
+  str tmp = _buf;
+  static rxx strip_rxx ("\\s*(\\S+)\\s*");
+  if (strip_rxx.match (tmp)) {
+    _val = strip_rxx[1];
+    if (_val && decode ())
+      ret = true;
+  }
+  return ret;
+}
+
+str 
+xml_base64_t::decode () const 
+{ 
+  if (!_d_val && _val)
+    _d_val = dearmor64 (_val.cstr (), _val.len ());
+  return _d_val;
 }
 
 static void spaces (zbuf &b, int n)
@@ -550,10 +563,21 @@ xml_method_response_t::to_xml_container ()
 }
 
 bool
+xml_method_response_t::dump_to_python (strbuf &b) const
+{
+  if (_body) {
+    _body->dump_to_python (b);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool
 xml_name_t::dump_to_python (strbuf &b) const
 {
   bool ret = true;
-  if (_value) b << _value;
+  if (_value) b << "'" << _value << "'" ;
   else ret = false;
   return ret;
 }
@@ -745,4 +769,45 @@ xml_str_t::escape (const str &in)
     if (cp > p1) b.tosuio ()->copy (p1, cp - p1);
     return b;
   }
+}
+
+bool
+xml_value_t::dump_to_python (strbuf &b) const
+{
+  if (_e) {
+    _e->dump_to_python (b);
+    return true;
+  } else {
+    b << "None";
+    return false;
+  }
+}
+
+bool
+xml_str_t::dump_to_python (strbuf &b) const
+{
+  if (_val) {
+    b << "'" << _val << "'";
+    return true;
+  } else {
+    b << "''";
+    return false;
+  }
+}
+
+bool
+xml_bool_t::dump_to_python (strbuf &b) const
+{
+  b << (_val ? "True" : "False");
+  return true;
+}
+
+bool
+xml_top_level_t::dump_to_python (strbuf &b) const
+{
+  if (size () >= 1 && (*this)[0]) {
+    (*this)[0]->dump_to_python (b);
+    return true;
+  }
+  return false;
 }

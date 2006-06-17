@@ -167,6 +167,7 @@ public:
   { return New refcounted<xml_top_level_t> (*this); }
   virtual ptr<xml_element_t> clone () const 
   { return clone_typed (); }
+  bool dump_to_python (strbuf &b) const;
 };
 
 class xml_name_t : public xml_element_t {
@@ -274,6 +275,7 @@ public:
   virtual int to_int () const;
   virtual str to_str () const;
   virtual str to_base64 () const;
+
   
 
   ptr<xml_value_wrapper_t> clone_typed () const
@@ -367,6 +369,7 @@ public:
 
   ptr<xml_method_response_t> clone_typed () const;
   ptr<xml_element_t> clone () const { return clone_typed (); }
+  bool dump_to_python (strbuf &b) const;
 private:
   ptr<xml_params_t> _params;
   ptr<xml_element_t> _body;
@@ -468,6 +471,7 @@ public:
   ptr<xml_element_t> generate (const char *n) const 
   { return New refcounted<xml_str_t> (); }
   void dump_data (zbuf &z, int level) const { if (_val) z << _val; }
+  bool dump_to_python (strbuf &b) const;
 
   static str escape (const str &in);
 
@@ -484,7 +488,8 @@ private:
 class xml_base64_t : public xml_scalar_t {
 public:
   xml_base64_t (const str &b, bool encoded = false) : 
-    _val (encoded ? b : armor64 (b)) {}
+    _val (encoded ? b : armor64 (b)),
+    _d_val (!encoded ? b : sNULL) {}
   xml_base64_t () : _val (armor64 (NULL, 0)) {}
 
   ptr<xml_base64_t> to_xml_base64 () { return mkref (this); }
@@ -492,9 +497,9 @@ public:
   str to_base64 () const { return _val; }
   str to_str () const { return decode (); }
 
-  str decode () const { return dearmor64 (_val.cstr (), _val.len ()); }
+  str decode () const;
   void set (const str &v, bool encoded = false) 
-  { _val = encoded ? v : armor64 (v); }
+  { _val = encoded ? v : armor64 (v); _d_val = NULL; }
   
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_base64_t>(); }
@@ -512,6 +517,7 @@ public:
   bool dump_to_python (strbuf &b) const;
 private:
   str _val;
+  mutable str _d_val;
 };
 
 class xml_struct_t : public xml_container_t {
@@ -594,6 +600,7 @@ public:
   str to_base64 () const 
   { return _e ? _e->to_base64 () : xml_element_t::to_base64(); }
   void dump_data (zbuf &b, int level) const { if (_e) _e->dump (b, level); }
+  bool dump_to_python (strbuf &b) const;
 
   static ptr<xml_value_t> alloc (ptr<xml_element_t> e = NULL)
   { return New refcounted<xml_value_t> (e); }
@@ -688,6 +695,7 @@ public:
   { return New refcounted<xml_bool_t> (b); }
 
   void dump_data (zbuf &b, int lev) const { b << (_val ? 1 : 0); }
+  bool dump_to_python (strbuf &b) const;
 
   ptr<xml_bool_t> clone_typed () const 
   { return New refcounted<xml_bool_t> (_val); }

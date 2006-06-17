@@ -106,12 +106,12 @@ private:
 
 // See additional codes in "libokxml/okxmlparse.h" and <expat.h>
 enum { OK_XMLRPC_OK = 0,
-       OK_XMLRPC_ERR_NO_DATA = 101,
-       OK_XMLRPC_ERR_NO_METHOD_CALL = 102,
-       OK_XMLRPC_ERR_NO_METHOD_NAME = 103,
-       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 104,
-       OK_XMLRPC_ERR_RECURSIVE = 105,
-       OK_XMLRPC_ERR_BAD_PARAMS = 106 };
+       OK_XMLRPC_ERR_NO_DATA = 201,
+       OK_XMLRPC_ERR_NO_METHOD_CALL = 202,
+       OK_XMLRPC_ERR_NO_METHOD_NAME = 203,
+       OK_XMLRPC_ERR_METHOD_NOT_FOUND = 204,
+       OK_XMLRPC_ERR_RECURSIVE = 205,
+       OK_XMLRPC_ERR_BAD_PARAMS = 206 };
 
 
 template<class C, class S>
