@@ -1868,3 +1868,21 @@ if test "$with_expat" != "no"; then
 fi
 AC_SUBST(LIBEXPAT)
 ])
+dnl
+dnl OKWS_PREFIX
+dnl
+dnl Make a prefix for OKWS to put all of its crap, like config files,
+dnl pub templates, logs and modules.  Note that lib/ and include/ will
+dnl be under the systemwide lib/ and include/, though maybe in the 
+dnl future it would make sense to move them under the prefix.
+dnl
+AC_DEFUN([OKWS_PREFIX],
+[AC_ARG_WITH(okws_prefix,
+--with-okws-prefix=PATH  Specify an OKWS prefix (PREFIX/okws by default)
+)
+okws_prefix=${prefix}/okws
+if test "${with_okws_prefix+set}" = "set" ; then
+	okws_prefix="$with_okws_prefix"
+fi
+])
+
