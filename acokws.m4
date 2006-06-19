@@ -1908,6 +1908,7 @@ okwshtdocsconfdir='${okwshtdocsdir}/conf'
 okwshtdocserrdir='${okwshtdocsdir}/err'
 okwshtdocsimgdir='${okwshtdocsdir}/img'
 okwshtdocslangdir='${okwshtdocsdir}/lang'
+okwsutildir='${okws_prefix}/bin'
 
 AC_SUBST(okws_prefix)
 AC_SUBST(okws_modules_dir)
@@ -1918,6 +1919,7 @@ AC_SUBST(okwshtdocserrdir)
 AC_SUBST(okwshtdocslangdir)
 AC_SUBST(okwshtdocsconfdir)
 AC_SUBST(okwshtdocsimgdir)
+AC_SUBST(okwsutildir)
 ])
 
 dnl
