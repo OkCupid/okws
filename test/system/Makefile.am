@@ -13,9 +13,6 @@ configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
 xmlex_SOURCES = xmlex.C
 
-SUBDIRS = htdocs
-
-
 SUFFIXES = .g .C .T
 .T.C:
 	-$(TAME) -c $< || rm -f $@
@@ -45,8 +42,8 @@ okws_config: $(srcdir)/okws_config.in
 	sed "s#@@TOP_BUILD@@#$$TOP_BUILD#g" < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
-	TEST_SRC=$(srcdir); \
-	sed "s#@@TEST_SRC@@#$$TEST_SRC#g" < $< > $@
+	TEST_SRC=$(top_srcdir); \
+	sed "s#@@TOP_SRCDIR@@#$$TOP_SRCDIR#g" < $< > $@
 
 tameclean:
 	rm -f $(srcdir)/static.C $(srcdir)/configtest.C $(srcdir)/simple.C \

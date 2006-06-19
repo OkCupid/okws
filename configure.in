@@ -180,6 +180,6 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile conf/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
-	  test/system/Makefile test/system/htdocs/Makefile
-	  test/system/htdocs/err/Makefile test/system/htdocs/d1/Makefile
-	  test/system/htdocs/conf/Makefile test/system/htdocs/lang/Makefile)
+	  test/system/Makefile htdocs/Makefile
+	  htdocs/err/Makefile htdocs/d1/Makefile
+	  htdocs/conf/Makefile htdocs/lang/Makefile)
