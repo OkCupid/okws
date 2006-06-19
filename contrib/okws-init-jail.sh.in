@@ -22,7 +22,7 @@ oij_init() {
 
     test "$LDD"     || LDD=ldd
     test "$PERL"    || PERL=perl
-    test "$INSTALL" || INSTALL=install
+    test "$INSTALL" || INSTALL='install'
     test "$CMP"     || CMP=cmp
     test "$MKDIR"   || MKDIR='mkdir -p'
     
@@ -49,7 +49,7 @@ oij_init() {
 get_configfile()
 {
     if test -z "$CFGFILE" ; then
-	for d in \ # %%okwsconfdir%% \
+	for d in %%okwsconfdir%% \
 	    /usr/local/etc/okws /usr/local/okws/conf /etc/okws/
 	do
 	  CFGFILE=$d/okws_config
@@ -184,8 +184,10 @@ config_jail_dir()
 
     jd=`read_field JailDir 2 1` || return 1
     sb=`read_field SvcBin 2` || sb=""
+    cdd=`read_field CoreDumpDir 2 1` || return 1
 
-    sh="$jd/$sb"
+    sb="$jd/$sb"
+    cdd="$jd/$cdd"
 
     mkdir_complete $jd 0755
     chown root $jd
@@ -195,7 +197,7 @@ config_jail_dir()
     chown root $sb 
     chgrp wheel $sb
 
-    if [ ! -$d $module ] ; then
+    if [ ! -d $module ] ; then
 	echo "Cannot access module directory: $d"  1>&2
 	return 1
     fi
@@ -206,7 +208,7 @@ config_jail_dir()
     
     LIBS=`find $sb -type f -perm -0100 | \
           xargs $LDD 2>/dev/null | \
-          perl -ne '{ print "$1\n" if /=>\s*(\S+); }' | sort | uniq `
+          perl -ne '{ print "$1\n" if /=>\s*(\S+)/ ; }' | sort | uniq `
 
     for lib in $LIBS $LINKER $LINKER_HINTS
     do
@@ -222,6 +224,12 @@ config_jail_dir()
       then
 	  $INSTALL $lib $jlib
       fi
+    done
+    
+    # make an adequate coredump directory
+    mkdir_complete $cdd 0755
+    chown root $cdd
+    chgrp wheel $cdd
 }
 
 #
@@ -244,7 +252,7 @@ for i; do
   esac
 done
 
-if [ $# -lt 2 ] ; then
+if [ $# -lt 1 ] ; then
     usage 
 fi
 
@@ -252,7 +260,7 @@ module=$1
       
 oij_init || usage
 get_configfile || usage
-config_log_dir || exit 3
+#config_log_dir || exit 3
 config_jail_dir $module || exit 3
 
-#read_field $*
+
