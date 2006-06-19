@@ -1878,11 +1878,18 @@ dnl future it would make sense to move them under the prefix.
 dnl
 AC_DEFUN([OKWS_PREFIX],
 [AC_ARG_WITH(okws_prefix,
---with-okws-prefix=PATH  Specify an OKWS prefix (PREFIX/okws by default)
+--with-okws-prefix=PATH         Specify an OKWS prefix (PREFIX/okws by default)
 )
-okws_prefix=${prefix}/okws
+AC_ARG_WITH(okws_module_dir,
+--with-okws-module-dir=PATH   module prefix (okws_prefix/modules by default)
+)
+okws_prefix='${prefix}/okws'
 if test "${with_okws_prefix+set}" = "set" ; then
 	okws_prefix="$with_okws_prefix"
+fi
+okws_module_dir='${okws_prefix}/modules'
+if test "${with_okws_module_dir+set}" = "set"; then
+	okws_module_dir="$with_okws_module_dir"
 fi
 ])
 

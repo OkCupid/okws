@@ -65,8 +65,9 @@ u_int ok_pubd_port = 11278;
 // configuration file constants
 //
 const char *ok_pub_config = "pub_config";
-const char *ok_etc_dir1 = "/usr/local/etc/okws";
-const char *ok_etc_dir2 = "/etc/okws";
+const char *ok_etc_dir1 = "/usr/local/etc/conf";
+const char *ok_etc_dir2 = "/usr/local/etc/okws";
+const char *ok_etc_dir3 = "/etc/okws";
 const char *ok_okws_config = "okws_config";
 const char *ok_okd_config = "okd_config";
 const char *okd_mgr_socket = "/var/run/okd.sock=";
@@ -237,7 +238,7 @@ u_int ok_recycle_suio_limit = 0;
 //
 // various paths to look through, in order
 //
-const char *ok_cfg_path[] = { ok_etc_dir1, ok_etc_dir2, 
+const char *ok_cfg_path[] = { ok_etc_dir1, ok_etc_dir2, ok_etc_dir3,
 			      etc1dir, etc2dir, etc3dir,
 			      NULL };
 

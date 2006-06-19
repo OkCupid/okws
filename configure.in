@@ -128,6 +128,15 @@ else
 fi
 LDADD_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
 
+dnl
+dnl Macros and variables for dealing with OKWS test programs, and 
+dnl scaffolding for build okws modules.
+dnl
+OKWS_PREFIX
+okws_module_dir_tagged='${okws_module_dir}'/${okwstag}
+AC_SUBST(okws_prefix)
+AC_SUBST(okws_module_dir)
+AC_SUBST(okws_module_dir_tagged)
 
 ETAGS_ARGS='-C /dev/null'
 

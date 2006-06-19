@@ -95,6 +95,7 @@ extern const char *ok_pubobjname;
 extern const char *ok_pub_config;
 extern const char *ok_etc_dir1;
 extern const char *ok_etc_dir2;
+extern const char *ok_etc_dir3;
 extern const char *ok_okws_config;
 extern const char *ok_okd_config;
 
