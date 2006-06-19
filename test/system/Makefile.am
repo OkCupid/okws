@@ -42,7 +42,7 @@ okws_config: $(srcdir)/okws_config.in
 	sed "s#@@TOP_BUILD@@#$$TOP_BUILD#g" < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
-	TEST_SRC=$(top_srcdir); \
+	TOP_SRCDIR=$(top_srcdir); \
 	sed "s#@@TOP_SRCDIR@@#$$TOP_SRCDIR#g" < $< > $@
 
 tameclean:

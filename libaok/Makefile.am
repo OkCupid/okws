@@ -50,4 +50,4 @@ MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in 
 
-BUILT_SOURCES = okprot.C okprot.h ok.C xmlrpcsrv.h
+BUILT_SOURCES = okprot.C okprot.h ok.C xmlrpcsrv.h xmlrpcsrv.C
