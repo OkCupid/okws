@@ -8,7 +8,7 @@
 ##
 ## Usage:
 ##
-##    okws-init-jail.sh [-f <config-file>] <module-name>
+##    okws-init-jail.sh [-f <config-file>] <module-path>
 ##
 ##-----------------------------------------------------------------------
 ## $Id: okws-init-jail.sh,v 1.1 2006/06/19 17:20:20 max Exp $
@@ -113,6 +113,7 @@ mkdir_complete()
     fi
     if [ ! -f $d ] ; then
 	$MKDIR $d
+	echo "making dir: " $d
     fi
     if [ ! -d $d ] ; then
 	echo "$MKDIR $d failed!" 1>&2
@@ -131,6 +132,7 @@ touch_file()
     m=$2
     if [ ! -f $f ]; then
 	touch $f
+	echo "creating file: " $f
     fi
     chmod $m $f
     return 0
@@ -141,9 +143,9 @@ touch_file()
 #
 config_log_dir()
 {
-    dir=`read_field LogDir 2` || return 1
-    access=`read_field AccessLog 2` || return 1
-    error=`read_field ErrorLog 2` || return 1
+    dir=`read_field LogDir 2 1` || return 1
+    access=`read_field AccessLog 2 1` || return 1
+    error=`read_field ErrorLog 2 1` || return 1
     user=`read_field OklogdUser 2` 
     group=`read_field OklogdGroup 2`
 
@@ -173,6 +175,56 @@ config_log_dir()
 
 
 #
+# create the jail dir, copy over the needed executables and libraries
+# and other stuff.
+#
+config_jail_dir()
+{
+    module=$1
+
+    jd=`read_field JailDir 2 1` || return 1
+    sb=`read_field SvcBin 2` || sb=""
+
+    sh="$jd/$sb"
+
+    mkdir_complete $jd 0755
+    chown root $jd
+    chgrp wheel $sb
+
+    mkdir_complete $sb 0755
+    chown root $sb 
+    chgrp wheel $sb
+
+    if [ ! -$d $module ] ; then
+	echo "Cannot access module directory: $d"  1>&2
+	return 1
+    fi
+
+    cp -r $module $sb
+    chown -R root $sb
+    chgrp -R wheel $sb
+    
+    LIBS=`find $sb -type f -perm -0100 | \
+          xargs $LDD 2>/dev/null | \
+          perl -ne '{ print "$1\n" if /=>\s*(\S+); }' | sort | uniq `
+
+    for lib in $LIBS $LINKER $LINKER_HINTS
+    do
+      jlib="$jd/$lib"
+      $CMP $jlib $lib > /dev/null 2>& 1
+      diff=$?
+      pdir=`dirname $jlib`
+      if [ ! -d $pdir ] ; then
+	  echo "making dir: $pdir"
+	  $MKDIR $pdir
+      fi
+      if test '(' ! -f $jlib -o $diff -eq 0 ')' -a -f $lib
+      then
+	  $INSTALL $lib $jlib
+      fi
+}
+
+#
 # usage output and kill
 #
 usage() {
@@ -191,9 +243,16 @@ for i; do
       --) shift; break;;
   esac
 done
+
+if [ $# -lt 2 ] ; then
+    usage 
+fi
+
+module=$1
       
 oij_init || usage
 get_configfile || usage
 config_log_dir || exit 3
+config_jail_dir $module || exit 3
 
 #read_field $*
