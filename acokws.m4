@@ -1904,12 +1904,18 @@ AC_DEFINE_UNQUOTED(OKWS_CONFIG_DIR, "$okwsconfdir",
 
 okwsbuildtoolsdir='${okws_prefix}/buildtools'
 okwshtdocsdir='${okws_prefix}/htdocs'
+okwshtdocsconfdir='${okwshtdocsdir}/conf'
+okwshtdocserrdir='${okwshtdocsdir}/err'
+okwshtdocslangdir='${okwshtdocsdir}/lang'
 
 AC_SUBST(okws_prefix)
 AC_SUBST(okws_modules_dir)
 AC_SUBST(okwsbuildtoolsdir)
 AC_SUBST(okwsconfdir)
 AC_SUBST(okwshtdocsdir)
+AC_SUBST(okwshtdocserrdir)
+AC_SUBST(okwshtdocslangdir)
+AC_SUBST(okwshtdocsconfdir)
 ])
 
 dnl
