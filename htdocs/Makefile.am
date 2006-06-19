@@ -5,7 +5,7 @@
 ##   compile and run out of the box, and should be able to test itself.
 ##
 
-SUBDIRS = lang err conf d1
+SUBDIRS = lang err conf test
 
 
 EXTRA_DIST = b.html buggy1.html buggy2.html c1.html c2.html default.html \
