@@ -4,7 +4,7 @@
 ##
 
 HTDOCS_FILES = 		welcome.html
-HTDOCS_ERR_FILES = 	err/404.html
+HTDOCS_ERR_FILES = 	err/404.html err/fnf.html err/parseerr.html
 HTDOCS_CONF_FILES = 	conf/mime.types conf/intl.conf 
 HTDOCS_LANG_FILES = 	lang/welcome.en.html lang/welcome.es.html\
 			lang/welcome.fr.html
@@ -12,8 +12,8 @@ HTDOCS_IMG_FILES =	img/boat.jpg
 
 HTDOCS_TEST_FILES = 	test/b.html test/buggy1.html test/buggy2.html \
 			test/c1.html test/c2.html test/default.html \
-			test/f1.html test/f2.html test/fnf.html \
-			test/newswitch.html test/null.html test/parse.html \
+			test/f1.html test/f2.html \
+			test/newswitch.html test/null.html \
 			test/rel.html test/s1.html test/s2.html \
 			test/switch.html test/x.html \
 			test/d1/a.html test/d1/b.html

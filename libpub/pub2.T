@@ -247,7 +247,6 @@ namespace pub2 {
 	    cache_noent (nm);
 	    strbuf b;
 	    b << nm << ": file not found";
-	    warn << b << "\n";
 	    status.set_status (XPUB_STATUS_NOENT);
 	    *status.error = b;
 	  }

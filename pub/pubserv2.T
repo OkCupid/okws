@@ -27,37 +27,53 @@
 
 namespace pubserv2 {
 
-  srv_t::srv_t (ptr<axprt_stream> x, file_lookup_t *fl, bool p, int fdfd)
-    : clone_server_t (fdfd),
-      local_publisher_t (parser, 0, fl),
+  primary_srv_t::primary_srv_t (ptr<axprt_stream> x, file_lookup_t *fl,
+				int fdfd)
+    : clone_server_t (fdfd), srv_t (x, fl)
+  {
+    if (!clone_server_t::setup ()) {
+      warn << "no socket setup for file descriptor passing!\n";
+    }
+  }
+
+  srv_t::srv_t (ptr<axprt_stream> x, file_lookup_t *fl)
+    : local_publisher_t (parser, 0, fl),
       _x (x), 
       _cli (aclnt::alloc (_x, pub_program_2)),
       _srv (asrv_delayed_eof::alloc (_x, pub_program_2, 
 				     wrap (this, &srv_t::dispatch))),
-      _primary (p),
       _last_update (0),
       _push_deltas (false),
       _registered (true),
       _push_deltas_lock (false),
       _file_lookup (fl)
+  {}
+
+  void srv_t::handle_eof () { delete this; }
+
+  void primary_srv_t::handle_eof ()
   {
-    _file_lookup->register_client (this);
-    if (_primary && !clone_server_t::setup ())
-      warn << "no socket setup for file descriptor passing!\n";
+    warn << "Caught EOF; shutting down.\n";
+    exit (0);
+  }
+
+  void srv_t::handle_clonefd (svccb *sbp)
+  {
+    sbp->reject (PROC_UNAVAIL);
+  }
+
+  void primary_srv_t::handle_clonefd (svccb *sbp)
+  {
+    // Handled by base class clone_server_t
+    clonefd (sbp);
   }
   
   void
   srv_t::dispatch (svccb *sbp)
   {
-    if (!sbp) {
-      if (_primary) {
-	warn << "EOF received; shutting down.\n";
-	exit (0);
-      } else {
-	delete this;
-	return;
-      }
-    }
+    if (!sbp) 
+      handle_eof ();
+
     u_int p = sbp->proc ();
     switch (p) {
     case PUB_NULL:
@@ -73,8 +89,7 @@ namespace pubserv2 {
       get_fstats (sbp);
       break;
     case PUB2_CLONE:
-      // handled by base class: clone_server_t
-      clonefd (sbp);
+      handle_clonefd (sbp);
       break;
     case PUB2_GET_PUSHES:
       { 
@@ -129,9 +144,9 @@ namespace pubserv2 {
   }
 
   void
-  srv_t::register_newclient (ptr<axprt_stream> x)
+  primary_srv_t::register_newclient (ptr<axprt_stream> x)
   {
-    client_accept (x);
+    vNew srv_t (x, _file_lookup);
   }
   
   srv_t::~srv_t ()

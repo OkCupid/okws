@@ -35,14 +35,11 @@
 #include "okdbg.h"
 #include "pub2.h"
 
-// global variables used to time out connection if no contact from parent
+// Version 1 - global variables used to time out connection if no 
+// contact from parent
 pslave_status_t slave_status;
 bool parent_connect;
 bool primary;
-
-// For pubd v2, we need a FD over which to send FDs.  
-int fdfd = -1;
-pubserv2::file_lookup_t *g_file_lookup;
 
 int version = 1;
 
@@ -56,23 +53,12 @@ config_var (pub_config_iface_t *p, const char *vname, T *out)
 void
 client_accept (ptr<axprt_stream> x)
 {
+  assert (version == 1);
   if (!x)
     fatal ("EOF from parent process.\n");
   parent_connect = true;
   bool p = primary && slave_status == PSLAVE_SLAVE;
-
-  switch (version) {
-  case 1:
-    vNew pubserv_t (x, p);
-    break;
-  case 2:
-    vNew pubserv2::srv_t (x, g_file_lookup, p, p ? fdfd : -1);
-    break;
-  default:
-    panic ("Unknown version given");
-    break;
-  }
-
+  vNew pubserv_t (x, p);
   primary = false;
 }
 
@@ -118,16 +104,19 @@ main_T (int argc, char **argv)
     const char *e, *v;
     bool pub2_cache (true);
     bool have_cfg (false);
+
     // Is activated only if we are doing caching and in pub2
-    pubserv2::cache_t *c  (NULL);
+    pubserv2::cache_t *cache (NULL);
+    pubserv2::file_lookup_t *fl (NULL);
+
     str tss, tsh; // treestat sentinel and heartbeat files
     pub_parser_t *ppt;
     ptr<pub2::local_publisher_t> cfgparse;
+    int fdfd (1);
   }
 
   parent_connect = false;
   primary = true;
-  fdfd = -1;
 
   /* need this call to setup global gzip table */
   zinit ();
@@ -240,10 +229,9 @@ main_T (int argc, char **argv)
       config_var (cfgparse, "TreestatCheckInterval",
 		  &ok_pub2_treestat_interval);
 
-      c = New pubserv2::cache_t ();
-      g_file_lookup = c;
+      fl = cache = New pubserv2::cache_t ();
     } else {
-      g_file_lookup = New pubserv2::file_lookup_t ();
+      fl = New pubserv2::file_lookup_t ();
     }
     
   } else if (!pub2_cache) {
@@ -273,8 +261,13 @@ main_T (int argc, char **argv)
       exit (1);
     }
   } else {
-    slave_status = PSLAVE_SLAVE;
+    // Since we're spawned via axprt_unix_dospawnv, that means
+    // that our parent is going to be sending us RPCs on
+    // standard input.
+    ptr<axprt_unix> x (axprt_unix::alloc (0, ok_axprt_ps));
+    vNew pubserv2::primary_srv_t (x, fl, fdfd);
   }
+	  
 
   setsid ();
 
@@ -283,7 +276,7 @@ main_T (int argc, char **argv)
 
   // After we set the jail directory, then we can start messing around
   // with sentinel files.
-  if (c) {
+  if (cache) {
     
     if (!tss && !cfgparse->cfg ("TreeStatSentinel",  &tss, true))
       tss = ppt->jail2real (ok_pub2_treestat_sentinel);
@@ -294,13 +287,13 @@ main_T (int argc, char **argv)
 	   "treestat sentinel file: %s\n"
 	   "treestat heartbeat file: %s\n",
 	   tss.cstr (), tsh.cstr ());
-    c->set_ts_files (tss, tsh);
-    c->start_timer ();
+    cache->set_ts_files (tss, tsh);
+    cache->start_timer ();
   }
 
   cfgparse = NULL;
   set_signals ();
-  if (slave_status == PSLAVE_SLAVE)
+  if (version == 1 && slave_status == PSLAVE_SLAVE)
     delaycb (ok_connect_wait, 0, wrap (pubd_slave_cb));
 }
 

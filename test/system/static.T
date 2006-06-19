@@ -63,7 +63,7 @@ protected:
 
 #define MIME_TYPES_FILE "conf/mime.types"
 #define INTL_CONF_FILE  "conf/intl.conf"
-#define FNF_FILE "/fnf.html"
+#define FNF_FILE "/err/fnf.html"
 
 TAMED void 
 oksrvc_static_t::post_launch_pub2_T (cbb cb)

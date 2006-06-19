@@ -91,31 +91,38 @@ namespace pubserv2 {
     virtual void unregister_client (srv_t *c) {}
   };
   
-  class srv_t : public clone_server_t, public pub2::local_publisher_t {
+  class srv_t : public pub2::local_publisher_t {
   public:
-    srv_t (ptr<axprt_stream> x, file_lookup_t *l,
-	   bool p = false, int fdfd = -1);
-    ~srv_t ();
+    srv_t (ptr<axprt_stream> x, file_lookup_t *l);
+    virtual ~srv_t ();
     void dispatch (svccb *sbp);
     void getfile (svccb *sbp, CLOSURE) ;
     void config (svccb *sbp) {}
     void get_fstats (svccb *sbp) {}
     void push_deltas (ptr<xpub2_delta_set_t> s, cbb cb, CLOSURE);
-    
-    void register_newclient (ptr<axprt_stream> x);
+
+    virtual void handle_clonefd (svccb *sbp);
+    virtual void handle_eof ();
     
     list_entry<srv_t> _lnk;
     
-  private:
+  protected:
     ptr<axprt_stream> _x;
     ptr<aclnt> _cli;
     ptr<asrv> _srv;
-    bool _primary;
     time_t _last_update;
     bool _push_deltas;
     bool _registered;
     bool _push_deltas_lock;
     file_lookup_t *_file_lookup;
+  };
+
+  class primary_srv_t : public clone_server_t, public srv_t {
+  public:
+    primary_srv_t (ptr<axprt_stream> x, file_lookup_t *l, int fdfd);
+    void register_newclient (ptr<axprt_stream> x);
+    void handle_clonefd (svccb *cbp);
+    void handle_eof ();
   };
   
   //-----------------------------------------------------------------------
