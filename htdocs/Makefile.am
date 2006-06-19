@@ -1,16 +1,21 @@
 ##
 ## $Id$
 ##
-##   test2 is our attempt at regression and Unit tests; eventually, should
-##   compile and run out of the box, and should be able to test itself.
 ##
 
-SUBDIRS = lang err conf test
+SUBDIRS = test
 
+HTML_FILES = \
+	conf/mime.types conf/intl.conf \
+	err/404.html \
+	img/okws.gif \
+	welcome.html \
+	lang/welcome.en.html lang/welcome.es.html lang/welcome.en.html
 
-EXTRA_DIST = b.html buggy1.html buggy2.html c1.html c2.html default.html \
-  f1.html f2.html fnf.html intl.html newswitch.html null.html parse.html \
-  rel.html s1.html s2.html switch.html x.html
+okwshtdocs_DATA = $(HTML_FILES)
+
+EXTRA_DIST= $(HTML_FILES)
+
 MAINTAINERCLEANFILES = Makefile.in
 
 
