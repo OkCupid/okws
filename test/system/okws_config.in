@@ -17,9 +17,11 @@ AccessLogFmt	ivt1sbU
 OkMgrSocket	/tmp/okd.sock=
 OkMgrSocketAccessMode	0777
 
-Service		static	/static
-Service		configtest /configtest
-RegexAlias	/static	^(:\d+)?/static/.*$
+Service		static		/static
+RegexAlias	/static		^(:\d+)?/static/.*$
+Alias		/static		/
+
+Service		configtest 	/configtest
 Service		simple	/simple
 Service		xmlex	/xmlrpc
 

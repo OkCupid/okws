@@ -61,9 +61,10 @@ protected:
   oksrvc_static_t *ok_static;
 };
 
-#define MIME_TYPES_FILE "conf/mime.types"
-#define INTL_CONF_FILE  "conf/intl.conf"
-#define FNF_FILE "/err/fnf.html"
+#define MIME_TYPES_FILE   "conf/mime.types"
+#define INTL_CONF_FILE    "conf/intl.conf"
+#define FNF_FILE          "/err/fnf.html"
+#define SPLASH_PAGE       "/welcome.html"
 
 TAMED void 
 oksrvc_static_t::post_launch_pub2_T (cbb cb)
@@ -107,38 +108,47 @@ okclnt_static_t::process_T ()
   if (!(mtm = ok_static->mime_type_map ())) {
     error (MIME_TYPES_FILE);
 
-  } else if (x.match (in)) {
-
-    ofn = x[2];
-    assert (ofn);
-
-    if ((mime_type = mtm->lookup (ofn, &sffx))) {
-
-      if (cicmp (sffx, "html")) {
-	cgi.load_aarr (&aarr);
-      } else {
-	opts |= P_NOPARSE;
-      }
-      set_content_type (mime_type);
-      
-      BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts); }
-
-      if (!rc) 
-	error (ofn);
-      
-    } else {
-      if (sffx) {
-	strbuf b;
-	b << "&lt; <i>no mime-type found for suffix '"
-	  << sffx << "'</i> &gt;";
-	error (b);
-      } else {
-	error ("&lt; <i>no suffix found on file!</i> &gt;");
-      }
+  } else {
+    
+    if (in == "/") {
+      ofn = SPLASH_PAGE;
+    } else if (x.match (in)) {
+      ofn = x[2];
+      assert (ofn);
     }
 
-  } else {
-    error ("&lt; <i>no file specified</i> &gt;");
+    if (ofn) {
+
+      if ((mime_type = mtm->lookup (ofn, &sffx))) {
+
+	if (cicmp (sffx, "html")) {
+	  cgi.load_aarr (&aarr);
+	} else {
+	  opts |= P_NOPARSE;
+	}
+	set_content_type (mime_type);
+	
+	BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts); }
+
+	if (!rc) 
+	  error (ofn);
+	
+      } else {
+	
+	if (sffx) {
+	  strbuf b;
+	  b << "&lt; <i>no mime-type found for suffix '"
+	    << sffx << "'</i> &gt;";
+	  error (b);
+	} else {
+	  error ("&lt; <i>no suffix found on file!</i> &gt;");
+	}
+      }
+
+    } else {
+      error ("&lt; <i>no file specified</i> &gt;");
+    }
+
   }
 
   if (!rc) {

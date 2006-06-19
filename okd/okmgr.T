@@ -139,13 +139,15 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   int ch;
   ctl_mode_t m = CTL_MODE_LOGTURN;
-  str sockname = okd_mgr_socket;
+  str sockname;
+  str sockname_arg;
   str configfile;
   vec<str> files;
   ok_set_typ_t set_typ = OK_SET_SOME;
   int version = 2;
+  bool no_config = false;
 
-  while ((ch = getopt (argc, argv, "lts:f:")) != -1)
+  while ((ch = getopt (argc, argv, "lts:f:F")) != -1)
     switch (ch) {
     case 't':
       m = CTL_MODE_LOGTURN;
@@ -154,10 +156,13 @@ main (int argc, char *argv[])
       m = CTL_MODE_LAUNCH;
       break;
     case 's':
-      sockname = optarg;
+      sockname_arg = optarg;
       break;
     case 'f':
       configfile = optarg;
+      break;
+    case 'F':
+      no_config = true;
       break;
     case 'a':
       set_typ = OK_SET_ALL;
@@ -175,9 +180,20 @@ main (int argc, char *argv[])
 	  files.size () == 0))
     usage ();
 
-  if (!configfile && !sockname) configfile = get_okws_config (false);
-  if (!sockname) sockname = parse_config (configfile);
+  if (sockname_arg && configfile) usage ();
+  if (no_config && configfile) usage ();
+
+  if (sockname_arg) 
+    sockname = sockname_arg;
+  else if (no_config) {
+    sockname = okd_mgr_socket;
+  } else {
+    if (!configfile) configfile = get_okws_config (true);
+    sockname = parse_config (configfile);
+  }
+    
   if (!sockname) fatal << "No socket found to open\n";
+  warn << "Using socket: " << sockname <<"\n";
 
   okmgr_clnt_t *t = NULL;
   switch (m) {
