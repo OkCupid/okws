@@ -214,7 +214,7 @@ OklogdGroup	oklog
 ##   client program (okmgr) connects to the running Web server.
 ##
 OkMgrSocket 			/var/run/okd.sock=
-OkMgrSocketAccessMode		0755
+OkMgrSocketAccessMode		0600
 
 ##
 ## Service <jailed-path> <URI-path>

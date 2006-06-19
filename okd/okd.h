@@ -162,7 +162,7 @@ public:
     reqid (0),
     xtab (2),
     _socket_filename (okd_mgr_socket),
-    _socket_mode (-1)
+    _socket_mode (okd_mgr_socket_mode)
   {
     listenport = p;
   }
