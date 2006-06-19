@@ -35,9 +35,7 @@
 
 <!--#set ({
 
-PORT 		=> 	2003,  		 	// PORT must be in caps
-OkwsData	=>	"/usr/local/okws",      // Not necessary 
-JailDir		=> 	"${OkwsData}/htdocs",	// Pubd Required variable
+JailDir		=> 	"%%okwshtdocsdir%%",	// Pubd Required variable
 RunAsUser	=>	"www",			// Pubd Required variable
 RunAsGroup	=>	${RunAsUser}		// Pubd Required variable
 

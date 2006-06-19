@@ -220,10 +220,10 @@ main_T (int argc, char **argv)
   if (version == 1) {
     if (!configfile || !ppt->parse_config (configfile))
       warn << "v1 error: cannot answer CONFIG RPC's\n";
-  }
 
-  if (port == ok_pubd_port) {
-    config_var (cfgparse, "PORT", &port);
+    if (port == ok_pubd_port) {
+      config_var (cfgparse, "PORT", &port);
+    }
   }
 
   if (version == 2) {
@@ -265,11 +265,17 @@ main_T (int argc, char **argv)
 
   warn ("OKWS version %s, Pub v%d, pid %d\n", 
 	VERSION, version, int (getpid ()));
-  if ((slave_status = pub_slave (wrap (client_accept), port, &slave_status)) 
-      == PSLAVE_ERR) {
-    warn << port << ": port already in use / can't bind to port\n";
-    exit (1);
+
+  if (version == 1) {
+    if ((slave_status = pub_slave (wrap (client_accept), port, &slave_status)) 
+	== PSLAVE_ERR) {
+      warn << port << ": port already in use / can't bind to port\n";
+      exit (1);
+    }
+  } else {
+    slave_status = PSLAVE_SLAVE;
   }
+
   setsid ();
 
   // set the privileges for the regular parse running
