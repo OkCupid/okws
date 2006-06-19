@@ -2,7 +2,7 @@
 ## $Id$
 ##
 ## This is the primary okd configuration file, which is typcially placed
-## in /usr/local/etc/okws.  This file needs to be editted before your
+## in /usr/local/okws/conf.  This file needs to be editted before your
 ## OKWS will work.  By default, currently, OKWS does not come with any
 ## compiled modules, though in future versions, it might....
 ##
@@ -13,7 +13,7 @@
 ##   tells okd which IP address to bind to, and which port to listen on.
 ##   Default port is 80.
 ##  	
-BindAddr 	0.0.0.0 8081
+BindAddr 	0.0.0.0 80
 
 ##
 ## ListenPorts <ports>
@@ -23,7 +23,8 @@ BindAddr 	0.0.0.0 8081
 ##   the port given in "BindAddr" above will still be the implicit
 ##   (and primary) port that okd listens on.
 ##
-ListenPorts 80 8080 8011
+##
+#ListenPorts 80 8080 8011
 
 
 ##
@@ -31,16 +32,9 @@ ListenPorts 80 8080 8011
 ##
 ##   All services run by okd will be in a chroot jail, assuming that okd
 ##   is started as root.  Specify where this chroot jail is with the
-##   jaildir parameter.  Note that after you install your services,
-##   they will be in a directory given by:
+##   jaildir parameter.
 ##
-##      /usr/local/okws/modules/<name>/<version>/<tag>/run
-##   
-##   by default.  We recommend at first that you compile with 
-##   debug mode, so in the above, name=example, version=0.1,
-##   and tag=debug.
-##
-JailDir 	/usr/local/okws/modules/example/0.1/debug/run
+JailDir 	/var/okws/run
 
 ##
 ## ServiceBin <dir>
@@ -57,12 +51,12 @@ ServiceBin	svc
 ##	read local named UNIX sockets. For instance, if the
 ##	the following configuration is specified:
 ##
-##		JailDir		/var/okws/modules/example/0.1/debug/run
+##		JailDir		/var/okws/run
 ##		SocketDir	/sockets
 ##
 ##	then the final socket directory will live:
 ##
-##		/var/okws/modules/example/0.1/debug/run/sockets
+##		/var/okws/run/sockets
 ##
 ##	on the physical, unjailed file system.
 ##
@@ -76,7 +70,7 @@ SocketDir	/sockets
 ##   on boot for these coredump files.  If okld is run as non-root,
 ##   then services will dump to whichever directory they were booted
 ##   into. Note that you will need to enable setgid coredumps on your
-##   system, which is sometime turned off for security reasons.  
+##   system, which is sometimes turned off for security reasons.  
 ##   On FreeBSD, for instance:
 ##
 ##	 sysctl kern.sugid_coredump=1
@@ -117,10 +111,10 @@ OkdGroup	www
 ##   The parent directory for OKWS standard executables, such as 
 ##   okd, pubd, and oklogd.
 ##
-TopDir /usr/local/lib/okws
+TopDir @@okwslibdir@@
 
 ##
-## PubdExecPath <path>
+## Pubd2ExecPath <path>
 ##
 ##   Tell okd where the Publishing Daemon (pubd) can be launched from.  Okd
 ##   will launch pubd prior to calling chroot, so the path should be relative
@@ -128,21 +122,12 @@ TopDir /usr/local/lib/okws
 ##   of the configuration directives that call upon it.
 ##
 ##   Note that it's possible to give command line options to pub here.
-##   Specify the "-w" option, for instance, turns on White-space-stripping
-##   which results in pretty good space savings.
+##   Specify the "-2" option for the recommended second version of
+##   the pub protocol.
 ##
-## PubdInet <ip-addr> <port>
+##   Can specify with -f the configuration file pubd uses.
 ##
-##   Alternatively, okd can connect to pubd over a TCP socket at the given
-##   IP address and port.
-##
-## PubdUnix <path>
-##
-##   Alternatively, okd can connect to pubd over a Unix domain socket. This
-##   path is relative to the real top of the file system, and not the 
-##   chroot jail.
-##
-PubdExecPath	pubd -w
+Pubd2ExecPath	pubd -2 -f @@okwsconfdir@@/pub_config.dist
 
 ##
 ## OkdlogdExecPath <path>
@@ -184,7 +169,7 @@ OkdExecPath 	okd
 ## 
 ##   These values are subject to change with future releases.
 ##
-LogDir		/var/log/okws
+LogDir		@@okws_prefix@@/logs
 AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU
@@ -211,6 +196,18 @@ OklogdGroup	oklog
 #UnsafeMode 0
 
 ##
+## Management Socket
+##
+##   OKWS keeps a management socket open, outside the jail, for 
+##   administrators to perform simple management tasks on a running
+##   Web server, such as turning over log files, or relaunching 
+##   Web services.  This Unix socket will be the way that a small
+##   client program (okmgr) connects to the running Web server.
+##
+#OkMgrSocket 			/var/run/okd.sock=
+#OkMgrSocketAccessMode		0777
+
+##
 ## Service <jailed-path> <URI-path>
 ##
 ##   Tells okd to launch and route to particular services.  The first argument
@@ -232,18 +229,16 @@ OklogdGroup	oklog
 ##   a ":" and a port # to the URI-path. An example is given below
 ## 
 ##
-Service 	google 	/google        # listen port=8081
-Service		pt1	/pt1           # listen port=8081
-Service 	pt2 	:8080/pt2      # listen port=8080
-
+#Service 	foo 	:8080/foo      # listen port=8080
+#
 ##
 ##   With the Service directive, it is also possible to pass 
 ##   environment variables specific to the particular service.
 ##   In the following example, we're telling the dmalloc library
 ##   to turn on runtime debug checks for only the login service:
 ##
-Service	DMALLOC_OPTIONS=debug=0x4f4ed03,inter=100 login /login
-
+#Service DMALLOC_OPTIONS=debug=0x4f4ed03,inter=100 login /login
+#
 ##
 ##   It is also possible to set a per-service limit on requests
 ##   served or lifetime, with the -r and -t flags, respectively.
@@ -252,7 +247,15 @@ Service	DMALLOC_OPTIONS=debug=0x4f4ed03,inter=100 login /login
 ##   In this example, run logout for either 1000 requests, or for
 ##   30000 seconds, whichever comes first.
 ##
-Service logout -r 1000 -t 30000 /logout
+#Service logout -r 1000 -t 30000 /logout
+#
+
+##
+## For test, launch 2 services; one for static pages, and the other for
+## serving dummy XML-RPC requests
+##
+Service		static		/static
+Service		xmlex		/xmlrc
 
 ##
 ## Gzip Compression Configuration
@@ -270,7 +273,7 @@ GzipCacheMax	0x10000     # maximum size of string to cache
 GzipMemLevel	9	    # maximum memory utilization
 
 ##
-## Aliases <To-URI> <From-URI>
+## Aliases <To-Service> <From-URI>
 ##
 ##   You can alias one URI to another rather easily using this
 ##   directive.
@@ -280,12 +283,27 @@ GzipMemLevel	9	    # maximum memory utilization
 ##   service available simultaneously on two different ports.
 ##
 ##   For the examples below, recall that we've set the **default port**
-##   to 8081 via the "BindAddr" directive above.
+##   to 80 via the "BindAddr" directive above.
 ##
+#Alias	/t1	 /test1		# http://x.cc/test1 -> http://x.cc/t1
+#Alias	:8081/t1 :8080/test2	# http://x.cc:8080/test2 -> http://x.cc:8081/t1
+#Alias	/t1	:80/test3	# http://x.cc/test3 -> http://x.cc:8081/t1
+
+Alias 		/static	/	# Splash-page served by 'static' service
+
 ##
-Alias	/t1	/test1		# http://x.cc:8081/test1 -> http://x.cc:8081/t1
-Alias	:80/t1	:8080/test2	# http://x.cc:8080/test2 -> http://x.cc/t1
-Alias	/t1	:80/test3	# http://x.cc/test3 -> http://x.cc:8081/t1
+## RegexAlias <To-Service> <From-URI-Regex>
+##
+## Map any request matching for the From-URI-Regex regex to the given 
+## "To Service."
+##
+## Below, any URL of the form:
+##
+##	http://x.cc/static/foo.html
+##
+## also served by the 'static' service.
+##
+RegexAlias	/static ^(:\d+)?/static/.*$
 
 ##
 ## Log Timing
@@ -347,7 +365,7 @@ FilterCGI 2
 ##   Custom error documents might have variable expansions for the 
 ##   variables: ${STATUS}, ${SERVINFO}, ${AUXSTR}
 ##
-#ErrorDoc	404	/404.html
+ErrorDoc	404	/err/404.html
 #ErrorDoc	500	/500.html
 
 
@@ -374,7 +392,7 @@ FilterCGI 2
 ##   with the added ability to specify that the given script must be
 ##   run with the given interpreter.
 ##
-Script PY /py-svc/users.py /users
+#Script PY /py-svc/users.py /users
 
 ##=======================================================================
 ## Other Miscellaneous Options
