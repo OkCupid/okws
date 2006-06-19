@@ -1906,6 +1906,7 @@ okwsbuildtoolsdir='${okws_prefix}/buildtools'
 okwshtdocsdir='${okws_prefix}/htdocs'
 okwshtdocsconfdir='${okwshtdocsdir}/conf'
 okwshtdocserrdir='${okwshtdocsdir}/err'
+okwshtdocsimgdir='${okwshtdocsdir}/img'
 okwshtdocslangdir='${okwshtdocsdir}/lang'
 
 AC_SUBST(okws_prefix)
@@ -1916,6 +1917,7 @@ AC_SUBST(okwshtdocsdir)
 AC_SUBST(okwshtdocserrdir)
 AC_SUBST(okwshtdocslangdir)
 AC_SUBST(okwshtdocsconfdir)
+AC_SUBST(okwshtdocsimgdir)
 ])
 
 dnl

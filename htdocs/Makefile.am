@@ -3,13 +3,12 @@
 ##
 ##
 
-SUBDIRS = test
-
 HTDOCS_FILES = 		welcome.html
 HTDOCS_ERR_FILES = 	err/404.html
 HTDOCS_CONF_FILES = 	conf/mime.types conf/intl.conf 
 HTDOCS_LANG_FILES = 	lang/welcome.en.html lang/welcome.es.html\
-			lang/welcome.en.html
+			lang/welcome.fr.html
+HTDOCS_IMG_FILES =	img/boat.jpg
 
 HTDOCS_TEST_FILES = 	test/b.html test/buggy1.html test/buggy2.html \
 			test/c1.html test/c2.html test/default.html \
@@ -23,9 +22,12 @@ okwshtdocs_DATA = 	$(HTDOCS_FILES)
 okwshtdocserr_DATA = 	$(HTDOCS_ERR_FILES)
 okwshtdocslang_DATA = 	$(HTDOCS_LANG_FILES)
 okwshtdocsconf_DATA = 	$(HTDOCS_CONF_FILES)
+okwshtdocsimg_DATA = 	$(HTDOCS_IMG_FILES)
 
 EXTRA_DIST= 	$(HTDOCS_FILES) $(HTDOCS_ERR_FILES) $(HTDOCS_LANG_FILES) \
-		$(HTDOCS_TEST_FILES) $(HTDOCS_CONF_FILES)
+		$(HTDOCS_TEST_FILES) $(HTDOCS_CONF_FILES) \
+		$(HTDOCS_IMG_FILES)
+		
 
 MAINTAINERCLEANFILES = Makefile.in
 
