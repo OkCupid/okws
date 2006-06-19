@@ -223,4 +223,7 @@ struct ok_grp_t : public ok_idpair_t {
 // debug function
 void ls (const str &s);
 
+// strip comments after getline returns
+void strip_comments (vec<str> *in);
+
 #endif /* _LIBPUB_PUBUTIL_H */

@@ -817,6 +817,8 @@ ok_base_t::okws_exec (const str &s) const
 void
 ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
+
   static rxx addr_rxx ("(\\*|[0-9.]+)(:([0-9]+))?");
 
   in_addr addr;
@@ -863,6 +865,8 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
 void
 ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
+
   str cmd = s.pop_front ();
   while (s.size ()) {
     u_int32_t t;

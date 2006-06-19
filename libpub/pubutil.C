@@ -341,6 +341,7 @@ dir_standardize (const str &s)
 void
 got_dir (str *out, vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   if (s.size () != 2) {
     warn << loc << ": usage: " << s[0] << " <path>\n";
     *errp = true;
@@ -588,4 +589,26 @@ errcode2str (const xpub_status_t &x)
     break;
   }
   return r;
+}
+
+void
+strip_comments (vec<str> *in)
+{
+  ssize_t start_from = -1;
+  ssize_t lim = in->size ();
+  for (ssize_t i = 0; i < lim; i++) {
+    const char *cp = (*in)[i].cstr ();
+    const char *pp = strchr (cp, '#');
+    if (pp) {
+      if (pp == cp) {
+	start_from = i;
+      } else {
+	(*in)[i] = str (cp, pp - cp);
+	start_from = i + 1;
+      }
+      break;
+    }
+  }
+  while ( start_from >= 0 && start_from < ssize_t (in->size ()) )
+    in->pop_back ();
 }

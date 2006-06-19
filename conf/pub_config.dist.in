@@ -25,7 +25,7 @@
 //	  - Setgid to this user after chroot'ing.
 //
 //   Other variables can be supplied here, as well as including other
-//   configuration files with a "<!--#include .. -->" statement.  The
+//   configuration files with an "include" statement.  The
 //   Variables set here will be treated as global defaults for all
 //   documents published by this particular pubd.
 //

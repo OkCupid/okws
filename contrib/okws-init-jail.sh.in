@@ -39,6 +39,9 @@ oij_init() {
 	    exit 128
 	fi
     fi
+    if test -z "$LINKER_HINTS" ; then
+	LINKER_HINTS='/var/run/ld-elf.so.hints /var/run/ld.so.hints /etc/ld.so.cache'
+    fi
     return 0
 }
 
@@ -63,6 +66,47 @@ get_configfile()
 	return 1
     fi
     return 0
+}
+
+#
+# checkuser <user>
+#
+#   Check that the given user exists
+#
+checkuser()
+{
+    if [ $# -ge 2 -a "$2" ] ; then
+	verbose=1
+    else
+	verbose=0
+    fi
+    awk -F: ' { print $1 } ' /etc/passwd | grep -e "^$1\$" 2>&1 >/dev/null
+    ret=$?
+    if [ $verbose -eq 1 -a $ret -ne 0 ] ; then
+	echo "User not found:" $1 1>&2
+    fi
+    return $ret
+}
+
+#
+# checkgroup <grp>
+#
+#   Check that the given group exists
+#
+checkgroup ()
+{
+    if [ $# -ge 2 -a "$2" ] ; then
+	verbose=1
+    else
+	verbose=0
+    fi
+
+    awk -F: ' { print $1 } ' /etc/group | grep -e "^$1\$" 2>&1 >/dev/null
+    ret=$?
+    if [ $verbose -eq 1 -a $ret -ne 0 ] ; then
+	echo "Group not found: " $1 1>&2
+    fi
+    return $ret
 }
 
 #
@@ -107,11 +151,11 @@ mkdir_complete()
 {
     d=$1
     m=$2
-    if [ -f $d -a ! -d $d ]; then
+    if [ -e $d -a ! -d $d ]; then
 	echo "$d exists, but isn't a directory!" 1>&2
 	return 1
     fi
-    if [ ! -f $d ] ; then
+    if [ ! -d $d ] ; then
 	$MKDIR $d
 	echo "making dir: " $d
     fi
@@ -159,12 +203,14 @@ config_log_dir()
     touch_file $dir/$error 0644
 
     if test "$user" ; then
+	checkuser $user 1 || return 1
 	for f in $dir $dir/$access $dir/$error ; do
 	    chown $user $f
 	done
     fi
 
     if test "$group"; then 
+	checkgroup $group 1 || return 1
 	for f in $dir $dir/$access $dir/$error ; do
 	    chgrp $group $f
 	done
@@ -257,10 +303,10 @@ if [ $# -lt 1 ] ; then
 fi
 
 module=$1
-      
+
 oij_init || usage
 get_configfile || usage
-#config_log_dir || exit 3
+config_log_dir || exit 3
 config_jail_dir $module || exit 3
 
 

@@ -88,21 +88,34 @@ parse_config (const str &f)
   vec<str> av;
   int line;
   str s;
+  str j;
   bool e;
+  struct stat sb;
 
   conftab ct;
-  ct.add ("OkMgrSocket", &s);
+  
+  ct.add ("OkMgrSocket", &s)
+    .add ("JailDir", &j);
 
   if (!can_read (f))
     return NULL;
 
   parseargs pa (f);
   while (pa.getline (&av, &line)) {
-    if (ct.match (av, f, line, &e)) {
-      return s;
+    ct.match (av, f, line, &e);
+  }
+
+  if (j) {
+    if (!s) { s = okd_mgr_socket; }
+    str s2 = s;
+    if (s2[0] == '/') { s2 = substr (s2, 1, s2.len() - 1); }
+    str x = apply_container_dir (j, s2);
+    if (stat (x.cstr (), &sb) == 0) {
+      return x;
     }
   }
-  return NULL;
+
+  return s;
 }
 
 TAMED void

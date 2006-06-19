@@ -102,6 +102,8 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
   s.pop_front ();
   vec<str> env;
 
+  strip_comments (&s);
+
   static rxx envsep ("=");
 
   bool fnd_dbg = false;
@@ -231,6 +233,8 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
 void
 okld_t::got_interpreter (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
+
   // pop off "Interpreter"
   str cmd = s.pop_front ();
 
@@ -286,6 +290,8 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   okws1_port_t port;
   okld_ch_t *chld;
   svc_options_t so;
+
+  strip_comments (&s);
 
   //
   // pop off "Service2"
@@ -364,6 +370,9 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   str ipret_str;
   okld_ch_t *ch = NULL;
   svc_options_t so;
+
+  // Remove the '#' and everything after...
+  strip_comments (&s);
 
   //
   // pop off "Service" or "Script"
@@ -451,6 +460,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
 void
 okld_t::got_regex_alias (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   if (s.size () != 3 && s.size () != 4) {
     warn << loc << ": usage: RegexAlias <to-URI> <regex> [<opts>]\n";
     *errp = true;
@@ -476,6 +486,7 @@ okld_t::got_regex_alias (vec<str> s, str loc, bool *errp)
 void
 okld_t::got_alias (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   if (s.size () != 3) {
     warn << loc << ": usage: Alias <to-URI> <from-URI>\n";
     *errp = true;
@@ -1036,12 +1047,14 @@ okld_t::shutdown2 (int status)
   else
     warn << "caught clean okd exit\n";
 
-  if (stat (_okd_mgr_socket.cstr (), &sb) == 0) {
+  str s = jail2real (_okd_mgr_socket);
+
+  if (stat (s.cstr (), &sb) == 0) {
     if (status != (NO_SOCKET_ALLOCATED * 256)) {
-      warn << "Deleting management socket: " << _okd_mgr_socket << "\n";
-      unlink (_okd_mgr_socket);
+      warn << "Deleting management socket: " << s << "\n";
+      unlink (s);
     } else {
-      warn << "Leaving management socket (" << _okd_mgr_socket 
+      warn << "Leaving management socket (" << s 
 	   << ") since it's likely not ours.\n";
     }
   }

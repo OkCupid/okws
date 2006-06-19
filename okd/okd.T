@@ -73,6 +73,7 @@ void
 okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
 {
   str name;
+  strip_comments (&s);
   if (s.size () != 2 || access (s[1], R_OK) != 0) {
     warn << loc << ": usage: PubdUnix <socketpath>\n";
     *errp = true;
@@ -88,6 +89,7 @@ okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   int status;
   if (s.size () != 3 || !convertint (s[1], &status)) {
     warn << loc << ": usage: ErrorDoc <status> <pub-path>\n";
@@ -111,6 +113,7 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   if (s.size () <= 1) {
     warn << loc << ": usage: PubdExecPath <path-to-pubd>\n";
     *errp = true;
@@ -141,6 +144,7 @@ okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   u_int port = ok_pubd_port;
   str name = "localhost";
   if (s.size () == 2) {
@@ -192,6 +196,7 @@ okd_t::launch_logd (cbb cb)
 void
 okd_t::got_alias (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   if (s.size () != 3) {
     warn << loc << ": usage: Alias <to-URI> <from-URI>\n";
     *errp = true;
@@ -203,6 +208,7 @@ okd_t::got_alias (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_regex_alias (vec<str> s, str loc, bool *errp)
 {
+  strip_comments (&s);
   if (s.size () != 3 && s.size () != 4) {
     warn << loc << ": usage: RegexAlias <to-URI> <regex> [<opts>]\n";
     *errp = true;
@@ -226,14 +232,14 @@ okd_t::open_mgr_socket ()
   // assuming he has a machine behind the firewall. better to either 
   // authenticate or to have the manager reachable only via a local
   // unix socket
-  if (stat (_socket_filename, &sb) == 0) {
-    warn << "Management socket (" << _socket_filename 
-	 << ") already exists or is in use!\n";
+  str s = jail2real (_socket_filename);
+  if (stat (s, &sb) == 0) {
+    warn << "Management socket (" << s << ") already exists or is in use!\n";
     exit (NO_SOCKET_ALLOCATED);
   }
 
-  if (!pub_server (wrap (this, &okd_t::newmgrsrv), _socket_filename)) {
-    warn << "Cannot open management socket (" << _socket_filename << ")\n";
+  if (!pub_server (wrap (this, &okd_t::newmgrsrv), s)) {
+    warn << "Cannot open management socket (" << s<< ")\n";
     exit (NO_SOCKET_ALLOCATED);
   }
 
@@ -247,19 +253,20 @@ okd_t::open_mgr_socket ()
     if (!u) fatal << "Cannot find user: " << u.getname () << "\n";
     if (!g) fatal << "Cannot find group: " << g.getname () << "\n";
 
-    if (chown (_socket_filename.cstr (), u.getid (), g.getid ()) != 0) {
+    if (chown (s.cstr (), u.getid (), g.getid ()) != 0) {
       fatal << "Failed to chown " << u.getname () << "." << g.getname ()
-	    << "on the management socket '" << _socket_filename << "'\n";
+	    << "on the management socket '" << s << "'\n";
     }
   }
   if (_socket_mode >= 0) {
-    if (chmod (_socket_filename.cstr (), _socket_mode) != 0) {
+    if (chmod (s.cstr (), _socket_mode) != 0) {
       fatal << "Cannot alter permisions on the management socket "
-	    << "'" << _socket_filename << "'\n";
+	    << "'" << s << "'\n";
     }
   }
 
-  warn << "Using management socket: " << _socket_filename << "\n";
+  warn << "Using management socket: " << _socket_filename
+       << " (jail2real: " << s << ")\n";
 }
 
 void
