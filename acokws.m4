@@ -1868,6 +1868,7 @@ if test "$with_expat" != "no"; then
 fi
 AC_SUBST(LIBEXPAT)
 ])
+
 dnl
 dnl OKWS_PREFIX
 dnl
@@ -1880,16 +1881,47 @@ AC_DEFUN([OKWS_PREFIX],
 [AC_ARG_WITH(okws_prefix,
 --with-okws-prefix=PATH         Specify an OKWS prefix (PREFIX/okws by default)
 )
-AC_ARG_WITH(okws_module_dir,
---with-okws-module-dir=PATH   module prefix (okws_prefix/modules by default)
+AC_ARG_WITH(okws_modules_dir,
+--with-okws-modules-dir=PATH   module prefix (okws_prefix/modules by default)
 )
+
 okws_prefix='${prefix}/okws'
 if test "${with_okws_prefix+set}" = "set" ; then
 	okws_prefix="$with_okws_prefix"
 fi
-okws_module_dir='${okws_prefix}/modules'
-if test "${with_okws_module_dir+set}" = "set"; then
-	okws_module_dir="$with_okws_module_dir"
+okws_modules_dir='${okws_prefix}/modules'
+if test "${with_okws_modules_dir+set}" = "set"; then
+	okws_modules_dir="$with_okws_modules_dir"
 fi
+
+okwsbuildtoolsdir='${okws_prefix}/buildtools'
+okwsconfdir='${okws_prefix}/conf'
+
+AC_SUBST(okws_prefix)
+AC_SUBST(okws_modules_dir)
+AC_SUBST(okwsbuildtoolsdir)
+])
+
+dnl
+dnl OKWS_MODULE
+dnl
+dnl A module is a bundle of services, libraries, and proxies that make
+dnl a Web site running on this machine
+dnl
+AC_DEFUN([OKWS_MODULE],
+[AC_ARG_WITH(module_name,
+--with-module-name=NAME  module name ('PACKAGE' by default')
+)
+module_name='${PACKAGE}'
+if test "${with_module_name+set}" = "set"; then
+	module_name="$with_module_name"
+fi
+
+module_dir='${okws_modules_dir}/${okwstag}/${module_name}'
+okwssvcdir='${module_dir}/svc'
+
+AC_SUBST(module_dir)
+AC_SUBST(module_name)
+AC_SUBST(okwssvcdir)
 ])
 

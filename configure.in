@@ -128,15 +128,27 @@ else
 fi
 LDADD_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
 
+
 dnl
-dnl Macros and variables for dealing with OKWS test programs, and 
-dnl scaffolding for build okws modules.
+dnl Where OKWS stores its files (except for those otherwise dumped
+dnl in lib/ and include/)
 dnl
 OKWS_PREFIX
-okws_module_dir_tagged='${okws_module_dir}'/${okwstag}
-AC_SUBST(okws_prefix)
-AC_SUBST(okws_module_dir)
-AC_SUBST(okws_module_dir_tagged)
+
+dnl
+dnl Macros and variables for dealing with an OKWS 'Module'.
+dnl An OKWS 'Module' is a bundle of services, libraries, and maybe
+dnl DB-proxies or RPC servers.  In this case, we're just build a test
+dnl module for out-of-the-box testing. In other cases, we might 
+dnl be using this macro to build something useful.
+dnl
+OKWS_MODULE
+
+dnl
+dnl The OKWS prefix macro sets the module name to $PACKAGE, but
+dnl we want to hardcode to 'test' in this case.
+dnl
+module_name='test'
 
 ETAGS_ARGS='-C /dev/null'
 

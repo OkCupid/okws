@@ -12,7 +12,9 @@ SUBDIRS = $(SBD1) $(SBD2) okd logd client test etc
 
 #test
 
-EXTRA_DIST = setup autoconf.sed .cvsignore 
+EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4
+
+okwsbuildtools_DATA = acokws.m4
 
 CLEANFILES = core *.core *~
 

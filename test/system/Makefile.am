@@ -7,7 +7,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = static configtest simple xmlex
+okwssvc_PROGRAMS = static configtest simple xmlex
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
