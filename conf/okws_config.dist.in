@@ -111,7 +111,7 @@ OkdGroup	www
 ##   The parent directory for OKWS standard executables, such as 
 ##   okd, pubd, and oklogd.
 ##
-TopDir @@okwslibdir@@
+TopDir %%okwslibdir%%
 
 ##
 ## Pubd2ExecPath <path>
@@ -127,7 +127,7 @@ TopDir @@okwslibdir@@
 ##
 ##   Can specify with -f the configuration file pubd uses.
 ##
-Pubd2ExecPath	pubd -2 -f @@okwsconfdir@@/pub_config.dist
+Pubd2ExecPath	pubd -2 -f %%okwsconfdir%%/pub_config.dist
 
 ##
 ## OkdlogdExecPath <path>
@@ -169,7 +169,7 @@ OkdExecPath 	okd
 ## 
 ##   These values are subject to change with future releases.
 ##
-LogDir		@@okws_prefix@@/logs
+LogDir		%%okws_prefix%%/logs
 AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU

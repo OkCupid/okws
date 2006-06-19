@@ -1884,6 +1884,8 @@ AC_DEFUN([OKWS_PREFIX],
 AC_ARG_WITH(okws_modules_dir,
 --with-okws-modules-dir=PATH   module prefix (okws_prefix/modules by default)
 )
+AC_ARG_WITH(okws_config_dir,
+--with-okws-config-dir=PATH    path to default configuration dir)
 
 okws_prefix='${prefix}/okws'
 if test "${with_okws_prefix+set}" = "set" ; then
@@ -1893,13 +1895,21 @@ okws_modules_dir='${okws_prefix}/modules'
 if test "${with_okws_modules_dir+set}" = "set"; then
 	okws_modules_dir="$with_okws_modules_dir"
 fi
+okwsconfdir='/usr/local/etc/okws'
+if test "${with_okws_config_dir+set}" = "set"; then
+	okwsconfdir="$with_okws_config_dir"
+fi
+AC_DEFINE_UNQUOTED(OKWS_CONFIG_DIR, "$okwsconfdir", 
+	First in the search path for OKWS configuration)
 
 okwsbuildtoolsdir='${okws_prefix}/buildtools'
-okwsconfdir='${okws_prefix}/conf'
+okwshtdocsdir='${okws_prefix}/htdocs'
 
 AC_SUBST(okws_prefix)
 AC_SUBST(okws_modules_dir)
 AC_SUBST(okwsbuildtoolsdir)
+AC_SUBST(okwsconfdir)
+AC_SUBST(okwshtdocsdir)
 ])
 
 dnl
