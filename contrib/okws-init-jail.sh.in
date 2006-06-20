@@ -168,6 +168,18 @@ mkdir_complete()
 }
 
 #
+# Make a directory for root, chmod'ed 0755, chowned to root, chgrp'ed
+# to wheel.
+#
+mkdir_for_root()
+{
+    d=$1
+    mkdir_complete $d 0755
+    chown root $d
+    chgrp wheel $d
+}
+
+#
 # touch a file if it doesn't exist already
 #
 touch_file()
@@ -229,19 +241,14 @@ config_jail_dir()
     module=$1
 
     jd=`read_field JailDir 2 1` || return 1
-    sb=`read_field SvcBin 2` || sb=""
+    sb=`read_field ServiceBin 2` || sb=""
     cdd=`read_field CoreDumpDir 2 1` || return 1
 
     sb="$jd/$sb"
     cdd="$jd/$cdd"
 
-    mkdir_complete $jd 0755
-    chown root $jd
-    chgrp wheel $sb
-
-    mkdir_complete $sb 0755
-    chown root $sb 
-    chgrp wheel $sb
+    mkdir_for_root $jd
+    mkdir_for_root $sb
 
     if [ ! -d $module ] ; then
 	echo "Cannot access module directory: $d"  1>&2
@@ -273,9 +280,13 @@ config_jail_dir()
     done
     
     # make an adequate coredump directory
-    mkdir_complete $cdd 0755
-    chown root $cdd
-    chgrp wheel $cdd
+    mkdir_for_root $cdd
+
+    # make a directory for OkMgrSocket
+    sn=`read_field OkMgrSocket 2 1` || sn="/var/run/okd.sock="
+    sn="$jd/$sn"
+    sd=`dirname $sn`
+    mkdir_for_root $sd
 }
 
 #

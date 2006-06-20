@@ -104,9 +104,25 @@ test:	all
 	@echo "   Starting up OKWS in place for testing!"
 	@echo "     - config file: test/system/okws_config"
 	@echo "     - Binding to: Port 8081"
+	@echo "     - Running okld as: you!"
 	@echo "   Hit Control-C to end test."
 	@echo ======================================================= 
 	okd/okld -f test/system/okws_config	
+
+.PHONY: roottest
+roottest: install
+	sh contrib/okws-init-jail.sh \
+		-f $(okwsconfdir)/okws_config.dist \
+		$(okwssvcdir)/
+	@echo =======================================================
+	@echo "   Starting up OKWS in place for testing!"
+	@echo "     - config file: $(okwsconfdir)/okws_config.dist"
+	@echo "     - Binding to: Port 80"
+	@echo "     - Running okld as: root"
+	@echo "   Hit Control-C to end test."
+	@echo ======================================================= 
+	$(okwsbindir)/okld -f $(okwsconfdir)/okws_config.dist
+
 
 .PHONY: buildclean
 buildclean: tameclean rpcclean
