@@ -14,7 +14,7 @@ AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU
 
-OkMgrSocket	/tmp/okd.sock=
+OkMgrSocket				okd.sock=
 OkMgrSocketAccessMode	0777
 
 Service		static		/static
