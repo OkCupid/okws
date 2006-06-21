@@ -138,6 +138,7 @@ public:
   int set_lowwat (int sz);
   bool timed_out () const { return _timed_out; }
   void set_drained_cb (cbv cb);
+  void cancel () { fail (HTTP_CLIENT_EOF); }
   
   const time_t start;
 

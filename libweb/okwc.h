@@ -248,8 +248,6 @@ public:
 		      const str &post, const str &type);
 
 protected:
-  void body_parse ();
-  void body_parsed (str bod);
   void finish2 (int status);
   void cancel2 ();
   void eat_chunk (size_t s);
