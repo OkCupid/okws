@@ -130,7 +130,7 @@ BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h fd_prot.C fd_prot.h \
 	txa_prot.h txa_prot.C pub2.C clone.C
 
 CLEANFILES = core *.core *~ *.rpo 
-EXTRA_DIST = .cvsignore 
+EXTRA_DIST = .cvsignore  pub2.T clone2.T
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in  parse.cc parse.h scan.cc

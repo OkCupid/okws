@@ -137,7 +137,7 @@ public:
   bool overflow () const { return overflow_flag; }
   int set_lowwat (int sz);
   bool timed_out () const { return _timed_out; }
-  void set_drained_cb (cbv cb);
+  void set_drained_cb (cbv::ptr cb);
   void cancel () { fail (HTTP_CLIENT_EOF); }
   
   const time_t start;

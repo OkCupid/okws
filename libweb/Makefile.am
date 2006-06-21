@@ -28,6 +28,16 @@ web_prot.h: $(srcdir)/web_prot.x
 	@rm -f $@
 	-$(RPCC) -h $(srcdir)/web_prot.x || rm -f $@
 
+.PHONY: xdrclean tameclean sourceclean
+
+xdrclean:
+	rm -f $(srcdir)/web_prot.h $(src_dir)/webprot.C
+
+tameclean:
+	rm -f $(srcdir)/okwc2.C
+
+soureclean: xdrclean tameclean
+
 EXTRA_DIST = .cvsignore okwc2.T
 
 BUILT_SOURCES = web_prot.h web_prot.C okwc2.C

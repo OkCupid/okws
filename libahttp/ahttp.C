@@ -153,11 +153,13 @@ ahttpcon::call_drained_cb ()
 }
 
 void
-ahttpcon::set_drained_cb (cbv cb)
+ahttpcon::set_drained_cb (cbv::ptr cb)
 {
-  if (!out->resid () || fd < 0)
+  if (!cb) {
+    drained_cb = NULL;
+  } else if (!out->resid () || fd < 0) {
     (*cb) ();
-  else {
+  } else {
     // hold onto the current drained_cb until after we access
     // this (by setting a new drained_cb)
     cbv::ptr c = drained_cb;

@@ -83,7 +83,7 @@ private:
 
 class abuf_t {
 public:
-  abuf_t (abuf_src_t *s, bool d = false)
+  abuf_t (abuf_src_t *s = NULL, bool d = false)
     : src (s), bc (false), lch (0), buf (NULL), endp (NULL), cp (NULL), 
     len (0), erc (ABUF_OK), delsrc (d), spcs (0),
     lim (-1), ccnt (0), mirror_base (NULL), mirror_p (NULL),
@@ -106,6 +106,7 @@ public:
   inline abuf_stat_t expectchar (char c);
   inline abuf_stat_t requirechar (char c);
   void finish ();
+  void setsrc (abuf_src_t *s, bool d) { src = s; delsrc = d; }
   inline void can_read () { erc = ABUF_OK; }
   abuf_src_t *getsrc () const { return src; }
   void init (cbv c) { src->init (c); }
