@@ -322,4 +322,5 @@ void
 okwc_cancel (okwc_req_t *req);
 
 
+extern okwc_dnscache_t dnscache;
 #endif

@@ -38,20 +38,45 @@
 #include "dns.h"
 #include "tame.h"
 
+class okwc2_post_t {
+public:
+  okwc2_post_t () {}
+  virtual size_t len () const = 0;
+  virtual void output (strbuf &b) const = 0;
+};
+
 class okwc2_req_t : public refcount {
 public:
+  okwc2_req_t (const str &hn, const str &fn, int v = 1, cgi_t *c = NULL) 
+    : _hostname (hn), _filename (fn), _vers (v), _outcookie (c) {}
+
   virtual ~okwc2_req_t () {}
   virtual void cancel () { _c.cancel (); }
   virtual void too_late_to_cancel () { _c.toolate (); }
   virtual void notify_on_cancel (cbv cb) { _c.wait (cb); }
-  virtual void make (ptr<ahttpcon> x, cbi cb) { (*cb) (HTTP_UNAVAILABLE); }
+  virtual void make (ptr<ahttpcon> x, cbi cb) { make_T (x, cb); }
+
+  virtual okwc2_post_t *get_post () const = 0;
+  virtual str get_type () const = 0;
+
+protected:
+  void fix_filename ();
+  void format_req (strbuf &b);
+
 private:
+  void make_T (ptr<ahttpcon> x, cbi cb, CLOSURE);
+
+  str _hostname;
+  str _filename;
   canceller_t _c;
+  int _vers;
+  cgi_t *_outcookie; // cookie sending out to the server
 };
 
 class okwc2_resp_t : public refcount {
 public:
   virtual ~okwc2_resp_t () {}
+  virtual void get (ptr<okwc2_req_t> r, ptr<ahttpcon> x, cbi s) = 0;
 };
 
 typedef callback<void, int, ptr<okwc2_resp_t> >::ref okwc2_cb_t;
@@ -60,18 +85,9 @@ class okwc2_t : public refcount {
 public:
   okwc2_t (const str &h, int p) : _hostname (h), _port (p) {}
   virtual void req (ptr<okwc2_req_t> req, okwc2_cb_t cb) { req_T (req, cb); }
-  virtual void do_dns_request (const str &hn, cbhent cb) 
-  { do_dns_request_T (hn, cb); }
-
-  virtual void get_response (ptr<okwc2_req_t> r, ptr<ahttpcon> x, 
-			     okwc2_cb_t c) 
-  { get_response_T (r, x, c); }
+  virtual ptr<okwc2_resp_t> alloc_resp () = 0;
 private:
   void req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb, CLOSURE);
-  void do_dns_request_T (str hn, cbhent cb, CLOSURE) {}
-  void get_response_T (ptr<okwc2_req_t> r, ptr<ahttpcon> x, okwc2_cb_t cb, 
-		       CLOSURE) {}
-
   const str _hostname;
   int _port;
 };

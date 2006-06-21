@@ -1,6 +1,9 @@
 // -*-c++-*-
 
 #include "okwc2.h"
+#include "okwc.h"
+
+//-----------------------------------------------------------------------
 
 TAMED static void
 cancellable_wait (coordgroup_t<bool> G, okwc2_cb_t cb, cbb callercv)
@@ -18,6 +21,78 @@ cancellable_wait (coordgroup_t<bool> G, okwc2_cb_t cb, cbb callercv)
     WAIT (G, dummy);
   }
 }
+
+//-----------------------------------------------------------------------
+
+void
+okwc2_req_t::fix_filename ()
+{
+  int len;
+  if (!_filename || (len = _filename.len ()) == 0) {
+    // empty file names --> "/"
+    _filename = "/";
+  } else if (_filename[0] != '/') {
+    // insert leading slash if not there.
+    _filename = strbuf ("/") << _filename;
+  } else {
+    // trunc all but the first leading slash
+    const char *fn = _filename.cstr ();
+    const char *cp;
+    for (cp = fn; *cp == '/'; cp++)  ;
+    cp--;
+    _filename = str (cp, len - (cp - fn)); 
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okwc2_req_t::format_req (strbuf &b)
+{
+
+  fix_filename ();
+  str mth = get_post () ? "POST" : "GET";
+
+  b << mth << " " << _filename << " HTTP/1." << _vers << HTTP_CRLF;
+  if (_vers == 1) {
+    b << "Connection: close" << HTTP_CRLF
+      << "Host: " << _hostname << HTTP_CRLF
+      << "User-agent: okwc/" << VERSION << HTTP_CRLF;
+  }
+  if (_outcookie) {
+    b << "Cookie: ";
+    _outcookie->encode (&b);
+    b << HTTP_CRLF;
+  }
+
+  str t = get_type ();
+
+  if (t) b << "Content-Type: " << t << HTTP_CRLF;
+
+  okwc2_post_t *p = get_post ();
+
+  if (p) b << "Content-Length: " << p->len () << HTTP_CRLF;
+  b << HTTP_CRLF;
+  if (p) p->output (b);
+
+}
+
+//-----------------------------------------------------------------------
+
+TAMED void
+okwc2_req_t::make_T (ptr<ahttpcon> x, cbi cb)
+{
+  VARS {
+    strbuf req;
+    int status (HTTP_OK);
+  }
+  format_req (req);
+  BLOCK { x->send (req, @()); }
+
+  (*cb) (status);
+}
+
+//-----------------------------------------------------------------------
 
 TAMED void
 okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
@@ -38,7 +113,7 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
   hold = mkref (this);
 
   req->notify_on_cancel (@[G, true]());
-  do_dns_request (_hostname, @[G, false](he, dns_err)); 
+  dnscache.lookup (_hostname, @[G, false](he, dns_err)); 
 
   BLOCK { cancellable_wait (G, cb, @(cancelled)); }
   if (cancelled) return;
@@ -61,7 +136,8 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
       if (cancelled) return;
 
       if (status == HTTP_OK) {
-	get_response (req, x, @[G,false](status, resp));
+	resp = alloc_resp ();
+	resp->get (req, x, @[G,false](status));
 
 	BLOCK { cancellable_wait (G, cb, @(cancelled)); }
 	if (cancelled) return;
@@ -73,3 +149,5 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
   G.remove_join ();
   SIGNAL (cb, status, resp);
 }
+
+//-----------------------------------------------------------------------
