@@ -37,6 +37,7 @@
 #include "async.h"
 #include "dns.h"
 #include "tame.h"
+#include "okwc.h"
 
 class okwc2_post_t {
 public:
@@ -75,8 +76,26 @@ private:
 
 class okwc2_resp_t : public refcount {
 public:
+  okwc2_resp_t (ptr<ahttpcon> x);
   virtual ~okwc2_resp_t () {}
-  virtual void get (ptr<okwc2_req_t> r, ptr<ahttpcon> x, cbi s) = 0;
+  void get (cbi cb) { get_T (cb); }
+protected:
+
+  // XXX make a real function
+  void run_chunker (cbi cb, CLOSURE) {}
+
+  ptr<ahttpcon> _x;
+  abuf_t _abuf;
+  char _scratch[OKWC_SCRATCH_SZ];
+  okwc_cookie_set_t _incookies;
+  okwc_http_hdr_t _hdr;
+
+  virtual void eat_chunk (size_t sz, cbv cb) = 0;
+
+private:
+  void get_body (cbi cb, CLOSURE);
+  void get_T (cbi cb, CLOSURE);
+		
 };
 
 typedef callback<void, int, ptr<okwc2_resp_t> >::ref okwc2_cb_t;
@@ -85,7 +104,7 @@ class okwc2_t : public refcount {
 public:
   okwc2_t (const str &h, int p) : _hostname (h), _port (p) {}
   virtual void req (ptr<okwc2_req_t> req, okwc2_cb_t cb) { req_T (req, cb); }
-  virtual ptr<okwc2_resp_t> alloc_resp () = 0;
+  virtual ptr<okwc2_resp_t> alloc_resp (ptr<ahttpcon> x) = 0;
 private:
   void req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb, CLOSURE);
   const str _hostname;

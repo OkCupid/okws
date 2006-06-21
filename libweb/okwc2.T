@@ -136,8 +136,8 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
       if (cancelled) return;
 
       if (status == HTTP_OK) {
-	resp = alloc_resp ();
-	resp->get (req, x, @[G,false](status));
+	resp = alloc_resp (x);
+	resp->get (@[G,false](status));
 
 	BLOCK { cancellable_wait (G, cb, @(cancelled)); }
 	if (cancelled) return;
@@ -151,3 +151,39 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
 }
 
 //-----------------------------------------------------------------------
+
+okwc2_resp_t::okwc2_resp_t (ptr<ahttpcon> x)
+  : _x (x),
+    _abuf (New abuf_con_t (_x), true),
+    _incookies (&_abuf, OKWC_SCRATCH_SZ, _scratch),
+    _hdr (&_abuf, &_incookies, OKWC_SCRATCH_SZ, _scratch) {}
+
+//-----------------------------------------------------------------------
+
+TAMED void
+okwc2_resp_t::get_T (cbi cb)
+{
+  VARS {
+    int status (HTTP_OK);
+  }
+  BLOCK { _hdr.parse (@(status)); }
+  if (status == HTTP_OK) { BLOCK { get_body (@(status)); } }
+
+  SIGNAL (cb, status);
+}
+
+//-----------------------------------------------------------------------
+
+TAMED void
+okwc2_resp_t::get_body (cbi cb)
+{
+  VARS {
+    int status (HTTP_OK);
+  }
+  if (_hdr.is_chunked ()) {
+    BLOCK { run_chunker (@(status)); }
+  } else {
+    BLOCK { eat_chunk (_hdr.get_contlen (), @()); }
+  }
+  SIGNAL (cb, status);
+}
