@@ -24,7 +24,7 @@
 #include "httpconst.h"
 #include "parseopt.h"
 
-okwc_dnscache_t dnscache;
+static okwc_dnscache_t dnscache;
 
 void
 okwc_dnscache_entry_t::lookup (cbhent cb)

@@ -38,6 +38,43 @@
 #include "dns.h"
 #include "tame.h"
 #include "okwc.h"
+#include "list.h"
+
+struct queued_cbhent_t {
+  queued_cbhent_t (cbhent c, bool i) 
+    : _cb (c), _in_charge (i), _in_list (true) {}
+  cbhent _cb;
+  tailq_entry<queued_cbhent_t> _link;
+  bool _in_charge;
+  bool _in_list;
+};
+
+class okwc2_dnscache_entry_t : public virtual refcount {
+public:
+  okwc2_dnscache_entry_t (const str &h, int t = 60) : 
+    _hostname (h), _expires (0), _resolving (false), _ttl (t), _err (0), 
+    _init (false) {}
+  void lookup (cbhent cb, ptr<canceller_t> cncl, CLOSURE);
+private:
+  void dnscb (ptr<hostent> he, int status);
+  str _hostname;
+  ptr<hostent> _he;
+  time_t _expires;
+  bool _resolving;
+  int _ttl;
+  int _err;
+  bool _init;
+
+  tailq<queued_cbhent_t, &queued_cbhent_t::_link> _cbq;
+};
+
+class okwc2_dnscache_t {
+public:
+  okwc2_dnscache_t () {}
+  ptr<canceller_t> lookup (const str &n, cbhent cb);
+private:
+  qhash<str, ptr<okwc2_dnscache_entry_t> > _cache;
+};
 
 class okwc2_post_t {
 public:
@@ -79,7 +116,7 @@ class okwc2_resp_t : public virtual refcount {
 public:
   okwc2_resp_t (ptr<ahttpcon> x);
   virtual ~okwc2_resp_t () {}
-  void get (cbi cb) { get_T (cb); }
+  ptr<canceller_t> get (cbi cb) { return get_T (cb); }
 protected:
 
   virtual void run_chunker (cbi cb) { run_chunker_T (cb); }
@@ -96,7 +133,7 @@ protected:
 
 private:
   void get_body_T (cbi cb, CLOSURE);
-  void get_T (cbi cb, CLOSURE);
+  ptr<canceller_t> get_T (cbi cb, CLOSURE);
   void run_chunker_T (cbi cb, CLOSURE);
 };
 

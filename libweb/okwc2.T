@@ -3,6 +3,125 @@
 #include "okwc2.h"
 #include "okwc.h"
 
+static okwc2_dnscache_t dnscache;
+
+//-----------------------------------------------------------------------
+
+ptr<canceller_t>
+okwc2_dnscache_t::lookup (const str &n, cbhent cb)
+{
+  ptr<canceller_t> ret (New refcounted<canceller_t> ());
+  ptr<okwc2_dnscache_entry_t> *entp, ent;
+    
+  if ((entp = _cache[n])) {
+    ent = *entp;
+  } else {
+    ent = New refcounted<okwc2_dnscache_entry_t> (n);
+    _cache.insert (n, ent);
+  }
+  ent->lookup (cb, ret);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okwc2_dnscache_entry_t::dnscb (ptr<hostent> he, int status)
+{
+  assert (_cbq.first && _cbq.first->_in_charge);
+  SIGNAL (_cbq.first->_cb, he, status);
+}
+
+//-----------------------------------------------------------------------
+
+TAMED void
+okwc2_dnscache_entry_t::lookup (cbhent cb, ptr<canceller_t> cncl)
+{
+  VARS {
+    coordgroup_t<bool> G (__FILE__, __LINE__);
+    queued_cbhent_t *l;
+    ptr<hostent> he;
+    int e (0);
+    bool cancelled;
+    dnsreq_t *dnsp;
+  }
+
+  if (_resolving) {
+    l = New queued_cbhent_t (@[G,false](he,e), false);
+    _cbq.insert_tail (l);
+  } else if (!_init || timenow > _expires || _err != 0) {
+    _resolving = true;
+    l = New queued_cbhent_t (@[G,false](he,e), true);
+    _cbq.insert_tail (l);
+
+    // Need to be a level of indirection around whom gets called
+    // when the DNS entry actually completes.  It could be that the
+    // guy who originally called it timed out, but the next guy
+    // had a longer timeout and therefore can afford to wait.
+    dnsp = dns_hostbyname (_hostname, 
+			   wrap (this, &okwc2_dnscache_entry_t::dnscb));
+  } else {
+    SIGNAL (cb, _he, _err);
+    return;
+  }
+
+  assert (l);
+
+  cncl->wait (@[G,true]());
+  WAIT(G, cancelled);
+
+  // Watch out! During the wait period, it's possible that l->_in_charge
+  // might have changed from false to true, so don't assume anything.
+  // This might have happened if the guy who was in charge timed out,
+  // and then delegated responsibility to us.
+
+  // If l is 'in_charge' it must also be the first element in the list
+  assert (!l->_in_charge || l == _cbq.first);
+
+  if (l->_in_list) {
+    l->_in_list = false;
+    _cbq.remove (l);
+  }
+
+  if (cancelled) {
+    if (l->_in_charge) {
+      queued_cbhent_t *nxt = _cbq.first;
+      e = ARERR_TIMEOUT;
+      if (nxt) {
+	assert (!nxt->_in_charge);
+	nxt->_in_charge = true;
+	l->_in_charge = false;
+      } else {
+	dnsreq_cancel (dnsp);
+      }
+    }
+  } else {
+    cncl->toolate ();
+  }
+
+  if (l->_in_charge) {
+    _err = e;
+    _init = true;
+    _he = he;
+    _expires = timenow + _ttl;
+    _resolving = false;
+  }
+
+  G.remove_join ();
+  SIGNAL (l->_cb, he, e);
+
+  if (l->_in_charge) {
+    queued_cbhent_t *o;
+    while ((o = _cbq.first)) {
+      o->_in_list = false;
+      _cbq.remove (o);
+      SIGNAL (o->_cb, he, e);
+    }
+  }
+
+  delete l;
+}
+
 //-----------------------------------------------------------------------
 
 TAMED static void
@@ -84,7 +203,7 @@ okwc2_req_t::make_T (ptr<ahttpcon> x, cbi cb)
     strbuf req;
     int status (HTTP_TIMEOUT);
     ptr<canceller_t> ret (New refcounted<canceller_t> ()); 
-    coordgroup_t<bool> G;
+    coordgroup_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
     bool dummy;
   }
@@ -127,13 +246,17 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
     bool cancelled;
     ptr<ahttpcon> x;
     tcpconnect_t *tc;
-    ptr<canceller_t> cancel_send;
+    ptr<canceller_t> cancel_send, cancel_get;
   }
   
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
 
+  // The req object has a canceller inside of it, that can be
+  // used to cancel the request.
   req->notify_on_cancel (@[G, true]());
+
+  
   dnscache.lookup (_hostname, @[G, false](he, dns_err)); 
 
   BLOCK { cancellable_wait (G, cb, @(cancelled)); }
@@ -147,10 +270,7 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
     BLOCK { cancellable_wait (G, cb, @(cancelled)); }
     if (cancelled) {
       tcpconnect_cancel (tc);
-      return;
-    }
-
-    if (fd < 0) {
+    } else if (fd < 0) {
       status = HTTP_CONNECTION_FAILED;
     } else {
       x = ahttpcon::alloc (fd);
@@ -159,15 +279,14 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, okwc2_cb_t cb)
       BLOCK { cancellable_wait (G, cb, @(cancelled)); }
       if (cancelled) {
 	cancel_send->cancel ();
-	return;
-      }
-
-      if (status == HTTP_OK) {
+      } else if (status == HTTP_OK) {
 	resp = alloc_resp (x);
-	resp->get (@[G,false](status));
-
+	cancel_get = resp->get (@[G,false](status));
+	
 	BLOCK { cancellable_wait (G, cb, @(cancelled)); }
-	if (cancelled) return;
+	if (cancelled) {
+	  cancel_get->cancel ();
+	}
       }
     }
   }
@@ -222,13 +341,25 @@ okwc2_resp_t::okwc2_resp_t (ptr<ahttpcon> x)
 
 //-----------------------------------------------------------------------
 
-TAMED void
+TAMED ptr<canceller_t>
 okwc2_resp_t::get_T (cbi cb)
 {
   VARS {
     int status (HTTP_OK);
+    ptr<canceller_t> ret (New refcounted<canceller_t> ());
+    coordgroup_t<bool> G (__FILE__, __LINE__);
+    bool cancelled;
   }
-  BLOCK { _hdr.parse (@(status)); }
+  DEFAULT_RETURN { return ret; }
+
+  _hdr.parse (@[G,false](status)); 
+  ret->wait (@[G,true]());
+
+  WAIT (G, cancelled);
+  if (cancelled) {
+
+  }
+
   if (status == HTTP_OK) { BLOCK { get_body (@(status)); } }
 
   SIGNAL (cb, status);
