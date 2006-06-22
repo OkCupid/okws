@@ -90,7 +90,7 @@ async_dumper_t::parse_guts ()
   while (bp < endp) {
     rc = abuf->dump (bp, endp - bp);
     if (rc < 0)
-      break; // EOF
+      break; // EOF or WAIT
     bp += rc;
   }
   if (bp == endp || rc == ABUF_EOFCHAR)

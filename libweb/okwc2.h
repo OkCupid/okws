@@ -59,6 +59,7 @@ public:
 private:
   void wait_for_resolution (ptr<canceller_t>, cbb cb, CLOSURE);
   void do_resolution (ptr<canceller_t> cncl, cbb cb, CLOSURE);
+  void commit_lookup (ptr<hostent> he, int status);
 
   str _hostname;
   ptr<hostent> _he;

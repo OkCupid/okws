@@ -98,6 +98,17 @@ okwc2_dnscache_entry_t::wait_for_resolution (ptr<canceller_t> cncl, cbb cb)
 
 //-----------------------------------------------------------------------
 
+
+void
+okwc2_dnscache_entry_t::commit_lookup (ptr<hostent> he, int e)
+{
+  _init = true;
+  _he = he;
+  _err = e;
+  _expires = timenow + _ttl;
+  _resolving = false;
+}
+
 TAMED void
 okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
 {
@@ -108,12 +119,21 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
     ptr<hostent> he;
     int e (ARERR_TIMEOUT);
     queued_cbv_t *qcb;
+    bool committed_lookup (false);
   }
 
   _resolving = true;
 
   dnsp = dns_hostbyname (_hostname, @[G,false](he, e));
-  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  cncl->wait (@[G,true]());
+  WAIT (G, cancelled);
+  if (!cancelled) {
+    cncl->clear ();
+    G.remove_var ();
+    committed_lookup = true;
+    commit_lookup (he, e);
+  }
+    
   SIGNAL (cb, !cancelled);
 
   while (cancelled && _waiters.first) {
@@ -121,24 +141,23 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
     WAIT(G,cancelled);
   }
 
-  _init = true;
-  _he = he;
-  _err = e;
-  _expires = timenow + _ttl;
-  _resolving = false;
+  if (!committed_lookup)
+    commit_lookup (he, e);
 
-  G.remove_var ();
   if (cancelled) {
-    assert (!_waiters.first);
     dnsreq_cancel (dnsp);
+    G.remove_var ();
   } else {
-    assert (_waiters.first);
-    _waiter_remove_cb = NULL;
+    if (_waiter_remove_cb) {
+      _waiter_remove_cb = NULL;
+      G.remove_var ();
+    }
     while ((qcb = _waiters.first)) {
       _waiters.remove (qcb);
       (*qcb->_cb) ();
     }
   }
+  assert (G.n_vars_left () == 0);
 }
 
 //-----------------------------------------------------------------------
@@ -201,7 +220,7 @@ okwc2_req_t::make_T (ptr<canceller_t> cncl, ptr<ahttpcon> x, cbi cb)
 {
   VARS {
     strbuf req;
-    int status (CANCELLED_STATUS);
+    int status (HTTP_OK);
     coordgroup_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
   }
@@ -210,9 +229,9 @@ okwc2_req_t::make_T (ptr<canceller_t> cncl, ptr<ahttpcon> x, cbi cb)
   
   x->send (req, @[G,false]());
   BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
-  G.remove_var ();
 
   if (cancelled) {
+    status = CANCELLED_STATUS;
     x->set_drained_cb (NULL);
     x->cancel ();
   }
@@ -367,6 +386,7 @@ okwc2_resp_t::get_body_T (ptr<canceller_t> cncl, cbi cb)
   } else {
     BLOCK { eat_chunk (cncl, _hdr.get_contlen (), @(status)); }
   }
+  BLOCK { finished_meal (cncl, status, @(status)); }
   SIGNAL (cb, status);
 }
 
@@ -399,7 +419,6 @@ okwc2_resp_t::run_chunker_T (ptr<canceller_t> cncl, cbi cb)
     } 
   } while (status == HTTP_OK && sz);
 
-  BLOCK { finished_meal (cncl, status, @(status)); }
   SIGNAL (cb, status);
 }
 
@@ -411,21 +430,32 @@ okwc2_resp_simple_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
   VARS {
     str chnk;
     coordgroup_t<bool> G (__FILE__, __LINE__);
-    bool cancelled;
+    bool cancelled, dummy;
     int status (HTTP_OK);
   }
 
   _dumper.dump (sz, @[G, false](chnk));
-  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  cncl->wait (@[G,true]());
+  WAIT (G,cancelled);
 
   if (cancelled) {
     status = CANCELLED_STATUS;
     _dumper.cancel ();
   } else {
+    G.remove_var ();
+    cncl->clear ();
     if (chnk) _chunks.push_back (chnk);
   }
 
   SIGNAL (cb, status);
+
+  // When you cancel the dumper, it still calls you back, so we need
+  // to wait for this callback.
+  if (G.n_vars_left ()) {
+    assert (cancelled);
+    WAIT (G, dummy);
+    assert (! G.n_vars_left ());
+  }
 }
 
 //-----------------------------------------------------------------------
