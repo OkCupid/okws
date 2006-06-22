@@ -42,13 +42,10 @@
 
 //-----------------------------------------------------------------------
 
-struct queued_cbhent_t {
-  queued_cbhent_t (cbhent c, bool i) 
-    : _cb (c), _in_charge (i), _in_list (true) {}
-  cbhent _cb;
-  tailq_entry<queued_cbhent_t> _link;
-  bool _in_charge;
-  bool _in_list;
+struct queued_cbv_t {
+  queued_cbv_t (cbv cb) : _cb (cb) {}
+  cbv _cb;
+  tailq_entry<queued_cbv_t> _link;
 };
 
 //-----------------------------------------------------------------------
@@ -60,7 +57,9 @@ public:
     _init (false) {}
   void lookup (ptr<canceller_t> cncl, cbhent cb, CLOSURE);
 private:
-  void dnscb (ptr<hostent> he, int status);
+  void wait_for_resolution (ptr<canceller_t>, cbb cb, CLOSURE);
+  void do_resolution (ptr<canceller_t> cncl, cbb cb, CLOSURE);
+
   str _hostname;
   ptr<hostent> _he;
   time_t _expires;
@@ -69,7 +68,9 @@ private:
   int _err;
   bool _init;
 
-  tailq<queued_cbhent_t, &queued_cbhent_t::_link> _cbq;
+  cbv::ptr _waiter_remove_cb;
+
+  tailq<queued_cbv_t, &queued_cbv_t::_link> _waiters;
 };
 
 //-----------------------------------------------------------------------

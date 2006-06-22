@@ -17,6 +17,24 @@ static okwc2_dnscache_t dnscache;
 
 //-----------------------------------------------------------------------
 
+TAMED static void
+cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb)
+{
+  VARS {
+    bool cancelled;
+  }
+
+  cncl->wait (@[G,true]());
+  WAIT (G, cancelled);
+  G.remove_var ();
+  if (!cancelled) cncl->clear ();
+
+  SIGNAL (cb, cancelled);
+}
+
+
+//-----------------------------------------------------------------------
+
 void
 okwc2_dnscache_t::lookup (ptr<canceller_t> cncl, const str &n, cbhent cb)
 {
@@ -33,115 +51,94 @@ okwc2_dnscache_t::lookup (ptr<canceller_t> cncl, const str &n, cbhent cb)
 
 //-----------------------------------------------------------------------
 
-void
-okwc2_dnscache_entry_t::dnscb (ptr<hostent> he, int status)
+TAMED void
+okwc2_dnscache_entry_t::lookup (ptr<canceller_t> cncl, cbhent cb)
 {
-  assert (_cbq.first && _cbq.first->_in_charge);
-  SIGNAL (_cbq.first->_cb, he, status);
+  VARS {
+    ptr<hostent> he;
+    int e (ARERR_TIMEOUT);
+    bool completed;
+  }
+
+  if (_resolving) {
+    BLOCK { wait_for_resolution (cncl, @(completed)); }
+  } else if (!_init || timenow > _expires || _err != 0) {
+    BLOCK { do_resolution (cncl, @(completed)); }
+  }
+  if (completed) {
+    he = _he;
+    e = _err;
+  }
+  SIGNAL (cb, he, e);
 }
 
 //-----------------------------------------------------------------------
 
 TAMED void
-okwc2_dnscache_entry_t::lookup (ptr<canceller_t> cncl, cbhent cb)
+okwc2_dnscache_entry_t::wait_for_resolution (ptr<canceller_t> cncl, cbb cb)
 {
   VARS {
     coordgroup_t<bool> G (__FILE__, __LINE__);
-    queued_cbhent_t *l;
-    ptr<hostent> he;
-    int e (0);
     bool cancelled;
-    dnsreq_t *dnsp;
+    queued_cbv_t *qcb;
+  }
+  qcb = New queued_cbv_t (@[G,false]());
+  _waiters.insert_tail (qcb);
+  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+
+  if (cancelled) {
+    _waiters.remove (qcb);
+    if (_waiter_remove_cb)
+      (*_waiter_remove_cb) ();
   }
 
-  if (_resolving) {
-    l = New queued_cbhent_t (@[G,false](he,e), false);
-    _cbq.insert_tail (l);
-  } else if (!_init || timenow > _expires || _err != 0) {
-    _resolving = true;
-    l = New queued_cbhent_t (@[G,false](he,e), true);
-    _cbq.insert_tail (l);
-
-    // Need to be a level of indirection around whom gets called
-    // when the DNS entry actually completes.  It could be that the
-    // guy who originally called it timed out, but the next guy
-    // had a longer timeout and therefore can afford to wait.
-    dnsp = dns_hostbyname (_hostname, 
-			   wrap (this, &okwc2_dnscache_entry_t::dnscb));
-  } else {
-    SIGNAL (cb, _he, _err);
-    return;
-  }
-
-  assert (l);
-
-  cncl->wait (@[G,true]());
-  WAIT(G, cancelled);
-  G.remove_join ();
-
-  // Watch out! During the wait period, it's possible that l->_in_charge
-  // might have changed from false to true, so don't assume anything.
-  // This might have happened if the guy who was in charge timed out,
-  // and then delegated responsibility to us.
-
-  // If l is 'in_charge' it must also be the first element in the list
-  assert (!l->_in_charge || l == _cbq.first);
-
-  if (l->_in_list) {
-    l->_in_list = false;
-    _cbq.remove (l);
-  }
-
-  if (cancelled && l->_in_charge) {
-    queued_cbhent_t *nxt = _cbq.first;
-    e = ARERR_TIMEOUT;
-    if (nxt) {
-      assert (!nxt->_in_charge);
-      nxt->_in_charge = true;
-      l->_in_charge = false;
-    } else {
-      dnsreq_cancel (dnsp);
-    }
-  }
-
-  if (l->_in_charge) {
-    _err = e;
-    _init = true;
-    _he = he;
-    _expires = timenow + _ttl;
-    _resolving = false;
-  }
-
-  // The general semantics are to not callback if we've been cancelled.
-  if (!cancelled) 
-    SIGNAL (l->_cb, he, e);
-
-  if (l->_in_charge) {
-    queued_cbhent_t *o;
-    while ((o = _cbq.first)) {
-      o->_in_list = false;
-      _cbq.remove (o);
-      SIGNAL (o->_cb, he, e);
-    }
-  }
-
-  delete l;
+  SIGNAL (cb, !cancelled);
+  delete qcb;
 }
+
 //-----------------------------------------------------------------------
 
-TAMED static void
-cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb)
+TAMED void
+okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
 {
   VARS {
+    dnsreq_t *dnsp;
+    coordgroup_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
+    ptr<hostent> he;
+    int e (ARERR_TIMEOUT);
+    queued_cbv_t *qcb;
   }
 
-  cncl->wait (@[G,true]());
-  WAIT (G, cancelled);
-  G.remove_var ();
-  cncl->toolate ();
+  _resolving = true;
 
-  SIGNAL (cb, cancelled);
+  dnsp = dns_hostbyname (_hostname, @[G,false](he, e));
+  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  SIGNAL (cb, !cancelled);
+
+  while (cancelled && _waiters.first) {
+    _waiter_remove_cb = @[G,true]();
+    WAIT(G,cancelled);
+  }
+
+  _init = true;
+  _he = he;
+  _err = e;
+  _expires = timenow + _ttl;
+  _resolving = false;
+
+  G.remove_var ();
+  if (cancelled) {
+    assert (!_waiters.first);
+    dnsreq_cancel (dnsp);
+  } else {
+    assert (_waiters.first);
+    _waiter_remove_cb = NULL;
+    while ((qcb = _waiters.first)) {
+      _waiters.remove (qcb);
+      (*qcb->_cb) ();
+    }
+  }
 }
 
 //-----------------------------------------------------------------------
