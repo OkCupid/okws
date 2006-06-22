@@ -149,5 +149,13 @@ public:
 
 typedef xml_obj_const_t xml_req_t;
 
+class xml_outreq_t : public xml_obj_t {
+public:
+  xml_outreq_t (const str &mn) : 
+    xml_obj_t (New refcounted<xml_method_call_t> (mn)) {}
+  xml_outreq_t () : xml_obj_t (New refcounted<xml_method_call_t> ()) {}
+};
+
+typedef xml_obj_const_t xml_inresp_t;
 
 #endif /* _LIBAHTTP_OKXMLOBJ_H */

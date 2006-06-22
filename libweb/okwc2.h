@@ -89,8 +89,9 @@ private:
 class okwc2_post_t {
 public:
   okwc2_post_t () {}
+  virtual ~okwc2_post_t () {}
   virtual size_t len () const = 0;
-  virtual void output (strbuf &b) const = 0;
+  virtual void output (strbuf &b) = 0;
 };
 
 //-----------------------------------------------------------------------

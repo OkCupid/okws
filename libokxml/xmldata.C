@@ -811,3 +811,10 @@ xml_top_level_t::dump_to_python (strbuf &b) const
   }
   return false;
 }
+
+ptr<xml_container_t>
+xml_method_call_t::to_xml_container ()
+{
+  if (!_params) _params = New refcounted<xml_params_t> ();
+  return _params;
+}

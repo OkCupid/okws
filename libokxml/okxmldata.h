@@ -241,6 +241,8 @@ public:
   { return New refcounted<xml_method_call_t> (); }
   const char *name () const { return "methodCall"; }
 
+  ptr<xml_container_t> to_xml_container ();
+
   ptr<xml_method_call_t> to_xml_method_call () { return mkref (this); }
   ptr<const xml_method_call_t> to_xml_method_call () const
   { return mkref (const_cast<xml_method_call_t *> (this)); }
