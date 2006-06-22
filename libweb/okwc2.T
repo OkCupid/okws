@@ -311,7 +311,7 @@ okwc2_t::timed_req_T (ptr<okwc2_req_t> r, ptr<okwc2_resp_t> resp, int to,
   VARS {
     int status;
     coordgroup_t<bool> G (__FILE__, __LINE__);
-    timecb_t *tcb;
+    timecb_t *tcb (NULL);
     bool timedout ;
     ptr<canceller_t> cncl;
   }
@@ -329,7 +329,7 @@ okwc2_t::timed_req_T (ptr<okwc2_req_t> r, ptr<okwc2_resp_t> resp, int to,
     WAIT (G, timedout);
     assert (!timedout);
 
-  } else {
+  } else if (tcb) {
     timecb_remove (tcb);
     G.remove_var ();
   }

@@ -7,9 +7,11 @@ SUFFIXES = .C .T .h
 	-$(TAME) -c $< || rm -f $@
 
 xmltst1.o:	xmltst1.C
-xmltst.lo: 	xmltst1.C
+xmltst1.lo: 	xmltst1.C
+xmlcli1.o:	xmlcli1.C
+xmlcli1.lo:	xmlcli1.C
 
-noinst_PROGRAMS = kmptst cgitst1 xmltst1 xmltst2 #pubtst1 pubtst2
+noinst_PROGRAMS = kmptst cgitst1 xmltst1 xmltst2 xmlcli1 #pubtst1 pubtst2
 
 # XXX
 # these are broken and should be removed
@@ -22,9 +24,10 @@ kmptst_SOURCES = kmptst.C
 
 xmltst1_SOURCES = xmltst1.C
 xmltst2_SOURCES = xmltst2.C
+xmlcli1_SOURCES = xmlcli1.C
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore
 MAINTAINERCLEANFILES = Makefile.in
 
-BUILT_SOURCES = xmltst1.C
+BUILT_SOURCES = xmltst1.C xmlcli1.C

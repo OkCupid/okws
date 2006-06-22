@@ -52,7 +52,7 @@ public:
   }
 
   virtual ptr<const xml_element_t> el () const = 0;
-  void output (zbuf &z) const { el ()->dump (z); }
+  virtual void output (zbuf &z) const { el ()->dump (z); }
   void output_python (strbuf &b) const { el ()->dump_to_python (b); }
 
   str name () const;
@@ -154,8 +154,17 @@ public:
   xml_outreq_t (const str &mn) : 
     xml_obj_t (New refcounted<xml_method_call_t> (mn)) {}
   xml_outreq_t () : xml_obj_t (New refcounted<xml_method_call_t> ()) {}
+  void set_method_name (const str &m) 
+  { _el->to_xml_method_call ()->set_method_name (m); }
+  void output (zbuf &b) const; 
 };
 
-typedef xml_obj_const_t xml_inresp_t;
+class xml_inresp_t : public xml_obj_const_t {
+public:
+  xml_inresp_t (ptr<const xml_element_t> e) : xml_obj_const_t (e) {}
+  xml_inresp_t () : xml_obj_const_t () {}
+  xml_inresp_t (const xml_obj_base_t &w) : xml_obj_const_t (w) {}
+  bool is_fault (int *code, str *msg) const;
+};
 
 #endif /* _LIBAHTTP_OKXMLOBJ_H */

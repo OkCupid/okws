@@ -301,11 +301,12 @@ zbuf::compress (strbuf *p, int level)
 }
 
 void
-zbuf::output (strbuf *p)
+zbuf::output (strbuf *p, bool doclear)
 {
   strbuf2zstr ();
   size_t lim = zs.size ();
-  p->tosuio ()->clear ();
+  if (doclear)
+    p->tosuio ()->clear ();
   for (size_t i = 0; i < lim; i++) {
     (*p) << zs[i].to_str ();
   }

@@ -644,9 +644,17 @@ xml_value_wrapper_t::cpvalue () const
 ptr<xml_method_response_t>
 xml_method_response_t::clone_typed () const
 {
-  return New refcounted<xml_method_response_t>
-    ( _params ? _params->clone_typed () : _params,
-     _body ? _body->clone () : _body );
+  ptr<xml_params_t> p;
+  ptr<xml_element_t> b;
+
+  if (_params) {
+    p = _params->clone_typed ();
+    b = p;
+  } else if (_body) {
+    b = _body->clone ();
+  }
+		 
+  return New refcounted<xml_method_response_t> (p, b);
 }
 
 ptr<xml_member_t>
@@ -818,3 +826,7 @@ xml_method_call_t::to_xml_container ()
   if (!_params) _params = New refcounted<xml_params_t> ();
   return _params;
 }
+
+bool 
+xml_top_level_t::can_contain (ptr<xml_element_t> e) const 
+{ return e->to_xml_method_call () || e->to_xml_method_response (); }

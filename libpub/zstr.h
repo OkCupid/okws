@@ -153,7 +153,7 @@ public:
   const strbuf &compress (int l = -1) { compress (&out); return out; }
 
 
-  void output (strbuf *b);
+  void output (strbuf *b, bool doclear = true);
   void compress (strbuf *b, int l = -1);
 
   int output (int fd, bool gz = false);

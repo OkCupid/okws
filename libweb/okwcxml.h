@@ -34,6 +34,7 @@
 # ifdef HAVE_EXPAT
 
 typedef callback<void, int, xml_inresp_t>::ref okwc2_xml_cb_t;
+typedef callback<void, int, str>::ref cbis;
 
 class okwc2_post_xml_t : public okwc2_post_t {
 public:
@@ -41,7 +42,7 @@ public:
   zbuf &zb () { return _zb; }
   const zbuf &zb () const { return _zb; }
   size_t len () const { return _zb.inflated_len (); }
-  void output (strbuf &b) const { _zb.to_strbuf (&b, false); }
+  void output (strbuf &b) const { _zb.output (&b, false); }
 private:
   mutable zbuf _zb;
 };
@@ -53,6 +54,7 @@ public:
   zbuf &zb () { return _post.zb (); }
   const zbuf &zb () const { return _post.zb (); }
   const okwc2_post_t *get_post () const { return &_post; }
+  str get_type () const { return "text/xml"; }
 protected:
   okwc2_post_xml_t _post;
 };
@@ -76,8 +78,13 @@ public:
     : okwc2_t (hn, port), _url (u) {}
   void call (xml_outreq_t req, okwc2_xml_cb_t cb, int to = 0)
   { call_T (req, cb, to); }
+  void call_dump (xml_outreq_t req, cbis cb, int to = 0)
+  { call_dump_T (req, cb, to); }
 private:
   void call_T (xml_outreq_t req, okwc2_xml_cb_t cb, int to, CLOSURE);
+  void call_dump_T (xml_outreq_t req, cbis cb, int to = 0, CLOSURE);
+  void make_req (xml_outreq_t req, ptr<okwc2_resp_t> resp, int to, cbi cb,
+		 CLOSURE);
   str _url;
 };
 

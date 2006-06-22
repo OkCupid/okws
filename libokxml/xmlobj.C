@@ -104,3 +104,32 @@ xml_obj_base_t::clone () const
 {
   return xml_obj_t (el ()->clone ());
 }
+
+void
+xml_outreq_t::output (zbuf &b) const
+{
+  b << "<?xml version='1.0'?>\n";
+  xml_obj_t::output (b);
+}
+
+bool
+xml_inresp_t::is_fault (int *code, str *msg) const
+{
+  ptr<const xml_element_t> e;
+  ptr<const xml_method_response_t> r;
+  ptr<const xml_fault_t> f;
+
+  warn << "obj: "<< el ()->name () << "\n";
+
+  if (el () && 
+      (r = el ()->to_xml_method_response ()) && 
+      (e = r->body ()) &&
+      (f = e->to_xml_fault ())) {
+    xml_obj_const_t o (f);
+    *code = o("faultCode");
+    *msg = o("faultString");
+    return true;
+  }
+  return false;
+}
+

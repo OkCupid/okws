@@ -58,6 +58,7 @@ xml_tagtab_t::xml_tagtab_t ()
   I(member);
   I(data);
   I(method_name);
+  I(method_response);
   I(fault);
   I(bool);
   I(int);

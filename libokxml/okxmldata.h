@@ -81,6 +81,9 @@ public:
   virtual ptr<const xml_method_call_t> to_xml_method_call () const
   { return NULL; }
   virtual ptr<const xml_member_t> to_xml_member () const { return NULL; }
+  virtual ptr<const xml_fault_t> to_xml_fault () const { return NULL; }
+  virtual ptr<const xml_method_response_t> to_xml_method_response () const 
+  { return NULL; }
 
   virtual bool put (const str &s, ptr<xml_element_t> el) { return false; }
   virtual bool put (size_t i, ptr<xml_element_t> el) { return false; }
@@ -160,8 +163,7 @@ public:
 class xml_top_level_t : public xml_container_t {
 public:
   const char *name () const { return "topLevel"; }
-  bool can_contain (ptr<xml_element_t> e) const 
-  { return e->to_xml_method_call (); }
+  bool can_contain (ptr<xml_element_t> e) const ;
 
   ptr<xml_top_level_t> clone_typed () const 
   { return New refcounted<xml_top_level_t> (*this); }
@@ -338,6 +340,8 @@ public:
   { return New refcounted<xml_fault_t> (); }
   const char *name () const { return "fault"; }
   ptr<xml_fault_t> to_xml_fault () { return mkref (this); }
+  ptr<const xml_fault_t> to_xml_fault () const
+  { return mkref (const_cast<xml_fault_t *> (this)); }
   static ptr<xml_fault_t> alloc (int rc, const str &s);
 
   ptr<xml_fault_t> clone_typed () const
@@ -354,11 +358,14 @@ public:
   void set_params (ptr<xml_params_t> p) { _params = p; }
   ptr<xml_element_t> generate (const char *) const
   { return New refcounted<xml_method_response_t> (); }
-  const char *name () const { return "methodReponse"; }
+  const char *name () const { return "methodResponse"; }
   ptr<xml_method_response_t> to_xml_method_response () { return mkref (this); }
+  ptr<const xml_method_response_t> to_xml_method_response () const
+  { return mkref (const_cast<xml_method_response_t *> (this)); }
   bool add (ptr<xml_element_t> e);
   void dump_data (zbuf &b, int lev) const 
   { if (_body) _body->dump (b, lev); }
+  ptr<const xml_element_t> body () const { return _body ; }
 
   static ptr<xml_method_response_t> alloc () 
   { return New refcounted<xml_method_response_t> (); }
@@ -367,7 +374,7 @@ public:
   ptr<const xml_container_t> to_xml_container () const { return _params; }
 
   void fault (int c, const str &s) { fault (xml_fault_t::alloc (c, s)); }
-  void fault (ptr<xml_fault_t> f) { _body = f; }
+  void fault (ptr<xml_fault_t> f) { _body = f; _params = NULL; }
 
   ptr<xml_method_response_t> clone_typed () const;
   ptr<xml_element_t> clone () const { return clone_typed (); }
