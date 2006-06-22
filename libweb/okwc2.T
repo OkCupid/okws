@@ -5,7 +5,6 @@
 
 static okwc2_dnscache_t dnscache;
 
-#define CANCELLED_STATUS HTTP_TIMEOUT
 
 //
 // Coding style:
@@ -17,7 +16,7 @@ static okwc2_dnscache_t dnscache;
 
 //-----------------------------------------------------------------------
 
-TAMED static void
+TAMED void
 cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb)
 {
   VARS {
@@ -206,7 +205,7 @@ okwc2_req_t::format_req (strbuf &b)
   str t = get_type ();
   if (t) b << "Content-Type: " << t << HTTP_CRLF;
 
-  okwc2_post_t *p = get_post ();
+  const okwc2_post_t *p = get_post ();
   if (p) b << "Content-Length: " << p->len () << HTTP_CRLF;
   b << HTTP_CRLF;
   if (p) p->output (b);

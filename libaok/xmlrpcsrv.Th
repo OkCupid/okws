@@ -61,8 +61,8 @@ public:
 
 
   ptr<xml_top_level_t> top_level () { return _parser.top_level (); }
-  ptr<const xml_top_level_t> top_level_const () const 
-  { return _parser.top_level_const (); }
+  ptr<const xml_top_level_t> top_level () const 
+  { return _parser.top_level (); }
 
   void reply (xml_resp_t r);
 protected:
@@ -170,11 +170,11 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
     u_int64_t rpc_id (xml_rpc_new_global_id ());
   }
 
-  do_debug (c->top_level_const (), "XML-RPC Input", rpc_id);
+  do_debug (c->top_level (), "XML-RPC Input", rpc_id);
   
   if (c->errcode () != XML_PARSE_OK) {
     resp = xml_fault_obj_t (c->errcode (), c->errmsg ());
-  } else if (!(e = c->top_level_const ()) || e->size () < 1) {
+  } else if (!(e = c->top_level ()) || e->size () < 1) {
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_DATA, 
 			    "No data given in XML call");
   } else if (!(call = e->get (0)->to_xml_method_call ())) {

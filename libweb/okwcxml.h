@@ -41,9 +41,9 @@ public:
   zbuf &zb () { return _zb; }
   const zbuf &zb () const { return _zb; }
   size_t len () const { return _zb.inflated_len (); }
-  void output (strbuf &b) { _zb.to_strbuf (&b, false); }
+  void output (strbuf &b) const { _zb.to_strbuf (&b, false); }
 private:
-  zbuf _zb;
+  mutable zbuf _zb;
 };
 
 class okwc2_req_xml_t : public okwc2_req_t {
@@ -52,6 +52,7 @@ public:
     : okwc2_req_t (hn, fn, 1, c) {}
   zbuf &zb () { return _post.zb (); }
   const zbuf &zb () const { return _post.zb (); }
+  const okwc2_post_t *get_post () const { return &_post; }
 protected:
   okwc2_post_xml_t _post;
 };
@@ -62,6 +63,8 @@ public:
   void eat_chunk (ptr<canceller_t> cncl, size_t sz, cbi cb) 
   { eat_chunk_T (cncl, sz, cb); }
   void finished_meal (ptr<canceller_t> cncl, int status, cbi cb);
+  ptr<const xml_top_level_t> top_level () 
+    const { return _parser.top_level (); }
 protected:
   xml_req_parser_t _parser;
   void eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb, CLOSURE);

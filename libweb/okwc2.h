@@ -40,6 +40,13 @@
 #include "okwc.h"
 #include "list.h"
 
+#define CANCELLED_STATUS HTTP_TIMEOUT
+
+//-----------------------------------------------------------------------
+
+void cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb,
+		       CLOSURE);
+
 //-----------------------------------------------------------------------
 
 struct queued_cbv_t {
@@ -91,7 +98,7 @@ public:
   okwc2_post_t () {}
   virtual ~okwc2_post_t () {}
   virtual size_t len () const = 0;
-  virtual void output (strbuf &b) = 0;
+  virtual void output (strbuf &b) const = 0;
 };
 
 //-----------------------------------------------------------------------
@@ -105,7 +112,7 @@ public:
   virtual void make (ptr<canceller_t> cncl, ptr<ahttpcon> x, cbi cb) 
   { return make_T (cncl, x, cb); }
 
-  virtual okwc2_post_t *get_post () const { return NULL; }
+  virtual const okwc2_post_t *get_post () const { return NULL; }
   virtual str get_type () const { return NULL; }
 
 protected:

@@ -174,8 +174,8 @@ public:
 
   ptr<xml_top_level_t> top_level () { return _xml.top_level (); }
 
-  ptr<const xml_top_level_t> top_level_const () const 
-  { return _xml.top_level_const (); }
+  ptr<const xml_top_level_t> top_level () const 
+  { return _xml.top_level (); }
 
   str errmsg () const { return _xml.errmsg (); }
   int errcode () const { return _xml.errcode (); }

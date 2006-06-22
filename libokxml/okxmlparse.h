@@ -69,7 +69,7 @@ public:
   void found_data (const char *buf, int len);
 
   ptr<xml_top_level_t> top_level () { return _top_level; }
-  ptr<const xml_top_level_t> top_level_const () const { return _top_level; }
+  ptr<const xml_top_level_t> top_level () const { return _top_level; }
   str errmsg () const;
   int errcode () const { return _status; }
 
