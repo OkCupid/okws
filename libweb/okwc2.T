@@ -25,7 +25,6 @@ cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb)
 
   cncl->wait (@[G,true]());
   WAIT (G, cancelled);
-  G.remove_var ();
   if (!cancelled) cncl->clear ();
 
   SIGNAL (cb, cancelled);
@@ -128,7 +127,6 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
   WAIT (G, cancelled);
   if (!cancelled) {
     cncl->clear ();
-    G.remove_var ();
     committed_lookup = true;
     commit_lookup (he, e);
   }
@@ -145,11 +143,9 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
 
   if (cancelled) {
     dnsreq_cancel (dnsp);
-    G.remove_var ();
   } else {
     if (_waiter_remove_cb) {
       _waiter_remove_cb = NULL;
-      G.remove_var ();
     }
     while ((qcb = _waiters.first)) {
       _waiters.remove (qcb);
@@ -331,7 +327,6 @@ okwc2_t::timed_req_T (ptr<okwc2_req_t> r, ptr<okwc2_resp_t> resp, int to,
 
   } else if (tcb) {
     timecb_remove (tcb);
-    G.remove_var ();
   }
 
   SIGNAL (cb, status);
@@ -441,7 +436,6 @@ okwc2_resp_simple_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
     status = CANCELLED_STATUS;
     _dumper.cancel ();
   } else {
-    G.remove_var ();
     cncl->clear ();
     if (chnk) _chunks.push_back (chnk);
   }

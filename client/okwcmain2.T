@@ -66,6 +66,7 @@ main2 (int argc, char **argv)
     aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
   } else if (resp->body ())
     aout << "\nbody: " << resp->body () << "\n";
+
   exit (0);
 }
 

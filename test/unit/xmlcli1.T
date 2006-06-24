@@ -36,6 +36,7 @@ main2 (int argc, char **argv)
     int code;
     str msg;
     bool verbose (false);
+	int w;
   }
 
   while ((ch = getopt (argc, argv, "vdt:")) != -1) {
@@ -109,7 +110,9 @@ main2 (int argc, char **argv)
       }
     }
   }
-  exit (0);
+  w = 3;
+  warnx << "waiting " << w << " seconds before exit\n";
+  delaycb (w, 0, wrap (exit, 0));
 }
 
 
