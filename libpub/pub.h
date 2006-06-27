@@ -1067,7 +1067,7 @@ public:
   pfile_sec_lst_t secs;
   pubstat_t err;
   str err_msg;
-  const phashp_t hsh;            // all other files don't
+  const phashp_t hsh; 
 
   // for pub2
   void publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
@@ -1083,6 +1083,14 @@ private:
 
 public:
   pfile_sec_t *section;
+
+  // for chunked file xfer in pub2
+  void init_xdr_opaque ();
+  ssize_t len () const;
+  ssize_t get_chunk (off_t offset, char *buf, size_t capacity) const;
+protected:
+  str _xdr_opaque;
+  phash_t _xdr_opaque_hash;
 };
 
 typedef ihash<const phashp_t, pfile_t, &pfile_t::hsh, 

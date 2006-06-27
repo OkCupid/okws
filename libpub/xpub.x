@@ -285,7 +285,8 @@ enum xpub_status_typ_t {
   XPUB_STATUS_OOB = 4,                 /* out of bounds */
   XPUB_STATUS_NOT_IMPLEMENTED = 5,
   XPUB_STATUS_RPC_ERR = 6,
-  XPUB_UNAVAILABLE = 7                 /* disabled at runtime */
+  XPUB_UNAVAILABLE = 7,                /* disabled at runtime */
+  XPUB_STATUS_CHUNKS = 8               /* have to return in chunks */
 };
 
 union xpub_status_t switch (xpub_status_typ_t status)
@@ -379,9 +380,24 @@ struct xpub2_getfile_arg_t {
   xpub2_file_freshcheck_t fresh;
 };
 
+struct xpub2_chunk_t {
+  unsigned		chunkid;
+  unsigned hyper	offset;
+  opaque		data<>;
+};
+
+struct xpub2_chunks_desc_t {
+  xpub2_fstat_t 	stat;
+  xpubhash_t            xdrhash;
+  unsigned		datasize;
+  xpub2_chunk_t		*chunk1;
+};
+
 union xpub2_getfile_res_t switch (xpub_status_typ_t status) {
 case XPUB_STATUS_OK:
   xpub2_getfile_data_t data;
+case XPUB_STATUS_CHUNKS:
+  xpub2_chunks_desc_t chunks;
 case XPUB_STATUS_ERR:
   string error<>;
 default:

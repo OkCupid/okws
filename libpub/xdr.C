@@ -23,6 +23,7 @@
 
 #include "pub.h"
 #include "parr.h"
+#include "crypt.h"
 
 #define DISABLE_GZIP -2
 
@@ -121,6 +122,34 @@ pfile_t::to_xdr (xpub_file_t *x) const
   for (i = 0, s = secs.first; s; s = secs.next (s))
     if (s->to_xdr (&(x->secs[i])))
       i++;
+}
+
+void
+pfile_t::init_xdr_opaque () 
+{
+  if (!_xdr_opaque) {
+    xpub_file_t x;
+    to_xdr (&x);
+    _xdr_opaque = xdr2str (x);
+    sha1_hash (_xdr_opaque_hash.val, _xdr_opaque.cstr (), 
+	       _xdr_opaque.len ());
+  }
+}
+
+ssize_t
+pfile_t::len () const
+{
+  return _xdr_opaque ? ssize_t (_xdr_opaque.len ()) : ssize_t (-1);
+}
+
+ssize_t 
+pfile_t::get_chunk (off_t offset, char *buf, size_t capacity) const
+{
+  if (!_xdr_opaque || offset >= _xdr_opaque.len ())
+    return -1;
+  ssize_t ret = min<ssize_t> (_xdr_opaque.len () - offset, capacity);
+  memcpy (buf, _xdr_opaque.cstr () + offset, ret);
+  return ret;
 }
 
 pfile_t::pfile_t (const xpub_file_t &x)
