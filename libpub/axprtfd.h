@@ -53,7 +53,7 @@ public:
     if (!rpc_traverse (xp, const_cast<T &> (t)))
       return false;
     
-    ux->sendfd (fd);
+    ux->sendfd (fd, true);
     ux->sendv (x.uio ()->iov (), x.uio ()->iovcnt ());
     
     return true;

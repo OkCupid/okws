@@ -361,14 +361,13 @@ struct xpub_files2_getfile_arg_t {
 
 
 struct xpub2_chunk_t {
-  unsigned		chunkid;
-  unsigned hyper	offset;
+  unsigned 		offset;
   opaque		data<>;
 };
 
 struct xpub2_chunkshdr_t {
-  xpub2_fstat_t 	stat;
   xpubhash_t            xdrhash;
+  int                   leasetime; /* time until flush possibility from cache*/
   unsigned		datasize;
 };
 
@@ -404,6 +403,22 @@ struct xpub2_getfile_arg_t {
   xpub_fn_t               filename;
   unsigned                options;
   xpub2_file_freshcheck_t fresh;
+  unsigned		  maxsz;
+};
+
+struct xpub2_getchunk_arg_t {
+  xpubhash_t hash;
+  unsigned offset;
+  unsigned size;
+};
+
+union xpub2_getchunk_res_t switch (xpub_status_typ_t status) {
+case XPUB_STATUS_OK:
+  xpub2_chunk_t chunk;
+case XPUB_STATUS_ERR:
+  string error<>;
+default:
+  void;
 };
 
 union xpub2_getfile_res_t switch (xpub_status_typ_t status) {
@@ -512,6 +527,13 @@ program PUB_PROGRAM {
 		 */
 		xpub2_get_fstats_res_t
 		PUB2_GET_FSTATS (u_int32_t) = 3;
+
+		/*
+	  	 * If the file is too big to be returned all at once,
+		 * we need to get it by chunks.
+		 */
+		xpub2_getchunk_res_t 
+		PUB2_GETCHUNK(xpub2_getchunk_arg_t) = 8;
 
 		/*
 		 * for each service, pubd needs to send a socket pair

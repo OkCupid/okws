@@ -168,7 +168,8 @@ namespace pub2 {
   /**
    * A global lookup class for looking up cached pubfile
    * attributes.  See pub/pubd2.h for an example of a useful
-   * global_t
+   * global_t.
+   *
    */
   class file_lookup_t {
   public:
@@ -178,12 +179,16 @@ namespace pub2 {
     { return false; }
     virtual void cache_lookup (pfnm_t j, pfnm_t r, phashp_t hsh, time_t ctime,
 			       off_t sz) {}
-    virtual bool getfile (ptr<pbinding_t> b, u_int opts,
+    virtual bool getfile (phashp_t h, u_int opts,
 			  ptr<bound_pfile2_t> *f, pubstat_t *s,
 			  str *em) { return false; }
-    virtual void cache_getfile (ptr<pbinding_t> b, u_int opts,
+    virtual void cache_getfile (phashp_t h, u_int opts,
 				ptr<bound_pfile2_t> f, pubstat_t s,
 				str em) {}
+
+    virtual int hold_chunks (ptr<bound_pfile2_t> p) { return -1; }
+    virtual ptr<bound_pfile2_t> get_chunks (phashp_t h, u_int opts) 
+      { return NULL; }
   };
 
   // should only need one of these, since it doesn't really do
@@ -267,19 +272,13 @@ namespace pub2 {
   protected:
     void getfile_T (pfnm_t nm, getfile_cb_t cb, u_int o = 0, CLOSURE) ;
     void getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
-		       getfile_cb_t cb, CLOSURE);
+		       getfile_cb_t cb, u_int opt, CLOSURE);
     bool is_remote () const { return true; }
 
     virtual bool prepare_getfile (const cache_key_t &k, 
 				  xpub2_getfile_arg_t *arg, 
 				  ptr<bound_pfile2_t> *f,
-				  status_t *status)
-    { 
-      arg->filename = k.fn ();
-      arg->options = k.opts();
-      arg->fresh.set_mode (XPUB2_FRESH_NONE);
-      return false;
-    }
+				  status_t *status);
 
     virtual void cache_getfile (const cache_key_t &k, 
 				ptr<bound_pfile2_t> file) {}

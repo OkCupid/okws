@@ -231,7 +231,7 @@ main_T (int argc, char **argv)
 
       fl = cache = New pubserv2::cache_t ();
     } else {
-      fl = New pubserv2::file_lookup_t ();
+      fl = New pubserv2::chunkholder_t ();
     }
     
   } else if (!pub2_cache) {

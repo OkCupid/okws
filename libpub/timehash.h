@@ -45,6 +45,7 @@ public:
   typedef timehash_node_t<K,V,F> node_t ;
 
   void set_timeout (u_int t) { _timeout = t; }
+  u_int timeout () const { return _timeout; }
   
   void insert (const V &v) 
   {

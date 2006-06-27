@@ -5,8 +5,7 @@
 #include "okdbg.h"
 
 namespace pub2 {
-
-  // should only need one of these
+  
   file_lookup_t g_file_nocache_lookup;
 
   typedef abstract_publisher_t ap_t;
@@ -216,7 +215,7 @@ namespace pub2 {
 
   TAMED void
   rp_t::getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
-		      getfile_cb_t cb)
+		      getfile_cb_t cb, u_int opts)
   {
     VARS {
       ptr<bound_pfile2_t> bpf;
@@ -227,7 +226,7 @@ namespace pub2 {
       file = res->data->file.whole;
     }
     if (file)
-      bpf = New refcounted<bound_pfile2_t> (nm, res->data->stat, *file);
+      bpf = New refcounted<bound_pfile2_t> (nm, res->data->stat, *file, opts);
     else {
       status.set_status (XPUB_STATUS_CORRUPTION);
       *status.error = "Chunked file corrupted in transfer";
@@ -256,7 +255,7 @@ namespace pub2 {
       } else {
 	switch (res.status) {
 	case XPUB_STATUS_OK:
-	  BLOCK { getfile_body (nm, &res, @(status, file)); }
+	  BLOCK { getfile_body (nm, &res, @(status, file), opts); }
 	  if (status.status == XPUB_STATUS_OK) {
 	    cache_getfile (k, file);
 	  }
@@ -441,13 +440,13 @@ namespace pub2 {
 	str em;
 
 	ptr<pbinding_t> bnd = New refcounted<pbinding_t> (fn2, hsh);
-	if (!_lookup->getfile (bnd, opts, &f, &s, &em)) {
+	if (!_lookup->getfile (bnd->hash (), opts, &f, &s, &em)) {
 
 	  // this might need to go over the network, too,
 	  // if we're bypassing NFS
 	  if ((f = _parser->pub2_parse (bnd, opts & opt_mask, &s, &em))) {
 	    f->set_ctime (ctime);
-	    _lookup->cache_getfile (bnd, opts, f, s, em);
+	    _lookup->cache_getfile (bnd->hash (), opts, f, s, em);
 	  }
 	}
 	
@@ -462,6 +461,22 @@ namespace pub2 {
     }
     (*cb) (res, f);
   }
+
+  bool 
+  remote_publisher_t::prepare_getfile (const cache_key_t &k, 
+				       xpub2_getfile_arg_t *arg, 
+				       ptr<bound_pfile2_t> *f,
+				       status_t *status)
+  {
+    arg->filename = k.fn ();
+    arg->options = k.opts();
+    arg->fresh.set_mode (XPUB2_FRESH_NONE);
+
+    // XXX please fix
+    arg->maxsz = max<int> (ok_axprt_ps - 0x200, 0x1000);
+    return false;
+  }
+  
 }
 
 TAMED void 

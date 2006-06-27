@@ -40,20 +40,22 @@ namespace pubserv2 {
     : local_publisher_t (parser, 0, fl),
       _x (x), 
       _cli (aclnt::alloc (_x, pub_program_2)),
-      _srv (asrv_delayed_eof::alloc (_x, pub_program_2, 
-				     wrap (this, &srv_t::dispatch))),
+      _srv (asrv::alloc (_x, pub_program_2, wrap (this, &srv_t::dispatch))),
       _last_update (0),
       _push_deltas (false),
       _registered (true),
       _push_deltas_lock (false),
       _file_lookup (fl)
-  {}
+  {
+    _file_lookup->register_client (this);
+  }
 
   void srv_t::handle_eof () { delete this; }
 
   void primary_srv_t::handle_eof ()
   {
     warn << "Caught EOF; shutting down.\n";
+    delete this;
     exit (0);
   }
 
@@ -71,8 +73,10 @@ namespace pubserv2 {
   void
   srv_t::dispatch (svccb *sbp)
   {
-    if (!sbp) 
+    if (!sbp) {
       handle_eof ();
+      return;
+    }
 
     u_int p = sbp->proc ();
     switch (p) {
@@ -121,6 +125,7 @@ namespace pubserv2 {
       xpub_status_t s;
       xpub2_getfile_res_t res (XPUB_STATUS_OK);
       u_int o;
+      ssize_t sz;
     }
     o = arg->options;
 
@@ -138,8 +143,19 @@ namespace pubserv2 {
       res.data->stat.ctime = f->ctime ();
       res.data->stat.fn = f->filename ();
       f->hash ()->to_xdr (&res.data->stat.hash);
-      res.data->file.set_mode (XPUB_XFER_WHOLE);
-      f->file ()->to_xdr (res.data->file.whole);
+
+      f->file ()->init_xdr_opaque ();
+      sz = f->file ()->len ();
+      assert (sz >= 0);
+      if (sz > ssize_t (arg->maxsz)) {
+	res.data->file.set_mode (XPUB_XFER_CHUNKED);
+	res.data->file.chunked->datasize = sz;
+	f->file ()->get_xdr_hash (&res.data->file.chunked->xdrhash);
+	res.data->file.chunked->leasetime = _lookup->hold_chunks (f);
+      } else {
+	res.data->file.set_mode (XPUB_XFER_WHOLE);
+	f->file ()->to_xdr (res.data->file.whole);
+      }
     }
     sbp->replyref (res);
   }
@@ -152,7 +168,9 @@ namespace pubserv2 {
   
   srv_t::~srv_t ()
   {
-    if (_registered) 
+    if (_registered) {
       _file_lookup->unregister_client (this);
+    }
   }
+
 };

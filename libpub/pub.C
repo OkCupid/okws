@@ -642,7 +642,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
   pfile_type_t t = wss ? PFILE_TYPE_WH : PFILE_TYPE_H;
   pfile_sec_t *ss = New pfile_html_sec_t (0);
   ptr<bound_pfile2_t> ret = 
-    New refcounted<bound_pfile2_t> (bnd, jail2real (fn), t);
+    New refcounted<bound_pfile2_t> (bnd, jail2real (fn), t, opts);
   pfile_t *pf = ret->file ();
   *err = PUBSTAT_OK;
   int wss_prev = yywss;

@@ -40,7 +40,7 @@ clone_server_t::clonefd (svccb *b)
     warn ("socketpair: %m\n");
     ret = false;
   } else {
-    register_newclient (axprt_unix::alloc (fds[0], ok_axprt_ps));
+    register_newclient (axprt_stream::alloc (fds[0], ok_axprt_ps));
     _fdsnk->send (fds[1], _fdseqno++);
   }
   b->replyref (ret);

@@ -193,6 +193,7 @@ okld_ch_t::launch ()
 
   if (okld->in_shutdown ()) {
     close (logfd);
+    if (pub2fd >= 0) close (pub2fd);
     strbuf b;
     b << "HOSED: shutdown received while relaunching service: ("
       << servpath << "," << rexecpath << ")\n";
@@ -255,6 +256,8 @@ okld_ch_t::launch ()
 
   pid = ahttpcon_spawn_pid;
   close (logfd);
+  if (pub2fd >= 0) close (pub2fd);
+
   if (fd < 0 || ctlfd < 0) {
     warn << "HOSED: Cannot launch service: (" << servpath << "," 
 	 << rexecpath << ")\n";

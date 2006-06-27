@@ -366,21 +366,21 @@ namespace pubserv2 {
   
   
   bool 
-  cache_t::getfile (ptr<pbinding_t> b, u_int opts,
+  cache_t::getfile (phashp_t h, u_int opts,
 		    ptr<bound_pfile2_t> *f, pubstat_t *s,
 		    str *em)
   {
     bool ret (false);
-    cache_key_t k (b->hash (), opts);
+    cache_key_t k (h, opts);
     cached_getfile_t *cgf = _getfile_cache[k];
     if (cgf) {
-      *f = cgf->_file;
+      if (f) *f = cgf->_file;
       ret = true;
     } else {
       cached_badfile_t *bf = _badfile_cache[k];
       if (bf) {
-	*s = bf->_stat;
-	*em = bf->_msg;
+	if (s) *s = bf->_stat;
+	if (em) *em = bf->_msg;
 	ret = true;
       }
     }
@@ -388,14 +388,14 @@ namespace pubserv2 {
   }
 
   void 
-  cache_t::cache_getfile (ptr<pbinding_t> b, u_int opts,
+  cache_t::cache_getfile (phashp_t h, u_int opts,
 			  ptr<bound_pfile2_t> f, pubstat_t s,
 			  str em) 
   {
-    cache_key_t k (b->hash (), opts);
+    cache_key_t k (h, opts);
     if (f) {
       _badfile_cache.remove (k);
-      _getfile_cache.insert (cached_getfile_t (k, f));
+      _getfile_cache.insert (cached_getfile_t (f));
     } else if (s != PUBSTAT_OK) {
       _getfile_cache.remove (k);
       _badfile_cache.insert (cached_badfile_t (k, s, em));
@@ -416,4 +416,35 @@ namespace pubserv2 {
     tmp.opts = _opts;
     return hash_bytes (reinterpret_cast<const void *> (&tmp), sizeof (tmp));
   }
+
+  int
+  cache_t::hold_chunks (ptr<bound_pfile2_t> f) 
+  {
+    return _getfile_cache.timeout ();
+  }
+  
+  ptr<bound_pfile2_t>
+  cache_t::get_chunks (phashp_t h, u_int opts)
+  {
+    ptr<bound_pfile2_t> ret;
+    getfile (h, opts, &ret, NULL, NULL);
+    return ret;
+  }
+
+
+  int
+  chunkholder_t::hold_chunks (ptr<bound_pfile2_t> f)
+  {
+    _chunk_cache.insert (cached_getfile_t (f));
+    return _chunk_cache.timeout ();
+  }
+
+  ptr<bound_pfile2_t> 
+  chunkholder_t::get_chunks (phashp_t h, u_int opts)
+  {
+    cache_key_t k (h, opts);
+    cached_getfile_t *cfg = _chunk_cache[k];
+    return cfg ? cfg->_file : NULL;
+  }
+
 };

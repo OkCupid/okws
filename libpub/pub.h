@@ -92,7 +92,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_EXPLORE_OFF (1 << 8)   // don't explore files after parse
 #define P_INCLUDE_V2  (1 << 9)   // support V2 include semantics
 #define P_EXPORTER    (1 << 10)  // export files via RPC
-#define P_NOPARSE     (1 << 11)  // don't part file at all
+#define P_NOPARSE     (1 << 11)  // don't parse file at all
 
 /* XXX - defaults should be put someplace better */
 #define P_INFINITY   65334
@@ -1088,6 +1088,7 @@ public:
   void init_xdr_opaque ();
   ssize_t len () const;
   ssize_t get_chunk (off_t offset, char *buf, size_t capacity) const;
+  void get_xdr_hash (xpubhash_t *x) const { _xdr_opaque_hash.to_xdr (x); }
 protected:
   str _xdr_opaque;
   phash_t _xdr_opaque_hash;
@@ -1443,22 +1444,24 @@ private:
 class bound_pfile2_t {
 public:
   bound_pfile2_t (pfnm_t nm, const xpub2_fstat_t &stat, 
-		  const xpub_file_t &file)
+		  const xpub_file_t &file, u_int o)
     : _name_in (nm),
       _name_out (stat.fn),
       _hsh (phash_t::alloc (stat.hash)),
       _binding (New refcounted<pbinding_t> (_name_out, _hsh)),
       _file (file),
       _bpf (bound_pfile_t::alloc (_binding, &_file, _name_in)),
-      _ctime (stat.ctime) {}
+      _ctime (stat.ctime),
+      _opts (o) {}
   
-  bound_pfile2_t (ptr<pbinding_t> bnd, pfnm_t jnm, pfile_type_t t)
+  bound_pfile2_t (ptr<pbinding_t> bnd, pfnm_t jnm, pfile_type_t t, u_int o)
     : _name_in (bnd->filename ()),
       _name_out (bnd->filename ()),
       _hsh (bnd->hash ()),
       _binding (bnd),
       _file (_hsh, t),
-      _bpf (bound_pfile_t::alloc (_binding, &_file, jnm, false)) {}
+      _bpf (bound_pfile_t::alloc (_binding, &_file, jnm, false)),
+      _opts (o) {}
       
   bpfcp_t bpf () const { return _bpf; }
   bpfmp_t nonconst_bpf () const { return _bpf; }
@@ -1468,6 +1471,7 @@ public:
   phashp_t hash () const { return _hsh; }
   void set_ctime (time_t t) { _ctime = t; }
   const str &filename () const { return _name_out; }
+  u_int opts () const { return _opts; }
   
 private:
   const str _name_in;
@@ -1477,6 +1481,7 @@ private:
   pfile_t _file;
   ptr<bound_pfile_t> _bpf;
   time_t _ctime;
+  u_int _opts;
 };
 
 /*

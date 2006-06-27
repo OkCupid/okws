@@ -36,11 +36,17 @@
 
 namespace pubserv2 {
   struct cache_key_t {
+
     cache_key_t (phashp_t h, u_int o) : 
       _filehash (h), _opts (op_mask (o)), _hshkey (hash_me ()) {}
+
+    cache_key_t (ptr<const bound_pfile2_t> f) :
+      _filehash (f->hash ()), _opts (op_mask (f->opts ())), 
+      _hshkey (hash_me ()) {}
+
     hash_t hash_me () const;
     
-    static u_int op_mask (u_int in) { return in & ( P_WSS); }
+    static u_int op_mask (u_int in) { return in & ( P_WSS | P_NOPARSE); }
     operator hash_t () const { return _hshkey; }
     bool operator== (const cache_key_t &k) const 
     { return _opts == k._opts && *_filehash == *k._filehash; }
@@ -51,8 +57,8 @@ namespace pubserv2 {
   };
 
   struct cached_getfile_t {
-    cached_getfile_t (const cache_key_t &k, ptr<bound_pfile2_t> f)
-      : _key (k), _file (f) {}
+    cached_getfile_t (ptr<bound_pfile2_t> f)
+      : _key (f), _file (f) {}
     cache_key_t _key;
     ptr<bound_pfile2_t> _file;
   };
@@ -217,6 +223,18 @@ namespace pubserv2 {
     time_t _last_ctime;           // last ctime, as reported by stat(2)
     time_t _last_change_local;    // local time of the last change
   };
+
+  class chunkholder_t: public file_lookup_t {
+  public:
+    chunkholder_t () :  file_lookup_t (),
+      _chunk_cache (ok_pub2_getfile_object_lifetime, true) {}
+
+    int hold_chunks (ptr<bound_pfile2_t> p);
+    ptr<bound_pfile2_t> get_chunks (phashp_t h, u_int opts);
+  private:
+    timehash_t<cache_key_t, cached_getfile_t> _chunk_cache;
+
+  };
   
   class cache_t : public file_lookup_t {
   public:
@@ -232,12 +250,13 @@ namespace pubserv2 {
     bool lookup (pfnm_t nm, phashp_t *hsh, time_t *ctime) ;
     void cache_lookup (pfnm_t j, pfnm_t r, phashp_t hsh, time_t ctime,
 		       off_t sz) ;
-    bool getfile (ptr<pbinding_t> b, u_int opts,
-		  ptr<bound_pfile2_t> *f, pubstat_t *s,
+    bool getfile (phashp_t h, u_int opts, ptr<bound_pfile2_t> *f, pubstat_t *s,
 		  str *em);
-    void cache_getfile (ptr<pbinding_t> b, u_int opts,
-			ptr<bound_pfile2_t> f, pubstat_t s,
-			str em);
+    void cache_getfile (phashp_t h, u_int opts, ptr<bound_pfile2_t> f, 
+			pubstat_t s, str em);
+
+    int hold_chunks (ptr<bound_pfile2_t> p) ;
+    ptr<bound_pfile2_t> get_chunks (phashp_t h, u_int opts);
 
     void set_ts_files (const str &s, const str &h)
     {
