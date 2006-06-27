@@ -214,6 +214,27 @@ namespace pub2 {
     }
   }
 
+  TAMED void
+  rp_t::getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
+		      getfile_cb_t cb)
+  {
+    VARS {
+      ptr<bound_pfile2_t> bpf;
+      status_t status (XPUB_STATUS_OK);
+      const xpub_file_t *file (NULL);
+    }
+    if (res->data->file.mode == XPUB_XFER_WHOLE) {
+      file = res->data->file.whole;
+    }
+    if (file)
+      bpf = New refcounted<bound_pfile2_t> (nm, res->data->stat, *file);
+    else {
+      status.set_status (XPUB_STATUS_CORRUPTION);
+      *status.error = "Chunked file corrupted in transfer";
+    }
+    (*cb) (status, bpf);
+  }
+
   TAMED void 
   rp_t::getfile_T (pfnm_t nm, getfile_cb_t cb, u_int opts)
   {
@@ -235,8 +256,10 @@ namespace pub2 {
       } else {
 	switch (res.status) {
 	case XPUB_STATUS_OK:
-	  file = New refcounted<bound_pfile2_t> (nm, *res.data);
-	  cache_getfile (k, file);
+	  BLOCK { getfile_body (nm, &res, @(status, file)); }
+	  if (status.status == XPUB_STATUS_OK) {
+	    cache_getfile (k, file);
+	  }
 	  break;
 	case XPUB_STATUS_NOCHANGE:
 	  file = file_nochange (k);

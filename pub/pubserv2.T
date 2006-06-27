@@ -138,7 +138,8 @@ namespace pubserv2 {
       res.data->stat.ctime = f->ctime ();
       res.data->stat.fn = f->filename ();
       f->hash ()->to_xdr (&res.data->stat.hash);
-      f->file ()->to_xdr (&res.data->file);
+      res.data->file.set_mode (XPUB_XFER_WHOLE);
+      f->file ()->to_xdr (res.data->file.whole);
     }
     sbp->replyref (res);
   }

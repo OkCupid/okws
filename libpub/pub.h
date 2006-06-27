@@ -1442,14 +1442,15 @@ private:
 // A wrapper opbject around bound pfiles, that keeps everything in scope.
 class bound_pfile2_t {
 public:
-  bound_pfile2_t (pfnm_t nm, const xpub2_getfile_data_t &data)
+  bound_pfile2_t (pfnm_t nm, const xpub2_fstat_t &stat, 
+		  const xpub_file_t &file)
     : _name_in (nm),
-      _name_out (data.stat.fn),
-      _hsh (phash_t::alloc (data.stat.hash)),
+      _name_out (stat.fn),
+      _hsh (phash_t::alloc (stat.hash)),
       _binding (New refcounted<pbinding_t> (_name_out, _hsh)),
-      _file (data.file),
+      _file (file),
       _bpf (bound_pfile_t::alloc (_binding, &_file, _name_in)),
-      _ctime (data.stat.ctime) {}
+      _ctime (stat.ctime) {}
   
   bound_pfile2_t (ptr<pbinding_t> bnd, pfnm_t jnm, pfile_type_t t)
     : _name_in (bnd->filename ()),
