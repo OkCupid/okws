@@ -1087,7 +1087,7 @@ public:
   // for chunked file xfer in pub2
   void init_xdr_opaque ();
   ssize_t len () const;
-  ssize_t get_chunk (off_t offset, char *buf, size_t capacity) const;
+  ssize_t get_chunk (size_t offset, char *buf, size_t capacity) const;
   void get_xdr_hash (xpubhash_t *x) const { _xdr_opaque_hash.to_xdr (x); }
 protected:
   str _xdr_opaque;

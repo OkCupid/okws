@@ -255,7 +255,8 @@ namespace pub2 {
 	_cli (aclnt::alloc (x, pub_program_2)),
 	_srv (asrv_delayed_eof::alloc 
 	      (x, pub_program_2, 
-	       wrap (this, &remote_publisher_t::dispatch))) {}
+	       wrap (this, &remote_publisher_t::dispatch))),
+	_maxsz (min<u_int> (ok_pub2_max_datasz, ok_axprt_ps >> 1)) {}
 
     virtual ~remote_publisher_t () {}
 
@@ -270,11 +271,28 @@ namespace pub2 {
     
 
   protected:
+
+    //------------------------------------------------------------
+    // All involved with getting a file, and dealing with its
+    // chunks, if necessary.
+    //
     void getfile_T (pfnm_t nm, getfile_cb_t cb, u_int o = 0, CLOSURE) ;
     void getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
 		       getfile_cb_t cb, u_int opt, CLOSURE);
-    void getfile_chunked (const xpub2_getfile_res_t *res,  u_int opts,
+
+    void getfile_chunked (const xpub2_getfile_data_t *dat,  u_int opts,
 			  xpub_file_t *file, status_cb_t cb, CLOSURE);
+
+    void launch_getchunk (coordgroup_t<ptr<bool> > cg, 
+			  const xpub2_getfile_data_t *dat, u_int opts,
+			  size_t offset, size_t dsz, char *buf, cbb cb,
+			  CLOSURE);
+    void getchunk (const xpub2_getfile_data_t *dat, u_int opts,
+		   size_t offset, size_t sz, char *buf, cbb ok, CLOSURE);
+    //
+    //-----------------------------------------------------------------------
+
+
     bool is_remote () const { return true; }
 
     virtual bool prepare_getfile (const cache_key_t &k, 
@@ -292,6 +310,7 @@ namespace pub2 {
     ptr<axprt_stream> _x;
     ptr<aclnt> _cli;
     ptr<asrv> _srv;
+    size_t _maxsz;
   };
 
 };

@@ -106,6 +106,7 @@ namespace pubserv2 {
     void config (svccb *sbp) {}
     void get_fstats (svccb *sbp) {}
     void push_deltas (ptr<xpub2_delta_set_t> s, cbb cb, CLOSURE);
+    void getchunk (svccb *sbp);
 
     virtual void handle_clonefd (svccb *sbp);
     virtual void handle_eof ();

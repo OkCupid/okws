@@ -143,7 +143,7 @@ pfile_t::len () const
 }
 
 ssize_t 
-pfile_t::get_chunk (off_t offset, char *buf, size_t capacity) const
+pfile_t::get_chunk (size_t offset, char *buf, size_t capacity) const
 {
   if (!_xdr_opaque || offset >= _xdr_opaque.len ())
     return -1;

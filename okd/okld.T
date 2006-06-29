@@ -708,6 +708,8 @@ okld_t::parseconfig (const str &cf)
     .add ("PubdExecPath", wrap (this, &okld_t::got_pubd_v1))
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
+    .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
+
     .ignore ("OkMgrSocketOwner")
     .ignore ("OkMgrSocketGroup")
     .ignore ("OkMgrSocketAccessMode")
@@ -863,6 +865,7 @@ okld_t::encode_env ()
     .insert ("ps", ok_axprt_ps)
     .insert ("clock", int (clock_mode))
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
+    .insert ("pub2chnk", ok_pub2_max_datasz)
     .insert ("pub1", pub_v1_support ? 1 : 0);
 
   if (mmc_file)

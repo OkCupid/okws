@@ -104,6 +104,9 @@ namespace pubserv2 {
 	sbp->replyref (f);
       }
       break;
+    case PUB2_GETCHUNK:
+      getchunk (sbp);
+      break;
     case PUB2_PUSH_DELTAS:
       // Another Pub server (that local on the NFS server) might
       // be pushing deltas to US, which we should, turn around
@@ -115,6 +118,28 @@ namespace pubserv2 {
       break;
     }
     return;
+  }
+
+  void
+  srv_t::getchunk (svccb *sbp)
+  {
+    xpub2_getchunk_arg_t *arg = sbp->Xtmpl getarg<xpub2_getchunk_arg_t> ();
+    xpub2_getchunk_res_t res;
+    phashp_t h = phash_t::alloc (arg->hash);
+    ptr<bound_pfile2_t> f = _lookup->get_chunks (h, arg->opts);
+    if (!f) {
+      res.set_status (XPUB_STATUS_NOENT);
+    } else {
+      res.set_status (XPUB_STATUS_OK);
+      res.chunk->data.setsize (arg->size);
+      ssize_t r = f->file ()->get_chunk (arg->offset, res.chunk->data.base (),
+					 arg->size);
+      if (r != ssize_t (arg->size)) {
+	res.set_status (XPUB_STATUS_ERR) ;
+	*res.error = "Datasize overflow";
+      }
+    }
+    sbp->replyref (res);
   }
   
   TAMED void

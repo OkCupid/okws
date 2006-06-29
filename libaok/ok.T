@@ -216,6 +216,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("wss", &ok_pub2_wss);
     t->lookup ("caching", &ok_pub2_caching);
     t->lookup ("ncto", &ok_pub2_svc_neg_cache_timeout);
+    t->lookup ("pub2chnk", &ok_pub2_max_datasz);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");

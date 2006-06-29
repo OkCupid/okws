@@ -245,6 +245,7 @@ extern int ok_pub2_svc_neg_cache_timeout;
 extern int ok_pub2_getfile_object_lifetime;
 extern int ok_pub2_chunk_lease_time;
 extern int ok_pub2_treestat_interval;
+extern size_t ok_pub2_max_datasz;
 extern const char *ok_pub2_treestat_sentinel;
 extern const char *ok_pub2_treestat_heartbeat;
 

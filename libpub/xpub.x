@@ -408,6 +408,7 @@ struct xpub2_getfile_arg_t {
 
 struct xpub2_getchunk_arg_t {
   xpubhash_t hash;
+  unsigned opts;
   unsigned offset;
   unsigned size;
 };

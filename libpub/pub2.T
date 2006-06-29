@@ -3,6 +3,7 @@
 
 #include "pub2.h"
 #include "okdbg.h"
+#include "crypt.h"
 
 namespace pub2 {
   
@@ -213,13 +214,122 @@ namespace pub2 {
     }
   }
 
+  TAMED static void
+  wait_for_nsignals (u_int n, coordgroup_t<ptr<bool> > cg, cbb cb)
+  {
+    VARS {
+      ptr<bool> tmpok;
+      bool ok (true);
+    }
+    while (cg.n_signals_left () > n) {
+      WAIT (cg, tmpok);
+      if (!*tmpok) ok = false;
+    }
+    SIGNAL (cb, ok);
+  }
+
   TAMED void
-  rp_t::getfile_chunked (const xpub2_getfile_res_t *res, u_int opts,
+  rp_t::getchunk (const xpub2_getfile_data_t *dat, u_int opts, size_t offset, 
+		  size_t sz, char *buf, cbb cb)
+  {
+    VARS {
+      clnt_stat err;
+      xpub2_getchunk_arg_t arg;
+      xpub2_getchunk_res_t res;
+      bool ok (false);
+      strbuf b;
+    }
+    memcpy (arg.hash.base (), dat->stat.hash.base (), PUBHASHSIZE);
+    arg.offset = offset;
+    arg.size = sz;
+    arg.opts = opts;
+
+    BLOCK { _cli->call (PUB2_GETCHUNK, &arg, &res, @(err) ); }
+
+    if (err) {
+      b << "RPC error in PUB2_GETCHUNK: " << err << "\n";
+      OKDBG3(PUB2_CHUNKS, ERROR, b);
+
+    } else if (res.status != XPUB_STATUS_OK) {
+      b << "PUB error in PUB2_GETCHUNK: " << res.status;
+      if (res.status == XPUB_STATUS_ERR)
+	b << ": " << *res.error;
+      OKDBG3(PUB2_CHUNKS, ERROR, b);
+
+    } else if (res.chunk->data.size () != sz) {
+      OKDBG3(PUB2_CHUNKS, ERROR, 
+	     "Error in PUB2_GETCHUNK: datasize mismatch");
+
+    } else {
+      ok = true;
+      memcpy (buf + offset, res.chunk->data.base (), res.chunk->data.size ());
+
+    }
+    SIGNAL (cb, ok);
+  }
+
+  TAMED void
+  rp_t::launch_getchunk (coordgroup_t<ptr<bool> > cg, 
+			 const xpub2_getfile_data_t *dat, u_int opts,
+			 size_t offset, size_t dsz, char *buf, cbb cb)
+  {
+    VARS {
+      u_int ws (5);
+      bool ok (true);
+      ptr<bool> nok;
+    }
+
+    assert (ws > 0);
+
+    BLOCK { wait_for_nsignals (ws - 1, cg, @(ok)); }
+    if (ok) {
+      nok = New refcounted<bool> ();
+      getchunk (dat, opts, offset, dsz, buf, @[cg,nok](*nok));
+    }
+
+    SIGNAL (cb, ok);
+  }
+
+  TAMED void
+  rp_t::getfile_chunked (const xpub2_getfile_data_t *dat, u_int opts,
 			 xpub_file_t *file, status_cb_t cb)
   {
     VARS {
       status_t status (XPUB_STATUS_OK);
+      size_t dsz (dat->file.chunked->datasize);
+      mstr buf (dsz);
+      coordgroup_t<ptr<bool> > cg (__FILE__, __LINE__);
+      bool ok (true), tmpok;
+      str m;
+      size_t cs;
+      size_t i;
     }
+
+    for (i = 0; i < dsz && ok; i += _maxsz) {
+      cs = min<size_t> (_maxsz, dsz - i);
+      BLOCK { launch_getchunk (cg, dat, opts, i, cs, buf.cstr (), @(tmpok)); }
+      if (!tmpok) ok = false;
+    }
+    BLOCK { wait_for_nsignals (0, cg, @(tmpok)); }
+    if (!tmpok) ok = false;
+
+    if (!ok) {
+      m = "Not all chunks retrieved"; 
+    } else {
+      char h[PUBHASHSIZE];
+      sha1_hash (h, buf.cstr (), buf.len ());
+      if (memcmp (h, dat->stat.hash.base (), PUBHASHSIZE)) {
+	m = "Hash mismatch";
+      } else if (!str2xdr (*file, buf)) {
+	m = "Demarshall of chunks failed";
+      }
+    }
+
+    if (m) {
+      status.set_status (XPUB_STATUS_CORRUPTION);
+      *status.error = m;
+    }
+
     SIGNAL (cb, status);
   }
 
@@ -236,7 +346,7 @@ namespace pub2 {
     if (res->data->file.mode == XPUB_XFER_WHOLE) {
       filep = res->data->file.whole;
     } else if (res->data->file.mode == XPUB_XFER_CHUNKED) {
-      BLOCK { getfile_chunked (res, opts, &file, @(status)); }
+      BLOCK { getfile_chunked (res->data, opts, &file, @(status)); }
       filep = &file;
     } else {
       status.set_status (XPUB_STATUS_ERR);
@@ -484,9 +594,7 @@ namespace pub2 {
     arg->filename = k.fn ();
     arg->options = k.opts();
     arg->fresh.set_mode (XPUB2_FRESH_NONE);
-
-    // XXX please fix
-    arg->maxsz = max<int> (ok_axprt_ps - 0x200, 0x1000);
+    arg->maxsz = _maxsz;
     return false;
   }
   

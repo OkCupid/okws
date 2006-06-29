@@ -231,6 +231,9 @@ int ok_pub2_getfile_object_lifetime = 3600;
 // amount of time a client has to gather all chunks (2 minutes)
 int ok_pub2_chunk_lease_time = 120;
 
+// largest possible file/chunk size (should be less than ok_axprt_ps)
+size_t ok_pub2_max_datasz = 0x1000;
+
 const char *ok_pub2_treestat_sentinel = ".treestat_sentinel";
 const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 
