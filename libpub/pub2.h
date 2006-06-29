@@ -273,6 +273,8 @@ namespace pub2 {
     void getfile_T (pfnm_t nm, getfile_cb_t cb, u_int o = 0, CLOSURE) ;
     void getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
 		       getfile_cb_t cb, u_int opt, CLOSURE);
+    void getfile_chunked (const xpub2_getfile_res_t *res,  u_int opts,
+			  xpub_file_t *file, status_cb_t cb, CLOSURE);
     bool is_remote () const { return true; }
 
     virtual bool prepare_getfile (const cache_key_t &k, 

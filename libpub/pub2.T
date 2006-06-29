@@ -214,24 +214,37 @@ namespace pub2 {
   }
 
   TAMED void
+  rp_t::getfile_chunked (const xpub2_getfile_res_t *res, u_int opts,
+			 xpub_file_t *file, status_cb_t cb)
+  {
+    VARS {
+      status_t status (XPUB_STATUS_OK);
+    }
+    SIGNAL (cb, status);
+  }
+
+  TAMED void
   rp_t::getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
 		      getfile_cb_t cb, u_int opts)
   {
     VARS {
       ptr<bound_pfile2_t> bpf;
       status_t status (XPUB_STATUS_OK);
-      const xpub_file_t *file (NULL);
+      const xpub_file_t *filep (NULL);
+      xpub_file_t file;
     }
     if (res->data->file.mode == XPUB_XFER_WHOLE) {
-      file = res->data->file.whole;
+      filep = res->data->file.whole;
+    } else if (res->data->file.mode == XPUB_XFER_CHUNKED) {
+      BLOCK { getfile_chunked (res, opts, &file, @(status)); }
+      filep = &file;
+    } else {
+      status.set_status (XPUB_STATUS_ERR);
+      *status.error = "Unknown transfer mode";
     }
-    if (file)
-      bpf = New refcounted<bound_pfile2_t> (nm, res->data->stat, *file, opts);
-    else {
-      status.set_status (XPUB_STATUS_CORRUPTION);
-      *status.error = "Chunked file corrupted in transfer";
-    }
-    (*cb) (status, bpf);
+    if (filep)
+      bpf = New refcounted<bound_pfile2_t> (nm, res->data->stat, *filep, opts);
+    SIGNAL (cb, status, bpf);
   }
 
   TAMED void 
