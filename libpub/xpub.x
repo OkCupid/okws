@@ -366,9 +366,9 @@ struct xpub2_chunk_t {
 };
 
 struct xpub2_chunkshdr_t {
-  xpubhash_t            xdrhash;
+  xpubhash_t            xdrhash;   /* a hash of the file's XDR repr */
   int                   leasetime; /* time until flush possibility from cache*/
-  unsigned		datasize;
+  unsigned		datasize;  /* size of the XDR repr */
 };
 
 union xpub2_xfered_file_t switch (xpub2_xfer_mode_t mode) {

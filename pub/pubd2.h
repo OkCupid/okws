@@ -227,7 +227,7 @@ namespace pubserv2 {
   class chunkholder_t: public file_lookup_t {
   public:
     chunkholder_t () :  file_lookup_t (),
-      _chunk_cache (ok_pub2_getfile_object_lifetime, true) {}
+      _chunk_cache (ok_pub2_chunk_lease_time, true) {}
 
     int hold_chunks (ptr<bound_pfile2_t> p);
     ptr<bound_pfile2_t> get_chunks (phashp_t h, u_int opts);

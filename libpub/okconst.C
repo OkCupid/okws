@@ -218,7 +218,7 @@ int ok_pub2_viserr = 1;          // pub errors visible by default
 // check treestat sentinel every two seconds
 int ok_pub2_treestat_interval = 2;   
 
-// timeout entirs in the negative filename lookup cache
+// timeout entries in the negative filename lookup cache
 int ok_pub2_neg_cache_timeout = 360;
 int ok_pub2_svc_neg_cache_timeout = 5;
 
@@ -227,6 +227,9 @@ int ok_pub2_clean_cache_interval = 10;
 
 // how long a getfile object lives in the cache (1 hour)
 int ok_pub2_getfile_object_lifetime = 3600;
+
+// amount of time a client has to gather all chunks (2 minutes)
+int ok_pub2_chunk_lease_time = 120;
 
 const char *ok_pub2_treestat_sentinel = ".treestat_sentinel";
 const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
