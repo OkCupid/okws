@@ -132,6 +132,7 @@ namespace pubserv2 {
     } else {
       res.set_status (XPUB_STATUS_OK);
       res.chunk->data.setsize (arg->size);
+      res.chunk->offset = arg->offset;
       ssize_t r = f->file ()->get_chunk (arg->offset, res.chunk->data.base (),
 					 arg->size);
       if (r != ssize_t (arg->size)) {

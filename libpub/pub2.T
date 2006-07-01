@@ -318,7 +318,7 @@ namespace pub2 {
     } else {
       char h[PUBHASHSIZE];
       sha1_hash (h, buf.cstr (), buf.len ());
-      if (memcmp (h, dat->stat.hash.base (), PUBHASHSIZE)) {
+      if (memcmp (h, dat->file.chunked->xdrhash.base (), PUBHASHSIZE)) {
 	m = "Hash mismatch";
       } else if (!str2xdr (*file, buf)) {
 	m = "Demarshall of chunks failed";
