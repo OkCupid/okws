@@ -18,6 +18,7 @@ usage ()
 	<< "\t -E pub subsystem: complain about errors\n"
 	<< "\t -J okd subsystem: debug jail2real() calls\n"
 	<< "\t -S okd subsystem: display shutdown status messages\n"
+        << "\t -u general flag : stall until CONT signal\n"
     ;
   exit (1);
 }
@@ -29,7 +30,7 @@ main (int argc, char *argv[])
   int ch;
   int64_t res = 0;
   setprogname (argv[0]);
-  while ((ch = getopt (argc, argv, "abcfhsABCEJS")) != -1) {
+  while ((ch = getopt (argc, argv, "abcfhsuABCEJS")) != -1) {
     switch (ch) {
     case 'a':
       res = res | OKWS_DEBUG_PUB_BINDTAB_INSERTS;
@@ -48,6 +49,9 @@ main (int argc, char *argv[])
       break;
     case 's':
       res = res | OKWS_DEBUG_OKD_STARTUP;
+      break;
+    case 'u':
+      res = res | OKWS_DEBUG_STALL_SIGCONT;
       break;
     case 'A':
       res = res | OKWS_DEBUG_SVC_ARGS;

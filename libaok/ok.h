@@ -90,6 +90,8 @@ public:
       //jaildir_run (ok_jaildir_run) 
   {}
 
+  bool got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<argv_t> *ep);
+
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
   void got_ports (vec<str> s, str loc, bool *errp);

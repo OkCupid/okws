@@ -123,6 +123,12 @@ main_T (int argc, char **argv)
 
   /* turn on debug flags set in the OKWS_DEBUG_OPTS environment variable */
   set_debug_flags ();
+  if (OKDBG2(STALL_SIGCONT)) {
+    warn << getpid () << ": blocking until SIGCONT signal..\n";
+    BLOCK { sigcb (SIGCONT, @()); }
+    warn << getpid () << ": unblocked\n";
+    sigcb (SIGCONT, NULL);
+  }
 
   /* 
    * set up global pub variables 

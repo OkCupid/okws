@@ -883,51 +883,6 @@ okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 				env);
 }
 
-bool
-okld_t::got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<argv_t> *ep)
-{
-  str cmd, err, prog;
-  vec<str> env;
-
-  assert (s.size () > 0);
-  
-  cmd = s.pop_front ();
-
-  while (s.size () && strchr (s[0].cstr (), '=')) 
-    env.push_back (s.pop_front ());
-
-  if (s.size ()) {
-    *ep = New refcounted<argv_t> (env, environ);
-  }
-
-  if (s.size () < 1) 
-    goto usage;
-
-  prog = s[0];
-  if (!is_safe (prog)) {
-    warn << loc << ": specified program " << prog
-	 << ") contains unsafe substrings\n";
-    goto fail;
-  }
-
-  prog = okws_exec (prog);
-  err = can_exec (prog);
-  if (err) {
-    warn << loc << ": cannot open program '" << prog 
-	 << "': " << err << "\n";
-    *errp = true;
-  } else {
-    s[0] = prog;
-    return true;
-  }
-
- usage:
-  warn << loc << ": usage: " << cmd << "[ENV] <path-to-bin> <args>\n";
- fail:
-  *errp = true;
-  return false;
-}
-
 void
 okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 {

@@ -135,6 +135,7 @@ namespace pubserv2 {
       res.chunk->offset = arg->offset;
       ssize_t r = f->file ()->get_chunk (arg->offset, res.chunk->data.base (),
 					 arg->size);
+      res.chunk->offset = arg->offset;
       if (r != ssize_t (arg->size)) {
 	res.set_status (XPUB_STATUS_ERR) ;
 	*res.error = "Datasize overflow";

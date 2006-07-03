@@ -297,7 +297,6 @@ public:
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
-  bool got_generic_exec (vec<str> &s, str log, bool *errp, ptr<argv_t> *ep);
   void got_pubd2_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
 

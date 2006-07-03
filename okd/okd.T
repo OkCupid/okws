@@ -113,31 +113,15 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
-  strip_comments (&s);
-  if (s.size () <= 1) {
-    warn << loc << ": usage: PubdExecPath <path-to-pubd>\n";
-    *errp = true;
-    return;
-  } else if (!is_safe (s[1])) {
-    warn << loc << ": pubd exec path (" << s[1] 
-	 << ") contains unsafe substrings\n";
-    *errp = true;
-    return;
-  }
-
-  // push back the packet size
-  s.push_back ("-s");
-  s.push_back (strbuf("0x%x", ok_axprt_ps));
-
-  str prog = okws_exec (s[1]);
-  str err = can_exec (prog);
-  if (err) {
-    warn << loc << ": cannot open pubd: " << err << "\n";
-    *errp = true;
+  ptr<argv_t> env;
+  if (got_generic_exec (s, loc, errp, &env)) {
+    // push back the packet size
+    s.push_back ("-s");
+    s.push_back (strbuf("0x%x", ok_axprt_ps));
+    pubd = New helper_exec_t (pub_program_1, s, 0,
+			      HLP_OPT_PING|HLP_OPT_NORETRY, env);
   } else {
-    s.pop_front ();
-    s[0] = prog;
-    pubd = New helper_exec_t (pub_program_1, s);
+    pubd = NULL;
   }
 }
 
