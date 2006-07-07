@@ -17,7 +17,7 @@ namespace pub2 {
 
   TAMED void 
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		   status_cb_t cb)
+		   getfile_cb_t cb)
   {
     VARS {
       status_t status (XPUB_STATUS_OK);
@@ -76,21 +76,24 @@ namespace pub2 {
     if (err)
       o->output_err (env, err, lineno);
     
-    SIGNAL (cb, status);
+    SIGNAL (cb, status, bpf);
   }
   
   TAMED void 
   ap_t::run (zbuf *b, pfnm_t nm, cbb cb, aarr_t *a, 
 	     u_int op, penv_t *e)
   {
-    VARS { status_t status; }
-    BLOCK { run_full (b, nm, @(status), a, op, e); }
+    VARS { 
+      status_t status; 
+      ptr<bound_pfile2_t> dummy; 
+    }
+    BLOCK { run_full (b, nm, @(status, dummy), a, op, e); }
     SIGNAL (cb, status.status == XPUB_STATUS_OK);
   }
 
   
   TAMED void 
-  ap_t::run_full (zbuf *b, pfnm_t nm, status_cb_t cb,
+  ap_t::run_full (zbuf *b, pfnm_t nm, getfile_cb_t cb,
 		  aarr_t *a, u_int op, penv_t *env)
   {
     VARS {
@@ -99,6 +102,7 @@ namespace pub2 {
       status_t status;
       bool XXX;
       pfile_type_t typ;
+      ptr<bound_pfile2_t> bpf;
     }
     if (op == 0)
       op = _opts;
@@ -107,11 +111,11 @@ namespace pub2 {
     typ = (op & P_WSS) ? PFILE_TYPE_WH : PFILE_TYPE_H;
     o = New refcounted<output_std_t> (b, typ, op);
     st = env->start_output (a, op);
-    BLOCK { publish (o, nm, env, 0, @(status)); }
+    BLOCK { publish (o, nm, env, 0, @(status, bpf)); }
 
     // XXX = ignore output from the following function
     XXX = env->finish_output (st);
-    SIGNAL (cb, status);
+    SIGNAL (cb, status, bpf);
   }
 
   TAMED void 
@@ -478,28 +482,32 @@ namespace pub2 {
   }
 
   TAMED void 
-  ap_t::run_cfg_full (pfnm_t nm, status_cb_t cb, aarr_t *dp)
+  ap_t::run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dp)
   {
     VARS {
       output_conf2_t o;
       penv_state_t *st;
       status_t status;
       bool XXX;
+      ptr<bound_pfile2_t> bpf;
     }
     if (!dp) 
       dp = &_base_cfg;
     o.set_dest (dp);
     st = _genv.start_output (NULL, 0);
-    BLOCK { publish (&o, nm, &_genv, 0, @(status)); }
+    BLOCK { publish (&o, nm, &_genv, 0, @(status, bpf)); }
     XXX = _genv.finish_output (st);
-    SIGNAL (cb, status);
+    SIGNAL (cb, status, bpf);
   }
 
   TAMED void 
   ap_t::run_cfg (pfnm_t nm, cbb cb, aarr_t *dp)
   {
-    VARS { status_t status; }
-    BLOCK { run_cfg_full (nm, @(status), dp); }
+    VARS { 
+      status_t status; 
+      ptr<bound_pfile2_t> dummy;
+    }
+    BLOCK { run_cfg_full (nm, @(status, dummy), dp); }
     SIGNAL (cb, status.status == XPUB_STATUS_OK);
   }
 

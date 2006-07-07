@@ -62,7 +62,7 @@ namespace pub2 {
      * @param opt publishing options to use.
      * @param e The environment to evaluate it (the global one by def.)
      */
-    void run_full (zbuf *b, pfnm_t fn, status_cb_t cb, 
+    void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
 		   aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL,
 		   CLOSURE);
 
@@ -77,8 +77,8 @@ namespace pub2 {
     // implement the pub2_iface_t contract; only call internally
     // from pub objects.
     void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		  status_cb_t coordvar) 
-    { publish_T (o, fn, env, lineno, coordvar); }
+		  getfile_cb_t cb) 
+    { publish_T (o, fn, env, lineno, cb); }
 
     /**
      * Read in and process configuration variables from a config file.
@@ -89,7 +89,7 @@ namespace pub2 {
      * @param res the aarr_t to write the results out to; associates
      *            with default publishing environment if none given.
      */
-    void run_cfg_full (pfnm_t nm, status_cb_t cb, aarr_t *dest = NULL, 
+    void run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL, 
 		       CLOSURE);
 
     void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
@@ -112,7 +112,7 @@ namespace pub2 {
     virtual void getfile (pfnm_t fn, getfile_cb_t cb, u_int o = 0) = 0;
 
     virtual void publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-			    status_cb_t cb, CLOSURE);
+			    getfile_cb_t cb, CLOSURE);
     
     virtual bool is_remote () const = 0;
 
