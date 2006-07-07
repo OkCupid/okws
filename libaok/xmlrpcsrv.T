@@ -173,6 +173,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     vec<xpub_status_t> pub_errc;
     aarr_t aa;
     vec<size_t> calls;
+    ptr<bound_pfile2_t> dummy;
   }
   BLOCK {
     r.setsize (q.size ());
@@ -183,7 +184,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
       aa.clear ();
       if (load_args (q[i], _srvc, &fn, &opts, &aa)) {
 	calls.push_back (i);
-	pub2 ()->run_full (out[i], fn, @(pub_errc[i]), &aa, opts);
+	pub2 ()->run_full (out[i], fn, @(pub_errc[i], dummy), &aa, opts);
       } else {
 	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
 	r[i]("error")("desc") = "failed to load Pub arguments";

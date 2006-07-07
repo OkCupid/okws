@@ -57,6 +57,12 @@ public:
     _q.insert_tail (n);
   }
 
+  const V *operator[] (const K &k) const
+  {
+    const node_t *n = _h[k];
+    return n ? &n->_val : NULL;
+  }
+
   V *operator[] (const K &k) 
   {
     node_t *n;

@@ -15,8 +15,20 @@ namespace pub2 {
   typedef output_conf2_t oc_t;
   typedef local_publisher_t lp_t;
 
-  TAMED void 
+  TAMED void
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
+		 status_cb_t cb)
+  {
+    VARS {
+      status_t status;
+      ptr<bound_pfile2_t> dummy;
+    }
+    BLOCK { publish_full_T (o, fn, env, lineno, @(status, dummy)); }
+    SIGNAL (cb, status);
+  }
+
+  TAMED void 
+  ap_t::publish_full_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
 		   getfile_cb_t cb)
   {
     VARS {
@@ -32,7 +44,7 @@ namespace pub2 {
 
     if (files_to_check.size () == 0) {
       status.set_status (XPUB_STATUS_NOENT);
-      SIGNAL (cb, status);
+      SIGNAL (cb, status, NULL);
       return;
     }
 
@@ -111,7 +123,7 @@ namespace pub2 {
     typ = (op & P_WSS) ? PFILE_TYPE_WH : PFILE_TYPE_H;
     o = New refcounted<output_std_t> (b, typ, op);
     st = env->start_output (a, op);
-    BLOCK { publish (o, nm, env, 0, @(status, bpf)); }
+    BLOCK { publish_full (o, nm, env, 0, @(status, bpf)); }
 
     // XXX = ignore output from the following function
     XXX = env->finish_output (st);
@@ -216,6 +228,14 @@ namespace pub2 {
 	}
       }
     }
+  }
+
+  bool
+  crp_t::is_cached (const pfnm_t &n, u_int o, const phash_t &h) const
+  {
+    cache_key_t k (n, o);
+    const cached_getfile_t *c = _getfile_cache[k];
+    return c && h == *(c->file ()->hash ());
   }
 
   TAMED static void
@@ -495,7 +515,7 @@ namespace pub2 {
       dp = &_base_cfg;
     o.set_dest (dp);
     st = _genv.start_output (NULL, 0);
-    BLOCK { publish (&o, nm, &_genv, 0, @(status, bpf)); }
+    BLOCK { publish_full (&o, nm, &_genv, 0, @(status, bpf)); }
     XXX = _genv.finish_output (st);
     SIGNAL (cb, status, bpf);
   }

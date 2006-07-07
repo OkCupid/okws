@@ -77,8 +77,14 @@ namespace pub2 {
     // implement the pub2_iface_t contract; only call internally
     // from pub objects.
     void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		  getfile_cb_t cb) 
+		  status_cb_t cb) 
     { publish_T (o, fn, env, lineno, cb); }
+
+    // a slightly more full-featured interface for pub2 calls.
+    void publish_full (output_t *o, pfnm_t fn, penv_t *env, int lineno,
+		       getfile_cb_t cb)
+    { publish_full_T (o, fn, env, lineno, cb); }
+
 
     /**
      * Read in and process configuration variables from a config file.
@@ -107,12 +113,17 @@ namespace pub2 {
 
     void list_files_to_check (const pfnm_t &n, vec<str> *out);
 
+    virtual bool is_cached (const pfnm_t &n, u_int o, const phash_t &hsh) const
+    { return false; }
+
   protected:
     // to be filled in by the sub classes
     virtual void getfile (pfnm_t fn, getfile_cb_t cb, u_int o = 0) = 0;
 
     virtual void publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-			    getfile_cb_t cb, CLOSURE);
+			    status_cb_t cb, CLOSURE);
+    virtual void publish_full_T (output_t *o, pfnm_t fn, penv_t *env,
+				 int lineno, getfile_cb_t cb, CLOSURE);
     
     virtual bool is_remote () const = 0;
 
@@ -347,6 +358,7 @@ namespace pub2 {
 
     void lost_connection ();
     void handle_new_deltas (svccb *sbp);
+    bool is_cached (const pfnm_t &n, u_int o, const phash_t &hsh) const;
   protected:
     void handle_new_deltas (const xpub2_delta_set_t &s);
     void clear_cache () { _getfile_cache.clear (); }

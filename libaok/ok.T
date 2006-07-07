@@ -33,6 +33,8 @@
 #include "okdbg.h"
 #include "sfsmisc.h"
 
+extern char ** environ;
+
 
 void
 init_syscall_stats ()
