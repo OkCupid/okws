@@ -5,15 +5,18 @@
 
 static okwc2_dnscache_t dnscache;
 
-
 //
-// Coding style:
+// Coding style / convention:
+//
 //  -For functions that we can modify the signatures for, pass the
 //   canceller object as a parameter.
-//  -For those we can't, need to use cancellable_wait
-//  -Canceled calls should not call their callbacks
 //
-
+//  -For those we can't, need to use cancellable_wait
+//    - Examples include DM's DNS resolution code, OKWS's 
+//      HTTP transport objects, and DM's tcpconnect.
+//
+//  - Canceled calls should not call their callbacks (with certain exceptions)
+//
 //-----------------------------------------------------------------------
 
 TAMED void
@@ -49,6 +52,14 @@ okwc2_dnscache_t::lookup (ptr<canceller_t> cncl, const str &n, cbhent cb)
 
 //-----------------------------------------------------------------------
 
+//
+// DNS resolution mechanics:
+//   - Only one client should be looking up a given host at a given time.
+//   - Thus, one looks up, and the rest wait for the lookup to complete.
+//   - If the resolver is canceled while waiting, he should not totally
+//     abandon the project; he should signal to his caller, but keep
+//     going, since the other waiters might have a longer timer.
+//
 TAMED void
 okwc2_dnscache_entry_t::lookup (ptr<canceller_t> cncl, cbhent cb)
 {
@@ -133,15 +144,23 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
     
   SIGNAL (cb, !cancelled);
 
+  // If we're cancelled, and there are still some waiters left, we still
+  // have to wait on the outcome of the DNS resolution.  But we get
+  // notified as the other waiters give up in the loop below.
   while (cancelled && _waiters.first) {
     _waiter_remove_cb = @[G,true]();
     WAIT(G,cancelled);
   }
 
+  // Once all waiters have abandoned, or the answer has come back,
+  // we can go ahead and commit the results of the lookup.
   if (!committed_lookup)
     commit_lookup (he, e);
 
   if (cancelled) {
+    assert (_waiters.first == NULL);
+
+    // Internally, stops listening on an fd and closes it.
     dnsreq_cancel (dnsp);
   } else {
     if (_waiter_remove_cb) {
@@ -248,6 +267,16 @@ dnserr2httperr (int i)
 
 //-----------------------------------------------------------------------
 
+/**
+ * @brief Do the main workflow of the HTTP request
+ * @param req The user's request
+ * @param resp Where to stick the response
+ * @param cb The callback to call when completed.
+ * @return A canceller, which the caller can poke to cancel this operation
+ *
+ * note: Disobeys above convention, in that it does call its callback
+ * even when cancelled.  Callers should take note.
+ */
 TAMED ptr<canceller_t>
 okwc2_t::req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
 {
@@ -300,6 +329,13 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
 
 //-----------------------------------------------------------------------
 
+/**
+ * @brief Make an HTTP req on a timer.
+ * @param r The req to make
+ * @param resp The response to stick the result into.
+ * @param to The timeout value in seconds.
+ * @param cbi The callback to call when finished.
+ */
 TAMED void
 okwc2_t::timed_req_T (ptr<okwc2_req_t> r, ptr<okwc2_resp_t> resp, int to, 
 		      cbi cb)
@@ -356,8 +392,11 @@ okwc2_resp_t::get_T (ptr<canceller_t> cncl, cbi cb)
     bool cancelled;
   }
 
+  // Call into the OKWS HTTP header parsing classes...
   _hdr.parse (@[G,false](status)); 
+
   BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+
   if (cancelled) {
     status = CANCELLED_STATUS;
     _hdr.cancel ();
@@ -375,9 +414,13 @@ okwc2_resp_t::get_body_T (ptr<canceller_t> cncl, cbi cb)
   VARS {
     int status (HTTP_OK);
   }
+
+  // Certain HTTP 1.1 responses are chunked, so we need to accommodate
+  // them with our 'chunker' class.
   if (_hdr.is_chunked ()) {
     BLOCK { run_chunker (cncl, @(status)); }
   } else {
+    // Unchunked responses are eaten in a single gulp.
     BLOCK { eat_chunk (cncl, _hdr.get_contlen (), @(status)); }
   }
   BLOCK { finished_meal (cncl, status, @(status)); }
