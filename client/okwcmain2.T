@@ -56,7 +56,6 @@ main2 (int argc, char **argv)
   filename = url_rxx[4];
 
   cli = New refcounted<okwc2_simple_t> (hostname, port);
-  resp = New refcounted<okwc2_resp_simple_t> ();
   
   // 10 second timeout
   BLOCK { cli->req (filename, @(status, resp), 10); }
