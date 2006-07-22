@@ -158,6 +158,7 @@ public:
   // toggle clock modes for SFS
   void init_sfs_clock (const str &f); 
 
+
   // can overide this on a service-by-service basis
   virtual bool init_pub2 (u_int opts = 0);
   virtual void launch_pub2 (cbb cb) { launch_pub2_T (cb); }
@@ -317,7 +318,8 @@ class oksrvc_t : public ok_httpsrv_t { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
-      pub1_supported (true)
+      pub1_supported (true),
+      wait_for_signal_in_startup (false)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -393,6 +395,9 @@ protected:
   void update_cb (svccb *sbp, ptr<pub_res_t> pr);
   void ready_call (bool rc);
 
+  // debug initialization procedure
+  void debug_launch (cbv cb, CLOSURE);
+
   str name;
   list<okclnt_base_t, &okclnt_base_t::lnk> clients;
   ptr<ahttpcon_listen> x;
@@ -411,6 +416,7 @@ protected:
   int n_fd_out;
   u_int n_reqs; // total number of requests served
   bool pub1_supported;
+  bool wait_for_signal_in_startup;
 
 private:
   void post_launch_pub2_T (cbb cb, CLOSURE);

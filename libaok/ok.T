@@ -389,6 +389,17 @@ ok_con_t::ctlclose ()
   ctlx = NULL; 
 }
 
+TAMED void
+oksrvc_t::debug_launch (cbv cb)
+{
+  if (wait_for_signal_in_startup) {
+    SVC_CHATTER ("waiting for SIGCONT before continuing...\n");
+    BLOCK { sigcb (SIGCONT, @()); }
+    sigcb (SIGCONT, NULL);
+  }
+  (*cb) ();
+}
+
 TAMED void 
 oksrvc_t::launch_T ()
 {
@@ -396,6 +407,8 @@ oksrvc_t::launch_T ()
     bool pub1_rc, logd_rc, dbs_rc (true), pub2_rc (true);
     clnt_stat err;
   }
+
+  BLOCK { debug_launch (@()); }
 
   setsid ();
   connect ();

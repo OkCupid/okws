@@ -166,7 +166,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:t:")) != -1 && rc) {
+  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:sSt:")) != -1 && rc) {
     switch (ch) {
     case 'u':
       if (*u) {
@@ -216,6 +216,12 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       break;
     case 'c':
       so->pub2_caching = 1;
+      break;
+    case 'S':
+      so->wait_for_signal = 0;
+      break;
+    case 's':
+      so->wait_for_signal = 1;
       break;
     default:
       warn << loc << ": unrecognized option given\n";
@@ -1375,4 +1381,5 @@ svc_options_t::apply_global_defaults ()
   if (wss < 0) wss = ok_pub2_wss;
   if (pub2_caching < 0) pub2_caching = ok_pub2_caching;
   if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
+  if (wait_for_signal < 0) wait_for_signal = 0;
 }

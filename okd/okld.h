@@ -169,7 +169,8 @@ struct svc_options_t {
       svc_time (-1), 
       wss (-1),
       pub2_caching (-1),
-      pub2_viserr (-1) {}
+      pub2_viserr (-1),
+      wait_for_signal (-1) {}
 
   void apply_global_defaults ();
 
@@ -188,6 +189,8 @@ struct svc_options_t {
 
   int pub2_caching;
   int pub2_viserr;
+
+  int wait_for_signal;
 };
 
 class okld_t;

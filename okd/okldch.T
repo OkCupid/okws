@@ -234,6 +234,7 @@ okld_ch_t::launch ()
   okld->env.insert ("lifetime", _svc_options.svc_time, false);
   okld->env.insert ("wss", _svc_options.wss, false);
   okld->env.insert ("caching", _svc_options.pub2_caching, false);
+  okld->env.insert ("wfs", _svc_options.wait_for_signal, false);
 
   argv.push_back (okld->env.encode ());
 
@@ -244,6 +245,7 @@ okld_ch_t::launch ()
   okld->env.remove ("lifereqs");
   okld->env.remove ("wss");
   okld->env.remove ("caching");
+  okld->env.remove ("wfs");
 
   argv_t env_tmp;
   if (env.size ()) 
