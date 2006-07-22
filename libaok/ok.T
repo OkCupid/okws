@@ -219,6 +219,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("caching", &ok_pub2_caching);
     t->lookup ("ncto", &ok_pub2_svc_neg_cache_timeout);
     t->lookup ("pub2chnk", &ok_pub2_max_datasz);
+    t->lookup ("wfs", &wait_for_signal_in_startup);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
@@ -393,7 +394,7 @@ TAMED void
 oksrvc_t::debug_launch (cbv cb)
 {
   if (wait_for_signal_in_startup) {
-    SVC_CHATTER ("waiting for SIGCONT before continuing...\n");
+    SVC_CHATTER ("waiting for SIGCONT before continuing...");
     BLOCK { sigcb (SIGCONT, @()); }
     sigcb (SIGCONT, NULL);
   }
