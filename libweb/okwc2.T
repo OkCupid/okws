@@ -118,6 +118,13 @@ okwc2_dnscache_entry_t::commit_lookup (ptr<hostent> he, int e)
   _resolving = false;
 }
 
+/**
+ * @brief Do a DNS resolution, on behalf of us and perhaps others.
+ * @param cncl A canceler that might send a cancel signal.
+ * @param cb Callback to call, *even if cancelled!*.
+ *
+ * Note: this function calls its callback even if it gets cancelled.
+ */
 TAMED void
 okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
 {

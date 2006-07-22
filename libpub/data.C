@@ -482,8 +482,17 @@ penv_t::go_g_var (const str &n) const
   }
 }
 
+const pval_t *
+aarr_t::lookup (const str &n) const
+{
+  const pval_t *ret = NULL;
+  const nvpair_t *p = aar [n];
+  if (p) ret = p->value ();
+  return ret;
+}
+
 pval_t *
-aarr_t::lookup (const str &n)
+aarr_t::lookup (const str &n) 
 {
   pval_t *ret = NULL;
   nvpair_t *p = aar [n];
@@ -491,6 +500,7 @@ aarr_t::lookup (const str &n)
   return ret;
 }
 
+//
 //
 // we can only evaluate a variable at a given stack level once; this
 // way we cut off any infinite recursion.  we enforce these rules with

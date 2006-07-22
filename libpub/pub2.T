@@ -490,8 +490,8 @@ namespace pub2 {
   {
     s->output_runtime (e);
     ptr<aarr_t> a = s->get_aarr ();
-    const nvtab_t *t = a->nvtab ();
-    for (const nvpair_t *p = t->first (); p ; p = t->next (p)) {
+    nvtab_t *t = a->nvtab ();
+    for (nvpair_t *p = t->first (); p ; p = t->next (p)) {
       _dest->add (New nvpair_t (p->nm, p->value ()->flatten (e)));
     }
   }

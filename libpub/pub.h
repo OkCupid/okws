@@ -214,7 +214,8 @@ public:
   nvpair_t (const xpub_nvpair_t &x);
   virtual ~nvpair_t () {}
   const str &name () const { return nm; }
-  pval_t *value () const { return val; }
+  const pval_t *value () const { return val; }
+  pval_t *value () { return val; }
   void output (output_t *o, penv_t *e, int i = 0) const;
 
   void dump2 (dumper_t *d) const;
@@ -303,12 +304,14 @@ public:
         
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
+  const pval_t *lookup (const str &n) const;
   void output (output_t *o, penv_t *e) const;
 
   void dump2 (dumper_t *d) const;
   str get_obj_name () const { return "aarr_t"; }
   bool to_xdr (xpub_aarr_t *x) const;
   const nvtab_t *nvtab () const { return &aar; }
+  nvtab_t *nvtab () { return &aar; }
   void clear () { aar.clear (); }
 
 protected:
