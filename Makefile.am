@@ -91,7 +91,7 @@ rpcclean:
 
 .PHONY: tameclean
 tameclean:
-	for dir in libpub libaok okd pub test2 ; do \
+	for dir in libpub libahttp libaok libweb okd pub test ; do \
 		(cd $$dir && $(MAKE) tameclean); \
 	done
 

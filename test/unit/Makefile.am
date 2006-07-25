@@ -31,3 +31,7 @@ EXTRA_DIST = .cvsignore
 MAINTAINERCLEANFILES = Makefile.in
 
 BUILT_SOURCES = xmltst1.C xmlcli1.C
+
+.PHONY: tameclean
+tameclean:
+	rm -f $(srcdir)/xmltst1.T  $(srcdir)/xmlcli1.T

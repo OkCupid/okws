@@ -1,7 +1,13 @@
 
 SUBDIRS = unit system
 
-.PHONY: test
+.PHONY: test tameclean
+
+tameclean: 
+	for dir in system unit; do \
+		(cd $$dir && $(MAKE) tameclean ) ; \
+	done
+  
 
 test:
 	for dir in system; do \
