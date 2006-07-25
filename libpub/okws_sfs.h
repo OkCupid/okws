@@ -65,9 +65,7 @@ typedef enum { SFS_CLOCK_GETTIME = 0,
 // Ideally, we could use cb->signal() freely within the code, but it's
 // nice to still be compatible with existing SFS.
 //
-#if defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009001
-#define SIGNAL(cb, ...) (cb)->signal(__VA_ARGS__)
-#else
+#ifndef SIGNAL
 #define SIGNAL(cb, ...) (*cb)(__VA_ARGS__)
 #endif
 
