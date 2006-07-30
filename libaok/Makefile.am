@@ -23,7 +23,7 @@ SUFFIXES = .C .T .h
 	-$(TAME) -c $< || rm -f $@
 
 xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
-	-$(TAME) -o $@ $< || rm -f $@
+	-$(TAME) -o $(srcdir)/$@ $< || rm -f $@
 
 ok.o:  ok.C
 ok.lo: ok.C
