@@ -34,4 +34,4 @@ BUILT_SOURCES = xmltst1.C xmlcli1.C
 
 .PHONY: tameclean
 tameclean:
-	rm -f $(srcdir)/xmltst1.C $(srcdir)/xmlcli0.C
+	rm -f $(srcdir)/xmltst1.C $(srcdir)/xmlcli1.C
