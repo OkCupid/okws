@@ -11,7 +11,7 @@
 #include "rxx.h"
 
 
-static rxx url_rxx ("http://([^:/]+)(:(\\d+)/)?(.*)");
+static rxx url_rxx ("http://([^:/]+)(:(\\d+))?(/(.*))?");
 
 void
 usage ()
@@ -52,7 +52,7 @@ main (int argc, char *argv [])
   str port_str = url_rxx[3];
   if (port_str && port_str.len ()) 
     assert (convertint (port_str, &port));
-  str filename = url_rxx[4];
+  str filename = url_rxx[5];
 
   okwc_request (hostname, port, filename, wrap (reqcb), 1, 100,
 		NULL, post, typ);

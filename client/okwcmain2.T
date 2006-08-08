@@ -13,7 +13,7 @@
 #include "tame.h"
 #include "okwc2.h"
 
-static rxx url_rxx ("http://([^:/]+)(:(\\d+)/)?(.*)");
+static rxx url_rxx ("http://([^:/]+)(:(\\d+))?(/(.*))?");
 
 void
 usage ()
@@ -53,7 +53,7 @@ main2 (int argc, char **argv)
   port_str = url_rxx[3];
   if (port_str && port_str.len ()) 
     assert (convertint (port_str, &port));
-  filename = url_rxx[4];
+  filename = url_rxx[5];
 
   cli = New refcounted<okwc2_simple_t> (hostname, port);
   
