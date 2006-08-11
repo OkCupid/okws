@@ -692,7 +692,7 @@ okclnt_base_t::output_hdr (ssize_t len)
 static void hold_str (str s) {}
 
 bool
-okclnt_base_t::output_fragment (str s)
+okclnt_base_t::output_frag_prepare ()
 {
   if (output_state == CLIENT_EOF)
     return false;
@@ -704,11 +704,57 @@ okclnt_base_t::output_fragment (str s)
     output_state = CLIENT_EOF;
     return false;
   }
+  return true;
+}
+
+bool
+okclnt_base_t::output_fragment (str s)
+{
+  if (!output_frag_prepare ())
+    return false;
 
   strbuf b (s);
   x->send (b, NULL, wrap (hold_str, s));
 
   return true;
+}
+
+bool
+okclnt_base_t::output_fragment (compressible_t &b)
+{
+  if (!output_frag_prepare ())
+    return false;
+
+  const strbuf& sb = b.to_strbuf(false);
+  x->send (sb, NULL, NULL);
+  b.clear();
+
+  return true;
+}
+
+TAMED bool
+okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
+			    penv_t *e)
+{
+  VARS {
+    zbuf z;
+    bool ret (true);
+    strbuf b;
+  }
+  DEFAULT_RETURN { return ret; }
+
+  if (!output_frag_prepare ()) {
+    ret = false;
+  } else {
+    BLOCK { pub2 ()->run (&z, f, @(ret), a, opt, e); }
+    if (ret) {
+      z.to_strbuf (&b, false);
+      BLOCK { x->send (b, NULL, @()); }
+    }
+  }
+
+  if (cb)
+    cb->signal (ret);
 }
 
 bool
