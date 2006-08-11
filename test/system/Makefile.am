@@ -10,7 +10,7 @@ $(PROGRAMS): $(LDEPS)
 if USE_XML
 
 XMLPROGS = xmlex
-NO_XML=0
+NO_XML=
 
 xmlex_SOURCES = xmlex.C
 xmlex.o:	xmlex.C
@@ -19,7 +19,7 @@ xmlex.lo:	xmlex.C
 else
 
 XMLPROGS =
-NO_XML = 1
+NO_XML = \#
 
 endif
 
@@ -52,9 +52,7 @@ test:	okws_config pub_config
 
 okws_config: $(srcdir)/okws_config.in
 	TOP_BUILD=`cd $(top_builddir) ; pwd`  NO_XML=$(NO_XML)  \
-	perl -ne ' { s#\@\@TOP_BUILD\@\@#$$ENV{"TOP_BUILD"}#e ; \
-		     $$d="#" if ($$ENV{"NO_XML"}); s/\@\@NO_XML\@\@/$$d/e ;  \
-		     print $$_ ; }' < $< > $@
+	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#e ; print $$_; } ' < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
 	TOP_SRCDIR=$(top_srcdir); \
