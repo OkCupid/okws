@@ -70,6 +70,7 @@ public:
   abuf_stat_t delimit_word (str *d, bool qms = false);
   abuf_stat_t delimit_key (str *k);
   abuf_stat_t delimit_val (str *v);
+  abuf_stat_t delimit_status (str *v);
   abuf_stat_t delimit (str *k, char stopchar, bool tol, bool gobble);
   abuf_stat_t eol () ;
   abuf_stat_t gobble_crlf (); 

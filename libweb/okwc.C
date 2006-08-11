@@ -474,7 +474,7 @@ okwc_http_hdr_t::parse_guts ()
     case OKWC_HDR_STATUS_DESC:
       r = eol ();
       if (r == ABUF_NOMATCH) 
-	r = delimit_word (&status_desc);
+	r = delimit_status (&status_desc);
       break;
     case OKWC_HDR_EOL1:
       r = require_crlf ();

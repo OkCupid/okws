@@ -73,6 +73,7 @@ public:
   void finish () {  x->setrcb (NULL); }
   void cancel () { cb = NULL; }
   bool overflow () const { return x->overflow (); }
+  suiolite *uio () const { return in; }
 
 private:
   ptr<ahttpcon> x;
@@ -128,6 +129,10 @@ public:
     spcs = 0;
     mirror_p = NULL;
   }
+
+  int get_ccnt() const { return ccnt - (bc ? 1 : 0); }
+
+  
 
 private:
   void moredata ();

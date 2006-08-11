@@ -194,6 +194,12 @@ http_hdr_t::delimit_val (str *v)
 }
 
 abuf_stat_t
+http_hdr_t::delimit_status (str *v)
+{
+  return delimit_val (v);
+}
+
+abuf_stat_t
 http_hdr_t::force_match (const char *s, bool tol)
 {
   assert (s && *s);

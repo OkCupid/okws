@@ -116,6 +116,7 @@ public:
   char *getdata (ssize_t *nbytes) const { *nbytes = dep[1] - rp; return rp; }
   void rembytes (ssize_t nbytes);
   int getlen () const { return len; }
+  ssize_t bytesread () const { return bytes_read; }
 
 private:
   const int len;
