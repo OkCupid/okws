@@ -732,7 +732,7 @@ okclnt_base_t::output_fragment (compressible_t &b)
   return true;
 }
 
-TAMED bool
+TAMED void
 okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
 			    penv_t *e)
 {
@@ -741,7 +741,6 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
     bool ret (true);
     strbuf b;
   }
-  DEFAULT_RETURN { return ret; }
 
   if (!output_frag_prepare ()) {
     ret = false;

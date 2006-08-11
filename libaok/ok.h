@@ -238,7 +238,7 @@ public:
   bool output_hdr (ssize_t sz = -1);
   bool output_fragment (str s);
   bool output_fragment (compressible_t &b);
-  bool output_file (const char *fn, cbb::ptr cb = NULL, aarr_t *a = NULL,
+  void output_file (const char *fn, cbb::ptr cb = NULL, aarr_t *a = NULL,
 		    u_int opt = 0, penv_t *e = NULL, CLOSURE);
   bool output_done ();
 
@@ -258,7 +258,6 @@ public:
   list_entry<okclnt_base_t> lnk;
 private:
   void serve_T (CLOSURE);
-  bool output_frag_prepare ();
 
 protected:
   virtual void delcb () { delete this; }
@@ -268,6 +267,7 @@ protected:
   virtual void parse (cbi status) = 0;
   virtual http_inhdr_t *hdr_p () = 0;
   virtual const http_inhdr_t &hdr_cr () const = 0;
+  bool output_frag_prepare ();
 		
   cbv::ptr cb;
   ref<ahttpcon> x;
