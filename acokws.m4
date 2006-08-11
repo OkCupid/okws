@@ -1808,6 +1808,7 @@ dnl
 AC_DEFUN([OKWS_EXPAT],
 [AC_ARG_WITH(expat,
 --with-expat=DIR      Specify location of expat library)
+use_xml=no
 if test "$with_expat" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
@@ -1860,6 +1861,7 @@ if test "$with_expat" != "no"; then
 		CPPFLAGS="$CPPFLAGS $okws_cv_expat_h"
 		AC_DEFINE(HAVE_EXPAT, 1, Enable XML support with Expat library)
 		LIBEXPAT="$okws_cv_libexpat"
+		use_xml=yes
 	else
 		AC_MSG_ERROR("No XML Support! To disable use --without-expat")
 	fi
@@ -1867,6 +1869,7 @@ if test "$with_expat" != "no"; then
 	CFLAGS=$ac_save_CFLAGS
 fi
 AC_SUBST(LIBEXPAT)
+AM_CONDITIONAL(USE_XML, test "${use_xml}" != "no")
 ])
 
 dnl

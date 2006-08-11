@@ -6,25 +6,27 @@ SUFFIXES = .C .T .h
 .T.C:
 	-$(TAME) -c $< || rm -f $@
 
+if USE_XML
+
+XMLPROGS = xmltst1 xmlcli1
+xmltst1_SOURCES = xmltst1.C
+xmlcli1_SOURCES = xmlcli1.C
+
 xmltst1.o:	xmltst1.C
 xmltst1.lo: 	xmltst1.C
 xmlcli1.o:	xmlcli1.C
 xmlcli1.lo:	xmlcli1.C
 
-noinst_PROGRAMS = kmptst cgitst1 xmltst1 xmltst2 xmlcli1 #pubtst1 pubtst2
+else
+XMLPROGS =
+endif
 
-# XXX
-# these are broken and should be removed
-#
-#pubtst1_SOURCES = pubtst1.C
-#pubtst2_SOURCES = pubtst2.C
+
+noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 #pubtst1 pubtst2
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
-
-xmltst1_SOURCES = xmltst1.C
 xmltst2_SOURCES = xmltst2.C
-xmlcli1_SOURCES = xmlcli1.C
 
 CLEANFILES = core *.core *~
 EXTRA_DIST = .cvsignore

@@ -25,6 +25,8 @@
 #ifndef _LIBAHTTP_OKXMLOBJ_H_
 #define _LIBAHTTP_OKXMLOBJ_H_
 
+#include "okxmldata.h"
+
 class xml_obj_const_t;
 class xml_obj_t;
 

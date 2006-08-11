@@ -23,6 +23,6 @@ Alias		/static		/
 
 Service		configtest 	/configtest
 Service		simple	/simple
-Service		xmlex	/xmlrpc
+@@NO_XML@@Service		xmlex /xmlrpc
 
 ErrorDoc	404	/err/404.html
