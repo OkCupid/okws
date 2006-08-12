@@ -719,24 +719,17 @@ okclnt_base_t::output_fragment (str s)
   return true;
 }
 
-TAMED bool
+bool
 okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
 {
-  VARS {
-    strbuf sb;
-    bool ret (true);
-  }
-  DEFAULT_RETURN { return ret; }
+  bool ret;
   if (!output_frag_prepare ())
     ret = false;
 
-  b.to_strbuf(&sb, false);
-  BLOCK {
-    x->send (&sb, NULL, @());
-    b.clear();
-  }
-  if (cb) 
-    SIGNAL (cb);
+  const strbuf &sb = b.to_strbuf(false);
+  x->send (sb, NULL, done);
+  b.clear();
+  return true;
 }
 
 TAMED void

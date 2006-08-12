@@ -237,7 +237,7 @@ public:
   // stuff for piecemeal output
   bool output_hdr (ssize_t sz = -1);
   bool output_fragment (str s);
-  bool output_fragment (compressible_t &b, cbv::ptr done = NULL, CLOSURE);
+  bool output_fragment (compressible_t &b, cbv::ptr done = NULL);
   void output_file (const char *fn, cbb::ptr cb = NULL, aarr_t *a = NULL,
 		    u_int opt = 0, penv_t *e = NULL, CLOSURE);
   bool output_done ();
