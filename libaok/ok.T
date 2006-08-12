@@ -753,7 +753,7 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
   }
 
   if (cb)
-    cb->signal (ret);
+    SIGNAL (cb, ret);
 }
 
 bool
