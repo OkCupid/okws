@@ -9,43 +9,43 @@ libweb_la_SOURCES = web_prot.C form.C inputcheck.C web.C email.C okwc.C \
 okwsinclude_HEADERS = web_prot.h web.h form.h email.h okwc.h okwc2.h \
 	okwcxml.h
 
-# cannot install, for now, since some broken Makefile.am's suck this
-# in and recompile, triggering a whole recompile
-noinst_HEADERS = web_prot.x
-
-SUFFIXES = .C .T .h
+SUFFIXES = .C .T .h .x
 
 .T.C:
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
+.x.h:
+	-$(RPCC) -h $< || rm -f $@
+.x.C:
+	-$(RPCC) -c $< || rm -f $@
+
+TAMEIN = okwc2.T okwcxml.T
+TAMEOUT = okwc2.C okwcxml.C
+RPCCOUT = web_prot.h web_prot.C
 
 okwc2.o:	okwc2.C
 okwc2.lo:	okwc2.C
 okwcxml.o:	okwcxml.C
 okwcxml.lo:	okwcxml.C
 
-web_prot.C: $(srcdir)/web_prot.x web_prot.h
-	@rm -f $@
-	-$(RPCC) -c $(srcdir)/web_prot.x || rm -f $@
-
-web_prot.h: $(srcdir)/web_prot.x
-	@rm -f $@
-	-$(RPCC) -h $(srcdir)/web_prot.x || rm -f $@
+web_prot.h:	web_prot.x
+web_prot.C:	web_prot.C
+web_prot.o:	web_prot.h
+web_prot.lo:	web_prot.h
 
 .PHONY: xdrclean tameclean sourceclean
 
 xdrclean:
-	rm -f $(srcdir)/web_prot.h $(src_dir)/webprot.C 
+	rm -f $(RPCCOUT)
 
 tameclean:
-	rm -f $(srcdir)/okwc2.C $(srcdir)/okwcxml.C
+	rm -f $(TAMEOUT)
 
 soureclean: xdrclean tameclean
 
-EXTRA_DIST = .cvsignore okwc2.T okwcxml.T
+EXTRA_DIST = .cvsignore $(TAMEIN) web_prot.x
+CLEANFILES = core *.core *~ *.rpo $(TAMEOUT) $(RPCCOUT)
+MAINTAINERCLEANFILES = Makefile.in
 
-BUILT_SOURCES = web_prot.h web_prot.C okwc2.C okwcxml.C
-CLEANFILES = core *.core *~ *.rpo $(BUILT_SOURCES)
 
-MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
-	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
-	stamp-h.in 
+dist-hook:
+	cd $(distdir) && rm -f $(TAMEOUT) $(RPCCOUT)

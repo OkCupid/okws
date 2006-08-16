@@ -38,7 +38,5 @@ tameclean:
 dist-hook:
 	cd $(distdir) && rm -f err.C resp.C
 
-MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
-	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
-	stamp-h.in 
+MAINTAINERCLEANFILES = Makefile.in
 

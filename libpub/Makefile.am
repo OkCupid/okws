@@ -28,6 +28,11 @@ SUFFIXES = .T .C .h .x
 .x.C:
 	-$(RPCC) -c $< || rm -f $@
 
+TAMEIN = pub2.T clone.T
+TAMEOUT = pub2.C clonce.C
+RPCCIN = xpub.x fd_prot.x txa_prot.x
+RPCCOUT = xpub.C xpub.h fd_prot.C fd_prot.h txa_prot.C txa_prot.h
+
 pub2.o: pub2.C
 pub2.lo: pub2.C
 clone.o: clone.C
@@ -97,15 +102,13 @@ parse.o: parse.cc parse.h
 
 .PHONY: xdrclean tameclean
 xdrclean:
-	rm -f xpub.C xpub.h
-	rm -f fd_prot.C fd_prot.h
-	rm -f txa_prot.C txa_prot.h
+	rm -f $(RPCCOUT)
 
 tameclean:
-	rm -f pub2.C clone.C
+	rm -f $(TAMEOUT)
 
 dist-hook:
-	cd $(distdir) && rm -f pub2.C clone.C
+	cd $(distdir) && rm -f $(RPCCOUT) $(TAMEOUT)
 
 .PHONY: sourceclean
 sourceclean: parseclean xdrclean tameclean
@@ -125,12 +128,6 @@ env.mk: Makefile
 
 
 BUILT_SOURCES = parse.cc parse.h scan.cc 
-
-CLEANFILES = core *.core *~ *.rpo xpub.C xpub.h fd_prot.C fd_prot.h \
-		txa_prot.h txa_prot.C pub2.C clone.C
-
-EXTRA_DIST = .cvsignore xpub.x fd_prot.x txa_prot.x pub2.T clone.T
-
-MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
-	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
-	stamp-h.in  parse.cc parse.h scan.cc
+CLEANFILES = core *.core *~ *.rpo $(RPCCOUT) $(TAMEOUT)
+EXTRA_DIST = .cvsignore $(RPCCIN) $(TAMEIN)
+MAINTAINERCLEANFILES = Makefile.in parse.cc parse.h scan.cc

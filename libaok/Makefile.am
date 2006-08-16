@@ -49,6 +49,4 @@ EXTRA_DIST = .cvsignore ok.T okprot.x xmlrpcsrv.Th xmlrpcsrv.T
 CLEANFILES = core *.core *~ *.rpo okprot.C okprot.h ok.C \
 	xmlrpcsrv.C xmlrpcsrv.h
 
-MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
-	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
-	stamp-h.in 
+MAINTAINERCLEANFILES = Makefile.in 
