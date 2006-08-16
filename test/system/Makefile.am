@@ -23,6 +23,9 @@ NO_XML = \#
 
 endif
 
+TAMEIN = configtest.T simple.T xmlex.T static.T
+TAMEOUT = configtest.C simple.C xmlex.C static.C
+
 okwssvc_PROGRAMS = static configtest simple $(XMLPROGS)
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
@@ -30,7 +33,7 @@ simple_SOURCES = simple.C
 
 SUFFIXES = .g .C .T
 .T.C:
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
 
 static.o:	static.C
 static.lo:	static.C
@@ -38,13 +41,12 @@ configtest.o:	configtest.C
 configtest.lo:	configtest.C
 simple.o:	simple.C
 simple.lo:	simple.C
+xmlex.o:	xmlex.C
+xmlex.lo:	xmlex.C
 
-CLEANFILES = core *.core *~ *_config *_log
-EXTRA_DIST = .cvsignore static.T okws_config.in pub_config.in configtest.T \
-	simple.T xmlex.T
-BUILT_SOURCES = static.C configtest.C simple.C xmlex.C
+CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
+EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)
 MAINTAINERCLEANFILES = Makefile.in
-
 
 .PHONY:	test tameclean
 
@@ -59,6 +61,8 @@ pub_config: $(srcdir)/pub_config.in
 	sed "s#@@TOP_SRCDIR@@#$$TOP_SRCDIR#g" < $< > $@
 
 tameclean:
-	rm -f $(srcdir)/static.C $(srcdir)/configtest.C $(srcdir)/simple.C \
-		$(srcdir)/xmlex.C
+	rm -f $(TAMEOUT)
+
+dist-hook:
+	cd $(distdir) && rm -f $(TAMEOUT)
 

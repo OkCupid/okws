@@ -4,7 +4,7 @@ $(PROGRAMS): $(LDEPS)
 SUFFIXES = .C .T .h
 
 .T.C:
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
 
 if USE_XML
 
@@ -21,19 +21,22 @@ else
 XMLPROGS =
 endif
 
+TAMEIN = xmlcli1.T xmltst1.T
+TAMEOUT = xmlcli1.C xmltst1.C
 
-noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 #pubtst1 pubtst2
+noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C
 
-CLEANFILES = core *.core *~
-EXTRA_DIST = .cvsignore
+CLEANFILES = core *.core *~  $(TAMEOUT)
+EXTRA_DIST = .cvsignore $(TAMEIN)
 MAINTAINERCLEANFILES = Makefile.in
-
-BUILT_SOURCES = xmltst1.C xmlcli1.C
 
 .PHONY: tameclean
 tameclean:
-	rm -f $(srcdir)/xmltst1.C $(srcdir)/xmlcli1.C
+	rm -f $(TAMEOUT)
+
+dist-hook:
+	cd $(distdir) && rm -f $(TAMEOUT)

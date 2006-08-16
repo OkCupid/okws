@@ -14,48 +14,42 @@ okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
 	okws_sfs.h timehash.h okstats.h
 
-noinst_HEADERS =  xpub.x fd_prot.x txa_prot.x env.mk
+noinst_HEADERS =  env.mk
 
 YDEBUG = @YDEBUG@
 LDEBUG = @LDEBUG@
 
-SUFFIXES = .T .C .h
+SUFFIXES = .T .C .h .x
 
 .T.C:
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
+.x.h:
+	-$(RPCC) -h $< || rm -f $@
+.x.C:
+	-$(RPCC) -c $< || rm -f $@
 
 pub2.o: pub2.C
 pub2.lo: pub2.C
 clone.o: clone.C
 clone.lo: clone.C
 
+xpub.h: xpub.x
+xpub.C: xpub.x
+xpub.o: xpub.h
+xpub.lo: xpub.h
+
+fd_prot.h: fd_prot.x
+fd_prot.C: fd_prot.x
+fd_prot.o: fd_prot.h
+fd_prot.lo: fd_prot.h
+
+txa_prot.h: txa_prot.x
+txa_prot.C: txa_prot.x
+txa_prot.o: txa_prot.h
+txa_prot.lo: txa_prot.h
+
 AM_YFLAGS = -d $(YDEBUG)
 AM_LFLAGS = $(LDEBUG)
-
-xpub.C:	$(srcdir)/xpub.x xpub.h
-	@rm -f $@
-	-$(RPCC) -c $(srcdir)/xpub.x || rm -f $@
-
-xpub.h:	$(srcdir)/xpub.x
-	@rm -f $@
-	-$(RPCC) -h $(srcdir)/xpub.x || rm -f $@
-
-fd_prot.C:	$(srcdir)/fd_prot.x fd_prot.h
-	@rm -f $@
-	-$(RPCC) -c $(srcdir)/fd_prot.x || rm -f $@
-
-fd_prot.h:	$(srcdir)/fd_prot.x
-	@rm -f $@
-	-$(RPCC) -h $(srcdir)/fd_prot.x || rm -f $@
-
-txa_prot.h:	$(srcdir)/txa_prot.x
-	@rm -f $@
-	-$(RPCC) -h $(srcdir)/txa_prot.x || rm -f $@
-
-txa_prot.C:	$(srcdir)/txa_prot.x txa_prot.h
-	@rm -f $@
-	-$(RPCC) -c $(srcdir)/txa_prot.x || rm -f $@
-
 
 scan.cc: scan.ll
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $(srcdir)/scan.ll 		\
@@ -63,6 +57,7 @@ scan.cc: scan.ll
 
 parse.h:
 	@:
+
 parse.cc: parse.yy
 	rm -f y.tab.c
 	$(YACC) $(AM_YFLAGS) $(YFLAGS) $(srcdir)/parse.yy
@@ -102,12 +97,15 @@ parse.o: parse.cc parse.h
 
 .PHONY: xdrclean tameclean
 xdrclean:
-	rm -f $(srcdir)/xpub.C $(srcdir)/xpub.h
-	rm -f $(srcdir)/fd_prot.C $(srcdir)/fd_prot.h
-	rm -f $(srcdir)/txa_prot.C $(srcdir)/txa_prot.h
+	rm -f xpub.C xpub.h
+	rm -f fd_prot.C fd_prot.h
+	rm -f txa_prot.C txa_prot.h
 
 tameclean:
-	rm -f $(srcdir)/pub2.C $(srcdir)/clone.C
+	rm -f pub2.C clone.C
+
+dist-hook:
+	cd $(distdir) && rm -f pub2.C clone.C
 
 .PHONY: sourceclean
 sourceclean: parseclean xdrclean tameclean
@@ -126,11 +124,13 @@ env.mk: Makefile
 	mv -f env.mk~ env.mk
 
 
-BUILT_SOURCES = parse.cc parse.h scan.cc xpub.C xpub.h fd_prot.C fd_prot.h \
-	txa_prot.h txa_prot.C pub2.C clone.C
+BUILT_SOURCES = parse.cc parse.h scan.cc 
 
-CLEANFILES = core *.core *~ *.rpo 
-EXTRA_DIST = .cvsignore  pub2.T clone2.T
+CLEANFILES = core *.core *~ *.rpo xpub.C xpub.h fd_prot.C fd_prot.h \
+		txa_prot.h txa_prot.C pub2.C clone.C
+
+EXTRA_DIST = .cvsignore xpub.x fd_prot.x txa_prot.x pub2.T clone.T
+
 MAINTAINERCLEANFILES = Makefile.in config.guess config.h.in config.sub \
 	configure install-sh ltconfig ltmain.sh missing mkinstalldirs \
 	stamp-h.in  parse.cc parse.h scan.cc

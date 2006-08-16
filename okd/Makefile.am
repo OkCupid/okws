@@ -12,7 +12,7 @@ okld_SOURCES = okld.C okldch.C okld_script.C
 SUFFIXES = .C .T .h
 
 .T.C:
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
 
 okld.o:    okld.C
 okld.lo:   okld.C
@@ -23,13 +23,16 @@ okd.lo:    okd.C
 okmgr.o:   okmgr.C
 okmgr.lo:  okmgr.C
 
-CLEANFILES = core *.core *~
+TAMEOUT = okld.C okldch.C okd.C okmgr.C
+
+CLEANFILES = core *.core *~ $(TAMEOUT)
 EXTRA_DIST = .cvsignore okld.T okldch.T okd.T okmgr.T
-BUILT_SOURCES = okld.C okldch.C okd.C okmgr.C
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY: tameclean
 
 tameclean:
-	rm -f $(srcdir)/okld.C $(srcdir)/okldch.C $(srcdir)/okd.C \
-		$(srcdir)/okmgr.C
+	rm -f $(TAMEOUT)
+
+dist-hook:
+	cd $(distdir) && rm -f $(TAMEOUT)

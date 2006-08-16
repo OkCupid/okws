@@ -15,7 +15,7 @@ treestat_LDADD = $(LDADD_PUB)
 SUFFIXES = .T .C .h
 
 .T.C:
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
 
 cache2.o:	cache2.C
 cache2.lo:	cache2.C
@@ -26,13 +26,14 @@ pubserv2.lo:	pubserv2.C
 treestat.o:	treestat.C
 treestat.lo:	treestat.C
 
-CLEANFILES = core *.core *~
+CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C
 EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T
-BUILT_SOURCES = cache2.C pubserv2.C pubd.C treestat.C
 MAINTAINERCLEANFILES = Makefile.in
+
+dist-hook:
+	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C
 
 .PHONY: tameclean 
 
 tameclean:
-	rm -f $(srcdir)/cache2.C $(srcdir)/pubd.C $(srcdir)/treestat.C \
-		$(srcdir)/pubserv2.C
+	rm -f cache2.C pubd.C treestat.C pubserv2.C

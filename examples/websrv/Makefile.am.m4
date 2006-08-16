@@ -13,7 +13,7 @@ SUFFIXES = .g .C .T
 	-$(PUB) $(PUBFLAGS) -w -o $@ $< || rm -f $@
 
 .T.C:	@rm -f $@
-	-$(TAME) -c $< || rm -f $@
+	-$(TAME) -o $@ $< || rm -f $@
 
 AM_LDFLAGS = $(SVC_LDFLAGS)
 
@@ -28,7 +28,8 @@ define(`svc_sources', svc_sources $1.C)dnl
 define(`svc_gfiles', svc_gfiles $1.g)dnl
 define(`svc_exes', svc_exes $1)dnl
 $1_SOURCES = $2 $1.C
-$1.C: $1.g
+$1.o: $1.C
+$1.lo: $1.C
 ]]changequote)dnl
 define(`tamemk',
 changequote([[,]])dnl
@@ -37,7 +38,8 @@ define(`svc_sources', svc_sources $1.C)dnl
 define(`svc_tfiles', svc_tfiles $1.T)dnl
 define(`svc_exes', svc_exes $1)dnl
 $1_SOURCES = $2 $1.C
-$1.C: $1.T
+$1.o: $1.C
+$1.lo: $1.C
 ]]changequote)dnl
 
 dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl dnl
@@ -81,18 +83,17 @@ dnl
 dnl Or whatever it is you please...
 dnl
 
-
-
-BUILT_SOURCES = svc_sources
-
-CLEANFILES = core *.core *~
-EXTRA_DIST = .cvsignore
+CLEANFILES = core *.core *~ svc_sources
+EXTRA_DIST = .cvsignore svc_gfiles svc_tfiles
 	
 MAINTAINERCLEANFILES = Makefile.in Makefile.am
 
 .PHONY: srcclean
 srcclean:
-	@rm -f svc_exes rpcmk_built
+	@rm -f svc_sources
+
+dist-hook:
+	cd $(distdir) && rm -f svc_sources
 
 $(srcdir)/Makefile.am: $(srcdir)/Makefile.am.m4
 	@rm -f $(srcdir)/Makefile.am~
