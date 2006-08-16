@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _LIBAHTTP_SMARTVEC_H
-#define _LIBAHTTP_SMARTVEC_H
+#ifndef _LIBOKXML_SMARTVEC_H
+#define _LIBOKXML_SMARTVEC_H
 
 template<class T, size_t N = 0>
 class smart_vec_t : vec<T,N>
@@ -69,4 +69,4 @@ private:
   ptrdiff_t _pops;
 };
 
-#endif /* _LIBAHTTP_SMARTVEC_H */
+#endif /* _LIBOKXML_SMARTVEC_H */
