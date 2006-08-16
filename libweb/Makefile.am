@@ -19,6 +19,7 @@ SUFFIXES = .C .T .h .x
 	-$(RPCC) -c $< || rm -f $@
 
 TAMEIN = okwc2.T okwcxml.T
+RCPCCIN = web_prot.x
 TAMEOUT = okwc2.C okwcxml.C
 RPCCOUT = web_prot.h web_prot.C
 
@@ -28,9 +29,9 @@ okwcxml.o:	okwcxml.C
 okwcxml.lo:	okwcxml.C
 
 web_prot.h:	web_prot.x
-web_prot.C:	web_prot.C
+web_prot.C:	web_prot.x
 web_prot.o:	web_prot.h
-web_prot.lo:	web_prot.h
+web_prot.lo: web_prot.h
 
 .PHONY: xdrclean tameclean sourceclean
 
@@ -42,7 +43,7 @@ tameclean:
 
 soureclean: xdrclean tameclean
 
-EXTRA_DIST = .cvsignore $(TAMEIN) web_prot.x
+EXTRA_DIST = .cvsignore $(TAMEIN) $(RPCCIN)
 CLEANFILES = core *.core *~ *.rpo $(TAMEOUT) $(RPCCOUT)
 MAINTAINERCLEANFILES = Makefile.in
 

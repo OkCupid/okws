@@ -41,8 +41,6 @@ configtest.o:	configtest.C
 configtest.lo:	configtest.C
 simple.o:	simple.C
 simple.lo:	simple.C
-xmlex.o:	xmlex.C
-xmlex.lo:	xmlex.C
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)
