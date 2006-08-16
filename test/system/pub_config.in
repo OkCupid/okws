@@ -29,7 +29,7 @@
 //   Variables set here will be treated as global defaults for all
 //   documents published by this particular pubd.
 //
-//   This file should be placed into /etc/sfs by default.
+//   This file should be placed into /usr/local/etc/okws by default.
 //
 -->
 
