@@ -57,7 +57,7 @@ okws_config: $(srcdir)/okws_config.in
 	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#e ; print $$_; } ' < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
-	TOP_SRCDIR=$(top_srcdir); \
+	TOP_SRCDIR=`cd $(top_srcdir) ; pwd ` ; \
 	sed "s#@@TOP_SRCDIR@@#$$TOP_SRCDIR#g" < $< > $@
 
 tameclean:
