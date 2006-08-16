@@ -19,7 +19,7 @@ SUFFIXES = .C .T .h .x
 	-$(RPCC) -c $< || rm -f $@
 
 TAMEIN = okwc2.T okwcxml.T
-RCPCCIN = web_prot.x
+RPCCIN = web_prot.x
 TAMEOUT = okwc2.C okwcxml.C
 RPCCOUT = web_prot.h web_prot.C
 
