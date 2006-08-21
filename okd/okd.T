@@ -634,7 +634,7 @@ void start_okd (int argc, char **argv)
     cf = get_okws_config ();
 
   zinit ();
-  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
+  warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okd = New okd_t (cf, logfd, 0, cdd, port, pub2fd);
   okd->set_signals ();
   okd->launch ();

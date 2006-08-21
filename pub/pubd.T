@@ -258,7 +258,7 @@ main_T (int argc, char **argv)
 
 
   warn ("OKWS version %s, Pub v%d, pid %d\n", 
-	VERSION, version, int (getpid ()));
+	OKWS_PATCHLEVEL_STR, version, int (getpid ()));
 
   if (version == 1) {
     if ((slave_status = pub_slave (wrap (client_accept), port, &slave_status)) 

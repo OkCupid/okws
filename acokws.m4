@@ -1947,4 +1947,18 @@ AC_SUBST(module_dir)
 AC_SUBST(module_name)
 AC_SUBST(okwssvcdir)
 ])
-
+dnl
+dnl OKWS_FAKE_VERSION - allow configuration-time specification of 
+dnl the version that the libdir and includedir refer to.
+dnl
+AC_DEFUN([OKWS_LAYOUT_VERSION],
+[AC_ARG_WITH(fake-version,
+--with-fake-version=FAKE	Specify a fake version)
+if test "$with_fake_version"; then
+	layoutversion=$with_fake_version
+else
+	layoutversion=$VERSION
+fi
+layoutversion=`echo $layoutversion | $PERL -ne '{ s/([0-9]+)\.([0-9]+).*/$1.$2/; print $_; }' `
+AC_SUBST(layoutversion)
+])

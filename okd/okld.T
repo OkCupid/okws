@@ -1167,7 +1167,7 @@ main (int argc, char *argv[])
     daemonize ();
   }
 
-  warn ("version %s, pid %d\n", VERSION, int (getpid ()));
+  warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okld_t *okld = New okld_t ();
   okld->debug_stallfile = dbf;
   okld->set_signals ();
