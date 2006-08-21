@@ -38,8 +38,10 @@
 
 
 // Patch Level <major>.<minor>.<pre> (out to 2 places)
-#define OKWS_PATCHLEVEL      1000005
-#define OKWS_PATCHLEVEL_STR  "1.0pre5"
+// patch levels 0-99 are preleases.
+// patch level 100 is release
+#define OKWS_PATCHLEVEL      1001001
+#define OKWS_PATCHLEVEL_STR  "1.1pre1"
 
 //
 // A header file for OKWS changes to SFS. Should be included by most files
