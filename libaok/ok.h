@@ -264,7 +264,7 @@ protected:
   void set_attributes (http_resp_attributes_t *hra);
   bool do_gzip () const;
 
-  virtual void parse (cbi status) = 0;
+  virtual void parse (cbi cb) = 0;
   virtual http_inhdr_t *hdr_p () = 0;
   virtual const http_inhdr_t &hdr_cr () const = 0;
   bool output_frag_prepare ();
