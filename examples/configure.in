@@ -41,6 +41,7 @@ SFS_FIND_RESOLV
 SFS_DMALLOC
 SFS_MYSQL
 OKWS_OKWS
+OKWS_EXPAT
 
 okmtopdir=${okm_prefix}/${okm_name}/${VERSION}/${okmtag}
 okmlibdir='${okmtopdir}/lib'

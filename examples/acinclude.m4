@@ -1803,6 +1803,7 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBAMT=${with_okws}/libamt/libamt.la
     LIBAHTTP=${with_okws}/libahttp/libahttp.la
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
+    LIBOKXML=${with_okws}/libokxml/libokxml.la
     PUB=${with_okws}/pub/pub
 elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
 	-a -f ${with_okws}/lib/okws${okwstagdir}/libpub.la; then
@@ -1820,6 +1821,7 @@ elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
     LIBAMT=${okwslibdir}/libamt.la
     LIBAHTTP=${okwslibdir}/libahttp.la
     LIBAMYSQL=${okwslibdir}/libamysql.la
+    LIBOKXML=${okwslibdir}/libokxml.la
 
     dnl
     dnl hack because AC_PATH_PROG is rocked
@@ -1850,11 +1852,12 @@ AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBAMT)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBAMYSQL)
+AC_SUBST(LIBOKXML)
 AC_SUBST(PUB)
 
-LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
+LDEPS='$(LIBOKXML) $(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
 LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB)'" $LDADD"
+LDADD='$(LIBOKXML) $(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBPUB)'" $LDADD"' $(LIBEXPAT)'
 LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)
@@ -1896,3 +1899,72 @@ then
 fi
 ])
 
+dnl
+dnl Find the expat libraries
+dnl
+AC_DEFUN([OKWS_EXPAT],
+[AC_ARG_WITH(expat,
+--with-expat=DIR      Specify location of expat library)
+use_xml=no
+if test "$with_expat" != "no"; then
+	ac_save_CFLAGS=$CFLAGS
+	ac_save_LIBS=$LIBS
+	dirs=""
+	if test ${with_expat+set} && "${with_expat}"; then
+		dirs="$dirs ${with_expat} ${with_expat}/include"
+	fi
+	if test "${prefix}" != "NONE"; then
+		dirs="$dirs ${prefix} ${prefix}/include"
+	fi
+	dirs="$dirs /usr/local/include /usr/include"
+	AC_CACHE_CHECK(for expat.h, okws_cv_expat_h,
+	[for dir in " " $dirs ; do
+		case $dir in
+			" ") iflags=" " ;;
+			*)   iflags="-I${dir}" ;; 
+		esac
+		CLFAGS="${ac_save_CFLAGS} $iflags"
+		AC_TRY_COMPILE([#include <expat.h>], [ XML_ParserCreate(0);],
+				okws_cv_expat_h="${iflags}"; break)
+	done
+	if test "$okws_cv_expat_h" = " " ; then
+		okws_cv_expat_h="yes"
+	fi
+	])
+	if test "$okws_cv_expat_h" = "yes"; then
+		okws_cv_expat_h=" "
+	fi
+	if test "${okws_cv_expat_h+set}"; then
+		dirs=`echo $okws_cv_expat_h | sed 's/include/lib/' `
+		dirs=`echo $dirs | sed 's/^-I//' `
+		AC_CACHE_CHECK(for libexpat, okws_cv_libexpat,
+		[for dir in " " $dirs; do
+			case $dir in
+				" ") lflags="-lexpat" ;;
+				*)   lflags="-L${dir} -lexpat" ;;
+			esac
+			LIBS="$ac_save_LIBS $lflags"
+			AC_TRY_LINK([#include <expat.h>],
+				    XML_ParserCreate (0);,
+				    okws_cv_libexpat=$lflags; break)
+		done
+		if test -z ${okws_cv_libexpat+set}; then
+			okws_cv_libexpat="no"
+		fi
+		])
+	fi
+	if test "${okws_cv_expat_h+set}" && test "$okws_cv_libexpat" != "no"
+	then
+		CPPFLAGS="$CPPFLAGS $okws_cv_expat_h"
+		AC_DEFINE(HAVE_EXPAT, 1, Enable XML support with Expat library)
+		LIBEXPAT="$okws_cv_libexpat"
+		use_xml=yes
+	else
+		AC_MSG_ERROR("No XML Support! To disable use --without-expat")
+	fi
+	LIBS=$ac_save_LIBS
+	CFLAGS=$ac_save_CFLAGS
+fi
+AC_SUBST(LIBEXPAT)
+AM_CONDITIONAL(USE_XML, test "${use_xml}" != "no")
+])
