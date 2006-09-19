@@ -39,7 +39,7 @@
 #if defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009003
 # include "lock.h"
 # define TAME_LOCKING 1
-#undef
+#endif /* SFSLITE_PATCHLEVEL */
 
 extern int yywss;          /* on if in White-space strip mode, off otherwise */
 
@@ -417,7 +417,7 @@ private:
   bool cerrflag; // compile error flag
   bool tlf; // top level flag
 #ifdef TAME_LOCKING
-  lock_t *_lock;
+  lock_t _lock;
 #endif /* TAME_LOCKING */
 };
 
