@@ -119,7 +119,15 @@ namespace pub2 {
     }
     if (op == 0)
       op = _opts;
+
+    // The other possibility is to lock env via tame locking.
+    // If this copy constructor turns out to be expensive in terms of CPU,
+    // we can try that.  Put a lock object in env, and since this
+    // function isn't called recursively, we don't need to worry
+    // about reacquring the lock recursively. Would also allow a rollback
+    // from SVN version 2182 to 2179.
     env_local = env ? New penv_t (*env) : New penv_t (_genv);
+
     typ = (op & P_WSS) ? PFILE_TYPE_WH : PFILE_TYPE_H;
     o = New refcounted<output_std_t> (b, typ, op);
     st = env_local->start_output (a, op);

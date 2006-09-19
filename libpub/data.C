@@ -45,6 +45,8 @@ output_conf_t::output_conf_t (bool d)
 void pbuf_t::add (zbuf *z) { add (New pbuf_zbuf_t (z)); }
 void pval_zbuf_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const 
 { ps->add (zb); }
+void penv_t::safe_push (ptr<const aarr_t> a) 
+{ estack.push_back (a); hold.push_back (a); }
 
 static void
 explore (pub_exploremode_t mode, const pfnm_t &nm)
@@ -1878,7 +1880,7 @@ void
 pfile_set_func_t::output_config (penv_t *e) const
 {
   env = e;
-  if (aarr) env->push (aarr);
+  if (aarr) env->safe_push (aarr);
 }
 
 xpub_status_typ_t
@@ -1949,3 +1951,22 @@ parr_mixed_t::flatten (penv_t *e)
 //
 //-----------------------------------------------------------------------
 
+//-----------------------------------------------------------------------
+//
+
+penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
+  : aarr_n (1), file (NULL), needloc (false), opts (o), evm (EVAL_FULL),
+    olineno (-1), cerrflag (false), tlf (true)
+{ 
+  if (g) push (g);
+  if (a) push (a); 
+}
+
+penv_t::penv_t (const penv_t &e)
+  : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
+    cerr (e.cerr), opts (e.opts), evm (e.evm),
+    estack (e.estack), gvars (e.gvars), fstack (e.fstack), hold (e.hold),
+    istack (e.istack), olineno (e.olineno) {}
+
+//
+//-----------------------------------------------------------------------

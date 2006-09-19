@@ -36,6 +36,11 @@
 #include "zstr.h"
 #include "tame.h"
 
+#if defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009003
+# include "lock.h"
+# define TAME_LOCKING 1
+#undef
+
 extern int yywss;          /* on if in White-space strip mode, off otherwise */
 
 struct yy_buffer_state;
@@ -345,21 +350,9 @@ public:
 
 class penv_t {
 public:
+  penv_t (aarr_t *a = NULL, u_int o = 0, aarr_t *g = NULL);
+  penv_t (const penv_t &e);
 
-  penv_t (aarr_t *a = NULL, u_int o = 0, aarr_t *g = NULL)
-    : aarr_n (1), file (NULL), needloc (false), opts (o), evm (EVAL_FULL),
-      olineno (-1), cerrflag (false), tlf (true)
-  { 
-    if (g) push (g);
-    if (a) push (a); 
-  }
-
-  penv_t (const penv_t &e)
-    : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
-      cerr (e.cerr), opts (e.opts), evm (e.evm),
-      estack (e.estack), gvars (e.gvars), fstack (e.fstack),
-      istack (e.istack), olineno (e.olineno) {}
-  
   ~penv_t () {}
 
   penv_state_t *start_output (aarr_t *a, u_int o);
@@ -371,6 +364,7 @@ public:
   size_t size () const { return estack.size (); }
   size_t gvsize () const { return gvars.size (); }
   void push (aarr_t *a) { estack.push_back (a); }
+  void safe_push (ptr<const aarr_t> a);
   void push (const gvars_t *g) { gvars.push_back (g); }
   const pval_t *lookup (const str &n, bool recurse = true);
   pval_w_t operator[] (const str &n) { return pval_w_t (n, this); }
@@ -404,7 +398,7 @@ public:
 
   bool set_tlf (bool b) { bool r = tlf; tlf = b; return r; }
   bool get_tlf () const { return tlf; }
-  void clear () { estack.clear (); gvars.clear (); }
+  void clear () { estack.clear (); gvars.clear (); hold.clear (); }
 
   int aarr_n;
   bpfcp_t file;
@@ -417,10 +411,14 @@ private:
   vec<const aarr_t *> estack; // eval stack
   vec<const gvars_t *> gvars;
   vec<bpfcp_t> fstack;
+  vec<ptr<const aarr_t> > hold;
   bhash_copyable_t<phashp_t> istack;
   int olineno;
   bool cerrflag; // compile error flag
   bool tlf; // top level flag
+#ifdef TAME_LOCKING
+  lock_t *_lock;
+#endif /* TAME_LOCKING */
 };
 
 class pfile_set_func_t;
