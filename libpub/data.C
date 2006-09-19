@@ -111,7 +111,7 @@ penv_t::resize (size_t s)
 {
   assert (s <= estack.size ());
   while (s != estack.size ()) 
-    estack.pop_tail (); // don't delete!!
+    estack.pop_back (); // don't delete!!
 }
 
 void
@@ -440,7 +440,7 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
     ps->add (New pbuf_var_t (nm));
     return;
   }
-  pval_t *pv;
+  const pval_t *pv;
   // for internal pvar_t (for instance, config variables), the pval_t was 
   // specified at initialization; this is a bit of a hack, but it should 
   // work.  Note that also because the initial lookup was without recursion,
@@ -508,27 +508,30 @@ aarr_t::lookup (const str &n)
 // d, the value (d-1) is pushed on to its vector.  all future evaluations
 // within the evaluation attempt will then start at level d-1.
 //
-pval_t *
+const pval_t *
 penv_t::lookup (const str &n, bool recurse)
 {
-  vec<aarr_t *> *v = NULL;
-  aarr_t *p;
+  ssize_t *sp, i;
+  vec<ssize_t> *v = NULL;
   
   if (recurse)
     v = evaltab[n];
-
-  p = v ? v->back () : estack.last;
-
-  pval_t *ret = NULL;
-  for (; p; p = estack.prev (p)) 
-    if ((ret = p->lookup(n))) 
+  
+  i = v ? v->back () : estack.size () -1;
+  
+  const pval_t *ret = NULL;
+  
+  for ( ; i >= 0; i--) {
+    if ((ret = estack[i]->lookup (n))) 
       break;
-  aarr_t *prev = p ? estack.prev (p) : NULL;
-  if (v)
-    v->push_back (prev);
+  }
+  i--;
+  
+  if (v) 
+    v->push_back (i);
   else if (recurse) {
-    vec<aarr_t *> vv;
-    vv.push_back (prev);
+    vec<ssize_t> vv;
+    vv.push_back (i);
     evaltab.insert (n, vv);
   }
   return ret;
@@ -537,7 +540,7 @@ penv_t::lookup (const str &n, bool recurse)
 void
 penv_t::eval_pop (const str &n)
 {
-  vec<aarr_t *> *v = evaltab[n];
+  vec<ssize_t> *v = evaltab[n];
   assert (v);
   if (v->size () == 1)
     evaltab.remove (n);
@@ -1869,15 +1872,6 @@ penv_t::finish_output (penv_state_t *s)
   cerrflag = s->errflag;
   delete s;
   return ret;
-}
-
-void
-pfile_set_func_t::remove () const
-{
-  if (env) {
-    env->remove (aarr);
-    env = NULL;
-  }
 }
 
 void

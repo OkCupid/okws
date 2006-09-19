@@ -525,7 +525,7 @@ pub_config_iface_t::cfg (const str &n, bool allownull) const
 }
 
 bool
-pub_config_iface_t::cfg (const str &n, pval_t **v) const
+pub_config_iface_t::cfg (const str &n, const pval_t **v) const
 {
   return ((*v = get_env ()->lookup (n, false)));
 }

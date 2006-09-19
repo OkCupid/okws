@@ -329,6 +329,20 @@ struct penv_state_t {
   bool errflag;
 };
 
+template<class K>
+class bhash_copyable_t : public bhash<K>
+{
+public:
+  bhash_copyable_t () : bhash<K>() {}
+  bhash_copyable_t (const bhash_copyable_t &h)
+  {
+    const qhash_slot<K,void> *s;
+    for (s = h.first (); s; s = h.next (s))  {
+      insert (s->key);
+    }
+  }
+};
+
 class penv_t {
 public:
 
@@ -340,6 +354,12 @@ public:
     if (a) push (a); 
   }
 
+  penv_t (const penv_t &e)
+    : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
+      cerr (e.cerr), opts (e.opts), evm (e.evm),
+      estack (e.estack), gvars (e.gvars), fstack (e.fstack),
+      istack (e.istack), olineno (e.olineno) {}
+  
   ~penv_t () {}
 
   penv_state_t *start_output (aarr_t *a, u_int o);
@@ -350,10 +370,9 @@ public:
   void resize (size_t s, size_t gvs) { resize (s); gresize (gvs); }
   size_t size () const { return estack.size (); }
   size_t gvsize () const { return gvars.size (); }
-  void push (aarr_t *a) { estack.insert_tail (a); }
-  void remove (aarr_t *a) { estack.remove (a); }
+  void push (aarr_t *a) { estack.push_back (a); }
   void push (const gvars_t *g) { gvars.push_back (g); }
-  pval_t *lookup (const str &n, bool recurse = true);
+  const pval_t *lookup (const str &n, bool recurse = true);
   pval_w_t operator[] (const str &n) { return pval_w_t (n, this); }
   pub_evalmode_t init_eval (pub_evalmode_t m = EVAL_FULL);
   void eval_pop (const str &n);
@@ -394,11 +413,11 @@ public:
   u_int opts;
 private:
   pub_evalmode_t evm;
-  qhash<str, vec<aarr_t *> > evaltab;
-  clist_t<aarr_t, &aarr_t::slnk> estack;  // eval stack
+  qhash<str, vec<ssize_t> > evaltab;
+  vec<const aarr_t *> estack; // eval stack
   vec<const gvars_t *> gvars;
   vec<bpfcp_t> fstack;
-  bhash<phashp_t> istack;
+  bhash_copyable_t<phashp_t> istack;
   int olineno;
   bool cerrflag; // compile error flag
   bool tlf; // top level flag
@@ -1262,9 +1281,8 @@ class pfile_set_func_t : public pfile_func_t {
 public:
   pfile_set_func_t (int l) 
     : pfile_func_t (l), err (false), env (NULL) {}
-  ~pfile_set_func_t () { remove (); }
+  ~pfile_set_func_t () {}
   pfile_set_func_t (const xpub_set_func_t &x);
-  void remove () const;
   void output (output_t *o, penv_t *e) const;
   bool add (ptr<arglist_t> a);
   bool validate () { return true; }
@@ -1497,7 +1515,7 @@ public:
   virtual ~pub_config_iface_t () {}
   virtual penv_t * get_env () const = 0;
   str cfg (const str &n, bool allownull = false) const;
-  bool cfg (const str &n, pval_t **v) const;
+  bool cfg (const str &n, const pval_t **v) const;
   bool cfg (const str &n, str *v, bool allownull = false) const;
   template<typename T> bool cfg (const str &n, T *v) const;
   pval_w_t operator[] (const str &s) const { return (*get_env ())[s]; }

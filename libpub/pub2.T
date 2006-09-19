@@ -115,18 +115,20 @@ namespace pub2 {
       bool XXX;
       pfile_type_t typ;
       ptr<bound_pfile2_t> bpf;
+      penv_t *env_local;
     }
     if (op == 0)
       op = _opts;
-    if (!env)
-      env = &_genv;
+    env_local = env ? New penv_t (*env) : New penv_t (_genv);
     typ = (op & P_WSS) ? PFILE_TYPE_WH : PFILE_TYPE_H;
     o = New refcounted<output_std_t> (b, typ, op);
-    st = env->start_output (a, op);
-    BLOCK { publish_full (o, nm, env, 0, @(status, bpf)); }
-
+    st = env_local->start_output (a, op);
+    BLOCK { publish_full (o, nm, env_local, 0, @(status, bpf)); }
+    
     // XXX = ignore output from the following function
-    XXX = env->finish_output (st);
+    XXX = env_local->finish_output (st);
+    delete env_local;
+
     SIGNAL (cb, status, bpf);
   }
 
