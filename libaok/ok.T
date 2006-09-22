@@ -1071,7 +1071,7 @@ okclnt_base_t::pub2 ()
 }
 
 ptr<pub2::locale_specific_publisher_t>
-okclnt_t::pub2_local ()
+okclnt_base_t::pub2_local ()
 {
   if (!_p2_locale)
     _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 ());
@@ -1079,7 +1079,7 @@ okclnt_t::pub2_local ()
 }
 
 void
-okclnt_t::set_localizer (ptr<const pub_localizer_t> l)
+okclnt_base_t::set_localizer (ptr<const pub_localizer_t> l)
 {
   _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 (), l);
 }
