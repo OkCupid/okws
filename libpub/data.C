@@ -513,7 +513,7 @@ aarr_t::lookup (const str &n)
 const pval_t *
 penv_t::lookup (const str &n, bool recurse)
 {
-  ssize_t *sp, i;
+  ssize_t i;
   vec<ssize_t> *v = NULL;
   
   if (recurse)
@@ -1966,7 +1966,8 @@ penv_t::penv_t (const penv_t &e)
   : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
     cerr (e.cerr), opts (e.opts), evm (e.evm),
     estack (e.estack), gvars (e.gvars), fstack (e.fstack), hold (e.hold),
-    istack (e.istack), olineno (e.olineno) {}
+    istack (e.istack), olineno (e.olineno), 
+    _localizer (e._localizer) {}
 
 //
 //-----------------------------------------------------------------------

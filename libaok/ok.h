@@ -42,6 +42,7 @@
 #include "lbalance.h"
 #include "tame.h"
 #include "pub2.h"
+#include "oklocale.h"
 
 typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH = 1,
@@ -253,9 +254,12 @@ public:
   void disable_gzip () { rsp_gzip = false; }
 
   void set_hdr_field (const str &k, const str &v);
-  ptr<pub2::remote_publisher_t> pub2 () ;
 
   list_entry<okclnt_base_t> lnk;
+  virtual ptr<pub2::remote_publisher_t> pub2 () ;
+  virtual ptr<pub2::locale_specific_publisher_t> pub2_local ();
+  void set_localizer (ptr<const pub_localizer_t> l);
+
 private:
   void serve_T (CLOSURE);
 
@@ -273,7 +277,6 @@ protected:
   ref<ahttpcon> x;
   oksrvc_t *oksrvc;
 
-  //strbuf out;
   zbuf out;
   ptr<http_response_t> rsp;
   vec<cookie_t *> outcookies;
@@ -287,6 +290,7 @@ protected:
 
   output_state_t output_state;
   u_int _timeout;
+  ptr<pub2::locale_specific_publisher_t> _p2_locale;
 };
 
 // 

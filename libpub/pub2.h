@@ -62,18 +62,18 @@ namespace pub2 {
      * @param opt publishing options to use.
      * @param e The environment to evaluate it (the global one by def.)
      */
-    void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
-		   aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL,
-		   CLOSURE);
+    virtual void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+			   aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL)
+    { run_full_T (b, fn, cb, a, opt, e); }
 
     /**
      * this is a simplified version of the above, with a simpler status
      * return message. See above for a description of the parameters.
      */
-    void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
-	      u_int opt = 0, penv_t *e = NULL,
-	      CLOSURE);
-
+    virtual void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
+		      u_int opt = 0, penv_t *e = NULL)
+    { run_T (b, fn, cb, a, opt, e); }
+    
     // implement the pub2_iface_t contract; only call internally
     // from pub objects.
     void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
@@ -111,7 +111,8 @@ namespace pub2 {
     u_int opts () const { return _opts; }
     void set_opts (u_int i) { _opts = i; }
 
-    void list_files_to_check (const pfnm_t &n, vec<str> *out);
+    void list_files_to_check (const pfnm_t &n, vec<str> *out,
+			      ptr<const pub_localizer_t> l);
 
     virtual bool is_cached (const pfnm_t &n, u_int o, const phash_t &hsh) const
     { return false; }
@@ -124,6 +125,12 @@ namespace pub2 {
 			    status_cb_t cb, CLOSURE);
     virtual void publish_full_T (output_t *o, pfnm_t fn, penv_t *env,
 				 int lineno, getfile_cb_t cb, CLOSURE);
+
+    void run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+		     aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL, 
+		     CLOSURE);
+    void run_T (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
+		u_int opt = 0, penv_t *e = NULL, CLOSURE);
     
     virtual bool is_remote () const = 0;
 
@@ -131,6 +138,33 @@ namespace pub2 {
     aarr_t _base_cfg;
     mutable penv_t _genv;   // global eval env
     str _cwd;               // CWD for publishing files
+  };
+
+  class locale_specific_publisher_t {
+  public:
+    locale_specific_publisher_t (ptr<abstract_publisher_t> ap,
+				 ptr<const pub_localizer_t> lcl = NULL)
+      : _ap (ap), _localizer (lcl) {}
+    
+    void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+		   aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL)
+    { run_full_T (b, fn, cb, a, opt, e); }
+
+    void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
+	      u_int opt = 0, penv_t *e = NULL)
+    { run_T (b, fn, cb, a, opt, e); }
+
+    ptr<abstract_publisher_t> publisher () { return _ap; }
+    
+  private:
+    void run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+		     aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL, 
+		     CLOSURE);
+    void run_T (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
+		u_int opt = 0, penv_t *e = NULL, CLOSURE);
+
+    ptr<abstract_publisher_t> _ap;
+    ptr<const pub_localizer_t> _localizer;
   };
 
   /**

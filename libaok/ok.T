@@ -1070,6 +1070,20 @@ okclnt_base_t::pub2 ()
   return oksrvc->pub2 ();
 }
 
+ptr<pub2::locale_specific_publisher_t>
+okclnt_t::pub2_local ()
+{
+  if (!_p2_locale)
+    _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 ());
+  return _p2_locale;
+}
+
+void
+okclnt_t::set_localizer (ptr<const pub_localizer_t> l)
+{
+  _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 (), l);
+}
+
 pval_w_t 
 oksrvc_t::operator[] (const str &s) const 
 { 

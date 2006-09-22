@@ -14,6 +14,41 @@ namespace pub2 {
   typedef caching_remote_publisher_t crp_t;
   typedef output_conf2_t oc_t;
   typedef local_publisher_t lp_t;
+  typedef locale_specific_publisher_t lsp_t;
+
+  TAMED void
+  lsp_t::run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+		     aarr_t *a, u_int o, penv_t *e)
+  {
+    VARS {
+      ptr<const pub_localizer_t> old;
+      status_t status (XPUB_STATUS_OK);
+      ptr<bound_pfile2_t> bpf;
+    }
+    if (!e) e = _ap->get_env ();
+    old = e->localizer ();
+    e->set_localizer (_localizer);
+    BLOCK { _ap->run_full (b, fn, @(status, bpf), a, o, e); }
+    e->set_localizer (old);
+    SIGNAL (cb, status, bpf);
+  }
+
+  TAMED void
+  lsp_t::run_T (zbuf *b, pfnm_t fn, cbb cb, 
+		aarr_t *a, u_int o, penv_t *e)
+  {
+    VARS {
+      ptr<const pub_localizer_t> old;
+      bool ok;
+    }
+    if (!e) e = _ap->get_env ();
+    old = e->localizer ();
+    e->set_localizer (_localizer);
+    BLOCK { _ap->run (b, fn, @(ok), a, o, e); }
+    e->set_localizer (old);
+    SIGNAL (cb, ok);
+  }
+
 
   TAMED void
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
@@ -40,7 +75,7 @@ namespace pub2 {
       str d,f, cwd_prev;
     }
 
-    list_files_to_check (fn, &files_to_check);
+    list_files_to_check (fn, &files_to_check, env ? env->localizer () : NULL);
 
     if (files_to_check.size () == 0) {
       status.set_status (XPUB_STATUS_NOENT);
@@ -92,8 +127,8 @@ namespace pub2 {
   }
   
   TAMED void 
-  ap_t::run (zbuf *b, pfnm_t nm, cbb cb, aarr_t *a, 
-	     u_int op, penv_t *e)
+  ap_t::run_T (zbuf *b, pfnm_t nm, cbb cb, aarr_t *a, 
+	       u_int op, penv_t *e)
   {
     VARS { 
       status_t status; 
@@ -102,11 +137,10 @@ namespace pub2 {
     BLOCK { run_full (b, nm, @(status, dummy), a, op, e); }
     SIGNAL (cb, status.status == XPUB_STATUS_OK);
   }
-
   
   TAMED void 
-  ap_t::run_full (zbuf *b, pfnm_t nm, getfile_cb_t cb,
-		  aarr_t *a, u_int op, penv_t *env)
+  ap_t::run_full_T (zbuf *b, pfnm_t nm, getfile_cb_t cb,
+		    aarr_t *a, u_int op, penv_t *env)
   {
     VARS {
       ptr<output_std_t> o;
@@ -542,23 +576,33 @@ namespace pub2 {
   }
 
   void
-  ap_t::list_files_to_check (const pfnm_t &nm, vec<str> *out)
+  ap_t::list_files_to_check (const pfnm_t &nm, vec<str> *out, 
+			     ptr<const pub_localizer_t> l)
   {
     str d,f;
     bool abs = basename_dirname (nm, &d, &f);
     if (!f) return;
     
     if (abs) {
+      if (l) out->push_back (l->localize (nm));
       out->push_back (nm);
     } else {
       
+      str n1, n2;
       strbuf b;
       if (is_remote ()) b << "/";
       b << nm;
-      out->push_back (b);
-
-      if (_cwd) 
-	out->push_back (apply_container_dir (_cwd, nm));
+      n1 = b;
+      
+      if (_cwd) {
+	n2 = apply_container_dir (_cwd, nm);
+      }
+      if (l) {
+	if (n1) out->push_back (l->localize (n1));
+	if (n2) out->push_back (l->localize (n2));
+      }
+      if (n1) out->push_back (n1);
+      if (n2) out->push_back (n2);
     }
   }
 

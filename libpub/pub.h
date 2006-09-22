@@ -348,6 +348,13 @@ public:
   }
 };
 
+class pub_localizer_t : public virtual refcount {
+public:
+  pub_localizer_t () {}
+  virtual ~pub_localizer_t () {}
+  virtual str localize (const str &infn) const = 0;
+};
+
 class penv_t {
 public:
   penv_t (aarr_t *a = NULL, u_int o = 0, aarr_t *g = NULL);
@@ -400,6 +407,9 @@ public:
   bool get_tlf () const { return tlf; }
   void clear () { estack.clear (); gvars.clear (); hold.clear (); }
 
+  void set_localizer (ptr<const pub_localizer_t> l) { _localizer = l; }
+  ptr<const pub_localizer_t> localizer () const { return _localizer; }
+
   int aarr_n;
   bpfcp_t file;
   bool needloc;
@@ -419,6 +429,7 @@ private:
 #ifdef TAME_LOCKING
   lock_t _lock;
 #endif /* TAME_LOCKING */
+  ptr<const pub_localizer_t> _localizer;
 };
 
 class pfile_set_func_t;
