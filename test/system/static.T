@@ -29,6 +29,7 @@
 #include "tame.h"
 #include "rxx.h"
 #include "mimetypes.h"
+#include "oklocale.h"
 
 class oksrvc_static_t : public oksrvc_t {
 public:
@@ -38,10 +39,13 @@ public:
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
   void post_launch_pub2_T (cbb cb, CLOSURE);
   void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
+
   const mime_type_map_t *mime_type_map () const { return _mtm; }
+  ptr<const std_locale::localizer_factory_t> lfact () const { return _lfact; }
 
 private:
   mime_type_map_t *_mtm;
+  ptr<std_locale::localizer_factory_t> _lfact;
 };
 
 class okclnt_static_t : public okclnt_t {
@@ -77,8 +81,10 @@ oksrvc_static_t::post_launch_pub2_T (cbb cb)
     pub2 ()->run_cfg (INTL_CONF_FILE,  @(res2));
     pub2 ()->run_cfg (MIME_TYPES_FILE, @(res3));
   }
-  if (res3) 
+  if (res3) {
     _mtm = New mime_type_map_t ((*(pub2 ()))["MimeTypes"]);
+    _lfact = std_locale::localizer_factory_t ((*(pub2 ()))["LocaleFormat"]);
+  }
 
   SIGNAL (cb, res1 && res2);
 }
@@ -100,6 +106,7 @@ okclnt_static_t::process_T ()
     const mime_type_map_t *mtm;
     str sffx;
     str mime_type;
+    str lang;
   }
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
@@ -124,11 +131,15 @@ okclnt_static_t::process_T ()
 	if (cicmp (sffx, "html")) {
 	  cgi.load_aarr (&aarr);
 	} else {
-	  opts |= P_NOPARSE;
+	  opts |= (P_NOPARSE|P_NOLOCALE);
 	}
 	set_content_type (mime_type);
+
+	if (cgi.lookup ("LANG", &lang)) {
+	  set_localizer (ok_static->lfact ()->mk_localizer (lang));
+	}
 	
-	BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts); }
+	BLOCK { pub2_local ()->run (&out, ofn, @(rc), &aarr, opts); }
 
 	if (!rc) 
 	  error (ofn);

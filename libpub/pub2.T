@@ -64,7 +64,7 @@ namespace pub2 {
 
   TAMED void 
   ap_t::publish_full_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		   getfile_cb_t cb)
+			getfile_cb_t cb)
   {
     VARS {
       status_t status (XPUB_STATUS_OK);
@@ -73,9 +73,14 @@ namespace pub2 {
       vec<str> files_to_check;
       size_t i;
       str d,f, cwd_prev;
+      ptr<const pub_localizer_t> localizer;
     }
 
-    list_files_to_check (fn, &files_to_check, env ? env->localizer () : NULL);
+    if (env && !(o->opts () & P_NOLOCALE)) {
+      localizer = env->localizer ();
+    }
+
+    list_files_to_check (fn, &files_to_check, localizer);
 
     if (files_to_check.size () == 0) {
       status.set_status (XPUB_STATUS_NOENT);

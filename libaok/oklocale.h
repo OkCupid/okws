@@ -47,6 +47,9 @@ namespace std_locale {
       : _lang (l), _partition (p) {}
     str lang () const { return _lang; }
     str partition () const { return _partition; }
+
+    static ptr<locale_t> alloc (const str &l, const str &p = NULL)
+    { return New refcounted<locale_t> (l, p); }
     
     void insert (strbuf &b, insert_type_t t,
 		 const char *s1, const char *s2) const;
@@ -71,8 +74,12 @@ namespace std_locale {
   class localizer_factory_t {
   public:
     localizer_factory_t (const str &cfg);
+    static ptr<localizer_factory_t> alloc (const str &cfg)
+    { return New refcounted<localizer_factory_t> (cfg); }
     void parse (const str &cfg);
     ptr<localizer_t> mk_localizer (ptr<locale_t> l) const;
+    ptr<localizer_t> mk_localizer (const str &l, const str &p = NULL) const
+    { return mk_localizer (locale_t::alloc (l, p)); }
   private:
     insert_type_t _dir, _sffx1, _sffx2;
   };

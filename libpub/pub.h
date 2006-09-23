@@ -98,6 +98,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_INCLUDE_V2  (1 << 9)   // support V2 include semantics
 #define P_EXPORTER    (1 << 10)  // export files via RPC
 #define P_NOPARSE     (1 << 11)  // don't parse file at all
+#define P_NOLOCALE    (1 << 12)  // Don't localize file
 
 /* XXX - defaults should be put someplace better */
 #define P_INFINITY   65334
