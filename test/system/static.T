@@ -83,6 +83,8 @@ oksrvc_static_t::post_launch_pub2_T (cbb cb)
   }
   if (res3) {
     _mtm = New mime_type_map_t ((*(pub2 ()))["MimeTypes"]);
+  }
+  if (res2) {
     str fmt = (*(pub2 ()))["LocaleFormat"];
     if (fmt)
       _lfact = std_locale::localizer_factory_t::alloc (fmt);
