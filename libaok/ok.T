@@ -1064,13 +1064,13 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
   SIGNAL (cb, rc);
 }
 
-ptr<pub2::remote_publisher_t>
+ptr<pub2::ok_iface_t>
 okclnt_base_t::pub2 ()
 {
   return oksrvc->pub2 ();
 }
 
-ptr<pub2::locale_specific_publisher_t>
+ptr<pub2::ok_iface_t>
 okclnt_base_t::pub2_local ()
 {
   if (!_p2_locale)

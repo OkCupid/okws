@@ -256,8 +256,8 @@ public:
   void set_hdr_field (const str &k, const str &v);
 
   list_entry<okclnt_base_t> lnk;
-  virtual ptr<pub2::remote_publisher_t> pub2 () ;
-  virtual ptr<pub2::locale_specific_publisher_t> pub2_local ();
+  virtual ptr<pub2::ok_iface_t> pub2 () ;
+  virtual ptr<pub2::ok_iface_t> pub2_local ();
   void set_localizer (ptr<const pub_localizer_t> l);
 
 private:

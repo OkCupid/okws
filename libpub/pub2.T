@@ -551,7 +551,7 @@ namespace pub2 {
   }
 
   TAMED void 
-  ap_t::run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dp)
+  ap_t::run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dp)
   {
     VARS {
       output_conf2_t o;
@@ -570,7 +570,7 @@ namespace pub2 {
   }
 
   TAMED void 
-  ap_t::run_cfg (pfnm_t nm, cbb cb, aarr_t *dp)
+  ap_t::run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dp)
   {
     VARS { 
       status_t status; 

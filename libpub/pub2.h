@@ -37,12 +37,38 @@ namespace pub2 {
   typedef callback<void, status_t>::ref status_cb_t;
   typedef callback<void, status_t, ptr<bound_pfile2_t> >::ref getfile_cb_t;
 
+  /**
+   * Publishing interface presented to higher level OKWS components.
+   */
+  class ok_iface_t : public pub_config_iface_t {
+  public:
+    virtual ~ok_iface_t () {}
+
+    virtual void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+			   aarr_t *a = NULL, u_int opt = 0, 
+			   penv_t *e = NULL) = 0;
+
+    virtual void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
+		      u_int opt = 0, penv_t *e = NULL) = 0;
+
+    virtual void run_cfg_full (pfnm_t nm, getfile_cb_t cb, 
+			       aarr_t *dest = NULL) = 0;
+
+    virtual void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL) = 0;
+
+    virtual void cfg_clear () = 0;
+    virtual u_int opts () const = 0;
+    virtual void set_opts (u_int i) = 0;
+
+    /* also must implement get_env */
+  };
+
   
   /**
    * Abstract version of classes that dump Pub output, given
    * access to a simple lookup/getfile interface.
    */
-  class abstract_publisher_t : public pub2_iface_t, public pub_config_iface_t {
+  class abstract_publisher_t : public pub2_iface_t, public ok_iface_t {
   public:
     abstract_publisher_t (u_int o = 0) 
       : _opts (o), _base_cfg (), _genv (&_base_cfg) {}
@@ -62,27 +88,27 @@ namespace pub2 {
      * @param opt publishing options to use.
      * @param e The environment to evaluate it (the global one by def.)
      */
-    virtual void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
-			   aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL)
+    void run_full (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
+		   aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL)
     { run_full_T (b, fn, cb, a, opt, e); }
 
     /**
      * this is a simplified version of the above, with a simpler status
      * return message. See above for a description of the parameters.
      */
-    virtual void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
-		      u_int opt = 0, penv_t *e = NULL)
+    void run (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
+	      u_int opt = 0, penv_t *e = NULL)
     { run_T (b, fn, cb, a, opt, e); }
     
     // implement the pub2_iface_t contract; only call internally
     // from pub objects.
-    void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		  status_cb_t cb) 
+    virtual void publish (output_t *o, pfnm_t fn, penv_t *env, int lineno,
+			  status_cb_t cb) 
     { publish_T (o, fn, env, lineno, cb); }
 
     // a slightly more full-featured interface for pub2 calls.
-    void publish_full (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-		       getfile_cb_t cb)
+    virtual void publish_full (output_t *o, pfnm_t fn, penv_t *env, int lineno,
+			       getfile_cb_t cb)
     { publish_full_T (o, fn, env, lineno, cb); }
 
 
@@ -95,10 +121,11 @@ namespace pub2 {
      * @param res the aarr_t to write the results out to; associates
      *            with default publishing environment if none given.
      */
-    void run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL, 
-		       CLOSURE);
+    void run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL)
+    { run_cfg_full_T (nm, cb, dest); }
 
-    void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
+    void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL)
+    { run_cfg_T (nm, cb, dest); }
 
 
     /**
@@ -120,19 +147,29 @@ namespace pub2 {
   protected:
     // to be filled in by the sub classes
     virtual void getfile (pfnm_t fn, getfile_cb_t cb, u_int o = 0) = 0;
+    virtual bool is_remote () const = 0;
 
-    virtual void publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
-			    status_cb_t cb, CLOSURE);
-    virtual void publish_full_T (output_t *o, pfnm_t fn, penv_t *env,
-				 int lineno, getfile_cb_t cb, CLOSURE);
+  private:
+
+    // Tamed implementations of the public interfaces
+    void publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
+		    status_cb_t cb, CLOSURE);
+
+    void publish_full_T (output_t *o, pfnm_t fn, penv_t *env,
+			 int lineno, getfile_cb_t cb, CLOSURE);
 
     void run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
 		     aarr_t *a = NULL, u_int opt = 0, penv_t *e = NULL, 
 		     CLOSURE);
+
     void run_T (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
 		u_int opt = 0, penv_t *e = NULL, CLOSURE);
+
+    void run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL,
+			 CLOSURE);
+    void run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
     
-    virtual bool is_remote () const = 0;
+  protected:
 
     u_int _opts;
     aarr_t _base_cfg;
@@ -140,9 +177,9 @@ namespace pub2 {
     str _cwd;               // CWD for publishing files
   };
 
-  class locale_specific_publisher_t {
+  class locale_specific_publisher_t : public ok_iface_t {
   public:
-    locale_specific_publisher_t (ptr<abstract_publisher_t> ap,
+    locale_specific_publisher_t (ptr<ok_iface_t> ap, 
 				 ptr<const pub_localizer_t> lcl = NULL)
       : _ap (ap), _localizer (lcl) {}
     
@@ -154,7 +191,17 @@ namespace pub2 {
 	      u_int opt = 0, penv_t *e = NULL)
     { run_T (b, fn, cb, a, opt, e); }
 
-    ptr<abstract_publisher_t> publisher () { return _ap; }
+    void run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL)
+    { _ap->run_cfg_full (nm, cb, dest); }
+
+    void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL)
+    { _ap->run_cfg (nm, cb, dest); }
+
+    penv_t *get_env () const { return _ap->get_env (); }
+
+    void cfg_clear () { _ap->cfg_clear (); }
+    u_int opts () const { return _ap->opts (); }
+    void set_opts (u_int i) { _ap->set_opts (i); }
     
   private:
     void run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
@@ -163,7 +210,7 @@ namespace pub2 {
     void run_T (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
 		u_int opt = 0, penv_t *e = NULL, CLOSURE);
 
-    ptr<abstract_publisher_t> _ap;
+    ptr<ok_iface_t> _ap;
     ptr<const pub_localizer_t> _localizer;
   };
 
