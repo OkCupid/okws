@@ -61,14 +61,14 @@ namespace std_locale {
   class localizer_t : public pub_localizer_t {
   public:
     localizer_t (insert_type_t d, insert_type_t s1, insert_type_t s2,
-		 ptr<locale_t> l)
+		 ptr<const locale_t> l)
       : pub_localizer_t (), _dir (d), _sffx1 (s1), _sffx2 (s2), _locale (l) {}
     
     virtual str localize (const str &infn) const;
     
   private:
     insert_type_t _dir, _sffx1, _sffx2;
-    ptr<locale_t> _locale;
+    ptr<const locale_t> _locale;
   };
   
   class localizer_factory_t {
@@ -77,7 +77,7 @@ namespace std_locale {
     static ptr<localizer_factory_t> alloc (const str &cfg)
     { return New refcounted<localizer_factory_t> (cfg); }
     void parse (const str &cfg);
-    ptr<localizer_t> mk_localizer (ptr<locale_t> l) const;
+    ptr<localizer_t> mk_localizer (ptr<const locale_t> l) const;
     ptr<localizer_t> mk_localizer (const str &l, const str &p = NULL) const
     { return mk_localizer (locale_t::alloc (l, p)); }
   private:

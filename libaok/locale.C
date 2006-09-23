@@ -24,7 +24,7 @@ namespace std_locale {
   str
   localizer_t::localize (const str &infn) const
   {
-    static rxx fn_rxx ("(.*/)?([^./])*(\\.[^/]*)");
+    static rxx fn_rxx ("(.*/)?([^./]*)(\\.[^/]*)");
     if (!fn_rxx.match (infn)) {
       return infn;
     } else {
@@ -53,11 +53,13 @@ namespace std_locale {
   static insert_type_t str2type (const str &in)
   {
     int ret = 0;
-    for (const char *cp = in.cstr (); *cp; cp++) {
-      if (*cp == 'l' || *cp == 'L') {
-	ret |= int (INSERT_LANG);
-      } else if (*cp == 'p' || *cp == 'P') {
-	ret |= int (INSERT_PARTITION);
+    if (in) {
+      for (const char *cp = in.cstr (); *cp; cp++) {
+	if (*cp == 'l' || *cp == 'L') {
+	  ret |= int (INSERT_LANG);
+	} else if (*cp == 'p' || *cp == 'P') {
+	  ret |= int (INSERT_PARTITION);
+	}
       }
     }
     return insert_type_t (ret);
@@ -74,6 +76,13 @@ namespace std_locale {
     _dir = str2type (d);
     _sffx1 = str2type (s1);
     _sffx2 = str2type (s2);
+  }
+
+  ptr<localizer_t>
+  localizer_factory_t::mk_localizer (ptr<const locale_t> in) const
+  {
+    return New refcounted<localizer_t> (_dir, _sffx1, _sffx2, in);
+
   }
 }
 
