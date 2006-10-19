@@ -614,6 +614,7 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
     if (sdflag) {
       error (lx, HTTP_UNAVAILABLE, NULL);
     } else {
+      _n_newcli ++;
       okclnt_base_t *c = make_newclnt (lx);
       c->serve ();
       add (c);

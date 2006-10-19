@@ -102,6 +102,7 @@ okdate_t::set (const str &s)
     assert (convertint (strip_zero(date_rxx[2]), &year) &&
 	    convertint (strip_zero(date_rxx[3]), &mon) &&
 	    convertint (strip_zero(date_rxx[4]), &mday));
+
   }
   
   if (date_rxx[5]) {
@@ -119,11 +120,15 @@ okdate_t::set (const str &s)
 str
 okdate_t::strip_zero(const str& s) const
 {
-  if (s[0] == '0') {
-    return substr(s, 1, s.len() - 1);
-  }
+  const char *cp = s.cstr ();
+  while (*cp == '0')
+    cp ++;
 
-  return s;
+  // If we got '00000' then make it '0'
+  if (*cp == '\0' && s.len () > 0) 
+    cp --;
+
+  return cp;
 }
 
 void

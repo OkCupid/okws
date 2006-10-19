@@ -191,6 +191,7 @@ protected:
   str mmc_file;
 
   ptr<pub2::remote_publisher_t> _pub2;
+
 };
 
 #define OKCLNT_BUFLEN 0x10400
@@ -327,7 +328,8 @@ public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
       pub1_supported (true),
-      wait_for_signal_in_startup (false)
+      wait_for_signal_in_startup (false),
+      _n_newcli (0) 
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -425,6 +427,7 @@ protected:
   u_int n_reqs; // total number of requests served
   bool pub1_supported;
   bool wait_for_signal_in_startup;
+  int _n_newcli;
 
 private:
   void post_launch_pub2_T (cbb cb, CLOSURE);
