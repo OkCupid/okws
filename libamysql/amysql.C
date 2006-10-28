@@ -28,7 +28,7 @@
 bool
 mysql_t::connect (const dbparam_t &p)
 {
-  return connect (p._database, p._user, p._hostname, p._pw,
+  return connect (p._database, p._user, p._host, p._pw,
 		  p._port, p._flags);
 }
 
