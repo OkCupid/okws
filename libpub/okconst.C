@@ -269,5 +269,5 @@ get_cfg_path (const char *env_var)
 
 str okws_etcfile (const char *f, const char *env_var) 
 { return sfsconst_etcfile (f, get_cfg_path (env_var)); }
-str okws_etcfile_required (const char *f, const char *env_var) 
-{ return sfsconst_etcfile_required (f, get_cfg_path (env_var)); }
+str okws_etcfile_required (const char *f, const char *env_var, bool d) 
+{ return sfsconst_etcfile_required (f, get_cfg_path (env_var), d); }

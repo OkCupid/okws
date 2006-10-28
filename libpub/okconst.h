@@ -264,8 +264,9 @@ str okws_etcfile (const char *f, const char *e = NULL);
  *
  * @param f the file to find.
  * @param e look in the env var and prepend value to front of path
+ * @param d whether to dump the program on error
  */
-str okws_etcfile_required (const char *f, const char *e = NULL);
+str okws_etcfile_required (const char *f, const char *e = NULL, bool d = true);
 
 
 
