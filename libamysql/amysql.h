@@ -590,13 +590,22 @@ public:
   ptr<mybind_t> p;
 };
 
+struct dbparam_t {
+  dbparam_t () : _port (0), _flags (0) {}
+
+  str       _database, _user, _host, _pw;
+  u_int     _port;
+  u_long    _flags;
+};
+
 class mystmt_t;
 class mysql_t {
 public:
   mysql_t (u_int o = 0) : opts (o) { mysql_init (&mysql); }
   ~mysql_t () { mysql_close (&mysql); }
   ptr<mysql_t> alloc () { return New refcounted<mysql_t> (); }
-  bool connect (const str &d, const str &h = NULL, const str &u = NULL, 
+  bool connect (const dbparam_t &p);
+  bool connect (const str &d, const str &u = NULL, const str &h = NULL, 
 		const str &pw = NULL, u_int prt = 0, u_long fl = 0);
   str error () const { return err; }
   ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);

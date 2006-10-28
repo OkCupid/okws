@@ -25,6 +25,13 @@
 #include "amysql.h"
 #include "mystmt.h"
 
+bool
+mysql_t::connect (const dbparam_t &p)
+{
+  return connect (p._database, p._user, p._hostname, p._pw,
+		  p._port, p._flags);
+}
+
 bool 
 mysql_t::connect (const str &db, const str &u, const str &h,
 		  const str &pw, u_int prt, u_long fl)
