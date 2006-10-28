@@ -250,18 +250,19 @@ get_cfg_path (const char *env_var)
   //
   // various paths to look through, in order
   //
-  const char *ok_cfg_path[] = { NULL, 
+  static const char *ok_cfg_path[] = { NULL, 
 				ok_etc_dir1, ok_etc_dir2, 
 				etc1dir, etc2dir, etc3dir,
 				NULL };
 
   const char *d = NULL;
+  const char **ret = ok_cfg_path;
   if (env_var && (d = getenv (env_var)) != NULL) {
-    ok_cfg_path[0] = d;
+    ret[0] = d;
   } else {
-    ok_cfg_path ++;
+    ret ++;
   }
-  return ok_cfg_path;
+  return ret;
 }
 
 
