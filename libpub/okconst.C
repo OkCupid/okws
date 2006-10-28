@@ -24,6 +24,7 @@
 #include <limits.h>
 #include "okconst.h"
 #include "sfsmisc.h"
+#include "rxx.h"
 
 
 //
@@ -244,30 +245,54 @@ const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 //
 u_int ok_recycle_suio_limit = 0;
 
-static const char **
-get_cfg_path (const char *env_var)
+static void
+vec2vec (vec<const char *> *out, const vec<str> &in)
+{
+  for (size_t i = 0; i < in.size (); i++) {
+    out->push_back (in[i]);
+  }
+  out->push_back (NULL);
+}
+
+static void
+get_cfg_path (vec<str> *v, const char *env_var)
 {
   //
   // various paths to look through, in order
   //
-  static const char *ok_cfg_path[] = { NULL, 
-				ok_etc_dir1, ok_etc_dir2, 
-				etc1dir, etc2dir, etc3dir,
-				NULL };
+  static rxx x (":");
 
-  const char *d = NULL;
-  const char **ret = ok_cfg_path;
+  static const char *ok_cfg_path[] = { ok_etc_dir1, ok_etc_dir2, 
+				       etc1dir, etc2dir, etc3dir,
+				       NULL };
+
+  str d;
   if (env_var && (d = getenv (env_var)) != NULL) {
-    ret[0] = d;
-  } else {
-    ret ++;
+    split (v, x, d);
   }
-  return ret;
+  for (const char **cp = ok_cfg_path; *cp; cp++) {
+    v->push_back (*cp);
+  }
 }
 
-
-
 str okws_etcfile (const char *f, const char *env_var) 
-{ return sfsconst_etcfile (f, get_cfg_path (env_var)); }
+{
+  vec<str> v1;
+  vec<const char *> v2;
+
+  get_cfg_path (&v1, env_var);
+  vec2vec (&v2, v1);
+
+  return sfsconst_etcfile (f, v2.base ());
+}
+
 str okws_etcfile_required (const char *f, const char *env_var, bool d) 
-{ return sfsconst_etcfile_required (f, get_cfg_path (env_var), d); }
+{ 
+  vec<str> v1;
+  vec<const char *> v2;
+
+  get_cfg_path (&v1, env_var);
+  vec2vec (&v2, v1);
+
+  return sfsconst_etcfile_required (f, v2.base (), d);
+}
