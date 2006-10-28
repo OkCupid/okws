@@ -244,15 +244,29 @@ const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 //
 u_int ok_recycle_suio_limit = 0;
 
-//
-// various paths to look through, in order
-//
-const char *ok_cfg_path[] = { ok_etc_dir0,
-			      ok_etc_dir1, ok_etc_dir2, ok_etc_dir3,
-			      etc1dir, etc2dir, etc3dir,
-			      NULL };
+static const char **
+get_cfg_path (const char *env_var)
+{
+  //
+  // various paths to look through, in order
+  //
+  const char *ok_cfg_path[] = { NULL, 
+				ok_etc_dir1, ok_etc_dir2, 
+				etc1dir, etc2dir, etc3dir,
+				NULL };
 
-str okws_etcfile (const char *f) 
-{ return sfsconst_etcfile (f, ok_cfg_path); }
-str okws_etcfile_required (const char *f) 
-{ return sfsconst_etcfile_required (f, ok_cfg_path); }
+  const char *d = NULL;
+  if (env_var && (d = getenv (env_var)) != NULL) {
+    ok_cfg_path[0] = d;
+  } else {
+    ok_cfg_path ++;
+  }
+  return ok_cfg_path;
+}
+
+
+
+str okws_etcfile (const char *f, const char *env_var) 
+{ return sfsconst_etcfile (f, get_cfg_path (env_var)); }
+str okws_etcfile_required (const char *f, const char *env_var) 
+{ return sfsconst_etcfile_required (f, get_cfg_path (env_var)); }
