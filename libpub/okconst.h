@@ -255,8 +255,10 @@ extern const char *ok_pub2_treestat_heartbeat;
  *
  * @param f the file to find.
  * @param e look in the env var and prepend value to front of path
+ * @param p the path by default to check (if NULL, use default)
  */
-str okws_etcfile (const char *f, const char *e = NULL);
+str okws_etcfile (const char *f, const char *e = NULL,
+		  const char **p = NULL);
 
 /**
  * Find an OKWS configuration file in the standard config file search path
@@ -265,8 +267,10 @@ str okws_etcfile (const char *f, const char *e = NULL);
  * @param f the file to find.
  * @param e look in the env var and prepend value to front of path
  * @param d whether to dump the program on error
+ * @param p the path by default to check (if NULL, use default)
  */
-str okws_etcfile_required (const char *f, const char *e = NULL, bool d = true);
+str okws_etcfile_required (const char *f, const char *e = NULL, bool d = true,
+			   const char **p = NULL);
 
 
 
