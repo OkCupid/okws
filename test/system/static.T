@@ -70,16 +70,16 @@ protected:
 #define FNF_FILE          "/err/fnf.html"
 #define SPLASH_PAGE       "/welcome.html"
 
-TAMED void 
+tamed void 
 oksrvc_static_t::post_launch_pub2_T (cbb cb)
 {
-  VARS {
+  tvars {
     bool res1, res2, res3;
   }
-  BLOCK { 
-    oksrvc_t::post_launch_pub2 (@(res1));
-    pub2 ()->run_cfg (INTL_CONF_FILE,  @(res2));
-    pub2 ()->run_cfg (MIME_TYPES_FILE, @(res3));
+  twait { 
+    oksrvc_t::post_launch_pub2 (mkevent (res1));
+    pub2 ()->run_cfg (INTL_CONF_FILE,  mkevent (res2));
+    pub2 ()->run_cfg (MIME_TYPES_FILE, mkevent (res3));
   }
   if (res3) {
     _mtm = New mime_type_map_t ((*(pub2 ()))["MimeTypes"]);
@@ -90,7 +90,7 @@ oksrvc_static_t::post_launch_pub2_T (cbb cb)
       _lfact = std_locale::localizer_factory_t::alloc (fmt);
   }
 
-  SIGNAL (cb, res1 && res2);
+  TRIGGER (cb, res1 && res2);
 }
 
 void
@@ -101,10 +101,10 @@ okclnt_static_t::error (const str &s)
   rc = false;
 }
 
-TAMED void 
+tamed void 
 okclnt_static_t::process_T ()
 {
-  VARS {
+  tvars {
     str in;
     u_int opts (P_IINFO|P_VERBOSE);
     const mime_type_map_t *mtm;
@@ -143,7 +143,7 @@ okclnt_static_t::process_T ()
 	  set_localizer (ok_static->lfact ()->mk_localizer (lang));
 	}
 	
-	BLOCK { pub2_local ()->run (&out, ofn, @(rc), &aarr, opts); }
+	twait { pub2_local ()->run (&out, ofn, mkevent (rc), &aarr, opts); }
 
 	if (!rc) 
 	  error (ofn);
@@ -167,7 +167,7 @@ okclnt_static_t::process_T ()
   }
 
   if (!rc) {
-    BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts|P_VISERR); }
+    twait { pub2 ()->run (&out, ofn, mkevent (rc), &aarr, opts|P_VISERR); }
   }
 
   output (out);

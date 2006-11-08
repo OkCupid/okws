@@ -51,23 +51,23 @@ protected:
   oksrvc_simple_t *ok_simple;
 };
 
-TAMED void 
+tamed void 
 oksrvc_simple_t::post_launch_pub2_T (cbb cb)
 {
-  VARS {
+  tvars {
     bool res1, res2;
   }
-  BLOCK { 
-    oksrvc_t::post_launch_pub2 (@(res1));
-    pub2 ()->run_cfg ("conf/intl.conf", @(res2)); 
+  twait { 
+    oksrvc_t::post_launch_pub2 (mkevent (res1));
+    pub2 ()->run_cfg ("conf/intl.conf", mkevent (res2)); 
   }
-  SIGNAL (cb, res1 && res2);
+  TRIGGER (cb, res1 && res2);
 }
 
-TAMED void 
+tamed void 
 okclnt_simple_t::process_T ()
 {
-  VARS {
+  tvars {
     aarr_t aarr;
     bool rc (true);
     u_int opts (P_IINFO|P_VERBOSE);
@@ -78,7 +78,7 @@ okclnt_simple_t::process_T ()
   if (file) {
     cgi.load_aarr (&aarr);
 
-    BLOCK { pub2 ()->run (&out, file, @(rc), &aarr, opts); }
+    twait { pub2 ()->run (&out, file, mkevent (rc), &aarr, opts); }
 
     if (!rc) {
       aarr.add ("target", file);
@@ -90,7 +90,7 @@ okclnt_simple_t::process_T ()
     rc = false;
   }
   if (!rc) {
-    BLOCK { pub2 ()->run (&out, file, @(rc), &aarr, opts|P_VISERR); }
+    twait { pub2 ()->run (&out, file, mkevent (rc), &aarr, opts|P_VISERR); }
   }
   output (out);
 }

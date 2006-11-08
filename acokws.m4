@@ -1620,6 +1620,7 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
     LIBSFSMISC=${sfslibdir}/libsfsmisc.la
     LIBTAME=${sfslibdir}/libtame.la
     MALLOCK=${sfslibdir}/mallock.o
+    ENVMK=${sfslibdir}/env.mk
     SFS_PATH_PROG(rpcc, ${sfslibdir})
     if test "$PATH_RPCC" -a -x "$PATH_RPCC" 
     then
@@ -1630,6 +1631,13 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
     then
 	TAME="$PATH_TAME"
     fi
+
+    LDADD_THR_SFS=""
+    if test -r "$ENVMK"  ; then
+	N="LDADD_THR"
+	LDADD_THR_SFS=`grep $N $ENVMK | sed -e "s/$N = //" `
+    fi 
+
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
 fi
@@ -1656,6 +1664,7 @@ AC_SUBST(LIBARPC)
 AC_SUBST(LIBSFSCRYPT)
 AC_SUBST(LIBSFSMISC)
 AC_SUBST(LIBTAME)
+AC_SUBST(LDADD_THR_SFS)
 dnl AC_SUBST(LIBSVC)
 dnl AC_SUBST(LIBSFS)
 AC_SUBST(RPCC)
@@ -1668,7 +1677,7 @@ SFS_DMALLOC
 
 dnl LDEPS='$(LIBSFSMISC) $(LIBSVC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
 LDEPS='$(LIBTAME) $(LIBSFSMISC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
-LDADD="$LDEPS "'$(LIBGMP) $(LIBPY)'
+LDADD="$LDEPS "'$(LIBGMP) $(LDADD_THR_SFS) $(LIBPY)'
 AC_SUBST(LDEPS)
 AC_SUBST(LDADD)
 ])

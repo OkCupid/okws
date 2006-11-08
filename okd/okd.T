@@ -51,7 +51,7 @@ common_404_t common_404;
 void
 okd_t::abort ()
 {
-  panic ("cought ABORT signal\n");
+  panic ("cought ABORT trigger\n");
 }
 
 void
@@ -142,14 +142,14 @@ okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
   pubd = New helper_inet_t (pub_program_1, name, port);
 }
 
-TAMED void 
+tamed void 
 okd_t::launch_pubd (cbb cb)
 {
-  VARS {
+  tvars {
     bool rc (true);
   }
   if (pubd) {
-    BLOCK { pubd->connect (@(rc)); }
+    twait { pubd->connect (mkevent (rc)); }
     if (!rc) {
       warn << "launch of pub daemon (pubd) failed.\n";
     }
@@ -157,7 +157,7 @@ okd_t::launch_pubd (cbb cb)
     warn << "Pub v1 is off since no Pubd was specified; "
 	 << "Pub v1 calls will fail\n";
   }
-  SIGNAL (cb, rc);
+  TRIGGER (cb, rc);
 }
 
 
@@ -167,14 +167,14 @@ okd_t::req_errdoc_set_2 (svccb *sbp)
   sbp->replyref (errdocs_x);
 }
 
-TAMED void 
+tamed void 
 okd_t::launch_logd (cbb cb)
 {
-  VARS { bool rc; }
+  tvars { bool rc; }
   assert (logfd > 0);
   logd = New fast_log_t (logfd, logfmt);
-  BLOCK { logd->connect (@(rc)); }
-  SIGNAL (cb, rc);
+  twait { logd->connect (mkevent (rc)); }
+  TRIGGER (cb, rc);
 }
 
 void
@@ -567,10 +567,10 @@ usage ()
   exit (NO_SOCKET_ALLOCATED);
 }
 
-TAMED static 
+tamed static 
 void start_okd (int argc, char **argv)
 {
-  VARS {
+  tvars {
     str cf;
     int logfd  (-1);
     int pub2fd (-1);
@@ -627,7 +627,7 @@ void start_okd (int argc, char **argv)
 
   // for debugging, we'll stall until the given file is touched.
   if (debug_stallfile) 
-    BLOCK { stall (debug_stallfile, @()); }
+    twait { stall (debug_stallfile, mkevent ()); }
 
   sfsconst_init ();
   if (!cf) 
@@ -640,10 +640,10 @@ void start_okd (int argc, char **argv)
   okd->launch ();
 }
 
-TAMED void 
+tamed void 
 okd_t::launch ()
 {
-  VARS {
+  tvars {
     bool pubd_rc, logd_rc, pub2_rc (true);
     bool do_exit (false);
   }
@@ -652,10 +652,10 @@ okd_t::launch ()
   open_mgr_socket ();
   init_pub2 ();
 
-  BLOCK {
-    launch_pubd (@(pubd_rc));
-    launch_logd (@(logd_rc));
-    launch_pub2 (@(pub2_rc));
+  twait {
+    launch_pubd (mkevent (pubd_rc));
+    launch_logd (mkevent (logd_rc));
+    launch_pub2 (mkevent (pub2_rc));
   }
 
   if (!pubd_rc) {
@@ -785,7 +785,7 @@ okd_t::check_runas ()
 //   fileset, using the cookie to indentify the pubd-resident state.
 //   
 //   Once all files are collected (or an abortive error has occured),
-//   okd must be certain to signal pubd to clean up, and therefore calls
+//   okd must be certain to trigger pubd to clean up, and therefore calls
 //   PUB_FILES2_CLOSE with the session cookie.
 //
 //   Eventually, v2 should replace v1 entirely.

@@ -50,7 +50,7 @@ protected:
 
 TAME (void okclnt_static_t::process_T ())
 {
-  VARS {
+  tvars {
     str ofn;
     aarr_t aarr;
     str in;
@@ -62,7 +62,7 @@ TAME (void okclnt_static_t::process_T ())
 
   if (x.match (in)) {
     ofn = x[2];
-    BLOCK { pub2 ()->run (&out, ofn, @(rc), NULL, opts); }
+    twait { pub2 ()->run (&out, ofn, mkevent (rc), NULL, opts); }
     if (!rc) {
       ofn = "/error/fnf.html";
       aarr.add ("target", ofn);
@@ -73,7 +73,7 @@ TAME (void okclnt_static_t::process_T ())
     rc = false;
   }
   if (!rc) {
-    BLOCK { pub2 ()->run (&out, ofn, @(rc), &aarr, opts|P_VISERR); }
+    twait { pub2 ()->run (&out, ofn, mkevent (rc), &aarr, opts|P_VISERR); }
   }
   output (out);
 }

@@ -19,6 +19,8 @@ mystmt_ag.C: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
 	-$(PERL) $(srcdir)/mystmt_ag.pl -c > mystmt_ag.C || rm -f $@
 
+amysql.C: mystmt_ag.h 
+
 PERLOUT = mystmt_ag.C mystmt_ag.h
 PERLIN = mystmt_ag.pl
 

@@ -131,9 +131,9 @@ namespace pubserv2 {
     d->files.push_back (s);
   }
   
-  TAMED void cache_t::refresh_delta_set (cbb cb)
+  tamed void cache_t::refresh_delta_set (cbb cb)
   {
-    VARS { 
+    tvars { 
       bool edit (false);
       bool dummy;
       ptr<xpub2_delta_set_t> s;
@@ -155,14 +155,14 @@ namespace pubserv2 {
       edit = true;
     }
     
-    SIGNAL (cb, edit);
+    TRIGGER (cb, edit);
     if (edit)
-      BLOCK { push_deltas (s, @(dummy)); }
+      twait { push_deltas (s, mkevent (dummy)); }
   }
   
-  TAMED void srv_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
+  tamed void srv_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
   {
-    VARS {
+    tvars {
       clnt_stat err;
       bool rc (true);
     }
@@ -172,7 +172,7 @@ namespace pubserv2 {
       rc = false; 
     } else {
       _push_deltas_lock = true;
-      BLOCK { _cli->call (PUB2_PUSH_DELTAS, s, &rc, @(err)); }
+      twait { _cli->call (PUB2_PUSH_DELTAS, s, &rc, mkevent (err)); }
       _push_deltas_lock = false;
       if (err) {
 	strbuf b;
@@ -183,27 +183,27 @@ namespace pubserv2 {
 	okdbg_warn (ERROR, "Service unexepectedly rejected stats push!\n");
       }
     }
-    SIGNAL (cb, rc);
+    TRIGGER (cb, rc);
   }
   
-  TAMED void 
+  tamed void 
   cache_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
   {
-    VARS { 
-      coordgroup_t<ptr<bool> > jg;
+    tvars { 
+      rendezvous_t<ptr<bool> > jg;
       ptr<bool> b;
       bool rc (true);
     }
     for (srv_t *e = _list.first; e; e = _list.next (e)) {
       b = New refcounted<bool> ();
-      e->push_deltas (s, @[jg,b](*b));
+      e->push_deltas (s, mkevent (jg,b, *b));
     }
     while (jg.need_join ()) {
-      WAIT (jg, b); 
+      twait (jg, b); 
       if (!*b) 
 	rc = false; 
     }
-    SIGNAL (cb, rc);
+    TRIGGER (cb, rc);
   }
 
   stamp_status_t
@@ -271,12 +271,12 @@ namespace pubserv2 {
    * @param i move tolerance up by i second increments
    * @param t if > 0, t gives the interval for checking the tree heartbeats
    */
-  TAMED ptr<canceller_t>
+  tamed ptr<canceller_t>
   cache_t::run_refresh_timer (u_int n, u_int x, u_int i, u_int t)
   {
-    VARS {
+    tvars {
       ptr<canceller_t> canceller (New refcounted<canceller_t> ());
-      coordgroup_t<bool> ev;
+      rendezvous_t<bool> ev;
       bool run_loop (true);
       bool edit (false);
       int tol (n); // tolerance for how fresh
@@ -288,7 +288,7 @@ namespace pubserv2 {
     DEFAULT_RETURN { return canceller; }
 
     assert (t <= n);
-    canceller->wait (@[ev,false]());
+    canceller->wait (mkevent (ev,false));
 
     while (run_loop) {
 
@@ -328,16 +328,16 @@ namespace pubserv2 {
 
 	last_check = okwstime ();
 	running_refresh = true;
-	refresh_delta_set (@[ev,true](edit));
+	refresh_delta_set (mkevent (ev,true, edit));
 
       } else {
-	delaycb (t > 0 ? t : tol, 0, @[ev,true]());
+	delaycb (t > 0 ? t : tol, 0, mkevent (ev,true));
       }
-      WAIT(ev,run_loop);
+      twait(ev,run_loop);
     }
 
-    while (ev.n_vars_left ()) {
-      WAIT (ev, run_loop);
+    while (ev.n_triggers_left ()) {
+      twait (ev, run_loop);
     }
   }
 

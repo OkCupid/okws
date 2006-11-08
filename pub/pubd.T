@@ -65,7 +65,7 @@ client_accept (ptr<axprt_stream> x)
 static void 
 pubshutdown (int sig)
 {
-  warn << "Caught signal: " << sig << "; shutting down\n";
+  warn << "Caught trigger: " << sig << "; shutting down\n";
   exit (0);
 }
 
@@ -90,10 +90,10 @@ pubd_slave_cb ()
     fatal << "exitting; no parent process found\n";
 }
 
-TAMED static void
+tamed static void
 main_T (int argc, char **argv)
 {
-  VARS {
+  tvars {
     u_int port (ok_pubd_port);
     int ch;
     str jaildir;
@@ -124,8 +124,8 @@ main_T (int argc, char **argv)
   /* turn on debug flags set in the OKWS_DEBUG_OPTS environment variable */
   set_debug_flags ();
   if (OKDBG2(STALL_SIGCONT)) {
-    warn << getpid () << ": blocking until SIGCONT signal..\n";
-    BLOCK { sigcb (SIGCONT, @()); }
+    warn << getpid () << ": blocking until SIGCONT trigger..\n";
+    twait { sigcb (SIGCONT, mkevent ()); }
     warn << getpid () << ": unblocked\n";
     sigcb (SIGCONT, NULL);
   }
@@ -207,7 +207,7 @@ main_T (int argc, char **argv)
 
   have_cfg = false;
   if (configfile) {
-    BLOCK { cfgparse->run_cfg (configfile, @(have_cfg)); }
+    twait { cfgparse->run_cfg (configfile, mkevent (have_cfg)); }
   }
   if (!have_cfg) 
     warn << "pubd running without default variable bindings\n";

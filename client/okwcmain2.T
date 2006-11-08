@@ -22,10 +22,10 @@ usage ()
   exit (1);
 }
 
-TAMED static void
+tamed static void
 main2 (int argc, char **argv)
 {
-  VARS {
+  tvars {
     str post;
     str typ;
     str hostname;
@@ -58,7 +58,7 @@ main2 (int argc, char **argv)
   cli = New refcounted<okwc2_simple_t> (hostname, port);
   
   // 10 second timeout
-  BLOCK { cli->req (filename, @(status, resp), 10); }
+  twait { cli->req (filename, mkevent (status, resp), 10); }
 
   aout << "status: " << status << "\n";
   if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {

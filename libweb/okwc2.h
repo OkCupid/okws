@@ -44,7 +44,7 @@
 
 //-----------------------------------------------------------------------
 
-void cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb,
+void cancellable_wait (ptr<canceller_t> cncl, rendezvous_t<bool> G, cbb cb,
 		       CLOSURE);
 
 //-----------------------------------------------------------------------

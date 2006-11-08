@@ -42,7 +42,7 @@ public:
     s[0]("one") = q[1];
     s[1] = "<testing><this&that>";
 
-    SIGNAL (cb, s);
+    TRIGGER (cb, s);
   };
 
 private:

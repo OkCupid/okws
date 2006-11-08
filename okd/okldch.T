@@ -154,10 +154,10 @@ okld_jailed_exec_t::chmod (int currmode)
 }
 
 
-TAMED void 
+tamed void 
 okld_ch_t::launch ()
 {
-  VARS {
+  tvars {
     int logfd;
     int pub2fd (-1);
     clone_only_client_t *p;
@@ -168,9 +168,9 @@ okld_ch_t::launch ()
   state = OKC_STATE_LAUNCH;
   p = okld->get_pubd2 ();
 
-  BLOCK { 
-    okld->get_logd ()->clone (@(logfd));
-    if (p) p->clone (@(pub2fd));
+  twait { 
+    okld->get_logd ()->clone (mkevent (logfd));
+    if (p) p->clone (mkevent (pub2fd));
   }
 
   if (logfd < 0) {

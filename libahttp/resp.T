@@ -220,33 +220,33 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
   return false;
 }
 
-TAMED void
+tamed void
 http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
 		      cbb cb, aarr_t *env, htpv_t v,
 		      bool gz)
 {
-  VARS {
+  tvars {
     zbuf b;
     bool rc;
   }
-  BLOCK { p->run (&b, fn, @(rc), env, P_WSS); }
+  twait { p->run (&b, fn, mkevent (rc), env, P_WSS); }
   if (rc) {
     b.to_strbuf (&body, v > 0 && gz);
   }
   if (gz) gzip ();
-  SIGNAL (cb, rc);
+  TRIGGER (cb, rc);
 }
 
 typedef ref<callback<void, ptr<http_pub2_t> > > http_pub2_cb_t;
 
-TAMED static void
+tamed static void
 http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
 		    http_pub2_cb_t cb, aarr_t *env, htpv_t v, bool gz)
 {
-  VARS {
+  tvars {
     ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (n, v)); 
     bool rc;
   }
-  BLOCK { ret->publish (p, fn, @(rc), env, v, gz); }
-  SIGNAL (cb, rc ? ret : NULL);
+  twait { ret->publish (p, fn, mkevent (rc), env, v, gz); }
+  TRIGGER (cb, rc ? ret : NULL);
 }

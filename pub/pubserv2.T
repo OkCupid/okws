@@ -144,10 +144,10 @@ namespace pubserv2 {
     sbp->replyref (res);
   }
   
-  TAMED void
+  tamed void
   srv_t::getfile (svccb *sbp)
   {
-    VARS {
+    tvars {
       xpub2_getfile_arg_t *arg (sbp->Xtmpl getarg<xpub2_getfile_arg_t> ());
       ptr<bound_pfile2_t> f;
       xpub_status_t s;
@@ -157,8 +157,8 @@ namespace pubserv2 {
     }
     o = arg->options;
 
-    BLOCK { 
-      pub2::local_publisher_t::getfile (arg->filename, @(s,f), arg->fresh, o); 
+    twait { 
+      pub2::local_publisher_t::getfile (arg->filename, mkevent (s,f), arg->fresh, o); 
     }
 
     if (!f) {

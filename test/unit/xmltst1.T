@@ -12,10 +12,10 @@ static void usage (void)
   exit (1);
 }
 
-TAMED static void
+tamed static void
 main_T ()
 {
-  VARS {
+  tvars {
     abuf_pipe_t src (ain);
     xml_req_parser_t xrp (&src);
     zbuf out_z;
@@ -28,7 +28,7 @@ main_T ()
   use_reference (src);
 
   xrp.init ();
-  BLOCK { xrp.parse (@(res)); }
+  twait { xrp.parse (mkevent (res)); }
   if (res == 0) {
     top = xrp.top_level ();
     top->dump (out_z);

@@ -19,18 +19,18 @@ static okwc2_dnscache_t dnscache;
 //
 //-----------------------------------------------------------------------
 
-TAMED void
-cancellable_wait (ptr<canceller_t> cncl, coordgroup_t<bool> G, cbb cb)
+tamed void
+cancellable_wait (ptr<canceller_t> cncl, rendezvous_t<bool> G, cbb cb)
 {
-  VARS {
+  tvars {
     bool cancelled;
   }
 
-  cncl->wait (@[G,true]());
-  WAIT (G, cancelled);
+  cncl->wait (mkevent (G,true));
+  twait (G, cancelled);
   if (!cancelled) cncl->clear ();
 
-  SIGNAL (cb, cancelled);
+  TRIGGER (cb, cancelled);
 }
 
 
@@ -57,43 +57,43 @@ okwc2_dnscache_t::lookup (ptr<canceller_t> cncl, const str &n, cbhent cb)
 //   - Only one client should be looking up a given host at a given time.
 //   - Thus, one looks up, and the rest wait for the lookup to complete.
 //   - If the resolver is canceled while waiting, he should not totally
-//     abandon the project; he should signal to his caller, but keep
+//     abandon the project; he should trigger to his caller, but keep
 //     going, since the other waiters might have a longer timer.
 //
-TAMED void
+tamed void
 okwc2_dnscache_entry_t::lookup (ptr<canceller_t> cncl, cbhent cb)
 {
-  VARS {
+  tvars {
     ptr<hostent> he;
     int e (ARERR_TIMEOUT);
     bool completed;
   }
 
   if (_resolving) {
-    BLOCK { wait_for_resolution (cncl, @(completed)); }
+    twait { wait_for_resolution (cncl, mkevent (completed)); }
   } else if (!_init || timenow > _expires || _err != 0) {
-    BLOCK { do_resolution (cncl, @(completed)); }
+    twait { do_resolution (cncl, mkevent (completed)); }
   }
   if (completed) {
     he = _he;
     e = _err;
   }
-  SIGNAL (cb, he, e);
+  TRIGGER (cb, he, e);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_dnscache_entry_t::wait_for_resolution (ptr<canceller_t> cncl, cbb cb)
 {
-  VARS {
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+  tvars {
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
     queued_cbv_t *qcb;
   }
-  qcb = New queued_cbv_t (@[G,false]());
+  qcb = New queued_cbv_t (mkevent (G,false));
   _waiters.insert_tail (qcb);
-  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
 
   if (cancelled) {
     _waiters.remove (qcb);
@@ -101,7 +101,7 @@ okwc2_dnscache_entry_t::wait_for_resolution (ptr<canceller_t> cncl, cbb cb)
       (*_waiter_remove_cb) ();
   }
 
-  SIGNAL (cb, !cancelled);
+  TRIGGER (cb, !cancelled);
   delete qcb;
 }
 
@@ -120,17 +120,17 @@ okwc2_dnscache_entry_t::commit_lookup (ptr<hostent> he, int e)
 
 /**
  * @brief Do a DNS resolution, on behalf of us and perhaps others.
- * @param cncl A canceler that might send a cancel signal.
+ * @param cncl A canceler that might send a cancel trigger.
  * @param cb Callback to call, *even if cancelled!*.
  *
  * Note: this function calls its callback even if it gets cancelled.
  */
-TAMED void
+tamed void
 okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
 {
-  VARS {
+  tvars {
     dnsreq_t *dnsp;
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
     ptr<hostent> he;
     int e (ARERR_TIMEOUT);
@@ -140,23 +140,23 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
 
   _resolving = true;
 
-  dnsp = dns_hostbyname (_hostname, @[G,false](he, e));
-  cncl->wait (@[G,true]());
-  WAIT (G, cancelled);
+  dnsp = dns_hostbyname (_hostname, mkevent (G,false, he, e));
+  cncl->wait (mkevent (G,true));
+  twait (G, cancelled);
   if (!cancelled) {
     cncl->clear ();
     committed_lookup = true;
     commit_lookup (he, e);
   }
     
-  SIGNAL (cb, !cancelled);
+  TRIGGER (cb, !cancelled);
 
   // If we're cancelled, and there are still some waiters left, we still
   // have to wait on the outcome of the DNS resolution.  But we get
   // notified as the other waiters give up in the loop below.
   while (cancelled && _waiters.first) {
-    _waiter_remove_cb = @[G,true]();
-    WAIT(G,cancelled);
+    _waiter_remove_cb = mkevent (G,true);
+    twait(G,cancelled);
   }
 
   // Once all waiters have abandoned, or the answer has come back,
@@ -178,7 +178,7 @@ okwc2_dnscache_entry_t::do_resolution (ptr<canceller_t> cncl, cbb cb)
       (*qcb->_cb) ();
     }
   }
-  assert (G.n_vars_left () == 0);
+  assert (G.n_triggers_left () == 0);
 }
 
 //-----------------------------------------------------------------------
@@ -236,27 +236,27 @@ okwc2_req_t::format_req (strbuf &b)
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_req_t::make_T (ptr<canceller_t> cncl, ptr<ahttpcon> x, cbi cb)
 {
-  VARS {
+  tvars {
     strbuf req;
     int status (HTTP_OK);
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
   }
 
   format_req (req);
   
-  x->send (req, @[G,false]());
-  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  x->send (req, mkevent (G,false));
+  twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
 
   if (cancelled) {
     status = CANCELLED_STATUS;
     x->set_drained_cb (NULL);
     x->cancel ();
   }
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
@@ -284,15 +284,15 @@ dnserr2httperr (int i)
  * note: Disobeys above convention, in that it does call its callback
  * even when cancelled.  Callers should take note.
  */
-TAMED ptr<canceller_t>
+tamed ptr<canceller_t>
 okwc2_t::req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
 {
-  VARS {
+  tvars {
     int status (0);
     ptr<okwc2_t> hold;
     ptr<hostent> he;
     int dns_err;
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     int fd;
     bool cancelled;
     ptr<ahttpcon> x;
@@ -304,14 +304,14 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
 
-  BLOCK { dnscache.lookup (cncl, _hostname, @(he, dns_err)); }
+  twait { dnscache.lookup (cncl, _hostname, mkevent (he, dns_err)); }
 
   if (dns_err || !he) {
     status = dnserr2httperr (dns_err);
   } else {
     
-    tc = tcpconnect (*(in_addr *)he->h_addr, _port, @[G, false](fd));
-    BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+    tc = tcpconnect (*(in_addr *)he->h_addr, _port, mkevent (G, false, fd));
+    twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
 
     if (cancelled) {
       status = CANCELLED_STATUS;
@@ -321,17 +321,17 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
     } else {
       
       x = ahttpcon::alloc (fd);
-      BLOCK { req->make (cncl, x, @(status)); }
+      twait { req->make (cncl, x, mkevent (status)); }
       if (status == HTTP_OK) {
 	resp->setx (x);
-	BLOCK { resp->get (cncl, @(status)); }
+	twait { resp->get (cncl, mkevent (status)); }
       }
     }
   }
 
-  // Always signal, even if cancelled...
+  // Always trigger, even if cancelled...
   cncl->toolate ();
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
@@ -343,36 +343,36 @@ okwc2_t::req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
  * @param to The timeout value in seconds.
  * @param cbi The callback to call when finished.
  */
-TAMED void
+tamed void
 okwc2_t::timed_req_T (ptr<okwc2_req_t> r, ptr<okwc2_resp_t> resp, int to, 
 		      cbi cb)
 {
-  VARS {
+  tvars {
     int status;
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     timecb_t *tcb (NULL);
     bool timedout ;
     ptr<canceller_t> cncl;
   }
 
-  cncl = req (r, resp, @[G,false](status));
+  cncl = req (r, resp, mkevent (G,false, status));
   if (to != 0) 
-    tcb = delaycb (to, 0, @[G,true]() );
+    tcb = delaycb (to, 0, mkevent (G,true) );
 
-  WAIT (G, timedout);
+  twait (G, timedout);
   if (timedout) {
 
     cncl->cancel (); 
 
     // Wait for the callback from req to set status
-    WAIT (G, timedout);
+    twait (G, timedout);
     assert (!timedout);
 
   } else if (tcb) {
     timecb_remove (tcb);
   }
 
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
@@ -390,97 +390,97 @@ okwc2_resp_t::setx (ptr<ahttpcon> x)
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_resp_t::get_T (ptr<canceller_t> cncl, cbi cb)
 {
-  VARS {
+  tvars {
     int status (HTTP_OK);
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     bool cancelled;
   }
 
   // Call into the OKWS HTTP header parsing classes...
-  _hdr.parse (@[G,false](status)); 
+  _hdr.parse (mkevent (G,false, status)); 
 
-  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
 
   if (cancelled) {
     status = CANCELLED_STATUS;
     _hdr.cancel ();
   } else if (status == HTTP_OK) { 
-    BLOCK { get_body (cncl, @(status)); }
+    twait { get_body (cncl, mkevent (status)); }
   }
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_resp_t::get_body_T (ptr<canceller_t> cncl, cbi cb)
 {
-  VARS {
+  tvars {
     int status (HTTP_OK);
   }
 
   // Certain HTTP 1.1 responses are chunked, so we need to accommodate
   // them with our 'chunker' class.
   if (_hdr.is_chunked ()) {
-    BLOCK { run_chunker (cncl, @(status)); }
+    twait { run_chunker (cncl, mkevent (status)); }
   } else {
     // Unchunked responses are eaten in a single gulp.
-    BLOCK { eat_chunk (cncl, _hdr.get_contlen (), @(status)); }
+    twait { eat_chunk (cncl, _hdr.get_contlen (), mkevent (status)); }
   }
-  BLOCK { finished_meal (cncl, status, @(status)); }
-  SIGNAL (cb, status);
+  twait { finished_meal (cncl, status, mkevent (status)); }
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_resp_t::run_chunker_T (ptr<canceller_t> cncl, cbi cb)
 {
-  VARS {
+  tvars {
     okwc_chunker_t *c;
     int status;
     size_t sz;
     bool cancelled;
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
   }
 
   c = New okwc_chunker_t (&_abuf, OKWC_SCRATCH_SZ, _scratch);
 
   do { 
-    c->parse (@[G,false] (status));
-    BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+    c->parse (mkevent (G,false, status));
+    twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
     if (cancelled) {
       c->cancel ();
       status = CANCELLED_STATUS;
 
     } else if (status == HTTP_OK && (sz = c->get_sz ())) {
     
-      BLOCK { eat_chunk (cncl, sz, @(status)); }
+      twait { eat_chunk (cncl, sz, mkevent (status)); }
       c->next_chunk ();
     } 
   } while (status == HTTP_OK && sz);
 
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_resp_simple_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
 {
-  VARS {
+  tvars {
     str chnk;
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     bool cancelled, dummy;
     int status (HTTP_OK);
   }
 
-  _dumper.dump (sz, @[G, false](chnk));
-  cncl->wait (@[G,true]());
-  WAIT (G,cancelled);
+  _dumper.dump (sz, mkevent (G, false, chnk));
+  cncl->wait (mkevent (G,true));
+  twait (G,cancelled);
 
   if (cancelled) {
     status = CANCELLED_STATUS;
@@ -490,14 +490,14 @@ okwc2_resp_simple_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
     if (chnk) _chunks.push_back (chnk);
   }
 
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 
   // When you cancel the dumper, it still calls you back, so we need
   // to wait for this callback.
-  if (G.n_vars_left ()) {
+  if (G.n_triggers_left ()) {
     assert (cancelled);
-    WAIT (G, dummy);
-    assert (! G.n_vars_left ());
+    twait (G, dummy);
+    assert (! G.n_triggers_left ());
   }
 }
 
@@ -514,20 +514,20 @@ okwc2_resp_simple_t::finished_meal (ptr<canceller_t> cncl, int status, cbi cb)
     _body = b;
     _chunks.clear ();
   }
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_simple_t::req (str fn, okwc2_simple_cb_t cb, int to, int v, cgi_t *c)
 {
-  VARS {
+  tvars {
     ptr<okwc2_resp_simple_t> resp (New refcounted<okwc2_resp_simple_t> ());
     ptr<okwc2_req_t> req;
     int status;
   }
   req = New refcounted<okwc2_req_t> (_hostname, fn, v, c);
-  BLOCK { timed_req (req, resp, to, @(status)); }
-  SIGNAL (cb, status, resp);
+  twait { timed_req (req, resp, to, mkevent (status)); }
+  TRIGGER (cb, status, resp);
 }

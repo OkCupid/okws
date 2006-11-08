@@ -86,6 +86,8 @@ parse.cc: parse.yy
 		fi;						\
 	fi
 
+CXXNOERR = -Wno-error
+
 scan.o: parse.o scan.cc parse.h
 	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
 

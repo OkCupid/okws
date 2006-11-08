@@ -118,10 +118,10 @@ parse_config (const str &f)
   return s;
 }
 
-TAMED void
+tamed void
 okmgr_clnt_t::run ()
 {
-  VARS {
+  tvars {
     helper_unix_t *hlp;
     bool ok;
     int rc (0);
@@ -131,9 +131,9 @@ okmgr_clnt_t::run ()
 
   hlp = New helper_unix_t (okmgr_program_1, _sockname);
   
-  BLOCK { hlp->connect (@(ok)); }
+  twait { hlp->connect (mkevent (ok)); }
   if (ok) {
-    BLOCK { do_host (hlp, &s, @(err)); }
+    twait { do_host (hlp, &s, mkevent (err)); }
     rc = -1;
     if (err) warn << "RPC Error: " << err;
     else if (s.status != OK_STATUS_OK) warn << *s.error << "\n";

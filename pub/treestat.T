@@ -179,10 +179,10 @@ static void usage ()
   exit (1);
 }
 
-TAMED static void
+tamed static void
 main_T (int argc, char **argv)
 {
-  VARS {
+  tvars {
     int ch;
     int i (1);
     str s, h, d;
@@ -255,7 +255,7 @@ main_T (int argc, char **argv)
       if (vlev >= D_LOW) {
 	warn << "Using config file: " << configfile << "\n";
       }
-      BLOCK { cfg->run_cfg (configfile, @(rc)); }
+      twait { cfg->run_cfg (configfile, mkevent (rc)); }
       if (!rc) {
 	warn << "Could not parse: " << configfile << "\n"
 	     << "  use -F to run without a config file\n";

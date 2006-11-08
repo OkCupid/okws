@@ -8,76 +8,76 @@
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_xml_t::call_T (xml_outreq_t req, okwc2_xml_cb_t cb, int to)
 {
-  VARS {
+  tvars {
     ptr<okwc2_resp_xml_t> hresp (New refcounted<okwc2_resp_xml_t> ());
     xml_inresp_t resp;
     int status;
   }
-  BLOCK { make_req (req, hresp, to, @(status)); }
+  twait { make_req (req, hresp, to, mkevent (status)); }
   if (status == HTTP_OK) {
     resp = xml_inresp_t (hresp->top_level ()->get (0));
   }
-  SIGNAL (cb, status, resp);
+  TRIGGER (cb, status, resp);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_xml_t::make_req (xml_outreq_t req, ptr<okwc2_resp_t> resp, int to,
 		       cbi cb)
 {
 
-  VARS {
+  tvars {
     int status;
     ptr<okwc2_req_xml_t> hreq;
   }
   hreq = New refcounted<okwc2_req_xml_t> (_hostname, _url);
   req.output (hreq->zb ());
-  BLOCK { timed_req (hreq, resp, to, @(status)); }
-  SIGNAL (cb, status);
+  twait { timed_req (hreq, resp, to, mkevent (status)); }
+  TRIGGER (cb, status);
 
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_xml_t::call_dump_T (xml_outreq_t req, cbis cb, int to)
 {
-  VARS {
+  tvars {
     int status;
     str res;
     ptr<okwc2_resp_simple_t> resp (New refcounted<okwc2_resp_simple_t> ());
   }
 
-  BLOCK { make_req (req, resp, to, @(status)); }
+  twait { make_req (req, resp, to, mkevent (status)); }
   if (status == HTTP_OK) {
     res = resp->body ();
   }
-  SIGNAL (cb, status, res);
+  TRIGGER (cb, status, res);
 }
 
 //-----------------------------------------------------------------------
 
-TAMED void
+tamed void
 okwc2_resp_xml_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
 {
-  VARS {
-    coordgroup_t<bool> G (__FILE__, __LINE__);
+  tvars {
+    rendezvous_t<bool> G (__FILE__, __LINE__);
     int status;
     bool cancelled;
   }
   _abuf.setlim (sz);
   _parser.init ();
-  _parser.parse (@[G,false](status));
-  BLOCK { cancellable_wait (cncl, G, @(cancelled)); }
+  _parser.parse (mkevent (G,false, status));
+  twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
   if (cancelled) {
     _parser.cancel ();
     status = CANCELLED_STATUS;
   }
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 //-----------------------------------------------------------------------
@@ -85,7 +85,7 @@ okwc2_resp_xml_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
 void
 okwc2_resp_xml_t::finished_meal (ptr<canceller_t> cncl, int status, cbi cb)
 {
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 #endif /* HAVE_EXPAT */

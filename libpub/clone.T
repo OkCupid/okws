@@ -86,15 +86,15 @@ clone_client_t::gotfd (int nfd, ptr<u_int32_t> id)
   }
 }
 
-TAMED void 
+tamed void 
 clone_client_t::clone (cbi cb)
 {
-  VARS {
+  tvars {
     bool b;
     clnt_stat err;
   }
 
-  BLOCK { _he->call (_procno, NULL, &b, @(err)); }
+  twait { _he->call (_procno, NULL, &b, mkevent (err)); }
 
   if (err) {
     warn << "clone RPC failed: " << err << "\n";

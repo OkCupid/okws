@@ -36,7 +36,10 @@
 #include "zstr.h"
 #include "tame.h"
 
-#if defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009003
+#if defined (SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 10000000
+# include "tame_lock.h"
+# define TAME_LOCKING 1
+#elif defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009003
 # include "lock.h"
 # define TAME_LOCKING 1
 #endif /* SFSLITE_PATCHLEVEL */

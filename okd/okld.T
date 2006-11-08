@@ -783,10 +783,10 @@ okld_t::parseconfig (const str &cf)
     okld_exit (1);
 }
 
-TAMED void 
+tamed void 
 okld_t::launch_pubd2 (cbi cb)
 {
-  VARS {
+  tvars {
     bool b;
     int ret (-1);
   }
@@ -794,7 +794,7 @@ okld_t::launch_pubd2 (cbi cb)
   pubd2 = New clone_only_client_t (pubd2exc, PUB2_CLONE);
 
 
-  BLOCK { pubd2->connect (@(b)); }
+  twait { pubd2->connect (mkevent (b)); }
   if (b) {
 
     // calling clone_client_t::init() sets up the FD source so we
@@ -803,20 +803,20 @@ okld_t::launch_pubd2 (cbi cb)
     // here for pub2
     assert (pubd2->init ());
 
-    BLOCK { pubd2->clone (@(ret)); }
+    twait { pubd2->clone (mkevent (ret)); }
     if (ret < 0) {
       warn << "pubd -2 did not send a file descriptor; failing\n";
     }
   } else {
     warn << "cannot connect to pub daemon version 2 (pubd -2)\n";
   }
-  SIGNAL (cb, ret);
+  TRIGGER (cb, ret);
 }
 
-TAMED void 
+tamed void 
 okld_t::launch_logd (cbi cb)
 {
-  VARS {
+  tvars {
     vec<str> *argv;
     bool b;
     int ret (-1);
@@ -829,16 +829,16 @@ okld_t::launch_logd (cbi cb)
   argv->push_back (logd_parms.encode ());
   logd = New log_primary_t (logexc);
 
-  BLOCK { logd->connect (@(b)); }
+  twait { logd->connect (mkevent (b)); }
   if (b) {
-    BLOCK { logd->clone(@(ret)); }
+    twait { logd->clone(mkevent (ret)); }
     if (ret < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
     }
   } else {
     warn << "cannot connect to launched log daemon (oklogd)\n";
   }
-  SIGNAL (cb, ret);
+  TRIGGER (cb, ret);
 }
 
 void
@@ -998,7 +998,7 @@ void
 okld_t::shutdown (int sig)
 {
   sdflag = true;
-  warn << "received shutdown signal (" << sig << "); shutting down\n";
+  warn << "received shutdown trigger (" << sig << "); shutting down\n";
   okdx = NULL;
 }
 
@@ -1175,7 +1175,7 @@ main (int argc, char *argv[])
   amain ();
 }
 
-TAMED 
+tamed 
 void okld_t::launch (str cf)
 {
   configfile = cf;
@@ -1194,10 +1194,10 @@ void okld_t::launch (str cf)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
 
   pub2fd = -1;
-  BLOCK {
-    launch_logd (@(logfd));
+  twait {
+    launch_logd (mkevent (logfd));
     if (pubd2exc)
-      launch_pubd2 (@(pub2fd));
+      launch_pubd2 (mkevent (pub2fd));
   }
 
   if (logfd < 0) {
@@ -1218,10 +1218,10 @@ void okld_t::launch (str cf)
   launchservices ();
 }
   
-TAMED
+tamed
 void okld_t::launchservices ()
 {
-  VARS {
+  tvars {
     u_int i, j;
   }
 
@@ -1236,7 +1236,7 @@ void okld_t::launchservices ()
   
   for (i = 0; i < svcs.size (); i++, j++) {
     if (okld_startup_batch_size && j >= okld_startup_batch_size) {
-      BLOCK { delaycb (okld_startup_batch_wait, 0, @()); }
+      twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
       j = 0;
     }
     if (sdflag) { 

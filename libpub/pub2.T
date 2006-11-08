@@ -16,11 +16,11 @@ namespace pub2 {
   typedef local_publisher_t lp_t;
   typedef locale_specific_publisher_t lsp_t;
 
-  TAMED void
+  tamed void
   lsp_t::run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
 		     aarr_t *a, u_int o, penv_t *e)
   {
-    VARS {
+    tvars {
       ptr<const pub_localizer_t> old;
       status_t status (XPUB_STATUS_OK);
       ptr<bound_pfile2_t> bpf;
@@ -28,45 +28,45 @@ namespace pub2 {
     if (!e) e = _ap->get_env ();
     old = e->localizer ();
     e->set_localizer (_localizer);
-    BLOCK { _ap->run_full (b, fn, @(status, bpf), a, o, e); }
+    twait { _ap->run_full (b, fn, mkevent (status, bpf), a, o, e); }
     e->set_localizer (old);
-    SIGNAL (cb, status, bpf);
+    TRIGGER (cb, status, bpf);
   }
 
-  TAMED void
+  tamed void
   lsp_t::run_T (zbuf *b, pfnm_t fn, cbb cb, 
 		aarr_t *a, u_int o, penv_t *e)
   {
-    VARS {
+    tvars {
       ptr<const pub_localizer_t> old;
       bool ok;
     }
     if (!e) e = _ap->get_env ();
     old = e->localizer ();
     e->set_localizer (_localizer);
-    BLOCK { _ap->run (b, fn, @(ok), a, o, e); }
+    twait { _ap->run (b, fn, mkevent (ok), a, o, e); }
     e->set_localizer (old);
-    SIGNAL (cb, ok);
+    TRIGGER (cb, ok);
   }
 
 
-  TAMED void
+  tamed void
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
 		 status_cb_t cb)
   {
-    VARS {
+    tvars {
       status_t status;
       ptr<bound_pfile2_t> dummy;
     }
-    BLOCK { publish_full_T (o, fn, env, lineno, @(status, dummy)); }
-    SIGNAL (cb, status);
+    twait { publish_full_T (o, fn, env, lineno, mkevent (status, dummy)); }
+    TRIGGER (cb, status);
   }
 
-  TAMED void 
+  tamed void 
   ap_t::publish_full_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
 			getfile_cb_t cb)
   {
-    VARS {
+    tvars {
       status_t status (XPUB_STATUS_OK);
       ptr<bound_pfile2_t> bpf;
       str err;
@@ -84,12 +84,12 @@ namespace pub2 {
 
     if (files_to_check.size () == 0) {
       status.set_status (XPUB_STATUS_NOENT);
-      SIGNAL (cb, status, NULL);
+      TRIGGER (cb, status, NULL);
       return;
     }
 
     for (i = 0; i < files_to_check.size (); i++) {
-      BLOCK { getfile (files_to_check[i], @(status, bpf), o->opts ()); }
+      twait { getfile (files_to_check[i], mkevent (status, bpf), o->opts ()); }
       if (status.status != XPUB_STATUS_NOENT)
 	break;
     }
@@ -105,7 +105,7 @@ namespace pub2 {
       cwd_prev = _cwd;
       _cwd = d;
 
-      BLOCK { bpf->bpf ()->publish (this, o, env, @(status)); }
+      twait { bpf->bpf ()->publish (this, o, env, mkevent (status)); }
       if (status.status != XPUB_STATUS_OK) 
 	err = strbuf () << "error in publishing file: " << fn;
 
@@ -128,26 +128,26 @@ namespace pub2 {
     if (err)
       o->output_err (env, err, lineno);
     
-    SIGNAL (cb, status, bpf);
+    TRIGGER (cb, status, bpf);
   }
   
-  TAMED void 
+  tamed void 
   ap_t::run_T (zbuf *b, pfnm_t nm, cbb cb, aarr_t *a, 
 	       u_int op, penv_t *e)
   {
-    VARS { 
+    tvars { 
       status_t status; 
       ptr<bound_pfile2_t> dummy; 
     }
-    BLOCK { run_full (b, nm, @(status, dummy), a, op, e); }
-    SIGNAL (cb, status.status == XPUB_STATUS_OK);
+    twait { run_full (b, nm, mkevent (status, dummy), a, op, e); }
+    TRIGGER (cb, status.status == XPUB_STATUS_OK);
   }
   
-  TAMED void 
+  tamed void 
   ap_t::run_full_T (zbuf *b, pfnm_t nm, getfile_cb_t cb,
 		    aarr_t *a, u_int op, penv_t *env)
   {
-    VARS {
+    tvars {
       ptr<output_std_t> o;
       penv_state_t *st;
       status_t status;
@@ -170,45 +170,45 @@ namespace pub2 {
     typ = (op & P_WSS) ? PFILE_TYPE_WH : PFILE_TYPE_H;
     o = New refcounted<output_std_t> (b, typ, op);
     st = env_local->start_output (a, op);
-    BLOCK { publish_full (o, nm, env_local, 0, @(status, bpf)); }
+    twait { publish_full (o, nm, env_local, 0, mkevent (status, bpf)); }
     
     // XXX = ignore output from the following function
     XXX = env_local->finish_output (st);
     delete env_local;
 
-    SIGNAL (cb, status, bpf);
+    TRIGGER (cb, status, bpf);
   }
 
-  TAMED void 
+  tamed void 
   rp_t::connect (cbb cb)
   {
-    VARS {
+    tvars {
       clnt_stat err;
       bool ret (true);
     }
-    BLOCK { _cli->call (PUB2_NULL, NULL, NULL, @(err)); }
+    twait { _cli->call (PUB2_NULL, NULL, NULL, mkevent (err)); }
     if (err) {
       warn << "NULL call to pubd failed: " << err << "\n";
       ret = false;
     }
-    SIGNAL (cb, ret);
+    TRIGGER (cb, ret);
   }
 
-  TAMED void 
+  tamed void 
   crp_t::connect (cbb cb)
   {
-    VARS { 
+    tvars { 
       clnt_stat stat;
       bool ret (true);
     }
-    BLOCK { _cli->call (PUB2_GET_PUSHES, NULL, &_connected, @(stat)); }
+    twait { _cli->call (PUB2_GET_PUSHES, NULL, &_connected, mkevent (stat)); }
     if (stat) {
       warn << "Intial RPC call to pubd-2 failed: " << stat << "\n";
       ret = false;
     } else if (!_connected) {
       warn << "pubd-2 denied request for file status pushes!\n";
     }
-    SIGNAL (cb, ret);
+    TRIGGER (cb, ret);
   }
 
   void rp_t::dispatch (svccb *sbp)
@@ -287,25 +287,25 @@ namespace pub2 {
     return c && h == *(c->file ()->hash ());
   }
 
-  TAMED static void
-  wait_for_nsignals (u_int n, coordgroup_t<ptr<bool> > cg, cbb cb)
+  tamed static void
+  wait_for_nsignals (u_int n, rendezvous_t<ptr<bool> > cg, cbb cb)
   {
-    VARS {
+    tvars {
       ptr<bool> tmpok;
       bool ok (true);
     }
-    while (cg.n_signals_left () > n) {
-      WAIT (cg, tmpok);
+    while (cg.n_triggers_left () > n) {
+      twait (cg, tmpok);
       if (!*tmpok) ok = false;
     }
-    SIGNAL (cb, ok);
+    TRIGGER (cb, ok);
   }
 
-  TAMED void
+  tamed void
   rp_t::getchunk (const xpub2_getfile_data_t *dat, u_int opts, size_t offset, 
 		  size_t sz, char *buf, cbb cb)
   {
-    VARS {
+    tvars {
       clnt_stat err;
       xpub2_getchunk_arg_t arg;
       xpub2_getchunk_res_t res;
@@ -317,7 +317,7 @@ namespace pub2 {
     arg.size = sz;
     arg.opts = opts;
 
-    BLOCK { _cli->call (PUB2_GETCHUNK, &arg, &res, @(err) ); }
+    twait { _cli->call (PUB2_GETCHUNK, &arg, &res, mkevent (err) ); }
 
     if (err) {
       b << "RPC error in PUB2_GETCHUNK: " << err << "\n";
@@ -338,15 +338,15 @@ namespace pub2 {
       memcpy (buf + offset, res.chunk->data.base (), res.chunk->data.size ());
 
     }
-    SIGNAL (cb, ok);
+    TRIGGER (cb, ok);
   }
 
-  TAMED void
-  rp_t::launch_getchunk (coordgroup_t<ptr<bool> > cg, 
+  tamed void
+  rp_t::launch_getchunk (rendezvous_t<ptr<bool> > cg, 
 			 const xpub2_getfile_data_t *dat, u_int opts,
 			 size_t offset, size_t dsz, char *buf, cbb cb)
   {
-    VARS {
+    tvars {
       u_int ws (5);
       bool ok (true);
       ptr<bool> nok;
@@ -354,24 +354,24 @@ namespace pub2 {
 
     assert (ws > 0);
 
-    BLOCK { wait_for_nsignals (ws - 1, cg, @(ok)); }
+    twait { wait_for_nsignals (ws - 1, cg, mkevent (ok)); }
     if (ok) {
       nok = New refcounted<bool> ();
-      getchunk (dat, opts, offset, dsz, buf, @[cg,nok](*nok));
+      getchunk (dat, opts, offset, dsz, buf, mkevent (cg,nok, *nok));
     }
 
-    SIGNAL (cb, ok);
+    TRIGGER (cb, ok);
   }
 
-  TAMED void
+  tamed void
   rp_t::getfile_chunked (const xpub2_getfile_data_t *dat, u_int opts,
 			 xpub_file_t *file, status_cb_t cb)
   {
-    VARS {
+    tvars {
       status_t status (XPUB_STATUS_OK);
       size_t dsz (dat->file.chunked->datasize);
       mstr buf (dsz);
-      coordgroup_t<ptr<bool> > cg (__FILE__, __LINE__);
+      rendezvous_t<ptr<bool> > cg (__FILE__, __LINE__);
       bool ok (true), tmpok;
       str m;
       size_t cs;
@@ -380,10 +380,10 @@ namespace pub2 {
 
     for (i = 0; i < dsz && ok; i += _maxsz) {
       cs = min<size_t> (_maxsz, dsz - i);
-      BLOCK { launch_getchunk (cg, dat, opts, i, cs, buf.cstr (), @(tmpok)); }
+      twait { launch_getchunk (cg, dat, opts, i, cs, buf.cstr (), mkevent (tmpok)); }
       if (!tmpok) ok = false;
     }
-    BLOCK { wait_for_nsignals (0, cg, @(tmpok)); }
+    twait { wait_for_nsignals (0, cg, mkevent (tmpok)); }
     if (!tmpok) ok = false;
 
     if (!ok) {
@@ -403,14 +403,14 @@ namespace pub2 {
       *status.error = m;
     }
 
-    SIGNAL (cb, status);
+    TRIGGER (cb, status);
   }
 
-  TAMED void
+  tamed void
   rp_t::getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
 		      getfile_cb_t cb, u_int opts)
   {
-    VARS {
+    tvars {
       ptr<bound_pfile2_t> bpf;
       status_t status (XPUB_STATUS_OK);
       const xpub_file_t *filep (NULL);
@@ -419,7 +419,7 @@ namespace pub2 {
     if (res->data->file.mode == XPUB_XFER_WHOLE) {
       filep = res->data->file.whole;
     } else if (res->data->file.mode == XPUB_XFER_CHUNKED) {
-      BLOCK { getfile_chunked (res->data, opts, &file, @(status)); }
+      twait { getfile_chunked (res->data, opts, &file, mkevent (status)); }
       filep = &file;
     } else {
       status.set_status (XPUB_STATUS_ERR);
@@ -427,13 +427,13 @@ namespace pub2 {
     }
     if (filep)
       bpf = New refcounted<bound_pfile2_t> (nm, res->data->stat, *filep, opts);
-    SIGNAL (cb, status, bpf);
+    TRIGGER (cb, status, bpf);
   }
 
-  TAMED void 
+  tamed void 
   rp_t::getfile_T (pfnm_t nm, getfile_cb_t cb, u_int opts)
   {
-    VARS {
+    tvars {
       clnt_stat err;
       ptr<bound_pfile2_t> file;
       xpub2_getfile_arg_t arg;
@@ -442,7 +442,7 @@ namespace pub2 {
       cache_key_t k (nm, opts);
     }
     if (!prepare_getfile (k, &arg, &file, &status)) {
-      BLOCK { _cli->call (PUB2_GETFILE, &arg, &res, @(err)); }
+      twait { _cli->call (PUB2_GETFILE, &arg, &res, mkevent (err)); }
       if (err) {
 	warn << nm << ": error in RPC call to PUB2_GETFILE: " 
 	     << err << "\n";
@@ -451,7 +451,7 @@ namespace pub2 {
       } else {
 	switch (res.status) {
 	case XPUB_STATUS_OK:
-	  BLOCK { getfile_body (nm, &res, @(status, file), opts); }
+	  twait { getfile_body (nm, &res, mkevent (status, file), opts); }
 	  if (status.status == XPUB_STATUS_OK) {
 	    cache_getfile (k, file);
 	  }
@@ -482,7 +482,7 @@ namespace pub2 {
 	}
       }
     }
-    SIGNAL (cb, status, file);
+    TRIGGER (cb, status, file);
   }
   
   bool crp_t::prepare_getfile (const cache_key_t &k, xpub2_getfile_arg_t *arg,
@@ -550,10 +550,10 @@ namespace pub2 {
     warn << "Conf file eval error (" << e->loc (l) << "): " << s << "\n";
   }
 
-  TAMED void 
+  tamed void 
   ap_t::run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dp)
   {
-    VARS {
+    tvars {
       output_conf2_t o;
       penv_state_t *st;
       status_t status;
@@ -564,20 +564,20 @@ namespace pub2 {
       dp = &_base_cfg;
     o.set_dest (dp);
     st = _genv.start_output (NULL, 0);
-    BLOCK { publish_full (&o, nm, &_genv, 0, @(status, bpf)); }
+    twait { publish_full (&o, nm, &_genv, 0, mkevent (status, bpf)); }
     XXX = _genv.finish_output (st);
-    SIGNAL (cb, status, bpf);
+    TRIGGER (cb, status, bpf);
   }
 
-  TAMED void 
+  tamed void 
   ap_t::run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dp)
   {
-    VARS { 
+    tvars { 
       status_t status; 
       ptr<bound_pfile2_t> dummy;
     }
-    BLOCK { run_cfg_full (nm, @(status, dummy), dp); }
-    SIGNAL (cb, status.status == XPUB_STATUS_OK);
+    twait { run_cfg_full (nm, mkevent (status, dummy), dp); }
+    TRIGGER (cb, status.status == XPUB_STATUS_OK);
   }
 
   void
@@ -687,11 +687,11 @@ namespace pub2 {
   
 }
 
-TAMED void 
+tamed void 
 bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
 			penv_t *genv, pub2::status_cb_t cb) const
 {
-  VARS {
+  tvars {
     bpfcp_t rct;
     pub2::status_t status;
   }
@@ -703,29 +703,29 @@ bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
 	<< rct->bnd->filename ();
     o->output_err_stacktrace (genv, msg);
   } else {
-    BLOCK { file->publish (iface, o, genv, @(status)); }
+    twait { file->publish (iface, o, genv, mkevent (status)); }
     genv->i_stack_remove (rct);
   }
 
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
-TAMED template<class T, clist_entry<T> T::*field> void
+tamed template<class T, clist_entry<T> T::*field> void
 publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
 			     penv_t *env, xpub_status_cb_t cb) const
 {
-  VARS {
+  tvars {
     xpub_status_t status (XPUB_STATUS_OK), status_tmp;
     T *e;
   }
   for (e = clist_t<T,field>::first; e; e = next (e)) {
     if (!e->publish_nonblock (iface, o, env)) {
-      BLOCK { e->publish (iface, o, env, @(status_tmp)); }
+      twait { e->publish (iface, o, env, mkevent (status_tmp)); }
       if (status_tmp.status != XPUB_STATUS_OK)
 	status = status_tmp;
     }
   }
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 					   
 void 
@@ -811,12 +811,12 @@ pfile_include_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
   }
 }
 
-TAMED void 
+tamed void 
 pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
 		       penv_t *g, aarr_t *e, pfnm_t nm,
 		       xpub_status_cb_t cb) const
 {
-  VARS {
+  tvars {
     bool tlf;
     xpub_status_t status (XPUB_STATUS_OK);
   }
@@ -825,12 +825,12 @@ pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
     push_frame (g, e);
     tlf = g->set_tlf (false);
     o->output_info (g, strbuf ("include: ") << nm, lineno);
-    BLOCK { iface->publish (o, nm, g, lineno, @(status)); }
+    twait { iface->publish (o, nm, g, lineno, mkevent (status)); }
     o->output_info (g, strbuf ("/include:" ) << nm, lineno);
     g->set_tlf (tlf);
     pop_frame (o, g);
   }
-  SIGNAL (cb, status);
+  TRIGGER (cb, status);
 }
 
 bool

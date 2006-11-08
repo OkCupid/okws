@@ -17,10 +17,10 @@ static void usage (void)
 
 static rxx url_rxx ("http://([^:/]+)(:(\\d+)/)?(.*)");
 
-TAMED static void
+tamed static void
 main2 (int argc, char **argv)
 {
-  VARS {
+  tvars {
     xml_outreq_t req;
     xml_inresp_t resp;
     str hostname;
@@ -85,12 +85,12 @@ main2 (int argc, char **argv)
   req[3]("array")[1] = 2;
 
   if (debug) {
-    BLOCK { cli->call_dump (req, @(status, body), timeout); }
+    twait { cli->call_dump (req, mkevent (status, body), timeout); }
     warn << "debug status: " << status << "\n";
     if (body) 
       warn << "body: " << body;
   } else {
-    BLOCK { cli->call (req, @(status, resp), timeout); }
+    twait { cli->call (req, mkevent (status, resp), timeout); }
     warn << "status: " << status << "\n";
     if (status == HTTP_OK) {
       if (resp.is_fault (&code, &msg)) {

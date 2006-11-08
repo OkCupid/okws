@@ -158,10 +158,10 @@ private:
 		  xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 };
 
-TAMED template<class C, class S> void
+tamed template<class C, class S> void
 oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
 {
-  VARS {
+  tvars {
     xml_resp_t resp;
     ptr<const xml_method_call_t> call;
     ptr<const xml_top_level_t> e;
@@ -184,7 +184,7 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_NAME,
 			    "No method name given");
   } else {
-    BLOCK { handle (cli, nm, xml_req_t (call->params ()), @(resp)); }
+    twait { handle (cli, nm, xml_req_t (call->params ()), mkevent (resp)); }
   }
 
   do_debug (resp.el (), "XML-RPC Output", rpc_id);
@@ -192,11 +192,11 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
   c->reply (resp);
 }
 
-TAMED template<class C, class S> void
+tamed template<class C, class S> void
 oksrvc_xmlrpc_t<C,S>::handle2_T (okclnt_xmlrpc_base_t *c, 
 				 str nm, xml_req_t q, xml_resp_cb_t cb)
 {
-  VARS {
+  tvars {
     C *cli (reinterpret_cast<C *> (c));
     typename oksrvc_xmlrpc_t<C,S>::handler_t *h;
     xml_resp_t resp;
@@ -206,7 +206,7 @@ oksrvc_xmlrpc_t<C,S>::handle2_T (okclnt_xmlrpc_base_t *c,
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_METHOD_NOT_FOUND, 
 			    "Method not found");
   } else {
-    BLOCK { ((*cli).*(*h)) (q, @(resp)); }
+    twait { ((*cli).*(*h)) (q, mkevent (resp)); }
   }
   (*cb) (resp);
 }

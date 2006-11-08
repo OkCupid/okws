@@ -48,13 +48,13 @@ protected:
   oksrvc_configtest_t *ok_configtest;
 };
 
-TAMED void okclnt_configtest_t::process_T ()
+tamed void okclnt_configtest_t::process_T ()
 {
-  VARS {
+  tvars {
     bool rc (true);
   }
 
-  BLOCK { pub2 ()->run_cfg (cgi["fn"], @(rc)); }
+  twait { pub2 ()->run_cfg (cgi["fn"], mkevent (rc)); }
   if (!rc) {
     out << "Error including file " << cgi["fn"] << " or file wasn't given\n";
   } else {

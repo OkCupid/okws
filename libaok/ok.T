@@ -85,11 +85,11 @@ ok_httpsrv_t::servinfo () const
   return (si = b);
 }
 
-TAMED void
+tamed void
 ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
 			ok_httpsrv_t::http_resp_cb_t cb)
 {
-  VARS {
+  tvars {
     errdoc_t *e;
     ptr<http_response_t> ret;
     ptr<http_pub2_t> hp2;
@@ -101,19 +101,19 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
       .add ("SERVINFO", servinfo ());
     if (s)
       ar.add ("AUXSTR", s);
-    BLOCK { http_pub2_t::alloc (pub2 (), n, e->fn, @(hp2), &ar, v, gz); }
+    twait { http_pub2_t::alloc (pub2 (), n, e->fn, mkevent (hp2), &ar, v, gz); }
     ret = hp2;
   }
   if (!ret)
     ret = New refcounted<http_error_t> (n, servinfo (), s, v);
-  SIGNAL (cb, ret);
+  TRIGGER (cb, ret);
 }
 
-TAMED void
+tamed void
 ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s, 
 		       cbv::ptr c, http_inhdr_t *h) 
 {
-  VARS {
+  tvars {
     ptr<http_parser_raw_t> prs;
     int status2;
     htpv_t v;
@@ -121,18 +121,18 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
   }
   if (!h && !x->closed ()) {
     prs = http_parser_raw_t::alloc (x);
-    BLOCK { prs->parse (@(status2)); }
+    twait { prs->parse (mkevent (status2)); }
     if (status2 == HTTP_OK) {
       h = prs->hdr_p ();
     }
   }
   v = h ? h->get_vers () : 0;
-  BLOCK { geterr (n, s, v, h && h->takes_gzip (), @(e)); }
+  twait { geterr (n, s, v, h && h->takes_gzip (), mkevent (e)); }
   assert (e);
   if (svclog)
     log (x, h, e, s);
   if (!x->closed ()) {
-    BLOCK { e->send (x, @()); }
+    twait { e->send (x, mkevent ()); }
   }
   if (c) 
     (*c) ();
@@ -311,7 +311,7 @@ oksrvc_t::kill (svccb *v)
   oksig_t *sig = v->Xtmpl getarg<oksig_t> ();
   switch (*sig) {
   case OK_SIG_HARDKILL:
-    SVC_ERROR ("caught hard KILL signal; exitting immediately");
+    SVC_ERROR ("caught hard KILL trigger; exitting immediately");
     end_program ();
     break;
   default:
@@ -333,7 +333,7 @@ void
 oksrvc_t::shutdown ()
 {
   if (OKDBG2(OKD_SHUTDOWN))
-    SVC_CHATTER ("caught shutdown signal");
+    SVC_CHATTER ("caught shutdown trigger");
 
   sdflag = true;
   clnt = NULL; // don't ctlclose -- we might still need more messages.
@@ -390,26 +390,26 @@ ok_con_t::ctlclose ()
   ctlx = NULL; 
 }
 
-TAMED void
+tamed void
 oksrvc_t::debug_launch (cbv cb)
 {
   if (wait_for_signal_in_startup) {
     SVC_CHATTER ("waiting for SIGCONT before continuing...");
-    BLOCK { sigcb (SIGCONT, @()); }
+    twait { sigcb (SIGCONT, mkevent ()); }
     sigcb (SIGCONT, NULL);
   }
   (*cb) ();
 }
 
-TAMED void 
+tamed void 
 oksrvc_t::launch_T ()
 {
-  VARS {
+  tvars {
     bool pub1_rc, logd_rc, dbs_rc (true), pub2_rc (true);
     clnt_stat err;
   }
 
-  BLOCK { debug_launch (@()); }
+  twait { debug_launch (mkevent ()); }
 
   setsid ();
   connect ();
@@ -421,10 +421,10 @@ oksrvc_t::launch_T ()
     fatal << "No logging mechanism specified.\n";
   }
 
-  BLOCK {
-    launch_pub2 (@(pub2_rc));
-    launch_pub1 (@(pub1_rc));
-    logd->connect (@(logd_rc));
+  twait {
+    launch_pub2 (mkevent (pub2_rc));
+    launch_pub1 (mkevent (pub1_rc));
+    logd->connect (mkevent (logd_rc));
   }
   if (!pub2_rc) {
     SVC_FATAL_ERROR ("could not establish connection with pubd version 2");
@@ -440,14 +440,14 @@ oksrvc_t::launch_T ()
   }
 
   // Allow work after pub2 init, but before we connect to DBs.
-  BLOCK { custom_init0 (@()); }
-  BLOCK { launch_dbs (@(dbs_rc)); }
-  BLOCK { custom_init (@()); }
+  twait { custom_init0 (mkevent ()); }
+  twait { launch_dbs (mkevent (dbs_rc)); }
+  twait { custom_init (mkevent ()); }
 
   if (OKDBG2 (OKD_STARTUP))
     SVC_CHATTER ("calling READY RPC to okd");
 
-  BLOCK { clnt->call (OKCTL_READY, NULL, NULL, @(err)); }
+  twait { clnt->call (OKCTL_READY, NULL, NULL, mkevent (err)); }
 
   if (err) {
     SVC_FATAL_ERROR ("OK Child Initialization: " << err);
@@ -465,10 +465,10 @@ oksrvc_t::launch_T ()
   }
 }
 
-TAMED void 
+tamed void 
 oksrvc_t::launch_pub1 (cbb cb)
 {
-  VARS {
+  tvars {
     ptr<pub_res_t> pr;
     bool rc;
     bool res (true);
@@ -484,7 +484,7 @@ oksrvc_t::launch_pub1 (cbb cb)
   if (pub1_supported) {
     // setup and launch Remote Pub Client
     
-    BLOCK { rpcli->config (@(pr)); }
+    twait { rpcli->config (mkevent (pr)); }
     if (!*pr) {
       strbuf b;
       b << "Pub v1: config failed: " << pr->to_str ();
@@ -494,7 +494,7 @@ oksrvc_t::launch_pub1 (cbb cb)
 
     init_publist ();
     
-    BLOCK { pubfiles (@(rc)); }
+    twait { pubfiles (mkevent (rc)); }
     if (!rc) res = false;
   } else {
 
@@ -502,21 +502,21 @@ oksrvc_t::launch_pub1 (cbb cb)
     init_publist ();
   }
 
-  SIGNAL (cb, res);
+  TRIGGER (cb, res);
 }
 
-TAMED void 
+tamed void 
 oksrvc_t::launch_dbs (cbb cb)
 {
-  VARS { 
+  tvars { 
     vec<bool> rc; 
     bool ret (true);
   }
 
   rc.setsize (dbs.size ());
-  BLOCK {
+  twait {
     for (u_int i = 0; i < dbs.size (); i++) 
-      dbs[i]->connect (@(rc[i]));
+      dbs[i]->connect (mkevent (rc[i]));
   }
   for (u_int i = 0; i < dbs.size (); i++) {
     if (!rc[i])
@@ -524,7 +524,7 @@ oksrvc_t::launch_dbs (cbb cb)
   }
   if (!ret) 
     SVC_ERROR ("not all databases properly initalized");
-  SIGNAL (cb, ret);
+  TRIGGER (cb, ret);
 }
 
 
@@ -633,13 +633,13 @@ oksrvc_t::add (okclnt_base_t *c)
   clients.insert_head (c);
 }
 
-TAMED void
+tamed void
 okclnt_base_t::serve_T ()
 {
-  VARS {
+  tvars {
     int status;
   }
-  BLOCK { parse (@(status)); }
+  twait { parse (mkevent (status)); }
   if (status == HTTP_OK)
     if (process_flag)
       panic ("duplicate process called!\n");
@@ -733,11 +733,11 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
   return true;
 }
 
-TAMED void
+tamed void
 okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
 			    penv_t *e)
 {
-  VARS {
+  tvars {
     zbuf z;
     bool ret (true);
     strbuf b;
@@ -746,15 +746,15 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
   if (!output_frag_prepare ()) {
     ret = false;
   } else {
-    BLOCK { pub2 ()->run (&z, f, @(ret), a, opt, e); }
+    twait { pub2 ()->run (&z, f, mkevent (ret), a, opt, e); }
     if (ret) {
       z.to_strbuf (&b, false);
-      BLOCK { x->send (b, NULL, @()); }
+      twait { x->send (b, NULL, mkevent ()); }
     }
   }
 
   if (cb)
-    SIGNAL (cb, ret);
+    TRIGGER (cb, ret);
 }
 
 bool
@@ -1030,39 +1030,39 @@ ok_httpsrv_t::init_pub2 (u_int opts)
   return ret;
 }
 
-TAMED void
+tamed void
 ok_httpsrv_t::launch_pub2_T (cbb cb)
 {
-  VARS {
+  tvars {
     bool rc (false);
   }
   if (pub2 ()) {
-    BLOCK { pub2 ()->connect (@(rc)); }
+    twait { pub2 ()->connect (mkevent (rc)); }
     if (rc) {
-      BLOCK { post_launch_pub2 (@(rc)); }
+      twait { post_launch_pub2 (mkevent (rc)); }
     }
     if (!rc) 
       okdbg_warn (ERROR, "Connection/initialization to pub2 failed!");
   }
-  SIGNAL (cb, rc);
+  TRIGGER (cb, rc);
 }
 
-TAMED void
+tamed void
 oksrvc_t::post_launch_pub2_T (cbb cb)
 {
-  VARS {
+  tvars {
     clnt_stat s;
     bool rc (true);
   }
   assert (pub2 ());
-  BLOCK { clnt->call (OKCTL_REQ_ERRDOCS_2, NULL, &errdocs_x, @(s)); }
+  twait { clnt->call (OKCTL_REQ_ERRDOCS_2, NULL, &errdocs_x, mkevent (s)); }
   if (s) {
     strbuf b;
     b << "In getting error documents: " << s;
     okdbg_warn (ERROR, b);
     rc = false;
   }
-  SIGNAL (cb, rc);
+  TRIGGER (cb, rc);
 }
 
 ptr<pub2::ok_iface_t>

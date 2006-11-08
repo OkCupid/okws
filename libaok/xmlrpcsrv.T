@@ -22,10 +22,10 @@ xml_rpc_new_global_id ()
   return ++xml_rpc_id;
 }
 
-TAMED void
+tamed void
 okclnt_xmlrpc_t::handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb)
 {
-  VARS {
+  tvars {
     size_t i;
     str nm;
     vec<xml_resp_t> r2;
@@ -36,7 +36,7 @@ okclnt_xmlrpc_t::handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb)
 
   r2.setsize (q.size ());
 
-  BLOCK {
+  twait {
     for (i = 0; i < q.size (); i++) {
       if (!(nm = q[i]("methodName"))) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_CALL,
@@ -49,7 +49,7 @@ okclnt_xmlrpc_t::handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb)
 				"Bad parameters to mutlicall");
       } else {
 	calls.push_back (i);
-	_srvc->handle (this, nm, xml_req_t (xc), @(r2[i]));
+	_srvc->handle (this, nm, xml_req_t (xc), mkevent (r2[i]));
       }
     }
   }
@@ -131,7 +131,7 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
 {
   static const char *FN = "filename";
   static const char *OPTS = "options";
-  static const char *VARS = "variables";
+  static const char *tvars = "variables";
   
   *fn = x(FN);
 
@@ -149,8 +149,8 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
       }
     }
   }
-  for (size_t j = 0; j < x(VARS).size (); j++) {
-    xml_obj_const_t o = x(VARS)[j];
+  for (size_t j = 0; j < x(tvars).size (); j++) {
+    xml_obj_const_t o = x(tvars)[j];
     if (o.name () && o.name ().len ()) {
       a->add (o.name (), str (o.value ()));
     }
@@ -161,10 +161,10 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
 
 #define XML_PUB_ARGLOAD_FAILED  401
 
-TAMED void
+tamed void
 okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
 {
-  VARS {
+  tvars {
     xml_resp_t r;
     size_t i;
     str fn;
@@ -175,7 +175,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     vec<size_t> calls;
     ptr<bound_pfile2_t> dummy;
   }
-  BLOCK {
+  twait {
     r.setsize (q.size ());
     out.setsize (q.size ());
     pub_errc.setsize (q.size ());
@@ -184,7 +184,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
       aa.clear ();
       if (load_args (q[i], _srvc, &fn, &opts, &aa)) {
 	calls.push_back (i);
-	pub2 ()->run_full (out[i], fn, @(pub_errc[i], dummy), &aa, opts);
+	pub2 ()->run_full (out[i], fn, mkevent (pub_errc[i], dummy), &aa, opts);
       } else {
 	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
 	r[i]("error")("desc") = "failed to load Pub arguments";
@@ -202,7 +202,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
       r[j]("data") = base64_str_t (b);
     }
   }
-  SIGNAL (cb, r);
+  TRIGGER (cb, r);
 }
 
 #endif /* HAVE_EXPAT */

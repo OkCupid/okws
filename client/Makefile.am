@@ -19,7 +19,7 @@ enctst_SOURCES = enctst.C
 okwc2_SOURCES = okwcmain2.C
 mygz2_SOURCES = mygz2.C
 
-okdbg_LDADD = $(LIBASYNC) $(LIBPY)
+okdbg_LDADD = $(LIBASYNC) $(LDADD_THR_SFS) $(LIBPY)
 
 SUFFIXES = .C .T .h
 
