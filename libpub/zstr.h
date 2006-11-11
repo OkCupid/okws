@@ -108,15 +108,15 @@ public:
 
   // static const char * pointers (for compiled-in strings) --
   // to make caching hints.
-  inline void set_scc_p (u_int i) { _scc_p = i ; }
-  inline u_int get_scc_p () const { return _scc_p; }
+  inline void set_scc_p (intptr_t i) { _scc_p = i ; }
+  inline intptr_t get_scc_p () const { return _scc_p; }
 
 private:
   friend class ztab_cache_t;
   ihash_entry<zstr> hlnk;
   tailq_entry<zstr> qlnk;
   ptr<zstrobj> b;
-  u_int _scc_p;
+  intptr_t _scc_p;
 };
 
 class compressible_t {
@@ -228,7 +228,7 @@ private:
   size_t minz, maxz, maxtot, tot;
   fhash<str, zstr, &zstr::hlnk> tab;
   tailq<zstr, &zstr::qlnk> q;
-  qhash<u_int, zstr *> cptab;
+  qhash<intptr_t, zstr *> cptab;
 };
 
 extern ztab_t *ztab;
