@@ -63,14 +63,16 @@ OKWS_EXPAT
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
 
 OKWS_LAYOUT_VERSION
+SHORTVERSION=`echo ${LAYOUTVERSION} | awk -F. '{ print $1 "." $2 }' `
+AC_SUBST(SHORTVERSION)
 
 if test -z "$okwslibdir"; then
-   okwslibdirp='${pkglibdir}-${layoutversion}'
-   okwslibdir='${pkglibdir}-${layoutversion}${okwstagdir}'
+   okwslibdirp='${pkglibdir}-${SHORTVERSION}'
+   okwslibdir='${pkglibdir}-${SHORTVERSION}${okwstagdir}'
 fi
 if test -z "$okwsincludedir"; then
-   okwsincludedirp='${pkgincludedir}-${layoutversion}'
-   okwsincludedir='${pkgincludedir}-${layoutversion}${okwstagdir}'
+   okwsincludedirp='${pkgincludedir}-${SHORTVERSION}'
+   okwsincludedir='${pkgincludedir}-${SHORTVERSION}${okwstagdir}'
 fi
 okwsexecdir="$okwslibdir"
 CPPFLAG="$CPPFLAGS -DEXECDIR="'\"$(okwsexecdir)\"'

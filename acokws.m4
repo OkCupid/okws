@@ -1967,10 +1967,9 @@ AC_DEFUN([OKWS_LAYOUT_VERSION],
 [AC_ARG_WITH(fake-version,
 --with-fake-version=FAKE	Specify a fake version)
 if test "$with_fake_version"; then
-	layoutversion=$with_fake_version
+	LAYOUTVERSION=$with_fake_version
 else
-	layoutversion=$VERSION
+	LAYOUTVERSION=$VERSION
 fi
-layoutversion=`echo $layoutversion | $PERL -ne '{ s/([0-9]+)\.([0-9]+).*/$1.$2/; print $_; }' `
-AC_SUBST(layoutversion)
+AC_SUBST(LAYOUTVERSION)
 ])
