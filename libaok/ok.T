@@ -862,12 +862,13 @@ oksrvc_t::pubfiles (cbb cb)
 void
 oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
 {
+  bool ret (true);
   if (!*res) {
     SVC_ERROR ("Pub of Rootfiles Failed");
     res->cluck ();
-    (*cb) (false);
+	ret = false;
   }
-  (*cb) (true);
+  (*cb) (ret);
 }
 
 str
