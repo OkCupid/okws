@@ -1406,6 +1406,7 @@ public:
   str get_obj_name () const { return "pint_t"; }
   void dump2 (dumper_t *d) const { DUMP(d, "val: " << val); }
   bool to_xdr (xpub_val_t *x) const;
+  bool to_int64 (int64_t *i) const { *i = val; return true; }
 
   ptr<pval_t> flatten (penv_t *) ;
 private:
