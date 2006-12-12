@@ -86,21 +86,26 @@ parse.cc: parse.yy
 		fi;						\
 	fi
 
-CXXNOERR = -Wno-error
-
-scan.o: parse.o scan.cc parse.h
-	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
+scan.lo: $(srcdir)/scan.cc parse.o
+	if $(LTCXXCOMPILE) $(CXXNOERR) -MT $@ -MD -MP \
+	-MF "$(DEPDIR)/$*.Tpo" -c -o $@ $(srcdir)/scan.cc; \
+	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; \
+	else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 
 .PHONY: parseclean
 parseclean:
 	rm -f $(srcdir)/parse.cc $(srcdir)/parse.h $(srcdir)/scan.cc
 
+# Bison no longer generates bad code;  let the standard rules
+# attempt to do the right thing
 parse.o: parse.cc parse.h
+
+#parse.o: parse.cc parse.h
 # Note: certain versions of bison put __attribute__((unused)) after
 # unused goto labels, which doesn't agree well with gcc 3.2.1.
 # If you have problems, try the next line instead of the following one.
 #	$(CXXCOMPILE) $(CXXNOERR) -D'__attribute__(x)=' -c $(srcdir)/parse.cc
-	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/parse.cc
+#	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/parse.cc
 
 .PHONY: xdrclean tameclean
 xdrclean:

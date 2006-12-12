@@ -23,6 +23,7 @@ Alias		/static		/
 
 Service		configtest 	/configtest
 Service		simple	/simple
+Service		ACLNT_TRACE=10 pub1tst /pub1tst
 @@NO_XML@@Service		xmlex /xmlrpc
 
 ErrorDoc	404	/err/404.html

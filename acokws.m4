@@ -1544,19 +1544,29 @@ AC_DEFUN([SFS_SFS],
 --with-sfs[[=PATH]]         specify location of SFS libraries)
 AC_ARG_WITH(heavy,
 --with-heavy                do not use sfslite)
+AC_ARG_WITH(sfs-version,
+--with-sfs-version=[[VERSION]] Specify a Major.Minor SFS version)
 if test "$with_sfs" = yes -o "$with_sfs" = ""; then
+
+    if test "$with_sfs_version"
+    then
+	sfsvers="-${with_sfs_version}"
+    else
+	sfsvers=""
+    fi	
+
     for dir in "$prefix" /usr/local /usr; do
 
 	dnl
 	dnl sfs${sfstagdir} in there for bkwds comptability
 	dnl
-	sfsprefixes="sfs${sfstagdir} sfs"
+	sfsprefixes="sfs${sfsvers}${sfstagdir} sfs${sfsvers}"
 
 	dnl
 	dnl can turn off sfslite with the --with-heavy flag
 	dnl
 	if test ! "$with_heavy" -o "$with_heavy" = "no"; then
-	   sfsprefixes="sfslite${sfstagdir} $sfsprefixes"
+	   sfsprefixes="sfslite${sfsvers}${sfstagdir} $sfsprefixes"
 	fi
 
 	BREAKOUT=0
