@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 # $Id$
 
-LDADD = $(LIBSFSMISC) $(LIBARPC) $(LIBSFSCRYPT) $(LIBASYNC) $(LDADD_THR_SFS) $(LIBGMP) $(LIBPY)
+LDADD = $(LIBSFSMISC) $(LIBSVC) $(LIBARPC) $(LIBSFSCRYPT) $(LIBASYNC) $(LDADD_THR_SFS) $(LIBGMP) $(LIBPY)
 
 okwsbin_PROGRAMS = txarpcc
 

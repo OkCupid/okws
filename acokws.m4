@@ -1601,6 +1601,7 @@ if test -f ${with_sfs}/Makefile -a -f ${with_sfs}/autoconf.h; then
     LIBARPC=${with_sfs}/arpc/libarpc.la
     LIBSFSCRYPT=${with_sfs}/crypt/libsfscrypt.la
     LIBSFSMISC=${with_sfs}/sfsmisc/libsfsmisc.la
+    LIBSVC=${with_sfs}/svc/libsvc.la
     LIBTAME=${with_sfs}/libtame/libtame.la
     MALLOCK=${with_sfs}/sfsmisc/mallock.o
     TAME=${with_sfs}/tame/tame
@@ -1619,6 +1620,7 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
     LIBSFSCRYPT=${sfslibdir}/libsfscrypt.la
     LIBSFSMISC=${sfslibdir}/libsfsmisc.la
     LIBTAME=${sfslibdir}/libtame.la
+    LIBSVC=${sfslibdir}/libsvc.la
     MALLOCK=${sfslibdir}/mallock.o
     ENVMK=${sfslibdir}/env.mk
     SFS_PATH_PROG(rpcc, ${sfslibdir})
@@ -1640,6 +1642,11 @@ elif test -f ${with_sfs}/include/${sfsprfx}/autoconf.h \
 
 else
     AC_MSG_ERROR("Can\'t find SFS libraries")
+fi
+
+if test -z "$LIBSVC" -o ! -f "$LIBSVC"
+then
+	LIBSVC=""
 fi
 
 if test "$enable_static" = yes -a -z "${NOPAGING+set}"; then
@@ -1665,7 +1672,7 @@ AC_SUBST(LIBSFSCRYPT)
 AC_SUBST(LIBSFSMISC)
 AC_SUBST(LIBTAME)
 AC_SUBST(LDADD_THR_SFS)
-dnl AC_SUBST(LIBSVC)
+AC_SUBST(LIBSVC)
 dnl AC_SUBST(LIBSFS)
 AC_SUBST(RPCC)
 AC_SUBST(TAME)
@@ -1676,7 +1683,7 @@ SFS_GMP
 SFS_DMALLOC
 
 dnl LDEPS='$(LIBSFSMISC) $(LIBSVC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
-LDEPS='$(LIBTAME) $(LIBSFSMISC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
+LDEPS='$(LIBTAME) $(LIBSFSMISC) $(LIBSVC) $(LIBSFSCRYPT) $(LIBARPC) $(LIBASYNC)'
 LDADD="$LDEPS "'$(LIBGMP) $(LDADD_THR_SFS) $(LIBPY)'
 AC_SUBST(LDEPS)
 AC_SUBST(LDADD)

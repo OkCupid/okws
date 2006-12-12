@@ -30,6 +30,11 @@
 #include "rxx.h"
 #include "mimetypes.h"
 #include "oklocale.h"
+#include "okws_sfs.h"
+
+#if !defined(OKWS_AT_VERSION) || !OKWS_AT_VERSION(1,2,0,0)
+# error "This service requires OKWS version 1.2.0 or greater!"
+#endif
 
 class oksrvc_static_t : public oksrvc_t {
 public:

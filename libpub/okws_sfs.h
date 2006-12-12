@@ -30,18 +30,27 @@
 #include "refcnt.h"
 #include "str.h"
 
-#ifdef SFSLITE_PATCHLEVEL
-# if SFSLITE_PATCHLEVEL < 8008002
-#  error "Need sfslite patchlevel of 0.8.8pre2 or greater!"
-# endif
+#if !defined(SFSLITE_AT_VERSION) || !SFSLITE_AT_VERSION(1,0,0,2)
+# error "Need sfslite patchlevel of 0.8.8pre2 or greater!"
 #endif
 
 
 // Patch Level <major>.<minor>.<pre> (out to 2 places)
 // patch levels 0-99 are preleases.
 // patch level 100 is release
-#define OKWS_PATCHLEVEL      1001001
-#define OKWS_PATCHLEVEL_STR  "1.1pre1"
+#define OKWS_VERSION_MAJOR 1
+#define OKWS_VERSION_MINOR 2
+#define OKWS_VERSION_PATCHLEVEL 0
+#define OKWS_VERSION_PRE 1
+
+#define OKWS_AT_VERSION(Maj,Min,Pat,Pre) \
+  (VERSION_FLATTEN(Maj,Min,Pat,Pre) <= \
+   VERSION_FLATTEN(OKWS_VERSION_MAJOR, \
+		   OKWS_VERSION_MINOR, \
+                   OKWS_VERSION_PATCHLEVEL, \
+                   OKWS_VERSION_PRE))
+
+#define OKWS_PATCHLEVEL_STR  "1.2.0pre1"
 
 //
 // A header file for OKWS changes to SFS. Should be included by most files
