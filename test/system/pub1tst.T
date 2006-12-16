@@ -61,10 +61,10 @@ protected:
   oksrvc_pub1tst_t *ok_pub1tst;
 };
 
-TAMED void 
+tamed void 
 okclnt_pub1tst_t::process_T ()
 {
-  VARS {
+  tvars {
   }
   out << "hi\n";
   output (out);
