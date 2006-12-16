@@ -50,7 +50,7 @@
                    OKWS_VERSION_PATCHLEVEL, \
                    OKWS_VERSION_PRE))
 
-#define OKWS_PATCHLEVEL_STR  "1.2.0pre1"
+#define OKWS_PATCHLEVEL_STR  OKWS_VERSION
 
 //
 // A header file for OKWS changes to SFS. Should be included by most files
@@ -76,8 +76,8 @@ typedef enum { SFS_CLOCK_GETTIME = 0,
 // Ideally, we could use cb->signal() freely within the code, but it's
 // nice to still be compatible with existing SFS.
 //
-#ifndef SIGNAL
-#define SIGNAL(cb, ...) (*cb)(__VA_ARGS__)
+#ifndef TRIGGER
+# define TRIGGER (cb, ...) (*cb)(__VA_ARGS__)
 #endif
 
 #endif /* LIBPUB_OKWS_SFS_H */

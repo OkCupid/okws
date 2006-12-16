@@ -66,7 +66,6 @@ $a\
 / HAVE_RFORK_THREAD/b pdefine
 / HAVE_KTHREADS/b pdefine
 / HAVE_PTHREADS/b pdefine
-/ OK_VERSION/b pdefine
 / OKWS_VERSION/b pdefine
 
 :skip

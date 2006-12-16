@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 
 AC_INIT(config.h.in)
-AM_INIT_AUTOMAKE(okws, 1.1pre1)
+AM_INIT_AUTOMAKE(okws, 1.2.0pre1)
 AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(PUB)
@@ -160,8 +160,6 @@ ETAGS_ARGS='-C /dev/null'
 
 OKWS_SET_VERSION
 
-AC_SUBST(OK_VERSION)
-AC_SUBST(OKWS_VERSION)
 AC_SUBST(LIBPUB)
 AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBOKXML)
