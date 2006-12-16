@@ -32,7 +32,7 @@ dnl SFS_REQUIRE_THREADS
 dnl
 dnl Since only PTH works, for now just require PTH or nothing
 dnl
-SFS_FIND_PTH
+OKWS_FIND_PTH
 
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
@@ -57,13 +57,15 @@ SFS_SFS
 SFS_SET_CLOCK
 SFS_FIND_RESOLV
 OKWS_LIBS
-SFS_MYSQL
+OKWS_MYSQL
 OKWS_EXPAT
 
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
 
-OKWS_LAYOUT_VERSION
-SHORTVERSION=`echo ${LAYOUTVERSION} | awk -F. '{ print $1 "." $2 }' `
+SFS_LAYOUT_VERSION
+SFS_MAKE_SYMLINK
+
+SHORTVERSION=`echo ${layoutversion} | awk -F. '{ print $1 "." $2 }' `
 AC_SUBST(SHORTVERSION)
 
 if test -z "$okwslibdir"; then
