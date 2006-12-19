@@ -253,6 +253,15 @@ main_T (int argc, char **argv)
     }
   }
 
+  struct stat sb;
+  if (stat (jaildir.cstr (), &sb) != 0) {
+    warn << "No directory found for JailDir: " << jaildir << "\n";
+    exit (1);
+  } else if (!S_ISDIR(sb.st_mode)) {
+    warn << "Supposed 'JailDir' is not a directory: " << jaildir << "\n";
+    exit (1);
+  }
+
   if (!uname) uname = cfgparse->cfg ("RunAsUser", true);
   if (!gname) gname = cfgparse->cfg ("RunAsGroup", true);
 
