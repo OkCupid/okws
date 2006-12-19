@@ -317,7 +317,9 @@ public:
   void parseconfig (const str &cf);
 
   void set_signals ();
-  void shutdown (int sig);
+  void caught_signal (int sig);
+  void caught_okd_eof ();
+  void shutdown1 ();
   void shutdown2 (int status);
   bool init_jaildir ();
   bool init_interpreters ();

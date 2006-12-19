@@ -44,8 +44,8 @@ extern int optind;
 void
 okld_t::set_signals ()
 {
-  sigcb (SIGTERM, wrap (this, &okld_t::shutdown, SIGTERM));
-  sigcb (SIGINT,  wrap (this, &okld_t::shutdown, SIGINT));
+  sigcb (SIGTERM, wrap (this, &okld_t::caught_signal, SIGTERM));
+  sigcb (SIGINT,  wrap (this, &okld_t::caught_signal, SIGINT));
 }
 
 static void
@@ -1027,16 +1027,31 @@ okld_t::fix_uids ()
 }
 
 void
-okld_t::shutdown (int sig)
+okld_t::caught_signal (int sig)
 {
+  warn << "received shutdown signal (" << sig << "); shutting down\n";
+  shutdown1 ();
+}
+
+void
+okld_t::caught_okd_eof ()
+{
+  warn << "Caught okd EOF on internal socket.\n";
+  shutdown1 ();
+}
+
+void
+okld_t::shutdown1 ()
+{
+  warn << "Starting shutdown, Phase 1\n";
   sdflag = true;
-  warn << "received shutdown trigger (" << sig << "); shutting down\n";
   okdx = NULL;
 }
 
 void
 okld_t::shutdown2 (int status)
 {
+  warn << "Shutdown, Phase 2\n";
   struct stat sb;
   if (status != 0)
     warn << "okd exitted uncleanly, with status=" << status << "\n";
@@ -1111,7 +1126,7 @@ okld_t::launch_okd (int logfd, int pub2fd)
   // okd.  Second, is okd's actual exit, which we'll wait on.
   okd_pid = axprt_unix_spawn_pid;
   chldcb (okd_pid, wrap (this, &okld_t::shutdown2));
-  okdx = fdsink_t::alloc (x, wrap (this, &okld_t::shutdown, SIGTERM));
+  okdx = fdsink_t::alloc (x, wrap (this, &okld_t::caught_okd_eof));
   return true;
 }
 
