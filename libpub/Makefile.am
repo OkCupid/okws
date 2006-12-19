@@ -29,7 +29,7 @@ SUFFIXES = .T .C .h .x
 	-$(RPCC) -c $< || rm -f $@
 
 TAMEIN = pub2.T clone.T
-TAMEOUT = pub2.C clonce.C
+TAMEOUT = pub2.C clone.C
 RPCCIN = xpub.x fd_prot.x txa_prot.x
 RPCCOUT = xpub.C xpub.h fd_prot.C fd_prot.h txa_prot.C txa_prot.h
 
@@ -98,7 +98,7 @@ parseclean:
 
 # Bison no longer generates bad code;  let the standard rules
 # attempt to do the right thing
-parse.o: parse.cc parse.h
+parse.o: parse.cc
 
 #parse.o: parse.cc parse.h
 # Note: certain versions of bison put __attribute__((unused)) after

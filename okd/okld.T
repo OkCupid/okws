@@ -39,6 +39,8 @@
 extern char ** environ;
 extern int optind;
 
+#define PUBD2_KEY "Pubd2ExecPath"
+
 void
 okld_t::set_signals ()
 {
@@ -601,6 +603,7 @@ okld_t::check_ports ()
 void
 okld_t::parseconfig (const str &cf)
 {
+  configfile = cf;
   warn << "using config file: " << cf << "\n";
   parseargs pa (cf);
   bool errors = false;
@@ -612,6 +615,7 @@ okld_t::parseconfig (const str &cf)
   str grp;
   str okd_gr, okd_un;
   str root, wheel;
+  bool no_pub_v2_support (false);
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -637,7 +641,8 @@ okld_t::parseconfig (const str &cf)
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
 			       &ok_base_t::got_ports))
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
-    .add ("Pubd2ExecPath", wrap (this, &okld_t::got_pubd2_exec))
+    .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
+    .add ("NoPub2", &no_pub_v2_support)
     .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
     .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
     .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
@@ -766,6 +771,15 @@ okld_t::parseconfig (const str &cf)
     errors = true;
   }
 
+  if (!no_pub_v2_support) {
+    if (!_pub_v2_error && !pubd2exc) {
+      if (!guess_pubd2 (cf))
+	errors = true;
+    }
+  } else {
+    warn << "Disabling Pub v2 support.\n";
+  }
+
   if (allports.size () == 0) {
     warn << "No listen ports given; assuming default port (80)\n";
     allports.push_back (listenport);
@@ -889,6 +903,21 @@ okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 				env);
 }
 
+bool
+okld_t::guess_pubd2 (const str &cf)
+{
+  bool err (false);
+  vec<str> v;
+  
+  warn << "No '" << PUBD2_KEY << "' given; guessing where to find pubd2.\n";
+  v.push_back (PUBD2_KEY);
+  v.push_back ("pubd");
+  v.push_back ("-2");
+  got_pubd2_exec (v, cf, &err);
+  
+  return !err;
+}
+
 void
 okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 {
@@ -901,6 +930,9 @@ okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
     // pubd already uses -s, so we supply a different command line flag
     // to pass pubd its end of the Unix domain socket
     pubd2exc->set_command_line_flag ("-x");
+    _pub_v2_error = false;
+  } else {
+    _pub_v2_error = true;
   }
 }
 
@@ -1130,12 +1162,16 @@ main (int argc, char *argv[])
   str cf;
   setprogname (argv[0]);
   str dbf;
+  str pidfile;
 
   set_debug_flags ();
 
   int ch;
-  while ((ch = getopt (argc, argv, "qf:D:?")) != -1)
+  while ((ch = getopt (argc, argv, "qf:D:?p:")) != -1)
     switch (ch) {
+    case 'p':
+      pidfile = optarg;
+      break;
     case 'D':
       dbf = optarg;
       break;
@@ -1162,15 +1198,18 @@ main (int argc, char *argv[])
   if (!cf) 
     cf = get_okws_config ();
 
+  // Need to daemonize before parsing config file, since the output
+  // of the config file parsing operation should go into the syslog.
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
-    daemonize ();
+    daemonize (pidfile);
   }
 
-  warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okld_t *okld = New okld_t ();
   okld->debug_stallfile = dbf;
   okld->set_signals ();
+
+  warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okld->launch (cf);
   amain ();
 }
@@ -1178,9 +1217,7 @@ main (int argc, char *argv[])
 tamed 
 void okld_t::launch (str cf)
 {
-  configfile = cf;
   parseconfig (cf);
-
   init_clock_daemon ();
 
   encode_env ();

@@ -291,7 +291,8 @@ public:
       used_primary_port (false),
       pubd2 (NULL),
       pub_v1_support (false),
-      _okd_mgr_socket (okd_mgr_socket) {}
+      _okd_mgr_socket (okd_mgr_socket),
+      _pub_v2_error (false) {}
       
 
   ~okld_t () { if (logexc) delete logexc; }
@@ -307,13 +308,14 @@ public:
   
   void okld_exit (int rc);
 
-  void launch (str cf, CLOSURE);
+  void launch (str s, CLOSURE);
   void launch_logd (cbi cb, CLOSURE);
   void launch_pubd2 (cbi cb, CLOSURE);
 
   bool launch_okd (int logfd, int pubd);
 
   void parseconfig (const str &cf);
+
   void set_signals ();
   void shutdown (int sig);
   void shutdown2 (int status);
@@ -332,6 +334,8 @@ public:
   bool safe_startup () const { return safe_startup_fl ;}
 
 private:
+
+  bool guess_pubd2 (const str &cf);
 
   struct alias_t {
     alias_t (const str &t, const str &f, const str &l, okws1_port_t p)
@@ -411,6 +415,9 @@ private:
   clone_only_client_t *pubd2;
   bool pub_v1_support;
   str _okd_mgr_socket;
+  bool _pub_v2_error;
+  
+  strbuf _errs;
 };
 
 #endif /* _OKD_OKD_H */

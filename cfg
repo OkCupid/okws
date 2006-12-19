@@ -33,13 +33,13 @@ if [ $DEBUG ]
 then
     echo "export DEBUG=$DEBUG" >> $CFG
 fi
-if [ $CXX ]
+if [ "$CXX" ]
 then
-    echo "export CXX=$CXX" >> $CFG
+    echo "export CXX='$CXX'" >> $CFG
 fi
-if [ $CC ] 
+if [ "$CC" ] 
 then
-    echo "export CC=$CC" >> $CFG
+    echo "export CC='$CC'" >> $CFG
 fi
 
 CONFIGURE=`echo $0 | sed 's/cfg/configure/' `

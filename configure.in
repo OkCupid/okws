@@ -79,7 +79,7 @@ fi
 okwsexecdir="$okwslibdir"
 CPPFLAG="$CPPFLAGS -DEXECDIR="'\"$(okwsexecdir)\"'
 
-if test -z "$okwstag" -o "${okws_systembin+set}" = "set" ; then
+if test "${okws_systembin+set}" = "set" ; then
 	okwsbindir='${prefix}/bin'
 else
 	okwsbindir="$okwslibdir"

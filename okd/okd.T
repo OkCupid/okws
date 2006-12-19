@@ -364,6 +364,7 @@ okd_t::parseconfig ()
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
     .ignore ("Pubd2ExecPath")
+    .ignore ("NoPub2")
     .ignore ("Pub2WSS")
     .ignore ("Pub2Caching")
     .ignore ("Pub2VisibleErrors")
@@ -582,7 +583,7 @@ void start_okd (int argc, char **argv)
 
   setprogname (argv[0]);
   set_debug_flags ();
-  
+
   int ch;
   while ((ch = getopt (argc, argv, "f:l:D:c:p:x:")) != -1)
     switch (ch) {
