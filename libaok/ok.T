@@ -645,7 +645,9 @@ okclnt_base_t::serve_T ()
       panic ("duplicate process called!\n");
     else {
       process_flag = true;
-      process ();
+      if (pre_process ()) {
+	process ();
+      }
     }
   else
     error (status);

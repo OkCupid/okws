@@ -393,7 +393,17 @@ pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
     pse = cases[v];
     if (!pse) pse = def;
 
-    if (!pse && (v.len () != 0 || !nulldef)) 
+    //
+    // MK 12.20.06
+    // Used to be this:
+    //
+    //   if (!pse && (v.len () != 0 || !nulldef)) 
+    //
+    // Which was causing warnings when some value was given for the key,
+    // and a nulldef was given.  I'm not entirely sure what I had in
+    // mind with this, but err on the side of fewer warnings here.
+    //
+    if (!pse && !nulldef)
       o->output_err (e, strbuf ("switch: no case when ") << key->name ()  
 		     << " = " << v, lineno);
   } 
