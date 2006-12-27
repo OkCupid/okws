@@ -231,7 +231,6 @@ public:
   virtual void error (int n, const str &s = NULL);
   virtual void process () = 0;
   virtual bool pre_process () { return true; }
-  virtual void parse () { parse_T (); }
   virtual void output (compressible_t &b);
   virtual void output (compressible_t *b);
   virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
