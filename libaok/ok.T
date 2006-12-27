@@ -1091,11 +1091,11 @@ okclnt_base_t::set_localizer (ptr<const pub_localizer_t> l)
 pval_w_t 
 oksrvc_t::operator[] (const str &s) const 
 { 
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call operator[] without Pub v1 support.");
-    return pval_w_t ();
-  } 
-  return (*rpcli)[s] ;
+  if (!supports_pub1 () || !_pub1_cfg || use_pub2_cfg ()) {
+    return ((*pub2 ()))[s];
+  } else {
+    return (*rpcli)[s] ;
+  }
 }
 
 

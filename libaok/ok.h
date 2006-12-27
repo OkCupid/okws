@@ -166,6 +166,7 @@ public:
   virtual void post_launch_pub2 (cbb cb) { (*cb) (true); }
 
   virtual ptr<pub2::remote_publisher_t> pub2 () { return _pub2; }
+  virtual ptr<const pub2::remote_publisher_t> pub2 () const { return _pub2; }
 
 private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
@@ -331,7 +332,8 @@ public:
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
       pub1_supported (true),
       wait_for_signal_in_startup (false),
-      _n_newcli (0) 
+      _n_newcli (0),
+      _pub1_cfg (true)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -341,7 +343,15 @@ public:
 
   virtual void launch () { launch_T (); }
   virtual newclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
-  virtual void init_publist () {}
+
+  // if we didn't give init_publist, then we're using pub2 for
+  // everything, including CFG variables.
+  virtual void init_publist () { _pub1_cfg = false; }
+
+  // Subclasses that specialize this method to true can
+  // always use pub2 configuration.
+  virtual bool use_pub2_cfg () const { return false; }
+
   virtual u_int get_andmask () const { return 0xffffffff; }
   virtual u_int get_ormask () const { return 0; }
   virtual void custom_init (cbv cb) { (*cb) (); }
@@ -430,6 +440,7 @@ protected:
   bool pub1_supported;
   bool wait_for_signal_in_startup;
   int _n_newcli;
+  bool _pub1_cfg;
 
 private:
   void post_launch_pub2_T (cbb cb, CLOSURE);

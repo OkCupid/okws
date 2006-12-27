@@ -30,8 +30,12 @@
 #include "refcnt.h"
 #include "str.h"
 
-#if !defined(SFSLITE_AT_VERSION) || !SFSLITE_AT_VERSION(1,0,0,2)
-# error "Need sfslite patchlevel of 0.8.8pre2 or greater!"
+#if !defined(SFSLITE_AT_VERSION) 
+# error "Need sfslite patchlevel of 1.0.0pre2 or greater!"
+#else
+# if !SFSLITE_AT_VERSION(1,0,0,2)
+#  error "Need sfslite patchlevel of 1.0.0pre2 or greater!"
+# endif
 #endif
 
 
