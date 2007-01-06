@@ -259,18 +259,9 @@ okd_t::newmgrsrv (ptr<axprt_stream> x)
   vNew okd_mgrsrv_t (x, this);
 }
 
-void
-okd_t::parseconfig ()
+bool
+okd_t::parse_file (const str &cf)
 {
-  const str &cf = configfile;
-  warn << "using config file: " << cf << "\n";
-  parseargs pa (cf);
-  bool errors = false;
-
-  int line;
-  vec<str> av;
-
-  str un, gn;
   conftab ct;
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
@@ -287,6 +278,8 @@ okd_t::parseconfig ()
     .add ("OkMgrSocketGroup", &_socket_group)
     .add ("OkMgrSocketAccessMode", &_socket_mode, 0, 0777)
     .add ("ListenQueueSize", &ok_listen_queue_max, OK_QMIN, OK_QMAX)
+    .add ("include", wrap (static_cast<config_parser_t *> (this), 
+			   &config_parser_t::include))
 
     .add ("OkdFDHighWat", &okd_fds_high_wat, 
 	  OKD_FDS_HIGH_WAT_LL, OKD_FDS_HIGH_WAT_UL)
@@ -316,8 +309,8 @@ okd_t::parseconfig ()
     .add ("ServerNameHTTP", &global_okws_server_label)
     .add ("HostName", &hostname)
 
-    .add ("OkdUser", &un)
-    .add ("OkdGroup", &gn)
+    .add ("OkdUser", &_config_user)
+    .add ("OkdGroup", &_config_grp)
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockFile", &mmc_file)
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)
@@ -381,23 +374,20 @@ okd_t::parseconfig ()
     .ignore ("ServiceAcceptMessages")
     .ignore ("DangerousZbufs");
 
+  return ct.run (cf);
+}
 
-  while (pa.getline (&av, &line)) {
-    if (!ct.match (av, cf, line, &errors)) {
-      warn << cf << ":" << line << ": unknown config parameter\n";
-      errors = true;
-    }
-  }
-
-  if (un) okd_usr = ok_usr_t (un);
-  if (gn) okd_grp = ok_grp_t (gn);
+bool
+okd_t::post_config (const str &fn)
+{
+  if (_config_user) okd_usr = ok_usr_t (_config_user);
+  if (_config_grp) okd_grp = ok_grp_t (_config_grp);
 
   if (!hostname)
     hostname = myname ();
-  if (errors)
-    exit (NO_SOCKET_ALLOCATED);
 
   init_syscall_stats ();
+  return true;
 }
 
 void
@@ -648,7 +638,10 @@ okd_t::launch ()
     bool pubd_rc, logd_rc, pub2_rc (true);
     bool do_exit (false);
   }
-  parseconfig ();
+
+  if (!run_configs (configfile))
+    exit (NO_SOCKET_ALLOCATED);
+  
   check_runas ();
   open_mgr_socket ();
   init_pub2 ();

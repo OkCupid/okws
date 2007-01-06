@@ -275,11 +275,12 @@ private:
   bool _free_ipret;
 };
 
-class okld_t : public ok_base_t 
+class okld_t : public ok_base_t , public config_parser_t
 {
 public:
   okld_t () 
-    : svc_grp (ok_okd_gname),
+    : config_parser_t (), 
+      svc_grp (ok_okd_gname),
       nxtuid (ok_svc_uid_low), logexc (NULL), pubd2exc (NULL),
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), okd_pid (-1),
       sdflag (false), service_bin (ok_service_bin),
@@ -314,7 +315,7 @@ public:
 
   bool launch_okd (int logfd, int pubd);
 
-  void parseconfig (const str &cf);
+  bool parseconfig (const str &cf);
 
   void set_signals ();
   void caught_signal (int sig);
@@ -334,6 +335,10 @@ public:
   ptr<fdsink_t> okdx;
   ok_grp_t svc_grp;
   bool safe_startup () const { return safe_startup_fl ;}
+
+protected:
+  bool parse_file (const str &fn);
+  bool post_config (const str &fn);
 
 private:
 
@@ -420,6 +425,13 @@ private:
   bool _pub_v2_error;
   
   strbuf _errs;
+
+  // variables set during configuration stage
+  str _config_grp, _config_okd_gr, _config_okd_un;
+  str _config_root, _config_wheel;
+  bool _config_no_pub_v2_support;
+						 
+
 };
 
 #endif /* _OKD_OKD_H */

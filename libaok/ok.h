@@ -77,6 +77,20 @@ protected:
   ptr<aclnt> clnt; 
 };
 
+class config_parser_t {
+public:
+  config_parser_t () {}
+  virtual ~config_parser_t () {}
+  bool run_configs (const str &fn);
+  void include (vec<str> s, str loc, bool *errp);
+protected:
+  bool do_file (const str &fn);
+  virtual bool parse_file (const str &fn) = 0;
+  virtual bool post_config (const str &fn) { return true; }
+private:
+  bhash<str> _seen; // files seen
+};
+
 class ok_base_t : public jailable_t {
 public:
   ok_base_t (const str &h = NULL, int lfd = -1, int pfd = -1)

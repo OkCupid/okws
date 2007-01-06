@@ -141,14 +141,16 @@ private:
   bool srv_disabled;
   int per_svc_nfd_in_xit;  // per service number FD in transit
   int _n_sent;             // N sent since reboot
+
 };
 
-class okd_t : public ok_httpsrv_t 
+class okd_t : public ok_httpsrv_t, public config_parser_t 
 {
 public:
   okd_t (const str &cf, int logfd_in, int okldfd_in, const str &cdd, 
 	 okws1_port_t p, int pub2fd_in) : 
     ok_httpsrv_t (NULL, logfd_in, pub2fd_in),
+    config_parser_t (),
     okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
     pubd (NULL), 
     configfile (cf),
@@ -198,7 +200,6 @@ public:
   void launch_logd (cbb cb, CLOSURE);
   void launch_pubd (cbb cb, CLOSURE);
 
-  void parseconfig ();
   void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
   void newserv (int fd);
   void shutdown (int sig);
@@ -246,6 +247,8 @@ protected:
   // queueing stuff
   void enable_accept_guts ();
   void disable_accept_guts ();
+  bool parse_file (const str &fn);
+  bool post_config (const str &fn);
 
 private:
   // Callbacks for Repub, Version 1
@@ -308,6 +311,8 @@ private:
   str _socket_filename;
   str _socket_group, _socket_owner;
   int _socket_mode;
+
+  str _config_grp, _config_user;
 };
 
 class okd_mgrsrv_t 

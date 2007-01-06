@@ -1156,3 +1156,44 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   *errp = true;
   return false;
 }
+
+bool
+config_parser_t::do_file (const str &fn)
+{
+  bool rc = false;
+  phash_t ph;
+  if (!file2hash (fn, &ph)) {
+    warn << "Cannot open config file: " << fn << "\n";
+  } else {
+    str s = ph.to_str ();
+    if (_seen[s]) {
+      warn << "File included more than once: " << fn << "\n";
+    } else {
+      _seen.insert (s);
+      warn << "Using config file: " << fn << "\n";
+      if (!parse_file (fn)) {
+	warn << "Config file parse failed: " << fn << "\n";
+      } else {
+	rc = true;
+      }
+    }
+  }
+  return rc;
+}
+
+bool
+config_parser_t::run_configs (const str &fn)
+{
+  return (do_file (fn) && post_config (fn));
+}
+
+void
+config_parser_t::include (vec<str> s, str loc, bool *errp)
+{
+  if (s.size () != 2) {
+    warn << loc << ": usage: include <file>\n";
+    *errp = true;
+  } else if (!do_file (s[1])) {
+    *errp = true;
+  }
+}

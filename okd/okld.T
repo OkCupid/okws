@@ -600,22 +600,11 @@ okld_t::check_ports ()
   return ret;
 }
 
-void
-okld_t::parseconfig (const str &cf)
+bool
+okld_t::parse_file (const str &cf)
 {
-  configfile = cf;
-  warn << "using config file: " << cf << "\n";
-  parseargs pa (cf);
-  bool errors = false;
-
-  int line;
-  vec<str> av;
-
   conftab ct;
-  str grp;
-  str okd_gr, okd_un;
-  str root, wheel;
-  bool no_pub_v2_support (false);
+  _config_no_pub_v2_support = false;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -632,7 +621,7 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceLowUid", &ok_svc_uid_low, OK_UID_MIN, OK_UID_MAX)
     .add ("ServiceHighUid", &ok_svc_uid_high, OK_UID_MIN, OK_UID_MAX)
     .add ("ServiceMode", &ok_svc_mode, 0, 0777)
-    .add ("ServiceGroup", &grp)
+    .add ("ServiceGroup", &_config_grp)
     .add ("OkdExecPath", wrap (this, &okld_t::got_okd_exec))
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
     .add ("SocketDir", wrap (got_dir, &sockdir))
@@ -642,7 +631,7 @@ okld_t::parseconfig (const str &cf)
 			       &ok_base_t::got_ports))
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
-    .add ("NoPub2", &no_pub_v2_support)
+    .add ("NoPub2", &_config_no_pub_v2_support)
     .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
     .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
     .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
@@ -668,13 +657,13 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceLifeRequests", &ok_svc_life_reqs, 0, INT_MAX)
     .add ("ServiceLifeTime", &ok_svc_life_time, 0, INT_MAX)
 
-    .add ("RootUser", &root)
-    .add ("RootGroup", &wheel)
+    .add ("RootUser", &_config_root)
+    .add ("RootGroup", &_config_wheel)
 
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
 
-    .add ("OkdUser", &okd_un)
-    .add ("OkdGroup", &okd_gr)
+    .add ("OkdUser", &_config_okd_un)
+    .add ("OkdGroup", &_config_okd_gr)
     
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
@@ -703,6 +692,8 @@ okld_t::parseconfig (const str &cf)
     .add ("ServiceFDLowWat", &ok_svc_fds_low_wat, 0, 10000)
     .add ("ServiceAcceptMessages", &ok_svc_accept_msgs)
 
+    .add ("include", wrap (static_cast<config_parser_t *> (this), 
+			   &config_parser_t::include))
 
     .add ("OkdFDHighWat", &okd_fds_high_wat, 
 	  OKD_FDS_HIGH_WAT_LL, OKD_FDS_HIGH_WAT_UL)
@@ -733,21 +724,26 @@ okld_t::parseconfig (const str &cf)
     .ignore ("ShutdownTimeout")
     .ignore ("OkdDebugMsgFreq");
 
+  return ct.run (cf);
+}
 
-  while (pa.getline (&av, &line)) {
-    if (!ct.match (av, cf, line, &errors)) {
-      warn << cf << ":" << line << ": unknown config parameter\n";
-      errors = true;
-    }
-  }
+bool
+okld_t::post_config (const str &cf)
+{
+  bool errors = false;
 
   // allow these to be set
-  if (root) ok_root = root;
-  if (wheel) ok_wheel = wheel;
+  if (_config_root) ok_root = _config_root;
+  if (_config_wheel) ok_wheel = _config_wheel;
 
-  if (grp) svc_grp = ok_grp_t (grp);
-  if (okd_un) okd_usr = ok_usr_t (okd_un);
-  if (okd_gr) okd_grp = ok_grp_t (okd_gr);
+  if (_config_grp) {
+    svc_grp = ok_grp_t (_config_grp);
+  } else {
+    warn << "no 'ServiceGroup' provided; using default: " 
+	 << svc_grp.getname () << "\n";
+  }
+  if (_config_okd_un) okd_usr = ok_usr_t (_config_okd_un);
+  if (_config_okd_gr) okd_grp = ok_grp_t (_config_okd_gr);
 
   nxtuid = ok_svc_uid_low;
 
@@ -771,7 +767,7 @@ okld_t::parseconfig (const str &cf)
     errors = true;
   }
 
-  if (!no_pub_v2_support) {
+  if (!_config_no_pub_v2_support) {
     if (!_pub_v2_error && !pubd2exc) {
       if (!guess_pubd2 (cf))
 	errors = true;
@@ -793,8 +789,7 @@ okld_t::parseconfig (const str &cf)
   if (!hostname)
     hostname = myname ();
 
-  if (errors)
-    okld_exit (1);
+  return (!errors);
 }
 
 tamed void 
@@ -1232,7 +1227,10 @@ main (int argc, char *argv[])
 tamed 
 void okld_t::launch (str cf)
 {
-  parseconfig (cf);
+  configfile = cf;
+  if (!run_configs (cf))
+    okld_exit (1);
+
   init_clock_daemon ();
 
   encode_env ();
