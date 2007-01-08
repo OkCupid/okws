@@ -698,7 +698,7 @@ okld_t::parse_file (const str &cf)
     .add ("OkdFDHighWat", &okd_fds_high_wat, 
 	  OKD_FDS_HIGH_WAT_LL, OKD_FDS_HIGH_WAT_UL)
     .add ("OkdFDLowWat", &okd_fds_low_wat, 
-	  OKD_FDS_LOW_WAT_LL, OKD_FDS_HIGH_WAT_UL)
+	  OKD_FDS_LOW_WAT_LL, OKD_FDS_LOW_WAT_UL)
     .add ("ServiceFDQuota", &ok_svc_fd_quota, 
 	  OK_SVC_FD_QUOTA_LL, OK_SVC_FD_QUOTA_UL)
 

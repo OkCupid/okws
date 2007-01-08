@@ -7,3 +7,7 @@ Patrick Crosby, Jason Jung, Alfred Perlstein
 
 Ian Rickard
  - GCC 4.0 and Darwin Support
+
+Michael Walfish
+ - Various bugfixes and patches;
+ - output_file logic in ok.T
