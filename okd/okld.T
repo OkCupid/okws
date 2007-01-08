@@ -688,8 +688,8 @@ okld_t::parse_file (const str &cf)
     .add ("SendSockAddrIn", &ok_send_sin)
     .add ("RecycleSuioLimit", &ok_recycle_suio_limit, OK_RSL_LL, OK_RSL_UL)
 
-    .add ("ServiceFDHighWat", &ok_svc_fds_high_wat, 0, 10240)
-    .add ("ServiceFDLowWat", &ok_svc_fds_low_wat, 0, 10000)
+    .add ("ServiceFDHighWat", &ok_svc_fds_high_wat, 0, OK_SVC_FD_HIGH_WAT_UL)
+    .add ("ServiceFDLowWat", &ok_svc_fds_low_wat, 0, OK_SVC_FD_LOW_WAT_UL)
     .add ("ServiceAcceptMessages", &ok_svc_accept_msgs)
 
     .add ("include", wrap (static_cast<config_parser_t *> (this), 
