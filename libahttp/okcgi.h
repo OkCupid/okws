@@ -90,8 +90,10 @@ public:
   static ptr<cgi_t> str_parse (const str &s);
 
   void set_uri_mode (bool b) { uri_mode = b; }
-  abuf_stat_t parse_key_or_val ();
-  abuf_stat_t parse_key_or_val (str *r, cgi_var_t vt);
+  // next function is virtual for MW, who wants to hook in at this point
+  // in the parsing.
+  virtual abuf_stat_t parse_guts_driver ();
+  abuf_stat_t parse_key_or_val (str *r, bool use_internal_state = true);
 
   virtual bool flookup (const str &k, cgi_files_t **v) { return false; }
 private:
@@ -115,6 +117,8 @@ private:
 protected:
   char *scratch;    // buffer for parse / scratch
   u_int buflen;
+  abuf_stat_t process_parsed_key_or_val(abuf_stat_t rc, str& s);
+  bool parse_still_waiting();
 };
 
 class cgiw_t {

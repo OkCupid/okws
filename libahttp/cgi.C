@@ -89,7 +89,7 @@ cgi_decode (const str &in)
   abuf_str_t a (in);
   cgi_t c (&a, false, CGISS_SIZE, cgi_static_scratch);
   str s;
-  return (c.parse_key_or_val (&s, CGI_NONE) == ABUF_EOF ? s : (str )NULL);
+  return (c.parse_key_or_val (&s, false) == ABUF_EOF ? s : (str )NULL);
 }
 
 #define MAX_EXPAND_FACTOR 3
@@ -206,7 +206,7 @@ cgi_t::reset ()
   async_parser_t::reset ();
 }
 */
-    
+
 cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
   : async_parser_t (a), pairtab_t<cgi_pair_t> (true),
     cookie (ck), bufalloc (false),
@@ -240,7 +240,7 @@ void
 cgi_t::parse_guts ()
 {
   abuf_stat_t rc;
-  do { rc = parse_key_or_val (); } while (rc != ABUF_EOF && rc != ABUF_WAIT);
+  do { rc = parse_guts_driver (); } while (rc != ABUF_EOF && rc != ABUF_WAIT);
   if (rc == ABUF_EOF) {
     finish_parse (HTTP_OK);
   }
@@ -264,13 +264,27 @@ cgi_t::parse_guts ()
     
 
 abuf_stat_t
-cgi_t::parse_key_or_val ()
+cgi_t::parse_guts_driver ()
 {
-  if (pstate == CGI_CKEY && pcp == scratch && abuf->skip_ws () == ABUF_WAIT)
+  if (parse_still_waiting())
     return ABUF_WAIT;
 
   str s;
-  abuf_stat_t rc = parse_key_or_val (&s, pstate);
+  abuf_stat_t rc = parse_key_or_val (&s);
+  return process_parsed_key_or_val(rc, s);
+}
+
+bool
+cgi_t::parse_still_waiting()
+{
+  return (pstate           == CGI_CKEY    && 
+	  pcp              == scratch     && 
+	  abuf->skip_ws () == ABUF_WAIT);
+}
+
+abuf_stat_t
+cgi_t::process_parsed_key_or_val(abuf_stat_t rc, str& s)
+{
   switch (rc) {
   case ABUF_SEPARATOR:
     assert (KEY_STATE (pstate));
@@ -293,6 +307,8 @@ cgi_t::parse_key_or_val ()
       insert (key, s);
     break;
   case ABUF_PARSE_ERR:
+    // MW: this is definitely unexpected... especially since
+    // parse_key_or_val(&s,vt) doesn't return this error code!
     panic ("Unexpected ABUF_PARSE_ERR return in CGI parse routines\n");
     break;
   default:
@@ -302,12 +318,19 @@ cgi_t::parse_key_or_val ()
 }
 
 abuf_stat_t
-cgi_t::parse_key_or_val (str *r, cgi_var_t vt)
+cgi_t::parse_key_or_val (str *r, bool use_internal_state)
 {
   int ch;
   bool flag = true;
   abuf_stat_t ret = ABUF_OK;
   abuf_stat_t rc;
+  // this line replaces a switch that used to happen implicitly 
+  // based on whatever the caller passed in. feels cleaner to me not to
+  // pass a member variable in as a parameter. probably that was
+  // happening b/c what was meant was "am I using the internal state or
+  // not? if not, I need another switch." the line below makes that
+  // explicit.
+  cgi_var_t vt = use_internal_state ? pstate : CGI_NONE;
 
   if (inhex) {
     rc = parse_hexchar (&pcp, endp);

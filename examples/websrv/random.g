@@ -27,8 +27,8 @@
 #include "pub.h"
 #include <unistd.h>
 #include "crypt.h"
-#include "amysql.h"
 #include "pt1_prot.h"
+//#include "amysql.h"
 
 #define DB "10.1.1.20"
 
