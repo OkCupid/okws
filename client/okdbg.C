@@ -2,6 +2,8 @@
 
 #include "okdbg.h"
 
+#include <inttypes.h>
+
 static void
 usage ()
 {
@@ -77,7 +79,7 @@ main (int argc, char *argv[])
     }
   }
 
-  printf ("%s=0x%qx\n", OKWS_DEBUG_OPTIONS, res);
+  printf ("%s=0x%" PRIx64 "\n", OKWS_DEBUG_OPTIONS, res);
   return 0;
 }
 

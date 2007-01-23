@@ -33,6 +33,8 @@
 #include "okerr.h"
 #include "okclone.h"
 
+#include <inttypes.h>
+
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
 #define LOG_BUF_DEFSIZE    0x10000
@@ -310,7 +312,7 @@ logbuf_t::put (u_int i)
 logbuf_t &
 logbuf_t::put (u_int64_t i)
 {
-  u_int l = sprintf (tiny, "%llx", i);
+  u_int l = sprintf (tiny, "%" PRIx64 "", i);
   return copy (tiny, l);
 }
 

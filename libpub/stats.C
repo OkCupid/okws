@@ -57,9 +57,11 @@ histogram_t::combine (const histogram_t &h)
 
 static int qcmp (const void *a, const void *b)
 {
-  int av = reinterpret_cast<int> (a);
-  int bv = reinterpret_cast<int> (b);
-  return (av - bv);
+  if(a > b)
+      return 1;
+  else if (a < b)
+      return -1;
+  return 0;
 }
 
 histogram_set_t::histogram_set_t (const int v[], int n, int x, int s)

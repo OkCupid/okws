@@ -38,7 +38,7 @@ mstr2::resize (size_t ul)
 {
   size_t sz = len ();
   size_t sz2 = (sz << 1) + 1;
-  warn ("XXX: resize %u, %u, %u\n", ul, sz, sz2); // DEBUG
+  warn ("XXX: resize %zu, %zu, %zu\n", ul, sz, sz2); // DEBUG
   if (sz2 > LOG_BUF_MAXLEN)
     return false;
   b2 = strobj::alloc (sz + 1);

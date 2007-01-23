@@ -1,6 +1,7 @@
 
 #include "okdbg-int.h"
 #include "parseopt.h"
+#include <inttypes.h>
 
 void
 set_debug_flags ()
@@ -10,7 +11,7 @@ set_debug_flags ()
     warn << "invalid debug flags given: " << df << "\n";
   }
   if (okws_debug_flags)
-    warn ("OKWS debug flags set: 0x%qx\n", okws_debug_flags);
+    warn ("OKWS debug flags set: 0x%" PRIx64 "\n", okws_debug_flags);
 }
 
 void 
