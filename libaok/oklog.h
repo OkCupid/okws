@@ -32,6 +32,7 @@
 #include "resp.h"
 #include "okerr.h"
 #include "okclone.h"
+#include "okprintf.h"
 
 #include <inttypes.h>
 

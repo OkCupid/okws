@@ -1,8 +1,8 @@
 
 
 #include "okdbg.h"
+#include "okprintf.h"
 
-#include <inttypes.h>
 
 static void
 usage ()
