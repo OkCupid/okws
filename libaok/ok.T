@@ -248,7 +248,7 @@ oksrvc_t::ctldispatch (svccb *v)
 {
   if (!v) {
     okdbg_warn (ERROR, "oksrvc_t::ctldispatch: NULL RPC received (shutdown)");
-    shutdown ();
+    internal_reliable_shutdown ("EOF on channel to okd", ok_shutdown_timeout);
     return;
   }
   u_int p = v->proc ();
