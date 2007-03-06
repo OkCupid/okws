@@ -415,6 +415,7 @@ okwc_http_bigstr_t::finish2 (int status)
 {
   resp->status = status;
   (*okwc_cb) (resp);
+  delete this;
 }
 
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
