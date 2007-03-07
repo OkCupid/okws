@@ -100,7 +100,7 @@ struct file1_t {
 };
 
 struct file2_t {
-  file2_t () : _mark_bit (false) {} 
+  file2_t () : _mark_bit (false), _visited (false) {}
   file2_t (const str &fn, const fid_t &f, const time_t &c) 
     : _fn (fn), _fid (f), _ctime (c), _mark_bit (false) {}
   str _fn;
@@ -108,6 +108,7 @@ struct file2_t {
   time_t _ctime;
   ihash_entry<file2_t> _lnk;
   bool _mark_bit;
+  bool _visited;
 };
 
 typedef ihash<fid_t, file2_t, &file2_t::_fid, &file2_t::_lnk> filetab_t;
@@ -313,6 +314,7 @@ treestat_t::mark_files ()
 {
   for (file2_t *fp = _tab.first (); fp; fp = _tab.next (fp)) {
     fp->_mark_bit = true;
+    fp->_visited = false;
   }
 }
 
@@ -342,6 +344,7 @@ treestat_t::explore_dir (const str &d)
   DIR *dir = opendir (d.cstr ());
   struct dirent *de;
   bool rc = false;
+
   if (!dir) {
     if (_verbose >= D_LOW)
       warn ("Failed to open dir %s: %m\n", d.cstr ());
@@ -357,6 +360,7 @@ treestat_t::explore_dir (const str &d)
       const mode_t &m = sb.st_mode;
       fid_t fid (sb);
       file2_t *f = _tab[fid];
+      bool visited = false;    // Don't go around in a circle
 
       if ((S_ISDIR (m) || S_ISREG (m) || S_ISLNK (m))) {
 	if (!_skiptab[fid] && de->d_name[0] != '.') {
@@ -375,9 +379,13 @@ treestat_t::explore_dir (const str &d)
 	      rc = true;
 	      f->_ctime = sb.st_ctime;
 	    }
+	    visited = f->_visited;
+	    f->_visited = true;
 	  }
-	  if (S_ISDIR (sb.st_mode) && explore_dir (fn))
+
+	  if (S_ISDIR (sb.st_mode) && !visited && explore_dir (fn))
 	    rc = true;
+
 	} else {
 	  if (_verbose >= D_HI) 
 	    warn ("Skipped file: %s\n", fn.cstr ());
