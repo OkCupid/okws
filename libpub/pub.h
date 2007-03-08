@@ -221,6 +221,7 @@ class nvpair_t : public virtual dumpable_t {
 public:
   nvpair_t (const str &n, ptr<pval_t> v) : nm (n), val (v) {}
   nvpair_t (const xpub_nvpair_t &x);
+  nvpair_t (const nvpair_t &p) : nm (p.nm), val (p.val) {}
   virtual ~nvpair_t () {}
   const str &name () const { return nm; }
   const pval_t *value () const { return val; }
@@ -321,7 +322,7 @@ public:
   bool to_xdr (xpub_aarr_t *x) const;
   const nvtab_t *nvtab () const { return &aar; }
   nvtab_t *nvtab () { return &aar; }
-  void clear () { aar.clear (); }
+  void deleteall () { aar.deleteall (); }
 
 protected:
   nvtab_t aar;

@@ -131,7 +131,7 @@ namespace pub2 {
     /**
      * Clear the base layer of pub variable bindings (read in by run_cfg).
      */
-    void cfg_clear () { _base_cfg.clear (); }
+    void cfg_clear () { _base_cfg.deleteall (); }
 
     penv_t *get_env () const { return &_genv; }
 
