@@ -465,6 +465,11 @@ namespace pub2 {
 	    cache_noent (nm);
 	    strbuf b;
 	    b << nm << ": file not found";
+
+	    // it's OK to fail here, since we can be checking for many
+	    // files in the path.
+	    // warn << b << "\n";
+
 	    status.set_status (XPUB_STATUS_NOENT);
 	    *status.error = b;
 	  }
