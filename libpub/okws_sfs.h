@@ -76,6 +76,8 @@ typedef enum { SFS_CLOCK_GETTIME = 0,
 # endif
 #endif
 
+#include "tame.h"
+
 //
 // Ideally, we could use cb->signal() freely within the code, but it's
 // nice to still be compatible with existing SFS.

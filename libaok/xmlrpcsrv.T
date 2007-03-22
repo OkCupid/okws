@@ -181,7 +181,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     pub_errc.setsize (q.size ());
     for (i = 0; i < q.size (); i++) {
       out[i] = New refcounted<zbuf> ();
-      aa.clear ();
+      aa.deleteall ();
       if (load_args (q[i], _srvc, &fn, &opts, &aa)) {
 	calls.push_back (i);
 	pub2 ()->run_full (out[i], fn, mkevent (pub_errc[i], dummy), &aa, opts);

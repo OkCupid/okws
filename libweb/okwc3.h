@@ -44,28 +44,25 @@
 
 //-----------------------------------------------------------------------
 
-void cancellable_wait (ptr<canceller_t> cncl, rendezvous_t<bool> G, cbb cb,
-		       CLOSURE);
-
-//-----------------------------------------------------------------------
-
 struct queued_cbv_t {
   queued_cbv_t (cbv cb) : _cb (cb) {}
   cbv _cb;
   tailq_entry<queued_cbv_t> _link;
 };
 
+typedef event_t<ptr<hostent>, int>::ref ev_hent_t;
+
 //-----------------------------------------------------------------------
 
-class okwc2_dnscache_entry_t : public virtual refcount {
+class okwc3_dnscache_entry_t : public virtual refcount {
 public:
-  okwc2_dnscache_entry_t (const str &h, int t = 60) : 
+  okwc3_dnscache_entry_t (const str &h, int t = 60) : 
     _hostname (h), _expires (0), _resolving (false), _ttl (t), _err (0), 
     _init (false) {}
-  void lookup (ptr<canceller_t> cncl, cbhent cb, CLOSURE);
+  void lookup (ev_hent_t cb, CLOSURE);
 private:
-  void wait_for_resolution (ptr<canceller_t>, cbb cb, CLOSURE);
-  void do_resolution (ptr<canceller_t> cncl, cbb cb, CLOSURE);
+  void wait_for_resolution (evb_t cb, CLOSURE);
+  void do_resolution (evb_t cb, CLOSURE);
   void commit_lookup (ptr<hostent> he, int status);
 
   str _hostname;
@@ -83,36 +80,35 @@ private:
 
 //-----------------------------------------------------------------------
 
-class okwc2_dnscache_t {
+class okwc3_dnscache_t {
 public:
-  okwc2_dnscache_t () {}
-  void lookup (ptr<canceller_t> cncl, const str &n, cbhent cb);
+  okwc3_dnscache_t () {}
+  void lookup (const str &n, ev_hent_t ev);
 private:
-  qhash<str, ptr<okwc2_dnscache_entry_t> > _cache;
+  qhash<str, ptr<okwc3_dnscache_entry_t> > _cache;
 };
 
 //-----------------------------------------------------------------------
 
-class okwc2_post_t {
+class okwc3_post_t {
 public:
-  okwc2_post_t () {}
-  virtual ~okwc2_post_t () {}
+  okwc3_post_t () {}
+  virtual ~okwc3_post_t () {}
   virtual size_t len () const = 0;
   virtual void output (strbuf &b) const = 0;
 };
 
 //-----------------------------------------------------------------------
 
-class okwc2_req_t : public virtual refcount {
+class okwc3_req_t : public virtual refcount {
 public:
-  okwc2_req_t (const str &hn, const str &fn, int v = 1, cgi_t *c = NULL) 
+  okwc3_req_t (const str &hn, const str &fn, int v = 1, cgi_t *c = NULL) 
     : _hostname (hn), _filename (fn), _vers (v), _outcookie (c) {}
 
-  virtual ~okwc2_req_t () {}
-  virtual void make (ptr<canceller_t> cncl, ptr<ahttpcon> x, cbi cb) 
-  { return make_T (cncl, x, cb); }
+  virtual ~okwc3_req_t () {}
+  virtual void make (ptr<ahttpcon> x, evi_t cb) { return make_T (x, cb); }
 
-  virtual const okwc2_post_t *get_post () const { return NULL; }
+  virtual const okwc3_post_t *get_post () const { return NULL; }
   virtual str get_type () const { return NULL; }
 
 protected:
@@ -120,7 +116,7 @@ protected:
   void format_req (strbuf &b);
 
 private:
-  void make_T (ptr<canceller_t> cncl, ptr<ahttpcon> x, cbi cb, CLOSURE);
+  void make_T (ptr<ahttpcon> x, evi_t cb, CLOSURE);
 
   str _hostname;
   str _filename;
@@ -130,24 +126,22 @@ private:
 
 //-----------------------------------------------------------------------
 
-class okwc2_resp_t : public virtual refcount {
+class okwc3_resp_t : public virtual refcount {
 public:
-  okwc2_resp_t ();
-  virtual ~okwc2_resp_t () {}
-  void get (ptr<canceller_t> cncl, cbi cb) { get_T (cncl, cb); }
+  okwc3_resp_t ();
+  virtual ~okwc3_resp_t () {}
+  void get (evi_t cb) { get_T (cb); }
   void setx (ptr<ahttpcon> x);
   const okwc_http_hdr_t *hdr () const { return &_hdr; }
   okwc_http_hdr_t *hdr () { return &_hdr; }
 
 protected:
 
-  virtual void run_chunker (ptr<canceller_t> cncl, cbi cb) 
-  { run_chunker_T (cncl, cb); }
-  virtual void get_body (ptr<canceller_t> cncl, cbi cb) 
-  { get_body_T (cncl, cb); }
+  virtual void run_chunker (evi_t cb) { run_chunker_T (cb); }
+  virtual void get_body (evi_t cb) { get_body_T (cb); }
 
-  virtual void eat_chunk (ptr<canceller_t> cncl, size_t, cbi cb) = 0;
-  virtual void finished_meal (ptr<canceller_t> cncl, int status, cbi cb) = 0;
+  virtual void eat_chunk (size_t, evi_t cb) = 0;
+  virtual void finished_meal (int status, evi_t cb) = 0;
 
   ptr<ahttpcon> _x;
   abuf_t _abuf;
@@ -156,62 +150,53 @@ protected:
   okwc_http_hdr_t _hdr;
 
 private:
-  void get_body_T (ptr<canceller_t> cncl, cbi cb, CLOSURE);
-  void get_T (ptr<canceller_t> cncl, cbi cb, CLOSURE);
-  void run_chunker_T (ptr<canceller_t> cncl, cbi cb, CLOSURE);
+  void get_body_T (evi_t cb, CLOSURE);
+  void get_T (evi_t cb, CLOSURE);
+  void run_chunker_T (evi_t cb, CLOSURE);
 };
 
 //-----------------------------------------------------------------------
 
-class okwc2_resp_simple_t : public okwc2_resp_t {
+class okwc3_resp_simple_t : public okwc3_resp_t {
 public:
-  okwc2_resp_simple_t () : _dumper (&_abuf) {}
-  void eat_chunk (ptr<canceller_t> cncl, size_t sz, cbi cb) 
-  { eat_chunk_T (cncl, sz, cb); }
-  void finished_meal (ptr<canceller_t> cncl, int status, cbi cb);
+  okwc3_resp_simple_t () : _dumper (&_abuf) {}
+  void eat_chunk (size_t sz, evi_t cb) { eat_chunk_T (sz, cb); }
+  void finished_meal (int status, evi_t cb);
   const str & body () const { return _body; }
 protected:
   async_dumper_t _dumper;
   vec<str> _chunks;
   str _body;
 private:
-  void eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb, CLOSURE);
+  void eat_chunk_T (size_t sz, evi_t cb, CLOSURE);
 };
 
 //-----------------------------------------------------------------------
 
-class okwc2_t : public virtual refcount {
+class okwc3_t : public virtual refcount {
 public:
-  okwc2_t (const str &h, int p) : _hostname (h), _port (p) {}
+  okwc3_t (const str &h, int p) : _hostname (h), _port (p) {}
 
-  virtual ptr<canceller_t> 
-  req (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, cbi cb)
-  { return req_T (req, resp, cb); }
-
-  virtual void 
-  timed_req (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp, int to, cbi cb)
-  { timed_req_T (req, resp, to, cb); }
+  virtual void req (ptr<okwc3_req_t> req, ptr<okwc3_resp_t> resp, evi_t cb)
+  { req_T (req, resp, cb); }
 
 protected:
   const str _hostname;
   int _port;
 
 private:
-  ptr<canceller_t> req_T (ptr<okwc2_req_t> req, 
-			  ptr<okwc2_resp_t> resp, cbi cb, CLOSURE);
-  void timed_req_T (ptr<okwc2_req_t> req, ptr<okwc2_resp_t> resp,
-		    int to, cbi cb, CLOSURE);
+  void req_T (ptr<okwc3_req_t> req, ptr<okwc3_resp_t> resp, evi_t cb, CLOSURE);
 
 };
 
 //-----------------------------------------------------------------------
 
-typedef callback<void, int, ptr<okwc2_resp_simple_t> >::ref okwc2_simple_cb_t;
+typedef event_t<int, ptr<okwc3_resp_simple_t> >::ref okwc3_simple_ev_t;
 
-class okwc2_simple_t : public okwc2_t {
+class okwc3_simple_t : public okwc3_t {
 public:
-  okwc2_simple_t (const str &h, int p) : okwc2_t (h, p) {}
-  void req (str fn, okwc2_simple_cb_t cb, int to = 0, 
+  okwc3_simple_t (const str &h, int p) : okwc3_t (h, p) {}
+  void req (str fn, okwc3_simple_ev_t cb, 
 	    int v = 1, cgi_t *c = NULL, CLOSURE);
 };
 
