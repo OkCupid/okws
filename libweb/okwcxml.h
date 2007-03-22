@@ -26,19 +26,19 @@
 #define _LIBWEB_OKWCXML_H
 
 
-#include "okwc2.h"
+#include "okwc3.h"
 #include "okxmlparse.h"
 #include "okxmlobj.h"
 
 // Can only compile this library if we have Expat Support
 # ifdef HAVE_EXPAT
 
-typedef callback<void, int, xml_inresp_t>::ref okwc2_xml_cb_t;
-typedef callback<void, int, str>::ref cbis;
+typedef event_t<int, xml_inresp_t>::ref okwc3_xml_ev_t;
+typedef event_t<int, str>::ref evis_t;
 
-class okwc2_post_xml_t : public okwc2_post_t {
+class okwc3_post_xml_t : public okwc3_post_t {
 public:
-  okwc2_post_xml_t () : okwc2_post_t () {}
+  okwc3_post_xml_t () : okwc3_post_t () {}
   zbuf &zb () { return _zb; }
   const zbuf &zb () const { return _zb; }
   size_t len () const { return _zb.inflated_len (); }
@@ -47,44 +47,40 @@ private:
   mutable zbuf _zb;
 };
 
-class okwc2_req_xml_t : public okwc2_req_t {
+class okwc3_req_xml_t : public okwc3_req_t {
 public:
-  okwc2_req_xml_t (const str &hn, const str &fn, cgi_t *c = NULL)
-    : okwc2_req_t (hn, fn, 1, c) {}
+  okwc3_req_xml_t (const str &hn, const str &fn, cgi_t *c = NULL)
+    : okwc3_req_t (hn, fn, 1, c) {}
   zbuf &zb () { return _post.zb (); }
   const zbuf &zb () const { return _post.zb (); }
-  const okwc2_post_t *get_post () const { return &_post; }
+  const okwc3_post_t *get_post () const { return &_post; }
   str get_type () const { return "text/xml"; }
 protected:
-  okwc2_post_xml_t _post;
+  okwc3_post_xml_t _post;
 };
 
-class okwc2_resp_xml_t : public okwc2_resp_t {
+class okwc3_resp_xml_t : public okwc3_resp_t {
 public:
-  okwc2_resp_xml_t () : _parser (&_abuf) {}
-  void eat_chunk (ptr<canceller_t> cncl, size_t sz, cbi cb) 
-  { eat_chunk_T (cncl, sz, cb); }
-  void finished_meal (ptr<canceller_t> cncl, int status, cbi cb);
+  okwc3_resp_xml_t () : _parser (&_abuf) {}
+  void eat_chunk (size_t sz, evi_t ev) { eat_chunk_T (sz, ev); }
+  void finished_meal (int status, evi_t ev);
   ptr<const xml_top_level_t> top_level () 
     const { return _parser.top_level (); }
 protected:
   xml_req_parser_t _parser;
-  void eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb, CLOSURE);
+  void eat_chunk_T (size_t sz, evi_t ev, CLOSURE);
 };
 
-class okwc2_xml_t : public okwc2_t {
+class okwc3_xml_t : public okwc3_t {
 public:
-  okwc2_xml_t (const str &hn, int port, const str &u)
-    : okwc2_t (hn, port), _url (u) {}
-  void call (xml_outreq_t req, okwc2_xml_cb_t cb, int to = 0)
-  { call_T (req, cb, to); }
-  void call_dump (xml_outreq_t req, cbis cb, int to = 0)
-  { call_dump_T (req, cb, to); }
+  okwc3_xml_t (const str &hn, int port, const str &u)
+    : okwc3_t (hn, port), _url (u) {}
+  void call (xml_outreq_t req, okwc3_xml_ev_t ev) { call_T (req, ev); }
+  void call_dump (xml_outreq_t req, evis_t ev) { call_dump_T (req, ev); }
 private:
-  void call_T (xml_outreq_t req, okwc2_xml_cb_t cb, int to, CLOSURE);
-  void call_dump_T (xml_outreq_t req, cbis cb, int to = 0, CLOSURE);
-  void make_req (xml_outreq_t req, ptr<okwc2_resp_t> resp, int to, cbi cb,
-		 CLOSURE);
+  void call_T (xml_outreq_t req, okwc3_xml_ev_t ev, CLOSURE);
+  void call_dump_T (xml_outreq_t req, evis_t ev, CLOSURE);
+  void make_req (xml_outreq_t req, ptr<okwc3_resp_t> resp, evi_t ev, CLOSURE);
   str _url;
 };
 

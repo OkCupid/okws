@@ -8,6 +8,7 @@
 #include "rxx.h"
 #include "okwcxml.h"
 #include "okxmlobj.h"
+#include "tame_connectors.h"
 
 static void usage (void)
 {
@@ -25,7 +26,7 @@ main2 (int argc, char **argv)
     xml_inresp_t resp;
     str hostname;
     u_int16_t port (80);
-    ptr<okwc2_xml_t> cli;
+    ptr<okwc3_xml_t> cli;
     str port_str;
     int timeout (0);
     str filename;
@@ -72,7 +73,7 @@ main2 (int argc, char **argv)
     assert (convertint (port_str, &port));
   filename = url_rxx[4];
   
-  cli = New refcounted<okwc2_xml_t> (hostname, port, filename);
+  cli = New refcounted<okwc3_xml_t> (hostname, port, filename);
 
   req.set_method_name ("foo");
 
@@ -85,12 +86,20 @@ main2 (int argc, char **argv)
   req[3]("array")[1] = 2;
 
   if (debug) {
-    twait { cli->call_dump (req, mkevent (status, body), timeout); }
+    status = HTTP_TIMEOUT;
+    twait { 
+      cli->call_dump (req, 
+		      connector::timeout (mkevent (status, body), timeout, 0));
+    }
     warn << "debug status: " << status << "\n";
     if (body) 
       warn << "body: " << body;
   } else {
-    twait { cli->call (req, mkevent (status, resp), timeout); }
+    status = HTTP_TIMEOUT;
+    twait { 
+      cli->call (req, 
+		 connector::timeout (mkevent (status, resp), timeout, 0));
+    }
     warn << "status: " << status << "\n";
     if (status == HTTP_OK) {
       if (resp.is_fault (&code, &msg)) {
@@ -108,11 +117,14 @@ main2 (int argc, char **argv)
 	resp.output_python (b);
 	warn << b << "\n";
       }
+    } else {
+      warn << "Failed with status=" << status << "\n";
     }
   }
   w = 3;
   warnx << "waiting " << w << " seconds before exit\n";
-  delaycb (w, 0, wrap (exit, 0));
+  twait { delaycb (w, 0, mkevent ()); }
+  exit (0);
 }
 
 
@@ -122,5 +134,4 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   main2 (argc, argv);
   amain ();
-
 }

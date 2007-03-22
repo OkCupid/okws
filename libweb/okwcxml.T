@@ -3,89 +3,86 @@
 /* $Id: okcgi.h 1682 2006-04-26 19:17:22Z max $ */
 
 #include "okwcxml.h"
+#include "tame_connectors.h"
 
 #ifdef HAVE_EXPAT
 
 //-----------------------------------------------------------------------
 
 tamed void
-okwc2_xml_t::call_T (xml_outreq_t req, okwc2_xml_cb_t cb, int to)
+okwc3_xml_t::call_T (xml_outreq_t req, okwc3_xml_ev_t ev)
 {
   tvars {
-    ptr<okwc2_resp_xml_t> hresp (New refcounted<okwc2_resp_xml_t> ());
+    ptr<okwc3_resp_xml_t> hresp (New refcounted<okwc3_resp_xml_t> ());
     xml_inresp_t resp;
     int status;
   }
-  twait { make_req (req, hresp, to, mkevent (status)); }
+  twait { make_req (req, hresp, connector::cnc (mkevent (status), ev)); }
   if (status == HTTP_OK) {
     resp = xml_inresp_t (hresp->top_level ()->get (0));
   }
-  TRIGGER (cb, status, resp);
+  ev->trigger (status, resp);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okwc2_xml_t::make_req (xml_outreq_t req, ptr<okwc2_resp_t> resp, int to,
-		       cbi cb)
+okwc3_xml_t::make_req (xml_outreq_t req, ptr<okwc3_resp_t> resp, evi_t ev)
 {
 
   tvars {
     int status;
-    ptr<okwc2_req_xml_t> hreq;
+    ptr<okwc3_req_xml_t> hreq;
   }
-  hreq = New refcounted<okwc2_req_xml_t> (_hostname, _url);
+  hreq = New refcounted<okwc3_req_xml_t> (_hostname, _url);
   req.output (hreq->zb ());
-  twait { timed_req (hreq, resp, to, mkevent (status)); }
-  TRIGGER (cb, status);
-
+  twait { okwc3_t::req (hreq, resp, connector::cnc (mkevent (status), ev)); }
+  ev->trigger (status);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okwc2_xml_t::call_dump_T (xml_outreq_t req, cbis cb, int to)
+okwc3_xml_t::call_dump_T (xml_outreq_t req, evis_t ev)
 {
   tvars {
     int status;
     str res;
-    ptr<okwc2_resp_simple_t> resp (New refcounted<okwc2_resp_simple_t> ());
+    ptr<okwc3_resp_simple_t> resp (New refcounted<okwc3_resp_simple_t> ());
   }
 
-  twait { make_req (req, resp, to, mkevent (status)); }
+  twait { make_req (req, resp, connector::cnc (mkevent (status), ev)); }
   if (status == HTTP_OK) {
     res = resp->body ();
   }
-  TRIGGER (cb, status, res);
+  ev->trigger (status, res);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okwc2_resp_xml_t::eat_chunk_T (ptr<canceller_t> cncl, size_t sz, cbi cb)
+okwc3_resp_xml_t::eat_chunk_T (size_t sz, evi_t ev)
 {
   tvars {
-    rendezvous_t<bool> G (__FILE__, __LINE__);
     int status;
-    bool cancelled;
+    outcome_t outc;
   }
   _abuf.setlim (sz);
   _parser.init ();
-  _parser.parse (mkevent (G,false, status));
-  twait { cancellable_wait (cncl, G, mkevent (cancelled)); }
-  if (cancelled) {
+  twait { _parser.parse (connector::cnc (mkevent (status), ev, &outc)); }
+  if (outc == OUTCOME_CANCELLED) {
     _parser.cancel ();
     status = CANCELLED_STATUS;
   }
-  TRIGGER (cb, status);
+  ev->trigger (status);
 }
 
 //-----------------------------------------------------------------------
 
 void
-okwc2_resp_xml_t::finished_meal (ptr<canceller_t> cncl, int status, cbi cb)
+okwc3_resp_xml_t::finished_meal (int status, evi_t ev)
 {
-  TRIGGER (cb, status);
+  ev->trigger (status);
 }
 
 #endif /* HAVE_EXPAT */
