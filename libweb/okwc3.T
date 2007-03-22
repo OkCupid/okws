@@ -144,6 +144,8 @@ okwc3_dnscache_entry_t::do_resolution (evb_t cb)
     // Internally, stops listening on an fd and closes it.
     dnsreq_cancel (dnsp);
   } else {
+    cb->set_notify_on_cancel (NULL);
+
     if (_waiter_remove_cb) {
       _waiter_remove_cb = NULL;
     }

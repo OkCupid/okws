@@ -11,7 +11,9 @@ def foo (a,b,c,d):
     print d
     return (4, "foo" , (1, 2, {"hi" : 40, "bye": (1,2) } ) )
 
-s = xmlsrv.SimpleXMLRPCServer (("0.0.0.0", 8089))
+port = 8089
+s = xmlsrv.SimpleXMLRPCServer (("0.0.0.0", port))
+print 'Server on port %d' % port
 s.register_function (foo)
 s.serve_forever ()
 
