@@ -13,7 +13,7 @@
 
 static void usage (void)
 {
-  warnx << "usage: " << progname << "[-d] [-t<timeout>] <url>\n";
+  warnx << "usage: " << progname << " [-n <ntimes>] [-d] [-t<timeout>] <url>\n";
   exit (1);
 }
 
@@ -27,6 +27,7 @@ main2 (int argc, char **argv)
     u_int16_t port (80);
     str port_str;
     str filename;
+    int tmo;
     int i;
     int ch;
     bool debug (false);
@@ -35,7 +36,7 @@ main2 (int argc, char **argv)
     ptr<okwc_resp_t> resp;
   }
 
-  while ((ch = getopt (argc, argv, "vdt:")) != -1) {
+  while ((ch = getopt (argc, argv, "n:vdt:")) != -1) {
     switch (ch) {
     case 'n':
       if (!convertint (optarg, &times))
@@ -75,11 +76,11 @@ main2 (int argc, char **argv)
   else
     filename = "/";
 
-  for (i = 0; i < ntimes; i++) {
+  for (i = 0; i < times; i++) {
     twait {
-      okwc_request (hostname, port, filename, mkevent (resp));
-      warn << "Response: " << resp->status << "\n";
+      okwc_request (hostname, port, filename, mkevent (resp), 1, tmo);
     }
+    warn << "Response: " << resp->status << "\n";
   }
 
   twait { delaycb (3, 0, mkevent ()); }

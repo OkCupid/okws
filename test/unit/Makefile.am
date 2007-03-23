@@ -32,7 +32,7 @@ noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C
-okwc1tst_SOURCES = okwc1tst
+okwc1tst_SOURCES = okwc1tst.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)
