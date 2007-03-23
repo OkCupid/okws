@@ -4,7 +4,7 @@ $(PROGRAMS): $(LDEPS)
 SUFFIXES = .C .T .h
 
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 if USE_XML
 
@@ -21,14 +21,18 @@ else
 XMLPROGS =
 endif
 
-TAMEIN = xmlcli1.T xmltst1.T
-TAMEOUT = xmlcli1.C xmltst1.C
+okwc1tst.o:	okwc1tst.C
+okwc1tst.lo:	okwc1tst.C
 
-noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 
+TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T
+TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C
+
+noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C
+okwc1tst_SOURCES = okwc1tst
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)

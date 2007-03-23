@@ -140,7 +140,7 @@ sub c_file {
 	codes ($i) . "\n\n";
 }
 
-my $N = 35;
+my $N = 50;
 if ($ARGV[0] eq "-h") {
     header_file ($N);
 } elsif ($ARGV[0] eq '-c') {
