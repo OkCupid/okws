@@ -39,7 +39,9 @@ okwc3_dnscache_entry_t::lookup (ev_hent_t ev)
     ptr<hostent> he;
     int e (ARERR_TIMEOUT);
     bool completed;
+    ptr<okwc3_dnscache_entry_t> hold;
   }
+  hold = mkref (this);
 
   if (_resolving) {
     twait { wait_for_resolution (connector::cnc (mkevent (completed), ev)); }
@@ -61,7 +63,9 @@ okwc3_dnscache_entry_t::wait_for_resolution (evb_t ev)
   tvars {
     queued_cbv_t *qcb;
     outcome_t outc;
+    ptr<okwc3_dnscache_entry_t> hold;
   }
+  hold = mkref (this);
 
   twait { 
     qcb = New queued_cbv_t (connector::cnc (mkevent (), ev, &outc));
@@ -110,8 +114,9 @@ okwc3_dnscache_entry_t::do_resolution (evb_t cb)
     int e (ARERR_TIMEOUT);
     bool committed_lookup (false);
     queued_cbv_t *p, *n;
-				    
+    ptr<okwc3_dnscache_entry_t> hold;
   }
+  hold = mkref (this);
 
   _resolving = true;
 
@@ -219,7 +224,9 @@ okwc3_req_t::make_T (ptr<ahttpcon> x, evi_t ev)
     strbuf req;
     int status (HTTP_OK);
     outcome_t outc;
+    ptr<okwc3_req_t> hold;
   }
+  hold = mkref (this);
 
   format_req (req);
 
@@ -303,14 +310,16 @@ okwc3_t::req_T (ptr<okwc3_req_t> req, ptr<okwc3_resp_t> resp, evi_t ev)
     }
   }
 
-  // Always trigger, even if cancelled...
   ev->trigger (status);
 }
+
 //-----------------------------------------------------------------------
 
 okwc3_resp_t::okwc3_resp_t ()
   : _incookies (&_abuf, OKWC_SCRATCH_SZ, _scratch),
     _hdr (&_abuf, &_incookies, OKWC_SCRATCH_SZ, _scratch) {}
+
+//-----------------------------------------------------------------------
 
 void
 okwc3_resp_t::setx (ptr<ahttpcon> x)
@@ -350,7 +359,9 @@ okwc3_resp_t::get_body_T (evi_t ev)
 {
   tvars {
     int status (HTTP_OK);
+    ptr<okwc3_resp_t> hold;
   }
+  hold = mkref (this);
 
   // Certain HTTP 1.1 responses are chunked, so we need to accommodate
   // them with our 'chunker' class.
@@ -377,7 +388,9 @@ okwc3_resp_t::run_chunker_T (evi_t ev)
     int status;
     size_t sz;
     outcome_t outc;
+    ptr<okwc3_resp_t> hold;
   }
+  hold = mkref (this);
 
   c = New okwc_chunker_t (&_abuf, OKWC_SCRATCH_SZ, _scratch);
 
@@ -406,7 +419,9 @@ okwc3_resp_simple_t::eat_chunk_T (size_t sz, evi_t ev)
     str chnk;
     int status (HTTP_OK);
     outcome_t outc;
+    ptr<okwc3_resp_simple_t> hold;
   }
+  hold = mkref (this);
 
   twait { _dumper.dump (sz, connector::cnc (mkevent (chnk), ev, &outc)); }
 
