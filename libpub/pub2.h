@@ -192,10 +192,10 @@ namespace pub2 {
     { run_T (b, fn, cb, a, opt, e); }
 
     void run_cfg_full (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL)
-    { _ap->run_cfg_full (nm, cb, dest); }
+    { run_cfg_full_T (nm, cb, dest); }
 
     void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL)
-    { _ap->run_cfg (nm, cb, dest); }
+    { run_cfg_T (nm, cb, dest); }
 
     penv_t *get_env () const { return _ap->get_env (); }
 
@@ -209,6 +209,9 @@ namespace pub2 {
 		     CLOSURE);
     void run_T (zbuf *b, pfnm_t fn, cbb cb, aarr_t *a = NULL,
 		u_int opt = 0, penv_t *e = NULL, CLOSURE);
+    void run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL,
+			 CLOSURE);
+    void run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
 
     ptr<ok_iface_t> _ap;
     ptr<const pub_localizer_t> _localizer;

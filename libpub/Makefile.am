@@ -22,7 +22,7 @@ LDEBUG = @LDEBUG@
 SUFFIXES = .T .C .h .x
 
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 .x.h:
 	-$(RPCC) -h $< || rm -f $@
 .x.C:

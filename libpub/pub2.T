@@ -49,6 +49,33 @@ namespace pub2 {
     TRIGGER (cb, ok);
   }
 
+  tamed void
+  lsp_t::run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dest)
+  {
+    tvars {
+      ptr<const pub_localizer_t> old;
+      status_t status;
+      ptr<bound_pfile2_t> bpf;
+      penv_t *e;
+    }
+    if (!e) e = _ap->get_env ();
+    old = e->localizer ();
+    e->set_localizer (_localizer);
+    twait { _ap->run_cfg_full (nm, mkevent (status, bpf), dest); }
+    e->set_localizer (old);
+    TRIGGER (cb, status, bpf);
+  }
+
+  tamed void
+  lsp_t::run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dest)
+  {
+    tvars {
+      status_t status;
+      ptr<bound_pfile2_t> dummy;
+    }
+    twait { run_cfg_full (nm, mkevent (status, dummy), dest); }
+    TRIGGER (cb, status.status == XPUB_STATUS_OK);
+  }
 
   tamed void
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
