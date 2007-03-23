@@ -28,7 +28,7 @@ main2 (int argc, char **argv)
     u_int16_t port (80);
     ptr<okwc3_xml_t> cli;
     str port_str;
-    int timeout (0);
+    int tmo (0);
     str filename;
     int status;
     str body;
@@ -49,7 +49,7 @@ main2 (int argc, char **argv)
       verbose = true;
       break;
     case 't':
-      if (!convertint (optarg, &timeout))
+      if (!convertint (optarg, &tmo))
 	usage ();
       break;
     default:
@@ -88,8 +88,7 @@ main2 (int argc, char **argv)
   if (debug) {
     status = HTTP_TIMEOUT;
     twait { 
-      cli->call_dump (req, 
-		      connector::timeout (mkevent (status, body), timeout, 0));
+      cli->call_dump (req, connector::timeout (mkevent (status, body), tmo));
     }
     warn << "debug status: " << status << "\n";
     if (body) 
@@ -97,8 +96,7 @@ main2 (int argc, char **argv)
   } else {
     status = HTTP_TIMEOUT;
     twait { 
-      cli->call (req, 
-		 connector::timeout (mkevent (status, resp), timeout, 0));
+      cli->call (req, connector::timeout (mkevent (status, resp), tmo));
     }
     warn << "status: " << status << "\n";
     if (status == HTTP_OK) {

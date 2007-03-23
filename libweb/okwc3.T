@@ -327,7 +327,9 @@ okwc3_resp_t::get_T (evi_t ev)
   tvars {
     int status (HTTP_OK);
     outcome_t outc;
+    ptr<okwc3_resp_t> hold;
   }
+  hold = mkref (this);
 
   // Call into the OKWS HTTP header parsing classes...
   twait { _hdr.parse (connector::cnc (mkevent (status), ev, &outc)); }
