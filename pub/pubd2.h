@@ -244,7 +244,7 @@ namespace pubserv2 {
 		 _badfile_cache (ok_pub2_getfile_object_lifetime, true),
 		 _last_update (0), _delta_id (0) {}
     
-    virtual ~cache_t () { if (_timer) _timer->cancel (); }
+    virtual ~cache_t () { if (_timer) *_timer = false; }
     
     bool do_pushes () const { return true; }
     
@@ -279,7 +279,7 @@ namespace pubserv2 {
     void trav_key (str k);
     void trav_nkey (str k);
     
-    ptr<canceller_t> _timer, _nc_timer;
+    ptr<bool> _timer;
     
     /**
      * Start the refresh timer; usually it fires every ival1 seconds,
@@ -292,8 +292,9 @@ namespace pubserv2 {
      *
      * Returns a canceller object to cancel this timer.
      */
-    ptr<canceller_t> 
-    run_refresh_timer (u_int ival1, u_int ival2, u_int eln, u_int tsi,
+    void
+    run_refresh_timer (ptr<bool> *out,
+		       u_int ival1, u_int ival2, u_int eln, u_int tsi,
 		       CLOSURE);
 
     /**

@@ -11,7 +11,7 @@
 #include "parseopt.h"
 #include "rxx.h"
 #include "tame.h"
-#include "okwc2.h"
+#include "okwc3.h"
 
 static rxx url_rxx ("http://([^:/]+)(:(\\d+))?(/(.*))?");
 
@@ -32,8 +32,8 @@ main2 (int argc, char **argv)
     u_int16_t port (80);
     str port_str;
     str filename;
-    ptr<okwc2_simple_t> cli;
-    ptr<okwc2_resp_simple_t> resp;
+    ptr<okwc3_simple_t> cli;
+    ptr<okwc3_resp_simple_t> resp;
     int status;
   }
 
@@ -55,7 +55,7 @@ main2 (int argc, char **argv)
     assert (convertint (port_str, &port));
   filename = url_rxx[5];
 
-  cli = New refcounted<okwc2_simple_t> (hostname, port);
+  cli = New refcounted<okwc3_simple_t> (hostname, port);
   
   // 10 second timeout
   twait { cli->req (filename, mkevent (status, resp), 10); }

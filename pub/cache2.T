@@ -271,12 +271,11 @@ namespace pubserv2 {
    * @param i move tolerance up by i second increments
    * @param t if > 0, t gives the interval for checking the tree heartbeats
    */
-  tamed ptr<canceller_t>
-  cache_t::run_refresh_timer (u_int n, u_int x, u_int i, u_int t)
+  tamed void
+  cache_t::run_refresh_timer (ptr<bool> *out, 
+			      u_int n, u_int x, u_int i, u_int t)
   {
     tvars {
-      ptr<canceller_t> canceller (New refcounted<canceller_t> ());
-      rendezvous_t<bool> ev;
       bool run_loop (true);
       bool edit (false);
       int tol (n); // tolerance for how fresh
@@ -284,13 +283,13 @@ namespace pubserv2 {
       stamp_status_t status;
       bool running_refresh (false);
       int diff;
+      ptr<bool> ok (New refcounted<bool> (true));
     }
-    DEFAULT_RETURN { return canceller; }
+    *out = ok;
 
     assert (t <= n);
-    canceller->wait (mkevent (ev,false));
 
-    while (run_loop) {
+    while (run_loop && *ok) {
 
       // Always update the freshness tolerance first, since it 
       // might immediately affect whether we sleep or launch
@@ -328,16 +327,11 @@ namespace pubserv2 {
 
 	last_check = okwstime ();
 	running_refresh = true;
-	refresh_delta_set (mkevent (ev,true, edit));
+	twait { refresh_delta_set (mkevent (edit)); }
 
       } else {
-	delaycb (t > 0 ? t : tol, 0, mkevent (ev,true));
+	twait { delaycb (t > 0 ? t : tol, 0, mkevent ()); }
       }
-      twait(ev,run_loop);
-    }
-
-    while (ev.n_triggers_left ()) {
-      twait (ev, run_loop);
     }
   }
 
@@ -358,9 +352,10 @@ namespace pubserv2 {
       t = 0;
     }
 
-    if (_timer)
-      _timer->cancel ();
-    _timer = run_refresh_timer (n, x, i, t);
+    if (_timer) {
+      *_timer = false;
+    }
+    run_refresh_timer (&_timer, n, x, i, t);
     _noent_cache.set_timeout (c);
   }
   
