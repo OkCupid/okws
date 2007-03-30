@@ -36,7 +36,8 @@
 okch_t::okch_t (okd_t *o, const str &s)
   : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
     destroyed (New refcounted<bool> (false)),
-    srv_disabled (false), per_svc_nfd_in_xit (0)
+    srv_disabled (false), per_svc_nfd_in_xit (0),
+    _n_sent (0), _last_restart (okwstime ())
 {
   myokd->insert (this);
 }
@@ -183,6 +184,13 @@ okch_t::start_chld ()
 }
 
 void
+okch_t::reset_n_sent ()
+{
+    _n_sent = 0; 
+    _last_restart = okwstime ();
+}
+
+void
 okch_t::got_new_x_fd (int fd, int p)
 {
   if (pid != p) {
@@ -273,6 +281,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     break;
   case OKCTL_CUSTOM_2_IN:
     myokd->custom2_in (sbp);
+    break;
+  case OKCTL_GET_STATS:
+    myokd->okctl_get_stats (sbp);
     break;
   default:
     sbp->reject (PROC_UNAVAIL);
@@ -488,5 +499,15 @@ okch_t::chld_eof (ptr<bool> dfp, bool debug)
     state = OKC_STATE_CRASH;
   } else 
     state = OKC_STATE_NONE;
+}
+
+void
+okch_t::to_status_xdr (oksvc_status_t *st)
+{
+  memset ((void *)st, 0, sizeof (*st));
+  st->pid = pid;
+  st->servpath = servpath;
+  st->n_served = _n_sent;
+  st->uptime = okwstime () - _last_restart;
 }
 

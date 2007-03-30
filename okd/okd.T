@@ -1034,6 +1034,19 @@ ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
   _custom_res->results.push_back (el);
 }
 
+void
+okd_t::okctl_get_stats (svccb *sbp)
+{
+  okctl_stats_t res;
+  res.status.setsize (servtab.size ());
+  int i = 0;
+  for (okch_t *p = servtab.first (); p; i++, p = servtab.next (p) ) {
+    p->to_status_xdr (&res.status[i]);
+  }
+  sbp->replyref (res);
+
+}
+
 int
 main (int argc, char *argv[])
 {

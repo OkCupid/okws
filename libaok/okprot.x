@@ -29,6 +29,17 @@ union ok_progs_t switch (ok_set_typ_t typ) {
    void;
 };
 
+struct oksvc_status_t {
+   ok_prog_t servpath;
+   int pid;
+   unsigned n_served;
+   unsigned uptime;
+};
+
+struct okctl_stats_t {
+	oksvc_status_t status<>;
+};
+
 struct ok_custom_data_t {
    opaque data<>;
 };
@@ -108,6 +119,9 @@ program OKCTL_PROGRAM {
 
 		xpub_errdoc_set_t
 		OKCTL_REQ_ERRDOCS_2 (void) = 11;
+
+		okctl_stats_t
+		OKCTL_GET_STATS(void) = 12;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;

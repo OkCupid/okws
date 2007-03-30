@@ -118,8 +118,10 @@ public:
 		       ptr<ok_custom_data_t> res,
 		       clnt_stat err);
 
+  void to_status_xdr (oksvc_status_t *out);
+
   inline int get_n_sent () const { return _n_sent; }
-  inline void reset_n_sent () { _n_sent = 0; }
+  void reset_n_sent () ;
   inline int inc_n_sent () { return (_n_sent ++) ; }
   
   okd_t *myokd;
@@ -141,6 +143,7 @@ private:
   bool srv_disabled;
   int per_svc_nfd_in_xit;  // per service number FD in transit
   int _n_sent;             // N sent since reboot
+  time_t _last_restart;    // time when started;
 
 };
 
@@ -230,6 +233,7 @@ public:
   void relaunch (const ok_progs_t &x, okrescb cb);
   void custom1_in (svccb *sbp);
   void custom2_in (svccb *sbp);
+  void okctl_get_stats (svccb *sbp);
   void turnlog (okrescb cb);
 
   void strip_privileges ();
