@@ -33,8 +33,8 @@
 // Can only compile this library if we have Expat Support
 # ifdef HAVE_EXPAT
 
-typedef event_t<int, xml_inresp_t>::ref okwc3_xml_ev_t;
-typedef event_t<int, str>::ref evis_t;
+typedef event<int, xml_inresp_t>::ref okwc3_xml_ev_t;
+typedef event<int, str>::ref evis_t;
 
 class okwc3_post_xml_t : public okwc3_post_t {
 public:

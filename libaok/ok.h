@@ -516,9 +516,10 @@ void init_syscall_stats ();
 
 inline void do_syscall_stats ()
 {
-  if (ok_ssdi > 0 && int (timenow - global_ssd_last) > int (ok_ssdi)) {
-    time_t diff = timenow - global_ssd_last;
-    global_ssd_last = timenow;
+  if (ok_ssdi > 0 && 
+      int (sfs_get_timenow ()- global_ssd_last) > int (ok_ssdi)) {
+    time_t diff = sfs_get_timenow () - global_ssd_last;
+    global_ssd_last = sfs_get_timenow();
     global_syscall_stats->dump (diff);
     global_syscall_stats->clear ();
   }

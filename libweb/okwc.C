@@ -34,7 +34,7 @@ okwc_dnscache_entry_t::lookup (cbhent cb)
     return;
   }
 
-  if (!init || timenow > expires || err != 0) {
+  if (!init || sfs_get_timenow() > expires || err != 0) {
     resolving = true;
     cbq.push_back (cb);
     dnsp = dns_hostbyname (hostname, 
@@ -54,7 +54,7 @@ okwc_dnscache_entry_t::name_cb (ptr<hostent> h, int e)
   err = e;
   he = h;
   resolving = false;
-  expires = timenow + ttl;
+  expires = sfs_get_timenow() + ttl;
   cbhent::ptr c;
   while (cbq.size ()) {
     c = cbq.pop_front ();

@@ -5,6 +5,7 @@
 #include "ihash.h"
 #include "qhash.h"
 #include "list.h"
+#include "litetime.h"
 
 #ifndef _PUB_TIMEHASH_H
 #define _PUB_TIMEHASH_H
@@ -12,7 +13,7 @@
 template<class K, class V, class F>
 class timehash_node_t {
 public:
-  timehash_node_t (const V &v) : _val (v), _ctime (timenow) {}
+  timehash_node_t (const V &v) : _val (v), _ctime (sfs_get_timenow ()) {}
 
   V _val;
   time_t _ctime;
@@ -94,7 +95,7 @@ public:
   void rejuvenate (node_t *n)
   {
     _q.remove (n);
-    n->_ctime = timenow;
+    n->_ctime = sfs_get_timenow ();
     _q.insert_tail (n);
   }
 
@@ -119,7 +120,7 @@ public:
   void expire ()
   {
     if (_timeout)
-      expire (timenow - _timeout);
+      expire (sfs_get_timenow () - _timeout);
   }
 
   void expire (time_t deadline)

@@ -315,14 +315,14 @@ namespace pub2 {
   }
 
   tamed static void
-  wait_for_nsignals (u_int n, rendezvous_t<ptr<bool> > cg, cbb cb)
+  wait_for_nsignals (u_int n, rendezvous_t<ptr<bool> > *cg, cbb cb)
   {
     tvars {
       ptr<bool> tmpok;
       bool ok (true);
     }
-    while (cg.n_triggers_left () > n) {
-      twait (cg, tmpok);
+    while (cg->n_triggers_left () > n) {
+      twait (*cg, tmpok);
       if (!*tmpok) ok = false;
     }
     TRIGGER (cb, ok);
@@ -369,7 +369,7 @@ namespace pub2 {
   }
 
   tamed void
-  rp_t::launch_getchunk (rendezvous_t<ptr<bool> > cg, 
+  rp_t::launch_getchunk (rendezvous_t<ptr<bool> > *cg, 
 			 const xpub2_getfile_data_t *dat, u_int opts,
 			 size_t offset, size_t dsz, char *buf, cbb cb)
   {
@@ -384,7 +384,7 @@ namespace pub2 {
     twait { wait_for_nsignals (ws - 1, cg, mkevent (ok)); }
     if (ok) {
       nok = New refcounted<bool> ();
-      getchunk (dat, opts, offset, dsz, buf, mkevent (cg,nok, *nok));
+      getchunk (dat, opts, offset, dsz, buf, mkevent (*cg, nok, *nok));
     }
 
     TRIGGER (cb, ok);
@@ -407,10 +407,12 @@ namespace pub2 {
 
     for (i = 0; i < dsz && ok; i += _maxsz) {
       cs = min<size_t> (_maxsz, dsz - i);
-      twait { launch_getchunk (cg, dat, opts, i, cs, buf.cstr (), mkevent (tmpok)); }
+      twait { 
+	launch_getchunk (&cg, dat, opts, i, cs, buf.cstr (), mkevent (tmpok)); 
+      }
       if (!tmpok) ok = false;
     }
-    twait { wait_for_nsignals (0, cg, mkevent (tmpok)); }
+    twait { wait_for_nsignals (0, &cg, mkevent (tmpok)); }
     if (!tmpok) ok = false;
 
     if (!ok) {
@@ -665,7 +667,7 @@ namespace pub2 {
       // pass 'timenow' (not sb.st_ctime) as the ctime of the file, since 
       // this file is the most up-to-date as of right now.
       ctime = okwstime ();
-      _lookup->cache_lookup (fn2, fn3, hsh, timenow, sb.st_size);
+      _lookup->cache_lookup (fn2, fn3, hsh, sfs_get_timenow(), sb.st_size);
     }
     
     if (hsh) {

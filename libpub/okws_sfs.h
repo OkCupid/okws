@@ -33,7 +33,7 @@
 #if !defined(SFSLITE_AT_VERSION) 
 # error "Need sfslite patchlevel of 1.1.0pre1 or greater!"
 #else
-# if !SFSLITE_AT_VERSION(1,1,0,0)
+# if !SFSLITE_AT_VERSION(1,1,1,0)
 #  error "Need sfslite patchlevel of 1.1.0pre1 or greater!"
 # endif
 #endif

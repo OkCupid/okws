@@ -50,7 +50,7 @@ struct queued_cbv_t {
   tailq_entry<queued_cbv_t> _link;
 };
 
-typedef event_t<ptr<hostent>, int>::ref ev_hent_t;
+typedef event<ptr<hostent>, int>::ref ev_hent_t;
 
 //-----------------------------------------------------------------------
 
@@ -191,7 +191,7 @@ private:
 
 //-----------------------------------------------------------------------
 
-typedef event_t<int, ptr<okwc3_resp_simple_t> >::ref okwc3_simple_ev_t;
+typedef event<int, ptr<okwc3_resp_simple_t> >::ref okwc3_simple_ev_t;
 
 class okwc3_simple_t : public okwc3_t {
 public:

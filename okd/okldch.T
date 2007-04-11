@@ -164,7 +164,7 @@ okld_ch_t::launch ()
   }
 
   if (startup_time == 0)
-    startup_time = timenow;
+    startup_time = sfs_get_timenow();
   state = OKC_STATE_LAUNCH;
   p = okld->get_pubd2 ();
 
@@ -350,7 +350,7 @@ okld_ch_t::chldcb (int status)
     return;
   }
   if (okld->safe_startup () && 
-      (timenow - startup_time < int (ok_chld_startup_time))) {
+      (sfs_get_timenow() - startup_time < int (ok_chld_startup_time))) {
     CH_ERROR ("HOSED: not restarting due to crash directly after startup");
     state = OKC_STATE_HOSED;
     return;
@@ -433,7 +433,8 @@ okld_ch_t::clean_dumps ()
     str corefile = de->d_name;
     str from = apply_container_dir (rundir, corefile);
     str to = apply_container_dir (okld->get_root_coredir (), 
-				  strbuf (corefile) << "." << timenow);
+				  strbuf (corefile) << "." 
+				  << sfs_get_timenow());
     if (link (from.cstr (), to.cstr ()) != 0) 
       warn ("could not move file %s: %m\n", from.cstr ());
     else if (unlink (from.cstr ()) != 0)

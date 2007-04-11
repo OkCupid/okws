@@ -378,7 +378,7 @@ namespace pub2 {
     void getfile_chunked (const xpub2_getfile_data_t *dat,  u_int opts,
 			  xpub_file_t *file, status_cb_t cb, CLOSURE);
 
-    void launch_getchunk (rendezvous_t<ptr<bool> > cg, 
+    void launch_getchunk (rendezvous_t<ptr<bool> > *cg, 
 			  const xpub2_getfile_data_t *dat, u_int opts,
 			  size_t offset, size_t dsz, char *buf, cbb cb,
 			  CLOSURE);

@@ -45,7 +45,7 @@ okwc3_dnscache_entry_t::lookup (ev_hent_t ev)
 
   if (_resolving) {
     twait { wait_for_resolution (connector::cnc (mkevent (completed), ev)); }
-  } else if (!_init || timenow > _expires || _err != 0) {
+  } else if (!_init || sfs_get_timenow() > _expires || _err != 0) {
     twait { do_resolution (connector::cnc (mkevent (completed), ev)); }
   }
   if (completed) {
@@ -90,7 +90,7 @@ okwc3_dnscache_entry_t::commit_lookup (ptr<hostent> he, int e)
   _init = true;
   _he = he;
   _err = e;
-  _expires = timenow + _ttl;
+  _expires = sfs_get_timenow() + _ttl;
   _resolving = false;
 }
 
@@ -121,7 +121,7 @@ okwc3_dnscache_entry_t::do_resolution (evb_t cb)
   _resolving = true;
 
   dnsp = dns_hostbyname (_hostname, mkevent (rv, false, he, e));
-  cb->set_notify_on_cancel (mkevent (rv, true));
+  cb->set_cancel_notifier (mkevent (rv, true));
   twait (rv, cancelled);
   if (!cancelled) {
     committed_lookup = true;
@@ -149,7 +149,7 @@ okwc3_dnscache_entry_t::do_resolution (evb_t cb)
     // Internally, stops listening on an fd and closes it.
     dnsreq_cancel (dnsp);
   } else {
-    cb->set_notify_on_cancel (NULL);
+    cb->set_cancel_notifier (NULL);
 
     if (_waiter_remove_cb) {
       _waiter_remove_cb = NULL;

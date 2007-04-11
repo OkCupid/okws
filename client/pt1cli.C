@@ -346,7 +346,7 @@ hclient_t::hclient_do_exit (int c)
   if (c == 0)
     n_successes ++;
 
-  lastexit = tsnow;
+  lastexit = sfs_get_tsnow();
 
   if (noisy) warn << "at cexit2: " << id << "\n";
   --nrunning;
@@ -560,6 +560,8 @@ static int timediff (const timespec &t1, const timespec &t2)
 int
 stop_timer (const timespec &tm)
 {
+  struct timespec tsnow = sfs_get_tsnow ();
+
   int ret = (tsnow.tv_nsec - tm.tv_nsec) / THOUSAND;
   int tmp = (tsnow.tv_sec - tm.tv_sec) * MILLION;
   ret += tmp;
@@ -569,6 +571,7 @@ stop_timer (const timespec &tm)
 void
 hclient_t::run ()
 {
+  struct timespec tsnow = sfs_get_tsnow ();
   if (noisy) warn << "run: " << id << "\n";
   if (nrunning >= nconcur) {
     if (noisy) warn << "queuing: " << id << "\n";
@@ -644,7 +647,7 @@ tpt_do_sample (bool last)
   last_n_successes = n_successes;
 
   tpt_samples.push_back (tpt_pair_t (diff, num));
-  tpt_last_sample = tsnow;
+  tpt_last_sample = sfs_get_tsnow ();
   if (!last)
     sched_tpt_measurement ();
 }
@@ -652,6 +655,8 @@ tpt_do_sample (bool last)
 static void
 main2 (int n)
 {
+  struct timespec tsnow = sfs_get_tsnow ();
+
   lastexit = tsnow;
   startt = tsnow;
   nleft = n - nconcur;
@@ -670,6 +675,7 @@ static void schedule_lose_patience_timer ();
 static void
 lose_patience_cb ()
 {
+  struct timespec tsnow = sfs_get_tsnow ();
   if (noisy)
     warnx ("lpcb: td=%d; nleft=%d\n", 
 	   timediff (tsnow, lastexit), nleft);
@@ -959,6 +965,8 @@ main (int argc, char *argv[])
   } else {
     port = 80;
   }
+
+  struct timespec tsnow = sfs_get_tsnow ();
 
   // unless we don this, shit won't be initialized, and i'll
   // starting ripping my hair out as to why all of the timestamps

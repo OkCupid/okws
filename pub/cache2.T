@@ -190,16 +190,16 @@ namespace pubserv2 {
   cache_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
   {
     tvars { 
-      rendezvous_t<ptr<bool> > jg;
+      rendezvous_t<ptr<bool> > rv (__FL__);
       ptr<bool> b;
       bool rc (true);
     }
     for (srv_t *e = _list.first; e; e = _list.next (e)) {
       b = New refcounted<bool> ();
-      e->push_deltas (s, mkevent (jg,b, *b));
+      e->push_deltas (s, mkevent (rv,b, *b));
     }
-    while (jg.need_join ()) {
-      twait (jg, b); 
+    while (rv.need_wait ()) {
+      twait (rv, b); 
       if (!*b) 
 	rc = false; 
     }

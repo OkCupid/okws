@@ -41,7 +41,7 @@ int n_ahttpcon = 0;
 
 ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
 		    bool ma)
-  : start (timenow), fd (f), rcbset (false), 
+  : start (sfs_get_timenow ()), fd (f), rcbset (false), 
     wcbset (false), bytes_recv (0), bytes_sent (0),
     eof (false), destroyed (false), out (suio_alloc ()), sin (s),
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
@@ -878,7 +878,8 @@ ahttp_tab_t::run ()
   while ((n = q.first) && flag) {
     if (* n->_destroyed_p ) {
       unreg (n);
-    } else if (int (timenow - n->_a->start) > int (ok_demux_timeout)) {
+    } else if (int (sfs_get_timenow() - n->_a->start) > 
+	       int (ok_demux_timeout)) {
       warn << "XXX: removing deadbeat http connection (fd="
 	   << n->_a->getfd () << ")\n";
       n->_a->hit_timeout ();

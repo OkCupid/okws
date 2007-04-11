@@ -32,7 +32,7 @@ static time_t timestr_time = 0;
 str
 getdate ()
 {
-  const time_t t1 = timenow;
+  const time_t t1 = sfs_get_timenow();
   if (t1 == timestr_time && timestr)
     return timestr;
 

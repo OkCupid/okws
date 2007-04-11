@@ -295,7 +295,8 @@ log_timer_t::timer_cb (ptr<bool> dstry)
 void
 log_timer_t::timestamp ()
 {
-  struct tm *stm = localtime (&timenow);
+  time_t tmp = sfs_get_timenow ();
+  struct tm *stm = localtime (&tmp);
   timelen = strftime (buf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
 }
 

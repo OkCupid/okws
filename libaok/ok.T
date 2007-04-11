@@ -41,7 +41,7 @@ init_syscall_stats ()
 {
   if (ok_ssdi > 0) {
     global_syscall_stats = New syscall_stats_t ();
-    global_ssd_last = timenow;
+    global_ssd_last = sfs_get_timenow();
   }
 }
 

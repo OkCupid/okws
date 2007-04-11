@@ -476,7 +476,7 @@ expire_in (int d, int h, int m, int s)
   h += d*24;
   m += h*60;
   s += m*60;
-  time_t t = timenow + s;
+  time_t t = sfs_get_timenow() + s;
   mstr out (40);
   struct tm *stm = gmtime (&t);
   size_t l = strftime (out.cstr (), 40, "%A, %d-%b-%Y %T GMT", stm);

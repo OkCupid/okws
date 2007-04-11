@@ -292,7 +292,7 @@ mtdispatch_t::chld_ready (int i)
   queue_el_t el;
   while (queue.size () && readyq.size ()) {
     el = queue.pop_front ();
-    int diff = timenow - el.timein;
+    int diff = sfs_get_timenow() - el.timein;
     if (diff > int (ok_amt_q_timeout)) {
       warn << "Timeout for object in queue (wait time=" 
 	   << diff << "s)\n";
@@ -408,7 +408,7 @@ mtd_thread_t::take_svccb ()
 {
   svccb *s = cell->sbp;
   if (s) {
-    start = timenow;
+    start = sfs_get_timenow();
     dispatch (s);
   }
 }
@@ -434,7 +434,7 @@ mtd_thread_t::replynull ()
 void
 mtd_thread_t::did_reply ()
 {
-  time_t tm = timenow - start;
+  time_t tm = sfs_get_timenow() - start;
   if (tm > LONG_REPLY_TIME) {
     if (cell->sbp) {
       TWARN ("long service time (" << tm << " secs) for PROC=" 
@@ -677,7 +677,7 @@ void
 mtd_stats_t::report ()
 {
   if (ok_amt_stat_freq == 0 ||
-      !tsdiff (start_sample, tsnow, ok_amt_stat_freq))
+      !tsdiff (start_sample, sfs_get_tsnow(), ok_amt_stat_freq))
     return;
   epoch_t e = new_epoch ();
   warn ("STATS: i=%d;o=%d;r=%d;q=%d;a=%d;t=%d;l=%d\n",
@@ -687,8 +687,9 @@ mtd_stats_t::report ()
 void
 ssrv_t::req_made ()
 {
-  reqtimes.push_back (tsnow);
-  while (reqtimes.size () && tsdiff (reqtimes[0], tsnow, ok_amt_lasi))
+  reqtimes.push_back (sfs_get_tsnow());
+  while (reqtimes.size () && 
+	 tsdiff (reqtimes[0], sfs_get_tsnow(), ok_amt_lasi))
     reqtimes.pop_front ();
   load_avg = reqtimes.size ();
 }
@@ -709,6 +710,9 @@ epoch_t
 mtd_stats_t::new_epoch ()
 {
   epoch_t e = sample;
+  
+  struct timespec tsnow;
+  tsnow = sfs_get_tsnow ();
 
   e.len_msec = (tsnow.tv_sec - start_sample.tv_sec) * 1000
     + (tsnow.tv_nsec - start_sample.tv_nsec) / 1000000;

@@ -27,6 +27,7 @@
 #include "okwsconf.h"
 #include "lbalance.h"
 #include "txa.h"
+#include "litetime.h"
 
 #ifdef HAVE_CLONE
 # include <sched.h>
@@ -107,7 +108,7 @@ struct epoch_t {
 };
 
 struct mtd_stats_t {
-  mtd_stats_t () : start_sample (tsnow) {}
+  mtd_stats_t () : start_sample (sfs_get_tsnow ()) {}
 
   inline void in () { sample.in ++ ; total.in ++; }
   inline void out () { sample.out ++ ; total.out ++; }
@@ -226,7 +227,7 @@ public:
 
   void enqueue (svccb *b) 
   {
-    queue.push_back (queue_el_t (b, timenow));
+    queue.push_back (queue_el_t (b, sfs_get_timenow()));
   }
 
   void set_max_q (u_int32_t q) { maxq = min<u_int> (q, MTD_MAXQ); }
