@@ -28,7 +28,6 @@ bhash<str> ids;
 
 const str shell ("/bin/sh");
 static str outfile;
-str python_module_name;
 
 str
 rpcprog (const rpc_program *rp, const rpc_vers *rv)
@@ -124,7 +123,7 @@ cleanup ()
 static void
 usage ()
 {
-  warn << "usage: rpcc {-c | -h | -python | -q | -pyl | -pyh | -pys }\n"
+  warn << "usage: rpcc {-c | -h }\n"
     "            [-Ppref] [-Ddef] [-Idir]\n\t[-o outfile] file.x\n";
   exit (1);
 }
@@ -148,7 +147,7 @@ main (int argc, char **argv)
   vec<char *> av;
   char *fname = NULL;
   char *basename;
-  enum { BAD, HEADER, CFILE, PYTHON, PYL, PYH, PYS } mode = BAD;
+  enum { BAD, HEADER, CFILE } mode = BAD;
   void (*fn) (str) = NULL;
   int len;
 
@@ -169,14 +168,6 @@ main (int argc, char **argv)
       mode = HEADER;
     else if (!strcmp (arg, "-c") && mode == BAD)
       mode = CFILE;
-    else if (!strcmp (arg, "-python") && mode == BAD)
-      mode = PYTHON;
-    else if (!strcmp (arg, "-pyl") && mode == BAD)
-      mode = PYL;
-    else if (!strcmp (arg, "-pyh") && mode == BAD)
-      mode = PYH;
-    else if (!strcmp (arg, "-pys") && mode == BAD)
-      mode = PYS;
     else if (!strcmp (arg, "-o") && !outfile && ++an < argc)
       outfile = argv[an];
     else if (!strncmp (arg, "-o", 2) && !outfile && arg[2])
@@ -185,17 +176,10 @@ main (int argc, char **argv)
       idprefix = argv[an];
     else if (!strncmp (arg, "-P", 2) && !idprefix && arg[2])
       idprefix = arg + 2;
-    else if (!strcmp (arg, "-n") &&  !python_module_name && ++an < argc)
-      python_module_name = argv[an];
-    else if (!strncmp (arg, "-n", 2) && !python_module_name && arg[2])
-      python_module_name = arg + 2;
     else 
       usage ();
   }
-  if (python_module_name && !(mode == PYL || mode == PYS)) {
-    warn << "-n parameter only valid with -pyl or -pys\n";
-    usage ();
-  }
+
   if (!fname)
     usage ();
 
@@ -223,32 +207,6 @@ main (int argc, char **argv)
     fn = gencfile;
     if (!outfile)
       outfile = strbuf ("%.*sC", len - 1, basename);
-    break;
-  case PYTHON:
-    av[2] = "-DRPCC_P";
-    fn = genpython;
-    if (!outfile)
-      outfile = strbuf ("%.*spy", len - 1, basename);
-     break;
-  case PYL:
-    av[2] = "-DRPCC_PYL";
-    fn = genpyc_lib;
-    // foo.x -> foo_lib.C
-    if (!outfile)
-      outfile = strbuf ("%.*s_lib.C", len - 2, basename);
-    break;
-  case PYH:
-    av[2] = "-DRPCC_PYH";
-    fn = genpyh;
-    if (!outfile)
-      outfile = strbuf ("%.*sh", len -1, basename);
-    break;
-  case PYS:
-    av[2] = "-DRPCC_PYS";
-    fn = genpyc_so;
-    // foo.x -> foo_so.C
-    if (!outfile)
-      outfile = strbuf ("%.*s_so.C", len -2, basename);
     break;
   default:
     usage ();

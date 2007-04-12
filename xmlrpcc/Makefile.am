@@ -3,18 +3,18 @@
 
 LDADD = $(LIBASYNC) $(LIBPY)
 
-sfsbin_PROGRAMS = rpcc
+okwsbin_PROGRAMS = xmlrpcc
 
 noinst_HEADERS = rpcc.h parse.h
 
-rpcc_SOURCES = genheader.C gencfile.C genpython.C parse.yy scan.ll rpcc.C \
-	genpyc.C
+xmlrpcc_SOURCES = genheader.C gencfile.C parse.yy scan.ll rpcc.C 
+
 if STATIC
-rpcc_LDADD = $(LDADD) $(LDADD_THR)
-rpcc_DEPENDENCIES = $(LIBASYNC)
+xmlrpcc_LDADD = $(LDADD) $(LDADD_THR)
+xmlrpcc_DEPENDENCIES = $(LIBASYNC)
 else
-rpcc_LDADD = $(LDADD) $(LDADD_THR)
-rpcc_DEPENDENCIES =
+xmlrpcc_LDADD = $(LDADD) $(LDADD_THR)
+xmlrpcc_DEPENDENCIES =
 endif
 
 YYFLAGS = -d

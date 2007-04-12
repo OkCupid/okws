@@ -26,55 +26,135 @@
 static void
 mkmshl (str id)
 {
-#if 0
-  if (!needtype[id])
-    return;
-#endif
-  aout << "void *\n"
-       << id << "_alloc ()\n"
+  aout << XDR_RETURN "\n"
+       << "xml_" << id << " (" << XML_OBJ << " *xml, void *objp)\n"
        << "{\n"
-       << "  return New " << id << ";\n"
-       << "}\n"
-#if 0
-       << "void\n"
-       << id << "_free (void *objp)\n"
-       << "{\n"
-       << "  delete static_cast<" << id << " *> (objp);\n"
-       << "}\n"
-#endif
-       << XDR_RETURN "\n"
-       << "xdr_" << id << " (XDR *xdrs, void *objp)\n"
-       << "{\n"
-       << "  switch (xdrs->x_op) {\n"
-       << "  case XDR_ENCODE:\n"
-       << "  case XDR_DECODE:\n"
-       << "    return rpc_traverse (xdrs, *static_cast<"
-       << id << " *> (objp));\n"
-       << "  case XDR_FREE:\n"
-       << "    rpc_destruct (static_cast<" << id << " *> (objp));\n"
-       << "    return true;\n"
-       << "  default:\n"
-       << "    panic (\"invalid xdr operation %d\\n\", xdrs->x_op);\n"
-       << "  }\n"
-       << "}\n"
-       << "\n"
-       << XDR_RETURN "\n"
-       << "xml_" << id << " (" << XML_BASE_OBJ << "*xml, void *objp)\n"
-       << "{\n"
-       << "  switch (xml->op()) {\n"
-       << "  case XML_ENCODE:\n"
-       << "  case XML_DECODE:\n"
-       << "    return rpc_traverse (xml,*static_cast<" 
-       << id << " *> (objp));\n"
-       << "  case XML_FREE:\n"
-       << "    rpc_destruct (static_cast<" << id << " *> (objp));\n"
-       << "    return true;\n"
-       << "  default:\n"
-       << "    panic (\"invalid xdr operation %d\\n\", xml->op ());\n"
-       << "  }\n"
+       << "  return xml_rpc_traverse (xml, *static_cast<" 
+       << id << " *> (objp), NULL);\n"
        << "}\n"
        << "\n";
 }
+
+static void
+dumpstruct (const rpc_sym *s)
+{
+  const rpc_struct *rs = s->sstruct.addr ();
+  aout << "bool\n"
+       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id 
+       << " &obj, const char *nm)\n"
+       << "{\n";
+  const rpc_decl *rd = rs->decls.base ();
+  aout << "  return xml_rpc_traverse_push (t, obj, \"" << rs->id << "\","
+       << " RPC_STRUCT, nm)\n";
+  for ( ; rd < rs->decls.lim (); rd++) {
+    aout << "    && xml_rpc_traverse (t, obj." << rd->id << ", \""
+	 << rd->id << "\")\n";
+  }
+  aout << "    && xml_rpc_traverse_pop (t, obj);\n" ;
+  aout << "}\n\n";
+}
+
+void
+pswitch (str prefix, const rpc_union *rs, str swarg,
+	 void (*pt) (str, const rpc_union *rs, const rpc_utag *),
+	 str suffix, void (*defac) (str, const rpc_union *rs))
+{
+  bool hasdefault = false;
+  str subprefix = strbuf () << prefix << "  ";
+
+  aout << prefix << "switch (" << swarg << ") {" << suffix;
+  for (const rpc_utag *rt = rs->cases.base (); rt < rs->cases.lim (); rt++) {
+    if (rt->swval) {
+      if (rt->swval == "TRUE")
+	aout << prefix << "case true:" << suffix;
+      else if (rt->swval == "FALSE")
+	aout << prefix << "case false:" << suffix;
+      else
+	aout << prefix << "case " << rt->swval << ":" << suffix;
+    }
+    else {
+      hasdefault = true;
+      aout << prefix << "default:" << suffix;
+    }
+    if (rt->tagvalid)
+      pt (subprefix, rs, rt);
+  }
+  if (!hasdefault && defac) {
+    aout << prefix << "default:" << suffix;
+    defac (subprefix, rs);
+  }
+  aout << prefix << "}\n";
+}
+
+static void
+punionmacro (str prefix, const rpc_union *rs, const rpc_utag *rt)
+{
+  if (rt->tag.type == "void")
+    aout << prefix << "res = true;\n";
+  else
+    aout << prefix << "res = xml_rpc_traverse (t, *obj."
+	 << rt->tag.id << ", \"" << rt->tag.id << "\");\n";
+  aout << prefix << "break;\n";
+}
+
+static void
+punionmacrodefault (str prefix, const rpc_union *rs)
+{
+  aout << prefix << "res = true;\n";
+  aout << prefix << "break;\n";
+}
+
+static void
+dumpunion (const rpc_sym *s)
+{
+  const rpc_union *rs = s->sunion.addr ();
+  aout << "\nbool\n"
+       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj,"
+       << "const char *nm)\n"
+       << "{\n"
+       << "  if (!xml_rpc_traverse_push (t, obj, " << rs->id 
+       << ", RPC_UNION, nm))\n"
+       << "    return false;\n"
+       << "  " << rs->tagtype << " tag = obj." << rs->tagid << ";\n"
+       << "  if (!xml_rpc_traverse (t, tag, \"" << rs->tagid << "\"))\n"
+       << "    return false;\n"
+       << "  if (tag != obj." << rs->tagid << ")\n"
+       << "    obj.set_" << rs->tagid << " (tag);\n\n"
+       << "  bool res = true;\n";
+
+  pswitch ("  ", rs, "tag", punionmacro, "\n", punionmacrodefault);
+    
+  aout << "  if (!rpc_traverse_pop (t, obj))\n"
+       << "    res = false;\n"
+       << "  return res;\n"
+       << "}\n";
+
+  // aout << "RPC_TYPE_DECL (" << rs->id << ")\n";
+
+  aout << "\n";
+}
+
+static void
+dumpenum (const rpc_sym *s)
+{
+  str lastval;
+  const rpc_enum *rs = s->senum.addr ();
+
+  aout << "\nbool "
+       << "xmp_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj,"
+       << "const char *nm);\n"
+       << "{\n"
+       << "  u_int32_t val = obj;\n"
+       << "  if (!xml_rpc_traverse_push (t, val, \"" <<  rs->id 
+       << "\", RPC_ENUM, nm)\n"
+       << "      || !xml_rpc_traverse (t, val)\n"
+       << "      || !xml_rpc_traverse_pop (t, val))\n"
+       << "    return false;\n"
+       << "  obj = " << rs->id << " (val);\n"
+       << "  return true;\n"
+       << "}\n";
+}
+
 
 static void
 mktbl (const rpc_program *rs)
@@ -133,13 +213,16 @@ dumpsym (const rpc_sym *s)
     break;
   case rpc_sym::STRUCT:
     mkmshl (s->sstruct->id);
+    dumpstruct (s);
     break;
   case rpc_sym::UNION:
     mkmshl (s->sunion->id);
+    dumpunion (s);
     break;
   case rpc_sym::ENUM:
     mkmshl (s->senum->id);
     populate_const_table_enum (s);
+    dumpenum (s);
     break;
   case rpc_sym::TYPEDEF:
     mkmshl (s->stypedef->id);
@@ -148,185 +231,6 @@ dumpsym (const rpc_sym *s)
     mktbl (s->sprogram.addr ());
     populate_const_table_prog (s);
     break;
-  default:
-    break;
-  }
-}
-
-static void
-print_print (str type)
-{
-  str pref (strbuf ("%*s", int (8 + type.len ()), ""));
-  aout << "void\n"
-    "print_" << type << " (const void *_objp, const strbuf *_sbp, "
-    "int _recdepth,\n" <<
-    pref << "const char *_name, const char *_prefix)\n"
-    "{\n"
-    "  rpc_print (_sbp ? *_sbp : warnx, *static_cast<const " << type
-       << " *> (_objp),\n"
-    "             _recdepth, _name, _prefix);\n"
-    "}\n";
-
-  aout << "void\n"
-    "dump_" << type << " (const " << type << " *objp)\n"
-    "{\n"
-    "  rpc_print (warnx, *objp);\n"
-    "}\n\n";
-}
-
-static void
-print_enum (const rpc_enum *s)
-{
-  aout <<
-    "const strbuf &\n"
-    "rpc_print (const strbuf &sb, const " << s->id << " &obj, "
-    "int recdepth,\n"
-    "           const char *name, const char *prefix)\n"
-    "{\n"
-    "  char *p;\n"
-    "  switch (obj) {\n";
-  for (const rpc_const *cp = s->tags.base (),
-	 *ep = s->tags.lim (); cp < ep; cp++)
-    aout <<
-      "  case " << cp->id << ":\n"
-      "    p = \"" << cp->id << "\";\n"
-      "    break;\n";
-  aout <<
-    "  default:\n"
-    "    p = NULL;\n"
-    "    break;\n"
-    "  }\n"
-    "  if (name) {\n"
-    "    if (prefix)\n"
-    "      sb << prefix;\n"
-    "    sb << \"" << s->id << " \" << name << \" = \";\n"
-    "  };\n"
-    "  if (p)\n"
-    "    sb << p;\n"
-    "  else\n"
-    "    sb << int (obj);\n"
-    "  if (prefix)\n"
-    "    sb << \";\\n\";\n"
-    "  return sb;\n"
-    "};\n";
-  print_print (s->id);
-}
-
-static void
-print_struct (const rpc_struct *s)
-{
-  aout <<
-    "const strbuf &\n"
-    "rpc_print (const strbuf &sb, const " << s->id << " &obj, "
-    "int recdepth,\n"
-    "           const char *name, const char *prefix)\n"
-    "{\n"
-    "  if (name) {\n"
-    "    if (prefix)\n"
-    "      sb << prefix;\n"
-    "    sb << \"" << s->id << " \" << name << \" = \";\n"
-    "  };\n"
-    "  const char *sep;\n"
-    "  str npref;\n"
-    "  if (prefix) {\n"
-    "    npref = strbuf (\"%s  \", prefix);\n"
-    "    sep = \"\";\n"
-    "    sb << \"{\\n\";\n"
-    "  }\n"
-    "  else {\n"
-    "    sep = \", \";\n"
-    "    sb << \"{ \";\n"
-    "  }\n";
-  const rpc_decl *dp = s->decls.base (), *ep = s->decls.lim ();
-  if (dp < ep)
-    aout <<
-      "  rpc_print (sb, obj." << dp->id << ", recdepth, "
-      "\"" << dp->id << "\", npref);\n";
-  while (++dp < ep)
-    aout <<
-      "  sb << sep;\n"
-      "  rpc_print (sb, obj." << dp->id << ", recdepth, "
-      "\"" << dp->id << "\", npref);\n";
-  aout <<
-    "  if (prefix)\n"
-    "    sb << prefix << \"};\\n\";\n"
-    "  else\n"
-    "    sb << \" }\";\n"
-    "  return sb;\n"
-    "}\n";
-  print_print (s->id);
-}
-
-static void
-print_case (str prefix, const rpc_union *rs, const rpc_utag *rt)
-{
-  if (rt->tag.type != "void")
-    aout
-      << prefix << "sb << sep;\n"
-      << prefix << "rpc_print (sb, *obj." << rt->tag.id << ", "
-      " recdepth, \"" << rt->tag.id << "\", npref);\n";
-  aout << prefix << "break;\n";
-}
-
-static void
-print_break (str prefix, const rpc_union *rs)
-{
-  aout << prefix << "break;\n";
-}
-
-static void
-print_union (const rpc_union *s)
-{
-  aout <<
-    "const strbuf &\n"
-    "rpc_print (const strbuf &sb, const " << s->id << " &obj, "
-    "int recdepth,\n"
-    "           const char *name, const char *prefix)\n"
-    "{\n"
-    "  if (name) {\n"
-    "    if (prefix)\n"
-    "      sb << prefix;\n"
-    "    sb << \"" << s->id << " \" << name << \" = \";\n"
-    "  };\n"
-    "  const char *sep;\n"
-    "  str npref;\n"
-    "  if (prefix) {\n"
-    "    npref = strbuf (\"%s  \", prefix);\n"
-    "    sep = \"\";\n"
-    "    sb << \"{\\n\";\n"
-    "  }\n"
-    "  else {\n"
-    "    sep = \", \";\n"
-    "    sb << \"{ \";\n"
-    "  }\n"
-    "  rpc_print (sb, obj." << s->tagid << ", recdepth, "
-    "\"" << s->tagid << "\", npref);\n";
-  pswitch ("  ", s, "obj." << s->tagid, print_case, "\n", print_break);
-  aout <<
-    "  if (prefix)\n"
-    "    sb << prefix << \"};\\n\";\n"
-    "  else\n"
-    "    sb << \" }\";\n"
-    "  return sb;\n"
-    "}\n";
-  print_print (s->id);
-}
-
-static void
-dumpprint (const rpc_sym *s)
-{
-  switch (s->type) {
-  case rpc_sym::STRUCT:
-    print_struct (s->sstruct.addr ());
-    break;
-  case rpc_sym::UNION:
-    print_union (s->sunion.addr ());
-    break;
-  case rpc_sym::ENUM:
-    print_enum (s->senum.addr ());
-    break;
-  case rpc_sym::TYPEDEF:
-    print_print (s->stypedef->id);
   default:
     break;
   }
@@ -351,14 +255,18 @@ makehdrname (str fname)
 static void
 dump_const_table ()
 {
-  aout << "static qhash<str, int> const_tab;\n";
-  aout << "void init_const_tab ()\n"
-       << "{\n";
+  aout << "struct xml_rpc_const_t {\n"
+       << "  const char *name;\n"
+       << "  int val;\n"
+       << "};\n\n";
+  aout << "static xml_rpc_const_t rpc_constants[] = {\n";
   for (size_t i = 0; i < const_tab.size (); i++) {
-    aout << "  const_tab.insert (\"" << const_tab[i] << "\","
-	 << const_tab[i] << ")\n";
+    if (i > 0) {
+      aout << ",\n";
+    }
+    aout << "  { \"" << const_tab[i] << "\", " << const_tab[i]  << " }";
   }
-  aout << "}\n\n";
+  aout << "\n};\n\n";
 }
 
 void
@@ -380,11 +288,6 @@ gencfile (str fname)
 	}
 #endif
 
-  aout << "#ifdef MAINTAINER\n\n";
-  for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)
-    dumpprint (s);
-  aout << "#endif /* MAINTAINER*/\n";
-
   for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)
     dumpsym (s);
 
@@ -392,4 +295,6 @@ gencfile (str fname)
 
   aout << "\n";
 }
+
+
 
