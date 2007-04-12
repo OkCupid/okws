@@ -248,8 +248,7 @@ okld_ch_t::launch ()
   okld->env.remove ("wfs");
 
   argv_t env_tmp;
-  if (env.size ()) 
-    env_tmp.init (env, environ);
+  env_tmp.init (env, environ);
 
   int fd, ctlfd;
   fd = ahttpcon_aspawn (exe, argv, 
