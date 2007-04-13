@@ -151,6 +151,7 @@ genheader (str fname, str xdr_headername)
        << "#ifndef " << guard << "\n"
        << "#define " << guard << " 1\n\n"
        << "#include \"xdrmisc.h\"\n"
+       << "#include \"okxmlxlate.h\"\n"
        << "#include \"" << makeinclude (xdr_headername) << "\"\n";
 
 

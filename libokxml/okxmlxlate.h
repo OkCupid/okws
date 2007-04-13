@@ -25,10 +25,14 @@
 #ifndef _LIBAHTTP_OKXMLXLATE_H
 #define _LIBAHTTP_OKXMLXLATE_H
 
+//
+// Runtime classes required for running XML<->XDR translation;
+// generate stubs via rpcc and xmlrpcc, and then plug in to this
+// class (automatically) via includes.
+//
 
 class XML_RPC_obj_t {
 public:
-  
 
 };
 
