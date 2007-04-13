@@ -59,15 +59,16 @@ struct xml_rpc_const_t {
 struct xml_rpcgen_table {
   const char *name;
   const std::type_info *type_arg;
-  xml_xdrproc_t xdr_arg;
+  xml_xdrproc_t xml_arg_proc;
   const std::type_info *type_res;
-  xml_xdrproc_t xdr_res;
+  xml_xdrproc_t xml_res_proc;
 };
 
 struct xml_rpc_program {
   u_int32_t progno;
   u_int32_t versno;
-  const struct xml_rpcgen_table *tbl;
+  const rpc_program *xdr_prog;
+  const struct xml_rpcgen_table *xml_tbl;
   size_t nproc;
   const char *name;
 };

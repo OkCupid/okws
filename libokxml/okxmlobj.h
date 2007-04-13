@@ -27,6 +27,14 @@
 
 #include "okxmldata.h"
 
+//
+// What's this?
+//
+//   Wrappers around the XML data elements declared in okxmldata.h; 
+//   they can be manipulated as regular objects, and the refcounting is
+//   done underneath the covers.
+//
+
 class xml_obj_const_t;
 class xml_obj_t;
 

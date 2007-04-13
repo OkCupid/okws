@@ -37,6 +37,8 @@
 #include "list.h"
 #include "tame_lock.h"
 #include "okxmlxlate.h"
+#include "okxml.h"
+#include "okxmlobj.h"
 
 namespace okxml {
 
@@ -44,6 +46,10 @@ namespace okxml {
 
   str to_netloc_hash (const str &h, int p);
 
+
+  //
+  // XXX: todo: cache aclnt objects along with transports.
+  //
   struct conn_t : public virtual refcount {
 
     conn_t (const str &h, int p);
@@ -85,6 +91,10 @@ namespace okxml {
     xlate_mgr_t () {}
 
     void add_file (const xml_rpc_file *file);
+
+    void xlate (xml_obj_const_t input,
+		xml_obj_t *output,
+		aclnt_cb cb, CLOSURE);
 
   private:
     void add_const (const xml_rpc_const_t *c);

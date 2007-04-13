@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include "tame.h"
 #include "rxx.h"
+#include "okxmlxlatemgr.h"
 
 class oksrvc_xlatetst_t;
 
@@ -36,16 +37,12 @@ class okclnt_xlatetst_t : public okclnt_xmlrpc_t {
 public:
   okclnt_xlatetst_t (ptr<ahttpcon> x, oksrvc_xlatetst_t *s) ;
 
-  void xlate (xml_req_t q, xml_resp_cb_t cb) {
-    xml_resp_t s;
-    s[0]("zero") = q[0];
-    s[0]("one") = q[1];
-    s[1] = "<testing><this&that>";
-
-    TRIGGER (cb, s);
-  };
-
+  void xlate (xml_req_t q, xml_resp_cb_t cb) { xlate_T (q, cb); }
+  
 private:
+  void xlate_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+
+
   oksrvc_xlatetst_t *_service;
 };
 
@@ -58,6 +55,12 @@ public:
     // Register XML-RPC service methods
     regh ("xlatetst.xlate", &okclnt_xlatetst_t::xlate); 
   }
+
+  void xlate (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+
+private:
+  okxml::xlate_mgr_t _xlmgr;
+
 };
 
 okclnt_xlatetst_t::okclnt_xlatetst_t (ptr<ahttpcon> x, oksrvc_xlatetst_t *s)
@@ -68,4 +71,28 @@ main (int argc, char *argv[])
 {
   (New oksrvc_xlatetst_t (argc, argv))->launch ();
   amain ();
+}
+
+tamed void
+okclnt_xlatetst_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
+{
+  tvars {
+    xml_resp_t res;
+  }
+  twait {
+    _service->xlate (q, mkevent (res));
+  }
+  (*cb) (res);
+}
+
+tamed void
+oksrvc_xlatetst_t::xlate (xml_req_t in, xml_resp_cb_t cb)
+{
+  tvars {
+    xml_resp_t res;
+    clnt_stat stat;
+  }
+  twait { _xlmgr.xlate (in[0], &res, mkevent (stat)); }
+
+  (*cb) (res);
 }

@@ -4,8 +4,12 @@
 
 #include "okxmlxlatemgr.h"
 #include "okconst.h"
+#include <limits.h>
+
 
 namespace okxml {
+
+  enum { PORT_MAX = 0x10000 };
 
   str
   to_netloc_hash (const str &h, int p)
@@ -118,5 +122,70 @@ namespace okxml {
       add_const (c);
     }
   }
+
+  tamed void
+  xlate_mgr_t::xlate (xml_obj_const_t input, 
+		      xml_obj_t *output,
+		      aclnt_cb cb)
+  {
+    tvars {
+      str hostname;
+      int port;
+      str program;
+      int procno;
+      xml_obj_const_t arg;
+      ptr<axprt> x;
+      clnt_stat stat;
+      const xml_rpc_program **progp;
+      ptr<aclnt> c;
+      XML_RPC_obj_t xml_arg, xml_res;
+      void *xdr_arg (NULL), *xdr_res (NULL);
+      const rpcgen_table *tblent_xdr;
+      const xml_rpcgen_table *tblent_xml;
+    }
+
+    hostname = input("hostname");
+    port = input ("port");
+    program = input ("program");
+    procno = input ("procno");
+    arg = input ("arg");
+
+    if (!hostname || port <= 0 || port >= PORT_MAX) {
+      stat = RPC_UNKNOWNHOST;
+    } else {
+      twait { _cmgr.getcon (hostname, port, mkevent (x)); }
+      if (!x) {
+	stat = RPC_UNKNOWNADDR;
+      } else if (!program || !(progp = _programs[program])) {
+	stat = RPC_PROGUNAVAIL;
+      } else if (procno < 0 || procno > int ((*progp)->xdr_prog->nproc)) {
+	stat = RPC_PROCUNAVAIL;
+      } else {
+	tblent_xml = (*progp)->xml_tbl + procno;
+	tblent_xdr = (*progp)->xdr_prog->tbl + procno;
+
+	xdr_arg = (*tblent_xdr->alloc_arg) ();
+	if (!tblent_xml->xml_arg_proc (&xml_arg, xdr_arg)) {
+	  stat = RPC_CANTDECODEARGS;
+	} else {
+	  c = aclnt::alloc (x, *((*progp)->xdr_prog));
+	  xdr_res = (*tblent_xdr->alloc_res) ();
+	  twait { c->call (procno, xdr_arg, xdr_res, mkevent (stat)); }
+	  if (!stat && !tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
+	    stat = RPC_CANTDECODERES;
+	  }
+	}
+      }
+    }
+    if (xdr_arg) {
+      xdr_free (tblent_xdr->xdr_arg, xdr_arg);
+    }
+    if (xdr_res) {
+      xdr_free (tblent_xdr->xdr_res, xdr_res);
+    }
+      
+    (*cb) (stat);
+  }
+
 }
 

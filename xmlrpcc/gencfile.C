@@ -168,12 +168,15 @@ static void
 mktbl (const rpc_program *rs)
 {
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
-    str name = strbuf ("xml_%s", rpcprog (rs, rv).cstr ());
+    str xdr_name = rpcprog (rs, rv);
+    str name = strbuf ("xml_%s", xdr_name.cstr ());
     aout << "static const xml_rpcgen_table " << name << "_tbl[] = {\n"
 	 << "  " << rs->id << "_" << rv->val << "_APPLY (XMLTBL_DECL)\n"
 	 << "};\n"
 	 << "const xml_rpc_program " << name << " = {\n"
-	 << "  " << rs->id << ", " << rv->id << ", " << name << "_tbl,\n"
+	 << "  " << rs->id << ", " << rv->id << ", " 
+	 << "&" << xdr_name << ", " 
+	 << name << "_tbl,\n"
 	 << "  sizeof (" << name << "_tbl" << ") / sizeof ("
 	 << name << "_tbl[0]),\n"
 	 << "  \"" << name << "\"\n"
