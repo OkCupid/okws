@@ -19,10 +19,10 @@ okprot.C : $(srcdir)/okprot.x okprot.h
 SUFFIXES = .C .T .h
 
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 ok.o:  ok.C
 ok.lo: ok.C

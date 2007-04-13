@@ -25,6 +25,10 @@
 #ifndef _LIBAHTTP_OKXMLXLATE_H
 #define _LIBAHTTP_OKXMLXLATE_H
 
+#include "async.h"
+#include "xdrmisc.h"
+#include "rpctypes.h"
+
 //
 // Runtime classes required for running XML<->XDR translation;
 // generate stubs via rpcc and xmlrpcc, and then plug in to this
