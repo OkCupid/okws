@@ -112,13 +112,13 @@ namespace okxml {
   }
 
   void
-  xlate_mgr_t::add_file (const xml_rpc_file *file)
+  xlate_mgr_t::add_file (const xml_rpc_file &file)
   {
-    _files.insert (file->filename, file);
-    for (const xml_rpc_program **p = file->programs; *p; p++) {
+    _files.insert (file.filename, &file);
+    for (const xml_rpc_program **p = file.programs; *p; p++) {
       add_program (*p);
     }
-    for (const xml_rpc_const_t *c = file->constants; c->name; c++) {
+    for (const xml_rpc_const_t *c = file.constants; c->name; c++) {
       add_const (c);
     }
   }

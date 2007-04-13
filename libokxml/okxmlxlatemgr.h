@@ -90,7 +90,7 @@ namespace okxml {
   public:
     xlate_mgr_t () {}
 
-    void add_file (const xml_rpc_file *file);
+    void add_file (const xml_rpc_file &file);
 
     void xlate (xml_obj_const_t input,
 		xml_obj_t *output,

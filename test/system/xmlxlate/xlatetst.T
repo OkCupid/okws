@@ -30,6 +30,7 @@
 #include "tame.h"
 #include "rxx.h"
 #include "okxmlxlatemgr.h"
+#include "tstprot_xml.h"
 
 class oksrvc_xlatetst_t;
 
@@ -54,6 +55,7 @@ public:
   { 
     // Register XML-RPC service methods
     regh ("xlatetst.xlate", &okclnt_xlatetst_t::xlate); 
+    _xlmgr.add_file (tstprot_xml_rpc_file);
   }
 
   void xlate (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
