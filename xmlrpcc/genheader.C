@@ -157,7 +157,7 @@ genheader (str fname, str xdr_headername)
   }
 
   aout << "extern xml_rpc_file " << stripfname (fname, false) 
-       << "_xml_rpc_file;\n";
+       << "_rpc_file;\n\n";
 
   aout << "#endif /* !" << guard << " */\n";
 }
