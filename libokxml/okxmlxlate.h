@@ -36,7 +36,7 @@ public:
 
 };
 
-typedef BOOL (*xml_xdrproc_t) (XML_RPC_obj_t *, void *);
+typedef bool (*xml_xdrproc_t) (XML_RPC_obj_t *, void *);
 
 typedef enum {
   XDR_STRUCT = 1,
@@ -54,9 +54,9 @@ struct xml_rpc_const_t {
 
 struct xml_rpcgen_table {
   const char *name;
-  const std::type_info &type_arg;
+  const std::type_info *type_arg;
   xml_xdrproc_t xdr_arg;
-  const std::type_info &type_res;
+  const std::type_info *type_res;
   xml_xdrproc_t xdr_res;
 };
 
@@ -64,7 +64,6 @@ struct xml_rpc_program {
   u_int32_t progno;
   u_int32_t versno;
   const struct xml_rpcgen_table *tbl;
-  const struct xml_rpc_const_t *const_tbl;
   size_t nproc;
   const char *name;
 };
@@ -95,6 +94,13 @@ xml_rpc_traverse_pop (XML_RPC_obj_t *obj, T &t)
 {
   return true;
 }
+
+inline bool
+xml_void (XML_RPC_obj_t *obj, void *v)
+{
+  return true;
+}
+
 
 
 #endif /* _LIBAHTTP_OKXMLXLATE_H */

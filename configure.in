@@ -185,4 +185,4 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  libweb/Makefile logd/Makefile Makefile conf/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile htdocs/Makefile contrib/Makefile
-	  xmlrpcc/Makefile )
+	  xmlrpcc/Makefile test/system/xmlxlate/Makefile )

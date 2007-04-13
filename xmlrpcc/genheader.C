@@ -26,7 +26,7 @@
 static void
 pmshl (str id)
 {
-  aout << XDR_RETURN " xml_" << id << " (XML_RPC_obj_t *, void *);\n";
+  aout << "bool xml_" << id << " (XML_RPC_obj_t *, void *);\n";
 }
 
 static void
@@ -73,7 +73,7 @@ dumpprog (const rpc_sym *s)
 {
   const rpc_program *rs = s->sprogram.addr ();
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
-    aout << "extern const rpc_program xml_" << rpcprog (rs, rv) << ";\n";
+    aout << "extern const xml_rpc_program xml_" << rpcprog (rs, rv) << ";\n";
   }
   aout << "\n";
 }
@@ -129,18 +129,6 @@ makeguard (str fname)
   return guard;
 }
 
-static str
-makeinclude (str fname)
-{
-  const char *p;
-
-  if ((p = strrchr (fname, '/')))
-    p++;
-  else p = fname;
-
-  return p;
-}
-
 void
 genheader (str fname, str xdr_headername)
 {
@@ -152,7 +140,7 @@ genheader (str fname, str xdr_headername)
        << "#define " << guard << " 1\n\n"
        << "#include \"xdrmisc.h\"\n"
        << "#include \"okxmlxlate.h\"\n"
-       << "#include \"" << makeinclude (xdr_headername) << "\"\n";
+       << "#include \"" << stripfname (xdr_headername) << "\"\n";
 
 
   int last = rpc_sym::LITERAL;
@@ -167,6 +155,9 @@ genheader (str fname, str xdr_headername)
     last = s->type;
     dumpsym (s);
   }
+
+  aout << "extern xml_rpc_const_t " << stripfname (fname, false) 
+       << "_rpc_constants[];\n";
 
   aout << "#endif /* !" << guard << " */\n";
 }

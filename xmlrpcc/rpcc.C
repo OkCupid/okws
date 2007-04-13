@@ -30,6 +30,25 @@ const str shell ("/bin/sh");
 static str outfile;
 
 str
+stripfname (str fname, bool suffix)
+{
+  const char *p;
+
+  if ((p = strrchr (fname, '/')))
+    p++;
+  else p = fname;
+
+  if (suffix)
+    return p;
+
+  const char *ep = p;
+  while (*ep && *ep != '.')
+    ep++;
+
+  return str (p, ep - p);
+}
+
+str
 rpcprog (const rpc_program *rp, const rpc_vers *rv)
 {
   strbuf name;

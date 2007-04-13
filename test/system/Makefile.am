@@ -16,15 +16,21 @@ xmlex_SOURCES = xmlex.C
 xmlex.o:	xmlex.C
 xmlex.lo:	xmlex.C
 
+XML_SUBDIRS = xmlxlate
+
 else
 
 XMLPROGS =
 NO_XML = \#
 
+XML_SUBDIRS = 
+
 endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C
+
+SUBDIRS = $(XML_SUBDIRS)
 
 okwssvc_PROGRAMS = static configtest simple pub1tst $(XMLPROGS)
 static_SOURCES = static.C
@@ -34,7 +40,7 @@ pub1tst_SOURCES = pub1tst.C
 
 SUFFIXES = .g .C .T
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 static.o:	static.C
 static.lo:	static.C

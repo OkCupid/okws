@@ -217,5 +217,5 @@ void pswitch (str prefix, const rpc_union *rs, str swarg,
 
 #define XML_OBJ "XML_RPC_obj_t"
 
-// added for pyc/pyh generation
-extern str python_module_name;
+
+str stripfname (str s, bool suffix = true);

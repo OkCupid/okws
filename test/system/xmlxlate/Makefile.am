@@ -1,0 +1,63 @@
+##
+## $Id: Makefile.am 2393 2006-12-12 04:23:35Z max $
+##
+##   test2 is our attempt at regression and Unit tests; eventually, should
+##   compile and run out of the box, and should be able to test itself.
+##
+
+$(PROGRAMS): $(LDEPS)
+
+if USE_XML
+
+XMLPROGS = xlatetst
+
+xlatetst_SOURCES = xlatetst.C tstprot.C tstprot_xml.C
+xlatetst.o:	xlatetst.C
+xlatetst.lo:	xlatetst.C
+
+else
+
+XMLPROGS =
+
+endif
+
+TAMEIN = xlatetst.T
+TAMEOUT = xlatetst.C 
+
+okwssvc_PROGRAMS = $(XMLPROGS)
+
+SUFFIXES = .x .T
+.T.C:
+	$(TAME) -o $@ $< || (rm -f $@ && false)
+
+tstprot.h: $(srcdir)/tstprot.x
+	@rm -f $@
+	-$(RPCC) -h $(srcdir)/tstprot.x || rm -f $@
+
+tstprot.C: $(srcdir)/tstprot.x
+	@rm -f $@
+	-$(RPCC) -c $(srcdir)/tstprot.x || rm -f $@
+
+tstprot_xml.h: $(srcdir)/tstprot.x
+	@rm -f $@
+	../../../xmlrpcc/xmlrpcc -h $(srcdir)/tstprot.x || rm -f $@
+
+tstprot_xml.C : $(srcdir)/tstprot.x 
+	@rm -f $@
+	../../../xmlrpcc/xmlrpcc -c $(srcdir)/tstprot.x || rm -f $@
+
+tstprot.C:	tstprot.h
+tstprot_xml.C:	tstprot_xml.h
+
+CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
+EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)
+MAINTAINERCLEANFILES = Makefile.in
+
+.PHONY:	tameclean
+
+tameclean:
+	rm -f $(TAMEOUT)
+
+dist-hook:
+	cd $(distdir) && rm -f $(TAMEOUT)
+
