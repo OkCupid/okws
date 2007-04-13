@@ -156,8 +156,8 @@ genheader (str fname, str xdr_headername)
     dumpsym (s);
   }
 
-  aout << "extern xml_rpc_const_t " << stripfname (fname, false) 
-       << "_rpc_constants[];\n";
+  aout << "extern xml_rpc_file " << stripfname (fname, false) 
+       << "_xml_rpc_file;\n";
 
   aout << "#endif /* !" << guard << " */\n";
 }

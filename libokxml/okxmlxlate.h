@@ -68,6 +68,11 @@ struct xml_rpc_program {
   const char *name;
 };
 
+struct xml_rpc_file {
+  const struct xml_rpc_program **programs;
+  const struct xml_rpc_const_t *constants;
+  const char *filename;
+};
 
 #define XMLTBL_DECL(proc, arg, res)                               \
 {                                                                 \

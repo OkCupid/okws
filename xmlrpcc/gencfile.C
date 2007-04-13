@@ -155,26 +155,33 @@ dumpenum (const rpc_sym *s)
        << "}\n";
 }
 
+vec<str> const_tab;
+vec<str> prog_tab;
+
+static void
+populate_prog_tab (const str &s)
+{
+  prog_tab.push_back (s);
+}
 
 static void
 mktbl (const rpc_program *rs)
 {
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
-    str name = rpcprog (rs, rv);
+    str name = strbuf ("xdr_%s", rpcprog (rs, rv).cstr ());
     aout << "static const xml_rpcgen_table " << name << "_tbl[] = {\n"
 	 << "  " << rs->id << "_" << rv->val << "_APPLY (XMLTBL_DECL)\n"
 	 << "};\n"
-	 << "const xml_rpc_program xml_" << name << " = {\n"
+	 << "const xml_rpc_program " << name << " = {\n"
 	 << "  " << rs->id << ", " << rv->id << ", " << name << "_tbl,\n"
 	 << "  sizeof (" << name << "_tbl" << ") / sizeof ("
 	 << name << "_tbl[0]),\n"
 	 << "  \"" << name << "\"\n"
 	 << "};\n";
+    populate_prog_tab (name);
   }
   aout << "\n";
 }
-
-vec<str> const_tab;
 
 static void
 populate_const_table (const str &s)
@@ -257,12 +264,31 @@ dump_const_table (str fname)
 {
   aout << "xml_rpc_const_t " << fname << "_rpc_constants[] = {\n";
   for (size_t i = 0; i < const_tab.size (); i++) {
-    if (i > 0) {
-      aout << ",\n";
-    }
-    aout << "  { \"" << const_tab[i] << "\", " << const_tab[i]  << " }";
+    aout << "  { \"" << const_tab[i] << "\", " << const_tab[i]  << " },\n";
   }
+  aout << "  { NULL, 0 }\n";
   aout << "\n};\n\n";
+}
+
+static void
+dump_prog_table (str fname)
+{
+  aout << "static const xml_rpc_program *" << fname << "_rpc_programs[] = {\n";
+  for (size_t i = 0; i < prog_tab.size (); i++) {
+    aout << "  &" << prog_tab[i] << ",\n";
+  }
+  aout << "  NULL\n"
+       << "};\n\n";
+}
+
+static void
+dump_file_struct (str prfx)
+{
+  aout << "xml_rpc_file " << prfx << "_rpc_file = {\n"
+       << "  " << prfx << "_rpc_programs,\n"
+       << "  " << prfx << "_rpc_constants,\n"
+       << "  \"" << prfx << "\"\n"
+       << "};\n\n";
 }
 
 void
@@ -275,7 +301,12 @@ gencfile (str fname, str xdr_headername)
   for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)
     dumpsym (s);
 
-  dump_const_table (stripfname(fname, false));
+  str prfx = stripfname (fname, false);
+
+  dump_const_table (prfx);
+  dump_prog_table (prfx);
+
+  dump_file_struct (prfx);
 
   aout << "\n";
 }
