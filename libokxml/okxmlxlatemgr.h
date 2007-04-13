@@ -30,5 +30,73 @@
 // Class for managing translation, connections, etc.
 //
 
+#include "async.h"
+#include "arpc.h"
+#include "tame.h"
+#include "ihash.h"
+#include "list.h"
+#include "tame_lock.h"
+#include "okxmlxlate.h"
+
+namespace okxml {
+
+  typedef callback<void, ptr<axprt> >::ref xcb_t;
+
+  str to_netloc_hash (const str &h, int p);
+
+  struct conn_t : public virtual refcount {
+
+    conn_t (const str &h, int p);
+
+    void connect (cbb cb, CLOSURE);
+    void touch ();
+    void release ();
+    bool connected () const;
+    ptr<axprt> x () { return _x; }
+
+    const str _hostname;
+    const int _port;
+    const str _hashkey;
+
+    const time_t _created;
+    time_t _accessed;
+
+    ptr<axprt_stream> _x;
+    ihash_entry<conn_t> _hlnk;
+    tailq_entry<conn_t> _qlnk;
+
+    tame::lock_t _lock;
+    ptr<conn_t> _self;
+  };
+
+  class connmgr_t {
+  public:
+    connmgr_t () {}
+
+    void getcon (const str &h, int p, xcb_t cb, CLOSURE);
+
+  private:
+    ihash<const str, conn_t, &conn_t::_hashkey, &conn_t::_hlnk> _tab;
+    tailq<conn_t, &conn_t::_qlnk> _q;
+  };
+
+  class xlate_mgr_t {
+  public:
+    xlate_mgr_t () {}
+
+    void add_file (const xml_rpc_file *file);
+
+  private:
+    void add_const (const xml_rpc_const_t *c);
+    void add_program (const xml_rpc_program *p);
+
+    qhash<str, const xml_rpc_program *> _programs;
+    qhash<str, int> _constants;
+    qhash<str, const xml_rpc_file *> _files;
+
+    connmgr_t _cmgr;
+  };
+
+};
 
 #endif /* _LIBAHTTP_OKXMLXLATEMGR_H */
