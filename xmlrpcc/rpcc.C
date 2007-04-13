@@ -148,7 +148,7 @@ main (int argc, char **argv)
   char *fname = NULL;
   char *basename;
   enum { BAD, HEADER, CFILE } mode = BAD;
-  void (*fn) (str) = NULL;
+  void (*fn) (str, str) = NULL;
   int len;
 
   av.push_back (PATH_CPP);
@@ -195,18 +195,21 @@ main (int argc, char **argv)
     basename = fname;
   len = strlen (basename);
 
+  str xdr_headername = strbuf("%.*sh", len - 1, basename);
+
   switch (mode) {
   case HEADER:
     av[2] = "-DRPCC_H";
     fn = genheader;
-    if (!outfile)
-      outfile = strbuf ("%.*sh", len - 1, basename);
+    if (!outfile) {
+      outfile = strbuf ("%.*s_xml.h", len - 2, basename);
+    }
     break;
   case CFILE:
     av[2] = "-DRPCC_C";
     fn = gencfile;
     if (!outfile)
-      outfile = strbuf ("%.*sC", len - 1, basename);
+      outfile = strbuf ("%.*s_xml.C", len - 2, basename);
     break;
   default:
     usage ();
@@ -225,9 +228,9 @@ main (int argc, char **argv)
   yyparse ();
   checkliterals ();
   if (outfile != "-" && outfile[0] != '|')
-    fn (outfile);
+    fn (outfile, xdr_headername);
   else
-    fn (fname);
+    fn (fname, xdr_headername);
 #if 0
   chldcb (child, wrap (reapcpp));
   amain ();

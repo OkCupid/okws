@@ -207,12 +207,8 @@ typedef vec<str> strlist_t;
 extern strlist_t litq;
 
 str rpcprog (const rpc_program *, const rpc_vers *);
-void genheader (str);
-void gencfile (str);
-void genpython (str);
-void genpyc_lib (str);
-void genpyc_so (str);
-void genpyh (str);
+void genheader (str,str);
+void gencfile (str,str);
 
 void pswitch (str prefix, const rpc_union *rs, str swarg,
 	      void (*pt) (str, const rpc_union *rs, const rpc_utag *),

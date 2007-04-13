@@ -27,5 +27,6 @@
 
 #include "okxmldata.h"
 #include "okxmlparse.h"
+#include "okxmlxlate.h"
 
 #endif /* _LIBAHTTP_OKXML_H */
