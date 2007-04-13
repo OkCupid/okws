@@ -28,6 +28,8 @@
 #include "async.h"
 #include "xdrmisc.h"
 #include "rpctypes.h"
+#include "okxmldata.h"
+#include "okxmlobj.h"
 
 //
 // Runtime classes required for running XML<->XDR translation;
@@ -37,7 +39,31 @@
 
 class XML_RPC_obj_t {
 public:
+  virtual bool enter_field (const char *f) = 0;
+  virtual bool exit_field () = 0;
+  virtual ~XML_RPC_obj_t () {}
+};
 
+class XML_creator_t : public XML_RPC_obj_t {
+public:
+  XML_creator_t () { _stack.push_back (xml_obj_ref_t (_root)); }
+  bool enter_field (const char *f);
+  bool exit_field () { _stack.pop_back (); return true; }
+private:
+  ptr<xml_element_t> _root;
+  vec<xml_obj_ref_t> _stack;
+};
+
+class XML_reader_t : public XML_RPC_obj_t {
+public:
+  XML_reader_t (xml_obj_const_t r) : _root (r)
+  { _stack.push_back (_root); }
+
+  bool enter_field (const char *f);
+  bool exit_field () { _stack.pop_back (); return true; }
+private:
+  xml_obj_const_t _root;
+  vec<xml_obj_const_t> _stack;
 };
 
 typedef bool (*xml_xdrproc_t) (XML_RPC_obj_t *, void *);
@@ -86,11 +112,50 @@ struct xml_rpc_file {
   &typeid (res), xml_##res                                        \
 },                                                                \
 
+ptr<xml_element_t>
+xml_enter_field (XML_RPC_obj_t *obj, const char *field_name);
+
+void xml_exit_field (XML_RPC_obj_t *obj, ptr<xml_element_t> el);
+
 template<class T> bool
 xml_rpc_traverse (XML_RPC_obj_t *obj, T &t, const char *field_name)
 {
-  return true;
+  ptr<xml_element_t> old;
+  bool ret = true;
+
+  if (field_name && !obj->enter_field (field_name))
+    return false;
+  
+  ret = rpc_traverse (obj, t);
+
+  if (field_name) {
+    obj->exit_field ();
+  }
+
+  return ret;
 }
+
+bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t i) ;
+bool rpc_traverse (XML_RPC_obj_t *obj, int32_t i) ; 
+
+template<size_t n> bool
+rpc_traverse (XML_RPC_obj_t *xml, rpc_opaque<n> &obj)
+{
+  return false;
+}
+
+template<size_t n> bool
+rpc_traverse (XML_RPC_obj_t *xml, rpc_bytes<n> &obj)
+{
+  return false;
+}
+
+template<size_t n> bool
+rpc_traverse (XML_RPC_obj_t *xml, rpc_str<n> &obj)
+{
+  return false;
+}
+
 
 template<class T> bool
 xml_rpc_traverse_push (XML_RPC_obj_t *obj, T &t, const char *class_name,

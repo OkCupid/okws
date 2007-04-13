@@ -111,6 +111,9 @@ public:
   const xml_obj_ref_t &set_value (ptr<xml_element_t> e);
   const xml_obj_ref_t &set_fault (const xml_fault_obj_t &w)
   { _el_ref->fault (w._fault); return *this; }
+
+  ptr<xml_struct_t> to_xml_struct ()
+  { return _el_ref ? _el_ref->to_xml_struct () : NULL; }
   
   const xml_obj_ref_t &operator=(bool b) 
   { return set_value (xml_bool_t::alloc (b)); }

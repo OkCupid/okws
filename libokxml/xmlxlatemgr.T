@@ -138,10 +138,11 @@ namespace okxml {
       clnt_stat stat;
       const xml_rpc_program **progp;
       ptr<aclnt> c;
-      XML_RPC_obj_t xml_arg, xml_res;
       void *xdr_arg (NULL), *xdr_res (NULL);
       const rpcgen_table *tblent_xdr;
       const xml_rpcgen_table *tblent_xml;
+      XML_creator_t xml_res;
+      XML_reader_t xml_arg (input);
     }
 
     hostname = input("hostname");
