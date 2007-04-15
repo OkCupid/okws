@@ -24,6 +24,9 @@ Alias		/static		/
 Service		configtest 	/configtest
 Service		simple	/simple
 Service		pub1tst /pub1tst
+
+# XML services
 @@NO_XML@@Service		xmlex /xmlrpc
+@@NO_XML@@Service		xmlxlate/xlatetst /xlate
 
 ErrorDoc	404	/err/404.html

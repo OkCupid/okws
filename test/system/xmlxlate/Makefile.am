@@ -14,6 +14,10 @@ XMLPROGS = xlatetst
 xlatetst_SOURCES = xlatetst.C tstprot.C tstprot_xml.C
 xlatetst.o:	xlatetst.C
 xlatetst.lo:	xlatetst.C
+xlatetst.o:	tstprot_xml.h tstprot.h
+
+XMLTAMEIN = xlatetst.T
+XMLTAMEOUT = xlatetst.C
 
 else
 
@@ -21,10 +25,12 @@ XMLPROGS =
 
 endif
 
-TAMEIN = xlatetst.T
-TAMEOUT = xlatetst.C 
+TAMEIN = $(XMLTAMEIN) tstsrv.T
+TAMEOUT = $(XMLTAMEOUT) tstsrv.C
 
 okwssvc_PROGRAMS = $(XMLPROGS)
+noinst_PROGRAMS = tstsrv
+tstsrv_SOURCES = tstsrv.C tstprot.C
 
 SUFFIXES = .x .T
 .T.C:

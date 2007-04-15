@@ -31,7 +31,7 @@ typedef string zz_t<>;
 struct ww_t {
 	zz_t z;
 	yy_t v<>;
-	yy_t a[50];
+	yy_t a[2];
 };
 
 

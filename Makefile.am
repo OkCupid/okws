@@ -91,12 +91,13 @@ rpcclean:
 
 .PHONY: tameclean
 tameclean:
-	for dir in libpub libahttp libaok libweb okd pub test ; do \
+	for dir in libpub libahttp libaok libweb okd pub client test ; do \
 		(cd $$dir && $(MAKE) tameclean); \
 	done
 
 .PHONY: test 
 test:	all
+	sh $(srcdir)/contrib/okws-test-touch-all.sh ; 	\
 	for dir in test; do			\
 		(cd $$dir && $(MAKE) test); 	\
 	done

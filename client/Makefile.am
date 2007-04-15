@@ -21,6 +21,8 @@ mygz2_SOURCES = mygz2.C
 
 okdbg_LDADD = $(LIBASYNC) $(LDADD_THR_SFS) $(LIBPY)
 
+TAMEOUT = okwcmain3.C
+
 SUFFIXES = .C .T .h
 
 .T.C:
@@ -30,9 +32,14 @@ okwcmain3.o:	okwcmain3.C
 okwcmain3.lo:	okwcmain3.C
 
 
-CLEANFILES = core *.core *~ okwcmain3.C
+CLEANFILES = core *.core *~ $(TAMEOUT)
 EXTRA_DIST = .cvsignore okwcmain3.T
 MAINTAINERCLEANFILES = Makefile.in
 
+.PHONY: tameclean
+
+tameclean:
+	rm -rf $(TAMEOUT)
+
 dist-hook:
-	cd $(distdir) && rm -f okwcmain3.C
+	cd $(distdir) && rm -f $(TAMEOUT)
