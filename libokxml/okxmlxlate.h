@@ -98,6 +98,8 @@ public:
     return true;
   }
 
+  ptr<xml_element_t> root () { return _root; }
+
   int push (const char *typname, xdr_phylum_t ph, 
 	    const char *fieldname);
   bool pop (int i) { _stack.popn_back (i); return true; }
@@ -115,6 +117,15 @@ class XML_reader_t : public XML_RPC_obj_t {
 public:
   XML_reader_t (xml_obj_const_t r) : _root (r)
   { _stack.push_back (_root); }
+
+  XML_reader_t () {}
+
+  void setroot (xml_obj_const_t r)
+  {
+    _stack.clear ();
+    _root = r;
+    _stack.push_back (r);
+  }
 
   bool enter_field (const char *f);
   bool exit_field () { _stack.pop_back (); return true; }

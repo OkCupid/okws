@@ -142,7 +142,7 @@ namespace okxml {
       const rpcgen_table *tblent_xdr;
       const xml_rpcgen_table *tblent_xml;
       XML_creator_t xml_res;
-      XML_reader_t xml_arg (input);
+      XML_reader_t xml_arg;
     }
 
     hostname = input("hostname");
@@ -150,6 +150,7 @@ namespace okxml {
     program = input ("program");
     procno = input ("procno");
     arg = input ("arg");
+    xml_arg.setroot (arg);
 
     if (!hostname || port <= 0 || port >= PORT_MAX) {
       stat = RPC_UNKNOWNHOST;
@@ -172,8 +173,12 @@ namespace okxml {
 	  c = aclnt::alloc (x, *((*progp)->xdr_prog));
 	  xdr_res = (*tblent_xdr->alloc_res) ();
 	  twait { c->call (procno, xdr_arg, xdr_res, mkevent (stat)); }
-	  if (!stat && !tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
-	    stat = RPC_CANTDECODERES;
+	  if (!stat) {
+	    if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
+	      stat = RPC_CANTDECODERES;
+	    } else {
+	      *output = xml_res.root ();
+	    }
 	  }
 	}
       }
