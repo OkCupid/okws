@@ -82,21 +82,8 @@ public:
   bool traverse (u_int32_t &i);
   XML_RPC_op_t mode () const { return XDR_2_XML; }
 
-  bool 
-  traverse_opaque (str &s)
-  {
-    if (!_stack.size ()) return false;
-    _stack.back () = base64_str_t (s);
-    return true;
-  }
-
-  bool
-  traverse_string (str &s)
-  {
-    if (!_stack.size ()) return false;
-    _stack.back () = s;
-    return true;
-  }
+  bool traverse_opaque (str &s);
+  bool traverse_string (str &s);
 
   ptr<xml_element_t> root () { return _root; }
 
@@ -108,6 +95,10 @@ public:
   int push_array_slot (int i);
 
 private:
+
+  xml_obj_ref_t &top () { return _stack.back (); }
+  bool is_empty () const { return _stack.size () == 0; }
+  void push (const xml_obj_ref_t &o) { _stack.push_back (o); }
 
   ptr<xml_element_t> _root;
   vec<xml_obj_ref_t> _stack;
@@ -133,27 +124,8 @@ public:
   bool traverse (u_int32_t &i);
   XML_RPC_op_t mode () const { return XML_2_XDR; }
 
-  bool 
-  traverse_opaque (str &s)
-  {
-    if (!_stack.size ()) return false;
-    ptr<const xml_base64_t> b = _stack.back ().el ()->to_xml_base64 ();
-    if (!b)
-      return false;
-    s = b->decode ();
-    return true;
-  }
-
-  bool
-  traverse_string (str &s)
-  {
-    if (!_stack.size ()) return false;
-    ptr<const xml_str_t> e = _stack.back ().el ()->to_xml_str ();
-    if (!e)
-      return false;
-    s = e->to_str ();
-    return true;
-  }
+  bool traverse_opaque (str &s);
+  bool traverse_string (str &s);
 
   bool pop (int i) { _stack.popn_back (i); return true; }
   int push (const char *typname, xdr_phylum_t ph, 
@@ -163,6 +135,11 @@ public:
   int push_array_slot (int i);
 
 private:
+  
+  const xml_obj_const_t &top () const { return _stack.back (); }
+  bool is_empty () const { return _stack.size () == 0; }
+  void push (const xml_obj_const_t &o) { _stack.push_back (o); }
+
   xml_obj_const_t _root;
   vec<xml_obj_const_t> _stack;
 };

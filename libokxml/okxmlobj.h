@@ -47,6 +47,13 @@ public:
   operator str () const { return el ()->to_str (); }
   operator bool () const { return el ()->to_bool (); }
 
+  bool is_int () const { return el()->is_type (XML_INT); }
+  bool is_str () const { return el()->is_type (XML_STR); }
+  bool is_bool () const { return el()->is_type (XML_BOOL); }
+  bool is_struct () const { return el()->is_type (XML_STRUCT); }
+  bool is_array () const { return el()->is_type (XML_ARRAY); }
+  bool is_base64() const { return el()->is_type (XML_BASE64); }
+
   xml_obj_const_t operator[] (size_t i) const ;
   xml_obj_const_t operator() (const str &s) const ;
 

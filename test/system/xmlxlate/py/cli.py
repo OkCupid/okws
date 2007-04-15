@@ -5,7 +5,7 @@ import sys
 
 server_url = "http://0.0.0.0:8081/xlater"
 server = xmlrpclib.Server (server_url)
-server.system.setDebugLevel (10)
+server.system.setDebugLevel (50)
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
       "port" : 4000,

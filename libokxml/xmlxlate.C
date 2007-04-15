@@ -7,20 +7,16 @@
 bool
 XML_creator_t::enter_field (const char *f)
 {
-  ptr<xml_struct_t> s = _stack.back ().to_xml_struct ();
-  if (!s)
-    return false;
-  _stack.push_back (xml_obj_ref_t (s->get_r (f)));
+  if (is_empty () || !top().is_struct ()) return false;
+  push (top()(f));
   return true;
 }
 
 bool
 XML_reader_t::enter_field (const char *f)
 {
-  ptr<const xml_struct_t> s = _stack.back ().to_xml_struct ();
-  if (!s)
-    return false;
-  _stack.push_back (xml_obj_const_t (s->get (f)));
+  if (is_empty () || !top().is_struct ()) return false;
+  push (top()(f));
   return true;
 }
 
@@ -39,36 +35,30 @@ rpc_traverse (XML_RPC_obj_t *obj, int32_t &i)
 bool
 XML_creator_t::traverse (int32_t &i)
 {
-  _stack.back () = int (i);
+  top() = int (i);
   return true;
 }
 
 bool
 XML_creator_t::traverse (u_int32_t &i)
 {
-  _stack.back () = int (i);
+  top() = int (i);
   return true;
 }
 
 bool
 XML_reader_t::traverse (int32_t &i)
 {
-  if (!_stack.size ()) return false;
-  ptr<const xml_int_t> x = _stack.back ().el ()->to_xml_int ();
-  if (!x)
-    return false;
-  i = *x;
+  if (is_empty () || !top().is_int ()) return false;
+  i = top();
   return true;
 }
 
 bool
 XML_reader_t::traverse (u_int32_t &i)
 {
-  if (!_stack.size ()) return false;
-  ptr<const xml_int_t> x = _stack.back ().el ()->to_xml_int ();
-  if (!x)
-    return false;
-  i = int (*x);
+  if (is_empty () || !top().is_int ()) return false;
+  i = int (top());
   return true;
 }
 
@@ -95,8 +85,8 @@ XML_creator_t::push (const char *typenam, xdr_phylum_t phy,
   }
 
   if (e) {
-    _stack.back () = e;
-    _stack.push_back (xml_obj_ref_t (e));
+    top() = e;
+    push (xml_obj_ref_t (e));
     ret = 1;
   }
 
@@ -108,8 +98,8 @@ XML_creator_t::push_array (size_t s, size_t capac, bool fixed,
 			   ssize_t *sz)
 {
   ptr<xml_element_t> e = xml_array_t::alloc ();
-  _stack.back () = e;
-  _stack.push_back (xml_obj_ref_t (e));
+  top() = e;
+  push (xml_obj_ref_t (e));
   *sz = -1;
   return 1;
 }
@@ -119,16 +109,12 @@ XML_reader_t::push_array (size_t s, size_t capac, bool fixed,
 			  ssize_t *szp)
 {
   *szp = -1;
-  if (!_stack.size ()) return -1;
 
-  ptr<const xml_array_t> a = _stack.back ().el ()->to_xml_array ();
-  ptr<const xml_data_t> d;
-  size_t sz;
+  if (is_empty () || !top().is_array ()) return -1;
 
-  if (!a || !(d = a->data ()) || (sz = d->size ()) > capac)
-    return -1;
-     
-  if (fixed && (sz != capac || s != sz))
+  size_t sz = top ().size ();
+  
+  if ((sz > capac) || (fixed && (sz != capac || s != sz)))
     return -1;
 
   *szp = sz;
@@ -138,18 +124,49 @@ XML_reader_t::push_array (size_t s, size_t capac, bool fixed,
 int
 XML_reader_t::push_array_slot (int i)
 {
-  if (!_stack.size ()) return -1;
-  xml_obj_const_t o = _stack.back ();
-  _stack.push_back (o[i]);
+  if (is_empty ()) return -1;
+  xml_obj_const_t o = top ();
+  push (o[i]);
   return 1;
 }
 
 int
 XML_creator_t::push_array_slot (int i)
 {
-  if (!_stack.size ()) return -1;
+  if (is_empty ()) return -1;
   xml_obj_ref_t o = _stack.back ();
-  _stack.push_back (o[i]);
+  push (o[i]);
   return 1;
 }
 
+bool
+XML_reader_t::traverse_opaque (str &s)
+{
+  if (is_empty () || !top().is_base64 ()) return false;
+  s = top ();
+  return true;
+}
+
+bool
+XML_reader_t::traverse_string (str &s)
+{
+  if (is_empty () || !top().is_str ()) return false;
+  s = top ();
+  return true;
+}
+
+bool
+XML_creator_t::traverse_opaque (str &s)
+{
+  if (is_empty () || !top().is_base64 ()) return false;
+  top () = base64_str_t (s);
+  return true;
+}
+
+bool
+XML_creator_t::traverse_string (str &s)
+{
+  if (is_empty () || !top().is_str ()) return false;
+  top () = s;
+  return true;
+}

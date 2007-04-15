@@ -51,6 +51,14 @@ class xml_method_response_t;
 class xml_container_t;
 class xml_fault_t;
 
+typedef enum { XML_NONE = 0,
+	       XML_INT = 1,
+	       XML_STR = 2,
+	       XML_BOOL = 3,
+	       XML_BASE64 = 4,
+	       XML_ARRAY = 5,
+	       XML_STRUCT = 6 } xml_obj_typ_t;
+
 class xml_element_t : public virtual refcount {
 public:
   xml_element_t () {}
@@ -103,6 +111,8 @@ public:
   virtual str to_bool () const { return false; }
   virtual str to_base64 () const { return armor64 (NULL, 0); }
   virtual bool is_value () const { return false; }
+
+  virtual bool is_type (xml_obj_typ_t t) const { return false; }
 
   virtual ptr<xml_element_t> clone () const 
   { return New refcounted<xml_element_t> (); }
@@ -452,6 +462,8 @@ public:
   void set (int i) { _val = i; }
   bool is_value () const { return true; }
 
+  bool is_type (xml_obj_typ_t t) const { return t == XML_INT; }
+
   ptr<xml_element_t> generate (const char *n) const 
   { return New refcounted<xml_int_t> (n); }
 
@@ -524,6 +536,8 @@ public:
 
   static ptr<xml_base64_t> alloc (const str &s, bool encoded = false)
   { return New refcounted<xml_base64_t> (s, encoded); }
+  
+  bool is_type (xml_obj_typ_t t) const { return t == XML_BASE64; }
 
   ptr<xml_base64_t> clone_typed () const 
   { return New refcounted<xml_base64_t> (_val); }
@@ -557,6 +571,8 @@ public:
   bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_member (); }
   bool close_tag ();
 
+  bool is_type (xml_obj_typ_t t) const { return t == XML_STRUCT; }
+
   bool set_pointer_to_me (ptr<xml_value_t> *v);
   
   ptr<xml_struct_t> clone_typed () const
@@ -584,6 +600,8 @@ public:
   static ptr<xml_array_t> alloc () 
   { return New refcounted<xml_array_t> (); }
 
+  bool is_type (xml_obj_typ_t t) const { return t == XML_ARRAY; }
+
   const char *name () const { return "array"; }
   bool is_value () const { return true; }
   ptr<xml_data_t> data () { return _data; }
@@ -594,6 +612,8 @@ public:
   ptr<const xml_container_t> to_xml_container () const { return _data; }
   void dump_data (zbuf &z, int lev) const;
   bool dump_to_python (strbuf &b) const;
+
+  bool is_array () const { return true; }
 
   bool assign_to (ptr<xml_element_t> to);
   bool set_pointer_to_me (ptr<xml_data_t> *d);
@@ -631,6 +651,8 @@ public:
 
   ptr<xml_container_t> to_xml_container ();
   ptr<xml_struct_t> to_xml_struct ();
+
+  bool is_type (xml_obj_typ_t t) const { return _e && _e->is_type (t); }
 
   ptr<const xml_container_t> to_xml_container () const 
   { return _e->to_xml_container (); }
@@ -681,6 +703,9 @@ public:
   ptr<xml_member_t> clone_typed () const;
   ptr<xml_element_t> clone () const { return clone_typed (); }
 
+  bool is_type (xml_obj_typ_t t) const 
+  { return member_value () && member_value ()->is_type (t); }
+
 private:
   ptr<xml_name_t> _member_name;
   ptr<xml_element_t> _member_value;
@@ -720,6 +745,8 @@ public:
 
   void dump_data (zbuf &b, int lev) const { b << (_val ? 1 : 0); }
   bool dump_to_python (strbuf &b) const;
+
+  bool is_type (xml_obj_typ_t t) const { return t == XML_BOOL; }
 
   ptr<xml_bool_t> clone_typed () const 
   { return New refcounted<xml_bool_t> (_val); }
