@@ -9,15 +9,15 @@ $(PROGRAMS): $(LDEPS)
 
 if USE_XML
 
-XMLPROGS = xlatetst
+XMLPROGS = xlater
 
-xlatetst_SOURCES = xlatetst.C tstprot.C tstprot_xml.C
-xlatetst.o:	xlatetst.C
-xlatetst.lo:	xlatetst.C
-xlatetst.o:	tstprot_xml.h tstprot.h
+xlater_SOURCES = xlater.C tstprot.C tstprot_xml.C
+xlater.o:	xlater.C
+xlater.lo:	xlater.C
+xlater.o:	tstprot_xml.h tstprot.h
 
-XMLTAMEIN = xlatetst.T
-XMLTAMEOUT = xlatetst.C
+XMLTAMEIN = xlater.T
+XMLTAMEOUT = xlater.C
 
 else
 

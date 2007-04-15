@@ -32,11 +32,11 @@
 #include "okxmlxlatemgr.h"
 #include "tstprot_xml.h"
 
-class oksrvc_xlatetst_t;
+class oksrvc_xlater_t;
 
-class okclnt_xlatetst_t : public okclnt_xmlrpc_t {
+class okclnt_xlater_t : public okclnt_xmlrpc_t {
 public:
-  okclnt_xlatetst_t (ptr<ahttpcon> x, oksrvc_xlatetst_t *s) ;
+  okclnt_xlater_t (ptr<ahttpcon> x, oksrvc_xlater_t *s) ;
 
   void xlate (xml_req_t q, xml_resp_cb_t cb) { xlate_T (q, cb); }
   
@@ -44,17 +44,17 @@ private:
   void xlate_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 
 
-  oksrvc_xlatetst_t *_service;
+  oksrvc_xlater_t *_service;
 };
 
-class oksrvc_xlatetst_t : 
-  public oksrvc_xmlrpc_t<okclnt_xlatetst_t, oksrvc_xlatetst_t> {
+class oksrvc_xlater_t : 
+  public oksrvc_xmlrpc_t<okclnt_xlater_t, oksrvc_xlater_t> {
 public:
-  oksrvc_xlatetst_t (int argc, char *argv[])
-    : oksrvc_xmlrpc_t<okclnt_xlatetst_t, oksrvc_xlatetst_t> (argc, argv)
+  oksrvc_xlater_t (int argc, char *argv[])
+    : oksrvc_xmlrpc_t<okclnt_xlater_t, oksrvc_xlater_t> (argc, argv)
   { 
     // Register XML-RPC service methods
-    regh ("xlatetst.xlate", &okclnt_xlatetst_t::xlate); 
+    regh ("xdr.xlate", &okclnt_xlater_t::xlate); 
     _xlmgr.add_file (tstprot_xml_rpc_file);
   }
 
@@ -65,18 +65,18 @@ private:
 
 };
 
-okclnt_xlatetst_t::okclnt_xlatetst_t (ptr<ahttpcon> x, oksrvc_xlatetst_t *s)
+okclnt_xlater_t::okclnt_xlater_t (ptr<ahttpcon> x, oksrvc_xlater_t *s)
   : okclnt_xmlrpc_t (x, s), _service (s) {}
 
 int
 main (int argc, char *argv[])
 {
-  (New oksrvc_xlatetst_t (argc, argv))->launch ();
+  (New oksrvc_xlater_t (argc, argv))->launch ();
   amain ();
 }
 
 tamed void
-okclnt_xlatetst_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xlater_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
 {
   tvars {
     xml_resp_t res;
@@ -88,7 +88,7 @@ okclnt_xlatetst_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
 }
 
 tamed void
-oksrvc_xlatetst_t::xlate (xml_req_t in, xml_resp_cb_t cb)
+oksrvc_xlater_t::xlate (xml_req_t in, xml_resp_cb_t cb)
 {
   tvars {
     xml_resp_t res;

@@ -102,7 +102,7 @@ namespace okxml {
   void
   xlate_mgr_t::add_program (const xml_rpc_program *p)
   {
-    _programs.insert (p->name, p);
+    _programs.insert (p->xdr_prog->name, p);
   }
 
   void
