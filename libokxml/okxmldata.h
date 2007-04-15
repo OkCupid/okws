@@ -499,6 +499,7 @@ public:
   { return New refcounted<xml_str_t> (); }
   void dump_data (zbuf &z, int level) const { if (_val) z << _val; }
   bool dump_to_python (strbuf &b) const;
+  bool is_type (xml_obj_typ_t t) const { return t == XML_STR; }
 
   static str escape (const str &in);
 

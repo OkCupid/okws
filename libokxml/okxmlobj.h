@@ -189,4 +189,6 @@ public:
   bool is_fault (int *code, str *msg) const;
 };
 
+typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
+
 #endif /* _LIBAHTTP_OKXMLOBJ_H */

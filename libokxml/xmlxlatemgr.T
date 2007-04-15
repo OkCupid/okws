@@ -124,9 +124,7 @@ namespace okxml {
   }
 
   tamed void
-  xlate_mgr_t::xlate (xml_obj_const_t input, 
-		      xml_obj_t *output,
-		      aclnt_cb cb)
+  xlate_mgr_t::xlate (xml_obj_const_t input, xml_resp_cb_t cb)
   {
     tvars {
       str hostname;
@@ -141,8 +139,9 @@ namespace okxml {
       void *xdr_arg (NULL), *xdr_res (NULL);
       const rpcgen_table *tblent_xdr;
       const xml_rpcgen_table *tblent_xml;
-      XML_creator_t xml_res;
+      xml_resp_t resp;
       XML_reader_t xml_arg;
+      XML_creator_t xml_res;
     }
 
     hostname = input("hostname");
@@ -174,10 +173,9 @@ namespace okxml {
 	  xdr_res = (*tblent_xdr->alloc_res) ();
 	  twait { c->call (procno, xdr_arg, xdr_res, mkevent (stat)); }
 	  if (!stat) {
+	    xml_res.setroot (resp[0]);
 	    if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
 	      stat = RPC_CANTDECODERES;
-	    } else {
-	      *output = xml_res.root ();
 	    }
 	  }
 	}
@@ -189,8 +187,13 @@ namespace okxml {
     if (xdr_res) {
       xdr_free (tblent_xdr->xdr_res, xdr_res);
     }
+
+    if (stat) {
+      // XXX for now...
+      resp = xml_fault_obj_t (int (stat), "XDR/XML error");
+    }
       
-    (*cb) (stat);
+    (*cb) (resp);
   }
 
 }

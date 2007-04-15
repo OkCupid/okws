@@ -92,9 +92,8 @@ oksrvc_xlater_t::xlate (xml_req_t in, xml_resp_cb_t cb)
 {
   tvars {
     xml_resp_t res;
-    clnt_stat stat;
   }
-  twait { _xlmgr.xlate (in[0], &res, mkevent (stat)); }
+  twait { _xlmgr.xlate (in[0], mkevent (res)); }
 
   (*cb) (res);
 }

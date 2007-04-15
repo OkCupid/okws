@@ -92,9 +92,7 @@ namespace okxml {
 
     void add_file (const xml_rpc_file &file);
 
-    void xlate (xml_obj_const_t input,
-		xml_obj_t *output,
-		aclnt_cb cb, CLOSURE);
+    void xlate (xml_obj_const_t input, xml_resp_cb_t cb, CLOSURE);
 
   private:
     void add_const (const xml_rpc_const_t *c);

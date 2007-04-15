@@ -75,7 +75,8 @@ public:
 
 class XML_creator_t : public XML_RPC_obj_t {
 public:
-  XML_creator_t () { _stack.push_back (xml_obj_ref_t (_root)); }
+  XML_creator_t () {}
+
   bool enter_field (const char *f);
   bool exit_field () { _stack.pop_back (); return true; }
   bool traverse (int32_t &i);
@@ -85,7 +86,10 @@ public:
   bool traverse_opaque (str &s);
   bool traverse_string (str &s);
 
-  ptr<xml_element_t> root () { return _root; }
+  void setroot (const xml_obj_ref_t &o)
+  {
+    _stack.push_back (o);
+  }
 
   int push (const char *typname, xdr_phylum_t ph, 
 	    const char *fieldname);
@@ -100,7 +104,6 @@ private:
   bool is_empty () const { return _stack.size () == 0; }
   void push (const xml_obj_ref_t &o) { _stack.push_back (o); }
 
-  ptr<xml_element_t> _root;
   vec<xml_obj_ref_t> _stack;
 };
 
@@ -211,8 +214,7 @@ template<class T, size_t n> void
 _array_setsize (rpc_vec<T,n> &v, size_t nsz) { v.setsize (nsz); }
 
 template<class V> bool
-_xml_rpc_traverse_array (XML_RPC_obj_t *xml, V &v, 
-			 const char *field_name, size_t n, bool fixed)
+_rpc_traverse_array (XML_RPC_obj_t *xml, V &v, size_t n, bool fixed)
 {
   ssize_t nsz;
   int n_frames;
@@ -238,21 +240,16 @@ _xml_rpc_traverse_array (XML_RPC_obj_t *xml, V &v,
 }
 
 template<class T, size_t n> bool
-xml_rpc_traverse (XML_RPC_obj_t *xml, rpc_vec<T,n> &v,
-		  const char *field_name)
+rpc_traverse (XML_RPC_obj_t *xml, rpc_vec<T,n> &v)
 {
-  return _xml_rpc_traverse_array (xml, v, field_name, n, false);
+  return _rpc_traverse_array (xml, v, n, false);
 }
-
 
 template<class T, size_t n> bool
-xml_rpc_traverse (XML_RPC_obj_t *xml, array<T,n> &v,
-		  const char *field_name)
+rpc_traverse (XML_RPC_obj_t *xml, array<T,n> &v)
 {
-  return _xml_rpc_traverse_array (xml, v, field_name, n, true);
+  return _rpc_traverse_array (xml, v, n, true);
 }
-
-
 
 bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) ;
 bool rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) ; 

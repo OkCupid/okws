@@ -69,8 +69,6 @@ protected:
   http_parser_xml_t _parser;
 };
 
-typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
-
 class oksrvc_xmlrpc_base_t : public oksrvc_t {
 public:
   oksrvc_xmlrpc_base_t (int argc, char *argv[]) : 

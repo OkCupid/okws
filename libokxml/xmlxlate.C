@@ -97,11 +97,8 @@ int
 XML_creator_t::push_array (size_t s, size_t capac, bool fixed, 
 			   ssize_t *sz)
 {
-  ptr<xml_element_t> e = xml_array_t::alloc ();
-  top() = e;
-  push (xml_obj_ref_t (e));
   *sz = -1;
-  return 1;
+  return 0;
 }
 
 int
