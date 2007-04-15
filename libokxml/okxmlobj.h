@@ -85,6 +85,8 @@ private:
 class base64_str_t
 {
 public:
+  base64_str_t (const char *c, size_t len) : _s (c, len), _encoded (false) {}
+
   base64_str_t (const str &s, bool e = false) : _s (s), _encoded (e) {}
   operator str() const { return _s; }
   bool encoded () const { return _encoded; }

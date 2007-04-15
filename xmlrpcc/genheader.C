@@ -61,7 +61,7 @@ dumpenum (const rpc_sym *s)
   pmshl (rs->id);
 
   aout << "\nbool "
-       << "xmp_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n"
+       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n"
     ;
 }
 

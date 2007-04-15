@@ -37,11 +37,40 @@
 // class (automatically) via includes.
 //
 
+typedef enum { XML_2_XDR = 1, XDR_2_XML = 2 } XML_RPC_op_t;
+
+typedef enum {
+  XDR_STRUCT = 1,
+  XDR_ENUM = 2,
+  XDR_UNION = 3,
+  XDR_POINTER = 4,
+  XDR_VECTOR = 5,
+  XDR_SCALAR = 6
+} xdr_phylum_t;
+
 class XML_RPC_obj_t {
 public:
   virtual bool enter_field (const char *f) = 0;
   virtual bool exit_field () = 0;
+  virtual bool traverse (int32_t &i) = 0;
+  virtual bool traverse (u_int32_t &u) = 0;
+  virtual bool traverse_opaque (str &s) = 0;
+  virtual bool traverse_string (str &s) = 0;
   virtual ~XML_RPC_obj_t () {}
+  virtual XML_RPC_op_t mode () const = 0;
+
+  // 
+  // Push routines return # of stack frames pushed on success,
+  // and -1 on failure.
+  //
+  virtual int push (const char *typname, xdr_phylum_t ph,
+		    const char *fieldname) = 0;
+  virtual int push_array_slot (int i) = 0;
+  virtual int push_array (size_t s, size_t capac, bool fixed, 
+			  ssize_t *rsz) = 0;
+
+  // Pop that many frames
+  virtual bool pop (int i) = 0;
 };
 
 class XML_creator_t : public XML_RPC_obj_t {
@@ -49,7 +78,35 @@ public:
   XML_creator_t () { _stack.push_back (xml_obj_ref_t (_root)); }
   bool enter_field (const char *f);
   bool exit_field () { _stack.pop_back (); return true; }
+  bool traverse (int32_t &i);
+  bool traverse (u_int32_t &i);
+  XML_RPC_op_t mode () const { return XDR_2_XML; }
+
+  bool 
+  traverse_opaque (str &s)
+  {
+    if (!_stack.size ()) return false;
+    _stack.back () = base64_str_t (s);
+    return true;
+  }
+
+  bool
+  traverse_string (str &s)
+  {
+    if (!_stack.size ()) return false;
+    _stack.back () = s;
+    return true;
+  }
+
+  int push (const char *typname, xdr_phylum_t ph, 
+	    const char *fieldname);
+  bool pop (int i) { _stack.popn_back (i); return true; }
+
+  int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
+  int push_array_slot (int i);
+
 private:
+
   ptr<xml_element_t> _root;
   vec<xml_obj_ref_t> _stack;
 };
@@ -61,21 +118,45 @@ public:
 
   bool enter_field (const char *f);
   bool exit_field () { _stack.pop_back (); return true; }
+  bool traverse (int32_t &i);
+  bool traverse (u_int32_t &i);
+  XML_RPC_op_t mode () const { return XML_2_XDR; }
+
+  bool 
+  traverse_opaque (str &s)
+  {
+    if (!_stack.size ()) return false;
+    ptr<const xml_base64_t> b = _stack.back ().el ()->to_xml_base64 ();
+    if (!b)
+      return false;
+    s = b->decode ();
+    return true;
+  }
+
+  bool
+  traverse_string (str &s)
+  {
+    if (!_stack.size ()) return false;
+    ptr<const xml_str_t> e = _stack.back ().el ()->to_xml_str ();
+    if (!e)
+      return false;
+    s = e->to_str ();
+    return true;
+  }
+
+  bool pop (int i) { _stack.popn_back (i); return true; }
+  int push (const char *typname, xdr_phylum_t ph, 
+		      const char *fieldname);
+
+  int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
+  int push_array_slot (int i);
+
 private:
   xml_obj_const_t _root;
   vec<xml_obj_const_t> _stack;
 };
 
 typedef bool (*xml_xdrproc_t) (XML_RPC_obj_t *, void *);
-
-typedef enum {
-  XDR_STRUCT = 1,
-  XDR_ENUM = 2,
-  XDR_UNION = 3,
-  XDR_POINTER = 4,
-  XDR_VECTOR = 5,
-  XDR_SCALAR = 6
-} xdr_phylum_t;
 
 struct xml_rpc_const_t {
   const char *name;
@@ -135,39 +216,128 @@ xml_rpc_traverse (XML_RPC_obj_t *obj, T &t, const char *field_name)
   return ret;
 }
 
-bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t i) ;
-bool rpc_traverse (XML_RPC_obj_t *obj, int32_t i) ; 
+template<class T, size_t n> void
+_array_setsize (array<T,n> &a, size_t nsz) { /* noop */ }
+
+template<class T, size_t n> void
+_array_setsize (rpc_vec<T,n> &v, size_t nsz) { v.setsize (nsz); }
+
+template<class V> bool
+_xml_rpc_traverse_array (XML_RPC_obj_t *xml, V &v, 
+			 const char *field_name, size_t n, bool fixed)
+{
+  ssize_t nsz;
+  int n_frames;
+  int a;
+
+  if ((n_frames = xml->push_array (v.size (), n, fixed, &nsz)) < 0)
+    return false;
+
+  if (nsz >= 0)
+    _array_setsize (v, nsz);
+
+  for (size_t i = 0; i < v.size (); i++) {
+    if ((a = xml->push_array_slot (i)) < 0 ||
+	!xml_rpc_traverse (xml, v[i], NULL) ||
+	!xml->pop (a))
+      return false;
+  }
+
+  if (!xml->pop (n_frames))
+    return false;
+
+  return true;
+}
+
+template<class T, size_t n> bool
+xml_rpc_traverse (XML_RPC_obj_t *xml, rpc_vec<T,n> &v,
+		  const char *field_name)
+{
+  return _xml_rpc_traverse_array (xml, v, field_name, n, false);
+}
+
+
+template<class T, size_t n> bool
+xml_rpc_traverse (XML_RPC_obj_t *xml, array<T,n> &v,
+		  const char *field_name)
+{
+  return _xml_rpc_traverse_array (xml, v, field_name, n, true);
+}
+
+
+
+bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) ;
+bool rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) ; 
+
+template<size_t n> bool
+rpc_traverse (XML_RPC_obj_t *xml, rpc_str<n> &obj)
+{
+  bool ret = false;
+  switch (xml->mode ()) {
+  case XML_2_XDR:
+    {
+      str s;
+      ret = xml->traverse_string (s);
+      if (ret && s.len () <= n) {
+	obj = s;
+      } else {
+	ret = false;
+      }
+    }
+    break;
+  case XDR_2_XML:
+    ret = xml->traverse_string (obj);
+    break;
+  default:
+    panic ("Unexpected XML conversion mode\n");
+    break;
+  }
+  return ret;
+}
+
+
+template<class T> bool
+rpc_traverse (XML_RPC_obj_t *xml, T &obj, size_t n)
+{
+  bool ret = false;
+  switch (xml->mode ()) {
+  case XML_2_XDR:
+    {
+      str s;
+      ret = xml->traverse_opaque (s);
+      if (ret && s.len () <= n) {
+	obj.setsize (s.len ());
+	memcpy (obj.base (), s.cstr (), s.len ());
+      } else {
+	ret = false;
+      }
+    }
+    break;
+	
+  case XDR_2_XML:
+    {
+      str s (obj.base (), obj.size ());
+      ret = xml->traverse_opaque (s);
+    }
+    break;
+
+  default:
+    panic ("Unexpected XML conversion mode\n");
+    break;
+  }
+  return ret;
+}
 
 template<size_t n> bool
 rpc_traverse (XML_RPC_obj_t *xml, rpc_opaque<n> &obj)
 {
-  return false;
+  return rpc_traverse (xml, obj, n);
 }
 
 template<size_t n> bool
 rpc_traverse (XML_RPC_obj_t *xml, rpc_bytes<n> &obj)
 {
-  return false;
-}
-
-template<size_t n> bool
-rpc_traverse (XML_RPC_obj_t *xml, rpc_str<n> &obj)
-{
-  return false;
-}
-
-
-template<class T> bool
-xml_rpc_traverse_push (XML_RPC_obj_t *obj, T &t, const char *class_name,
-		       xdr_phylum_t phy, const char *field_name)
-{
-  return true;
-}
-
-template<class T> bool
-xml_rpc_traverse_pop (XML_RPC_obj_t *obj, T &t)
-{
-  return true;
+  return rpc_traverse (xml, obj, n);
 }
 
 inline bool

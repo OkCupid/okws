@@ -57,11 +57,15 @@ public:
   virtual ~xml_element_t () {} 
 
   virtual ptr<xml_array_t> to_xml_array () { return NULL; }
+  virtual ptr<const xml_array_t> to_xml_array () const { return NULL; }
   virtual ptr<xml_int_t> to_xml_int () { return NULL; }
+  virtual ptr<const xml_int_t> to_xml_int () const { return NULL; }
   virtual ptr<xml_bool_t> to_xml_bool () { return NULL; }
   virtual ptr<xml_double_t> to_xml_double () { return NULL; }
   virtual ptr<xml_str_t> to_xml_str () { return NULL; }
+  virtual ptr<const xml_str_t> to_xml_str () const { return NULL ;}
   virtual ptr<xml_base64_t> to_xml_base64 () { return NULL; }
+  virtual ptr<const xml_base64_t> to_xml_base64 () const { return NULL; }
   virtual ptr<xml_null_t> to_xml_null () { return NULL; }
   virtual ptr<xml_method_call_t> to_xml_method_call () { return NULL; }
   virtual ptr<xml_params_t> to_xml_params () { return NULL; }
@@ -442,6 +446,7 @@ public:
   xml_int_t (const str &t, int v) : _tag (t), _val (v) {}
   xml_int_t (int i = 0) : _val (i) {}
   ptr<xml_int_t> to_xml_int () { return mkref (this); }
+  ptr<const xml_int_t> to_xml_int () const { return mkref (this); }
   int to_int () const { return _val; }
   str to_str () const { strbuf b; b << _val; return b; }
   void set (int i) { _val = i; }
@@ -473,6 +478,7 @@ public:
   xml_str_t (const str &s) : _val (s) {}
   xml_str_t () {}
   ptr<xml_str_t> to_xml_str () { return mkref (this); }
+  ptr<const xml_str_t> to_xml_str ()  const { return mkref (this); }
   str to_str () const { return _val; }
   void set (const str &v) { _val = v; }
   const char *name () const { return "string"; }
@@ -502,6 +508,7 @@ public:
   xml_base64_t () : _val (armor64 (NULL, 0)) {}
 
   ptr<xml_base64_t> to_xml_base64 () { return mkref (this); }
+  ptr<const xml_base64_t> to_xml_base64 () const { return mkref (this); }
 
   str to_base64 () const { return _val; }
   str to_str () const { return decode (); }
@@ -542,6 +549,9 @@ public:
 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_struct_t>(); }
+  static ptr<xml_element_t> alloc () 
+  { return New refcounted<xml_struct_t> (); }
+
   const char *name () const { return "struct"; }
   bool is_value () const { return true; }
   bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_member (); }
@@ -567,12 +577,17 @@ public:
 
   bool put (size_t i, ptr<xml_element_t> el);
   ptr<xml_array_t> to_xml_array () { return mkref (this); }
+  ptr<const xml_array_t> to_xml_array () const { return mkref (this);}
 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_array_t>(); }
+  static ptr<xml_array_t> alloc () 
+  { return New refcounted<xml_array_t> (); }
+
   const char *name () const { return "array"; }
   bool is_value () const { return true; }
   ptr<xml_data_t> data () { return _data; }
+  ptr<const xml_data_t> data () const { return _data; }
   bool add (ptr<xml_element_t> e);
 
   ptr<xml_container_t> to_xml_container ();
