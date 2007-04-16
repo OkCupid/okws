@@ -104,8 +104,7 @@ XML_reader_t::push_array (size_t s, size_t capac, bool fixed,
   size_t sz = top ().size ();
   
   if ((sz > capac) || (fixed && (sz != capac || s != sz))) {
-    _err_msg = "Array/vector had bad size";
-    return -1;
+    return error_generic ("Array/vector had bad size", -1);
   }
 
   *szp = sz;
@@ -211,29 +210,47 @@ XML_RPC_obj_t::debug_push (int i)
 }
 
 str
-XML_RPC_obj_t::error_msg (const str &prfx)
+XML_RPC_obj_t::error_msg (const str &arg)
 {
-  str x = _err_msg;
-  if (!x) x = "generic error";
+  if (!_err_msg) {
+    return "generic error";
+  }
+  const char *x = "";
+  if (arg)
+    x = arg;
+  return strbuf (_err_msg.cstr (), x);
+}
+
+void
+XML_RPC_obj_t::freeze_err_msg (str s)
+{
+  if (!s) s = "generic error";
   strbuf b;
   for (size_t i = 0; i < _debug_stack.size (); i++) {
     if (i > 0) b << ":";
     b << _debug_stack[i];
   }
 
-  b << ": ";
-  if (prfx)
-    b << prfx << ": ";
-  b << x;
+  b << ": %s: ";
+  b << s;
 
-  return b;
+  _err_msg = b;
+}
+
+
+
+int
+XML_RPC_obj_t::error_generic (const char *f, int rc)
+{
+  freeze_err_msg (f);
+  return rc;
 }
 
 int
 XML_RPC_obj_t::error_empty (const char *f, int rc)
 {
   strbuf b ("Expected type '%s'; got nothing", f);
-  _err_msg = b;
+  freeze_err_msg (b);
   return rc;
 }
 
@@ -241,6 +258,6 @@ int
 XML_RPC_obj_t::error_wrong_type (const char *f, int rc)
 {
   strbuf b ("Expected type '%s'; got something else instead", f);
-  _err_msg = b;
+  freeze_err_msg (b);
   return rc;
 }

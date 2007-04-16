@@ -1204,7 +1204,7 @@ main (int argc, char *argv[])
   if (argc > 1)
     usage ();
 
-  sfsconst_init ();
+  sfsconst_init (true);
   if (!cf) 
     cf = get_okws_config ();
 

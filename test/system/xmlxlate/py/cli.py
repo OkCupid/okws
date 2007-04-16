@@ -59,3 +59,12 @@ res = server.xdr.xlate (
 
 print (res)
 
+res = server.xdr.xlate (
+    { "hostname" : "127.0.0.1",
+      "port" : 4000,
+      "program" : "tst_prog_1",
+      "procno" : C.TST_RPC2,
+      "arg" : { "xx" : C.XXA,
+                "a" : { "x" : "a",
+                        "y" : "xxyyy44"}}
+      } )

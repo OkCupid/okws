@@ -79,8 +79,11 @@ public:
 
   int error_wrong_type (const char *f, int rc = 0);
   int error_empty (const char *f, int rc = 0);
+  int error_generic(const char *f, int rc = 0);
 
 protected:
+  void freeze_err_msg (str s);
+
   vec<str> _debug_stack;
   str _err_msg;
 };

@@ -620,7 +620,7 @@ void start_okd (int argc, char **argv)
   if (debug_stallfile) 
     twait { stall (debug_stallfile, mkevent ()); }
 
-  sfsconst_init ();
+  sfsconst_init (true);
   if (!cf) 
     cf = get_okws_config ();
 

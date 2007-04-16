@@ -190,7 +190,7 @@ namespace okxml {
 	xdr_arg = (*tblent_xdr->alloc_arg) ();
 	if (!tblent_xml->xml_arg_proc (&xml_arg, xdr_arg)) {
 	  stat = RPC_CANTDECODEARGS;
-	  errm = xml_arg.error_msg ("Argument decoding error");
+	  errm = xml_arg.error_msg (clnt_sperrno (stat));
 	} else {
 	  c = aclnt::alloc (x, *((*progp)->xdr_prog));
 	  xdr_res = (*tblent_xdr->alloc_res) ();
@@ -199,7 +199,7 @@ namespace okxml {
 	    xml_res.setroot (resp[0]);
 	    if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
 	      stat = RPC_CANTDECODERES;
-	      errm = xml_res.error_msg ("Result decoding error");
+	      errm = xml_res.error_msg (clnt_sperrno (stat));
 	    }
 	  }
 	}
