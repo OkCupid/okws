@@ -70,6 +70,18 @@ public:
 
   // Pop that many frames
   virtual bool pop (int i) = 0;
+
+  void debug_push (const str &f);
+  void debug_push (int i);
+  void debug_pop () { _debug_stack.pop_back (); }
+
+  str error_msg (const str &prfx);
+
+  int error_wrong_type (const char *f, int rc = 0);
+  int error_empty (const char *f, int rc = 0);
+private:
+  vec<str> _debug_stack;
+  str _err_msg;
 };
 
 class XML_creator_t : public XML_RPC_obj_t {
@@ -77,7 +89,7 @@ public:
   XML_creator_t () {}
 
   bool enter_field (const char *f);
-  bool exit_field () { _stack.pop_back (); return true; }
+  bool exit_field ();
   bool traverse (int32_t &i);
   bool traverse (u_int32_t &i);
   XML_RPC_op_t mode () const { return XDR_2_XML; }
@@ -120,7 +132,7 @@ public:
   }
 
   bool enter_field (const char *f);
-  bool exit_field () { _stack.pop_back (); return true; }
+  bool exit_field () ;
   bool traverse (int32_t &i);
   bool traverse (u_int32_t &i);
   XML_RPC_op_t mode () const { return XML_2_XDR; }
