@@ -39,6 +39,12 @@ struct aa_t {
 	yy_t *p2;
 };
 
+struct bb_t {
+	unsigned x;
+	hyper y;
+	unsigned hyper z;
+};
+
 
 program TST_PROG {
 	version TEST_VERS {
@@ -54,6 +60,9 @@ program TST_PROG {
 
 		aa_t
 		TST_RPC3(aa_t) = 3;
+
+		bb_t
+		TST_RPC4(bb_t) = 4;
 
 	} = 1;
 } = 34291;

@@ -49,6 +49,7 @@ static void
 dumpenum (const rpc_sym *s)
 {
   const rpc_enum *rs = s->senum.addr ();
+  aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << "&obj);\n";
   pmshl (rs->id);
 }
 

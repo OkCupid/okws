@@ -126,6 +126,15 @@ dumpunion (const rpc_sym *s)
 static void
 dumpenum (const rpc_sym *s)
 {
+  const rpc_enum *rs = s->senum.addr ();
+  aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << "&obj)\n"
+       << "{\n"
+       << "  int32_t val = obj;\n"
+       << "  if (!rpc_traverse (t, val))\n"
+       << "    return false;\n"
+       << "  obj = xx_t (val);\n"
+       << "  return true;\n"
+       << "}\n";
 }
 
 vec<str> const_tab;

@@ -54,6 +54,8 @@ public:
   virtual bool exit_field () = 0;
   virtual bool traverse (int32_t &i) = 0;
   virtual bool traverse (u_int32_t &u) = 0;
+  virtual bool traverse (int64_t &i) = 0;
+  virtual bool traverse (u_int64_t &i) = 0;
   virtual bool traverse_opaque (str &s) = 0;
   virtual bool traverse_string (str &s) = 0;
   virtual ~XML_RPC_obj_t () {}
@@ -96,6 +98,8 @@ public:
   bool exit_field ();
   bool traverse (int32_t &i);
   bool traverse (u_int32_t &i);
+  bool traverse (int64_t &i);
+  bool traverse (u_int64_t &i);
   XML_RPC_op_t mode () const { return XDR_2_XML; }
 
   bool traverse_opaque (str &s);
@@ -138,7 +142,12 @@ public:
   bool enter_field (const char *f);
   bool exit_field () ;
   bool traverse (int32_t &i);
+
   bool traverse (u_int32_t &i);
+  bool traverse (int64_t &i);
+  bool traverse (u_int64_t &i);
+
+
   XML_RPC_op_t mode () const { return XML_2_XDR; }
 
   bool traverse_opaque (str &s);
@@ -151,6 +160,7 @@ public:
   int push_ptr (bool dummy, bool *alloc);
 
 private:
+  template<class T> bool t_traverse (const char *prfx, T &i);
   
   const xml_obj_const_t &top () const { return _stack.back (); }
   bool is_empty () const { return _stack.size () == 0; }
@@ -264,8 +274,10 @@ rpc_traverse (XML_RPC_obj_t *xml, array<T,n> &v)
   return _rpc_traverse_array (xml, v, n, true);
 }
 
-bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) ;
 bool rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) ; 
+bool rpc_traverse (XML_RPC_obj_t *obj, int64_t &i);
+bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) ;
+bool rpc_traverse (XML_RPC_obj_t *obj, u_int64_t &i);
 
 template<size_t n> bool
 rpc_traverse (XML_RPC_obj_t *xml, rpc_str<n> &obj)
