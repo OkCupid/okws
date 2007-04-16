@@ -33,10 +33,7 @@ static void
 dumpstruct (const rpc_sym *s)
 {
   const rpc_struct *rs = s->sstruct.addr ();
-  aout << "bool "
-       << "xml_rpc_traverse (" XML_OBJ "*t, " 
-       << rs->id << " &obj, const char *nm);\n"
-    ;
+  aout << "bool rpc_traverse (" XML_OBJ "*t, " << rs->id << " &obj);\n" ;
   pmshl(rs->id);
 }
 
@@ -44,25 +41,15 @@ static void
 dumpunion (const rpc_sym *s)
 {
   const rpc_union *rs = s->sunion.addr ();
-  aout << "\nbool "
-       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj, "
-       << "const char *nm);\n";
-
+  aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n";
   pmshl (rs->id);
-
-  aout << "\n";
 }
 
 static void
 dumpenum (const rpc_sym *s)
 {
-  str lastval;
   const rpc_enum *rs = s->senum.addr ();
   pmshl (rs->id);
-
-  aout << "\nbool "
-       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n"
-    ;
 }
 
 static void

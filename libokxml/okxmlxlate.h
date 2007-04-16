@@ -63,8 +63,6 @@ public:
   // Push routines return # of stack frames pushed on success,
   // and -1 on failure.
   //
-  virtual int push (const char *typname, xdr_phylum_t ph,
-		    const char *fieldname) = 0;
   virtual int push_array_slot (int i) = 0;
   virtual int push_array (size_t s, size_t capac, bool fixed, 
 			  ssize_t *rsz) = 0;
@@ -91,8 +89,6 @@ public:
     _stack.push_back (o);
   }
 
-  int push (const char *typname, xdr_phylum_t ph, 
-	    const char *fieldname);
   bool pop (int i) { _stack.popn_back (i); return true; }
 
   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
@@ -131,8 +127,6 @@ public:
   bool traverse_string (str &s);
 
   bool pop (int i) { _stack.popn_back (i); return true; }
-  int push (const char *typname, xdr_phylum_t ph, 
-		      const char *fieldname);
 
   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
   int push_array_slot (int i);

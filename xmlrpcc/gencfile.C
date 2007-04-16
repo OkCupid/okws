@@ -40,19 +40,15 @@ dumpstruct (const rpc_sym *s)
 {
   const rpc_struct *rs = s->sstruct.addr ();
   aout << "bool\n"
-       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id 
-       << " &obj, const char *nm)\n"
-       << "{\n"
-       << "  int n_frames;\n";
+       << "rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj)\n"
+       << "{\n";
   const rpc_decl *rd = rs->decls.base ();
-  aout << "  return (n_frames = t->push (\"" << rs->id << "\","
-       << " XDR_STRUCT, nm)) >= 0\n";
   for ( ; rd < rs->decls.lim (); rd++) {
-    aout << "    && xml_rpc_traverse (t, obj." << rd->id << ", \""
-	 << rd->id << "\")\n";
+    aout << "  if (!xml_rpc_traverse (t, obj." << rd->id << ", \""
+	 << rd->id << "\")) return false;\n";
   }
-  aout << "    && t->pop (n_frames);\n" ;
-  aout << "}\n\n";
+  aout << "  return true;\n"
+       << "}\n\n";
 }
 
 void
@@ -110,13 +106,8 @@ dumpunion (const rpc_sym *s)
 {
   const rpc_union *rs = s->sunion.addr ();
   aout << "\nbool\n"
-       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj, "
-       << "const char *nm)\n"
+       << "rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj)\n"
        << "{\n"
-       << "  int n_frames;\n"
-       << "  if ((n_frames = t->push (\"" << rs->id  << "\""
-       << ", XDR_UNION, nm)) < 0)\n"
-       << "    return false;\n"
        << "  " << rs->tagtype << " tag = obj." << rs->tagid << ";\n"
        << "  if (!xml_rpc_traverse (t, tag, \"" << rs->tagid << "\"))\n"
        << "    return false;\n"
@@ -126,12 +117,8 @@ dumpunion (const rpc_sym *s)
 
   pswitch ("  ", rs, "tag", punionmacro, "\n", punionmacrodefault);
     
-  aout << "  if (!t->pop (n_frames))\n"
-       << "    res = false;\n"
-       << "  return res;\n"
+  aout << "  return res;\n"
        << "}\n";
-
-  // aout << "RPC_TYPE_DECL (" << rs->id << ")\n";
 
   aout << "\n";
 }
@@ -139,23 +126,6 @@ dumpunion (const rpc_sym *s)
 static void
 dumpenum (const rpc_sym *s)
 {
-  str lastval;
-  const rpc_enum *rs = s->senum.addr ();
-
-  aout << "\nbool "
-       << "xml_rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj, "
-       << "const char *nm)\n"
-       << "{\n"
-       << "  int n_frames;\n"
-       << "  u_int32_t val = obj;\n"
-       << "  if ((n_frames = t->push (\"" <<  rs->id 
-       << "\", XDR_ENUM, nm)) < 0\n"
-       << "      || !xml_rpc_traverse (t, val, NULL)\n"
-       << "      || !t->pop (n_frames))\n"
-       << "    return false;\n"
-       << "  obj = " << rs->id << " (val);\n"
-       << "  return true;\n"
-       << "}\n";
 }
 
 vec<str> const_tab;
@@ -273,7 +243,7 @@ dump_const_table (str fname)
     aout << "  { \"" << const_tab[i] << "\", " << const_tab[i]  << " },\n";
   }
   aout << "  { NULL, 0 }\n";
-  aout << "\n};\n\n";
+  aout << "};\n\n";
 }
 
 static void
