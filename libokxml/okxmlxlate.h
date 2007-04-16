@@ -66,6 +66,7 @@ public:
   virtual int push_array_slot (int i) = 0;
   virtual int push_array (size_t s, size_t capac, bool fixed, 
 			  ssize_t *rsz) = 0;
+  virtual int push_ptr (bool exists, bool *alloc) = 0;
 
   // Pop that many frames
   virtual bool pop (int i) = 0;
@@ -93,6 +94,7 @@ public:
 
   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
   int push_array_slot (int i);
+  int push_ptr (bool exists, bool *alloc);
 
 private:
 
@@ -130,6 +132,7 @@ public:
 
   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
   int push_array_slot (int i);
+  int push_ptr (bool dummy, bool *alloc);
 
 private:
   
@@ -274,6 +277,22 @@ rpc_traverse (XML_RPC_obj_t *xml, rpc_str<n> &obj)
   return ret;
 }
 
+template<class T> bool
+rpc_traverse (XML_RPC_obj_t *xml, rpc_ptr<T> &obj)
+{
+  int rc;
+  bool alloc = false;
+  if ((rc = xml->push_ptr (obj, &alloc)) < 0)
+    return false;
+  bool ret = true;
+  if (rc > 0) {
+    if (alloc)
+      obj.alloc ();
+    ret = rpc_traverse (xml, *obj);
+  }
+  xml->pop (rc);
+  return ret;
+}
 
 template<class T> bool
 rpc_traverse (XML_RPC_obj_t *xml, T &obj, size_t n)

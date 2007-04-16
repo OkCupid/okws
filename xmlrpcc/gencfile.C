@@ -105,7 +105,7 @@ static void
 dumpunion (const rpc_sym *s)
 {
   const rpc_union *rs = s->sunion.addr ();
-  aout << "\nbool\n"
+  aout << "bool\n"
        << "rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj)\n"
        << "{\n"
        << "  " << rs->tagtype << " tag = obj." << rs->tagid << ";\n"

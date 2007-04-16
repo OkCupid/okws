@@ -109,6 +109,11 @@ public:
   ptr<xml_fault_t> _fault;
 };
 
+class xml_empty_array_t {
+public:
+  xml_empty_array_t () {}
+};
+
 class xml_obj_ref_t : public xml_obj_base_t  {
 public:
   xml_obj_ref_t (ptr<xml_element_t> &e) : _el_ref (e) {}
@@ -143,6 +148,8 @@ public:
   { return set_value (w.el ()->clone ()); }
   const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
   { return set_fault (w); }
+  const xml_obj_ref_t &operator=(const xml_empty_array_t &a)
+  { (void)coerce_to_container (); return (*this); }
 
   void setsize (size_t s);
   xml_obj_ref_t value ();

@@ -56,6 +56,12 @@ tstsrv_t::dispatch (svccb *sbp)
       sbp->replyref (res);
       break;
     }
+  case TST_RPC3:
+    {
+      aa_t *arg = sbp->Xtmpl getarg<aa_t> ();
+      sbp->reply (arg);
+      break;
+    }
   default:
     sbp->reject (PROC_UNAVAIL);
     break;

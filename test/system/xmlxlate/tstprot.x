@@ -34,6 +34,11 @@ struct ww_t {
 	yy_t a[2];
 };
 
+struct aa_t {
+	yy_t *p1;
+	yy_t *p2;
+};
+
 
 program TST_PROG {
 	version TEST_VERS {
@@ -46,6 +51,9 @@ program TST_PROG {
 
 		ww_t
 		TST_RPC2(yy_t) = 2;
+
+		aa_t
+		TST_RPC3(aa_t) = 3;
 
 	} = 1;
 } = 34291;

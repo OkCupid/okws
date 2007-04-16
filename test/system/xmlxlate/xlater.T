@@ -39,9 +39,11 @@ public:
   okclnt_xlater_t (ptr<ahttpcon> x, oksrvc_xlater_t *s) ;
 
   void xlate (xml_req_t q, xml_resp_cb_t cb) { xlate_T (q, cb); }
+  void constants (xml_req_t q, xml_resp_cb_t cb) { constants_T (q, cb); }
   
 private:
   void xlate_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+  void constants_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 
 
   oksrvc_xlater_t *_service;
@@ -55,10 +57,11 @@ public:
   { 
     // Register XML-RPC service methods
     regh ("xdr.xlate", &okclnt_xlater_t::xlate); 
+    regh ("xdr.constants", &okclnt_xlater_t::constants);
     _xlmgr.add_file (tstprot_xml_rpc_file);
   }
 
-  void xlate (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+  okxml::xlate_mgr_t *xlmgr () { return &_xlmgr; }
 
 private:
   okxml::xlate_mgr_t _xlmgr;
@@ -82,18 +85,19 @@ okclnt_xlater_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
     xml_resp_t res;
   }
   twait {
-    _service->xlate (q, mkevent (res));
+    _service->xlmgr ()->xlate (q[0], mkevent (res));
   }
   (*cb) (res);
 }
 
 tamed void
-oksrvc_xlater_t::xlate (xml_req_t in, xml_resp_cb_t cb)
+okclnt_xlater_t::constants_T (xml_req_t q, xml_resp_cb_t cb)
 {
   tvars {
     xml_resp_t res;
   }
-  twait { _xlmgr.xlate (in[0], mkevent (res)); }
-
+  twait {
+    _service->xlmgr ()->get_constants (q, mkevent (res));
+  }
   (*cb) (res);
 }

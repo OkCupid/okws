@@ -123,6 +123,27 @@ namespace okxml {
     }
   }
 
+  void
+  xlate_mgr_t::get_constants (xml_req_t in, xml_resp_cb_t cb)
+  {
+    xml_resp_t resp;
+    size_t k = 0;
+    for (size_t i = 0; i < in.size (); i++) {
+      for (size_t j = 0; j < in[i].size (); j++) {
+	str f = in[i][j];
+	const xml_rpc_file **x;
+	if (f && (x = _files[f])) {
+	  for (const xml_rpc_const_t *c = (*x)->constants; c->name; c++) {
+	    resp[0][k][0] = c->name;
+	    resp[0][k][1] = c->val;
+	    k++;
+	  }
+	}
+      }
+      cb->trigger (resp);
+    }
+  }
+
   tamed void
   xlate_mgr_t::xlate (xml_obj_const_t input, xml_resp_cb_t cb)
   {

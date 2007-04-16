@@ -90,17 +90,14 @@ int
 XML_reader_t::push_array_slot (int i)
 {
   if (is_empty ()) return -1;
-  xml_obj_const_t o = top ();
-  push (o[i]);
+  push (top ()[i]);
   return 1;
 }
 
 int
 XML_creator_t::push_array_slot (int i)
 {
-  if (is_empty ()) return -1;
-  xml_obj_ref_t o = _stack.back ();
-  push (o[i]);
+  push (top ()[i]);
   return 1;
 }
 
@@ -132,4 +129,40 @@ XML_creator_t::traverse_string (str &s)
 {
   top () = s;
   return true;
+}
+
+int
+XML_reader_t::push_ptr (bool dummy, bool *alloc)
+{
+  int ret = -1;
+  *alloc = false;
+  if (!is_empty () && top ().is_array ()) {
+    switch (top ().size ()) {
+    case 0: 
+      ret = 0;
+      break;
+    case 1:
+      *alloc = true;
+      push (top ()[0]);
+      ret = 1;
+      break;
+    default:
+      ret = -1;
+    }
+  }
+  return ret;
+}
+
+int
+XML_creator_t::push_ptr (bool exists, bool *alloc)
+{
+  int ret = 0;
+  *alloc = false;
+  if (exists) {
+    push (top ()[0]);
+    ret = 1;
+  } else {
+    top () = xml_empty_array_t ();
+  }
+  return ret;
 }
