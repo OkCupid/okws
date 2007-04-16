@@ -15,8 +15,6 @@ class RpcConst:
         for p in lst:
             self.set (p)
     
-    
-
 server_url = "http://0.0.0.0:8081/xlater"
 server = xmlrpclib.Server (server_url)
 server.system.setDebugLevel (50)

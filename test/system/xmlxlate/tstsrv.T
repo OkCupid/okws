@@ -11,7 +11,7 @@
 
 class tstsrv_t : public tame::server_t {
 public:
-  tstsrv_t (int fd) : tame::server_t (fd) {}
+  tstsrv_t (int fd, int v) : tame::server_t (fd, v) {}
   const rpc_program &get_prog () const { return tst_prog_1; }
   void dispatch (svccb *sbp);
 };
@@ -19,7 +19,7 @@ public:
 class tstsrv_factory_t : public tame::server_factory_t {
 public:
   tstsrv_factory_t () : tame::server_factory_t () {}
-  tame::server_t *alloc_server (int fd) { return New tstsrv_t (fd); }
+  tame::server_t *alloc_server (int fd, int v) { return New tstsrv_t (fd, v); }
 };
 
 void

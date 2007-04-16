@@ -201,7 +201,7 @@ XML_creator_t::push_ptr (bool exists, bool *alloc)
 void
 XML_RPC_obj_t::debug_push (const str &s)
 {
-  _debug_stack.push_back (f);
+  _debug_stack.push_back (s);
 }
 
 void

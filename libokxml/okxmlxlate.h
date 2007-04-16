@@ -79,7 +79,8 @@ public:
 
   int error_wrong_type (const char *f, int rc = 0);
   int error_empty (const char *f, int rc = 0);
-private:
+
+protected:
   vec<str> _debug_stack;
   str _err_msg;
 };
