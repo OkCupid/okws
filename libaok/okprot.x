@@ -54,7 +54,9 @@ enum ok_xstatus_typ_t {
   OK_STATUS_PUBERR = 1,
   OK_STATUS_NOSUCHCHILD = 2,
   OK_STATUS_ERR = 3,
-  OK_STATUS_DEADCHILD = 4
+  OK_STATUS_DEADCHILD = 4,
+  OK_STATUS_NOMORE = 5,
+  OK_STATUS_BADFD = 6
 };
 
 union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
@@ -79,6 +81,12 @@ union ok_xstatus_t switch (ok_xstatus_typ_t status)
    void;
  default:
    string error<>;
+};
+
+typedef ok_xstatus_typ_t okctl_sendcon_res_t;
+
+struct okctl_sendcon_arg_t {
+	opaque sin<>;
 };
 
 program OKCTL_PROGRAM {
@@ -122,6 +130,12 @@ program OKCTL_PROGRAM {
 
 		okctl_stats_t
 		OKCTL_GET_STATS(void) = 12;
+
+		okctl_sendcon_res_t
+		OKCTL_SEND_CON(okctl_sendcon_arg_t) = 13;
+
+		void
+		OKCTL_REENABLE_ACCEPT(void) = 14;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;

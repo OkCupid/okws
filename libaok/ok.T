@@ -101,7 +101,9 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
       .add ("SERVINFO", servinfo ());
     if (s)
       ar.add ("AUXSTR", s);
-    twait { http_pub2_t::alloc (pub2 (), n, e->fn, mkevent (hp2), &ar, v, gz); }
+    twait { 
+      http_pub2_t::alloc (pub2 (), n, e->fn, mkevent (hp2), &ar, v, gz); 
+    }
     ret = hp2;
   }
   if (!ret)
@@ -268,6 +270,9 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_CUSTOM_2_OUT:
     custom2_rpc (v);
     break;
+  case OKCTL_SEND_CON:
+    handle_new_con (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
@@ -351,24 +356,14 @@ oksrvc_t::end_program ()
 void
 oksrvc_t::connect ()
 {
-  ctlx = axprt_unix::alloc (1, ok_axprt_ps);
-  x = ahttpcon_listen::alloc (0);
+  ctlx = axprt_unix::alloc (0, ok_axprt_ps);
   ctlcon (wrap (this, &oksrvc_t::ctldispatch));
 
   //
-  // setting the listen callback on this ahttpcon_listen object 
-  // will turn on its ability to read data from upstream.
+  // XXX core-0-2 
+  // No need to enable_accept -- it's already on by default.
   //
-  x->setlcb (wrap (this, &oksrvc_t::newclnt));
-
-  //
-  // must be called after setlcb; this will turn on our own 
-  // accept_enabled flag; it will also wind up calling enable_selread
-  // on the underlying object (for the second time!) but this will 
-  // simply be a no-op, since the enable_selread is idempotent 
-  // in the world of ahttpcon_listen and associated objects.
-  //
-  enable_accept ();
+  // enable_accept ();
 }
 
 void
@@ -527,7 +522,6 @@ oksrvc_t::launch_dbs (cbb cb)
   TRIGGER (cb, ret);
 }
 
-
 dbcon_t *
 oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 		  int32_t l)
@@ -582,18 +576,13 @@ ok_httpsrv_t::enable_accept ()
   }
 }
 
-
 void
 oksrvc_t::enable_accept_guts ()
 {
-  x->enable_fd_accept ();
+  clnt->call (OKCTL_REENABLE_ACCEPT, NULL, NULL, aclnt_cb_null);
 }
 
-void
-oksrvc_t::disable_accept_guts ()
-{
-  x->disable_fd_accept ();
-}
+void oksrvc_t::disable_accept_guts () {}
 
 void
 oksrvc_t::closed_fd ()
@@ -604,8 +593,42 @@ oksrvc_t::closed_fd ()
 }
 
 void
+oksrvc_t::handle_new_con (svccb *sbp)
+{
+  okctl_sendcon_res_t res = OK_STATUS_OK;
+  okctl_sendcon_arg_t *arg = sbp->Xtmpl getarg<okctl_sendcon_arg_t> ();
+
+  int fd = ctlx->recvfd ();
+
+  if (fd < 0) {
+    warn << "Got bad file descriptor instead of new connection\n";
+    res = OK_STATUS_BADFD;
+  } else {
+    sockaddr_in *sin = NULL;
+    if (arg->sin.size () != sizeof (sockaddr_in)) {
+      warn << "Got bad sockaddr_in from okd (wrong size)\n";
+    } else {
+      sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
+      memcpy ((void *)sin, arg->sin.base (), sizeof (*sin));
+    }
+
+    // fd -- the new file descriptor
+    // sin -- the sockaddr info
+    // -1   -- use SUIOLITE_DEF_BUFLEN for length of incoming buffer
+    // -1   -- use default receive channel limit
+    // false-- no close on exec
+    // true -- reset the socket flags 
+    ptr<ahttpcon> x = ahttpcon::alloc (fd, sin, -1, -1, false, true);
+    if (!newclnt (x))
+      res = OK_STATUS_NOMORE;
+  }
+  sbp->replyref (res);
+}
+
+bool
 oksrvc_t::newclnt (ptr<ahttpcon> lx)
 {
+  bool sendmore = true;
   if (!lx) { 
     warn << "oksrvc_t::newclnt: NULL request encountered\n";
   } else {
@@ -621,9 +644,11 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
     }
     if (ok_svc_fds_high_wat != 0 && n_fd_out >= int (ok_svc_fds_high_wat)) {
       disable_accept ();
+      sendmore = false;
     }
   }
   do_syscall_stats ();
+  return sendmore;
 }
 
 void

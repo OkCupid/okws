@@ -99,11 +99,10 @@ public:
   ~okch_t ();
   void launch ();
   void clone (ref<ahttpcon_clone> xc);
-  void send_con_to_service (ref<ahttpcon_clone> xc);
+  void send_con_to_service (ref<ahttpcon_clone> xc, CLOSURE);
   void shutdown (oksig_t sig, cbv cb);
 
   void got_new_ctlx_fd (int fd, int p);
-  void got_new_x_fd (int fd, int p);
 
   void dispatch (ptr<bool> destroyed, svccb *b);
   void repub (ptr<ok_repub_t> rpb);
@@ -113,7 +112,7 @@ public:
   void kill ();
   void custom1_out (const ok_custom_data_t &x);
   void custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x);
-  void chld_eof (ptr<bool> dfp, bool debug = false);
+  void chld_eof ();
   void custom2_out_cb (ptr<ok_custom2_trig_t> trig, 
 		       ptr<ok_custom_data_t> res,
 		       clnt_stat err);
@@ -129,12 +128,11 @@ public:
   const str servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
   ihash_entry<okch_t> lnk;
 protected:
+  void handle_reenable_accept (svccb *sbp);
   void start_chld ();
 private:
   void shutdown_cb1 (cbv cb);
   void closed_fd ();
-
-  ptr<ahttpcon> x;
 
   vec<ptr<ahttpcon_clone> > conqueue;
 
@@ -144,7 +142,8 @@ private:
   int per_svc_nfd_in_xit;  // per service number FD in transit
   int _n_sent;             // N sent since reboot
   time_t _last_restart;    // time when started;
-
+  
+  bool _too_busy;          // the server is potentially too busy to get more
 };
 
 class okd_t : public ok_httpsrv_t, public config_parser_t 

@@ -8,7 +8,7 @@
 ACSFS=acsfs.m4
 if test ! -f $ACSFS
 then
-    for d in /usr/local/lib/sfslite-1.0  \
+    for d in /usr/local/lib/sfslite-1.1  \
 		 /usr/local/lib/sfslite \
 	     /usr/local/share/aclocal \
 	     /usr/local/gnu-autotools/shared/aclocal-1.9 

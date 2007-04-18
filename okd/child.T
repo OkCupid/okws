@@ -1,3 +1,4 @@
+// -*-c++-*-
 /* $Id$ */
 
 /*
@@ -36,8 +37,9 @@
 okch_t::okch_t (okd_t *o, const str &s)
   : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
     destroyed (New refcounted<bool> (false)),
-    srv_disabled (false), per_svc_nfd_in_xit (0),
-    _n_sent (0), _last_restart (okwstime ())
+    per_svc_nfd_in_xit (0),
+    _n_sent (0), _last_restart (okwstime ()),
+    _too_busy (false)
 {
   myokd->insert (this);
 }
@@ -61,18 +63,30 @@ okch_t::closed_fd ()
 void
 okch_t::clone (ref<ahttpcon_clone> xc)
 {
-  if (!x || x->ateof () || state != OKC_STATE_SERVE) {
-    if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED || 
-	conqueue.size () >= ok_con_queue_max) {
+  if (!ctlx || ctlx->ateof () || state != OKC_STATE_SERVE) {
+
+    if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED 
+	|| conqueue.size () >= ok_con_queue_max) {
+
       myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
+
     } else {
       //warn << "queued con\n"; // XX debug
       conqueue.push_back (xc);
     }
-  } else if (ok_svc_fd_quota && per_svc_nfd_in_xit > int (ok_svc_fd_quota)) {
+
+  } else if ((ok_svc_fd_quota && per_svc_nfd_in_xit > int (ok_svc_fd_quota))
+	     || _too_busy) {
     // warn << "debug: fail: " << per_svc_nfd_in_xit << "\n";
-    warn << "**WARNING: Service " << servpath << " appears unresponsive!\n";
+
+    if (_too_busy)
+      warn << "**WARNING: Service " << servpath 
+	   << " too busy to accept new connections\n";
+    else
+      warn << "**WARNING: Service " << servpath << " appears unresponsive!\n";
+
     myokd->error (xc, HTTP_UNAVAILABLE, make_generic_http_req (servpath));
+
   } else {
     if (ok_svc_fd_quota) {
       // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
@@ -86,12 +100,6 @@ okch_t::clone (ref<ahttpcon_clone> xc)
 void
 okch_t::shutdown (oksig_t g, cbv cb)
 {
-  if (okd_child_sel_disable && srv_disabled) {
-    warn << "*broken: restarting stopped ASRV for child\n";
-    srv_disabled = false;
-    xhinfo::xon (ctlx, true);
-  }
-
   if (clnt) {
     // note that no authentication needed for this kill signal.
     if (g == OK_SIG_ABORT) {
@@ -121,11 +129,22 @@ okch_t::got_new_ctlx_fd (int fd, int p)
   ctlx = axprt_unix::alloc (fd, ok_axprt_ps);
   ctlcon (wrap (this, &okch_t::dispatch, destroyed));
   state = OKC_STATE_LAUNCH_SEQ_1;
+  start_chld ();
 }
 
-void
+tamed void
 okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
 {
+  tvars {
+    okctl_sendcon_arg_t arg;
+    okctl_sendcon_res_t res;
+    clnt_stat err;
+    ptr<bool> df;
+    sockaddr_in *sin (NULL);
+  }
+
+  df = destroyed;
+
   if (xc->timed_out ()) {
     CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
 	     << "): not forwarding to child");
@@ -133,20 +152,51 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
     CH_ERROR ("Dead file descriptor encountered");
   } else {
     inc_n_sent ();
-    x->clone (xc);
+    sin = xc->get_sin ();
+    arg.sin.setsize (sizeof (*sin));
+    memcpy (arg.sin.base (), (void *)sin, sizeof (*sin));
+
+    // Hack: reclaim the FD, but hold onto the ahttpcon until
+    // after the server has acked it.
+    twait { 
+      ctlx->sendfd (xc->takefd ());
+      clnt->call (OKCTL_SEND_CON, &arg, &res, mkevent (err)); 
+    }
+
+    if (err) {
+      CH_ERROR ("Error in RPC for sending connection: " << err);
+    } else if (res == OK_STATUS_NOMORE) {
+      if (*df) {
+	CH_ERROR ("No more connections; but service died..\n");
+      } else {
+	CH_ERROR ("Service is busy; disabling incoming connections\n");
+	_too_busy = true;
+      }
+    } else if (res != OK_STATUS_OK) {
+      CH_ERROR ("Service rejected new connection: " << res);
+    }
+
+    //
+    // XXX core-0-2 note:
+    //
+    // Hold on xc until we've heard back, which will trigger a callback
+    // saying that one fewer FD is in transit; however, we'd do best
+    // to simplify this mechanism.
+    //
+
   }
 }
 
 //
 // Need two things before we can start dispatching connections
 // (and set state == OKC_STATE_SERVE):
-//    (1) ptr<ahttpcon> x  to be handed to us by okld.
+//    (1) ptr<axprt_unix> ctlx to be handed to us by okld.
 //    (2) the child to call OKCLNT_READY
 //
 void
 okch_t::start_chld ()
 {
-  if (state == OKC_STATE_LAUNCH_SEQ_2 && x) {
+  if (state == OKC_STATE_LAUNCH_SEQ_2 && ctlx) {
 
     // debug messages
     if (OKDBG2 (OKD_STARTUP))
@@ -157,30 +207,13 @@ okch_t::start_chld ()
 
     reset_n_sent ();
 
-    // need to check that x is still here every time through the 
+    // need to check that ctlx is still here every time through the 
     // loop; the service might have crashed as we were servicing
     // queued connections.
-    while (conqueue.size () && x) 
+    while (conqueue.size () && ctlx)
       send_con_to_service (conqueue.pop_front ());
 
-    //
-    // XXX - this doesn't work yet.  To make it work, we need to do the
-    // following:
-    //
-    //    - renable the server upon new publication pushes.
-    //    - handle EOF conditions wisely; meaning, if we get a new 
-    //      child for the same service, then we should assume an EOF;
-    //      if we're not selecting on the FD, we might not see the
-    //      EOF messages come in.
-    //
-    if (okd_child_sel_disable) {
-      // disable the read on this socket.
-      warn << "*broken: turning of child select on CTL socket\n";
-      srv_disabled = true;
-      ctlx->setrcb (NULL);
-    }
   }
-    
 }
 
 void
@@ -188,36 +221,6 @@ okch_t::reset_n_sent ()
 {
     _n_sent = 0; 
     _last_restart = okwstime ();
-}
-
-void
-okch_t::got_new_x_fd (int fd, int p)
-{
-  if (pid != p) {
-    strbuf b;
-    b << "mismatching process IDs; hosed child: " << servpath << "\n";
-    okdbg_warn (FATAL_ERROR, b);
-    goto xfail;
-  }
-
-  if (!ctlx) {
-    strbuf b;
-    b << "improper connection status; hosed child: " << servpath << "\n";
-    okdbg_warn (FATAL_ERROR, b);
-    goto xfail;
-  }
-
-  x = ahttpcon_dispatch::alloc (fd);
-  x->seteofcb (wrap (this, &okch_t::chld_eof, destroyed, true));
-
-  start_chld ();
-
-  return;
-
- xfail:
-  state = OKC_STATE_HOSED;
-  close (fd);
-  chld_eof (destroyed);
 }
 
 void
@@ -231,6 +234,14 @@ okch_t::shutdown_cb1 (cbv cb)
 }
 
 void
+okch_t::handle_reenable_accept (svccb *sbp)
+{
+  CH_ERROR ("Service reenabled accept; can now serve new connections");
+  _too_busy = false;
+  sbp->reply (NULL);
+}
+
+void
 okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
 {
   if (*dfp) {
@@ -239,9 +250,10 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
   }
   
   if (!sbp) {
-    chld_eof (destroyed);
+    chld_eof ();
     return ;
   }
+
   u_int p = sbp->proc ();
 
   if (state == OKC_STATE_KILLING) {
@@ -284,6 +296,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     break;
   case OKCTL_GET_STATS:
     myokd->okctl_get_stats (sbp);
+    break;
+  case OKCTL_REENABLE_ACCEPT:
+    handle_reenable_accept (sbp);
     break;
   default:
     sbp->reject (PROC_UNAVAIL);
@@ -431,8 +446,6 @@ void
 okch_t::kill ()
 {
   CH_CHATTER ("disconnecting from child");
-  x->seteofcb (cbv_null);
-  x = NULL;
   ctlx = NULL;
   clnt = NULL;
   srv = NULL;
@@ -481,20 +494,13 @@ okch_t::custom1_out (const ok_custom_data_t &x)
 }
 
 void
-okch_t::chld_eof (ptr<bool> dfp, bool debug)
+okch_t::chld_eof ()
 {
-  if (debug) {
-    CH_ERROR ("okch_t::chld_eof called from ahttpcon/eofcb");
-  }
-  if (*dfp) {
-    CH_ERROR ("destroyed child process died");
-    return;
-  }
   warn << servpath << ": child process died (pid " << pid << ")\n";
   ctlx = NULL;
   srv = NULL;
   clnt = NULL;
-  x = NULL;
+
   if (myokd && !myokd->in_shutdown ()) {
     state = OKC_STATE_CRASH;
   } else 

@@ -1,7 +1,7 @@
 
 $(PROGRAMS): $(LDEPS)
 
-noinst_PROGRAMS = hcli hsrv degz mygz pt1cli okwc tmr bench mygz2 enctst okwc3
+noinst_PROGRAMS = hcli degz mygz pt1cli okwc tmr bench mygz2 enctst okwc3
 okwsbin_PROGRAMS = okdbg
 
 noinst_HEADERS = normdist.h
@@ -10,7 +10,6 @@ okdbg_SOURCES = okdbg.C
 hcli_SOURCES = hcli.C
 okwc_SOURCES = okwcmain.C
 pt1cli_SOURCES = pt1cli.C normdist.C
-hsrv_SOURCES = hsrv.C
 degz_SOURCES = degz.C 
 mygz_SOURCES = mygz.C
 tmr_SOURCES = tmr.C

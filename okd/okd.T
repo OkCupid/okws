@@ -427,14 +427,14 @@ okd_t::strip_privileges ()
 void
 okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
 {
+  if (!s)
+    status = HTTP_BAD_REQUEST;
+
   if (status != HTTP_OK) {
     x->declone ();
     error (x, status);
-  } else if (!s) {
-    x->declone ();
-    error (x, HTTP_BAD_REQUEST);
   } else {
-
+    
     // for services not on the default port, rewrite the request
     // URL with the port explictly mentioned
     if (port != listenport) {
@@ -505,6 +505,8 @@ okd_t::newserv (int fd)
     //
     // when this file descriptor is closed on our end, we need
     // to decrement nfd_in_xit
+    //
+    // No longer necesary; for now leave it in
     //
     x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
 
@@ -724,14 +726,6 @@ okd_t::got_chld_fd (int fd, ptr<okws_fd_t> desc)
   okch_t *ch;
   str uri;
   switch (desc->fdtyp) {
-  case OKWS_SVC_X:
-    uri = fix_uri (desc->x->name);
-    if (!(ch = servtab[uri])) {
-      warn << "received service FDs out of order!\n";
-      close (fd);
-    }
-    ch->got_new_x_fd (fd, desc->x->pid);
-    break;
   case OKWS_SVC_CTL_X:
     uri = fix_uri (desc->ctlx->name);
     if (!(ch = servtab[uri])) {

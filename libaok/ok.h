@@ -52,7 +52,8 @@ typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_DELAY = 5,
 	       OKC_STATE_LAUNCH_SEQ_1 = 6,
 	       OKC_STATE_LAUNCH_SEQ_2 = 7,
-               OKC_STATE_KILLING = 8 } okc_state_t;
+               OKC_STATE_KILLING = 8,
+	       OKC_STATE_TOOBUSY = 9 } okc_state_t;
 
 
 struct errdoc_t {
@@ -320,7 +321,8 @@ class okclnt_t : public okclnt_base_t,
 public:
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
     okclnt_base_t (xx, o),
-    http_parser_cgi_t (xx, to) {}
+    http_parser_cgi_t (xx, to) 
+  {}
 
   void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
   http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
@@ -350,6 +352,7 @@ public:
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
+    accept_enabled = true;
   }
 
   typedef okclnt_base_t newclnt_t;
@@ -424,7 +427,8 @@ protected:
   void launch_dbs (cbb cb, CLOSURE);
 
 
-  void newclnt (ptr<ahttpcon> lx);
+  void handle_new_con (svccb *sbp);
+  bool newclnt (ptr<ahttpcon> lx);
   void update (svccb *sbp);
   void kill (svccb *v);
   void update_cb (svccb *sbp, ptr<pub_res_t> pr);
@@ -435,7 +439,6 @@ protected:
 
   str name;
   list<okclnt_base_t, &okclnt_base_t::lnk> clients;
-  ptr<ahttpcon_listen> x;
 
   u_int nclients;
   bool sdflag;

@@ -58,30 +58,9 @@ private:
   cbv cb;
 };
 
-//
-// fdtosend is set up to be stack allocated, i presume, as an optimization;
-// this should really be changed to be heap allocated, and to have some
-// simple story for recyling. would be much cleaner, and less error
-// prone.  this is future work.
-//
-struct fdtosend {
-  const int fd;
-  mutable bool closeit;
-  fdtosend (int f, bool c, ptr<cbv_countdown_t> b = NULL)
-    : fd (f), closeit (c), cb (b) {}
-  ~fdtosend () { if (closeit) close (fd); }
-  fdtosend (const fdtosend &f) : fd (f.fd), closeit (f.closeit), cb (f.cb)
-  { f.closeit = false; }
-  ptr<cbv_countdown_t> cb;
-};
-
 class ahttpcon_clone;
 class ahttpcon : public virtual refcount 
 {
-  vec<u_int64_t> syncpts; // sync points
-
-protected:
-  vec<fdtosend> fdsendq;
 
 public:
   /**
@@ -104,10 +83,8 @@ public:
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
   virtual ~ahttpcon ();
-  void sendfd (int sfd, bool closeit = true, ptr<cbv_countdown_t> cb = NULL);
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
-  void clone (ref<ahttpcon_clone> xc);
   void output ();
   void spacecb ();
   void error (int ec);
@@ -149,7 +126,6 @@ protected:
   virtual int dowritev (int cnt) { return out->output (fd, cnt); }
   virtual ssize_t doread (int fd);
   virtual void recvd_bytes (int n);
-  inline void wrsync ();
   virtual void fail (int s = HTTP_BAD_REQUEST);
   virtual void too_many_fds () { fail (); }
   virtual void fail2 (int s) {}
@@ -195,32 +171,6 @@ public:
     : ahttpcon (f, NULL, mb) {}
   static ptr<ahttpcon_dispatch> alloc (int f, int mb = SUIOLITE_DEF_BUFLEN)
   { return New refcounted<ahttpcon_dispatch> (f, mb); }
-protected:
-  virtual int dowritev (int cnt);
-};
-
-// for child process listening for a file descriptor to come in
-typedef callback<void, ptr<ahttpcon> >::ref listencb_t;
-class ahttpcon_listen : public ahttpcon 
-{
-public:
-  ahttpcon_listen (int f) : ahttpcon (f), fd_accept_enabled (false)
-  { 
-    // XXX - don't want to stop listening to okd! there should be no
-    // channel limit here; setting recv_limit = 0 should achieve this.
-    recv_limit = 0; 
-  }
-  void setlcb (listencb_t c);
-  static ptr<ahttpcon_listen> alloc (int f) 
-  { return New refcounted<ahttpcon_listen> (f); }
-  void disable_fd_accept ();
-  void enable_fd_accept ();
-protected:
-  virtual ssize_t doread (int fd);
-  void fail2 (int s);
-  void too_many_fds () {}
-  listencb_t::ptr lcb;
-  bool fd_accept_enabled;
 };
 
 // for server process to peek () and then pass of the fd
@@ -291,24 +241,6 @@ private:
   tailq<ahttp_tab_node_t, &ahttp_tab_node_t::_qent> q;
   size_t nent;
 };
-
-
-ptr<ahttpcon> 
-ahttpcon_aspawn (str execpath, cbv::ptr postforkcb, ptr<axprt_unix> *ctlx,
-		 char *const *env);
-
-int
-ahttpcon_aspawn (str execpath, const vec<str> &arv, cbv::ptr pfcb,
-		 int *ctlx, char *const *env);
-
-int
-ahttpcon_spawn (str execpath, const vec<str> &avs, 
-		cbv::ptr postforkcb, bool async, char *const *env,
-		int *ctlx);
-
-extern int ahttpcon_spawn_pid;
-
-bool http_server (listencb_t lcb, int port);
 
 
 #endif /* _LIBAHTTP_AHTTP */

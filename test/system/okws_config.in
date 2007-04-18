@@ -6,7 +6,7 @@ ServiceBin	test/system
 
 PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
-OkdExecPath	okd/okd
+OkdExecPath	ASRV_TRACE=10 okd/okd
 Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
 LogDir		@@TOP_BUILD@@/test
@@ -14,10 +14,10 @@ AccessLog	/access_log
 ErrorLog	/error_log
 AccessLogFmt	ivt1sbU
 
-OkMgrSocket             okd.sock=
+OkMgrSocket             okd.sock
 OkMgrSocketAccessMode	0777
 
-Service		static		/static
+Service		static /static
 RegexAlias	/static		^(:\d+)?/static/.*$
 Alias		/static		/
 

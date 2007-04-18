@@ -12,7 +12,7 @@ okld_SOURCES = okld.C okldch.C okld_script.C
 SUFFIXES = .C .T .h
 
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 okld.o:    okld.C
 okld.lo:   okld.C
@@ -22,11 +22,13 @@ okd.o:     okd.C
 okd.lo:    okd.C
 okmgr.o:   okmgr.C
 okmgr.lo:  okmgr.C
+child.o:   child.C
+child.lo:  child.C
 
-TAMEOUT = okld.C okldch.C okd.C okmgr.C
+TAMEOUT = okld.C okldch.C okd.C okmgr.C child.C
 
 CLEANFILES = core *.core *~ $(TAMEOUT)
-EXTRA_DIST = .cvsignore okld.T okldch.T okd.T okmgr.T
+EXTRA_DIST = .cvsignore okld.T okldch.T okd.T okmgr.T child.T
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY: tameclean

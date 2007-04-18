@@ -250,16 +250,16 @@ okld_ch_t::launch ()
   argv_t env_tmp;
   env_tmp.init (env, environ);
 
-  int fd, ctlfd;
-  fd = ahttpcon_aspawn (exe, argv, 
+  ptr<axprt_unix> x = 
+    axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
 			wrap (this, &okld_ch_t::set_svc_ids), 
-			&ctlfd, env_tmp);
+			env_tmp);
 
-  pid = ahttpcon_spawn_pid;
+  pid = axprt_unix_spawn_pid;
   close (logfd);
   if (pub2fd >= 0) close (pub2fd);
 
-  if (fd < 0 || ctlfd < 0) {
+  if (!x) {
     warn << "HOSED: Cannot launch service: (" << servpath << "," 
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
@@ -267,6 +267,8 @@ okld_ch_t::launch ()
   }
 
   ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
+
+  int ctlfd = x->reclaim ();
 
   okws_fd_t fdx (OKWS_SVC_CTL_X);
 
@@ -276,22 +278,8 @@ okld_ch_t::launch ()
   // if we're shutting down, okld->okdx will be NULL
   if (!okld->okdx || !okld->okdx->send (ctlfd, fdx)) {
     close (ctlfd);
-    close (fd);
     warn << "HOSED: Cannot clone CTL file descriptor: (" << servpath << ")\n";
     state = OKC_STATE_HOSED;
-    return;
-  }
-
-  fdx.set_fdtyp (OKWS_SVC_X);
-  fdx.x->pid = pid;
-  fdx.x->name = servpath;
-
-  // if we're shutting down, okld->okdx will be NULL
-  if (!okld->okdx || !okld->okdx->send (fd, fdx)) {
-    close (ctlfd);
-    close (fd);
-    state = OKC_STATE_HOSED;
-    warn << "HOSED: Cannot clone HTTP file descriptor: (" << servpath << ")\n";
     return;
   }
 
