@@ -14,8 +14,13 @@ class RpcConst:
     def setall (self, lst):
         for p in lst:
             self.set (p)
+
+if len (sys.argv) == 2:
+	host = sys.argv[1]
+else:
+	host = "0.0.0.0:8081"
     
-server_url = "http://0.0.0.0:8081/xlater"
+server_url = "http://" + host + "/xlater"
 server = xmlrpclib.Server (server_url)
 server.system.setDebugLevel (50)
 
