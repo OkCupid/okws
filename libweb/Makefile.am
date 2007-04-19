@@ -16,7 +16,7 @@ SUFFIXES = .C .T .h .x
 .x.h:
 	$(OKRPCC) -h $< || (rm -f $@ && false)
 .x.C:
-	$(XMLRPCC) -c $< || (rm -f $@ && false)
+	$(OKRPCC) -c $< || (rm -f $@ && false)
 
 TAMEIN = okwcxml.T okwc3.T
 RPCCIN = web_prot.x
