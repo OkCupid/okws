@@ -30,7 +30,7 @@
 #include "tame.h"
 #include "rxx.h"
 #include "okxmlxlatemgr.h"
-#include "tstprot_xml.h"
+#include "tstprot.h"
 
 class oksrvc_xlater_t;
 
