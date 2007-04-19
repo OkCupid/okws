@@ -226,7 +226,7 @@ class oksrvc_t;
 class okclnt_base_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
-    x (xx), 
+    _client_con (xx), 
     oksrvc (o),
     process_flag (false), 
     uid_set (false), 
@@ -278,8 +278,12 @@ public:
   virtual ptr<pub2::ok_iface_t> pub2_local ();
   void set_localizer (ptr<const pub_localizer_t> l);
 
+  ptr<ahttpcon> client_con () { return _client_con; }
+  ptr<const ahttpcon> client_con () const { return _client_con; }
+
 private:
   void serve_T (CLOSURE);
+  ref<ahttpcon> _client_con;
 
 protected:
   virtual void delcb () { delete this; }
@@ -292,7 +296,6 @@ protected:
   bool output_frag_prepare ();
 		
   cbv::ptr cb;
-  ref<ahttpcon> x;
   oksrvc_t *oksrvc;
 
   zbuf out;

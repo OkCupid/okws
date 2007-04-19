@@ -69,7 +69,8 @@ okclnt_base_t::add_cookie (const str &h, const str &p)
 void 
 okclnt_base_t::error (int n, const str &s)
 { 
-  oksrvc->error (x, n, s, wrap (this, &okclnt_base_t::delcb), hdr_p ());
+  oksrvc->error (_client_con, n, s, 
+		 wrap (this, &okclnt_base_t::delcb), hdr_p ());
 }
 
 str
@@ -704,7 +705,7 @@ okclnt_base_t::output_hdr (ssize_t len)
   assert (output_state == ALL_AT_ONCE);
   output_state = STREAMING_HDRS;
 
-  if (x->closed ()) {
+  if (_client_con->closed ()) {
     output_state = CLIENT_EOF;
     return false;
   }
@@ -728,7 +729,7 @@ okclnt_base_t::output_frag_prepare ()
   assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
   output_state = STREAMING_BODY;
 
-  if (x->closed ()) {
+  if (_client_con->closed ()) {
     output_state = CLIENT_EOF;
     return false;
   }
@@ -742,7 +743,7 @@ okclnt_base_t::output_fragment (str s)
     return false;
 
   strbuf b (s);
-  x->send (b, NULL, wrap (hold_str, s));
+  _client_con->send (b, NULL, wrap (hold_str, s));
 
   return true;
 }
@@ -755,7 +756,7 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
     ret = false;
 
   const strbuf &sb = b.to_strbuf(false);
-  x->send (sb, NULL, done);
+  _client_con->send (sb, NULL, done);
   b.clear();
   return true;
 }
@@ -776,7 +777,9 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
     twait { pub2 ()->run (&z, f, mkevent (ret), a, opt, e); }
     if (ret) {
       z.to_strbuf (&b, false);
-      twait { x->send (b, NULL, mkevent ()); }
+      twait { 
+	_client_con->send (b, NULL, mkevent ()); 
+      }
     }
   }
 
@@ -793,7 +796,7 @@ okclnt_base_t::output_done ()
   }
   assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
   output_state = DONE;
-  x->set_drained_cb (wrap (this, &okclnt_base_t::delcb));
+  _client_con->set_drained_cb (wrap (this, &okclnt_base_t::delcb));
   return true;
 }
 
@@ -816,7 +819,7 @@ okclnt_base_t::output (compressible_t &b)
   output_state = DONE;
 
   // client might have cancelled as we were waiting for DB
-  if (x->closed ()) {
+  if (_client_con->closed ()) {
     error (HTTP_CLIENT_EOF);
     return;
   }
@@ -847,8 +850,8 @@ okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
     rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
   }
 
-  oksrvc->log (x, hdr_p (), rsp);
-  rsp->send (x, cb);
+  oksrvc->log (_client_con, hdr_p (), rsp);
+  rsp->send (_client_con, cb);
 }
 
 void

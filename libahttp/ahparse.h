@@ -47,7 +47,7 @@
 class http_parser_base_t {
 public:
   http_parser_base_t (ptr<ahttpcon> xx, u_int to) 
-    : x (xx), abuf (New abuf_con_t (xx), true),
+    : _parser_x (xx), abuf (New abuf_con_t (xx), true),
       timeout (to ? to : ok_clnt_timeout),
       buflen (HTTP_PARSE_BUFLEN), tocb (NULL),
       destroyed (New refcounted<bool> (false)) {}
@@ -56,7 +56,7 @@ public:
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }
   virtual http_inhdr_t *hdr_p () = 0;
   virtual const http_inhdr_t &hdr_cr () const = 0;
-  ptr<ahttpcon> get_x () const { return x; }
+  ptr<ahttpcon> get_x () const { return _parser_x; }
   abuf_t *get_abuf_p () { return &abuf; }
 
   void parse (cbi cb);
@@ -69,7 +69,9 @@ protected:
   void clnt_timeout ();
   void stop_abuf ();
 
-  ptr<ahttpcon> x;
+private:
+  ptr<ahttpcon> _parser_x;
+protected:
   abuf_t abuf;
   u_int timeout;
   size_t buflen;
