@@ -52,6 +52,8 @@ class XML_RPC_obj_t {
 public:
   virtual bool enter_field (const char *f) = 0;
   virtual bool exit_field () = 0;
+
+  virtual bool traverse (bool &b) = 0;
   virtual bool traverse (int32_t &i) = 0;
   virtual bool traverse (u_int32_t &u) = 0;
   virtual bool traverse (int64_t &i) = 0;
@@ -96,6 +98,7 @@ public:
 
   bool enter_field (const char *f);
   bool exit_field ();
+  bool traverse (bool &b);
   bool traverse (int32_t &i);
   bool traverse (u_int32_t &i);
   bool traverse (int64_t &i);
@@ -143,6 +146,7 @@ public:
   bool exit_field () ;
   bool traverse (int32_t &i);
 
+  bool traverse (bool &b);
   bool traverse (u_int32_t &i);
   bool traverse (int64_t &i);
   bool traverse (u_int64_t &i);
@@ -274,6 +278,7 @@ rpc_traverse (XML_RPC_obj_t *xml, array<T,n> &v)
   return _rpc_traverse_array (xml, v, n, true);
 }
 
+bool rpc_traverse (XML_RPC_obj_t *obj, bool &b);
 bool rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) ; 
 bool rpc_traverse (XML_RPC_obj_t *obj, int64_t &i);
 bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) ;
@@ -366,11 +371,29 @@ rpc_traverse (XML_RPC_obj_t *xml, rpc_bytes<n> &obj)
   return rpc_traverse (xml, obj, n);
 }
 
+#define XML_STUB(xdrTyp,cTyp)                                      \
+inline bool                                                        \
+xml_##xdrTyp (XML_RPC_obj_t *x, void *objp)                        \
+{                                                                  \
+  return xml_rpc_traverse (x, *static_cast<cTyp *> (objp), NULL);  \
+}
+
+XML_STUB(bool, bool);
+XML_STUB(int, int32_t);
+XML_STUB(int32_t, int32_t);
+XML_STUB(unsigned, u_int32_t);
+XML_STUB(u_int32_t, u_int32_t);
+XML_STUB(hyper, int64_t);
+XML_STUB(int64_t, int64_t);
+XML_STUB(u_int64_t, u_int64_t);
+
 inline bool
 xml_void (XML_RPC_obj_t *obj, void *v)
 {
   return true;
 }
+
+#undef XML_STUB
 
 
 

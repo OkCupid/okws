@@ -132,7 +132,7 @@ dumpenum (const rpc_sym *s)
        << "  int32_t val = obj;\n"
        << "  if (!rpc_traverse (t, val))\n"
        << "    return false;\n"
-       << "  obj = xx_t (val);\n"
+       << "  obj = " << rs->id << " (val);\n"
        << "  return true;\n"
        << "}\n";
 }

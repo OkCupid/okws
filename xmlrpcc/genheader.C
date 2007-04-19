@@ -49,12 +49,16 @@ static void
 dumpenum (const rpc_sym *s)
 {
   const rpc_enum *rs = s->senum.addr ();
-  aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << "&obj);\n";
+  aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n";
   pmshl (rs->id);
 }
 
 static void
-dumptypedef (const rpc_sym *s) {}
+dumptypedef (const rpc_sym *s) 
+{
+  const rpc_typedef *rs = s->stypedef.addr ();
+  pmshl (rs->id);
+}
 
 static void
 dumpprog (const rpc_sym *s)

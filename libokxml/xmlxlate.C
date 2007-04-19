@@ -42,6 +42,12 @@ XML_reader_t::exit_field ()
 
 
 bool 
+rpc_traverse (XML_RPC_obj_t *obj, bool &b)
+{
+  return obj->traverse (b);
+}
+
+bool 
 rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) 
 { 
   return obj->traverse (i);
@@ -120,6 +126,13 @@ XML_creator_t::traverse (int32_t &i)
 }
 
 bool
+XML_creator_t::traverse (bool &b)
+{
+  top() = b;
+  return true;
+}
+
+bool
 XML_creator_t::traverse (u_int32_t &i)
 {
   top() = xml_int_repr ("ui4", i);
@@ -146,6 +159,17 @@ XML_reader_t::traverse (int32_t &i)
   if (is_empty ())      return error_empty ("int");
   if (!top().is_int ()) return error_wrong_type ("int");
   i = top();
+  return true;
+}
+
+bool
+XML_reader_t::traverse (bool &b)
+{
+  if (is_empty ())      
+    return error_empty ("bool");
+  if (!top().is_bool() && !top().is_int ()) 
+    return error_wrong_type ("bool");
+  b = top();
   return true;
 }
 
