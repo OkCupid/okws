@@ -45,6 +45,8 @@ struct bb_t {
 	unsigned hyper z;
 };
 
+typedef bb_t cc_t<>;
+
 
 program TST_PROG {
 	version TEST_VERS {
@@ -63,6 +65,15 @@ program TST_PROG {
 
 		bb_t
 		TST_RPC4(bb_t) = 4;
+
+		bool
+		TST_RPC5(cc_t) = 5;
+
+		xx_t
+		TST_RPC6(hyper) = 6;
+
+		int
+		TST_RPC7(unsigned) = 7;	
 
 	} = 1;
 } = 34291;

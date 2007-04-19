@@ -11,10 +11,10 @@ if USE_XML
 
 XMLPROGS = xlater
 
-xlater_SOURCES = xlater.C tstprot.C tstprot_xml.C
+xlater_SOURCES = xlater.C tstprot.C
 xlater.o:	xlater.C
 xlater.lo:	xlater.C
-xlater.o:	tstprot_xml.h tstprot.h
+xlater.o:	tstprot.h
 
 XMLTAMEIN = xlater.T
 XMLTAMEOUT = xlater.C
@@ -38,22 +38,13 @@ SUFFIXES = .x .T
 
 tstprot.h: $(srcdir)/tstprot.x
 	@rm -f $@
-	-$(RPCC) -h $(srcdir)/tstprot.x || rm -f $@
+	$(XMLRPCC) -h $(srcdir)/tstprot.x || (rm -f $@ && false)
 
 tstprot.C: $(srcdir)/tstprot.x
 	@rm -f $@
-	-$(RPCC) -c $(srcdir)/tstprot.x || rm -f $@
-
-tstprot_xml.h: $(srcdir)/tstprot.x
-	@rm -f $@
-	../../../xmlrpcc/xmlrpcc -h $(srcdir)/tstprot.x || rm -f $@
-
-tstprot_xml.C : $(srcdir)/tstprot.x 
-	@rm -f $@
-	../../../xmlrpcc/xmlrpcc -c $(srcdir)/tstprot.x || rm -f $@
+	$(XMLRPCC) -c $(srcdir)/tstprot.x || (rm -f $@ && false)
 
 tstprot.C:	tstprot.h
-tstprot_xml.C:	tstprot_xml.h
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)

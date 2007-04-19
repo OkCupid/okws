@@ -58,7 +58,7 @@ public:
     // Register XML-RPC service methods
     regh ("xdr.xlate", &okclnt_xlater_t::xlate); 
     regh ("xdr.constants", &okclnt_xlater_t::constants);
-    _xlmgr.add_file (tstprot_xml_rpc_file);
+    _xlmgr.add_file (tstprot_rpc_file);
   }
 
   okxml::xlate_mgr_t *xlmgr () { return &_xlmgr; }

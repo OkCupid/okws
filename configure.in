@@ -8,6 +8,7 @@ AM_INIT_AUTOMAKE(okws, 1.2.0pre1)
 AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(PUB)
+AC_SUBST(XMLRPCC)
 
 AC_CANONICAL_HOST
 
@@ -36,6 +37,7 @@ OKWS_FIND_PTH
 
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
+test "$XMLRPCC" || XMLRPCC='$(top_builddir)/xmlrpcc/xmlrpcc'
 test "$RPCC" || RPCC='/usr/local/bin/rpcc'
 test "$TAME" || TAME='/usr/local/bin/tame'
 dnl

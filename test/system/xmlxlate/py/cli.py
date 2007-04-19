@@ -21,7 +21,7 @@ server.system.setDebugLevel (50)
 
 C = RpcConst ()
 
-C.setall (server.xdr.constants ( [ "tstprot_xml"] ) )
+C.setall (server.xdr.constants ( [ "tstprot"] ) )
 
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
