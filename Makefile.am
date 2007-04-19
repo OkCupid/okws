@@ -2,13 +2,13 @@
 ## $Id$
 
 
-SBD1 = txarpcc libpub pub libokxml libahttp libaok libamt libweb  
+SBD1 = txarpcc libpub pub libokxml libahttp libaok libamt xmlrpcc libweb  
 
 if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1) $(SBD2) okd logd client xmlrpcc test conf htdocs contrib
+SUBDIRS = $(SBD1) $(SBD2) okd logd client test conf htdocs contrib
 
 #test
 

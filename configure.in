@@ -9,6 +9,7 @@ AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(PUB)
 AC_SUBST(XMLRPCC)
+AC_SUBST(OKRPCC)
 
 AC_CANONICAL_HOST
 
@@ -54,13 +55,22 @@ AM_PROG_LEX
 
 AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
 
-
 SFS_SFS
 SFS_SET_CLOCK
 SFS_FIND_RESOLV
 OKWS_LIBS
 OKWS_MYSQL
 OKWS_EXPAT
+
+dnl
+dnl Need to use the xmlrpcc if possible when publishing OKWS .x files
+dnl
+OKRPCC="$RPCC"
+if test "${use_xml}" = "yes"
+then
+	OKRPCC="$XMLRPCC"
+fi
+
 
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
 

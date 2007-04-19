@@ -14,9 +14,9 @@ SUFFIXES = .C .T .h .x
 .T.C:
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 .x.h:
-	-$(RPCC) -h $< || rm -f $@
+	$(OKRPCC) -h $< || (rm -f $@ && false)
 .x.C:
-	-$(RPCC) -c $< || rm -f $@
+	$(XMLRPCC) -c $< || (rm -f $@ && false)
 
 TAMEIN = okwcxml.T okwc3.T
 RPCCIN = web_prot.x

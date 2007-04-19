@@ -395,6 +395,12 @@ xml_void (XML_RPC_obj_t *obj, void *v)
 
 #undef XML_STUB
 
+//
+// Needed for empty slots in the RPC table (analogue of xdr_false
+// in rpcc).
+//
+inline bool xml_false (XML_RPC_obj_t *x, void *p) { return false; }
+
 
 
 #endif /* _LIBAHTTP_OKXMLXLATE_H */
