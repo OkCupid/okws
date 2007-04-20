@@ -263,7 +263,7 @@ get_cfg_path (vec<str> *v, const char *env_var, const char *cfg_path[])
   static rxx x (":");
 
   str d;
-  if (env_var && (d = getenv (env_var)) != NULL) {
+  if (env_var && (d = getenv (env_var))) {
     split (v, x, d);
   }
   for (const char **cp = cfg_path; *cp; cp++) {
