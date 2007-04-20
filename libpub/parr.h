@@ -106,7 +106,7 @@ public:
     }
   }
 
-  u_int size () const { return v.size (); }
+  size_t size () const { return v.size (); }
 
   bool to_xdr (xpub_val_t *x) const 
   {
@@ -257,7 +257,7 @@ public:
   const parr_mixed_t *to_mixed_arr () const { return this; }
 
   ptr<pval_t> operator[] (size_t i) const { return v[i]; }
-  u_int size () const { return v.size (); }
+  size_t size () const { return v.size (); }
 
   bool add (ptr<pval_t> i) { v.push_back (i); return true;}
   bool add (int64_t i) {v.push_back (New refcounted<pint_t> (i)); return true;}
