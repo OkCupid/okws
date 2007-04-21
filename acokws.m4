@@ -614,10 +614,19 @@ dnl
 AC_DEFUN([OKWS_OKWS],
 [AC_ARG_WITH(okws,
 --with-okws[[=PATH]]	     specify location of SFS libraries)
-
+AC_ARG_WITH(okws-version,
+--with-okws-version=[[VERSION]] Specify a Major.Minor OKWS version)
 if test "$with_okws" = yes -o "$with_okws" = ""; then
+
+    if test "$with_okws_version"
+    then
+	okwsvers="-${with_okws_version}"
+    else
+	okwsvers=""
+    fi	
+
     for dir in "$prefix" /usr/local /usr; do
-	if test -f $dir/lib/okws${okwstagdir}/libpub.la; then
+	if test -f $dir/lib/okws${okwsvers}${okwstagdir}/libpub.la; then
 	    with_okws=$dir
 	    break
 	fi
@@ -710,11 +719,11 @@ AC_SUBST(LIBAMYSQL)
 AC_SUBST(PUB)
 AC_SUBST(XMLRPCC)
 
-LDADD="$LDADD"' $(LIBEXPAT)'
+LIBS='$(LIBEXPAT) '"$LIBS"
 
-LDEPS='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
+LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDEPS"
 LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDADD"
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
 LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)
