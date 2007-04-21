@@ -453,6 +453,7 @@ AC_DEFUN([OKWS_EXPAT],
 [AC_ARG_WITH(expat,
 --with-expat=DIR      Specify location of expat library)
 use_xml=no
+LIBEXPAT=""
 if test "$with_expat" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
@@ -590,4 +591,146 @@ okwssvcdir='${module_dir}/svc'
 AC_SUBST(module_dir)
 AC_SUBST(module_name)
 AC_SUBST(okwssvcdir)
+])
+
+dnl
+dnl majorly ghetto but have had trouble with SFS_PATH_PROG in the 
+dnl past.
+dnl
+AC_DEFUN([OKWS_PATH_PROG],
+[ for dir in ${okwslibdir} ${with_okws}/bin /usr/local/bin /usr/bin /bin
+    do
+      if test -x $dir/$1 ; then
+	 RES="$dir/$1"
+	 break;
+      fi
+    done
+])
+
+dnl
+dnl Find installed OkCupid OKWS Libraries
+dnl This is not for OKWS, but for other packages that use OKWS
+dnl
+AC_DEFUN([OKWS_OKWS],
+[AC_ARG_WITH(okws,
+--with-okws[[=PATH]]	     specify location of SFS libraries)
+
+if test "$with_okws" = yes -o "$with_okws" = ""; then
+    for dir in "$prefix" /usr/local /usr; do
+	if test -f $dir/lib/okws${okwstagdir}/libpub.la; then
+	    with_okws=$dir
+	    break
+	fi
+    done
+fi
+
+case "$with_okws" in
+    /*) ;;
+    *) with_okws="$PWD/$with_okws" ;;
+esac
+
+echo "1) with_okws = ${with_okws}" >&5
+
+if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
+    if egrep '#define DMALLOC' ${with_okws}/okwsconf.h > /dev/null 2>&1; then
+	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
+    elif test "$with_dmalloc" -a "$with_dmalloc" != no; then
+	AC_MSG_ERROR("OKWS libraries not compiled with dmalloc")
+    fi
+    okwssrcdir=`sed -ne 's/^srcdir *= *//p' ${with_okws}/Makefile`
+    case "$okwssrcdir" in
+	/*) ;;
+	*) okwssrcdir="${with_okws}/${okwssrcdir}" ;;
+    esac
+
+    CPPFLAGS="$CPPFLAGS -I${with_okws}"
+    for lib in libpub libahttp libaok libweb libamt libamysql; do
+	CPPFLAGS="$CPPFLAGS -I${okwssrcdir}/$lib"
+    done
+    for lib in libpub libaok libweb libamysql; do
+	CPPFLAGS="$CPPFLAGS -I${with_okws}/$lib"
+    done
+    LIBPUB=${with_okws}/libpub/libpub.la
+    LIBAOK=${with_okws}/libaok/libaok.la
+    LIBOKXML=${with_okws}/libokxml/libokxml.la
+    LIBWEB=${with_okws}/libweb/libweb.la
+    LIBAMT=${with_okws}/libamt/libamt.la
+    LIBAHTTP=${with_okws}/libahttp/libahttp.la
+    LIBAMYSQL=${with_okws}/libamysql/libamysql.la
+    PUB=${with_okws}/pub/pub
+    XMLRPCC=${with_okws}/xmlrpcc/xmlrpcc
+elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
+	-a -f ${with_okws}/lib/okws${okwstagdir}/libpub.la; then
+    okwsincludedir="${with_okws}/include/okws${okwstagdir}"
+    okwslibdir=${with_okws}/lib/okws${okwstagdir}
+    if egrep '#define DMALLOC' ${okwsincludedir}/okwsconf.h > /dev/null; then
+	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
+    else
+	with_dmalloc=no
+    fi
+    CPPFLAGS="$CPPFLAGS -I${okwsincludedir}"
+    LIBPUB=${okwslibdir}/libpub.la
+    LIBAOK=${okwslibdir}/libaok.la
+    LIBOKXML=${okwslibdir}/libokxml.la
+    LIBWEB=${okwslibdir}/libweb.la
+    LIBAMT=${okwslibdir}/libamt.la
+    LIBAHTTP=${okwslibdir}/libahttp.la
+    LIBAMYSQL=${okwslibdir}/libamysql.la
+
+    dnl
+    dnl hack because AC_PATH_PROG is rocked
+    dnl
+    OKWS_PATH_PROG(pub)
+    PUB="$RES"
+    if test -z "$PUB"; then
+	PUB=pub
+    fi
+    RES=
+    OKWS_PATH_PROG(xmlrpcc)
+    XMLRPCC="$RES"
+    if test -z "$XMLRPCC"; then
+	XMLRPCC=xmlrpcc
+    fi
+    RES=
+else
+    AC_MSG_ERROR("Can't find OKWS libraries")
+fi
+okwslibdir='$(libdir)/okws'
+okwsincludedir='$(libdir)/include'
+AC_SUBST(okwslibdir)
+AC_SUBST(okwsincludedir)
+
+AC_SUBST(LIBPUB)
+AC_SUBST(LIBAOK)
+AC_SUBST(LIBOKXML)
+AC_SUBST(LIBAHTTP)
+AC_SUBST(LIBAMT)
+AC_SUBST(LIBWEB)
+AC_SUBST(LIBAMYSQL)
+AC_SUBST(PUB)
+AC_SUBST(XMLRPCC)
+
+LDADD="$LDADD"' $(LIBEXPAT)'
+
+LDEPS='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
+LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDADD"
+LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
+
+AC_SUBST(LDEPS)
+AC_SUBST(LDADD)
+AC_SUBST(LDADD_DB)
+AC_SUBST(LDEPS_DB)
+
+dnl
+dnl if not shared executables, then we'll need to compile
+dnl services statically (due to jailing...)
+dnl
+shared_tmp=1
+if test -z "$enable_shared" -o "$enable_shared" = "no"; then
+	shared_tmp=0
+	SVC_LDFLAGS=-all-static
+fi
+AC_SUBST(SVC_LDFLAGS)
+AM_CONDITIONAL(DLINKED_SERVICES, test $shared_tmp -eq 1)
 ])
