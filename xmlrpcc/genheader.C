@@ -425,6 +425,8 @@ dumpsym (const rpc_sym *s)
   }
 }
 
+
+
 static str
 makeguard (str fname)
 {

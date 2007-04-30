@@ -217,5 +217,6 @@ void pswitch (str prefix, const rpc_union *rs, str swarg,
 
 #define XML_OBJ "XML_RPC_obj_t"
 
+extern bool guess_defines;
 
 str stripfname (str s, bool suffix = true);

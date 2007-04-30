@@ -77,3 +77,10 @@ program TST_PROG {
 
 	} = 1;
 } = 34291;
+
+%#define XXXX
+%#define FOO0  455
+%#define FOO1  "xxx"
+%#define FOO2  4+5+5 * FOO0 - 400
+%#define FOO3  FOO2
+

@@ -616,6 +616,13 @@ AC_DEFUN([OKWS_OKWS],
 --with-okws[[=PATH]]	     specify location of SFS libraries)
 AC_ARG_WITH(okws-version,
 --with-okws-version=[[VERSION]] Specify a Major.Minor OKWS version)
+
+dnl
+dnl Need to set the OKWS prefixes for OKWS standard install scripts,
+dnl contrib, etc.
+dnl
+OKWS_PREFIX
+
 if test "$with_okws" = yes -o "$with_okws" = ""; then
 
     if test "$with_okws_version"
@@ -668,6 +675,8 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
     PUB=${with_okws}/pub/pub
     XMLRPCC=${with_okws}/xmlrpcc/xmlrpcc
+
+    XMLRPCC_COLLECT=${with_okws}/contrib/xmlrpcc-x-collect.pl
 elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
 	-a -f ${with_okws}/lib/okws${okwstagdir}/libpub.la; then
     okwsincludedir="${with_okws}/include/okws${okwstagdir}"
@@ -685,6 +694,8 @@ elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
     LIBAMT=${okwslibdir}/libamt.la
     LIBAHTTP=${okwslibdir}/libahttp.la
     LIBAMYSQL=${okwslibdir}/libamysql.la
+
+    XMLRPCC_COLLECT=${okwsutildir}/xmlrpcc-x-collect.pl
 
     dnl
     dnl hack because AC_PATH_PROG is rocked
@@ -718,6 +729,7 @@ AC_SUBST(LIBWEB)
 AC_SUBST(LIBAMYSQL)
 AC_SUBST(PUB)
 AC_SUBST(XMLRPCC)
+AC_SUBST(XMLRPCC_COLLECT)
 
 LIBS='$(LIBEXPAT) '"$LIBS"
 

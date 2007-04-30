@@ -72,7 +72,7 @@ const char *ok_etc_dir2 = "/usr/local/okws/conf";
 const char *ok_etc_dir3 = "/etc/okws";
 const char *ok_okws_config = "okws_config";
 const char *ok_okd_config = "okd_config";
-const char *okd_mgr_socket = "/var/run/okd.sock=";
+const char *okd_mgr_socket = "/var/run/okd.sock";
 
 int okd_mgr_socket_mode = 0600;
 

@@ -28,6 +28,8 @@ endif
 TAMEIN = $(XMLTAMEIN) tstsrv.T
 TAMEOUT = $(XMLTAMEOUT) tstsrv.C
 
+tstsrv.o: tstprot.h
+
 okwssvc_PROGRAMS = $(XMLPROGS)
 noinst_PROGRAMS = tstsrv
 tstsrv_SOURCES = tstsrv.C tstprot.C
@@ -38,11 +40,11 @@ SUFFIXES = .x .T
 
 tstprot.h: $(srcdir)/tstprot.x
 	@rm -f $@
-	$(XMLRPCC) -h $(srcdir)/tstprot.x || (rm -f $@ && false)
+	$(XMLRPCC) -g -h $(srcdir)/tstprot.x || (rm -f $@ && false)
 
 tstprot.C: $(srcdir)/tstprot.x
 	@rm -f $@
-	$(XMLRPCC) -c $(srcdir)/tstprot.x || (rm -f $@ && false)
+	$(XMLRPCC) -g -c $(srcdir)/tstprot.x || (rm -f $@ && false)
 
 tstprot.C:	tstprot.h
 

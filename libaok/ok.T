@@ -778,7 +778,7 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
     if (ret) {
       z.to_strbuf (&b, false);
       twait { 
-	_client_con->send (b, NULL, mkevent ()); 
+	_client_con->send (b, NULL, @()); 
       }
     }
   }

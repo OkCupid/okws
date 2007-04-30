@@ -59,6 +59,7 @@ namespace pub2 {
     virtual void cfg_clear () = 0;
     virtual u_int opts () const = 0;
     virtual void set_opts (u_int i) = 0;
+    virtual aarr_t *base_cfg () = 0 ;
 
     /* also must implement get_env */
   };
@@ -133,6 +134,13 @@ namespace pub2 {
      */
     void cfg_clear () { _base_cfg.deleteall (); }
 
+
+    /**
+     * In case this should be mutated....
+     */
+    aarr_t *base_cfg () { return &_base_cfg; }
+
+
     penv_t *get_env () const { return &_genv; }
 
     u_int opts () const { return _opts; }
@@ -202,6 +210,7 @@ namespace pub2 {
     void cfg_clear () { _ap->cfg_clear (); }
     u_int opts () const { return _ap->opts (); }
     void set_opts (u_int i) { _ap->set_opts (i); }
+    aarr_t *base_cfg () { return _ap->base_cfg (); }
     
   private:
     void run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 

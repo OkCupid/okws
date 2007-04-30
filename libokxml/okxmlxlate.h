@@ -198,10 +198,23 @@ struct xml_rpc_program {
   const char *name;
 };
 
+class xml_pound_def_collector_t {
+public:
+  virtual ~xml_pound_def_collector_t () {}
+
+  template<class T> void collect (const str &s, T t) {}
+  virtual void collect (const str &s, int i) = 0;
+  virtual void collect (const str &s, str v) = 0;
+  virtual void collect (const str &s, const char *c) = 0;
+};
+
+typedef void (*xml_pound_def_collect_fn_t) (xml_pound_def_collector_t *c);
+
 struct xml_rpc_file {
   const struct xml_rpc_program **programs;
   const struct xml_rpc_const_t *constants;
   const char *filename;
+  xml_pound_def_collect_fn_t pound_def_collector;
 };
 
 #define XMLTBL_DECL(proc, arg, res)                               \

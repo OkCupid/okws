@@ -22,6 +22,7 @@
  */
 
 #include "rpcc.h"
+#include "rxx.h"
 
 static void
 mkmshl_xml (str id)
@@ -222,6 +223,31 @@ populate_const_table_prog (const rpc_sym *s)
   }
 }
 
+vec<str> pound_defs;
+
+static void
+collect_pound_def (str s)
+{
+  static rxx x ("#\\s*define\\s*(\\S+)\\s+(.*)");
+  if (guess_defines && x.match (s)) {
+    pound_defs.push_back (x[1]);
+  }
+}
+
+static void
+dump_pound_defs (str fn)
+{
+  aout << "static void\n"
+       << fn << "_pound_defs_fn (xml_pound_def_collector_t *c)\n"
+       << "{\n";
+  for (size_t i = 0; i < pound_defs.size (); i++) {
+    aout << "  c->collect (\"" << pound_defs[i] << "\", "
+	 << pound_defs[i] << ");\n";
+  }
+  aout << "}\n\n";
+
+}
+
 static void
 dumpsym (const rpc_sym *s)
 {
@@ -249,6 +275,8 @@ dumpsym (const rpc_sym *s)
     mktbl (s->sprogram.addr ());
     populate_const_table_prog (s);
     break;
+  case rpc_sym::LITERAL:
+    collect_pound_def (*s->sliteral);
   default:
     break;
   }
@@ -477,7 +505,8 @@ dump_file_struct (str prfx)
   aout << "xml_rpc_file " << prfx << "_rpc_file = {\n"
        << "  " << prfx << "_rpc_programs,\n"
        << "  " << prfx << "_rpc_constants,\n"
-       << "  \"" << prfx << "\"\n"
+       << "  \"" << prfx << "\",\n"
+       << "  " << prfx << "_pound_defs_fn\n"
        << "};\n\n";
 }
 
@@ -514,6 +543,7 @@ gencfile (str fname)
 
   dump_const_table (prfx);
   dump_prog_table (prfx);
+  dump_pound_defs (prfx);
 
   dump_file_struct (prfx);
 

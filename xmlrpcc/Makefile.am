@@ -8,14 +8,8 @@ okwsbin_PROGRAMS = xmlrpcc
 noinst_HEADERS = rpcc.h parse.h
 
 xmlrpcc_SOURCES = genheader.C gencfile.C parse.yy scan.ll rpcc.C 
-
-if STATIC
-xmlrpcc_LDADD = $(LDADD) $(LDADD_THR)
+xmlrpcc_LDADD = $(LDADD)
 xmlrpcc_DEPENDENCIES = $(LIBASYNC)
-else
-xmlrpcc_LDADD = $(LDADD) $(LDADD_THR)
-xmlrpcc_DEPENDENCIES =
-endif
 
 YYFLAGS = -d
 

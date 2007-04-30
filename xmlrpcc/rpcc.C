@@ -28,6 +28,7 @@ bhash<str> ids;
 
 const str shell ("/bin/sh");
 static str outfile;
+bool guess_defines;
 
 str
 stripfname (str fname, bool suffix)
@@ -161,45 +162,56 @@ reapcpp (int status)
 int
 main (int argc, char **argv)
 {
+  enum { BAD, HEADER, CFILE } mode = BAD;
   pid_t child;
-  int an;
   vec<char *> av;
   char *fname = NULL;
   char *basename;
-  enum { BAD, HEADER, CFILE } mode = BAD;
   void (*fn) (str) = NULL;
   int len;
+  int ch;
+
+  guess_defines = true;
 
   av.push_back (PATH_CPP);
   av.push_back ("-DRPCC");
   av.push_back (NULL);
 
-  for (an = 1; an < argc; an++) {
-    char *arg = argv[an];
-    int arglen = strlen (arg);
-
-    if (arg[0] == '-' && (arg[1] == 'D' || arg[1] == 'I'))
-      av.push_back (arg);
-    else if (!fname && arglen > 2 && arg[0] != '-'
-	     && arg[arglen-1] == 'x' && arg[arglen-2] == '.')
-      fname = arg;
-    else if (!strcmp (arg, "-h") && mode == BAD)
-      mode = HEADER;
-    else if (!strcmp (arg, "-c") && mode == BAD)
-      mode = CFILE;
-    else if (!strcmp (arg, "-o") && !outfile && ++an < argc)
-      outfile = argv[an];
-    else if (!strncmp (arg, "-o", 2) && !outfile && arg[2])
-      outfile = arg + 2;
-    else if (!strcmp (arg, "-P") && !idprefix && ++an < argc)
-      idprefix = argv[an];
-    else if (!strncmp (arg, "-P", 2) && !idprefix && arg[2])
-      idprefix = arg + 2;
-    else 
+  while ((ch = getopt (argc, argv, "GDIhco:P:")) != -1) {
+    switch (ch) {
+    case 'D':
+    case 'I':
+      av.push_back (argv[optind]);
+      break;
+    case 'h':
+    case 'c':
+      if (mode != BAD)
+	usage ();
+      else 
+	mode = (ch == 'c') ? CFILE : HEADER;
+      break;
+    case 'G':
+      guess_defines = false;
+      break;
+    case 'o':
+      outfile = optarg;
+      break;
+    case 'P':
+      if (!idprefix) {
+	idprefix = optarg;
+      } else {
+	usage ();
+      }
+      break;
+    default:
       usage ();
+    }
   }
-
-  if (!fname)
+  argv += optind;
+  argc -= optind;
+  if (argc == 1)
+    fname = argv[0];
+  else
     usage ();
 
   if (idprefix)

@@ -112,6 +112,14 @@ namespace okxml {
   }
 
   void
+  xlate_mgr_t::add_files (const xml_rpc_file *const *list)
+  {
+    for (const xml_rpc_file *const *p = list; *p; p++) {
+      add_file (**p);
+    }
+  }
+
+  void
   xlate_mgr_t::add_file (const xml_rpc_file &file)
   {
     _files.insert (file.filename, &file);
@@ -123,11 +131,64 @@ namespace okxml {
     }
   }
 
+  class collector_t : public xml_pound_def_collector_t {
+  public:
+
+    struct xml_pair_t {
+      xml_pair_t (const str &n) : _name (n) {}
+      virtual ~xml_pair_t () {}
+
+      void output (xml_obj_ref_t o) 
+      {
+	o[0] = _name;
+	output_v (o[1]);
+      }
+
+    protected:
+      const str _name;
+      virtual void output_v (xml_obj_ref_t o) = 0;
+    };
+    
+    template<class T>
+    struct tpair_t : public xml_pair_t {
+      tpair_t (const str &s, T i) : xml_pair_t (s), _value (i) {}
+      void output_v (xml_obj_ref_t o) { o = _value; }
+    private:
+      const T _value;
+    };
+
+    collector_t () {}
+
+    ~collector_t() 
+    {
+      while (_v.size ()) 
+	delete _v.pop_back ();
+    }
+
+    void collect (const str &s, str v)
+    { _v.push_back (New tpair_t<str> (s, v)); }
+    void collect (const str &s, int i) 
+    { _v.push_back (New tpair_t<int> (s, i));}
+    void collect (const str &s, const char *v) 
+    { _v.push_back (New tpair_t<const char *> (s, v));}
+
+    void output (xml_obj_ref_t o, size_t offset)
+    {
+      for (size_t k = 0; k < _v.size (); k++) {
+	_v[k]->output (o[offset+k]);
+      }
+    }
+
+  private:
+    vec<xml_pair_t *> _v;
+  };
+
   void
   xlate_mgr_t::get_constants (xml_req_t in, xml_resp_cb_t cb)
   {
     xml_resp_t resp;
     size_t k = 0;
+    collector_t collector;
     for (size_t i = 0; i < in.size (); i++) {
       for (size_t j = 0; j < in[i].size (); j++) {
 	str f = in[i][j];
@@ -138,10 +199,13 @@ namespace okxml {
 	    resp[0][k][1] = c->val;
 	    k++;
 	  }
+	  if ( (*x)->pound_def_collector )
+	    (*x)->pound_def_collector (&collector);
 	}
       }
-      cb->trigger (resp);
     }
+    collector.output (resp[0], k);
+    cb->trigger (resp);
   }
 
   tamed void

@@ -91,6 +91,7 @@ namespace okxml {
     xlate_mgr_t () {}
 
     void add_file (const xml_rpc_file &file);
+    void add_files (const xml_rpc_file *const * list);
 
     void xlate (xml_obj_const_t input, xml_resp_cb_t cb, CLOSURE);
     void get_constants (xml_req_t input, xml_resp_cb_t cb);
