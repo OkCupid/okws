@@ -40,11 +40,11 @@ SUFFIXES = .x .T
 
 tstprot.h: $(srcdir)/tstprot.x
 	@rm -f $@
-	$(XMLRPCC) -g -h $(srcdir)/tstprot.x || (rm -f $@ && false)
+	$(XMLRPCC) -h $(srcdir)/tstprot.x || (rm -f $@ && false)
 
 tstprot.C: $(srcdir)/tstprot.x
 	@rm -f $@
-	$(XMLRPCC) -g -c $(srcdir)/tstprot.x || (rm -f $@ && false)
+	$(XMLRPCC) -c $(srcdir)/tstprot.x || (rm -f $@ && false)
 
 tstprot.C:	tstprot.h
 
