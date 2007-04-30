@@ -187,8 +187,6 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
 
-  int pub1tmp;
-
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
     t->lookup ("jaildir", &jaildir);
@@ -199,7 +197,6 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
     t->lookup ("pub2fd", &pub2fd);
-    t->lookup ("pub1", &pub1tmp);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &ok_gzip);
     t->lookup ("filtercgi", &ok_filter_cgi);
@@ -232,8 +229,6 @@ oksrvc_t::init (int argc, char *argv[])
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
 
-    pub1_supported = pub1tmp;
-
     if (OKDBG2 (SVC_ARGS))
       t->dump1 ();
 
@@ -259,9 +254,6 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_NULL:
     v->reply (NULL);
     break;
-  case OKCTL_UPDATE:
-    update (v);
-    break;
   case OKCTL_KILL:
     kill (v);
     break;
@@ -278,25 +270,6 @@ oksrvc_t::ctldispatch (svccb *v)
     v->reject (PROC_UNAVAIL);
     break;
   }
-}
-
-void
-oksrvc_t::update (svccb *sbp)
-{
-  if (supports_pub1 ()) {
-    xpub_fnset_t *s = sbp->Xtmpl getarg <xpub_fnset_t> ();
-    rpcli->publish (*s, wrap (this, &oksrvc_t::update_cb, sbp));
-  } else {
-    SVC_ERROR ("Cannot answer UPDATE RPC without Pub v1 support.\n");
-    sbp->reject (PROC_UNAVAIL);
-  }
-}
-
-void
-oksrvc_t::update_cb (svccb *sbp, ptr<pub_res_t> pr)
-{
-  ok_res_t okr (pr);
-  sbp->replyref (okr.to_xdr ());
 }
 
 void
@@ -401,7 +374,7 @@ tamed void
 oksrvc_t::launch_T ()
 {
   tvars {
-    bool pub1_rc, logd_rc, dbs_rc (true), pub2_rc (true);
+    bool logd_rc, dbs_rc (true), pub2_rc (true);
     clnt_stat err;
   }
 
@@ -419,7 +392,6 @@ oksrvc_t::launch_T ()
 
   twait {
     launch_pub2 (mkevent (pub2_rc));
-    launch_pub1 (mkevent (pub1_rc));
     logd->connect (mkevent (logd_rc));
   }
   if (!pub2_rc) {
@@ -428,10 +400,6 @@ oksrvc_t::launch_T ()
   }
   if (!logd_rc) {
     SVC_FATAL_ERROR ("Could not establish connection to logd\n");
-    exit (1);
-  }
-  if (!pub1_rc) {
-    SVC_FATAL_ERROR ("Launch of legacy publisher (pubd v1) failed\n");
     exit (1);
   }
 
@@ -459,46 +427,6 @@ oksrvc_t::launch_T ()
 		   "service lifetime expired", 
 		   ok_shutdown_timeout_fast));
   }
-}
-
-tamed void 
-oksrvc_t::launch_pub1 (cbb cb)
-{
-  tvars {
-    ptr<pub_res_t> pr;
-    bool rc;
-    bool res (true);
-  }
-
-  // Still need to allocate this even for Pub v1 disabled, since
-  // otherwise the legacy calls to pub->include will segfault (with
-  // pub unitialized).  When pub v1 phased out, we can remove this.
-  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
-				OKCTL_PUBCONF, 
-				get_andmask (), get_ormask ());
-
-  if (pub1_supported) {
-    // setup and launch Remote Pub Client
-    
-    twait { rpcli->config (mkevent (pr)); }
-    if (!*pr) {
-      strbuf b;
-      b << "Pub v1: config failed: " << pr->to_str ();
-      str s = b;
-      SVC_ERROR (s);
-    }
-
-    init_publist ();
-    
-    twait { pubfiles (mkevent (rc)); }
-    if (!rc) res = false;
-  } else {
-
-    // Call anyway to force warnings. This function should be empty.
-    init_publist ();
-  }
-
-  TRIGGER (cb, res);
 }
 
 tamed void 
@@ -534,19 +462,6 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 
   dbs.push_back (d);
   return d;
-}
-
-lblnc_t *
-oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
-{
-  if (supports_pub1 ()) {
-    lblnc_t *l = New lblnc_t (rpcli, i, p, port);
-    dbs.push_back (l);
-    return l;
-  } else {
-    SVC_ERROR ("Cannot use load balacned services with Pub v1");
-    return NULL;
-  }
 }
 
 void
@@ -854,53 +769,6 @@ okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
   rsp->send (_client_con, cb);
 }
 
-void
-oksrvc_t::add_pubfiles (const char *arr[], u_int sz, bool c)
-{
-  for (u_int i = 0; i < sz; i++) 
-    add_pubfile (arr[i]);
-}
-
-void
-oksrvc_t::add_pubfiles (const char *arr[], bool c)
-{
-  for (const char **p = arr; p && *p; p++)
-    add_pubfile (*p, c);
-}
-
-void
-oksrvc_t::add_pubfile (const str &s, bool c)
-{
-  // warn << "add_pubfile:" << s << "\n"; // debug
-  if (supports_pub1 ())
-    rpcli->add_rootfile (s, c);
-  else {
-    SVC_ERROR ("Cannot call add_pubfile() without Pub v1 support");
-  }
-}
-
-void
-oksrvc_t::pubfiles (cbb cb) 
-{
-  if (supports_pub1 ()) {
-    rpcli->publish (wrap (this, &oksrvc_t::pubbed, cb));
-  } else {
-    SVC_ERROR ("Cannot call pubfiles() without Pub v1 support");
-  }
-}
-
-void
-oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
-{
-  bool ret (true);
-  if (!*res) {
-    SVC_ERROR ("Pub of Rootfiles Failed");
-    res->cluck ();
-	ret = false;
-  }
-  (*cb) (ret);
-}
-
 str
 ok_base_t::okws_exec (const str &s) const
 {
@@ -1119,22 +987,7 @@ okclnt_base_t::set_localizer (ptr<const pub_localizer_t> l)
 pval_w_t 
 oksrvc_t::operator[] (const str &s) const 
 { 
-  if (!supports_pub1 () || !_pub1_cfg || use_pub2_cfg ()) {
-    return ((*pub2 ()))[s];
-  } else {
-    return (*rpcli)[s] ;
-  }
-}
-
-
-str 
-oksrvc_t::cfg (const str &n) const 
-{ 
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n);
+  return ((*pub2 ()))[s];
 }
 
 bool

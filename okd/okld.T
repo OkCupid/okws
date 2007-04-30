@@ -705,9 +705,6 @@ okld_t::parse_file (const str &cf)
     .add ("StartupBatchSize", &okld_startup_batch_size, 0, 128)
     .add ("StartupBatchWait", &okld_startup_batch_wait, 0, 128)
 
-    .add ("PubdInet", wrap (this, &okld_t::got_pubd_v1))
-    .add ("PubUnix", wrap (this, &okld_t::got_pubd_v1))
-    .add ("PubdExecPath", wrap (this, &okld_t::got_pubd_v1))
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
@@ -802,7 +799,6 @@ okld_t::launch_pubd2 (cbi cb)
   assert (pubd2exc);
   pubd2 = New clone_only_client_t (pubd2exc, PUB2_CLONE);
 
-
   twait { pubd2->connect (mkevent (b)); }
   if (b) {
 
@@ -881,7 +877,6 @@ okld_t::encode_env ()
     .insert ("clock", int (clock_mode))
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
-    .insert ("pub1", pub_v1_support ? 1 : 0);
 
   if (mmc_file)
     env.insert ("mmcf", mmc_file);
@@ -907,7 +902,6 @@ okld_t::guess_pubd2 (const str &cf)
   warn << "No '" << PUBD2_KEY << "' given; guessing where to find pubd2.\n";
   v.push_back (PUBD2_KEY);
   v.push_back ("pubd");
-  v.push_back ("-2");
   got_pubd2_exec (v, cf, &err);
   
   return !err;

@@ -152,7 +152,6 @@ public:
   typedef callback<void, ptr<http_response_t> >::ref http_resp_cb_t;
       
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
-  virtual void add_pubfile (const str &s, bool conf = false) {}
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
 	      http_inhdr_t *h = NULL)
@@ -173,7 +172,6 @@ public:
 
   // toggle clock modes for SFS
   void init_sfs_clock (const str &f); 
-
 
   // can overide this on a service-by-service basis
   virtual bool init_pub2 (u_int opts = 0);
@@ -348,10 +346,8 @@ class oksrvc_t : public ok_httpsrv_t { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
-      pub1_supported (true),
       wait_for_signal_in_startup (false),
-      _n_newcli (0),
-      _pub1_cfg (true)
+      _n_newcli (0)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -362,10 +358,6 @@ public:
 
   virtual void launch () { launch_T (); }
   virtual newclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
-
-  // if we didn't give init_publist, then we're using pub2 for
-  // everything, including CFG variables.
-  virtual void init_publist () { _pub1_cfg = false; }
 
   // Subclasses that specialize this method to true can
   // always use pub2 configuration.
@@ -391,25 +383,12 @@ public:
   void add (okclnt_base_t *c);
   void end_program (); 
 
-  void add_pubfiles (const char *arr[], u_int sz, bool conf = false);
-  void add_pubfiles (const char *arr[], bool conf = false);
-  void add_pubfile (const str &s, bool conf = false);
-
-  str cfg (const str &n) const ;
-  template<class C> bool cfg (const str &n, C *v) const ;
-  template<typename T> parr_err_t cfg (const str &n, u_int i, T *p) const;
-
-  void pubfiles (cbb cb);
   dbcon_t *add_db (const str &host, u_int port, const rpc_program &p,
 		   int32_t txa_login_rpc = -1);
-  lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
-
   pval_w_t operator[] (const str &s) const;
     
 
   ptr<aclnt> get_okd_aclnt () { return clnt; }
-  pub_rclient_t *get_rpcli () { return rpcli; }
-  bool supports_pub1 () const { return pub1_supported; }
 
 private:
   void launch_T (CLOSURE);
@@ -424,17 +403,12 @@ protected:
   virtual void call_exit (int rc) 
 	{ exit (rc); } // Python needs to override this
 
-  void pubbed (cbb cb, ptr<pub_res_t> res);
-
-  void launch_pub1 (cbb cb, CLOSURE);  // legacy
   void launch_dbs (cbb cb, CLOSURE);
 
 
   void handle_new_con (svccb *sbp);
   bool newclnt (ptr<ahttpcon> lx);
-  void update (svccb *sbp);
   void kill (svccb *v);
-  void update_cb (svccb *sbp, ptr<pub_res_t> pr);
   void ready_call (bool rc);
 
   // debug initialization procedure
@@ -445,7 +419,6 @@ protected:
 
   u_int nclients;
   bool sdflag;
-  pub_rclient_t *rpcli;
 
   vec<helper_base_t *> dbs;
   bool dbstatus;
@@ -456,10 +429,8 @@ protected:
   vec<str> authtoks;
   int n_fd_out;
   u_int n_reqs; // total number of requests served
-  bool pub1_supported;
   bool wait_for_signal_in_startup;
   int _n_newcli;
-  bool _pub1_cfg;
 
 private:
   void post_launch_pub2_T (cbb cb, CLOSURE);
@@ -488,33 +459,6 @@ do {                                           \
 #define SVC_ERROR(x) SVC_MSG(ERROR, x)
 #define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
 #define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
-
-
-template<typename T> parr_err_t 
-oksrvc_t::cfg (const str &n, u_int i, T *p) const
-{
-  pval_t *v;
-  const parr_ival_t *arr;
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call oksrvc_t::cfg() without Pub v1 support.\n");
-    return PARR_NOT_FOUND;
-  }
-  if (!rpcli->cfg (n, &v))
-    return PARR_NOT_FOUND;
-  if (!(arr = v->to_int_arr ()))
-    return PARR_BAD_TYPE;
-  return arr->val (i, p);
-}
-
-template<class C> bool 
-oksrvc_t::cfg (const str &n, C *v) const 
-{ 
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n, v);
-}
 
   
 str okws_exec (const str &x);

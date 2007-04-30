@@ -291,7 +291,6 @@ public:
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
       used_primary_port (false),
       pubd2 (NULL),
-      pub_v1_support (false),
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false) {}
       
@@ -302,11 +301,8 @@ public:
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
-  void got_pubd2_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
 
-  void got_pubd_v1 (vec<str> s, str log, bool *errp) { pub_v1_support = true; }
-  
   void okld_exit (int rc);
 
   void launch (str s, CLOSURE);
@@ -420,7 +416,6 @@ private:
 	&okld_interpreter_t::_link> interpreters;
 
   clone_only_client_t *pubd2;
-  bool pub_v1_support;
   str _okd_mgr_socket;
   bool _pub_v2_error;
   

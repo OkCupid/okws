@@ -32,37 +32,17 @@ void pstr_t::add (ptr<pvar_t> v) { add (New pstr_var_t (v)); n++; }
 void pstr_t::add (pstr_el_t *v) { els.insert_tail (v); n++; }
 void pfile_set_func_t::dump2 (dumper_t *d) const { if (aarr) aarr->dump (d); }
 aarr_t *pswitch_env_t::env () const { return aarr; }
-void bound_pfile_t::explore (pub_exploremode_t m) const
-{ if (file) file->explore (m); }
 str penv_t::loc (int l) const 
 { return file ? file->loc (l) : str("at top level"); }
 pfnm_t penv_t::filename () const { return file->bnd->filename (); }
 void bound_pfile_t::close () { file->close (); }
 output_std_t::output_std_t (zbuf *o, const pfile_t *t) :
   output_t (t ? t->type () : PFILE_TYPE_H), out (o), osink_open (false) {}
-output_conf_t::output_conf_t (bool d) 
-  : output_t (PFILE_TYPE_CONF), env (New refcounted<aarr_t> ()), dflag (d) {}
 void pbuf_t::add (zbuf *z) { add (New pbuf_zbuf_t (z)); }
 void pval_zbuf_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const 
 { ps->add (zb); }
 void penv_t::safe_push (ptr<const aarr_t> a) 
 { estack.push_back (a); hold.push_back (a); }
-
-static void
-explore (pub_exploremode_t mode, const pfnm_t &nm)
-{
-  switch (mode) {
-  case EXPLORE_PARSE:
-    pub->queue_hfile (nm);
-    break;
-  case EXPLORE_FNCALL:
-    pub->explore (nm);
-    break;
-  case EXPLORE_CONF:
-  default:
-    break;
-  }
-}
 
 pub_evalmode_t 
 penv_t::init_eval (pub_evalmode_t m)
@@ -71,20 +51,6 @@ penv_t::init_eval (pub_evalmode_t m)
   pub_evalmode_t r = evm;
   evm = m;
   return r;
-}
-
-void 
-pfile_include_t::explore (pub_exploremode_t mode) const
-{
-  ::explore (mode, fn);
-}
-
-void
-pfile_inclist_t::explore (pub_exploremode_t mode) const
-{
-  u_int lim = files.size ();
-  for (u_int i = 0; i < lim; i++)
-    ::explore (mode, files[i]);
 }
 
 void
@@ -238,37 +204,6 @@ pfile_sec_t::add (pfile_sec_t *s)
   }
   delete s;
   return this;
-}
-
-void
-pfile_func_t::include (output_t *o, penv_t *g, aarr_t *e, const pfnm_t &nm)
-  const
-{
-  bpfcp_t f;
-  if (!o->descend ())
-    return;
-
-  if ((f = pub->getfile (nm))) {
-    push_frame (g, e);
-    bool tlf = g->set_tlf (false);
-    o->output_info (g, strbuf ("include: ") << f->filename (), lineno);
-    f->output (o, g);
-    o->output_info (g, strbuf ("/include: ") << f->filename (), lineno);
-    g->set_tlf (tlf);
-    pop_frame (o, g);
-  } else {
-    o->output_err (g, strbuf (nm) << ": cannot include file", lineno);
-  }
-}
-
-void
-pfile_include_t::output (output_t *o, penv_t *genv) const
-{
-  if (!fn) {
-    o->output_err (genv, "include: no file given", lineno);
-  } else {
-    include (o, genv, env, fn);
-  }
 }
 
 void
@@ -728,8 +663,7 @@ pfile_inclist_t::add (ptr<arglist_t> l)
 	err = true;
       } else {
 	files.push_back (b->fn); // use completed filename
-	if (!pub->do_explore ())
-	  delete b;
+	delete b;
       }
     }
   }
@@ -804,8 +738,7 @@ pfile_include_t::add (ptr<arglist_t> l)
       err = true;
     } else {
       fn = b->fn; // use the completed filename
-      if (!pub->do_explore ())
-	delete b;
+      delete b;
     }
   }
 
@@ -944,8 +877,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
       err = true;
     } else if (b) {
       fn2 = b->fn;
-      if (!pub->do_explore ())
-	delete b;
+      delete b;
     }
   }
 
@@ -1263,12 +1195,6 @@ output_std_t::output_err (penv_t *e, const str &s, int l)
 }
 
 void
-output_conf_t::output_err (penv_t *e, const str &s, int l)
-{
-  warn << "Conf file eval error (" << e->loc (l) << "): " << s << "\n";
-}
-
-void
 pfile_set_func_t::output (output_t *o, penv_t *e) const
 {
   o->output_set_func (e, this);
@@ -1278,12 +1204,6 @@ void
 output_std_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
 {
   s->output_runtime (e);
-}
-
-void
-output_conf_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
-{
-  s->output_config (e);
 }
 
 void

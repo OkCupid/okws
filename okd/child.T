@@ -264,9 +264,6 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
   }
 
   switch (p) {
-  case OKCTL_PUBCONF:
-    myokd->pubconf (sbp);
-    break;
   case OKCTL_READY:
     if (state == OKC_STATE_LAUNCH_SEQ_1) {
       state = OKC_STATE_LAUNCH_SEQ_2;
@@ -276,17 +273,8 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     }
     sbp->reply (NULL);
     break;
-  case OKCTL_REQ_ERRDOCS:
-    myokd->send_errdoc_set (sbp);
-    break;
   case OKCTL_REQ_ERRDOCS_2:
     myokd->req_errdoc_set_2 (sbp);
-    break;
-  case OKCTL_GETFILE:
-    myokd->getfile (sbp);
-    break;
-  case OKCTL_LOOKUP:
-    myokd->lookup (sbp);
     break;
   case OKCTL_CUSTOM_1_IN: 
     myokd->custom1_in (sbp);
@@ -304,142 +292,6 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     sbp->reject (PROC_UNAVAIL);
     break;
   }
-}
-
-void
-okd_t::pubconf (svccb *sbp)
-{
-  if (!supports_pub1 ()) {
-    warn << "Cannot call PUBCONF with Pub v1 disabled.\n";
-    sbp->reject (PROC_UNAVAIL);
-    return;
-  }
-  ptr<xpub_file_t> cf;
-  if ((cf = pprox->get_pubconf ())) {
-    xpub_getfile_res_t x (XPUB_STATUS_OK);
-    *x.file = *cf;
-    sbp->replyref (x);
-  } else { 
-    if (!cfq.blocked (sbp)) {
-      ptr<xpub_getfile_res_t> r = New refcounted<xpub_getfile_res_t> ();
-      pubd->call (PUB_CONFIG, NULL, r, wrap (this, &okd_t::pubconfed, r));
-    }
-  }
-}
-
-void
-okd_t::pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err)
-{
-  if (err) {
-    r->set_status (XPUB_STATUS_ERR);
-    *r->error = strbuf () << err;
-  } else if (r->status == XPUB_STATUS_OK) {
-    pprox->cache_pubconf (*r->file);
-  }
-  cfq.finish (r);
-}
-
-
-void
-okd_t::lookup (svccb *sbp)
-{
-  if (!supports_pub1 ()) {
-    warn << "Cannot call LOOKUP without Pub v1 enabled.\n";
-    sbp->reject (PROC_UNAVAIL);
-    return;
-  }
-
-  xpub_fn_t *x = sbp->Xtmpl getarg<xpub_fn_t> ();
-  xpub_lookup_res_t res;
-  if (pprox->lookup (*x, &res)) 
-    sbp->replyref (res);
-  else {
-    pfnm_t fn = *x;
-    if (!luq.inq (fn, sbp)) {
-      ptr<xpub_lookup_res_t> resp = New refcounted<xpub_lookup_res_t> ();
-      pubd->call (PUB_LOOKUP, x, resp, 
-		  wrap (this, &okd_t::lookedup, fn, resp));
-    }
-  }
-}
-
-void
-okd_t::lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err)
-{
-  if (err) {
-    r->set_status (XPUB_STATUS_ERR);
-    *r->error = strbuf () << err;
-  } else if (r->status == XPUB_STATUS_OK) {
-    phashp_t hsh = phash_t::alloc (*r->hash);
-    pprox->cache (fn, hsh);
-  }
-  luq.finish (fn, r);
-}
-
-void
-okch_t::repub (ptr<ok_repub_t> rpb)
-{
-  if (!clnt) {
-    *rpb->res << (strbuf ("Cannot repub; client not yet initialized: ")
-		  << servpath);
-  } else {
-    clnt->call (OKCTL_UPDATE, &rpb->new_fnset, &rpb->xst,
-		wrap (this, &okch_t::repub_cb, rpb));
-  }
-}
-
-void
-okch_t::repub_cb (ptr<ok_repub_t> rpb, clnt_stat err)
-{
-  if (err) 
-    *rpb->res << (strbuf ("repub error: ") << err);
-  else 
-    rpb->res->add (rpb->xst);
-}
-
-void
-okd_t::getfile (svccb *sbp)
-{
-  if (!supports_pub1 ()) {
-    warn << "Cannot call OKCTL_GETFILE without Pub v1 running.\n";
-    sbp->reject (PROC_UNAVAIL);
-    return;
-  }
-  xpubhash_t *xh = sbp->Xtmpl getarg<xpubhash_t> ();
-  phashp_t hsh = phash_t::alloc (*xh);
-  xpub_getfile_res_t res;
-  if (pprox->getfile (hsh, &res)) 
-    sbp->replyref (res);
-  else {
-    if (!gfq.inq (hsh, sbp)) {
-      ptr<xpub_getfile_res_t> resp = New refcounted<xpub_getfile_res_t> ();
-      pubd->call (PUB_GETFILE, hsh, resp, 
-		  wrap (this, &okd_t::gotfile, hsh, resp));
-    }
-  }
-}
-
-void
-okd_t::gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> res, clnt_stat err)
-{
-  if (err) {
-    res->set_status (XPUB_STATUS_ERR);
-    *res->error = strbuf () << err;
-  } else if (res->status == XPUB_STATUS_OK) {
-    pprox->cache (*res->file);
-  }
-  gfq.finish (hsh, res);
-}
-
-void
-okd_t::send_errdoc_set (svccb *sbp)
-{
-  if (!supports_pub1 ()) {
-    warn << "Cannot call REQ_ERRDOCS without Pub v1 enabled.\n";
-    sbp->reject (PROC_UNAVAIL);
-    return;
-  }
-  sbp->replyref (xeds);
 }
 
 void

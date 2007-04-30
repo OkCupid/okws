@@ -61,18 +61,17 @@
 
 %type <str> var str1 bname 
 %type <num> number
-%type <pvar> pvar evar gcode
+%type <pvar> pvar evar
 %type <pval> bvalue arr i_arr g_arr
-%type <sec> guy_print htag htag_list javascript pre b_js_tag
-%type <el> ptag guy_vars guy_func
-%type <func> guy_funcname ptag_func
+%type <sec> htag htag_list javascript pre b_js_tag
+%type <el> ptag
+%type <func> ptag_func
 %type <pstr> pstr pstr_sq
 %type <arg> arg aarr nested_env
 %type <parr> i_arr_open
 
 %%
-file: gfile       {}
-	| hfile   {}
+file: | hfile   {}
 	| conffile {}
 	;
 
@@ -80,47 +79,6 @@ conffile: T_BCONF aarr {}
 	;
 
 hfile: html 
-	;
-
-gfile: gfile_section
-	| gfile gfile_section
-	;
-
-gfile_section: T_CODE	    { PSECTION->add ($1); }
-	| '/'		    { PSECTION->add ('/'); }
-	| guy_section 	    {}
-	;
-
-guy_section: T_BGUY
-	{
-	  PFILE->add_section ();
-	  PFILE->push_section (New pfile_gs_t (PLINENO));
-	}
-	guy_code T_EGUY
-	{
-	  PFILE->add_section ();
-	  PFILE->push_section (New pfile_code_t (PLINENO));
-	}
-	;	
-
-guy_code: /* empty */ {}
-	| guy_code guy_command
-	;
-
-guy_command: guy_vars { PSECTION->add ($1); }
-	| guy_func    { PSECTION->add ($1); }
-	| guy_print   { PSECTION->add ($1, false); }
-	;
-
-guy_vars: guy_vars_mode varlist ';'
-	{
-	  $$ = New pfile_gframe_t (PGVARS);
-	  PGVARS = NULL;
-	}
-	;
-
-guy_vars_mode: T_VARS  { PGVARS = New gvars_t (); }
-	| T_UVARS      { PGVARS = New guvars_t (); }
 	;
 
 varlist: var 
@@ -131,21 +89,6 @@ varlist: var
 	{
 	  PGVARS->add ($3);
 	}
-	;
-
-guy_print: T_PRINT '(' var ')' 
-	{
-          pfile_gprint_t *gp = New pfile_gprint_t (PLINENO, $3);
-	  PFILE->push_section (gp);
-	}
-	ghtml_block
-	{
-          $$ = PFILE->pop_section ();
-	}
-	;
-
-ghtml_block: T_BGH html T_EGH
-	| T_BWGH html T_EGH
 	;
 
 html: /* empty */ {}
@@ -176,7 +119,6 @@ nested_env: T_2L_BRACE
 	;
 
 evar:     pvar
-	| gcode
 	;
 	
 ptag: ptag_func 
@@ -338,30 +280,6 @@ htag_val: T_HNAM   { PSECTION->add ($1); }
 	}
 	;
 
-guy_func: guy_funcname 
-	{
-	  PUSH_PFUNC ($1); /* must do this before accessing ARGLIST */
-	  ARGLIST = New refcounted<arglist_t> ();
-	}
-	'(' arglist ')' ';'
-	{
-	  if (!PFUNC->add (ARGLIST)) {
-	    PARSEFAIL;
-          } else {
-	    PFUNC->explore (EXPLORE_PARSE);
-	    if (!$1->validate ())
-	      PARSEFAIL;
-          }
-	  ARGLIST = NULL;
-	  $$ = POP_PFUNC ();
-	}
-	;
-
-guy_funcname: T_CTINCLUDE  { $$ = New pfile_g_ctinclude_t (PLINENO); }
-	| T_INCLUDE        { $$ = New pfile_g_include_t (PLINENO); }
-	| T_INIT_PDL	   { $$ = New pfile_g_init_pdl_t (PLINENO, PFILE); }
-	;
-
 parg:   '('
 	{
 	  ARGLIST = New refcounted<arglist_t> ();
@@ -490,23 +408,11 @@ pstr_list: /* empty */ {}
 pstr_el:  T_STR { PPSTR->add ($1); }
 	| T_CH  { PPSTR->add ($1); }
 	| pvar  { PPSTR->add ($1); }
-	| gcode { PPSTR->add ($1); }
 	;
 
 pvar: T_BVAR T_VAR '}'
 	{
 	  $$ = New refcounted<pvar_t> ($2, PLINENO);
-	}
-	;
-
-gcode: T_BGCODE T_GCODE '}'
-	{
-	  $$ = New refcounted<gcode_t> ($2, PLINENO);
-	}
-	|
-	T_BGCCE T_GCODE '}'
-	{
-	  $$ = New refcounted<gcode_t> ($2, PLINENO, true);
 	}
 	;
 

@@ -38,8 +38,6 @@
 #include "okdbg.h"
 #include "rpcwindow.h"
 
-static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
-
 common_404_t::common_404_t ()
 {
   tab.insert ("/favicon.ico");
@@ -66,7 +64,6 @@ okd_t::~okd_t ()
 {
   if (logd) delete logd;
   if (pubd) delete pubd;
-  delete pprox;
 }
 
 void
@@ -755,162 +752,6 @@ okd_t::check_runas ()
   if (!okd_grp)
     fatal << configfile 
 	  << ": please specify a valid group for \"OkdGroup\"\n";
-}
-
-//=======================================================================
-//
-// Repub v2
-//
-//   In repub v2, we ask pubd for the complete file set descending from
-//   the given repub filesets, as before.  However, we find a workaround
-//   to the problem that the returned set is often quite large. 
-//   
-//   In v2, pubd returns a 'summary' of the file set it really wanted to
-//   return, composed of the set of filename->content hash bindings,
-//   the number of files to fetch, and also a 'cookie.'
-//
-//   okd then sends follow-up RPCs to get the files in the requested 
-//   fileset, using the cookie to indentify the pubd-resident state.
-//   
-//   Once all files are collected (or an abortive error has occured),
-//   okd must be certain to trigger pubd to clean up, and therefore calls
-//   PUB_FILES2_CLOSE with the session cookie.
-//
-//   Eventually, v2 should replace v1 entirely.
-//
-void
-okd_t::repub2 (const xpub_fnset_t &f, okrescb cb)
-{
-  ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
-  pubd->call (PUB_FILES2, &f, &rpb->xpr2, 
-	      wrap (this, &okd_t::repub2_cb1, rpb));
-}
-
-void
-okd_t::repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
-{
-  if (err || rpb->xpr2.status.status != XPUB_STATUS_OK) {
-    strbuf sb;
-    sb << "RPC Error from PUB_FILES2: " << err ;
-    okdbg_warn (ERROR, sb);
-    repub_cb1 (rpb, err);
-  } else {
-    rpb->xpr.set.bindings = rpb->xpr2.set.bindings;
-    rpb->nfiles = rpb->xpr2.set.nfiles;
-    rpb->cache.setsize (rpb->nfiles);
-    rpb->cookie = rpb->xpr2.set.cookie;
-    rpb->xpr.set.files.setsize (rpb->nfiles);
-    repub2_getfiles (rpb);
-  }
-}
-
-void
-okd_t::repub2_getfiles (ptr<ok_repub_t> rpb)
-{
-  rpc_windower_t *w = 
-    New rpc_windower_t (rpb->nfiles, 30, 
-			wrap (this, &okd_t::repub2_getfile, rpb),
-			wrap (this, &okd_t::repub2_gotfile, rpb),
-			wrap (this, &okd_t::repub2_done, rpb));
-  w->run ();
-
-  // w will delete itself once repub2_done() is called.
-}
-
-bool
-okd_t::repub2_getfile (ptr<ok_repub_t> rpb, int i, aclnt_cb cb)
-{
-  xpub_files2_getfile_arg_t arg;
-  arg.cookie = rpb->cookie;
-  arg.fileno = i;
-  pubd->call (PUB_FILES2_GETFILE, &arg, &rpb->cache[i], cb);
-  return true;
-}
-
-bool
-okd_t::repub2_gotfile (ptr<ok_repub_t> rpb, int i, clnt_stat err)
-{
-  bool ret = false;
-  if (err) {
-    strbuf sb;
-    sb << "Repub RPC error for filenumber " << i << ": " << err;
-    rpb->res->pub_res_t::add (sb);
-    okdbg_warn (ERROR, sb) ;
-  } else {
-    int rc = rpb->cache[i].status;
-    if (rc != XPUB_STATUS_OK) {
-      strbuf sb;
-      sb << "Pubd error " << rc << " for filenumber " << i ;
-      if (rc == XPUB_STATUS_ERR)
-	sb << ": " << *rpb->cache[i].error;
-      okdbg_warn (ERROR, sb);
-      rpb->res->pub_res_t::add (sb);
-    } else {
-      rpb->xpr.set.files[i] = *(rpb->cache[i].file);
-      ret = true;
-    }
-  }
-  return ret;
-}
-
-static void
-close_cb (xpub_status_typ_t *t, clnt_stat err)
-{
-  if (err) {
-    strbuf sb;
-    sb << "RPC Error for PUB_FILES2_CLOSE: " << err << "\n";
-    okdbg_warn (ERROR, sb);
-  } else if (*t != XPUB_STATUS_OK) {
-    strbuf sb;
-    sb << "PUB_FILES2_CLOSE failed with result code: " << *t << "\n";
-    okdbg_warn (ERROR, sb);
-  }
-  delete t;
-}
-
-
-void
-okd_t::repub2_done (ptr<ok_repub_t> rpb, bool rc)
-{
-  xpub_status_typ_t *t = New xpub_status_typ_t ();
-  pubd->call (PUB_FILES2_CLOSE, &rpb->cookie, &t, wrap (close_cb, t));
-  repub_cb1 (rpb, static_cast<clnt_stat> (0));
-}
-
-//
-// End Repub v2
-//
-//=======================================================================
-
-void
-okd_t::repub (const xpub_fnset_t &f, okrescb cb)
-{
-  ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
-  pubd->call (PUB_FILES, &f, &rpb->xpr, wrap (this, &okd_t::repub_cb1, rpb));
-}
-
-
-void
-okd_t::repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
-{
-  if (err) {
-    *rpb->res << (strbuf ("RPC error in repubbing: ") << err);
-    return;
-  }
-  rpb->res->pub_res_t::add (rpb->xpr.status);
-  pprox->cache (rpb->xpr.set);
-  rpb->set_new_fnset ();
-  servtab.traverse (wrap (srepub, rpb));
-}
-
-void
-ok_repub_t::set_new_fnset ()
-{
-  u_int lim = xpr.set.bindings.size ();
-  new_fnset.files.setsize (lim);
-  for (u_int i = 0; i < lim; i++)
-    new_fnset.files[i] = xpr.set.bindings[i].fn;
-  new_fnset.rebind = true;
 }
 
 void

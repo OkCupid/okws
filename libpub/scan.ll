@@ -44,47 +44,18 @@ EOL	[ \t]*\n?
 TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
-%x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE 
-%x GCODE PRE PSTR_SQ 
+%x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS 
+%x PRE PSTR_SQ 
 
 %%
 
 <INITIAL>\n	{ PLINC; return ('\n'); }
 
-<GFILE>{
-"/*o" |
-"/**"(guy|pub)"*" |
-"/*<"(guy|pub)">"  { yy_push_state (GSEC); return T_BGUY; }
-"/"		{ return '/' ; }
-[^/]+		{ yylval.str = yytext; nlcount (); return T_CODE; }
-}
-
-<GSEC>{
-\n		{ PLINC; }
-{WS}+		/* ignore */ ;
-
-"o*/" |
-"**"(guy|pub)"*/"{WS}*\n? |
-"</"(guy|pub)">*/"{WS}*\n? 	{ yy_pop_state (); 
-	                          if (yytext[yyleng - 1] == '\n') PLINC; 
-	                          return T_EGUY; }
-
-"<<"{VAR};	{ eos_plinc (); return begin_GH (); }
-"//".*$		/* discard */;
-uvar		return T_UVARS;		
-vars		return T_VARS;
-print		return T_PRINT;
-ct_include	return T_CTINCLUDE;
-include		return T_INCLUDE;
-init_publist	return T_INIT_PDL;
-<<EOF>>		{ return yyerror ("unterminated GUY mode in file"); }
-}
-
 <PTAG>{
 "-->"		{ yy_pop_state (); return T_EPTAG; }
 }
 
-<GSEC,PTAG>{
+<PTAG>{
 {WS}+		/* discard */ ;
 \n		{ PLINC; }
 
@@ -141,7 +112,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  		}
 }
 
-<GH,H,WH,WGH,JS,PSTR,GSEC,PTAG,HTAG,PSTR_SQ>{
+<H,WH,JS,PSTR,PTAG,HTAG,PSTR_SQ>{
 "@{"		{ yy_push_state (GCODE); return T_BGCODE; }
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
 "%{"		{ yy_push_state (GCODE); return T_BGCCE; }
@@ -412,10 +383,6 @@ yy_push_pubstate (pfile_type_t t)
   case PFILE_TYPE_CONF:
     yy_push_state (H);
     break;
-  case PFILE_TYPE_GUY:
-  case PFILE_TYPE_CODE:
-    yy_push_state (GFILE);
-    break;
   case PFILE_TYPE_H:
     yy_push_state (H);
     break;
@@ -462,19 +429,14 @@ gcc_hack_use_static_functions ()
 
 /*
 // States:
-//   GFILE - C/C++ mode -- passthrough / ECHO
-//   GUY - directives within a C/C++ file such as ct_include and include
 //   STR - string within an HTML tag or within regular mode
 //   SSTR - string with single quotes around it
 //   H - HTML w/ includes and variables and switches and such
 //   HTAG - Regular tag within HTML mode
 //   PTAG - Pub tag within HTML
-//   GH - HTML from within a Guy file -- i.e., HTML + also look
-//	   for an EOF-like tok (G-HTML)
 //   PSTR - Parsed string
 //   PVAR - Variable state (within ${...})
 //   WH - White-space-stripped HTML
-//   WGH - White-space-stripped G-HTML
 //   HCOM - HTML Comment
 //   JS - JavaScript
 //

@@ -158,7 +158,8 @@ namespace pubserv2 {
     o = arg->options;
 
     twait { 
-      pub2::local_publisher_t::getfile (arg->filename, mkevent (s,f), arg->fresh, o); 
+      pub2::local_publisher_t::getfile (arg->filename, mkevent (s,f), 
+					arg->fresh, o); 
     }
 
     if (!f) {

@@ -153,7 +153,6 @@ okld_jailed_exec_t::chmod (int currmode)
   return true;
 }
 
-
 tamed void 
 okld_ch_t::launch ()
 {
