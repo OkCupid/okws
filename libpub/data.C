@@ -1088,12 +1088,16 @@ output_std_t::output_file_loc (penv_t *e, int lineno)
 void
 output_std_t::output_raw (penv_t *e, const str &s)
 {
-  out->cat (s);
+  if (!_muzzled)
+    out->cat (s);
 }
 
 void
 output_std_t::output (penv_t *e, zbuf *zb, bool quoted)
 {
+  if (_muzzled)
+    return;
+
   switch (mode) {
   case PFILE_TYPE_H:
   case PFILE_TYPE_WH:
@@ -1121,6 +1125,9 @@ output_std_t::output (penv_t *e, zbuf *zb, bool quoted)
 void
 output_std_t::output (penv_t *e, const zstr &s, bool quoted)
 {
+  if (_muzzled)
+    return;
+
   switch (mode) {
   case PFILE_TYPE_H:
   case PFILE_TYPE_WH:
@@ -2019,4 +2026,12 @@ penv_t::set_global (const aarr_t &a)
     ret = true;
   }
   return ret;
+}
+
+bool
+output_t::set_muzzle (bool b)
+{
+  bool r = _muzzled;
+  _muzzled = b;
+  return r;
 }

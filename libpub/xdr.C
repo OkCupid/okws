@@ -89,6 +89,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_include_t (*x.include);
   case XPUB_INCLUDE2:
     return New pfile_include2_t (*x.include);
+  case XPUB_LOAD:
+    return New pfile_load_t (*x.include);
   case XPUB_FILE_PSTR:
     return New pfile_pstr_t (*x.file_pstr);
   case XPUB_FILE_VAR:
@@ -424,13 +426,25 @@ pfile_include_t::to_xdr (xpub_obj_t *x) const
 }
 
 bool
-pfile_include2_t::to_xdr (xpub_obj_t *x) const
+pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const
 {
-  x->set_typ (XPUB_INCLUDE2);
+  x->set_typ (typ);
   to_xdr_base (x);
   x->include->fn.set_vrs (XPUB_V2);
   if (fn_v2) fn_v2->to_xdr (x->include->fn.v2);
   return true;
+}
+
+bool
+pfile_include2_t::to_xdr (xpub_obj_t *x) const
+{
+  return to_xdr_base2 (x, XPUB_INCLUDE2);
+}
+
+bool
+pfile_load_t::to_xdr (xpub_obj_t *x) const 
+{
+  return to_xdr_base2 (x, XPUB_LOAD);
 }
 
 bool
@@ -466,6 +480,9 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
     err = true;
   }
 }
+
+pfile_load_t::pfile_load_t (const xpub_include_t &x)
+  : pfile_include2_t (x) {}
 
 pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
   : pfile_func_t (x.lineno), err (false)

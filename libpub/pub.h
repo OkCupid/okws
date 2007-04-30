@@ -450,7 +450,9 @@ private:
 class pfile_set_func_t;
 class output_t {
 public:
-  output_t (pfile_type_t m, u_int o = 0) : mode (m), _opts (o) {}
+  output_t (pfile_type_t m, u_int o = 0) 
+    : mode (m), _opts (o), _muzzled (false) {}
+
   virtual ~output_t () {}
 
   virtual void output_raw (penv_t *e, const str &s) {}
@@ -473,8 +475,11 @@ public:
   virtual u_int opts () const { return _opts; }
   virtual bool wss () const { return _opts & P_WSS; }
 
+  virtual bool set_muzzle (bool n);
+
   pfile_type_t mode;
   u_int _opts;
+  bool _muzzled;
 };
 
 class output_std_t : public output_t {
@@ -851,6 +856,7 @@ public:
 		aarr_t *e, pfnm_t fn, xpub_status_cb_t cb, CLOSURE) const;
 
   int get_lineno () const { return lineno; }
+  virtual bool muzzle_output () const { return false; }
   ptr<arglist_t> arglist;
 protected:
   int lineno;
@@ -923,10 +929,19 @@ public:
   virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
 
 protected:
+  virtual bool to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const;
   // evaluate filename
   str eval_fn (penv_t *env) const;
 
   ptr<pstr_t> fn_v2;
+};
+
+class pfile_load_t : public pfile_include2_t {
+public:
+  pfile_load_t (int l) : pfile_include2_t (l) {}
+  pfile_load_t (const xpub_include_t &x);
+  bool muzzle_output () const { return true; }
+  virtual bool to_xdr (xpub_obj_t *x) const;
 };
 
 class pfile_g_init_pdl_t : public pfile_func_t {
