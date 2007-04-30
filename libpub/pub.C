@@ -261,7 +261,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
     }
   } else {
     int old_opts = get_opts ();
-    int new_opts = (old_opts | P_INCLUDE_V2 | P_EXPLORE_OFF);
+    int new_opts = old_opts;
     set_opts (new_opts);
     
     r = ret->nonconst_bpf ();

@@ -771,35 +771,20 @@ publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
 					   
 void 
 pfile_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
-		  pub2::status_cb_t callercv, ptr<closure_t> dummy) const
+		  pub2::status_cb_t ev, ptr<closure_t> dummy) const
 {
   o->output_header (genv);
-  secs.publish (iface, o, genv, callercv);
+  secs.publish (iface, o, genv, ev);
 }
 
 void 
 pfile_sec_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
-		      pub2::status_cb_t callercv, ptr<closure_t> dummy) const
+		      pub2::status_cb_t ev, ptr<closure_t> dummy) const
 {
   if (els) 
-    els->publish (iface, o, genv, callercv);
+    els->publish (iface, o, genv, ev);
   else
-    (*callercv) (XPUB_STATUS_OK);
-}
-
-void 
-pfile_include_t::publish (pub2_iface_t *iface, output_t *o,
-			  penv_t *genv, xpub_status_cb_t callercv,
-			  ptr<closure_t> dummy) const
-{
-  if (!fn) {
-    o->output_err (genv, "include: no file given", lineno);
-    xpub_status_t status (XPUB_STATUS_NOENT);
-    *status.error = "include command with no file given";
-    (*callercv) (status);
-  } else {
-    pfile_func_t::publish (iface, o, genv, env, fn, callercv);
-  }
+    (*ev) (XPUB_STATUS_OK);
 }
 
 str
@@ -813,7 +798,7 @@ pfile_include2_t::eval_fn (penv_t *e) const
 
 void
 pfile_include2_t::publish (pub2_iface_t *iface, output_t *o,
-			   penv_t *genv, xpub_status_cb_t callercv,
+			   penv_t *genv, xpub_status_cb_t ev,
 			   ptr<closure_t> dummy) const
 {
   str v = eval_fn (genv);
@@ -821,9 +806,9 @@ pfile_include2_t::publish (pub2_iface_t *iface, output_t *o,
     o->output_err (genv, "include: no file given or expansion failed", lineno);
     xpub_status_t status (XPUB_STATUS_NOENT);
     *status.error = "include v2 command with no filename";
-    (*callercv) (status);
+    (*ev) (status);
   } else {
-    pfile_func_t::publish (iface, o, genv, env, v, callercv);
+    pfile_func_t::publish (iface, o, genv, env, v, ev);
   }
 }
 
@@ -834,18 +819,6 @@ pfile_include2_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
   str v = eval_fn (genv);
   if (!v || v.len () == 0) {
     o->output_err (genv, "include: no file given or expansion failed", lineno);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-bool
-pfile_include_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
-				   penv_t *genv) const
-{
-  if (!fn) {
-    o->output_err (genv, "include: no file given", lineno);
     return true;
   } else {
     return false;
@@ -898,7 +871,7 @@ pfile_switch_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g)
 
 void
 pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
-			 xpub_status_cb_t callercv, ptr<closure_t> dummy) const
+			 xpub_status_cb_t ev, ptr<closure_t> dummy) const
 {
   pswitch_env_t *pse = _eval_cache_flag ? 
     _cached_eval_res : eval_for_output (o, g);
@@ -908,11 +881,11 @@ pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
 
   if (pse) {
     if (pse->fn) {
-      pfile_func_t::publish (i, o, g, pse->env (), pse->fn, callercv);
+      pfile_func_t::publish (i, o, g, pse->env (), pse->fn, ev);
     } else if (pse->nested_env ()) {
-      pse->nested_env ()->publish (i, o, g, callercv);
+      pse->nested_env ()->publish (i, o, g, ev);
     } else {
-      (*callercv) (xpub_status_t (XPUB_STATUS_OK));
+      (*ev) (xpub_status_t (XPUB_STATUS_OK));
     }
   }
 }

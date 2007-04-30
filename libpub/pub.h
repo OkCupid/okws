@@ -802,36 +802,18 @@ protected:
   int lineno;
 };
 
-class pfile_inclist_t : public pfile_func_t {
+class pfile_include2_t : public pfile_func_t {
 public:
-  pfile_inclist_t (int l) : pfile_func_t (l), err (false), ali (0) {}
-  pfile_inclist_t (const xpub_inclist_t &x);
-  ~pfile_inclist_t () {}
-  void output (output_t *o, penv_t *e) const {}
-  bool add (ptr<arglist_t> l);
-  bool validate ();
-  pfile_el_type_t get_type () const { return PFILE_INCLIST; }
-  void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pfile_inclist_t"; }
-  bool to_xdr (xpub_obj_t *x) const;
-protected:
-  bool err;
-  vec<pfnm_t> files;
-  u_int ali; // arglist index
-};
-
-class pfile_include2_t : public pfile_include_t {
-public:
-  pfile_include2_t (int l) : pfile_include_t (l) {}
+  pfile_include2_t (int l) : pfile_func_t (l), err (false) {}
   pfile_include2_t (const xpub_include_t &x);
   virtual ~pfile_include2_t () {}
-  virtual void output (output_t *o, penv_t *e) const;
   virtual bool add (ptr<arglist_t> l);
   virtual bool validate ();
   pfile_el_type_t get_type () const { return PFILE_INCLUDE2; }
   virtual str get_obj_name () const { return "pfile_include2_t"; }
   virtual bool to_xdr (xpub_obj_t *x) const;
   void dump2 (dumper_t *d) const;
+  void output (output_t *o, penv_t *e) const { assert (false); }
 
   // For pub2
   virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
@@ -839,9 +821,13 @@ public:
   virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
 
 protected:
+  bool add_base (ptr<arglist_t> l);
   // evaluate filename
   str eval_fn (penv_t *env) const;
 
+  bool err;
+  pfnm_t fn;
+  ptr<aarr_arg_t> env;
   ptr<pstr_t> fn_v2;
 };
 
@@ -1056,9 +1042,9 @@ public:
 			   _eval_cache_flag (false) {}
   pfile_switch_t (const xpub_switch_t &x);
   ~pfile_switch_t () { if (def) delete def; cases.deleteall (); }
-  void output (output_t *o, penv_t *e) const;
 
   pswitch_env_t *eval_for_output (output_t *o, penv_t *e) const;
+  void output (output_t *o, penv_t *e) const { assert (false); }
 
   bool add (ptr<arglist_t> a);
   bool validate ();
@@ -1378,7 +1364,6 @@ public:
       jailed (false), 
       jm (JAIL_NONE) {}
 
-  virtual str jail2real (const str &n) const { return n; }
   void set_homedir (const str &d) { homedir = dir_standardize (d); }
   pfnm_t apply_homedir (const pfnm_t &n) const;
   
@@ -1448,18 +1433,7 @@ private:
   str homedir;
 };
 
-class cfgw_t {
-public:
-  cfgw_t (pub_t *p) : pubp (p) {}
-  pval_w_t operator[] (const str &s) const { return (*pubp)[s]; }
-private:
-  pub_t *pubp;
-};
-
 extern pub_parser_t *parser;
-extern pub_t *pub;
-extern pub_client_t *pcli;
-extern pub_base_t *pubincluder;
 
 #define TEE(b,s)  b << s; warn << s;
   

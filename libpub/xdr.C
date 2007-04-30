@@ -83,10 +83,6 @@ pfile_el_t::alloc (const xpub_obj_t &x)
   switch (x.typ) {
   case XPUB_HTML_EL:
     return New pfile_html_el_t (*x.html_el);
-  case XPUB_INCLIST:
-    return New pfile_inclist_t (*x.inclist);
-  case XPUB_INCLUDE:
-    return New pfile_include_t (*x.include);
   case XPUB_INCLUDE2:
     return New pfile_include2_t (*x.include);
   case XPUB_FILE_PSTR:
@@ -405,59 +401,21 @@ aarr_t::aarr_t (const xpub_aarr_t &x)
   }
 }
 
-void
-pfile_include_t::to_xdr_base (xpub_obj_t *x) const
-{
-  if (env)
-    env->to_xdr (&x->include->env);
-  x->include->lineno = lineno;
-}
-
-bool 
-pfile_include_t::to_xdr (xpub_obj_t *x) const
-{
-  x->set_typ (XPUB_INCLUDE);
-  to_xdr_base (x);
-  x->include->fn.set_vrs (XPUB_V1);
-  *x->include->fn.v1 = fn;
-  return true;
-}
-
 bool
 pfile_include2_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB_INCLUDE2);
-  to_xdr_base (x);
+  if (env)
+    env->to_xdr (&x->include->env);
   x->include->fn.set_vrs (XPUB_V2);
   if (fn_v2) fn_v2->to_xdr (x->include->fn.v2);
   return true;
 }
 
-bool
-pfile_inclist_t::to_xdr (xpub_obj_t *x) const
-{
-  x->set_typ (XPUB_INCLIST);
-  size_t lim = files.size ();
-  x->inclist->files.setsize (lim);
-  for (size_t i = 0; i < lim; i++) 
-    x->inclist->files[i] = files[i];
-  return true;
-}
-
-pfile_include_t::pfile_include_t (const xpub_include_t &x)
-  : pfile_func_t (x.lineno), err (false),
-    env (New refcounted<aarr_arg_t> (x.env))
-{
-  if (x.fn.vrs == XPUB_V1) {
-    fn = *x.fn.v1;
-  } else {
-    warn << "Got unexpected XDR pfile representation for v1 include.\n";
-    err = true;
-  }
-}
-
 pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
-  : pfile_include_t (x.lineno, New refcounted<aarr_arg_t> (x.env))
+  : pfile_func_t (x.lineno),
+    err (false),
+    env (New refcounted<aarr_arg_t> (x.env))
 {
   if (x.fn.vrs == XPUB_V2) {
     fn_v2 = New refcounted<pstr_t> (*x.fn.v2);
@@ -465,14 +423,6 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
     warn << "Got unexpected XDR pfile representation for v2 include.\n";
     err = true;
   }
-}
-
-pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
-  : pfile_func_t (x.lineno), err (false)
-{
-  size_t lim = x.files.size ();
-  for (size_t i = 0; i < lim; i++)
-    files.push_back (x.files[i]);
 }
 
 bool

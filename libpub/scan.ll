@@ -6,8 +6,6 @@
 #include "parse.h"
 #define YY_STR_BUFLEN 20*1024
 
-static int end_GH ();
-static int begin_GH ();
 static void begin_PSTR (int i, int mode);
 static void end_PSTR ();
 static void begin_STR (int i, int j);
@@ -15,7 +13,6 @@ static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (char *c, int l);
 static void nlcount (int m = 0);
-static void eos_plinc ();
 
 int yy_ssln;
 int yy_wss_nl;
@@ -93,13 +90,10 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	                          "environment"); }
 }
 
-<WGH,GH>^{VAR}/\n	{ if (end_GH ()) return T_EGH; 
-		          else { yylval.str = yytext; return T_HTML; } }
-<H,GH>\n		{ PLINC; return (yytext[0]); }
+<H>\n			{ PLINC; return (yytext[0]); }
 
 <H,WH>{
 {TPRFX}include		{ yy_push_state (PTAG); return T_PTINCLUDE; }
-{TPRFX}inclist		{ yy_push_state (PTAG); return T_PTINCLIST; }
 {TPRFX}setl		{ yy_push_state (PTAG); return T_PTSETL; }
 {TPRFX}set		{ yy_push_state (PTAG); return T_PTSET; }
 {TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
@@ -113,11 +107,9 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <H,WH,JS,PSTR,PTAG,HTAG,PSTR_SQ>{
-"@{"		{ yy_push_state (GCODE); return T_BGCODE; }
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
-"%{"		{ yy_push_state (GCODE); return T_BGCCE; }
 
-\\+[$@%]"{"|\\"}}"	        { yylval.str = yytext + 1; return T_HTML; }
+\\+[$]"{"|\\"}}"	        { yylval.str = yytext + 1; return T_HTML; }
 
 "}}"		{ if (yy_d_brace > 0) {
 		     yy_d_brace -- ;
@@ -127,21 +119,20 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	 	     yylval.str = yytext; return T_HTML;
 	          } 
                 } 
-[$@%}]		{ yylval.ch = yytext[0]; return T_CH; }
+[$}]		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
-<GH>[^$@%}\\\n]+	{ yylval.str = yytext; return T_HTML; }
 <H>{
-[^$@%}\\<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[^$}\\<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 "<"		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
-<H,GH>{
+<H>{
 \\		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
 
-<WH,WGH>{	
+<WH>{	
 {WSN}+		{ nlcount (); return (' '); }
 "<!"		{ yylval.str = yytext; return T_HTML; }
 [<][/?%]?	{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
@@ -186,7 +177,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 -		{ if (yy_pt_com) { addch (yytext[0], -1); } }
 }
 
-<WH,WGH>{
+<WH>{
 [^$@\\<\n\t} ]+	{ yylval.str = yytext; return T_HTML; }
 \\		{ yylval.ch = yytext[0]; return T_CH; }
 }
@@ -247,12 +238,6 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		}
 }
 
-<GCODE>{
-[}]		{ yy_pop_state (); return (yytext[0]); }
-[^{};]+		{ yylval.str = yytext; return T_GCODE; }
-.		{ return yyerror ("illegal token found in @{..}"); }
-}
-
 <PVAR>{
 {VAR}		{ yylval.str = yytext; return T_VAR; }
 \}		{ yy_pop_state (); return (yytext[0]); }
@@ -262,28 +247,6 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 .		{ return yyerror ("illegal token found in input"); }
 
 %%
-int
-end_GH ()
-{
-  if (mystrcmp (eof_tok, yytext)) {
-    xfree (eof_tok);
-    yy_pop_state ();
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-int
-begin_GH ()
-{
-  int strlen = yyleng - 3;
-  eof_tok = (char *)xmalloc (strlen + 1);
-  memcpy (eof_tok, yytext + 2, strlen);
-  eof_tok[strlen] = 0;
-  yy_push_state (yywss ? WGH : GH);
-  return (yywss ? T_BWGH : T_BGH);
-}
 
 void
 begin_PSTR (int i, int state)
@@ -398,13 +361,6 @@ void
 yy_pop_pubstate ()
 {
   yy_pop_state ();
-}
-
-void
-eos_plinc ()
-{
-  if (yytext[yyleng - 1] == '\n')
-    PLINC;
 }
 
 void

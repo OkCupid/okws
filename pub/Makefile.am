@@ -25,15 +25,17 @@ pubserv2.o:	pubserv2.C
 pubserv2.lo:	pubserv2.C
 treestat.o:	treestat.C
 treestat.lo:	treestat.C
+pubmain.o:	pubmain.C
+pubmain.lo: pubmain.C
 
-CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C
-EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T
+CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C pubmain.C
+EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T pubmaim.T
 MAINTAINERCLEANFILES = Makefile.in
 
 dist-hook:
-	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C
+	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C pubmain.C
 
 .PHONY: tameclean 
 
 tameclean:
-	rm -f cache2.C pubd.C treestat.C pubserv2.C
+	rm -f cache2.C pubd.C treestat.C pubserv2.C pubmain.C

@@ -12,7 +12,6 @@ enum xpub_obj_typ_t {
   XPUB_FILE_VAR = 5,
   XPUB_SWITCH = 6,
   XPUB_SET_FUNC = 7,
-  XPUB_INCLIST = 8,
   XPUB_INCLUDE2 = 9,
   XPUB_RAW = 10,
   XPUB_SET_LOCAL_FUNC = 11
@@ -165,11 +164,6 @@ struct xpub_include_t {
   xpub_aarr_t env;
 };
 
-struct xpub_inclist_t {
-  int lineno;
-  xpub_fn_t files<>;
-};
-
 %struct xpub_obj_t;
 struct xpub_section_t {
   int lineno;
@@ -270,8 +264,6 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
  case XPUB_SET_FUNC:
  case XPUB_SET_LOCAL_FUNC:
    xpub_set_func_t set_func;
- case XPUB_INCLIST:
-   xpub_inclist_t inclist;
  case XPUB_RAW:
    xpub_raw_t raw;
 };

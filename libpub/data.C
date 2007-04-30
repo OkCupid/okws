@@ -198,13 +198,6 @@ pfile_sec_t::add (pfile_sec_t *s)
 }
 
 void
-pfile_include2_t::output (output_t *o, penv_t *genv) const
-{
-  o->output_err (genv, "include: can't call output on v2 include file", 
-		 lineno);
-}
-
-void
 bound_pfile_t::output (output_t *o, penv_t *genv) const
 {
   bpfcp_t rct = mkref (const_cast<bound_pfile_t *> (this));
@@ -271,20 +264,6 @@ evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const
     return eval_simple ();
   ptr<pbuf_t> st = eval_to_pbuf (e, m);
   return st->to_str (m, allownull);
-}
-
-void
-pfile_switch_t::output (output_t *o, penv_t *e) const
-{
-  pswitch_env_t *pse = eval_for_output (o, e);
-  // we might have given switch an empty file (so as to allow 
-  // the default to catch more stuff, for instance).
-  if (pse)
-    if (pse->fn)
-      include (o, e, pse->env (), pse->fn);
-    else if (pse->nested_env ()) {
-      pse->nested_env ()->output (o, e);
-    }
 }
 
 void
@@ -500,17 +479,6 @@ parr_mixed_t::eval_simple () const
   else return NULL;
 }
 
-void
-pfile_gs_t::output (output_t *o, penv_t *e) const
-{
-  frm.mark_frame (e);
-  e->aarr_n = 1;
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
-  els->output (o, e);
-  o->switch_mode (m);
-  e->needloc = true;
-  frm.pop_frame (o, e);
-}
 
 pfile_t::pfile_t (const phashp_t &h, pfile_type_t t)
   : err (PUBSTAT_OK), hsh (h), lineno (1), yybs (NULL), fp (NULL),
@@ -602,50 +570,6 @@ concatable_str_t::concat (concatable_t *l)
 }
 
 bool
-pfile_g_init_pdl_t::add (ptr<arglist_t> l)
-{
-  if (l->size () != 1 || !(*l)[0]->is_null ()) {
-    PWARN("init_publist () takes no arguments");
-    err = true;
-  }
-  return (!err);
-}
-
-bool
-pfile_inclist_t::add (ptr<arglist_t> l)
-{
-  str fn;
-  pbinding_t *b = NULL;
-  if (!err) {
-    u_int lim = l->size ();
-    for (u_int i = 0; i < lim; i++) {
-      if (!(fn = (*l)[i]->eval ()) || fn.len () <= 0) {
-	PWARN ("Bad filename in inclist (" << ali << "," << i << ")");
-	err = true;
-      } else if (!(b = parser->to_binding (fn))) {
-	PWARN (fn << ": cannot access file");
-	err = true;
-      } else {
-	files.push_back (b->fn); // use completed filename
-	delete b;
-      }
-    }
-  }
-  ali++;
-  return (!err);
-}
-
-bool
-pfile_inclist_t::validate ()
-{
-  if (files.size () <= 0) {
-    PWARN ("No files given to inclist () command");
-    err = true;
-  }
-  return (!err);
-}
-
-bool
 pfile_include2_t::add (ptr<arglist_t> l)
 {
   // XXX kind of kludgey, but fn should never be set if we're in 
@@ -667,6 +591,19 @@ pfile_include2_t::add (ptr<arglist_t> l)
       assert (s);
       fn_v2 = s;
     }
+  }
+  return (!err);
+}
+
+bool
+pfile_include2_t::add_base (ptr<arglist_t> l) 
+{
+  if (l->size () <= 0 || l->size () > 2) {
+    PWARN("Wrong number of arguments to include");
+    err = true;
+  } else if (l->size () == 2 && !(env = (*l)[1]->to_aarr ())) {
+    PWARN("Second argument to include must be an associative array");
+    err = true;
   }
   return (!err);
 }
@@ -841,84 +778,6 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
     }
   }
   return (!err);
-}
-
-bool
-pfile_g_include_t::add (ptr<arglist_t> l)
-{
-  if (err)
-    return false;
-  if (l->size () < 1) {
-    PWARN("Wrong number of arguments to include");
-    err = true;
-  } else {
-    
-    // true if the last element is an associate array
-    bool last_aa = (*l)[l->size () - 1]->to_aarr ();
-
-    if ((last_aa && l->size () == 4) || (!last_aa && l->size () == 3)) {
-      if (!(pubobj = (*l)[0]->eval ()) || pubobj.len () <= 0) {
-	PWARN("Bad first argument to include; pub object expected");
-	err = true;
-      } else {
-	l->pop_front ();
-      }
-    } else {
-
-      //
-      // no first arg was given (which corresponds to the name of the 
-      // publishing object); thus, we'll just assume the default name.
-      //
-      pubobj = str (ok_pubobjname);
-    }
-
-    if (!err) {
-      bool ret = pfile_g_ctinclude_t::add (l);
-      if (ret)
-	PFILE->add_ifile (fn);
-      return ret;
-    }
-  }
-  return (!err);
-}
-
-bool
-pfile_g_ctinclude_t::add (ptr<arglist_t> l)
-{
-  if (err) 
-    return false;
-  if (l->size () != 3 && l->size () != 2) {
-    PWARN("Bad syntax in ct_include arguments");
-    err = true;
-  } else if (!(osink = (*l)[0]->eval ()) || osink.len () <= 0) {
-    PWARN("Invalid output sink given to ct_include function");
-    err = true;
-  } else if (!(fn = (*l)[1]->eval ()) || fn.len () <= 0) {
-    PWARN("No filename given for ct_include");
-    err = true;
-  } else if (l->size () == 3 && !(env = (*l)[2]->to_aarr ())) {
-    PWARN("Bad third argument given to ct_include; shoud be ass-arr");
-    err = true;
-  } else if (ct_read () && !parser->to_binding (fn)) {
-    PWARN(fn << ": cannot open file");
-    err = true;
-  }
-  return (!err);
-}
-
-void
-pfile_switch_t::explore (pub_exploremode_t mode) const
-{
-  str fn;
-  for (u_int i = 0; i < files.size (); i++) {
-    fn = files[i];
-    if (fn) ::explore (mode, fn);
-  }
-  if (def && (fn = def->filename ()))
-    ::explore (mode, fn);
-
-  if (nullcase && (fn = nullcase->filename ()))
-    ::explore (mode, fn);
 }
 
 void
@@ -1141,67 +1000,6 @@ aarr_t::add (const str &n, const str &v)
 {
   add (New nvpair_t (n, New refcounted<pstr_t> (v)));
   return (*this);
-}
-
-void
-pfile_g_init_pdl_t::output (output_t *o, penv_t *e) const
-{
-  e->needloc = true;
-  vec<pfnm_t> v = file->get_ifiles ();
-  strbuf b ("\n");
-  u_int lim = v.size ();
-  for (u_int i = 0; i < lim; i++) {
-    if (i != 0) b << "\n";
-    b << "\tadd_pubfile (\"" << v[i] << "\");";
-  }
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_CODE);
-  o->output (e, b);
-  o->switch_mode (m);
-}
-
-void
-pfile_g_include_t::output (output_t *o, penv_t *e) const
-{
-  e->needloc = true;
-  if (!pubobj) {
-    o->output_err (e, "no pub object given", lineno);
-    return;
-  }
-
-  if (!fn) {
-    o->output_err (e, "no file to include", lineno);
-    return;
-  }
-
-  if (!osink) {
-    o->output_err (e, "no suio to output to", lineno);
-    return;
-  }
-
-  o->output_file_loc (e, lineno);
-
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_CODE);
-
-  str arg4;
-  if (env) {
-    strbuf a ("_pv");
-    a << e->aarr_n++;
-    strbuf b ("   {\n\taarr_t ");
-    b << a << ";\n\t" << a;
-    o->output (e, b);
-    env->output (o, e);
-    arg4 = strbuf ("&") << a;
-  } else {
-    arg4 = "NULL";
-  }
-  str flags = (e->opts & P_DEBUG) ? "P_DEBUG" : "0";
-  o->output (e, strbuf ("\t") << pubobj << "->include (&" << osink << ", " 
-	     << c_escape (fn) << ", " << flags << ", "  
-	     << arg4 << ");\n");
-  if (env) 
-    o->output (e, "\t}\n");
-
-  o->switch_mode (m);
 }
 
 static void
@@ -1438,14 +1236,6 @@ pfile_include2_t::dump2 (dumper_t *d) const
 }
 
 void
-pfile_inclist_t::dump2 (dumper_t *d) const
-{
-  u_int lim = files.size ();
-  for (u_int i = 0; i < lim; i++)
-    DUMP (d, "fn: " << files[i]);
-}
-
-void
 pfile_html_el_t::dump2 (dumper_t *d) const
 {
   str c = to_str ();
@@ -1547,21 +1337,6 @@ dumpable_t::dump (dumper_t *d) const
 }
 
 void
-pfile_sec_t::explore (pub_exploremode_t mode) const
-{
-  if (els)
-    for (pfile_el_t *e = els->first; e; e = els->next (e))
-      e->explore (mode);
-}
-
-void
-pfile_t::explore (pub_exploremode_t mode) const
-{
-  for (pfile_sec_t *s = secs.first; s; s = secs.next (s))
-    s->explore (mode);
-}
-
-void
 parr_mixed_t::dump2 (dumper_t *d) const
 {
   DUMP (d, "n elements: " << v.size ());
@@ -1600,13 +1375,6 @@ penv_t::finish_output (penv_state_t *s)
   cerrflag = s->errflag;
   delete s;
   return ret;
-}
-
-void
-pfile_set_func_t::output_config (penv_t *e) const
-{
-  env = e;
-  if (aarr) env->safe_push (aarr);
 }
 
 xpub_status_typ_t

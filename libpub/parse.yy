@@ -24,18 +24,10 @@
 %token <str> T_BPRE
 %token <str> T_EPRE
 
-%token T_BGUY
-%token T_EGUY
-%token T_BWGH
-%token T_BGH
-%token T_EGH
 %token T_VARS
 %token T_UVARS
 %token T_PRINT
-%token T_CTINCLUDE
-%token T_INCLUDE
 %token T_PTINCLUDE
-%token T_PTINCLIST
 %token T_PTSET
 %token T_PTSETL
 %token T_PTSWITCH
@@ -141,7 +133,6 @@ ptag_func: T_PTINCLUDE  { $$ = New pfile_include2_t (PLINENO); }
 	| T_PTSET	{ $$ = New pfile_set_func_t (PLINENO); }
 	| T_PTSETL      { $$ = New pfile_set_local_func_t (PLINENO); }
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }
-	| T_PTINCLIST	{ $$ = New pfile_inclist_t (PLINENO); }
 	;
 
 e_js_tag: T_EJS		{ PSECTION->add ($1); }
