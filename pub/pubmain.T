@@ -1,4 +1,5 @@
 /* $Id$ */
+// -*-c++-*-
 
 /*
  *
@@ -23,6 +24,7 @@
 
 #include <unistd.h>
 #include "pub.h"
+#include "pub2.h"
 #include "pub_parse.h"
 #include <stdlib.h>
 
@@ -32,40 +34,45 @@ usage ()
   fatal << "usage: [-wr] [-g|-h|-e] [-F|-f<config>] [-o <outfile>] <infile>\n";
 }
 
-int
-main (int argc, char *argv[])
+tamed static void
+main2 (int argc, char **argv)
 {
-  setprogname (argv[0]);
-  bool wss = false;
-  bool iinfo  = true;
-  bool readonly_out = false;
-  pfile_type_t m = PFILE_TYPE_NONE;
-  int ch;
-  str infile, outfile;
-  str configfile;
-  str jaildir;
-  bool nojail = false;
-  bool noconfig = false;
-  const char *e, *v;
-  u_int opts = 0;
-  bool nodebug = false;
-  // setup global gzip table
-  zinit ();
-  bool evalmode = false;
+  tvars {
+    bool wss (false);
+    bool iinfo  (true);
+    bool readonly_out (false);
+    pfile_type_t m (PFILE_TYPE_NONE);
+    int ch;
+    str infile, outfile;
+    str configfile;
+    str jaildir;
+    bool nojail (false);
+    bool noconfig (false);
+    const char *e, *v;
+    u_int opts (0);
+    bool nodebug (false);
+    bool evalmode (false);
+    pub_parser_t *ppt;
+    vec<str> cfgs;
+    bool use_default_cfg (false);
+    bhash<str> cfg_bmap;
+    bool cfg_succ (false);
+    bool ok;
+    u_int i;
+    int fd;
+    bool err;
+    ptr<pub2::local_publisher_t> lp;
+    zbuf b;
+  }
 
   // Initialize global pub variables
-  pub_parser_t *ppt = pub_parser_t::alloc ();
-
-  setprogname (argv[0]);
-
-  vec<str> cfgs;
-  bhash<str> cfg_bmap;
-  bool use_default_cfg = false;
+  zinit ();
+  ppt = pub_parser_t::alloc ();
 
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;
   
-  while ((ch = getopt (argc, argv, "DFIcwrgvhEeo:f:j:J")) != -1) {
+  while ((ch = getopt (argc, argv, "DFIcwrvheo:f:j:J")) != -1) {
     switch (ch) {
     case 'e':
       evalmode = true;
@@ -79,9 +86,6 @@ main (int argc, char *argv[])
     case 'r':
       readonly_out = true;
       break;
-    case 'g':
-      if (m) usage ();
-      m = PFILE_TYPE_CODE;
     case 'I':
       iinfo = false;
       break;
@@ -101,10 +105,6 @@ main (int argc, char *argv[])
     case 'h':
       if (m) usage ();
       m = PFILE_TYPE_H;
-      break;
-    case 'E':
-      if (m) usage ();
-      m = PFILE_TYPE_EC;
       break;
     case 'o':
       outfile = optarg;
@@ -138,31 +138,33 @@ main (int argc, char *argv[])
 
   if (!nodebug)
     opts |= P_DEBUG;
-  ppt->set_opts (opts);
+
+  lp = New refcounted<pub2::local_publisher_t> (ppt, opts);
 
 #ifdef PDEBUG
   yydebug = 1;
 #endif /* PDEBUG */
   
-  bool cfg_succ = false;
-  for (u_int i = 0; i < cfgs.size (); i++)
-    if (ppt->parse_config (cfgs[i]))
+  for (i = 0; i < cfgs.size (); i++) {
+    twait { lp->run_cfg (cfgs[i], mkevent (ok)); }
+    if (ok) {
       cfg_succ = true;
-
+    }
+  }
+  
   if (configfile && !cfg_succ)
     warn << "pub running without default variable bindings\n";
 
   if (evalmode) {
     bool noisy = (optind < argc - 1);
     for (int i = optind; i < argc; i++) {
-      str s = ppt->cfg (argv[i]);
+      str s = lp->cfg (argv[i]);
       if (noisy) printf ("(%s) -> ", argv[i]);
       if (s) printf ("%s", s.cstr ());
       if (noisy || (s && *s)) printf ("\n");
     }
     exit (0);
   }
-
 
   if (optind != argc - 1)
     usage ();
@@ -173,12 +175,6 @@ main (int argc, char *argv[])
     if ((out2 = suffix_sub (infile, ".shtml", ".html")) ||
 	(out2 = suffix_sub (infile, ".pphp", ".php"))) {
       m2 = PFILE_TYPE_H;
-    } else if ((out2 = suffix_sub (infile, ".g", ".C")) ||
-	       (out2 = suffix_sub (infile, ".ok", ".C"))) {
-      nojail = true;
-      m2 = PFILE_TYPE_CODE;
-    } else if ((out2 = suffix_sub (infile, ".ec", ".C"))) {
-      m2 = PFILE_TYPE_EC;
     }
     if (!m) m = m2;
     if (!outfile) outfile = out2;
@@ -205,37 +201,38 @@ main (int argc, char *argv[])
   
   // P_WSS needs to be a parser option, so reset the options here.
   ppt->set_opts (opts);
+  lp->set_opts (opts);
 
-  int fd = myopen (outfile, readonly_out ? 0444 : 0644);
+  fd = myopen (outfile, readonly_out ? 0444 : 0644);
   if (fd < 0)
     usage ();
-  bool err = false;
+  err = false;
 
-  bpfcp_t bnd;
-  const pbinding_t *i;
-
-  if (!(i = ppt->to_binding (infile, NULL, true))) {
-    warn << infile << ": cannot open file\n";
-    err = true;
-  } else if (!(bnd = ppt->parse (i, m))) {
-    warn << infile << ": bailing out due to parse errors\n";
+  twait { lp->run (&b, infile, mkevent (ok)); }
+  if (!ok) {
+    warn << infile << ": cannot open/parse file\n";
     err = true;
   } else {
     /*
     if (ppt->parseerr)
       err = true;
     */
-#ifdef PDEBUG 
-    dumper_t d;
-    bnd->dump (&d);
-#endif /* PDEBUG */
 
-    zbuf b;
-    if (!ppt->include (&b, bnd, opts) || (b.output (fd) < 0))
+    if (b.output (fd) < 0) {
+      warn << outfile << ": cannot output\n";
       err = true;
+    }
   }
   close (fd);
   if (err)
     unlink (outfile);
-  return (err ? 1 : 0);
+  exit (err ? 1 : 0);
+}
+
+int
+main (int argc, char *argv[])
+{
+  setprogname (argv[0]);
+  main2 (argc, argv);
+  amain ();
 }

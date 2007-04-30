@@ -51,21 +51,21 @@ class pstr_t;
 class pstr_el_t;
 class penv_t;
 
-typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1, 
-	       PFILE_SWITCH = 2, PFILE_VAR = 3, 
-	       PFILE_PSTR = 4, PFILE_CCODE = 5, 
-	       PFILE_GFRAME = 6, PFILE_FILE = 7, 
-	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
-	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
-	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13 } pfile_el_type_t;
+typedef enum { PFILE_HTML_EL = 0, 
+	       PFILE_INC = 1, 
+	       PFILE_SWITCH = 2, 
+	       PFILE_VAR = 3, 
+	       PFILE_PSTR = 4, 
+	       PFILE_FILE = 7, 
+	       PFILE_SEC = 8, 
+	       PFILE_INCLUDE = 9,
+	       PFILE_FUNC = 10, 
+	       PFILE_INCLUDE2 = 12, 
+	       PFILE_RAW = 13 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
-	       PFILE_TYPE_GUY = 1,
 	       PFILE_TYPE_H = 2,
 	       PFILE_TYPE_WH = 3,
-	       PFILE_TYPE_CODE = 4,
-	       PFILE_TYPE_EC = 5,
-	       PFILE_TYPE_WEC = 6,
                PFILE_TYPE_CONF = 7,
 	       PFILE_TYPE_CONF2 = 8} pfile_type_t;
 
@@ -429,11 +429,9 @@ public:
   virtual void output_header (penv_t *e) {}
   virtual void output_err_stacktrace (penv_t *e, const str &s, int l = -1);
 
-  virtual void output_file_loc (penv_t *e, int lineno) {}
   virtual void output_set_func (penv_t *e, const pfile_set_func_t *s) = 0;
 
   virtual pfile_type_t switch_mode (pfile_type_t m) { return PFILE_TYPE_NONE; }
-  virtual str switch_osink (const str &ns) { return NULL; }
   virtual str switch_class (const str &nc) { return NULL; }
   virtual str get_class () const { return NULL; }
   virtual bool descend () const { return true; }
@@ -448,7 +446,7 @@ public:
 class output_std_t : public output_t {
 public:
   output_std_t (zbuf *o, pfile_type_t m = PFILE_TYPE_H, u_int opt = 0) 
-    : output_t (m, opt), out (o), osink_open (false) {}
+    : output_t (m, opt), out (o) {}
   output_std_t (zbuf *o, const pfile_t *f = NULL);
   virtual ~output_std_t () {}
 
@@ -458,18 +456,14 @@ public:
   void output_err (penv_t *e, const str &s, int l = -1);
   void output_info (penv_t *e, const str &s, int l = -1);
   void output_header (penv_t *e);
-  void output_file_loc (penv_t *e, int lineno);
   virtual void output_set_func (penv_t *e, const pfile_set_func_t *a);
   pfile_type_t switch_mode (pfile_type_t m);
-  str switch_osink (const str &ns);
   str switch_class (const str &nc);
   str get_class () const { return classname; }
 
 private:
   zbuf *out;
-  str osink;
   str classname;
-  bool osink_open;
 };
 
 

@@ -1,13 +1,13 @@
 
 $(PROGRAMS): $(LDEPS_PUB)
 
-noinst_HEADERS = pubd.h pubd2.h
+noinst_HEADERS = pubd2.h
 
 okwsbin_PROGRAMS = pub treestat
 okwsexec_PROGRAMS = pubd
 pub_SOURCES = pubmain.C
 pub_LDADD = $(LDADD_PUB)
-pubd_SOURCES = pubd.C pubserv.C pubserv2.C cache2.C 
+pubd_SOURCES = pubd.C pubserv2.C cache2.C 
 pubd_LDADD = $(LDADD_PUB)
 treestat_SOURCES = treestat.C
 treestat_LDADD = $(LDADD_PUB)
@@ -15,7 +15,7 @@ treestat_LDADD = $(LDADD_PUB)
 SUFFIXES = .T .C .h
 
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 cache2.o:	cache2.C
 cache2.lo:	cache2.C

@@ -22,7 +22,6 @@
  *
  */
 #include "pubd2.h"
-#include "pubd.h"
 #include "puberr.h"
 
 namespace pubserv2 {

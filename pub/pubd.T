@@ -217,8 +217,8 @@ main_T (int argc, char **argv)
   if (!uname) uname = cfgparse->cfg ("RunAsUser", true);
   if (!gname) gname = cfgparse->cfg ("RunAsGroup", true);
 
-  warn ("OKWS version %s, Pub v%d, pid %d\n", 
-	OKWS_PATCHLEVEL_STR, version, int (getpid ()));
+  warn ("OKWS version %s, Pub v2, pid %d\n", 
+	OKWS_PATCHLEVEL_STR, int (getpid ()));
   
   // Since we're spawned via axprt_unix_dospawnv, that means
   // that our parent is going to be sending us RPCs on
