@@ -4,7 +4,7 @@ $(PROGRAMS): $(LDEPS)
 okwslib_LTLIBRARIES = libpub.la
 
 libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
-	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
+	pub.C xdr.C slave.C  zstr.C okconst.C \
 	pvalw.C jail.C fd_prot.C lbalance.C rpcwindow.C pub2.C clone.C \
 	debug.C stats.C 
 

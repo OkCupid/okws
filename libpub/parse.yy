@@ -127,11 +127,7 @@ ptag: ptag_func
 	}
 	ptag_list ptag_close
 	{
-	  if (PFUNC->validate ()) {
-	    if (parser->do_explore ()) {
-	      PFUNC->explore (EXPLORE_PARSE);
-	    }
-	  } else
+	  if (!PFUNC->validate ()) 
 	    PARSEFAIL;
 	  $$ = POP_PFUNC();
 	}
@@ -141,20 +137,7 @@ ptag_close: ';' T_EPTAG
 	| T_EPTAG
 	;
 
-ptag_func: T_PTINCLUDE  
-	{ 
-	   switch (parser->get_include_version ()) {
-	   case XPUB_V2:
-	      $$ = New pfile_include2_t (PLINENO); 
-	      break;
-	   case XPUB_V1:
-	      $$ = New pfile_include_t (PLINENO);
- 	      break;
-	   default:
-	      panic ("unexpected PUB version (not 1 or 2)\n");
-	      break;
-	   }
-        }
+ptag_func: T_PTINCLUDE  { $$ = New pfile_include2_t (PLINENO); }
 	| T_PTSET	{ $$ = New pfile_set_func_t (PLINENO); }
 	| T_PTSETL      { $$ = New pfile_set_local_func_t (PLINENO); }
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }

@@ -94,7 +94,6 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_WSS     1 << 6        /* white space stripping */
 #define P_CLEAR   1 << 7        /* used to clear all other options */
 
-#define P_INCLUDE_V2  (1 << 9)   // support V2 include semantics
 #define P_EXPORTER    (1 << 10)  // export files via RPC
 #define P_NOPARSE     (1 << 11)  // don't parse file at all
 #define P_NOLOCALE    (1 << 12)  // Don't localize file
@@ -355,8 +354,6 @@ public:
   bool finish_output (penv_state_t *s);
 
   void resize (size_t s);
-  void gresize (size_t gvs);
-  void resize (size_t s, size_t gvs) { resize (s); gresize (gvs); }
   size_t size () const { return estack.size (); }
   void push (aarr_t *a) { estack.push_back (a); }
   void safe_push (ptr<const aarr_t> a);
@@ -378,9 +375,6 @@ public:
   void compile_err (const str &s);
   void warning (const str &s) const;
   bool success () const { return !cerrflag; }
-
-  bool go_g_var (const str &n) const;
-  bool is_gvar (const str &v) const;
 
   str stack_to_str () const;
   bool i_stack_add (bpfcp_t t);
@@ -623,16 +617,14 @@ typedef qhash<str, u_int> qhsi_t;
 
 class pfile_frame_t : public virtual dumpable_t {
 public:
-  pfile_frame_t () : sss (0), sgvss (0) {}
-  void mark_frame (penv_t *p) const 
-  { sss = p->size () ; sgvss = p->gvsize (); }
+  pfile_frame_t () : sss (0) {}
+  void mark_frame (penv_t *p) const { sss = p->size () ; }
   void push_frame (penv_t *p, aarr_t *f) const;
   void pop_frame (output_t *o, penv_t *p) const 
-  { if (o->stack_restore ()) p->resize (sss, sgvss); }
+  { if (o->stack_restore ()) p->resize (sss); }
   virtual str get_obj_name () const { return "pfile_frame_t"; }
 private:
   mutable int sss;    /* start stack size */
-  mutable int sgvss;  /* start gvar stack size */
 };
 
 class parr_t;
@@ -826,33 +818,6 @@ protected:
   bool err;
   vec<pfnm_t> files;
   u_int ali; // arglist index
-};
-
-class pfile_include_t : public pfile_func_t {
-public:
-  pfile_include_t (int l, ptr<aarr_arg_t> e = NULL) : 
-    pfile_func_t (l), err (false), env (e) {}
-  pfile_include_t (const xpub_include_t &x);
-  virtual ~pfile_include_t () {}
-  virtual void output (output_t *o, penv_t *e) const;
-  virtual bool add (ptr<arglist_t> l);
-  virtual bool validate ();
-  virtual pfile_el_type_t get_type () const { return PFILE_INCLUDE; }
-
-  virtual void dump2 (dumper_t *d) const;
-  virtual str get_obj_name () const { return "pfile_include_t"; }
-  virtual bool to_xdr (xpub_obj_t *x) const;
-  void to_xdr_base (xpub_obj_t *x) const;
-  bool add_base (ptr<arglist_t> l);
-
-  // For pub2
-  virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
-			xpub_status_cb_t , CLOSURE) const;
-  virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
-protected:
-  bool err;
-  pfnm_t fn;
-  ptr<aarr_arg_t> env;
 };
 
 class pfile_include2_t : public pfile_include_t {
@@ -1442,7 +1407,6 @@ public:
   void push_parr (ptr<parr_t> a);
   ptr<parr_t> pop_parr ();
 
-  xpub_version_t get_include_version () const { return XPUB_V2; }
   xpub_version_t get_version () const { return XPUB_V2; }
 
   //

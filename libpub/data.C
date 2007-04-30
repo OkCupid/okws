@@ -83,19 +83,10 @@ penv_t::resize (size_t s)
 }
 
 void
-penv_t::gresize (size_t gvs)
-{
-  assert (gvs <= estack.size ());
-  while (gvs != gvars.size ())
-    gvars.pop_back (); // don't delete!!
-}
-
-void
-pfile_frame_t::push_frame (penv_t *p, aarr_t *f, const gvars_t *g) const
+pfile_frame_t::push_frame (penv_t *p, aarr_t *f) const
 {
   mark_frame (p);
   if (f) p->push (f);
-  if (g) p->push (g);
 }
 
 void
@@ -363,17 +354,6 @@ aarr_t::add (nvpair_t *p)
 }
 
 void
-gcode_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
-{
-  if (e->get_tlf ()) 
-    ps->add (New pbuf_var_t (nm));
-  else {
-    str s = strbuf ("@{") << nm << "}";
-    ps->add (s);
-  }
-}
-
-void
 parr_mixed_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
   u_int lim = v.size ();
@@ -389,10 +369,6 @@ parr_mixed_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 void
 pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
-  if (e->go_g_var (nm)) {
-    ps->add (New pbuf_var_t (nm));
-    return;
-  }
   const pval_t *pv;
   // for internal pvar_t (for instance, config variables), the pval_t was 
   // specified at initialization; this is a bit of a hack, but it should 
@@ -421,18 +397,6 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
   }
   if (popit)
     e->eval_pop (nm);
-}
-
-bool
-penv_t::go_g_var (const str &n) const
-{
-  switch (evm) {
-  case EVAL_FULL:
-  case EVAL_INTERNAL:
-    return false;
-  default:
-    return is_gvar (n);
-  }
 }
 
 const pval_t *
@@ -703,54 +667,6 @@ pfile_include2_t::add (ptr<arglist_t> l)
       assert (s);
       fn_v2 = s;
     }
-  }
-  return (!err);
-}
-
-bool
-pfile_include_t::add_base (ptr<arglist_t> l) 
-{
-  if (l->size () <= 0 || l->size () > 2) {
-    PWARN("Wrong number of arguments to include");
-    err = true;
-  } else if (l->size () == 2 && !(env = (*l)[1]->to_aarr ())) {
-    PWARN("Second argument to include must be an associative array");
-    err = true;
-  }
-  return (!err);
-}
-
-bool
-pfile_include_t::add (ptr<arglist_t> l)
-{
-  pbinding_t *b = NULL;
-  if (!err) {
-    if (fn) {
-      PWARN("Include tags only take one p-argument");
-      err = true;
-    } else if (!add_base (l)) {
-      err = true;
-    } else if (!(fn = (*l)[0]->eval ()) || fn.len () <= 0) {
-      PWARN("Bad filename in include");
-      err = true;
-    } else if (!(b = parser->to_binding (fn))) {
-      PWARN(fn << ": cannot access file");
-      err = true;
-    } else {
-      fn = b->fn; // use the completed filename
-      delete b;
-    }
-  }
-
-  return (!err);
-}
-
-bool
-pfile_include_t::validate ()
-{
-  if (!fn) {
-    PWARN("No file to include");
-    err = true;
   }
   return (!err);
 }
@@ -1206,26 +1122,6 @@ output_std_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
   s->output_runtime (e);
 }
 
-void
-pfile_g_ctinclude_t::output (output_t *o, penv_t *e) const
-{
-  e->needloc = true;
-  if (!osink) {
-    o->output_err (e, "no output sink given", lineno);
-    return;
-  }
-  o->output_file_loc (e, lineno);
-  
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
-  str oo = o->switch_osink (osink);
-
-  pfile_include_t::output (o, e);
-
-  o->switch_osink (oo);
-  o->switch_mode (m);
-
-}
-
 aarr_t &
 aarr_t::add (const str &n, zbuf *z)
 {
@@ -1420,25 +1316,6 @@ pbuf_var_t::to_str_2 (pub_evalmode_t m) const
   }
 }
 
-void
-pfile_gprint_t::output (output_t *o, penv_t *e) const
-{
-  e->needloc = true;
-
-  if (!outv)
-    return;
-
-  o->output_file_loc (e, lineno);
-
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
-  str oo = o->switch_osink (outv);
-
-  pfile_html_sec_t::output (o, e);
-
-  o->switch_osink (oo);
-  o->switch_mode (m);
-}
-
 pfile_type_t
 output_std_t::switch_mode (pfile_type_t m)
 {
@@ -1537,19 +1414,6 @@ dumper_t::set_sp_buf ()
   sp_buf[level*DUMP_INDENT] = '\0';
 }
 
-static void
-_gvars_t_dump (dumper_t *d, const str &s)
-{
-  DUMP(d, "gv: " << s);
-}
-
-void
-gvars_t::dump2 (dumper_t *d) const
-{
-  gvtab_t *p = const_cast<gvtab_t *> (&tab);
-  p->traverse (wrap (_gvars_t_dump, d));
-}
-
 void
 pstr_t::dump2 (dumper_t *d) const 
 {
@@ -1564,14 +1428,6 @@ pval_zbuf_t::dump2 (dumper_t *d) const
 }
 
 void
-pfile_include_t::dump2 (dumper_t *d) const
-{
-  if (fn) 
-    DUMP (d, "fn: " << fn);
-  env->dump (d);
-}
-
-void
 pfile_include2_t::dump2 (dumper_t *d) const
 {
   if (fn_v2) {
@@ -1581,31 +1437,12 @@ pfile_include2_t::dump2 (dumper_t *d) const
   env->dump (d) ;
 }
 
-
 void
 pfile_inclist_t::dump2 (dumper_t *d) const
 {
   u_int lim = files.size ();
   for (u_int i = 0; i < lim; i++)
     DUMP (d, "fn: " << files[i]);
-}
-
-
-void
-pfile_g_ctinclude_t::dump2 (dumper_t *d) const 
-{
-  str os = osink; if (!os) os = "(NULL)";
-  DUMP(d, "osink: " << os <<  "; fn: " << fn);
-}
-
-void
-pfile_g_include_t::dump2 (dumper_t *d) const 
-{
-  str os = osink; if (!os) os = "(NULL)";
-  str po = pubobj; if (!po) po = "(NULL)";
-  DUMP(d, "osink: " << os << "; fn: " << fn);
-  DUMP(d, "pubobj: " << po);
-  env->dump (d);
 }
 
 void
@@ -1615,23 +1452,6 @@ pfile_html_el_t::dump2 (dumper_t *d) const
   DUMP(d, "-{ data (" << c.len () << "):");
   d->output (c, false);
   DUMP(d, " }");
-}
-
-void
-pfile_gprint_t::dump2 (dumper_t *d) const 
-{
-  DUMP(d, "outv: " << outv);
-  pfile_html_sec_t::dump2 (d);
-}
-
-void
-pfile_code_t::dump2 (dumper_t *d) const 
-{
-  str s = sb;
-  DUMP(d, "-{ code (" << s.len () << "):");
-  d->output (s, false);
-  DUMP(d, " }");
-  pfile_sec_t::dump2 (d);
 }
 
 void
@@ -1649,23 +1469,11 @@ pfile_t::dump2 (dumper_t *d) const
   case PFILE_TYPE_NONE:
     t = "none";
     break;
-  case PFILE_TYPE_GUY:
-    t = "guy";
-    break;
   case PFILE_TYPE_H:
     t = "html";
     break;
   case PFILE_TYPE_WH:
     t = "ws-stripped html";
-    break;
-  case PFILE_TYPE_CODE:
-    t = "c++-code";
-    break;
-  case PFILE_TYPE_WEC:
-    t = "ws-stripped Embedded C++";
-    break;
-  case PFILE_TYPE_EC:
-    t = "Embedded C++";
     break;
   default:
     t = "other/bad file type";
@@ -1736,28 +1544,6 @@ dumpable_t::dump (dumper_t *d) const
   d->begin_obj (get_obj_name (), (void *)this, get_lineno ());
   dump2 (d);
   d->end_obj ();
-}
-
-bool
-penv_t::is_gvar (const str &v) const
-{
-  int rc;
-  for (int i = gvars.size () - 1; i >= 0; i--) 
-    if ((rc = gvars[i]->lookup (v)))
-      return (rc < 0 ? false : true);
-  return false;
-}
-
-void
-pfile_code_t::output (output_t *o, penv_t *e) const
-{
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_CODE);
-  if (e->needloc) {
-    o->output_file_loc (e, lineno);
-    e->needloc = false;
-  }
-  o->output (e, sb);
-  o->switch_mode (m);
 }
 
 void
@@ -1905,7 +1691,8 @@ penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
 penv_t::penv_t (const penv_t &e)
   : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
     cerr (e.cerr), opts (e.opts), evm (e.evm),
-    estack (e.estack), gvars (e.gvars), fstack (e.fstack), hold (e.hold),
+    estack (e.estack), 
+    fstack (e.fstack), hold (e.hold),
     istack (e.istack), olineno (e.olineno), 
     _localizer (e._localizer) {}
 

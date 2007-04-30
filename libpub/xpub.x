@@ -30,7 +30,6 @@ enum oksig_t {
 };
 
 enum xpub_version_t {
-  XPUB_V1 =1,
   XPUB_V2 = 2
 };
 
@@ -156,8 +155,6 @@ struct xpub_aarr_t {
 
 union xpub_include_fn_t switch (xpub_version_t vrs)
 {
-case XPUB_V1:
-  xpub_fn_t v1;
 case XPUB_V2:
   xpub_pstr_t v2;
 };
