@@ -31,7 +31,7 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [-l | -p | -t | -1] [-a?] "
+  warnx << "usage: okmgr [-l |  -t | -1] [-a?] "
 	<< "<file1> <file2> ...\n";
   exit (1);
 }
@@ -53,22 +53,6 @@ okmgr_launch_t::okmgr_launch_t (const str &s, const vec<str> &f,
 
 okmgr_logturn_t::okmgr_logturn_t (const str &s)
   : okmgr_clnt_t (s) {}
-
-okmgr_pub_t::okmgr_pub_t (const str &s, const vec<str> &f, int v)
-  : okmgr_clnt_t (s), _version (v)
-{
-  _fns.rebind = true;
-  _fns.files.setsize (f.size ());
-  for (size_t i = 0; i < f.size (); i++)
-    _fns.files[i] = f[i];
-}
-
-void
-okmgr_pub_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
-{
-  int procno = (_version == 2 ? OKMGR_REPUB2 : OKMGR_REPUB);
-  h->call (procno, &_fns, s, cb);
-}
 
 void
 okmgr_logturn_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
@@ -157,7 +141,6 @@ main (int argc, char *argv[])
   str configfile;
   vec<str> files;
   ok_set_typ_t set_typ = OK_SET_SOME;
-  int version = 2;
   bool no_config = false;
 
   while ((ch = getopt (argc, argv, "lts:f:F")) != -1)
@@ -210,9 +193,6 @@ main (int argc, char *argv[])
 
   okmgr_clnt_t *t = NULL;
   switch (m) {
-  case CTL_MODE_PUB:
-    t = New okmgr_pub_t (sockname, files, version);
-    break;
   case CTL_MODE_LAUNCH:
     t = New okmgr_launch_t (sockname, files, set_typ);
     break;

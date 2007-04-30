@@ -190,15 +190,6 @@ http_status_set_t::get_desc (int n, str *l) const
   return s->sdesc;
 }
 
-ptr<http_pub_t>
-http_pub_t::alloc (int n, const pub_base_t &p, const str &fn, aarr_t *env, 
-		   htpv_t v)
-{
-  ptr<http_pub_t> ret (New refcounted<http_pub_t> (n, p, fn, env, v));
-  if (ret->err) return NULL;
-  else return ret;
-}
-
 u_int
 http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
 { 

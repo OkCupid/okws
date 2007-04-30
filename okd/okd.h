@@ -133,7 +133,6 @@ public:
     ok_httpsrv_t (NULL, logfd_in, pub2fd_in),
     config_parser_t (),
     okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
-    pubd (NULL), 
     configfile (cf),
     okldfd (okldfd_in),
     sdflag (false), sd2 (false), dcb (NULL), 
@@ -159,26 +158,14 @@ public:
 
   void got_alias (vec<str> s, str loc, bool *errp);
   void got_regex_alias (vec<str> s, str loc, bool *errp);
-  void got_pubd_unix (vec<str> s, str loc, bool *errp);
-  void got_pubd_inet (vec<str> s, str loc, bool *errp);
-  void got_pubd_exec (vec<str> s, str loc, bool *errp);
   void got_err_doc (vec<str> s, str loc, bool *errp);
 
   void gotfd (int fd, ptr<okws_fd_t> desc);
-
-  void pubconf (svccb *sbp);
-  void getfile (svccb *sbp);
-  void lookup (svccb *sbp);
-
-  void pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err);
-  void lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err);
-  void gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> r, clnt_stat err);
 
   // Well, no one ever said event-driven programming was pretty
   void launch (CLOSURE);
 
   void launch_logd (cbb cb, CLOSURE);
-  void launch_pubd (cbb cb, CLOSURE);
 
   void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
   void newserv (int fd);
@@ -197,8 +184,6 @@ public:
 
   ok_usr_t okd_usr; 
   ok_grp_t okd_grp;
-
-  helper_t *pubd;
 
   void open_mgr_socket ();
 

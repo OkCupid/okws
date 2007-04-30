@@ -46,15 +46,6 @@ private:
   const str _sockname;
 };
 
-class okmgr_pub_t : public okmgr_clnt_t {
-public:
-  okmgr_pub_t (const str &s, const vec<str> &f, int v);
-  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
-private:
-  xpub_fnset_t _fns;
-  int _version;
-};
-
 class okmgr_logturn_t : public okmgr_clnt_t {
 public:
   okmgr_logturn_t (const str &s ) ;

@@ -39,7 +39,7 @@
 extern char ** environ;
 extern int optind;
 
-#define PUBD2_KEY "Pubd2ExecPath"
+#define PUBD2_KEY "PubdExecPath"
 
 void
 okld_t::set_signals ()
@@ -604,7 +604,6 @@ bool
 okld_t::parse_file (const str &cf)
 {
   conftab ct;
-  _config_no_pub_v2_support = false;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -631,7 +630,6 @@ okld_t::parse_file (const str &cf)
 			       &ok_base_t::got_ports))
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
-    .add ("NoPub2", &_config_no_pub_v2_support)
     .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
     .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
     .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
@@ -764,13 +762,9 @@ okld_t::post_config (const str &cf)
     errors = true;
   }
 
-  if (!_config_no_pub_v2_support) {
-    if (!_pub_v2_error && !pubd2exc) {
-      if (!guess_pubd2 (cf))
-	errors = true;
-    }
-  } else {
-    warn << "Disabling Pub v2 support.\n";
+  if (!_pub_v2_error && !pubd2exc) {
+    if (!guess_pubd2 (cf))
+      errors = true;
   }
 
   if (allports.size () == 0) {
@@ -877,6 +871,7 @@ okld_t::encode_env ()
     .insert ("clock", int (clock_mode))
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
+    ;
 
   if (mmc_file)
     env.insert ("mmcf", mmc_file);

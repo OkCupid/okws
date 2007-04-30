@@ -63,24 +63,6 @@ okd_t::set_signals ()
 okd_t::~okd_t ()
 {
   if (logd) delete logd;
-  if (pubd) delete pubd;
-}
-
-void
-okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
-{
-  str name;
-  strip_comments (&s);
-  if (s.size () != 2 || access (s[1], R_OK) != 0) {
-    warn << loc << ": usage: PubdUnix <socketpath>\n";
-    *errp = true;
-  } else if (!is_safe (s[1])) {
-    warn << loc << ": Pubd socket path (" << s[1]
-	 << ") contains unsafe substrings\n";
-    *errp = true;
-  } else {
-    pubd = New helper_unix_t (pub_program_1, s[1]);
-  }
 }
 
 void
@@ -105,56 +87,6 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
     // for pub v1
     errdocs.insert (New errdoc_t (status, s[2]));
   }
-}
-
-void
-okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
-{
-  ptr<argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) {
-    // push back the packet size
-    s.push_back ("-s");
-    s.push_back (strbuf("0x%x", ok_axprt_ps));
-    pubd = New helper_exec_t (pub_program_1, s, 0,
-			      HLP_OPT_PING|HLP_OPT_NORETRY, env);
-  } else {
-    pubd = NULL;
-  }
-}
-
-void
-okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
-{
-  strip_comments (&s);
-  u_int port = ok_pubd_port;
-  str name = "localhost";
-  if (s.size () == 2) {
-    if (!convertint (s[1], &port))
-      name = s[1];
-  } else if (s.size () != 3 || !convertint (s[2], &port) || !(name = s[1])) {
-    warn << loc << ": usage: PubdInet <hostname> <port>\n";
-    *errp = true;
-    return;
-  }
-  pubd = New helper_inet_t (pub_program_1, name, port);
-}
-
-tamed void 
-okd_t::launch_pubd (cbb cb)
-{
-  tvars {
-    bool rc (true);
-  }
-  if (pubd) {
-    twait { pubd->connect (mkevent (rc)); }
-    if (!rc) {
-      warn << "launch of pub daemon (pubd) failed.\n";
-    }
-  } else {
-    warn << "Pub v1 is off since no Pubd was specified; "
-	 << "Pub v1 calls will fail\n";
-  }
-  TRIGGER (cb, rc);
 }
 
 
@@ -288,9 +220,6 @@ okd_t::parse_file (const str &cf)
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
     .add ("OkdAcceptMessages", &accept_msgs)
 
-    .add ("PubdUnix", wrap (this, &okd_t::got_pubd_unix))
-    .add ("PubdInet", wrap (this, &okd_t::got_pubd_inet))
-    .add ("PubdExecPath", wrap (this, &okd_t::got_pubd_exec))
     .add ("ErrorDoc", wrap (this, &okd_t::got_err_doc))
     .add ("SendSockAddrIn", &ok_send_sin)
 
@@ -353,7 +282,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("SvcLog")
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
-    .ignore ("Pubd2ExecPath")
+    .ignore ("PubdExecPath")
     .ignore ("NoPub2")
     .ignore ("Pub2WSS")
     .ignore ("Pub2Caching")
@@ -634,7 +563,7 @@ tamed void
 okd_t::launch ()
 {
   tvars {
-    bool pubd_rc, logd_rc, pub2_rc (true);
+    bool logd_rc, pub2_rc (true);
     bool do_exit (false);
   }
 
@@ -646,15 +575,10 @@ okd_t::launch ()
   init_pub2 ();
 
   twait {
-    launch_pubd (mkevent (pubd_rc));
     launch_logd (mkevent (logd_rc));
     launch_pub2 (mkevent (pub2_rc));
   }
 
-  if (!pubd_rc) {
-    warn << "Pubd, version 1, failed to launch: aborting\n";
-    do_exit = true;
-  } 
   if (!logd_rc) {
     warn << "failed to connect to oklogd; aborting\n";
     do_exit = true;

@@ -12,31 +12,22 @@ okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
 	suiolite.h ahparse.h abuf_pipe.h mimetypes.h
 
-SUFFIXES = .T .g .C
-.g.C:
-	@rm -f $@
-	-$(PUB) $(PUBFLAGS) -o $@ $< || rm -f $@
-
 .T.C:
-	-$(TAME) -o $@ $< || rm -f $@
+	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 resp.o: resp.C
 resp.lo: resp.C
-err.o: err.C
-err.lo: err.C
 
-EXTRA_DIST = .cvsignore err.g resp.T
-CLEANFILES = core *.core *~ *.rpo err.C resp.C
+EXTRA_DIST = .cvsignore resp.T
+CLEANFILES = core *.core *~ *.rpo resp.C
 
-.PHONY: sourceclean tameclean
-sourceclean:
-	rm -f err.C
+.PHONY: tameclean
 
 tameclean:
 	rm -f resp.C
 
 dist-hook:
-	cd $(distdir) && rm -f err.C resp.C
+	cd $(distdir) && rm -f resp.C
 
 MAINTAINERCLEANFILES = Makefile.in
 

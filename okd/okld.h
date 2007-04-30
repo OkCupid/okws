@@ -302,6 +302,7 @@ public:
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
+  void got_pubd2_exec (vec<str> s, str loc, bool *errp);
 
   void okld_exit (int rc);
 
@@ -424,7 +425,6 @@ private:
   // variables set during configuration stage
   str _config_grp, _config_okd_gr, _config_okd_un;
   str _config_root, _config_wheel;
-  bool _config_no_pub_v2_support;
 						 
 
 };
