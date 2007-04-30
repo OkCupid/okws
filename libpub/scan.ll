@@ -129,6 +129,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <H,WH>{
 {TPRFX}include		{ yy_push_state (PTAG); return T_PTINCLUDE; }
 {TPRFX}inclist		{ yy_push_state (PTAG); return T_PTINCLIST; }
+{TPRFX}setl		{ yy_push_state (PTAG); return T_PTSETL; }
 {TPRFX}set		{ yy_push_state (PTAG); return T_PTSET; }
 {TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
 {TPRFX}"#"	    	|

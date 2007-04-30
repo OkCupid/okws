@@ -194,6 +194,13 @@ namespace pub2 {
     // from SVN version 2182 to 2179.
     env_local = env ? New penv_t (*env) : New penv_t (_genv);
 
+    // 
+    // Running with GLOBALSET allows <!--#set --> to behave 'globally'
+    // and not to make only local changes to the evironment variable
+    // stack.
+    //
+    op |= P_GLOBALSET;
+
     typ = (op & P_WSS) ? PFILE_TYPE_WH : PFILE_TYPE_H;
     o = New refcounted<output_std_t> (b, typ, op);
     st = env_local->start_output (a, op);

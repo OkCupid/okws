@@ -298,7 +298,10 @@ bool
 pub_base_t::include (zbuf *b, bpfcp_t f, u_int opt, aarr_t *a) const
 {
   output_std_t o (b, f->file);
-  penv_state_t *st = genv.start_output (a, fixopts (get_opts ()));
+
+  // XXX - ignore 'opt' as passed in; not sure why....
+  opt = get_opts () | P_GLOBALSET;
+  penv_state_t *st = genv.start_output (a, fixopts (opt));
   f->output (&o, &genv);
   return genv.finish_output (st);
 }

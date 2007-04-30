@@ -138,7 +138,10 @@ okclnt_static_t::process_T ()
       if ((mime_type = mtm->lookup (ofn, &sffx))) {
 
 	if (cicmp (sffx, "html")) {
+
+	  // XXX - note that this is unsafe vis-a-vis XSS attacks.
 	  cgi.load_aarr (&aarr);
+
 	} else {
 	  opts |= (P_NOPARSE|P_NOLOCALE);
 	}

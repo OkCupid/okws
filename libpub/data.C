@@ -411,13 +411,19 @@ pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
 }
 
 void
-aarr_t::add (nvpair_t *p)
+nvtab_t::insert (nvpair_t *p)
 {
-  nvpair_t *op = aar[p->name ()];
+  nvpair_t *op = (*this)[p->name ()];
   if (op) {
-    aar.remove (op);
+    remove (op);
     delete op;
   }
+  super_t::insert (p);
+}
+
+void
+aarr_t::add (nvpair_t *p)
+{
   aar.insert (p);
 }
 
@@ -1870,6 +1876,10 @@ penv_t::start_output (aarr_t *a, u_int o)
 {
   penv_state_t *r = New penv_state_t (getopts (), size (), cerrflag);
   opts = o;
+  if (o & P_GLOBALSET) {
+    _global_set = New refcounted<aarr_t> ();
+    safe_push (_global_set);
+  }
   if (a) push (a);
   cerrflag = false;
   return r;
@@ -1981,3 +1991,32 @@ penv_t::penv_t (const penv_t &e)
 
 //
 //-----------------------------------------------------------------------
+
+void
+pfile_set_local_func_t::output_runtime (penv_t *e) const
+{
+  push_frame (e, aarr);
+}
+
+void
+pfile_set_func_t::output_runtime (penv_t *e) const
+{
+  // set_global() will return false if global-setting was not enabled
+  // for this particular output run.  In that case, revert to the old
+  // behavior, as seen in pfile_set_local_func (by pushing on a frame).
+  // This case comes up when using pub2::output_conf2_t class, which
+  // does its own flattening.
+  if (aarr && !e->set_global (*aarr))
+    push_frame (e, aarr);
+}
+
+bool
+penv_t::set_global (const aarr_t &a)
+{
+  bool ret = false;
+  if (_global_set) {
+    _global_set->overwrite_with (a);
+    ret = true;
+  }
+  return ret;
+}

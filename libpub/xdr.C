@@ -97,6 +97,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_switch_t (*x.swtch);
   case XPUB_SET_FUNC:
     return New pfile_set_func_t (*x.set_func);
+  case XPUB_SET_LOCAL_FUNC:
+    return New pfile_set_local_func_t (*x.set_func);
   case XPUB_RAW:
     return New pfile_raw_el_t (*x.raw);
   default:
@@ -476,10 +478,23 @@ pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
 bool
 pfile_set_func_t::to_xdr (xpub_obj_t *x) const
 {
-  x->set_typ (XPUB_SET_FUNC);
+  return to_xdr_common (x, XPUB_SET_FUNC);
+}
+
+bool
+pfile_set_func_t::to_xdr_common (xpub_obj_t *x, xpub_obj_typ_t typ) const 
+{ 
+  assert (typ == XPUB_SET_FUNC || typ == XPUB_SET_LOCAL_FUNC);
+  x->set_typ (typ);
   aarr->to_xdr (&x->set_func->aarr);
   x->set_func->lineno = lineno;
   return true;
+}
+
+bool
+pfile_set_local_func_t::to_xdr (xpub_obj_t *x) const
+{ 
+  return to_xdr_common (x, XPUB_SET_LOCAL_FUNC);
 }
 
 pfile_set_func_t::pfile_set_func_t (const xpub_set_func_t &x)

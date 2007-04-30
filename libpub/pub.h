@@ -102,6 +102,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_EXPORTER    (1 << 10)  // export files via RPC
 #define P_NOPARSE     (1 << 11)  // don't parse file at all
 #define P_NOLOCALE    (1 << 12)  // Don't localize file
+#define P_GLOBALSET   (1 << 13)  // Allow non-local sets
 
 /* XXX - defaults should be put someplace better */
 #define P_INFINITY   65334
@@ -241,9 +242,15 @@ private:
 class nvtab_t : 
   public ihash<const str, nvpair_t, &nvpair_t::nm, &nvpair_t::hlink>
 {
+
+private:
+  typedef ihash<const str, nvpair_t, &nvpair_t::nm, &nvpair_t::hlink> super_t;
+
 public:
+
   void copy (const nvtab_t &dest);
   void overwrite_with (const nvtab_t &dest);
+  void insert (nvpair_t *p);
 };
 
 
@@ -377,6 +384,7 @@ public:
   size_t gvsize () const { return gvars.size (); }
   void push (aarr_t *a) { estack.push_back (a); }
   void safe_push (ptr<const aarr_t> a);
+  bool set_global (const aarr_t &a);
   void push (const gvars_t *g) { gvars.push_back (g); }
   const pval_t *lookup (const str &n, bool recurse = true);
   pval_w_t operator[] (const str &n) { return pval_w_t (n, this); }
@@ -435,6 +443,8 @@ private:
   lock_t _lock;
 #endif /* TAME_LOCKING */
   ptr<const pub_localizer_t> _localizer;
+
+  ptr<aarr_t> _global_set;
 };
 
 class pfile_set_func_t;
@@ -1297,20 +1307,31 @@ public:
     : pfile_func_t (l), err (false), env (NULL) {}
   ~pfile_set_func_t () {}
   pfile_set_func_t (const xpub_set_func_t &x);
-  void output (output_t *o, penv_t *e) const;
+  virtual void output (output_t *o, penv_t *e) const;
   bool add (ptr<arglist_t> a);
   bool validate () { return true; }
-  void output_runtime (penv_t *e) const { push_frame (e, aarr); }
+  virtual void output_runtime (penv_t *e) const;
   void output_config (penv_t *e) const ;
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pfile_set_func_t"; }
-  bool to_xdr (xpub_obj_t *x) const;
+  virtual str get_obj_name () const { return "pfile_set_func_t"; }
+  virtual bool to_xdr (xpub_obj_t *x) const;
   ptr<aarr_arg_t> get_aarr () const { return aarr; }
-private:
+protected:
+  bool to_xdr_common (xpub_obj_t *x, xpub_obj_typ_t typ) const;
   bool err;
   ptr<aarr_arg_t> aarr;
   mutable penv_t *env;
+};
+
+class pfile_set_local_func_t : public pfile_set_func_t {
+public:
+  pfile_set_local_func_t (int l) : pfile_set_func_t (l) {}
+  pfile_set_local_func_t (const xpub_set_func_t &x)
+    : pfile_set_func_t (x) {}
+  str get_obj_name () const { return "pfile_set_local_func_t"; }
+  bool to_xdr (xpub_obj_t *x) const;
+  void output_runtime (penv_t *e) const;
 };
 
 class pval_null_t : public pval_t {

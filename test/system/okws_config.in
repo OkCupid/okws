@@ -6,7 +6,7 @@ ServiceBin	test/system
 
 PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
-OkdExecPath	ASRV_TRACE=10 okd/okd
+OkdExecPath	okd/okd
 Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
 LogDir		@@TOP_BUILD@@/test
@@ -27,6 +27,6 @@ Service		pub1tst /pub1tst
 
 # XML services
 @@NO_XML@@Service		xmlex /xmlrpc
-@@NO_XML@@Service		ACLNT_TRACE=10 xmlxlate/xlater /xlater
+@@NO_XML@@Service		xmlxlate/xlater /xlater
 
 ErrorDoc	404	/err/404.html

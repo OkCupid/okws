@@ -37,6 +37,7 @@
 %token T_PTINCLUDE
 %token T_PTINCLIST
 %token T_PTSET
+%token T_PTSETL
 %token T_PTSWITCH
 %token T_EPTAG
 %token T_BVAR
@@ -213,6 +214,7 @@ ptag_func: T_PTINCLUDE
 	   }
         }
 	| T_PTSET	{ $$ = New pfile_set_func_t (PLINENO); }
+	| T_PTSETL      { $$ = New pfile_set_local_func_t (PLINENO); }
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }
 	| T_PTINCLIST	{ $$ = New pfile_inclist_t (PLINENO); }
 	;
