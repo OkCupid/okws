@@ -66,8 +66,6 @@ TCLOSE	[ \t]*[;]?[ \t]*"-->"
 [(),{}=;]	return yytext[0];
 
 
-
-
 int(32(_t)?)?[(]	return T_INT_ARR; 
 char[(]			return T_CHAR_ARR;
 int64(_t)?[(]		return T_INT64_ARR;
@@ -94,6 +92,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <H,WH>{
 {TPRFX}include		{ yy_push_state (PTAG); return T_PTINCLUDE; }
+{TPRFX}load		{ yy_push_state (PTAG); return T_PTLOAD; }
 {TPRFX}setl		{ yy_push_state (PTAG); return T_PTSETL; }
 {TPRFX}set		{ yy_push_state (PTAG); return T_PTSET; }
 {TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }

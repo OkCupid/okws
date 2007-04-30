@@ -833,9 +833,13 @@ pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
   tvars {
     bool tlf;
     xpub_status_t status (XPUB_STATUS_OK);
+    bool muzzled;
   }
 
   if (o->descend ()) {
+
+    muzzled = o->set_muzzle (muzzle_output ());
+
     push_frame (g, e);
     tlf = g->set_tlf (false);
     o->output_info (g, strbuf ("include: ") << nm, lineno);
@@ -843,6 +847,8 @@ pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
     o->output_info (g, strbuf ("/include:" ) << nm, lineno);
     g->set_tlf (tlf);
     pop_frame (o, g);
+
+    o->set_muzzle (muzzled);
   }
   TRIGGER (cb, status);
 }

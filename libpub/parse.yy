@@ -28,12 +28,12 @@
 %token T_UVARS
 %token T_PRINT
 %token T_PTINCLUDE
+%token T_PTLOAD
 %token T_PTSET
 %token T_PTSETL
 %token T_PTSWITCH
 %token T_EPTAG
 %token T_BVAR
-%token T_ETAG
 %token T_BCONF
 %token T_BGCODE
 %token T_BGCCE
@@ -133,6 +133,7 @@ ptag_func: T_PTINCLUDE  { $$ = New pfile_include2_t (PLINENO); }
 	| T_PTSET	{ $$ = New pfile_set_func_t (PLINENO); }
 	| T_PTSETL      { $$ = New pfile_set_local_func_t (PLINENO); }
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }
+	| T_PTLOAD      { $$ = New pfile_load_t (PLINENO); }
 	;
 
 e_js_tag: T_EJS		{ PSECTION->add ($1); }
