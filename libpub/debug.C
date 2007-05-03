@@ -1,7 +1,7 @@
 
 #include "okdbg-int.h"
 #include "parseopt.h"
-#include "okprintf.h"
+#include "okformat.h"
 
 void
 set_debug_flags ()

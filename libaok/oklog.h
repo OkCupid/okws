@@ -32,9 +32,7 @@
 #include "resp.h"
 #include "okerr.h"
 #include "okclone.h"
-#include "okprintf.h"
-
-#include <inttypes.h>
+#include "okformat.h"
 
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite

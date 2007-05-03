@@ -12,7 +12,7 @@ okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
 	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
-	okws_sfs.h timehash.h okstats.h 
+	okws_sfs.h timehash.h okstats.h okformat.h
 
 noinst_HEADERS =  env.mk
 
