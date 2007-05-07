@@ -103,23 +103,23 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_INFINITY   65334
 
 /* shortcut macros for common operations on the global pub object */
-#define PWARN(x)   parser->pwarn (strbuf () << x)
-#define PFILE      parser->bpf->file
+#define PWARN(x)   global_parser->pwarn (strbuf () << x)
+#define PFILE      global_parser->bpf->file
 #define PARSEFAIL  PFILE->err = PUBSTAT_PARSE_ERROR;
 #define PLINC      PFILE->inc_lineno ()
 #define PLINENO    (PFILE->get_lineno ())
 #define PSECTION   PFILE->section
-#define PFUNC      parser->top_func ()
+#define PFUNC      global_parser->top_func ()
 #define ARGLIST    PFUNC->arglist
-#define PLASTHTAG  parser->lasttag
-#define PHTAG      parser->tag
-#define PAARR      parser->aarr
-#define PSTR1      parser->str1
-#define PPSTR      parser->pstr
-#define PARR       parser->parr
+#define PLASTHTAG  global_parser->lasttag
+#define PHTAG      global_parser->tag
+#define PAARR      global_parser->aarr
+#define PSTR1      global_parser->str1
+#define PPSTR      global_parser->pstr
+#define PARR       global_parser->parr
 
-#define PUSH_PFUNC(x) do { parser->push_func (x); } while (0)
-#define POP_PFUNC()   parser->pop_func()
+#define PUSH_PFUNC(x) do { global_parser->push_func (x); } while (0)
+#define POP_PFUNC()   global_parser->pop_func()
 
 #define PUB_NULL_CASE "NULL"
 
@@ -1442,15 +1442,15 @@ private:
   str homedir;
 };
 
-extern pub_parser_t *parser;
+extern pub_parser_t *global_parser;
 
 #define TEE(b,s)  b << s; warn << s;
   
 void 
 pfile_sec_t::apply_space ()
 {
-  if (parser->space_flag) {
-    parser->space_flag = false;
+  if (global_parser->space_flag) {
+    global_parser->space_flag = false;
     add (' ');
   }
 }
@@ -1459,7 +1459,7 @@ void
 pfile_sec_t::hadd_space ()
 {
   if (!yywss) add (' ');
-  else parser->space_flag = true;
+  else global_parser->space_flag = true;
 }
 
 void
@@ -1467,7 +1467,7 @@ pfile_html_sec_t::hadd_space ()
 {
   if (!yywss) add (' ');
   else if (nlgobble) nlgobble = false;
-  else parser->space_flag = true;
+  else global_parser->space_flag = true;
 }
 
 void

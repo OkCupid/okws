@@ -36,7 +36,7 @@ namespace pubserv2 {
   }
 
   srv_t::srv_t (ptr<axprt_stream> x, file_lookup_t *fl)
-    : local_publisher_t (parser, 0, fl),
+    : local_publisher_t (global_parser, 0, fl),
       _x (x), 
       _cli (aclnt::alloc (_x, pub_program_2)),
       _srv (asrv_delayed_eof::alloc (_x, pub_program_2, 

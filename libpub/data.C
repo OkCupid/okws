@@ -725,7 +725,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
     if (!(*l)[0]->is_null () && !(ckey = (*l)[0]->eval ())) {
       PWARN("Cannot determine case key");
       err = true;
-    } else if (fn1 && !(b = parser->to_binding (fn1))) {
+    } else if (fn1 && !(b = global_parser->to_binding (fn1))) {
       PWARN(fn1 << ": cannot access file");
       err = true;
     } else if (b) {

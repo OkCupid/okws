@@ -320,21 +320,21 @@ arr: i_arr | g_arr;
 
 g_arr: '('
 	{
-	  parser->push_parr (New refcounted<parr_mixed_t> ());
+	  global_parser->push_parr (New refcounted<parr_mixed_t> ());
 	}
 	g_arr_list ')'
 	{
-	  $$ = parser->pop_parr ();
+	  $$ = global_parser->pop_parr ();
 	}
 	;
 
 i_arr: i_arr_open 
 	{
-	  parser->push_parr ($1);
+	  global_parser->push_parr ($1);
 	}
 	i_arr_list ')'
 	{
-	  $$ = parser->pop_parr ();
+	  $$ = global_parser->pop_parr ();
 	}
 	;
 

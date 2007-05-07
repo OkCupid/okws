@@ -103,7 +103,7 @@ main_T (int argc, char **argv)
    * set up global pub variables 
    * arg true = this pubd is an exporter.
    */
-  ppt = pub_parser_t::alloc (true);
+  global_parser = ppt = pub_parser_t::alloc (true);
 
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;

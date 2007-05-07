@@ -29,7 +29,7 @@
 #include "okdbg.h"
 
 /* global publishing objects */
-pub_parser_t *parser;
+pub_parser_t *global_parser;
 
 char dwarnbuf[1024];
 
@@ -270,9 +270,9 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
       delete ss;
       ret = NULL;
     } else {
-      pub_parser_t *old_parser = parser;
+      pub_parser_t *old_parser = global_parser;
       
-      parser = this;
+      global_parser = this;
       push_file (r);
       pf->push_section (ss);
       pf->lex_activate (t);
@@ -286,7 +286,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
 	*err_msg = pf->err_msg;
 	ret = NULL;
       }
-      parser = old_parser;
+      global_parser = old_parser;
     }
     set_opts (old_opts);
     yywss = wss_prev;

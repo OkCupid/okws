@@ -7,7 +7,6 @@ ServiceBin	test/system
 PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
 OkdExecPath	okd/okd
-Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
 LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log
@@ -23,7 +22,6 @@ Alias		/static		/
 
 Service		configtest 	/configtest
 Service		simple	/simple
-Service		pub1tst /pub1tst
 
 # XML services
 @@NO_XML@@Service		xmlex /xmlrpc
