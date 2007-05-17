@@ -65,9 +65,13 @@
 #define MTD_MAXQ        1000
 #define MTD_STACKSIZE   0x100000
 
-
 #define TWARN(x) \
-  warn << "thread " << tid << ": " << x << "\n"
+  do { \
+    strbuf b; \
+    b << progname << "[" << tid << "]: " << x << "\n"; \
+    str s = b; \
+    fprintf (stderr, "%s", s.cstr ()); \
+  } while (0)
 
 typedef enum { MTD_KTHREADS = 0, MTD_PTH = 1, 
 	       MTD_PTHREADS = 3 } mtd_thread_typ_t;
