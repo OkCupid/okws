@@ -34,6 +34,9 @@ pub_parser_t *parser;
 pub_client_t *pcli;
 pub_base_t *pubincluder;
 
+// dealloc space after each run
+extern int yylex_destroy(void);
+
 char dwarnbuf[1024];
 
 bound_pfile_t::~bound_pfile_t ()
@@ -692,6 +695,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
       }
       pub = old_pub;
       parser = old_parser;
+      yylex_destroy();
     }
     set_opts (old_opts);
     yywss = wss_prev;
