@@ -732,7 +732,7 @@ public:
     : els (ls ? New pfile_el_lst_t () : NULL), lineno (l),
       btag_flag (false), etag_flag (false) {}
   pfile_sec_t (const xpub_section_t &x);
-  ~pfile_sec_t () { if (els) delete els; }
+  ~pfile_sec_t () { if (els) { els->deleteall(); delete els; } }
   pfile_sec_t *add (pfile_el_t *el, bool combine = true);
   pfile_sec_t *add (pfile_sec_t *s);
   virtual pfile_sec_t *add (char c) { return this; }

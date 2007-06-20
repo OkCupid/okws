@@ -23,16 +23,19 @@ endif
 
 okwc1tst.o:	okwc1tst.C
 okwc1tst.lo:	okwc1tst.C
+pubmemtst.o:	pubmemtst.C
+pubmemtst.lo: 	pubmemtst.C
 
-TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T
-TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C
+TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T pubmemtst.T
+TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C
 
-noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst
+noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C
 okwc1tst_SOURCES = okwc1tst.C
+pupmemtst_SOURCES = pubmemtst.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)
