@@ -35,7 +35,7 @@ cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C
 okwc1tst_SOURCES = okwc1tst.C
-pupmemtst_SOURCES = pubmemtst.C
+pubmemtst_SOURCES = pubmemtst.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)
