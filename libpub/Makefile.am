@@ -57,8 +57,15 @@ AM_YFLAGS = -d $(YDEBUG)
 AM_LFLAGS = $(LDEBUG)
 
 scan.cc: scan.ll
-	$(LEX) $(AM_LFLAGS) $(LFLAGS) $(srcdir)/scan.ll 		\
+	$(LEX) $(AM_LFLAGS) $(LFLAGS) $(srcdir)/scan.ll \
 	&& mv $(LEX_OUTPUT_ROOT).c $(srcdir)/scan.cc
+if MAKE_OLD_FLEX 
+	@echo "XXX"
+	@echo "XXX WARNING!! You have an old version of flex!!"
+	@echo "XXX OKWS will leak memory in its pub system!!"
+	@echo "XXX Please upgrade!"
+	@echo "XXX"
+endif
 
 parse.h:
 	@:

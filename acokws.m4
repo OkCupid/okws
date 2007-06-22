@@ -755,3 +755,21 @@ fi
 AC_SUBST(SVC_LDFLAGS)
 AM_CONDITIONAL(DLINKED_SERVICES, test $shared_tmp -eq 1)
 ])
+dnl
+dnl
+dnl
+AC_DEFUN([OKWS_FLEX_VERSION],
+[
+AM_PROG_LEX
+dnl
+dnl Wanted version is flex 2.5.33 or greater
+dnl
+actual=`$LEX --version`
+current_flex=0
+perl ${srcdir}/build/flex_vers.pl flex 2.5.33 "$actual"
+if test $? -eq  0; then
+	current_flex=1
+	AC_DEFINE(HAVE_RECENT_FLEX, 1, Define if Flex version is >= 2.5.33)
+fi
+AM_CONDITIONAL(MAKE_OLD_FLEX, test ${current_flex} -eq 0)
+])
