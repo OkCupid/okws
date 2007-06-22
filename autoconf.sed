@@ -67,6 +67,7 @@ $a\
 / HAVE_KTHREADS/b pdefine
 / HAVE_PTHREADS/b pdefine
 / OKWS_VERSION/b pdefine
+/ HAVE_RECENT_FLEX/b pdefine
 
 :skip
 d

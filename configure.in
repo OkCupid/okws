@@ -168,6 +168,12 @@ dnl we want to hardcode to 'test' in this case.
 dnl
 module_name='test'
 
+dnl
+dnl Set FLEX version since we have version-specific fixes for FLEX memory
+dnl leaks
+dnl
+OKWS_FLEX_VERSION
+
 ETAGS_ARGS='-C /dev/null'
 
 OKWS_SET_VERSION

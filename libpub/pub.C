@@ -32,7 +32,15 @@
 pub_parser_t *global_parser;
 
 // dealloc space after each run
+#ifdef HAVE_RECENT_FLEX
 extern int yylex_destroy(void);
+static void flex_cleanup() { yylex_destroy (); }
+#else
+static void flex_cleanup()
+{
+  warn << "XXX Flex cleanup can't run! Leaking memory!! XXX\n";
+}
+#endif
 
 char dwarnbuf[1024];
 
@@ -291,6 +299,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
       }
       global_parser = old_parser;
       yylex_destroy();
+      flex_cleanup();
     }
     set_opts (old_opts);
     yywss = wss_prev;
