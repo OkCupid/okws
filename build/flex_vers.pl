@@ -2,19 +2,28 @@
 # usage:
 #   flex_version.pl <flex-name> <flex-desired-version> <flex-v-output>
 #
+# Return via exit value:
+#   0 - Flex version is sufficient
+#   1 - Flex is old
+#   2 - Glex --version gave weird result
+#   3 - Bad usage
+#
+# Example:
+#
+#    perl flex_vers.pl flex 2.5.33 "`flex --version`"
 
 use strict;
 
 sub usage()
 {
-	warn "$0 <flex-name> <flex-desired-version> <flex-v-output>\n";
-	exit 1;
+    warn "$0 <flex-name> <flex-desired-version> <flex-v-output>\n";
+    exit 1;
 }
 
 sub get_vers($)
 {
-	my ($in) = @_;
-	return split /\./, $in  ;
+    my ($in) = @_;
+    return split /\./, $in  ;
 }
 
 #
@@ -22,18 +31,18 @@ sub get_vers($)
 #
 sub vers_ge ($$)
 {
-	my ($aa, $bb) = @_;
-	my @a = @$aa;
-	my @b = @$bb;
-	while ($#a >= 0 || $#b >= 0) {
-		return 0 if ($#a < 0 && $#b >= 0);
-		return 1 if ($#a >= 0 && $#b < 0);
-		return 1 if ($a[0] > $b[0]);
-		return 0 if ($a[0] < $b[0]);
-		shift @a;
-		shift @b;
-	}
-	return 1;
+    my ($aa, $bb) = @_;
+    my @a = @$aa;
+    my @b = @$bb;
+    while ($#a >= 0 || $#b >= 0) {
+	return 0 if ($#a < 0 && $#b >= 0);
+	return 1 if ($#a >= 0 && $#b < 0);
+	return 1 if ($a[0] > $b[0]);
+	return 0 if ($a[0] < $b[0]);
+	shift @a;
+	shift @b;
+    }
+    return 1;
 }
 
 
