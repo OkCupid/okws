@@ -59,6 +59,15 @@ public:
   cgi_t &url () { return _parser.get_url (); }
   http_inhdr_t &hdr () { return _parser.hdr; }
 
+  /*
+   * xml_pub2_local - a function that can be implemented by subclasses
+   * to do something special if there is a 'lang' field specified as
+   * part of the XML-RPC argument to okws.pub.  For now, just do
+   * the default, which is to ignore the lang parameter.
+   *
+   */
+  virtual ptr<pub2::ok_iface_t> xml_pub2_local (const str &lang) 
+  { return pub2(); }
 
   ptr<xml_top_level_t> top_level () { return _parser.top_level (); }
   ptr<const xml_top_level_t> top_level () const 
