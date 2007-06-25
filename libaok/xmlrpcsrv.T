@@ -189,7 +189,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
       aa.deleteall ();
       if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang)) {
 	calls.push_back (i);
-	xml_pub2_local(lang)-> run_full (out[i], fn, 
+	xml_pub2_local(lang)->run_full (out[i], fn, 
 					 mkevent (pub_errc[i], dummy), 
 					 &aa, opts);
       } else {
