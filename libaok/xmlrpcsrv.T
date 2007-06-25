@@ -127,14 +127,14 @@ oksrvc_xmlrpc_base_t::init_optmap ()
 
 static bool
 load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
-	   str *fn, u_int *opts, aarr_t *a)
+	   str *fn, u_int *opts, aarr_t *a, str *lang)
 {
   static const char *FN = "filename";
   static const char *OPTS = "options";
   static const char *tvars = "variables";
+  static const char *LANG = "language";
   
   *fn = x(FN);
-
   *opts = 0;
   const u_int *opt;
   str s = x(OPTS);
@@ -155,6 +155,10 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
       a->add (o.name (), str (o.value ()));
     }
   }
+
+  str l = x(LANG);
+  if (l && l.len () > 0) 
+    *lang = l;
   
   return (*fn && fn->len () > 0);
 }
@@ -174,6 +178,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     aarr_t aa;
     vec<size_t> calls;
     ptr<bound_pfile2_t> dummy;
+    str lang;
   }
   twait {
     r.setsize (q.size ());
@@ -182,9 +187,11 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     for (i = 0; i < q.size (); i++) {
       out[i] = New refcounted<zbuf> ();
       aa.deleteall ();
-      if (load_args (q[i], _srvc, &fn, &opts, &aa)) {
+      if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang)) {
 	calls.push_back (i);
-	pub2 ()->run_full (out[i], fn, mkevent (pub_errc[i], dummy), &aa, opts);
+	xml_pub2_local(lang)-> run_full (out[i], fn, 
+					 mkevent (pub_errc[i], dummy), 
+					 &aa, opts);
       } else {
 	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
 	r[i]("error")("desc") = "failed to load Pub arguments";
