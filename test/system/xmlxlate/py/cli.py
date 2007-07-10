@@ -71,7 +71,7 @@ res = server.xdr.xlate (
       "procno" : C.TST_RPC4,
       "arg" : { "x" : "ui4:" + str (8484848),
                 "y" : "i8:" + str (4948484848444L),
-                "z" : "ui8:"+ str (1181818823883128L)
+                "z" : "ui8:"+ str (2**62 + 2**63)
                 }
       } )
 
