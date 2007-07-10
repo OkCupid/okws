@@ -5,6 +5,10 @@
 #include "okxmlxlate.h"
 #include "parseopt.h"
 
+#define UI8_STR "ui8"
+#define UI4_STR "ui4"
+#define I8_STR  "i8"
+
 bool
 XML_creator_t::enter_field (const char *f)
 {
@@ -80,24 +84,7 @@ xml_int_repr (const char *x, T &t)
 }
 
 template<class T> bool
-xml_decode_int_repr (const str &s, const char *prfx, T &t)
-{
-  size_t plen = strlen (prfx);
-
-  // need at least 2 more characters in addition to the prefix,
-  // which are the colon, and a digit
-  if (s.len () < plen + 2) return false;
-
-  const char *input = s.cstr ();
-  if (strncmp (prfx, input, plen)) return false;
-  input += plen;
-  if (*input != ':') return false;
-  input++;
-  return convertint (input, &t);
-}
-
-template<class T> bool
-xml_decode_int_repr (const str &s, const char *prfx, u_int64_t &i)
+xml_decode_int_repr (const str &s, const char *prfx, T &i, bool sig)
 {
   size_t plen = strlen (prfx);
   
@@ -111,17 +98,23 @@ xml_decode_int_repr (const str &s, const char *prfx, u_int64_t &i)
   if (*bp != ':') return false;
   bp ++;
   char *ep;
-  i = strtoull (bp, &ep, 0);
+
+  if (sig) {
+    i = strtoll (bp, &ep, 0);
+  } else {
+    i = strtoull (bp, &ep, 0);
+  }
+
   return (ep && !*ep);
 }
 
 template<class T> bool
-XML_reader_t::t_traverse (const char *prfx, T &i)
+XML_reader_t::t_traverse (const char *prfx, T &i, bool sig)
 {
   if (is_empty ())      return error_empty ("string");
   if (!top().is_str ()) return error_wrong_type ("string");
 
-  if (!xml_decode_int_repr (top (), prfx, i)) {
+  if (!xml_decode_int_repr (top (), prfx, i, sig)) {
     strbuf b ("%s decoding error", prfx);
     return error_generic (str (b));
   }
@@ -145,21 +138,21 @@ XML_creator_t::traverse (bool &b)
 bool
 XML_creator_t::traverse (u_int32_t &i)
 {
-  top() = xml_int_repr ("ui4", i);
+  top() = xml_int_repr (UI4_STR, i);
   return true;
 }
 
 bool
 XML_creator_t::traverse (int64_t &i)
 {
-  top() = xml_int_repr ("i8", i);
+  top() = xml_int_repr (I8_STR, i);
   return true;
 }
 
 bool
 XML_creator_t::traverse (u_int64_t &i)
 {
-  top() = xml_int_repr ("ui8", i);
+  top() = xml_int_repr (UI8_STR, i);
   return true;
 }
 
@@ -186,19 +179,19 @@ XML_reader_t::traverse (bool &b)
 bool
 XML_reader_t::traverse (u_int32_t &i)
 {
-  return t_traverse ("ui4", i);
+  return t_traverse (UI4_STR, i, false);
 }
 
 bool
 XML_reader_t::traverse (int64_t &i)
 {
-  return t_traverse ("i8", i);
+  return t_traverse (I8_STR, i, true);
 }
 
 bool
 XML_reader_t::traverse (u_int64_t &i)
 {
-  return t_traverse ("ui8", i);
+  return t_traverse (UI8_STR, i, false);
 }
 
 int
