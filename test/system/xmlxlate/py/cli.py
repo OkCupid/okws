@@ -64,25 +64,45 @@ res = server.xdr.xlate (
 
 print (res)
 
+ull = 2**61 * 7 + 44
+ll = 0 - (2**62  + 33)
+
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
       "port" : 4000,
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC4,
       "arg" : { "x" : "ui4:" + str (8484848),
-                "y" : "i8:" + str (4948484848444L),
-                "z" : "ui8:"+ str (2**62 + 2**63)
+                "y" : "i8:" + str (ll),
+                "z" : "ui8:"+ str (ull)
                 }
       } )
 
 print (res)
 
-res = server.xdr.xlate (
-    { "hostname" : "127.0.0.1",
-      "port" : 4000,
-      "program" : "tst_prog_1",
-      "procno" : C.TST_RPC2,
-      "arg" : { "xx" : C.XXA,
-                "a" : { "x" : "a",
-                        "y" : "xxyyy44"}}
-      } )
+ull_post = long(res['z'][4:])
+ll_post = long (res['y'][3:])
+
+if ull != ull_post:
+    raise ValueError, "RPC problem translating u_int64_t; " + \
+          "got %x, expected %x" % (ull_post, ull)
+
+if ll != ll_post:
+    raise ValueError, "RPC problem translating int64_t; " + \
+          "got %d, expected %d" % (ll_post, ll)
+	
+
+try:
+    
+    res = server.xdr.xlate (
+        { "hostname" : "127.0.0.1",
+          "port" : 4000,
+          "program" : "tst_prog_1",
+          "procno" : C.TST_RPC2,
+          "arg" : { "xx" : C.XXA,
+                    "a" : { "x" : "a",
+                            "y" : "xxyyy44"}}
+          } )
+
+except xmlrpclib.Fault, f:
+    print 'Good; caught fault: %s' % f

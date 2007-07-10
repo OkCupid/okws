@@ -164,7 +164,7 @@ public:
   int push_ptr (bool dummy, bool *alloc);
 
 private:
-  template<class T> bool t_traverse (const char *prfx, T &i);
+  template<class T> bool t_traverse (const char *prfx, T &i, bool sig);
   
   const xml_obj_const_t &top () const { return _stack.back (); }
   bool is_empty () const { return _stack.size () == 0; }
