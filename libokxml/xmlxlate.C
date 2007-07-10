@@ -83,6 +83,11 @@ template<class T> bool
 xml_decode_int_repr (const str &s, const char *prfx, T &t)
 {
   size_t plen = strlen (prfx);
+
+  // need at least 2 more characters in addition to the prefix,
+  // which are the colon, and a digit
+  if (s.len () < plen + 2) return false;
+
   const char *input = s.cstr ();
   if (strncmp (prfx, input, plen)) return false;
   input += plen;
@@ -92,9 +97,14 @@ xml_decode_int_repr (const str &s, const char *prfx, T &t)
 }
 
 template<class T> bool
-xml_deccode_int_repr (const str &s, const char *prfx, u_int64_t &i)
+xml_decode_int_repr (const str &s, const char *prfx, u_int64_t &i)
 {
   size_t plen = strlen (prfx);
+  
+  // need at least 2 more characters in addition to the prefix,
+  // which are the colon, and a digit
+  if (s.len () < plen + 2) return false;
+
   const char *input = s.cstr ();
   if (strncmp (prfx, input, plen)) return false;
   const char *bp = input + plen;

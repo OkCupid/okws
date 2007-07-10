@@ -65,7 +65,9 @@ tstsrv_t::dispatch (svccb *sbp)
   case TST_RPC4:
     {
       bb_t *arg = sbp->Xtmpl getarg<bb_t> ();
-      sbp->reply (arg);
+      bb_t a2 = *arg;
+      a2.z = arg->z / 2;
+      sbp->reply (&a2);
       break;
     }
   default:
