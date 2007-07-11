@@ -103,6 +103,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_NOPARSE     (1 << 11)  // don't parse file at all
 #define P_NOLOCALE    (1 << 12)  // Don't localize file
 #define P_GLOBALSET   (1 << 13)  // Allow non-local sets
+#define P_CONFIG      (1 << 14)  // Treat all files as configs
 
 /* XXX - defaults should be put someplace better */
 #define P_INFINITY   65334

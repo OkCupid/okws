@@ -115,9 +115,10 @@ void
 oksrvc_xmlrpc_base_t::init_optmap ()
 {
   const char *options[] = { "debug", "includeInfo", "verbose",
-			    "visibleErrors", "WSS", "raw", NULL };
+			    "visibleErrors", "WSS", "raw", 
+			    "conf", "config", NULL };
   u_int optvals[] = { P_DEBUG, P_IINFO, P_VERBOSE, P_VISERR,
-		      P_WSS, P_NOPARSE };
+		      P_WSS, P_NOPARSE, P_CONFIG, P_CONFIG };
   u_int *vp;
   const char **o;
   for (o = options, vp = optvals; *o; o++, vp++) {
@@ -135,6 +136,7 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
   static const char *VARS = "variables";
   static const char *LANG = "language";
   static const char *CONF = "conf";
+  static const char *CONFIG = "config";
   
   *fn = x(FN);
   *opts = 0;
@@ -162,7 +164,7 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
   if (l && l.len () > 0) 
     *lang = l;
 
-  *conf = x(CONF);
+  *conf = x(CONF) || x(CONFIG) || (*opts & P_CONFIG);
 
   return (*fn && fn->len () > 0);
 }
@@ -233,10 +235,12 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
   // need an env for conf files ?
   env = pub2 ()->get_env ();
 
+  r.setsize (q.size ());
+  out.setsize (q.size ());
+  conf_out.setsize (q.size ());
+  pub_errc.setsize (q.size ());
+
   twait {
-    r.setsize (q.size ());
-    out.setsize (q.size ());
-    pub_errc.setsize (q.size ());
     for (i = 0; i < q.size (); i++) {
       aa.deleteall ();
       if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang, &conf)) {

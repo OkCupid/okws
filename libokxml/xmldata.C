@@ -212,6 +212,10 @@ int
 xml_value_wrapper_t::to_int () const 
 { return _value ? _value->to_int () : xml_element_t::to_int (); }
 
+bool
+xml_value_wrapper_t::to_bool () const
+{ return _value ? _value->to_bool () : xml_element_t::to_bool (); }
+
 str
 xml_value_wrapper_t::to_str () const
 { return _value ? _value->to_str () : xml_element_t::to_str (); }
