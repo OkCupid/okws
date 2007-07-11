@@ -316,7 +316,7 @@ protected:
 
 // 
 // This is the standard okclnt_t, used for parsing regular HTTP requests,
-// with x-URL-encoded GET, POST of mutlipart form data.
+// with x-URL-encoded GET, POST of multipart form data.
 //
 class okclnt_t : public okclnt_base_t, 
 		 public http_parser_cgi_t 
