@@ -115,9 +115,10 @@ void
 oksrvc_xmlrpc_base_t::init_optmap ()
 {
   const char *options[] = { "debug", "includeInfo", "verbose",
-			    "visibleErrors", "WSS", "raw", NULL };
+			    "visibleErrors", "WSS", "raw", 
+			    "conf", "config", NULL };
   u_int optvals[] = { P_DEBUG, P_IINFO, P_VERBOSE, P_VISERR,
-		      P_WSS, P_NOPARSE };
+		      P_WSS, P_NOPARSE, P_CONFIG, P_CONFIG };
   u_int *vp;
   const char **o;
   for (o = options, vp = optvals; *o; o++, vp++) {
@@ -127,12 +128,15 @@ oksrvc_xmlrpc_base_t::init_optmap ()
 
 static bool
 load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
-	   str *fn, u_int *opts, aarr_t *a, str *lang)
+	   str *fn, u_int *opts, aarr_t *a, str *lang,
+	   bool *conf)
 {
   static const char *FN = "filename";
   static const char *OPTS = "options";
-  static const char *tvars = "variables";
+  static const char *VARS = "variables";
   static const char *LANG = "language";
+  static const char *CONF = "conf";
+  static const char *CONFIG = "config";
   
   *fn = x(FN);
   *opts = 0;
@@ -149,8 +153,8 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
       }
     }
   }
-  for (size_t j = 0; j < x(tvars).size (); j++) {
-    xml_obj_const_t o = x(tvars)[j];
+  for (size_t j = 0; j < x(VARS).size (); j++) {
+    xml_obj_const_t o = x(VARS)[j];
     if (o.name () && o.name ().len ()) {
       a->add (o.name (), str (o.value ()));
     }
@@ -159,11 +163,54 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
   str l = x(LANG);
   if (l && l.len () > 0) 
     *lang = l;
-  
+
+  *conf = x(CONF) || x(CONFIG) || (*opts & P_CONFIG);
+
   return (*fn && fn->len () > 0);
 }
 
 #define XML_PUB_ARGLOAD_FAILED  401
+
+static void
+pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
+{
+  if (!v) 
+    return;
+
+  const parr_mixed_t *ma;
+  const parr_ival_t *ia;
+  int64_t t;
+  
+  if ((ma = v->to_mixed_arr ())) {
+    for (size_t i = 0; i < ma->size (); i++) {
+      pval2xml (o[i], (*ma)[i], env);
+    }
+  } else if ((ia = v->to_int_arr ())) {
+    for (size_t i = 0; i < ia->size (); i++) {
+      int t = 0;
+      ia->val (i, &t);
+      o[i] = t;
+    }
+  } else if (v->to_int64(&t)) {
+    o = int (t);
+  } else {
+    o = v->eval (env, EVAL_INTERNAL);
+  }
+}
+
+static xml_obj_t
+aarr2xml (ptr<aarr_t> a, penv_t *env)
+{
+  xml_obj_t ret (New refcounted<xml_struct_t> ());
+  if (a) {
+    const nvtab_t *nvt = a->nvtab ();
+    nvpair_t *p;
+    for (p = nvt->first (); p; p = nvt->next (p)) {
+      pval2xml ( ret(p->name()), p->value (), env);
+    }
+  }
+  return ret;
+}
 
 tamed void
 okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
@@ -174,24 +221,41 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     str fn;
     u_int opts;
     vec<ptr<zbuf> > out;
+    vec<ptr<aarr_t> > conf_out;
     vec<xpub_status_t> pub_errc;
     aarr_t aa;
     vec<size_t> calls;
     ptr<bound_pfile2_t> dummy;
     str lang;
+    bool conf;
+    ptr<pub2::ok_iface_t> iface;
+    penv_t *env;
   }
+
+  // need an env for conf files ?
+  env = pub2 ()->get_env ();
+
+  r.setsize (q.size ());
+  out.setsize (q.size ());
+  conf_out.setsize (q.size ());
+  pub_errc.setsize (q.size ());
+
   twait {
-    r.setsize (q.size ());
-    out.setsize (q.size ());
-    pub_errc.setsize (q.size ());
     for (i = 0; i < q.size (); i++) {
-      out[i] = New refcounted<zbuf> ();
       aa.deleteall ();
-      if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang)) {
+      if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang, &conf)) {
 	calls.push_back (i);
-	xml_pub2_local(lang)->run_full (out[i], fn, 
-					 mkevent (pub_errc[i], dummy), 
-					 &aa, opts);
+	iface = xml_pub2_local (lang);
+	if (conf) {
+	  conf_out[i] = New refcounted<aarr_t> ();
+	  iface->run_cfg_full (fn, mkevent (pub_errc[i], dummy),
+			       conf_out[i]);
+	} else {
+	  out[i] = New refcounted<zbuf> ();
+	  iface->run_full (out[i], fn, 
+			   mkevent (pub_errc[i], dummy), 
+			   &aa, opts);
+	}
       } else {
 	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
 	r[i]("error")("desc") = "failed to load Pub arguments";
@@ -203,10 +267,13 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     if (pub_errc[j].status != XPUB_STATUS_OK) {
       r[j]("error")("code") = int (pub_errc[j].status);
       r[j]("error")("desc") = errcode2str (pub_errc[j]);
-    } else {
+    } else if (out[j]) {
       strbuf b ;
       out[j]->to_strbuf (&b, false);
       r[j]("data") = base64_str_t (b);
+    } else {
+      assert (conf_out[j]);
+      r[j]("data") = aarr2xml (conf_out[j], env);
     }
   }
   TRIGGER (cb, r);

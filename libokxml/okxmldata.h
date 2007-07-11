@@ -108,7 +108,7 @@ public:
 
   virtual int to_int () const { return 0; }
   virtual str to_str () const { return ""; }
-  virtual str to_bool () const { return false; }
+  virtual bool to_bool () const { return false; }
   virtual str to_base64 () const { return armor64 (NULL, 0); }
   virtual bool is_value () const { return false; }
 
@@ -293,6 +293,7 @@ public:
   virtual int to_int () const;
   virtual str to_str () const;
   virtual str to_base64 () const;
+  virtual bool to_bool () const;
 
   ptr<xml_value_wrapper_t> clone_typed () const
   { return New refcounted<xml_value_wrapper_t> (cpvalue ()); }
@@ -456,6 +457,7 @@ public:
   ptr<xml_int_t> to_xml_int () { return mkref (this); }
   ptr<const xml_int_t> to_xml_int () const { return mkref (this); }
   int to_int () const { return _val; }
+  bool to_bool () const { return _val != 0; }
   str to_str () const { strbuf b; b << _val; return b; }
   void set (int i) { _val = i; }
   bool is_value () const { return true; }
@@ -640,6 +642,9 @@ public:
 
   int to_int () const { return _e ? _e->to_int () : xml_element_t::to_int (); }
   str to_str () const { return _e ? _e->to_str () : xml_element_t::to_str (); }
+  bool to_bool () const 
+  { return _e ? _e->to_bool () : xml_element_t::to_bool (); }
+
   str to_base64 () const 
   { return _e ? _e->to_base64 () : xml_element_t::to_base64(); }
   void dump_data (zbuf &b, int level) const { if (_e) _e->dump (b, level); }
@@ -744,6 +749,7 @@ public:
 
   void dump_data (zbuf &b, int lev) const { b << (_val ? 1 : 0); }
   bool dump_to_python (strbuf &b) const;
+  bool to_bool () const { return _val; }
 
   bool is_type (xml_obj_typ_t t) const { return t == XML_BOOL; }
 
