@@ -117,6 +117,15 @@ okclnt_static_t::process_T ()
     str mime_type;
     str lang;
   }
+ 
+
+  {
+    // XXX - test that it's OK to write to stdout.  This used to crash
+    // the server!
+    const char *test = "hello world!\n";
+    write (1, test, strlen (test));
+  }
+
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
   in = hdr.get_target ();
