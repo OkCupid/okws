@@ -111,7 +111,7 @@ public:
   void process () { _srvc->handle (this); }
 
   virtual void handle_multicall (xml_req_t q, xml_resp_cb_t cb) 
-  { handle_mutlicall_T (q, cb); }
+  { handle_multicall_T (q, cb); }
   virtual void handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb);
   virtual void handle_okws_pub (xml_req_t q, xml_resp_cb_t cb) 
   { handle_okws_pub_T (q, cb); }
@@ -119,7 +119,7 @@ public:
 protected:
   oksrvc_xmlrpc_base_t *_srvc;
 private:
-  void handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+  void handle_multicall_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
   void handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
 };
 

@@ -23,7 +23,7 @@ xml_rpc_new_global_id ()
 }
 
 tamed void
-okclnt_xmlrpc_t::handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xmlrpc_t::handle_multicall_T (xml_req_t q, xml_resp_cb_t cb)
 {
   tvars {
     size_t i;
@@ -40,13 +40,13 @@ okclnt_xmlrpc_t::handle_mutlicall_T (xml_req_t q, xml_resp_cb_t cb)
     for (i = 0; i < q.size (); i++) {
       if (!(nm = q[i]("methodName"))) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_CALL,
-			     "No methodCall for mutlicall call");
+			     "No methodCall for multicall call");
       } else if (nm == MULTICALL) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_RECURSIVE,
 			     "Cannot make recursive multicalls");
       } else if (!(xc = q[i]("params").to_xml_container ())) {
 	r[i] = xml_fault_obj_t (OK_XMLRPC_ERR_BAD_PARAMS,
-				"Bad parameters to mutlicall");
+				"Bad parameters to multicall");
       } else {
 	calls.push_back (i);
 	_srvc->handle (this, nm, xml_req_t (xc), mkevent (r2[i]));

@@ -182,6 +182,7 @@ void
 xml_req_parser_t::init (const char *encoding)
 {
   assert (!_xml_parser_init);
+  _xml_parser_init = true;
   _xml_parser = XML_ParserCreate (encoding);
   XML_SetUserData (_xml_parser, this);
   XML_SetElementHandler (_xml_parser, start_element_handler, 
