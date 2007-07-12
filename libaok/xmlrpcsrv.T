@@ -194,6 +194,7 @@ pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
   } else if (v->to_int64(&t)) {
     o = int (t);
   } else {
+    // everything should be flattened anyways....
     o = v->eval (env, EVAL_INTERNAL);
   }
 }
