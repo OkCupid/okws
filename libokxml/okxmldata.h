@@ -554,6 +554,7 @@ private:
 class xml_struct_t : public xml_container_t {
 public:
   xml_struct_t () {}
+  ~xml_struct_t () {}
   xml_struct_t (const xml_struct_t &s);
   ptr<const xml_element_t> get (const str &s) const;
   ptr<xml_element_t> &get_r (const str &s);

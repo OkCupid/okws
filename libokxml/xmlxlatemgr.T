@@ -271,9 +271,11 @@ namespace okxml {
     }
     if (xdr_arg) {
       xdr_free (tblent_xdr->xdr_arg, xdr_arg);
+      xfree (xdr_arg);
     }
     if (xdr_res) {
       xdr_free (tblent_xdr->xdr_res, xdr_res);
+      xfree (xdr_res);
     }
 
     if (stat) {
