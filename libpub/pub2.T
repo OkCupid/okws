@@ -600,13 +600,41 @@ namespace pub2 {
       status_t status;
       bool XXX;
       ptr<bound_pfile2_t> bpf;
+      penv_t *env (NULL);
+      bool del_env (false);
+      u_int op (0);
     }
-    if (!dp) 
+
+    if (!dp) {
+
+      // In the first case, just publish the data to the global publishing
+      // object, in which case all changes are effectively global, and
+      // we don't need to worry about race conditions, since it's all
+      // going to the same place.
       dp = &_base_cfg;
+      env = &_genv;
+    } else {
+
+      // In the second case, we're publishing to a given array, in which
+      // case we are worried about race conditions.  We also want the behavior
+      // in which the changes to the environment produced by <!--#set -->
+      // persist past the end of the include, and therefore, we need
+      // to set the GLOBALSET flag.  Of course, all of this should be
+      // a lot cleaner, but for now, this shouldn't break anything else
+      // and it should work.
+      env = New penv_t (_genv);
+      del_env = true;
+      op |= P_GLOBALSET;
+    }
+
     o.set_dest (dp);
-    st = _genv.start_output (NULL, 0);
-    twait { publish_full (&o, nm, &_genv, 0, mkevent (status, bpf)); }
-    XXX = _genv.finish_output (st);
+    st = env->start_output (NULL, op);
+    twait { publish_full (&o, nm, env, 0, mkevent (status, bpf)); }
+    XXX = env->finish_output (st);
+
+    if (del_env)
+      delete env;
+
     TRIGGER (cb, status, bpf);
   }
 

@@ -2,7 +2,13 @@
 import xmlrpclib
 import sys
 
-server_url = "http://0.0.0.0:8081/xmlrpc"
+srv = "0.0.0.0:8081"
+
+if len (sys.argv) > 1:
+	srv = sys.argv[1]
+
+
+server_url = "http://%s/xmlrpc" % (srv)
 server = xmlrpclib.Server (server_url)
 server.system.setDebugLevel (40)
 
