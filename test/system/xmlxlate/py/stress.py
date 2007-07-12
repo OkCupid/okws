@@ -28,7 +28,7 @@ C = RpcConst ()
 
 C.setall (server.xdr.constants ( [ "tstprot"] ) )
 
-for i in range(0,1000):
+for i in range(0,10000):
 
     ull = 2**61 * 7 + 44
     ll = 0 - (2**62  + 33)

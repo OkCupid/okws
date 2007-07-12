@@ -370,6 +370,23 @@ oksrvc_t::debug_launch (cbv cb)
   (*cb) ();
 }
 
+static void
+safeguard_stdout()
+{
+  // By default, SFS sets us up (in aspawn) so that fds 0 and fds 1 **both**
+  // point to our parent (in this case okd).  This is fine so long as
+  // no one tries to printf("foo").  If someone does, stdout (fd=1) will
+  // send that data to okd, who will be expecting an XDR-RPC.  When it
+  // gets ASCII text 'foo', it will get mad and close the RPC connection
+  // via ::fail().  This will cause the service to initiate shutdown.
+
+  // We redirect stdout -> stderr to prevent devs from making this mistake...
+
+  close (STDOUT_FILENO);
+  int rc = dup (STDERR_FILENO);
+  assert (rc == STDOUT_FILENO);
+}
+
 tamed void 
 oksrvc_t::launch_T ()
 {
@@ -382,6 +399,8 @@ oksrvc_t::launch_T ()
 
   setsid ();
   connect ();
+  
+  safeguard_stdout();
 
   // initialization and connect to logging daemon
   if (logfd >= 0) {
