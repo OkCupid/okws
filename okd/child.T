@@ -93,6 +93,8 @@ okch_t::clone (ref<ahttpcon_clone> xc)
       per_svc_nfd_in_xit ++;
       xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd));
     }
+    assert (ctlx);
+    assert (clnt);
     send_con_to_service (xc);
   }
 }
@@ -145,6 +147,9 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
 
   df = destroyed;
 
+  assert (ctlx);
+  assert (clnt);
+
   if (xc->timed_out ()) {
     CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
 	     << "): not forwarding to child");
@@ -158,22 +163,33 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
 
     // Hack: reclaim the FD, but hold onto the ahttpcon until
     // after the server has acked it.
-    twait { 
-      ctlx->sendfd (xc->takefd ());
-      clnt->call (OKCTL_SEND_CON, &arg, &res, mkevent (err)); 
-    }
+    ctlx->sendfd (xc->takefd ());
 
-    if (err) {
-      CH_ERROR ("Error in RPC for sending connection: " << err);
-    } else if (res == OK_STATUS_NOMORE) {
-      if (*df) {
-	CH_ERROR ("No more connections; but service died..\n");
-      } else {
-	CH_ERROR ("Service is busy; disabling incoming connections\n");
-	_too_busy = true;
+    // Note! Calling sendfd above might have revealed an EOF condition,
+    // which will callback immediately with ctlx = NULL and clnt = NULL
+    // for this object.  Thus, we have no guarantees that clnt is non-
+    // NULL after the above call.
+    if (!clnt) {
+
+      // May as well tell the client of the failure....
+      myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
+
+      CH_ERROR ("Lost child in between sending FD and sending RPC");
+
+    } else {
+      twait { clnt->call (OKCTL_SEND_CON, &arg, &res, mkevent(err)); }
+      if (err) {
+	CH_ERROR ("Error in RPC for sending connection: " << err);
+      } else if (res == OK_STATUS_NOMORE) {
+	if (*df) {
+	  CH_ERROR ("No more connections; but service died..\n");
+	} else {
+	  CH_ERROR ("Service is busy; disabling incoming connections\n");
+	  _too_busy = true;
+	}
+      } else if (res != OK_STATUS_OK) {
+	CH_ERROR ("Service rejected new connection: " << res);
       }
-    } else if (res != OK_STATUS_OK) {
-      CH_ERROR ("Service rejected new connection: " << res);
     }
 
     //
