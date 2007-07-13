@@ -623,6 +623,7 @@ namespace pub2 {
       // a lot cleaner, but for now, this shouldn't break anything else
       // and it should work.
       env = New penv_t (_genv);
+      dp->overwrite_with (_base_cfg);
       del_env = true;
       op |= P_GLOBALSET;
     }
