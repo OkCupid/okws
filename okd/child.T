@@ -171,9 +171,9 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
     // NULL after the above call.
     if (!clnt) {
 
-      // May as well tell the client of the failure....
-      myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
-
+      // XXX: Just don't reply to user at all; should potentially 
+      // respond with an error message, but since we've already taken
+      // the FD out of xc, that would be a nuisance...
       CH_ERROR ("Lost child in between sending FD and sending RPC");
 
     } else {
