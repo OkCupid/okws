@@ -236,9 +236,16 @@ okwc_http_t::make_req ()
     outcook->encode (&reqbuf);
     reqbuf << HTTP_CRLF;
   }
-  if (_type) {
-    reqbuf << "Content-Type: " << _type << HTTP_CRLF;
-  }
+
+  str typ = _type;
+
+  if (_post && !typ)
+    typ = "application/x-form-urlencoded";
+
+  if (typ) {
+    reqbuf << "Content-Type: " << typ << HTTP_CRLF;
+  } 
+
   if (_post) {
     reqbuf << "Content-Length: " << _post.len () << HTTP_CRLF;
   }
