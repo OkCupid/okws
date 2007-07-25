@@ -174,8 +174,8 @@ methodmap_t::methodmap_t ()
 
 post_methodmap_t::post_methodmap_t ()
 {
-  map.insert ("application/x-www-form-urlencoded", POST_MTHD_URLENCODED);
-  map.insert ("multipart/form-data", POST_MTHD_MULTIPART_FORM);
+  map.insert (ok_http_urlencoded, POST_MTHD_URLENCODED);
+  map.insert (ok_http_multipart, POST_MTHD_MULTIPART_FORM);
 }
 
 http_method_t

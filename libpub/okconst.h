@@ -93,6 +93,12 @@ extern u_int ok_mgr_port;
 extern const char *ok_pubobjname;
 
 //
+// http constants
+//
+extern char *ok_http_urlencoded;
+extern char *ok_http_multipart;
+
+//
 // configfile constants
 //
 extern const char *ok_pub_config;
