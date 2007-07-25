@@ -240,7 +240,7 @@ okwc_http_t::make_req ()
   str typ = _type;
 
   if (_post && !typ)
-    typ = "application/x-form-urlencoded";
+    typ = ok_http_urlencoded;
 
   if (typ) {
     reqbuf << "Content-Type: " << typ << HTTP_CRLF;
