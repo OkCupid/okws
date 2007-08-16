@@ -132,7 +132,7 @@ LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT)'
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDADD"' $(LIBEXPAT)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
@@ -140,7 +140,7 @@ if test "$enable_shared" = yes; then
    LDEPS_AMT=
 else
    LDEPS_PUB='$(LIBPUB) '"$LDEPS"
-   LDEPS='$(LIBWEB) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDEPS"
+   LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDEPS"
    LDEPS_AMT='$(LIBAMT) '"$LDEPS"
    LDEPS_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDEPS"
 fi
