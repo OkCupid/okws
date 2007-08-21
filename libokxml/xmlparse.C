@@ -24,7 +24,7 @@
 
 
 #include "okxmlparse.h"
-#include "config.h"
+#include "okwsconf.h"
 #ifdef HAVE_EXPAT
 
 class xml_tagtab_t {

@@ -27,7 +27,7 @@
 
 
 // Only use this library if we have EXPAT support
-#include "config.h"
+#include "okwsconf.h"
 # ifdef HAVE_EXPAT
 
 #include "async.h"
