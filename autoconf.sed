@@ -68,6 +68,7 @@ $a\
 / HAVE_PTHREADS/b pdefine
 / OKWS_VERSION/b pdefine
 / HAVE_RECENT_FLEX/b pdefine
+/ HAVE_EXPAT/b pdefine
 
 :skip
 d
