@@ -69,8 +69,7 @@ sub generate_hfile {
     }
 
     my $protector = "__" . uc ($fn) . "__" ;
-    $protector =~ s/\./_/g ;
-    
+    $protector =~ s{[./-]}{_}g ;
 
     my $csym = '*' . $symname . "[]";
     print $fh <<EOF;
