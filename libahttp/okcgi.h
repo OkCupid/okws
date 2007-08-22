@@ -89,6 +89,7 @@ public:
   
   static ptr<cgi_t> str_parse (const str &s);
 
+  void reset_state ();
   void set_uri_mode (bool b) { uri_mode = b; }
   // next function is virtual for MW, who wants to hook in at this point
   // in the parsing.

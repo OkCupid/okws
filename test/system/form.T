@@ -81,7 +81,7 @@ okclnt_form_t::process_T ()
   }
   
   {
-    const char *fields[] = { "x", "y", NULL };
+    const char *fields[] = { "X", "Y", NULL };
     vec<str> v;
     for (const char **p = fields; *p; p++) {
       cgi.lookup (*p, &v);

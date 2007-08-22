@@ -119,9 +119,13 @@ http_parser_cgi_t::v_parse_cb1 (int status)
     cgi_t *post_cgi;
 
     if (_union_mode) {
+
       cgi = &_union_cgi;
-      _union_cgi.set_uri_mode (false);
       post_cgi = &_union_cgi;
+
+      // need to reset interior state for new parsing.
+      _union_cgi.reset_state ();
+
     } else {
       cgi = &post;
       post_cgi = &post;
