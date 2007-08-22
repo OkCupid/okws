@@ -38,11 +38,13 @@
 
 class oksrvc_form_t : public oksrvc_t {
 public:
-  oksrvc_form_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
+  oksrvc_form_t (int argc, char *argv[]) 
+    : oksrvc_t (argc, argv), _union_cgi (true) {}
 
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
-  bool use_union_cgi () const { return true; }
-private:
+  bool use_union_cgi () const { return _union_cgi; }
+
+  bool _union_cgi;
 };
 
 class okclnt_form_t : public okclnt_t {
@@ -88,12 +90,20 @@ okclnt_form_t::process_T ()
       str s = v2s(v);
       a.add (*p, s);
     }
-  }
 
-  if (cgi.lookup ("nxt_query", &q)) {
-    a.add ("query_unesc", q);
-    a.add ("query_esc", xss_filter (q));
+    if (cgi.lookup ("nxt_query", &q)) {
+      a.add ("query_unesc", q);
+      a.add ("query_esc", xss_filter (q));
+    }
+    
+    int i;
+    if (cgi.lookup ("union", &i)) {
+      ok_form->_union_cgi = i;
+    }
+
+    a.add ("union", ok_form->_union_cgi);
   }
+  
 
   twait { pub2 ()->run (&out, "/form.html", mkevent (ok), &a); }
 
