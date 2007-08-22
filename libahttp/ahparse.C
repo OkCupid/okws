@@ -119,9 +119,13 @@ http_parser_cgi_t::v_parse_cb1 (int status)
     cgi_t *post_cgi;
 
     if (_union_mode) {
+
       cgi = &_union_cgi;
-      _union_cgi.set_uri_mode (false);
       post_cgi = &_union_cgi;
+
+      // need to reset interior state for new parsing.
+      _union_cgi.reset_state ();
+
     } else {
       cgi = &post;
       post_cgi = &post;
@@ -194,7 +198,7 @@ void
 http_parser_cgi_t::set_union_mode (bool b)
 {
   _union_mode = b;
-  hdr.set_url (_union_mode ? &url : &_union_cgi);
+  hdr.set_url (_union_mode ? &_union_cgi : &url);
 }
 
 #endif /* HAVE_EXPAT */

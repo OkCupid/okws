@@ -38,25 +38,26 @@
 
 class oksrvc_form_t : public oksrvc_t {
 public:
-  oksrvc_static_t (int argc, char *argv[]) 
-    : oksrvc_t (argc, argv), _mtm (NULL) {}
+  oksrvc_form_t (int argc, char *argv[]) 
+    : oksrvc_t (argc, argv), _union_cgi (true) {}
 
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
-  bool use_union_cgi () const { return true; }
-private:
+  bool use_union_cgi () const { return _union_cgi; }
+
+  bool _union_cgi;
 };
 
 class okclnt_form_t : public okclnt_t {
 public:
   okclnt_form_t (ptr<ahttpcon> x, oksrvc_form_t *o)
-    : okclnt_t (x, o), ok_static (o) {}
+    : okclnt_t (x, o), ok_form (o) {}
   ~okclnt_form_t () {}
 
   void process () { process_T (); }
   void process_T (CLOSURE); 
 
 protected:
-  oksrvc_static_t *ok_static;
+  oksrvc_form_t *ok_form;
 };
 
 static str
@@ -78,18 +79,31 @@ okclnt_form_t::process_T ()
   tvars {
     bool ok;
     aarr_t a;
+    str q;
   }
   
   {
-    const char *v[] = { "X", "Y", NULL };
+    const char *fields[] = { "X", "Y", NULL };
     vec<str> v;
-    for (const char **p = v; *p; p++) {
+    for (const char **p = fields; *p; p++) {
       cgi.lookup (*p, &v);
       str s = v2s(v);
       a.add (*p, s);
     }
+
+    if (cgi.lookup ("nxt_query", &q)) {
+      a.add ("query_unesc", q);
+      a.add ("query_esc", xss_filter (q));
+    }
+    
+    int i;
+    if (cgi.lookup ("union", &i)) {
+      ok_form->_union_cgi = i;
+    }
+
+    a.add ("union", ok_form->_union_cgi);
   }
-  a.add ("query", cgi["query"]);
+  
 
   twait { pub2 ()->run (&out, "/form.html", mkevent (ok), &a); }
 
@@ -105,7 +119,11 @@ oksrvc_form_t::make_newclnt (ptr<ahttpcon> x)
 int
 main (int argc, char *argv[])
 {
-  oksrvc_t *oksrvc = New oksrvc_fom_t (argc, argv);
+  oksrvc_t *oksrvc = New oksrvc_form_t (argc, argv);
   oksrvc->launch ();
+
+  // XXX -- this service, is by design, vulnerable to XSS attacks
+  ok_filter_cgi = XSSFILT_NONE;
+
   amain ();
 }

@@ -217,6 +217,17 @@ cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
   init (buf);
 }
 
+void
+cgi_t::reset_state ()
+{
+  pstate = cookie ? CGI_CKEY : CGI_KEY;
+  inhex = false;
+  hex_i = 0;
+  hex_h = 0;
+  hex_lch = 0;
+  uri_mode = false;
+}
+
 cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
   : async_parser_t (s), pairtab_t<cgi_pair_t> (true),
   cookie (ck), bufalloc (false),
