@@ -194,7 +194,7 @@ void
 http_parser_cgi_t::set_union_mode (bool b)
 {
   _union_mode = b;
-  hdr.set_url (_union_mode ? &url : &_union_cgi);
+  hdr.set_url (_union_mode ? &_union_cgi : &url);
 }
 
 #endif /* HAVE_EXPAT */

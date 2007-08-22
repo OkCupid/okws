@@ -77,10 +77,11 @@ okclnt_form_t::process_T ()
   tvars {
     bool ok;
     aarr_t a;
+    str q;
   }
   
   {
-    const char *fields[] = { "X", "Y", NULL };
+    const char *fields[] = { "x", "y", NULL };
     vec<str> v;
     for (const char **p = fields; *p; p++) {
       cgi.lookup (*p, &v);
@@ -88,7 +89,11 @@ okclnt_form_t::process_T ()
       a.add (*p, s);
     }
   }
-  a.add ("query", cgi["query"]);
+
+  if (cgi.lookup ("nxt_query", &q)) {
+    a.add ("query_unesc", q);
+    a.add ("query_esc", xss_filter (q));
+  }
 
   twait { pub2 ()->run (&out, "/form.html", mkevent (ok), &a); }
 
@@ -106,5 +111,9 @@ main (int argc, char *argv[])
 {
   oksrvc_t *oksrvc = New oksrvc_form_t (argc, argv);
   oksrvc->launch ();
+
+  // XXX -- this service, is by design, vulnerable to XSS attacks
+  ok_filter_cgi = XSSFILT_NONE;
+
   amain ();
 }

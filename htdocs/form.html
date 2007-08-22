@@ -6,11 +6,12 @@
 
 <b>X</b>: ${X} <br>
 <b>Y</b>: ${Y} <br>
+<b>Query for This Submit</b>: ${query_esc}<br>
 
-<form action=/form?${query} method=post>
+<form action=/form?${query_unesc} method=post>
 X: <input type=text name=X><br>
 Y: <input type=text name=Y><br>
-Query: <input type=text name=query><br>
+Next Query: <input type=text name=nxt_query><br>
 <input type=submit name=submit value=submit>
 </form>
 </body>

@@ -140,6 +140,7 @@ public:
   http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0) :
     http_parser_full_t (xx, to),
     post (&abuf, false, buflen, scratch),
+    _union_cgi (&abuf, false, buflen, scratch),
     mpfd (NULL),
     mpfd_flag (false),
     _union_mode (false) {}
@@ -160,11 +161,12 @@ public:
 
 protected:
   cgi_t post;
+  // In union CGI mode, both POST and GET variables are shoved into one place.
+  cgi_t _union_cgi;
+
   cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
 
-  // In union CGI mode, both POST and GET variables are shoved into one place.
-  cgi_t _union_cgi;
 private:
   bool mpfd_flag;
   bool _union_mode;
