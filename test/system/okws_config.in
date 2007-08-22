@@ -24,6 +24,7 @@ Alias		/static		/
 Service		configtest 	/configtest
 Service		simple	/simple
 Service		pub1tst /pub1tst
+Service		form	/form
 
 # XML services
 @@NO_XML@@Service		xmlex /xmlrpc
