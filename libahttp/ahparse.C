@@ -115,7 +115,17 @@ void
 http_parser_cgi_t::v_parse_cb1 (int status)
 {
   if (hdr.mthd == HTTP_MTHD_POST) {
-    cgi = &post;
+    
+    cgi_t *post_cgi;
+
+    if (_union_mode) {
+      cgi = &_union_cgi;
+      _union_cgi.set_uri_mode (false);
+      post_cgi = &_union_cgi;
+    } else {
+      cgi = &post;
+      post_cgi = &post;
+    }
     
     cbi::ptr pcb;
     if (!(pcb = prepare_post_parse (status)))
@@ -132,9 +142,13 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 	finish (HTTP_NOT_ALLOWED);
       }
     } else 
-      post.parse (pcb);
+      post_cgi->parse (pcb);
   } else if (hdr.mthd == HTTP_MTHD_GET) {
-    cgi = &url;
+    if (_union_mode) {
+      cgi = &_union_cgi;
+    } else {
+      cgi = &url;
+    }
     finish (status);
   } else {
     finish (HTTP_NOT_ALLOWED);
@@ -174,6 +188,13 @@ http_parser_xml_t::v_parse_cb1 (int status)
   } else {
     finish (HTTP_NOT_ACCEPTABLE);
   }
+}
+
+void
+http_parser_cgi_t::set_union_mode (bool b)
+{
+  _union_mode = b;
+  hdr.set_url (_union_mode ? &url : &_union_cgi);
 }
 
 #endif /* HAVE_EXPAT */

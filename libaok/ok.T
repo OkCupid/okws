@@ -574,6 +574,8 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
     } else {
       _n_newcli ++;
       okclnt_base_t *c = make_newclnt (lx);
+      if (use_union_cgi ())
+	  c->set_union_cgi_mode (true);
       c->serve ();
       add (c);
     }

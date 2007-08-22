@@ -56,8 +56,8 @@ http_inhdr_t::parse_guts ()
       r = abuf->skip_hws (1);
       break;
     case INHDRST_TARGET:
-      r = delimit_word (&target, uri ? true : false);
-      if (!uri && r == ABUF_OK) {
+      r = delimit_word (&target, url ? true : false);
+      if (!url && r == ABUF_OK) {
 	state = INHDRST_SPC2;
 	inc = false;
       }
@@ -65,8 +65,8 @@ http_inhdr_t::parse_guts ()
     case INHDRST_URIDAT:
       r = abuf->expectchar ('?');
       if (r == ABUF_OK) {
-	uri->set_uri_mode (true);
-	uri->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
+	url->set_uri_mode (true);
+	url->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
       } else if (r == ABUF_NOMATCH)
 	r = ABUF_OK;

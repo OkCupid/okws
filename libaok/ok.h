@@ -251,6 +251,10 @@ public:
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
 
+  // Kludge; this won't do anything except for subclasses that actually
+  // use CGI.
+  virtual void set_union_cgi_mode (bool b) {}
+
   // stuff for piecemeal output
   bool output_hdr (ssize_t sz = -1);
   bool output_fragment (str s);
@@ -328,6 +332,11 @@ public:
   void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
   http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
   const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
+
+  void set_union_cgi_mode (bool b)
+  {
+    http_parser_cgi_t::set_union_mode (b);
+  }
 };
 
 typedef callback<okclnt_base_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
@@ -374,6 +383,8 @@ public:
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
 
   virtual ~oksrvc_t () ;
+
+  virtual bool use_union_cgi () const { return false; }
 
   void init (int argc, char *argv[]);
   void shutdown ();

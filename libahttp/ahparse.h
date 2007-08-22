@@ -141,7 +141,8 @@ public:
     http_parser_full_t (xx, to),
     post (&abuf, false, buflen, scratch),
     mpfd (NULL),
-    mpfd_flag (false) {}
+    mpfd_flag (false),
+    _union_mode (false) {}
   ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
 
   void v_cancel () { hdr.cancel (); post.cancel (); }
@@ -155,12 +156,18 @@ public:
   cgi_mpfd_t *get_mpfd () { return mpfd; }
   cgiw_t & get_cgi () { return cgi; }
 
+  void set_union_mode (bool b);
+
 protected:
   cgi_t post;
   cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
+
+  // In union CGI mode, both POST and GET variables are shoved into one place.
+  cgi_t _union_cgi;
 private:
   bool mpfd_flag;
+  bool _union_mode;
 };
 
 #ifdef HAVE_EXPAT
