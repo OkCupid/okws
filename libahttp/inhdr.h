@@ -76,7 +76,7 @@ public:
   http_inhdr_t (abuf_t *a, cgi_t *u = NULL, cgi_t *c = NULL, 
 		size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
     : async_parser_t (a), http_hdr_t (a, bfln, b),
-      contlen (-1), uri (u), cookie (c), state (INHDRST_START) {}
+      contlen (-1), url (u), cookie (c), state (INHDRST_START) {}
 
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
@@ -87,12 +87,14 @@ public:
   http_method_t mthd;  // method code
   int contlen;     // content-length size
 
+  void set_url (cgi_t *u) { url = u; }
+
 protected:
   void parse_guts ();
   virtual void ext_parse_cb (int dummy);
   virtual void fixup ();
 
-  cgi_t *uri;
+  cgi_t *url;
   cgi_t *cookie;
   inhdrst_t state;    // parse state
 
