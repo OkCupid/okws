@@ -72,8 +72,10 @@ public:
   virtual void output (zbuf &z) const { el ()->dump (z); }
   void output_python (strbuf &b) const { el ()->dump_to_python (b); }
 
+  // for struct members, say what the name of the field is
   str name () const;
   xml_obj_const_t value () const;
+  str xml_typename (bool c = true) const ;
   
   xml_obj_t clone () const;
 };

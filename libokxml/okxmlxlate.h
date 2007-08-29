@@ -81,7 +81,8 @@ public:
 
   str error_msg (const str &prfx);
 
-  int error_wrong_type (const char *f, int rc = 0);
+  //int error_wrong_type (const char *f, int rc = 0);
+  int error_wrong_type (const char *f, const xml_obj_base_t &o, int rc = 0);
   int error_empty (const char *f, int rc = 0);
   int error_generic(const char *f, int rc = 0);
 

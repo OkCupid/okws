@@ -42,7 +42,7 @@ xml_tagtab_t::xml_tagtab_t ()
 #define I(x)                                \
   {                                         \
     e = New refcounted<xml_##x##_t> ();     \
-    _tab.insert (e->name (), e);           \
+    _tab.insert (e->xml_typename (), e);    \
   }
 
   I(struct);
@@ -135,9 +135,9 @@ xml_req_parser_t::end_element (const char *nm)
     parse_error (XML_PARSE_UNBALANCED, NULL);
   } else if (!el->is_a (nm)) {
     str m;
-    if (el->name ()) {
+    if (el->xml_typename ()) {
       strbuf b;
-      b << "Unexpected tag '</" << el->name () << "'>; got tag '</" 
+      b << "Unexpected tag '</" << el->xml_typename () << "'>; got tag '</" 
 	<< nm  << ">'";
       m = b;
     } else {
@@ -159,15 +159,16 @@ xml_req_parser_t::found_data (const char *buf, int len)
     if (!el->add (buf, len)) {
       strbuf b;
       str tmp (buf, len);
-      b << "bad character data for element of type '" << el->name () << "'; "
+      b << "bad character data for element of type '" 
+        << el->xml_typename () << "'; "
 	<< "data is: '" << tmp << "'";
       parse_error (XML_PARSE_BAD_CHARDATA, b);
     }
   } else if (has_non_ws (buf, len)) {
     strbuf b;
     str m;
-    if (el->name ()) {
-      b << "for element of type '" << el->name () << "'; ";
+    if (el->xml_typename ()) {
+      b << "for element of type '" << el->xml_typename () << "'; ";
     }
     str tmp (buf, len);
     b << "unexpected character data is: '" << tmp << "'";

@@ -106,3 +106,20 @@ try:
 
 except xmlrpclib.Fault, f:
     print 'Good; caught fault: %s' % f
+
+
+try:
+    
+    res = server.xdr.xlate (
+        { "hostname" : "127.0.0.1",
+          "port" : 4000,
+          "program" : "tst_prog_1",
+          "procno" : C.TST_RPC2,
+          "arg" : { "xx" : C.XXA,
+                    "a" : { "x" : 1000,
+                            "y" : 5000 }}
+          } )
+
+except xmlrpclib.Fault, f:
+    print 'Good; caught fault: %s' % f
+
