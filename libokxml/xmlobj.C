@@ -119,7 +119,7 @@ xml_inresp_t::is_fault (int *code, str *msg) const
   ptr<const xml_method_response_t> r;
   ptr<const xml_fault_t> f;
 
-  warn << "obj: "<< el ()->name () << "\n";
+  warn << "obj: "<< el ()->xml_typename () << "\n";
 
   if (el () && 
       (r = el ()->to_xml_method_response ()) && 
@@ -133,3 +133,13 @@ xml_inresp_t::is_fault (int *code, str *msg) const
   return false;
 }
 
+str
+xml_obj_base_t::xml_typename (bool coerce) const
+{
+  // if coerce, descend until we get to a primitive type.
+  return str (el() ? 
+	      (coerce ? 
+	       el()->xml_typename_coerce () : 
+	       el()->xml_typename ()) :
+	      "unknown"); 
+}

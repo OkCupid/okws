@@ -133,10 +133,13 @@ public:
 
   virtual ptr<xml_element_t> generate (const char *) const
   { return New refcounted<xml_element_t> (); }
-  virtual const char *name () const { return NULL; }
+  virtual const char *xml_typename () const { return NULL; }
+  virtual const char *xml_typename_coerce () const { return xml_typename (); }
   
   // used during parsing
-  virtual bool is_a (const char *s) const { return !strcmp (name (), s); }
+  virtual bool is_a (const char *s) const 
+  { return !strcmp (xml_typename (), s); }
+
   virtual bool add (const char *buf, int len) { return false; }
   virtual bool gets_char_data () const { return false; }
   virtual bool add (ptr<xml_element_t> e) { return false; }
@@ -176,7 +179,7 @@ public:
 
 class xml_top_level_t : public xml_container_t {
 public:
-  const char *name () const { return "topLevel"; }
+  const char *xml_typename () const { return "topLevel"; }
   bool can_contain (ptr<xml_element_t> e) const ;
 
   ptr<xml_top_level_t> clone_typed () const 
@@ -192,7 +195,7 @@ public:
   xml_name_t (const str &s) : _value (s) {}
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_name_t> (); }
-  virtual const char *name () const { return "name"; }
+  virtual const char *xml_typename () const { return "name"; }
   virtual ptr<xml_name_t> to_xml_name () { return mkref (this); }
   str value () const { return _value ;}
   void set_value (const str &v) { _value = v;}
@@ -225,7 +228,7 @@ public:
   ptr<xml_name_t> to_xml_name () { return NULL; }
   ptr<xml_method_name_t> to_xml_method_name () { return mkref (this); }
 
-  const char *name () const { return "methodName"; }
+  const char *xml_typename () const { return "methodName"; }
   bool dump_to_python (strbuf &b) const;
 
   ptr<xml_method_name_t> clone_typed () const
@@ -255,7 +258,7 @@ public:
   
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_method_call_t> (); }
-  const char *name () const { return "methodCall"; }
+  const char *xml_typename () const { return "methodCall"; }
 
   ptr<xml_container_t> to_xml_container ();
 
@@ -316,7 +319,7 @@ public:
 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_param_t> (); }
-  const char *name () const { return "param"; }
+  const char *xml_typename () const { return "param"; }
 
   static ptr<xml_param_t> alloc ()
   { return New refcounted<xml_param_t> (); }
@@ -333,7 +336,7 @@ public:
 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_params_t> (); }
-  const char *name () const { return "params"; }
+  const char *xml_typename () const { return "params"; }
   bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_param (); }
   ptr<xml_params_t> to_xml_params () { return mkref (this); }
 
@@ -351,7 +354,7 @@ public:
 
   ptr<xml_element_t> generate (const char *) const
   { return New refcounted<xml_fault_t> (); }
-  const char *name () const { return "fault"; }
+  const char *xml_typename () const { return "fault"; }
   ptr<xml_fault_t> to_xml_fault () { return mkref (this); }
   ptr<const xml_fault_t> to_xml_fault () const
   { return mkref (const_cast<xml_fault_t *> (this)); }
@@ -371,7 +374,7 @@ public:
   void set_params (ptr<xml_params_t> p) { _params = p; }
   ptr<xml_element_t> generate (const char *) const
   { return New refcounted<xml_method_response_t> (); }
-  const char *name () const { return "methodResponse"; }
+  const char *xml_typename () const { return "methodResponse"; }
   ptr<xml_method_response_t> to_xml_method_response () { return mkref (this); }
   ptr<const xml_method_response_t> to_xml_method_response () const
   { return mkref (const_cast<xml_method_response_t *> (this)); }
@@ -407,7 +410,7 @@ public:
   static ptr<xml_null_t> alloc () { return null_element; }
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_params_t> (); }
-  const char *name () const { return "null"; }
+  const char *xml_typename () const { return "null"; }
 
   ptr<xml_null_t> clone_typed () const { return xml_null_t::alloc (); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
@@ -436,7 +439,7 @@ public:
   ptr<xml_element_t> generate (const char *n) const 
   { return New refcounted<xml_double_t> (); }
 
-  const char *name () const { return "double"; }
+  const char *xml_typename () const { return "double"; }
   bool close_tag ();
   void dump_data (zbuf &b, int lev) const;
   bool dump_to_python (strbuf &b) const;
@@ -470,7 +473,7 @@ public:
   static ptr<xml_int_t> alloc (int i)
   { return New refcounted<xml_int_t> (i); }
 
-  const char *name () const { return "int"; }
+  const char *xml_typename () const { return "int"; }
   bool is_a (const char *n) const { return !strcmp (_tag.cstr (), n); }
   bool close_tag ();
   void dump_data (zbuf &b, int lev) const { b << _val; }
@@ -493,7 +496,7 @@ public:
   ptr<const xml_str_t> to_xml_str ()  const { return mkref (this); }
   str to_str () const { return _val; }
   void set (const str &v) { _val = v; }
-  const char *name () const { return "string"; }
+  const char *xml_typename () const { return "string"; }
   bool close_tag ();
   ptr<xml_element_t> generate (const char *n) const 
   { return New refcounted<xml_str_t> (); }
@@ -532,7 +535,7 @@ public:
   
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_base64_t>(); }
-  const char *name () const { return "base64"; }
+  const char *xml_typename () const { return "base64"; }
   bool close_tag ();
 
   static ptr<xml_base64_t> alloc (const str &s, bool encoded = false)
@@ -568,7 +571,7 @@ public:
   static ptr<xml_element_t> alloc () 
   { return New refcounted<xml_struct_t> (); }
 
-  const char *name () const { return "struct"; }
+  const char *xml_typename () const { return "struct"; }
   bool is_value () const { return true; }
   bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_member (); }
   bool close_tag ();
@@ -604,7 +607,7 @@ public:
 
   bool is_type (xml_obj_typ_t t) const { return t == XML_ARRAY; }
 
-  const char *name () const { return "array"; }
+  const char *xml_typename () const { return "array"; }
   bool is_value () const { return true; }
   ptr<xml_data_t> data () { return _data; }
   ptr<const xml_data_t> data () const { return _data; }
@@ -632,7 +635,9 @@ public:
   xml_value_t (ptr<xml_element_t> e = NULL) : _e (e) {}
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_value_t> (); }
-  const char *name () const { return "value"; }
+
+  const char *xml_typename () const { return "value"; }
+  const char *xml_typename_coerce () const;
 
   ptr<xml_element_t> &element () { return _e; }
   ptr<const xml_element_t> element_const () const { return _e; }
@@ -688,7 +693,7 @@ public:
 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_member_t> (); }
-  const char *name () const { return "member"; }
+  const char *xml_typename () const { return "member"; }
   ptr<xml_member_t> to_xml_member () { return mkref (this); }
   ptr<const xml_member_t> to_xml_member () const
   { return mkref (const_cast<xml_member_t *>  (this)); }
@@ -722,7 +727,7 @@ public:
   xml_data_t (const xml_data_t &x) : xml_container_t (x) {} 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_data_t> (); }
-  const char *name () const { return "data"; }
+  const char *xml_typename () const { return "data"; }
   ptr<xml_data_t> to_xml_data () { return mkref (this); }
   bool can_contain (ptr<xml_element_t> e) const { return e->to_xml_value (); }
   static ptr<xml_data_t> alloc () { return New refcounted<xml_data_t> (); }
@@ -741,7 +746,7 @@ public:
 
   ptr<xml_element_t> generate (const char *) const 
   { return New refcounted<xml_bool_t> (); }
-  const char *name () const { return "boolean"; }
+  const char *xml_typename () const { return "boolean"; }
   ptr<xml_bool_t> to_xml_bool () { return mkref (this); }
   bool close_tag ();
 

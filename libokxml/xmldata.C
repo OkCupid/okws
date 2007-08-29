@@ -389,16 +389,16 @@ static void spaces (zbuf &b, int n)
 void
 xml_element_t::dump (zbuf &b, int lev) const
 {
-  if (name ()) {
+  if (xml_typename ()) {
     spaces (b, lev);
-    b << "<" << name () << ">";
+    b << "<" << xml_typename () << ">";
     if (!gets_char_data ()) b << "\n";
   }
   dump_data (b, lev + 1);
-  if (name ()) {
+  if (xml_typename ()) {
     if (!gets_char_data ())
       spaces (b, lev);
-    b << "</" << name () << ">\n";
+    b << "</" << xml_typename () << ">\n";
   }
 }
 
@@ -834,3 +834,7 @@ xml_method_call_t::to_xml_container ()
 bool 
 xml_top_level_t::can_contain (ptr<xml_element_t> e) const 
 { return e->to_xml_method_call () || e->to_xml_method_response (); }
+
+const char *
+xml_value_t::xml_typename_coerce () const
+{ return _e ? _e->xml_typename_coerce () : "unbound value"; }

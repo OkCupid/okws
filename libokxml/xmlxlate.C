@@ -21,7 +21,7 @@ bool
 XML_reader_t::enter_field (const char *f)
 {
   if (is_empty ())         return error_empty ("struct");
-  if (!top().is_struct ()) return error_wrong_type ("struct");
+  if (!top().is_struct ()) return error_wrong_type ("struct", top());
 
   push (top()(f));
   debug_push (f);
@@ -112,7 +112,7 @@ template<class T> bool
 XML_reader_t::t_traverse (const char *prfx, T &i, bool sig)
 {
   if (is_empty ())      return error_empty ("string");
-  if (!top().is_str ()) return error_wrong_type ("string");
+  if (!top().is_str ()) return error_wrong_type ("string", top());
 
   if (!xml_decode_int_repr (top (), prfx, i, sig)) {
     strbuf b ("%s decoding error", prfx);
@@ -160,7 +160,7 @@ bool
 XML_reader_t::traverse (int32_t &i)
 {
   if (is_empty ())      return error_empty ("int");
-  if (!top().is_int ()) return error_wrong_type ("int");
+  if (!top().is_int ()) return error_wrong_type ("int", top());
   i = top();
   return true;
 }
@@ -171,7 +171,7 @@ XML_reader_t::traverse (bool &b)
   if (is_empty ())      
     return error_empty ("bool");
   if (!top().is_bool() && !top().is_int ()) 
-    return error_wrong_type ("bool");
+    return error_wrong_type ("bool", top());
   b = top();
   return true;
 }
@@ -209,7 +209,7 @@ XML_reader_t::push_array (size_t s, size_t capac, bool fixed,
   *szp = -1;
 
   if (is_empty ())        return error_empty ("array/vector", -1);
-  if (!top().is_array ()) return error_wrong_type ("array/vector", -1);
+  if (!top().is_array ()) return error_wrong_type ("array/vector", top(), -1);
 
   size_t sz = top ().size ();
   
@@ -242,7 +242,7 @@ bool
 XML_reader_t::traverse_opaque (str &s)
 {
   if (is_empty ())         return error_empty ("base64");
-  if (!top().is_base64 ()) return error_wrong_type ("base64");
+  if (!top().is_base64 ()) return error_wrong_type ("base64", top());
   s = top ();
   return true;
 }
@@ -251,7 +251,7 @@ bool
 XML_reader_t::traverse_string (str &s)
 {
   if (is_empty ())         return error_empty ("string");
-  if (!top().is_str ())    return error_wrong_type ("string");
+  if (!top().is_str ())    return error_wrong_type ("string", top());
   s = top ();
   return true;
 }
@@ -276,7 +276,7 @@ XML_reader_t::push_ptr (bool dummy, bool *alloc)
   int ret = -1;
   *alloc = false;
   if (is_empty ())         return error_empty ("array/ptr", -1);
-  if (!top ().is_array ()) return error_wrong_type ("array/ptr", -1);
+  if (!top ().is_array ()) return error_wrong_type ("array/ptr", top(), -1);
 
   switch (top ().size ()) {
   case 0: 
@@ -363,9 +363,20 @@ XML_RPC_obj_t::error_empty (const char *f, int rc)
 }
 
 int
-XML_RPC_obj_t::error_wrong_type (const char *f, int rc)
+XML_RPC_obj_t::error_wrong_type (const char *f, const xml_obj_base_t &o, 
+                                 int rc)
 {
-  strbuf b ("Expected type '%s'; got something else instead", f);
+  const char *e = o.xml_typename (true);
+  
+  strbuf b ("Expected type '%s'; got '%s' instead", f, e);
   freeze_err_msg (b);
   return rc;
 }
+
+/*
+int
+XML_RPC_obj_t::error_wrong_type (const char *f, int rc)
+{
+  return error_wrong_type (f, NULL, rc);
+}
+*/
