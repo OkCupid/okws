@@ -23,6 +23,7 @@
 #include "okwc.h"
 #include "httpconst.h"
 #include "parseopt.h"
+#include "rxx.h"
 
 static okwc_dnscache_t dnscache;
 
@@ -87,6 +88,42 @@ okwc_request (const str &host, u_int16_t port, const str &fn,
   req->launch ();
   return req;
 }
+
+okwc_req_t *
+okwc_request_proxied (const str &proxy_hostname,
+		      u_int16_t proxy_port,
+		      const str &url,
+		      okwc_cb_t cb,
+		      int vers,
+		      int timeout,
+		      cgi_t *outcook,
+		      const str &post,
+		      const str &type)
+{
+  static rxx url_rxx ("http://([^:/\\s]+(:\\d+)?)(/\\S*)");
+  okwc_req_t *req =  NULL;
+  if (!url_rxx.match (url)) {
+    (*cb) (New refcounted<okwc_resp_t> (HTTP_CLIENT_BAD_PROXY));
+  } else {
+  
+    req = New okwc_req_bigstr_t (proxy_hostname, 
+				 proxy_port, url, 
+				 cb, vers, timeout, outcook,
+				 post, type);
+    req->set_proxy_mode (url_rxx[1]);
+    req->launch ();
+  }
+  return req;
+}
+
+void
+okwc_req_t::set_proxy_mode (const str &hn)
+{
+  _proxy_mode = true;
+  _proxy_hdr_hostname = hn;
+}
+
+
 void
 okwc_cancel (okwc_req_t *req)
 {
@@ -107,6 +144,7 @@ okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f,
 			const str &t)
   : hostname (h), port (p), filename (f),
     vers (v), timeout (to), outcookie (ock),
+    _proxy_mode (false),
     tcpcon (NULL), waiting_for_dns (false), fd (-1), 
     http (NULL), timer (NULL),
     _post (post), _type (t) {}
@@ -151,9 +189,10 @@ okwc_req_t::tcpcon_cb (int f)
 okwc_http_t *
 okwc_req_bigstr_t::okwc_http_alloc () 
 {
-  return New okwc_http_bigstr_t (x, filename,  hostname,
+  return New okwc_http_bigstr_t (x, filename,  hostname, port,
 				 wrap (this, &okwc_req_bigstr_t::http_cb), 
-				 vers, outcookie, _post, _type);
+				 vers, outcookie, _post, _type,
+				 _proxy_mode, _proxy_hdr_hostname);
 }
 
 void
@@ -203,19 +242,23 @@ void
 okwc_http_t::make_req ()
 {
   int len;
-  if (!filename || (len = filename.len ()) == 0) {
-    // empty file names --> "/"
-    filename = "/";
-  } else if (filename[0] != '/') {
-    // insert leading slash if not there.
-    filename = strbuf ("/") << filename;
-  } else {
-    // trunc all but the first leading slash
-    const char *fn = filename.cstr ();
-    const char *cp;
-    for (cp = fn; *cp == '/'; cp++)  ;
-    cp--;
-    filename = str (cp, len - (cp - fn)); 
+
+  // Fixup filename if not in proxy mode.
+  if (!_proxy_mode) {
+    if (!filename || (len = filename.len ()) == 0) {
+      // empty file names --> "/"
+      filename = "/";
+    } else if (filename[0] != '/') {
+      // insert leading slash if not there.
+      filename = strbuf ("/") << filename;
+    } else {
+      // trunc all but the first leading slash
+      const char *fn = filename.cstr ();
+      const char *cp;
+      for (cp = fn; *cp == '/'; cp++)  ;
+      cp--;
+      filename = str (cp, len - (cp - fn)); 
+    }
   }
 
   //
@@ -226,11 +269,29 @@ okwc_http_t::make_req ()
   str mth = _post ? "POST" : "GET";
 
   reqbuf << mth << " " << filename << " HTTP/1." << vers  << HTTP_CRLF;
-  if (vers == 1) {
-    reqbuf << "Connection: close" << HTTP_CRLF
-	   << "Host: " << hostname << HTTP_CRLF
-	   << "User-agent: okwc/" << VERSION << HTTP_CRLF;
+
+  str hn;
+  if (_proxy_mode) {
+    hn = _proxy_hdr_hostname;
+  } else {
+    strbuf b;
+    b << hostname;
+    if (port != 80)
+      b << ":" << port;
+    hn = b;
   }
+
+  //
+  // In either HTTP/1.0 or HTTP/1.1, be polite like wget and output the
+  // hostname and user-agent
+  //
+  reqbuf << "Host: " << hn << HTTP_CRLF
+	 << "User-agent: okwc/" << VERSION << HTTP_CRLF;
+
+  if (vers == 1) {
+    reqbuf << "Connection: close" << HTTP_CRLF;
+  }
+
   if (outcook) {
     reqbuf << "Cookie: ";
     outcook->encode (&reqbuf);
@@ -425,19 +486,27 @@ okwc_http_bigstr_t::finish2 (int status)
 }
 
 okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
+			  int port_in,
 			  int v, cgi_t *ock, okwc_cookie_set_t *incook,
-			  const str &p, const str &t)
-  : x (xx), filename (f), hostname (h), abuf (New abuf_con_t (xx), true),
+			  const str &p, const str &t, bool proxy_mode,
+			  const str &proxy_hdr_hostname)
+  : x (xx), filename (f), hostname (h), port (port_in),
+    abuf (New abuf_con_t (xx), true),
     resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch, incook)),
     vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL),
-    _post (p), _type (t)
+    _post (p), _type (t),
+    _proxy_mode (proxy_mode),
+    _proxy_hdr_hostname (proxy_hdr_hostname)
 {}
 
 okwc_http_bigstr_t::okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f,
-					const str &h, okwc_cb_t cb,
+					const str &h, int port, okwc_cb_t cb,
 					int v, cgi_t *okc, const str &p,
-					const str &t)
-  : okwc_http_t (xx,f,h,v,okc,NULL,p,t), body (&abuf), okwc_cb (cb)
+					const str &t,
+					bool proxy_mode,
+					const str &proxy_hdr_hostname)
+  : okwc_http_t (xx,f,h,port,v,okc,NULL,p,t,proxy_mode,proxy_hdr_hostname), 
+    body (&abuf), okwc_cb (cb)
 {}
 
 void

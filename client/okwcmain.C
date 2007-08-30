@@ -39,7 +39,18 @@ main (int argc, char *argv [])
   str typ;
   if (argc != 2 && argc != 3) 
     usage ();
-  if (!url_rxx.match (argv[1])) 
+
+  str connect_to;
+  str prx = getenv ("http_proxy");
+  str filename;
+  if (prx) {
+    connect_to = prx;
+  } else {
+    connect_to = argv[1];
+  }
+
+
+  if (!url_rxx.match (connect_to)) 
     usage ();
 
   if (argc == 3) {
@@ -50,12 +61,21 @@ main (int argc, char *argv [])
   str hostname = url_rxx[1];
   u_int16_t port = 80;
   str port_str = url_rxx[3];
-  if (port_str && port_str.len ()) 
-    assert (convertint (port_str, &port));
-  str filename = url_rxx[5];
+  if (port_str && port_str.len ())  {
+    bool rc = convertint (port_str, &port);
+    assert (rc);
+  }
 
-  okwc_request (hostname, port, filename, wrap (reqcb), 1, 100,
-		NULL, post, typ);
+  if (prx) {
+    filename = argv[1];
+    okwc_request_proxied (hostname, port, filename, wrap (reqcb), 0, 100,
+			  NULL, post, typ);
+  } else {
+    filename = url_rxx[5];
+    okwc_request (hostname, port, filename, wrap (reqcb), 0, 100,
+		  NULL, post, typ);
+  }
+
   amain ();
 }
 

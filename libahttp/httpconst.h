@@ -58,6 +58,7 @@
 //
 #define HTTP_CLIENT_EOF  600
 #define HTTP_CONNECTION_FAILED 601
+#define HTTP_CLIENT_BAD_PROXY 602
 
 #define HTTP_CRLF "\r\n"
 

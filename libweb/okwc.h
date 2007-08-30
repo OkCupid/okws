@@ -194,9 +194,12 @@ public:
 		 OKWC_HTTP_HDR = 2,
 		 OKWC_HTTP_BODY = 3 } state_t;
 		 
-  okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, 
+  okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h, int port,
 	       int v, cgi_t *ock, okwc_cookie_set_t *incook = NULL,
-	       const str &post = NULL, const str &type = NULL);
+	       const str &post = NULL, const str &type = NULL,
+	       bool proxy_mode = false, 
+	       const str &proxy_hdr_hostname = NULL);
+
   virtual ~okwc_http_t () { if (chunker) delete (chunker); }
 
   void make_req ();
@@ -222,6 +225,7 @@ protected:
   ptr<ahttpcon> x;
   str filename;
   str hostname;
+  int port;
   abuf_t abuf;
   char scratch[OKWC_SCRATCH_SZ];
 
@@ -234,6 +238,9 @@ protected:
   ptr<bool> cancel_flag;
   okwc_chunker_t *chunker;
   const str _post, _type;
+
+  bool _proxy_mode;
+  str _proxy_hdr_hostname;
 };
 
 //
@@ -244,8 +251,9 @@ protected:
 class okwc_http_bigstr_t : public okwc_http_t {
 public:
   okwc_http_bigstr_t (ptr<ahttpcon> xx, const str &f, 
-		      const str &h, okwc_cb_t c, int v, cgi_t *ock,
-		      const str &post, const str &type);
+		      const str &h, int port, okwc_cb_t c, int v, cgi_t *ock,
+		      const str &post, const str &type,
+		      bool proxy_mode, const str &proxy_hdr_hostname);
 
 protected:
   void finish2 (int status);
@@ -270,6 +278,8 @@ public:
   void launch ();
   void cancel (int status, bool from_dcb = false);
 
+  void set_proxy_mode (const str &hostname);
+
 protected:
   virtual okwc_http_t *okwc_http_alloc () = 0;
   void dns_cb (ptr<hostent> he, int err);
@@ -283,6 +293,11 @@ protected:
   int vers;         // 0=>HTTP/1.0;  1=>HTTP/1.1
   int timeout;
   cgi_t *outcookie; // cookies client is sending to server
+
+  // if running in proxy mode, supply this hostname in HTTP headers
+  bool _proxy_mode;
+  str _proxy_hdr_hostname;
+                          
 
   tcpconnect_t *tcpcon;
   bool waiting_for_dns;
@@ -315,6 +330,34 @@ okwc_request (const str &h, u_int16_t port, const str &fn,
 	      okwc_cb_t cb, int vers = 0, int timeout = -1, 
 	      cgi_t *outcook = NULL, const str &post = NULL,
 	      const str &type = NULL);
+
+/*
+ * wget a remote URL, but using a proxied interface.
+ *
+ * @param proxy_hostname the hostname of the proxy
+ * @praram proxy_port the port of the proxy.
+ * @param url the URL to fetch, in the form http://www.foo.com:500/xxx/yyy
+ * @param cb callback to call when completed.
+ * @param vers HTTP version; 1 = 1.1 and 0 = 1.0
+ * @param timeout Timeout after this many seconds (or -1 if no timeout)
+ * @param outcook Cookies to send to the server
+ * @param post a POST payload to ship to the server.
+ * @param type the Content-type: to send to the server.
+ *
+ * @returns an okwc_req_t, which you can later call okwc_cancel() on
+ * you wish.
+ */
+okwc_req_t *
+okwc_request_proxied (const str &proxy_hostname,
+		      u_int16_t proxy_port,
+		      const str &url,
+		      okwc_cb_t cb,
+		      int vers = 0,
+		      int timeout = -1,
+		      cgi_t *outcook = NULL,
+		      const str &post = NULL,
+		      const str &type = NULL);
+
 
 void
 okwc_cancel (okwc_req_t *req);
