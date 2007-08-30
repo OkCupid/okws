@@ -10,6 +10,8 @@ mystmt_ag.o: mystmt_ag.C
 mystmt_ag.lo: mystmt_ag.C
 amysql.o: mystmt_ag.h
 amysql.lo: mystmt_ag.h
+mystmt.o: mystmt_ag.h
+mystmt.lo: mystmt_ag.h
 
 
 mystmt_ag.h: $(srcdir)/mystmt_ag.pl
