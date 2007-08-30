@@ -129,6 +129,11 @@ dnscache_entry_t::do_resolution (evb_t cb)
   if (!cancelled) {
     committed_lookup = true;
     commit_lookup (he, e);
+
+    // since we're about to trigger cb, don't need to worry about whether
+    // it's cancelled any more.  In the case of cancelation, don't the
+    // cancel notifier is automatically NULLed out.
+    cb->set_cancel_notifier (NULL);
   }
 
   cb->trigger (!cancelled);
@@ -152,7 +157,6 @@ dnscache_entry_t::do_resolution (evb_t cb)
     // Internally, stops listening on an fd and closes it.
     dnsreq_cancel (dnsp);
   } else {
-    cb->set_cancel_notifier (NULL);
 
     if (_waiter_remove_cb) {
       _waiter_remove_cb = NULL;
