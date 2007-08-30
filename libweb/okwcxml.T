@@ -7,13 +7,15 @@
 
 #ifdef HAVE_EXPAT
 
+namespace okwc3 {
+
 //-----------------------------------------------------------------------
 
 tamed void
-okwc3_xml_t::call_T (xml_outreq_t req, okwc3_xml_ev_t ev)
+agent_xml_t::call_T (xml_outreq_t req, xml_ev_t ev)
 {
   tvars {
-    ptr<okwc3_resp_xml_t> hresp (New refcounted<okwc3_resp_xml_t> ());
+    ptr<resp_xml_t> hresp (New refcounted<resp_xml_t> ());
     xml_inresp_t resp;
     int status;
   }
@@ -27,28 +29,28 @@ okwc3_xml_t::call_T (xml_outreq_t req, okwc3_xml_ev_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-okwc3_xml_t::make_req (xml_outreq_t req, ptr<okwc3_resp_t> resp, evi_t ev)
+agent_xml_t::make_req (xml_outreq_t req, ptr<resp_t> resp, evi_t ev)
 {
 
   tvars {
     int status;
-    ptr<okwc3_req_xml_t> hreq;
+    ptr<req_xml_t> hreq;
   }
-  hreq = New refcounted<okwc3_req_xml_t> (_hostname, _url);
+  hreq = New refcounted<req_xml_t> (_reqinfo);
   req.output (hreq->zb ());
-  twait { okwc3_t::req (hreq, resp, connector::cnc (mkevent (status), ev)); }
+  twait { agent_t::req (hreq, resp, connector::cnc (mkevent (status), ev)); }
   ev->trigger (status);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okwc3_xml_t::call_dump_T (xml_outreq_t req, evis_t ev)
+agent_xml_t::call_dump_T (xml_outreq_t req, evis_t ev)
 {
   tvars {
     int status;
     str res;
-    ptr<okwc3_resp_simple_t> resp (New refcounted<okwc3_resp_simple_t> ());
+    ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
   }
 
   twait { make_req (req, resp, connector::cnc (mkevent (status), ev)); }
@@ -61,7 +63,7 @@ okwc3_xml_t::call_dump_T (xml_outreq_t req, evis_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-okwc3_resp_xml_t::eat_chunk_T (size_t sz, evi_t ev)
+resp_xml_t::eat_chunk_T (size_t sz, evi_t ev)
 {
   tvars {
     int status;
@@ -80,9 +82,24 @@ okwc3_resp_xml_t::eat_chunk_T (size_t sz, evi_t ev)
 //-----------------------------------------------------------------------
 
 void
-okwc3_resp_xml_t::finished_meal (int status, evi_t ev)
+resp_xml_t::finished_meal (int status, evi_t ev)
 {
   ev->trigger (status);
 }
+
+//-----------------------------------------------------------------------
+
+agent_xml_t::agent_xml_t (const str &hn, int port, const str &u, bool proxied)
+  : agent_t (hn, port),
+    _reqinfo (proxied ? 
+	      reqinfo_proxied_t::alloc (u) :
+	      reqinfo_direct_t::alloc (hn, port, u))
+{}
+
+
+
+//-----------------------------------------------------------------------
+
+};
 
 #endif /* HAVE_EXPAT */
