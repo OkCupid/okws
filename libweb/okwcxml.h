@@ -33,12 +33,14 @@
 // Can only compile this library if we have Expat Support
 # ifdef HAVE_EXPAT
 
-typedef event<int, xml_inresp_t>::ref okwc3_xml_ev_t;
+namespace okwc3 {
+
+typedef event<int, xml_inresp_t>::ref xml_ev_t;
 typedef event<int, str>::ref evis_t;
 
-class okwc3_post_xml_t : public okwc3_post_t {
+class post_xml_t : public post_t {
 public:
-  okwc3_post_xml_t () : okwc3_post_t () {}
+  post_xml_t () : post_t () {}
   zbuf &zb () { return _zb; }
   const zbuf &zb () const { return _zb; }
   size_t len () const { return _zb.inflated_len (); }
@@ -47,21 +49,20 @@ private:
   mutable zbuf _zb;
 };
 
-class okwc3_req_xml_t : public okwc3_req_t {
+class req_xml_t : public req_t {
 public:
-  okwc3_req_xml_t (const str &hn, const str &fn, cgi_t *c = NULL)
-    : okwc3_req_t (hn, fn, 1, c) {}
+  req_xml_t (ptr<reqinfo_t> ri, cgi_t *c = NULL) : req_t (ri, 1, c) {}
   zbuf &zb () { return _post.zb (); }
   const zbuf &zb () const { return _post.zb (); }
-  const okwc3_post_t *get_post () const { return &_post; }
+  const post_t *get_post () const { return &_post; }
   str get_type () const { return "text/xml"; }
 protected:
-  okwc3_post_xml_t _post;
+  post_xml_t _post;
 };
 
-class okwc3_resp_xml_t : public okwc3_resp_t {
+class resp_xml_t : public resp_t {
 public:
-  okwc3_resp_xml_t () : _parser (&_abuf) {}
+  resp_xml_t () : _parser (&_abuf) {}
   void eat_chunk (size_t sz, evi_t ev) { eat_chunk_T (sz, ev); }
   void finished_meal (int status, evi_t ev);
   ptr<const xml_top_level_t> top_level () 
@@ -71,17 +72,19 @@ protected:
   void eat_chunk_T (size_t sz, evi_t ev, CLOSURE);
 };
 
-class okwc3_xml_t : public okwc3_t {
+class agent_xml_t : public agent_t {
 public:
-  okwc3_xml_t (const str &hn, int port, const str &u)
-    : okwc3_t (hn, port), _url (u) {}
-  void call (xml_outreq_t req, okwc3_xml_ev_t ev) { call_T (req, ev); }
+  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false);
+
+  void call (xml_outreq_t req, xml_ev_t ev) { call_T (req, ev); }
   void call_dump (xml_outreq_t req, evis_t ev) { call_dump_T (req, ev); }
 private:
-  void call_T (xml_outreq_t req, okwc3_xml_ev_t ev, CLOSURE);
+  void call_T (xml_outreq_t req, xml_ev_t ev, CLOSURE);
   void call_dump_T (xml_outreq_t req, evis_t ev, CLOSURE);
-  void make_req (xml_outreq_t req, ptr<okwc3_resp_t> resp, evi_t ev, CLOSURE);
-  str _url;
+  void make_req (xml_outreq_t req, ptr<resp_t> resp, evi_t ev, CLOSURE);
+  ptr<reqinfo_t> _reqinfo;
+};
+
 };
 
 # endif /* HAVE_EXPAT */

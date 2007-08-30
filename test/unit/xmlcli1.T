@@ -26,7 +26,7 @@ main2 (int argc, char **argv)
     xml_inresp_t resp;
     str hostname;
     u_int16_t port (80);
-    ptr<okwc3_xml_t> cli;
+    ptr<okwc3::agent_xml_t> cli;
     str port_str;
     int tmo (0);
     str filename;
@@ -37,7 +37,7 @@ main2 (int argc, char **argv)
     int code;
     str msg;
     bool verbose (false);
-	int w;
+    int w;
   }
 
   while ((ch = getopt (argc, argv, "vdt:")) != -1) {
@@ -73,7 +73,7 @@ main2 (int argc, char **argv)
     assert (convertint (port_str, &port));
   filename = url_rxx[4];
   
-  cli = New refcounted<okwc3_xml_t> (hostname, port, filename);
+  cli = New refcounted<okwc3::agent_xml_t> (hostname, port, filename);
 
   req.set_method_name ("foo");
 

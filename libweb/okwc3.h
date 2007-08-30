@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _LIBWEB_OKWC2_H
-#define _LIBWEB_OKWC2_H
+#ifndef _LIBWEB_OKWC3_H
+#define _LIBWEB_OKWC3_H
 
 #include "okcgi.h"
 #include "abuf.h"
@@ -42,6 +42,8 @@
 
 #define CANCELLED_STATUS HTTP_TIMEOUT
 
+namespace okwc3 {
+
 //-----------------------------------------------------------------------
 
 struct queued_cbv_t {
@@ -54,9 +56,9 @@ typedef event<ptr<hostent>, int>::ref ev_hent_t;
 
 //-----------------------------------------------------------------------
 
-class okwc3_dnscache_entry_t : public virtual refcount {
+class dnscache_entry_t : public virtual refcount {
 public:
-  okwc3_dnscache_entry_t (const str &h, int t = 60) : 
+  dnscache_entry_t (const str &h, int t = 60) : 
     _hostname (h), _expires (0), _resolving (false), _ttl (t), _err (0), 
     _init (false) {}
   void lookup (ev_hent_t cb, CLOSURE);
@@ -80,56 +82,103 @@ private:
 
 //-----------------------------------------------------------------------
 
-class okwc3_dnscache_t {
+class dnscache_t {
 public:
-  okwc3_dnscache_t () {}
+  dnscache_t () {}
   void lookup (const str &n, ev_hent_t ev);
 private:
-  qhash<str, ptr<okwc3_dnscache_entry_t> > _cache;
+  qhash<str, ptr<dnscache_entry_t> > _cache;
 };
 
 //-----------------------------------------------------------------------
 
-class okwc3_post_t {
+class post_t {
 public:
-  okwc3_post_t () {}
-  virtual ~okwc3_post_t () {}
+  post_t () {}
+  virtual ~post_t () {}
   virtual size_t len () const = 0;
   virtual void output (strbuf &b) const = 0;
 };
 
 //-----------------------------------------------------------------------
 
-class okwc3_req_t : public virtual refcount {
+class reqinfo_t {
 public:
-  okwc3_req_t (const str &hn, const str &fn, int v = 1, cgi_t *c = NULL) 
-    : _hostname (hn), _filename (fn), _vers (v), _outcookie (c) {}
+  reqinfo_t () {}
+  virtual ~reqinfo_t () {}
+  virtual str get_fixed_filename () const = 0;
+  virtual str get_hdr_hostname () const = 0;
+  virtual bool validate () const = 0;
+};
 
-  virtual ~okwc3_req_t () {}
+//-----------------------------------------------------------------------
+
+class reqinfo_direct_t : public reqinfo_t {
+public:
+  reqinfo_direct_t (const str &hn, int port, const str &fn)
+    : reqinfo_t (), _hostname (hn), _port (port), _filename (fn) {}
+
+  static ptr<reqinfo_t> alloc (const str &hn, int port, const str &fn)
+  { return New refcounted<reqinfo_direct_t> (hn, port, fn); }
+
+  str get_fixed_filename () const;
+  str get_hdr_hostname () const ;
+  bool validate () const { return true; }
+private:
+  const str _hostname;
+  const int _port;
+  const str _filename;
+};
+
+//-----------------------------------------------------------------------
+
+class reqinfo_proxied_t : public reqinfo_t {
+public:
+  reqinfo_proxied_t (const str &url) ;
+
+  static ptr<reqinfo_t> alloc (const str &url)
+  { return New refcounted<reqinfo_proxied_t> (url); }
+
+  str get_fixed_filename () const { return _url; }
+  str get_hdr_hostname () const { return _hdr_hostname; }
+  bool validate () const { return _valid; }
+private:
+  const str _url;
+  str _hdr_hostname;
+  bool _valid;
+};
+
+//-----------------------------------------------------------------------
+
+class req_t : public virtual refcount {
+public:
+  req_t (ptr<reqinfo_t> ri, int v = 1, cgi_t *c = NULL) 
+    : _reqinfo (ri), _vers (v), _outcookie (c) {}
+
+  virtual ~req_t () {}
   virtual void make (ptr<ahttpcon> x, evi_t cb) { return make_T (x, cb); }
 
-  virtual const okwc3_post_t *get_post () const { return NULL; }
+  virtual const post_t *get_post () const { return NULL; }
   virtual str get_type () const { return NULL; }
 
 protected:
-  void fix_filename ();
   void format_req (strbuf &b);
 
 private:
   void make_T (ptr<ahttpcon> x, evi_t cb, CLOSURE);
 
-  str _hostname;
-  str _filename;
+protected:
+  ptr<const reqinfo_t> _reqinfo;
   int _vers;
   cgi_t *_outcookie; // cookie sending out to the server
 };
 
 //-----------------------------------------------------------------------
 
-class okwc3_resp_t : public virtual refcount {
+class resp_t : public virtual refcount {
 public:
-  okwc3_resp_t ();
-  virtual ~okwc3_resp_t () {}
+  resp_t ();
+  virtual ~resp_t () {}
   void get (evi_t cb) { get_T (cb); }
   void setx (ptr<ahttpcon> x);
   const okwc_http_hdr_t *hdr () const { return &_hdr; }
@@ -157,9 +206,9 @@ private:
 
 //-----------------------------------------------------------------------
 
-class okwc3_resp_simple_t : public okwc3_resp_t {
+class resp_simple_t : public resp_t {
 public:
-  okwc3_resp_simple_t () : _dumper (&_abuf) {}
+  resp_simple_t () : _dumper (&_abuf) {}
   void eat_chunk (size_t sz, evi_t cb) { eat_chunk_T (sz, cb); }
   void finished_meal (int status, evi_t cb);
   const str & body () const { return _body; }
@@ -173,11 +222,12 @@ private:
 
 //-----------------------------------------------------------------------
 
-class okwc3_t : public virtual refcount {
+class agent_t : public virtual refcount {
 public:
-  okwc3_t (const str &h, int p) : _hostname (h), _port (p) {}
+  virtual ~agent_t () {}
+  agent_t (const str &h, int p) : _hostname (h), _port (p) {}
 
-  virtual void req (ptr<okwc3_req_t> req, ptr<okwc3_resp_t> resp, evi_t cb)
+  virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
   { req_T (req, resp, cb); }
 
 protected:
@@ -185,21 +235,48 @@ protected:
   int _port;
 
 private:
-  void req_T (ptr<okwc3_req_t> req, ptr<okwc3_resp_t> resp, evi_t cb, CLOSURE);
-
+  void req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
 };
 
 //-----------------------------------------------------------------------
 
-typedef event<int, ptr<okwc3_resp_simple_t> >::ref okwc3_simple_ev_t;
+typedef event<int, ptr<resp_simple_t> >::ref simple_ev_t;
 
-class okwc3_simple_t : public okwc3_t {
+class agent_get_t : public agent_t {
 public:
-  okwc3_simple_t (const str &h, int p) : okwc3_t (h, p) {}
-  void req (str fn, okwc3_simple_ev_t cb, 
-	    int v = 1, cgi_t *c = NULL, CLOSURE);
+  agent_get_t (const str &h, int p) : agent_t (h, p) {}
+  virtual void get (const str &fn, simple_ev_t ev,
+		    int v = 1, cgi_t *c = NULL) = 0;
+};
+
+
+//-----------------------------------------------------------------------
+
+class agent_get_direct_t : public agent_get_t {
+public:
+  virtual ~agent_get_direct_t () {}
+  agent_get_direct_t (const str &h, int p) : agent_get_t (h, p) {}
+  void get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL)
+  { get_T (fn, cb, v, c); }
+private:
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, CLOSURE);
+  
 };
 
 //-----------------------------------------------------------------------
 
-#endif /* _LIBWEB_OKWC2_H */
+class agent_get_proxied_t : public agent_get_t {
+public:
+  agent_get_proxied_t (const str &h, int p) : agent_get_t (h, p) {}
+  void get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL)
+  { get_T (url, cb, v, c); }
+private:
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, CLOSURE);
+  
+};
+
+//-----------------------------------------------------------------------
+
+};
+
+#endif /* _LIBWEB_OKWC3_H */
