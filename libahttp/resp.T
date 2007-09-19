@@ -114,6 +114,10 @@ http_resp_header_redirect_t::fill (const str &s)
   add_closed ();
   add_server ();
   add ("Location", s);
+
+  // anything else the user might have added; takes precedence
+  // over anything put above
+  cleanme = attributes.get_others (&fields);
 }
 
 void
@@ -159,12 +163,16 @@ http_resp_header_t::to_strbuf () const
     output_me.setsize (lim);
     bhash<str> winner_hsh;
     for (int i = lim - 1; i >= 0; i--) {
-      str n = mytolower (fields[i].name);
-      if (winner_hsh[n]) {
-	output_me[i] = false;
+      if (fields[i].can_duplicate ()) {
+	output_me[i] = true; 
       } else {
-	winner_hsh.insert (n);
-	output_me[i] = true;
+	str n = mytolower (fields[i].name);
+	if (winner_hsh[n]) {
+	  output_me[i] = false;
+	} else {
+	  winner_hsh.insert (n);
+	  output_me[i] = true;
+	}
       }
     }
   }

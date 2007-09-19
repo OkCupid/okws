@@ -27,17 +27,18 @@ XML_SUBDIRS =
 
 endif
 
-TAMEIN = configtest.T simple.T xmlex.T static.T form.T
-TAMEOUT = configtest.C simple.C xmlex.C static.C form.C
+TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T
+TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C
 
 SUBDIRS = $(XML_SUBDIRS)
 
-okwssvc_PROGRAMS = static configtest simple form $(XMLPROGS)
+okwssvc_PROGRAMS = static configtest simple form cookie $(XMLPROGS)
 
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
 form_SOURCES = form.C
+cookie_SOURCES = cookie.C
 
 SUFFIXES = .g .C .T
 .T.C:
@@ -51,6 +52,8 @@ simple.o:	simple.C
 simple.lo:	simple.C
 form.o:	    form.C
 form.lo:    form.C
+cookie.o:  cookie.C
+cookie.lo: cookie.C
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)
