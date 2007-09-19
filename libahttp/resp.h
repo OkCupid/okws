@@ -67,10 +67,19 @@ extern http_status_set_t http_status;
 
 class http_hdr_field_t {
 public:
-  http_hdr_field_t (const str &n, const str &v) : name (n), val (v) {}
-  http_hdr_field_t (const str &n, int64_t i) : name(n), val (strbuf () << i) {}
+  ~http_hdr_field_t () {}
+
+  http_hdr_field_t (const str &n, const str &v, bool cd = false) 
+    : name (n), val (v), _can_duplicate (cd) {}
+  http_hdr_field_t (const str &n, int64_t i) 
+    : name(n), val (strbuf () << i), _can_duplicate (false) {}
+
+  bool can_duplicate () const { return _can_duplicate; }
   str name;
   str val;
+
+protected:
+  const bool _can_duplicate;
 };
 
 class http_hdr_date_t : public http_hdr_field_t {
@@ -85,7 +94,8 @@ public:
 
 class http_hdr_cookie_t : public http_hdr_field_t {
 public:
-  http_hdr_cookie_t (const str &v) : http_hdr_field_t ("Set-Cookie", v) {}
+  http_hdr_cookie_t (const str &v) 
+    : http_hdr_field_t ("Set-Cookie", v, true) {}
 };
 
 class http_resp_attributes_t {
@@ -147,7 +157,7 @@ public:
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", global_okws_server_label); }
   void add_closed () { add ("Connection", "close"); }
-private:
+protected:
   http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;
   bool cleanme;

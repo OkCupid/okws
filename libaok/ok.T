@@ -704,6 +704,11 @@ void
 okclnt_base_t::redirect (const str &l, int ht)
 {
   http_resp_attributes_t hra (ht, hdr_cr ().get_vers ());
+
+  // set any other field that might have been asked for.
+  // Note, we must do this before the following line.
+  hra.set_others (hdr_fields);
+
   rsp = New refcounted<http_response_redirect_t> (l, hra);
   send (rsp, wrap (this, &okclnt_base_t::delcb));
 }
