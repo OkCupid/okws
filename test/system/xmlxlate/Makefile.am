@@ -49,7 +49,7 @@ tstprot.C: $(srcdir)/tstprot.x
 tstprot.C:	tstprot.h
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
-EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)
+EXTRA_DIST = $(TAMEIN) tstprot.x
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY:	tameclean
