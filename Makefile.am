@@ -12,7 +12,7 @@ SUBDIRS = $(SBD1) $(SBD2) okd logd client test conf htdocs contrib
 
 #test
 
-EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4
+EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 build/flex_vers.pl
 
 okwsbuildtools_DATA = acokws.m4
 

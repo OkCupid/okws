@@ -20,7 +20,7 @@ TAMEOUT = xmlxlatemgr.C
 xmlxlatemgr.o:	xmlxlatemgr.C
 xmlxlatemgr.lo:	xmlxlatemgr.C
 
-EXTRA_DIST = 
+EXTRA_DIST = xmlxlatemgr.T
 CLEANFILES = core *.core *~ *.rpo $(TAMEOUT)
 
 dist-hook:
