@@ -760,6 +760,8 @@ dnl
 dnl
 AC_DEFUN([OKWS_FLEX_VERSION],
 [
+AC_ARG_ENABLE(leaky_flex,
+--enable-leaky-flex	Allow OKWS to compile with old (leaky) flex)
 AM_PROG_LEX
 dnl
 dnl Wanted version is flex 2.5.33 or greater
@@ -770,6 +772,11 @@ perl ${srcdir}/build/flex_vers.pl flex 2.5.33 "$actual"
 if test $? -eq  0; then
 	current_flex=1
 	AC_DEFINE(HAVE_RECENT_FLEX, 1, Define if Flex version is >= 2.5.33)
+else 
+	if test "${enable_leaky_flex+set}" != "set" ; then
+		AC_MSG_ERROR([Old flex version found; either upgrade or override with --enable-leaky-flex])
+	fi
+	
 fi
 AM_CONDITIONAL(MAKE_OLD_FLEX, test ${current_flex} -eq 0)
 ])
