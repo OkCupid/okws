@@ -64,7 +64,7 @@ public:
   okxml::xlate_mgr_t *xlmgr () { return &_xlmgr; }
 
 private:
-  okxml::xlate_mgr_t _xlmgr;
+  okxml::xlate_retry_mgr_t _xlmgr;
 
 };
 

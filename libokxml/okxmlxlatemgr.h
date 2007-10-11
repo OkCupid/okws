@@ -89,6 +89,7 @@ namespace okxml {
   class xlate_mgr_t {
   public:
     xlate_mgr_t () {}
+    virtual ~xlate_mgr_t () {}
 
     void add_file (const xml_rpc_file &file);
     void add_files (const xml_rpc_file *const * list);
@@ -96,7 +97,14 @@ namespace okxml {
     void xlate (xml_obj_const_t input, xml_resp_cb_t cb, CLOSURE);
     void get_constants (xml_req_t input, xml_resp_cb_t cb);
 
-  private:
+  protected:
+    virtual void do_rpc (str hostname, int port, 
+			 const rpc_program &prog,
+			 int procno, const void *arg, void *res,
+			 aclnt_cb cb)
+    { do_rpc_T (hostname, port, prog, procno, arg, res, cb); }
+
+
     void add_const (const xml_rpc_const_t *c);
     void add_program (const xml_rpc_program *p);
 
@@ -105,7 +113,34 @@ namespace okxml {
     qhash<str, const xml_rpc_file *> _files;
 
     connmgr_t _cmgr;
+
+  private:
+    void do_rpc_T (str hostname, int port, 
+		   const rpc_program &prog,
+		   int procno, const void *arg, void *res,
+		   aclnt_cb cb, CLOSURE);
   };
+
+
+  class xlate_retry_mgr_t : public xlate_mgr_t {
+  public:
+    xlate_retry_mgr_t ();
+    void set_delays (const vec<timespec> &d) { _delays = d; }
+  protected:
+    void do_rpc (str hostname, int port, 
+		 const rpc_program &prog,
+		 int procno, const void *arg, void *res,
+		 aclnt_cb cb)
+    { do_rpc_T (hostname, port, prog, procno, arg, res, cb); }
+  private:
+    void do_rpc_T (str hostname, int port, 
+		   const rpc_program &prog,
+		   int procno, const void *arg, void *res,
+		   aclnt_cb cb, CLOSURE);
+
+    vec<timespec> _delays;
+  };
+
 
 };
 
