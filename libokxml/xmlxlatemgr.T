@@ -208,6 +208,120 @@ namespace okxml {
     cb->trigger (resp);
   }
 
+  static const char *
+  my_clnt_sperrno (clnt_stat stat)
+  {
+    const char *ret;
+    switch (stat) {
+    case RPC_UNKNOWNADDR:
+      ret = "Cannot open TCP connection to given host/port";
+      break;
+    default:
+      ret = clnt_sperrno (stat);
+      break;
+    }
+    return ret;
+  }
+
+  static str
+  make_rpc_errmsg (const str &hostname, int port, clnt_stat stat)
+  {
+    str who;
+    if (hostname) {
+      strbuf b; 
+      b << hostname << ":" << port;
+      who = b;
+    } else {
+      who  = "(N/A)";
+    }
+    
+    strbuf b; 
+    str m = my_clnt_sperrno (stat);
+    b << "To " << who << ": " << m;
+    return b;
+  }
+
+  xlate_retry_mgr_t::xlate_retry_mgr_t  ()
+    : xlate_mgr_t ()
+  {
+    timespec ts[] = { { 0, 500000000 },
+		      { 1, 0 },
+		      { 3, 0 },
+		      { 7, 0 },
+		      { 0, 0 } };
+
+    for (timespec *t = ts; t->tv_sec || t->tv_nsec; t++) {
+      _delays.push_back (*t);
+    }
+  }
+
+  static bool retry_it (clnt_stat s) 
+  { return (s == RPC_CANTSEND || s == RPC_CANTRECV || s == RPC_UNKNOWNADDR); }
+
+  tamed void
+  xlate_retry_mgr_t::do_rpc_T (str hostname, int port, 
+			       const rpc_program &prog,
+			       int procno, const void *arg, void *res,
+			       aclnt_cb cb)
+  {
+    tvars {
+      ptr<axprt> x;
+      clnt_stat stat;
+      ptr<aclnt> c;
+      ssize_t i (-1);
+      
+    }
+
+    do {
+
+      if (i >= 0) {
+
+	{
+	  str m = make_rpc_errmsg (hostname, port, stat);
+	  warn << "** attempt " << i << ": " << m << "\n";
+	}
+
+	twait { 
+	  delaycb (_delays[i].tv_sec, _delays[i].tv_nsec, mkevent ()); 
+	}
+      }
+    
+      twait { _cmgr.getcon (hostname, port, mkevent (x)); }
+      if (!x) {
+	stat = RPC_UNKNOWNADDR;
+      } else {
+	c = aclnt::alloc (x, prog);
+	twait { c->call (procno, arg, res, mkevent (stat)); }
+      }
+
+    } while (retry_it (stat) && ++i < ssize_t (_delays.size ()));
+
+    cb->trigger (stat);
+  }
+
+
+  tamed void
+  xlate_mgr_t::do_rpc_T (str hostname, int port, 
+			 const rpc_program &prog,
+			 int procno, const void *arg, void *res,
+			 aclnt_cb cb)
+  {
+    tvars {
+      ptr<axprt> x;
+      clnt_stat stat;
+      ptr<aclnt> c;
+    }
+    twait { _cmgr.getcon (hostname, port, mkevent (x)); }
+    if (!x) {
+      stat = RPC_UNKNOWNADDR;
+    } else {
+      c = aclnt::alloc (x, prog);
+      twait { c->call (procno, arg, res, mkevent (stat)); }
+    }
+    cb->trigger (stat);
+  }
+
+
   tamed void
   xlate_mgr_t::xlate (xml_obj_const_t input, xml_resp_cb_t cb)
   {
@@ -217,10 +331,8 @@ namespace okxml {
       str program;
       int procno;
       xml_obj_const_t arg;
-      ptr<axprt> x;
       clnt_stat stat;
       const xml_rpc_program **progp;
-      ptr<aclnt> c;
       void *xdr_arg (NULL), *xdr_res (NULL);
       const rpcgen_table *tblent_xdr;
       const xml_rpcgen_table *tblent_xml;
@@ -239,36 +351,34 @@ namespace okxml {
 
     if (!hostname || port <= 0 || port >= PORT_MAX) {
       stat = RPC_UNKNOWNHOST;
+    } else if (!program || !(progp = _programs[program])) {
+      stat = RPC_PROGUNAVAIL;
+    } else if (procno < 0 || procno > int ((*progp)->xdr_prog->nproc)) {
+      stat = RPC_PROCUNAVAIL;
     } else {
-      twait { _cmgr.getcon (hostname, port, mkevent (x)); }
-      if (!x) {
-	stat = RPC_UNKNOWNADDR;
-      } else if (!program || !(progp = _programs[program])) {
-	stat = RPC_PROGUNAVAIL;
-      } else if (procno < 0 || procno > int ((*progp)->xdr_prog->nproc)) {
-	stat = RPC_PROCUNAVAIL;
-      } else {
-	tblent_xml = (*progp)->xml_tbl + procno;
-	tblent_xdr = (*progp)->xdr_prog->tbl + procno;
+      tblent_xml = (*progp)->xml_tbl + procno;
+      tblent_xdr = (*progp)->xdr_prog->tbl + procno;
 
-	xdr_arg = (*tblent_xdr->alloc_arg) ();
-	if (!tblent_xml->xml_arg_proc (&xml_arg, xdr_arg)) {
-	  stat = RPC_CANTDECODEARGS;
-	  errm = xml_arg.error_msg (clnt_sperrno (stat));
-	} else {
-	  c = aclnt::alloc (x, *((*progp)->xdr_prog));
-	  xdr_res = (*tblent_xdr->alloc_res) ();
-	  twait { c->call (procno, xdr_arg, xdr_res, mkevent (stat)); }
-	  if (!stat) {
-	    xml_res.setroot (resp[0]);
-	    if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
-	      stat = RPC_CANTDECODERES;
-	      errm = xml_res.error_msg (clnt_sperrno (stat));
-	    }
+      xdr_arg = (*tblent_xdr->alloc_arg) ();
+      if (!tblent_xml->xml_arg_proc (&xml_arg, xdr_arg)) {
+	stat = RPC_CANTDECODEARGS;
+	errm = xml_arg.error_msg (my_clnt_sperrno (stat));
+      } else {
+	xdr_res = (*tblent_xdr->alloc_res) ();
+	twait { 
+	  do_rpc (hostname, port, *((*progp)->xdr_prog),
+		  procno, xdr_arg, xdr_res, mkevent (stat)); 
+	}
+	if (!stat) {
+	  xml_res.setroot (resp[0]);
+	  if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
+	    stat = RPC_CANTDECODERES;
+	    errm = xml_res.error_msg (my_clnt_sperrno (stat));
 	  }
 	}
       }
     }
+
     if (xdr_arg) {
       xdr_free (tblent_xdr->xdr_arg, xdr_arg);
       xfree (xdr_arg);
@@ -279,8 +389,14 @@ namespace okxml {
     }
 
     if (stat) {
-      if (!errm)
-	errm = clnt_sperrno (stat);
+
+      str errmsg_rpc = make_rpc_errmsg (hostname, port, stat);
+
+      warn << errmsg_rpc << "\n";
+      if (!errm) {
+	errm = errmsg_rpc;
+      }
+
       resp = xml_fault_obj_t (int (stat), errm);
     }
       
