@@ -208,6 +208,21 @@ namespace okxml {
     cb->trigger (resp);
   }
 
+  static const char *
+  my_clnt_sperrno (clnt_stat stat)
+  {
+    const char *ret;
+    switch (stat) {
+    case RPC_UNKNOWNADDR:
+      ret = "Cannot open TCP connection to given host/port";
+      break;
+    default:
+      ret = clnt_sperrno (stat);
+      break;
+    }
+    return ret;
+  }
+
   static str
   make_rpc_errmsg (const str &hostname, int port, clnt_stat stat)
   {
@@ -221,8 +236,8 @@ namespace okxml {
     }
     
     strbuf b; 
-    str m = clnt_sperrno (stat);
-    b << "RPC to " << who << ":" << m;
+    str m = my_clnt_sperrno (stat);
+    b << "To " << who << ": " << m;
     return b;
   }
 
@@ -241,7 +256,7 @@ namespace okxml {
   }
 
   static bool retry_it (clnt_stat s) 
-  { return (s == RPC_CANTSEND || s == RPC_CANTRECV); }
+  { return (s == RPC_CANTSEND || s == RPC_CANTRECV || s == RPC_UNKNOWNADDR); }
 
   tamed void
   xlate_retry_mgr_t::do_rpc_T (str hostname, int port, 
@@ -347,7 +362,7 @@ namespace okxml {
       xdr_arg = (*tblent_xdr->alloc_arg) ();
       if (!tblent_xml->xml_arg_proc (&xml_arg, xdr_arg)) {
 	stat = RPC_CANTDECODEARGS;
-	errm = xml_arg.error_msg (clnt_sperrno (stat));
+	errm = xml_arg.error_msg (my_clnt_sperrno (stat));
       } else {
 	xdr_res = (*tblent_xdr->alloc_res) ();
 	twait { 
@@ -358,7 +373,7 @@ namespace okxml {
 	  xml_res.setroot (resp[0]);
 	  if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
 	    stat = RPC_CANTDECODERES;
-	    errm = xml_res.error_msg (clnt_sperrno (stat));
+	    errm = xml_res.error_msg (my_clnt_sperrno (stat));
 	  }
 	}
       }
