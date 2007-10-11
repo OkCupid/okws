@@ -68,6 +68,12 @@ tstsrv_t::dispatch (svccb *sbp)
       sbp->reply (arg);
       break;
     }
+  case TST_RPC8:
+    {
+      long_arg_t *la = sbp->Xtmpl getarg<long_arg_t> ();
+      sbp->replyref (la->x);
+      break;
+    }
   default:
     sbp->reject (PROC_UNAVAIL);
     break;
