@@ -279,8 +279,26 @@ namespace okxml {
     }
 
     if (stat) {
-      if (!errm)
-	errm = clnt_sperrno (stat);
+
+      str who;
+      if (hostname) {
+	strbuf b; 
+	b << "hostname" << ":" << port;
+	who = b;
+      } else {
+	who  = "(N/A)";
+      }
+
+      strbuf b; 
+      str m = clnt_sperrno (stat);
+      b << "RPC to " << who << ":" << m;
+      str errmsg_rpc = b;
+
+      warn << errmsg_rpc << "\n";
+      if (!errm) {
+	errm = errmsg_rpc;
+      }
+
       resp = xml_fault_obj_t (int (stat), errm);
     }
       
