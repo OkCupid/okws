@@ -5,6 +5,18 @@ struct tst_arg_t {
 	string y<>;
 };
 
+struct long_arg_t {
+	int x;
+	int a<>;
+	string b<>;
+	string c<>;
+	int this_is_a_very_long_name_1;
+	int this_is_a_very_long_name_2;
+	int this_is_a_very_long_name_3;
+	int this_is_a_very_long_name_4;
+	int this_is_a_very_long_name_5;
+};
+
 struct tst_res_t {
 	bool b;
 	int v<>;
@@ -74,6 +86,9 @@ program TST_PROG {
 
 		int
 		TST_RPC7(unsigned) = 7;	
+
+		int
+		TST_RPC8(long_arg_t) = 8;
 
 	} = 1;
 } = 34291;

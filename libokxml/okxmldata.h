@@ -207,11 +207,13 @@ public:
 
   bool gets_char_data () const { return true; }
   bool add (const char *s, int l);
+  bool close_tag ();
 
   ptr<xml_name_t> clone_typed () const 
   { return New refcounted<xml_name_t> (_value); }
   virtual ptr<xml_element_t> clone () const { return clone_typed (); }
 protected:
+  strbuf _buf;
   str _value;
 };
 

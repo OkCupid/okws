@@ -535,13 +535,20 @@ xml_double_t::to_const_char (int *rc) const
 
 
 bool
-xml_name_t::add (const char *buf, int len)
+xml_name_t::add (const char *dat, int len)
 {
+  _buf.tosuio ()->copy (dat, len);
+  return true;
+}
+
+bool
+xml_name_t::close_tag ()
+{
+  str v = _buf;
   static rxx name_rxx ("[a-zA-Z0-9\\._-]+");
-  str s (buf, len);
-  if (!name_rxx.match (s))
+  if (!name_rxx.match (v))
     return false;
-  _value = s;
+  _value = v;
   return true;
 }
 
