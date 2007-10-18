@@ -62,7 +62,7 @@ zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
   return err;
 }
 
-static str
+str
 zcompress (const str &in, int lev)
 {
   uLong slen = in.len ();
@@ -75,6 +75,65 @@ zcompress (const str &in, int lev)
   }
   m.setlen (dlen);
   return m;
+}
+
+static bool 
+zdecompress_ok (int i) { return (i == Z_STREAM_END || i == Z_BUF_ERROR); }
+
+str
+zdecompress (const str &in)
+{
+  vec<str> v;
+  strbuf b;
+  size_t seglen = 0x1000;
+  z_stream stream;
+  int err;
+  int rc;
+  str ret;
+
+  const Bytef *inbuf = reinterpret_cast<const Bytef *> (in.cstr ());
+  uLong inlen = static_cast<uLong> (in.len ());
+
+  stream.next_in = const_cast<Bytef *> (inbuf);
+  stream.avail_in = inlen;
+  stream.avail_out = 0;
+  stream.zalloc = (alloc_func) NULL;
+  stream.zfree = (free_func) NULL;
+
+  err = inflateInit2 (&stream, -MAX_WBITS);
+  if (err != Z_OK) {
+    warn << "zlib::inflateInit2: error " << err << "\n";
+  } else {
+    do {
+      mstr m (seglen);
+      stream.avail_out = static_cast<uLong> (seglen);
+      stream.next_out = reinterpret_cast<Bytef *> (m.cstr ());
+      
+      rc = inflate (&stream, Z_FINISH);
+      
+      if (zdecompress_ok (rc)) {
+	m.setlen (seglen - static_cast<size_t> (stream.avail_out));
+	str s = m;
+	v.push_back (s);
+	b << s;
+      }
+      
+    } while (stream.avail_in > 0 && rc == Z_BUF_ERROR);
+    
+    if (!zdecompress_ok (rc)) {
+      warn << "zlib::inflate: error " << rc << "\n";
+    } else if (stream.avail_in != 0) {
+      warn << "zlib::inflate: data leftover!\n";
+    } else {
+      rc = inflateEnd (&stream);
+      if (rc != Z_OK) {
+	warn << "zlib::inflateEnd: error " << rc << "\n";
+      } else {
+	ret = b;
+      }
+    }
+  }
+  return ret;
 }
 
 static int

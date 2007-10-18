@@ -355,4 +355,7 @@ zbuf::strbuf2zstr ()
 
 void zinit (bool cache = true, int lev = -1);
 
+str zdecompress (const str &in);
+str zcompress (const str &in, int lev);
+
 #endif /* _LIBAZ_ZSTR */

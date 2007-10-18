@@ -29,13 +29,15 @@ pubmemtst.lo: 	pubmemtst.C
 TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T pubmemtst.T
 TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C
 
-noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst
+noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst \
+	gz
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C
 okwc1tst_SOURCES = okwc1tst.C
 pubmemtst_SOURCES = pubmemtst.C
+gz_SOURCES = gz.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)
