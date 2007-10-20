@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "tame.h"
 #include "rxx.h"
+#include "ok_adebug.h"
 
 class oksrvc_simple_t : public oksrvc_t {
 public:
@@ -74,6 +75,9 @@ okclnt_simple_t::process_T ()
     str file;
   }
   file = cgi["file"];
+
+  syslog_warning << "Test A B C D\n";
+  syslog_warning_x << "Test 1 2 3 4\n";
 
   if (file) {
     cgi.load_aarr (&aarr);

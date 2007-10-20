@@ -104,6 +104,18 @@ namespace ok {
   debug_obj_t::debug_obj_t (int fl, int fd)
     : _flags (fl), _fd (fd)
   {
+    init ();
+  }
+
+  debug_obj_t::debug_obj_t (const debug_obj_params_t &p)
+    : _flags (p._flags), _fd (p._fd)
+  {
+    init ();
+  }
+
+  void
+  debug_obj_t::init ()
+  {
     int progpid = getpid ();
     if (_flags & timeflag)
       cat (timestring ()).cat (" ");
@@ -112,6 +124,12 @@ namespace ok {
 	cat (progname).cat ("[").cat (progpid).cat ("]: ");
       else
 	cat (progname).cat (": ");
+  }
+
+  void
+  debug_mgr_t::output (const suio *u, int flags, int fd)
+  {
+    get (fd)->output (u, flags);
   }
   
   const debug_obj_t &
@@ -126,13 +144,11 @@ namespace ok {
   
   debug_obj_t::~debug_obj_t ()
   {
-    debug_mgr.output (uio, _flags, _fd);
-  }
-
-  void
-  debug_mgr_t::output (const suio *u, int flags, int fd)
-  {
-    get (fd)->output (u, flags);
+    if ((_flags & sfsflag)) {
+      warnx << *this;
+    } else {
+      debug_mgr.output (uio, _flags, _fd);
+    }
   }
 
   int 
@@ -184,6 +200,19 @@ namespace ok {
       }
     }
     return false;
+  }
+
+  debug_obj_params_t 
+  syslog_ctl_t::params (int lev, bool x) const
+  {
+    int mode = 0;
+    if (x)
+      mode |= debug_obj_t::xflag;
+
+    if (_started && _set[lev])
+      mode |= debug_obj_t::sfsflag;
+
+    return debug_obj_params_t (mode, _fds[lev]);
   }
 
   bool

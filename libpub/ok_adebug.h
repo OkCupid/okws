@@ -9,17 +9,26 @@
 
 namespace ok {
 
+  class debug_obj_params_t {
+  public:
+    debug_obj_params_t (int fl, int fd)
+      : _flags (fl), _fd (fd) {}
+    int _flags, _fd;
+  };
+
   class debug_obj_t : public strbuf {
   public:
-    enum { xflag = 1, timeflag = 8 };
+    enum { xflag = 1, sfsflag = 2, timeflag = 8 };
 
     explicit debug_obj_t (int fl = -1, int fd = -1);
+    explicit debug_obj_t (const debug_obj_params_t &p);
     ~debug_obj_t ();
 
     const debug_obj_t &operator() (const char *fmt, ...) const
       __attribute__ ((format (printf, 2, 3)));
 
   private:
+    void init ();
     const int _flags;
     const int _fd;
   };
@@ -59,6 +68,10 @@ namespace ok {
     bool enable_level (const str &l);
     bool start_loggers ();
 
+    debug_obj_params_t params (int lev, bool x = false) const;
+
+    int mode () const { return _started ? debug_obj_t::sfsflag : 0 ; }
+
     enum { WARNING = 0, NOTICE = 1, CRIT = 2, INFO = 3, NLEV = 4 };
     static const char *_levels[NLEV];
 
@@ -79,20 +92,21 @@ namespace ok {
 
 };
 
-#define syslog_warning ok::debug_obj_t(0,ok::syslog_ctl_t::warning_fd())
+#define syslog_warning \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.WARNING))
 #define syslog_warning_x \
-  ok::debug_obj_t(ok::debug_obj_t::xflag, ok::syslog_ctl_t::warning_fd())
-
-#define syslog_info ok::debug_obj_t(0,ok::syslog_ctl_t::info_fd())
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.WARNING, true))
+#define syslog_info \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO))
 #define syslog_info_x \
-  ok::debug_obj_t(ok::debug_obj_t::xflag, ok::syslog_ctl_t::info_fd())
-
-#define syslog_crit ok::debug_obj_t(0,ok::syslog_ctl_t::crit_fd())
-#define syslog_crit_x \
-  ok::debug_obj_t(ok::debug_obj_t::xflag, ok::syslog_ctl_t::crit_fd())
-
-#define syslog_notice ok::debug_obj_t(0,ok::syslog_ctl_t::notice_fd())
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO, true))
+#define syslog_notice \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.NOTICE))
 #define syslog_notice_x \
-  ok::debug_obj_t(ok::debug_obj_t::xflag, ok::syslog_ctl_t::notice_fd())
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.NOTICE, true))
+#define syslog_crit \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.CRIT))
+#define syslog_crit_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.CRIT, true))
 
 #endif /* _LIBPUB_OK_ADEBUG_H_ */
