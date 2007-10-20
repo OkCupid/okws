@@ -79,6 +79,8 @@ okclnt_simple_t::process_T ()
 
   syslog_warning << "Test A B C D\n";
   syslog_warning_x << "Test 1 2 3 4\n";
+  syslog_info << "Test X Y Z\n";
+  syslog_crit << "Test P Q R\n";
 
   if (file) {
     cgi.load_aarr (&aarr);

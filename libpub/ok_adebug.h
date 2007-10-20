@@ -63,6 +63,7 @@ namespace ok {
   };
 
   int start_custom_logger (const str &pri, str tag = NULL);
+  void setprogpid (int p = -1);
 
   class syslog_ctl_t {
   public:

@@ -11,6 +11,7 @@ namespace ok {
 
   debug_mgr_t debug_mgr;
   syslog_ctl_t syslog_ctl;
+  int progpid;
 
   debug_fd_t *
   debug_mgr_t::get (int i)
@@ -116,7 +117,6 @@ namespace ok {
   void
   debug_obj_t::init ()
   {
-    int progpid = getpid ();
     bool need_colon = false;
     bool need_space = false;
     if (_flags & timeflag) {
@@ -169,6 +169,14 @@ namespace ok {
     } else {
       debug_mgr.output (uio, _flags, _fd);
     }
+  }
+
+  void 
+  setprogpid (int p)
+  {
+    if (p < 0) 
+      p = getpid ();
+    progpid = p;
   }
 
   int 
