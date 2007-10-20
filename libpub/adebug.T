@@ -1,6 +1,10 @@
-
 // -*-c++-*-
+
 #include "ok_adebug.h"
+
+//
+// Code here copied from SFS, async/aerr.C
+//
 
 namespace ok {
 
