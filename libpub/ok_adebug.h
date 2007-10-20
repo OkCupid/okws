@@ -8,7 +8,7 @@
 #include "qhash.h"
 
 namespace ok {
-  
+
   class debug_obj_t : public strbuf {
   public:
     enum { xflag = 1, timeflag = 8 };
@@ -24,16 +24,31 @@ namespace ok {
     const int _fd;
   };
 
+  class debug_fd_t {
+  public:
+    debug_fd_t (int fd) : _fd (fd), _flushing (false) {}
+    void output (const suio *in, int flags);
+  private:
+    void flush (CLOSURE);
+
+  public:
+    int _fd;
+    ihash_entry<debug_fd_t> _lnk;
+  private:
+    suio _uio;
+    bool _flushing;
+  };
+
   class debug_mgr_t {
   public:
     debug_mgr_t () {}
     ~debug_mgr_t () {}
 
-    void output (const suio *in, int flags, int fd, CLOSURE);
+    void output (const suio *in, int flags, int fd);
 
   private:
-    suio *get (int i);
-    qhash<int, suio *> _tab;
+    debug_fd_t *get (int fd);
+    ihash<int, debug_fd_t, &debug_fd_t::_fd, &debug_fd_t::_lnk> _tab;
   };
 
 };

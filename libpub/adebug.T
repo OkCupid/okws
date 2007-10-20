@@ -10,16 +10,13 @@ namespace ok {
 
   debug_mgr_t debug_mgr;
 
-  suio *
+  debug_fd_t *
   debug_mgr_t::get (int i)
   {
-    suio **p = _tab[i];
-    suio *ret;
-    if (p) {
-      ret = *p;
-    } else {
-      ret = New suio ();
-      _tab.insert (i, ret);
+    debug_fd_t *ret = _tab[i];
+    if (!ret) {
+      ret = New debug_fd_t (i);
+      _tab.insert (ret);
     }
     return ret;
   }
@@ -27,60 +24,69 @@ namespace ok {
   static bool
   ends_in_newline (suio *s, int l)
   {
-    return 
-      s->iov ()[l].iov_len > 0 &&
+    return s->iov ()[l].iov_len > 0 &&
       *((char *)s->iov ()[l].iov_base + s->iov()[l].iov_len - 1) == '\n';
   }
 
-  tamed void
-  debug_mgr_t::output (const suio *in, int flags, int fd)
+  void
+  debug_fd_t::output (const suio *in, int flags)
   {
-    tvars {
-      suio *guio;
-      int cnt;
-      int n;
-      bool go (true);
-    }
-
-    guio = get (fd);
-    assert (guio);
-
     // If the current uio ends in newline, then break it at the 
     // current place.
-    if (guio->resid () && ends_in_newline (guio, guio->iovcnt () - 1))
-      guio->breakiov ();
+    if (_uio.resid () && ends_in_newline (&_uio, _uio.iovcnt () - 1))
+      _uio.breakiov ();
 
-    guio->copyu (in);
+    _uio.copyu (in);
 
+    flush ();
+  }
+
+  tamed void
+  debug_fd_t::flush ()
+  {
+    tvars {
+      bool go (true);
+      bool do_output (true);
+      int cnt;
+      int n;
+    }
+
+    if (_flushing) return;
+    
+    _flushing = true;
+  
     while (go) {
 
       /* Try to write whole lines at a time. */
-      for (cnt = min (guio->iovcnt (), (size_t) UIO_MAXIOV);
-	   cnt > 0 && !ends_in_newline (guio, cnt-1);
+      for (cnt = min (_uio.iovcnt (), (size_t) UIO_MAXIOV);
+	   cnt > 0 && !ends_in_newline (&_uio, cnt-1);
 	   cnt--)
 	;
       
       if (!cnt) {
-	if (guio->iovcnt () < UIO_MAXIOV) {
+	if (_uio.iovcnt () < UIO_MAXIOV) {
 	  /* Wait for a carriage return */
-	  return;
+	  do_output = false;
+	  go = false;
 	} else {
 	  cnt = -1;
 	}
       }
       
-      n = guio->output (fd, cnt);
-      if (n < 0)
-	guio->clear ();
-      
-      if (guio->resid ()) {
-	twait { fdcb (fd, selwrite, mkevent ()); }
-	fdcb (fd, selwrite, NULL);
-      } else {
-	go = false;
-      }
+      if (do_output) {
+	n = _uio.output (_fd, cnt);
+	if (n < 0)
+	  _uio.clear ();
+	
+	if (_uio.resid ()) {
+	  twait { fdcb (_fd, selwrite, mkevent ()); }
+	  fdcb (_fd, selwrite, NULL);
+	} else {
+	  go = false;
+	}
+      } 
     }
-
+    _flushing = false;
   }
 
   static const char *
