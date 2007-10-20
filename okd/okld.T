@@ -35,6 +35,7 @@
 #include "xpub.h"
 #include "pubutil.h"
 #include "rxx.h"
+#include "ok_adebug.h"
 
 extern char ** environ;
 extern int optind;
@@ -600,6 +601,17 @@ okld_t::check_ports ()
   return ret;
 }
 
+static
+void got_syslog_levels (vec<str> s, str loc, bool *errp)
+{
+  for (size_t i = 1; i < s.size (); i++) {
+    if (!ok::syslog_ctl.enable_level (s[i])) {
+      warn << loc << ": bad syslog level: " << s[i] << "\n";
+      *errp = true;
+    }
+  }
+}
+
 bool
 okld_t::parse_file (const str &cf)
 {
@@ -652,6 +664,8 @@ okld_t::parse_file (const str &cf)
     .add ("MmapClockFile", &mmc_file)
     .add ("DangerousZbufs", &ok_dangerous_zbufs)
     .add ("SyslogPriority", &ok_syslog_priority)
+    .add ("SyslogDomain", &ok_syslog_domain)
+    .add ("SyslogLevels", wrap (got_syslog_levels))
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
     
     .add ("ServiceLifeRequests", &ok_svc_life_reqs, 0, INT_MAX)
@@ -1210,9 +1224,12 @@ main (int argc, char *argv[])
 
   // Need to daemonize before parsing config file, since the output
   // of the config file parsing operation should go into the syslog.
+
+
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
     daemonize (pidfile);
+    ok::syslog_ctl.start_loggers ();
   }
 
   okld_t *okld = New okld_t ();

@@ -430,7 +430,6 @@ private:
   str _config_grp, _config_okd_gr, _config_okd_un;
   str _config_root, _config_wheel;
   bool _config_no_pub_v2_support;
-						 
 
 };
 

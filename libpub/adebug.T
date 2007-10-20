@@ -1,6 +1,7 @@
 // -*-c++-*-
 
 #include "ok_adebug.h"
+#include "okconst.h"
 
 //
 // Code here copied from SFS, async/aerr.C
@@ -9,6 +10,7 @@
 namespace ok {
 
   debug_mgr_t debug_mgr;
+  syslog_ctl_t syslog_ctl;
 
   debug_fd_t *
   debug_mgr_t::get (int i)
@@ -125,6 +127,80 @@ namespace ok {
   debug_obj_t::~debug_obj_t ()
   {
     debug_mgr.output (uio, _flags, _fd);
+  }
+
+  void
+  debug_mgr_t::output (const suio *u, int flags, int fd)
+  {
+    get (fd)->output (u, flags);
+  }
+
+  int 
+  start_custom_logger (const str &priority, str tag)
+  {
+    int ret = -1;
+#ifdef PATH_LOGGER
+    if (!tag) tag = "";
+    char *av[] = { PATH_LOGGER, "-p", 
+		   const_cast<char *> (priority.cstr ()), 
+		   "-t", 
+		   const_cast<char *> (tag.cstr ()), NULL };
+    int fds[2];
+    if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) < 0) 
+      fatal ("socketpair: %m\n");
+    close_on_exec (fds[0]);
+    if (fds[1] != 0) 
+      close_on_exec (fds[1]);
+    
+    if (spawn (PATH_LOGGER, av, fds[1], 0, 0) >= 0) {
+      close (fds[1]);
+      ret = fds[0];
+    } else {
+      ret = -1;
+    }
+#endif /* PATH_LOGGER */
+    return ret;
+  }
+
+  syslog_ctl_t::syslog_ctl_t ()
+    : _started (false)
+  {
+    for (int i = 0; i < NLEV; i++) {
+      _fds[i] = errfd;
+      _set[i] = false;
+    }
+  }
+
+  const char *syslog_ctl_t::_levels[] = 
+    { "info", "warning" , "crit", "notice" };
+
+  bool
+  syslog_ctl_t::enable_level (const str &l)
+  {
+    for (int i = 0; i < NLEV; i++) {
+      if (strcasecmp (l.cstr (), _levels[i]) == 0) {
+	_set[i] = true;
+	return true;
+      }
+    }
+    return false;
+  }
+
+  bool
+  syslog_ctl_t::start_loggers ()
+  {
+    for (int i = 0; i < NLEV; i++) {
+      if (_set[i]) {
+	strbuf b;
+	b << ok_syslog_domain << "." << _levels[i];
+	if ((_fds[i] = start_custom_logger (b)) != 0) {
+	  warn << "Could not start log level: " << b << "\n";
+	  return false;
+	}
+      }
+    }
+    _started = true;
+    return true;
   }
 
 };
