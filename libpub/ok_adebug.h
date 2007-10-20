@@ -11,16 +11,17 @@ namespace ok {
 
   class debug_obj_params_t {
   public:
-    debug_obj_params_t (int fl, int fd)
-      : _flags (fl), _fd (fd) {}
+    debug_obj_params_t (int fl, int fd, const char *lev)
+      : _flags (fl), _fd (fd), _level (lev) {}
     int _flags, _fd;
+    const char *_level;
   };
 
   class debug_obj_t : public strbuf {
   public:
-    enum { xflag = 1, sfsflag = 2, timeflag = 8 };
+    enum { xflag = 1, warnxflag = 2, timeflag = 8 };
 
-    explicit debug_obj_t (int fl = -1, int fd = -1);
+    explicit debug_obj_t (int fl = -1, int fd = -1, const char *lev = NULL);
     explicit debug_obj_t (const debug_obj_params_t &p);
     ~debug_obj_t ();
 
@@ -31,6 +32,7 @@ namespace ok {
     void init ();
     const int _flags;
     const int _fd;
+    const char *_level;
   };
 
   class debug_fd_t {
@@ -69,8 +71,6 @@ namespace ok {
     bool start_loggers ();
 
     debug_obj_params_t params (int lev, bool x = false) const;
-
-    int mode () const { return _started ? debug_obj_t::sfsflag : 0 ; }
 
     enum { WARNING = 0, NOTICE = 1, CRIT = 2, INFO = 3, NLEV = 4 };
     static const char *_levels[NLEV];

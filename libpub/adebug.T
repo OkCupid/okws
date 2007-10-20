@@ -101,14 +101,14 @@ namespace ok {
     return buf;
   }
 
-  debug_obj_t::debug_obj_t (int fl, int fd)
-    : _flags (fl), _fd (fd)
+  debug_obj_t::debug_obj_t (int fl, int fd, const char *l)
+    : _flags (fl), _fd (fd), _level (l)
   {
     init ();
   }
 
   debug_obj_t::debug_obj_t (const debug_obj_params_t &p)
-    : _flags (p._flags), _fd (p._fd)
+    : _flags (p._flags), _fd (p._fd), _level (p._level)
   {
     init ();
   }
@@ -117,13 +117,33 @@ namespace ok {
   debug_obj_t::init ()
   {
     int progpid = getpid ();
-    if (_flags & timeflag)
-      cat (timestring ()).cat (" ");
-    if (!(_flags & xflag) && progname)
+    bool need_colon = false;
+    bool need_space = false;
+    if (_flags & timeflag) {
+      cat (timestring ());
+      need_space = true;
+    }
+    if (!(_flags & xflag) && progname) {
+      need_colon = true;
+      need_space = true;
       if (progpid)
-	cat (progname).cat ("[").cat (progpid).cat ("]: ");
+	cat (progname).cat ("[").cat (progpid).cat ("]");
       else
-	cat (progname).cat (": ");
+	cat (progname);
+    }
+    if (_level && (_flags & warnxflag)) {
+      if (need_space) {
+	cat (" ");
+      }
+      cat ("[").cat (_level).cat ("]");
+      need_colon = true;
+      need_space = false;
+    }
+    if (need_colon) {
+      cat(": ");
+    } else if (need_space) {
+      cat (" ");
+    }
   }
 
   void
@@ -144,7 +164,7 @@ namespace ok {
   
   debug_obj_t::~debug_obj_t ()
   {
-    if ((_flags & sfsflag)) {
+    if ((_flags & warnxflag)) {
       warnx << *this;
     } else {
       debug_mgr.output (uio, _flags, _fd);
@@ -209,10 +229,10 @@ namespace ok {
     if (x)
       mode |= debug_obj_t::xflag;
 
-    if (_started && _set[lev])
-      mode |= debug_obj_t::sfsflag;
+    if (!_started || !_set[lev])
+      mode |= debug_obj_t::warnxflag;
 
-    return debug_obj_params_t (mode, _fds[lev]);
+    return debug_obj_params_t (mode, _fds[lev], _levels[lev]);
   }
 
   bool

@@ -39,6 +39,7 @@ simple_SOURCES = simple.C
 pub1tst_SOURCES = pub1tst.C
 form_SOURCES = form.C
 cookie_SOURCES = cookie.C
+noinst_HEADERS = test_const.h
 
 SUFFIXES = .g .C .T
 .T.C:
