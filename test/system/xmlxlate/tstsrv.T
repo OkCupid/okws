@@ -77,7 +77,7 @@ tstsrv_t::dispatch (svccb *sbp)
   case TST_RPC9:
     {
       aston_t *a = sbp->Xtmpl getarg<aston_t> ();
-      sbp->replyref (a->motes.size ()); 
+      sbp->replyref (a->questions.size ()); 
       break;
     }
   default:

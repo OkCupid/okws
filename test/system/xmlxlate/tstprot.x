@@ -60,13 +60,15 @@ struct bb_t {
 typedef bb_t cc_t<>;
 
 struct mote_t {
-       unsigned questionid;
-       unsigned data;
+       int questionid;
+       unsigned int data;
 };
+
+typedef mote_t motes_t<>;
 
 struct aston_t {
        unsigned hyper id;
-       mote_t motes<>;
+       motes_t questions;
 };
 
 

@@ -34,10 +34,10 @@ res = server.xdr.xlate (
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC9,
       "arg" : { "id" : "ui8:1",
-                "motes" : [ { "questionid" : 10, "data" : 20 },
-                            { "questionid" : 3, "data" : 100 },
-                            { "questionid" : 30, "data" : 20 } ] }
+                "questions" : [ { "questionid" : 10, "data" : "ui4:20" } ] }
       } )
+
+sys.exit (0)
 
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
