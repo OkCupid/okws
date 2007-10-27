@@ -59,6 +59,16 @@ struct bb_t {
 
 typedef bb_t cc_t<>;
 
+struct mote_t {
+       unsigned questionid;
+       unsigned data;
+};
+
+struct aston_t {
+       unsigned hyper id;
+       mote_t motes<>;
+};
+
 
 program TST_PROG {
 	version TEST_VERS {
@@ -89,6 +99,9 @@ program TST_PROG {
 
 		int
 		TST_RPC8(long_arg_t) = 8;
+
+		int
+		TST_RPC9(aston_t) = 9;
 
 	} = 1;
 } = 34291;
