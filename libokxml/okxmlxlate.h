@@ -351,7 +351,7 @@ rpc_traverse (XML_RPC_obj_t *xml, T &obj, size_t n)
       str s;
       ret = xml->traverse_opaque (s);
       if (ret && s.len () <= n) {
-	obj.setsize (s.len ());
+        _array_setsize (obj, s.len ()); 
 	memcpy (obj.base (), s.cstr (), s.len ());
       } else {
 	ret = false;

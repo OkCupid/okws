@@ -471,7 +471,7 @@ if test "$with_expat" != "no"; then
 			" ") iflags=" " ;;
 			*)   iflags="-I${dir}" ;; 
 		esac
-		CLFAGS="${ac_save_CFLAGS} $iflags"
+		CFLAGS="${ac_save_CFLAGS} $iflags"
 		AC_TRY_COMPILE([#include <expat.h>], [ XML_ParserCreate(0);],
 				okws_cv_expat_h="${iflags}"; break)
 	done
