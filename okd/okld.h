@@ -425,7 +425,6 @@ private:
   // variables set during configuration stage
   str _config_grp, _config_okd_gr, _config_okd_un;
   str _config_root, _config_wheel;
-						 
 
 };
 

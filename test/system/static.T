@@ -31,6 +31,7 @@
 #include "mimetypes.h"
 #include "oklocale.h"
 #include "okws_sfs.h"
+#include "test_const.h"
 
 #if !defined(OKWS_AT_VERSION) || !OKWS_AT_VERSION(1,2,0,0)
 # error "This service requires OKWS version 1.2.0 or greater!"
@@ -70,10 +71,6 @@ protected:
   oksrvc_static_t *ok_static;
 };
 
-#define MIME_TYPES_FILE   "conf/mime.types"
-#define INTL_CONF_FILE    "conf/intl.conf"
-#define FNF_FILE          "/err/fnf.html"
-#define SPLASH_PAGE       "/welcome.html"
 
 tamed void 
 oksrvc_static_t::post_launch_pub2_T (cbb cb)

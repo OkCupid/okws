@@ -194,6 +194,7 @@ extern u_int hlpr_max_qlen;                    // maximum # to q
 extern u_int ok_log_tick;                       // how often log timer ticks
 extern u_int ok_log_period;                     // how many ticks to a flush
 extern str ok_syslog_priority;                  // syslog section
+extern str ok_syslog_domain;                    // domain for syslog
 extern str ok_access_log_fmt;                   // default log format
 
 //

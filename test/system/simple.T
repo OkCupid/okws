@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include "tame.h"
 #include "rxx.h"
+#include "ok_adebug.h"
+#include "test_const.h"
 
 class oksrvc_simple_t : public oksrvc_t {
 public:
@@ -59,7 +61,7 @@ oksrvc_simple_t::post_launch_pub2_T (cbb cb)
   }
   twait { 
     oksrvc_t::post_launch_pub2 (mkevent (res1));
-    pub2 ()->run_cfg ("conf/intl.conf", mkevent (res2)); 
+    pub2 ()->run_cfg (INTL_CONF_FILE, mkevent (res2)); 
   }
   TRIGGER (cb, res1 && res2);
 }
@@ -75,6 +77,11 @@ okclnt_simple_t::process_T ()
   }
   file = cgi["file"];
 
+  syslog_warning << "Test A B C D\n";
+  syslog_warning_x << "Test 1 2 3 4\n";
+  syslog_info << "Test X Y Z\n";
+  syslog_crit << "Test P Q R\n";
+
   if (file) {
     cgi.load_aarr (&aarr);
 
@@ -82,11 +89,11 @@ okclnt_simple_t::process_T ()
 
     if (!rc) {
       aarr.add ("target", file);
-      file = "/fnf.html";
+      file = FNF_FILE;
     }
   } else {
     aarr.add ("target", "&lt; <i>no <tt>file</tt> specified</i> &gt;");
-    file = "/fnf.html";
+    file = FNF_FILE;
     rc = false;
   }
   if (!rc) {

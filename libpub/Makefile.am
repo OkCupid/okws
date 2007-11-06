@@ -6,13 +6,13 @@ okwslib_LTLIBRARIES = libpub.la
 libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 	pub.C xdr.C slave.C  zstr.C okconst.C \
 	pvalw.C jail.C fd_prot.C lbalance.C rpcwindow.C pub2.C clone.C \
-	debug.C stats.C 
+	debug.C stats.C adebug.C
 
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
 	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
-	okws_sfs.h timehash.h okstats.h okformat.h
+	okws_sfs.h timehash.h okstats.h okformat.h ok_adebug.h
 
 noinst_HEADERS =  env.mk
 
@@ -28,8 +28,8 @@ SUFFIXES = .T .C .h .x
 .x.C:
 	-$(RPCC) -c $< || rm -f $@
 
-TAMEIN = pub2.T clone.T
-TAMEOUT = pub2.C clone.C
+TAMEIN = pub2.T clone.T adebug.T
+TAMEOUT = pub2.C clone.C adebug.C
 RPCCIN = xpub.x fd_prot.x txa_prot.x
 RPCCOUT = xpub.C xpub.h fd_prot.C fd_prot.h txa_prot.C txa_prot.h
 
@@ -37,6 +37,8 @@ pub2.o: pub2.C
 pub2.lo: pub2.C
 clone.o: clone.C
 clone.lo: clone.C
+adebug.o: adebug.C
+adebug.lo: adebug.C
 
 xpub.h: xpub.x
 xpub.C: xpub.x
