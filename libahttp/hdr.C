@@ -203,7 +203,23 @@ abuf_stat_t
 http_hdr_t::force_match (const char *s, bool tol)
 {
   assert (s && *s);
-  const char *cp = (curr_match == s ? fmcp : s);
+
+  // MK Note 11/5/07: Thanks to Benjie Chen for submitting a patch
+  // that fixes earlier bugs in this function.
+
+  const char *cp;
+  if (s == curr_match) {
+    // In this first case, we're matching the same field as we did 
+    // last time, and therefore, we pick off where the last attempt to
+    // match left off. 
+    cp = fmcp;
+  } else {
+    // In this second case, we're matching on a new string, so throw
+    // away the old state in 'fmcp' and start from the beginning of
+    // the given string.
+    cp = curr_match = s;
+  }
+
   abuf_stat_t ret = ABUF_CONTINUE;
   int ch;
   while (ret == ABUF_CONTINUE) {
@@ -215,11 +231,23 @@ http_hdr_t::force_match (const char *s, bool tol)
 	ret = ABUF_PARSE_ERR;
       else {
 	cp++;
-	if (!*cp)
+	if (!*cp) {
 	  ret = ABUF_OK;
+	}
       }
     }
   }
+
+  if (ret == ABUF_OK || ret == ABUF_PARSE_ERR) {
+    // If we won't be matching on this string anymore, reset state
+    // for the next time through.
+    fmcp = curr_match = NULL;
+  } else {
+    // We're waiting, in which case we want to pick up the match from
+    // where we left off.
+    fmcp = cp;
+  }
+
   return ret;
 }
 
