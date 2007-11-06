@@ -212,9 +212,30 @@ cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
     cookie (ck), bufalloc (false),
     inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
     hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
+    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH)),
+    _maxlen (-1)
 {
   init (buf);
+}
+
+bool
+cgi_t::extend_scratch ()
+{
+  bool ret = false;
+  if (_maxlen > 0 && u_int (_maxlen) > buflen) {
+    char *nb = static_cast<char *> (xmalloc (_maxlen));
+    assert (nb);
+    memcpy (nb, scratch, buflen);
+    if (bufalloc && scratch) {
+      xfree (scratch);
+    }
+    buflen = _maxlen;
+    scratch = nb;
+    bufalloc = true;
+    ret = true;
+    endp = scratch + buflen;
+  }
+  return ret;
 }
 
 void
@@ -230,10 +251,12 @@ cgi_t::reset_state ()
 
 cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
   : async_parser_t (s), pairtab_t<cgi_pair_t> (true),
-  cookie (ck), bufalloc (false),
-  inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
-  hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-  buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
+    cookie (ck), bufalloc (false),
+    inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
+    hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
+    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH)),
+    _maxlen (-1)
+    
 {
   init (buf);
 }
@@ -351,7 +374,19 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
       inhex = false;
   }
     
-  while ( pcp < endp && flag && ret == ABUF_OK) {
+  while ( flag && ret == ABUF_OK) {
+
+    if (pcp >= endp) {
+      size_t off = pcp - scratch;
+      if (extend_scratch ()) {
+	pcp = scratch + off;
+	assert (pcp < endp);
+      } else {
+	ret = ABUF_OVERFLOW;
+	break;
+      }
+    }
+
     ch = abuf->get ();
     switch (ch) {
     case CGI_SEPCHAR:
