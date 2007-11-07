@@ -106,7 +106,7 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
     if (needlen > CGI_MAXLEN)
       return 0;
     freeit = true;
-    scratch = (char *)xmalloc (needlen + 1);
+    scratch = static_cast<char *> (xmalloc (needlen + 1));
   }
   char *op = scratch;
   const char *inp = in.cstr ();
@@ -188,7 +188,7 @@ cgi_t::init (char *buf)
     scratch = buf;
     bufalloc = false;
   } else {
-    scratch = (char *) xmalloc (buflen);
+    scratch = static_cast<char *> (xmalloc (buflen));
     bufalloc = true;
   }
   assert (scratch);
@@ -209,7 +209,7 @@ cgi_t::reset ()
 
 static u_int fixlen (u_int l)
 {
-  // MK 11/6/07 - I'm not sure why we CGI_MAX_SCRATCH.  For now,
+  // MK 11/6/07 - I'm not sure why we need CGI_MAX_SCRATCH.  For now,
   // just pump it way up.
   return min<u_int> (l, min<u_int> (ok_cgibuf_limit, CGI_MAX_SCRATCH));
 }
