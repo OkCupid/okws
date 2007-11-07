@@ -26,6 +26,7 @@ Service		simple	/simple
 Service		pub1tst /pub1tst
 Service		form	/form
 Service 	cookie /cookie
+Service		post /post
 
 # XML services
 @@NO_XML@@Service		xmlex /xmlrpc

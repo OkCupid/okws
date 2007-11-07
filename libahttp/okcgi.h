@@ -34,7 +34,7 @@
 #include "aparse.h"
 
 #define CGI_DEF_SCRATCH  0x10000
-#define CGI_MAX_SCRATCH  0x40000
+#define CGI_MAX_SCRATCH  0x400000  
 
 
 #define CGI_MAXLEN 131072

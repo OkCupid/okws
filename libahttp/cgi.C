@@ -207,12 +207,20 @@ cgi_t::reset ()
 }
 */
 
+static u_int fixlen (u_int l)
+{
+  // MK 11/6/07 - I'm not sure why we CGI_MAX_SCRATCH.  For now,
+  // just pump it way up.
+  return min<u_int> (l, min<u_int> (ok_cgibuf_limit, CGI_MAX_SCRATCH));
+}
+
+
 cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
   : async_parser_t (a), pairtab_t<cgi_pair_t> (true),
     cookie (ck), bufalloc (false),
     inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
     hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH)),
+    buflen (fixlen (bfln)),
     _maxlen (-1)
 {
   init (buf);
@@ -225,9 +233,11 @@ cgi_t::extend_scratch ()
   if (_maxlen > 0 && u_int (_maxlen) > buflen) {
     char *nb = static_cast<char *> (xmalloc (_maxlen));
     assert (nb);
-    memcpy (nb, scratch, buflen);
-    if (bufalloc && scratch) {
-      xfree (scratch);
+    if (scratch) {
+      memcpy (nb, scratch, buflen);
+      if (bufalloc) {
+	xfree (scratch);
+      }
     }
     buflen = _maxlen;
     scratch = nb;
@@ -254,7 +264,7 @@ cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
     cookie (ck), bufalloc (false),
     inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
     hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH)),
+    buflen (fixlen (bfln)),
     _maxlen (-1)
     
 {
