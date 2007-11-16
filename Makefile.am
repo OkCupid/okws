@@ -8,11 +8,15 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1) $(SBD2) okd logd client test conf htdocs contrib
+if USE_SSL
+SSLDIR = okssl
+endif
 
-#test
+SUBDIRS = $(SBD1) $(SBD2) okd $(SSLDIR) logd client test conf htdocs contrib
 
-EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 build/flex_vers.pl
+
+EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 \
+	build/flex_vers.pl
 
 okwsbuildtools_DATA = acokws.m4
 
