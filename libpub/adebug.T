@@ -2,6 +2,7 @@
 
 #include "ok_adebug.h"
 #include "okconst.h"
+#include "pubutil.h"
 
 //
 // Code here copied from SFS, async/aerr.C
@@ -212,6 +213,7 @@ namespace ok {
     for (int i = 0; i < NLEV; i++) {
       _fds[i] = errfd;
       _set[i] = false;
+      _tab.insert (my_tolower (_levels[i]), i);
     }
   }
 
@@ -221,13 +223,10 @@ namespace ok {
   bool
   syslog_ctl_t::enable_level (const str &l)
   {
-    for (int i = 0; i < NLEV; i++) {
-      if (strcasecmp (l.cstr (), _levels[i]) == 0) {
-	_set[i] = true;
-	return true;
-      }
-    }
-    return false;
+    int *lev = _tab[my_tolower(l)];
+    if (lev) 
+      _set[*lev] = true;
+    return (lev != NULL);
   }
 
   debug_obj_params_t 

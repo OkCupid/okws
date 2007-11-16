@@ -612,3 +612,16 @@ strip_comments (vec<str> *in)
   while ( start_from >= 0 && start_from < ssize_t (in->size ()) )
     in->pop_back ();
 }
+
+str
+my_tolower (const str &in)
+{
+  if (!in) return in;
+
+  mstr out (in.len ());
+  for (size_t i = 0; i < in.len (); i++) {
+    out[i] = tolower (in[i]);
+  }
+  out.setlen (in.len ());
+  return out;
+}
