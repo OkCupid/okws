@@ -9,7 +9,7 @@ SBD2 = libamysql
 endif
 
 if USE_SSL
-SSLDIR = okssl
+SSLDIR = ssl
 endif
 
 SUBDIRS = $(SBD1) $(SBD2) okd $(SSLDIR) logd client test conf htdocs contrib
