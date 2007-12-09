@@ -625,3 +625,38 @@ my_tolower (const str &in)
   out.setlen (in.len ());
   return out;
 }
+
+str
+trunc_at_first_null (const str &s)
+{
+  assert (s);
+
+  const char *cp;
+  size_t len = s.len ();
+  size_t l;
+  const char nullc = '\0';
+
+  // Figure out if a '\0' or the end-of-string comes first.
+  for (cp = s.cstr (), l = 0; *cp != nullc && l < len; cp++, l++);
+
+  str ret;
+
+  if (*cp == nullc) {
+    
+    // The most likely outcome
+    if (l == len) ret = s;
+
+    // There was a '\0' inside the string
+    else ret = s.cstr ();
+
+  } else {
+   
+    // String is not null terminated!
+    mstr m (len + 1);
+    memcpy (m.cstr (), s.cstr (), len);
+    m[len] = nullc;
+    ret = m;
+  }
+
+  return ret;
+}
