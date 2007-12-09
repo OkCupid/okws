@@ -29,6 +29,7 @@
 #include "parseopt.h"
 #include "clist.h"
 #include "pub.h"
+#include "pubutil.h"
 
 // max buf of 256K
 #define XSS_MAX_BUF 0x40000  
@@ -151,10 +152,15 @@ protected:
 template<class C> str
 pairtab_t<C>::safe_lookup (const str &key) const
 {
-  const str &s = lookup (key);
-  if (s && filter && ok_filter_cgi == XSSFILT_SOME) return xss_filter (s);
-  else if (s) return s;
-  else return empty;
+  str s = lookup (key);
+  if (s) {
+    s = trunc_at_first_null (s);
+    if (filter && ok_filter_cgi == XSSFILT_SOME) 
+      s = xss_filter (s);
+  } else {
+    s = empty;
+  }
+  return s;
 }
 
 template<class C> bool
