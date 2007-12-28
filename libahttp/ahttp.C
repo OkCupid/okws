@@ -332,26 +332,23 @@ ahttpcon::input ()
   }
   if (n == 0) {
     eof = true;
-    fail ();
-    return;
+  } else {
+    bytes_recv += n;
+
+    // stop DOS attacks?
+    if (recv_limit > 0 && bytes_recv > recv_limit) {
+      
+      warn << "Channel limit exceded ";
+      if (remote_ip)
+	warnx << "(" << remote_ip << ")";
+      warnx << "\n";
+      
+      eof = true;
+      disable_selread ();
+      overflow_flag = true;
+      n = 0;
+    }
   }
-
-  bytes_recv += n;
-
-  // stop DOS attacks?
-  if (recv_limit > 0 && bytes_recv > recv_limit) {
-
-    warn << "Channel limit exceded ";
-    if (remote_ip)
-      warnx << "(" << remote_ip << ")";
-    warnx << "\n";
-
-    eof = true;
-    disable_selread ();
-    overflow_flag = true;
-    n = 0;
-  }
-
   recvd_bytes (n);
 }
 
