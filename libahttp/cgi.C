@@ -321,9 +321,15 @@ cgi_t::parse_guts_driver ()
 bool
 cgi_t::parse_still_waiting()
 {
-  return (pstate           == CGI_CKEY    && 
-	  pcp              == scratch     && 
-	  abuf->skip_ws () == ABUF_WAIT);
+  return (pstate                  == CGI_CKEY    && 
+	  pcp                     == scratch     && 
+	  // 
+	  // MK 12/27/07: bugfix.  In cookie mode, make sure
+	  // we don't gobble up \r\n's.  If so, we might fail
+	  // if the browser gave an empty Cookie: line!!
+	  //
+	  ((cookie && abuf->skip_hws (0) == ABUF_WAIT) ||
+	   (!cookie && abuf->skip_ws () == ABUF_WAIT)));
 }
 
 abuf_stat_t

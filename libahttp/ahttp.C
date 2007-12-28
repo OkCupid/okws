@@ -330,25 +330,36 @@ ahttpcon::input ()
     }
     return;
   }
+
+  //
+  // MK 12/27/07: Back-out earlier change here, in which for n==0, still
+  // call recvd_bytes(0), to go through the normal processing path.  That
+  // might be the right thing to do if there are browsers that do
+  // TCP half-closes.  I don't think there are, so just leave it as
+  // is so I don't break anything.
+  //
   if (n == 0) {
     eof = true;
-  } else {
-    bytes_recv += n;
-
-    // stop DOS attacks?
-    if (recv_limit > 0 && bytes_recv > recv_limit) {
-      
-      warn << "Channel limit exceded ";
-      if (remote_ip)
-	warnx << "(" << remote_ip << ")";
-      warnx << "\n";
-      
-      eof = true;
-      disable_selread ();
-      overflow_flag = true;
-      n = 0;
-    }
+    fail ();
+    return;
   }
+
+  bytes_recv += n;
+
+  // stop DOS attacks?
+  if (recv_limit > 0 && bytes_recv > recv_limit) {
+
+    warn << "Channel limit exceded ";
+    if (remote_ip)
+      warnx << "(" << remote_ip << ")";
+    warnx << "\n";
+
+    eof = true;
+    disable_selread ();
+    overflow_flag = true;
+    n = 0;
+  }
+
   recvd_bytes (n);
 }
 
