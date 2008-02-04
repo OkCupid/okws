@@ -6,6 +6,7 @@
 #include "amisc.h"
 #include "tame.h"
 #include "qhash.h"
+#include <syslog.h>
 
 namespace ok {
 
@@ -73,15 +74,32 @@ namespace ok {
 
     debug_obj_params_t params (int lev, bool x = false) const;
 
-    enum { WARNING = 0, NOTICE = 1, CRIT = 2, INFO = 3, NLEV = 4 };
+
+    enum { EMERG = 0,
+	   ALERT = 1,
+	   CRIT = 2,
+	   ERR = 3,
+	   WARNING = 4,
+	   NOTICE = 5,
+	   INFO = 6,
+	   DEBUG = 7,
+           NLEV = 8 };
+
     static const char *_levels[NLEV];
 
+    int emerg_fd () { return _fds[EMERG]; }
+    int alert_fd () { return _fds[ALERT]; }
+    int crit_fd () { return _fds[CRIT]; }
+    int err_fd () { return _fds[ERR]; }
     int warning_fd () { return _fds[WARNING]; }
     int notice_fd () { return _fds[NOTICE]; }
-    int crit_fd () { return _fds[CRIT]; }
     int info_fd () { return _fds[INFO]; }
+    int debug_fd () { return _fds[DEBUG]; }
 
     bool started () const { return _started; }
+
+    str to_str () const;
+    bool init_child (const str &s);
 
   private:
     bool _started;
@@ -91,24 +109,49 @@ namespace ok {
   };
   
   extern syslog_ctl_t syslog_ctl;
-
 };
 
-#define syslog_warning \
-  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.WARNING))
-#define syslog_warning_x \
-  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.WARNING, true))
-#define syslog_info \
-  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO))
-#define syslog_info_x \
-  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO, true))
-#define syslog_notice \
-  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.NOTICE))
-#define syslog_notice_x \
-  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.NOTICE, true))
+/* EMERGENCY level */
+#define syslog_emerg \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.EMERG))
+#define syslog_emerg_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.EMERG, true))
+
+/* ALERT level */
+#define syslog_alert \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.ALERT))
+#define syslog_alert_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.ALERT, true))
+
+/* CRIT level */
 #define syslog_crit \
   ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.CRIT))
 #define syslog_crit_x \
   ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.CRIT, true))
+
+/* ERR level */
+#define syslog_err \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.ERR))
+#define syslog_err_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.ERR, true))
+
+/* WARNING level */
+#define syslog_warning \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.WARNING))
+#define syslog_warning_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.WARNING, true))
+
+/* NOTICE level */
+#define syslog_notice \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.NOTICE))
+#define syslog_notice_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.NOTICE, true))
+
+/* INFO level */
+#define syslog_info \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO))
+#define syslog_info_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO, true))
+
 
 #endif /* _LIBPUB_OK_ADEBUG_H_ */

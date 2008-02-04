@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "okdbg.h"
+#include "ok_adebug.h"
 
 extern char ** environ;
 
@@ -234,6 +235,11 @@ okld_ch_t::launch ()
   okld->env.insert ("wss", _svc_options.wss, false);
   okld->env.insert ("caching", _svc_options.pub2_caching, false);
   okld->env.insert ("wfs", _svc_options.wait_for_signal, false);
+
+  if (okld->opt_daemon ()) {
+    str l = ok::syslog_ctl.to_str ();
+    okld->env.insert ("loggers", l, false);
+  }
 
   argv.push_back (okld->env.encode ());
 

@@ -78,7 +78,8 @@ okclnt_simple_t::process_T ()
   file = cgi["file"];
 
   syslog_warning << "Test A B C D\n";
-  syslog_warning_x << "Test 1 2 3 4\n";
+  syslog_warning_x << "Test 1 2 3 4 ";
+  syslog_warning_x << "  a b cd\n";
   syslog_info << "Test X Y Z\n";
   syslog_crit << "Test P Q R\n";
 

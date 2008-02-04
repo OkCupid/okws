@@ -1225,6 +1225,9 @@ main (int argc, char *argv[])
   okld->debug_stallfile = dbf;
   okld->set_signals ();
 
+  okld->set_opt_daemon (opt_daemon);
+
+
   warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okld->launch (cf);
   amain ();

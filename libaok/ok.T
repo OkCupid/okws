@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include "okdbg.h"
 #include "sfsmisc.h"
+#include "ok_adebug.h"
 
 extern char ** environ;
 
@@ -186,6 +187,7 @@ oksrvc_t::init (int argc, char *argv[])
 		 "; running as (" << getuid () << ", " << geteuid () << ")");
 
   str mmc_file = ok_mmc_file;
+  str loggers;
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -220,10 +222,17 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("ncto", &ok_pub2_svc_neg_cache_timeout);
     t->lookup ("pub2chnk", &ok_pub2_max_datasz);
     t->lookup ("wfs", &wait_for_signal_in_startup);
+    t->lookup ("loggers", &loggers);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
     ok_send_sin = t->blookup ("sendsin");
+
+    if (loggers) {
+      if (!ok::syslog_ctl.init_child (loggers)) {
+	warn << "Cannot initialize sysloggers!\n";
+      }
+    }
 
     int tmp = 0;
     if (t->lookup ("clock", &tmp))

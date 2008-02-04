@@ -3,6 +3,8 @@
 #include "ok_adebug.h"
 #include "okconst.h"
 #include "pubutil.h"
+#include "rxx.h"
+#include "parseopt.h"
 
 //
 // Code here copied from SFS, async/aerr.C
@@ -132,7 +134,7 @@ namespace ok {
       else
 	cat (progname);
     }
-    if (_level && (_flags & warnxflag)) {
+    if (_level && (_flags & warnxflag) && !(_flags & xflag)) {
       if (need_space) {
 	cat (" ");
       }
@@ -218,7 +220,7 @@ namespace ok {
   }
 
   const char *syslog_ctl_t::_levels[] = 
-    { "info", "warning" , "crit", "notice" };
+    { "emerg", "alert", "crit", "err", "warning", "notice", "info", "debug" } ;
 
   bool
   syslog_ctl_t::enable_level (const str &l)
@@ -258,5 +260,42 @@ namespace ok {
     _started = true;
     return true;
   }
+
+  bool 
+  syslog_ctl_t::init_child (const str &s)
+  {
+    vec<str> v;
+    static rxx sep (";");
+    static rxx pair ("([0-9]+):([0-9]+)");
+    int lev, fd;
+    bool ret = true;
+    if (split (&v, sep, s) <= 0) {
+      ret = false; 
+    } else {
+      for (size_t i = 0; i < v.size (); i++) {
+	if (!pair.match (v[i]) ||
+	    !convertint (pair[0], &lev) ||
+	    !convertint (pair[1], &fd)) {
+	  ret = false;
+	} else {
+	  _set[lev] = true;
+	  _fds[lev] = fd;
+	}
+      }
+    }
+    return ret;
+  }
+
+  str
+  syslog_ctl_t::to_str () const
+  {
+    strbuf b;
+    for (int i = 0; i < NLEV; i++) {
+      if (i) b << ";";
+      b << i << ":" << _fds[i];
+    }
+    return b;
+  }
+
 
 };
