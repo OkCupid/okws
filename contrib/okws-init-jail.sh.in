@@ -255,7 +255,7 @@ config_jail_dir()
 	return 1
     fi
 
-    cp -r $module $sb
+    cp -r $module/* $sb
     chown -R root $sb
     chgrp -R wheel $sb
     

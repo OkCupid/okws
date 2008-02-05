@@ -123,7 +123,7 @@ ServiceGroup	www
 TopDir %%okwslibdir%%
 
 ##
-## Pubd2ExecPath <path>
+## PubdExecPath <path>
 ##
 ##   Tell okd where the Publishing Daemon (pubd) can be launched from.  Okd
 ##   will launch pubd prior to calling chroot, so the path should be relative
@@ -136,7 +136,7 @@ TopDir %%okwslibdir%%
 ##
 ##   Can specify with -f the configuration file pubd uses.
 ##
-Pubd2ExecPath	pubd -2 -f %%okwsconfdir%%/pub_config.dist
+PubdExecPath	pubd -f %%okwsconfdir%%/pub_config.dist
 
 ##
 ## OkdlogdExecPath <path>
@@ -265,6 +265,7 @@ OkMgrSocketAccessMode		0600
 ##
 Service		static		/static
 Service		xmlex		/xmlrc
+Service		simple		/simple
 
 ##
 ## Gzip Compression Configuration
