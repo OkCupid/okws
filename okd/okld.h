@@ -232,6 +232,7 @@ public:
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
 
+
 protected:
   svc_options_t _svc_options;
 
@@ -255,6 +256,7 @@ private:
 
   // arguments given to the executable (such as 'python filename')
   vec<str> args;
+
 
 };
 
@@ -293,7 +295,8 @@ public:
       pubd2 (NULL),
       pub_v1_support (false),
       _okd_mgr_socket (okd_mgr_socket),
-      _pub_v2_error (false) {}
+      _pub_v2_error (false),
+      _opt_daemon (false) {}
       
 
   ~okld_t () { if (logexc) delete logexc; }
@@ -335,6 +338,8 @@ public:
   ptr<fdsink_t> okdx;
   ok_grp_t svc_grp;
   bool safe_startup () const { return safe_startup_fl ;}
+  void set_opt_daemon (bool b) { _opt_daemon = b; }
+  bool opt_daemon () const { return _opt_daemon; }
 
 protected:
   bool parse_file (const str &fn);
@@ -430,7 +435,8 @@ private:
   str _config_grp, _config_okd_gr, _config_okd_un;
   str _config_root, _config_wheel;
   bool _config_no_pub_v2_support;
-
+  bool _opt_daemon;
+						 
 };
 
 #endif /* _OKD_OKD_H */

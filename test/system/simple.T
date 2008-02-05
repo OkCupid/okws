@@ -78,7 +78,8 @@ okclnt_simple_t::process_T ()
   file = cgi["file"];
 
   syslog_warning << "Test A B C D\n";
-  syslog_warning_x << "Test 1 2 3 4\n";
+  syslog_warning_x << "Test 1 2 3 4 ";
+  syslog_warning_x << "  a b cd\n";
   syslog_info << "Test X Y Z\n";
   syslog_crit << "Test P Q R\n";
 
@@ -113,5 +114,14 @@ main (int argc, char *argv[])
 {
   oksrvc_t *oksrvc = New oksrvc_simple_t (argc, argv);
   oksrvc->launch ();
+
+  syslog_emerg << "Emergency!\n";
+  syslog_alert << "Alert!\n";
+  syslog_crit << "Crtical!\n";
+  syslog_err << "Error!\n";
+  syslog_warning << "Warning!\n";
+  syslog_info << "Info!\n";
+  syslog_debug << "Debug\n";
+  
   amain ();
 }

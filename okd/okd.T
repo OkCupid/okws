@@ -372,6 +372,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("ServiceFDHighWat")
     .ignore ("ServiceFDLowWat")
     .ignore ("ServiceAcceptMessages")
+    .ignore ("SyslogLevels")
     .ignore ("DangerousZbufs");
 
   return ct.run (cf);

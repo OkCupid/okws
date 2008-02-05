@@ -255,7 +255,7 @@ config_jail_dir()
 	return 1
     fi
 
-    cp -r $module $sb
+    cp -r $module/* $sb
     chown -R root $sb
     chgrp -R wheel $sb
     
@@ -273,7 +273,7 @@ config_jail_dir()
 	  echo "making dir: $pdir"
 	  $MKDIR $pdir
       fi
-      if test '(' ! -f $jlib -o $diff -eq 0 ')' -a -f $lib
+      if test '(' ! -f $jlib -o $diff -ne 0 ')' -a -f $lib
       then
 	  $INSTALL $lib $jlib
       fi

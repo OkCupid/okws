@@ -498,5 +498,16 @@ ServiceFDLowWat	950
 ServiceLifeRequests 	0
 ServiceLifeTime		0
 
+
+##
+## SyslogLevels
+##
+##   Enable reporting through the following syslog levels, in order
+##   of severity:
+## 
+##      debug info warning err alert crit emerg
+##
+SyslogLevels info err crit
+
 ##
 ##=======================================================================

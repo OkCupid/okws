@@ -897,6 +897,11 @@ okld_t::encode_env ()
     .insert ("pub2chnk", ok_pub2_max_datasz)
     .insert ("pub1", pub_v1_support ? 1 : 0);
 
+  if (_opt_daemon) {
+    str l = ok::syslog_ctl.to_str ();
+    env.insert ("loggers", l, false);
+  }
+
   if (mmc_file)
     env.insert ("mmcf", mmc_file);
 }
@@ -1224,17 +1229,17 @@ main (int argc, char *argv[])
 
   // Need to daemonize before parsing config file, since the output
   // of the config file parsing operation should go into the syslog.
-
-
+  // XXX: should fix this.
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
     daemonize (pidfile);
-    ok::syslog_ctl.start_loggers ();
   }
 
   okld_t *okld = New okld_t ();
   okld->debug_stallfile = dbf;
   okld->set_signals ();
+
+  okld->set_opt_daemon (opt_daemon);
 
   warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okld->launch (cf);
@@ -1247,6 +1252,10 @@ void okld_t::launch (str cf)
   configfile = cf;
   if (!run_configs (cf))
     okld_exit (1);
+
+  if (_opt_daemon) {
+    ok::syslog_ctl.start_loggers ();
+  }
 
   init_clock_daemon ();
 

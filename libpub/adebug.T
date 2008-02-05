@@ -2,6 +2,9 @@
 
 #include "ok_adebug.h"
 #include "okconst.h"
+#include "pubutil.h"
+#include "rxx.h"
+#include "parseopt.h"
 
 //
 // Code here copied from SFS, async/aerr.C
@@ -131,7 +134,7 @@ namespace ok {
       else
 	cat (progname);
     }
-    if (_level && (_flags & warnxflag)) {
+    if (_level && (_flags & warnxflag) && !(_flags & xflag)) {
       if (need_space) {
 	cat (" ");
       }
@@ -192,7 +195,7 @@ namespace ok {
     int fds[2];
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) < 0) 
       fatal ("socketpair: %m\n");
-    close_on_exec (fds[0]);
+    //close_on_exec (fds[0]);
     if (fds[1] != 0) 
       close_on_exec (fds[1]);
     
@@ -212,22 +215,21 @@ namespace ok {
     for (int i = 0; i < NLEV; i++) {
       _fds[i] = errfd;
       _set[i] = false;
+      _tab.insert (my_tolower (_levels[i]), i);
     }
   }
 
   const char *syslog_ctl_t::_levels[] = 
-    { "info", "warning" , "crit", "notice" };
+    { "emerg", "alert", "crit", "err", "warning", "notice", "info", "debug" } ;
 
   bool
   syslog_ctl_t::enable_level (const str &l)
   {
-    for (int i = 0; i < NLEV; i++) {
-      if (strcasecmp (l.cstr (), _levels[i]) == 0) {
-	_set[i] = true;
-	return true;
-      }
+    int *lev = _tab[my_tolower(l)];
+    if (lev) {
+      _set[*lev] = true;
     }
-    return false;
+    return (lev != NULL);
   }
 
   debug_obj_params_t 
@@ -250,7 +252,7 @@ namespace ok {
       if (_set[i]) {
 	strbuf b;
 	b << ok_syslog_domain << "." << _levels[i];
-	if ((_fds[i] = start_custom_logger (b)) != 0) {
+	if ((_fds[i] = start_custom_logger (b)) < 0) {
 	  warn << "Could not start log level: " << b << "\n";
 	  return false;
 	}
@@ -259,5 +261,50 @@ namespace ok {
     _started = true;
     return true;
   }
+
+  bool 
+  syslog_ctl_t::init_child (const str &s)
+  {
+    vec<str> v;
+    static rxx sep (";");
+    static rxx pair ("([0-9]+)=([0-9]+)");
+    int lev, fd;
+    bool ret = true;
+    if (!s || s.len() == 0) {
+      ret = true;
+    } else if (split (&v, sep, s) <= 0) {
+      ret = false; 
+    } else {
+      for (size_t i = 0; i < v.size (); i++) {
+	if (!pair.match (v[i]) ||
+	    !convertint (pair[1], &lev) ||
+	    !convertint (pair[2], &fd)) {
+	  ret = false;
+	} else {
+	  _set[lev] = true;
+	  _fds[lev] = fd;
+	}
+      }
+    }
+    if (ret)
+      _started = true;
+    return ret;
+  }
+
+  str
+  syslog_ctl_t::to_str () const
+  {
+    strbuf b;
+    bool first = true;
+    for (int i = 0; i < NLEV; i++) {
+      if (_set[i]) {
+	if (!first) b << ";";
+	else first = false;
+	b << i << "=" << _fds[i];
+      }
+    }
+    return b;
+  }
+
 
 };

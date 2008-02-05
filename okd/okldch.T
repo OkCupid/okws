@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "okdbg.h"
+#include "ok_adebug.h"
 
 extern char ** environ;
 
