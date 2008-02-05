@@ -195,7 +195,7 @@ namespace ok {
     int fds[2];
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) < 0) 
       fatal ("socketpair: %m\n");
-    close_on_exec (fds[0]);
+    //close_on_exec (fds[0]);
     if (fds[1] != 0) 
       close_on_exec (fds[1]);
     
@@ -226,8 +226,9 @@ namespace ok {
   syslog_ctl_t::enable_level (const str &l)
   {
     int *lev = _tab[my_tolower(l)];
-    if (lev) 
+    if (lev) {
       _set[*lev] = true;
+    }
     return (lev != NULL);
   }
 
@@ -251,7 +252,7 @@ namespace ok {
       if (_set[i]) {
 	strbuf b;
 	b << ok_syslog_domain << "." << _levels[i];
-	if ((_fds[i] = start_custom_logger (b)) != 0) {
+	if ((_fds[i] = start_custom_logger (b)) < 0) {
 	  warn << "Could not start log level: " << b << "\n";
 	  return false;
 	}
@@ -266,16 +267,18 @@ namespace ok {
   {
     vec<str> v;
     static rxx sep (";");
-    static rxx pair ("([0-9]+):([0-9]+)");
+    static rxx pair ("([0-9]+)=([0-9]+)");
     int lev, fd;
     bool ret = true;
-    if (split (&v, sep, s) <= 0) {
+    if (!s || s.len() == 0) {
+      ret = true;
+    } else if (split (&v, sep, s) <= 0) {
       ret = false; 
     } else {
       for (size_t i = 0; i < v.size (); i++) {
 	if (!pair.match (v[i]) ||
-	    !convertint (pair[0], &lev) ||
-	    !convertint (pair[1], &fd)) {
+	    !convertint (pair[1], &lev) ||
+	    !convertint (pair[2], &fd)) {
 	  ret = false;
 	} else {
 	  _set[lev] = true;
@@ -283,6 +286,8 @@ namespace ok {
 	}
       }
     }
+    if (ret)
+      _started = true;
     return ret;
   }
 
@@ -290,9 +295,13 @@ namespace ok {
   syslog_ctl_t::to_str () const
   {
     strbuf b;
+    bool first = true;
     for (int i = 0; i < NLEV; i++) {
-      if (i) b << ";";
-      b << i << ":" << _fds[i];
+      if (_set[i]) {
+	if (!first) b << ";";
+	else first = false;
+	b << i << "=" << _fds[i];
+      }
     }
     return b;
   }

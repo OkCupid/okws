@@ -1218,12 +1218,10 @@ main (int argc, char *argv[])
 
   // Need to daemonize before parsing config file, since the output
   // of the config file parsing operation should go into the syslog.
-
-
+  // XXX: should fix this.
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
     daemonize (pidfile);
-    ok::syslog_ctl.start_loggers ();
   }
 
   okld_t *okld = New okld_t ();
@@ -1231,7 +1229,6 @@ main (int argc, char *argv[])
   okld->set_signals ();
 
   okld->set_opt_daemon (opt_daemon);
-
 
   warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okld->launch (cf);
@@ -1244,6 +1241,10 @@ void okld_t::launch (str cf)
   configfile = cf;
   if (!run_configs (cf))
     okld_exit (1);
+
+  if (_opt_daemon) {
+    ok::syslog_ctl.start_loggers ();
+  }
 
   init_clock_daemon ();
 
