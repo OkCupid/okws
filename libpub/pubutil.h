@@ -167,6 +167,7 @@ bool cicmp (const str &s1, const char *c2);
 bool cicmp (const str &s2, const char *c2, u_int len);
 inline bool cicmp (const str &s1, const str &s2)
 { return cicmp (s1, s2.cstr (), s2.len ()); }
+str my_tolower (const str &in);
 
 // uid / gid stuff
 

@@ -614,6 +614,19 @@ strip_comments (vec<str> *in)
 }
 
 str
+my_tolower (const str &in)
+{
+  if (!in) return in;
+
+  mstr out (in.len ());
+  for (size_t i = 0; i < in.len (); i++) {
+    out[i] = tolower (in[i]);
+  }
+  out.setlen (in.len ());
+  return out;
+}
+
+str
 trunc_at_first_null (const str &s)
 {
   assert (s);

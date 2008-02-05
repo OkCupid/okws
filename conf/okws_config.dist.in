@@ -265,6 +265,7 @@ OkMgrSocketAccessMode		0600
 ##
 Service		static		/static
 Service		xmlex		/xmlrc
+Service     simple      /simple
 
 ##
 ## Gzip Compression Configuration

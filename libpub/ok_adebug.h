@@ -105,6 +105,7 @@ namespace ok {
     bool _started;
     int _fds[NLEV];
     bool _set[NLEV];
+    qhash<str, int> _tab;
   };
   
   extern syslog_ctl_t syslog_ctl;
