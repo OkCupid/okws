@@ -153,5 +153,11 @@ namespace ok {
 #define syslog_info_x \
   ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.INFO, true))
 
+/* DEBUG level */
+#define syslog_debug \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.DEBUG))
+#define syslog_debug_x \
+  ok::debug_obj_t(ok::syslog_ctl.params (ok::syslog_ctl.DEBUG, true))
+
 
 #endif /* _LIBPUB_OK_ADEBUG_H_ */

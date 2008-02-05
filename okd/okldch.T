@@ -236,11 +236,6 @@ okld_ch_t::launch ()
   okld->env.insert ("caching", _svc_options.pub2_caching, false);
   okld->env.insert ("wfs", _svc_options.wait_for_signal, false);
 
-  if (okld->opt_daemon ()) {
-    str l = ok::syslog_ctl.to_str ();
-    okld->env.insert ("loggers", l, false);
-  }
-
   argv.push_back (okld->env.encode ());
 
   // undo all of the damage

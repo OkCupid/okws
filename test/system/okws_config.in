@@ -25,6 +25,8 @@ Service		simple	/simple
 Service		form	/form
 Service 	cookie /cookie
 
+SyslogLevels	emerg alert crit info warning debug err notice
+
 # XML services
 @@NO_XML@@Service		xmlex /xmlrpc
 @@NO_XML@@Service		xmlxlate/xlater /xlater

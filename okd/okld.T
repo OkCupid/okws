@@ -887,6 +887,11 @@ okld_t::encode_env ()
     .insert ("pub2chnk", ok_pub2_max_datasz)
     ;
 
+  if (_opt_daemon) {
+    str l = ok::syslog_ctl.to_str ();
+    env.insert ("loggers", l, false);
+  }
+
   if (mmc_file)
     env.insert ("mmcf", mmc_file);
 }
