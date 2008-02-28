@@ -647,7 +647,7 @@ pub_base_t::configed (ptr<xpub_getfile_res_t> xr, pubrescb c, clnt_stat err)
 
 // new parsing routine for pub2
 ptr<bound_pfile2_t>
-pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
+pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *errp,
 			 str *err_msg)
 {
   bpfmp_t r;
@@ -658,7 +658,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
   ptr<bound_pfile2_t> ret = 
     New refcounted<bound_pfile2_t> (bnd, jail2real (fn), t, opts);
   pfile_t *pf = ret->file ();
-  *err = PUBSTAT_OK;
+  pubstat_t err = PUBSTAT_OK;
   int wss_prev = yywss;
   yywss = wss ? 1 : 0;
 
@@ -668,6 +668,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
       PWARN (fn << ": cannot read raw file");
       delete ss;
       ret = NULL;
+      err = PUBSTAT_READ_ERROR;
     } else {
       ss->add (New pfile_raw_el_t (d));
       pf->add_section (ss);
@@ -681,6 +682,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
     if (!r->open ()) {
       PWARN (fn << ": failed to open file");
       delete ss;
+      err = PUBSTAT_FNF;
       ret = NULL;
     } else {
       pub_parser_t *old_parser = parser;
@@ -697,7 +699,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
       r->close ();
       if (pf->err != PUBSTAT_OK) {
 	PWARN (fn << ": parse failed");
-	*err = pf->err;
+	err = pf->err;
 	*err_msg = pf->err_msg;
 	ret = NULL;
       }
@@ -708,6 +710,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *err,
     set_opts (old_opts);
     yywss = wss_prev;
   }
+  *errp = err;
   return ret;
 }
 

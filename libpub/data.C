@@ -1920,6 +1920,7 @@ pub_stat2status (pubstat_t in)
   case PUBSTAT_FNF:
     return (XPUB_STATUS_NOENT);
     break;
+  case PUBSTAT_READ_ERROR:
   case PUBSTAT_PARSE_ERROR:
     return (XPUB_STATUS_ERR);
     break;
