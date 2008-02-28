@@ -69,8 +69,10 @@ typedef enum { PFILE_TYPE_NONE = 0,
                PFILE_TYPE_CONF = 7,
 	       PFILE_TYPE_CONF2 = 8} pfile_type_t;
 
-typedef enum { PUBSTAT_OK = 0, PUBSTAT_FNF = 1, 
-	       PUBSTAT_PARSE_ERROR = 3 } pubstat_t;
+typedef enum { PUBSTAT_OK = 0, 
+	       PUBSTAT_FNF = 1, 
+	       PUBSTAT_PARSE_ERROR = 3,
+	       PUBSTAT_READ_ERROR = 4 } pubstat_t;
 
 xpub_status_typ_t pub_stat2status (pubstat_t in);
 
