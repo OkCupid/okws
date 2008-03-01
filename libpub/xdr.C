@@ -410,6 +410,7 @@ pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const
   if (env)
     env->to_xdr (&x->include->env);
   x->include->fn.set_vrs (XPUB_V2);
+  x->include->lineno = lineno;
   if (fn_v2) fn_v2->to_xdr (x->include->fn.v2);
   return true;
 }
