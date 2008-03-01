@@ -26,7 +26,8 @@ int yy_pt_com;  /* pass-throgh comment! */
 char str_buf[YY_STR_BUFLEN];
 int sbi;
 char *eof_tok;
-int yy_d_brace =0;
+int yy_d_brace = 0;
+int yy_d_bracket = 0;
 
 %}
 
@@ -45,7 +46,7 @@ TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 %x GSEC STR SSTR H HTAG PTAG GH PSTR PVAR WH WGH HCOM JS GFILE 
-%x GCODE PRE PSTR_SQ 
+%x GCODE PRE PSTR_SQ TXLCOM TXLCOM3
 
 %%
 
@@ -140,12 +141,44 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  		}
 }
 
+<TXLCOM3>{
+"]"+		{ if (strlen (yytext) >=2) { yy_pop_state (); } }
+[^\]]+		{ /* ignore */; }
+}
+
+<TXLCOM>{
+"[["		{ yy_d_bracket++; }
+\\"[""["+	{ /* ignore */ ; }
+
+"["		|
+"\\"		|
+"]"		|
+[^\]\[\\]+	{ /* ignore */ ; }
+
+"]]"		{ yy_d_bracket--; if (yy_d_bracket <= 1) { yy_pop_state (); } }
+}
+
+
 <GH,H,WH,WGH,JS,PSTR,GSEC,PTAG,HTAG,PSTR_SQ>{
 "@{"		{ yy_push_state (GCODE); return T_BGCODE; }
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
 "%{"		{ yy_push_state (GCODE); return T_BGCCE; }
 
-\\+[$@%]"{"|\\"}}"	        { yylval.str = yytext + 1; return T_HTML; }
+
+"["{2,4}	{
+                   size_t len = strlen (yytext);
+		   if (len == 3) {
+		      yy_push_state (TXLCOM3);
+		   } else {
+		      yy_d_bracket += (len >> 1);
+                      if (yy_d_bracket > 1) { yy_push_state (TXLCOM); }
+                   } 
+                }
+
+\\+[$@%]"{"	|
+\\"}}"		|
+\\"["{2,4}	|
+\\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
 
 "}}"		{ if (yy_d_brace > 0) {
 		     yy_d_brace -- ;
@@ -155,12 +188,24 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	 	     yylval.str = yytext; return T_HTML;
 	          } 
                 } 
-[$@%}]		{ yylval.ch = yytext[0]; return T_CH; }
+
+
+"]]"		{ 
+                  if (yy_d_bracket > 0) {
+		     yy_d_bracket--;
+                  } else {
+		     yylval.str = yytext;
+		     return T_HTML;
+		  }
+                }
+
+[$@%}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
+
 }
 
 <GH>[^$@%}\\\n]+	{ yylval.str = yytext; return T_HTML; }
 <H>{
-[^$@%}\\<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[^$@%}\\<\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 "<"		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
@@ -215,8 +260,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <WH,WGH>{
-[^$@\\<\n\t} ]+	{ yylval.str = yytext; return T_HTML; }
-\\		{ yylval.ch = yytext[0]; return T_CH; }
+[^$@\\<\n\t}\[\] ]+	{ yylval.str = yytext; return T_HTML; }
+\\		 	{ yylval.ch = yytext[0]; return T_CH; }
 }
 
 <HTAG>{
@@ -255,7 +300,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \"		{ end_PSTR (); return (yytext[0]); }
-[^"\\$@%}]+	{ yylval.str = yytext; return T_STR; }
+[^"\\$@%}\[\]]+	{ yylval.str = yytext; return T_STR; }
 }
 
 <PSTR_SQ>{
@@ -264,7 +309,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \'		{ end_PSTR (); return (yytext[0]); }
-[^'\\$@%}]+	{ yylval.str = yytext; return T_STR; }
+[^'\\$@%}\[\]]+	{ yylval.str = yytext; return T_STR; }
 }
 
 
@@ -476,5 +521,7 @@ gcc_hack_use_static_functions ()
 //   WGH - White-space-stripped G-HTML
 //   HCOM - HTML Comment
 //   JS - JavaScript
+//   TXLCOM - Translator comment
+//   TXLCOM3 - Translator comment state 3
 //
 */

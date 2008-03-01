@@ -49,7 +49,9 @@
 %token T_EJS_SILENT
 %token T_BJS_SILENT
 %token T_2L_BRACE
+%token T_2L_BRACKET
 %token T_2R_BRACE
+%token T_2R_BRACKET
 
 %token T_INT_ARR
 %token T_UINT_ARR
