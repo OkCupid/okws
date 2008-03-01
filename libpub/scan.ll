@@ -133,7 +133,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 "]]"		{ yy_d_bracket = 0; }
 
-[$}]		{ yylval.ch = yytext[0]; return T_CH; }
+[$}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
 }
 
 <H>{
@@ -192,8 +192,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <WH>{
-[^$@\\<\n\t} ]+	{ yylval.str = yytext; return T_HTML; }
-\\		{ yylval.ch = yytext[0]; return T_CH; }
+[^$@\\<\n\t}\[\] ]+	{ yylval.str = yytext; return T_HTML; }
+\\		 	{ yylval.ch = yytext[0]; return T_CH; }
 }
 
 <HTAG>{
@@ -232,7 +232,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \"		{ end_PSTR (); return (yytext[0]); }
-[^"\\$@%}]+	{ yylval.str = yytext; return T_STR; }
+[^"\\$@%}\[\]]+	{ yylval.str = yytext; return T_STR; }
 }
 
 <PSTR_SQ>{
@@ -241,7 +241,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \'		{ end_PSTR (); return (yytext[0]); }
-[^'\\$@%}]+	{ yylval.str = yytext; return T_STR; }
+[^'\\$@%}\[\]]+	{ yylval.str = yytext; return T_STR; }
 }
 
 
