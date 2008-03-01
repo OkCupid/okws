@@ -43,7 +43,7 @@ TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS 
-%x PRE PSTR_SQ TXLCOM
+%x PRE PSTR_SQ TXLCOM TXLCOM3
 
 %%
 
@@ -107,19 +107,35 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <TXLCOM>{
-"]]"		{ yy_pop_state (); }
+"]]"		{ yy_d_bracket--; yy_pop_state (); }
+}
+
+<TXLCOM3>{
+"]]]"		{ yy_pop_state (); }
+}
+
+<TXLCOM,TXLCOM3>{
 "]"		|
 [^\]]+		/* ignore */ ;
 }
 
 
+
 <H,WH,JS,PSTR,PTAG,HTAG,PSTR_SQ>{
 "${"		{ yy_push_state (PVAR); return T_BVAR; }
-"[["            { if (yy_d_bracket++ > 0) { yy_push_state (TXLCOM); } }
+
+"["{2,4}	{
+		   if (yylval.str.len() == 3) {
+		      yy_push_state (TXLCOM3);
+		   } else {
+		      yy_d_bracket += yylval.str.len () / 2;
+                      if (yy_d_bracket > 1) { yy_push_state (TXLCOM); }
+                   } 
+                }
 
 \\+[$]"{" 	|
 \\"}}"		|
-\\"[["		|
+\\"["{2,4}	|
 \\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
 
 "}}"		{ if (yy_d_brace > 0) {
@@ -410,5 +426,6 @@ gcc_hack_use_static_functions ()
 //   HCOM - HTML Comment
 //   JS - JavaScript
 //   TXLCOM - Translator comment
+//   TXLCOM3 - Translator comment state 3
 //
 */
