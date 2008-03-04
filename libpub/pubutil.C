@@ -660,3 +660,26 @@ trunc_at_first_null (const str &s)
 
   return ret;
 }
+
+void
+fix_trailing_newlines (str *sp)
+{
+  if (sp) {
+    str s = *sp;
+    
+    if (s) {
+      const char *bp = s.cstr ();
+      const char *ep = bp + s.len ();
+      const char *nlp = ep - 1;
+      
+      for ( ; nlp >= bp && *nlp == '\n'; nlp--) ;
+      
+      // Advance to the first newline to nuke (or jump over it)
+      nlp += 2;
+      
+      if (nlp < ep) {
+        *sp = str (s.cstr (), nlp - bp);
+      }
+    }
+  }
+}
