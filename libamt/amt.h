@@ -71,7 +71,7 @@
     strbuf b; \
     b << progname << "[" << tid << "]: " << x << "\n"; \
     str s = b; \
-	fix_trailing_newlines (&s); \
+    fix_trailing_newlines (&s);	       \
     fprintf (stderr, "%s", s.cstr ()); \
   } while (0)
 
