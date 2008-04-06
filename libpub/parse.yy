@@ -75,16 +75,6 @@ conffile: T_BCONF aarr {}
 hfile: html 
 	;
 
-varlist: var 
-	{
-	  PGVARS->add ($1);
-	}
-	| varlist ',' var 
-	{
-	  PGVARS->add ($3);
-	}
-	;
-
 html: /* empty */ {}
 	| html html_part
 	;

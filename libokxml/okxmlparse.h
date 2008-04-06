@@ -53,13 +53,11 @@ public:
   xml_req_parser_t (abuf_src_t *s) 
     : async_parser_t (s), 
       _xml_parser_init (false),
-      _top_level (New refcounted<xml_top_level_t> ()),
       _status (XML_PARSE_OK) {}
 
   xml_req_parser_t (abuf_t *a) 
     : async_parser_t (a), 
       _xml_parser_init (false),
-      _top_level (New refcounted<xml_top_level_t> ()),
       _status (XML_PARSE_OK) {}
 
   void init (const char *encoding = NULL);
@@ -68,6 +66,9 @@ public:
   void end_element (const char *name);
   void found_data (const char *buf, int len);
 
+  virtual ptr<xml_element_t> generate (const char *nm, const char **atts);
+  virtual void v_init ();
+
   ptr<xml_top_level_t> top_level () { return _top_level; }
   ptr<const xml_top_level_t> top_level () const { return _top_level; }
   str errmsg () const;
@@ -75,7 +76,7 @@ public:
 
   void cancel ();
 
-  ~xml_req_parser_t ();
+  virtual ~xml_req_parser_t ();
 
 protected:
   xml_element_t *active_el () { return _stack.back (); }

@@ -6,13 +6,13 @@ okwslib_LTLIBRARIES = libpub.la
 libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 	pub.C xdr.C slave.C  zstr.C okconst.C \
 	pvalw.C jail.C fd_prot.C lbalance.C rpcwindow.C pub2.C clone.C \
-	debug.C stats.C adebug.C
+	debug.C stats.C adebug.C scalar.C
 
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h axprtfd.h \
 	fhash.h fd_prot.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
 	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
-	okws_sfs.h timehash.h okstats.h okformat.h ok_adebug.h
+	okws_sfs.h timehash.h okstats.h okformat.h ok_adebug.h pscalar.h
 
 noinst_HEADERS =  env.mk
 

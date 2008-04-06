@@ -1,0 +1,163 @@
+<OkTest>
+	<OkTestVersion>1.0</OkTestVersion>
+	<Title><![CDATA[The Nonsense Test]]></Title>	
+	<TestId> 12312312 </TestId>
+	<Rating>Teen</Rating>
+	<Category>Knowledge</Category>
+	<Subcategory>Pop Culture</Subcategory>
+	<LanguageCode>en</LanguageCode>
+	<TimeSpentEditing>0</TimeSpentEditing>
+	<CreateTime> 0</CreateTime>
+	<LastEditTime> 0 </LastEditTime>
+	<AboutTheAuthor>
+	  <Name>Chris Coyne</Name>
+	  <Description>
+	   <![CDATA[
+	   	Chris Coyne is a computer programmer by day, but at night he\'s a crazy blind
+	    test author and he\'s been known to ride the mechanical bull.
+	   ]]>
+	  </Description>
+	  <Image>
+	    <Src>http://panther.is1.okcimg.com/users/704/510/7055112809383642671/t965360113.jpg</Src>
+	    <Width>250</Width>
+		<Height>250</Height>
+		<From>Internet</From>
+		<OriginalSrc>http://cnn.com/shit.gif</OriginalSrc>
+	 </Image>
+	</AboutTheAuthor>
+	<Tags>
+		<Tag><![CDATA[Purity]]></Tag>
+		<Tag><![CDATA[introversion]]></Tag>
+		<Tag><![CDATA[dogs]]></Tag>
+		<Tag><![CDATA[dirty dog]]></Tag>
+	</Tags>
+	<Var>
+	  <Name>Purity</Name>
+	  <Description>How pure you are</Description>
+	</Var>
+	<Var>
+	  <Name>Experience</Name>
+	  <Description>How experienced you are</Description>
+	</Var>
+	<Var>
+	  <Name>Sexuality</Name>
+	  <Description>How sexual you are</Description>
+	</Var>
+	<VarScaling>
+	  <Type>Percentage</Type>
+	</VarScaling>
+	<Contents>
+		<ContentItem Type="PageBreak" Id="30">
+			<SubmitButtonText><![CDATA[Onward!]]></SubmitButtonText>
+		</ContentItem>			
+		<ContentItem Type="Image" Id="2342342">
+		 <Src>http://panther.is1.okcimg.com/users/348/108/34910810133136532/mt509085277.jpg</Src>
+		 <Width>400</Width>
+		 <Height>282</Height>
+		 <From>Internet</From>
+		 <OriginalSrc>http://cnn.com/shit.gif</OriginalSrc>
+		</ContentItem>
+		<ContentItem Type="YouTube" Id="25442342">
+		 <Src><![CDATA[<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/T6c-umQ_hlc&rel=1"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/T6c-umQ_hlc&rel=1" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>]]></Src>
+		</ContentItem>				
+		<ContentItem Type="HTMLBlock" Id="10">		
+ 			<![CDATA[Welcome to my test!<br /><img src="http://is0.okcupid.com/23492/2342394.png" />Can you dig it!!!!<b>Dudes.</b>]]>
+		</ContentItem>	
+		<ContentItem Type="QuestionSlider" Id="40">
+			<QuestionText><![CDATA[How much do you like to party?]]></QuestionText>
+			<MinText><![CDATA[Not at all]]></MinText>
+			<MaxText><![CDATA[A lot]]></MaxText>
+			<Key><![CDATA[Slide that bar!]]></Key>
+			<Steps>7</Steps>
+			<AnswerScoring>
+				<VarAffected>Purity</VarAffected>
+				<MinValue>-3</MinValue>
+				<MaxValue>3</MaxValue>
+			</AnswerScoring>
+		</ContentItem>
+	</Contents>
+	<ScoringAdjustment>
+		<Type>GenderRange</Type>
+		<Min>18</Min>
+		<Max>22</Max>
+		<VarAffected>Purity</VarAffected>
+		<Effect>-3</Effect>		
+	</ScoringAdjustment>
+	<ScoringAdjustment>
+		<Type>TestTimerRange</Type>
+		<Min>0</Min>
+		<Max>120</Max>
+		<VarAffected>Purity</VarAffected>
+		<Effect>2</Effect>		
+	</ScoringAdjustment>
+
+	<Results>
+
+		<Result Id="3904892">
+
+			<Requirement Type="GreaterThanValue" Id="64723033">
+				<Var>Purity</Var>
+				<Value>0</Value>
+			</Requirement>
+
+			<Requirement Type="LessThanValue" Id="44123232">
+				<Var>Purity</Var>
+				<Value>20</Value>
+			</Requirement>
+
+			<Requirement Type="GreaterThanVar" Id="2366117459">
+				<Var>Sexuality</Var>
+				<Target>Purity</Target>
+			</Requirement>
+
+			<Requirement Type="LessThanValue" Id="4532">
+				<Var>Sexuality</Var>
+				<Value>20</Value>
+			</Requirement>
+
+			<Image>http://www.stopgeek.com/wp-content/uploads/2007/07/sense.jpg</Image>
+			<Title><![CDATA[The Boy Next Door]]></Title>
+			<Subtitle><![CDATA[You are %{purity}% pure!]]></Subtitle>
+			<Description><![CDATA[
+				
+				You probably have a tendency to eat undercooked foods. People like you feel this way for the same reasons that you wear shiny belts backwards.
+				
+			]]></Description>
+
+		</Result>
+
+		<Result Id="3904945">
+
+			<Requirement Type="GreatestVar" Id="73911904">
+				<Var>Purity</Var>
+			</Requirement>
+
+			<Requirement Type="LessThanValue" Id="6843973">
+				<Var>Sexuality</Var>
+				<Value>0</Value>
+			</Requirement>
+
+			<Image>http://www.innocentenglish.com/funny-pics/lolcats/funny-kitty-invisible-lawnmower.jpg</Image>
+			<Title><![CDATA[The Man Last Window]]></Title>
+			<Subtitle><![CDATA[You are %{purity}% pure!]]></Subtitle>
+			<Description><![CDATA[
+				
+				You are a crazy ass person. Not. You are the Boy Next Door.
+				
+			]]></Description>
+
+		</Result>
+
+		<Result Id="9862345">
+			<Image>http://www.awesomebackgrounds.com/templates/by-default-logo.GIF</Image>
+			<Title><![CDATA[The Default Boy]]></Title>
+			<Subtitle><![CDATA[You are %{default}% default!]]></Subtitle>
+			<Description><![CDATA[
+				
+				You are the default boy!  
+				
+			]]></Description>
+		</Result>
+
+	</Results>
+</OkTest>

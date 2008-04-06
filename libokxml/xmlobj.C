@@ -143,3 +143,49 @@ xml_obj_base_t::xml_typename (bool coerce) const
 	       el()->xml_typename ()) :
 	      "unknown"); 
 }
+
+
+//=======================================================================
+
+xml_gobj_t
+xml_gobj_t::operator[] (size_t i) const
+{
+  if (!_v || i >= _v->size ()) {
+    if (_obj && i == 0) {
+      return xml_gobj_t ((*_v)[0], NULL);
+    } else {
+      return xml_gobj_t ();
+    }
+  } else {
+    return xml_gobj_t ((*_v)[i], NULL);
+  }
+}
+
+ptr<const xml_generic_t> 
+xml_gobj_t::obj () const
+{
+  if (_obj) return _obj;
+  else if (_v && _v->size ()) return ((*_v)[0]);
+  else return xml_generic_t::alloc_null ();
+}
+
+xml_gobj_t
+xml_gobj_t::operator() (const str &k) const
+{
+  const ptr<vec<ptr<xml_generic_t> > > *v = obj ()->lookup (k);
+  if (v) { return xml_gobj_t (NULL, *v); }
+  else { return xml_gobj_t (); }
+}
+
+size_t
+xml_gobj_t::len () const
+{
+  if (!_v) return 0;
+  else return _v->size ();
+}
+
+xml_gobj_t::xml_gobj_t (ptr<const xml_element_t> x)
+  : _obj (x->to_xml_generic () ? x->to_xml_generic () : 
+	  xml_generic_t::alloc_null ()) {}
+
+//=======================================================================
