@@ -1,0 +1,408 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas.microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=us-ascii">
+<meta name=Generator content="Microsoft Word 12 (filtered medium)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";}
+a:link, span.MsoHyperlink
+	{mso-style-priority:99;
+	color:blue;
+	text-decoration:underline;}
+a:visited, span.MsoHyperlinkFollowed
+	{mso-style-priority:99;
+	color:purple;
+	text-decoration:underline;}
+p.MsoListParagraph, li.MsoListParagraph, div.MsoListParagraph
+	{mso-style-priority:34;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";}
+span.EmailStyle17
+	{mso-style-type:personal-compose;
+	font-family:"Calibri","sans-serif";
+	color:windowtext;}
+.MsoChpDefault
+	{mso-style-type:export-only;}
+@page Section1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.Section1
+	{page:Section1;}
+ /* List Definitions */
+ @list l0
+	{mso-list-id:68769991;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1808524054 -288095500 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l0:level1
+	{mso-level-tab-stop:none;
+	mso-level-number-position:left;
+	margin-left:.75in;
+	text-indent:-.25in;}
+@list l1
+	{mso-list-id:345983701;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1465318292 67698703 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l1:level1
+	{mso-level-tab-stop:none;
+	mso-level-number-position:left;
+	text-indent:-.25in;}
+@list l2
+	{mso-list-id:353504273;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1862735660 67698703 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l2:level1
+	{mso-level-tab-stop:none;
+	mso-level-number-position:left;
+	text-indent:-.25in;}
+@list l3
+	{mso-list-id:384448747;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1935422108 575416638 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l3:level1
+	{mso-level-tab-stop:none;
+	mso-level-number-position:left;
+	margin-left:.75in;
+	text-indent:-.25in;}
+@list l4
+	{mso-list-id:1575235332;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1541334186 67698703 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l4:level1
+	{mso-level-tab-stop:none;
+	mso-level-number-position:left;
+	text-indent:-.25in;}
+ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+<!--[if gte mso 9]><xml>
+ <o:shapedefaults v:ext="edit" spidmax="1026" />
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <o:shapelayout v:ext="edit">
+  <o:idmap v:ext="edit" data="1" />
+ </o:shapelayout></xml><![endif]-->
+</head>
+
+<body lang=EN-US link=blue vlink=purple>
+
+<div class=Section1>
+
+<p class=MsoNormal>Hey Max,<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>I&#8217;ve been sitting on some pub improvement requests for
+a while now, and I&#8217;m wondering if any of these are easy, and if you have
+any time to add them. We&#8217;re about to start this redesign and it could be
+a good time to start using them.<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>So, here are the ideas:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>#1: switching notation: easier ways to group keys (list and
+numerical):<o:p></o:p></p>
+
+<p class=MsoNormal>---------------------------------------------------<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!--#switch(age),([0,17],&#8221;minor.html&#8221;),(,&#8221;you_got_drafted.html&#8221;)--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!--#switch(celcius),([-273,1], {{Roads may be slippery}}),()--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!--#switch(lang_code),<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp; (&#8220;jp&#8221;,&#8221;he&#8221;, {{ Your
+character set scares us}})<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp; (&#8220;fr&#8221;, &#8220;es&#8221;,&#8221;de&#8221;,
+{{ You&#8217;re a European. }}),<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp; (,)<o:p></o:p></p>
+
+<p class=MsoNormal>--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>#2: switching on regular expression matches<o:p></o:p></p>
+
+<p class=MsoNormal>---------------------------------------------------------------------------------<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!--#switch(location_name),<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp; (/New York/, {{ You&#8217;re a New Yorker! }})<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp; &nbsp;(,{{ Sorry. }})--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!--#switch(screenname),<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp;(/_taco/, {{ Hey ${screenname}, are you crunchy or
+soft? }})<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp;(,)--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>#3 pub-level escaping<o:p></o:p></p>
+
+<p class=MsoNormal>---------------------------------------------------------------------------------<o:p></o:p></p>
+
+<p class=MsoNormal>Maybe pub could start doing this? Websrvs can but it might
+be nice to make it pub-possible, then we don&#8217;t have to have different
+vars pubbed by the same service to offer AJAX and regular and URLS, etc.<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;script&gt;<o:p></o:p></p>
+
+<p class=MsoNormal>// essay with line breaks and quotes escaped<o:p></o:p></p>
+
+<p class=MsoNormal>var result = &#8220;${essay:JS}&#8221;<o:p></o:p></p>
+
+<p class=MsoNormal>&lt;/script&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!-- URL encoded --&gt;<o:p></o:p></p>
+
+<p class=MsoNormal>&lt;a href=&#8221;test/${testname:url}/take&#8221;&gt;Take
+that test&lt;/a&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;input type=&#8221;text&#8221; name=&#8221;search&#8221;
+value=&#8221;${search:htmltag}&#8221; /&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Etc.<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>#4: Probably the most important&#8230;.pub comments (that
+can be used for translation tagging)<o:p></o:p></p>
+
+<p class=MsoNormal>---------------------------------------------------------------------------------<o:p></o:p></p>
+
+<p class=MsoNormal>My hack solution for translation tagging:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='text-indent:.5in'>&lt;!--t[translate this crap]--&gt;You
+are a tosser&lt;!--/t--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>It has a bunch of problems:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>1.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>We can&#8217;t use them inside plaintext files like
+e-mails to users<o:p></o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>2.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>We can&#8217;t put them inside OKWS directives like set
+statements or switch statements (Except inside {{}})<o:p></o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>3.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>We can&#8217;t HTML comment out a region that contains
+translation tags, or we&#8217;ll break the page. Because you can&#8217;t nest
+HTML comments.<o:p></o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>4.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>It&#8217;s typo prone and somewhat hard to read<o:p></o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>5.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>It requires more typing than a good solution<o:p></o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>6.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>Our translation notes end up visible to the user in
+view-source unless we have whitespace stripping turned on<o:p></o:p></p>
+
+<p class=MsoListParagraph style='text-indent:-.25in;mso-list:l2 level1 lfo1'><![if !supportLists]><span
+style='mso-list:Ignore'>7.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]>We can&#8217;t embed the tags inside HTML tags. This is
+rough as the following common code demonstrates:<o:p></o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'>&lt;!--t[Please translate the word &#8220;Go&#8221;]--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'>&lt;input type=&#8221;submit&#8221;
+id = &#8220;sub&#8221; name = &#8220;sub&#8221; value=&#8221;Go&#8221;&gt;<o:p></o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'>&lt;!--/t--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>I propose we have some syntax for pub comments that&#8217;s
+super simple and designed from the beginning for translation tagging.<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Double square brackets are stripped from pub.<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='text-indent:.5in'>[[Hello world &lt;!--#include(&#8220;a.html&#8221;)--&gt;]]<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Is exactly the same as:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Hello
+world &lt;!--#include(&#8220;a.html&#8221;)--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Except for anything enclosed in pounds inside them:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [[
+#This is a private note# This is public. ]]<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>So that Is identical to:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; This
+is public.<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>What does this allow us to do? Illustrating with examples:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>First, internal comments are easy and don&#8217;t break HTML
+comments and can exist inside okws directives. <o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='text-indent:.5in'>[[# Adam and Peter: this file is so
+cool. Great job. This ${var} won&#8217;t be pubbed here. #]] <o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Second, simple double brackets will be the new t-tag in my
+editor. Translators will see them, unless the entire comments are pounded out (like
+in the above example):<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'>[[Hey ${screenname}, welcome back!]]<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Even better, finally we can do this:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='text-indent:.5in'>&lt;input type=&#8221;submit&#8221;
+value=&#8221;[[# This is the text on a submit button # Go]]&#8221;&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>And, here&#8217;s another thing. Set statements are
+impossible to deal with with the old t-tags. Check this out the new way<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>&lt;!--#set({<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp; hour_24 =&gt; [[# set to 1 if your time is shown in
+24 hour format # 0 ]],<o:p></o:p></p>
+
+<p class=MsoNormal>&nbsp; site_title =&gt; &#8220;[[# This sets the title of
+the user&#8217;s window # OkCupid America! ]]&#8221;<o:p></o:p></p>
+
+<p class=MsoNormal>})--&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Final notes on this:<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoListParagraph style='margin-left:.75in;text-indent:-.25in;
+mso-list:l0 level1 lfo5'><![if !supportLists]><span style='mso-list:Ignore'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]>There
+would have to be a way to escape [[ and ]] into a page without dropping them. <o:p></o:p></p>
+
+<p class=MsoListParagraph style='margin-left:.75in;text-indent:-.25in;
+mso-list:l0 level1 lfo5'><![if !supportLists]><span style='mso-list:Ignore'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]>Leading
+and trailing whitespace inside a [[ and ]] region should be dropped, so that
+this outputs:<o:p></o:p></p>
+
+<p class=MsoNormal style='margin-left:.5in'><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-left:.75in'>&lt;input type=&#8221;submit&#8221;
+value=&#8221;[[# comment # Go ]]&#8221; /&gt;<o:p></o:p></p>
+
+<p class=MsoNormal style='margin-left:.75in'><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-left:.75in'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;input
+type=&#8221;submit&#8221; value=&#8221;Go&#8221; /&gt;<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>Thoughts on all this?<o:p></o:p></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal>cc<o:p></o:p></p>
+
+</div>
+
+</body>
+
+</html>

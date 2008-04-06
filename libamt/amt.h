@@ -28,6 +28,7 @@
 #include "lbalance.h"
 #include "txa.h"
 #include "litetime.h"
+#include "pubutil.h"
 
 #ifdef HAVE_CLONE
 # include <sched.h>
@@ -70,6 +71,7 @@
     strbuf b; \
     b << progname << "[" << tid << "]: " << x << "\n"; \
     str s = b; \
+    fix_trailing_newlines (&s);	       \
     fprintf (stderr, "%s", s.cstr ()); \
   } while (0)
 

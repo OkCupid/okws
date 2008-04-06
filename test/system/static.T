@@ -123,6 +123,10 @@ okclnt_static_t::process_T ()
     write (1, test, strlen (test));
   }
 
+  if (cgi.blookup ("wss")) {
+    opts |= P_WSS;
+  }
+
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
   in = hdr.get_target ();

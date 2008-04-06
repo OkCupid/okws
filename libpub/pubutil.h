@@ -229,5 +229,6 @@ void strip_comments (vec<str> *in);
 
 
 str trunc_at_first_null (const str &s);
+void fix_trailing_newlines (str *s);
 
 #endif /* _LIBPUB_PUBUTIL_H */
