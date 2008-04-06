@@ -200,4 +200,64 @@ public:
 
 typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
 
+//-----------------------------------------------------------------------
+
+// An xml generic object
+class xml_gobj_t {
+public:
+  xml_gobj_t (ptr<const xml_element_t> el);
+  xml_gobj_t () : _obj (xml_generic_t::alloc_null ()) {}
+
+  xml_gobj_t operator[] (size_t s) const;
+  xml_gobj_t operator() (const str &k) const;
+  size_t len () const;
+  str tagname () const { return obj ()->tagname (); }
+  const xml_attributes_t &attributes () const { return obj ()->attributes (); }
+  scalar_obj_t attribute (const str &k) const { return obj ()->attribute (k); }
+  bool is_null () const { return obj ()->is_null (); }
+  scalar_obj_t cdata () const { return obj ()->cdata (); }
+
+  friend class xml_gobj_key_iterator_t;
+  friend class xml_gobj_item_iterator_t;
+private:
+
+  xml_gobj_t (ptr<const xml_generic_t> g,
+	      ptr<const vec<ptr<xml_generic_t> > > v)
+    : _obj (g), _v (v) {}
+  ptr<const xml_generic_t> obj () const;
+
+  ptr<const xml_generic_t> _obj;
+  ptr<const vec<ptr<xml_generic_t> > > _v;
+};
+
+class xml_gobj_key_iterator_t {
+public:
+  xml_gobj_key_iterator_t (xml_gobj_t o) : _it (o.obj ()) {}
+  str next (xml_gobj_t *v = NULL)
+  {
+    ptr<vec<ptr<xml_generic_t> > > p;
+    str k = _it.next (&p);
+    if (k && v) *v = xml_gobj_t (NULL, p);
+    return k;
+  }
+private:
+  xml_generic_key_iterator_t _it;
+};
+
+class xml_gobj_item_iterator_t {
+public:
+  xml_gobj_item_iterator_t (xml_gobj_t o) : _it (o.obj ()) {}
+  bool next (xml_gobj_t *n = NULL)
+  {
+    ptr<const xml_generic_t> g = _it.next ();
+    if (g && n) *n = xml_gobj_t (g, NULL);
+    return g;
+  }
+private:
+  xml_generic_item_iterator_t _it;
+};
+
+
+//-----------------------------------------------------------------------
+
 #endif /* _LIBAHTTP_OKXMLOBJ_H */

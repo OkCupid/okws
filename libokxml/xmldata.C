@@ -391,12 +391,12 @@ xml_element_t::dump (zbuf &b, int lev) const
 {
   if (xml_typename ()) {
     spaces (b, lev);
-    b << "<" << xml_typename () << ">";
-    if (!gets_char_data ()) b << "\n";
+    b << "<" << dump_typename () << ">";
+    if (!has_char_data ()) b << "\n";
   }
   dump_data (b, lev + 1);
   if (xml_typename ()) {
-    if (!gets_char_data ())
+    if (!has_char_data ())
       spaces (b, lev);
     b << "</" << xml_typename () << ">\n";
   }
@@ -845,3 +845,190 @@ xml_top_level_t::can_contain (ptr<xml_element_t> e) const
 const char *
 xml_value_t::xml_typename_coerce () const
 { return _e ? _e->xml_typename_coerce () : "unbound value"; }
+
+
+//=======================================================================
+//-----------------------------------------------------------------------
+// Generic data types (not for XML-RPC)
+
+xml_attributes_t::xml_attributes_t (const char **atts)
+{
+  for (const char **p = atts; p && *p; p += 2) {
+    _t.insert (str (p[0]), scalar_obj_t (p[1]));
+  }
+}
+
+scalar_obj_t _null_so;
+
+scalar_obj_t
+xml_attributes_t::lookup (const str &k) const
+{
+  const scalar_obj_t *o = _t[k];
+
+  if (o) { return *o; }
+  else { return _null_so; }
+}
+
+bool
+xml_attributes_t::lookup (const str &k, scalar_obj_t *op) const
+{
+  const scalar_obj_t *o = _t[k];
+  if (o) { *op = *o; }
+  return (o != NULL);
+}
+
+bool
+xml_generic_t::add (ptr<xml_element_t> e)
+{
+  bool ret = true;
+  ptr<xml_generic_t> g;
+  if ((g = e->to_xml_generic ())) {
+    str n = g->tagname ();
+    ptr<vec<ptr<xml_generic_t> > > *vp = _tab[n];
+    ptr<vec<ptr<xml_generic_t> > > v;
+    if (vp) {
+      v = *vp;
+    } else {
+      v = New refcounted<vec<ptr<xml_generic_t> > > ();
+      _tab.insert (n, v);
+    }
+    v->push_back (g);
+  } else {
+    ret = false;
+  }
+  return ret;
+}
+
+ptr<xml_generic_t> xml_generic_t::_null_generic;
+
+ptr<const xml_generic_t>
+xml_generic_t::alloc_null()
+{
+  if (!_null_generic) {
+    const char **p = NULL;
+    _null_generic = New refcounted<xml_generic_t> ("NULL", p);
+  }
+  return _null_generic;
+}
+
+const char *
+xml_generic_t::xml_typename () const 
+{
+  if (_class) return _class.cstr ();
+  else return NULL;
+}
+
+bool
+xml_generic_t::is_a (const char *t) const
+{
+  const char *me = xml_typename ();
+  return me && t && strcmp (me, t) == 0;
+}
+
+bool
+xml_generic_t::close_tag () 
+{
+  if (_buf) {
+    _so = scalar_obj_t (*_buf);
+  }
+  return true;
+}
+
+bool
+xml_generic_t::add (const char *s, int l)
+{
+  if (!_buf) {
+    int i;
+    // if all spaces, then don't add new chardata.
+    for (i = 0; i < l && isspace (s[i]); i++) ;
+    if (i == l) return true;
+  }
+  if (!_buf) _buf = New refcounted<strbuf> ();
+  _buf->tosuio ()->copy (s, l);
+  return true;
+}
+
+void 
+xml_generic_t::dump_data (zbuf &b, int lev) const
+{
+  xml_generic_item_iterator_t i (mkref (this));
+  ptr<const xml_generic_t> e;
+
+  scalar_obj_t o = _so;
+  if (!_so.is_null ()) {
+    b << _so.to_str ();
+  }
+  
+  while ((e = i.next ())) { e->dump (b, lev + 1); }
+}
+
+ptr<const xml_generic_t>
+xml_generic_item_iterator_t::next ()
+{
+  ptr<const xml_generic_t> r;
+  if (!_eof && (!_v || _i >= _v->size ())) {
+    _v = NULL;
+    _i = 0;
+    if (!_it.next (&_v)) _eof = true;
+    else assert (_v->size () > 0);
+  }
+  if (_v) r = (*_v)[_i++];
+  return r;
+}
+
+str
+xml_attributes_t::to_str () const
+{
+  strbuf b;
+  qhash_const_iterator_t<str, scalar_obj_t> it (_t);
+  const str *k;
+  scalar_obj_t v;
+  bool first = true;
+  vec<str> s;
+  while ((k = it.next (&v))) {
+    if (!first) b << " ";
+    else first = false;
+    s.push_back (v.to_str ());
+    b << *k << "=\"" << s.back () << "\"";
+  }
+  return b;
+}
+
+str
+xml_generic_t::dump_typename () const
+{
+  strbuf b;
+  b << xml_typename ();
+  str a = attributes ().to_str ();
+  if (a && a.len () > 0) {
+    b << " " << a;
+  }
+  return b;
+}
+
+bool xml_generic_t::has_char_data () const { return !_so.is_null (); } 
+
+
+str
+scalar_obj_t::trim () const
+{
+  str s = to_str ();
+  if (s.len () == 0) return s;
+  const char *bp = s.cstr ();
+  size_t len = s.len ();
+  const char *ep = bp + len;
+  size_t i = 0;
+
+  for ( i = 0; i < len && isspace (bp[i]); i++);
+  if (i == len) return "";
+  bp += i;
+
+  for ( ep --; isspace (*ep) && ep > bp; ep --) ;
+  ep ++;
+
+  return str (bp, ep - bp);
+}
+
+
+//-----------------------------------------------------------------------
+//=======================================================================

@@ -110,10 +110,16 @@ xml_req_parser_t::~xml_req_parser_t ()
 
 xml_tagtab_t xmltab;
 
+ptr<xml_element_t>
+xml_req_parser_t::generate (const char *nm, const char **atts)
+{
+  return xmltab.generate (nm);
+}
+
 void
 xml_req_parser_t::start_element (const char *nm, const char **atts)
 {
-  ptr<xml_element_t> el = xmltab.generate (nm);
+  ptr<xml_element_t> el = generate (nm, atts);
   if (el) {
     if (active_el ()->add (el)) {
       push_el (el);
@@ -183,12 +189,19 @@ void
 xml_req_parser_t::init (const char *encoding)
 {
   assert (!_xml_parser_init);
+  v_init ();
   _xml_parser_init = true;
   _xml_parser = XML_ParserCreate (encoding);
   XML_SetUserData (_xml_parser, this);
   XML_SetElementHandler (_xml_parser, start_element_handler, 
 			 end_element_handler);
   XML_SetCharacterDataHandler (_xml_parser, character_data_handler);
+}
+
+void
+xml_req_parser_t::v_init ()
+{
+  _top_level = New refcounted<xml_top_level_t> ();
   push_el (_top_level);
 }
 

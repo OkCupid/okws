@@ -30,6 +30,7 @@
 #include "zstr.h"
 #include "smartvec.h"
 #include "okws_sfs.h"
+#include "pscalar.h"
 
 class xml_struct_t;
 class xml_array_t;
@@ -50,6 +51,7 @@ class xml_method_name_t;
 class xml_method_response_t;
 class xml_container_t;
 class xml_fault_t;
+class xml_generic_t;
 
 typedef enum { XML_NONE = 0,
 	       XML_INT = 1,
@@ -96,6 +98,8 @@ public:
   virtual ptr<const xml_fault_t> to_xml_fault () const { return NULL; }
   virtual ptr<const xml_method_response_t> to_xml_method_response () const 
   { return NULL; }
+  virtual ptr<xml_generic_t> to_xml_generic () { return NULL; }
+  virtual ptr<const xml_generic_t> to_xml_generic () const { return NULL; }
 
   virtual bool put (const str &s, ptr<xml_element_t> el) { return false; }
   virtual bool put (size_t i, ptr<xml_element_t> el) { return false; }
@@ -134,6 +138,7 @@ public:
   virtual ptr<xml_element_t> generate (const char *) const
   { return New refcounted<xml_element_t> (); }
   virtual const char *xml_typename () const { return NULL; }
+  virtual str dump_typename () const { return xml_typename (); }
   virtual const char *xml_typename_coerce () const { return xml_typename (); }
   
   // used during parsing
@@ -142,6 +147,7 @@ public:
 
   virtual bool add (const char *buf, int len) { return false; }
   virtual bool gets_char_data () const { return false; }
+  virtual bool has_char_data () const { return gets_char_data (); }
   virtual bool add (ptr<xml_element_t> e) { return false; }
   virtual bool close_tag () { return true; }
 };
@@ -769,6 +775,114 @@ private:
 };
 
 bool has_non_ws (const char *buf, int len);
+
+
+//-----------------------------------------------------------------------
+
+// Stuff for generic (non XML-RPC) XML
+
+class xml_attributes_t {
+public:
+  xml_attributes_t (const char **atts);
+  scalar_obj_t operator[] (const str &k) const { return lookup (k); }
+  scalar_obj_t lookup (const str &k) const;
+  bool lookup (const str &k, scalar_obj_t *so) const;
+  str to_str () const;
+
+  friend class xml_attribute_iterator_t;
+private:
+  qhash<str, scalar_obj_t> _t;
+};
+
+template<class V>
+class key_iterator_t {
+public:
+  key_iterator_t (const qhash<str, V> &x) : _it (x) {}
+  str next (V *v = NULL)
+  {
+    const str *k = _it.next (v);
+    if (k) return *k;
+    return NULL;
+  }
+private:
+  qhash_const_iterator_t<str, V> _it;
+};
+
+class xml_attribute_iterator_t : public key_iterator_t<scalar_obj_t> {
+public:
+  xml_attribute_iterator_t (const xml_attributes_t &x) : 
+    key_iterator_t<scalar_obj_t> (x._t) {}
+};
+
+class xml_generic_t : public xml_element_t {
+public:
+  xml_generic_t (const char *n, const char **atts) : 
+    xml_element_t (), _class (n), _atts (atts) {}
+
+  bool add (ptr<xml_element_t> e);
+
+  const ptr<vec<ptr<xml_generic_t> > > *lookup (const str &k) const
+  { return _tab[k]; }
+
+  ptr<xml_generic_t> to_xml_generic () { return mkref (this); }
+  ptr<const xml_generic_t> to_xml_generic () const 
+  { return mkref (const_cast<xml_generic_t *> (this)); }
+
+  const xml_attributes_t &attributes () const { return _atts; }
+  scalar_obj_t attribute (const str &k) const { return _atts[k]; }
+  str tagname () const { return _class; }
+
+  static ptr<const xml_generic_t> alloc_null ();
+  bool is_null () const { return !_class; }
+
+  const char *xml_typename () const;
+  bool is_a (const char *t) const;
+  bool close_tag () ;
+  bool gets_char_data () const { return true; }
+  bool has_char_data () const ;
+  bool add (const char *c, int l);
+  str dump_typename () const;
+
+  void dump_data (zbuf &b, int lev) const;
+
+  scalar_obj_t cdata () const { return _so; }
+
+  friend class xml_generic_item_iterator_t;
+  friend class xml_generic_key_iterator_t;
+
+protected:
+  static ptr<xml_generic_t> _null_generic;
+  str _class;
+  xml_attributes_t _atts;
+  qhash<str, ptr<vec<ptr<xml_generic_t> > > > _tab;
+  scalar_obj_t _so;
+  ptr<strbuf> _buf;
+};
+
+typedef ptr<vec<ptr<xml_generic_t> > > gvecp_t;
+
+class xml_generic_item_iterator_t {
+public:
+  xml_generic_item_iterator_t (ptr<const xml_generic_t> o)
+    : _obj (o), _it (o->_tab), _i (0), _eof (false) {}
+  ptr<const xml_generic_t> next ();
+
+private:
+  ptr<const xml_generic_t> _obj;
+  qhash_const_iterator_t<str, gvecp_t> _it;
+  size_t _i;
+  gvecp_t _v;
+  bool _eof;
+};
+
+class xml_generic_key_iterator_t : public key_iterator_t<gvecp_t> {
+public:
+  xml_generic_key_iterator_t (ptr<const xml_generic_t> o) 
+    : key_iterator_t<gvecp_t> (o->_tab) {}
+};
+
+
+//-----------------------------------------------------------------------
 
 
 
