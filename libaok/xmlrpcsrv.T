@@ -106,6 +106,8 @@ oksrvc_xmlrpc_base_t::do_debug (ptr<const xml_element_t> el,
 	el->dump_to_python (b);
 	b << "\n";
       }
+    } else {
+      b << "\n";
     }
     b.tosuio ()->output (2);
   }
