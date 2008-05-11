@@ -95,8 +95,8 @@ extern const char *ok_pubobjname;
 //
 // http constants
 //
-extern char *ok_http_urlencoded;
-extern char *ok_http_multipart;
+extern const char *ok_http_urlencoded;
+extern const char *ok_http_multipart;
 
 //
 // configfile constants

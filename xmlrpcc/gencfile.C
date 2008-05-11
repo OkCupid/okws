@@ -312,7 +312,7 @@ print_enum (const rpc_enum *s)
     "int recdepth,\n"
     "           const char *name, const char *prefix)\n"
     "{\n"
-    "  char *p;\n"
+    "  const char *p;\n"
     "  switch (obj) {\n";
   for (const rpc_const *cp = s->tags.base (),
 	 *ep = s->tags.lim (); cp < ep; cp++)

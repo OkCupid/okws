@@ -188,10 +188,10 @@ namespace ok {
     int ret = -1;
 #ifdef PATH_LOGGER
     if (!tag) tag = "";
-    char *av[] = { PATH_LOGGER, "-p", 
-		   const_cast<char *> (priority.cstr ()), 
-		   "-t", 
-		   const_cast<char *> (tag.cstr ()), NULL };
+    const char *av[] = { PATH_LOGGER, "-p", 
+			 priority.cstr (), 
+			 "-t", 
+			 tag.cstr (), NULL };
     int fds[2];
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) < 0) 
       fatal ("socketpair: %m\n");

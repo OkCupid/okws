@@ -59,8 +59,8 @@ rpcprog (const rpc_program *rp, const rpc_vers *rv)
   return name << "_" << rv->val;
 }
 
-pid_t
-runcpp (char **argv)
+static pid_t
+runcpp (const char *const* argv)
 {
   pid_t pid;
   int fds[2];
@@ -78,7 +78,7 @@ runcpp (char **argv)
       dup2 (fds[1], 1);
       close (fds[1]);
     }
-    execv (PATH_CPP, argv);
+    execv (PATH_CPP, const_cast<char *const *> (argv));
     fatal ("%s: %m\n", PATH_CPP);
   }
 
@@ -164,7 +164,7 @@ main (int argc, char **argv)
 {
   enum { BAD, HEADER, CFILE } mode = BAD;
   pid_t child;
-  vec<char *> av;
+  vec<const char *> av;
   char *fname = NULL;
   char *basename;
   void (*fn) (str) = NULL;
