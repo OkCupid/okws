@@ -46,7 +46,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
     overflow_flag (false), ss (global_syscall_stats),
     sin_alloced (s != NULL),
-    _timed_out (false),
+    _timed_out (false), _no_more_read (false),
     destroyed_p (New refcounted<bool> (false))
 {
   //
@@ -284,13 +284,34 @@ ahttpcon::spacecb ()
 bool
 ahttpcon::enable_selread ()
 {
-  if (fd < 0)
+  if (fd < 0 || _no_more_read)
     return false;
   if (!rcbset) {
     fdcb (fd, selread, wrap (this, &ahttpcon::input));
     rcbset = true;
   }
   return true;
+}
+
+void
+ahttpcon::stop_read ()
+{
+#define BUFSZ 65000
+  if (!_no_more_read && fd >= 0)  {
+    _no_more_read = true;
+    disable_selread ();
+
+    shutdown (fd, SHUT_RD);
+    warn << "trying 1-way shutdown!\n";
+
+    char buf[BUFSZ];
+    ssize_t rc;
+    while ((rc = read (fd, buf, BUFSZ)) > 0) {
+      //warn << "read " << rc << " bytes\n";
+    }
+    //warn << "end read loop: " << rc << "\n";
+  }
+#undef BUFSZ
 }
 
 void

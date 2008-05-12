@@ -102,6 +102,10 @@ cbi::ptr
 http_parser_full_t::prepare_post_parse (int status)
 {
   if (hdr.contlen > int (ok_reqsize_limit)) {
+    warn << "Header warns of upload too big (" 
+	 << hdr.contlen << "b vs. " << ok_reqsize_limit << "b); "
+	 << "aborting!\n";
+    /* get_x ()->stop_read (); */
     finish (HTTP_NOT_ALLOWED);
     return NULL;
   } else if (hdr.contlen < 0)
