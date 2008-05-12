@@ -55,6 +55,7 @@ make_resp ()
 static void
 fiddle_with_send (int fd)
 {
+  if (0) {
   int opt = 1;
   size_t optlen = sizeof (opt);
   int rc = getsockopt (fd, SOL_SOCKET, SO_SNDLOWAT, &opt, &optlen);
@@ -69,7 +70,17 @@ fiddle_with_send (int fd)
   if (rc <0) {
     warn ("setsockopt: %m\n");
   }
-}
+  }
+
+  shutdown (fd, SHUT_RD);
+  warn << "trying 1-way shutdown!\n";
+
+  char buf[BUFSZ];
+  ssize_t rc;
+  while ((rc = read (fd, buf, BUFSZ)) > 0) {}
+  warn << "done read flush; rc=" << rc << "\n";
+
+}  
 
 tamed static void
 handle_one (int fd, evv_t ev)
