@@ -24,6 +24,7 @@ Service		configtest 	/configtest
 Service		simple	/simple
 Service		form	/form
 Service 	cookie /cookie
+Service		upload /upload
 
 SyslogLevels	emerg alert crit info warning debug err notice
 
