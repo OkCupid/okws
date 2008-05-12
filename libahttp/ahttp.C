@@ -46,7 +46,9 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
     overflow_flag (false), ss (global_syscall_stats),
     sin_alloced (s != NULL),
-    _timed_out (false), _no_more_read (false),
+    _timed_out (false), 
+    _no_more_read (false),
+    _delayed_close (false),
     destroyed_p (New refcounted<bool> (false))
 {
   //
@@ -230,12 +232,29 @@ ahttpcon::~ahttpcon ()
 }
 
 void
+ahttpcon::short_circuit_output ()
+{
+  _delayed_close = true;
+}
+
+static void
+void_close (int fd)
+{
+  warn << "delayed close; fd=" << fd << "\n";
+  (void)close (fd);
+}
+
+void
 ahttpcon::fail (int s)
 {
   if (fd >= 0) {
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
-    close (fd);
+    if (_delayed_close) {
+      delaycb (1, 0, wrap (void_close, fd));
+    } else {
+      close (fd);
+    }
   }
   fd = -1;
   if (!destroyed) {

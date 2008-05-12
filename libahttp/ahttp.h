@@ -117,6 +117,7 @@ public:
   void set_drained_cb (cbv::ptr cb);
   void cancel () { fail (HTTP_CLIENT_EOF); }
   void stop_read ();
+  void short_circuit_output ();
   
   const time_t start;
 
@@ -155,6 +156,7 @@ protected:
   ptr<cbv_countdown_t> cbcd;
   bool _timed_out;
   bool _no_more_read;
+  bool _delayed_close;
 
 public:
   ptr<bool> destroyed_p;
