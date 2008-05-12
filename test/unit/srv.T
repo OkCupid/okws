@@ -91,6 +91,7 @@ handle_one (int fd, evv_t ev)
     str s;
   }
   make_async (fd);
+  tcp_nodelay (fd);
 
   do {
     twait { tame::waitread (fd, mkevent ()); }
@@ -99,7 +100,7 @@ handle_one (int fd, evv_t ev)
   } while (0);
   warn << "done reading!\n";
   s = make_resp ();
-  fiddle_with_send (fd);
+  //fiddle_with_send (fd);
   rc = write (fd, s.cstr (), s.len ());
   warn << "Wrote " << rc << " bytes\n";
   close (fd);
