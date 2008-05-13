@@ -59,6 +59,8 @@ public:
   ptr<ahttpcon> get_x () const { return _parser_x; }
   abuf_t *get_abuf_p () { return &abuf; }
 
+  void short_circuit_output ();
+
   void parse (cbi cb);
 protected:
   virtual void v_parse_cb1 (int status) { finish (status); }

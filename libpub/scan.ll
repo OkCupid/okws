@@ -13,7 +13,7 @@ static void end_PSTR ();
 static void begin_STR (int i, int j);
 static int  end_STR ();
 static int addch (int c1, int c2);
-static int addstr (char *c, int l);
+static int addstr (const char *c, int l);
 static void nlcount (int m = 0);
 static void eos_plinc ();
 
@@ -409,7 +409,7 @@ addch (int c1, int c2)
 }
 
 int
-addstr (char *s, int l)
+addstr (const char *s, int l)
 {
   if (sbi + l >= YY_STR_BUFLEN - 1)
     return yyerror ("string buffer overflow");
@@ -500,7 +500,8 @@ void
 gcc_hack_use_static_functions ()
 {
   assert (false);
-  yyunput (yy_top_state (), "hello");
+  char buf[2];
+  yyunput (yy_top_state (), buf);
 }
 
 

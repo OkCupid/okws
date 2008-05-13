@@ -89,8 +89,8 @@ u_int ok_axprt_ps = 0x1000000;   // 16MB -- big for now
 //
 // http constants
 //
-char *ok_http_urlencoded = "application/x-www-form-urlencoded";
-char *ok_http_multipart  = "multipart/form-data";
+const char *ok_http_urlencoded = "application/x-www-form-urlencoded";
+const char *ok_http_multipart  = "multipart/form-data";
 
 //
 // timeouts

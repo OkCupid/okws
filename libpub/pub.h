@@ -308,14 +308,7 @@ public:
   aarr_t &add (const str &n, ptr<zbuf> zb);
   aarr_t &add (const str &n, const strbuf &b) { return add (n, str (b)); }
 
-  template<class T>
-  aarr_t &add (const str &n, T i) {
-    strbuf b;
-    b << i;
-    add (New nvpair_t (n, New refcounted<pstr_t> (b)));
-    return (*this);
-  }
-
+  template<class T> aarr_t &add (const str &n, T i);
   aarr_t &operator= (const aarr_t &in)
   {
     aar.copy (in.aar);
@@ -1882,6 +1875,15 @@ pub_config_iface_t::cfg (const str &n, T *v) const
 {
   str s;
   return (cfg (n, &s) && convertint (s, v));
+}
+
+template<class T> aarr_t &
+aarr_t::add (const str &n, T i)
+{
+  strbuf b;
+  b << i;
+  add (New nvpair_t (n, New refcounted<pstr_t> (b)));
+  return (*this);
 }
 
 const char * getenvval (const char *s);

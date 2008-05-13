@@ -21,6 +21,8 @@ xmltst3.o:  xmltst3.C
 xmltst3.lo:  xmltst3.C
 xmltst4.o:  xmltst4.C
 xmltst4.lo:  xmltst4.C
+srv.o:		srv.C
+srv.lo:		srv.T
 
 else
 XMLPROGS =
@@ -31,11 +33,13 @@ okwc1tst.lo:	okwc1tst.C
 pubmemtst.o:	pubmemtst.C
 pubmemtst.lo: 	pubmemtst.C
 
-TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T pubmemtst.T xmltst3.T xmltst4.T
-TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C xmltst3.C xmltst4.C
+TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T pubmemtst.T xmltst3.T xmltst4.T \
+	srv.T
+TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C xmltst3.C xmltst4.C \
+	srv.C
 
 noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst \
-	gz
+	gz srv
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
@@ -43,6 +47,7 @@ xmltst2_SOURCES = xmltst2.C
 okwc1tst_SOURCES = okwc1tst.C
 pubmemtst_SOURCES = pubmemtst.C
 gz_SOURCES = gz.C
+srv_SOURCES = srv.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)

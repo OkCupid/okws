@@ -46,7 +46,9 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
     overflow_flag (false), ss (global_syscall_stats),
     sin_alloced (s != NULL),
-    _timed_out (false),
+    _timed_out (false), 
+    _no_more_read (false),
+    _delayed_close (false),
     destroyed_p (New refcounted<bool> (false))
 {
   //
@@ -230,12 +232,35 @@ ahttpcon::~ahttpcon ()
 }
 
 void
+ahttpcon::short_circuit_output ()
+{
+  _delayed_close = true;
+}
+
+/*
+ * In some cases, it helps to delay the close so that the bytes sent
+ * to the client can go out.  In particular, this is useful (in some
+ * tests) when the server tries to reply before it has read the
+ * entire incoming request.  Leave the code in, but it hasn't helped
+ * with FF or IE.  It does help against netcat.
+ */
+static void
+void_close (int fd)
+{
+  (void)close (fd);
+}
+
+void
 ahttpcon::fail (int s)
 {
   if (fd >= 0) {
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
-    close (fd);
+    if (_delayed_close) {
+      delaycb (1, 0, wrap (void_close, fd));
+    } else {
+      close (fd);
+    }
   }
   fd = -1;
   if (!destroyed) {
@@ -284,13 +309,38 @@ ahttpcon::spacecb ()
 bool
 ahttpcon::enable_selread ()
 {
-  if (fd < 0)
+  if (fd < 0 || _no_more_read)
     return false;
   if (!rcbset) {
     fdcb (fd, selread, wrap (this, &ahttpcon::input));
     rcbset = true;
   }
   return true;
+}
+
+void
+ahttpcon::stop_read ()
+{
+  /*
+   * half-way close code; does not achieve the purpose intended,
+   * which is to reply to an HTTP req before reading in the whole
+   * req.
+   */
+  if (!_no_more_read && fd >= 0)  {
+    _no_more_read = true;
+    disable_selread ();
+
+    shutdown (fd, SHUT_RD);
+    warn << "trying 1-way shutdown!\n";
+
+    // read all packets from the kernel buffer
+#define BUFSZ 65000
+    char buf[BUFSZ];
+    ssize_t rc;
+    while ((rc = read (fd, buf, BUFSZ)) > 0) {}
+#undef BUFSZ
+
+  }
 }
 
 void

@@ -27,6 +27,7 @@ Service		pub1tst /pub1tst
 Service		form	/form
 Service 	cookie /cookie
 Service		post /post
+Service		upload /upload
 
 SyslogLevels	emerg alert crit info warning debug err notice
 

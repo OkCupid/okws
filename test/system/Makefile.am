@@ -28,14 +28,15 @@ XML_SUBDIRS =
 endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T form.T cookie.T \
-	post.T
+	post.T upload.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C form.C cookie.C \
-	post.C
+	post.C uplaod.C
 
 SUBDIRS = $(XML_SUBDIRS)
 
 okwssvc_PROGRAMS = static configtest simple pub1tst form cookie \
-	post $(XMLPROGS)
+	post upload $(XMLPROGS)
+
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
@@ -44,6 +45,7 @@ form_SOURCES = form.C
 post_SOURCES = post.C
 cookie_SOURCES = cookie.C
 noinst_HEADERS = test_const.h
+upload_SOURCS = upload.C
 
 SUFFIXES = .g .C .T
 .T.C:
@@ -63,6 +65,8 @@ post.o:	   post.C
 post.lo:   post.C
 cookie.o:  cookie.C
 cookie.lo: cookie.C
+upload.o:	upload.C
+uplaod.lo:	upload.C
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)

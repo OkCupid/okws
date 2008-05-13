@@ -102,6 +102,10 @@ cbi::ptr
 http_parser_full_t::prepare_post_parse (int status)
 {
   if (hdr.contlen > int (ok_reqsize_limit)) {
+    warn << "Header warns of upload too big (" 
+	 << hdr.contlen << "b vs. " << ok_reqsize_limit << "b); "
+	 << "aborting!\n";
+    short_circuit_output ();
     finish (HTTP_NOT_ALLOWED);
     return NULL;
   } else if (hdr.contlen < 0)
@@ -157,6 +161,7 @@ http_parser_cgi_t::v_parse_cb1 (int status)
     }
     finish (status);
   } else {
+    short_circuit_output ();
     finish (HTTP_NOT_ALLOWED);
   }
 }
@@ -166,6 +171,7 @@ http_parser_base_t::clnt_timeout ()
 {
   tocb = NULL;
   v_cancel ();
+  short_circuit_output ();
   finish (HTTP_TIMEOUT);
 }
 
@@ -201,6 +207,12 @@ http_parser_cgi_t::set_union_mode (bool b)
 {
   _union_mode = b;
   hdr.set_url (_union_mode ? &_union_cgi : &url);
+}
+
+void
+http_parser_base_t::short_circuit_output ()
+{
+  if (_parser_x) _parser_x->short_circuit_output ();
 }
 
 #endif /* HAVE_EXPAT */
