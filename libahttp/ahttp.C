@@ -237,10 +237,16 @@ ahttpcon::short_circuit_output ()
   _delayed_close = true;
 }
 
+/*
+ * In some cases, it helps to delay the close so that the bytes sent
+ * to the client can go out.  In particular, this is useful (in some
+ * tests) when the server tries to reply before it has read the
+ * entire incoming request.  Leave the code in, but it hasn't helped
+ * with FF or IE.  It does help against netcat.
+ */
 static void
 void_close (int fd)
 {
-  warn << "delayed close; fd=" << fd << "\n";
   (void)close (fd);
 }
 
@@ -315,7 +321,11 @@ ahttpcon::enable_selread ()
 void
 ahttpcon::stop_read ()
 {
-#define BUFSZ 65000
+  /*
+   * half-way close code; does not achieve the purpose intended,
+   * which is to reply to an HTTP req before reading in the whole
+   * req.
+   */
   if (!_no_more_read && fd >= 0)  {
     _no_more_read = true;
     disable_selread ();
@@ -323,14 +333,14 @@ ahttpcon::stop_read ()
     shutdown (fd, SHUT_RD);
     warn << "trying 1-way shutdown!\n";
 
+    // read all packets from the kernel buffer
+#define BUFSZ 65000
     char buf[BUFSZ];
     ssize_t rc;
-    while ((rc = read (fd, buf, BUFSZ)) > 0) {
-      //warn << "read " << rc << " bytes\n";
-    }
-    //warn << "end read loop: " << rc << "\n";
-  }
+    while ((rc = read (fd, buf, BUFSZ)) > 0) {}
 #undef BUFSZ
+
+  }
 }
 
 void
