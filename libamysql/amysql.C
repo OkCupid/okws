@@ -36,7 +36,7 @@ bool
 mysql_t::connect (const str &db, const str &u, const str &h,
 		  const str &pw, u_int prt, u_long fl)
 {
-#if define(MYSQL_VERSION_ID) and MYSQL_VERSION_ID >= 50000
+#if defined(MYSQL_VERSION_ID) && (MYSQL_VERSION_ID >= 50000)
    my_bool b = 1;
    if (mysql_options (&mysql, MYSQL_OPT_RECONNECT, (const char *)&b) != 0) {
       fprintf (stderr, "cannot set reconnect on MySQL object\n");
