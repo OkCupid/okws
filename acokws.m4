@@ -630,10 +630,12 @@ if test "$with_okws" = yes -o "$with_okws" = ""; then
 	okwsvers="-${with_okws_version}"
     else
 	okwsvers=""
-    fi	
+    fi
+
+    okwsstem="okws${okwsvers}${okwstagdir}"
 
     for dir in "$prefix" /usr/local /usr; do
-	if test -f $dir/lib/okws${okwsvers}${okwstagdir}/libpub.la; then
+	if test -f $dir/lib/${okwsstem}/libpub.la; then
 	    with_okws=$dir
 	    break
 	fi
@@ -677,10 +679,10 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     XMLRPCC=${with_okws}/xmlrpcc/xmlrpcc
 
     XMLRPCC_COLLECT=${with_okws}/contrib/xmlrpcc-x-collect.pl
-elif test -f ${with_okws}/include/okws${okwstagdir}/okwsconf.h \
-	-a -f ${with_okws}/lib/okws${okwstagdir}/libpub.la; then
-    okwsincludedir="${with_okws}/include/okws${okwstagdir}"
-    okwslibdir=${with_okws}/lib/okws${okwstagdir}
+elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
+	-a -f ${with_okws}/lib/${okwsstem}/libpub.la; then
+    okwsincludedir="${with_okws}/include/${okwsstem}"
+    okwslibdir=${with_okws}/lib/${okwsstem}
     if egrep '#define DMALLOC' ${okwsincludedir}/okwsconf.h > /dev/null; then
 	test -z "$with_dmalloc" -o "$with_dmalloc" = no && with_dmalloc=yes
     else
