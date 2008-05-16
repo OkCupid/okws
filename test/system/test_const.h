@@ -5,6 +5,7 @@
 
 #define MIME_TYPES_FILE   "conf/mime.types"
 #define INTL_CONF_FILE    "conf/intl.conf"
+#define PURIFY_CONF_FILE  "conf/purify.conf"
 #define FNF_FILE          "/err/fnf.html"
 #define SPLASH_PAGE       "/welcome.html"
 
