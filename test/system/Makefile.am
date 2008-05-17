@@ -9,12 +9,17 @@ $(PROGRAMS): $(LDEPS)
 
 if USE_XML
 
-XMLPROGS = xmlex
+XMLPROGS = xmlex purify
 NO_XML=
 
 xmlex_SOURCES = xmlex.C
+purify_SOURCES = purify.C purify_lib.C
 xmlex.o:	xmlex.C
 xmlex.lo:	xmlex.C
+purify.o:	purify.C
+purify.lo:	purify.C
+purify_lib.o:	purify_lib.C
+purify_lib.lo:	purify_lib.C
 
 XML_SUBDIRS = xmlxlate
 
@@ -27,8 +32,10 @@ XML_SUBDIRS =
 
 endif
 
-TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T upload.T
-TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C upload.C
+TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
+	post.T upload.T purify.T purify_lib.T
+TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
+	post.C upload.C purify.C purify_lib.C
 
 SUBDIRS = $(XML_SUBDIRS)
 
@@ -40,7 +47,7 @@ simple_SOURCES = simple.C
 form_SOURCES = form.C
 cookie_SOURCES = cookie.C
 noinst_HEADERS = test_const.h
-upload_SOURCS = upload.C
+upload_SOURCES = upload.C
 
 SUFFIXES = .g .C .T
 .T.C:
@@ -57,7 +64,7 @@ form.lo:    form.C
 cookie.o:  cookie.C
 cookie.lo: cookie.C
 upload.o:	upload.C
-uplaod.lo:	upload.C
+upload.lo:	upload.C
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)

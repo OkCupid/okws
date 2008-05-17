@@ -190,7 +190,7 @@ xml_method_response_t::add (ptr<xml_element_t> e)
 {
   ptr<xml_params_t> p;
   if ((p = e->to_xml_params ())) {
-    p = e->to_xml_params ();
+    _params = p;
     _body = e;
   } else if (e->to_xml_fault ()) {
     _body = e;

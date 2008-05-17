@@ -25,6 +25,7 @@ Service		simple	/simple
 Service		form	/form
 Service 	cookie /cookie
 Service		upload /upload
+Service 	purify /purify
 
 SyslogLevels	emerg alert crit info warning debug err notice
 
@@ -33,3 +34,5 @@ SyslogLevels	emerg alert crit info warning debug err notice
 @@NO_XML@@Service		xmlxlate/xlater /xlater
 
 ErrorDoc	404	/err/404.html
+
+FilterCGI 0
