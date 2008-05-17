@@ -32,16 +32,17 @@
 #include "test_const.h"
 #include "okwcxml.h"
 #include "tame_connectors.h"
+#include "purify_lib.h"
 
 class oksrvc_purify_t : public oksrvc_t {
 public:
   oksrvc_purify_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
   void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
-  ptr<okwc3::agent_xml_t> agent() { return _cli; }
+  purify::purifier_t *purifier () { return &_purifier; }
 protected:
   void post_launch_pub2_T (cbb cb,  CLOSURE);
-  ptr<okwc3::agent_xml_t> _cli;
+  purify::purifier_t _purifier;
 };
 
 class okclnt_purify_t : public okclnt_t {
@@ -57,7 +58,6 @@ protected:
   oksrvc_purify_t *ok_purify;
 };
 
-static rxx url_rxx ("http://([^:/]+)(:(\\d+)/)?(.*)");
 
 tamed void 
 oksrvc_purify_t::post_launch_pub2_T (cbb cb)
@@ -67,27 +67,10 @@ oksrvc_purify_t::post_launch_pub2_T (cbb cb)
   }
   twait { 
     oksrvc_t::post_launch_pub2 (mkevent (res1));
-    pub2 ()->run_cfg (PURIFY_CONF_FILE, mkevent (res2)); 
+    _purifier.init (pub2 (), "/conf/purify.conf", mkevent (res2));
   }
-
-  { 
-    str url, hn, port_str, path;
-    int port (80);
-
-    url = (*pub2())["purify-url"];
-
-    if (url && url_rxx.match (url)) {
-
-      hn = url_rxx[1];
-      port_str = url_rxx[3];
-      path = url_rxx[4];
-
-      if (port_str)
-	convertint (port_str, &port);
-
-      _cli = New refcounted<okwc3::agent_xml_t> (hn, port, path);
-
-    }
+  if (!res2) {
+    warn << "purifier failed to initialize\n";
   }
 
   TRIGGER (cb, res1 && res2);
@@ -104,42 +87,14 @@ okclnt_purify_t::process_T ()
     str file ("/test/purify.html");
     str dirtyhtml;
     str outhtml;
-    xml_outreq_t req;
-    xml_inresp_t resp;
-    int status;
-    int tmo (20);
-    int code;
-    str msg;
-    ptr<okwc3::agent_xml_t> cli;
+    purify::status_t status;
   }
 
   dirtyhtml = cgi["dirtyhtml"];
   if (cgi.blookup ("doit")) {
     outhtml = "<N/A> -- Failure!";
-
-    if ((cli = ok_purify->agent ())) {
-      req.set_method_name ("html.purify");
-      req[0] = base64_str_t (dirtyhtml);
-      status = HTTP_TIMEOUT;
-      twait { 
-	cli->call (req, connector::timeout (mkevent (status, resp), tmo));
-      }
-      if (status == HTTP_OK) {
-	if (resp.is_fault (&code, &msg)) {
-	  warn << "Fault(" << code << "): ";
-	  if (msg) warnx << msg;
-	  warnx << "\n";
-	} else {
-	  strbuf b;
-	  resp.output_python (b);
-	  warn << b << "\n";
-	  outhtml = resp[0];
-	}
-      } else {
-	warn << "xml rpc failure: " << status << "\n";
-      }
-    } else {
-      warn << "no agent available\n";
+    twait {
+      ok_purify->purifier ()->purify (dirtyhtml, mkevent (status, outhtml));
     }
   } else {
     outhtml = dirtyhtml;

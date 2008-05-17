@@ -13,11 +13,13 @@ XMLPROGS = xmlex purify
 NO_XML=
 
 xmlex_SOURCES = xmlex.C
-purify_SOURCES = purify.C
+purify_SOURCES = purify.C purify_lib.C
 xmlex.o:	xmlex.C
 xmlex.lo:	xmlex.C
 purify.o:	purify.C
 purify.lo:	purify.C
+purify_lib.o:	purify_lib.C
+purify_lib.lo:	purify_lib.C
 
 XML_SUBDIRS = xmlxlate
 
@@ -31,9 +33,9 @@ XML_SUBDIRS =
 endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T form.T cookie.T \
-	post.T upload.T purify.T
+	post.T upload.T purify.T purify_lib.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C form.C cookie.C \
-	post.C upload.C purify.C
+	post.C upload.C purify.C purify_lib.C
 
 SUBDIRS = $(XML_SUBDIRS)
 

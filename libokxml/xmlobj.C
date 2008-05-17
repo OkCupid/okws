@@ -119,7 +119,8 @@ xml_inresp_t::is_fault (int *code, str *msg) const
   ptr<const xml_method_response_t> r;
   ptr<const xml_fault_t> f;
 
-  warn << "obj: "<< el ()->xml_typename () << "\n";
+  // comment out debug statement
+  // warn << "obj: "<< el ()->xml_typename () << "\n"; 
 
   if (el () && 
       (r = el ()->to_xml_method_response ()) && 
