@@ -72,6 +72,8 @@ struct aston_t {
 };
 
 
+namespace RPC {
+
 program TST_PROG {
 	version TEST_VERS {
 
@@ -107,6 +109,8 @@ program TST_PROG {
 
 	} = 1;
 } = 34291;
+
+};
 
 %#define XXXX
 %#define FOO0  455

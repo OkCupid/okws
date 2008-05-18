@@ -458,7 +458,7 @@ dumpnamespace (const rpc_sym *s)
   for (const rpc_program *rp = ns->progs.base (); 
        rp < ns->progs.lim (); rp++) {
     for (const rpc_vers *rv = rp->vers.base ();
-	 rv < rp->vers.lim (); rp++ ) {
+	 rv < rp->vers.lim (); rv++ ) {
       str n = rpcprog (rp, rv);
       aout << "  namespace " << n << " {\n";
       for (const rpc_proc *rc = rv->procs.base ();
