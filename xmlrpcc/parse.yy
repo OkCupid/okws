@@ -40,6 +40,7 @@ static str getid (str);
 %token T_ENUM
 %token T_TYPEDEF
 %token T_PROGRAM
+%token T_NAMESPACE
 
 %token T_UNSIGNED
 %token T_INT
@@ -72,6 +73,7 @@ definition: def_const
 	| def_type
 	| def_union
         | def_program
+	| def_namespace
 	;
 
 def_type: T_TYPEDEF declaration
@@ -133,6 +135,8 @@ def_union: T_UNION newid T_SWITCH '(' type T_ID ')' '{'
 	union_taglist '}' ';'
 	;
 
+def_namespace: T_NAMESPACE newid '{' prog_list '}' ';' ;
+
 def_program: T_PROGRAM newid '{'
 	{
 	  rpc_sym *s = &symlist.push_back ();
@@ -147,6 +151,8 @@ def_program: T_PROGRAM newid '{'
 		 sizeof (rpc_vers), vers_compare);
 	}
 	;
+
+prog_list: def_program | prog_list def_program;
 
 version_list: version_decl | version_list version_decl
 	;

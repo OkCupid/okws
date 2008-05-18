@@ -1,7 +1,9 @@
-/* A Bison parser, made by GNU Bison 2.1.  */
+/* A Bison parser, made by GNU Bison 2.3.  */
 
-/* Skeleton parser for Yacc-like parsing with Bison,
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+/* Skeleton interface for Bison's Yacc-like parsers in C
+
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,10 +20,18 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor,
    Boston, MA 02110-1301, USA.  */
 
-/* As a special exception, when this file is copied by Bison into a
-   Bison output file, you may use that output file without restriction.
-   This special exception was added by the Free Software Foundation
-   in version 1.24 of Bison.  */
+/* As a special exception, you may create a larger work that contains
+   part or all of the Bison parser skeleton and distribute that work
+   under terms of your choice, so long as that work isn't itself a
+   parser generator using the skeleton or a modified version thereof
+   as a parser skeleton.  Alternatively, if you modify or redistribute
+   the parser skeleton itself, you may (at your option) remove this
+   special exception, which will cause the skeleton and the resulting
+   Bison output files to be licensed under the GNU General Public
+   License without this special exception.
+
+   This special exception was added by the Free Software Foundation in
+   version 2.2 of Bison.  */
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -37,18 +47,19 @@
      T_ENUM = 263,
      T_TYPEDEF = 264,
      T_PROGRAM = 265,
-     T_UNSIGNED = 266,
-     T_INT = 267,
-     T_HYPER = 268,
-     T_DOUBLE = 269,
-     T_QUADRUPLE = 270,
-     T_VOID = 271,
-     T_VERSION = 272,
-     T_SWITCH = 273,
-     T_CASE = 274,
-     T_DEFAULT = 275,
-     T_OPAQUE = 276,
-     T_STRING = 277
+     T_NAMESPACE = 266,
+     T_UNSIGNED = 267,
+     T_INT = 268,
+     T_HYPER = 269,
+     T_DOUBLE = 270,
+     T_QUADRUPLE = 271,
+     T_VOID = 272,
+     T_VERSION = 273,
+     T_SWITCH = 274,
+     T_CASE = 275,
+     T_DEFAULT = 276,
+     T_OPAQUE = 277,
+     T_STRING = 278
    };
 #endif
 /* Tokens.  */
@@ -60,23 +71,24 @@
 #define T_ENUM 263
 #define T_TYPEDEF 264
 #define T_PROGRAM 265
-#define T_UNSIGNED 266
-#define T_INT 267
-#define T_HYPER 268
-#define T_DOUBLE 269
-#define T_QUADRUPLE 270
-#define T_VOID 271
-#define T_VERSION 272
-#define T_SWITCH 273
-#define T_CASE 274
-#define T_DEFAULT 275
-#define T_OPAQUE 276
-#define T_STRING 277
+#define T_NAMESPACE 266
+#define T_UNSIGNED 267
+#define T_INT 268
+#define T_HYPER 269
+#define T_DOUBLE 270
+#define T_QUADRUPLE 271
+#define T_VOID 272
+#define T_VERSION 273
+#define T_SWITCH 274
+#define T_CASE 275
+#define T_DEFAULT 276
+#define T_OPAQUE 277
+#define T_STRING 278
 
 
 
 
-#if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
+#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef int YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -84,6 +96,4 @@ typedef int YYSTYPE;
 #endif
 
 extern YYSTYPE yylval;
-
-
 

@@ -59,6 +59,7 @@ union		return T_UNION;
 enum		return T_ENUM;
 typedef		return T_TYPEDEF;
 program		return T_PROGRAM;
+namespace	return T_NAMESPACE;
 
 unsigned	return T_UNSIGNED;
 int		return T_INT;
