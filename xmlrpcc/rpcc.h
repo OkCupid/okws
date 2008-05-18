@@ -143,6 +143,11 @@ struct rpc_program {
   vec<rpc_vers> vers;
 };
 
+struct rpc_namespace {
+  str id;
+  vec<rpc_program> progs;
+};
+
 struct rpc_sym {
   union {
     union_entry_base _base;
@@ -153,9 +158,11 @@ struct rpc_sym {
     union_entry<rpc_union> sunion;
     union_entry<rpc_program> sprogram;
     union_entry<str> sliteral;
+    union_entry<rpc_namespace> snamespace;
   };
 
-  enum symtype { CONST, STRUCT, UNION, ENUM, TYPEDEF, PROGRAM, LITERAL } type;
+  enum symtype { CONST, STRUCT, UNION, ENUM, TYPEDEF, PROGRAM, LITERAL,
+		 NAMESPACE } type;
 
   rpc_sym () { _base.init (); }
   rpc_sym (const rpc_sym &s) : type (s.type) { _base.init (s._base); }
@@ -165,8 +172,13 @@ private:
     { type = n.type; _base.assign (n._base); return *this; }
 public:
 
+  symtype gettype () const { return type; }
+
   void settype (symtype t) {
     switch (type = t) {
+    case NAMESPACE:
+      snamespace.select ();
+      break;
     case CONST:
       sconst.select ();
       break;
@@ -220,3 +232,5 @@ void pswitch (str prefix, const rpc_union *rs, str swarg,
 extern bool guess_defines;
 
 str stripfname (str s, bool suffix = true);
+  
+rpc_program *get_prog (bool creat);

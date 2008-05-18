@@ -135,38 +135,46 @@ def_union: T_UNION newid T_SWITCH '(' type T_ID ')' '{'
 	union_taglist '}' ';'
 	;
 
-def_namespace: T_NAMESPACE newid '{' prog_list '}' ';' ;
-
 def_program: T_PROGRAM newid '{'
 	{
-	  rpc_sym *s = &symlist.push_back ();
-	  s->settype (rpc_sym::PROGRAM);
-	  s->sprogram->id = $2;
+	  rpc_program *s = get_prog (true);
+	  s->id = $2;
 	}
 	version_list '}' '=' number ';'
 	{
-	  rpc_sym *s = &symlist.back ();
-	  s->sprogram->val = $8;
-	  qsort (s->sprogram->vers.base (), s->sprogram->vers.size (),
-		 sizeof (rpc_vers), vers_compare);
+	  rpc_program *s = get_prog (false);
+	  s->val = $8;
+	  qsort (s->vers.base (), s->vers.size (), 
+	         sizeof (rpc_vers), vers_compare);
 	}
 	;
 
-prog_list: def_program | prog_list def_program;
+def_namespace: T_NAMESPACE newid '{'
+        {
+	  rpc_sym *s = &symlist.push_back ();
+	  s->settype (rpc_sym::NAMESPACE);
+	  s->snamespace->id = $2;
+
+        } 
+	program_list '}' ';'
+	;
+
+program_list: def_program | program_list def_program
+        ;
 
 version_list: version_decl | version_list version_decl
 	;
 
 version_decl: T_VERSION newid '{'
 	{
-	  rpc_sym *s = &symlist.back ();
-	  rpc_vers *rv = &s->sprogram->vers.push_back ();
+          rpc_program *p = get_prog (false);
+	  rpc_vers *rv = &p->vers.push_back ();
 	  rv->id = $2;
 	}
 	proc_list '}' '=' number ';'
 	{
-	  rpc_sym *s = &symlist.back ();
-	  rpc_vers *rv = &s->sprogram->vers.back ();
+          rpc_program *p = get_prog (false);
+	  rpc_vers *rv = &p->vers.back ();
 	  rv->val = $8;
 	  qsort (rv->procs.base (), rv->procs.size (),
 		 sizeof (rpc_proc), proc_compare);
@@ -178,8 +186,8 @@ proc_list: proc_decl | proc_list proc_decl
 
 proc_decl: type_or_void newid '(' type_or_void ')' '=' number ';'
 	{
-	  rpc_sym *s = &symlist.back ();
-	  rpc_vers *rv = &s->sprogram->vers.back ();
+          rpc_program *p = get_prog (false);
+	  rpc_vers *rv = &p->vers.back ();
 	  rpc_proc *rp = &rv->procs.push_back ();
 	  rp->id = $2;
 	  rp->val = $7;

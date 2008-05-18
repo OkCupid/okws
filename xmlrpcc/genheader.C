@@ -353,9 +353,8 @@ dumptypedef (const rpc_sym *s)
 }
 
 static void
-dumpprog_xml (const rpc_sym *s)
+dumpprog_xml (const rpc_program *rs)
 {
-  const rpc_program *rs = s->sprogram.addr ();
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
     aout << "extern const xml_rpc_program xml_" << rpcprog (rs, rv) << ";\n";
   }
@@ -363,9 +362,8 @@ dumpprog_xml (const rpc_sym *s)
 }
 
 static void
-dumpprog (const rpc_sym *s)
+dumpprog (const rpc_program *rs)
 {
-  const rpc_program *rs = s->sprogram.addr ();
   // aout << "\nenum { " << rs->id << " = " << rs->val << " };\n";
   aout << "#ifndef " << rs->id << "\n"
        << "#define " << rs->id << " " << rs->val << "\n"
@@ -391,7 +389,88 @@ dumpprog (const rpc_sym *s)
 	 << rs->id << "_" << rv->val << "_APPLY_NOVOID(macro, void)\n";
   }
   aout << "\n";
-  dumpprog_xml (s);
+  dumpprog_xml (rs);
+}
+
+static str
+tolower (const str &in)
+{
+  strbuf r;
+  for (const char *c = in.cstr (); *c; c++) {
+    r << char (tolower (*c));
+  }
+  return r;
+}
+
+static void
+dump_tmpl_proc_1 (const str &arg, const str &res, const str &fn,
+		  const str &spc, bool argpointer, const str &rpc)
+{
+
+  const char *dec1 = argpointer ? "*" : "&";
+  const char *dec2 = argpointer ? ""  : "&";
+  
+    
+  aout << spc << "template<class C, class E> void\n"
+       << spc << fn << "(C c, ";
+  if (arg) 
+    aout << "const " << arg << " " << dec1 << "arg, ";
+  if (res)
+    aout << res << " *res, ";
+  aout << "E cb)\n";
+
+  aout << spc << "{ c->call (" << rpc << ", ";
+
+  if (arg) aout << dec2 << "arg";
+  else     aout << "NULL";
+  aout << ", ";
+
+  if (res) aout << "res";
+  else     aout << "NULL";
+
+  aout << ", cb); }\n";
+}
+
+static void
+dump_tmpl_proc (const rpc_proc *rc)
+{
+  str arg, res;
+  str fn = tolower (rc->id);
+  if (rc->arg != "void") arg = rc->arg;
+  if (rc->res != "void") res = rc->res;
+  str spc = "    ";
+
+  dump_tmpl_proc_1 (arg, res, fn, spc, true, rc->id);
+  if (arg) 
+    dump_tmpl_proc_1 (arg, res, fn, spc, false, rc->id);
+  aout << "\n";
+
+}
+
+static void
+dumpnamespace (const rpc_sym *s)
+{
+  const rpc_namespace *ns = s->snamespace.addr ();
+  for (size_t i = 0; i < ns->progs.size (); i++) {
+    dumpprog (&ns->progs[i]);
+  }
+  aout << "namespace " << ns->id << " {\n";
+  for (const rpc_program *rp = ns->progs.base (); 
+       rp < ns->progs.lim (); rp++) {
+    for (const rpc_vers *rv = rp->vers.base ();
+	 rv < rp->vers.lim (); rp++ ) {
+      str n = rpcprog (rp, rv);
+      aout << "  namespace " << n << " {\n";
+      for (const rpc_proc *rc = rv->procs.base ();
+	   rc < rv->procs.lim (); rc++) {
+
+	dump_tmpl_proc (rc);
+
+      }
+      aout << "  };\n"; // rpcprog (p, v);
+    }
+  }
+  aout << "};\n"; // ns->id
 }
 
 static void
@@ -415,7 +494,10 @@ dumpsym (const rpc_sym *s)
     dumptypedef (s);
     break;
   case rpc_sym::PROGRAM:
-    dumpprog (s);
+    dumpprog (s->sprogram);
+    break;
+  case rpc_sym::NAMESPACE:
+    dumpnamespace (s);
     break;
   case rpc_sym::LITERAL:
     aout << *s->sliteral << "\n";

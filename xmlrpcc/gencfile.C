@@ -249,6 +249,14 @@ dump_pound_defs (str fn)
 }
 
 static void
+mkns (const rpc_namespace *ns)
+{
+  for (const rpc_program *rp = ns->progs.base (); rp < ns->progs.lim (); rp++) {
+    mktbl (rp);
+  }
+}
+
+static void
 dumpsym (const rpc_sym *s)
 {
   switch (s->type) {
@@ -274,6 +282,9 @@ dumpsym (const rpc_sym *s)
   case rpc_sym::PROGRAM:
     mktbl (s->sprogram.addr ());
     populate_const_table_prog (s);
+    break;
+  case rpc_sym::NAMESPACE:
+    mkns (s->snamespace);
     break;
   case rpc_sym::LITERAL:
     collect_pound_def (*s->sliteral);
