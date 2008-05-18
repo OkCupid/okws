@@ -57,7 +57,7 @@ fiddle_with_send (int fd)
 {
   if (0) {
   int opt = 1;
-  size_t optlen = sizeof (opt);
+  socklen_t optlen = sizeof (opt);
   int rc = getsockopt (fd, SOL_SOCKET, SO_SNDLOWAT, &opt, &optlen);
   warn ("getlowat %d, %d\n", rc, opt);
   opt = 1;
