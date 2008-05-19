@@ -39,7 +39,7 @@ TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C xmltst3.C xmltst4.C \
 	srv.C
 
 noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst \
-	gz srv
+	gz srv newline
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
@@ -48,6 +48,7 @@ okwc1tst_SOURCES = okwc1tst.C
 pubmemtst_SOURCES = pubmemtst.C
 gz_SOURCES = gz.C
 srv_SOURCES = srv.C
+newline_SOURCES = newline.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)

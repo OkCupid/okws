@@ -61,7 +61,7 @@ namespace purify {
   bool
   purifier_t::init (const str &s)
   {
-    bool ret;
+    bool ret = false;
     if (!(_url = s)) {
       warn << "purifier: no URL passed\n";
     } else if (!init ()) {
