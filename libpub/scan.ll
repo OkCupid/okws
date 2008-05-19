@@ -191,7 +191,14 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 "[[["		{
 		   yy_d_bracket += 1;
 		   bracket_mark_left (1);
-		   yy_push_state (TXLCOM3);
+
+		   // [[ ... [[[     actually goes to regular comment mode
+		   // [[[ ... [[     goes to "trips" mode
+		   if (yy_d_bracket == 1) {
+		      yy_push_state (TXLCOM3);
+		   } else {
+		      yy_push_state (TXLCOM);
+		   }
 		}
 
 "[["		{
