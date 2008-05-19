@@ -17,6 +17,11 @@ static int addstr (const char *c, int l);
 static void nlcount (int m = 0);
 static void eos_plinc ();
 
+static void bracket_mark_left (int n = 1);
+static void bracket_mark_right (void);
+static int unbalanced_bracket (void);
+static int bracket_check_eof (void);
+
 int yy_ssln;
 int yy_wss_nl;
 int yywss;
@@ -28,6 +33,7 @@ int sbi;
 char *eof_tok;
 int yy_d_brace;
 int yy_d_bracket;
+vec<int> yy_d_bracket_linenos;
 
 %}
 
@@ -142,20 +148,31 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <TXLCOM3>{
-"]"+		{ if (strlen (yytext) >=2) { yy_pop_state (); } }
-[^\]]+		{ /* ignore */; }
+"]"{3}		{ 
+		   yy_d_bracket --;
+                   bracket_mark_right ();
+		   yy_pop_state (); 
+                }
+\n		{ PLINC; }
+[^\]\n]+	{ /* ignore */; }
 }
 
 <TXLCOM>{
-"[["		{ yy_d_bracket++; }
+"[["		{ yy_d_bracket++; bracket_mark_left (); }
 \\"[""["+	{ /* ignore */ ; }
 
 "["		|
 "\\"		|
 "]"		|
-[^\]\[\\]+	{ /* ignore */ ; }
+[^\]\[\\\n]+	{ /* ignore */ ; }
 
-"]]"		{ yy_d_bracket--; if (yy_d_bracket <= 1) { yy_pop_state (); } }
+"]]"		{ 
+		   yy_d_bracket--; 
+		   bracket_mark_right();
+		   if (yy_d_bracket <= 1) { yy_pop_state (); } 
+                }
+
+\n		{ PLINC; }
 }
 
 
@@ -165,15 +182,24 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 "%{"		{ yy_push_state (GCODE); return T_BGCCE; }
 
 
-"["{2,4}	{
-                   size_t len = strlen (yytext);
-		   if (len == 3) {
-		      yy_push_state (TXLCOM3);
-		   } else {
-		      yy_d_bracket += (len >> 1);
-                      if (yy_d_bracket > 1) { yy_push_state (TXLCOM); }
-                   } 
-                }
+"[[[["		{
+		   yy_d_bracket += 2;
+		   bracket_mark_left (2);
+		   yy_push_state (TXLCOM);
+		}
+
+"[[["		{
+		   yy_d_bracket += 1;
+		   bracket_mark_left (1);
+		   yy_push_state (TXLCOM3);
+		}
+
+"[["		{
+		   yy_d_bracket ++;
+		   bracket_mark_left (1);
+		   if (yy_d_bracket > 1) 
+		     yy_push_state (TXLCOM);
+		}
 
 \\+[$@%]"{"	|
 \\"}}"		|
@@ -192,6 +218,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 "]]"		{ 
                   if (yy_d_bracket > 0) {
+		     bracket_mark_right ();
 		     yy_d_bracket--;
                   } else {
 		     yylval.str = yytext;
@@ -201,6 +228,9 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 [$@%}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
 
+}
+<GH,H,WH,WGH,JS,PTAG,HTAG,TXLCOM,TXLCOM3>{
+<<EOF>>		{  return bracket_check_eof(); }
 }
 
 <GH>[^$@%}\\\n]+	{ yylval.str = yytext; return T_HTML; }
@@ -314,9 +344,9 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 
 <STR,PSTR,SSTR,PSTR_SQ>{
-<<EOF>>		{ return 
-		  yyerror (strbuf ("EOF found in str started on line %d", 
-			           yy_ssln)); 
+<<EOF>>		{ 
+		  return yyerror (strbuf ("EOF found in str started on "
+                                          "line %d", yy_ssln)); 
 		}
 }
 
@@ -509,6 +539,41 @@ scanner_reset (void)
 {
    yy_d_brace = 0;
    yy_d_bracket = 0;
+   yy_d_bracket_linenos.clear ();
+}
+
+void
+bracket_mark_left (int l)
+{
+   for (int i = 0; i < l; i++) {
+     yy_d_bracket_linenos.push_back (PLINENO);
+   }
+}
+
+void
+bracket_mark_right (void)
+{
+   if (yy_d_bracket_linenos.size ())
+     yy_d_bracket_linenos.pop_back ();
+}
+
+int
+unbalanced_bracket (void)
+{
+  int ret = 0;
+  if (yy_d_bracket_linenos.size ())
+    ret = yy_d_bracket_linenos.back ();
+  return ret;
+}
+
+int
+bracket_check_eof (void)
+{
+  if (yy_d_bracket > 0) {
+    yyerror (strbuf ("Unbalanced [[ or [[[ at EOF; started at line %d",
+       unbalanced_bracket ()));
+  }
+  return 0;
 }
 
 
