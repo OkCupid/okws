@@ -23,8 +23,8 @@ int yy_pt_com;  /* pass-throgh comment! */
 char str_buf[YY_STR_BUFLEN];
 int sbi;
 char *eof_tok;
-int yy_d_brace = 0;
-int yy_d_bracket = 0;
+int yy_d_brace;
+int yy_d_bracket;
 
 %}
 
@@ -422,6 +422,13 @@ gcc_hack_use_static_functions ()
   assert (false);
   char buf[2];
   yyunput (yy_top_state (), buf);
+}
+
+void
+scanner_reset (void)
+{
+   yy_d_brace = 0;
+   yy_d_bracket = 0;
 }
 
 

@@ -289,6 +289,7 @@ pub_parser_t::pub2_parse(ptr<pbinding_t> bnd, int opts, pubstat_t *errp,
       push_file (r);
       pf->push_section (ss);
       pf->lex_activate (t);
+      scanner_reset ();
       yyparse ();
       pf->add_section (ss);
       pop_file ();

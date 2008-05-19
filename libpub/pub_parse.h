@@ -41,6 +41,7 @@ void yyswitch (yy_buffer_state *s);
 yy_buffer_state *yycreatebuf (FILE *fp);
 extern int yyparse ();
 extern int yylex ();
+void scanner_reset (void);
 
 #ifdef PDEBUG
 extern int yydebug;
