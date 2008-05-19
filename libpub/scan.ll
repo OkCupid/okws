@@ -154,8 +154,6 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		   yy_d_bracket += 1;
 		   bracket_mark_left (1);
 
-		   // [[ ... [[[     actually goes to regular comment mode
-		   // [[[ ... [[     goes to "trips" mode
 		   if (yy_d_bracket == 1) {
 		      yy_push_state (TXLCOM3);
 		   } else {
@@ -497,7 +495,7 @@ int
 bracket_check_eof (void)
 {
   if (yy_d_bracket > 0) {
-    yyerror (strbuf ("Unbalanced [[ or [[[ at EOF; started at line %d",
+    yyerror (strbuf ("Unbalanced brackets at EOF; started at line %d",
        unbalanced_bracket ()));
   }
   return 0;
