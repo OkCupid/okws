@@ -33,14 +33,14 @@ XML_SUBDIRS =
 endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
-	post.T upload.T purify.T purify_lib.T
+	upload.T purify.T purify_lib.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
-	post.C upload.C purify.C purify_lib.C
+	upload.C purify.C purify_lib.C
 
 SUBDIRS = $(XML_SUBDIRS)
 
 okwssvc_PROGRAMS = static configtest simple form cookie upload $(XMLPROGS) \
-	post posttest
+	posttest
 
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
