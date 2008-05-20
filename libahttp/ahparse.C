@@ -149,8 +149,10 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 	warn << "file upload attempted when not permitted\n";
 	finish (HTTP_NOT_ALLOWED);
       }
-    } else 
+    } else {
+	  post_cgi->set_max_scratchlen (hdr.contlen);
       post_cgi->parse (pcb);
+    }
   } else if (hdr.mthd == HTTP_MTHD_GET) {
     if (_union_mode) {
       cgi = &_union_cgi;
