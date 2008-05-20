@@ -1009,26 +1009,5 @@ xml_generic_t::dump_typename () const
 bool xml_generic_t::has_char_data () const { return !_so.is_null (); } 
 
 
-str
-scalar_obj_t::trim () const
-{
-  str s = to_str ();
-  if (s.len () == 0) return s;
-  const char *bp = s.cstr ();
-  size_t len = s.len ();
-  const char *ep = bp + len;
-  size_t i = 0;
-
-  for ( i = 0; i < len && isspace (bp[i]); i++);
-  if (i == len) return "";
-  bp += i;
-
-  for ( ep --; isspace (*ep) && ep > bp; ep --) ;
-  ep ++;
-
-  return str (bp, ep - bp);
-}
-
-
 //-----------------------------------------------------------------------
 //=======================================================================
