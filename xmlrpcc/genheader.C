@@ -353,9 +353,8 @@ dumptypedef (const rpc_sym *s)
 }
 
 static void
-dumpprog_xml (const rpc_sym *s)
+dumpprog_xml (const rpc_program *rs)
 {
-  const rpc_program *rs = s->sprogram.addr ();
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
     aout << "extern const xml_rpc_program xml_" << rpcprog (rs, rv) << ";\n";
   }
@@ -363,9 +362,8 @@ dumpprog_xml (const rpc_sym *s)
 }
 
 static void
-dumpprog (const rpc_sym *s)
+dumpprog (const rpc_program *rs)
 {
-  const rpc_program *rs = s->sprogram.addr ();
   // aout << "\nenum { " << rs->id << " = " << rs->val << " };\n";
   aout << "#ifndef " << rs->id << "\n"
        << "#define " << rs->id << " " << rs->val << "\n"
@@ -391,7 +389,167 @@ dumpprog (const rpc_sym *s)
 	 << rs->id << "_" << rv->val << "_APPLY_NOVOID(macro, void)\n";
   }
   aout << "\n";
-  dumpprog_xml (s);
+  dumpprog_xml (rs);
+}
+
+static str
+tolower (const str &in)
+{
+  strbuf r;
+  for (const char *c = in.cstr (); *c; c++) {
+    r << char (tolower (*c));
+  }
+  return r;
+}
+
+static void
+dump_tmpl_proc_1 (const str &arg, const str &res, const str &fn,
+		  const str &spc, bool argpointer, const str &rpc,
+		  const str &cli, const str &cli_tmpl, const str &ret, 
+		  bool call)
+{
+
+  const char *dec1 = argpointer ? "*" : "&";
+  const char *dec2 = argpointer ? ""  : "&";
+
+  str prfx = "";
+
+  if (!call) prfx = "w_";
+    
+  aout << spc << "template<";
+  if (cli_tmpl)
+    aout << "class " << cli_tmpl << ", ";
+  aout << "class E> ";
+  if (ret) aout << ret;
+  else aout << "void";
+  aout << "\n";
+
+  aout << spc << prfx << fn << "(" << cli << " c, ";
+  if (arg) 
+    aout << "const " << arg << " " << dec1 << "arg, ";
+  if (res)
+    aout << res << " *res, ";
+  aout << "E cb)\n";
+
+  aout << spc << "{ ";
+  if (ret) 
+    aout << "return ";
+  if (call) aout << "c->call";
+  else      aout << "(*c)"; 
+  aout << " (" << rpc << ", ";
+
+  if (arg) aout << dec2 << "arg";
+  else     aout << "NULL";
+  aout << ", ";
+
+  if (res) aout << "res";
+  else     aout << "NULL";
+
+  aout << ", cb); ";
+  aout << "}\n\n";
+}
+static void
+dump_tmpl_proc_2 (const str &arg, const str &res, const str &fn,
+		  const str &spc, const str &rpc,
+		  const str &cli, const str &cli_tmpl, const str &ret, 
+		  bool call)
+{
+  dump_tmpl_proc_1 (arg, res, fn, spc, true, rpc, cli, cli_tmpl, ret, call);
+  if (arg)
+    dump_tmpl_proc_1 (arg, res, fn, spc, false, rpc, cli, cli_tmpl, ret, call);
+}
+
+static void
+dump_tmpl_proc_3 (const str &arg, const str &res, const str &fn,
+         const str &spc, const str &rpc)
+{
+  dump_tmpl_proc_2 (arg, res, fn, spc, rpc, "C", "C", NULL, true);
+  dump_tmpl_proc_2 (arg, res, fn, spc, rpc, 
+                    "typename callback<void,u_int32_t,"
+		    "const void*,void*,E>::ref", 
+		    NULL, NULL, false);
+  dump_tmpl_proc_2 (arg, res, fn, spc, rpc, 
+                    "typename callback<R,u_int32_t,const void*,void*,E>::ref", 
+		    "R", "R", false);
+}
+
+static void
+dump_tmpl_class (const str &arg, const str &res, const str &c, const str &spc)
+{
+  aout << spc << "template<class S>\n"
+       << spc << "class " << c << " {\n"
+       << spc << "public:\n"
+       << spc << "  " << c << "(S *s) : _replied (false), _sbp (s) {}\n";
+  if (arg) {
+    aout << spc << "  " << "const ::" << arg << "* getarg() const { "
+	 << " return static_cast<" << arg << "*> (_sbp->getvoidarg ()); }\n";
+    aout << spc << "  ::" << arg << "* getarg() { "
+	 << " return static_cast<" << arg << "*> (_sbp->getvoidarg ()); }\n";
+  }
+  if (res) {
+    aout << spc << "  " << "void reply (const ::" << res << " *r) "
+	 << "{ check_reply (); _sbp->reply (r); }\n";
+    aout << spc << "  " << "void reply (const ::" << res << " &r) "
+	 << "{ check_reply (); _sbp->replyref (r); }\n";
+  } else {
+    aout << spc << "  " << "void reply () "
+	 << "{ check_reply (); _sbp->reply (NULL); }\n";
+  }
+  aout << spc << "  " << "S *sbp () { return _sbp; }\n";
+  aout << spc << "  " << "const S *sbp () const { return _sbp; }\n";
+
+  aout << spc << "  " << "void reject (auth_stat s) "
+       << "{ check_reply (); _sbp->reject (s); }\n"
+       << spc << "  " << "void reject (accept_stat s) "
+       << "{ check_reply (); _sbp->reject (s); }\n\n";
+
+  aout << spc << "private:\n"
+       << spc << "  void check_reply () "
+       << "{ assert (!_replied); _replied = true; }\n"
+       << spc << "  bool _replied;\n"
+       << spc << "  S *_sbp;\n"
+       << spc << "};\n\n";
+}
+
+static void
+dump_tmpl_proc (const rpc_proc *rc)
+{
+  str arg, res;
+  str fn = tolower (rc->id);
+  if (rc->arg != "void") arg = rc->arg;
+  if (rc->res != "void") res = rc->res;
+  str spc = "    ";
+
+  aout << "\n";
+  aout << spc << "// " << rc->id 
+       << " -----------------------------------------\n\n";
+  dump_tmpl_proc_3 (arg, res, fn, spc, rc->id);
+  dump_tmpl_class (arg, res, strbuf ("%s_srv_t", fn.cstr ()), spc);
+}
+
+static void
+dumpnamespace (const rpc_sym *s)
+{
+  const rpc_namespace *ns = s->snamespace.addr ();
+  for (size_t i = 0; i < ns->progs.size (); i++) {
+    dumpprog (&ns->progs[i]);
+  }
+  aout << "namespace " << ns->id << " {\n";
+  for (const rpc_program *rp = ns->progs.base (); 
+       rp < ns->progs.lim (); rp++) {
+    for (const rpc_vers *rv = rp->vers.base ();
+	 rv < rp->vers.lim (); rv++ ) {
+      str n = rpcprog (rp, rv);
+      aout << "  namespace " << n << " {\n";
+      for (const rpc_proc *rc = rv->procs.base ();
+	   rc < rv->procs.lim (); rc++) {
+
+	dump_tmpl_proc (rc);
+      }
+      aout << "  };\n"; // rpcprog (p, v);
+    }
+  }
+  aout << "};\n"; // ns->id
 }
 
 static void
@@ -415,7 +573,10 @@ dumpsym (const rpc_sym *s)
     dumptypedef (s);
     break;
   case rpc_sym::PROGRAM:
-    dumpprog (s);
+    dumpprog (s->sprogram);
+    break;
+  case rpc_sym::NAMESPACE:
+    dumpnamespace (s);
     break;
   case rpc_sym::LITERAL:
     aout << *s->sliteral << "\n";
