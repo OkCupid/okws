@@ -26,6 +26,7 @@ Service		form	/form
 Service 	cookie /cookie
 Service		upload /upload
 Service 	purify /purify
+Service		posttest /posttest
 
 SyslogLevels	emerg alert crit info warning debug err notice
 

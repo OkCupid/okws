@@ -39,7 +39,8 @@ TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
 
 SUBDIRS = $(XML_SUBDIRS)
 
-okwssvc_PROGRAMS = static configtest simple form cookie upload $(XMLPROGS)
+okwssvc_PROGRAMS = static configtest simple form cookie upload $(XMLPROGS) \
+	post posttest
 
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
@@ -48,6 +49,7 @@ form_SOURCES = form.C
 cookie_SOURCES = cookie.C
 noinst_HEADERS = test_const.h
 upload_SOURCES = upload.C
+posttest_SOURCES = posttest.C
 
 SUFFIXES = .g .C .T
 .T.C:

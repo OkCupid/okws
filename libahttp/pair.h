@@ -122,6 +122,9 @@ public:
   const pair_t * first () const { return tab.first (); }
   const pair_t * next (const pair_t *n) const { return tab.next (n); }
 
+  const pair_t *lfirst () const { return lst.first ; }
+  const pair_t *lnext (const pair_t *p) const { return lst.cnext (p); }
+
   void load_aarr (aarr_t *in) const
   {
     const pair_t *p;
