@@ -34,8 +34,6 @@
 #include "aparse.h"
 
 #define CGI_DEF_SCRATCH  0x10000
-#define CGI_MAX_SCRATCH  0x40000
-
 
 #define CGI_MAXLEN 131072
 #define CGI_BINDCHAR '='
@@ -97,6 +95,8 @@ public:
   abuf_stat_t parse_key_or_val (str *r, bool use_internal_state = true);
 
   virtual bool flookup (const str &k, cgi_files_t **v) { return false; }
+
+  void set_max_scratchlen (int i) { _maxlen = i; }
 private:
   void init (char *buf);
   virtual void parse_guts ();
@@ -117,9 +117,12 @@ private:
   bool uri_mode;    // on if parsing within a URI
 protected:
   char *scratch;    // buffer for parse / scratch
-  u_int buflen;
+  u_int buflen;     // buffer len right now
+  int _maxlen;      // maximum len it can ever grow to
+
   abuf_stat_t process_parsed_key_or_val(abuf_stat_t rc, str& s);
-  bool parse_still_waiting();
+  bool        parse_still_waiting();
+  bool        extend_scratch();
 };
 
 class cgiw_t {

@@ -203,6 +203,7 @@ extern str ok_access_log_fmt;                   // default log format
 extern u_int ok_clnt_timeout;                   // user timeout
 extern u_int ok_reqsize_limit;                  // maximum client req size
 extern u_int ok_hdrsize_limit;                  // biggest HTTP header allowed
+extern u_int ok_cgibuf_limit;                   // limit cgi buf for testing
 
 //
 // Async-Multi-Threaded stuff

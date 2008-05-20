@@ -106,7 +106,7 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
     if (needlen > CGI_MAXLEN)
       return 0;
     freeit = true;
-    scratch = (char *)xmalloc (needlen + 1);
+    scratch = static_cast<char *> (xmalloc (needlen + 1));
   }
   char *op = scratch;
   const char *inp = in.cstr ();
@@ -188,7 +188,7 @@ cgi_t::init (char *buf)
     scratch = buf;
     bufalloc = false;
   } else {
-    scratch = (char *) xmalloc (buflen);
+    scratch = static_cast<char *> (xmalloc (buflen));
     bufalloc = true;
   }
   assert (scratch);
@@ -207,14 +207,46 @@ cgi_t::reset ()
 }
 */
 
+static u_int fixlen (u_int l)
+{
+  // MK 11/6/07 - I'm not sure why we need CGI_MAX_SCRATCH.  For now,
+  // just pump it way up.
+  return min<u_int> (l, ok_cgibuf_limit);
+}
+
+
 cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
   : async_parser_t (a), pairtab_t<cgi_pair_t> (true),
     cookie (ck), bufalloc (false),
     inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
     hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
+    buflen (fixlen (bfln)),
+    _maxlen (-1)
 {
   init (buf);
+}
+
+bool
+cgi_t::extend_scratch ()
+{
+  bool ret = false;
+  u_int uml = _maxlen;
+  if (_maxlen > 0 && uml > buflen && uml <= ok_cgibuf_limit) {
+    char *nb = static_cast<char *> (xmalloc (_maxlen));
+    assert (nb);
+    if (scratch) {
+      memcpy (nb, scratch, buflen);
+      if (bufalloc) {
+	xfree (scratch);
+      }
+    }
+    buflen = _maxlen;
+    scratch = nb;
+    bufalloc = true;
+    ret = true;
+    endp = scratch + buflen;
+  }
+  return ret;
 }
 
 void
@@ -230,10 +262,12 @@ cgi_t::reset_state ()
 
 cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
   : async_parser_t (s), pairtab_t<cgi_pair_t> (true),
-  cookie (ck), bufalloc (false),
-  inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
-  hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-  buflen (min<u_int> (bfln, CGI_MAX_SCRATCH))
+    cookie (ck), bufalloc (false),
+    inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
+    hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
+    buflen (fixlen (bfln)),
+    _maxlen (-1)
+    
 {
   init (buf);
 }
@@ -356,7 +390,19 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
       inhex = false;
   }
     
-  while ( pcp < endp && flag && ret == ABUF_OK) {
+  while ( flag && ret == ABUF_OK) {
+
+    if (pcp >= endp) {
+      size_t off = pcp - scratch;
+      if (extend_scratch ()) {
+	pcp = scratch + off;
+	assert (pcp < endp);
+      } else {
+	ret = ABUF_OVERFLOW;
+	break;
+      }
+    }
+
     ch = abuf->get ();
     switch (ch) {
     case CGI_SEPCHAR:
@@ -427,8 +473,9 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
   }
 
   if (ret != ABUF_WAIT) {
-    assert (ret == ABUF_OK || ret == ABUF_SEPARATOR || ret == ABUF_EOF);
-    if (pcp >= endp) {
+    assert (ret == ABUF_OK || ret == ABUF_SEPARATOR || ret == ABUF_EOF ||
+	    ret == ABUF_OVERFLOW);
+    if (ret == ABUF_OVERFLOW || pcp >= endp) {
       *r = NULL;
       ret =  ABUF_OVERFLOW;
     } else {
