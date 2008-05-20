@@ -263,6 +263,8 @@ class Test:
                 emsg ("Server sent back stupid key: %s" % k)
                 raise TestError, err
 
+            print "OK: %s" % k
+
     ##----------------------------------------
 
 
