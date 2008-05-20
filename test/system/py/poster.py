@@ -5,6 +5,7 @@ import random
 import sys
 import hashlib
 import getopt
+import re
 
 progname = sys.argv[0]
 
@@ -66,6 +67,9 @@ class DataObj:
     def gen (self, keylen, datlen):
         self._key = sg.gen (keylen, True);
         self._value = sg.gen (datlen, False)
+
+    def key (self):
+        return self._key
         
     def dump (self):
         print "key: %s" % self._key
@@ -86,11 +90,17 @@ class DataObj:
 class DataSet:
 
     def __init__ (self, lens):
+        self._lookup = {}
         self._objs = [ DataObj (lens = l) for l in lens ]
+        for (i,o) in enumerate (self._objs):
+            self._lookup[o.key ()] = i
 
     def dump (self):
         for o in self._objs:
             o.dump ()
+
+    def __getitem__ (self, k):
+        return self._objs[self._lookup[k]]
 
     def dump2 (self):
         for o in self._objs:
@@ -203,19 +213,77 @@ class Test:
 
     def dump2 (self):
         self._data.dump2 ()
-        
-##-----------------------------------------------------------------------
+
+    ##----------------------------------------
+
+    def post (self):
+        params = self._data.params ()
+        headers = { "Content-type" : "application/x-www-form-urlencoded",
+                    "Accept" : "text/plain" }
+        conn = httplib.HTTPConnection ("%s:%d" % (self._host, self._port))
+        conn.request ("POST", self._service, params, headers)
+        response = conn.getresponse ()
+        print response.status, response.reason
+        if response.status != 200:
+            raise TestError, "Non-200 Response back from server!"
+
+        self._resp = response.read ()
+        conn.close ();
+
+    ##----------------------------------------
+
+    def check (self):
+
+        rxx = re.compile ("([^:]+): (\\d+) ([0-9a-f]+)")
+        err = "bad data from server"
+
+        lines = self._resp.split ('-')
+        for l in lines:
+            m = rxx.match (l)
+            if m is None:
+                emsg ("Bad line from server: %s" % l)
+                raise TestError, "bad line from server"
+
+            k = m.group (1)
+            length = int (m.group (2))
+            sha = m.group(3)
+
+            try:
+                obj = self._data[k]
+                fp = obj.fingerprint ()
+                if fp[1] != length:
+                    emsg ("Bad len for key %s; expected %d, got %d" \
+                              % (k, fp[1], length) )
+                    raise TestError, err
+                if fp[2] != sha:
+                    emsg ("Bad SHA value for key %s; exected %s, got %s" \
+                              % (k, fp[2], sha) )
+                    raise TestError, err
+            except KeyError, e:
+                emsg ("Server sent back stupid key: %s" % k)
+                raise TestError, err
+
+    ##----------------------------------------
+
+
+##=======================================================================
 
 def main(argv):
     
     tst = Test()
     tst.readArgs(argv)
     tst.init()
+
+    print "Data:---------------------------------------------"
     tst.dump2()
+    print
+
+    tst.post()
+    tst.check ()
 
     return 0
 
-##-----------------------------------------------------------------------
+##=======================================================================
 
 try:
     rc = main(sys.argv)
