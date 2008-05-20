@@ -82,6 +82,7 @@ oksrvc_posttest_t::make_newclnt (ptr<ahttpcon> x)
 int
 main (int argc, char *argv[])
 {
+  ok_cgibuf_limit = 0x400000; // 4MB!
   oksrvc_t *oksrvc = New oksrvc_posttest_t (argc, argv);
   oksrvc->launch ();
   amain ();

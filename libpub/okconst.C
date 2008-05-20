@@ -184,7 +184,7 @@ str   ok_access_log_fmt = "ivt1sbz";
 u_int ok_clnt_timeout = 60;          // in seconds
 u_int ok_reqsize_limit = 2097152;    // 2MB
 u_int ok_hdrsize_limit = 0x2000;     // 8K
-u_int ok_cgibuf_limit = UINT_MAX;    // no artificial limit by default
+u_int ok_cgibuf_limit = 0x10000;     // 64KB
 
 //
 // libamt

@@ -211,7 +211,7 @@ static u_int fixlen (u_int l)
 {
   // MK 11/6/07 - I'm not sure why we need CGI_MAX_SCRATCH.  For now,
   // just pump it way up.
-  return min<u_int> (l, min<u_int> (ok_cgibuf_limit, CGI_MAX_SCRATCH));
+  return min<u_int> (l, ok_cgibuf_limit);
 }
 
 
@@ -230,7 +230,8 @@ bool
 cgi_t::extend_scratch ()
 {
   bool ret = false;
-  if (_maxlen > 0 && u_int (_maxlen) > buflen) {
+  u_int uml = _maxlen;
+  if (_maxlen > 0 && uml > buflen && uml <= ok_cgibuf_limit) {
     char *nb = static_cast<char *> (xmalloc (_maxlen));
     assert (nb);
     if (scratch) {
@@ -388,6 +389,7 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
     else
       inhex = false;
   }
+
     
   while ( flag && ret == ABUF_OK) {
 
@@ -472,8 +474,9 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
   }
 
   if (ret != ABUF_WAIT) {
-    assert (ret == ABUF_OK || ret == ABUF_SEPARATOR || ret == ABUF_EOF);
-    if (pcp >= endp) {
+    assert (ret == ABUF_OK || ret == ABUF_SEPARATOR || ret == ABUF_EOF ||
+	    ret == ABUF_OVERFLOW);
+    if (ret == ABUF_OVERFLOW || pcp >= endp) {
       *r = NULL;
       ret =  ABUF_OVERFLOW;
     } else {
