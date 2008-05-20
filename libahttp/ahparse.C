@@ -150,7 +150,7 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 	finish (HTTP_NOT_ALLOWED);
       }
     } else {
-	  post_cgi->set_max_scratchlen (hdr.contlen);
+      post_cgi->set_max_scratchlen (hdr.contlen);
       post_cgi->parse (pcb);
     }
   } else if (hdr.mthd == HTTP_MTHD_GET) {
