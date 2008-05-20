@@ -130,6 +130,8 @@ class Test:
         self._val_mul = 4
         self._num_fields = 8
         self._randseed = None
+        self._reverse = False
+        self._shuffle = False
 
     ##----------------------------------------
 
@@ -153,14 +155,16 @@ class Test:
 
     def readArgs (self, argv):
 
-        short_opts = 'h:p:n:k:v:s:r:'
+        short_opts = 'h:p:n:k:v:s:r:bf'
         long_opts =  [ "host=",
                        "port=",
                        "num-fields=",
                        "key-inc=",
                        "val-mul=",
                        "service=",
-                       "randseed=" ]
+                       "randseed=",
+                       "backwards",
+                       "shuffle" ]
 
         self._argv = argv
         
@@ -182,8 +186,12 @@ class Test:
                 self.set_int ("val_mul", a)
             elif o in ("-s", "--service"):
                 self._service = a
-            elif o in ('-r', '-randseed'):
+            elif o in ('-r', '--randseed'):
                 self.set_int ("randseed", a)
+            elif o in ('-b', '--backwards'):
+                self._reverse = True
+            elif o in ('-f', '--shuffle'):
+                self._shuffle = True
             else:
                 self.usage ()
 
@@ -207,6 +215,12 @@ class Test:
             lst += [ (self._key_len, self._val_len) ]
             self._key_len += self._key_inc
             self._val_len *= self._val_mul
+
+        if self._reverse:
+            lst.reverse ()
+        if self._shuffle:
+            random.shuffle (lst)
+
         self._data = DataSet (lst)
 
     ##----------------------------------------
@@ -237,8 +251,12 @@ class Test:
         rxx = re.compile ("([^:]+): (\\d+) ([0-9a-f]+)")
         err = "bad data from server"
 
-        lines = self._resp.split ('-')
+        lines = self._resp.split ('\n')
         for l in lines:
+
+            if len (l.strip ()) == 0:
+                continue
+
             m = rxx.match (l)
             if m is None:
                 emsg ("Bad line from server: %s" % l)
@@ -256,7 +274,7 @@ class Test:
                               % (k, fp[1], length) )
                     raise TestError, err
                 if fp[2] != sha:
-                    emsg ("Bad SHA value for key %s; exected %s, got %s" \
+                    emsg ("Bad SHA value for key %s; expected %s, got %s" \
                               % (k, fp[2], sha) )
                     raise TestError, err
             except KeyError, e:
