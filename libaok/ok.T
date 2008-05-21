@@ -325,15 +325,16 @@ oksrvc_t::kill (svccb *v)
 {
   RPC::okctl_program_1::okctl_kill_srv_t<svccb> srv (v);
   oksig_t sig = *srv.getarg ();
-  srv.reply ();
 
   switch (sig) {
   case OK_SIG_HARDKILL:
     SVC_ERROR ("caught hard KILL trigger; exitting immediately");
+    srv.reply ();
     end_program ();
     break;
   default:
     shutdown ();
+    srv.reply ();
     break;
   }
 }
