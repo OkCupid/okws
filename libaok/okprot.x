@@ -89,6 +89,8 @@ struct okctl_sendcon_arg_t {
 	opaque sin<>;
 };
 
+namespace RPC {
+
 program OKCTL_PROGRAM {
 	version OKCLT_VERS {
 	
@@ -143,6 +145,8 @@ program OKCTL_PROGRAM {
 	} = 1;
 } = 11279;
 
+};
+
 typedef string ip_addr_t<16>;
 enum oklog_typ_t {
   OKLOG_OK = 0,
@@ -196,6 +200,8 @@ struct oklog_fast_arg_t {
 %#define LOG_RFR    (1 << 5)
 %#define LOG_UID    (1 << 6)
 
+namespace RPC {
+
 program OKLOG_PROGRAM {
 	version OKCTL_VERS {
 	
@@ -248,3 +254,4 @@ program OKMGR_PROGRAM {
 	} = 1;
 } = 11278;
 
+};
