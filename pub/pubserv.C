@@ -82,32 +82,36 @@ pubserv_t::dispatch (svccb *sbp)
 void
 pubserv_t::config (svccb *sbp)
 {
+  RPC::pub_program_1::pub_config_srv_t<svccb> srv (sbp);
+
   if (parser->defconf) {
-    sbp->reply (parser->defconf);
+    srv.reply (parser->defconf);
   } else {
     xpub_getfile_res_t x;
     x.set_status (XPUB_STATUS_NOENT);
-    sbp->replyref (x);
+    srv.reply (x);
   }
 }
 
 void
 pubserv_t::getfile (svccb *sbp)
 {
+  RPC::pub_program_1::pub_getfile_srv_t<svccb> srv (sbp);
   str err;
   xpub_getfile_res_t res (XPUB_STATUS_OK);
-  xpubhash_t *r = sbp->Xtmpl getarg<xpubhash_t> ();
+  xpubhash_t *r = srv.getarg ();
   phashp_t hsh = phash_t::alloc (*r);
   pfile_t *f = parser->getfile (hsh);
   if (!f) res.set_status (XPUB_STATUS_NOENT);
   else f->to_xdr (res.file);
-  sbp->replyref (res);
+  srv.reply (res);
 }
 
 void
 pubserv_t::lookup (svccb *sbp)
 {
-  xpub_fn_t *x = sbp->Xtmpl getarg<xpub_fn_t> ();
+  RPC::pub_program_1::pub_lookup_srv_t<svccb> srv (sbp);
+  xpub_fn_t *x = srv.getarg ();
   pbinding_t *bnd = parser->to_binding (*x);
   xpub_lookup_res_t res (XPUB_STATUS_OK);
   bpfcp_t bpf;
@@ -122,7 +126,7 @@ pubserv_t::lookup (svccb *sbp)
     res.set_status (XPUB_STATUS_ERR);
     *res.error = err;
   }
-  sbp->replyref (res);
+  srv.reply (res);
 }
 
 void
@@ -146,23 +150,24 @@ pubserv_t::pubfiles2 (svccb *sbp)
 void
 pubserv_t::pubfiles2_close (svccb *sbp)
 {
-  xpub_cookie_t *cookie = sbp->Xtmpl getarg<xpub_cookie_t> ();
+  RPC::pub_program_1::pub_files2_close_srv_t<svccb> srv (sbp);
+  xpub_cookie_t *cookie = srv.getarg ();
   xpub_status_typ_t t = XPUB_STATUS_OK;
   if (sessions[*cookie]) {
     sessions.remove (*cookie);
   } else {
     t = XPUB_STATUS_NOENT;
   }
-  sbp->replyref (&t);
+  srv.reply (t);
 }
 
 
 void
 pubserv_t::pubfiles2_getfile (svccb *sbp)
 {
+  RPC::pub_program_1::pub_files2_getfile_srv_t<svccb> srv (sbp);
   xpub_getfile_res_t res (XPUB_STATUS_OK);
-  xpub_files2_getfile_arg_t *arg = 
-    sbp->Xtmpl getarg<xpub_files2_getfile_arg_t> ();
+  xpub_files2_getfile_arg_t *arg = srv.getarg ();
   ptr<xpub_result_t> *pres = sessions[arg->cookie];
   if (!pres) {
     res.set_status (XPUB_STATUS_NOENT);
@@ -171,7 +176,7 @@ pubserv_t::pubfiles2_getfile (svccb *sbp)
   } else {
     *res.file = (*pres)->set.files[arg->fileno];
   }
-  sbp->replyref (res);
+  srv.reply (res);
 }
 
 void

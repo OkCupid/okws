@@ -31,13 +31,15 @@ xmlrpcsrv.o: xmlrpcsrv.C
 xmlrpcsrv.lo: xmlrpcsrv.C
 okprot.o: okprot.h
 okprot.lo: okprot.h
+log.o: log.C
+log.lo: log.C
 
 xmlrpcsrv.C: xmlrpcsrv.h
 
 .PHONY: rpcclean tameclean
 
 tameclean:
-	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h
+	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C
 
 rpcclean:
 	rm -f okprot.C okprot.h

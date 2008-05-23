@@ -443,9 +443,8 @@ protected:
 
   void handle_new_con (svccb *sbp);
   bool newclnt (ptr<ahttpcon> lx);
-  void update (svccb *sbp);
+  void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);
-  void update_cb (svccb *sbp, ptr<pub_res_t> pr);
   void ready_call (bool rc);
 
   // debug initialization procedure

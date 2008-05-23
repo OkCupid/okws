@@ -289,23 +289,29 @@ oksrvc_t::ctldispatch (svccb *v)
   }
 }
 
-void
+tamed void
 oksrvc_t::update (svccb *sbp)
 {
+  tvars {
+    RPC::okctl_program_1::okctl_update_srv_t<svccb> x (sbp);
+    xpub_fnset_t *s (x.getarg ());
+    ptr<pub_res_t> pr;
+  }
+
   if (supports_pub1 ()) {
-    xpub_fnset_t *s = sbp->Xtmpl getarg <xpub_fnset_t> ();
-    rpcli->publish (*s, wrap (this, &oksrvc_t::update_cb, sbp));
+
+    twait { rpcli->publish (*s, mkevent (pr)); }
+
+    {
+      ok_res_t okr (pr);
+      ok_xstatus_t st = okr.to_xdr ();
+      x.reply (st);
+    }
+
   } else {
     SVC_ERROR ("Cannot answer UPDATE RPC without Pub v1 support.\n");
-    sbp->reject (PROC_UNAVAIL);
+    x.reject (PROC_UNAVAIL);
   }
-}
-
-void
-oksrvc_t::update_cb (svccb *sbp, ptr<pub_res_t> pr)
-{
-  ok_res_t okr (pr);
-  sbp->replyref (okr.to_xdr ());
 }
 
 void
