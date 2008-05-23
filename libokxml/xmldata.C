@@ -937,14 +937,18 @@ xml_generic_t::close_tag ()
 bool
 xml_generic_t::add (const char *s, int l)
 {
-  if (!_buf) {
-    int i;
-    // if all spaces, then don't add new chardata.
-    for (i = 0; i < l && isspace (s[i]); i++) ;
-    if (i == l) return true;
+  if (_cdata) {
+    _cdata->add (s, l);
+  } else {
+    if (!_buf) {
+      int i;
+      // if all spaces, then don't add new chardata.
+      for (i = 0; i < l && isspace (s[i]); i++) ;
+      if (i == l) return true;
+    }
+    if (!_buf) _buf = New refcounted<strbuf> ();
+    _buf->tosuio ()->copy (s, l);
   }
-  if (!_buf) _buf = New refcounted<strbuf> ();
-  _buf->tosuio ()->copy (s, l);
   return true;
 }
 
@@ -954,9 +958,13 @@ xml_generic_t::dump_data (zbuf &b, int lev) const
   xml_generic_item_iterator_t i (mkref (this));
   ptr<const xml_generic_t> e;
 
-  scalar_obj_t o = _so;
-  if (!_so.is_null ()) {
-    b << _so.to_str ();
+  if (_cdata) {
+    _cdata->dump (b);
+  } else {
+    scalar_obj_t o = _so;
+    if (!_so.is_null ()) {
+      b << _so.to_str ();
+    }
   }
   
   while ((e = i.next ())) { e->dump (b, lev + 1); }
@@ -1007,6 +1015,81 @@ xml_generic_t::dump_typename () const
 }
 
 bool xml_generic_t::has_char_data () const { return !_so.is_null (); } 
+
+bool
+xml_generic_t::start_cdata ()
+{
+  if (_cdata || _buf) return false;
+  _cdata = New refcounted<xml_cdata_t> ();
+  return true;
+}
+
+bool
+xml_generic_t::end_cdata ()
+{
+  if (!_cdata) return false;
+  _cdata->close ();
+  return true;
+}
+
+bool
+xml_cdata_t::add (const char *s, int len)
+{
+  _b.tosuio ()->copy (s, len);
+  return true;
+}
+
+void
+xml_cdata_t::set (const str &s)
+{
+  clear ();
+  _s = s;
+}
+
+void
+xml_cdata_t::clear ()
+{
+  _b.tosuio ()->clear ();
+}
+
+void
+xml_cdata_t::close ()
+{
+  _is_open = false;
+  _s = _b;
+  clear ();
+}
+
+str
+xml_generic_t::safe_cdata (bool allownull) const
+{
+  str ret;
+  if (_cdata) ret = _cdata->to_str ();
+  if (!ret && !allownull) ret = "";
+  return ret;
+}
+
+bool
+xml_generic_t::gets_cdata () const 
+{
+  return (!_buf);
+}
+
+bool
+xml_generic_t::gets_char_data () const
+{
+  return (!_cdata || _cdata->is_open ());
+}
+
+void
+xml_cdata_t::dump (zbuf &b) const
+{
+  assert (!_is_open);
+  b << "<![CDATA[";
+  if (_s)
+    b << _s;
+  b << "]]>";
+}
 
 
 //-----------------------------------------------------------------------

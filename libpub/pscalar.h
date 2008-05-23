@@ -55,6 +55,10 @@ private:
 
     bool to_int64 (int64_t *out) const;
     bool to_double (double *out) const;
+
+    void set (const str &s);
+    void set (double d);
+    void set (int64_t i);
     
     typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
     
@@ -84,6 +88,13 @@ public:
   bool to_bool () const { return _p->to_bool (); }
   bool is_null () const { return _p->is_null (); }
   str trim () const;
+
+
+  void set (const str &s) { _p->set (s); }
+  void set (double d) { _p->set (d); }
+  void set (int64_t i) { _p->set (i); }
+
+
 private:
   ptr<_p_t> _p;
 };

@@ -147,7 +147,10 @@ public:
 
   virtual bool add (const char *buf, int len) { return false; }
   virtual bool gets_char_data () const { return false; }
+  virtual bool start_cdata () const { return false; }
+  virtual bool end_cdata () const { return false; }
   virtual bool has_char_data () const { return gets_char_data (); }
+  virtual bool has_cdata () const { return false; }
   virtual bool add (ptr<xml_element_t> e) { return false; }
   virtual bool close_tag () { return true; }
 };
@@ -814,6 +817,25 @@ public:
     key_iterator_t<scalar_obj_t> (x._t) {}
 };
 
+class xml_cdata_t {
+public:
+  xml_cdata_t () : _is_open (true) {}
+  ~xml_cdata_t () {}
+
+  bool add (const char *c, int len);
+  void close (void);
+  str to_str () const { return _s; }
+  void set (const str &s);
+  bool is_open () const { return _is_open; }
+  void dump (zbuf &b) const;
+
+private:
+  void clear (void);
+  strbuf _b;
+  str _s;
+  bool _is_open;
+};
+
 class xml_generic_t : public xml_element_t {
 public:
   xml_generic_t (const char *n, const char **atts) : 
@@ -838,14 +860,22 @@ public:
   const char *xml_typename () const;
   bool is_a (const char *t) const;
   bool close_tag () ;
-  bool gets_char_data () const { return true; }
+  bool gets_char_data () const;
   bool has_char_data () const ;
+  bool has_cdata () const { return _cdata; }
+  bool gets_cdata () const;
   bool add (const char *c, int l);
   str dump_typename () const;
 
+  bool start_cdata ();
+  bool end_cdata ();
+
   void dump_data (zbuf &b, int lev) const;
 
-  scalar_obj_t cdata () const { return _so; }
+  scalar_obj_t char_data () const { return _so; }
+  ptr<xml_cdata_t> cdata () { return _cdata; }
+  ptr<const xml_cdata_t> cdata () const { return _cdata; }
+  str safe_cdata (bool allownull) const;
 
   friend class xml_generic_item_iterator_t;
   friend class xml_generic_key_iterator_t;
@@ -857,6 +887,7 @@ protected:
   qhash<str, ptr<vec<ptr<xml_generic_t> > > > _tab;
   scalar_obj_t _so;
   ptr<strbuf> _buf;
+  ptr<xml_cdata_t> _cdata;
 };
 
 typedef ptr<vec<ptr<xml_generic_t> > > gvecp_t;

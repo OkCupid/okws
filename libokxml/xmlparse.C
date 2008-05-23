@@ -100,6 +100,19 @@ character_data_handler (void *pv, const char *buf, int len)
   parser->found_data (buf, len);
 }
 
+static void
+cdata_start_handler (void *pv)
+{
+  xml_req_parser_t *parser = static_cast<xml_req_parser_t *> (pv);
+  parser->start_cdata ();
+}
+
+static void
+cdata_end_handler (void *pv)
+{
+  xml_req_parser_t *parser = static_cast<xml_req_parser_t *> (pv);
+  parser->end_cdata ();
+}
 
 xml_req_parser_t::~xml_req_parser_t ()
 {
@@ -158,6 +171,36 @@ xml_req_parser_t::end_element (const char *nm)
 }
 
 void
+xml_req_parser_t::start_cdata (void)
+{
+  xml_element_t *el = active_el ();
+  if (!el->start_cdata ()) {
+    strbuf b;
+    str m;
+    if (el->xml_typename ()) {
+      b << "for element of type '" << el->xml_typename () << "'; ";
+    }
+    m = b;
+    parse_error (XML_PARSE_UNEXPECTED_CDATA, m);
+  }
+}
+
+void
+xml_req_parser_t::end_cdata (void)
+{
+  xml_element_t *el = active_el ();
+  if (!el->end_cdata ()) {
+    strbuf b;
+    str m;
+    if (el->xml_typename ()) {
+      b << "for element of type '" << el->xml_typename () << "'; ";
+    }
+    m = b;
+    parse_error (XML_PARSE_BAD_CDATA, m);
+  }
+}
+
+void
 xml_req_parser_t::found_data (const char *buf, int len)
 {
   xml_element_t *el = active_el ();
@@ -196,6 +239,8 @@ xml_req_parser_t::init (const char *encoding)
   XML_SetElementHandler (_xml_parser, start_element_handler, 
 			 end_element_handler);
   XML_SetCharacterDataHandler (_xml_parser, character_data_handler);
+  XML_SetCdataSectionHandler (_xml_parser, cdata_start_handler,
+			      cdata_end_handler);
 }
 
 void
@@ -275,7 +320,6 @@ xml_req_parser_t::cancel ()
 {
   XML_StopParser (_xml_parser, 0);
 }
-
 
 
 #endif /* HAVE_EXPAT */

@@ -107,6 +107,38 @@ scalar_obj_t::trim () const
   return str (bp, ep - bp);
 }
 
+void
+scalar_obj_t::_p_t::set (const str &s)
+{
+  _s = s;
+  _double_cnv = CNV_NONE;
+  _int_cnv = CNV_NONE;
+}
+
+void
+scalar_obj_t::_p_t::set (double d)
+{
+#define BUFSZ 1024
+  char buf[BUFSZ];
+  size_t n = snprintf (buf, BUFSZ-1, "%g" , d);
+  _s = buf;
+  size_t lim = min<size_t> (BUFSZ -1, n);
+  buf[lim] = '\0';
+  _d = d;
+  _double_cnv = CNV_OK;
+  _int_cnv = CNV_BAD;
+#undef BUFSZ
+}
+
+void
+scalar_obj_t::_p_t::set (int64_t i)
+{
+  _s = strbuf () << i;
+  _i = i;
+  _d = i;
+  _double_cnv = CNV_OK;
+  _int_cnv = CNV_OK;
+}
 
 //-----------------------------------------------------------------------
 //=======================================================================

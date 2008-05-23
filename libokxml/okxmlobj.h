@@ -215,7 +215,9 @@ public:
   const xml_attributes_t &attributes () const { return obj ()->attributes (); }
   scalar_obj_t attribute (const str &k) const { return obj ()->attribute (k); }
   bool is_null () const { return obj ()->is_null (); }
-  scalar_obj_t cdata () const { return obj ()->cdata (); }
+  scalar_obj_t chdata () const { return obj ()->char_data (); }
+  str cdata (bool allownull = false) const 
+  { return obj ()->safe_cdata (allownull); }
 
   friend class xml_gobj_key_iterator_t;
   friend class xml_gobj_item_iterator_t;
