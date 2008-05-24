@@ -84,8 +84,10 @@ scalar_obj_t::_p_t::to_str () const
   return _s;
 }
 
-scalar_obj_t::scalar_obj_t () : _p (New refcounted<_p_t> ()) {}
-scalar_obj_t::scalar_obj_t (const str &s) : _p (New refcounted<_p_t> (s)) {}
+scalar_obj_t::scalar_obj_t () 
+  : _p (New refcounted<_p_t> ()), _frozen (false) {}
+scalar_obj_t::scalar_obj_t (const str &s) 
+  : _p (New refcounted<_p_t> (s)), _frozen (false) {}
 
 str
 scalar_obj_t::trim () const
@@ -163,6 +165,7 @@ scalar_obj_t::freeze ()
     str s = *_b;
     _p->set (s);
     _b = NULL;
+    _frozen = true;
   }
 }
 

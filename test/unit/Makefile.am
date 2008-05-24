@@ -8,19 +8,22 @@ SUFFIXES = .C .T .h
 
 if USE_XML
 
-XMLPROGS = xmltst1 xmlcli1 xmltst3 xmltst4
+XMLPROGS = xmltst1 xmlcli1 xmltst3 xmltst4 xmltst5
 xmltst1_SOURCES = xmltst1.C
 xmltst4_SOURCES = xmltst4.C
+xmltst5_SOURCES = xmltst5.C
 xmlcli1_SOURCES = xmlcli1.C
 
 xmltst1.o:	xmltst1.C
 xmltst1.lo: 	xmltst1.C
 xmlcli1.o:	xmlcli1.C
 xmlcli1.lo:	xmlcli1.C
-xmltst3.o:  xmltst3.C
-xmltst3.lo:  xmltst3.C
-xmltst4.o:  xmltst4.C
-xmltst4.lo:  xmltst4.C
+xmltst3.o:	xmltst3.C
+xmltst3.lo:	xmltst3.C
+xmltst4.o:	xmltst4.C
+xmltst4.lo:	xmltst4.C
+xmltst5.lo:	xmltst5.C	
+xmltst5.o:	xmltst5.C	
 srv.o:		srv.C
 srv.lo:		srv.T
 
@@ -34,9 +37,9 @@ pubmemtst.o:	pubmemtst.C
 pubmemtst.lo: 	pubmemtst.C
 
 TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T pubmemtst.T xmltst3.T xmltst4.T \
-	srv.T
+	srv.T xmltst5.T
 TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C xmltst3.C xmltst4.C \
-	srv.C
+	srv.C xmltst5.C
 
 noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst \
 	gz srv newline

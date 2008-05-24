@@ -98,6 +98,7 @@ public:
   void add (const char *c, size_t l);
   void add (const str &s);
   void freeze ();
+  bool is_frozen () const { return _frozen; }
   
   virtual bool strip_add (const char *s, int l) const { return true; }
 
@@ -105,6 +106,7 @@ private:
   void ready_append ();
   ptr<strbuf> _b;
   ptr<_p_t> _p;
+  bool _frozen;
 };
 
 #endif /* _LIBPUB_PSCALAR_H_ */

@@ -936,9 +936,11 @@ xml_generic_t::close_tag ()
 bool
 xml_generic_t::add (const char *s, int l)
 {
-  if (!_so && has_non_ws (s, l)) 
+  bool nonws = has_non_ws (s, l);
+
+  if (!_so && nonws)
     _so = New refcounted<xml_scalar_obj_w_t> ();
-  if (_so)
+  if (_so && (nonws || !_so->is_frozen ()))
     _so->add (s, l);
   return true;
 }

@@ -56,16 +56,6 @@ explore (ptr<const xml_generic_t> top)
     str s = tags[i].data();
     warn << "  Tag: " << s << "\n";
   }
-
-  {
-    zbuf zb;
-    o.dump (zb);
-    strbuf b;
-    zb.to_strbuf (&b, false);
-    warn << "DUMP==========================================================\n"
-	 << b << "\n";
-  }
-
 }
 
 tamed static void
