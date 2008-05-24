@@ -153,7 +153,7 @@ xml_gobj_t::operator[] (size_t i) const
 {
   if (!_v || i >= _v->size ()) {
     if (_obj && i == 0) {
-      return xml_gobj_t ((*_v)[0], NULL);
+      return xml_gobj_t (_obj, NULL);
     } else {
       return xml_gobj_t ();
     }

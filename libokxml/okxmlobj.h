@@ -215,12 +215,10 @@ public:
   const xml_attributes_t &attributes () const { return obj ()->attributes (); }
   scalar_obj_t attribute (const str &k) const { return obj ()->attribute (k); }
   bool is_null () const { return obj ()->is_null (); }
+  operator str() const { return data(); }
+  void dump (zbuf &b) { obj ()->dump (b); }
 
-  // Data that is just of the form <src>http://foo.com</src>
-  scalar_obj_t chdata () const { return obj ()->chdata (); }
-
-  // Data of the form <text><![CDATA[<x><y><z>]]></text>
-  scalar_obj_t cdata () const { return obj ()->cdata (); }
+  scalar_obj_t data () const { return obj ()->data (); }
 
   friend class xml_gobj_key_iterator_t;
   friend class xml_gobj_item_iterator_t;

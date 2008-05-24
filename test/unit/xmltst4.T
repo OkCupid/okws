@@ -20,15 +20,17 @@ explore (ptr<const xml_generic_t> top)
   xml_gobj_t o (top);
   xml_gobj_t okt = o("OkTest");
   warn << "OkTest.AboutTheAuthor.Description=" << 
-    o("OkTest")("AboutTheAuthor")("Description").chdata ().trim () << "\n";
+    o("OkTest")("AboutTheAuthor")("Description").data ().trim () << "\n";
+
+  warn << "OkTest.Title=" << o("OkTest")("Title") << "\n";
 
   xml_gobj_t var = okt("Var");
   for (size_t i = 0; i < var.len(); i++) {
-    warn << "OkTest.Var[" << i << "].Name=" << var[i]("Name").chdata ().trim ()
+    warn << "OkTest.Var[" << i << "].Name=" << var[i]("Name").data ().trim ()
 	 << "\n";
   }
-  warn << "->Var the First=" << var("Name").chdata ().trim () << "\n";
-  warn << "->Var the First=" << var("Name")[0].chdata ().trim () << "\n";
+  warn << "->Var the First=" << var("Name").data ().trim () << "\n";
+  warn << "->Var the First=" << var("Name")[0].data ().trim () << "\n";
   
   xml_gobj_key_iterator_t ki (okt);
   str s;
@@ -51,9 +53,19 @@ explore (ptr<const xml_generic_t> top)
 
   xml_gobj_t tags = okt("Tags")("Tag");
   for (size_t i = 0; i < tags.len (); i++) {
-    str s = tags[i].chdata();
+    str s = tags[i].data();
     warn << "  Tag: " << s << "\n";
   }
+
+  {
+    zbuf zb;
+    o.dump (zb);
+    strbuf b;
+    zb.to_strbuf (&b, false);
+    warn << "DUMP==========================================================\n"
+	 << b << "\n";
+  }
+
 }
 
 tamed static void

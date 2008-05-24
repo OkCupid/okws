@@ -140,5 +140,40 @@ scalar_obj_t::_p_t::set (int64_t i)
   _int_cnv = CNV_OK;
 }
 
+void
+scalar_obj_t::add (const char *c, size_t s)
+{
+  if (!_b) {
+    _p->clear ();
+    _b = New refcounted<strbuf> ();
+  }
+  _b->tosuio ()->copy (c, s);
+}
+
+void
+scalar_obj_t::add (const str &s)
+{
+  add (s.cstr (), s.len ());
+}
+
+void
+scalar_obj_t::freeze ()
+{
+  if (_b) {
+    str s = *_b;
+    _p->set (s);
+    _b = NULL;
+  }
+}
+
+void
+scalar_obj_t::_p_t::clear ()
+{
+  _s = NULL;
+  _d = 0.0;
+  _i = 0;
+  _double_cnv = _int_cnv = CNV_NONE;
+}
+
 //-----------------------------------------------------------------------
 //=======================================================================

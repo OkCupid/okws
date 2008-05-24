@@ -204,7 +204,7 @@ void
 xml_req_parser_t::found_data (const char *buf, int len)
 {
   xml_element_t *el = active_el ();
-  if (el->gets_char_data ()) {
+  if (el->gets_data ()) {
     if (!el->add (buf, len)) {
       strbuf b;
       str tmp (buf, len);
