@@ -1043,7 +1043,7 @@ void
 xml_cdata_t::set (const str &s)
 {
   clear ();
-  _s = s;
+  _so.set (s);
 }
 
 void
@@ -1056,17 +1056,8 @@ void
 xml_cdata_t::close ()
 {
   _is_open = false;
-  _s = _b;
+  _so.set (_b);
   clear ();
-}
-
-str
-xml_generic_t::safe_cdata (bool allownull) const
-{
-  str ret;
-  if (_cdata) ret = _cdata->to_str ();
-  if (!ret && !allownull) ret = "";
-  return ret;
 }
 
 bool
@@ -1084,11 +1075,9 @@ xml_generic_t::gets_char_data () const
 void
 xml_cdata_t::dump (zbuf &b) const
 {
+  str s = _so;
   assert (!_is_open);
-  b << "<![CDATA[";
-  if (_s)
-    b << _s;
-  b << "]]>";
+  b << "<![CDATA[" << s << "]]>";
 }
 
 

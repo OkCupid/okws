@@ -824,16 +824,16 @@ public:
 
   bool add (const char *c, int len);
   void close (void);
-  str to_str () const { return _s; }
   void set (const str &s);
   bool is_open () const { return _is_open; }
   void dump (zbuf &b) const;
+  scalar_obj_t scalar_obj () const { assert (!_is_open); return _so; }
 
 private:
   void clear (void);
   strbuf _b;
-  str _s;
   bool _is_open;
+  scalar_obj_t _so;
 };
 
 class xml_generic_t : public xml_element_t {
@@ -872,10 +872,12 @@ public:
 
   void dump_data (zbuf &b, int lev) const;
 
-  scalar_obj_t char_data () const { return _so; }
-  ptr<xml_cdata_t> cdata () { return _cdata; }
-  ptr<const xml_cdata_t> cdata () const { return _cdata; }
-  str safe_cdata (bool allownull) const;
+  scalar_obj_t chdata () const { return _so; }
+  ptr<xml_cdata_t> cdata_p () { return _cdata; }
+  ptr<const xml_cdata_t> cdata_p () const { return _cdata; }
+
+  scalar_obj_t cdata () const 
+  { return _cdata ? _cdata->scalar_obj () : scalar_obj_t (); }
 
   friend class xml_generic_item_iterator_t;
   friend class xml_generic_key_iterator_t;
