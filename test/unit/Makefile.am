@@ -36,13 +36,36 @@ okwc1tst.lo:	okwc1tst.C
 pubmemtst.o:	pubmemtst.C
 pubmemtst.lo: 	pubmemtst.C
 
-TAMEIN = xmlcli1.T xmltst1.T okwc1tst.T pubmemtst.T xmltst3.T xmltst4.T \
-	srv.T xmltst5.T
-TAMEOUT = xmlcli1.C xmltst1.C okwc1tst.C pubmemtst.C xmltst3.C xmltst4.C \
-	srv.C xmltst5.C
+TAMEIN = \
+	xmlcli1.T \
+	pubmemtst.T \
+	okwc1tst.T \
+	xmltst1.T \
+	xmltst3.T \
+	xmltst4.T \
+	xmltst5.T \
+	srv.T 
 
-noinst_PROGRAMS = kmptst cgitst1 $(XMLPROGS) xmltst2 okwc1tst pubmemtst \
-	gz srv newline
+TAMEOUT = \
+	xmlcli1.C \
+	pubmemtst.C \
+	okwc1tst.C \
+	xmltst1.C \
+	xmltst3.C \
+	xmltst4.C \
+	xmltst5.C \
+	srv.C 
+
+noinst_PROGRAMS = \
+	kmptst \
+	cgitst1 \
+	$(XMLPROGS) \
+	xmltst2 \
+	okwc1tst \
+	pubmemtst \
+	gz \
+	srv \
+	newline
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
