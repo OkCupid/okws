@@ -45,7 +45,9 @@ enum { XML_PARSE_OK = 0,
        XML_PARSE_UNBALANCED = 104,
        XML_PARSE_UNMATCHED = 105,
        XML_PARSE_CLOSE_ERROR = 106,
-       XML_PARSE_BAD_CHARDATA = 107 };
+       XML_PARSE_BAD_CHARDATA = 107,
+       XML_PARSE_UNEXPECTED_CDATA = 108,
+       XML_PARSE_BAD_CDATA = 109 };
 
 class xml_req_parser_t : public async_parser_t {
 public:
@@ -65,6 +67,8 @@ public:
   void start_element (const char *name, const char **atts);
   void end_element (const char *name);
   void found_data (const char *buf, int len);
+  void start_cdata ();
+  void end_cdata ();
 
   virtual ptr<xml_element_t> generate (const char *nm, const char **atts);
   virtual void v_init ();
@@ -96,6 +100,7 @@ private:
   int                _status;
   str                _err_msg;
 };
+
 
 # endif /* HAVE_EXPAT */
 #endif  /* LIBAHTTP_OKXMLPARSE_H */

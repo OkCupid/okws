@@ -55,6 +55,11 @@ private:
 
     bool to_int64 (int64_t *out) const;
     bool to_double (double *out) const;
+
+    void set (const str &s);
+    void set (double d);
+    void set (int64_t i);
+    void clear ();
     
     typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
     
@@ -69,6 +74,7 @@ private:
 public:
   scalar_obj_t ();
   scalar_obj_t (const str &s);
+  virtual ~scalar_obj_t () {}
   operator str () const { return to_str (); }
   operator bool () const { return to_bool (); }
   operator int64_t () const { return to_int64 (); }
@@ -84,8 +90,23 @@ public:
   bool to_bool () const { return _p->to_bool (); }
   bool is_null () const { return _p->is_null (); }
   str trim () const;
+
+  void set (const str &s) { _p->set (s); }
+  void set (double d) { _p->set (d); }
+  void set (int64_t i) { _p->set (i); }
+
+  void add (const char *c, size_t l);
+  void add (const str &s);
+  void freeze ();
+  bool is_frozen () const { return _frozen; }
+  
+  virtual bool strip_add (const char *s, int l) const { return true; }
+
 private:
+  void ready_append ();
+  ptr<strbuf> _b;
   ptr<_p_t> _p;
+  bool _frozen;
 };
 
 #endif /* _LIBPUB_PSCALAR_H_ */

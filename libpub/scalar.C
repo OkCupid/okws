@@ -84,8 +84,10 @@ scalar_obj_t::_p_t::to_str () const
   return _s;
 }
 
-scalar_obj_t::scalar_obj_t () : _p (New refcounted<_p_t> ()) {}
-scalar_obj_t::scalar_obj_t (const str &s) : _p (New refcounted<_p_t> (s)) {}
+scalar_obj_t::scalar_obj_t () 
+  : _p (New refcounted<_p_t> ()), _frozen (false) {}
+scalar_obj_t::scalar_obj_t (const str &s) 
+  : _p (New refcounted<_p_t> (s)), _frozen (false) {}
 
 str
 scalar_obj_t::trim () const
@@ -107,6 +109,74 @@ scalar_obj_t::trim () const
   return str (bp, ep - bp);
 }
 
+void
+scalar_obj_t::_p_t::set (const str &s)
+{
+  _s = s;
+  _double_cnv = CNV_NONE;
+  _int_cnv = CNV_NONE;
+}
+
+void
+scalar_obj_t::_p_t::set (double d)
+{
+#define BUFSZ 1024
+  char buf[BUFSZ];
+  size_t n = snprintf (buf, BUFSZ-1, "%g" , d);
+  _s = buf;
+  size_t lim = min<size_t> (BUFSZ -1, n);
+  buf[lim] = '\0';
+  _d = d;
+  _double_cnv = CNV_OK;
+  _int_cnv = CNV_BAD;
+#undef BUFSZ
+}
+
+void
+scalar_obj_t::_p_t::set (int64_t i)
+{
+  _s = strbuf () << i;
+  _i = i;
+  _d = i;
+  _double_cnv = CNV_OK;
+  _int_cnv = CNV_OK;
+}
+
+void
+scalar_obj_t::add (const char *c, size_t s)
+{
+  if (!_b) {
+    _p->clear ();
+    _b = New refcounted<strbuf> ();
+  }
+  _b->tosuio ()->copy (c, s);
+}
+
+void
+scalar_obj_t::add (const str &s)
+{
+  add (s.cstr (), s.len ());
+}
+
+void
+scalar_obj_t::freeze ()
+{
+  if (_b) {
+    str s = *_b;
+    _p->set (s);
+    _b = NULL;
+    _frozen = true;
+  }
+}
+
+void
+scalar_obj_t::_p_t::clear ()
+{
+  _s = NULL;
+  _d = 0.0;
+  _i = 0;
+  _double_cnv = _int_cnv = CNV_NONE;
+}
 
 //-----------------------------------------------------------------------
 //=======================================================================

@@ -146,8 +146,11 @@ public:
   { return !strcmp (xml_typename (), s); }
 
   virtual bool add (const char *buf, int len) { return false; }
-  virtual bool gets_char_data () const { return false; }
-  virtual bool has_char_data () const { return gets_char_data (); }
+  virtual bool gets_data () const { return false; }
+  virtual bool start_cdata () { return false; }
+  virtual bool end_cdata () { return false; }
+  virtual bool has_data () const { return gets_data (); }
+  virtual bool has_cdata () const { return false; }
   virtual bool add (ptr<xml_element_t> e) { return false; }
   virtual bool close_tag () { return true; }
 };
@@ -211,7 +214,7 @@ public:
   { if (_value) z << _value; }
   bool dump_to_python (strbuf &b) const;
 
-  bool gets_char_data () const { return true; }
+  bool gets_data () const { return true; }
   bool add (const char *s, int l);
   bool close_tag ();
 
@@ -428,7 +431,7 @@ class xml_scalar_t : public xml_element_t {
 public:
   xml_scalar_t () {}
   bool add (const char *b, int s);
-  bool gets_char_data () const { return true; }
+  bool gets_data () const { return true; }
   bool is_value () const { return true; }
   bool set_pointer_to_me (ptr<xml_value_t> *v);
 protected:
@@ -814,9 +817,22 @@ public:
     key_iterator_t<scalar_obj_t> (x._t) {}
 };
 
+class xml_scalar_obj_w_t : public scalar_obj_t {
+public:
+  virtual void dump (zbuf &b) const;
+  virtual bool is_cdata () const { return false; }
+  bool strip_add (const char *s, int l) const;
+};
+
+class xml_cdata_t : public xml_scalar_obj_w_t {
+public:
+  void dump (zbuf &b) const;
+  bool is_cdata () const { return true; }
+};
+
 class xml_generic_t : public xml_element_t {
 public:
-  xml_generic_t (const char *n, const char **atts) : 
+  xml_generic_t (const char *n = NULL, const char **atts = NULL) : 
     xml_element_t (), _class (n), _atts (atts) {}
 
   bool add (ptr<xml_element_t> e);
@@ -832,38 +848,50 @@ public:
   scalar_obj_t attribute (const str &k) const { return _atts[k]; }
   str tagname () const { return _class; }
 
-  static ptr<const xml_generic_t> alloc_null ();
+  static ptr<xml_generic_t> alloc_null ();
+  static ptr<const xml_generic_t> const_alloc_null ();
   bool is_null () const { return !_class; }
 
   const char *xml_typename () const;
   bool is_a (const char *t) const;
   bool close_tag () ;
-  bool gets_char_data () const { return true; }
-  bool has_char_data () const ;
+  bool gets_data () const { return true; }
+  bool has_data () const;
+  bool has_cdata () const { return _so && _so->is_cdata (); }
   bool add (const char *c, int l);
   str dump_typename () const;
 
-  void dump_data (zbuf &b, int lev) const;
+  bool start_cdata ();
+  bool end_cdata ();
 
-  scalar_obj_t cdata () const { return _so; }
+  void dump_data (zbuf &b, int lev) const;
+  void set (const str &s) { make_so ()->set (s); }
+  void set (int64_t i) { make_so ()->set (i); }
+  void set (double d) { make_so ()->set (d); }
+
+  scalar_obj_t data () const;
+  ptr<xml_scalar_obj_w_t> make_so ();
 
   friend class xml_generic_item_iterator_t;
+  friend class xml_generic_const_item_iterator_t;
   friend class xml_generic_key_iterator_t;
+  friend class xml_generic_const_key_iterator_t;
+
+  static ptr<const xml_generic_t> _null_generic;
 
 protected:
-  static ptr<xml_generic_t> _null_generic;
   str _class;
   xml_attributes_t _atts;
   qhash<str, ptr<vec<ptr<xml_generic_t> > > > _tab;
-  scalar_obj_t _so;
-  ptr<strbuf> _buf;
+  ptr<xml_scalar_obj_w_t> _so;
 };
 
 typedef ptr<vec<ptr<xml_generic_t> > > gvecp_t;
+typedef ptr<const vec<ptr<xml_generic_t> > > cgvecp_t;
 
-class xml_generic_item_iterator_t {
+class xml_generic_const_item_iterator_t {
 public:
-  xml_generic_item_iterator_t (ptr<const xml_generic_t> o)
+  xml_generic_const_item_iterator_t (ptr<const xml_generic_t> o)
     : _obj (o), _it (o->_tab), _i (0), _eof (false) {}
   ptr<const xml_generic_t> next ();
 
@@ -875,9 +903,29 @@ private:
   bool _eof;
 };
 
+class xml_generic_item_iterator_t {
+public:
+  xml_generic_item_iterator_t (ptr<xml_generic_t> o)
+    : _obj (o), _it (o->_tab), _i (0), _eof (false) {}
+  ptr<xml_generic_t> next ();
+
+private:
+  ptr<xml_generic_t> _obj;
+  qhash_iterator_t<str, gvecp_t> _it;
+  size_t _i;
+  gvecp_t _v;
+  bool _eof;
+};
+
 class xml_generic_key_iterator_t : public key_iterator_t<gvecp_t> {
 public:
-  xml_generic_key_iterator_t (ptr<const xml_generic_t> o) 
+  xml_generic_key_iterator_t (ptr<xml_generic_t> o) 
+    : key_iterator_t<gvecp_t> (o->_tab) {}
+};
+
+class xml_generic_const_key_iterator_t : public key_iterator_t<gvecp_t> {
+public:
+  xml_generic_const_key_iterator_t (ptr<const xml_generic_t> o) 
     : key_iterator_t<gvecp_t> (o->_tab) {}
 };
 
