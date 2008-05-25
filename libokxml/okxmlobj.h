@@ -200,38 +200,97 @@ public:
 
 typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
 
-//-----------------------------------------------------------------------
+//=======================================================================
 
 // An xml generic object
-class xml_gobj_t {
-public:
-  xml_gobj_t (ptr<const xml_element_t> el);
-  xml_gobj_t () : _obj (xml_generic_t::alloc_null ()) {}
 
-  xml_gobj_t operator[] (size_t s) const;
-  xml_gobj_t operator() (const str &k) const;
+class xml_gobj_const_t;
+
+//-----------------------------------------------------------------------
+
+class xml_gobj_base_t {
+public:
+  virtual ~xml_gobj_base_t () {}
+  xml_gobj_base_t () {}
+
+  xml_gobj_const_t operator[] (size_t s) const;
+  xml_gobj_const_t operator() (const str &k) const;
   size_t len () const;
   str tagname () const { return obj ()->tagname (); }
   const xml_attributes_t &attributes () const { return obj ()->attributes (); }
   scalar_obj_t attribute (const str &k) const { return obj ()->attribute (k); }
   bool is_null () const { return obj ()->is_null (); }
   operator str() const { return data(); }
-  void dump (zbuf &b) { obj ()->dump (b); }
+  void dump (zbuf &b) const { obj ()->dump (b); }
+
+  ptr<const xml_generic_t> obj() const;
 
   scalar_obj_t data () const { return obj ()->data (); }
 
-  friend class xml_gobj_key_iterator_t;
-  friend class xml_gobj_item_iterator_t;
-private:
+protected:
+  virtual ptr<const vec<ptr<xml_generic_t> > > v() const = 0;
+  virtual ptr<const xml_generic_t> o() const = 0;
 
-  xml_gobj_t (ptr<const xml_generic_t> g,
-	      ptr<const vec<ptr<xml_generic_t> > > v)
+};
+
+//-----------------------------------------------------------------------
+
+class xml_gobj_const_t : public xml_gobj_base_t {
+public:
+  xml_gobj_const_t (ptr<const xml_element_t> el);
+  xml_gobj_const_t () : _obj (xml_generic_t::const_alloc_null ()) {}
+
+protected:
+  ptr<const vec<ptr<xml_generic_t> > > v() const { return _v; }
+  ptr<const xml_generic_t> o() const { return _obj; }
+
+  xml_gobj_const_t (ptr<const xml_generic_t> g,
+		    ptr<const vec<ptr<xml_generic_t> > > v)
     : _obj (g), _v (v) {}
-  ptr<const xml_generic_t> obj () const;
 
+  friend class xml_gobj_base_t;
+  friend class xml_gobj_const_key_iterator_t;
+  friend class xml_gobj_const_item_iterator_t;
+
+private:
   ptr<const xml_generic_t> _obj;
   ptr<const vec<ptr<xml_generic_t> > > _v;
 };
+
+//-----------------------------------------------------------------------
+
+class xml_gobj_t : public xml_gobj_base_t {
+public:
+  xml_gobj_t (ptr<xml_element_t> el);
+  xml_gobj_t () : _obj (xml_generic_t::alloc_null ()) {}
+
+  xml_gobj_t operator[] (size_t s) ;
+  xml_gobj_t operator() (const str &k) ;
+
+  xml_gobj_t &operator=(const str &s) { set (s); return (*this); }
+  void set (const str &s) { obj ()->set (s); }
+  ptr<xml_generic_t> obj () ;
+
+  friend class xml_gobj_key_iterator_t;
+  friend class xml_gobj_item_iterator_t;
+  friend class xml_gobj_const_key_iterator_t;
+  friend class xml_gobj_const_item_iterator_t;
+
+protected:
+  ptr<const vec<ptr<xml_generic_t> > > v() const { return _v; }
+  ptr<const xml_generic_t> o() const { return _obj; }
+
+  xml_gobj_t (ptr<xml_generic_t> g,
+	      ptr<vec<ptr<xml_generic_t> > > v)
+    : _obj (g), _v (v) {}
+
+private:
+  void extend_vec (size_t i);
+  ptr<xml_generic_t> _obj;
+  ptr<vec<ptr<xml_generic_t> > > _v;
+};
+
+//-----------------------------------------------------------------------
 
 class xml_gobj_key_iterator_t {
 public:
@@ -252,7 +311,7 @@ public:
   xml_gobj_item_iterator_t (xml_gobj_t o) : _it (o.obj ()) {}
   bool next (xml_gobj_t *n = NULL)
   {
-    ptr<const xml_generic_t> g = _it.next ();
+    ptr<xml_generic_t> g = _it.next ();
     if (g && n) *n = xml_gobj_t (g, NULL);
     return g;
   }
@@ -260,7 +319,34 @@ private:
   xml_generic_item_iterator_t _it;
 };
 
+//-----------------------------------------------------------------------
 
+class xml_gobj_const_key_iterator_t {
+public:
+  xml_gobj_const_key_iterator_t (xml_gobj_const_t o) : _it (o.obj ()) {}
+  str next (xml_gobj_const_t *v = NULL)
+  {
+    ptr<vec<ptr<xml_generic_t> > > p;
+    str k = _it.next (&p);
+    if (k && v) *v = xml_gobj_const_t (NULL, p);
+    return k;
+  }
+private:
+  xml_generic_const_key_iterator_t _it;
+};
+
+class xml_gobj_const_item_iterator_t {
+public:
+  xml_gobj_const_item_iterator_t (xml_gobj_const_t o) : _it (o.obj ()) {}
+  bool next (xml_gobj_const_t *n = NULL)
+  {
+    ptr<const xml_generic_t> g = _it.next ();
+    if (g && n) *n = xml_gobj_const_t (g, NULL);
+    return g;
+  }
+private:
+  xml_generic_const_item_iterator_t _it;
+};
 //-----------------------------------------------------------------------
 
 #endif /* _LIBAHTTP_OKXMLOBJ_H */

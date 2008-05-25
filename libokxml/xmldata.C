@@ -899,14 +899,19 @@ xml_generic_t::add (ptr<xml_element_t> e)
   return ret;
 }
 
-ptr<xml_generic_t> xml_generic_t::_null_generic;
-
-ptr<const xml_generic_t>
+ptr<xml_generic_t>
 xml_generic_t::alloc_null()
 {
+  return New refcounted<xml_generic_t> ();
+}
+
+ptr<const xml_generic_t> xml_generic_t::_null_generic;
+
+ptr<const xml_generic_t>
+xml_generic_t::const_alloc_null()
+{
   if (!_null_generic) {
-    const char **p = NULL;
-    _null_generic = New refcounted<xml_generic_t> ("NULL", p);
+    _null_generic = New refcounted<xml_generic_t> ();
   }
   return _null_generic;
 }
@@ -972,7 +977,7 @@ xml_cdata_t::dump (zbuf &b) const
 void 
 xml_generic_t::dump_data (zbuf &b, int lev) const
 {
-  xml_generic_item_iterator_t i (mkref (this));
+  xml_generic_const_item_iterator_t i (mkref (this));
   ptr<const xml_generic_t> e;
 
   if (_so) _so->dump (b);
@@ -980,8 +985,22 @@ xml_generic_t::dump_data (zbuf &b, int lev) const
   while ((e = i.next ())) { e->dump (b, lev + 1); }
 }
 
-ptr<const xml_generic_t>
+ptr<xml_generic_t>
 xml_generic_item_iterator_t::next ()
+{
+  ptr<xml_generic_t> r;
+  if (!_eof && (!_v || _i >= _v->size ())) {
+    _v = NULL;
+    _i = 0;
+    if (!_it.next (&_v)) _eof = true;
+    else assert (_v->size () > 0);
+  }
+  if (_v) r = (*_v)[_i++];
+  return r;
+}
+
+ptr<const xml_generic_t>
+xml_generic_const_item_iterator_t::next ()
 {
   ptr<const xml_generic_t> r;
   if (!_eof && (!_v || _i >= _v->size ())) {
@@ -1048,6 +1067,15 @@ xml_generic_t::data () const
 
 }
 
+ptr<xml_scalar_obj_w_t>
+xml_generic_t::make_so ()
+{
+  if (!_so) 
+    _so = New refcounted<xml_scalar_obj_w_t> ();
+  return _so;
+}
+
+//-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
 //=======================================================================

@@ -17,7 +17,7 @@ static void usage (void)
 static void
 explore (ptr<const xml_generic_t> top)
 {
-  xml_gobj_t o (top);
+  xml_gobj_const_t o (top);
   zbuf zb;
   o.dump (zb);
   strbuf b;

@@ -14,13 +14,16 @@ static void usage (void)
   exit (1);
 }
 
-static void
-explore (ptr<const xml_generic_t> top)
+void
+explore (ptr<xml_generic_t> top)
 {
   xml_gobj_t o (top);
   xml_gobj_t okt = o("OkTest");
   warn << "OkTest.AboutTheAuthor.Description=" << 
     o("OkTest")("AboutTheAuthor")("Description").data ().trim () << "\n";
+
+  warn << "OkTest.Title=" << o("OkTest")("Title") << "\n";
+  o("OkTest")("Title")  = "Doggy Doggy Time";
 
   warn << "OkTest.Title=" << o("OkTest")("Title") << "\n";
 
@@ -65,7 +68,7 @@ main_T ()
     holdvar abuf_pipe_t src (ain);
     xml_req_parser_generic_t xrp (&src);
     int res;
-    ptr<const xml_generic_t> top;
+    ptr<xml_generic_t> top;
   }
 
   xrp.init ();

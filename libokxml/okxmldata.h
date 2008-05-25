@@ -832,7 +832,7 @@ public:
 
 class xml_generic_t : public xml_element_t {
 public:
-  xml_generic_t (const char *n, const char **atts) : 
+  xml_generic_t (const char *n = NULL, const char **atts = NULL) : 
     xml_element_t (), _class (n), _atts (atts) {}
 
   bool add (ptr<xml_element_t> e);
@@ -848,7 +848,8 @@ public:
   scalar_obj_t attribute (const str &k) const { return _atts[k]; }
   str tagname () const { return _class; }
 
-  static ptr<const xml_generic_t> alloc_null ();
+  static ptr<xml_generic_t> alloc_null ();
+  static ptr<const xml_generic_t> const_alloc_null ();
   bool is_null () const { return !_class; }
 
   const char *xml_typename () const;
@@ -864,14 +865,19 @@ public:
   bool end_cdata ();
 
   void dump_data (zbuf &b, int lev) const;
+  void set (const str &s) { make_so ()->set (s); }
 
   scalar_obj_t data () const;
+  ptr<xml_scalar_obj_w_t> make_so ();
 
   friend class xml_generic_item_iterator_t;
+  friend class xml_generic_const_item_iterator_t;
   friend class xml_generic_key_iterator_t;
+  friend class xml_generic_const_key_iterator_t;
+
+  static ptr<const xml_generic_t> _null_generic;
 
 protected:
-  static ptr<xml_generic_t> _null_generic;
   str _class;
   xml_attributes_t _atts;
   qhash<str, ptr<vec<ptr<xml_generic_t> > > > _tab;
@@ -879,10 +885,11 @@ protected:
 };
 
 typedef ptr<vec<ptr<xml_generic_t> > > gvecp_t;
+typedef ptr<const vec<ptr<xml_generic_t> > > cgvecp_t;
 
-class xml_generic_item_iterator_t {
+class xml_generic_const_item_iterator_t {
 public:
-  xml_generic_item_iterator_t (ptr<const xml_generic_t> o)
+  xml_generic_const_item_iterator_t (ptr<const xml_generic_t> o)
     : _obj (o), _it (o->_tab), _i (0), _eof (false) {}
   ptr<const xml_generic_t> next ();
 
@@ -894,9 +901,29 @@ private:
   bool _eof;
 };
 
+class xml_generic_item_iterator_t {
+public:
+  xml_generic_item_iterator_t (ptr<xml_generic_t> o)
+    : _obj (o), _it (o->_tab), _i (0), _eof (false) {}
+  ptr<xml_generic_t> next ();
+
+private:
+  ptr<xml_generic_t> _obj;
+  qhash_iterator_t<str, gvecp_t> _it;
+  size_t _i;
+  gvecp_t _v;
+  bool _eof;
+};
+
 class xml_generic_key_iterator_t : public key_iterator_t<gvecp_t> {
 public:
-  xml_generic_key_iterator_t (ptr<const xml_generic_t> o) 
+  xml_generic_key_iterator_t (ptr<xml_generic_t> o) 
+    : key_iterator_t<gvecp_t> (o->_tab) {}
+};
+
+class xml_generic_const_key_iterator_t : public key_iterator_t<gvecp_t> {
+public:
+  xml_generic_const_key_iterator_t (ptr<const xml_generic_t> o) 
     : key_iterator_t<gvecp_t> (o->_tab) {}
 };
 
