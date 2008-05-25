@@ -267,8 +267,14 @@ public:
   xml_gobj_t operator[] (size_t s) ;
   xml_gobj_t operator() (const str &k) ;
 
-  xml_gobj_t &operator=(const str &s) { set (s); return (*this); }
+  template<class T>
+  xml_gobj_t &operator=(T s) { set (s); return (*this); }
+
   void set (const str &s) { obj ()->set (s); }
+  void set (int64_t i) { obj ()->set (i); }
+  void set (double d) { obj ()->set (d); }
+  void set (int32_t i) { obj ()->set (int64_t (i)); }
+
   ptr<xml_generic_t> obj () ;
 
   friend class xml_gobj_key_iterator_t;

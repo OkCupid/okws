@@ -866,6 +866,8 @@ public:
 
   void dump_data (zbuf &b, int lev) const;
   void set (const str &s) { make_so ()->set (s); }
+  void set (int64_t i) { make_so ()->set (i); }
+  void set (double d) { make_so ()->set (d); }
 
   scalar_obj_t data () const;
   ptr<xml_scalar_obj_w_t> make_so ();

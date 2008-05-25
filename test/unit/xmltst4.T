@@ -24,8 +24,10 @@ explore (ptr<xml_generic_t> top)
 
   warn << "OkTest.Title=" << o("OkTest")("Title") << "\n";
   o("OkTest")("Title")  = "Doggy Doggy Time";
-
   warn << "OkTest.Title=" << o("OkTest")("Title") << "\n";
+  o("OkTest")("Title")  = 200;
+  warn << "OkTest.Title=" << o("OkTest")("Title") << "\n";
+
 
   xml_gobj_t var = okt("Var");
   for (size_t i = 0; i < var.len(); i++) {
