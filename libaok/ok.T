@@ -296,7 +296,8 @@ oksrvc_t::remove (okclnt_base_t *c)
 void
 oksrvc_t::kill (svccb *v)
 {
-  oksig_t *sig = v->Xtmpl getarg<oksig_t> ();
+  RPC::okctl_program_1::okctl_kill_srv_t<svccb> srv (v);
+  oksig_t *sig = srv.getarg ();
   switch (*sig) {
   case OK_SIG_HARDKILL:
     SVC_ERROR ("caught hard KILL trigger; exitting immediately");
@@ -304,7 +305,7 @@ oksrvc_t::kill (svccb *v)
     break;
   default:
     shutdown ();
-    v->reply (NULL);
+    srv.reply ();
     break;
   }
 }
@@ -439,7 +440,7 @@ oksrvc_t::launch_T ()
   if (OKDBG2 (OKD_STARTUP))
     SVC_CHATTER ("calling READY RPC to okd");
 
-  twait { clnt->call (OKCTL_READY, NULL, NULL, mkevent (err)); }
+  twait { RPC::okctl_program_1::okctl_ready (clnt, mkevent (err)); }
 
   if (err) {
     SVC_FATAL_ERROR ("OK Child Initialization: " << err);
@@ -523,7 +524,7 @@ ok_httpsrv_t::enable_accept ()
 void
 oksrvc_t::enable_accept_guts ()
 {
-  clnt->call (OKCTL_REENABLE_ACCEPT, NULL, NULL, aclnt_cb_null);
+  RPC::okctl_program_1::okctl_reenable_accept (clnt, aclnt_cb_null);
 }
 
 void oksrvc_t::disable_accept_guts () {}
@@ -539,8 +540,9 @@ oksrvc_t::closed_fd ()
 void
 oksrvc_t::handle_new_con (svccb *sbp)
 {
+  RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
   okctl_sendcon_res_t res = OK_STATUS_OK;
-  okctl_sendcon_arg_t *arg = sbp->Xtmpl getarg<okctl_sendcon_arg_t> ();
+  okctl_sendcon_arg_t *arg = srv.getarg ();
 
   int fd = ctlx->recvfd ();
 
@@ -566,7 +568,7 @@ oksrvc_t::handle_new_con (svccb *sbp)
     if (!newclnt (x))
       res = OK_STATUS_NOMORE;
   }
-  sbp->replyref (res);
+  srv.reply (res);
 }
 
 bool
@@ -989,7 +991,9 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
     bool rc (true);
   }
   assert (pub2 ());
-  twait { clnt->call (OKCTL_REQ_ERRDOCS_2, NULL, &errdocs_x, mkevent (s)); }
+  twait { 
+    RPC::okctl_program_1::okctl_req_errdocs_2 (clnt, &errdocs_x, mkevent (s)); 
+  }
   if (s) {
     strbuf b;
     b << "In getting error documents: " << s;

@@ -1,3 +1,4 @@
+// -*-c++-*-
 /* $Id$ */
 
 /*
@@ -24,51 +25,61 @@
 
 #include "ok.h"
 
-void
-log_t::connect (cbb cb)
+tamed void
+log_t::connect_T (evb_t ev)
 {
-  h->connect (wrap (this, &log_t::connect_cb1, cb));
-}
-
-void
-log_t::connect_cb1 (cbb cb, bool b)
-{
-  if (b)
-    connect_cb3 ();
-  (*cb) (b);
-}
-
-void
-rpc_log_t::connect_cb1 (cbb cb, bool b)
-{
-  if (!b) {
-    (*cb) (b);
-    return;
+  tvars {
+    bool ok;
   }
-  h->call (OKLOG_GET_LOGSET, NULL, &logset, 
-	   wrap (this, &rpc_log_t::connect_cb2, cb));
+  twait { h->connect (mkevent (ok)); }
+  ev->trigger (ok);
 }
 
-void
-rpc_log_t::connect_cb2 (cbb cb, clnt_stat err)
+tamed void
+rpc_log_t::connect_T (evb_t ev)
 {
-  if (err) {
-    warn << "when determining oklogd parameters: " << err << "\n";
+  tvars {
+    bool ok;
+    clnt_stat err;
   }
-  connect_cb3 ();
-  (*cb) (true);
+  twait { log_t::connect_T (mkevent (ok)); }
+  if (ok) {
+    twait { 
+      RPC::oklog_program_1::oklog_get_logset (h, &logset, mkevent (err)); 
+    }
+    if (err) {
+      warn << "when determining oklogd parameters: " << err << "\n";
+      ok = false;
+    }
+  }
+  ev->trigger (ok);
 }
 
-void
-log_primary_t::connect_cb3 ()
+tamed void
+log_primary_t::connect_T (evb_t ev)
 {
-  assert (clone_client_t::init ());
-}
+  tvars {
+    bool ok;
+  }
+  twait { rpc_log_t::connect_T (mkevent (ok)); }
+  if (ok) {
+    ok = clone_client_t::init ();
+    assert (ok);
+  }
+  ev->trigger (ok);
+} 
 
-void
-fast_log_t::connect_cb3 ()
+
+tamed void
+fast_log_t::connect_T (evb_t ev)
 {
-  tmr.start ();
+  tvars {
+    bool ok;
+  }
+  twait { log_t::connect_T (mkevent (ok)); }
+  if (ok)
+    tmr.start ();
+  ev->trigger (ok);
 }
 
 void
@@ -163,12 +174,16 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
 }
 
 
-void
-rpc_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-	    const str &aux)
+tamed void
+rpc_log_t::log_T (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+		  str aux)
 {
-  oklog_arg_t la (OKLOG_OK);
-  oklog_ok_t *lo;
+  tvars {
+    oklog_arg_t la (OKLOG_OK);
+    oklog_ok_t *lo;
+    bool b;
+    clnt_stat err;
+  }
   if (res->get_status () == HTTP_OK) {
     lo = la.ok;
   } else {
@@ -192,16 +207,12 @@ rpc_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
     if (logset & LOG_UA)   lo->user_agent = (*req)["user-agent"];
   }
 
-  ref<bool> b (New refcounted<bool> (true));
-  h->call (OKLOG_LOG, &la, b, wrap (this, &rpc_log_t::logged, b));
-}
-
-void
-rpc_log_t::logged (ptr<bool> b, clnt_stat err)
-{
+  twait {
+    RPC::oklog_program_1::oklog_log (h, la, &b, mkevent (err));
+  }
   if (err) 
     warn << "RPC error in logging: " << err << "\n";
-  else if (!*b) 
+  else if (!b) 
     warn << "log attempted failed\n";
 }
 
@@ -300,54 +311,47 @@ log_timer_t::timestamp ()
   timelen = strftime (buf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
 }
 
-void
-fast_log_t::flush ()
+tamed void
+fast_log_t::flush_T ()
 {
-  oklog_fast_arg_t arg;
-  int ai, ei;
-  bool call = false;
-  if (access.to_str (&arg.access, &ai))
-    call = true;
-  if (error.to_str (&arg.error, &ei)) 
-    call = true;
+  tvars {
+    oklog_fast_arg_t arg;
+    int ai, ei;
+    bool ok;
+    clnt_stat err;
+    bool c1, c2;
+  }
 
-  if (call) {
-    ptr<bool> res = New refcounted<bool>;
-    h->call (OKLOG_FAST, &arg, res, 
-	     wrap (this, &fast_log_t::flushed, ai, ei, res));
+  c1 = access.to_str (&arg.access, &ai);
+  c2 = error.to_str (&arg.error, &ei);
+  
+  if (c1 || c2) {
+    twait { RPC::oklog_program_1::oklog_fast (h, arg, &ok, mkevent (err)); }
+    if (err) {
+      warn << "Error in log RPC: " << err << "\n";
+    } else if (!ok) {
+      warn << "Log RPC returned failure\n";
+    }
+    access.unlock (ai);
+    error.unlock (ei);
   } else {
     tmr.disable ();
   }
 }
 
-void
-log_t::turn_cb (ptr<bool> b, okrescb cb, clnt_stat err)
+tamed void
+log_t::turn_T (okrescb cb)
 {
-  ptr<ok_res_t> res = New refcounted<ok_res_t> ();
+  tvars {
+    bool ok;
+    clnt_stat err;
+    ptr<ok_res_t> res (New refcounted<ok_res_t> ());
+  }
+  twait { RPC::oklog_program_1::oklog_turn (h, &ok, mkevent (err)); }
   if (err) {
     *res << (strbuf ("RPC Error: ") << err);
-  } else if (!*b) {
+  } else if (!ok) {
     *res << strbuf ("logger failed to turn over logs");
   }
   (*cb) (res);
-}
-
-void
-log_t::turn (okrescb cb)
-{
-  ptr<bool> b = New refcounted<bool> ();
-  h->call (OKLOG_TURN, NULL, b,
-	   wrap (this, &log_t::turn_cb, b, cb));
-}
-
-void
-fast_log_t::flushed (int ai, int ei, ptr<bool> r, clnt_stat err)
-{
-  if (err) {
-    warn << "Error in log RPC: " << err << "\n";
-  } else if (!*r) {
-    warn << "Log RPC returned failure\n";
-  }
-  access.unlock (ai);
-  error.unlock (ei);
 }

@@ -89,45 +89,6 @@ struct okctl_sendcon_arg_t {
 	opaque sin<>;
 };
 
-program OKCTL_PROGRAM {
-	version OKCLT_VERS {
-	
-		void
-		OKCTL_NULL (void) = 0;
-	
-		void
-		OKCTL_READY (void) = 1;
-
-		ok_xstatus_t
-		OKCTL_CUSTOM_1_IN (ok_custom_arg_t) = 7;
-	
-		ok_xstatus_t 
-		OKCTL_CUSTOM_1_OUT (ok_custom_data_t) = 8;
-
-		ok_custom_res_set_t
-		OKCTL_CUSTOM_2_IN (ok_custom_arg_t) = 9;
-
-		ok_custom_data_t
-		OKCTL_CUSTOM_2_OUT (ok_custom_data_t) = 10;
-
-		xpub_errdoc_set_t
-		OKCTL_REQ_ERRDOCS_2 (void) = 11;
-
-		okctl_stats_t
-		OKCTL_GET_STATS(void) = 12;
-
-		okctl_sendcon_res_t
-		OKCTL_SEND_CON(okctl_sendcon_arg_t) = 13;
-
-		void
-		OKCTL_REENABLE_ACCEPT(void) = 14;
-
-		void
-		OKCTL_KILL (oksig_t) = 99;
-
-	} = 1;
-} = 11279;
-
 typedef string ip_addr_t<16>;
 enum oklog_typ_t {
   OKLOG_OK = 0,
@@ -181,6 +142,47 @@ struct oklog_fast_arg_t {
 %#define LOG_RFR    (1 << 5)
 %#define LOG_UID    (1 << 6)
 
+namespace RPC {
+
+program OKCTL_PROGRAM {
+	version OKCLT_VERS {
+	
+		void
+		OKCTL_NULL (void) = 0;
+	
+		void
+		OKCTL_READY (void) = 1;
+
+		ok_xstatus_t
+		OKCTL_CUSTOM_1_IN (ok_custom_arg_t) = 7;
+	
+		void
+		OKCTL_CUSTOM_1_OUT (ok_custom_data_t) = 8;
+
+		ok_custom_res_set_t
+		OKCTL_CUSTOM_2_IN (ok_custom_arg_t) = 9;
+
+		ok_custom_data_t
+		OKCTL_CUSTOM_2_OUT (ok_custom_data_t) = 10;
+
+		xpub_errdoc_set_t
+		OKCTL_REQ_ERRDOCS_2 (void) = 11;
+
+		okctl_stats_t
+		OKCTL_GET_STATS(void) = 12;
+
+		okctl_sendcon_res_t
+		OKCTL_SEND_CON(okctl_sendcon_arg_t) = 13;
+
+		void
+		OKCTL_REENABLE_ACCEPT(void) = 14;
+
+		void
+		OKCTL_KILL (oksig_t) = 99;
+
+	} = 1;
+} = 11279;
+
 program OKLOG_PROGRAM {
 	version OKCTL_VERS {
 	
@@ -227,3 +229,4 @@ program OKMGR_PROGRAM {
 	} = 1;
 } = 11278;
 
+};

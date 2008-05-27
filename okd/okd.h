@@ -90,11 +90,10 @@ public:
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
   void custom1_out (const ok_custom_data_t &x);
-  void custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x);
+  void custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x,
+		    CLOSURE);
+
   void chld_eof ();
-  void custom2_out_cb (ptr<ok_custom2_trig_t> trig, 
-		       ptr<ok_custom_data_t> res,
-		       clnt_stat err);
 
   void to_status_xdr (oksvc_status_t *out);
 
@@ -188,7 +187,7 @@ public:
   void open_mgr_socket ();
 
   void relaunch (const ok_progs_t &x, okrescb cb);
-  void custom1_in (svccb *sbp);
+  void custom1_in (svccb *sbp, CLOSURE);
   void custom2_in (svccb *sbp);
   void okctl_get_stats (svccb *sbp);
   void turnlog (okrescb cb);
@@ -213,7 +212,7 @@ protected:
 
 private:
 
-  void custom1_in (const ok_custom_arg_t &x, okrescb cb);
+  void custom1_in_impl (const ok_custom_arg_t &x, okrescb cb);
 
   void apply_to_children (const ok_progs_t &x, cb_okch_t acb,
 			  ptr<ok_res_t> res, cbs::ptr notfoundcb = NULL);

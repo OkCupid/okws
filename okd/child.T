@@ -114,7 +114,7 @@ okch_t::shutdown (oksig_t g, cbv cb)
       }
 	
       clnt->seteofcb (wrap (this, &okch_t::shutdown_cb1, cb));
-      clnt->call (OKCTL_KILL, &g, NULL, aclnt_cb_null);
+      RPC::okctl_program_1::okctl_kill (clnt, &g, aclnt_cb_null);
 
       // don't answer any more pub messages
       state = OKC_STATE_KILLING;
@@ -177,7 +177,9 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
       CH_ERROR ("Lost child in between sending FD and sending RPC");
 
     } else {
-      twait { clnt->call (OKCTL_SEND_CON, &arg, &res, mkevent(err)); }
+      twait { 
+	RPC::okctl_program_1::okctl_send_con (clnt, &arg, &res, mkevent(err)); 
+      }
       if (err) {
 	CH_ERROR ("Error in RPC for sending connection: " << err);
       } else if (res == OK_STATUS_NOMORE) {
@@ -320,24 +322,23 @@ okch_t::kill ()
   state = OKC_STATE_NONE;
 }
 
-void
-okch_t::custom2_out_cb (ptr<ok_custom2_trig_t> trig,
-			ptr<ok_custom_data_t> res, clnt_stat err)
-{
-  if (err)
-    trig->add_err (servpath, OK_STATUS_ERR);
-  else
-    trig->add_succ (servpath, *res);
-}
-
-void
+tamed void
 okch_t::custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x)
 {
-  ptr<ok_custom_data_t> resp = New refcounted<ok_custom_data_t> ();
+  tvars {
+    ok_custom_data_t res;
+    clnt_stat err;
+  }
   
   if (clnt && !clnt->xprt ()->ateof ()) {
-    clnt->call (OKCTL_CUSTOM_2_OUT, &x, resp, 
-		wrap (this, &okch_t::custom2_out_cb, trig, resp));
+    twait {
+      RPC::okctl_program_1::okctl_custom_2_out (clnt, x, &res, mkevent (err));
+    }
+    if (err) {
+      trig->add_err (servpath, OK_STATUS_ERR);
+    } else {
+      trig->add_succ (servpath, res);
+    }
   } else {
     trig->add_err (servpath, OK_STATUS_DEADCHILD);
     CH_ERROR ("child in state=" << state << 
@@ -354,7 +355,7 @@ okch_t::custom1_out (const ok_custom_data_t &x)
   // XXX want to collect success information and so on from this guy
   // (as in repub)
   if (clnt && !clnt->xprt ()->ateof ()) {
-    clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
+    RPC::okctl_program_1::okctl_custom_1_out (clnt, &x, aclnt_cb_null);
   } else {
     CH_ERROR ("child in state=" << state << 
 	     "swallowing OKCTL_CUSTOM_1_OUT RPC.");

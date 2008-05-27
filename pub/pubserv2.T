@@ -122,7 +122,8 @@ namespace pubserv2 {
   void
   srv_t::getchunk (svccb *sbp)
   {
-    xpub2_getchunk_arg_t *arg = sbp->Xtmpl getarg<xpub2_getchunk_arg_t> ();
+    RPC::pub_program_2::pub2_getchunk_srv_t<svccb> srv (sbp);
+    xpub2_getchunk_arg_t *arg = srv.getarg ();
     xpub2_getchunk_res_t res;
     phashp_t h = phash_t::alloc (arg->hash);
     ptr<bound_pfile2_t> f = _lookup->get_chunks (h, arg->opts);
@@ -140,14 +141,15 @@ namespace pubserv2 {
 	*res.error = "Datasize overflow";
       }
     }
-    sbp->replyref (res);
+    srv.reply (res);
   }
   
   tamed void
   srv_t::getfile (svccb *sbp)
   {
     tvars {
-      xpub2_getfile_arg_t *arg (sbp->Xtmpl getarg<xpub2_getfile_arg_t> ());
+      RPC::pub_program_2::pub2_getfile_srv_t<svccb> srv (sbp);
+      xpub2_getfile_arg_t *arg (srv.getarg ());
       ptr<bound_pfile2_t> f;
       xpub_status_t s;
       xpub2_getfile_res_t res (XPUB_STATUS_OK);
@@ -185,7 +187,7 @@ namespace pubserv2 {
 	f->file ()->to_xdr (res.data->file.whole);
       }
     }
-    sbp->replyref (res);
+    srv.reply (res);
   }
 
   void

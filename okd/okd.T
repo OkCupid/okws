@@ -93,7 +93,8 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
 void
 okd_t::req_errdoc_set_2 (svccb *sbp)
 {
-  sbp->replyref (errdocs_x);
+  RPC::okctl_program_1::okctl_req_errdocs_2_srv_t<svccb> srv (sbp);
+  srv.reply (errdocs_x);
 }
 
 tamed void 
@@ -710,11 +711,20 @@ s_custom2_cb (ptr<ok_custom2_trig_t> trig, ok_custom_data_t data, okch_t *ch)
 }
 
 // receive and handle an incoming CUSTOM1 RPC request
-void
+tamed void
 okd_t::custom1_in (svccb *sbp)
 {
-  ok_custom_arg_t *c = sbp->Xtmpl getarg<ok_custom_arg_t> ();
-  custom1_in (*c, wrap (replystatus, sbp));
+  tvars {
+    ptr<ok_res_t> res;
+    RPC::okctl_program_1::okctl_custom_1_in_srv_t<svccb> srv (sbp);
+    ok_custom_arg_t *c (srv.getarg ());
+  }
+
+  twait {
+    custom1_in_impl (*c, mkevent (res));
+  }
+
+  srv.reply (res->to_xdr ());
 }
 
 static void
@@ -747,7 +757,7 @@ okd_t::custom2_in (svccb *sbp)
 }
 
 void
-okd_t::custom1_in (const ok_custom_arg_t &x, okrescb cb)
+okd_t::custom1_in_impl (const ok_custom_arg_t &x, okrescb cb)
 {
   ptr<ok_res_t> res = New refcounted<ok_res_t> ();
   apply_to_children (x.progs, wrap (s_custom1_cb, x.data), res);
@@ -797,13 +807,14 @@ ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
 void
 okd_t::okctl_get_stats (svccb *sbp)
 {
+  RPC::okctl_program_1::okctl_get_stats_srv_t<svccb> srv (sbp);
   okctl_stats_t res;
   res.status.setsize (servtab.size ());
   int i = 0;
   for (okch_t *p = servtab.first (); p; i++, p = servtab.next (p) ) {
     p->to_status_xdr (&res.status[i]);
   }
-  sbp->replyref (res);
+  srv.reply (res);
 
 }
 

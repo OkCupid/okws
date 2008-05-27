@@ -57,13 +57,13 @@ okmgr_logturn_t::okmgr_logturn_t (const str &s)
 void
 okmgr_logturn_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
-  h->call (OKMGR_TURNLOG, NULL, s, cb);
+  RPC::okmgr_program_1::okmgr_turnlog (h, s, cb);
 }
 
 void
 okmgr_launch_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
-  h->call (OKMGR_RELAUNCH, &_progs, s, cb);
+  RPC::okmgr_program_1::okmgr_relaunch (h, _progs, s, cb);
 }
 
 static str

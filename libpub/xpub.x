@@ -460,6 +460,8 @@ default:
   void;
 };
 
+namespace RPC {
+
 program PUB_PROGRAM {
 	version PUB_VERS {
 
@@ -555,4 +557,4 @@ program PUB_PROGRAM {
 
 } = 11277;
 
-
+};

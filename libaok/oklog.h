@@ -34,6 +34,7 @@
 #include "okclone.h"
 #include "okformat.h"
 
+
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
 #define LOG_BUF_DEFSIZE    0x10000
@@ -171,18 +172,17 @@ class log_t {
 public:
   log_t (helper_t *hh) : h (hh) {}
   virtual ~log_t () { delete h; }
-  void connect (cbb cb);
+  virtual void connect (evb_t ev) { connect_T (ev); }
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		    const str &s) = 0;
   int getfd () const { return h->getfd (); }
   virtual void clone (cbi cb) { (*cb) (-1); }
-  virtual void turn (okrescb cb);
+  virtual void turn (okrescb cb) { turn_T (cb); }
   void kill (cbv c, ptr<okauthtok_t> tok, 
 	     oksig_t s = OK_SIG_KILL) { h->kill (c, tok, s); }
 protected:
-  void turn_cb (ptr<bool> b, okrescb cb, clnt_stat err);
-  virtual void connect_cb1 (cbb cb, bool c);
-  virtual void connect_cb3 () {}
+  void turn_T (okrescb cb, CLOSURE);
+  void connect_T (evb_t ev, CLOSURE);
   helper_t *h;
 };
 
@@ -192,12 +192,19 @@ public:
   rpc_log_t (const str &p) 
     : log_t (New helper_unix_t (oklog_program_1, p, HLP_OPT_QUEUE)) {}
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-	    const str &s);
+	    const str &s) { log_T (x, req, res, s); }
+  virtual void connect (evb_t ev) { rpc_log_t::connect_T (ev); }
   void connect_cb1 (cbb cb, bool b);
   void connect_cb2 (cbb cb, clnt_stat err);
+ 
+protected:
+  void connect_T (evb_t ev, CLOSURE);
+  void log_T (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+	      str s, CLOSURE);
+  
 private:
   void logged (ptr<bool> b, clnt_stat err);
-  int logset;
+  u_int32_t logset;
 };
 
 class log_primary_t : public rpc_log_t, public clone_client_t
@@ -208,7 +215,9 @@ public:
       clone_client_t (hh, OKLOG_CLONE), 
       he (hh) {}
   void clone (cbi cb) { clone_client_t::clone (cb); }
+  void connect (evb_t ev) { connect_T (ev); }
 private:
+  void connect_T (evb_t ev, CLOSURE);
   void connect_cb3 ();
   helper_exec_t *he;
 };
@@ -249,16 +258,17 @@ public:
       fmt (f), tmr (wrap (this, &fast_log_t::flush)) {}
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 	    const str &s);
-  void flush ();
-  void connect_cb3 ();
+  void flush() { flush_T (); }
+  void connect (evb_t ev) { connect_T (ev); }
 protected:
   bool past_high_water () const;
   void add_access (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res);
   void add_error (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		  const str &aux);
   void add_notice (oklog_typ_t x, const str &ntc);
-  void flushed (int ai, int ei, ptr<bool> r, clnt_stat err);
+  void flush_T (CLOSURE);
 private:
+  void connect_T (evb_t ev, CLOSURE);
   str fmt;
   log_timer_t tmr;
   logbuf_t access, error;

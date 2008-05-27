@@ -220,7 +220,7 @@ namespace pub2 {
       clnt_stat err;
       bool ret (true);
     }
-    twait { _cli->call (PUB2_NULL, NULL, NULL, mkevent (err)); }
+    twait { RPC::pub_program_2::pub2_null (_cli, mkevent (err)); }
     if (err) {
       warn << "NULL call to pubd failed: " << err << "\n";
       ret = false;
@@ -235,7 +235,9 @@ namespace pub2 {
       clnt_stat stat;
       bool ret (true);
     }
-    twait { _cli->call (PUB2_GET_PUSHES, NULL, &_connected, mkevent (stat)); }
+    twait { 
+      RPC::pub_program_2::pub2_get_pushes (_cli, &_connected, mkevent (stat)); 
+    }
     if (stat) {
       warn << "Intial RPC call to pubd-2 failed: " << stat << "\n";
       ret = false;
@@ -351,7 +353,9 @@ namespace pub2 {
     arg.size = sz;
     arg.opts = opts;
 
-    twait { _cli->call (PUB2_GETCHUNK, &arg, &res, mkevent (err) ); }
+    twait { 
+      RPC::pub_program_2::pub2_getchunk (_cli, &arg, &res, mkevent (err) ); 
+    }
 
     if (err) {
       b << "RPC error in PUB2_GETCHUNK: " << err << "\n";
@@ -478,7 +482,9 @@ namespace pub2 {
       cache_key_t k (nm, opts);
     }
     if (!prepare_getfile (k, &arg, &file, &status)) {
-      twait { _cli->call (PUB2_GETFILE, &arg, &res, mkevent (err)); }
+      twait { 
+	RPC::pub_program_2::pub2_getfile (_cli, &arg, &res, mkevent (err)); 
+      }
       if (err) {
 	warn << nm << ": error in RPC call to PUB2_GETFILE: " 
 	     << err << "\n";

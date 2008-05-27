@@ -87,8 +87,11 @@ logd_t::dispatch (svccb *sbp)
     log (sbp);
     break;
   case OKLOG_GET_LOGSET:
-    sbp->replyref (logset);
-    break;
+    {
+      RPC::oklog_program_1::oklog_get_logset_srv_t<svccb> srv (sbp);
+      srv.reply (logset);
+      break;
+    }
   case OKLOG_TURN:
     turn (sbp);
     break;
@@ -390,6 +393,7 @@ void
 logd_t::turn (svccb *sbp)
 {
   bool ret = false;
+  RPC::oklog_program_1::oklog_turn_srv_t<svccb> srv (sbp);
 
   logfile_t *access2 = NULL;
   logfile_t *error2 = NULL;
@@ -408,26 +412,28 @@ logd_t::turn (svccb *sbp)
   if (!ret) 
     warn << "flush of logfiles failed; no changes made\n";
 
-  sbp->replyref (ret);
+  srv.reply (ret);
 }
 
 void
 logd_t::fastlog (svccb *sbp)
 {
   bool ret = true;
-  oklog_fast_arg_t *fa = sbp->Xtmpl getarg<oklog_fast_arg_t> ();
+  RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
+  oklog_fast_arg_t *fa = srv.getarg ();
   assert (access);
   assert (error);
   access->flush (fa->access);
   error->flush (fa->error);
-  sbp->replyref (&ret);
+  srv.reply (ret);
 }
 
 void
 logd_t::log (svccb *sbp)
 {
+  RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
   bool ret = true;
-  oklog_arg_t *la = sbp->Xtmpl getarg<oklog_arg_t> ();
+  oklog_arg_t *la = srv.getarg ();
   switch (la->typ) {
   case OKLOG_OK:
     ret = access_log (*la->ok);
@@ -443,5 +449,5 @@ logd_t::log (svccb *sbp)
     if (!access_log (la->err->log)) ret = false;
     break;
   }
-  sbp->replyref (ret);
+  srv.reply (ret);
 }

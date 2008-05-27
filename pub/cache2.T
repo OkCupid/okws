@@ -172,7 +172,9 @@ namespace pubserv2 {
       rc = false; 
     } else {
       _push_deltas_lock = true;
-      twait { _cli->call (PUB2_PUSH_DELTAS, s, &rc, mkevent (err)); }
+      twait { 
+	RPC::pub_program_2::pub2_push_deltas (_cli, s, &rc, mkevent (err)); 
+      }
       _push_deltas_lock = false;
       if (err) {
 	strbuf b;
