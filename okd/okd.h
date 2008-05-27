@@ -105,8 +105,7 @@ public:
   void got_new_ctlx_fd (int fd, int p);
 
   void dispatch (ptr<bool> destroyed, svccb *b);
-  void repub (ptr<ok_repub_t> rpb);
-  void repub_cb (ptr<ok_repub_t> rpb, clnt_stat err);
+  void repub (ptr<ok_repub_t> rpb, CLOSURE);
 
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();

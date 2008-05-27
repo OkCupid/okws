@@ -114,7 +114,7 @@ okch_t::shutdown (oksig_t g, cbv cb)
       }
 	
       clnt->seteofcb (wrap (this, &okch_t::shutdown_cb1, cb));
-      clnt->call (OKCTL_KILL, &g, NULL, aclnt_cb_null);
+      RPC::okctl_program_1::okctl_kill (clnt, &g, aclnt_cb_null);
 
       // don't answer any more pub messages
       state = OKC_STATE_KILLING;
@@ -177,7 +177,8 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
       CH_ERROR ("Lost child in between sending FD and sending RPC");
 
     } else {
-      twait { clnt->call (OKCTL_SEND_CON, &arg, &res, mkevent(err)); }
+      twait { 
+	RPC::okctl_program_1::okctl_send_con (clnt, &arg, &res, mkevent(err)); }
       if (err) {
 	CH_ERROR ("Error in RPC for sending connection: " << err);
       } else if (res == OK_STATUS_NOMORE) {
@@ -338,7 +339,8 @@ okd_t::pubconf (svccb *sbp)
   } else { 
     if (!cfq.blocked (sbp)) {
       ptr<xpub_getfile_res_t> r = New refcounted<xpub_getfile_res_t> ();
-      pubd->call (PUB_CONFIG, NULL, r, wrap (this, &okd_t::pubconfed, r));
+      RPC::pub_program_1::pub_config (pubd, r, 
+				      wrap (this, &okd_t::pubconfed, r));
     }
   }
 }
@@ -373,8 +375,8 @@ okd_t::lookup (svccb *sbp)
     pfnm_t fn = *x;
     if (!luq.inq (fn, sbp)) {
       ptr<xpub_lookup_res_t> resp = New refcounted<xpub_lookup_res_t> ();
-      pubd->call (PUB_LOOKUP, x, resp, 
-		  wrap (this, &okd_t::lookedup, fn, resp));
+      RPC::pub_program_1::pub_lookup (pubd, x, resp, 
+				      wrap (this, &okd_t::lookedup, fn, resp));
     }
   }
 }
@@ -392,25 +394,27 @@ okd_t::lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err)
   luq.finish (fn, r);
 }
 
-void
+tamed void
 okch_t::repub (ptr<ok_repub_t> rpb)
 {
+  tvars {
+    clnt_stat err;
+  }
   if (!clnt) {
     *rpb->res << (strbuf ("Cannot repub; client not yet initialized: ")
 		  << servpath);
   } else {
-    clnt->call (OKCTL_UPDATE, &rpb->new_fnset, &rpb->xst,
-		wrap (this, &okch_t::repub_cb, rpb));
+    twait { 
+      RPC::okctl_program_1::okctl_update (clnt,
+					  &rpb->new_fnset, 
+					  &rpb->xst,
+					  mkevent (err));
+    }
+    if (err) 
+      *rpb->res << (strbuf ("repub error: ") << err);
+    else 
+      rpb->res->add (rpb->xst);
   }
-}
-
-void
-okch_t::repub_cb (ptr<ok_repub_t> rpb, clnt_stat err)
-{
-  if (err) 
-    *rpb->res << (strbuf ("repub error: ") << err);
-  else 
-    rpb->res->add (rpb->xst);
 }
 
 void
