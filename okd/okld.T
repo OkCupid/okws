@@ -647,7 +647,7 @@ okld_t::parse_file (const str &cf)
     .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
     .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
     .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
-    .add ("Pub2SvcNegativeCacheTimeout", &ok_pub2_svc_neg_cache_timeout,
+    .add ("Pub2SvcNegCacheTimeout", &ok_pub2_svc_neg_cache_timeout,
 	  0, INT_MAX)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)

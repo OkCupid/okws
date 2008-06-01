@@ -541,8 +541,14 @@ namespace pub2 {
       *status->error = b;
       *f = NULL;
       return true;
-    } else 
+    } else {
+      if (OKDBG2(PUB2_CACHE)) {
+	str tmp = k.fn ();
+	if (!tmp) tmp = "<NONE>";
+	okdbg_warn (CHATTER, "cache MISS: %s:%x\n", tmp.cstr (), k.opts ());
+      }
       return rp_t::prepare_getfile (k, arg, f, status);
+    }
   }
 
   void crp_t::cache_noent (pfnm_t nm)
@@ -570,6 +576,9 @@ namespace pub2 {
       hp = &h;
     }
     (*hp)->insert (k.opts ());
+
+    OKDBG4(PUB2_CACHE, CHATTER, 
+	   "cache INSERT: %s:%x\n", k.fn ().cstr (), k.opts ());
 
     _noent_cache.remove (k.fn ());
 
