@@ -309,12 +309,7 @@ public:
   aarr_t &add (const str &n, const strbuf &b) { return add (n, str (b)); }
 
   template<class T> aarr_t &add (const str &n, T i);
-  aarr_t &operator= (const aarr_t &in)
-  {
-    aar.copy (in.aar);
-    return (*this);
-  }
-        
+  aarr_t &operator= (const aarr_t &in);
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
   const pval_t *lookup (const str &n) const;

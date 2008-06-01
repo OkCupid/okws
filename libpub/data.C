@@ -2036,3 +2036,10 @@ output_t::set_muzzle (bool b)
   _muzzled = b;
   return r;
 }
+
+aarr_t &
+aarr_t::operator= (const aarr_t &in)
+{
+  aar.copy (in.aar);
+  return (*this);
+}
