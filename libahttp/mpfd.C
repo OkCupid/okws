@@ -194,7 +194,16 @@ cgi_mpfd_t::parse_guts ()
 
   switch (r) {
   case ABUF_EOF:
-    finish_parse (state == MPFD_EOF ? HTTP_OK : HTTP_UNEXPECTED_EOF);
+    int rc;
+    if (state == MPFD_EOF) {
+      rc = HTTP_OK;
+    } else {
+      rc = HTTP_UNEXPECTED_EOF;
+      warn ("mpfd EOF in state %d after %d bytes read\n", 
+	    int (state), abuf ? abuf->get_ccnt () : -1);
+    }
+    
+    finish_parse (rc);
     break;
   case ABUF_PARSE_ERR:
     finish_parse (HTTP_BAD_REQUEST);
