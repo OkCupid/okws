@@ -41,7 +41,7 @@ dnscache_entry_t::lookup (ev_hent_t ev)
   tvars {
     ptr<hostent> he;
     int e (ARERR_TIMEOUT);
-    bool completed;
+    bool completed (false);
     ptr<dnscache_entry_t> hold;
   }
   hold = mkref (this);
@@ -50,7 +50,10 @@ dnscache_entry_t::lookup (ev_hent_t ev)
     twait { wait_for_resolution (connector::cnc (mkevent (completed), ev)); }
   } else if (!_init || sfs_get_timenow() > _expires || _err != 0) {
     twait { do_resolution (connector::cnc (mkevent (completed), ev)); }
+  } else {
+    completed = true; // hit cache!
   }
+
   if (completed) {
     he = _he;
     e = _err;
