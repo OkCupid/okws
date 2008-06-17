@@ -68,8 +68,11 @@ void
 async_parser_t::finish_parse (int r)
 {
   parsing = false;
-  if (pcb)
-    (*pcb) (r);
+  if (pcb) {
+    cbi::ptr tmp = pcb;
+    pcb = NULL;
+    (*tmp) (r);
+  }
 }
 
 void
