@@ -779,7 +779,7 @@ public:
     : els (ls ? New pfile_el_lst_t () : NULL), lineno (l),
       btag_flag (false), etag_flag (false) {}
   pfile_sec_t (const xpub_section_t &x);
-  ~pfile_sec_t () { if (els) { els->deleteall(); delete els; } }
+  virtual ~pfile_sec_t () { if (els) { els->deleteall(); delete els; } }
   pfile_sec_t *add (pfile_el_t *el, bool combine = true);
   pfile_sec_t *add (pfile_sec_t *s);
   virtual pfile_sec_t *add (char c) { return this; }
@@ -1242,7 +1242,7 @@ public:
 			   _cached_eval_res (NULL), 
 			   _eval_cache_flag (false) {}
   pfile_switch_t (const xpub_switch_t &x);
-  ~pfile_switch_t () { if (def) delete def; cases.deleteall (); }
+  ~pfile_switch_t ();
   void output (output_t *o, penv_t *e) const;
 
   pswitch_env_t *eval_for_output (output_t *o, penv_t *e) const;

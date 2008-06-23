@@ -237,6 +237,13 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
+pfile_switch_t::~pfile_switch_t ()
+{
+  if (def) delete def;
+  if (nullcase) delete nullcase;
+  cases.deleteall ();
+}
+
 pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
   pfile_func_t (x.lineno), err (false), def (NULL), 
   key (New refcounted<pvar_t> (x.key)), nulldef (x.nulldef),
