@@ -96,7 +96,7 @@ okclnt_form_t::process_T ()
       a.add ("query_esc", xss_filter (q));
     }
     
-    int i;
+    int i = 0;
     if (cgi.lookup ("union", &i)) {
       ok_form->_union_cgi = i;
     }

@@ -189,7 +189,7 @@ oksrvc_t::init (int argc, char *argv[])
   str mmc_file = ok_mmc_file;
   str loggers;
 
-  int pub1tmp;
+  int pub1tmp = 0;
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
