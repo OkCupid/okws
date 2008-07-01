@@ -247,6 +247,11 @@ oksrvc_t::init (int argc, char *argv[])
       t->dump1 ();
 
   }
+
+  // Give virtual classes an opportunity to init constants after we've
+  // read in all important constants from argv.
+  init_constants ();
+
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
   init_pub2 ( (ok_pub2_wss > 0 ? P_WSS : 0) |

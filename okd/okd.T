@@ -465,6 +465,14 @@ okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
 	  okdbg_warn (ERROR, b);
 	}
       }
+      if (ra._rxx.errcode () != 0) {
+	strbuf b;
+	b << " - cause: RXX failure: " << ra._rxx.errcode () << "\n";
+	b << " - input was: '"; 
+	if (s) b << s;
+	b << "'\n";
+	okdbg_warn (ERROR, b);
+      }
     }
     
     if (!c) {
@@ -1045,6 +1053,7 @@ okd_t::okctl_get_stats (svccb *sbp)
 int
 main (int argc, char *argv[])
 {
+  sfs_rxx_panic = false; // don't panic on RXX failures
   start_okd (argc, argv);
   amain ();
 }

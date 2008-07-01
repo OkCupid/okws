@@ -384,6 +384,7 @@ public:
   virtual u_int get_ormask () const { return 0; }
   virtual void custom_init (cbv cb) { (*cb) (); }
   virtual void custom_init0 (cbv cb) { (*cb) (); }
+  virtual void init_constants () {}
 
   virtual void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
 
