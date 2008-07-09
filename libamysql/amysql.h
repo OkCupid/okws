@@ -596,6 +596,7 @@ struct dbparam_t {
   str       _database, _user, _host, _pw;
   u_int     _port;
   u_long    _flags;
+  str       _report_rpcs;
 };
 
 class mystmt_t;

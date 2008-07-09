@@ -23,6 +23,8 @@
 
 #include "amt.h"
 #include "txa_prot.h"
+#include "rxx.h"
+#include "parseopt.h"
 
 #define LONG_REPLY_TIME   2
 
@@ -578,11 +580,32 @@ ssrv_t::accept (ptr<axprt_stream> x)
 }
 
 ssrv_client_t::ssrv_client_t (ssrv_t *s, const rpc_program *const p, 
-			      ptr<axprt> x, const txa_prog_t *t) 
-  : ssrv (s), txa_prog (t)
+			      ptr<axprt_stream> x, const txa_prog_t *t) 
+  : ssrv (s), txa_prog (t), _x (x)
 {
   ssrv->insert (this);
   srv = asrv::alloc (x, *p, wrap (this, &ssrv_client_t::dispatch));
+  init_reporting_info ();
+}
+
+void
+ssrv_client_t::init_reporting_info ()
+{
+  int fd = _x->getreadfd ();
+  sockaddr_in sin;
+  socklen_t sl = sizeof (sin);
+  memset (&sin, 0, sizeof (sin));
+
+  const char *a = "<getpeername failure>";
+  _port = 0;
+
+  if (getpeername (fd, (sockaddr *)&sin, &sl) == 0) {
+    a = inet_ntoa (sin.sin_addr);
+    if (!a) a = "<inet_ntoa failure>";
+    _port = ntohs (sin.sin_port);
+  }
+
+  _hostname = a;
 }
 
 void
@@ -592,6 +615,7 @@ ssrv_client_t::dispatch (svccb *s)
     delete this;
   else {
     u_int32_t procno = s->proc ();
+    ssrv->mtd->g_reporting.rpc_report (procno, _hostname, _port);
     if (txa_prog && txa_prog->get_login_rpc () == procno) {
 	txa_login_arg_t *arg = s->Xtmpl getarg<txa_login_arg_t> ();
 	authtoks.clear ();
@@ -726,4 +750,40 @@ mtd_stats_t::new_epoch ()
   sample.to = 0;
 
   return e;
+}
+
+bool
+mtd_reporting_t::set_rpc_reports (const str &s)
+{
+  bool ok = true;
+  static rxx x ("\\s*,\\s*");
+  _rpcs.clear ();
+  if (s) {
+    vec<str> v;
+    split (&v, x, s);
+    for (size_t i = 0; i < v.size (); i++) {
+      int tmp;
+      if (convertint (v[i], &tmp)) {
+	_rpcs.insert (tmp);
+      } else {
+	ok = false;
+	warn << "Bad RPC number specified for reporting: " << v[i] << "\n";
+      }
+    }
+  }
+  return ok;
+}
+
+void
+mtd_reporting_t::rpc_report (int rpc, const str &s, int p)
+{
+  if (_rpcs[rpc]) {
+    warn << "RPC=" << rpc << "; hostname=" << s << "; port=" << p << "\n";
+  }
+}
+
+mtd_reporting_t::mtd_reporting_t ()
+{
+  const char *p = safegetenv ("DBPRX_REPORT_RPCS");
+  if (p) set_rpc_reports (p);
 }
