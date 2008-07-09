@@ -132,6 +132,15 @@ struct mtd_stats_t {
   epoch_t total;
 };
 
+struct mtd_reporting_t {
+public:
+  mtd_reporting_t ();
+  void rpc_report (int rpc, const str &s, int port);
+  bool set_rpc_reports (const str &s);
+private:
+  bhash<int> _rpcs;
+};
+
 class ssrv_t;
 class mtd_thread_t { // Abstract class for Child threads
 public:
@@ -264,7 +273,8 @@ protected:
 
 
 public:
-  mtd_stats_t  g_stats;    // global stats
+  mtd_stats_t  g_stats;         // global stats
+  mtd_reporting_t g_reporting;  // Report about who is making these rpcs
 
 protected:
   const txa_prog_t * const txa_prog; // for Thin XDR Authentication
@@ -273,18 +283,25 @@ protected:
 
 class ssrv_client_t {
 public:
-  ssrv_client_t (ssrv_t *s, const rpc_program *const p, ptr<axprt> x,
+  ssrv_client_t (ssrv_t *s, const rpc_program *const p, ptr<axprt_stream> x,
 		 const txa_prog_t *t);
   ~ssrv_client_t ();
   void dispatch (svccb *s);
   list_entry<ssrv_client_t> lnk;
   bool authorized (u_int32_t procno) ;
+protected:
+  void init_reporting_info ();
 private:
   ssrv_t *ssrv;
   ptr<asrv> srv;
   const txa_prog_t *const txa_prog;
   vec<str> authtoks;
   qhash<u_int32_t, bool> authcache;
+  ptr<axprt_stream> _x;
+
+  // hostname/port of the guy on the other end
+  str _hostname;
+  int _port;
 };
 
 class ssrv_t { // Synchronous Server (I.e. its threads can block)
