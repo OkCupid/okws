@@ -25,6 +25,7 @@
 #include "txa_prot.h"
 #include "rxx.h"
 #include "parseopt.h"
+#include "rpc_stats.h"
 
 #define LONG_REPLY_TIME   2
 
@@ -306,9 +307,19 @@ mtdispatch_t::chld_ready (int i)
   }
 }
 
+void
+mtdispatch_t::init_rpc_stats ()
+{
+  if (ok_amt_rpc_stats)
+    get_rpc_stats().set_active(true).set_interval (ok_amt_rpc_stats_interval);
+}
+
 void 
 mtdispatch_t::init ()
 {
+
+  init_rpc_stats ();
+
   int fds[2];
   if (pipe (fds) < 0)
     fatal << "mtdispatch::init: cannot open pipe\n";
