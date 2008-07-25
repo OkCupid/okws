@@ -448,8 +448,17 @@ okd_t::newserv (int fd)
       disable_accept ();
     }
   }
-  else if (errno != EAGAIN)
-    warn ("** accept error: %m\n");
+  else {
+    if (errno != EAGAIN) {
+      const char *ip = NULL;
+      if (sin) {
+	ip = inet_ntoa (sin->sin_addr);
+      }
+      if (!ip) ip = "<no-ip>";
+      warn ("** accept error (%s): %m\n", ip);
+    } 
+    xfree (sin);
+  }
 }
 
 

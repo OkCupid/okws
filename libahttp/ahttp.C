@@ -41,7 +41,7 @@ int n_ahttpcon = 0;
 ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
 		    bool ma)
   : start (sfs_get_timenow ()), fd (f), rcbset (false), 
-    wcbset (false), bytes_recv (0), bytes_sent (0),
+    wcbset (false), _bytes_recv (0), bytes_sent (0),
     eof (false), destroyed (false), out (suio_alloc ()), sin (s),
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
     overflow_flag (false), ss (global_syscall_stats),
@@ -375,7 +375,8 @@ ahttpcon::input ()
       warn ("Too many fds (%d) in ahttpcon::input: %m\n", n_ahttpcon);
       too_many_fds ();
     } else if (errno != EAGAIN) {
-      warn ("nfds=%d; Error in ahttpcon::input: %m (%d)\n", n_ahttpcon, errno);
+      warn ("nfds=%d; Error in ahttpcon::input (%s): %m (%d)\n", 
+	    n_ahttpcon, get_remote_ip ().cstr (), errno);
       fail ();
     }
     return;
@@ -386,10 +387,10 @@ ahttpcon::input ()
     return;
   }
 
-  bytes_recv += n;
+  _bytes_recv += n;
 
   // stop DOS attacks?
-  if (recv_limit > 0 && bytes_recv > recv_limit) {
+  if (recv_limit > 0 && _bytes_recv > recv_limit) {
 
     warn << "Channel limit exceded ";
     if (remote_ip)
@@ -676,8 +677,9 @@ ahttp_tab_t::run ()
       unreg (n);
     } else if (int (sfs_get_timenow() - n->_a->start) > 
 	       int (ok_demux_timeout)) {
-      warn << "XXX: removing deadbeat http connection (fd="
-	   << n->_a->getfd () << ")\n";
+      warn ("HTTP connection timed out in demux (ip=%s; fd=%d; bytes=%d)\n",
+	    n->_a->get_remote_ip ().cstr (), n->_a->getfd (),
+	    n->_a->bytes_recv ());
       n->_a->hit_timeout ();
       unreg (n);
     } else {

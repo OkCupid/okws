@@ -118,6 +118,7 @@ public:
   void cancel () { fail (HTTP_CLIENT_EOF); }
   void stop_read ();
   void short_circuit_output ();
+  int bytes_recv () const { return _bytes_recv;}
   
   const time_t start;
 
@@ -142,7 +143,7 @@ protected:
   cbv::ptr drained_cb;
   bool rcbset, wcbset;
   suiolite *in;
-  int bytes_recv, bytes_sent;
+  int _bytes_recv, bytes_sent;
   bool eof, destroyed;
   suio *out;
   sockaddr_in *sin;
