@@ -251,6 +251,7 @@ public:
 protected:
   mtd_thread_arg_t *launch_init (int i, int fdout, int *closeit);
   virtual void launch (int i, int fd) = 0;
+  virtual void init_rpc_stats ();
   
   void shutdown ();
   int msg_send (int tid, mtd_status_t s);
