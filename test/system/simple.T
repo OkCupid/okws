@@ -40,14 +40,14 @@ protected:
   void post_launch_pub2_T (cbb cb,  CLOSURE);
 };
 
-class okclnt_simple_t : public okclnt_t {
+class okclnt_simple_t : public okclnt2_t {
 public:
   okclnt_simple_t (ptr<ahttpcon> x, oksrvc_simple_t *o)
-    : okclnt_t (x, o), ok_simple (o) {}
+    : okclnt2_t (x, o), ok_simple (o) {}
   ~okclnt_simple_t () {}
 
-  void process () { process_T (); }
-  void process_T (CLOSURE); 
+  void process (proc_ev_t ev) { process_T (ev); }
+  void process_T (proc_ev_t ev, CLOSURE); 
 
 protected:
   oksrvc_simple_t *ok_simple;
@@ -67,7 +67,7 @@ oksrvc_simple_t::post_launch_pub2_T (cbb cb)
 }
 
 tamed void 
-okclnt_simple_t::process_T ()
+okclnt_simple_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     aarr_t aarr;
@@ -100,7 +100,8 @@ okclnt_simple_t::process_T ()
   if (!rc) {
     twait { pub2 ()->run (&out, file, mkevent (rc), &aarr, opts|P_VISERR); }
   }
-  output (out);
+  twait { output (out, mkevent ()); }
+  ev->trigger (true, HTTP_OK);
 }
 
 oksrvc_t::newclnt_t *

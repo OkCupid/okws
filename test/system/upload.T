@@ -37,21 +37,21 @@ public:
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
 };
 
-class okclnt_upload_t : public okclnt_t {
+class okclnt_upload_t : public okclnt2_t {
 public:
   okclnt_upload_t (ptr<ahttpcon> x, oksrvc_upload_t *o)
-    : okclnt_t (x, o), ok_upload (o) {}
+    : okclnt2_t (x, o), ok_upload (o) {}
   ~okclnt_upload_t () {}
 
-  void process () { process_T (); }
-  void process_T (CLOSURE); 
+  void process (proc_ev_t ev) { process_T (ev); }
+  void process_T (proc_ev_t ev, CLOSURE); 
 
 protected:
   oksrvc_upload_t *ok_upload;
 };
 
 tamed void 
-okclnt_upload_t::process_T ()
+okclnt_upload_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     aarr_t aarr;
@@ -69,7 +69,8 @@ okclnt_upload_t::process_T ()
   aarr.add ("sz", sz);
 
   twait { pub2 ()->run (&out, file, mkevent (rc), &aarr); }
-  output (out);
+  twait { output (out, mkevent ()); }
+  ev->trigger (true, HTTP_OK);
 }
 
 oksrvc_t::newclnt_t *
