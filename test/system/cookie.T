@@ -35,21 +35,21 @@ public:
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
 };
 
-class okclnt_cookie_t : public okclnt_t {
+class okclnt_cookie_t : public okclnt2_t {
 public:
   okclnt_cookie_t (ptr<ahttpcon> x, oksrvc_cookie_t *o)
-    : okclnt_t (x, o), ok_cookie (o) {}
+    : okclnt2_t (x, o), ok_cookie (o) {}
   ~okclnt_cookie_t () {}
 
-  void process () { process_T (); }
-  void process_T (CLOSURE); 
+  void process (proc_ev_t ev) { process_T (ev); }
+  void process_T (proc_ev_t ev, CLOSURE); 
 
 protected:
   oksrvc_cookie_t *ok_cookie;
 };
 
 tamed void 
-okclnt_cookie_t::process_T ()
+okclnt_cookie_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     bool do_redirect (false);
@@ -70,10 +70,11 @@ okclnt_cookie_t::process_T ()
   set_hdr_field ("My-Special-Field", "Some stuff YYY XXX ZZZ 333");
 
   if (do_redirect) {
-    redirect ("http://www.someurl.com/fff");
+    twait { redirect ("http://www.someurl.com/fff", -1, mkevent ()); }
   } else {
-    output (out);
+    twait { output (out, mkevent ()); }
   }
+  ev->trigger (true, HTTP_OK);
 }
 
 oksrvc_t::newclnt_t *

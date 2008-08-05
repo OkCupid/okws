@@ -47,14 +47,14 @@ public:
   bool _union_cgi;
 };
 
-class okclnt_form_t : public okclnt_t {
+class okclnt_form_t : public okclnt2_t {
 public:
   okclnt_form_t (ptr<ahttpcon> x, oksrvc_form_t *o)
-    : okclnt_t (x, o), ok_form (o) {}
+    : okclnt2_t (x, o), ok_form (o) {}
   ~okclnt_form_t () {}
 
-  void process () { process_T (); }
-  void process_T (CLOSURE); 
+  void process (proc_ev_t ev) { process_T (ev); }
+  void process_T (proc_ev_t ev, CLOSURE); 
 
 protected:
   oksrvc_form_t *ok_form;
@@ -74,7 +74,7 @@ v2s (const vec<str> &in)
 }
 
 tamed void 
-okclnt_form_t::process_T ()
+okclnt_form_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     bool ok;
@@ -106,8 +106,8 @@ okclnt_form_t::process_T ()
   
 
   twait { pub2 ()->run (&out, "/form.html", mkevent (ok), &a); }
-
-  output (out);
+  twait { output (out, mkevent ()); }
+  ev->trigger (true, HTTP_OK);
 }
 
 oksrvc_t::newclnt_t *
