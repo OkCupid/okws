@@ -321,6 +321,12 @@ mtdispatch_t::init ()
   init_rpc_stats ();
 
   int fds[2];
+
+  if (num == 0) {
+    warn << "Cannot start program with 0 threads; exiting...\n";
+    exit (3);
+  }
+
   if (pipe (fds) < 0)
     fatal << "mtdispatch::init: cannot open pipe\n";
   fdin = fds[0];
