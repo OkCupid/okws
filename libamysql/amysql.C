@@ -97,7 +97,7 @@ amysql_thread_t::prepare (const str &q, u_int o)
 	   
   sth_t r = mysql.prepare (q, o);
   if (!r) 
-    TWARN (mysql.error ());
+    TWARN ("prepare query failed: " << q);
   return r;
 }
 
