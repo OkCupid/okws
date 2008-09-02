@@ -88,12 +88,14 @@ namespace okxml {
 
   class xlate_mgr_t {
   public:
-    xlate_mgr_t () {}
+    xlate_mgr_t ();
     virtual ~xlate_mgr_t () {}
 
     void add_file (const xml_rpc_file &file);
     void add_files (const xml_rpc_file *const * list);
 
+    void get_types(xml_req_t input, xml_resp_cb_t cb);
+    void get_prog_info(xml_req_t input, xml_resp_cb_t cb);
     void xlate (xml_obj_const_t input, xml_resp_cb_t cb, CLOSURE);
     void get_constants (xml_req_t input, xml_resp_cb_t cb);
 
@@ -107,10 +109,12 @@ namespace okxml {
 
     void add_const (const xml_rpc_const_t *c);
     void add_program (const xml_rpc_program *p);
+    void add_type (const xml_typeinfo_t *t);
 
     qhash<str, const xml_rpc_program *> _programs;
     qhash<str, int> _constants;
     qhash<str, const xml_rpc_file *> _files;
+    qhash<str, const xml_typeinfo_t *> _types;
 
     connmgr_t _cmgr;
 
@@ -119,6 +123,11 @@ namespace okxml {
 		   const rpc_program &prog,
 		   int procno, const void *arg, void *res,
 		   aclnt_cb cb, CLOSURE);
+
+    void fill_struct_info(xml_obj_ref_t x, const xml_struct_entry_t *entries,
+                          int type, vec<str> &out, bhash<str> &seen);
+    void fill_type_info(xml_obj_ref_t x, const xml_typeinfo_t *type,
+                        vec<str> &out, bhash<str> &seen);
   };
 
 

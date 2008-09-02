@@ -380,3 +380,43 @@ XML_RPC_obj_t::error_wrong_type (const char *f, int rc)
   return error_wrong_type (f, NULL, rc);
 }
 */
+
+#define PRIM(x) xml_typeinfo_t xml_typeinfo_ ## x =	\
+    { #x, xml_typeinfo_t::PRIMITIVE, NULL }
+
+#define DEF(x, y) \
+  static xml_struct_entry_t _xml_typedef_ ## x =			\
+    { NULL, #x, &xml_typeinfo_ ## y, 0, 0 };				\
+  xml_typeinfo_t xml_typeinfo_ ## x =					\
+    { #x, xml_typeinfo_t::TYPEDEF, &_xml_typedef_ ## x }
+
+PRIM(void);
+PRIM(bool);
+PRIM(int);
+PRIM(u_int32_t);
+PRIM(hyper);
+PRIM(u_int64_t);
+PRIM(string);
+PRIM(opaque);
+PRIM(false); // just to make macros expand w/o compile errors
+
+DEF(int32_t, int);
+DEF(int64_t, hyper);
+DEF(uint32_t, u_int32_t);
+DEF(uint64_t, u_int64_t);
+
+const xml_typeinfo_t *xml_typeinfo_base_types[] = {
+    &xml_typeinfo_void,
+    &xml_typeinfo_bool,
+    &xml_typeinfo_int,
+    &xml_typeinfo_u_int32_t,
+    &xml_typeinfo_hyper,
+    &xml_typeinfo_u_int64_t,
+    &xml_typeinfo_string,
+    &xml_typeinfo_opaque,
+    &xml_typeinfo_int32_t,
+    &xml_typeinfo_int64_t,
+    &xml_typeinfo_uint32_t,
+    &xml_typeinfo_uint64_t,
+};
+

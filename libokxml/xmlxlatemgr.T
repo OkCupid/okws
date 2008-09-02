@@ -112,6 +112,12 @@ namespace okxml {
   }
 
   void
+  xlate_mgr_t::add_type (const xml_typeinfo_t *t)
+  {
+    _types.insert (t->name, t);
+  }
+
+  void
   xlate_mgr_t::add_files (const xml_rpc_file *const *list)
   {
     for (const xml_rpc_file *const *p = list; *p; p++) {
@@ -128,6 +134,9 @@ namespace okxml {
     }
     for (const xml_rpc_const_t *c = file.constants; c->name; c++) {
       add_const (c);
+    }
+    for (const xml_typeinfo_t **t = file.types; *t; t++) {
+      add_type (*t);
     }
   }
 
@@ -182,6 +191,119 @@ namespace okxml {
   private:
     vec<xml_pair_t *> _v;
   };
+
+  xlate_mgr_t::xlate_mgr_t()
+  {
+    for (const xml_typeinfo_t **t = xml_typeinfo_base_types; *t; t++) {
+      add_type (*t);
+    }
+  }
+
+  void
+  xlate_mgr_t::fill_struct_info(xml_obj_ref_t x, 
+				const xml_struct_entry_t *entries, int type, 
+				vec<str> &out, bhash<str> &seen)
+  {
+    size_t i = 0;
+    bool done = false;
+    while (!done) {
+      bool hasAny = false;
+      if (entries[i].type) {
+        str type = entries[i].type->name;
+        x[i]("type") = type; hasAny = true;
+        if (!seen[type] && _types[type]) {
+          seen.insert(type);
+          out.push_back(type);
+        }
+      }
+      if (entries[i].name) { 
+	x[i]("name") = str(entries[i].name); 
+	hasAny = true; 
+      }
+      if (entries[i].swval) { 
+	x[i]("swval") = str(entries[i].swval); 
+	hasAny = true; 
+      }
+      if (hasAny) {
+        x[i]("qual") = entries[i].qual;
+        x[i]("bound") = entries[i].bound;
+      }
+      done = !hasAny || (type == xml_typeinfo_t::TYPEDEF);
+      i++;
+    }
+  }
+
+  void
+  xlate_mgr_t::fill_type_info(xml_obj_ref_t x, const xml_typeinfo_t *type, 
+			      vec<str> &out, bhash<str> &seen)
+  {
+    x("type") = type->name;
+    switch (type->category) {
+    case xml_typeinfo_t::PRIMITIVE: x("category") = str("PRIMITIVE"); break;
+    case xml_typeinfo_t::ENUM: x("category") = str("ENUM"); break;
+    case xml_typeinfo_t::STRUCT:
+      x("category") = str("STRUCT");
+      fill_struct_info(x("members"), type->contents, 
+		       xml_typeinfo_t::STRUCT, out, seen);
+      break;
+    case xml_typeinfo_t::UNION:
+      x("category") = str("UNION");
+      fill_struct_info(x("members"), type->contents, 
+		       xml_typeinfo_t::UNION, out, seen);
+      break;
+    case xml_typeinfo_t::TYPEDEF:
+      x("category") = str("TYPEDEF");
+      fill_struct_info(x("alias"), type->contents, 
+		       xml_typeinfo_t::TYPEDEF, out, seen);
+    };
+  }
+
+  void
+  xlate_mgr_t::get_types(xml_req_t in, xml_resp_cb_t cb)
+  {
+    xml_resp_t resp;
+    bhash<str> seen;
+    vec<str> out;
+    for (size_t i = 0; i < in.size (); i++) {
+      for (size_t j = 0; j < in[i].size (); j++) {
+	str n = in[i][j];
+	const xml_typeinfo_t **t;
+	if (!n || !(t = _types[n])) continue;
+
+        if (seen[(*t)->name]) continue;
+        out.push_back((*t)->name);
+        seen.insert((*t)->name);
+      }
+    }
+    for (size_t i = 0; i < out.size(); i++) {
+      fill_type_info(resp[0](out[i]), *_types[out[i]], out, seen);
+    }
+
+    cb(resp);
+  }
+
+  void
+  xlate_mgr_t::get_prog_info (xml_req_t in, xml_resp_cb_t cb)
+  {
+    xml_resp_t resp;
+    for (size_t i = 0; i < in.size (); i++) {
+      for (size_t j = 0; j < in[i].size (); j++) {
+        str p = in[i][j];
+        const xml_rpc_program **x;
+        if (!p || !(x = _programs[p])) continue;
+        for (size_t k = 0; k < (*x)->nproc; k++) {
+          if (! (*x)->xml_tbl[k].name) { 
+            resp(p)[k]("name") = "null";
+            continue;
+          }
+          resp[0](p)[k]("name") = (*x)->xml_tbl[k].name;
+          resp[0](p)[k]("arg") = (*x)->xml_tbl[k].xml_arg_type->name;
+          resp[0](p)[k]("res")= (*x)->xml_tbl[k].xml_res_type->name;
+        }
+      }
+    }
+    cb(resp);
+  }
 
   void
   xlate_mgr_t::get_constants (xml_req_t in, xml_resp_cb_t cb)

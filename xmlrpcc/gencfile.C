@@ -77,6 +77,7 @@ mkmshl (str id)
 
 vec<str> const_tab;
 vec<str> prog_tab;
+vec<str> type_tab;
 
 static void
 populate_prog_tab (const str &s)
@@ -126,6 +127,25 @@ mktbl (const rpc_program *rs)
 }
 
 static void
+dumpstructmember_xml(str swval, const rpc_decl *rd)
+{
+  if (swval)
+    aout << "  { \"" << swval << "\", ";
+  else
+    aout << "  { NULL, ";
+  if (rd->id)
+    aout << "\"" << rd->id << "\", ";
+  else
+    aout << "NULL, ";
+  if (rd->type)
+    aout << "&xml_typeinfo_" << rd->type << ", ";
+  else
+    aout << "NULL, ";
+  aout << (int)rd->qual << ", "
+       << (rd->bound ? rd->bound : "0") << " }";
+}
+
+static void
 dumpstruct_xml (const rpc_sym *s)
 {
   const rpc_struct *rs = s->sstruct.addr ();
@@ -139,6 +159,21 @@ dumpstruct_xml (const rpc_sym *s)
   }
   aout << "  return true;\n"
        << "}\n\n";
+
+ aout << "static xml_struct_entry_t _xml_contents_" << rs->id << "[] = {\n";
+  for (rd = rs->decls.base (); rd < rs->decls.lim (); rd++) {
+    dumpstructmember_xml(NULL, rd);
+    aout << ",\n";
+  }
+  aout << "  { NULL, NULL, NULL, 0, 0 }\n";
+  aout << "};\n\n";
+
+  aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
+       << "  \"" << rs->id << "\",\n"
+       << "  xml_typeinfo_t::STRUCT,\n"
+       << "  _xml_contents_" << rs->id << ",\n"
+       << "};\n\n";
+  type_tab.push_back(rs->id);
 }
 
 static void
@@ -176,9 +211,24 @@ dumpunion_xml (const rpc_sym *s)
   pswitch ("  ", rs, "tag", punionmacro_xml, "\n", punionmacrodefault_xml);
     
   aout << "  return res;\n"
-       << "}\n";
+       << "}\n\n";
 
-  aout << "\n";
+  aout << "xml_struct_entry_t _xml_contents_" << rs->id << "[] = {\n"
+       << "  { NULL, \"" << rs->tagid << "\", &xml_typeinfo_" 
+       << rs->tagtype << ", 0, 0},\n";
+  for (const rpc_utag *rc = rs->cases.base(); rc < rs->cases.lim(); rc++) {
+    dumpstructmember_xml(rc->swval, &rc->tag);
+    aout << ",\n";
+  }
+  aout << "  { NULL, NULL, NULL, 0, 0 }," 
+       << "};\n\n";
+
+  aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
+       << "  \"" << rs->id << "\",\n"
+       << "  xml_typeinfo_t::UNION,\n"
+       << "  _xml_contents_" << rs->id << ",\n"
+       << "};\n\n";
+  type_tab.push_back(rs->id);
 }
 
 static void
@@ -192,7 +242,15 @@ dumpenum_xml (const rpc_sym *s)
        << "    return false;\n"
        << "  obj = " << rs->id << " (val);\n"
        << "  return true;\n"
-       << "}\n";
+       << "}\n\n";
+
+  aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
+       << "  \"" << rs->id << "\",\n"
+       << "  xml_typeinfo_t::ENUM,\n"
+       << "  NULL\n"
+       << "};\n\n";
+
+  type_tab.push_back(rs->id);
 }
 
 static void
@@ -257,6 +315,22 @@ mkns (const rpc_namespace *ns)
 }
 
 static void
+dumptypedef_xml (const rpc_sym *s)
+{
+  const rpc_decl *rd = s->stypedef.addr ();
+  aout << "static xml_struct_entry_t _xml_typedef_" << rd->id << " = \n";
+  dumpstructmember_xml(NULL, rd);
+  aout << ";\n\n";
+  aout << "xml_typeinfo_t xml_typeinfo_" << rd->id << " = {\n"
+       << "  \"" << rd->id << "\",\n"
+       << "  xml_typeinfo_t::TYPEDEF,\n"
+       << "  &_xml_typedef_" << rd->id << "\n"
+       << "};\n\n";
+
+  type_tab.push_back(rd->id);
+}
+
+static void
 dumpsym (const rpc_sym *s)
 {
   switch (s->type) {
@@ -278,6 +352,7 @@ dumpsym (const rpc_sym *s)
     break;
   case rpc_sym::TYPEDEF:
     mkmshl (s->stypedef->id);
+    dumptypedef_xml (s);
     break;
   case rpc_sym::PROGRAM:
     mktbl (s->sprogram.addr ());
@@ -511,11 +586,23 @@ dump_prog_table (str fname)
 }
 
 static void
+dump_type_table (str fname)
+{
+  aout << "static const xml_typeinfo_t *" << fname << "_rpc_types[] = {\n";
+  for (size_t i = 0; i < type_tab.size (); i++) {
+    aout << "  &xml_typeinfo_" << type_tab[i] << ",\n";
+  }
+  aout << "  NULL\n"
+       << "};\n\n";
+}
+
+static void
 dump_file_struct (str prfx)
 {
   aout << "xml_rpc_file " << prfx << "_rpc_file = {\n"
        << "  " << prfx << "_rpc_programs,\n"
        << "  " << prfx << "_rpc_constants,\n"
+       << "  " << prfx << "_rpc_types,\n"
        << "  \"" << prfx << "\",\n"
        << "  " << prfx << "_pound_defs_fn\n"
        << "};\n\n";
@@ -554,6 +641,7 @@ gencfile (str fname)
 
   dump_const_table (prfx);
   dump_prog_table (prfx);
+  dump_type_table (prfx);
   dump_pound_defs (prfx);
 
   dump_file_struct (prfx);

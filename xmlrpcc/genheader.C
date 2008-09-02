@@ -86,6 +86,8 @@ dumpstruct_xml (const rpc_sym *s)
 {
   const rpc_struct *rs = s->sstruct.addr ();
   aout << "bool rpc_traverse (" XML_OBJ "*t, " << rs->id << " &obj);\n" ;
+
+  aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
 }
 
 static void
@@ -201,6 +203,7 @@ dumpunion_xml (const rpc_sym *s)
 {
   const rpc_union *rs = s->sunion.addr ();
   aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n";
+  aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
 }
 
 static void
@@ -301,6 +304,7 @@ dumpenum_xml (const rpc_sym *s)
 {
   const rpc_enum *rs = s->senum.addr ();
   aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n";
+  aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
 }
 
 static void
@@ -350,6 +354,7 @@ dumptypedef (const rpc_sym *s)
   pdecl ("typedef ", rd);
   pmshl (rd->id);
   aout << "RPC_TYPEDEF_DECL (" << rd->id << ")\n";
+  aout << "extern xml_typeinfo_t xml_typeinfo_" << rd->id << ";\n";
 }
 
 static void
