@@ -182,11 +182,28 @@ struct xml_rpc_const_t {
   int val;
 };
 
+struct xml_typeinfo_t;
+
+struct xml_struct_entry_t {
+  const char *swval; // <-- for union members only
+  const char *name;
+  xml_typeinfo_t *type;
+  int qual, bound;
+};
+
+struct xml_typeinfo_t {
+  const char *name;
+  enum { PRIMITIVE, STRUCT, UNION, ENUM, TYPEDEF } category;
+  xml_struct_entry_t *contents;
+};
+
 struct xml_rpcgen_table {
   const char *name;
   const std::type_info *type_arg;
+  const xml_typeinfo_t *xml_arg_type;
   xml_xdrproc_t xml_arg_proc;
   const std::type_info *type_res;
+  const xml_typeinfo_t *xml_res_type;
   xml_xdrproc_t xml_res_proc;
 };
 
@@ -202,7 +219,7 @@ struct xml_rpc_program {
 class xml_pound_def_collector_t {
 public:
   virtual ~xml_pound_def_collector_t () {}
-
+  
   template<class T> void collect (const str &s, T t) {}
   virtual void collect (const str &s, int i) = 0;
   virtual void collect (const str &s, str v) = 0;
@@ -214,17 +231,18 @@ typedef void (*xml_pound_def_collect_fn_t) (xml_pound_def_collector_t *c);
 struct xml_rpc_file {
   const struct xml_rpc_program **programs;
   const struct xml_rpc_const_t *constants;
+  const struct xml_typeinfo_t **types;
   const char *filename;
   xml_pound_def_collect_fn_t pound_def_collector;
 };
 
 #define XMLTBL_DECL(proc, arg, res)                               \
-{                                                                 \
-  #proc,                                                          \
-  &typeid (arg), xml_##arg,                                       \
-  &typeid (res), xml_##res                                        \
-},                                                                \
-
+  {								  \
+    #proc,							  \
+      &typeid (arg), &xml_typeinfo_##arg, xml_##arg,		  \
+      &typeid (res), &xml_typeinfo_##res, xml_##res		  \
+      },							  \
+    
 ptr<xml_element_t>
 xml_enter_field (XML_RPC_obj_t *obj, const char *field_name);
 
@@ -235,16 +253,16 @@ xml_rpc_traverse (XML_RPC_obj_t *obj, T &t, const char *field_name)
 {
   ptr<xml_element_t> old;
   bool ret = true;
-
+  
   if (field_name && !obj->enter_field (field_name))
     return false;
   
   ret = rpc_traverse (obj, t);
-
+  
   if (field_name) {
     obj->exit_field ();
   }
-
+  
   return ret;
 }
 
@@ -260,23 +278,23 @@ _rpc_traverse_array (XML_RPC_obj_t *xml, V &v, size_t n, bool fixed)
   ssize_t nsz;
   int n_frames;
   int a;
-
+  
   if ((n_frames = xml->push_array (v.size (), n, fixed, &nsz)) < 0)
     return false;
-
+  
   if (nsz >= 0)
     _array_setsize (v, nsz);
-
+  
   for (size_t i = 0; i < v.size (); i++) {
     if ((a = xml->push_array_slot (i)) < 0 ||
 	!xml_rpc_traverse (xml, v[i], NULL) ||
 	!xml->pop (a))
       return false;
   }
-
+  
   if (!xml->pop (n_frames))
     return false;
-
+  
   return true;
 }
 
@@ -390,7 +408,8 @@ inline bool                                                        \
 xml_##xdrTyp (XML_RPC_obj_t *x, void *objp)                        \
 {                                                                  \
   return xml_rpc_traverse (x, *static_cast<cTyp *> (objp), NULL);  \
-}
+}                                                                  \
+extern xml_typeinfo_t xml_typeinfo_ ## xdrTyp;
 
 XML_STUB(bool, bool);
 XML_STUB(int, int32_t);
@@ -400,6 +419,14 @@ XML_STUB(u_int32_t, u_int32_t);
 XML_STUB(hyper, int64_t);
 XML_STUB(int64_t, int64_t);
 XML_STUB(u_int64_t, u_int64_t);
+
+extern xml_typeinfo_t xml_typeinfo_void;
+extern xml_typeinfo_t xml_typeinfo_string;
+extern xml_typeinfo_t xml_typeinfo_uint32_t;
+extern xml_typeinfo_t xml_typeinfo_uint64_t;
+extern xml_typeinfo_t xml_typeinfo_opaque;
+extern xml_typeinfo_t xml_typeinfo_false;
+extern const xml_typeinfo_t *xml_typeinfo_base_types[];
 
 inline bool
 xml_void (XML_RPC_obj_t *obj, void *v)
