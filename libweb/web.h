@@ -48,6 +48,10 @@ public:
     : err (false), dt_tm (0), stm_set (false), time_t_set (false)
   { set (s); }
 
+  okdate_t (const struct tm &s, long gmt_off) 
+    : err (false), dt_tm (0), stm_set (false), time_t_set (false)
+  { set (s, gmt_off); }
+
   okdate_t (time_t tm) 
     : err (false), dt_tm (0), stm_set (false), time_t_set (true) 
   { set (tm); }
@@ -55,6 +59,10 @@ public:
   okdate_t (const str &s) 
     : err (false), dt_tm (0), stm_set (false), time_t_set (false)
   { set (s); }
+
+  okdate_t (const str &s, long gmt_off) 
+    : err (false), dt_tm (0), stm_set (false), time_t_set (false)
+  { set (s, gmt_off); }
 
   okdate_t (int month, int day, int year) 
     : err(false), dt_tm(0), stm_set (false), time_t_set (false)
@@ -87,16 +95,18 @@ public:
   template<class C> static ptr<okdate_t> alloc (C x)
   { return New refcounted<okdate_t> (x); }
 
-  void set (const x_okdate_t &x);
-  void set (const x_okdate_time_t &x);
-  void set (const x_okdate_date_t &x);
   void set (const struct tm &s);
   void set (time_t t);
   void set (const str &s);
+  void set (const struct tm &s, long gmt_off);
+  void set (const x_okdate_t &x, long gmt_off = 0);
+  bool set (const str &s, long gmt_off);
+  void set (const x_okdate_date_t &x, long gmt_off = 0);
+  void set (const x_okdate_time_t &x, long gmt_off = 0);
 
   operator time_t () const { return to_time_t (); }
 
-  virtual str to_str () const;
+  virtual str to_str (long gmt_off = 0) const;
   void to_xdr (x_okdate_t *x) const;
   void to_xdr (x_okdate_date_t *x) const;
   void to_xdr (x_okdate_time_t *x) const;
@@ -104,6 +114,7 @@ public:
   void to_stm (struct tm *stmp) const;
   void set_stm () const;
   void to_strbuf (strbuf *b, bool quotes) const;
+  void to_strbuf (strbuf *b, bool quotes, long gmt_off) const;
 
   bool valid() const;
 		
@@ -120,10 +131,9 @@ public:
   mutable bool stm_set;  // if the above is set;
   mutable bool time_t_set;
   mutable time_t time_t_val;
-
 private:
-  str strip_zero(const str& s) const;
-		
+  void apply_gmt_off (long gmt_off);
+
 };
 
 typedef ptr<okdate_t> okdatep_t;

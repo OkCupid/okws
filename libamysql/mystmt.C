@@ -163,6 +163,13 @@ bool
 mystmt_t::execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 {
   struct timeval t1;
+
+  // Set the GMT offset in the global field if necessary, using this
+  // thread to do so
+  if (_tzc && !_tzc->fetching ()) {
+    (void)_tzc->gmt_offset ();
+  }
+
   if (lqt) 
     gettimeofday (&t1, NULL);
   bool rc = execute2 (b, arr, n);

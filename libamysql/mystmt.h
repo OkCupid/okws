@@ -30,12 +30,13 @@
 class sth_parsed_t : public mystmt_t 
 {
 public:
-  sth_parsed_t (MYSQL *m, const str &q, u_int o = 0) 
-    : mystmt_t (), mysql (m), qry (q), n_iparam (0), bufs (NULL), opts (o),
+  sth_parsed_t (MYSQL *m, const str &q, u_int o = 0, tz_corrector_t *t = NULL)
+    : mystmt_t (t), mysql (m), qry (q), n_iparam (0), bufs (NULL), opts (o),
       myres (NULL) {}
   ~sth_parsed_t ();
-  static ptr<sth_parsed_t> alloc (MYSQL *m, const str &q, u_int o)
-  { return New refcounted<sth_parsed_t> (m, q, o); }
+  static ptr<sth_parsed_t> 
+  alloc (MYSQL *m, const str &q, u_int o, tz_corrector_t *tzc)
+  { return New refcounted<sth_parsed_t> (m, q, o, tzc); }
   bool parse ();
   adb_status_t fetch2 (bool bnd = false);
   str get_last_qry () const { return last_qry; }
@@ -67,11 +68,13 @@ protected:
 class sth_prepared_t : public mystmt_t 
 {
 public:
-  sth_prepared_t (MYSQL_STMT *s, const str &q, u_int o = 0) 
-    : mystmt_t (), sth (s), bnds (NULL), qry (q), opts (o) {}
+  sth_prepared_t (MYSQL_STMT *s, const str &q, u_int o = 0, 
+		  tz_corrector_t *t = NULL) 
+    : mystmt_t (t), sth (s), bnds (NULL), qry (q), opts (o) {}
   ~sth_prepared_t ();
-  static ptr<sth_prepared_t> alloc (MYSQL_STMT *s, const str &q, u_int o)
-  { return New refcounted<sth_prepared_t> (s, q, o); }
+  static ptr<sth_prepared_t> 
+  alloc (MYSQL_STMT *s, const str &q, u_int o, tz_corrector_t *tzc)
+  { return New refcounted<sth_prepared_t> (s, q, o, tzc); }
   adb_status_t fetch2 (bool bnd = false);
 protected:
   bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);

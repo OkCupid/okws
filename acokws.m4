@@ -447,6 +447,23 @@ else
 fi
 ])
 dnl
+dnl Figure out if struct tm has a tm_gmoff field or not.
+dnl From what I can tell, FreeBSD does, glibc doesn't.
+dnl
+AC_DEFUN([OKWS_GMTOFF],
+[AC_CACHE_CHECK(for tm_gmtoff in struct tm, okws_cv_gmtoff,
+[AC_TRY_COMPILE([#include <time.h>
+], [ struct tm t; t.tm_gmtoff = 1; ], okws_cv_gmtoff="tm_gmtoff" )
+if test ! ${okws_cv_gmtoff+set} ; then
+   AC_TRY_COMPILE([#include <time.h>
+   ], [ struct tm t; t.__tm_gmtoff = 1; ], okws_cv_gmtoff="__tm_gmtoff" )
+fi
+])
+if test ${okws_cv_gmtoff+set} ; then
+   AC_DEFINE_UNQUOTED(STRUCT_TM_GMTOFF, $okws_cv_gmtoff, struct tm has a tm_gmtoff field)
+fi
+])
+dnl
 dnl Find the expat libraries
 dnl
 AC_DEFUN([OKWS_EXPAT],
@@ -587,10 +604,12 @@ fi
 
 module_dir='${okws_modules_dir}/${okwstag}/${module_name}'
 okwssvcdir='${module_dir}/svc'
+okwsprxdir='${module_dir}/dbprox'
 
 AC_SUBST(module_dir)
 AC_SUBST(module_name)
 AC_SUBST(okwssvcdir)
+AC_SUBST(okwsprxdir)
 ])
 
 dnl

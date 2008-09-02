@@ -61,6 +61,7 @@ SFS_FIND_RESOLV
 OKWS_LIBS
 OKWS_MYSQL
 OKWS_EXPAT
+OKWS_GMTOFF
 
 dnl
 dnl Need to use the xmlrpcc if possible when publishing OKWS .x files
@@ -203,4 +204,5 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  libweb/Makefile logd/Makefile Makefile conf/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile htdocs/Makefile contrib/Makefile
-	  xmlrpcc/Makefile test/system/xmlxlate/Makefile )
+	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
+	  test/system/3tier/Makefile )

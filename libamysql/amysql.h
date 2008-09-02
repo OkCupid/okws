@@ -73,10 +73,11 @@ typedef char MYSQL_BIND;
 
 u_int next2pow (u_int i);
 
-#define AMYSQL_NOCACHE  (1 << 0)  /* cache prepared querieds in hashtab */
-#define AMYSQL_PREPARED (1 << 1)  /* use prepared statement handles */
-#define AMYSQL_DEFAULT  (1 << 2)  /* use global object defaults */
-#define AMYSQL_USERES   (1 << 3)  /* call use res as opposed to store res */
+#define AMYSQL_NOCACHE     (1 << 0)  /* cache prepared querieds in hashtab */
+#define AMYSQL_PREPARED    (1 << 1)  /* use prepared statement handles */
+#define AMYSQL_DEFAULT     (1 << 2)  /* use global object defaults */
+#define AMYSQL_USERES      (1 << 3)  /* call use res as opposed to store res */
+#define AMYSQL_NOTZCORRECT (1 << 4)  /* turn of TZ correction */
 
 #define MYSQL_DATE_STRLEN 20     // strlen ("YYYY-MM-DD HH:MM:SS")
 
@@ -127,8 +128,7 @@ class mbdxat_t : public mybind_date_xassign_t {
 public:
   mbdxat_t (C *p) : mybind_date_xassign_t (), pntr (p) {}
 #ifdef HAVE_MYSQL_BIND
-  void assign (const MYSQL_TIME &tm, okdatep_t d) 
-  { mysql_to_xdr (tm, pntr); d->set (*pntr); }
+  void assign (const MYSQL_TIME &tm, okdatep_t d);
 #endif
 
   // special "assign" function for parsed queries; usually
@@ -599,6 +599,8 @@ struct dbparam_t {
   str       _report_rpcs;
 };
 
+class tz_corrector_t;
+
 class mystmt_t;
 class mysql_t {
 public:
@@ -609,7 +611,8 @@ public:
   bool connect (const str &d, const str &u = NULL, const str &h = NULL, 
 		const str &pw = NULL, u_int prt = 0, u_long fl = 0);
   str error () const { return err; }
-  ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
+  ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT,
+			 tz_corrector_t *tzc = NULL);
   u_int64_t insert_id () { return mysql_insert_id (&mysql); }
   u_int64_t affected_rows() { return mysql_affected_rows(&mysql);}
 #ifdef HAVE_MYSQL_BIND
@@ -624,16 +627,55 @@ public:
 
 class amysql_thread_t : public mtd_thread_t {
 public:
-  amysql_thread_t (mtd_thread_arg_t *a, u_int o = 0) 
-    : mtd_thread_t (a), mysql (o) {}
+  amysql_thread_t (mtd_thread_arg_t *a, u_int o = 0);
   virtual ~amysql_thread_t () {}
   ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
+  bool init_phase0 ();
 protected:
   mysql_t mysql;
+  tz_corrector_t *_tzc;
 };
+
+class tz_corrector_t {
+public:
+  tz_corrector_t (amysql_thread_t &t) 
+    : _thr (t), _nxt_update (0), _gmtoff (0), tid (t.getid ()), 
+      _fetching (false) {}
+  long gmt_offset () ;
+  bool prepare ();
+  bool fetching () const { return _fetching; }
+
+private:
+  bool run ();
+  void reschedule ();
+  time_t next_hour (time_t t);
+  amysql_thread_t &_thr;
+  time_t _nxt_update;
+  long _gmtoff;
+  int tid; // so that TWARN works inside of this class
+  ptr<mystmt_t> _sth;
+  bool _fetching;
+};
+
+class global_gmt_offset_t {
+public:
+  global_gmt_offset_t () : _when_updated (0), _val (0) {}
+  bool get (long *val, time_t freshness = 0);
+  long get () { return _val; }
+  void set (long v);
+private:
+  time_t _when_updated;
+  long _val;
+};
+
+extern global_gmt_offset_t global_gmt_offset;
 
 #define PREP(x) prepare (strbuf () << x)
 
-
+#ifdef HAVE_MYSQL_BIND
+template<class C> void 
+mbdxat_t<C>::assign (const MYSQL_TIME &tm, okdatep_t d)
+{ mysql_to_xdr (tm, pntr); d->set (*pntr, global_gmt_offset.get ()); }
+#endif
 
 #endif /* _LIBAMYSQL_AMYSQL_H */

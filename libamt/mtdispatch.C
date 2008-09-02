@@ -385,7 +385,8 @@ void
 mtd_thread_t::run ()
 { 
   mtd_status_t rc;
-  if (!init ()) {
+
+  if (!init_phase0 () || !init()) {
     TWARN ("thread could not initialize");
     msg_send (MTD_SHUTDOWN);
     delete this;

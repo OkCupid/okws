@@ -30,6 +30,7 @@ Service		post /post
 Service		upload /upload
 Service 	purify /purify
 Service		posttest /posttest
+Service		3tier/tst2 /tst2
 
 SyslogLevels	emerg alert crit info warning debug err notice
 

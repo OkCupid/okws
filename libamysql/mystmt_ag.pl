@@ -98,7 +98,9 @@ typedef enum {
 
 class mystmt_t {
 public:
-  mystmt_t () : res_arr (NULL), errno_n (0), state (AMYSQL_NONE), lqt (0) {}
+  mystmt_t (tz_corrector_t *t) : 
+      res_arr (NULL), errno_n (0), state (AMYSQL_NONE), lqt (0), _tzc (t),
+      _tz_run (false) {}
   virtual ~mystmt_t () ;
   virtual adb_status_t fetch2 (bool bnd = false) = 0;
   str error () const { return err; }
@@ -121,6 +123,8 @@ protected:
   unsigned int errno_n;
   amysql_state_t state;
   u_int lqt;  // long query timer (in milliseconds)
+  tz_corrector_t *_tzc;
+  bool _tz_run;
 
 public:
 $stuff

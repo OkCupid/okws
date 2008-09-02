@@ -87,6 +87,23 @@ char_to_sex (char c)
 
 static rxx date_rxx ("(([0-9]{4})-([0-9]{2})-([0-9]{2}))?" 
 		     "( ([0-9]{2}):([0-9]{2}):([0-9]{2}))?");
+
+//
+// this is needed so convertint doesn't think strings like "09" are octal
+//
+static str strip_zero(const str& s)
+{
+  const char *cp = s.cstr ();
+  while (*cp == '0')
+    cp ++;
+
+  // If we got '00000' then make it '0'
+  if (*cp == '\0' && s.len () > 0) 
+    cp --;
+
+  return cp;
+}
+
 void
 okdate_t::set (const str &s)
 {
@@ -99,37 +116,70 @@ okdate_t::set (const str &s)
   if (date_rxx[1]) {
     dt_tm |= OK_DATE;
     
-    assert (convertint (strip_zero(date_rxx[2]), &year) &&
-	    convertint (strip_zero(date_rxx[3]), &mon) &&
-	    convertint (strip_zero(date_rxx[4]), &mday));
+    bool ok = convertint (strip_zero(date_rxx[2]), &year) &&
+      convertint (strip_zero(date_rxx[3]), &mon) &&
+      convertint (strip_zero(date_rxx[4]), &mday);
+    assert (ok);
 
   }
   
   if (date_rxx[5]) {
     dt_tm |= OK_TIME;
-    
-    assert (convertint (strip_zero(date_rxx[6]), &hour) &&
-	    convertint (strip_zero(date_rxx[7]), &min) &&
-	    convertint (strip_zero(date_rxx[8]), &sec));
+
+    bool ok = convertint (strip_zero(date_rxx[6]), &hour) &&
+      convertint (strip_zero(date_rxx[7]), &min) &&
+      convertint (strip_zero(date_rxx[8]), &sec);
+    assert (ok);
   }
 }
 
-//
-// this is needed so convertint doesn't think strings like "09" are octal
-//
-str
-okdate_t::strip_zero(const str& s) const
+bool
+okdate_t::set (const str &s, long gmt_off)
 {
-  const char *cp = s.cstr ();
-  while (*cp == '0')
-    cp ++;
+  if (!s || !date_rxx.match (s) || !date_rxx[1] || !date_rxx[5]) {
+    err = true;
+  } else {
+    struct tm t;
 
-  // If we got '00000' then make it '0'
-  if (*cp == '\0' && s.len () > 0) 
-    cp --;
+    bool ok = convertint (strip_zero(date_rxx[2]), &t.tm_year) &&
+      convertint (strip_zero(date_rxx[3]), &t.tm_mon) &&
+      convertint (strip_zero(date_rxx[4]), &t.tm_mday) &&
+      convertint (strip_zero(date_rxx[6]), &t.tm_hour) &&
+      convertint (strip_zero(date_rxx[7]), &t.tm_min) &&
+      convertint (strip_zero(date_rxx[8]), &t.tm_sec);
+    assert (ok);
 
-  return cp;
+    t.tm_year -= 1900;
+    t.tm_mon -= 1;
+    set (t, gmt_off);
+  }
+  return !err;
 }
+
+static time_t
+to_utc (const struct tm &t, long gmt_offset)
+{
+  time_t ret;
+  struct tm tmp = t;
+
+#ifdef STRUCT_TM_GMTOFF
+  tmp.STRUCT_TM_GMTOFF = gmt_offset;
+  ret = mktime (&tmp);
+  
+#else /* ! STRUCT_TM_GMTOFF */
+  ret = mktime (&tmp);
+  ret += gmt_offset;
+#endif
+
+  return ret;
+}
+
+void
+okdate_t::set (const struct tm &s, long gmt_off)
+{
+  set (to_utc (s, gmt_off));
+}
+
 
 void
 okdate_t::set (time_t t)
@@ -160,33 +210,52 @@ okdate_t::set (const struct tm &s)
 }
 
 void
-okdate_t::set (const x_okdate_date_t &x)
+okdate_t::set (const x_okdate_date_t &x, long gmt_off)
 {
   mday = x.mday;
   mon = x.mon;
   year = x.year;
   dt_tm |= OK_DATE;
-  sec = 0;
-  min = 0;
-  hour = 0;
+  stm_set = false;
+  if (gmt_off)
+    apply_gmt_off (gmt_off);
 }
 
 void
-okdate_t::set (const x_okdate_time_t &x)
+okdate_t::apply_gmt_off (long gmt_off)
+{
+  struct tm t;
+  to_stm (&t);
+  set (t, gmt_off);
+}
+
+void
+okdate_t::set (const x_okdate_time_t &x, long gmt_off_dummy)
 {
   sec = x.sec;
   min = x.min;
   hour = x.hour;
+  stm_set = false;
   dt_tm |= OK_TIME;
 }
 
 void
-okdate_t::set (const x_okdate_t &x)
+okdate_t::set (const x_okdate_t &x, long gmt_off)
 {
-  if (x.date.on) 
-    set (*x.date.date);
   if (x.time.on)
     set (*x.time.time);
+  else
+    sec = min = hour = 0;
+
+  if (x.date.on) 
+    set (*x.date.date, gmt_off);
+}
+
+void
+okdate_t::to_strbuf (strbuf *b, bool quotes, long gmt_off) const
+{
+  okdate_t tmp (to_time_t () + gmt_off);
+  tmp.to_strbuf (b, quotes);
 }
 
 void
@@ -205,10 +274,10 @@ okdate_t::to_strbuf (strbuf *b, bool quotes) const
 }
 
 str
-okdate_t::to_str () const
+okdate_t::to_str (long gmt_off) const
 {
   strbuf d;
-  to_strbuf (&d, false);
+  to_strbuf (&d, false, gmt_off);
   return d;
 }
 
