@@ -35,41 +35,46 @@ public:
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
 };
 
-class okclnt_cookie_t : public okclnt_t {
+class okclnt_cookie_t : public okclnt2_t {
 public:
   okclnt_cookie_t (ptr<ahttpcon> x, oksrvc_cookie_t *o)
-    : okclnt_t (x, o), ok_cookie (o) {}
+    : okclnt2_t (x, o), ok_cookie (o) {}
   ~okclnt_cookie_t () {}
 
-  void process () { process_T (); }
-  void process_T (CLOSURE); 
+  void process (proc_ev_t ev) { process_T (ev); }
+  void process_T (proc_ev_t ev, CLOSURE); 
 
 protected:
   oksrvc_cookie_t *ok_cookie;
 };
 
 tamed void 
-okclnt_cookie_t::process_T ()
-{
-
-  {
-    cookie_t *c[5];
-
-    c[0] = add_cookie ("foo.com", "/");
-    c[1] = add_cookie (".foo.com", "/");
-    c[2] = add_cookie ("b.foo.com", "/");
-    c[3] = add_cookie (".b.foo.com", "/");
-    c[4] = add_cookie ("a.b.foo.com", "/");
-
-    c[0]->add ("a1", "foo.com");
-    c[1]->add ("a2", ".foo.com");
-    c[2]->add ("a3", "b.foo.com");
-    c[3]->add ("a2", ".b.foo.com");
-    c[4]->add ("a2", "a.b.foo.com");
+okclnt_cookie_t::process_T (okclnt2_t::proc_ev_t ev)
+{ 
+  tvars {
+    bool do_redirect (false);
   }
 
-  out << "hi\n";
-  output (out);
+  if (cgi.blookup ("redirect")) {
+    do_redirect = true;
+  }
+
+  {
+    cookie_t *c[2];
+    c[0] = add_cookie ("foo.com", "/bar");
+    c[1] = add_cookie ("sub.foo.com", "/");
+    c[0]->add ("y", 10).add ("x", "XxX");
+    c[1]->add ("zz", 133).add("ww", "WwW");
+  }
+
+  set_hdr_field ("My-Special-Field", "Some stuff YYY XXX ZZZ 333");
+
+  if (do_redirect) {
+    twait { redirect ("http://www.someurl.com/fff", -1, mkevent ()); }
+  } else {
+    twait { output (out, mkevent ()); }
+  }
+  ev->trigger (true, HTTP_OK);
 }
 
 oksrvc_t::newclnt_t *

@@ -154,7 +154,7 @@ public:
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-	      http_inhdr_t *h = NULL)
+		      http_inhdr_t *h = NULL)
   { error_T (x, n, s, c, h); }
 
   virtual str servinfo () const;
@@ -241,12 +241,21 @@ public:
 
   virtual ~okclnt_base_t ();
   virtual void serve () { serve_T (); }
-  virtual void error (int n, const str &s = NULL);
+
+  virtual void error (int n, const str &s = NULL, evv_t::ptr ev = NULL)
+  { error_T (n, s, ev); }
+
   virtual void process () = 0;
   virtual bool pre_process () { return true; }
-  virtual void output (compressible_t &b);
-  virtual void output (compressible_t *b);
-  virtual void redirect (const str &s, int status = HTTP_MOVEDPERM);
+  virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
+  virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
+
+  virtual void redirect (const str &s, int status = -1,
+			 evv_t::ptr ev = NULL, CLOSURE);
+
+  virtual void send_complete () { delete this; }
+  virtual void serve_complete () {}
+
   virtual void send (ptr<http_response_t> rsp, cbv::ptr cb);
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
@@ -261,7 +270,8 @@ public:
   bool output_fragment (compressible_t &b, cbv::ptr done = NULL);
   void output_file (const char *fn, cbb::ptr cb = NULL, aarr_t *a = NULL,
 		    u_int opt = 0, penv_t *e = NULL, CLOSURE);
-  bool output_done ();
+
+  void output_done (evb_t::ptr ev, CLOSURE);
 
   //
   // set these for different HTTP response configurations;
@@ -283,18 +293,24 @@ public:
   ptr<ahttpcon> client_con () { return _client_con; }
   ptr<const ahttpcon> client_con () const { return _client_con; }
 
+  // The following 2 ought be protected, but are not to handle
+  // tame warts.
+  virtual const http_inhdr_t &hdr_cr () const = 0;
+  bool do_gzip () const;
+
 private:
   void serve_T (CLOSURE);
+  void output_fragment_T (str s, CLOSURE);
+  void error_T (int n, const str &s = NULL, evv_t::ptr ev = NULL, CLOSURE);
+  void output_T (compressible_t *b, evv_t::ptr ev, CLOSURE);
+
   ref<ahttpcon> _client_con;
 
 protected:
-  virtual void delcb () { delete this; }
   void set_attributes (http_resp_attributes_t *hra);
-  bool do_gzip () const;
 
   virtual void parse (cbi cb) = 0;
   virtual http_inhdr_t *hdr_p () = 0;
-  virtual const http_inhdr_t &hdr_cr () const = 0;
   bool output_frag_prepare ();
 		
   cbv::ptr cb;
@@ -337,6 +353,25 @@ public:
   {
     http_parser_cgi_t::set_union_mode (b);
   }
+};
+
+//
+// Upgraded version of okclnt2, with a better state machine architecture
+//
+class okclnt2_t : public okclnt_t {
+public:
+  typedef event<bool, int>::ref proc_ev_t;
+
+  okclnt2_t (ptr<ahttpcon> x, oksrvc_t *c, u_int to = 0) :
+    okclnt_t (x, c, to) {}
+
+  void serve () { serve_T (); }
+  void process () {}
+  virtual void process (proc_ev_t ev) = 0;
+  void send_complete () {}
+  void serve_complete () { delete this; }
+private:
+  void serve_T (CLOSURE);
 };
 
 typedef callback<okclnt_base_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;

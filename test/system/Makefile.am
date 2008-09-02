@@ -37,7 +37,7 @@ TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
 TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
 	upload.C purify.C purify_lib.C
 
-SUBDIRS = $(XML_SUBDIRS)
+SUBDIRS = $(XML_SUBDIRS) 3tier
 
 okwssvc_PROGRAMS = static configtest simple form cookie upload $(XMLPROGS) \
 	posttest

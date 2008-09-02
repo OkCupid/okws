@@ -149,6 +149,7 @@ public:
   void run ();
   virtual void dispatch (svccb *sbp) = 0;
   virtual bool init () { return true; }
+  virtual bool init_phase0 () { return true; }
   void finish ();
 
   void replynull ();

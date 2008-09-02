@@ -54,14 +54,14 @@ private:
   ptr<std_locale::localizer_factory_t> _lfact;
 };
 
-class okclnt_static_t : public okclnt_t {
+class okclnt_static_t : public okclnt2_t {
 public:
   okclnt_static_t (ptr<ahttpcon> x, oksrvc_static_t *o)
-    : okclnt_t (x, o), ok_static (o) {}
+    : okclnt2_t (x, o), ok_static (o) {}
   ~okclnt_static_t () {}
 
-  void process () { process_T (); }
-  void process_T (CLOSURE); 
+  void process (proc_ev_t ev) { process_T (ev); }
+  void process_T (proc_ev_t ev, CLOSURE); 
 
 protected:
   void error (const str &desc);
@@ -103,8 +103,9 @@ okclnt_static_t::error (const str &s)
   rc = false;
 }
 
+
 tamed void 
-okclnt_static_t::process_T ()
+okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     str in;
@@ -114,13 +115,17 @@ okclnt_static_t::process_T ()
     str mime_type;
     str lang;
   }
+
+  static bool first_time = true;
  
 
+  if (first_time)
   {
     // XXX - test that it's OK to write to stdout.  This used to crash
     // the server!
     const char *test = "hello world!\n";
     write (1, test, strlen (test));
+    first_time = false;
   }
 
   if (cgi.blookup ("wss")) {
@@ -187,8 +192,8 @@ okclnt_static_t::process_T ()
   if (!rc) {
     twait { pub2 ()->run (&out, ofn, mkevent (rc), &aarr, opts|P_VISERR); }
   }
-
-  output (out);
+  twait { output (out, mkevent ()); }
+  ev->trigger (true, HTTP_OK);
 }
 
 oksrvc_t::newclnt_t *

@@ -51,7 +51,7 @@ mysql_t::connect (const str &db, const str &u, const str &h,
 }
 
 sth_t
-mysql_t::prepare (const str &q, u_int l_opts)
+mysql_t::prepare (const str &q, u_int l_opts, tz_corrector_t *tzc)
 {
   if (l_opts & AMYSQL_DEFAULT)
     l_opts = opts;
@@ -73,10 +73,10 @@ mysql_t::prepare (const str &q, u_int l_opts)
 	<< q << "): " << mysql_error (&mysql);
       return NULL;
     }
-    r = sth_prepared_t::alloc (s, q, l_opts);
+    r = sth_prepared_t::alloc (s, q, l_opts, tzc);
 #endif // HAVE_MYSQL_BINDFUNCS && HAVE_MYSQL_BIND
   } else {
-    ptr<sth_parsed_t> r2 = sth_parsed_t::alloc (&mysql, q, l_opts);
+    ptr<sth_parsed_t> r2 = sth_parsed_t::alloc (&mysql, q, l_opts, tzc);
     if (!r2->parse ())
       return NULL;
     r = r2;
@@ -95,11 +95,16 @@ amysql_thread_t::prepare (const str &q, u_int o)
     return NULL;
   }
 	   
-  sth_t r = mysql.prepare (q, o);
+  sth_t r = mysql.prepare (q, o, _tzc);
   if (!r) 
     TWARN ("prepare query failed: " << q);
   return r;
 }
+
+amysql_thread_t::amysql_thread_t (mtd_thread_arg_t *a, u_int o)
+  : mtd_thread_t (a), mysql (o),
+    _tzc ( (o & AMYSQL_NOTZCORRECT) ? NULL : New tz_corrector_t (*this)) 
+{}
 
 #ifdef HAVE_MYSQL_BIND
 void
@@ -196,14 +201,14 @@ mybind_date_t::mybind_date_t (const x_okdate_t &d)
 void
 mybind_date_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 {
-  datep->to_strbuf (b, true);
+  datep->to_strbuf (b, true, global_gmt_offset.get ());
 }
 
 str
 mybind_date_t::to_str () const 
 {
   strbuf b;
-  datep->to_strbuf (&b, true);
+  datep->to_strbuf (&b, true, global_gmt_offset.get ());
   return b;
 }
 
@@ -243,14 +248,21 @@ mysql_to_xdr (const MYSQL_TIME &tm, x_okdate_date_t*x)
   x->mon = tm.month;
   x->year = tm.year;
 }
+
 #endif
 
 bool
 mybind_date_t::read_str (const char *c, unsigned long)
 {
   parsed = true;
-  datep->set (c);
+  datep->set (c, global_gmt_offset.get ());
   if (pntr)
     pntr->parsed_assign (datep);
   return (!datep->err);
+}
+
+bool
+amysql_thread_t::init_phase0 ()
+{
+  return (!_tzc || _tzc->prepare ());
 }

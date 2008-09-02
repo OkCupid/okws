@@ -67,11 +67,17 @@ okclnt_base_t::add_cookie (const str &h, const str &p)
   return ret;
 }
 
-void 
-okclnt_base_t::error (int n, const str &s)
+tamed void 
+okclnt_base_t::error_T (int n, const str &s, evv_t::ptr ev)
 { 
-  oksrvc->error (_client_con, n, s, 
-		 wrap (this, &okclnt_base_t::delcb), hdr_p ());
+  
+  twait { 
+    oksrvc->error (_client_con, n, s, mkevent (), hdr_p ());
+  }
+
+  if (ev) 
+    ev->trigger ();
+  send_complete ();
 }
 
 str
@@ -607,6 +613,33 @@ oksrvc_t::add (okclnt_base_t *c)
 }
 
 tamed void
+okclnt2_t::serve_T ()
+{
+  tvars {
+    int status;
+    bool did_output (false);
+  }
+  twait { parse (mkevent (status)); }
+  if (status == HTTP_OK) {
+    if (process_flag)
+      panic ("duplicate process called!\n");
+    else {
+      twait { process (mkevent (did_output, status)); }
+    }
+  }
+
+  if (!did_output) {
+    if (status != HTTP_OK) {
+      twait { error (status, NULL, mkevent ()); }
+    } else {
+      twait { output (out, mkevent ()); }
+    }
+  }
+
+  serve_complete ();
+}
+
+tamed void
 okclnt_base_t::serve_T ()
 {
   tvars {
@@ -626,17 +659,25 @@ okclnt_base_t::serve_T ()
     error (status);
 }
 
-void
-okclnt_base_t::redirect (const str &l, int ht)
+tamed void
+okclnt_base_t::redirect (const str &l, int ht_in, evv_t::ptr ev)
 {
-  http_resp_attributes_t hra (ht, hdr_cr ().get_vers ());
+  tvars {
+    holdvar int ht (ht_in > 0 ? ht_in : HTTP_MOVEDPERM);
+    http_resp_attributes_t hra (ht, _self->hdr_cr ().get_vers ());
+  }
 
   // set any other field that might have been asked for.
   // Note, we must do this before the following line.
   hra.set_others (hdr_fields);
 
   rsp = New refcounted<http_response_redirect_t> (l, hra);
-  send (rsp, wrap (this, &okclnt_base_t::delcb));
+  twait { send (rsp, mkevent ()); }
+
+  if (ev) {
+    ev->trigger ();
+  }
+  send_complete ();
 }
 
 void
@@ -670,8 +711,6 @@ okclnt_base_t::output_hdr (ssize_t len)
   return true;
 }
 
-static void hold_str (str s) {}
-
 bool
 okclnt_base_t::output_frag_prepare ()
 {
@@ -693,11 +732,17 @@ okclnt_base_t::output_fragment (str s)
 {
   if (!output_frag_prepare ())
     return false;
-
-  strbuf b (s);
-  _client_con->send (b, NULL, wrap (hold_str, s));
-
+  output_fragment_T (s);
   return true;
+}
+
+tamed void
+okclnt_base_t::output_fragment_T (str s)
+{
+  tvars {
+    strbuf b (s);
+  }
+  twait { _client_con->send (b, NULL, mkevent ()); }
 }
 
 bool
@@ -729,27 +774,36 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
     twait { pub2 ()->run (&z, f, mkevent (ret), a, opt, e); }
     if (ret) {
       z.to_strbuf (&b, false);
-      twait { 
-	_client_con->send (b, NULL, mkevent ()); 
-      }
+      twait { _client_con->send (b, NULL, mkevent ()); }
     }
   }
 
   if (cb)
     TRIGGER (cb, ret);
+  send_complete ();
 }
 
-bool
-okclnt_base_t::output_done ()
+tamed void
+okclnt_base_t::output_done (evb_t::ptr ev)
 {
-  if (output_state == CLIENT_EOF) {
-    error (HTTP_CLIENT_EOF);
-    return false;
+  tvars {
+    bool ret;
   }
-  assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
-  output_state = DONE;
-  _client_con->set_drained_cb (wrap (this, &okclnt_base_t::delcb));
-  return true;
+
+  if (output_state == CLIENT_EOF) {
+    twait { error (HTTP_CLIENT_EOF, NULL, mkevent ()); }
+    ret = false;
+  } else {
+    assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
+    output_state = DONE;
+    twait { _client_con->set_drained_cb (mkevent ()); }
+    ret = true;
+  }
+
+  if (ev) {
+    ev->trigger (ret);
+  } 
+  send_complete ();
 }
 
 bool
@@ -759,44 +813,52 @@ okclnt_base_t::do_gzip () const
 }
 
 void
-okclnt_base_t::output (compressible_t *b)
+okclnt_base_t::output (compressible_t &b, evv_t::ptr ev)
 {
-  output (*b);
+  output (&b, ev);
 }
 
 void
-okclnt_base_t::output (compressible_t &b)
+okclnt_base_t::output (compressible_t *b, evv_t::ptr ev)
 {
+  output_T (b, ev);
+}
+
+tamed void
+okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
+{
+  tvars {
+    bool gz (_self->do_gzip ());
+    ssize_t prelen (gz ? b->inflated_len () : -1);
+    const strbuf &sb (b->to_strbuf (gz));
+    http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
+  }
+
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
 
   // client might have cancelled as we were waiting for DB
   if (_client_con->closed ()) {
-    error (HTTP_CLIENT_EOF);
-    return;
+    twait { error (HTTP_CLIENT_EOF, NULL, mkevent ()); }
+  } else {
+
+    set_attributes (&hra);
+    hra.set_gzip (gz);
+    rsp = New refcounted<http_response_ok_t> (sb, hra);
+
+    if (uid_set) rsp->set_uid (uid);
+    if (prelen > 0) rsp->set_inflated_len (prelen);
+    twait { send (rsp, mkevent ()); }
   }
 
-  ssize_t prelen = -1;
-  bool gz = do_gzip ();
-  if (gz) 
-    prelen = b.inflated_len ();
-  const strbuf &sb = b.to_strbuf (gz);
-
-  http_resp_attributes_t hra (HTTP_OK, hdr_cr ().get_vers ());
-  set_attributes (&hra);
-
-  hra.set_gzip (gz);
-    
-  rsp = New refcounted<http_response_ok_t> (sb, hra);
-  if (uid_set) rsp->set_uid (uid);
-  if (prelen > 0) rsp->set_inflated_len (prelen);
-  send (rsp, wrap (this, &okclnt_base_t::delcb));
+  if (ev)
+    ev->trigger ();
+  send_complete ();
 }
 
 void
 okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
-
   // do cookies
   for (u_int i = 0; i < outcookies.size(); i++) {
     rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
