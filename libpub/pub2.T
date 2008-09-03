@@ -56,9 +56,9 @@ namespace pub2 {
       ptr<const pub_localizer_t> old;
       status_t status;
       ptr<bound_pfile2_t> bpf;
-      penv_t *e;
+      penv_t *e (NULL);
     }
-    if (!e) e = _ap->get_env ();
+    e = _ap->get_env ();
     old = e->localizer ();
     e->set_localizer (_localizer);
     twait { _ap->run_cfg_full (nm, mkevent (status, bpf), dest); }
