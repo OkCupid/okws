@@ -29,6 +29,26 @@ agent_xml_t::call_T (xml_outreq_t req, xml_ev_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
+agent_xml_t::call_to_T (xml_outreq_t req, xml_ev_t ev, int to)
+{
+  tvars {
+    xml_inresp_t resp;
+    int status;
+  }
+  if (to == 0) {
+    twait { call_T (req, mkevent (status, resp)); }
+  } else {
+    status = HTTP_TIMEOUT;
+    twait { call_T (req, connector::timeout (mkevent (status, resp), to, 0)); }
+  }
+  ev->trigger (status, resp);
+}
+
+
+
+//-----------------------------------------------------------------------
+
+tamed void
 agent_xml_t::make_req (xml_outreq_t req, ptr<resp_t> resp, evi_t ev)
 {
 

@@ -77,9 +77,11 @@ public:
   agent_xml_t (const str &hn, int port, const str &u, bool proxied = false);
 
   void call (xml_outreq_t req, xml_ev_t ev) { call_T (req, ev); }
+  void call (xml_outreq_t req, xml_ev_t ev, int to) { call_to_T (req, ev, to); }
   void call_dump (xml_outreq_t req, evis_t ev) { call_dump_T (req, ev); }
 private:
   void call_T (xml_outreq_t req, xml_ev_t ev, CLOSURE);
+  void call_to_T (xml_outreq_t req, xml_ev_t ev, int to, CLOSURE);
   void call_dump_T (xml_outreq_t req, evis_t ev, CLOSURE);
   void make_req (xml_outreq_t req, ptr<resp_t> resp, evi_t ev, CLOSURE);
   ptr<reqinfo_t> _reqinfo;
