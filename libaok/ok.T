@@ -68,16 +68,18 @@ okclnt_base_t::add_cookie (const str &h, const str &p)
 }
 
 tamed void 
-okclnt_base_t::error_T (int n, const str &s, evv_t::ptr ev)
+okclnt_base_t::error_T (int n, const str &s, bool do_send_complete, 
+			evv_t::ptr ev)
 { 
-  
   twait { 
     oksrvc->error (_client_con, n, s, mkevent (), hdr_p ());
   }
 
   if (ev) 
     ev->trigger ();
-  send_complete ();
+
+  if (do_send_complete)
+    send_complete ();
 }
 
 str
@@ -729,7 +731,7 @@ okclnt2_t::serve_T ()
 
   if (!did_output) {
     if (status != HTTP_OK) {
-      twait { error (status, NULL, mkevent ()); }
+      twait { error (status, NULL, true, mkevent ()); }
     } else {
       twait { output (out, mkevent ()); }
     }
@@ -890,7 +892,7 @@ okclnt_base_t::output_done (evb_t::ptr ev)
   }
 
   if (output_state == CLIENT_EOF) {
-    twait { error (HTTP_CLIENT_EOF, NULL, mkevent ()); }
+    twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
     ret = false;
   } else {
     assert (output_state == STREAMING_HDRS || output_state == STREAMING_BODY);
@@ -938,7 +940,10 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 
   // client might have cancelled as we were waiting for DB
   if (_client_con->closed ()) {
-    twait { error (HTTP_CLIENT_EOF, NULL, mkevent ()); }
+
+    // 3rd argument false --- don't issue send_complete() within
+    // error(), since we only want to call send_complete() once.
+    twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
   } else {
 
     set_attributes (&hra);
