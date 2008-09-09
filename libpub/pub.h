@@ -1767,6 +1767,9 @@ public:
   void push_parr (ptr<parr_t> a);
   ptr<parr_t> pop_parr ();
 
+  void set_jailmode (jail_mode_t j) { jm = j; }
+  jail_mode_t get_jailmode () const { return jm ; }
+
   xpub_version_t get_include_version () const 
   { return ((get_opts () & P_INCLUDE_V2) ? XPUB_V2 : XPUB_V1); }
 
