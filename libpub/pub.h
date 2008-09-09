@@ -1393,6 +1393,8 @@ public:
   ptr<parr_t> pop_parr ();
 
   xpub_version_t get_version () const { return XPUB_V2; }
+  void set_jailmode (jail_mode_t j) { jm = j; }
+  jail_mode_t get_jailmode () const { return jm ; }
 
   //
   // manipulate the stack of functions

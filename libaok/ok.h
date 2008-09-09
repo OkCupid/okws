@@ -242,8 +242,9 @@ public:
   virtual ~okclnt_base_t ();
   virtual void serve () { serve_T (); }
 
-  virtual void error (int n, const str &s = NULL, evv_t::ptr ev = NULL)
-  { error_T (n, s, ev); }
+  virtual void error (int n, const str &s = NULL, 
+		      bool do_send_complete = true, evv_t::ptr ev = NULL)
+  { error_T (n, s, do_send_complete, ev); }
 
   virtual void process () = 0;
   virtual bool pre_process () { return true; }
@@ -301,7 +302,7 @@ public:
 private:
   void serve_T (CLOSURE);
   void output_fragment_T (str s, CLOSURE);
-  void error_T (int n, const str &s = NULL, evv_t::ptr ev = NULL, CLOSURE);
+  void error_T (int n, const str &s, bool complete, evv_t::ptr ev, CLOSURE);
   void output_T (compressible_t *b, evv_t::ptr ev, CLOSURE);
 
   ref<ahttpcon> _client_con;
