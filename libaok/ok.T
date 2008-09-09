@@ -930,7 +930,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 {
   tvars {
     bool gz (_self->do_gzip ());
-    ssize_t prelen (gz ? b->inflated_len () : -1);
+    ssize_t prelen (gz ? b->inflated_len () : ssize_t (-1));
     const strbuf &sb (b->to_strbuf (gz));
     http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
   }
