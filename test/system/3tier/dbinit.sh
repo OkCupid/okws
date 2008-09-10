@@ -2,7 +2,7 @@
 
 MYSQL=mysql
 ROOTUSER="root"
-ROOTPW=""
+ROOTPW="asdfqwer"
 DBNAME=okws_db_tst2
 OKUSER=okws
 OKPW="abc123"

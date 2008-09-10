@@ -4,5 +4,6 @@ CREATE TABLE IF NOT EXISTS tst2 (
        s     VARCHAR(255) NOT NULL,
        d     DATETIME NOT NULL,
        i     INTEGER UNSIGNED NOT NULL,
+       d2    DATE NOT NULL,
        UNIQUE INDEX key_index (s)
 );
