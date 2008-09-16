@@ -197,6 +197,11 @@ extern str ok_syslog_priority;                  // syslog section
 extern str ok_syslog_domain;                    // domain for syslog
 extern str ok_access_log_fmt;                   // default log format
 
+// 
+// sfs system constants
+//
+extern bool ok_sys_use_kq;                      // use KQ by default
+
 //
 // service/client constants
 //

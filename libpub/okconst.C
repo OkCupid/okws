@@ -186,6 +186,9 @@ u_int ok_reqsize_limit = 2097152;    // 2MB
 u_int ok_hdrsize_limit = 0x2000;     // 8K
 u_int ok_cgibuf_limit = 0x10000;     // 64KB
 
+// only use KQ on freebsd
+bool ok_sys_use_kq = false;           // use KQ by default
+
 //
 // libamt
 //

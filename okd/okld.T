@@ -36,6 +36,7 @@
 #include "pubutil.h"
 #include "rxx.h"
 #include "ok_adebug.h"
+#include "sfs_select.h"
 
 extern char ** environ;
 extern int optind;
@@ -725,6 +726,7 @@ okld_t::parse_file (const str &cf)
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
+    .add ("UseKQ", &ok_sys_use_kq)
 
     .ignore ("OkMgrSocketOwner")
     .ignore ("OkMgrSocketGroup")
@@ -895,7 +897,8 @@ okld_t::encode_env ()
     .insert ("clock", int (clock_mode))
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
-    .insert ("pub1", pub_v1_support ? 1 : 0);
+    .insert ("pub1", pub_v1_support ? 1 : 0)
+    .insert ("kq", ok_sys_use_kq ? 1 : 0);
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();
@@ -1252,6 +1255,9 @@ void okld_t::launch (str cf)
   configfile = cf;
   if (!run_configs (cf))
     okld_exit (1);
+
+  // Don't change selcet policy in OKD for now.
+  //set_sfs_select_policy ();
 
   if (_opt_daemon) {
     ok::syslog_ctl.start_loggers ();

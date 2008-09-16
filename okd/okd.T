@@ -318,6 +318,7 @@ okd_t::parse_file (const str &cf)
     .add ("OkdDebugMsgFreq", &okd_debug_msg_freq, 0, 0x10000)
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
+    .add ("UseKQ", &ok_sys_use_kq)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -661,6 +662,8 @@ okd_t::launch ()
 
   if (!run_configs (configfile))
     exit (NO_SOCKET_ALLOCATED);
+
+  set_sfs_select_policy ();
   
   check_runas ();
   open_mgr_socket ();
