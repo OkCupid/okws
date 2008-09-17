@@ -33,6 +33,7 @@
 #include "okdbg.h"
 #include "sfsmisc.h"
 #include "ok_adebug.h"
+#include "sfs_select.h"
 
 extern char ** environ;
 
@@ -197,6 +198,8 @@ oksrvc_t::init (int argc, char *argv[])
   str mmc_file = ok_mmc_file;
   str loggers;
 
+  int seltmp = 0;
+
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
     t->lookup ("jaildir", &jaildir);
@@ -235,6 +238,11 @@ oksrvc_t::init (int argc, char *argv[])
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
     ok_send_sin = t->blookup ("sendsin");
+    t->lookup ("sel", &seltmp);
+
+    ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
+
+    set_sfs_select_policy ();
 
     if (loggers) {
       if (!ok::syslog_ctl.init_child (loggers)) {
@@ -257,6 +265,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   zinit (ok_gzip, ok_gzip_compress_level);
 }
+
 
 void
 oksrvc_t::ctldispatch (svccb *v)
@@ -1183,4 +1192,12 @@ config_parser_t::include (vec<str> s, str loc, bool *errp)
   } else if (!do_file (s[1])) {
     *errp = true;
   }
+}
+
+void
+set_sfs_select_policy ()
+{
+  if (ok_sys_sel_policy != sfs_core::SELECT_NONE &&
+      sfs_core::set_select_policy (ok_sys_sel_policy) < 0)
+    warn << "Failed to set select policy to KQ\n";
 }

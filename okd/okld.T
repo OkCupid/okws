@@ -36,6 +36,7 @@
 #include "pubutil.h"
 #include "rxx.h"
 #include "ok_adebug.h"
+#include "sfs_select.h"
 
 extern char ** environ;
 extern int optind;
@@ -616,6 +617,7 @@ bool
 okld_t::parse_file (const str &cf)
 {
   conftab ct;
+  str sys_sel_tmp;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -720,6 +722,7 @@ okld_t::parse_file (const str &cf)
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
+    .add ("SelectPolicy", &sys_sel_tmp)
 
     .ignore ("OkMgrSocketOwner")
     .ignore ("OkMgrSocketGroup")
@@ -733,7 +736,11 @@ okld_t::parse_file (const str &cf)
     .ignore ("ShutdownTimeout")
     .ignore ("OkdDebugMsgFreq");
 
-  return ct.run (cf);
+  bool ret = ct.run (cf);
+  if (ret) {
+    ok_sys_sel_policy = sfs_core::select_policy_from_str (sys_sel_tmp);
+  }
+  return ret;
 }
 
 bool
@@ -885,6 +892,7 @@ okld_t::encode_env ()
     .insert ("clock", int (clock_mode))
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
+    .insert ("sel", int (ok_sys_sel_policy));
     ;
 
   if (_opt_daemon) {
@@ -1241,6 +1249,9 @@ void okld_t::launch (str cf)
   configfile = cf;
   if (!run_configs (cf))
     okld_exit (1);
+
+  // Don't change selcet policy in okld for now.
+  //set_sfs_select_policy ();
 
   if (_opt_daemon) {
     ok::syslog_ctl.start_loggers ();

@@ -26,6 +26,7 @@
 #define _LIBPUB_OKCONST_H 1
 
 #include "async.h"
+#include "sfs_select.h"
 
 enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 
@@ -196,6 +197,11 @@ extern u_int ok_log_period;                     // how many ticks to a flush
 extern str ok_syslog_priority;                  // syslog section
 extern str ok_syslog_domain;                    // domain for syslog
 extern str ok_access_log_fmt;                   // default log format
+
+// 
+// sfs system constants
+//
+extern sfs_core::select_policy_t ok_sys_sel_policy;
 
 //
 // service/client constants

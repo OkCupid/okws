@@ -550,5 +550,12 @@ do {                                           \
  */
 str get_okws_config (bool make_fatal = true);
 
+/**
+ * 
+ * switch the SFS core select policy
+ *
+ */
+void set_sfs_select_policy ();
+
 
 #endif /* _LIBAOK_OKBASE_H */

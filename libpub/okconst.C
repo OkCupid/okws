@@ -187,6 +187,12 @@ u_int ok_hdrsize_limit = 0x2000;     // 8K
 u_int ok_cgibuf_limit = 0x10000;     // 64k , dial it up per-service
 
 //
+// Specify which select policy to use; by default, SELECT_NONE
+// is don't use any select policy.
+//
+sfs_core::select_policy_t ok_sys_sel_policy = sfs_core::SELECT_NONE; 
+
+//
 // libamt
 //
 u_int ok_amt_lasi = 20;              // load avg sampling interval in secs
