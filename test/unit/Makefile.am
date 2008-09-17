@@ -10,9 +10,10 @@ if USE_XML
 
 XMLPROGS = xmltst1 xmlcli1 xmltst3 xmltst4 xmltst5 xmltst6
 xmltst1_SOURCES = xmltst1.C
+xmltst3_SOURCES = xmltst3.C
 xmltst4_SOURCES = xmltst4.C
 xmltst5_SOURCES = xmltst5.C
-xmltst6_SORUCES = xmltst6.C
+xmltst6_SOURCES = xmltst6.C
 xmlcli1_SOURCES = xmlcli1.C
 
 xmltst1.o:	xmltst1.C
