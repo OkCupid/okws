@@ -263,6 +263,8 @@ bool
 okd_t::parse_file (const str &cf)
 {
   conftab ct;
+  str sys_sel_tmp;
+
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
@@ -318,7 +320,7 @@ okd_t::parse_file (const str &cf)
     .add ("OkdDebugMsgFreq", &okd_debug_msg_freq, 0, 0x10000)
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
-    .add ("UseKQ", &ok_sys_use_kq)
+    .add ("SelectPolicy", &sys_sel_tmp)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -376,7 +378,11 @@ okd_t::parse_file (const str &cf)
     .ignore ("SyslogLevels")
     .ignore ("DangerousZbufs");
 
-  return ct.run (cf);
+  bool ret = ct.run (cf);
+  if (ret) {
+    ok_sys_sel_policy = sfs_core::select_policy_from_str (sys_sel_tmp);
+  }
+  return ret;
 }
 
 bool

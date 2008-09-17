@@ -618,6 +618,7 @@ okld_t::parse_file (const str &cf)
 {
   conftab ct;
   _config_no_pub_v2_support = false;
+  str sys_sel_tmp;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -726,7 +727,7 @@ okld_t::parse_file (const str &cf)
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
-    .add ("UseKQ", &ok_sys_use_kq)
+    .add ("SelectPolicy", &sys_sel_tmp)
 
     .ignore ("OkMgrSocketOwner")
     .ignore ("OkMgrSocketGroup")
@@ -740,7 +741,11 @@ okld_t::parse_file (const str &cf)
     .ignore ("ShutdownTimeout")
     .ignore ("OkdDebugMsgFreq");
 
-  return ct.run (cf);
+  bool ret = ct.run (cf);
+  if (ret) {
+    ok_sys_sel_policy = sfs_core::select_policy_from_str (sys_sel_tmp);
+  }
+  return ret;
 }
 
 bool
@@ -898,7 +903,7 @@ okld_t::encode_env ()
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
     .insert ("pub1", pub_v1_support ? 1 : 0)
-    .insert ("kq", ok_sys_use_kq ? 1 : 0);
+    .insert ("sel", int (ok_sys_sel_policy));
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();
@@ -1256,7 +1261,7 @@ void okld_t::launch (str cf)
   if (!run_configs (cf))
     okld_exit (1);
 
-  // Don't change selcet policy in OKD for now.
+  // Don't change selcet policy in okld for now.
   //set_sfs_select_policy ();
 
   if (_opt_daemon) {

@@ -186,8 +186,11 @@ u_int ok_reqsize_limit = 2097152;    // 2MB
 u_int ok_hdrsize_limit = 0x2000;     // 8K
 u_int ok_cgibuf_limit = 0x10000;     // 64KB
 
-// only use KQ on freebsd
-bool ok_sys_use_kq = false;           // use KQ by default
+//
+// Specify which select policy to use; by default, SELECT_NONE
+// is don't use any select policy.
+//
+sfs_core::select_policy_t ok_sys_sel_policy = sfs_core::SELECT_NONE; 
 
 //
 // libamt

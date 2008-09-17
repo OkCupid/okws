@@ -26,6 +26,7 @@
 #define _LIBPUB_OKCONST_H 1
 
 #include "async.h"
+#include "sfs_select.h"
 
 enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 
@@ -200,7 +201,7 @@ extern str ok_access_log_fmt;                   // default log format
 // 
 // sfs system constants
 //
-extern bool ok_sys_use_kq;                      // use KQ by default
+extern sfs_core::select_policy_t ok_sys_sel_policy;
 
 //
 // service/client constants
