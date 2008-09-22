@@ -38,6 +38,8 @@
 #include "okdbg.h"
 #include "rpcwindow.h"
 
+okd_t *global_okd;
+
 static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
 
 common_404_t::common_404_t ()
@@ -654,6 +656,7 @@ void start_okd (int argc, char **argv)
   zinit ();
   warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
   okd = New okd_t (cf, logfd, 0, cdd, port, pub2fd);
+  global_okd = okd;
   okd->set_signals ();
   okd->launch ();
 }
