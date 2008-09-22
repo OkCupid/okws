@@ -24,6 +24,7 @@
 #include "pub.h"
 #include "parr.h"
 #include "pub_parse.h"
+#include "parseopt.h"
 
 pstr_t::pstr_t (ptr<pvar_t> v) : n (0) { add (v); }
 pstr_t::pstr_t (const str &s) : n (0) { add (s); }
@@ -31,7 +32,7 @@ void pstr_t::output (output_t *o, penv_t *e) const { els.output (o, e); }
 void pstr_t::add (ptr<pvar_t> v) { add (New pstr_var_t (v)); n++; }
 void pstr_t::add (pstr_el_t *v) { els.insert_tail (v); n++; }
 void pfile_set_func_t::dump2 (dumper_t *d) const { if (aarr) aarr->dump (d); }
-aarr_t *pswitch_env_t::env () const { return aarr; }
+aarr_t *pswitch_env_base_t::env () const { return aarr; }
 void bound_pfile_t::explore (pub_exploremode_t m) const
 { if (file) file->explore (m); }
 str penv_t::loc (int l) const 
@@ -350,7 +351,7 @@ evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const
 void
 pfile_switch_t::output (output_t *o, penv_t *e) const
 {
-  pswitch_env_t *pse = eval_for_output (o, e);
+  ptr<pswitch_env_base_t> pse = eval_for_output (o, e);
   // we might have given switch an empty file (so as to allow 
   // the default to catch more stuff, for instance).
   if (pse)
@@ -371,11 +372,11 @@ nested_env_t::output (output_t *o, penv_t *e) const
   //_frm.pop_frame (o, e);
 }
 
-pswitch_env_t *
+ptr<pswitch_env_base_t>
 pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
 {
   str v;
-  pswitch_env_t *pse = NULL;
+  ptr<pswitch_env_base_t> pse;
   if (key)
     // treading lightly here; adding the "allownull" hack because
     // i'm not sure what kind of semantics people are currently 
@@ -390,7 +391,17 @@ pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
       o->output_err (e, strbuf ("switch: cannot evaluate key value (")
 		     << key->name () << ")", lineno);
   } else {
-    pse = cases[v];
+    const ptr<pswitch_env_base_t> *psep = _exact_cases[v];
+    if (psep)
+      pse = *psep;
+
+    if (!pse) {
+      for (size_t i = 0; i < _other_cases.size () && !pse; i++) {
+	if (_other_cases[i]->match (v))
+	  pse = _other_cases[i];
+      }
+    }
+
     if (!pse) pse = def;
 
     //
@@ -449,6 +460,12 @@ parr_mixed_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
     v[i]->eval_obj (ps, e, d);
   }
   ps->add (")");
+}
+
+void
+pub_regex_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
+{
+  ps->add (_rxx_str ? _rxx_str : str ("<Empty RXX>") );
 }
 
 void
@@ -855,7 +872,7 @@ pfile_switch_t::validate ()
   if (!key) {
     PWARN("No key for switch statement");
     err = true;
-  } else if (cases.size () == 0 && !def) {
+  } else if (_all_cases.size () == 0 && !def) {
     PWARN("No cases for switch");
     err = true;
   }
@@ -883,6 +900,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   ptr<aarr_arg_t> env;
   phashp_t ph;
   str ckey;
+  ptr<pub_regex_t> rxx;
 
   // fn1 is what's provided in the given file; fn2 is
   // the output from the the to_binding call to get the jailed filename
@@ -936,7 +954,8 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   
   pbinding_t *b = NULL;
   if (!err) {
-    if (!(*l)[0]->is_null () && !(ckey = (*l)[0]->eval ())) {
+    if (!(*l)[0]->is_null () && !(ckey = (*l)[0]->eval ()) &&
+	!(rxx = (*l)[0]->to_regex ())) {
       PWARN("Cannot determine case key");
       err = true;
     } else if (fn1 && !(b = parser->to_binding (fn1))) {
@@ -973,24 +992,46 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   if (!err) {
     if (ckey && ckey == "*") ckey = NULL;
     bool nullkey = (ckey && ckey == PUB_NULL_CASE) ;
-    if ((!ckey && def) || (ckey && cases[ckey]) || (nullkey && nullcase)) {
+    ptr<pswitch_env_base_t> allcase;
+						      
+    if (rxx) {
+      ptr<pswitch_env_rxx_t> se = 
+	New refcounted<pswitch_env_rxx_t> (rxx, fn2, env, ne);
+      _other_cases.push_back (se);
+      allcase = se;
+
+    } else if ((!ckey && def) || (ckey && _exact_cases[ckey]) || 
+	       (nullkey && nullcase)) {
       PWARN("Doubly-defined case statement in switch");
       err = true;
     } else {
       if (nullkey) ckey = NULL;
-      pswitch_env_t *se = New pswitch_env_t (ckey, fn2, env, ne);
 
-      if (nullkey)
-	nullcase = se;
-      else if (!ckey) 
-	def = se;
-      else 
-	cases.insert (se);
+      if (!ckey) {
 
-      // might have a NULL file if none was requested
-      if (fn2)
-	files.push_back (fn2);
+	ptr<pswitch_env_nullkey_t> nke = 
+	  New refcounted<pswitch_env_nullkey_t> (fn2, env, ne);
+
+	if (nullkey)
+	  nullcase = nke;
+	else 
+	  def = nke;
+
+      } else {
+	ptr<pswitch_env_exact_t> se = 
+	  New refcounted<pswitch_env_exact_t> (ckey, fn2, env, ne);
+	_exact_cases.insert (ckey, se);
+	allcase = se;
+      }
     }
+
+    if (!err && allcase)
+      _all_cases.push_back (allcase);
+
+    // might have a NULL file if none was requested
+    if (!err && fn2)
+      files.push_back (fn2);
+    
   }
   return (!err);
 }
@@ -1769,17 +1810,12 @@ pvar_t::dump2 (dumper_t *d) const
 }
 
 void
-pswitch_env_t::dump2 (dumper_t *d) const
+pswitch_env_base_t::dump2 (dumper_t *d) const
 {
-  DUMP(d, "key: " << (key ? key : str ("NONE")) 
+  str k = get_key ();
+  DUMP(d, "key: " << (k? k: str ("NONE")) 
        << "; fn: " << (fn ? fn : str ("NONE")));
   if (aarr) aarr->dump (d);
-}
-
-static void
-_pswitch_env_dump (dumper_t *d, pswitch_env_t *e)
-{
-  e->dump (d);
 }
 
 void
@@ -1792,10 +1828,11 @@ pfile_switch_t::dump2 (dumper_t *d) const
     def->dump (d);
   }
   DUMP(d, "other cases:");
- 
-  cases_t *c = const_cast<cases_t *> (&cases);
-  c->traverse (wrap (_pswitch_env_dump, d));
-}
+  
+  for (size_t i = 0; i < _all_cases.size (); i++) {
+      _all_cases[i]->dump (d);
+    }
+	 }
 
 void
 nvpair_t::dump2 (dumper_t *d) const
@@ -2042,4 +2079,39 @@ aarr_t::operator= (const aarr_t &in)
 {
   aar.copy (in.aar);
   return (*this);
+}
+
+bool
+pub_regex_t::compile (str *s)
+{
+  rrxx x;
+  bool ret = true;
+  if (!x.compile (_rxx_str.cstr (), _opts.cstr ())) {
+    strbuf b;
+    b << "error compiling regex: " << x.geterr ();
+    *s = b;
+    ret = false;
+  } else {
+    _rxx = New refcounted<rxx> (x);
+  }
+  return ret;
+}
+
+bool
+pub_regex_t::match (const str &s)
+{
+  return _rxx && s && _rxx->match (s);
+}
+ 
+bool
+pswitch_env_exact_t::match (const str &s) const
+{
+  return s && s == _key;
+
+}
+
+bool
+pswitch_env_rxx_t::match (const str &s) const
+{
+  return _rxx->match (s);
 }

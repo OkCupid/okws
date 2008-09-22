@@ -208,13 +208,6 @@ pfile_pstr_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
-static
-void case_to_xdr (xpub_obj_t *x, size_t *i, const pswitch_env_t &e)
-{
-  if (e.to_xdr (&x->swtch->cases[*i]))
-    (*i)++;
-}
-
 bool
 pfile_switch_t::to_xdr (xpub_obj_t *x) const
 {
@@ -229,9 +222,10 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
     nullcase->to_xdr (x->swtch->nullcase);
   }
 
-  size_t i = 0;
-  x->swtch->cases.setsize (cases.size ());
-  cases.traverse (wrap (&case_to_xdr, x, &i));
+  x->swtch->cases.setsize (_all_cases.size ());
+  for (size_t i = 0; i < _all_cases.size (); i++) {
+    _all_cases[i]->to_xdr (&x->swtch->cases[i]);
+  }
   x->swtch->lineno = lineno;
   x->swtch->nulldef = nulldef;
   return true;
@@ -239,9 +233,6 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
 
 pfile_switch_t::~pfile_switch_t ()
 {
-  if (def) delete def;
-  if (nullcase) delete nullcase;
-  cases.deleteall ();
 }
 
 pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
@@ -251,34 +242,63 @@ pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
 {
   size_t lim = x.cases.size ();
   if (x.defcase) {
-    def = New pswitch_env_t (*x.defcase);
+    def = pswitch_env_base_t::alloc(*x.defcase)->to_nullkey();
     if (def->fn)
       files.push_back (def->fn);
   }
   if (x.nullcase) {
-    nullcase = New pswitch_env_t (*x.nullcase);
+    nullcase = pswitch_env_base_t::alloc (*x.nullcase)->to_nullkey();
     if (nullcase->fn)
       files.push_back (nullcase->fn);
   }
 
   for (size_t i = 0; i < lim; i++) {
-    pswitch_env_t *e = New pswitch_env_t (x.cases[i]);
-    cases.insert (e);
-    if (e->fn)
-      files.push_back (e->fn);
+    ptr<pswitch_env_base_t> e = pswitch_env_base_t::alloc (x.cases[i]);
+    if (e) {
+      if (e->is_exact ()) 
+	_exact_cases.insert (e->get_key (), e);
+      else
+	_other_cases.push_back (e);
+      if (e->fn)
+	files.push_back (e->fn);
+    }
   }
 }
 
 bool
-pswitch_env_t::to_xdr (xpub_switch_env_t *x) const
+pswitch_env_exact_t::to_xdr (xpub_switch_env_union_t *u) const
+{
+  u->set_typ (XPUB_SWITCH_ENV_EXACT);
+  xpub_switch_env_exact_t *x = u->exact;
+  x->key = _key;
+  return to_xdr_base (&x->base);
+}
+
+bool
+pswitch_env_nullkey_t::to_xdr (xpub_switch_env_union_t *u) const
+{
+  u->set_typ (XPUB_SWITCH_ENV_NULLKEY);
+  xpub_switch_env_nullkey_t *x = u->nullkey;
+  return to_xdr_base (&x->base);
+}
+
+bool
+pswitch_env_rxx_t::to_xdr (xpub_switch_env_union_t *u) const
+{
+  u->set_typ (XPUB_SWITCH_ENV_RXX);
+  xpub_switch_env_rxx_t *x = u->rxx;
+  if (_rxx) {
+    _rxx->to_xdr (&x->rxx);
+  }
+  return to_xdr_base (&x->base);
+}
+
+bool
+pswitch_env_base_t::to_xdr_base (xpub_switch_env_base_t *x) const
 {
   if (aarr)
     aarr->to_xdr (&x->aarr);
 
-  if (key) {
-    x->key.alloc ();
-    (*x->key) = key;
-  }
   if (fn) {
     x->body.set_typ (XPUB_SWITCH_FILE);
     *x->body.fn = fn;
@@ -291,12 +311,65 @@ pswitch_env_t::to_xdr (xpub_switch_env_t *x) const
   return true;
 }
 
-pswitch_env_t::pswitch_env_t (const xpub_switch_env_t &x)
-  : key (x.key ? str (*x.key) : sNULL),
-    fn (x.body.typ == XPUB_SWITCH_FILE ? str (*x.body.fn) : sNULL), 
+pswitch_env_exact_t::pswitch_env_exact_t (const xpub_switch_env_exact_t &x)
+  : pswitch_env_base_t (x.base),
+    _key (x.key) {}
+
+pswitch_env_nullkey_t::pswitch_env_nullkey_t 
+(const xpub_switch_env_nullkey_t &x)
+  : pswitch_env_base_t (x.base) {}
+
+pswitch_env_rxx_t::pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x)
+  : pswitch_env_base_t (x.base),
+    _rxx (New refcounted<pub_regex_t> (x.rxx))
+{
+ 
+  str s;
+  if (!_rxx->compile (&s)) {
+    warn << s << "\n";
+  }
+}
+
+pswitch_env_base_t::pswitch_env_base_t (const xpub_switch_env_base_t &x)
+  : fn (x.body.typ == XPUB_SWITCH_FILE ? str (*x.body.fn) : sNULL), 
     aarr (New refcounted<aarr_arg_t> (x.aarr)),
     _nested_env (x.body.typ == XPUB_SWITCH_NESTED_ENV ?
 		 nested_env_t::alloc (*x.body.sec) : NULL) {}
+
+ptr<pswitch_env_base_t>
+pswitch_env_base_t::alloc (const xpub_switch_env_union_t &x)
+{
+  ptr<pswitch_env_base_t> ret;
+  switch (x.typ) {
+  case XPUB_SWITCH_ENV_EXACT:
+    ret = New refcounted<pswitch_env_exact_t> (*x.exact);
+    break;
+  case XPUB_SWITCH_ENV_RXX:
+    ret = New refcounted<pswitch_env_rxx_t> (*x.rxx);
+    break;
+  case XPUB_SWITCH_ENV_NULLKEY:
+    ret = New refcounted<pswitch_env_nullkey_t> (*x.nullkey);
+    break;
+  default:
+    warn << "Unexpected type of switch environment\n";
+    break;
+  }
+  return ret;
+}
+
+bool
+pub_regex_t::to_xdr (xpub_regex_t *x) const
+{
+  x->rxx = _rxx_str;
+  x->opts = _opts;
+  return true;
+}
+
+pub_regex_t::pub_regex_t (const xpub_regex_t &x) 
+  : _rxx_str (x.rxx), _opts (x.opts) {}
+
+pub_irange_t::pub_irange_t (const xpub_irange_t &x)
+  : _low (x.low), _hi (x.hi) {}
 
 ptr<nested_env_t>
 nested_env_t::alloc (const xpub_section_t &s)
@@ -605,7 +678,6 @@ parr_int64_t::to_xdr (xpub_parr_t *x) const
   return parr_ival_tmplt_t<int64_t>::to_xdr (x->hyperarr.addr ());
 }
 
-
 bool
 pfile_raw_el_t::to_xdr (xpub_obj_t *x) const
 {
@@ -616,3 +688,41 @@ pfile_raw_el_t::to_xdr (xpub_obj_t *x) const
   }
   return true;
 }
+
+
+bool
+pub_irange_t::to_xdr (xpub_range_t *out)
+{
+  out->set_typ (XPUB_IRANGE);
+  out->ir->low = _low;
+  out->ir->hi = _hi;
+  return true;
+}
+
+static double 
+cnv_double (const x_double_t &x)
+{
+  return (double)x.n / (double)x.d ;
+}
+
+void
+cnv_double (double in, x_double_t *out)
+{
+  int64_t d = 100000000;
+  double tmp = in * d;
+  int64_t n = int64_t (tmp);
+  out->d = d;
+  out->n = n;
+}
+
+bool
+pub_drange_t::to_xdr (xpub_range_t *out)
+{
+  out->set_typ (XPUB_DRANGE);
+  cnv_double (_low, &out->dr->low);
+  cnv_double (_hi, &out->dr->hi);
+  return true;
+}
+
+pub_drange_t::pub_drange_t (const xpub_drange_t &in)
+  : _low (cnv_double (in.low)), _hi (cnv_double (in.hi)) {}

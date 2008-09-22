@@ -22,6 +22,13 @@ enum xpub_obj_typ_t {
 typedef opaque xpubhash_t[PUBHASHSIZE];
 typedef opaque okauthtok_t[OKAUTHTOKSIZE];
 
+enum xpub_switch_env_typ_t {
+  XPUB_SWITCH_ENV_NULLKEY = 0,
+  XPUB_SWITCH_ENV_EXACT = 1,
+  XPUB_SWITCH_ENV_RXX = 2,
+  XPUB_SWITCH_ENV_RANGE = 3
+};
+
 enum oksig_t {
   OK_SIG_NONE = 0,
   OK_SIG_HARDKILL = 1,
@@ -235,10 +242,68 @@ default:
  void;
 };
 
-struct xpub_switch_env_t {
-  xpub_key_t *key; /* Can be NULL in the case of a default case */
+struct xpub_switch_env_base_t {
   xpub_switch_env_body_t body;
   xpub_aarr_t aarr;
+};
+
+struct xpub_switch_env_exact_t {
+  xpub_switch_env_base_t base;
+  xpub_key_t key; /* Cannot be NULL */
+};
+
+struct xpub_regex_t {
+  string rxx<>;
+  string opts<>;
+};
+
+struct xpub_irange_t {
+  hyper low;
+  hyper hi;
+};
+
+struct x_double_t {
+  hyper n;
+  hyper d;
+};
+
+struct xpub_drange_t {
+  x_double_t low;
+  x_double_t hi;
+};
+
+struct xpub_switch_env_rxx_t {
+  xpub_switch_env_base_t base;
+  xpub_regex_t rxx;
+};
+
+enum xpub_range_typ_t { XPUB_IRANGE, XPUB_DRANGE };
+
+union xpub_range_t switch (xpub_range_typ_t typ) {
+case XPUB_IRANGE:
+  xpub_irange_t ir;
+case XPUB_DRANGE:
+  xpub_drange_t dr;
+};
+
+struct xpub_switch_env_range_t {
+  xpub_switch_env_base_t base;
+  xpub_range_t ir;
+};
+
+struct xpub_switch_env_nullkey_t {
+  xpub_switch_env_base_t base;
+};
+
+union xpub_switch_env_union_t switch (xpub_switch_env_typ_t typ) {
+case XPUB_SWITCH_ENV_NULLKEY:
+     xpub_switch_env_nullkey_t nullkey;
+case XPUB_SWITCH_ENV_EXACT:
+     xpub_switch_env_exact_t exact;
+case XPUB_SWITCH_ENV_RXX:
+     xpub_switch_env_rxx_t rxx;
+case XPUB_SWITCH_ENV_RANGE:
+     xpub_switch_env_range_t range;
 };
 
 struct xpub_set_func_t {
@@ -248,9 +313,9 @@ struct xpub_set_func_t {
 
 struct xpub_switch_t {
   int lineno;
-  xpub_switch_env_t cases<>;
-  xpub_switch_env_t *defcase;
-  xpub_switch_env_t *nullcase;
+  xpub_switch_env_union_t cases<>;
+  xpub_switch_env_union_t *defcase;
+  xpub_switch_env_union_t *nullcase;
   xpub_var_t key;
   bool nulldef;
 };

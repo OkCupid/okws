@@ -35,6 +35,7 @@
 #include "holdtab.h"
 #include "zstr.h"
 #include "tame.h"
+#include "pscalar.h"
 
 #if defined (SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 10000000
 # include "tame_lock.h"
@@ -675,6 +676,8 @@ class parr_t;
 class parr_mixed_t;
 class parr_ival_t;
 class nested_env_t;
+class pub_regex_t;
+class pub_range_t;
 
 class arg_t : public virtual refcount, public virtual dumpable_t,
 	      public virtual evalable_t
@@ -683,6 +686,8 @@ public:
   virtual ~arg_t () {}
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
   virtual bool is_null () const { return false; }
+  virtual ptr<pub_regex_t> to_regex () { return NULL; }
+  virtual ptr<pub_range_t> to_range () { return NULL; }
   virtual ptr<pval_t> to_pval () { return NULL; }
   virtual bool to_int64 (int64_t *i) const { return false; }
   virtual const parr_mixed_t *to_mixed_arr () const { return NULL; }
@@ -700,6 +705,63 @@ public:
   virtual ptr<pval_t> flatten(penv_t *e) ;
   virtual ptr<pstr_t> to_pstr () { return NULL; }
 };
+
+class pub_regex_t : public pval_t {
+public:
+  pub_regex_t (const str &r, const str &o) : _rxx_str (r), _opts (o) {}
+  pub_regex_t (const xpub_regex_t &x);
+  bool to_xdr (xpub_regex_t *x) const;
+  bool compile (str *err);
+  bool match (const str &s);
+  ptr<pub_regex_t> to_regex () { return mkref (this); }
+  str to_str () const { return _rxx_str; }
+  str get_obj_name () const { return "regex"; }
+  void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
+
+private:
+  const str _rxx_str;
+  const str _opts;
+  ptr<rxx> _rxx;
+};
+
+class pub_range_t : public pval_t {
+public:
+  virtual bool match (scalar_obj_t so) = 0;
+  virtual bool to_xdr (xpub_range_t *r) = 0;
+  virtual str to_str () const = 0;
+  static ptr<pub_range_t> alloc (const str &pat, const str &o, str *e);
+  static ptr<pub_range_t> alloc (const xpub_range_t &xpr);
+  void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
+  ptr<pub_range_t> to_range () { return mkref (this); }
+};
+
+class pub_irange_t : public pub_range_t {
+public:
+  pub_irange_t (int64_t l, int64_t h) : _low (l), _hi (h) {}
+  pub_irange_t (const xpub_irange_t &x);
+  str get_obj_name () const { return "irange"; }
+
+  str to_str () const;
+  bool match (scalar_obj_t so);
+  bool to_xdr (xpub_range_t *r);
+
+private:
+  const int64_t _low, _hi;
+};
+
+class pub_drange_t : public pub_range_t {
+public:
+  pub_drange_t (double l, double h) : _low (l), _hi (h) {}
+  pub_drange_t (const xpub_drange_t &x);
+  str get_obj_name () const { return "irange"; }
+
+  str to_str () const;
+  bool match (scalar_obj_t so);
+  bool to_xdr (xpub_range_t *r);
+private:
+  const double _low, _hi;
+};
+
 
 class pfile_el_t : public virtual concatable_t, public virtual dumpable_t,
 		   public virtual pub2able_t {
@@ -1203,28 +1265,79 @@ private:
   const int lineno;
 };
 
-class pswitch_env_t : public virtual dumpable_t {
+class pswitch_env_nullkey_t;
+
+class pswitch_env_base_t : public virtual dumpable_t ,
+			   public virtual refcount {
 public:
-  pswitch_env_t (const str &k, const pfnm_t &n, ptr<aarr_arg_t> a,
-		 ptr<nested_env_t> ne)
-    : key (k), fn (n), aarr (a), _nested_env (ne) {}
-  pswitch_env_t (const xpub_switch_env_t &x);
-  virtual ~pswitch_env_t () {}
+  pswitch_env_base_t (const pfnm_t &n, ptr<aarr_arg_t> a,
+		      ptr<nested_env_t> ne)
+    : fn (n), aarr (a), _nested_env (ne) {}
+  pswitch_env_base_t (const xpub_switch_env_base_t &x);
+
+  static ptr<pswitch_env_base_t> alloc (const xpub_switch_env_union_t &x);
+
+  virtual ~pswitch_env_base_t () {}
   aarr_t *env () const;
   pfnm_t filename () { return fn; }
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pswitch_env_t"; }
-  bool to_xdr (xpub_switch_env_t *e) const;
   ptr<nested_env_t> nested_env () { return _nested_env; }
+  virtual bool match (const str &s) const = 0;
+  virtual bool to_xdr (xpub_switch_env_union_t *x) const = 0;
+  virtual str get_key () const = 0;
+  virtual bool is_exact () const { return false; }
+  bool to_xdr_base (xpub_switch_env_base_t *b) const;
+  str get_obj_name () const { return "pswitch_env_t"; }
+  virtual ptr<pswitch_env_nullkey_t> to_nullkey () { return NULL; }
 
-  const str key;
-  ihash_entry<pswitch_env_t> hlink;
   const pfnm_t fn;
 private:
   const ptr<aarr_arg_t> aarr;
   ptr<nested_env_t> _nested_env;
 };
+
+class pswitch_env_nullkey_t : public pswitch_env_base_t {
+public:
+  pswitch_env_nullkey_t (const pfnm_t &n, ptr<aarr_arg_t> a,
+			 ptr<nested_env_t> ne)
+    : pswitch_env_base_t (n, a, ne) {}
+  str get_key () const { return "<NULL>"; }
+  pswitch_env_nullkey_t (const xpub_switch_env_nullkey_t &k);
+  bool match (const str &s) const { return false; }
+  bool to_xdr (xpub_switch_env_union_t *e) const;
+  ptr<pswitch_env_nullkey_t> to_nullkey () { return mkref (this); }
+};
+
+class pswitch_env_exact_t : public pswitch_env_base_t {
+public:
+  pswitch_env_exact_t (const str &k, const pfnm_t &n, ptr<aarr_arg_t> a,
+		       ptr<nested_env_t> ne)
+    : pswitch_env_base_t (n, a, ne), _key (k) {}
+  pswitch_env_exact_t (const xpub_switch_env_exact_t &x);
+
+  bool to_xdr (xpub_switch_env_union_t *e) const;
+  bool match (const str &s) const;
+  str get_key () const { return _key; }
+
+  virtual bool is_exact () const { return true; }
+  const str _key;
+};
+
+class pswitch_env_rxx_t : public pswitch_env_base_t {
+public:
+  pswitch_env_rxx_t (ptr<pub_regex_t> rxx, const pfnm_t n, 
+		     ptr<aarr_arg_t> a, ptr<nested_env_t> ne)
+    : pswitch_env_base_t (n, a, ne), _rxx (rxx) {}
+  pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x);
+  str get_obj_name () const { return "pswitch_env_rxx_t"; }
+  bool match (const str &s) const;
+
+  str get_key () const { return _rxx->to_str (); }
+  bool to_xdr (xpub_switch_env_union_t *e) const;
+  const ptr<pub_regex_t> _rxx;
+};
+
 
 template<class T> struct keyfn<T, phashp_t> {
   keyfn () {}
@@ -1233,8 +1346,6 @@ template<class T> struct keyfn<T, phashp_t> {
 };
 
 
-typedef ihash<const str, pswitch_env_t, &pswitch_env_t::key, 
-	      &pswitch_env_t::hlink> cases_t;
 class pfile_switch_t : public pfile_func_t {
 public:
   pfile_switch_t (int l) : pfile_func_t (l), err (false), def (NULL), 
@@ -1245,7 +1356,7 @@ public:
   ~pfile_switch_t ();
   void output (output_t *o, penv_t *e) const;
 
-  pswitch_env_t *eval_for_output (output_t *o, penv_t *e) const;
+  ptr<pswitch_env_base_t> eval_for_output (output_t *o, penv_t *e) const;
 
   bool add (ptr<arglist_t> a);
   bool validate ();
@@ -1264,13 +1375,21 @@ private:
   bool add_case(ptr<arglist_t> l);
   vec<pfnm_t> files;
   bool err;
-  cases_t cases;
-  pswitch_env_t *def;
+  ptr<pswitch_env_nullkey_t> def;
   ptr<pvar_t> key;
   bool nulldef;
-  pswitch_env_t *nullcase;
-  mutable pswitch_env_t *_cached_eval_res;
+  ptr<pswitch_env_nullkey_t> nullcase;
+  mutable ptr<pswitch_env_base_t> _cached_eval_res;
   mutable bool _eval_cache_flag;
+
+  vec<ptr<pswitch_env_base_t> > _all_cases;
+
+  // Cases w/ exact matches, lookup by key.
+  qhash<str, ptr<pswitch_env_base_t> > _exact_cases;
+  
+  // All cases keyed by RXXs. Note we're using ptr's here instead of
+  // low-level *'s just for convenience.
+  vec<ptr<pswitch_env_base_t> > _other_cases;
 };
 
 class aarr_arg_t : public aarr_t, public arg_t {

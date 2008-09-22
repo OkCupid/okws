@@ -922,7 +922,7 @@ bool
 pfile_switch_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g) 
   const
 {
-  pswitch_env_t *pse = eval_for_output (o, g);
+  ptr<pswitch_env_base_t> pse = eval_for_output (o, g);
 
   // Need a file name to do include; if doing include, cache the results
   // of the above computation inside the switch object, so that they'll
@@ -944,7 +944,7 @@ void
 pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
 			 xpub_status_cb_t callercv, ptr<closure_t> dummy) const
 {
-  pswitch_env_t *pse = _eval_cache_flag ? 
+  pswitch_env_base_t *pse = _eval_cache_flag ? 
     _cached_eval_res : eval_for_output (o, g);
 
   _cached_eval_res = NULL;
