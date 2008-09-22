@@ -178,7 +178,8 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
 
     } else {
       twait { 
-	RPC::okctl_program_1::okctl_send_con (clnt, &arg, &res, mkevent(err)); }
+	RPC::okctl_program_1::okctl_send_con (clnt, &arg, &res, mkevent(err)); 
+      }
       if (err) {
 	CH_ERROR ("Error in RPC for sending connection: " << err);
       } else if (res == OK_STATUS_NOMORE) {

@@ -71,6 +71,7 @@ ahttpcon_clone::takefd ()
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
     wcbset = false;
+    rcbset = false;
   }
   fd = -1;
   ccb = NULL;
@@ -711,11 +712,3 @@ ahttp_tab_t::sched ()
   dcb = delaycb (interval, 0, wrap (this, &ahttp_tab_t::run));
 }
 
-void
-ahttpcon::close_fd ()
-{
-  fdcb (fd, selread, NULL);
-  fdcb (fd, selwrite, NULL);
-  close (fd);
-  fd = -1;
-}
