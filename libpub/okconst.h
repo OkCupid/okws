@@ -173,6 +173,7 @@ extern int ok_svc_life_reqs;                   // Upper limit on Reqs per life
 extern int ok_svc_life_time;                   // Upper limit on Svc lifetime
 extern const char *okd_mgr_socket;             // okd's management socket
 extern int okd_mgr_socket_mode;                // chown sock to this mode
+extern u_int okd_accept_delay;                 // delay before enabling accept
 
 //
 // okld constants

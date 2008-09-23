@@ -133,6 +133,7 @@ int64_t okws_debug_flags = 0;       // no debug on at first
 bool ok_dangerous_zbufs = false;    // only for experts if true.
 int ok_svc_life_reqs = 0;           // Upper limit on # of Reqs per Lifetime
 int ok_svc_life_time = 0;           // Upper limit on service lifetime
+u_int okd_accept_delay = 0;         // delay before enabling accept
 
 //
 // okld constants

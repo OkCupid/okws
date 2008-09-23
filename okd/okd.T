@@ -323,6 +323,7 @@ okd_t::parse_file (const str &cf)
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
+    .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -407,7 +408,10 @@ okd_t::closed_fd ()
 
   //warn << "debug/global: dec: " << nfd_in_xit << "\n";
 
-  if (nfd_in_xit < int (okd_fds_low_wat) && !accept_enabled)
+  if (_accept_ready &&
+      nfd_in_xit < int (okd_fds_low_wat) && 
+      !accept_enabled)
+
     enable_accept ();
 }
 
@@ -725,6 +729,14 @@ okd_t::launch ()
 
   // once jailed, we can access the mmap'ed clock file (if necessary)
   init_sfs_clock (mmc_file);
+
+  if (okd_accept_delay) {
+    warn << "delaying " << okd_accept_delay << "s before enabling accept\n";
+    twait { delaycb (okd_accept_delay, 0, mkevent ()); }
+    warn << "accept delay complete\n";
+  }
+
+  _accept_ready = true;
 
   enable_accept ();
 }
