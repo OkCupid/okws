@@ -8,11 +8,12 @@ SUFFIXES = .C .T .h
 
 if USE_XML
 
-XMLPROGS = xmltst1 xmlcli1 xmltst3 xmltst4 xmltst5
+XMLPROGS = xmltst1 xmlcli1 str2xmlobj xmltst3 xmltst4 xmltst5
 xmltst1_SOURCES = xmltst1.C
 xmltst4_SOURCES = xmltst4.C
 xmltst5_SOURCES = xmltst5.C
 xmlcli1_SOURCES = xmlcli1.C
+str2xmlobj_SORUCES = str2xmlobj.C
 
 xmltst1.o:	xmltst1.C
 xmltst1.lo: 	xmltst1.C
@@ -26,6 +27,8 @@ xmltst5.lo:	xmltst5.C
 xmltst5.o:	xmltst5.C	
 srv.o:		srv.C
 srv.lo:		srv.T
+str2xmlobj.o:   str2xmlobj.C
+str2xmlobj.lo:   str2xmlobj.C
 
 else
 XMLPROGS =
@@ -44,7 +47,8 @@ TAMEIN = \
 	xmltst3.T \
 	xmltst4.T \
 	xmltst5.T \
-	srv.T 
+	srv.T \
+	str2xmlobj.T
 
 TAMEOUT = \
 	xmlcli1.C \
@@ -54,7 +58,8 @@ TAMEOUT = \
 	xmltst3.C \
 	xmltst4.C \
 	xmltst5.C \
-	srv.C 
+	srv.C \
+	str2xmlobj.C
 
 noinst_PROGRAMS = \
 	kmptst \

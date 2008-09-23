@@ -49,7 +49,7 @@ TPRFX	"<!--#"[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS 
-%x PRE PSTR_SQ TXLCOM TXLCOM3
+%x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
 
 %%
 
@@ -71,6 +71,10 @@ TCLOSE	[ \t]*[;]?[ \t]*"-->"
 
 =>		|
 [(),{}=;]	return yytext[0];
+
+
+m#		{ yy_push_state (POUND_REGEX); return T_REGEX_BEGIN; }
+r#		{ yy_push_state (POUND_REGEX); return T_RANGE_BEGIN; }
 
 
 int(32(_t)?)?[(]	return T_INT_ARR; 
@@ -111,6 +115,16 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 			  addstr ("<!--", 4);
 	  		}
 }
+
+<POUND_REGEX>{
+[^#\\]+|\\#|\\	{ yylval.str = yytext; return T_REGEX_BODY; }
+#[a-zA-Z]*	{ 
+		   yy_pop_state ();
+                   yylval.str = yytext + 1; 
+                   return T_REGEX_END; 
+                }
+}
+
 
 <TXLCOM3>{
 "]"{3}		{ 
@@ -516,5 +530,7 @@ bracket_check_eof (void)
 //   JS - JavaScript
 //   TXLCOM - Translator comment
 //   TXLCOM3 - Translator comment state 3
+//   POUND_REGEX - m#...# regex environment
+//   REGEX_OPTS - parse opts after regex
 //
 */

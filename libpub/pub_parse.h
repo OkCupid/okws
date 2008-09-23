@@ -59,6 +59,7 @@ struct yystype {
   char ch;
   int64_t num;
   ::str str;
+  ptr<strbuf> buf;
 };
 
 #define YYSTYPE yystype

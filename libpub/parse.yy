@@ -23,6 +23,8 @@
 %token <str> T_BTAG
 %token <str> T_BPRE
 %token <str> T_EPRE
+%token <str> T_REGEX_BODY
+%token <str> T_REGEX_END
 
 %token T_VARS
 %token T_UVARS
@@ -45,6 +47,9 @@
 %token T_2R_BRACE
 %token T_2R_BRACKET
 
+%token T_REGEX_BEGIN
+%token T_RANGE_BEGIN
+
 %token T_INT_ARR
 %token T_UINT_ARR
 %token T_CHAR_ARR
@@ -61,11 +66,12 @@
 %type <el> ptag
 %type <func> ptag_func
 %type <pstr> pstr pstr_sq
-%type <arg> arg aarr nested_env
+%type <arg> arg aarr nested_env regex range
 %type <parr> i_arr_open
+%type <buf> regex_body
 
 %%
-file: | hfile   {}
+file:  hfile   {}
 	| conffile {}
 	;
 
@@ -267,6 +273,40 @@ arglist: arg 		    { ARGLIST->push_back ($1); }
 	| arglist ',' arg   { ARGLIST->push_back ($3); }
 	;
 
+regex_body: 
+	    {
+		ptr<strbuf> b = New refcounted<strbuf> ();
+		*b << "";
+		$$ = b;
+	    }
+	    | regex_body T_REGEX_BODY
+	    {
+	       $1->cat ($2.cstr (), true);
+	       $$ = $1;
+	    };
+
+regex:	T_REGEX_BEGIN regex_body T_REGEX_END 
+	{
+	  ptr<pub_regex_t> rx = New refcounted<pub_regex_t> (*$2, $3);
+	  str s;
+	  if (!rx->compile (&s)) {
+            PWARN(s);
+	    PARSEFAIL;
+          }
+	  $$ = rx;
+	};
+
+range: T_RANGE_BEGIN regex_body T_REGEX_END
+       {
+	 str s;
+         ptr<pub_range_t> r = pub_range_t::alloc (*$2, $3, &s);
+	 if (!r) {
+  	   PWARN(s);
+	   PARSEFAIL;
+	 }
+         $$ = r;
+       };
+
 arg: /* empty */  { $$ = New refcounted<pval_null_t> (); }
 	| var     { $$ = New refcounted<pstr_t> ($1); }
 	| pstr    { $$ = $1; }
@@ -274,6 +314,8 @@ arg: /* empty */  { $$ = New refcounted<pval_null_t> (); }
 	| aarr    { $$ = $1; }
 	| pvar    { $$ = New refcounted<pstr_t> ($1); }
 	| nested_env { $$ = $1; }
+	| regex   { $$ = $1; }
+	| range   { $$ = $1; }
 	;
 
 aarr: '{' 
