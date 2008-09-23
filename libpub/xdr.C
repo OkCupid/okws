@@ -294,6 +294,17 @@ pswitch_env_rxx_t::to_xdr (xpub_switch_env_union_t *u) const
 }
 
 bool
+pswitch_env_range_t::to_xdr (xpub_switch_env_union_t *u) const
+{
+  u->set_typ (XPUB_SWITCH_ENV_RANGE);
+  xpub_switch_env_range_t *x = u->range;
+  if (_range) {
+    _range->to_xdr (&x->range);
+  }
+  return to_xdr_base (&x->base);
+}
+
+bool
 pswitch_env_base_t::to_xdr_base (xpub_switch_env_base_t *x) const
 {
   if (aarr)
@@ -330,6 +341,11 @@ pswitch_env_rxx_t::pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x)
   }
 }
 
+pswitch_env_range_t::pswitch_env_range_t (const xpub_switch_env_range_t &x)
+  : pswitch_env_base_t (x.base),
+    _range (pub_range_t::alloc (x.range))
+{}
+
 pswitch_env_base_t::pswitch_env_base_t (const xpub_switch_env_base_t &x)
   : fn (x.body.typ == XPUB_SWITCH_FILE ? str (*x.body.fn) : sNULL), 
     aarr (New refcounted<aarr_arg_t> (x.aarr)),
@@ -349,6 +365,9 @@ pswitch_env_base_t::alloc (const xpub_switch_env_union_t &x)
     break;
   case XPUB_SWITCH_ENV_NULLKEY:
     ret = New refcounted<pswitch_env_nullkey_t> (*x.nullkey);
+    break;
+  case XPUB_SWITCH_ENV_RANGE:
+    ret = New refcounted<pswitch_env_range_t> (*x.range);
     break;
   default:
     warn << "Unexpected type of switch environment\n";
@@ -689,7 +708,6 @@ pfile_raw_el_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
-
 bool
 pub_irange_t::to_xdr (xpub_range_t *out)
 {
@@ -726,3 +744,20 @@ pub_drange_t::to_xdr (xpub_range_t *out)
 
 pub_drange_t::pub_drange_t (const xpub_drange_t &in)
   : _low (cnv_double (in.low)), _hi (cnv_double (in.hi)) {}
+
+ptr<pub_range_t>
+pub_range_t::alloc (const xpub_range_t &xpr)
+{
+  ptr<pub_range_t> ret;
+  switch (xpr.typ) {
+  case XPUB_IRANGE:
+    ret = New refcounted<pub_irange_t> (*xpr.ir);
+    break;
+  case XPUB_DRANGE:
+    ret = New refcounted<pub_drange_t> (*xpr.dr);
+    break;
+  default:
+    break;
+  }
+  return ret;
+}

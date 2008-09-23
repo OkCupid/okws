@@ -1283,7 +1283,7 @@ public:
 
   void dump2 (dumper_t *d) const;
   ptr<nested_env_t> nested_env () { return _nested_env; }
-  virtual bool match (const str &s) const = 0;
+  virtual bool match (const scalar_obj_t &s) const = 0;
   virtual bool to_xdr (xpub_switch_env_union_t *x) const = 0;
   virtual str get_key () const = 0;
   virtual bool is_exact () const { return false; }
@@ -1304,7 +1304,7 @@ public:
     : pswitch_env_base_t (n, a, ne) {}
   str get_key () const { return "<NULL>"; }
   pswitch_env_nullkey_t (const xpub_switch_env_nullkey_t &k);
-  bool match (const str &s) const { return false; }
+  bool match (const scalar_obj_t &s) const { return false; }
   bool to_xdr (xpub_switch_env_union_t *e) const;
   ptr<pswitch_env_nullkey_t> to_nullkey () { return mkref (this); }
 };
@@ -1317,7 +1317,7 @@ public:
   pswitch_env_exact_t (const xpub_switch_env_exact_t &x);
 
   bool to_xdr (xpub_switch_env_union_t *e) const;
-  bool match (const str &s) const;
+  bool match (const scalar_obj_t &s) const;
   str get_key () const { return _key; }
 
   virtual bool is_exact () const { return true; }
@@ -1326,16 +1326,29 @@ public:
 
 class pswitch_env_rxx_t : public pswitch_env_base_t {
 public:
-  pswitch_env_rxx_t (ptr<pub_regex_t> rxx, const pfnm_t n, 
+  pswitch_env_rxx_t (ptr<pub_regex_t> rxx, const pfnm_t &n, 
 		     ptr<aarr_arg_t> a, ptr<nested_env_t> ne)
     : pswitch_env_base_t (n, a, ne), _rxx (rxx) {}
   pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x);
   str get_obj_name () const { return "pswitch_env_rxx_t"; }
-  bool match (const str &s) const;
+  bool match (const scalar_obj_t &s) const;
 
   str get_key () const { return _rxx->to_str (); }
   bool to_xdr (xpub_switch_env_union_t *e) const;
   const ptr<pub_regex_t> _rxx;
+};
+
+class pswitch_env_range_t : public pswitch_env_base_t {
+public:
+  pswitch_env_range_t (ptr<pub_range_t> r, const pfnm_t &n,
+		       ptr<aarr_arg_t> a, ptr<nested_env_t> ne)
+    : pswitch_env_base_t (n, a, ne), _range (r) {}
+  pswitch_env_range_t (const xpub_switch_env_range_t &x);
+  str get_obj_name () const { return "pswitch_env_range_t"; }
+  bool match (const scalar_obj_t &s) const;
+  str get_key () const { return _range->to_str (); }
+  bool to_xdr (xpub_switch_env_union_t *e) const;
+  const ptr<pub_range_t> _range;
 };
 
 

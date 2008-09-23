@@ -288,7 +288,7 @@ case XPUB_DRANGE:
 
 struct xpub_switch_env_range_t {
   xpub_switch_env_base_t base;
-  xpub_range_t ir;
+  xpub_range_t range;
 };
 
 struct xpub_switch_env_nullkey_t {
