@@ -734,7 +734,8 @@ okld_t::parse_file (const str &cf)
     .ignore ("OkdChildSelectDisable")
     .ignore ("ShutdownRetries")
     .ignore ("ShutdownTimeout")
-    .ignore ("OkdDebugMsgFreq");
+    .ignore ("OkdDebugMsgFreq")
+    .ignore ("AcceptDelay");
 
   bool ret = ct.run (cf);
   if (ret) {

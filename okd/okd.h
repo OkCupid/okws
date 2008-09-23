@@ -142,7 +142,8 @@ public:
     reqid (0),
     xtab (2),
     _socket_filename (okd_mgr_socket),
-    _socket_mode (okd_mgr_socket_mode)
+    _socket_mode (okd_mgr_socket_mode),
+    _accept_ready (false)
   {
     listenport = p;
   }
@@ -261,6 +262,7 @@ private:
   int _socket_mode;
 
   str _config_grp, _config_user;
+  bool _accept_ready;
 };
 
 class okd_mgrsrv_t 
