@@ -1070,20 +1070,19 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
     *errp = true;
   }
   if (!*errp) {
-    if (allports_map[listenport]) {
+    if (_all_ports_map[listenport]) {
       warn << loc << ": repeated port #: " << listenport << "\n";
       *errp = true;
       return;
     }
-    allports.push_back (listenport);
-    allports_map.insert (listenport);
+    add_port (listenport, false);
     
     bind_addr_set = true;
   }
 }
 
 void
-ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
+ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 {
   strip_comments (&s);
 
@@ -1097,14 +1096,24 @@ ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
     } else if (t > PORT_MAX) {
       warn << loc << ": port out of range: " << t << "\n";
       *errp = true;
-    } else if (allports_map[port]) {
+    } else if (_all_ports_map[port]) {
       warn << loc << ": repeated port #: " << t << "\n";
       *errp = true;
     } else {
-      allports.push_back (port);
-      allports_map.insert (port);
+      add_port (port, ssl);
     }
   }
+}
+
+void
+ok_base_t::add_port (okws1_port_t port, bool ssl)
+{
+  assert (!_all_ports_map[port]);
+  _all_ports.push_back (port);
+  if (ssl) 
+    _https_ports.push_back (port);
+  else
+    _http_ports.push_back (port);
 }
 
 

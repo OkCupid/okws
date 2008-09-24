@@ -62,6 +62,7 @@ OKWS_LIBS
 OKWS_MYSQL
 OKWS_EXPAT
 OKWS_GMTOFF
+OKWS_SSL
 
 dnl
 dnl Need to use the xmlrpcc if possible when publishing OKWS .x files
@@ -133,7 +134,7 @@ LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDADD"' $(LIBEXPAT)'
+LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
@@ -205,4 +206,4 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile htdocs/Makefile contrib/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
-	  test/system/3tier/Makefile )
+	  test/system/3tier/Makefile ssl/Makefile )

@@ -562,7 +562,7 @@ okld_t::check_services_and_aliases ()
       warn << a.loc << ": Alias URI is already taken by a service: " 
 	   << a.from << "\n";
       ret = false;
-    } else if (a.port && !allports_map[a.port]) {
+    } else if (a.port && !_all_ports_map[a.port]) {
       warn << a.loc << ": alias uses port (" << a.port << ") that OKD "
 	   << "does not listen on\n";
       ret = false;
@@ -590,8 +590,8 @@ bool
 okld_t::check_ports ()
 {
   bool ret = true;
-  while (allports.size ()) {
-    okws1_port_t p = allports.pop_front ();
+  while (_all_ports.size ()) {
+    okws1_port_t p = _all_ports.pop_front ();
     if (!(used_ports[p] || (p == listenport && used_primary_port))) {
       warn << "OKD will listen on port " << p << ", but no "
 	   << "services will be using it!\n";
@@ -642,7 +642,10 @@ okld_t::parse_file (const str &cf)
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
-			       &ok_base_t::got_ports))
+			       &ok_base_t::got_ports, false))
+    .add ("EnableSSL", &_enable_ssl)
+    .add ("ListenPortsSSL", wrap (static_cast<ok_base_t *> (this),
+				  &ok_base_t::got_ports, true))
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
     .add ("NoPub2", &_config_no_pub_v2_support)
@@ -798,10 +801,9 @@ okld_t::post_config (const str &cf)
     warn << "Disabling Pub v2 support.\n";
   }
 
-  if (allports.size () == 0) {
+  if (_all_ports.size () == 0) {
     warn << "No listen ports given; assuming default port (80)\n";
-    allports.push_back (listenport);
-    allports_map.insert (listenport);
+    add_port (listenport, false);
   }
 
   if (!check_services_and_aliases () || !check_ports () 
@@ -1160,7 +1162,7 @@ okld_t::check_service_ports ()
   u_int lim = svcs.size ();
   for (u_int i = 0; i < lim; i++) {
     okws1_port_t p = svcs[i]->get_port ();
-    if (p && ! allports_map[p]) {
+    if (p && ! _all_ports_map[p]) {
       warn << svcs[i]->loc () 
 	   << ": service uses a port (" << p << ") that OKD does not "
 	   << "listen on!!\n";

@@ -270,7 +270,10 @@ okd_t::parse_file (const str &cf)
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
-			       &ok_base_t::got_ports))
+			       &ok_base_t::got_ports, false))
+    .add ("ListenPortsSSL", wrap (static_cast<ok_base_t *> (this),
+				  &ok_base_t::got_ports, true))
+    .add ("EnableSSL", &_enable_ssl)
     .add ("Alias", wrap (this, &okd_t::got_alias))
     .add ("RegexAlias", wrap (this, &okd_t::got_regex_alias))
     .add ("JailDir", wrap (got_dir, &jaildir))
@@ -708,21 +711,21 @@ okd_t::launch ()
   okldx = fdsource_t<okws_fd_t>::alloc (okldfd, wrap (this, &okd_t::gotfd));
   assert (okldx);
 
-  if (allports.size () == 0) {
+  if (_http_ports.size () == 0) {
     warn << "No listen addr/ports specified; assuming *:80\n";
-    allports.push_back (listenport);
+    _http_ports.push_back (listenport);
   }
 
-  for (u_int i = 0; i < allports.size () ; i++) {
-    int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
+  for (u_int i = 0; i < _http_ports.size () ; i++) {
+    int fd = inetsocket (SOCK_STREAM, _http_ports[i], listenaddr);
     if (fd < 0) {
-      fatal ("could not bind TCP port %d: %m\n", allports[i]);
+      fatal ("could not bind TCP port %d: %m\n", _http_ports[i]);
     }
     close_on_exec (fd);
     listen (fd, ok_listen_queue_max);
     listenfds.push_back (fd);
-    portmap.insert (fd, allports[i]);
-    warn << "listening on " << listenaddr_str << ":" << allports[i] << "\n";
+    portmap.insert (fd, _http_ports[i]);
+    warn << "listening on " << listenaddr_str << ":" << _http_ports[i] << "\n";
   }
 
   strip_privileges ();

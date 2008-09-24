@@ -297,7 +297,6 @@ public:
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false),
       _opt_daemon (false) {}
-      
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -437,6 +436,7 @@ private:
   bool _config_no_pub_v2_support;
   bool _opt_daemon;
 						 
+
 };
 
 #endif /* _OKD_OKD_H */

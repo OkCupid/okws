@@ -29,6 +29,7 @@
 #include <grp.h>
 #include <ctype.h>
 #include "rxx.h"
+#include "parseopt.h"
 
 bool
 mystrcmp (const char *a, const char *b)
@@ -682,4 +683,19 @@ fix_trailing_newlines (str *sp)
       }
     }
   }
+}
+
+static rxx host_and_port ("([^:]+)(:(\\d{1,6}))?");
+
+bool
+to_hostname_and_port (const str &in, str *out, int *port)
+{
+  bool ret = true;
+  if (!host_and_port.match (in) ||
+      (host_and_port[3] && !convertint (host_and_port[3], port))) {
+    ret = false;
+  } else {
+    *out = host_and_port[1];
+  }
+  return ret;
 }

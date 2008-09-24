@@ -85,8 +85,13 @@ union ok_xstatus_t switch (ok_xstatus_typ_t status)
 
 typedef ok_xstatus_typ_t okctl_sendcon_res_t;
 
+struct ssl_ctx_t {
+       string cipher<>;
+};
+
 struct okctl_sendcon_arg_t {
 	opaque sin<>;
+	ssl_ctx_t *ssl;
 };
 
 namespace RPC {

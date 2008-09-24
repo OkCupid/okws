@@ -102,7 +102,8 @@ public:
       topdir (ok_topdir),
       reported_name (ok_wsname),
       logd (NULL), logfd (lfd), pub2fd (pfd),
-      bind_addr_set (false)
+      bind_addr_set (false),
+      _enable_ssl (false)
       //jaildir_run (ok_jaildir_run) 
   {}
 
@@ -110,7 +111,8 @@ public:
 
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
-  void got_ports (vec<str> s, str loc, bool *errp);
+  void got_ports (bool ssl, vec<str> s, str loc, bool *errp);
+  void add_port (okws1_port_t p, bool ssl);
   str okws_exec (const str &path) const;
   //str doubly_jail_rundir () const { return nest_jails (jaildir_run); }
 
@@ -126,8 +128,8 @@ public:
   str debug_stallfile;
   str server_id;
 
-  vec<okws1_port_t> allports;
-  bhash<okws1_port_t> allports_map;
+  vec<okws1_port_t> _https_ports, _http_ports, _all_ports;
+  bhash<okws1_port_t> _all_ports_map;
 
 
 protected:
@@ -139,6 +141,7 @@ protected:
   int pub2fd;
   //str jaildir_run;  // nested jaildir for okd and services
   bool bind_addr_set; // called after got_bindaddr;
+  bool _enable_ssl;
 };
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
