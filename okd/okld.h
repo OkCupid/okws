@@ -334,7 +334,10 @@ public:
   logd_parms_t logd_parms;
 
   cgi_t env;    // execution environment
-  ptr<fdsink_t> okdx;
+
+  ptr<axprt_unix> _okd_x;
+  ptr<aclnt> _okd_cli;
+
   ok_grp_t svc_grp;
   bool safe_startup () const { return safe_startup_fl ;}
   void set_opt_daemon (bool b) { _opt_daemon = b; }

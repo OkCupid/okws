@@ -36,8 +36,6 @@
 #include "okerr.h"
 #include "svq.h"
 #include "okconst.h"
-#include "axprtfd.h"
-#include "fd_prot.h"
 #include "arpc.h"
 #include "rxx.h"
 #include "tame.h"
@@ -186,7 +184,7 @@ public:
   void got_pubd_exec (vec<str> s, str loc, bool *errp);
   void got_err_doc (vec<str> s, str loc, bool *errp);
 
-  void gotfd (int fd, ptr<okws_fd_t> desc);
+  void okld_dispatch (svccb *sbp);
 
   void pubconf (svccb *sbp);
   void getfile (svccb *sbp);
@@ -281,7 +279,7 @@ private:
   void shutdown3 ();
   void shutdown_cb1 ();
 
-  void got_chld_fd (int fd, ptr<okws_fd_t> desc);
+  void got_child_fd (int fd, const okws_svc_descriptor_t &d);
 
   str configfile;
   int okldfd;
@@ -301,7 +299,9 @@ private:
   int sdattempt;
   int cntr;
 
-  ptr<fdsource_t<okws_fd_t> > okldx;
+  ptr<axprt_unix> _okld_x;
+  ptr<asrv> _okld_srv;
+
   str coredumpdir;
   xpub_errdoc_set_t xeds;
 

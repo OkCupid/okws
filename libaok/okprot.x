@@ -94,6 +94,64 @@ struct okctl_sendcon_arg_t {
 	ssl_ctx_t *ssl;
 };
 
+typedef string ip_addr_t<16>;
+enum oklog_typ_t {
+  OKLOG_OK = 0,
+  OKLOG_ERR_WARNING = 1,
+  OKLOG_ERR_ERROR = 2,
+  OKLOG_ERR_NOTICE = 3,
+  OKLOG_ERR_CRITICAL = 4,
+  OKLOG_ERR_DEBUG = 5
+};
+
+struct oklog_notice_t {
+  string notice<>;
+};
+
+struct oklog_ok_t {
+  int status;
+  string req<>;
+  ip_addr_t ip;
+  int size;
+  string user_agent<>;
+  string service<>;
+  string referer<>;
+  hyper uid;
+};
+
+struct oklog_err_t {
+  oklog_ok_t log;
+  string aux<>;
+};
+
+union oklog_arg_t switch (oklog_typ_t typ) {
+ case OKLOG_OK:
+   oklog_ok_t ok;
+ case OKLOG_ERR_NOTICE:
+ case OKLOG_ERR_CRITICAL:
+   oklog_notice_t notice;
+ default:
+   oklog_err_t err;    
+};
+
+struct oklog_fast_arg_t {
+  string access<>;
+  string error<>;
+};
+
+struct okws_svc_descriptor_t {
+  string name<256>;
+  int pid;
+};
+
+%#define LOG_IP     (1 << 0)
+%#define LOG_UA     (1 << 1)
+%#define LOG_SZ     (1 << 2)
+%#define LOG_REQ    (1 << 3)
+%#define LOG_SVC    (1 << 4)
+%#define LOG_RFR    (1 << 5)
+%#define LOG_UID    (1 << 6)
+
 namespace RPC {
 
 program OKCTL_PROGRAM {
@@ -150,63 +208,6 @@ program OKCTL_PROGRAM {
 	} = 1;
 } = 11279;
 
-};
-
-typedef string ip_addr_t<16>;
-enum oklog_typ_t {
-  OKLOG_OK = 0,
-  OKLOG_ERR_WARNING = 1,
-  OKLOG_ERR_ERROR = 2,
-  OKLOG_ERR_NOTICE = 3,
-  OKLOG_ERR_CRITICAL = 4,
-  OKLOG_ERR_DEBUG = 5
-};
-
-struct oklog_notice_t {
-  string notice<>;
-};
-
-struct oklog_ok_t {
-  int status;
-  string req<>;
-  ip_addr_t ip;
-  int size;
-  string user_agent<>;
-  string service<>;
-  string referer<>;
-  hyper uid;
-};
-
-struct oklog_err_t {
-  oklog_ok_t log;
-  string aux<>;
-};
-
-union oklog_arg_t switch (oklog_typ_t typ) {
- case OKLOG_OK:
-   oklog_ok_t ok;
- case OKLOG_ERR_NOTICE:
- case OKLOG_ERR_CRITICAL:
-   oklog_notice_t notice;
- default:
-   oklog_err_t err;    
-};
-
-struct oklog_fast_arg_t {
-  string access<>;
-  string error<>;
-};
-
-%#define LOG_IP     (1 << 0)
-%#define LOG_UA     (1 << 1)
-%#define LOG_SZ     (1 << 2)
-%#define LOG_REQ    (1 << 3)
-%#define LOG_SVC    (1 << 4)
-%#define LOG_RFR    (1 << 5)
-%#define LOG_UID    (1 << 6)
-
-namespace RPC {
-
 program OKLOG_PROGRAM {
 	version OKCTL_VERS {
 	
@@ -258,5 +259,18 @@ program OKMGR_PROGRAM {
 		OKMGR_REPUB2 (xpub_fnset_t) = 6;
 	} = 1;
 } = 11278;
+
+program OKLD_PROGRAM {
+	version OKLD_VERS {
+
+		void
+		OKLD_NULL(void) = 0;
+
+		ok_xstatus_typ_t
+		OKLD_NEW_SERVICE(okws_svc_descriptor_t) = 1;
+
+	} = 1;
+
+} = 11279;
 
 };

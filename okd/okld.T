@@ -1070,7 +1070,8 @@ okld_t::shutdown1 ()
 {
   warn << "Starting shutdown, Phase 1\n";
   sdflag = true;
-  okdx = NULL;
+  _okd_cli = NULL;
+  _okd_x = NULL;
 }
 
 void
@@ -1151,7 +1152,9 @@ okld_t::launch_okd (int logfd, int pub2fd)
   // okd.  Second, is okd's actual exit, which we'll wait on.
   okd_pid = axprt_unix_spawn_pid;
   chldcb (okd_pid, wrap (this, &okld_t::shutdown2));
-  okdx = fdsink_t::alloc (x, wrap (this, &okld_t::caught_okd_eof));
+  _okd_x = x;
+  _okd_cli = aclnt::alloc (x, okld_program_1);
+  _okd_cli->seteofcb (wrap (this, &okld_t::caught_okd_eof));
   return true;
 }
 

@@ -708,8 +708,9 @@ okd_t::launch ()
     exit (1);
   }
 
-  okldx = fdsource_t<okws_fd_t>::alloc (okldfd, wrap (this, &okd_t::gotfd));
-  assert (okldx);
+  _okld_x = axprt_unix::alloc (okldfd);
+  _okld_srv = asrv::alloc (_okld_x, okld_program_1,
+			   wrap (this, &okd_t::okld_dispatch));
 
   if (_http_ports.size () == 0) {
     warn << "No listen addr/ports specified; assuming *:80\n";
@@ -745,48 +746,44 @@ okd_t::launch ()
 }
 
 void
-okd_t::gotfd (int fd, ptr<okws_fd_t> desc)
+okd_t::okld_dispatch (svccb *sbp)
 {
-  if (fd < 0) {
-    shutdown (0);
-    return;
+  if (!sbp) {
+    
+  } else {
+    switch (sbp->proc ()) {
+    case OKLD_NEW_SERVICE:
+      {
+	RPC::okld_program_1::okld_new_service_srv_t<svccb> srv (sbp);
+	const okws_svc_descriptor_t *arg = srv.getarg ();
+	int fd = _okld_x->recvfd ();
+	ok_xstatus_typ_t st;
+	if (fd >= 0)  {
+	  got_child_fd (fd, *arg);
+	  st = OK_STATUS_OK;
+	} else {
+	  st = OK_STATUS_BADFD;
+	}
+	srv.reply (st);
+      }
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+      break;
+    }
   }
-  assert (fd >= 0 && desc);
-
-  switch (desc->fdtyp) {
-  case OKWS_SVC_X:
-  case OKWS_SVC_CTL_X:
-    got_chld_fd (fd, desc);
-    break;
-  default:
-    okdbg_warn (ERROR, "unknown FD type received from okld\n");
-    break;
-  }
-  return;
 }
 
 void
-okd_t::got_chld_fd (int fd, ptr<okws_fd_t> desc)
+okd_t::got_child_fd (int fd, const okws_svc_descriptor_t &d)
 {
+  str uri = fix_uri (d.name);
   okch_t *ch;
-  str uri;
-  switch (desc->fdtyp) {
-  case OKWS_SVC_CTL_X:
-    uri = fix_uri (desc->ctlx->name);
-    if (!(ch = servtab[uri])) {
-      // calling New will insert the object into the table
-      ch = New okch_t (this, uri);
-    }
-
-    // XXX - debug
-    // will need this to debug missing file descriptors
-    // warn << "got CTL fd: " << desc->ctlx->pid << "\n";
-
-    ch->got_new_ctlx_fd (fd, desc->ctlx->pid);
-    break;
-  default:
-    assert (false);
+  if (!(ch = servtab[uri])) {
+    // calling New will insert the object into the table
+    ch = New okch_t (this, uri);
   }
+  ch->got_new_ctlx_fd (fd, d.pid);
 }
 
 void
