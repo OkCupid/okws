@@ -99,66 +99,24 @@ okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 void
 okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 {
-  //
-  // pop off "OkdExec"
-  //
-  str es;
-  s.pop_front ();
-  vec<str> env;
-
-  strip_comments (&s);
-
-  static rxx envsep ("=");
-
-  bool fnd_dbg = false;
-
-  while (s.size () && strchr (s[0].cstr (), '=')) {
-    vec<str> tmp;
-    assert (split (&tmp, envsep, s[0]));
-    if (tmp[0] == OKWS_DEBUG_OPTIONS) 
-      fnd_dbg = true;
-    env.push_back (s.pop_front ());
-  }
-
-  // 
-  // if our options were on, but none were passed to okd, then
-  // we turn it on here
-  //
-  str opts = getenv (OKWS_DEBUG_OPTIONS);
-  if (!fnd_dbg && opts) {
-    strbuf b;
-    b.fmt ("%s=%s", OKWS_DEBUG_OPTIONS, opts.cstr ());
-    env.push_back (b);
-  }
-
-  if (s.size () != 1)
-    goto usage;
-  
-  okdexecpath = s.pop_front ();
-
-  if (!is_safe (okdexecpath)) {
-    warn << loc << ": okd path (" << okdexecpath
-	 << ") contains unsafe substrings\n";
-    goto err;
-  }
-
-  es = can_exec (okws_exec (okdexecpath));
-  if (es) {
-    warn << loc << ": cannot exec okd: " << es <<"\n";
-    goto err;
-  }
-  
-  if (env.size ()) 
-    okdenv.init (env, environ);
-
-  return;
-
- usage:
-    warn << loc << ": usage: OkdExecPath [<ENV>] <okd-execpath>\n";
- err:
-    *errp = true;
+  got_generic_exec (&_okd, s, loc, errp);
 }
 
+void
+okld_t::got_generic_exec (okld_helper_t *out, vec<str> str loc, bool *errp)
+{
+  ptr<argv_t> env;
+  if (got_generic_exec (s, loc, errp, &env)) {
+    out->argv () += s;
+    out->set_env (env);
+  }
+}
+
+void
+okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp)
+{
+  got_generic_exec (&_okssl, s, loc, errp);
+}
 
 static bool
 parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
@@ -637,6 +595,7 @@ okld_t::parse_file (const str &cf)
     .add ("ServiceMode", &ok_svc_mode, 0, 0777)
     .add ("ServiceGroup", &_config_grp)
     .add ("OkdExecPath", wrap (this, &okld_t::got_okd_exec))
+    .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
@@ -767,8 +726,8 @@ okld_t::post_config (const str &cf)
     warn << "no 'ServiceGroup' provided; using default: " 
 	 << svc_grp.getname () << "\n";
   }
-  if (_config_okd_un) okd_usr = ok_usr_t (_config_okd_un);
-  if (_config_okd_gr) okd_grp = ok_grp_t (_config_okd_gr);
+  if (_config_okd_un) _okd.set_user (_config_okd_un);
+  if (_config_okd_gr) _okd.set_group (_config_okd_gr);
 
   nxtuid = ok_svc_uid_low;
 
@@ -1113,16 +1072,20 @@ okld_t::okld_exit (int code)
   exit (code);
 }
 
+tamed bool
+okld_t::launch_okssl (evb_t ev)
+{
+  tvars {
+    str prog;
+  }
+  prog = oksslexecpath;
+
+}
 
 bool
 okld_t::launch_okd (int logfd, int pub2fd)
 {
-  str prog = okws_exec (okdexecpath);
-  str err = can_exec (prog);
-  if (err) 
-    fatal << "OKD execute error: " << err << "\n";
-  vec<str> argv;
-  argv.push_back (prog);
+  vec<str> &argv = _okd_proclnch.argv ();
   argv.push_back ("-f");
   argv.push_back (configfile);
   argv.push_back ("-l");
@@ -1140,7 +1103,8 @@ okld_t::launch_okd (int logfd, int pub2fd)
   }
 
   // launch okd synchronously; no point in us running if okd puked.
-  ptr<axprt_unix> x = axprt_unix_spawnv (prog, argv, 0, NULL, okdenv);
+  ptr<axprt_unix> x = axprt_unix_spawnv (argv[0], argv, 0, NULL, 
+					 _okd_proclnch.env ());
   if (!x)
     return false;
 
@@ -1263,6 +1227,10 @@ main (int argc, char *argv[])
 tamed 
 void okld_t::launch (str cf)
 {
+  tvars {
+    bool ok;
+  }
+
   configfile = cf;
   if (!run_configs (cf))
     okld_exit (1);
@@ -1305,6 +1273,10 @@ void okld_t::launch (str cf)
   }
 
   if (!launch_okd (logfd, pub2fd))
+    okld_exit (1);
+
+  twait { launch_okssl (mkevent (ok)); }
+  if (!ok) 
     okld_exit (1);
   
   chroot ();
@@ -1476,3 +1448,37 @@ svc_options_t::apply_global_defaults ()
   if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
   if (wait_for_signal < 0) wait_for_signal = 0;
 }
+
+//-----------------------------------------------------------------------
+
+okld_helper_t::okld_helper_t (const str &u, const str &g)
+  : _pid (-1),
+    _usr (u),
+    _grp (g) {}
+
+//-----------------------------------------------------------------------
+
+char *const *
+okld_helper_t::env () const 
+{
+  if (env) return *_env;
+  else return _empty_env;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::set_group (const str &g)
+{
+  _grp = ok_grp_t (g);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::set_uesr (const str &u)
+{
+  _usr = ok_usr_t (u);
+}
+
+//-----------------------------------------------------------------------

@@ -1083,6 +1083,7 @@ okd_t::okctl_get_stats (svccb *sbp)
 
 }
 
+
 int
 main (int argc, char *argv[])
 {
@@ -1090,3 +1091,4 @@ main (int argc, char *argv[])
   start_okd (argc, argv);
   amain ();
 }
+

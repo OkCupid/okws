@@ -45,6 +45,31 @@
 
 class okld_t;
 
+/*
+ * A class to hold onto a process command/argv and its environment
+ * so that it can be later launched.
+ */
+class okld_helper_t {
+public:
+  okld_helper_t (const str &u, const str &g);
+  void set_env (ptr<argv_t> e) { _env = v; }
+  vec<str> &argv () { return _argv; }
+  char* const* env () const ;
+  void set_group (const str &g);
+  void set_user (const str &u);
+
+private:
+  vec<str> _argv;
+  ptr<argv_t> _env;
+  argv_t _empty_env;
+  int _pid;
+
+  ptr<axprt_unix> _x;
+  ptr<aclnt> _cli;
+  ok_usr_t _usr;
+  ok_grp_t _grp;
+};
+
 /**
  * a class for things that will be jailed into OKWS's runtime directory,
  * such as compile scripts, and also Python interpreters. Mainly, it
@@ -284,10 +309,10 @@ public:
     : config_parser_t (), 
       svc_grp (ok_okd_gname),
       nxtuid (ok_svc_uid_low), logexc (NULL), pubd2exc (NULL),
-      coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), okd_pid (-1),
+      coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), 
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
-      okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
+      _okd (ok_okd_uname, ok_okd_gname),
       okd_dumpdir ("/tmp"), 
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
@@ -303,6 +328,8 @@ public:
   void got_service (bool script, vec<str> s, str loc, bool *errp);
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
+  void got_okssl_exec (vec<str> s, str loc, bool *errp);
+  void got_generic_exec (okld_helper_t *h, vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
   void got_pubd2_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
@@ -334,9 +361,6 @@ public:
   logd_parms_t logd_parms;
 
   cgi_t env;    // execution environment
-
-  ptr<axprt_unix> _okd_x;
-  ptr<aclnt> _okd_cli;
 
   ok_grp_t svc_grp;
   bool safe_startup () const { return safe_startup_fl ;}
@@ -390,16 +414,13 @@ private:
 
   vec<okld_ch_t *> svcs;
   int nxtuid;
-  str okd_exec;
   str coredump_path;
   helper_exec_t *logexc, *pubd2exc;
 
-  str okdexecpath;
   str coredumpdir;
   str sockdir;
 
   str configfile;
-  int okd_pid;
   bool sdflag;
 
   str service_bin;       // directory where service exes are kept
@@ -408,8 +429,9 @@ private:
 
   str root_coredir;      // privileged core directory
 
-  ok_usr_t okd_usr;
-  ok_grp_t okd_grp;
+
+  okld_helper_t _okd, _okssl;
+
   str okd_dumpdir;
 
   sfs_clock_t clock_mode;
@@ -420,7 +442,6 @@ private:
   u_int launchp;
 
   bool used_primary_port;
-  argv_t okdenv;
 
   ihash<const str, okld_interpreter_t, 
 	&okld_interpreter_t::_name,

@@ -1276,10 +1276,12 @@ oksrvc_t::cfg (const str &n) const
 
 bool
 ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp, 
-			      ptr<argv_t> *ep)
+			     ptr<argv_t> *ep)
 {
   str cmd, err, prog;
   vec<str> env;
+  bool fnd_dbg = false;
+  const char *cp;
 
   strip_comments (&s);
 
@@ -1287,8 +1289,18 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   
   cmd = s.pop_front ();
 
-  while (s.size () && strchr (s[0].cstr (), '=')) 
+  while (s.size () && (cp = strchr (s[0].cstr (), '=')))  {
+    if (strncmp (OKWS_DEBUG_OPTIONS, s[0], cp - s[0]) == 0)
+      fnd_dbg = true;
     env.push_back (s.pop_front ());
+  }
+
+  str opts = getenv (OKWS_DEBUG_OPTIONS);
+  if (!fnd_dbg && opts) {
+    strbuf b;
+    b.fmt ("%s=%s", OKWS_DEBUG_OPTIONS, opts.cstr ());
+    env.push_back (b);
+  }
 
   if (s.size ()) {
     *ep = New refcounted<argv_t> (env, environ);

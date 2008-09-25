@@ -699,3 +699,10 @@ to_hostname_and_port (const str &in, str *out, int *port)
   }
   return ret;
 }
+
+void
+argv_t::copy (const argv_t &in)
+{
+
+
+}
