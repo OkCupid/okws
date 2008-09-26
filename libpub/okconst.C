@@ -144,6 +144,11 @@ u_int okd_accept_delay = 0;         // delay before enabling accept
 u_int okld_startup_batch_size = 25;        // number in each batch
 u_int okld_startup_batch_wait = 3;         // n secs to wait between batch
 
+//
+// okssl constants
+//
+const char *ok_ssl_certfile = "okws.cert";     // name of the OKWS certfile
+
 // location of the memory-mapped clock daemon
 const char *ok_mmcd = "/usr/local/lib/sfslite/mmcd";
 

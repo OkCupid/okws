@@ -183,6 +183,10 @@ extern u_int okd_accept_delay;                 // delay before enabling accept
 extern u_int okld_startup_batch_size;          // number in each batch
 extern u_int okld_startup_batch_wait;          // n secs to wait between batch
 
+//
+// okssl constants
+//
+extern const char *ok_ssl_certfile;           // where the cert is kept
 
 //
 // helper constants

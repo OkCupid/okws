@@ -51,7 +51,8 @@ class okld_t;
  */
 class okld_helper_t {
 public:
-  okld_helper_t (const str &u, const str &g);
+  okld_helper_t (const str &n, const str &u, const str &g);
+  ~okld_helper_t () {}
   void set_env (ptr<argv_t> e) { _env = e; }
   vec<str> &argv () { return _argv; }
   char* const* env () const ;
@@ -68,8 +69,20 @@ public:
   ptr<axprt_unix> x () { return _x; }
   ptr<aclnt> cli () { return _cli; }
   bool launch ();
+  str dumpdir () const { return _dumpdir; }
 
-private:
+  bool configure (jailable_t *j, const str &prfx);
+  void activate ();
+  bool active () const { return _active; }
+
+protected:
+  bool configure_user ();
+  bool configure_group ();
+  bool configure_dumpdir (jailable_t *j, const str &prfx);
+  virtual bool v_configure () { return true; }
+
+  const str _name;
+
   vec<str> _argv;
   ptr<argv_t> _env;
   argv_t _empty_env;
@@ -79,6 +92,28 @@ private:
   ptr<aclnt> _cli;
   ok_usr_t _usr;
   ok_grp_t _grp;
+  bool _active;
+  str _dumpdir;
+};
+
+class okld_helper_okd_t : public okld_helper_t {
+public:
+  okld_helper_okd_t (const str &u, const str &g)
+    : okld_helper_t ("okd", u, g) {}
+private:
+};
+
+class okld_helper_ssl_t : public okld_helper_t {
+public:
+  okld_helper_ssl_t (const str &u, const str &g) 
+    : okld_helper_t ("okssld", u, g),
+      _certfile (ok_ssl_certfile) {}
+  str _certfile;
+  bool v_configure ();
+  str certfile_resolved () const { return _certfile_resolved; }
+private:
+  vec<okws1_port_t> _ports;
+  str _certfile_resolved;
 };
 
 /**
@@ -323,9 +358,8 @@ public:
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), 
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
-      _okd (ok_okd_uname, ok_okd_gname),
+      _okd ("okd", ok_okd_uname, ok_okd_gname),
       _okssl (ok_ssl_uname, ok_ssl_gname),
-      okd_dumpdir ("/tmp"), 
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
       used_primary_port (false),
@@ -364,6 +398,7 @@ public:
   void caught_okd_eof ();
   void shutdown1 ();
   void shutdown2 (int status);
+  void shutdown_ssl (int status);
   bool init_jaildir ();
   bool init_interpreters ();
   bool in_shutdown () const { return sdflag; }
@@ -446,9 +481,8 @@ private:
   str root_coredir;      // privileged core directory
 
 
-  okld_helper_t _okd, _okssl;
-
-  str okd_dumpdir;
+  okld_helper_t _okd;
+  okld_helper_ssl_t _okssl;
 
   sfs_clock_t clock_mode;
   str mmc_file;
@@ -472,6 +506,7 @@ private:
 
   // variables set during configuration stage
   str _config_grp, _config_okd_gr, _config_okd_un;
+  str _config_ssl_gr, _config_ssl_un;
   str _config_root, _config_wheel;
   bool _config_no_pub_v2_support;
   bool _opt_daemon;

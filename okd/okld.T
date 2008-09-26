@@ -100,6 +100,7 @@ void
 okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 {
   okld_t::got_generic_exec (&_okd, s, loc, errp);
+  _okd.activate ();
 }
 
 void
@@ -116,6 +117,7 @@ void
 okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp)
 {
   okld_t::got_generic_exec (&_okssl, s, loc, errp);
+  _okssl.activate ();
 }
 
 static bool
@@ -596,6 +598,7 @@ okld_t::parse_file (const str &cf)
     .add ("ServiceGroup", &_config_grp)
     .add ("OkdExecPath", wrap (this, &okld_t::got_okd_exec))
     .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
+    .add ("CertfileSSL", &_okssl._certfile)
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
@@ -642,6 +645,8 @@ okld_t::parse_file (const str &cf)
 
     .add ("OkdUser", &_config_okd_un)
     .add ("OkdGroup", &_config_okd_gr)
+    .add ("OksslUser", &_config_ssl_un)
+    .add ("OksslGroup", &_config_ssl_gr)
     
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
@@ -728,6 +733,8 @@ okld_t::post_config (const str &cf)
   }
   if (_config_okd_un) _okd.set_user (_config_okd_un);
   if (_config_okd_gr) _okd.set_group (_config_okd_gr);
+  if (_config_ssl_un) _okssl.set_user (_config_ssl_un);
+  if (_config_ssl_gr) _okssl.set_group (_config_ssl_gr);
 
   nxtuid = ok_svc_uid_low;
 
@@ -1075,8 +1082,38 @@ tamed void
 okld_t::launch_okssl (evb_t ev)
 {
   tvars {
+    vec<str> argv;
+    int logfd;
+    bool rc (false);
   }
 
+  if (!_okssl.active ()) {
+    rc = true;
+  } else {
+    twait { logd->clone (mkevent (logfd)); }
+    if (logfd < 0) {
+      warn << "oklogd did not send a file descriptor; failing\n";
+    } else {
+      argv.push_back ("-k");
+      argv.push_back (_okssl.certfile_resolved ());
+      argv.push_back ("-d");
+      argv.push_back (_okssl.dumpdir ());
+      argv.push_back ("-l");
+      argv.push_back (strbuf () << logfd);
+      for (size_t i = 0; i < _https_ports.size (); i++) {
+	argv.push_back ("-p");
+	argv.push_back (strbuf () << _https_ports[i]);
+      }
+      _okssl.argv () += argv;
+
+      if (_okssl.launch ()) {
+	_okssl.set_chldcb (wrap (this, &okld_t::shutdown_ssl));
+	_okssl.make_cli (okld_program_1, wrap (this, &okld_t::shutdown_ssl, 0));
+	rc = true;
+      }
+    }
+  }
+  ev->trigger (rc);
 }
 
 bool
@@ -1089,7 +1126,7 @@ okld_t::launch_okd (int logfd, int pub2fd)
   argv.push_back ("-l");
   argv.push_back (strbuf () << logfd);
   argv.push_back ("-c");
-  argv.push_back (okd_dumpdir);
+  argv.push_back (_okd.dumpdir ());
   argv.push_back ("-p");
   argv.push_back (strbuf () << listenport);
   argv.push_back ("-x");
@@ -1339,24 +1376,15 @@ okld_t::init_jaildir ()
     ret = false;
 
   u_int lim = svcs.size ();
-  if (!_okd.user ()) {
-    warn << "cannot find a user for okd (" << _okd.user().getname () 
-	 << " does not exist)\n";
-    return false;
+
+  if (!_okd.active ()) {
+    warn << "No okd was specified; cannot run!\n";
+    ret = false;
   }
 
-  if (!_okd.group ()) {
-    warn << "cannot find group for okd (" << _okd.group ().getname ()
-	 << "does not exist)\n";
-    return false;
-  }
-
-  okd_dumpdir = apply_container_dir (coredumpdir, 
-				     strbuf () << _okd.user ().getid ());
-  if (!jail_mkdir (okd_dumpdir, 0700, &_okd.user (), &_okd.group ())) {
-    warn << "cannot allocate jail directory for okd\n";
-    return false;
-  }
+  if (!_okd.configure (this, coredumpdir) || 
+      !_okssl.configure (this, coredumpdir))
+    ret = false;
 
   // separate coredump directory for each service UID
   for (u_int i = 0; i < lim; i++) {
@@ -1448,10 +1476,13 @@ svc_options_t::apply_global_defaults ()
 
 //-----------------------------------------------------------------------
 
-okld_helper_t::okld_helper_t (const str &u, const str &g)
-  : _pid (-1),
+okld_helper_t::okld_helper_t (const str &n, const str &u, const str &g)
+  : _name (n),
+    _pid (-1),
     _usr (u),
-    _grp (g) {}
+    _grp (g),
+    _active (false),
+    _dumpdir ("/tmp") {}
 
 //-----------------------------------------------------------------------
 
@@ -1506,5 +1537,90 @@ okld_helper_t::make_cli (const rpc_program &p, cbv::ptr eofcb)
     _cli->seteofcb (eofcb);
 }
 
+//-----------------------------------------------------------------------
+
+void okld_helper_t::activate () { _active = true; }
 
 //-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure (jailable_t *j, const str &prefix)
+{
+  return (!_active ||
+	  (configure_user () &&
+	   configure_group () &&
+	   configure_dumpdir (j, prefix)));
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure_user ()
+{
+  bool rc = true;
+  if (!_usr) {
+    warn << "cannot find a user for okd (" << _usr.getname () 
+	 << " does not exist)\n";
+    rc = false;
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure_group ()
+{
+  bool rc = true;
+  if (!_grp) {
+    warn << "cannot find group for okd (" << _grp.getname ()
+	 << "does not exist)\n";
+    rc = false;
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure_dumpdir (jailable_t *j, const str &d)
+{
+  bool ret;
+  _dumpdir = apply_container_dir (d, strbuf () << _usr.getid ());
+  if (!j->jail_mkdir (_dumpdir, 0700, &_usr, &_grp)) {
+    warn << "cannot allocate jail directory for " << _name << "\n";
+    ret = false;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_ssl_t::v_configure ()
+{
+  _certfile_resolved = NULL;
+  if (_certfile && _certfile.len () && _certfile[0] == '/') {
+    int rc = access (_certfile.cstr (), R_OK);
+    if (rc != 0) {
+      warn ("cannot access certfile %s: %m\n", _certfile.cstr ());
+    } else {
+      _certfile_resolved = _certfile;
+    }
+  } else {
+    _certfile_resolved = okws_etcfile (_certfile, NULL, false);
+  }
+  return _certfile_resolved;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::shutdown_ssl (int i)
+{
+
+
+}
+
+//-----------------------------------------------------------------------
+
