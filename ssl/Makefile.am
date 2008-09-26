@@ -2,25 +2,22 @@
 
 $(PROGRAMS): $(LDEPS)
 
-okwslib_LTLIBRARIES = libokssl.la
-noinst_PROGRAMS = ssl-proxy
+noinst_HEADERS = okssl.h oksslproxy.h
 
+okwsexec_PROGRAMS = okssld
 
-libokssl_la_SOURCES = okssl.T
-
+okssld_SOURCES = proxy.T okssld.T
 
 SUFFIXES = .C .T .h
 
 .T.C:
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
-ssl_proxy_SOURCES = proxy.C
+TAMEIN = proxy.T okssld.T
+TAMEOUT = proxy.C okssld.C
 
-TAMEIN = proxy.T okssl.T
-TAMEOUT = proxy.C okssl.C
-
-okssl.o: okssl.C
-okssl.lo: okssl.C
+okssld.o: okssld.C
+okssld.lo: okssld.C
 proxy.o: proxy.C
 proxy.lo: proxy.C
 
@@ -28,7 +25,6 @@ proxy.lo: proxy.C
 
 tameclean:
 	rm -f $(TAMEOUT)
-
 
 dist-hook:
 	cd $(distdir) && rm -f $(TAMEOUT)
