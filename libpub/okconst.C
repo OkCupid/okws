@@ -51,6 +51,9 @@ const char *ok_pubd_gname = "www";    // default runas group for pubd
 const char *ok_logd_uname = "oklog";  // logging role, user
 const char *ok_logd_gname = "oklog";  // logging role, group
 
+const char *ok_ssl_uname = "okssl";  // SSL key management role, user
+const char *ok_ssl_gname = "okssl";  // SSL key management role, group
+
 //
 // pub constants
 //

@@ -52,11 +52,22 @@ class okld_t;
 class okld_helper_t {
 public:
   okld_helper_t (const str &u, const str &g);
-  void set_env (ptr<argv_t> e) { _env = v; }
+  void set_env (ptr<argv_t> e) { _env = e; }
   vec<str> &argv () { return _argv; }
   char* const* env () const ;
   void set_group (const str &g);
   void set_user (const str &u);
+  const ok_usr_t &user () const { return _usr; }
+  ok_usr_t &user () { return _usr; }
+  const ok_grp_t &group () const { return _grp; }
+  ok_grp_t &group () { return _grp; }
+
+  void set_chldcb (cbi::ptr cb);
+  void make_cli (const rpc_program &p, cbv::ptr eofcb);
+  void disconnect () { _x = NULL; _cli = NULL; }
+  ptr<axprt_unix> x () { return _x; }
+  ptr<aclnt> cli () { return _cli; }
+  bool launch ();
 
 private:
   vec<str> _argv;
@@ -313,6 +324,7 @@ public:
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
       _okd (ok_okd_uname, ok_okd_gname),
+      _okssl (ok_ssl_uname, ok_ssl_gname),
       okd_dumpdir ("/tmp"), 
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
@@ -343,6 +355,7 @@ public:
   void launch_pubd2 (cbi cb, CLOSURE);
 
   bool launch_okd (int logfd, int pubd);
+  void launch_okssl (evb_t ev, CLOSURE);
 
   bool parseconfig (const str &cf);
 
@@ -366,6 +379,9 @@ public:
   bool safe_startup () const { return safe_startup_fl ;}
   void set_opt_daemon (bool b) { _opt_daemon = b; }
   bool opt_daemon () const { return _opt_daemon; }
+
+  okld_helper_t &okd () { return _okd; }
+  const okld_helper_t &okd () const { return _okd; }
 
 protected:
   bool parse_file (const str &fn);

@@ -162,7 +162,8 @@ jailable_t::jail_mkdir_p (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g)
 }
 
 bool
-jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u, ok_grp_t *g,
+jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u, 
+		      ok_grp_t *g,
 		      const struct stat &sb)
 {
   if (uid)

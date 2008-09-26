@@ -76,6 +76,8 @@ extern const char *ok_okd_uname;
 extern const char *ok_okd_gname;
 extern const char *ok_logd_uname;
 extern const char *ok_logd_gname;
+extern const char *ok_ssl_uname;
+extern const char *ok_ssl_gname;
 
 //
 // default packet size for all axprts

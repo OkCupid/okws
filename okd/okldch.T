@@ -271,15 +271,15 @@ okld_ch_t::launch ()
   } else {
 
     ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
-    
+
     // if we're shutting down, okld->_okd_cli will be NULL
-    if (okld->_okd_cli) {
+    if (okld->okd ().cli ()) {
       ctlfd = x->reclaim ();
       arg.pid = pid;
       arg.name = servpath;
       twait {
-	okld->_okd_x->sendfd (ctlfd);
-	RPC::okld_program_1::okld_new_service (okld->_okd_cli,
+	okld->okd ().x ()->sendfd (ctlfd);
+	RPC::okld_program_1::okld_new_service (okld->okd ().cli (),
 					       arg, &res, mkevent (err));
       }
      

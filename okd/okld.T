@@ -99,14 +99,14 @@ okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 void
 okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 {
-  got_generic_exec (&_okd, s, loc, errp);
+  okld_t::got_generic_exec (&_okd, s, loc, errp);
 }
 
 void
-okld_t::got_generic_exec (okld_helper_t *out, vec<str> str loc, bool *errp)
+okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
 {
   ptr<argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) {
+  if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     out->argv () += s;
     out->set_env (env);
   }
@@ -115,7 +115,7 @@ okld_t::got_generic_exec (okld_helper_t *out, vec<str> str loc, bool *errp)
 void
 okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp)
 {
-  got_generic_exec (&_okssl, s, loc, errp);
+  okld_t::got_generic_exec (&_okssl, s, loc, errp);
 }
 
 static bool
@@ -881,7 +881,7 @@ void
 okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 {
   ptr<argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) 
+  if (ok_base_t::got_generic_exec (s, loc, errp, &env)) 
     logexc = New helper_exec_t (oklog_program_1, s, 1,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
 				env);
@@ -906,7 +906,7 @@ void
 okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 {
   ptr<argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) {
+  if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     pubd2exc = New helper_exec_t (pub_program_2, s, 1,
 				  HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
 				  env);
@@ -1029,8 +1029,7 @@ okld_t::shutdown1 ()
 {
   warn << "Starting shutdown, Phase 1\n";
   sdflag = true;
-  _okd_cli = NULL;
-  _okd_x = NULL;
+  _okd.disconnect ();
 }
 
 void
@@ -1072,20 +1071,19 @@ okld_t::okld_exit (int code)
   exit (code);
 }
 
-tamed bool
+tamed void 
 okld_t::launch_okssl (evb_t ev)
 {
   tvars {
-    str prog;
   }
-  prog = oksslexecpath;
 
 }
 
 bool
 okld_t::launch_okd (int logfd, int pub2fd)
 {
-  vec<str> &argv = _okd_proclnch.argv ();
+  vec<str> argv;
+
   argv.push_back ("-f");
   argv.push_back (configfile);
   argv.push_back ("-l");
@@ -1102,11 +1100,12 @@ okld_t::launch_okd (int logfd, int pub2fd)
     argv.push_back (strbuf (debug_stallfile) << ".okd");
   }
 
+  _okd.argv () += argv;
+
   // launch okd synchronously; no point in us running if okd puked.
-  ptr<axprt_unix> x = axprt_unix_spawnv (argv[0], argv, 0, NULL, 
-					 _okd_proclnch.env ());
-  if (!x)
+  if (!_okd.launch ()) {
     return false;
+  }
 
   // we've passed this to OKD; don't need it anymore
   close (logfd);
@@ -1114,11 +1113,9 @@ okld_t::launch_okd (int logfd, int pub2fd)
 
   // two shutdown events -- first on close of fdsource_t<> on
   // okd.  Second, is okd's actual exit, which we'll wait on.
-  okd_pid = axprt_unix_spawn_pid;
-  chldcb (okd_pid, wrap (this, &okld_t::shutdown2));
-  _okd_x = x;
-  _okd_cli = aclnt::alloc (x, okld_program_1);
-  _okd_cli->seteofcb (wrap (this, &okld_t::caught_okd_eof));
+  _okd.set_chldcb (wrap (this, &okld_t::shutdown2));
+  _okd.make_cli (okld_program_1, wrap (this, &okld_t::caught_okd_eof));
+
   return true;
 }
 
@@ -1342,21 +1339,21 @@ okld_t::init_jaildir ()
     ret = false;
 
   u_int lim = svcs.size ();
-  if (!okd_usr) {
-    warn << "cannot find a user for okd (" << okd_usr.getname () 
+  if (!_okd.user ()) {
+    warn << "cannot find a user for okd (" << _okd.user().getname () 
 	 << " does not exist)\n";
     return false;
   }
 
-  if (!okd_grp) {
-    warn << "cannot find group for okd (" << okd_grp.getname ()
+  if (!_okd.group ()) {
+    warn << "cannot find group for okd (" << _okd.group ().getname ()
 	 << "does not exist)\n";
     return false;
   }
 
   okd_dumpdir = apply_container_dir (coredumpdir, 
-				     strbuf () << okd_usr.getid ());
-  if (!jail_mkdir (okd_dumpdir, 0700, &okd_usr, &okd_grp)) {
+				     strbuf () << _okd.user ().getid ());
+  if (!jail_mkdir (okd_dumpdir, 0700, &_okd.user (), &_okd.group ())) {
     warn << "cannot allocate jail directory for okd\n";
     return false;
   }
@@ -1461,7 +1458,7 @@ okld_helper_t::okld_helper_t (const str &u, const str &g)
 char *const *
 okld_helper_t::env () const 
 {
-  if (env) return *_env;
+  if (_env) return *_env;
   else return _empty_env;
 }
 
@@ -1476,9 +1473,38 @@ okld_helper_t::set_group (const str &g)
 //-----------------------------------------------------------------------
 
 void
-okld_helper_t::set_uesr (const str &u)
+okld_helper_t::set_user (const str &u)
 {
   _usr = ok_usr_t (u);
 }
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::launch ()
+{
+  _x = axprt_unix_spawnv (_argv[0], _argv, 0, NULL, env ());
+  _pid = axprt_unix_spawn_pid;
+  return _x;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::set_chldcb (cbi::ptr cb)
+{
+  chldcb (_pid, cb);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::make_cli (const rpc_program &p, cbv::ptr eofcb)
+{
+  _cli = aclnt::alloc (_x, p);
+  if (eofcb) 
+    _cli->seteofcb (eofcb);
+}
+
 
 //-----------------------------------------------------------------------
