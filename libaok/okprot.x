@@ -144,6 +144,10 @@ struct okws_svc_descriptor_t {
   int pid;
 };
 
+struct okws_send_ssl_arg_t {
+  int dummy;
+};
+
 %#define LOG_IP     (1 << 0)
 %#define LOG_UA     (1 << 1)
 %#define LOG_SZ     (1 << 2)
@@ -269,8 +273,22 @@ program OKLD_PROGRAM {
 		ok_xstatus_typ_t
 		OKLD_NEW_SERVICE(okws_svc_descriptor_t) = 1;
 
+		ok_xstatus_typ_t
+		OKLD_SEND_SSL_SOCKET(okws_send_ssl_arg_t) = 2;
+
 	} = 1;
 
 } = 11279;
+
+program OKSSL_PROGRAM {
+	version OKSSL_VERS {
+
+		void
+		OKSSL_NULL(void) = 0;
+
+		ok_xstatus_typ_t 
+		OKSSL_TOGGLE_ACCEPT(bool) = 1;
+	} = 1;
+} = 11280;
 
 };

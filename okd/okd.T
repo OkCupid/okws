@@ -563,6 +563,7 @@ okd_t::newserv (int fd)
 void
 okd_t::disable_accept_guts ()
 {
+  _ssl.disable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, NULL);
@@ -571,6 +572,7 @@ okd_t::disable_accept_guts ()
 void
 okd_t::enable_accept_guts ()
 {
+  _ssl.enable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, wrap (this, &okd_t::newserv, listenfds[i]));
@@ -579,6 +581,7 @@ okd_t::enable_accept_guts ()
 void
 okd_t::stop_listening ()
 {
+  _ssl.disable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) {
     fdcb (listenfds[i], selread, NULL);
@@ -767,11 +770,41 @@ okd_t::okld_dispatch (svccb *sbp)
 	srv.reply (st);
       }
       break;
+    case OKLD_SEND_SSL_SOCKET:
+      {
+	RPC::okld_program_1::okld_send_ssl_socket_srv_t<svccb> srv (sbp);
+
+	// ignore arg!
+	//const okws_send_ssl_arg_t *arg = srv.getarg ();
+
+	int fd = _okld_x->recvfd ();
+	ok_xstatus_typ_t st;
+	if (fd >= 0) {
+	  listen_from_ssl (fd);
+	  st = OK_STATUS_OK;
+	} else {
+	  st = OK_STATUS_BADFD;
+	}
+	srv.reply (st);
+      }
+      break;
     default:
       sbp->reject (PROC_UNAVAIL);
       break;
     }
   }
+}
+
+bool
+okd_t::listen_from_ssl (int fd)
+{
+  bool ret = true;
+  if (!_ssl.init (fd)) {
+    warn << "Multiple SSLs given; using only the first!\n";
+    close (fd);
+    ret = false;
+  }
+  return ret;
 }
 
 void
@@ -1083,6 +1116,67 @@ okd_t::okctl_get_stats (svccb *sbp)
 
 }
 
+bool
+okd_ssl_t::init (int fd)
+{
+  bool rc = true;
+  if (fd < 0) {
+    _fd = fd;
+    _x = axprt_unix::alloc (fd);
+    _cli = aclnt::alloc (_x, okssl_program_1);
+    _srv = asrv::alloc (_x, okssl_program_1, 
+			wrap (this, &okd_ssl_t::dispatch));
+  } else {
+    rc = false;
+  }
+  return rc;
+}
+
+void
+okd_ssl_t::dispatch (svccb *sbp)
+{
+  if (!sbp) {
+    warn << "okssld shut down; no more SSL connections accepted\n";
+    hangup ();
+  } else {
+    switch (sbp->proc ()) {
+
+    }
+  }
+}
+
+tamed void
+okd_ssl_t::toggle_accept (bool arg)
+{
+  tvars {
+    ok_xstatus_typ_t res;
+    clnt_stat err;
+  }
+
+  if (_cli) {
+    twait{
+      RPC::okssl_program_1::okssl_toggle_accept (_cli, arg, &res, 
+						 mkevent (err));
+    }
+    if (err) {
+      warn << "RPC failure in toggling SSL accept: " << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn << "okssld failed to toggle accept (";
+      rpc_print (warnx, res, NULL, 0, NULL);
+      warnx << ")\n";
+    }
+  }
+}
+
+void
+okd_ssl_t::hangup ()
+{
+  _fd = -1;
+  _x = NULL;
+  _cli = NULL;
+  _srv = NULL;
+}
+
 
 int
 main (int argc, char *argv[])
@@ -1091,4 +1185,6 @@ main (int argc, char *argv[])
   start_okd (argc, argv);
   amain ();
 }
+
+
 

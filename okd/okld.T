@@ -1085,6 +1085,10 @@ okld_t::launch_okssl (evb_t ev)
     vec<str> argv;
     int logfd;
     bool rc (false);
+    int fds[2];
+    okws_send_ssl_arg_t arg;
+    ok_xstatus_typ_t res;
+    clnt_stat err;
   }
 
   if (!_okssl.active ()) {
@@ -1093,6 +1097,8 @@ okld_t::launch_okssl (evb_t ev)
     twait { logd->clone (mkevent (logfd)); }
     if (logfd < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
+    } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
+      warn ("socketpair failed when start okssld: %m\n");
     } else {
       argv.push_back ("-k");
       argv.push_back (_okssl.certfile_resolved ());
@@ -1100,6 +1106,8 @@ okld_t::launch_okssl (evb_t ev)
       argv.push_back (_okssl.dumpdir ());
       argv.push_back ("-l");
       argv.push_back (strbuf () << logfd);
+      argv.push_back ("-t");
+      argv.push_back (strbuf () << fds[0]);
       for (size_t i = 0; i < _https_ports.size (); i++) {
 	argv.push_back ("-p");
 	argv.push_back (strbuf () << _https_ports[i]);
@@ -1109,8 +1117,25 @@ okld_t::launch_okssl (evb_t ev)
       if (_okssl.launch ()) {
 	_okssl.set_chldcb (wrap (this, &okld_t::shutdown_ssl));
 	_okssl.make_cli (okld_program_1, wrap (this, &okld_t::shutdown_ssl, 0));
-	rc = true;
+	twait {
+	  _okssl.x ()->sendfd (fds[1]);
+	  arg.dummy = 0;
+	  RPC::okld_program_1::okld_send_ssl_socket 
+	    (_okssl.cli (), arg, &res, mkevent (err));
+	}
+	if (err) {
+	  warn << "Error sending SSL socket to okd: " << err << "\n";
+	} else if (res != OK_STATUS_OK) {
+	  warn << "okd rejected SSL socket (";
+	  rpc_print (warnx, res, 0, NULL, NULL);
+	  warnx << ")\n";
+	} else {
+	  rc = true;
+	}
+      } else {
+	close (fds[1]);
       }
+      close (fds[0]);
     }
   }
   ev->trigger (rc);

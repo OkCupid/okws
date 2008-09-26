@@ -143,6 +143,23 @@ private:
   bool _too_busy;          // the server is potentially too busy to get more
 };
 
+class okd_ssl_t {
+public:
+  okd_ssl_t () : _fd (-1) {}
+  ~okd_ssl_t () { hangup (); }
+  bool init (int fd);
+  void enable_accept () { toggle_accept (true); }
+  void disable_accept () { toggle_accept (false); }
+  void dispatch (svccb *sbp);
+  void hangup ();
+private:
+  void toggle_accept (bool b, CLOSURE);
+  int _fd;
+  ptr<axprt_unix> _x;
+  ptr<aclnt> _cli;
+  ptr<asrv> _srv;
+};
+
 class okd_t : public ok_httpsrv_t, public config_parser_t 
 {
 public:
@@ -280,6 +297,7 @@ private:
   void shutdown_cb1 ();
 
   void got_child_fd (int fd, const okws_svc_descriptor_t &d);
+  bool listen_from_ssl (int fd);
 
   str configfile;
   int okldfd;
@@ -317,6 +335,7 @@ private:
 
   str _config_grp, _config_user;
   bool _accept_ready;
+  okd_ssl_t _ssl;
 };
 
 class okd_mgrsrv_t 
