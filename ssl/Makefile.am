@@ -6,7 +6,7 @@ noinst_HEADERS = okssl.h oksslproxy.h
 
 okwsexec_PROGRAMS = okssld
 
-okssld_SOURCES = proxy.T okssld.T
+okssld_SOURCES = proxy.T okssld.T util.C
 
 SUFFIXES = .C .T .h
 
