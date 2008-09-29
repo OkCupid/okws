@@ -236,4 +236,26 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
+  str
+  proxy_t::cipher_info () const
+  {
+    const SSL_CIPHER *cipher;
+    strbuf b;
+    
+    if (_ssl && (cipher = SSL_get_current_cipher(_ssl))) {
+      const char *n = SSL_CIPHER_get_name (cipher);
+      if (n) b << n;
+      b << "-";
+      int bits;
+      if (ssl_ok (SSL_CIPHER_get_bits (cipher, &bits)))
+	b << bits;
+      b << "-";
+      const char *v = SSL_CIPHER_get_version (cipher);
+      b << v;
+    }
+    return b;
+  }
+
+  //-----------------------------------------------------------------------
+
 };

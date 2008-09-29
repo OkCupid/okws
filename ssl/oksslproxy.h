@@ -88,6 +88,7 @@ namespace okssl {
     bool init (SSL_CTX *ctx, int encfd, int plainfd);
     void start (evb_t ev, CLOSURE);
     void finish (evv_t ev, CLOSURE);
+    str cipher_info () const;
   private:
     bool init_ssl_connection (int s, SSL *s);
     SSL *_ssl;

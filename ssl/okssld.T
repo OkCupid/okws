@@ -26,6 +26,7 @@ namespace okssl {
     bool accept (int fd);
     int fd () { return _fd; }
     str to_str () const;
+    void to_xdr (okctl_sendcon_arg_t *x);
   private:
     int _fd;
     sockaddr_in _sin;
@@ -54,17 +55,19 @@ namespace okssl {
     okssld_t () {}
     bool parseopt (int argc, char *argv[]);
 
-    bool init ();
+    void init (evb_t ev, CLOSURE);
     void run ();
 
     void handle_new_connection (port_t *p, ptr<con_t> con, CLOSURE);
     void enable_accept ();
     void disable_accept ();
+    void dispatch (svccb *sbp) {}
 
   private:
     bool init_perms ();
     bool init_ports ();
     bool init_ssl ();
+    void init_okd (evb_t ev, CLOSURE);
     bool load_certificate ();
 
     vec<port_t> _ports;
@@ -72,10 +75,23 @@ namespace okssl {
     int _uid, _gid;
     str _dir;
     str _certfile;
-    int _logfd, _okdfd;
+    int _logfd, _okd_fd;
+
+    ptr<axprt_unix> _okd_x;
+    ptr<aclnt> _okd_cli;
+    ptr<asrv>  _okd_srv;
 
     SSL_CTX *_ssl_ctx;
   };
+
+  //-----------------------------------------------------------------------
+
+  void 
+  con_t::to_xdr (okctl_sendcon_arg_t *x)
+  {
+    x->sin.setsize (sizeof (_sin));
+    memcpy (x->sin.base (), &_sin, sizeof (_sin));
+  }
 
   //-----------------------------------------------------------------------
 
@@ -129,6 +145,9 @@ namespace okssl {
       str cli;
       bool ok;
       bool close0 (true), close1 (true);
+      okctl_sendcon_arg_t arg;
+      ok_xstatus_typ_t res;
+      clnt_stat err;
     }
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
@@ -143,6 +162,15 @@ namespace okssl {
 	if (!ok) {
 	  warn ("Failed to handshake with remote client %s\n", cli.cstr ());
 	} else {
+	  c->to_xdr (&arg);
+	  arg.ssl.alloc ();
+	  arg.ssl->cipher = prx.cipher_info ();
+	  close1 = false;
+	  _okd_x->sendfd (fds[1]);
+	  twait {
+	    RPC::okssl_program_1::okssl_new_connection 
+	      (_okd_cli, arg, &res, mkevent (err));
+	  }
 	}
       }
     }
@@ -267,6 +295,35 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
+  tamed void
+  okssld_t::init_okd (evb_t ev)
+  {
+    tvars {
+      clnt_stat err;
+      bool rc (false);
+    }
+
+    if (_okd_fd < 0) {
+      warn << "Invalid FD from okd acquired from okld: " << _okd_fd << "\n";
+    } else {
+      _okd_x = axprt_unix::alloc (_okd_fd);
+      _okd_cli = aclnt::alloc (_okd_x, okssl_program_1);
+      twait {
+	RPC::okssl_program_1::okssl_null (_okd_cli, mkevent (err));
+      }
+      if (!err) {
+	warn << "Cannot ping okd: " << err << "\n";
+      } else {
+	_okd_srv = asrv::alloc (_okd_x, okssl_program_1,
+				wrap (this, &okssld_t::dispatch));
+	rc = true;
+      }
+    }
+    ev->trigger (rc);
+  }
+
+  //-----------------------------------------------------------------------
+
   bool
   okssld_t::init_ssl ()
   {
@@ -295,13 +352,19 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
   
-  bool
-  okssld_t::init ()
+  tamed void
+  okssld_t::init (evb_t ev)
   {
-    return 
-      init_ssl () &&
-      init_ports () &&
-      init_perms ();
+    tvars {
+      bool rc;
+    }
+
+    rc = init_ssl () && init_ports () && init_perms ();
+
+    if (rc) {
+      twait { init_okd (mkevent (rc)); }
+    }
+    ev->trigger (rc);
   }
 
   //-----------------------------------------------------------------------
@@ -338,7 +401,7 @@ namespace okssl {
 	}
 	break;
       case 't':
-	if (!convertint (optarg, &_okdfd)) {
+	if (!convertint (optarg, &_okd_fd)) {
 	  warn << "Cannot parse FD to okd " << optarg << "\n";
 	  rc = false;
 	}
@@ -371,24 +434,34 @@ okssl::okssld_t *okssld;
 //-----------------------------------------------------------------------
 
 
-int
-main (int argc, char *argv[])
+tamed static void
+main2 (int argc, char **argv)
 {
-  setprogname (argv[0]);
+  tvars {
+    bool ok;
+  }
+  
   okssld = New okssl::okssld_t ();
 
   if (!okssld->parseopt (argc, argv)) {
     warn << "Parse of okssl options failed\n";
-    return -1;
+    exit (-1);
   }
 
-  if (!okssld->init ()) {
+  twait { okssld->init (mkevent (ok)); }
+  if (!ok) {
     warn << "Failed to initialize SSL\n";
-    return -1;
+    exit (-1);
   }
 
   okssld->run ();
+}
 
+int
+main (int argc, char *argv[])
+{
+  setprogname (argv[0]);
+  main2 (argc, argv);
   amain ();
   return 0;
 }
