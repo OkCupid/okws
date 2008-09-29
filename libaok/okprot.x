@@ -288,6 +288,9 @@ program OKSSL_PROGRAM {
 
 		ok_xstatus_typ_t 
 		OKSSL_TOGGLE_ACCEPT(bool) = 1;
+
+		ok_xstatus_typ_t
+		OKSSL_NEW_CONNECTION(okctl_sendcon_arg_t) = 2;
 	} = 1;
 } = 11280;
 

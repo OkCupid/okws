@@ -10,6 +10,7 @@
 #include "tame_io.h"
 #include "parseopt.h"
 #include "pubutil.h"
+#include "tame_rendezvous.h"
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -64,26 +65,36 @@ namespace okssl {
     
     ~ssl_to_std_proxy_t () {}
     void force_read () { _force_read = true; poke (); }
+    void set_handshake_ev (evv_t::ptr ev) { _handshake_ev = ev; }
     
   protected:
     bool is_readable () const;
     int v_read (int fd);
     bool _force_read;
+    evv_t::ptr _handshake_ev;
   };
   
   //=======================================================================
 
+  typedef enum { HANDSHAKE = 1, COMPLETE_A = 2, COMPLETE_B = 3 } proxy_event_t;
+
   class proxy_t {
   public:
-    proxy_t () : _ssl (NULL), _encfd (-1), _plainfd (-1) {}
+    proxy_t () 
+      : _ssl (NULL), _encfd (-1), _plainfd (-1),
+	_rv (__FILE__, __LINE__) {}
+		 
     ~proxy_t () ;
     bool init (SSL_CTX *ctx, int encfd, int plainfd);
-    void run (evv_t ev, CLOSURE);
+    void start (evb_t ev, CLOSURE);
+    void finish (evv_t ev, CLOSURE);
   private:
     bool init_ssl_connection (int s, SSL *s);
     SSL *_ssl;
     int _encfd, _plainfd;
     ptr<base_proxy_t> _prx[2];
+    ptr<ssl_to_std_proxy_t> _handshaker;
+    rendezvous_t<proxy_event_t> _rv;
   };
   
   //=======================================================================

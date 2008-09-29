@@ -42,6 +42,13 @@ namespace okssl {
       rc = SSL_accept (_ssl);
       doing_accept = true;
     } else {
+     
+      if (_handshake_ev) {
+	_handshake_ev = NULL;
+	evv_t::ptr ev = _handshake_ev;
+	ev->trigger ();
+      }
+
       int sz = room_left ();
       assert (sz > 0 || _force_read);
       rc = SSL_read (_ssl, buf, sz);
@@ -166,8 +173,9 @@ namespace okssl {
       } else if (!init_ssl_connection (encfd, _ssl)) {
 	warn << "Failed to initalized SSL on given FD\n";
       } else {
-	
-	_prx[0] = New refcounted<ssl_to_std_proxy_t> (_ssl);
+
+	_handshaker = New refcounted<ssl_to_std_proxy_t> (_ssl);
+	_prx[0] = _handshaker;
 	_prx[1] = New refcounted<std_to_ssl_proxy_t> (_ssl);
 	
 	for (size_t i = 0; i < 2; i++) {
@@ -183,12 +191,37 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   tamed void
-  proxy_t::run (evv_t ev)
+  proxy_t::start (evb_t ev)
   {
-    twait {
-      _prx[0]->go (_encfd, _plainfd, mkevent ());
-      _prx[1]->go (_plainfd, _encfd, mkevent ());
+    tvars {
+      bool ok (false);
+      proxy_event_t which;
     }
+
+    _handshaker->set_handshake_ev (mkevent (_rv, HANDSHAKE));
+    _prx[0]->go (_encfd, _plainfd, mkevent (_rv, COMPLETE_A));
+    _prx[1]->go (_plainfd, _encfd, mkevent (_rv, COMPLETE_B));
+
+    twait (_rv, which);
+    if (which == HANDSHAKE) {
+      ok = true;
+    } else {
+      _rv.cancel ();
+    }
+
+    ev->trigger (ok);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  proxy_t::finish (evv_t ev)
+  {
+    tvars {
+      proxy_event_t which;
+    }
+    twait (_rv, which);
+    twait (_rv, which);
     ev->trigger ();
   }
 

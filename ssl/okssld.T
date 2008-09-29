@@ -24,6 +24,8 @@ namespace okssl {
   public:
     con_t () {}
     bool accept (int fd);
+    int fd () { return _fd; }
+    str to_str () const;
   private:
     int _fd;
     sockaddr_in _sin;
@@ -55,7 +57,7 @@ namespace okssl {
     bool init ();
     void run ();
 
-    void new_connection (port_t *p, ptr<con_t> con);
+    void handle_new_connection (port_t *p, ptr<con_t> con, CLOSURE);
     void enable_accept ();
     void disable_accept ();
 
@@ -100,16 +102,52 @@ namespace okssl {
     if (!c->accept (_fd)) {
       warn ("accept failure: %m\n");
     } else {
-      _okssl->new_connection (this, c);
+      _okssl->handle_new_connection (this, c);
     }
   }
 
   //-----------------------------------------------------------------------
 
-  void
-  okssld_t::new_connection (port_t *p, ptr<con_t> c)
+  str
+  con_t::to_str () const
   {
+    const char *s = inet_ntoa (_sin.sin_addr);
+    if (!s) {
+      s = "0.0.0.0";
+    }
+    return s;
+  }
 
+  //-----------------------------------------------------------------------
+
+  tamed void
+  okssld_t::handle_new_connection (port_t *p, ptr<con_t> c)
+  {
+    tvars {
+      int fds[2];
+      proxy_t prx;
+      str cli;
+      bool ok;
+      bool close0 (true), close1 (true);
+    }
+
+    if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
+      warn ("Cannot allocate a socketpair %m\n");
+    } else {
+      make_async (fds[0]);
+      if (!prx.init (_ssl_ctx, c->fd (), fds[0])) {
+	warn ("Failed to initialize new proxy object\n");
+      } else {
+	cli = c->to_str ();
+	twait { prx.start (mkevent (ok));}
+	if (!ok) {
+	  warn ("Failed to handshake with remote client %s\n", cli.cstr ());
+	} else {
+	}
+      }
+    }
+    if (close0) close (fds[0]);
+    if (close1) close (fds[1]);
 
   }
 
