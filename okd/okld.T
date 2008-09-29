@@ -1102,6 +1102,10 @@ okld_t::launch_okssl (evb_t ev)
     } else {
       argv.push_back ("-k");
       argv.push_back (_okssl.certfile_resolved ());
+      argv.push_back ("-u");
+      argv.push_back (strbuf () << _okssl.user ().getid ());
+      argv.push_back ("-g");
+      argv.push_back (strbuf () << _okssl.group ().getid ());
       argv.push_back ("-d");
       argv.push_back (_okssl.dumpdir ());
       argv.push_back ("-l");

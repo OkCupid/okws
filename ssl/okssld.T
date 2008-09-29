@@ -16,13 +16,33 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
+  class okssld_t;
+
+  //-----------------------------------------------------------------------
+
+  class con_t {
+  public:
+    con_t () {}
+    bool accept (int fd);
+  private:
+    int _fd;
+    sockaddr_in _sin;
+  };
+
+  //-----------------------------------------------------------------------
+
   class port_t {
   public:
-    port_t (int p) : _port (p), _fd (-1) {}
+    port_t (int p, okssld_t *s) : _port (p), _fd (-1), _okssl (s) {}
     bool init ();
+    void enable ();
+    void disable ();
+    int port () const { return _port; }
   private:
+    void accept_cb ();
     int _port;
     int _fd;
+    okssld_t *_okssl;
   };
 
   //-----------------------------------------------------------------------
@@ -34,11 +54,15 @@ namespace okssl {
 
     bool init ();
     void run ();
+
+    void new_connection (port_t *p, ptr<con_t> con);
+    void enable_accept ();
+    void disable_accept ();
+
   private:
     bool init_perms ();
     bool init_ports ();
     bool init_ssl ();
-
     bool load_certificate ();
 
     vec<port_t> _ports;
@@ -50,6 +74,75 @@ namespace okssl {
 
     SSL_CTX *_ssl_ctx;
   };
+
+  //-----------------------------------------------------------------------
+
+  void
+  port_t::enable ()
+  {
+    fdcb (_fd, selread, wrap (this, &port_t::accept_cb));
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  port_t::disable ()
+  {
+    fdcb (_fd, selread, NULL);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  port_t::accept_cb ()
+  {
+    ptr<con_t> c = New refcounted<con_t> ();
+    if (!c->accept (_fd)) {
+      warn ("accept failure: %m\n");
+    } else {
+      _okssl->new_connection (this, c);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  okssld_t::new_connection (port_t *p, ptr<con_t> c)
+  {
+
+
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  con_t::accept (int fd)
+  {
+    size_t sinlen = sizeof (sockaddr_in);
+    bzero (&_sin, sinlen);
+    _fd = ::accept (fd, reinterpret_cast<sockaddr *> (&_sin), &sinlen);
+    return (_fd >= 0);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  okssld_t::enable_accept ()
+  {
+    for (size_t i = 0; i < _ports.size (); i++) {
+      _ports[i].enable ();
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  okssld_t::disable_accept ()
+  {
+    for (size_t i = 0; i < _ports.size (); i++) {
+      _ports[i].disable ();
+    }
+  }
 
   //-----------------------------------------------------------------------
 
@@ -66,6 +159,32 @@ namespace okssl {
       warn << "listening on port " << _port << "\n";
     }
     return (fd >= 0);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool 
+  okssld_t::init_perms ()
+  {
+    bool ret = false;
+    if (!getuid ()) {
+      if (chroot (_dir.cstr ()) != 0) {
+	warn ("Could not chroot into run directory %s: %m\n", _dir.cstr ());
+      } else if (setgid (_gid) != 0) {
+	warn ("Cannot change group to GID=%d: %m\n", _gid);
+      } else if (setuid (_uid) != 0) {
+	warn ("Cannot change user to UID=%d: %m\n", _uid);
+      } else {
+	ret = true;
+      }
+    } else {
+      if (chdir (_dir.cstr ()) != 0) {
+	warn ("Could not change into run directory %s: %m\n", _dir.cstr ());
+      } else {
+	ret = true;
+      }
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -143,7 +262,8 @@ namespace okssl {
   {
     return 
       init_ssl () &&
-      init_ports ();
+      init_ports () &&
+      init_perms ();
   }
 
   //-----------------------------------------------------------------------
@@ -192,7 +312,7 @@ namespace okssl {
 	    warn << "Cannot parse port " << optarg << "\n";
 	    rc = false;
 	  } else {
-	    _ports.push_back (port_t (port));
+	    _ports.push_back (port_t (port, this));
 	  }
 	  break;
 	}

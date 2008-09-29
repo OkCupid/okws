@@ -780,8 +780,12 @@ okd_t::okld_dispatch (svccb *sbp)
 	int fd = _okld_x->recvfd ();
 	ok_xstatus_typ_t st;
 	if (fd >= 0) {
-	  listen_from_ssl (fd);
-	  st = OK_STATUS_OK;
+	  make_async (fd);
+	  if (listen_from_ssl (fd)) {
+	    st = OK_STATUS_OK;
+	  } else {
+	    st = OK_STATUS_NOMORE;
+	  }
 	} else {
 	  st = OK_STATUS_BADFD;
 	}
