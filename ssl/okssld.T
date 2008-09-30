@@ -52,16 +52,21 @@ namespace okssl {
   
   class okssld_t {
   public:
-    okssld_t () {}
+
+    okssld_t () 
+      : _logfd (-1), 
+	_okd_fd (-1), 
+	_accept_enabled (false) {}
+
     bool parseopt (int argc, char *argv[]);
 
     void init (evb_t ev, CLOSURE);
     void run ();
 
     void handle_new_connection (port_t *p, ptr<con_t> con, CLOSURE);
-    void enable_accept ();
-    void disable_accept ();
-    void dispatch (svccb *sbp) {}
+    bool enable_accept ();
+    bool disable_accept ();
+    void dispatch (svccb *sbp);
 
   private:
     bool init_perms ();
@@ -69,6 +74,8 @@ namespace okssl {
     bool init_ssl ();
     void init_okd (evb_t ev, CLOSURE);
     bool load_certificate ();
+    ok_xstatus_typ_t toggle_accept (bool b);
+    void shutdown ();
 
     vec<port_t> _ports;
 
@@ -82,6 +89,7 @@ namespace okssl {
     ptr<asrv>  _okd_srv;
 
     SSL_CTX *_ssl_ctx;
+    bool _accept_enabled;
   };
 
   //-----------------------------------------------------------------------
@@ -136,6 +144,47 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
+  ok_xstatus_typ_t
+  okssld_t::toggle_accept (bool b)
+  {
+    bool rc = b ? enable_accept () : disable_accept ();
+    return (rc ? OK_STATUS_OK : OK_STATUS_ERR);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  okssld_t::shutdown ()
+  {
+    exit (0);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  okssld_t::dispatch (svccb *sbp)
+  {
+    if (!sbp) {
+      warn << "Received EOF from okd; shutting down...\n";
+      shutdown ();
+      return;
+    }
+    switch (sbp->proc ()) {
+    case OKSSL_TOGGLE_ACCEPT:
+      {
+	RPC::okssl_program_1::okssl_toggle_accept_srv_t<svccb> srv (sbp);
+	ok_xstatus_typ_t rc = toggle_accept (*srv.getarg ());
+	srv.reply (rc);
+      }
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+      break;
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
   okssld_t::handle_new_connection (port_t *p, ptr<con_t> c)
   {
@@ -171,6 +220,7 @@ namespace okssl {
 	    RPC::okssl_program_1::okssl_new_connection 
 	      (_okd_cli, arg, &res, mkevent (err));
 	  }
+	  // XXX handle the rest!
 	}
       }
     }
@@ -192,22 +242,30 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
-  void
+  bool
   okssld_t::enable_accept ()
   {
-    for (size_t i = 0; i < _ports.size (); i++) {
-      _ports[i].enable ();
+    bool rc = !_accept_enabled;
+    if (rc) {
+      for (size_t i = 0; i < _ports.size (); i++) {
+	_ports[i].enable ();
+      }
     }
+    return rc;
   }
 
   //-----------------------------------------------------------------------
 
-  void
+  bool
   okssld_t::disable_accept ()
   {
-    for (size_t i = 0; i < _ports.size (); i++) {
-      _ports[i].disable ();
+    bool rc = _accept_enabled;
+    if (rc) {
+      for (size_t i = 0; i < _ports.size (); i++) {
+	_ports[i].disable ();
+      }
     }
+    return rc;
   }
 
   //-----------------------------------------------------------------------
