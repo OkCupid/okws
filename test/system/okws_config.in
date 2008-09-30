@@ -13,6 +13,7 @@ Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 @@NO_SSL@@OkssldExecPath	ssl/okssld
 @@NO_SSL@@SslListenPorts	4430
 @@NO_SSL@@SslCertFile		@@TOP_SRCDIR@@/test/system/okws.cert
+@@NO_SSL@@SslKeyFile		@@TOP_SRCDIR@@/test/system/okws.key
 
 LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log
