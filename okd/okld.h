@@ -108,15 +108,18 @@ public:
   okld_helper_ssl_t (const str &u, const str &g) 
     : okld_helper_t ("okssld", u, g),
       _certfile (ok_ssl_certfile),
+      _keyfile (ok_ssl_keyfile),
       _timeout (ok_ssl_timeout) {}
 
-  str _certfile;
+  str _certfile, _keyfile;
   u_int _timeout;
   bool v_configure ();
   str certfile_resolved () const { return _certfile_resolved; }
+  str keyfile_resolved () const { return _keyfile_resolved; }
 private:
+  str resolve (const str &in, const char *which) const;
   vec<okws1_port_t> _ports;
-  str _certfile_resolved;
+  str _certfile_resolved, _keyfile_resolved;
 };
 
 /**

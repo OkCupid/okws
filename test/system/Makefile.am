@@ -32,6 +32,12 @@ XML_SUBDIRS =
 
 endif
 
+if USE_SSL
+NO_SSL=
+else
+NO_SSL = \#
+endif
+
 TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T form.T cookie.T \
 	post.T upload.T purify.T purify_lib.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C form.C cookie.C \
@@ -83,7 +89,10 @@ MAINTAINERCLEANFILES = Makefile.in
 test:	okws_config pub_config 
 
 okws_config: $(srcdir)/okws_config.in
-	TOP_BUILD=`cd $(top_builddir) ; pwd`  NO_XML=$(NO_XML)  \
+	TOP_BUILD=`cd $(top_builddir) ; pwd`  \
+	NO_XML=$(NO_XML) \
+	NO_SSL=$(NO_SSL) \
+	TOP_SRCDIR=`cd $(top_srcdir) ; pwd` \
 	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#e ; print $$_; } ' < $< > $@
 
 pub_config: $(srcdir)/pub_config.in

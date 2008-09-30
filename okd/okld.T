@@ -606,7 +606,8 @@ okld_t::parse_file (const str &cf)
 			       &ok_base_t::got_ports, false))
 
     .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
-    .add ("SslCertfile", &_okssl._certfile)
+    .add ("SslCertFile", &_okssl._certfile)
+    .add ("SslKeyFile", &_okssl._keyfile)
     .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
 				  &ok_base_t::got_ports, true))
     .add ("SslTimeout", &_okssl._timeout, UIZ, u_int (100000))
@@ -1105,8 +1106,10 @@ okld_t::launch_okssl (evb_t ev)
     } else {
       argv.push_back ("-m");
       argv.push_back (strbuf () << _okssl._timeout);
-      argv.push_back ("-k");
+      argv.push_back ("-c");
       argv.push_back (_okssl.certfile_resolved ());
+      argv.push_back ("-k");
+      argv.push_back (_okssl.keyfile_resolved ());
       argv.push_back ("-u");
       argv.push_back (strbuf () << _okssl.user ().getid ());
       argv.push_back ("-g");
@@ -1633,18 +1636,30 @@ okld_helper_t::configure_dumpdir (jailable_t *j, const str &d)
 bool
 okld_helper_ssl_t::v_configure ()
 {
-  _certfile_resolved = NULL;
-  if (_certfile && _certfile.len () && _certfile[0] == '/') {
-    int rc = access (_certfile.cstr (), R_OK);
+  return 
+    (_certfile_resolved = resolve (_certfile, "certificate")) &&
+    (_keyfile_resolved = resolve (_keyfile, "private key"));
+}
+
+//-----------------------------------------------------------------------
+
+str
+okld_helper_ssl_t::resolve (const str &in, const char *which) const
+{
+  str out;
+  if (!in || !in.len ()) {
+    warn ("No file given for SSL %s\n", which);
+  } else if  (in[0] == '/') {
+    int rc = access (in.cstr (), R_OK);
     if (rc != 0) {
-      warn ("cannot access certfile %s: %m\n", _certfile.cstr ());
+      warn ("cannot access %s %s: %m\n", which, in.cstr ());
     } else {
-      _certfile_resolved = _certfile;
+      out = in;
     }
   } else {
-    _certfile_resolved = okws_etcfile (_certfile, NULL, false);
+    out = okws_etcfile (in, NULL, false);
   }
-  return _certfile_resolved;
+  return out;
 }
 
 //-----------------------------------------------------------------------

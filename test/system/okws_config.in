@@ -8,9 +8,11 @@ PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
 OkdExecPath	okd/okd
 Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
-OkssldExecPath	ssl/okssld
 
-SslListenPorts	443
+# SSL Configuration (if enabled)
+@@NO_SSL@@OkssldExecPath	ssl/okssld
+@@NO_SSL@@SslListenPorts	4430
+@@NO_SSL@@SslCertFile		@@TOP_SRCDIR@@/test/system/okws.cert
 
 LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log

@@ -85,7 +85,7 @@ namespace okssl {
 
     int _uid, _gid;
     str _dir;
-    str _certfile;
+    str _certfile, _keyfile;
     int _logfd, _okd_fd;
 
     ptr<axprt_unix> _okd_x;
@@ -377,13 +377,16 @@ namespace okssl {
   okssld_t::load_certificate ()
   {
     bool ret = false;
-    if (!ssl_ok (SSL_CTX_use_certificate_chain_file (_ssl_ctx, 
-						     _certfile.cstr ()))) {
+    if (!ssl_ok (SSL_CTX_use_certificate_file (_ssl_ctx, 
+					       _certfile.cstr (),
+					       SSL_FILETYPE_PEM))) {
       ssl_complain ("use_certifcate() failed\n");
     } else if (!ssl_ok (SSL_CTX_use_PrivateKey_file (_ssl_ctx, 
-						     _certfile.cstr (), 
+						     _keyfile.cstr (), 
 						     SSL_FILETYPE_PEM))) {
       ssl_complain("use_PrivateKey() failed\n");
+    } else if (!ssl_ok (SSL_CTX_check_private_key (_ssl_ctx))) {
+      ssl_complain("check private key failed\n");
     } else {
       ret = true;
     }
@@ -439,6 +442,8 @@ namespace okssl {
       warn << "Cannot initialize SSL engine internals\n";
     } else if (!_certfile) {
       warn << "No certificate file specified\n";
+    } else if (!_keyfile) {
+      warn << "No private key file specified\n";
     } else if (!(meth = SSLv23_server_method ())) {
       warn << "Could not allocate SSL method\n";
     } else if (!(_ssl_ctx = SSL_CTX_new (meth))) {
@@ -479,9 +484,12 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "k:u:g:d:l:t:p:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "m:c:k:u:g:d:l:t:p:")) != -1) {
       switch (ch) {
       case 'k':
+	_keyfile = optarg;
+	break;
+      case 'c':
 	_certfile = optarg;
 	break;
       case 'u':
