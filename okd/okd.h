@@ -145,7 +145,7 @@ private:
 
 class okd_ssl_t {
 public:
-  okd_ssl_t () : _fd (-1) {}
+  okd_ssl_t (okd_t *o) : _okd (o), _fd (-1) {}
   ~okd_ssl_t () { hangup (); }
   bool init (int fd);
   void enable_accept () { toggle_accept (true); }
@@ -154,6 +154,7 @@ public:
   void hangup ();
 private:
   void toggle_accept (bool b, CLOSURE);
+  okd_t *_okd;
   int _fd;
   ptr<axprt_unix> _x;
   ptr<aclnt> _cli;
@@ -181,7 +182,8 @@ public:
     xtab (2),
     _socket_filename (okd_mgr_socket),
     _socket_mode (okd_mgr_socket_mode),
-    _accept_ready (false)
+    _accept_ready (false),
+    _ssl (this)
   {
     listenport = p;
   }
@@ -219,6 +221,7 @@ public:
 
   void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
   void newserv (int fd);
+  void newserv2 (int port, int nfd, sockaddr_in *sin);
   void shutdown (int sig);
 
   ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab;

@@ -507,45 +507,7 @@ okd_t::newserv (int fd)
   socklen_t sinlen = sizeof (sockaddr_in);
   bzero (sin, sinlen);
   int nfd = accept (fd, (sockaddr *) sin, &sinlen);
-  u_int freq = okd_debug_msg_freq;
-  if (nfd >= 0) {
-    reqid ++;
-
-    // debug messaging
-    if (freq > 0 && (reqid % freq) == 0) {
-      strbuf b;
-      b << "nfd_in_xit=" << nfd_in_xit << "; " 
-	<< "xtab.nent=" << xtab.n_entries () << "; "
-	<< "nfds=" << n_ahttpcon << "\n";
-      okdbg_warn (CHATTER, b);
-    }
-
-    nfd_in_xit ++;  // keep track of the number of FDs in transit
-    close_on_exec (nfd);
-    tcp_nodelay (nfd);
-    ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
-    
-    xtab.reg (x, x->destroyed_p);
-
-    //
-    // when this file descriptor is closed on our end, we need
-    // to decrement nfd_in_xit
-    //
-    // No longer necesary; for now leave it in
-    //
-    x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
-
-
-    OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
-	   "accepted connection from %s\n", x->get_remote_ip ().cstr ());
-
-    x->setccb (wrap (this, &okd_t::sclone, x, *portmap[fd]));
-
-    if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
-      disable_accept ();
-    }
-  }
-  else {
+  if (nfd < 0) {
     if (errno != EAGAIN) {
       const char *ip = NULL;
       if (sin) {
@@ -555,10 +517,51 @@ okd_t::newserv (int fd)
       warn ("** accept error (%s): %m\n", ip);
     } 
     xfree (sin);
+  } else {
+    newserv2 (*portmap[fd], nfd, sin);
   }
 }
 
+void
+okd_t::newserv2 (int port, int nfd, sockaddr_in *sin)
+{
+  u_int freq = okd_debug_msg_freq;
+  reqid ++;
 
+  // debug messaging
+  if (freq > 0 && (reqid % freq) == 0) {
+    strbuf b;
+    b << "nfd_in_xit=" << nfd_in_xit << "; " 
+      << "xtab.nent=" << xtab.n_entries () << "; "
+      << "nfds=" << n_ahttpcon << "\n";
+    okdbg_warn (CHATTER, b);
+  }
+  
+  nfd_in_xit ++;  // keep track of the number of FDs in transit
+  close_on_exec (nfd);
+  tcp_nodelay (nfd);
+  ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
+  
+  xtab.reg (x, x->destroyed_p);
+  
+  //
+  // when this file descriptor is closed on our end, we need
+  // to decrement nfd_in_xit
+  //
+  // No longer necesary; for now leave it in
+  //
+  x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
+  
+  
+  OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
+	 "accepted connection from %s\n", x->get_remote_ip ().cstr ());
+  
+  x->setccb (wrap (this, &okd_t::sclone, x, port));
+  
+  if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
+    disable_accept ();
+  }
+}
 
 void
 okd_t::disable_accept_guts ()
@@ -1144,7 +1147,29 @@ okd_ssl_t::dispatch (svccb *sbp)
     hangup ();
   } else {
     switch (sbp->proc ()) {
+    case OKSSL_NEW_CONNECTION:
+      {
+	int fd = _x->recvfd ();
+	RPC::okssl_program_1::okssl_new_connection_srv_t<svccb> srv (sbp);
+	const okssl_sendcon_arg_t &arg = *srv.getarg (); 
+	ok_xstatus_typ_t res = OK_STATUS_OK;
 
+	if (fd < 0) {
+	  res = OK_STATUS_BADFD;
+	} else if (arg.sin.size () < sizeof (sockaddr_in)) {
+	  res = OK_STATUS_ERR;
+	} else {
+	  // XXX todo -- send SSL information
+	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
+	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
+	  _okd->newserv2 (arg.port, fd, sin);
+	}
+	srv.reply (res);
+      }
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+      break;
     }
   }
 }

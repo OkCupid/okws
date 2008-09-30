@@ -94,6 +94,12 @@ struct okctl_sendcon_arg_t {
 	ssl_ctx_t *ssl;
 };
 
+struct okssl_sendcon_arg_t {
+       opaque sin<>;
+       ssl_ctx_t ssl;
+       int port;
+};
+
 typedef string ip_addr_t<16>;
 enum oklog_typ_t {
   OKLOG_OK = 0,
@@ -290,7 +296,7 @@ program OKSSL_PROGRAM {
 		OKSSL_TOGGLE_ACCEPT(bool) = 1;
 
 		ok_xstatus_typ_t
-		OKSSL_NEW_CONNECTION(okctl_sendcon_arg_t) = 2;
+		OKSSL_NEW_CONNECTION(okssl_sendcon_arg_t) = 2;
 	} = 1;
 } = 11280;
 

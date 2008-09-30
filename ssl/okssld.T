@@ -27,7 +27,7 @@ namespace okssl {
     bool accept (int fd);
     int fd () { return _fd; }
     str to_str () const;
-    void to_xdr (okctl_sendcon_arg_t *x);
+    void to_xdr (okssl_sendcon_arg_t *x);
   private:
     int _fd;
     sockaddr_in _sin;
@@ -78,7 +78,8 @@ namespace okssl {
     bool load_certificate ();
     ok_xstatus_typ_t toggle_accept (bool b);
     void shutdown ();
-    void sendcon (ptr<con_t> c, int fd, const str &cipher, evb_t ev, CLOSURE);
+    void sendcon (ptr<con_t> c, int fd, const port_t &p,
+		  const str &cipher, evb_t ev, CLOSURE);
 
     vec<port_t> _ports;
 
@@ -99,7 +100,7 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   void 
-  con_t::to_xdr (okctl_sendcon_arg_t *x)
+  con_t::to_xdr (okssl_sendcon_arg_t *x)
   {
     x->sin.setsize (sizeof (_sin));
     memcpy (x->sin.base (), &_sin, sizeof (_sin));
@@ -190,19 +191,20 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   tamed void
-  okssld_t::sendcon (ptr<con_t> c, int fd, const str &cipher, evb_t ev)
+  okssld_t::sendcon (ptr<con_t> c, int fd, const port_t &p,
+		     const str &cipher, evb_t ev)
   {
     tvars {
       str cli;
-      okctl_sendcon_arg_t arg;
+      okssl_sendcon_arg_t arg;
       ok_xstatus_typ_t res;
       clnt_stat err;
       bool ok (false);
     }
     
     c->to_xdr (&arg);
-    arg.ssl.alloc ();
-    arg.ssl->cipher = cipher;
+    arg.ssl.cipher = cipher;
+    arg.port = p.port ();
     
     _okd_x->sendfd (fd);
 
@@ -256,7 +258,7 @@ namespace okssl {
 	  }
 	  close (fds[1]);
 	} else {
-	  twait { sendcon (c, fds[1], prx.cipher_info (), mkevent (ok)); }
+	  twait { sendcon (c, fds[1], *p, prx.cipher_info (), mkevent (ok)); }
 	  if (ok) {
 	    twait { 
 	      prx.finish (connector::timeout (mkevent (), _timeout, 0, &o)); 
