@@ -76,6 +76,7 @@ namespace okssl {
     bool load_certificate ();
     ok_xstatus_typ_t toggle_accept (bool b);
     void shutdown ();
+    void sendcon (ptr<con_t> c, int fd, const str &cipher, evb_t ev, CLOSURE);
 
     vec<port_t> _ports;
 
@@ -186,6 +187,43 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   tamed void
+  okssld_t::sendcon (ptr<con_t> c, int fd, const str &cipher, evb_t ev)
+  {
+    tvars {
+      str cli;
+      okctl_sendcon_arg_t arg;
+      ok_xstatus_typ_t res;
+      clnt_stat err;
+      bool ok (false);
+    }
+    
+    c->to_xdr (&arg);
+    arg.ssl.alloc ();
+    arg.ssl->cipher = cipher;
+    
+    _okd_x->sendfd (fd);
+
+    twait {
+      RPC::okssl_program_1::okssl_new_connection 
+	(_okd_cli, arg, &res, mkevent (err));
+    }
+
+    if (err) {
+      warn << "Failed to send connection (" << cli 
+	   << ") to okd: " << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn ("okd rejected connection %s with status %d\n",
+	    cli.cstr (), int (res));
+    } else {
+      ok = true;
+    }
+
+    ev->trigger (ok);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
   okssld_t::handle_new_connection (port_t *p, ptr<con_t> c)
   {
     tvars {
@@ -193,10 +231,6 @@ namespace okssl {
       proxy_t prx;
       str cli;
       bool ok;
-      bool close0 (true), close1 (true);
-      okctl_sendcon_arg_t arg;
-      ok_xstatus_typ_t res;
-      clnt_stat err;
     }
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
@@ -206,42 +240,22 @@ namespace okssl {
       if (!prx.init (_ssl_ctx, c->fd (), fds[0])) {
 	warn ("Failed to initialize new proxy object\n");
       } else {
-	close0 = false;
-	close (fds[0]);
-
 	cli = c->to_str ();
 	twait { prx.start (mkevent (ok)); }
 	if (!ok) {
 	  warn ("Failed to handshake with remote client %s\n", cli.cstr ());
+	  close (fds[1]);
 	} else {
-	  ok = false;
-	  c->to_xdr (&arg);
-	  arg.ssl.alloc ();
-	  arg.ssl->cipher = prx.cipher_info ();
-
-	  close1 = false;
-	  _okd_x->sendfd (fds[1]);
-
-	  twait {
-	    RPC::okssl_program_1::okssl_new_connection 
-	      (_okd_cli, arg, &res, mkevent (err));
-	  }
-	  if (err) {
-	    warn << "Failed to send connection (" << cli 
-		 << ") to okd: " << err << "\n";
-	  } else if (res != OK_STATUS_OK) {
-	    warn ("okd rejected connection %s with status %d\n",
-		  cli.cstr (), int (res));
-	  } else {
+	  twait { sendcon (c, fds[1], prx.cipher_info (), mkevent (ok)); }
+	  if (ok) {
 	    twait { prx.finish (mkevent ()); }
-	    ok = true;
+	  } else {
+	    prx.cancel ();
 	  }
-	  if (!ok) { prx.cancel (); }
 	}
       }
+      close (fds[0]);
     }
-    if (close0) close (fds[0]);
-    if (close1) close (fds[1]);
   }
 
   //-----------------------------------------------------------------------
