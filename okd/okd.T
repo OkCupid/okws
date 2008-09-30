@@ -375,6 +375,13 @@ okd_t::parse_file (const str &cf)
     .ignore ("ServiceLifeRequests")
     .ignore ("ServiceLifeTime")
 
+    .ignore ("OkssldExecPath")
+    .ignore ("SslCertFile")
+    .ignore ("SslListenPorts")
+    .ignore ("SslTimeout")
+    .ignore ("SslUser")
+    .ignore ("SslGroup")
+
     .ignore ("StartupBatchSize")
     .ignore ("StartupBatchWait")
 

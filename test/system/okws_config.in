@@ -8,6 +8,9 @@ PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
 OkdExecPath	okd/okd
 Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
+OkssldExecPath	ssl/okssld
+
+SslListenPorts	443
 
 LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log

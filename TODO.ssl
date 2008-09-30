@@ -1,0 +1,3 @@
+
+- separate logging channel to oklogd
+- pass SSL contenxt information from okd to service

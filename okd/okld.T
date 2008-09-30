@@ -610,8 +610,8 @@ okld_t::parse_file (const str &cf)
     .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
 				  &ok_base_t::got_ports, true))
     .add ("SslTimeout", &_okssl._timeout, UIZ, u_int (100000))
-    .add ("OksslUser", &_config_ssl_un)
-    .add ("OksslGroup", &_config_ssl_gr)
+    .add ("SslUser", &_config_ssl_un)
+    .add ("SslGroup", &_config_ssl_gr)
 
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
