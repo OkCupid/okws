@@ -10,6 +10,7 @@
 #include "ahutil.h"
 #include "oksslutil.h"
 #include "tame_connectors.h"
+#include "tame_io.h"
 
 //-----------------------------------------------------------------------
 
@@ -58,7 +59,8 @@ namespace okssl {
       : _logfd (-1), 
 	_okd_fd (-1), 
 	_accept_enabled (false),
-	_timeout (ok_ssl_timeout) {}
+	_timeout (ok_ssl_timeout),
+	_debug (false) {}
 
     bool parseopt (int argc, char *argv[]);
 
@@ -95,6 +97,7 @@ namespace okssl {
     SSL_CTX *_ssl_ctx;
     bool _accept_enabled;
     u_int _timeout;
+    bool _debug;
   };
 
   //-----------------------------------------------------------------------
@@ -468,6 +471,11 @@ namespace okssl {
     tvars {
       bool rc;
     }
+    
+    if (_debug) {
+      warn ("DEBUG: waiting for CONT before continuing (pid=%d)\n", getpid ());
+      twait { tame::sigcb1 (SIGCONT, mkevent ()); }
+    }
 
     rc = init_ssl () && init_ports () && init_perms ();
 
@@ -484,8 +492,11 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "m:c:k:u:g:d:l:t:p:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:")) != -1) {
       switch (ch) {
+      case 'D':
+	_debug = true;
+	break;
       case 'k':
 	_keyfile = optarg;
 	break;
