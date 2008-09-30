@@ -107,8 +107,11 @@ class okld_helper_ssl_t : public okld_helper_t {
 public:
   okld_helper_ssl_t (const str &u, const str &g) 
     : okld_helper_t ("okssld", u, g),
-      _certfile (ok_ssl_certfile) {}
+      _certfile (ok_ssl_certfile),
+      _timeout (ok_ssl_timeout) {}
+
   str _certfile;
+  u_int _timeout;
   bool v_configure ();
   str certfile_resolved () const { return _certfile_resolved; }
 private:

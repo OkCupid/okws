@@ -9,6 +9,7 @@
 #include "ok.h"
 #include "ahutil.h"
 #include "oksslutil.h"
+#include "tame_connectors.h"
 
 //-----------------------------------------------------------------------
 
@@ -56,7 +57,8 @@ namespace okssl {
     okssld_t () 
       : _logfd (-1), 
 	_okd_fd (-1), 
-	_accept_enabled (false) {}
+	_accept_enabled (false),
+	_timeout (ok_ssl_timeout) {}
 
     bool parseopt (int argc, char *argv[]);
 
@@ -91,6 +93,7 @@ namespace okssl {
 
     SSL_CTX *_ssl_ctx;
     bool _accept_enabled;
+    u_int _timeout;
   };
 
   //-----------------------------------------------------------------------
@@ -230,7 +233,8 @@ namespace okssl {
       int fds[2];
       proxy_t prx;
       str cli;
-      bool ok;
+      bool ok (false);
+      outcome_t o;
     }
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
@@ -241,18 +245,30 @@ namespace okssl {
 	warn ("Failed to initialize new proxy object\n");
       } else {
 	cli = c->to_str ();
-	twait { prx.start (mkevent (ok)); }
+	twait { 
+	  prx.start (connector::timeout (mkevent (ok), _timeout, 0, &o)); 
+	}
 	if (!ok) {
-	  warn ("Failed to handshake with remote client %s\n", cli.cstr ());
+	  if (o != OUTCOME_SUCC) {
+	    warn ("Timeout in handshake for client %s\n", cli.cstr ());
+	  } else {
+	    warn ("Failed to handshake with remote client %s\n", cli.cstr ());
+	  }
 	  close (fds[1]);
 	} else {
 	  twait { sendcon (c, fds[1], prx.cipher_info (), mkevent (ok)); }
 	  if (ok) {
-	    twait { prx.finish (mkevent ()); }
-	  } else {
-	    prx.cancel ();
+	    twait { 
+	      prx.finish (connector::timeout (mkevent (), _timeout, 0, &o)); 
+	    }
+	    if (o != OUTCOME_SUCC) {
+	      warn ("Timeout in SSL transmission for client %s\n", cli.cstr ());
+	      ok = false;
+	    }
 	  }
 	}
+	if (!ok) 
+	  prx.cancel ();
       }
       close (fds[0]);
     }
@@ -484,6 +500,12 @@ namespace okssl {
       case 'l':
 	if (!convertint (optarg, &_logfd)) {
 	  warn << "Cannot parse log FD " << optarg << "\n";
+	  rc = false;
+	}
+	break;
+      case 'm':
+	if (!convertint (optarg, &_timeout)) {
+	  warn << "Cannot parse timeout " << optarg << "\n";
 	  rc = false;
 	}
 	break;

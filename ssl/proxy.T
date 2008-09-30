@@ -194,7 +194,6 @@ namespace okssl {
   proxy_t::start (evb_t ev)
   {
     tvars {
-      bool ok (false);
       proxy_event_t which;
     }
 
@@ -203,14 +202,7 @@ namespace okssl {
     _prx[1]->go (_plainfd, _encfd, mkevent (_rv, COMPLETE_B));
 
     twait (_rv, which);
-    if (which == HANDSHAKE) {
-      ok = true;
-    } else {
-      _rv.cancel ();
-      _canceled = true;
-    }
-
-    ev->trigger (ok);
+    ev->trigger (which == HANDSHAKE);
   }
 
   //-----------------------------------------------------------------------

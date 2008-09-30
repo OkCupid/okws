@@ -187,6 +187,7 @@ extern u_int okld_startup_batch_wait;          // n secs to wait between batch
 // okssl constants
 //
 extern const char *ok_ssl_certfile;           // where the cert is kept
+extern u_int ok_ssl_timeout;                  // how long before we timeout
 
 //
 // helper constants

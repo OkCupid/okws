@@ -579,6 +579,7 @@ okld_t::parse_file (const str &cf)
   conftab ct;
   _config_no_pub_v2_support = false;
   str sys_sel_tmp;
+  u_int UIZ = 0;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -597,17 +598,21 @@ okld_t::parse_file (const str &cf)
     .add ("ServiceMode", &ok_svc_mode, 0, 0777)
     .add ("ServiceGroup", &_config_grp)
     .add ("OkdExecPath", wrap (this, &okld_t::got_okd_exec))
-    .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
-    .add ("CertfileSSL", &_okssl._certfile)
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
 			       &ok_base_t::got_ports, false))
-    .add ("EnableSSL", &_enable_ssl)
-    .add ("ListenPortsSSL", wrap (static_cast<ok_base_t *> (this),
+
+    .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
+    .add ("SslCertfile", &_okssl._certfile)
+    .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
 				  &ok_base_t::got_ports, true))
+    .add ("SslTimeout", &_okssl._timeout, UIZ, u_int (100000))
+    .add ("OksslUser", &_config_ssl_un)
+    .add ("OksslGroup", &_config_ssl_gr)
+
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
     .add ("NoPub2", &_config_no_pub_v2_support)
@@ -645,8 +650,6 @@ okld_t::parse_file (const str &cf)
 
     .add ("OkdUser", &_config_okd_un)
     .add ("OkdGroup", &_config_okd_gr)
-    .add ("OksslUser", &_config_ssl_un)
-    .add ("OksslGroup", &_config_ssl_gr)
     
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
@@ -1100,6 +1103,8 @@ okld_t::launch_okssl (evb_t ev)
     } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
       warn ("socketpair failed when start okssld: %m\n");
     } else {
+      argv.push_back ("-m");
+      argv.push_back (strbuf () << _okssl._timeout);
       argv.push_back ("-k");
       argv.push_back (_okssl.certfile_resolved ());
       argv.push_back ("-u");
