@@ -206,27 +206,42 @@ namespace okssl {
       if (!prx.init (_ssl_ctx, c->fd (), fds[0])) {
 	warn ("Failed to initialize new proxy object\n");
       } else {
+	close0 = false;
+	close (fds[0]);
+
 	cli = c->to_str ();
-	twait { prx.start (mkevent (ok));}
+	twait { prx.start (mkevent (ok)); }
 	if (!ok) {
 	  warn ("Failed to handshake with remote client %s\n", cli.cstr ());
 	} else {
+	  ok = false;
 	  c->to_xdr (&arg);
 	  arg.ssl.alloc ();
 	  arg.ssl->cipher = prx.cipher_info ();
+
 	  close1 = false;
 	  _okd_x->sendfd (fds[1]);
+
 	  twait {
 	    RPC::okssl_program_1::okssl_new_connection 
 	      (_okd_cli, arg, &res, mkevent (err));
 	  }
-	  // XXX handle the rest!
+	  if (err) {
+	    warn << "Failed to send connection (" << cli 
+		 << ") to okd: " << err << "\n";
+	  } else if (res != OK_STATUS_OK) {
+	    warn ("okd rejected connection %s with status %d\n",
+		  cli.cstr (), int (res));
+	  } else {
+	    twait { prx.finish (mkevent ()); }
+	    ok = true;
+	  }
+	  if (!ok) { prx.cancel (); }
 	}
       }
     }
     if (close0) close (fds[0]);
     if (close1) close (fds[1]);
-
   }
 
   //-----------------------------------------------------------------------

@@ -207,6 +207,7 @@ namespace okssl {
       ok = true;
     } else {
       _rv.cancel ();
+      _canceled = true;
     }
 
     ev->trigger (ok);
@@ -254,6 +255,17 @@ namespace okssl {
       b << v;
     }
     return b;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  proxy_t::cancel ()
+  {
+    if (!_canceled) {
+      _canceled = true;
+      _rv.cancel ();
+    }
   }
 
   //-----------------------------------------------------------------------

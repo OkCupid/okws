@@ -81,14 +81,18 @@ namespace okssl {
   class proxy_t {
   public:
     proxy_t () 
-      : _ssl (NULL), _encfd (-1), _plainfd (-1),
-	_rv (__FILE__, __LINE__) {}
+      : _ssl (NULL), 
+	_encfd (-1), 
+	_plainfd (-1),
+	_rv (__FILE__, __LINE__),
+	_canceled (false) {}
 		 
     ~proxy_t () ;
     bool init (SSL_CTX *ctx, int encfd, int plainfd);
     void start (evb_t ev, CLOSURE);
     void finish (evv_t ev, CLOSURE);
     str cipher_info () const;
+    void cancel ();
   private:
     bool init_ssl_connection (int s, SSL *s);
     SSL *_ssl;
@@ -96,6 +100,7 @@ namespace okssl {
     ptr<base_proxy_t> _prx[2];
     ptr<ssl_to_std_proxy_t> _handshaker;
     rendezvous_t<proxy_event_t> _rv;
+    bool _canceled;
   };
   
   //=======================================================================
