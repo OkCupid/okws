@@ -1109,7 +1109,7 @@ void
 ok_base_t::add_port (okws1_port_t port, bool ssl)
 {
   assert (!_all_ports_map[port]);
-  _all_ports.push_back (port);
+  _all_ports_map.insert (port, ssl);
   if (ssl) 
     _https_ports.push_back (port);
   else

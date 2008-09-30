@@ -550,9 +550,14 @@ bool
 okld_t::check_ports ()
 {
   bool ret = true;
-  while (_all_ports.size ()) {
-    okws1_port_t p = _all_ports.pop_front ();
-    if (!(used_ports[p] || (p == listenport && used_primary_port))) {
+  qhash_const_iterator_t<okws1_port_t, bool> it (_all_ports_map);
+  const okws1_port_t *pp;
+  while ((pp = it.next ())) {
+    okws1_port_t p = *pp;
+    if (!(used_ports[p] ||
+	  (used_primary_port &&
+	   (p == listenport || 
+	    (_okssl.active () && p == ok_ssl_port))))) {
       warn << "OKD will listen on port " << p << ", but no "
 	   << "services will be using it!\n";
       ret = false;
@@ -608,6 +613,7 @@ okld_t::parse_file (const str &cf)
     .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
     .add ("SslCertFile", &_okssl._certfile)
     .add ("SslKeyFile", &_okssl._keyfile)
+    .add ("SslPrimaryPort", wrap (this, (&okld_t::got_ssl_primary_port)))
     .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
 				  &ok_base_t::got_ports, true))
     .add ("SslTimeout", &_okssl._timeout, UIZ, u_int (100000))
@@ -771,7 +777,7 @@ okld_t::post_config (const str &cf)
     warn << "Disabling Pub v2 support.\n";
   }
 
-  if (_all_ports.size () == 0) {
+  if (_all_ports_map.size () == 0) {
     warn << "No listen ports given; assuming default port (80)\n";
     add_port (listenport, false);
   }
@@ -1082,6 +1088,21 @@ okld_t::okld_exit (int code)
   exit (code);
 }
 
+bool
+okld_t::fixup_ssl_ports ()
+{
+  bool *sslp = _all_ports_map[ok_ssl_port];
+  bool ret;
+  if (!sslp) { 
+    add_port (ok_ssl_port, true); 
+  } else if (!*sslp && _https_ports.size () == 0) {
+    warn << "Cannot add default SSL port (" << ok_ssl_port 
+	 << ") since it's already listening for HTTPS\n";
+    ret = false;
+  }
+  return ret;
+}
+
 tamed void 
 okld_t::launch_okssl (evb_t ev)
 {
@@ -1097,6 +1118,8 @@ okld_t::launch_okssl (evb_t ev)
 
   if (!_okssl.active ()) {
     rc = true;
+  } else if (!fixup_ssl_ports ()) {
+    warn << "No SSL ports are available\n";
   } else {
     twait { logd->clone (mkevent (logfd)); }
     if (logfd < 0) {
@@ -1120,10 +1143,12 @@ okld_t::launch_okssl (evb_t ev)
       argv.push_back (strbuf () << logfd);
       argv.push_back ("-t");
       argv.push_back (strbuf () << fds[0]);
+
       for (size_t i = 0; i < _https_ports.size (); i++) {
 	argv.push_back ("-p");
 	argv.push_back (strbuf () << _https_ports[i]);
       }
+
       _okssl.argv () += argv;
 
       if (_okssl.launch ()) {
@@ -1669,6 +1694,27 @@ okld_t::shutdown_ssl (int i)
 {
 
 
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::got_ssl_primary_port (vec<str> v, str loc, bool *errp)
+{
+  bool err = true;
+  u_int port;
+  if (v.size () != 2 || !convertint (v[1], &port)) {
+    warn << loc << ": usage: " << v[0] << " <port>\n";
+  } else if (port > OK_PORT_MAX || port < OK_PORT_MIN) {
+    warn << loc << ": port out of range (" << port << ")\n";
+  } else if (_all_ports_map[port]) {
+    warn << loc << ": report port #: " << port << "\n";
+  } else {
+    ok_ssl_port = port;
+    add_port (port, true);
+    err = false;
+  }
+  if (err) *errp = true;
 }
 
 //-----------------------------------------------------------------------

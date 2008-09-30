@@ -378,6 +378,7 @@ public:
   ~okld_t () { if (logexc) delete logexc; }
 
   void got_service (bool script, vec<str> s, str loc, bool *errp);
+  void got_ssl_primary_port (vec<str> s, str loc, bool *errp);
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
   void got_okssl_exec (vec<str> s, str loc, bool *errp);
@@ -453,6 +454,7 @@ private:
   bool check_ports ();
   void got_alias (vec<str> s, str loc, bool *errp);
   void got_regex_alias (vec<str> s, str loc, bool *errp);
+  bool fixup_ssl_ports ();
 
   bool fix_uids ();
   bool config_jaildir ();

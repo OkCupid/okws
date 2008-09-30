@@ -189,6 +189,7 @@ extern u_int okld_startup_batch_wait;          // n secs to wait between batch
 extern const char *ok_ssl_certfile;           // where the cert is kept
 extern const char *ok_ssl_keyfile;            // where the priv key is kept
 extern u_int ok_ssl_timeout;                  // how long before we timeout
+extern u_int ok_ssl_port;                     // 443
 
 //
 // helper constants
