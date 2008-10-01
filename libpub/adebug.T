@@ -5,6 +5,7 @@
 #include "pubutil.h"
 #include "rxx.h"
 #include "parseopt.h"
+#include "tame_io.h"
 
 //
 // Code here copied from SFS, async/aerr.C
@@ -306,5 +307,14 @@ namespace ok {
     return b;
   }
 
+  tamed void
+  debug_startup (evv_t ev)
+  {
+    warn << "DEBUG: waiting for SIGCONT (pid=" << getpid () << ")\n";
+    twait {
+      tame::sigcb1 (SIGCONT, mkevent ());
+    }
+    ev->trigger ();
+  }
 
 };

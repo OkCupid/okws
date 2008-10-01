@@ -1159,10 +1159,10 @@ okld_t::launch_okssl (evb_t ev)
 	_okssl.set_chldcb (wrap (this, &okld_t::shutdown_ssl));
 	_okssl.make_cli (okld_program_1, wrap (this, &okld_t::shutdown_ssl, 0));
 	twait {
-	  _okssl.x ()->sendfd (fds[1]);
+	  _okd.x ()->sendfd (fds[1]);
 	  arg.dummy = 0;
 	  RPC::okld_program_1::okld_send_ssl_socket 
-	    (_okssl.cli (), arg, &res, mkevent (err));
+	    (_okd.cli (), arg, &res, mkevent (err));
 	}
 	if (err) {
 	  warn << "Error sending SSL socket to okd: " << err << "\n";

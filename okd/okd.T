@@ -37,6 +37,7 @@
 #include "axprtfd.h"
 #include "okdbg.h"
 #include "rpcwindow.h"
+#include "ok_adebug.h"
 
 okd_t *global_okd;
 
@@ -615,9 +616,9 @@ void start_okd (int argc, char **argv)
     str cf;
     int logfd  (-1);
     int pub2fd (-1);
-    str debug_stallfile;
     str cdd;  // core dump dir
     okws1_port_t port (ok_dport);
+    bool debug_startup (false);
     okd_t *okd;
   }
 
@@ -625,10 +626,10 @@ void start_okd (int argc, char **argv)
   set_debug_flags ();
 
   int ch;
-  while ((ch = getopt (argc, argv, "f:l:D:c:p:x:")) != -1)
+  while ((ch = getopt (argc, argv, "f:l:Dc:p:x:")) != -1)
     switch (ch) {
     case 'D':
-      debug_stallfile = optarg;
+      debug_startup = true;
       break;
     case 'f':
       if (cf)
@@ -667,8 +668,9 @@ void start_okd (int argc, char **argv)
   }
 
   // for debugging, we'll stall until the given file is touched.
-  if (debug_stallfile) 
-    twait { stall (debug_stallfile, mkevent ()); }
+  if (debug_startup) {
+    twait { ok::debug_startup (mkevent ()); }
+  }
 
   sfsconst_init (true);
   if (!cf) 
@@ -763,7 +765,7 @@ void
 okd_t::okld_dispatch (svccb *sbp)
 {
   if (!sbp) {
-    
+    shutdown (0);
   } else {
     switch (sbp->proc ()) {
     case OKLD_NEW_SERVICE:
@@ -1135,7 +1137,8 @@ bool
 okd_ssl_t::init (int fd)
 {
   bool rc = true;
-  if (fd < 0) {
+  assert (fd >= 0);
+  if (_fd < 0) {
     _fd = fd;
     _x = axprt_unix::alloc (fd);
     _cli = aclnt::alloc (_x, okssl_program_1);
