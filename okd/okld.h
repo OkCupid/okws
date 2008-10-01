@@ -79,7 +79,6 @@ protected:
   bool configure_user ();
   bool configure_group ();
   bool configure_dumpdir (jailable_t *j, const str &prfx);
-  virtual bool v_configure () { return true; }
 
   const str _name;
 
@@ -113,7 +112,7 @@ public:
 
   str _certfile, _keyfile;
   u_int _timeout;
-  bool v_configure ();
+  bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
 private:
@@ -410,6 +409,7 @@ public:
   bool init_interpreters ();
   bool in_shutdown () const { return sdflag; }
   str get_root_coredir () const { return root_coredir; }
+  bool init_ssl ();
 
   clone_only_client_t *get_pubd2 () const { return pubd2; }
 

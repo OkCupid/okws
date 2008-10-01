@@ -93,7 +93,7 @@ okws_config: $(srcdir)/okws_config.in
 	NO_XML=$(NO_XML) \
 	NO_SSL=$(NO_SSL) \
 	TOP_SRCDIR=`cd $(top_srcdir) ; pwd` \
-	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#e ; print $$_; } ' < $< > $@
+	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#ge ; print $$_; } ' < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
 	TOP_SRCDIR=`cd $(top_srcdir) ; pwd ` ; \

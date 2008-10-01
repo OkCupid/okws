@@ -782,8 +782,10 @@ okld_t::post_config (const str &cf)
     add_port (listenport, false);
   }
 
-  if (!check_services_and_aliases () || !check_ports () 
-      || !check_service_ports ()) 
+  if (!check_services_and_aliases () || 
+      !fixup_ssl_ports () ||
+      !check_ports () || 
+      !check_service_ports ()) 
     errors = true;
 
   if (!hostname)
@@ -1091,14 +1093,16 @@ okld_t::okld_exit (int code)
 bool
 okld_t::fixup_ssl_ports ()
 {
-  bool *sslp = _all_ports_map[ok_ssl_port];
-  bool ret;
-  if (!sslp) { 
-    add_port (ok_ssl_port, true); 
-  } else if (!*sslp && _https_ports.size () == 0) {
-    warn << "Cannot add default SSL port (" << ok_ssl_port 
-	 << ") since it's already listening for HTTPS\n";
-    ret = false;
+  bool ret = true;
+  if (_okssl.active ()) {
+    bool *sslp = _all_ports_map[ok_ssl_port];
+    if (!sslp) { 
+      add_port (ok_ssl_port, true); 
+    } else if (!*sslp && _https_ports.size () == 0) {
+      warn << "Cannot add default SSL port (" << ok_ssl_port 
+	   << ") since it's already listening for HTTPS\n";
+      ret = false;
+    }
   }
   return ret;
 }
@@ -1118,8 +1122,6 @@ okld_t::launch_okssl (evb_t ev)
 
   if (!_okssl.active ()) {
     rc = true;
-  } else if (!fixup_ssl_ports ()) {
-    warn << "No SSL ports are available\n";
   } else {
     twait { logd->clone (mkevent (logfd)); }
     if (logfd < 0) {
@@ -1129,20 +1131,22 @@ okld_t::launch_okssl (evb_t ev)
     } else {
       argv.push_back ("-m");
       argv.push_back (strbuf () << _okssl._timeout);
-      argv.push_back ("-c");
-      argv.push_back (_okssl.certfile_resolved ());
-      argv.push_back ("-k");
-      argv.push_back (_okssl.keyfile_resolved ());
-      argv.push_back ("-u");
-      argv.push_back (strbuf () << _okssl.user ().getid ());
-      argv.push_back ("-g");
-      argv.push_back (strbuf () << _okssl.group ().getid ());
+      if (will_jail ()) {
+	argv.push_back ("-u");
+	argv.push_back (strbuf () << _okssl.user ().getid ());
+	argv.push_back ("-g");
+	argv.push_back (strbuf () << _okssl.group ().getid ());
+      }
       argv.push_back ("-d");
       argv.push_back (_okssl.dumpdir ());
       argv.push_back ("-l");
       argv.push_back (strbuf () << logfd);
       argv.push_back ("-t");
       argv.push_back (strbuf () << fds[0]);
+      argv.push_back ("-c");
+      argv.push_back (_okssl.certfile_resolved ());
+      argv.push_back ("-k");
+      argv.push_back (_okssl.keyfile_resolved ());
 
       for (size_t i = 0; i < _https_ports.size (); i++) {
 	argv.push_back ("-p");
@@ -1320,8 +1324,14 @@ main (int argc, char *argv[])
   amain ();
 }
 
-tamed 
-void okld_t::launch (str cf)
+bool
+okld_t::init_ssl ()
+{
+  return _okssl.configure_keys ();
+}
+
+tamed void 
+okld_t::launch (str cf)
 {
   tvars {
     bool ok;
@@ -1341,8 +1351,11 @@ void okld_t::launch (str cf)
   init_clock_daemon ();
 
   encode_env ();
-  if (!(check_exes () && fix_uids () && init_jaildir () 
-	&& init_interpreters ()))
+  if (!(check_exes () && 
+	fix_uids () && 
+	init_jaildir () && 
+	init_interpreters () &&
+	init_ssl ()))
     okld_exit (1);
 
   used_ports.clear ();
@@ -1659,11 +1672,11 @@ okld_helper_t::configure_dumpdir (jailable_t *j, const str &d)
 //-----------------------------------------------------------------------
 
 bool
-okld_helper_ssl_t::v_configure ()
+okld_helper_ssl_t::configure_keys ()
 {
-  return 
-    (_certfile_resolved = resolve (_certfile, "certificate")) &&
-    (_keyfile_resolved = resolve (_keyfile, "private key"));
+  return (!_active ||
+	  ((_certfile_resolved = resolve (_certfile, "certificate")) &&
+	   (_keyfile_resolved = resolve (_keyfile, "private key"))));
 }
 
 //-----------------------------------------------------------------------
@@ -1682,7 +1695,7 @@ okld_helper_ssl_t::resolve (const str &in, const char *which) const
       out = in;
     }
   } else {
-    out = okws_etcfile (in, NULL, false);
+    out = okws_etcfile_required (in, NULL, true);
   }
   return out;
 }
