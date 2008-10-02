@@ -612,6 +612,8 @@ main2 (int argc, char **argv)
   okssld->run ();
 }
 
+//-----------------------------------------------------------------------
+
 int
 main (int argc, char *argv[])
 {

@@ -765,6 +765,7 @@ void
 okd_t::okld_dispatch (svccb *sbp)
 {
   if (!sbp) {
+    warn << "initiate shutdown; EOF from okld\n";
     shutdown (0);
   } else {
     switch (sbp->proc ()) {
