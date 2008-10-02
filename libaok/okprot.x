@@ -300,4 +300,13 @@ program OKSSL_PROGRAM {
 	} = 1;
 } = 11280;
 
+program NULL_PROGRAM {
+	version NULL_VERS {
+
+		void
+		NULL_NULL(void) = 0;
+
+	} = 1;
+} = 11281;
+
 };

@@ -73,9 +73,11 @@ namespace okssl {
     void dispatch (svccb *sbp);
 
   private:
+    void okld_eof ();
     bool init_perms ();
     bool init_ports ();
     bool init_ssl ();
+    bool init_okld ();
     void init_okd (evb_t ev, CLOSURE);
     bool load_certificate ();
     ok_xstatus_typ_t toggle_accept (bool b);
@@ -93,6 +95,7 @@ namespace okssl {
     ptr<axprt_unix> _okd_x;
     ptr<aclnt> _okd_cli;
     ptr<asrv>  _okd_srv;
+    ptr<aclnt> _okld_cli;
 
     SSL_CTX *_ssl_ctx;
     bool _accept_enabled;
@@ -464,6 +467,26 @@ namespace okssl {
   }
 
   //-----------------------------------------------------------------------
+
+  bool
+  okssld_t::init_okld ()
+  {
+    ptr<axprt> x = axprt_unix::alloc (0);
+    _okld_cli = aclnt::alloc (x, null_program_1);
+    _okld_cli->seteofcb (wrap (this, &okssld_t::okld_eof));
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  okssld_t::okld_eof ()
+  {
+    warn << "EOF from okld; shutting down!\n";
+    shutdown ();
+  }
+
+  //-----------------------------------------------------------------------
   
   tamed void
   okssld_t::init (evb_t ev)
@@ -477,7 +500,7 @@ namespace okssl {
       twait { tame::sigcb1 (SIGCONT, mkevent ()); }
     }
 
-    rc = init_ssl () && init_ports () && init_perms ();
+    rc = init_okld () && init_ssl () && init_ports () && init_perms ();
 
     if (rc) {
       twait { init_okd (mkevent (rc)); }
