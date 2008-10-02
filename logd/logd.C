@@ -353,6 +353,12 @@ logfile_t::open (const str &f)
 }
 
 bool
+logd_t::ssl_log (const oklog_ok_t &x)
+{
+  return true;
+}
+
+bool
 logd_t::access_log (const oklog_ok_t &x)
 {
   u_int lim = fmt_els.size ();
@@ -434,7 +440,8 @@ void
 logd_t::log (svccb *sbp)
 {
   bool ret = true;
-  oklog_arg_t *la = sbp->Xtmpl getarg<oklog_arg_t> ();
+  RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
+  oklog_arg_t *la = srv.getarg ();
   switch (la->typ) {
   case OKLOG_OK:
     ret = access_log (*la->ok);
@@ -443,6 +450,9 @@ logd_t::log (svccb *sbp)
   case OKLOG_ERR_CRITICAL:
     ret = error_log (*la);
     break;
+  case OKLOG_SSL:
+    ret = ssl_log (*la);
+    breal;
   default:
     if (!error_log (*la)) ret = false;
     if (!(la->err->log.req && la->err->log.req.len ())) 
@@ -450,5 +460,5 @@ logd_t::log (svccb *sbp)
     if (!access_log (la->err->log)) ret = false;
     break;
   }
-  sbp->replyref (ret);
+  srv.reply (ret);
 }

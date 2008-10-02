@@ -107,7 +107,8 @@ enum oklog_typ_t {
   OKLOG_ERR_ERROR = 2,
   OKLOG_ERR_NOTICE = 3,
   OKLOG_ERR_CRITICAL = 4,
-  OKLOG_ERR_DEBUG = 5
+  OKLOG_ERR_DEBUG = 5,
+  OKLOG_SSL = 6
 };
 
 struct oklog_notice_t {
@@ -130,12 +131,20 @@ struct oklog_err_t {
   string aux<>;
 };
 
+struct oklog_ssl_msg_t {
+  string ip<>;
+  string cipher<>;
+  string msg<>;
+};
+
 union oklog_arg_t switch (oklog_typ_t typ) {
  case OKLOG_OK:
    oklog_ok_t ok;
  case OKLOG_ERR_NOTICE:
  case OKLOG_ERR_CRITICAL:
    oklog_notice_t notice;
+ case OKLOG_SSL:
+   oklog_ssl_msg_t ssl;
  default:
    oklog_err_t err;    
 };
