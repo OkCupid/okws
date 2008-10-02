@@ -152,8 +152,10 @@ logd_t::close_logfiles ()
 {
   delete access;
   delete error;
+  delete ssl;
   access = NULL;
   error = NULL;
+  ssl = NULL;
 }
 
 void
@@ -394,13 +396,17 @@ logd_t::turn (svccb *sbp)
 
   logfile_t *access2 = NULL;
   logfile_t *error2 = NULL;
+  logfile_t *ssl2 = NULL;
 
   if (logfile_setup (&access2, parms.accesslog, "access")) {
     if (logfile_setup (&error2, parms.errorlog, "error")) {
-      ret = true;
-      close_logfiles ();
-      access = access2;
-      error = error2;
+      if (logfile_setup (&ssl2, parms.errorlog, "ssl")) {
+	ret = true;
+	close_logfiles ();
+	access = access2;
+	error = error2;
+	ssl = ssl2;
+      }
     } else {
       delete access2;
     }
