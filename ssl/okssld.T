@@ -404,7 +404,8 @@ namespace okssl {
   void
   okssld_t::run ()
   {
-
+    warn << "++ initialization complete; accepting connections\n";
+    enable_accept ();
   }
 
   //-----------------------------------------------------------------------
@@ -595,6 +596,7 @@ main2 (int argc, char **argv)
   }
   
   okssld = New okssl::okssld_t ();
+  warn << "Starting up; pid=" << getpid () << "\n";
 
   if (!okssld->parseopt (argc, argv)) {
     warn << "Parse of okssl options failed\n";
