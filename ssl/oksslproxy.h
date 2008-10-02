@@ -21,12 +21,9 @@ namespace okssl {
   
   class base_proxy_t  : public tame::std_proxy_t {
   public:
-    base_proxy_t (SSL *ssl, const str &d = NULL, ssize_t sz = -1)
-      : tame::std_proxy_t (d, sz), 
-	_ssl (ssl),
-	_other_way (NULL) {}
-    
-    virtual ~base_proxy_t () {}
+    base_proxy_t (SSL *ssl, const str &d = NULL, ssize_t sz = -1);
+    virtual ~base_proxy_t ();
+
     void set_other_way (base_proxy_t *x) { _other_way = x; }
     
     virtual void force_write () { panic ("not implemented!\n"); }
@@ -80,13 +77,7 @@ namespace okssl {
 
   class proxy_t {
   public:
-    proxy_t () 
-      : _ssl (NULL), 
-	_encfd (-1), 
-	_plainfd (-1),
-	_rv (__FILE__, __LINE__),
-	_canceled (false) {}
-		 
+    proxy_t () ;
     ~proxy_t () ;
     bool init (SSL_CTX *ctx, int encfd, int plainfd);
     void start (evb_t ev, CLOSURE);

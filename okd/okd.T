@@ -327,6 +327,7 @@ okd_t::parse_file (const str &cf)
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
     .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
+    .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -379,7 +380,6 @@ okd_t::parse_file (const str &cf)
     .ignore ("SslCertFile")
     .ignore ("SslKeyFile")
     .ignore ("SslListenPorts")
-    .ignore ("SslPrimaryPort")
     .ignore ("SslTimeout")
     .ignore ("SslUser")
     .ignore ("SslGroup")
@@ -463,7 +463,7 @@ okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
     
     // for services not on the default port, rewrite the request
     // URL with the port explictly mentioned
-    if (port != listenport) {
+    if (port != listenport && port != ok_ssl_port) {
       strbuf b (":");
       b << port << s;
       s = b;
@@ -527,12 +527,12 @@ okd_t::newserv (int fd)
     } 
     xfree (sin);
   } else {
-    newserv2 (*portmap[fd], nfd, sin);
+    newserv2 (*portmap[fd], nfd, sin, false);
   }
 }
 
 void
-okd_t::newserv2 (int port, int nfd, sockaddr_in *sin)
+okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied)
 {
   u_int freq = okd_debug_msg_freq;
   reqid ++;
@@ -548,7 +548,8 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin)
   
   nfd_in_xit ++;  // keep track of the number of FDs in transit
   close_on_exec (nfd);
-  tcp_nodelay (nfd);
+  if (!proxied)
+    tcp_nodelay (nfd);
   ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
   
   xtab.reg (x, x->destroyed_p);
@@ -1174,7 +1175,7 @@ okd_ssl_t::dispatch (svccb *sbp)
 	  // XXX todo -- send SSL information
 	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
 	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
-	  _okd->newserv2 (arg.port, fd, sin);
+	  _okd->newserv2 (arg.port, fd, sin, true);
 	}
 	srv.reply (res);
       }

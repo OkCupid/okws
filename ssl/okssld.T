@@ -211,7 +211,7 @@ namespace okssl {
     c->to_xdr (&arg);
     arg.ssl.cipher = cipher;
     arg.port = p.port ();
-    
+
     _okd_x->sendfd (fd);
 
     twait {

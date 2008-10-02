@@ -44,8 +44,8 @@ namespace okssl {
     } else {
      
       if (_handshake_ev) {
-	_handshake_ev = NULL;
 	evv_t::ptr ev = _handshake_ev;
+	_handshake_ev = NULL;
 	ev->trigger ();
       }
 
@@ -219,9 +219,39 @@ namespace okssl {
   }
 
   //-----------------------------------------------------------------------
+  
+  base_proxy_t::base_proxy_t (SSL *ssl, const str &d, ssize_t sz)
+    : tame::std_proxy_t (d, sz),
+      _ssl (ssl),
+      _other_way (NULL)
+  {
+    warn ("+ base_proxy_t %p\n", this);
+  }
+
+  //-----------------------------------------------------------------------
+
+  base_proxy_t::~base_proxy_t ()
+  {
+    warn ("- base_proxy_t %p\n", this);
+  }
+
+  //-----------------------------------------------------------------------
+
+  proxy_t::proxy_t ()
+    : _ssl (NULL),
+      _encfd (-1),
+      _plainfd (-1),
+      _rv (__FILE__, __LINE__),
+      _canceled (false)
+  {
+    warn ("+ proxy %p\n", this);
+  }
+
+  //-----------------------------------------------------------------------
 
   proxy_t::~proxy_t ()
   {
+    warn ("- proxy %p\n", this);
     if (_encfd >= 0) close (_encfd);
     if (_encfd >= 0) close (_plainfd);
     if (_ssl) SSL_free (_ssl);

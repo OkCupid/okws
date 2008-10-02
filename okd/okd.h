@@ -221,7 +221,7 @@ public:
 
   void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
   void newserv (int fd);
-  void newserv2 (int port, int nfd, sockaddr_in *sin);
+  void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx);
   void shutdown (int sig);
 
   ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab;
