@@ -226,6 +226,7 @@ logd_parms_t::decode (const str &p)
   t->lookup ("alfmt",     &accesslog_fmt);
   t->lookup ("user",      &user);
   t->lookup ("group",     &group);
+  t->lookup ("ssllog",    &ssllog);
 }
 
 str
@@ -240,7 +241,8 @@ logd_parms_t::encode () const
     .insert ("alfmt",     accesslog_fmt)
     .insert ("user",      user)
     .insert ("group",     group)
-    .insert ("svclog",    svclog);
+    .insert ("svclog",    svclog)
+    .insert ("ssllog",    ssllog);
   return ((enc = ct.encode ()));
 }
 

@@ -137,7 +137,7 @@ public:
   logd_t (const str &in, int f = -1) 
     : clone_server_t (f),
       tmr (wrap (this, &logd_t::flush)), 
-      parms (in), logset (0), error (NULL), access (NULL),
+      parms (in), logset (0), error (NULL), access (NULL), ssl (NULL),
       dcb (NULL), 
       uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
       injail (false) {}
@@ -175,7 +175,7 @@ private:
   vec<logd_fmt_el_t *> fmt_els;
   logd_parms_t parms;
   u_int logset;
-  logfile_t *error, *access;
+  logfile_t *error, *access, *ssl;
   timecb_t *dcb;
   int uid;
   ok_usr_t usr;

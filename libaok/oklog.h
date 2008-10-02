@@ -160,6 +160,7 @@ public:
   str logdir;
   str accesslog;
   str errorlog;
+  str ssllog;
   str accesslog_fmt;
   str user;
   str group;

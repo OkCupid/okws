@@ -142,7 +142,8 @@ bool
 logd_t::logfile_setup ()
 {
   return (logfile_setup (&access, parms.accesslog, "access") &&
-	  logfile_setup (&error, parms.errorlog, "error"));
+	  logfile_setup (&error, parms.errorlog, "error") &&
+	  logfile_setup (&ssl, parms.ssllog, "ssl"));
 }
 
 
@@ -253,7 +254,7 @@ void
 logd_t::launch ()
 {
   if (!setup ()) 
-    fatal << "launch/setup of failed\n";
+    fatal << "launch/setup failed\n";
 }
 
 bool
