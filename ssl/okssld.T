@@ -170,6 +170,7 @@ namespace okssl {
   void
   okssld_t::shutdown ()
   {
+    if (_logd) { _logd->flush (); }
     exit (0);
   }
 
@@ -286,8 +287,10 @@ namespace okssl {
 	}
 	if (!ok) 
 	  prx.cancel ();
-	if (_logd)  
+	if (_logd)  {
 	  _logd->log_ssl (cli, cipher, msg);
+	  _logd->flush ();
+	}
       }
       close (fds[0]);
     }

@@ -270,7 +270,7 @@ namespace okssl {
       if (n) b << n;
       b << "-";
       int bits;
-      if (ssl_ok (SSL_CIPHER_get_bits (cipher, &bits)))
+      if (SSL_CIPHER_get_bits (cipher, &bits)) != 0)
 	b << bits;
       b << "-";
       const char *v = SSL_CIPHER_get_version (cipher);
