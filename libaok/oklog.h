@@ -92,6 +92,8 @@ public:
   inline logbuf_t &time (const char *c, u_int len) { return bcpy (c, len); }
   inline logbuf_t &referer (const str &s) { return hcpy (s); }
   inline logbuf_t &remote_ip (const str &i) { return copy (i); }
+  inline logbuf_t &cipher (const str &c) { return copy (c); }
+  inline logbuf_t &msg (const str &m) { return copy (m); }
   inline logbuf_t &user_agent (const str &u) { return qcpy (u); }
   inline logbuf_t &req (const str &r) { return qcpy (r); }
   inline logbuf_t &svc (const str &v) { return copy (v); }
@@ -264,13 +266,14 @@ protected:
   void add_access (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res);
   void add_error (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		  const str &aux);
+  void add_ssl (const str &ip, const str &cipher, const str &msg);
   void add_notice (oklog_typ_t x, const str &ntc);
   void flush_T (CLOSURE);
 private:
   void connect_T (evb_t ev, CLOSURE);
   str fmt;
   log_timer_t tmr;
-  logbuf_t access, error;
+  logbuf_t access, error, ssl;
 };
 
 logbuf_t &

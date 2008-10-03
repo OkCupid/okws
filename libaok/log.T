@@ -127,6 +127,12 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
 }
 
 void
+fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
+{
+  ssl.remote_ip (ip).cipher (cipher).msg (msg);
+}
+
+void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
 			http_response_t *res)
 {
