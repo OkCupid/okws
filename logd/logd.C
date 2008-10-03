@@ -353,8 +353,11 @@ logfile_t::open (const str &f)
 }
 
 bool
-logd_t::ssl_log (const oklog_ok_t &x)
+logd_t::ssl_log (const oklog_ssl_msg_t &x)
 {
+  logbuf_t *lb = ssl->getbuf ();
+  lb->copy ("[client ", 8).remote_ip (x.ip).copy ("] ", 2).copy (x.cipher);
+  if (x.msg.len ()) lb->copy (" ", 1).copy (x.msg);
   return true;
 }
 
@@ -451,8 +454,8 @@ logd_t::log (svccb *sbp)
     ret = error_log (*la);
     break;
   case OKLOG_SSL:
-    ret = ssl_log (*la);
-    breal;
+    ret = ssl_log (*la->ssl);
+    break;
   default:
     if (!error_log (*la)) ret = false;
     if (!(la->err->log.req && la->err->log.req.len ())) 

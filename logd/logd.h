@@ -169,8 +169,8 @@ private:
   void close_logfiles ();
   void parse_fmt ();
   bool access_log (const oklog_ok_t &x);
-  bool ssl_log (const oklog_ok_t &x);
   bool error_log (const oklog_arg_t &x);
+  bool ssl_log (const oklog_ssl_msg_t &x);
 
   tailq<logd_client_t, &logd_client_t::lnk> lst;
   vec<logd_fmt_el_t *> fmt_els;
