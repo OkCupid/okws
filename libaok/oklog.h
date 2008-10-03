@@ -259,6 +259,7 @@ public:
       fmt (f), tmr (wrap (this, &fast_log_t::flush)) {}
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 	    const str &s);
+  void log_ssl (const str &i, const str &c, const str &m);
   void flush() { flush_T (); }
   void connect (evb_t ev) { connect_T (ev); }
 protected:

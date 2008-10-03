@@ -97,10 +97,22 @@ fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
   }
 }
 
+void
+fast_log_t::log_ssl (const str &ip, const str &cipher, const str &msg)
+{
+  tmr.enable ();
+  add_ssl (ip, cipher, msg);
+  if (past_high_water ()) {
+    flush ();
+    tmr.reset ();
+  }
+}
+
 bool
 fast_log_t::past_high_water () const
 {
-  return (access.past_high_water () || error.past_high_water ());
+  return (access.past_high_water () || error.past_high_water () ||
+	  ssl.past_high_water ());
 }
 
 void
@@ -129,7 +141,13 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
 void
 fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
 {
-  ssl.remote_ip (ip).cipher (cipher).msg (msg);
+  ssl << tmr << ' ';
+  ssl.copy ("[client ", 8).remote_ip (ip).copy ("] ", 2)
+    .cipher (cipher);
+  if (msg) {
+    ssl.copy (" ", 1).msg (msg);
+  }
+  ssl.newline ();
 }
 
 void

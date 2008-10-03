@@ -60,7 +60,8 @@ namespace okssl {
 	_okd_fd (-1), 
 	_accept_enabled (false),
 	_timeout (ok_ssl_timeout),
-	_debug (false) {}
+	_debug (false),
+	_logd (NULL) {}
 
     bool parseopt (int argc, char *argv[]);
 
@@ -79,6 +80,7 @@ namespace okssl {
     bool init_ssl ();
     bool init_okld ();
     void init_okd (evb_t ev, CLOSURE);
+    void init_logd (evb_t ev, CLOSURE);
     bool load_certificate ();
     ok_xstatus_typ_t toggle_accept (bool b);
     void shutdown ();
@@ -101,6 +103,7 @@ namespace okssl {
     bool _accept_enabled;
     u_int _timeout;
     bool _debug;
+    fast_log_t *_logd;
   };
 
   //-----------------------------------------------------------------------
@@ -240,9 +243,11 @@ namespace okssl {
     tvars {
       int fds[2];
       proxy_t prx;
-      str cli;
       bool ok (false);
       outcome_t o;
+      str cli;
+      str msg ("-");
+      str cipher ("-");
     }
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
@@ -258,18 +263,22 @@ namespace okssl {
 	}
 	if (!ok) {
 	  if (o != OUTCOME_SUCC) {
-	    warn ("Timeout in handshake for client %s\n", cli.cstr ());
+	    msg = "timeout in handshake";
 	  } else {
-	    warn ("Failed to handshake with remote client %s\n", cli.cstr ());
+	    msg = "handshake failed";
 	  }
+	  if (_logd) _logd->log_ssl (cli, "-", msg);
+	  warn << "Error in handshake: " << msg << " for " << cli << "\n";
 	  close (fds[1]);
 	} else {
+	  cipher = prx.cipher_info ();
 	  twait { sendcon (c, fds[1], *p, prx.cipher_info (), mkevent (ok)); }
 	  if (ok) {
 	    twait { 
 	      prx.finish (connector::timeout (mkevent (), _timeout, 0, &o)); 
 	    }
 	    if (o != OUTCOME_SUCC) {
+	      msg = "SSL timeout in transmission";
 	      warn ("Timeout in SSL transmission for client %s\n", cli.cstr ());
 	      ok = false;
 	    }
@@ -277,6 +286,8 @@ namespace okssl {
 	}
 	if (!ok) 
 	  prx.cancel ();
+	if (_logd)  
+	  _logd->log_ssl (cli, cipher, msg);
       }
       close (fds[0]);
     }
@@ -494,6 +505,7 @@ namespace okssl {
   {
     tvars {
       bool rc;
+      bool okd_rc, logd_rc;
     }
     
     if (_debug) {
@@ -504,9 +516,36 @@ namespace okssl {
     rc = init_okld () && init_ssl () && init_ports () && init_perms ();
 
     if (rc) {
-      twait { init_okd (mkevent (rc)); }
+      twait { 
+	init_okd (mkevent (okd_rc));
+	init_logd (mkevent (logd_rc));
+      }
     }
-    ev->trigger (rc);
+
+    ev->trigger (rc && okd_rc && logd_rc);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  okssld_t::init_logd (evb_t ev)
+  {
+    tvars {
+      bool ok (false);
+    }
+
+    if (_logfd < 0) {
+      warn << "Invalid log FD given: " << _logfd << "\n";
+    } else {
+      _logd = New fast_log_t (_logfd, ok_access_log_fmt);
+      twait { 
+	_logd->connect (mkevent (ok));
+      }
+      if (!ok) {
+	warn << "Failed to connect to logd\n";
+      }
+    }
+    ev->trigger (ok);
   }
 
   //-----------------------------------------------------------------------
