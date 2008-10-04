@@ -47,7 +47,7 @@ okch_t::okch_t (okd_t *o, const str &s)
 okch_t::~okch_t ()
 {
   while (conqueue.size ()) 
-    myokd->error (conqueue.pop_front (), HTTP_SRV_ERROR);
+    myokd->error (conqueue.pop_front ().con (), HTTP_SRV_ERROR);
   myokd->remove (this);
   *destroyed = true;
 }
@@ -61,8 +61,9 @@ okch_t::closed_fd ()
 }
 
 void
-okch_t::clone (ref<ahttpcon_clone> xc)
+okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 {
+  ref<ahttpcon_clone> xc (acw.con ());
   if (!ctlx || ctlx->ateof () || state != OKC_STATE_SERVE) {
 
     if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED 
@@ -72,7 +73,7 @@ okch_t::clone (ref<ahttpcon_clone> xc)
 
     } else {
       //warn << "queued con\n"; // XX debug
-      conqueue.push_back (xc);
+      conqueue.push_back (acw);
     }
 
   } else if ((ok_svc_fd_quota && per_svc_nfd_in_xit > int (ok_svc_fd_quota))
@@ -95,7 +96,7 @@ okch_t::clone (ref<ahttpcon_clone> xc)
     }
     assert (ctlx);
     assert (clnt);
-    send_con_to_service (xc);
+    send_con_to_service (acw);
   }
 }
 
@@ -135,7 +136,7 @@ okch_t::got_new_ctlx_fd (int fd, int p)
 }
 
 tamed void
-okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
+okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 {
   tvars {
     okctl_sendcon_arg_t arg;
@@ -143,6 +144,7 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
     clnt_stat err;
     ptr<bool> df;
     sockaddr_in *sin (NULL);
+    ref<ahttpcon_clone> xc (acw.con ());
   }
 
   df = destroyed;
@@ -161,20 +163,9 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
     arg.sin.setsize (sizeof (*sin));
     memcpy (arg.sin.base (), (void *)sin, sizeof (*sin));
 
-    {
-      ptr<demux_data_t> d = xc->demux_data ();
-      if (d) {
-	arg.port = d->_port;
-	if (d->_ssl) {
-	  arg.ssl.alloc ();
-	  if (d->_ssl_info) {
-	    arg.ssl->cipher = d->_ssl_info;
-	  }
-	}
-      } else {
-	arg.port = 0;
-      }
-    }
+    // add in extra SSL and port information
+    acw.demux_data ()->to_xdr (&arg);
+
 
     // Hack: reclaim the FD, but hold onto the ahttpcon until
     // after the server has acked it.

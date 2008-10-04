@@ -96,8 +96,8 @@ public:
   okch_t (okd_t *o, const str &e);
   ~okch_t ();
   void launch ();
-  void clone (ref<ahttpcon_clone> xc);
-  void send_con_to_service (ref<ahttpcon_clone> xc, CLOSURE);
+  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw);
+  void send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
   void shutdown (oksig_t sig, cbv cb);
 
   void got_new_ctlx_fd (int fd, int p);
@@ -131,7 +131,7 @@ private:
   void shutdown_cb1 (cbv cb);
   void closed_fd ();
 
-  vec<ptr<ahttpcon_clone> > conqueue;
+  vec<ahttpcon_wrapper_t<ahttpcon_clone> > conqueue;
 
   okc_state_t state;
   ptr<bool> destroyed;
@@ -219,7 +219,7 @@ public:
   void launch_logd (cbb cb, CLOSURE);
   void launch_pubd (cbb cb, CLOSURE);
 
-  void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
+  void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status);
   void newserv (int fd);
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
 		 const ssl_ctx_t *ssl);

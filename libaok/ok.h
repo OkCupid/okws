@@ -92,6 +92,40 @@ private:
   bhash<str> _seen; // files seen
 };
 
+class demux_data_t {
+public:
+  demux_data_t (okws1_port_t p, bool s, const str &i)
+    : _port (p), _ssl (s), _ssl_info (i) {}
+
+  static ptr<demux_data_t> alloc (const okctl_sendcon_arg_t &x);
+  void to_xdr (okctl_sendcon_arg_t *x);
+
+  okws1_port_t port () const { return _port; }
+  bool ssl () const { return _ssl; }
+  str ssl_info () const { return _ssl_info; }
+
+private:
+
+  okws1_port_t _port;
+  bool _ssl;
+  str _ssl_info;
+};
+
+template<class A>
+class ahttpcon_wrapper_t {
+public:
+  ahttpcon_wrapper_t (ptr<A> c, ptr<demux_data_t> d = NULL) 
+    : _con (c), _demux_data (d) {}
+  ptr<A> con () { return _con; }
+  ptr<const A> con () const { return _con; }
+  ptr<demux_data_t> demux_data () { return _demux_data; }
+  ptr<const demux_data_t> demux_data () const { return _demux_data; }
+
+private:
+  ptr<A> _con;
+  ptr<demux_data_t> _demux_data;
+};
+
 class ok_base_t : public jailable_t {
 public:
   ok_base_t (const str &h = NULL, int lfd = -1, int pfd = -1)

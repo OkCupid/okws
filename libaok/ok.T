@@ -657,7 +657,7 @@ oksrvc_t::handle_new_con (svccb *sbp)
   RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
 
   okctl_sendcon_res_t res = OK_STATUS_OK;
-  okctl_sendcon_arg_t *arg = srv.getarg ();
+  const okctl_sendcon_arg_t *arg = srv.getarg ();
 
   int fd = ctlx->recvfd ();
 
@@ -1382,3 +1382,29 @@ set_sfs_select_policy ()
       sfs_core::set_select_policy (ok_sys_sel_policy) < 0)
     warn << "Failed to set select policy to KQ\n";
 }
+
+//-----------------------------------------------------------------------
+
+void
+demux_data_t::to_xdr (okctl_sendcon_arg_t *arg)
+{
+  arg->port = _port;
+  if (_ssl) {
+    arg->ssl.alloc ();
+    if (_ssl_info) {
+      arg->ssl->cipher = _ssl_info;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<demux_data_t>
+demux_data_t::alloc (const okctl_sendcon_arg_t &arg)
+{
+  str ssl;
+  if (arg.ssl) ssl = arg.ssl->cipher;
+  return New refcounted<demux_data_t> (arg.port, arg.ssl, ssl);
+}
+
+//-----------------------------------------------------------------------

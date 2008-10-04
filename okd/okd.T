@@ -452,8 +452,11 @@ okd_t::strip_privileges ()
 }
 
 void
-okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
+okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
 {
+  ref<ahttpcon_clone> x (acw.con ());
+  okws1_port_t port = acw.demux_data ()->port ();
+
   if (!s)
     status = HTTP_BAD_REQUEST;
 
@@ -505,7 +508,7 @@ okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
     } else {
-      c->clone (x);
+      c->clone (acw);
     }
   }
 }
@@ -552,8 +555,10 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   close_on_exec (nfd);
   if (!proxied)
     tcp_nodelay (nfd);
-  ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
-  x->set_demux_data (New refcounted<demux_data_t> (port, ssl, ssl->cipher));
+
+  ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
+  ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl, ssl->cipher));
+  ahttpcon_wrapper_t<ahttpcon_clone> acw (x, dd);
   
   xtab.reg (x, x->destroyed_p);
   
@@ -569,7 +574,7 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
 	 "accepted connection from %s\n", x->get_remote_ip ().cstr ());
   
-  x->setccb (wrap (this, &okd_t::sclone, x, port));
+  x->setccb (wrap (this, &okd_t::sclone, acw));
   
   if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
     disable_accept ();
