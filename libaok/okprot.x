@@ -152,6 +152,7 @@ union oklog_arg_t switch (oklog_typ_t typ) {
 struct oklog_fast_arg_t {
   string access<>;
   string error<>;
+  string ssl<>;
 };
 
 struct okws_svc_descriptor_t {

@@ -431,12 +431,17 @@ void
 logd_t::fastlog (svccb *sbp)
 {
   bool ret = true;
-  oklog_fast_arg_t *fa = sbp->Xtmpl getarg<oklog_fast_arg_t> ();
+  RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
+  const oklog_fast_arg_t *fa = srv.getarg ();
+
   assert (access);
   assert (error);
+  assert (ssl);
   access->flush (fa->access);
   error->flush (fa->error);
-  sbp->replyref (&ret);
+  ssl->flush (fa->ssl);
+
+  srv.reply (ret);
 }
 
 void

@@ -342,16 +342,17 @@ fast_log_t::flush_T ()
 {
   tvars {
     oklog_fast_arg_t arg;
-    int ai, ei;
+    int ai, ei, si;
     bool ok;
     clnt_stat err;
-    bool c1, c2;
+    bool c1, c2, c3;
   }
 
   c1 = access.to_str (&arg.access, &ai);
   c2 = error.to_str (&arg.error, &ei);
+  c3 = ssl.to_str (&arg.ssl, &si);
   
-  if (c1 || c2) {
+  if (c1 || c2 || c3) {
     twait { RPC::oklog_program_1::oklog_fast (h, arg, &ok, mkevent (err)); }
     if (err) {
       warn << "Error in log RPC: " << err << "\n";
@@ -360,6 +361,7 @@ fast_log_t::flush_T ()
     }
     access.unlock (ai);
     error.unlock (ei);
+    ssl.unlock (si);
   } else {
     tmr.disable ();
   }

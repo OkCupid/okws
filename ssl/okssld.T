@@ -440,7 +440,7 @@ namespace okssl {
       twait {
 	RPC::okssl_program_1::okssl_null (_okd_cli, mkevent (err));
       }
-      if (!err) {
+      if (err) {
 	warn << "Cannot ping okd: " << err << "\n";
       } else {
 	_okd_srv = asrv::alloc (_okd_x, okssl_program_1,

@@ -1161,6 +1161,12 @@ okd_ssl_t::dispatch (svccb *sbp)
     hangup ();
   } else {
     switch (sbp->proc ()) {
+    case OKSSL_NULL:
+      {
+	RPC::okssl_program_1::okssl_null_srv_t<svccb> srv (sbp);
+	srv.reply ();
+      }
+      break;
     case OKSSL_NEW_CONNECTION:
       {
 	int fd = _x->recvfd ();
