@@ -225,14 +225,14 @@ namespace okssl {
       _ssl (ssl),
       _other_way (NULL)
   {
-    warn ("+ base_proxy_t %p\n", this);
+    /* warn ("+ base_proxy_t %p\n", this); */
   }
 
   //-----------------------------------------------------------------------
 
   base_proxy_t::~base_proxy_t ()
   {
-    warn ("- base_proxy_t %p\n", this);
+    /* warn ("- base_proxy_t %p\n", this); */
   }
 
   //-----------------------------------------------------------------------
@@ -244,14 +244,14 @@ namespace okssl {
       _rv (__FILE__, __LINE__),
       _canceled (false)
   {
-    warn ("+ proxy %p\n", this);
+    /* warn ("+ proxy %p\n", this); */
   }
 
   //-----------------------------------------------------------------------
 
   proxy_t::~proxy_t ()
   {
-    warn ("- proxy %p\n", this);
+    /* warn ("- proxy %p\n", this); */
     if (_encfd >= 0) close (_encfd);
     if (_encfd >= 0) close (_plainfd);
     if (_ssl) SSL_free (_ssl);
