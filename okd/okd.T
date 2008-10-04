@@ -528,12 +528,13 @@ okd_t::newserv (int fd)
     } 
     xfree (sin);
   } else {
-    newserv2 (*portmap[fd], nfd, sin, false);
+    newserv2 (*portmap[fd], nfd, sin, false, NULL);
   }
 }
 
 void
-okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied)
+okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
+		 const ssl_ctx_t *ssl)
 {
   u_int freq = okd_debug_msg_freq;
   reqid ++;
@@ -552,6 +553,7 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied)
   if (!proxied)
     tcp_nodelay (nfd);
   ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
+  x->set_demux_data (New refcounted<demux_data_t> (port, ssl, ssl->cipher));
   
   xtab.reg (x, x->destroyed_p);
   
@@ -1182,7 +1184,7 @@ okd_ssl_t::dispatch (svccb *sbp)
 	  // XXX todo -- send SSL information
 	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
 	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
-	  _okd->newserv2 (arg.port, fd, sin, true);
+	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl);
 	}
 	srv.reply (res);
       }

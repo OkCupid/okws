@@ -166,6 +166,15 @@ public:
   }
 };
 
+struct demux_data_t {
+  demux_data_t (int p, bool s, const str &i)
+    : _port (p), _ssl (s), _ssl_info (i) {}
+
+  int _port;
+  bool _ssl;
+  str _ssl_info;
+};
+
 // for parent dispatcher, which will send fd's
 class ahttpcon_dispatch : public ahttpcon
 {
@@ -193,6 +202,10 @@ public:
   void declone ();
   static u_int maxscan () { return 10 + OK_MAX_URI_LEN; }
 
+  ptr<const demux_data_t> demux_data () const { return _demux_data; }
+  ptr<demux_data_t> demux_data () { return _demux_data; }
+  void set_demux_data (ptr<demux_data_t> d) { _demux_data = d; }
+
 protected:
   void recvd_bytes (int n);
   void fail2 (int s);
@@ -215,6 +228,9 @@ private:
   bool decloned;
   int trickle_state;
   timecb_t *dcb;
+
+  ptr<demux_data_t> _demux_data;
+
 };
 
 struct ahttp_tab_node_t {

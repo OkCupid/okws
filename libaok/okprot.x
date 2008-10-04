@@ -91,6 +91,7 @@ struct ssl_ctx_t {
 
 struct okctl_sendcon_arg_t {
 	opaque sin<>;
+	unsigned port;
 	ssl_ctx_t *ssl;
 };
 

@@ -161,9 +161,25 @@ okch_t::send_con_to_service (ref<ahttpcon_clone> xc)
     arg.sin.setsize (sizeof (*sin));
     memcpy (arg.sin.base (), (void *)sin, sizeof (*sin));
 
+    {
+      ptr<demux_data_t> d = xc->demux_data ();
+      if (d) {
+	arg.port = d->_port;
+	if (d->_ssl) {
+	  arg.ssl.alloc ();
+	  if (d->_ssl_info) {
+	    arg.ssl->cipher = d->_ssl_info;
+	  }
+	}
+      } else {
+	arg.port = 0;
+      }
+    }
+
     // Hack: reclaim the FD, but hold onto the ahttpcon until
     // after the server has acked it.
     ctlx->sendfd (xc->takefd ());
+
 
     // Note! Calling sendfd above might have revealed an EOF condition,
     // which will callback immediately with ctlx = NULL and clnt = NULL
