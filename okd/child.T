@@ -143,7 +143,6 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     okctl_sendcon_res_t res;
     clnt_stat err;
     ptr<bool> df;
-    sockaddr_in *sin (NULL);
     ref<ahttpcon_clone> xc (acw.con ());
   }
 
@@ -159,13 +158,9 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     CH_ERROR ("Dead file descriptor encountered");
   } else {
     inc_n_sent ();
-    sin = xc->get_sin ();
-    arg.sin.setsize (sizeof (*sin));
-    memcpy (arg.sin.base (), (void *)sin, sizeof (*sin));
 
-    // add in extra SSL and port information
-    acw.demux_data ()->to_xdr (&arg);
-
+    // add in extra SSL and port information; also the remote address
+    acw.to_xdr (&arg);
 
     // Hack: reclaim the FD, but hold onto the ahttpcon until
     // after the server has acked it.

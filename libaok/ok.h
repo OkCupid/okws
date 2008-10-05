@@ -121,6 +121,15 @@ public:
   ptr<demux_data_t> demux_data () { return _demux_data; }
   ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
+  void
+  to_xdr (okctl_sendcon_arg_t *x)
+  {
+    sockaddr_in *sin = _con->get_sin ();
+    x->sin.setsize (sizeof (*sin));
+    memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
+    _demux_data->to_xdr (x);
+  }
+
 private:
   ptr<A> _con;
   ptr<demux_data_t> _demux_data;
