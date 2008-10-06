@@ -77,7 +77,7 @@ namespace okssl {
 
   class proxy_t {
   public:
-    proxy_t () ;
+    proxy_t (u_int debug_level = 0) ;
     ~proxy_t () ;
     bool init (SSL_CTX *ctx, int encfd, int plainfd);
     void start (evb_t ev, CLOSURE);
@@ -92,6 +92,7 @@ namespace okssl {
     ptr<ssl_to_std_proxy_t> _handshaker;
     rendezvous_t<proxy_event_t> _rv;
     bool _canceled;
+    u_int _debug_level;
   };
   
   //=======================================================================

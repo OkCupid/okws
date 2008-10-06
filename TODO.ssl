@@ -1,5 +1,3 @@
 
-- separate logging channel to oklogd
-- pass SSL contenxt information from okd to service
 - handle signals properly in okssld
 - okd shutdown appears broken for certain okssld failures

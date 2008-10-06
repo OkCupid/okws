@@ -43,5 +43,7 @@
 #define OKWS_DEBUG_PUB2_CACHE                     (1 << 11)
 #define OKWS_DEBUG_PUB2_CHUNKS                    (1 << 12)
 #define OKWS_DEBUG_STALL_SIGCONT                  (1 << 13)
+#define OKWS_DEBUG_SSL_MEM                        (1 << 14)
+#define OKWS_DEBUG_SSL_PROXY                      (1 << 15)
 
 #endif /* _LIBPUB_OKDEBUG_H */

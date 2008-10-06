@@ -108,7 +108,8 @@ public:
     : okld_helper_t ("okssld", u, g),
       _certfile (ok_ssl_certfile),
       _keyfile (ok_ssl_keyfile),
-      _timeout (ok_ssl_timeout) {}
+      _timeout (ok_ssl_timeout) 
+  {}
 
   str _certfile, _keyfile;
   u_int _timeout;

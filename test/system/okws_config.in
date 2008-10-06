@@ -10,10 +10,12 @@ OkdExecPath	okd/okd
 Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
 # SSL Configuration (if enabled)
-@@NO_SSL@@OkssldExecPath	ACLNT_TRACE=10 ssl/okssld
+@@NO_SSL@@OkssldExecPath	ssl/okssld
 @@NO_SSL@@SslPrimaryPort	4430
-@@NO_SSL@@SslCertFile		@@TOP_SRCDIR@@/test/system/okws.crt
-@@NO_SSL@@SslKeyFile		@@TOP_SRCDIR@@/test/system/okws.key
+@@NO_SSL@@SslCertFile		@@TOP_SRCDIR@@/test/system/okws.crt.dist
+@@NO_SSL@@SslKeyFile		@@TOP_SRCDIR@@/test/system/okws.key.dist
+@@NO_SSL@@SslUser		okssl
+@@NO_SSL@@SslGroup		okssl
 
 LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log

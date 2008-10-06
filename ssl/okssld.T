@@ -60,7 +60,7 @@ namespace okssl {
 	_okd_fd (-1), 
 	_accept_enabled (false),
 	_timeout (ok_ssl_timeout),
-	_debug (false),
+	_debug_startup (false),
 	_logd (NULL) {}
 
     bool parseopt (int argc, char *argv[]);
@@ -102,7 +102,7 @@ namespace okssl {
     SSL_CTX *_ssl_ctx;
     bool _accept_enabled;
     u_int _timeout;
-    bool _debug;
+    bool _debug_startup;
     fast_log_t *_logd;
   };
 
@@ -408,6 +408,8 @@ namespace okssl {
     } else if (!ssl_ok (SSL_CTX_check_private_key (_ssl_ctx))) {
       ssl_complain("check private key failed\n");
     } else {
+      warn << "Using cert: " << _certfile << "\n";
+      warn << "Using key : " << _keyfile << "\n";
       ret = true;
     }
     return ret;
@@ -511,7 +513,7 @@ namespace okssl {
       bool okd_rc, logd_rc;
     }
     
-    if (_debug) {
+    if (_debug_startup) {
       warn ("DEBUG: waiting for CONT before continuing (pid=%d)\n", getpid ());
       twait { tame::sigcb1 (SIGCONT, mkevent ()); }
     }
@@ -561,7 +563,7 @@ namespace okssl {
     while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:")) != -1) {
       switch (ch) {
       case 'D':
-	_debug = true;
+	_debug_startup = true;
 	break;
       case 'k':
 	_keyfile = optarg;

@@ -4,6 +4,7 @@
 
 #include "oksslproxy.h"
 #include "oksslutil.h"
+#include "okdbg.h"
 
 //=======================================================================
 
@@ -179,7 +180,9 @@ namespace okssl {
 	_prx[1] = New refcounted<std_to_ssl_proxy_t> (_ssl);
 	
 	for (size_t i = 0; i < 2; i++) {
-	  _prx[i]->set_debug_level (2);
+	  if (OKDBG2(SSL_PROXY)) {
+	    _prx[i]->set_debug_level (2);
+	  }
 	  _prx[i]->set_other_way (_prx[1 - i]);
 	}
 	ret = true;
@@ -225,33 +228,33 @@ namespace okssl {
       _ssl (ssl),
       _other_way (NULL)
   {
-    /* warn ("+ base_proxy_t %p\n", this); */
+    OKDBG4(SSL_MEM, CHATTER, "+ base_proxy_t %p\n", this);
   }
 
   //-----------------------------------------------------------------------
 
   base_proxy_t::~base_proxy_t ()
   {
-    /* warn ("- base_proxy_t %p\n", this); */
+    OKDBG4(SSL_MEM, CHATTER, "- base_proxy_t %p\n", this);
   }
 
   //-----------------------------------------------------------------------
 
-  proxy_t::proxy_t ()
+  proxy_t::proxy_t (u_int dl)
     : _ssl (NULL),
       _encfd (-1),
       _plainfd (-1),
       _rv (__FILE__, __LINE__),
       _canceled (false)
   {
-    /* warn ("+ proxy %p\n", this); */
+    OKDBG4(SSL_MEM, CHATTER, "+ proxy %p\n", this);
   }
 
   //-----------------------------------------------------------------------
 
   proxy_t::~proxy_t ()
   {
-    /* warn ("- proxy %p\n", this); */
+    OKDBG4(SSL_MEM, CHATTER, "- proxy %p\n", this);
     if (_encfd >= 0) close (_encfd);
     if (_encfd >= 0) close (_plainfd);
     if (_ssl) SSL_free (_ssl);
@@ -268,11 +271,11 @@ namespace okssl {
     if (_ssl && (cipher = SSL_get_current_cipher(_ssl))) {
       const char *n = SSL_CIPHER_get_name (cipher);
       if (n) b << n;
-      b << "-";
+      b << "--";
       int bits;
       if (SSL_CIPHER_get_bits (cipher, &bits) != 0)
 	b << bits;
-      b << "-";
+      b << "--";
       const char *v = SSL_CIPHER_get_version (cipher);
       b << v;
     }
