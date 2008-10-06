@@ -94,8 +94,17 @@ private:
 
 class demux_data_t {
 public:
+
   demux_data_t (okws1_port_t p, bool s, const str &i)
     : _port (p), _ssl (s), _ssl_info (i) {}
+
+  demux_data_t (okws1_port_t p, const ssl_ctx_t *ssl)
+    : _port (p), 
+      _ssl (ssl ? true : false)
+  {
+    if (ssl) 
+      _ssl_info = ssl->cipher;
+  }
 
   static ptr<demux_data_t> alloc (const okctl_sendcon_arg_t &x);
   void to_xdr (okctl_sendcon_arg_t *x);
@@ -116,6 +125,8 @@ class ahttpcon_wrapper_t {
 public:
   ahttpcon_wrapper_t (ptr<A> c, ptr<demux_data_t> d = NULL) 
     : _con (c), _demux_data (d) {}
+  ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg_t &x)
+    : _con (c), _demux_data (demux_data_t::alloc (x)) {}
   ptr<A> con () { return _con; }
   ptr<const A> con () const { return _con; }
   ptr<demux_data_t> demux_data () { return _demux_data; }
@@ -309,6 +320,9 @@ public:
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
 
+  virtual bool ssl_only () const { return false; } 
+  virtual str  ssl_redirect_str () const { return NULL; }
+
   // Kludge; this won't do anything except for subclasses that actually
   // use CGI.
   virtual void set_union_cgi_mode (bool b) {}
@@ -333,6 +347,10 @@ public:
   void disable_gzip () { rsp_gzip = false; }
 
   void set_hdr_field (const str &k, const str &v);
+
+  void set_demux_data (ptr<demux_data_t> d) { _demux_data = d; }
+  bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
+  str ssl_cipher () const;
 
   list_entry<okclnt_base_t> lnk;
   virtual ptr<pub2::ok_iface_t> pub2 () ;
@@ -379,6 +397,7 @@ protected:
   output_state_t output_state;
   u_int _timeout;
   ptr<pub2::locale_specific_publisher_t> _p2_locale;
+  ptr<demux_data_t> _demux_data;
 };
 
 // 
@@ -525,7 +544,7 @@ protected:
 
 
   void handle_new_con (svccb *sbp);
-  bool newclnt (ptr<ahttpcon> lx);
+  bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);
   void ready_call (bool rc);

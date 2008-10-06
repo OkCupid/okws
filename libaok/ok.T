@@ -651,6 +651,8 @@ oksrvc_t::closed_fd ()
     enable_accept ();
 }
 
+
+
 void
 oksrvc_t::handle_new_con (svccb *sbp)
 {
@@ -680,15 +682,17 @@ oksrvc_t::handle_new_con (svccb *sbp)
     // false-- no close on exec
     // true -- reset the socket flags 
     ptr<ahttpcon> x = ahttpcon::alloc (fd, sin, -1, -1, false, true);
-    if (!newclnt (x))
+    ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
+    if (!newclnt (acw))
       res = OK_STATUS_NOMORE;
   }
   srv.reply (res);
 }
 
 bool
-oksrvc_t::newclnt (ptr<ahttpcon> lx)
+oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
 {
+  ptr<ahttpcon> lx = acw.con ();
   bool sendmore = true;
   if (!lx) { 
     warn << "oksrvc_t::newclnt: NULL request encountered\n";
@@ -700,6 +704,7 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
     } else {
       _n_newcli ++;
       okclnt_base_t *c = make_newclnt (lx);
+      c->set_demux_data (acw.demux_data ());
       if (use_union_cgi ())
 	  c->set_union_cgi_mode (true);
       c->serve ();
@@ -727,16 +732,31 @@ okclnt2_t::serve_T ()
   tvars {
     int status;
     bool did_output (false);
-  }
-  twait { parse (mkevent (status)); }
-  if (status == HTTP_OK) {
-    if (process_flag)
-      panic ("duplicate process called!\n");
-    else {
-      twait { process (mkevent (did_output, status)); }
-    }
+    str s;
   }
 
+  if (ssl_only () && !is_ssl ()) {
+
+    if ((s = ssl_redirect_str ())) {
+      twait { redirect (s, HTTP_MOVEDPERM, mkevent ()); }
+      did_output = true;
+    } else {
+      status = HTTP_FORBIDDEN;
+    }
+
+  } else {
+
+    twait { parse (mkevent (status)); }
+    if (status == HTTP_OK) {
+      if (process_flag)
+	panic ("duplicate process called!\n");
+      else {
+	twait { process (mkevent (did_output, status)); }
+      }
+    }
+
+  }
+    
   if (!did_output) {
     if (status != HTTP_OK) {
       twait { error (status, NULL, true, mkevent ()); }
@@ -744,7 +764,7 @@ okclnt2_t::serve_T ()
       twait { output (out, mkevent ()); }
     }
   }
-
+  
   serve_complete ();
 }
 
@@ -754,18 +774,32 @@ okclnt_base_t::serve_T ()
   tvars {
     int status;
   }
-  twait { parse (mkevent (status)); }
-  if (status == HTTP_OK)
-    if (process_flag)
-      panic ("duplicate process called!\n");
-    else {
-      process_flag = true;
-      if (pre_process ()) {
-	process ();
-      }
+
+  if (ssl_only () && !is_ssl ()) {
+
+    str s = ssl_redirect_str ();
+    if (s) {
+      redirect (s);
+    } else {
+      error (HTTP_FORBIDDEN);
     }
-  else
-    error (status);
+
+  } else {
+
+    twait { parse (mkevent (status)); }
+    if (status == HTTP_OK) {
+      if (process_flag)
+	panic ("duplicate process called!\n");
+      else {
+	process_flag = true;
+	if (pre_process ()) {
+	  process ();
+	}
+      }
+    } else {
+      error (status);
+    }
+  }
 }
 
 tamed void
@@ -1405,6 +1439,15 @@ demux_data_t::alloc (const okctl_sendcon_arg_t &arg)
   str ssl;
   if (arg.ssl) ssl = arg.ssl->cipher;
   return New refcounted<demux_data_t> (arg.port, arg.ssl, ssl);
+}
+
+//-----------------------------------------------------------------------
+
+str 
+okclnt_base_t::ssl_cipher () const 
+{
+  if (_demux_data) return _demux_data->ssl_info ();
+  else return NULL;
 }
 
 //-----------------------------------------------------------------------

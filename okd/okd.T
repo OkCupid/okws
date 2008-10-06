@@ -557,7 +557,7 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
     tcp_nodelay (nfd);
 
   ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
-  ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl, ssl->cipher));
+  ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl));
   ahttpcon_wrapper_t<ahttpcon_clone> acw (x, dd);
   
   xtab.reg (x, x->destroyed_p);
