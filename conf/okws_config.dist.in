@@ -478,6 +478,14 @@ SslCertFile	/usr/local/etc/okws/okws.crt.dist
 ##
 #SslTimeout 100
 
+##
+## SslLog
+##
+##  A logfile for SSL-specific information
+##
+SslLog /ssl_log
+
+
 
 ## /SSL
 ##=======================================================================

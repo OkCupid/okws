@@ -1138,6 +1138,8 @@ okld_t::launch_okssl (evb_t ev)
 	argv.push_back ("-g");
 	argv.push_back (strbuf () << _okssl.group ().getid ());
       }
+      argv.push_back ("-j");
+      argv.push_back (jaildir);
       argv.push_back ("-d");
       argv.push_back (_okssl.dumpdir ());
       argv.push_back ("-l");

@@ -90,7 +90,7 @@ namespace okssl {
     vec<port_t> _ports;
 
     int _uid, _gid;
-    str _dir;
+    str _dir, _jaildir;
     str _certfile, _keyfile;
     int _logfd, _okd_fd;
 
@@ -350,7 +350,7 @@ namespace okssl {
       warn << "listening on port " << _port << "\n";
     }
     return (fd >= 0);
-  }
+  } 
 
   //-----------------------------------------------------------------------
 
@@ -359,17 +359,25 @@ namespace okssl {
   {
     bool ret = false;
     if (!getuid ()) {
-      if (chroot (_dir.cstr ()) != 0) {
-	warn ("Could not chroot into run directory %s: %m\n", _dir.cstr ());
+      if (!_dir) {
+	warn ("No coredump/run directory specified! Cannot continue.\n");
+      } else if (!_jaildir) {
+	warn ("No jail directory speicified! Cannot continue.\n");
+      } else if (chroot (_jaildir.cstr ()) != 0) {
+	warn ("Could not chroot into run directory %s: %m\n", _jaildir.cstr ());
       } else if (setgid (_gid) != 0) {
 	warn ("Cannot change group to GID=%d: %m\n", _gid);
       } else if (setuid (_uid) != 0) {
 	warn ("Cannot change user to UID=%d: %m\n", _uid);
+      } else if (chdir (_dir.cstr ()) != 0) {
+	warn ("Cannot change into cored dump dir %s: %m\n", _dir.cstr ());
       } else {
 	ret = true;
       }
     } else {
-      if (chdir (_dir.cstr ()) != 0) {
+      if (!_dir) {
+	warn ("Cannot find a run directory\n");
+      } else if (chdir (_dir.cstr ()) != 0) {
 	warn ("Could not change into run directory %s: %m\n", _dir.cstr ());
       } else {
 	ret = true;
@@ -560,8 +568,11 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:j:")) != -1) {
       switch (ch) {
+      case 'j':
+	_jaildir = optarg;
+	break;
       case 'D':
 	_debug_startup = true;
 	break;

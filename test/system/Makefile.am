@@ -48,7 +48,7 @@ SUBDIRS = $(XML_SUBDIRS) 3tier
 okwssvc_PROGRAMS = static configtest simple pub1tst form cookie \
 	post upload $(XMLPROGS) posttest
 
-okwsconf_DATA: okws.crt.dist okws.key.dist
+okwsconf_DATA = okws.crt.dist okws.key.dist
 
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
