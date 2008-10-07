@@ -28,10 +28,22 @@ okdbg_warn (okdbg_lev_t l, const char *fmt, ...)
 void
 okdbg_warn (okdbg_lev_t l, const str &s)
 {
-  vec<str> lines;
-  static rxx newline ("\\n");
-  split (&lines, newline, s);
-  for (size_t i = 0; i < lines.size (); i++) {
+  size_t len = s.len ();
+  char *cp = New char[len + 1];
+
+  if (!cp) {
+    warn << "MALLOC FAILED! Warn anyway: " << s << "\n";
+    return;
+  }
+
+  memcpy (cp, s.cstr (), len + 1);
+
+  char *bp, *np;
+
+  for (bp = cp; bp && *bp; bp = np) {
+    if ((np = strchr (bp, '\n'))) {
+      *np++ = '\0';
+    }
     switch (l) {
     case CHATTER:
       warn << "++ ";
@@ -46,6 +58,7 @@ okdbg_warn (okdbg_lev_t l, const str &s)
       warn << "";
       break;
     }
-    warnx << lines[i] << "\n";
+    warnx << bp << "\n";
   }
+  delete [] cp;
 }

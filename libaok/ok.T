@@ -339,12 +339,19 @@ void
 oksrvc_t::remove (okclnt_base_t *c)
 {
   clients.remove (c);
+  --nclients;
 
   if (ok_svc_life_reqs > 0 && ++n_reqs >= u_int (ok_svc_life_reqs)) {
     internal_reliable_shutdown ("served maximum number of requests",
 				ok_shutdown_timeout_fast);
-  } else if (!--nclients && sdflag)
-    end_program ();
+  } else if (sdflag) {
+    if (!nclients) {
+      end_program ();
+    } else {
+      OKDBG4(OKD_SHUTDOWN, CHATTER, 
+	     "cli shutdown, still %u left, waiting...\n", nclients);
+    }
+  }
 }
 
 void
@@ -384,6 +391,10 @@ oksrvc_t::shutdown ()
   clnt = NULL; // don't ctlclose -- we might still need more messages.
   if (!nclients) 
     end_program ();
+  else {
+    OKDBG4(OKD_SHUTDOWN, CHATTER,
+	   "not exitting yet; %u clients oustanding", nclients);
+  }
 }
 
 void
@@ -475,11 +486,16 @@ oksrvc_t::launch_T ()
     fatal << "No logging mechanism specified.\n";
   }
 
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ launching pub and log\n");
+
   twait {
     launch_pub2 (mkevent (pub2_rc));
     launch_pub1 (mkevent (pub1_rc));
     logd->connect (mkevent (logd_rc));
   }
+
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("- launched pub and log\n");
+
   if (!pub2_rc) {
     SVC_FATAL_ERROR ("could not establish connection with pubd version 2");
     exit (1);
@@ -494,11 +510,15 @@ oksrvc_t::launch_T ()
   }
 
   // Allow work after pub2 init, but before we connect to DBs.
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ custom_init0\n");
   twait { custom_init0 (mkevent ()); }
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ launch_dbs\n");
   twait { launch_dbs (mkevent (dbs_rc)); }
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ custom_init\n");
   twait { custom_init (mkevent ()); }
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("- custom_init\n");
 
-  if (OKDBG2 (OKD_STARTUP))
+  if (OKDBG2 (OKD_STARTUP) || OKDBG2(SVC_STARTUP))
     SVC_CHATTER ("calling READY RPC to okd");
 
   twait { RPC::okctl_program_1::okctl_ready (clnt, mkevent (err)); }
@@ -565,19 +585,37 @@ oksrvc_t::launch_dbs (cbb cb)
   tvars { 
     vec<bool> rc; 
     bool ret (true);
+    rendezvous_t<size_t> rv (__FILE__, __LINE__);
+    size_t i,j;
+  }
+
+  if (OKDBG2(SVC_DATABASES)) {
+    SVC_CHATTER ("+ launching databases\n");
   }
 
   rc.setsize (dbs.size ());
-  twait {
-    for (u_int i = 0; i < dbs.size (); i++) 
-      dbs[i]->connect (mkevent (rc[i]));
+
+  for (i = 0; i < dbs.size (); i++)  {
+    dbs[i]->connect (mkevent (rv, i, rc[i]));
+    if (OKDBG2(SVC_DATABASES)) {
+      SVC_CHATTER ("++ launching " << dbs[i]->getname () << "\n");
+    }
   }
-  for (u_int i = 0; i < dbs.size (); i++) {
-    if (!rc[i])
+
+  for (i = 0; i < dbs.size (); i++) {
+    twait (rv, j);
+    SVC_CHATTER ("-- launched " << dbs[j]->getname () << " -> " 
+		 << rc[j] << "\n");
+    if (!rc[j])
       ret = false;
   }
+
   if (!ret) 
-    SVC_ERROR ("not all databases properly initalized");
+    SVC_ERROR ("not all databases properly initalized\n");
+
+  if (OKDBG2(SVC_DATABASES)) {
+    SVC_CHATTER ("- launched databases\n");
+  }
   TRIGGER (cb, ret);
 }
 
