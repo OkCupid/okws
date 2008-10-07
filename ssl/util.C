@@ -1,5 +1,6 @@
 
 #include "oksslutil.h"
+#include <openssl/rand.h>
 
 namespace okssl {
 
@@ -12,6 +13,18 @@ namespace okssl {
   static BIO *_bio_err;
   
   //-----------------------------------------------------------------------
+
+  static bool
+  init_rand ()
+  {
+#define BUFSZ 40
+    unsigned char foo[BUFSZ];
+    RAND_get_rand_method() ->bytes (foo, BUFSZ);
+#undef BUFSZ
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
   
   bool
   init_ssl_internals ()
@@ -21,6 +34,9 @@ namespace okssl {
       SSL_load_error_strings ();
       _bio_err = BIO_new_fp (stderr, BIO_NOCLOSE);
     }
+    if (!init_rand ())
+      warn ("Failed to initialize random number generator in SSL\n");
+  
     return true;
   }
   

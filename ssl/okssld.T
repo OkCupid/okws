@@ -673,6 +673,7 @@ int
 main (int argc, char *argv[])
 {
   setprogname (argv[0]);
+  set_debug_flags ();
   main2 (argc, argv);
   amain ();
   return 0;
