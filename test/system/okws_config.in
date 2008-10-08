@@ -8,9 +8,18 @@ PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
 OkdExecPath	okd/okd
 
+# SSL Configuration (if enabled)
+@@NO_SSL@@OkssldExecPath	ssl/okssld
+@@NO_SSL@@SslPrimaryPort	4430
+@@NO_SSL@@SslCertFile		@@TOP_SRCDIR@@/test/system/okws.crt.dist
+@@NO_SSL@@SslKeyFile		@@TOP_SRCDIR@@/test/system/okws.key.dist
+@@NO_SSL@@SslUser		okssl
+@@NO_SSL@@SslGroup		okssl
+
 LogDir		@@TOP_BUILD@@/test
 AccessLog	/access_log
 ErrorLog	/error_log
+SslLog		/ssl_log
 AccessLogFmt	ivt1sbU
 
 OkMgrSocket             okd.sock
@@ -27,7 +36,7 @@ Service 	cookie /cookie
 Service		upload /upload
 Service 	purify /purify
 Service		posttest /posttest
-Service		3tier/tst2 /tst2
+#Service		3tier/tst2 /tst2
 
 SyslogLevels	emerg alert crit info warning debug err notice
 

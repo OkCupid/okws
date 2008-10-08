@@ -50,6 +50,7 @@ bool is_safe (const str &s);
 int nfs_safe_stat (const char *f, struct stat *sb);
 inline time_t okwstime () { return sfs_get_timenow(); }
 str errcode2str (const xpub_status_t &e);
+bool to_hostname_and_port (const str &in, str *out, int *port);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL
@@ -64,6 +65,7 @@ public:
   void init (const vec<str> &v, const char *const *seed = NULL);
   ~argv_t ();
   size_t size () const { return _v.size () - 1; }
+  void copy (const argv_t &in);
 
   // BOOOOO; but getopt and everyone else seem to use char *const *
   // and not const char * const * as i suspect they should.

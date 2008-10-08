@@ -157,6 +157,13 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 	  // XXX - note that this is unsafe vis-a-vis XSS attacks.
 	  cgi.load_aarr (&aarr);
 
+	  {
+	    str s;
+	    if (is_ssl () && (s = ssl_cipher ())) {
+	      aarr.add ("CIPHER", s);
+	    }
+	  }
+
 	} else {
 	  opts |= (P_NOPARSE|P_NOLOCALE);
 	}

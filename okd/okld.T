@@ -99,66 +99,26 @@ okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 void
 okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 {
-  //
-  // pop off "OkdExec"
-  //
-  str es;
-  s.pop_front ();
-  vec<str> env;
-
-  strip_comments (&s);
-
-  static rxx envsep ("=");
-
-  bool fnd_dbg = false;
-
-  while (s.size () && strchr (s[0].cstr (), '=')) {
-    vec<str> tmp;
-    assert (split (&tmp, envsep, s[0]));
-    if (tmp[0] == OKWS_DEBUG_OPTIONS) 
-      fnd_dbg = true;
-    env.push_back (s.pop_front ());
-  }
-
-  // 
-  // if our options were on, but none were passed to okd, then
-  // we turn it on here
-  //
-  str opts = getenv (OKWS_DEBUG_OPTIONS);
-  if (!fnd_dbg && opts) {
-    strbuf b;
-    b.fmt ("%s=%s", OKWS_DEBUG_OPTIONS, opts.cstr ());
-    env.push_back (b);
-  }
-
-  if (s.size () != 1)
-    goto usage;
-  
-  okdexecpath = s.pop_front ();
-
-  if (!is_safe (okdexecpath)) {
-    warn << loc << ": okd path (" << okdexecpath
-	 << ") contains unsafe substrings\n";
-    goto err;
-  }
-
-  es = can_exec (okws_exec (okdexecpath));
-  if (es) {
-    warn << loc << ": cannot exec okd: " << es <<"\n";
-    goto err;
-  }
-  
-  if (env.size ()) 
-    okdenv.init (env, environ);
-
-  return;
-
- usage:
-    warn << loc << ": usage: OkdExecPath [<ENV>] <okd-execpath>\n";
- err:
-    *errp = true;
+  okld_t::got_generic_exec (&_okd, s, loc, errp);
+  _okd.activate ();
 }
 
+void
+okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
+{
+  ptr<argv_t> env;
+  if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
+    out->argv () += s;
+    out->set_env (env);
+  }
+}
+
+void
+okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp)
+{
+  okld_t::got_generic_exec (&_okssl, s, loc, errp);
+  _okssl.activate ();
+}
 
 static bool
 parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
@@ -562,7 +522,7 @@ okld_t::check_services_and_aliases ()
       warn << a.loc << ": Alias URI is already taken by a service: " 
 	   << a.from << "\n";
       ret = false;
-    } else if (a.port && !allports_map[a.port]) {
+    } else if (a.port && !_all_ports_map[a.port]) {
       warn << a.loc << ": alias uses port (" << a.port << ") that OKD "
 	   << "does not listen on\n";
       ret = false;
@@ -590,9 +550,14 @@ bool
 okld_t::check_ports ()
 {
   bool ret = true;
-  while (allports.size ()) {
-    okws1_port_t p = allports.pop_front ();
-    if (!(used_ports[p] || (p == listenport && used_primary_port))) {
+  qhash_const_iterator_t<okws1_port_t, bool> it (_all_ports_map);
+  const okws1_port_t *pp;
+  while ((pp = it.next ())) {
+    okws1_port_t p = *pp;
+    if (!(used_ports[p] ||
+	  (used_primary_port &&
+	   (p == listenport || 
+	    (_okssl.active () && p == ok_ssl_port))))) {
       warn << "OKD will listen on port " << p << ", but no "
 	   << "services will be using it!\n";
       ret = false;
@@ -618,6 +583,7 @@ okld_t::parse_file (const str &cf)
 {
   conftab ct;
   str sys_sel_tmp;
+  u_int UIZ = 0;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -641,7 +607,18 @@ okld_t::parse_file (const str &cf)
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
-			       &ok_base_t::got_ports))
+			       &ok_base_t::got_ports, false))
+
+    .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
+    .add ("SslCertFile", &_okssl._certfile)
+    .add ("SslKeyFile", &_okssl._keyfile)
+    .add ("SslPrimaryPort", wrap (this, (&okld_t::got_ssl_primary_port)))
+    .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
+				  &ok_base_t::got_ports, true))
+    .add ("SslTimeout", &_okssl._timeout, UIZ, u_int (100000))
+    .add ("SslUser", &_config_ssl_un)
+    .add ("SslGroup", &_config_ssl_gr)
+
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
     .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
@@ -652,6 +629,7 @@ okld_t::parse_file (const str &cf)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
     .add ("ErrorLog", &logd_parms.errorlog)
+    .add ("SslLog", &logd_parms.ssllog)
     .add ("AccessLogFmt", &logd_parms.accesslog_fmt)
     .add ("SvcLog", &logd_parms.svclog)
     .add ("OklogdUser", &logd_parms.user)
@@ -759,8 +737,10 @@ okld_t::post_config (const str &cf)
     warn << "no 'ServiceGroup' provided; using default: " 
 	 << svc_grp.getname () << "\n";
   }
-  if (_config_okd_un) okd_usr = ok_usr_t (_config_okd_un);
-  if (_config_okd_gr) okd_grp = ok_grp_t (_config_okd_gr);
+  if (_config_okd_un) _okd.set_user (_config_okd_un);
+  if (_config_okd_gr) _okd.set_group (_config_okd_gr);
+  if (_config_ssl_un) _okssl.set_user (_config_ssl_un);
+  if (_config_ssl_gr) _okssl.set_group (_config_ssl_gr);
 
   nxtuid = ok_svc_uid_low;
 
@@ -789,14 +769,15 @@ okld_t::post_config (const str &cf)
       errors = true;
   }
 
-  if (allports.size () == 0) {
+  if (_all_ports_map.size () == 0) {
     warn << "No listen ports given; assuming default port (80)\n";
-    allports.push_back (listenport);
-    allports_map.insert (listenport);
+    add_port (listenport, false);
   }
 
-  if (!check_services_and_aliases () || !check_ports () 
-      || !check_service_ports ()) 
+  if (!check_services_and_aliases () || 
+      !fixup_ssl_ports () ||
+      !check_ports () || 
+      !check_service_ports ()) 
     errors = true;
 
   if (!hostname)
@@ -910,7 +891,7 @@ void
 okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 {
   ptr<argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) 
+  if (ok_base_t::got_generic_exec (s, loc, errp, &env)) 
     logexc = New helper_exec_t (oklog_program_1, s, 1,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
 				env);
@@ -934,7 +915,7 @@ void
 okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 {
   ptr<argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) {
+  if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     pubd2exc = New helper_exec_t (pub_program_2, s, 1,
 				  HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
 				  env);
@@ -1057,7 +1038,7 @@ okld_t::shutdown1 ()
 {
   warn << "Starting shutdown, Phase 1\n";
   sdflag = true;
-  okdx = NULL;
+  _okd.disconnect ();
 }
 
 void
@@ -1099,22 +1080,111 @@ okld_t::okld_exit (int code)
   exit (code);
 }
 
+bool
+okld_t::fixup_ssl_ports ()
+{
+  bool ret = true;
+  if (_okssl.active ()) {
+    bool *sslp = _all_ports_map[ok_ssl_port];
+    if (!sslp) { 
+      add_port (ok_ssl_port, true); 
+    } else if (!*sslp && _https_ports.size () == 0) {
+      warn << "Cannot add default SSL port (" << ok_ssl_port 
+	   << ") since it's already listening for HTTPS\n";
+      ret = false;
+    }
+  }
+  return ret;
+}
+
+tamed void 
+okld_t::launch_okssl (evb_t ev)
+{
+  tvars {
+    vec<str> argv;
+    int logfd;
+    bool rc (false);
+    int fds[2];
+    okws_send_ssl_arg_t arg;
+    ok_xstatus_typ_t res;
+    clnt_stat err;
+  }
+
+  if (!_okssl.active ()) {
+    rc = true;
+  } else {
+    twait { logd->clone (mkevent (logfd)); }
+    if (logfd < 0) {
+      warn << "oklogd did not send a file descriptor; failing\n";
+    } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
+      warn ("socketpair failed when start okssld: %m\n");
+    } else {
+      argv.push_back ("-m");
+      argv.push_back (strbuf () << _okssl._timeout);
+      if (will_jail ()) {
+	argv.push_back ("-u");
+	argv.push_back (strbuf () << _okssl.user ().getid ());
+	argv.push_back ("-g");
+	argv.push_back (strbuf () << _okssl.group ().getid ());
+      }
+      argv.push_back ("-j");
+      argv.push_back (jaildir);
+      argv.push_back ("-d");
+      argv.push_back (_okssl.dumpdir ());
+      argv.push_back ("-l");
+      argv.push_back (strbuf () << logfd);
+      argv.push_back ("-t");
+      argv.push_back (strbuf () << fds[0]);
+      argv.push_back ("-c");
+      argv.push_back (_okssl.certfile_resolved ());
+      argv.push_back ("-k");
+      argv.push_back (_okssl.keyfile_resolved ());
+
+      for (size_t i = 0; i < _https_ports.size (); i++) {
+	argv.push_back ("-p");
+	argv.push_back (strbuf () << _https_ports[i]);
+      }
+
+      _okssl.argv () += argv;
+
+      if (_okssl.launch ()) {
+	_okssl.set_chldcb (wrap (this, &okld_t::shutdown_ssl));
+	_okssl.make_cli (okld_program_1, wrap (this, &okld_t::shutdown_ssl, 0));
+	twait {
+	  _okd.x ()->sendfd (fds[1]);
+	  arg.dummy = 0;
+	  RPC::okld_program_1::okld_send_ssl_socket 
+	    (_okd.cli (), arg, &res, mkevent (err));
+	}
+	if (err) {
+	  warn << "Error sending SSL socket to okd: " << err << "\n";
+	} else if (res != OK_STATUS_OK) {
+	  warn << "okd rejected SSL socket (";
+	  rpc_print (warnx, res, 0, NULL, NULL);
+	  warnx << ")\n";
+	} else {
+	  rc = true;
+	}
+      } else {
+	close (fds[1]);
+      }
+      close (fds[0]);
+    }
+  }
+  ev->trigger (rc);
+}
 
 bool
 okld_t::launch_okd (int logfd, int pub2fd)
 {
-  str prog = okws_exec (okdexecpath);
-  str err = can_exec (prog);
-  if (err) 
-    fatal << "OKD execute error: " << err << "\n";
   vec<str> argv;
-  argv.push_back (prog);
+
   argv.push_back ("-f");
   argv.push_back (configfile);
   argv.push_back ("-l");
   argv.push_back (strbuf () << logfd);
   argv.push_back ("-c");
-  argv.push_back (okd_dumpdir);
+  argv.push_back (_okd.dumpdir ());
   argv.push_back ("-p");
   argv.push_back (strbuf () << listenport);
   argv.push_back ("-x");
@@ -1125,10 +1195,12 @@ okld_t::launch_okd (int logfd, int pub2fd)
     argv.push_back (strbuf (debug_stallfile) << ".okd");
   }
 
+  _okd.argv () += argv;
+
   // launch okd synchronously; no point in us running if okd puked.
-  ptr<axprt_unix> x = axprt_unix_spawnv (prog, argv, 0, NULL, okdenv);
-  if (!x)
+  if (!_okd.launch ()) {
     return false;
+  }
 
   // we've passed this to OKD; don't need it anymore
   close (logfd);
@@ -1136,9 +1208,9 @@ okld_t::launch_okd (int logfd, int pub2fd)
 
   // two shutdown events -- first on close of fdsource_t<> on
   // okd.  Second, is okd's actual exit, which we'll wait on.
-  okd_pid = axprt_unix_spawn_pid;
-  chldcb (okd_pid, wrap (this, &okld_t::shutdown2));
-  okdx = fdsink_t::alloc (x, wrap (this, &okld_t::caught_okd_eof));
+  _okd.set_chldcb (wrap (this, &okld_t::shutdown2));
+  _okd.make_cli (okld_program_1, wrap (this, &okld_t::caught_okd_eof));
+
   return true;
 }
 
@@ -1149,7 +1221,7 @@ okld_t::check_service_ports ()
   u_int lim = svcs.size ();
   for (u_int i = 0; i < lim; i++) {
     okws1_port_t p = svcs[i]->get_port ();
-    if (p && ! allports_map[p]) {
+    if (p && ! _all_ports_map[p]) {
       warn << svcs[i]->loc () 
 	   << ": service uses a port (" << p << ") that OKD does not "
 	   << "listen on!!\n";
@@ -1244,9 +1316,19 @@ main (int argc, char *argv[])
   amain ();
 }
 
-tamed 
-void okld_t::launch (str cf)
+bool
+okld_t::init_ssl ()
 {
+  return _okssl.configure_keys ();
+}
+
+tamed void 
+okld_t::launch (str cf)
+{
+  tvars {
+    bool ok;
+  }
+
   configfile = cf;
   if (!run_configs (cf))
     okld_exit (1);
@@ -1261,8 +1343,11 @@ void okld_t::launch (str cf)
   init_clock_daemon ();
 
   encode_env ();
-  if (!(check_exes () && fix_uids () && init_jaildir () 
-	&& init_interpreters ()))
+  if (!(check_exes () && 
+	fix_uids () && 
+	init_jaildir () && 
+	init_interpreters () &&
+	init_ssl ()))
     okld_exit (1);
 
   used_ports.clear ();
@@ -1289,6 +1374,10 @@ void okld_t::launch (str cf)
   }
 
   if (!launch_okd (logfd, pub2fd))
+    okld_exit (1);
+
+  twait { launch_okssl (mkevent (ok)); }
+  if (!ok) 
     okld_exit (1);
   
   chroot ();
@@ -1354,24 +1443,15 @@ okld_t::init_jaildir ()
     ret = false;
 
   u_int lim = svcs.size ();
-  if (!okd_usr) {
-    warn << "cannot find a user for okd (" << okd_usr.getname () 
-	 << " does not exist)\n";
-    return false;
+
+  if (!_okd.active ()) {
+    warn << "No okd was specified; cannot run!\n";
+    ret = false;
   }
 
-  if (!okd_grp) {
-    warn << "cannot find group for okd (" << okd_grp.getname ()
-	 << "does not exist)\n";
-    return false;
-  }
-
-  okd_dumpdir = apply_container_dir (coredumpdir, 
-				     strbuf () << okd_usr.getid ());
-  if (!jail_mkdir (okd_dumpdir, 0700, &okd_usr, &okd_grp)) {
-    warn << "cannot allocate jail directory for okd\n";
-    return false;
-  }
+  if (!_okd.configure (this, coredumpdir) || 
+      !_okssl.configure (this, coredumpdir))
+    ret = false;
 
   // separate coredump directory for each service UID
   for (u_int i = 0; i < lim; i++) {
@@ -1460,3 +1540,187 @@ svc_options_t::apply_global_defaults ()
   if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
   if (wait_for_signal < 0) wait_for_signal = 0;
 }
+
+//-----------------------------------------------------------------------
+
+okld_helper_t::okld_helper_t (const str &n, const str &u, const str &g)
+  : _name (n),
+    _pid (-1),
+    _usr (u),
+    _grp (g),
+    _active (false),
+    _dumpdir ("/tmp") {}
+
+//-----------------------------------------------------------------------
+
+char *const *
+okld_helper_t::env () const 
+{
+  if (_env) return *_env;
+  else return _empty_env;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::set_group (const str &g)
+{
+  _grp = ok_grp_t (g);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::set_user (const str &u)
+{
+  _usr = ok_usr_t (u);
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::launch ()
+{
+  _x = axprt_unix_spawnv (_argv[0], _argv, 0, NULL, env ());
+  _pid = axprt_unix_spawn_pid;
+  return _x;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::set_chldcb (cbi::ptr cb)
+{
+  chldcb (_pid, cb);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_helper_t::make_cli (const rpc_program &p, cbv::ptr eofcb)
+{
+  _cli = aclnt::alloc (_x, p);
+  if (eofcb) 
+    _cli->seteofcb (eofcb);
+}
+
+//-----------------------------------------------------------------------
+
+void okld_helper_t::activate () { _active = true; }
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure (jailable_t *j, const str &prefix)
+{
+  return (!_active ||
+	  (configure_user () &&
+	   configure_group () &&
+	   configure_dumpdir (j, prefix)));
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure_user ()
+{
+  bool rc = true;
+  if (!_usr) {
+    warn << "cannot find a user for okd (" << _usr.getname () 
+	 << " does not exist)\n";
+    rc = false;
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure_group ()
+{
+  bool rc = true;
+  if (!_grp) {
+    warn << "cannot find group for okd (" << _grp.getname ()
+	 << "does not exist)\n";
+    rc = false;
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_t::configure_dumpdir (jailable_t *j, const str &d)
+{
+  bool ret;
+  _dumpdir = apply_container_dir (d, strbuf () << _usr.getid ());
+  if (!j->jail_mkdir (_dumpdir, 0700, &_usr, &_grp)) {
+    warn << "cannot allocate jail directory for " << _name << "\n";
+    ret = false;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_helper_ssl_t::configure_keys ()
+{
+  return (!_active ||
+	  ((_certfile_resolved = resolve (_certfile, "certificate")) &&
+	   (_keyfile_resolved = resolve (_keyfile, "private key"))));
+}
+
+//-----------------------------------------------------------------------
+
+str
+okld_helper_ssl_t::resolve (const str &in, const char *which) const
+{
+  str out;
+  if (!in || !in.len ()) {
+    warn ("No file given for SSL %s\n", which);
+  } else if  (in[0] == '/') {
+    int rc = access (in.cstr (), R_OK);
+    if (rc != 0) {
+      warn ("cannot access %s %s: %m\n", which, in.cstr ());
+    } else {
+      out = in;
+    }
+  } else {
+    out = okws_etcfile_required (in, NULL, true);
+  }
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::shutdown_ssl (int i)
+{
+
+
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::got_ssl_primary_port (vec<str> v, str loc, bool *errp)
+{
+  bool err = true;
+  u_int port;
+  if (v.size () != 2 || !convertint (v[1], &port)) {
+    warn << loc << ": usage: " << v[0] << " <port>\n";
+  } else if (port > OK_PORT_MAX || port < OK_PORT_MIN) {
+    warn << loc << ": port out of range (" << port << ")\n";
+  } else if (_all_ports_map[port]) {
+    warn << loc << ": report port #: " << port << "\n";
+  } else {
+    ok_ssl_port = port;
+    add_port (port, true);
+    err = false;
+  }
+  if (err) *errp = true;
+}
+
+//-----------------------------------------------------------------------
+

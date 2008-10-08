@@ -85,18 +85,32 @@ union ok_xstatus_t switch (ok_xstatus_typ_t status)
 
 typedef ok_xstatus_typ_t okctl_sendcon_res_t;
 
+struct ssl_ctx_t {
+       string cipher<>;
+};
+
 struct okctl_sendcon_arg_t {
 	opaque sin<>;
+	unsigned port;
+	ssl_ctx_t *ssl;
+};
+
+struct okssl_sendcon_arg_t {
+       opaque sin<>;
+       ssl_ctx_t ssl;
+       int port;
 };
 
 typedef string ip_addr_t<16>;
+
 enum oklog_typ_t {
   OKLOG_OK = 0,
   OKLOG_ERR_WARNING = 1,
   OKLOG_ERR_ERROR = 2,
   OKLOG_ERR_NOTICE = 3,
   OKLOG_ERR_CRITICAL = 4,
-  OKLOG_ERR_DEBUG = 5
+  OKLOG_ERR_DEBUG = 5,
+  OKLOG_SSL = 6
 };
 
 struct oklog_notice_t {
@@ -119,12 +133,20 @@ struct oklog_err_t {
   string aux<>;
 };
 
+struct oklog_ssl_msg_t {
+  string ip<>;
+  string cipher<>;
+  string msg<>;
+};
+
 union oklog_arg_t switch (oklog_typ_t typ) {
  case OKLOG_OK:
    oklog_ok_t ok;
  case OKLOG_ERR_NOTICE:
  case OKLOG_ERR_CRITICAL:
    oklog_notice_t notice;
+ case OKLOG_SSL:
+   oklog_ssl_msg_t ssl;
  default:
    oklog_err_t err;    
 };
@@ -132,6 +154,16 @@ union oklog_arg_t switch (oklog_typ_t typ) {
 struct oklog_fast_arg_t {
   string access<>;
   string error<>;
+  string ssl<>;
+};
+
+struct okws_svc_descriptor_t {
+  string name<256>;
+  int pid;
+};
+
+struct okws_send_ssl_arg_t {
+  int dummy;
 };
 
 %#define LOG_IP     (1 << 0)
@@ -228,5 +260,44 @@ program OKMGR_PROGRAM {
 		OKMGR_CUSTOM_2 (ok_custom_arg_t) = 5;
 	} = 1;
 } = 11278;
+
+program OKLD_PROGRAM {
+	version OKLD_VERS {
+
+		void
+		OKLD_NULL(void) = 0;
+
+		ok_xstatus_typ_t
+		OKLD_NEW_SERVICE(okws_svc_descriptor_t) = 1;
+
+		ok_xstatus_typ_t
+		OKLD_SEND_SSL_SOCKET(okws_send_ssl_arg_t) = 2;
+
+	} = 1;
+
+} = 11279;
+
+program OKSSL_PROGRAM {
+	version OKSSL_VERS {
+
+		void
+		OKSSL_NULL(void) = 0;
+
+		ok_xstatus_typ_t 
+		OKSSL_TOGGLE_ACCEPT(bool) = 1;
+
+		ok_xstatus_typ_t
+		OKSSL_NEW_CONNECTION(okssl_sendcon_arg_t) = 2;
+	} = 1;
+} = 11280;
+
+program NULL_PROGRAM {
+	version NULL_VERS {
+
+		void
+		NULL_NULL(void) = 0;
+
+	} = 1;
+} = 11281;
 
 };

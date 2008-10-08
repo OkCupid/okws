@@ -48,6 +48,7 @@ okd_t::shutdown (int sig)
   sdflag = true;
   sd2 = false;
   stop_listening ();
+  xtab.shutdown ();
 
   OKDBG3(OKD_SHUTDOWN, CHATTER, "sending soft KILL to all services");
 
@@ -103,8 +104,9 @@ okd_t::shutdown2 ()
 
 
   // no need to disconnect from oklogd or pubd explicitly/ that will
-  // happen when we delete this.
-  delete this;
+  // happen when we exit.  Also, do not delete this...
+  // delete this;
+
   warn << "shutdown complete\n";
   exit (0);
 }

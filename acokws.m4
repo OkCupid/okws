@@ -446,6 +446,7 @@ else
   ac_cv_lib_z=yes
 fi
 ])
+
 dnl
 dnl Figure out if struct tm has a tm_gmoff field or not.
 dnl From what I can tell, FreeBSD does, glibc doesn't.
@@ -464,6 +465,79 @@ if test ${okws_cv_gmtoff+set} ; then
 fi
 ])
 dnl
+dnl Find the SSL libraries
+dnl
+AC_DEFUN([OKWS_SSL],
+[AC_ARG_WITH(ssl,
+--with-ssl=DIR      Specify location of expat library)
+use_ssl=no
+LIBSSL=""
+if test "$with_ssl" != "no"; then
+	ac_save_CFLAGS=$CFLAGS
+	ac_save_LIBS=$LIBS
+	dirs=""
+	if test ${with_ssl+set} && "${with_ssl}"; then
+		dirs="$dirs ${with_ssl} ${with_ssl}/include"
+	fi
+	if test "${prefix}" != "NONE"; then
+		dirs="$dirs ${prefix} ${prefix}/include"
+	fi
+	dirs="$dirs /usr/local/include /usr/include"
+	AC_CACHE_CHECK(for ssl.h, okws_cv_ssl_h,
+	[for dir in " " $dirs ; do
+		case $dir in
+			" ") iflags=" " ;;
+			*)   iflags="-I${dir}" ;; 
+		esac
+		CFLAGS="${ac_save_CFLAGS} $iflags"
+		AC_TRY_COMPILE([#include <openssl/ssl.h>], 
+                               [ (void)SSL_new((SSL_CTX *)NULL);],
+				okws_cv_ssl_h="${iflags}"; break)
+	done
+	if test "$okws_cv_ssl_h" = " " ; then
+		okws_cv_ssl_h="yes"
+	fi
+	])
+	if test "$okws_cv_ssl_h" = "yes"; then
+		okws_cv_ssl_h=" "
+	fi
+	if test "${okws_cv_ssl_h+set}"; then
+		dirs=`echo $okws_cv_ssl_h | sed 's/include/lib/' `
+		dirs=`echo $dirs | sed 's/^-I//' `
+		dirs="$dirs /usr/lib /usr/local/lib"
+		AC_CACHE_CHECK(for libssl, okws_cv_libssl,
+		[for dir in " " $dirs; do
+			case $dir in
+				" ") lflags="-lssl" ;;
+				*)   lflags="-L${dir} -lssl" ;;
+			esac
+			LIBS="$ac_save_LIBS $lflags"
+			AC_TRY_LINK([#include <openssl/ssl.h>],
+				    [(void)SSL_new((SSL_CTX *)NULL);],
+				    okws_cv_libssl=$lflags; break)
+		done
+		if test -z ${okws_cv_libssl+set}; then
+			okws_cv_libssl="no"
+		fi
+		])
+	fi
+	if test "${okws_cv_ssl_h+set}" && test "$okws_cv_libssl" != "no"
+	then
+		CPPFLAGS="$CPPFLAGS $okws_cv_ssl_h"
+		AC_DEFINE(HAVE_SSL, 1, Enable OpenSSL support)
+		LIBSSL="$okws_cv_libssl"
+		use_ssl=yes
+	else
+		AC_MSG_ERROR("No OpenSSL Support! To disable use --without-ssl")
+	fi
+	LIBS=$ac_save_LIBS
+	CFLAGS=$ac_save_CFLAGS
+fi
+AC_SUBST(LIBSSL)
+AM_CONDITIONAL(USE_SSL, test "${use_ssl}" != "no")
+])
+dnl
+>>>>>>> .merge-right.r3641
 dnl Find the expat libraries
 dnl
 AC_DEFUN([OKWS_EXPAT],
@@ -752,7 +826,7 @@ AC_SUBST(PUB)
 AC_SUBST(XMLRPCC)
 AC_SUBST(XMLRPCC_COLLECT)
 
-LIBS='$(LIBEXPAT) '"$LIBS"
+LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
 LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDEPS"
 LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"

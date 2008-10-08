@@ -37,6 +37,7 @@
 #include "axprtfd.h"
 #include "okdbg.h"
 #include "rpcwindow.h"
+#include "ok_adebug.h"
 
 common_404_t::common_404_t ()
 {
@@ -198,7 +199,9 @@ okd_t::parse_file (const str &cf)
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
-			       &ok_base_t::got_ports))
+			       &ok_base_t::got_ports, false))
+    .add ("ListenPortsSSL", wrap (static_cast<ok_base_t *> (this),
+				  &ok_base_t::got_ports, true))
     .add ("Alias", wrap (this, &okd_t::got_alias))
     .add ("RegexAlias", wrap (this, &okd_t::got_regex_alias))
     .add ("JailDir", wrap (got_dir, &jaildir))
@@ -243,12 +246,13 @@ okd_t::parse_file (const str &cf)
     .add ("SfsClockMode", wrap (got_clock_mode, &clock_mode))
     .add ("MmapClockFile", &mmc_file)
     .add ("OkdChildSelectDisable", &okd_child_sel_disable)
-    .add ("DemuxTimeout", &ok_demux_timeout, 0, 30)
+    .add ("DemuxTimeout", &ok_demux_timeout, 0, 360)
     .add ("OkdDebugMsgFreq", &okd_debug_msg_freq, 0, 0x10000)
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
     .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
+    .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
 
     .ignore ("MmapClockDaemon")
     .ignore ("Service")
@@ -265,6 +269,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("OklogdExecPath")
     .ignore ("LogDir")
     .ignore ("AccessLog")
+    .ignore ("SslLog")
     .ignore ("ErrorLog")
     .ignore ("AccessLogFmt")
     .ignore ("OklogdUser")
@@ -296,6 +301,14 @@ okd_t::parse_file (const str &cf)
 
     .ignore ("ServiceLifeRequests")
     .ignore ("ServiceLifeTime")
+
+    .ignore ("OkssldExecPath")
+    .ignore ("SslCertFile")
+    .ignore ("SslKeyFile")
+    .ignore ("SslListenPorts")
+    .ignore ("SslTimeout")
+    .ignore ("SslUser")
+    .ignore ("SslGroup")
 
     .ignore ("StartupBatchSize")
     .ignore ("StartupBatchWait")
@@ -364,8 +377,11 @@ okd_t::strip_privileges ()
 }
 
 void
-okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
+okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
 {
+  ref<ahttpcon_clone> x (acw.con ());
+  okws1_port_t port = acw.demux_data ()->port ();
+
   if (!s)
     status = HTTP_BAD_REQUEST;
 
@@ -376,7 +392,7 @@ okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
     
     // for services not on the default port, rewrite the request
     // URL with the port explictly mentioned
-    if (port != listenport) {
+    if (port != listenport && port != ok_ssl_port) {
       strbuf b (":");
       b << port << s;
       s = b;
@@ -409,7 +425,7 @@ okd_t::sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status)
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
     } else {
-      c->clone (x);
+      c->clone (acw);
     }
   }
 }
@@ -421,45 +437,7 @@ okd_t::newserv (int fd)
   socklen_t sinlen = sizeof (sockaddr_in);
   bzero (sin, sinlen);
   int nfd = accept (fd, (sockaddr *) sin, &sinlen);
-  u_int freq = okd_debug_msg_freq;
-  if (nfd >= 0) {
-    reqid ++;
-
-    // debug messaging
-    if (freq > 0 && (reqid % freq) == 0) {
-      strbuf b;
-      b << "nfd_in_xit=" << nfd_in_xit << "; " 
-	<< "xtab.nent=" << xtab.n_entries () << "; "
-	<< "nfds=" << n_ahttpcon << "\n";
-      okdbg_warn (CHATTER, b);
-    }
-
-    nfd_in_xit ++;  // keep track of the number of FDs in transit
-    close_on_exec (nfd);
-    tcp_nodelay (nfd);
-    ref<ahttpcon_clone> x = ahttpcon_clone::alloc (nfd, sin);
-    
-    xtab.reg (x, x->destroyed_p);
-
-    //
-    // when this file descriptor is closed on our end, we need
-    // to decrement nfd_in_xit
-    //
-    // No longer necesary; for now leave it in
-    //
-    x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
-
-
-    OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
-	   "accepted connection from %s\n", x->get_remote_ip ().cstr ());
-
-    x->setccb (wrap (this, &okd_t::sclone, x, *portmap[fd]));
-
-    if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
-      disable_accept ();
-    }
-  }
-  else {
+  if (nfd < 0) {
     if (errno != EAGAIN) {
       const char *ip = NULL;
       if (sin) {
@@ -469,14 +447,61 @@ okd_t::newserv (int fd)
       warn ("** accept error (%s): %m\n", ip);
     } 
     xfree (sin);
+  } else {
+    newserv2 (*portmap[fd], nfd, sin, false, NULL);
   }
 }
 
+void
+okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
+		 const ssl_ctx_t *ssl)
+{
+  u_int freq = okd_debug_msg_freq;
+  reqid ++;
 
+  // debug messaging
+  if (freq > 0 && (reqid % freq) == 0) {
+    strbuf b;
+    b << "nfd_in_xit=" << nfd_in_xit << "; " 
+      << "xtab.nent=" << xtab.n_entries () << "; "
+      << "nfds=" << n_ahttpcon << "\n";
+    okdbg_warn (CHATTER, b);
+  }
+  
+  nfd_in_xit ++;  // keep track of the number of FDs in transit
+  close_on_exec (nfd);
+  if (!proxied)
+    tcp_nodelay (nfd);
+
+  ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
+  ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl));
+  ahttpcon_wrapper_t<ahttpcon_clone> acw (x, dd);
+  
+  xtab.reg (x, x->destroyed_p);
+  
+  //
+  // when this file descriptor is closed on our end, we need
+  // to decrement nfd_in_xit
+  //
+  // No longer necesary; for now leave it in
+  //
+  x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
+  
+  
+  OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
+	 "accepted connection from %s\n", x->get_remote_ip ().cstr ());
+  
+  x->setccb (wrap (this, &okd_t::sclone, acw));
+  
+  if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
+    disable_accept ();
+  }
+}
 
 void
 okd_t::disable_accept_guts ()
 {
+  _ssl.disable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, NULL);
@@ -485,6 +510,7 @@ okd_t::disable_accept_guts ()
 void
 okd_t::enable_accept_guts ()
 {
+  _ssl.enable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, wrap (this, &okd_t::newserv, listenfds[i]));
@@ -493,6 +519,7 @@ okd_t::enable_accept_guts ()
 void
 okd_t::stop_listening ()
 {
+  _ssl.disable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) {
     fdcb (listenfds[i], selread, NULL);
@@ -515,9 +542,9 @@ void start_okd (int argc, char **argv)
     str cf;
     int logfd  (-1);
     int pub2fd (-1);
-    str debug_stallfile;
     str cdd;  // core dump dir
     okws1_port_t port (ok_dport);
+    bool debug_startup (false);
     okd_t *okd;
   }
 
@@ -525,10 +552,10 @@ void start_okd (int argc, char **argv)
   set_debug_flags ();
 
   int ch;
-  while ((ch = getopt (argc, argv, "f:l:D:c:p:x:")) != -1)
+  while ((ch = getopt (argc, argv, "f:l:Dc:p:x:")) != -1)
     switch (ch) {
     case 'D':
-      debug_stallfile = optarg;
+      debug_startup = true;
       break;
     case 'f':
       if (cf)
@@ -567,8 +594,9 @@ void start_okd (int argc, char **argv)
   }
 
   // for debugging, we'll stall until the given file is touched.
-  if (debug_stallfile) 
-    twait { stall (debug_stallfile, mkevent ()); }
+  if (debug_startup) {
+    twait { ok::debug_startup (mkevent ()); }
+  }
 
   sfsconst_init (true);
   if (!cf) 
@@ -616,24 +644,25 @@ okd_t::launch ()
     exit (1);
   }
 
-  okldx = fdsource_t<okws_fd_t>::alloc (okldfd, wrap (this, &okd_t::gotfd));
-  assert (okldx);
+  _okld_x = axprt_unix::alloc (okldfd);
+  _okld_srv = asrv::alloc (_okld_x, okld_program_1,
+			   wrap (this, &okd_t::okld_dispatch));
 
-  if (allports.size () == 0) {
+  if (_http_ports.size () == 0) {
     warn << "No listen addr/ports specified; assuming *:80\n";
-    allports.push_back (listenport);
+    _http_ports.push_back (listenport);
   }
 
-  for (u_int i = 0; i < allports.size () ; i++) {
-    int fd = inetsocket (SOCK_STREAM, allports[i], listenaddr);
+  for (u_int i = 0; i < _http_ports.size () ; i++) {
+    int fd = inetsocket (SOCK_STREAM, _http_ports[i], listenaddr);
     if (fd < 0) {
-      fatal ("could not bind TCP port %d: %m\n", allports[i]);
+      fatal ("could not bind TCP port %d: %m\n", _http_ports[i]);
     }
     close_on_exec (fd);
     listen (fd, ok_listen_queue_max);
     listenfds.push_back (fd);
-    portmap.insert (fd, allports[i]);
-    warn << "listening on " << listenaddr_str << ":" << allports[i] << "\n";
+    portmap.insert (fd, _http_ports[i]);
+    warn << "listening on " << listenaddr_str << ":" << _http_ports[i] << "\n";
   }
 
   strip_privileges ();
@@ -653,48 +682,79 @@ okd_t::launch ()
 }
 
 void
-okd_t::gotfd (int fd, ptr<okws_fd_t> desc)
+okd_t::okld_dispatch (svccb *sbp)
 {
-  if (fd < 0) {
+  if (!sbp) {
+    warn << "initiate shutdown; EOF from okld\n";
     shutdown (0);
-    return;
-  }
-  assert (fd >= 0 && desc);
+  } else {
+    switch (sbp->proc ()) {
+    case OKLD_NEW_SERVICE:
+      {
+	RPC::okld_program_1::okld_new_service_srv_t<svccb> srv (sbp);
+	const okws_svc_descriptor_t *arg = srv.getarg ();
+	int fd = _okld_x->recvfd ();
+	ok_xstatus_typ_t st;
+	if (fd >= 0)  {
+	  got_child_fd (fd, *arg);
+	  st = OK_STATUS_OK;
+	} else {
+	  st = OK_STATUS_BADFD;
+	}
+	srv.reply (st);
+      }
+      break;
+    case OKLD_SEND_SSL_SOCKET:
+      {
+	RPC::okld_program_1::okld_send_ssl_socket_srv_t<svccb> srv (sbp);
 
-  switch (desc->fdtyp) {
-  case OKWS_SVC_X:
-  case OKWS_SVC_CTL_X:
-    got_chld_fd (fd, desc);
-    break;
-  default:
-    okdbg_warn (ERROR, "unknown FD type received from okld\n");
-    break;
+	// ignore arg!
+	//const okws_send_ssl_arg_t *arg = srv.getarg ();
+
+	int fd = _okld_x->recvfd ();
+	ok_xstatus_typ_t st;
+	if (fd >= 0) {
+	  make_async (fd);
+	  if (listen_from_ssl (fd)) {
+	    st = OK_STATUS_OK;
+	  } else {
+	    st = OK_STATUS_NOMORE;
+	  }
+	} else {
+	  st = OK_STATUS_BADFD;
+	}
+	srv.reply (st);
+      }
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+      break;
+    }
   }
-  return;
+}
+
+bool
+okd_t::listen_from_ssl (int fd)
+{
+  bool ret = true;
+  if (!_ssl.init (fd)) {
+    warn << "Multiple SSLs given; using only the first!\n";
+    close (fd);
+    ret = false;
+  }
+  return ret;
 }
 
 void
-okd_t::got_chld_fd (int fd, ptr<okws_fd_t> desc)
+okd_t::got_child_fd (int fd, const okws_svc_descriptor_t &d)
 {
+  str uri = fix_uri (d.name);
   okch_t *ch;
-  str uri;
-  switch (desc->fdtyp) {
-  case OKWS_SVC_CTL_X:
-    uri = fix_uri (desc->ctlx->name);
-    if (!(ch = servtab[uri])) {
-      // calling New will insert the object into the table
-      ch = New okch_t (this, uri);
-    }
-
-    // XXX - debug
-    // will need this to debug missing file descriptors
-    // warn << "got CTL fd: " << desc->ctlx->pid << "\n";
-
-    ch->got_new_ctlx_fd (fd, desc->ctlx->pid);
-    break;
-  default:
-    assert (false);
+  if (!(ch = servtab[uri])) {
+    // calling New will insert the object into the table
+    ch = New okch_t (this, uri);
   }
+  ch->got_new_ctlx_fd (fd, d.pid);
 }
 
 void
@@ -848,9 +908,103 @@ okd_t::okctl_get_stats (svccb *sbp)
 
 }
 
+bool
+okd_ssl_t::init (int fd)
+{
+  bool rc = true;
+  assert (fd >= 0);
+  if (_fd < 0) {
+    _fd = fd;
+    _x = axprt_unix::alloc (fd);
+    _cli = aclnt::alloc (_x, okssl_program_1);
+    _srv = asrv::alloc (_x, okssl_program_1, 
+			wrap (this, &okd_ssl_t::dispatch));
+  } else {
+    rc = false;
+  }
+  return rc;
+}
+
+void
+okd_ssl_t::dispatch (svccb *sbp)
+{
+  if (!sbp) {
+    warn << "okssld shut down; no more SSL connections accepted\n";
+    hangup ();
+  } else {
+    switch (sbp->proc ()) {
+    case OKSSL_NULL:
+      {
+	RPC::okssl_program_1::okssl_null_srv_t<svccb> srv (sbp);
+	srv.reply ();
+      }
+      break;
+    case OKSSL_NEW_CONNECTION:
+      {
+	int fd = _x->recvfd ();
+	RPC::okssl_program_1::okssl_new_connection_srv_t<svccb> srv (sbp);
+	const okssl_sendcon_arg_t &arg = *srv.getarg (); 
+	ok_xstatus_typ_t res = OK_STATUS_OK;
+
+	if (fd < 0) {
+	  res = OK_STATUS_BADFD;
+	} else if (arg.sin.size () < sizeof (sockaddr_in)) {
+	  res = OK_STATUS_ERR;
+	} else {
+	  // XXX todo -- send SSL information
+	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
+	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
+	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl);
+	}
+	srv.reply (res);
+      }
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+      break;
+    }
+  }
+}
+
+tamed void
+okd_ssl_t::toggle_accept (bool arg)
+{
+  tvars {
+    ok_xstatus_typ_t res;
+    clnt_stat err;
+  }
+
+  if (_cli) {
+    twait{
+      RPC::okssl_program_1::okssl_toggle_accept (_cli, arg, &res, 
+						 mkevent (err));
+    }
+    if (err) {
+      warn << "RPC failure in toggling SSL accept: " << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn << "okssld failed to toggle accept (";
+      rpc_print (warnx, res, NULL, 0, NULL);
+      warnx << ")\n";
+    }
+  }
+}
+
+void
+okd_ssl_t::hangup ()
+{
+  _fd = -1;
+  _x = NULL;
+  _cli = NULL;
+  _srv = NULL;
+}
+
+
 int
 main (int argc, char *argv[])
 {
   start_okd (argc, argv);
   amain ();
 }
+
+
+

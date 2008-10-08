@@ -76,6 +76,8 @@ extern const char *ok_okd_uname;
 extern const char *ok_okd_gname;
 extern const char *ok_logd_uname;
 extern const char *ok_logd_gname;
+extern const char *ok_ssl_uname;
+extern const char *ok_ssl_gname;
 
 //
 // default packet size for all axprts
@@ -181,6 +183,13 @@ extern u_int okd_accept_delay;                 // delay before enabling accept
 extern u_int okld_startup_batch_size;          // number in each batch
 extern u_int okld_startup_batch_wait;          // n secs to wait between batch
 
+//
+// okssl constants
+//
+extern const char *ok_ssl_certfile;           // where the cert is kept
+extern const char *ok_ssl_keyfile;            // where the priv key is kept
+extern u_int ok_ssl_timeout;                  // how long before we timeout
+extern u_int ok_ssl_port;                     // 443
 
 //
 // helper constants

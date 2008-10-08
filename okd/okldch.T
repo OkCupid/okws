@@ -23,12 +23,12 @@
  */
 
 #include "okld.h"
-#include "fd_prot.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include "okdbg.h"
 #include "ok_adebug.h"
+#include "okprot.h"
 
 extern char ** environ;
 
@@ -161,6 +161,13 @@ okld_ch_t::launch ()
     int logfd;
     int pub2fd (-1);
     clone_only_client_t *p;
+    okws_svc_descriptor_t arg;
+    ok_xstatus_typ_t res;
+    clnt_stat err;
+    vec<str> argv;
+    str exe, i;
+    ptr<axprt_unix> x;
+    int ctlfd;
   }
 
   if (startup_time == 0)
@@ -202,14 +209,12 @@ okld_ch_t::launch ()
     return;
   }
 
-  vec<str> argv;
-
   // the first argument to aspawn ()...
-  str exe = get_execpath ();
+  exe = get_execpath ();
 
   // only do something in the case of a script; true => we are now
   // chrooted
-  str i = get_interpreter ();
+  i = get_interpreter ();
   if (i) {
     exe = i;
     argv.push_back (i);
@@ -224,7 +229,7 @@ okld_ch_t::launch ()
   // for Service2-style command lands, we can have many arguments
   // here specified in okws_config.  make sure to add the encoded
   // parameters last
-  for (u_int i = 0; i < args.size (); i++)
+  for (size_t i = 0; i < args.size (); i++)
     argv.push_back (args[i]);
 
   // per-service options might override global options here
@@ -247,13 +252,13 @@ okld_ch_t::launch ()
   okld->env.remove ("caching");
   okld->env.remove ("wfs");
 
-  argv_t env_tmp;
-  env_tmp.init (env, environ);
-
-  ptr<axprt_unix> x = 
-    axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
-			wrap (this, &okld_ch_t::set_svc_ids), 
-			env_tmp);
+  {
+    argv_t env_tmp;
+    env_tmp.init (env, environ);
+    x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
+			     wrap (this, &okld_ch_t::set_svc_ids), 
+			     env_tmp);
+  }
 
   pid = axprt_unix_spawn_pid;
   close (logfd);
@@ -263,28 +268,33 @@ okld_ch_t::launch ()
     warn << "HOSED: Cannot launch service: (" << servpath << "," 
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
-    return;
+  } else {
+
+    ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
+
+    // if we're shutting down, okld->_okd_cli will be NULL
+    if (okld->okd ().cli ()) {
+      ctlfd = x->reclaim ();
+      arg.pid = pid;
+      arg.name = servpath;
+      twait {
+	okld->okd ().x ()->sendfd (ctlfd);
+	RPC::okld_program_1::okld_new_service (okld->okd ().cli (),
+					       arg, &res, mkevent (err));
+      }
+     
+      state = OKC_STATE_HOSED;
+      if (err) {
+	warn << "HOSED: Cannot send service to okd (" << servpath << "): "
+	     << err << "\n";
+      } else if (res != OK_STATUS_OK) {
+	warn << "HOSED: Okd rejected service (" << servpath << ") with code="
+	     << int (res) << "\n";
+      } else {
+	state = OKC_STATE_SERVE;
+      }
+    }
   }
-
-  ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
-
-  int ctlfd = x->reclaim ();
-
-  okws_fd_t fdx (OKWS_SVC_CTL_X);
-
-  fdx.ctlx->pid = pid;
-  fdx.ctlx->name = servpath;
-
-  // if we're shutting down, okld->okdx will be NULL
-  if (!okld->okdx || !okld->okdx->send (ctlfd, fdx)) {
-    close (ctlfd);
-    warn << "HOSED: Cannot clone CTL file descriptor: (" << servpath << ")\n";
-    state = OKC_STATE_HOSED;
-    return;
-  }
-
-  state = OKC_STATE_SERVE;
-  return;
 }
 
 void

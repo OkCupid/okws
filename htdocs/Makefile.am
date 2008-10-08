@@ -3,7 +3,7 @@
 ##
 ##
 
-HTDOCS_FILES = 		welcome.html
+HTDOCS_FILES = 		welcome.html cipher.html
 HTDOCS_ERR_FILES = 	err/404.html err/fnf.html err/parseerr.html
 HTDOCS_CONF_FILES = 	conf/mime.types conf/intl.conf 
 HTDOCS_LANG_FILES = 	lang/welcome.en.html lang/welcome.es.html\

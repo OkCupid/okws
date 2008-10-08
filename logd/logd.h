@@ -137,7 +137,7 @@ public:
   logd_t (const str &in, int f = -1) 
     : clone_server_t (f),
       tmr (wrap (this, &logd_t::flush)), 
-      parms (in), logset (0), error (NULL), access (NULL),
+      parms (in), logset (0), error (NULL), access (NULL), ssl (NULL),
       dcb (NULL), 
       uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
       injail (false) {}
@@ -170,12 +170,13 @@ private:
   void parse_fmt ();
   bool access_log (const oklog_ok_t &x);
   bool error_log (const oklog_arg_t &x);
+  bool ssl_log (const oklog_ssl_msg_t &x);
 
   tailq<logd_client_t, &logd_client_t::lnk> lst;
   vec<logd_fmt_el_t *> fmt_els;
   logd_parms_t parms;
   u_int logset;
-  logfile_t *error, *access;
+  logfile_t *error, *access, *ssl;
   timecb_t *dcb;
   int uid;
   ok_usr_t usr;

@@ -23,7 +23,6 @@
 
 #include "pslave.h"
 #include "stllike.h"
-#include "axprtfd.h"
 #include "okdbg.h"
 
 static int

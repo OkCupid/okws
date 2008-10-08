@@ -1,0 +1,71 @@
+How do I create a self-signed SSL Certificate for testing purposes?
+
+   1. Make sure OpenSSL is installed and in your PATH.
+
+   2. Run the following command, to create server.key and server.crt files:
+      $ openssl req -new -x509 -nodes -out server.crt -keyout server.key
+      These can be used as follows in your httpd.conf file:
+
+                   SSLCertificateFile    /path/to/this/server.crt
+                   SSLCertificateKeyFile /path/to/this/server.key
+      	
+
+   3. It is important that you are aware that this server.key does not have any passphrase. To add a passphrase to the key, you should run the following command, and enter & verify the passphrase as requested.
+
+      $ openssl rsa -des3 -in server.key -out server.key.new
+      $ mv server.key.new server.key
+      Please backup the server.key file, and the passphrase you entered, in a secure location.
+
+How do I create a real SSL Certificate?
+
+Here is a step-by-step description:
+
+   1. Make sure OpenSSL is installed and in your PATH.
+
+   2. Create a RSA private key for your Apache server (will be Triple-DES encrypted and PEM formatted):
+
+      $ openssl genrsa -des3 -out server.key 1024
+
+      Please backup this server.key file and the pass-phrase you entered in a secure location. You can see the details of this RSA private key by using the command:
+
+      $ openssl rsa -noout -text -in server.key
+
+      If necessary, you can also create a decrypted PEM version (not recommended) of this RSA private key with:
+
+      $ openssl rsa -in server.key -out server.key.unsecure
+
+   3. Create a Certificate Signing Request (CSR) with the server RSA private key (output will be PEM formatted):
+
+      $ openssl req -new -key server.key -out server.csr
+
+      Make sure you enter the FQDN ("Fully Qualified Domain Name") of the server when OpenSSL prompts you for the "CommonName", i.e. when you generate a CSR for a website which will be later accessed via https://www.foo.dom/, enter "www.foo.dom" here. You can see the details of this CSR by using
+
+      $ openssl req -noout -text -in server.csr
+
+   4. You now have to send this Certificate Signing Request (CSR) to a Certifying Authority (CA) to be signed. Once the CSR has been signed, you will have a real Certificate, which can be used by Apache. You can have a CSR signed by a commercial CA, or you can create your own CA to sign it.
+      Commercial CAs usually ask you to post the CSR into a web form, pay for the signing, and then send a signed Certificate, which you can store in a server.crt file. For more information about commercial CAs see the following locations:
+
+         1. Verisign
+            http://digitalid.verisign.com/server/apacheNotice.htm
+         2. Thawte
+            http://www.thawte.com/
+         3. CertiSign Certificadora Digital Ltda.
+            http://www.certisign.com.br
+         4. IKS GmbH
+            http://www.iks-jena.de/leistungen/ca/
+         5. Uptime Commerce Ltd.
+            http://www.uptimecommerce.com
+         6. BelSign NV/SA
+            http://www.belsign.be
+      For details on how to create your own CA, and use this to sign a CSR, see below.
+      Once your CSR has been signed, you can see the details of the Certificate as follows:
+
+      $ openssl x509 -noout -text -in server.crt
+   5. You should now have two files: server.key and server.crt. These can be used as follows in your httpd.conf file:
+
+             SSLCertificateFile    /path/to/this/server.crt
+             SSLCertificateKeyFile /path/to/this/server.key
+             
+
+      The server.csr file is no longer needed.
+

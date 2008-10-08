@@ -49,6 +49,7 @@ private:
     int to_int () const;
     int64_t to_int64 () const;
     str to_str () const;
+    str to_str_n () const { return _s; }
     double to_double () const;
     bool to_bool () const;
     bool is_null () const { return !_s; }
@@ -90,6 +91,7 @@ public:
   bool to_bool () const { return _p->to_bool (); }
   bool is_null () const { return _p->is_null (); }
   str trim () const;
+  str to_str_n () const { return _p->to_str_n (); }
 
   void set (const str &s) { _p->set (s); }
   void set (double d) { _p->set (d); }

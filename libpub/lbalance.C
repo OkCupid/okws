@@ -24,6 +24,7 @@
 #include "lbalance.h"
 #include "rxx.h"
 #include "parseopt.h"
+#include "pubutil.h"
 
 void
 lblnc_tab_t::activate (u_int i)
@@ -101,8 +102,6 @@ lblnc_tab_t::add (lblnc_node_t *n)
     alive.push_back (n);
 }
 
-static rxx host_and_port ("[^:]+(:\\d{1,6})?");
-
 lblnc_t::lblnc_t (pub_config_iface_t *pub, const str &nm, 
 		  const rpc_program &rp,
 		  int port) 
@@ -114,19 +113,14 @@ lblnc_t::lblnc_t (pub_config_iface_t *pub, const str &nm,
     return;
   }
   for (u_int i = 0 ; i < sz ; i++) {
-    str s = (*pub)[nm][i];
-    str host = s;
-    if (!host_and_port.match (s) || (!host_and_port[2] && port <= 0)) {
-      warn << "invalid DB specified: " << s << "\n";
+    str in = (*pub)[nm][i];
+    str host;
+    int p = port;
+    if (!to_hostname_and_port (in, &host, &p)) {
+      warn << "invalid DB specified: " << in << "\n";
       continue;
     } 
-    int p;
-    if (host_and_port[2]) {
-      assert (convertint (host_and_port[2], &p));
-      host = host_and_port[1];
-    } else 
-      p = port;
-   
+
     // XXX: debug info 
     warn << "db[" << i << "]: " << host << ":" << p << "\n";
     tab.add (New lblnc_node_t (i, rp, host, p, this));

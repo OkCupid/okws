@@ -95,6 +95,9 @@ public:
   suiolite *uio () const { return in; }
   u_int get_bytes_sent () const { return bytes_sent; }
 
+  str select_set () const;
+  virtual str get_debug_info () const { return NULL; }
+
   void set_close_fd_cb (cbv cb) 
   { assert (!cbcd); cbcd = New refcounted<cbv_countdown_t> (cb); }
 
@@ -192,6 +195,7 @@ public:
 
   void declone ();
   static u_int maxscan () { return 10 + OK_MAX_URI_LEN; }
+  str get_debug_info () const;
 
 protected:
   void recvd_bytes (int n);
@@ -215,6 +219,7 @@ private:
   bool decloned;
   int trickle_state;
   timecb_t *dcb;
+  bool _demuxed;
 };
 
 struct ahttp_tab_node_t {
@@ -229,13 +234,18 @@ struct ahttp_tab_node_t {
 
 class ahttp_tab_t {
 public:
-  ahttp_tab_t (int i) : interval (i), dcb (NULL), nent (0) { sched (); }
+
+  ahttp_tab_t (int i) 
+    : interval (i), dcb (NULL), nent (0), _shutdown (false)
+  { sched (); }
+
   ~ahttp_tab_t () { if (dcb) timecb_remove (dcb); }
   
   void unreg (ahttp_tab_node_t *n);
   void reg (ahttpcon *a, ptr<bool> destroyed);
   void run ();
   void sched ();
+  void shutdown ();
   inline size_t n_entries () const { return nent; }
 
 private:
@@ -243,6 +253,7 @@ private:
   timecb_t *dcb;
   tailq<ahttp_tab_node_t, &ahttp_tab_node_t::_qent> q;
   size_t nent;
+  bool _shutdown;
 };
 
 

@@ -302,12 +302,19 @@ void
 oksrvc_t::remove (okclnt_base_t *c)
 {
   clients.remove (c);
+  --nclients;
 
   if (ok_svc_life_reqs > 0 && ++n_reqs >= u_int (ok_svc_life_reqs)) {
     internal_reliable_shutdown ("served maximum number of requests",
 				ok_shutdown_timeout_fast);
-  } else if (!--nclients && sdflag)
-    end_program ();
+  } else if (sdflag) {
+    if (!nclients) {
+      end_program ();
+    } else {
+      OKDBG4(OKD_SHUTDOWN, CHATTER, 
+	     "cli shutdown, still %u left, waiting...\n", nclients);
+    }
+  }
 }
 
 void
@@ -345,6 +352,10 @@ oksrvc_t::shutdown ()
   clnt = NULL; // don't ctlclose -- we might still need more messages.
   if (!nclients) 
     end_program ();
+  else {
+    OKDBG4(OKD_SHUTDOWN, CHATTER,
+	   "not exitting yet; %u clients oustanding", nclients);
+  }
 }
 
 void
@@ -436,10 +447,15 @@ oksrvc_t::launch_T ()
     fatal << "No logging mechanism specified.\n";
   }
 
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ launching pub and log\n");
+
   twait {
     launch_pub2 (mkevent (pub2_rc));
     logd->connect (mkevent (logd_rc));
   }
+
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("- launched pub and log\n");
+
   if (!pub2_rc) {
     SVC_FATAL_ERROR ("could not establish connection with pubd version 2");
     exit (1);
@@ -450,11 +466,15 @@ oksrvc_t::launch_T ()
   }
 
   // Allow work after pub2 init, but before we connect to DBs.
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ custom_init0\n");
   twait { custom_init0 (mkevent ()); }
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ launch_dbs\n");
   twait { launch_dbs (mkevent (dbs_rc)); }
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ custom_init\n");
   twait { custom_init (mkevent ()); }
+  if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("- custom_init\n");
 
-  if (OKDBG2 (OKD_STARTUP))
+  if (OKDBG2 (OKD_STARTUP) || OKDBG2(SVC_STARTUP))
     SVC_CHATTER ("calling READY RPC to okd");
 
   twait { RPC::okctl_program_1::okctl_ready (clnt, mkevent (err)); }
@@ -481,19 +501,37 @@ oksrvc_t::launch_dbs (cbb cb)
   tvars { 
     vec<bool> rc; 
     bool ret (true);
+    rendezvous_t<size_t> rv (__FILE__, __LINE__);
+    size_t i,j;
+  }
+
+  if (OKDBG2(SVC_DATABASES)) {
+    SVC_CHATTER ("+ launching databases\n");
   }
 
   rc.setsize (dbs.size ());
-  twait {
-    for (u_int i = 0; i < dbs.size (); i++) 
-      dbs[i]->connect (mkevent (rc[i]));
+
+  for (i = 0; i < dbs.size (); i++)  {
+    dbs[i]->connect (mkevent (rv, i, rc[i]));
+    if (OKDBG2(SVC_DATABASES)) {
+      SVC_CHATTER ("++ launching " << dbs[i]->getname () << "\n");
+    }
   }
-  for (u_int i = 0; i < dbs.size (); i++) {
-    if (!rc[i])
+
+  for (i = 0; i < dbs.size (); i++) {
+    twait (rv, j);
+    SVC_CHATTER ("-- launched " << dbs[j]->getname () << " -> " 
+		 << rc[j] << "\n");
+    if (!rc[j])
       ret = false;
   }
+
   if (!ret) 
-    SVC_ERROR ("not all databases properly initalized");
+    SVC_ERROR ("not all databases properly initalized\n");
+
+  if (OKDBG2(SVC_DATABASES)) {
+    SVC_CHATTER ("- launched databases\n");
+  }
   TRIGGER (cb, ret);
 }
 
@@ -554,12 +592,14 @@ oksrvc_t::closed_fd ()
     enable_accept ();
 }
 
+
+
 void
 oksrvc_t::handle_new_con (svccb *sbp)
 {
   RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
   okctl_sendcon_res_t res = OK_STATUS_OK;
-  okctl_sendcon_arg_t *arg = srv.getarg ();
+  const okctl_sendcon_arg_t *arg = srv.getarg ();
 
   int fd = ctlx->recvfd ();
 
@@ -582,15 +622,17 @@ oksrvc_t::handle_new_con (svccb *sbp)
     // false-- no close on exec
     // true -- reset the socket flags 
     ptr<ahttpcon> x = ahttpcon::alloc (fd, sin, -1, -1, false, true);
-    if (!newclnt (x))
+    ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
+    if (!newclnt (acw))
       res = OK_STATUS_NOMORE;
   }
   srv.reply (res);
 }
 
 bool
-oksrvc_t::newclnt (ptr<ahttpcon> lx)
+oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
 {
+  ptr<ahttpcon> lx = acw.con ();
   bool sendmore = true;
   if (!lx) { 
     warn << "oksrvc_t::newclnt: NULL request encountered\n";
@@ -602,6 +644,7 @@ oksrvc_t::newclnt (ptr<ahttpcon> lx)
     } else {
       _n_newcli ++;
       okclnt_base_t *c = make_newclnt (lx);
+      c->set_demux_data (acw.demux_data ());
       if (use_union_cgi ())
 	  c->set_union_cgi_mode (true);
       c->serve ();
@@ -629,16 +672,31 @@ okclnt2_t::serve_T ()
   tvars {
     int status;
     bool did_output (false);
-  }
-  twait { parse (mkevent (status)); }
-  if (status == HTTP_OK) {
-    if (process_flag)
-      panic ("duplicate process called!\n");
-    else {
-      twait { process (mkevent (did_output, status)); }
-    }
+    str s;
   }
 
+  if (ssl_only () && !is_ssl ()) {
+
+    if ((s = ssl_redirect_str ())) {
+      twait { redirect (s, HTTP_MOVEDPERM, mkevent ()); }
+      did_output = true;
+    } else {
+      status = HTTP_FORBIDDEN;
+    }
+
+  } else {
+
+    twait { parse (mkevent (status)); }
+    if (status == HTTP_OK) {
+      if (process_flag)
+	panic ("duplicate process called!\n");
+      else {
+	twait { process (mkevent (did_output, status)); }
+      }
+    }
+
+  }
+    
   if (!did_output) {
     if (status != HTTP_OK) {
       twait { error (status, NULL, true, mkevent ()); }
@@ -646,7 +704,7 @@ okclnt2_t::serve_T ()
       twait { output (out, mkevent ()); }
     }
   }
-
+  
   serve_complete ();
 }
 
@@ -656,18 +714,32 @@ okclnt_base_t::serve_T ()
   tvars {
     int status;
   }
-  twait { parse (mkevent (status)); }
-  if (status == HTTP_OK)
-    if (process_flag)
-      panic ("duplicate process called!\n");
-    else {
-      process_flag = true;
-      if (pre_process ()) {
-	process ();
-      }
+
+  if (ssl_only () && !is_ssl ()) {
+
+    str s = ssl_redirect_str ();
+    if (s) {
+      redirect (s);
+    } else {
+      error (HTTP_FORBIDDEN);
     }
-  else
-    error (status);
+
+  } else {
+
+    twait { parse (mkevent (status)); }
+    if (status == HTTP_OK) {
+      if (process_flag)
+	panic ("duplicate process called!\n");
+      else {
+	process_flag = true;
+	if (pre_process ()) {
+	  process ();
+	}
+      }
+    } else {
+      error (status);
+    }
+  }
 }
 
 tamed void
@@ -925,20 +997,19 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
     *errp = true;
   }
   if (!*errp) {
-    if (allports_map[listenport]) {
+    if (_all_ports_map[listenport]) {
       warn << loc << ": repeated port #: " << listenport << "\n";
       *errp = true;
       return;
     }
-    allports.push_back (listenport);
-    allports_map.insert (listenport);
+    add_port (listenport, false);
     
     bind_addr_set = true;
   }
 }
 
 void
-ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
+ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 {
   strip_comments (&s);
 
@@ -952,14 +1023,24 @@ ok_base_t::got_ports (vec<str> s, str loc, bool *errp)
     } else if (t > PORT_MAX) {
       warn << loc << ": port out of range: " << t << "\n";
       *errp = true;
-    } else if (allports_map[port]) {
+    } else if (_all_ports_map[port]) {
       warn << loc << ": repeated port #: " << t << "\n";
       *errp = true;
     } else {
-      allports.push_back (port);
-      allports_map.insert (port);
+      add_port (port, ssl);
     }
   }
+}
+
+void
+ok_base_t::add_port (okws1_port_t port, bool ssl)
+{
+  assert (!_all_ports_map[port]);
+  _all_ports_map.insert (port, ssl);
+  if (ssl) 
+    _https_ports.push_back (port);
+  else
+    _http_ports.push_back (port);
 }
 
 
@@ -1107,10 +1188,12 @@ oksrvc_t::operator[] (const str &s) const
 
 bool
 ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp, 
-			      ptr<argv_t> *ep)
+			     ptr<argv_t> *ep)
 {
   str cmd, err, prog;
   vec<str> env;
+  bool fnd_dbg = false;
+  const char *cp;
 
   strip_comments (&s);
 
@@ -1118,8 +1201,18 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   
   cmd = s.pop_front ();
 
-  while (s.size () && strchr (s[0].cstr (), '=')) 
+  while (s.size () && (cp = strchr (s[0].cstr (), '=')))  {
+    if (strncmp (OKWS_DEBUG_OPTIONS, s[0], cp - s[0]) == 0)
+      fnd_dbg = true;
     env.push_back (s.pop_front ());
+  }
+
+  str opts = getenv (OKWS_DEBUG_OPTIONS);
+  if (!fnd_dbg && opts) {
+    strbuf b;
+    b.fmt ("%s=%s", OKWS_DEBUG_OPTIONS, opts.cstr ());
+    env.push_back (b);
+  }
 
   if (s.size ()) {
     *ep = New refcounted<argv_t> (env, environ);
@@ -1201,3 +1294,38 @@ set_sfs_select_policy ()
       sfs_core::set_select_policy (ok_sys_sel_policy) < 0)
     warn << "Failed to set select policy to KQ\n";
 }
+
+//-----------------------------------------------------------------------
+
+void
+demux_data_t::to_xdr (okctl_sendcon_arg_t *arg)
+{
+  arg->port = _port;
+  if (_ssl) {
+    arg->ssl.alloc ();
+    if (_ssl_info) {
+      arg->ssl->cipher = _ssl_info;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<demux_data_t>
+demux_data_t::alloc (const okctl_sendcon_arg_t &arg)
+{
+  str ssl;
+  if (arg.ssl) ssl = arg.ssl->cipher;
+  return New refcounted<demux_data_t> (arg.port, arg.ssl, ssl);
+}
+
+//-----------------------------------------------------------------------
+
+str 
+okclnt_base_t::ssl_cipher () const 
+{
+  if (_demux_data) return _demux_data->ssl_info ();
+  else return NULL;
+}
+
+//-----------------------------------------------------------------------

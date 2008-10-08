@@ -296,13 +296,15 @@ pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
       o->output_err (e, strbuf ("switch: cannot evaluate key value (")
 		     << key->name () << ")", lineno);
   } else {
+   
     const ptr<pswitch_env_base_t> *psep = _exact_cases[v];
     if (psep)
       pse = *psep;
 
     if (!pse) {
+      scalar_obj_t so (v);
       for (size_t i = 0; i < _other_cases.size () && !pse; i++) {
-	if (_other_cases[i]->match (v))
+	if (_other_cases[i]->match (so))
 	  pse = _other_cases[i];
       }
     }
@@ -687,6 +689,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   phashp_t ph;
   str ckey;
   ptr<pub_regex_t> rxx;
+  ptr<pub_range_t> range;
 
   // fn1 is what's provided in the given file; fn2 is
   // the output from the the to_binding call to get the jailed filename
@@ -740,8 +743,10 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   
   pbinding_t *b = NULL;
   if (!err) {
-    if (!(*l)[0]->is_null () && !(ckey = (*l)[0]->eval ()) &&
-	!(rxx = (*l)[0]->to_regex ())) {
+    if (!(*l)[0]->is_null () && 
+	!(ckey = (*l)[0]->eval ()) &&
+	!(rxx = (*l)[0]->to_regex ()) && 
+	!(range = (*l)[0]->to_range ())) {
       PWARN("Cannot determine case key");
       err = true;
     } else if (fn1 && !(b = global_parser->to_binding (fn1))) {
@@ -779,11 +784,18 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
     bool nullkey = (ckey && ckey == PUB_NULL_CASE) ;
     ptr<pswitch_env_base_t> allcase;
 						      
-    if (rxx) {
-      ptr<pswitch_env_rxx_t> se = 
-	New refcounted<pswitch_env_rxx_t> (rxx, fn2, env, ne);
-      _other_cases.push_back (se);
-      allcase = se;
+    if (rxx || range) {
+      ptr<pswitch_env_base_t> se;
+      if (rxx) {
+	se = New refcounted<pswitch_env_rxx_t> (rxx, fn2, env, ne);
+      } else if (range) {
+	se = New refcounted<pswitch_env_range_t> (range, fn2, env, ne);
+	warn << "range in effect!\n";
+      }
+      if (se) {
+	_other_cases.push_back (se);
+	allcase = se;
+      }
 
     } else if ((!ckey && def) || (ckey && _exact_cases[ckey]) || 
 	       (nullkey && nullcase)) {
@@ -1492,14 +1504,21 @@ pub_regex_t::match (const str &s)
 }
  
 bool
-pswitch_env_exact_t::match (const str &s) const
+pswitch_env_exact_t::match (const scalar_obj_t &so) const
 {
+  const str &s = so.to_str_n ();
   return s && s == _key;
-
 }
 
 bool
-pswitch_env_rxx_t::match (const str &s) const
+pswitch_env_rxx_t::match (const scalar_obj_t &so) const
 {
+  const str &s = so.to_str_n ();
   return _rxx->match (s);
+}
+
+bool
+pswitch_env_range_t::match (const scalar_obj_t &so) const
+{
+  return _range && _range->match (so);
 }

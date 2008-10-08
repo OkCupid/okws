@@ -92,6 +92,60 @@ private:
   bhash<str> _seen; // files seen
 };
 
+class demux_data_t {
+public:
+
+  demux_data_t (okws1_port_t p, bool s, const str &i)
+    : _port (p), _ssl (s), _ssl_info (i) {}
+
+  demux_data_t (okws1_port_t p, const ssl_ctx_t *ssl)
+    : _port (p), 
+      _ssl (ssl ? true : false)
+  {
+    if (ssl) 
+      _ssl_info = ssl->cipher;
+  }
+
+  static ptr<demux_data_t> alloc (const okctl_sendcon_arg_t &x);
+  void to_xdr (okctl_sendcon_arg_t *x);
+
+  okws1_port_t port () const { return _port; }
+  bool ssl () const { return _ssl; }
+  str ssl_info () const { return _ssl_info; }
+
+private:
+
+  okws1_port_t _port;
+  bool _ssl;
+  str _ssl_info;
+};
+
+template<class A>
+class ahttpcon_wrapper_t {
+public:
+  ahttpcon_wrapper_t (ptr<A> c, ptr<demux_data_t> d = NULL) 
+    : _con (c), _demux_data (d) {}
+  ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg_t &x)
+    : _con (c), _demux_data (demux_data_t::alloc (x)) {}
+  ptr<A> con () { return _con; }
+  ptr<const A> con () const { return _con; }
+  ptr<demux_data_t> demux_data () { return _demux_data; }
+  ptr<const demux_data_t> demux_data () const { return _demux_data; }
+
+  void
+  to_xdr (okctl_sendcon_arg_t *x)
+  {
+    sockaddr_in *sin = _con->get_sin ();
+    x->sin.setsize (sizeof (*sin));
+    memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
+    _demux_data->to_xdr (x);
+  }
+
+private:
+  ptr<A> _con;
+  ptr<demux_data_t> _demux_data;
+};
+
 class ok_base_t : public jailable_t {
 public:
   ok_base_t (const str &h = NULL, int lfd = -1, int pfd = -1)
@@ -102,7 +156,8 @@ public:
       topdir (ok_topdir),
       reported_name (ok_wsname),
       logd (NULL), logfd (lfd), pub2fd (pfd),
-      bind_addr_set (false)
+      bind_addr_set (false),
+      _ssl_primary_port (ok_ssl_port)
       //jaildir_run (ok_jaildir_run) 
   {}
 
@@ -110,7 +165,8 @@ public:
 
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
-  void got_ports (vec<str> s, str loc, bool *errp);
+  void got_ports (bool ssl, vec<str> s, str loc, bool *errp);
+  void add_port (okws1_port_t p, bool ssl);
   str okws_exec (const str &path) const;
   //str doubly_jail_rundir () const { return nest_jails (jaildir_run); }
 
@@ -126,8 +182,8 @@ public:
   str debug_stallfile;
   str server_id;
 
-  vec<okws1_port_t> allports;
-  bhash<okws1_port_t> allports_map;
+  vec<okws1_port_t> _https_ports, _http_ports;
+  qhash<okws1_port_t, bool> _all_ports_map;
 
 
 protected:
@@ -139,6 +195,7 @@ protected:
   int pub2fd;
   //str jaildir_run;  // nested jaildir for okd and services
   bool bind_addr_set; // called after got_bindaddr;
+  okws1_port_t _ssl_primary_port;
 };
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
@@ -261,6 +318,9 @@ public:
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
 
+  virtual bool ssl_only () const { return false; } 
+  virtual str  ssl_redirect_str () const { return NULL; }
+
   // Kludge; this won't do anything except for subclasses that actually
   // use CGI.
   virtual void set_union_cgi_mode (bool b) {}
@@ -285,6 +345,10 @@ public:
   void disable_gzip () { rsp_gzip = false; }
 
   void set_hdr_field (const str &k, const str &v);
+
+  void set_demux_data (ptr<demux_data_t> d) { _demux_data = d; }
+  bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
+  str ssl_cipher () const;
 
   list_entry<okclnt_base_t> lnk;
   virtual ptr<pub2::ok_iface_t> pub2 () ;
@@ -331,6 +395,7 @@ protected:
   output_state_t output_state;
   u_int _timeout;
   ptr<pub2::locale_specific_publisher_t> _p2_locale;
+  ptr<demux_data_t> _demux_data;
 };
 
 // 
@@ -454,7 +519,7 @@ protected:
 
 
   void handle_new_con (svccb *sbp);
-  bool newclnt (ptr<ahttpcon> lx);
+  bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void kill (svccb *v);
   void ready_call (bool rc);
 

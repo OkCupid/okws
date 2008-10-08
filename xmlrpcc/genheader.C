@@ -22,6 +22,7 @@
  */
 
 #include "rpcc.h"
+#include "rxx.h"
 
 static void
 pmshl_xml (str id)
@@ -478,6 +479,16 @@ dump_tmpl_proc_3 (const str &arg, const str &res, const str &fn,
 		    "R", "R", false);
 }
 
+static bool
+is_builtin(const str &s)
+{
+  static rxx x ("(((unsigned|long|const)\\s+)*|(u_?)?)"
+		"(bool|char|int|short|quad|long|"
+		"int(8|16|32|64)_t)");
+
+  return x.match (s);
+}
+
 static void
 dump_tmpl_class (const str &arg, const str &res, const str &c, const str &spc)
 {
@@ -486,16 +497,25 @@ dump_tmpl_class (const str &arg, const str &res, const str &c, const str &spc)
        << spc << "public:\n"
        << spc << "  " << c << "(S *s) : _replied (false), _sbp (s) {}\n";
   if (arg) {
-    aout << spc << "  " << "const ::" << arg << "* getarg() const { "
+    str dcol = is_builtin (arg) ? "" : "::";
+    aout << spc << "  " << "const " << dcol << arg << "* getarg() const { "
 	 << " return static_cast<" << arg << "*> (_sbp->getvoidarg ()); }\n";
-    aout << spc << "  ::" << arg << "* getarg() { "
+    aout << spc << "  " << dcol << arg << "* getarg() { "
 	 << " return static_cast<" << arg << "*> (_sbp->getvoidarg ()); }\n";
   }
   if (res) {
-    aout << spc << "  " << "void reply (const ::" << res << " *r) "
+    str dcol = is_builtin (res) ? "" : "::";
+    aout << spc << "  " << "void reply (const " << dcol << res << " *r) "
 	 << "{ check_reply (); _sbp->reply (r); }\n";
-    aout << spc << "  " << "void reply (const ::" << res << " &r) "
+    aout << spc << "  " << "void reply (const " << dcol << res << " &r) "
 	 << "{ check_reply (); _sbp->replyref (r); }\n";
+    aout << spc << "  " << "void reply (ptr< " << dcol << res << "> r) "
+	 << "{ check_reply (); _sbp->reply (r); }\n";
+
+    aout << spc << "  " 
+	 << "VA_TEMPLATE(ptr<" << res << "> alloc_res, "
+	 << " { return New refcounted<" << res << "> "
+	 << ", ; } )\n";
   } else {
     aout << spc << "  " << "void reply () "
 	 << "{ check_reply (); _sbp->reply (NULL); }\n";
@@ -506,7 +526,10 @@ dump_tmpl_class (const str &arg, const str &res, const str &c, const str &spc)
   aout << spc << "  " << "void reject (auth_stat s) "
        << "{ check_reply (); _sbp->reject (s); }\n"
        << spc << "  " << "void reject (accept_stat s) "
-       << "{ check_reply (); _sbp->reject (s); }\n\n";
+       << "{ check_reply (); _sbp->reject (s); }\n"
+       << spc << "  " << "void reject () "
+       << "{ check_reply (); _sbp->reject (); }\n\n";
+
 
   aout << spc << "private:\n"
        << spc << "  void check_reply () "

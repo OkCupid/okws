@@ -97,10 +97,22 @@ fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
   }
 }
 
+void
+fast_log_t::log_ssl (const str &ip, const str &cipher, const str &msg)
+{
+  tmr.enable ();
+  add_ssl (ip, cipher, msg);
+  if (past_high_water ()) {
+    flush ();
+    tmr.reset ();
+  }
+}
+
 bool
 fast_log_t::past_high_water () const
 {
-  return (access.past_high_water () || error.past_high_water ());
+  return (access.past_high_water () || error.past_high_water () ||
+	  ssl.past_high_water ());
 }
 
 void
@@ -124,6 +136,18 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
     error.copy (": ", 2).copy (auxstr);
 
   error.newline ();
+}
+
+void
+fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
+{
+  ssl << tmr << ' ';
+  ssl.copy ("[client ", 8).remote_ip (ip).copy ("] ", 2)
+    .cipher (cipher);
+  if (msg) {
+    ssl.copy (" ", 1).msg (msg);
+  }
+  ssl.newline ();
 }
 
 void
@@ -226,6 +250,7 @@ logd_parms_t::decode (const str &p)
   t->lookup ("alfmt",     &accesslog_fmt);
   t->lookup ("user",      &user);
   t->lookup ("group",     &group);
+  t->lookup ("ssllog",    &ssllog);
 }
 
 str
@@ -240,7 +265,8 @@ logd_parms_t::encode () const
     .insert ("alfmt",     accesslog_fmt)
     .insert ("user",      user)
     .insert ("group",     group)
-    .insert ("svclog",    svclog);
+    .insert ("svclog",    svclog)
+    .insert ("ssllog",    ssllog);
   return ((enc = ct.encode ()));
 }
 
@@ -316,16 +342,17 @@ fast_log_t::flush_T ()
 {
   tvars {
     oklog_fast_arg_t arg;
-    int ai, ei;
+    int ai, ei, si;
     bool ok;
     clnt_stat err;
-    bool c1, c2;
+    bool c1, c2, c3;
   }
 
   c1 = access.to_str (&arg.access, &ai);
   c2 = error.to_str (&arg.error, &ei);
+  c3 = ssl.to_str (&arg.ssl, &si);
   
-  if (c1 || c2) {
+  if (c1 || c2 || c3) {
     twait { RPC::oklog_program_1::oklog_fast (h, arg, &ok, mkevent (err)); }
     if (err) {
       warn << "Error in log RPC: " << err << "\n";
@@ -334,6 +361,7 @@ fast_log_t::flush_T ()
     }
     access.unlock (ai);
     error.unlock (ei);
+    ssl.unlock (si);
   } else {
     tmr.disable ();
   }

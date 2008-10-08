@@ -404,6 +404,92 @@ ErrorDoc	404	/err/404.html
 ##
 #Script PY /py-svc/users.py /users
 
+
+##=======================================================================
+## SSL
+##
+
+## OkssldExecPath
+##
+##  Specifying where to find okssld will turn SSL on for this OKWS
+##  instance.  okssld is the daemon in charge of negotatiating SSL
+##  handshakes and the SSL tunnel abstraction.  Only it needs access
+##  to SSL keys.
+##
+##  Can specify command line arguments and environment variables to
+##  okssld as one does to okd.  The salient options are:
+##
+##    -D   debugging; stall for a signal before starting up
+##
+##  Most of the other options are constructed by okld, and are determined
+##  by the okws_config options given below...
+##
+OkssldExecPath okssld
+
+##
+## SslUser / SslGroup
+##
+##  If running as root, specify a user and group for okssld to run as,
+##  which of course should not interfere with the other user and
+##  group IDs used.  The defaultis 'okssl' in both cases.
+##
+#SslUser	okssl
+#SslGroup	okssl
+
+##
+## SslKeyFile
+##
+##  Specify where the secret server key is for SSL on this machine.
+##  The .dist file is a bogus key and of course should not be used
+##  in product.
+##
+SslKeyFile	/usr/local/etc/okws/okws.key.dist
+
+##
+## SslCertFile
+##
+##  Specify the location of the server certificate.
+##
+SslCertFile	/usr/local/etc/okws/okws.crt.dist
+
+##
+## SslPrimaryPort
+##
+##  The primary SSL port to listen on.  By default, incoming connections
+##  on this port will be routed to all services specified in this file.
+##  The default is 443, the standard https port.
+##
+#SslPrimaryPort	443
+
+##
+## SslListenPorts
+##
+##  Specify other ports that SSL will listen on.  These ports must be
+##  explicitly refered to by the services that plan to use them.
+##  For instance, :4430/profile, as above.
+##
+#SslListenPorts 444 445 4430
+
+##
+## SslTimeout
+##
+##  If connections don't act before this timeout expires, they will
+##  be garbage collected, so okssld does not leak state...
+##
+#SslTimeout 100
+
+##
+## SslLog
+##
+##  A logfile for SSL-specific information
+##
+SslLog /ssl_log
+
+
+
+## /SSL
+##=======================================================================
+
 ##=======================================================================
 ## Other Miscellaneous Options
 ##

@@ -145,7 +145,8 @@ bool
 logd_t::logfile_setup ()
 {
   return (logfile_setup (&access, parms.accesslog, "access") &&
-	  logfile_setup (&error, parms.errorlog, "error"));
+	  logfile_setup (&error, parms.errorlog, "error") &&
+	  logfile_setup (&ssl, parms.ssllog, "ssl"));
 }
 
 
@@ -154,8 +155,10 @@ logd_t::close_logfiles ()
 {
   delete access;
   delete error;
+  delete ssl;
   access = NULL;
   error = NULL;
+  ssl = NULL;
 }
 
 void
@@ -256,7 +259,7 @@ void
 logd_t::launch ()
 {
   if (!setup ()) 
-    fatal << "launch/setup of failed\n";
+    fatal << "launch/setup failed\n";
 }
 
 bool
@@ -353,6 +356,15 @@ logfile_t::open (const str &f)
 }
 
 bool
+logd_t::ssl_log (const oklog_ssl_msg_t &x)
+{
+  logbuf_t *lb = ssl->getbuf ();
+  lb->copy ("[client ", 8).remote_ip (x.ip).copy ("] ", 2).copy (x.cipher);
+  if (x.msg.len ()) lb->copy (" ", 1).copy (x.msg);
+  return true;
+}
+
+bool
 logd_t::access_log (const oklog_ok_t &x)
 {
   u_int lim = fmt_els.size ();
@@ -397,13 +409,17 @@ logd_t::turn (svccb *sbp)
 
   logfile_t *access2 = NULL;
   logfile_t *error2 = NULL;
+  logfile_t *ssl2 = NULL;
 
   if (logfile_setup (&access2, parms.accesslog, "access")) {
     if (logfile_setup (&error2, parms.errorlog, "error")) {
-      ret = true;
-      close_logfiles ();
-      access = access2;
-      error = error2;
+      if (logfile_setup (&ssl2, parms.errorlog, "ssl")) {
+	ret = true;
+	close_logfiles ();
+	access = access2;
+	error = error2;
+	ssl = ssl2;
+      }
     } else {
       delete access2;
     }
@@ -420,11 +436,15 @@ logd_t::fastlog (svccb *sbp)
 {
   bool ret = true;
   RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
-  oklog_fast_arg_t *fa = srv.getarg ();
+  const oklog_fast_arg_t *fa = srv.getarg ();
+
   assert (access);
   assert (error);
+  assert (ssl);
   access->flush (fa->access);
   error->flush (fa->error);
+  ssl->flush (fa->ssl);
+
   srv.reply (ret);
 }
 
@@ -434,6 +454,7 @@ logd_t::log (svccb *sbp)
   RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
   bool ret = true;
   oklog_arg_t *la = srv.getarg ();
+
   switch (la->typ) {
   case OKLOG_OK:
     ret = access_log (*la->ok);
@@ -441,6 +462,9 @@ logd_t::log (svccb *sbp)
   case OKLOG_ERR_NOTICE:
   case OKLOG_ERR_CRITICAL:
     ret = error_log (*la);
+    break;
+  case OKLOG_SSL:
+    ret = ssl_log (*la->ssl);
     break;
   default:
     if (!error_log (*la)) ret = false;

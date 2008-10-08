@@ -51,6 +51,9 @@ const char *ok_pubd_gname = "www";    // default runas group for pubd
 const char *ok_logd_uname = "oklog";  // logging role, user
 const char *ok_logd_gname = "oklog";  // logging role, group
 
+const char *ok_ssl_uname = "okssl";  // SSL key management role, user
+const char *ok_ssl_gname = "okssl";  // SSL key management role, group
+
 //
 // pub constants
 //
@@ -101,7 +104,7 @@ u_int ok_shutdown_timeout_fast = 3; // seconds
 u_int ok_shutdown_retries = 3;      // n retries before giving up
 u_int ok_db_retries_max = 100;
 u_int ok_db_retries_delay = 3;
-u_int ok_demux_timeout = 15;        // clients have 15 secs to make a REQ
+u_int ok_demux_timeout = 30;        // clients have 30 secs to make a REQ
 
 //
 // okd constants
@@ -140,6 +143,14 @@ u_int okd_accept_delay = 0;         // delay before enabling accept
 //
 u_int okld_startup_batch_size = 25;        // number in each batch
 u_int okld_startup_batch_wait = 3;         // n secs to wait between batch
+
+//
+// okssl constants
+//
+const char *ok_ssl_certfile = "okws.crt";     // name of the OKWS certfile
+const char *ok_ssl_keyfile = "okws.key";      // private Key
+u_int ok_ssl_timeout = 100;                   // long timeout for SSL con
+u_int ok_ssl_port = 443;                      // default SSL port
 
 // location of the memory-mapped clock daemon
 const char *ok_mmcd = "/usr/local/lib/sfslite/mmcd";

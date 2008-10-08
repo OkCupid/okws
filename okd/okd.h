@@ -36,8 +36,6 @@
 #include "okerr.h"
 #include "svq.h"
 #include "okconst.h"
-#include "axprtfd.h"
-#include "fd_prot.h"
 #include "arpc.h"
 #include "rxx.h"
 #include "tame.h"
@@ -79,8 +77,8 @@ public:
   okch_t (okd_t *o, const str &e);
   ~okch_t ();
   void launch ();
-  void clone (ref<ahttpcon_clone> xc);
-  void send_con_to_service (ref<ahttpcon_clone> xc, CLOSURE);
+  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw);
+  void send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
   void shutdown (oksig_t sig, cbv cb);
 
   void got_new_ctlx_fd (int fd, int p);
@@ -112,7 +110,7 @@ private:
   void shutdown_cb1 (cbv cb);
   void closed_fd ();
 
-  vec<ptr<ahttpcon_clone> > conqueue;
+  vec<ahttpcon_wrapper_t<ahttpcon_clone> > conqueue;
 
   okc_state_t state;
   ptr<bool> destroyed;
@@ -122,6 +120,24 @@ private:
   time_t _last_restart;    // time when started;
   
   bool _too_busy;          // the server is potentially too busy to get more
+};
+
+class okd_ssl_t {
+public:
+  okd_ssl_t (okd_t *o) : _okd (o), _fd (-1) {}
+  ~okd_ssl_t () { hangup (); }
+  bool init (int fd);
+  void enable_accept () { toggle_accept (true); }
+  void disable_accept () { toggle_accept (false); }
+  void dispatch (svccb *sbp);
+  void hangup ();
+private:
+  void toggle_accept (bool b, CLOSURE);
+  okd_t *_okd;
+  int _fd;
+  ptr<axprt_unix> _x;
+  ptr<aclnt> _cli;
+  ptr<asrv> _srv;
 };
 
 class okd_t : public ok_httpsrv_t, public config_parser_t 
@@ -143,7 +159,8 @@ public:
     xtab (2),
     _socket_filename (okd_mgr_socket),
     _socket_mode (okd_mgr_socket_mode),
-    _accept_ready (false)
+    _accept_ready (false),
+    _ssl (this)
   {
     listenport = p;
   }
@@ -160,15 +177,17 @@ public:
   void got_regex_alias (vec<str> s, str loc, bool *errp);
   void got_err_doc (vec<str> s, str loc, bool *errp);
 
-  void gotfd (int fd, ptr<okws_fd_t> desc);
+  void okld_dispatch (svccb *sbp);
 
   // Well, no one ever said event-driven programming was pretty
   void launch (CLOSURE);
 
   void launch_logd (cbb cb, CLOSURE);
 
-  void sclone (ref<ahttpcon_clone> x, okws1_port_t port, str s, int status);
+  void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status);
   void newserv (int fd);
+  void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
+		 const ssl_ctx_t *ssl);
   void shutdown (int sig);
 
   ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab;
@@ -229,7 +248,8 @@ private:
   void shutdown3 ();
   void shutdown_cb1 ();
 
-  void got_chld_fd (int fd, ptr<okws_fd_t> desc);
+  void got_child_fd (int fd, const okws_svc_descriptor_t &d);
+  bool listen_from_ssl (int fd);
 
   str configfile;
   int okldfd;
@@ -247,7 +267,9 @@ private:
   int sdattempt;
   int cntr;
 
-  ptr<fdsource_t<okws_fd_t> > okldx;
+  ptr<axprt_unix> _okld_x;
+  ptr<asrv> _okld_srv;
+
   str coredumpdir;
   xpub_errdoc_set_t xeds;
 
@@ -263,6 +285,7 @@ private:
 
   str _config_grp, _config_user;
   bool _accept_ready;
+  okd_ssl_t _ssl;
 };
 
 class okd_mgrsrv_t 

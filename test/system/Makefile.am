@@ -37,10 +37,18 @@ TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
 TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
 	upload.C purify.C purify_lib.C
 
+if USE_SSL
+NO_SSL=
+else
+NO_SSL = \#
+endif
+
 SUBDIRS = $(XML_SUBDIRS) 3tier
 
 okwssvc_PROGRAMS = static configtest simple form cookie upload $(XMLPROGS) \
 	posttest
+
+okwsconf_DATA = okws.crt.dist okws.key.dist
 
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
@@ -77,8 +85,11 @@ MAINTAINERCLEANFILES = Makefile.in
 test:	okws_config pub_config 
 
 okws_config: $(srcdir)/okws_config.in
-	TOP_BUILD=`cd $(top_builddir) ; pwd`  NO_XML=$(NO_XML)  \
-	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#e ; print $$_; } ' < $< > $@
+	TOP_BUILD=`cd $(top_builddir) ; pwd`  \
+	NO_XML=$(NO_XML) \
+	NO_SSL=$(NO_SSL) \
+	TOP_SRCDIR=`cd $(top_srcdir) ; pwd` \
+	perl -ne ' { s#\@\@(.*?)\@\@#$$ENV{$$1}#ge ; print $$_; } ' < $< > $@
 
 pub_config: $(srcdir)/pub_config.in
 	TOP_SRCDIR=`cd $(top_srcdir) ; pwd ` ; \

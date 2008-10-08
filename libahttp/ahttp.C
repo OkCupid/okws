@@ -68,13 +68,14 @@ ahttpcon_clone::takefd ()
 {
   int ret = fd;
   if (fd >= 0) {
-    fdcb (fd, selread, NULL);
-    fdcb (fd, selwrite, NULL);
     wcbset = false;
     rcbset = false;
+    fdcb (fd, selread, NULL);
+    fdcb (fd, selwrite, NULL);
   }
   fd = -1;
   ccb = NULL;
+  _demuxed = true;
   return ret;
 }
 
@@ -200,9 +201,9 @@ ahttpcon::setrcb (cbi::ptr cb)
 
 ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
   : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), 
-  found (false), delimit_state (0), delimit_status (HTTP_OK),
-  delimit_start (NULL), bytes_scanned (0), decloned (false),
-  trickle_state (0), dcb (NULL)
+    found (false), delimit_state (0), delimit_status (HTTP_OK),
+    delimit_start (NULL), bytes_scanned (0), decloned (false),
+    trickle_state (0), dcb (NULL), _demuxed (false)
 {
   in->setpeek ();
 }
@@ -255,6 +256,8 @@ void
 ahttpcon::fail (int s)
 {
   if (fd >= 0) {
+    rcbset = false;
+    wcbset = false;
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
     if (_delayed_close) {
@@ -313,8 +316,8 @@ ahttpcon::enable_selread ()
   if (fd < 0 || _no_more_read)
     return false;
   if (!rcbset) {
-    fdcb (fd, selread, wrap (this, &ahttpcon::input));
     rcbset = true;
+    fdcb (fd, selread, wrap (this, &ahttpcon::input));
   }
   return true;
 }
@@ -347,8 +350,8 @@ ahttpcon::stop_read ()
 void
 ahttpcon::disable_selread ()
 {
-  fdcb (fd, selread, NULL);
   rcbset = false;
+  fdcb (fd, selread, NULL);
 }
 
 ssize_t
@@ -365,8 +368,8 @@ ahttpcon::input ()
     return;
   ref<ahttpcon> hold (mkref (this));  // Don't let this be freed under us
   if (in->full ()) {
-    fdcb (fd, selread, NULL);
     rcbset = false;
+    fdcb (fd, selread, NULL);
     return;
   }
   ssize_t n = doread (fd);
@@ -452,6 +455,7 @@ void
 ahttpcon_clone::end_read ()
 {
   if (fd >= 0) {
+    rcbset = false;
     fdcb (fd, selread, NULL);
     found = true;
   }
@@ -667,24 +671,46 @@ ahttp_tab_t::reg (ahttpcon *a, ptr<bool> d)
 }
 
 void
+ahttp_tab_t::shutdown ()
+{
+  if (dcb) {
+    timecb_remove (dcb);
+    dcb = NULL;
+  }
+  _shutdown = true;
+}
+
+void
 ahttp_tab_t::run ()
 {
   dcb = NULL;
   ahttp_tab_node_t *n;
 
   bool flag = true;
-  while ((n = q.first) && flag) {
+  while ((n = q.first) && flag && !_shutdown) {
     if (* n->_destroyed_p ) {
       unreg (n);
-    } else if (int (sfs_get_timenow() - n->_a->start) > 
-	       int (ok_demux_timeout)) {
-      warn ("HTTP connection timed out in demux (ip=%s; fd=%d; bytes=%d)\n",
-	    n->_a->get_remote_ip ().cstr (), n->_a->getfd (),
-	    n->_a->bytes_recv ());
-      n->_a->hit_timeout ();
-      unreg (n);
     } else {
-      flag = false;
+      ptr<ahttpcon> a = mkref (n->_a); // hold onto this
+      if (int (sfs_get_timenow() - n->_a->start) > 
+	  int (ok_demux_timeout)) {
+	
+	str ss = a->select_set();
+	str dbi = a->get_debug_info ();
+	str ip = a->get_remote_ip ();
+	if (!dbi) dbi = "";
+	if (!ss) ss = "";
+
+	warn ("HTTP connection timed out in demux "
+	      "(ip=%s; fd=%d; bytes=%d; select=%s%s)\n",
+	      ip.cstr (), a->getfd (), a->bytes_recv (), 
+	      ss.cstr (), dbi.cstr ());
+
+	a->hit_timeout ();
+	unreg (n);
+      } else {
+	flag = false;
+      }
     }
   }
   sched ();
@@ -701,6 +727,24 @@ ahttp_tab_t::unreg (ahttp_tab_node_t *n)
 void
 ahttp_tab_t::sched ()
 {
-  dcb = delaycb (interval, 0, wrap (this, &ahttp_tab_t::run));
+  if (!_shutdown)
+    dcb = delaycb (interval, 0, wrap (this, &ahttp_tab_t::run));
 }
 
+str
+ahttpcon::select_set () const
+{
+  strbuf b;
+  if (rcbset) b << "r";
+  if (wcbset) b << "w";
+  return b;
+}
+
+str
+ahttpcon_clone::get_debug_info () const
+{
+  strbuf b;
+  b << "; demuxed=" << int (_demuxed) << "; decloned=" << int (decloned)
+    << "; status=" << int (delimit_status) ;
+  return b;
+}

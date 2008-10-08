@@ -45,6 +45,83 @@
 
 class okld_t;
 
+/*
+ * A class to hold onto a process command/argv and its environment
+ * so that it can be later launched.
+ */
+class okld_helper_t {
+public:
+  okld_helper_t (const str &n, const str &u, const str &g);
+  ~okld_helper_t () {}
+  void set_env (ptr<argv_t> e) { _env = e; }
+  vec<str> &argv () { return _argv; }
+  char* const* env () const ;
+  void set_group (const str &g);
+  void set_user (const str &u);
+  const ok_usr_t &user () const { return _usr; }
+  ok_usr_t &user () { return _usr; }
+  const ok_grp_t &group () const { return _grp; }
+  ok_grp_t &group () { return _grp; }
+
+  void set_chldcb (cbi::ptr cb);
+  void make_cli (const rpc_program &p, cbv::ptr eofcb);
+  void disconnect () { _x = NULL; _cli = NULL; }
+  ptr<axprt_unix> x () { return _x; }
+  ptr<aclnt> cli () { return _cli; }
+  bool launch ();
+  str dumpdir () const { return _dumpdir; }
+
+  bool configure (jailable_t *j, const str &prfx);
+  void activate ();
+  bool active () const { return _active; }
+
+protected:
+  bool configure_user ();
+  bool configure_group ();
+  bool configure_dumpdir (jailable_t *j, const str &prfx);
+
+  const str _name;
+
+  vec<str> _argv;
+  ptr<argv_t> _env;
+  argv_t _empty_env;
+  int _pid;
+
+  ptr<axprt_unix> _x;
+  ptr<aclnt> _cli;
+  ok_usr_t _usr;
+  ok_grp_t _grp;
+  bool _active;
+  str _dumpdir;
+};
+
+class okld_helper_okd_t : public okld_helper_t {
+public:
+  okld_helper_okd_t (const str &u, const str &g)
+    : okld_helper_t ("okd", u, g) {}
+private:
+};
+
+class okld_helper_ssl_t : public okld_helper_t {
+public:
+  okld_helper_ssl_t (const str &u, const str &g) 
+    : okld_helper_t ("okssld", u, g),
+      _certfile (ok_ssl_certfile),
+      _keyfile (ok_ssl_keyfile),
+      _timeout (ok_ssl_timeout) 
+  {}
+
+  str _certfile, _keyfile;
+  u_int _timeout;
+  bool configure_keys ();
+  str certfile_resolved () const { return _certfile_resolved; }
+  str keyfile_resolved () const { return _keyfile_resolved; }
+private:
+  str resolve (const str &in, const char *which) const;
+  vec<okws1_port_t> _ports;
+  str _certfile_resolved, _keyfile_resolved;
+};
+
 /**
  * a class for things that will be jailed into OKWS's runtime directory,
  * such as compile scripts, and also Python interpreters. Mainly, it
@@ -284,11 +361,11 @@ public:
     : config_parser_t (), 
       svc_grp (ok_okd_gname),
       nxtuid (ok_svc_uid_low), logexc (NULL), pubd2exc (NULL),
-      coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), okd_pid (-1),
+      coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), 
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
-      okd_usr (ok_okd_uname), okd_grp (ok_okd_gname),
-      okd_dumpdir ("/tmp"), 
+      _okd ("okd", ok_okd_uname, ok_okd_gname),
+      _okssl (ok_ssl_uname, ok_ssl_gname),
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
       used_primary_port (false),
@@ -296,13 +373,15 @@ public:
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false),
       _opt_daemon (false) {}
-      
 
   ~okld_t () { if (logexc) delete logexc; }
 
   void got_service (bool script, vec<str> s, str loc, bool *errp);
+  void got_ssl_primary_port (vec<str> s, str loc, bool *errp);
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_okd_exec (vec<str> s, str loc, bool *errp);
+  void got_okssl_exec (vec<str> s, str loc, bool *errp);
+  void got_generic_exec (okld_helper_t *h, vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
   void got_pubd2_exec (vec<str> s, str loc, bool *errp);
@@ -314,6 +393,7 @@ public:
   void launch_pubd2 (cbi cb, CLOSURE);
 
   bool launch_okd (int logfd, int pubd);
+  void launch_okssl (evb_t ev, CLOSURE);
 
   bool parseconfig (const str &cf);
 
@@ -322,21 +402,26 @@ public:
   void caught_okd_eof ();
   void shutdown1 ();
   void shutdown2 (int status);
+  void shutdown_ssl (int status);
   bool init_jaildir ();
   bool init_interpreters ();
   bool in_shutdown () const { return sdflag; }
   str get_root_coredir () const { return root_coredir; }
+  bool init_ssl ();
 
   clone_only_client_t *get_pubd2 () const { return pubd2; }
 
   logd_parms_t logd_parms;
 
   cgi_t env;    // execution environment
-  ptr<fdsink_t> okdx;
+
   ok_grp_t svc_grp;
   bool safe_startup () const { return safe_startup_fl ;}
   void set_opt_daemon (bool b) { _opt_daemon = b; }
   bool opt_daemon () const { return _opt_daemon; }
+
+  okld_helper_t &okd () { return _okd; }
+  const okld_helper_t &okd () const { return _okd; }
 
 protected:
   bool parse_file (const str &fn);
@@ -367,6 +452,7 @@ private:
   bool check_ports ();
   void got_alias (vec<str> s, str loc, bool *errp);
   void got_regex_alias (vec<str> s, str loc, bool *errp);
+  bool fixup_ssl_ports ();
 
   bool fix_uids ();
   bool config_jaildir ();
@@ -385,16 +471,13 @@ private:
 
   vec<okld_ch_t *> svcs;
   int nxtuid;
-  str okd_exec;
   str coredump_path;
   helper_exec_t *logexc, *pubd2exc;
 
-  str okdexecpath;
   str coredumpdir;
   str sockdir;
 
   str configfile;
-  int okd_pid;
   bool sdflag;
 
   str service_bin;       // directory where service exes are kept
@@ -403,9 +486,9 @@ private:
 
   str root_coredir;      // privileged core directory
 
-  ok_usr_t okd_usr;
-  ok_grp_t okd_grp;
-  str okd_dumpdir;
+
+  okld_helper_t _okd;
+  okld_helper_ssl_t _okssl;
 
   sfs_clock_t clock_mode;
   str mmc_file;
@@ -415,7 +498,6 @@ private:
   u_int launchp;
 
   bool used_primary_port;
-  argv_t okdenv;
 
   ihash<const str, okld_interpreter_t, 
 	&okld_interpreter_t::_name,
@@ -429,9 +511,11 @@ private:
 
   // variables set during configuration stage
   str _config_grp, _config_okd_gr, _config_okd_un;
+  str _config_ssl_gr, _config_ssl_un;
   str _config_root, _config_wheel;
   bool _opt_daemon;
 						 
+
 };
 
 #endif /* _OKD_OKD_H */
