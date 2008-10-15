@@ -85,7 +85,7 @@ public:
   virtual ~ahttpcon ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
-  void output ();
+  void output (ptr<bool> destroyed_local);
   void spacecb ();
   void error (int ec);
   void send (const strbuf &b, cbv::ptr drained, cbv::ptr sent = NULL);
@@ -133,7 +133,7 @@ protected:
   virtual void fail (int s = HTTP_BAD_REQUEST);
   virtual void too_many_fds () { fail (); }
   virtual void fail2 (int s) {}
-  void input ();
+  void input (ptr<bool> destroyed_local);
   bool enable_selread ();
   void disable_selread ();
   void call_drained_cb ();

@@ -123,7 +123,7 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr drained,
   drained_cb = drained;
   if (sent)
     out->iovcb (sent);
-  output ();
+  output (destroyed_p);
 }
 
 void
@@ -152,8 +152,10 @@ ahttpcon::set_drained_cb (cbv::ptr cb)
 }
 
 void
-ahttpcon::output ()
+ahttpcon::output (ptr<bool> destroyed_local)
 {
+  if (*destroyed_local)
+    return;
   if (fd < 0)
     return;
 
@@ -168,7 +170,7 @@ ahttpcon::output ()
     fail ();
   } else if (more_to_write && !wcbset) {
     wcbset = true;
-    fdcb (fd, selwrite, wrap (this, &ahttpcon::output));
+    fdcb (fd, selwrite, wrap (this, &ahttpcon::output, destroyed_p));
   }
   else if (!more_to_write && wcbset) {
     wcbset = false;
@@ -317,7 +319,7 @@ ahttpcon::enable_selread ()
     return false;
   if (!rcbset) {
     rcbset = true;
-    fdcb (fd, selread, wrap (this, &ahttpcon::input));
+    fdcb (fd, selread, wrap (this, &ahttpcon::input, destroyed_p));
   }
   return true;
 }
@@ -362,8 +364,10 @@ ahttpcon::doread (int fd)
 }
 
 void
-ahttpcon::input ()
+ahttpcon::input (ptr<bool> destroyed_local)
 {
+  if (*destroyed_local)
+    return;
   if (fd < 0)
     return;
   ref<ahttpcon> hold (mkref (this));  // Don't let this be freed under us
