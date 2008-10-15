@@ -333,7 +333,8 @@ dumpenum (const rpc_sym *s)
   }
   aout << "};\n";
   pmshl (rs->id);
-  aout << "RPC_ENUM_DECL (" << rs->id << ")\n";
+  aout << "RPC_ENUM_DECL (" << rs->id << ")\n"
+       << "TYPE2STRUCT( , " << rs->id << ");\n";
 
   aout << "\ntemplate<class T> inline bool\n"
        << "rpc_traverse (T &t, " << rs->id << " &obj)\n"
