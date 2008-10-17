@@ -29,8 +29,6 @@
 #include "mystmt.h"
 #include "web.h"
 
-TYPE2STRUCT( , adb_status_t);
-
 class tst2_srv_t : public amysql_thread_t {
 public:
   tst2_srv_t (mtd_thread_arg_t *a, int meth) 
