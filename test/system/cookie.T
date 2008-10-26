@@ -60,14 +60,25 @@ okclnt_cookie_t::process_T (okclnt2_t::proc_ev_t ev)
   }
 
   {
-    cookie_t *c[2];
+    cookie_t *c[3];
     c[0] = add_cookie ("foo.com", "/bar");
     c[1] = add_cookie ("sub.foo.com", "/");
-    c[0]->add ("y", 10).add ("x", "XxX");
+    c[2] = add_cookie ("", "/");
+    c[0]->add ("y", 10).add ("x", "XxX").set_expires (1,0,0,0);
     c[1]->add ("zz", 133).add("ww", "WwW");
+    c[2]->add ("x", 10).add ("y", "XxX").set_expires (1,0,0,0);
   }
 
-  set_hdr_field ("My-Special-Field", "Some stuff YYY XXX ZZZ 333");
+  {
+    const char *cookies[] = { "x", "y", NULL };
+    for (const char **cp = cookies; *cp; cp++) {
+      if (cookie.exists (*cp)) {
+	out << *cp << " -> " << cookie[*cp] << "<br>\n";
+      }
+    }
+  }
+
+  out << "body\n";
 
   if (do_redirect) {
     twait { redirect ("http://www.someurl.com/fff", -1, mkevent ()); }

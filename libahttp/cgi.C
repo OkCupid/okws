@@ -534,16 +534,19 @@ cgi_t::str_parse (const str &s)
 }
 
 str
-expire_in (int d, int h, int m, int s)
+expire_in (int d, int h, int m, int s, rfc_number_t rfc)
 {
+#define MAXLEN 60
   h += d*24;
   m += h*60;
   s += m*60;
   time_t t = sfs_get_timenow() + s;
-  mstr out (40);
+  mstr out (MAXLEN);
   struct tm *stm = gmtime (&t);
-  size_t l = strftime (out.cstr (), 40, "%A, %d-%b-%Y %T GMT", stm);
+  const char *fmt = rfc_date_fmt (rfc);
+  size_t l = strftime (out.cstr (), MAXLEN, fmt, stm);
   out.setlen (l);
   return out;
+#undef MAXLEN
 }
 

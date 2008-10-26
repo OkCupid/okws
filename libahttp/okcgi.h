@@ -151,7 +151,7 @@ private:
   cgi_t *c;
 };
 
-str expire_in (int d, int h, int m, int s);
+str expire_in (int d, int h, int m, int s, rfc_number_t rfc = RFC_1123);
 
 //
 // cookie_t is for setting OUTGOING cookies only.
@@ -173,8 +173,9 @@ public:
   cookie_t &add (const str &k, u_int64_t i) { insert (k, i); return (*this); }
   cookie_t &add (const str &k, int64_t i) { insert (k, i); return (*this); }
 
-  cookie_t &set_expires (int d, int h, int m, int s)
-  { return set_expires (expire_in (d, h, m, s)); }
+  cookie_t &set_expires (int d, int h, int m, int s, 
+			 rfc_number_t rfc = RFC_1123)
+  { return set_expires (expire_in (d, h, m, s, rfc)); }
 
   cookie_t &set_expires (const str &s) { expires.addval (s); return (*this); }
   

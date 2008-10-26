@@ -62,4 +62,11 @@
 
 #define HTTP_CRLF "\r\n"
 
+typedef enum {
+  RFC_1036  = 1036,
+  RFC_1123  = 1123
+} rfc_number_t;
+
+const char *rfc_date_fmt (rfc_number_t rfc);
+
 #endif /* _LIBAHTTP_HTTPCONST */
