@@ -6,7 +6,7 @@ okwslib_LTLIBRARIES = libahttp.la
 
 libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 	abuf_pipe.C pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C  \
-	mimetypes.C
+	mimetypes.C httpconst.C
 
 okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
