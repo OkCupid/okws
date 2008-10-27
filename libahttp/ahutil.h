@@ -26,10 +26,11 @@
 #define _LIBAHTTP_AHUTIL 1
 
 #include "async.h"
+#include "httpconst.h"
 
 typedef u_char htpv_t;
 
-str getdate ();
+str getdate (rfc_number_t rfc = RFC_1123);
 bool mystrlcmp (const str &s, const char *b);
 str tolower_s (const str &in);
 

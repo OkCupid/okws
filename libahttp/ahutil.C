@@ -30,7 +30,7 @@ static str timestr;
 static time_t timestr_time = 0;
 
 str
-getdate ()
+getdate (rfc_number_t rfc)
 {
   const time_t t1 = sfs_get_timenow();
   if (t1 == timestr_time && timestr)
@@ -40,7 +40,7 @@ getdate ()
 
   struct tm *t2 = gmtime (&t1);
   static char buf[100];
-  size_t n = strftime (buf, 100, "%a, %d %b %Y %T %Z", t2);
+  size_t n = strftime (buf, 100, rfc_date_fmt (rfc), t2);
   return (timestr = str (buf, n));
 }
 
