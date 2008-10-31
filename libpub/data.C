@@ -790,7 +790,6 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
 	se = New refcounted<pswitch_env_rxx_t> (rxx, fn2, env, ne);
       } else if (range) {
 	se = New refcounted<pswitch_env_range_t> (range, fn2, env, ne);
-	warn << "range in effect!\n";
       }
       if (se) {
 	_other_cases.push_back (se);
