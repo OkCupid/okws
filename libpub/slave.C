@@ -92,9 +92,9 @@ pub_slave (pubserv_cb cb, u_int port, pslave_status_t *s)
 }
 
 bool
-pub_server (pubserv_cb cb, u_int port)
+pub_server (pubserv_cb cb, u_int port, u_int32_t addr)
 {
-  int pubfd = inetsocket (SOCK_STREAM, port);
+  int pubfd = inetsocket (SOCK_STREAM, port, addr);
   if (pubfd < 0)
     return false;
   pub_server_fd (wrap (pub_accept, cb, pubfd), pubfd);
