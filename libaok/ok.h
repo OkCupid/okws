@@ -53,7 +53,8 @@ typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH_SEQ_1 = 6,
 	       OKC_STATE_LAUNCH_SEQ_2 = 7,
                OKC_STATE_KILLING = 8,
-	       OKC_STATE_TOOBUSY = 9 } okc_state_t;
+	       OKC_STATE_TOOBUSY = 9,
+	       OKC_STATE_STANDBY = 10 } okc_state_t;
 
 
 struct errdoc_t {
@@ -65,6 +66,8 @@ struct errdoc_t {
 
 typedef u_int16_t okws1_port_t;
 #define PORT_MAX USHRT_MAX
+
+typedef event<ok_xstatus_typ_t>::ref okstat_ev_t;
 
 class ok_con_t {
 public:

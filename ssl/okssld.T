@@ -301,7 +301,7 @@ namespace okssl {
   bool
   con_t::accept (int fd)
   {
-    size_t sinlen = sizeof (sockaddr_in);
+    socklen_t sinlen = sizeof (sockaddr_in);
     bzero (&_sin, sinlen);
     _fd = ::accept (fd, reinterpret_cast<sockaddr *> (&_sin), &sinlen);
     return (_fd >= 0);

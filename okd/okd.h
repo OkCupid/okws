@@ -93,10 +93,10 @@ private:
 class okd_t;
 class okch_t : public ok_con_t {  // OK Child Handle
 public:
-  okch_t (okd_t *o, const str &e);
+  okch_t (okd_t *o, const str &e, okc_state_t st = OKC_STATE_NONE);
   ~okch_t ();
   void launch ();
-  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw);
+  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
   void send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
   void shutdown (oksig_t sig, cbv cb);
 
@@ -119,6 +119,8 @@ public:
   inline int get_n_sent () const { return _n_sent; }
   void reset_n_sent () ;
   inline int inc_n_sent () { return (_n_sent ++) ; }
+  void awaken (evb_t ev, CLOSURE);
+  void set_state (okc_state_t s) { state = s; }
   
   okd_t *myokd;
   int pid;
@@ -141,6 +143,9 @@ private:
   time_t _last_restart;    // time when started;
   
   bool _too_busy;          // the server is potentially too busy to get more
+
+  // To be triggered when this service is ready to go.
+  evv_t::ptr _ready_trigger; 
 };
 
 class okd_ssl_t {
@@ -183,7 +188,8 @@ public:
     _socket_filename (okd_mgr_socket),
     _socket_mode (okd_mgr_socket_mode),
     _accept_ready (false),
-    _ssl (this)
+    _ssl (this),
+    _lazy_startup (false)
   {
     listenport = p;
   }
@@ -202,6 +208,9 @@ public:
   void got_pubd_inet (vec<str> s, str loc, bool *errp);
   void got_pubd_exec (vec<str> s, str loc, bool *errp);
   void got_err_doc (vec<str> s, str loc, bool *errp);
+  void got_service (vec<str> s, str loc, bool *errp);
+  void got_service2 (vec<str> s, str loc, bool *errp);
+  void got_script (vec<str> s, str loc, bool *errp);
 
   void okld_dispatch (svccb *sbp);
 
@@ -224,6 +233,7 @@ public:
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
 		 const ssl_ctx_t *ssl);
   void shutdown (int sig);
+  void awaken (str nm, evb_t ev, CLOSURE);
 
   ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab;
   qhash<str, str> aliases;
@@ -271,6 +281,8 @@ protected:
   void disable_accept_guts ();
   bool parse_file (const str &fn);
   bool post_config (const str &fn);
+  bool lazy_startup () const { return _lazy_startup; }
+  ok_xstatus_typ_t reserve_child (const str &nm, bool lzy);
 
 private:
   // Callbacks for Repub, Version 1
@@ -323,6 +335,7 @@ private:
 
   ptr<axprt_unix> _okld_x;
   ptr<asrv> _okld_srv;
+  ptr<aclnt> _okld_cli;
 
   str coredumpdir;
   xpub_errdoc_set_t xeds;
@@ -340,6 +353,7 @@ private:
   str _config_grp, _config_user;
   bool _accept_ready;
   okd_ssl_t _ssl;
+  bool _lazy_startup;
 };
 
 class okd_mgrsrv_t 

@@ -34,8 +34,8 @@
   warn << servpath << ":" << pid << ": " << x << "\n";
 
 
-okch_t::okch_t (okd_t *o, const str &s)
-  : myokd (o), pid (-1), servpath (s), state (OKC_STATE_NONE),
+okch_t::okch_t (okd_t *o, const str &s, okc_state_t st)
+  : myokd (o), pid (-1), servpath (s), state (st),
     destroyed (New refcounted<bool> (false)),
     per_svc_nfd_in_xit (0),
     _n_sent (0), _last_restart (okwstime ()),
@@ -60,11 +60,23 @@ okch_t::closed_fd ()
   myokd->closed_fd ();
 }
 
-void
+tamed void
 okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 {
-  ref<ahttpcon_clone> xc (acw.con ());
-  if (!ctlx || ctlx->ateof () || state != OKC_STATE_SERVE) {
+  tvars {
+    ref<ahttpcon_clone> xc (acw.con ());
+    bool ok (true);
+  }
+
+  if (state == OKC_STATE_STANDBY) {
+    twait { awaken (mkevent (ok)); }
+  }
+
+  if (!ok) {
+    warn << "**WARNING: Cannot awaken service " << servpath << "\n";
+    myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
+
+  } else if (!ctlx || ctlx->ateof () || state != OKC_STATE_SERVE) {
 
     if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED 
 	|| conqueue.size () >= ok_con_queue_max) {
@@ -540,3 +552,16 @@ okch_t::to_status_xdr (oksvc_status_t *st)
   st->uptime = okwstime () - _last_restart;
 }
 
+//-----------------------------------------------------------------------
+
+tamed void
+okch_t::awaken (evb_t ev)
+{
+  tvars {
+    bool ok;
+  }
+  twait { myokd->awaken (servpath, mkevent (ok));}
+  ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------

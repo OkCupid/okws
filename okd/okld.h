@@ -65,6 +65,7 @@ public:
 
   void set_chldcb (cbi::ptr cb);
   void make_cli (const rpc_program &p, cbv::ptr eofcb);
+  void make_srv (const rpc_program &p, callback<void, svccb *>::ref cb);
   void disconnect () { _x = NULL; _cli = NULL; }
   ptr<axprt_unix> x () { return _x; }
   ptr<aclnt> cli () { return _cli; }
@@ -89,6 +90,7 @@ protected:
 
   ptr<axprt_unix> _x;
   ptr<aclnt> _cli;
+  ptr<asrv> _srv;
   ok_usr_t _usr;
   ok_grp_t _grp;
   bool _active;
@@ -276,7 +278,8 @@ public:
   okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 	     ok_usr_t *u, vec<str> env, okws1_port_t p = 0) ;
   virtual ~okld_ch_t () { if (uid) delete uid ;  }
-  void launch (CLOSURE);
+  void launch (evv_t::ptr ev = NULL, CLOSURE);
+  void reserve (bool lazy, evb_t ev, CLOSURE);
   void sig_chld_cb (int status);
 
   int pid;
@@ -293,6 +296,7 @@ public:
   void chldcb (int status);
   void clean_dumps ();
   void add_args (const vec<str> &a);
+  void lazy_startup (evb_t ev, CLOSURE);
 
   okws1_port_t get_port () const { return port; }
   void set_service_options (const svc_options_t &so)
@@ -373,7 +377,8 @@ public:
       pub_v1_support (false),
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false),
-      _opt_daemon (false) {}
+      _opt_daemon (false),
+      _lazy_startup (false) {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -399,10 +404,12 @@ public:
   void launch_okssl (evb_t ev, CLOSURE);
 
   bool parseconfig (const str &cf);
+  bool lazy_startup () const { return _lazy_startup; }
 
   void set_signals ();
   void caught_signal (int sig);
   void caught_okd_eof ();
+  void okd_dispatch (svccb *sbp);
   void shutdown1 ();
   void shutdown2 (int status);
   void shutdown_ssl (int status);
@@ -429,6 +436,8 @@ public:
 protected:
   bool parse_file (const str &fn);
   bool post_config (const str &fn);
+  void poke_lazy_service_2 (str name, okstat_ev_t ev, CLOSURE);
+  void poke_lazy_service (svccb *sbp, CLOSURE);
 
 private:
 
@@ -458,6 +467,7 @@ private:
   bool fixup_ssl_ports ();
 
   bool fix_uids ();
+  void add_svc (ptr<okld_ch_t> c);
   bool config_jaildir ();
   void init_clock_daemon ();
   void relaunch_clock_daemon (int sig);
@@ -472,7 +482,9 @@ private:
   void launch2 (int fd);
   void launchservices (CLOSURE);
 
-  vec<okld_ch_t *> svcs;
+  vec<ptr<okld_ch_t> > svcs;
+  qhash<str, ptr<okld_ch_t> > _svc_lookup;
+
   int nxtuid;
   str coredump_path;
   helper_exec_t *logexc, *pubd2exc;
@@ -519,6 +531,7 @@ private:
   str _config_root, _config_wheel;
   bool _config_no_pub_v2_support;
   bool _opt_daemon;
+  bool _lazy_startup;
 						 
 
 };

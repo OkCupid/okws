@@ -50,3 +50,5 @@ SyslogLevels	emerg alert crit info warning debug err notice
 ErrorDoc	404	/err/404.html
 
 FilterCGI 0
+
+LazyStartup 1
