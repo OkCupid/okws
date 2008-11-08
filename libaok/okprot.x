@@ -56,7 +56,9 @@ enum ok_xstatus_typ_t {
   OK_STATUS_ERR = 3,
   OK_STATUS_DEADCHILD = 4,
   OK_STATUS_NOMORE = 5,
-  OK_STATUS_BADFD = 6
+  OK_STATUS_BADFD = 6,
+  OK_STATUS_DUP = 7,
+  OK_STATUS_BADWAKEUP = 8
 };
 
 union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
@@ -158,8 +160,13 @@ struct oklog_fast_arg_t {
 };
 
 struct okws_svc_descriptor_t {
-  string name<256>;
+  string name<>;
   int pid;
+};
+
+struct okws_svc_reserve_arg_t {
+  string name<>;
+  bool lazy;
 };
 
 struct okws_send_ssl_arg_t {
@@ -273,6 +280,12 @@ program OKLD_PROGRAM {
 		ok_xstatus_typ_t
 		OKLD_SEND_SSL_SOCKET(okws_send_ssl_arg_t) = 2;
 
+		ok_xstatus_typ_t
+		OKLD_POKE_LAZY_SERVICE(okws_svc_descriptor_t) = 3;
+
+		ok_xstatus_typ_t
+		OKLD_RESERVE(okws_svc_reserve_arg_t) = 4;
+
 	} = 1;
 
 } = 11279;
@@ -288,6 +301,7 @@ program OKSSL_PROGRAM {
 
 		ok_xstatus_typ_t
 		OKSSL_NEW_CONNECTION(okssl_sendcon_arg_t) = 2;
+
 	} = 1;
 } = 11280;
 

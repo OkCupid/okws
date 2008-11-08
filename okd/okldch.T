@@ -154,8 +154,10 @@ okld_jailed_exec_t::chmod (int currmode)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
-okld_ch_t::launch ()
+okld_ch_t::launch (evv_t::ptr ev)
 {
   tvars {
     int logfd;
@@ -295,6 +297,8 @@ okld_ch_t::launch ()
       }
     }
   }
+  if (ev)
+    ev->trigger ();
 }
 
 void
@@ -472,4 +476,60 @@ okld_ch_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
   return true;
 }
 
+//-----------------------------------------------------------------------
 
+tamed void
+okld_ch_t::lazy_startup (evb_t ev)
+{
+  tvars {
+    bool ret (true);
+  }
+  if (state == OKC_STATE_STANDBY) {
+    twait { launch (mkevent ());  }
+    ret = (state == OKC_STATE_SERVE);
+  } else {
+    ret = false;
+  }
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okld_ch_t::reserve (bool lazy, evb_t ev)
+{
+  tvars {
+    ptr<aclnt> cli;
+    clnt_stat err;
+    okws_svc_reserve_arg_t arg;
+    ok_xstatus_typ_t res;
+    bool ret (true);
+  }
+  cli = okld->okd ().cli ();
+  if (lazy) {
+    state = OKC_STATE_STANDBY;
+  }
+  if (cli) {
+    arg.name = servpath;
+    arg.lazy = lazy;
+    twait { RPC::okld_program_1::okld_reserve (cli, arg, &res, mkevent (err)); }
+    if (err) {
+      warn << "HOSED: Cannot reserve space for service (" << servpath << "): "
+	   << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn << "HOSED: Okd rejected resevation (" << servpath << ") with code="
+	   << int (res) << "\n";
+    } else {
+      state = OKC_STATE_STANDBY;
+    }
+  } else {
+    warn << "HOSED: Cannot launch service (" << servpath << ") since "
+	 << "okd went away\n";
+  }
+  if (!ret) {
+    state = OKC_STATE_HOSED;
+  }
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------

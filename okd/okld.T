@@ -258,7 +258,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   str exe, httppath;
 
   okws1_port_t port;
-  okld_ch_t *chld;
+  ptr<okld_ch_t> chld;
   svc_options_t so;
 
   strip_comments (&s);
@@ -311,11 +311,11 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
     warnx << " " << s[i];
   warnx << ")\n";
  
-  chld = New okld_ch_t (exe, httppath, this, loc, u, env, port);
+  chld = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
   chld->add_args (s);
   chld->set_service_options (so);
 
-  svcs.push_back (chld);
+  add_svc (chld);
   return;
 
  usage:
@@ -338,7 +338,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   okws1_port_t port;
   okld_interpreter_t *ipret = NULL;
   str ipret_str;
-  okld_ch_t *ch = NULL;
+  ptr<okld_ch_t> ch;
   svc_options_t so;
 
   // Remove the '#' and everything after...
@@ -408,12 +408,13 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
 
   warn << cmd << ": URI(" << httppath << ") --> unix(" << exe << ")\n";
   if (script)
-    ch = New okld_ch_script_t (exe, httppath, this, loc, ipret, u, env, port);
+    ch = New refcounted<okld_ch_script_t> (exe, httppath, this, loc, 
+					   ipret, u, env, port);
   else
-    ch = New okld_ch_t (exe, httppath, this, loc, u, env, port);
+    ch = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
   ch->set_service_options (so);
 
-  svcs.push_back (ch);
+  add_svc (ch);
 
   return;
 
@@ -696,6 +697,7 @@ okld_t::parse_file (const str &cf)
 
     .add ("StartupBatchSize", &okld_startup_batch_size, 0, 128)
     .add ("StartupBatchWait", &okld_startup_batch_wait, 0, 128)
+    .add ("LazyStartup", &_lazy_startup)
 
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
@@ -1033,6 +1035,64 @@ okld_t::caught_okd_eof ()
   shutdown1 ();
 }
 
+//-----------------------------------------------------------------------
+
+tamed void 
+okld_t::poke_lazy_service_2 (str name, okstat_ev_t ev)
+{
+  tvars {
+    ptr<okld_ch_t> *ch;
+    ok_xstatus_typ_t ret;
+    bool ok;
+  }
+  if ((ch = _svc_lookup[name])) {
+    if (sdflag) {
+      warn << "Cannot start service " << name << " due to okld shutdown\n";
+      ret = OK_STATUS_DEADCHILD;
+    } else {
+      twait { (*ch)->lazy_startup (mkevent (ok)); }
+      ret = ok ? OK_STATUS_OK : OK_STATUS_BADWAKEUP;
+    }
+  } else {
+    ret = OK_STATUS_NOSUCHCHILD;
+  }
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::okd_dispatch (svccb *sbp)
+{
+  if (!sbp) {
+    // Handle the shutdown in the client part of the library.
+  } else {
+    switch (sbp->proc ()) {
+    case OKLD_POKE_LAZY_SERVICE:
+      poke_lazy_service (sbp);
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okld_t::poke_lazy_service (svccb *sbp)
+{
+  tvars {
+    RPC::okld_program_1::okld_poke_lazy_service_srv_t<svccb> srv (sbp);
+    const okws_svc_descriptor_t *arg (srv.getarg ());
+    ok_xstatus_typ_t typ;
+  }
+  twait { poke_lazy_service_2 (arg->name, mkevent (typ)); }
+  srv.reply (typ);
+}
+
+//-----------------------------------------------------------------------
+
 void
 okld_t::shutdown1 ()
 {
@@ -1210,6 +1270,9 @@ okld_t::launch_okd (int logfd, int pub2fd)
   // okd.  Second, is okd's actual exit, which we'll wait on.
   _okd.set_chldcb (wrap (this, &okld_t::shutdown2));
   _okd.make_cli (okld_program_1, wrap (this, &okld_t::caught_okd_eof));
+  if (lazy_startup ()) {
+    _okd.make_srv (okld_program_1, wrap (this, &okld_t::okd_dispatch));
+  }
 
   return true;
 }
@@ -1388,8 +1451,20 @@ tamed
 void okld_t::launchservices ()
 {
   tvars {
-    u_int i, j;
+    u_int i, j (0);
+    bool ok;
   }
+
+  // First reserve a slot for all services.
+  for (i = 0; i < svcs.size (); i++) {
+    if (sdflag) {
+      warn << "Skipping service reservation due to shutdown flag.\n";
+      return;
+    } else {
+      twait { svcs[i]->reserve (lazy_startup (), mkevent (ok)); }
+    }
+  }
+
 
   // XXX - hack for now; there is a problem when we launch too many
   // services at once, in that we lose file descriptors around the
@@ -1399,17 +1474,18 @@ void okld_t::launchservices ()
   // retrieve the 128th file descriptor. Some small changes
   // to david's libraries might be able to fix this. For now,
   // we'll hack in a timeout to let okd catch up, if possible.
-  
-  for (i = 0; i < svcs.size (); i++, j++) {
-    if (okld_startup_batch_size && j >= okld_startup_batch_size) {
-      twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
-      j = 0;
+  if (!lazy_startup()) {
+    for (i = 0; i < svcs.size (); i++, j++) {
+      if (okld_startup_batch_size && j >= okld_startup_batch_size) {
+	twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
+	j = 0;
+      }
+      if (sdflag) { 
+	warn << "not launching due to shutdown flag\n";
+	return;
+      }
+      svcs[i]->launch ();
     }
-    if (sdflag) { 
-      warn << "not launching due to shutdown flag\n";
-      return;
-    }
-    svcs[i]->launch ();
   }
 }
 
@@ -1606,6 +1682,14 @@ okld_helper_t::make_cli (const rpc_program &p, cbv::ptr eofcb)
 
 //-----------------------------------------------------------------------
 
+void
+okld_helper_t::make_srv (const rpc_program &p, callback<void, svccb *>::ref cb)
+{
+  _srv = asrv::alloc (_x, p, cb);
+}
+
+//-----------------------------------------------------------------------
+
 void okld_helper_t::activate () { _active = true; }
 
 //-----------------------------------------------------------------------
@@ -1720,6 +1804,15 @@ okld_t::got_ssl_primary_port (vec<str> v, str loc, bool *errp)
     err = false;
   }
   if (err) *errp = true;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::add_svc (ptr<okld_ch_t> ch)
+{
+  svcs.push_back (ch);
+  _svc_lookup.insert (ch->servpath, ch);
 }
 
 //-----------------------------------------------------------------------

@@ -253,12 +253,15 @@ okd_t::parse_file (const str &cf)
     .add ("SelectPolicy", &sys_sel_tmp)
     .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
     .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
+    .add ("LazyStartup", &_lazy_startup)
+
+    // script and service options, just ignore 'em...
+    .ignore ("Service")
+    .ignore ("Service2")
+    .ignore ("Script")
 
     .ignore ("MmapClockDaemon")
-    .ignore ("Service")
     .ignore ("Interpreter")
-    .ignore ("Script")
-    .ignore ("Service2")
     .ignore ("CrashSamplingInterval")
     .ignore ("MaxCrahsedProcesses")
     .ignore ("ServiceLowUid")
@@ -414,8 +417,8 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
 	c = servtab[ra._target];
 	if (!c) {
 	  strbuf b;
-	  b << "Expected a service " << ra._target 
-	    << " but couldn't find it!\n";
+	  b << "Startup race condition: expected a service " << ra._target 
+	    << " but it's not available yet!\n";
 	  okdbg_warn (ERROR, b);
 	}
       }
@@ -648,6 +651,10 @@ okd_t::launch ()
   _okld_srv = asrv::alloc (_okld_x, okld_program_1,
 			   wrap (this, &okd_t::okld_dispatch));
 
+  if (lazy_startup()) {
+    _okld_cli = aclnt::alloc (_okld_x, okld_program_1);
+  }
+
   if (_http_ports.size () == 0) {
     warn << "No listen addr/ports specified; assuming *:80\n";
     _http_ports.push_back (listenport);
@@ -704,6 +711,14 @@ okd_t::okld_dispatch (svccb *sbp)
 	srv.reply (st);
       }
       break;
+    case OKLD_RESERVE:
+      {
+	RPC::okld_program_1::okld_reserve_srv_t<svccb> srv (sbp);
+	const okws_svc_reserve_arg_t *arg = srv.getarg ();
+	ok_xstatus_typ_t st = reserve_child (arg->name, arg->lazy);
+	srv.reply (st);
+      }
+      break;
     case OKLD_SEND_SSL_SOCKET:
       {
 	RPC::okld_program_1::okld_send_ssl_socket_srv_t<svccb> srv (sbp);
@@ -755,6 +770,21 @@ okd_t::got_child_fd (int fd, const okws_svc_descriptor_t &d)
     ch = New okch_t (this, uri);
   }
   ch->got_new_ctlx_fd (fd, d.pid);
+}
+
+ok_xstatus_typ_t
+okd_t::reserve_child (const str &nm, bool lazy)
+{
+  okch_t *ch;
+  ok_xstatus_typ_t ret = OK_STATUS_OK;
+  okc_state_t st = lazy ? OKC_STATE_STANDBY : OKC_STATE_NONE;
+  if (!(ch = servtab[nm])) {
+    ch = New okch_t (this, nm, st);
+  } else {
+    ch->set_state (st);
+    ret = OK_STATUS_DUP;
+  }
+  return ret;
 }
 
 void
@@ -951,7 +981,6 @@ okd_ssl_t::dispatch (svccb *sbp)
 	} else if (arg.sin.size () < sizeof (sockaddr_in)) {
 	  res = OK_STATUS_ERR;
 	} else {
-	  // XXX todo -- send SSL information
 	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
 	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
 	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl);
@@ -975,7 +1004,7 @@ okd_ssl_t::toggle_accept (bool arg)
   }
 
   if (_cli) {
-    twait{
+    twait {
       RPC::okssl_program_1::okssl_toggle_accept (_cli, arg, &res, 
 						 mkevent (err));
     }
@@ -997,6 +1026,39 @@ okd_ssl_t::hangup ()
   _cli = NULL;
   _srv = NULL;
 }
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::awaken (str nm, evb_t ev)
+{
+  tvars {
+    okws_svc_descriptor_t arg;
+    ok_xstatus_typ_t res;
+    clnt_stat err;
+    bool ok (false);
+  }
+  
+  if (_okld_cli) {
+    arg.pid = 0;
+    arg.name = nm;
+    twait {
+      RPC::okld_program_1::okld_poke_lazy_service (_okld_cli, arg, &res, 
+						   mkevent (err)); 
+    }
+    if (err) {
+      warn << "RPC error awakening service " << nm << ": " << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn << "okld did not awaken service " << nm 
+	   << ": rc=" << int (res) << "\n";
+    } else {
+      ok = true;
+    }
+  }
+  ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
 
 
 int

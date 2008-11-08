@@ -265,7 +265,10 @@ namespace okssl {
   str
   proxy_t::cipher_info () const
   {
-    const SSL_CIPHER *cipher;
+    // Older versions of SSL don't take a const SSL_CIPHER
+    // for get_bits and get_version, etc.  So we need to use
+    // a non-const cipher to work around that issue.
+    SSL_CIPHER *cipher;
     strbuf b;
     
     if (_ssl && (cipher = SSL_get_current_cipher(_ssl))) {
