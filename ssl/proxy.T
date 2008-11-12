@@ -149,9 +149,14 @@ namespace okssl {
       ssl_complain ("ioctl failed on socket\n");
       ret = false;
     } else {
+      // This bio is freed when we call SSL_free(ssl);
       BIO *sbio = BIO_new_socket (s, BIO_NOCLOSE);
       SSL_set_bio (ssl, sbio, sbio);
       SSL_set_accept_state (ssl);
+
+      // XXX - untested
+      SSL_set_mode (ssl, (SSL_MODE_ENABLE_PARTIAL_WRITE |
+			  SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER));
     }
     return ret;
   }
