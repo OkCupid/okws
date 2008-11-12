@@ -2,6 +2,9 @@
 // -*-c++-*-
 /* $Id: ok.T 3066 2007-09-19 00:36:58Z max $ */
 
+#include "okwsconf.h"
+#ifdef HAVE_SSL
+
 #include "oksslproxy.h"
 #include "oksslutil.h"
 #include "okdbg.h"
@@ -299,3 +302,5 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
 };
+
+#endif /* HAVE_SSL */

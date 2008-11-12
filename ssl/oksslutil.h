@@ -4,6 +4,9 @@
 #ifndef __SSL_OKSSLUTIL_H__
 #define __SSL_OKSSLUTIL_H__
 
+#include "okwsconf.h"
+#ifdef HAVE_SSL
+
 #include "async.h"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -15,5 +18,7 @@ namespace okssl {
   void ssl_complain (const str &s);
 
 };
+
+#endif /* HAVE_SSL */
 
 #endif /* __SSL_OKSSLUTIL_H_ */

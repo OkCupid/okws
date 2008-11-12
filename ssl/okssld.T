@@ -1,7 +1,6 @@
 
 // -*-c++-*-
 
-#include "okssl.h"
 #include "oksslproxy.h"
 #include "pub.h"
 #include "okconst.h"
@@ -497,9 +496,16 @@ namespace okssl {
   okssld_t::init_okld ()
   {
     ptr<axprt> x = axprt_unix::alloc (0);
-    _okld_cli = aclnt::alloc (x, null_program_1);
-    _okld_cli->seteofcb (wrap (this, &okssld_t::okld_eof));
-    return true;
+    bool ret = true;
+    if (x && x->getreadfd () >= 0) {
+      _okld_cli = aclnt::alloc (x, null_program_1);
+      _okld_cli->seteofcb (wrap (this, &okssld_t::okld_eof));
+    } else {
+      warn << "** Cannot create connection to okld;\n";
+      warn << "** Check that okssld is launched okld\n";
+      ret = false;
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------

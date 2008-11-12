@@ -4,6 +4,9 @@
 #ifndef __SSL_OKSSLPROXY_H__
 #define __SSL_OKSSLPROXY_H__
 
+#include "okwsconf.h"
+#ifdef HAVE_SSL
+
 #include "async.h"
 #include "tame.h"
 #include "tame_connectors.h"
@@ -100,4 +103,5 @@ namespace okssl {
 };
 
 
+# endif /* HAVE_SSL */
 #endif /* __SSL_OKSSL_PROXY_H_ */

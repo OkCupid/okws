@@ -119,7 +119,7 @@ done
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamysql libweb; do
+for lib in libpub libahttp libokxml libaok libamt libamysql libweb ssl; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -133,8 +133,9 @@ LIBAOK='$(top_builddir)/libaok/libaok.la'
 LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
+LIBOKSSL='$(top_builddir)/ssl/libokssl.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
+LDADD='$(LIBOKSSL) $(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
@@ -186,6 +187,7 @@ AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAOK)
 AC_SUBST(LIBAMT)
 AC_SUBST(LIBWEB)
+AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBAMYSQL)
 AC_SUBST(LDADD_PUB)
 AC_SUBST(LDEPS_PUB)

@@ -537,7 +537,6 @@ AC_SUBST(LIBSSL)
 AM_CONDITIONAL(USE_SSL, test "${use_ssl}" != "no")
 ])
 dnl
->>>>>>> .merge-right.r3641
 dnl Find the expat libraries
 dnl
 AC_DEFUN([OKWS_EXPAT],
@@ -768,6 +767,7 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBAMT=${with_okws}/libamt/libamt.la
     LIBAHTTP=${with_okws}/libahttp/libahttp.la
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
+    LIBOKSSL=${with_okws}/ssl/libokssl.la
     PUB=${with_okws}/pub/pub
     XMLRPCC=${with_okws}/xmlrpcc/xmlrpcc
 
@@ -789,6 +789,7 @@ elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
     LIBAMT=${okwslibdir}/libamt.la
     LIBAHTTP=${okwslibdir}/libahttp.la
     LIBAMYSQL=${okwslibdir}/libamysql.la
+    LIBOKSSL=${okwslibdir}/libokssl.la
 
     XMLRPCC_COLLECT=${okwsutildir}/xmlrpcc-x-collect.pl
 
@@ -819,8 +820,10 @@ AC_SUBST(LIBPUB)
 AC_SUBST(LIBAOK)
 AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAHTTP)
+AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBAMT)
 AC_SUBST(LIBWEB)
+AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBAMYSQL)
 AC_SUBST(PUB)
 AC_SUBST(XMLRPCC)
@@ -828,9 +831,9 @@ AC_SUBST(XMLRPCC_COLLECT)
 
 LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
-LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDEPS"
+LDEPS='$(LIBOKSSL) $(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDEPS"
 LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
-LDADD='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
+LDADD='$(LIBOKSSL) $(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
 LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)
