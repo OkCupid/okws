@@ -54,8 +54,8 @@ namespace okssl {
   factory_t::factory_t ()
   {
     SSLeay_add_ssl_algorithms ();
-    SSL_METHOD *meth = SSLv32_client_method ();
-    SSL_load_error_string ();
+    SSL_METHOD *meth = SSLv23_client_method ();
+    SSL_load_error_strings ();
     _ctx = SSL_CTX_new (meth);
     SSL_CTX_set_default_verify_paths (_ctx);
     SSL_CTX_set_verify (_ctx, SSL_VERIFY_NONE, NULL);

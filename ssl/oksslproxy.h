@@ -88,7 +88,7 @@ namespace okssl {
     str cipher_info () const;
     void cancel ();
   private:
-    bool init_ssl_connection (int s, SSL *s);
+    bool init_ssl_connection (int , SSL *);
     SSL *_ssl;
     int _encfd, _plainfd;
     ptr<base_proxy_t> _prx[2];
