@@ -252,23 +252,23 @@ req_t::format_req (strbuf &b)
 //-----------------------------------------------------------------------
 
 tamed void
-req_t::make_T (ptr<ahttpcon> x, evi_t ev)
+req_t::make_T (ptr<ok_xprt_base_t> x, evi_t ev)
 {
   tvars {
     strbuf req;
     int status (HTTP_OK);
     outcome_t outc;
     ptr<req_t> hold;
+    bool r;
   }
   hold = mkref (this);
 
   format_req (req);
 
-  twait { x->send (req, connector::cnc (mkevent (), ev, &outc)); }
+  twait { x->drain_to_network (&req, connector::cnc (mkevent (r), ev, &outc)); }
   if (outc == OUTCOME_CANCELLED) {
     status = CANCELLED_STATUS;
-    x->set_drained_cb (NULL);
-    x->cancel ();
+    x->drain_cancel ();
   }
   ev->trigger (status);
 }
@@ -307,7 +307,7 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
     ptr<hostent> he;
     int dns_err;
     int fd;
-    ptr<ahttpcon> x;
+    ptr<ok_xprt_base_t> x;
     tcpconnect_t *tc;
     outcome_t outc;
   }
@@ -356,10 +356,10 @@ resp_t::resp_t ()
 //-----------------------------------------------------------------------
 
 void
-resp_t::setx (ptr<ahttpcon> x)
+resp_t::setx (ptr<ok_xprt_base_t> x)
 {
   _x = x;
-  _abuf.setsrc (New abuf_con_t (_x), true);
+  _abuf.setsrc (_x->alloc_abuf_src (), true);
 }
 
 //-----------------------------------------------------------------------

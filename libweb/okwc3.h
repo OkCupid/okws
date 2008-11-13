@@ -156,7 +156,7 @@ public:
     : _reqinfo (ri), _vers (v), _outcookie (c) {}
 
   virtual ~req_t () {}
-  virtual void make (ptr<ahttpcon> x, evi_t cb) { return make_T (x, cb); }
+  virtual void make (ptr<ok_xprt_base_t> x, evi_t cb) { return make_T (x, cb); }
 
   virtual const post_t *get_post () const { return NULL; }
   virtual str get_type () const { return NULL; }
@@ -165,7 +165,7 @@ protected:
   void format_req (strbuf &b);
 
 private:
-  void make_T (ptr<ahttpcon> x, evi_t cb, CLOSURE);
+  void make_T (ptr<ok_xprt_base_t> x, evi_t cb, CLOSURE);
 
 protected:
   ptr<const reqinfo_t> _reqinfo;
@@ -180,7 +180,7 @@ public:
   resp_t ();
   virtual ~resp_t () {}
   void get (evi_t cb) { get_T (cb); }
-  void setx (ptr<ahttpcon> x);
+  void setx (ptr<ok_xprt_base_t> x);
   const okwc_http_hdr_t *hdr () const { return &_hdr; }
   okwc_http_hdr_t *hdr () { return &_hdr; }
 
@@ -192,7 +192,7 @@ protected:
   virtual void eat_chunk (size_t, evi_t cb) = 0;
   virtual void finished_meal (int status, evi_t cb) = 0;
 
-  ptr<ahttpcon> _x;
+  ptr<ok_xprt_base_t> _x;
   abuf_t _abuf;
   char _scratch[OKWC_SCRATCH_SZ];
   okwc_cookie_set_t _incookies;
