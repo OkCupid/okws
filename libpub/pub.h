@@ -1622,7 +1622,7 @@ public:
   bool include (zbuf *b, const pfnm_t &fn, u_int opts = 0, 
 		aarr_t *env = NULL) const;
   bool include (zbuf *b, bpfcp_t f, u_int o = 0, aarr_t *e = NULL) const;
-  void r_config (pubrescb c, int mthd, ptr<aclnt> c);
+  void r_config (pubrescb , int mthd, ptr<aclnt> );
   void configed (ptr<xpub_getfile_res_t> x, pubrescb c, clnt_stat e);
   virtual void v_config_cb (const xpub_file_t &x) {}
 

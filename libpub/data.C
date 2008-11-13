@@ -354,12 +354,13 @@ pfile_switch_t::output (output_t *o, penv_t *e) const
   ptr<pswitch_env_base_t> pse = eval_for_output (o, e);
   // we might have given switch an empty file (so as to allow 
   // the default to catch more stuff, for instance).
-  if (pse)
-    if (pse->fn)
+  if (pse) {
+    if (pse->fn) {
       include (o, e, pse->env (), pse->fn);
-    else if (pse->nested_env ()) {
+    } else if (pse->nested_env ()) {
       pse->nested_env ()->output (o, e);
     }
+  }
 }
 
 void
@@ -1630,11 +1631,13 @@ pfile_t::add_section (pfile_sec_t *s)
 {
   if (!s) 
     s = pop_section ();
-  if (s)
-    if (s->is_empty ())
+  if (s) {
+    if (s->is_empty ()) {
       delete s;
-    else
+    } else {
       secs.insert_tail (s);
+    }
+  }
 }
 
 // ------------------------------------------------------------------------

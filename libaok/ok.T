@@ -1241,13 +1241,13 @@ str
 get_okws_config (bool fat)
 {
   str cf = okws_etcfile ("okws_config");
-  if (!cf)
+  if (!cf) {
     if (fat) {
       cf = okws_etcfile_required ("okd_config");
     } else {
       cf = okws_etcfile ("okd_config");
     }
-  
+  }
   return cf;
 }
 
@@ -1258,10 +1258,11 @@ ok_httpsrv_t::init_pub2 (u_int opts)
   if (pub2fd > 0) {
     ptr<axprt_stream> x (axprt_stream::alloc (pub2fd, ok_axprt_ps));
 
-    if (ok_pub2_caching) 
+    if (ok_pub2_caching) {
       _pub2 = New refcounted<pub2::caching_remote_publisher_t> (x, opts);
-    else
+    } else {
       _pub2 = New refcounted<pub2::remote_publisher_t> (x, opts);
+    }
 
     ret = true;
   }

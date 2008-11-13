@@ -75,11 +75,13 @@ int
 myopen (const char *arg, u_int mode)
 {
   struct stat sb;
-  if (stat (arg, &sb) == 0)
-    if (!S_ISREG (sb.st_mode)) 
+  if (stat (arg, &sb) == 0) {
+    if (!S_ISREG (sb.st_mode))  {
       fatal << arg << ": file exists but is not a regular file\n";
-    else if (unlink (arg) < 0 || stat (arg, &sb) == 0)
+    } else if (unlink (arg) < 0 || stat (arg, &sb) == 0) {
       fatal << arg << ": could not remove file\n";
+    }
+  }
  
   int fd = open (arg, O_CREAT|O_WRONLY, mode);
   if (!fd)
