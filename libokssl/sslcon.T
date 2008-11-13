@@ -81,10 +81,22 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
+  void
+  con_t::drain_cancel ()
+  {
+    if (_cancel_ev) {
+      evv_t::ptr c = _cancel_ev;
+      _cancel_ev = NULL;
+      c->trigger ();
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
 #define BUFSZ 1024
 
   tamed void
-  con_t::drain_to_network (strbuf *bp, evb_t ev)
+  con_t::drain_to_network_T (strbuf *bp, evb_t ev)
   {
     tvars {
       suio *uio (bp->tosuio ());
@@ -97,20 +109,33 @@ namespace okssl {
       bool wait_for_write (true);
       char buf[BUFSZ];
       int err;
+      rendezvous_t<bool> rv;
+      bool do_wait;
     }
+
+    assert (!_cancel_ev);
+    _cancel_ev = mkevent (rv, false);
 
     while (go) {
 
+      do_wait = true;
       if (need_read) {
-	twait { rfd.on (mkevent ()); }
+	rfd.on (mkevent (rv, true));
+      } else if (uio->resid () > 0 && wait_for_write) {
+	wfd.on (mkevent (rv, true));
+      } else {
+	do_wait = false;
+      }
 
+      if (do_wait) 
+	twait (rv, go);
+
+      if (!go) {
+	ret = false;
+      } else if (need_read) {
 	// read 0 bytes of data for now.
 	SSL_read (_ssl, buf, 0);
-
       } else if (uio->resid () > 0) {
-	if (wait_for_write) {
-	  twait { wfd.on (mkevent ()); }
-	}
 
 	{
 	  const struct iovec &iov = uio->iov ()[0];
@@ -140,6 +165,7 @@ namespace okssl {
 	go = false;
       }
     }
+    _cancel_ev = NULL;
     ev->trigger (ret);
   }
 
@@ -193,6 +219,14 @@ namespace okssl {
   }
 #undef BUFSZ
 
+  //-----------------------------------------------------------------------
+
+  abuf_src_t *
+  con_t::alloc_abuf_src ()
+  {
+    return New okssl_src_t (mkref (this));
+  }
+  
   //-----------------------------------------------------------------------
 
 };
