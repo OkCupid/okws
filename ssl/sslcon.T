@@ -51,6 +51,30 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
+  factory_t::factory_t ()
+  {
+    SSLeay_add_ssl_algorithms ();
+    SSL_METHOD *meth = SSLv32_client_method ();
+    SSL_load_error_string ();
+    _ctx = SSL_CTX_new (meth);
+    SSL_CTX_set_default_verify_paths (_ctx);
+    SSL_CTX_set_verify (_ctx, SSL_VERIFY_NONE, NULL);
+  }
+
+  //-----------------------------------------------------------------------
+
+  static ptr<factory_t> g_factory;
+
+  ptr<factory_t>
+  factory ()
+  {
+    if (!g_factory)
+      g_factory = New refcounted<factory_t> ();
+    return g_factory;
+  }
+
+  //-----------------------------------------------------------------------
+
   factory_t::~factory_t ()
   {
   }
@@ -71,7 +95,6 @@ namespace okssl {
       tame::iofd_t wfd (_self->_fd, selwrite);
       bool need_read (false);
       bool wait_for_write (true);
-      struct iovec iov;
       char buf[BUFSZ];
       int err;
     }
@@ -80,13 +103,20 @@ namespace okssl {
 
       if (need_read) {
 	twait { rfd.on (mkevent ()); }
-	SSL_read (_ssl, buf, BUFSZ);
+
+	// read 0 bytes of data for now.
+	SSL_read (_ssl, buf, 0);
+
       } else if (uio->resid () > 0) {
 	if (wait_for_write) {
 	  twait { wfd.on (mkevent ()); }
 	}
-	iov = uio->iov ()[0];
-	rc = SSL_write (_ssl, iov.iov_base, iov.iov_len);
+
+	{
+	  const struct iovec &iov = uio->iov ()[0];
+	  rc = SSL_write (_ssl, iov.iov_base, iov.iov_len);
+	}
+
 	if (rc >= 0) {
 	  uio->rembytes (rc);
 	} else {
@@ -113,6 +143,54 @@ namespace okssl {
     ev->trigger (ret);
   }
 
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  con_t::read (char *out, size_t len, evssz_t ev)
+  {
+    tvars {
+      tame::iofd_t rfd (_self->_fd, selread);
+      tame::iofd_t wfd (_self->_fd, selwrite);
+      bool go (true);
+      bool need_write (false);
+      bool wait_for_read (true);
+      ssize_t ret (-1);
+      char buf[BUFSZ];
+      int err;
+    }
+
+    while (go) {
+      if (need_write) {
+	twait { wfd.on (mkevent ()); }
+	SSL_write (_ssl, buf, 0);
+      } else if (len > 0) {
+	if (wait_for_read) {
+	  twait { rfd.on (mkevent ()); }
+	}
+	ret = SSL_read (_ssl, out, len);
+	if (ret < 0) {
+	  err = SSL_get_error (_ssl, ret);
+	  switch (err) {
+	  case SSL_ERROR_WANT_READ:
+	    wait_for_read = true;
+	    break;
+	  case SSL_ERROR_WANT_WRITE:
+	    need_write = true;
+	    break;
+	  default:
+	    ssl_complain ("SSL_write encountered an error: ");
+	    errno = EIO;
+	    go = false;
+	    break;
+	  }
+	} else {
+	  go = false;
+	}
+      }
+    }
+    ev->trigger (ret);
+  }
 #undef BUFSZ
 
   //-----------------------------------------------------------------------

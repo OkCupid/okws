@@ -21,6 +21,8 @@
 
 namespace okssl {
 
+  typedef event<ssize_t>::ref evssz_t;
+
   //-----------------------------------------------------------------------
 
   class con_t : public virtual refcount {
@@ -29,6 +31,7 @@ namespace okssl {
     ~con_t ();
     bool ok () const { return _ok; }
     void drain_to_network (strbuf *b, evb_t ev, CLOSURE);
+    void read (char *out, size_t len, evsz_t ev);
     int _fd;
   private:
     SSL *_ssl;
