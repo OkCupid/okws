@@ -33,14 +33,13 @@ namespace okssl {
     ~con_t ();
     bool ok () const { return _ok; }
     void drain_to_network (strbuf *b, evb_t ev) { drain_to_network_T (b, ev); }
-    void read (char *out, size_t len, evssz_t ev, CLOSURE);
+    void read (void *out, size_t len, evssz_t ev, CLOSURE);
     void drain_cancel (void);
     abuf_src_t *alloc_abuf_src ();
     int _fd;
   protected:
     void drain_to_network_T (strbuf *b, evb_t ev, CLOSURE);
   private:
-    evv_t::ptr _cancel_ev;
     SSL *_ssl;
     BIO *_rbio, *_wbio;
     bool _ok;
@@ -61,11 +60,11 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
-  class okssl_src_t : public abuf_src_t {
+  class asrc_t : public abuf_src_t {
   public:
-    okssl_src_t (ptr<con_t> c) : _con (c) {}
-    ~okssl_src_t () ;
-    void init (cbv c);
+    asrc_t (ptr<con_t> c) : _con (c), _go (true), _eof (false) {}
+    ~asrc_t () ;
+    void init (cbv c) { init_T (c); }
     void readcb (int n);
     abuf_indata_t getdata ();
     void rembytes (int n);
@@ -73,7 +72,11 @@ namespace okssl {
     void cancel () ;
     bool overflow ();
   private:
+    void init_T (cbv c, CLOSURE);
     ptr<con_t> _con;
+    bool _go;
+    bool _eof;
+    suiolite _uio;
   };
 
   //-----------------------------------------------------------------------

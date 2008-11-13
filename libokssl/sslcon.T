@@ -75,21 +75,10 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
-  factory_t::~factory_t ()
-  {
-  }
-
+  factory_t::~factory_t () {} 
   //-----------------------------------------------------------------------
 
-  void
-  con_t::drain_cancel ()
-  {
-    if (_cancel_ev) {
-      evv_t::ptr c = _cancel_ev;
-      _cancel_ev = NULL;
-      c->trigger ();
-    }
-  }
+  void con_t::drain_cancel () {}
 
   //-----------------------------------------------------------------------
 
@@ -109,32 +98,27 @@ namespace okssl {
       bool wait_for_write (true);
       char buf[BUFSZ];
       int err;
-      rendezvous_t<bool> rv;
-      bool do_wait;
+      outcome_t oc;
     }
-
-    assert (!_cancel_ev);
-    _cancel_ev = mkevent (rv, false);
 
     while (go) {
 
-      do_wait = true;
       if (need_read) {
-	rfd.on (mkevent (rv, true));
+	twait { rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	if (oc == OUTCOME_SUCC) { 
+	  SSL_read (_ssl, buf, 0);
+	  need_read = false;
+	} else {
+	  go = false;
+	}
       } else if (uio->resid () > 0 && wait_for_write) {
-	wfd.on (mkevent (rv, true));
-      } else {
-	do_wait = false;
+	twait { wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	wait_for_write = false;
+	go = (oc == OUTCOME_SUCC);
       }
-
-      if (do_wait) 
-	twait (rv, go);
 
       if (!go) {
 	ret = false;
-      } else if (need_read) {
-	// read 0 bytes of data for now.
-	SSL_read (_ssl, buf, 0);
       } else if (uio->resid () > 0) {
 
 	{
@@ -165,7 +149,6 @@ namespace okssl {
 	go = false;
       }
     }
-    _cancel_ev = NULL;
     ev->trigger (ret);
   }
 
@@ -173,7 +156,7 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   tamed void
-  con_t::read (char *out, size_t len, evssz_t ev)
+  con_t::read (void *out, size_t len, evssz_t ev)
   {
     tvars {
       tame::iofd_t rfd (_self->_fd, selread);
@@ -224,9 +207,89 @@ namespace okssl {
   abuf_src_t *
   con_t::alloc_abuf_src ()
   {
-    return New okssl_src_t (mkref (this));
+    return New asrc_t (mkref (this));
   }
   
+  //-----------------------------------------------------------------------
+  
+  tamed void
+  asrc_t::init_T (cbv abuf_cb)
+  {
+    tvars {
+      iovec *iov;
+      ssize_t rc;
+    }
+    while (_go) {
+      iov = _uio.get_iov ();
+      twait { _con->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
+      if (rc > 0) {
+	_uio.account_for_new_bytes (rc);
+      }
+      if (rc == 0) {
+	_eof = true;
+	_go = false;
+      }
+      (*abuf_cb) ();
+    }
+  }
+  
+  //-----------------------------------------------------------------------
+
+  void
+  asrc_t::readcb (int n)
+  {
+
+  }
+
+  //-----------------------------------------------------------------------
+
+  abuf_indata_t
+  asrc_t::getdata ()
+  {
+    if (_eof) return abuf_indata_t ();
+    else return abuf_indata_t (&_uio);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  asrc_t::finish ()
+  {
+    _go = false;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  asrc_t::cancel ()
+  {
+    _go = false;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  asrc_t::overflow ()
+  {
+    // XXX implement me!
+    return false;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  asrc_t::rembytes (int n)
+  {
+    _uio.rembytes (n);
+  }
+
+  //-----------------------------------------------------------------------
+
+  asrc_t::~asrc_t ()
+  {
+    // XXX implement me!
+  }
+
   //-----------------------------------------------------------------------
 
 };
