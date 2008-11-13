@@ -123,6 +123,7 @@ suiolite::rembytes (ssize_t nbytes)
 iovec *
 suiolite::get_iov (size_t *len)
 {
+  load_iov ();
   if (len) *len = N_REGIONS;
   return iov;
 }
