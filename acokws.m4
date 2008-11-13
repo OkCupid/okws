@@ -767,7 +767,7 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBAMT=${with_okws}/libamt/libamt.la
     LIBAHTTP=${with_okws}/libahttp/libahttp.la
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
-    LIBOKSSL=${with_okws}/ssl/libokssl.la
+    LIBOKSSL=${with_okws}/libokssl/libokssl.la
     PUB=${with_okws}/pub/pub
     XMLRPCC=${with_okws}/xmlrpcc/xmlrpcc
 

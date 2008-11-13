@@ -10,20 +10,13 @@ SUFFIXES = .C .T .h
 .T.C:
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
-TAMEIN = proxy.T okssld.T sslcon.T
-TAMEOUT = proxy.C okssld.C sslcon.C
+TAMEIN = proxy.T sslcon.T
+TAMEOUT = proxy.C slcon.C
 
 proxy.o: proxy.C
 proxy.lo: proxy.C
 sslcon.o: sslcon.C
 sslcon.lo: sslcon.C
-
-if USE_SSL
-okwsexec_PROGRAMS = okssld
-okssld_SOURCES = okssld.C
-okssld.o: okssld.C
-okssld.lo: okssld.C
-endif
 
 .PHONY: tameclean
 

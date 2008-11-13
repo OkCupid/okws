@@ -8,7 +8,7 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1) $(SBD2) ssl okd logd client test conf htdocs contrib
+SUBDIRS = $(SBD1) $(SBD2) libokssl okd ssld logd client test conf htdocs contrib
 
 
 EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 \

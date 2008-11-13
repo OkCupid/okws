@@ -119,7 +119,7 @@ done
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamysql libweb ssl; do
+for lib in libpub libahttp libokxml libaok libamt libamysql libweb libokssl; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -133,7 +133,7 @@ LIBAOK='$(top_builddir)/libaok/libaok.la'
 LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
-LIBOKSSL='$(top_builddir)/ssl/libokssl.la'
+LIBOKSSL='$(top_builddir)/libokssl/libokssl.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
 LDADD='$(LIBOKSSL) $(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
@@ -208,4 +208,4 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile htdocs/Makefile contrib/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
-	  test/system/3tier/Makefile ssl/Makefile )
+	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile )
