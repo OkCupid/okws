@@ -66,17 +66,20 @@ namespace okssl {
   public:
     asrc_t (ptr<con_t> c);
     ~asrc_t () ;
-    void init (cbv c) { init_T (c); }
+    void init (cbv c);
     abuf_indata_t getdata ();
     void rembytes (int n);
     void finish () ;
     void cancel () ;
+  protected:
+    void read_loop (CLOSURE);
   private:
-    void init_T (cbv c, CLOSURE);
     ptr<con_t> _con;
     bool _go;
     bool _eof;
     suiolite _uio;
+    bool _running;
+    cbv::ptr _abuf_cb;
   public:
     ptr<bool> _destroyed;
     u_int32_t _current;

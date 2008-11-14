@@ -297,46 +297,39 @@ namespace okssl {
   
   //-----------------------------------------------------------------------
 
+  void
+  asrc_t::init (cbv abuf_cb)
+  {
+    _abuf_cb = abuf_cb;
+
+    // By convention, call once if there's anything to read, of if
+    // we're at the EOF.
+    if (_uio.resid () || _eof) {
+      (*_abuf_cb) ();
+    }
+
+    read_loop ();
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
-  asrc_t::init_T (cbv abuf_cb)
+  asrc_t::read_loop ()
   {
     tvars {
       iovec *iov;
       ssize_t rc;
       ptr<bool> destroyed (_self->_destroyed);
-      u_int32_t me (++_self->_current);
     }
 
-    warn << me << ":init_T A\n";
+    if (_running)
+      return;
+    _running = true;
 
-    // By convention, call once if there's anything to read, of if
-    // we're at the EOF.
-    if (_uio.resid () || _eof) {
-      (*abuf_cb) ();
-    }
-
-
-    //
-    // What's _current == me?
-    //
-    //    Due to legacy designs, an abuf can be called init() upon
-    //    multiple times -- for instance, for the cookie parsing,
-    //    inside the header parsing.  In fact, that's really the only
-    //    time.  In this case, the last call to this->init() should
-    //    trample all else before.  When the cookie is doing being
-    //    parse, then init() will be called again, in the original
-    //    context.
-    //
-    //    In other words, _current == me ensures that only the most
-    //    recent call to init() is going forward; the others should
-    //    be dead.
-    //
-    while (_go && _current == me) {
+    while (_go) {
 
       iov = _uio.get_iov ();
-      warn << me << ":init_T B\n";
       twait { _con->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
-      warn << me << ":init_T C\n";
       
       if (*destroyed) 
 	return;
@@ -349,11 +342,9 @@ namespace okssl {
 	_go = false;
       }
 
-      warn << me << ":init_T D\n";
-      (*abuf_cb) ();
-      warn << me << ":init_T E\n";
+      (*_abuf_cb) ();
     }
-    warn << me << ":init_T F\n";
+    _running = false;
   }
   
   //-----------------------------------------------------------------------
@@ -371,6 +362,7 @@ namespace okssl {
     : _con (c),
       _go (true),
       _eof (false),
+      _running (false),
       _destroyed (New refcounted<bool> (false)),
       _current (0) {}
       
