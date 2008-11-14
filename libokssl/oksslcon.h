@@ -37,11 +37,14 @@ namespace okssl {
     abuf_src_t *alloc_abuf_src ();
     int _fd;
   protected:
+    void ssl_connect (evb_t ev, CLOSURE);
+    void ssl_connect_2 (evb_t ev, CLOSURE);
     void drain_to_network_T (strbuf *b, evb_t ev, CLOSURE);
   private:
     SSL *_ssl;
     BIO *_rbio, *_wbio;
     bool _ok;
+    bool _connected;
   };
 
   //-----------------------------------------------------------------------

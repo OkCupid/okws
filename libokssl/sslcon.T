@@ -24,7 +24,8 @@ namespace okssl {
       _ssl (ssl),
       _rbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _wbio (BIO_new_socket (fd, BIO_NOCLOSE)),
-      _ok (true)
+      _ok (true),
+      _connected (false)
   {
     unsigned long sl = 1;
     if (BIO_socket_ioctl (fd, FIONBIO, &sl) < 0) {
@@ -76,13 +77,82 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   factory_t::~factory_t () {} 
+
   //-----------------------------------------------------------------------
 
   void con_t::drain_cancel () {}
 
   //-----------------------------------------------------------------------
+  
+  tamed void
+  con_t::ssl_connect (evb_t ev)
+  {
+    tvars {
+      bool rc;
+    }
 
+    if (_connected) {
+      rc = true;
+    } else {
+      twait { ssl_connect_2 (connector::cnc (mkevent (rc), ev)); }
+      if (!rc) {
+	warn << "SSL connection establishment failed\n";
+      }
+    }
+    ev->trigger (rc);
+
+  }
+
+  //-----------------------------------------------------------------------
+  
 #define BUFSZ 1024
+
+  tamed void
+  con_t::ssl_connect_2 (evb_t ev)
+  {
+    tvars {
+      int err, rc;
+      bool ret (false);
+      bool go (true);
+      tame::iofd_t wfd (_self->_fd, selwrite);
+      tame::iofd_t rfd (_self->_fd, selread);
+      outcome_t oc (OUTCOME_SUCC);
+    }
+
+    while (go) {
+      go = false;
+
+      rc = SSL_connect (_ssl);
+      if (rc < 0) {
+	err = SSL_get_error (_ssl, rc);
+	switch (err) {
+	case SSL_ERROR_WANT_READ:
+	  {
+	    twait { rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    go = (oc == OUTCOME_SUCC);
+	  }
+	  break;
+	case SSL_ERROR_WANT_WRITE:
+	  {
+	    twait { wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    go = (oc == OUTCOME_SUCC);
+	  }
+	  break;
+	default:
+	  ssl_complain ("unhandled error durring connection: ");
+	  errno = EIO;
+	  break;
+	}
+      } else {
+	ret = true;
+	_connected = true;
+      }
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
 
   tamed void
   con_t::drain_to_network_T (strbuf *bp, evb_t ev)
@@ -100,6 +170,9 @@ namespace okssl {
       int err;
       outcome_t oc;
     }
+
+    twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
+    if (!go) { ret = false; }
 
     while (go) {
 
@@ -168,6 +241,8 @@ namespace okssl {
       char buf[BUFSZ];
       int err;
     }
+
+    twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
 
     while (go) {
       if (need_write) {
