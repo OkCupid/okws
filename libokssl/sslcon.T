@@ -309,6 +309,13 @@ namespace okssl {
 
     warn << me << ":init_T A\n";
 
+    // By convention, call once if there's anything to read, of if
+    // we're at the EOF.
+    if (_uio.resid () || _eof) {
+      (*abuf_cb) ();
+    }
+
+
     //
     // What's _current == me?
     //
@@ -326,22 +333,20 @@ namespace okssl {
     //
     while (_go && _current == me) {
 
-      if (_uio.resid () == 0) {
-	iov = _uio.get_iov ();
-	warn << me << ":init_T B\n";
-	twait { _con->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
-	warn << me << ":init_T C\n";
-	
-	if (*destroyed) 
-	  return;
-
-	if (rc > 0) {
-	  _uio.account_for_new_bytes (rc);
-	}
-	if (rc == 0) {
-	  _eof = true;
-	  _go = false;
-	}
+      iov = _uio.get_iov ();
+      warn << me << ":init_T B\n";
+      twait { _con->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
+      warn << me << ":init_T C\n";
+      
+      if (*destroyed) 
+	return;
+      
+      if (rc > 0) {
+	_uio.account_for_new_bytes (rc);
+      }
+      if (rc == 0) {
+	_eof = true;
+	_go = false;
       }
 
       warn << me << ":init_T D\n";
