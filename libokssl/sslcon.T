@@ -218,10 +218,15 @@ namespace okssl {
     tvars {
       iovec *iov;
       ssize_t rc;
+      ptr<bool> destroyed (_self->_destroyed);
     }
     while (_go) {
       iov = _uio.get_iov ();
       twait { _con->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
+
+      if (*destroyed) 
+	return;
+
       if (rc > 0) {
 	_uio.account_for_new_bytes (rc);
       }
@@ -235,20 +240,20 @@ namespace okssl {
   
   //-----------------------------------------------------------------------
 
-  void
-  asrc_t::readcb (int n)
-  {
-
-  }
-
-  //-----------------------------------------------------------------------
-
   abuf_indata_t
   asrc_t::getdata ()
   {
     if (_eof) return abuf_indata_t ();
     else return abuf_indata_t (&_uio);
   }
+
+  //-----------------------------------------------------------------------
+
+  asrc_t::asrc_t (ptr<con_t> c)
+    : _con (c),
+      _go (true),
+      _eof (false),
+      _destroyed (New refcounted<bool> (false)) {}
 
   //-----------------------------------------------------------------------
 
@@ -268,15 +273,6 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
-  bool
-  asrc_t::overflow ()
-  {
-    // XXX implement me!
-    return false;
-  }
-
-  //-----------------------------------------------------------------------
-
   void
   asrc_t::rembytes (int n)
   {
@@ -287,7 +283,7 @@ namespace okssl {
 
   asrc_t::~asrc_t ()
   {
-    // XXX implement me!
+    *_destroyed = true;
   }
 
   //-----------------------------------------------------------------------

@@ -4,6 +4,7 @@
 #include "okwc.h"
 #include "tame_connectors.h"
 #include "rxx.h"
+#include "oksslcon.h"
 
 namespace okwc3 {
 
@@ -202,7 +203,7 @@ str
 reqinfo_direct_t::get_hdr_hostname () const
 {
   str ret;
-  if (_port == 80) {
+  if (_port == std_port (_https)) {
     ret = _hostname;
   } else {
     strbuf b;
@@ -334,8 +335,13 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
     } else if (fd < 0) {
       status = HTTP_CONNECTION_FAILED;
     } else {
-      
-      x = ahttpcon::alloc (fd);
+     
+      if (req->https ()) {
+	x = okssl::factory ()->alloc_con (fd);
+      } else {
+	x = ahttpcon::alloc (fd);
+      }
+
       twait { req->make (x, connector::cnc (mkevent (status), ev)); }
       if (status == HTTP_OK) {
 	resp->setx (x);
@@ -487,8 +493,9 @@ resp_simple_t::finished_meal (int status, evi_t ev)
 
 //-----------------------------------------------------------------------
 
-reqinfo_proxied_t::reqinfo_proxied_t (const str &url)
-  : _url (url),
+reqinfo_proxied_t::reqinfo_proxied_t (const str &url, bool s)
+  : reqinfo_t (s),
+    _url (url),
     _valid (false)
 {
   static rxx url_rxx ("http://([^:/\\s]+(:\\d+)?)(/.*)?");
@@ -502,7 +509,8 @@ reqinfo_proxied_t::reqinfo_proxied_t (const str &url)
 //-----------------------------------------------------------------------
 
 tamed void
-agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c)
+agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
+			   bool https)
 {
   tvars {
     ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
@@ -511,7 +519,7 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c)
     int status;
   }
 
-  ri = reqinfo_direct_t::alloc (_hostname, _port, fn);
+  ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
   assert (ri->validate ());
   rq = New refcounted<req_t> (ri, v, c);
 
@@ -522,12 +530,13 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c)
 //-----------------------------------------------------------------------
 
 tamed void
-agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c)
+agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
+			    bool https)
 {
   tvars {
     ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
     ptr<req_t> rq;
-    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url));
+    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url, https));
     int status;
   }
 

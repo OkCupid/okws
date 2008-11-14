@@ -74,7 +74,8 @@ protected:
 
 class agent_xml_t : public agent_t {
 public:
-  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false);
+  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false,
+	       bool https = false);
 
   void call (xml_outreq_t req, xml_ev_t ev) { call_T (req, ev); }
   void call (xml_outreq_t req, xml_ev_t ev, int to) { call_to_T (req, ev, to); }

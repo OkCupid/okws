@@ -24,7 +24,6 @@ namespace okssl {
 
   typedef event<ssize_t>::ref evssz_t;
 
-
   //-----------------------------------------------------------------------
 
   class con_t : public ok_xprt_base_t {
@@ -62,21 +61,21 @@ namespace okssl {
 
   class asrc_t : public abuf_src_t {
   public:
-    asrc_t (ptr<con_t> c) : _con (c), _go (true), _eof (false) {}
+    asrc_t (ptr<con_t> c);
     ~asrc_t () ;
     void init (cbv c) { init_T (c); }
-    void readcb (int n);
     abuf_indata_t getdata ();
     void rembytes (int n);
     void finish () ;
     void cancel () ;
-    bool overflow ();
   private:
     void init_T (cbv c, CLOSURE);
     ptr<con_t> _con;
     bool _go;
     bool _eof;
     suiolite _uio;
+  public:
+    ptr<bool> _destroyed;
   };
 
   //-----------------------------------------------------------------------
