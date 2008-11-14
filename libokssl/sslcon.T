@@ -91,7 +91,7 @@ namespace okssl {
       suio *uio (bp->tosuio ());
       bool ret (true);
       bool go (true);
-      bool rc;
+      int rc;
       tame::iofd_t rfd (_self->_fd, selread);
       tame::iofd_t wfd (_self->_fd, selwrite);
       bool need_read (false);

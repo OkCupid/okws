@@ -13,6 +13,7 @@
 #include "tame.h"
 #include "okwc3.h"
 #include "tame_connectors.h"
+#include "oksslutil.h"
 
 static rxx url_rxx ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
 
@@ -43,8 +44,8 @@ main2 (int argc, char **argv)
     bool https (false);
   }
 
+  okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
-
 
   while ((ch = getopt (argc, argv, "t:p:")) != -1) {
     switch (ch) {
