@@ -79,6 +79,7 @@ namespace okssl {
     suiolite _uio;
   public:
     ptr<bool> _destroyed;
+    u_int32_t _current;
   };
 
   //-----------------------------------------------------------------------
