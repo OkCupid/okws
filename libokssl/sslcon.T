@@ -237,7 +237,6 @@ namespace okssl {
       char buf[BUFSZ];
       int err;
     }
-    warn << "enter scope!\n";
 
     twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
 
@@ -247,29 +246,17 @@ namespace okssl {
 	SSL_write (_ssl, buf, 0);
       } else if (len > 0) {
 	if (wait_for_read) {
-	  warn << "RFD.on Start wait (len=" << len << ")\n";
 	  twait { _rfd.on (mkevent ()); }
-	  warn << "RFD.on Stop wait...\n";
 	}
 	ret = SSL_read (_ssl, out, len);
 
-	{
-	  if (ret > 0) {
-	    warn << "read OK: len=" << ret<< "; datlen=" << ret << "\n";
-	  } else {
-	    warn << "read BAD: " << ret << "\n";
-	  }
-	}
-	
 	if (ret < 0) {
 	  err = SSL_get_error (_ssl, ret);
 	  switch (err) {
 	  case SSL_ERROR_WANT_READ:
-	    warn << " -- WANT READ\n";
 	    wait_for_read = true;
 	    break;
 	  case SSL_ERROR_WANT_WRITE:
-	    warn << " -- WANT WRITE\n";
 	    need_write = true;
 	    break;
 	  default:
@@ -284,7 +271,6 @@ namespace okssl {
       }
     }
     ev->trigger (ret);
-    warn << "leave scope!\n";
   }
 #undef BUFSZ
 
@@ -339,7 +325,6 @@ namespace okssl {
 	_uio.account_for_new_bytes (rc);
       }
       if (rc == 0) {
-	warn << "Hit EOF!!\n";
 	_eof = true;
 	_go = false;
       }
