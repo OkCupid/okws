@@ -25,7 +25,9 @@ namespace okssl {
       _rbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _wbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _ok (true),
-      _connected (false)
+      _connected (false),
+      _rfd (fd, selread),
+      _wfd (fd, selwrite)
   {
     unsigned long sl = 1;
     if (BIO_socket_ioctl (fd, FIONBIO, &sl) < 0) {
@@ -114,8 +116,6 @@ namespace okssl {
       int err, rc;
       bool ret (false);
       bool go (true);
-      tame::iofd_t wfd (_self->_fd, selwrite);
-      tame::iofd_t rfd (_self->_fd, selread);
       outcome_t oc (OUTCOME_SUCC);
     }
 
@@ -128,13 +128,13 @@ namespace okssl {
 	switch (err) {
 	case SSL_ERROR_WANT_READ:
 	  {
-	    twait { rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    twait { _rfd.on (connector::cnc (mkevent (), ev, &oc)); }
 	    go = (oc == OUTCOME_SUCC);
 	  }
 	  break;
 	case SSL_ERROR_WANT_WRITE:
 	  {
-	    twait { wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    twait { _wfd.on (connector::cnc (mkevent (), ev, &oc)); }
 	    go = (oc == OUTCOME_SUCC);
 	  }
 	  break;
@@ -162,8 +162,6 @@ namespace okssl {
       bool ret (true);
       bool go (true);
       int rc;
-      tame::iofd_t rfd (_self->_fd, selread);
-      tame::iofd_t wfd (_self->_fd, selwrite);
       bool need_read (false);
       bool wait_for_write (true);
       char buf[BUFSZ];
@@ -177,7 +175,7 @@ namespace okssl {
     while (go) {
 
       if (need_read) {
-	twait { rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	twait { _rfd.on (connector::cnc (mkevent (), ev, &oc)); }
 	if (oc == OUTCOME_SUCC) { 
 	  SSL_read (_ssl, buf, 0);
 	  need_read = false;
@@ -185,7 +183,7 @@ namespace okssl {
 	  go = false;
 	}
       } else if (uio->resid () > 0 && wait_for_write) {
-	twait { wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	twait { _wfd.on (connector::cnc (mkevent (), ev, &oc)); }
 	wait_for_write = false;
 	go = (oc == OUTCOME_SUCC);
       }
@@ -232,32 +230,32 @@ namespace okssl {
   con_t::read (void *out, size_t len, evssz_t ev)
   {
     tvars {
-      tame::iofd_t rfd (_self->_fd, selread);
-      tame::iofd_t wfd (_self->_fd, selwrite);
       bool go (true);
       bool need_write (false);
-      bool wait_for_read (true);
+      bool wait_for_read (false);
       ssize_t ret (-1);
       char buf[BUFSZ];
       int err;
     }
+    warn << "enter scope!\n";
 
     twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
 
     while (go) {
       if (need_write) {
-	twait { wfd.on (mkevent ()); }
+	twait { _wfd.on (mkevent ()); }
 	SSL_write (_ssl, buf, 0);
       } else if (len > 0) {
 	if (wait_for_read) {
-	  twait { rfd.on (mkevent ()); }
+	  warn << "RFD.on Start wait (len=" << len << ")\n";
+	  twait { _rfd.on (mkevent ()); }
+	  warn << "RFD.on Stop wait...\n";
 	}
 	ret = SSL_read (_ssl, out, len);
 
 	{
 	  if (ret > 0) {
-	    str s ((const char *)out, ret);
-	    warn << "read OK: len=" << ret<< "; dat=" << s << "\n";
+	    warn << "read OK: len=" << ret<< "; datlen=" << ret << "\n";
 	  } else {
 	    warn << "read BAD: " << ret << "\n";
 	  }
@@ -267,9 +265,11 @@ namespace okssl {
 	  err = SSL_get_error (_ssl, ret);
 	  switch (err) {
 	  case SSL_ERROR_WANT_READ:
+	    warn << " -- WANT READ\n";
 	    wait_for_read = true;
 	    break;
 	  case SSL_ERROR_WANT_WRITE:
+	    warn << " -- WANT WRITE\n";
 	    need_write = true;
 	    break;
 	  default:
@@ -284,6 +284,7 @@ namespace okssl {
       }
     }
     ev->trigger (ret);
+    warn << "leave scope!\n";
   }
 #undef BUFSZ
 
@@ -338,6 +339,7 @@ namespace okssl {
 	_uio.account_for_new_bytes (rc);
       }
       if (rc == 0) {
+	warn << "Hit EOF!!\n";
 	_eof = true;
 	_go = false;
       }
@@ -362,6 +364,7 @@ namespace okssl {
     : _con (c),
       _go (true),
       _eof (false),
+      _uio (20000),
       _running (false),
       _destroyed (New refcounted<bool> (false)),
       _current (0) {}

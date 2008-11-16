@@ -45,6 +45,7 @@ namespace okssl {
     BIO *_rbio, *_wbio;
     bool _ok;
     bool _connected;
+    tame::iofd_t _rfd, _wfd;
   };
 
   //-----------------------------------------------------------------------
