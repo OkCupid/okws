@@ -1,6 +1,9 @@
 
-#include "oksslutil.h"
-#include <openssl/rand.h>
+#include "okwsconf.h"
+#ifdef HAVE_SSL
+
+# include "oksslutil.h"
+# include <openssl/rand.h>
 
 namespace okssl {
 
@@ -53,4 +56,6 @@ namespace okssl {
   
   //-----------------------------------------------------------------------
 };
+
+#endif /* HAVE_SSL */
 

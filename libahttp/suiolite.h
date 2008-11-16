@@ -96,13 +96,16 @@ struct syscall_stats_t {
 
 class suiolite {
 public:
+  enum { N_REGIONS = 2 } ;
+
   suiolite (int l = SUIOLITE_DEF_BUFLEN, cbv::ptr s = NULL) 
     : len (min<int> (l, SUIOLITE_MAX_BUFLEN)), buf ((char *)xmalloc (len)),
       bep (buf + len), rp (buf), scb (s), peek (false), bytes_read (0)
   {
-    for (int i = 0; i < 2; i++) dep[i] = buf;
+    for (int i = 0; i < N_REGIONS; i++) dep[i] = buf;
   }
   ~suiolite () { xfree (buf); }
+
 
 
   void clear ();
@@ -117,14 +120,18 @@ public:
   void rembytes (ssize_t nbytes);
   int getlen () const { return len; }
   ssize_t bytesread () const { return bytes_read; }
+  iovec *get_iov (size_t *len = NULL);
+
+  void load_iov ();
+  void account_for_new_bytes (ssize_t n);
 
 private:
   const int len;
   char *buf;
   char *bep;     // buffer end pointer
   char *rp;      // read pointer
-  char *dep[2];  // data end pointer
-  iovec iov[2];
+  char *dep[N_REGIONS];  // data end pointer
+  iovec iov[N_REGIONS];
   cbv::ptr scb;  // space CB -- callback if space is available in the uio
   bool peek;
   u_int bytes_read;

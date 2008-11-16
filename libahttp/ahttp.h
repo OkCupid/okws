@@ -29,6 +29,7 @@
 #include "suiolite.h"
 #include "okconst.h"
 #include "httpconst.h"
+#include "tame.h"
 
 #define AHTTP_MAXLINE 1024
 
@@ -47,8 +48,6 @@ void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
 suio *suio_alloc ();
 
-
-
 class cbv_countdown_t : public virtual refcount {
 public:
   cbv_countdown_t (cbv c) : cb (c) {}
@@ -58,8 +57,19 @@ private:
   cbv cb;
 };
 
+class abuf_src_t;
+
+class ok_xprt_base_t : public virtual refcount {
+public:
+  ok_xprt_base_t () {}
+  virtual ~ok_xprt_base_t () {}
+  virtual abuf_src_t *alloc_abuf_src () = 0;
+  virtual void drain_to_network (strbuf *b, evb_t ev) = 0;
+  virtual void drain_cancel () = 0;
+};
+
 class ahttpcon_clone;
-class ahttpcon : public virtual refcount 
+class ahttpcon : public ok_xprt_base_t
 {
 
 public:
@@ -77,6 +87,14 @@ public:
    */
   ahttpcon (int f, sockaddr_in *s = NULL, int mb = -1,
 	    int rcvlmt = -1, bool coe = true, bool ma = true) ;
+
+  //--------------------------------------------------
+  // ok_xprt_base_t interface
+  abuf_src_t *alloc_abuf_src () ;
+  void drain_to_network (strbuf *b, evb_t ev);
+  void drain_cancel ();
+  
+  //--------------------------------------------------
 
   int getfd () const { return fd; }
   bool ateof () const { return eof; }

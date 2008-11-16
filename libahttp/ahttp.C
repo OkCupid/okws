@@ -22,6 +22,7 @@
  */
 
 #include "ahttp.h"
+#include "abuf.h"
 #include "httpconst.h"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -752,3 +753,32 @@ ahttpcon_clone::get_debug_info () const
     << "; status=" << int (delimit_status) ;
   return b;
 }
+
+//-----------------------------------------------------------------------
+
+abuf_src_t *
+ahttpcon::alloc_abuf_src ()
+{
+  return New abuf_con_t (mkref (this));
+}
+
+//-----------------------------------------------------------------------
+
+static void true_cb (evb_t ev) { ev->trigger (true); }
+
+void
+ahttpcon::drain_to_network (strbuf *b, evb_t ev)
+{
+  send (*b, wrap (true_cb, ev));
+}
+
+//-----------------------------------------------------------------------
+
+void 
+ahttpcon::drain_cancel ()
+{
+  set_drained_cb (NULL);
+  cancel ();
+}
+
+//-----------------------------------------------------------------------

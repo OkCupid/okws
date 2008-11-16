@@ -1138,11 +1138,13 @@ pfile_t::add_section (pfile_sec_t *s)
 {
   if (!s) 
     s = pop_section ();
-  if (s)
-    if (s->is_empty ())
+  if (s) {
+    if (s->is_empty ()) {
       delete s;
-    else
+    } else {
       secs.insert_tail (s);
+    }
+  }
 }
 
 // ------------------------------------------------------------------------

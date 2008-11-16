@@ -171,8 +171,9 @@ main (int argc, char *argv[])
   for (int i = optind; i < argc; i++) 
     files.push_back (argv[i]);
 
-  if ((set_typ == OK_SET_ALL) && (m != CTL_MODE_LAUNCH || files.size ())
-      || (m != CTL_MODE_LOGTURN && set_typ == OK_SET_SOME && 
+  if (((set_typ == OK_SET_ALL) && (m != CTL_MODE_LAUNCH || files.size ()))
+      || (m != CTL_MODE_LOGTURN && 
+	  set_typ == OK_SET_SOME && 
 	  files.size () == 0))
     usage ();
 

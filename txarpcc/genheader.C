@@ -35,7 +35,7 @@ pmshl (str id)
 }
 
 static str
-decltype (const rpc_decl *d)
+rpc_decltype (const rpc_decl *d)
 {
   if (d->type == "string")
     return strbuf () << "rpc_str<" << d->bound << ">";
@@ -74,7 +74,7 @@ static void
 pdecl (str prefix, const rpc_decl *d)
 {
   str name = d->id;
-  aout << prefix << decltype (d) << " " << name << ";\n";
+  aout << prefix << rpc_decltype (d) << " " << name << ";\n";
 }
 
 static void
@@ -197,7 +197,7 @@ dumpunion (const rpc_sym *s)
     if (!rt->swval)
       hasdefault = true;
     if (rt->tagvalid && rt->tag.type != "void") {
-      str type = decltype (&rt->tag);
+      str type = rpc_decltype (&rt->tag);
       if (type[type.len ()-1] == '>')
 	type = type << " ";
       aout << "    union_entry<" << type << "> "

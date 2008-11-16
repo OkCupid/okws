@@ -44,6 +44,8 @@
 
 namespace okwc3 {
 
+inline int std_port (bool s) { return s ? 443 : 80 ; }
+
 //-----------------------------------------------------------------------
 
 struct queued_cbv_t {
@@ -104,22 +106,25 @@ public:
 
 class reqinfo_t {
 public:
-  reqinfo_t () {}
+  reqinfo_t (bool b) : _https (b) {}
   virtual ~reqinfo_t () {}
   virtual str get_fixed_filename () const = 0;
   virtual str get_hdr_hostname () const = 0;
   virtual bool validate () const = 0;
+  bool https () const { return _https; }
+protected:
+  const bool _https;
 };
 
 //-----------------------------------------------------------------------
 
 class reqinfo_direct_t : public reqinfo_t {
 public:
-  reqinfo_direct_t (const str &hn, int port, const str &fn)
-    : reqinfo_t (), _hostname (hn), _port (port), _filename (fn) {}
+  reqinfo_direct_t (const str &hn, int port, const str &fn, bool s)
+    : reqinfo_t (s), _hostname (hn), _port (port), _filename (fn) {}
 
-  static ptr<reqinfo_t> alloc (const str &hn, int port, const str &fn)
-  { return New refcounted<reqinfo_direct_t> (hn, port, fn); }
+  static ptr<reqinfo_t> alloc (const str &hn, int port, const str &fn, bool s)
+  { return New refcounted<reqinfo_direct_t> (hn, port, fn, s); }
 
   str get_fixed_filename () const;
   str get_hdr_hostname () const ;
@@ -134,10 +139,10 @@ private:
 
 class reqinfo_proxied_t : public reqinfo_t {
 public:
-  reqinfo_proxied_t (const str &url) ;
+  reqinfo_proxied_t (const str &url, bool s) ;
 
-  static ptr<reqinfo_t> alloc (const str &url)
-  { return New refcounted<reqinfo_proxied_t> (url); }
+  static ptr<reqinfo_t> alloc (const str &url, bool s)
+  { return New refcounted<reqinfo_proxied_t> (url, s); }
 
   str get_fixed_filename () const { return _url; }
   str get_hdr_hostname () const { return _hdr_hostname; }
@@ -156,16 +161,17 @@ public:
     : _reqinfo (ri), _vers (v), _outcookie (c) {}
 
   virtual ~req_t () {}
-  virtual void make (ptr<ahttpcon> x, evi_t cb) { return make_T (x, cb); }
+  virtual void make (ptr<ok_xprt_base_t> x, evi_t cb) { return make_T (x, cb); }
 
   virtual const post_t *get_post () const { return NULL; }
   virtual str get_type () const { return NULL; }
+  bool https () const { return _reqinfo->https (); }
 
 protected:
   void format_req (strbuf &b);
 
 private:
-  void make_T (ptr<ahttpcon> x, evi_t cb, CLOSURE);
+  void make_T (ptr<ok_xprt_base_t> x, evi_t cb, CLOSURE);
 
 protected:
   ptr<const reqinfo_t> _reqinfo;
@@ -180,7 +186,7 @@ public:
   resp_t ();
   virtual ~resp_t () {}
   void get (evi_t cb) { get_T (cb); }
-  void setx (ptr<ahttpcon> x);
+  void setx (ptr<ok_xprt_base_t> x);
   const okwc_http_hdr_t *hdr () const { return &_hdr; }
   okwc_http_hdr_t *hdr () { return &_hdr; }
 
@@ -192,7 +198,7 @@ protected:
   virtual void eat_chunk (size_t, evi_t cb) = 0;
   virtual void finished_meal (int status, evi_t cb) = 0;
 
-  ptr<ahttpcon> _x;
+  ptr<ok_xprt_base_t> _x;
   abuf_t _abuf;
   char _scratch[OKWC_SCRATCH_SZ];
   okwc_cookie_set_t _incookies;
@@ -246,7 +252,7 @@ class agent_get_t : public agent_t {
 public:
   agent_get_t (const str &h, int p) : agent_t (h, p) {}
   virtual void get (const str &fn, simple_ev_t ev,
-		    int v = 1, cgi_t *c = NULL) = 0;
+		    int v = 1, cgi_t *c = NULL, bool https = false) = 0;
 };
 
 
@@ -256,10 +262,14 @@ class agent_get_direct_t : public agent_get_t {
 public:
   virtual ~agent_get_direct_t () {}
   agent_get_direct_t (const str &h, int p) : agent_get_t (h, p) {}
-  void get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL)
-  { get_T (fn, cb, v, c); }
+
+  void 
+  get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
+       bool https = false)
+  { get_T (fn, cb, v, c, https); }
+
 private:
-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, CLOSURE);
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, CLOSURE);
   
 };
 
@@ -268,10 +278,14 @@ private:
 class agent_get_proxied_t : public agent_get_t {
 public:
   agent_get_proxied_t (const str &h, int p) : agent_get_t (h, p) {}
-  void get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL)
-  { get_T (url, cb, v, c); }
+  
+  void 
+  get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
+       bool https = false)
+  { get_T (url, cb, v, c, https); }
+
 private:
-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, CLOSURE);
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, CLOSURE);
   
 };
 

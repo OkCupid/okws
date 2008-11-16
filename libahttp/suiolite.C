@@ -32,40 +32,22 @@ suiolite::clear ()
   peek = false;
   bytes_read = 0;
 
-  for (int i = 0; i < 2; i++) dep[i] = buf;
+  for (int i = 0; i < N_REGIONS; i++) dep[i] = buf;
 }
 
-ssize_t
-suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
+void
+suiolite::load_iov ()
 {
-  if (full ())
-    return 0;
-
   iov[0].iov_base = dep[1];
   iov[0].iov_len = bep - dep[1];
   iov[1].iov_base = dep[0];
   iov[1].iov_len = rp - dep[0];
+}
 
-  ssize_t n = 0;
-  if (nfd) {
-    if (ss) ss->n_readvfd ++;
-    n = readvfd (fd, iov, 2, nfd);
-  } else if (peek) {
-    struct msghdr mh;
-    bzero (&mh, sizeof (mh));
-    mh.msg_iov = (struct iovec *) iov;
-    mh.msg_iovlen = 2;
-    if (ss) ss->n_recvmsg ++;
-    n = recvmsg (fd, &mh, MSG_PEEK);
-  } else {
-    if (ss) ss->n_readv ++;
-    n = readv (fd, iov, 2);
-  }
-    
-  if (n <= 0)
-    return n;
-  bytes_read += n;
-  ssize_t tn = n;
+void
+suiolite::account_for_new_bytes (ssize_t n)
+{
+  assert (n >= 0);
 
   //
   // we've read in n bytes, which may have been into the two
@@ -81,11 +63,42 @@ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
   //  dep[1] += len;
   //  dep[0] += (n - len);
   //
-  for (int i = 0; i < 2; i++) {
-    int len = min<int> (tn, iov[i].iov_len);
+  bytes_read += n;
+  for (int i = 0; i < N_REGIONS; i++) {
+    int len = min<int> (n, iov[i].iov_len);
     dep[1 - i] += len;
-    tn -= len;
+    n -= len;
   }
+}
+
+ssize_t
+suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
+{
+  if (full ())
+    return 0;
+
+  load_iov ();
+
+  ssize_t n = 0;
+  if (nfd) {
+    if (ss) ss->n_readvfd ++;
+    n = readvfd (fd, iov, N_REGIONS, nfd);
+  } else if (peek) {
+    struct msghdr mh;
+    bzero (&mh, sizeof (mh));
+    mh.msg_iov = (struct iovec *) iov;
+    mh.msg_iovlen = N_REGIONS;
+    if (ss) ss->n_recvmsg ++;
+    n = recvmsg (fd, &mh, MSG_PEEK);
+  } else {
+    if (ss) ss->n_readv ++;
+    n = readv (fd, iov, N_REGIONS);
+  }
+    
+  if (n > 0)  {
+    account_for_new_bytes (n);
+  }
+
   return n;
 }
 
@@ -105,4 +118,12 @@ suiolite::rembytes (ssize_t nbytes)
   }
   if (docall)
     (*scb) ();
+}
+
+iovec *
+suiolite::get_iov (size_t *len)
+{
+  load_iov ();
+  if (len) *len = N_REGIONS;
+  return iov;
 }

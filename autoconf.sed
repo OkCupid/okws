@@ -69,6 +69,7 @@ $a\
 / OKWS_VERSION/b pdefine
 / HAVE_RECENT_FLEX/b pdefine
 / HAVE_EXPAT/b pdefine
+/ HAVE_SSL/b pdefine
 
 :skip
 d

@@ -13,8 +13,9 @@
 #include "tame.h"
 #include "okwc3.h"
 #include "tame_connectors.h"
+#include "oksslutil.h"
 
-static rxx url_rxx ("http://([^:/]+)(:(\\d+))?(/(.*))?");
+static rxx url_rxx ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
 
 void
 usage ()
@@ -40,10 +41,11 @@ main2 (int argc, char **argv)
     str connect_to;
     int ch;
     int timeout (-1);
+    bool https (false);
   }
 
+  okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
-
 
   while ((ch = getopt (argc, argv, "t:p:")) != -1) {
     switch (ch) {
@@ -79,14 +81,18 @@ main2 (int argc, char **argv)
   if (!url_rxx.match (connect_to))
     usage ();
 
+  if (url_rxx[1] && url_rxx[1] == "s") {
+    https = true;
+  }
+
   if (argc == 2) {
-    post = argv[1];
+    post = argv[2];
     typ = "application/x-www-form-urlencoded";
   }
 
-  hostname = url_rxx[1];
-  port = 80;
-  port_str = url_rxx[3];
+  hostname = url_rxx[2];
+  port = https ? 443 : 80;
+  port_str = url_rxx[4];
 
   if (port_str && port_str.len ()) {
     bool rc = convertint (port_str, &port);
@@ -96,14 +102,14 @@ main2 (int argc, char **argv)
   if (prx) {
     cli = New refcounted<okwc3::agent_get_proxied_t> (hostname, port);
   } else {
-    filename = url_rxx[5];
+    filename = url_rxx[6];
     cli = New refcounted<okwc3::agent_get_direct_t> (hostname, port);
   }
 
   twait { 
     cli->get (filename, 
 	      connector::timeout (mkevent (status, resp), timeout),
-	      1); 
+	      1, NULL, https);
   }
 
   aout << "status: " << status << "\n";

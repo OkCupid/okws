@@ -2,17 +2,14 @@
 ## $Id$
 
 
-SBD1 = txarpcc libpub pub libokxml libahttp libaok libamt xmlrpcc libweb  
+SBD1 = txarpcc libpub pub libokxml libahttp libaok libamt xmlrpcc libokssl \
+	 libweb
 
 if USE_MYSQL
 SBD2 = libamysql
 endif
 
-if USE_SSL
-SSLDIR = ssl
-endif
-
-SUBDIRS = $(SBD1) $(SBD2) okd $(SSLDIR) logd client test conf htdocs contrib
+SUBDIRS = $(SBD1) $(SBD2) okd ssld logd client test conf htdocs contrib
 
 
 EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 \
