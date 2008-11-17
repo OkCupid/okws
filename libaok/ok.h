@@ -522,6 +522,7 @@ protected:
 
 
   void handle_new_con (svccb *sbp);
+  void handle_get_stats (svccb *v);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void kill (svccb *v);
   void ready_call (bool rc);

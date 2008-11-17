@@ -705,6 +705,7 @@ okld_t::parse_file (const str &cf)
     .add ("SelectPolicy", &sys_sel_tmp)
 
     .ignore ("OkMgrSocketOwner")
+    .ignore ("StatPageURL")
     .ignore ("OkMgrSocketGroup")
     .ignore ("OkMgrSocketAccessMode")
     .ignore ("MaxConQueueSize")

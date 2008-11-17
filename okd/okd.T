@@ -254,6 +254,7 @@ okd_t::parse_file (const str &cf)
     .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
     .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
     .add ("LazyStartup", &_lazy_startup)
+    .add ("StatPageURL", &_stat_page_url)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")
@@ -391,6 +392,9 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
   if (status != HTTP_OK) {
     x->declone ();
     error (x, status);
+  } else if (_stat_page_url && s == _stat_page_url) {
+    render_stats_page (acw.con ());
+
   } else {
     
     // for services not on the default port, rewrite the request

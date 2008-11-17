@@ -227,6 +227,7 @@ ahttpcon::~ahttpcon ()
   // bookeeping for debug purposes.
   //
   --n_ahttpcon;
+  ahttpcon_byte_counter.update (get_bytes_sent (), get_bytes_recv ());
 
   destroyed = true;
   *destroyed_p = true;
@@ -779,6 +780,46 @@ ahttpcon::drain_cancel ()
 {
   set_drained_cb (NULL);
   cancel ();
+}
+
+//-----------------------------------------------------------------------
+
+byte_counter_t ahttpcon_byte_counter;
+
+//-----------------------------------------------------------------------
+
+void
+byte_counter_t::update (ssize_t s, ssize_t r)
+{
+  _n_sent += s;
+  _n_recv += r;
+}
+
+//-----------------------------------------------------------------------
+
+void
+byte_counter_t::clear ()
+{
+  _n_sent = 0;
+  _n_recv = 0;
+}
+
+//-----------------------------------------------------------------------
+
+void
+byte_counter_t::query (size_t *s, size_t *r)
+{
+  *s = _n_sent;
+  *r = _n_recv;
+}
+
+//-----------------------------------------------------------------------
+
+void
+byte_counter_t::query_and_clear (size_t *s, size_t *r)
+{
+  query (s, r);
+  clear ();
 }
 
 //-----------------------------------------------------------------------
