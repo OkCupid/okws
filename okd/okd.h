@@ -53,6 +53,15 @@ class okch_t;
 typedef callback<void, okch_t *>::ref cb_okch_t;
 typedef callback<cb_okch_t, ptr<ok_res_t> >::ref okch_apply_cb_t;
 
+struct okd_stats_t {
+  void to_strbuf (strbuf &b) const;
+  time_t _uptime;
+  size_t _n_req;
+  size_t _n_recv;
+  size_t _n_sent;
+  size_t _n_tot;
+};
+
 struct ok_repub_t {
   ok_repub_t (const xpub_fnset_t &f, okrescb c)
     : fnset (f), cb (c), res (New refcounted<ok_res_t> ()), cookie (0) {}
@@ -121,6 +130,8 @@ public:
   inline int inc_n_sent () { return (_n_sent ++) ; }
   void awaken (evb_t ev, CLOSURE);
   void set_state (okc_state_t s) { state = s; }
+
+  void stats_collect (okd_stats_t *s, evv_t ev, CLOSURE);
   
   okd_t *myokd;
   int pid;
@@ -184,6 +195,7 @@ public:
     coredumpdir (cdd),
     nfd_in_xit (0),
     reqid (0),
+    _startup_time (time (NULL)),
     xtab (2),
     _socket_filename (okd_mgr_socket),
     _socket_mode (okd_mgr_socket_mode),
@@ -282,7 +294,14 @@ protected:
   bool parse_file (const str &fn);
   bool post_config (const str &fn);
   bool lazy_startup () const { return _lazy_startup; }
+  void render_stat_page (ptr<ahttpcon_clone> x, CLOSURE);
   ok_xstatus_typ_t reserve_child (const str &nm, bool lzy);
+
+  /* statistics */
+  void stats_collect (okd_stats_t *s, evv_t ev, CLOSURE);
+  void render_stats_page (ptr<ahttpcon_clone> x, CLOSURE);
+  void send_stats_reply (ptr<ahttpcon> x, const okd_stats_t &stats, htpv_t v,
+			 evv_t ev, CLOSURE);
 
 private:
   // Callbacks for Repub, Version 1
@@ -342,6 +361,7 @@ private:
 
   int nfd_in_xit;       // number of FDs in transit
   u_int reqid;
+  time_t _startup_time;
   ahttp_tab_t xtab;
 
   qhash<int, okws1_port_t> portmap;
@@ -354,6 +374,7 @@ private:
   bool _accept_ready;
   okd_ssl_t _ssl;
   bool _lazy_startup;
+  str _stat_page_url;
 };
 
 class okd_mgrsrv_t 

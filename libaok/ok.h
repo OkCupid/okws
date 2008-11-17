@@ -547,6 +547,7 @@ protected:
 
 
   void handle_new_con (svccb *sbp);
+  void handle_get_stats (svccb *v);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);

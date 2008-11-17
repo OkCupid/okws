@@ -5,7 +5,7 @@ noinst_HEADERS = okld.h okd.h okmgr.h
 
 okwsbin_PROGRAMS = okld okmgr
 okwsexec_PROGRAMS =  okd
-okd_SOURCES = okd.C mgrsrv.C child.C shutdown.C 
+okd_SOURCES = okd.C mgrsrv.C child.C shutdown.C stats.C
 okmgr_SOURCES = okmgr.C
 okld_SOURCES = okld.C okldch.C okld_script.C
 
@@ -25,10 +25,10 @@ okmgr.lo:  okmgr.C
 child.o:   child.C
 child.lo:  child.C
 
-TAMEOUT = okld.C okldch.C okd.C okmgr.C child.C
+TAMEOUT = okld.C okldch.C okd.C okmgr.C child.C stats.C
 
 CLEANFILES = core *.core *~ $(TAMEOUT)
-EXTRA_DIST = .cvsignore okld.T okldch.T okd.T okmgr.T child.T
+EXTRA_DIST = .cvsignore okld.T okldch.T okd.T okmgr.T child.T stats.T
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY: tameclean

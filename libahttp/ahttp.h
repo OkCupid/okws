@@ -68,6 +68,21 @@ public:
   virtual void drain_cancel () = 0;
 };
 
+class byte_counter_t {
+public:
+  byte_counter_t () : _n_sent (0), _n_recv (0) {}
+  void update (ssize_t s, ssize_t r);
+  void clear ();
+  void query_and_clear (size_t *s, size_t *r);
+  void query (size_t *s, size_t *r);
+  size_t get_bytes_sent () const { return _n_sent; }
+  size_t get_bytes_recv () const { return _n_recv; }
+private:
+  size_t _n_sent, _n_recv;
+};
+
+extern byte_counter_t ahttpcon_byte_counter;
+
 class ahttpcon_clone;
 class ahttpcon : public ok_xprt_base_t
 {
@@ -111,7 +126,8 @@ public:
 	      cbv::ptr sent = NULL);
   void copyv (const iovec *iov, int cnt);
   suiolite *uio () const { return in; }
-  u_int get_bytes_sent () const { return bytes_sent; }
+  size_t get_bytes_sent () const { return bytes_sent; }
+  size_t get_bytes_recv () const { return _bytes_recv; }
 
   str select_set () const;
   virtual str get_debug_info () const { return NULL; }

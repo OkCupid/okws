@@ -10,7 +10,7 @@ OkdExecPath	okd/okd
 Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
 # SSL Configuration (if enabled)
-@@NO_SSL@@OkssldExecPath	ssl/okssld
+@@NO_SSL@@OkssldExecPath	ssld/okssld
 @@NO_SSL@@SslPrimaryPort	4430
 @@NO_SSL@@SslCertFile		@@TOP_SRCDIR@@/test/system/okws.crt.dist
 @@NO_SSL@@SslKeyFile		@@TOP_SRCDIR@@/test/system/okws.key.dist
@@ -40,6 +40,8 @@ Service		upload /upload
 Service 	purify /purify
 Service		posttest /posttest
 #Service		3tier/tst2 /tst2
+
+StatPageURL		/stats
 
 SyslogLevels	emerg alert crit info warning debug err notice
 

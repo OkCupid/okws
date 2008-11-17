@@ -36,6 +36,12 @@ struct oksvc_status_t {
    unsigned uptime;
 };
 
+struct oksvc_stats_t {
+  unsigned hyper n_sent;
+  unsigned hyper n_recv;
+};
+
+
 struct okctl_stats_t {
 	oksvc_status_t status<>;
 };
@@ -229,6 +235,9 @@ program OKCTL_PROGRAM {
 
 		void
 		OKCTL_REENABLE_ACCEPT(void) = 14;
+
+		oksvc_stats_t
+		OKCTL_GET_STATS_FROM_SVC(void) = 15;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;

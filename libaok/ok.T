@@ -304,6 +304,9 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_SEND_CON:
     handle_new_con (v);
     break;
+  case OKCTL_GET_STATS_FROM_SVC:
+    handle_get_stats (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
@@ -1490,3 +1493,16 @@ okclnt_base_t::ssl_cipher () const
 }
 
 //-----------------------------------------------------------------------
+
+void
+oksrvc_t::handle_get_stats (svccb *v)
+{
+  RPC::okctl_program_1::okctl_get_stats_from_svc_srv_t<svccb> srv (v);
+  oksvc_stats_t res;
+  res.n_sent = ahttpcon_byte_counter.get_bytes_sent ();
+  res.n_recv = ahttpcon_byte_counter.get_bytes_recv ();
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
