@@ -1736,7 +1736,7 @@ okld_helper_t::configure_group ()
 bool
 okld_helper_t::configure_dumpdir (jailable_t *j, const str &d)
 {
-  bool ret;
+  bool ret = true;
   _dumpdir = apply_container_dir (d, strbuf () << _usr.getid ());
   if (!j->jail_mkdir (_dumpdir, 0700, &_usr, &_grp)) {
     warn << "cannot allocate jail directory for " << _name << "\n";
