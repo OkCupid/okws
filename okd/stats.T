@@ -108,9 +108,9 @@ okd_stats_t::to_strbuf (strbuf &b) const
 
   b << "Total Accesses: " << _n_req << "\n"
     << "Total kBytes: " << B2K(_n_tot) << "\n"
+    << "Uptime: " << _uptime << "\n"
     << "Total Read kBytes: " << B2K(_n_recv) << "\n"
-    << "Total Send kBytes: " << B2K(_n_sent) << "\n"
-    << "Uptime: " << _uptime << "\n";
+    << "Total Send kBytes: " << B2K(_n_sent) << "\n";
 }
 
 #undef B2K
