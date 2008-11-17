@@ -269,9 +269,8 @@ populate_const_table_enum (const rpc_sym *s)
 }
 
 static void
-populate_const_table_prog (const rpc_sym *s)
+populate_const_table_prog (const rpc_program *rs)
 {
-  const rpc_program *rs = s->sprogram.addr ();
   populate_const_table (rs->id);
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
     populate_const_table (rv->id);
@@ -311,6 +310,7 @@ mkns (const rpc_namespace *ns)
 {
   for (const rpc_program *rp = ns->progs.base (); rp < ns->progs.lim (); rp++) {
     mktbl (rp);
+    populate_const_table_prog (rp);
   }
 }
 
@@ -355,8 +355,11 @@ dumpsym (const rpc_sym *s)
     dumptypedef_xml (s);
     break;
   case rpc_sym::PROGRAM:
-    mktbl (s->sprogram.addr ());
-    populate_const_table_prog (s);
+    {
+      const rpc_program *rp = s->sprogram.addr ();
+      mktbl (rp);
+      populate_const_table_prog (rp);
+    }
     break;
   case rpc_sym::NAMESPACE:
     mkns (s->snamespace);
