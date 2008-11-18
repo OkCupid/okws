@@ -46,8 +46,12 @@ okch_t::okch_t (okd_t *o, const str &s, okc_state_t st)
 
 okch_t::~okch_t ()
 {
-  while (conqueue.size ()) 
-    myokd->error (conqueue.pop_front ().con (), HTTP_SRV_ERROR);
+  while (conqueue.size ())  {
+    ahttpcon_wrapper_t<ahttpcon_clone> acw (conqueue.pop_front ());
+    ref<ahttpcon_clone> x (acw.con ());
+    x->declone ();
+    myokd->error (x, HTTP_SRV_ERROR);
+  }
   myokd->remove (this);
   *destroyed = true;
 }
@@ -74,6 +78,7 @@ okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 
   if (!ok) {
     warn << "**WARNING: Cannot awaken service " << servpath << "\n";
+    xc->declone ();
     myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
 
   } else if (!ctlx || ctlx->ateof () || state != OKC_STATE_SERVE) {
@@ -81,6 +86,7 @@ okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED 
 	|| conqueue.size () >= ok_con_queue_max) {
 
+      xc->declone ();
       myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
 
     } else {
@@ -98,6 +104,7 @@ okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     else
       warn << "**WARNING: Service " << servpath << " appears unresponsive!\n";
 
+    xc->declone ();
     myokd->error (xc, HTTP_UNAVAILABLE, make_generic_http_req (servpath));
 
   } else {
