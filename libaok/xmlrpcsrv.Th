@@ -26,6 +26,7 @@
 #define _LIBAOK_OKXMLSRV_H
 
 # include "ok.h"
+# include "xml_ahparse.h"
 # include "okxmlparse.h"
 # include "okxmlobj.h"
 # include "tame.h"
