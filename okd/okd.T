@@ -461,15 +461,14 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
   ref<ahttpcon_clone> x (acw.con ());
   okws1_port_t port = acw.demux_data ()->port ();
 
-  if (!s)
-    status = HTTP_BAD_REQUEST;
+  if (!s && status == HTTP_OK)
+    status = HTTP_TIMEOUT;
 
   if (status != HTTP_OK) {
     x->declone ();
     error (x, status);
   } else if (_stat_page_url && s == _stat_page_url) {
     render_stats_page (acw.con ());
-
   } else {
     
     // for services not on the default port, rewrite the request
