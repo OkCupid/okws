@@ -600,6 +600,10 @@ okd_t::disable_accept_guts ()
 void
 okd_t::enable_accept_guts ()
 {
+  if (sdflag) {
+    warn << "refusing to reenable accept when in shutdown\n";
+    return;
+  }
   _ssl.enable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
@@ -609,12 +613,15 @@ okd_t::enable_accept_guts ()
 void
 okd_t::stop_listening ()
 {
+  accept_enabled = false;
   _ssl.disable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) {
     fdcb (listenfds[i], selread, NULL);
     close (listenfds[i]);
+    listenfds[i] = -1;
   }
+  listenfds.clear ();
 }
 
 static void
