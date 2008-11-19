@@ -66,7 +66,7 @@ public:
   void set_chldcb (cbi::ptr cb);
   void make_cli (const rpc_program &p, cbv::ptr eofcb);
   void make_srv (const rpc_program &p, callback<void, svccb *>::ref cb);
-  void disconnect () { _x = NULL; _cli = NULL; }
+  void disconnect () { _x = NULL; _cli = NULL; _srv = NULL; }
   ptr<axprt_unix> x () { return _x; }
   ptr<aclnt> cli () { return _cli; }
   bool launch ();
