@@ -175,3 +175,16 @@ http_parser_base_t::clnt_timeout ()
   finish (HTTP_TIMEOUT);
 }
 
+
+void
+http_parser_cgi_t::set_union_mode (bool b)
+{
+  _union_mode = b;
+  hdr.set_url (_union_mode ? &_union_cgi : &url);
+}
+
+void
+http_parser_base_t::short_circuit_output ()
+{
+  if (_parser_x) _parser_x->short_circuit_output ();
+}
