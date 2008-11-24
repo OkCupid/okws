@@ -170,6 +170,7 @@ okld_ch_t::launch (evv_t::ptr ev)
     str exe, i;
     ptr<axprt_unix> x;
     int ctlfd;
+    str report_exe;
   }
 
   if (startup_time == 0)
@@ -212,7 +213,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   }
 
   // the first argument to aspawn ()...
-  exe = get_execpath ();
+  report_exe = exe = get_execpath ();
 
   // only do something in the case of a script; true => we are now
   // chrooted
@@ -255,6 +256,10 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.remove ("wfs");
 
   {
+
+    OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
+	   report_exe.cstr ());
+
     argv_t env_tmp;
     env_tmp.init (env, environ);
     x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
@@ -271,6 +276,9 @@ okld_ch_t::launch (evv_t::ptr ev)
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
   } else {
+   
+    OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
+	   report_exe.cstr (), int (pid));
 
     ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
 

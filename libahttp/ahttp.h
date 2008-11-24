@@ -130,6 +130,7 @@ public:
   size_t get_bytes_recv () const { return _bytes_recv; }
 
   str select_set () const;
+  str all_info () const;
   virtual str get_debug_info () const { return NULL; }
 
   void set_close_fd_cb (cbv cb) 
@@ -152,7 +153,7 @@ public:
   int set_lowwat (int sz);
   bool timed_out () const { return _timed_out; }
   void set_drained_cb (cbv::ptr cb);
-  void cancel () { fail (HTTP_CLIENT_EOF); }
+  void cancel () { fail(); }
   void stop_read ();
   void short_circuit_output ();
   int bytes_recv () const { return _bytes_recv;}
@@ -164,9 +165,10 @@ protected:
   virtual int dowritev (int cnt) { return out->output (fd, cnt); }
   virtual ssize_t doread (int fd);
   virtual void recvd_bytes (int n);
-  virtual void fail (int s = HTTP_BAD_REQUEST);
+  virtual void fail ();
+  virtual void read_fail (int s) { fail (); }
   virtual void too_many_fds () { fail (); }
-  virtual void fail2 (int s) {}
+  virtual void fail2 () {}
   void input (ptr<bool> destroyed_local);
   bool enable_selread ();
   void disable_selread ();
@@ -196,11 +198,8 @@ protected:
 
 public:
   ptr<bool> destroyed_p;
-  void hit_timeout () 
-  { 
-    _timed_out = true;
-    fail (HTTP_TIMEOUT); 
-  }
+  void kill ();
+  void hit_timeout ();
 };
 
 // for parent dispatcher, which will send fd's
@@ -233,7 +232,9 @@ public:
 
 protected:
   void recvd_bytes (int n);
-  void fail2 (int s);
+  void fail2 ();
+  void read_fail (int s);
+  void issue_ccb (int s);
 
 private:
   void end_read ();
@@ -280,6 +281,7 @@ public:
   void run ();
   void sched ();
   void shutdown ();
+  void kill_all ();
   inline size_t n_entries () const { return nent; }
 
 private:

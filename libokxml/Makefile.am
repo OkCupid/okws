@@ -10,10 +10,10 @@ SUFFIXES = .C .T
 okwslib_LTLIBRARIES = libokxml.la
 
 libokxml_la_SOURCES = xmlparse.C xmldata.C xmlobj.C xmlxlate.C \
-	xmlxlatemgr.C xmlgeneric.C
+	xmlxlatemgr.C xmlgeneric.C xml_ahparse.C 
 
 okwsinclude_HEADERS = okxml.h okxmldata.h okxmlobj.h okxmlparse.h smartvec.h\
-	okxmlxlate.h okxmlxlatemgr.h okxmlgeneric.h
+	okxmlxlate.h okxmlxlatemgr.h okxmlgeneric.h xml_ahparse.h
 
 TAMEOUT = xmlxlatemgr.C
 

@@ -386,15 +386,14 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
   ref<ahttpcon_clone> x (acw.con ());
   okws1_port_t port = acw.demux_data ()->port ();
 
-  if (!s)
-    status = HTTP_BAD_REQUEST;
+  if (!s && status == HTTP_OK)
+    status = HTTP_TIMEOUT;
 
   if (status != HTTP_OK) {
     x->declone ();
     error (x, status);
   } else if (_stat_page_url && s == _stat_page_url) {
     render_stats_page (acw.con ());
-
   } else {
     
     // for services not on the default port, rewrite the request
@@ -517,6 +516,10 @@ okd_t::disable_accept_guts ()
 void
 okd_t::enable_accept_guts ()
 {
+  if (sdflag) {
+    warn << "refusing to reenable accept when in shutdown\n";
+    return;
+  }
   _ssl.enable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
@@ -526,12 +529,15 @@ okd_t::enable_accept_guts ()
 void
 okd_t::stop_listening ()
 {
+  accept_enabled = false;
   _ssl.disable_accept ();
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) {
     fdcb (listenfds[i], selread, NULL);
     close (listenfds[i]);
+    listenfds[i] = -1;
   }
+  listenfds.clear ();
 }
 
 static void

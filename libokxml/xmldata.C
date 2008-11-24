@@ -365,8 +365,15 @@ xml_base64_t::close_tag ()
   static rxx strip_rxx ("\\s*(\\S+)\\s*");
   if (strip_rxx.match (tmp)) {
     _val = strip_rxx[1];
-    if (_val && decode ())
+    assert (_val);
+    if (decode ()) {
       ret = true;
+    } else {
+      warn << "Failed to base-64 decode string: " << _val << "\n";
+    }
+  } else {
+    _d_val = "";
+    ret = true;
   }
   return ret;
 }

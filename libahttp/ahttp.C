@@ -257,7 +257,7 @@ void_close (int fd)
 }
 
 void
-ahttpcon::fail (int s)
+ahttpcon::fail ()
 {
   if (fd >= 0) {
     rcbset = false;
@@ -280,32 +280,25 @@ ahttpcon::fail (int s)
     else if (drained_cb) {
       call_drained_cb ();
     }
-    fail2 (s);
+    fail2 ();
   }
 }
 
 void
-ahttpcon_clone::fail2 (int s)
+ahttpcon_clone::fail2 ()
 {
-  if (ccb) {
-    // we're being paranoid since the hold in fail2 should cover
-    // us, but in case anything changes in the future, we should
-    // assume that settint ccb = NULL causes this object to be
-    // destroyed.
-    clonecb_t::ptr c = ccb;
-    ccb = NULL;
-    (*c) (NULL, s);
-  }
+  issue_ccb (HTTP_TIMEOUT);
 }
 
 void
 ahttpcon_clone::setccb (clonecb_t c)
 {
   assert (!destroyed);
-  if (enable_selread ()) 
+  if (enable_selread ()) {
     ccb = c;
-  else
-    fail2 (HTTP_BAD_REQUEST);
+  } else {
+    read_fail (HTTP_BAD_REQUEST);
+  }
 }
 
 void
@@ -677,52 +670,6 @@ ahttp_tab_t::reg (ahttpcon *a, ptr<bool> d)
 }
 
 void
-ahttp_tab_t::shutdown ()
-{
-  if (dcb) {
-    timecb_remove (dcb);
-    dcb = NULL;
-  }
-  _shutdown = true;
-}
-
-void
-ahttp_tab_t::run ()
-{
-  dcb = NULL;
-  ahttp_tab_node_t *n;
-
-  bool flag = true;
-  while ((n = q.first) && flag && !_shutdown) {
-    if (* n->_destroyed_p ) {
-      unreg (n);
-    } else {
-      ptr<ahttpcon> a = mkref (n->_a); // hold onto this
-      if (int (sfs_get_timenow() - n->_a->start) > 
-	  int (ok_demux_timeout)) {
-	
-	str ss = a->select_set();
-	str dbi = a->get_debug_info ();
-	str ip = a->get_remote_ip ();
-	if (!dbi) dbi = "";
-	if (!ss) ss = "";
-
-	warn ("HTTP connection timed out in demux "
-	      "(ip=%s; fd=%d; bytes=%d; select=%s%s)\n",
-	      ip.cstr (), a->getfd (), a->bytes_recv (), 
-	      ss.cstr (), dbi.cstr ());
-
-	a->hit_timeout ();
-	unreg (n);
-      } else {
-	flag = false;
-      }
-    }
-  }
-  sched ();
-}
-
-void
 ahttp_tab_t::unreg (ahttp_tab_node_t *n)
 {
   q.remove (n);
@@ -820,6 +767,127 @@ byte_counter_t::query_and_clear (size_t *s, size_t *r)
 {
   query (s, r);
   clear ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttp_tab_t::kill_all ()
+{
+  ahttp_tab_node_t *n;
+  while (( n = q.first) ) {
+    if (! *n->_destroyed_p ) {
+      ptr<ahttpcon> a = mkref (n->_a);
+      str ai = a->all_info ();
+      warn << "HTTP connection killed due to shutdown " << ai << "\n";
+      a->kill ();
+    }
+    unreg (n);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttpcon::hit_timeout ()
+{
+  _timed_out = true;
+  read_fail (HTTP_TIMEOUT);
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttpcon::kill ()
+{
+  read_fail (HTTP_GONE);
+}
+
+//-----------------------------------------------------------------------
+
+str
+ahttpcon::all_info () const 
+{
+  str ss = select_set();
+  str dbi = get_debug_info ();
+  str ip = get_remote_ip ();
+  if (!dbi) dbi = "";
+  if (!ss) ss = "";
+  strbuf b ("(ip=%s; fd=%d; bytes=%d; select=%s%s)",
+	      ip.cstr (), getfd (), bytes_recv (), 
+	      ss.cstr (), dbi.cstr ());
+  return b;
+
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttp_tab_t::run ()
+{
+  dcb = NULL;
+  ahttp_tab_node_t *n;
+
+  assert (!_shutdown);
+
+  bool flag = true;
+  while ((n = q.first) && flag) {
+    if (* n->_destroyed_p ) {
+      unreg (n);
+    } else {
+      ptr<ahttpcon> a = mkref (n->_a); // hold onto this
+      if (int (sfs_get_timenow() - n->_a->start) > 
+	  int (ok_demux_timeout)) {
+
+	str ai = a->all_info ();
+	warn << "HTTP connection timed out in demux " << ai << "\n";
+
+	a->hit_timeout ();
+	unreg (n);
+      }  else {
+	flag = false;
+      }
+    }
+  }
+  sched ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttp_tab_t::shutdown ()
+{
+  if (dcb) {
+    timecb_remove (dcb);
+    dcb = NULL;
+  }
+  _shutdown = true;
+  kill_all ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttpcon_clone::issue_ccb (int s)
+{
+  if (ccb) {
+    clonecb_t::ptr c = ccb;
+    ccb = NULL;
+    (*c) (NULL, s);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+ahttpcon_clone::read_fail (int s)
+{
+  if (fd >= 0) {
+    rcbset = false;
+    fdcb (fd, selread, NULL);
+    _no_more_read = true;
+  }
+  issue_ccb (s);
 }
 
 //-----------------------------------------------------------------------
