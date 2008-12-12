@@ -94,6 +94,7 @@ pub_slave (pubserv_cb cb, u_int port, pslave_status_t *s)
 bool
 pub_server (pubserv_cb cb, u_int port, u_int32_t addr)
 {
+
   if (addr == INADDR_ANY) {
     struct in_addr ia;
     const char *c = getenv ("PUB_SERVER_ADDR");
