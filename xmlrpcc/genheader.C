@@ -520,9 +520,13 @@ dump_tmpl_class (const str &arg, const str &res, const str &c, const str &spc)
 	 << "{ check_reply (); _sbp->reply (r); }\n";
 
     aout << spc << "  " 
-	 << "VA_TEMPLATE(ptr<" << res << "> alloc_res, "
-	 << " { return New refcounted<" << res << "> "
-	 << ", ; } )\n";
+	 << "ptr<" << res << "> alloc_res () "
+	 << " { return New refcounted<" << res << "> (); }\n";
+    aout << spc << "  template<class T> " 
+	 << "ptr<" << res << ">\n"
+	 << spc << "  alloc_res (const T &t) "
+	 << " { return New refcounted<" << res << "> (t); }\n";
+
   } else {
     aout << spc << "  " << "void reply () "
 	 << "{ check_reply (); _sbp->reply (NULL); }\n";
