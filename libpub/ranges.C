@@ -14,7 +14,7 @@ pub_range_t::alloc (const str &pat, const str &o, str *ep)
   str e;
 
   if (ix.match (pat)) {
-    int64_t lo, hi;
+    int64_t lo (0), hi (0);
     if (!convertint (ix[1], &lo)) {
       e = strbuf ("Cannot convert low end of range (") << ix[1] << ")";
     } else if (!convertint (ix[3], &hi)) {
@@ -25,7 +25,7 @@ pub_range_t::alloc (const str &pat, const str &o, str *ep)
       ret = New refcounted<pub_irange_t> (lo, hi);
     }
   } else if (dx.match (pat)) {
-    double lo, hi;
+    double lo (0.0), hi (0.0);
     if (!convertdouble(dx[1], &lo)) {
       e = strbuf ("Cannot convert low end of float-range (") << dx[1] << ")";
     } else if (!convertdouble (dx[2], &hi)) {

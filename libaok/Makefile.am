@@ -24,8 +24,8 @@ SUFFIXES = .C .T .h
 xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
-ok.o:  ok.C
-ok.lo: ok.C
+ok.o:  ok.C okprot.h
+ok.lo: ok.C okprot.h
 xmlrpcsrv.C: xmlrpcsrv.h
 xmlrpcsrv.o: xmlrpcsrv.C
 xmlrpcsrv.lo: xmlrpcsrv.C

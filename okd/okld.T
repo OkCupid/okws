@@ -68,7 +68,7 @@ okld_ch_t::add_args (const vec<str> &v)
 bool
 okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 {
-  u_int32_t t;
+  u_int32_t t (0);
   if (port)
     *port = 0;
   static rxx uri_spec ("((:(\\d+))?/)?([a-zA-Z0-9/._~-]+)");

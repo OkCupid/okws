@@ -321,7 +321,7 @@ main (int argc, char *argv[])
   int ch;
   vec<str> hosts;
   vec<str> files;
-  int fdfd;
+  int fdfd (0);
   while ((ch = getopt (argc, argv, "s:?")) != -1)
     switch (ch) {
     case 's':
@@ -336,6 +336,11 @@ main (int argc, char *argv[])
 
   if (optind == argc) 
     usage ();
+ 
+  if (fdfd < 0) {
+    warn << "No -f parameter passed; one is required\n";
+    usage ();
+  }
 
   setsid ();
   warn ("OKWS version %s, pid %d\n", VERSION, int (getpid ()));

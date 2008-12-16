@@ -429,7 +429,7 @@ hclient_t::do_read ()
   // the header) then we're ready to close (or rock!)
   //
   if (body && (bp - body >= reqsz)) {
-    write (1, buf, bp - buf);
+    rc_ignore (write (1, buf, bp - buf));
     if (noisy) warn ("ok, closing up!\n");
     cexit (0);
   }

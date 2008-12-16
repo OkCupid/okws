@@ -211,7 +211,7 @@ namespace pubserv2 {
   {
     stamp_status_t ret = STAMP_ERROR;
     str stmp;
-    time_t ct;
+    time_t ct (0);
 
     if (!_fn) {
       ret = STAMP_DISABLED;

@@ -1163,7 +1163,7 @@ ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 
   str cmd = s.pop_front ();
   while (s.size ()) {
-    u_int32_t t;
+    u_int32_t t (0);
     okws1_port_t port = 0;
     if (!convertint (s.pop_front (), &t) || !(port = t)) {
       warn << loc << ": usage: " << cmd << " <ports>\n";

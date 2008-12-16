@@ -171,11 +171,9 @@ main (int argc, char *argv[])
     usage ();
   str host = hostport[1];
   str port_s = hostport[3];
-  int port;
+  int port (80);
   if (port_s) {
     if (!convertint (port_s, &port)) usage ();
-  } else {
-    port = 80;
   }
   nrunning = 0;
   nconcur = 20;
