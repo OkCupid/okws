@@ -8,6 +8,7 @@ ptr<pub_range_t>
 pub_range_t::alloc (const str &pat, const str &o, str *ep)
 {
   static rxx ix ("\\[\\s*((-|0x)?\\d+)\\s*-\\s*((-|0x)?\\d+)\\s*\\]");
+  static rxx ux ("\\[\\s*(0x)?\\d+)\\s*-\\s*(0x)?\\d+)\\s*ULL\\s*\\]");
   static rxx dx ("\\[\\s*(-?[0-9.]+)\\s*-\\s*(-?[0-9.]+)\\s*\\]");
 
   ptr<pub_range_t> ret;
