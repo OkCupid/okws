@@ -742,6 +742,18 @@ pub_drange_t::to_xdr (xpub_range_t *out)
   return true;
 }
 
+bool
+pub_urange_t::to_xdr (xpub_range_t *out)
+{
+  out->set_typ (XPUB_URANGE);
+  out->ur->low = _low;
+  out->ur->hi = _hi;
+  return true;
+}
+
+pub_urange_t::pub_urange_t (const xpub_urange_t &in)
+  : _low (in.low), _hi (in.hi) {}
+
 pub_drange_t::pub_drange_t (const xpub_drange_t &in)
   : _low (cnv_double (in.low)), _hi (cnv_double (in.hi)) {}
 
@@ -755,6 +767,9 @@ pub_range_t::alloc (const xpub_range_t &xpr)
     break;
   case XPUB_DRANGE:
     ret = New refcounted<pub_drange_t> (*xpr.dr);
+    break;
+  case XPUB_URANGE:
+    ret = New refcounted<pub_urange_t> (*xpr.ur);
     break;
   default:
     break;

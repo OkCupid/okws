@@ -42,14 +42,9 @@ scalar_obj_t::_p_t::to_int64 (int64_t *out) const
 bool
 scalar_obj_t::_p_t::to_uint64 (u_int64_t *out) const
 {
-  char *ep;
   bool ret = false;
   if (_s) {
-    u_int64_t v = strtoull (_s, &ep, 0);
-    if (ep && *ep == '\0') {
-      *out = v;
-      ret = true;
-    }
+    ret = convertuint (_s, out);
   }
   return ret;
 }
@@ -201,6 +196,19 @@ scalar_obj_t::_p_t::clear ()
   _d = 0.0;
   _i = 0;
   _double_cnv = _int_cnv = CNV_NONE;
+}
+
+bool
+convertuint (const str &s, u_int64_t *out)
+{
+  bool ret = false;
+  char *ep;
+  u_int64_t v = strtoull (s, &ep, 0);
+  if (ep && *ep == '\0') {
+    *out = v;
+    ret = true;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

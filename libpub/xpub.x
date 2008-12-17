@@ -272,18 +272,25 @@ struct xpub_drange_t {
   x_double_t hi;
 };
 
+struct xpub_urange_t {
+  unsigned hyper low;
+  unsigned hyper hi;
+};
+
 struct xpub_switch_env_rxx_t {
   xpub_switch_env_base_t base;
   xpub_regex_t rxx;
 };
 
-enum xpub_range_typ_t { XPUB_IRANGE, XPUB_DRANGE };
+enum xpub_range_typ_t { XPUB_IRANGE, XPUB_DRANGE, XPUB_URANGE };
 
 union xpub_range_t switch (xpub_range_typ_t typ) {
 case XPUB_IRANGE:
   xpub_irange_t ir;
 case XPUB_DRANGE:
   xpub_drange_t dr;
+case XPUB_URANGE:
+  xpub_urange_t ur;
 };
 
 struct xpub_switch_env_range_t {

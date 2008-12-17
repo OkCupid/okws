@@ -749,6 +749,19 @@ private:
   const int64_t _low, _hi;
 };
 
+class pub_urange_t : public pub_range_t {
+public:
+  pub_urange_t (u_int64_t l, u_int64_t h) : _low (l), _hi (h) {}
+  pub_urange_t (const xpub_urange_t &x);
+  str get_obj_name () const { return "urange"; }
+
+  str to_str () const;
+  bool match (scalar_obj_t so);
+  bool to_xdr (xpub_range_t *r);
+private:
+  const u_int64_t _low, _hi;
+};
+
 class pub_drange_t : public pub_range_t {
 public:
   pub_drange_t (double l, double h) : _low (l), _hi (h) {}
