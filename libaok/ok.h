@@ -54,7 +54,8 @@ typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH_SEQ_2 = 7,
                OKC_STATE_KILLING = 8,
 	       OKC_STATE_TOOBUSY = 9,
-	       OKC_STATE_STANDBY = 10 } okc_state_t;
+	       OKC_STATE_STANDBY = 10,
+		   OKC_STATE_BADPORTS = 11 } okc_state_t;
 
 
 struct errdoc_t {
@@ -149,6 +150,54 @@ private:
   ptr<demux_data_t> _demux_data;
 };
 
+
+//-----------------------------------------------------------------------
+
+class ok_portpair_t;
+
+class ok_con_acceptor_t {
+public:
+  ok_con_acceptor_t () {}
+  virtual ~ok_con_acceptor_t () {}
+  virtual void accept_new_con (ok_portpair_t *p) = 0 ;
+};
+
+//-----------------------------------------------------------------------
+
+struct ok_portpair_t {
+  ok_portpair_t (int port = -1, int fd = -1) 
+    : _port (port), _fd (fd), _listening (false) {}
+  str encode_as_str () const;
+  void close () ;
+  void disable_accept ();
+  void report ();
+  void enable_accept (ok_con_acceptor_t *s, int listenq);
+  bool parse (const str &in);
+
+  int _port;
+  int _fd;
+  bool _listening;
+};
+
+//-----------------------------------------------------------------------
+
+struct ok_direct_ports_t {
+public:
+  ok_direct_ports_t () {}
+  void init (const vec<int> &p);
+  bool bind (const str &prog, u_int32_t listenaddr);
+  str encode_as_str () const;
+  void close ();
+  void report ();
+  bool parse (const str &s);
+  void enable_accept (ok_con_acceptor_t *s, int listenq);
+  void disable_accept ();
+private:
+  vec<ok_portpair_t> _ports;
+};
+
+//-----------------------------------------------------------------------
+
 class ok_base_t : public jailable_t {
 public:
   ok_base_t (const str &h = NULL, int lfd = -1, int pfd = -1)
@@ -188,6 +237,7 @@ public:
   vec<okws1_port_t> _https_ports, _http_ports;
   qhash<okws1_port_t, bool> _all_ports_map;
 
+  ok_direct_ports_t _direct_ports;
 
 protected:
   str fix_uri (const str &in) const;
@@ -457,7 +507,7 @@ public:
 			   helper_inet_t::getname () ;}
 };
 
-class oksrvc_t : public ok_httpsrv_t { // OK Service
+class oksrvc_t : public ok_httpsrv_t, public ok_con_acceptor_t  { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
@@ -527,6 +577,9 @@ public:
   pub_rclient_t *get_rpcli () { return rpcli; }
   bool supports_pub1 () const { return pub1_supported; }
 
+  // for accept direct connections (not via okd)
+  void accept_new_con (ok_portpair_t *p);
+
 private:
   void launch_T (CLOSURE);
 
@@ -534,6 +587,8 @@ protected:
   void closed_fd ();
   void enable_accept_guts ();
   void disable_accept_guts ();
+  void enable_direct_ports ();
+  void disable_direct_ports ();
 
   void internal_reliable_shutdown (str s, int t);
 

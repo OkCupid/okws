@@ -197,6 +197,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
   str loggers;
+  str dp_str;
 
   int pub1tmp = 0;
   int seltmp = 0;
@@ -236,11 +237,13 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("pub2chnk", &ok_pub2_max_datasz);
     t->lookup ("wfs", &wait_for_signal_in_startup);
     t->lookup ("loggers", &loggers);
+    t->lookup ("lqm", &ok_listen_queue_max);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
     ok_send_sin = t->blookup ("sendsin");
     t->lookup ("sel", &seltmp);
+    t->lookup ("dps", &dp_str);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
 
@@ -249,6 +252,12 @@ oksrvc_t::init (int argc, char *argv[])
     if (loggers) {
       if (!ok::syslog_ctl.init_child (loggers)) {
 	warn << "Cannot initialize sysloggers!\n";
+      }
+    }
+
+    if (dp_str && dp_str.len () > 0) {
+      if (!_direct_ports.parse (dp_str)) {
+	warn << "failed to parse direct ports\n";
       }
     }
 
@@ -525,6 +534,8 @@ oksrvc_t::launch_T ()
     SVC_CHATTER ("calling READY RPC to okd");
 
   twait { RPC::okctl_program_1::okctl_ready (clnt, mkevent (err)); }
+  enable_direct_ports ();
+  _direct_ports.report ();
 
   if (err) {
     SVC_FATAL_ERROR ("OK Child Initialization: " << err);
@@ -676,13 +687,24 @@ ok_httpsrv_t::enable_accept ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::enable_accept_guts ()
 {
   RPC::okctl_program_1::okctl_reenable_accept (clnt, aclnt_cb_null);
+  enable_direct_ports ();
 }
 
-void oksrvc_t::disable_accept_guts () {}
+//-----------------------------------------------------------------------
+
+void 
+oksrvc_t::disable_accept_guts () 
+{
+  disable_direct_ports ();
+}
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::closed_fd ()
@@ -691,8 +713,6 @@ oksrvc_t::closed_fd ()
   if (n_fd_out < int (ok_svc_fds_low_wat) && !accept_enabled)
     enable_accept ();
 }
-
-
 
 void
 oksrvc_t::handle_new_con (svccb *sbp)

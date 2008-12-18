@@ -130,8 +130,19 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:sSt:")) != -1 && rc) {
+  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:sSt:p:")) != -1 && rc) {
     switch (ch) {
+    case 'p':
+      {
+	int tmp_port;
+	if (convertint (optarg, &tmp_port)) {
+	  so->ports.push_back (tmp_port);
+	} else {
+	  warn << loc << ": -p option needs a port (integer)\n";
+	  rc = false;
+	}
+      }
+      break;
     case 'u':
       if (*u) {
 	warn << loc << ": -u option specified more than once!\n";
@@ -889,7 +900,8 @@ okld_t::encode_env ()
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
     .insert ("pub1", pub_v1_support ? 1 : 0)
-    .insert ("sel", int (ok_sys_sel_policy));
+    .insert ("sel", int (ok_sys_sel_policy))
+    .insert ("lqm", ok_listen_queue_max);
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();
@@ -1487,16 +1499,16 @@ void okld_t::launchservices ()
   // retrieve the 128th file descriptor. Some small changes
   // to david's libraries might be able to fix this. For now,
   // we'll hack in a timeout to let okd catch up, if possible.
-  if (!lazy_startup()) {
-    for (i = 0; i < svcs.size (); i++, j++) {
-      if (okld_startup_batch_size && j >= okld_startup_batch_size) {
-	twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
-	j = 0;
-      }
-      if (sdflag) { 
-	warn << "not launching due to shutdown flag\n";
-	return;
-      }
+  for (i = 0; i < svcs.size (); i++, j++) {
+    if (okld_startup_batch_size && j >= okld_startup_batch_size) {
+      twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
+      j = 0;
+    }
+    if (sdflag) { 
+      warn << "not launching due to shutdown flag\n";
+      return;
+    }
+    if (!lazy_startup() || svcs[i]->has_direct_ports ()) {
       svcs[i]->launch ();
     }
   }

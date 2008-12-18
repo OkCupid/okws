@@ -270,6 +270,8 @@ struct svc_options_t {
   int pub2_viserr;
 
   int wait_for_signal;
+
+  vec<int> ports;
 };
 
 class okld_t;
@@ -297,6 +299,7 @@ public:
   void clean_dumps ();
   void add_args (const vec<str> &a);
   void lazy_startup (evb_t ev, CLOSURE);
+  bool has_direct_ports () const { return _svc_options.ports.size () > 0; }
 
   okws1_port_t get_port () const { return port; }
   void set_service_options (const svc_options_t &so)
@@ -312,7 +315,6 @@ public:
   virtual int get_desired_execfile_mode () const { return ok_svc_mode; }
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
-
 
 protected:
   svc_options_t _svc_options;
@@ -337,8 +339,7 @@ private:
 
   // arguments given to the executable (such as 'python filename')
   vec<str> args;
-
-
+  ok_direct_ports_t _direct_ports;
 };
 
 class okld_ch_script_t : public okld_ch_t {

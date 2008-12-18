@@ -3,7 +3,14 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libaok.la
 
-libaok_la_SOURCES = okprot.C ok.C log.C logbuf.C xmlrpcsrv.C locale.C
+libaok_la_SOURCES = \
+	okprot.C \
+	ok.C \
+	log.C \
+	logbuf.C \
+	xmlrpcsrv.C \
+	locale.C \
+	direct.C
 
 okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
 	oklocale.h
