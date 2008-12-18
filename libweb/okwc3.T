@@ -245,7 +245,13 @@ req_t::format_req (strbuf &b)
 
   const post_t *p = get_post ();
   if (p) b << "Content-Length: " << p->len () << HTTP_CRLF;
+
+  const vec<str> *v = get_extra_headers ();
+  for (size_t i = 0; v && i < v->size (); i++) {
+    b << (*v)[i] << HTTP_CRLF;
+  }
   b << HTTP_CRLF;
+
   if (p) p->output (b);
 
 }

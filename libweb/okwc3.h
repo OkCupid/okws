@@ -166,6 +166,7 @@ public:
   virtual const post_t *get_post () const { return NULL; }
   virtual str get_type () const { return NULL; }
   bool https () const { return _reqinfo->https (); }
+  virtual const vec<str> *get_extra_headers () const { return NULL; }
 
 protected:
   void format_req (strbuf &b);
