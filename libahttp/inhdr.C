@@ -72,7 +72,9 @@ http_inhdr_t::parse_guts ()
 	r = ABUF_OK;
       break;
     case INHDRST_SPC2:
-      r = abuf->skip_hws (1);
+      // Maybe there's an end-of-the-line here...
+      if ((r = eol ()) != ABUF_OK) 
+	r = abuf->skip_hws (1);
       break;
     case INHDRST_OPTPARAM:
       r = eol ();

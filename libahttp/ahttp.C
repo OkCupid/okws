@@ -509,7 +509,7 @@ ahttpcon_clone::delimit (int dummy)
       case 2:
 	if (!delimit_start) 
 	  delimit_start = p;
-	if (*p == ' ' || *p == '?') {
+	if (*p == ' ' || *p == '?' || *p == '\r' || *p == '\n') {
 	  return str (delimit_start, p - delimit_start);
 	} else if (*p == '\n' || *p == '\r') {
 	  delimit_status = HTTP_BAD_REQUEST;
