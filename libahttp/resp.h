@@ -195,6 +195,8 @@ public:
   void set_inflated_len (size_t l) { inflated_len = l; }
   inline void set_uid (u_int64_t i) { uid = i; }
   inline u_int64_t get_uid () const { return uid; }
+  inline void set_custom_log2 (const str &s) { _custom_log2 = s; }
+  inline str get_custom_log2 () const { return _custom_log2; }
 
   http_resp_header_t header;
 protected:
@@ -202,6 +204,7 @@ protected:
   u_int nbytes;
   u_int64_t uid;
   size_t inflated_len;
+  str _custom_log2;
 };
 
 class http_response_ok_t : public http_response_t {

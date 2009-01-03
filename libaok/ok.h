@@ -398,6 +398,7 @@ public:
   void set_expires (const str &s) { expires = s; }
   void set_content_disposition (const str &s) { contdisp = s; }
   void disable_gzip () { rsp_gzip = false; }
+  void set_custom_log2 (const str &s) { _custom_log2 = s; }
 
   void set_hdr_field (const str &k, const str &v);
 
@@ -432,6 +433,7 @@ protected:
   virtual void parse (cbi cb) = 0;
   virtual http_inhdr_t *hdr_p () = 0;
   bool output_frag_prepare ();
+  void fixup_response (ptr<http_response_t> rsp);
 		
   cbv::ptr cb;
   oksrvc_t *oksrvc;
@@ -451,6 +453,7 @@ protected:
   u_int _timeout;
   ptr<pub2::locale_specific_publisher_t> _p2_locale;
   ptr<demux_data_t> _demux_data;
+  str _custom_log2;
 };
 
 // 

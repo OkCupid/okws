@@ -896,6 +896,13 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
   hra->set_others (hdr_fields);
 }
 
+void
+okclnt_base_t::fixup_response (ptr<http_response_t> rsp)
+{
+  if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
+}
+
+
 bool
 okclnt_base_t::output_hdr (ssize_t len)
 {
@@ -911,6 +918,8 @@ okclnt_base_t::output_hdr (ssize_t len)
   set_attributes (&hra);
   hra.set_gzip (false);
   rsp = New refcounted<http_response_ok_t> (len, hra);
+  fixup_response (rsp);
+
   send (rsp, NULL);
   return true;
 }
@@ -1052,6 +1061,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     set_attributes (&hra);
     hra.set_gzip (gz);
     rsp = New refcounted<http_response_ok_t> (sb, hra);
+    fixup_response (rsp);
 
     if (uid_set) rsp->set_uid (uid);
     if (prelen > 0) rsp->set_inflated_len (prelen);
