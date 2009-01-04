@@ -5,6 +5,8 @@ okwslib_LTLIBRARIES = libamysql.la
 libamysql_la_SOURCES =  amysql.C mystmt_ag.C mystmt.C tz.C
 okwsinclude_HEADERS = amysql.h mystmt_ag.h mystmt.h
 
+libamysql_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
+
 mystmt_ag.C: mystmt_ag.h
 mystmt_ag.o: mystmt_ag.C
 mystmt_ag.lo: mystmt_ag.C

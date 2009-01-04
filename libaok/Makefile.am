@@ -12,6 +12,8 @@ libaok_la_SOURCES = \
 	locale.C \
 	direct.C
 
+libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
+
 okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
 	oklocale.h
 

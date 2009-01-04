@@ -8,6 +8,8 @@ libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 	pvalw.C jail.C lbalance.C rpcwindow.C pub2.C clone.C \
 	debug.C stats.C adebug.C scalar.C ranges.C
 
+libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
+
 okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h \
 	fhash.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \

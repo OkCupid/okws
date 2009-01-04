@@ -5,6 +5,7 @@ $(PROGRAMS): $(LDEPS)
 okwslib_LTLIBRARIES = libokssl.la
 libokssl_la_SOURCES = proxy.C util.C sslcon.C
 okwsinclude_HEADERS = oksslproxy.h oksslcon.h oksslutil.h
+libokssl_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 SUFFIXES = .C .T .h
 .T.C:

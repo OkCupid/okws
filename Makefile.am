@@ -30,6 +30,7 @@ SUBDIRS = \
 	htdocs \
 	contrib
 
+ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 \
 	build/flex_vers.pl
