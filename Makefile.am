@@ -30,6 +30,9 @@ SUBDIRS = \
 	htdocs \
 	contrib
 
+##
+## New aclocal (1.10+) is asking for this...
+##
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 \
