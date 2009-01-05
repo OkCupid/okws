@@ -348,7 +348,7 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
       }
 
       twait { req->make (x, connector::cnc (mkevent (status), ev)); }
-      if (do_resp_get (status)) {
+      if (status == HTTP_OK) {
 	resp->setx (x);
 	twait { resp->get (connector::cnc (mkevent (status), ev)); }
       }
@@ -361,7 +361,7 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 //-----------------------------------------------------------------------
 
 bool
-agent_t::do_resp_get (int status) const
+resp_t::do_get_body (int status) const
 {
   return (status == HTTP_OK);
 }
@@ -400,7 +400,7 @@ resp_t::get_T (evi_t ev)
   if (outc == OUTCOME_CANCELLED) {
     status = CANCELLED_STATUS;
     _hdr.cancel ();
-  } else if (status == HTTP_OK) { 
+  } else if (do_get_body (status)) {
     twait { get_body (connector::cnc (mkevent (status), ev)); }
   }
   ev->trigger (status);

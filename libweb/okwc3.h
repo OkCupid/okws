@@ -198,6 +198,7 @@ protected:
 
   virtual void eat_chunk (size_t, evi_t cb) = 0;
   virtual void finished_meal (int status, evi_t cb) = 0;
+  virtual bool do_get_body (int status) const;
 
   ptr<ok_xprt_base_t> _x;
   abuf_t _abuf;
@@ -238,7 +239,6 @@ public:
   { req_T (req, resp, cb); }
 
 protected:
-  virtual bool do_resp_get (int status) const;
 
   const str _hostname;
   int _port;
