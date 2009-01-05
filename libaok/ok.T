@@ -35,6 +35,11 @@
 #include "ok_adebug.h"
 #include "sfs_select.h"
 
+#ifdef HAVE_LINUX_PRCTL_DUMP
+# include <sys/prctl.h>
+#endif /* HAVE_LINUX_PRCTL_DUMP */
+
+
 extern char ** environ;
 
 
@@ -484,6 +489,7 @@ oksrvc_t::launch_T ()
     clnt_stat err;
   }
 
+  enable_coredumps ();
   twait { debug_launch (mkevent ()); }
 
   setsid ();
@@ -1533,6 +1539,21 @@ oksrvc_t::handle_get_stats (svccb *v)
   res.n_recv = ahttpcon_byte_counter.get_bytes_recv ();
   srv.reply (res);
 }
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::enable_coredumps ()
+{
+#ifdef HAVE_LINUX_PRCTL_DUMP
+  if (prctl (PR_SET_DUMPABLE, 1) != 0) {
+    warn ("prctl(PR_SET_DUMPABLE, 1) failed: %m\n");
+  }
+#endif /* HAVE_LINUX_PRCTL_DUMP */
+
+
+}
+
 
 //-----------------------------------------------------------------------
 

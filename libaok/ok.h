@@ -592,6 +592,7 @@ protected:
   void disable_accept_guts ();
   void enable_direct_ports ();
   void disable_direct_ports ();
+  void enable_coredumps ();
 
   void internal_reliable_shutdown (str s, int t);
 

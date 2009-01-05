@@ -67,6 +67,7 @@ OKWS_MYSQL
 OKWS_EXPAT
 OKWS_GMTOFF
 OKWS_SSL
+OKWS_LINUX_PRCTL_DUMP
 
 dnl
 dnl Need to use the xmlrpcc if possible when publishing OKWS .x files

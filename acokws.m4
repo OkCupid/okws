@@ -878,3 +878,23 @@ else
 fi
 AM_CONDITIONAL(MAKE_OLD_FLEX, test ${current_flex} -eq 0)
 ])
+
+ 
+dnl
+dnl Check for Linux prctl() to get coredumps after setuid/setgid
+dnl
+AC_DEFUN([OKWS_LINUX_PRCTL_DUMP],
+[
+AC_MSG_CHECKING(for Linux prctl(PR_SET_DUMPABLE))
+AC_TRY_COMPILE(
+[
+#include <sys/prctl.h>
+],
+[prctl(PR_SET_DUMPABLE, 1);],
+linux_prctl=yes, linux_prctl=no)
+if test "$linux_prctl" = "yes"
+then
+    AC_DEFINE([HAVE_LINUX_PRCTL_DUMP], [1], [prctl(PR_SET_DUMPABLE, 1) can be used])
+fi
+echo $linux_prctl
+])
