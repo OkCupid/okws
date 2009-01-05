@@ -324,49 +324,6 @@ okld_ch_t::launch (evv_t::ptr ev)
 
 //-----------------------------------------------------------------------
 
-#if 0
-tamed void
-okld_ch_t::send_direct_ports (evb_t ev)
-{
-  tvars {
-    ptr<aclnt> cli;
-    ptr<axprt_unix> x;
-    clnt_stat err;
-    ok_xstatus_typ_t res;
-    size_t i;
-    int port;
-    bool ok (true);
-  }
-
-  cli = okld->okd ().cli ();
-  x = okld->okd ().x ();
-
-  for (i = 0; i < _direct_ports.size (); i++) {
-    twait {
-      port = _direct_ports[i]._port;
-      x->sendfd (_direct_ports[i]._fd);
-      RPC::okld_program_1::okld_send_direct_port (cli, port, &res, 
-						  mkevent (err)); 
-    }
-    if (err) {
-      warn << "RPC error in sending port (" << port 
-	   << ") to service (" << servpath 
-	   << "): " << err << "\n";
-      ok = false;
-    } else if (res != OK_STATUS_OK) {
-      warn << "okld error in sending port (" << port
-	   << ") to service (" << servpath
-	   << "): " << int (res) << "\n";
-      ok = false;
-    }
-  }
-  ev->trigger (ok);
-}
-
-#endif
-
-//-----------------------------------------------------------------------
-
 void
 okld_ch_t::set_svc_ids ()
 {
