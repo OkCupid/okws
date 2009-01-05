@@ -300,7 +300,6 @@ dnserr2httperr (int i)
  * @param req The user's request
  * @param resp Where to stick the response
  * @param cb The callback to call when completed.
- * @return A canceller, which the caller can poke to cancel this operation
  *
  * note: Disobeys above convention, in that it does call its callback
  * even when cancelled.  Callers should take note.
@@ -349,7 +348,7 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
       }
 
       twait { req->make (x, connector::cnc (mkevent (status), ev)); }
-      if (status == HTTP_OK) {
+      if (do_resp_get (status)) {
 	resp->setx (x);
 	twait { resp->get (connector::cnc (mkevent (status), ev)); }
       }
@@ -358,6 +357,15 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 
   ev->trigger (status);
 }
+
+//-----------------------------------------------------------------------
+
+bool
+agent_t::do_resp_get (int status) const
+{
+  return (status == HTTP_OK);
+}
+
 
 //-----------------------------------------------------------------------
 

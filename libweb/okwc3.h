@@ -238,6 +238,8 @@ public:
   { req_T (req, resp, cb); }
 
 protected:
+  virtual bool do_resp_get (int status) const;
+
   const str _hostname;
   int _port;
 
