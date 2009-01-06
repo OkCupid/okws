@@ -246,7 +246,15 @@ okld_ch_t::launch (evv_t::ptr ev)
     argv.push_back (args[i]);
 
   // per-service options might override global options here
-  _svc_options.apply_global_defaults ();
+  if (!_svc_options.apply_global_defaults (servpath)) {
+    strbuf b;
+    b << "cannot apply configuration parameters (" << servpath 
+      << "); aborting service\n";
+    okdbg_warn (ERROR, b);
+    state = OKC_STATE_BADPORTS;
+    return;
+  }
+    
 
   okld->env.insert ("lifereqs", _svc_options.svc_reqs, false);
   okld->env.insert ("lifetime", _svc_options.svc_time, false);
@@ -254,6 +262,8 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.insert ("caching", _svc_options.pub2_caching, false);
   okld->env.insert ("wfs", _svc_options.wait_for_signal, false);
   okld->env.insert ("dps", _direct_ports.encode_as_str (), false);
+  okld->env.insert ("fdlw", _svc_options.lowat, false);
+  okld->env.insert ("fdhw", _svc_options.hiwat, false);
 
   argv.push_back (okld->env.encode ());
 
@@ -266,6 +276,8 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.remove ("caching");
   okld->env.remove ("wfs");
   okld->env.remove ("dps");
+  okld->env.remove ("fdlw");
+  okld->env.remove ("fdhw");
 
   {
 

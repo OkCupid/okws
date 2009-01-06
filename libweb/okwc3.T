@@ -288,7 +288,7 @@ dnserr2httperr (int i)
   switch (i) {
   case NOERROR: return HTTP_OK;
   case ARERR_TIMEOUT: return HTTP_TIMEOUT;
-  default: return HTTP_CONNECTION_FAILED;
+  default: return HTTP_DNS_FAILED;
   }
 }
 

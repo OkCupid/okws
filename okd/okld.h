@@ -249,9 +249,12 @@ struct svc_options_t {
       wss (-1),
       pub2_caching (-1),
       pub2_viserr (-1),
-      wait_for_signal (-1) {}
+      wait_for_signal (-1),
+      hiwat (-1),
+      lowat (-1) {}
 
-  void apply_global_defaults ();
+  bool apply_global_defaults (const str &svc);
+  bool check_options (const str &loc) const;
 
   // service-specific options
   //
@@ -270,6 +273,8 @@ struct svc_options_t {
   int pub2_viserr;
 
   int wait_for_signal;
+
+  int hiwat, lowat;
 
   vec<int> ports;
 };

@@ -26,7 +26,7 @@ AccessLogFmt	ivt1sbU
 OkMgrSocket             okd.sock
 OkMgrSocketAccessMode	0777
 
-Service		static -p 8818 -p 8819 /static
+Service		static -p 8818 -p 8819 -h 3 -l 1 /static
 RegexAlias	/static		^(:\d+)?/static/.*$
 Alias		/static		/
 

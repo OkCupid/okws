@@ -130,7 +130,8 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:sSt:p:")) != -1 && rc) {
+  const char *opts = "eEcCWwu:r:sSt:p:l:h:";
+  while ((ch = getopt (argv.size (), argv, opts)) != -1 && rc) {
     switch (ch) {
     case 'p':
       {
@@ -160,6 +161,18 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
 	  warn << loc << ": cannot find user " << optarg << "\n";
 	  rc = false;
 	}
+      }
+      break;
+    case 'h':
+      if (!convertint (optarg, &so->hiwat)) {
+	warn << loc << ": -h expects an integer argument\n";
+	rc = false;
+      }
+      break;
+    case 'l':
+      if (!convertint (optarg, &so->lowat)) {
+	warn << loc << ": -l expects an integer argument\n";
+	rc = false;
       }
       break;
     case 't':
@@ -204,9 +217,14 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       break;
     }
   }
+
   // pop off "bin" and also all arguments
   for (int i = 0; i < optind; i++) {
     v->pop_front ();
+  }
+
+  if (!so->check_options (loc)) {
+    rc = false;
   }
   return rc;
 }
@@ -1631,15 +1649,27 @@ okld_t::init_interpreters ()
   return true;
 }
 
-void
-svc_options_t::apply_global_defaults ()
+bool
+svc_options_t::apply_global_defaults (const str &s)
 {
+  bool ret = true;
+
   if (svc_reqs < 0) svc_reqs = ok_svc_life_reqs;
   if (svc_time < 0) svc_time = ok_svc_life_time;
   if (wss < 0) wss = ok_pub2_wss;
   if (pub2_caching < 0) pub2_caching = ok_pub2_caching;
   if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
   if (wait_for_signal < 0) wait_for_signal = 0;
+  if (hiwat < 0) hiwat = ok_svc_fds_high_wat;
+  if (lowat < 0) lowat = ok_svc_fds_low_wat;
+
+  if (lowat >= hiwat) {
+    warn << "watermark error for service " << s 
+	 << "; low (" << lowat << ") is not less than high (" << hiwat 
+	 <<  ")\n";
+    ret = false;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -1842,3 +1872,17 @@ okld_t::add_svc (ptr<okld_ch_t> ch)
 
 //-----------------------------------------------------------------------
 
+bool
+svc_options_t::check_options (const str &loc) const
+{
+  bool ok = true;
+  if (lowat >= 0 && hiwat >= 0 && lowat >= hiwat) {
+    warn << loc <<  ": watermark error: "
+	 << "low watermark (" << lowat << ") "
+	 << "must be less than high watermark (" << hiwat << ")\n";
+    ok = false;
+  }
+  return ok;
+}
+
+//-----------------------------------------------------------------------
