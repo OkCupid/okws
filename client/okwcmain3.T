@@ -134,6 +134,7 @@ main2 (int argc, char **argv)
 int 
 main (int argc, char *argv [])
 {
+  set_debug_flags ();
   main2 (argc, argv);
   amain ();
 }
