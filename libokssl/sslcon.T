@@ -6,6 +6,7 @@
 #include "oksslcon.h"
 #include "oksslutil.h"
 #include "tame_io.h"
+#include "okdbg.h"
 
 namespace okssl {
 
@@ -249,6 +250,13 @@ namespace okssl {
 	  twait { _rfd.on (mkevent ()); }
 	}
 	ret = SSL_read (_ssl, out, len);
+
+	if (OKDBG2 (SSL_INDATA)) {
+	  if (ret > 0) {
+	    str s (reinterpret_cast<const char *> (out), ret);
+	    fprintf (stderr, "SSL read: %s\n", s.cstr ());
+	  }
+	}
 
 	if (ret < 0) {
 	  err = SSL_get_error (_ssl, ret);

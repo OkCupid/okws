@@ -104,6 +104,18 @@ public:
 
 //-----------------------------------------------------------------------
 
+class simple_post_t : public post_t {
+public:
+  simple_post_t (const str &s) : post_t (), _s (s) {}
+  ~simple_post_t () {}
+  size_t len () const { return _s.len (); }
+  void output (strbuf &b) const { b << _s; }
+private:
+  const str _s;
+};
+
+//-----------------------------------------------------------------------
+
 class reqinfo_t {
 public:
   reqinfo_t (bool b) : _https (b) {}
@@ -163,10 +175,14 @@ public:
   virtual ~req_t () {}
   virtual void make (ptr<ok_xprt_base_t> x, evi_t cb) { return make_T (x, cb); }
 
-  virtual const post_t *get_post () const { return NULL; }
+  virtual const post_t *get_post () const;
+  virtual const vec<str> *get_extra_headers () const;
+
   virtual str get_type () const { return NULL; }
   bool https () const { return _reqinfo->https (); }
-  virtual const vec<str> *get_extra_headers () const { return NULL; }
+
+  void set_post (const str &p) { _simple_post = p; }
+  void set_extra_headers (const vec<str> &v);
 
 protected:
   void format_req (strbuf &b);
@@ -178,6 +194,12 @@ protected:
   ptr<const reqinfo_t> _reqinfo;
   int _vers;
   cgi_t *_outcookie; // cookie sending out to the server
+
+  // implement simple posts inline
+private:
+  str _simple_post;
+  mutable ptr<post_t> _post_obj;
+  vec<str> _extra_headers;
 };
 
 //-----------------------------------------------------------------------
@@ -255,7 +277,8 @@ class agent_get_t : public agent_t {
 public:
   agent_get_t (const str &h, int p) : agent_t (h, p) {}
   virtual void get (const str &fn, simple_ev_t ev,
-		    int v = 1, cgi_t *c = NULL, bool https = false) = 0;
+		    int v = 1, cgi_t *c = NULL, bool https = false,
+		    str post = NULL, vec<str> *eh = NULL) = 0;
 };
 
 
@@ -268,12 +291,12 @@ public:
 
   void 
   get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
-       bool https = false)
-  { get_T (fn, cb, v, c, https); }
+       bool https = false, str post = NULL, vec<str> *eh = NULL)
+  { get_T (fn, cb, v, c, https, post, eh); }
 
 private:
-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, CLOSURE);
-  
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
+	      str post, vec<str> *eh, CLOSURE);
 };
 
 //-----------------------------------------------------------------------
@@ -284,11 +307,12 @@ public:
   
   void 
   get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
-       bool https = false)
-  { get_T (url, cb, v, c, https); }
+       bool https = false, str post = NULL, vec<str> *eh = NULL)
+  { get_T (url, cb, v, c, https, post, eh); }
 
 private:
-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, CLOSURE);
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
+	      str post, vec<str> *eh, CLOSURE);
   
 };
 

@@ -363,7 +363,7 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 bool
 resp_t::do_get_body (int status) const
 {
-  return (status == HTTP_OK);
+  return (status == HTTP_OK || status == 500);
 }
 
 
@@ -388,7 +388,7 @@ tamed void
 resp_t::get_T (evi_t ev)
 {
   tvars {
-    int status (HTTP_OK);
+    int status (HTTP_OK), status2;
     outcome_t outc;
     ptr<resp_t> hold;
   }
@@ -401,7 +401,8 @@ resp_t::get_T (evi_t ev)
     status = CANCELLED_STATUS;
     _hdr.cancel ();
   } else if (do_get_body (status)) {
-    twait { get_body (connector::cnc (mkevent (status), ev)); }
+    twait { get_body (connector::cnc (mkevent (status2), ev)); }
+    if (status == HTTP_OK) { status = status2; }
   }
   ev->trigger (status);
 }
@@ -522,9 +523,23 @@ reqinfo_proxied_t::reqinfo_proxied_t (const str &url, bool s)
 
 //-----------------------------------------------------------------------
 
+const post_t *
+req_t::get_post () const
+{
+  const post_t *ret = NULL;
+  if (_simple_post) {
+    _post_obj = New refcounted<simple_post_t> (_simple_post);
+    ret = _post_obj;
+  }
+  return ret;
+}
+ 
+
+//-----------------------------------------------------------------------
+
 tamed void
 agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
-			   bool https)
+			   bool https, str post, vec<str> *eh)
 {
   tvars {
     ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
@@ -536,6 +551,8 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
   ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
   assert (ri->validate ());
   rq = New refcounted<req_t> (ri, v, c);
+  if (post) rq->set_post (post);
+  if (eh && eh->size ()) rq->set_extra_headers (*eh);
 
   twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
   ev->trigger (status, resp);
@@ -545,7 +562,7 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
 
 tamed void
 agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
-			    bool https)
+			    bool https, str post, vec<str> *eh)
 {
   tvars {
     ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
@@ -558,10 +575,32 @@ agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
     status = HTTP_CLIENT_BAD_PROXY;
   } else {
     rq = New refcounted<req_t> (ri, v, c);
+    if (post) rq->set_post (post);
+    if (eh && eh->size ()) rq->set_extra_headers (*eh);
     twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
   }
   ev->trigger (status, resp);
 }
+
+//-----------------------------------------------------------------------
+
+void
+req_t::set_extra_headers (const vec<str> &v)
+{
+  for (size_t i = 0; i < v.size (); i++) {
+    _extra_headers.push_back (v[i]);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+const vec<str> *
+req_t::get_extra_headers () const
+{
+  if (_extra_headers.size ()) { return &_extra_headers; }
+  else { return NULL; }
+}
+
 
 //-----------------------------------------------------------------------
 

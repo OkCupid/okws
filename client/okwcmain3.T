@@ -20,7 +20,7 @@ static rxx url_rxx ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
 void
 usage ()
 {
-  warn << "usage: okwc [-t <timeout>] [-p <proxy>] <url> <post>\n";
+  warn << "usage: okwc [-t <timeout>] [-p <proxy>] <url> [<post-file>]\n";
   exit (1);
 }
 
@@ -42,12 +42,13 @@ main2 (int argc, char **argv)
     int ch;
     int timeout (-1);
     bool https (false);
+    vec<str> extra_headers;
   }
 
   okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
 
-  while ((ch = getopt (argc, argv, "t:p:")) != -1) {
+  while ((ch = getopt (argc, argv, "t:p:h:")) != -1) {
     switch (ch) {
     case 't':
       if (!convertint (optarg, &timeout))
@@ -55,6 +56,9 @@ main2 (int argc, char **argv)
       break;
     case 'p':
       prx = optarg;
+      break;
+    case 'h':
+      extra_headers.push_back (optarg);
       break;
     default:
       usage ();
@@ -86,7 +90,11 @@ main2 (int argc, char **argv)
   }
 
   if (argc == 2) {
-    post = argv[2];
+    str file = argv[1];
+    if (!(post = file2str (file))) {
+      warn ("Cannot open post file %s: %m\n", file.cstr ());
+      usage ();
+    }
     typ = "application/x-www-form-urlencoded";
   }
 
@@ -109,7 +117,8 @@ main2 (int argc, char **argv)
   twait { 
     cli->get (filename, 
 	      connector::timeout (mkevent (status, resp), timeout),
-	      1, NULL, https);
+	      1, NULL, https, 
+	      post, &extra_headers);
   }
 
   aout << "status: " << status << "\n";
