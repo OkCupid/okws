@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+#
 #
 # usage:
 #   flex_version.pl <flex-name> <flex-desired-version> <flex-v-output>
