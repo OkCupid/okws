@@ -196,6 +196,13 @@ namespace okssl {
 	{
 	  const struct iovec &iov = uio->iov ()[0];
 	  rc = SSL_write (_ssl, iov.iov_base, iov.iov_len);
+
+	  if (OKDBG2 (SSL_OUTDATA)) {
+	    if (rc > 0) {
+	      str s (reinterpret_cast<const char *> (iov.iov_base), rc);
+	      fprintf (stderr, "SSL write: %s\n", s.cstr ());
+	    }
+	  }
 	}
 
 	if (rc >= 0) {

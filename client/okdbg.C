@@ -25,6 +25,7 @@ usage ()
 	<< "\t -m ssl subsystem: debug memory allocations\n"
 	<< "\t -p ssl subsystem: debug proxy operations\n"
 	<< "\t -i ssl subsystem: debug SSL input data\n"
+	<< "\t -o ssl subsystem: debug SSL output data\n"
 	<< "\n"
 	<< "\t -f kld subsystem: display FD passing information\n"
 	<< "\t -h hlp subsystem: noisy output about helper connections\n"
@@ -40,7 +41,7 @@ main (int argc, char *argv[])
   int ch;
   int64_t res = 0;
   setprogname (argv[0]);
-  while ((ch = getopt (argc, argv, "abcdfhimpsuvABCEJS")) != -1) {
+  while ((ch = getopt (argc, argv, "abcdfhimopsuvABCEJS")) != -1) {
     switch (ch) {
     case 'a':
       res = res | OKWS_DEBUG_PUB_BINDTAB_INSERTS;
@@ -68,6 +69,9 @@ main (int argc, char *argv[])
       break;
     case 'm':
       res = res | OKWS_DEBUG_SSL_MEM;
+      break;
+    case 'o':
+      res = res | OKWS_DEBUG_SSL_OUTDATA;
       break;
     case 'p':
       res = res | OKWS_DEBUG_SSL_PROXY;
