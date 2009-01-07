@@ -203,7 +203,7 @@ str
 reqinfo_direct_t::get_hdr_hostname () const
 {
   str ret;
-  if (_port == std_port (_https)) {
+  if (_port == std_port (false)) {
     ret = _hostname;
   } else {
     strbuf b;

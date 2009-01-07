@@ -18,7 +18,6 @@ enctst_SOURCES = enctst.C
 okwc3_SOURCES = okwcmain3.C
 mygz2_SOURCES = mygz2.C
 
-okdbg_LDADD = $(LIBASYNC) $(LDADD_THR_SFS) $(LIBPY)
 
 TAMEOUT = okwcmain3.C
 
