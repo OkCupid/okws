@@ -154,7 +154,6 @@ namespace okssl {
 
   //-----------------------------------------------------------------------
 
-
   tamed void
   con_t::drain_to_network_T (strbuf *bp, evb_t ev)
   {
@@ -200,8 +199,9 @@ namespace okssl {
 	  if (OKDBG2 (SSL_OUTDATA)) {
 	    if (rc > 0) {
 	      strbuf b;
-	      b << "++ SSL write: ";
-	      b.cat (reinterpret_cast<const char *> (iov.iov_base), rc);
+	      str s (reinterpret_cast<const char *> (iov.iov_base), rc);
+	      b << "++ SSL write (" << rc << "," << iov.iov_len << "): "
+		<< s << "\n";
 	      b.tosuio ()->output (2);
 	    }
 	  }
@@ -271,8 +271,8 @@ namespace okssl {
 	if (OKDBG2 (SSL_INDATA)) {
 	  if (ret > 0) {
 	    strbuf b;
-	    b << "++ SSL read: ";
-	    b.cat (reinterpret_cast<const char *> (out), ret);
+	    str s (reinterpret_cast<const char *> (out), ret);
+	    b << "++ SSL read: " << s << "\n";
 	    b.tosuio ()->output (2);
 	  }
 	}
