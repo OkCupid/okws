@@ -249,6 +249,7 @@ namespace okssl {
       ssize_t ret (-1);
       char buf[BUFSZ];
       int err;
+      size_t tot (0);
     }
 
     twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
@@ -262,6 +263,8 @@ namespace okssl {
 	  twait { _rfd.on (mkevent ()); }
 	}
 	ret = SSL_read (_ssl, out, len);
+
+	if (ret > 0) { tot += ret; }
 
 	if (OKDBG2 (SSL_INDATA)) {
 	  if (ret > 0) {
@@ -290,6 +293,10 @@ namespace okssl {
 	}
       }
     }
+
+    OKDBG4 (SSL_INDATA, CHATTER, 
+	    "leaving sslcon::read; rc=%zd; bytes=%zu\n", ret, tot);
+
     ev->trigger (ret);
   }
 #undef BUFSZ
