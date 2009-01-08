@@ -78,7 +78,7 @@ okclnt_base_t::error_T (int n, const str &s, bool do_send_complete,
 			evv_t::ptr ev)
 { 
   twait { 
-    oksrvc->error (_client_con, n, s, mkevent (), hdr_p ());
+    oksrvc->error (_client_con, n, s, mkevent (), hdr_p (), this);
   }
 
   if (ev) 
@@ -129,7 +129,7 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
 
 tamed void
 ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s, 
-		       cbv::ptr c, http_inhdr_t *h) 
+		       cbv::ptr c, http_inhdr_t *h, okclnt_base_t *b) 
 {
   tvars {
     ptr<http_parser_raw_t> prs;
@@ -146,6 +146,8 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
   }
   v = h ? h->get_vers () : 0;
   twait { geterr (n, s, v, h && h->takes_gzip (), mkevent (e)); }
+  if (b) { b->fixup_response (e); }
+
   assert (e);
   if (svclog)
     log (x, h, e, s);

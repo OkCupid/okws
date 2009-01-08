@@ -251,6 +251,8 @@ protected:
   okws1_port_t _ssl_primary_port;
 };
 
+class okclnt_base_t;
+
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
   ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub2fd = -1) 
@@ -265,8 +267,8 @@ public:
   virtual void add_pubfile (const str &s, bool conf = false) {}
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		      http_inhdr_t *h = NULL)
-  { error_T (x, n, s, c, h); }
+		      http_inhdr_t *h = NULL, okclnt_base_t *cli = NULL)
+  { error_T (x, n, s, c, h, cli); }
 
   virtual str servinfo () const;
   
@@ -296,7 +298,7 @@ public:
 private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
   void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		http_inhdr_t *h = NULL, CLOSURE);
+		http_inhdr_t *h = NULL, okclnt_base_t *cli = NULL, CLOSURE);
   void launch_pub2_T (cbb cb, CLOSURE);
 
 protected:
@@ -419,6 +421,8 @@ public:
   virtual const http_inhdr_t &hdr_cr () const = 0;
   bool do_gzip () const;
 
+  void fixup_response (ptr<http_response_t> rsp);
+
 private:
   void serve_T (CLOSURE);
   void output_fragment_T (str s, CLOSURE);
@@ -433,7 +437,6 @@ protected:
   virtual void parse (cbi cb) = 0;
   virtual http_inhdr_t *hdr_p () = 0;
   bool output_frag_prepare ();
-  void fixup_response (ptr<http_response_t> rsp);
 		
   cbv::ptr cb;
   oksrvc_t *oksrvc;
