@@ -199,10 +199,10 @@ namespace okssl {
 
 	  if (OKDBG2 (SSL_OUTDATA)) {
 	    if (rc > 0) {
-	      const char *prfx = "++ SSL write: ";
-	      write (2, prfx, strlen (prfx));
-	      str s (reinterpret_cast<const char *> (iov.iov_base), rc);
-	      write (2, s.cstr (), s.len ());
+	      strbuf b;
+	      b << "++ SSL write: ";
+	      b.cat (reinterpret_cast<const char *> (iov.iov_base), rc);
+	      b.tosuio ()->output (2);
 	    }
 	  }
 	}
@@ -270,10 +270,10 @@ namespace okssl {
 
 	if (OKDBG2 (SSL_INDATA)) {
 	  if (ret > 0) {
-	    const char *prfx = "++ SSL read: ";
-	    write (2, prfx, strlen (prfx));
-	    str s (reinterpret_cast<const char *> (out), ret);
-	    write (2, s.cstr (), s.len ());
+	    strbuf b;
+	    b << "++ SSL read: ";
+	    b.cat (reinterpret_cast<const char *> (out), ret);
+	    b.tosuio ()->output (2);
 	  }
 	}
 
