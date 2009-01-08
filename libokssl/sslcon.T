@@ -228,6 +228,11 @@ namespace okssl {
 	go = false;
       }
     }
+    if (OKDBG2 (SSL_OUTDATA)) {
+      size_t sz = uio->resid ();
+      okdbg_warn (CHATTER, "leaving sslcon::drain; rc=%d; resid=%zu\n",
+		  ret, sz);
+    }
     ev->trigger (ret);
   }
 
