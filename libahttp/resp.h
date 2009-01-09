@@ -207,6 +207,12 @@ protected:
   str _custom_log2;
 };
 
+class http_response_head_t : public http_response_t {
+public:
+  http_response_head_t (size_t sz, const http_resp_attributes_t &a) :
+    http_response_t (http_resp_header_ok_t (sz, a)) {}
+};
+
 class http_response_ok_t : public http_response_t {
 public:
   http_response_ok_t (const strbuf &b, const http_resp_attributes_t &a) :

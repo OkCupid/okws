@@ -364,6 +364,7 @@ public:
   virtual bool pre_process () { return true; }
   virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
   virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
+  virtual void output_head (size_t sz, evv_t::ptr ev = NULL);
 
   virtual void redirect (const str &s, int status = -1,
 			 evv_t::ptr ev = NULL, CLOSURE);
@@ -428,6 +429,7 @@ private:
   void output_fragment_T (str s, CLOSURE);
   void error_T (int n, const str &s, bool complete, evv_t::ptr ev, CLOSURE);
   void output_T (compressible_t *b, evv_t::ptr ev, CLOSURE);
+  void output_head_T (size_t sz, evv_t::ptr ev, CLOSURE);
 
   ref<ahttpcon> _client_con;
 
@@ -437,6 +439,9 @@ protected:
   virtual void parse (cbi cb) = 0;
   virtual http_inhdr_t *hdr_p () = 0;
   bool output_frag_prepare ();
+  
+  void output_impl (size_t prelen, const strbuf &sb, bool gz, evv_t ev,
+		    CLOSURE);
 		
   cbv::ptr cb;
   oksrvc_t *oksrvc;

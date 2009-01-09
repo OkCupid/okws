@@ -118,51 +118,66 @@ http_parser_full_t::prepare_post_parse (int status)
 void
 http_parser_cgi_t::v_parse_cb1 (int status)
 {
-  if (hdr.mthd == HTTP_MTHD_POST) {
-    
-    cgi_t *post_cgi;
+  switch (hdr.mthd) {
 
-    if (_union_mode) {
+  case HTTP_MTHD_POST:
 
-      cgi = &_union_cgi;
-      post_cgi = &_union_cgi;
-
-      // need to reset interior state for new parsing.
-      _union_cgi.reset_state ();
-
-    } else {
-      cgi = &post;
-      post_cgi = &post;
-    }
-    
-    cbi::ptr pcb;
-    if (!(pcb = prepare_post_parse (status)))
-      return;
-
-    str boundary;
-    if (cgi_mpfd_t::match (hdr, &boundary)) {
-      if (mpfd_flag) {
-	mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
-	cgi = mpfd;
-	mpfd->parse (pcb);
+    {
+      cgi_t *post_cgi;
+      
+      if (_union_mode) {
+	
+	cgi = &_union_cgi;
+	post_cgi = &_union_cgi;
+	
+	// need to reset interior state for new parsing.
+	_union_cgi.reset_state ();
+	
       } else {
-	warn << "file upload attempted when not permitted\n";
-	finish (HTTP_NOT_ALLOWED);
+	cgi = &post;
+	post_cgi = &post;
       }
-    } else {
-      post_cgi->set_max_scratchlen (hdr.contlen);
-      post_cgi->parse (pcb);
+      
+      cbi::ptr pcb;
+      if ((pcb = prepare_post_parse (status))) {
+      
+	str boundary;
+	if (cgi_mpfd_t::match (hdr, &boundary)) {
+	  if (mpfd_flag) {
+	    mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
+	    cgi = mpfd;
+	    mpfd->parse (pcb);
+	  } else {
+	    warn << "file upload attempted when not permitted\n";
+	    finish (HTTP_NOT_ALLOWED);
+	  }
+	} else {
+	  post_cgi->set_max_scratchlen (hdr.contlen);
+	  post_cgi->parse (pcb);
+	}
+      }
     }
-  } else if (hdr.mthd == HTTP_MTHD_GET) {
-    if (_union_mode) {
-      cgi = &_union_cgi;
-    } else {
-      cgi = &url;
+
+    break;
+
+  case HTTP_MTHD_GET:
+  case HTTP_MTHD_HEAD:
+    {
+      if (_union_mode) {
+	  cgi = &_union_cgi;
+      } else {
+	cgi = &url;
+      }
+      finish (status);
     }
-    finish (status);
-  } else {
-    short_circuit_output ();
-    finish (HTTP_NOT_ALLOWED);
+    break;
+    
+  default:
+    {
+      short_circuit_output ();
+      finish (HTTP_NOT_ALLOWED);
+    }
+    break;
   }
 }
 

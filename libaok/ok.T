@@ -1039,11 +1039,37 @@ okclnt_base_t::output (compressible_t &b, evv_t::ptr ev)
   output (&b, ev);
 }
 
+//-----------------------------------------------------------------------
+
 void
 okclnt_base_t::output (compressible_t *b, evv_t::ptr ev)
 {
   output_T (b, ev);
 }
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::output_head (size_t sz, evv_t::ptr ev)
+{
+  output_head_T (sz, ev);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_base_t::output_head_T (size_t sz, evv_t::ptr ev)
+{
+  tvars {
+    strbuf b;
+  }
+
+  b << "";
+  twait { output_impl (sz, b, false, mkevent ()); }
+  if (ev) ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
@@ -1052,9 +1078,19 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     bool gz (_self->do_gzip ());
     ssize_t prelen (gz ? b->inflated_len () : ssize_t (-1));
     const strbuf &sb (b->to_strbuf (gz));
+  }
+  twait { output_impl (prelen, sb, gz, mkevent ()); }
+  if (ev) ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_base_t::output_impl (size_t prelen, const strbuf &sb, bool gz, evv_t ev)
+{
+  tvars {
     http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
   }
-
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
 
@@ -1067,8 +1103,14 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
   } else {
 
     set_attributes (&hra);
-    hra.set_gzip (gz);
-    rsp = New refcounted<http_response_ok_t> (sb, hra);
+
+    if (hdr_cr ().mthd == HTTP_MTHD_HEAD) {
+      hra.set_gzip (false);
+      rsp = New refcounted<http_response_head_t> (sb.tosuio ()->resid (), hra);
+    } else {
+      hra.set_gzip (gz);
+      rsp = New refcounted<http_response_ok_t> (sb, hra);
+    }
     fixup_response (rsp);
 
     if (uid_set) rsp->set_uid (uid);
@@ -1076,8 +1118,8 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     twait { send (rsp, mkevent ()); }
   }
 
-  if (ev)
-    ev->trigger ();
+  ev->trigger ();
+
   send_complete ();
 }
 
