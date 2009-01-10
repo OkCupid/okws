@@ -34,6 +34,7 @@
 #include "sfsmisc.h"
 #include "ok_adebug.h"
 #include "sfs_select.h"
+#include "tame_trigger.h"
 
 #ifdef HAVE_LINUX_PRCTL_DUMP
 # include <sys/prctl.h>
@@ -833,7 +834,7 @@ okclnt2_t::serve_T ()
       twait { output (out, mkevent ()); }
     }
   }
-  
+
   serve_complete ();
 }
 
@@ -1085,8 +1086,13 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     if (prelen > 0) rsp->set_inflated_len (prelen);
     twait { send (rsp, mkevent ()); }
   }
-  if (ev) ev->trigger ();
+
+  // in okclnt_t versions 1s, will call delete this..
   send_complete ();
+
+  // make sure this trigger is the last thing done in this function
+  // and that we don't access this afterwards...
+  if (ev) ev->trigger ();
 }
 
 //-----------------------------------------------------------------------

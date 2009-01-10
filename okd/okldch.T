@@ -150,7 +150,8 @@ okld_jailed_exec_t::chmod (int currmode)
   }
   strbuf b ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
 	    get_execpath ().cstr (), ustat.st_mode & 07777, mode);
-  okdbg_warn (CHATTER, b);
+  str s = b;
+  okdbg_warn (CHATTER, s);
   return true;
 }
 

@@ -611,7 +611,7 @@ okwc_http_hdr_t::parse_guts ()
 void
 okwc_http_hdr_t::fixup ()
 {
-  if (!lookup ("content-length", &contlen))
+  if (!lookup ("content-length", &contlen) || contlen == 0)
     contlen = okwc_def_contlen;
 }
 

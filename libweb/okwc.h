@@ -110,7 +110,8 @@ public:
   
   okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, size_t bflen, char *b)
     : async_parser_t (a), http_hdr_t (a, bflen, b),
-      cookie (ck), state (OKWC_HDR_START), status (HTTP_BAD_REQUEST),
+      cookie (ck), state (OKWC_HDR_START), 
+      contlen (0), status (HTTP_BAD_REQUEST),
       noins (false) {}
 
   int get_contlen () const { return contlen; }
