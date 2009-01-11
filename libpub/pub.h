@@ -36,6 +36,7 @@
 #include "zstr.h"
 #include "tame.h"
 #include "pscalar.h"
+#include "parseopt.h"
 
 #if defined (SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 10000000
 # include "tame_lock.h"

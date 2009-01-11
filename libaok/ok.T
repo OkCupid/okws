@@ -184,7 +184,7 @@ ok_httpsrv_t::init_sfs_clock (const str &f)
 
 oksrvc_t::~oksrvc_t ()
 {
-  okclnt_base_t *n, *p;
+  okclnt_interface_t *n, *p;
   for (p = clients.first; p; p = n) {
     n = clients.next (p);
     delete p;
@@ -356,7 +356,7 @@ oksrvc_t::update (svccb *sbp)
 }
 
 void
-oksrvc_t::remove (okclnt_base_t *c)
+oksrvc_t::remove (okclnt_interface_t *c)
 {
   clients.remove (c);
   --nclients;
@@ -773,7 +773,7 @@ oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
       error (lx, HTTP_UNAVAILABLE, NULL);
     } else {
       _n_newcli ++;
-      okclnt_base_t *c = make_newclnt (lx);
+      okclnt_interface_t *c = make_newclnt (lx);
       c->set_demux_data (acw.demux_data ());
       if (use_union_cgi ())
 	  c->set_union_cgi_mode (true);
@@ -790,7 +790,7 @@ oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
 }
 
 void
-oksrvc_t::add (okclnt_base_t *c)
+oksrvc_t::add (okclnt_interface_t *c)
 {
   nclients++;
   clients.insert_head (c);

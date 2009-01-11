@@ -327,6 +327,25 @@ protected:
 
 class oksrvc_t;
 
+//-----------------------------------------------------------------------
+
+class okclnt_interface_t {
+public:
+  okclnt_interface_t () {}
+  virtual ~okclnt_interface_t () {}
+  virtual void set_union_cgi_mode (bool b) = 0;
+  virtual void set_demux_data (ptr<demux_data_t> d) = 0;
+  virtual void serve () = 0;
+  list_entry<okclnt_interface_t> lnk;
+};
+
+//-----------------------------------------------------------------------
+
+typedef callback<okclnt_interface_t *, ptr<ahttpcon>, oksrvc_t *>::ref 
+nclntcb_t;
+
+//-----------------------------------------------------------------------
+
 //
 // There should be one okclnt_base_t per external HTTP request.
 // We've split the logic up between stuff that goes mainly here,
@@ -335,7 +354,7 @@ class oksrvc_t;
 // specify the amount and type of parsing done in response to
 // a request, by implementing the virtual parse() method.
 //
-class okclnt_base_t {
+class okclnt_base_t : public virtual okclnt_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
     _client_con (xx), 
@@ -408,7 +427,6 @@ public:
   bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
   str ssl_cipher () const;
 
-  list_entry<okclnt_base_t> lnk;
   virtual ptr<pub2::ok_iface_t> pub2 () ;
   virtual ptr<pub2::ok_iface_t> pub2_local ();
   void set_localizer (ptr<const pub_localizer_t> l);
@@ -501,7 +519,7 @@ private:
   void serve_T (CLOSURE);
 };
 
-typedef callback<okclnt_base_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
+//-----------------------------------------------------------------------
 
 class dbcon_t : public helper_inet_t {
 public:
@@ -512,6 +530,8 @@ public:
   str getname () const { return strbuf ("database: ") << 
 			   helper_inet_t::getname () ;}
 };
+
+//-----------------------------------------------------------------------
 
 class oksrvc_t : public ok_httpsrv_t, public ok_con_acceptor_t  { // OK Service
 public:
@@ -527,7 +547,7 @@ public:
     accept_enabled = true;
   }
 
-  typedef okclnt_base_t newclnt_t;
+  typedef okclnt_interface_t newclnt_t;
 
   virtual void launch () { launch_T (); }
   virtual newclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
@@ -559,8 +579,8 @@ public:
   void shutdown ();
   void connect ();
   void ctldispatch (svccb *c);
-  void remove (okclnt_base_t *c);
-  void add (okclnt_base_t *c);
+  void remove (okclnt_interface_t *c);
+  void add (okclnt_interface_t *c);
   void end_program (); 
 
   void add_pubfiles (const char *arr[], u_int sz, bool conf = false);
@@ -619,7 +639,7 @@ protected:
   void debug_launch (cbv cb, CLOSURE);
 
   str name;
-  list<okclnt_base_t, &okclnt_base_t::lnk> clients;
+  list<okclnt_interface_t, &okclnt_interface_t::lnk> clients;
 
   u_int nclients;
   bool sdflag;
