@@ -10,12 +10,13 @@ libaok_la_SOURCES = \
 	logbuf.C \
 	xmlrpcsrv.C \
 	locale.C \
-	direct.C
+	direct.C \
+	ok3.C
 
 libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
-	oklocale.h
+	oklocale.h ok3.h
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@
@@ -35,6 +36,8 @@ xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
 
 ok.o:  ok.C okprot.h
 ok.lo: ok.C okprot.h
+ok.o: ok.C
+ok.lo: ok.C
 xmlrpcsrv.C: xmlrpcsrv.h
 xmlrpcsrv.o: xmlrpcsrv.C
 xmlrpcsrv.lo: xmlrpcsrv.C
@@ -48,17 +51,17 @@ xmlrpcsrv.C: xmlrpcsrv.h
 .PHONY: rpcclean tameclean
 
 tameclean:
-	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C
+	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C ok3.C
 
 rpcclean:
 	rm -f okprot.C okprot.h
 
 dist-hook:
 	cd $(distdir) && rm -f okprot.C okprot.h ok.C xmlrpcsrv.h \
-		xmlrpcsrv.C
+		xmlrpcsrv.C ok3.C
 
 EXTRA_DIST = .cvsignore ok.T okprot.x xmlrpcsrv.Th xmlrpcsrv.T
 CLEANFILES = core *.core *~ *.rpo okprot.C okprot.h ok.C \
-	xmlrpcsrv.C xmlrpcsrv.h
+	xmlrpcsrv.C xmlrpcsrv.h ok3.C
 
 MAINTAINERCLEANFILES = Makefile.in 
