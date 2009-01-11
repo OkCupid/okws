@@ -54,14 +54,10 @@ init_syscall_stats ()
 }
 
 void
-ok_httpsrv_t::malloc_init ()
-{
-}
-
+ok_httpsrv_t::malloc_init () {}
 
 okclnt_base_t::~okclnt_base_t () 
 { 
-  oksrvc->remove (this); 
   while (outcookies.size ())
     delete outcookies.pop_front ();
 }
@@ -130,7 +126,7 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
 
 tamed void
 ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s, 
-		       cbv::ptr c, http_inhdr_t *h, okclnt_base_t *b) 
+		       cbv::ptr c, http_inhdr_t *h, okclnt_interface_t *b) 
 {
   tvars {
     ptr<http_parser_raw_t> prs;
@@ -778,7 +774,6 @@ oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
       if (use_union_cgi ())
 	  c->set_union_cgi_mode (true);
       c->serve ();
-      add (c);
     }
     if (ok_svc_fds_high_wat != 0 && n_fd_out >= int (ok_svc_fds_high_wat)) {
       disable_accept ();
@@ -1568,10 +1563,30 @@ oksrvc_t::enable_coredumps ()
     warn ("prctl(PR_SET_DUMPABLE, 1) failed: %m\n");
   }
 #endif /* HAVE_LINUX_PRCTL_DUMP */
-
-
 }
-
 
 //-----------------------------------------------------------------------
 
+okclnt_interface_t::okclnt_interface_t (oksrvc_t *o)
+  : oksrvc (o)
+{ o->add (this); }
+
+//-----------------------------------------------------------------------
+
+okclnt_interface_t::~okclnt_interface_t ()
+{ oksrvc->remove (this); }
+
+//-----------------------------------------------------------------------
+
+void do_syscall_stats ()
+{
+  if (ok_ssdi > 0 && 
+      int (sfs_get_timenow ()- global_ssd_last) > int (ok_ssdi)) {
+    time_t diff = sfs_get_timenow () - global_ssd_last;
+    global_ssd_last = sfs_get_timenow();
+    global_syscall_stats->dump (diff);
+    global_syscall_stats->clear ();
+  }
+}
+
+//-----------------------------------------------------------------------

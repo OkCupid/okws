@@ -44,6 +44,8 @@
 #include "pub2.h"
 #include "oklocale.h"
 
+//-----------------------------------------------------------------------
+
 typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH = 1,
 	       OKC_STATE_SERVE = 2,
@@ -58,6 +60,8 @@ typedef enum { OKC_STATE_NONE = 0,
 		   OKC_STATE_BADPORTS = 11 } okc_state_t;
 
 
+//-----------------------------------------------------------------------
+
 struct errdoc_t {
   errdoc_t (int n, const str &f) : status (n), fn (f) {}
   int status;
@@ -65,10 +69,14 @@ struct errdoc_t {
   ihash_entry<errdoc_t> lnk;
 };
 
+//-----------------------------------------------------------------------
+
 typedef u_int16_t okws1_port_t;
 #define PORT_MAX USHRT_MAX
 
 typedef event<ok_xstatus_typ_t>::ref okstat_ev_t;
+
+//-----------------------------------------------------------------------
 
 class ok_con_t {
 public:
@@ -81,6 +89,8 @@ protected:
   ptr<asrv> srv;
   ptr<aclnt> clnt; 
 };
+
+//-----------------------------------------------------------------------
 
 class config_parser_t {
 public:
@@ -95,6 +105,8 @@ protected:
 private:
   bhash<str> _seen; // files seen
 };
+
+//-----------------------------------------------------------------------
 
 class demux_data_t {
 public:
@@ -123,6 +135,8 @@ private:
   bool _ssl;
   str _ssl_info;
 };
+
+//-----------------------------------------------------------------------
 
 template<class A>
 class ahttpcon_wrapper_t {
@@ -251,7 +265,11 @@ protected:
   okws1_port_t _ssl_primary_port;
 };
 
-class okclnt_base_t;
+//-----------------------------------------------------------------------
+
+class okclnt_interface_t;
+
+//-----------------------------------------------------------------------
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
@@ -267,7 +285,7 @@ public:
   virtual void add_pubfile (const str &s, bool conf = false) {}
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		      http_inhdr_t *h = NULL, okclnt_base_t *cli = NULL)
+		      http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL)
   { error_T (x, n, s, c, h, cli); }
 
   virtual str servinfo () const;
@@ -297,8 +315,11 @@ public:
 
 private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
+
   void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		http_inhdr_t *h = NULL, okclnt_base_t *cli = NULL, CLOSURE);
+		http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL, 
+		CLOSURE);
+
   void launch_pub2_T (cbb cb, CLOSURE);
 
 protected:
@@ -331,12 +352,16 @@ class oksrvc_t;
 
 class okclnt_interface_t {
 public:
-  okclnt_interface_t () {}
-  virtual ~okclnt_interface_t () {}
+  okclnt_interface_t (oksrvc_t *o);
+  virtual ~okclnt_interface_t ();
   virtual void set_union_cgi_mode (bool b) = 0;
   virtual void set_demux_data (ptr<demux_data_t> d) = 0;
   virtual void serve () = 0;
+  virtual void fixup_response (ptr<http_response_t> rsp) {}
   list_entry<okclnt_interface_t> lnk;
+
+protected:
+  oksrvc_t *oksrvc;
 };
 
 //-----------------------------------------------------------------------
@@ -354,11 +379,11 @@ nclntcb_t;
 // specify the amount and type of parsing done in response to
 // a request, by implementing the virtual parse() method.
 //
-class okclnt_base_t : public virtual okclnt_interface_t {
+class okclnt_base_t : public okclnt_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
+    okclnt_interface_t (o),
     _client_con (xx), 
-    oksrvc (o),
     process_flag (false), 
     uid_set (false), 
     rsp_gzip (true),
@@ -457,7 +482,6 @@ protected:
   bool output_frag_prepare ();
   
   cbv::ptr cb;
-  oksrvc_t *oksrvc;
 
   zbuf out;
   ptr<http_response_t> rsp;
@@ -477,6 +501,8 @@ protected:
   str _custom_log2;
 };
 
+//-----------------------------------------------------------------------
+
 // 
 // This is the standard okclnt_t, used for parsing regular HTTP requests,
 // with x-URL-encoded GET, POST of multipart form data.
@@ -495,10 +521,10 @@ public:
   const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
 
   void set_union_cgi_mode (bool b)
-  {
-    http_parser_cgi_t::set_union_mode (b);
-  }
+  { http_parser_cgi_t::set_union_mode (b); }
 };
+
+//-----------------------------------------------------------------------
 
 //
 // Upgraded version of okclnt2, with a better state machine architecture
@@ -526,9 +552,8 @@ public:
   dbcon_t (const rpc_program &g, const str &h, u_int p)
     : helper_inet_t (g, h, p, 0) {}
 
-
-  str getname () const { return strbuf ("database: ") << 
-			   helper_inet_t::getname () ;}
+  str getname () const 
+  { return strbuf ("database: ") << helper_inet_t::getname (); }
 };
 
 //-----------------------------------------------------------------------
@@ -663,15 +688,13 @@ private:
   void post_launch_pub2_T (cbb cb, CLOSURE);
 };
 
+//-----------------------------------------------------------------------
 
-class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
-public:
-  oksrvcw_t (int argc, char *argv[], nclntcb_t c) : 
-    oksrvc_t (argc, argv), nccb (c) {}
-  newclnt_t *make_newclnt (ptr<ahttpcon> lx) { return (*nccb) (lx, this); }
-private:
-  nclntcb_t nccb;
-}; 
+str okws_exec (const str &x);
+void init_syscall_stats ();
+void do_syscall_stats ();
+
+//-----------------------------------------------------------------------
 
 /**
  * Service-Specific error messages
@@ -687,6 +710,7 @@ do {                                           \
 #define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
 #define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
 
+//-----------------------------------------------------------------------
 
 template<typename T> parr_err_t 
 oksrvc_t::cfg (const str &n, u_int i, T *p) const
@@ -704,6 +728,8 @@ oksrvc_t::cfg (const str &n, u_int i, T *p) const
   return arr->val (i, p);
 }
 
+//-----------------------------------------------------------------------
+
 template<class C> bool 
 oksrvc_t::cfg (const str &n, C *v) const 
 { 
@@ -714,28 +740,13 @@ oksrvc_t::cfg (const str &n, C *v) const
   return rpcli->cfg (n, v);
 }
 
-  
-str okws_exec (const str &x);
-void init_syscall_stats ();
-
-inline void do_syscall_stats ()
-{
-  if (ok_ssdi > 0 && 
-      int (sfs_get_timenow ()- global_ssd_last) > int (ok_ssdi)) {
-    time_t diff = sfs_get_timenow () - global_ssd_last;
-    global_ssd_last = sfs_get_timenow();
-    global_syscall_stats->dump (diff);
-    global_syscall_stats->clear ();
-  }
-}
+//-----------------------------------------------------------------------
 
 //
 // XXX - hack - this is used by both okch_t and okld_ch_t - just happens
 // that they have similar internal variables; the might be put into a 
 // class tree, but they share little functionality in common.
 //
-
-  
 #define CH_MSG(M,x)                            \
 do {                                           \
   strbuf b;                                    \
@@ -747,6 +758,8 @@ do {                                           \
 #define CH_ERROR(x)    CH_MSG(ERROR, x)
 
 #define NO_SOCKET_ALLOCATED 7
+
+//-----------------------------------------------------------------------
 
 
 /**
@@ -764,5 +777,7 @@ str get_okws_config (bool make_fatal = true);
  */
 void set_sfs_select_policy ();
 
+
+//-----------------------------------------------------------------------
 
 #endif /* _LIBAOK_OKBASE_H */
