@@ -107,7 +107,7 @@ public:
 
   //------------------------------------------------------------------------
 
-  virtual void process (ptr<req_t> req, ptr<resp_t> resp) = 0;
+  virtual void process (ptr<req_t> req, ptr<resp_t> resp, evv_t ev) = 0;
 
   //------------------------------------------------------------------------
 

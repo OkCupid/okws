@@ -151,6 +151,35 @@ okclnt3_t::alloc_resp ()
 
 //-----------------------------------------------------------------------
 
+typedef enum { SRV_OUTPUT, SRV_PROCESS, SRV_TIMEOUT } srv_typ_t;
+
+//-----------------------------------------------------------------------
+
+tamed static void
+timed_flush (rendezvous_t<srv_typ_t> *rv, u_int to, evv_t ev)
+{
+  tvars {
+    srv_typ_t which;
+    timecb_t *tcb (NULL);
+  }
+  
+  tcb = delaycb (ok_clnt_timeout, 0, mkevent (*rv, SRV_TIMEOUT));
+  // wait for the output loop to flush completely
+
+  while (tcb && rv->n_triggers_left () > 1) {
+    twait (*rv, which);
+    if (which == SRV_TIMEOUT) { tcb = NULL; }
+  }
+
+  // either timer or useful event will be left, either way...
+  rv->cancel ();
+
+  if (tcb) timecb_remove (tcb);
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt3_t::serve_T ()
 {
@@ -158,10 +187,10 @@ okclnt3_t::serve_T ()
     bool go (true);
     ptr<okclnt3_t::req_t> req;
     int status;
-    rendezvous_t<> rv (__FILE__, __LINE__);
+    rendezvous_t<srv_typ_t> rv (__FILE__, __LINE__);
   }
 
-  output_loop (mkevent (rv));
+  output_loop (mkevent (rv, SRV_OUTPUT));
 
   if (go) go = check_ssl ();
 
@@ -169,14 +198,13 @@ okclnt3_t::serve_T ()
     req = New refcounted<req_t> (_x, ok_clnt_timeout);
     twait { req->parse (mkevent (status, go)); }
     if (status == HTTP_OK) {
-      process (req, alloc_resp ());
+      process (req, alloc_resp (), mkevent (rv, SRV_PROCESS));
     } else {
       error (status);
     }
   }
 
-  // wait for the output loop to flush completely
-  twait (rv);
+  twait { timed_flush (&rv, ok_clnt_timeout, mkevent ()); }
 
   finish_serve ();
 }
