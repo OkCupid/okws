@@ -17,12 +17,14 @@ public:
 
   //------------------------------------------------------------------------
 
-  class req_t : http_parser_cgi_t {
+  class req_t : public http_parser_cgi_t, public virtual refcount {
   public:
     req_t (ptr<ahttpcon> x, u_int to);
     ~req_t ();
 
-    void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
+    typedef event<int, bool>::ref parse_ev_t;
+
+    void parse (parse_ev_t, CLOSURE); 
     http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
     const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
 
@@ -32,15 +34,19 @@ public:
 
   //------------------------------------------------------------------------
 
-  class resp_t {
+  class resp_t : public virtual refcount {
   public:
-    resp_t ();
+    resp_t (okclnt3_t *o);
     ~resp_t ();
 
     //-----------------------------------------------------------------------
 
-    void send (int status, zbuf *body, evi_t ev, CLOSURE);
-    void redirect (const str &loc, int status, evi_t ev, CLOSURE);
+    void error (int status) { reply (status, NULL, NULL); }
+    void redirect (int status, str u) { reply (status, NULL, u); }
+    void reply (int status, ptr<compressible_t> body, str redir_url);
+
+    //-----------------------------------------------------------------------
+
     ptr<cookie_t> add_cookie (const str &h = NULL, const str &p = "/");
     void set_uid (u_int64_t i) { _uid = i; _uid_set = true; }
 
@@ -55,7 +61,14 @@ public:
 
     //-----------------------------------------------------------------------
 
+    void mark_defunct () { _ok_clnt = NULL; }
+    bool is_ready () const { return _replied; }
+    void send (evb_t ev);
+
+    //-----------------------------------------------------------------------
+
   protected:
+    okclnt3_t *_ok_clnt;
     vec<ptr<cookie_t> > _outcookies;
     ptr<http_response_t> _http_resp;
     u_int64_t _uid;
@@ -65,22 +78,23 @@ public:
     str _custom_log2;
     bool _rsp_gzip;
 
-    bool _sent;
+    bool _sent, _replied;
+
+    int _status;
+    ptr<compressible_t> _body;
+    str _redir_url;
 
     ptr<vec<http_hdr_field_t> > _hdr_fields;
   };
 
   //------------------------------------------------------------------------
 
-  okclnt3_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0)
-    : okclnt_interface_t (o),
-      _x (xx),
-      _timeout (to) 
-  {}
+  okclnt3_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0);
+  ~okclnt3_t ();
 
   //------------------------------------------------------------------------
 
-  virtual void process (ptr<req_t> req, ptr<resp_t> resp, evi_t ev) = 0;
+  virtual void process (ptr<req_t> req, ptr<resp_t> resp) = 0;
 
   //------------------------------------------------------------------------
 
@@ -97,12 +111,51 @@ public:
 
   //------------------------------------------------------------------------
 
+  void set_union_cgi_mode (bool b) { _union_cgi_mode = b; }
+  void set_demux_data (ptr<demux_data_t> d)  { _demux_data = d; }
+  virtual void serve () { serve_T (); }
+
+  //------------------------------------------------------------------------
+
 protected:
+
+  //------------------------------------------------------------------------
+
+  void serve_T (CLOSURE);
+  virtual void finish_serve () { delete this; }
+
+  //-----------------------------------------------------------------------
+  
+  ptr<resp_t> alloc_resp ();
+  bool check_ssl ();
+  void redirect (int status, const str &u);
+  void error (int status);
+
+  //-----------------------------------------------------------------------
+
+  void poke ();
+  void output_loop (CLOSURE);
+  void finish_output (evv_t ev);
+  void await_poke (evv_t ev);
+
+  //-----------------------------------------------------------------------
+
   ptr<ahttpcon> _x;
   u_int _timeout;
 
   ptr<demux_data_t> _demux_data;
   ptr<pub2::locale_specific_publisher_t> _p2_locale;
+  vec<ptr<resp_t> > _resps;
+
+  bool _union_cgi_mode;
+
+  //-----------------------------------------------------------------------
+
+  evv_t::ptr _output_poke, _output_done_ev, _poke_ev;
+  bool _output_done;
+
+  //-----------------------------------------------------------------------
+
 };
 
 
