@@ -204,6 +204,9 @@ okclnt3_t::serve_T ()
     }
   }
 
+  // XXX can still call delete this before all process() 
+  // children have triggered... need to think a little
+  // more about it...
   twait { timed_flush (&rv, ok_clnt_timeout, mkevent ()); }
 
   finish_serve ();
