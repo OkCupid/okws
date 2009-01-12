@@ -33,8 +33,7 @@ okclnt3_t::okclnt3_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to)
   : okclnt_interface_t (o),
     _x (xx),
     _timeout (to),
-    _union_cgi_mode (false),
-    _output_done (false) {}
+    _union_cgi_mode (false) {}
 
 //-----------------------------------------------------------------------
 
@@ -109,18 +108,6 @@ okclnt3_t::pub2_local ()
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::poke ()
-{
-  if (_poke_ev) {
-    evv_t tmp = _poke_ev;
-    _poke_ev = NULL;
-    tmp->trigger ();
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
 okclnt3_t::redirect (int status, const str &u)
 {
   alloc_resp ()->redirect (status, u);
@@ -171,9 +158,10 @@ okclnt3_t::serve_T ()
     bool go (true);
     ptr<okclnt3_t::req_t> req;
     int status;
+    rendezvous_t<> rv (__FILE__, __LINE__);
   }
 
-  output_loop ();
+  output_loop (mkevent (rv));
 
   if (go) go = check_ssl ();
 
@@ -188,7 +176,7 @@ okclnt3_t::serve_T ()
   }
 
   // wait for the output loop to flush completely
-  twait { finish_output (mkevent ()); }
+  twait (rv);
 
   finish_serve ();
 }
@@ -211,41 +199,24 @@ okclnt3_t::req_t::parse (okclnt3_t::req_t::parse_ev_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-okclnt3_t::output_loop ()
+okclnt3_t::output_loop (evv_t ev)
 {
   tvars {
     ptr<okclnt3_t::resp_t> rsp;
     bool go (true);
   }
 
-  while (go && (!_output_done_ev || _resps.size ())) {
+  twait { _output_cv.wait (mkevent ()); }
+
+  while (go && _resps.size ()) {
     rsp = _resps.pop_front ();
     while (!rsp->is_ready ()) {
-      twait { await_poke (mkevent ()); }
+      twait { _output_cv.wait (mkevent ()); }
     }
     twait { rsp->send (mkevent (go)); }
   }
 
-  if (_output_done_ev)
-    _output_done_ev->trigger ();
-}
-
-//-----------------------------------------------------------------------
-
-void
-okclnt3_t::finish_output (evv_t ev)
-{
-  if (_output_done) ev->trigger ();
-  else _output_done_ev = ev;
-}
-
-//-----------------------------------------------------------------------
-
-void
-okclnt3_t::await_poke (evv_t ev)
-{
-  if (_poke_ev) ev->trigger ();
-  else _poke_ev = ev;
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -254,6 +225,43 @@ void
 okclnt3_t::resp_t::send (evb_t ev)
 {
 
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::poke ()
+{
+  _output_cv.poke ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::cv_t::wait (evv_t ev)
+{
+  if (_go) {
+    assert (!_ev);
+    _go = false;
+    ev->trigger ();
+  } else {
+    _ev = ev;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::cv_t::poke ()
+{
+  if (_ev) {
+    assert (!_go);
+    evv_t tmp (_ev);
+    _ev = NULL;
+    tmp->trigger ();
+  } else {
+    _go = true;
+  }
 }
 
 //-----------------------------------------------------------------------

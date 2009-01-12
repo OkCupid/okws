@@ -17,6 +17,19 @@ public:
 
   //------------------------------------------------------------------------
 
+  class cv_t {
+  public:
+    cv_t () : _go (false) {}
+    void wait (evv_t ev);
+    void poke ();
+  private:
+    bool _go;
+    evv_t::ptr _ev;
+  };
+
+  //------------------------------------------------------------------------
+
+
   class req_t : public http_parser_cgi_t, public virtual refcount {
   public:
     req_t (ptr<ahttpcon> x, u_int to);
@@ -134,7 +147,7 @@ protected:
   //-----------------------------------------------------------------------
 
   void poke ();
-  void output_loop (CLOSURE);
+  void output_loop (evv_t ev, CLOSURE);
   void finish_output (evv_t ev);
   void await_poke (evv_t ev);
 
@@ -151,8 +164,7 @@ protected:
 
   //-----------------------------------------------------------------------
 
-  evv_t::ptr _output_poke, _output_done_ev, _poke_ev;
-  bool _output_done;
+  cv_t _output_cv;
 
   //-----------------------------------------------------------------------
 
