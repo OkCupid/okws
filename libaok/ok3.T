@@ -49,13 +49,14 @@ okclnt3_t::~okclnt3_t ()
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::resp_t::reply (int status, ptr<compressible_t> body, str redir_url)
+okclnt3_t::resp_t::reply (int st, ptr<compressible_t> b, str url, str es)
 {
   assert (!_replied);
   if (_ok_clnt) {
-    _status = status;
-    _body = body;
-    _redir_url = redir_url;
+    _status = st;
+    _body = b;
+    _redir_url = url;
+    _error_str = es;
     _replied = true;
 
     _ok_clnt->poke ();
@@ -241,20 +242,50 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
 
 //-----------------------------------------------------------------------
 
+bool
+okclnt3_t::resp_t::do_gzip () const
+{
+  return (_req && _req->hdr_cr ().takes_gzip () && ok_gzip && _rsp_gzip);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
+{
+  if (_cache_control) hra->set_cache_control (_cache_control);
+  if (_content_type) hra->set_content_type (_content_type);
+  if (_expires) hra->set_expires (_expires);
+  if (_cont_disp) hra->set_content_disposition (_cont_disp);
+
+  // set anything else you want
+  hra->set_others (_hdr_fields);
+}
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt3_t::resp_t::send (evb_t ev)
 {
   tvars {
     ptr<http_response_t> rsp;
-    holdvar ptr<okclnt3_t::req_t> req (_self->req ());
-    holdvar int vers (req ? req->hdr_cr ().get_vers () : 0);
+    ptr<okclnt3_t::req_t> req (_self->req ());
+    int vers (req ? req->hdr_cr ().get_vers () : 0);
     http_resp_attributes_t hra (_self->status (), vers);
+    bool gz (_self->do_gzip ());
+    bool ok (false);
+    oksrvc_t *svc;
+    strbuf body_buf;
   }
 
   hra.set_others (_hdr_fields);
 
+  if (!con () || con ()->closed ()) {
+    _status = HTTP_CLIENT_EOF;
+  }
+
+  // Handle Redirects
   if (_redir_url)  {
-    if (http_is_redirect (_status)) {
+    if (httpconst::is_redirect (_status)) {
       rsp = New refcounted<http_response_redirect_t> (_redir_url, hra);
     } else {
       _status = HTTP_SRV_ERROR;
@@ -262,7 +293,36 @@ okclnt3_t::resp_t::send (evb_t ev)
     }
   }
 
+  // Handle Errors
+  if (httpconst::is_error (_status)) {
+    if (_ok_clnt && (svc = _ok_clnt->get_oksrvc ())) {
+      twait { svc->geterr (_status, _error_str, vers, gz, mkevent (rsp)); }
+    } else {
+      ok = false;
+    }
 
+  } else if (!rsp) {
+   
+    bool head (false);
+
+    head = (req && req->hdr_cr ().mthd == HTTP_MTHD_HEAD);
+
+    if (head) { gz = false; }
+    if (_body) { _body->to_strbuf (&body_buf, gz); }
+
+    size_t contlen = body_buf.tosuio ()->resid ();
+
+    hra.set_gzip (false);
+    set_attributes (&hra);
+
+    if (head) {
+      rsp = New refcounted<http_response_head_t> (contlen, hra);
+    } else {
+      rsp = New refcounted<http_response_ok_t> (body_buf, hra);
+    }
+  }
+
+  ev->trigger (ok);
 }
 
 //-----------------------------------------------------------------------
@@ -300,6 +360,16 @@ okclnt3_t::cv_t::poke ()
   } else {
     _go = true;
   }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<ahttpcon>
+okclnt3_t::resp_t::con ()
+{
+  ptr<ahttpcon> ret;
+  if (_ok_clnt) { ret = _ok_clnt->con (); }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

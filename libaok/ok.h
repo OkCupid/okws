@@ -360,6 +360,9 @@ public:
   virtual void fixup_response (ptr<http_response_t> rsp) {}
   list_entry<okclnt_interface_t> lnk;
 
+  virtual oksrvc_t *get_oksrvc () { return oksrvc; }
+  virtual const oksrvc_t *get_oksrvc () const { return oksrvc; }
+
 protected:
   oksrvc_t *oksrvc;
 };

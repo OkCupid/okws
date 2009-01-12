@@ -20,8 +20,11 @@ const char *rfc_date_fmt (rfc_number_t rfc)
 
 //-----------------------------------------------------------------------
 
-bool 
-http_is_redirect (int status)
-{
-  return (status >= 300 && status < 400);
-}
+namespace httpconst {
+
+  bool is_redirect (int status) { return (status >= 300 && status < 400); }
+  bool is_error (int status) { return (status >= 400); }
+
+};
+
+//-----------------------------------------------------------------------

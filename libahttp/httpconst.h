@@ -70,6 +70,10 @@ typedef enum {
 } rfc_number_t;
 
 const char *rfc_date_fmt (rfc_number_t rfc);
-bool http_is_redirect (int status);
+
+namespace httpconst {
+  bool is_redirect (int status);
+  bool is_error (int status);
+};
 
 #endif /* _LIBAHTTP_HTTPCONST */

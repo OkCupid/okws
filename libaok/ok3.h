@@ -54,9 +54,12 @@ public:
 
     //-----------------------------------------------------------------------
 
-    void error (int status) { reply (status, NULL, NULL); }
-    void redirect (int status, str u) { reply (status, NULL, u); }
-    void reply (int status, ptr<compressible_t> body, str redir_url);
+    void error (int status, str s = NULL) { reply (status, NULL, NULL, s); }
+    void redirect (int status, str u) { reply (status, NULL, u, NULL); }
+    void ok (int status, ptr<compressible_t> body) { reply (status, body); }
+
+    void reply (int status, ptr<compressible_t> body, 
+		str url = NULL, str es = NULL);
 
     //-----------------------------------------------------------------------
 
@@ -74,6 +77,10 @@ public:
 
     //-----------------------------------------------------------------------
 
+    void set_attributes (http_resp_attributes_t *hra);
+
+    //-----------------------------------------------------------------------
+
     void mark_defunct () { _ok_clnt = NULL; }
     bool is_ready () const { return _replied; }
     void send (evb_t ev, CLOSURE);
@@ -82,6 +89,8 @@ public:
 
     ptr<req_t> req () { return _req; }
     int status () const { return _status; }
+    bool do_gzip () const;
+    ptr<ahttpcon> con ();
 
     //-----------------------------------------------------------------------
 
@@ -101,6 +110,7 @@ public:
     int _status;
     ptr<compressible_t> _body;
     str _redir_url;
+    str _error_str;
 
     ptr<vec<http_hdr_field_t> > _hdr_fields;
 
@@ -128,6 +138,7 @@ public:
   void set_localizer (ptr<const pub_localizer_t> l);
   ptr<pub2::ok_iface_t> pub2 ();
   ptr<pub2::ok_iface_t> pub2_local ();
+  ptr<ahttpcon> con () { return _x; }
 
   //------------------------------------------------------------------------
 
