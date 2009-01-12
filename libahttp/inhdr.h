@@ -89,7 +89,9 @@ public:
       url (u), 
       cookie (c), 
       state (INHDRST_START),
-      _conn_mode (HTTP_CONN_NONE) {}
+      _conn_mode (HTTP_CONN_NONE),
+      _reqno (0),
+      _pipeline_eof_ok (false) {}
 
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
@@ -97,11 +99,14 @@ public:
   inline str get_mthd_str () const { return tmthd; }
   inline str get_vers_str () const { return vers; }
   http_conn_mode_t get_conn_mode () const;
-  
+  inline u_int get_reqno () const { return _reqno; }
+
   http_method_t mthd;  // method code
   int contlen;     // content-length size
 
   void set_url (cgi_t *u) { url = u; }
+  void set_reqno (u_int i, bool pipelining, htpv_t prev_vers);
+  bool seek_pipeline_eof () const { return _pipeline_eof_ok; }
 
 protected:
   void parse_guts ();
@@ -118,6 +123,8 @@ protected:
   str line1;        // first line of the HTTP req
 
   http_conn_mode_t _conn_mode;
+  u_int _reqno;     // serial # of this request within an HTTP/1.1 pipeline
+  bool _pipeline_eof_ok;
 };
 
 

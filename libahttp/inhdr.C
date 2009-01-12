@@ -152,6 +152,14 @@ http_inhdr_t::parse_guts ()
     break;
   }
 
+  if (status == HTTP_BAD_REQUEST && 
+      r == ABUF_EOF && 
+      state == INHDRST_START && 
+      seek_pipeline_eof ()) {
+
+    status = HTTP_PIPELINE_EOF;
+  }
+
   if (status == HTTP_OK)
     fixup ();
   finish_parse (status);
@@ -212,5 +220,15 @@ http_inhdr_t::takes_gzip () const
 http_conn_mode_t 
 http_inhdr_t::get_conn_mode () const
 { return _conn_mode; }
+
+//-----------------------------------------------------------------------
+
+void
+http_inhdr_t::set_reqno (u_int i, bool pipelining, htpv_t prev_vers)
+{
+  _reqno = i;
+  _pipeline_eof_ok = (i > 1 && pipelining && prev_vers == 1);
+}
+
 
 //-----------------------------------------------------------------------

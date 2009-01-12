@@ -5,8 +5,12 @@
 
 //-----------------------------------------------------------------------
 
-okclnt3_t::req_t::req_t (ptr<ahttpcon> x, u_int to)
-  : http_parser_cgi_t (x, to) {}
+okclnt3_t::req_t::req_t (ptr<ahttpcon> x, u_int reqno, htpv_t prev_vers, 
+			 u_int to)
+  : http_parser_cgi_t (x, to) 
+{
+  hdr.set_reqno (reqno, true, prev_vers);
+}
 
 //-----------------------------------------------------------------------
 
@@ -162,6 +166,8 @@ okclnt3_t::serve_T ()
     ptr<okclnt3_t::req_t> req;
     int status;
     rendezvous_t<> rv (__FILE__, __LINE__);
+    u_int reqno (1);
+    htpv_t prev (0);
   }
 
   output_loop (ok_clnt_timeout, mkevent (rv));
@@ -169,13 +175,16 @@ okclnt3_t::serve_T ()
   if (go) go = check_ssl ();
 
   while (go) {
-    req = New refcounted<req_t> (_x, ok_clnt_timeout);
+    req = New refcounted<req_t> (_x, reqno, prev, ok_clnt_timeout);
     twait { req->parse (mkevent (status, go)); }
+
     if (status == HTTP_OK) {
+      prev = req->http_vers ();
       process (req, alloc_resp (req), mkevent (rv));
-    } else {
+    } else if (status != HTTP_PIPELINE_EOF) {
       error (status);
     }
+
   }
 
   while (rv.need_wait ())
@@ -315,7 +324,10 @@ okclnt3_t::resp_t::send (evb_t ev)
     }
 
   } else if (!rsp) {
-   
+
+    // Handle the case in which the response is OK to send out,
+    // but the response must be generated...
+
     bool head (false);
     ssize_t prelen;
     
@@ -338,15 +350,13 @@ okclnt3_t::resp_t::send (evb_t ev)
       rsp = New refcounted<http_response_ok_t> (body_buf, hra);
     }
     if (prelen > 0) { rsp->set_inflated_len (prelen); }
+
   }
 
   // now make a final pass
   fixup_response (rsp);
   if (_uid_set) rsp->set_uid (_uid);
-
-  if (!httpconst::is_error (_status)) {
-    fixup_cookies (rsp);
-  }
+  if (!httpconst::is_error (_status)) { fixup_cookies (rsp); }
 
   svc->log (x, inhdrs, rsp);
 

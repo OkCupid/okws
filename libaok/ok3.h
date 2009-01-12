@@ -32,7 +32,7 @@ public:
 
   class req_t : public http_parser_cgi_t, public virtual refcount {
   public:
-    req_t (ptr<ahttpcon> x, u_int to);
+    req_t (ptr<ahttpcon> x, u_int rn, htpv_t prev_vers, u_int to);
     ~req_t ();
 
     typedef event<int, bool>::ref parse_ev_t;
@@ -43,6 +43,8 @@ public:
 
     void set_union_cgi_mode (bool b)
     { http_parser_cgi_t::set_union_mode (b); }
+
+    htpv_t http_vers () const { return hdr.get_vers (); }
   };
 
   //------------------------------------------------------------------------

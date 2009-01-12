@@ -105,6 +105,7 @@ public:
   inline logbuf_t &uid (u_int64_t i) { return put (i); }
   inline logbuf_t &inflated_len (size_t l) { return put ((unsigned int)l); }
   inline logbuf_t &custom2 (const str &s) { return bcpy (s); }
+  inline logbuf_t &reqno (u_int n) { return put (n); }
 
   inline logbuf_t &bcpy (const char *c, u_int len);
   inline logbuf_t &qcpy (const char *c, u_int len);
