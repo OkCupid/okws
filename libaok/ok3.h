@@ -49,7 +49,7 @@ public:
 
   class resp_t : public virtual refcount {
   public:
-    resp_t (okclnt3_t *o);
+    resp_t (okclnt3_t *o, ptr<req_t> q);
     ~resp_t ();
 
     //-----------------------------------------------------------------------
@@ -76,7 +76,12 @@ public:
 
     void mark_defunct () { _ok_clnt = NULL; }
     bool is_ready () const { return _replied; }
-    void send (evb_t ev);
+    void send (evb_t ev, CLOSURE);
+
+    //-----------------------------------------------------------------------
+
+    ptr<req_t> req () { return _req; }
+    int status () const { return _status; }
 
     //-----------------------------------------------------------------------
 
@@ -98,6 +103,8 @@ public:
     str _redir_url;
 
     ptr<vec<http_hdr_field_t> > _hdr_fields;
+
+    ptr<req_t> _req;
   };
 
   //------------------------------------------------------------------------
@@ -139,7 +146,7 @@ protected:
 
   //-----------------------------------------------------------------------
   
-  ptr<resp_t> alloc_resp ();
+  ptr<resp_t> alloc_resp (ptr<req_t> r = NULL);
   bool check_ssl ();
   void redirect (int status, const str &u);
   void error (int status);

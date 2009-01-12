@@ -17,3 +17,11 @@ const char *rfc_date_fmt (rfc_number_t rfc)
   }
   return out;
 }
+
+//-----------------------------------------------------------------------
+
+bool 
+http_is_redirect (int status)
+{
+  return (status >= 300 && status < 400);
+}

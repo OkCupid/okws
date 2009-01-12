@@ -117,6 +117,7 @@ public:
   void get_others (cbs cb);
 
   void set_version (htpv_t v) { _version = v; }
+  void set_status (int i) { _status = i; }
   void set_content_type (const str &s) { _content_type = s; }
   void set_cache_control (const str &s) { _cache_control = s; }
   void set_expires (const str &s) { _expires = s; }

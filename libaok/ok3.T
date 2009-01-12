@@ -20,13 +20,14 @@ okclnt3_t::resp_t::~resp_t ()
 
 //-----------------------------------------------------------------------
 
-okclnt3_t::resp_t::resp_t (okclnt3_t *o)
+okclnt3_t::resp_t::resp_t (okclnt3_t *o, ptr<req_t> q)
   : _ok_clnt (o),
     _uid (0),
     _uid_set (false), 
     _rsp_gzip (false),
     _sent (false),
-    _replied (false) {}
+    _replied (false),
+    _req (q) {}
 
 //-----------------------------------------------------------------------
 
@@ -143,9 +144,9 @@ okclnt3_t::check_ssl ()
 //-----------------------------------------------------------------------
 
 ptr<okclnt3_t::resp_t>
-okclnt3_t::alloc_resp ()
+okclnt3_t::alloc_resp (ptr<req_t> req)
 {
-  ptr<resp_t> r = New refcounted<resp_t> (this);
+  ptr<resp_t> r = New refcounted<resp_t> (this, req);
   _resps.push_back (r);
   return r;
 }
@@ -170,7 +171,7 @@ okclnt3_t::serve_T ()
     req = New refcounted<req_t> (_x, ok_clnt_timeout);
     twait { req->parse (mkevent (status, go)); }
     if (status == HTTP_OK) {
-      process (req, alloc_resp (), mkevent (rv));
+      process (req, alloc_resp (req), mkevent (rv));
     } else {
       error (status);
     }
@@ -240,9 +241,27 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
 
 //-----------------------------------------------------------------------
 
-void
+tamed void
 okclnt3_t::resp_t::send (evb_t ev)
 {
+  tvars {
+    ptr<http_response_t> rsp;
+    holdvar ptr<okclnt3_t::req_t> req (_self->req ());
+    holdvar int vers (req ? req->hdr_cr ().get_vers () : 0);
+    http_resp_attributes_t hra (_self->status (), vers);
+  }
+
+  hra.set_others (_hdr_fields);
+
+  if (_redir_url)  {
+    if (http_is_redirect (_status)) {
+      rsp = New refcounted<http_response_redirect_t> (_redir_url, hra);
+    } else {
+      _status = HTTP_SRV_ERROR;
+      hra.set_status (_status);
+    }
+  }
+
 
 }
 

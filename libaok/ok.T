@@ -1096,7 +1096,7 @@ void
 okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
   // do cookies
-  for (u_int i = 0; i < outcookies.size(); i++) {
+  for (size_t i = 0; i < outcookies.size(); i++) {
     rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
   }
 
