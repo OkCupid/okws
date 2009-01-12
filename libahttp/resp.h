@@ -103,7 +103,8 @@ public:
   http_resp_attributes_t (u_int s, htpv_t v) : 
     _status (s), _version (v), _content_type ("text/html"), 
     _cache_control ("private"), 
-    _gzip (false) {}
+    _gzip (false),
+    _connection ("closed") {}
 
   u_int get_status () const { return _status; }
   htpv_t get_version () const { return _version; }
@@ -113,6 +114,7 @@ public:
   str get_content_disposition () const { return _contdisp; }
   bool get_gzip () const { return _gzip; }
   bool get_others (vec<http_hdr_field_t> *output);
+  str get_connection () const { return _connection;  }
 
   void get_others (cbs cb);
 
@@ -124,6 +126,7 @@ public:
   void set_gzip (bool b) { _gzip = b; }
   void set_content_disposition (const str s) { _contdisp = s; }
   void set_others (ptr<vec<http_hdr_field_t> > p ) { _others = p; }
+  void set_connection (str s) { _connection = s; }
 
   u_int _status;
   htpv_t _version;
@@ -132,6 +135,7 @@ public:
   str _expires;
   str _contdisp;
   bool _gzip;
+  str _connection;
 
   ptr<vec<http_hdr_field_t> > _others;
 
@@ -157,7 +161,7 @@ public:
   void gzip ();
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", global_okws_server_label); }
-  void add_closed () { add ("Connection", "close"); }
+  void add_connection ();
 protected:
   http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;

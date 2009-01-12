@@ -92,7 +92,7 @@ http_resp_header_t::fill (bool gz)
 {
   add_date ();
   add ("Content-Type", attributes.get_content_type ());
-  add_closed ();
+  add_connection ();
   add ("Cache-control", attributes.get_cache_control ());
   str tmp;
   if ((tmp = attributes.get_expires ()))  
@@ -108,10 +108,16 @@ http_resp_header_t::fill (bool gz)
 }
 
 void
+http_resp_header_t::add_connection ()
+{
+  add ("Connection", attributes.get_connection ());
+}
+
+void
 http_resp_header_redirect_t::fill (const str &s)
 {
   add_date ();
-  add_closed ();
+  add_connection ();
   add_server ();
   add ("Location", s);
 

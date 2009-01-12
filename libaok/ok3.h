@@ -78,6 +78,8 @@ public:
     //-----------------------------------------------------------------------
 
     void set_attributes (http_resp_attributes_t *hra);
+    void fixup_cookies (ptr<http_response_t> rsp);
+    void fixup_response (ptr<http_response_t> rsp);
 
     //-----------------------------------------------------------------------
 
@@ -91,6 +93,7 @@ public:
     int status () const { return _status; }
     bool do_gzip () const;
     ptr<ahttpcon> con ();
+    oksrvc_t *svc ();
 
     //-----------------------------------------------------------------------
 

@@ -263,24 +263,37 @@ okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
 }
 //-----------------------------------------------------------------------
 
+oksrvc_t *
+okclnt3_t::resp_t::svc ()
+{
+  oksrvc_t *ret = NULL;
+  if (_ok_clnt) ret = _ok_clnt->get_oksrvc ();
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt3_t::resp_t::send (evb_t ev)
 {
   tvars {
     ptr<http_response_t> rsp;
     ptr<okclnt3_t::req_t> req (_self->req ());
+    http_inhdr_t *inhdrs (req ? req->hdr_p () : NULL);
     int vers (req ? req->hdr_cr ().get_vers () : 0);
     http_resp_attributes_t hra (_self->status (), vers);
     bool gz (_self->do_gzip ());
     bool ok (false);
-    oksrvc_t *svc;
+    oksrvc_t *svc (_self->svc ());
     strbuf body_buf;
+    ptr<ahttpcon> x (_self->con ());
   }
 
   hra.set_others (_hdr_fields);
 
-  if (!con () || con ()->closed ()) {
+  if (!x || x->closed ()) {
     _status = HTTP_CLIENT_EOF;
+    ok = false;
   }
 
   // Handle Redirects
@@ -295,7 +308,7 @@ okclnt3_t::resp_t::send (evb_t ev)
 
   // Handle Errors
   if (httpconst::is_error (_status)) {
-    if (_ok_clnt && (svc = _ok_clnt->get_oksrvc ())) {
+    if (svc) {
       twait { svc->geterr (_status, _error_str, vers, gz, mkevent (rsp)); }
     } else {
       ok = false;
@@ -304,11 +317,15 @@ okclnt3_t::resp_t::send (evb_t ev)
   } else if (!rsp) {
    
     bool head (false);
-
+    ssize_t prelen;
+    
     head = (req && req->hdr_cr ().mthd == HTTP_MTHD_HEAD);
 
     if (head) { gz = false; }
-    if (_body) { _body->to_strbuf (&body_buf, gz); }
+    if (_body) { 
+      _body->to_strbuf (&body_buf, gz); 
+      prelen = gz ? _body->inflated_len () : -1;
+    }
 
     size_t contlen = body_buf.tosuio ()->resid ();
 
@@ -320,6 +337,21 @@ okclnt3_t::resp_t::send (evb_t ev)
     } else {
       rsp = New refcounted<http_response_ok_t> (body_buf, hra);
     }
+    if (prelen > 0) { rsp->set_inflated_len (prelen); }
+  }
+
+  // now make a final pass
+  fixup_response (rsp);
+  if (_uid_set) rsp->set_uid (_uid);
+
+  if (!httpconst::is_error (_status)) {
+    fixup_cookies (rsp);
+  }
+
+  svc->log (x, inhdrs, rsp);
+
+  if (x && ok) {
+    twait { rsp->send (x, mkevent ()); }
   }
 
   ev->trigger (ok);
@@ -370,6 +402,24 @@ okclnt3_t::resp_t::con ()
   ptr<ahttpcon> ret;
   if (_ok_clnt) { ret = _ok_clnt->con (); }
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::resp_t::fixup_cookies (ptr<http_response_t> rsp)
+{
+  for (size_t i = 0; i < _outcookies.size (); i++) {
+    rsp->header.add (http_hdr_cookie_t (_outcookies[i]->to_str ()));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::resp_t::fixup_response (ptr<http_response_t> rsp)
+{
+  if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
 }
 
 //-----------------------------------------------------------------------
