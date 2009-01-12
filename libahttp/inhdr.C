@@ -163,6 +163,12 @@ http_inhdr_t::fixup ()
   if (!lookup ("content-length", &contlen))
     contlen = -1;
   mthd = methodmap.lookup (tmthd);
+  
+  str tmp;
+
+  _conn_mode = 
+    (lookup ("connection", &tmp) && cicmp (tmp, "keep-alive")) ? 
+    HTTP_CONN_KEEPALIVE : HTTP_CONN_CLOSED;
 }
 
 methodmap_t::methodmap_t ()
@@ -201,3 +207,10 @@ http_inhdr_t::takes_gzip () const
 	  && !netscape4_rxx.search (ua));
 }
 
+//-----------------------------------------------------------------------
+
+http_conn_mode_t 
+http_inhdr_t::get_conn_mode () const
+{ return _conn_mode; }
+
+//-----------------------------------------------------------------------

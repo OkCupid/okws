@@ -71,19 +71,33 @@ private:
 
 extern methodmap_t methodmap;
 
+//-----------------------------------------------------------------------
+
+typedef enum { HTTP_CONN_NONE = 0,
+	       HTTP_CONN_CLOSED = 1,
+	       HTTP_CONN_KEEPALIVE = 2 } http_conn_mode_t;
+
+//-----------------------------------------------------------------------
+
 class http_inhdr_t : public http_hdr_t, public pairtab_t<> {
 public:
   http_inhdr_t (abuf_t *a, cgi_t *u = NULL, cgi_t *c = NULL, 
 		size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
-    : async_parser_t (a), http_hdr_t (a, bfln, b),
-      contlen (-1), url (u), cookie (c), state (INHDRST_START) {}
+    : async_parser_t (a), 
+      http_hdr_t (a, bfln, b),
+      contlen (-1), 
+      url (u), 
+      cookie (c), 
+      state (INHDRST_START),
+      _conn_mode (HTTP_CONN_NONE) {}
 
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
   bool takes_gzip () const;
   inline str get_mthd_str () const { return tmthd; }
   inline str get_vers_str () const { return vers; }
-
+  http_conn_mode_t get_conn_mode () const;
+  
   http_method_t mthd;  // method code
   int contlen;     // content-length size
 
@@ -102,6 +116,8 @@ protected:
   str target;       // URI given as target
   str vers;         // HTTP version
   str line1;        // first line of the HTTP req
+
+  http_conn_mode_t _conn_mode;
 };
 
 
