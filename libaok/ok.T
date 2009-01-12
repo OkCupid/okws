@@ -867,8 +867,10 @@ okclnt_base_t::serve_T ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
-okclnt_base_t::redirect (const str &l, int ht_in, evv_t::ptr ev)
+okclnt_base_t::redirect_T (const str &l, int ht_in, evv_t::ptr ev)
 {
   tvars {
     holdvar int ht (ht_in > 0 ? ht_in : HTTP_MOVEDPERM);
@@ -887,6 +889,8 @@ okclnt_base_t::redirect (const str &l, int ht_in, evv_t::ptr ev)
   }
   send_complete ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
@@ -1027,12 +1031,6 @@ bool
 okclnt_base_t::do_gzip () const
 {
   return hdr_cr ().takes_gzip () && ok_gzip && rsp_gzip;
-}
-
-void
-okclnt_base_t::output (compressible_t &b, evv_t::ptr ev)
-{
-  output (&b, ev);
 }
 
 //-----------------------------------------------------------------------
@@ -1587,6 +1585,22 @@ void do_syscall_stats ()
     global_syscall_stats->dump (diff);
     global_syscall_stats->clear ();
   }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::output (compressible_t &b, evv_t::ptr ev)
+{
+  output (&b, ev);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::okreply (ptr<compressible_t> b, evv_t::ptr ev)
+{
+  output (b, ev);
 }
 
 //-----------------------------------------------------------------------

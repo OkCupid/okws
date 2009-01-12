@@ -365,6 +365,13 @@ okclnt3_t::resp_t::send (evb_t ev)
   }
 
   ev->trigger (ok);
+
+  if (_release_ev) {
+    evv_t ev (_release_ev);
+    _release_ev = NULL;
+    ev->trigger ();
+  }
+
 }
 
 //-----------------------------------------------------------------------
@@ -440,6 +447,33 @@ okclnt3_t::resp_t::set_hdr_field (const str &k, const str &v)
   if (!_hdr_fields)
     _hdr_fields = New refcounted<vec<http_hdr_field_t> > ();
   _hdr_fields->push_back (http_hdr_field_t (k,v));
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::rrpair_t::okreply (ptr<compressible_t> c, evv_t::ptr ev)
+{ 
+  _resp->reply (HTTP_OK, c); 
+  _resp->set_release_ev (ev);
+} 
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::rrpair_t::redirect (const str &u, int s, evv_t::ptr ev)
+{
+  _resp->redirect (s > 0 ? s : HTTP_MOVEDPERM, u);
+  _resp->set_release_ev (ev);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::rrpair_t::error (int st, const str &s, bool dummy, evv_t::ptr ev)
+{
+  _resp->error (st, s);
+  _resp->set_release_ev (ev);
 }
 
 //-----------------------------------------------------------------------

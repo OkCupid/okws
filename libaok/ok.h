@@ -369,17 +369,33 @@ protected:
 
 //-----------------------------------------------------------------------
 
-class okresp_interface_t {
+//
+// OKRRP = OK Request/Response Pair
+//
+class okrrp_interface_t {
 public:
-  okresp_interface_t () {}
-  virtual ~okresp_interface_t () {}
+  okrrp_interface_t () {}
+  virtual ~okrrp_interface_t () {}
 
+  // manipulate output parameters
   virtual void set_custom_log2 (const str &log) = 0;
   virtual void disable_gzip () = 0;
   virtual void set_expires (const str &s) = 0;
   virtual void set_hdr_field (const str &k, const str &v) = 0;
   virtual void set_cache_control (const str &s) = 0;
   virtual void set_content_type (const str &s) = 0;
+
+  // access input parameters
+  virtual const http_inhdr_t &hdr_cr () const = 0;
+  virtual http_inhdr_t *hdr_p () = 0;
+
+  // output paths...
+  virtual void okreply (ptr<compressible_t> c, evv_t::ptr ev = NULL) = 0;
+  virtual void redirect (const str &s, int status = -1,
+			 evv_t::ptr ev = NULL) = 0;
+  virtual void error (int n, const str &s = NULL, 
+		      bool do_send_complete = true, evv_t::ptr ev = NULL) = 0;
+
 };
 
 //-----------------------------------------------------------------------
@@ -399,7 +415,7 @@ nclntcb_t;
 //
 class okclnt_base_t 
   : public okclnt_interface_t, 
-    public okresp_interface_t {
+    public okrrp_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
     okclnt_interface_t (o),
@@ -426,11 +442,14 @@ public:
 
   virtual void process () = 0;
   virtual bool pre_process () { return true; }
-  virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
   virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
 
+  void okreply (ptr<compressible_t> p, evv_t::ptr ev = NULL);
+  virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
+
   virtual void redirect (const str &s, int status = -1,
-			 evv_t::ptr ev = NULL, CLOSURE);
+			 evv_t::ptr ev = NULL)
+  { redirect_T (s, status, ev); }
 
   virtual void send_complete () { delete this; }
   virtual void serve_complete () {}
@@ -481,7 +500,6 @@ public:
 
   // The following 2 ought be protected, but are not to handle
   // tame warts.
-  virtual const http_inhdr_t &hdr_cr () const = 0;
   bool do_gzip () const;
 
   void fixup_response (ptr<http_response_t> rsp);
@@ -491,6 +509,7 @@ private:
   void output_fragment_T (str s, CLOSURE);
   void error_T (int n, const str &s, bool complete, evv_t::ptr ev, CLOSURE);
   void output_T (compressible_t *b, evv_t::ptr ev, CLOSURE);
+  void redirect_T (const str &s, int status, evv_t::ptr ev, CLOSURE);
 
   ref<ahttpcon> _client_con;
 
@@ -498,7 +517,6 @@ protected:
   void set_attributes (http_resp_attributes_t *hra);
 
   virtual void parse (cbi cb) = 0;
-  virtual http_inhdr_t *hdr_p () = 0;
   bool output_frag_prepare ();
   
   cbv::ptr cb;

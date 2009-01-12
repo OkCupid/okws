@@ -49,9 +49,7 @@ public:
 
   //------------------------------------------------------------------------
 
-  class resp_t 
-    : public virtual refcount, 
-      public okresp_interface_t {
+  class resp_t : public virtual refcount {
   public:
     resp_t (okclnt3_t *o, ptr<req_t> q);
     ~resp_t ();
@@ -64,6 +62,8 @@ public:
 
     void reply (int status, ptr<compressible_t> body, 
 		str url = NULL, str es = NULL);
+
+    void set_release_ev (evv_t::ptr ev) { _release_ev = ev; }
 
     //-----------------------------------------------------------------------
 
@@ -123,6 +123,46 @@ public:
     ptr<vec<http_hdr_field_t> > _hdr_fields;
 
     ptr<req_t> _req;
+    evv_t::ptr _release_ev;
+  };
+
+  //------------------------------------------------------------------------
+
+  class rrpair_t : public okrrp_interface_t  {
+  public:
+    rrpair_t (ptr<req_t> rq, ptr<resp_t> resp)
+      : _req (rq), _resp (resp) {}
+    
+    void set_custom_log2 (const str &log) { _resp->set_custom_log2 (log); }
+    void disable_gzip () { _resp->disable_gzip (); }
+    void set_expires (const str &s)  { _resp->set_expires (s); }
+
+    void set_hdr_field (const str &k, const str &v) 
+    { _resp->set_hdr_field (k, v); }
+
+    void set_cache_control (const str &s) { _resp->set_cache_control (s); }
+    void set_content_type (const str &s) { _resp->set_content_type (s); }
+
+    // access input parameters
+    const http_inhdr_t &hdr_cr () const { return _req->hdr_cr (); }
+    virtual http_inhdr_t *hdr_p () { return _req->hdr_p (); }
+
+    // output paths...
+    void okreply (ptr<compressible_t> c, evv_t::ptr ev = NULL);
+    void redirect (const str &s, int status = -1, evv_t::ptr ev = NULL);
+    void error (int n, const str &s = NULL, bool dm = true, 
+		evv_t::ptr ev = NULL);
+
+    void process (evv_t ev, CLOSURE);
+
+  private:
+
+    void output_T (compressible_t *c, evv_t::ptr ev, CLOSURE);
+    void redirect_T (const str &s, int status, evv_t::ptr ev, CLOSURE);
+    void error_T (int n, const str &s, bool dm, evv_t::ptr ev, CLOSURE);
+
+    ptr<req_t> _req;
+    ptr<resp_t> _resp;
   };
 
   //------------------------------------------------------------------------
@@ -133,6 +173,9 @@ public:
   //------------------------------------------------------------------------
 
   virtual void process (ptr<req_t> req, ptr<resp_t> resp, evv_t ev) = 0;
+
+  // convert to a standard request that looks like HTTP/1.0
+  ptr<rrpair_t> convert (ptr<req_t> req, ptr<resp_t> resp);
 
   //------------------------------------------------------------------------
 
@@ -153,6 +196,7 @@ public:
   void set_union_cgi_mode (bool b) { _union_cgi_mode = b; }
   void set_demux_data (ptr<demux_data_t> d)  { _demux_data = d; }
   virtual void serve () { serve_T (); }
+
 
   //------------------------------------------------------------------------
 
