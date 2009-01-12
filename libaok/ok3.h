@@ -49,7 +49,9 @@ public:
 
   //------------------------------------------------------------------------
 
-  class resp_t : public virtual refcount {
+  class resp_t 
+    : public virtual refcount, 
+      public okresp_interface_t {
   public:
     resp_t (okclnt3_t *o, ptr<req_t> q);
     ~resp_t ();
@@ -76,6 +78,7 @@ public:
     void set_content_disposition (const str &s) { _cont_disp = s; }
     void disable_gzip () { _rsp_gzip = false; }
     void set_custom_log2 (const str &s) { _custom_log2 = s; }
+    void set_hdr_field (const str &k, const str &v);
 
     //-----------------------------------------------------------------------
 

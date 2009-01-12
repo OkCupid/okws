@@ -369,6 +369,21 @@ protected:
 
 //-----------------------------------------------------------------------
 
+class okresp_interface_t {
+public:
+  okresp_interface_t () {}
+  virtual ~okresp_interface_t () {}
+
+  virtual void set_custom_log2 (const str &log) = 0;
+  virtual void disable_gzip () = 0;
+  virtual void set_expires (const str &s) = 0;
+  virtual void set_hdr_field (const str &k, const str &v) = 0;
+  virtual void set_cache_control (const str &s) = 0;
+  virtual void set_content_type (const str &s) = 0;
+};
+
+//-----------------------------------------------------------------------
+
 typedef callback<okclnt_interface_t *, ptr<ahttpcon>, oksrvc_t *>::ref 
 nclntcb_t;
 
@@ -382,7 +397,9 @@ nclntcb_t;
 // specify the amount and type of parsing done in response to
 // a request, by implementing the virtual parse() method.
 //
-class okclnt_base_t : public okclnt_interface_t {
+class okclnt_base_t 
+  : public okclnt_interface_t, 
+    public okresp_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
     okclnt_interface_t (o),
