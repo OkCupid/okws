@@ -147,7 +147,7 @@ protected:
   //-----------------------------------------------------------------------
 
   void poke ();
-  void output_loop (evv_t ev, CLOSURE);
+  void output_loop (int time_budget, evv_t ev, CLOSURE);
   void finish_output (evv_t ev);
   void await_poke (evv_t ev);
 

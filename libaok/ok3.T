@@ -1,6 +1,7 @@
 // -*-c++-*-
 
 #include "ok3.h"
+#include "tame_connectors.h"
 
 //-----------------------------------------------------------------------
 
@@ -151,35 +152,6 @@ okclnt3_t::alloc_resp ()
 
 //-----------------------------------------------------------------------
 
-typedef enum { SRV_OUTPUT, SRV_PROCESS, SRV_TIMEOUT } srv_typ_t;
-
-//-----------------------------------------------------------------------
-
-tamed static void
-timed_flush (rendezvous_t<srv_typ_t> *rv, u_int to, evv_t ev)
-{
-  tvars {
-    srv_typ_t which;
-    timecb_t *tcb (NULL);
-  }
-  
-  tcb = delaycb (ok_clnt_timeout, 0, mkevent (*rv, SRV_TIMEOUT));
-  // wait for the output loop to flush completely
-
-  while (tcb && rv->n_triggers_left () > 1) {
-    twait (*rv, which);
-    if (which == SRV_TIMEOUT) { tcb = NULL; }
-  }
-
-  // either timer or useful event will be left, either way...
-  rv->cancel ();
-
-  if (tcb) timecb_remove (tcb);
-  ev->trigger ();
-}
-
-//-----------------------------------------------------------------------
-
 tamed void
 okclnt3_t::serve_T ()
 {
@@ -187,10 +159,10 @@ okclnt3_t::serve_T ()
     bool go (true);
     ptr<okclnt3_t::req_t> req;
     int status;
-    rendezvous_t<srv_typ_t> rv (__FILE__, __LINE__);
+    rendezvous_t<> rv (__FILE__, __LINE__);
   }
 
-  output_loop (mkevent (rv, SRV_OUTPUT));
+  output_loop (ok_clnt_timeout, mkevent (rv));
 
   if (go) go = check_ssl ();
 
@@ -198,16 +170,14 @@ okclnt3_t::serve_T ()
     req = New refcounted<req_t> (_x, ok_clnt_timeout);
     twait { req->parse (mkevent (status, go)); }
     if (status == HTTP_OK) {
-      process (req, alloc_resp (), mkevent (rv, SRV_PROCESS));
+      process (req, alloc_resp (), mkevent (rv));
     } else {
       error (status);
     }
   }
 
-  // XXX can still call delete this before all process() 
-  // children have triggered... need to think a little
-  // more about it...
-  twait { timed_flush (&rv, ok_clnt_timeout, mkevent ()); }
+  while (rv.need_wait ())
+    twait (rv);
 
   finish_serve ();
 }
@@ -230,21 +200,39 @@ okclnt3_t::req_t::parse (okclnt3_t::req_t::parse_ev_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-okclnt3_t::output_loop (evv_t ev)
+okclnt3_t::output_loop (int time_budget, evv_t ev)
 {
   tvars {
     ptr<okclnt3_t::resp_t> rsp;
     bool go (true);
+    outcome_t outc;
+    time_t start, stop;
   }
 
   twait { _output_cv.wait (mkevent ()); }
 
   while (go && _resps.size ()) {
+
     rsp = _resps.pop_front ();
     while (!rsp->is_ready ()) {
       twait { _output_cv.wait (mkevent ()); }
     }
-    twait { rsp->send (mkevent (go)); }
+
+    start = sfs_get_timenow ();
+    twait { 
+      rsp->send (connector::timeout (mkevent (go), time_budget, 0, &outc)); 
+    }
+    stop = sfs_get_timenow ();
+
+    // update the time budget for next time around....
+    time_budget = max<int> (1, time_budget - (stop - start));
+
+    if (outc == OUTCOME_TIMEDOUT) {
+      str i = _x->all_info ();
+      go = false;
+      warn << "timeout in send: " << i << "\n";
+    }
+
   }
 
   ev->trigger ();
