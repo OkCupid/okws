@@ -227,6 +227,7 @@ protected:
   vec<ptr<resp_t> > _resps;
 
   bool _union_cgi_mode;
+  bool _serving;
 
   //-----------------------------------------------------------------------
 

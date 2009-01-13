@@ -39,7 +39,8 @@ okclnt3_t::okclnt3_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to)
   : okclnt_interface_t (o),
     _x (xx),
     _timeout (to),
-    _union_cgi_mode (false) {}
+    _union_cgi_mode (false),
+    _serving (false) {}
 
 //-----------------------------------------------------------------------
 
@@ -162,7 +163,6 @@ tamed void
 okclnt3_t::serve_T ()
 {
   tvars {
-    bool go (true);
     ptr<okclnt3_t::req_t> req;
     int status;
     rendezvous_t<> rv (__FILE__, __LINE__);
@@ -170,13 +170,15 @@ okclnt3_t::serve_T ()
     htpv_t prev (0);
   }
 
+  _serving = true;
+
   output_loop (ok_clnt_timeout, mkevent (rv));
 
-  if (go) go = check_ssl ();
+  _serving = check_ssl ();
 
-  while (go) {
+  while (_serving) {
     req = New refcounted<req_t> (_x, reqno, prev, ok_clnt_timeout);
-    twait { req->parse (mkevent (status, go)); }
+    twait { req->parse (mkevent (status, _serving)); }
 
     if (status == HTTP_OK) {
       prev = req->http_vers ();
@@ -220,14 +222,12 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
     time_t start, stop;
   }
 
-  twait { _output_cv.wait (mkevent ()); }
+  while ((_serving || _resps.size ()) && go) {
 
-  while (go && _resps.size ()) {
-
-    rsp = _resps.pop_front ();
-    while (!rsp->is_ready ()) {
+    while (!(_resps.size () && _resps[0]->is_ready ())) {
       twait { _output_cv.wait (mkevent ()); }
     }
+    rsp = _resps.pop_front ();
 
     start = sfs_get_timenow ();
     twait { 
