@@ -206,7 +206,9 @@ okclnt3_t::req_t::parse (okclnt3_t::req_t::parse_ev_t ev)
   }
 
   twait { http_parser_cgi_t::parse (mkevent (status)); }
-  go = (status == HTTP_OK && hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE);
+  go = (status == HTTP_OK && 
+	hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE &&
+	hdr.get_vers () >= 1);
   ev->trigger (status, go);
 }
 
