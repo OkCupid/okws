@@ -127,7 +127,8 @@ main2 (int argc, char **argv)
   } else if (resp && resp->body ())
     aout << "\nbody: " << resp->body () << "\n";
 
-  twait { delaycb (0, 0, mkevent ()); }
+  // delay to find any bugz
+  twait { delaycb (2, 0, mkevent ()); }
 
   exit (0);
 }

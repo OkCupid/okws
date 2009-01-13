@@ -21,14 +21,14 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   con_t::con_t (int fd, SSL *ssl)
-    : _fd (fd), 
+    : _fd (tame::rcfd_t::alloc (fd)), 
       _ssl (ssl),
       _rbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _wbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _ok (true),
       _connected (false),
-      _rfd (fd, selread),
-      _wfd (fd, selwrite)
+      _rfd (tame::iofd_t::alloc (_fd, selread)),
+      _wfd (tame::iofd_t::alloc (_fd, selwrite))
   {
     unsigned long sl = 1;
     if (BIO_socket_ioctl (fd, FIONBIO, &sl) < 0) {
@@ -45,10 +45,6 @@ namespace okssl {
 
   con_t::~con_t ()
   {
-    if (_fd >= 0) {
-      close (_fd);
-      _fd = -1;
-    }
     SSL_free (_ssl);
   }
 
@@ -129,13 +125,13 @@ namespace okssl {
 	switch (err) {
 	case SSL_ERROR_WANT_READ:
 	  {
-	    twait { _rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    twait { _rfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	    go = (oc == OUTCOME_SUCC);
 	  }
 	  break;
 	case SSL_ERROR_WANT_WRITE:
 	  {
-	    twait { _wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    twait { _wfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	    go = (oc == OUTCOME_SUCC);
 	  }
 	  break;
@@ -175,7 +171,7 @@ namespace okssl {
     while (go) {
 
       if (need_read) {
-	twait { _rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	twait { _rfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	if (oc == OUTCOME_SUCC) { 
 	  SSL_read (_ssl, buf, 0);
 	  need_read = false;
@@ -183,7 +179,7 @@ namespace okssl {
 	  go = false;
 	}
       } else if (uio->resid () > 0 && wait_for_write) {
-	twait { _wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	twait { _wfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	wait_for_write = false;
 	go = (oc == OUTCOME_SUCC);
       }
@@ -258,11 +254,11 @@ namespace okssl {
 
     while (go) {
       if (need_write) {
-	twait { _wfd.on (mkevent ()); }
+	twait { _wfd->on (mkevent ()); }
 	SSL_write (_ssl, buf, 0);
       } else if (len > 0) {
 	if (wait_for_read) {
-	  twait { _rfd.on (mkevent ()); }
+	  twait { _rfd->on (mkevent ()); }
 	}
 	ret = SSL_read (_ssl, out, len);
 

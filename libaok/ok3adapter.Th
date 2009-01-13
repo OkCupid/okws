@@ -10,22 +10,22 @@
 //-----------------------------------------------------------------------
 
 template<class S, class V>
-class okclnt2_adaptor_t : public V, public okclnt2_t
+class okclnt2_adapter_t : public V, public okclnt2_t
 {
 public:
-  okclnt2_adaptor_t (ptr<ahttpcon> x, S *s, u_int to = 0)
+  okclnt2_adapter_t (ptr<ahttpcon> x, S *s, u_int to = 0)
     : okclnt2_t (x, s, to) {}
 
-  void process (proc_ev_t ev) { V::process_adaptor (ev); }
+  void process (proc_ev_t ev) { V::process_adapter (ev); }
 };
 
 //-----------------------------------------------------------------------
 
 template<class S, class V>
-class okclnt3_adaptor_t : public okclnt3_t
+class okclnt3_adapter_t : public okclnt3_t
 {
 public:
-  okclnt3_adaptor_t (ptr<ahttpcon> x, S *s, u_int to = 0)
+  okclnt3_adapter_t (ptr<ahttpcon> x, S *s, u_int to = 0)
     : okclnt3_t (x, s, to) {}
 
   void process (ptr<req_t> req, ptr<resp_t> resp, evv_t ev)
@@ -38,7 +38,7 @@ private:
 //-----------------------------------------------------------------------
 
 tamed template<class S, class V> void
-okclnt3_adaptor_t<S,V>::process_T (ptr<okclnt3_t::req_t> req,
+okclnt3_adapter_t<S,V>::process_T (ptr<okclnt3_t::req_t> req,
 				   ptr<okclnt3_t::resp_t> resp,
 				   evv_t ev)
 {
@@ -47,7 +47,7 @@ okclnt3_adaptor_t<S,V>::process_T (ptr<okclnt3_t::req_t> req,
     bool did_reply;
     int status;
   }
-  twait { rrp->process_adaptor (mkevent (did_reply, status)); }
+  twait { rrp->process_adapter (mkevent (did_reply, status)); }
   if (!did_reply) { resp->error (status); }
   ev->trigger ();
 }

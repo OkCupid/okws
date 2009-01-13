@@ -34,7 +34,7 @@ SUFFIXES = .C .T .h
 xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
-ok3adaptor.h: $(srcdir)/ok3adaptor.Th
+ok3adapter.h: $(srcdir)/ok3adapter.Th
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 ok.o:  ok.C okprot.h
@@ -54,18 +54,18 @@ xmlrpcsrv.C: xmlrpcsrv.h
 .PHONY: rpcclean tameclean
 
 tameclean:
-	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C ok3.C ok3adaptor.h
+	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C ok3.C ok3adapter.h
 
 rpcclean:
 	rm -f okprot.C okprot.h
 
 dist-hook:
 	cd $(distdir) && rm -f okprot.C okprot.h ok.C xmlrpcsrv.h \
-		xmlrpcsrv.C ok3.C ok3adaptor.h
+		xmlrpcsrv.C ok3.C ok3adapter.h
 
 EXTRA_DIST = .cvsignore ok.T okprot.x xmlrpcsrv.Th xmlrpcsrv.T \
-	ok3adaptor.Th
+	ok3adapter.Th
 CLEANFILES = core *.core *~ *.rpo okprot.C okprot.h ok.C \
-	xmlrpcsrv.C xmlrpcsrv.h ok3.C ok3adaptor.h
+	xmlrpcsrv.C xmlrpcsrv.h ok3.C ok3adapter.h
 
 MAINTAINERCLEANFILES = Makefile.in 
