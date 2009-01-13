@@ -292,7 +292,7 @@ okclnt3_t::resp_t::send (evb_t ev)
     int vers (req ? req->hdr_cr ().get_vers () : 0);
     http_resp_attributes_t hra (_self->status (), vers);
     bool gz (_self->do_gzip ());
-    bool ok (false);
+    bool ok (true);
     oksrvc_t *svc (_self->svc ());
     strbuf body_buf;
     ptr<ahttpcon> x (_self->con ());
