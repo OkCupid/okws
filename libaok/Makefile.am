@@ -16,7 +16,7 @@ libaok_la_SOURCES = \
 libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
-	oklocale.h ok3.h
+	oklocale.h ok3.h ok3adapter.h
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@
@@ -32,6 +32,9 @@ SUFFIXES = .C .T .h
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 xmlrpcsrv.h: $(srcdir)/xmlrpcsrv.Th
+	$(TAME) -o $@ $< || (rm -f $@ && false)
+
+ok3adaptor.h: $(srcdir)/ok3adaptor.Th
 	$(TAME) -o $@ $< || (rm -f $@ && false)
 
 ok.o:  ok.C okprot.h
@@ -51,17 +54,18 @@ xmlrpcsrv.C: xmlrpcsrv.h
 .PHONY: rpcclean tameclean
 
 tameclean:
-	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C ok3.C
+	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C ok3.C ok3adaptor.h
 
 rpcclean:
 	rm -f okprot.C okprot.h
 
 dist-hook:
 	cd $(distdir) && rm -f okprot.C okprot.h ok.C xmlrpcsrv.h \
-		xmlrpcsrv.C ok3.C
+		xmlrpcsrv.C ok3.C ok3adaptor.h
 
-EXTRA_DIST = .cvsignore ok.T okprot.x xmlrpcsrv.Th xmlrpcsrv.T
+EXTRA_DIST = .cvsignore ok.T okprot.x xmlrpcsrv.Th xmlrpcsrv.T \
+	ok3adaptor.Th
 CLEANFILES = core *.core *~ *.rpo okprot.C okprot.h ok.C \
-	xmlrpcsrv.C xmlrpcsrv.h ok3.C
+	xmlrpcsrv.C xmlrpcsrv.h ok3.C ok3adaptor.h
 
 MAINTAINERCLEANFILES = Makefile.in 
