@@ -128,7 +128,7 @@ public:
 
   //------------------------------------------------------------------------
 
-  class rrpair_t : public okrrp_interface_t  {
+  class rrpair_t : public virtual okrrp_interface_t  {
   public:
     rrpair_t (ptr<req_t> rq, ptr<resp_t> resp)
       : _req (rq), _resp (resp) {}
@@ -197,7 +197,6 @@ public:
   void set_demux_data (ptr<demux_data_t> d)  { _demux_data = d; }
   virtual void serve () { serve_T (); }
 
-
   //------------------------------------------------------------------------
 
 protected:
@@ -240,6 +239,7 @@ protected:
 
 };
 
+//-----------------------------------------------------------------------
 
 
 #endif /* __LIBAOK_OK3_H__ */

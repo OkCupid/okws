@@ -1,0 +1,57 @@
+// -*-c++-*-
+/* $Id$ */
+
+#ifndef __LIBAOK_OK3ADATPER_H__
+#define __LIBAOK_OK3ADATPER_H__
+
+#include "ok.h"
+#include "ok3.h"
+
+//-----------------------------------------------------------------------
+
+template<class S, class V>
+class okclnt2_adaptor_t : public V, public okclnt2_t
+{
+public:
+  okclnt2_adaptor_t (ptr<ahttpcon> x, S *s, u_int to = 0)
+    : okclnt2_t (x, s, to) {}
+
+  void process (proc_ev_t ev) { V::process_adaptor (ev); }
+};
+
+//-----------------------------------------------------------------------
+
+template<class S, class V>
+class okclnt3_adaptor_t : public okclnt3_t
+{
+public:
+  okclnt3_adaptor_t (ptr<ahttpcon> x, S *s, u_int to = 0)
+    : okclnt3_t (x, s, to) {}
+
+  void process (ptr<req_t> req, ptr<resp_t> resp, evv_t ev)
+  { process_T (req, resp, ev); }
+private:
+  void process_T (ptr<req_t> req, ptr<resp_t> resp, evv_t ev, CLOSURE);
+
+};
+
+//-----------------------------------------------------------------------
+
+tamed template<class S, class V> void
+okclnt3_adaptor_t<S,V>::process_T (ptr<okclnt3_t::req_t> req,
+				   ptr<okclnt3_t::resp_t> resp,
+				   evv_t ev)
+{
+  tvars {
+    ptr<V> rrp (New refcounted<V> (req, resp));
+    bool did_reply;
+    int status;
+  }
+  twait { rrp->process_adaptor (mkevent (did_reply, status)); }
+  if (!did_reply) { resp->error (status); }
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+#endif /* __LIBAOK_OK3ADATPER_H__ */

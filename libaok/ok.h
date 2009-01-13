@@ -415,7 +415,7 @@ nclntcb_t;
 //
 class okclnt_base_t 
   : public okclnt_interface_t, 
-    public okrrp_interface_t {
+    public virtual okrrp_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
     okclnt_interface_t (o),
