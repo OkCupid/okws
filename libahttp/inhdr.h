@@ -100,6 +100,7 @@ public:
   inline str get_vers_str () const { return vers; }
   http_conn_mode_t get_conn_mode () const;
   inline u_int get_reqno () const { return _reqno; }
+  str get_connection () const;
 
   http_method_t mthd;  // method code
   int contlen;     // content-length size

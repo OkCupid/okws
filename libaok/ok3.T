@@ -267,6 +267,12 @@ okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
   if (_expires) hra->set_expires (_expires);
   if (_cont_disp) hra->set_content_disposition (_cont_disp);
 
+  str tmp;
+  if (_req) {
+    tmp = _req->hdr_cr ().get_connection ();
+    if (tmp) hra->set_connection (tmp);
+  }
+
   // set anything else you want
   hra->set_others (_hdr_fields);
 }
@@ -356,7 +362,10 @@ okclnt3_t::resp_t::send (evb_t ev)
   // now make a final pass
   fixup_response (rsp);
   if (_uid_set) rsp->set_uid (_uid);
-  if (!httpconst::is_error (_status)) { fixup_cookies (rsp); }
+
+  if (!httpconst::is_error (_status)) { 
+    fixup_cookies (rsp); 
+  }
 
   svc->log (x, inhdrs, rsp);
 
@@ -437,6 +446,7 @@ void
 okclnt3_t::resp_t::fixup_response (ptr<http_response_t> rsp)
 {
   if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
+
 }
 
 //-----------------------------------------------------------------------
@@ -454,8 +464,8 @@ okclnt3_t::resp_t::set_hdr_field (const str &k, const str &v)
 void
 okclnt3_t::rrpair_t::okreply (ptr<compressible_t> c, evv_t::ptr ev)
 { 
-  _resp->reply (HTTP_OK, c); 
   _resp->set_release_ev (ev);
+  _resp->reply (HTTP_OK, c); 
 } 
 
 //-----------------------------------------------------------------------
@@ -463,8 +473,8 @@ okclnt3_t::rrpair_t::okreply (ptr<compressible_t> c, evv_t::ptr ev)
 void
 okclnt3_t::rrpair_t::redirect (const str &u, int s, evv_t::ptr ev)
 {
-  _resp->redirect (s > 0 ? s : HTTP_MOVEDPERM, u);
   _resp->set_release_ev (ev);
+  _resp->redirect (s > 0 ? s : HTTP_MOVEDPERM, u);
 }
 
 //-----------------------------------------------------------------------
@@ -472,8 +482,8 @@ okclnt3_t::rrpair_t::redirect (const str &u, int s, evv_t::ptr ev)
 void
 okclnt3_t::rrpair_t::error (int st, const str &s, evv_t::ptr ev)
 {
-  _resp->error (st, s);
   _resp->set_release_ev (ev);
+  _resp->error (st, s);
 }
 
 //-----------------------------------------------------------------------

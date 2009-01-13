@@ -175,7 +175,7 @@ http_inhdr_t::fixup ()
   str tmp;
 
   _conn_mode = 
-    (lookup ("connection", &tmp) && cicmp (tmp, "keep-alive")) ? 
+    ((tmp = get_connection ()) && cicmp (tmp, "keep-alive")) ? 
     HTTP_CONN_KEEPALIVE : HTTP_CONN_CLOSED;
 }
 
@@ -230,5 +230,14 @@ http_inhdr_t::set_reqno (u_int i, bool pipelining, htpv_t prev_vers)
   _pipeline_eof_ok = (i > 1 && pipelining && prev_vers == 1);
 }
 
+//-----------------------------------------------------------------------
+
+str
+http_inhdr_t::get_connection () const
+{
+  str tmp;
+  lookup ("connection", &tmp);
+  return tmp;
+}
 
 //-----------------------------------------------------------------------
