@@ -148,12 +148,9 @@ public:
     virtual http_inhdr_t *hdr_p () { return _req->hdr_p (); }
 
     // output paths...
-    void okreply (ptr<compressible_t> c, evv_t::ptr ev = NULL);
-    void redirect (const str &s, int status = -1, evv_t::ptr ev = NULL);
-    void error (int n, const str &s = NULL, bool dm = true, 
-		evv_t::ptr ev = NULL);
-
-    void process (evv_t ev, CLOSURE);
+    void okreply (ptr<compressible_t> c, evv_t::ptr ev);
+    void redirect (const str &s, int status, evv_t::ptr ev);
+    void error (int n, const str &s, evv_t::ptr ev);
 
   private:
 

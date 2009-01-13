@@ -470,7 +470,7 @@ okclnt3_t::rrpair_t::redirect (const str &u, int s, evv_t::ptr ev)
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::rrpair_t::error (int st, const str &s, bool dummy, evv_t::ptr ev)
+okclnt3_t::rrpair_t::error (int st, const str &s, evv_t::ptr ev)
 {
   _resp->error (st, s);
   _resp->set_release_ev (ev);

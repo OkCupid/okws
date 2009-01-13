@@ -43,6 +43,7 @@
 
 extern char ** environ;
 
+//-----------------------------------------------------------------------
 
 void
 init_syscall_stats ()
@@ -53,14 +54,20 @@ init_syscall_stats ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_httpsrv_t::malloc_init () {}
+
+//-----------------------------------------------------------------------
 
 okclnt_base_t::~okclnt_base_t () 
 { 
   while (outcookies.size ())
     delete outcookies.pop_front ();
 }
+
+//-----------------------------------------------------------------------
 
 cookie_t *
 okclnt_base_t::add_cookie (const str &h, const str &p)
@@ -69,6 +76,8 @@ okclnt_base_t::add_cookie (const str &h, const str &p)
   outcookies.push_back (ret);
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 okclnt_base_t::error_T (int n, const str &s, bool do_send_complete, 
@@ -85,6 +94,24 @@ okclnt_base_t::error_T (int n, const str &s, bool do_send_complete,
     send_complete ();
 }
 
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::error (int n, const str &s, evv_t::ptr ev)
+{
+  error (n, s, true, ev);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::error (int n)
+{
+  error (n, NULL, true, NULL);
+}
+
+//-----------------------------------------------------------------------
+
 str
 ok_httpsrv_t::servinfo () const
 {
@@ -97,6 +124,8 @@ ok_httpsrv_t::servinfo () const
   
   return (si = b);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
@@ -123,6 +152,8 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
     ret = New refcounted<http_error_t> (n, servinfo (), s, v);
   TRIGGER (cb, ret);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s, 
@@ -155,13 +186,7 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
     (*c) ();
 }
 
-/*
-static void
-usage ()
-{
-  fatal << "usage: <oksrvc> <cgi-encoded-args>\n";
-}
-*/
+//-----------------------------------------------------------------------
 
 void
 ok_httpsrv_t::init_sfs_clock (const str &f)
@@ -178,6 +203,8 @@ ok_httpsrv_t::init_sfs_clock (const str &f)
   }
 }
 
+//-----------------------------------------------------------------------
+
 oksrvc_t::~oksrvc_t ()
 {
   okclnt_interface_t *n, *p;
@@ -186,6 +213,8 @@ oksrvc_t::~oksrvc_t ()
     delete p;
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::init (int argc, char *argv[])
@@ -288,6 +317,7 @@ oksrvc_t::init (int argc, char *argv[])
   zinit (ok_gzip, ok_gzip_compress_level);
 }
 
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::ctldispatch (svccb *v)
@@ -326,6 +356,8 @@ oksrvc_t::ctldispatch (svccb *v)
   }
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 oksrvc_t::update (svccb *sbp)
 {
@@ -351,6 +383,8 @@ oksrvc_t::update (svccb *sbp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::remove (okclnt_interface_t *c)
 {
@@ -369,6 +403,8 @@ oksrvc_t::remove (okclnt_interface_t *c)
     }
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::kill (svccb *v)
@@ -389,6 +425,8 @@ oksrvc_t::kill (svccb *v)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::internal_reliable_shutdown (str s, int t)
 {
@@ -396,6 +434,8 @@ oksrvc_t::internal_reliable_shutdown (str s, int t)
   delaycb (t, 0, wrap (this, &oksrvc_t::end_program));
   shutdown ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::shutdown ()
@@ -413,12 +453,16 @@ oksrvc_t::shutdown ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::end_program ()
 {
   SVC_CHATTER ("shutting down");
   call_exit (0);
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::connect ()
@@ -433,6 +477,8 @@ oksrvc_t::connect ()
   // enable_accept ();
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_con_t::ctlcon (callback<void, svccb *>::ref cb)
 {
@@ -444,6 +490,8 @@ ok_con_t::ctlcon (callback<void, svccb *>::ref cb)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_con_t::ctlclose ()
 {
@@ -451,6 +499,8 @@ ok_con_t::ctlclose ()
   srv = NULL;
   ctlx = NULL; 
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 oksrvc_t::debug_launch (cbv cb)
@@ -462,6 +512,8 @@ oksrvc_t::debug_launch (cbv cb)
   }
   (*cb) ();
 }
+
+//-----------------------------------------------------------------------
 
 static void
 safeguard_stdout()
@@ -479,6 +531,8 @@ safeguard_stdout()
   int rc = dup (STDERR_FILENO);
   assert (rc == STDOUT_FILENO);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 oksrvc_t::launch_T ()
@@ -558,6 +612,8 @@ oksrvc_t::launch_T ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
 oksrvc_t::launch_pub1 (cbb cb)
 {
@@ -597,6 +653,8 @@ oksrvc_t::launch_pub1 (cbb cb)
 
   TRIGGER (cb, res);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 oksrvc_t::launch_dbs (cbb cb)
@@ -638,6 +696,8 @@ oksrvc_t::launch_dbs (cbb cb)
   TRIGGER (cb, ret);
 }
 
+//-----------------------------------------------------------------------
+
 dbcon_t *
 oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 		  int32_t l)
@@ -650,6 +710,8 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
   dbs.push_back (d);
   return d;
 }
+
+//-----------------------------------------------------------------------
 
 lblnc_t *
 oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
@@ -664,6 +726,8 @@ oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_httpsrv_t::disable_accept ()
 {
@@ -677,6 +741,8 @@ ok_httpsrv_t::disable_accept ()
     disable_accept_guts ();
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 ok_httpsrv_t::enable_accept ()
@@ -719,6 +785,8 @@ oksrvc_t::closed_fd ()
     enable_accept ();
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::handle_new_con (svccb *sbp)
 {
@@ -755,6 +823,8 @@ oksrvc_t::handle_new_con (svccb *sbp)
   srv.reply (res);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
 {
@@ -784,12 +854,16 @@ oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
   return sendmore;
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::add (okclnt_interface_t *c)
 {
   nclients++;
   clients.insert_head (c);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt2_t::serve_T ()
@@ -832,6 +906,8 @@ okclnt2_t::serve_T ()
 
   serve_complete ();
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt_base_t::serve_T ()
@@ -888,6 +964,14 @@ okclnt_base_t::redirect_T (const str &l, int ht_in, evv_t::ptr ev)
     ev->trigger ();
   }
   send_complete ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::redirect (const str &l)
+{
+  redirect (l, HTTP_MOVEDPERM, NULL);
 }
 
 //-----------------------------------------------------------------------
@@ -957,6 +1041,8 @@ okclnt_base_t::output_fragment (str s)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt_base_t::output_fragment_T (str s)
 {
@@ -965,6 +1051,8 @@ okclnt_base_t::output_fragment_T (str s)
   }
   twait { _client_con->send (b, NULL, mkevent ()); }
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
@@ -978,6 +1066,8 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
   b.clear();
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
@@ -1004,6 +1094,8 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
   send_complete ();
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt_base_t::output_done (evb_t::ptr ev)
 {
@@ -1026,6 +1118,8 @@ okclnt_base_t::output_done (evb_t::ptr ev)
   } 
   send_complete ();
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::do_gzip () const
@@ -1102,6 +1196,8 @@ okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
   rsp->send (_client_con, cb);
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::add_pubfiles (const char *arr[], u_int sz, bool c)
 {
@@ -1109,12 +1205,16 @@ oksrvc_t::add_pubfiles (const char *arr[], u_int sz, bool c)
     add_pubfile (arr[i]);
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::add_pubfiles (const char *arr[], bool c)
 {
   for (const char **p = arr; p && *p; p++)
     add_pubfile (*p, c);
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::add_pubfile (const str &s, bool c)
@@ -1127,6 +1227,8 @@ oksrvc_t::add_pubfile (const str &s, bool c)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::pubfiles (cbb cb) 
 {
@@ -1136,6 +1238,8 @@ oksrvc_t::pubfiles (cbb cb)
     SVC_ERROR ("Cannot call pubfiles() without Pub v1 support");
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
@@ -1149,11 +1253,15 @@ oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
   (*cb) (ret);
 }
 
+//-----------------------------------------------------------------------
+
 str
 ok_base_t::okws_exec (const str &s) const
 {
   return (s[0] == '/' ? s : str (strbuf (topdir) << "/" << s));
 }
+
+//-----------------------------------------------------------------------
 
 // configuration parsing helper routine.
 void
@@ -1203,6 +1311,8 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 {
@@ -1227,6 +1337,8 @@ ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_base_t::add_port (okws1_port_t port, bool ssl)
 {
@@ -1237,6 +1349,8 @@ ok_base_t::add_port (okws1_port_t port, bool ssl)
   else
     _http_ports.push_back (port);
 }
+
+//-----------------------------------------------------------------------
 
 
 //
@@ -1263,6 +1377,8 @@ split_uri (str in, str *out)
   return port;
 }
 
+//-----------------------------------------------------------------------
+
 //
 // 80:/foo --> /foo if listening on port 80 already...
 //
@@ -1279,6 +1395,8 @@ ok_base_t::fix_uri (const str &in) const
   return out;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okclnt_base_t::set_hdr_field (const str &k, const str &v)
 {
@@ -1286,6 +1404,8 @@ okclnt_base_t::set_hdr_field (const str &k, const str &v)
     hdr_fields = New refcounted<vec<http_hdr_field_t> > ();
   hdr_fields->push_back (http_hdr_field_t (k,v));
 }
+
+//-----------------------------------------------------------------------
 
 str 
 get_okws_config (bool fat)
@@ -1300,6 +1420,8 @@ get_okws_config (bool fat)
   }
   return cf;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 ok_httpsrv_t::init_pub2 (u_int opts)
@@ -1319,6 +1441,8 @@ ok_httpsrv_t::init_pub2 (u_int opts)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 ok_httpsrv_t::launch_pub2_T (cbb cb)
 {
@@ -1335,6 +1459,8 @@ ok_httpsrv_t::launch_pub2_T (cbb cb)
   }
   TRIGGER (cb, rc);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 oksrvc_t::post_launch_pub2_T (cbb cb)
@@ -1356,11 +1482,15 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
   TRIGGER (cb, rc);
 }
 
+//-----------------------------------------------------------------------
+
 ptr<pub2::ok_iface_t>
 okclnt_base_t::pub2 ()
 {
   return oksrvc->pub2 ();
 }
+
+//-----------------------------------------------------------------------
 
 ptr<pub2::ok_iface_t>
 okclnt_base_t::pub2_local ()
@@ -1370,11 +1500,15 @@ okclnt_base_t::pub2_local ()
   return _p2_locale;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okclnt_base_t::set_localizer (ptr<const pub_localizer_t> l)
 {
   _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 (), l);
 }
+
+//-----------------------------------------------------------------------
 
 pval_w_t 
 oksrvc_t::operator[] (const str &s) const 
@@ -1386,6 +1520,7 @@ oksrvc_t::operator[] (const str &s) const
   }
 }
 
+//-----------------------------------------------------------------------
 
 str 
 oksrvc_t::cfg (const str &n) const 
@@ -1396,6 +1531,8 @@ oksrvc_t::cfg (const str &n) const
   }
   return rpcli->cfg (n);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp, 
@@ -1457,6 +1594,8 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   return false;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 config_parser_t::do_file (const str &fn)
 {
@@ -1481,11 +1620,15 @@ config_parser_t::do_file (const str &fn)
   return rc;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 config_parser_t::run_configs (const str &fn)
 {
   return (do_file (fn) && post_config (fn));
 }
+
+//-----------------------------------------------------------------------
 
 void
 config_parser_t::include (vec<str> s, str loc, bool *errp)
@@ -1497,6 +1640,8 @@ config_parser_t::include (vec<str> s, str loc, bool *errp)
     *errp = true;
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 set_sfs_select_policy ()

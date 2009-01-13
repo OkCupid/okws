@@ -390,11 +390,9 @@ public:
   virtual http_inhdr_t *hdr_p () = 0;
 
   // output paths...
-  virtual void okreply (ptr<compressible_t> c, evv_t::ptr ev = NULL) = 0;
-  virtual void redirect (const str &s, int status = -1,
-			 evv_t::ptr ev = NULL) = 0;
-  virtual void error (int n, const str &s = NULL, 
-		      bool do_send_complete = true, evv_t::ptr ev = NULL) = 0;
+  virtual void okreply (ptr<compressible_t> c, evv_t::ptr ev) = 0;
+  virtual void redirect (const str &s, int status, evv_t::ptr ev) = 0;
+  virtual void error (int n, const str &s, evv_t::ptr ev) = 0;
 
 };
 
@@ -436,23 +434,36 @@ public:
   virtual ~okclnt_base_t ();
   virtual void serve () { serve_T (); }
 
-  virtual void error (int n, const str &s = NULL, 
-		      bool do_send_complete = true, evv_t::ptr ev = NULL)
+  //-----------------------------------------------------------------------
+
+  void error (int n, const str &s, bool do_send_complete, evv_t::ptr ev)
   { error_T (n, s, do_send_complete, ev); }
+  void error (int n, const str &s, evv_t::ptr ev);
+  void error (int n);
+
+  //-----------------------------------------------------------------------
 
   virtual void process () = 0;
   virtual bool pre_process () { return true; }
-  virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
 
-  void okreply (ptr<compressible_t> p, evv_t::ptr ev = NULL);
+  //-----------------------------------------------------------------------
+
+  virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
+  void okreply (ptr<compressible_t> p, evv_t::ptr ev);
   virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
 
-  virtual void redirect (const str &s, int status = -1,
-			 evv_t::ptr ev = NULL)
+  //-----------------------------------------------------------------------
+
+  void redirect (const str &s);
+  virtual void redirect (const str &s, int status, evv_t::ptr ev)
   { redirect_T (s, status, ev); }
+
+  //-----------------------------------------------------------------------
 
   virtual void send_complete () { delete this; }
   virtual void serve_complete () {}
+
+  //-----------------------------------------------------------------------
 
   virtual void send (ptr<http_response_t> rsp, cbv::ptr cb);
   virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");

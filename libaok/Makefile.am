@@ -11,7 +11,8 @@ libaok_la_SOURCES = \
 	xmlrpcsrv.C \
 	locale.C \
 	direct.C \
-	ok3.C
+	ok3.C \
+	ok3adapter.C
 
 libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
@@ -48,6 +49,8 @@ okprot.o: okprot.h
 okprot.lo: okprot.h
 log.o: log.C
 log.lo: log.C
+ok3adapter.o: ok3adapter.h
+ok3adapter.lo: ok3adapter.h
 
 xmlrpcsrv.C: xmlrpcsrv.h
 
