@@ -90,7 +90,8 @@ public:
 
     void mark_defunct () { _ok_clnt = NULL; }
     bool is_ready () const { return _replied; }
-    void send (evb_t ev, CLOSURE);
+    void send (evb_t ev, time_t time_budget = 0, int *nsp = NULL, CLOSURE);
+    void cancel (int status, evv_t ev, CLOSURE);
 
     //-----------------------------------------------------------------------
 
@@ -103,6 +104,13 @@ public:
     //-----------------------------------------------------------------------
 
   protected:
+
+    //-----------------------------------------------------------------------
+
+    void do_release_ev ();
+
+    //-----------------------------------------------------------------------
+
     okclnt3_t *_ok_clnt;
     vec<ptr<cookie_t> > _outcookies;
     ptr<http_response_t> _http_resp;
@@ -208,7 +216,7 @@ protected:
   ptr<resp_t> alloc_resp (ptr<req_t> r = NULL);
   bool check_ssl ();
   void redirect (int status, const str &u);
-  void error (int status);
+  void error (int status, ptr<req_t> r = NULL);
 
   //-----------------------------------------------------------------------
 

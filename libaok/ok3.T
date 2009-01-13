@@ -125,9 +125,9 @@ okclnt3_t::redirect (int status, const str &u)
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::error (int status)
+okclnt3_t::error (int status, ptr<req_t> req)
 {
-  alloc_resp ()->error (status);
+  alloc_resp (req)->error (status);
   poke ();
 }
 
@@ -178,15 +178,20 @@ okclnt3_t::serve_T ()
 
   while (_serving) {
     req = New refcounted<req_t> (_x, reqno, prev, ok_clnt_timeout);
+
+    warn << "Go up into parse!\n";
     twait { req->parse (mkevent (status, _serving)); }
+    warn << "Parse returned: (" << status << ", " << _serving << ")\n";
 
     if (status == HTTP_OK) {
       prev = req->http_vers ();
       process (req, alloc_resp (req), mkevent (rv));
     } else if (status != HTTP_PIPELINE_EOF) {
-      error (status);
+      error (status, req);
+      if (status == HTTP_TIMEOUT) { 
+	_serving = false; 
+      }
     }
-
   }
 
   while (rv.need_wait ())
@@ -219,9 +224,9 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
 {
   tvars {
     ptr<okclnt3_t::resp_t> rsp;
-    bool go (true);
-    outcome_t outc;
     time_t start, stop;
+    bool go (true);
+    int fail_status (HTTP_OK);
   }
 
   while ((_serving || _resps.size ()) && go) {
@@ -229,23 +234,23 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
     while (!(_resps.size () && _resps[0]->is_ready ())) {
       twait { _output_cv.wait (mkevent ()); }
     }
+
     rsp = _resps.pop_front ();
-
+    
     start = sfs_get_timenow ();
-    twait { 
-      rsp->send (connector::timeout (mkevent (go), time_budget, 0, &outc)); 
-    }
+    twait { rsp->send (mkevent (go), time_budget, &fail_status); }
     stop = sfs_get_timenow ();
-
+    
     // update the time budget for next time around....
     time_budget = max<int> (1, time_budget - (stop - start));
 
-    if (outc == OUTCOME_TIMEDOUT) {
-      str i = _x->all_info ();
-      go = false;
-      warn << "timeout in send: " << i << "\n";
-    }
+  }
 
+  // Cancel all of these guys.
+  while (_resps.size ()) {
+    assert (fail_status != HTTP_OK);
+    rsp = _resps.pop_front ();
+    twait { rsp->cancel (fail_status, mkevent ()); }
   }
 
   ev->trigger ();
@@ -291,7 +296,7 @@ okclnt3_t::resp_t::svc ()
 //-----------------------------------------------------------------------
 
 tamed void
-okclnt3_t::resp_t::send (evb_t ev)
+okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
 {
   tvars {
     ptr<http_response_t> rsp;
@@ -304,12 +309,14 @@ okclnt3_t::resp_t::send (evb_t ev)
     oksrvc_t *svc (_self->svc ());
     strbuf body_buf;
     ptr<ahttpcon> x (_self->con ());
+    outcome_t outc (OUTCOME_SUCC);
+    int nxt_status;
   }
 
   hra.set_others (_hdr_fields);
 
   if (!x || x->closed ()) {
-    _status = HTTP_CLIENT_EOF;
+    nxt_status = _status = HTTP_CLIENT_EOF;
     ok = false;
   }
 
@@ -326,8 +333,11 @@ okclnt3_t::resp_t::send (evb_t ev)
   // Handle Errors
   if (httpconst::is_error (_status)) {
     if (svc) {
-      twait { svc->geterr (_status, _error_str, vers, gz, mkevent (rsp)); }
+      twait { 
+	svc->geterr (_status, _error_str, vers, gz, mkevent (rsp)); 
+      }
     } else {
+      nxt_status = HTTP_SRV_ERROR;
       ok = false;
     }
 
@@ -372,17 +382,58 @@ okclnt3_t::resp_t::send (evb_t ev)
   svc->log (x, inhdrs, rsp);
 
   if (x && ok) {
-    twait { rsp->send (x, mkevent ()); }
+
+    twait { 
+      rsp->send (x, connector::timeout (mkevent (), time_budget, 0, &outc));
+    }
+    
+    if (outc == OUTCOME_TIMEDOUT) {
+      str i = x->all_info ();
+      ok = false;
+      nxt_status = HTTP_TIMEOUT;
+      warn << "timeout in send: " << i << "\n";
+      x->cancel ();
+    }
   }
-
+  
+  if (nxt_status_p)
+    *nxt_status_p = nxt_status;
+  
+  // tell the output loop it can keep on going
   ev->trigger (ok);
+  
+  // tell the developer-specified process() function that it's OK to
+  // release the memory associated with sending this reply.
+  do_release_ev ();
+}
 
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::resp_t::do_release_ev ()
+{
   if (_release_ev) {
     evv_t ev (_release_ev);
     _release_ev = NULL;
     ev->trigger ();
   }
+}
 
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt3_t::resp_t::cancel (int status, evv_t ev)
+{
+  tvars {
+    bool dummy;
+  }
+
+  _redir_url = NULL;
+  _status = status;
+  _body = NULL;
+
+  twait { send (mkevent (dummy), 0); }
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------

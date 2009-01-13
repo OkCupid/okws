@@ -189,7 +189,7 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.inflated_len (res->get_inflated_len ());
       break;
     case 'q':
-      access.reqno (req->get_reqno ());
+      access.reqno (req ? req->get_reqno () : 0);
       break;
     case '2':
       access.custom2 (res->get_custom_log2 ());
