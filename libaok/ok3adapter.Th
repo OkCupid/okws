@@ -8,7 +8,24 @@
 #include "ok3.h"
 
 //
-// Base class:
+// What is this?
+//
+//   ok3adapter is a class that allows applications to be written
+//   agnostic to whether they are being used as an okclnt2_t or
+//   an okclnt3_t.  As designed, okclnt2_t is an inherently HTTP
+//   1.0 interface, with only one connection per client.  okclnt3_t
+//   is designed as a 1.1 interface, to allow pipelined connections
+//   per client. okclnt3_t has some special features for dealing
+//   with this sort of scenario and will eventually become the
+//   main request processing class for OKWS.  In this transitionary
+//   period, however, we want to allow both.  Hence this adapter
+//   class.
+
+//
+// Requirements-----
+//
+//  The programmer must implement a base class that fits the following
+//  general template:
 //
 //  template<class P, class S>
 //  class P : public virtual okrrp_interface_t {
@@ -18,6 +35,13 @@
 //  };
 //
 //  Where S inherits from oksrvc_t;
+//
+//  She can then instantiate classes of the form:
+//
+//    okclnt2_apapter_t<P,S> 
+//    okclnt3_apapter_t<P,S> 
+//  
+//  Both of which implement the oksrvc_t::newclnt_t interface.
 //
 
 //-----------------------------------------------------------------------
