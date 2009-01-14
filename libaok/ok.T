@@ -132,10 +132,27 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
 			ok_httpsrv_t::http_resp_cb_t cb)
 {
   tvars {
+    ptr<http_response_t> ret;
+    http_resp_attributes_t hra (n, v);
+  }
+  hra.set_gzip (gz);
+  
+  twait { geterr (s, hra, mkevent (ret)); }
+  TRIGGER (cb, ret);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+ok_httpsrv_t::geterr2_T (str s, const http_resp_attributes_t &hra,
+			 ok_httpsrv_t::http_resp_cb_t cb)
+{
+  tvars {
     errdoc_t *e;
     ptr<http_response_t> ret;
     ptr<http_pub2_t> hp2;
     aarr_t ar;
+    int n (hra.get_status ());
   }
   e = errdocs[n];
   if (e && pub2 ()) {
@@ -143,13 +160,14 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
       .add ("SERVINFO", servinfo ());
     if (s)
       ar.add ("AUXSTR", s);
-    twait { 
-      http_pub2_t::alloc (pub2 (), n, e->fn, mkevent (hp2), &ar, v, gz); 
-    }
+    twait { http_pub2_t::alloc2 (pub2 (), hra, e->fn, mkevent (hp2), &ar); }
     ret = hp2;
   }
-  if (!ret)
-    ret = New refcounted<http_error_t> (n, servinfo (), s, v);
+
+  if (!ret) {
+    ret = New refcounted<http_error_t> (hra, servinfo (), s);
+  }
+
   TRIGGER (cb, ret);
 }
 

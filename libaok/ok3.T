@@ -315,22 +315,40 @@ okclnt3_t::resp_t::do_gzip () const
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
+okclnt3_t::resp_t::set_connection_attributes (http_resp_attributes_t *hra)
 {
-  if (_cache_control) hra->set_cache_control (_cache_control);
-  if (_content_type) hra->set_content_type (_content_type);
-  if (_expires) hra->set_expires (_expires);
-  if (_cont_disp) hra->set_content_disposition (_cont_disp);
-
   str tmp;
   if (_req) {
     tmp = _req->hdr_cr ().get_connection ();
     if (tmp) hra->set_connection (tmp);
   }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::resp_t::set_error_attributes (http_resp_attributes_t *hra)
+{
+  set_connection_attributes (hra);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
+{
+
+  if (_cache_control) hra->set_cache_control (_cache_control);
+  if (_content_type) hra->set_content_type (_content_type);
+  if (_expires) hra->set_expires (_expires);
+  if (_cont_disp) hra->set_content_disposition (_cont_disp);
+
+  set_connection_attributes (hra);
 
   // set anything else you want
   hra->set_others (_hdr_fields);
 }
+
 //-----------------------------------------------------------------------
 
 oksrvc_t *
@@ -350,7 +368,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     ptr<http_response_t> rsp;
     ptr<okclnt3_t::req_t> req (_self->req ());
     http_inhdr_t *inhdrs (req ? req->hdr_p () : NULL);
-    int vers (req ? req->hdr_cr ().get_vers () : 0);
+    holdvar int vers (req ? req->hdr_cr ().get_vers () : 0);
     http_resp_attributes_t hra (_self->status (), vers);
     bool gz (_self->do_gzip ());
     bool ok (true);
@@ -380,10 +398,9 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
 
   // Handle Errors
   if (httpconst::is_error (_status)) {
+    set_error_attributes (&hra);
     if (svc) {
-      twait { 
-	svc->geterr (_status, _error_str, vers, gz, mkevent (rsp)); 
-      }
+      twait { svc->geterr (_error_str, hra, mkevent (rsp)); }
     } else {
       nxt_status = HTTP_SRV_ERROR;
       ok = false;

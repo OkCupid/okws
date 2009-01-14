@@ -293,6 +293,10 @@ public:
   virtual void geterr (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb)
   { geterr_T (n, s, v, gz, cb); }
 
+  virtual void 
+  geterr (str s, const http_resp_attributes_t &hra, http_resp_cb_t cb) 
+  { geterr2_T (s, hra, cb); }
+
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
 		    const str &s = NULL)
     const { if (svclog && logd) logd->log (x, req, res, s); }
@@ -315,6 +319,8 @@ public:
 
 private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
+  void geterr2_T (str s, const http_resp_attributes_t &hra, 
+		 http_resp_cb_t cb, CLOSURE);
 
   void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
 		http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL, 

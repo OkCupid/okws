@@ -237,9 +237,10 @@ public:
 
 class http_error_t : public http_response_t {
 public:
-  http_error_t (int n, const str &si, const str &aux = NULL, htpv_t v = 0)
-    : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
-  { header.fill (); }
+
+  http_error_t (int n, const str &si, const str &aux = NULL, htpv_t v = 0);
+  http_error_t (const http_resp_attributes_t &hra, const str &si,
+		const str &aux = NULL);
   static strbuf make_body (int n, const str &si, const str &aux);
 };
 
@@ -261,6 +262,8 @@ class http_pub2_t : public http_response_t {
 public:
   http_pub2_t (int n, htpv_t v = 0)
     : http_response_t (http_resp_header_t (n, v)) {} 
+  http_pub2_t (const http_resp_attributes_t &ha)
+    : http_response_t (http_resp_header_t (ha)) {}
 
   void publish (ptr<pub2::remote_publisher_t> p, str fn,
 		cbb cb, aarr_t *env = NULL,
@@ -268,8 +271,14 @@ public:
 
   static void
   alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-	 callback<void, ptr<http_pub2_t> >::ref cb,
+	 event<ptr<http_pub2_t> >::ref cb,
 	 aarr_t *env = NULL, htpv_t v = 0, bool gz = false, CLOSURE);
+
+  static void
+  alloc2 (ptr<pub2::remote_publisher_t> p, 
+	  const http_resp_attributes_t &hra, str fn,
+	  event<ptr<http_pub2_t> >::ref cb,
+	  aarr_t *env = NULL, CLOSURE);
 
 };
 

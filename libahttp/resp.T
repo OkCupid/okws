@@ -234,6 +234,8 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
   return false;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
 		      cbb cb, aarr_t *env, htpv_t v,
@@ -251,16 +253,56 @@ http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
   TRIGGER (cb, rc);
 }
 
-typedef ref<callback<void, ptr<http_pub2_t> > > http_pub2_cb_t;
+//-----------------------------------------------------------------------
+
+typedef event<ptr<http_pub2_t> >::ref  http_pub2_ev_t;
 
 tamed static void
 http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-		    http_pub2_cb_t cb, aarr_t *env, htpv_t v, bool gz)
+		    http_pub2_ev_t ev, aarr_t *env, htpv_t v, bool gz)
 {
   tvars {
     ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (n, v)); 
     bool rc;
   }
   twait { ret->publish (p, fn, mkevent (rc), env, v, gz); }
-  TRIGGER (cb, rc ? ret : NULL);
+  ev->trigger (rc ? ret : NULL);
 }
+
+//-----------------------------------------------------------------------
+
+tamed static void
+http_pub2_t::alloc2 (ptr<pub2::remote_publisher_t> p, 
+		     const http_resp_attributes_t &hra, str fn, 
+		     http_pub2_ev_t ev, aarr_t *env)
+{
+  tvars {
+    ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (hra));
+    bool rc;
+  }
+  twait { 
+    ret->publish (p, fn, mkevent (rc), env, hra.get_version (), 
+		  hra.get_gzip ());
+  }
+  ev->trigger (rc ? ret : NULL);
+}
+
+//-----------------------------------------------------------------------
+
+http_error_t::http_error_t (int n, const str &si, const str &aux, htpv_t v)
+  : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
+{ 
+  header.fill (false, nbytes); 
+}
+
+//-----------------------------------------------------------------------
+
+http_error_t::http_error_t (const http_resp_attributes_t &hra, 
+			    const str &si, const str &aux)
+  : http_response_t (http_resp_header_t (hra), 
+		     make_body (hra.get_status (), si, aux)) 
+{
+  header.fill (false, nbytes); 
+}
+
+//-----------------------------------------------------------------------
