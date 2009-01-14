@@ -192,7 +192,7 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
   }
   v = h ? h->get_vers () : 0;
   twait { geterr (n, s, v, h && h->takes_gzip (), mkevent (e)); }
-  if (b) { b->fixup_response (e); }
+  if (b) { b->fixup_log (e); }
 
   assert (e);
   if (svclog)
@@ -1007,7 +1007,7 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
 }
 
 void
-okclnt_base_t::fixup_response (ptr<http_response_t> rsp)
+okclnt_base_t::fixup_log (ptr<http_response_t> rsp)
 {
   if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
 }
@@ -1028,7 +1028,7 @@ okclnt_base_t::output_hdr (ssize_t len)
   set_attributes (&hra);
   hra.set_gzip (false);
   rsp = New refcounted<http_response_ok_t> (len, hra);
-  fixup_response (rsp);
+  fixup_log (rsp);
 
   send (rsp, NULL);
   return true;
@@ -1185,7 +1185,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
       hra.set_gzip (gz);
       rsp = New refcounted<http_response_ok_t> (sb, hra);
     }
-    fixup_response (rsp);
+    fixup_log (rsp);
 
     if (uid_set) rsp->set_uid (uid);
     if (prelen > 0) rsp->set_inflated_len (prelen);

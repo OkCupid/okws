@@ -90,7 +90,7 @@ public:
     void set_connection_attributes (http_resp_attributes_t *hra);
     void set_error_attributes (http_resp_attributes_t *hra);
     void fixup_cookies (ptr<http_response_t> rsp);
-    void fixup_response (ptr<http_response_t> rsp);
+    void fixup_log (ptr<http_response_t> rsp);
 
     //-----------------------------------------------------------------------
 
@@ -98,6 +98,10 @@ public:
     bool is_ready () const { return _replied; }
     void send (evb_t ev, time_t time_budget = 0, int *nsp = NULL, CLOSURE);
     void cancel (int status, evv_t ev, CLOSURE);
+
+    //-----------------------------------------------------------------------
+
+    void set_log_fixup_cb (cbv::ptr cb) { _log_fixup_cb = cb; }
 
     //-----------------------------------------------------------------------
 
@@ -138,6 +142,7 @@ public:
 
     ptr<req_t> _req;
     evv_t::ptr _release_ev;
+    cbv::ptr _log_fixup_cb;
   };
 
   //------------------------------------------------------------------------
@@ -165,6 +170,8 @@ public:
     void okreply (ptr<compressible_t> c, evv_t::ptr ev);
     void redirect (const str &s, int status, evv_t::ptr ev);
     void error (int n, const str &s, evv_t::ptr ev);
+
+    void set_log_fixup_cb (cbv::ptr ev);
 
   private:
 

@@ -170,6 +170,15 @@ okclnt3_t::alloc_req (u_int rn, htpv_t prev)
 
 //-----------------------------------------------------------------------
 
+static bool
+is_clean_eof (int status)
+{
+  return (status == HTTP_PIPELINE_CLEAN_TIMEOUT || status == HTTP_PIPELINE_EOF);
+}
+
+
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt3_t::serve_T ()
 {
@@ -196,20 +205,22 @@ okclnt3_t::serve_T ()
     if (status == HTTP_OK) {
       prev = req->http_vers ();
       process (req, alloc_resp (req), mkevent (rv));
-    } else if (status == HTTP_PIPELINE_CLEAN_TIMEOUT) {
-      poke ();
-    } else if (status != HTTP_PIPELINE_EOF) {
+    } else if (!is_clean_eof (status)) {
       error (status, req);
     }
 
     if (okclnt3::n_keepalives >= 0 && int (reqno) > okclnt3::n_keepalives) {
       _serving = false;
     }
-
   }
 
-  while (rv.need_wait ())
+  // always poke when leaving the loop, to get the output loop
+  // to make sure to flush.  not always needed, but can't hurt.
+  poke ();
+
+  while (rv.need_wait ()) {
     twait (rv);
+  }
 
   finish_serve ();
 }
@@ -437,14 +448,11 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
   }
 
   // now make a final pass
-  fixup_response (rsp);
   if (_uid_set) rsp->set_uid (_uid);
 
   if (!httpconst::is_error (_status)) { 
     fixup_cookies (rsp); 
   }
-
-  svc->log (x, inhdrs, rsp);
 
   if (x && ok) {
 
@@ -460,6 +468,12 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
       x->cancel ();
     }
   }
+
+  if (_log_fixup_cb) { 
+    (*_log_fixup_cb) ();
+  }
+  fixup_log (rsp);
+  svc->log (x, inhdrs, rsp);
   
   if (nxt_status_p)
     *nxt_status_p = nxt_status;
@@ -470,6 +484,16 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
   // tell the developer-specified process() function that it's OK to
   // release the memory associated with sending this reply.
   do_release_ev ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt3_t::rrpair_t::set_log_fixup_cb (cbv::ptr cb)
+{
+  if (_resp) { 
+    _resp->set_log_fixup_cb (cb); 
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -561,10 +585,9 @@ okclnt3_t::resp_t::fixup_cookies (ptr<http_response_t> rsp)
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::resp_t::fixup_response (ptr<http_response_t> rsp)
+okclnt3_t::resp_t::fixup_log (ptr<http_response_t> rsp)
 {
   if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
-
 }
 
 //-----------------------------------------------------------------------

@@ -363,7 +363,7 @@ public:
   virtual void set_union_cgi_mode (bool b) = 0;
   virtual void set_demux_data (ptr<demux_data_t> d) = 0;
   virtual void serve () = 0;
-  virtual void fixup_response (ptr<http_response_t> rsp) {}
+  virtual void fixup_log (ptr<http_response_t> rsp) {}
   list_entry<okclnt_interface_t> lnk;
 
   virtual oksrvc_t *get_oksrvc () { return oksrvc; }
@@ -390,6 +390,8 @@ public:
   virtual void set_hdr_field (const str &k, const str &v) = 0;
   virtual void set_cache_control (const str &s) = 0;
   virtual void set_content_type (const str &s) = 0;
+
+  virtual void set_log_fixup_cb (cbv::ptr ev) {}
 
   // access input parameters
   virtual const http_inhdr_t &hdr_cr () const = 0;
@@ -519,7 +521,7 @@ public:
   // tame warts.
   bool do_gzip () const;
 
-  void fixup_response (ptr<http_response_t> rsp);
+  void fixup_log (ptr<http_response_t> rsp);
 
 private:
   void serve_T (CLOSURE);
