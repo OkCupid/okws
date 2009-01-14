@@ -235,6 +235,35 @@ okclnt3_t::req_t::parse (okclnt3_t::req_t::parse_ev_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
+okclnt3_t::wait_for_ready_output (okclnt3_t::resp_t::ev_t ev)
+{
+  tvars {
+    ptr<okclnt3_t::resp_t> ret;
+    bool go (true);
+  }
+
+  while (go) {
+
+    if (!ret && _resps.size ())  {
+      ret = _resps.pop_front ();
+    }
+
+    if (ret && ret->is_ready ()) {
+      go = false;
+    } else if (!ret && !_serving) {
+      go = false;
+    } else {
+      twait { _output_cv.wait (mkevent ()); }
+    }
+
+  }
+
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
 okclnt3_t::output_loop (int time_budget, evv_t ev)
 {
   tvars {
@@ -244,19 +273,15 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
     int fail_status (HTTP_OK);
   }
 
-
   while (go) {
 
-    while (_serving && !(_resps.size () && _resps[0]->is_ready ())) {
-      twait { _output_cv.wait (mkevent ()); }
-    }
+    twait { wait_for_ready_output (mkevent (rsp)); }
 
-    if (!_serving && !_resps.size ()) {
+    if (!rsp) {
       go = false;
 
     } else {
 
-      rsp = _resps.pop_front ();
       assert (rsp->is_ready ());
     
       start = sfs_get_timenow ();
@@ -267,7 +292,6 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
       time_budget = max<int> (1, time_budget - (stop - start));
 
     }
-
   }
 
   // Cancel all of these guys.

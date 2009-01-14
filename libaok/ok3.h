@@ -56,6 +56,10 @@ public:
 
     //-----------------------------------------------------------------------
 
+    typedef event<ptr<resp_t> >::ref ev_t;
+
+    //-----------------------------------------------------------------------
+
     void error (int status, str s = NULL) { reply (status, NULL, NULL, s); }
     void redirect (int status, str u) { reply (status, NULL, u, NULL); }
     void ok (int status, ptr<compressible_t> body) { reply (status, body); }
@@ -223,6 +227,7 @@ protected:
 
   void poke ();
   void output_loop (int time_budget, evv_t ev, CLOSURE);
+  void wait_for_ready_output (okclnt3_t::resp_t::ev_t ev, CLOSURE);
   void finish_output (evv_t ev);
   void await_poke (evv_t ev);
 
