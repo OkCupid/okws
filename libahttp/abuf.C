@@ -33,25 +33,30 @@ abuf_t::moredata ()
     src->rembytes (len);
   }
   abuf_indata_t in = src->getdata ();
-  buf = cp = in.bp;
+  _basep = _cp = in.bp;
   len = in.len;
 
-  endp = buf + in.len;
+  _endp = _basep + in.len;
   erc = in.erc;
 }
 
 void 
 abuf_t::finish ()
 {
-  ssize_t nbytes = cp - buf;
+  ssize_t nbytes = _cp - _basep;
 
   assert (nbytes >= 0);
   assert (len >= nbytes);
 
   src->rembytes (nbytes);
 
+
   // especially important if we're going to reuse this abuf
   len -= nbytes;
+
+  // move the base buf pointer up, making potentially some data
+  // still available...
+  _basep = _cp;
 
   src->finish ();
 }
@@ -153,7 +158,7 @@ abuf_t::flush (char *buf, size_t len)
 {
   assert (len >= 0);
 
-  if (len == 0 || cp == endp)
+  if (len == 0 || _cp == _endp)
     return 0;
   
   if (bc) {
@@ -161,9 +166,9 @@ abuf_t::flush (char *buf, size_t len)
     len--;
   }
     
-  size_t readlen = min<size_t> (len, endp - cp);
-  memcpy (buf, cp, readlen);
-  cp += readlen;
+  size_t readlen = min<size_t> (len, _endp - _cp);
+  memcpy (buf, _cp, readlen);
+  _cp += readlen;
   ccnt += readlen;
   
   // add the buffered char to the tally
@@ -227,15 +232,15 @@ abuf_t::stream (const char **bp)
   }
 
   if ((r = get_errchar ()) < 0) return r;
-  if (endp - cp == 0) {
+  if (_endp - _cp == 0) {
     moredata ();
     if ((r = get_errchar ()) < 0) return r;
   }
 
   assert (erc == ABUF_OK);
-  *bp = cp;
-  ssize_t ret = endp - cp;
-  cp = endp;
+  *bp = _cp;
+  ssize_t ret = _endp - _cp;
+  _cp = _endp;
   ccnt += ret;
   return ret;
 }

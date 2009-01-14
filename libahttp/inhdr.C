@@ -154,8 +154,7 @@ http_inhdr_t::parse_guts ()
 
   if (status == HTTP_BAD_REQUEST && 
       r == ABUF_EOF && 
-      state == INHDRST_START && 
-      seek_pipeline_eof ()) {
+      clean_pipeline_eof_state ()) {
 
     status = HTTP_PIPELINE_EOF;
   }
@@ -245,5 +244,22 @@ http_inhdr_t::get_connection () const
 void
 http_inhdr_t::v_debug ()
 {}
+
+//-----------------------------------------------------------------------
+
+bool
+http_inhdr_t::clean_pipeline_eof_state () const
+{
+  return (state == INHDRST_START && _pipeline_eof_ok);
+}
+
+//-----------------------------------------------------------------------
+
+int
+http_inhdr_t::timeout_status () const
+{
+  return (clean_pipeline_eof_state () ? HTTP_PIPELINE_CLEAN_TIMEOUT :
+	  HTTP_TIMEOUT);
+}
 
 //-----------------------------------------------------------------------

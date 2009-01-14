@@ -23,6 +23,8 @@
 
 #include "ahparse.h"
 
+//-----------------------------------------------------------------------
+
 http_parser_base_t::~http_parser_base_t ()
 {
   if (tocb) {
@@ -38,23 +40,31 @@ http_parser_base_t::~http_parser_base_t ()
   *destroyed = true;
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_parser_base_t::parse (cbi c)
 {
   cb = c;
   tocb = delaycb (timeout, 0, wrap (this, &http_parser_base_t::clnt_timeout));
+  _parsing_header = true;
   hdr_p ()->parse (wrap (this, &http_parser_base_t::parse_cb1));
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::parse_cb1 (int status)
 {
+  _parsing_header = false;
   if (status != HTTP_OK) {
     finish (status);
     return;
   }
   v_parse_cb1 (status);
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::finish (int status)
@@ -87,11 +97,15 @@ http_parser_base_t::finish (int status)
   // not to touch class variables after the (*tcb) call.
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_parser_base_t::stop_abuf ()
 {
   _abuf->finish ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_full_t::finish2 (int s1, int s2)
@@ -103,6 +117,8 @@ http_parser_full_t::finish2 (int s1, int s2)
   else
     finish (HTTP_OK);
 }
+
+//-----------------------------------------------------------------------
 
 cbi::ptr
 http_parser_full_t::prepare_post_parse (int status)
@@ -120,6 +136,8 @@ http_parser_full_t::prepare_post_parse (int status)
   _abuf->setlim (hdr.contlen);
   return wrap (this, &http_parser_full_t::finish2, status);
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_cgi_t::v_parse_cb1 (int status)
@@ -187,15 +205,18 @@ http_parser_cgi_t::v_parse_cb1 (int status)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_parser_base_t::clnt_timeout ()
 {
   tocb = NULL;
   v_cancel ();
   short_circuit_output ();
-  finish (HTTP_TIMEOUT);
+  finish (v_timeout_status ());
 }
 
+//-----------------------------------------------------------------------
 
 void
 http_parser_cgi_t::set_union_mode (bool b)
@@ -204,8 +225,20 @@ http_parser_cgi_t::set_union_mode (bool b)
   hdr.set_url (_union_mode ? &_union_cgi : &url);
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_parser_base_t::short_circuit_output ()
 {
   if (_parser_x) _parser_x->short_circuit_output ();
 }
+
+//-----------------------------------------------------------------------
+
+int
+http_parser_cgi_t::v_timeout_status () const
+{
+  return (_parsing_header ? hdr.timeout_status () : HTTP_TIMEOUT);
+}
+
+//-----------------------------------------------------------------------

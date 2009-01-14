@@ -164,7 +164,18 @@ okclnt3_t::alloc_resp (ptr<req_t> req)
 ptr<okclnt3_t::req_t>
 okclnt3_t::alloc_req (u_int rn, htpv_t prev)
 {
-  return New refcounted<req_t> (_x, _abuf, rn, prev, ok_clnt_timeout);
+  u_int to = (rn > 1 ? okclnt3::keepalive_timeout : ok_clnt_timeout);
+  return New refcounted<req_t> (_x, _abuf, rn, prev, to);
+}
+
+//-----------------------------------------------------------------------
+
+static bool
+pipe_clean_status (int status)
+{
+  return (status == HTTP_PIPELINE_EOF ||
+	  status == HTTP_PIPELINE_CLEAN_TIMEOUT ||
+	  status == HTTP_OK);
 }
 
 //-----------------------------------------------------------------------
@@ -195,12 +206,14 @@ okclnt3_t::serve_T ()
     if (status == HTTP_OK) {
       prev = req->http_vers ();
       process (req, alloc_resp (req), mkevent (rv));
-    } else if (status != HTTP_PIPELINE_EOF) {
+    } else if (!pipe_clean_status (status)) {
       error (status, req);
-      if (status == HTTP_TIMEOUT) { 
-	_serving = false; 
-      }
     }
+
+    if (okclnt3::n_keepalives >= 0 && int (reqno) > okclnt3::n_keepalives) {
+      _serving = false;
+    }
+
   }
 
   while (rv.need_wait ())
@@ -222,6 +235,7 @@ okclnt3_t::req_t::parse (okclnt3_t::req_t::parse_ev_t ev)
   twait { http_parser_cgi_t::parse (mkevent (status)); }
   go = (status == HTTP_OK && 
 	hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE &&
+	(hdr.mthd == HTTP_MTHD_GET || hdr.mthd == HTTP_MTHD_HEAD) &&
 	hdr.get_vers () >= 1);
   ev->trigger (status, go);
 }
@@ -547,5 +561,13 @@ okclnt3_t::rrpair_t::error (int st, const str &s, evv_t::ptr ev)
   _resp->set_release_ev (ev);
   _resp->error (st, s);
 }
+
+//-----------------------------------------------------------------------
+
+// Constants for dealining with keepalives
+namespace okclnt3 {
+  int n_keepalives = 20;
+  int keepalive_timeout = 20;
+};
 
 //-----------------------------------------------------------------------

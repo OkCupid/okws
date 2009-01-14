@@ -52,7 +52,8 @@ public:
       _del_abuf (b ? false : true),
       timeout (to ? to : ok_clnt_timeout),
       buflen (HTTP_PARSE_BUFLEN), tocb (NULL),
-      destroyed (New refcounted<bool> (false)) {}
+      destroyed (New refcounted<bool> (false)),
+      _parsing_header (false) {}
 
   virtual ~http_parser_base_t ();
 
@@ -61,6 +62,7 @@ public:
   virtual const http_inhdr_t &hdr_cr () const = 0;
   ptr<ahttpcon> get_x () const { return _parser_x; }
   abuf_t *get_abuf_p () { return _abuf; }
+  virtual int v_timeout_status () const { return HTTP_TIMEOUT; }
 
   void short_circuit_output ();
 
@@ -85,6 +87,7 @@ protected:
   timecb_t *tocb;
   cbi::ptr cb;
   ptr<bool> destroyed;
+  bool _parsing_header;
 };
 
 class http_parser_raw_t : public http_parser_base_t {
@@ -167,6 +170,7 @@ public:
   cgiw_t & get_cgi () { return cgi; }
 
   void set_union_mode (bool b);
+  int v_timeout_status () const;
 
 protected:
   cgi_t post;

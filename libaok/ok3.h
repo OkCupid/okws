@@ -249,5 +249,13 @@ protected:
 
 //-----------------------------------------------------------------------
 
+// Constants for dealining with keepalives
+namespace okclnt3 {
+  extern int n_keepalives;
+  extern int keepalive_timeout;
+};
+
+//-----------------------------------------------------------------------
+
 
 #endif /* __LIBAOK_OK3_H__ */
