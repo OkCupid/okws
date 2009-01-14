@@ -170,16 +170,6 @@ okclnt3_t::alloc_req (u_int rn, htpv_t prev)
 
 //-----------------------------------------------------------------------
 
-static bool
-pipe_clean_status (int status)
-{
-  return (status == HTTP_PIPELINE_EOF ||
-	  status == HTTP_PIPELINE_CLEAN_TIMEOUT ||
-	  status == HTTP_OK);
-}
-
-//-----------------------------------------------------------------------
-
 tamed void
 okclnt3_t::serve_T ()
 {
@@ -206,7 +196,9 @@ okclnt3_t::serve_T ()
     if (status == HTTP_OK) {
       prev = req->http_vers ();
       process (req, alloc_resp (req), mkevent (rv));
-    } else if (!pipe_clean_status (status)) {
+    } else if (status == HTTP_PIPELINE_CLEAN_TIMEOUT) {
+      poke ();
+    } else if (status != HTTP_PIPELINE_EOF) {
       error (status, req);
     }
 
@@ -252,20 +244,29 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
     int fail_status (HTTP_OK);
   }
 
-  while ((_serving || _resps.size ()) && go) {
 
-    while (!(_resps.size () && _resps[0]->is_ready ())) {
+  while (go) {
+
+    while (_serving && !(_resps.size () && _resps[0]->is_ready ())) {
       twait { _output_cv.wait (mkevent ()); }
     }
 
-    rsp = _resps.pop_front ();
+    if (!_serving && !_resps.size ()) {
+      go = false;
+
+    } else {
+
+      rsp = _resps.pop_front ();
+      assert (rsp->is_ready ());
     
-    start = sfs_get_timenow ();
-    twait { rsp->send (mkevent (go), time_budget, &fail_status); }
-    stop = sfs_get_timenow ();
-    
-    // update the time budget for next time around....
-    time_budget = max<int> (1, time_budget - (stop - start));
+      start = sfs_get_timenow ();
+      twait { rsp->send (mkevent (go), time_budget, &fail_status); }
+      stop = sfs_get_timenow ();
+      
+      // update the time budget for next time around....
+      time_budget = max<int> (1, time_budget - (stop - start));
+
+    }
 
   }
 
