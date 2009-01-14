@@ -5,9 +5,9 @@
 
 //-----------------------------------------------------------------------
 
-okclnt3_t::req_t::req_t (ptr<ahttpcon> x, u_int reqno, htpv_t prev_vers, 
-			 u_int to)
-  : http_parser_cgi_t (x, to) 
+okclnt3_t::req_t::req_t (ptr<ahttpcon> x, abuf_t *b, u_int reqno, 
+			 htpv_t prev_vers, u_int to)
+  : http_parser_cgi_t (x, to, b) 
 {
   hdr.set_reqno (reqno, true, prev_vers);
 }
@@ -38,6 +38,7 @@ okclnt3_t::resp_t::resp_t (okclnt3_t *o, ptr<req_t> q)
 okclnt3_t::okclnt3_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to)
   : okclnt_interface_t (o),
     _x (xx),
+    _abuf (New abuf_t (New abuf_con_t (_x), true)),
     _timeout (to),
     _union_cgi_mode (false),
     _serving (false) {}
@@ -49,6 +50,7 @@ okclnt3_t::~okclnt3_t ()
   for (size_t i = 0; i < _resps.size(); i++) {
     _resps[i]->mark_defunct ();
   }
+  delete _abuf;
 }
 
 //-----------------------------------------------------------------------
@@ -159,6 +161,14 @@ okclnt3_t::alloc_resp (ptr<req_t> req)
 
 //-----------------------------------------------------------------------
 
+ptr<okclnt3_t::req_t>
+okclnt3_t::alloc_req (u_int rn, htpv_t prev)
+{
+  return New refcounted<req_t> (_x, _abuf, rn, prev, ok_clnt_timeout);
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt3_t::serve_T ()
 {
@@ -177,11 +187,10 @@ okclnt3_t::serve_T ()
   _serving = check_ssl ();
 
   while (_serving) {
-    req = New refcounted<req_t> (_x, reqno, prev, ok_clnt_timeout);
 
-    warn << "Go up into parse!\n";
+    req = alloc_req (reqno++, prev);
+
     twait { req->parse (mkevent (status, _serving)); }
-    warn << "Parse returned: (" << status << ", " << _serving << ")\n";
 
     if (status == HTTP_OK) {
       prev = req->http_vers ();

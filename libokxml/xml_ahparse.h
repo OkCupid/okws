@@ -1,4 +1,4 @@
-
+// -*-c++-*-
 #ifndef __LIBXML_XML_AHPARSE__
 #define  __LIBXML_XML_AHPARSE__
 
@@ -11,7 +11,7 @@
 class http_parser_xml_t : public http_parser_full_t {
 public:
   http_parser_xml_t (ptr<ahttpcon> xx, int to = 0)
-    : http_parser_full_t (xx, to), _xml (&abuf) {}
+    : http_parser_full_t (xx, to), _xml (_abuf) {}
   ~http_parser_xml_t () {}
 
   void v_cancel () ;

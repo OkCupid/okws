@@ -32,7 +32,7 @@ public:
 
   class req_t : public http_parser_cgi_t, public virtual refcount {
   public:
-    req_t (ptr<ahttpcon> x, u_int rn, htpv_t prev_vers, u_int to);
+    req_t (ptr<ahttpcon> x, abuf_t *b, u_int rn, htpv_t prev_vers, u_int to);
     ~req_t ();
 
     typedef event<int, bool>::ref parse_ev_t;
@@ -214,6 +214,7 @@ protected:
   //-----------------------------------------------------------------------
   
   ptr<resp_t> alloc_resp (ptr<req_t> r = NULL);
+  ptr<req_t> alloc_req (u_int rn, htpv_t prev);
   bool check_ssl ();
   void redirect (int status, const str &u);
   void error (int status, ptr<req_t> r = NULL);
@@ -228,6 +229,7 @@ protected:
   //-----------------------------------------------------------------------
 
   ptr<ahttpcon> _x;
+  abuf_t *_abuf;
   u_int _timeout;
 
   ptr<demux_data_t> _demux_data;

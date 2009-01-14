@@ -55,6 +55,7 @@ public:
   
   // where the real guts of the async parsing is done -- not here
   virtual void parse_guts () = 0;
+  virtual void v_debug () {}
   abuf_t *get_abuf () { return abuf; }
 
 protected:
@@ -63,6 +64,7 @@ private:
   cbi::ptr pcb;
   bool nwabuf;
   bool parsing;
+protected:
   bool dataready;
 };
 

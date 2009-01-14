@@ -29,6 +29,12 @@ http_parser_base_t::~http_parser_base_t ()
     timecb_remove (tocb);
     tocb = NULL;
   }
+ 
+  if (_del_abuf && _abuf) {
+    delete _abuf;
+    _abuf = NULL;
+  }
+
   *destroyed = true;
 }
 
@@ -84,7 +90,7 @@ http_parser_base_t::finish (int status)
 void
 http_parser_base_t::stop_abuf ()
 {
-  abuf.finish ();
+  _abuf->finish ();
 }
 
 void
@@ -111,7 +117,7 @@ http_parser_full_t::prepare_post_parse (int status)
   } else if (hdr.contlen < 0)
     hdr.contlen = ok_reqsize_limit -1;
   
-  abuf.setlim (hdr.contlen);
+  _abuf->setlim (hdr.contlen);
   return wrap (this, &http_parser_full_t::finish2, status);
 }
 
@@ -144,7 +150,7 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 	str boundary;
 	if (cgi_mpfd_t::match (hdr, &boundary)) {
 	  if (mpfd_flag) {
-	    mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
+	    mpfd = cgi_mpfd_t::alloc (_abuf, hdr.contlen, boundary);
 	    cgi = mpfd;
 	    mpfd->parse (pcb);
 	  } else {

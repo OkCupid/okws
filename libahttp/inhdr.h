@@ -108,6 +108,7 @@ public:
   void set_url (cgi_t *u) { url = u; }
   void set_reqno (u_int i, bool pipelining, htpv_t prev_vers);
   bool seek_pipeline_eof () const { return _pipeline_eof_ok; }
+  void v_debug ();
 
 protected:
   void parse_guts ();

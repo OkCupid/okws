@@ -46,18 +46,21 @@
 //
 class http_parser_base_t {
 public:
-  http_parser_base_t (ptr<ahttpcon> xx, u_int to) 
-    : _parser_x (xx), abuf (New abuf_con_t (xx), true),
+  http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b) 
+    : _parser_x (xx), 
+      _abuf (b ? b : New abuf_t (New abuf_con_t (xx), true)),
+      _del_abuf (b ? false : true),
       timeout (to ? to : ok_clnt_timeout),
       buflen (HTTP_PARSE_BUFLEN), tocb (NULL),
       destroyed (New refcounted<bool> (false)) {}
+
   virtual ~http_parser_base_t ();
 
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }
   virtual http_inhdr_t *hdr_p () = 0;
   virtual const http_inhdr_t &hdr_cr () const = 0;
   ptr<ahttpcon> get_x () const { return _parser_x; }
-  abuf_t *get_abuf_p () { return &abuf; }
+  abuf_t *get_abuf_p () { return _abuf; }
 
   void short_circuit_output ();
 
@@ -74,7 +77,8 @@ protected:
 private:
   ptr<ahttpcon> _parser_x;
 protected:
-  abuf_t abuf;
+  abuf_t *_abuf;
+  bool _del_abuf;
   u_int timeout;
   size_t buflen;
   char scratch[HTTP_PARSE_BUFLEN];
@@ -85,9 +89,10 @@ protected:
 
 class http_parser_raw_t : public http_parser_base_t {
 public:
-  http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0)
-    : http_parser_base_t (xx, to), 
-      hdr (&abuf, NULL, NULL, buflen, scratch) {}
+
+  http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
+    : http_parser_base_t (xx, to, b), 
+      hdr (_abuf, NULL, NULL, buflen, scratch) {}
 
   http_inhdr_t *hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
@@ -106,12 +111,14 @@ public:
  */
 class http_parser_full_t : public http_parser_base_t {
 public:
-  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0)
-    : http_parser_base_t (xx, to), buflen2 (HTTP_PARSE_BUFLEN2),
-      cookie (&abuf, true, buflen2, scratch2),
-      url (&abuf, false, buflen2, scratch2),
-      hdr (&abuf, &url, &cookie, buflen, scratch) 
+  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
+    : http_parser_base_t (xx, to, b), 
+      buflen2 (HTTP_PARSE_BUFLEN2),
+      cookie (_abuf, true, buflen2, scratch2),
+      url (_abuf, false, buflen2, scratch2),
+      hdr (_abuf, &url, &cookie, buflen, scratch) 
   {}
+
   virtual ~http_parser_full_t () {}
 
   http_inhdr_t * hdr_p () { return &hdr; }
@@ -139,10 +146,10 @@ public:
 
 class http_parser_cgi_t : public http_parser_full_t {
 public:
-  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0) :
-    http_parser_full_t (xx, to),
-    post (&abuf, false, buflen, scratch),
-    _union_cgi (&abuf, false, buflen, scratch),
+  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) :
+    http_parser_full_t (xx, to, b),
+    post (_abuf, false, buflen, scratch),
+    _union_cgi (_abuf, false, buflen, scratch),
     mpfd (NULL),
     mpfd_flag (false),
     _union_mode (false) {}

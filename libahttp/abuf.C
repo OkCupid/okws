@@ -29,11 +29,13 @@
 void
 abuf_t::moredata ()
 {
-  if (len > 0)
+  if (len > 0) {
     src->rembytes (len);
+  }
   abuf_indata_t in = src->getdata ();
   buf = cp = in.bp;
   len = in.len;
+
   endp = buf + in.len;
   erc = in.erc;
 }
@@ -41,7 +43,16 @@ abuf_t::moredata ()
 void 
 abuf_t::finish ()
 {
-  src->rembytes (cp - buf);
+  ssize_t nbytes = cp - buf;
+
+  assert (nbytes >= 0);
+  assert (len >= nbytes);
+
+  src->rembytes (nbytes);
+
+  // especially important if we're going to reuse this abuf
+  len -= nbytes;
+
   src->finish ();
 }
 
