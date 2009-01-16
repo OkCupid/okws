@@ -5,9 +5,10 @@
 
 //-----------------------------------------------------------------------
 
-okclnt3_t::req_t::req_t (ptr<ahttpcon> x, abuf_t *b, u_int reqno, 
+okclnt3_t::req_t::req_t (okclnt3_t *o, ptr<ahttpcon> x, abuf_t *b, u_int reqno, 
 			 htpv_t prev_vers, u_int to)
-  : http_parser_cgi_t (x, to, b) 
+  : http_parser_cgi_t (x, to, b),
+    _ok_clnt (o)
 {
   hdr.set_reqno (reqno, true, prev_vers);
 }
@@ -165,7 +166,7 @@ ptr<okclnt3_t::req_t>
 okclnt3_t::alloc_req (u_int rn, htpv_t prev)
 {
   u_int to = (rn > 1 ? okclnt3::keepalive_timeout : ok_clnt_timeout);
-  return New refcounted<req_t> (_x, _abuf, rn, prev, to);
+  return New refcounted<req_t> (this, _x, _abuf, rn, prev, to);
 }
 
 //-----------------------------------------------------------------------
@@ -625,6 +626,30 @@ okclnt3_t::rrpair_t::error (int st, const str &s, evv_t::ptr ev)
 {
   _resp->set_release_ev (ev);
   _resp->error (st, s);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<demux_data_t>
+okclnt3_t::rrpair_t::demux_data () 
+{
+  ptr<demux_data_t> d;
+  okclnt3_t *o;
+  if (_req && (o = _req->ok_clnt ())) 
+    d = o->demux_data ();
+  return d;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const demux_data_t>
+okclnt3_t::rrpair_t::demux_data () const
+{
+  ptr<const demux_data_t> d;
+  const okclnt3_t *o;
+  if (_req && (o = _req->ok_clnt ())) 
+    d = o->demux_data ();
+  return d;
 }
 
 //-----------------------------------------------------------------------

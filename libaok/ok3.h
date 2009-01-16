@@ -32,7 +32,8 @@ public:
 
   class req_t : public http_parser_cgi_t, public virtual refcount {
   public:
-    req_t (ptr<ahttpcon> x, abuf_t *b, u_int rn, htpv_t prev_vers, u_int to);
+    req_t (okclnt3_t *o, ptr<ahttpcon> x, abuf_t *b, u_int rn, 
+	   htpv_t prev_vers, u_int to);
     ~req_t ();
 
     typedef event<int, bool>::ref parse_ev_t;
@@ -45,6 +46,10 @@ public:
     { http_parser_cgi_t::set_union_mode (b); }
 
     htpv_t http_vers () const { return hdr.get_vers (); }
+    okclnt3_t *ok_clnt () { return _ok_clnt; }
+    const okclnt3_t *ok_clnt () const { return _ok_clnt; }
+  private:
+    okclnt3_t *_ok_clnt;
   };
 
   //------------------------------------------------------------------------
@@ -173,6 +178,9 @@ public:
 
     void set_log_fixup_cb (cbv::ptr ev);
 
+    ptr<demux_data_t> demux_data ();
+    ptr<const demux_data_t> demux_data () const;
+
   private:
 
     void output_T (compressible_t *c, evv_t::ptr ev, CLOSURE);
@@ -201,6 +209,11 @@ public:
   virtual str  ssl_redirect_str () const { return NULL; }
   bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
   str ssl_cipher () const;
+
+  //------------------------------------------------------------------------
+
+  ptr<demux_data_t> demux_data () { return _demux_data; }
+  ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
   //------------------------------------------------------------------------
 

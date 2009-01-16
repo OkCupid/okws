@@ -402,6 +402,8 @@ public:
   virtual void redirect (const str &s, int status, evv_t::ptr ev) = 0;
   virtual void error (int n, const str &s, evv_t::ptr ev) = 0;
 
+  virtual ptr<demux_data_t> demux_data () = 0;
+  virtual ptr<const demux_data_t> demux_data () const = 0;
 };
 
 //-----------------------------------------------------------------------
@@ -470,6 +472,11 @@ public:
 
   virtual void send_complete () { delete this; }
   virtual void serve_complete () {}
+
+  //-----------------------------------------------------------------------
+
+  ptr<demux_data_t> demux_data () { return _demux_data; }
+  ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
   //-----------------------------------------------------------------------
 
