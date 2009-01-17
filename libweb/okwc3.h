@@ -212,6 +212,7 @@ public:
   void setx (ptr<ok_xprt_base_t> x);
   const okwc_http_hdr_t *hdr () const { return &_hdr; }
   okwc_http_hdr_t *hdr () { return &_hdr; }
+  virtual str body () const { return NULL; }
 
 protected:
 
@@ -241,7 +242,7 @@ public:
   resp_simple_t () : _dumper (&_abuf) {}
   void eat_chunk (size_t sz, evi_t cb) { eat_chunk_T (sz, cb); }
   void finished_meal (int status, evi_t cb);
-  const str & body () const { return _body; }
+  virtual str body () const { return _body; }
 protected:
   async_dumper_t _dumper;
   vec<str> _chunks;
@@ -252,30 +253,51 @@ private:
 
 //-----------------------------------------------------------------------
 
+class obj_factory_t {
+public:
+  obj_factory_t () {}
+  virtual ~obj_factory_t () {}
+  virtual ptr<resp_t> alloc_resp ();
+  virtual ptr<req_t> alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c);
+};
+
+//-----------------------------------------------------------------------
+
 class agent_t : public virtual refcount {
 public:
   virtual ~agent_t () {}
-  agent_t (const str &h, int p) : _hostname (h), _port (p) {}
+  agent_t (const str &h, int p, ptr<obj_factory_t> a = NULL) 
+    : _hostname (h), 
+      _port (p),
+      _obj_factory (a ? a : New refcounted<obj_factory_t> ()) {}
 
   virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
   { req_T (req, resp, cb); }
+
+  virtual ptr<resp_t> alloc_resp () { return _obj_factory->alloc_resp (); }
+  virtual ptr<req_t> alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
+  { return _obj_factory->alloc_req (ri, v, c); }
 
 protected:
 
   const str _hostname;
   int _port;
+  ptr<obj_factory_t> _obj_factory;
 
 private:
   void req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
 };
 
+
 //-----------------------------------------------------------------------
 
-typedef event<int, ptr<resp_simple_t> >::ref simple_ev_t;
+typedef event<int, ptr<resp_t> >::ref simple_ev_t;
 
 class agent_get_t : public agent_t {
 public:
-  agent_get_t (const str &h, int p) : agent_t (h, p) {}
+  agent_get_t (const str &h, int p, ptr<obj_factory_t> a = NULL) 
+    : agent_t (h, p, a) {}
+
   virtual void get (const str &fn, simple_ev_t ev,
 		    int v = 1, cgi_t *c = NULL, bool https = false,
 		    str post = NULL, vec<str> *eh = NULL) = 0;
@@ -287,7 +309,8 @@ public:
 class agent_get_direct_t : public agent_get_t {
 public:
   virtual ~agent_get_direct_t () {}
-  agent_get_direct_t (const str &h, int p) : agent_get_t (h, p) {}
+  agent_get_direct_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
+    : agent_get_t (h, p, f) {}
 
   void 
   get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
@@ -303,7 +326,8 @@ private:
 
 class agent_get_proxied_t : public agent_get_t {
 public:
-  agent_get_proxied_t (const str &h, int p) : agent_get_t (h, p) {}
+  agent_get_proxied_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
+    : agent_get_t (h, p, f) {}
   
   void 
   get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
@@ -313,7 +337,6 @@ public:
 private:
   void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
 	      str post, vec<str> *eh, CLOSURE);
-  
 };
 
 //-----------------------------------------------------------------------

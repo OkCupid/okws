@@ -357,6 +357,12 @@ namespace okssl {
       }
 
       (*_abuf_cb) ();
+
+      // the above callback might have freed memory out from underneath
+      // us (if everything got deallocated).  In that case, we gotta
+      // jet out of here.
+      if (*destroyed) 
+	return;
     }
     _running = false;
   }

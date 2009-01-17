@@ -4,7 +4,7 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libokssl.la
 libokssl_la_SOURCES = proxy.C util.C sslcon.C
-okwsinclude_HEADERS = oksslproxy.h oksslcon.h oksslutil.h
+okwsinclude_HEADERS = oksslproxy.h oksslcon.h oksslutil.h okssl.h
 libokssl_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 SUFFIXES = .C .T .h
@@ -27,6 +27,6 @@ tameclean:
 dist-hook:
 	cd $(distdir) && rm -f $(TAMEOUT)
 
-EXTRA_DIST = .cvsignore $(TAMEIN)
+EXTRA_DIST = $(TAMEIN)
 CLEANFILES = core *.core *~ *.rpo $(TAMEOUT)
 MAINTAINERCLEANFILES = Makefile.in 

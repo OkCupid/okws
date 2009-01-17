@@ -38,7 +38,7 @@
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
 #define LOG_BUF_DEFSIZE    0x10000
-#define LOG_BUF_MAXWRITE   0x400
+#define LOG_BUF_MAXWRITE   0x1000
 #define LOG_BUF_MAXLEN     0x800000
 #define LOG_BUF_TINYLEN    32
 #define LOG_BUF_HIGHWAT    0x7e00   // 2^15 - 512
@@ -283,7 +283,8 @@ logbuf_t &
 logbuf_t::copy (const char *c, u_int len)
 {
   if (len && c && cp) {
-    if (len < LOG_BUF_MAXWRITE && (cp + len <= ep || resize ())) {
+    if (len > LOG_BUF_MAXWRITE) len = LOG_BUF_MAXWRITE;
+    if (cp + len <= ep || resize ()) {
       memcpy (cp, c, len);
       cp += len;
       assert (cp <= ep);

@@ -2,7 +2,7 @@
 $(PROGRAMS): $(LDEPS) 
 
 okwslib_LTLIBRARIES = libamysql.la
-libamysql_la_SOURCES =  amysql.C mystmt_ag.C mystmt.C tz.C
+libamysql_la_SOURCES = amysql.C mystmt_ag.C mystmt.C tz.C
 okwsinclude_HEADERS = amysql.h mystmt_ag.h mystmt.h
 
 libamysql_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
@@ -10,8 +10,8 @@ libamysql_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 mystmt_ag.C: mystmt_ag.h
 mystmt_ag.o: mystmt_ag.C
 mystmt_ag.lo: mystmt_ag.C
-amysql.o: mystmt_ag.h
-amysql.lo: mystmt_ag.h
+amysql.o: mystmt_ag.h amysql.C
+amysql.lo: mystmt_ag.h amysql.C
 mystmt.o: mystmt_ag.h
 mystmt.lo: mystmt_ag.h
 
@@ -29,7 +29,7 @@ amysql.C: mystmt_ag.h
 PERLOUT = mystmt_ag.C mystmt_ag.h
 PERLIN = mystmt_ag.pl
 
-EXTRA_DIST = .cvsignore $(PERLIN)
+EXTRA_DIST = $(PERLIN)
 CLEANFILES = core *.core *~ *.rpo $(PERLOUT)
 
 MAINTAINERCLEANFILES = Makefile.in

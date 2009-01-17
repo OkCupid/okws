@@ -602,8 +602,7 @@ okwc_http_hdr_t::parse_guts ()
   if (r != ABUF_WAIT) {
     if (status_parse != HTTP_OK)
       status = status_parse;
-    if (status == HTTP_OK)
-      fixup ();
+    fixup (); // fixup all the time, not just on success.
     finish_parse (status);
   }
 }

@@ -55,7 +55,6 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_SVC_FD_HIGH_WAT_UL 10240
 #define OK_SVC_FD_LOW_WAT_UL  10000
 
-
 //
 // gzip parameters (see zstr.h)
 //

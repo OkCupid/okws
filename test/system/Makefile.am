@@ -82,8 +82,9 @@ cookie.lo: cookie.C
 upload.o:	upload.C
 upload.lo:	upload.C
 
-CLEANFILES = core *.core *~ *_config *_log $(TAMEOUT)
-EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN) purify_lib.h
+CLEANFILES = core *.core *~ *_config *_log $(TAMEOUT) 
+EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN) purify_lib.h \
+	okws.crt.dist okws.key.dist
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY:	test tameclean

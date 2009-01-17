@@ -472,6 +472,7 @@ AC_DEFUN([OKWS_SSL],
 --with-ssl=DIR      Specify location of expat library)
 use_ssl=no
 LIBSSL=""
+sslbaselib="-lssl -lcrypto"
 if test "$with_ssl" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
@@ -508,8 +509,8 @@ if test "$with_ssl" != "no"; then
 		AC_CACHE_CHECK(for libssl, okws_cv_libssl,
 		[for dir in " " $dirs; do
 			case $dir in
-				" ") lflags="-lssl" ;;
-				*)   lflags="-L${dir} -lssl" ;;
+				" ") lflags="${sslbaselib}" ;;
+				*)   lflags="-L${dir} ${sslbaselib}" ;;
 			esac
 			LIBS="$ac_save_LIBS $lflags"
 			AC_TRY_LINK([#include <openssl/ssl.h>],

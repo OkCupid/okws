@@ -365,7 +365,7 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 bool
 resp_t::do_get_body (int status) const
 {
-  return (status == HTTP_OK || status == 500);
+  return (status == HTTP_OK);
 }
 
 
@@ -535,7 +535,22 @@ req_t::get_post () const
   }
   return ret;
 }
- 
+
+//-----------------------------------------------------------------------
+
+ptr<resp_t>
+obj_factory_t::alloc_resp ()
+{
+  return New refcounted<resp_simple_t> ();
+}
+
+//-----------------------------------------------------------------------
+
+ptr<req_t>
+obj_factory_t::alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
+{
+  return New refcounted<req_t> (ri, v, c);
+}
 
 //-----------------------------------------------------------------------
 
@@ -544,7 +559,7 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
 			   bool https, str post, vec<str> *eh)
 {
   tvars {
-    ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
+    ptr<resp_t> resp (_self->alloc_resp ()); 
     ptr<req_t> rq;
     ptr<reqinfo_t> ri;
     int status;
@@ -552,7 +567,7 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
 
   ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
   assert (ri->validate ());
-  rq = New refcounted<req_t> (ri, v, c);
+  rq = alloc_req (ri, v, c);
   if (post) rq->set_post (post);
   if (eh && eh->size ()) rq->set_extra_headers (*eh);
 
