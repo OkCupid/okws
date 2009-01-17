@@ -47,10 +47,12 @@ xmlrpcsrv.o: xmlrpcsrv.C
 xmlrpcsrv.lo: xmlrpcsrv.C
 okprot.o: okprot.h
 okprot.lo: okprot.h
-log.o: log.C
-log.lo: log.C
+log.o: log.C okprot.h
+log.lo: log.C okprot.h
 ok3adapter.o: ok3adapter.h
 ok3adapter.lo: ok3adapter.h
+ok3.lo: okprot.h
+ok3.o: okprot.h
 
 xmlrpcsrv.C: xmlrpcsrv.h
 

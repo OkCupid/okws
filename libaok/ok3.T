@@ -424,7 +424,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     // but the response must be generated...
 
     bool head (false);
-    ssize_t prelen;
+    ssize_t prelen (-1);
     
     head = (req && req->hdr_cr ().mthd == HTTP_MTHD_HEAD);
 
