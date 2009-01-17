@@ -1,0 +1,263 @@
+Index: libweb/okwc3.T
+===================================================================
+--- libweb/okwc3.T	(revision 3949)
++++ libweb/okwc3.T	(working copy)
+@@ -224,7 +224,8 @@
+ 
+   b << mth << " " << fn << " HTTP/1." << _vers << HTTP_CRLF;
+   if (_vers == 1) {
+-    b << "Connection: close" << HTTP_CRLF;
++    const char *cn = _keepalive ? "keep-alive" : "closed";
++    b << "Connection: " << cn << HTTP_CRLF;
+   }
+ 
+   /*
+@@ -554,45 +555,58 @@
+ 
+ //-----------------------------------------------------------------------
+ 
++rrpair_t
++agent_t::direct_alloc (const str &fn, int v, cgi_t *c, bool https, str post,
++		       vec<str> *eh)
++{
++  ptr<reqinfo_t> ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
++  ptr<resp_t> resp = alloc_resp (); 
++  ptr<req_t> rq;
++  assert (ri->validate ());
++  rq = alloc_req (ri, v, c);
++  if (post) rq->set_post (post);
++  if (eh && eh->size ()) rq->set_extra_headers (*eh);
++
++  return rrpair_t (rq, resp);
++}
++
++//-----------------------------------------------------------------------
++
+ tamed void
+-agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
+-			   bool https, str post, vec<str> *eh)
++agent_get_direct_t::get_T (args_t args, simple_ev_t ev)
+ {
+   tvars {
+-    ptr<resp_t> resp (_self->alloc_resp ()); 
+-    ptr<req_t> rq;
+-    ptr<reqinfo_t> ri;
++    rrpair_t rrp;
+     int status;
+   }
+ 
+-  ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
+-  assert (ri->validate ());
+-  rq = alloc_req (ri, v, c);
+-  if (post) rq->set_post (post);
+-  if (eh && eh->size ()) rq->set_extra_headers (*eh);
++  rrp = direct_alloc (args);
+ 
+-  twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
+-  ev->trigger (status, resp);
++  twait { 
++    agent_t::req (rrp.req (), rrp.resp (), 
++		  connector::cnc (mkevent (status), ev)); 
++  }
++  ev->trigger (status, rrp.resp ());
+ }
+ 
+ //-----------------------------------------------------------------------
+ 
+ tamed void
+-agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
+-			    bool https, str post, vec<str> *eh)
++agent_get_proxied_t::get_T (args_t args, simple_ev_t ev)
+ {
+   tvars {
+     ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
+     ptr<req_t> rq;
+-    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url, https));
++    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (args.url (), args.https ()));
+     int status;
++    vec<str> *eh (args.extra_headers ());
+   }
+ 
+   if (!ri->validate ()) {
+     status = HTTP_CLIENT_BAD_PROXY;
+   } else {
+-    rq = New refcounted<req_t> (ri, v, c);
+-    if (post) rq->set_post (post);
++    rq = New refcounted<req_t> (ri, args.verion (), args.cgi ());
++    if (post) rq->set_post (args.post ());
+     if (eh && eh->size ()) rq->set_extra_headers (*eh);
+     twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
+   }
+@@ -621,4 +635,15 @@
+ 
+ //-----------------------------------------------------------------------
+ 
++tamed void
++agent_pipelinet_t::get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c,
++			  bool s, str post, vec<str> *eh)
++{
++
++
++}
++
++
++//-----------------------------------------------------------------------
++
+ };
+Index: libweb/okwc3.h
+===================================================================
+--- libweb/okwc3.h	(revision 3949)
++++ libweb/okwc3.h	(working copy)
+@@ -170,7 +170,7 @@
+ class req_t : public virtual refcount {
+ public:
+   req_t (ptr<reqinfo_t> ri, int v = 1, cgi_t *c = NULL) 
+-    : _reqinfo (ri), _vers (v), _outcookie (c) {}
++    : _reqinfo (ri), _vers (v), _outcookie (c), _keepalive (false) {}
+ 
+   virtual ~req_t () {}
+   virtual void make (ptr<ok_xprt_base_t> x, evi_t cb) { return make_T (x, cb); }
+@@ -183,6 +183,7 @@
+ 
+   void set_post (const str &p) { _simple_post = p; }
+   void set_extra_headers (const vec<str> &v);
++  void set_keepalive (bool b) { _keepalive = b; }
+ 
+ protected:
+   void format_req (strbuf &b);
+@@ -200,6 +201,9 @@
+   str _simple_post;
+   mutable ptr<post_t> _post_obj;
+   vec<str> _extra_headers;
++protected:
++  bool _keepalive;
++  
+ };
+ 
+ //-----------------------------------------------------------------------
+@@ -263,6 +267,20 @@
+ 
+ //-----------------------------------------------------------------------
+ 
++class rrpair_t {
++public:
++  rrpair_t () {}
++  rrpair_t (ptr<req_t> q, ptr<resp_t> p) : _req (q), _resp (p) {}
++  ptr<req_t> req () { return _req; }
++  ptr<resp_t> resp () { return _resp; }
++private:
++  ptr<req_t> _req;
++  ptr<resp_t> _resp;
++
++};
++
++//-----------------------------------------------------------------------
++
+ class agent_t : public virtual refcount {
+ public:
+   virtual ~agent_t () {}
+@@ -278,8 +296,9 @@
+   virtual ptr<req_t> alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
+   { return _obj_factory->alloc_req (ri, v, c); }
+ 
++  rrpair_t direct_alloc (args_t args);
++  
+ protected:
+-
+   const str _hostname;
+   int _port;
+   ptr<obj_factory_t> _obj_factory;
+@@ -288,7 +307,35 @@
+   void req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
+ };
+ 
++//-----------------------------------------------------------------------
+ 
++class args_t {
++public:
++  args_t (const str &fn, int v = 1, cgi_t *c = NULL,
++	  bool https = false, str post = NULL, vec<str> *eh = NULL)
++    : _fn (fn),
++      _vers (1), 
++      _cgi (c),
++      _https (https),
++      _post (post),
++      _eh (eh) {}
++
++  str fn () const { return _fn; }
++  int ver () const { return _vers; }
++  cgi_t *cgi () { return _cgi; }
++  bool https () const { return _https; }
++  str post () const { return _post; }
++  vec<str> *extra_headers () const { return _eh; }
++  
++protected:
++  str _fn;
++  int _vers;
++  cgi_t *_cgi;
++  bool _https;
++  str _post;
++  vec<str> *_eh;
++};
++
+ //-----------------------------------------------------------------------
+ 
+ typedef event<int, ptr<resp_t> >::ref simple_ev_t;
+@@ -298,9 +345,7 @@
+   agent_get_t (const str &h, int p, ptr<obj_factory_t> a = NULL) 
+     : agent_t (h, p, a) {}
+ 
+-  virtual void get (const str &fn, simple_ev_t ev,
+-		    int v = 1, cgi_t *c = NULL, bool https = false,
+-		    str post = NULL, vec<str> *eh = NULL) = 0;
++  virtual void get (args_t args, simple_ev_t ev);
+ };
+ 
+ 
+@@ -312,14 +357,10 @@
+   agent_get_direct_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
+     : agent_get_t (h, p, f) {}
+ 
+-  void 
+-  get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
+-       bool https = false, str post = NULL, vec<str> *eh = NULL)
+-  { get_T (fn, cb, v, c, https, post, eh); }
++  void get (args_t args, simple_ev_t cb) { get_T (args, cb); }
+ 
+ private:
+-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
+-	      str post, vec<str> *eh, CLOSURE);
++  void get_T (args_t args, simple_ev_t cb, CLOSURE);
+ };
+ 
+ //-----------------------------------------------------------------------
+@@ -329,14 +370,23 @@
+   agent_get_proxied_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
+     : agent_get_t (h, p, f) {}
+   
+-  void 
+-  get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
+-       bool https = false, str post = NULL, vec<str> *eh = NULL)
+-  { get_T (url, cb, v, c, https, post, eh); }
++  void get (args_t args, simple_ev_t cb) { get_T (args, cb); }
++private:
++  void get_T (args_t args, simple_ev_t cb, CLOSURE);
++};
+ 
++//-----------------------------------------------------------------------
++
++class agent_pipelined_t : public agent_get_t {
++public:
++
++  virtual ~agent_pipelined_t () {}
++  agent_pipelined_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
++    : agent_get_t (h, p, f) {}
++
++  void get (args_t args, simple_ev_t cb) { get_T (args, cb); }
+ private:
+-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
+-	      str post, vec<str> *eh, CLOSURE);
++  void get_T (args_t args, simple_ev_t cb, CLOSURE);
+ };
+ 
+ //-----------------------------------------------------------------------
