@@ -91,7 +91,21 @@ namespace okwc4 {
     run (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev) = 0;
 
   protected:
+
     ptr<hostargs_t> _hostargs;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class agent_oneshot_t : public agent_base_t {
+  public:
+    agent_oneshot_t (ptr<hostargs_t> ha) : agent_base_t (ha) {}
+
+    void run (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev) 
+    { run_T (ra, f, ev); }
+
+  private:
+    void run_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev, CLOSURE);
   };
 
   //-----------------------------------------------------------------------
