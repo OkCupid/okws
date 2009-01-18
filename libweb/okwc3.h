@@ -39,6 +39,7 @@
 #include "tame.h"
 #include "okwc.h"
 #include "list.h"
+#include "tame_lock.h"
 
 #define CANCELLED_STATUS HTTP_TIMEOUT
 
@@ -268,12 +269,18 @@ public:
 
 //-----------------------------------------------------------------------
 
+typedef event<int, ptr<ok_xprt_base_t> >::ref evix_t;
+
+//-----------------------------------------------------------------------
+
 class agent_t : public virtual refcount {
 public:
   virtual ~agent_t () {}
-  agent_t (const str &h, int p, ptr<obj_factory_t> a = NULL) 
+  agent_t (const str &h, okws1_port_t p, ptr<obj_factory_t> a = NULL) 
     : _hostname (h), 
       _port (p),
+      _ssl (false),
+      _keepalive (false), 
       _obj_factory (a ? a : New refcounted<obj_factory_t> ()) {}
 
   virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
@@ -283,10 +290,22 @@ public:
   virtual ptr<req_t> alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
   { return _obj_factory->alloc_req (ri, v, c); }
 
+  str hostname () const { return _hostname; }
+  okws1_port_t port () const { return _port; }
+  bool use_ssl () const { return _ssl; }
+
 protected:
 
+  void get_x (evix_t ev, CLOSURE);
+  void clear_x ();
+
   const str _hostname;
-  int _port;
+  okws1_port_t _port;
+  bool _ssl;
+  bool _keepalive;
+  ptr<ok_xprt_base_t> _x;
+  tame::lock_t _req_lock, _resp_lock;
+
   ptr<obj_factory_t> _obj_factory;
 
 private:
@@ -343,6 +362,8 @@ private:
   void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
 	      str post, vec<str> *eh, CLOSURE);
 };
+
+//-----------------------------------------------------------------------
 
 };
 

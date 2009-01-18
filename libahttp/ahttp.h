@@ -66,6 +66,7 @@ public:
   virtual abuf_src_t *alloc_abuf_src () = 0;
   virtual void drain_to_network (strbuf *b, evb_t ev) = 0;
   virtual void drain_cancel () = 0;
+  virtual bool ateof () const = 0;
 };
 
 class byte_counter_t {
@@ -108,11 +109,11 @@ public:
   abuf_src_t *alloc_abuf_src () ;
   void drain_to_network (strbuf *b, evb_t ev);
   void drain_cancel ();
+  bool ateof () const { return eof; }
   
   //--------------------------------------------------
 
   int getfd () const { return fd; }
-  bool ateof () const { return eof; }
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
   virtual ~ahttpcon ();

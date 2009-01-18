@@ -310,52 +310,32 @@ tamed void
 agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 {
   tvars {
-    int status (0);
+    int status (HTTP_TIMEOUT);
     ptr<agent_t> hold;
-    ptr<hostent> he;
-    int dns_err;
-    int fd;
     ptr<ok_xprt_base_t> x;
-    tcpconnect_t *tc;
     outcome_t outc;
   }
   
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
-  
+
   twait { 
-    dnscache.lookup (_hostname, connector::cnc(mkevent (he, dns_err), ev));
+    _req_lock.acquire (tame::lock_t::EXLUSIVE, 
+		       connector::cnc (mkevent (), ev, &outc));
   }
 
-  if (dns_err || !he) {
-    status = dnserr2httperr (dns_err);
-  } else {
+  twait { get_x (connector::cnc (mkevent (status, x), ev)); }
 
-    twait { 
-      tc = tcpconnect (*(in_addr *)he->h_addr, _port, 
-		       connector::cnc (mkevent (fd), ev, &outc));
-    }
-
-    if (outc == OUTCOME_CANCELLED) {
-      status = CANCELLED_STATUS;
-      tcpconnect_cancel (tc);
-    } else if (fd < 0) {
-      status = HTTP_CONNECTION_FAILED;
-    } else {
-     
-      if (req->https ()) {
-	x = okssl::factory ()->alloc_con (fd);
-      } else {
-	x = ahttpcon::alloc (fd);
-      }
-
-      twait { req->make (x, connector::cnc (mkevent (status), ev)); }
-      if (status == HTTP_OK) {
-	resp->setx (x);
-	twait { resp->get (connector::cnc (mkevent (status), ev)); }
-      }
+  if (x) {
+    
+    twait { req->make (x, connector::cnc (mkevent (status), ev)); }
+    if (status == HTTP_OK) {
+      resp->setx (x);
+      twait { resp->get (connector::cnc (mkevent (status), ev)); }
     }
   }
+
+  clear_x ();
 
   ev->trigger (status);
 }
@@ -617,5 +597,66 @@ req_t::get_extra_headers () const
   if (_extra_headers.size ()) { return &_extra_headers; }
   else { return NULL; }
 }
+
+//-----------------------------------------------------------------------
+
+tamed void
+agent_t::get_x (evix_t ev)
+{
+  tvars {
+    ptr<agent_t> hold;
+    ptr<hostent> he;
+    int status (HTTP_OK);
+    int dns_err;
+    tcpconnect_t *tc;
+    outcome_t outc;
+    int fd;
+    bool dorelease (false);
+  }
+
+  // Keep this object from being freed from underneath us.
+  hold = mkref (this);
+
+  if (!_x || _x->ateof ()) {
+
+    twait { 
+      dnscache.lookup (hostname (), connector::cnc (mkevent (he, dns_err), ev));
+    }
+    
+    if (dns_err || !he) {
+      status = dnserr2httperr (dns_err);
+    } else {
+
+      twait { 
+	tc = tcpconnect (*(in_addr *)he->h_addr, port (), 
+			 connector::cnc (mkevent (fd), ev, &outc));
+      }
+      
+      if (outc == OUTCOME_CANCELLED) {
+	status = CANCELLED_STATUS;
+	tcpconnect_cancel (tc);
+      } else if (fd < 0) {
+	status = HTTP_CONNECTION_FAILED;
+      } else if (use_ssl ()) {
+	_x = okssl::factory ()->alloc_con (fd);
+      } else {
+	_x = ahttpcon::alloc (fd);
+      }
+    }
+
+  }
+  ev->trigger (status, _x);
+
+}
+
+//-----------------------------------------------------------------------
+
+void 
+agent_t::clear_x ()
+{
+  if (_keepalive)
+    _x = NULL;
+}
+//-----------------------------------------------------------------------
 
 };

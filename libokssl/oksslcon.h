@@ -35,6 +35,7 @@ namespace okssl {
     void read (void *out, size_t len, evssz_t ev, CLOSURE);
     void drain_cancel (void);
     abuf_src_t *alloc_abuf_src ();
+    bool ateof () const { return _eof; }
     ptr<tame::rcfd_t> _fd;
   protected:
     void ssl_connect (evb_t ev, CLOSURE);
@@ -46,6 +47,7 @@ namespace okssl {
     bool _ok;
     bool _connected;
     ptr<tame::iofd_t> _rfd, _wfd;
+    bool _eof;
   };
 
   //-----------------------------------------------------------------------

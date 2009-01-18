@@ -134,9 +134,7 @@ bool
 okwc_http_hdr_t::is_chunked () const
 {
   str v;
-  return (lookup ("transfer-encoding", &v) &&
-	  v.len () == 7 &&
-	  mystrlcmp (v, "chunked"));
+  return (lookup ("transfer-encoding", &v) && cicmp (v, "chunked"));
 }
 
 okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 

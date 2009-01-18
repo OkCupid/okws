@@ -28,7 +28,8 @@ namespace okssl {
       _ok (true),
       _connected (false),
       _rfd (tame::iofd_t::alloc (_fd, selread)),
-      _wfd (tame::iofd_t::alloc (_fd, selwrite))
+      _wfd (tame::iofd_t::alloc (_fd, selwrite)),
+      _eof (false)
   {
     unsigned long sl = 1;
     if (BIO_socket_ioctl (fd, FIONBIO, &sl) < 0) {
@@ -262,6 +263,7 @@ namespace okssl {
 	}
 	ret = SSL_read (_ssl, out, len);
 
+	if (ret == 0) { _eof = true; }
 	if (ret > 0) { tot += ret; }
 
 	if (OKDBG2 (SSL_INDATA)) {
