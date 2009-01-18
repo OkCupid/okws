@@ -42,9 +42,12 @@
 
 #define CANCELLED_STATUS HTTP_TIMEOUT
 
+enum { DEF_HTTP_PORT = 80, DEF_HTTPS_PORT = 443 };
+
 namespace okwc3 {
 
-inline int std_port (bool s) { return s ? 443 : 80 ; }
+inline okws1_port_t std_port (bool s) 
+{ return s ? DEF_HTTPS_PORT : DEF_HTTP_PORT; }
 
 //-----------------------------------------------------------------------
 
@@ -130,6 +133,64 @@ protected:
 
 //-----------------------------------------------------------------------
 
+class hostargs_t {
+public:
+  hostargs_t (const str &h, okws1_port_t p, bool s);
+  str hostname () const { return _hostname; }
+  okws1_port_t port () const { return _port; }
+  bool https () const { return _https; }
+  str to_str () const;
+private:
+  str _hostname;
+  okws1_port_t _port;
+  bool _https;
+};
+
+//-----------------------------------------------------------------------
+
+class reqargs_t {
+public:
+  reqargs_t (const str &u = NULL,
+	     htpv_t v = 1, 
+	     str post = NULL,
+	     ptr<const cgi_t> ck = NULL,
+	     ptr<vec<str> > eh = NULL,
+	     ptr<const hostargs_t> ha = NULL);
+
+  reqargs_t (ptr<const hostargs_t> ha, const str &u)
+    : _url (u), _hostargs (ha) {}
+
+  reqargs_t &set_url (const str &u);
+  reqargs_t &set_post (const str &p);
+  reqargs_t &set_outcookies (ptr<const cgi_t> c);
+  reqargs_t &set_extra_headers (ptr<vec<str> > v);
+  reqargs_t &add_header (const str &h);
+  reqargs_t &set_hostargs (ptr<const hostargs_t> h);
+
+  static ptr<reqargs_t> alloc (const str &url);
+
+  static ptr<reqargs_t> 
+  alloc_proxied (const str &url, const str &ph, okws1_port_t pp, bool s);
+
+  virtual ~reqargs_t () {}
+
+protected:
+  str _url;
+  
+  htpv_t _version;
+
+  str _post;
+  ptr<const cgi_t> _outcookies;
+  ptr<vec<str> > _extra_headers;
+  ptr<const hostargs_t> _hostargs;
+};
+
+//-----------------------------------------------------------------------
+
+str fix_url_filename (const str &s);
+
+//-----------------------------------------------------------------------
+
 class reqinfo_direct_t : public reqinfo_t {
 public:
   reqinfo_direct_t (const str &hn, int port, const str &fn, bool s)
@@ -138,7 +199,7 @@ public:
   static ptr<reqinfo_t> alloc (const str &hn, int port, const str &fn, bool s)
   { return New refcounted<reqinfo_direct_t> (hn, port, fn, s); }
 
-  str get_fixed_filename () const;
+  str get_fixed_filename () const { return fix_url_filename (_filename); }
   str get_hdr_hostname () const ;
   bool validate () const { return true; }
 private:

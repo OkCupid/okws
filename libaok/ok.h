@@ -71,7 +71,6 @@ struct errdoc_t {
 
 //-----------------------------------------------------------------------
 
-typedef u_int16_t okws1_port_t;
 #define PORT_MAX USHRT_MAX
 
 typedef event<ok_xstatus_typ_t>::ref okstat_ev_t;

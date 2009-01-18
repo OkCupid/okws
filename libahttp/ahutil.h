@@ -29,6 +29,7 @@
 #include "httpconst.h"
 
 typedef u_char htpv_t;
+typedef u_int16_t okws1_port_t;
 
 str getdate (rfc_number_t rfc = RFC_1123, time_t tm = 0);
 bool mystrlcmp (const str &s, const char *b);
