@@ -125,7 +125,7 @@ namespace oksync {
       s->_waiters.insert (id, c);
     }
 
-    warn << "G: " << stage << "," << id << "\n";
+    warn << "I: " << stage << "," << id << "\n";
     ev->trigger (c);
   }
 

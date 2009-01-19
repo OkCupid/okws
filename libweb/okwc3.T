@@ -249,9 +249,11 @@ req_t::format_req (strbuf &b, bool ka)
   if (t) b << "Content-Type: " << t << HTTP_CRLF;
 
   const post_t *p = get_post ();
+  size_t len = 0;
   if (p) {
-    b << "Content-Length: " << p->len () << HTTP_CRLF;
-  } 
+    len = p->len ();
+  }
+  b << "Content-Length: " << len << HTTP_CRLF;
 
   const vec<str> *v = get_extra_headers ();
   for (size_t i = 0; v && i < v->size (); i++) {
