@@ -10,7 +10,8 @@ namespace okwc4 {
   //-----------------------------------------------------------------------
   
   reqargs_t::reqargs_t (const str &u,
-			htpv_t v, str post,
+			str post,
+			htpv_t v,
 			ptr<const cgi_t> ck,
 			ptr<vec<str> > eh,
 			ptr<const hostargs_t> ha)

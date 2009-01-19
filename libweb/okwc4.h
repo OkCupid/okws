@@ -56,14 +56,14 @@ namespace okwc4 {
   class reqargs_t {
   public:
     reqargs_t (const str &u = NULL,
-	       htpv_t v = 1, 
 	       str post = NULL,
+	       htpv_t v = 1, 
 	       ptr<const cgi_t> ck = NULL,
 	       ptr<vec<str> > eh = NULL,
 	       ptr<const hostargs_t> ha = NULL);
     
     reqargs_t (ptr<const hostargs_t> ha, const str &u)
-      : _url (u), _hostargs (ha) {}
+      : _url (u), _version (1), _hostargs (ha) {}
     
     reqargs_t &set_url (const str &u);
     reqargs_t &set_post (const str &p);
