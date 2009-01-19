@@ -1,6 +1,7 @@
 // -*-c++-*-
 #include "okwc3.h"
 #include "okwc4.h"
+#include "tame_connectors.h"
 
 namespace okwc4 {
 
@@ -32,6 +33,8 @@ namespace okwc4 {
   { SET(v, _extra_headers); }
   reqargs_t &reqargs_t::set_hostargs (ptr<const hostargs_t> h) 
   { SET(h, _hostargs); }
+  reqargs_t &reqargs_t::set_content_type (const str &s) 
+  { SET(s, _content_type); }
   
 #undef SET
   
@@ -121,9 +124,41 @@ namespace okwc4 {
   tamed void
   agent_get_t::get_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev)
   {
+    tvars {
+      ptr<obj_factory_t> factory;
+      ptr<req_t> req;
+      ptr<resp_t> resp;
+      int status;
+    }
+    factory = f ? f : _obj_factory;
+    req = factory->alloc_req (ra);
+    resp = factory->alloc_resp ();
 
-
+    twait { agent_t::req (req, resp, connector::cnc (mkevent (status), ev)); }
+    ev->trigger (status, resp);
   }
+
+  //-----------------------------------------------------------------------
+
+  str req_t::get_type () const { return _ra->_content_type; }
+  const vec<str> *req_t::get_extra_headers() const {return _ra->_extra_headers;}
+  htpv_t req_t::get_version () const { return _ra->_version; }
+  str req_t::get_hdr_hostname () const { return _ra->_hostargs->to_str (); }
+  str req_t::get_filename () const { return _ra->_url; }
+  const cgi_t * req_t::get_outcookie () const { return _ra->_outcookies; }
+  str req_t::get_simple_post_str () const { return _ra->_post; }
+
+  //-----------------------------------------------------------------------
+
+  ptr<req_t> 
+  obj_factory_t::alloc_req (ptr<const reqargs_t> ra)
+  { return New refcounted<req_t> (ra); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<resp_t>
+  obj_factory_t::alloc_resp ()
+  { return New refcounted<resp_simple_t> (); }
 
   //-----------------------------------------------------------------------
   

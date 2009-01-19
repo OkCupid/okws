@@ -153,16 +153,18 @@ main2 (int argc, char **argv)
   }
 
   if (prx) {
-    cli = New refcounted<okwc3::agent_get_proxied_t> (hostname, port, factory);
+    cli = New refcounted<okwc3::agent_get_proxied_t> (hostname, port, https, 
+						      factory);
   } else {
     filename = url_rxx[6];
-    cli = New refcounted<okwc3::agent_get_direct_t> (hostname, port, factory);
+    cli = New refcounted<okwc3::agent_get_direct_t> (hostname, port, https,
+						     factory);
   }
 
   twait { 
     cli->get (filename, 
 	      connector::timeout (mkevent (status, resp), timeout),
-	      1, NULL, https, 
+	      1, NULL, 
 	      post, &extra_headers);
   }
 

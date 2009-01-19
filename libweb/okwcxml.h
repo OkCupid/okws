@@ -49,9 +49,9 @@ private:
   mutable zbuf _zb;
 };
 
-class req_xml_t : public req_t {
+class req_xml_t : public req3_t {
 public:
-  req_xml_t (ptr<reqinfo_t> ri, cgi_t *c = NULL) : req_t (ri, 1, c) {}
+  req_xml_t (ptr<reqinfo_t> ri, cgi_t *c = NULL) : req3_t (ri, 1, c) {}
   zbuf &zb () { return _post.zb (); }
   const zbuf &zb () const { return _post.zb (); }
   const post_t *get_post () const { return &_post; }
@@ -74,8 +74,7 @@ protected:
 
 class agent_xml_t : public agent_t {
 public:
-  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false,
-	       bool https = false);
+  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false);
 
   void call (xml_outreq_t req, xml_ev_t ev) { call_T (req, ev); }
   void call (xml_outreq_t req, xml_ev_t ev, int to) { call_to_T (req, ev, to); }

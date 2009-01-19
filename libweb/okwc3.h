@@ -123,14 +123,12 @@ private:
 
 class reqinfo_t {
 public:
-  reqinfo_t (bool b) : _https (b) {}
+  reqinfo_t () {}
   virtual ~reqinfo_t () {}
   virtual str get_fixed_filename () const = 0;
   virtual str get_hdr_hostname () const = 0;
   virtual bool validate () const = 0;
-  bool https () const { return _https; }
 protected:
-  const bool _https;
 };
 
 str fix_url_filename (const str &s);
@@ -139,11 +137,11 @@ str fix_url_filename (const str &s);
 
 class reqinfo_direct_t : public reqinfo_t {
 public:
-  reqinfo_direct_t (const str &hn, int port, const str &fn, bool s)
-    : reqinfo_t (s), _hostname (hn), _port (port), _filename (fn) {}
+  reqinfo_direct_t (const str &hn, int port, const str &fn)
+    : reqinfo_t (), _hostname (hn), _port (port), _filename (fn) {}
 
-  static ptr<reqinfo_t> alloc (const str &hn, int port, const str &fn, bool s)
-  { return New refcounted<reqinfo_direct_t> (hn, port, fn, s); }
+  static ptr<reqinfo_t> alloc (const str &hn, int port, const str &fn)
+  { return New refcounted<reqinfo_direct_t> (hn, port, fn); }
 
   str get_fixed_filename () const { return fix_url_filename (_filename); }
   str get_hdr_hostname () const ;
@@ -158,10 +156,10 @@ private:
 
 class reqinfo_proxied_t : public reqinfo_t {
 public:
-  reqinfo_proxied_t (const str &url, bool s) ;
+  reqinfo_proxied_t (const str &url) ;
 
-  static ptr<reqinfo_t> alloc (const str &url, bool s)
-  { return New refcounted<reqinfo_proxied_t> (url, s); }
+  static ptr<reqinfo_t> alloc (const str &url)
+  { return New refcounted<reqinfo_proxied_t> (url); }
 
   str get_fixed_filename () const { return _url; }
   str get_hdr_hostname () const { return _hdr_hostname; }
@@ -176,36 +174,61 @@ private:
 
 class req_t : public virtual refcount {
 public:
-  req_t (ptr<reqinfo_t> ri, int v = 1, cgi_t *c = NULL) 
-    : _reqinfo (ri), _vers (v), _outcookie (c) {}
-
+  req_t () {}
   virtual ~req_t () {}
+
+  virtual str get_type () const = 0;
+  virtual const post_t *get_post () const;
+  virtual const vec<str> *get_extra_headers () const = 0;
+  virtual htpv_t get_version () const = 0;
+  virtual str get_hdr_hostname () const = 0;
+  virtual str get_filename () const = 0;
+  virtual const cgi_t *get_outcookie () const = 0;
+  virtual str get_simple_post_str () const = 0;
+  virtual void set_post (const str &p) = 0;
+  virtual void set_extra_headers (const vec<str> &v) = 0;
+
   virtual void make (ptr<ok_xprt_base_t> x, evi_t cb) { return make_T (x, cb); }
 
-  virtual const post_t *get_post () const;
-  virtual const vec<str> *get_extra_headers () const;
-
-  virtual str get_type () const { return NULL; }
-  bool https () const { return _reqinfo->https (); }
-
-  void set_post (const str &p) { _simple_post = p; }
-  void set_extra_headers (const vec<str> &v);
 
 protected:
-  void format_req (strbuf &b);
-
-private:
   void make_T (ptr<ok_xprt_base_t> x, evi_t cb, CLOSURE);
+  void format_req (strbuf &b);
+  mutable ptr<post_t> _post_obj;
+
+};
+
+//-----------------------------------------------------------------------
+
+class req3_t : public req_t {
+public:
+  req3_t (ptr<reqinfo_t> ri, htpv_t v = 1, cgi_t *c = NULL) 
+    : req_t (),
+      _reqinfo (ri), 
+      _vers (v), 
+      _outcookie (c) {}
+
+  virtual ~req3_t () {}
+
+  void set_post (const str &p) { _simple_post = p; }
+  void set_extra_headers (const vec<str> &v) ;
+
+  virtual str get_type () const { return NULL; }
+  virtual str get_simple_post_str () const { return _simple_post; }
+  virtual const vec<str> *get_extra_headers () const;
+  htpv_t get_version () const { return _vers; }
+  str get_hdr_hostname () const { return _reqinfo->get_hdr_hostname (); }
+  str get_filename () const { return _reqinfo->get_fixed_filename (); }
+  const cgi_t *get_outcookie () const { return _outcookie; }
 
 protected:
   ptr<const reqinfo_t> _reqinfo;
-  int _vers;
+  htpv_t _vers;
   cgi_t *_outcookie; // cookie sending out to the server
 
   // implement simple posts inline
 private:
   str _simple_post;
-  mutable ptr<post_t> _post_obj;
   vec<str> _extra_headers;
 };
 
@@ -277,21 +300,15 @@ typedef event<int, ptr<ok_xprt_base_t> >::ref evix_t;
 class agent_t : public virtual refcount {
 public:
   virtual ~agent_t () {}
-  agent_t (const str &h, okws1_port_t p, ptr<obj_factory_t> a = NULL,
-	   bool s = false) 
+  agent_t (const str &h, okws1_port_t p, bool s = false) 
     : _hostname (h), 
       _port (p),
       _ssl (s),
       _keepalive (false), 
-      _obj_factory (a ? a : New refcounted<obj_factory_t> ()),
       _pipeliner (New refcounted<oksync::pipeliner_t> ()) {}
 
   virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
   { req_T (req, resp, cb); }
-
-  virtual ptr<resp_t> alloc_resp () { return _obj_factory->alloc_resp (); }
-  virtual ptr<req_t> alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
-  { return _obj_factory->alloc_req (ri, v, c); }
 
   str hostname () const { return _hostname; }
   okws1_port_t port () const { return _port; }
@@ -307,7 +324,6 @@ protected:
   bool _ssl;
   bool _keepalive;
   ptr<ok_xprt_base_t> _x;
-  ptr<obj_factory_t> _obj_factory;
   ptr<oksync::pipeliner_t> _pipeliner;
 
 private:
@@ -321,12 +337,15 @@ typedef event<int, ptr<resp_t> >::ref simple_ev_t;
 
 class agent_get_t : public agent_t {
 public:
-  agent_get_t (const str &h, int p, ptr<obj_factory_t> a = NULL) 
-    : agent_t (h, p, a) {}
+  agent_get_t (const str &h, int p, bool s, ptr<obj_factory_t> f = NULL) 
+    : agent_t (h, p, s),
+      _obj_factory (f ? f : New refcounted<obj_factory_t> ()) {}
 
   virtual void get (const str &fn, simple_ev_t ev,
-		    int v = 1, cgi_t *c = NULL, bool https = false,
+		    int v = 1, cgi_t *c = NULL, 
 		    str post = NULL, vec<str> *eh = NULL) = 0;
+protected:
+  ptr<obj_factory_t> _obj_factory;
 };
 
 
@@ -335,16 +354,16 @@ public:
 class agent_get_direct_t : public agent_get_t {
 public:
   virtual ~agent_get_direct_t () {}
-  agent_get_direct_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
-    : agent_get_t (h, p, f) {}
+  agent_get_direct_t (const str &h, int p, bool s, ptr<obj_factory_t> f = NULL) 
+    : agent_get_t (h, p, s, f) {}
 
   void 
   get (const str &fn, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
-       bool https = false, str post = NULL, vec<str> *eh = NULL)
-  { get_T (fn, cb, v, c, https, post, eh); }
+       str post = NULL, vec<str> *eh = NULL)
+  { get_T (fn, cb, v, c, post, eh); }
 
 private:
-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, 
 	      str post, vec<str> *eh, CLOSURE);
 };
 
@@ -352,16 +371,17 @@ private:
 
 class agent_get_proxied_t : public agent_get_t {
 public:
-  agent_get_proxied_t (const str &h, int p, ptr<obj_factory_t> f = NULL) 
-    : agent_get_t (h, p, f) {}
+  agent_get_proxied_t (const str &h, int p, bool s, 
+		       ptr<obj_factory_t> f = NULL) 
+    : agent_get_t (h, p, s, f) {}
   
   void 
   get (const str &url, simple_ev_t cb, int v = 1, cgi_t *c = NULL, 
-       bool https = false, str post = NULL, vec<str> *eh = NULL)
-  { get_T (url, cb, v, c, https, post, eh); }
+       str post = NULL, vec<str> *eh = NULL)
+  { get_T (url, cb, v, c, post, eh); }
 
 private:
-  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, bool s, 
+  void get_T (const str &fn, simple_ev_t cb, int v, cgi_t *c, 
 	      str post, vec<str> *eh, CLOSURE);
 };
 

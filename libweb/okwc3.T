@@ -219,24 +219,27 @@ void
 req_t::format_req (strbuf &b)
 {
 
-  str fn = _reqinfo->get_fixed_filename ();
+  str fn = get_filename ();
   str mth = get_post () ? "POST" : "GET";
+  htpv_t vers = get_version ();
 
-  b << mth << " " << fn << " HTTP/1." << _vers << HTTP_CRLF;
-  if (_vers == 1) {
+  b << mth << " " << fn << " HTTP/1." << vers << HTTP_CRLF;
+  if (vers == 1) {
     b << "Connection: close" << HTTP_CRLF;
   }
 
   /*
    * Be polite like wget and always send the following two headers
    */
-  str hn = _reqinfo->get_hdr_hostname ();
+  str hn = get_hdr_hostname ();
   b << "Host: " << hn << HTTP_CRLF
     << "User-agent: okwc/" << VERSION << HTTP_CRLF;
 
-  if (_outcookie) {
+  const cgi_t *oc = get_outcookie ();
+  
+  if (oc) {
     b << "Cookie: ";
-    _outcookie->encode (&b);
+    oc->encode (&b);
     b << HTTP_CRLF;
   }
 
@@ -255,7 +258,6 @@ req_t::format_req (strbuf &b)
   b << HTTP_CRLF;
 
   if (p) p->output (b);
-
 }
 
 //-----------------------------------------------------------------------
@@ -501,8 +503,8 @@ resp_simple_t::finished_meal (int status, evi_t ev)
 
 //-----------------------------------------------------------------------
 
-reqinfo_proxied_t::reqinfo_proxied_t (const str &url, bool s)
-  : reqinfo_t (s),
+reqinfo_proxied_t::reqinfo_proxied_t (const str &url)
+  : reqinfo_t (),
     _url (url),
     _valid (false)
 {
@@ -520,8 +522,8 @@ const post_t *
 req_t::get_post () const
 {
   const post_t *ret = NULL;
-  if (_simple_post) {
-    _post_obj = New refcounted<simple_post_t> (_simple_post);
+  if (get_simple_post_str ()) {
+    _post_obj = New refcounted<simple_post_t> (get_simple_post_str ());
     ret = _post_obj;
   }
   return ret;
@@ -540,25 +542,26 @@ obj_factory_t::alloc_resp ()
 ptr<req_t>
 obj_factory_t::alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
 {
-  return New refcounted<req_t> (ri, v, c);
+  return New refcounted<req3_t> (ri, v, c);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
 agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
-			   bool https, str post, vec<str> *eh)
+			   str post, vec<str> *eh)
 {
   tvars {
-    ptr<resp_t> resp (_self->alloc_resp ()); 
+    ptr<resp_t> resp;
     ptr<req_t> rq;
     ptr<reqinfo_t> ri;
     int status;
   }
 
-  ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
+  resp = _obj_factory->alloc_resp ();
+  ri = reqinfo_direct_t::alloc (_hostname, _port, fn);
   assert (ri->validate ());
-  rq = alloc_req (ri, v, c);
+  rq = _obj_factory->alloc_req (ri, v, c);
   if (post) rq->set_post (post);
   if (eh && eh->size ()) rq->set_extra_headers (*eh);
 
@@ -570,19 +573,19 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
 
 tamed void
 agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
-			    bool https, str post, vec<str> *eh)
+			    str post, vec<str> *eh)
 {
   tvars {
     ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
     ptr<req_t> rq;
-    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url, https));
+    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url));
     int status;
   }
 
   if (!ri->validate ()) {
     status = HTTP_CLIENT_BAD_PROXY;
   } else {
-    rq = New refcounted<req_t> (ri, v, c);
+    rq = New refcounted<req3_t> (ri, v, c);
     if (post) rq->set_post (post);
     if (eh && eh->size ()) rq->set_extra_headers (*eh);
     twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
@@ -593,7 +596,7 @@ agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
 //-----------------------------------------------------------------------
 
 void
-req_t::set_extra_headers (const vec<str> &v)
+req3_t::set_extra_headers (const vec<str> &v)
 {
   for (size_t i = 0; i < v.size (); i++) {
     _extra_headers.push_back (v[i]);
@@ -603,7 +606,7 @@ req_t::set_extra_headers (const vec<str> &v)
 //-----------------------------------------------------------------------
 
 const vec<str> *
-req_t::get_extra_headers () const
+req3_t::get_extra_headers () const
 {
   if (_extra_headers.size ()) { return &_extra_headers; }
   else { return NULL; }

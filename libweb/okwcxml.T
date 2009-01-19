@@ -109,12 +109,11 @@ resp_xml_t::finished_meal (int status, evi_t ev)
 
 //-----------------------------------------------------------------------
 
-agent_xml_t::agent_xml_t (const str &hn, int port, const str &u, bool proxied,
-			  bool https)
+agent_xml_t::agent_xml_t (const str &hn, int port, const str &u, bool proxied)
   : agent_t (hn, port),
     _reqinfo (proxied ? 
-	      reqinfo_proxied_t::alloc (u, https) :
-	      reqinfo_direct_t::alloc (hn, port, u, https))
+	      reqinfo_proxied_t::alloc (u) : 
+	      reqinfo_direct_t::alloc (hn, port, u))
 {}
 
 

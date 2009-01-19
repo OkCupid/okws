@@ -23,8 +23,9 @@ namespace okwc4 {
 
   //-----------------------------------------------------------------------
 
-  typedef okwc3::obj_factory_t obj_factory_t;
   typedef okwc3::simple_ev_t resp_ev_t;
+  typedef okwc3::resp_t resp_t;
+  typedef okwc3::resp_simple_t resp_simple_t;
 
   //-----------------------------------------------------------------------
   
@@ -43,7 +44,11 @@ namespace okwc4 {
   };
   
   //-----------------------------------------------------------------------
+
+  class req_t;
   
+  //-----------------------------------------------------------------------
+
   class reqargs_t {
   public:
     reqargs_t (const str &u = NULL,
@@ -62,6 +67,7 @@ namespace okwc4 {
     reqargs_t &set_extra_headers (ptr<vec<str> > v);
     reqargs_t &add_header (const str &h);
     reqargs_t &set_hostargs (ptr<const hostargs_t> h);
+    reqargs_t &set_content_type (const str &s);
     
     static ptr<reqargs_t> alloc (const str &url);
     
@@ -69,6 +75,8 @@ namespace okwc4 {
     alloc_proxied (const str &url, const str &ph, okws1_port_t pp, bool s);
     
     virtual ~reqargs_t () {}
+
+    friend class req_t;
     
   protected:
     str _url;
@@ -76,17 +84,50 @@ namespace okwc4 {
     htpv_t _version;
     
     str _post;
+    str _content_type;
     ptr<const cgi_t> _outcookies;
     ptr<vec<str> > _extra_headers;
     ptr<const hostargs_t> _hostargs;
   };
   
   //-----------------------------------------------------------------------
-  
+
+  class req_t : public okwc3::req_t {
+  public:
+    req_t (ptr<const reqargs_t> ra) : _ra (ra) {}
+
+    str get_type () const;
+    const vec<str> *get_extra_headers () const;
+    htpv_t get_version () const;
+    str get_hdr_hostname () const;
+    str get_filename () const;
+    const cgi_t *get_outcookie () const;
+    str get_simple_post_str () const;
+
+    // don't support these....
+    void set_post (const str &p)  {}
+    void set_extra_headers (const vec<str> &v)  {}
+
+  protected:
+    ptr<const reqargs_t> _ra;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class obj_factory_t {
+  public:
+    obj_factory_t () {}
+    virtual ~obj_factory_t () {}
+    virtual ptr<resp_t> alloc_resp ();
+    virtual ptr<req_t> alloc_req (ptr<const reqargs_t> ra);
+  };
+
+  //-----------------------------------------------------------------------
+
   class agent_get_t : public okwc3::agent_t {
   public:
     agent_get_t (ptr<hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
-      : okwc3::agent_t (ha->hostname (), ha->port (), f, ha->ssl ()),
+      : okwc3::agent_t (ha->hostname (), ha->port (), ha->ssl ()),
 	_hostargs (ha),
 	_obj_factory (f) {}
 
