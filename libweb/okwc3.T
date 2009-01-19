@@ -244,6 +244,7 @@ req_t::format_req (strbuf &b)
   }
 
   str t = get_type ();
+  if (!t && get_post ()) t = "application/x-www-form-urlencoded";
   if (t) b << "Content-Type: " << t << HTTP_CRLF;
 
   const post_t *p = get_post ();

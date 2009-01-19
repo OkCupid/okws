@@ -113,6 +113,20 @@ namespace okwc4 {
   }
   
   //-----------------------------------------------------------------------
+
+  ptr<reqargs_t>
+  reqargs_t::alloc_proxied (const str &url, const str &proxy)
+  {
+    str host;
+    int port;
+    ptr<reqargs_t> ret;
+    if (!to_hostname_and_port (proxy, &host, &port)) {
+      ret = alloc_proxied (url, host, port, false);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
   
   hostargs_t::hostargs_t (const str &h, okws1_port_t p, bool s)
     : _hostname (h),
@@ -159,6 +173,16 @@ namespace okwc4 {
   ptr<resp_t>
   obj_factory_t::alloc_resp ()
   { return New refcounted<resp_simple_t> (); }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  hostargs_t::eq (const hostargs_t &ha) const
+  {
+    return (ha._hostname == _hostname &&
+	    ha._port == _port &&
+	    ha._https == _https);
+  }
 
   //-----------------------------------------------------------------------
   

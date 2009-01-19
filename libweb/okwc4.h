@@ -18,6 +18,7 @@
 #include "dns.h"
 #include "tame.h"
 #include "okwc.h"
+#include "okwc3.h"
 
 namespace okwc4 {
 
@@ -37,6 +38,9 @@ namespace okwc4 {
     bool https () const { return _https; }
     bool ssl () const { return _https; }
     str to_str () const;
+    bool operator== (const hostargs_t &ha) const { return eq (ha); }
+    bool operator!= (const hostargs_t &ha) const { return !eq (ha); }
+    bool eq (const hostargs_t &ha) const;
   private:
     str _hostname;
     okws1_port_t _port;
@@ -73,6 +77,9 @@ namespace okwc4 {
     
     static ptr<reqargs_t> 
     alloc_proxied (const str &url, const str &ph, okws1_port_t pp, bool s);
+    static ptr<reqargs_t> alloc_proxied (const str &url, const str &proxy);
+
+    ptr<const hostargs_t> host () const { return _hostargs; }
     
     virtual ~reqargs_t () {}
 
@@ -126,7 +133,7 @@ namespace okwc4 {
 
   class agent_get_t : public okwc3::agent_t {
   public:
-    agent_get_t (ptr<hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
+    agent_get_t (ptr<const hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
       : okwc3::agent_t (ha->hostname (), ha->port (), ha->ssl ()),
 	_hostargs (ha),
 	_obj_factory (f) {}
@@ -141,7 +148,7 @@ namespace okwc4 {
   protected:
     void get_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev, CLOSURE);
 
-    ptr<hostargs_t> _hostargs;
+    ptr<const hostargs_t> _hostargs;
     ptr<obj_factory_t> _obj_factory;
   };
 
