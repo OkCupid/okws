@@ -65,8 +65,8 @@ main2 (int argc, char **argv)
   tvars {
     str post;
     ptr<okwc4::agent_get_t> cli;
-    ptr<okwc4::resp_t> resp;
-    int status (HTTP_TIMEOUT);
+    vec<ptr<okwc4::resp_t> > respv;
+    vec<int> statusv;
     str prx;
     int ch;
     int timeout (-1);
@@ -79,13 +79,18 @@ main2 (int argc, char **argv)
     str postfile;
     size_t s;
     bool ka (false);
+    rendezvous_t<> rv (__FILE__, __LINE__);
+    bool parallel (false);
   }
 
   okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
 
-  while ((ch = getopt (argc, argv, "t:p:h:o:f:k")) != -1) {
+  while ((ch = getopt (argc, argv, "t:p:h:o:f:kl")) != -1) {
     switch (ch) {
+    case 'l':
+      parallel = true;
+      break;
     case 'k':
       ka = true;
       break;
@@ -147,21 +152,37 @@ main2 (int argc, char **argv)
     }
   }
 
+  respv.setsize (rav.size ());
+  statusv.setsize (rav.size ());
   for (s = 0; s < rav.size (); s++) {
     ra = rav[s];
-    if (!pra || *(pra->host ()) != *(ra->host ()) ) {
+    if (!cli || !pra || *(pra->host ()) != *(ra->host ()) ) {
       cli = New refcounted<okwc4::agent_get_t> (ra->host (), factory);
-      cli->set_keepalive (ka);
-      twait { cli->get (ra, mkevent (status, resp)); }
-      
-      aout << "status: " << status << "\n";
-      if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {
-	aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
-      } else if (resp && resp->body ()) {
-	aout << "\nbody: " << resp->body () << "\n";
-      }
     }
+    cli->set_keepalive (ka);
+    statusv[s] = HTTP_TIMEOUT;
+    cli->get (ra, mkevent (rv, statusv[s], respv[s])); 
     pra = ra;
+
+    if (!parallel) {
+      twait (rv);
+    }
+  }
+  
+  while (rv.need_wait ()) {
+    twait (rv);
+  }
+
+  for (s = 0; s < rav.size (); s++) {
+    int status = statusv[s];
+    ptr<okwc4::resp_t> resp = respv[s];
+    
+    aout << "status(" << s << "): " << status << "\n";
+    if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {
+      aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
+    } else if (resp && resp->body ()) {
+      aout << "\nbody: " << resp->body () << "\n";
+    }
   }
 
   // delay to find any bugz
