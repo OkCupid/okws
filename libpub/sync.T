@@ -88,44 +88,33 @@ namespace oksync {
 
     sp = _stages[stage];
 
-    warn << "A: " << stage << "," << id << "\n";
     if (!sp) {
-      warn << "B1: " << stage << "," << id << "\n";
       s = New refcounted<stage_t> ();
       _stages.insert (stage, s);
     } else {
-      warn << "B2: " << stage << "," << id << "\n";
       s = *sp;
     }
 
     if (pid >= 0) {
-      warn << "C: " << stage << "," << id << "\n";
       pp = s->_waiters[pid];
       if (!pp) {
-	warn << "D1: " << stage << "," << id << "\n";
 	p = New refcounted<cv_t> ();
 	s->_waiters.insert (pid, p);
       } else {
-	warn << "D2: " << stage << "," << id << "\n";
 	p = *pp;
       }
-      warn << "E: " << stage << "," << id << "\n";
       twait { p->wait (mkevent ()); }
-      warn << "F: " << stage << "," << id << "\n";
       s->_waiters.remove (pid);
     }
 
     cp = s->_waiters[id];
     if (cp) {
-      warn << "G: " << stage << "," << id << "\n";
       c = *cp;
     } else {
-      warn << "H: " << stage << "," << id << "\n";
       c = New refcounted<cv_t> ();
       s->_waiters.insert (id, c);
     }
 
-    warn << "I: " << stage << "," << id << "\n";
     ev->trigger (c);
   }
 
