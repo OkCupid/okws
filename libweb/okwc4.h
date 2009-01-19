@@ -45,6 +45,7 @@ namespace okwc4 {
     str _hostname;
     okws1_port_t _port;
     bool _https;
+    bool _keepalive;
   };
   
   //-----------------------------------------------------------------------

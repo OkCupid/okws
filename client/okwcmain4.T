@@ -21,7 +21,7 @@
 void
 usage ()
 {
-  warn << "usage: okwc [-t <timeout>] [-o <status>] [-p <proxy>] "
+  warn << "usage: okwc [-k] [-t <timeout>] [-o <status>] [-p <proxy>] "
        << " [ -f <post-file> ] "
        << "<url1> <url2> ..\n";
   exit (1);
@@ -78,13 +78,17 @@ main2 (int argc, char **argv)
     vec<ptr<okwc4::reqargs_t> > rav;
     str postfile;
     size_t s;
+    bool ka (false);
   }
 
   okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
 
-  while ((ch = getopt (argc, argv, "t:p:h:o:f:")) != -1) {
+  while ((ch = getopt (argc, argv, "t:p:h:o:f:k")) != -1) {
     switch (ch) {
+    case 'k':
+      ka = true;
+      break;
     case 'f':
       postfile = optarg;
       break;
@@ -147,6 +151,7 @@ main2 (int argc, char **argv)
     ra = rav[s];
     if (!pra || *(pra->host ()) != *(ra->host ()) ) {
       cli = New refcounted<okwc4::agent_get_t> (ra->host (), factory);
+      cli->set_keepalive (ka);
       twait { cli->get (ra, mkevent (status, resp)); }
       
       aout << "status: " << status << "\n";
@@ -156,6 +161,7 @@ main2 (int argc, char **argv)
 	aout << "\nbody: " << resp->body () << "\n";
       }
     }
+    pra = ra;
   }
 
   // delay to find any bugz

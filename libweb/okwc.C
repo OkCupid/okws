@@ -577,9 +577,10 @@ okwc_http_hdr_t::parse_guts ()
     case OKWC_HDR_EOL2A:
       if (noins)
 	noins = false;
-      else if (key)
+      else if (key) {
+	warn << "KV: " << key << " -> " << val << "\n";
 	insert (key, val);
-      else 
+      } else 
 	r = ABUF_PARSE_ERR;
       key = val = NULL;
       break;

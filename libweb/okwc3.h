@@ -188,12 +188,13 @@ public:
   virtual void set_post (const str &p) = 0;
   virtual void set_extra_headers (const vec<str> &v) = 0;
 
-  virtual void make (ptr<ok_xprt_base_t> x, evi_t cb) { return make_T (x, cb); }
+  virtual void make (ptr<ok_xprt_base_t> x, bool k, evi_t cb) 
+  { return make_T (x, k, cb); }
 
 
 protected:
-  void make_T (ptr<ok_xprt_base_t> x, evi_t cb, CLOSURE);
-  void format_req (strbuf &b);
+  void make_T (ptr<ok_xprt_base_t> x, bool keepalive, evi_t cb, CLOSURE);
+  void format_req (strbuf &b, bool ka);
   mutable ptr<post_t> _post_obj;
 
 };
@@ -313,6 +314,7 @@ public:
   str hostname () const { return _hostname; }
   okws1_port_t port () const { return _port; }
   bool use_ssl () const { return _ssl; }
+  void set_keepalive (bool b) { _keepalive = b; }
 
 protected:
 

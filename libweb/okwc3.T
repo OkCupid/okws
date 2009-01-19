@@ -216,7 +216,7 @@ reqinfo_direct_t::get_hdr_hostname () const
 //-----------------------------------------------------------------------
 
 void
-req_t::format_req (strbuf &b)
+req_t::format_req (strbuf &b, bool ka)
 {
 
   str fn = get_filename ();
@@ -225,7 +225,8 @@ req_t::format_req (strbuf &b)
 
   b << mth << " " << fn << " HTTP/1." << vers << HTTP_CRLF;
   if (vers == 1) {
-    b << "Connection: close" << HTTP_CRLF;
+    const char *conn = ka ? "keep-alive" : "closed";
+    b << "Connection: " << conn  << HTTP_CRLF;
   }
 
   /*
@@ -264,7 +265,7 @@ req_t::format_req (strbuf &b)
 //-----------------------------------------------------------------------
 
 tamed void
-req_t::make_T (ptr<ok_xprt_base_t> x, evi_t ev)
+req_t::make_T (ptr<ok_xprt_base_t> x, bool ka, evi_t ev)
 {
   tvars {
     strbuf req;
@@ -275,7 +276,7 @@ req_t::make_T (ptr<ok_xprt_base_t> x, evi_t ev)
   }
   hold = mkref (this);
 
-  format_req (req);
+  format_req (req, ka);
 
   twait { x->drain_to_network (&req, connector::cnc (mkevent (r), ev, &outc)); }
   if (outc == OUTCOME_CANCELLED) {
@@ -334,7 +335,9 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
     twait { get_x (connector::cnc (mkevent (status, x), ev)); }
 
     if (x) {
-      twait { req->make (x, connector::cnc (mkevent (status), ev)); }
+      twait { 
+	req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); 
+      }
       if (status == HTTP_OK) {
 	resp->setx (x);
 
