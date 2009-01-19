@@ -610,6 +610,14 @@ okwc_http_hdr_t::fixup ()
 {
   if (!lookup ("content-length", &contlen) || contlen == 0)
     contlen = okwc_def_contlen;
+
+  str tmp;
+  if (lookup ("connection", &tmp) && cicmp (tmp, "keep-alive")) {
+    _conn = HTTP_CONN_KEEPALIVE;
+  } else {
+    _conn = HTTP_CONN_CLOSED;
+  }
+
 }
 
 void

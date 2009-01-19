@@ -5,6 +5,7 @@
 #define __LIBAOK_OK3_H__
 
 #include "ok.h"
+#include "oksync.h"
 
 /*
  * okclnt3_t: like okclnt_t and okclnt2_t, a class that corresponds to
@@ -16,19 +17,6 @@ class okclnt3_t : public okclnt_interface_t {
 public:
 
   //------------------------------------------------------------------------
-
-  class cv_t {
-  public:
-    cv_t () : _go (false) {}
-    void wait (evv_t ev);
-    void poke ();
-  private:
-    bool _go;
-    evv_t::ptr _ev;
-  };
-
-  //------------------------------------------------------------------------
-
 
   class req_t : public http_parser_cgi_t, public virtual refcount {
   public:
@@ -268,7 +256,7 @@ protected:
 
   //-----------------------------------------------------------------------
 
-  cv_t _output_cv;
+  oksync::cv_t _output_cv;
 
   //-----------------------------------------------------------------------
 

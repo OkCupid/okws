@@ -313,29 +313,40 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
     int status (HTTP_TIMEOUT);
     ptr<agent_t> hold;
     ptr<ok_xprt_base_t> x;
-    outcome_t outc;
+    outcome_t outc (OUTCOME_SUCC);
+    ptr<oksync::pipeliner_t::handle_t> plh;
   }
   
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
 
-  twait { 
-    _req_lock.acquire (tame::lock_t::EXLUSIVE, 
-		       connector::cnc (mkevent (), ev, &outc));
+  plh = _pipeliner->init ();
+
+  if (_keepalive) {
+    twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
   }
 
-  twait { get_x (connector::cnc (mkevent (status, x), ev)); }
+  if (outc == OUTCOME_SUCC) {
 
-  if (x) {
-    
-    twait { req->make (x, connector::cnc (mkevent (status), ev)); }
-    if (status == HTTP_OK) {
-      resp->setx (x);
-      twait { resp->get (connector::cnc (mkevent (status), ev)); }
+    twait { get_x (connector::cnc (mkevent (status, x), ev)); }
+
+    if (x) {
+      twait { req->make (x, connector::cnc (mkevent (status), ev)); }
+      if (status == HTTP_OK) {
+	resp->setx (x);
+
+	if (_keepalive) {
+	  twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
+	}
+
+	if (outc == OUTCOME_SUCC) {
+	  twait { resp->get (connector::cnc (mkevent (status), ev)); }
+	}
+      }
+      clear_x (resp);
+
     }
   }
-
-  clear_x ();
 
   ev->trigger (status);
 }
@@ -611,7 +622,6 @@ agent_t::get_x (evix_t ev)
     tcpconnect_t *tc;
     outcome_t outc;
     int fd;
-    bool dorelease (false);
   }
 
   // Keep this object from being freed from underneath us.
@@ -652,10 +662,11 @@ agent_t::get_x (evix_t ev)
 //-----------------------------------------------------------------------
 
 void 
-agent_t::clear_x ()
+agent_t::clear_x (ptr<resp_t> req)
 {
-  if (_keepalive)
+  if (!_keepalive || req->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
     _x = NULL;
+  }
 }
 //-----------------------------------------------------------------------
 

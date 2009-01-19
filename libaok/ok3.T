@@ -536,35 +536,6 @@ okclnt3_t::poke ()
 
 //-----------------------------------------------------------------------
 
-void
-okclnt3_t::cv_t::wait (evv_t ev)
-{
-  if (_go) {
-    assert (!_ev);
-    _go = false;
-    ev->trigger ();
-  } else {
-    _ev = ev;
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-okclnt3_t::cv_t::poke ()
-{
-  if (_ev) {
-    assert (!_go);
-    evv_t tmp (_ev);
-    _ev = NULL;
-    tmp->trigger ();
-  } else {
-    _go = true;
-  }
-}
-
-//-----------------------------------------------------------------------
-
 ptr<ahttpcon>
 okclnt3_t::resp_t::con ()
 {

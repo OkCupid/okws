@@ -36,10 +36,13 @@
 #include "httpconst.h"
 #include "async.h"
 #include "dns.h"
+#include "inhdr.h"
 
 //
 // okwc = OK Web Client
 //
+
+//-----------------------------------------------------------------------
 
 class okwc_dnscache_entry_t : public virtual refcount {
 public:
@@ -61,6 +64,8 @@ private:
   vec<cbhent> cbq;
 };
 
+//-----------------------------------------------------------------------
+
 class okwc_dnscache_t {
 public:
   okwc_dnscache_t () {}
@@ -68,6 +73,8 @@ public:
 private:
   qhash<str, ptr<okwc_dnscache_entry_t> > cache;
 };
+
+//-----------------------------------------------------------------------
 
 class okwc_cookie_set_t : public vec<cgi_t *> 
 {
@@ -89,9 +96,9 @@ private:
   char *buf;
 };
 
-
-
 #define OKWC_SCRATCH_SZ 4096
+
+//-----------------------------------------------------------------------
 
 class okwc_http_hdr_t : public http_hdr_t, public pairtab_t<> {
 public:
@@ -112,10 +119,12 @@ public:
     : async_parser_t (a), http_hdr_t (a, bflen, b),
       cookie (ck), state (OKWC_HDR_START), 
       contlen (0), status (HTTP_BAD_REQUEST),
-      noins (false) {}
+      noins (false),
+      _conn (HTTP_CONN_CLOSED) {}
 
   int get_contlen () const { return contlen; }
   bool is_chunked () const ;
+  http_conn_mode_t connection () const { return _conn; }
 
 protected:
   void parse_guts ();
@@ -134,7 +143,10 @@ private:
   bool chunked;
 
   str key, val;
+  http_conn_mode_t _conn;
 };
+
+//-----------------------------------------------------------------------
 
 struct okwc_resp_t {
   okwc_resp_t (abuf_t *a, size_t bfln, char *b, okwc_cookie_set_t *incook)
@@ -160,7 +172,11 @@ struct okwc_resp_t {
   okwc_http_hdr_t *_hdr;
 };
 
+//-----------------------------------------------------------------------
+
 typedef callback<void, ptr<okwc_resp_t> >::ref okwc_cb_t;
+
+//-----------------------------------------------------------------------
 
 //
 // okwc_chunker_t
@@ -244,6 +260,8 @@ protected:
   str _proxy_hdr_hostname;
 };
 
+//-----------------------------------------------------------------------
+
 //
 // returns the body of the HTTP response as a big string, malloced
 // in a big buffer. this is the simplest, but is wasteful
@@ -268,6 +286,8 @@ private:
   vec<str> chunks;
   okwc_cb_t okwc_cb;
 };
+
+//-----------------------------------------------------------------------
 
 class okwc_req_t {
 public:
@@ -312,6 +332,8 @@ protected:
   const str _type;
 };
 
+//-----------------------------------------------------------------------
+
 class okwc_req_bigstr_t : public okwc_req_t {
 public:
   okwc_req_bigstr_t (const str &ht, u_int16_t p, const str &fn,
@@ -325,12 +347,16 @@ protected:
   okwc_cb_t okwc_cb;
 };
 
+//-----------------------------------------------------------------------
 
 okwc_req_t *
 okwc_request (const str &h, u_int16_t port, const str &fn, 
 	      okwc_cb_t cb, int vers = 0, int timeout = -1, 
 	      cgi_t *outcook = NULL, const str &post = NULL,
 	      const str &type = NULL);
+
+
+//-----------------------------------------------------------------------
 
 /*
  * wget a remote URL, but using a proxied interface.
@@ -360,8 +386,11 @@ okwc_request_proxied (const str &proxy_hostname,
 		      const str &type = NULL);
 
 
+//-----------------------------------------------------------------------
+
 void
 okwc_cancel (okwc_req_t *req);
 
+//-----------------------------------------------------------------------
 
 #endif

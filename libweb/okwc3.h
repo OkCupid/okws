@@ -39,7 +39,7 @@
 #include "tame.h"
 #include "okwc.h"
 #include "list.h"
-#include "tame_lock.h"
+#include "oksync.h"
 
 #define CANCELLED_STATUS HTTP_TIMEOUT
 
@@ -59,6 +59,7 @@ struct queued_cbv_t {
 };
 
 typedef event<ptr<hostent>, int>::ref ev_hent_t;
+
 
 //-----------------------------------------------------------------------
 
@@ -281,7 +282,8 @@ public:
       _port (p),
       _ssl (false),
       _keepalive (false), 
-      _obj_factory (a ? a : New refcounted<obj_factory_t> ()) {}
+      _obj_factory (a ? a : New refcounted<obj_factory_t> ()),
+      _pipeliner (New refcounted<oksync::pipeliner_t> (2)) {}
 
   virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
   { req_T (req, resp, cb); }
@@ -297,16 +299,15 @@ public:
 protected:
 
   void get_x (evix_t ev, CLOSURE);
-  void clear_x ();
+  void clear_x (ptr<resp_t> req);
 
   const str _hostname;
   okws1_port_t _port;
   bool _ssl;
   bool _keepalive;
   ptr<ok_xprt_base_t> _x;
-  tame::lock_t _req_lock, _resp_lock;
-
   ptr<obj_factory_t> _obj_factory;
+  ptr<oksync::pipeliner_t> _pipeliner;
 
 private:
   void req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
