@@ -1,3 +1,4 @@
+// -*-c++-*-
 #include "okwc3.h"
 #include "okwc4.h"
 

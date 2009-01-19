@@ -82,30 +82,22 @@ namespace okwc4 {
   
   //-----------------------------------------------------------------------
   
-  class agent_base_t {
+  class agent_get_t : public okwc3::agent_t {
   public:
-    agent_base_t (ptr<hostargs_t> ha) : _hostargs (ha) {}
+    agent_base_t (ptr<hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
+      : _hostargs (ha),
+	_obj_factory (f) {}
+
     virtual ~agent_base_t () {}
 
-    virtual void 
-    run (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev) = 0;
+    virtual void get (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev) 
+    { get_T (ra, f, ev); }
+
+    void get (ptr<reqargs_t> ra, resp_ev_t ev) { return get (ra, NULL, ev); }
 
   protected:
-
     ptr<hostargs_t> _hostargs;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class agent_oneshot_t : public agent_base_t {
-  public:
-    agent_oneshot_t (ptr<hostargs_t> ha) : agent_base_t (ha) {}
-
-    void run (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev) 
-    { run_T (ra, f, ev); }
-
-  private:
-    void run_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev, CLOSURE);
+    ptr<obj_factory_t> _obj_factory;
   };
 
   //-----------------------------------------------------------------------
