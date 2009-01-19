@@ -277,13 +277,14 @@ typedef event<int, ptr<ok_xprt_base_t> >::ref evix_t;
 class agent_t : public virtual refcount {
 public:
   virtual ~agent_t () {}
-  agent_t (const str &h, okws1_port_t p, ptr<obj_factory_t> a = NULL) 
+  agent_t (const str &h, okws1_port_t p, ptr<obj_factory_t> a = NULL,
+	   bool s = false) 
     : _hostname (h), 
       _port (p),
-      _ssl (false),
+      _ssl (s),
       _keepalive (false), 
       _obj_factory (a ? a : New refcounted<obj_factory_t> ()),
-      _pipeliner (New refcounted<oksync::pipeliner_t> (2)) {}
+      _pipeliner (New refcounted<oksync::pipeliner_t> ()) {}
 
   virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
   { req_T (req, resp, cb); }

@@ -35,24 +35,29 @@ namespace oksync {
   
   //--------------------------------------------------------------------
 
-  pipeliner_t::pipeliner_t (size_t nstages)
-  {
-    _stages.setsize (nstages);
-  }
+  pipeliner_t::pipeliner_t () : _id (0) {}
 
   //--------------------------------------------------------------------
 
   ptr<pipeliner_t::handle_t>
   pipeliner_t::init ()
   {
-    return New refcounted<handle_t> (mkref (this));
+    return New refcounted<handle_t> (mkref (this), _id++);
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  pipeliner_t::handle_t::release ()
+  {
+    if (_curr) (_curr->poke ());
   }
 
   //--------------------------------------------------------------------
 
   pipeliner_t::handle_t::~handle_t ()
   {
-    if (_locked) { _parent->release (_stage); }
+    release ();
   }
 
   //--------------------------------------------------------------------
@@ -62,38 +67,51 @@ namespace oksync {
   {
     tvars {
       holdvar ptr<pipeliner_t::handle_t> hold (mkref (_self));
-      size_t nxtstage;
-      size_t oldstage;
     }
 
-    oldstage = _stage;
-    nxtstage = oldstage + 1;
-
-    twait { _parent->acquire (nxtstage, mkevent ()); }
-    _stage = nxtstage;
-    _locked = true;
-
+    release ();
+    _stage++;
+    twait { _parent->get_next (_stage, _id, mkevent (_curr)); }
     ev->trigger ();
-    
-    if (oldstage >= 0) {
-      _parent->release (oldstage);
+  }
+
+  //--------------------------------------------------------------------
+
+  tamed void
+  pipeliner_t::get_next (size_t stage, size_t id, pipeliner_t::ev_t ev)
+  {
+    tvars {
+      ptr<pipeliner_t::stage_t> *sp, s;
+      ptr<cv_t> c, *cp, p, *pp;
+      size_t pid;
     }
-  }
 
-  //--------------------------------------------------------------------
+    sp = _stages[stage];
 
-  void
-  pipeliner_t::acquire (size_t s, evv_t ev)
-  {
-   _stages[s].acquire (tame::lock_t::EXCLUSIVE, ev);
-  }
+    if (!sp) {
+      s = New refcounted<stage_t> ();
+      _stages.insert (stage, s);
+    } else {
+      s = *sp;
+      if (_id > 0) {
+	pid = _id - 1;
+	pp = s->_waiters[pid];
+	if (pp) {
+	  p = *pp;
+	  twait { p->wait (mkevent ()); }
+	  s->_waiters.remove (pid);
+	}
+      }
+      cp = s->_waiters[_id];
+      if (cp) c = *cp;
+    }
 
-  //--------------------------------------------------------------------
+    if (!c) {
+      c = New refcounted<cv_t> ();
+      s->_waiters.insert (_id, c);
+    }
 
-  void
-  pipeliner_t::release (size_t s)
-  {
-    _stages[s].release ();
+    ev->trigger (c);
   }
 
   //--------------------------------------------------------------------

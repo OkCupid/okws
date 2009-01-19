@@ -26,26 +26,37 @@ namespace oksync {
 
   class pipeliner_t : public virtual refcount {
   public:
-    pipeliner_t (size_t nstages);
+    pipeliner_t ();
+
+    typedef event<ptr<cv_t> >::ref ev_t;
+
+    class stage_t {
+    public:
+      stage_t () {}
+      qhash<size_t, ptr<cv_t> > _waiters;
+    };
     
     class handle_t : public virtual refcount {
     public:
-      handle_t (ptr<pipeliner_t> p) 
-	: _parent (p), _stage (-1), _locked (false) {}
+      handle_t (ptr<pipeliner_t> p, size_t id) 
+	: _parent (p), _id (id), _locked (false), _stage (-1) {}
       ~handle_t ();
       void advance (evv_t evk, CLOSURE);
+      void release ();
     protected:
       ptr<pipeliner_t> _parent;
-      ssize_t _stage;
+      ptr<cv_t> _curr;
+      size_t _id;
       bool _locked;
+      size_t _stage;
     };
 
     ptr<handle_t> init ();
-    void release (size_t s);
-    void acquire (size_t s, evv_t ev);
+    void get_next (size_t stage, size_t id, ev_t ev, CLOSURE);
     
   private:
-    vec<tame::lock_t> _stages;
+    size_t _id;
+    qhash<size_t, ptr<stage_t> > _stages;
   };
   
   //---------------------------------------------------------------------

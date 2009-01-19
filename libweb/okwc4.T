@@ -119,9 +119,8 @@ namespace okwc4 {
   //-----------------------------------------------------------------------
 
   tamed void
-  agent_oneshot_t::run_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev)
+  agent_get_t::get_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev)
   {
-
 
 
   }

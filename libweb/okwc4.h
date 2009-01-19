@@ -34,6 +34,7 @@ namespace okwc4 {
     str hostname () const { return _hostname; }
     okws1_port_t port () const { return _port; }
     bool https () const { return _https; }
+    bool ssl () const { return _https; }
     str to_str () const;
   private:
     str _hostname;
@@ -84,11 +85,12 @@ namespace okwc4 {
   
   class agent_get_t : public okwc3::agent_t {
   public:
-    agent_base_t (ptr<hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
-      : _hostargs (ha),
+    agent_get_t (ptr<hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
+      : okwc3::agent_t (ha->hostname (), ha->port (), f, ha->ssl ()),
+	_hostargs (ha),
 	_obj_factory (f) {}
 
-    virtual ~agent_base_t () {}
+    virtual ~agent_get_t () {}
 
     virtual void get (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev) 
     { get_T (ra, f, ev); }
@@ -96,6 +98,8 @@ namespace okwc4 {
     void get (ptr<reqargs_t> ra, resp_ev_t ev) { return get (ra, NULL, ev); }
 
   protected:
+    void get_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev, CLOSURE);
+
     ptr<hostargs_t> _hostargs;
     ptr<obj_factory_t> _obj_factory;
   };
