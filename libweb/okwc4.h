@@ -137,7 +137,7 @@ namespace okwc4 {
     agent_get_t (ptr<const hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
       : okwc3::agent_t (ha->hostname (), ha->port (), ha->ssl ()),
 	_hostargs (ha),
-	_obj_factory (f) {}
+	_obj_factory (f ? f : New refcounted<obj_factory_t> ()) {}
 
     virtual ~agent_get_t () {}
 

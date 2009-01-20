@@ -384,7 +384,7 @@ agent_t::req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 
 	if (outc == OUTCOME_SUCC) {
 	  twait { resp->get (connector::cnc (mkevent (status), ev)); }
-	}
+	} 
       }
       if (resp->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
 	_x = NULL;

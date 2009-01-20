@@ -523,13 +523,16 @@ okwc_http_hdr_t::parse_guts ()
 {
   abuf_stat_t r = ABUF_OK;
   bool inc;
-  int status_parse = HTTP_BAD_REQUEST;
+  int status_combined = HTTP_NO_STATUS;
 
   while (r == ABUF_OK) {
     inc = true;
     switch (state) {
     case OKWC_HDR_START:
       r = delimit_word (&vers);
+      if (r == ABUF_OK && _status_parse == HTTP_NO_STATUS) {
+	_status_parse = HTTP_OK;
+      }
       break;
     case OKWC_HDR_SPC1:
       r = abuf->skip_hws (1);
@@ -538,7 +541,7 @@ okwc_http_hdr_t::parse_guts ()
       {
 	str status_str;
 	r = delimit_word (&status_str);
-	if (r == ABUF_OK && !convertint (status_str, &status))
+	if (r == ABUF_OK && !convertint (status_str, &_status_header))
 	  r = ABUF_PARSE_ERR;
 	break;
       }
@@ -556,8 +559,8 @@ okwc_http_hdr_t::parse_guts ()
     case OKWC_HDR_KEY:
       r = gobble_crlf ();
       if (r == ABUF_OK) {
-	status_parse = HTTP_OK;
 	r = ABUF_EOF;
+	_clean_eoh = true;
       } else if (r == ABUF_NOMATCH)
 	r = delimit_key (&key);
       break;
@@ -597,11 +600,15 @@ okwc_http_hdr_t::parse_guts ()
     if (r == ABUF_OK && inc)
       state = static_cast<state_t> (state + 1);
   }
+
   if (r != ABUF_WAIT) {
-    if (status_parse != HTTP_OK)
-      status = status_parse;
+    if (!_clean_eoh) {
+      _status_parse = HTTP_BAD_REQUEST;
+    }
+    status_combined = (_status_header != HTTP_NO_STATUS 
+		       ? _status_header : _status_parse);
     fixup (); // fixup all the time, not just on success.
-    finish_parse (status);
+    finish_parse (status_combined);
   }
 }
 
