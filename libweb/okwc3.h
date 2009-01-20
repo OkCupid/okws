@@ -308,8 +308,7 @@ public:
       _keepalive (false), 
       _pipeliner (New refcounted<oksync::pipeliner_t> ()) {}
 
-  virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb)
-  { req_T (req, resp, cb); }
+  virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb);
 
   str hostname () const { return _hostname; }
   okws1_port_t port () const { return _port; }
@@ -318,8 +317,7 @@ public:
 
 protected:
 
-  void get_x (evix_t ev, CLOSURE);
-  void clear_x (ptr<resp_t> req);
+  void get_x (ptr<ok_xprt_base_t> x, evix_t ev, CLOSURE);
 
   const str _hostname;
   okws1_port_t _port;
@@ -329,7 +327,8 @@ protected:
   ptr<oksync::pipeliner_t> _pipeliner;
 
 private:
-  void req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
+  void req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
+  void req_oneshot (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
 };
 
 

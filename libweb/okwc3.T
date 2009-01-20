@@ -303,6 +303,7 @@ dnserr2httperr (int i)
 
 //-----------------------------------------------------------------------
 
+
 /**
  * @brief Do the main workflow of the HTTP request
  * @param req The user's request
@@ -313,12 +314,50 @@ dnserr2httperr (int i)
  * even when cancelled.  Callers should take note.
  */
 tamed void
-agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
+agent_t::req_oneshot (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 {
   tvars {
     int status (HTTP_TIMEOUT);
     ptr<agent_t> hold;
     ptr<ok_xprt_base_t> x;
+  }
+  
+  // Keep this object from being freed from underneath us.
+  hold = mkref (this);
+
+  twait { get_x (NULL, connector::cnc (mkevent (status, x), ev)); }
+
+  if (x) {
+    twait { req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); }
+    if (status == HTTP_OK) {
+      resp->setx (x);
+      twait { resp->get (connector::cnc (mkevent (status), ev)); }
+    }
+  }
+  
+  ev->trigger (status);
+}
+
+//-----------------------------------------------------------------------
+
+void
+agent_t::req (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
+{
+  if (_keepalive) { req_ka (req, resp, ev); }
+  else { req_oneshot (req, resp, ev); }
+}
+
+//-----------------------------------------------------------------------
+
+/**
+ * keepalive req
+ */
+tamed void
+agent_t::req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
+{
+  tvars {
+    int status (HTTP_TIMEOUT);
+    ptr<agent_t> hold;
     outcome_t outc (OUTCOME_SUCC);
     ptr<oksync::pipeliner_t::handle_t> plh;
   }
@@ -328,31 +367,28 @@ agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 
   plh = _pipeliner->init ();
 
-  if (_keepalive) {
-    twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
-  }
+  twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
 
   if (outc == OUTCOME_SUCC) {
 
-    twait { get_x (connector::cnc (mkevent (status, x), ev)); }
+    twait { get_x (_x, connector::cnc (mkevent (status, _x), ev)); }
 
-    if (x) {
+    if (_x) {
       twait { 
-	req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); 
+	req->make (_x, _keepalive, connector::cnc (mkevent (status), ev)); 
       }
       if (status == HTTP_OK) {
-	resp->setx (x);
+	resp->setx (_x);
 
-	if (_keepalive) {
-	  twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
-	}
+	twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
 
 	if (outc == OUTCOME_SUCC) {
 	  twait { resp->get (connector::cnc (mkevent (status), ev)); }
 	}
       }
-      clear_x (resp);
-
+      if (resp->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
+	_x = NULL;
+      }
     }
   }
 
@@ -621,7 +657,7 @@ req3_t::get_extra_headers () const
 //-----------------------------------------------------------------------
 
 tamed void
-agent_t::get_x (evix_t ev)
+agent_t::get_x (ptr<ok_xprt_base_t> x, evix_t ev)
 {
   tvars {
     ptr<agent_t> hold;
@@ -636,7 +672,7 @@ agent_t::get_x (evix_t ev)
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
 
-  if (!_x || _x->ateof ()) {
+  if (!x || x->ateof ()) {
 
     twait { 
       dnscache.lookup (hostname (), connector::cnc (mkevent (he, dns_err), ev));
@@ -657,26 +693,17 @@ agent_t::get_x (evix_t ev)
       } else if (fd < 0) {
 	status = HTTP_CONNECTION_FAILED;
       } else if (use_ssl ()) {
-	_x = okssl::factory ()->alloc_con (fd);
+	x = okssl::factory ()->alloc_con (fd);
       } else {
-	_x = ahttpcon::alloc (fd);
+	x = ahttpcon::alloc (fd);
       }
     }
 
   }
-  ev->trigger (status, _x);
+  ev->trigger (status, x);
 
 }
 
-//-----------------------------------------------------------------------
-
-void 
-agent_t::clear_x (ptr<resp_t> req)
-{
-  if (!_keepalive || req->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
-    _x = NULL;
-  }
-}
 //-----------------------------------------------------------------------
 
 };

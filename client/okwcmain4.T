@@ -181,7 +181,7 @@ main2 (int argc, char **argv)
     if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {
       aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
     } else if (resp && resp->body ()) {
-      aout << "\nbody: " << resp->body () << "\n";
+      aout << "\nbody(" << s << "): " << resp->body () << "\n";
     }
   }
 
