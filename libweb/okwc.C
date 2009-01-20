@@ -546,7 +546,9 @@ okwc_http_hdr_t::parse_guts ()
 	break;
       }
     case OKWC_HDR_SPC2:
-      r = abuf->skip_hws (1);
+      // maybe there's an EOL here (not status desc)
+      if ((r = eol ()) != ABUF_OK)
+	r = abuf->skip_hws (1);
       break;
     case OKWC_HDR_STATUS_DESC:
       r = eol ();

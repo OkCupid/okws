@@ -360,6 +360,7 @@ agent_t::req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
     ptr<agent_t> hold;
     outcome_t outc (OUTCOME_SUCC);
     ptr<oksync::pipeliner_t::handle_t> plh;
+    ptr<ok_xprt_base_t> x;
   }
   
   // Keep this object from being freed from underneath us.
@@ -371,22 +372,33 @@ agent_t::req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
 
   if (outc == OUTCOME_SUCC) {
 
-    twait { get_x (_x, connector::cnc (mkevent (status, _x), ev)); }
+    twait { get_x (_x, connector::cnc (mkevent (status, x), ev)); }
 
-    if (_x) {
+    // set the global object to use the x we just got back; others
+    // later in the pipeline might want it.  we can clear it later,
+    // but those who have already gotten _x get to keep their reference 
+    // to it.
+    _x = x;
+
+    if (x) {
+      warn << "making it...\n";
       twait { 
-	req->make (_x, _keepalive, connector::cnc (mkevent (status), ev)); 
+	req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); 
       }
+      warn << "made it: " << status << "\n";
       if (status == HTTP_OK) {
-	resp->setx (_x);
+	resp->setx (x);
 
 	twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
 
+	warn << "getting it...\n";
 	if (outc == OUTCOME_SUCC) {
 	  twait { resp->get (connector::cnc (mkevent (status), ev)); }
 	} 
+	warn << "got it: " << status << "\n";
       }
       if (resp->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
+	warn << "kill connection...\n";
 	_x = NULL;
       }
     }
