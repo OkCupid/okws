@@ -103,7 +103,7 @@ public:
   inline int peek ();
   inline void unget () { bc = true; }
   inline abuf_stat_t skip_ws ();
-  inline abuf_stat_t skip_hws (int mn = 0);
+  abuf_stat_t skip_hws (int mn = 0);
   inline abuf_stat_t expectchar (char c);
   inline abuf_stat_t requirechar (char c);
   void finish ();
@@ -190,22 +190,6 @@ abuf_t::skip_ws ()
     unget ();
     return ABUF_OK;
   }
-}
-
-abuf_stat_t
-abuf_t::skip_hws (int mn)
-{
-  int ch;
-  do { ch = get (); spcs ++; } while (ch == ' ' || ch == '\t');
-  spcs --;
-  if (ch == ABUF_WAITCHAR)
-    return ABUF_WAIT;
-  abuf_stat_t ret = ABUF_OK;
-  if (spcs < mn)
-    ret = ABUF_PARSE_ERR;
-  spcs = 0;
-  unget ();
-  return ABUF_OK;
 }
 
 abuf_stat_t

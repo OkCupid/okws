@@ -59,13 +59,17 @@ http_hdr_t::delimit_word (str *wrd, bool qms)
       break;
     }
   }
-  if (pcp == endp)
+
+  if (ch == ABUF_EOFCHAR && pcp == scratch) {
+    ret = ABUF_EOF;
+  } else if (pcp == endp) {
     ret = ABUF_OVERFLOW;
-  if (ret == ABUF_OK) {
+  } else if (ret == ABUF_OK) {
     *wrd = str (scratch, pcp - scratch);
     pcp = scratch;
     abuf->unget ();
   }
+
   return ret;
 }
 
