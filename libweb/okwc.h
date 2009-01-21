@@ -118,7 +118,7 @@ public:
   okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, size_t bflen, char *b)
     : async_parser_t (a), http_hdr_t (a, bflen, b),
       cookie (ck), state (OKWC_HDR_START), 
-      contlen (0), 
+      contlen (0), _has_body (false),
       _status_parse (HTTP_NO_STATUS),
       _status_header (HTTP_NO_STATUS),
       _clean_eoh (false),
@@ -128,6 +128,7 @@ public:
   int get_contlen () const { return contlen; }
   bool is_chunked () const ;
   http_conn_mode_t connection () const { return _conn; }
+  bool has_body () const { return _has_body; }
 
 protected:
   void parse_guts ();
@@ -140,6 +141,7 @@ private:
   okwc_cookie_set_t *cookie;
   state_t state, ret_state;
   int contlen;
+  bool _has_body;
   str vers, status_desc;
   int _status_parse, _status_header;
   bool _clean_eoh;
@@ -396,5 +398,6 @@ void
 okwc_cancel (okwc_req_t *req);
 
 //-----------------------------------------------------------------------
+
 
 #endif
