@@ -28,7 +28,7 @@
 abuf_stat_t
 http_hdr_t::delimit_word (str *wrd, bool qms)
 {
-  int ch;
+  int ch = ABUF_WAITCHAR;
   abuf_stat_t ret = ABUF_OK;
   bool flag = true;
   for ( ; pcp < endp && flag; pcp += (flag ? 1 : 0)) {
