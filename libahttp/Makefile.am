@@ -6,7 +6,7 @@ okwslib_LTLIBRARIES = libahttp.la
 
 libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 	abuf_pipe.C pair.C hdr.C inhdr.C ahparse.C aparse.C kmp.C mpfd.C  \
-	mimetypes.C httpconst.C 
+	mimetypes.C httpconst.C  resp2.C
 
 libahttp_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
@@ -24,21 +24,23 @@ SUFFIXES = .T .g .C
 
 resp.o: resp.C
 resp.lo: resp.C
+resp2.o: resp.C
+resp2.lo: resp.C
 err.o: err.C
 err.lo: err.C
 
-EXTRA_DIST = .cvsignore err.g resp.T
-CLEANFILES = core *.core *~ *.rpo err.C resp.C
+EXTRA_DIST = .cvsignore err.g resp.T resp2.T
+CLEANFILES = core *.core *~ *.rpo err.C resp.C resp2.C
 
 .PHONY: sourceclean tameclean
 sourceclean:
 	rm -f err.C
 
 tameclean:
-	rm -f resp.C
+	rm -f resp.C resp2.C
 
 dist-hook:
-	cd $(distdir) && rm -f err.C resp.C
+	cd $(distdir) && rm -f err.C resp.C resp2.C
 
 MAINTAINERCLEANFILES = Makefile.in
 

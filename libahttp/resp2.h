@@ -27,4 +27,19 @@
 
 #include "resp.h"
 
+//------------------------------------------------------------------------
+
+class http_response_ok2_t : public http_response_base_t {
+public:
+  http_response_ok2_t (const http_resp_attributes_t &a, ptr<compressible_t> x)
+    : _header (a),
+      _body (x) {}
+
+protected:
+  http_resp_header_t _header;
+  ptr<compressible_t> _body;
+};
+
+//------------------------------------------------------------------------
+
 #endif /* __LIBAHTTP_RESP2__ */
