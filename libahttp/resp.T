@@ -222,6 +222,24 @@ http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
+tamed void 
+http_response_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
+{
+  tvars {
+    ssize_t ret;
+  }
+
+  twait { 
+    ret = send (x, mkevent ()); 
+  }
+
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
 bool
 http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
 {

@@ -37,6 +37,8 @@
 //
 extern str global_okws_server_label;
 
+//-----------------------------------------------------------------------
+
 class http_status_t {
 public:
   http_status_t (int n, const str &sd, const str &ld)
@@ -46,6 +48,8 @@ public:
   const str ldesc;
   ihash_entry<http_status_t> lnk;
 };
+
+//-----------------------------------------------------------------------
 
 class http_status_set_t {
 public:
@@ -63,7 +67,11 @@ private:
   ihash<int, http_status_t, &http_status_t::status, &http_status_t::lnk> tab;
 };
 
+//-----------------------------------------------------------------------
+
 extern http_status_set_t http_status;
+
+//-----------------------------------------------------------------------
 
 class http_hdr_field_t {
 public:
@@ -82,21 +90,29 @@ protected:
   const bool _can_duplicate;
 };
 
+//-----------------------------------------------------------------------
+
 class http_hdr_date_t : public http_hdr_field_t {
 public:
   http_hdr_date_t () : http_hdr_field_t ("Date", getdate ()) {}
 };
+
+//-----------------------------------------------------------------------
 
 class http_hdr_size_t : public http_hdr_field_t {
 public:
   http_hdr_size_t (ssize_t s) : http_hdr_field_t ("Content-Length", s) {}
 };
 
+//-----------------------------------------------------------------------
+
 class http_hdr_cookie_t : public http_hdr_field_t {
 public:
   http_hdr_cookie_t (const str &v) 
     : http_hdr_field_t ("Set-Cookie", v, true) {}
 };
+
+//-----------------------------------------------------------------------
 
 class http_resp_attributes_t {
 public:
@@ -141,6 +157,8 @@ public:
 
 };
 
+//-----------------------------------------------------------------------
+
 class http_resp_header_t {
 public:
   http_resp_header_t (const http_resp_attributes_t &a) 
@@ -168,12 +186,16 @@ protected:
   bool cleanme;
 };
 
+//-----------------------------------------------------------------------
+
 class http_resp_header_redirect_t : public http_resp_header_t {
 public:
   http_resp_header_redirect_t (const str &loc, const http_resp_attributes_t &a)
     : http_resp_header_t (a) { fill (loc); }
   void fill (const str &loc);
 };
+
+//-----------------------------------------------------------------------
 
 class http_resp_header_ok_t : public http_resp_header_t {
 public:
@@ -183,7 +205,36 @@ public:
     : http_resp_header_t (a) { fill (a.get_gzip (), s); }
 };
 
-class http_response_t {
+//-----------------------------------------------------------------------
+
+typedef event<ssize_t>::ref ev_ssize_t;
+
+//-----------------------------------------------------------------------
+
+/**
+ * a new base class for responses version 2
+ */
+class http_response_base_t {
+public:
+  http_response_base_t () {}
+  virtual ~http_response_base_t () {}
+
+  // accessors to header information --------------------------------------
+  virtual const http_resp_header_t *get_header () const = 0;
+  virtual http_resp_header_t *get_header () = 0;
+
+  // the all-import output function ---------------------------------------
+  virtual void send2 (ptr<ahttpcon> x, ev_ssize_t ev) = 0;
+
+  // fixup logging information --------------------------------------------
+  virtual void set_uid (u_int64_t u) = 0;
+  virtual void set_inflated_len (size_t s) = 0;
+  virtual void set_custom_log2 (const str &s) = 0;
+};
+
+//-----------------------------------------------------------------------
+
+class http_response_t : public http_response_base_t {
 public:
   http_response_t (const http_resp_header_t &h) 
     : header (h), nbytes (0), uid (0), inflated_len (0) {}
@@ -196,6 +247,7 @@ public:
   inline int get_nbytes () const { return nbytes; }
   inline size_t get_inflated_len () const { return inflated_len; }
   inline void gzip () { header.gzip (); }
+  void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
 
   void set_inflated_len (size_t l) { inflated_len = l; }
   inline void set_uid (u_int64_t i) { uid = i; }
@@ -203,8 +255,14 @@ public:
   inline void set_custom_log2 (const str &s) { _custom_log2 = s; }
   inline str get_custom_log2 () const { return _custom_log2; }
 
+  const http_resp_header_t *get_header () const { return &header; }
+  http_resp_header_t *get_header () { return &header; }
+
   http_resp_header_t header;
 protected:
+
+  void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
+
   strbuf body;
   u_int nbytes;
   u_int64_t uid;
@@ -212,28 +270,38 @@ protected:
   str _custom_log2;
 };
 
+//-----------------------------------------------------------------------
+
 class http_response_head_t : public http_response_t {
 public:
   http_response_head_t (size_t sz, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_ok_t (sz, a)) {}
 };
 
+//-----------------------------------------------------------------------
+
 class http_response_ok_t : public http_response_t {
 public:
   http_response_ok_t (const strbuf &b, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_ok_t (b.tosuio ()->resid (), a), b) 
   {}
+
+//-----------------------------------------------------------------------
   
   // for piece-meal output mode
   http_response_ok_t (size_t s, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_ok_t (s, a)) {}
 };
 
+//-----------------------------------------------------------------------
+
 class http_response_redirect_t : public http_response_t {
 public:
   http_response_redirect_t (const str &s, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_redirect_t (s, a)) {}
 };
+
+//-----------------------------------------------------------------------
 
 class http_error_t : public http_response_t {
 public:
@@ -243,6 +311,8 @@ public:
 		const str &aux = NULL);
   static strbuf make_body (int n, const str &si, const str &aux);
 };
+
+//-----------------------------------------------------------------------
 
 class http_pub_t : public http_response_t {
 public:
@@ -257,6 +327,8 @@ public:
   static ptr<http_pub_t> alloc (int n, const pub_base_t &p, const str &fn,
 				aarr_t *env = NULL, htpv_t v = 0);
 };
+
+//-----------------------------------------------------------------------
 
 class http_pub2_t : public http_response_t {
 public:
@@ -282,5 +354,6 @@ public:
 
 };
 
+//-----------------------------------------------------------------------
 
 #endif /* _LIBAHTTP_RESP */
