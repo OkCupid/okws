@@ -38,6 +38,7 @@ abuf_t::moredata ()
 
   _endp = _basep + in.len;
   erc = in.erc;
+
 }
 
 void 

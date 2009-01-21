@@ -314,97 +314,38 @@ dnserr2httperr (int i)
  * even when cancelled.  Callers should take note.
  */
 tamed void
-agent_t::req_oneshot (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
+agent_t::req_oneshot (ptr<req_t> req, ptr<resp_factory_t> of, resp_ev_t ev)
 {
   tvars {
     int status (HTTP_TIMEOUT);
     ptr<agent_t> hold;
     ptr<ok_xprt_base_t> x;
+    bool dummy;
+    ptr<resp_t> resp;
   }
   
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
 
-  twait { get_x (NULL, connector::cnc (mkevent (status, x), ev)); }
+  twait { get_x (NULL, connector::cnc (mkevent (status, x, dummy), ev)); }
 
   if (x) {
-    twait { req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); }
+    twait { req->make (x, false, connector::cnc (mkevent (status), ev)); }
     if (status == HTTP_OK) {
-      resp->setx (x);
+      resp = of->alloc_resp (x, NULL);
       twait { resp->get (connector::cnc (mkevent (status), ev)); }
     }
   }
   
-  ev->trigger (status);
+  ev->trigger (status, resp);
 }
 
 //-----------------------------------------------------------------------
 
 void
-agent_t::req (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
+agent_t::req (ptr<req_t> req, ptr<resp_factory_t> resp, resp_ev_t ev)
 {
-  if (_keepalive) { req_ka (req, resp, ev); }
-  else { req_oneshot (req, resp, ev); }
-}
-
-//-----------------------------------------------------------------------
-
-/**
- * keepalive req
- */
-tamed void
-agent_t::req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
-{
-  tvars {
-    int status (HTTP_TIMEOUT);
-    ptr<agent_t> hold;
-    outcome_t outc (OUTCOME_SUCC);
-    ptr<oksync::pipeliner_t::handle_t> plh;
-    ptr<ok_xprt_base_t> x;
-  }
-  
-  // Keep this object from being freed from underneath us.
-  hold = mkref (this);
-
-  plh = _pipeliner->init ();
-
-  twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
-
-  if (outc == OUTCOME_SUCC) {
-
-    twait { get_x (_x, connector::cnc (mkevent (status, x), ev)); }
-
-    // set the global object to use the x we just got back; others
-    // later in the pipeline might want it.  we can clear it later,
-    // but those who have already gotten _x get to keep their reference 
-    // to it.
-    _x = x;
-
-    if (x) {
-      warn << "making it...\n";
-      twait { 
-	req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); 
-      }
-      warn << "made it: " << status << "\n";
-      if (status == HTTP_OK) {
-	resp->setx (x);
-
-	twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
-
-	warn << "getting it...\n";
-	if (outc == OUTCOME_SUCC) {
-	  twait { resp->get (connector::cnc (mkevent (status), ev)); }
-	} 
-	warn << "got it: " << status << "\n";
-      }
-      if (resp->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
-	warn << "kill connection...\n";
-	_x = NULL;
-      }
-    }
-  }
-
-  ev->trigger (status);
+  req_oneshot (req, resp, ev);
 }
 
 //-----------------------------------------------------------------------
@@ -418,18 +359,11 @@ resp_t::do_get_body (int status) const
 
 //-----------------------------------------------------------------------
 
-resp_t::resp_t ()
-  : _incookies (&_abuf, OKWC_SCRATCH_SZ, _scratch),
-    _hdr (&_abuf, &_incookies, OKWC_SCRATCH_SZ, _scratch) {}
-
-//-----------------------------------------------------------------------
-
-void
-resp_t::setx (ptr<ok_xprt_base_t> x)
-{
-  _x = x;
-  _abuf.setsrc (_x->alloc_abuf_src (), true);
-}
+resp_t::resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a)
+  : _x (x),
+    _abuf (a ? a : New refcounted<abuf_t> (_x->alloc_abuf_src (), true)),
+    _incookies (_abuf, OKWC_SCRATCH_SZ, _scratch),
+    _hdr (_abuf, &_incookies, OKWC_SCRATCH_SZ, _scratch) {}
 
 //-----------------------------------------------------------------------
 
@@ -449,7 +383,7 @@ resp_t::get_T (evi_t ev)
   if (outc == OUTCOME_CANCELLED) {
     status = CANCELLED_STATUS;
     _hdr.cancel ();
-  } else if (do_get_body (status)) {
+  } else if (do_get_body (status) || _hdr.has_body ()) {
     twait { get_body (connector::cnc (mkevent (status2), ev)); }
     if (status == HTTP_OK) { status = status2; }
   }
@@ -496,7 +430,7 @@ resp_t::run_chunker_T (evi_t ev)
   }
   hold = mkref (this);
 
-  c = New okwc_chunker_t (&_abuf, OKWC_SCRATCH_SZ, _scratch);
+  c = New okwc_chunker_t (_abuf, OKWC_SCRATCH_SZ, _scratch);
 
   do { 
     twait { c->parse (connector::cnc (mkevent (status), ev, &outc)); }
@@ -586,9 +520,9 @@ req_t::get_post () const
 //-----------------------------------------------------------------------
 
 ptr<resp_t>
-obj_factory_t::alloc_resp ()
+obj_factory_t::alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> b)
 {
-  return New refcounted<resp_simple_t> ();
+  return New refcounted<resp_simple_t> (x, b);
 }
 
 //-----------------------------------------------------------------------
@@ -612,14 +546,16 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
     int status;
   }
 
-  resp = _obj_factory->alloc_resp ();
   ri = reqinfo_direct_t::alloc (_hostname, _port, fn);
   assert (ri->validate ());
   rq = _obj_factory->alloc_req (ri, v, c);
   if (post) rq->set_post (post);
   if (eh && eh->size ()) rq->set_extra_headers (*eh);
 
-  twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
+  twait { 
+    agent_t::req (rq, _obj_factory, 
+		  connector::cnc (mkevent (status, resp), ev)); 
+  }
   ev->trigger (status, resp);
 }
 
@@ -630,7 +566,7 @@ agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
 			    str post, vec<str> *eh)
 {
   tvars {
-    ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
+    ptr<resp_t> resp;
     ptr<req_t> rq;
     ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url));
     int status;
@@ -642,7 +578,10 @@ agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
     rq = New refcounted<req3_t> (ri, v, c);
     if (post) rq->set_post (post);
     if (eh && eh->size ()) rq->set_extra_headers (*eh);
-    twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
+    twait { 
+      agent_t::req (rq, _obj_factory, 
+		    connector::cnc (mkevent (status, resp), ev)); 
+    }
   }
   ev->trigger (status, resp);
 }
@@ -669,7 +608,7 @@ req3_t::get_extra_headers () const
 //-----------------------------------------------------------------------
 
 tamed void
-agent_t::get_x (ptr<ok_xprt_base_t> x, evix_t ev)
+agent_t::get_x (ptr<ok_xprt_base_t> x, evixb_t ev)
 {
   tvars {
     ptr<agent_t> hold;
@@ -679,12 +618,15 @@ agent_t::get_x (ptr<ok_xprt_base_t> x, evix_t ev)
     tcpconnect_t *tc;
     outcome_t outc;
     int fd;
+    bool newone (false);
   }
 
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
 
   if (!x || x->ateof ()) {
+
+    newone = true;
 
     twait { 
       dnscache.lookup (hostname (), connector::cnc (mkevent (he, dns_err), ev));
@@ -712,7 +654,7 @@ agent_t::get_x (ptr<ok_xprt_base_t> x, evix_t ev)
     }
 
   }
-  ev->trigger (status, x);
+  ev->trigger (status, x, newone);
 
 }
 

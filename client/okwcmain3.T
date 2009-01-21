@@ -29,7 +29,8 @@ usage ()
 
 class my_resp_t : public okwc3::resp_simple_t {
 public:
-  my_resp_t (vec<int> s) : okwc3::resp_simple_t () 
+  my_resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a, vec<int> s) 
+    : okwc3::resp_simple_t (x, a) 
   {
     _ok_status.insert (HTTP_OK);
     for (size_t i = 0; i < s.size () ; i++) {
@@ -48,8 +49,8 @@ class my_factory_t : public okwc3::obj_factory_t {
 public:
   my_factory_t (vec<int> s) : _ok_status (s) {}
 
-  ptr<okwc3::resp_t> alloc_resp () 
-  { return New refcounted<my_resp_t> (_ok_status); }
+  ptr<okwc3::resp_t> alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> a) 
+  { return New refcounted<my_resp_t> (x, a, _ok_status); }
 
 private:
   vec<int> _ok_status;
@@ -188,3 +189,4 @@ main (int argc, char *argv [])
   main2 (argc, argv);
   amain ();
 }
+

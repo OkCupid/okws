@@ -140,17 +140,15 @@ namespace okwc4 {
   agent_get_t::get_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev)
   {
     tvars {
-      ptr<obj_factory_t> factory;
       ptr<req_t> req;
-      ptr<resp_t> resp;
+      ptr<resp_t> rsp;
       int status;
     }
-    factory = f ? f : _obj_factory;
-    req = factory->alloc_req (ra);
-    resp = factory->alloc_resp ();
 
-    twait { agent_t::req (req, resp, connector::cnc (mkevent (status), ev)); }
-    ev->trigger (status, resp);
+    if (!f) f = _obj_factory;
+    req = f->alloc_req (ra);
+    twait { agent_t::req (req, f, connector::cnc (mkevent (status, rsp), ev)); }
+    ev->trigger (status, rsp);
   }
 
   //-----------------------------------------------------------------------
@@ -172,8 +170,8 @@ namespace okwc4 {
   //-----------------------------------------------------------------------
 
   ptr<resp_t>
-  obj_factory_t::alloc_resp ()
-  { return New refcounted<resp_simple_t> (); }
+  obj_factory_t::alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> a)
+  { return New refcounted<resp_simple_t> (x, a); }
 
   //-----------------------------------------------------------------------
 
@@ -186,5 +184,80 @@ namespace okwc4 {
   }
 
   //-----------------------------------------------------------------------
-  
+
+  /**
+   * keepalive req
+   */
+  tamed void
+  agent_t::req_ka (ptr<req_t> req, ptr<resp_factory_t> of, resp_ev_t ev)
+  {
+    tvars {
+      int status (HTTP_TIMEOUT);
+      ptr<agent_t> hold;
+      outcome_t outc (OUTCOME_SUCC);
+      ptr<oksync::pipeliner_t::handle_t> plh;
+      ptr<ok_xprt_base_t> x;
+      ptr<abuf_t> abuf;
+      bool newone;
+      ptr<resp_t> resp;
+    }
+    
+    // Keep this object from being freed from underneath us.
+    hold = mkref (this);
+    
+    plh = _pipeliner->init ();
+    
+    twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
+    
+    if (outc == OUTCOME_SUCC) {
+      
+      twait { get_x (_x, connector::cnc (mkevent (status, x, newone), ev)); }
+      
+      // set the global object to use the x we just got back; others
+      // later in the pipeline might want it.  we can clear it later,
+      // but those who have already gotten _x get to keep their reference 
+      // to it.
+      if (newone) {
+	_x = x;
+	_abuf = abuf = New refcounted<abuf_t> (_x->alloc_abuf_src (), true);
+      } else {
+	abuf = _abuf;
+      }
+      
+      if (x) {
+	twait { 
+	  req->make (x, _keepalive, connector::cnc (mkevent (status), ev)); 
+	}
+
+	if (status == HTTP_OK) {
+	  resp = of->alloc_resp (x, abuf);
+	  
+	  twait { plh->advance (connector::cnc (mkevent (), ev, &outc)); }
+	  
+	  if (outc == OUTCOME_SUCC) {
+	    twait { resp->get (connector::cnc (mkevent (status), ev)); }
+	  } 
+	  abuf->finish ();
+	}
+
+	if (resp->hdr ()->connection () != HTTP_CONN_KEEPALIVE) {
+	  _x = NULL;
+	  _abuf = NULL;
+	}
+
+      }
+    }
+    ev->trigger (status, resp);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void 
+  agent_t::req (ptr<req_t> req, ptr<resp_factory_t> rf, resp_ev_t cb)
+  {
+    if (_keepalive) { req_ka (req, rf, cb); }
+    else { req_oneshot (req, rf, cb); }
+  }
+
+  //-----------------------------------------------------------------------
 };

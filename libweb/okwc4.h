@@ -24,9 +24,10 @@ namespace okwc4 {
 
   //-----------------------------------------------------------------------
 
-  typedef okwc3::simple_ev_t resp_ev_t;
+  typedef okwc3::resp_ev_t resp_ev_t;
   typedef okwc3::resp_t resp_t;
   typedef okwc3::resp_simple_t resp_simple_t;
+  typedef okwc3::resp_factory_t resp_factory_t;
 
   //-----------------------------------------------------------------------
   
@@ -122,22 +123,46 @@ namespace okwc4 {
 
   //-----------------------------------------------------------------------
 
-  class obj_factory_t {
+  class obj_factory_t : public resp_factory_t {
   public:
     obj_factory_t () {}
     virtual ~obj_factory_t () {}
-    virtual ptr<resp_t> alloc_resp ();
+    virtual ptr<resp_t> alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> a);
     virtual ptr<req_t> alloc_req (ptr<const reqargs_t> ra);
   };
 
   //-----------------------------------------------------------------------
 
-  class agent_get_t : public okwc3::agent_t {
+  class agent_t : public okwc3::agent_t {
   public:
-    agent_get_t (ptr<const hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
+    agent_t (ptr<const hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
       : okwc3::agent_t (ha->hostname (), ha->port (), ha->ssl ()),
 	_hostargs (ha),
-	_obj_factory (f ? f : New refcounted<obj_factory_t> ()) {}
+	_obj_factory (f ? f : New refcounted<obj_factory_t> ()),
+	_pipeliner (New refcounted<oksync::pipeliner_t> ()),
+	_keepalive (false) {}
+
+    virtual ~agent_t () {}
+
+    void req (ptr<req_t> req, ptr<resp_factory_t> f, resp_ev_t cb);
+    void set_keepalive (bool b) { _keepalive = b; }
+  protected:
+    void req_ka (ptr<req_t> req, ptr<resp_factory_t> f, resp_ev_t cb, CLOSURE);
+
+    ptr<const hostargs_t> _hostargs;
+    ptr<obj_factory_t> _obj_factory;
+    ptr<ok_xprt_base_t> _x;
+    ptr<abuf_t> _abuf;
+    ptr<oksync::pipeliner_t> _pipeliner;
+    bool _keepalive;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class agent_get_t : public agent_t {
+  public:
+    agent_get_t (ptr<const hostargs_t> ha, ptr<obj_factory_t> f = NULL) 
+      : agent_t (ha, f) {}
 
     virtual ~agent_get_t () {}
 
@@ -149,8 +174,6 @@ namespace okwc4 {
   protected:
     void get_T (ptr<reqargs_t> ra, ptr<obj_factory_t> f, resp_ev_t ev, CLOSURE);
 
-    ptr<const hostargs_t> _hostargs;
-    ptr<obj_factory_t> _obj_factory;
   };
 
   //-----------------------------------------------------------------------

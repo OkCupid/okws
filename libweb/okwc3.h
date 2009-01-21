@@ -237,13 +237,13 @@ private:
 
 class resp_t : public virtual refcount {
 public:
-  resp_t ();
+  resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> b);
   virtual ~resp_t () {}
   void get (evi_t cb) { get_T (cb); }
-  void setx (ptr<ok_xprt_base_t> x);
   const okwc_http_hdr_t *hdr () const { return &_hdr; }
   okwc_http_hdr_t *hdr () { return &_hdr; }
   virtual str body () const { return NULL; }
+  virtual int get_id () const { return 0; }
 
 protected:
 
@@ -255,7 +255,7 @@ protected:
   virtual bool do_get_body (int status) const;
 
   ptr<ok_xprt_base_t> _x;
-  abuf_t _abuf;
+  ptr<abuf_t> _abuf;
   char _scratch[OKWC_SCRATCH_SZ];
   okwc_cookie_set_t _incookies;
   okwc_http_hdr_t _hdr;
@@ -270,7 +270,10 @@ private:
 
 class resp_simple_t : public resp_t {
 public:
-  resp_simple_t () : _dumper (&_abuf) {}
+  resp_simple_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> b) 
+    : resp_t (x, b),
+      _dumper (_abuf) {}
+
   void eat_chunk (size_t sz, evi_t cb) { eat_chunk_T (sz, cb); }
   void finished_meal (int status, evi_t cb);
   virtual str body () const { return _body; }
@@ -284,17 +287,26 @@ private:
 
 //-----------------------------------------------------------------------
 
-class obj_factory_t {
+class resp_factory_t {
+public:
+  virtual ~resp_factory_t () {}
+  virtual ptr<resp_t> alloc_resp (ptr<ok_xprt_base_t>, ptr<abuf_t> buf) = 0;
+};
+
+//-----------------------------------------------------------------------
+
+class obj_factory_t : public resp_factory_t {
 public:
   obj_factory_t () {}
   virtual ~obj_factory_t () {}
-  virtual ptr<resp_t> alloc_resp ();
+  virtual ptr<resp_t> alloc_resp (ptr<ok_xprt_base_t>, ptr<abuf_t> buf);
   virtual ptr<req_t> alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c);
 };
 
 //-----------------------------------------------------------------------
 
-typedef event<int, ptr<ok_xprt_base_t> >::ref evix_t;
+typedef event<int, ptr<ok_xprt_base_t>, bool >::ref evixb_t;
+typedef event<int, ptr<resp_t> >::ref resp_ev_t;
 
 //-----------------------------------------------------------------------
 
@@ -304,31 +316,25 @@ public:
   agent_t (const str &h, okws1_port_t p, bool s = false) 
     : _hostname (h), 
       _port (p),
-      _ssl (s),
-      _keepalive (false), 
-      _pipeliner (New refcounted<oksync::pipeliner_t> ()) {}
-
-  virtual void req (ptr<req_t> req, ptr<resp_t> resp, evi_t cb);
+      _ssl (s) {}
+  
+  virtual void req (ptr<req_t> req, ptr<resp_factory_t> resp, resp_ev_t cb);
 
   str hostname () const { return _hostname; }
   okws1_port_t port () const { return _port; }
   bool use_ssl () const { return _ssl; }
-  void set_keepalive (bool b) { _keepalive = b; }
 
 protected:
 
-  void get_x (ptr<ok_xprt_base_t> x, evix_t ev, CLOSURE);
+  void get_x (ptr<ok_xprt_base_t> x, evixb_t ev, CLOSURE);
 
   const str _hostname;
   okws1_port_t _port;
   bool _ssl;
-  bool _keepalive;
-  ptr<ok_xprt_base_t> _x;
-  ptr<oksync::pipeliner_t> _pipeliner;
 
-private:
-  void req_ka (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
-  void req_oneshot (ptr<req_t> req, ptr<resp_t> resp, evi_t cb, CLOSURE);
+protected:
+  void req_oneshot (ptr<req_t> req, ptr<resp_factory_t> resp, 
+		    resp_ev_t cb, CLOSURE);
 };
 
 
@@ -387,6 +393,7 @@ private:
 };
 
 //-----------------------------------------------------------------------
+
 
 };
 
