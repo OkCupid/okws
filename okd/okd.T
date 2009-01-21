@@ -242,7 +242,7 @@ okd_t::open_mgr_socket ()
 
     if (chown (s.cstr (), u.getid (), g.getid ()) != 0) {
       fatal << "Failed to chown " << u.getname () << "." << g.getname ()
-	    << "on the management socket '" << s << "'\n";
+	    << " on the management socket '" << s << "'\n";
     }
   }
   if (_socket_mode >= 0) {

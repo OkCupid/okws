@@ -102,7 +102,9 @@ http_inhdr_t::parse_guts ()
       // else we're waiting or found EOF or found stray '\r' in hdr
       break;
     case INHDRST_SPC3:
-      r = abuf->skip_hws (1);
+      // keepalived doesn't put a space between it's User-Agent
+      // and it, so let's accommodate it here....
+      r = abuf->skip_hws (0);
       break;
     case INHDRST_VALUE:
       if (cookie && iscookie ()) {
