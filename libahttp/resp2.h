@@ -32,33 +32,27 @@
 class http_response_ok2_t : public http_response_base_t {
 public:
   http_response_ok2_t (const http_resp_attributes_t &a, 
-		       ptr<compressible_t> x, bool compress = false)
-    : _header (a),
-      _body (x),
-      _compressed (compress),
-      _uid (0),
-      _inflated_len (0),
-      _n_bytes (0) {}
+		       ptr<compressible_t> x);
 
-  const http_resp_header_t *get_header () const { return &_header; }
   http_resp_header_t *get_header () { return &_header; }
+  const http_resp_header_t *get_header () const { return &_header; }
 
   u_int send (ptr<ahttpcon> x, cbv::ptr cb);
-  void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
+  void send2 (ptr<ahttpcon> x, ev_ssize_t ev);
   size_t get_nbytes () const { return _n_bytes; }
 
 protected:
-  void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
+  void fill ();
 
   http_resp_header_t _header;
   ptr<compressible_t> _body;
 
   bool _compressed;
   u_int64_t _uid;
-  size_t _inflated_len;
   str _custom_log2;
   size_t _n_bytes;
 
+  strbuf _out;
 };
 
 //------------------------------------------------------------------------

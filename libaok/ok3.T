@@ -434,13 +434,13 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
       contlen = _body ? _body->inflated_len () : 0;
     }
 
-    hra.set_gzip (false);
+    hra.set_gzip (gz);
     set_attributes (&hra);
 
     if (head) {
       rsp = New refcounted<http_response_head_t> (contlen, hra);
     } else {
-      rsp = New refcounted<http_response_ok2_t> (hra, _body, gz);
+      rsp = New refcounted<http_response_ok2_t> (hra, _body);
     }
   }
 

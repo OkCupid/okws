@@ -4,28 +4,44 @@
 
 //-----------------------------------------------------------------------
 
-tamed void
-http_response_ok2_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
+http_response_ok2_t::http_response_ok2_t (const http_resp_attributes_t &a, 
+					  ptr<compressible_t> x)
+    : _header (a),
+      _body (x),
+      _compressed (a.get_gzip ()),
+      _uid (0),
+      _n_bytes (0) 
 {
-  tvars {
-    strbuf b, b2;
-    ssize_t rc;
-  }
+  fill ();
+}
 
+//-----------------------------------------------------------------------
+
+void
+http_response_ok2_t::fill ()
+{
+  strbuf b2;
   if (_body) {
     _body->to_strbuf (&b2, _compressed);
     _n_bytes = b2.tosuio ()->resid ();
+    set_inflated_len (_body->inflated_len ());
   } else {
     _n_bytes = 0;
     _compressed = false;
   }
 
   _header.fill (_compressed, _n_bytes);
-  _header.fill_strbuf (b);
-  b << b2;
+  _header.fill_strbuf (_out);
+  _out << b2;
+}
 
-  twait { x->send2 (b, mkevent (rc)); }
-  ev->trigger (rc);
+
+//-----------------------------------------------------------------------
+
+void
+http_response_ok2_t::send2 (ptr<ahttpcon> x, ev_ssize_t ev)
+{
+  x->send2 (_out, ev);
 }
 
 //-----------------------------------------------------------------------
