@@ -125,6 +125,7 @@ public:
   void send (const strbuf &b, cbv::ptr drained, cbv::ptr sent = NULL);
   void sendv (const iovec *iov, int cnt, cbv::ptr drained = NULL,
 	      cbv::ptr sent = NULL);
+  void send2 (const strbuf &b, event<ssize_t>::ref ev, CLOSURE);
   void copyv (const iovec *iov, int cnt);
   suiolite *uio () const { return in; }
   size_t get_bytes_sent () const { return bytes_sent; }
