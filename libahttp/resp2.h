@@ -31,13 +31,20 @@
 
 class http_response_ok2_t : public http_response_base_t {
 public:
-  http_response_ok2_t (const http_resp_attributes_t &a, ptr<compressible_t> x)
+  http_response_ok2_t (const http_resp_attributes_t &a, 
+		       ptr<compressible_t> x, bool compress = false)
     : _header (a),
-      _body (x) {}
+      _body (x),
+      _compressed (compress) {}
+
+  void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
 
 protected:
+  void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
+
   http_resp_header_t _header;
   ptr<compressible_t> _body;
+  bool _compressed;
 };
 
 //------------------------------------------------------------------------

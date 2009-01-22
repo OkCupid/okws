@@ -113,6 +113,8 @@ http_resp_header_t::add_connection ()
   add ("Connection", attributes.get_connection ());
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_resp_header_redirect_t::fill (const str &s)
 {
@@ -126,6 +128,8 @@ http_resp_header_redirect_t::fill (const str &s)
   cleanme = attributes.get_others (&fields);
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_resp_header_t::fill (bool gz, ssize_t len)
 {
@@ -134,6 +138,8 @@ http_resp_header_t::fill (bool gz, ssize_t len)
     add (http_hdr_size_t (len));
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_resp_header_t::gzip ()
 {
@@ -141,11 +147,23 @@ http_resp_header_t::gzip ()
   add ("Transfer-Encoding", "chunked");
 }
 
+//-----------------------------------------------------------------------
+
 strbuf
 http_resp_header_t::to_strbuf () const
 {
-  vec<bool> output_me;
   strbuf b;
+  fill_strbuf (b);
+  return b;
+}
+
+//-----------------------------------------------------------------------
+
+void
+http_resp_header_t::fill_strbuf (strbuf &b) const
+{
+  vec<bool> output_me;
+
   b << "HTTP/";
   switch (attributes.get_version ()) {
   case 1:
@@ -189,8 +207,9 @@ http_resp_header_t::to_strbuf () const
   }
   b << HTTP_CRLF;
 
-  return b;
 }
+
+//-----------------------------------------------------------------------
 
 str
 http_status_set_t::get_desc (int n, str *l) const
@@ -204,6 +223,8 @@ http_status_set_t::get_desc (int n, str *l) const
   return s->sdesc;
 }
 
+//-----------------------------------------------------------------------
+
 ptr<http_pub_t>
 http_pub_t::alloc (int n, const pub_base_t &p, const str &fn, aarr_t *env, 
 		   htpv_t v)
@@ -212,6 +233,8 @@ http_pub_t::alloc (int n, const pub_base_t &p, const str &fn, aarr_t *env,
   if (ret->err) return NULL;
   else return ret;
 }
+
+//-----------------------------------------------------------------------
 
 u_int
 http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)

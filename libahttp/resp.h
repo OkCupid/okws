@@ -175,6 +175,7 @@ public:
   virtual void fill (bool gz = false);
   void fill (bool gz, ssize_t len);
   strbuf to_strbuf () const;
+  void fill_strbuf (strbuf &b) const;
   inline int get_status () const { return attributes.get_status (); }
   void gzip ();
   void add_date () { add (http_hdr_date_t ()); }
