@@ -13,28 +13,32 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
     suio *uio (b.tosuio ());
     int rc;
     holdvar ptr<ahttpcon> hold (mkref (_self));
-    size_t pre, post, n;
+    size_t pre, post;
   }
 
   do {
+
     if (fd < 0) {
       warn ("write not possible due to EOF\n");
       ret = -1;
+
     } else {
      
       pre = uio->resid ();
       rc = uio->output (fd);
       post = uio->resid ();
-      n = post - pre;
+
+      // update accounting whether we're done or not...
+      if (rc > 0) {
+	assert (pre > post);
+	ret += (pre - post);
+      }
 
       if (!post) {
 
-	/* noop */
+	// noop: we're all done and will be exitting the loop...
 
       } else if (rc >= 0) {
-
-	assert (pre >= post);
-	ret += (pre - post);
 
 	assert (!wcbset);
 	wcbset = true;
