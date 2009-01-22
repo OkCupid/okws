@@ -132,7 +132,7 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
 			ok_httpsrv_t::http_resp_cb_t cb)
 {
   tvars {
-    ptr<http_response_t> ret;
+    ptr<http_response_base_t> ret;
     http_resp_attributes_t hra (n, v);
   }
   hra.set_gzip (gz);
@@ -181,7 +181,7 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
     ptr<http_parser_raw_t> prs;
     int status2;
     htpv_t v;
-    ptr<http_response_t> e;
+    ptr<http_response_base_t> e;
   }
   if (!h && !x->closed ()) {
     prs = http_parser_raw_t::alloc (x);
@@ -1006,12 +1006,15 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
   hra->set_others (hdr_fields);
 }
 
+//-----------------------------------------------------------------------
+
 void
-okclnt_base_t::fixup_log (ptr<http_response_t> rsp)
+okclnt_base_t::fixup_log (ptr<http_response_base_t> rsp)
 {
   if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
 }
 
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::output_hdr (ssize_t len)

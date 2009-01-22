@@ -178,7 +178,8 @@ public:
   log_t (helper_t *hh) : h (hh) {}
   virtual ~log_t () { delete h; }
   virtual void connect (evb_t ev) { connect_T (ev); }
-  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
+		    http_response_base_t *res,
 		    const str &s) = 0;
   int getfd () const { return h->getfd (); }
   virtual void clone (cbi cb) { (*cb) (-1); }
@@ -196,7 +197,7 @@ public:
   rpc_log_t (helper_t *h) : log_t (h), logset (~0) {}
   rpc_log_t (const str &p) 
     : log_t (New helper_unix_t (oklog_program_1, p, HLP_OPT_QUEUE)) {}
-  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   virtual void connect (evb_t ev) { rpc_log_t::connect_T (ev); }
   void connect_cb1 (cbb cb, bool b);
@@ -259,7 +260,7 @@ public:
     : log_t (New helper_fd_t (oklog_program_1, fd, "oklogd", 
 			      HLP_OPT_PING|HLP_OPT_NORETRY)),
       fmt (f), tmr (wrap (this, &fast_log_t::flush)) {}
-  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   void log_ssl (const str &i, const str &c, const str &m);
   void flush() { flush_T (); }

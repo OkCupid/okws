@@ -43,6 +43,7 @@ public:
   const http_resp_header_t *get_header () const { return &_header; }
   http_resp_header_t *get_header () { return &_header; }
 
+  u_int send (ptr<ahttpcon> x, cbv::ptr cb);
   void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
   size_t get_nbytes () const { return _n_bytes; }
 

@@ -82,8 +82,8 @@ public:
     void set_attributes (http_resp_attributes_t *hra);
     void set_connection_attributes (http_resp_attributes_t *hra);
     void set_error_attributes (http_resp_attributes_t *hra);
-    void fixup_cookies (ptr<http_response_t> rsp);
-    void fixup_log (ptr<http_response_t> rsp);
+    void fixup_cookies (ptr<http_response_base_t> rsp);
+    void fixup_log (ptr<http_response_base_t> rsp);
 
     //-----------------------------------------------------------------------
 

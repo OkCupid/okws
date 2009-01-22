@@ -83,8 +83,8 @@ fast_log_t::connect_T (evb_t ev)
 }
 
 void
-fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-		 const str &aux)
+fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
+		 http_response_base_t *res, const str &aux)
 {
   tmr.enable ();
   int s = res->get_status ();
@@ -205,8 +205,8 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
 
 
 void
-rpc_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-	    const str &aux)
+rpc_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
+		http_response_base_t *res, const str &aux)
 {
   oklog_arg_t la (OKLOG_OK);
   oklog_ok_t *lo;

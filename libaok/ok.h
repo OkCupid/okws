@@ -278,7 +278,7 @@ public:
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}
 
-  typedef callback<void, ptr<http_response_t> >::ref http_resp_cb_t;
+  typedef callback<void, ptr<http_response_base_t> >::ref http_resp_cb_t;
       
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
   virtual void add_pubfile (const str &s, bool conf = false) {}
@@ -296,7 +296,8 @@ public:
   geterr (str s, const http_resp_attributes_t &hra, http_resp_cb_t cb) 
   { geterr2_T (s, hra, cb); }
 
-  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
+		    http_response_base_t *res,
 		    const str &s = NULL)
     const { if (svclog && logd) logd->log (x, req, res, s); }
 
@@ -362,7 +363,7 @@ public:
   virtual void set_union_cgi_mode (bool b) = 0;
   virtual void set_demux_data (ptr<demux_data_t> d) = 0;
   virtual void serve () = 0;
-  virtual void fixup_log (ptr<http_response_t> rsp) {}
+  virtual void fixup_log (ptr<http_response_base_t> rsp) {}
   list_entry<okclnt_interface_t> lnk;
 
   virtual oksrvc_t *get_oksrvc () { return oksrvc; }
@@ -527,7 +528,7 @@ public:
   // tame warts.
   bool do_gzip () const;
 
-  void fixup_log (ptr<http_response_t> rsp);
+  void fixup_log (ptr<http_response_base_t> rsp);
 
 private:
   void serve_T (CLOSURE);

@@ -2,6 +2,7 @@
 
 #include "ok3.h"
 #include "tame_connectors.h"
+#include "resp2.h"
 
 //-----------------------------------------------------------------------
 
@@ -377,7 +378,7 @@ tamed void
 okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
 {
   tvars {
-    ptr<http_response_t> rsp;
+    ptr<http_response_base_t> rsp;
     ptr<okclnt3_t::req_t> req (_self->req ());
     http_inhdr_t *inhdrs (req ? req->hdr_p () : NULL);
     holdvar int vers (req ? req->hdr_cr ().get_vers () : 0);
@@ -385,10 +386,11 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     bool gz (_self->do_gzip ());
     bool ok (true);
     oksrvc_t *svc (_self->svc ());
-    strbuf body_buf;
     ptr<ahttpcon> x (_self->con ());
     outcome_t outc (OUTCOME_SUCC);
     int nxt_status;
+    ssize_t rc;
+    size_t contlen;
   }
 
   hra.set_others (_hdr_fields);
@@ -424,17 +426,13 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     // but the response must be generated...
 
     bool head (false);
-    ssize_t prelen (-1);
-    
+
     head = (req && req->hdr_cr ().mthd == HTTP_MTHD_HEAD);
 
-    if (head) { gz = false; }
-    if (_body) { 
-      _body->to_strbuf (&body_buf, gz); 
-      prelen = gz ? _body->inflated_len () : -1;
+    if (head) { 
+      gz = false; 
+      contlen = _body ? _body->inflated_len () : 0;
     }
-
-    size_t contlen = body_buf.tosuio ()->resid ();
 
     hra.set_gzip (false);
     set_attributes (&hra);
@@ -442,10 +440,8 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     if (head) {
       rsp = New refcounted<http_response_head_t> (contlen, hra);
     } else {
-      rsp = New refcounted<http_response_ok_t> (body_buf, hra);
+      rsp = New refcounted<http_response_ok2_t> (hra, _body, gz);
     }
-    if (prelen > 0) { rsp->set_inflated_len (prelen); }
-
   }
 
   // now make a final pass
@@ -458,7 +454,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
   if (x && ok) {
 
     twait { 
-      rsp->send (x, connector::timeout (mkevent (), time_budget, 0, &outc));
+      rsp->send2 (x, connector::timeout (mkevent (rc), time_budget, 0, &outc));
     }
     
     if (outc == OUTCOME_TIMEDOUT) {
@@ -547,17 +543,17 @@ okclnt3_t::resp_t::con ()
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::resp_t::fixup_cookies (ptr<http_response_t> rsp)
+okclnt3_t::resp_t::fixup_cookies (ptr<http_response_base_t> rsp)
 {
   for (size_t i = 0; i < _outcookies.size (); i++) {
-    rsp->header.add (http_hdr_cookie_t (_outcookies[i]->to_str ()));
+    rsp->get_header ()->add (http_hdr_cookie_t (_outcookies[i]->to_str ()));
   }
 }
 
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::resp_t::fixup_log (ptr<http_response_t> rsp)
+okclnt3_t::resp_t::fixup_log (ptr<http_response_base_t> rsp)
 {
   if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
 }

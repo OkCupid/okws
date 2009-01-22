@@ -228,6 +228,7 @@ public:
   virtual http_resp_header_t *get_header () = 0;
 
   // the all-import output function ---------------------------------------
+  virtual u_int send (ptr<ahttpcon> x, cbv::ptr cb) = 0;
   virtual void send2 (ptr<ahttpcon> x, ev_ssize_t ev) = 0;
 
   // fixup logging information --------------------------------------------
