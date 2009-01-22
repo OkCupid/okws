@@ -377,6 +377,9 @@ ahttpcon::input (ptr<bool> destroyed_local)
     if (errno == EMSGSIZE) {
       warn ("Too many fds (%d) in ahttpcon::input: %m\n", n_ahttpcon);
       too_many_fds ();
+    } else if (errno == ECONNRESET) {
+      eof = true;
+      fail ();
     } else if (errno != EAGAIN) {
       warn ("nfds=%d; Error in ahttpcon::input (%s): %m (%d)\n", 
 	    n_ahttpcon, get_remote_ip ().cstr (), errno);
