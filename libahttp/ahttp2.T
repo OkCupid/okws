@@ -13,7 +13,7 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
     suio *uio (b.tosuio ());
     int rc;
     holdvar ptr<ahttpcon> hold (mkref (_self));
-    size_t pre, post;
+    size_t pre, post, n;
   }
 
   do {
@@ -25,11 +25,17 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
       pre = uio->resid ();
       rc = uio->output (fd);
       post = uio->resid ();
+      n = post - pre;
 
-      if (rc >= 0) {
+      if (!post) {
+
+	/* noop */
+
+      } else if (rc >= 0) {
+
 	assert (pre >= post);
 	ret += (pre - post);
-      } else if (rc < 0 && errno == EAGAIN) {
+
 	assert (!wcbset);
 	wcbset = true;
 	twait { fdcb (fd, selwrite, mkevent ()); }
@@ -37,12 +43,14 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
 	  wcbset = false;
 	  fdcb (fd, selwrite, NULL);
 	}
-      } else if (rc < 0) {
+
+      } else {
+
 	warn ("For fd=%d: error in write: %m\n", fd);
 	ret = -1;
       }
     }
-  } while (ret >= 0 && uio->resid ());
+  } while (ret >= 0 && post);
   
   ev->trigger (ret);
 
