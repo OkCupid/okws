@@ -38,10 +38,15 @@ http_response_ok2_t::fill ()
 
 //-----------------------------------------------------------------------
 
-void
-http_response_ok2_t::send2 (ptr<ahttpcon> x, ev_ssize_t ev)
+tamed void
+http_response_ok2_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
 {
-  x->send2 (_out, ev);
+  tvars {
+    holdvar ptr<http_response_ok2_t> hold (mkref (_self));
+    ssize_t rc;
+  }
+  twait { x->send2 (_out, mkevent (rc)); }
+  ev->trigger (rc);
 }
 
 //-----------------------------------------------------------------------

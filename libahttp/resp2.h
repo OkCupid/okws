@@ -29,7 +29,8 @@
 
 //------------------------------------------------------------------------
 
-class http_response_ok2_t : public http_response_base_t {
+class http_response_ok2_t : public http_response_base_t, 
+			    public virtual refcount {
 public:
   http_response_ok2_t (const http_resp_attributes_t &a, 
 		       ptr<compressible_t> x);
@@ -38,10 +39,11 @@ public:
   const http_resp_header_t *get_header () const { return &_header; }
 
   u_int send (ptr<ahttpcon> x, cbv::ptr cb);
-  void send2 (ptr<ahttpcon> x, ev_ssize_t ev);
+  void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
   size_t get_nbytes () const { return _n_bytes; }
 
 protected:
+  void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
   void fill ();
 
   http_resp_header_t _header;
