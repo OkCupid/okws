@@ -688,6 +688,7 @@ okld_t::parse_file (const str &cf)
 
     .add ("OkdUser", &_config_okd_un)
     .add ("OkdGroup", &_config_okd_gr)
+    .add ("LogBuffers", &ok_log_nbufs, 2, 100)
     
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
@@ -919,6 +920,7 @@ okld_t::encode_env ()
     .insert ("pub2chnk", ok_pub2_max_datasz)
     .insert ("pub1", pub_v1_support ? 1 : 0)
     .insert ("sel", int (ok_sys_sel_policy))
+    .insert ("nlb", ok_log_nbufs)
     .insert ("lqm", ok_listen_queue_max);
 
   if (_opt_daemon) {

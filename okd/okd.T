@@ -335,6 +335,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("Service")
     .ignore ("Service2")
     .ignore ("Script")
+    .ignore ("LogBuffers")
 
     .ignore ("MmapClockDaemon")
     .ignore ("Interpreter")

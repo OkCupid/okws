@@ -84,9 +84,10 @@ private:
 
 class logbuf_t {
 public:
-  logbuf_t (u_int s = LOG_BUF_DEFSIZE, u_int h = LOG_BUF_HIGHWAT) 
+  logbuf_t (u_int s = LOG_BUF_DEFSIZE, u_int h = LOG_BUF_HIGHWAT)
     : sz (max (s, static_cast<u_int> (LOG_BUF_MINSIZE))),
-      bufs (sz, 3), okfl (true), hwat (h) { assert (getbuf ()); }
+      bufs (sz, ok_log_nbufs), 
+      okfl (true), hwat (h) { assert (getbuf ()); }
   ~logbuf_t () {}
 
   inline logbuf_t &time (const char *c, u_int len) { return bcpy (c, len); }
