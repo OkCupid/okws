@@ -217,7 +217,10 @@ typedef event<ssize_t>::ref ev_ssize_t;
  */
 class http_response_base_t {
 public:
-  http_response_base_t () {}
+  http_response_base_t ()
+    : _uid (0),
+      _inflated_len (0) {}
+
   virtual ~http_response_base_t () {}
 
   // accessors to header information --------------------------------------
@@ -228,9 +231,24 @@ public:
   virtual void send2 (ptr<ahttpcon> x, ev_ssize_t ev) = 0;
 
   // fixup logging information --------------------------------------------
-  virtual void set_uid (u_int64_t u) = 0;
-  virtual void set_inflated_len (size_t s) = 0;
-  virtual void set_custom_log2 (const str &s) = 0;
+  virtual void set_uid (u_int64_t u) { _uid = u; }
+  virtual void set_inflated_len (size_t s) { _inflated_len = s; }
+  virtual void set_custom_log2 (const str &s) { _custom_log2 = s; }
+
+  // access for logging info ---------------------------------------------
+  virtual u_int64_t get_uid () const { return _uid; }
+  virtual size_t get_inflated_len () const { return _inflated_len; }
+  virtual str get_custom_log2 () const { return _custom_log2; }
+
+  // access for response ------------------------------------------------
+  int get_status () const { return get_header ()->get_status (); }
+  virtual size_t get_nbytes () const = 0;
+
+private:
+  u_int64_t _uid;
+  size_t _inflated_len;
+  str _custom_log2;
+
 };
 
 //-----------------------------------------------------------------------
@@ -244,17 +262,9 @@ public:
       inflated_len (0) {}
   strbuf to_strbuf () const { return (header.to_strbuf () << body); }
   u_int send (ptr<ahttpcon> x, cbv::ptr cb) ;
-  inline int get_status () const { return header.get_status (); }
-  inline int get_nbytes () const { return nbytes; }
-  inline size_t get_inflated_len () const { return inflated_len; }
+  size_t get_nbytes () const { return nbytes; }
   inline void gzip () { header.gzip (); }
   void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
-
-  void set_inflated_len (size_t l) { inflated_len = l; }
-  inline void set_uid (u_int64_t i) { uid = i; }
-  inline u_int64_t get_uid () const { return uid; }
-  inline void set_custom_log2 (const str &s) { _custom_log2 = s; }
-  inline str get_custom_log2 () const { return _custom_log2; }
 
   const http_resp_header_t *get_header () const { return &header; }
   http_resp_header_t *get_header () { return &header; }
@@ -265,7 +275,7 @@ protected:
   void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
 
   strbuf body;
-  u_int nbytes;
+  size_t nbytes;
   u_int64_t uid;
   size_t inflated_len;
   str _custom_log2;

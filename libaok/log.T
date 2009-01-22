@@ -123,7 +123,7 @@ fast_log_t::add_notice (oklog_typ_t x, const str &ntc)
 
 void
 fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req, 
-		       http_response_t *res, const str &aux)
+		       http_response_base_t *res, const str &aux)
 {
   error << tmr << ' ' << OKLOG_ERR_ERROR << ' ';
   error.copy ("[client ", 8).remote_ip (x->get_remote_ip ())
@@ -152,7 +152,7 @@ fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
 
 void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
-			http_response_t *res)
+			http_response_base_t *res)
 {
   const char *fmp = fmt ? fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *p;

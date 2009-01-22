@@ -266,9 +266,10 @@ public:
   void connect (evb_t ev) { connect_T (ev); }
 protected:
   bool past_high_water () const;
-  void add_access (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res);
-  void add_error (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-		  const str &aux);
+  void add_access (ref<ahttpcon> x, http_inhdr_t *req, 
+		   http_response_base_t *res);
+  void add_error (ref<ahttpcon> x, http_inhdr_t *req, 
+		  http_response_base_t *res, const str &aux);
   void add_ssl (const str &ip, const str &cipher, const str &msg);
   void add_notice (oklog_typ_t x, const str &ntc);
   void flush_T (CLOSURE);
