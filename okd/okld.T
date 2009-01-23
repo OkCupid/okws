@@ -1006,6 +1006,7 @@ okld_t::fix_uids ()
 
     if (unsafe_mode) {
       svc->assign_uid (ueuid_own);
+      svc->set_unsafe ();
     } else {
       if (svc->usr ()) {
 	// in this case, the operator specified the user via a -u option
@@ -1056,13 +1057,11 @@ okld_t::fix_uids ()
       // note that scripts will do something different here from
       // compiled executables (some combination of making new copies
       // of the interpreter and fiddling bits).
-    }
 
-    if (!svc->fixup_doall (ueuid_orig, ueuid_own, uegid_orig, uegid, mode))
-      ret = false;
+      if (!svc->fixup_doall (ueuid_orig, ueuid_own, uegid_orig, uegid, mode))
+	ret = false;
+    }
   }
-  endgrent ();
-  endpwent ();
   return ret;
 }
 

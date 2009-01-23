@@ -134,7 +134,7 @@ class okld_jailed_exec_t {
 public:
   okld_jailed_exec_t (const str &e, okld_t *o, const str &l) :
     rexecpath (e), okld (o), cfgfile_loc (l), have_ustat (false),
-    exec_uid (-1), exec_gid (-1), mode (-1) {}
+    exec_uid (-1), exec_gid (-1), mode (-1), _unsafe (false) {}
   ~okld_jailed_exec_t () {}
 
   bool get_unix_stat ();
@@ -146,6 +146,7 @@ public:
   const str &loc () const { return cfgfile_loc; }
   void assign_mode (int m) { mode = m; }
   bool chmod (int m);
+  void set_unsafe (bool b = true) { _unsafe = b; }
 
   /**
    * get the execpath relative to current file system root, adjusted
@@ -184,6 +185,7 @@ protected:
 
   int exec_uid, exec_gid;  // UID/GID of the executable!
   int mode;
+  bool _unsafe;
 
 };
 

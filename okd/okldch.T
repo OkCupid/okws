@@ -414,6 +414,8 @@ okld_jailed_exec_t::fix_exec ()
 {
   // force a redo in the case of resurrecting a new service!
   have_ustat = false;
+  if (_unsafe) 
+    return true;
   if (!get_unix_stat ())
     return false;
   if ((get_exec_uid () != exec_uid || get_exec_gid () != exec_gid) && 
