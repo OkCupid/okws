@@ -38,6 +38,8 @@ namespace ok {
     scratch_t (size_t l) : _buf (New char[l]), _len (l) {}
     ~scratch_t () { delete [] _buf; }
     char *buf () { return _buf; }
+    char *end () { return _buf + _len ; }
+    const char *end () const { return _buf + _len ; }
     const char *buf () const { return _buf; }
     size_t len () const { return _len; }
     list_entry<scratch_t> _lnk;
@@ -71,9 +73,9 @@ namespace ok {
     ~scratch_mgr_t () { _h.deleteall (); }
 
     ptr<scratch_handle_t> alloc (size_t s);
+    static ptr<scratch_handle_t> nonstd_alloc (size_t s);
     friend class scratch_handle_t;
   private:
-    static ptr<scratch_handle_t> nonstd_alloc (size_t s);
     void reclaim (scratch_t *s);
 
     ihash<size_t, scrlist_t, &scrlist_t::_size, &scrlist_t::_hlnk> _h;
@@ -90,7 +92,9 @@ namespace ok {
     ~scratch_handle_t ();
 
     char *buf () { return _scratch->buf (); }
+    char *end () { return _scratch->end (); }
     const char *buf () const { return _scratch->buf (); }
+    const char *end () const { return _scratch->end (); }
     size_t len () const { return _scratch->len (); }
     ptr<scratch_handle_t> grow (size_t sz);
 
@@ -98,6 +102,11 @@ namespace ok {
     scratch_t *_scratch;
     scratch_mgr_t *_mgr;
   };
+
+  //-----------------------------------------------------------------
+
+  ptr<scratch_handle_t> alloc_scratch (size_t sz);
+  ptr<scratch_handle_t> alloc_nonstd_scratch (size_t sz);
 
   //-----------------------------------------------------------------
 

@@ -30,6 +30,7 @@
 #include "clist.h"
 #include "pub.h"
 #include "pubutil.h"
+#include "okscratch.h"
 
 // max buf of 256K
 #define XSS_MAX_BUF 0x40000  
@@ -37,10 +38,11 @@ str xss_filter (const str &in);
 str xss_filter (const char *in, u_int l);
 
 struct encode_t {
-  encode_t (strbuf *o, char *s = NULL, size_t l = 0)
-    : out (o), scratch (s), len (l), first (true) {}
+  encode_t (strbuf *o, ptr<ok::scratch_handle_t> s = NULL)
+    : out (o), _scratch (s), first (true) {}
+  ptr<ok::scratch_handle_t> scratch () { return _scratch; }
   strbuf *out;
-  char *scratch;
+  ptr<ok::scratch_handle_t> _scratch;
   size_t len;
   bool first;
 };

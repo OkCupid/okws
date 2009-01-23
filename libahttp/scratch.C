@@ -5,6 +5,20 @@ namespace ok {
 
   //-----------------------------------------------------------------------
 
+  static scratch_mgr_t g_scratch_mgr;
+
+  //-----------------------------------------------------------------------
+
+  ptr<scratch_handle_t> 
+  alloc_scratch (size_t sz) { return g_scratch_mgr.alloc (sz); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<scratch_handle_t> 
+  alloc_nonstd_scratch (size_t sz) { return g_scratch_mgr.nonstd_alloc (sz); }
+
+  //-----------------------------------------------------------------------
+
   scratch_t *
   scrlist_t::alloc ()
   {

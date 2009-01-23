@@ -36,6 +36,7 @@
 #include "pslave.h"
 #include "pubutil.h"
 #include "mpfd.h"
+#include "okscratch.h"
 
 #define HTTP_PARSE_BUFLEN 0x4000
 #define HTTP_PARSE_BUFLEN2 0x1000
@@ -51,10 +52,11 @@ public:
       _abuf (b ? b : New abuf_t (New abuf_con_t (xx), true)),
       _del_abuf (b ? false : true),
       timeout (to ? to : ok_clnt_timeout),
-      buflen (HTTP_PARSE_BUFLEN), tocb (NULL),
+      tocb (NULL),
       destroyed (New refcounted<bool> (false)),
-      _parsing_header (false) {}
-
+      _parsing_header (false),
+      _scratch (ok::alloc_scratch (HTTP_PARSE_BUFLEN)) {}
+  
   virtual ~http_parser_base_t ();
 
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }
@@ -83,11 +85,11 @@ protected:
   bool _del_abuf;
   u_int timeout;
   size_t buflen;
-  char scratch[HTTP_PARSE_BUFLEN];
   timecb_t *tocb;
   cbi::ptr cb;
   ptr<bool> destroyed;
   bool _parsing_header;
+  ptr<ok::scratch_handle_t> _scratch;
 };
 
 class http_parser_raw_t : public http_parser_base_t {
@@ -95,7 +97,7 @@ public:
 
   http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
     : http_parser_base_t (xx, to, b), 
-      hdr (_abuf, NULL, NULL, buflen, scratch) {}
+      hdr (_abuf, NULL, NULL, _scratch) {}
 
   http_inhdr_t *hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
@@ -117,10 +119,14 @@ public:
   http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
     : http_parser_base_t (xx, to, b), 
       buflen2 (HTTP_PARSE_BUFLEN2),
-      cookie (_abuf, true, buflen2, scratch2),
-      url (_abuf, false, buflen2, scratch2),
-      hdr (_abuf, &url, &cookie, buflen, scratch) 
-  {}
+      cookie (_abuf, true),
+      url (_abuf, false),
+      hdr (_abuf, &url, &cookie, _scratch) 
+  {
+    ptr<ok::scratch_handle_t> s2 = ok::alloc_scratch (HTTP_PARSE_BUFLEN);
+    cookie.set_scratch (s2);
+    url.set_scratch (s2);
+  }
 
   virtual ~http_parser_full_t () {}
 
@@ -151,8 +157,8 @@ class http_parser_cgi_t : public http_parser_full_t {
 public:
   http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) :
     http_parser_full_t (xx, to, b),
-    post (_abuf, false, buflen, scratch),
-    _union_cgi (_abuf, false, buflen, scratch),
+    post (_abuf, false,_scratch),
+    _union_cgi (_abuf, false, _scratch),
     mpfd (NULL),
     mpfd_flag (false),
     _union_mode (false) {}
@@ -179,6 +185,7 @@ protected:
 
   cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
+
 
 private:
   bool mpfd_flag;

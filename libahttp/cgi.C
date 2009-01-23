@@ -43,12 +43,11 @@ static const bool REGCHARTAB[] = {
    1, 1, 1, 1, 1, 1 };
 
 #define CGISS_SIZE 0x10000
-static char cgi_static_scratch[CGISS_SIZE];
 
 void
 cgi_t::encode (strbuf *b) const
 {
-  encode_t *e = New encode_t (b, scratch, buflen);
+  encode_t *e = New encode_t (b, ok::alloc_scratch (CGISS_SIZE));
   pairtab_t<cgi_pair_t>::encode (e);
   delete e;
 }
@@ -56,7 +55,7 @@ cgi_t::encode (strbuf *b) const
 void
 cookie_t::encode (strbuf *b) const
 {
-  encode_t *e = New encode_t (b, scratch, buflen);
+  encode_t *e = New encode_t (b, _scratch);
   pairtab_t<cgi_pair_t>::encode (e);
   str sep = get_sep ();
   expires.encode (e, sep);
@@ -79,7 +78,7 @@ str
 cgi_encode (const str &in)
 {
   strbuf b;
-  cgi_encode (in, &b, cgi_static_scratch, CGISS_SIZE, true);
+  cgi_encode (in, &b, ok::alloc_scratch (CGISS_SIZE), true);
   return b;
 }
 
@@ -87,7 +86,7 @@ str
 cgi_decode (const str &in)
 {
   abuf_str_t a (in);
-  cgi_t c (&a, false, CGISS_SIZE, cgi_static_scratch);
+  cgi_t c (&a, false, ok::alloc_scratch (CGISS_SIZE));
   str s;
   return (c.parse_key_or_val (&s, false) == ABUF_EOF ? s : (str )NULL);
 }
@@ -95,9 +94,8 @@ cgi_decode (const str &in)
 #define MAX_EXPAND_FACTOR 3
 
 size_t
-cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
+cgi_encode (const str &in, strbuf *out, ptr<ok::scratch_handle_t> scr, bool e)
 {
-  bool freeit = false;
   size_t inlen = in.len ();
   size_t needlen = inlen * MAX_EXPAND_FACTOR;
 
@@ -105,10 +103,9 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
   if (inlen > needlen) {
     if (needlen > CGI_MAXLEN)
       return 0;
-    freeit = true;
-    scratch = static_cast<char *> (xmalloc (needlen + 1));
+    scr = scr->grow (needlen + 1);
   }
-  char *op = scratch;
+  char *op = scr->buf ();
   const char *inp = in.cstr ();
   const char *ep = inp + in.len ();
   int inc;
@@ -145,10 +142,8 @@ cgi_encode (const str &in, strbuf *out, char *scratch, size_t len, bool e)
 	*op++ = inc;
     }
   }
-  size_t olen = op - scratch;
-  out->tosuio ()->copy (scratch, olen);
-  if (freeit)
-    xfree (scratch);
+  size_t olen = op - scr->buf ();
+  out->tosuio ()->copy (scr->buf (), olen);
   return olen;
 }
 
@@ -171,83 +166,75 @@ cgi_pair_t::encode (encode_t *e, const str &sep) const
   else
     *e->out << sep;
   strbuf c;
-  cgi_encode (key, &c, e->scratch, e->len, encflag);
+  cgi_encode (key, &c, e->scratch (), encflag);
   size_t s = vals.size ();
   for (u_int i = 0; i < s; i++) {
     if (i > 0)
       *e->out << sep;
     *e->out << c << "=";
-    cgi_encode (vals[i], e->out, e->scratch, e->len, encflag);
+    cgi_encode (vals[i], e->out, e->scratch (), encflag);
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
-cgi_t::init (char *buf)
+cgi_t::init ()
 {
-  if (buf) {
-    scratch = buf;
-    bufalloc = false;
-  } else {
-    scratch = static_cast<char *> (xmalloc (buflen));
-    bufalloc = true;
+  if (_scratch) {
+    pcp = _scratch->buf ();
+    endp = _scratch->end ();
   }
-  assert (scratch);
-  pcp = scratch;
-  endp = scratch + buflen;
 }
 
-/*
- * XXX - should fix this 
- *
+//-----------------------------------------------------------------------
+
 void
-cgi_t::reset ()
+cgi_t::set_scratch (ptr<ok::scratch_handle_t> s)
 {
-  pairtab_t<cgi_pair_t>::reset ();
-  async_parser_t::reset ();
-}
-*/
-
-static u_int fixlen (u_int l)
-{
-  // MK 11/6/07 - I'm not sure why we need CGI_MAX_SCRATCH.  For now,
-  // just pump it way up.
-  return min<u_int> (l, ok_cgibuf_limit);
+  _scratch = s;
+  init ();
 }
 
+//-----------------------------------------------------------------------
 
-cgi_t::cgi_t (abuf_t *a, bool ck, u_int bfln, char *buf)
-  : async_parser_t (a), pairtab_t<cgi_pair_t> (true),
-    cookie (ck), bufalloc (false),
-    inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
-    hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (fixlen (bfln)),
+cgi_t::cgi_t (abuf_t *a, bool ck, ptr<ok::scratch_handle_t> s)
+  : async_parser_t (a), 
+    pairtab_t<cgi_pair_t> (true),
+    cookie (ck), 
+    bufalloc (false),
+    inhex (false), 
+    pstate (cookie ? CGI_CKEY : CGI_KEY), 
+    hex_i (0), 
+    hex_h (0), 
+    hex_lch (0), 
+    uri_mode (false),
+    _scratch (s),
     _maxlen (-1)
 {
-  init (buf);
+  init ();
 }
+
+//-----------------------------------------------------------------------
 
 bool
 cgi_t::extend_scratch ()
 {
   bool ret = false;
-  u_int uml = _maxlen;
-  if (_maxlen > 0 && uml > buflen && uml <= ok_cgibuf_limit) {
-    char *nb = static_cast<char *> (xmalloc (_maxlen));
-    assert (nb);
-    if (scratch) {
-      memcpy (nb, scratch, buflen);
-      if (bufalloc) {
-	xfree (scratch);
-      }
+  if (_maxlen > 0 && 
+      _maxlen > ssize_t (_scratch->len ()) && 
+      _maxlen <= ssize_t (ok_cgibuf_limit)) {
+    ptr<ok::scratch_handle_t> n = _scratch->grow (_maxlen);
+    if (n) {
+      ret = true;
+      _scratch = n;
+      endp = _scratch->end ();
     }
-    buflen = _maxlen;
-    scratch = nb;
-    bufalloc = true;
-    ret = true;
-    endp = scratch + buflen;
   }
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 void
 cgi_t::reset_state ()
@@ -260,26 +247,33 @@ cgi_t::reset_state ()
   uri_mode = false;
 }
 
-cgi_t::cgi_t (abuf_src_t *s, bool ck, u_int bfln, char *buf)
-  : async_parser_t (s), pairtab_t<cgi_pair_t> (true),
-    cookie (ck), bufalloc (false),
-    inhex (false), pstate (cookie ? CGI_CKEY : CGI_KEY), 
-    hex_i (0), hex_h (0), hex_lch (0), uri_mode (false),
-    buflen (fixlen (bfln)),
+//-----------------------------------------------------------------------
+
+cgi_t::cgi_t (abuf_src_t *s, bool ck, ptr<ok::scratch_handle_t> scr)
+  : async_parser_t (s), 
+    pairtab_t<cgi_pair_t> (true),
+    cookie (ck), 
+    inhex (false), 
+    pstate (cookie ? CGI_CKEY : CGI_KEY), 
+    hex_i (0), 
+    hex_h (0), 
+    hex_lch (0), 
+    uri_mode (false),
+    _scratch (scr),
     _maxlen (-1)
-    
 {
-  init (buf);
+  init ();
 }
+
+//-----------------------------------------------------------------------
 
 cgi_t::~cgi_t ()
 {
   tab.deleteall ();
-  if (bufalloc && scratch) {
-    xfree (scratch);
-    scratch = NULL;
-  }
+  _scratch = NULL;
 }
+
+//-----------------------------------------------------------------------
 
 void
 cgi_t::parse_guts ()
@@ -290,6 +284,8 @@ cgi_t::parse_guts ()
     finish_parse (HTTP_OK);
   }
 }
+
+//-----------------------------------------------------------------------
 
 #define KEY_STATE(s)                      \
    ((s) == CGI_KEY || (s) == CGI_CKEY)
@@ -327,8 +323,8 @@ cgi_t::parse_still_waiting()
   // if the browser gave an empty Cookie: line!!
   // Note we only advance past white space in the case of
   // a Cookie: line in the first place.
-  return (pstate             == CGI_CKEY    && 
-	  pcp                == scratch     && 
+  return (pstate             == CGI_CKEY             && 
+	  pcp                == _scratch->buf ()     && 
 	  abuf->skip_hws (0) == ABUF_WAIT);
 }
 
@@ -394,9 +390,9 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
   while ( flag && ret == ABUF_OK) {
 
     if (pcp >= endp) {
-      size_t off = pcp - scratch;
+      size_t off = pcp - _scratch->buf ();
       if (extend_scratch ()) {
-	pcp = scratch + off;
+	pcp = _scratch->buf () + off;
 	assert (pcp < endp);
       } else {
 	ret = ABUF_OVERFLOW;
@@ -473,6 +469,7 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
     }
   }
 
+  char *scratch = _scratch->buf ();
   if (ret != ABUF_WAIT) {
     assert (ret == ABUF_OK || ret == ABUF_SEPARATOR || ret == ABUF_EOF ||
 	    ret == ABUF_OVERFLOW);

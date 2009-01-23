@@ -60,6 +60,8 @@ http_hdr_t::delimit_word (str *wrd, bool qms)
     }
   }
 
+  char *scratch = _scratch->buf ();
+
   if (ch == ABUF_EOFCHAR && pcp == scratch) {
     ret = ABUF_EOF;
   } else if (pcp == endp) {
@@ -191,8 +193,9 @@ http_hdr_t::delimit_val (str *v)
   if (pcp == endp)
     ret = ABUF_OVERFLOW;
   if (ret == ABUF_OK) {
-    *v = str (scratch, pcp - scratch);
-    pcp = scratch;
+    char *sb = _scratch->buf ();
+    *v = str (sb, pcp - sb);
+    pcp = sb;
   }
   return ret;
 }
@@ -291,9 +294,10 @@ http_hdr_t::delimit (str *k, char stopchar, bool tol, bool gobble)
   }
   if (pcp == endp)
     ret = ABUF_OVERFLOW;
-  if (ret == ABUF_OK) {
-    *k = str (scratch, pcp - scratch);
-    pcp = scratch;
+  if (ret == ABUF_OK) { 
+    char *sb = _scratch->buf ();
+    *k = str (sb, pcp - sb);
+    pcp = sb;
   }
   return ret;
 }
@@ -334,8 +338,9 @@ http_hdr_t::delimit_key (str *k)
   if (pcp == endp)
     ret = ABUF_OVERFLOW;
   if (ret == ABUF_OK) {
-    *k = str (scratch, pcp - scratch);
-    pcp = scratch;
+    char *sb = _scratch->buf ();
+    *k = str (sb, pcp - sb);
+    pcp = sb;
   }
   return ret;
 }
@@ -344,7 +349,7 @@ void
 http_hdr_t::reset ()
 {
   async_parser_t::reset ();
-  pcp = scratch;
+  pcp = _scratch->buf ();
   CRLF_need_LF = false;
   nvers = 0;
   noins = false;

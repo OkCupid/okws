@@ -82,9 +82,9 @@ typedef enum { HTTP_CONN_NONE = 0,
 class http_inhdr_t : public http_hdr_t, public pairtab_t<> {
 public:
   http_inhdr_t (abuf_t *a, cgi_t *u = NULL, cgi_t *c = NULL, 
-		size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
+		ptr<ok::scratch_handle_t> s = NULL)
     : async_parser_t (a), 
-      http_hdr_t (a, bfln, b),
+      http_hdr_t (a, s),
       contlen (-1), 
       url (u), 
       cookie (c), 

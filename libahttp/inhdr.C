@@ -49,7 +49,7 @@ http_inhdr_t::parse_guts ()
     inc = true;
     switch (state) {
     case INHDRST_START:
-      abuf->mirror (scr2, SCR2_LEN);
+      abuf->mirror (_scr2->buf (), _scr2->len ());
       r = delimit_word (&tmthd);
       break;
     case INHDRST_SPC1:
