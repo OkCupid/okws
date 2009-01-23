@@ -148,14 +148,15 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 
     {
       cgi_t *post_cgi;
+      ptr<cgi_t> ucg;
       
       if (_union_mode) {
-	
-	cgi = &_union_cgi;
-	post_cgi = &_union_cgi;
+	ucg = get_union_cgi ();
+	cgi = ucg;
+	post_cgi = ucg;
 	
 	// need to reset interior state for new parsing.
-	_union_cgi.reset_state ();
+	ucg->reset_state ();
 	
       } else {
 	cgi = &post;
@@ -188,9 +189,9 @@ http_parser_cgi_t::v_parse_cb1 (int status)
   case HTTP_MTHD_HEAD:
     {
       if (_union_mode) {
-	  cgi = &_union_cgi;
+	cgi = get_union_cgi ();
       } else {
-	cgi = &url;
+	cgi = get_url_p ();
       }
       finish (status);
     }
@@ -222,7 +223,7 @@ void
 http_parser_cgi_t::set_union_mode (bool b)
 {
   _union_mode = b;
-  hdr.set_url (_union_mode ? &_union_cgi : &url);
+  hdr.set_url (_union_mode ? get_union_cgi () : get_url_p ());
 }
 
 //-----------------------------------------------------------------------
@@ -239,6 +240,19 @@ int
 http_parser_cgi_t::v_timeout_status () const
 {
   return (_parsing_header ? hdr.timeout_status () : HTTP_TIMEOUT);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<cgi_t>
+http_parser_cgi_t::get_union_cgi ()
+{
+  if (!_union_cgi) {
+    ptr<ok::scratch_handle_t> h = 
+      ok::alloc_scratch (ok_http_inhdr_buflen_big);
+    _union_cgi = New refcounted<cgi_t> (get_abuf_p (), false, h);
+  }
+  return _union_cgi;
 }
 
 //-----------------------------------------------------------------------

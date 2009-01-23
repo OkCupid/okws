@@ -228,6 +228,7 @@ int ok_interpreter_mode = 0550;
 int ok_script_mode = 0440;
 
 int okwc_def_contlen = 0x20000;      // 128K 
+size_t okwc_scratch_sz = 0x1000;
 
 //
 // for freebsd this works, but no on planetlab, etc..
@@ -273,6 +274,12 @@ const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 // of course, we can turn this on via okws_config.
 //
 u_int ok_recycle_suio_limit = 0;
+
+
+size_t ok_http_inhdr_buflen_big = 0x4000;   
+size_t ok_http_inhdr_buflen_sml = 0x1000;
+bool ok_http_parse_query_string = true;
+bool ok_http_parse_cookies = true;
 
 static void
 vec2vec (vec<const char *> *out, const vec<str> &in)

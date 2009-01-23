@@ -38,9 +38,6 @@
 #include "mpfd.h"
 #include "okscratch.h"
 
-#define HTTP_PARSE_BUFLEN 0x4000
-#define HTTP_PARSE_BUFLEN2 0x1000
-
 //
 // http_parser_base_t -- high level parsing object for HTTP requests;
 // parses the headers, and then the bodies appropriately
@@ -55,7 +52,7 @@ public:
       tocb (NULL),
       destroyed (New refcounted<bool> (false)),
       _parsing_header (false),
-      _scratch (ok::alloc_scratch (HTTP_PARSE_BUFLEN)) {}
+      _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)) {}
   
   virtual ~http_parser_base_t ();
 
@@ -97,7 +94,7 @@ public:
 
   http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
     : http_parser_base_t (xx, to, b), 
-      hdr (_abuf, NULL, NULL, _scratch) {}
+      hdr (_abuf, _scratch) {}
 
   http_inhdr_t *hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
@@ -118,15 +115,8 @@ class http_parser_full_t : public http_parser_base_t {
 public:
   http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
     : http_parser_base_t (xx, to, b), 
-      buflen2 (HTTP_PARSE_BUFLEN2),
-      cookie (_abuf, true),
-      url (_abuf, false),
-      hdr (_abuf, &url, &cookie, _scratch) 
-  {
-    ptr<ok::scratch_handle_t> s2 = ok::alloc_scratch (HTTP_PARSE_BUFLEN);
-    cookie.set_scratch (s2);
-    url.set_scratch (s2);
-  }
+      hdr (_abuf, _scratch) 
+  {}
 
   virtual ~http_parser_full_t () {}
 
@@ -134,20 +124,15 @@ public:
   const http_inhdr_t &hdr_cr () const { return hdr; }
   void finish2 (int s1, int s2);
 
-
-  cgi_t & get_cookie () { return cookie; }
-  cgi_t & get_url () { return url; }
+  cgi_t & get_cookie () { return *hdr.get_cookie (); }
+  cgi_t & get_url () { return *hdr.get_url (); }
+  ptr<cgi_t> get_url_p () { return hdr.get_url (); }
   http_inhdr_t & get_hdr () { return hdr; }
 
 protected:
 
   // called to prepare a parsing of a post body.
   cbi::ptr prepare_post_parse (int status);
-
-  size_t buflen2;
-  cgi_t cookie;
-  cgi_t url;
-  char scratch2[HTTP_PARSE_BUFLEN2];
 
 public:
   http_inhdr_t hdr;
@@ -157,8 +142,7 @@ class http_parser_cgi_t : public http_parser_full_t {
 public:
   http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) :
     http_parser_full_t (xx, to, b),
-    post (_abuf, false,_scratch),
-    _union_cgi (_abuf, false, _scratch),
+    post (_abuf, false, _scratch),
     mpfd (NULL),
     mpfd_flag (false),
     _union_mode (false) {}
@@ -178,10 +162,13 @@ public:
   void set_union_mode (bool b);
   int v_timeout_status () const;
 
+  cgi_t &cookie () { return get_cookie (); }
+
 protected:
+  ptr<cgi_t> get_union_cgi ();
   cgi_t post;
   // In union CGI mode, both POST and GET variables are shoved into one place.
-  cgi_t _union_cgi;
+  ptr<cgi_t> _union_cgi;
 
   cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method

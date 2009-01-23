@@ -256,7 +256,7 @@ protected:
 
   ptr<ok_xprt_base_t> _x;
   ptr<abuf_t> _abuf;
-  char _scratch[OKWC_SCRATCH_SZ];
+  ptr<ok::scratch_handle_t> _scratch;
   okwc_cookie_set_t _incookies;
   okwc_http_hdr_t _hdr;
 

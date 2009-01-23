@@ -99,6 +99,8 @@ extern const char *ok_pubobjname;
 //
 extern const char *ok_http_urlencoded;
 extern const char *ok_http_multipart;
+extern bool ok_http_parse_cookies;
+extern bool ok_http_parse_query_string;
 
 //
 // configfile constants
@@ -235,6 +237,12 @@ extern bool ok_amt_rpc_stats;                   // whether to turn on RPC stats
 extern u_int ok_amt_rpc_stats_interval;         // interval to printf
 
 //
+// HTTP constant stuff
+//
+extern size_t ok_http_inhdr_buflen_big;         // headers need to fit in here
+extern size_t ok_http_inhdr_buflen_sml;         // for sub-buffers
+
+//
 // Service UID Ranges
 //
 extern int ok_svc_uid_low;
@@ -247,6 +255,7 @@ extern int ok_script_mode;
 // OK Web Client params
 //
 extern int okwc_def_contlen;                     // when servers don't give it
+extern size_t okwc_scratch_sz;
 
 //
 // On most platforms these are 'root' and 'wheel' but not all!

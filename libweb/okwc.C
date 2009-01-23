@@ -356,7 +356,7 @@ okwc_http_t::body_parse ()
 {
   if (hdr ()->is_chunked ()) {
     assert (!chunker);
-    chunker = New okwc_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch);
+    chunker = New okwc_chunker_t (&abuf, _scratch);
     start_chunker ();
   } else {
     eat_chunk (hdr ()->get_contlen ());
@@ -490,8 +490,12 @@ okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
 			  const str &proxy_hdr_hostname)
   : x (xx), filename (f), hostname (h), port (port_in),
     abuf (New abuf_con_t (xx), true),
-    resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch, incook)),
-    vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL),
+    _scratch (ok::alloc_scratch (okwc_scratch_sz)),
+    resp (okwc_resp_t::alloc (&abuf, _scratch, incook)),
+    vers (v), 
+    outcook (ock), 
+    state (OKWC_HTTP_NONE), 
+    chunker (NULL),
     _post (p), _type (t),
     _proxy_mode (proxy_mode),
     _proxy_hdr_hostname (proxy_hdr_hostname)

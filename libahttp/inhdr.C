@@ -56,8 +56,8 @@ http_inhdr_t::parse_guts ()
       r = abuf->skip_hws (1);
       break;
     case INHDRST_TARGET:
-      r = delimit_word (&target, url ? true : false);
-      if (!url && r == ABUF_OK) {
+      r = delimit_word (&target, _parse_query_string);
+      if (!_parse_query_string && r == ABUF_OK) {
 	state = INHDRST_SPC2;
 	inc = false;
       }
@@ -65,6 +65,7 @@ http_inhdr_t::parse_guts ()
     case INHDRST_URIDAT:
       r = abuf->expectchar ('?');
       if (r == ABUF_OK) {
+	ptr<cgi_t> url = get_url ();
 	url->set_uri_mode (true);
 	url->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
@@ -107,9 +108,9 @@ http_inhdr_t::parse_guts ()
       r = abuf->skip_hws (0);
       break;
     case INHDRST_VALUE:
-      if (cookie && iscookie ()) {
+      if (get_cookie () && iscookie () && ok_http_parse_cookies) {
 	noins = true;
-	cookie->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
+	get_cookie ()->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
       }
       r = delimit_val (&val);
@@ -262,6 +263,40 @@ http_inhdr_t::timeout_status () const
 {
   return (clean_pipeline_eof_state () ? HTTP_PIPELINE_CLEAN_TIMEOUT :
 	  HTTP_TIMEOUT);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<ok::scratch_handle_t> 
+http_inhdr_t::alloc_scratch2 ()
+{
+  if (!_scratch2) {
+    _scratch2 = ok::alloc_scratch (ok_http_inhdr_buflen_sml);
+  }
+  return _scratch2;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<cgi_t>
+http_inhdr_t::get_cookie ()
+{
+  if (!_cookie) {
+    _cookie = New refcounted<cgi_t> (get_abuf (), true, alloc_scratch2 ());
+  }
+  return _cookie;
+}
+
+//-----------------------------------------------------------------------
+
+
+ptr<cgi_t>
+http_inhdr_t::get_url ()
+{
+  if (!_url) {
+    _url = New refcounted<cgi_t> (get_abuf (), false, alloc_scratch2 ());
+  }
+  return _url;
 }
 
 //-----------------------------------------------------------------------

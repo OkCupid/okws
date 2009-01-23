@@ -79,24 +79,21 @@ private:
 class okwc_cookie_set_t : public vec<cgi_t *> 
 {
 public:
-  okwc_cookie_set_t () : abuf (NULL), bflen (0), buf (NULL) {}
-  okwc_cookie_set_t (abuf_t *a, size_t l, char *b)
-    : abuf (a), bflen (l), buf (b) {}
+  okwc_cookie_set_t () : abuf (NULL) {}
+  okwc_cookie_set_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
+    : abuf (a), _scratch (s) {}
 
   void reset () { while (size ()) delete pop_back (); }
 
   ~okwc_cookie_set_t () { reset (); }
 
   cgi_t *push_back_new () 
-  { return push_back (New cgi_t (abuf, true, bflen, buf)); }
+  { return push_back (New cgi_t (abuf, true, _scratch)); }
 
 private:
   abuf_t *abuf;
-  size_t bflen;
-  char *buf;
+  ptr<ok::scratch_handle_t> _scratch;
 };
-
-#define OKWC_SCRATCH_SZ 4096
 
 //-----------------------------------------------------------------------
 
@@ -115,10 +112,14 @@ public:
 		 OKWC_HDR_EOL2A = 10,
 		 OKWC_HDR_EOL2B = 11 } state_t;
   
-  okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, size_t bflen, char *b)
-    : async_parser_t (a), http_hdr_t (a, bflen, b),
-      cookie (ck), state (OKWC_HDR_START), 
-      contlen (0), _has_body (false),
+  okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, 
+		   ptr<ok::scratch_handle_t> s)
+    : async_parser_t (a), 
+      http_hdr_t (a, s),
+      cookie (ck), 
+      state (OKWC_HDR_START), 
+      contlen (0), 
+      _has_body (false),
       _status_parse (HTTP_NO_STATUS),
       _status_header (HTTP_NO_STATUS),
       _clean_eoh (false),
@@ -155,27 +156,31 @@ private:
 //-----------------------------------------------------------------------
 
 struct okwc_resp_t {
-  okwc_resp_t (abuf_t *a, size_t bfln, char *b, okwc_cookie_set_t *incook)
-    : status (HTTP_OK), cookies (a, bfln, b), 
-    _hdr (New okwc_http_hdr_t (a, incook ? incook : &cookies, bfln, b)) {}
+  okwc_resp_t (abuf_t *a, ptr<ok::scratch_handle_t> s, 
+	       okwc_cookie_set_t *incook)
+    : status (HTTP_OK), 
+      cookies (a, s),
+      _hdr (New okwc_http_hdr_t (a, incook ? incook : &cookies, s)) {}
 
   ~okwc_resp_t () { if (_hdr) delete _hdr; }
 
   okwc_resp_t (int s) : status (s), _hdr (NULL) {}
 
-  static ptr<okwc_resp_t> alloc (abuf_t *a, size_t bfln, char *b, 
+  static ptr<okwc_resp_t> alloc (abuf_t *a, ptr<ok::scratch_handle_t> s,
 				 okwc_cookie_set_t *incook)
-  { return New refcounted<okwc_resp_t> (a, bfln, b, incook); }
+  { return New refcounted<okwc_resp_t> (a, s, incook); }
 
   static ptr<okwc_resp_t> alloc (int s) 
   { return New refcounted<okwc_resp_t> (s); }
 
   okwc_http_hdr_t *hdr () { return _hdr; }
+  ptr<ok::scratch_handle_t> scratch () { return _scratch; }
 
   str body;
   int status;
   okwc_cookie_set_t cookies;
   okwc_http_hdr_t *_hdr;
+  ptr<ok::scratch_handle_t> _scratch;
 };
 
 //-----------------------------------------------------------------------
@@ -199,8 +204,8 @@ private:
 		 EOL2 = 4,
 		 DONE = 5 } state_t;
 public: 
-  okwc_chunker_t (abuf_t *a, size_t bfln, char *b)
-    : async_parser_t (a), http_hdr_t (a, bfln, b), sz (0), state (START) {}
+  okwc_chunker_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
+    : async_parser_t (a), http_hdr_t (a, s), sz (0), state (START) {}
   size_t get_sz () const { return sz; }
   void next_chunk () { sz = 0; state = FINISH_PREV; }
 protected:
@@ -250,8 +255,8 @@ protected:
   str hostname;
   int port;
   abuf_t abuf;
-  char scratch[OKWC_SCRATCH_SZ];
 
+  ptr<ok::scratch_handle_t> _scratch;
   ptr<okwc_resp_t> resp;
   int vers;
   cgi_t *outcook; // cookie sending out to the server

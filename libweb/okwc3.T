@@ -5,6 +5,7 @@
 #include "tame_connectors.h"
 #include "rxx.h"
 #include "oksslcon.h"
+#include "okconst.h"
 
 namespace okwc3 {
 
@@ -362,8 +363,9 @@ resp_t::do_get_body (int status) const
 resp_t::resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a)
   : _x (x),
     _abuf (a ? a : New refcounted<abuf_t> (_x->alloc_abuf_src (), true)),
-    _incookies (_abuf, OKWC_SCRATCH_SZ, _scratch),
-    _hdr (_abuf, &_incookies, OKWC_SCRATCH_SZ, _scratch) {}
+    _scratch (ok::alloc_scratch (okwc_scratch_sz)),
+    _incookies (_abuf, _scratch),
+    _hdr (_abuf, &_incookies, _scratch) {}
 
 //-----------------------------------------------------------------------
 
@@ -430,7 +432,7 @@ resp_t::run_chunker_T (evi_t ev)
   }
   hold = mkref (this);
 
-  c = New okwc_chunker_t (_abuf, OKWC_SCRATCH_SZ, _scratch);
+  c = New okwc_chunker_t (_abuf, _scratch);
 
   do { 
     twait { c->parse (connector::cnc (mkevent (status), ev, &outc)); }
@@ -444,6 +446,8 @@ resp_t::run_chunker_T (evi_t ev)
       c->next_chunk ();
     } 
   } while (status == HTTP_OK && sz);
+
+  delete c;
 
   ev->trigger (status);
 }
