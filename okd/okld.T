@@ -1006,58 +1006,58 @@ okld_t::fix_uids ()
 
     if (unsafe_mode) {
       svc->assign_uid (ueuid_own);
-      continue;
-    }
-
-    if (svc->usr ()) {
-      // in this case, the operator specified the user via a -u option
-      // to the Service line.
-      uegid = svc->usr ()->getid ();
-      if (uids_in_use[uegid]) {
-	warn << "The UID " << uegid
-	     << " that you specified for service " << svc->servpath << "\n"
-	     << "\t is in use by another, and I'm refusing to use it.\n";
-	return false;
-      } else if (owners[uegid]) {
-	warn << "The UID " << uegid
-	     << " that you specified for service " << svc->servpath << "\n"
-	     << "\towns the executable of another service, so it's unsafe "
-	     << "to use.\n";
-	return false;
-      }
     } else {
-      // In this case, we autogenerate a user ID / group ID pair
-      while ((getpwuid (uegid) ||  getgrgid (uegid) ||
-	      uids_in_use[uegid] || owners[uegid]) && 
-	     uegid <= ok_svc_uid_high) {
-	warn << "UID/GID=" << uegid
-	     << " is in use; refusing to use it.\n";
-	uegid = ++nxtuid;
+      if (svc->usr ()) {
+	// in this case, the operator specified the user via a -u option
+	// to the Service line.
+	uegid = svc->usr ()->getid ();
+	if (uids_in_use[uegid]) {
+	  warn << "The UID " << uegid
+	       << " that you specified for service " << svc->servpath << "\n"
+	       << "\t is in use by another, and I'm refusing to use it.\n";
+	  return false;
+	} else if (owners[uegid]) {
+	  warn << "The UID " << uegid
+	       << " that you specified for service " << svc->servpath << "\n"
+	       << "\towns the executable of another service, so it's unsafe "
+	       << "to use.\n";
+	  return false;
+	}
+      } else {
+	// In this case, we autogenerate a user ID / group ID pair
+	while ((getpwuid (uegid) ||  getgrgid (uegid) ||
+		uids_in_use[uegid] || owners[uegid]) && 
+	       uegid <= ok_svc_uid_high) {
+	  warn << "UID/GID=" << uegid
+	       << " is in use; refusing to use it.\n";
+	  uegid = ++nxtuid;
+	}
       }
-    }
       
-    if (uegid > ok_svc_uid_high) {
-      warn << "too many services / ran out of UIDs\n";
-      return false;
+      if (uegid > ok_svc_uid_high) {
+	warn << "too many services / ran out of UIDs\n";
+	return false;
+      }
+      
+      uids_in_use.insert (uegid);
+      
+      // because we check after the previous insert, we won't be able to
+      // use a GID/UID pair in its entirety; this is precisely by design
+      if (uids_in_use[ueuid_own]) {
+	warn << svc->loc () << ": UID " << ueuid_own
+	     << " in use / changing ownership on file to root\n";
+	ueuid_own = ok_usr_t (ok_root).getid ();
+      } 
+      
+      owners.insert (ueuid_own);
+      
+      // fixup ownership and permissions, and who to exec as
+      // based on the old and new gid.uid pairs (and also the old mode).
+      // note that scripts will do something different here from
+      // compiled executables (some combination of making new copies
+      // of the interpreter and fiddling bits).
     }
-    
-    uids_in_use.insert (uegid);
-    
-    // because we check after the previous insert, we won't be able to
-    // use a GID/UID pair in its entirety; this is precisely by design
-    if (uids_in_use[ueuid_own]) {
-      warn << svc->loc () << ": UID " << ueuid_own
-	   << " in use / changing ownership on file to root\n";
-      ueuid_own = ok_usr_t (ok_root).getid ();
-    } 
-    
-    owners.insert (ueuid_own);
 
-    // fixup ownership and permissions, and who to exec as
-    // based on the old and new gid.uid pairs (and also the old mode).
-    // note that scripts will do something different here from
-    // compiled executables (some combination of making new copies
-    // of the interpreter and fiddling bits).
     if (!svc->fixup_doall (ueuid_orig, ueuid_own, uegid_orig, uegid, mode))
       ret = false;
   }

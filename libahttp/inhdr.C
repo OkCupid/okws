@@ -108,7 +108,7 @@ http_inhdr_t::parse_guts ()
       r = abuf->skip_hws (0);
       break;
     case INHDRST_VALUE:
-      if (get_cookie () && iscookie () && ok_http_parse_cookies) {
+      if (ok_http_parse_cookies && get_cookie () && iscookie ()) {
 	noins = true;
 	get_cookie ()->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
