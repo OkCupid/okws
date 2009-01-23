@@ -241,6 +241,7 @@ extern u_int ok_amt_rpc_stats_interval;         // interval to printf
 //
 extern size_t ok_http_inhdr_buflen_big;         // headers need to fit in here
 extern size_t ok_http_inhdr_buflen_sml;         // for sub-buffers
+extern size_t ok_dflt_cgibuf_sz;                // for small cgi static buffers
 
 //
 // Service UID Ranges

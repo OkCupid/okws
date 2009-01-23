@@ -82,6 +82,9 @@ public:
 	 ptr<ok::scratch_handle_t> scr = NULL);
   ~cgi_t ();
 
+  static ptr<cgi_t> alloc (abuf_t *a, bool ck, ptr<ok::scratch_handle_t> h);
+  static ptr<cgi_t> alloc (abuf_src_t *a, bool ck, ptr<ok::scratch_handle_t> h);
+
   void set_scratch (ptr<ok::scratch_handle_t> s);
 
   virtual void encode (strbuf *b) const;
@@ -105,7 +108,6 @@ private:
   abuf_stat_t parse_hexchar (char **pp, char *end);
 
   bool cookie;
-  bool bufalloc;    // on if we alloced this buf; off if we're borrowing it
 
   bool inhex;       // inhex when forced to wait
   cgi_var_t pstate; // parse state

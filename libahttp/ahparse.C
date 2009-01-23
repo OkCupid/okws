@@ -250,9 +250,54 @@ http_parser_cgi_t::get_union_cgi ()
   if (!_union_cgi) {
     ptr<ok::scratch_handle_t> h = 
       ok::alloc_scratch (ok_http_inhdr_buflen_big);
-    _union_cgi = New refcounted<cgi_t> (get_abuf_p (), false, h);
+    _union_cgi = cgi_t::alloc (get_abuf_p (), false, h);
   }
   return _union_cgi;
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_base_t::http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
+  : _parser_x (xx), 
+    _abuf (b ? b : New abuf_t (New abuf_con_t (xx), true)),
+    _del_abuf (b ? false : true),
+    timeout (to ? to : ok_clnt_timeout),
+    tocb (NULL),
+    destroyed (New refcounted<bool> (false)),
+    _parsing_header (false),
+    _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_raw_t::http_parser_raw_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
+  : http_parser_base_t (xx, to, b), 
+    hdr (_abuf, _scratch) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_full_t::http_parser_full_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
+  : http_parser_base_t (xx, to, b), 
+    hdr (_abuf, _scratch) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_cgi_t::http_parser_cgi_t (ptr<ahttpcon> xx, int to, abuf_t *b) 
+  : http_parser_full_t (xx, to, b),
+    post (_abuf, false, _scratch),
+    mpfd (NULL),
+    mpfd_flag (false),
+    _union_mode (false) 
+{
+  assert (_abuf);
 }
 
 //-----------------------------------------------------------------------

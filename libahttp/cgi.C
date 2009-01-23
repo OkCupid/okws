@@ -25,6 +25,8 @@
 #include "parseopt.h"
 #include "httpconst.h"
 
+//-----------------------------------------------------------------------
+
 static const int HEXVALTAB[] = {
     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 
    -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 
@@ -32,6 +34,8 @@ static const int HEXVALTAB[] = {
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
    -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, 
    11, 12, 13, 14, 15 };
+
+//-----------------------------------------------------------------------
 
 static const bool REGCHARTAB[] = {
    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
@@ -42,15 +46,17 @@ static const bool REGCHARTAB[] = {
    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
    1, 1, 1, 1, 1, 1 };
 
-#define CGISS_SIZE 0x10000
+//-----------------------------------------------------------------------
 
 void
 cgi_t::encode (strbuf *b) const
 {
-  encode_t *e = New encode_t (b, ok::alloc_scratch (CGISS_SIZE));
+  encode_t *e = New encode_t (b, ok::alloc_scratch (ok_dflt_cgibuf_sz));
   pairtab_t<cgi_pair_t>::encode (e);
   delete e;
 }
+
+//-----------------------------------------------------------------------
 
 void
 cookie_t::encode (strbuf *b) const
@@ -66,6 +72,8 @@ cookie_t::encode (strbuf *b) const
   delete e;
 }
 
+//-----------------------------------------------------------------------
+
 str
 cgi_t::encode () const 
 {
@@ -74,24 +82,30 @@ cgi_t::encode () const
   return b;
 }
 
+//-----------------------------------------------------------------------
+
 str
 cgi_encode (const str &in)
 {
   strbuf b;
-  cgi_encode (in, &b, ok::alloc_scratch (CGISS_SIZE), true);
+  cgi_encode (in, &b, ok::alloc_scratch (ok_dflt_cgibuf_sz), true);
   return b;
 }
+
+//-----------------------------------------------------------------------
 
 str
 cgi_decode (const str &in)
 {
   abuf_str_t a (in);
-  cgi_t c (&a, false, ok::alloc_scratch (CGISS_SIZE));
+  cgi_t c (&a, false, ok::alloc_scratch (ok_dflt_cgibuf_sz));
   str s;
   return (c.parse_key_or_val (&s, false) == ABUF_EOF ? s : (str )NULL);
 }
 
 #define MAX_EXPAND_FACTOR 3
+
+//-----------------------------------------------------------------------
 
 size_t
 cgi_encode (const str &in, strbuf *out, ptr<ok::scratch_handle_t> scr, bool e)
@@ -202,7 +216,6 @@ cgi_t::cgi_t (abuf_t *a, bool ck, ptr<ok::scratch_handle_t> s)
   : async_parser_t (a), 
     pairtab_t<cgi_pair_t> (true),
     cookie (ck), 
-    bufalloc (false),
     inhex (false), 
     pstate (cookie ? CGI_CKEY : CGI_KEY), 
     hex_i (0), 
@@ -304,6 +317,8 @@ cgi_t::parse_guts ()
      s = CGI_CKEY;
     
 
+//-----------------------------------------------------------------------
+
 abuf_stat_t
 cgi_t::parse_guts_driver ()
 {
@@ -314,6 +329,8 @@ cgi_t::parse_guts_driver ()
   abuf_stat_t rc = parse_key_or_val (&s);
   return process_parsed_key_or_val(rc, s);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 cgi_t::parse_still_waiting()
@@ -327,6 +344,8 @@ cgi_t::parse_still_waiting()
 	  pcp                == _scratch->buf ()     && 
 	  abuf->skip_hws (0) == ABUF_WAIT);
 }
+
+//-----------------------------------------------------------------------
 
 abuf_stat_t
 cgi_t::process_parsed_key_or_val(abuf_stat_t rc, str& s)
@@ -362,6 +381,8 @@ cgi_t::process_parsed_key_or_val(abuf_stat_t rc, str& s)
   }
   return rc;
 }
+
+//-----------------------------------------------------------------------
 
 abuf_stat_t
 cgi_t::parse_key_or_val (str *r, bool use_internal_state)
@@ -487,6 +508,8 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 abuf_stat_t
 cgi_t::parse_hexchar (char **pp, char *end)
 {
@@ -522,14 +545,19 @@ cgi_t::parse_hexchar (char **pp, char *end)
   return ABUF_OK;
 }
 
+//-----------------------------------------------------------------------
+
 ptr<cgi_t>
 cgi_t::str_parse (const str &s)
 {
   abuf_str_t cgis (s);
-  ptr<cgi_t> r = New refcounted<cgi_t, vbase> (&cgis);
+  ptr<ok::scratch_handle_t> scr = ok::alloc_scratch (ok_dflt_cgibuf_sz);
+  ptr<cgi_t> r = New refcounted<cgi_t, vbase> (&cgis, false, scr);
   r->parse (NULL);
   return r;
 }
+
+//-----------------------------------------------------------------------
 
 str
 expire_in (int d, int h, int m, int s, rfc_number_t rfc)
@@ -548,3 +576,21 @@ expire_in (int d, int h, int m, int s, rfc_number_t rfc)
 #undef MAXLEN
 }
 
+
+//-----------------------------------------------------------------------
+
+ptr<cgi_t>
+cgi_t::alloc (abuf_t *a, bool ck, ptr<ok::scratch_handle_t> h)
+{
+  return New refcounted<cgi_t, vbase> (a, ck, h);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<cgi_t>
+cgi_t::alloc (abuf_src_t *a, bool ck, ptr<ok::scratch_handle_t> h)
+{
+  return New refcounted<cgi_t, vbase> (a, ck, h);
+}
+
+//-----------------------------------------------------------------------

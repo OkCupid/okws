@@ -44,16 +44,7 @@
 //
 class http_parser_base_t {
 public:
-  http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b) 
-    : _parser_x (xx), 
-      _abuf (b ? b : New abuf_t (New abuf_con_t (xx), true)),
-      _del_abuf (b ? false : true),
-      timeout (to ? to : ok_clnt_timeout),
-      tocb (NULL),
-      destroyed (New refcounted<bool> (false)),
-      _parsing_header (false),
-      _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)) {}
-  
+  http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b) ;
   virtual ~http_parser_base_t ();
 
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }
@@ -91,10 +82,7 @@ protected:
 
 class http_parser_raw_t : public http_parser_base_t {
 public:
-
-  http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
-    : http_parser_base_t (xx, to, b), 
-      hdr (_abuf, _scratch) {}
+  http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL);
 
   http_inhdr_t *hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
@@ -113,11 +101,7 @@ public:
  */
 class http_parser_full_t : public http_parser_base_t {
 public:
-  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL)
-    : http_parser_base_t (xx, to, b), 
-      hdr (_abuf, _scratch) 
-  {}
-
+  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL);
   virtual ~http_parser_full_t () {}
 
   http_inhdr_t * hdr_p () { return &hdr; }
@@ -140,12 +124,7 @@ public:
 
 class http_parser_cgi_t : public http_parser_full_t {
 public:
-  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) :
-    http_parser_full_t (xx, to, b),
-    post (_abuf, false, _scratch),
-    mpfd (NULL),
-    mpfd_flag (false),
-    _union_mode (false) {}
+  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) ;
   ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
 
   void v_cancel () { hdr.cancel (); post.cancel (); }

@@ -275,9 +275,9 @@ const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 //
 u_int ok_recycle_suio_limit = 0;
 
-
 size_t ok_http_inhdr_buflen_big = 0x4000;   
 size_t ok_http_inhdr_buflen_sml = 0x1000;
+size_t ok_dflt_cgibuf_sz = 0x10000;
 bool ok_http_parse_query_string = true;
 bool ok_http_parse_cookies = true;
 

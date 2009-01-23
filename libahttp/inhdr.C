@@ -282,7 +282,7 @@ ptr<cgi_t>
 http_inhdr_t::get_cookie ()
 {
   if (!_cookie) {
-    _cookie = New refcounted<cgi_t> (get_abuf (), true, alloc_scratch2 ());
+    _cookie = cgi_t::alloc (get_abuf (), true, alloc_scratch2 ());
   }
   return _cookie;
 }
@@ -294,7 +294,7 @@ ptr<cgi_t>
 http_inhdr_t::get_url ()
 {
   if (!_url) {
-    _url = New refcounted<cgi_t> (get_abuf (), false, alloc_scratch2 ());
+    _url = cgi_t::alloc (get_abuf (), false, alloc_scratch2 ());
   }
   return _url;
 }
