@@ -140,6 +140,7 @@ okdate_t::set (const str &s, long gmt_off)
     err = true;
   } else {
     struct tm t;
+    memset (&t, 0, sizeof (t));
     bool time = false;
     err = false;
 
@@ -244,6 +245,7 @@ void
 okdate_t::apply_gmt_off (long gmt_off)
 {
   struct tm t;
+  memset (&t, 0, sizeof (tm));
   to_stm (&t);
   set (t, gmt_off);
 }
