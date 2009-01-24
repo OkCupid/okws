@@ -1386,7 +1386,7 @@ ok_base_t::add_port (okws1_port_t port, bool ssl)
 static okws1_port_t
 split_uri (str in, str *out)
 {
-  okws1_port_t port;
+  okws1_port_t port = 0;
   const char *p = in;
   if (p[0] == ':') {
     const char *e = strchr (p, '/');
