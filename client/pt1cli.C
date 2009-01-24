@@ -724,7 +724,7 @@ main (int argc, char *argv[])
   mode = NONE;
   bool no_pub = false;
 
-  int tmp;
+  int tmp = 0;
 
   static rxx lose_patience_rxx ("(\\d+),(\\d+)");
 
