@@ -62,6 +62,13 @@ case $with_mode in
 		CXXDEBUG='-g -O2'
 		;;
 
+	"hiperf" )
+		 sfstag=$with_mode
+		 okwstag=$with_mode
+		 DEBUG='-g -O3'
+		 CXXDEBUG='-g -O3'
+		 ;;
+
 	"pydbg" )
 		sfstag=$with_mode
 		okwstag=$with_mode
