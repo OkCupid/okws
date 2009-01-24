@@ -245,7 +245,7 @@ void
 okdate_t::apply_gmt_off (long gmt_off)
 {
   struct tm t;
-  memset (&t, 0, sizeof (tm));
+  memset (&t, 0, sizeof (t));
   to_stm (&t);
   set (t, gmt_off);
 }
