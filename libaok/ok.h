@@ -205,8 +205,11 @@ public:
   bool parse (const str &s);
   void enable_accept (ok_con_acceptor_t *s, int listenq);
   void disable_accept ();
+  bool operator[] (int p) const { return _map[p]; }
+  void add_port_pair (const ok_portpair_t &p);
 private:
   vec<ok_portpair_t> _ports;
+  bhash<int> _map;
 };
 
 //-----------------------------------------------------------------------
@@ -228,6 +231,7 @@ public:
 
   bool got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<argv_t> *ep);
 
+  bool is_direct_port (int i) const { return _direct_ports[i]; }
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
   void got_ports (bool ssl, vec<str> s, str loc, bool *errp);

@@ -24,11 +24,20 @@ ok_direct_ports_t::bind (const str &servpath, u_int32_t listenaddr)
 //-----------------------------------------------------------------------
 
 void
+ok_direct_ports_t::add_port_pair (const ok_portpair_t &p)
+{
+  _ports.push_back (p);
+  _map.insert (p._port);
+}
+
+//-----------------------------------------------------------------------
+
+void
 ok_direct_ports_t::init (const vec<int> &v)
 {
   _ports.clear (); // if reiniting after a crash
   for (size_t i = 0; i < v.size (); i++) {
-    _ports.push_back (ok_portpair_t (v[i]));
+    add_port_pair (ok_portpair_t (v[i]));
   }
 }
 
@@ -91,7 +100,7 @@ ok_direct_ports_t::parse (const str &in)
       warn << "Cannot parse port pair: " << v[i] << "\n";
       ret = false;
     } else {
-      _ports.push_back (p);
+      add_port_pair (p);
     }
   }
   return ret;
