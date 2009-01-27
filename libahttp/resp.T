@@ -252,10 +252,14 @@ http_response_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
 {
   tvars {
     ssize_t ret;
+    strbuf b;
   }
 
+  header.fill_strbuf (b);
+  b.borrow_data (body);
+
   twait { 
-    ret = send (x, mkevent ()); 
+    x->send2 (b, mkevent (ret));
   }
 
   ev->trigger (ret);

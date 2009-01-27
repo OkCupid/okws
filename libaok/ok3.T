@@ -432,6 +432,10 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     if (head) { 
       gz = false; 
       contlen = _body ? _body->inflated_len () : 0;
+
+      // We're not going to need the body any more; let's force the
+      // deallocation now
+      _body = NULL; 
     }
 
     hra.set_gzip (gz);
