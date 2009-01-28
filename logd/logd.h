@@ -147,6 +147,7 @@ public:
   void newclnt (bool p, ptr<axprt_stream> x);
   void dispatch (svccb *sbp);
   void shutdown ();
+  void handle_sighup ();
 
   log_timer_t tmr;
 
@@ -157,6 +158,7 @@ protected:
 
 private:
   void turn (svccb *sbp);
+  bool turn ();
   void log (svccb *sbp);
   void fastlog (svccb *sbp);
   void flush ();

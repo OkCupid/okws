@@ -309,8 +309,10 @@ logd_t::flush ()
   if (running) {
     assert (error);
     assert (access);
+    assert (ssl);
     error->flush ();
     access->flush ();
+    ssl->flush ();
   }
 }
 
@@ -345,6 +347,7 @@ main (int argc, char *argv[])
   setsid ();
   warn ("OKWS version %s, pid %d\n", VERSION, int (getpid ()));
   glogd = New logd_t (argv[optind], fdfd);
+  sigcb (SIGHUP, wrap (glogd, &logd_t::handle_sighup));
   glogd->launch ();
   amain ();
 }
@@ -403,8 +406,8 @@ logd_t::error_log (const oklog_arg_t &x)
   return lb->ok ();
 }
 
-void
-logd_t::turn (svccb *sbp)
+bool
+logd_t::turn ()
 {
   bool ret = false;
 
@@ -412,24 +415,44 @@ logd_t::turn (svccb *sbp)
   logfile_t *error2 = NULL;
   logfile_t *ssl2 = NULL;
 
-  if (logfile_setup (&access2, parms.accesslog, "access")) {
-    if (logfile_setup (&error2, parms.errorlog, "error")) {
-      if (logfile_setup (&ssl2, parms.errorlog, "ssl")) {
-	ret = true;
-	close_logfiles ();
-	access = access2;
-	error = error2;
-	ssl = ssl2;
-      }
-    } else {
-      delete access2;
-    }
-  } // else access2 autodeleted
+  if (logfile_setup (&access2, parms.accesslog, "access") &&
+      logfile_setup (&error2, parms.errorlog, "error") &&
+      logfile_setup (&ssl2, parms.errorlog, "ssl")) {
+
+    ret = true;
+    close_logfiles ();
+    access = access2;
+    error = error2;
+    ssl = ssl2;
+
+  } else {
+   
+    if (access2) delete access2;
+    if (error2) delete error2;
+    if (ssl2) return ssl2;
+  } 
+
+  // else access2 autodeleted
 
   if (!ret) 
     warn << "flush of logfiles failed; no changes made\n";
+  return ret;
+}
 
+void
+logd_t::turn (svccb *sbp)
+{
+  bool ret = turn ();
   sbp->replyref (ret);
+}
+
+void
+logd_t::handle_sighup ()
+{
+  warn << "Received HUP signal (" << SIGHUP  << "); turning logs\n";
+  bool ret = turn ();
+  if (!ret) 
+    warn << "XX log turn failed!\n";
 }
 
 void
