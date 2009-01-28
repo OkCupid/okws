@@ -468,7 +468,7 @@ public:
 
   void error (int n, const str &s, bool do_send_complete, evv_t::ptr ev)
   { error_T (n, s, do_send_complete, ev); }
-  void error (int n, const str &s, evv_t::ptr ev);
+  void error (int n, const str &s, evv_t::ptr ev = NULL);
   void error (int n);
 
   //-----------------------------------------------------------------------
