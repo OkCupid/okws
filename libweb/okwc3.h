@@ -361,7 +361,8 @@ protected:
 class agent_get_direct_t : public agent_get_t {
 public:
   virtual ~agent_get_direct_t () {}
-  agent_get_direct_t (const str &h, int p, bool s, ptr<obj_factory_t> f = NULL) 
+  agent_get_direct_t (const str &h, int p, bool s = false, 
+                      ptr<obj_factory_t> f = NULL) 
     : agent_get_t (h, p, s, f) {}
 
   void 
@@ -378,7 +379,7 @@ private:
 
 class agent_get_proxied_t : public agent_get_t {
 public:
-  agent_get_proxied_t (const str &h, int p, bool s, 
+  agent_get_proxied_t (const str &h, int p, bool s = false, 
 		       ptr<obj_factory_t> f = NULL) 
     : agent_get_t (h, p, s, f) {}
   
