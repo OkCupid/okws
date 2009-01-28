@@ -35,6 +35,7 @@
 #include "ok_adebug.h"
 #include "sfs_select.h"
 #include "tame_trigger.h"
+#include "resp2.h"
 
 #ifdef HAVE_LINUX_PRCTL_DUMP
 # include <sys/prctl.h>
@@ -61,19 +62,11 @@ ok_httpsrv_t::malloc_init () {}
 
 //-----------------------------------------------------------------------
 
-okclnt_base_t::~okclnt_base_t () 
-{ 
-  while (outcookies.size ())
-    delete outcookies.pop_front ();
-}
-
-//-----------------------------------------------------------------------
-
-cookie_t *
-okclnt_base_t::add_cookie (const str &h, const str &p)
+ptr<cookie_t>
+outcookie_holder_t::add_cookie (const str &h, const str &p)
 {
-  cookie_t *ret = New cookie_t (h, p);
-  outcookies.push_back (ret);
+  ptr<cookie_t> ret = New refcounted<cookie_t> (h, p);
+  _oc.push_back (ret);
   return ret;
 }
 
@@ -1038,6 +1031,8 @@ okclnt_base_t::output_hdr (ssize_t len)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okclnt_base_t::output_frag_prepare ()
 {
@@ -1053,6 +1048,8 @@ okclnt_base_t::output_frag_prepare ()
   }
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::output_fragment (str s)
@@ -1209,10 +1206,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 void
 okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
-  // do cookies
-  for (size_t i = 0; i < outcookies.size(); i++) {
-    rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
-  }
+  fixup_cookies (rsp);
 
   oksrvc->log (_client_con, hdr_p (), rsp);
   rsp->send (_client_con, cb);
@@ -1769,5 +1763,76 @@ okclnt_base_t::okreply (ptr<compressible_t> b, evv_t::ptr ev)
 {
   output (b, ev);
 }
+
+//-----------------------------------------------------------------------
+
+void
+outcookie_holder_t::fixup_cookies (ptr<http_response_base_t> rsp)
+{
+  const vec<ptr<cookie_t> > *v = get_outcookies ();
+  for (size_t i = 0; i < v->size(); i++) {
+    rsp->get_header ()->add (http_hdr_cookie_t ((*v)[i]->to_str ()));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
+{
+  tvars {
+    bool gz (_self->do_gzip ());
+    ssize_t prelen (gz && b ? b->inflated_len () : ssize_t (-1));
+    http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
+    ptr<ahttpcon> x (_self->client_con ());
+    ptr<http_response_base_t> rsp;
+    size_t contlen;
+    bool head (false);
+    ssize_t rc;
+  }
+
+  assert (output_state == ALL_AT_ONCE);
+  output_state = DONE;
+
+  // client might have cancelled as we were waiting for DB
+  if (x->closed ()) {
+
+    // 3rd argument false --- don't issue send_complete() within
+    // error(), since we only want to call send_complete() once.
+    twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
+  } else {
+
+   
+    head = (hdr_cr ().mthd == HTTP_MTHD_HEAD);
+    if (head) {
+      gz = false;
+      contlen = b ? b->inflated_len () : 0;
+      b = NULL;
+    }
+
+    set_attributes (&hra);
+
+    if (head) {
+      hra.set_gzip (false);
+      rsp = New refcounted<http_response_head_t> (contlen, hra);
+    } else {
+      hra.set_gzip (gz);
+      rsp = New refcounted<http_response_ok2_t> (hra, b);
+    }
+    fixup_log (rsp);
+
+    if (uid_set) rsp->set_uid (uid);
+    if (prelen > 0) rsp->set_inflated_len (prelen);
+    fixup_cookies (rsp);
+
+    twait { rsp->send2 (x, mkevent (rc)); }
+  }
+
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+okclnt_base_t::~okclnt_base_t () {}
 
 //-----------------------------------------------------------------------

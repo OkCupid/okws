@@ -42,7 +42,8 @@ public:
 
   //------------------------------------------------------------------------
 
-  class resp_t : public virtual refcount {
+  class resp_t : public outcookie_holder_t, 
+		 public virtual refcount {
   public:
     resp_t (okclnt3_t *o, ptr<req_t> q);
     ~resp_t ();
@@ -82,7 +83,6 @@ public:
     void set_attributes (http_resp_attributes_t *hra);
     void set_connection_attributes (http_resp_attributes_t *hra);
     void set_error_attributes (http_resp_attributes_t *hra);
-    void fixup_cookies (ptr<http_response_base_t> rsp);
     void fixup_log (ptr<http_response_base_t> rsp);
 
     //-----------------------------------------------------------------------
@@ -115,7 +115,6 @@ public:
     //-----------------------------------------------------------------------
 
     okclnt3_t *_ok_clnt;
-    vec<ptr<cookie_t> > _outcookies;
     ptr<http_response_t> _http_resp;
     u_int64_t _uid;
     bool _uid_set;

@@ -112,13 +112,14 @@ cgi_encode (const str &in, strbuf *out, ptr<ok::scratch_handle_t> scr, bool e)
 {
   size_t inlen = in.len ();
   size_t needlen = inlen * MAX_EXPAND_FACTOR;
-
-  // XXX: some check here?
-  if (inlen > needlen) {
-    if (needlen > CGI_MAXLEN)
-      return 0;
-    scr = scr->grow (needlen + 1);
+  
+  if (!scr) {
+    size_t sz = max<size_t> (needlen, ok_dflt_cgibuf_sz);
+    scr = ok::alloc_scratch (sz);
+  } else if (needlen > scr->len ()) {
+    scr = ok::alloc_nonstd_scratch (needlen);
   }
+
   char *op = scr->buf ();
   const char *inp = in.cstr ();
   const char *ep = inp + in.len ();

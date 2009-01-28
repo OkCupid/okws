@@ -74,16 +74,6 @@ okclnt3_t::resp_t::reply (int st, ptr<compressible_t> b, str url, str es)
 
 //-----------------------------------------------------------------------
 
-ptr<cookie_t>
-okclnt3_t::resp_t::add_cookie (const str &h, const str &p)
-{
-  ptr<cookie_t> ret = New refcounted<cookie_t> (h, p);
-  _outcookies.push_back (ret);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
 str
 okclnt3_t::ssl_cipher () const 
 {
@@ -542,16 +532,6 @@ okclnt3_t::resp_t::con ()
   ptr<ahttpcon> ret;
   if (_ok_clnt) { ret = _ok_clnt->con (); }
   return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-okclnt3_t::resp_t::fixup_cookies (ptr<http_response_base_t> rsp)
-{
-  for (size_t i = 0; i < _outcookies.size (); i++) {
-    rsp->get_header ()->add (http_hdr_cookie_t (_outcookies[i]->to_str ()));
-  }
 }
 
 //-----------------------------------------------------------------------

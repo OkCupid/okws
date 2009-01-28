@@ -412,6 +412,21 @@ public:
 
 //-----------------------------------------------------------------------
 
+class outcookie_holder_t {
+public:
+  outcookie_holder_t () {}
+  ~outcookie_holder_t () {}
+  vec<ptr<cookie_t> > *get_outcookies () { return &_oc; }
+  const vec<ptr<cookie_t> > *get_outcookies () const { return &_oc; }
+  void fixup_cookies (ptr<http_response_base_t> resp);
+  ptr<cookie_t> add_cookie (const str &h = NULL, const str &p = "/");
+public:
+  vec<ptr<cookie_t> > _oc;
+  
+};
+
+//-----------------------------------------------------------------------
+
 typedef callback<okclnt_interface_t *, ptr<ahttpcon>, oksrvc_t *>::ref 
 nclntcb_t;
 
@@ -427,6 +442,7 @@ nclntcb_t;
 //
 class okclnt_base_t 
   : public okclnt_interface_t, 
+    public outcookie_holder_t, 
     public virtual okrrp_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
@@ -485,7 +501,6 @@ public:
   //-----------------------------------------------------------------------
 
   virtual void send (ptr<http_response_t> rsp, cbv::ptr cb);
-  virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
 
   virtual bool ssl_only () const { return false; } 
@@ -534,6 +549,8 @@ public:
 
   void fixup_log (ptr<http_response_base_t> rsp);
 
+  //-----------------------------------------------------------------------
+
 private:
   void serve_T (CLOSURE);
   void output_fragment_T (str s, CLOSURE);
@@ -553,7 +570,6 @@ protected:
 
   zbuf out;
   ptr<http_response_t> rsp;
-  vec<cookie_t *> outcookies;
   bool process_flag;
   u_int64_t uid; // hacked in for now;
   bool uid_set;
@@ -587,6 +603,12 @@ public:
   void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
   http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
   const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
+
+  // for clients that are stuck with okclnt_t, but would like to
+  // try the reduced-copy output path, try output2. output2 obligates
+  // the caller to 'delete this' and to to provide a refcounted 
+  // compressible reply object.
+  void output2 (ptr<compressible_t> c, evv_t ev, CLOSURE);
 
   void set_union_cgi_mode (bool b)
   { http_parser_cgi_t::set_union_mode (b); }
