@@ -48,7 +48,7 @@ namespace oksync {
       ptr<cv_t> _curr;
       size_t _id;
       bool _locked;
-      size_t _stage;
+      ssize_t _stage;
     };
 
     ptr<handle_t> init ();

@@ -256,7 +256,7 @@ http_response_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
   }
 
   header.fill_strbuf (b);
-  b.borrow_data (body);
+  b.take (body);
 
   twait { 
     x->send2 (b, mkevent (ret));

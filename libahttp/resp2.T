@@ -32,7 +32,7 @@ http_response_ok2_t::fill ()
 
   _header.fill (_compressed, _n_bytes);
   _header.fill_strbuf (_out);
-  _out.borrow_data (b2);
+  _out.take (b2);
 }
 
 
