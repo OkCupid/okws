@@ -594,3 +594,16 @@ cgi_t::alloc (abuf_src_t *a, bool ck, ptr<ok::scratch_handle_t> h)
 }
 
 //-----------------------------------------------------------------------
+
+static ptr<cgi_t> g_empty;
+
+ptr<const cgi_t>
+cgi_t::global_empty ()
+{
+  if (!g_empty) {
+    g_empty = New refcounted<cgi_t> ();
+  }
+  return g_empty;
+}
+
+//-----------------------------------------------------------------------

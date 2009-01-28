@@ -289,6 +289,17 @@ http_inhdr_t::get_cookie ()
 
 //-----------------------------------------------------------------------
 
+ptr<const cgi_t>
+http_inhdr_t::get_cookie () const
+{
+  ptr<const cgi_t> out;
+  out = _cookie;
+  if (!out) out = cgi_t::global_empty ();
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
 
 ptr<cgi_t>
 http_inhdr_t::get_url ()

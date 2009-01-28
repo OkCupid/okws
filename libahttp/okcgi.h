@@ -102,6 +102,8 @@ public:
   virtual bool flookup (const str &k, cgi_files_t **v) { return false; }
 
   void set_max_scratchlen (ssize_t i) { _maxlen = i; }
+
+  static ptr<const cgi_t> global_empty();
 private:
   void init ();
   virtual void parse_guts ();

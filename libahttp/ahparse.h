@@ -109,6 +109,7 @@ public:
   void finish2 (int s1, int s2);
 
   cgi_t & get_cookie () { return *hdr.get_cookie (); }
+  const cgi_t & get_cookie () const { return *hdr.get_cookie (); }
   cgi_t & get_url () { return *hdr.get_url (); }
   ptr<cgi_t> get_url_p () { return hdr.get_url (); }
   http_inhdr_t & get_hdr () { return hdr; }
@@ -142,6 +143,7 @@ public:
   int v_timeout_status () const;
 
   cgi_t &cookie () { return get_cookie (); }
+  const cgi_t &cookie () const { return get_cookie (); }
 
 protected:
   ptr<cgi_t> get_union_cgi ();

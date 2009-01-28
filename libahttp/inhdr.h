@@ -111,6 +111,7 @@ public:
   int timeout_status () const;
 
   ptr<cgi_t> get_cookie ();
+  ptr<const cgi_t> get_cookie () const;
   ptr<cgi_t> get_url ();
 
 protected:
