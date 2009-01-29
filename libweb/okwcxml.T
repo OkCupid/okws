@@ -28,8 +28,11 @@ resp_xml_factory_t::fetch (int id)
   ptr<resp_xml_t> *p = _tab[id];
   ptr<resp_xml_t> ret;
   if (p) {
+
+    // D'oh! Make sure to grab a reference to this return value before
+    // deallocating it.
+    ret = *p; 
     _tab.remove (id);
-    ret = *p;
   }
   return ret;
 }
@@ -46,7 +49,7 @@ agent_xml_t::call_T (xml_outreq_t req, xml_ev_t ev)
     int status;
   }
 
-  twait { make_req (req, true, connector::cnc (mkevent (status, gresp), ev)); }
+  twait { make_req (req, false, connector::cnc (mkevent (status, gresp), ev)); }
 
   if (!gresp) {
     status = HTTP_BAD_REQUEST;

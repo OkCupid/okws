@@ -323,6 +323,7 @@ agent_t::req_oneshot (ptr<req_t> req, ptr<resp_factory_t> of, resp_ev_t ev)
     ptr<ok_xprt_base_t> x;
     bool dummy;
     ptr<resp_t> resp;
+    ptr<abuf_t> abuf;
   }
   
   // Keep this object from being freed from underneath us.
@@ -333,7 +334,8 @@ agent_t::req_oneshot (ptr<req_t> req, ptr<resp_factory_t> of, resp_ev_t ev)
   if (x) {
     twait { req->make (x, false, connector::cnc (mkevent (status), ev)); }
     if (status == HTTP_OK) {
-      resp = of->alloc_resp (x, NULL);
+      abuf = New refcounted<abuf_t> (x->alloc_abuf_src (), true);
+      resp = of->alloc_resp (x, abuf);
       twait { resp->get (connector::cnc (mkevent (status), ev)); }
     }
   }
@@ -362,10 +364,13 @@ resp_t::do_get_body (int status) const
 
 resp_t::resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a)
   : _x (x),
-    _abuf (a ? a : New refcounted<abuf_t> (_x->alloc_abuf_src (), true)),
+    _abuf (a),
     _scratch (ok::alloc_scratch (okwc_scratch_sz)),
     _incookies (_abuf, _scratch),
-    _hdr (_abuf, &_incookies, _scratch) {}
+    _hdr (_abuf, &_incookies, _scratch) 
+{
+  assert (_abuf);
+}
 
 //-----------------------------------------------------------------------
 
