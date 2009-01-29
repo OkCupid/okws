@@ -14,7 +14,10 @@ namespace okwc3 {
 ptr<resp_t>
 resp_xml_factory_t::alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> b)
 {
-  return New refcounted<resp_xml_t> (x, b, ++_id);
+  ptr<resp_xml_t> r = New refcounted<resp_xml_t> (x, b, _id);
+  _tab.insert (_id, r);
+  _id++;
+  return r;
 }
 
 //-----------------------------------------------------------------------
