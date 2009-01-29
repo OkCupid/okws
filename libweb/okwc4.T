@@ -88,7 +88,7 @@ namespace okwc4 {
       port_s = url_rxx[4];
       if (port_s && port_s.len ()) {
 	if (!convertint (port_s, &port)) {
-	  warn << "okwc3: cannot convert port: " << port_s << "\n";
+	  warn << "okwc4: cannot convert port: " << port_s << "\n";
 	  ok = false;
 	}
       }

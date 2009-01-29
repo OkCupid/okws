@@ -49,6 +49,12 @@ agent_xml_t::call_T (xml_outreq_t req, xml_ev_t ev)
     int status;
   }
 
+  // Specify false here -> use the object allocator that parses XML
+  // bodies and so on.  This is, do **not** use the simple allocator.
+  // Unfortunately, don't want to upcast the return value from make_req, 
+  // so need to kludge around it by fetching the upcasted object object 
+  // out of the allocator.  Might want the revisit this interface ...
+  // again :(.  okwc5 anyone?
   twait { make_req (req, false, connector::cnc (mkevent (status, gresp), ev)); }
 
   if (!gresp) {
