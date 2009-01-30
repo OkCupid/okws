@@ -105,6 +105,18 @@ static str strip_zero(const str& s)
 }
 
 void
+okdate_t::clear ()
+{
+  sec = min = hour = mday = mon = year = 0;
+  err = false;
+  memset (&stm, 0, sizeof (stm));
+  dt_tm = 0;
+  stm_set = false;
+  time_t_set = false;
+  time_t_val = false;
+}
+
+void
 okdate_t::set (const str &s)
 {
   if (!s || !date_rxx.match (s)) {
@@ -200,10 +212,10 @@ okdate_t::set (const struct tm &s, long gmt_off)
   set (to_utc (s, gmt_off));
 }
 
-
 void
 okdate_t::set (time_t t)
 {
+  clear ();
   time_t_val = t;
   time_t_set = true;
   struct tm *stm = gmtime (&t);
