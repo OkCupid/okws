@@ -707,8 +707,10 @@ pfile_t::push_section (pfile_sec_t *s)
 bool
 concatable_str_t::concat (const str &s)
 {
-  sb << s; 
-  hold.push_back (s); 
+  if (s) {
+    sb << s; 
+    hold.push_back (s); 
+  }
   return true; 
 }
 
