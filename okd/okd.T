@@ -397,7 +397,8 @@ okd_t::parse_file (const str &cf)
     .ignore ("ServiceFDLowWat")
     .ignore ("ServiceAcceptMessages")
     .ignore ("SyslogLevels")
-    .ignore ("DangerousZbufs");
+    .ignore ("DangerousZbufs")
+    .ignore ("OklogdPidfile");
 
   bool ret = ct.run (cf);
   if (ret) {

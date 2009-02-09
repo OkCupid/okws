@@ -38,7 +38,7 @@ public:
   ~logfile_t () { close (); }
   logbuf_t *getbuf () { return &buf; }
   bool open (const str &n);
-  bool open_verbose (const str &n, const str &typ, const str &prfx);
+  bool open_verbose (const str &n, const str &typ);
   void flush () { if (fd >= 0) buf.output (fd); }
   bool flush (const str &s);
   void close ();
@@ -165,6 +165,7 @@ private:
   void timer_setup () { tmr.start (); }
   bool setup ();
   bool slave_setup ();
+  bool pidfile_setup ();
   bool logfile_setup () ;
   bool logfile_setup (logfile_t **f, const str &l, const str &t);
   bool perms_setup ();
@@ -173,6 +174,8 @@ private:
   bool access_log (const oklog_ok_t &x);
   bool error_log (const oklog_arg_t &x);
   bool ssl_log (const oklog_ssl_msg_t &x);
+  void clean_pidfile ();
+  str fixup_file (const str &in) const;
 
   tailq<logd_client_t, &logd_client_t::lnk> lst;
   vec<logd_fmt_el_t *> fmt_els;
@@ -186,6 +189,7 @@ private:
   bool running;
 
   bool injail;
+  str _pidfile;
   
 };
 

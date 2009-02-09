@@ -152,6 +152,7 @@ extern const char *ok_sockdir;                 // unix sockets available..
 extern const char *ok_okdexecpath;             // where okd lives
 extern const char *ok_jaildir_run;             // service rundir
 extern const char *ok_service_bin;             // where service exes live
+extern const char *ok_logd_pidfile;            // logfile for oklogd
 extern u_int ok_resurrect_delay;               // when a child dies..
 extern u_int ok_resurrect_delay_ms;            // in nanoseconds
 extern u_int ok_chld_startup_time;             // how long startup takes

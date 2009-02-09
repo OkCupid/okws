@@ -60,7 +60,7 @@ ServiceBin	svc
 ##
 ##	on the physical, unjailed file system.
 ##
-SocketDir	/sockets
+SocketDir	/var/run
 
 ##
 ## CoreDumpDir <dir>

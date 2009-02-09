@@ -180,6 +180,7 @@ const char *ok_coredumpdir = "/var/coredumps";
 const char *ok_sockdir = "/var/run";
 const char *ok_jaildir_run = "var/run";
 const char *ok_service_bin = "";
+const char *ok_logd_pidfile = "oklogd.pid";
 
 //
 // log constants for timing

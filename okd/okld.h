@@ -540,7 +540,6 @@ private:
   bool _config_no_pub_v2_support;
   bool _opt_daemon;
   bool _lazy_startup;
-						 
 
 };
 

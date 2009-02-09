@@ -661,6 +661,7 @@ okld_t::parse_file (const str &cf)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
     .add ("ErrorLog", &logd_parms.errorlog)
+    .add ("OklogdPidfile", &logd_parms.pidfile)
     .add ("SslLog", &logd_parms.ssllog)
     .add ("AccessLogFmt", &logd_parms.accesslog_fmt)
     .add ("SvcLog", &logd_parms.svclog)
@@ -1157,6 +1158,12 @@ okld_t::shutdown2 (int status)
 
   str s = jail2real (_okd_mgr_socket);
 
+  if (logexc) {
+    if (!logexc->remove_pidfile ()) {
+      warn ("Oklogd pidfile removal failed: %m\n");
+    }
+  }
+
   if (stat (s.cstr (), &sb) == 0) {
     if (status != (NO_SOCKET_ALLOCATED * 256)) {
       warn << "Deleting management socket: " << s << "\n";
@@ -1166,11 +1173,8 @@ okld_t::shutdown2 (int status)
 	   << ") since it's likely not ours.\n";
     }
   }
-
   warn << "shutdown complete\n";
-
   okld_exit (status);
-
 }
 
 void

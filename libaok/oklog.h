@@ -155,9 +155,15 @@ private:
 class logd_parms_t {
 public:
   logd_parms_t () 
-    : user (ok_logd_uname), group (ok_logd_gname), svclog (true) {}
+    : user (ok_logd_uname), 
+      group (ok_logd_gname), 
+      pidfile (ok_logd_pidfile),
+      svclog (true) {}
   logd_parms_t (const str &p)
-    : user (ok_logd_uname), group (ok_logd_gname) { decode (p); }
+    : user (ok_logd_uname), 
+      group (ok_logd_gname),
+      pidfile (ok_logd_pidfile)
+  { decode (p); }
 
   void decode (const str &p);
   str encode () const;
@@ -169,6 +175,7 @@ public:
   str accesslog_fmt;
   str user;
   str group;
+  str pidfile;
   bool svclog;
 private:
   mutable str enc;

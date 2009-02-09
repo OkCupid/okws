@@ -257,6 +257,7 @@ logd_parms_t::decode (const str &p)
   t->lookup ("user",      &user);
   t->lookup ("group",     &group);
   t->lookup ("ssllog",    &ssllog);
+  t->lookup ("pidfile",   &pidfile);
 }
 
 str
