@@ -970,6 +970,7 @@ okclnt_base_t::redirect_T (const str &l, int ht_in, evv_t::ptr ev)
   hra.set_others (hdr_fields);
 
   rsp = New refcounted<http_response_redirect_t> (l, hra);
+  if (uid_set) rsp->set_uid (uid);
   twait { send (rsp, mkevent ()); }
 
   if (ev) {
@@ -1824,7 +1825,7 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
     if (uid_set) rsp->set_uid (uid);
     if (prelen > 0) rsp->set_inflated_len (prelen);
     fixup_cookies (rsp);
-
+    oksrvc->log (x, hdr_p (), rsp);
     twait { rsp->send2 (x, mkevent (rc)); }
   }
 
