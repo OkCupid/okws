@@ -32,9 +32,13 @@
 #include "arpc.h"
 #include "tame.h"
 
+//-----------------------------------------------------------------------
+
 typedef enum { CTL_MODE_PUB = 0, CTL_MODE_LAUNCH = 1,
 	       CTL_MODE_LOGTURN = 2,
 	       CTL_MODE_LEAK_CHECKER = 3 } ctl_mode_t;
+
+//-----------------------------------------------------------------------
 
 class okmgr_clnt_t {
 public:
@@ -47,6 +51,8 @@ private:
   const str _sockname;
 };
 
+//-----------------------------------------------------------------------
+
 class okmgr_pub_t : public okmgr_clnt_t {
 public:
   okmgr_pub_t (const str &s, const vec<str> &f, int v);
@@ -56,11 +62,15 @@ private:
   int _version;
 };
 
+//-----------------------------------------------------------------------
+
 class okmgr_logturn_t : public okmgr_clnt_t {
 public:
   okmgr_logturn_t (const str &s ) ;
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 };
+
+//-----------------------------------------------------------------------
 
 class okmgr_launch_t : public okmgr_clnt_t {
 public:
