@@ -1307,6 +1307,26 @@ okd_t::awaken (str nm, evb_t ev)
 
 //-----------------------------------------------------------------------
 
+tamed void
+okd_t::toggle_leak_checker (svccb *sbp)
+{
+  tvars {
+    RPC::okmgr_program_1::okmgr_leak_checker_srv_t<svccb> srv (sbp);
+    const okmgr_leak_checker_arg_t *arg (srv.getarg ());
+    ok_xstatus_typ_t status;
+    okch_t *ch;
+  }
+  
+  if ((ch = servtab[arg->prog])) {
+    twait { ch->toggle_leak_checker (arg->cmd, mkevent (status)); }
+  } else {
+    status = OK_STATUS_NOSUCHCHILD;
+  }
+  srv.reply (status);
+}
+
+//-----------------------------------------------------------------------
+
 
 int
 main (int argc, char *argv[])

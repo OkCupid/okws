@@ -31,7 +31,7 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [-l | -p | -t | -1] [-a?] "
+  warnx << "usage: okmgr [-l | -p | -t | -1] [-a?] [-s <socket>]"
 	<< "<file1> <file2> ...\n";
   exit (1);
 }

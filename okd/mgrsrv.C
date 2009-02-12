@@ -61,6 +61,9 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_CUSTOM_2:
     myokd->custom2_in (sbp);
     break;
+  case OKMGR_LEAK_CHECKER:
+    myokd->toggle_leak_checker (sbp);
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;

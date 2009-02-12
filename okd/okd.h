@@ -132,6 +132,9 @@ public:
   void set_state (okc_state_t s) { state = s; }
 
   void stats_collect (okd_stats_t *s, evv_t ev, CLOSURE);
+
+  void toggle_leak_checker (ok_leak_checker_cmd_t cmd, 
+			    event<ok_xstatus_typ_t>::ref ev, CLOSURE);
   
   okd_t *myokd;
   int pid;
@@ -273,6 +276,7 @@ public:
   void relaunch (const ok_progs_t &x, okrescb cb);
   void custom1_in (svccb *sbp);
   void custom2_in (svccb *sbp);
+  void toggle_leak_checker (svccb *sbp, CLOSURE);
   void okctl_get_stats (svccb *sbp);
   void turnlog (okrescb cb);
 

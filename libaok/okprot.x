@@ -64,7 +64,9 @@ enum ok_xstatus_typ_t {
   OK_STATUS_NOMORE = 5,
   OK_STATUS_BADFD = 6,
   OK_STATUS_DUP = 7,
-  OK_STATUS_BADWAKEUP = 8
+  OK_STATUS_BADWAKEUP = 8,
+  OK_STATUS_UNAVAIL = 9,
+  OK_STATUS_UNKNOWN_OPTION = 10
 };
 
 union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
@@ -118,6 +120,18 @@ enum oklog_typ_t {
   OKLOG_ERR_CRITICAL = 4,
   OKLOG_ERR_DEBUG = 5,
   OKLOG_SSL = 6
+};
+
+enum ok_leak_checker_cmd_t {
+     OK_LEAK_CHECKER_ENABLE = 1,
+     OK_LEAK_CHECKER_DISABLE = 2,
+     OK_LEAK_CHECKER_RESET = 3,
+     OK_LEAK_CHECKER_REPORT = 4
+};
+
+struct okmgr_leak_checker_arg_t {
+  ok_prog_t prog;
+  ok_leak_checker_cmd_t cmd;
 };
 
 struct oklog_notice_t {
@@ -239,6 +253,9 @@ program OKCTL_PROGRAM {
 		oksvc_stats_t
 		OKCTL_GET_STATS_FROM_SVC(void) = 15;
 
+		ok_xstatus_typ_t
+		OKCTL_LEAK_CHECKER(ok_leak_checker_cmd_t) = 16;
+
 		void
 		OKCTL_KILL (oksig_t) = 99;
 
@@ -294,6 +311,9 @@ program OKMGR_PROGRAM {
 
 		ok_xstatus_t
 		OKMGR_REPUB2 (xpub_fnset_t) = 6;
+
+		ok_xstatus_t
+		OKMGR_LEAK_CHECKER(okmgr_leak_checker_arg_t) = 7;
 	} = 1;
 } = 11278;
 
@@ -343,4 +363,4 @@ program NULL_PROGRAM {
 	} = 1;
 } = 11281;
 
-};
+}; /* namespace RPC */
