@@ -8,7 +8,7 @@ ok_toggle_leak_checker (ok_leak_checker_cmd_t cmd)
 {
   ok_xstatus_typ_t status;
 
-#ifdef SIMPLE_LEAK_CHECKER
+#if defined(SIMPLE_LEAK_CHECKER) and !defined(DMALLOC)
   status = OK_STATUS_OK;
   switch (cmd) {
   case OK_LEAK_CHECKER_ENABLE:
