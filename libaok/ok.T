@@ -23,7 +23,6 @@
  */
 
 #include "ok.h"
-#include "okprot.h"
 #include "okerr.h"
 #include "pubutil.h"
 #include "parseopt.h"

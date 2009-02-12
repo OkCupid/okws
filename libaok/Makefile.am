@@ -4,6 +4,7 @@ $(PROGRAMS): $(LDEPS)
 okwslib_LTLIBRARIES = libaok.la
 
 libaok_la_SOURCES = \
+	okprotext.C \
 	okprot.C \
 	ok.C \
 	log.C \
@@ -17,16 +18,25 @@ libaok_la_SOURCES = \
 
 libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
-	oklocale.h ok3.h ok3adapter.h okprotutil.h
+okwsinclude_HEADERS = ok.h okprotext.h \
+	okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
+	oklocale.h ok3.h ok3adapter.h okprotutil.h 
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@
-	$(XMLRPCC) -h $(srcdir)/okprot.x || rm -f $@
+	-$(RPCC) -h $(srcdir)/okprot.x || rm -f $@
 
 okprot.C : $(srcdir)/okprot.x okprot.h
 	@rm -f $@
-	$(XMLRPCC) -c $(srcdir)/okprot.x || rm -f $@
+	-$(RPCC) -c $(srcdir)/okprot.x || rm -f $@
+
+okprotext.h: $(srcdir)/okprotext.x
+	@rm -f $@
+	$(XMLRPCC) -h $(srcdir)/okprotext.x || rm -f $@
+
+okprotext.C: $(srcdir)/okprotext.x okprotext.h
+	@rm -f $@
+	$(XMLRPCC) -c $(srcdir)/okprotext.x || rm -f $@
 
 SUFFIXES = .C .T .h
 
@@ -46,8 +56,10 @@ ok.lo: ok.C
 xmlrpcsrv.C: xmlrpcsrv.h
 xmlrpcsrv.o: xmlrpcsrv.C
 xmlrpcsrv.lo: xmlrpcsrv.C
-okprot.o: okprot.h
-okprot.lo: okprot.h
+okprot.o: okprotext.h okprot.h 
+okprot.lo: okprotext.h okprot.h
+okprotext.o: okprotext.h
+okprotext.lo: okprotext.h
 log.o: log.C okprot.h
 log.lo: log.C okprot.h
 ok3adapter.o: ok3adapter.h

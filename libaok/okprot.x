@@ -1,6 +1,7 @@
 /* $Id$ */
 
 %#include "xpub.h"
+%#include "okprotext.h"
 
 struct xpub_errdoc_t {
   int status;
@@ -43,7 +44,7 @@ struct oksvc_stats_t {
 
 
 struct okctl_stats_t {
-	oksvc_status_t status<>;
+    oksvc_status_t status<>;
 };
 
 struct ok_custom_data_t {
@@ -53,20 +54,6 @@ struct ok_custom_data_t {
 struct ok_custom_arg_t {
   ok_progs_t progs;
   ok_custom_data_t data;
-};
-
-enum ok_xstatus_typ_t {
-  OK_STATUS_OK = 0,
-  OK_STATUS_PUBERR = 1,
-  OK_STATUS_NOSUCHCHILD = 2,
-  OK_STATUS_ERR = 3,
-  OK_STATUS_DEADCHILD = 4,
-  OK_STATUS_NOMORE = 5,
-  OK_STATUS_BADFD = 6,
-  OK_STATUS_DUP = 7,
-  OK_STATUS_BADWAKEUP = 8,
-  OK_STATUS_UNAVAIL = 9,
-  OK_STATUS_UNKNOWN_OPTION = 10
 };
 
 union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
@@ -83,14 +70,6 @@ struct ok_custom_res_t {
 
 struct ok_custom_res_set_t {
   ok_custom_res_t results<>;
-};
-
-union ok_xstatus_t switch (ok_xstatus_typ_t status) 
-{
- case OK_STATUS_OK:
-   void;
- default:
-   string error<>;
 };
 
 typedef ok_xstatus_typ_t okctl_sendcon_res_t;
@@ -120,14 +99,6 @@ enum oklog_typ_t {
   OKLOG_ERR_CRITICAL = 4,
   OKLOG_ERR_DEBUG = 5,
   OKLOG_SSL = 6
-};
-
-enum ok_leak_checker_cmd_t {
-     OK_LEAK_CHECKER_NONE = 0,
-     OK_LEAK_CHECKER_ENABLE = 1,
-     OK_LEAK_CHECKER_DISABLE = 2,
-     OK_LEAK_CHECKER_RESET = 3,
-     OK_LEAK_CHECKER_REPORT = 4
 };
 
 struct okmgr_leak_checker_arg_t {

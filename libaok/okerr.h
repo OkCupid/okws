@@ -25,9 +25,9 @@
 #ifndef _LIBAOK_OKERR_H
 #define _LIBAOK_OKERR_H 1
 
+#include "xpub.h"
 #include "okprot.h"
 #include "puberr.h"
-#include "xpub.h"
 
 class ok_res_t : public pub_res_t {
 public:
