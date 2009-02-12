@@ -12,20 +12,21 @@ libaok_la_SOURCES = \
 	locale.C \
 	direct.C \
 	ok3.C \
-	ok3adapter.C
+	ok3adapter.C \
+	okprotutil.C
 
 libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = ok.h okprot.h oklog.h svq.h okerr.h xmlrpcsrv.h \
-	oklocale.h ok3.h ok3adapter.h
+	oklocale.h ok3.h ok3adapter.h okprotutil.h
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@
-	-$(RPCC) -h $(srcdir)/okprot.x || rm -f $@
+	$(XMLRPCC) -h $(srcdir)/okprot.x || rm -f $@
 
 okprot.C : $(srcdir)/okprot.x okprot.h
 	@rm -f $@
-	-$(RPCC) -c $(srcdir)/okprot.x || rm -f $@
+	$(XMLRPCC) -c $(srcdir)/okprot.x || rm -f $@
 
 SUFFIXES = .C .T .h
 

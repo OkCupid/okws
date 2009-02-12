@@ -6,11 +6,11 @@ SBD1 = \
 	txarpcc \
 	libpub \
 	pub \
+	xmlrpcc \
 	libahttp \
 	libokxml \
 	libaok \
 	libamt \
-	xmlrpcc \
 	libokssl \
 	libweb
 

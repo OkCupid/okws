@@ -36,6 +36,7 @@
 #include "sfs_select.h"
 #include "tame_trigger.h"
 #include "resp2.h"
+#include "okprotutil.h"
 
 #ifdef HAVE_LINUX_PRCTL_DUMP
 # include <sys/prctl.h>
@@ -335,33 +336,7 @@ void
 oksrvc_t::handle_leak_checker (svccb *sbp)
 {
   RPC::okctl_program_1::okctl_leak_checker_srv_t<svccb> srv (sbp);
-  ok_xstatus_typ_t status;
-
-#ifdef SIMPLE_LEAK_CHECKER
-  ok_leak_checker_cmd_t cmd (*srv.getarg ());
-  status = OK_STATUS_OK;
-  switch (cmd) {
-  case OK_LEAK_CHECKER_ENABLE:
-    simple_leak_checker_enable ();
-    break;
-  case OK_LEAK_CHECKER_DISABLE:
-    simple_leak_checker_disable ();
-    break;
-  case OK_LEAK_CHECKER_REPORT:
-    simple_leak_checker_report ();
-    break;
-  case OK_LEAK_CHECKER_RESET:
-    simple_leak_checker_reset ();
-    break;
-  default:
-    status = OK_STATUS_UNKNOWN_OPTION;
-    break;
-  }
-
-#else /* !SIMPLE_LEAK_CHECKER */
-  status = OK_STATUS_UNAVAIL;
-#endif /* SIMPLE_LEAK_CHECKER */
-
+  ok_xstatus_typ_t status = ok_toggle_leak_checker (*srv.getarg ());
   srv.reply (status);
 }
 
