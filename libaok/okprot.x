@@ -123,6 +123,7 @@ enum oklog_typ_t {
 };
 
 enum ok_leak_checker_cmd_t {
+     OK_LEAK_CHECKER_NONE = 0,
      OK_LEAK_CHECKER_ENABLE = 1,
      OK_LEAK_CHECKER_DISABLE = 2,
      OK_LEAK_CHECKER_RESET = 3,

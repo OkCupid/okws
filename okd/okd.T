@@ -1314,6 +1314,7 @@ okd_t::toggle_leak_checker (svccb *sbp)
     RPC::okmgr_program_1::okmgr_leak_checker_srv_t<svccb> srv (sbp);
     const okmgr_leak_checker_arg_t *arg (srv.getarg ());
     ok_xstatus_typ_t status;
+    ok_xstatus_t ret;
     okch_t *ch;
   }
   
@@ -1322,7 +1323,8 @@ okd_t::toggle_leak_checker (svccb *sbp)
   } else {
     status = OK_STATUS_NOSUCHCHILD;
   }
-  srv.reply (status);
+  ret.set_status (status);
+  srv.reply (ret);
 }
 
 //-----------------------------------------------------------------------

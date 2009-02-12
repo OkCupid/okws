@@ -31,14 +31,20 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [-l | -p | -t | -1] [-a?] [-s <socket>]"
-	<< "<file1> <file2> ...\n";
+  warnx << "usage: okmgr [-l | -p | -t | -1 ] [-a?] [-s <socket> | -f <conf> ]"
+	<< "<svc1> <svc2> ...\n"
+	<< "       okmgr -c [ enable | disable | print | clear ] "
+	<< "[-s <socket> | -f <conf>] <svc>\n";
+				     
   exit (1);
 }
 
 okmgr_clnt_t::okmgr_clnt_t (const str &s) 
   : _err (false), _sockname (s) {}
 
+okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, const str &prog,
+					    ok_leak_checker_cmd_t cmd)
+  : okmgr_clnt_t (s), _prog (prog), _cmd (cmd) {}
 
 okmgr_launch_t::okmgr_launch_t (const str &s, const vec<str> &f,
 				ok_set_typ_t t) 
@@ -159,14 +165,28 @@ main (int argc, char *argv[])
   ok_set_typ_t set_typ = OK_SET_SOME;
   int version = 2;
   bool no_config = false;
+  ok_leak_checker_cmd_t cmd = OK_LEAK_CHECKER_NONE;
 
-  while ((ch = getopt (argc, argv, "lts:f:F")) != -1)
+  while ((ch = getopt (argc, argv, "c:lts:f:F")) != -1)
     switch (ch) {
     case 't':
       m = CTL_MODE_LOGTURN;
       break;
     case 'l':
       m = CTL_MODE_LAUNCH;
+      break;
+    case 'c':
+      m = CTL_MODE_LEAK_CHECKER;
+      switch (optarg[0]) {
+      case 'e': cmd = OK_LEAK_CHECKER_ENABLE; break;
+      case 'd': cmd = OK_LEAK_CHECKER_DISABLE; break;
+      case 'r': cmd = OK_LEAK_CHECKER_RESET; break;
+      case 'p': cmd = OK_LEAK_CHECKER_REPORT; break;
+      default:  
+	warn << "Unknown subcommand for argument -c\n";
+	usage ();
+	break;
+      }
       break;
     case 's':
       sockname_arg = optarg;
@@ -187,6 +207,11 @@ main (int argc, char *argv[])
 
   for (int i = optind; i < argc; i++) 
     files.push_back (argv[i]);
+
+  if (files.size () != 1) {
+    warn << "Option -c only applies to one service at a time\n";
+    usage ();
+  }
 
   if (((set_typ == OK_SET_ALL) && (m != CTL_MODE_LAUNCH || files.size ()))
       || (m != CTL_MODE_LOGTURN && 
@@ -211,6 +236,9 @@ main (int argc, char *argv[])
 
   okmgr_clnt_t *t = NULL;
   switch (m) {
+  case CTL_MODE_LEAK_CHECKER:
+    t = New okmgr_leak_checker_t (sockname, files[0], cmd);
+    break;
   case CTL_MODE_PUB:
     t = New okmgr_pub_t (sockname, files, version);
     break;
@@ -229,3 +257,18 @@ main (int argc, char *argv[])
 
   amain ();
 }
+
+//-----------------------------------------------------------------------
+
+void
+okmgr_leak_checker_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
+{
+  okmgr_leak_checker_arg_t arg;
+  arg.prog = _prog;
+  arg.cmd = _cmd;
+
+  RPC::okmgr_program_1::okmgr_leak_checker (h, arg, s, cb);
+
+}
+
+//-----------------------------------------------------------------------

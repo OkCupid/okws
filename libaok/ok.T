@@ -339,7 +339,7 @@ oksrvc_t::handle_leak_checker (svccb *sbp)
 
 #ifdef SIMPLE_LEAK_CHECKER
   ok_leak_checker_cmd_t cmd (*srv.getarg ());
-  status = OK_XSTATUS_OK;
+  status = OK_STATUS_OK;
   switch (cmd) {
   case OK_LEAK_CHECKER_ENABLE:
     simple_leak_checker_enable ();
@@ -350,8 +350,8 @@ oksrvc_t::handle_leak_checker (svccb *sbp)
   case OK_LEAK_CHECKER_REPORT:
     simple_leak_checker_report ();
     break;
-  case OK_LEAK_CHECKER_CLEAR:
-    simple_leak_checker_clear ();
+  case OK_LEAK_CHECKER_RESET:
+    simple_leak_checker_reset ();
     break;
   default:
     status = OK_STATUS_UNKNOWN_OPTION;
