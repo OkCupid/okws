@@ -1,4 +1,10 @@
 
+/*
+ * Compile this file with xmlrpcc --- then it's available to XML/RPC
+ * interfaces.  Can't do the whole of okprot.x this way, since that would
+ * pull in xpub.x.  However, xpub.x cannot be compiled with xmlrpcc, since
+ * the XML stuff happens later in the build process.
+ */
 
 enum ok_xstatus_typ_t {
   OK_STATUS_OK = 0,
