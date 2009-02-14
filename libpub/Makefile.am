@@ -76,7 +76,8 @@ $(srcdir)/parse.cc: $(srcdir)/parse.yy
 scan.lo: $(srcdir)/scan.cc parse.lo
 	if $(LTCXXCOMPILE) $(CXXNOERR) -MT $@ -MD -MP \
 	-MF "$(DEPDIR)/$*.Tpo" -c -o $@ $(srcdir)/scan.cc; \
-	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; 
+	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; \
+	else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 
 .PHONY: parseclean
 parseclean:
