@@ -906,3 +906,17 @@ then
 fi
 echo $linux_prctl
 ])
+
+dnl
+dnl Find BISON in particular, not YACC
+dnl
+AC_DEFUN([OKWS_BISON],
+[AC_PROG_YACC
+echo "$YACC" | grep "bison" > /dev/null
+if test $? -ne 0
+then
+   AC_MSG_ERROR("Cannot find a working implementation of `bison'")
+fi
+BISON="$YACC"
+AC_SUBST(BISON)
+])

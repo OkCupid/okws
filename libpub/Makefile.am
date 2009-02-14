@@ -58,9 +58,8 @@ txa_prot.lo: txa_prot.h
 AM_YFLAGS = -d $(YDEBUG)
 AM_LFLAGS = $(LDEBUG)
 
-scan.cc: scan.ll
-	$(LEX) $(AM_LFLAGS) $(LFLAGS) $(srcdir)/scan.ll \
-	&& mv $(LEX_OUTPUT_ROOT).c $(srcdir)/scan.cc
+$(srcdir)/scan.cc: $(srcdir)/scan.ll
+	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 if MAKE_OLD_FLEX 
 	@echo "XXX"
 	@echo "XXX WARNING!! You have an old version of flex!!"
@@ -69,52 +68,20 @@ if MAKE_OLD_FLEX
 	@echo "XXX"
 endif
 
-parse.h:
-	@:
+$(srcdir)/parse.cc: $(srcdir)/parse.yy
+	$(BISON) $(AM_YFLAGS) $(YFLAGS) -o $@~ $<  \
+	  && mv $@~ $@ \
+	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
-parse.cc: parse.yy
-	rm -f y.tab.c
-	$(YACC) $(AM_YFLAGS) $(YFLAGS) $(srcdir)/parse.yy
-	case "$(YACC)" in					\
-	*bison*)						\
-		sed -e 's/union yyalloc/struct yyalloc/g' 	\
-			< y.tab.c |				\
-		sed -e 's/__attribute__ \(\(.*\)\)/if (0) YYERROR;/'  \
-			> $(srcdir)/parse.cc ;			\
-		rm -f y.tab.c 					\
-		;;						\
-	*)							\
-		mv -f y.tab.c $(srcdir)/parse.cc		\
-		;;						\
-	esac
-	if test -f y.tab.h; then				\
-		if cmp -s y.tab.h $(srcdir)/parse.h; then	\
-			rm -f y.tab.h;				\
-		else						\
-			mv y.tab.h $(srcdir)/parse.h;		\
-		fi;						\
-	fi
+scan.o: parse.o $(srcdir)/scan.cc
+	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
 
-scan.lo: $(srcdir)/scan.cc parse.o
-	if $(LTCXXCOMPILE) $(CXXNOERR) -MT $@ -MD -MP \
-	-MF "$(DEPDIR)/$*.Tpo" -c -o $@ $(srcdir)/scan.cc; \
-	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; \
-	else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+scan.lo: parse.lo
+scan.o: parse.lo
 
 .PHONY: parseclean
 parseclean:
 	rm -f $(srcdir)/parse.cc $(srcdir)/parse.h $(srcdir)/scan.cc
-
-# Bison no longer generates bad code;  let the standard rules
-# attempt to do the right thing
-parse.o: parse.cc
-
-#parse.o: parse.cc parse.h
-# Note: certain versions of bison put __attribute__((unused)) after
-# unused goto labels, which doesn't agree well with gcc 3.2.1.
-# If you have problems, try the next line instead of the following one.
-#	$(CXXCOMPILE) $(CXXNOERR) -D'__attribute__(x)=' -c $(srcdir)/parse.cc
-#	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/parse.cc
 
 .PHONY: xdrclean tameclean
 xdrclean:
