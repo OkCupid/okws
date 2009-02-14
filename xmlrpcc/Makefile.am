@@ -21,8 +21,7 @@ $(srcdir)/parse.cc: $(srcdir)/parse.yy
 	  && mv $@~ $@ \
 	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
-scan.lo: $(srcdir)/scan.cc parse.o parse.lo
-scan.o: parse.lo
+scan.lo: parse.lo
 
 .PHONY: parseclean
 parseclean:

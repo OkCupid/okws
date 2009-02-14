@@ -26,17 +26,12 @@ parse.h:
 $(srcdir)/scan.cc: $(srcdir)/scan.ll
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 
-scan.o: parse.o $(srcdir)/scan.cc
-	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
-
 $(srcdir)/parse.cc: $(srcdir)/parse.yy
 	$(BISON) $(AM_YFLAGS) $(YFLAGS) -o $@~ $<  \
 	  && mv $@~ $@ \
 	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
 scan.lo: parse.lo
-scan.o: parse.lo
-parse.o: parse.cc
 
 
 .PHONY: parseclean
