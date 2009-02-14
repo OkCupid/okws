@@ -5,7 +5,7 @@ LDADD = $(LIBSFSMISC) $(LIBSVC) $(LIBARPC) $(LIBSFSCRYPT) $(LIBASYNC) $(LDADD_TH
 
 okwsbin_PROGRAMS = txarpcc
 
-noinst_HEADERS = rpcc.h parse.h ptxa.h
+noinst_HEADERS = rpcc.h ptxa.h
 
 txarpcc_SOURCES = genheader.C gencfile.C genpython.C parse.yy scan.ll \
 	rpcc.C ptxa.C
@@ -20,9 +20,6 @@ endif
 
 AM_YFLAGS = -d
 
-parse.h:
-	@:
-
 $(srcdir)/scan.cc: $(srcdir)/scan.ll
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 
@@ -31,16 +28,14 @@ $(srcdir)/parse.cc: $(srcdir)/parse.yy
 	  && mv $@~ $@ \
 	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
-scan.lo: $(srcdir)/scan.cc parse.lo
-	if $(LTCXXCOMPILE) $(CXXNOERR) -MT $@ -MD -MP \
-	-MF "$(DEPDIR)/$*.Tpo" -c -o $@ $(srcdir)/scan.cc; \
-	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; 
+scan.o: parse.o $(srcdir)/scan.cc
+	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
 
 .PHONY: parseclean
 parseclean:
 	rm -f $(srcdir)/parse.cc $(srcdir)/parse.h $(srcdir)/scan.cc
 
-BUILT_SOURCES = parse.cc scan.cc
+BUILT_SOURCES = parse.cc scan.cc parse.h
 
 CLEANFILES = core *.core *~ *.rpo
 
