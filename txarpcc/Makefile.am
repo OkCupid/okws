@@ -31,8 +31,10 @@ $(srcdir)/parse.cc: $(srcdir)/parse.yy
 	  && mv $@~ $@ \
 	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
-scan.lo: parse.lo
-
+scan.lo: $(srcdir)/scan.cc parse.lo
+	if $(LTCXXCOMPILE) $(CXXNOERR) -MT $@ -MD -MP \
+	-MF "$(DEPDIR)/$*.Tpo" -c -o $@ $(srcdir)/scan.cc; \
+	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; 
 
 .PHONY: parseclean
 parseclean:
