@@ -208,7 +208,7 @@ main (int argc, char *argv[])
   for (int i = optind; i < argc; i++) 
     files.push_back (argv[i]);
 
-  if (files.size () != 1) {
+  if (m == CTL_MODE_LEAK_CHECKER && files.size () != 1) {
     warn << "Option -c only applies to one service at a time\n";
     usage ();
   }
