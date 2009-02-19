@@ -1,6 +1,9 @@
 
 #include "okprotutil.h"
-#include "sfs_profiler.h"
+
+#ifdef SIMPLE_PROFILER
+# include "sfs_profiler.h"
+#endif
 
 //-----------------------------------------------------------------------
 

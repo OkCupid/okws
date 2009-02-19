@@ -1,5 +1,5 @@
 
-include $(SFS_LIB_MK)
+-include $(SFS_LIB_MK)
 
 $(PROGRAMS): $(LDEPS)
 

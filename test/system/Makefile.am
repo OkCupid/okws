@@ -5,7 +5,7 @@
 ##   compile and run out of the box, and should be able to test itself.
 ##
 
-include $(SFS_LIB_MK)
+-include $(SFS_LIB_MK)
 
 $(PROGRAMS): $(LDEPS)
 
