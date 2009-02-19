@@ -1,6 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 ## $Id$
 
+include $(SFS_LIB_MK)
 
 SBD1 = \
 	txarpcc \

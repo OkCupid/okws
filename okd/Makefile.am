@@ -1,4 +1,6 @@
 
+include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 noinst_HEADERS = okld.h okd.h okmgr.h 

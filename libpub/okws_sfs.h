@@ -33,7 +33,7 @@
 #if !defined(SFSLITE_AT_VERSION) 
 # error "Need sfslite patchlevel of 1.2.6pre1 or greater!"
 #else
-# if !SFSLITE_AT_VERSION(1,2,6,1)
+# if !SFSLITE_AT_VERSION(1,2,6,3)
 #  error "Need sfslite patchlevel of 1.2.6pre1 or greater!"
 # endif
 #endif
@@ -45,7 +45,7 @@
 #define OKWS_VERSION_MAJOR 1
 #define OKWS_VERSION_MINOR 4
 #define OKWS_VERSION_PATCHLEVEL 0
-#define OKWS_VERSION_PRE 3
+#define OKWS_VERSION_PRE 4
 
 #define OKWS_AT_VERSION(Maj,Min,Pat,Pre) \
   (VERSION_FLATTEN(Maj,Min,Pat,Pre) <= \

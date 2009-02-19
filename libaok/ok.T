@@ -342,6 +342,16 @@ oksrvc_t::handle_leak_checker (svccb *sbp)
 //-----------------------------------------------------------------------
 
 void
+oksrvc_t::handle_profiler (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_profiler_srv_t<svccb> srv (sbp);
+  ok_xstatus_typ_t status = ok_toggle_profiler (*srv.getarg ());
+  srv.reply (status);
+}
+
+//-----------------------------------------------------------------------
+
+void
 oksrvc_t::ctldispatch (svccb *v)
 {
   if (!v) {
@@ -374,6 +384,9 @@ oksrvc_t::ctldispatch (svccb *v)
     break;
   case OKCTL_LEAK_CHECKER:
     handle_leak_checker (v);
+    break;
+  case OKCTL_PROFILER:
+    handle_profiler (v);
     break;
   default:
     v->reject (PROC_UNAVAIL);

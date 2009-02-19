@@ -20,13 +20,12 @@ enum ok_xstatus_typ_t {
   OK_STATUS_UNKNOWN_OPTION = 10
 };
 
-
-enum ok_leak_checker_cmd_t {
-     OK_LEAK_CHECKER_NONE = 0,
-     OK_LEAK_CHECKER_ENABLE = 1,
-     OK_LEAK_CHECKER_DISABLE = 2,
-     OK_LEAK_CHECKER_RESET = 3,
-     OK_LEAK_CHECKER_REPORT = 4
+enum ok_diagnostic_cmd_t {
+     OK_DIAGNOSTIC_NONE = 0,
+     OK_DIAGNOSTIC_ENABLE = 1,
+     OK_DIAGNOSTIC_DISABLE = 2,
+     OK_DIAGNOSTIC_RESET = 3,
+     OK_DIAGNOSTIC_REPORT = 4
 };
 
 union ok_xstatus_t switch (ok_xstatus_typ_t status) 

@@ -101,9 +101,9 @@ enum oklog_typ_t {
   OKLOG_SSL = 6
 };
 
-struct okmgr_leak_checker_arg_t {
+struct okmgr_diagnostic_arg_t {
   ok_prog_t prog;
-  ok_leak_checker_cmd_t cmd;
+  ok_diagnostic_cmd_t cmd;
 };
 
 struct oklog_notice_t {
@@ -226,7 +226,10 @@ program OKCTL_PROGRAM {
 		OKCTL_GET_STATS_FROM_SVC(void) = 15;
 
 		ok_xstatus_typ_t
-		OKCTL_LEAK_CHECKER(ok_leak_checker_cmd_t) = 16;
+		OKCTL_LEAK_CHECKER(ok_diagnostic_cmd_t) = 16;
+
+		ok_xstatus_typ_t
+		OKCTL_PROFILER(ok_diagnostic_cmd_t) = 17;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;
@@ -285,7 +288,10 @@ program OKMGR_PROGRAM {
 		OKMGR_REPUB2 (xpub_fnset_t) = 6;
 
 		ok_xstatus_t
-		OKMGR_LEAK_CHECKER(okmgr_leak_checker_arg_t) = 7;
+		OKMGR_LEAK_CHECKER(okmgr_diagnostic_arg_t) = 7;
+
+		ok_xstatus_t
+		OKMGR_PROFILER(okmgr_diagnostic_arg_t) = 8;
 	} = 1;
 } = 11278;
 

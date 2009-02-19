@@ -1312,7 +1312,7 @@ okd_t::toggle_leak_checker (svccb *sbp)
 {
   tvars {
     RPC::okmgr_program_1::okmgr_leak_checker_srv_t<svccb> srv (sbp);
-    const okmgr_leak_checker_arg_t *arg (srv.getarg ());
+    const okmgr_diagnostic_arg_t *arg (srv.getarg ());
     ok_xstatus_typ_t status;
     ok_xstatus_t ret;
     okch_t *ch;
@@ -1320,6 +1320,28 @@ okd_t::toggle_leak_checker (svccb *sbp)
   
   if ((ch = servtab[arg->prog])) {
     twait { ch->toggle_leak_checker (arg->cmd, mkevent (status)); }
+  } else {
+    status = OK_STATUS_NOSUCHCHILD;
+  }
+  ret.set_status (status);
+  srv.reply (ret);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::toggle_profiler (svccb *sbp)
+{
+  tvars {
+    RPC::okmgr_program_1::okmgr_profiler_srv_t<svccb> srv (sbp);
+    const okmgr_diagnostic_arg_t *arg (srv.getarg ());
+    ok_xstatus_typ_t status;
+    ok_xstatus_t ret;
+    okch_t *ch;
+  }
+  
+  if ((ch = servtab[arg->prog])) {
+    twait { ch->toggle_profiler (arg->cmd, mkevent (status)); }
   } else {
     status = OK_STATUS_NOSUCHCHILD;
   }

@@ -1,4 +1,6 @@
 
+include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS_PUB)
 
 noinst_HEADERS = pubd.h pubd2.h

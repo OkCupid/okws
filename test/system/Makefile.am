@@ -5,6 +5,8 @@
 ##   compile and run out of the box, and should be able to test itself.
 ##
 
+include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 if USE_XML

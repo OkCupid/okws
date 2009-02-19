@@ -39,12 +39,24 @@ usage ()
   exit (1);
 }
 
+//-----------------------------------------------------------------------
+
 okmgr_clnt_t::okmgr_clnt_t (const str &s) 
   : _err (false), _sockname (s) {}
 
+//-----------------------------------------------------------------------
+
 okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, const str &prog,
-					    ok_leak_checker_cmd_t cmd)
+					    ok_diagnostic_cmd_t cmd)
   : okmgr_clnt_t (s), _prog (prog), _cmd (cmd) {}
+
+//-----------------------------------------------------------------------
+
+okmgr_profiler_t::okmgr_profiler_t (const str &s, const str &prog,
+				    ok_diagnostic_cmd_t cmd)
+  : okmgr_clnt_t (s), _prog (prog), _cmd (cmd) {}
+
+//-----------------------------------------------------------------------
 
 okmgr_launch_t::okmgr_launch_t (const str &s, const vec<str> &f,
 				ok_set_typ_t t) 
@@ -57,8 +69,12 @@ okmgr_launch_t::okmgr_launch_t (const str &s, const vec<str> &f,
   }
 }
 
+//-----------------------------------------------------------------------
+
 okmgr_logturn_t::okmgr_logturn_t (const str &s)
   : okmgr_clnt_t (s) {}
+
+//-----------------------------------------------------------------------
 
 okmgr_pub_t::okmgr_pub_t (const str &s, const vec<str> &f, int v)
   : okmgr_clnt_t (s), _version (v)
@@ -69,6 +85,8 @@ okmgr_pub_t::okmgr_pub_t (const str &s, const vec<str> &f, int v)
     _fns.files[i] = f[i];
 }
 
+//-----------------------------------------------------------------------
+
 void
 okmgr_pub_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
@@ -76,17 +94,23 @@ okmgr_pub_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
   h->call (procno, &_fns, s, cb);
 }
 
+//-----------------------------------------------------------------------
+
 void
 okmgr_logturn_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
   h->call (OKMGR_TURNLOG, NULL, s, cb);
 }
 
+//-----------------------------------------------------------------------
+
 void
 okmgr_launch_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
   h->call (OKMGR_RELAUNCH, &_progs, s, cb);
 }
+
+//-----------------------------------------------------------------------
 
 static str
 parse_config (const str &f)
@@ -124,6 +148,8 @@ parse_config (const str &f)
   return s;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 okmgr_clnt_t::run ()
 {
@@ -152,6 +178,24 @@ okmgr_clnt_t::run ()
   exit (rc);
 }
 
+//-----------------------------------------------------------------------
+
+static ok_diagnostic_cmd_t 
+optarg2cmd (const char *a)
+{
+  ok_diagnostic_cmd_t cmd;
+  switch (a[0]) {
+  case 'e': cmd = OK_DIAGNOSTIC_ENABLE; break;
+  case 'd': cmd = OK_DIAGNOSTIC_DISABLE; break;
+  case 'r': cmd = OK_DIAGNOSTIC_RESET; break;
+  case 'p': cmd = OK_DIAGNOSTIC_REPORT; break;
+  default: cmd = OK_DIAGNOSTIC_NONE; break;
+  }
+  return cmd;
+}
+
+//-----------------------------------------------------------------------
+
 int 
 main (int argc, char *argv[])
 {
@@ -165,9 +209,9 @@ main (int argc, char *argv[])
   ok_set_typ_t set_typ = OK_SET_SOME;
   int version = 2;
   bool no_config = false;
-  ok_leak_checker_cmd_t cmd = OK_LEAK_CHECKER_NONE;
+  ok_diagnostic_cmd_t cmd = OK_DIAGNOSTIC_NONE;
 
-  while ((ch = getopt (argc, argv, "c:lts:f:F")) != -1)
+  while ((ch = getopt (argc, argv, "c:p:lts:f:F")) != -1)
     switch (ch) {
     case 't':
       m = CTL_MODE_LOGTURN;
@@ -177,12 +221,15 @@ main (int argc, char *argv[])
       break;
     case 'c':
       m = CTL_MODE_LEAK_CHECKER;
-      switch (optarg[0]) {
-      case 'e': cmd = OK_LEAK_CHECKER_ENABLE; break;
-      case 'd': cmd = OK_LEAK_CHECKER_DISABLE; break;
-      case 'r': cmd = OK_LEAK_CHECKER_RESET; break;
-      case 'p': cmd = OK_LEAK_CHECKER_REPORT; break;
-      default:  
+      if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
+	warn << "Unknown subcommand for argument -c\n";
+	usage ();
+	break;
+      }
+      break;
+    case 'p':
+      m = CTL_MODE_PROFILER;
+      if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
 	warn << "Unknown subcommand for argument -c\n";
 	usage ();
 	break;
@@ -239,6 +286,9 @@ main (int argc, char *argv[])
   case CTL_MODE_LEAK_CHECKER:
     t = New okmgr_leak_checker_t (sockname, files[0], cmd);
     break;
+  case CTL_MODE_PROFILER:
+    t = New okmgr_profiler_t (sockname, files[0], cmd);
+    break;
   case CTL_MODE_PUB:
     t = New okmgr_pub_t (sockname, files, version);
     break;
@@ -263,12 +313,23 @@ main (int argc, char *argv[])
 void
 okmgr_leak_checker_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
-  okmgr_leak_checker_arg_t arg;
+  okmgr_diagnostic_arg_t arg;
   arg.prog = _prog;
   arg.cmd = _cmd;
 
   RPC::okmgr_program_1::okmgr_leak_checker (h, arg, s, cb);
+}
 
+//-----------------------------------------------------------------------
+
+void
+okmgr_profiler_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
+{
+  okmgr_diagnostic_arg_t arg;
+  arg.prog = _prog;
+  arg.cmd = _cmd;
+
+  RPC::okmgr_program_1::okmgr_profiler (h, arg, s, cb);
 }
 
 //-----------------------------------------------------------------------

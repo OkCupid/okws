@@ -746,6 +746,7 @@ protected:
   void handle_new_con (svccb *sbp);
   void handle_get_stats (svccb *v);
   void handle_leak_checker (svccb *v);
+  void handle_profiler (svccb *sbp);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);

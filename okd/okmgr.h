@@ -34,9 +34,11 @@
 
 //-----------------------------------------------------------------------
 
-typedef enum { CTL_MODE_PUB = 0, CTL_MODE_LAUNCH = 1,
+typedef enum { CTL_MODE_PUB = 0, 
+	       CTL_MODE_LAUNCH = 1,
 	       CTL_MODE_LOGTURN = 2,
-	       CTL_MODE_LEAK_CHECKER = 3 } ctl_mode_t;
+	       CTL_MODE_LEAK_CHECKER = 3,
+	       CTL_MODE_PROFILER = 4 } ctl_mode_t;
 
 //-----------------------------------------------------------------------
 
@@ -86,11 +88,26 @@ private:
 class okmgr_leak_checker_t : public okmgr_clnt_t {
 public:
   okmgr_leak_checker_t (const str &s, const str &prog,
-			ok_leak_checker_cmd_t cmd);
+			ok_diagnostic_cmd_t cmd);
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
   ok_prog_t _prog;
-  ok_leak_checker_cmd_t _cmd;
+  ok_diagnostic_cmd_t _cmd;
+};
+
+//-----------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------
+
+class okmgr_profiler_t : public okmgr_clnt_t {
+public:
+  okmgr_profiler_t (const str &s, const str &prog,
+			ok_diagnostic_cmd_t cmd);
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
+private:
+  ok_prog_t _prog;
+  ok_diagnostic_cmd_t _cmd;
 };
 
 //-----------------------------------------------------------------------
