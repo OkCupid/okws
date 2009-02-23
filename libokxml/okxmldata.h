@@ -514,6 +514,8 @@ public:
   void dump_data (zbuf &z, int level) const { if (_val) z << _val; }
   bool dump_to_python (strbuf &b) const;
   bool is_type (xml_obj_typ_t t) const { return t == XML_STR; }
+  bool start_cdata () { return true; }
+  bool end_cdata () { return true; }
 
   static str escape (const str &in);
 
@@ -560,6 +562,9 @@ public:
   void dump_data (zbuf &z, int lev) const
   { if (_val) z << _val ; }
   bool dump_to_python (strbuf &b) const;
+
+  bool start_cdata () { return true; }
+  bool end_cdata () { return true; }
 private:
   str _val;
   mutable str _d_val;
