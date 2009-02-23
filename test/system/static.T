@@ -213,7 +213,6 @@ oksrvc_static_t::make_newclnt (ptr<ahttpcon> x)
 int
 main (int argc, char *argv[])
 {
-  sfs_profiler::init ();
   oksrvc_t *oksrvc = New oksrvc_static_t (argc, argv);
   oksrvc->launch ();
   amain ();
