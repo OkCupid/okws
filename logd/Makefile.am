@@ -1,4 +1,5 @@
 
+-include $(SFS_LIB_MK)
 $(PROGRAMS): $(LDEPS)
 
 okwsexec_PROGRAMS = oklogd

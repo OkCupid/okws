@@ -1,4 +1,6 @@
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 SUFFIXES = .C .T .h

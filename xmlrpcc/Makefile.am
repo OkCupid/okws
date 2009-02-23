@@ -2,6 +2,7 @@
 # $Id: Makefile.am 2263 2006-10-11 15:20:57Z max $
 
 -include $(SFS_LIB_MK)
+
 LDADD = $(LIBASYNC) $(LIBPY) $(LDADD_STD_ALL)
 
 okwsbin_PROGRAMS = xmlrpcc

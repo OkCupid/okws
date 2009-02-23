@@ -1,4 +1,6 @@
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libaok.la
