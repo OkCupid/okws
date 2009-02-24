@@ -101,6 +101,8 @@ public:
   str get_connection () const;
   void set_parse_query_string (bool b) { _parse_query_string = b; }
 
+  str get_referrer (bool null_ok = false) const;
+
   http_method_t mthd;  // method code
   int contlen;     // content-length size
 

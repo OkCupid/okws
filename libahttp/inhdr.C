@@ -311,3 +311,14 @@ http_inhdr_t::get_url ()
 }
 
 //-----------------------------------------------------------------------
+
+str
+http_inhdr_t::get_referrer (bool null_ok) const
+{
+  str ret;
+  if (!lookup ("referer", &ret) && !null_ok)
+    ret = "";
+  return ret;
+}
+
+//-----------------------------------------------------------------------
