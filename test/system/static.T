@@ -32,7 +32,6 @@
 #include "oklocale.h"
 #include "okws_sfs.h"
 #include "test_const.h"
-#include "sfs_profiler.h"
 
 #if !defined(OKWS_AT_VERSION) || !OKWS_AT_VERSION(1,2,0,0)
 # error "This service requires OKWS version 1.2.0 or greater!"
