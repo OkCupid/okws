@@ -43,6 +43,19 @@ bool primary;
 
 int version = 1;
 
+/*
+ *
+extern char **environ;
+static void
+dump_env ()
+{
+  for (char **ep = environ; *ep; ep++) {
+    warn << "env: " << *ep << "\n";
+  }
+}
+*
+*/
+
 template<class T> bool
 config_var (pub_config_iface_t *p, const char *vname, T *out)
 {

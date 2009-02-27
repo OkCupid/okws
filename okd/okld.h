@@ -53,7 +53,7 @@ class okld_helper_t {
 public:
   okld_helper_t (const str &n, const str &u, const str &g);
   ~okld_helper_t () {}
-  void set_env (ptr<argv_t> e) { _env = e; }
+  void set_env (ptr<env_argv_t> e) { _env = e; }
   vec<str> &argv () { return _argv; }
   char* const* env () const ;
   void set_group (const str &g);
@@ -84,8 +84,8 @@ protected:
   const str _name;
 
   vec<str> _argv;
-  ptr<argv_t> _env;
-  argv_t _empty_env;
+  ptr<env_argv_t> _env;
+  env_argv_t _empty_env;
   int _pid;
 
   ptr<axprt_unix> _x;

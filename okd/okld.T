@@ -106,7 +106,7 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 void
 okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     out->argv () += s;
     out->set_env (env);
@@ -937,7 +937,7 @@ okld_t::encode_env ()
 void
 okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) 
     logexc = New helper_exec_t (oklog_program_1, s, 1,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
@@ -962,7 +962,7 @@ okld_t::guess_pubd2 (const str &cf)
 void
 okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     pubd2exc = New helper_exec_t (pub_program_2, s, 1,
 				  HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,

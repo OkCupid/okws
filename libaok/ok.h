@@ -229,7 +229,7 @@ public:
       //jaildir_run (ok_jaildir_run) 
   {}
 
-  bool got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<argv_t> *ep);
+  bool got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<env_argv_t> *ep);
 
   bool is_direct_port (int i) const { return _direct_ports[i]; }
   log_t *get_logd () { return logd; }

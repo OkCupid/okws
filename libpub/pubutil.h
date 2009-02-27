@@ -72,9 +72,17 @@ public:
   operator char* const* () const 
   { return const_cast<char *const *> (_v.base ()); }
 
-private:
+protected:
   vec<const char *> _v;
+private:
   vec<const char *> _free_me;
+};
+
+class env_argv_t : public argv_t {
+public:
+  env_argv_t (const vec<str> &v, const char *const *seed = NULL);
+  env_argv_t () : argv_t () {}
+  void prune ();
 };
 
 struct phash_t {

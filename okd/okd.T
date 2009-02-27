@@ -116,7 +116,7 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
 void
 okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (got_generic_exec (s, loc, errp, &env)) {
     // push back the packet size
     s.push_back ("-s");

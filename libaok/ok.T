@@ -1579,7 +1579,7 @@ oksrvc_t::cfg (const str &n) const
 
 bool
 ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp, 
-			     ptr<argv_t> *ep)
+			     ptr<env_argv_t> *ep)
 {
   str cmd, err, prog;
   vec<str> env;
@@ -1606,7 +1606,11 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   }
 
   if (s.size ()) {
-    *ep = New refcounted<argv_t> (env, environ);
+
+    *ep = New refcounted<env_argv_t> (env, environ);
+
+    // prune out repeated/overloaded environment variables
+    (*ep)->prune ();
   }
 
   if (s.size () < 1) 

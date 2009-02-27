@@ -708,3 +708,46 @@ argv_t::copy (const argv_t &in)
 
 
 }
+
+//-----------------------------------------------------------------------
+
+env_argv_t::env_argv_t (const vec<str> &v, const char *const *seed)
+  : argv_t (v, seed) {}
+
+//-----------------------------------------------------------------------
+
+void
+env_argv_t::prune ()
+{
+  bhash<const char *> hits;
+  vec<const char *> newv;
+
+  for (ssize_t i = _v.size () - 1; i >= 0; i--) {
+
+    // Note that there's a NULL at the end, so skip over it.
+    if (_v[i]) {
+      bool ins = true;
+      const char *el = _v[i];
+      const char *cp = strchr (el, '=');
+      if (cp) {
+	str name = str (el, cp - el);
+	if (!hits[name]) {
+	  hits.insert (name);
+	} else {
+	  ins = false;
+	}
+      }
+      if (ins) newv.push_back (_v[i]);
+    }
+  }
+
+  _v.clear ();
+
+  // Insert into _v in reverse order
+  for (ssize_t i = newv.size () - 1; i >= 0; i--) {
+    _v.push_back(newv[i]);
+  }
+  _v.push_back (NULL);
+}
+
+//-----------------------------------------------------------------------
