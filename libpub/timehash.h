@@ -66,16 +66,14 @@ public:
 
   V *operator[] (const K &k) 
   {
-    node_t *n;
-    if (_rejuvenate) {
-      if ((n = _h[k])) 
-	rejuvenate (n);
-      expire ();
-    }  else {
-      expire ();
-      n = _h[k];
-    }
+    if (_rejuvenate) { rejuvenate (k); }
+
     expire ();
+
+    // Must access _h AFTER expire() call; must also lookup this k
+    // twice, to make sure we didn't delete it between the rejeuvenate
+    node_t *n = _h[k];
+
     if (n) { return &n->_val; }
     else { return NULL; }
   }
@@ -94,8 +92,8 @@ public:
 
   void rejuvenate (node_t *n)
   {
-    _q.remove (n);
     n->_ctime = sfs_get_timenow ();
+    _q.remove (n);
     _q.insert_tail (n);
   }
 
@@ -137,7 +135,9 @@ public:
 
   void clear ()
   {
-    for (node_t *n = _q.first; n ; n = _q.next (n)) {
+    node_t *nn;
+    for (node_t *n = _q.first; n ; n = nn) {
+      nn = _q.next (n);
       remove (n);
     }
   }
