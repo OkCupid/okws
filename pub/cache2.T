@@ -65,7 +65,7 @@ namespace pubserv2 {
     struct stat sb;
     cached_lookup_obj_t *o = _lookup_cache[k];
     assert (o);
-    const str &rfn = o->real_fn ();
+    str rfn = o->real_fn ();
 
     if (nfs_safe_stat (rfn.cstr (), &sb) < 0) {
       // a file that used to exist has gone missing
