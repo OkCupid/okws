@@ -68,10 +68,17 @@ namespace pubserv2 {
     str rfn = o->real_fn ();
 
     if (nfs_safe_stat (rfn.cstr (), &sb) < 0) {
+
       // a file that used to exist has gone missing
       _lookup_cache.remove (k);
+
+      // After removing k, we cannot access o, since o is now pointiing
+      // to deallocated data after the above call to remove.
+      o = NULL;
+
       _noent_cache.insert (jailed_file_t (k, rfn));
       add_delta (k);
+
     } else {
       
       bool dirty = false;
@@ -97,6 +104,11 @@ namespace pubserv2 {
 
 	// a file has be modified!
 	_lookup_cache.remove (k);
+
+	// As above, we can remove the k object from the list, but after
+	// we do so, we better not access o again.
+	o = NULL;
+
 	add_delta (k);
       } 
     }  
