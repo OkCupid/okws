@@ -732,7 +732,13 @@ protected:
   void disable_direct_ports ();
   void enable_coredumps ();
 
-  void internal_reliable_shutdown (str s, int t);
+  void internal_reliable_shutdown (str s, int t)
+  { internal_reliable_shutdown_T (s, t); }
+  void internal_reliable_shutdown_T (str s, int t, CLOSURE);
+
+  // Subclasses can implement this hook to do some work before
+  // the shutdown sequence actually starts.
+  virtual void pre_shutdown_hook (evv_t ev) { ev->trigger (); }
 
   virtual void call_exit (int rc) 
 	{ exit (rc); } // Python needs to override this

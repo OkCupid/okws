@@ -45,7 +45,7 @@
 #define OKWS_VERSION_MAJOR 1
 #define OKWS_VERSION_MINOR 4
 #define OKWS_VERSION_PATCHLEVEL 0
-#define OKWS_VERSION_PRE 5
+#define OKWS_VERSION_PRE 6
 
 #define OKWS_AT_VERSION(Maj,Min,Pat,Pre) \
   (VERSION_FLATTEN(Maj,Min,Pat,Pre) <= \

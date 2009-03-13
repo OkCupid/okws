@@ -465,10 +465,11 @@ oksrvc_t::kill (svccb *v)
 
 //-----------------------------------------------------------------------
 
-void
-oksrvc_t::internal_reliable_shutdown (str s, int t)
+tamed void
+oksrvc_t::internal_reliable_shutdown_T (str s, int t)
 {
   SVC_CHATTER ("Internal Shutdown Initiated: " << s);
+  twait { pre_shutdown_hook (mkevent ()); }
   delaycb (t, 0, wrap (this, &oksrvc_t::end_program));
   shutdown ();
 }
