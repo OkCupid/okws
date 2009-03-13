@@ -469,14 +469,13 @@ tamed void
 oksrvc_t::internal_reliable_shutdown_T (str s, int t)
 {
   SVC_CHATTER ("Internal Shutdown Initiated: " << s);
-  twait { pre_shutdown_hook (mkevent ()); }
   delaycb (t, 0, wrap (this, &oksrvc_t::end_program));
   shutdown ();
 }
 
 //-----------------------------------------------------------------------
 
-void
+tamed void
 oksrvc_t::shutdown ()
 {
   if (OKDBG2(OKD_SHUTDOWN))
@@ -484,6 +483,7 @@ oksrvc_t::shutdown ()
 
   sdflag = true;
   clnt = NULL; // don't ctlclose -- we might still need more messages.
+  twait { pre_shutdown_hook (mkevent ()); }
   if (!nclients) 
     end_program ();
   else {
