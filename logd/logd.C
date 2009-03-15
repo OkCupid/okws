@@ -307,7 +307,7 @@ logd_t::perms_setup ()
 	warn << "chroot to directory failed: " << parms.logdir << "\n";
 	return false;
       } else {
-	chdir ("/");
+	rc_ignore (chdir ("/"));
       }
       injail = true;
     }
