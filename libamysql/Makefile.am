@@ -15,16 +15,13 @@ amysql.lo: mystmt_ag.h amysql.C
 mystmt.o: mystmt_ag.h
 mystmt.lo: mystmt_ag.h
 
-
 mystmt_ag.h: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
-	-$(PERL) $(srcdir)/mystmt_ag.pl -h > mystmt_ag.h || rm -f $@
+	-$(PERL) $< -h > $@~ && mv $@~ $@
 
 mystmt_ag.C: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
-	-$(PERL) $(srcdir)/mystmt_ag.pl -c > mystmt_ag.C || rm -f $@
-
-amysql.C: mystmt_ag.h 
+	-$(PERL) $< -c > $@~ && mv $@~ $@
 
 PERLOUT = mystmt_ag.C mystmt_ag.h
 PERLIN = mystmt_ag.pl
