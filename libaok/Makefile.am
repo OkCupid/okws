@@ -77,14 +77,14 @@ tameclean:
 	rm -f ok.C xmlrpcsrv.C xmlrpcsrv.h log.C ok3.C ok3adapter.h
 
 rpcclean:
-	rm -f okprot.C okprot.h
+	rm -f okprot.C okprot.h okprotext.C okprotext.h
 
 dist-hook:
 	cd $(distdir) && rm -f okprot.C okprot.h ok.C xmlrpcsrv.h \
 		xmlrpcsrv.C ok3.C ok3adapter.h
 
 EXTRA_DIST = .cvsignore ok.T okprot.x xmlrpcsrv.Th xmlrpcsrv.T \
-	ok3adapter.Th
+	ok3adapter.Th okprotext.x
 CLEANFILES = core *.core *~ *.rpo okprot.C okprot.h ok.C \
 	xmlrpcsrv.C xmlrpcsrv.h ok3.C ok3adapter.h
 
