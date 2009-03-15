@@ -7,7 +7,7 @@ LDADD = $(LIBASYNC) $(LIBPY) $(LDADD_STD_ALL)
 
 okwsbin_PROGRAMS = xmlrpcc
 
-noinst_HEADERS = rpcc.h 
+noinst_HEADERS = rpcc.h parse.h
 
 xmlrpcc_SOURCES = genheader.C gencfile.C parse.yy scan.ll rpcc.C 
 xmlrpcc_LDADD = $(LDADD)
@@ -23,7 +23,9 @@ $(srcdir)/parse.cc: $(srcdir)/parse.yy
 	  && mv $@~ $@ \
 	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
-scan.o: parse.o $(srcdir)/scan.cc
+$(srcdir)/parse.cc: $(srcdir)/parse.h
+
+scan.o: parse.o $(srcdir)/parse.h $(srcdir)/scan.cc
 	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
 
 .PHONY: parseclean
