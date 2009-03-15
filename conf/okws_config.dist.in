@@ -341,7 +341,16 @@ ClientTimeout	60
 ##   Limits amounts of data that a client is allowed to send; to stop
 ##   DOS attacks on memory. Specified in bytes.
 ##
-ChannelLimit 	262144     # 256k
+ChannelLimit 	 2097152   # 2M
+
+##
+## CgiValueLenLimit
+##
+##   Limits the maxlen of a CGI value read during parsing; again, to
+##   limit the damage of DOS mem attacks.  Specified in bytes. Should
+##   be less than ChannelLimit
+##
+CgiValueLenLimit  524288   # 512k
 
 ##
 ## FilterCGI
