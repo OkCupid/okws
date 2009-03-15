@@ -196,9 +196,10 @@ str   ok_access_log_fmt = "ivt1sbz";
 // service/client constants
 //
 u_int ok_clnt_timeout = 60;          // in seconds
-u_int ok_reqsize_limit = 2097152;    // 2MB
-u_int ok_hdrsize_limit = 0x2000;     // 8K
-u_int ok_cgibuf_limit = 0x10000;     // 64KB
+
+size_t ok_hdrsize_limit = 0x2000;      // 8K
+size_t ok_reqsize_limit = 0x200000;    // 2MB
+size_t ok_cgibuf_limit = 0x80000;      // 512KB
 
 //
 // Specify which select policy to use; by default, SELECT_NONE

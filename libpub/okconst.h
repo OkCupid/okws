@@ -39,8 +39,8 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_PORT_MAX 65000
 #define OK_UID_MIN 100
 #define OK_UID_MAX 65000
-#define OK_RQSZLMT_MIN  1024
-#define OK_RQSZLMT_MAX  32*1024*1024
+#define OK_RQSZLMT_MIN  size_t (1024)
+#define OK_RQSZLMT_MAX  size_t (32*1024*1024)
 
 #define OK_MAX_URI_LEN 128
 
@@ -220,9 +220,12 @@ extern sfs_core::select_policy_t ok_sys_sel_policy;
 // service/client constants
 //
 extern u_int ok_clnt_timeout;                   // user timeout
-extern u_int ok_reqsize_limit;                  // maximum client req size
-extern u_int ok_hdrsize_limit;                  // biggest HTTP header allowed
-extern u_int ok_cgibuf_limit;                   // limit cgi buf for testing
+
+// MK 3/16/09: All sizes should be size_t's, but start on these
+// for now.
+extern size_t ok_hdrsize_limit;                 // biggest HTTP header allowed
+extern size_t ok_reqsize_limit;                 // maximum client req size
+extern size_t ok_cgibuf_limit;                  // limit cgi buf for testing
 
 //
 // Async-Multi-Threaded stuff
