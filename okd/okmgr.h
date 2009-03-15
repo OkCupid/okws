@@ -32,8 +32,15 @@
 #include "arpc.h"
 #include "tame.h"
 
-typedef enum { CTL_MODE_PUB = 0, CTL_MODE_LAUNCH = 1,
-	       CTL_MODE_LOGTURN = 2 } ctl_mode_t;
+//-----------------------------------------------------------------------
+
+typedef enum { CTL_MODE_PUB = 0, 
+	       CTL_MODE_LAUNCH = 1,
+	       CTL_MODE_LOGTURN = 2,
+	       CTL_MODE_LEAK_CHECKER = 3,
+	       CTL_MODE_PROFILER = 4 } ctl_mode_t;
+
+//-----------------------------------------------------------------------
 
 class okmgr_clnt_t {
 public:
@@ -46,11 +53,26 @@ private:
   const str _sockname;
 };
 
+//-----------------------------------------------------------------------
+
+class okmgr_pub_t : public okmgr_clnt_t {
+public:
+  okmgr_pub_t (const str &s, const vec<str> &f, int v);
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
+private:
+  xpub_fnset_t _fns;
+  int _version;
+};
+
+//-----------------------------------------------------------------------
+
 class okmgr_logturn_t : public okmgr_clnt_t {
 public:
   okmgr_logturn_t (const str &s ) ;
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 };
+
+//-----------------------------------------------------------------------
 
 class okmgr_launch_t : public okmgr_clnt_t {
 public:
@@ -61,5 +83,33 @@ private:
   ok_progs_t _progs;
 };
 
+//-----------------------------------------------------------------------
+
+class okmgr_leak_checker_t : public okmgr_clnt_t {
+public:
+  okmgr_leak_checker_t (const str &s, const str &prog,
+			ok_diagnostic_cmd_t cmd);
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
+private:
+  ok_prog_t _prog;
+  ok_diagnostic_cmd_t _cmd;
+};
+
+//-----------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------
+
+class okmgr_profiler_t : public okmgr_clnt_t {
+public:
+  okmgr_profiler_t (const str &s, const str &prog,
+			ok_diagnostic_cmd_t cmd);
+  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
+private:
+  ok_prog_t _prog;
+  ok_diagnostic_cmd_t _cmd;
+};
+
+//-----------------------------------------------------------------------
 
 #endif /* _OKD_OKMGR_H */

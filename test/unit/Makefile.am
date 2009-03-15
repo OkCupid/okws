@@ -1,4 +1,6 @@
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 SUFFIXES = .C .T .h
@@ -8,10 +10,20 @@ SUFFIXES = .C .T .h
 
 if USE_XML
 
-XMLPROGS = xmltst1 xmlcli1 str2xmlobj xmltst3 xmltst4 xmltst5
+XMLPROGS = \
+	str2xmlobj \
+	xmltst1 \
+	xmltst3 \
+	xmltst4 \
+    xmltst5 \
+	xmltst6 \
+	xmlcli1 
+
 xmltst1_SOURCES = xmltst1.C
+xmltst3_SOURCES = xmltst3.C
 xmltst4_SOURCES = xmltst4.C
 xmltst5_SOURCES = xmltst5.C
+xmltst6_SOURCES = xmltst6.C
 xmlcli1_SOURCES = xmlcli1.C
 str2xmlobj_SOURCES = str2xmlobj.C
 
@@ -25,6 +37,8 @@ xmltst4.o:	xmltst4.C
 xmltst4.lo:	xmltst4.C
 xmltst5.lo:	xmltst5.C	
 xmltst5.o:	xmltst5.C	
+xmltst6.o:	xmltst6.C
+xmltst6.lo:	xmltst6.C
 srv.o:		srv.C
 srv.lo:		srv.T
 str2xmlobj.o:   str2xmlobj.C
@@ -34,7 +48,7 @@ else
 XMLPROGS =
 endif
 
-okwc1tst.o:	okwc1tst.C
+okwc1tst.o:	    okwc1tst.C
 okwc1tst.lo:	okwc1tst.C
 pubmemtst.o:	pubmemtst.C
 pubmemtst.lo: 	pubmemtst.C
@@ -47,6 +61,7 @@ TAMEIN = \
 	xmltst3.T \
 	xmltst4.T \
 	xmltst5.T \
+	xmltst6.T \
 	srv.T \
 	str2xmlobj.T
 
@@ -58,6 +73,7 @@ TAMEOUT = \
 	xmltst3.C \
 	xmltst4.C \
 	xmltst5.C \
+	xmltst6.C \
 	srv.C \
 	str2xmlobj.C
 

@@ -1,4 +1,5 @@
 
+-include $(SFS_LIB_MK)
 
 $(PROGRAMS): $(LDEPS)
 
@@ -11,6 +12,8 @@ okwslib_LTLIBRARIES = libokxml.la
 
 libokxml_la_SOURCES = xmlparse.C xmldata.C xmlobj.C xmlxlate.C \
 	xmlxlatemgr.C xmlgeneric.C xml_ahparse.C 
+
+libokxml_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = okxml.h okxmldata.h okxmlobj.h okxmlparse.h smartvec.h\
 	okxmlxlate.h okxmlxlatemgr.h okxmlgeneric.h xml_ahparse.h

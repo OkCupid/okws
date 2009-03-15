@@ -1,16 +1,17 @@
 ## Process this file with automake to produce Makefile.in
 ## $Id$
 
+include $(SFS_LIB_MK)
 
 SBD1 = \
 	txarpcc \
 	libpub \
 	pub \
+	xmlrpcc \
 	libahttp \
 	libokxml \
 	libaok \
 	libamt \
-	xmlrpcc \
 	libokssl \
 	libweb
 
@@ -30,6 +31,10 @@ SUBDIRS = \
 	htdocs \
 	contrib
 
+##
+## New aclocal (1.10+) is asking for this...
+##
+ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = setup autoconf.sed .cvsignore setup.gnu acokws.m4 \
 	build/flex_vers.pl

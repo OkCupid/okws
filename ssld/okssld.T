@@ -496,10 +496,13 @@ namespace okssl {
   bool
   okssld_t::init_okld ()
   {
+    bool ret = false;
     ptr<axprt> x = axprt_unix::alloc (0);
-    _okld_cli = aclnt::alloc (x, null_program_1);
-    _okld_cli->seteofcb (wrap (this, &okssld_t::okld_eof));
-    return true;
+    if ((_okld_cli = aclnt::alloc (x, null_program_1))) {
+      _okld_cli->seteofcb (wrap (this, &okssld_t::okld_eof));
+      ret = true;
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------

@@ -83,9 +83,11 @@ typedef enum { CONTDISP_START = 0,
 // content-disposition: parser
 class contdisp_parser_t : public http_hdr_t {
 public:
-  contdisp_parser_t (abuf_t *a, u_int len, char *b)
-    : async_parser_t (a), http_hdr_t (a, len, b), 
-    typ (CONTDISP_NONE), state (CONTDISP_START) {}
+  contdisp_parser_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
+    : async_parser_t (a), 
+      http_hdr_t (a, s),
+      typ (CONTDISP_NONE), 
+      state (CONTDISP_START) {}
 
   void parse_guts ();
   void reset ();
@@ -101,14 +103,18 @@ public:
 
 class cgi_mpfd_t : public cgi_t, public http_hdr_t {
 public:
-  cgi_mpfd_t (abuf_t *a, u_int len, char *b)
+  cgi_mpfd_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
     : async_parser_t (a),
-      cgi_t (a, false, len, b),
-      http_hdr_t (a, len, b),
-      cdp (a, len, b),
+      cgi_t (a, false, s),
+      http_hdr_t (a, s),
+      cdp (a, s),
       cdm ("content-disposition", true),
-      cbm (NULL), buf (b), buflen (len), state (MPFD_START),
-      to_start (false), attach (false), match_ended (false) {}
+      cbm (NULL), 
+      _scratch (s),
+      state (MPFD_START),
+      to_start (false), 
+      attach (false), 
+      match_ended (false) {}
 
   ~cgi_mpfd_t (); 
 	      
@@ -117,7 +123,7 @@ public:
   pair_t *alloc_pair (const str &k, const str &v, bool e = true) const
   { return New cgi_mpfd_pair_t (k,v,e); }
   static bool match (const http_inhdr_t &hdr, str *b);
-  static cgi_mpfd_t *alloc (abuf_t *a, u_int l, const str &b);
+  static cgi_mpfd_t *alloc (abuf_t *a, size_t sz, const str &b);
   void add_boundary (const str &b);
   abuf_stat_t parse_2dash ();
 
@@ -132,8 +138,7 @@ private:
   kmp_matcher_t cdm; // "Content-disposition" matcher
   vec<kmp_matcher_t *> boundaries;
   kmp_matcher_t *cbm; // current boundary matcher
-  char *buf;
-  u_int buflen;
+  ptr<ok::scratch_handle_t> _scratch;
   mpfdst_t state;
   mpfdkt_t kt;
   bool to_start;

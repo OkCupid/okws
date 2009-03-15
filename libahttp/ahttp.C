@@ -377,6 +377,9 @@ ahttpcon::input (ptr<bool> destroyed_local)
     if (errno == EMSGSIZE) {
       warn ("Too many fds (%d) in ahttpcon::input: %m\n", n_ahttpcon);
       too_many_fds ();
+    } else if (errno == ECONNRESET) {
+      eof = true;
+      fail ();
     } else if (errno != EAGAIN) {
       warn ("nfds=%d; Error in ahttpcon::input (%s): %m (%d)\n", 
 	    n_ahttpcon, get_remote_ip ().cstr (), errno);
@@ -384,6 +387,14 @@ ahttpcon::input (ptr<bool> destroyed_local)
     }
     return;
   }
+
+  //
+  // MK 12/27/07: Back-out earlier change here, in which for n==0, still
+  // call recvd_bytes(0), to go through the normal processing path.  That
+  // might be the right thing to do if there are browsers that do
+  // TCP half-closes.  I don't think there are, so just leave it as
+  // is so I don't break anything.
+  //
   if (n == 0) {
     eof = true;
     fail ();
@@ -501,12 +512,8 @@ ahttpcon_clone::delimit (int dummy)
       case 2:
 	if (!delimit_start) 
 	  delimit_start = p;
-	if (*p == ' ' || *p == '?') {
+	if (*p == ' ' || *p == '?' || *p == '\r' || *p == '\n') {
 	  return str (delimit_start, p - delimit_start);
-	} else if (*p == '\n' || *p == '\r') {
-	  delimit_status = HTTP_BAD_REQUEST;
-	  in->rembytes (i);
-	  return NULL;
 	}
 	break;
       default:
@@ -891,3 +898,4 @@ ahttpcon_clone::read_fail (int s)
 }
 
 //-----------------------------------------------------------------------
+

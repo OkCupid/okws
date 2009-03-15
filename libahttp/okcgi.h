@@ -68,8 +68,8 @@ public:
   void encode (encode_t *e, const str &sep) const;
 };
 
-size_t cgi_encode (const str &in, strbuf *out, char *scratch = NULL, 
-		   size_t len = 0, bool e = true);
+size_t cgi_encode (const str &in, strbuf *out, 
+		   ptr<ok::scratch_handle_t> s = NULL, bool e = true);
 str cgi_encode (const str &in);
 str cgi_decode (const str &in);
 
@@ -77,10 +77,15 @@ class cgi_t : public virtual async_parser_t,
 	      public pairtab_t<cgi_pair_t> {
 public:
   cgi_t (abuf_src_t *s = NULL, bool ck = false, 
-	 u_int bfln = CGI_DEF_SCRATCH, char *buf = NULL);
-  cgi_t (abuf_t *a, bool ck = false, u_int buflen = CGI_DEF_SCRATCH,
-	 char *buf = NULL);
+	 ptr<ok::scratch_handle_t> scr = NULL);
+  cgi_t (abuf_t *a, bool ck = false, 
+	 ptr<ok::scratch_handle_t> scr = NULL);
   ~cgi_t ();
+
+  static ptr<cgi_t> alloc (abuf_t *a, bool ck, ptr<ok::scratch_handle_t> h);
+  static ptr<cgi_t> alloc (abuf_src_t *a, bool ck, ptr<ok::scratch_handle_t> h);
+
+  void set_scratch (ptr<ok::scratch_handle_t> s);
 
   virtual void encode (strbuf *b) const;
   virtual str encode () const;
@@ -96,14 +101,15 @@ public:
 
   virtual bool flookup (const str &k, cgi_files_t **v) { return false; }
 
-  void set_max_scratchlen (int i) { _maxlen = i; }
+  void set_max_scratchlen (ssize_t i) { _maxlen = i; }
+
+  static ptr<const cgi_t> global_empty();
 private:
-  void init (char *buf);
+  void init ();
   virtual void parse_guts ();
   abuf_stat_t parse_hexchar (char **pp, char *end);
 
   bool cookie;
-  bool bufalloc;    // on if we alloced this buf; off if we're borrowing it
 
   bool inhex;       // inhex when forced to wait
   cgi_var_t pstate; // parse state
@@ -116,9 +122,8 @@ private:
 
   bool uri_mode;    // on if parsing within a URI
 protected:
-  char *scratch;    // buffer for parse / scratch
-  u_int buflen;     // buffer len right now
-  int _maxlen;      // maximum len it can ever grow to
+  ptr<ok::scratch_handle_t> _scratch;
+  ssize_t _maxlen;      // maximum len it can ever grow to
 
   abuf_stat_t process_parsed_key_or_val(abuf_stat_t rc, str& s);
   bool        parse_still_waiting();

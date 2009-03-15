@@ -268,7 +268,7 @@ main_T (int argc, char **argv)
 	if (!g) g = cfg->cfg ("RunAsGroup", true);
 
 	str ts;
-	int ti;
+	int ti (0);
 	if (mode < 0 && (ts = cfg->cfg ("TreeStatMode")) &&
 	    convertint (ts, &ti))
 	  mode = ti;

@@ -23,7 +23,6 @@
  */
 
 #include "ok.h"
-#include "okprot.h"
 #include "okerr.h"
 #include "pubutil.h"
 #include "parseopt.h"
@@ -34,9 +33,18 @@
 #include "sfsmisc.h"
 #include "ok_adebug.h"
 #include "sfs_select.h"
+#include "tame_trigger.h"
+#include "resp2.h"
+#include "okprotutil.h"
+
+#ifdef HAVE_LINUX_PRCTL_DUMP
+# include <sys/prctl.h>
+#endif /* HAVE_LINUX_PRCTL_DUMP */
+
 
 extern char ** environ;
 
+//-----------------------------------------------------------------------
 
 void
 init_syscall_stats ()
@@ -47,33 +55,29 @@ init_syscall_stats ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
-ok_httpsrv_t::malloc_init ()
+ok_httpsrv_t::malloc_init () {}
+
+//-----------------------------------------------------------------------
+
+ptr<cookie_t>
+outcookie_holder_t::add_cookie (const str &h, const str &p)
 {
-}
-
-
-okclnt_base_t::~okclnt_base_t () 
-{ 
-  oksrvc->remove (this); 
-  while (outcookies.size ())
-    delete outcookies.pop_front ();
-}
-
-cookie_t *
-okclnt_base_t::add_cookie (const str &h, const str &p)
-{
-  cookie_t *ret = New cookie_t (h, p);
-  outcookies.push_back (ret);
+  ptr<cookie_t> ret = New refcounted<cookie_t> (h, p);
+  _oc.push_back (ret);
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 okclnt_base_t::error_T (int n, const str &s, bool do_send_complete, 
 			evv_t::ptr ev)
 { 
   twait { 
-    oksrvc->error (_client_con, n, s, mkevent (), hdr_p ());
+    oksrvc->error (_client_con, n, s, mkevent (), hdr_p (), this);
   }
 
   if (ev) 
@@ -82,6 +86,24 @@ okclnt_base_t::error_T (int n, const str &s, bool do_send_complete,
   if (do_send_complete)
     send_complete ();
 }
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::error (int n, const str &s, evv_t::ptr ev)
+{
+  error (n, s, true, ev);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::error (int n)
+{
+  error (n, NULL, true, NULL);
+}
+
+//-----------------------------------------------------------------------
 
 str
 ok_httpsrv_t::servinfo () const
@@ -96,15 +118,34 @@ ok_httpsrv_t::servinfo () const
   return (si = b);
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
 			ok_httpsrv_t::http_resp_cb_t cb)
+{
+  tvars {
+    ptr<http_response_base_t> ret;
+    http_resp_attributes_t hra (n, v);
+  }
+  hra.set_gzip (gz);
+  
+  twait { geterr (s, hra, mkevent (ret)); }
+  TRIGGER (cb, ret);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+ok_httpsrv_t::geterr2_T (str s, const http_resp_attributes_t &hra,
+			 ok_httpsrv_t::http_resp_cb_t cb)
 {
   tvars {
     errdoc_t *e;
     ptr<http_response_t> ret;
     ptr<http_pub2_t> hp2;
     aarr_t ar;
+    int n (hra.get_status ());
   }
   e = errdocs[n];
   if (e && pub2 ()) {
@@ -112,25 +153,28 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
       .add ("SERVINFO", servinfo ());
     if (s)
       ar.add ("AUXSTR", s);
-    twait { 
-      http_pub2_t::alloc (pub2 (), n, e->fn, mkevent (hp2), &ar, v, gz); 
-    }
+    twait { http_pub2_t::alloc2 (pub2 (), hra, e->fn, mkevent (hp2), &ar); }
     ret = hp2;
   }
-  if (!ret)
-    ret = New refcounted<http_error_t> (n, servinfo (), s, v);
+
+  if (!ret) {
+    ret = New refcounted<http_error_t> (hra, servinfo (), s);
+  }
+
   TRIGGER (cb, ret);
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s, 
-		       cbv::ptr c, http_inhdr_t *h) 
+		       cbv::ptr c, http_inhdr_t *h, okclnt_interface_t *b) 
 {
   tvars {
     ptr<http_parser_raw_t> prs;
     int status2;
     htpv_t v;
-    ptr<http_response_t> e;
+    ptr<http_response_base_t> e;
   }
   if (!h && !x->closed ()) {
     prs = http_parser_raw_t::alloc (x);
@@ -141,6 +185,8 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
   }
   v = h ? h->get_vers () : 0;
   twait { geterr (n, s, v, h && h->takes_gzip (), mkevent (e)); }
+  if (b) { b->fixup_log (e); }
+
   assert (e);
   if (svclog)
     log (x, h, e, s);
@@ -151,13 +197,7 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
     (*c) ();
 }
 
-/*
-static void
-usage ()
-{
-  fatal << "usage: <oksrvc> <cgi-encoded-args>\n";
-}
-*/
+//-----------------------------------------------------------------------
 
 void
 ok_httpsrv_t::init_sfs_clock (const str &f)
@@ -174,14 +214,18 @@ ok_httpsrv_t::init_sfs_clock (const str &f)
   }
 }
 
+//-----------------------------------------------------------------------
+
 oksrvc_t::~oksrvc_t ()
 {
-  okclnt_base_t *n, *p;
+  okclnt_interface_t *n, *p;
   for (p = clients.first; p; p = n) {
     n = clients.next (p);
     delete p;
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::init (int argc, char *argv[])
@@ -197,7 +241,9 @@ oksrvc_t::init (int argc, char *argv[])
 
   str mmc_file = ok_mmc_file;
   str loggers;
+  str dp_str;
 
+  int pub1tmp = 0;
   int seltmp = 0;
 
   if (argc == 2) {
@@ -210,6 +256,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
     t->lookup ("pub2fd", &pub2fd);
+    t->lookup ("pub1", &pub1tmp);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &ok_gzip);
     t->lookup ("filtercgi", &ok_filter_cgi);
@@ -220,6 +267,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("clito", &ok_clnt_timeout);
     t->lookup ("ps", &ok_axprt_ps);
     t->lookup ("reqszlimit", &ok_reqsize_limit);
+    t->lookup ("cgilimit" , &ok_cgibuf_limit);
     t->lookup ("ssdi", &ok_ssdi);
     t->lookup ("fdlw", &ok_svc_fds_low_wat);
     t->lookup ("fdhw", &ok_svc_fds_high_wat);
@@ -234,11 +282,14 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("pub2chnk", &ok_pub2_max_datasz);
     t->lookup ("wfs", &wait_for_signal_in_startup);
     t->lookup ("loggers", &loggers);
+    t->lookup ("lqm", &ok_listen_queue_max);
+    t->lookup ("nlb", &ok_log_nbufs);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
     ok_send_sin = t->blookup ("sendsin");
     t->lookup ("sel", &seltmp);
+    t->lookup ("dps", &dp_str);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
 
@@ -250,14 +301,27 @@ oksrvc_t::init (int argc, char *argv[])
       }
     }
 
+    if (dp_str && dp_str.len () > 0) {
+      if (!_direct_ports.parse (dp_str)) {
+	warn << "failed to parse direct ports\n";
+      }
+    }
+
     int tmp = 0;
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
+
+    pub1_supported = pub1tmp;
 
     if (OKDBG2 (SVC_ARGS))
       t->dump1 ();
 
   }
+
+  // Give virtual classes an opportunity to init constants after we've
+  // read in all important constants from argv.
+  init_constants ();
+
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
   init_pub2 ( (ok_pub2_wss > 0 ? P_WSS : 0) |
@@ -266,6 +330,27 @@ oksrvc_t::init (int argc, char *argv[])
   zinit (ok_gzip, ok_gzip_compress_level);
 }
 
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::handle_leak_checker (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_leak_checker_srv_t<svccb> srv (sbp);
+  ok_xstatus_typ_t status = ok_toggle_leak_checker (*srv.getarg ());
+  srv.reply (status);
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::handle_profiler (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_profiler_srv_t<svccb> srv (sbp);
+  ok_xstatus_typ_t status = ok_toggle_profiler (*srv.getarg ());
+  srv.reply (status);
+}
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::ctldispatch (svccb *v)
@@ -279,6 +364,9 @@ oksrvc_t::ctldispatch (svccb *v)
   switch (p) {
   case OKCTL_NULL:
     v->reply (NULL);
+    break;
+  case OKCTL_UPDATE:
+    update (v);
     break;
   case OKCTL_KILL:
     kill (v);
@@ -295,14 +383,49 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_GET_STATS_FROM_SVC:
     handle_get_stats (v);
     break;
+  case OKCTL_LEAK_CHECKER:
+    handle_leak_checker (v);
+    break;
+  case OKCTL_PROFILER:
+    handle_profiler (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
   }
 }
 
+//-----------------------------------------------------------------------
+
+tamed void
+oksrvc_t::update (svccb *sbp)
+{
+  tvars {
+    RPC::okctl_program_1::okctl_update_srv_t<svccb> x (sbp);
+    xpub_fnset_t *s (x.getarg ());
+    ptr<pub_res_t> pr;
+  }
+
+  if (supports_pub1 ()) {
+
+    twait { rpcli->publish (*s, mkevent (pr)); }
+
+    {
+      ok_res_t okr (pr);
+      ok_xstatus_t st = okr.to_xdr ();
+      x.reply (st);
+    }
+
+  } else {
+    SVC_ERROR ("Cannot answer UPDATE RPC without Pub v1 support.\n");
+    x.reject (PROC_UNAVAIL);
+  }
+}
+
+//-----------------------------------------------------------------------
+
 void
-oksrvc_t::remove (okclnt_base_t *c)
+oksrvc_t::remove (okclnt_interface_t *c)
 {
   clients.remove (c);
   --nclients;
@@ -320,14 +443,18 @@ oksrvc_t::remove (okclnt_base_t *c)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::kill (svccb *v)
 {
   RPC::okctl_program_1::okctl_kill_srv_t<svccb> srv (v);
-  oksig_t *sig = srv.getarg ();
-  switch (*sig) {
+  oksig_t sig = *srv.getarg ();
+
+  switch (sig) {
   case OK_SIG_HARDKILL:
     SVC_ERROR ("caught hard KILL trigger; exitting immediately");
+    srv.reply ();
     end_program ();
     break;
   default:
@@ -337,15 +464,19 @@ oksrvc_t::kill (svccb *v)
   }
 }
 
-void
-oksrvc_t::internal_reliable_shutdown (str s, int t)
+//-----------------------------------------------------------------------
+
+tamed void
+oksrvc_t::internal_reliable_shutdown_T (str s, int t)
 {
   SVC_CHATTER ("Internal Shutdown Initiated: " << s);
   delaycb (t, 0, wrap (this, &oksrvc_t::end_program));
   shutdown ();
 }
 
-void
+//-----------------------------------------------------------------------
+
+tamed void
 oksrvc_t::shutdown ()
 {
   if (OKDBG2(OKD_SHUTDOWN))
@@ -353,6 +484,7 @@ oksrvc_t::shutdown ()
 
   sdflag = true;
   clnt = NULL; // don't ctlclose -- we might still need more messages.
+  twait { pre_shutdown_hook (mkevent ()); }
   if (!nclients) 
     end_program ();
   else {
@@ -361,12 +493,16 @@ oksrvc_t::shutdown ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::end_program ()
 {
   SVC_CHATTER ("shutting down");
   call_exit (0);
 }
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::connect ()
@@ -381,6 +517,8 @@ oksrvc_t::connect ()
   // enable_accept ();
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_con_t::ctlcon (callback<void, svccb *>::ref cb)
 {
@@ -392,6 +530,8 @@ ok_con_t::ctlcon (callback<void, svccb *>::ref cb)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_con_t::ctlclose ()
 {
@@ -399,6 +539,8 @@ ok_con_t::ctlclose ()
   srv = NULL;
   ctlx = NULL; 
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 oksrvc_t::debug_launch (cbv cb)
@@ -410,6 +552,8 @@ oksrvc_t::debug_launch (cbv cb)
   }
   (*cb) ();
 }
+
+//-----------------------------------------------------------------------
 
 static void
 safeguard_stdout()
@@ -428,14 +572,17 @@ safeguard_stdout()
   assert (rc == STDOUT_FILENO);
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
 oksrvc_t::launch_T ()
 {
   tvars {
-    bool logd_rc, dbs_rc (true), pub2_rc (true);
+    bool pub1_rc, logd_rc, dbs_rc (true), pub2_rc (true);
     clnt_stat err;
   }
 
+  enable_coredumps ();
   twait { debug_launch (mkevent ()); }
 
   setsid ();
@@ -454,6 +601,7 @@ oksrvc_t::launch_T ()
 
   twait {
     launch_pub2 (mkevent (pub2_rc));
+    launch_pub1 (mkevent (pub1_rc));
     logd->connect (mkevent (logd_rc));
   }
 
@@ -465,6 +613,10 @@ oksrvc_t::launch_T ()
   }
   if (!logd_rc) {
     SVC_FATAL_ERROR ("Could not establish connection to logd\n");
+    exit (1);
+  }
+  if (!pub1_rc) {
+    SVC_FATAL_ERROR ("Launch of legacy publisher (pubd v1) failed\n");
     exit (1);
   }
 
@@ -481,6 +633,8 @@ oksrvc_t::launch_T ()
     SVC_CHATTER ("calling READY RPC to okd");
 
   twait { RPC::okctl_program_1::okctl_ready (clnt, mkevent (err)); }
+  enable_direct_ports ();
+  _direct_ports.report ();
 
   if (err) {
     SVC_FATAL_ERROR ("OK Child Initialization: " << err);
@@ -497,6 +651,50 @@ oksrvc_t::launch_T ()
 		   ok_shutdown_timeout_fast));
   }
 }
+
+//-----------------------------------------------------------------------
+
+tamed void 
+oksrvc_t::launch_pub1 (cbb cb)
+{
+  tvars {
+    ptr<pub_res_t> pr;
+    bool rc;
+    bool res (true);
+  }
+
+  // Still need to allocate this even for Pub v1 disabled, since
+  // otherwise the legacy calls to pub->include will segfault (with
+  // pub unitialized).  When pub v1 phased out, we can remove this.
+  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
+				OKCTL_PUBCONF, 
+				get_andmask (), get_ormask ());
+
+  if (pub1_supported) {
+    // setup and launch Remote Pub Client
+    
+    twait { rpcli->config (mkevent (pr)); }
+    if (!*pr) {
+      strbuf b;
+      b << "Pub v1: config failed: " << pr->to_str ();
+      str s = b;
+      SVC_ERROR (s);
+    }
+
+    init_publist ();
+    
+    twait { pubfiles (mkevent (rc)); }
+    if (!rc) res = false;
+  } else {
+
+    // Call anyway to force warnings. This function should be empty.
+    init_publist ();
+  }
+
+  TRIGGER (cb, res);
+}
+
+//-----------------------------------------------------------------------
 
 tamed void 
 oksrvc_t::launch_dbs (cbb cb)
@@ -538,6 +736,8 @@ oksrvc_t::launch_dbs (cbb cb)
   TRIGGER (cb, ret);
 }
 
+//-----------------------------------------------------------------------
+
 dbcon_t *
 oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
 		  int32_t l)
@@ -550,6 +750,23 @@ oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
   dbs.push_back (d);
   return d;
 }
+
+//-----------------------------------------------------------------------
+
+lblnc_t *
+oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
+{
+  if (supports_pub1 ()) {
+    lblnc_t *l = New lblnc_t (rpcli, i, p, port);
+    dbs.push_back (l);
+    return l;
+  } else {
+    SVC_ERROR ("Cannot use load balacned services with Pub v1");
+    return NULL;
+  }
+}
+
+//-----------------------------------------------------------------------
 
 void
 ok_httpsrv_t::disable_accept ()
@@ -565,6 +782,8 @@ ok_httpsrv_t::disable_accept ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_httpsrv_t::enable_accept ()
 {
@@ -579,13 +798,24 @@ ok_httpsrv_t::enable_accept ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::enable_accept_guts ()
 {
   RPC::okctl_program_1::okctl_reenable_accept (clnt, aclnt_cb_null);
+  enable_direct_ports ();
 }
 
-void oksrvc_t::disable_accept_guts () {}
+//-----------------------------------------------------------------------
+
+void 
+oksrvc_t::disable_accept_guts () 
+{
+  disable_direct_ports ();
+}
+
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::closed_fd ()
@@ -595,12 +825,13 @@ oksrvc_t::closed_fd ()
     enable_accept ();
 }
 
-
+//-----------------------------------------------------------------------
 
 void
 oksrvc_t::handle_new_con (svccb *sbp)
 {
   RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
+
   okctl_sendcon_res_t res = OK_STATUS_OK;
   const okctl_sendcon_arg_t *arg = srv.getarg ();
 
@@ -632,6 +863,8 @@ oksrvc_t::handle_new_con (svccb *sbp)
   srv.reply (res);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
 {
@@ -646,12 +879,11 @@ oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
       error (lx, HTTP_UNAVAILABLE, NULL);
     } else {
       _n_newcli ++;
-      okclnt_base_t *c = make_newclnt (lx);
+      okclnt_interface_t *c = make_newclnt (lx);
       c->set_demux_data (acw.demux_data ());
       if (use_union_cgi ())
 	  c->set_union_cgi_mode (true);
       c->serve ();
-      add (c);
     }
     if (ok_svc_fds_high_wat != 0 && n_fd_out >= int (ok_svc_fds_high_wat)) {
       disable_accept ();
@@ -662,12 +894,16 @@ oksrvc_t::newclnt (ahttpcon_wrapper_t<ahttpcon> acw)
   return sendmore;
 }
 
+//-----------------------------------------------------------------------
+
 void
-oksrvc_t::add (okclnt_base_t *c)
+oksrvc_t::add (okclnt_interface_t *c)
 {
   nclients++;
   clients.insert_head (c);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt2_t::serve_T ()
@@ -707,9 +943,11 @@ okclnt2_t::serve_T ()
       twait { output (out, mkevent ()); }
     }
   }
-  
+
   serve_complete ();
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt_base_t::serve_T ()
@@ -745,8 +983,10 @@ okclnt_base_t::serve_T ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
-okclnt_base_t::redirect (const str &l, int ht_in, evv_t::ptr ev)
+okclnt_base_t::redirect_T (const str &l, int ht_in, evv_t::ptr ev)
 {
   tvars {
     holdvar int ht (ht_in > 0 ? ht_in : HTTP_MOVEDPERM);
@@ -758,6 +998,7 @@ okclnt_base_t::redirect (const str &l, int ht_in, evv_t::ptr ev)
   hra.set_others (hdr_fields);
 
   rsp = New refcounted<http_response_redirect_t> (l, hra);
+  if (uid_set) rsp->set_uid (uid);
   twait { send (rsp, mkevent ()); }
 
   if (ev) {
@@ -765,6 +1006,16 @@ okclnt_base_t::redirect (const str &l, int ht_in, evv_t::ptr ev)
   }
   send_complete ();
 }
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::redirect (const str &l)
+{
+  redirect (l, HTTP_MOVEDPERM, NULL);
+}
+
+//-----------------------------------------------------------------------
 
 void
 okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
@@ -777,6 +1028,16 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
   // set anything else you want
   hra->set_others (hdr_fields);
 }
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::fixup_log (ptr<http_response_base_t> rsp)
+{
+  if (_custom_log2) rsp->set_custom_log2 (_custom_log2);
+}
+
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::output_hdr (ssize_t len)
@@ -793,9 +1054,13 @@ okclnt_base_t::output_hdr (ssize_t len)
   set_attributes (&hra);
   hra.set_gzip (false);
   rsp = New refcounted<http_response_ok_t> (len, hra);
+  fixup_log (rsp);
+
   send (rsp, NULL);
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::output_frag_prepare ()
@@ -813,6 +1078,8 @@ okclnt_base_t::output_frag_prepare ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okclnt_base_t::output_fragment (str s)
 {
@@ -822,6 +1089,8 @@ okclnt_base_t::output_fragment (str s)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt_base_t::output_fragment_T (str s)
 {
@@ -830,6 +1099,8 @@ okclnt_base_t::output_fragment_T (str s)
   }
   twait { _client_con->send (b, NULL, mkevent ()); }
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
@@ -843,6 +1114,8 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
   b.clear();
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
@@ -869,6 +1142,8 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
   send_complete ();
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt_base_t::output_done (evb_t::ptr ev)
 {
@@ -892,23 +1167,23 @@ okclnt_base_t::output_done (evb_t::ptr ev)
   send_complete ();
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okclnt_base_t::do_gzip () const
 {
   return hdr_cr ().takes_gzip () && ok_gzip && rsp_gzip;
 }
 
-void
-okclnt_base_t::output (compressible_t &b, evv_t::ptr ev)
-{
-  output (&b, ev);
-}
+//-----------------------------------------------------------------------
 
 void
 okclnt_base_t::output (compressible_t *b, evv_t::ptr ev)
 {
   output_T (b, ev);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
@@ -932,36 +1207,106 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
   } else {
 
     set_attributes (&hra);
-    hra.set_gzip (gz);
-    rsp = New refcounted<http_response_ok_t> (sb, hra);
+
+    if (hdr_cr ().mthd == HTTP_MTHD_HEAD) {
+      hra.set_gzip (false);
+      rsp = New refcounted<http_response_head_t> (sb.tosuio ()->resid (), hra);
+    } else {
+      hra.set_gzip (gz);
+      rsp = New refcounted<http_response_ok_t> (sb, hra);
+    }
+    fixup_log (rsp);
 
     if (uid_set) rsp->set_uid (uid);
     if (prelen > 0) rsp->set_inflated_len (prelen);
     twait { send (rsp, mkevent ()); }
   }
 
-  if (ev)
-    ev->trigger ();
+  // in okclnt_t versions 1s, will call delete this..
   send_complete ();
+
+  // make sure this trigger is the last thing done in this function
+  // and that we don't access this afterwards...
+  if (ev) ev->trigger ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
-  // do cookies
-  for (u_int i = 0; i < outcookies.size(); i++) {
-    rsp->header.add (http_hdr_cookie_t (outcookies[i]->to_str ()));
-  }
+  fixup_cookies (rsp);
 
   oksrvc->log (_client_con, hdr_p (), rsp);
   rsp->send (_client_con, cb);
 }
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::add_pubfiles (const char *arr[], u_int sz, bool c)
+{
+  for (u_int i = 0; i < sz; i++) 
+    add_pubfile (arr[i]);
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::add_pubfiles (const char *arr[], bool c)
+{
+  for (const char **p = arr; p && *p; p++)
+    add_pubfile (*p, c);
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::add_pubfile (const str &s, bool c)
+{
+  // warn << "add_pubfile:" << s << "\n"; // debug
+  if (supports_pub1 ())
+    rpcli->add_rootfile (s, c);
+  else {
+    SVC_ERROR ("Cannot call add_pubfile() without Pub v1 support");
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::pubfiles (cbb cb) 
+{
+  if (supports_pub1 ()) {
+    rpcli->publish (wrap (this, &oksrvc_t::pubbed, cb));
+  } else {
+    SVC_ERROR ("Cannot call pubfiles() without Pub v1 support");
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
+{
+  bool ret (true);
+  if (!*res) {
+    SVC_ERROR ("Pub of Rootfiles Failed");
+    res->cluck ();
+	ret = false;
+  }
+  (*cb) (ret);
+}
+
+//-----------------------------------------------------------------------
 
 str
 ok_base_t::okws_exec (const str &s) const
 {
   return (s[0] == '/' ? s : str (strbuf (topdir) << "/" << s));
 }
+
+//-----------------------------------------------------------------------
 
 // configuration parsing helper routine.
 void
@@ -1011,6 +1356,8 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 {
@@ -1018,7 +1365,7 @@ ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 
   str cmd = s.pop_front ();
   while (s.size ()) {
-    u_int32_t t;
+    u_int32_t t (0);
     okws1_port_t port = 0;
     if (!convertint (s.pop_front (), &t) || !(port = t)) {
       warn << loc << ": usage: " << cmd << " <ports>\n";
@@ -1035,6 +1382,8 @@ ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 ok_base_t::add_port (okws1_port_t port, bool ssl)
 {
@@ -1045,6 +1394,8 @@ ok_base_t::add_port (okws1_port_t port, bool ssl)
   else
     _http_ports.push_back (port);
 }
+
+//-----------------------------------------------------------------------
 
 
 //
@@ -1058,7 +1409,7 @@ ok_base_t::add_port (okws1_port_t port, bool ssl)
 static okws1_port_t
 split_uri (str in, str *out)
 {
-  okws1_port_t port;
+  okws1_port_t port = 0;
   const char *p = in;
   if (p[0] == ':') {
     const char *e = strchr (p, '/');
@@ -1070,6 +1421,8 @@ split_uri (str in, str *out)
   }
   return port;
 }
+
+//-----------------------------------------------------------------------
 
 //
 // 80:/foo --> /foo if listening on port 80 already...
@@ -1087,6 +1440,8 @@ ok_base_t::fix_uri (const str &in) const
   return out;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okclnt_base_t::set_hdr_field (const str &k, const str &v)
 {
@@ -1094,6 +1449,8 @@ okclnt_base_t::set_hdr_field (const str &k, const str &v)
     hdr_fields = New refcounted<vec<http_hdr_field_t> > ();
   hdr_fields->push_back (http_hdr_field_t (k,v));
 }
+
+//-----------------------------------------------------------------------
 
 str 
 get_okws_config (bool fat)
@@ -1108,6 +1465,8 @@ get_okws_config (bool fat)
   }
   return cf;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 ok_httpsrv_t::init_pub2 (u_int opts)
@@ -1127,6 +1486,8 @@ ok_httpsrv_t::init_pub2 (u_int opts)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 ok_httpsrv_t::launch_pub2_T (cbb cb)
 {
@@ -1144,6 +1505,8 @@ ok_httpsrv_t::launch_pub2_T (cbb cb)
   TRIGGER (cb, rc);
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 oksrvc_t::post_launch_pub2_T (cbb cb)
 {
@@ -1152,7 +1515,7 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
     bool rc (true);
   }
   assert (pub2 ());
-  twait { 
+  twait {
     RPC::okctl_program_1::okctl_req_errdocs_2 (clnt, &errdocs_x, mkevent (s)); 
   }
   if (s) {
@@ -1164,11 +1527,15 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
   TRIGGER (cb, rc);
 }
 
+//-----------------------------------------------------------------------
+
 ptr<pub2::ok_iface_t>
 okclnt_base_t::pub2 ()
 {
   return oksrvc->pub2 ();
 }
+
+//-----------------------------------------------------------------------
 
 ptr<pub2::ok_iface_t>
 okclnt_base_t::pub2_local ()
@@ -1178,21 +1545,43 @@ okclnt_base_t::pub2_local ()
   return _p2_locale;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okclnt_base_t::set_localizer (ptr<const pub_localizer_t> l)
 {
   _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 (), l);
 }
 
+//-----------------------------------------------------------------------
+
 pval_w_t 
 oksrvc_t::operator[] (const str &s) const 
 { 
-  return ((*pub2 ()))[s];
+  if (!supports_pub1 () || !_pub1_cfg || use_pub2_cfg ()) {
+    return ((*pub2 ()))[s];
+  } else {
+    return (*rpcli)[s] ;
+  }
 }
+
+//-----------------------------------------------------------------------
+
+str 
+oksrvc_t::cfg (const str &n) const 
+{ 
+  if (!supports_pub1 ()) {
+    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
+    return sNULL;
+  }
+  return rpcli->cfg (n);
+}
+
+//-----------------------------------------------------------------------
 
 bool
 ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp, 
-			     ptr<argv_t> *ep)
+			     ptr<env_argv_t> *ep)
 {
   str cmd, err, prog;
   vec<str> env;
@@ -1219,7 +1608,11 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   }
 
   if (s.size ()) {
-    *ep = New refcounted<argv_t> (env, environ);
+
+    *ep = New refcounted<env_argv_t> (env, environ);
+
+    // prune out repeated/overloaded environment variables
+    (*ep)->prune ();
   }
 
   if (s.size () < 1) 
@@ -1250,6 +1643,8 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   return false;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 config_parser_t::do_file (const str &fn)
 {
@@ -1274,11 +1669,15 @@ config_parser_t::do_file (const str &fn)
   return rc;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 config_parser_t::run_configs (const str &fn)
 {
   return (do_file (fn) && post_config (fn));
 }
+
+//-----------------------------------------------------------------------
 
 void
 config_parser_t::include (vec<str> s, str loc, bool *errp)
@@ -1290,6 +1689,8 @@ config_parser_t::include (vec<str> s, str loc, bool *errp)
     *errp = true;
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 set_sfs_select_policy ()
@@ -1346,3 +1747,125 @@ oksrvc_t::handle_get_stats (svccb *v)
 
 //-----------------------------------------------------------------------
 
+void
+oksrvc_t::enable_coredumps ()
+{
+#ifdef HAVE_LINUX_PRCTL_DUMP
+  if (prctl (PR_SET_DUMPABLE, 1) != 0) {
+    warn ("prctl(PR_SET_DUMPABLE, 1) failed: %m\n");
+  }
+#endif /* HAVE_LINUX_PRCTL_DUMP */
+}
+
+//-----------------------------------------------------------------------
+
+okclnt_interface_t::okclnt_interface_t (oksrvc_t *o)
+  : oksrvc (o)
+{ o->add (this); }
+
+//-----------------------------------------------------------------------
+
+okclnt_interface_t::~okclnt_interface_t ()
+{ oksrvc->remove (this); }
+
+//-----------------------------------------------------------------------
+
+void do_syscall_stats ()
+{
+  if (ok_ssdi > 0 && 
+      int (sfs_get_timenow ()- global_ssd_last) > int (ok_ssdi)) {
+    time_t diff = sfs_get_timenow () - global_ssd_last;
+    global_ssd_last = sfs_get_timenow();
+    global_syscall_stats->dump (diff);
+    global_syscall_stats->clear ();
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::output (compressible_t &b, evv_t::ptr ev)
+{
+  output (&b, ev);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_base_t::okreply (ptr<compressible_t> b, evv_t::ptr ev)
+{
+  output (b, ev);
+}
+
+//-----------------------------------------------------------------------
+
+void
+outcookie_holder_t::fixup_cookies (ptr<http_response_base_t> rsp)
+{
+  const vec<ptr<cookie_t> > *v = get_outcookies ();
+  for (size_t i = 0; i < v->size(); i++) {
+    rsp->get_header ()->add (http_hdr_cookie_t ((*v)[i]->to_str ()));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
+{
+  tvars {
+    bool gz (_self->do_gzip ());
+    ssize_t prelen (gz && b ? b->inflated_len () : ssize_t (-1));
+    http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
+    ptr<ahttpcon> x (_self->client_con ());
+    ptr<http_response_base_t> rsp;
+    size_t contlen;
+    bool head (false);
+    ssize_t rc;
+  }
+
+  assert (output_state == ALL_AT_ONCE);
+  output_state = DONE;
+
+  // client might have cancelled as we were waiting for DB
+  if (x->closed ()) {
+
+    // 3rd argument false --- don't issue send_complete() within
+    // error(), since we only want to call send_complete() once.
+    twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
+  } else {
+
+   
+    head = (hdr_cr ().mthd == HTTP_MTHD_HEAD);
+    if (head) {
+      gz = false;
+      contlen = b ? b->inflated_len () : 0;
+      b = NULL;
+    }
+
+    set_attributes (&hra);
+
+    if (head) {
+      hra.set_gzip (false);
+      rsp = New refcounted<http_response_head_t> (contlen, hra);
+    } else {
+      hra.set_gzip (gz);
+      rsp = New refcounted<http_response_ok2_t> (hra, b);
+    }
+    fixup_log (rsp);
+
+    if (uid_set) rsp->set_uid (uid);
+    if (prelen > 0) rsp->set_inflated_len (prelen);
+    fixup_cookies (rsp);
+    oksrvc->log (x, hdr_p (), rsp);
+    twait { rsp->send2 (x, mkevent (rc)); }
+  }
+
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+okclnt_base_t::~okclnt_base_t () {}
+
+//-----------------------------------------------------------------------

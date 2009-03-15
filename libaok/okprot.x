@@ -1,6 +1,7 @@
 /* $Id$ */
 
 %#include "xpub.h"
+%#include "okprotext.h"
 
 struct xpub_errdoc_t {
   int status;
@@ -43,7 +44,7 @@ struct oksvc_stats_t {
 
 
 struct okctl_stats_t {
-	oksvc_status_t status<>;
+    oksvc_status_t status<>;
 };
 
 struct ok_custom_data_t {
@@ -53,18 +54,6 @@ struct ok_custom_data_t {
 struct ok_custom_arg_t {
   ok_progs_t progs;
   ok_custom_data_t data;
-};
-
-enum ok_xstatus_typ_t {
-  OK_STATUS_OK = 0,
-  OK_STATUS_PUBERR = 1,
-  OK_STATUS_NOSUCHCHILD = 2,
-  OK_STATUS_ERR = 3,
-  OK_STATUS_DEADCHILD = 4,
-  OK_STATUS_NOMORE = 5,
-  OK_STATUS_BADFD = 6,
-  OK_STATUS_DUP = 7,
-  OK_STATUS_BADWAKEUP = 8
 };
 
 union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
@@ -81,14 +70,6 @@ struct ok_custom_res_t {
 
 struct ok_custom_res_set_t {
   ok_custom_res_t results<>;
-};
-
-union ok_xstatus_t switch (ok_xstatus_typ_t status) 
-{
- case OK_STATUS_OK:
-   void;
- default:
-   string error<>;
 };
 
 typedef ok_xstatus_typ_t okctl_sendcon_res_t;
@@ -110,7 +91,6 @@ struct okssl_sendcon_arg_t {
 };
 
 typedef string ip_addr_t<16>;
-
 enum oklog_typ_t {
   OKLOG_OK = 0,
   OKLOG_ERR_WARNING = 1,
@@ -119,6 +99,11 @@ enum oklog_typ_t {
   OKLOG_ERR_CRITICAL = 4,
   OKLOG_ERR_DEBUG = 5,
   OKLOG_SSL = 6
+};
+
+struct okmgr_diagnostic_arg_t {
+  ok_prog_t prog;
+  ok_diagnostic_cmd_t cmd;
 };
 
 struct oklog_notice_t {
@@ -198,10 +183,25 @@ program OKCTL_PROGRAM {
 		void
 		OKCTL_READY (void) = 1;
 
+		xpub_errdoc_set_t
+		OKCTL_REQ_ERRDOCS (void) = 2;
+
+		ok_xstatus_t
+	        OKCTL_UPDATE (xpub_fnset_t) = 3;
+
+		xpub_getfile_res_t
+		OKCTL_GETFILE (xpubhash_t) = 4;
+
+		xpub_lookup_res_t
+		OKCTL_LOOKUP (xpub_fn_t) = 5;
+
+		xpub_getfile_res_t
+		OKCTL_PUBCONF (void) = 6;
+
 		ok_xstatus_t
 		OKCTL_CUSTOM_1_IN (ok_custom_arg_t) = 7;
 	
-		void
+		ok_xstatus_t 
 		OKCTL_CUSTOM_1_OUT (ok_custom_data_t) = 8;
 
 		ok_custom_res_set_t
@@ -224,6 +224,12 @@ program OKCTL_PROGRAM {
 
 		oksvc_stats_t
 		OKCTL_GET_STATS_FROM_SVC(void) = 15;
+
+		ok_xstatus_typ_t
+		OKCTL_LEAK_CHECKER(ok_diagnostic_cmd_t) = 16;
+
+		ok_xstatus_typ_t
+		OKCTL_PROFILER(ok_diagnostic_cmd_t) = 17;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;
@@ -264,6 +270,9 @@ program OKMGR_PROGRAM {
 		OKMGR_NULL (void) = 0;
 
 		ok_xstatus_t
+		OKMGR_REPUB (xpub_fnset_t) = 1;
+
+		ok_xstatus_t
 		OKMGR_RELAUNCH (ok_progs_t) = 2;
 
 		ok_xstatus_t
@@ -274,6 +283,15 @@ program OKMGR_PROGRAM {
 
 		ok_custom_res_t
 		OKMGR_CUSTOM_2 (ok_custom_arg_t) = 5;
+
+		ok_xstatus_t
+		OKMGR_REPUB2 (xpub_fnset_t) = 6;
+
+		ok_xstatus_t
+		OKMGR_LEAK_CHECKER(okmgr_diagnostic_arg_t) = 7;
+
+		ok_xstatus_t
+		OKMGR_PROFILER(okmgr_diagnostic_arg_t) = 8;
 	} = 1;
 } = 11278;
 
@@ -323,4 +341,4 @@ program NULL_PROGRAM {
 	} = 1;
 } = 11281;
 
-};
+}; /* namespace RPC */

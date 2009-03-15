@@ -36,10 +36,13 @@
 #include "httpconst.h"
 #include "async.h"
 #include "dns.h"
+#include "inhdr.h"
 
 //
 // okwc = OK Web Client
 //
+
+//-----------------------------------------------------------------------
 
 class okwc_dnscache_entry_t : public virtual refcount {
 public:
@@ -61,6 +64,8 @@ private:
   vec<cbhent> cbq;
 };
 
+//-----------------------------------------------------------------------
+
 class okwc_dnscache_t {
 public:
   okwc_dnscache_t () {}
@@ -69,29 +74,28 @@ private:
   qhash<str, ptr<okwc_dnscache_entry_t> > cache;
 };
 
+//-----------------------------------------------------------------------
+
 class okwc_cookie_set_t : public vec<cgi_t *> 
 {
 public:
-  okwc_cookie_set_t () : abuf (NULL), bflen (0), buf (NULL) {}
-  okwc_cookie_set_t (abuf_t *a, size_t l, char *b)
-    : abuf (a), bflen (l), buf (b) {}
+  okwc_cookie_set_t () : abuf (NULL) {}
+  okwc_cookie_set_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
+    : abuf (a), _scratch (s) {}
 
   void reset () { while (size ()) delete pop_back (); }
 
   ~okwc_cookie_set_t () { reset (); }
 
   cgi_t *push_back_new () 
-  { return push_back (New cgi_t (abuf, true, bflen, buf)); }
+  { return push_back (New cgi_t (abuf, true, _scratch)); }
 
 private:
   abuf_t *abuf;
-  size_t bflen;
-  char *buf;
+  ptr<ok::scratch_handle_t> _scratch;
 };
 
-
-
-#define OKWC_SCRATCH_SZ 4096
+//-----------------------------------------------------------------------
 
 class okwc_http_hdr_t : public http_hdr_t, public pairtab_t<> {
 public:
@@ -108,13 +112,24 @@ public:
 		 OKWC_HDR_EOL2A = 10,
 		 OKWC_HDR_EOL2B = 11 } state_t;
   
-  okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, size_t bflen, char *b)
-    : async_parser_t (a), http_hdr_t (a, bflen, b),
-      cookie (ck), state (OKWC_HDR_START), status (HTTP_BAD_REQUEST),
-      noins (false) {}
+  okwc_http_hdr_t (abuf_t *a, okwc_cookie_set_t *ck, 
+		   ptr<ok::scratch_handle_t> s)
+    : async_parser_t (a), 
+      http_hdr_t (a, s),
+      cookie (ck), 
+      state (OKWC_HDR_START), 
+      contlen (0), 
+      _has_body (false),
+      _status_parse (HTTP_NO_STATUS),
+      _status_header (HTTP_NO_STATUS),
+      _clean_eoh (false),
+      noins (false),
+      _conn (HTTP_CONN_CLOSED) {}
 
   int get_contlen () const { return contlen; }
   bool is_chunked () const ;
+  http_conn_mode_t connection () const { return _conn; }
+  bool has_body () const { return _has_body; }
 
 protected:
   void parse_guts ();
@@ -127,39 +142,52 @@ private:
   okwc_cookie_set_t *cookie;
   state_t state, ret_state;
   int contlen;
+  bool _has_body;
   str vers, status_desc;
-  int status;
+  int _status_parse, _status_header;
+  bool _clean_eoh;
   bool noins;
   bool chunked;
 
   str key, val;
+  http_conn_mode_t _conn;
 };
 
+//-----------------------------------------------------------------------
+
 struct okwc_resp_t {
-  okwc_resp_t (abuf_t *a, size_t bfln, char *b, okwc_cookie_set_t *incook)
-    : status (HTTP_OK), cookies (a, bfln, b), 
-    _hdr (New okwc_http_hdr_t (a, incook ? incook : &cookies, bfln, b)) {}
+  okwc_resp_t (abuf_t *a, ptr<ok::scratch_handle_t> s, 
+	       okwc_cookie_set_t *incook)
+    : status (HTTP_OK), 
+      cookies (a, s),
+      _hdr (New okwc_http_hdr_t (a, incook ? incook : &cookies, s)) {}
 
   ~okwc_resp_t () { if (_hdr) delete _hdr; }
 
   okwc_resp_t (int s) : status (s), _hdr (NULL) {}
 
-  static ptr<okwc_resp_t> alloc (abuf_t *a, size_t bfln, char *b, 
+  static ptr<okwc_resp_t> alloc (abuf_t *a, ptr<ok::scratch_handle_t> s,
 				 okwc_cookie_set_t *incook)
-  { return New refcounted<okwc_resp_t> (a, bfln, b, incook); }
+  { return New refcounted<okwc_resp_t> (a, s, incook); }
 
   static ptr<okwc_resp_t> alloc (int s) 
   { return New refcounted<okwc_resp_t> (s); }
 
   okwc_http_hdr_t *hdr () { return _hdr; }
+  ptr<ok::scratch_handle_t> scratch () { return _scratch; }
 
   str body;
   int status;
   okwc_cookie_set_t cookies;
   okwc_http_hdr_t *_hdr;
+  ptr<ok::scratch_handle_t> _scratch;
 };
 
+//-----------------------------------------------------------------------
+
 typedef callback<void, ptr<okwc_resp_t> >::ref okwc_cb_t;
+
+//-----------------------------------------------------------------------
 
 //
 // okwc_chunker_t
@@ -176,8 +204,8 @@ private:
 		 EOL2 = 4,
 		 DONE = 5 } state_t;
 public: 
-  okwc_chunker_t (abuf_t *a, size_t bfln, char *b)
-    : async_parser_t (a), http_hdr_t (a, bfln, b), sz (0), state (START) {}
+  okwc_chunker_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
+    : async_parser_t (a), http_hdr_t (a, s), sz (0), state (START) {}
   size_t get_sz () const { return sz; }
   void next_chunk () { sz = 0; state = FINISH_PREV; }
 protected:
@@ -227,8 +255,8 @@ protected:
   str hostname;
   int port;
   abuf_t abuf;
-  char scratch[OKWC_SCRATCH_SZ];
 
+  ptr<ok::scratch_handle_t> _scratch;
   ptr<okwc_resp_t> resp;
   int vers;
   cgi_t *outcook; // cookie sending out to the server
@@ -242,6 +270,8 @@ protected:
   bool _proxy_mode;
   str _proxy_hdr_hostname;
 };
+
+//-----------------------------------------------------------------------
 
 //
 // returns the body of the HTTP response as a big string, malloced
@@ -267,6 +297,8 @@ private:
   vec<str> chunks;
   okwc_cb_t okwc_cb;
 };
+
+//-----------------------------------------------------------------------
 
 class okwc_req_t {
 public:
@@ -311,6 +343,8 @@ protected:
   const str _type;
 };
 
+//-----------------------------------------------------------------------
+
 class okwc_req_bigstr_t : public okwc_req_t {
 public:
   okwc_req_bigstr_t (const str &ht, u_int16_t p, const str &fn,
@@ -324,12 +358,16 @@ protected:
   okwc_cb_t okwc_cb;
 };
 
+//-----------------------------------------------------------------------
 
 okwc_req_t *
 okwc_request (const str &h, u_int16_t port, const str &fn, 
 	      okwc_cb_t cb, int vers = 0, int timeout = -1, 
 	      cgi_t *outcook = NULL, const str &post = NULL,
 	      const str &type = NULL);
+
+
+//-----------------------------------------------------------------------
 
 /*
  * wget a remote URL, but using a proxied interface.
@@ -359,8 +397,12 @@ okwc_request_proxied (const str &proxy_hostname,
 		      const str &type = NULL);
 
 
+//-----------------------------------------------------------------------
+
 void
 okwc_cancel (okwc_req_t *req);
+
+//-----------------------------------------------------------------------
 
 
 #endif

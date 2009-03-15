@@ -36,6 +36,7 @@
 #include "zstr.h"
 #include "tame.h"
 #include "pscalar.h"
+#include "parseopt.h"
 
 #if defined (SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 10000000
 # include "tame_lock.h"
@@ -52,21 +53,21 @@ class pstr_t;
 class pstr_el_t;
 class penv_t;
 
-typedef enum { PFILE_HTML_EL = 0, 
-	       PFILE_INC = 1, 
-	       PFILE_SWITCH = 2, 
-	       PFILE_VAR = 3, 
-	       PFILE_PSTR = 4, 
-	       PFILE_FILE = 7, 
-	       PFILE_SEC = 8, 
-	       PFILE_INCLUDE = 9,
-	       PFILE_FUNC = 10, 
-	       PFILE_INCLUDE2 = 12, 
-	       PFILE_RAW = 13 } pfile_el_type_t;
+typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1, 
+	       PFILE_SWITCH = 2, PFILE_VAR = 3, 
+	       PFILE_PSTR = 4, PFILE_CCODE = 5, 
+	       PFILE_GFRAME = 6, PFILE_FILE = 7, 
+	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
+	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
+	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
+	       PFILE_TYPE_GUY = 1,
 	       PFILE_TYPE_H = 2,
 	       PFILE_TYPE_WH = 3,
+	       PFILE_TYPE_CODE = 4,
+	       PFILE_TYPE_EC = 5,
+	       PFILE_TYPE_WEC = 6,
                PFILE_TYPE_CONF = 7,
 	       PFILE_TYPE_CONF2 = 8} pfile_type_t;
 
@@ -76,6 +77,9 @@ typedef enum { PUBSTAT_OK = 0,
 	       PUBSTAT_READ_ERROR = 4 } pubstat_t;
 
 xpub_status_typ_t pub_stat2status (pubstat_t in);
+
+typedef enum { EXPLORE_PARSE = 0, EXPLORE_FNCALL = 1,
+	       EXPLORE_CONF = 2 } pub_exploremode_t;
 
 typedef enum { EVAL_FULL = 0, EVAL_INTERNAL = 1, 
 	       EVAL_COMPILE = 2, EVAL_SIMPLE = 3 } pub_evalmode_t;
@@ -97,6 +101,8 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_WSS     1 << 6        /* white space stripping */
 #define P_CLEAR   1 << 7        /* used to clear all other options */
 
+#define P_EXPLORE_OFF (1 << 8)   // don't explore files after parse
+#define P_INCLUDE_V2  (1 << 9)   // support V2 include semantics
 #define P_EXPORTER    (1 << 10)  // export files via RPC
 #define P_NOPARSE     (1 << 11)  // don't parse file at all
 #define P_NOLOCALE    (1 << 12)  // Don't localize file
@@ -107,23 +113,24 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define P_INFINITY   65334
 
 /* shortcut macros for common operations on the global pub object */
-#define PWARN(x)   global_parser->pwarn (strbuf () << x)
-#define PFILE      global_parser->bpf->file
+#define PWARN(x)   parser->pwarn (strbuf () << x)
+#define PFILE      parser->bpf->file
 #define PARSEFAIL  PFILE->err = PUBSTAT_PARSE_ERROR;
 #define PLINC      PFILE->inc_lineno ()
 #define PLINENO    (PFILE->get_lineno ())
 #define PSECTION   PFILE->section
-#define PFUNC      global_parser->top_func ()
+#define PFUNC      parser->top_func ()
 #define ARGLIST    PFUNC->arglist
-#define PLASTHTAG  global_parser->lasttag
-#define PHTAG      global_parser->tag
-#define PAARR      global_parser->aarr
-#define PSTR1      global_parser->str1
-#define PPSTR      global_parser->pstr
-#define PARR       global_parser->parr
+#define PLASTHTAG  parser->lasttag
+#define PHTAG      parser->tag
+#define PAARR      parser->aarr
+#define PGVARS     parser->gvars
+#define PSTR1      parser->str1
+#define PPSTR      parser->pstr
+#define PARR       parser->parr
 
-#define PUSH_PFUNC(x) do { global_parser->push_func (x); } while (0)
-#define POP_PFUNC()   global_parser->pop_func()
+#define PUSH_PFUNC(x) do { parser->push_func (x); } while (0)
+#define POP_PFUNC()   parser->pop_func()
 
 #define PUB_NULL_CASE "NULL"
 
@@ -188,6 +195,24 @@ private:
   vec<str> hold;
 };
 
+typedef bhash<str> gvtab_t;
+class gvars_t : public virtual dumpable_t {
+public:
+  gvars_t () {}
+  virtual ~gvars_t () {}
+  void add (const str &s) { tab.insert (s); }
+  virtual str get_obj_name () const { return "gvars_t"; }
+  void dump2 (dumper_t *d) const;
+  virtual int lookup (const str &s) const { return (tab[s] ? 1 : 0); }
+protected:
+  gvtab_t tab;
+};
+
+class guvars_t : public gvars_t {
+public:
+  int lookup (const str &s) const { return (tab[s] ? -1 : 0); }
+  str get_obj_name () const { return "guvars_t"; }
+};
 
 class aarr_t;
 class aarr_arg_t;
@@ -346,10 +371,14 @@ public:
   bool finish_output (penv_state_t *s);
 
   void resize (size_t s);
+  void gresize (size_t gvs);
+  void resize (size_t s, size_t gvs) { resize (s); gresize (gvs); }
   size_t size () const { return estack.size (); }
+  size_t gvsize () const { return gvars.size (); }
   void push (aarr_t *a) { estack.push_back (a); }
   void safe_push (ptr<const aarr_t> a);
   bool set_global (const aarr_t &a);
+  void push (const gvars_t *g) { gvars.push_back (g); }
   const pval_t *lookup (const str &n, bool recurse = true);
   pval_w_t operator[] (const str &n) { return pval_w_t (n, this); }
   pub_evalmode_t init_eval (pub_evalmode_t m = EVAL_FULL);
@@ -368,6 +397,9 @@ public:
   void warning (const str &s) const;
   bool success () const { return !cerrflag; }
 
+  bool go_g_var (const str &n) const;
+  bool is_gvar (const str &v) const;
+
   str stack_to_str () const;
   bool i_stack_add (bpfcp_t t);
   void i_stack_remove (bpfcp_t t);
@@ -379,7 +411,7 @@ public:
 
   bool set_tlf (bool b) { bool r = tlf; tlf = b; return r; }
   bool get_tlf () const { return tlf; }
-  void clear () { estack.clear (); hold.clear (); }
+  void clear () { estack.clear (); gvars.clear (); hold.clear (); }
 
   void set_localizer (ptr<const pub_localizer_t> l) { _localizer = l; }
   ptr<const pub_localizer_t> localizer () const { return _localizer; }
@@ -393,6 +425,7 @@ private:
   pub_evalmode_t evm;
   qhash<str, vec<ssize_t> > evaltab;
   vec<const aarr_t *> estack; // eval stack
+  vec<const gvars_t *> gvars;
   vec<bpfcp_t> fstack;
   vec<ptr<const aarr_t> > hold;
   bhash_copyable_t<phashp_t> istack;
@@ -423,9 +456,11 @@ public:
   virtual void output_header (penv_t *e) {}
   virtual void output_err_stacktrace (penv_t *e, const str &s, int l = -1);
 
+  virtual void output_file_loc (penv_t *e, int lineno) {}
   virtual void output_set_func (penv_t *e, const pfile_set_func_t *s) = 0;
 
   virtual pfile_type_t switch_mode (pfile_type_t m) { return PFILE_TYPE_NONE; }
+  virtual str switch_osink (const str &ns) { return NULL; }
   virtual str switch_class (const str &nc) { return NULL; }
   virtual str get_class () const { return NULL; }
   virtual bool descend () const { return true; }
@@ -443,7 +478,7 @@ public:
 class output_std_t : public output_t {
 public:
   output_std_t (zbuf *o, pfile_type_t m = PFILE_TYPE_H, u_int opt = 0) 
-    : output_t (m, opt), out (o) {}
+    : output_t (m, opt), out (o), osink_open (false) {}
   output_std_t (zbuf *o, const pfile_t *f = NULL);
   virtual ~output_std_t () {}
 
@@ -453,14 +488,31 @@ public:
   void output_err (penv_t *e, const str &s, int l = -1);
   void output_info (penv_t *e, const str &s, int l = -1);
   void output_header (penv_t *e);
+  void output_file_loc (penv_t *e, int lineno);
   virtual void output_set_func (penv_t *e, const pfile_set_func_t *a);
   pfile_type_t switch_mode (pfile_type_t m);
+  str switch_osink (const str &ns);
   str switch_class (const str &nc);
   str get_class () const { return classname; }
 
 private:
   zbuf *out;
+  str osink;
   str classname;
+  bool osink_open;
+};
+
+class output_conf_t : public output_t {
+public:
+  output_conf_t (bool d = true) ;
+  ~output_conf_t () {}
+  void output_set_func (penv_t *e, const pfile_set_func_t *s);
+  void output_err (penv_t *e, const str &s, int l = -1);
+  bool descend () const { return dflag; }
+  bool stack_restore () const { return false; }
+  ptr<aarr_t> env;
+private:
+  bool dflag;
 };
 
 
@@ -545,6 +597,7 @@ struct bound_pfile_t : public virtual refcount,
   pfnm_t filename () const { return bnd->filename (); }
   operator bool() const { return (bnd && file); }
   void output (output_t *o, penv_t *e) const;
+  void explore (pub_exploremode_t m) const; 
   const pbinding_t *const bnd;
   pfile_t *const file;
   const pfnm_t rfn; // used only when publishing 
@@ -608,14 +661,16 @@ typedef qhash<str, u_int> qhsi_t;
 
 class pfile_frame_t : public virtual dumpable_t {
 public:
-  pfile_frame_t () : sss (0) {}
-  void mark_frame (penv_t *p) const { sss = p->size () ; }
-  void push_frame (penv_t *p, aarr_t *f) const;
+  pfile_frame_t () : sss (0), sgvss (0) {}
+  void mark_frame (penv_t *p) const 
+  { sss = p->size () ; sgvss = p->gvsize (); }
+  void push_frame (penv_t *p, aarr_t *f, const gvars_t *g = NULL) const;
   void pop_frame (output_t *o, penv_t *p) const 
-  { if (o->stack_restore ()) p->resize (sss); }
+  { if (o->stack_restore ()) p->resize (sss, sgvss); }
   virtual str get_obj_name () const { return "pfile_frame_t"; }
 private:
   mutable int sss;    /* start stack size */
+  mutable int sgvss;  /* start gvar stack size */
 };
 
 class parr_t;
@@ -695,6 +750,19 @@ private:
   const int64_t _low, _hi;
 };
 
+class pub_urange_t : public pub_range_t {
+public:
+  pub_urange_t (u_int64_t l, u_int64_t h) : _low (l), _hi (h) {}
+  pub_urange_t (const xpub_urange_t &x);
+  str get_obj_name () const { return "urange"; }
+
+  str to_str () const;
+  bool match (scalar_obj_t so);
+  bool to_xdr (xpub_range_t *r);
+private:
+  const u_int64_t _low, _hi;
+};
+
 class pub_drange_t : public pub_range_t {
 public:
   pub_drange_t (double l, double h) : _low (l), _hi (h) {}
@@ -722,6 +790,7 @@ public:
   clist_entry<pfile_el_t> lnk;
   virtual bool to_xdr (xpub_obj_t *x) const { return false; }
   static pfile_el_t *alloc (const xpub_obj_t &x);
+  virtual void explore (pub_exploremode_t mode) const {}
 };
 typedef publist_t<pfile_el_t, &pfile_el_t::lnk> pfile_el_lst_t;
 
@@ -737,6 +806,7 @@ public:
 };
 
 class pvar_t;
+class gcode_t;
 class pstr_var_t;
 class pstr_t : public pval_t, public pub2able_t {
 public:
@@ -799,6 +869,7 @@ public:
 
   virtual void dump2 (dumper_t *d) const { if (els) els->dump (d); }
   int get_lineno () const { return lineno; }
+  virtual void explore (pub_exploremode_t mode) const;
   virtual bool is_tag () const { return false; }
 
   // functions for adding HTML fragments
@@ -842,6 +913,9 @@ public:
   pfile_func_t (int l) : lineno (l) {}
   virtual bool add (ptr<arglist_t> al) = 0;
   virtual bool validate () { return false; }
+  virtual void explore (pub_exploremode_t mode) const {}
+  void include (output_t *o, penv_t *genv, aarr_t *lenv, const pfnm_t &nm) 
+    const;
   virtual pfile_el_type_t get_type () const { return PFILE_FUNC; }
 
   // for pub2
@@ -855,18 +929,66 @@ protected:
   int lineno;
 };
 
-class pfile_include2_t : public pfile_func_t {
+class pfile_inclist_t : public pfile_func_t {
 public:
-  pfile_include2_t (int l) : pfile_func_t (l), err (false) {}
-  pfile_include2_t (const xpub_include_t &x);
-  virtual ~pfile_include2_t () {}
+  pfile_inclist_t (int l) : pfile_func_t (l), err (false), ali (0) {}
+  pfile_inclist_t (const xpub_inclist_t &x);
+  ~pfile_inclist_t () {}
+  void output (output_t *o, penv_t *e) const {}
+  bool add (ptr<arglist_t> l);
+  bool validate ();
+  void explore (pub_exploremode_t mode) const;
+  pfile_el_type_t get_type () const { return PFILE_INCLIST; }
+  void dump2 (dumper_t *d) const;
+  str get_obj_name () const { return "pfile_inclist_t"; }
+  bool to_xdr (xpub_obj_t *x) const;
+protected:
+  bool err;
+  vec<pfnm_t> files;
+  u_int ali; // arglist index
+};
+
+class pfile_include_t : public pfile_func_t {
+public:
+  pfile_include_t (int l, ptr<aarr_arg_t> e = NULL) : 
+    pfile_func_t (l), err (false), env (e) {}
+  pfile_include_t (const xpub_include_t &x);
+  virtual ~pfile_include_t () {}
+  virtual void output (output_t *o, penv_t *e) const;
   virtual bool add (ptr<arglist_t> l);
   virtual bool validate ();
+  virtual void explore (pub_exploremode_t mode) const;
+  virtual pfile_el_type_t get_type () const { return PFILE_INCLUDE; }
+
+  virtual void dump2 (dumper_t *d) const;
+  virtual str get_obj_name () const { return "pfile_include_t"; }
+  virtual bool to_xdr (xpub_obj_t *x) const;
+  void to_xdr_base (xpub_obj_t *x) const;
+  bool add_base (ptr<arglist_t> l);
+
+  // For pub2
+  virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
+			xpub_status_cb_t , CLOSURE) const;
+  virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+protected:
+  bool err;
+  pfnm_t fn;
+  ptr<aarr_arg_t> env;
+};
+
+class pfile_include2_t : public pfile_include_t {
+public:
+  pfile_include2_t (int l) : pfile_include_t (l) {}
+  pfile_include2_t (const xpub_include_t &x);
+  virtual ~pfile_include2_t () {}
+  virtual void output (output_t *o, penv_t *e) const;
+  virtual bool add (ptr<arglist_t> l);
+  virtual bool validate ();
+  virtual void explore (pub_exploremode_t mode) const {}
   pfile_el_type_t get_type () const { return PFILE_INCLUDE2; }
   virtual str get_obj_name () const { return "pfile_include2_t"; }
   virtual bool to_xdr (xpub_obj_t *x) const;
   void dump2 (dumper_t *d) const;
-  void output (output_t *o, penv_t *e) const { assert (false); }
 
   // For pub2
   virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
@@ -874,14 +996,10 @@ public:
   virtual bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
 
 protected:
-  bool add_base (ptr<arglist_t> l);
   virtual bool to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const;
   // evaluate filename
   str eval_fn (penv_t *env) const;
 
-  bool err;
-  pfnm_t fn;
-  ptr<aarr_arg_t> env;
   ptr<pstr_t> fn_v2;
 };
 
@@ -891,6 +1009,58 @@ public:
   pfile_load_t (const xpub_include_t &x);
   bool muzzle_output () const { return true; }
   virtual bool to_xdr (xpub_obj_t *x) const;
+};
+
+class pfile_g_init_pdl_t : public pfile_func_t {
+public:
+  pfile_g_init_pdl_t (int l, const pfile_t *const f) 
+    : pfile_func_t (l), file (f), err (false) {}
+  void output (output_t *o, penv_t *e) const;
+  bool add (ptr<arglist_t> l);
+  bool validate () { return (!err); }
+  void dump2 (dumper_t *d) const {}
+  str get_obj_name () const { return "pfile_g_init_pdl_t"; }
+protected:
+  const pfile_t *const file;
+  bool err;
+};
+
+class pfile_g_ctinclude_t : public pfile_include_t {
+public:
+  pfile_g_ctinclude_t (int l) : pfile_include_t (l) {}
+  virtual void output (output_t *o, penv_t *e) const;
+  virtual bool add (ptr<arglist_t> l);
+  bool validate () { return (!err); }
+  virtual bool ct_read () const { return true; }
+
+  virtual void dump2 (dumper_t *d) const;
+  virtual str get_obj_name () const { return "pfile_g_ctinclude_t"; }
+protected:
+  str osink;
+};
+
+class pfile_g_include_t : public pfile_g_ctinclude_t {
+public:
+  pfile_g_include_t (int l) : pfile_g_ctinclude_t (l) {}
+  void output (output_t *o, penv_t *e) const;
+  bool add (ptr<arglist_t> l);
+  void explore (pub_exploremode_t mode) const {}
+  bool ct_read () const { return false; }
+  void dump2 (dumper_t *d) const;
+  virtual str get_obj_name () const { return "pfile_g_include_t"; }
+private:
+  str pubobj;
+};
+
+class pfile_gframe_t : public pfile_frame_t, public pfile_el_t  {
+public:
+  pfile_gframe_t (gvars_t *g) : vars (g) {}
+  void output (output_t *o, penv_t *e) const { push_frame (e, NULL, vars); }
+  ~pfile_gframe_t () { if (vars) delete vars; }
+  pfile_el_type_t get_type () const { return PFILE_GFRAME; }
+  void dump2 (dumper_t *d) const { if (vars) vars->dump (d); }
+private:
+  gvars_t *vars;
 };
 
 class pfile_html_sec_t : public pfile_sec_t {
@@ -945,6 +1115,32 @@ public:
   void dump2 (dumper_t *d) const;
 };
 
+class pfile_gprint_t : public pfile_html_sec_t {
+public:
+  pfile_gprint_t (int l, const str &o) 
+    : pfile_html_sec_t (l, true), outv (o) {}
+  void output (output_t *o, penv_t *e) const;
+
+  void dump2 (dumper_t *d) const;
+  str get_obj_name () const { return "pfile_gprint_t"; }
+private:
+  const str outv;
+};
+
+class pfile_code_t : public pfile_sec_t {
+public:
+  void output (output_t *o, penv_t *e) const;
+  pfile_code_t (int l) : pfile_sec_t (l, false) {}
+  pfile_sec_t *add (char c) { sb.tosuio ()->copy (&c, 1); return this; }
+  pfile_sec_t *add (const str &s) { sb << s; return this; }
+  pfile_el_type_t get_type () const { return PFILE_CCODE; }
+
+  void dump2 (dumper_t *d) const;
+  str get_obj_name () const { return "pfile_code_t"; }
+private:
+  strbuf sb;
+};
+
 /* serves mainly as a traverser class */
 class pfile_pstr_t : public pfile_el_t {
 public:
@@ -987,6 +1183,7 @@ public:
 
   str get_obj_name () const { return "pfile_t"; }
   void dump2 (dumper_t *d) const;
+  void explore (pub_exploremode_t mode) const ;
   void setfp (FILE *f);
   void close () { fclose (fp); fp = NULL; }
 
@@ -1028,6 +1225,15 @@ protected:
 typedef ihash<const phashp_t, pfile_t, &pfile_t::hsh, 
 	      &pfile_t::hlink> pfile_map_t;
 
+class pfile_gs_t : public pfile_sec_t {
+public:
+  pfile_gs_t (int l) : pfile_sec_t (l) {}
+  virtual void output (output_t *o, penv_t *e) const;
+  virtual str get_obj_name () const { return "pfile_gs_t"; }
+private:
+  pfile_frame_t frm;
+};
+
 class pvar_t 
   : public virtual evalable_t, public virtual refcount, 
     public virtual dumpable_t {
@@ -1047,6 +1253,15 @@ protected:
   const str nm;
   int lineno;
   pval_t *val;
+};
+
+class gcode_t : public pvar_t {
+public:
+  gcode_t (const str &v, int l = 0, bool es = false) 
+    : pvar_t (v, l), escaped (false) {}
+  void eval_obj (pbuf_t *s, penv_t *e, u_int depth = P_INFINITY) const;
+  str get_obj_name () const { return "gcode_t"; }
+  bool escaped;
 };
 
 class pfile_var_t : public pfile_el_t
@@ -1166,12 +1381,13 @@ public:
 			   _eval_cache_flag (false) {}
   pfile_switch_t (const xpub_switch_t &x);
   ~pfile_switch_t ();
+  void output (output_t *o, penv_t *e) const;
 
   ptr<pswitch_env_base_t> eval_for_output (output_t *o, penv_t *e) const;
-  void output (output_t *o, penv_t *e) const { assert (false); }
 
   bool add (ptr<arglist_t> a);
   bool validate ();
+  void explore (pub_exploremode_t mode) const;
   bool to_xdr (xpub_obj_t *x) const;
 
   void dump2 (dumper_t *d) const;
@@ -1247,6 +1463,7 @@ public:
   bool add (ptr<arglist_t> a);
   bool validate () { return true; }
   virtual void output_runtime (penv_t *e) const;
+  void output_config (penv_t *e) const ;
 
   void dump2 (dumper_t *d) const;
   virtual str get_obj_name () const { return "pfile_set_func_t"; }
@@ -1406,10 +1623,22 @@ public:
   pub_base_t (u_int o = 0) : mcf (NULL), _opts (o) {}
   virtual ~pub_base_t () { if (mcf) delete mcf; }
   
+  bool run_configs ();
+  bool run_config (pfile_t *f);
+  bool run_config (str nm);
+
   inline void set_opts (u_int o) { _opts = o; }
   inline u_int get_opts () const { return _opts; }
 
+  virtual bpfcp_t v_getfile (const pfnm_t &n) const = 0;
   virtual u_int fixopts (u_int in) const { return in; }
+
+  bool include (zbuf *b, const pfnm_t &fn, u_int opts = 0, 
+		aarr_t *env = NULL) const;
+  bool include (zbuf *b, bpfcp_t f, u_int o = 0, aarr_t *e = NULL) const;
+  void r_config (pubrescb , int mthd, ptr<aclnt> );
+  void configed (ptr<xpub_getfile_res_t> x, pubrescb c, clnt_stat e);
+  virtual void v_config_cb (const xpub_file_t &x) {}
 
 protected:
   vec<str> cfgfiles;     // all root cfg files
@@ -1480,39 +1709,196 @@ public:
   pval_w_t operator[] (const str &s) const { return (*get_env ())[s]; }
 };
 
-//
-// Interface with lex/yacc and parse incoming pub-formatted files
-//
-class pub_parser_t : public pub_base_t, public pub_config_iface_t
+/*
+ * pubv1 cruft: a lot of this stuff can be removed once pub v1 is
+ * phased out.
+ */
+class pub_t : public pub_base_t, public pub_config_iface_t {
+public:
+  pub_t (u_int o = 0) : pub_base_t (o), set (New set_t ()), rebind (false) {}
+  virtual ~pub_t () { delete set; }
+
+  // V1 Only
+  bpfcp_t getfile (const pfnm_t &nm) const ;   
+  pfile_t *getfile (phashp_t hsh) const;
+  bool add_rootfile (const str &fn, bool conf = false);
+  void queue_hfile (const pfnm_t &n) { parsequeue.push_back (n); }
+  virtual void explore (const str &fn) const { assert (false); }
+  bpfcp_t v_getfile (const pfnm_t &n) const
+  { return set->getfile (apply_homedir (n)); }
+
+
+  // V1 and V2
+  virtual str jail2real (const str &n) const { return n; }
+  void set_homedir (const str &d) { homedir = dir_standardize (d); }
+  pfnm_t apply_homedir (const pfnm_t &n) const;
+
+  // on for all except version 2 pub_parser_t
+  virtual bool do_explore () const { return true; }
+  virtual xpub_version_t get_version () const { return XPUB_V1; }
+
+  penv_t *get_env () const { return &genv; }
+  const penv_t *get_const_env () const { return &genv; }
+
+  bool do_wss () const { return (get_opts () & P_WSS); }
+  bool be_verbose () const { return (get_opts () & P_VERBOSE); }
+
+  // V1 only
+  struct set_t {
+    set_t () {}
+    ~set_t () { files.deleteall (); }
+    void insert (const pbinding_t *bnd, const pfile_t *f = NULL);
+    void insert (const pfile_t *f);
+    void remove (pfile_t *f);
+    void remove (const pbinding_t *bnd, pfile_t *f);
+    void insert (bpfcp_t bpf);
+    bpfcp_t getfile (const pfnm_t &nm, const set_t *backup = NULL) const;
+    pbinding_t *to_binding (const pfnm_t &fn, const pfnm_t &rfn, 
+			    bool rebind, bool toplev = false);
+    pbinding_t *alloc (const pfnm_t &fn, phashp_t h, bool toplev = false);
+
+    bindtab_t  bindings;                // expands filenames to hashes
+    pfile_map_t files;                  // expands hashes to files
+  };
+  virtual const set_t *get_backup_set () const { return NULL; }
+
+  vec<str> rootfiles;     // all pub rootfiles (V1)
+  bhash<str> rfbh;        // rootfile bhash (V1)
+  bhash<str> crfbh;       // config rootfile bhash (V1)
+  set_t *set;             // working set of files (V1)
+  vec<pfnm_t> parsequeue; // for synchronous file exploration (V1)
+  bool rebind;            // manage binding tables locally (V1)
+
+  str homedir;
+};
+
+// V1 cruft
+class pub_client_t : public pub_t 
+{
+public:
+  pub_client_t () : pub_t (), nset (NULL) {}
+  void explore (const pfnm_t &fn) const;
+  static pub_client_t *alloc ();
+  virtual const set_t *get_backup_set () const { return nset; }
+  set_t *nset;
+};
+
+// V1 cruft
+class pub_rclient_t : public pub_client_t
+{
+public:
+  pub_rclient_t (ptr<aclnt> c, int lm, int gfm, int pcm, u_int am = ~0, 
+		 u_int om = 0) 
+    : pub_client_t (), clnt (c), lookup_mthd (lm), getfile_mthd (gfm),
+      pubconf_mthd (pcm), running (false), nreq (0), init (false), 
+      andmask (am), ormask (om) 
+  { 
+    set_homedir ("/"); 
+  }
+  void publish (pubrescb c) { publish (rootfiles, c); }
+  void publish (const vec<str> &files, pubrescb c);
+  void publish (const xpub_fnset_t &files, pubrescb c);
+  void config (pubrescb c) { r_config (c, pubconf_mthd, clnt); }
+  static pub_rclient_t *alloc (ptr<aclnt> c, int lm, int gm, int cm,
+			       u_int am = ~0, u_int = 0);
+
+  struct waiter_t {
+    waiter_t (const vec<str> &f, pubrescb c) 
+      : files (f), cb (c) {}
+    vec<str> files;
+    pubrescb cb;
+  };
+  u_int fixopts (u_int in) const { return ((in & andmask) | ormask); }
+
+private:
+
+  void getfile (const pfnm_t &fn);
+  void lookup (const pfnm_t &fn, bindcb c);
+  void lookedup (pfnm_t fn, ptr<xpub_lookup_res_t> xr, clnt_stat err);
+  void getfile_lookedup (pbinding_t *bnd);
+  void getfile (pbinding_t *bnd);
+  void gotfile (ptr<xpub_getfile_res_t> xr, pbinding_t *bnd, clnt_stat err);
+  void finish_req ();
+  void finish_publish ();
+  bool new_set ();
+  void explore (const pfnm_t &fn) const;
+
+  ptr<aclnt> clnt;
+  const int lookup_mthd;
+  const int getfile_mthd;
+  const int pubconf_mthd;
+  ptr<pub_res_t> res;
+  vec<waiter_t *> waiters;
+  bhash<phashp_t> getfile_hold;
+  holdtab_t<pfnm_t, bindcb, pbinding_t *> holdtab;
+  pubrescb::ptr cb;
+  bool running;
+  int nreq;
+  bool init;
+  u_int andmask;
+  u_int ormask;
+};
+
+// V1 cruft
+class pub_proxy_t : public pub_base_t 
+{
+public:
+  pub_proxy_t () 
+    : pub_base_t (), bindings (wrap (this, &pub_proxy_t::remove)) {}
+  static pub_proxy_t *alloc ();
+  bool lookup (const xpub_fn_t &f, xpub_lookup_res_t *res);
+  bool getfile (const phashp_t &h, xpub_getfile_res_t *res);
+  void cache (const xpub_set_t &st);
+  void cache (ptr<xpub_file_t> res);
+  void cache (const xpub_file_t &f);
+  void cache (const xpub_pbinding_t &bnd);
+  void cache (const pfnm_t &fn, phashp_t hsh);
+  void cache_pubconf (const xpub_file_t &f);
+  ptr<xpub_file_t> get_pubconf () const { return pconf; }
+  void clear ();
+  void remove (phashp_t h);
+  bpfcp_t v_getfile (const pfnm_t &nm) const;
+  void gc_orphans ();
+  void gc_files_iterator (bhash<phashp_t> *in_use, const phashp_t &key,
+			  ptr<xpub_file_t> *dummy);
+
+protected:
+  void v_config_cb (const xpub_file_t &x) { cache_pubconf (x); }
+
+private:
+  bindtab_t bindings;
+  ptr<xpub_file_t> pconf;
+  qhash<phashp_t, ptr<xpub_file_t> > files;
+  qhash<phashp_t, ptr<xpub_file_t> > recycle;
+  mutable qhash<pfnm_t, bpfcp_t> my_cache;
+};
+
+
+// V1 and V2; still useful; interface with lex/yacc and parse incoming
+// pub-formatted files
+class pub_parser_t : public pub_t 
 {
 public:
   pub_parser_t (bool exp = false) 
-    : pub_base_t (exp ? P_EXPORTER : 0), 
-      tag (NULL), 
+    : pub_t (exp ? P_EXPORTER : 0), gvars (NULL), tag (NULL), 
       lasttag (NULL), 
-      space_flag (false), 
-      xset_collect (false), 
-      jaildir (""), 
-      jailed (false), 
-      jm (JAIL_NONE) {}
-
-  void set_homedir (const str &d) { homedir = dir_standardize (d); }
-  pfnm_t apply_homedir (const pfnm_t &n) const;
+      space_flag (false), xset_collect (false), 
+      jaildir (""), jailed (false), jm (JAIL_NONE) {}
   
   static pub_parser_t *alloc (bool exp = false);
+  bool init (const str &fn);
+  bpfcp_t parse_config (const str &fn, bool init = true);
+  bpfcp_t parse (const pbinding_t *bnd, pfile_type_t t);
   void pwarn (const strbuf &b) ;
 
   void push_file (bpfmp_t f) { if (bpf) stack.push_back (bpf); bpf = f; }
   void pop_file ();
   void dump_stack ();
 
+  bool do_explore () const { return (!(get_opts () & P_EXPLORE_OFF)); }
   bool is_exporter () const { return (get_opts () & P_EXPORTER); }
-  bool do_wss () const { return (get_opts () & P_WSS); }
-  bool be_verbose () const { return (get_opts () & P_VERBOSE); }
 
-  penv_t *get_env () const { return &genv; }
-  const penv_t *get_const_env () const { return &genv; }
-
+  void init_set () { xset.clear (); xset_collect = true; }
   void export_set (xpub_set_t *xs);
   void setprivs (str jd, str un, str gn);
   void setjail (str jd, bool permissive = false);
@@ -1521,12 +1907,17 @@ public:
   void lock_in_jail () { jailed = true; }
   void free_from_jail () { if (!(get_opts() & P_DAEMON)) jailed = false; }
   bool behind_bars () const { return (get_opts() & P_DAEMON) || jailed; }
+
+  pbinding_t *to_binding (const pfnm_t &fn, set_t *s = NULL, 
+			  bool toplev = false);
   void push_parr (ptr<parr_t> a);
   ptr<parr_t> pop_parr ();
 
-  xpub_version_t get_version () const { return XPUB_V2; }
   void set_jailmode (jail_mode_t j) { jm = j; }
   jail_mode_t get_jailmode () const { return jm ; }
+
+  xpub_version_t get_include_version () const 
+  { return ((get_opts () & P_INCLUDE_V2) ? XPUB_V2 : XPUB_V1); }
 
   //
   // manipulate the stack of functions
@@ -1534,7 +1925,6 @@ public:
   pfile_func_t *top_func () { return _func_stack.back (); }
   void push_func (pfile_func_t *f) { _func_stack.push_back (f); }
   pfile_func_t *pop_func () { return _func_stack.pop_back (); }
-  pbinding_t *to_binding (const pfnm_t &fn);
 
   str complete_fn (const str &in) const;
 
@@ -1545,6 +1935,7 @@ public:
   ptr<parr_t> parr;
   concatable_str_t *str1;
   bpfmp_t bpf;
+  gvars_t *gvars;
   vec<pfile_func_t *> _func_stack;
   pfile_html_tag_t *tag, *lasttag;
 
@@ -1557,6 +1948,8 @@ public:
 
   ptr<xpub_getfile_res_t> defconf;
 private:
+  bpfcp_t parse1 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t);
+  bpfcp_t parse2 (const pbinding_t *bnd, pfile_sec_t *ss, pfile_type_t);
   vec<bpfmp_t> stack;
   vec<bpfcp_t> xset;
   bool xset_collect;
@@ -1564,18 +1957,28 @@ private:
   bool jailed;
   jail_mode_t jm;
   vec<ptr<parr_t> > parr_stack;
-  str homedir;
 };
 
-extern pub_parser_t *global_parser;
+class cfgw_t {
+public:
+  cfgw_t (pub_t *p) : pubp (p) {}
+  pval_w_t operator[] (const str &s) const { return (*pubp)[s]; }
+private:
+  pub_t *pubp;
+};
+
+extern pub_parser_t *parser;
+extern pub_t *pub;
+extern pub_client_t *pcli;
+extern pub_base_t *pubincluder;
 
 #define TEE(b,s)  b << s; warn << s;
   
 void 
 pfile_sec_t::apply_space ()
 {
-  if (global_parser->space_flag) {
-    global_parser->space_flag = false;
+  if (parser->space_flag) {
+    parser->space_flag = false;
     add (' ');
   }
 }
@@ -1584,7 +1987,7 @@ void
 pfile_sec_t::hadd_space ()
 {
   if (!yywss) add (' ');
-  else global_parser->space_flag = true;
+  else parser->space_flag = true;
 }
 
 void
@@ -1592,7 +1995,7 @@ pfile_html_sec_t::hadd_space ()
 {
   if (!yywss) add (' ');
   else if (nlgobble) nlgobble = false;
-  else global_parser->space_flag = true;
+  else parser->space_flag = true;
 }
 
 void

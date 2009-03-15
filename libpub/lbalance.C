@@ -102,8 +102,7 @@ lblnc_tab_t::add (lblnc_node_t *n)
     alive.push_back (n);
 }
 
-lblnc_t::lblnc_t (pub_config_iface_t *pub, const str &nm, 
-		  const rpc_program &rp,
+lblnc_t::lblnc_t (pub_t *pub, const str &nm, const rpc_program &rp,
 		  int port) 
   : helper_base_t (), name (nm), prog (rp), dcb (NULL)
 {

@@ -60,6 +60,10 @@
 #define HTTP_CONNECTION_FAILED 601
 #define HTTP_CLIENT_BAD_PROXY 602
 #define HTTP_SERVER_SHUTDOWN 603
+#define HTTP_DNS_FAILED 604
+#define HTTP_PIPELINE_EOF 605
+#define HTTP_PIPELINE_CLEAN_TIMEOUT 606
+#define HTTP_NO_STATUS 0
 
 #define HTTP_CRLF "\r\n"
 
@@ -69,5 +73,10 @@ typedef enum {
 } rfc_number_t;
 
 const char *rfc_date_fmt (rfc_number_t rfc);
+
+namespace httpconst {
+  bool is_redirect (int status);
+  bool is_error (int status);
+};
 
 #endif /* _LIBAHTTP_HTTPCONST */

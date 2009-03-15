@@ -115,6 +115,7 @@ public:
   void set_stm () const;
   void to_strbuf (strbuf *b, bool quotes) const;
   void to_strbuf (strbuf *b, bool quotes, long gmt_off) const;
+  void clear ();
 
   bool valid() const;
 		

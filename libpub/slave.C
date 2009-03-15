@@ -191,6 +191,7 @@ helper_exec_t::launch (cbb c)
     axprt_unix_aspawnv (prog, argv, ok_axprt_ps, 
 			wrap (this, &helper_exec_t::setprivs),
 			_env ? *_env : static_cast<char *const *> (NULL));
+  _pid = axprt_unix_spawn_pid;
   fd = ux->getfd ();
   x = ux;
 
@@ -592,4 +593,39 @@ status2str (hlp_status_t st)
   }
 #undef D
 }
+
+//-----------------------------------------------------------------------
+
+bool
+helper_exec_t::make_pidfile (const str &f)
+{
+  bool ret = false;
+  if (_pid == 0) {
+    warn << "No PID for process given!\n";
+    errno = EINVAL;
+  } else {
+    strbuf b;
+    b << _pid;
+    str s = b;
+    if ((ret = str2file (f, s, 0644))) {
+      _pidfile = f;
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool 
+helper_exec_t::remove_pidfile ()
+{
+  bool ret = true;
+  if (_pidfile) {
+    int rc = unlink (_pidfile.cstr ());
+    ret = (rc == 0);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
 

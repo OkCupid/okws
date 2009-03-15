@@ -74,8 +74,7 @@ private:
 
 class lblnc_t : public helper_base_t {
 public:
-  lblnc_t (pub_config_iface_t *pub, const str &i, const rpc_program &rp, 
-	   int port = -1) ;
+  lblnc_t (pub_t *pub, const str &i, const rpc_program &rp, int port = -1) ;
   virtual ~lblnc_t () {}
   void launch (cbv::ptr c);
   void connect (cbb::ptr c);

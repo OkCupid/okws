@@ -40,10 +40,9 @@ cgi_mpfd_t::match (const http_inhdr_t &hdr, str *bndry)
 }
 
 cgi_mpfd_t *
-cgi_mpfd_t::alloc (abuf_t *a, u_int len, const str &b)
+cgi_mpfd_t::alloc (abuf_t *a, size_t len, const str &b)
 {
-  char *buf = (char *)xmalloc (len);
-  cgi_mpfd_t *r = New cgi_mpfd_t (a, len, buf);
+  cgi_mpfd_t *r = New cgi_mpfd_t (a, ok::alloc_nonstd_scratch (len));
   r->add_boundary (b);
   return r;
 }
@@ -295,7 +294,7 @@ cgi_mpfd_t::match_boundary (str *dat)
     cbm = boundaries.back ();
     cbm->reset ();
     if (dat)
-      abuf->mirror (buf, buflen);
+      abuf->mirror (_scratch->buf (), _scratch->len ());
   }
 
   int ch;
@@ -346,7 +345,6 @@ mpfd_ktmap_t::lookup (const str &s) const
 
 cgi_mpfd_t::~cgi_mpfd_t ()
 {
-  xfree (buf);
   while (boundaries.size ())
     remove_boundary ();
 }

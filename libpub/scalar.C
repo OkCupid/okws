@@ -3,10 +3,10 @@
 #include "parseopt.h"
 
 scalar_obj_t::_p_t::_p_t () 
-  : _double_cnv (CNV_NONE), _int_cnv (CNV_NONE) {}
+  : _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE) {}
 
 scalar_obj_t::_p_t::_p_t (const str &s)
-  : _s (s), _double_cnv (CNV_NONE), _int_cnv (CNV_NONE) {}
+  : _s (s), _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE) {}
 
 int64_t 
 scalar_obj_t::_p_t::to_int64 () const
@@ -18,6 +18,16 @@ scalar_obj_t::_p_t::to_int64 () const
   return _i;
 }
 
+u_int64_t 
+scalar_obj_t::_p_t::to_uint64 () const 
+{
+  if (_uint_cnv == CNV_NONE) {
+    _u = 0;
+    _uint_cnv = (_s && to_uint64 (&_u)) ? CNV_OK : CNV_BAD;
+  }
+  return _u;
+}
+
 bool
 scalar_obj_t::_p_t::to_int64 (int64_t *out) const
 {
@@ -27,6 +37,16 @@ scalar_obj_t::_p_t::to_int64 (int64_t *out) const
     return true;
   }
   return false;
+}
+
+bool
+scalar_obj_t::_p_t::to_uint64 (u_int64_t *out) const
+{
+  bool ret = false;
+  if (_s) {
+    ret = convertuint (_s, out);
+  }
+  return ret;
 }
 
 int
@@ -176,6 +196,19 @@ scalar_obj_t::_p_t::clear ()
   _d = 0.0;
   _i = 0;
   _double_cnv = _int_cnv = CNV_NONE;
+}
+
+bool
+convertuint (const str &s, u_int64_t *out)
+{
+  bool ret = false;
+  char *ep;
+  u_int64_t v = strtoull (s, &ep, 0);
+  if (ep && *ep == '\0') {
+    *out = v;
+    ret = true;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

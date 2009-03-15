@@ -43,6 +43,12 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_NULL:
     sbp->reply (NULL);
     break;
+  case OKMGR_REPUB:
+    repub (sbp, 1);  // version # == 1
+    break;
+  case OKMGR_REPUB2:
+    repub (sbp, 2);  // version # == 2
+    break;
   case OKMGR_RELAUNCH:
     relaunch (sbp);
     break;
@@ -55,6 +61,12 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_CUSTOM_2:
     myokd->custom2_in (sbp);
     break;
+  case OKMGR_LEAK_CHECKER:
+    myokd->toggle_leak_checker (sbp);
+    break;
+  case OKMGR_PROFILER:
+    myokd->toggle_profiler (sbp);
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;
@@ -66,6 +78,21 @@ okd_mgrsrv_t::relaunch (svccb *sbp)
 {
   ok_progs_t *p = sbp->Xtmpl getarg<ok_progs_t> ();
   myokd->relaunch (*p, wrap (replystatus, sbp));
+}
+
+void
+okd_mgrsrv_t::repub (svccb *sbp, int v)
+{
+  if (!myokd->supports_pub1 ()) {
+    warn << "Pub v1 disabled; cannot serve REPUB RPCs.\n";
+    sbp->reject (PROC_UNAVAIL);
+  } else {
+    xpub_fnset_t *r = sbp->Xtmpl getarg<xpub_fnset_t> ();
+    if (v == 1) 
+      myokd->repub (*r, wrap (replystatus, sbp));
+    else
+      myokd->repub2 (*r, wrap (replystatus, sbp));
+  }
 }
 
 void

@@ -36,9 +36,7 @@
 #include "pslave.h"
 #include "pubutil.h"
 #include "mpfd.h"
-
-#define HTTP_PARSE_BUFLEN 0x4000
-#define HTTP_PARSE_BUFLEN2 0x1000
+#include "okscratch.h"
 
 //
 // http_parser_base_t -- high level parsing object for HTTP requests;
@@ -46,18 +44,15 @@
 //
 class http_parser_base_t {
 public:
-  http_parser_base_t (ptr<ahttpcon> xx, u_int to) 
-    : _parser_x (xx), abuf (New abuf_con_t (xx), true),
-      timeout (to ? to : ok_clnt_timeout),
-      buflen (HTTP_PARSE_BUFLEN), tocb (NULL),
-      destroyed (New refcounted<bool> (false)) {}
+  http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b) ;
   virtual ~http_parser_base_t ();
 
   str operator[] (const str &k) const { return hdr_cr ().lookup (k); }
   virtual http_inhdr_t *hdr_p () = 0;
   virtual const http_inhdr_t &hdr_cr () const = 0;
   ptr<ahttpcon> get_x () const { return _parser_x; }
-  abuf_t *get_abuf_p () { return &abuf; }
+  abuf_t *get_abuf_p () { return _abuf; }
+  virtual int v_timeout_status () const { return HTTP_TIMEOUT; }
 
   void short_circuit_output ();
 
@@ -74,20 +69,20 @@ protected:
 private:
   ptr<ahttpcon> _parser_x;
 protected:
-  abuf_t abuf;
+  abuf_t *_abuf;
+  bool _del_abuf;
   u_int timeout;
   size_t buflen;
-  char scratch[HTTP_PARSE_BUFLEN];
   timecb_t *tocb;
   cbi::ptr cb;
   ptr<bool> destroyed;
+  bool _parsing_header;
+  ptr<ok::scratch_handle_t> _scratch;
 };
 
 class http_parser_raw_t : public http_parser_base_t {
 public:
-  http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0)
-    : http_parser_base_t (xx, to), 
-      hdr (&abuf, NULL, NULL, buflen, scratch) {}
+  http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL);
 
   http_inhdr_t *hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
@@ -106,21 +101,17 @@ public:
  */
 class http_parser_full_t : public http_parser_base_t {
 public:
-  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0)
-    : http_parser_base_t (xx, to), buflen2 (HTTP_PARSE_BUFLEN2),
-      cookie (&abuf, true, buflen2, scratch2),
-      url (&abuf, false, buflen2, scratch2),
-      hdr (&abuf, &url, &cookie, buflen, scratch) 
-  {}
+  http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL);
   virtual ~http_parser_full_t () {}
 
   http_inhdr_t * hdr_p () { return &hdr; }
   const http_inhdr_t &hdr_cr () const { return hdr; }
   void finish2 (int s1, int s2);
 
-
-  cgi_t & get_cookie () { return cookie; }
-  cgi_t & get_url () { return url; }
+  cgi_t & get_cookie () { return *hdr.get_cookie (); }
+  const cgi_t & get_cookie () const { return *hdr.get_cookie (); }
+  cgi_t & get_url () { return *hdr.get_url (); }
+  ptr<cgi_t> get_url_p () { return hdr.get_url (); }
   http_inhdr_t & get_hdr () { return hdr; }
 
 protected:
@@ -128,24 +119,13 @@ protected:
   // called to prepare a parsing of a post body.
   cbi::ptr prepare_post_parse (int status);
 
-  size_t buflen2;
-  cgi_t cookie;
-  cgi_t url;
-  char scratch2[HTTP_PARSE_BUFLEN2];
-
 public:
   http_inhdr_t hdr;
 };
 
 class http_parser_cgi_t : public http_parser_full_t {
 public:
-  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0) :
-    http_parser_full_t (xx, to),
-    post (&abuf, false, buflen, scratch),
-    _union_cgi (&abuf, false, buflen, scratch),
-    mpfd (NULL),
-    mpfd_flag (false),
-    _union_mode (false) {}
+  http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) ;
   ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
 
   void v_cancel () { hdr.cancel (); post.cancel (); }
@@ -160,14 +140,20 @@ public:
   cgiw_t & get_cgi () { return cgi; }
 
   void set_union_mode (bool b);
+  int v_timeout_status () const;
+
+  cgi_t &cookie () { return get_cookie (); }
+  const cgi_t &cookie () const { return get_cookie (); }
 
 protected:
+  ptr<cgi_t> get_union_cgi ();
   cgi_t post;
   // In union CGI mode, both POST and GET variables are shoved into one place.
-  cgi_t _union_cgi;
+  ptr<cgi_t> _union_cgi;
 
   cgi_mpfd_t *mpfd;
   cgiw_t cgi;  // wrapper set to either url or post, depending on the method
+
 
 private:
   bool mpfd_flag;

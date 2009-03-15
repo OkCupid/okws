@@ -60,7 +60,7 @@ ServiceBin	svc
 ##
 ##	on the physical, unjailed file system.
 ##
-SocketDir	/sockets
+SocketDir	/var/run
 
 ##
 ## CoreDumpDir <dir>
@@ -123,7 +123,7 @@ ServiceGroup	www
 TopDir %%okwslibdir%%
 
 ##
-## PubdExecPath <path>
+## Pubd2ExecPath <path>
 ##
 ##   Tell okd where the Publishing Daemon (pubd) can be launched from.  Okd
 ##   will launch pubd prior to calling chroot, so the path should be relative
@@ -136,7 +136,7 @@ TopDir %%okwslibdir%%
 ##
 ##   Can specify with -f the configuration file pubd uses.
 ##
-PubdExecPath	pubd -f %%okwsconfdir%%/pub_config.dist
+Pubd2ExecPath	pubd -2 -f %%okwsconfdir%%/pub_config.dist
 
 ##
 ## OkdlogdExecPath <path>
@@ -265,7 +265,7 @@ OkMgrSocketAccessMode		0600
 ##
 Service		static		/static
 Service		xmlex		/xmlrc
-Service		simple		/simple
+Service     simple      /simple
 
 ##
 ## Gzip Compression Configuration
@@ -341,7 +341,16 @@ ClientTimeout	60
 ##   Limits amounts of data that a client is allowed to send; to stop
 ##   DOS attacks on memory. Specified in bytes.
 ##
-ChannelLimit 	262144     # 256k
+ChannelLimit 	 2097152   # 2M
+
+##
+## CgiValueLenLimit
+##
+##   Limits the maxlen of a CGI value read during parsing; again, to
+##   limit the damage of DOS mem attacks.  Specified in bytes. Should
+##   be less than ChannelLimit
+##
+CgiValueLenLimit  524288   # 512k
 
 ##
 ## FilterCGI

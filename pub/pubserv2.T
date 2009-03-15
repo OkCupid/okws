@@ -22,6 +22,7 @@
  *
  */
 #include "pubd2.h"
+#include "pubd.h"
 #include "puberr.h"
 
 namespace pubserv2 {
@@ -36,7 +37,7 @@ namespace pubserv2 {
   }
 
   srv_t::srv_t (ptr<axprt_stream> x, file_lookup_t *fl)
-    : local_publisher_t (global_parser, 0, fl),
+    : local_publisher_t (parser, 0, fl),
       _x (x), 
       _cli (aclnt::alloc (_x, pub_program_2)),
       _srv (asrv_delayed_eof::alloc (_x, pub_program_2, 
@@ -123,6 +124,7 @@ namespace pubserv2 {
   srv_t::getchunk (svccb *sbp)
   {
     RPC::pub_program_2::pub2_getchunk_srv_t<svccb> srv (sbp);
+
     xpub2_getchunk_arg_t *arg = srv.getarg ();
     xpub2_getchunk_res_t res;
     phashp_t h = phash_t::alloc (arg->hash);

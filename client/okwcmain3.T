@@ -20,9 +20,43 @@ static rxx url_rxx ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
 void
 usage ()
 {
-  warn << "usage: okwc [-t <timeout>] [-p <proxy>] <url> <post>\n";
+  warn << "usage: okwc [-t <timeout>] [-o <status>] [-p <proxy>] "
+       << "<url> [<post-file>]\n";
   exit (1);
 }
+
+//-----------------------------------------------------------------------
+
+class my_resp_t : public okwc3::resp_simple_t {
+public:
+  my_resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a, vec<int> s) 
+    : okwc3::resp_simple_t (x, a) 
+  {
+    _ok_status.insert (HTTP_OK);
+    for (size_t i = 0; i < s.size () ; i++) {
+      warn << "Add: " << s[i] <<"\n";
+      _ok_status.insert (s[i]);
+    }
+  }
+
+  bool do_get_body (int s) const { return _ok_status[s]; }
+  bhash<int> _ok_status;
+};
+
+//-----------------------------------------------------------------------
+
+class my_factory_t : public okwc3::obj_factory_t {
+public:
+  my_factory_t (vec<int> s) : _ok_status (s) {}
+
+  ptr<okwc3::resp_t> alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> a) 
+  { return New refcounted<my_resp_t> (x, a, _ok_status); }
+
+private:
+  vec<int> _ok_status;
+};
+
+//-----------------------------------------------------------------------
 
 tamed static void
 main2 (int argc, char **argv)
@@ -35,19 +69,23 @@ main2 (int argc, char **argv)
     str port_str;
     str filename;
     ptr<okwc3::agent_get_t> cli;
-    ptr<okwc3::resp_simple_t> resp;
+    ptr<okwc3::resp_t> resp;
     int status (HTTP_TIMEOUT);
     str prx;
     str connect_to;
     int ch;
     int timeout (-1);
     bool https (false);
+    vec<str> extra_headers;
+    vec<int> ok_status;
+    int tmp;
+    ptr<my_factory_t> factory;
   }
 
   okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
 
-  while ((ch = getopt (argc, argv, "t:p:")) != -1) {
+  while ((ch = getopt (argc, argv, "t:p:h:o:")) != -1) {
     switch (ch) {
     case 't':
       if (!convertint (optarg, &timeout))
@@ -56,10 +94,22 @@ main2 (int argc, char **argv)
     case 'p':
       prx = optarg;
       break;
+    case 'h':
+      extra_headers.push_back (optarg);
+      break;
+    case 'o':
+      if (!convertint (optarg, &tmp)) {
+	warn << "Bad status " << optarg << ": must be an int!\n";
+	usage ();
+      }
+      ok_status.push_back (tmp);
+      break;
     default:
       usage ();
     }
   }
+
+  factory = New refcounted<my_factory_t> (ok_status);
 
   argc -= optind;
   argv += optind;
@@ -86,7 +136,11 @@ main2 (int argc, char **argv)
   }
 
   if (argc == 2) {
-    post = argv[2];
+    str file = argv[1];
+    if (!(post = file2str (file))) {
+      warn ("Cannot open post file %s: %m\n", file.cstr ());
+      usage ();
+    }
     typ = "application/x-www-form-urlencoded";
   }
 
@@ -100,16 +154,19 @@ main2 (int argc, char **argv)
   }
 
   if (prx) {
-    cli = New refcounted<okwc3::agent_get_proxied_t> (hostname, port);
+    cli = New refcounted<okwc3::agent_get_proxied_t> (hostname, port, https, 
+						      factory);
   } else {
     filename = url_rxx[6];
-    cli = New refcounted<okwc3::agent_get_direct_t> (hostname, port);
+    cli = New refcounted<okwc3::agent_get_direct_t> (hostname, port, https,
+						     factory);
   }
 
   twait { 
     cli->get (filename, 
 	      connector::timeout (mkevent (status, resp), timeout),
-	      1, NULL, https);
+	      1, NULL, 
+	      post, &extra_headers);
   }
 
   aout << "status: " << status << "\n";
@@ -118,6 +175,9 @@ main2 (int argc, char **argv)
   } else if (resp && resp->body ())
     aout << "\nbody: " << resp->body () << "\n";
 
+  // delay to find any bugz
+  twait { delaycb (2, 0, mkevent ()); }
+
   exit (0);
 }
 
@@ -125,6 +185,8 @@ main2 (int argc, char **argv)
 int 
 main (int argc, char *argv [])
 {
+  set_debug_flags ();
   main2 (argc, argv);
   amain ();
 }
+

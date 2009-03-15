@@ -105,6 +105,18 @@ static str strip_zero(const str& s)
 }
 
 void
+okdate_t::clear ()
+{
+  sec = min = hour = mday = mon = year = 0;
+  err = false;
+  memset (&stm, 0, sizeof (stm));
+  dt_tm = 0;
+  stm_set = false;
+  time_t_set = false;
+  time_t_val = false;
+}
+
+void
 okdate_t::set (const str &s)
 {
   if (!s || !date_rxx.match (s)) {
@@ -136,23 +148,43 @@ okdate_t::set (const str &s)
 bool
 okdate_t::set (const str &s, long gmt_off)
 {
-  if (!s || !date_rxx.match (s) || !date_rxx[1] || !date_rxx[5]) {
+  if (!s || !date_rxx.match (s)) { 
     err = true;
   } else {
     struct tm t;
+    memset (&t, 0, sizeof (t));
+    bool time = false;
+    err = false;
 
-    bool ok = convertint (strip_zero(date_rxx[2]), &t.tm_year) &&
-      convertint (strip_zero(date_rxx[3]), &t.tm_mon) &&
-      convertint (strip_zero(date_rxx[4]), &t.tm_mday) &&
-      convertint (strip_zero(date_rxx[6]), &t.tm_hour) &&
-      convertint (strip_zero(date_rxx[7]), &t.tm_min) &&
-      convertint (strip_zero(date_rxx[8]), &t.tm_sec);
-    assert (ok);
+    if (date_rxx[1]) {
+      bool ok = 
+	convertint (strip_zero(date_rxx[2]), &t.tm_year) &&
+	convertint (strip_zero(date_rxx[3]), &t.tm_mon) &&
+	convertint (strip_zero(date_rxx[4]), &t.tm_mday);
+      assert (ok);
+    }
+    
+    if (date_rxx[5]) {
+      time = true;
+      bool ok = 
+	convertint (strip_zero(date_rxx[6]), &t.tm_hour) &&
+	convertint (strip_zero(date_rxx[7]), &t.tm_min) &&
+	convertint (strip_zero(date_rxx[8]), &t.tm_sec);
+      assert (ok);
+    }
 
-    t.tm_year -= 1900;
-    t.tm_mon -= 1;
-    set (t, gmt_off);
+    if (time) {
+      t.tm_year -= 1900;
+      t.tm_mon -= 1;
+      set (t, gmt_off);
+    } else {
+      year = t.tm_year;
+      mon = t.tm_mon;
+      mday = t.tm_mday;
+      dt_tm |= OK_DATE;
+    }
   }
+
   return !err;
 }
 
@@ -180,10 +212,10 @@ okdate_t::set (const struct tm &s, long gmt_off)
   set (to_utc (s, gmt_off));
 }
 
-
 void
 okdate_t::set (time_t t)
 {
+  clear ();
   time_t_val = t;
   time_t_set = true;
   struct tm *stm = gmtime (&t);
@@ -225,6 +257,7 @@ void
 okdate_t::apply_gmt_off (long gmt_off)
 {
   struct tm t;
+  memset (&t, 0, sizeof (t));
   to_stm (&t);
   set (t, gmt_off);
 }

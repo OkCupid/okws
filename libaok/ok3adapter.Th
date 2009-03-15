@@ -1,0 +1,122 @@
+// -*-c++-*-
+/* $Id$ */
+
+#ifndef __LIBAOK_OK3ADATPER_H__
+#define __LIBAOK_OK3ADATPER_H__
+
+#include "ok.h"
+#include "ok3.h"
+
+//
+// What is this?
+//
+//   ok3adapter is a class that allows applications to be written
+//   agnostic to whether they are being used as an okclnt2_t or
+//   an okclnt3_t.  As designed, okclnt2_t is an inherently HTTP
+//   1.0 interface, with only one connection per client.  okclnt3_t
+//   is designed as a 1.1 interface, to allow pipelined connections
+//   per client. okclnt3_t has some special features for dealing
+//   with this sort of scenario and will eventually become the
+//   main request processing class for OKWS.  In this transitionary
+//   period, however, we want to allow both.  Hence this adapter
+//   class.
+
+//
+// Requirements-----
+//
+//  The programmer must implement a base class that fits the following
+//  general template:
+//
+//  template<class P, class S>
+//  class P : public virtual okrrp_interface_t {
+//  public:
+//      P (S *s);
+//      void process_impl (evi_t ev);
+//  };
+//
+//  Where S inherits from oksrvc_t;
+//
+//  She can then instantiate classes of the form:
+//
+//    okclnt2_apapter_t<P,S> 
+//    okclnt3_apapter_t<P,S> 
+//  
+//  Both of which implement the oksrvc_t::newclnt_t interface.
+//
+
+//-----------------------------------------------------------------------
+
+template<class P, class S>
+class okclnt2_adapter_t : public P, public okclnt2_t
+{
+public:
+  okclnt2_adapter_t (ptr<ahttpcon> x, S *s, u_int to)
+    : P (s),
+      okclnt2_t (x, s, to) {}
+
+  void process (proc_ev_t ev) { process_T (ev); }
+protected:
+  void process_T (proc_ev_t ev, CLOSURE);
+};
+
+//-----------------------------------------------------------------------
+
+template<class P, class S>
+class ok3rrp_adapter_t : public P, public okclnt3_t::rrpair_t 
+{
+public:
+  ok3rrp_adapter_t (S *s, ptr<okclnt3_t::req_t> req, 
+		    ptr<okclnt3_t::resp_t> resp)
+    : P (s),
+      okclnt3_t::rrpair_t (req, resp) {}
+};
+
+//-----------------------------------------------------------------------
+
+template<class P, class S>
+class okclnt3_adapter_t : public okclnt3_t
+{
+public:
+  okclnt3_adapter_t (ptr<ahttpcon> x, S *s, u_int to)
+    : okclnt3_t (x, s, to), _svc (s) {}
+
+  void process (ptr<req_t> req, ptr<resp_t> resp, evv_t ev)
+  { process_T (req, resp, ev); }
+
+protected:
+  void process_T (ptr<req_t> req, ptr<resp_t> resp, evv_t ev, CLOSURE);
+public:
+  S *_svc;
+};
+
+//-----------------------------------------------------------------------
+
+tamed template<class P, class S> void
+okclnt3_adapter_t<P,S>::process_T (ptr<okclnt3_t::req_t> req,
+				   ptr<okclnt3_t::resp_t> resp,
+				   evv_t ev)
+{
+  tvars {
+    ptr<ok3rrp_adapter_t<P,S> > rrp 
+      (New refcounted<ok3rrp_adapter_t<P,S> > (_self->_svc, req, resp));
+    int dummy;
+  }
+  twait { rrp->process_impl (mkevent (dummy)); }
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed template<class P, class S> void
+okclnt2_adapter_t<P,S>::process_T (okclnt2_t::proc_ev_t ev)
+{
+  tvars {
+    int status;
+  }
+  twait { P::process_impl (mkevent (status)); }
+  ev->trigger (true, status);
+}
+
+//-----------------------------------------------------------------------
+
+#endif /* __LIBAOK_OK3ADATPER_H__ */

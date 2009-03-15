@@ -38,7 +38,7 @@
 #define LOG_TIMEBUF_SIZE   64
 #define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
 #define LOG_BUF_DEFSIZE    0x10000
-#define LOG_BUF_MAXWRITE   0x400
+#define LOG_BUF_MAXWRITE   0x1000
 #define LOG_BUF_MAXLEN     0x800000
 #define LOG_BUF_TINYLEN    32
 #define LOG_BUF_HIGHWAT    0x7e00   // 2^15 - 512
@@ -84,9 +84,10 @@ private:
 
 class logbuf_t {
 public:
-  logbuf_t (u_int s = LOG_BUF_DEFSIZE, u_int h = LOG_BUF_HIGHWAT) 
+  logbuf_t (u_int s = LOG_BUF_DEFSIZE, u_int h = LOG_BUF_HIGHWAT)
     : sz (max (s, static_cast<u_int> (LOG_BUF_MINSIZE))),
-      bufs (sz, 3), okfl (true), hwat (h) { assert (getbuf ()); }
+      bufs (sz, ok_log_nbufs), 
+      okfl (true), hwat (h) { assert (getbuf ()); }
   ~logbuf_t () {}
 
   inline logbuf_t &time (const char *c, u_int len) { return bcpy (c, len); }
@@ -104,6 +105,8 @@ public:
   { return put (st).spc ().copy (http_status[st]); }
   inline logbuf_t &uid (u_int64_t i) { return put (i); }
   inline logbuf_t &inflated_len (size_t l) { return put ((unsigned int)l); }
+  inline logbuf_t &custom2 (const str &s) { return bcpy (s); }
+  inline logbuf_t &reqno (u_int n) { return put (n); }
 
   inline logbuf_t &bcpy (const char *c, u_int len);
   inline logbuf_t &qcpy (const char *c, u_int len);
@@ -152,9 +155,15 @@ private:
 class logd_parms_t {
 public:
   logd_parms_t () 
-    : user (ok_logd_uname), group (ok_logd_gname), svclog (true) {}
+    : user (ok_logd_uname), 
+      group (ok_logd_gname), 
+      pidfile (ok_logd_pidfile),
+      svclog (true) {}
   logd_parms_t (const str &p)
-    : user (ok_logd_uname), group (ok_logd_gname) { decode (p); }
+    : user (ok_logd_uname), 
+      group (ok_logd_gname),
+      pidfile (ok_logd_pidfile)
+  { decode (p); }
 
   void decode (const str &p);
   str encode () const;
@@ -166,6 +175,7 @@ public:
   str accesslog_fmt;
   str user;
   str group;
+  str pidfile;
   bool svclog;
 private:
   mutable str enc;
@@ -176,7 +186,8 @@ public:
   log_t (helper_t *hh) : h (hh) {}
   virtual ~log_t () { delete h; }
   virtual void connect (evb_t ev) { connect_T (ev); }
-  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
+		    http_response_base_t *res,
 		    const str &s) = 0;
   int getfd () const { return h->getfd (); }
   virtual void clone (cbi cb) { (*cb) (-1); }
@@ -194,16 +205,14 @@ public:
   rpc_log_t (helper_t *h) : log_t (h), logset (~0) {}
   rpc_log_t (const str &p) 
     : log_t (New helper_unix_t (oklog_program_1, p, HLP_OPT_QUEUE)) {}
-  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-	    const str &s) { log_T (x, req, res, s); }
+  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
+	    const str &s);
   virtual void connect (evb_t ev) { rpc_log_t::connect_T (ev); }
   void connect_cb1 (cbb cb, bool b);
   void connect_cb2 (cbb cb, clnt_stat err);
  
 protected:
   void connect_T (evb_t ev, CLOSURE);
-  void log_T (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-	      str s, CLOSURE);
   
 private:
   void logged (ptr<bool> b, clnt_stat err);
@@ -259,16 +268,17 @@ public:
     : log_t (New helper_fd_t (oklog_program_1, fd, "oklogd", 
 			      HLP_OPT_PING|HLP_OPT_NORETRY)),
       fmt (f), tmr (wrap (this, &fast_log_t::flush)) {}
-  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   void log_ssl (const str &i, const str &c, const str &m);
   void flush() { flush_T (); }
   void connect (evb_t ev) { connect_T (ev); }
 protected:
   bool past_high_water () const;
-  void add_access (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res);
-  void add_error (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-		  const str &aux);
+  void add_access (ref<ahttpcon> x, http_inhdr_t *req, 
+		   http_response_base_t *res);
+  void add_error (ref<ahttpcon> x, http_inhdr_t *req, 
+		  http_response_base_t *res, const str &aux);
   void add_ssl (const str &ip, const str &cipher, const str &msg);
   void add_notice (oklog_typ_t x, const str &ntc);
   void flush_T (CLOSURE);
@@ -283,7 +293,8 @@ logbuf_t &
 logbuf_t::copy (const char *c, u_int len)
 {
   if (len && c && cp) {
-    if (len < LOG_BUF_MAXWRITE && (cp + len <= ep || resize ())) {
+    if (len > LOG_BUF_MAXWRITE) len = LOG_BUF_MAXWRITE;
+    if (cp + len <= ep || resize ()) {
       memcpy (cp, c, len);
       cp += len;
       assert (cp <= ep);

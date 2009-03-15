@@ -53,7 +53,7 @@ main (int argc, char *argv[])
   mp[1] = 0x8b;
   mp[2] = 8;
   mp[9] = 0xff;
-  write (1, mp, 10);
+  rc_ignore (write (1, mp, 10));
   uLong crc = 0;
   Bytef *inb;
   uLong tot = 0;

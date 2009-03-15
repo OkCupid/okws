@@ -70,6 +70,7 @@ $a\
 / HAVE_RECENT_FLEX/b pdefine
 / HAVE_EXPAT/b pdefine
 / HAVE_SSL/b pdefine
+/ HAVE_LINUX_PRCTL_DUMP/b pdefine
 
 :skip
 d

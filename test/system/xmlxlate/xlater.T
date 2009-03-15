@@ -29,6 +29,9 @@
 #include <unistd.h>
 #include "tame.h"
 #include "rxx.h"
+
+#define ENABLE_XML_XDR
+
 #include "okxmlxlatemgr.h"
 #include "tstprot.h"
 

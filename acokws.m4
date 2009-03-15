@@ -62,6 +62,13 @@ case $with_mode in
 		CXXDEBUG='-g -O2'
 		;;
 
+	"hiperf" )
+		 sfstag=$with_mode
+		 okwstag=$with_mode
+		 DEBUG='-g -O3'
+		 CXXDEBUG='-g -O3'
+		 ;;
+
 	"pydbg" )
 		sfstag=$with_mode
 		okwstag=$with_mode
@@ -472,6 +479,7 @@ AC_DEFUN([OKWS_SSL],
 --with-ssl=DIR      Specify location of expat library)
 use_ssl=no
 LIBSSL=""
+sslbaselib="-lssl -lcrypto"
 if test "$with_ssl" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
@@ -508,8 +516,8 @@ if test "$with_ssl" != "no"; then
 		AC_CACHE_CHECK(for libssl, okws_cv_libssl,
 		[for dir in " " $dirs; do
 			case $dir in
-				" ") lflags="-lssl" ;;
-				*)   lflags="-L${dir} -lssl" ;;
+				" ") lflags="${sslbaselib}" ;;
+				*)   lflags="-L${dir} ${sslbaselib}" ;;
 			esac
 			LIBS="$ac_save_LIBS $lflags"
 			AC_TRY_LINK([#include <openssl/ssl.h>],
@@ -877,4 +885,38 @@ else
 	
 fi
 AM_CONDITIONAL(MAKE_OLD_FLEX, test ${current_flex} -eq 0)
+])
+
+ 
+dnl
+dnl Check for Linux prctl() to get coredumps after setuid/setgid
+dnl
+AC_DEFUN([OKWS_LINUX_PRCTL_DUMP],
+[
+AC_MSG_CHECKING(for Linux prctl(PR_SET_DUMPABLE))
+AC_TRY_COMPILE(
+[
+#include <sys/prctl.h>
+],
+[prctl(PR_SET_DUMPABLE, 1);],
+linux_prctl=yes, linux_prctl=no)
+if test "$linux_prctl" = "yes"
+then
+    AC_DEFINE([HAVE_LINUX_PRCTL_DUMP], [1], [prctl(PR_SET_DUMPABLE, 1) can be used])
+fi
+echo $linux_prctl
+])
+
+dnl
+dnl Find BISON in particular, not YACC
+dnl
+AC_DEFUN([OKWS_BISON],
+[AC_PROG_YACC
+echo "$YACC" | grep "bison" > /dev/null
+if test $? -ne 0
+then
+   AC_MSG_ERROR("Cannot find a working implementation of `bison'")
+fi
+BISON="$YACC"
+AC_SUBST(BISON)
 ])

@@ -269,7 +269,7 @@ namespace ok {
     vec<str> v;
     static rxx sep (";");
     static rxx pair ("([0-9]+)=([0-9]+)");
-    int lev, fd;
+    int lev (0), fd (0);
     bool ret = true;
     if (!s || s.len() == 0) {
       ret = true;

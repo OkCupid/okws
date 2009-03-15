@@ -1,5 +1,6 @@
 
 #include "pub.h"
+#include "pscalar.h"
 #include "parseopt.h"
 #include "okformat.h"
 
@@ -7,14 +8,28 @@
 ptr<pub_range_t>
 pub_range_t::alloc (const str &pat, const str &o, str *ep)
 {
-  static rxx ix ("\\[\\s*((-|0x)?\\d+)\\s*-\\s*((-|0x)?\\d+)\\s*\\]");
+  static rxx ix ("\\[\\s*((-|0x)?[0-9a-fA-F]+)\\s*-"
+		 "\\s*((-|0x)?[0-9a-fA-F]+)\\s*\\]");
+  static rxx ux ("\\[\\s*((0x)?[0-9a-fA-F]+)[uU]\\s*-"
+		 "\\s*((0x)?[0-9a-fA-F]+)[uU]\\s*\\s*\\]");
   static rxx dx ("\\[\\s*(-?[0-9.]+)\\s*-\\s*(-?[0-9.]+)\\s*\\]");
 
   ptr<pub_range_t> ret;
   str e;
 
-  if (ix.match (pat)) {
-    int64_t lo, hi;
+  if (ux.match (pat)) {
+    u_int64_t lo (0), hi (0);
+    if (!convertuint (ux[1], &lo))  {
+      e = strbuf ("Cannot convert low end of range (") << ux[1] << ")";
+    } else if (!convertuint (ux[3], &hi)) {
+      e = strbuf ("Cannot convert hi end of range (") << ux[3] << ")";
+    } else if (lo > hi) {
+      e = strbuf ("range impossible to satisfy (lo > hi)");
+    } else {
+      ret = New refcounted<pub_urange_t> (lo, hi);
+    }
+  } else if (ix.match (pat)) {
+    int64_t lo (0), hi (0);
     if (!convertint (ix[1], &lo)) {
       e = strbuf ("Cannot convert low end of range (") << ix[1] << ")";
     } else if (!convertint (ix[3], &hi)) {
@@ -25,7 +40,7 @@ pub_range_t::alloc (const str &pat, const str &o, str *ep)
       ret = New refcounted<pub_irange_t> (lo, hi);
     }
   } else if (dx.match (pat)) {
-    double lo, hi;
+    double lo (0.0), hi (0.0);
     if (!convertdouble(dx[1], &lo)) {
       e = strbuf ("Cannot convert low end of float-range (") << dx[1] << ")";
     } else if (!convertdouble (dx[2], &hi)) {
@@ -78,3 +93,21 @@ pub_range_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
   ps->add (to_str ());
 }
+
+str
+pub_urange_t::to_str () const 
+{
+  strbuf b ("Urange: [");
+  b << _low << ", " << _hi << "]";
+  return b;
+}
+
+bool
+pub_urange_t::match (scalar_obj_t so)
+{
+  u_int64_t u;
+  if (!so.to_uint64 (&u)) return false;
+  return (u >= _low && u <= _hi);
+}
+
+

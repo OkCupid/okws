@@ -150,7 +150,8 @@ okld_jailed_exec_t::chmod (int currmode)
   }
   strbuf b ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
 	    get_execpath ().cstr (), ustat.st_mode & 07777, mode);
-  okdbg_warn (CHATTER, b);
+  str s = b;
+  okdbg_warn (CHATTER, s);
   return true;
 }
 
@@ -212,7 +213,17 @@ okld_ch_t::launch (evv_t::ptr ev)
     return;
   }
 
-  // the first argument to aspawn ()...
+  _direct_ports.init (_svc_options.ports);
+  if (!_direct_ports.bind (servpath, okld->listenaddr)) {
+    strbuf b;
+    b << "cannot bind to all direct ports (" << servpath 
+      << "," << rexecpath << ")\n";
+    okdbg_warn (ERROR, b);
+    state = OKC_STATE_BADPORTS;
+    return;
+  }
+
+    // the first argument to aspawn ()...
   report_exe = exe = get_execpath ();
 
   // only do something in the case of a script; true => we are now
@@ -236,13 +247,24 @@ okld_ch_t::launch (evv_t::ptr ev)
     argv.push_back (args[i]);
 
   // per-service options might override global options here
-  _svc_options.apply_global_defaults ();
+  if (!_svc_options.apply_global_defaults (servpath)) {
+    strbuf b;
+    b << "cannot apply configuration parameters (" << servpath 
+      << "); aborting service\n";
+    okdbg_warn (ERROR, b);
+    state = OKC_STATE_BADPORTS;
+    return;
+  }
+    
 
   okld->env.insert ("lifereqs", _svc_options.svc_reqs, false);
   okld->env.insert ("lifetime", _svc_options.svc_time, false);
   okld->env.insert ("wss", _svc_options.wss, false);
   okld->env.insert ("caching", _svc_options.pub2_caching, false);
   okld->env.insert ("wfs", _svc_options.wait_for_signal, false);
+  okld->env.insert ("dps", _direct_ports.encode_as_str (), false);
+  okld->env.insert ("fdlw", _svc_options.lowat, false);
+  okld->env.insert ("fdhw", _svc_options.hiwat, false);
 
   argv.push_back (okld->env.encode ());
 
@@ -254,6 +276,9 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.remove ("wss");
   okld->env.remove ("caching");
   okld->env.remove ("wfs");
+  okld->env.remove ("dps");
+  okld->env.remove ("fdlw");
+  okld->env.remove ("fdhw");
 
   {
 
@@ -270,6 +295,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   pid = axprt_unix_spawn_pid;
   close (logfd);
   if (pub2fd >= 0) close (pub2fd);
+  _direct_ports.close ();
 
   if (!x) {
     warn << "HOSED: Cannot launch service: (" << servpath << "," 
@@ -308,6 +334,8 @@ okld_ch_t::launch (evv_t::ptr ev)
   if (ev)
     ev->trigger ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_ch_t::set_svc_ids ()
@@ -386,6 +414,8 @@ okld_jailed_exec_t::fix_exec ()
 {
   // force a redo in the case of resurrecting a new service!
   have_ustat = false;
+  if (_unsafe) 
+    return true;
   if (!get_unix_stat ())
     return false;
   if ((get_exec_uid () != exec_uid || get_exec_gid () != exec_gid) && 

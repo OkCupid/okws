@@ -5,6 +5,7 @@ struct tst2_data_t {
        x_okdate_t d;
        int      i;
        int      pk;
+       x_okdate_t d2;
 };
 
 struct tst2_put_arg_t {

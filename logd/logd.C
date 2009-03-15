@@ -71,8 +71,21 @@ void
 logd_t::shutdown ()
 {
   clone_server_t::close ();
+  clean_pidfile ();
   delete this;
   exit (0);
+}
+
+void
+logd_t::clean_pidfile ()
+{
+  if (_pidfile) {
+    const char *f = _pidfile;
+    int rc = unlink (f);
+    if (rc != 0) {
+      warn ("failed to clean pidfile ('%s'): %m\n", f);
+    }
+  }
 }
 
 void
@@ -87,11 +100,8 @@ logd_t::dispatch (svccb *sbp)
     log (sbp);
     break;
   case OKLOG_GET_LOGSET:
-    {
-      RPC::oklog_program_1::oklog_get_logset_srv_t<svccb> srv (sbp);
-      srv.reply (logset);
-      break;
-    }
+    sbp->replyref (logset);
+    break;
   case OKLOG_TURN:
     turn (sbp);
     break;
@@ -126,13 +136,9 @@ logd_t::slave_setup ()
 bool
 logd_t::logfile_setup (logfile_t **f, const str &log, const str &typ)
 {
-  str prfx;
-  if (!injail)
-    prfx = parms.logdir;
-
   assert (!*f);
   *f = New logfile_t ();
-  if ((*f)->open_verbose (log, typ, prfx)) {
+  if ((*f)->open_verbose (fixup_file (log), typ)) {
     return true;
   } else {
     delete *f;
@@ -184,27 +190,15 @@ logfile_t::flush (const str &x)
 }
 
 bool
-logfile_t::open_verbose (const str &n, const str &typ, const str &p)
+logfile_t::open_verbose (const str &n, const str &typ)
 {
-  if (n) fn = n;
-  if (!fn) {
+  if (!n) {
     warn << "no " << typ << " log specified\n";
     return false;
   }
-
-  str fullpath;
-  if (p) {
-    strbuf b (p);
-    if (p[p.len () - 1] != '/' && fn[0] != '/')
-      b << "/";
-    b << fn;
-    fullpath = b;
-  } else {
-    fullpath = fn;
-  }
     
-  if (!open (fullpath)) {
-    warn << "cannot open log file: " << fullpath << "\n";
+  if (!open (n)) {
+    warn << "cannot open log file: " << n << "\n";
     return false;
   }
   return true;
@@ -266,12 +260,33 @@ bool
 logd_t::setup ()
 {
   parse_fmt ();
-  if (!(perms_setup () && logfile_setup () && slave_setup () 
-	&& clone_server_t::setup ())) 
+  if (!(perms_setup () && 
+	logfile_setup () && 
+	pidfile_setup () && 
+	slave_setup () 
+	&& clone_server_t::setup ()))
     return false;
   timer_setup ();
+  
   running = true;
   return true;
+}
+
+bool
+logd_t::pidfile_setup ()
+{
+  _pidfile = fixup_file (parms.pidfile);
+
+  strbuf b;
+  bool ret = true;
+  const char *f = _pidfile;
+  strbuf b2;
+  b << getpid ();
+  if (!str2file (f, b, 0644)) {
+    warn ("Could not allocate pidfile ('%s'): %m\n", f);
+    ret = false;
+  }
+  return ret;
 }
 
 bool
@@ -291,6 +306,8 @@ logd_t::perms_setup ()
       if (chroot (parms.logdir) < 0) {
 	warn << "chroot to directory failed: " << parms.logdir << "\n";
 	return false;
+      } else {
+	rc_ignore (chdir ("/"));
       }
       injail = true;
     }
@@ -312,8 +329,10 @@ logd_t::flush ()
   if (running) {
     assert (error);
     assert (access);
+    assert (ssl);
     error->flush ();
     access->flush ();
+    ssl->flush ();
   }
 }
 
@@ -324,7 +343,7 @@ main (int argc, char *argv[])
   int ch;
   vec<str> hosts;
   vec<str> files;
-  int fdfd;
+  int fdfd (0);
   while ((ch = getopt (argc, argv, "s:?")) != -1)
     switch (ch) {
     case 's':
@@ -339,10 +358,16 @@ main (int argc, char *argv[])
 
   if (optind == argc) 
     usage ();
+ 
+  if (fdfd < 0) {
+    warn << "No -f parameter passed; one is required\n";
+    usage ();
+  }
 
   setsid ();
   warn ("OKWS version %s, pid %d\n", VERSION, int (getpid ()));
   glogd = New logd_t (argv[optind], fdfd);
+  sigcb (SIGHUP, wrap (glogd, &logd_t::handle_sighup));
   glogd->launch ();
   amain ();
 }
@@ -401,34 +426,53 @@ logd_t::error_log (const oklog_arg_t &x)
   return lb->ok ();
 }
 
-void
-logd_t::turn (svccb *sbp)
+bool
+logd_t::turn ()
 {
   bool ret = false;
-  RPC::oklog_program_1::oklog_turn_srv_t<svccb> srv (sbp);
 
   logfile_t *access2 = NULL;
   logfile_t *error2 = NULL;
   logfile_t *ssl2 = NULL;
 
-  if (logfile_setup (&access2, parms.accesslog, "access")) {
-    if (logfile_setup (&error2, parms.errorlog, "error")) {
-      if (logfile_setup (&ssl2, parms.errorlog, "ssl")) {
-	ret = true;
-	close_logfiles ();
-	access = access2;
-	error = error2;
-	ssl = ssl2;
-      }
-    } else {
-      delete access2;
-    }
-  } // else access2 autodeleted
+  if (logfile_setup (&access2, parms.accesslog, "access") &&
+      logfile_setup (&error2, parms.errorlog, "error") &&
+      logfile_setup (&ssl2, parms.errorlog, "ssl")) {
+
+    ret = true;
+    close_logfiles ();
+    access = access2;
+    error = error2;
+    ssl = ssl2;
+
+  } else {
+   
+    if (access2) delete access2;
+    if (error2) delete error2;
+    if (ssl2) return ssl2;
+  } 
+
+  // else access2 autodeleted
 
   if (!ret) 
     warn << "flush of logfiles failed; no changes made\n";
+  return ret;
+}
 
-  srv.reply (ret);
+void
+logd_t::turn (svccb *sbp)
+{
+  bool ret = turn ();
+  sbp->replyref (ret);
+}
+
+void
+logd_t::handle_sighup ()
+{
+  warn << "Received HUP signal (" << SIGHUP  << "); turning logs\n";
+  bool ret = turn ();
+  if (!ret) 
+    warn << "XX log turn failed!\n";
 }
 
 void
@@ -451,10 +495,9 @@ logd_t::fastlog (svccb *sbp)
 void
 logd_t::log (svccb *sbp)
 {
-  RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
   bool ret = true;
+  RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
   oklog_arg_t *la = srv.getarg ();
-
   switch (la->typ) {
   case OKLOG_OK:
     ret = access_log (*la->ok);
@@ -475,3 +518,26 @@ logd_t::log (svccb *sbp)
   }
   srv.reply (ret);
 }
+
+//-----------------------------------------------------------------------
+
+str
+logd_t::fixup_file (const str &s) const
+{
+  if (!s) return NULL;
+
+  str p = injail ? "/" : parms.logdir;
+
+  strbuf b ;
+  b << p;
+
+  if (p[p.len () - 1] != '/' && s[0] != '/')
+    b << "/";
+  b << s;
+
+  str ret = b;
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------

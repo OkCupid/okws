@@ -74,7 +74,7 @@ okclnt_tst2_t::process_T (okclnt2_t::proc_ev_t ev)
     adb_status_t res;
     clnt_stat err;
     okdate_t before (okwstime ());
-    okdate_t after;
+    okdate_t after, after2;
     str key;
   }
 
@@ -88,6 +88,7 @@ okclnt_tst2_t::process_T (okclnt2_t::proc_ev_t ev)
   before.to_xdr (&arg.data.d);
   arg.data.i = getpid ();
   arg.data.pk = 0;
+  before.to_xdr (&arg.data.d2);
 
   out << "<html><head><title>Test2</title></head></html>\n";
   out << "<body>\n";
@@ -104,10 +105,13 @@ okclnt_tst2_t::process_T (okclnt2_t::proc_ev_t ev)
       out << "<font color=red>Get error: " << int(gres.status) << "\n";
     } else {
       after.set (gres.dat->d);
+      after2.set (gres.dat->d2);
       str s1 = before.to_str ();
       str s2 = after.to_str ();
+      str s3 = after2.to_str ();
       out << "<b>before:</b> " << s1 << "\n<br>"
-	  << "<b>after:</b>  " << s2 << "\n<br>";
+	  << "<b>after1:</b>  " << s2 << "\n<br>"
+	  << "<b>after2:</b>  " << s3 << "\n<br>";
     }
   }
   out << "</body>\n"

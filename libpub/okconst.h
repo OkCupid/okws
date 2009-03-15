@@ -39,8 +39,8 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_PORT_MAX 65000
 #define OK_UID_MIN 100
 #define OK_UID_MAX 65000
-#define OK_RQSZLMT_MIN  1024
-#define OK_RQSZLMT_MAX  32*1024*1024
+#define OK_RQSZLMT_MIN  size_t (1024)
+#define OK_RQSZLMT_MAX  size_t (32*1024*1024)
 
 #define OK_MAX_URI_LEN 128
 
@@ -52,9 +52,8 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_SVC_FD_QUOTA_UL 0x100000
 #define OK_RSL_LL 0
 #define OK_RSL_UL 10240
-#define OK_SVC_FD_HIGH_WAT_UL 10240
-#define OK_SVC_FD_LOW_WAT_UL  10000
-
+#define OK_SVC_FD_HIGH_WAT_UL 102400
+#define OK_SVC_FD_LOW_WAT_UL  100000
 
 //
 // gzip parameters (see zstr.h)
@@ -100,6 +99,8 @@ extern const char *ok_pubobjname;
 //
 extern const char *ok_http_urlencoded;
 extern const char *ok_http_multipart;
+extern bool ok_http_parse_cookies;
+extern bool ok_http_parse_query_string;
 
 //
 // configfile constants
@@ -151,6 +152,7 @@ extern const char *ok_sockdir;                 // unix sockets available..
 extern const char *ok_okdexecpath;             // where okd lives
 extern const char *ok_jaildir_run;             // service rundir
 extern const char *ok_service_bin;             // where service exes live
+extern const char *ok_logd_pidfile;            // logfile for oklogd
 extern u_int ok_resurrect_delay;               // when a child dies..
 extern u_int ok_resurrect_delay_ms;            // in nanoseconds
 extern u_int ok_chld_startup_time;             // how long startup takes
@@ -204,6 +206,7 @@ extern u_int hlpr_max_qlen;                    // maximum # to q
 //
 extern u_int ok_log_tick;                       // how often log timer ticks
 extern u_int ok_log_period;                     // how many ticks to a flush
+extern u_int ok_log_nbufs;                      // how many buffers for the log
 extern str ok_syslog_priority;                  // syslog section
 extern str ok_syslog_domain;                    // domain for syslog
 extern str ok_access_log_fmt;                   // default log format
@@ -217,9 +220,12 @@ extern sfs_core::select_policy_t ok_sys_sel_policy;
 // service/client constants
 //
 extern u_int ok_clnt_timeout;                   // user timeout
-extern u_int ok_reqsize_limit;                  // maximum client req size
-extern u_int ok_hdrsize_limit;                  // biggest HTTP header allowed
-extern u_int ok_cgibuf_limit;                   // limit cgi buf for testing
+
+// MK 3/16/09: All sizes should be size_t's, but start on these
+// for now.
+extern size_t ok_hdrsize_limit;                 // biggest HTTP header allowed
+extern size_t ok_reqsize_limit;                 // maximum client req size
+extern size_t ok_cgibuf_limit;                  // limit cgi buf for testing
 
 //
 // Async-Multi-Threaded stuff
@@ -235,6 +241,13 @@ extern bool ok_amt_rpc_stats;                   // whether to turn on RPC stats
 extern u_int ok_amt_rpc_stats_interval;         // interval to printf
 
 //
+// HTTP constant stuff
+//
+extern size_t ok_http_inhdr_buflen_big;         // headers need to fit in here
+extern size_t ok_http_inhdr_buflen_sml;         // for sub-buffers
+extern size_t ok_dflt_cgibuf_sz;                // for small cgi static buffers
+
+//
 // Service UID Ranges
 //
 extern int ok_svc_uid_low;
@@ -247,6 +260,7 @@ extern int ok_script_mode;
 // OK Web Client params
 //
 extern int okwc_def_contlen;                     // when servers don't give it
+extern size_t okwc_scratch_sz;
 
 //
 // On most platforms these are 'root' and 'wheel' but not all!

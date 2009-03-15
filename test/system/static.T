@@ -124,7 +124,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     // XXX - test that it's OK to write to stdout.  This used to crash
     // the server!
     const char *test = "hello world!\n";
-    write (1, test, strlen (test));
+    rc_ignore (write (1, test, strlen (test)));
     first_time = false;
   }
 

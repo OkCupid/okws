@@ -33,17 +33,37 @@ void pstr_t::add (ptr<pvar_t> v) { add (New pstr_var_t (v)); n++; }
 void pstr_t::add (pstr_el_t *v) { els.insert_tail (v); n++; }
 void pfile_set_func_t::dump2 (dumper_t *d) const { if (aarr) aarr->dump (d); }
 aarr_t *pswitch_env_base_t::env () const { return aarr; }
+void bound_pfile_t::explore (pub_exploremode_t m) const
+{ if (file) file->explore (m); }
 str penv_t::loc (int l) const 
 { return file ? file->loc (l) : str("at top level"); }
 pfnm_t penv_t::filename () const { return file->bnd->filename (); }
 void bound_pfile_t::close () { file->close (); }
 output_std_t::output_std_t (zbuf *o, const pfile_t *t) :
-  output_t (t ? t->type () : PFILE_TYPE_H), out (o) {}
+  output_t (t ? t->type () : PFILE_TYPE_H), out (o), osink_open (false) {}
+output_conf_t::output_conf_t (bool d) 
+  : output_t (PFILE_TYPE_CONF), env (New refcounted<aarr_t> ()), dflag (d) {}
 void pbuf_t::add (zbuf *z) { add (New pbuf_zbuf_t (z)); }
 void pval_zbuf_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const 
 { ps->add (zb); }
 void penv_t::safe_push (ptr<const aarr_t> a) 
 { estack.push_back (a); hold.push_back (a); }
+
+static void
+explore (pub_exploremode_t mode, const pfnm_t &nm)
+{
+  switch (mode) {
+  case EXPLORE_PARSE:
+    pub->queue_hfile (nm);
+    break;
+  case EXPLORE_FNCALL:
+    pub->explore (nm);
+    break;
+  case EXPLORE_CONF:
+  default:
+    break;
+  }
+}
 
 pub_evalmode_t 
 penv_t::init_eval (pub_evalmode_t m)
@@ -52,6 +72,20 @@ penv_t::init_eval (pub_evalmode_t m)
   pub_evalmode_t r = evm;
   evm = m;
   return r;
+}
+
+void 
+pfile_include_t::explore (pub_exploremode_t mode) const
+{
+  ::explore (mode, fn);
+}
+
+void
+pfile_inclist_t::explore (pub_exploremode_t mode) const
+{
+  u_int lim = files.size ();
+  for (u_int i = 0; i < lim; i++)
+    ::explore (mode, files[i]);
 }
 
 void
@@ -84,10 +118,19 @@ penv_t::resize (size_t s)
 }
 
 void
-pfile_frame_t::push_frame (penv_t *p, aarr_t *f) const
+penv_t::gresize (size_t gvs)
+{
+  assert (gvs <= estack.size ());
+  while (gvs != gvars.size ())
+    gvars.pop_back (); // don't delete!!
+}
+
+void
+pfile_frame_t::push_frame (penv_t *p, aarr_t *f, const gvars_t *g) const
 {
   mark_frame (p);
   if (f) p->push (f);
+  if (g) p->push (g);
 }
 
 void
@@ -199,6 +242,44 @@ pfile_sec_t::add (pfile_sec_t *s)
 }
 
 void
+pfile_func_t::include (output_t *o, penv_t *g, aarr_t *e, const pfnm_t &nm)
+  const
+{
+  bpfcp_t f;
+  if (!o->descend ())
+    return;
+
+  if ((f = pub->getfile (nm))) {
+    push_frame (g, e);
+    bool tlf = g->set_tlf (false);
+    o->output_info (g, strbuf ("include: ") << f->filename (), lineno);
+    f->output (o, g);
+    o->output_info (g, strbuf ("/include: ") << f->filename (), lineno);
+    g->set_tlf (tlf);
+    pop_frame (o, g);
+  } else {
+    o->output_err (g, strbuf (nm) << ": cannot include file", lineno);
+  }
+}
+
+void
+pfile_include_t::output (output_t *o, penv_t *genv) const
+{
+  if (!fn) {
+    o->output_err (genv, "include: no file given", lineno);
+  } else {
+    include (o, genv, env, fn);
+  }
+}
+
+void
+pfile_include2_t::output (output_t *o, penv_t *genv) const
+{
+  o->output_err (genv, "include: can't call output on v2 include file", 
+		 lineno);
+}
+
+void
 bound_pfile_t::output (output_t *o, penv_t *genv) const
 {
   bpfcp_t rct = mkref (const_cast<bound_pfile_t *> (this));
@@ -265,6 +346,21 @@ evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const
     return eval_simple ();
   ptr<pbuf_t> st = eval_to_pbuf (e, m);
   return st->to_str (m, allownull);
+}
+
+void
+pfile_switch_t::output (output_t *o, penv_t *e) const
+{
+  ptr<pswitch_env_base_t> pse = eval_for_output (o, e);
+  // we might have given switch an empty file (so as to allow 
+  // the default to catch more stuff, for instance).
+  if (pse) {
+    if (pse->fn) {
+      include (o, e, pse->env (), pse->fn);
+    } else if (pse->nested_env ()) {
+      pse->nested_env ()->output (o, e);
+    }
+  }
 }
 
 void
@@ -346,6 +442,17 @@ aarr_t::add (nvpair_t *p)
 }
 
 void
+gcode_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
+{
+  if (e->get_tlf ()) 
+    ps->add (New pbuf_var_t (nm));
+  else {
+    str s = strbuf ("@{") << nm << "}";
+    ps->add (s);
+  }
+}
+
+void
 parr_mixed_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
   u_int lim = v.size ();
@@ -367,6 +474,10 @@ pub_regex_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 void
 pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
+  if (e->go_g_var (nm)) {
+    ps->add (New pbuf_var_t (nm));
+    return;
+  }
   const pval_t *pv;
   // for internal pvar_t (for instance, config variables), the pval_t was 
   // specified at initialization; this is a bit of a hack, but it should 
@@ -395,6 +506,18 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
   }
   if (popit)
     e->eval_pop (nm);
+}
+
+bool
+penv_t::go_g_var (const str &n) const
+{
+  switch (evm) {
+  case EVAL_FULL:
+  case EVAL_INTERNAL:
+    return false;
+  default:
+    return is_gvar (n);
+  }
 }
 
 const pval_t *
@@ -498,6 +621,17 @@ parr_mixed_t::eval_simple () const
   else return NULL;
 }
 
+void
+pfile_gs_t::output (output_t *o, penv_t *e) const
+{
+  frm.mark_frame (e);
+  e->aarr_n = 1;
+  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
+  els->output (o, e);
+  o->switch_mode (m);
+  e->needloc = true;
+  frm.pop_frame (o, e);
+}
 
 pfile_t::pfile_t (const phashp_t &h, pfile_type_t t)
   : err (PUBSTAT_OK), hsh (h), lineno (1), yybs (NULL), fp (NULL),
@@ -573,8 +707,10 @@ pfile_t::push_section (pfile_sec_t *s)
 bool
 concatable_str_t::concat (const str &s)
 {
-  sb << s; 
-  hold.push_back (s); 
+  if (s) {
+    sb << s; 
+    hold.push_back (s); 
+  }
   return true; 
 }
 
@@ -586,6 +722,51 @@ concatable_str_t::concat (concatable_t *l)
     return false;
   concat (s);
   return true;
+}
+
+bool
+pfile_g_init_pdl_t::add (ptr<arglist_t> l)
+{
+  if (l->size () != 1 || !(*l)[0]->is_null ()) {
+    PWARN("init_publist () takes no arguments");
+    err = true;
+  }
+  return (!err);
+}
+
+bool
+pfile_inclist_t::add (ptr<arglist_t> l)
+{
+  str fn;
+  pbinding_t *b = NULL;
+  if (!err) {
+    u_int lim = l->size ();
+    for (u_int i = 0; i < lim; i++) {
+      if (!(fn = (*l)[i]->eval ()) || fn.len () <= 0) {
+	PWARN ("Bad filename in inclist (" << ali << "," << i << ")");
+	err = true;
+      } else if (!(b = parser->to_binding (fn))) {
+	PWARN (fn << ": cannot access file");
+	err = true;
+      } else {
+	files.push_back (b->fn); // use completed filename
+	if (!pub->do_explore ())
+	  delete b;
+      }
+    }
+  }
+  ali++;
+  return (!err);
+}
+
+bool
+pfile_inclist_t::validate ()
+{
+  if (files.size () <= 0) {
+    PWARN ("No files given to inclist () command");
+    err = true;
+  }
+  return (!err);
 }
 
 bool
@@ -615,13 +796,49 @@ pfile_include2_t::add (ptr<arglist_t> l)
 }
 
 bool
-pfile_include2_t::add_base (ptr<arglist_t> l) 
+pfile_include_t::add_base (ptr<arglist_t> l) 
 {
   if (l->size () <= 0 || l->size () > 2) {
     PWARN("Wrong number of arguments to include");
     err = true;
   } else if (l->size () == 2 && !(env = (*l)[1]->to_aarr ())) {
     PWARN("Second argument to include must be an associative array");
+    err = true;
+  }
+  return (!err);
+}
+
+bool
+pfile_include_t::add (ptr<arglist_t> l)
+{
+  pbinding_t *b = NULL;
+  if (!err) {
+    if (fn) {
+      PWARN("Include tags only take one p-argument");
+      err = true;
+    } else if (!add_base (l)) {
+      err = true;
+    } else if (!(fn = (*l)[0]->eval ()) || fn.len () <= 0) {
+      PWARN("Bad filename in include");
+      err = true;
+    } else if (!(b = parser->to_binding (fn))) {
+      PWARN(fn << ": cannot access file");
+      err = true;
+    } else {
+      fn = b->fn; // use the completed filename
+      if (!pub->do_explore ())
+	delete b;
+    }
+  }
+
+  return (!err);
+}
+
+bool
+pfile_include_t::validate ()
+{
+  if (!fn) {
+    PWARN("No file to include");
     err = true;
   }
   return (!err);
@@ -749,12 +966,13 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
 	!(range = (*l)[0]->to_range ())) {
       PWARN("Cannot determine case key");
       err = true;
-    } else if (fn1 && !(b = global_parser->to_binding (fn1))) {
+    } else if (fn1 && !(b = parser->to_binding (fn1))) {
       PWARN(fn1 << ": cannot access file");
       err = true;
     } else if (b) {
       fn2 = b->fn;
-      delete b;
+      if (!pub->do_explore ())
+	delete b;
     }
   }
 
@@ -832,6 +1050,96 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   return (!err);
 }
 
+bool
+pfile_g_include_t::add (ptr<arglist_t> l)
+{
+  if (err)
+    return false;
+  if (l->size () < 1) {
+    PWARN("Wrong number of arguments to include");
+    err = true;
+  } else {
+    
+    // true if the last element is an associate array
+    bool last_aa = (*l)[l->size () - 1]->to_aarr ();
+
+    if ((last_aa && l->size () == 4) || (!last_aa && l->size () == 3)) {
+      if (!(pubobj = (*l)[0]->eval ()) || pubobj.len () <= 0) {
+	PWARN("Bad first argument to include; pub object expected");
+	err = true;
+      } else {
+	l->pop_front ();
+      }
+    } else {
+
+      //
+      // no first arg was given (which corresponds to the name of the 
+      // publishing object); thus, we'll just assume the default name.
+      //
+      pubobj = str (ok_pubobjname);
+    }
+
+    if (!err) {
+      bool ret = pfile_g_ctinclude_t::add (l);
+      if (ret)
+	PFILE->add_ifile (fn);
+      return ret;
+    }
+  }
+  return (!err);
+}
+
+bool
+pfile_g_ctinclude_t::add (ptr<arglist_t> l)
+{
+  if (err) 
+    return false;
+  if (l->size () != 3 && l->size () != 2) {
+    PWARN("Bad syntax in ct_include arguments");
+    err = true;
+  } else if (!(osink = (*l)[0]->eval ()) || osink.len () <= 0) {
+    PWARN("Invalid output sink given to ct_include function");
+    err = true;
+  } else if (!(fn = (*l)[1]->eval ()) || fn.len () <= 0) {
+    PWARN("No filename given for ct_include");
+    err = true;
+  } else if (l->size () == 3 && !(env = (*l)[2]->to_aarr ())) {
+    PWARN("Bad third argument given to ct_include; shoud be ass-arr");
+    err = true;
+  } else if (ct_read () && !parser->to_binding (fn)) {
+    PWARN(fn << ": cannot open file");
+    err = true;
+  }
+  return (!err);
+}
+
+void
+pfile_switch_t::explore (pub_exploremode_t mode) const
+{
+  str fn;
+  for (u_int i = 0; i < files.size (); i++) {
+    fn = files[i];
+    if (fn) ::explore (mode, fn);
+  }
+  if (def && (fn = def->filename ()))
+    ::explore (mode, fn);
+
+  if (nullcase && (fn = nullcase->filename ()))
+    ::explore (mode, fn);
+}
+
+void
+output_std_t::output_file_loc (penv_t *e, int lineno)
+{
+  if (lineno == 0)
+    lineno++;
+  pfile_type_t m = switch_mode (PFILE_TYPE_CODE);
+  str fn = e->filename ();
+  if (fn)
+    output (e, strbuf ("\n#line ") << lineno << " \"" << fn << "\"" << "\n");
+  switch_mode (m);
+}
+
 void
 output_std_t::output_raw (penv_t *e, const str &s)
 {
@@ -848,8 +1156,22 @@ output_std_t::output (penv_t *e, zbuf *zb, bool quoted)
   switch (mode) {
   case PFILE_TYPE_H:
   case PFILE_TYPE_WH:
+  case PFILE_TYPE_CODE:
     out->cat (*zb);
     break;
+  case PFILE_TYPE_WEC:
+  case PFILE_TYPE_EC:
+  case PFILE_TYPE_GUY:
+    {
+      vec<zstr> zs;
+      zb->to_zstr_vec (&zs);
+      u_int len = zs.size ();
+      for (u_int i = 0; i < len; i++) {
+	output (e, zs[i], quoted);
+      }
+    }
+    break;
+  case PFILE_TYPE_CONF:
   default:
     break;
   }
@@ -864,7 +1186,31 @@ output_std_t::output (penv_t *e, const zstr &s, bool quoted)
   switch (mode) {
   case PFILE_TYPE_H:
   case PFILE_TYPE_WH:
+  case PFILE_TYPE_CODE:
     *out << s;
+    break;
+  case PFILE_TYPE_WEC:
+  case PFILE_TYPE_EC:
+  case PFILE_TYPE_GUY: 
+    {
+      vec<str> ss;
+      assert (osink);
+      if (str_split (&ss, s, quoted)) {
+	for (u_int i = 0; i < ss.size (); i++) {
+	  if (osink_open) {
+	    if (i == 0) *out << "     << " << ss[i] << "\n";
+	    else        *out << "        " << ss[i] << "\n";
+	  } else {
+	    *out << "  " << osink << " << " << ss[i] << "\n";
+	    osink_open = true;
+	  }
+	}
+      } else {
+	output_err (e, "str_split failed");
+      }
+    }
+    break;
+  case PFILE_TYPE_CONF:
     break;
   default:
     break;
@@ -914,6 +1260,16 @@ void
 output_std_t::output_header (penv_t *e)
 {
   pfile_type_t om = mode;
+  if (mode == PFILE_TYPE_EC) 
+    mode = PFILE_TYPE_CODE;
+
+  if (mode == PFILE_TYPE_CODE) {
+    str fn = e->filename ();
+    output (e, strbuf () << "\n/*\n * Generated by pub from file: " << fn
+	    << "\n * DO NOT EDIT!!!\n" 
+	    << " */\n\n" );
+    e->needloc = true;
+  }
   mode = om;
 }
 
@@ -923,9 +1279,15 @@ output_std_t::output_info (penv_t *e, const str &s, int l)
   if (!e->output_info ())
     return;
   switch (mode) {
+  case PFILE_TYPE_EC:
+  case PFILE_TYPE_WEC:
   case PFILE_TYPE_H:
   case PFILE_TYPE_WH:
+  case PFILE_TYPE_GUY:
     output (e, strbuf () << "<!-- " << e->loc (l) << ": " << s << " -->");
+    break;
+  case PFILE_TYPE_CODE:
+    output (e, strbuf () << "/* " << e->loc (l) << ": " << s << " */\n");
     break;
   default:
     break;
@@ -951,10 +1313,21 @@ output_std_t::output_err (penv_t *e, const str &s, int l)
       warn << m << "\n";
       break;
     }
+  case PFILE_TYPE_GUY:
+  case PFILE_TYPE_CODE:
+  case PFILE_TYPE_EC:
+    e->compile_err (s);
+    break;
   default:
     warn << "Uncaught error (" << e->loc (l) << "): " << s << "\n";
     exit (1);
   }
+}
+
+void
+output_conf_t::output_err (penv_t *e, const str &s, int l)
+{
+  warn << "Conf file eval error (" << e->loc (l) << "): " << s << "\n";
 }
 
 void
@@ -967,6 +1340,32 @@ void
 output_std_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
 {
   s->output_runtime (e);
+}
+
+void
+output_conf_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
+{
+  s->output_config (e);
+}
+
+void
+pfile_g_ctinclude_t::output (output_t *o, penv_t *e) const
+{
+  e->needloc = true;
+  if (!osink) {
+    o->output_err (e, "no output sink given", lineno);
+    return;
+  }
+  o->output_file_loc (e, lineno);
+  
+  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
+  str oo = o->switch_osink (osink);
+
+  pfile_include_t::output (o, e);
+
+  o->switch_osink (oo);
+  o->switch_mode (m);
+
 }
 
 aarr_t &
@@ -988,6 +1387,67 @@ aarr_t::add (const str &n, const str &v)
 {
   add (New nvpair_t (n, New refcounted<pstr_t> (v)));
   return (*this);
+}
+
+void
+pfile_g_init_pdl_t::output (output_t *o, penv_t *e) const
+{
+  e->needloc = true;
+  vec<pfnm_t> v = file->get_ifiles ();
+  strbuf b ("\n");
+  u_int lim = v.size ();
+  for (u_int i = 0; i < lim; i++) {
+    if (i != 0) b << "\n";
+    b << "\tadd_pubfile (\"" << v[i] << "\");";
+  }
+  pfile_type_t m = o->switch_mode (PFILE_TYPE_CODE);
+  o->output (e, b);
+  o->switch_mode (m);
+}
+
+void
+pfile_g_include_t::output (output_t *o, penv_t *e) const
+{
+  e->needloc = true;
+  if (!pubobj) {
+    o->output_err (e, "no pub object given", lineno);
+    return;
+  }
+
+  if (!fn) {
+    o->output_err (e, "no file to include", lineno);
+    return;
+  }
+
+  if (!osink) {
+    o->output_err (e, "no suio to output to", lineno);
+    return;
+  }
+
+  o->output_file_loc (e, lineno);
+
+  pfile_type_t m = o->switch_mode (PFILE_TYPE_CODE);
+
+  str arg4;
+  if (env) {
+    strbuf a ("_pv");
+    a << e->aarr_n++;
+    strbuf b ("   {\n\taarr_t ");
+    b << a << ";\n\t" << a;
+    o->output (e, b);
+    env->output (o, e);
+    arg4 = strbuf ("&") << a;
+  } else {
+    arg4 = "NULL";
+  }
+  str flags = (e->opts & P_DEBUG) ? "P_DEBUG" : "0";
+  o->output (e, strbuf ("\t") << pubobj << "->include (&" << osink << ", " 
+	     << c_escape (fn) << ", " << flags << ", "  
+	     << arg4 << ");\n");
+  if (env) 
+    o->output (e, "\t}\n");
+
+  o->switch_mode (m);
 }
 
 static void
@@ -1102,12 +1562,47 @@ pbuf_var_t::to_str_2 (pub_evalmode_t m) const
   }
 }
 
+void
+pfile_gprint_t::output (output_t *o, penv_t *e) const
+{
+  e->needloc = true;
+
+  if (!outv)
+    return;
+
+  o->output_file_loc (e, lineno);
+
+  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
+  str oo = o->switch_osink (outv);
+
+  pfile_html_sec_t::output (o, e);
+
+  o->switch_osink (oo);
+  o->switch_mode (m);
+}
+
 pfile_type_t
 output_std_t::switch_mode (pfile_type_t m)
 {
   pfile_type_t r = mode;
+  bool cmode = (mode == PFILE_TYPE_GUY || mode == PFILE_TYPE_EC ||
+		mode == PFILE_TYPE_WEC);
+  if (cmode && osink_open) {
+      *out << "    ;\n";
+      osink_open = false;
+  }
+  if (cmode)
+    osink_open = false;
   mode = m;
   return r;
+}
+
+str
+output_std_t::switch_osink (const str &no)
+{
+  str oo = osink;
+  osink = no;
+  return oo;
 }
 
 str
@@ -1186,6 +1681,19 @@ dumper_t::set_sp_buf ()
   sp_buf[level*DUMP_INDENT] = '\0';
 }
 
+static void
+_gvars_t_dump (dumper_t *d, const str &s)
+{
+  DUMP(d, "gv: " << s);
+}
+
+void
+gvars_t::dump2 (dumper_t *d) const
+{
+  gvtab_t *p = const_cast<gvtab_t *> (&tab);
+  p->traverse (wrap (_gvars_t_dump, d));
+}
+
 void
 pstr_t::dump2 (dumper_t *d) const 
 {
@@ -1200,6 +1708,14 @@ pval_zbuf_t::dump2 (dumper_t *d) const
 }
 
 void
+pfile_include_t::dump2 (dumper_t *d) const
+{
+  if (fn) 
+    DUMP (d, "fn: " << fn);
+  env->dump (d);
+}
+
+void
 pfile_include2_t::dump2 (dumper_t *d) const
 {
   if (fn_v2) {
@@ -1209,6 +1725,33 @@ pfile_include2_t::dump2 (dumper_t *d) const
   env->dump (d) ;
 }
 
+
+void
+pfile_inclist_t::dump2 (dumper_t *d) const
+{
+  u_int lim = files.size ();
+  for (u_int i = 0; i < lim; i++)
+    DUMP (d, "fn: " << files[i]);
+}
+
+
+void
+pfile_g_ctinclude_t::dump2 (dumper_t *d) const 
+{
+  str os = osink; if (!os) os = "(NULL)";
+  DUMP(d, "osink: " << os <<  "; fn: " << fn);
+}
+
+void
+pfile_g_include_t::dump2 (dumper_t *d) const 
+{
+  str os = osink; if (!os) os = "(NULL)";
+  str po = pubobj; if (!po) po = "(NULL)";
+  DUMP(d, "osink: " << os << "; fn: " << fn);
+  DUMP(d, "pubobj: " << po);
+  env->dump (d);
+}
+
 void
 pfile_html_el_t::dump2 (dumper_t *d) const
 {
@@ -1216,6 +1759,23 @@ pfile_html_el_t::dump2 (dumper_t *d) const
   DUMP(d, "-{ data (" << c.len () << "):");
   d->output (c, false);
   DUMP(d, " }");
+}
+
+void
+pfile_gprint_t::dump2 (dumper_t *d) const 
+{
+  DUMP(d, "outv: " << outv);
+  pfile_html_sec_t::dump2 (d);
+}
+
+void
+pfile_code_t::dump2 (dumper_t *d) const 
+{
+  str s = sb;
+  DUMP(d, "-{ code (" << s.len () << "):");
+  d->output (s, false);
+  DUMP(d, " }");
+  pfile_sec_t::dump2 (d);
 }
 
 void
@@ -1233,11 +1793,23 @@ pfile_t::dump2 (dumper_t *d) const
   case PFILE_TYPE_NONE:
     t = "none";
     break;
+  case PFILE_TYPE_GUY:
+    t = "guy";
+    break;
   case PFILE_TYPE_H:
     t = "html";
     break;
   case PFILE_TYPE_WH:
     t = "ws-stripped html";
+    break;
+  case PFILE_TYPE_CODE:
+    t = "c++-code";
+    break;
+  case PFILE_TYPE_WEC:
+    t = "ws-stripped Embedded C++";
+    break;
+  case PFILE_TYPE_EC:
+    t = "Embedded C++";
     break;
   default:
     t = "other/bad file type";
@@ -1306,6 +1878,43 @@ dumpable_t::dump (dumper_t *d) const
   d->end_obj ();
 }
 
+bool
+penv_t::is_gvar (const str &v) const
+{
+  int rc;
+  for (int i = gvars.size () - 1; i >= 0; i--) 
+    if ((rc = gvars[i]->lookup (v)))
+      return (rc < 0 ? false : true);
+  return false;
+}
+
+void
+pfile_code_t::output (output_t *o, penv_t *e) const
+{
+  pfile_type_t m = o->switch_mode (PFILE_TYPE_CODE);
+  if (e->needloc) {
+    o->output_file_loc (e, lineno);
+    e->needloc = false;
+  }
+  o->output (e, sb);
+  o->switch_mode (m);
+}
+
+void
+pfile_sec_t::explore (pub_exploremode_t mode) const
+{
+  if (els)
+    for (pfile_el_t *e = els->first; e; e = els->next (e))
+      e->explore (mode);
+}
+
+void
+pfile_t::explore (pub_exploremode_t mode) const
+{
+  for (pfile_sec_t *s = secs.first; s; s = secs.next (s))
+    s->explore (mode);
+}
+
 void
 parr_mixed_t::dump2 (dumper_t *d) const
 {
@@ -1345,6 +1954,13 @@ penv_t::finish_output (penv_state_t *s)
   cerrflag = s->errflag;
   delete s;
   return ret;
+}
+
+void
+pfile_set_func_t::output_config (penv_t *e) const
+{
+  env = e;
+  if (aarr) env->safe_push (aarr);
 }
 
 xpub_status_typ_t
@@ -1430,8 +2046,7 @@ penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
 penv_t::penv_t (const penv_t &e)
   : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
     cerr (e.cerr), opts (e.opts), evm (e.evm),
-    estack (e.estack), 
-    fstack (e.fstack), hold (e.hold),
+    estack (e.estack), gvars (e.gvars), fstack (e.fstack), hold (e.hold),
     istack (e.istack), olineno (e.olineno), 
     _localizer (e._localizer) {}
 

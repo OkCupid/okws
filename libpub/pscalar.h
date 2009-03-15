@@ -48,6 +48,7 @@ private:
 
     int to_int () const;
     int64_t to_int64 () const;
+    u_int64_t to_uint64 () const;
     str to_str () const;
     str to_str_n () const { return _s; }
     double to_double () const;
@@ -56,6 +57,7 @@ private:
 
     bool to_int64 (int64_t *out) const;
     bool to_double (double *out) const;
+    bool to_uint64 (u_int64_t *out) const;
 
     void set (const str &s);
     void set (double d);
@@ -67,9 +69,10 @@ private:
   private:
     str _s;
     
-    mutable cnv_status_t _double_cnv, _int_cnv;
+    mutable cnv_status_t _double_cnv, _int_cnv, _uint_cnv;
     mutable double _d;
     mutable int64_t _i;
+    mutable u_int64_t _u;
   };
 
 public:
@@ -85,6 +88,8 @@ public:
   bool to_int64 (int64_t *o) const { return _p->to_int64 (o); }
   bool to_double (double *o) const { return _p->to_double (o); }
   int64_t to_int64 () const { return _p->to_int64 (); }
+  u_int64_t to_uint64 () const { return _p->to_uint64 (); }
+  bool to_uint64 (u_int64_t *o) const { return _p->to_uint64 (o); }
   int to_int () const { return _p->to_int (); }
   str to_str () const { return _p->to_str (); }
   double to_double () const { return _p->to_double (); }
@@ -110,5 +115,7 @@ private:
   ptr<_p_t> _p;
   bool _frozen;
 };
+
+bool convertuint (const str &s, u_int64_t *out);
 
 #endif /* _LIBPUB_PSCALAR_H_ */

@@ -49,9 +49,11 @@ private:
   mutable zbuf _zb;
 };
 
-class req_xml_t : public req_t {
+//-----------------------------------------------------------------------
+
+class req_xml_t : public req3_t {
 public:
-  req_xml_t (ptr<reqinfo_t> ri, cgi_t *c = NULL) : req_t (ri, 1, c) {}
+  req_xml_t (ptr<reqinfo_t> ri, cgi_t *c = NULL) : req3_t (ri, 1, c) {}
   zbuf &zb () { return _post.zb (); }
   const zbuf &zb () const { return _post.zb (); }
   const post_t *get_post () const { return &_post; }
@@ -59,32 +61,57 @@ public:
 protected:
   post_xml_t _post;
 };
+  
+//-----------------------------------------------------------------------
 
 class resp_xml_t : public resp_t {
 public:
-  resp_xml_t () : _parser (&_abuf) {}
+  resp_xml_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a, int id) 
+    : resp_t (x, a), _parser (a), _id (id) {}
+
   void eat_chunk (size_t sz, evi_t ev) { eat_chunk_T (sz, ev); }
   void finished_meal (int status, evi_t ev);
   ptr<const xml_top_level_t> top_level () 
     const { return _parser.top_level (); }
+  int get_id () const { return _id; }
 protected:
   xml_req_parser_t _parser;
   void eat_chunk_T (size_t sz, evi_t ev, CLOSURE);
+  int _id;
 };
+
+//-----------------------------------------------------------------------
+
+class resp_xml_factory_t : public resp_factory_t {
+public:
+  resp_xml_factory_t () : _id (0) {}
+  ptr<resp_t> alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> a);
+  ptr<resp_xml_t> fetch (int id);
+private:
+  qhash<int, ptr<resp_xml_t> > _tab;
+  int _id;
+};
+
+//-----------------------------------------------------------------------
 
 class agent_xml_t : public agent_t {
 public:
-  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false,
-	       bool https = false);
+  agent_xml_t (const str &hn, int port, const str &u, bool proxied = false);
 
   void call (xml_outreq_t req, xml_ev_t ev) { call_T (req, ev); }
+  void call (xml_outreq_t req, xml_ev_t ev, int to) { call_to_T (req, ev, to); }
   void call_dump (xml_outreq_t req, evis_t ev) { call_dump_T (req, ev); }
 private:
   void call_T (xml_outreq_t req, xml_ev_t ev, CLOSURE);
+  void call_to_T (xml_outreq_t req, xml_ev_t ev, int to, CLOSURE);
   void call_dump_T (xml_outreq_t req, evis_t ev, CLOSURE);
-  void make_req (xml_outreq_t req, ptr<resp_t> resp, evi_t ev, CLOSURE);
+  void make_req (xml_outreq_t req, bool simple, resp_ev_t ev, CLOSURE);
   ptr<reqinfo_t> _reqinfo;
+  ptr<resp_xml_factory_t> _xml_factory;
+  ptr<obj_factory_t> _simple_factory;
 };
+
+//-----------------------------------------------------------------------
 
 };
 

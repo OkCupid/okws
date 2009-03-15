@@ -54,8 +54,8 @@ tst2_srv_t::init ()
   if (!mysql.connect ("okws_db_tst2", "okws", "localhost", "abc123")) {
     TWARN (mysql.error ());
     rc = false;
-  } else if (!(_q_get = PREP("SELECT id,d,i FROM tst2 WHERE s = ?")) ||
-	     !(_q_put = PREP("INSERT INTO tst2(s,d,i) VALUES(?,?,?)"))) {
+  } else if (!(_q_get = PREP("SELECT id,d,i,d2 FROM tst2 WHERE s = ?")) ||
+	     !(_q_put = PREP("INSERT INTO tst2(s,d,i,d2) VALUES(?,?,?,?)"))) {
     rc = false;
   }
   return rc;
@@ -91,7 +91,8 @@ tst2_srv_t::get (svccb *b)
   if (!_q_get->execute (*arg)) {
     rc = ADB_EXECUTE_ERROR;
   } else {
-    rc = _q_get->fetch (&res->dat->pk, &res->dat->d, &res->dat->i);
+    rc = _q_get->fetch (&res->dat->pk, &res->dat->d, &res->dat->i,
+			&res->dat->d2);
   }
 
   if (rc != ADB_OK) {
@@ -109,7 +110,7 @@ tst2_srv_t::put (svccb *b)
   const tst2_put_arg_t *arg = b->Xtmpl getarg<tst2_put_arg_t> ();
   ptr<adb_status_t> res = New refcounted<adb_status_t> (ADB_OK);
 
-  if (!_q_put->execute (arg->key, arg->data.d, arg->data.i)) {
+  if (!_q_put->execute (arg->key, arg->data.d, arg->data.i, arg->data.d2)) {
     *res = ADB_EXECUTE_ERROR;
     str es;
     if ((es = _q_put->error ())) 

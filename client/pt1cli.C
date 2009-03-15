@@ -429,7 +429,7 @@ hclient_t::do_read ()
   // the header) then we're ready to close (or rock!)
   //
   if (body && (bp - body >= reqsz)) {
-    write (1, buf, bp - buf);
+    rc_ignore (write (1, buf, bp - buf));
     if (noisy) warn ("ok, closing up!\n");
     cexit (0);
   }
@@ -724,7 +724,7 @@ main (int argc, char *argv[])
   mode = NONE;
   bool no_pub = false;
 
-  int tmp;
+  int tmp = 0;
 
   static rxx lose_patience_rxx ("(\\d+),(\\d+)");
 

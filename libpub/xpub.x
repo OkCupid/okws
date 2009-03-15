@@ -12,6 +12,7 @@ enum xpub_obj_typ_t {
   XPUB_FILE_VAR = 5,
   XPUB_SWITCH = 6,
   XPUB_SET_FUNC = 7,
+  XPUB_INCLIST = 8,
   XPUB_INCLUDE2 = 9,
   XPUB_RAW = 10,
   XPUB_SET_LOCAL_FUNC = 11,
@@ -37,6 +38,7 @@ enum oksig_t {
 };
 
 enum xpub_version_t {
+  XPUB_V1 =1,
   XPUB_V2 = 2
 };
 
@@ -162,6 +164,8 @@ struct xpub_aarr_t {
 
 union xpub_include_fn_t switch (xpub_version_t vrs)
 {
+case XPUB_V1:
+  xpub_fn_t v1;
 case XPUB_V2:
   xpub_pstr_t v2;
 };
@@ -170,6 +174,11 @@ struct xpub_include_t {
   int lineno;
   xpub_include_fn_t fn;
   xpub_aarr_t env;
+};
+
+struct xpub_inclist_t {
+  int lineno;
+  xpub_fn_t files<>;
 };
 
 %struct xpub_obj_t;
@@ -263,18 +272,25 @@ struct xpub_drange_t {
   x_double_t hi;
 };
 
+struct xpub_urange_t {
+  unsigned hyper low;
+  unsigned hyper hi;
+};
+
 struct xpub_switch_env_rxx_t {
   xpub_switch_env_base_t base;
   xpub_regex_t rxx;
 };
 
-enum xpub_range_typ_t { XPUB_IRANGE, XPUB_DRANGE };
+enum xpub_range_typ_t { XPUB_IRANGE, XPUB_DRANGE, XPUB_URANGE };
 
 union xpub_range_t switch (xpub_range_typ_t typ) {
 case XPUB_IRANGE:
   xpub_irange_t ir;
 case XPUB_DRANGE:
   xpub_drange_t dr;
+case XPUB_URANGE:
+  xpub_urange_t ur;
 };
 
 struct xpub_switch_env_range_t {
@@ -331,6 +347,8 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
  case XPUB_SET_FUNC:
  case XPUB_SET_LOCAL_FUNC:
    xpub_set_func_t set_func;
+ case XPUB_INCLIST:
+   xpub_inclist_t inclist;
  case XPUB_RAW:
    xpub_raw_t raw;
 };
@@ -623,3 +641,4 @@ program PUB_PROGRAM {
 } = 11277;
 
 };
+

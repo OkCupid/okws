@@ -1,4 +1,6 @@
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 SUFFIXES = .C .T .h
@@ -24,6 +26,6 @@ tameclean:
 dist-hook:
 	cd $(distdir) && rm -f $(TAMEOUT)
 
-EXTRA_DIST = .cvsignore $(TAMEIN)
+EXTRA_DIST = $(TAMEIN)
 CLEANFILES = core *.core *~ *.rpo $(TAMEOUT)
 MAINTAINERCLEANFILES = Makefile.in 

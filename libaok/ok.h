@@ -44,6 +44,8 @@
 #include "pub2.h"
 #include "oklocale.h"
 
+//-----------------------------------------------------------------------
+
 typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH = 1,
 	       OKC_STATE_SERVE = 2,
@@ -54,8 +56,11 @@ typedef enum { OKC_STATE_NONE = 0,
 	       OKC_STATE_LAUNCH_SEQ_2 = 7,
                OKC_STATE_KILLING = 8,
 	       OKC_STATE_TOOBUSY = 9,
-	       OKC_STATE_STANDBY = 10 } okc_state_t;
+	       OKC_STATE_STANDBY = 10,
+		   OKC_STATE_BADPORTS = 11 } okc_state_t;
 
+
+//-----------------------------------------------------------------------
 
 struct errdoc_t {
   errdoc_t (int n, const str &f) : status (n), fn (f) {}
@@ -64,10 +69,13 @@ struct errdoc_t {
   ihash_entry<errdoc_t> lnk;
 };
 
-typedef u_int16_t okws1_port_t;
+//-----------------------------------------------------------------------
+
 #define PORT_MAX USHRT_MAX
 
 typedef event<ok_xstatus_typ_t>::ref okstat_ev_t;
+
+//-----------------------------------------------------------------------
 
 class ok_con_t {
 public:
@@ -80,6 +88,8 @@ protected:
   ptr<asrv> srv;
   ptr<aclnt> clnt; 
 };
+
+//-----------------------------------------------------------------------
 
 class config_parser_t {
 public:
@@ -94,6 +104,8 @@ protected:
 private:
   bhash<str> _seen; // files seen
 };
+
+//-----------------------------------------------------------------------
 
 class demux_data_t {
 public:
@@ -123,6 +135,8 @@ private:
   str _ssl_info;
 };
 
+//-----------------------------------------------------------------------
+
 template<class A>
 class ahttpcon_wrapper_t {
 public:
@@ -149,6 +163,57 @@ private:
   ptr<demux_data_t> _demux_data;
 };
 
+
+//-----------------------------------------------------------------------
+
+class ok_portpair_t;
+
+class ok_con_acceptor_t {
+public:
+  ok_con_acceptor_t () {}
+  virtual ~ok_con_acceptor_t () {}
+  virtual void accept_new_con (ok_portpair_t *p) = 0 ;
+};
+
+//-----------------------------------------------------------------------
+
+struct ok_portpair_t {
+  ok_portpair_t (int port = -1, int fd = -1) 
+    : _port (port), _fd (fd), _listening (false) {}
+  str encode_as_str () const;
+  void close () ;
+  void disable_accept ();
+  void report ();
+  void enable_accept (ok_con_acceptor_t *s, int listenq);
+  bool parse (const str &in);
+
+  int _port;
+  int _fd;
+  bool _listening;
+};
+
+//-----------------------------------------------------------------------
+
+struct ok_direct_ports_t {
+public:
+  ok_direct_ports_t () {}
+  void init (const vec<int> &p);
+  bool bind (const str &prog, u_int32_t listenaddr);
+  str encode_as_str () const;
+  void close ();
+  void report ();
+  bool parse (const str &s);
+  void enable_accept (ok_con_acceptor_t *s, int listenq);
+  void disable_accept ();
+  bool operator[] (int p) const { return _map[p]; }
+  void add_port_pair (const ok_portpair_t &p);
+private:
+  vec<ok_portpair_t> _ports;
+  bhash<int> _map;
+};
+
+//-----------------------------------------------------------------------
+
 class ok_base_t : public jailable_t {
 public:
   ok_base_t (const str &h = NULL, int lfd = -1, int pfd = -1)
@@ -164,8 +229,9 @@ public:
       //jaildir_run (ok_jaildir_run) 
   {}
 
-  bool got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<argv_t> *ep);
+  bool got_generic_exec (vec<str> &s, str loc, bool *errp, ptr<env_argv_t> *ep);
 
+  bool is_direct_port (int i) const { return _direct_ports[i]; }
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
   void got_ports (bool ssl, vec<str> s, str loc, bool *errp);
@@ -188,6 +254,7 @@ public:
   vec<okws1_port_t> _https_ports, _http_ports;
   qhash<okws1_port_t, bool> _all_ports_map;
 
+  ok_direct_ports_t _direct_ports;
 
 protected:
   str fix_uri (const str &in) const;
@@ -201,6 +268,12 @@ protected:
   okws1_port_t _ssl_primary_port;
 };
 
+//-----------------------------------------------------------------------
+
+class okclnt_interface_t;
+
+//-----------------------------------------------------------------------
+
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
   ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub2fd = -1) 
@@ -209,20 +282,26 @@ public:
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}
 
-  typedef callback<void, ptr<http_response_t> >::ref http_resp_cb_t;
+  typedef callback<void, ptr<http_response_base_t> >::ref http_resp_cb_t;
       
   virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
+  virtual void add_pubfile (const str &s, bool conf = false) {}
 
   virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		      http_inhdr_t *h = NULL)
-  { error_T (x, n, s, c, h); }
+		      http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL)
+  { error_T (x, n, s, c, h, cli); }
 
   virtual str servinfo () const;
   
   virtual void geterr (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb)
   { geterr_T (n, s, v, gz, cb); }
 
-  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
+  virtual void 
+  geterr (str s, const http_resp_attributes_t &hra, http_resp_cb_t cb) 
+  { geterr2_T (s, hra, cb); }
+
+  virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
+		    http_response_base_t *res,
 		    const str &s = NULL)
     const { if (svclog && logd) logd->log (x, req, res, s); }
 
@@ -232,6 +311,7 @@ public:
 
   // toggle clock modes for SFS
   void init_sfs_clock (const str &f); 
+
 
   // can overide this on a service-by-service basis
   virtual bool init_pub2 (u_int opts = 0);
@@ -243,8 +323,13 @@ public:
 
 private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
+  void geterr2_T (str s, const http_resp_attributes_t &hra, 
+		 http_resp_cb_t cb, CLOSURE);
+
   void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
-		http_inhdr_t *h = NULL, CLOSURE);
+		http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL, 
+		CLOSURE);
+
   void launch_pub2_T (cbb cb, CLOSURE);
 
 protected:
@@ -273,6 +358,80 @@ protected:
 
 class oksrvc_t;
 
+//-----------------------------------------------------------------------
+
+class okclnt_interface_t {
+public:
+  okclnt_interface_t (oksrvc_t *o);
+  virtual ~okclnt_interface_t ();
+  virtual void set_union_cgi_mode (bool b) = 0;
+  virtual void set_demux_data (ptr<demux_data_t> d) = 0;
+  virtual void serve () = 0;
+  virtual void fixup_log (ptr<http_response_base_t> rsp) {}
+  list_entry<okclnt_interface_t> lnk;
+
+  virtual oksrvc_t *get_oksrvc () { return oksrvc; }
+  virtual const oksrvc_t *get_oksrvc () const { return oksrvc; }
+
+protected:
+  oksrvc_t *oksrvc;
+};
+
+//-----------------------------------------------------------------------
+
+//
+// OKRRP = OK Request/Response Pair
+//
+class okrrp_interface_t {
+public:
+  okrrp_interface_t () {}
+  virtual ~okrrp_interface_t () {}
+
+  // manipulate output parameters
+  virtual void set_custom_log2 (const str &log) = 0;
+  virtual void disable_gzip () = 0;
+  virtual void set_expires (const str &s) = 0;
+  virtual void set_hdr_field (const str &k, const str &v) = 0;
+  virtual void set_cache_control (const str &s) = 0;
+  virtual void set_content_type (const str &s) = 0;
+
+  virtual void set_log_fixup_cb (cbv::ptr ev) {}
+
+  // access input parameters
+  virtual const http_inhdr_t &hdr_cr () const = 0;
+  virtual http_inhdr_t *hdr_p () = 0;
+
+  // output paths...
+  virtual void okreply (ptr<compressible_t> c, evv_t::ptr ev) = 0;
+  virtual void redirect (const str &s, int status, evv_t::ptr ev) = 0;
+  virtual void error (int n, const str &s, evv_t::ptr ev) = 0;
+
+  virtual ptr<demux_data_t> demux_data () = 0;
+  virtual ptr<const demux_data_t> demux_data () const = 0;
+};
+
+//-----------------------------------------------------------------------
+
+class outcookie_holder_t {
+public:
+  outcookie_holder_t () {}
+  ~outcookie_holder_t () {}
+  vec<ptr<cookie_t> > *get_outcookies () { return &_oc; }
+  const vec<ptr<cookie_t> > *get_outcookies () const { return &_oc; }
+  void fixup_cookies (ptr<http_response_base_t> resp);
+  ptr<cookie_t> add_cookie (const str &h = NULL, const str &p = "/");
+public:
+  vec<ptr<cookie_t> > _oc;
+  
+};
+
+//-----------------------------------------------------------------------
+
+typedef callback<okclnt_interface_t *, ptr<ahttpcon>, oksrvc_t *>::ref 
+nclntcb_t;
+
+//-----------------------------------------------------------------------
+
 //
 // There should be one okclnt_base_t per external HTTP request.
 // We've split the logic up between stuff that goes mainly here,
@@ -281,11 +440,14 @@ class oksrvc_t;
 // specify the amount and type of parsing done in response to
 // a request, by implementing the virtual parse() method.
 //
-class okclnt_base_t {
+class okclnt_base_t 
+  : public okclnt_interface_t, 
+    public outcookie_holder_t, 
+    public virtual okrrp_interface_t {
 public:
   okclnt_base_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) :
+    okclnt_interface_t (o),
     _client_con (xx), 
-    oksrvc (o),
     process_flag (false), 
     uid_set (false), 
     rsp_gzip (true),
@@ -302,23 +464,43 @@ public:
   virtual ~okclnt_base_t ();
   virtual void serve () { serve_T (); }
 
-  virtual void error (int n, const str &s = NULL, 
-		      bool do_send_complete = true, evv_t::ptr ev = NULL)
+  //-----------------------------------------------------------------------
+
+  void error (int n, const str &s, bool do_send_complete, evv_t::ptr ev)
   { error_T (n, s, do_send_complete, ev); }
+  void error (int n, const str &s, evv_t::ptr ev = NULL);
+  void error (int n);
+
+  //-----------------------------------------------------------------------
 
   virtual void process () = 0;
   virtual bool pre_process () { return true; }
-  virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
-  virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
 
-  virtual void redirect (const str &s, int status = -1,
-			 evv_t::ptr ev = NULL, CLOSURE);
+  //-----------------------------------------------------------------------
+
+  virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
+  void okreply (ptr<compressible_t> p, evv_t::ptr ev);
+  virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
+
+  //-----------------------------------------------------------------------
+
+  void redirect (const str &s);
+  virtual void redirect (const str &s, int status, evv_t::ptr ev)
+  { redirect_T (s, status, ev); }
+
+  //-----------------------------------------------------------------------
 
   virtual void send_complete () { delete this; }
   virtual void serve_complete () {}
 
+  //-----------------------------------------------------------------------
+
+  ptr<demux_data_t> demux_data () { return _demux_data; }
+  ptr<const demux_data_t> demux_data () const { return _demux_data; }
+
+  //-----------------------------------------------------------------------
+
   virtual void send (ptr<http_response_t> rsp, cbv::ptr cb);
-  virtual cookie_t *add_cookie (const str &h = NULL, const str &p = "/");
   void set_uid (u_int64_t i) { uid = i; uid_set = true; }
 
   virtual bool ssl_only () const { return false; } 
@@ -346,6 +528,7 @@ public:
   void set_expires (const str &s) { expires = s; }
   void set_content_disposition (const str &s) { contdisp = s; }
   void disable_gzip () { rsp_gzip = false; }
+  void set_custom_log2 (const str &s) { _custom_log2 = s; }
 
   void set_hdr_field (const str &k, const str &v);
 
@@ -353,7 +536,6 @@ public:
   bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
   str ssl_cipher () const;
 
-  list_entry<okclnt_base_t> lnk;
   virtual ptr<pub2::ok_iface_t> pub2 () ;
   virtual ptr<pub2::ok_iface_t> pub2_local ();
   void set_localizer (ptr<const pub_localizer_t> l);
@@ -363,14 +545,18 @@ public:
 
   // The following 2 ought be protected, but are not to handle
   // tame warts.
-  virtual const http_inhdr_t &hdr_cr () const = 0;
   bool do_gzip () const;
+
+  void fixup_log (ptr<http_response_base_t> rsp);
+
+  //-----------------------------------------------------------------------
 
 private:
   void serve_T (CLOSURE);
   void output_fragment_T (str s, CLOSURE);
   void error_T (int n, const str &s, bool complete, evv_t::ptr ev, CLOSURE);
   void output_T (compressible_t *b, evv_t::ptr ev, CLOSURE);
+  void redirect_T (const str &s, int status, evv_t::ptr ev, CLOSURE);
 
   ref<ahttpcon> _client_con;
 
@@ -378,15 +564,12 @@ protected:
   void set_attributes (http_resp_attributes_t *hra);
 
   virtual void parse (cbi cb) = 0;
-  virtual http_inhdr_t *hdr_p () = 0;
   bool output_frag_prepare ();
-		
+  
   cbv::ptr cb;
-  oksrvc_t *oksrvc;
 
   zbuf out;
   ptr<http_response_t> rsp;
-  vec<cookie_t *> outcookies;
   bool process_flag;
   u_int64_t uid; // hacked in for now;
   bool uid_set;
@@ -399,7 +582,10 @@ protected:
   u_int _timeout;
   ptr<pub2::locale_specific_publisher_t> _p2_locale;
   ptr<demux_data_t> _demux_data;
+  str _custom_log2;
 };
+
+//-----------------------------------------------------------------------
 
 // 
 // This is the standard okclnt_t, used for parsing regular HTTP requests,
@@ -418,11 +604,17 @@ public:
   http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
   const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
 
+  // for clients that are stuck with okclnt_t, but would like to
+  // try the reduced-copy output path, try output2. output2 obligates
+  // the caller to 'delete this' and to to provide a refcounted 
+  // compressible reply object.
+  void output2 (ptr<compressible_t> c, evv_t ev, CLOSURE);
+
   void set_union_cgi_mode (bool b)
-  {
-    http_parser_cgi_t::set_union_mode (b);
-  }
+  { http_parser_cgi_t::set_union_mode (b); }
 };
+
+//-----------------------------------------------------------------------
 
 //
 // Upgraded version of okclnt2, with a better state machine architecture
@@ -443,34 +635,41 @@ private:
   void serve_T (CLOSURE);
 };
 
-typedef callback<okclnt_base_t *, ptr<ahttpcon>, oksrvc_t *>::ref nclntcb_t;
+//-----------------------------------------------------------------------
 
 class dbcon_t : public helper_inet_t {
 public:
   dbcon_t (const rpc_program &g, const str &h, u_int p)
     : helper_inet_t (g, h, p, 0) {}
 
-
-  str getname () const { return strbuf ("database: ") << 
-			   helper_inet_t::getname () ;}
+  str getname () const 
+  { return strbuf ("database: ") << helper_inet_t::getname (); }
 };
 
-class oksrvc_t : public ok_httpsrv_t { // OK Service
+//-----------------------------------------------------------------------
+
+class oksrvc_t : public ok_httpsrv_t, public ok_con_acceptor_t  { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
+      pub1_supported (true),
       wait_for_signal_in_startup (false),
-      _n_newcli (0)
+      _n_newcli (0),
+      _pub1_cfg (true)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
     accept_enabled = true;
   }
 
-  typedef okclnt_base_t newclnt_t;
+  typedef okclnt_interface_t newclnt_t;
 
   virtual void launch () { launch_T (); }
   virtual newclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
+
+  // if we didn't give init_publist, then we're using pub2 for
+  // everything, including CFG variables.
+  virtual void init_publist () { _pub1_cfg = false; }
 
   // Subclasses that specialize this method to true can
   // always use pub2 configuration.
@@ -480,6 +679,7 @@ public:
   virtual u_int get_ormask () const { return 0; }
   virtual void custom_init (cbv cb) { (*cb) (); }
   virtual void custom_init0 (cbv cb) { (*cb) (); }
+  virtual void init_constants () {}
 
   virtual void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
 
@@ -491,19 +691,35 @@ public:
   virtual bool use_union_cgi () const { return false; }
 
   void init (int argc, char *argv[]);
-  void shutdown ();
+  void shutdown (CLOSURE);
   void connect ();
   void ctldispatch (svccb *c);
-  void remove (okclnt_base_t *c);
-  void add (okclnt_base_t *c);
+  void remove (okclnt_interface_t *c);
+  void add (okclnt_interface_t *c);
   void end_program (); 
 
+  void add_pubfiles (const char *arr[], u_int sz, bool conf = false);
+  void add_pubfiles (const char *arr[], bool conf = false);
+  void add_pubfile (const str &s, bool conf = false);
+
+  str cfg (const str &n) const ;
+  template<class C> bool cfg (const str &n, C *v) const ;
+  template<typename T> parr_err_t cfg (const str &n, u_int i, T *p) const;
+
+  void pubfiles (cbb cb);
   dbcon_t *add_db (const str &host, u_int port, const rpc_program &p,
 		   int32_t txa_login_rpc = -1);
+  lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
+
   pval_w_t operator[] (const str &s) const;
     
 
   ptr<aclnt> get_okd_aclnt () { return clnt; }
+  pub_rclient_t *get_rpcli () { return rpcli; }
+  bool supports_pub1 () const { return pub1_supported; }
+
+  // for accept direct connections (not via okd)
+  void accept_new_con (ok_portpair_t *p);
 
 private:
   void launch_T (CLOSURE);
@@ -512,18 +728,33 @@ protected:
   void closed_fd ();
   void enable_accept_guts ();
   void disable_accept_guts ();
+  void enable_direct_ports ();
+  void disable_direct_ports ();
+  void enable_coredumps ();
 
-  void internal_reliable_shutdown (str s, int t);
+  void internal_reliable_shutdown (str s, int t)
+  { internal_reliable_shutdown_T (s, t); }
+  void internal_reliable_shutdown_T (str s, int t, CLOSURE);
+
+  // Subclasses can implement this hook to do some work before
+  // the shutdown sequence actually starts.
+  virtual void pre_shutdown_hook (evv_t ev) { ev->trigger (); }
 
   virtual void call_exit (int rc) 
 	{ exit (rc); } // Python needs to override this
 
+  void pubbed (cbb cb, ptr<pub_res_t> res);
+
+  void launch_pub1 (cbb cb, CLOSURE);  // legacy
   void launch_dbs (cbb cb, CLOSURE);
 
 
   void handle_new_con (svccb *sbp);
   void handle_get_stats (svccb *v);
+  void handle_leak_checker (svccb *v);
+  void handle_profiler (svccb *sbp);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
+  void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);
   void ready_call (bool rc);
 
@@ -531,10 +762,11 @@ protected:
   void debug_launch (cbv cb, CLOSURE);
 
   str name;
-  list<okclnt_base_t, &okclnt_base_t::lnk> clients;
+  list<okclnt_interface_t, &okclnt_interface_t::lnk> clients;
 
   u_int nclients;
   bool sdflag;
+  pub_rclient_t *rpcli;
 
   vec<helper_base_t *> dbs;
   bool dbstatus;
@@ -545,22 +777,22 @@ protected:
   vec<str> authtoks;
   int n_fd_out;
   u_int n_reqs; // total number of requests served
+  bool pub1_supported;
   bool wait_for_signal_in_startup;
   int _n_newcli;
+  bool _pub1_cfg;
 
 private:
   void post_launch_pub2_T (cbb cb, CLOSURE);
 };
 
+//-----------------------------------------------------------------------
 
-class oksrvcw_t : public oksrvc_t { // OK Service Wrapped
-public:
-  oksrvcw_t (int argc, char *argv[], nclntcb_t c) : 
-    oksrvc_t (argc, argv), nccb (c) {}
-  newclnt_t *make_newclnt (ptr<ahttpcon> lx) { return (*nccb) (lx, this); }
-private:
-  nclntcb_t nccb;
-}; 
+str okws_exec (const str &x);
+void init_syscall_stats ();
+void do_syscall_stats ();
+
+//-----------------------------------------------------------------------
 
 /**
  * Service-Specific error messages
@@ -576,28 +808,43 @@ do {                                           \
 #define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
 #define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
 
-  
-str okws_exec (const str &x);
-void init_syscall_stats ();
+//-----------------------------------------------------------------------
 
-inline void do_syscall_stats ()
+template<typename T> parr_err_t 
+oksrvc_t::cfg (const str &n, u_int i, T *p) const
 {
-  if (ok_ssdi > 0 && 
-      int (sfs_get_timenow ()- global_ssd_last) > int (ok_ssdi)) {
-    time_t diff = sfs_get_timenow () - global_ssd_last;
-    global_ssd_last = sfs_get_timenow();
-    global_syscall_stats->dump (diff);
-    global_syscall_stats->clear ();
+  pval_t *v;
+  const parr_ival_t *arr;
+  if (!supports_pub1 ()) {
+    SVC_ERROR ("Cannot call oksrvc_t::cfg() without Pub v1 support.\n");
+    return PARR_NOT_FOUND;
   }
+  if (!rpcli->cfg (n, &v))
+    return PARR_NOT_FOUND;
+  if (!(arr = v->to_int_arr ()))
+    return PARR_BAD_TYPE;
+  return arr->val (i, p);
 }
+
+//-----------------------------------------------------------------------
+
+template<class C> bool 
+oksrvc_t::cfg (const str &n, C *v) const 
+{ 
+  if (!supports_pub1 ()) {
+    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
+    return sNULL;
+  }
+  return rpcli->cfg (n, v);
+}
+
+//-----------------------------------------------------------------------
 
 //
 // XXX - hack - this is used by both okch_t and okld_ch_t - just happens
 // that they have similar internal variables; the might be put into a 
 // class tree, but they share little functionality in common.
 //
-
-  
 #define CH_MSG(M,x)                            \
 do {                                           \
   strbuf b;                                    \
@@ -609,6 +856,8 @@ do {                                           \
 #define CH_ERROR(x)    CH_MSG(ERROR, x)
 
 #define NO_SOCKET_ALLOCATED 7
+
+//-----------------------------------------------------------------------
 
 
 /**
@@ -626,5 +875,7 @@ str get_okws_config (bool make_fatal = true);
  */
 void set_sfs_select_policy ();
 
+
+//-----------------------------------------------------------------------
 
 #endif /* _LIBAOK_OKBASE_H */

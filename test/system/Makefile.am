@@ -5,6 +5,8 @@
 ##   compile and run out of the box, and should be able to test itself.
 ##
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS)
 
 if USE_XML
@@ -32,28 +34,30 @@ XML_SUBDIRS =
 
 endif
 
-TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
-	upload.T purify.T purify_lib.T
-TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
-	upload.C purify.C purify_lib.C
-
 if USE_SSL
 NO_SSL=
 else
 NO_SSL = \#
 endif
 
+TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T form.T cookie.T \
+	post.T upload.T purify.T purify_lib.T
+TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C form.C cookie.C \
+	post.C upload.C purify.C purify_lib.C
+
 SUBDIRS = $(XML_SUBDIRS) 3tier
 
-okwssvc_PROGRAMS = static configtest simple form cookie upload $(XMLPROGS) \
-	posttest
+okwssvc_PROGRAMS = static configtest simple pub1tst form cookie \
+	post upload $(XMLPROGS) posttest
 
 okwsconf_DATA = okws.crt.dist okws.key.dist
 
 static_SOURCES = static.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
+pub1tst_SOURCES = pub1tst.C
 form_SOURCES = form.C
+post_SOURCES = post.C
 cookie_SOURCES = cookie.C
 noinst_HEADERS = test_const.h
 upload_SOURCES = upload.C
@@ -69,15 +73,20 @@ configtest.o:	configtest.C
 configtest.lo:	configtest.C
 simple.o:	simple.C
 simple.lo:	simple.C
+pub1tst.o: pub1tst.C
+pub1tst.lo: pub1tst.C
 form.o:	    form.C
 form.lo:    form.C
+post.o:	   post.C
+post.lo:   post.C
 cookie.o:  cookie.C
 cookie.lo: cookie.C
 upload.o:	upload.C
 upload.lo:	upload.C
 
-CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
-EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN)
+CLEANFILES = core *.core *~ *_config *_log $(TAMEOUT) 
+EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN) purify_lib.h \
+	okws.crt.dist okws.key.dist
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY:	test tameclean

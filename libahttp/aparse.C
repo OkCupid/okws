@@ -31,6 +31,7 @@ async_parser_t::parse (cbi::ptr c)
   // this call might set dataready
   abuf->init (wrap (this, &async_parser_t::can_read_cb));
   parsing = true;
+  v_debug ();
   if (dataready)
     parse_guts ();
 }

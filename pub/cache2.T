@@ -65,13 +65,20 @@ namespace pubserv2 {
     struct stat sb;
     cached_lookup_obj_t *o = _lookup_cache[k];
     assert (o);
-    const str &rfn = o->real_fn ();
+    str rfn = o->real_fn ();
 
     if (nfs_safe_stat (rfn.cstr (), &sb) < 0) {
+
       // a file that used to exist has gone missing
       _lookup_cache.remove (k);
+
+      // After removing k, we cannot access o, since o is now pointiing
+      // to deallocated data after the above call to remove.
+      o = NULL;
+
       _noent_cache.insert (jailed_file_t (k, rfn));
       add_delta (k);
+
     } else {
       
       bool dirty = false;
@@ -97,6 +104,11 @@ namespace pubserv2 {
 
 	// a file has be modified!
 	_lookup_cache.remove (k);
+
+	// As above, we can remove the k object from the list, but after
+	// we do so, we better not access o again.
+	o = NULL;
+
 	add_delta (k);
       } 
     }  
@@ -172,9 +184,7 @@ namespace pubserv2 {
       rc = false; 
     } else {
       _push_deltas_lock = true;
-      twait { 
-	RPC::pub_program_2::pub2_push_deltas (_cli, s, &rc, mkevent (err)); 
-      }
+      twait { _cli->call (PUB2_PUSH_DELTAS, s, &rc, mkevent (err)); }
       _push_deltas_lock = false;
       if (err) {
 	strbuf b;
@@ -213,7 +223,7 @@ namespace pubserv2 {
   {
     stamp_status_t ret = STAMP_ERROR;
     str stmp;
-    time_t ct;
+    time_t ct (0);
 
     if (!_fn) {
       ret = STAMP_DISABLED;

@@ -34,10 +34,13 @@
 class fdsink_t : public virtual refcount {
 public:
   fdsink_t (ptr<axprt_unix> xx, cbv::ptr ec) 
-    : ux (xx), eofcb (ec), eof (ux->ateof ()) 
+    : ux (xx), eofcb (ec), eof (ux->ateof ()), 
+      _destroyed (New refcounted<bool> (false))
   {
-    ux->setrcb (wrap (this, &fdsink_t::rcb));
+    ux->setrcb (wrap (this, &fdsink_t::rcb, _destroyed));
   }
+
+  ~fdsink_t () { *_destroyed = true; }
 
   static ptr<fdsink_t> alloc (ptr<axprt_unix> xx, cbv::ptr ec)
   { return New refcounted<fdsink_t> (xx, ec); }
@@ -60,8 +63,10 @@ public:
   }
 
   void 
-  rcb (const char *, ssize_t s, const sockaddr *)
+  rcb (ptr<bool> df, const char *, ssize_t s, const sockaddr *)
   {
+    if (*df) { return; }
+
     if (s == 0 || ux->ateof ()) {
       eof = true;
       if (eofcb) {
@@ -80,6 +85,7 @@ public:
   ptr<axprt_unix> ux;
   cbv::ptr eofcb;
   bool eof;
+  ptr<bool> _destroyed;
 };
 
 template<typename T>

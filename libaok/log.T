@@ -83,8 +83,8 @@ fast_log_t::connect_T (evb_t ev)
 }
 
 void
-fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-		 const str &aux)
+fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
+		 http_response_base_t *res, const str &aux)
 {
   tmr.enable ();
   int s = res->get_status ();
@@ -123,7 +123,7 @@ fast_log_t::add_notice (oklog_typ_t x, const str &ntc)
 
 void
 fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req, 
-		       http_response_t *res, const str &aux)
+		       http_response_base_t *res, const str &aux)
 {
   error << tmr << ' ' << OKLOG_ERR_ERROR << ' ';
   error.copy ("[client ", 8).remote_ip (x->get_remote_ip ())
@@ -152,7 +152,7 @@ fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
 
 void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
-			http_response_t *res)
+			http_response_base_t *res)
 {
   const char *fmp = fmt ? fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *p;
@@ -188,6 +188,12 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
     case 'z':
       access.inflated_len (res->get_inflated_len ());
       break;
+    case 'q':
+      access.reqno (req ? req->get_reqno () : 0);
+      break;
+    case '2':
+      access.custom2 (res->get_custom_log2 ());
+      break;
     default:
       access.cchar (*p);
       break;
@@ -198,16 +204,12 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
 }
 
 
-tamed void
-rpc_log_t::log_T (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
-		  str aux)
+void
+rpc_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
+		http_response_base_t *res, const str &aux)
 {
-  tvars {
-    oklog_arg_t la (OKLOG_OK);
-    oklog_ok_t *lo;
-    bool b;
-    clnt_stat err;
-  }
+  oklog_arg_t la (OKLOG_OK);
+  oklog_ok_t *lo;
   if (res->get_status () == HTTP_OK) {
     lo = la.ok;
   } else {
@@ -231,12 +233,16 @@ rpc_log_t::log_T (ref<ahttpcon> x, http_inhdr_t *req, http_response_t *res,
     if (logset & LOG_UA)   lo->user_agent = (*req)["user-agent"];
   }
 
-  twait {
-    RPC::oklog_program_1::oklog_log (h, la, &b, mkevent (err));
-  }
+  ref<bool> b (New refcounted<bool> (true));
+  h->call (OKLOG_LOG, &la, b, wrap (this, &rpc_log_t::logged, b));
+}
+
+void
+rpc_log_t::logged (ptr<bool> b, clnt_stat err)
+{
   if (err) 
     warn << "RPC error in logging: " << err << "\n";
-  else if (!b) 
+  else if (!*b) 
     warn << "log attempted failed\n";
 }
 
@@ -251,6 +257,7 @@ logd_parms_t::decode (const str &p)
   t->lookup ("user",      &user);
   t->lookup ("group",     &group);
   t->lookup ("ssllog",    &ssllog);
+  t->lookup ("pidfile",   &pidfile);
 }
 
 str

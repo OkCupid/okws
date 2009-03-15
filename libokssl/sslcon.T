@@ -6,6 +6,7 @@
 #include "oksslcon.h"
 #include "oksslutil.h"
 #include "tame_io.h"
+#include "okdbg.h"
 
 namespace okssl {
 
@@ -20,14 +21,15 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   con_t::con_t (int fd, SSL *ssl)
-    : _fd (fd), 
+    : _fd (tame::rcfd_t::alloc (fd)), 
       _ssl (ssl),
       _rbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _wbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _ok (true),
       _connected (false),
-      _rfd (fd, selread),
-      _wfd (fd, selwrite)
+      _rfd (tame::iofd_t::alloc (_fd, selread)),
+      _wfd (tame::iofd_t::alloc (_fd, selwrite)),
+      _eof (false)
   {
     unsigned long sl = 1;
     if (BIO_socket_ioctl (fd, FIONBIO, &sl) < 0) {
@@ -44,10 +46,6 @@ namespace okssl {
 
   con_t::~con_t ()
   {
-    if (_fd >= 0) {
-      close (_fd);
-      _fd = -1;
-    }
     SSL_free (_ssl);
   }
 
@@ -128,13 +126,13 @@ namespace okssl {
 	switch (err) {
 	case SSL_ERROR_WANT_READ:
 	  {
-	    twait { _rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    twait { _rfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	    go = (oc == OUTCOME_SUCC);
 	  }
 	  break;
 	case SSL_ERROR_WANT_WRITE:
 	  {
-	    twait { _wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	    twait { _wfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	    go = (oc == OUTCOME_SUCC);
 	  }
 	  break;
@@ -152,7 +150,6 @@ namespace okssl {
   }
 
   //-----------------------------------------------------------------------
-
 
   tamed void
   con_t::drain_to_network_T (strbuf *bp, evb_t ev)
@@ -175,7 +172,7 @@ namespace okssl {
     while (go) {
 
       if (need_read) {
-	twait { _rfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	twait { _rfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	if (oc == OUTCOME_SUCC) { 
 	  SSL_read (_ssl, buf, 0);
 	  need_read = false;
@@ -183,7 +180,7 @@ namespace okssl {
 	  go = false;
 	}
       } else if (uio->resid () > 0 && wait_for_write) {
-	twait { _wfd.on (connector::cnc (mkevent (), ev, &oc)); }
+	twait { _wfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	wait_for_write = false;
 	go = (oc == OUTCOME_SUCC);
       }
@@ -195,6 +192,16 @@ namespace okssl {
 	{
 	  const struct iovec &iov = uio->iov ()[0];
 	  rc = SSL_write (_ssl, iov.iov_base, iov.iov_len);
+
+	  if (OKDBG2 (SSL_OUTDATA)) {
+	    if (rc > 0) {
+	      strbuf b;
+	      str s (reinterpret_cast<const char *> (iov.iov_base), rc);
+	      b << "++ SSL write (" << rc << "," << iov.iov_len << "): "
+		<< s << "\n";
+	      b.tosuio ()->output (2);
+	    }
+	  }
 	}
 
 	if (rc >= 0) {
@@ -220,6 +227,11 @@ namespace okssl {
 	go = false;
       }
     }
+    if (OKDBG2 (SSL_OUTDATA)) {
+      size_t sz = uio->resid ();
+      okdbg_warn (CHATTER, "leaving sslcon::drain; rc=%d; resid=%zu\n",
+		  ret, sz);
+    }
     ev->trigger (ret);
   }
 
@@ -236,19 +248,32 @@ namespace okssl {
       ssize_t ret (-1);
       char buf[BUFSZ];
       int err;
+      size_t tot (0);
     }
 
     twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
 
     while (go) {
       if (need_write) {
-	twait { _wfd.on (mkevent ()); }
+	twait { _wfd->on (mkevent ()); }
 	SSL_write (_ssl, buf, 0);
       } else if (len > 0) {
 	if (wait_for_read) {
-	  twait { _rfd.on (mkevent ()); }
+	  twait { _rfd->on (mkevent ()); }
 	}
 	ret = SSL_read (_ssl, out, len);
+
+	if (ret == 0) { _eof = true; }
+	if (ret > 0) { tot += ret; }
+
+	if (OKDBG2 (SSL_INDATA)) {
+	  if (ret > 0) {
+	    strbuf b;
+	    str s (reinterpret_cast<const char *> (out), ret);
+	    b << "++ SSL read: " << s << "\n";
+	    b.tosuio ()->output (2);
+	  }
+	}
 
 	if (ret < 0) {
 	  err = SSL_get_error (_ssl, ret);
@@ -270,6 +295,10 @@ namespace okssl {
 	}
       }
     }
+
+    OKDBG4 (SSL_INDATA, CHATTER, 
+	    "leaving sslcon::read; rc=%zd; bytes=%zu\n", ret, tot);
+
     ev->trigger (ret);
   }
 #undef BUFSZ
@@ -330,6 +359,12 @@ namespace okssl {
       }
 
       (*_abuf_cb) ();
+
+      // the above callback might have freed memory out from underneath
+      // us (if everything got deallocated).  In that case, we gotta
+      // jet out of here.
+      if (*destroyed) 
+	return;
     }
     _running = false;
   }

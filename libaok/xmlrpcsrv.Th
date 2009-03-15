@@ -111,6 +111,8 @@ public:
     : okclnt_xmlrpc_base_t (xx, s, to), _srvc (s) { }
   void process () { _srvc->handle (this); }
 
+  virtual bool is_authorized (xml_req_t q) { return true; }
+
   virtual void handle_multicall (xml_req_t q, xml_resp_cb_t cb) 
   { handle_multicall_T (q, cb); }
   virtual void handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb);
@@ -131,7 +133,8 @@ enum { OK_XMLRPC_OK = 0,
        OK_XMLRPC_ERR_NO_METHOD_NAME = 203,
        OK_XMLRPC_ERR_METHOD_NOT_FOUND = 204,
        OK_XMLRPC_ERR_RECURSIVE = 205,
-       OK_XMLRPC_ERR_BAD_PARAMS = 206 };
+       OK_XMLRPC_ERR_BAD_PARAMS = 206,
+       OK_XMLRPC_ERR_NOT_AUTHORIZED = 207 };
 
 
 template<class C, class S>
@@ -176,6 +179,7 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
     str nm;
     C *cli (reinterpret_cast<C *> (c));
     u_int64_t rpc_id (xml_rpc_new_global_id ());
+    xml_req_t q;
   }
 
   do_debug (c->top_level (), "XML-RPC Input", rpc_id);
@@ -192,7 +196,13 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
     resp = xml_fault_obj_t (OK_XMLRPC_ERR_NO_METHOD_NAME,
 			    "No method name given");
   } else {
-    twait { handle (cli, nm, xml_req_t (call->params ()), mkevent (resp)); }
+    q = xml_req_t (call->params ());
+    if (!cli->is_authorized (q)) {
+      resp = xml_fault_obj_t (OK_XMLRPC_ERR_NOT_AUTHORIZED,
+			      "Bad IP/credentials given");
+    } else {
+      twait { handle (cli, nm, q, mkevent (resp)); }
+    }
   }
 
   do_debug (resp.el (), "XML-RPC Output", rpc_id);

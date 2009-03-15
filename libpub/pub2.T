@@ -220,7 +220,7 @@ namespace pub2 {
       clnt_stat err;
       bool ret (true);
     }
-    twait { RPC::pub_program_2::pub2_null (_cli, mkevent (err)); }
+    twait { _cli->call (PUB2_NULL, NULL, NULL, mkevent (err)); }
     if (err) {
       warn << "NULL call to pubd failed: " << err << "\n";
       ret = false;
@@ -235,9 +235,7 @@ namespace pub2 {
       clnt_stat stat;
       bool ret (true);
     }
-    twait { 
-      RPC::pub_program_2::pub2_get_pushes (_cli, &_connected, mkevent (stat)); 
-    }
+    twait { _cli->call (PUB2_GET_PUSHES, NULL, &_connected, mkevent (stat)); }
     if (stat) {
       warn << "Intial RPC call to pubd-2 failed: " << stat << "\n";
       ret = false;
@@ -353,9 +351,7 @@ namespace pub2 {
     arg.size = sz;
     arg.opts = opts;
 
-    twait { 
-      RPC::pub_program_2::pub2_getchunk (_cli, &arg, &res, mkevent (err) ); 
-    }
+    twait { _cli->call (PUB2_GETCHUNK, &arg, &res, mkevent (err) ); }
 
     if (err) {
       b << "RPC error in PUB2_GETCHUNK: " << err << "\n";
@@ -482,9 +478,7 @@ namespace pub2 {
       cache_key_t k (nm, opts);
     }
     if (!prepare_getfile (k, &arg, &file, &status)) {
-      twait { 
-	RPC::pub_program_2::pub2_getfile (_cli, &arg, &res, mkevent (err)); 
-      }
+      twait { _cli->call (PUB2_GETFILE, &arg, &res, mkevent (err)); }
       if (err) {
 	warn << nm << ": error in RPC call to PUB2_GETFILE: " 
 	     << err << "\n";
@@ -815,20 +809,35 @@ publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
 					   
 void 
 pfile_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
-		  pub2::status_cb_t ev, ptr<closure_t> dummy) const
+		  pub2::status_cb_t callercv, ptr<closure_t> dummy) const
 {
   o->output_header (genv);
-  secs.publish (iface, o, genv, ev);
+  secs.publish (iface, o, genv, callercv);
 }
 
 void 
 pfile_sec_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
-		      pub2::status_cb_t ev, ptr<closure_t> dummy) const
+		      pub2::status_cb_t callercv, ptr<closure_t> dummy) const
 {
   if (els) 
-    els->publish (iface, o, genv, ev);
+    els->publish (iface, o, genv, callercv);
   else
-    (*ev) (XPUB_STATUS_OK);
+    (*callercv) (XPUB_STATUS_OK);
+}
+
+void 
+pfile_include_t::publish (pub2_iface_t *iface, output_t *o,
+			  penv_t *genv, xpub_status_cb_t callercv,
+			  ptr<closure_t> dummy) const
+{
+  if (!fn) {
+    o->output_err (genv, "include: no file given", lineno);
+    xpub_status_t status (XPUB_STATUS_NOENT);
+    *status.error = "include command with no file given";
+    (*callercv) (status);
+  } else {
+    pfile_func_t::publish (iface, o, genv, env, fn, callercv);
+  }
 }
 
 str
@@ -842,7 +851,7 @@ pfile_include2_t::eval_fn (penv_t *e) const
 
 void
 pfile_include2_t::publish (pub2_iface_t *iface, output_t *o,
-			   penv_t *genv, xpub_status_cb_t ev,
+			   penv_t *genv, xpub_status_cb_t callercv,
 			   ptr<closure_t> dummy) const
 {
   str v = eval_fn (genv);
@@ -850,9 +859,9 @@ pfile_include2_t::publish (pub2_iface_t *iface, output_t *o,
     o->output_err (genv, "include: no file given or expansion failed", lineno);
     xpub_status_t status (XPUB_STATUS_NOENT);
     *status.error = "include v2 command with no filename";
-    (*ev) (status);
+    (*callercv) (status);
   } else {
-    pfile_func_t::publish (iface, o, genv, env, v, ev);
+    pfile_func_t::publish (iface, o, genv, env, v, callercv);
   }
 }
 
@@ -863,6 +872,18 @@ pfile_include2_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
   str v = eval_fn (genv);
   if (!v || v.len () == 0) {
     o->output_err (genv, "include: no file given or expansion failed", lineno);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool
+pfile_include_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
+				   penv_t *genv) const
+{
+  if (!fn) {
+    o->output_err (genv, "include: no file given", lineno);
     return true;
   } else {
     return false;
@@ -921,7 +942,7 @@ pfile_switch_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g)
 
 void
 pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
-			 xpub_status_cb_t ev, ptr<closure_t> dummy) const
+			 xpub_status_cb_t callercv, ptr<closure_t> dummy) const
 {
   pswitch_env_base_t *pse = _eval_cache_flag ? 
     _cached_eval_res : eval_for_output (o, g);
@@ -931,11 +952,11 @@ pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
 
   if (pse) {
     if (pse->fn) {
-      pfile_func_t::publish (i, o, g, pse->env (), pse->fn, ev);
+      pfile_func_t::publish (i, o, g, pse->env (), pse->fn, callercv);
     } else if (pse->nested_env ()) {
-      pse->nested_env ()->publish (i, o, g, ev);
+      pse->nested_env ()->publish (i, o, g, callercv);
     } else {
-      (*ev) (xpub_status_t (XPUB_STATUS_OK));
+      (*callercv) (xpub_status_t (XPUB_STATUS_OK));
     }
   }
 }

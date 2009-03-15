@@ -197,12 +197,12 @@ public:
   helper_exec_t (const rpc_program &rp, const vec<str> &a, u_int n = 0,
 		 u_int o = HLP_OPT_PING|HLP_OPT_NORETRY,
 		 ptr<argv_t> env = NULL) 
-    : helper_t (rp, o), argv (a), n_add_socks (n),
+    : helper_t (rp, o), _pid (0), argv (a), n_add_socks (n),
       _command_line_flag (ok_fdfd_command_line_flag),
       _env (env) {}
   helper_exec_t (const rpc_program &rp, const str &s, u_int n = 0,
 		 u_int o = HLP_OPT_PING|HLP_OPT_NORETRY)
-    : helper_t (rp, o), n_add_socks (n),
+    : helper_t (rp, o), _pid (0), n_add_socks (n),
       _command_line_flag (ok_fdfd_command_line_flag) 
   { argv.push_back (s); }
 
@@ -213,17 +213,22 @@ public:
   int get_sock (u_int i = 0) const 
   { return (i < socks.size () ? socks[i] : -1); }
   void set_command_line_flag (const str &s) { _command_line_flag = s; }
+  pid_t pid () const { return _pid; }
+  bool make_pidfile (const str &s);
+  bool remove_pidfile ();
   rpc_ptr<int> uid;
   rpc_ptr<int> gid;
 protected:
   void launch (cbb c);
 private:
+  pid_t _pid;
   vec<int> socks;
   void setprivs ();
   vec<str> argv;
   u_int n_add_socks;
   str _command_line_flag;
   ptr<argv_t> _env;
+  str _pidfile;
 };
 
 class helper_unix_t : public helper_t {

@@ -50,7 +50,7 @@ protected:
 
 tamed void 
 okclnt_cookie_t::process_T (okclnt2_t::proc_ev_t ev)
-{ 
+{
   tvars {
     bool do_redirect (false);
   }
@@ -72,8 +72,8 @@ okclnt_cookie_t::process_T (okclnt2_t::proc_ev_t ev)
   {
     const char *cookies[] = { "x", "y", NULL };
     for (const char **cp = cookies; *cp; cp++) {
-      if (cookie.exists (*cp)) {
-	out << *cp << " -> " << cookie[*cp] << "<br>\n";
+      if (cookie ().exists (*cp)) {
+	out << *cp << " -> " << cookie()[*cp] << "<br>\n";
       }
     }
   }

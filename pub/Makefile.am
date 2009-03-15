@@ -1,13 +1,15 @@
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS_PUB)
 
-noinst_HEADERS = pubd2.h
+noinst_HEADERS = pubd.h pubd2.h
 
 okwsbin_PROGRAMS = pub treestat
 okwsexec_PROGRAMS = pubd
 pub_SOURCES = pubmain.C
 pub_LDADD = $(LDADD_PUB)
-pubd_SOURCES = pubd.C pubserv2.C cache2.C 
+pubd_SOURCES = pubd.C pubserv.C pubserv2.C cache2.C 
 pubd_LDADD = $(LDADD_PUB)
 treestat_SOURCES = treestat.C
 treestat_LDADD = $(LDADD_PUB)
@@ -15,7 +17,7 @@ treestat_LDADD = $(LDADD_PUB)
 SUFFIXES = .T .C .h
 
 .T.C:
-	$(TAME) -o $@ $< || (rm -f $@ && false)
+	-$(TAME) -o $@ $< || rm -f $@
 
 cache2.o:	cache2.C
 cache2.lo:	cache2.C
@@ -25,17 +27,15 @@ pubserv2.o:	pubserv2.C
 pubserv2.lo:	pubserv2.C
 treestat.o:	treestat.C
 treestat.lo:	treestat.C
-pubmain.o:	pubmain.C
-pubmain.lo: pubmain.C
 
-CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C pubmain.C
-EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T pubmaim.T
+CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C
+EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T
 MAINTAINERCLEANFILES = Makefile.in
 
 dist-hook:
-	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C pubmain.C
+	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C
 
 .PHONY: tameclean 
 
 tameclean:
-	rm -f cache2.C pubd.C treestat.C pubserv2.C pubmain.C
+	rm -f cache2.C pubd.C treestat.C pubserv2.C

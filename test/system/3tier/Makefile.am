@@ -43,7 +43,7 @@ tst2d_LDADD = $(LDADD_AMYSQL)
 #-----------------------------------------------------------------------
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
-EXTRA_DIST = $(TAMEIN) tstprot.x
+EXTRA_DIST = $(TAMEIN) tst2_prot.x
 MAINTAINERCLEANFILES = Makefile.in
 
 #-----------------------------------------------------------------------

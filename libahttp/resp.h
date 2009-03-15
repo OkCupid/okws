@@ -37,6 +37,8 @@
 //
 extern str global_okws_server_label;
 
+//-----------------------------------------------------------------------
+
 class http_status_t {
 public:
   http_status_t (int n, const str &sd, const str &ld)
@@ -46,6 +48,8 @@ public:
   const str ldesc;
   ihash_entry<http_status_t> lnk;
 };
+
+//-----------------------------------------------------------------------
 
 class http_status_set_t {
 public:
@@ -63,7 +67,11 @@ private:
   ihash<int, http_status_t, &http_status_t::status, &http_status_t::lnk> tab;
 };
 
+//-----------------------------------------------------------------------
+
 extern http_status_set_t http_status;
+
+//-----------------------------------------------------------------------
 
 class http_hdr_field_t {
 public:
@@ -82,15 +90,21 @@ protected:
   const bool _can_duplicate;
 };
 
+//-----------------------------------------------------------------------
+
 class http_hdr_date_t : public http_hdr_field_t {
 public:
   http_hdr_date_t () : http_hdr_field_t ("Date", getdate ()) {}
 };
 
+//-----------------------------------------------------------------------
+
 class http_hdr_size_t : public http_hdr_field_t {
 public:
   http_hdr_size_t (ssize_t s) : http_hdr_field_t ("Content-Length", s) {}
 };
+
+//-----------------------------------------------------------------------
 
 class http_hdr_cookie_t : public http_hdr_field_t {
 public:
@@ -98,12 +112,15 @@ public:
     : http_hdr_field_t ("Set-Cookie", v, true) {}
 };
 
+//-----------------------------------------------------------------------
+
 class http_resp_attributes_t {
 public:
   http_resp_attributes_t (u_int s, htpv_t v) : 
     _status (s), _version (v), _content_type ("text/html"), 
     _cache_control ("private"), 
-    _gzip (false) {}
+    _gzip (false),
+    _connection ("closed") {}
 
   u_int get_status () const { return _status; }
   htpv_t get_version () const { return _version; }
@@ -113,16 +130,19 @@ public:
   str get_content_disposition () const { return _contdisp; }
   bool get_gzip () const { return _gzip; }
   bool get_others (vec<http_hdr_field_t> *output);
+  str get_connection () const { return _connection;  }
 
   void get_others (cbs cb);
 
   void set_version (htpv_t v) { _version = v; }
+  void set_status (int i) { _status = i; }
   void set_content_type (const str &s) { _content_type = s; }
   void set_cache_control (const str &s) { _cache_control = s; }
   void set_expires (const str &s) { _expires = s; }
   void set_gzip (bool b) { _gzip = b; }
   void set_content_disposition (const str s) { _contdisp = s; }
   void set_others (ptr<vec<http_hdr_field_t> > p ) { _others = p; }
+  void set_connection (str s) { _connection = s; }
 
   u_int _status;
   htpv_t _version;
@@ -131,10 +151,13 @@ public:
   str _expires;
   str _contdisp;
   bool _gzip;
+  str _connection;
 
   ptr<vec<http_hdr_field_t> > _others;
 
 };
+
+//-----------------------------------------------------------------------
 
 class http_resp_header_t {
 public:
@@ -152,16 +175,19 @@ public:
   virtual void fill (bool gz = false);
   void fill (bool gz, ssize_t len);
   strbuf to_strbuf () const;
+  void fill_strbuf (strbuf &b) const;
   inline int get_status () const { return attributes.get_status (); }
   void gzip ();
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", global_okws_server_label); }
-  void add_closed () { add ("Connection", "close"); }
+  void add_connection ();
 protected:
   http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;
   bool cleanme;
 };
+
+//-----------------------------------------------------------------------
 
 class http_resp_header_redirect_t : public http_resp_header_t {
 public:
@@ -169,6 +195,8 @@ public:
     : http_resp_header_t (a) { fill (loc); }
   void fill (const str &loc);
 };
+
+//-----------------------------------------------------------------------
 
 class http_resp_header_ok_t : public http_resp_header_t {
 public:
@@ -178,7 +206,55 @@ public:
     : http_resp_header_t (a) { fill (a.get_gzip (), s); }
 };
 
-class http_response_t {
+//-----------------------------------------------------------------------
+
+typedef event<ssize_t>::ref ev_ssize_t;
+
+//-----------------------------------------------------------------------
+
+/**
+ * a new base class for responses version 2
+ */
+class http_response_base_t {
+public:
+  http_response_base_t ()
+    : _uid (0),
+      _inflated_len (0) {}
+
+  virtual ~http_response_base_t () {}
+
+  // accessors to header information --------------------------------------
+  virtual const http_resp_header_t *get_header () const = 0;
+  virtual http_resp_header_t *get_header () = 0;
+
+  // the all-import output function ---------------------------------------
+  virtual u_int send (ptr<ahttpcon> x, cbv::ptr cb) = 0;
+  virtual void send2 (ptr<ahttpcon> x, ev_ssize_t ev) = 0;
+
+  // fixup logging information --------------------------------------------
+  virtual void set_uid (u_int64_t u) { _uid = u; }
+  virtual void set_inflated_len (size_t s) { _inflated_len = s; }
+  virtual void set_custom_log2 (const str &s) { _custom_log2 = s; }
+
+  // access for logging info ---------------------------------------------
+  virtual u_int64_t get_uid () const { return _uid; }
+  virtual size_t get_inflated_len () const { return _inflated_len; }
+  virtual str get_custom_log2 () const { return _custom_log2; }
+
+  // access for response ------------------------------------------------
+  int get_status () const { return get_header ()->get_status (); }
+  virtual size_t get_nbytes () const = 0;
+
+private:
+  u_int64_t _uid;
+  size_t _inflated_len;
+  str _custom_log2;
+
+};
+
+//-----------------------------------------------------------------------
+
+class http_response_t : public http_response_base_t {
 public:
   http_response_t (const http_resp_header_t &h) 
     : header (h), nbytes (0), uid (0), inflated_len (0) {}
@@ -187,33 +263,49 @@ public:
       inflated_len (0) {}
   strbuf to_strbuf () const { return (header.to_strbuf () << body); }
   u_int send (ptr<ahttpcon> x, cbv::ptr cb) ;
-  inline int get_status () const { return header.get_status (); }
-  inline int get_nbytes () const { return nbytes; }
-  inline size_t get_inflated_len () const { return inflated_len; }
+  size_t get_nbytes () const { return nbytes; }
   inline void gzip () { header.gzip (); }
+  void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
 
-  void set_inflated_len (size_t l) { inflated_len = l; }
-  inline void set_uid (u_int64_t i) { uid = i; }
-  inline u_int64_t get_uid () const { return uid; }
+  const http_resp_header_t *get_header () const { return &header; }
+  http_resp_header_t *get_header () { return &header; }
 
   http_resp_header_t header;
 protected:
+
+  void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
+
   strbuf body;
-  u_int nbytes;
+  size_t nbytes;
   u_int64_t uid;
   size_t inflated_len;
+  str _custom_log2;
 };
+
+//-----------------------------------------------------------------------
+
+class http_response_head_t : public http_response_t {
+public:
+  http_response_head_t (size_t sz, const http_resp_attributes_t &a) :
+    http_response_t (http_resp_header_ok_t (sz, a)) {}
+};
+
+//-----------------------------------------------------------------------
 
 class http_response_ok_t : public http_response_t {
 public:
   http_response_ok_t (const strbuf &b, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_ok_t (b.tosuio ()->resid (), a), b) 
   {}
+
+//-----------------------------------------------------------------------
   
   // for piece-meal output mode
   http_response_ok_t (size_t s, const http_resp_attributes_t &a) :
     http_response_t (http_resp_header_ok_t (s, a)) {}
 };
+
+//-----------------------------------------------------------------------
 
 class http_response_redirect_t : public http_response_t {
 public:
@@ -221,18 +313,41 @@ public:
     http_response_t (http_resp_header_redirect_t (s, a)) {}
 };
 
+//-----------------------------------------------------------------------
+
 class http_error_t : public http_response_t {
 public:
-  http_error_t (int n, const str &si, const str &aux = NULL, htpv_t v = 0)
-    : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
-  { header.fill (); }
+
+  http_error_t (int n, const str &si, const str &aux = NULL, htpv_t v = 0);
+  http_error_t (const http_resp_attributes_t &hra, const str &si,
+		const str &aux = NULL);
   static strbuf make_body (int n, const str &si, const str &aux);
 };
+
+//-----------------------------------------------------------------------
+
+class http_pub_t : public http_response_t {
+public:
+  http_pub_t (int n, const pub_base_t &p, const str &fn, aarr_t *env = NULL,
+	      htpv_t v = 0, bool gz = false) 
+    : http_response_t (http_resp_header_t (n, v)), zb (),
+      err (!p.include (&zb, fn, 0, env))
+  { if (!err) zb.to_strbuf (&body, v > 0 && gz); }
+     
+  zbuf zb;
+  bool err;
+  static ptr<http_pub_t> alloc (int n, const pub_base_t &p, const str &fn,
+				aarr_t *env = NULL, htpv_t v = 0);
+};
+
+//-----------------------------------------------------------------------
 
 class http_pub2_t : public http_response_t {
 public:
   http_pub2_t (int n, htpv_t v = 0)
     : http_response_t (http_resp_header_t (n, v)) {} 
+  http_pub2_t (const http_resp_attributes_t &ha)
+    : http_response_t (http_resp_header_t (ha)) {}
 
   void publish (ptr<pub2::remote_publisher_t> p, str fn,
 		cbb cb, aarr_t *env = NULL,
@@ -240,10 +355,17 @@ public:
 
   static void
   alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-	 callback<void, ptr<http_pub2_t> >::ref cb,
+	 event<ptr<http_pub2_t> >::ref cb,
 	 aarr_t *env = NULL, htpv_t v = 0, bool gz = false, CLOSURE);
+
+  static void
+  alloc2 (ptr<pub2::remote_publisher_t> p, 
+	  const http_resp_attributes_t &hra, str fn,
+	  event<ptr<http_pub2_t> >::ref cb,
+	  aarr_t *env = NULL, CLOSURE);
 
 };
 
+//-----------------------------------------------------------------------
 
 #endif /* _LIBAHTTP_RESP */

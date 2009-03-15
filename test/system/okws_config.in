@@ -7,6 +7,7 @@ ServiceBin	test/system
 PubdExecPath	pub/pubd -w -f @@TOP_BUILD@@/test/system/pub_config
 OklogdExecPath	logd/oklogd
 OkdExecPath	okd/okd
+Pubd2ExecPath	pub/pubd -2 -f @@TOP_BUILD@@/test/system/pub_config
 
 # SSL Configuration (if enabled)
 @@NO_SSL@@OkssldExecPath	ssld/okssld
@@ -25,14 +26,16 @@ AccessLogFmt	ivt1sbU
 OkMgrSocket             okd.sock
 OkMgrSocketAccessMode	0777
 
-Service		static /static
+Service		static -p 8818 -p 8819 -h 3 -l 1 /static
 RegexAlias	/static		^(:\d+)?/static/.*$
 Alias		/static		/
 
 Service		configtest 	/configtest
 Service		simple	/simple
+Service		pub1tst /pub1tst
 Service		form	/form
 Service 	cookie /cookie
+Service		post /post
 Service		upload /upload
 Service 	purify /purify
 Service		posttest /posttest
@@ -51,3 +54,4 @@ ErrorDoc	404	/err/404.html
 FilterCGI 0
 
 LazyStartup 1
+SafeStartup 0

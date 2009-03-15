@@ -32,6 +32,17 @@ res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
       "port" : 4000,
       "program" : "tst_prog_1",
+      "procno" : C.TST_RPC9,
+      "arg" : { "id" : "ui8:1",
+                "questions" : [ { "questionid" : 10, "data" : "ui4:20" } ] }
+      } )
+
+sys.exit (0)
+
+res = server.xdr.xlate (
+    { "hostname" : "127.0.0.1",
+      "port" : 4000,
+      "program" : "tst_prog_1",
       "procno" : C.TST_RPC3,
       "arg" : { "p1" : [], 
                 "p2" : [ { "xx" : C.XXC, "z" : 33 } ]
@@ -90,7 +101,7 @@ if ull != ull_post:
 if ll != ll_post:
     raise ValueError, "RPC problem translating int64_t; " + \
           "got %d, expected %d" % (ll_post, ll)
-	
+
 
 try:
     

@@ -59,6 +59,20 @@ struct bb_t {
 
 typedef bb_t cc_t<>;
 
+struct mote_t {
+       int questionid;
+       unsigned int data;
+};
+
+typedef mote_t motes_t<>;
+
+struct aston_t {
+       unsigned hyper id;
+       motes_t questions;
+};
+
+
+namespace RPC {
 
 program TST_PROG {
 	version TEST_VERS {
@@ -90,8 +104,13 @@ program TST_PROG {
 		int
 		TST_RPC8(long_arg_t) = 8;
 
+		int
+		TST_RPC9(aston_t) = 9;
+
 	} = 1;
 } = 34291;
+
+};
 
 %#define XXXX
 %#define FOO0  455

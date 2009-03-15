@@ -27,6 +27,7 @@
 #include "xpub.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include "pubd.h"
 #include "parseopt.h"
 #include "pslave.h"
 #include "pubd2.h"
@@ -34,11 +35,44 @@
 #include "okdbg.h"
 #include "pub2.h"
 
+// Version 1 - global variables used to time out connection if no 
+// contact from parent
+pslave_status_t slave_status;
+bool parent_connect;
+bool primary;
+
+int version = 1;
+
+/*
+ *
+extern char **environ;
+static void
+dump_env ()
+{
+  for (char **ep = environ; *ep; ep++) {
+    warn << "env: " << *ep << "\n";
+  }
+}
+*
+*/
+
 template<class T> bool
 config_var (pub_config_iface_t *p, const char *vname, T *out)
 {
   str s = p->cfg (vname);
   return (s && convertint (s, out));
+}
+
+void
+client_accept (ptr<axprt_stream> x)
+{
+  assert (version == 1);
+  if (!x)
+    fatal ("EOF from parent process.\n");
+  parent_connect = true;
+  bool p = primary && slave_status == PSLAVE_SLAVE;
+  vNew pubserv_t (x, p);
+  primary = false;
 }
 
 static void 
@@ -60,6 +94,13 @@ usage ()
 {
   warn << "usage: pubd [-p port] [-w] [XXX other undocumented opts XXX]\n";
   exit (1);
+}
+
+static void
+pubd_slave_cb ()
+{
+  if (!parent_connect)
+    fatal << "exitting; no parent process found\n";
 }
 
 tamed static void
@@ -87,6 +128,9 @@ main_T (int argc, char **argv)
     int fdfd (1);
   }
 
+  parent_connect = false;
+  primary = true;
+
   /* need this call to setup global gzip table */
   zinit ();
 
@@ -103,7 +147,7 @@ main_T (int argc, char **argv)
    * set up global pub variables 
    * arg true = this pubd is an exporter.
    */
-  global_parser = ppt = pub_parser_t::alloc (true);
+  ppt = pub_parser_t::alloc (true);
 
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;
@@ -111,7 +155,7 @@ main_T (int argc, char **argv)
   while ((ch = getopt (argc, argv, "2vp:wj:u:g:f:s:x:CH:S:")) != -1)
     switch (ch) {
     case '2':
-      warn << "-2 flag is deprecated; only version 2 is possible now\n";
+      version = 2;
       break;
     case 'p':
       if (!convertint (optarg, &port))
@@ -162,9 +206,11 @@ main_T (int argc, char **argv)
   if (!configfile) 
     configfile = okws_etcfile (ok_pub_config);
 
-  if (fdfd < 0) {
-    warn << "pubd also needs a -x with a Unix FD\n";
-    exit (1);
+  if (version == 2) {
+    if (fdfd < 0) {
+      warn << "pubd -2 also needs a -x with a Unix FD\n";
+      exit (1);
+    }
   }
   
   /*
@@ -179,24 +225,39 @@ main_T (int argc, char **argv)
   if (!have_cfg) 
     warn << "pubd running without default variable bindings\n";
 
-  if (pub2_cache) {
-    config_var (cfgparse, "RefreshIntervalMin", &ok_pub2_refresh_min);
-    config_var (cfgparse, "RefreshIntervalMax", &ok_pub2_refresh_max);
-    config_var (cfgparse, "RefreshIntervalIncr", &ok_pub2_refresh_incr);
-    config_var (cfgparse, "NegativeLookupCacheTimeout",
-		&ok_pub2_neg_cache_timeout);
-    config_var (cfgparse, "CleanCacheInterval", 
-		&ok_pub2_clean_cache_interval);
-    config_var (cfgparse, "GetfileObjectLifetime", 
-		&ok_pub2_getfile_object_lifetime);
-    config_var (cfgparse, "TreestatCheckInterval",
-		&ok_pub2_treestat_interval);
-    
-    fl = cache = New pubserv2::cache_t ();
-  } else {
-    fl = New pubserv2::chunkholder_t ();
+  if (version == 1) {
+    if (!configfile || !ppt->parse_config (configfile))
+      warn << "v1 error: cannot answer CONFIG RPC's\n";
+
+    if (port == ok_pubd_port) {
+      config_var (cfgparse, "PORT", &port);
+    }
   }
-  
+
+  if (version == 2) {
+    if (pub2_cache) {
+      config_var (cfgparse, "RefreshIntervalMin", &ok_pub2_refresh_min);
+      config_var (cfgparse, "RefreshIntervalMax", &ok_pub2_refresh_max);
+      config_var (cfgparse, "RefreshIntervalIncr", &ok_pub2_refresh_incr);
+      config_var (cfgparse, "NegativeLookupCacheTimeout",
+		  &ok_pub2_neg_cache_timeout);
+      config_var (cfgparse, "CleanCacheInterval", 
+		  &ok_pub2_clean_cache_interval);
+      config_var (cfgparse, "GetfileObjectLifetime", 
+		  &ok_pub2_getfile_object_lifetime);
+      config_var (cfgparse, "TreestatCheckInterval",
+		  &ok_pub2_treestat_interval);
+
+      fl = cache = New pubserv2::cache_t ();
+    } else {
+      fl = New pubserv2::chunkholder_t ();
+    }
+    
+  } else if (!pub2_cache) {
+    warn << "Can only use -C with -2!\n";
+    usage ();
+  }
+
   if (!jaildir) {
     if (!cfgparse->cfg ("JailDir", &jaildir, true)) {
       warn << "Cannot find a jail directory; none was specified with -j\n"
@@ -217,14 +278,24 @@ main_T (int argc, char **argv)
   if (!uname) uname = cfgparse->cfg ("RunAsUser", true);
   if (!gname) gname = cfgparse->cfg ("RunAsGroup", true);
 
-  warn ("OKWS version %s, Pub v2, pid %d\n", 
-	OKWS_PATCHLEVEL_STR, int (getpid ()));
-  
-  // Since we're spawned via axprt_unix_dospawnv, that means
-  // that our parent is going to be sending us RPCs on
-  // standard input.
-  ptr<axprt_unix> x (axprt_unix::alloc (0, ok_axprt_ps));
-  vNew pubserv2::primary_srv_t (x, fl, fdfd);
+
+  warn ("OKWS version %s, Pub v%d, pid %d\n", 
+	OKWS_PATCHLEVEL_STR, version, int (getpid ()));
+
+  if (version == 1) {
+    if ((slave_status = pub_slave (wrap (client_accept), port, &slave_status)) 
+	== PSLAVE_ERR) {
+      warn << port << ": port already in use / can't bind to port\n";
+      exit (1);
+    }
+  } else {
+    // Since we're spawned via axprt_unix_dospawnv, that means
+    // that our parent is going to be sending us RPCs on
+    // standard input.
+    ptr<axprt_unix> x (axprt_unix::alloc (0, ok_axprt_ps));
+    vNew pubserv2::primary_srv_t (x, fl, fdfd);
+  }
+	  
 
   setsid ();
 
@@ -250,6 +321,8 @@ main_T (int argc, char **argv)
 
   cfgparse = NULL;
   set_signals ();
+  if (version == 1 && slave_status == PSLAVE_SLAVE)
+    delaycb (ok_connect_wait, 0, wrap (pubd_slave_cb));
 }
 
 

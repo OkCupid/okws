@@ -53,7 +53,7 @@ class okld_helper_t {
 public:
   okld_helper_t (const str &n, const str &u, const str &g);
   ~okld_helper_t () {}
-  void set_env (ptr<argv_t> e) { _env = e; }
+  void set_env (ptr<env_argv_t> e) { _env = e; }
   vec<str> &argv () { return _argv; }
   char* const* env () const ;
   void set_group (const str &g);
@@ -84,8 +84,8 @@ protected:
   const str _name;
 
   vec<str> _argv;
-  ptr<argv_t> _env;
-  argv_t _empty_env;
+  ptr<env_argv_t> _env;
+  env_argv_t _empty_env;
   int _pid;
 
   ptr<axprt_unix> _x;
@@ -134,7 +134,7 @@ class okld_jailed_exec_t {
 public:
   okld_jailed_exec_t (const str &e, okld_t *o, const str &l) :
     rexecpath (e), okld (o), cfgfile_loc (l), have_ustat (false),
-    exec_uid (-1), exec_gid (-1), mode (-1) {}
+    exec_uid (-1), exec_gid (-1), mode (-1), _unsafe (false) {}
   ~okld_jailed_exec_t () {}
 
   bool get_unix_stat ();
@@ -146,6 +146,7 @@ public:
   const str &loc () const { return cfgfile_loc; }
   void assign_mode (int m) { mode = m; }
   bool chmod (int m);
+  void set_unsafe (bool b = true) { _unsafe = b; }
 
   /**
    * get the execpath relative to current file system root, adjusted
@@ -184,6 +185,7 @@ protected:
 
   int exec_uid, exec_gid;  // UID/GID of the executable!
   int mode;
+  bool _unsafe;
 
 };
 
@@ -249,9 +251,12 @@ struct svc_options_t {
       wss (-1),
       pub2_caching (-1),
       pub2_viserr (-1),
-      wait_for_signal (-1) {}
+      wait_for_signal (-1),
+      hiwat (-1),
+      lowat (-1) {}
 
-  void apply_global_defaults ();
+  bool apply_global_defaults (const str &svc);
+  bool check_options (const str &loc) const;
 
   // service-specific options
   //
@@ -270,6 +275,10 @@ struct svc_options_t {
   int pub2_viserr;
 
   int wait_for_signal;
+
+  int hiwat, lowat;
+
+  vec<int> ports;
 };
 
 class okld_t;
@@ -297,6 +306,7 @@ public:
   void clean_dumps ();
   void add_args (const vec<str> &a);
   void lazy_startup (evb_t ev, CLOSURE);
+  bool has_direct_ports () const { return _svc_options.ports.size () > 0; }
 
   okws1_port_t get_port () const { return port; }
   void set_service_options (const svc_options_t &so)
@@ -312,7 +322,6 @@ public:
   virtual int get_desired_execfile_mode () const { return ok_svc_mode; }
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
-
 
 protected:
   svc_options_t _svc_options;
@@ -337,8 +346,7 @@ private:
 
   // arguments given to the executable (such as 'python filename')
   vec<str> args;
-
-
+  ok_direct_ports_t _direct_ports;
 };
 
 class okld_ch_script_t : public okld_ch_t {
@@ -374,6 +382,7 @@ public:
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
       used_primary_port (false),
       pubd2 (NULL),
+      pub_v1_support (false),
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false),
       _opt_daemon (false),
@@ -388,9 +397,11 @@ public:
   void got_okssl_exec (vec<str> s, str loc, bool *errp);
   void got_generic_exec (okld_helper_t *h, vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
+  void got_pubd2_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
-  void got_pubd2_exec (vec<str> s, str loc, bool *errp);
 
+  void got_pubd_v1 (vec<str> s, str log, bool *errp) { pub_v1_support = true; }
+  
   void okld_exit (int rc);
 
   void launch (str s, CLOSURE);
@@ -516,6 +527,7 @@ private:
 	&okld_interpreter_t::_link> interpreters;
 
   clone_only_client_t *pubd2;
+  bool pub_v1_support;
   str _okd_mgr_socket;
   bool _pub_v2_error;
   
@@ -525,9 +537,9 @@ private:
   str _config_grp, _config_okd_gr, _config_okd_un;
   str _config_ssl_gr, _config_ssl_un;
   str _config_root, _config_wheel;
+  bool _config_no_pub_v2_support;
   bool _opt_daemon;
   bool _lazy_startup;
-						 
 
 };
 

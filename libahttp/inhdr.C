@@ -49,15 +49,15 @@ http_inhdr_t::parse_guts ()
     inc = true;
     switch (state) {
     case INHDRST_START:
-      abuf->mirror (scr2, SCR2_LEN);
+      abuf->mirror (_scr2->buf (), _scr2->len ());
       r = delimit_word (&tmthd);
       break;
     case INHDRST_SPC1:
       r = abuf->skip_hws (1);
       break;
     case INHDRST_TARGET:
-      r = delimit_word (&target, url ? true : false);
-      if (!url && r == ABUF_OK) {
+      r = delimit_word (&target, _parse_query_string);
+      if (!_parse_query_string && r == ABUF_OK) {
 	state = INHDRST_SPC2;
 	inc = false;
       }
@@ -65,6 +65,7 @@ http_inhdr_t::parse_guts ()
     case INHDRST_URIDAT:
       r = abuf->expectchar ('?');
       if (r == ABUF_OK) {
+	ptr<cgi_t> url = get_url ();
 	url->set_uri_mode (true);
 	url->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
@@ -72,7 +73,9 @@ http_inhdr_t::parse_guts ()
 	r = ABUF_OK;
       break;
     case INHDRST_SPC2:
-      r = abuf->skip_hws (1);
+      // Maybe there's an end-of-the-line here...
+      if ((r = eol ()) != ABUF_OK) 
+	r = abuf->skip_hws (1);
       break;
     case INHDRST_OPTPARAM:
       r = eol ();
@@ -100,12 +103,14 @@ http_inhdr_t::parse_guts ()
       // else we're waiting or found EOF or found stray '\r' in hdr
       break;
     case INHDRST_SPC3:
-      r = abuf->skip_hws (1);
+      // keepalived doesn't put a space between it's User-Agent
+      // and it, so let's accommodate it here....
+      r = abuf->skip_hws (0);
       break;
     case INHDRST_VALUE:
-      if (cookie && iscookie ()) {
+      if (ok_http_parse_cookies && get_cookie () && iscookie ()) {
 	noins = true;
-	cookie->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
+	get_cookie ()->parse (wrap (this, &http_inhdr_t::ext_parse_cb));
 	return;
       }
       r = delimit_val (&val);
@@ -150,6 +155,13 @@ http_inhdr_t::parse_guts ()
     break;
   }
 
+  if (status == HTTP_BAD_REQUEST && 
+      r == ABUF_EOF && 
+      clean_pipeline_eof_state ()) {
+
+    status = HTTP_PIPELINE_EOF;
+  }
+
   if (status == HTTP_OK)
     fixup ();
   finish_parse (status);
@@ -161,6 +173,12 @@ http_inhdr_t::fixup ()
   if (!lookup ("content-length", &contlen))
     contlen = -1;
   mthd = methodmap.lookup (tmthd);
+  
+  str tmp;
+
+  _conn_mode = 
+    ((tmp = get_connection ()) && cicmp (tmp, "keep-alive")) ? 
+    HTTP_CONN_KEEPALIVE : HTTP_CONN_CLOSED;
 }
 
 methodmap_t::methodmap_t ()
@@ -199,3 +217,108 @@ http_inhdr_t::takes_gzip () const
 	  && !netscape4_rxx.search (ua));
 }
 
+//-----------------------------------------------------------------------
+
+http_conn_mode_t 
+http_inhdr_t::get_conn_mode () const
+{ return _conn_mode; }
+
+//-----------------------------------------------------------------------
+
+void
+http_inhdr_t::set_reqno (u_int i, bool pipelining, htpv_t prev_vers)
+{
+  _reqno = i;
+  _pipeline_eof_ok = (i > 1 && pipelining && prev_vers == 1);
+}
+
+//-----------------------------------------------------------------------
+
+str
+http_inhdr_t::get_connection () const
+{
+  str tmp;
+  lookup ("connection", &tmp);
+  return tmp;
+}
+
+//-----------------------------------------------------------------------
+
+void
+http_inhdr_t::v_debug ()
+{}
+
+//-----------------------------------------------------------------------
+
+bool
+http_inhdr_t::clean_pipeline_eof_state () const
+{
+  return (state == INHDRST_START && _pipeline_eof_ok);
+}
+
+//-----------------------------------------------------------------------
+
+int
+http_inhdr_t::timeout_status () const
+{
+  return (clean_pipeline_eof_state () ? HTTP_PIPELINE_CLEAN_TIMEOUT :
+	  HTTP_TIMEOUT);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<ok::scratch_handle_t> 
+http_inhdr_t::alloc_scratch2 ()
+{
+  if (!_scratch2) {
+    _scratch2 = ok::alloc_scratch (ok_http_inhdr_buflen_sml);
+  }
+  return _scratch2;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<cgi_t>
+http_inhdr_t::get_cookie ()
+{
+  if (!_cookie) {
+    _cookie = cgi_t::alloc (get_abuf (), true, alloc_scratch2 ());
+  }
+  return _cookie;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const cgi_t>
+http_inhdr_t::get_cookie () const
+{
+  ptr<const cgi_t> out;
+  out = _cookie;
+  if (!out) out = cgi_t::global_empty ();
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
+
+ptr<cgi_t>
+http_inhdr_t::get_url ()
+{
+  if (!_url) {
+    _url = cgi_t::alloc (get_abuf (), false, alloc_scratch2 ());
+  }
+  return _url;
+}
+
+//-----------------------------------------------------------------------
+
+str
+http_inhdr_t::get_referrer (bool null_ok) const
+{
+  str ret;
+  if (!lookup ("referer", &ret) && !null_ok)
+    ret = "";
+  return ret;
+}
+
+//-----------------------------------------------------------------------

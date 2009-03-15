@@ -42,27 +42,21 @@
 //
 class http_hdr_t : public virtual async_parser_t {
 public:
-  http_hdr_t (abuf_t *a, size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
+  http_hdr_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
     : async_parser_t (a),
-      buflen (min<size_t> (bfln, HTTPHDR_MAX_SCRATCH)), 
-      scratch (b), scratchalloc (false), 
-      noins (false), nvers (0),
+      _scratch (s ? s : ok::alloc_scratch (HTTPHDR_DEF_SCRATCH)),
+      pcp (_scratch->buf ()),
+      endp (_scratch->end ()),
+      noins (false), 
+      _scr2 (ok::alloc_scratch (SCR2_LEN)),
+      nvers (0),
       CRLF_need_LF (false)
-  {
-    if (!scratch) {
-      scratch = (char *) xmalloc (buflen);
-      scratchalloc = true;
-    }
-    pcp = scratch;
-    endp = scratch + buflen;
-  }
+      
+  {}
 
   void reset ();
 
-  ~http_hdr_t () 
-  { 
-    if (scratchalloc && scratch) xfree (scratch); 
-  }
+  ~http_hdr_t () {}
 
   inline htpv_t get_vers () const { return nvers; }
   
@@ -83,9 +77,7 @@ public:
   }
 
 
-  size_t buflen;
-  char *scratch;
-  bool scratchalloc;
+  ptr<ok::scratch_handle_t> _scratch;
 
   char *pcp;        // parse character pointer
   char *endp;       // end of the scratch buffer
@@ -96,7 +88,7 @@ public:
   
   bool noins;       // on to disable insert into the pairtab (for Cookies)
 
-  char scr2[SCR2_LEN]; // scratch for logging purposes, etc
+  ptr<ok::scratch_handle_t> _scr2;
   htpv_t nvers;     // HTTP version; 0 ==> 1.0,  1 ==> 1.1
 
   bool CRLF_need_LF; // when looking for a CRLF....

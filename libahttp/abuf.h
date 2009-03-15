@@ -85,7 +85,7 @@ private:
 class abuf_t {
 public:
   abuf_t (abuf_src_t *s = NULL, bool d = false)
-    : src (s), bc (false), lch (0), buf (NULL), endp (NULL), cp (NULL), 
+    : src (s), bc (false), lch (0), _basep (NULL), _endp (NULL), _cp (NULL), 
     len (0), erc (ABUF_OK), delsrc (d), spcs (0),
     lim (-1), ccnt (0), mirror_base (NULL), mirror_p (NULL),
     mirror_end (NULL) {}
@@ -103,7 +103,7 @@ public:
   inline int peek ();
   inline void unget () { bc = true; }
   inline abuf_stat_t skip_ws ();
-  inline abuf_stat_t skip_hws (int mn = 0);
+  abuf_stat_t skip_hws (int mn = 0);
   inline abuf_stat_t expectchar (char c);
   inline abuf_stat_t requirechar (char c);
   void finish ();
@@ -141,7 +141,7 @@ private:
   abuf_src_t *src;
   bool bc;   // flag that's on if a char is buffered (due to unget ())
   int lch;
-  const char *buf, *endp, *cp;
+  const char *_basep, *_endp, *_cp;
   ssize_t len;
   abuf_stat_t erc;
   bool delsrc;
@@ -193,22 +193,6 @@ abuf_t::skip_ws ()
 }
 
 abuf_stat_t
-abuf_t::skip_hws (int mn)
-{
-  int ch;
-  do { ch = get (); spcs ++; } while (ch == ' ' || ch == '\t');
-  spcs --;
-  if (ch == ABUF_WAITCHAR)
-    return ABUF_WAIT;
-  abuf_stat_t ret = ABUF_OK;
-  if (spcs < mn)
-    ret = ABUF_PARSE_ERR;
-  spcs = 0;
-  unget ();
-  return ABUF_OK;
-}
-
-abuf_stat_t
 abuf_t::expectchar (char ch)
 {
   int c = get ();
@@ -235,8 +219,8 @@ abuf_t::requirechar (char ch)
 #define ABUF_T_GET_GOT_CHAR                   \
   ccnt ++;                                    \
   if (mirror_p && mirror_p < mirror_end)      \
-     *mirror_p++ = *cp;                       \
-  return (lch = *cp++)
+     *mirror_p++ = *_cp;                      \
+  return (lch = *_cp++)
 
 int
 abuf_t::get ()
@@ -249,13 +233,13 @@ abuf_t::get ()
   if (lim == ccnt)
     return ABUF_EOFCHAR;
 
-  if (cp < endp) {
+  if (_cp < _endp) {
     ABUF_T_GET_GOT_CHAR;
   }
 
   if (erc == ABUF_OK) {
     moredata ();
-    if (erc == ABUF_OK && cp < endp) {
+    if (erc == ABUF_OK && _cp < _endp) {
       ABUF_T_GET_GOT_CHAR;
     }
   }

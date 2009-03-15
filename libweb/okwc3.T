@@ -5,6 +5,7 @@
 #include "tame_connectors.h"
 #include "rxx.h"
 #include "oksslcon.h"
+#include "okconst.h"
 
 namespace okwc3 {
 
@@ -52,8 +53,9 @@ dnscache_entry_t::lookup (ev_hent_t ev)
   } else if (!_init || sfs_get_timenow() > _expires || _err != 0) {
     twait { do_resolution (connector::cnc (mkevent (completed), ev)); }
   } else {
-    completed = true; // cache hit!
+    completed = true; // hit cache!
   }
+
   if (completed) {
     he = _he;
     e = _err;
@@ -174,17 +176,17 @@ dnscache_entry_t::do_resolution (evb_t cb)
 
 //-----------------------------------------------------------------------
 
-str
-reqinfo_direct_t::get_fixed_filename () const
+str 
+fix_url_filename (const str &in) 
 {
   int len;
-  str ret = _filename;
+  str ret = in;
   if (!ret || (len = ret.len ()) == 0) {
     // empty file names --> "/"
     ret = "/";
   } else if (ret[0] != '/') {
     // insert leading slash if not there.
-    ret = strbuf ("/") << _filename;
+    ret = strbuf ("/") << in;
   } else {
     // trunc all but the first leading slash
     const char *fn = ret.cstr ();
@@ -202,7 +204,7 @@ str
 reqinfo_direct_t::get_hdr_hostname () const
 {
   str ret;
-  if (_port == std_port (_https)) {
+  if (_port == std_port (false)) {
     ret = _hostname;
   } else {
     strbuf b;
@@ -215,44 +217,58 @@ reqinfo_direct_t::get_hdr_hostname () const
 //-----------------------------------------------------------------------
 
 void
-req_t::format_req (strbuf &b)
+req_t::format_req (strbuf &b, bool ka)
 {
 
-  str fn = _reqinfo->get_fixed_filename ();
+  str fn = get_filename ();
   str mth = get_post () ? "POST" : "GET";
+  htpv_t vers = get_version ();
 
-  b << mth << " " << fn << " HTTP/1." << _vers << HTTP_CRLF;
-  if (_vers == 1) {
-    b << "Connection: close" << HTTP_CRLF;
+  b << mth << " " << fn << " HTTP/1." << vers << HTTP_CRLF;
+  if (vers == 1) {
+    const char *conn = ka ? "keep-alive" : "closed";
+    b << "Connection: " << conn  << HTTP_CRLF;
   }
 
   /*
    * Be polite like wget and always send the following two headers
    */
-  str hn = _reqinfo->get_hdr_hostname ();
+  str hn = get_hdr_hostname ();
   b << "Host: " << hn << HTTP_CRLF
     << "User-agent: okwc/" << VERSION << HTTP_CRLF;
 
-  if (_outcookie) {
+  const cgi_t *oc = get_outcookie ();
+  
+  if (oc) {
     b << "Cookie: ";
-    _outcookie->encode (&b);
+    oc->encode (&b);
     b << HTTP_CRLF;
   }
 
   str t = get_type ();
+  if (!t && get_post ()) t = "application/x-www-form-urlencoded";
   if (t) b << "Content-Type: " << t << HTTP_CRLF;
 
   const post_t *p = get_post ();
-  if (p) b << "Content-Length: " << p->len () << HTTP_CRLF;
-  b << HTTP_CRLF;
-  if (p) p->output (b);
+  size_t len = 0;
+  if (p) {
+    len = p->len ();
+  }
+  b << "Content-Length: " << len << HTTP_CRLF;
 
+  const vec<str> *v = get_extra_headers ();
+  for (size_t i = 0; v && i < v->size (); i++) {
+    b << (*v)[i] << HTTP_CRLF;
+  }
+  b << HTTP_CRLF;
+
+  if (p) p->output (b);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-req_t::make_T (ptr<ok_xprt_base_t> x, evi_t ev)
+req_t::make_T (ptr<ok_xprt_base_t> x, bool ka, evi_t ev)
 {
   tvars {
     strbuf req;
@@ -263,7 +279,7 @@ req_t::make_T (ptr<ok_xprt_base_t> x, evi_t ev)
   }
   hold = mkref (this);
 
-  format_req (req);
+  format_req (req, ka);
 
   twait { x->drain_to_network (&req, connector::cnc (mkevent (r), ev, &outc)); }
   if (outc == OUTCOME_CANCELLED) {
@@ -281,90 +297,79 @@ dnserr2httperr (int i)
   switch (i) {
   case NOERROR: return HTTP_OK;
   case ARERR_TIMEOUT: return HTTP_TIMEOUT;
-  default: return HTTP_CONNECTION_FAILED;
+  default: return HTTP_DNS_FAILED;
   }
 }
 
 
 //-----------------------------------------------------------------------
+
 
 /**
  * @brief Do the main workflow of the HTTP request
  * @param req The user's request
  * @param resp Where to stick the response
  * @param cb The callback to call when completed.
- * @return A canceller, which the caller can poke to cancel this operation
  *
  * note: Disobeys above convention, in that it does call its callback
  * even when cancelled.  Callers should take note.
  */
 tamed void
-agent_t::req_T (ptr<req_t> req, ptr<resp_t> resp, evi_t ev)
+agent_t::req_oneshot (ptr<req_t> req, ptr<resp_factory_t> of, resp_ev_t ev)
 {
   tvars {
-    int status (0);
+    int status (HTTP_TIMEOUT);
     ptr<agent_t> hold;
-    ptr<hostent> he;
-    int dns_err;
-    int fd;
     ptr<ok_xprt_base_t> x;
-    tcpconnect_t *tc;
-    outcome_t outc;
+    bool dummy;
+    ptr<resp_t> resp;
+    ptr<abuf_t> abuf;
   }
   
   // Keep this object from being freed from underneath us.
   hold = mkref (this);
+
+  twait { get_x (NULL, connector::cnc (mkevent (status, x, dummy), ev)); }
+
+  if (x) {
+    twait { req->make (x, false, connector::cnc (mkevent (status), ev)); }
+    if (status == HTTP_OK) {
+      abuf = New refcounted<abuf_t> (x->alloc_abuf_src (), true);
+      resp = of->alloc_resp (x, abuf);
+      twait { resp->get (connector::cnc (mkevent (status), ev)); }
+    }
+  }
   
-  twait { 
-    dnscache.lookup (_hostname, connector::cnc(mkevent (he, dns_err), ev));
-  }
-
-  if (dns_err || !he) {
-    status = dnserr2httperr (dns_err);
-  } else {
-
-    twait { 
-      tc = tcpconnect (*(in_addr *)he->h_addr, _port, 
-		       connector::cnc (mkevent (fd), ev, &outc));
-    }
-
-    if (outc == OUTCOME_CANCELLED) {
-      status = CANCELLED_STATUS;
-      tcpconnect_cancel (tc);
-    } else if (fd < 0) {
-      status = HTTP_CONNECTION_FAILED;
-    } else {
-     
-      if (req->https ()) {
-	x = okssl::factory ()->alloc_con (fd);
-      } else {
-	x = ahttpcon::alloc (fd);
-      }
-
-      twait { req->make (x, connector::cnc (mkevent (status), ev)); }
-      if (status == HTTP_OK) {
-	resp->setx (x);
-	twait { resp->get (connector::cnc (mkevent (status), ev)); }
-      }
-    }
-  }
-
-  ev->trigger (status);
+  ev->trigger (status, resp);
 }
 
 //-----------------------------------------------------------------------
 
-resp_t::resp_t ()
-  : _incookies (&_abuf, OKWC_SCRATCH_SZ, _scratch),
-    _hdr (&_abuf, &_incookies, OKWC_SCRATCH_SZ, _scratch) {}
+void
+agent_t::req (ptr<req_t> req, ptr<resp_factory_t> resp, resp_ev_t ev)
+{
+  req_oneshot (req, resp, ev);
+}
 
 //-----------------------------------------------------------------------
 
-void
-resp_t::setx (ptr<ok_xprt_base_t> x)
+bool
+resp_t::do_get_body (int status) const
 {
-  _x = x;
-  _abuf.setsrc (_x->alloc_abuf_src (), true);
+  return (status == HTTP_OK);
+}
+
+
+//-----------------------------------------------------------------------
+
+resp_t::resp_t (ptr<ok_xprt_base_t> x, ptr<abuf_t> a)
+  : _x (x),
+    _abuf (a),
+    _scratch (ok::alloc_scratch (okwc_scratch_sz)),
+    _incookies (_abuf, _scratch),
+    _hdr (_abuf, &_incookies, _scratch) 
+{
+  assert (_abuf);
 }
 
 //-----------------------------------------------------------------------
@@ -373,7 +378,7 @@ tamed void
 resp_t::get_T (evi_t ev)
 {
   tvars {
-    int status (HTTP_OK);
+    int status (HTTP_OK), status2;
     outcome_t outc;
     ptr<resp_t> hold;
   }
@@ -385,8 +390,9 @@ resp_t::get_T (evi_t ev)
   if (outc == OUTCOME_CANCELLED) {
     status = CANCELLED_STATUS;
     _hdr.cancel ();
-  } else if (status == HTTP_OK) { 
-    twait { get_body (connector::cnc (mkevent (status), ev)); }
+  } else if (do_get_body (status) || _hdr.has_body ()) {
+    twait { get_body (connector::cnc (mkevent (status2), ev)); }
+    if (status == HTTP_OK) { status = status2; }
   }
   ev->trigger (status);
 }
@@ -431,7 +437,7 @@ resp_t::run_chunker_T (evi_t ev)
   }
   hold = mkref (this);
 
-  c = New okwc_chunker_t (&_abuf, OKWC_SCRATCH_SZ, _scratch);
+  c = New okwc_chunker_t (_abuf, _scratch);
 
   do { 
     twait { c->parse (connector::cnc (mkevent (status), ev, &outc)); }
@@ -445,6 +451,8 @@ resp_t::run_chunker_T (evi_t ev)
       c->next_chunk ();
     } 
   } while (status == HTTP_OK && sz);
+
+  delete c;
 
   ev->trigger (status);
 }
@@ -492,8 +500,8 @@ resp_simple_t::finished_meal (int status, evi_t ev)
 
 //-----------------------------------------------------------------------
 
-reqinfo_proxied_t::reqinfo_proxied_t (const str &url, bool s)
-  : reqinfo_t (s),
+reqinfo_proxied_t::reqinfo_proxied_t (const str &url)
+  : reqinfo_t (),
     _url (url),
     _valid (false)
 {
@@ -507,22 +515,56 @@ reqinfo_proxied_t::reqinfo_proxied_t (const str &url, bool s)
 
 //-----------------------------------------------------------------------
 
+const post_t *
+req_t::get_post () const
+{
+  const post_t *ret = NULL;
+  if (get_simple_post_str ()) {
+    _post_obj = New refcounted<simple_post_t> (get_simple_post_str ());
+    ret = _post_obj;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<resp_t>
+obj_factory_t::alloc_resp (ptr<ok_xprt_base_t> x, ptr<abuf_t> b)
+{
+  return New refcounted<resp_simple_t> (x, b);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<req_t>
+obj_factory_t::alloc_req (ptr<reqinfo_t> ri, int v, cgi_t *c)
+{
+  return New refcounted<req3_t> (ri, v, c);
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
-			   bool https)
+			   str post, vec<str> *eh)
 {
   tvars {
-    ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
+    ptr<resp_t> resp;
     ptr<req_t> rq;
     ptr<reqinfo_t> ri;
     int status;
   }
 
-  ri = reqinfo_direct_t::alloc (_hostname, _port, fn, https);
+  ri = reqinfo_direct_t::alloc (_hostname, _port, fn);
   assert (ri->validate ());
-  rq = New refcounted<req_t> (ri, v, c);
+  rq = _obj_factory->alloc_req (ri, v, c);
+  if (post) rq->set_post (post);
+  if (eh && eh->size ()) rq->set_extra_headers (*eh);
 
-  twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
+  twait { 
+    agent_t::req (rq, _obj_factory, 
+		  connector::cnc (mkevent (status, resp), ev)); 
+  }
   ev->trigger (status, resp);
 }
 
@@ -530,22 +572,99 @@ agent_get_direct_t::get_T (const str &fn, simple_ev_t ev, int v, cgi_t *c,
 
 tamed void
 agent_get_proxied_t::get_T (const str &url, simple_ev_t ev, int v, cgi_t *c,
-			    bool https)
+			    str post, vec<str> *eh)
 {
   tvars {
-    ptr<resp_simple_t> resp (New refcounted<resp_simple_t> ());
+    ptr<resp_t> resp;
     ptr<req_t> rq;
-    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url, https));
+    ptr<reqinfo_t> ri (reqinfo_proxied_t::alloc (url));
     int status;
   }
 
   if (!ri->validate ()) {
     status = HTTP_CLIENT_BAD_PROXY;
   } else {
-    rq = New refcounted<req_t> (ri, v, c);
-    twait { agent_t::req (rq, resp, connector::cnc (mkevent (status), ev)); }
+    rq = New refcounted<req3_t> (ri, v, c);
+    if (post) rq->set_post (post);
+    if (eh && eh->size ()) rq->set_extra_headers (*eh);
+    twait { 
+      agent_t::req (rq, _obj_factory, 
+		    connector::cnc (mkevent (status, resp), ev)); 
+    }
   }
   ev->trigger (status, resp);
+}
+
+//-----------------------------------------------------------------------
+
+void
+req3_t::set_extra_headers (const vec<str> &v)
+{
+  for (size_t i = 0; i < v.size (); i++) {
+    _extra_headers.push_back (v[i]);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+const vec<str> *
+req3_t::get_extra_headers () const
+{
+  if (_extra_headers.size ()) { return &_extra_headers; }
+  else { return NULL; }
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+agent_t::get_x (ptr<ok_xprt_base_t> x, evixb_t ev)
+{
+  tvars {
+    ptr<agent_t> hold;
+    ptr<hostent> he;
+    int status (HTTP_OK);
+    int dns_err;
+    tcpconnect_t *tc;
+    outcome_t outc;
+    int fd;
+    bool newone (false);
+  }
+
+  // Keep this object from being freed from underneath us.
+  hold = mkref (this);
+
+  if (!x || x->ateof ()) {
+
+    newone = true;
+
+    twait { 
+      dnscache.lookup (hostname (), connector::cnc (mkevent (he, dns_err), ev));
+    }
+    
+    if (dns_err || !he) {
+      status = dnserr2httperr (dns_err);
+    } else {
+
+      twait { 
+	tc = tcpconnect (*(in_addr *)he->h_addr, port (), 
+			 connector::cnc (mkevent (fd), ev, &outc));
+      }
+      
+      if (outc == OUTCOME_CANCELLED) {
+	status = CANCELLED_STATUS;
+	tcpconnect_cancel (tc);
+      } else if (fd < 0) {
+	status = HTTP_CONNECTION_FAILED;
+      } else if (use_ssl ()) {
+	x = okssl::factory ()->alloc_con (fd);
+      } else {
+	x = ahttpcon::alloc (fd);
+      }
+    }
+
+  }
+  ev->trigger (status, x, newone);
+
 }
 
 //-----------------------------------------------------------------------

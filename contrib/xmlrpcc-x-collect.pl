@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 #
 # A script to collect .x files in a given directory, and to make
@@ -48,6 +48,7 @@ sub generate_cfile {
 EOF
     }
     print $fh "\n";
+    print $fh "#define ENABLE_XML_XDR 1\n";
     foreach my $x (@$xfiles) {
 	print $fh qq{\#include "$x.h"\n};
     }

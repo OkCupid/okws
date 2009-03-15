@@ -26,11 +26,19 @@
 %token <str> T_REGEX_BODY
 %token <str> T_REGEX_END
 
+%token T_BGUY
+%token T_EGUY
+%token T_BWGH
+%token T_BGH
+%token T_EGH
 %token T_VARS
 %token T_UVARS
 %token T_PRINT
+%token T_CTINCLUDE
+%token T_INCLUDE
 %token T_PTINCLUDE
 %token T_PTLOAD
+%token T_PTINCLIST
 %token T_PTSET
 %token T_PTSETL
 %token T_PTSWITCH
@@ -60,18 +68,19 @@
 
 %type <str> var str1 bname 
 %type <num> number
-%type <pvar> pvar evar
+%type <pvar> pvar evar gcode
 %type <pval> bvalue arr i_arr g_arr
-%type <sec> htag htag_list javascript pre b_js_tag
-%type <el> ptag
-%type <func> ptag_func
+%type <sec> guy_print htag htag_list javascript pre b_js_tag
+%type <el> ptag guy_vars guy_func
+%type <func> guy_funcname ptag_func
 %type <pstr> pstr pstr_sq
 %type <arg> arg aarr nested_env regex range
 %type <parr> i_arr_open
 %type <buf> regex_body
 
 %%
-file:  hfile   {}
+file: gfile {}
+	| hfile {}
 	| conffile {}
 	;
 
@@ -79,6 +88,72 @@ conffile: T_BCONF aarr {}
 	;
 
 hfile: html 
+	;
+
+gfile: gfile_section
+	| gfile gfile_section
+	;
+
+gfile_section: T_CODE	    { PSECTION->add ($1); }
+	| '/'		    { PSECTION->add ('/'); }
+	| guy_section 	    {}
+	;
+
+guy_section: T_BGUY
+	{
+	  PFILE->add_section ();
+	  PFILE->push_section (New pfile_gs_t (PLINENO));
+	}
+	guy_code T_EGUY
+	{
+	  PFILE->add_section ();
+	  PFILE->push_section (New pfile_code_t (PLINENO));
+	}
+	;	
+
+guy_code: /* empty */ {}
+	| guy_code guy_command
+	;
+
+guy_command: guy_vars { PSECTION->add ($1); }
+	| guy_func    { PSECTION->add ($1); }
+	| guy_print   { PSECTION->add ($1, false); }
+	;
+
+guy_vars: guy_vars_mode varlist ';'
+	{
+	  $$ = New pfile_gframe_t (PGVARS);
+	  PGVARS = NULL;
+	}
+	;
+
+guy_vars_mode: T_VARS  { PGVARS = New gvars_t (); }
+	| T_UVARS      { PGVARS = New guvars_t (); }
+	;
+
+varlist: var 
+	{
+	  PGVARS->add ($1);
+	}
+	| varlist ',' var 
+	{
+	  PGVARS->add ($3);
+	}
+	;
+
+guy_print: T_PRINT '(' var ')' 
+	{
+          pfile_gprint_t *gp = New pfile_gprint_t (PLINENO, $3);
+	  PFILE->push_section (gp);
+	}
+	ghtml_block
+	{
+          $$ = PFILE->pop_section ();
+	}
+	;
+
+ghtml_block: T_BGH html T_EGH
+	| T_BWGH html T_EGH
 	;
 
 html: /* empty */ {}
@@ -109,6 +184,7 @@ nested_env: T_2L_BRACE
 	;
 
 evar:     pvar
+	| gcode
 	;
 	
 ptag: ptag_func 
@@ -117,7 +193,11 @@ ptag: ptag_func
 	}
 	ptag_list ptag_close
 	{
-	  if (!PFUNC->validate ()) 
+	  if (PFUNC->validate ()) {
+	    if (parser->do_explore ()) {
+	      PFUNC->explore (EXPLORE_PARSE);
+	    }
+	  } else
 	    PARSEFAIL;
 	  $$ = POP_PFUNC();
 	}
@@ -127,10 +207,24 @@ ptag_close: ';' T_EPTAG
 	| T_EPTAG
 	;
 
-ptag_func: T_PTINCLUDE  { $$ = New pfile_include2_t (PLINENO); }
+ptag_func: T_PTINCLUDE  
+	{ 
+	   switch (parser->get_include_version ()) {
+	   case XPUB_V2:
+	      $$ = New pfile_include2_t (PLINENO); 
+	      break;
+	   case XPUB_V1:
+	      $$ = New pfile_include_t (PLINENO);
+ 	      break;
+	   default:
+	      panic ("unexpected PUB version (not 1 or 2)\n");
+	      break;
+	   }
+        }
 	| T_PTSET	{ $$ = New pfile_set_func_t (PLINENO); }
 	| T_PTSETL      { $$ = New pfile_set_local_func_t (PLINENO); }
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }
+	| T_PTINCLIST	{ $$ = New pfile_inclist_t (PLINENO); }
 	| T_PTLOAD      { $$ = New pfile_load_t (PLINENO); }
 	;
 
@@ -253,6 +347,30 @@ htag_val: T_HNAM   { PSECTION->add ($1); }
 	}
 	;
 
+guy_func: guy_funcname 
+	{
+	  PUSH_PFUNC ($1); /* must do this before accessing ARGLIST */
+	  ARGLIST = New refcounted<arglist_t> ();
+	}
+	'(' arglist ')' ';'
+	{
+	  if (!PFUNC->add (ARGLIST)) {
+	    PARSEFAIL;
+          } else {
+	    PFUNC->explore (EXPLORE_PARSE);
+	    if (!$1->validate ())
+	      PARSEFAIL;
+          }
+	  ARGLIST = NULL;
+	  $$ = POP_PFUNC ();
+	}
+	;
+
+guy_funcname: T_CTINCLUDE  { $$ = New pfile_g_ctinclude_t (PLINENO); }
+	| T_INCLUDE        { $$ = New pfile_g_include_t (PLINENO); }
+	| T_INIT_PDL	   { $$ = New pfile_g_init_pdl_t (PLINENO, PFILE); }
+	;
+
 parg:   '('
 	{
 	  ARGLIST = New refcounted<arglist_t> ();
@@ -354,21 +472,21 @@ arr: i_arr | g_arr;
 
 g_arr: '('
 	{
-	  global_parser->push_parr (New refcounted<parr_mixed_t> ());
+	  parser->push_parr (New refcounted<parr_mixed_t> ());
 	}
 	g_arr_list ')'
 	{
-	  $$ = global_parser->pop_parr ();
+	  $$ = parser->pop_parr ();
 	}
 	;
 
 i_arr: i_arr_open 
 	{
-	  global_parser->push_parr ($1);
+	  parser->push_parr ($1);
 	}
 	i_arr_list ')'
 	{
-	  $$ = global_parser->pop_parr ();
+	  $$ = parser->pop_parr ();
 	}
 	;
 
@@ -417,11 +535,23 @@ pstr_list: /* empty */ {}
 pstr_el:  T_STR { PPSTR->add ($1); }
 	| T_CH  { PPSTR->add ($1); }
 	| pvar  { PPSTR->add ($1); }
+	| gcode { PPSTR->add ($1); }
 	;
 
 pvar: T_BVAR T_VAR '}'
 	{
 	  $$ = New refcounted<pvar_t> ($2, PLINENO);
+	}
+	;
+
+gcode: T_BGCODE T_GCODE '}'
+	{
+	  $$ = New refcounted<gcode_t> ($2, PLINENO);
+	}
+	|
+	T_BGCCE T_GCODE '}'
+	{
+	  $$ = New refcounted<gcode_t> ($2, PLINENO, true);
 	}
 	;
 

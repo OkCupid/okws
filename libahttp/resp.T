@@ -92,7 +92,7 @@ http_resp_header_t::fill (bool gz)
 {
   add_date ();
   add ("Content-Type", attributes.get_content_type ());
-  add_closed ();
+  add_connection ();
   add ("Cache-control", attributes.get_cache_control ());
   str tmp;
   if ((tmp = attributes.get_expires ()))  
@@ -108,10 +108,18 @@ http_resp_header_t::fill (bool gz)
 }
 
 void
+http_resp_header_t::add_connection ()
+{
+  add ("Connection", attributes.get_connection ());
+}
+
+//-----------------------------------------------------------------------
+
+void
 http_resp_header_redirect_t::fill (const str &s)
 {
   add_date ();
-  add_closed ();
+  add_connection ();
   add_server ();
   add ("Location", s);
 
@@ -119,6 +127,8 @@ http_resp_header_redirect_t::fill (const str &s)
   // over anything put above
   cleanme = attributes.get_others (&fields);
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_resp_header_t::fill (bool gz, ssize_t len)
@@ -128,6 +138,8 @@ http_resp_header_t::fill (bool gz, ssize_t len)
     add (http_hdr_size_t (len));
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_resp_header_t::gzip ()
 {
@@ -135,11 +147,23 @@ http_resp_header_t::gzip ()
   add ("Transfer-Encoding", "chunked");
 }
 
+//-----------------------------------------------------------------------
+
 strbuf
 http_resp_header_t::to_strbuf () const
 {
-  vec<bool> output_me;
   strbuf b;
+  fill_strbuf (b);
+  return b;
+}
+
+//-----------------------------------------------------------------------
+
+void
+http_resp_header_t::fill_strbuf (strbuf &b) const
+{
+  vec<bool> output_me;
+
   b << "HTTP/";
   switch (attributes.get_version ()) {
   case 1:
@@ -183,8 +207,9 @@ http_resp_header_t::to_strbuf () const
   }
   b << HTTP_CRLF;
 
-  return b;
 }
+
+//-----------------------------------------------------------------------
 
 str
 http_status_set_t::get_desc (int n, str *l) const
@@ -198,6 +223,19 @@ http_status_set_t::get_desc (int n, str *l) const
   return s->sdesc;
 }
 
+//-----------------------------------------------------------------------
+
+ptr<http_pub_t>
+http_pub_t::alloc (int n, const pub_base_t &p, const str &fn, aarr_t *env, 
+		   htpv_t v)
+{
+  ptr<http_pub_t> ret (New refcounted<http_pub_t> (n, p, fn, env, v));
+  if (ret->err) return NULL;
+  else return ret;
+}
+
+//-----------------------------------------------------------------------
+
 u_int
 http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
 { 
@@ -206,6 +244,28 @@ http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
   x->send (b, cb); 
   return ret;
 }
+
+//-----------------------------------------------------------------------
+
+tamed void 
+http_response_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
+{
+  tvars {
+    ssize_t ret;
+    strbuf b;
+  }
+
+  header.fill_strbuf (b);
+  b.take (body);
+
+  twait { 
+    x->send2 (b, mkevent (ret));
+  }
+
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
 
 bool
 http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
@@ -218,6 +278,8 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
   }
   return false;
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
@@ -236,16 +298,56 @@ http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
   TRIGGER (cb, rc);
 }
 
-typedef ref<callback<void, ptr<http_pub2_t> > > http_pub2_cb_t;
+//-----------------------------------------------------------------------
+
+typedef event<ptr<http_pub2_t> >::ref  http_pub2_ev_t;
 
 tamed static void
 http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-		    http_pub2_cb_t cb, aarr_t *env, htpv_t v, bool gz)
+		    http_pub2_ev_t ev, aarr_t *env, htpv_t v, bool gz)
 {
   tvars {
     ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (n, v)); 
     bool rc;
   }
   twait { ret->publish (p, fn, mkevent (rc), env, v, gz); }
-  TRIGGER (cb, rc ? ret : NULL);
+  ev->trigger (rc ? ret : NULL);
 }
+
+//-----------------------------------------------------------------------
+
+tamed static void
+http_pub2_t::alloc2 (ptr<pub2::remote_publisher_t> p, 
+		     const http_resp_attributes_t &hra, str fn, 
+		     http_pub2_ev_t ev, aarr_t *env)
+{
+  tvars {
+    ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (hra));
+    bool rc;
+  }
+  twait { 
+    ret->publish (p, fn, mkevent (rc), env, hra.get_version (), 
+		  hra.get_gzip ());
+  }
+  ev->trigger (rc ? ret : NULL);
+}
+
+//-----------------------------------------------------------------------
+
+http_error_t::http_error_t (int n, const str &si, const str &aux, htpv_t v)
+  : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
+{ 
+  header.fill (false, nbytes); 
+}
+
+//-----------------------------------------------------------------------
+
+http_error_t::http_error_t (const http_resp_attributes_t &hra, 
+			    const str &si, const str &aux)
+  : http_response_t (http_resp_header_t (hra), 
+		     make_body (hra.get_status (), si, aux)) 
+{
+  header.fill (false, nbytes); 
+}
+
+//-----------------------------------------------------------------------

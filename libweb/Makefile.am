@@ -1,13 +1,17 @@
 
+-include $(SFS_LIB_MK)
+
 $(PROGRAMS): $(LDEPS) 
 
 okwslib_LTLIBRARIES = libweb.la
 
 libweb_la_SOURCES = web_prot.C form.C inputcheck.C web.C email.C okwc.C \
-	 okwcxml.C okwc3.C
+	 okwcxml.C okwc3.C okwc4.C
+
+libweb_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = web_prot.h web.h form.h email.h okwc.h  \
-	okwcxml.h okwc3.h
+	okwcxml.h okwc3.h okwc4.h
 
 SUFFIXES = .C .T .h .x
 
@@ -18,20 +22,22 @@ SUFFIXES = .C .T .h .x
 .x.C:
 	$(OKRPCC) -c $< || (rm -f $@ && false)
 
-TAMEIN = okwcxml.T okwc3.T
+TAMEIN = okwcxml.T okwc3.T okwc4.T
 RPCCIN = web_prot.x
-TAMEOUT = okwcxml.C okwc3.C
+TAMEOUT = okwcxml.C okwc3.C okwc4.C
 RPCCOUT = web_prot.h web_prot.C
 
 okwc3.o:	okwc3.C
 okwc3.lo:	okwc3.C
+okwc4.o:	okwc4.C
+okwc4.lo:	okwc4.C
 okwcxml.o:	okwcxml.C
 okwcxml.lo:	okwcxml.C
 
 web_prot.h:	web_prot.x
 web_prot.C:	web_prot.x
 web_prot.o:	web_prot.h
-web_prot.lo: web_prot.h
+web_prot.lo: 	web_prot.h
 
 .PHONY: xdrclean tameclean sourceclean
 

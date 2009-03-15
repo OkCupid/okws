@@ -134,9 +134,7 @@ bool
 okwc_http_hdr_t::is_chunked () const
 {
   str v;
-  return (lookup ("transfer-encoding", &v) &&
-	  v.len () == 7 &&
-	  mystrlcmp (v, "chunked"));
+  return (lookup ("transfer-encoding", &v) && cicmp (v, "chunked"));
 }
 
 okwc_req_t::okwc_req_t (const str &h, u_int16_t p, const str &f, 
@@ -358,7 +356,7 @@ okwc_http_t::body_parse ()
 {
   if (hdr ()->is_chunked ()) {
     assert (!chunker);
-    chunker = New okwc_chunker_t (&abuf, OKWC_SCRATCH_SZ, scratch);
+    chunker = New okwc_chunker_t (&abuf, _scratch);
     start_chunker ();
   } else {
     eat_chunk (hdr ()->get_contlen ());
@@ -492,8 +490,12 @@ okwc_http_t::okwc_http_t (ptr<ahttpcon> xx, const str &f, const str &h,
 			  const str &proxy_hdr_hostname)
   : x (xx), filename (f), hostname (h), port (port_in),
     abuf (New abuf_con_t (xx), true),
-    resp (okwc_resp_t::alloc (&abuf, OKWC_SCRATCH_SZ, scratch, incook)),
-    vers (v), outcook (ock), state (OKWC_HTTP_NONE), chunker (NULL),
+    _scratch (ok::alloc_scratch (okwc_scratch_sz)),
+    resp (okwc_resp_t::alloc (&abuf, _scratch, incook)),
+    vers (v), 
+    outcook (ock), 
+    state (OKWC_HTTP_NONE), 
+    chunker (NULL),
     _post (p), _type (t),
     _proxy_mode (proxy_mode),
     _proxy_hdr_hostname (proxy_hdr_hostname)
@@ -525,13 +527,16 @@ okwc_http_hdr_t::parse_guts ()
 {
   abuf_stat_t r = ABUF_OK;
   bool inc;
-  int status_parse = HTTP_BAD_REQUEST;
+  int status_combined = HTTP_NO_STATUS;
 
   while (r == ABUF_OK) {
     inc = true;
     switch (state) {
     case OKWC_HDR_START:
       r = delimit_word (&vers);
+      if (r == ABUF_OK && _status_parse == HTTP_NO_STATUS) {
+	_status_parse = HTTP_OK;
+      }
       break;
     case OKWC_HDR_SPC1:
       r = abuf->skip_hws (1);
@@ -540,12 +545,14 @@ okwc_http_hdr_t::parse_guts ()
       {
 	str status_str;
 	r = delimit_word (&status_str);
-	if (r == ABUF_OK && !convertint (status_str, &status))
+	if (r == ABUF_OK && !convertint (status_str, &_status_header))
 	  r = ABUF_PARSE_ERR;
 	break;
       }
     case OKWC_HDR_SPC2:
-      r = abuf->skip_hws (1);
+      // maybe there's an EOL here (not status desc)
+      if ((r = eol ()) != ABUF_OK)
+	r = abuf->skip_hws (1);
       break;
     case OKWC_HDR_STATUS_DESC:
       r = eol ();
@@ -558,8 +565,8 @@ okwc_http_hdr_t::parse_guts ()
     case OKWC_HDR_KEY:
       r = gobble_crlf ();
       if (r == ABUF_OK) {
-	status_parse = HTTP_OK;
 	r = ABUF_EOF;
+	_clean_eoh = true;
       } else if (r == ABUF_NOMATCH)
 	r = delimit_key (&key);
       break;
@@ -579,9 +586,9 @@ okwc_http_hdr_t::parse_guts ()
     case OKWC_HDR_EOL2A:
       if (noins)
 	noins = false;
-      else if (key)
+      else if (key) {
 	insert (key, val);
-      else 
+      } else 
 	r = ABUF_PARSE_ERR;
       key = val = NULL;
       break;
@@ -599,20 +606,33 @@ okwc_http_hdr_t::parse_guts ()
     if (r == ABUF_OK && inc)
       state = static_cast<state_t> (state + 1);
   }
+
   if (r != ABUF_WAIT) {
-    if (status_parse != HTTP_OK)
-      status = status_parse;
-    if (status == HTTP_OK)
-      fixup ();
-    finish_parse (status);
+    if (!_clean_eoh) {
+      _status_parse = HTTP_BAD_REQUEST;
+    }
+    status_combined = (_status_header != HTTP_NO_STATUS 
+		       ? _status_header : _status_parse);
+    fixup (); // fixup all the time, not just on success.
+    finish_parse (status_combined);
   }
 }
 
 void
 okwc_http_hdr_t::fixup ()
 {
-  if (!lookup ("content-length", &contlen))
+  if (lookup ("content-length", &contlen))
+    _has_body = true;
+  if (contlen == 0) 
     contlen = okwc_def_contlen;
+
+  str tmp;
+  if (lookup ("connection", &tmp) && cicmp (tmp, "keep-alive")) {
+    _conn = HTTP_CONN_KEEPALIVE;
+  } else {
+    _conn = HTTP_CONN_CLOSED;
+  }
+
 }
 
 void

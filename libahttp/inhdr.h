@@ -71,37 +71,72 @@ private:
 
 extern methodmap_t methodmap;
 
+//-----------------------------------------------------------------------
+
+typedef enum { HTTP_CONN_NONE = 0,
+	       HTTP_CONN_CLOSED = 1,
+	       HTTP_CONN_KEEPALIVE = 2 } http_conn_mode_t;
+
+//-----------------------------------------------------------------------
+
 class http_inhdr_t : public http_hdr_t, public pairtab_t<> {
 public:
-  http_inhdr_t (abuf_t *a, cgi_t *u = NULL, cgi_t *c = NULL, 
-		size_t bfln = HTTPHDR_DEF_SCRATCH, char *b = NULL)
-    : async_parser_t (a), http_hdr_t (a, bfln, b),
-      contlen (-1), url (u), cookie (c), state (INHDRST_START) {}
+  http_inhdr_t (abuf_t *a, ptr<ok::scratch_handle_t> s = NULL)
+    : async_parser_t (a), 
+      http_hdr_t (a, s),
+      contlen (-1), 
+      state (INHDRST_START),
+      _conn_mode (HTTP_CONN_NONE),
+      _reqno (0),
+      _pipeline_eof_ok (false),
+      _parse_query_string (ok_http_parse_query_string) {}
 
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
   bool takes_gzip () const;
   inline str get_mthd_str () const { return tmthd; }
   inline str get_vers_str () const { return vers; }
+  http_conn_mode_t get_conn_mode () const;
+  inline u_int get_reqno () const { return _reqno; }
+  str get_connection () const;
+  void set_parse_query_string (bool b) { _parse_query_string = b; }
+
+  str get_referrer (bool null_ok = false) const;
 
   http_method_t mthd;  // method code
   int contlen;     // content-length size
 
-  void set_url (cgi_t *u) { url = u; }
+  void set_url (ptr<cgi_t> u) { _url = u; }
+  void set_reqno (u_int i, bool pipelining, htpv_t prev_vers);
+  bool clean_pipeline_eof_state () const;
+  void v_debug ();
+  int timeout_status () const;
+
+  ptr<cgi_t> get_cookie ();
+  ptr<const cgi_t> get_cookie () const;
+  ptr<cgi_t> get_url ();
 
 protected:
   void parse_guts ();
   virtual void ext_parse_cb (int dummy);
   virtual void fixup ();
+  ptr<ok::scratch_handle_t> alloc_scratch2 ();
 
-  cgi_t *url;
-  cgi_t *cookie;
+  ptr<cgi_t> _cookie;
+  ptr<cgi_t> _url;
+  ptr<ok::scratch_handle_t> _scratch2;
+
   inhdrst_t state;    // parse state
 
   str tmthd;        // POST, GET, etc...
   str target;       // URI given as target
   str vers;         // HTTP version
   str line1;        // first line of the HTTP req
+
+  http_conn_mode_t _conn_mode;
+  u_int _reqno;     // serial # of this request within an HTTP/1.1 pipeline
+  bool _pipeline_eof_ok;
+  bool _parse_query_string;
 };
 
 

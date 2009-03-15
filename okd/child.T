@@ -303,6 +303,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
   }
 
   switch (p) {
+  case OKCTL_PUBCONF:
+    myokd->pubconf (sbp);
+    break;
   case OKCTL_READY:
     if (state == OKC_STATE_LAUNCH_SEQ_1) {
       state = OKC_STATE_LAUNCH_SEQ_2;
@@ -312,8 +315,17 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     }
     sbp->reply (NULL);
     break;
+  case OKCTL_REQ_ERRDOCS:
+    myokd->send_errdoc_set (sbp);
+    break;
   case OKCTL_REQ_ERRDOCS_2:
     myokd->req_errdoc_set_2 (sbp);
+    break;
+  case OKCTL_GETFILE:
+    myokd->getfile (sbp);
+    break;
+  case OKCTL_LOOKUP:
+    myokd->lookup (sbp);
     break;
   case OKCTL_CUSTOM_1_IN: 
     myokd->custom1_in (sbp);
@@ -334,6 +346,145 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
 }
 
 void
+okd_t::pubconf (svccb *sbp)
+{
+  if (!supports_pub1 ()) {
+    warn << "Cannot call PUBCONF with Pub v1 disabled.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
+  ptr<xpub_file_t> cf;
+  if ((cf = pprox->get_pubconf ())) {
+    xpub_getfile_res_t x (XPUB_STATUS_OK);
+    *x.file = *cf;
+    sbp->replyref (x);
+  } else { 
+    if (!cfq.blocked (sbp)) {
+      ptr<xpub_getfile_res_t> r = New refcounted<xpub_getfile_res_t> ();
+      RPC::pub_program_1::pub_config (pubd, r, 
+				      wrap (this, &okd_t::pubconfed, r));
+    }
+  }
+}
+
+void
+okd_t::pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err)
+{
+  if (err) {
+    r->set_status (XPUB_STATUS_ERR);
+    *r->error = strbuf () << err;
+  } else if (r->status == XPUB_STATUS_OK) {
+    pprox->cache_pubconf (*r->file);
+  }
+  cfq.finish (r);
+}
+
+
+void
+okd_t::lookup (svccb *sbp)
+{
+  if (!supports_pub1 ()) {
+    warn << "Cannot call LOOKUP without Pub v1 enabled.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
+
+  xpub_fn_t *x = sbp->Xtmpl getarg<xpub_fn_t> ();
+  xpub_lookup_res_t res;
+  if (pprox->lookup (*x, &res)) 
+    sbp->replyref (res);
+  else {
+    pfnm_t fn = *x;
+    if (!luq.inq (fn, sbp)) {
+      ptr<xpub_lookup_res_t> resp = New refcounted<xpub_lookup_res_t> ();
+      RPC::pub_program_1::pub_lookup (pubd, x, resp, 
+				      wrap (this, &okd_t::lookedup, fn, resp));
+    }
+  }
+}
+
+void
+okd_t::lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err)
+{
+  if (err) {
+    r->set_status (XPUB_STATUS_ERR);
+    *r->error = strbuf () << err;
+  } else if (r->status == XPUB_STATUS_OK) {
+    phashp_t hsh = phash_t::alloc (*r->hash);
+    pprox->cache (fn, hsh);
+  }
+  luq.finish (fn, r);
+}
+
+tamed void
+okch_t::repub (ptr<ok_repub_t> rpb)
+{
+  tvars {
+    clnt_stat err;
+  }
+  if (!clnt) {
+    *rpb->res << (strbuf ("Cannot repub; client not yet initialized: ")
+		  << servpath);
+  } else {
+    twait { 
+      RPC::okctl_program_1::okctl_update (clnt,
+					  &rpb->new_fnset, 
+					  &rpb->xst,
+					  mkevent (err));
+    }
+    if (err) 
+      *rpb->res << (strbuf ("repub error: ") << err);
+    else 
+      rpb->res->add (rpb->xst);
+  }
+}
+
+void
+okd_t::getfile (svccb *sbp)
+{
+  if (!supports_pub1 ()) {
+    warn << "Cannot call OKCTL_GETFILE without Pub v1 running.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
+  xpubhash_t *xh = sbp->Xtmpl getarg<xpubhash_t> ();
+  phashp_t hsh = phash_t::alloc (*xh);
+  xpub_getfile_res_t res;
+  if (pprox->getfile (hsh, &res)) 
+    sbp->replyref (res);
+  else {
+    if (!gfq.inq (hsh, sbp)) {
+      ptr<xpub_getfile_res_t> resp = New refcounted<xpub_getfile_res_t> ();
+      pubd->call (PUB_GETFILE, hsh, resp, 
+		  wrap (this, &okd_t::gotfile, hsh, resp));
+    }
+  }
+}
+
+void
+okd_t::gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> res, clnt_stat err)
+{
+  if (err) {
+    res->set_status (XPUB_STATUS_ERR);
+    *res->error = strbuf () << err;
+  } else if (res->status == XPUB_STATUS_OK) {
+    pprox->cache (*res->file);
+  }
+  gfq.finish (hsh, res);
+}
+
+void
+okd_t::send_errdoc_set (svccb *sbp)
+{
+  if (!supports_pub1 ()) {
+    warn << "Cannot call REQ_ERRDOCS without Pub v1 enabled.\n";
+    sbp->reject (PROC_UNAVAIL);
+    return;
+  }
+  sbp->replyref (xeds);
+}
+
+void
 okch_t::kill ()
 {
   CH_CHATTER ("disconnecting from child");
@@ -343,23 +494,24 @@ okch_t::kill ()
   state = OKC_STATE_NONE;
 }
 
-tamed void
+void
+okch_t::custom2_out_cb (ptr<ok_custom2_trig_t> trig,
+			ptr<ok_custom_data_t> res, clnt_stat err)
+{
+  if (err)
+    trig->add_err (servpath, OK_STATUS_ERR);
+  else
+    trig->add_succ (servpath, *res);
+}
+
+void
 okch_t::custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x)
 {
-  tvars {
-    ok_custom_data_t res;
-    clnt_stat err;
-  }
+  ptr<ok_custom_data_t> resp = New refcounted<ok_custom_data_t> ();
   
   if (clnt && !clnt->xprt ()->ateof ()) {
-    twait {
-      RPC::okctl_program_1::okctl_custom_2_out (clnt, x, &res, mkevent (err));
-    }
-    if (err) {
-      trig->add_err (servpath, OK_STATUS_ERR);
-    } else {
-      trig->add_succ (servpath, res);
-    }
+    clnt->call (OKCTL_CUSTOM_2_OUT, &x, resp, 
+		wrap (this, &okch_t::custom2_out_cb, trig, resp));
   } else {
     trig->add_err (servpath, OK_STATUS_DEADCHILD);
     CH_ERROR ("child in state=" << state << 
@@ -376,7 +528,7 @@ okch_t::custom1_out (const ok_custom_data_t &x)
   // XXX want to collect success information and so on from this guy
   // (as in repub)
   if (clnt && !clnt->xprt ()->ateof ()) {
-    RPC::okctl_program_1::okctl_custom_1_out (clnt, &x, aclnt_cb_null);
+    clnt->call (OKCTL_CUSTOM_1_OUT, &x, NULL, aclnt_cb_null);
   } else {
     CH_ERROR ("child in state=" << state << 
 	     "swallowing OKCTL_CUSTOM_1_OUT RPC.");
@@ -417,6 +569,64 @@ okch_t::awaken (evb_t ev)
   }
   twait { myokd->awaken (servpath, mkevent (ok));}
   ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okch_t::toggle_leak_checker (ok_diagnostic_cmd_t cmd, 
+			     event<ok_xstatus_typ_t>::ref ev)
+{
+  tvars {
+    clnt_stat err;
+    ok_xstatus_typ_t status;
+  }
+  
+  if (!clnt) {
+    LDCH_ERROR("cannot connect to client for leak_checker toggle");
+    status = OK_STATUS_DEADCHILD;
+  } else {
+   
+    twait {
+      RPC::okctl_program_1::
+	okctl_leak_checker (clnt, cmd, &status, mkevent (err));
+    }
+
+    if (err) {
+      LDCH_ERROR ("RPC failure in leak_checker: " << err);
+      status = OK_STATUS_ERR;
+    }
+  }
+  ev->trigger (status);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okch_t::toggle_profiler (ok_diagnostic_cmd_t cmd, 
+			 event<ok_xstatus_typ_t>::ref ev)
+{
+  tvars {
+    clnt_stat err;
+    ok_xstatus_typ_t status;
+  }
+  
+  if (!clnt) {
+    LDCH_ERROR("cannot connect to client for leak_checker toggle");
+    status = OK_STATUS_DEADCHILD;
+  } else {
+   
+    twait {
+      RPC::okctl_program_1::
+	okctl_profiler (clnt, cmd, &status, mkevent (err));
+    }
+
+    if (err) {
+      LDCH_ERROR ("RPC failure in leak_checker: " << err);
+      status = OK_STATUS_ERR;
+    }
+  }
+  ev->trigger (status);
 }
 
 //-----------------------------------------------------------------------

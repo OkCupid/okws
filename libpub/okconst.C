@@ -180,12 +180,14 @@ const char *ok_coredumpdir = "/var/coredumps";
 const char *ok_sockdir = "/var/run";
 const char *ok_jaildir_run = "var/run";
 const char *ok_service_bin = "";
+const char *ok_logd_pidfile = "oklogd.pid";
 
 //
 // log constants for timing
 //
 u_int ok_log_tick = 500;             // in milliseconds
 u_int ok_log_period = 8;             // log flushed every 4 seconds
+u_int ok_log_nbufs = 2;              // number of log bufs
 str   ok_syslog_priority = "local3.debug";
 str   ok_syslog_domain = "local3";
 str   ok_access_log_fmt = "ivt1sbz";
@@ -194,9 +196,10 @@ str   ok_access_log_fmt = "ivt1sbz";
 // service/client constants
 //
 u_int ok_clnt_timeout = 60;          // in seconds
-u_int ok_reqsize_limit = 2097152;    // 2MB
-u_int ok_hdrsize_limit = 0x2000;     // 8K
-u_int ok_cgibuf_limit = 0x10000;     // 64k , dial it up per-service
+
+size_t ok_hdrsize_limit = 0x2000;      // 8K
+size_t ok_reqsize_limit = 0x200000;    // 2MB
+size_t ok_cgibuf_limit = 0x80000;      // 512KB
 
 //
 // Specify which select policy to use; by default, SELECT_NONE
@@ -227,6 +230,7 @@ int ok_interpreter_mode = 0550;
 int ok_script_mode = 0440;
 
 int okwc_def_contlen = 0x20000;      // 128K 
+size_t okwc_scratch_sz = 0x1000;
 
 //
 // for freebsd this works, but no on planetlab, etc..
@@ -272,6 +276,12 @@ const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 // of course, we can turn this on via okws_config.
 //
 u_int ok_recycle_suio_limit = 0;
+
+size_t ok_http_inhdr_buflen_big = 0x4000;   
+size_t ok_http_inhdr_buflen_sml = 0x1000;
+size_t ok_dflt_cgibuf_sz = 0x10000;
+bool ok_http_parse_query_string = true;
+bool ok_http_parse_cookies = true;
 
 static void
 vec2vec (vec<const char *> *out, const vec<str> &in)

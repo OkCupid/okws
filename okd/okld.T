@@ -41,7 +41,7 @@
 extern char ** environ;
 extern int optind;
 
-#define PUBD2_KEY "PubdExecPath"
+#define PUBD2_KEY "Pubd2ExecPath"
 
 void
 okld_t::set_signals ()
@@ -68,7 +68,7 @@ okld_ch_t::add_args (const vec<str> &v)
 bool
 okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
 {
-  u_int32_t t;
+  u_int32_t t (0);
   if (port)
     *port = 0;
   static rxx uri_spec ("((:(\\d+))?/)?([a-zA-Z0-9/._~-]+)");
@@ -106,7 +106,7 @@ okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 void
 okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     out->argv () += s;
     out->set_env (env);
@@ -130,8 +130,20 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  while ((ch = getopt (argv.size (), argv, "eEcCWwu:r:sSt:")) != -1 && rc) {
+  const char *opts = "eEcCWwu:r:sSt:p:l:h:";
+  while ((ch = getopt (argv.size (), argv, opts)) != -1 && rc) {
     switch (ch) {
+    case 'p':
+      {
+	int tmp_port;
+	if (convertint (optarg, &tmp_port)) {
+	  so->ports.push_back (tmp_port);
+	} else {
+	  warn << loc << ": -p option needs a port (integer)\n";
+	  rc = false;
+	}
+      }
+      break;
     case 'u':
       if (*u) {
 	warn << loc << ": -u option specified more than once!\n";
@@ -149,6 +161,18 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
 	  warn << loc << ": cannot find user " << optarg << "\n";
 	  rc = false;
 	}
+      }
+      break;
+    case 'h':
+      if (!convertint (optarg, &so->hiwat)) {
+	warn << loc << ": -h expects an integer argument\n";
+	rc = false;
+      }
+      break;
+    case 'l':
+      if (!convertint (optarg, &so->lowat)) {
+	warn << loc << ": -l expects an integer argument\n";
+	rc = false;
       }
       break;
     case 't':
@@ -193,9 +217,14 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       break;
     }
   }
+
   // pop off "bin" and also all arguments
   for (int i = 0; i < optind; i++) {
     v->pop_front ();
+  }
+
+  if (!so->check_options (loc)) {
+    rc = false;
   }
   return rc;
 }
@@ -583,6 +612,7 @@ bool
 okld_t::parse_file (const str &cf)
 {
   conftab ct;
+  _config_no_pub_v2_support = false;
   str sys_sel_tmp;
   u_int UIZ = 0;
 
@@ -622,6 +652,7 @@ okld_t::parse_file (const str &cf)
 
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
     .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
+    .add ("NoPub2", &_config_no_pub_v2_support)
     .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
     .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
     .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
@@ -630,6 +661,7 @@ okld_t::parse_file (const str &cf)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
     .add ("ErrorLog", &logd_parms.errorlog)
+    .add ("OklogdPidfile", &logd_parms.pidfile)
     .add ("SslLog", &logd_parms.ssllog)
     .add ("AccessLogFmt", &logd_parms.accesslog_fmt)
     .add ("SvcLog", &logd_parms.svclog)
@@ -657,6 +689,7 @@ okld_t::parse_file (const str &cf)
 
     .add ("OkdUser", &_config_okd_un)
     .add ("OkdGroup", &_config_okd_gr)
+    .add ("LogBuffers", &ok_log_nbufs, 2, 100)
     
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
@@ -678,6 +711,7 @@ okld_t::parse_file (const str &cf)
     .add ("GzipCacheSize", &ok_gzip_cache_storelimit, 0, 0x10000000)
     .add ("GzipMemLevel", &ok_gzip_mem_level, 0, 9)
     .add ("ChannelLimit", &ok_reqsize_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
+    .add ("CgiValueLenLimit", &ok_cgibuf_limit, OK_RQSZLMT_MIN, OK_RQSZLMT_MAX)
     .add ("SendSockAddrIn", &ok_send_sin)
     .add ("RecycleSuioLimit", &ok_recycle_suio_limit, OK_RSL_LL, OK_RSL_UL)
 
@@ -699,6 +733,9 @@ okld_t::parse_file (const str &cf)
     .add ("StartupBatchWait", &okld_startup_batch_wait, 0, 128)
     .add ("LazyStartup", &_lazy_startup)
 
+    .add ("PubdInet", wrap (this, &okld_t::got_pubd_v1))
+    .add ("PubUnix", wrap (this, &okld_t::got_pubd_v1))
+    .add ("PubdExecPath", wrap (this, &okld_t::got_pubd_v1))
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
@@ -768,9 +805,13 @@ okld_t::post_config (const str &cf)
     errors = true;
   }
 
-  if (!_pub_v2_error && !pubd2exc) {
-    if (!guess_pubd2 (cf))
-      errors = true;
+  if (!_config_no_pub_v2_support) {
+    if (!_pub_v2_error && !pubd2exc) {
+      if (!guess_pubd2 (cf))
+	errors = true;
+    }
+  } else {
+    warn << "Disabling Pub v2 support.\n";
   }
 
   if (_all_ports_map.size () == 0) {
@@ -799,6 +840,7 @@ okld_t::launch_pubd2 (cbi cb)
   }
   assert (pubd2exc);
   pubd2 = New clone_only_client_t (pubd2exc, PUB2_CLONE);
+
 
   twait { pubd2->connect (mkevent (b)); }
   if (b) {
@@ -867,6 +909,7 @@ okld_t::encode_env ()
     .insert ("clito", ok_clnt_timeout)
     .insert ("rsl", ok_recycle_suio_limit)
     .insert ("reqszlimit", ok_reqsize_limit)
+    .insert ("cgilimit", ok_cgibuf_limit)
     .insert ("filtercgi", ok_filter_cgi)
     .insert ("ssdi", ok_ssdi)
     .insert ("sendsin", ok_send_sin ? 1 : 0)
@@ -878,8 +921,10 @@ okld_t::encode_env ()
     .insert ("clock", int (clock_mode))
     .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
     .insert ("pub2chnk", ok_pub2_max_datasz)
-    .insert ("sel", int (ok_sys_sel_policy));
-    ;
+    .insert ("pub1", pub_v1_support ? 1 : 0)
+    .insert ("sel", int (ok_sys_sel_policy))
+    .insert ("nlb", ok_log_nbufs)
+    .insert ("lqm", ok_listen_queue_max);
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();
@@ -894,7 +939,7 @@ okld_t::encode_env ()
 void
 okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) 
     logexc = New helper_exec_t (oklog_program_1, s, 1,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
@@ -910,6 +955,7 @@ okld_t::guess_pubd2 (const str &cf)
   warn << "No '" << PUBD2_KEY << "' given; guessing where to find pubd2.\n";
   v.push_back (PUBD2_KEY);
   v.push_back ("pubd");
+  v.push_back ("-2");
   got_pubd2_exec (v, cf, &err);
   
   return !err;
@@ -918,7 +964,7 @@ okld_t::guess_pubd2 (const str &cf)
 void
 okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 {
-  ptr<argv_t> env;
+  ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
     pubd2exc = New helper_exec_t (pub_program_2, s, 1,
 				  HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
@@ -963,63 +1009,62 @@ okld_t::fix_uids ()
 
     if (unsafe_mode) {
       svc->assign_uid (ueuid_own);
-      continue;
-    }
-
-    if (svc->usr ()) {
-      // in this case, the operator specified the user via a -u option
-      // to the Service line.
-      uegid = svc->usr ()->getid ();
-      if (uids_in_use[uegid]) {
-	warn << "The UID " << uegid
-	     << " that you specified for service " << svc->servpath << "\n"
-	     << "\t is in use by another, and I'm refusing to use it.\n";
-	return false;
-      } else if (owners[uegid]) {
-	warn << "The UID " << uegid
-	     << " that you specified for service " << svc->servpath << "\n"
-	     << "\towns the executable of another service, so it's unsafe "
-	     << "to use.\n";
-	return false;
-      }
+      svc->set_unsafe ();
     } else {
-      // In this case, we autogenerate a user ID / group ID pair
-      while ((getpwuid (uegid) ||  getgrgid (uegid) ||
-	      uids_in_use[uegid] || owners[uegid]) && 
-	     uegid <= ok_svc_uid_high) {
-	warn << "UID/GID=" << uegid
-	     << " is in use; refusing to use it.\n";
-	uegid = ++nxtuid;
+      if (svc->usr ()) {
+	// in this case, the operator specified the user via a -u option
+	// to the Service line.
+	uegid = svc->usr ()->getid ();
+	if (uids_in_use[uegid]) {
+	  warn << "The UID " << uegid
+	       << " that you specified for service " << svc->servpath << "\n"
+	       << "\t is in use by another, and I'm refusing to use it.\n";
+	  return false;
+	} else if (owners[uegid]) {
+	  warn << "The UID " << uegid
+	       << " that you specified for service " << svc->servpath << "\n"
+	       << "\towns the executable of another service, so it's unsafe "
+	       << "to use.\n";
+	  return false;
+	}
+      } else {
+	// In this case, we autogenerate a user ID / group ID pair
+	while ((getpwuid (uegid) ||  getgrgid (uegid) ||
+		uids_in_use[uegid] || owners[uegid]) && 
+	       uegid <= ok_svc_uid_high) {
+	  warn << "UID/GID=" << uegid
+	       << " is in use; refusing to use it.\n";
+	  uegid = ++nxtuid;
+	}
       }
-    }
       
-    if (uegid > ok_svc_uid_high) {
-      warn << "too many services / ran out of UIDs\n";
-      return false;
-    }
-    
-    uids_in_use.insert (uegid);
-    
-    // because we check after the previous insert, we won't be able to
-    // use a GID/UID pair in its entirety; this is precisely by design
-    if (uids_in_use[ueuid_own]) {
-      warn << svc->loc () << ": UID " << ueuid_own
-	   << " in use / changing ownership on file to root\n";
-      ueuid_own = ok_usr_t (ok_root).getid ();
-    } 
-    
-    owners.insert (ueuid_own);
+      if (uegid > ok_svc_uid_high) {
+	warn << "too many services / ran out of UIDs\n";
+	return false;
+      }
+      
+      uids_in_use.insert (uegid);
+      
+      // because we check after the previous insert, we won't be able to
+      // use a GID/UID pair in its entirety; this is precisely by design
+      if (uids_in_use[ueuid_own]) {
+	warn << svc->loc () << ": UID " << ueuid_own
+	     << " in use / changing ownership on file to root\n";
+	ueuid_own = ok_usr_t (ok_root).getid ();
+      } 
+      
+      owners.insert (ueuid_own);
+      
+      // fixup ownership and permissions, and who to exec as
+      // based on the old and new gid.uid pairs (and also the old mode).
+      // note that scripts will do something different here from
+      // compiled executables (some combination of making new copies
+      // of the interpreter and fiddling bits).
 
-    // fixup ownership and permissions, and who to exec as
-    // based on the old and new gid.uid pairs (and also the old mode).
-    // note that scripts will do something different here from
-    // compiled executables (some combination of making new copies
-    // of the interpreter and fiddling bits).
-    if (!svc->fixup_doall (ueuid_orig, ueuid_own, uegid_orig, uegid, mode))
-      ret = false;
+      if (!svc->fixup_doall (ueuid_orig, ueuid_own, uegid_orig, uegid, mode))
+	ret = false;
+    }
   }
-  endgrent ();
-  endpwent ();
   return ret;
 }
 
@@ -1115,6 +1160,12 @@ okld_t::shutdown2 (int status)
 
   str s = jail2real (_okd_mgr_socket);
 
+  if (logexc) {
+    if (!logexc->remove_pidfile ()) {
+      warn ("Oklogd pidfile removal failed: %m\n");
+    }
+  }
+
   if (stat (s.cstr (), &sb) == 0) {
     if (status != (NO_SOCKET_ALLOCATED * 256)) {
       warn << "Deleting management socket: " << s << "\n";
@@ -1124,11 +1175,8 @@ okld_t::shutdown2 (int status)
 	   << ") since it's likely not ours.\n";
     }
   }
-
   warn << "shutdown complete\n";
-
   okld_exit (status);
-
 }
 
 void
@@ -1476,16 +1524,16 @@ void okld_t::launchservices ()
   // retrieve the 128th file descriptor. Some small changes
   // to david's libraries might be able to fix this. For now,
   // we'll hack in a timeout to let okd catch up, if possible.
-  if (!lazy_startup()) {
-    for (i = 0; i < svcs.size (); i++, j++) {
-      if (okld_startup_batch_size && j >= okld_startup_batch_size) {
-	twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
-	j = 0;
-      }
-      if (sdflag) { 
-	warn << "not launching due to shutdown flag\n";
-	return;
-      }
+  for (i = 0; i < svcs.size (); i++, j++) {
+    if (okld_startup_batch_size && j >= okld_startup_batch_size) {
+      twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
+      j = 0;
+    }
+    if (sdflag) { 
+      warn << "not launching due to shutdown flag\n";
+      return;
+    }
+    if (!lazy_startup() || svcs[i]->has_direct_ports ()) {
       svcs[i]->launch ();
     }
   }
@@ -1608,15 +1656,27 @@ okld_t::init_interpreters ()
   return true;
 }
 
-void
-svc_options_t::apply_global_defaults ()
+bool
+svc_options_t::apply_global_defaults (const str &s)
 {
+  bool ret = true;
+
   if (svc_reqs < 0) svc_reqs = ok_svc_life_reqs;
   if (svc_time < 0) svc_time = ok_svc_life_time;
   if (wss < 0) wss = ok_pub2_wss;
   if (pub2_caching < 0) pub2_caching = ok_pub2_caching;
   if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
   if (wait_for_signal < 0) wait_for_signal = 0;
+  if (hiwat < 0) hiwat = ok_svc_fds_high_wat;
+  if (lowat < 0) lowat = ok_svc_fds_low_wat;
+
+  if (lowat >= hiwat) {
+    warn << "watermark error for service " << s 
+	 << "; low (" << lowat << ") is not less than high (" << hiwat 
+	 <<  ")\n";
+    ret = false;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -1819,3 +1879,17 @@ okld_t::add_svc (ptr<okld_ch_t> ch)
 
 //-----------------------------------------------------------------------
 
+bool
+svc_options_t::check_options (const str &loc) const
+{
+  bool ok = true;
+  if (lowat >= 0 && hiwat >= 0 && lowat >= hiwat) {
+    warn << loc <<  ": watermark error: "
+	 << "low watermark (" << lowat << ") "
+	 << "must be less than high watermark (" << hiwat << ")\n";
+    ok = false;
+  }
+  return ok;
+}
+
+//-----------------------------------------------------------------------

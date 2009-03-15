@@ -83,6 +83,10 @@ pfile_el_t::alloc (const xpub_obj_t &x)
   switch (x.typ) {
   case XPUB_HTML_EL:
     return New pfile_html_el_t (*x.html_el);
+  case XPUB_INCLIST:
+    return New pfile_inclist_t (*x.inclist);
+  case XPUB_INCLUDE:
+    return New pfile_include_t (*x.include);
   case XPUB_INCLUDE2:
     return New pfile_include2_t (*x.include);
   case XPUB_LOAD:
@@ -502,16 +506,38 @@ aarr_t::aarr_t (const xpub_aarr_t &x)
   }
 }
 
+void
+pfile_include_t::to_xdr_base (xpub_obj_t *x) const
+{
+  if (env)
+    env->to_xdr (&x->include->env);
+  x->include->lineno = lineno;
+}
+
+bool 
+pfile_include_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB_INCLUDE);
+  to_xdr_base (x);
+  x->include->fn.set_vrs (XPUB_V1);
+  *x->include->fn.v1 = fn;
+  return true;
+}
+
 bool
 pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const
 {
   x->set_typ (typ);
-  if (env)
-    env->to_xdr (&x->include->env);
+  to_xdr_base (x);
   x->include->fn.set_vrs (XPUB_V2);
-  x->include->lineno = lineno;
   if (fn_v2) fn_v2->to_xdr (x->include->fn.v2);
   return true;
+}
+
+bool
+pfile_include2_t::to_xdr (xpub_obj_t *x) const
+{
+  return to_xdr_base2 (x, XPUB_INCLUDE2);
 }
 
 bool
@@ -521,15 +547,30 @@ pfile_load_t::to_xdr (xpub_obj_t *x) const
 }
 
 bool
-pfile_include2_t::to_xdr (xpub_obj_t *x) const
+pfile_inclist_t::to_xdr (xpub_obj_t *x) const
 {
-  return to_xdr_base2 (x, XPUB_INCLUDE2);
+  x->set_typ (XPUB_INCLIST);
+  size_t lim = files.size ();
+  x->inclist->files.setsize (lim);
+  for (size_t i = 0; i < lim; i++) 
+    x->inclist->files[i] = files[i];
+  return true;
+}
+
+pfile_include_t::pfile_include_t (const xpub_include_t &x)
+  : pfile_func_t (x.lineno), err (false),
+    env (New refcounted<aarr_arg_t> (x.env))
+{
+  if (x.fn.vrs == XPUB_V1) {
+    fn = *x.fn.v1;
+  } else {
+    warn << "Got unexpected XDR pfile representation for v1 include.\n";
+    err = true;
+  }
 }
 
 pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
-  : pfile_func_t (x.lineno),
-    err (false),
-    env (New refcounted<aarr_arg_t> (x.env))
+  : pfile_include_t (x.lineno, New refcounted<aarr_arg_t> (x.env))
 {
   if (x.fn.vrs == XPUB_V2) {
     fn_v2 = New refcounted<pstr_t> (*x.fn.v2);
@@ -541,6 +582,14 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
 
 pfile_load_t::pfile_load_t (const xpub_include_t &x)
   : pfile_include2_t (x) {}
+
+pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
+  : pfile_func_t (x.lineno), err (false)
+{
+  size_t lim = x.files.size ();
+  for (size_t i = 0; i < lim; i++)
+    files.push_back (x.files[i]);
+}
 
 bool
 pfile_set_func_t::to_xdr (xpub_obj_t *x) const
@@ -693,6 +742,18 @@ pub_drange_t::to_xdr (xpub_range_t *out)
   return true;
 }
 
+bool
+pub_urange_t::to_xdr (xpub_range_t *out)
+{
+  out->set_typ (XPUB_URANGE);
+  out->ur->low = _low;
+  out->ur->hi = _hi;
+  return true;
+}
+
+pub_urange_t::pub_urange_t (const xpub_urange_t &in)
+  : _low (in.low), _hi (in.hi) {}
+
 pub_drange_t::pub_drange_t (const xpub_drange_t &in)
   : _low (cnv_double (in.low)), _hi (cnv_double (in.hi)) {}
 
@@ -706,6 +767,9 @@ pub_range_t::alloc (const xpub_range_t &xpr)
     break;
   case XPUB_DRANGE:
     ret = New refcounted<pub_drange_t> (*xpr.dr);
+    break;
+  case XPUB_URANGE:
+    ret = New refcounted<pub_urange_t> (*xpr.ur);
     break;
   default:
     break;

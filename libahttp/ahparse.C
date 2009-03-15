@@ -23,32 +23,48 @@
 
 #include "ahparse.h"
 
+//-----------------------------------------------------------------------
+
 http_parser_base_t::~http_parser_base_t ()
 {
   if (tocb) {
     timecb_remove (tocb);
     tocb = NULL;
   }
+ 
+  if (_del_abuf && _abuf) {
+    delete _abuf;
+    _abuf = NULL;
+  }
+
   *destroyed = true;
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::parse (cbi c)
 {
   cb = c;
   tocb = delaycb (timeout, 0, wrap (this, &http_parser_base_t::clnt_timeout));
+  _parsing_header = true;
   hdr_p ()->parse (wrap (this, &http_parser_base_t::parse_cb1));
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::parse_cb1 (int status)
 {
+  _parsing_header = false;
   if (status != HTTP_OK) {
     finish (status);
     return;
   }
   v_parse_cb1 (status);
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::finish (int status)
@@ -81,11 +97,15 @@ http_parser_base_t::finish (int status)
   // not to touch class variables after the (*tcb) call.
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_parser_base_t::stop_abuf ()
 {
-  abuf.finish ();
+  _abuf->finish ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_full_t::finish2 (int s1, int s2)
@@ -97,6 +117,8 @@ http_parser_full_t::finish2 (int s1, int s2)
   else
     finish (HTTP_OK);
 }
+
+//-----------------------------------------------------------------------
 
 cbi::ptr
 http_parser_full_t::prepare_post_parse (int status)
@@ -111,60 +133,80 @@ http_parser_full_t::prepare_post_parse (int status)
   } else if (hdr.contlen < 0)
     hdr.contlen = ok_reqsize_limit -1;
   
-  abuf.setlim (hdr.contlen);
+  _abuf->setlim (hdr.contlen);
   return wrap (this, &http_parser_full_t::finish2, status);
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_cgi_t::v_parse_cb1 (int status)
 {
-  if (hdr.mthd == HTTP_MTHD_POST) {
-    
-    cgi_t *post_cgi;
+  switch (hdr.mthd) {
 
-    if (_union_mode) {
+  case HTTP_MTHD_POST:
 
-      cgi = &_union_cgi;
-      post_cgi = &_union_cgi;
-
-      // need to reset interior state for new parsing.
-      _union_cgi.reset_state ();
-
-    } else {
-      cgi = &post;
-      post_cgi = &post;
-    }
-    
-    cbi::ptr pcb;
-    if (!(pcb = prepare_post_parse (status)))
-      return;
-
-    str boundary;
-    if (cgi_mpfd_t::match (hdr, &boundary)) {
-      if (mpfd_flag) {
-	mpfd = cgi_mpfd_t::alloc (&abuf, hdr.contlen, boundary);
-	cgi = mpfd;
-	mpfd->parse (pcb);
+    {
+      cgi_t *post_cgi;
+      ptr<cgi_t> ucg;
+      
+      if (_union_mode) {
+	ucg = get_union_cgi ();
+	cgi = ucg;
+	post_cgi = ucg;
+	
+	// need to reset interior state for new parsing.
+	ucg->reset_state ();
+	
       } else {
-	warn << "file upload attempted when not permitted\n";
-	finish (HTTP_NOT_ALLOWED);
+	cgi = &post;
+	post_cgi = &post;
       }
-    } else {
-      post_cgi->set_max_scratchlen (hdr.contlen);
-      post_cgi->parse (pcb);
+      
+      cbi::ptr pcb;
+      if ((pcb = prepare_post_parse (status))) {
+      
+	str boundary;
+	if (cgi_mpfd_t::match (hdr, &boundary)) {
+	  if (mpfd_flag) {
+	    mpfd = cgi_mpfd_t::alloc (_abuf, hdr.contlen, boundary);
+	    cgi = mpfd;
+	    mpfd->parse (pcb);
+	  } else {
+	    warn << "file upload attempted when not permitted\n";
+	    finish (HTTP_NOT_ALLOWED);
+	  }
+	} else {
+	  post_cgi->set_max_scratchlen (hdr.contlen);
+	  post_cgi->parse (pcb);
+	}
+      }
     }
-  } else if (hdr.mthd == HTTP_MTHD_GET) {
-    if (_union_mode) {
-      cgi = &_union_cgi;
-    } else {
-      cgi = &url;
+
+    break;
+
+  case HTTP_MTHD_GET:
+  case HTTP_MTHD_HEAD:
+    {
+      if (_union_mode) {
+	cgi = get_union_cgi ();
+      } else {
+	cgi = get_url_p ();
+      }
+      finish (status);
     }
-    finish (status);
-  } else {
-    short_circuit_output ();
-    finish (HTTP_NOT_ALLOWED);
+    break;
+    
+  default:
+    {
+      short_circuit_output ();
+      finish (HTTP_NOT_ALLOWED);
+    }
+    break;
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::clnt_timeout ()
@@ -172,19 +214,90 @@ http_parser_base_t::clnt_timeout ()
   tocb = NULL;
   v_cancel ();
   short_circuit_output ();
-  finish (HTTP_TIMEOUT);
+  finish (v_timeout_status ());
 }
 
+//-----------------------------------------------------------------------
 
 void
 http_parser_cgi_t::set_union_mode (bool b)
 {
   _union_mode = b;
-  hdr.set_url (_union_mode ? &_union_cgi : &url);
+  hdr.set_url (_union_mode ? get_union_cgi () : get_url_p ());
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_parser_base_t::short_circuit_output ()
 {
   if (_parser_x) _parser_x->short_circuit_output ();
 }
+
+//-----------------------------------------------------------------------
+
+int
+http_parser_cgi_t::v_timeout_status () const
+{
+  return (_parsing_header ? hdr.timeout_status () : HTTP_TIMEOUT);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<cgi_t>
+http_parser_cgi_t::get_union_cgi ()
+{
+  if (!_union_cgi) {
+    ptr<ok::scratch_handle_t> h = 
+      ok::alloc_scratch (ok_http_inhdr_buflen_big);
+    _union_cgi = cgi_t::alloc (get_abuf_p (), false, h);
+  }
+  return _union_cgi;
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_base_t::http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
+  : _parser_x (xx), 
+    _abuf (b ? b : New abuf_t (New abuf_con_t (xx), true)),
+    _del_abuf (b ? false : true),
+    timeout (to ? to : ok_clnt_timeout),
+    tocb (NULL),
+    destroyed (New refcounted<bool> (false)),
+    _parsing_header (false),
+    _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_raw_t::http_parser_raw_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
+  : http_parser_base_t (xx, to, b), 
+    hdr (_abuf, _scratch) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_full_t::http_parser_full_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
+  : http_parser_base_t (xx, to, b), 
+    hdr (_abuf, _scratch) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
+
+http_parser_cgi_t::http_parser_cgi_t (ptr<ahttpcon> xx, int to, abuf_t *b) 
+  : http_parser_full_t (xx, to, b),
+    post (_abuf, false, _scratch),
+    mpfd (NULL),
+    mpfd_flag (false),
+    _union_mode (false) 
+{
+  assert (_abuf);
+}
+
+//-----------------------------------------------------------------------
