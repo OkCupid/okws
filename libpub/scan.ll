@@ -225,7 +225,11 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 
-<WH>{	
+<H,WH>{	
+[<]{PRET}{WSN}*[>] { yy_push_state (PRE); nlcount (); yylval.str = yytext; 
+	          return T_BPRE; }
+}
+<WH>{
 {WSN}+		{ nlcount (); return (' '); }
 "<!"		{ yylval.str = yytext; return T_HTML; }
 [<][/?%]?	{ yy_push_state (HTAG); yylval.str = yytext; return T_BTAG; }
@@ -237,8 +241,6 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 \<!--		{ yy_pt_com = 0; yy_push_state (HCOM); }
 
 
-\<{PRET}{WSN}*\> { yy_push_state (PRE); nlcount (); yylval.str = yytext; 
-	          return T_BPRE; }
 }
 
 <PRE>{
