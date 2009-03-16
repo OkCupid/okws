@@ -1,5 +1,5 @@
 
-<!--#switch (CIPHER), 
-               (NULL, {{ }}),
-               ( , {{ <hr> <b>SSL Cipher Info:</b> ${CIPHER} <br> }} )
--->
+{% switch (CIPHER), 
+          (NULL, {{ }}),
+          ( , {{ <hr> <b>SSL Cipher Info:</b> ${CIPHER} <br> }} )
+%}

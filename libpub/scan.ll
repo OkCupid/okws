@@ -45,8 +45,8 @@ PRET    [Pp][Rr][Ee]
 WS	[ \t]
 WSN	[ \t\n]
 EOL	[ \t]*\n?
-TPRFX	"<!--#"[ \t]*
-TCLOSE	[ \t]*[;]?[ \t]*"-->"
+TPRFX	(<!--#|\{%)[ \t]*
+TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
@@ -217,8 +217,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <H>{
-[^$}\\<\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
-"<"		{ yylval.ch = yytext[0]; return T_CH; }
+[^$}{\\<\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[<{]		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
 <H>{
@@ -272,7 +272,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <WH>{
-[^$\\<\n\t}\[\] ]+	{ yylval.str = yytext; return T_HTML; }
+[^$\\<{\n\t}\[\] ]+	{ yylval.str = yytext; return T_HTML; }
 \\		 	{ yylval.ch = yytext[0]; return T_CH; }
 }
 
