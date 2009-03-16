@@ -158,8 +158,21 @@ scalar_obj_t::_p_t::set (int64_t i)
   _s = strbuf () << i;
   _i = i;
   _d = i;
+  _u = i;
   _double_cnv = CNV_OK;
   _int_cnv = CNV_OK;
+}
+
+void
+scalar_obj_t::_p_t::set_u (u_int64_t i)
+{
+  _s = strbuf () << i;
+  _i = i;
+  _d = i;
+  _u = i;
+  _double_cnv = CNV_OK;
+  _int_cnv = CNV_OK;
+  _uint_cnv = CNV_OK;
 }
 
 void

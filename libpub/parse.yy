@@ -35,6 +35,7 @@
 %token T_PTSET
 %token T_PTSETL
 %token T_PTSWITCH
+%token T_PTFOR
 %token T_EPTAG
 %token T_BVAR
 %token T_BCONF
@@ -158,6 +159,7 @@ ptag_func: T_PTINCLUDE
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }
 	| T_PTINCLIST	{ $$ = New pfile_inclist_t (PLINENO); }
 	| T_PTLOAD      { $$ = New pfile_load_t (PLINENO); }
+	| T_PTFOR       { $$ = New pfile_for_t (PLINENO); }
 	;
 
 e_js_tag: T_EJS		{ PSECTION->add ($1); }

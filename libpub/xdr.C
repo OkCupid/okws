@@ -103,6 +103,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_set_local_func_t (*x.set_func);
   case XPUB_RAW:
     return New pfile_raw_el_t (*x.raw);
+  case XPUB_FOR:
+    return New pfile_for_t (*x.forloop);
   default:
     return NULL;
   }
@@ -525,6 +527,13 @@ pfile_include_t::to_xdr (xpub_obj_t *x) const
 }
 
 bool
+pfile_for_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB_FOR);
+  return true;
+}
+
+bool
 pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const
 {
   x->set_typ (typ);
@@ -579,6 +588,14 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
     err = true;
   }
 }
+
+//-----------------------------------------------------------------------
+
+pfile_for_t::pfile_for_t (const xpub_for_t &x)
+  : pfile_func_t (x.lineno),
+    _iter (x.iter),
+    _arr (x.arr),
+    _env (nested_env_t::alloc (x.body)) {}
 
 pfile_load_t::pfile_load_t (const xpub_include_t &x)
   : pfile_include2_t (x) {}

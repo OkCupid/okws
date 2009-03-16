@@ -4,6 +4,9 @@
 #include "pub2.h"
 #include "okdbg.h"
 #include "crypt.h"
+#include "parr.h"
+
+//-----------------------------------------------------------------------
 
 namespace pub2 {
   
@@ -766,6 +769,8 @@ namespace pub2 {
   
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
 bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
 			penv_t *genv, pub2::status_cb_t cb) const
@@ -789,6 +794,8 @@ bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
   TRIGGER (cb, status);
 }
 
+//-----------------------------------------------------------------------
+
 tamed template<class T, clist_entry<T> T::*field> void
 publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
 			     penv_t *env, xpub_status_cb_t cb) const
@@ -807,6 +814,8 @@ publist_t<T,field>::publish (pub2_iface_t *iface, output_t *o,
   TRIGGER (cb, status);
 }
 					   
+//-----------------------------------------------------------------------
+
 void 
 pfile_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
 		  pub2::status_cb_t callercv, ptr<closure_t> dummy) const
@@ -814,6 +823,8 @@ pfile_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
   o->output_header (genv);
   secs.publish (iface, o, genv, callercv);
 }
+
+//-----------------------------------------------------------------------
 
 void 
 pfile_sec_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
@@ -824,6 +835,8 @@ pfile_sec_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
   else
     (*callercv) (XPUB_STATUS_OK);
 }
+
+//-----------------------------------------------------------------------
 
 void 
 pfile_include_t::publish (pub2_iface_t *iface, output_t *o,
@@ -840,6 +853,8 @@ pfile_include_t::publish (pub2_iface_t *iface, output_t *o,
   }
 }
 
+//-----------------------------------------------------------------------
+
 str
 pfile_include2_t::eval_fn (penv_t *e) const
 {
@@ -848,6 +863,8 @@ pfile_include2_t::eval_fn (penv_t *e) const
     r = fn_v2->eval (e, EVAL_INTERNAL, true);
   return r;
 }
+
+//-----------------------------------------------------------------------
 
 void
 pfile_include2_t::publish (pub2_iface_t *iface, output_t *o,
@@ -865,6 +882,8 @@ pfile_include2_t::publish (pub2_iface_t *iface, output_t *o,
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_include2_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
 				    penv_t *genv) const
@@ -878,6 +897,8 @@ pfile_include2_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_include_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
 				   penv_t *genv) const
@@ -889,6 +910,8 @@ pfile_include_t::publish_nonblock (pub2_iface_t *iface, output_t *o,
     return false;
   }
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
@@ -918,6 +941,8 @@ pfile_func_t::publish (pub2_iface_t *iface, output_t *o,
   TRIGGER (cb, status);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_switch_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g) 
   const
@@ -940,6 +965,8 @@ pfile_switch_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
 			 xpub_status_cb_t callercv, ptr<closure_t> dummy) const
@@ -960,4 +987,71 @@ pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
     }
   }
 }
+
+//-----------------------------------------------------------------------
+
+bool
+pfile_for_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+pfile_for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
+		      xpub_status_cb_t callercv) const
+{
+  tvars {
+    const parr_mixed_t *a;
+    const pval_t *v;
+    ptr<const pval_t> hold;
+    bool ok (false);
+    aarr_t frame;
+    size_t i, len;
+    nvpair_t *p;
+    ptr<pval_t> row;
+    ptr<aarr_t> row_aarr;
+    xpub_status_t res (XPUB_STATUS_OK);
+    size_t frame_pointer;
+  }
+
+  if (!(v = e->lookup (_arr, false)) || !(hold = mkref (v))) {
+    strbuf b ("for: cannot find iterable vector (%s)\n", _arr.cstr ());
+    o->output_err (e, b, lineno);
+  } else if (!(a = v->to_mixed_arr ())) {
+    strbuf b ("for: given value is not iterable vector (%s)\n", _arr.cstr ());
+    o->output_err (e, b, lineno);
+  } else {
+    ok = true;
+    len = a->size ();
+
+    frame_pointer = e->size ();
+    e->push (&frame);
+
+    for (i = 0; i < len; i++) {
+      if (!(row = (*a)[i])) {
+	strbuf b ("for: row %zu is undefined!\n", i);
+	o->output_err (e, b, lineno);
+      } else if (!(row_aarr = row->to_aarr ())) {
+	strbuf b ("for: row %zu is not an associative array!\n", i);
+	o->output_err (e, b, lineno);
+      } else if (_env) {
+	row_aarr->replace ("count", int64_t (len));
+	row_aarr->replace ("iter", int64_t (i));
+	row_aarr->replace ("last", int64_t (len - 1 == i));
+	frame.replace (_iter, pub_aarr_t::alloc (row_aarr));
+
+	twait { _env->publish (iface, o, e, mkevent (res)); }
+
+	delete p;
+      }
+    }
+    e->resize (frame_pointer);
+  }
+  
+  (*callercv) (res);
+}
+
+//-----------------------------------------------------------------------
 

@@ -328,6 +328,8 @@ pvar_t::output (output_t *o, penv_t *e) const
   st->output (o, e);
 }
 
+//-----------------------------------------------------------------------
+
 ptr<pbuf_t>
 evalable_t::eval_to_pbuf (penv_t *e, pub_evalmode_t m) const
 {
@@ -339,6 +341,30 @@ evalable_t::eval_to_pbuf (penv_t *e, pub_evalmode_t m) const
   return st;
 }
 
+//-----------------------------------------------------------------------
+
+bool 
+evalable_t::eval_to_scalar (penv_t *e, scalar_obj_t *o) const
+{
+  bool ret;
+  str s = eval (e, EVAL_INTERNAL, true);
+  if ((ret = s)) {
+    *o = scalar_obj_t (s);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub_scalar_t::eval_to_scalar (penv_t *e, scalar_obj_t *o) const
+{
+  *o = _obj;
+  return !_obj.is_null ();
+}
+
+//-----------------------------------------------------------------------
+    
 str
 evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const 
 {
@@ -347,6 +373,8 @@ evalable_t::eval (penv_t *e, pub_evalmode_t m, bool allownull) const
   ptr<pbuf_t> st = eval_to_pbuf (e, m);
   return st->to_str (m, allownull);
 }
+
+//-----------------------------------------------------------------------
 
 void
 pfile_switch_t::output (output_t *o, penv_t *e) const
@@ -363,6 +391,8 @@ pfile_switch_t::output (output_t *o, penv_t *e) const
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 nested_env_t::output (output_t *o, penv_t *e) const
 {
@@ -373,18 +403,24 @@ nested_env_t::output (output_t *o, penv_t *e) const
   //_frm.pop_frame (o, e);
 }
 
+//-----------------------------------------------------------------------
+
 ptr<pswitch_env_base_t>
 pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
 {
   str v;
   ptr<pswitch_env_base_t> pse;
-  if (key)
+  scalar_obj_t so;
+  bool found = false;
+
+  if (key) {
     // treading lightly here; adding the "allownull" hack because
     // i'm not sure what kind of semantics people are currently 
     // using.
-    v = key->eval (e, EVAL_INTERNAL, true);
+    found = key->eval_to_scalar (e, &so);
+  }
 
-  if (!v) {
+  if (!found) {
     pse = nullcase;
     if (!pse) pse = def;
 
@@ -393,12 +429,12 @@ pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
 		     << key->name () << ")", lineno);
   } else {
    
+    str v = so.to_str ();
     const ptr<pswitch_env_base_t> *psep = _exact_cases[v];
     if (psep)
       pse = *psep;
 
     if (!pse) {
-      scalar_obj_t so (v);
       for (size_t i = 0; i < _other_cases.size () && !pse; i++) {
 	if (_other_cases[i]->match (so))
 	  pse = _other_cases[i];
@@ -442,6 +478,12 @@ aarr_t::add (nvpair_t *p)
 }
 
 void
+aarr_t::remove (nvpair_t *p)
+{
+  aar.remove (p);
+}
+
+void
 gcode_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
   if (e->get_tlf ()) 
@@ -465,11 +507,23 @@ parr_mixed_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
   ps->add (")");
 }
 
+//-----------------------------------------------------------------------
+
 void
 pub_regex_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
   ps->add (_rxx_str ? _rxx_str : str ("<Empty RXX>") );
 }
+
+//-----------------------------------------------------------------------
+
+void
+pub_scalar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
+{
+  ps->add (_obj.to_str ());
+}
+
+//-----------------------------------------------------------------------
 
 void
 pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
@@ -508,6 +562,8 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
     e->eval_pop (nm);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 penv_t::go_g_var (const str &n) const
 {
@@ -520,23 +576,51 @@ penv_t::go_g_var (const str &n) const
   }
 }
 
+//-----------------------------------------------------------------------
+
 const pval_t *
 aarr_t::lookup (const str &n) const
 {
+  const char *cp = strchr (n, '.');
+  str k = cp ? str (cp) : n;
+
   const pval_t *ret = NULL;
-  const nvpair_t *p = aar [n];
+  const nvpair_t *p = aar [k];
   if (p) ret = p->value ();
+
+  if (cp && ret) {
+    ptr<const pub_aarr_t> aarr = ret->to_pub_aarr ();
+    if (aarr) {
+      ret = aarr->obj ()->lookup (cp + 1);
+    }
+  }
+
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 pval_t *
 aarr_t::lookup (const str &n) 
 {
+  char *cp = strchr (n, '.');
+  str k = cp ? str (cp) : n;
+
   pval_t *ret = NULL;
   nvpair_t *p = aar [n];
   if (p) ret = p->value ();
+
+  if (cp && ret) {
+    ptr<pub_aarr_t> aarr = ret->to_pub_aarr ();
+    if (aarr) {
+      ret = aarr->obj ()->lookup (cp + 1);
+    }
+  }
+
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 //
 //
@@ -549,6 +633,7 @@ aarr_t::lookup (const str &n)
 const pval_t *
 penv_t::lookup (const str &n, bool recurse)
 {
+
   ssize_t i;
   vec<ssize_t> *v = NULL;
   
@@ -2138,3 +2223,45 @@ pswitch_env_range_t::match (const scalar_obj_t &so) const
 {
   return _range && _range->match (so);
 }
+
+//-----------------------------------------------------------------------
+
+bool
+pfile_for_t::add (ptr<arglist_t> l)
+{
+  bool ret = true;
+  if (_iter || 
+      !l || 
+      l->size () != 2 ||
+      !(_iter = ((*l)[0])->eval ()) ||
+      !(_arr = ((*l)[1])->eval ())) {
+    PWARN ("pub takes 2 arguments (formal variable and array)\n");
+    ret = false;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pfile_for_t::output (output_t *o, penv_t *e) const
+{
+}
+
+//-----------------------------------------------------------------------
+
+aarr_t &
+aarr_t::replace (const str &n, ptr<pval_t> v)
+{
+  nvpair_t *nvp = aar[n];
+  if (nvp) {
+    nvp->set_value (v);
+  } else {
+    nvp = New nvpair_t (n, v);
+    aar.insert (nvp);
+  }
+  return (*this);
+}
+
+//-----------------------------------------------------------------------
+

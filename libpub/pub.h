@@ -223,6 +223,8 @@ class output_t;
 typedef ptr<const bound_pfile_t> bpfcp_t; // const pointer
 typedef ptr<bound_pfile_t> bpfmp_t;       // mutable pointer
 
+//-----------------------------------------------------------------------
+
 class nvpair_t : public virtual dumpable_t {
 public:
   nvpair_t (const str &n, ptr<pval_t> v) : nm (n), val (v) {}
@@ -238,11 +240,15 @@ public:
   str get_obj_name () const { return "nvpair_t"; }
   bool to_xdr (xpub_nvpair_t *x) const;
 
+  void set_value (ptr<pval_t> r) { val = r; }
+
   const str nm;
   ihash_entry<nvpair_t> hlink;
 private:
-  const ref<pval_t> val;
+   ref<pval_t> val;
 };
+
+//-----------------------------------------------------------------------
 
 class nvtab_t : 
   public ihash<const str, nvpair_t, &nvpair_t::nm, &nvpair_t::hlink>
@@ -257,7 +263,6 @@ public:
   void overwrite_with (const nvtab_t &dest);
   void insert (nvpair_t *p);
 };
-
 
 class pval_w_t {
 public:
@@ -298,6 +303,8 @@ public:
   virtual void output (output_t *o, penv_t *e) const = 0;
 };
 
+//-----------------------------------------------------------------------
+
 class aarr_t : public virtual dumpable_t, public virtual outputable_t {
 public:
   aarr_t () {}
@@ -309,8 +316,18 @@ public:
   aarr_t &add (const str &n, zbuf *b);
   aarr_t &add (const str &n, ptr<zbuf> zb);
   aarr_t &add (const str &n, const strbuf &b) { return add (n, str (b)); }
+  void remove (nvpair_t *p);
+
+  aarr_t &replace (const str &n, ptr<pval_t> v);
+  template<class T> aarr_t &replace_so (const str &n, T i);
+
+  aarr_t &replace (const str &n, int64_t i) { return replace_so (n, i); }
+  aarr_t &replace (const str &n, double d) { return replace_so (n, d); }
+  aarr_t &replace (const str &n, const str &s) { return replace_so (n, s); }
+
 
   template<class T> aarr_t &add (const str &n, T i);
+
   aarr_t &operator= (const aarr_t &in);
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
@@ -330,6 +347,8 @@ private:
   friend class penv_t;
   clist_entry<aarr_t> slnk;
 };
+
+//-----------------------------------------------------------------------
 
 struct penv_state_t {
   penv_state_t (u_int o, size_t e, bool f) 
@@ -422,6 +441,7 @@ public:
   str cerr;
   u_int opts;
 private:
+
   pub_evalmode_t evm;
   qhash<str, vec<ssize_t> > evaltab;
   vec<const aarr_t *> estack; // eval stack
@@ -605,6 +625,7 @@ struct bound_pfile_t : public virtual refcount,
 
 };
 
+//-----------------------------------------------------------------------
 
 class pbuf_t;
 class evalable_t {
@@ -612,6 +633,9 @@ public:
   virtual ~evalable_t () {}
   str eval (penv_t *e, pub_evalmode_t m = EVAL_FULL, 
 	    bool allownull = false) const;
+
+  virtual bool eval_to_scalar (penv_t *e, scalar_obj_t *so) const;
+
   str eval () const { return eval (NULL, EVAL_SIMPLE); }
   ptr<pbuf_t> eval_to_pbuf (penv_t *e, pub_evalmode_t m) const;
 
@@ -628,6 +652,8 @@ public:
   virtual void eval_obj (pbuf_t *s, penv_t *e, u_int d) const = 0;
   virtual str eval_simple () const { return NULL; }
 };
+
+//-----------------------------------------------------------------------
 
 template<class T, clist_entry<T> T::*field>
 struct publist_t 
@@ -679,6 +705,10 @@ class parr_ival_t;
 class nested_env_t;
 class pub_regex_t;
 class pub_range_t;
+class pub_scalar_t;
+class pub_aarr_t;
+
+//-----------------------------------------------------------------------
 
 class arg_t : public virtual refcount, public virtual dumpable_t,
 	      public virtual evalable_t
@@ -686,6 +716,8 @@ class arg_t : public virtual refcount, public virtual dumpable_t,
 public:
   virtual ~arg_t () {}
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
+  virtual ptr<pub_aarr_t> to_pub_aarr () { return NULL; }
+  virtual ptr<const pub_aarr_t> to_pub_aarr () const { return NULL; }
   virtual bool is_null () const { return false; }
   virtual ptr<pub_regex_t> to_regex () { return NULL; }
   virtual ptr<pub_range_t> to_range () { return NULL; }
@@ -695,7 +727,11 @@ public:
   virtual const parr_ival_t *to_int_arr () const { return NULL; }
   virtual const parr_t *to_arr () const { return NULL; }
   virtual ptr<nested_env_t> to_nested_env () { return NULL; }
+  virtual ptr<pub_scalar_t> to_scalar () { return NULL; }
+  virtual ptr<const pub_scalar_t> to_scalar () const { return NULL; }
 };
+
+//-----------------------------------------------------------------------
 
 class pval_t : public arg_t {
 public:
@@ -706,6 +742,8 @@ public:
   virtual ptr<pval_t> flatten(penv_t *e) ;
   virtual ptr<pstr_t> to_pstr () { return NULL; }
 };
+
+//-----------------------------------------------------------------------
 
 class pub_regex_t : public pval_t {
 public:
@@ -725,6 +763,8 @@ private:
   ptr<rxx> _rxx;
 };
 
+//-----------------------------------------------------------------------
+
 class pub_range_t : public pval_t {
 public:
   virtual bool match (scalar_obj_t so) = 0;
@@ -735,6 +775,8 @@ public:
   void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
   ptr<pub_range_t> to_range () { return mkref (this); }
 };
+
+//-----------------------------------------------------------------------
 
 class pub_irange_t : public pub_range_t {
 public:
@@ -750,6 +792,8 @@ private:
   const int64_t _low, _hi;
 };
 
+//-----------------------------------------------------------------------
+
 class pub_urange_t : public pub_range_t {
 public:
   pub_urange_t (u_int64_t l, u_int64_t h) : _low (l), _hi (h) {}
@@ -762,6 +806,8 @@ public:
 private:
   const u_int64_t _low, _hi;
 };
+
+//-----------------------------------------------------------------------
 
 class pub_drange_t : public pub_range_t {
 public:
@@ -776,6 +822,25 @@ private:
   const double _low, _hi;
 };
 
+//-----------------------------------------------------------------------
+
+class pub_aarr_t : public pval_t {
+public:
+  pub_aarr_t (ptr<aarr_t> a) : _obj (a) {}
+  ptr<const aarr_t> obj () const { return _obj; }
+  ptr<aarr_t> obj () { return _obj; }
+  str get_obj_name () const { return "pub_aarr"; }
+  ptr<const pub_aarr_t> to_pub_aarr () const { return mkref (this); }
+  ptr<pub_aarr_t> to_pub_aarr () { return mkref (this); }
+  static ptr<pub_aarr_t> alloc (ptr<aarr_t> a) 
+  { return New refcounted<pub_aarr_t> (a); }
+  void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const {}
+
+private:
+  ptr<aarr_t> _obj;
+};
+
+//-----------------------------------------------------------------------
 
 class pfile_el_t : public virtual concatable_t, public virtual dumpable_t,
 		   public virtual pub2able_t {
@@ -808,6 +873,33 @@ public:
 class pvar_t;
 class gcode_t;
 class pstr_var_t;
+
+//-----------------------------------------------------------------------
+
+class pub_scalar_t : public pval_t {
+public:
+  pub_scalar_t (const str &n) : _obj (n) {}
+  pub_scalar_t (int64_t i) { _obj.set (i); }
+  pub_scalar_t (const scalar_obj_t &o) : _obj (o) {}
+
+  template<class T>
+  static ptr<pub_scalar_t> alloc (T i)
+  { return New refcounted<pub_scalar_t> (i); }
+
+  ptr<pub_scalar_t> to_scalar () { return mkref (this); }
+  ptr<const pub_scalar_t> to_scalar () const { return mkref (this); }
+  const scalar_obj_t &obj () const { return _obj; }
+  scalar_obj_t &obj () { return _obj; }
+  void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;
+  str get_obj_name () const { return "pub_scalar_t"; }
+
+  bool eval_to_scalar (penv_t *e, scalar_obj_t *o) const;
+private:
+  scalar_obj_t _obj;
+};
+
+//-----------------------------------------------------------------------
+
 class pstr_t : public pval_t, public pub2able_t {
 public:
   pstr_t (ptr<pvar_t> v);
@@ -974,6 +1066,24 @@ protected:
   bool err;
   pfnm_t fn;
   ptr<aarr_arg_t> env;
+};
+
+class pfile_for_t : public pfile_func_t {
+public:
+  pfile_for_t (int l) : pfile_func_t (l) {}
+  pfile_for_t (const xpub_for_t &x);
+  bool to_xdr (xpub_obj_t *x) const;
+  bool add (ptr<arglist_t> l);
+  str get_obj_name () const { return "pfile_for_t"; }
+  virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
+			xpub_status_cb_t , CLOSURE) const;
+  bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+  void output (output_t *o, penv_t *e) const;
+protected:
+private:
+  str _iter;
+  str _arr;
+  ptr<nested_env_t> _env;
 };
 
 class pfile_include2_t : public pfile_include_t {
@@ -1424,6 +1534,7 @@ public:
   aarr_arg_t (const xpub_aarr_t &x) : aarr_t (x) {}
   aarr_arg_t () {}
   ptr<aarr_arg_t> to_aarr () { return mkref (this); }
+  ptr<const aarr_arg_t> to_aarr () const { return mkref (this); }
   str get_obj_name () const { return "aarr_arg_t"; }
   void eval_obj (pbuf_t *, penv_t *, u_int) const {}
 };
@@ -2024,10 +2135,15 @@ pub_config_iface_t::cfg (const str &n, T *v) const
 template<class T> aarr_t &
 aarr_t::add (const str &n, T i)
 {
-  strbuf b;
-  b << i;
-  add (New nvpair_t (n, New refcounted<pstr_t> (b)));
+  add (New nvpair_t (n, pub_scalar_t::alloc (i)));
   return (*this);
+}
+
+template<class T> aarr_t &
+aarr_t::replace_so (const str &n, T i)
+{
+  ptr<pval_t> v = pub_scalar_t::alloc (i);
+  return replace (n, v);
 }
 
 const char * getenvval (const char *s);

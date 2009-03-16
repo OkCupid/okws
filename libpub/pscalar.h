@@ -36,10 +36,16 @@
 #include "zstr.h"
 #include "tame.h"
 
+//-----------------------------------------------------------------------
+
 bool convertdouble (const str &x, double *dp);
+
+//-----------------------------------------------------------------------
 
 class scalar_obj_t {
 private:
+
+  //-----------------------------------------------------------------------
 
   class _p_t {
   public:
@@ -62,6 +68,7 @@ private:
     void set (const str &s);
     void set (double d);
     void set (int64_t i);
+    void set_u (u_int64_t u);
     void clear ();
     
     typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
@@ -74,6 +81,8 @@ private:
     mutable int64_t _i;
     mutable u_int64_t _u;
   };
+
+  //-----------------------------------------------------------------------
 
 public:
   scalar_obj_t ();
@@ -101,6 +110,7 @@ public:
   void set (const str &s) { _p->set (s); }
   void set (double d) { _p->set (d); }
   void set (int64_t i) { _p->set (i); }
+  void set_u (u_int64_t u) { _p->set_u (u); }
 
   void add (const char *c, size_t l);
   void add (const str &s);
@@ -116,6 +126,10 @@ private:
   bool _frozen;
 };
 
+//-----------------------------------------------------------------------
+
 bool convertuint (const str &s, u_int64_t *out);
+
+//-----------------------------------------------------------------------
 
 #endif /* _LIBPUB_PSCALAR_H_ */

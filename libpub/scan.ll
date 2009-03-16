@@ -114,6 +114,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
  			  begin_STR (HCOM, 0);
 			  addstr ("<!--", 4);
 	  		}
+
+{TPRFX}for              { yy_push_state (PTAG); return T_PTFOR; }
 }
 
 <POUND_REGEX>{

@@ -16,7 +16,8 @@ enum xpub_obj_typ_t {
   XPUB_INCLUDE2 = 9,
   XPUB_RAW = 10,
   XPUB_SET_LOCAL_FUNC = 11,
-  XPUB_LOAD = 12
+  XPUB_LOAD = 12,
+  XPUB_FOR = 13
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -327,6 +328,13 @@ struct xpub_switch_t {
   bool nulldef;
 };
 
+struct xpub_for_t {
+  int lineno;
+  xpub_var_t iter;
+  xpub_var_t arr;
+  xpub_section_t body;
+};
+
 union xpub_obj_t switch (xpub_obj_typ_t typ) {
  case XPUB_NONE:
    void;
@@ -349,6 +357,8 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
    xpub_set_func_t set_func;
  case XPUB_INCLIST:
    xpub_inclist_t inclist;
+ case XPUB_FOR:
+   xpub_for_t forloop;
  case XPUB_RAW:
    xpub_raw_t raw;
 };
