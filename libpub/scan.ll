@@ -56,7 +56,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 <INITIAL>\n	{ PLINC; return ('\n'); }
 
 <PTAG>{
-"-->"		{ yy_pop_state (); return T_EPTAG; }
+(-->|%\})		{ yy_pop_state (); return T_EPTAG; }
 }
 
 <PTAG>{
@@ -95,8 +95,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 "//".*$		/* discard */ ;
 
-.		{ return yyerror ("illegal token found in GUY/PTAG "
-	                          "environment"); }
+.		{ return yyerror ("illegal token found in PTAG environment"); }
 }
 
 <H>\n			{ PLINC; return (yytext[0]); }
