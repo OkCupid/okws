@@ -74,9 +74,9 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   }
   
   for (size_t i = 0; i < 3; i++) {
-    po("i")[i]("x") = i;
+    po("row")[i]("val") = i;
     for (size_t j = 0; j < 4; j++) {
-      po("i")[i]("j")[j]("x") = j;
+      po("row")[i]("col")[j]("val") = j;
     }
   }
   
