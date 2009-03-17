@@ -49,6 +49,8 @@ namespace pub3 {
 
     // scalar access features: mutable
     obj_t &operator= (int64_t i) { return set_int (i); }
+    obj_t &operator= (int i) { return set_int (i); }
+    obj_t &operator= (size_t s) { return set_int (s); }
     obj_t &operator= (const str &s) { return set_str (s); }
     obj_t &operator= (double d) { return set_double (d); }
     obj_t &operator= (ptr<pval_t> z) { return set_value (z); }
@@ -56,6 +58,9 @@ namespace pub3 {
 
     // wild card
     obj_t &operator= (obj_t o) { return set_obj (o); }
+
+    ptr<aarr_t> dict () { return _dict; }
+    ptr<const aarr_t> dict () const { return _dict; }
     
   protected:
 

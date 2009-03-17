@@ -32,14 +32,18 @@
 #include "oklocale.h"
 #include "okws_sfs.h"
 #include "test_const.h"
+#include "pub3obj.h"
+
+//-----------------------------------------------------------------------
 
 class oksrvc_forloop_t : public oksrvc_t {
 public:
-  oksrvc_forloop_t (int argc, char *argv[]) 
-    : oksrvc_t (argc, argv), _mtm (NULL) {}
+  oksrvc_forloop_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
 private:
 };
+
+//-----------------------------------------------------------------------
 
 class okclnt_forloop_t : public okclnt2_t {
 public:
@@ -51,13 +55,15 @@ public:
 
 };
 
+//-----------------------------------------------------------------------
+
 tamed void 
 okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
-    pub_obj2_t p;
+    pub3::obj_t po;
     int opts (0);
-    int rc;
+    bool rc;
     const char *tstf;
   }
 
@@ -68,29 +74,27 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   }
   
   for (size_t i = 0; i < 3; i++) {
-    p("i")[i]("x") = i;
+    po("i")[i]("x") = i;
     for (size_t j = 0; j < 4; j++) {
-      p("i")[i]("j")[j]("x") = j;
+      po("i")[i]("j")[j]("x") = j;
     }
   }
-
-
-  for (each match row) {
-     dict = obj("row").push_back ();
-	 dict.insert ("userid", 10);
-  }
   
-  twait { pub2 ()->run (&out, tstf, mkevent (rc), p.val (), opts|P_VISERR); }
+  twait { pub2 ()->run (&out, tstf, mkevent (rc), po.dict (), opts|P_VISERR); }
   twait { output (out, mkevent ()); }
 
   ev->trigger (true, HTTP_OK);
 }
+
+//-----------------------------------------------------------------------
 
 oksrvc_t::newclnt_t *
 oksrvc_forloop_t::make_newclnt (ptr<ahttpcon> x)
 {
   return New okclnt_forloop_t (x, this);
 }
+
+//-----------------------------------------------------------------------
 
 int
 main (int argc, char *argv[])
@@ -100,5 +104,4 @@ main (int argc, char *argv[])
   amain ();
 }
 
-
-{% for (
+//-----------------------------------------------------------------------
