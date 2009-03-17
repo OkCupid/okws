@@ -11,7 +11,6 @@
 %token <str> T_NUM
 %token <str> T_HNAM
 %token <str> T_HVAL
-%token <str> T_CODE
 %token <str> T_STR
 %token <str> T_VAR
 %token <ch>  T_CH
@@ -25,10 +24,6 @@
 %token <str> T_REGEX_BODY
 %token <str> T_REGEX_END
 
-%token T_VARS
-%token T_UVARS
-%token T_PRINT
-%token T_INCLUDE
 %token T_PTINCLUDE
 %token T_PTLOAD
 %token T_PTINCLIST
@@ -42,9 +37,7 @@
 %token T_EJS_SILENT
 %token T_BJS_SILENT
 %token T_2L_BRACE
-%token T_2L_BRACKET
 %token T_2R_BRACE
-%token T_2R_BRACKET
 
 %token T_REGEX_BEGIN
 %token T_RANGE_BEGIN
@@ -55,7 +48,6 @@
 %token T_INT16_ARR
 %token T_UINT16_ARR
 %token T_INT64_ARR
-%token T_UINT64_ARR
 
 %type <str> var str1 bname 
 %type <num> number
@@ -70,7 +62,7 @@
 %type <buf> regex_body
 
 %%
-file: | hfile {}
+file: hfile {}
 	| conffile {}
 	;
 
@@ -78,16 +70,6 @@ conffile: T_BCONF aarr {}
 	;
 
 hfile: html 
-	;
-
-varlist: var 
-	{
-	  PGVARS->add ($1);
-	}
-	| varlist ',' var 
-	{
-	  PGVARS->add ($3);
-	}
 	;
 
 html: /* empty */ {}

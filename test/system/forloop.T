@@ -73,6 +73,12 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
       p("i")[i]("j")[j]("x") = j;
     }
   }
+
+
+  for (each match row) {
+     dict = obj("row").push_back ();
+	 dict.insert ("userid", 10);
+  }
   
   twait { pub2 ()->run (&out, tstf, mkevent (rc), p.val (), opts|P_VISERR); }
   twait { output (out, mkevent ()); }
@@ -93,3 +99,6 @@ main (int argc, char *argv[])
   oksrvc->launch ();
   amain ();
 }
+
+
+{% for (

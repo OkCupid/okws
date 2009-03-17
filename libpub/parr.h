@@ -255,12 +255,18 @@ public:
   ~parr_mixed_t () {}
 
   const parr_mixed_t *to_mixed_arr () const { return this; }
+  parr_mixed_t *to_mixed_arr () { return this; }
 
-  ptr<pval_t> operator[] (size_t i) const { return v[i]; }
+  const ptr<pval_t> &operator[] (size_t i) const { return v[i]; }
+  ptr<pval_t> &operator[] (size_t i) { return v[i]; }
+
   size_t size () const { return v.size (); }
 
   bool add (ptr<pval_t> i) { v.push_back (i); return true;}
   bool add (int64_t i) {v.push_back (New refcounted<pint_t> (i)); return true;}
+
+  ptr<pval_t> &push_back () { return v.push_back (); }
+  void setsize (size_t s) { v.setsize (s); }
 
   str get_obj_name () const { return "parr_t"; }
   void dump2 (dumper_t *d) const;

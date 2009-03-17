@@ -310,7 +310,7 @@ bool
 pswitch_env_base_t::to_xdr_base (xpub_switch_env_base_t *x) const
 {
   if (aarr)
-    aarr->to_xdr (&x->aarr);
+    aarr->aarr_t::to_xdr (&x->aarr);
 
   if (fn) {
     x->body.set_typ (XPUB_SWITCH_FILE);
@@ -512,7 +512,7 @@ void
 pfile_include_t::to_xdr_base (xpub_obj_t *x) const
 {
   if (env)
-    env->to_xdr (&x->include->env);
+    env->aarr_t::to_xdr (&x->include->env);
   x->include->lineno = lineno;
 }
 
@@ -619,7 +619,7 @@ pfile_set_func_t::to_xdr_common (xpub_obj_t *x, xpub_obj_typ_t typ) const
 { 
   assert (typ == XPUB_SET_FUNC || typ == XPUB_SET_LOCAL_FUNC);
   x->set_typ (typ);
-  aarr->to_xdr (&x->set_func->aarr);
+  aarr->aarr_t::to_xdr (&x->set_func->aarr);
   x->set_func->lineno = lineno;
   return true;
 }

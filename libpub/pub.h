@@ -124,7 +124,6 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PLASTHTAG  parser->lasttag
 #define PHTAG      parser->tag
 #define PAARR      parser->aarr
-#define PGVARS     parser->gvars
 #define PSTR1      parser->str1
 #define PPSTR      parser->pstr
 #define PARR       parser->parr
@@ -230,6 +229,7 @@ public:
   nvpair_t (const str &n, ptr<pval_t> v) : nm (n), val (v) {}
   nvpair_t (const xpub_nvpair_t &x);
   nvpair_t (const nvpair_t &p) : nm (p.nm), val (p.val) {}
+  nvpair_t (const str &n) : nm (n) {}
   virtual ~nvpair_t () {}
   const str &name () const { return nm; }
   const pval_t *value () const { return val; }
@@ -241,11 +241,13 @@ public:
   bool to_xdr (xpub_nvpair_t *x) const;
 
   void set_value (ptr<pval_t> r) { val = r; }
+  ptr<pval_t> &value_ref () { return val; }
+  const ptr<pval_t> &value_ref () const { return val; }
 
   const str nm;
   ihash_entry<nvpair_t> hlink;
 private:
-   ref<pval_t> val;
+  ptr<pval_t> val;
 };
 
 //-----------------------------------------------------------------------
@@ -319,12 +321,13 @@ public:
   void remove (nvpair_t *p);
 
   aarr_t &replace (const str &n, ptr<pval_t> v);
+  ptr<pval_t> &value_ref (const str &n);
+  const ptr<pval_t> &value_ref (const str &n) const;
   template<class T> aarr_t &replace_so (const str &n, T i);
 
   aarr_t &replace (const str &n, int64_t i) { return replace_so (n, i); }
   aarr_t &replace (const str &n, double d) { return replace_so (n, d); }
   aarr_t &replace (const str &n, const str &s) { return replace_so (n, s); }
-
 
   template<class T> aarr_t &add (const str &n, T i);
 
@@ -332,6 +335,7 @@ public:
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
   const pval_t *lookup (const str &n) const;
+
   void output (output_t *o, penv_t *e) const;
 
   void dump2 (dumper_t *d) const;
@@ -340,6 +344,7 @@ public:
   const nvtab_t *nvtab () const { return &aar; }
   nvtab_t *nvtab () { return &aar; }
   void deleteall () { aar.deleteall (); }
+  size_t size () const { return aar.size (); }
 
 protected:
   nvtab_t aar;
@@ -716,6 +721,7 @@ class arg_t : public virtual refcount, public virtual dumpable_t,
 public:
   virtual ~arg_t () {}
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
+  virtual ptr<const aarr_arg_t> to_aarr () const { return NULL; }
   virtual ptr<pub_aarr_t> to_pub_aarr () { return NULL; }
   virtual ptr<const pub_aarr_t> to_pub_aarr () const { return NULL; }
   virtual bool is_null () const { return false; }
@@ -724,6 +730,7 @@ public:
   virtual ptr<pval_t> to_pval () { return NULL; }
   virtual bool to_int64 (int64_t *i) const { return false; }
   virtual const parr_mixed_t *to_mixed_arr () const { return NULL; }
+  virtual parr_mixed_t *to_mixed_arr () { return NULL; }
   virtual const parr_ival_t *to_int_arr () const { return NULL; }
   virtual const parr_t *to_arr () const { return NULL; }
   virtual ptr<nested_env_t> to_nested_env () { return NULL; }
@@ -881,6 +888,7 @@ public:
   pub_scalar_t (const str &n) : _obj (n) {}
   pub_scalar_t (int64_t i) { _obj.set (i); }
   pub_scalar_t (const scalar_obj_t &o) : _obj (o) {}
+  pub_scalar_t () {}
 
   template<class T>
   static ptr<pub_scalar_t> alloc (T i)
@@ -1529,7 +1537,9 @@ private:
   vec<ptr<pswitch_env_base_t> > _other_cases;
 };
 
-class aarr_arg_t : public aarr_t, public arg_t {
+//-----------------------------------------------------------------------
+
+class aarr_arg_t : public aarr_t, public pval_t {
 public:
   aarr_arg_t (const xpub_aarr_t &x) : aarr_t (x) {}
   aarr_arg_t () {}
@@ -1538,6 +1548,8 @@ public:
   str get_obj_name () const { return "aarr_arg_t"; }
   void eval_obj (pbuf_t *, penv_t *, u_int) const {}
 };
+
+//-----------------------------------------------------------------------
 
 class nested_env_t : public arg_t, public pub2able_t
 {
