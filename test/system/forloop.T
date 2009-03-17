@@ -55,22 +55,28 @@ tamed void
 okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
-    aarr_t aarr;
+    pub_obj2_t p;
+    int opts (0);
+    int rc;
+    const char *tstf;
   }
+
+  tstf = "/test/forloop.html";
 
   if (cgi.blookup ("wss")) {
     opts |= P_WSS;
   }
   
-  ptr<parr_mixed_t> i_arr = New refcounted<parr_mixed_t> ();
   for (size_t i = 0; i < 3; i++) {
-    ptr<parr_mixed_t> j_arr = New refcounted<parr_mixed_t> (); 
+    p("i")[i]("x") = i;
     for (size_t j = 0; j < 4; j++) {
-      ptr<aarr_t> aarr = New refcounted<aarr_t> ();
-      aarr->add ("j", j);
+      p("i")[i]("j")[j]("x") = j;
     }
   }
+  
+  twait { pub2 ()->run (&out, tstf, mkevent (rc), p.val (), opts|P_VISERR); }
   twait { output (out, mkevent ()); }
+
   ev->trigger (true, HTTP_OK);
 }
 
