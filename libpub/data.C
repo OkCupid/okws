@@ -2265,32 +2265,25 @@ aarr_t::replace (const str &n, ptr<pval_t> v)
 
 //-----------------------------------------------------------------------
 
-ptr<pval_t> &
-aarr_t::value_ref (const str &n)
+ptr<const pval_t> 
+aarr_t::lookup_ptr (const str &n) const
 {
-  nvpair_t *nvp = aar[n];
-  if (!nvp) {
-    nvp = New nvpair_t (n);
-    aar.insert (nvp);
-  }
-  return nvp->value_ref ();
+  const nvpair_t *nvp = aar[n];
+  ptr<const pval_t> ret;
+  if (nvp) { ret = nvp->value_ptr (); }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
 
-
-const ptr<pval_t> &
-aarr_t::value_ref (const str &n) const
+ptr<pval_t> 
+aarr_t::lookup_ptr (const str &n)
 {
-  static ptr<pval_t> null_pval;
-
-  const nvpair_t *nvp = aar[n];
-  if (nvp) {
-    return nvp->value_ref ();
-  } 
-  return null_pval;
+  nvpair_t *nvp = aar[n];
+  ptr<pval_t> ret;
+  if (nvp) { ret = nvp->value_ptr (); }
+  return ret;
 }
-
 
 //-----------------------------------------------------------------------
 

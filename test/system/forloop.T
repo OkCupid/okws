@@ -61,7 +61,7 @@ tamed void
 okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
-    pub3::obj_t po;
+    pub3::obj_t pub_obj;
     int opts (0);
     bool rc;
     const char *tstf;
@@ -74,13 +74,15 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   }
   
   for (size_t i = 0; i < 3; i++) {
-    po("row")[i]("val") = i;
+    pub_obj("row")[i]("val") = i;
     for (size_t j = 0; j < 4; j++) {
-      po("row")[i]("col")[j]("val") = j;
+      pub_obj("row")[i]("col")[j]("val") = j;
     }
   }
   
-  twait { pub2 ()->run (&out, tstf, mkevent (rc), po.dict (), opts|P_VISERR); }
+  twait { 
+    pub2 ()->run (&out, tstf, mkevent (rc), pub_obj.dict (), opts|P_VISERR); 
+  }
   twait { output (out, mkevent ()); }
 
   ev->trigger (true, HTTP_OK);

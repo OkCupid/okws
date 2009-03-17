@@ -12,14 +12,62 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class obj_ref_t {
+  public:
+    obj_ref_t () {}
+    virtual ~obj_ref_t () {}
+    virtual void set (ptr<pval_t> v) = 0;
+    virtual ptr<pval_t> get () = 0;
+    virtual ptr<const pval_t> get () const = 0;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class obj_ref_dict_t : public obj_ref_t {
+  public:
+    obj_ref_dict_t (ptr<aarr_t> d, const str &k) : _dict (d), _key (k) {}
+    void set (ptr<pval_t> v) { _dict->replace (_key, v); }
+    ptr<pval_t> get () { return _dict->lookup_ptr (_key); }
+    ptr<const pval_t> get () const { return _dict->lookup_ptr (_key); }
+    
+    static ptr<obj_ref_t> alloc (ptr<aarr_t> d, const str &k)
+    { return New refcounted<obj_ref_dict_t> (d, k); }
+
+  private:
+    const ptr<aarr_t> _dict;
+    const str _key;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class obj_ref_vec_t : public obj_ref_t {
+  public:
+    obj_ref_vec_t (ptr<parr_mixed_t> v, size_t i) : _vec (v), _index (i) {}
+    void set (ptr<pval_t> v);
+    ptr<pval_t> get ();
+    ptr<const pval_t> get () const;
+
+    static ptr<obj_ref_t> alloc (ptr<parr_mixed_t> v, size_t i)
+    { return New refcounted<obj_ref_vec_t> (v, i); }
+
+  private:
+    const ptr<parr_mixed_t> _vec;
+    const size_t _index;
+  };
+
+  //-----------------------------------------------------------------------
+
   class const_obj_t {
   public:
-    const_obj_t (const ptr<pval_t> &r) : _const_val_ref (r) {}
-    const_obj_t () : _const_val_ref (_dummy_val) {}
+    const_obj_t () {}
+    const_obj_t (ptr<const pval_t> v) : _c_obj (v) {}
+    virtual ~const_obj_t () {}
 
     size_t size () const;
     const_obj_t operator[] (size_t s) const;
     const_obj_t operator() (const str &s) const;
+
+    virtual ptr<const pval_t> obj () const { return _c_obj; }
 
   protected:
     ptr<const parr_mixed_t> to_vector () const;
@@ -27,16 +75,16 @@ namespace pub3 {
     ptr<const pub_scalar_t> to_scalar () const;
 
   private:
-    ptr<pval_t> _dummy_val;
-    const ptr<pval_t> &_const_val_ref;
+    ptr<const pval_t> _c_obj;
   };
 
   //-----------------------------------------------------------------------
 
   class obj_t : public const_obj_t {
   public:
-    obj_t (ptr<pval_t> &r) : const_obj_t (r), _val (r), _val_ref (r) {}
-    obj_t () : const_obj_t (),  _val_ref (_val) {}
+    obj_t (ptr<obj_ref_t> r) : _ref (r) {}
+    obj_t (ptr<pval_t> v) : _obj (v) {}
+    obj_t () {}
 
     // array access features: mutable
     obj_t push_back ();
@@ -61,6 +109,9 @@ namespace pub3 {
 
     ptr<aarr_t> dict () { return _dict; }
     ptr<const aarr_t> dict () const { return _dict; }
+
+    ptr<const pval_t> obj () const;
+    ptr<pval_t> obj ();
     
   protected:
 
@@ -77,16 +128,16 @@ namespace pub3 {
     obj_t &set_obj (obj_t o) { return set_value (o.value ()); }
     obj_t &set_scalar (scalar_obj_t so);
 
-    void update_value (ptr<pval_t> v) { _val_ref = v; _val = v; }
-    ptr<pval_t> value () { return _val_ref; }
+    void update_value (ptr<pval_t> v);
+    ptr<pval_t> value () { return obj (); }
 
     bool set_value_vec (ptr<pval_t> v);
     bool set_value_scalar (ptr<pval_t> v);
     bool set_value_dict (ptr<pval_t> v);
 
   private:
-    ptr<pval_t> _val;
-    ptr<pval_t> &_val_ref;
+    ptr<pval_t> _obj;
+    ptr<obj_ref_t> _ref;
     ptr<parr_mixed_t> _vec;
     ptr<aarr_arg_t> _dict;
     ptr<pub_scalar_t> _scalar;

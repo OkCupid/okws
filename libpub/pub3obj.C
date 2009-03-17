@@ -5,6 +5,39 @@ namespace pub3 {
 
   //=======================================================================
 
+  void
+  obj_ref_vec_t::set (ptr<pval_t> v)
+  {
+    if (_vec) {
+      if (_vec->size () <= _index) {
+	_vec->setsize (_index + 1);
+      }
+      (*_vec)[_index] = v;
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const pval_t>
+  obj_ref_vec_t::get () const
+  {
+    ptr<const pval_t> v;
+    if (_vec && _index < _vec->size ()) { v = (*_vec)[_index]; }
+    return v;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t>
+  obj_ref_vec_t::get () 
+  {
+    ptr<pval_t> v;
+    if (_vec && _index < _vec->size ()) { v = (*_vec)[_index]; }
+    return v;
+  }
+
+  //=======================================================================
+
   size_t
   const_obj_t::size () const 
   {
@@ -37,7 +70,7 @@ namespace pub3 {
   {
     ptr<const aarr_arg_t> d = to_dict ();
     if (d) {
-      return const_obj_t (d->value_ref (s));
+      return const_obj_t (d->lookup_ptr (s));
     }
     return const_obj_t ();
   }
@@ -49,7 +82,7 @@ namespace pub3 {
   {
     ptr<const parr_mixed_t> v;
     const parr_mixed_t *vr;
-    if ((vr = _const_val_ref->to_mixed_arr ())) {
+    if (obj () && (vr = obj ()->to_mixed_arr ())) {
       v = mkref (vr);
     }
     return v;
@@ -60,7 +93,9 @@ namespace pub3 {
   ptr<const aarr_arg_t>
   const_obj_t::to_dict () const
   {
-    return _const_val_ref->to_aarr ();
+    ptr<const aarr_arg_t> r;
+    if (obj ()) r = obj ()->to_aarr ();
+    return r;
   }
 
   //-----------------------------------------------------------------------
@@ -68,17 +103,19 @@ namespace pub3 {
   ptr<const pub_scalar_t>
   const_obj_t::to_scalar () const
   {
-    return _const_val_ref->to_scalar ();
+    ptr<const pub_scalar_t> r;
+    if (obj ()) r = obj ()->to_scalar ();
+    return r;
   }
 
   //=======================================================================
-
 
   obj_t
   obj_t::push_back ()
   {
     ptr<parr_mixed_t> v = to_vector ();
-    obj_t o (v->push_back ());
+    v->push_back ();
+    obj_t o (obj_ref_vec_t::alloc (v, v->size () - 1));
     return o;
   }
 
@@ -88,7 +125,7 @@ namespace pub3 {
   obj_t::push_back (obj_t o)
   {
     ptr<parr_mixed_t> v = to_vector ();
-    v->add (o.value ());
+    v->add (o.obj ());
   }
 
   //-----------------------------------------------------------------------
@@ -97,10 +134,7 @@ namespace pub3 {
   obj_t::operator[] (size_t i)
   {
     ptr<parr_mixed_t> v = to_vector ();
-    if (v->size () <= i) {
-      v->setsize (i + 1);
-    }
-    return obj_t ((*v)[i]);
+    return obj_t (obj_ref_vec_t::alloc (v, i)); 
   }
 
   //-----------------------------------------------------------------------
@@ -109,7 +143,7 @@ namespace pub3 {
   obj_t::insert (const str &n, obj_t o)
   {
     ptr<aarr_arg_t> d = to_dict ();
-    d->replace (n, o.value ());
+    d->replace (n, o.obj ());
   }
 
   //-----------------------------------------------------------------------
@@ -118,7 +152,7 @@ namespace pub3 {
   obj_t::operator() (const str &s)
   {
     ptr<aarr_arg_t> d = to_dict ();
-    return obj_t (d->value_ref (s));
+    return obj_t (obj_ref_dict_t::alloc (d, s));
   }
 
   //-----------------------------------------------------------------------
@@ -268,6 +302,33 @@ namespace pub3 {
     scalar_obj_t so;
     so.set (d);
     return set_scalar (so);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  obj_t::update_value (ptr<pval_t> v)
+  {
+    if (_ref) { _ref->set (v); }
+    else      { _obj = v; }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const pval_t>
+  obj_t::obj () const
+  {
+    if (_ref) { return _ref->get (); }
+    else      { return _obj; }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t>
+  obj_t::obj ()
+  {
+    if (_ref) { return _ref->get (); }
+    else      { return _obj; }
   }
 
   //-----------------------------------------------------------------------

@@ -127,6 +127,7 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PSTR1      parser->str1
 #define PPSTR      parser->pstr
 #define PARR       parser->parr
+#define ARGLIST2   parser->arglist
 
 #define PUSH_PFUNC(x) do { parser->push_func (x); } while (0)
 #define POP_PFUNC()   parser->pop_func()
@@ -229,7 +230,6 @@ public:
   nvpair_t (const str &n, ptr<pval_t> v) : nm (n), val (v) {}
   nvpair_t (const xpub_nvpair_t &x);
   nvpair_t (const nvpair_t &p) : nm (p.nm), val (p.val) {}
-  nvpair_t (const str &n) : nm (n) {}
   virtual ~nvpair_t () {}
   const str &name () const { return nm; }
   const pval_t *value () const { return val; }
@@ -241,13 +241,14 @@ public:
   bool to_xdr (xpub_nvpair_t *x) const;
 
   void set_value (ptr<pval_t> r) { val = r; }
-  ptr<pval_t> &value_ref () { return val; }
-  const ptr<pval_t> &value_ref () const { return val; }
+
+  ptr<pval_t> value_ptr () { return val; }
+  ptr<const pval_t> value_ptr () const { return val; }
 
   const str nm;
   ihash_entry<nvpair_t> hlink;
 private:
-  ptr<pval_t> val;
+  ref<pval_t> val;
 };
 
 //-----------------------------------------------------------------------
@@ -335,6 +336,9 @@ public:
   aarr_t &overwrite_with (const aarr_t &r);
   pval_t *lookup (const str &n);
   const pval_t *lookup (const str &n) const;
+
+  ptr<pval_t> lookup_ptr (const str &n);
+  ptr<const pval_t> lookup_ptr (const str &n) const;
 
   void output (output_t *o, penv_t *e) const;
 
@@ -1076,12 +1080,15 @@ protected:
   ptr<aarr_arg_t> env;
 };
 
+//-----------------------------------------------------------------------
+
 class pfile_for_t : public pfile_func_t {
 public:
   pfile_for_t (int l) : pfile_func_t (l) {}
   pfile_for_t (const xpub_for_t &x);
   bool to_xdr (xpub_obj_t *x) const;
   bool add (ptr<arglist_t> l);
+  bool add_env (ptr<nested_env_t> e) { _env = e; return true; }
   str get_obj_name () const { return "pfile_for_t"; }
   virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
 			xpub_status_cb_t , CLOSURE) const;
@@ -1093,6 +1100,8 @@ private:
   str _arr;
   ptr<nested_env_t> _env;
 };
+
+//-----------------------------------------------------------------------
 
 class pfile_include2_t : public pfile_include_t {
 public:

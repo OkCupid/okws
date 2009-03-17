@@ -37,7 +37,7 @@ vec<int> yy_d_bracket_linenos;
 %option stack
 %option noyywrap
 
-VAR	[a-zA-Z_][a-zA-Z_0-9]*
+VAR	[a-zA-Z_][a-zA-Z_0-9.]*
 HNAM	[a-zA-Z_][a-zA-Z_0-9-]*
 HVAL	[^ \t\n\r"'>=$]*[^ \t\n\r/"'>=$]
 ST	[Ss][Cc][Rr][Ii][Pp][Tt]

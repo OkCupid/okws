@@ -526,12 +526,22 @@ pfile_include_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_for_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB_FOR);
+  x->forloop->lineno = lineno;
+  x->forloop->iter = _iter;
+  x->forloop->arr = _arr;
+  if (_env && _env->sec ()) {
+    _env->sec ()->to_xdr (&x->forloop->body);
+  }
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const

@@ -60,6 +60,8 @@ struct yystype {
   int64_t num;
   ::str str;
   ptr<strbuf> buf;
+  ptr<nested_env_t> nenv;
+  ptr<arglist_t> arglist2;
 };
 
 #define YYSTYPE yystype

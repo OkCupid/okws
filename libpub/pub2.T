@@ -1009,7 +1009,6 @@ pfile_for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     bool ok (false);
     aarr_t frame;
     size_t i, len;
-    nvpair_t *p;
     ptr<pval_t> row;
     ptr<aarr_t> row_aarr;
     xpub_status_t res (XPUB_STATUS_OK);
@@ -1043,8 +1042,6 @@ pfile_for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 	frame.replace (_iter, pub_aarr_t::alloc (row_aarr));
 
 	twait { _env->publish (iface, o, e, mkevent (res)); }
-
-	delete p;
       }
     }
     e->resize (frame_pointer);

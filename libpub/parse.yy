@@ -54,12 +54,14 @@
 %type <pvar> pvar evar 
 %type <pval> bvalue arr i_arr g_arr
 %type <sec> htag htag_list javascript pre b_js_tag
-%type <el> ptag 
+%type <el> ptag forloop
 %type <func> ptag_func
 %type <pstr> pstr pstr_sq
-%type <arg> arg aarr nested_env regex range
+%type <arg> arg aarr regex range
 %type <parr> i_arr_open
 %type <buf> regex_body
+%type <nenv> nested_env
+%type <arglist2> parg2
 
 %%
 file: hfile {}
@@ -116,6 +118,7 @@ ptag: ptag_func
 	    PARSEFAIL;
 	  $$ = POP_PFUNC();
 	}
+	| forloop
 	;
 
 ptag_close: ';' T_EPTAG
@@ -141,8 +144,15 @@ ptag_func: T_PTINCLUDE
 	| T_PTSWITCH	{ $$ = New pfile_switch_t (PLINENO); }
 	| T_PTINCLIST	{ $$ = New pfile_inclist_t (PLINENO); }
 	| T_PTLOAD      { $$ = New pfile_load_t (PLINENO); }
-	| T_PTFOR       { $$ = New pfile_for_t (PLINENO); }
 	;
+
+forloop: T_PTFOR parg2 nested_env ptag_close 
+	 {
+	    pfile_for_t *f = New pfile_for_t (PLINENO);
+	    f->add ($2);
+	    f->add_env ($3);
+	    $$ = f;
+	 };
 
 e_js_tag: T_EJS		{ PSECTION->add ($1); }
 	| T_EJS_SILENT	{}
@@ -275,8 +285,22 @@ parg:   '('
 	}
 	;
 
+parg2: '('
+       {
+	  ARGLIST2 = New refcounted<arglist_t> ();
+       } 
+       arglist2 ')'
+       {
+          $$ = ARGLIST2;
+	  ARGLIST2 = NULL;
+       };
+
 ptag_list: parg
 	| ptag_list ',' parg
+	;
+
+arglist2: arg               { ARGLIST2->push_back ($1); }
+        | arglist2 ',' arg  { ARGLIST2->push_back ($3); }
 	;
 
 arglist: arg 		    { ARGLIST->push_back ($1); }
