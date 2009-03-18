@@ -225,4 +225,29 @@ convertuint (const str &s, u_int64_t *out)
 }
 
 //-----------------------------------------------------------------------
+
+bool
+scalar_obj_t::operator== (const scalar_obj_t &o2) const
+{
+  int64_t i1, i2;
+  u_int64_t u1, u2;
+  double d1, d2;
+  str s1, s2;
+  bool ret;
+
+  if (to_int64 (&i1) && o2.to_int64 (&i2)) { ret = (i1 == i2); }
+  else if (to_uint64 (&u1) && o2.to_uint64 (&u2)) { ret = (u1 == u2); }
+  else if (to_double (&d1) && o2.to_double (&d2)) { ret = (d1 == d2); }
+  else {
+    s1 = to_str ();
+    s2 = o2.to_str ();
+    if (s1 && s2) { ret = (s1 == s2); }
+    else if (!s1 && !s2) { ret = true; }
+    else { ret = false; }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 //=======================================================================

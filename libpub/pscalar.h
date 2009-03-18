@@ -116,6 +116,8 @@ public:
   void add (const str &s);
   void freeze ();
   bool is_frozen () const { return _frozen; }
+
+  bool operator== (const scalar_obj_t &o2) const;
   
   virtual bool strip_add (const char *s, int l) const { return true; }
 

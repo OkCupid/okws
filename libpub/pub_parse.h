@@ -67,6 +67,8 @@ struct yystype {
   ptr<pub3::cond_clause_list_t> p3cclist;
   ptr<pub3::cond_clause_t> p3cc;
   ptr<pub3::expr_t> p3expr;
+  bool bl;
+  pub3::relop_t relop;
 };
 
 #define YYSTYPE yystype

@@ -41,7 +41,6 @@ namespace pub3 {
     static ptr<cond_clause_t> alloc (int l) 
     { return New refcounted<cond_clause_t> (l); }
 
-
     void add_expr (ptr<expr_t> e) { _expr = e; }
     void add_env (ptr<nested_env_t> e) { _env = e; }
 

@@ -85,7 +85,11 @@
 
 %type <p3cclist> p3_cond_clause_list;
 %type <p3cc> p3_cond_clause;
-%type <p3expr> p3_expression;
+%type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
+%type <p3expr> p3_relational_expr p3_unary_expr;
+%type <relop> p3_relational_op;
+
+%type <bl> p3_equality_op;
 
 /* ------------------------------------------------ */
 
@@ -202,7 +206,7 @@ p3_cond_clause_list:
           }
 	  ;
 
-p3_cond_clause: '(' p3_expression ')' nested_env
+p3_cond_clause: '(' p3_expr ')' nested_env
          {
 	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
 	    c->add_expr ($2);
@@ -552,67 +556,91 @@ var: T_VAR
  * in {% cond %} statements and also filters.
  */
 
-p3_expression: p3_logical_AND_expression
+p3_expr: p3_logical_AND_expr
 	       {
-	          $$ = NULL;
+	          $$ = $1;
 	       }
-	       | p3_expression T_P3_OR p3_logical_AND_expression
+	       | p3_expr T_P3_OR p3_logical_AND_expr
 	       {
-	          $$ = NULL;
+	          $$ = New refcounted<pub3::expr_OR_t> ($1, $3);
                }
 	       ;
 
-p3_logical_AND_expression: p3_equality_expression
-	       | p3_logical_AND_expression T_P3_AND p3_equality_expression
+p3_logical_AND_expr: p3_equality_expr
+               { 
+	          $$ = $1 ; 
+	       }
+	       | p3_logical_AND_expr T_P3_AND p3_equality_expr
+               { 
+	          $$ = New refcounted<pub3::expr_AND_t> ($1, $3);
+	       }
 	       ;
 
-p3_equality_expression: p3_relational_expression
-	 	| p3_equality_expression p3_equality_op p3_relational_expression
+p3_equality_expr: p3_relational_expr
+		{
+  		   $$ = $1;
+		}
+	 	| p3_equality_expr p3_equality_op p3_relational_expr
+		{
+		   $$ = New refcounted<pub3::expr_EQ_t> ($1, $3, $2);
+		}
 		;	
 
-p3_equality_op: T_P3_EQEQ
-		| T_P3_NEQ
+p3_equality_op: T_P3_EQEQ   { $$ = true; }
+		| T_P3_NEQ  { $$ = false; }
 		;
 
-p3_relational_expression: 
-             p3_unary_expression
-           | p3_relational_expression p3_relational_op p3_unary_expression
+p3_relational_expr: 
+             p3_unary_expr
+           {
+	      $$ = $1;
+	   }
+           | p3_relational_expr p3_relational_op p3_unary_expr
+	   {
+	      $$ = New refcounted<pub3::expr_relational_t> ($1, $3, $2);
+           }
 	   ;	
 
-p3_relational_op: '<'
-		  | '>'
-		  | T_P3_GTEQ
-		  | T_P3_LTEQ
+p3_relational_op: '<'          { $$ = pub3::REL_LT; }
+		  | '>'        { $$ = pub3::REL_GT; }
+		  | T_P3_GTEQ  { $$ = pub3::REL_GTE; }
+		  | T_P3_LTEQ  { $$ = pub3::REL_LTE; }
 		  ;
 
 p3_unary_op: '!'
 	     | '-'
 	     ; 
 
-p3_unary_expression: 
-             p3_unary_op p3_unary_expression
-           | p3_postfix_expression
+p3_unary_expr: 
+             p3_unary_op p3_unary_expr
+	   {
+	      $$ = NULL;
+           }
+           | p3_postfix_expr
+	   {
+	      $$ = NULL;
+           }
 	   ;
 
-p3_postfix_expression:
-             p3_primary_expression 
-	   | p3_postfix_expression '.' p3_identifier
-	   | p3_postfix_expression '['  p3_expression ']'
-	   | p3_postfix_expression '(' p3_argument_expression_list_opt ')' 
+p3_postfix_expr:
+             p3_primary_expr 
+	   | p3_postfix_expr '.' p3_identifier
+	   | p3_postfix_expr '['  p3_expr ']'
+	   | p3_postfix_expr '(' p3_argument_expr_list_opt ')' 
 	   ;
 
-p3_primary_expression: p3_identifier
+p3_primary_expr: p3_identifier
 		       | p3_constant
 		       | p3_string
-		       | '(' p3_expression ')'
+		       | '(' p3_expr ')'
 		       ;
 
-p3_argument_expression_list_opt:  /* empty */
-				 | p3_argument_expression_list
+p3_argument_expr_list_opt:  /* empty */
+				 | p3_argument_expr_list
 				 ;
 
-p3_argument_expression_list: p3_expression
-			     | p3_argument_expression_list ',' p3_expression
+p3_argument_expr_list: p3_expr
+			     | p3_argument_expr_list ',' p3_expr
 
 p3_constant: p3_integer_constant
 	     | p3_character_constant
