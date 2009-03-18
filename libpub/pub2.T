@@ -1010,7 +1010,7 @@ pfile_for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     aarr_t frame;
     size_t i, len;
     ptr<pval_t> row;
-    ptr<aarr_t> row_aarr;
+    ptr<aarr_arg_t> row_aarr;
     xpub_status_t res (XPUB_STATUS_OK);
     size_t frame_pointer;
   }
@@ -1039,7 +1039,9 @@ pfile_for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 	row_aarr->replace ("count", int64_t (len));
 	row_aarr->replace ("iter", int64_t (i));
 	row_aarr->replace ("last", int64_t (len - 1 == i));
-	frame.replace (_iter, pub_aarr_t::alloc (row_aarr));
+	row_aarr->replace ("odd", int64_t (i % 2));
+	row_aarr->replace ("even", 1 - int64_t (i % 2));
+	frame.replace (_iter, row_aarr);
 
 	twait { _env->publish (iface, o, e, mkevent (res)); }
       }

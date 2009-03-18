@@ -715,7 +715,6 @@ class nested_env_t;
 class pub_regex_t;
 class pub_range_t;
 class pub_scalar_t;
-class pub_aarr_t;
 
 //-----------------------------------------------------------------------
 
@@ -726,8 +725,6 @@ public:
   virtual ~arg_t () {}
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
   virtual ptr<const aarr_arg_t> to_aarr () const { return NULL; }
-  virtual ptr<pub_aarr_t> to_pub_aarr () { return NULL; }
-  virtual ptr<const pub_aarr_t> to_pub_aarr () const { return NULL; }
   virtual bool is_null () const { return false; }
   virtual ptr<pub_regex_t> to_regex () { return NULL; }
   virtual ptr<pub_range_t> to_range () { return NULL; }

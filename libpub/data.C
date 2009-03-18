@@ -582,16 +582,16 @@ const pval_t *
 aarr_t::lookup (const str &n) const
 {
   const char *cp = strchr (n, '.');
-  str k = cp ? str (cp) : n;
+  str k = cp ? str (n, cp - n) : n;
 
   const pval_t *ret = NULL;
   const nvpair_t *p = aar [k];
   if (p) ret = p->value ();
 
   if (cp && ret) {
-    ptr<const pub_aarr_t> aarr = ret->to_pub_aarr ();
+    ptr<const aarr_arg_t> aarr = ret->to_aarr ();
     if (aarr) {
-      ret = aarr->obj ()->lookup (cp + 1);
+      ret = aarr->lookup (cp + 1);
     }
   }
 
@@ -604,16 +604,16 @@ pval_t *
 aarr_t::lookup (const str &n) 
 {
   char *cp = strchr (n, '.');
-  str k = cp ? str (cp) : n;
+  str k = cp ? str (n, cp - n) : n;
 
   pval_t *ret = NULL;
   nvpair_t *p = aar [n];
   if (p) ret = p->value ();
 
   if (cp && ret) {
-    ptr<pub_aarr_t> aarr = ret->to_pub_aarr ();
+    ptr<aarr_arg_t> aarr = ret->to_aarr ();
     if (aarr) {
-      ret = aarr->obj ()->lookup (cp + 1);
+      ret = aarr->lookup (cp + 1);
     }
   }
 
