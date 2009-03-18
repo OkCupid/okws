@@ -24,6 +24,11 @@
 %token <str> T_REGEX_BODY
 %token <str> T_REGEX_END
 
+%token <str> T_P3_INT
+%token <str> T_P3_CHAR
+%token <str> T_P3_FLOAT
+%token <str> T_P3_STRING
+
 %token T_PTINCLUDE
 %token T_PTLOAD
 %token T_PTINCLIST
@@ -63,9 +68,27 @@
 %type <nenv> nested_env
 %type <arglist2> parg2
 
+/* ------------------------------------------------ */
+
+%token T_P3_START
+%token T_P3_EQEQ
+%token T_P3_NEQ
+%token T_P3_LT
+%token T_P3_GT
+%token T_P3_GTEQ
+%token T_P3_LTEQ
+%token T_P3_BANG
+%token T_P3_NEG
+%token T_P3_OR
+%token T_P3_AND
+%token T_P3_IDENTIFIER
+
+/* ------------------------------------------------ */
+
 %%
 file: hfile {}
 	| conffile {}
+	| T_P3_START p3_expression
 	;
 
 conffile: T_BCONF aarr {}
@@ -488,3 +511,78 @@ number: T_NUM
 
 var: T_VAR
 	;
+
+
+/*----------------------------------------------------------------------- */
+/* Below follows the new support for generic sexpr's, which will appear
+ * in {% cond %} statements and also filters.
+ */
+
+p3_expression: p3_logical_AND_expression
+	       | p3_expression T_P3_OR p3_logical_AND_expression
+	       ;
+
+p3_logical_AND_expression: p3_equality_expression
+	       | p3_logical_AND_expression T_P3_AND p3_equality_expression
+	       ;
+
+p3_equality_expression: p3_relational_expression
+	 	| p3_equality_expression p3_equality_op p3_relational_expression
+		;	
+
+p3_equality_op: T_P3_EQEQ
+		| T_P3_NEQ
+		;
+
+p3_relational_expression: 
+             p3_unary_expression
+           | p3_relational_expression p3_relational_op p3_unary_expression
+	   ;	
+
+p3_relational_op: T_P3_GT
+		  | T_P3_LT
+		  | T_P3_GTEQ
+		  | T_P3_LTEQ
+		  ;
+
+p3_unary_op: T_P3_BANG
+	     | T_P3_NEG
+	     ; 
+
+p3_unary_expression: 
+             p3_unary_op p3_unary_expression
+           | p3_postfix_expression
+	   ;
+
+p3_postfix_expression:
+             p3_primary_expression 
+	   | p3_postfix_expression '.' p3_identifier
+	   | p3_postfix_expression '['  p3_expression ']'
+	   | p3_postfix_expression '(' p3_argument_expression_list_opt ')' 
+	   ;
+
+p3_primary_expression: p3_identifier
+		       | p3_constant
+		       | p3_string
+		       | '(' p3_expression ')'
+		       ;
+
+p3_argument_expression_list_opt:  /* empty */
+				 | p3_argument_expression_list
+				 ;
+
+p3_argument_expression_list: p3_expression
+			     | p3_argument_expression_list ',' p3_expression
+
+p3_constant: p3_integer_constant
+	     | p3_character_constant
+	     | p3_floating_constant
+	     ;
+
+p3_identifier: T_P3_IDENTIFIER;
+p3_integer_constant: T_P3_INT ;
+p3_character_constant: T_P3_CHAR ;
+p3_floating_constant: T_P3_FLOAT ;
+p3_string : T_P3_STRING;
+
+/*----------------------------------------------------------------------- */
