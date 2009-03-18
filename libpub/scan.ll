@@ -37,6 +37,7 @@ vec<int> yy_d_bracket_linenos;
 %option stack
 %option noyywrap
 
+P3IDENT [a-zA-Z_][a-zA-Z_0-9]*
 VAR	[a-zA-Z_][a-zA-Z_0-9.]*
 HNAM	[a-zA-Z_][a-zA-Z_0-9-]*
 HVAL	[^ \t\n\r"'>=$]*[^ \t\n\r/"'>=$]
@@ -50,6 +51,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
+%x P3 P3_BASE
 
 %%
 
@@ -62,12 +64,6 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 <PTAG>{
 {WS}+		/* discard */ ;
 \n		{ PLINC; }
-
-"{{"		{ 
-   	     	   yy_d_brace ++; 
-		   yy_push_state (yywss ? WH : H);
-	 	   return T_2L_BRACE; 
-		}
 
 =>		|
 [(),{}=;]	return yytext[0];
@@ -115,7 +111,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 			  addstr ("<!--", 4);
 	  		}
 
-{TPRFX}for              { yy_push_state (PTAG); return T_PTFOR; }
+{TPRFX}for              { yy_push_state (PTAG); return T_P3_FOR; }
+{TPRFX}(cond|if)	{ yy_push_state (P3_BASE); return T_P3_COND; }
 }
 
 <POUND_REGEX>{
@@ -343,6 +340,52 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 .		{ return yyerror ("illegal token found in input"); }
 
+
+<P3_BASE>{
+[(]		{ yy_push_state (P3); return yytext[0]; }
+[,]		{ return yytext[0]; }
+[ \t]+		{ /* ignore */ }
+\n		{ PLINC; }
+.		{ return yyerror ("illegal token in Pub v3 evironment"); }
+"%}"		{ yy_pop_state (); return T_EPTAG; }
+}
+
+<PTAG,P3_BASE>{
+"{{"		{ 
+   	     	   yy_d_brace ++; 
+		   yy_push_state (yywss ? WH : H);
+	 	   return T_2L_BRACE; 
+		}
+}
+
+<P3>{
+
+\n		{ PLINC; }
+
+[Tt]rue		{ return T_P3_TRUE; }
+[Ff]alse	{ return T_P3_FALSE; }
+{P3IDENT}	{ yylval.str = yytext; return T_P3_IDENTIFIER; }
+(0x)?[0-9]+	{ yylval.str = yytext; return T_P3_INT; }
+[0-9.]+		{ yylval.str = yytext; return T_P3_FLOAT; }
+
+==		{ return T_P3_EQEQ; }
+!=		{ return T_P3_NEQ; }
+[<]=		{ return T_P3_LTEQ; }
+>=		{ return T_P3_GTEQ; }
+[!=><,[\].-]	{ return yytext[0]; }
+[(]		{ yy_push_state (P3); return yytext[0]; }
+[)]		{ yy_pop_state (); return yytext[0]; }
+"||"		{ return T_P3_OR; }
+&&		{ return T_P3_AND; }
+'[^']'		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
+
+[ \t]+		{ /* ignore */ }
+["] 		{ begin_STR (STR, 0); }
+
+.		{ return yyerror ("illegal token in Pub v3 environment"); }
+}
+
+
 %%
 
 void
@@ -539,5 +582,6 @@ bracket_check_eof (void)
 //   TXLCOM3 - Translator comment state 3
 //   POUND_REGEX - m#...# regex environment
 //   REGEX_OPTS - parse opts after regex
+//   P3 -- Pub v3 (expanded boolean logic)
 //
 */

@@ -1088,6 +1088,13 @@ private:
 
 //-----------------------------------------------------------------------
 
+class pfile_cond_t : public pfile_func_t {
+public:
+  pfile_cond_t (int l) : pfile_func_t (l) {}
+};
+
+//-----------------------------------------------------------------------
+
 class pfile_include2_t : public pfile_include_t {
 public:
   pfile_include2_t (int l) : pfile_include_t (l) {}
