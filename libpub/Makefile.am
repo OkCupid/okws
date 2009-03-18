@@ -34,8 +34,8 @@ SUFFIXES = .T .C .h .x
 .x.C:
 	-$(RPCC) -c $< || rm -f $@
 
-TAMEIN = pub2.T clone.T adebug.T sync.T
-TAMEOUT = pub2.C clone.C adebug.C sync.C
+TAMEIN = pub2.T clone.T adebug.T sync.T pub3func.T
+TAMEOUT = pub2.C clone.C adebug.C sync.C pub3func.C
 RPCCIN = xpub.x txa_prot.x
 RPCCOUT = xpub.C xpub.h txa_prot.C txa_prot.h
 
@@ -47,6 +47,8 @@ sync.o: sync.C
 sync.lo: sync.C
 adebug.o: adebug.C
 adebug.lo: adebug.C
+pub3func.lo: pub3func.C
+pub3func.o: pub3func.C
 
 xpub.h: xpub.x
 xpub.C: xpub.x
