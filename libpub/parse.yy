@@ -646,7 +646,10 @@ p3_postfix_expr:
            } 
 	   ;
 
-p3_primary_expr: p3_identifier { $$ = NULL; }
+p3_primary_expr: p3_identifier 
+           { 
+	      $$ = New refcounted<pub3::expr_ref_t> ($1, PLINENO);
+	   }
            | p3_constant       { $$ = NULL; }
 	   | p3_string         { $$ = NULL; }
 	   | '(' p3_expr ')'   { $$ = $2;   }

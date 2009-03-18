@@ -201,3 +201,20 @@ pub3::expr_t::eval_as_vec (penv_t *e) const
 }
 
 //-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_ref_t::eval_as_pval (penv_t *e) const
+{
+  const pval_t *v = e->lookup (_name, false);
+  ptr<const pval_t> ret;
+  if (!v && e->debug ()) {
+    e->setlineno (_lineno);
+    e->warning (strbuf ("cannot resolve variable: " ) << _name.cstr ());
+    e->unsetlineno ();
+  } else {
+    ret = mkref (v);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------

@@ -121,6 +121,18 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_ref_t : public expr_t {
+  public:
+    expr_ref_t (const str &s, int l) : _name (s), _lineno (l) {}
+  private:
+    ptr<const pval_t> eval_as_pval (penv_t *e) const;
+
+    str _name;
+    int _lineno;
+  };
+
+  //-----------------------------------------------------------------------
+
   typedef vec<ptr<expr_t> > expr_list_t;
 
   //-----------------------------------------------------------------------
