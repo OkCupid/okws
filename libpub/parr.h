@@ -30,12 +30,16 @@
 #define INT64_MAX   0x7fffffffffffffffLL 
 #define INT64_MIN (-0x7fffffffffffffffLL - 1)
 
+//-----------------------------------------------------------------------
+
 class parr_int_t;
 class parr_char_t;
 class parr_int16_t;
 class parr_int64_t;
 class parr_uint_t;
 class parr_uint16_t;
+
+//-----------------------------------------------------------------------
 
 class parr_t : public pval_t {
 public:
@@ -46,6 +50,8 @@ public:
   virtual size_t size () const = 0;
   const parr_t *to_arr () const { return this; }
 };
+
+//-----------------------------------------------------------------------
 
 /* integer-valued array! */
 class parr_ival_t : public parr_t {
@@ -72,6 +78,8 @@ public:
   virtual ptr<pval_t> flatten (penv_t *e) { return mkref (this); }
 };
 
+//-----------------------------------------------------------------------
+
 template<typename T, typename P> static parr_err_t 
 _val (const vec<T> &v, size_t i, P *p)
 {
@@ -82,6 +90,8 @@ _val (const vec<T> &v, size_t i, P *p)
     return PARR_OUT_OF_BOUNDS;
   }
 }
+
+//-----------------------------------------------------------------------
 
 template<typename T>
 class parr_ival_tmplt_t : public parr_ival_t {
@@ -161,6 +171,8 @@ protected:
   vec<T> v;
 };
 
+//-----------------------------------------------------------------------
+
 //
 // class name: _int_
 // ctype: int
@@ -181,6 +193,8 @@ public:
   parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
 };
 
+//-----------------------------------------------------------------------
+
 class parr_char_t : public parr_ival_tmplt_t<char> {
 public:
   parr_char_t () : parr_ival_tmplt_t<char> (CHAR_MIN, CHAR_MAX) {}
@@ -196,6 +210,8 @@ public:
   parr_err_t val (size_t i, int16_t *p) const { return _val (v, i, p); }
 };
 
+//-----------------------------------------------------------------------
+
 class parr_int16_t : public parr_ival_tmplt_t<int16_t> {
 public:
   parr_int16_t () : parr_ival_tmplt_t<int16_t> (SHRT_MIN, SHRT_MAX) {}
@@ -210,6 +226,8 @@ public:
   parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
 };
 
+//-----------------------------------------------------------------------
+
 class parr_uint_t : public parr_ival_tmplt_t<u_int> {
 public:
   parr_uint_t () : parr_ival_tmplt_t<u_int> (0, UINT_MAX) {}
@@ -222,6 +240,8 @@ public:
 
   parr_err_t val (size_t i, u_int *p) const { return _val (v, i, p); }
 };
+
+//-----------------------------------------------------------------------
 
 class parr_uint16_t : public parr_ival_tmplt_t<u_int16_t> {
 public:
@@ -248,14 +268,16 @@ public:
   str get_obj_name () const { return "parr_int64_t"; }
 };
 
+//-----------------------------------------------------------------------
+
 class parr_mixed_t : public parr_t {
 public:
   parr_mixed_t () : parr_t () {}
   parr_mixed_t (const xpub_parr_mixed_t &x);
   ~parr_mixed_t () {}
 
-  const parr_mixed_t *to_mixed_arr () const { return this; }
-  parr_mixed_t *to_mixed_arr () { return this; }
+  ptr<const parr_mixed_t> to_mixed_arr () const { return mkref (this); }
+  ptr<parr_mixed_t> to_mixed_arr () { return mkref (this); }
 
   const ptr<pval_t> &operator[] (size_t i) const { return v[i]; }
   ptr<pval_t> &operator[] (size_t i) { return v[i]; }
@@ -280,5 +302,7 @@ public:
 private:
   vec<ptr<pval_t> > v;
 };
+
+//-----------------------------------------------------------------------
 
 #endif /* _LIBPUB_PARR_H */

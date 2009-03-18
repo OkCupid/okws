@@ -80,12 +80,9 @@ namespace pub3 {
   ptr<const parr_mixed_t>
   const_obj_t::to_vector () const
   {
-    ptr<const parr_mixed_t> v;
-    const parr_mixed_t *vr;
-    if (obj () && (vr = obj ()->to_mixed_arr ())) {
-      v = mkref (vr);
-    }
-    return v;
+    ptr<const parr_mixed_t> r;
+    if (obj ()) r = obj ()->to_mixed_arr ();
+    return r;
   }
 
   //-----------------------------------------------------------------------
@@ -160,6 +157,10 @@ namespace pub3 {
   ptr<parr_mixed_t> 
   obj_t::to_vector ()
   {
+    if (!_vec && obj ()) {
+      _vec = obj ()->to_mixed_arr ();
+    }
+
     if (!_vec) {
       _scalar = NULL;
       _dict = NULL;
@@ -174,6 +175,10 @@ namespace pub3 {
   ptr<aarr_arg_t>
   obj_t::to_dict ()
   {
+    if (!_dict && obj ()) {
+      _dict = obj ()->to_aarr ();
+    }
+
     if (!_dict) {
       _scalar = NULL;
       _vec = NULL;
@@ -188,6 +193,10 @@ namespace pub3 {
   ptr<pub_scalar_t>
   obj_t::to_scalar ()
   {
+    if (!_scalar && obj ()) {
+      _scalar = obj ()->to_scalar ();
+    }
+
     if (!_scalar) {
       _vec = NULL;
       _dict = NULL;
@@ -230,9 +239,8 @@ namespace pub3 {
   obj_t::set_value_vec (ptr<pval_t> in)
   {
     bool ret = true;
-    parr_mixed_t *vr = in->to_mixed_arr ();
-    if (vr) {
-      ptr<parr_mixed_t> v = mkref (vr);
+    ptr<parr_mixed_t> v = in->to_mixed_arr ();
+    if (v) {
       _dict = NULL;
       _scalar = NULL;
       _vec = v;

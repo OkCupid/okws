@@ -733,8 +733,8 @@ public:
   virtual ptr<pub_range_t> to_range () { return NULL; }
   virtual ptr<pval_t> to_pval () { return NULL; }
   virtual bool to_int64 (int64_t *i) const { return false; }
-  virtual const parr_mixed_t *to_mixed_arr () const { return NULL; }
-  virtual parr_mixed_t *to_mixed_arr () { return NULL; }
+  virtual ptr<const parr_mixed_t> to_mixed_arr () const { return NULL; }
+  virtual ptr<parr_mixed_t> to_mixed_arr () { return NULL; }
   virtual const parr_ival_t *to_int_arr () const { return NULL; }
   virtual const parr_t *to_arr () const { return NULL; }
   virtual ptr<nested_env_t> to_nested_env () { return NULL; }
