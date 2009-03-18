@@ -58,6 +58,7 @@ namespace pub3 {
 
   class expr_NOT_t : public expr_logical_t  {
   public:
+    expr_NOT_t (ptr<expr_t> e) : _e (e) {}
     bool eval_as_bool (penv_t *e) const;
     ptr<expr_t> _e;
   };

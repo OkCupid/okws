@@ -86,7 +86,7 @@
 %type <p3cclist> p3_cond_clause_list;
 %type <p3cc> p3_cond_clause;
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
-%type <p3expr> p3_relational_expr p3_unary_expr;
+%type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
 %type <relop> p3_relational_op;
 
 %type <bl> p3_equality_op;
@@ -601,32 +601,41 @@ p3_relational_expr:
            }
 	   ;	
 
-p3_relational_op: '<'          { $$ = pub3::REL_LT; }
-		  | '>'        { $$ = pub3::REL_GT; }
-		  | T_P3_GTEQ  { $$ = pub3::REL_GTE; }
-		  | T_P3_LTEQ  { $$ = pub3::REL_LTE; }
-		  ;
-
-p3_unary_op: '!'
-	     | '-'
-	     ; 
+p3_relational_op: 
+              '<'        { $$ = pub3::REL_LT; }
+	    | '>'        { $$ = pub3::REL_GT; }
+	    | T_P3_GTEQ  { $$ = pub3::REL_GTE; }
+            | T_P3_LTEQ  { $$ = pub3::REL_LTE; }
+	    ;
 
 p3_unary_expr: 
-             p3_unary_op p3_unary_expr
+             p3_postfix_expr
 	   {
-	      $$ = NULL;
+	      $$ = $1;
            }
-           | p3_postfix_expr
+           | '!' p3_unary_expr
 	   {
-	      $$ = NULL;
+	      $$ = New refcounted<pub3::expr_NOT_t> ($2);
            }
 	   ;
 
 p3_postfix_expr:
-             p3_primary_expr 
+           p3_primary_expr 
+	   {
+	      $$ = NULL;
+           } 
 	   | p3_postfix_expr '.' p3_identifier
+	   {
+	      $$ = NULL;
+           } 
 	   | p3_postfix_expr '['  p3_expr ']'
+	   {
+	      $$ = NULL;
+           } 
 	   | p3_postfix_expr '(' p3_argument_expr_list_opt ')' 
+	   {
+	      $$ = NULL;
+           } 
 	   ;
 
 p3_primary_expr: p3_identifier

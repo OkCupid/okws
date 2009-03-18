@@ -79,3 +79,13 @@ pub3::expr_relational_t::eval_as_bool (penv_t *e) const
 }
 
 //-----------------------------------------------------------------------
+
+bool
+pub3::expr_NOT_t::eval_as_bool (penv_t *e) const
+{
+  bool ret = true;
+  if (_e) ret = !(_e->eval_as_bool (e));
+  return ret;
+}
+
+//-----------------------------------------------------------------------
