@@ -83,6 +83,10 @@
 %token <str> T_P3_FLOAT
 %token <str> T_P3_STRING
 
+%type <p3cclist> p3_cond_clause_list;
+%type <p3cc> p3_cond_clause;
+%type <p3expr> p3_expression;
+
 /* ------------------------------------------------ */
 
 %%
@@ -177,19 +181,34 @@ forloop: T_P3_FOR parg2 nested_env ptag_close
 	    $$ = f;
 	 };
 
-cond: T_P3_COND cond_clause_list ptag_close
+cond: T_P3_COND p3_cond_clause_list ptag_close
       {
-         pub3::cond_t *c = NULL;
+         pub3::cond_t *c = New pub3::cond_t (PLINENO);
+	 c->add_clauses ($2);
 	 $$ = c;
       }
       ;
 
-cond_clause_list: cond_clause
-		  | cond_clause_list ',' cond_clause
-		  ;
+p3_cond_clause_list: 
+          p3_cond_clause
+	  {
+	     $$ = New refcounted<pub3::cond_clause_list_t> ();
+	     $$->push_back ($1);
+          }
+	  | p3_cond_clause_list ',' p3_cond_clause
+	  {
+	     $1->push_back ($3);
+  	     $$ = $1;
+          }
+	  ;
 
-cond_clause: '(' p3_expression ')' nested_env
-	     ;
+p3_cond_clause: '(' p3_expression ')' nested_env
+         {
+	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
+	    c->add_expr ($2);
+	    c->add_env ($4);
+	 }
+	 ;
 
 
 e_js_tag: T_EJS		{ PSECTION->add ($1); }
@@ -534,7 +553,13 @@ var: T_VAR
  */
 
 p3_expression: p3_logical_AND_expression
+	       {
+	          $$ = NULL;
+	       }
 	       | p3_expression T_P3_OR p3_logical_AND_expression
+	       {
+	          $$ = NULL;
+               }
 	       ;
 
 p3_logical_AND_expression: p3_equality_expression

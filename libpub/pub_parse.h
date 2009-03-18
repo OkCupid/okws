@@ -28,6 +28,7 @@
 #include "pub.h"
 #include "pubutil.h"
 #include "parr.h"
+#include "pub3.h"
 
 extern int yy_wss_nl;      /* 1 over the fraction of \n to leave in */
 extern int yyesc;          /* on if we're to gobble up espaces in strings */
@@ -62,6 +63,10 @@ struct yystype {
   ptr<strbuf> buf;
   ptr<nested_env_t> nenv;
   ptr<arglist_t> arglist2;
+
+  ptr<pub3::cond_clause_list_t> p3cclist;
+  ptr<pub3::cond_clause_t> p3cc;
+  ptr<pub3::expr_t> p3expr;
 };
 
 #define YYSTYPE yystype

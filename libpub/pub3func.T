@@ -1,4 +1,4 @@
-
+// -*-c++-*-
 #include "pub3func.h"
 
 //-----------------------------------------------------------------------
@@ -87,6 +87,33 @@ bool
 pub3::for_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
 {
   return false;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::cond_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
+		      xpub_status_cb_t callercv) const
+{
+  tvars {
+    xpub_status_t res (XPUB_STATUS_OK);
+  }
+  (*callercv) (res);
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::cond_t::output (output_t *o, penv_t *e) const
+{
 }
 
 //-----------------------------------------------------------------------
