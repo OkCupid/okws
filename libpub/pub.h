@@ -334,6 +334,8 @@ public:
 
   aarr_t &operator= (const aarr_t &in);
   aarr_t &overwrite_with (const aarr_t &r);
+
+  // Lookup Functions ------------------
   pval_t *lookup (const str &n);
   const pval_t *lookup (const str &n) const;
 
@@ -342,6 +344,7 @@ public:
 
   nvpair_t *lookup_nvpair (const str &n) { return aar[n]; }
   const nvpair_t *lookup_nvpair (const str &n) const { return aar[n]; }
+  // end Lookup Functions -----------------
 
   void output (output_t *o, penv_t *e) const;
 
