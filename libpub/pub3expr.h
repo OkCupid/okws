@@ -18,11 +18,14 @@ namespace pub3 {
   public:
     expr_t () {}
     virtual ~expr_t () {}
-    virtual bool eval_as_bool (penv_t *e) const = 0;
-    virtual int64_t eval_as_int (penv_t *e) const = 0;
-    virtual str eval_as_str (penv_t *e) const = 0;
+
+    virtual bool eval_as_bool (penv_t *e) const;
+    virtual int64_t eval_as_int (penv_t *e) const;
+    virtual u_int64_t eval_as_uint (penv_t *e) const;
+    virtual str eval_as_str (penv_t *e) const;
     virtual scalar_obj_t eval_as_scalar (penv_t *e) const = 0;
     virtual bool is_null (penv_t *e) const = 0;
+    virtual ptr<const aarr_t> eval_as_dict (penv_t *e) const { return NULL; }
   };
   
   //-----------------------------------------------------------------------
@@ -86,6 +89,26 @@ namespace pub3 {
 
     ptr<expr_t> _o1, _o2;
     bool _pos;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_dictref_t : public expr_t {
+  public:
+    expr_dictref_t (ptr<expr_t> d, const str &k)
+      : _dict (d), _key (k) {}
+
+    bool eval_as_bool (penv_t *e) const;
+    int64_t eval_as_int (penv_t *e) const;
+    str eval_as_str (penv_t *e) const;
+    scalar_obj_t eval_as_scalar (penv_t *e) const;
+    bool is_null (penv_t *e) const;
+    ptr<const aarr_t> eval_as_dict (penv_t *e) const;
+    
+  private:
+    ptr<const pval_t> eval_as_pval (penv_t *e) const;
+    ptr<expr_t> _dict;
+    str _key;
   };
 
   //-----------------------------------------------------------------------

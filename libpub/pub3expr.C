@@ -89,3 +89,66 @@ pub3::expr_NOT_t::eval_as_bool (penv_t *e) const
 }
 
 //-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_dictref_t::eval_as_pval (penv_t *e) const
+{
+  ptr<const aarr_t> d;
+  ptr<const pval_t> v;
+  if (_dict && (d = _dict->eval_as_dict (e))) {
+    v = d->lookup_ptr (_key);
+  }
+  return v;
+}
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t
+pub3::expr_dictref_t::eval_as_scalar (penv_t *e) const
+{
+  scalar_obj_t so;
+  ptr<const pval_t> v = eval_as_pval (e);
+  ptr<const pub_scalar_t> s;
+  if (v && (s = v->to_scalar ())) {
+    so = s->obj ();
+  }
+  return so;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_t::eval_as_bool (penv_t *e) const
+{
+  scalar_obj_t so = eval_as_scalar (e);
+  return so.to_bool ();
+}
+
+//-----------------------------------------------------------------------
+
+int64_t
+pub3::expr_t::eval_as_int (penv_t *e) const
+{
+  scalar_obj_t so = eval_as_scalar (e);
+  return so.to_int64 ();
+}
+
+//-----------------------------------------------------------------------
+
+u_int64_t
+pub3::expr_t::eval_as_uint (penv_t *e) const
+{
+  scalar_obj_t so = eval_as_scalar (e);
+  return so.to_uint64 ();
+}
+
+//-----------------------------------------------------------------------
+
+str
+pub3::expr_t::eval_as_str (penv_t *e) const
+{
+  scalar_obj_t so = eval_as_scalar (e);
+  return so.to_str ();
+}
+
+//-----------------------------------------------------------------------
