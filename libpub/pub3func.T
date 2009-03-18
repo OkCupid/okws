@@ -117,3 +117,15 @@ pub3::cond_t::output (output_t *o, penv_t *e) const
 }
 
 //-----------------------------------------------------------------------
+
+namespace pub3 {
+
+  ptr<runtime_fn_t>
+  runtime_fn_t::alloc (const str &s, ptr<expr_list_t> l, str *err)
+  {
+    return NULL;
+  }
+
+};
+
+//-----------------------------------------------------------------------

@@ -87,7 +87,10 @@
 %type <p3cc> p3_cond_clause;
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
+%type <p3expr> p3_primary_expr;
 %type <relop> p3_relational_op;
+%type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
+%type <str> p3_identifier;
 
 %type <bl> p3_equality_op;
 
@@ -622,7 +625,7 @@ p3_unary_expr:
 p3_postfix_expr:
            p3_primary_expr 
 	   {
-	      $$ = NULL;
+	      $$ = $1;
            } 
 	   | p3_postfix_expr '.' p3_identifier
 	   {
@@ -632,24 +635,38 @@ p3_postfix_expr:
 	   {
 	      $$ = NULL;
            } 
-	   | p3_postfix_expr '(' p3_argument_expr_list_opt ')' 
+	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
-	      $$ = NULL;
+	      str s;
+	      $$ = pub3::runtime_fn_t::alloc ($1, $3, &s);
+	      if (!$$) {
+	         PWARN(s);
+		 PARSEFAIL;
+	      }
            } 
 	   ;
 
-p3_primary_expr: p3_identifier
-		       | p3_constant
-		       | p3_string
-		       | '(' p3_expr ')'
-		       ;
+p3_primary_expr: p3_identifier { $$ = NULL; }
+           | p3_constant       { $$ = NULL; }
+	   | p3_string         { $$ = NULL; }
+	   | '(' p3_expr ')'   { $$ = $2;   }
+	   ;
 
-p3_argument_expr_list_opt:  /* empty */
-				 | p3_argument_expr_list
-				 ;
+p3_argument_expr_list_opt:           { $$ = NULL; }
+           | p3_argument_expr_list   { $$ = $1; }
+           ;
 
 p3_argument_expr_list: p3_expr
-			     | p3_argument_expr_list ',' p3_expr
+           {
+	      $$ = New refcounted<pub3::expr_list_t> ();
+	      $$->push_back ($1);
+	   }
+           | p3_argument_expr_list ',' p3_expr
+	   {
+	      $$ = $1;
+	      $$->push_back ($3);
+	   }
+	   ;
 
 p3_constant: p3_integer_constant
 	     | p3_character_constant
@@ -657,7 +674,8 @@ p3_constant: p3_integer_constant
 	     | p3_boolean_constant
 	     ;
 
-p3_identifier: T_P3_IDENTIFIER;
+p3_identifier: T_P3_IDENTIFIER { $$ = $1; } ;
+
 p3_integer_constant: T_P3_INT ;
 p3_character_constant: T_P3_CHAR ;
 p3_floating_constant: T_P3_FLOAT ;

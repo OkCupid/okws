@@ -72,6 +72,16 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
+
+  class runtime_fn_t : public expr_t {
+  public:
+
+    static ptr<runtime_fn_t> 
+    alloc (const str &s, ptr<expr_list_t> l, str *err);
+
+  };
+
+  //-----------------------------------------------------------------------
 };
 
 #endif /* _LIBPUB_PUB3FUNC_H_ */
