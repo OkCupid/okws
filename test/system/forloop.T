@@ -83,7 +83,7 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   */
 
   for (size_t i = 0; i < 4; i++) {
-    pub_obj("row")[i] = 2 *i + 1;
+    pub_obj("row")[i]("val") = 2 *i + 1;
   }
   
   twait { 
