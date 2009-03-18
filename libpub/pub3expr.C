@@ -1,5 +1,6 @@
 
 #include "pub3expr.h"
+#include "parseopt.h"
 
 //-----------------------------------------------------------------------
 
@@ -215,6 +216,57 @@ pub3::expr_ref_t::eval_as_pval (penv_t *e) const
     ret = mkref (v);
   }
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_str_t::eval_as_bool (penv_t *e) const
+{
+  return (_val && _val.len ());
+}
+
+//-----------------------------------------------------------------------
+
+int64_t
+pub3::expr_str_t::eval_as_int (penv_t *e) const
+{
+  int64_t ret = 0;
+  if (_val)
+    convertint (_val, &ret);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+str
+pub3::expr_str_t::eval_as_str (penv_t *e) const
+{
+  return _val;
+}
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t
+pub3::expr_str_t::eval_as_scalar (penv_t *e) const
+{
+  return scalar_obj_t (_val);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_str_t::eval_as_pval (penv_t *e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar (e));
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_str_t::is_null (penv_t *e) const
+{
+  return !_val;
 }
 
 //-----------------------------------------------------------------------

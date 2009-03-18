@@ -124,11 +124,30 @@ namespace pub3 {
   class expr_ref_t : public expr_t {
   public:
     expr_ref_t (const str &s, int l) : _name (s), _lineno (l) {}
-  private:
+  protected:
     ptr<const pval_t> eval_as_pval (penv_t *e) const;
 
     str _name;
     int _lineno;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_str_t : public expr_t {
+  public:
+    expr_str_t (const str &s) : _val (s) {}
+
+    bool eval_as_bool (penv_t *e) const;
+    str eval_as_str (penv_t *e) const;
+    scalar_obj_t eval_as_scalar (penv_t *e) const;
+    int64_t eval_as_int (penv_t *e) const;
+    bool is_null (penv_t *e) const;
+    ptr<const aarr_t> eval_as_dict (penv_t *e) const { return NULL; }
+    ptr<const parr_mixed_t> eval_as_vec (penv_t *e) const { return NULL; }
+
+  protected:
+    ptr<const pval_t> eval_as_pval (penv_t *e) const;
+    str _val;
   };
 
   //-----------------------------------------------------------------------

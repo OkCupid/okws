@@ -90,7 +90,7 @@
 %type <p3expr> p3_primary_expr;
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
-%type <str> p3_identifier;
+%type <str> p3_identifier p3_string;
 
 %type <bl> p3_equality_op;
 
@@ -650,8 +650,14 @@ p3_primary_expr: p3_identifier
            { 
 	      $$ = New refcounted<pub3::expr_ref_t> ($1, PLINENO);
 	   }
-           | p3_constant       { $$ = NULL; }
-	   | p3_string         { $$ = NULL; }
+           | p3_constant       
+	   { 
+	      $$ = NULL;
+           }
+	   | p3_string         
+	   { 
+              $$ = New refcounted<pub3::expr_str_t> ($1);
+	   }
 	   | '(' p3_expr ')'   { $$ = $2;   }
 	   ;
 
