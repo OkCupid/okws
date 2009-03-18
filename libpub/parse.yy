@@ -629,11 +629,11 @@ p3_postfix_expr:
            } 
 	   | p3_postfix_expr '.' p3_identifier
 	   {
-	      $$ = NULL;
+	      $$ = New refcounted<pub3::expr_dictref_t> ($1, $3);
            } 
 	   | p3_postfix_expr '['  p3_expr ']'
 	   {
-	      $$ = NULL;
+	      $$ = New refcounted<pub3::expr_vecref_t> ($1, $3);
            } 
 	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {

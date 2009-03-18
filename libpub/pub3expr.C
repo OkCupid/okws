@@ -103,8 +103,25 @@ pub3::expr_dictref_t::eval_as_pval (penv_t *e) const
 
 //-----------------------------------------------------------------------
 
+ptr<const pval_t>
+pub3::expr_vecref_t::eval_as_pval (penv_t *e) const
+{
+  ptr<const parr_mixed_t> v;
+  ptr<const pval_t> r;
+  int64_t i;
+
+  if (_vec && (v = _vec->eval_as_vec (e))) {
+    if (_index) i = _index->eval_as_int (e);
+    r = (*v)[i];
+  }
+  return r;
+}
+
+
+//-----------------------------------------------------------------------
+
 scalar_obj_t
-pub3::expr_dictref_t::eval_as_scalar (penv_t *e) const
+pub3::expr_t::eval_as_scalar (penv_t *e) const
 {
   scalar_obj_t so;
   ptr<const pval_t> v = eval_as_pval (e);
@@ -149,6 +166,38 @@ pub3::expr_t::eval_as_str (penv_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
   return so.to_str ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_t::is_null (penv_t *e) const
+{
+  return eval_as_pval (e) == NULL;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const aarr_t>
+pub3::expr_t::eval_as_dict (penv_t *e) const
+{
+  ptr<const aarr_arg_t> r;
+  ptr<const pval_t> v;
+  if ((v = eval_as_pval (e))) 
+    r = v->to_aarr ();
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const parr_mixed_t>
+pub3::expr_t::eval_as_vec (penv_t *e) const
+{
+  ptr<const parr_mixed_t> r;
+  ptr<const pval_t> v;
+  if ((v = eval_as_pval (e))) 
+    r = v->to_mixed_arr ();
+  return r;
 }
 
 //-----------------------------------------------------------------------
