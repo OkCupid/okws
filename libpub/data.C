@@ -581,42 +581,68 @@ penv_t::go_g_var (const str &n) const
 const pval_t *
 aarr_t::lookup (const str &n) const
 {
-  const char *cp = strchr (n, '.');
-  str k = cp ? str (n, cp - n) : n;
-
   const pval_t *ret = NULL;
-  const nvpair_t *p = aar [k];
-  if (p) ret = p->value ();
+  const aarr_t *a = this;
+  str k = n;
 
-  if (cp && ret) {
-    ptr<const aarr_arg_t> aarr = ret->to_aarr ();
-    if (aarr) {
-      ret = aarr->lookup (cp + 1);
+  while (a) {
+
+    // Fast track this for the common case of no '.' characters;
+    // in that case, there should be no strcpies...
+    const char *cp = strchr (k, '.');
+    if (cp) k = str (k, cp - k.cstr ());
+
+    // Do a simple lookup that just pokes inside the table.
+    const nvpair_t *p = a->lookup_nvpair (k);
+
+    if (p) 
+      ret = p->value ();
+
+    // cp being true means that there was a '.' in the variable name,
+    // and ret being non-null means we can look deeper, potentially.
+    if (cp && ret) {
+      a = ret->to_aarr ();
+      k = cp + 1;
+      ret = NULL;
+    } else {
+      a = NULL;
     }
   }
-
   return ret;
 }
 
 //-----------------------------------------------------------------------
 
 pval_t *
-aarr_t::lookup (const str &n) 
+aarr_t::lookup (const str &n)
 {
-  char *cp = strchr (n, '.');
-  str k = cp ? str (n, cp - n) : n;
-
   pval_t *ret = NULL;
-  nvpair_t *p = aar [n];
-  if (p) ret = p->value ();
+  aarr_t *a = this;
+  str k = n;
 
-  if (cp && ret) {
-    ptr<aarr_arg_t> aarr = ret->to_aarr ();
-    if (aarr) {
-      ret = aarr->lookup (cp + 1);
+  while (a) {
+
+    // Fast track this for the common case of no '.' characters;
+    // in that case, there should be no strcpies...
+    const char *cp = strchr (k.cstr (), '.');
+    if (cp) k = str (k, cp - k.cstr ());
+
+    // Do a simple lookup that just pokes inside the table.
+    nvpair_t *p = a->lookup_nvpair (k);
+
+    if (p) 
+      ret = p->value ();
+
+    // cp being true means that there was a '.' in the variable name,
+    // and ret being non-null means we can look deeper, potentially.
+    if (cp && ret) {
+      a = ret->to_aarr ();
+      k = cp + 1;
+      ret = NULL;
+    } else {
+      a = NULL;
     }
   }
-
   return ret;
 }
 

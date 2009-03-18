@@ -340,6 +340,9 @@ public:
   ptr<pval_t> lookup_ptr (const str &n);
   ptr<const pval_t> lookup_ptr (const str &n) const;
 
+  nvpair_t *lookup_nvpair (const str &n) { return aar[n]; }
+  const nvpair_t *lookup_nvpair (const str &n) const { return aar[n]; }
+
   void output (output_t *o, penv_t *e) const;
 
   void dump2 (dumper_t *d) const;
@@ -828,24 +831,6 @@ public:
   bool to_xdr (xpub_range_t *r);
 private:
   const double _low, _hi;
-};
-
-//-----------------------------------------------------------------------
-
-class pub_aarr_t : public pval_t {
-public:
-  pub_aarr_t (ptr<aarr_t> a) : _obj (a) {}
-  ptr<const aarr_t> obj () const { return _obj; }
-  ptr<aarr_t> obj () { return _obj; }
-  str get_obj_name () const { return "pub_aarr"; }
-  ptr<const pub_aarr_t> to_pub_aarr () const { return mkref (this); }
-  ptr<pub_aarr_t> to_pub_aarr () { return mkref (this); }
-  static ptr<pub_aarr_t> alloc (ptr<aarr_t> a) 
-  { return New refcounted<pub_aarr_t> (a); }
-  void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const {}
-
-private:
-  ptr<aarr_t> _obj;
 };
 
 //-----------------------------------------------------------------------
