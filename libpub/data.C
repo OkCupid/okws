@@ -2252,30 +2252,6 @@ pswitch_env_range_t::match (const scalar_obj_t &so) const
 
 //-----------------------------------------------------------------------
 
-bool
-pfile_for_t::add (ptr<arglist_t> l)
-{
-  bool ret = true;
-  if (_iter || 
-      !l || 
-      l->size () != 2 ||
-      !(_iter = ((*l)[0])->eval ()) ||
-      !(_arr = ((*l)[1])->eval ())) {
-    PWARN ("pub takes 2 arguments (formal variable and array)\n");
-    ret = false;
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pfile_for_t::output (output_t *o, penv_t *e) const
-{
-}
-
-//-----------------------------------------------------------------------
-
 aarr_t &
 aarr_t::replace (const str &n, ptr<pval_t> v)
 {

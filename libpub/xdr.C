@@ -24,6 +24,7 @@
 #include "pub.h"
 #include "parr.h"
 #include "crypt.h"
+#include "pub3.h"
 
 #define DISABLE_GZIP -2
 
@@ -104,7 +105,7 @@ pfile_el_t::alloc (const xpub_obj_t &x)
   case XPUB_RAW:
     return New pfile_raw_el_t (*x.raw);
   case XPUB_FOR:
-    return New pfile_for_t (*x.forloop);
+    return New pub3::for_t (*x.forloop);
   default:
     return NULL;
   }
@@ -529,7 +530,7 @@ pfile_include_t::to_xdr (xpub_obj_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pfile_for_t::to_xdr (xpub_obj_t *x) const
+pub3::for_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB_FOR);
   x->forloop->lineno = lineno;
@@ -601,11 +602,13 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
 
 //-----------------------------------------------------------------------
 
-pfile_for_t::pfile_for_t (const xpub_for_t &x)
+pub3::for_t::for_t (const xpub_for_t &x)
   : pfile_func_t (x.lineno),
     _iter (x.iter),
     _arr (x.arr),
     _env (nested_env_t::alloc (x.body)) {}
+
+//-----------------------------------------------------------------------
 
 pfile_load_t::pfile_load_t (const xpub_include_t &x)
   : pfile_include2_t (x) {}

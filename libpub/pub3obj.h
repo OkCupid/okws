@@ -1,9 +1,8 @@
 // -*-c++-*-
 /* $Id: parr.h 2784 2007-04-20 16:32:00Z max $ */
 
-
-#ifndef _LIBPUB_PUBROW_H_
-#define _LIBPUB_PUBROW_H_
+#ifndef _LIBPUB_PUB3OBJ_H_
+#define _LIBPUB_PUB3OBJ_H_
 
 #include "pub.h"
 #include "parr.h"
@@ -148,5 +147,5 @@ namespace pub3 {
 };
 
 
-#endif /* _LIBPUB_PUBROW_H_ */
+#endif /* _LIBPUB_PUB3OBJ_H_ */
 

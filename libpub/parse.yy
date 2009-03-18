@@ -5,6 +5,7 @@
 #include "pub.h"
 #include "pub_parse.h"
 #include "parr.h"
+#include "pub3.h"
 
 %}
 
@@ -170,7 +171,7 @@ ptag_func: T_PTINCLUDE
 
 forloop: T_P3_FOR parg2 nested_env ptag_close 
 	 {
-	    pfile_for_t *f = New pfile_for_t (PLINENO);
+	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    f->add ($2);
 	    f->add_env ($3);
 	    $$ = f;
@@ -178,7 +179,7 @@ forloop: T_P3_FOR parg2 nested_env ptag_close
 
 cond: T_P3_COND cond_clause_list ptag_close
       {
-         pfile_cond_t *c = NULL;
+         pub3::cond_t *c = NULL;
 	 $$ = c;
       }
       ;
