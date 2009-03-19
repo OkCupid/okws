@@ -334,6 +334,7 @@ struct xpub3_for_t {
   xpub_var_t iter;
   xpub_var_t arr;
   xpub_section_t body;
+  xpub_section_t empty;
 };
 
 enum xpub3_expr_typ_t {
@@ -369,9 +370,12 @@ struct xpub3_not_t {
    xpub3_expr_t *e;
 };
 
+typedef xpub3_expr_t xpub3_expr_list_t<>;
+
 struct xpub3_fn_t {
+   int lineno;
    string name<>;
-   xpub3_expr_t args<>;
+   xpub3_expr_list_t args;
 };
 
 struct xpub3_eq_t {

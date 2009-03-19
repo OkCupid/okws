@@ -15,6 +15,9 @@ pub3::for_t::to_xdr (xpub_obj_t *x) const
   if (_env && _env->sec ()) {
     _env->sec ()->to_xdr (&x->forloop->body);
   }
+  if (_empty && _empty->sec ()) {
+    _empty->sec ()->to_xdr (&x->forloop->empty);
+  }
   return true;
 }
 
@@ -24,7 +27,8 @@ pub3::for_t::for_t (const xpub3_for_t &x)
   : pfile_func_t (x.lineno),
     _iter (x.iter),
     _arr (x.arr),
-    _env (nested_env_t::alloc (x.body)) {}
+    _env (nested_env_t::alloc (x.body)),
+    _empty (nested_env_t::alloc (x.empty)) {}
 
 //-----------------------------------------------------------------------
 
@@ -72,6 +76,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_NOT:
     r = New refcounted<pub3::expr_NOT_t> (*x.xnot);
     break;
+  case XPUB3_EXPR_FN:
+    r = pub3::runtime_fn_t::alloc (*x.fn);
+    break;
   default:
     break;
   }
@@ -94,5 +101,36 @@ pub3::expr_AND_t::expr_AND_t (const xpub3_and_t &x)
 
 pub3::expr_NOT_t::expr_NOT_t (const xpub3_not_t &x)
   : _e (expr_t::alloc (x.e)) {}
+
+//-----------------------------------------------------------------------
+
+
+ptr<pub3::runtime_fn_t>
+pub3::runtime_fn_t::alloc (const xpub3_fn_t &x)
+{
+  return alloc (x.name, expr_t::alloc (x.args), x.lineno, NULL);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_list_t>
+pub3::expr_t::alloc (const xpub3_expr_list_t &x)
+{
+  ptr<expr_list_t> ret = New refcounted<expr_list_t> ();
+  for (size_t i = 0; i < x.size (); i++) {
+    ret->push_back (expr_t::alloc (x[i]));
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_list_t>
+pub3::expr_t::alloc (const xpub3_expr_list_t *x)
+{
+  ptr<expr_list_t> ret;
+  if (x) ret = alloc (*x);
+  return ret;
+}
 
 //-----------------------------------------------------------------------

@@ -61,7 +61,7 @@
 %type <arg> arg aarr regex range
 %type <parr> i_arr_open
 %type <buf> regex_body
-%type <nenv> nested_env
+%type <nenv> nested_env empty_clause
 %type <arglist2> parg2
 
 /* ------------------------------------------------ */
@@ -183,13 +183,20 @@ ptag_func: T_PTINCLUDE
 	| T_PTLOAD      { $$ = New pfile_load_t (PLINENO); }
 	;
 
-forloop: T_P3_FOR parg2 nested_env ptag_close 
+forloop: T_P3_FOR parg2 nested_env empty_clause ptag_close 
 	 {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    f->add ($2);
 	    f->add_env ($3);
+	    f->add_empty ($4);
 	    $$ = f;
 	 };
+
+empty_clause: 
+         /* empty */       { $$ = NULL; }
+	 | ','  nested_env { $$ = $2; }
+ 	 ;
+
 
 cond: T_P3_COND p3_cond_clause_list ptag_close
       {
@@ -641,7 +648,7 @@ p3_postfix_expr:
 	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
 	      str s;
-	      $$ = pub3::runtime_fn_t::alloc ($1, $3, &s);
+	      $$ = pub3::runtime_fn_t::alloc ($1, $3, PLINENO, &s);
 	      if (!$$) {
 	         PWARN(s);
 		 PARSEFAIL;

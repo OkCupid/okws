@@ -20,6 +20,7 @@ namespace pub3 {
     bool to_xdr (xpub_obj_t *x) const;
     bool add (ptr<arglist_t> l);
     bool add_env (ptr<nested_env_t> e) { _env = e; return true; }
+    bool add_empty (ptr<nested_env_t> e) { _empty = e; return true; }
     str get_obj_name () const { return "pub3::for_t"; }
     virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
 			  xpub_status_cb_t , CLOSURE) const;
@@ -30,6 +31,7 @@ namespace pub3 {
     str _iter;
     str _arr;
     ptr<nested_env_t> _env;
+    ptr<nested_env_t> _empty;
   };
   
   //-----------------------------------------------------------------------
@@ -80,8 +82,12 @@ namespace pub3 {
   public:
 
     static ptr<runtime_fn_t> 
-    alloc (const str &s, ptr<expr_list_t> l, str *err);
+    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err);
 
+    static ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
+
+  private:
+    int lineno;
   };
 
   //-----------------------------------------------------------------------

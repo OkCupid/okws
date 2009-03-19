@@ -10,7 +10,6 @@
 
 namespace pub3 {
 
-
   //-----------------------------------------------------------------------
 
   class expr_t {
@@ -20,6 +19,8 @@ namespace pub3 {
 
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
+    static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t &x);
+    static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t *x);
 
     virtual bool eval_as_bool (penv_t *e) const;
     virtual int64_t eval_as_int (penv_t *e) const;

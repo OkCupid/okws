@@ -32,8 +32,8 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 		      xpub_status_cb_t callercv) const
 {
   tvars {
-    const parr_mixed_t *a;
-    const pval_t *v;
+    const parr_mixed_t *a (NULL);
+    const pval_t *v (NULL);
     ptr<const pval_t> hold;
     bool ok (false);
     aarr_t frame;
@@ -44,14 +44,29 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     size_t frame_pointer;
   }
 
-  if (!(v = e->lookup (_arr, false)) || !(hold = mkref (v))) {
-    strbuf b ("for: cannot find iterable vector (%s)\n", _arr.cstr ());
+  v = e->lookup (_arr, false);
+  if (v) a = v->to_mixed_arr ();
+
+  if (!v && !_empty) {
+
+    strbuf b ("for: cannot find iteration value (%s)\n", _arr.cstr ());
     o->output_err (e, b, lineno);
-  } else if (!(a = v->to_mixed_arr ())) {
+
+  } else if (!a && !_empty) {
+
     strbuf b ("for: given value is not iterable vector (%s)\n", _arr.cstr ());
     o->output_err (e, b, lineno);
+    
+  } else if (!a) {
+
+    twait { _empty->publish (iface, o, e, mkevent (res)); }
+
   } else {
+
+    hold = mkref (v);
+
     ok = true;
+    assert (a);
     len = a->size ();
 
     frame_pointer = e->size ();
@@ -120,11 +135,15 @@ pub3::cond_t::output (output_t *o, penv_t *e) const
 
 namespace pub3 {
 
+  //-----------------------------------------------------------------------
+
   ptr<runtime_fn_t>
-  runtime_fn_t::alloc (const str &s, ptr<expr_list_t> l, str *err)
+  runtime_fn_t::alloc (const str &s, ptr<expr_list_t> l, int ln, str *err)
   {
     return NULL;
   }
+
+  //-----------------------------------------------------------------------
 
 };
 
