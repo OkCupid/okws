@@ -432,9 +432,9 @@ case XPUB3_EXPR_RELATION:
 case XPUB3_EXPR_EQ:
      xpub3_eq_t eq;
 case XPUB3_EXPR_DICTREF:
-     xpub3_dictref_t dr;
+     xpub3_dictref_t dictref;
 case XPUB3_EXPR_VECREF:
-     xpub3_vecref_t vr;
+     xpub3_vecref_t vecref;
 case XPUB3_EXPR_REF:
      xpub3_ref_t xref;
 case XPUB3_EXPR_STR:

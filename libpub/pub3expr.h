@@ -107,6 +107,7 @@ namespace pub3 {
   public:
     expr_dictref_t (ptr<expr_t> d, const str &k)
       : _dict (d), _key (k) {}
+    expr_dictref_t (const xpub3_dictref_t &x);
   protected:
     ptr<const pval_t> eval_as_pval (penv_t *e) const;
     ptr<expr_t> _dict;
@@ -118,6 +119,7 @@ namespace pub3 {
   class expr_vecref_t : public expr_t {
   public:
     expr_vecref_t (ptr<expr_t> v, ptr<expr_t> i) : _vec (v), _index (i) {}
+    expr_vecref_t (const xpub3_vecref_t &x);
 
   protected:
     ptr<const pval_t> eval_as_pval (penv_t *e) const;

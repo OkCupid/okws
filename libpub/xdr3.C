@@ -79,6 +79,12 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_FN:
     r = pub3::runtime_fn_t::alloc (*x.fn);
     break;
+  case XPUB3_EXPR_DICTREF:
+    r = New refcounted<pub3::expr_dictref_t> (*x.dictref);
+    break;
+  case XPUB3_EXPR_VECREF:
+    r = New refcounted<pub3::expr_vecref_t> (*x.vecref);
+    break;
   default:
     break;
   }
@@ -134,3 +140,13 @@ pub3::expr_t::alloc (const xpub3_expr_list_t *x)
 }
 
 //-----------------------------------------------------------------------
+
+pub3::expr_dictref_t::expr_dictref_t (const xpub3_dictref_t &x)
+  : _dict (expr_t::alloc (x.dict)),
+    _key (x.key) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
+  : _vec (expr_t::alloc (x.vec)),
+    _index (expr_t::alloc (x.index)) {}
