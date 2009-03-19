@@ -9,7 +9,7 @@ libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
 	pvalw.C jail.C lbalance.C rpcwindow.C pub2.C clone.C \
 	debug.C stats.C adebug.C scalar.C ranges.C sync.C \
-	pub3obj.C pub3expr.C pub3func.C
+	pub3obj.C pub3expr.C pub3func.C xdr3.C
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 

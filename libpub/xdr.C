@@ -532,21 +532,6 @@ pfile_include_t::to_xdr (xpub_obj_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::for_t::to_xdr (xpub_obj_t *x) const
-{
-  x->set_typ (XPUB_FOR);
-  x->forloop->lineno = lineno;
-  x->forloop->iter = _iter;
-  x->forloop->arr = _arr;
-  if (_env && _env->sec ()) {
-    _env->sec ()->to_xdr (&x->forloop->body);
-  }
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-bool
 pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const
 {
   x->set_typ (typ);
@@ -599,34 +584,6 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
   } else {
     warn << "Got unexpected XDR pfile representation for v2 include.\n";
     err = true;
-  }
-}
-
-//-----------------------------------------------------------------------
-
-pub3::for_t::for_t (const xpub3_for_t &x)
-  : pfile_func_t (x.lineno),
-    _iter (x.iter),
-    _arr (x.arr),
-    _env (nested_env_t::alloc (x.body)) {}
-
-//-----------------------------------------------------------------------
-
-pub3::cond_clause_t::cond_clause_t (const xpub3_cond_clause_t &x)
-  : _lineno (x.lineno),
-    _expr (expr_t::alloc (x.expr)),
-    _env (nested_env_t::alloc (x.body)) {}
-
-//-----------------------------------------------------------------------
-
-pub3::cond_t::cond_t (const xpub3_cond_t &x)
-  : pfile_func_t (x.lineno)
-{
-  if (x.clauses.size ()) {
-    _clauses = New refcounted<cond_clause_list_t> ();
-    for (size_t i = 0; i < x.clauses.size (); i++) {
-      _clauses->push_back (New refcounted<cond_clause_t> (x.clauses[i]));
-    }
   }
 }
 
@@ -827,15 +784,6 @@ pub_range_t::alloc (const xpub_range_t &xpr)
     break;
   }
   return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-pub3::expr_t::alloc (const xpub3_expr_t &x)
-{
-  ptr<pub3::expr_t> r;
-  return r;
 }
 
 //-----------------------------------------------------------------------

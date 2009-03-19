@@ -19,6 +19,7 @@ namespace pub3 {
     virtual ~expr_t () {}
 
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
+    static ptr<expr_t> alloc (const xpub3_expr_t *x);
 
     virtual bool eval_as_bool (penv_t *e) const;
     virtual int64_t eval_as_int (penv_t *e) const;
@@ -49,6 +50,7 @@ namespace pub3 {
   class expr_OR_t : public expr_logical_t {
   public:
     expr_OR_t (ptr<expr_t> t1, ptr<expr_t> t2) : _t1 (t1), _t2 (t2) {}
+    expr_OR_t (const xpub3_or_t &x);
     bool eval_as_bool (penv_t *e) const;
     ptr<expr_t> _t1, _t2;
   };
@@ -58,6 +60,7 @@ namespace pub3 {
   class expr_AND_t : public expr_logical_t  {
   public:
     expr_AND_t (ptr<expr_t> f1, ptr<expr_t> f2) : _f1 (f1), _f2 (f2) {}
+    expr_AND_t (const xpub3_and_t &x);
     bool eval_as_bool (penv_t *e) const;
     ptr<expr_t> _f1, _f2;
   };
@@ -67,6 +70,7 @@ namespace pub3 {
   class expr_NOT_t : public expr_logical_t  {
   public:
     expr_NOT_t (ptr<expr_t> e) : _e (e) {}
+    expr_NOT_t (const xpub3_not_t &x);
     bool eval_as_bool (penv_t *e) const;
     ptr<expr_t> _e;
   };
