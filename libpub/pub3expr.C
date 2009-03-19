@@ -270,3 +270,39 @@ pub3::expr_str_t::is_null (penv_t *e) const
 }
 
 //-----------------------------------------------------------------------
+
+scalar_obj_t
+pub3::expr_int_t::eval_as_scalar (penv_t *e) const
+{
+  scalar_obj_t so;
+  so.set (_val);
+  return so;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_int_t::eval_as_pval (penv_t *e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar (e));
+}
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t
+pub3::expr_double_t::eval_as_scalar (penv_t *e) const
+{
+  scalar_obj_t so;
+  so.set (_val);
+  return so;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_double_t::eval_as_pval (penv_t *e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar (e)); 
+}
+
+//-----------------------------------------------------------------------

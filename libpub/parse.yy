@@ -6,6 +6,7 @@
 #include "pub_parse.h"
 #include "parr.h"
 #include "pub3.h"
+#include "pscalar.h"
 
 %}
 
@@ -87,10 +88,12 @@
 %type <p3cc> p3_cond_clause;
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
-%type <p3expr> p3_primary_expr;
+%type <p3expr> p3_primary_expr p3_constant;
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
 %type <str> p3_identifier p3_string;
+%type <num> p3_integer_constant p3_character_constant p3_boolean_constant;
+%type <dbl> p3_floating_constant;
 
 %type <bl> p3_equality_op;
 
@@ -652,7 +655,7 @@ p3_primary_expr: p3_identifier
 	   }
            | p3_constant       
 	   { 
-	      $$ = NULL;
+	      $$ = $1;
            }
 	   | p3_string         
 	   { 
@@ -677,18 +680,54 @@ p3_argument_expr_list: p3_expr
 	   }
 	   ;
 
-p3_constant: p3_integer_constant
-	     | p3_character_constant
-	     | p3_floating_constant
-	     | p3_boolean_constant
-	     ;
+p3_constant: 
+           p3_integer_constant
+           {
+	      $$ = New refcounted<pub3::expr_int_t> ($1); 
+	   }
+           | p3_character_constant
+           {
+	      $$ = New refcounted<pub3::expr_int_t> ($1); 
+	   }
+	   | p3_floating_constant
+	   {
+	      $$ = New refcounted<pub3::expr_double_t> ($1); 
+	   }
+           | p3_boolean_constant
+	   {
+	      $$ = New refcounted<pub3::expr_int_t> ($1);
+	   }
+	   ;
 
 p3_identifier: T_P3_IDENTIFIER { $$ = $1; } ;
 
-p3_integer_constant: T_P3_INT ;
-p3_character_constant: T_P3_CHAR ;
-p3_floating_constant: T_P3_FLOAT ;
-p3_string : T_P3_STRING;
-p3_boolean_constant: T_P3_TRUE | T_P3_FALSE;
+p3_boolean_constant: 
+          T_P3_TRUE { $$ = 1; }
+        | T_P3_FALSE { $$ = 0; }
+
+p3_integer_constant: T_P3_INT
+        {
+	   int64_t i = 0;
+	   if (!convertint ($1, &i)) {
+	      strbuf b ("Cannot convert '%s' to int", $1.cstr ());
+	      PARSEFAIL;
+	   }
+	   $$ = i;
+	}
+ 	;
+
+p3_floating_constant: T_P3_FLOAT
+        {
+	   double d = 0;
+	   if (!convertdouble ($1, &d)) {
+	      strbuf b ("Cannot convert '%s' to double", $1.cstr ());
+	      PARSEFAIL;
+           }
+	   $$ = d;
+	}
+	;
+
+p3_character_constant: T_P3_CHAR { $$ = $1; };
+p3_string : T_P3_STRING ;
 
 /*----------------------------------------------------------------------- */

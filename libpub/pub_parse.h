@@ -70,6 +70,7 @@ struct yystype {
   ptr<pub3::expr_list_t> p3exprlist;
   bool bl;
   pub3::relop_t relop;
+  double dbl;
 };
 
 #define YYSTYPE yystype

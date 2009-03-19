@@ -152,6 +152,40 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_int_t : public expr_t {
+  public:
+    expr_int_t (int64_t i) : _val (i) {}
+
+    bool eval_as_bool (penv_t *e) const { return _val; }
+    scalar_obj_t eval_as_scalar (penv_t *e) const;
+    bool is_null (penv_t *e) const { return false; }
+    ptr<const aarr_t> eval_as_dict (penv_t *e) const { return NULL; }
+    ptr<const parr_mixed_t> eval_as_vec (penv_t *e) const { return NULL; }
+
+  private:
+    ptr<const pval_t> eval_as_pval (penv_t *e) const;
+    int64_t _val;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_double_t : public expr_t {
+  public:
+    expr_double_t (double d) : _val (d) {}
+
+    bool eval_as_bool (penv_t *e) const { return _val != 0; }
+    scalar_obj_t eval_as_scalar (penv_t *e) const;
+    bool is_null (penv_t *e) const { return false; }
+    ptr<const aarr_t> eval_as_dict (penv_t *e) const { return NULL; }
+    ptr<const parr_mixed_t> eval_as_vec (penv_t *e) const { return NULL; }
+
+  private:
+    ptr<const pval_t> eval_as_pval (penv_t *e) const;
+    double _val;
+  };
+
+  //-----------------------------------------------------------------------
+
   typedef vec<ptr<expr_t> > expr_list_t;
 
   //-----------------------------------------------------------------------
