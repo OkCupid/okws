@@ -207,10 +207,43 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  //-----------------------------------------------------------------------
+
   obj_t &
   obj_t::set_value (ptr<pval_t> in)
   {
-    set_value_scalar (in) || set_value_dict (in) || set_value_vec (in);
+    if (!in) {
+      /* noop */
+    } else if (set_value_scalar (in)) {
+      /* noop */ 
+    } else if (set_value_dict (in)) {
+      /* noop */ 
+    } else {
+      set_value_vec (in);
+    }
+    return (*this);
+  }
+
+  //----------------------------------------------------------------------
+
+  void
+  obj_t::clear_value ()
+  {
+    _vec = NULL;
+    _dict = NULL;
+    _obj = NULL;
+  }
+
+  //----------------------------------------------------------------------
+
+  obj_t &
+  obj_t::set_obj (obj_t in)
+  {
+    _ref = in._ref;
+    _obj = in._obj;
+    _vec = in._vec;
+    _dict = in._dict;
+    _scalar = in._scalar;
     return (*this);
   }
 

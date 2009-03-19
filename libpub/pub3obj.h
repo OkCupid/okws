@@ -124,7 +124,7 @@ namespace pub3 {
     obj_t &set_int (int64_t i);
     obj_t &set_str (const str &s);
     obj_t &set_double (double d);
-    obj_t &set_obj (obj_t o) { return set_value (o.value ()); }
+    obj_t &set_obj (obj_t o);
     obj_t &set_scalar (scalar_obj_t so);
 
     void update_value (ptr<pval_t> v);
@@ -133,6 +133,7 @@ namespace pub3 {
     bool set_value_vec (ptr<pval_t> v);
     bool set_value_scalar (ptr<pval_t> v);
     bool set_value_dict (ptr<pval_t> v);
+    void clear_value ();
 
   private:
     ptr<pval_t> _obj;
