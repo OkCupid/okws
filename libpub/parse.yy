@@ -608,10 +608,10 @@ p3_relational_expr:
 	   ;	
 
 p3_relational_op: 
-              '<'        { $$ = pub3::REL_LT; }
-	    | '>'        { $$ = pub3::REL_GT; }
-	    | T_P3_GTEQ  { $$ = pub3::REL_GTE; }
-            | T_P3_LTEQ  { $$ = pub3::REL_LTE; }
+              '<'        { $$ = XPUB3_REL_LT; }
+	    | '>'        { $$ = XPUB3_REL_GT; }
+	    | T_P3_GTEQ  { $$ = XPUB3_REL_GTE; }
+            | T_P3_LTEQ  { $$ = XPUB3_REL_LTE; }
 	    ;
 
 p3_unary_expr: 

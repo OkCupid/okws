@@ -106,6 +106,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_raw_el_t (*x.raw);
   case XPUB_FOR:
     return New pub3::for_t (*x.forloop);
+  case XPUB_COND:
+    return New pub3::cond_t (*x.cond);
   default:
     return NULL;
   }
@@ -602,11 +604,31 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
 
 //-----------------------------------------------------------------------
 
-pub3::for_t::for_t (const xpub_for_t &x)
+pub3::for_t::for_t (const xpub3_for_t &x)
   : pfile_func_t (x.lineno),
     _iter (x.iter),
     _arr (x.arr),
     _env (nested_env_t::alloc (x.body)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::cond_clause_t::cond_clause_t (const xpub3_cond_clause_t &x)
+  : _lineno (x.lineno),
+    _expr (expr_t::alloc (x.expr)),
+    _env (nested_env_t::alloc (x.body)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::cond_t::cond_t (const xpub3_cond_t &x)
+  : pfile_func_t (x.lineno)
+{
+  if (x.clauses.size ()) {
+    _clauses = New refcounted<cond_clause_list_t> ();
+    for (size_t i = 0; i < x.clauses.size (); i++) {
+      _clauses->push_back (New refcounted<cond_clause_t> (x.clauses[i]));
+    }
+  }
+}
 
 //-----------------------------------------------------------------------
 
@@ -806,3 +828,14 @@ pub_range_t::alloc (const xpub_range_t &xpr)
   }
   return ret;
 }
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+pub3::expr_t::alloc (const xpub3_expr_t &x)
+{
+  ptr<pub3::expr_t> r;
+  return r;
+}
+
+//-----------------------------------------------------------------------

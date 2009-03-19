@@ -69,10 +69,10 @@ pub3::expr_relational_t::eval_as_bool (penv_t *e) const
     int64_t l = _l->eval_as_int (e);
     int64_t r = _r->eval_as_int (e);
     switch (_op) {
-    case REL_LT:  ret = (l < r); break;
-    case REL_GT:  ret = (l > r); break;
-    case REL_LTE: ret = (l <= r); break;
-    case REL_GTE: ret = (l >= r); break;
+    case XPUB3_REL_LT : ret = (l < r);  break;
+    case XPUB3_REL_GT : ret = (l > r);  break;
+    case XPUB3_REL_LTE: ret = (l <= r); break;
+    case XPUB3_REL_GTE: ret = (l >= r); break;
     default: panic ("unexpected relational operator!\n");
     }
   }

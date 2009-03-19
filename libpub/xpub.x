@@ -17,7 +17,8 @@ enum xpub_obj_typ_t {
   XPUB_RAW = 10,
   XPUB_SET_LOCAL_FUNC = 11,
   XPUB_LOAD = 12,
-  XPUB_FOR = 13
+  XPUB_FOR = 13,
+  XPUB_COND = 14
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -328,11 +329,127 @@ struct xpub_switch_t {
   bool nulldef;
 };
 
-struct xpub_for_t {
+struct xpub3_for_t {
   int lineno;
   xpub_var_t iter;
   xpub_var_t arr;
   xpub_section_t body;
+};
+
+enum xpub3_expr_typ_t {
+   XPUB3_EXPR_NULL,
+   XPUB3_EXPR_AND,
+   XPUB3_EXPR_OR,
+   XPUB3_EXPR_NOT,
+   XPUB3_EXPR_FN,
+   XPUB3_EXPR_RELATION,
+   XPUB3_EXPR_EQ,
+   XPUB3_EXPR_DICTREF,
+   XPUB3_EXPR_VECREF,
+   XPUB3_EXPR_REF,
+   XPUB3_EXPR_STR,
+   XPUB3_EXPR_INT,
+   XPUB3_EXPR_DOUBLE
+};
+enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
+
+%struct xpub3_expr_t;
+
+struct xpub3_and_t {
+   xpub3_expr_t *f1;
+   xpub3_expr_t *f2;   
+};
+
+struct xpub3_or_t {
+   xpub3_expr_t *t1;
+   xpub3_expr_t *t2;   
+};
+
+struct xpub3_not_t {
+   xpub3_expr_t *e;
+};
+
+struct xpub3_fn_t {
+   string name<>;
+   xpub3_expr_t args<>;
+};
+
+struct xpub3_eq_t {
+   bool neg;
+   xpub3_expr_t *e1;
+   xpub3_expr_t *e2;
+};
+
+struct xpub3_relation_t {
+   xpub3_relop_t relop;
+   xpub3_expr_t *left;
+   xpub3_expr_t *right;
+};
+
+struct xpub3_dictref_t {
+   xpub3_expr_t *dict;
+   string key<>;
+};
+
+struct xpub3_vecref_t {
+   xpub3_expr_t *vec;
+   xpub3_expr_t *index;
+};
+
+struct xpub3_ref_t {
+   string key<>;
+};
+
+struct xpub3_str_t {
+   string val<>;
+};
+
+struct xpub3_int_t {
+   hyper val;
+};
+
+struct xpub3_double_t {
+   string val<>;
+};
+
+union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
+case XPUB3_EXPR_NULL:
+     void;
+case XPUB3_EXPR_AND:
+     xpub3_and_t xand;
+case XPUB3_EXPR_OR:
+     xpub3_or_t xxor;
+case XPUB3_EXPR_NOT:
+     xpub3_not_t xnot;
+case XPUB3_EXPR_FN:
+     xpub3_fn_t fn;
+case XPUB3_EXPR_RELATION:
+     xpub3_relation_t relation;
+case XPUB3_EXPR_EQ:
+     xpub3_eq_t eq;
+case XPUB3_EXPR_DICTREF:
+     xpub3_dictref_t dr;
+case XPUB3_EXPR_VECREF:
+     xpub3_vecref_t vr;
+case XPUB3_EXPR_REF:
+     xpub3_ref_t xref;
+case XPUB3_EXPR_STR:
+     xpub3_str_t xstr;
+case XPUB3_EXPR_INT:
+     xpub3_int_t xint;
+case XPUB3_EXPR_DOUBLE:
+     xpub3_double_t xdouble;
+};
+
+struct xpub3_cond_clause_t {
+  int lineno;
+  xpub3_expr_t expr;
+  xpub_section_t body;
+};
+
+struct xpub3_cond_t {
+  int lineno;
+  xpub3_cond_clause_t clauses<>;
 };
 
 union xpub_obj_t switch (xpub_obj_typ_t typ) {
@@ -358,7 +475,9 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
  case XPUB_INCLIST:
    xpub_inclist_t inclist;
  case XPUB_FOR:
-   xpub_for_t forloop;
+   xpub3_for_t forloop;
+ case XPUB_COND:
+   xpub3_cond_t cond;
  case XPUB_RAW:
    xpub_raw_t raw;
 };

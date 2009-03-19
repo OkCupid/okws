@@ -16,7 +16,7 @@ namespace pub3 {
   class for_t : public pfile_func_t {
   public:
     for_t (int l) : pfile_func_t (l) {}
-    for_t (const xpub_for_t &x);
+    for_t (const xpub3_for_t &x);
     bool to_xdr (xpub_obj_t *x) const;
     bool add (ptr<arglist_t> l);
     bool add_env (ptr<nested_env_t> e) { _env = e; return true; }
@@ -37,6 +37,7 @@ namespace pub3 {
   class cond_clause_t {
   public:
     cond_clause_t (int l) : _lineno (l) {}
+    cond_clause_t (const xpub3_cond_clause_t &x);
 
     static ptr<cond_clause_t> alloc (int l) 
     { return New refcounted<cond_clause_t> (l); }
@@ -59,6 +60,8 @@ namespace pub3 {
   class cond_t : public pfile_func_t {
   public:
     cond_t (int l) : pfile_func_t (l) {}
+    cond_t (const xpub3_cond_t &x);
+
     void add_clauses (ptr<cond_clause_list_t> c) { _clauses = c; }
     str get_obj_name () const { return "pub3::cond_t"; }
     bool to_xdr (xpub_obj_t *x) const { return false; }

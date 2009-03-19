@@ -10,7 +10,6 @@
 
 namespace pub3 {
 
-  typedef enum { REL_LT, REL_GT, REL_LTE, REL_GTE } relop_t;
 
   //-----------------------------------------------------------------------
 
@@ -18,6 +17,8 @@ namespace pub3 {
   public:
     expr_t () {}
     virtual ~expr_t () {}
+
+    static ptr<expr_t> alloc (const xpub3_expr_t &x);
 
     virtual bool eval_as_bool (penv_t *e) const;
     virtual int64_t eval_as_int (penv_t *e) const;
@@ -74,12 +75,12 @@ namespace pub3 {
 
   class expr_relational_t : public expr_logical_t {
   public:
-    expr_relational_t (ptr<expr_t> l, ptr<expr_t> r, relop_t op)
+    expr_relational_t (ptr<expr_t> l, ptr<expr_t> r, xpub3_relop_t op)
       : _l (l), _r (r), _op (op) {}
     bool eval_as_bool (penv_t *e) const;
 
     ptr<expr_t> _l, _r;
-    relop_t _op;
+    xpub3_relop_t _op;
   };
 
   //-----------------------------------------------------------------------
