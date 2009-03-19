@@ -62,7 +62,7 @@ pub3::expr_EQ_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_relational_t::eval_as_bool (penv_t *e) const
+pub3::expr_relation_t::eval_as_bool (penv_t *e) const
 {
   bool ret = false;
   if (_l && !_l->is_null (e) && _r && !_r->is_null (e)) {

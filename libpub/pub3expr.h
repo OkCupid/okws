@@ -78,27 +78,31 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_relational_t : public expr_logical_t {
+  class expr_relation_t : public expr_logical_t {
   public:
-    expr_relational_t (ptr<expr_t> l, ptr<expr_t> r, xpub3_relop_t op)
-      : _l (l), _r (r), _op (op) {}
+    expr_relation_t (ptr<expr_t> l, ptr<expr_t> r, xpub3_relop_t op, int ln)
+      : _l (l), _r (r), _op (op), _lineno (ln) {}
+    expr_relation_t (const xpub3_relation_t &x);
     bool eval_as_bool (penv_t *e) const;
 
     ptr<expr_t> _l, _r;
     xpub3_relop_t _op;
+    int _lineno;
   };
 
   //-----------------------------------------------------------------------
 
   class expr_EQ_t : public expr_logical_t {
   public:
-    expr_EQ_t (ptr<expr_t> o1, ptr<expr_t> o2, bool pos) : 
-      _o1 (o1), _o2 (o2), _pos (pos) {}
+    expr_EQ_t (ptr<expr_t> o1, ptr<expr_t> o2, bool pos, int ln) : 
+      _o1 (o1), _o2 (o2), _pos (pos), _lineno (ln) {}
+    expr_EQ_t (const xpub3_eq_t &x);
 
     bool eval_as_bool (penv_t *e) const;
 
     ptr<expr_t> _o1, _o2;
     bool _pos;
+    int _lineno;
   };
 
   //-----------------------------------------------------------------------
@@ -132,6 +136,8 @@ namespace pub3 {
   class expr_ref_t : public expr_t {
   public:
     expr_ref_t (const str &s, int l) : _name (s), _lineno (l) {}
+    expr_ref_t (const xpub3_ref_t &x);
+
   protected:
     ptr<const pval_t> eval_as_pval (penv_t *e) const;
 
@@ -144,6 +150,7 @@ namespace pub3 {
   class expr_str_t : public expr_t {
   public:
     expr_str_t (const str &s) : _val (s) {}
+    expr_str_t (const xpub3_str_t &x);
 
     bool eval_as_bool (penv_t *e) const;
     str eval_as_str (penv_t *e) const;
@@ -163,6 +170,7 @@ namespace pub3 {
   class expr_int_t : public expr_t {
   public:
     expr_int_t (int64_t i) : _val (i) {}
+    expr_int_t (const xpub3_int_t &x);
 
     bool eval_as_bool (penv_t *e) const { return _val; }
     scalar_obj_t eval_as_scalar (penv_t *e) const;
@@ -180,6 +188,7 @@ namespace pub3 {
   class expr_double_t : public expr_t {
   public:
     expr_double_t (double d) : _val (d) {}
+    expr_double_t (const xpub3_double_t &d);
 
     bool eval_as_bool (penv_t *e) const { return _val != 0; }
     scalar_obj_t eval_as_scalar (penv_t *e) const;

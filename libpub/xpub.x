@@ -379,12 +379,14 @@ struct xpub3_fn_t {
 };
 
 struct xpub3_eq_t {
-   bool neg;
-   xpub3_expr_t *e1;
-   xpub3_expr_t *e2;
+   int lineno;
+   xpub3_expr_t *o1;
+   xpub3_expr_t *o2;
+   bool pos;
 };
 
 struct xpub3_relation_t {
+   int lineno;
    xpub3_relop_t relop;
    xpub3_expr_t *left;
    xpub3_expr_t *right;
@@ -401,6 +403,7 @@ struct xpub3_vecref_t {
 };
 
 struct xpub3_ref_t {
+   int lineno;
    string key<>;
 };
 

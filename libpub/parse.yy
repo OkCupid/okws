@@ -595,7 +595,7 @@ p3_equality_expr: p3_relational_expr
 		}
 	 	| p3_equality_expr p3_equality_op p3_relational_expr
 		{
-		   $$ = New refcounted<pub3::expr_EQ_t> ($1, $3, $2);
+		   $$ = New refcounted<pub3::expr_EQ_t> ($1, $3, $2, PLINENO);
 		}
 		;	
 
@@ -610,7 +610,7 @@ p3_relational_expr:
 	   }
            | p3_relational_expr p3_relational_op p3_unary_expr
 	   {
-	      $$ = New refcounted<pub3::expr_relational_t> ($1, $3, $2);
+	      $$ = New refcounted<pub3::expr_relation_t> ($1, $3, $2, PLINENO);
            }
 	   ;	
 

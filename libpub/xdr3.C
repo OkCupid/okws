@@ -67,11 +67,11 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
 {
   ptr<pub3::expr_t> r;
   switch (x.typ) {
-  case XPUB3_EXPR_OR:
-    r = New refcounted<pub3::expr_OR_t> (*x.xxor);
-    break;
   case XPUB3_EXPR_AND:
     r = New refcounted<pub3::expr_AND_t> (*x.xand);
+    break;
+  case XPUB3_EXPR_OR:
+    r = New refcounted<pub3::expr_OR_t> (*x.xxor);
     break;
   case XPUB3_EXPR_NOT:
     r = New refcounted<pub3::expr_NOT_t> (*x.xnot);
@@ -79,11 +79,29 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_FN:
     r = pub3::runtime_fn_t::alloc (*x.fn);
     break;
+  case XPUB3_EXPR_RELATION:
+    r = New refcounted<pub3::expr_relation_t> (*x.relation);
+    break;
+  case XPUB3_EXPR_EQ:
+    r = New refcounted<pub3::expr_EQ_t> (*x.eq);
+    break;
   case XPUB3_EXPR_DICTREF:
     r = New refcounted<pub3::expr_dictref_t> (*x.dictref);
     break;
   case XPUB3_EXPR_VECREF:
     r = New refcounted<pub3::expr_vecref_t> (*x.vecref);
+    break;
+  case XPUB3_EXPR_REF:
+    r = New refcounted<pub3::expr_ref_t> (*x.xref);
+    break;
+  case XPUB3_EXPR_STR:
+    r = New refcounted<pub3::expr_str_t> (*x.xstr);
+    break;
+  case XPUB3_EXPR_INT:
+    r = New refcounted<pub3::expr_int_t> (*x.xint);
+    break;
+  case XPUB3_EXPR_DOUBLE:
+    r = New refcounted<pub3::expr_double_t> (*x.xdouble);
     break;
   default:
     break;
@@ -150,3 +168,45 @@ pub3::expr_dictref_t::expr_dictref_t (const xpub3_dictref_t &x)
 pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
   : _vec (expr_t::alloc (x.vec)),
     _index (expr_t::alloc (x.index)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_ref_t::expr_ref_t (const xpub3_ref_t &x)
+  : _name (x.key), _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_relation_t::expr_relation_t (const xpub3_relation_t &x)
+  : _l  (expr_t::alloc (x.left)),
+    _r  (expr_t::alloc (x.right)),
+    _op (x.relop),
+    _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_EQ_t::expr_EQ_t (const xpub3_eq_t &x)
+  : _o1  (expr_t::alloc (x.o1)),
+    _o2  (expr_t::alloc (x.o2)),
+    _pos (x.pos),
+    _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_str_t::expr_str_t (const xpub3_str_t &x)
+  : _val (x.val) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_int_t::expr_int_t (const xpub3_int_t &x)
+  : _val (x.val) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
+  : _val (0)
+{
+  convertdouble (x.val, &_val);
+}
+
+
+//-----------------------------------------------------------------------
