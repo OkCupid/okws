@@ -161,13 +161,15 @@ pub3::expr_t::alloc (const xpub3_expr_list_t *x)
 
 pub3::expr_dictref_t::expr_dictref_t (const xpub3_dictref_t &x)
   : _dict (expr_t::alloc (x.dict)),
-    _key (x.key) {}
+    _key (x.key),
+    _lineno (x.lineno) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
   : _vec (expr_t::alloc (x.vec)),
-    _index (expr_t::alloc (x.index)) {}
+    _index (expr_t::alloc (x.index)),
+    _lineno (x.lineno) {}
 
 //-----------------------------------------------------------------------
 
@@ -208,5 +210,174 @@ pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
   convertdouble (x.val, &_val);
 }
 
+//-----------------------------------------------------------------------
+
+void 
+pub3::expr_t::expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> x)
+{
+  if (e) {
+    x.alloc ();
+    e->to_xdr (x);
+  }
+}
 
 //-----------------------------------------------------------------------
+
+void
+pub3::expr_t::expr_to_xdr (const ptr<expr_list_t> in, xpub3_expr_list_t *out)
+{
+  if (in) {
+    out->setsize (in->size ());
+    for (size_t i = 0; i < in->size (); i++) {
+      ptr<const expr_t> x = (*in)[i];
+      if (x) {
+	x->to_xdr (&(*out)[i]);
+      } else {
+	(*out)[i].set_typ (XPUB3_EXPR_NULL);
+      }
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_AND);
+  expr_to_xdr (_f1, x->xand->f1);
+  expr_to_xdr (_f2, x->xand->f2);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_OR);
+  expr_to_xdr (_t1, x->xxor->t1);
+  expr_to_xdr (_t2, x->xxor->t2);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_NOT_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_NOT);
+  expr_to_xdr (_e, x->xnot->e);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::runtime_fn_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_FN);
+  x->fn->lineno = _lineno;
+  x->fn->name = name ();
+  expr_to_xdr (args (), &x->fn->args);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_relation_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_RELATION);
+  x->relation->lineno = _lineno;
+  x->relation->relop = _op;
+  expr_to_xdr (_l, x->relation->left);
+  expr_to_xdr (_r, x->relation->right);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_EQ_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_EQ);
+  x->eq->lineno = _lineno;
+  x->eq->pos = _pos;
+  expr_to_xdr (_o1, x->eq->o1);
+  expr_to_xdr (_o2, x->eq->o2);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_dictref_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_DICTREF);
+  x->dictref->lineno = _lineno;
+  x->dictref->key = _key;
+  expr_to_xdr (_dict, x->dictref->dict);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_vecref_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_VECREF);
+  x->dictref->lineno = _lineno;
+  expr_to_xdr (_index, x->vecref->index);
+  expr_to_xdr (_vec, x->vecref->vec);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_ref_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_REF);
+  x->xref->lineno = _lineno;
+  x->xref->key = _name;
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_str_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_STR);
+  x->xstr->val = _val;
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_int_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_INT);
+  x->xint->val = _val;
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
+{
+#define BUFSZ 1024
+  x->set_typ (XPUB3_EXPR_DOUBLE);
+  char buf[BUFSZ];
+  snprintf (buf, BUFSZ, "%g", _val);
+  x->xdouble->val = buf;
+  return true;
+#undef BUFSZ
+}
+
+//-----------------------------------------------------------------------
+
+

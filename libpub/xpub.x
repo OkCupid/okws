@@ -393,11 +393,13 @@ struct xpub3_relation_t {
 };
 
 struct xpub3_dictref_t {
+   int lineno;
    xpub3_expr_t *dict;
    string key<>;
 };
 
 struct xpub3_vecref_t {
+   int lineno;
    xpub3_expr_t *vec;
    xpub3_expr_t *index;
 };

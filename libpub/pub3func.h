@@ -86,8 +86,13 @@ namespace pub3 {
 
     static ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
 
-  private:
-    int lineno;
+    virtual ptr<expr_list_t> args () const = 0;
+    virtual str name () const = 0;
+
+    bool to_xdr (xpub3_expr_t *x) const;
+
+  protected:
+    int _lineno;
   };
 
   //-----------------------------------------------------------------------

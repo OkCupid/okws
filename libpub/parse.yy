@@ -639,11 +639,11 @@ p3_postfix_expr:
            } 
 	   | p3_postfix_expr '.' p3_identifier
 	   {
-	      $$ = New refcounted<pub3::expr_dictref_t> ($1, $3);
+	      $$ = New refcounted<pub3::expr_dictref_t> ($1, $3, PLINENO);
            } 
 	   | p3_postfix_expr '['  p3_expr ']'
 	   {
-	      $$ = New refcounted<pub3::expr_vecref_t> ($1, $3);
+	      $$ = New refcounted<pub3::expr_vecref_t> ($1, $3, PLINENO);
            } 
 	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
