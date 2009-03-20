@@ -49,12 +49,12 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 
   if (!v && !_empty) {
 
-    strbuf b ("for: cannot find iteration value (%s)\n", _arr.cstr ());
+    strbuf b ("for: cannot find iteration value (%s)", _arr.cstr ());
     o->output_err (e, b, lineno);
 
   } else if (!a && !_empty) {
 
-    strbuf b ("for: given value is not iterable vector (%s)\n", _arr.cstr ());
+    strbuf b ("for: given value is not iterable vector (%s)", _arr.cstr ());
     o->output_err (e, b, lineno);
     
   } else if (!a) {
@@ -74,10 +74,10 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 
     for (i = 0; i < len; i++) {
       if (!(row = (*a)[i])) {
-	strbuf b ("for: row %zu is undefined!\n", i);
+	strbuf b ("for: row %zu is undefined!", i);
 	o->output_err (e, b, lineno);
       } else if (!(row_aarr = row->to_aarr ())) {
-	strbuf b ("for: row %zu is not an associative array!\n", i);
+	strbuf b ("for: row %zu is not an associative array!", i);
 	o->output_err (e, b, lineno);
       } else if (_env) {
 	row_aarr->replace ("count", int64_t (len));
