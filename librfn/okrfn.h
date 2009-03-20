@@ -41,6 +41,9 @@ namespace rfn1 {
     static ptr<runtime_fn_t> 
     constructor (const str &n, ptr<expr_list_t> e, int lineno, str *err);
 
+    ptr<const pval_t> eval_as_pval (eval_t *e) const;
+    scalar_obj_t eval_as_scalar (eval_t *e) const;
+
   private:
     ptr<expr_t> _low;
     ptr<expr_t> _high;

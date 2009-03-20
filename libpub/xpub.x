@@ -350,6 +350,7 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_REF,
    XPUB3_EXPR_STR,
    XPUB3_EXPR_INT,
+   XPUB3_EXPR_UINT,
    XPUB3_EXPR_DOUBLE
 };
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -417,6 +418,10 @@ struct xpub3_int_t {
    hyper val;
 };
 
+struct xpub3_uint_t {
+  unsigned hyper val;
+};
+
 struct xpub3_double_t {
    string val<>;
 };
@@ -446,6 +451,8 @@ case XPUB3_EXPR_STR:
      xpub3_str_t xstr;
 case XPUB3_EXPR_INT:
      xpub3_int_t xint;
+case XPUB3_EXPR_UINT:
+     xpub3_uint_t xuint;
 case XPUB3_EXPR_DOUBLE:
      xpub3_double_t xdouble;
 };

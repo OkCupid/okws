@@ -100,6 +100,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_INT:
     r = New refcounted<pub3::expr_int_t> (*x.xint);
     break;
+  case XPUB3_EXPR_UINT:
+    r = New refcounted<pub3::expr_uint_t> (*x.xuint);
+    break;
   case XPUB3_EXPR_DOUBLE:
     r = New refcounted<pub3::expr_double_t> (*x.xdouble);
     break;
@@ -200,6 +203,11 @@ pub3::expr_str_t::expr_str_t (const xpub3_str_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_int_t::expr_int_t (const xpub3_int_t &x)
+  : _val (x.val) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_uint_t::expr_uint_t (const xpub3_uint_t &x)
   : _val (x.val) {}
 
 //-----------------------------------------------------------------------
@@ -367,9 +375,19 @@ pub3::expr_int_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_uint_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_UINT);
+  x->xuint->val = _val;
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 {
-#define BUFSZ 1024
+#define BUFSZ 64
   x->set_typ (XPUB3_EXPR_DOUBLE);
   char buf[BUFSZ];
   snprintf (buf, BUFSZ, "%g", _val);

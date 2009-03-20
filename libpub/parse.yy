@@ -80,19 +80,23 @@
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
+%token <str> T_P3_UINT
 %token <ch>  T_P3_CHAR
 %token <str> T_P3_FLOAT
 %token <str> T_P3_STRING
 
 %type <p3cclist> p3_cond_clause_list;
 %type <p3cc> p3_cond_clause;
+
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
 %type <p3expr> p3_primary_expr p3_constant;
+%type <p3expr> p3_integer_constant;
+
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
 %type <str> p3_identifier p3_string;
-%type <num> p3_integer_constant p3_character_constant p3_boolean_constant;
+%type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 
 %type <bl> p3_equality_op;
@@ -685,7 +689,7 @@ p3_argument_expr_list: p3_expr
 p3_constant: 
            p3_integer_constant
            {
-	      $$ = New refcounted<pub3::expr_int_t> ($1); 
+	      $$ = $1;
 	   }
            | p3_character_constant
            {
@@ -714,9 +718,22 @@ p3_integer_constant: T_P3_INT
 	      strbuf b ("Cannot convert '%s' to int", $1.cstr ());
 	      PARSEFAIL;
 	   }
-	   $$ = i;
+	   $$ = New refcounted<pub3::expr_int_t> (i);
 	}
- 	;
+	| T_P3_UINT
+	{
+	   u_int64_t u = 0;
+	   if (!convertuint ($1, &u)) {
+	      strbuf b ("Cannot conver '%s' to unsigned int", $1.cstr ());
+	      PARSEFAIL;
+           }
+	   if (u <= u_int64_t (INT64_MAX)) {
+	     $$ = New refcounted<pub3::expr_int_t> (u);
+           } else {
+	     $$ = New refcounted<pub3::expr_uint_t> (u);
+           }
+	}
+	;
 
 p3_floating_constant: T_P3_FLOAT
         {

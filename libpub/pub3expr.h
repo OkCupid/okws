@@ -14,14 +14,18 @@ namespace pub3 {
 
   class eval_t {
   public:
-    eval_t (penv_t *e, output_t *o) : _env (e), _output (o) {}
+    eval_t (penv_t *e, output_t *o) : _env (e), _output (o), _loud (false) {}
 
     penv_t *penv () const { return _env; }
     output_t *output () const { return _output; }
 
+    bool set_loud (bool b);
+    bool loud () const { return _loud; }
+
   private:
     penv_t *_env;
     output_t *_output;
+    bool _loud;
   };
 
   //-----------------------------------------------------------------------
@@ -65,6 +69,7 @@ namespace pub3 {
   public:
     expr_logical_t (int l = -1) : expr_t (l) {}
     int64_t eval_as_int (eval_t *e) const { return eval_as_bool (e); }
+    u_int64_t eval_as_uint (eval_t *e) const { return eval_as_bool (e); }
     scalar_obj_t eval_as_scalar (eval_t *e) const;
     str eval_as_str (eval_t *e) const;
     bool is_null (eval_t *e) const { return false; }
@@ -189,6 +194,7 @@ namespace pub3 {
     str eval_as_str (eval_t *e) const;
     scalar_obj_t eval_as_scalar (eval_t *e) const;
     int64_t eval_as_int (eval_t *e) const;
+    u_int64_t eval_as_uint (eval_t *e) const;
     bool is_null (eval_t *e) const;
     ptr<const aarr_t> eval_as_dict (eval_t *e) const { return NULL; }
     ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const { return NULL; }
@@ -201,39 +207,58 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_int_t : public expr_t {
+  class expr_number_t : public expr_t {
+  public:
+    expr_number_t () : expr_t () {}
+
+    bool is_null (eval_t *e) const { return false; }
+    ptr<const aarr_t> eval_as_dict (eval_t *e) const { return NULL; }
+    ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const { return NULL; }
+  protected:
+    ptr<const pval_t> eval_as_pval (eval_t *e) const;
+  };
+  
+
+  //-----------------------------------------------------------------------
+
+  class expr_int_t : public expr_number_t {
   public:
     expr_int_t (int64_t i) : _val (i) {}
     expr_int_t (const xpub3_int_t &x);
 
     bool eval_as_bool (eval_t *e) const { return _val; }
     scalar_obj_t eval_as_scalar (eval_t *e) const;
-    bool is_null (eval_t *e) const { return false; }
-    ptr<const aarr_t> eval_as_dict (eval_t *e) const { return NULL; }
-    ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const { return NULL; }
-
     bool to_xdr (xpub3_expr_t *x) const;
-  private:
-    ptr<const pval_t> eval_as_pval (eval_t *e) const;
+
+  protected:
     int64_t _val;
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_double_t : public expr_t {
+  class expr_uint_t : public expr_number_t {
+  public:
+    expr_uint_t (u_int64_t i) : _val (i) {}
+    expr_uint_t (const xpub3_uint_t &x);
+
+    bool eval_as_bool (eval_t *e) const { return _val; }
+    scalar_obj_t eval_as_scalar (eval_t *e) const;
+    bool to_xdr (xpub3_expr_t *x) const;
+  private:
+    u_int64_t _val;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_double_t : public expr_number_t {
   public:
     expr_double_t (double d) : _val (d) {}
     expr_double_t (const xpub3_double_t &d);
 
     bool eval_as_bool (eval_t *e) const { return _val != 0; }
     scalar_obj_t eval_as_scalar (eval_t *e) const;
-    bool is_null (eval_t *e) const { return false; }
-    ptr<const aarr_t> eval_as_dict (eval_t *e) const { return NULL; }
-    ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const { return NULL; }
-
     bool to_xdr (xpub3_expr_t *x) const;
   private:
-    ptr<const pval_t> eval_as_pval (eval_t *e) const;
     double _val;
   };
 

@@ -1,6 +1,7 @@
 
 #include "pscalar.h"
 #include "parseopt.h"
+#include "parr.h"
 
 scalar_obj_t::_p_t::_p_t () 
   : _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE) {}
@@ -12,8 +13,14 @@ int64_t
 scalar_obj_t::_p_t::to_int64 () const
 {
   if (_int_cnv == CNV_NONE) {
-    _i = 0;
-    _int_cnv = (_s && convertint (_s, &_i)) ? CNV_OK : CNV_BAD;
+
+    if (_uint_cnv == CNV_OK && (_u <= u_int64_t (INT64_MAX))) {
+      _i = _u;
+      _int_cnv = CNV_OK;
+    } else {
+      _i = 0;
+      _int_cnv = (_s && convertint (_s, &_i)) ? CNV_OK : CNV_BAD;
+    }
   }
   return _i;
 }
@@ -22,8 +29,14 @@ u_int64_t
 scalar_obj_t::_p_t::to_uint64 () const 
 {
   if (_uint_cnv == CNV_NONE) {
-    _u = 0;
-    _uint_cnv = (_s && to_uint64 (&_u)) ? CNV_OK : CNV_BAD;
+
+    if (_int_cnv == CNV_OK && _i >= 0) {
+      _u = _i;
+      _uint_cnv = CNV_OK;
+    } else {
+      _u = 0;
+      _uint_cnv = (_s && to_uint64 (&_u)) ? CNV_OK : CNV_BAD;
+    }
   }
   return _u;
 }

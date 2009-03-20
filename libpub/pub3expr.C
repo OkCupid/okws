@@ -153,7 +153,16 @@ int64_t
 pub3::expr_t::eval_as_int (eval_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
-  return so.to_int64 ();
+  int64_t r = 0;
+
+  if (!so.to_int64 (&r) && e->loud ()) {
+    str tmp = so.to_str ();
+    if (!tmp) tmp = "<none>";
+    strbuf b ("cannot convert '%s' to int64", tmp.cstr ());
+    report_error (e, b);
+  }
+
+  return r;
 }
 
 //-----------------------------------------------------------------------
@@ -162,7 +171,16 @@ u_int64_t
 pub3::expr_t::eval_as_uint (eval_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
-  return so.to_uint64 ();
+  u_int64_t r = 0;
+
+  if (!so.to_uint64 (&r) && e->loud ()) {
+    str tmp = so.to_str ();
+    if (!tmp) tmp = "<none>";
+    strbuf b ("cannot convert '%s' to uint64", tmp.cstr ());
+    report_error (e, b);
+  }
+
+  return r;
 }
 
 //-----------------------------------------------------------------------
@@ -257,6 +275,17 @@ pub3::expr_str_t::eval_as_int (eval_t *e) const
 
 //-----------------------------------------------------------------------
 
+u_int64_t
+pub3::expr_str_t::eval_as_uint (eval_t *e) const
+{
+  u_int64_t ret = 0;
+  if (_val)
+    convertuint (_val, &ret);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 str
 pub3::expr_str_t::eval_as_str (eval_t *e) const
 {
@@ -299,14 +328,6 @@ pub3::expr_int_t::eval_as_scalar (eval_t *e) const
 
 //-----------------------------------------------------------------------
 
-ptr<const pval_t>
-pub3::expr_int_t::eval_as_pval (eval_t *e) const
-{
-  return New refcounted<pub_scalar_t> (eval_as_scalar (e));
-}
-
-//-----------------------------------------------------------------------
-
 scalar_obj_t
 pub3::expr_double_t::eval_as_scalar (eval_t *e) const
 {
@@ -317,10 +338,30 @@ pub3::expr_double_t::eval_as_scalar (eval_t *e) const
 
 //-----------------------------------------------------------------------
 
-ptr<const pval_t>
-pub3::expr_double_t::eval_as_pval (eval_t *e) const
+scalar_obj_t
+pub3::expr_uint_t::eval_as_scalar (eval_t *e) const
 {
-  return New refcounted<pub_scalar_t> (eval_as_scalar (e)); 
+  scalar_obj_t so;
+  so.set_u (_val);
+  return so;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_number_t::eval_as_pval (eval_t *e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar(e)); 
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::eval_t::set_loud (bool b)
+{
+  bool c = _loud;
+  _loud = b;
+  return c;
 }
 
 //-----------------------------------------------------------------------
