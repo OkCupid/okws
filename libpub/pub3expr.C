@@ -246,9 +246,13 @@ pub3::expr_ref_t::eval_as_pval (eval_t *e) const
   penv_t *env = e->penv ();
   const pval_t *v = env->lookup (_name, false);
   ptr<const pval_t> ret;
-  if (!v && env->debug ()) {
+  if (!v) {
+
+    // if env->debug(), perhaps?
+    // for now, leave it noisy
     strbuf b ("cannot resolve variable: '%s'", _name.cstr ());
     report_error (e, b);
+
   } else {
     ret = mkref (v);
   }

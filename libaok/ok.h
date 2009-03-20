@@ -675,6 +675,12 @@ public:
   // always use pub2 configuration.
   virtual bool use_pub2_cfg () const { return false; }
 
+
+  // Initialized the pub3 runtime library; by default, it's 
+  // the standard librfn library, but you can add your own,
+  // or disable as you see fit.
+  virtual void init_pub3_runtime ();
+
   virtual u_int get_andmask () const { return 0xffffffff; }
   virtual u_int get_ormask () const { return 0; }
   virtual void custom_init (cbv cb) { (*cb) (); }

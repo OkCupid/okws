@@ -36,6 +36,7 @@
 #include "tame_trigger.h"
 #include "resp2.h"
 #include "okprotutil.h"
+#include "okrfn.h"
 
 #ifdef HAVE_LINUX_PRCTL_DUMP
 # include <sys/prctl.h>
@@ -321,6 +322,10 @@ oksrvc_t::init (int argc, char *argv[])
   // Give virtual classes an opportunity to init constants after we've
   // read in all important constants from argv.
   init_constants ();
+
+  // initialize a set of library routines in pub3 to use for this 
+  // service;  they are customizable...
+  init_pub3_runtime ();
 
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
@@ -1862,6 +1867,14 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
   }
 
   ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::init_pub3_runtime ()
+{
+  pub3::rfn_factory_t::set (New refcounted<rfn1::std_factory_t> ());
 }
 
 //-----------------------------------------------------------------------

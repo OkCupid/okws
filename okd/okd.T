@@ -399,7 +399,8 @@ okd_t::parse_file (const str &cf)
     .ignore ("ServiceAcceptMessages")
     .ignore ("SyslogLevels")
     .ignore ("DangerousZbufs")
-    .ignore ("OklogdPidfile");
+    .ignore ("OklogdPidfile")
+    ;
 
   bool ret = ct.run (cf);
   if (ret) {
@@ -1352,7 +1353,6 @@ okd_t::toggle_profiler (svccb *sbp)
 
 //-----------------------------------------------------------------------
 
-
 int
 main (int argc, char *argv[])
 {
@@ -1361,5 +1361,4 @@ main (int argc, char *argv[])
   amain ();
 }
 
-
-
+//-----------------------------------------------------------------------

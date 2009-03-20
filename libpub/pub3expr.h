@@ -178,9 +178,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
-
     str _name;
-    int _lineno;
   };
 
   //-----------------------------------------------------------------------

@@ -776,6 +776,7 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBAHTTP=${with_okws}/libahttp/libahttp.la
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
     LIBOKSSL=${with_okws}/libokssl/libokssl.la
+    LIBRFN=${with_okws}/librfn/librfn.la
     PUB=${with_okws}/pub/pub
     XMLRPCC=${with_okws}/xmlrpcc/xmlrpcc
 
@@ -798,6 +799,7 @@ elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
     LIBAHTTP=${okwslibdir}/libahttp.la
     LIBAMYSQL=${okwslibdir}/libamysql.la
     LIBOKSSL=${okwslibdir}/libokssl.la
+    LIBRFN=${okwslibdir}/librfn.la
 
     XMLRPCC_COLLECT=${okwsutildir}/xmlrpcc-x-collect.pl
 
@@ -828,7 +830,7 @@ AC_SUBST(LIBPUB)
 AC_SUBST(LIBAOK)
 AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAHTTP)
-AC_SUBST(LIBOKSSL)
+AC_SUBST(LIBRFN)
 AC_SUBST(LIBAMT)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBOKSSL)
@@ -839,9 +841,9 @@ AC_SUBST(XMLRPCC_COLLECT)
 
 LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
-LDEPS='$(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
+LDEPS='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
 LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
-LDADD='$(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
+LDADD='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
 LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)
