@@ -86,7 +86,7 @@ namespace pub3 {
   class runtime_fn_t : public expr_t {
   public:
     runtime_fn_t (const str &n, ptr<expr_list_t> a, int l) 
-      : _name (n), _arglist (a), _lineno (l) {}
+      : expr_t (l), _name (n), _arglist (a) {}
 
     ptr<expr_list_t> args () const { return _arglist; }
     str name () const { return _name; }
@@ -96,7 +96,6 @@ namespace pub3 {
   protected:
     str _name;
     ptr<expr_list_t> _arglist;
-    int _lineno;
   };
 
   //-----------------------------------------------------------------------
@@ -128,7 +127,7 @@ namespace pub3 {
     virtual ~rfn_factory_t () {}
 
     virtual ptr<runtime_fn_t>
-    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err) = 0;
+    alloc (const str &s, ptr<expr_list_t> l, int lineno) = 0;
 
     ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
 
@@ -142,12 +141,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class null_fn_factory_t : public rfn_factory_t {
+  class null_rfn_factory_t : public rfn_factory_t {
   public:
-
-    ptr<runtime_fn_t>
-    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err) 
-    { return NULL; }
+    null_rfn_factory_t  () : rfn_factory_t () {}
+    ptr<runtime_fn_t> alloc (const str &s, ptr<expr_list_t> l, int lineno);
 
   };
 

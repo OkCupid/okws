@@ -42,7 +42,7 @@ namespace pub3 {
     static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t &x);
     static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t *x);
 
-    static void expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> x);
+    static void expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x);
 
     static void expr_to_xdr (const ptr<vec<ptr<expr_t> > > in, 
 			     xpub3_expr_list_t *out);

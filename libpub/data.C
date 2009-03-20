@@ -36,7 +36,7 @@ aarr_t *pswitch_env_base_t::env () const { return aarr; }
 void bound_pfile_t::explore (pub_exploremode_t m) const
 { if (file) file->explore (m); }
 str penv_t::loc (int l) const 
-{ return file ? file->loc (l) : str("at top level"); }
+{ return file ? file->loc (l > 0 ? l : olineno) : str("at top level"); }
 pfnm_t penv_t::filename () const { return file->bnd->filename (); }
 void bound_pfile_t::close () { file->close (); }
 output_std_t::output_std_t (zbuf *o, const pfile_t *t) :

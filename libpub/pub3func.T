@@ -178,7 +178,7 @@ namespace pub3 {
   rfn_factory_t::get ()
   {
     if (!_curr) {
-      _curr = New refcounted<null_fn_factory_t> ();
+      _curr = New refcounted<null_rfn_factory_t> ();
     }
     return _curr;
   }
@@ -190,6 +190,15 @@ namespace pub3 {
   {
     report_error (e, _err);
     return NULL;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<runtime_fn_t> 
+  null_rfn_factory_t::alloc (const str &s, ptr<expr_list_t> l, int lineno)
+  {
+    strbuf b ("null library; function '%s' does not exist here", s.cstr ());
+    return New refcounted<error_fn_t> (s, l, lineno, b);
   }
 
   //-----------------------------------------------------------------------

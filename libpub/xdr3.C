@@ -131,11 +131,10 @@ pub3::expr_NOT_t::expr_NOT_t (const xpub3_not_t &x)
 
 //-----------------------------------------------------------------------
 
-
 ptr<pub3::runtime_fn_t>
 pub3::rfn_factory_t::alloc (const xpub3_fn_t &x)
 {
-  return alloc (x.name, expr_t::alloc (x.args), x.lineno, NULL);
+  return alloc (x.name, expr_t::alloc (x.args), x.lineno);
 }
 
 //-----------------------------------------------------------------------
@@ -221,11 +220,11 @@ pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
 //-----------------------------------------------------------------------
 
 void 
-pub3::expr_t::expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> x)
+pub3::expr_t::expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x)
 {
   if (e) {
-    x.alloc ();
-    e->to_xdr (x);
+    x->alloc ();
+    e->to_xdr (*x);
   }
 }
 
@@ -253,8 +252,8 @@ bool
 pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_AND);
-  expr_to_xdr (_f1, x->xand->f1);
-  expr_to_xdr (_f2, x->xand->f2);
+  expr_to_xdr (_f1, &x->xand->f1);
+  expr_to_xdr (_f2, &x->xand->f2);
   return true;
 }
 
@@ -264,8 +263,8 @@ bool
 pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_OR);
-  expr_to_xdr (_t1, x->xxor->t1);
-  expr_to_xdr (_t2, x->xxor->t2);
+  expr_to_xdr (_t1, &x->xxor->t1);
+  expr_to_xdr (_t2, &x->xxor->t2);
   return true;
 }
 
@@ -275,7 +274,7 @@ bool
 pub3::expr_NOT_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_NOT);
-  expr_to_xdr (_e, x->xnot->e);
+  expr_to_xdr (_e, &x->xnot->e);
   return true;
 }
 
@@ -299,8 +298,8 @@ pub3::expr_relation_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_RELATION);
   x->relation->lineno = _lineno;
   x->relation->relop = _op;
-  expr_to_xdr (_l, x->relation->left);
-  expr_to_xdr (_r, x->relation->right);
+  expr_to_xdr (_l, &x->relation->left);
+  expr_to_xdr (_r, &x->relation->right);
   return true;
 }
 
@@ -312,8 +311,8 @@ pub3::expr_EQ_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_EQ);
   x->eq->lineno = _lineno;
   x->eq->pos = _pos;
-  expr_to_xdr (_o1, x->eq->o1);
-  expr_to_xdr (_o2, x->eq->o2);
+  expr_to_xdr (_o1, &x->eq->o1);
+  expr_to_xdr (_o2, &x->eq->o2);
   return true;
 }
 
@@ -325,7 +324,7 @@ pub3::expr_dictref_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_DICTREF);
   x->dictref->lineno = _lineno;
   x->dictref->key = _key;
-  expr_to_xdr (_dict, x->dictref->dict);
+  expr_to_xdr (_dict, &x->dictref->dict);
   return true;
 }
 
@@ -336,8 +335,8 @@ pub3::expr_vecref_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_VECREF);
   x->dictref->lineno = _lineno;
-  expr_to_xdr (_index, x->vecref->index);
-  expr_to_xdr (_vec, x->vecref->vec);
+  expr_to_xdr (_index, &x->vecref->index);
+  expr_to_xdr (_vec, &x->vecref->vec);
   return true;
 }
 
