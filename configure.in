@@ -213,4 +213,5 @@ AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile htdocs/Makefile contrib/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
-	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile )
+	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
+	  librfn/Makefile )

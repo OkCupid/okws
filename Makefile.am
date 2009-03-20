@@ -13,7 +13,8 @@ SBD1 = \
 	libaok \
 	libamt \
 	libokssl \
-	libweb
+	libweb \
+	librfn
 
 if USE_MYSQL
 SBD2 = libamysql
