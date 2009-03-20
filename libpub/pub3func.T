@@ -132,19 +132,38 @@ pub3::cond_t::output (output_t *o, penv_t *e) const
 }
 
 //-----------------------------------------------------------------------
+//
+// Functions for allocations runtime functions (rfn's)
 
 namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<runtime_fn_t>
-  runtime_fn_t::alloc (const str &s, ptr<expr_list_t> l, int ln, str *err)
-  {
-    return NULL;
-  }
+  ptr<rfn_factory_t> rfn_factory_t::_curr;
 
   //-----------------------------------------------------------------------
+  
+  void
+  rfn_factory_t::set (ptr<rfn_factory_t> f)
+  {
+    _curr = f;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  ptr<rfn_factory_t>
+  rfn_factory_t::get ()
+  {
+    if (!_curr) {
+      _curr = New refcounted<null_fn_factory_t> ();
+    }
+    return _curr;
+  }
+    
+//-----------------------------------------------------------------------
 
 };
 
+//
+// end RFNs
 //-----------------------------------------------------------------------

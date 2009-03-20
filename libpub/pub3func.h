@@ -80,11 +80,7 @@ namespace pub3 {
 
   class runtime_fn_t : public expr_t {
   public:
-
-    static ptr<runtime_fn_t> 
-    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err);
-
-    static ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
+    runtime_fn_t (int l) : _lineno (l) {}
 
     virtual ptr<expr_list_t> args () const = 0;
     virtual str name () const = 0;
@@ -93,6 +89,47 @@ namespace pub3 {
 
   protected:
     int _lineno;
+  };
+
+  //-----------------------------------------------------------------------
+
+  //
+  // rfn_factory: runtime function factory
+  //
+  //  allocates runtime functions.  OKWS core supports some of them
+  //  but specific okws instances are welcome to support more.  
+  //  details still uncertain, but it will most likely involve
+  //  local changes to pubd (via dynamic loading?) and also changes
+  //  to specific services -- similar to the Apache module system...
+  //
+  class rfn_factory_t {
+  public:
+    rfn_factory_t () {}
+    virtual ~rfn_factory_t () {}
+
+    virtual ptr<runtime_fn_t>
+    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err) = 0;
+
+    ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
+
+
+    // Access the singleton runtime function factory; by default
+    // it's set to a null factory, but can be explanded any which
+    // way.
+    static ptr<rfn_factory_t> _curr;
+    static void set (ptr<rfn_factory_t> f);
+    static ptr<rfn_factory_t> get ();
+  };
+
+  //-----------------------------------------------------------------------
+
+  class null_fn_factory_t : public rfn_factory_t {
+  public:
+
+    ptr<runtime_fn_t>
+    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err) 
+    { return NULL; }
+
   };
 
   //-----------------------------------------------------------------------

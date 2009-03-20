@@ -77,7 +77,7 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     r = New refcounted<pub3::expr_NOT_t> (*x.xnot);
     break;
   case XPUB3_EXPR_FN:
-    r = pub3::runtime_fn_t::alloc (*x.fn);
+    r = pub3::rfn_factory_t::get ()->alloc (*x.fn);
     break;
   case XPUB3_EXPR_RELATION:
     r = New refcounted<pub3::expr_relation_t> (*x.relation);
@@ -130,7 +130,7 @@ pub3::expr_NOT_t::expr_NOT_t (const xpub3_not_t &x)
 
 
 ptr<pub3::runtime_fn_t>
-pub3::runtime_fn_t::alloc (const xpub3_fn_t &x)
+pub3::rfn_factory_t::alloc (const xpub3_fn_t &x)
 {
   return alloc (x.name, expr_t::alloc (x.args), x.lineno, NULL);
 }
