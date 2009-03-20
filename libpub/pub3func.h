@@ -100,6 +100,8 @@ namespace pub3 {
   public:
     error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)
       : runtime_fn_t (n, a, l), _err (err) {}
+
+    ptr<const pval_t> eval_as_pval (eval_t *e) const;
   protected:
     str _err;
   };

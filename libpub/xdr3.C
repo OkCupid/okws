@@ -160,37 +160,37 @@ pub3::expr_t::alloc (const xpub3_expr_list_t *x)
 //-----------------------------------------------------------------------
 
 pub3::expr_dictref_t::expr_dictref_t (const xpub3_dictref_t &x)
-  : _dict (expr_t::alloc (x.dict)),
-    _key (x.key),
-    _lineno (x.lineno) {}
+  : expr_t (x.lineno),
+    _dict (expr_t::alloc (x.dict)),
+    _key (x.key) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
-  : _vec (expr_t::alloc (x.vec)),
-    _index (expr_t::alloc (x.index)),
-    _lineno (x.lineno) {}
+  : expr_t (x.lineno),
+    _vec (expr_t::alloc (x.vec)),
+    _index (expr_t::alloc (x.index)) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_ref_t::expr_ref_t (const xpub3_ref_t &x)
-  : _name (x.key), _lineno (x.lineno) {}
+  : expr_t (x.lineno), _name (x.key) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_relation_t::expr_relation_t (const xpub3_relation_t &x)
-  : _l  (expr_t::alloc (x.left)),
+  : expr_logical_t (x.lineno),
+    _l  (expr_t::alloc (x.left)),
     _r  (expr_t::alloc (x.right)),
-    _op (x.relop),
-    _lineno (x.lineno) {}
+    _op (x.relop) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_EQ_t::expr_EQ_t (const xpub3_eq_t &x)
-  : _o1  (expr_t::alloc (x.o1)),
+  : expr_logical_t (x.lineno),
+    _o1  (expr_t::alloc (x.o1)),
     _o2  (expr_t::alloc (x.o2)),
-    _pos (x.pos),
-    _lineno (x.lineno) {}
+    _pos (x.pos) {}
 
 //-----------------------------------------------------------------------
 

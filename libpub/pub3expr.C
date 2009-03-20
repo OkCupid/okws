@@ -5,7 +5,7 @@
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_OR_t::eval_as_bool (penv_t *e) const
+pub3::expr_OR_t::eval_as_bool (eval_t *e) const
 {
   return ((_t1 && _t1->eval_as_bool (e)) || (_t2 && _t2->eval_as_bool (e)));
 }
@@ -13,7 +13,7 @@ pub3::expr_OR_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_AND_t::eval_as_bool (penv_t *e) const
+pub3::expr_AND_t::eval_as_bool (eval_t *e) const
 {
   return ((_f1 && _f1->eval_as_bool (e)) && (_f2 && _f2->eval_as_bool (e)));
 }
@@ -21,7 +21,7 @@ pub3::expr_AND_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 scalar_obj_t
-pub3::expr_logical_t::eval_as_scalar (penv_t *e) const
+pub3::expr_logical_t::eval_as_scalar (eval_t *e) const
 {
   scalar_obj_t o;
   o.set (eval_as_int (e));
@@ -31,7 +31,7 @@ pub3::expr_logical_t::eval_as_scalar (penv_t *e) const
 //-----------------------------------------------------------------------
 
 str
-pub3::expr_logical_t::eval_as_str (penv_t *e) const
+pub3::expr_logical_t::eval_as_str (eval_t *e) const
 {
   bool b = eval_as_bool (e);
   return b ? "True" : "False";
@@ -40,7 +40,7 @@ pub3::expr_logical_t::eval_as_str (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_EQ_t::eval_as_bool (penv_t *e) const
+pub3::expr_EQ_t::eval_as_bool (eval_t *e) const
 {
   int flip = _pos ? 0 : 1;
   int tmp;
@@ -62,7 +62,7 @@ pub3::expr_EQ_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_relation_t::eval_as_bool (penv_t *e) const
+pub3::expr_relation_t::eval_as_bool (eval_t *e) const
 {
   bool ret = false;
   if (_l && !_l->is_null (e) && _r && !_r->is_null (e)) {
@@ -82,7 +82,7 @@ pub3::expr_relation_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_NOT_t::eval_as_bool (penv_t *e) const
+pub3::expr_NOT_t::eval_as_bool (eval_t *e) const
 {
   bool ret = true;
   if (_e) ret = !(_e->eval_as_bool (e));
@@ -92,7 +92,7 @@ pub3::expr_NOT_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const pval_t>
-pub3::expr_dictref_t::eval_as_pval (penv_t *e) const
+pub3::expr_dictref_t::eval_as_pval (eval_t *e) const
 {
   ptr<const aarr_t> d;
   ptr<const pval_t> v;
@@ -105,7 +105,7 @@ pub3::expr_dictref_t::eval_as_pval (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const pval_t>
-pub3::expr_vecref_t::eval_as_pval (penv_t *e) const
+pub3::expr_vecref_t::eval_as_pval (eval_t *e) const
 {
   ptr<const parr_mixed_t> v;
   ptr<const pval_t> r;
@@ -122,7 +122,7 @@ pub3::expr_vecref_t::eval_as_pval (penv_t *e) const
 //-----------------------------------------------------------------------
 
 scalar_obj_t
-pub3::expr_t::eval_as_scalar (penv_t *e) const
+pub3::expr_t::eval_as_scalar (eval_t *e) const
 {
   scalar_obj_t so;
   ptr<const pval_t> v = eval_as_pval (e);
@@ -136,7 +136,7 @@ pub3::expr_t::eval_as_scalar (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_t::eval_as_bool (penv_t *e) const
+pub3::expr_t::eval_as_bool (eval_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
   return so.to_bool ();
@@ -145,7 +145,7 @@ pub3::expr_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 int64_t
-pub3::expr_t::eval_as_int (penv_t *e) const
+pub3::expr_t::eval_as_int (eval_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
   return so.to_int64 ();
@@ -154,7 +154,7 @@ pub3::expr_t::eval_as_int (penv_t *e) const
 //-----------------------------------------------------------------------
 
 u_int64_t
-pub3::expr_t::eval_as_uint (penv_t *e) const
+pub3::expr_t::eval_as_uint (eval_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
   return so.to_uint64 ();
@@ -163,7 +163,7 @@ pub3::expr_t::eval_as_uint (penv_t *e) const
 //-----------------------------------------------------------------------
 
 str
-pub3::expr_t::eval_as_str (penv_t *e) const
+pub3::expr_t::eval_as_str (eval_t *e) const
 {
   scalar_obj_t so = eval_as_scalar (e);
   return so.to_str ();
@@ -172,7 +172,7 @@ pub3::expr_t::eval_as_str (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_t::is_null (penv_t *e) const
+pub3::expr_t::is_null (eval_t *e) const
 {
   return eval_as_pval (e) == NULL;
 }
@@ -180,7 +180,7 @@ pub3::expr_t::is_null (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const aarr_t>
-pub3::expr_t::eval_as_dict (penv_t *e) const
+pub3::expr_t::eval_as_dict (eval_t *e) const
 {
   ptr<const aarr_arg_t> r;
   ptr<const pval_t> v;
@@ -192,7 +192,7 @@ pub3::expr_t::eval_as_dict (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const parr_mixed_t>
-pub3::expr_t::eval_as_vec (penv_t *e) const
+pub3::expr_t::eval_as_vec (eval_t *e) const
 {
   ptr<const parr_mixed_t> r;
   ptr<const pval_t> v;
@@ -203,15 +203,28 @@ pub3::expr_t::eval_as_vec (penv_t *e) const
 
 //-----------------------------------------------------------------------
 
-ptr<const pval_t>
-pub3::expr_ref_t::eval_as_pval (penv_t *e) const
+void
+pub3::expr_t::report_error (eval_t *e, str msg) const
 {
-  const pval_t *v = e->lookup (_name, false);
+  penv_t *env = e->penv ();
+  output_t *out = e->output ();
+  env->setlineno (_lineno);
+  env->warning (msg);
+  out->output_err (env, msg);
+  env->unsetlineno ();
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::expr_ref_t::eval_as_pval (eval_t *e) const
+{
+  penv_t *env = e->penv ();
+  const pval_t *v = env->lookup (_name, false);
   ptr<const pval_t> ret;
-  if (!v && e->debug ()) {
-    e->setlineno (_lineno);
-    e->warning (strbuf ("cannot resolve variable: " ) << _name.cstr ());
-    e->unsetlineno ();
+  if (!v && env->debug ()) {
+    strbuf b ("cannot resolve variable: '%s'", _name.cstr ());
+    report_error (e, b);
   } else {
     ret = mkref (v);
   }
@@ -221,7 +234,7 @@ pub3::expr_ref_t::eval_as_pval (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_str_t::eval_as_bool (penv_t *e) const
+pub3::expr_str_t::eval_as_bool (eval_t *e) const
 {
   return (_val && _val.len ());
 }
@@ -229,7 +242,7 @@ pub3::expr_str_t::eval_as_bool (penv_t *e) const
 //-----------------------------------------------------------------------
 
 int64_t
-pub3::expr_str_t::eval_as_int (penv_t *e) const
+pub3::expr_str_t::eval_as_int (eval_t *e) const
 {
   int64_t ret = 0;
   if (_val)
@@ -240,7 +253,7 @@ pub3::expr_str_t::eval_as_int (penv_t *e) const
 //-----------------------------------------------------------------------
 
 str
-pub3::expr_str_t::eval_as_str (penv_t *e) const
+pub3::expr_str_t::eval_as_str (eval_t *e) const
 {
   return _val;
 }
@@ -248,7 +261,7 @@ pub3::expr_str_t::eval_as_str (penv_t *e) const
 //-----------------------------------------------------------------------
 
 scalar_obj_t
-pub3::expr_str_t::eval_as_scalar (penv_t *e) const
+pub3::expr_str_t::eval_as_scalar (eval_t *e) const
 {
   return scalar_obj_t (_val);
 }
@@ -256,7 +269,7 @@ pub3::expr_str_t::eval_as_scalar (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const pval_t>
-pub3::expr_str_t::eval_as_pval (penv_t *e) const
+pub3::expr_str_t::eval_as_pval (eval_t *e) const
 {
   return New refcounted<pub_scalar_t> (eval_as_scalar (e));
 }
@@ -264,7 +277,7 @@ pub3::expr_str_t::eval_as_pval (penv_t *e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_str_t::is_null (penv_t *e) const
+pub3::expr_str_t::is_null (eval_t *e) const
 {
   return !_val;
 }
@@ -272,7 +285,7 @@ pub3::expr_str_t::is_null (penv_t *e) const
 //-----------------------------------------------------------------------
 
 scalar_obj_t
-pub3::expr_int_t::eval_as_scalar (penv_t *e) const
+pub3::expr_int_t::eval_as_scalar (eval_t *e) const
 {
   scalar_obj_t so;
   so.set (_val);
@@ -282,7 +295,7 @@ pub3::expr_int_t::eval_as_scalar (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const pval_t>
-pub3::expr_int_t::eval_as_pval (penv_t *e) const
+pub3::expr_int_t::eval_as_pval (eval_t *e) const
 {
   return New refcounted<pub_scalar_t> (eval_as_scalar (e));
 }
@@ -290,7 +303,7 @@ pub3::expr_int_t::eval_as_pval (penv_t *e) const
 //-----------------------------------------------------------------------
 
 scalar_obj_t
-pub3::expr_double_t::eval_as_scalar (penv_t *e) const
+pub3::expr_double_t::eval_as_scalar (eval_t *e) const
 {
   scalar_obj_t so;
   so.set (_val);
@@ -300,7 +313,7 @@ pub3::expr_double_t::eval_as_scalar (penv_t *e) const
 //-----------------------------------------------------------------------
 
 ptr<const pval_t>
-pub3::expr_double_t::eval_as_pval (penv_t *e) const
+pub3::expr_double_t::eval_as_pval (eval_t *e) const
 {
   return New refcounted<pub_scalar_t> (eval_as_scalar (e)); 
 }
