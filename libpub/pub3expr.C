@@ -1,6 +1,7 @@
 
 #include "pub3expr.h"
 #include "parseopt.h"
+#include "okformat.h"
 
 //-----------------------------------------------------------------------
 

@@ -12,8 +12,8 @@ pub3::for_t::to_xdr (xpub_obj_t *x) const
   x->forloop->lineno = lineno;
   x->forloop->iter = _iter;
   x->forloop->arr = _arr;
-  if (_env && _env->sec ()) {
-    _env->sec ()->to_xdr (&x->forloop->body);
+  if (_env) {
+    _env->to_xdr (&x->forloop->body);
   }
   if (_empty && _empty->sec ()) {
     _empty->sec ()->to_xdr (&x->forloop->empty);
@@ -398,4 +398,33 @@ pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::cond_clause_t::to_xdr (xpub3_cond_clause_t *x) const
+{
+  x->lineno = _lineno;
 
+  if (_expr) { _expr->to_xdr (&x->expr); } 
+  else { x->expr.set_typ (XPUB3_EXPR_NULL); }
+
+  if (_env) { _env->to_xdr (&x->body); }
+
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::cond_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB_COND);
+  x->cond->lineno = lineno;
+
+  size_t s = _clauses ? _clauses->size () : size_t (0);
+  x->cond->clauses.setsize (s);
+  for (size_t i = 0; i < s; i++) {
+    (*_clauses)[i]->to_xdr (&x->cond->clauses[i]);
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------

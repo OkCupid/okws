@@ -228,6 +228,7 @@ p3_cond_clause: '(' p3_expr ')' nested_env
 	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
 	    c->add_expr ($2);
 	    c->add_env ($4);
+	    $$ = c;
 	 }
 	 ;
 

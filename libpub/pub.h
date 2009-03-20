@@ -1538,6 +1538,7 @@ public:
   const pfile_sec_t *sec () const { return _sec; }
   void output (output_t *o, penv_t *e) const;
   static ptr<nested_env_t> alloc (const xpub_section_t &s);
+  bool to_xdr (xpub_section_t *x) const;
 
   // For pub2
   void publish (pub2_iface_t *i, output_t *o, penv_t *g, xpub_status_cb_t cb,

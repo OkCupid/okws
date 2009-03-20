@@ -120,7 +120,30 @@ pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 {
   tvars {
     xpub_status_t res (XPUB_STATUS_OK);
+    size_t len;
+    size_t i;
+    ptr<const pub3::expr_t> expr;
+    bool found (false);
+    pub3::eval_t eval (e, o);
+    ptr<pub3::cond_clause_t> clause;
+    ptr<nested_env_t> env;
   }
+
+  len = _clauses ? _clauses->size () : size_t (0) ;
+
+  for (i = 0; !found && i < len; i++) {
+
+    if ((clause = (*_clauses)[i]) &&
+	(expr = clause->expr ()) &&
+	expr->eval_as_bool (&eval)) {
+
+      found = true;
+      if ((env = clause->env ())) {
+	twait { env->publish (iface, o, e, mkevent (res)); }
+      }
+    }
+  }
+
   (*callercv) (res);
 }
 

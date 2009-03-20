@@ -7,7 +7,7 @@ namespace rfn1 {
 
   std_factory_t::std_factory_t ()
   {
-    _tab.insert ("random", &random_t::constructor);
+    _tab.insert ("rand", &random_t::constructor);
   }
 
   //-----------------------------------------------------------------------

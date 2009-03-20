@@ -28,6 +28,8 @@
 
 #define DISABLE_GZIP -2
 
+//-----------------------------------------------------------------------
+
 void
 zstr_to_xdr (const zstr &z, xpub_zstr_t *x, int l)
 {
@@ -37,12 +39,16 @@ zstr_to_xdr (const zstr &z, xpub_zstr_t *x, int l)
   x->clev = l;
 }
 
+//-----------------------------------------------------------------------
+
 zstr
 xdr_to_zstr (const xpub_zstr_t &x)
 {
   str zs (x.zs.base (), x.zs.size ()); // XXX memcpy -- ineffecient
   return zstr (x.s, zs, x.clev);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_html_sec_t::to_xdr (xpub_section_t *x) const
@@ -61,6 +67,8 @@ pfile_html_sec_t::to_xdr (xpub_section_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pfile_html_sec_t::pfile_html_sec_t (const xpub_section_t &x)
   : pfile_sec_t (x.lineno)
 {
@@ -68,6 +76,8 @@ pfile_html_sec_t::pfile_html_sec_t (const xpub_section_t &x)
   for (size_t i = 0; i < lim; i++) 
     pfile_sec_t::add (pfile_el_t::alloc (x.els[i]));
 }
+
+//-----------------------------------------------------------------------
 
 pfile_sec_t::pfile_sec_t (const xpub_section_t &x)
   : lineno (x.lineno)
@@ -77,6 +87,8 @@ pfile_sec_t::pfile_sec_t (const xpub_section_t &x)
   for (size_t i = 0; i < lim; i++) 
     add (pfile_el_t::alloc (x.els[i]));
 }
+
+//-----------------------------------------------------------------------
 
 pfile_el_t *
 pfile_el_t::alloc (const xpub_obj_t &x) 
@@ -113,6 +125,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_html_el_t::to_xdr (xpub_obj_t *x) const
 {
@@ -120,6 +134,8 @@ pfile_html_el_t::to_xdr (xpub_obj_t *x) const
   zstr_to_xdr (to_zstr (), &x->html_el->data, Z_BEST_COMPRESSION);
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 void 
 pfile_t::to_xdr (xpub_file_t *x) const
@@ -133,6 +149,8 @@ pfile_t::to_xdr (xpub_file_t *x) const
       i++;
 }
 
+//-----------------------------------------------------------------------
+
 void
 pfile_t::init_xdr_opaque () 
 {
@@ -145,11 +163,15 @@ pfile_t::init_xdr_opaque ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 ssize_t
 pfile_t::len () const
 {
   return _xdr_opaque ? ssize_t (_xdr_opaque.len ()) : ssize_t (-1);
 }
+
+//-----------------------------------------------------------------------
 
 ssize_t 
 pfile_t::get_chunk (size_t offset, char *buf, size_t capacity) const
@@ -161,6 +183,8 @@ pfile_t::get_chunk (size_t offset, char *buf, size_t capacity) const
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 pfile_t::pfile_t (const xpub_file_t &x)
   : err (PUBSTAT_OK), hsh (phash_t::alloc (x.hsh)), lineno (1), 
     pft (PFILE_TYPE_H), section (NULL)
@@ -170,6 +194,8 @@ pfile_t::pfile_t (const xpub_file_t &x)
     add_section (New pfile_html_sec_t (x.secs[i]));
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pstr_var_t::to_xdr (xpub_pstr_el_t *x) const
 {
@@ -178,6 +204,8 @@ pstr_var_t::to_xdr (xpub_pstr_el_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pstr_str_t::to_xdr (xpub_pstr_el_t *x) const
 {
@@ -185,6 +213,8 @@ pstr_str_t::to_xdr (xpub_pstr_el_t *x) const
   *x->str = to_str ();
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pstr_t::to_xdr (xpub_pstr_t *x) const 
@@ -198,12 +228,16 @@ pstr_t::to_xdr (xpub_pstr_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pstr_t::to_xdr (xpub_val_t *x) const
 {
   x->set_typ (XPUB_VAL_PSTR);
   return to_xdr (x->pstr);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_pstr_t::to_xdr (xpub_obj_t *x) const 
@@ -212,6 +246,8 @@ pfile_pstr_t::to_xdr (xpub_obj_t *x) const
   pstr->to_xdr (&x->file_pstr->pstr);
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_switch_t::to_xdr (xpub_obj_t *x) const
@@ -236,9 +272,13 @@ pfile_switch_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pfile_switch_t::~pfile_switch_t ()
 {
 }
+
+//-----------------------------------------------------------------------
 
 pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
   pfile_func_t (x.lineno), err (false), def (NULL), 
@@ -270,6 +310,8 @@ pfile_switch_t::pfile_switch_t (const xpub_switch_t &x) :
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pswitch_env_exact_t::to_xdr (xpub_switch_env_union_t *u) const
 {
@@ -279,6 +321,8 @@ pswitch_env_exact_t::to_xdr (xpub_switch_env_union_t *u) const
   return to_xdr_base (&x->base);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pswitch_env_nullkey_t::to_xdr (xpub_switch_env_union_t *u) const
 {
@@ -286,6 +330,8 @@ pswitch_env_nullkey_t::to_xdr (xpub_switch_env_union_t *u) const
   xpub_switch_env_nullkey_t *x = u->nullkey;
   return to_xdr_base (&x->base);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pswitch_env_rxx_t::to_xdr (xpub_switch_env_union_t *u) const
@@ -298,6 +344,8 @@ pswitch_env_rxx_t::to_xdr (xpub_switch_env_union_t *u) const
   return to_xdr_base (&x->base);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pswitch_env_range_t::to_xdr (xpub_switch_env_union_t *u) const
 {
@@ -308,6 +356,8 @@ pswitch_env_range_t::to_xdr (xpub_switch_env_union_t *u) const
   }
   return to_xdr_base (&x->base);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pswitch_env_base_t::to_xdr_base (xpub_switch_env_base_t *x) const
@@ -327,13 +377,19 @@ pswitch_env_base_t::to_xdr_base (xpub_switch_env_base_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pswitch_env_exact_t::pswitch_env_exact_t (const xpub_switch_env_exact_t &x)
   : pswitch_env_base_t (x.base),
     _key (x.key) {}
 
+//-----------------------------------------------------------------------
+
 pswitch_env_nullkey_t::pswitch_env_nullkey_t 
 (const xpub_switch_env_nullkey_t &x)
   : pswitch_env_base_t (x.base) {}
+
+//-----------------------------------------------------------------------
 
 pswitch_env_rxx_t::pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x)
   : pswitch_env_base_t (x.base),
@@ -346,16 +402,22 @@ pswitch_env_rxx_t::pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x)
   }
 }
 
+//-----------------------------------------------------------------------
+
 pswitch_env_range_t::pswitch_env_range_t (const xpub_switch_env_range_t &x)
   : pswitch_env_base_t (x.base),
     _range (pub_range_t::alloc (x.range))
 {}
+
+//-----------------------------------------------------------------------
 
 pswitch_env_base_t::pswitch_env_base_t (const xpub_switch_env_base_t &x)
   : fn (x.body.typ == XPUB_SWITCH_FILE ? str (*x.body.fn) : sNULL), 
     aarr (New refcounted<aarr_arg_t> (x.aarr)),
     _nested_env (x.body.typ == XPUB_SWITCH_NESTED_ENV ?
 		 nested_env_t::alloc (*x.body.sec) : NULL) {}
+
+//-----------------------------------------------------------------------
 
 ptr<pswitch_env_base_t>
 pswitch_env_base_t::alloc (const xpub_switch_env_union_t &x)
@@ -381,6 +443,8 @@ pswitch_env_base_t::alloc (const xpub_switch_env_union_t &x)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pub_regex_t::to_xdr (xpub_regex_t *x) const
 {
@@ -389,11 +453,17 @@ pub_regex_t::to_xdr (xpub_regex_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pub_regex_t::pub_regex_t (const xpub_regex_t &x) 
   : _rxx_str (x.rxx), _opts (x.opts) {}
 
+//-----------------------------------------------------------------------
+
 pub_irange_t::pub_irange_t (const xpub_irange_t &x)
   : _low (x.low), _hi (x.hi) {}
+
+//-----------------------------------------------------------------------
 
 ptr<nested_env_t>
 nested_env_t::alloc (const xpub_section_t &s)
@@ -401,12 +471,16 @@ nested_env_t::alloc (const xpub_section_t &s)
   return New refcounted<nested_env_t> (New pfile_html_sec_t (s));
 }
 
+//-----------------------------------------------------------------------
+
 static void
 nvpair_to_xdr (xpub_aarr_t *x, size_t *i, const nvpair_t &n) 
 {
   if (n.to_xdr (&x->tab[*i]))
     (*i)++;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 nvpair_t::to_xdr (xpub_nvpair_t *x) const
@@ -417,8 +491,12 @@ nvpair_t::to_xdr (xpub_nvpair_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 nvpair_t::nvpair_t (const xpub_nvpair_t &x) 
   : nm (x.key), val (pval_t::alloc (x.val)) {}
+
+//-----------------------------------------------------------------------
 
 ptr<pval_t>
 pval_t::alloc (const xpub_val_t &x) 
@@ -438,6 +516,8 @@ pval_t::alloc (const xpub_val_t &x)
     return NULL;
   }
 }
+
+//-----------------------------------------------------------------------
 
 ptr<parr_ival_t>
 parr_ival_t::alloc (const xpub_parr_t &x)
@@ -460,12 +540,16 @@ parr_ival_t::alloc (const xpub_parr_t &x)
   return NULL;
 }
 
+//-----------------------------------------------------------------------
+
 parr_mixed_t::parr_mixed_t (const xpub_parr_mixed_t &x)
 {
   size_t lim = x.size ();
   for (size_t i = 0; i < lim; i++)
     v.push_back (pval_t::alloc (x[i]));
 }
+
+//-----------------------------------------------------------------------
 
 bool
 parr_mixed_t::to_xdr (xpub_val_t *x) const
@@ -478,6 +562,8 @@ parr_mixed_t::to_xdr (xpub_val_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 
 bool
 pval_null_t::to_xdr (xpub_val_t *x) const
@@ -486,6 +572,8 @@ pval_null_t::to_xdr (xpub_val_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pint_t::to_xdr (xpub_val_t *x) const
 {
@@ -493,6 +581,8 @@ pint_t::to_xdr (xpub_val_t *x) const
   *x->i = val;
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 aarr_t::to_xdr (xpub_aarr_t *x) const
@@ -503,6 +593,8 @@ aarr_t::to_xdr (xpub_aarr_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 aarr_t::aarr_t (const xpub_aarr_t &x)
 {
   size_t lim = x.tab.size ();
@@ -511,6 +603,8 @@ aarr_t::aarr_t (const xpub_aarr_t &x)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 pfile_include_t::to_xdr_base (xpub_obj_t *x) const
 {
@@ -518,6 +612,8 @@ pfile_include_t::to_xdr_base (xpub_obj_t *x) const
     env->aarr_t::to_xdr (&x->include->env);
   x->include->lineno = lineno;
 }
+
+//-----------------------------------------------------------------------
 
 bool 
 pfile_include_t::to_xdr (xpub_obj_t *x) const
@@ -541,17 +637,23 @@ pfile_include2_t::to_xdr_base2 (xpub_obj_t *x, xpub_obj_typ_t typ) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_include2_t::to_xdr (xpub_obj_t *x) const
 {
   return to_xdr_base2 (x, XPUB_INCLUDE2);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_load_t::to_xdr (xpub_obj_t *x) const 
 {
   return to_xdr_base2 (x, XPUB_LOAD);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_inclist_t::to_xdr (xpub_obj_t *x) const
@@ -564,6 +666,8 @@ pfile_inclist_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pfile_include_t::pfile_include_t (const xpub_include_t &x)
   : pfile_func_t (x.lineno), err (false),
     env (New refcounted<aarr_arg_t> (x.env))
@@ -575,6 +679,8 @@ pfile_include_t::pfile_include_t (const xpub_include_t &x)
     err = true;
   }
 }
+
+//-----------------------------------------------------------------------
 
 pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
   : pfile_include_t (x.lineno, New refcounted<aarr_arg_t> (x.env))
@@ -592,6 +698,8 @@ pfile_include2_t::pfile_include2_t (const xpub_include_t &x)
 pfile_load_t::pfile_load_t (const xpub_include_t &x)
   : pfile_include2_t (x) {}
 
+//-----------------------------------------------------------------------
+
 pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
   : pfile_func_t (x.lineno), err (false)
 {
@@ -600,11 +708,15 @@ pfile_inclist_t::pfile_inclist_t (const xpub_inclist_t &x)
     files.push_back (x.files[i]);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_set_func_t::to_xdr (xpub_obj_t *x) const
 {
   return to_xdr_common (x, XPUB_SET_FUNC);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_set_func_t::to_xdr_common (xpub_obj_t *x, xpub_obj_typ_t typ) const 
@@ -616,16 +728,22 @@ pfile_set_func_t::to_xdr_common (xpub_obj_t *x, xpub_obj_typ_t typ) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_set_local_func_t::to_xdr (xpub_obj_t *x) const
 { 
   return to_xdr_common (x, XPUB_SET_LOCAL_FUNC);
 }
 
+//-----------------------------------------------------------------------
+
 pfile_set_func_t::pfile_set_func_t (const xpub_set_func_t &x)
   : pfile_func_t (x.lineno), err (false),
     aarr (New refcounted<aarr_arg_t> (x.aarr)),
     env (NULL) {}
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_var_t::to_xdr (xpub_obj_t *x) const
@@ -636,8 +754,12 @@ pfile_var_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pfile_var_t::pfile_var_t (const xpub_file_var_t &x)
   : var (New refcounted<pvar_t> (x.var)), lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
 
 pstr_t::pstr_t (const xpub_pstr_t &x) : n (0)
 {
@@ -645,6 +767,8 @@ pstr_t::pstr_t (const xpub_pstr_t &x) : n (0)
   for (size_t i = 0; i < lim; i++)
     add (pstr_el_t::alloc (x.els[i]));
 }
+
+//-----------------------------------------------------------------------
 
 pstr_el_t *
 pstr_el_t::alloc (const xpub_pstr_el_t &x)
@@ -659,12 +783,16 @@ pstr_el_t::alloc (const xpub_pstr_el_t &x)
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 parr_int_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_INT);
   return parr_ival_tmplt_t<int>::to_xdr (x->intarr.addr ());
 }
+
+//-----------------------------------------------------------------------
 
 bool
 parr_char_t::to_xdr (xpub_parr_t *x) const
@@ -678,12 +806,16 @@ parr_char_t::to_xdr (xpub_parr_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 parr_int16_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_INT16);
   return parr_ival_tmplt_t<int16_t>::to_xdr (x->int16arr.addr ());
 }
+
+//-----------------------------------------------------------------------
 
 bool
 parr_uint16_t::to_xdr (xpub_parr_t *x) const
@@ -692,6 +824,8 @@ parr_uint16_t::to_xdr (xpub_parr_t *x) const
   return parr_ival_tmplt_t<u_int16_t>::to_xdr (x->uint16arr.addr ());
 }
 
+//-----------------------------------------------------------------------
+
 bool
 parr_uint_t::to_xdr (xpub_parr_t *x) const
 {
@@ -699,12 +833,16 @@ parr_uint_t::to_xdr (xpub_parr_t *x) const
   return parr_ival_tmplt_t<u_int>::to_xdr (x->uintarr.addr ());
 }
 
+//-----------------------------------------------------------------------
+
 bool
 parr_int64_t::to_xdr (xpub_parr_t *x) const
 {
   x->set_typ (XPUB_INT64);
   return parr_ival_tmplt_t<int64_t>::to_xdr (x->hyperarr.addr ());
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_raw_el_t::to_xdr (xpub_obj_t *x) const
@@ -717,6 +855,8 @@ pfile_raw_el_t::to_xdr (xpub_obj_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pub_irange_t::to_xdr (xpub_range_t *out)
 {
@@ -726,11 +866,15 @@ pub_irange_t::to_xdr (xpub_range_t *out)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 static double 
 cnv_double (const x_double_t &x)
 {
   return (double)x.n / (double)x.d ;
 }
+
+//-----------------------------------------------------------------------
 
 void
 cnv_double (double in, x_double_t *out)
@@ -742,6 +886,8 @@ cnv_double (double in, x_double_t *out)
   out->n = n;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pub_drange_t::to_xdr (xpub_range_t *out)
 {
@@ -750,6 +896,8 @@ pub_drange_t::to_xdr (xpub_range_t *out)
   cnv_double (_hi, &out->dr->hi);
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pub_urange_t::to_xdr (xpub_range_t *out)
@@ -760,11 +908,17 @@ pub_urange_t::to_xdr (xpub_range_t *out)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 pub_urange_t::pub_urange_t (const xpub_urange_t &in)
   : _low (in.low), _hi (in.hi) {}
 
+//-----------------------------------------------------------------------
+
 pub_drange_t::pub_drange_t (const xpub_drange_t &in)
   : _low (cnv_double (in.low)), _hi (cnv_double (in.hi)) {}
+
+//-----------------------------------------------------------------------
 
 ptr<pub_range_t>
 pub_range_t::alloc (const xpub_range_t &xpr)
@@ -782,6 +936,18 @@ pub_range_t::alloc (const xpub_range_t &xpr)
     break;
   default:
     break;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+nested_env_t::to_xdr (xpub_section_t *x) const
+{
+  bool ret = false;
+  if (_sec) {
+    ret = _sec->to_xdr (x);
   }
   return ret;
 }

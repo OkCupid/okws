@@ -47,6 +47,11 @@ namespace pub3 {
     void add_expr (ptr<expr_t> e) { _expr = e; }
     void add_env (ptr<nested_env_t> e) { _env = e; }
 
+    bool to_xdr (xpub3_cond_clause_t *x) const;
+
+    ptr<const expr_t> expr () const { return _expr; }
+    ptr<nested_env_t> env () const { return _env; }
+
   private:
     int _lineno;
     ptr<expr_t> _expr;
@@ -66,7 +71,7 @@ namespace pub3 {
 
     void add_clauses (ptr<cond_clause_list_t> c) { _clauses = c; }
     str get_obj_name () const { return "pub3::cond_t"; }
-    bool to_xdr (xpub_obj_t *x) const { return false; }
+    bool to_xdr (xpub_obj_t *x) const;
     void publish (pub2_iface_t *, output_t *, penv_t *, 
 		  xpub_status_cb_t , CLOSURE) const;
     bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
