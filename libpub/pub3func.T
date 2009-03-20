@@ -165,6 +165,7 @@ namespace pub3 {
   ptr<const pval_t>
   error_fn_t::eval_as_pval (eval_t *e) const
   {
+    report_error (e, _err);
     return NULL;
   }
 

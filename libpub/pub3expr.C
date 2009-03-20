@@ -96,8 +96,13 @@ pub3::expr_dictref_t::eval_as_pval (eval_t *e) const
 {
   ptr<const aarr_t> d;
   ptr<const pval_t> v;
-  if (_dict && (d = _dict->eval_as_dict (e))) {
-    v = d->lookup_ptr (_key);
+  if (!_dict) {
+    report_error (e, "dict reference into NULL");
+  } else if (!(d = _dict->eval_as_dict (e))) {
+    report_error (e, "dict reference into non-dict");
+  } else if (!(v = d->lookup_ptr (_key))) {
+    strbuf b ("cannot resolve key '%s'", _key.cstr ());
+    report_error (e, b);
   }
   return v;
 }
