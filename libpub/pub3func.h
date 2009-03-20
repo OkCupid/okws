@@ -96,6 +96,16 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class error_fn_t : public runtime_fn_t {
+  public:
+    error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)
+      : runtime_fn_t (n, a, l), _err (err) {}
+  protected:
+    str _err;
+  };
+
+  //-----------------------------------------------------------------------
+
   //
   // rfn_factory: runtime function factory
   //
@@ -114,7 +124,6 @@ namespace pub3 {
     alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err) = 0;
 
     ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
-
 
     // Access the singleton runtime function factory; by default
     // it's set to a null factory, but can be explanded any which

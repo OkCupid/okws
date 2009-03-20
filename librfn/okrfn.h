@@ -14,7 +14,7 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   typedef ptr<runtime_fn_t> (*constructor_t) 
-  (const str &n, ptr<expr_list_t> l, int lineno, str *err);
+  (const str &n, ptr<expr_list_t> l, int line, str *err);
 
   //-----------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ namespace rfn1 {
     std_factory_t ();
 
     ptr<runtime_fn_t>
-    alloc (const str &s, ptr<expr_list_t> l, int lineno, str *err);
+    alloc (const str &s, ptr<expr_list_t> l, int lineno);
 
     qhash<str, constructor_t> _tab;
 

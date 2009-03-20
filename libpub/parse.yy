@@ -647,12 +647,7 @@ p3_postfix_expr:
            } 
 	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
-	      str s;
-	      $$ = pub3::rfn_factory_t::get ()->alloc ($1, $3, PLINENO, &s);
-	      if (!$$) {
-	         PWARN(s);
-		 PARSEFAIL;
-	      }
+	      $$ = New refcounted<pub3::runtime_fn_t> ($1, $3, PLINENO);
            } 
 	   ;
 
