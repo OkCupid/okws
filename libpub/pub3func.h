@@ -80,14 +80,17 @@ namespace pub3 {
 
   class runtime_fn_t : public expr_t {
   public:
-    runtime_fn_t (int l) : _lineno (l) {}
+    runtime_fn_t (const str &n, ptr<expr_list_t> a, int l) 
+      : _name (n), _arglist (a), _lineno (l) {}
 
-    virtual ptr<expr_list_t> args () const = 0;
-    virtual str name () const = 0;
+    ptr<expr_list_t> args () const { return _arglist; }
+    str name () const { return _name; }
 
     bool to_xdr (xpub3_expr_t *x) const;
 
   protected:
+    str _name;
+    ptr<expr_list_t> _arglist;
     int _lineno;
   };
 
