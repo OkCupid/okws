@@ -132,6 +132,10 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     opts |= P_WSS;
   }
 
+  if (cgi.blookup ("viserr")) {
+    opts |= P_VISERR;
+  }
+
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
   in = hdr.get_target ();
