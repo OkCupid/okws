@@ -30,6 +30,13 @@
    </br>}} 
 %}
 
+<h2>Inline List</h2>
+{% for (r, push)
+  {{{% cond (r.last)   {{ and }},
+            (!r.first) {{,}}     %} 
+    ${r.val}}}  
+%} 
+
 <h2>Empty</h2>
  {% for (r, nodice) {{ ${r.notfound} }}, {{Vector was empty!}} %}
 
