@@ -1,0 +1,167 @@
+Index: libpub/scan.ll
+===================================================================
+--- libpub/scan.ll	(revision 4230)
++++ libpub/scan.ll	(working copy)
+@@ -51,7 +51,7 @@
+ 
+ %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
+ %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
+-%x P3 P3_BASE
++%x P3 P3_BASE P3_STR P3_STR_VAR
+ 
+ %%
+ 
+@@ -358,8 +358,19 @@
+ 		}
+ }
+ 
+-<P3>{
++<P3_STR>{
++"${"		{ yy_push_state (P3_STR_VAR); return T_P3_BEGIN_EXPR; }
++\\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
++["]		{ return yytext[0]; }
++[^\\$"]+	{ yylval.str = yytext; return T_P3_STRING; }
++}
+ 
++P3STR_VAR{
++[}]		{ yy_pop_state (); return T_P3_END_EXPR; }
++}
++
++<P3,P3_STR_VAR>{
++
+ \n		{ PLINC; }
+ 
+ [Tt]rue		{ return T_P3_TRUE; }
+@@ -375,7 +386,8 @@
+ !=		{ return T_P3_NEQ; }
+ [<]=		{ return T_P3_LTEQ; }
+ >=		{ return T_P3_GTEQ; }
+-[!=><,[\].+-]	{ return yytext[0]; }
++=>		{ return yytext[0]; }
++[!=><,[\].+:-]	{ return yytext[0]; }
+ [(]		{ yy_push_state (P3); return yytext[0]; }
+ [)]		{ yy_pop_state (); return yytext[0]; }
+ "||"		{ return T_P3_OR; }
+@@ -383,12 +395,11 @@
+ '[^']'		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
+ 
+ [ \t]+		{ /* ignore */ }
+-["] 		{ begin_STR (STR, 0); }
++["] 		{ begin_P3STR (P3_STR); return yytext[0]; }
+ 
+ .		{ return yyerror ("illegal token in Pub v3 environment"); }
+ }
+ 
+-
+ %%
+ 
+ void
+Index: libpub/pub3expr.h
+===================================================================
+--- libpub/pub3expr.h	(revision 4233)
++++ libpub/pub3expr.h	(working copy)
+@@ -54,6 +54,7 @@
+     virtual int64_t eval_as_int (eval_t *e) const;
+     virtual u_int64_t eval_as_uint (eval_t *e) const;
+     virtual str eval_as_str (eval_t *e) const;
++    virtual str eval_as_str () const { return NULL; }
+     virtual scalar_obj_t eval_as_scalar (eval_t *e) const;
+     virtual bool is_null (eval_t *e) const;
+     virtual ptr<const aarr_t> eval_as_dict (eval_t *e) const;
+@@ -235,6 +236,8 @@
+     ptr<const aarr_t> eval_as_dict (eval_t *e) const { return NULL; }
+     ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const { return NULL; }
+ 
++    str eval_as_str () const { return _val; }
++
+     bool to_xdr (xpub3_expr_t *x) const;
+   protected:
+     ptr<const pval_t> eval_as_pval (eval_t *e) const;
+@@ -300,6 +303,24 @@
+ 
+   //-----------------------------------------------------------------------
+ 
++  class expr_shell_str_t : public expr_t {
++  public:
++    expr_shell_str_t (const str &s, int lineno)
++      : expr_t (lineno) 
++    { 
++      _els.push_back (New refcounted<expr_str_t> (s)); 
++    }
++    
++    scalar_obj_t eval_as_scalar (eval_t *e) const;
++    ptr<expr_shell_str_t> compact () const;
++    void add (ptr<expr_t> e);
++
++  protected:
++    vec<ptr<expr_t> > _els;
++  };
++
++  //-----------------------------------------------------------------------
++
+   typedef vec<ptr<expr_t> > expr_list_t;
+ 
+   //-----------------------------------------------------------------------
+Index: libpub/parse.yy
+===================================================================
+--- libpub/parse.yy	(revision 4230)
++++ libpub/parse.yy	(working copy)
+@@ -74,6 +74,8 @@
+ %token T_P3_AND
+ %token T_P3_COND
+ %token T_P3_FALSE
++%token T_P3_BEGIN_EXPR
++%token T_P3_END_EXPR
+ 
+ %token T_P3_FOR
+ %token T_P3_TRUE
+@@ -764,6 +766,48 @@
+ 	;
+ 
+ p3_character_constant: T_P3_CHAR { $$ = $1; };
+-p3_string : T_P3_STRING ;
+ 
++p3_string: '"' p3_string_elements_opt '"'
++        {
++           $$ = $2->compact ();
++	}
++	;
++
++p3_string_elements_opt:
++          /* empty */
++        {
++           $$ = New refcounted<pub3::expr_shell_str_t> ("", PLINENO);
++	}
++	| p3_string_elements
++	{
++	   $$ = $1;
++	}
++	;
++
++p3_string_elements: 
++          p3_string_element 
++        { 
++           $$ = New refcounted<pub3::expr_shell_str_t> ($1, PLINENO);
++	}
++        | p3_string_elements p3_string_element
++	{
++	   $$->add ($2);
++	}
++	;
++
++p3_string_element: 
++          T_P3_STRING { $$ = New refcounted<expr_str_t> ($1); }
++	| T_P3_CHAR 
++	{ 
++	   $$ = New refcounted<expr_str_t> (strbuf ("%c", $1));
++	}
++	|  p3_inline_expr { $$ = $1; }
++	;
++
++p3_inline_expr: 
++        T_P3_BEGIN_EXPR p3_expr T_P3_END_EXPR { $$ = $2; }
++        ;
++	
++		  
++
+ /*----------------------------------------------------------------------- */
