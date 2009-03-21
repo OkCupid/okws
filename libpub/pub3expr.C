@@ -465,3 +465,29 @@ pub3::expr_arithmetic_t::eval_as_pval (eval_t *e) const
 }
 
 //-----------------------------------------------------------------------
+
+ptr<const pval_t> 
+pub3::expr_shell_str_t::eval_as_pval (eval_t *e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar (e));
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_shell_str_t>
+pub3::expr_shell_str_t::compact () const
+{
+  // IMPLEMENT ME!!
+  return NULL;
+}
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t
+pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
+{
+  scalar_obj_t so ("UNIMPLEMENTED -- XXX - IMPLEMENT ME!");
+  return so;
+}
+
+//-----------------------------------------------------------------------

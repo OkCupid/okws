@@ -47,13 +47,14 @@ namespace pub3 {
 
     static void expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x);
 
-    static void expr_to_xdr (const ptr<vec<ptr<expr_t> > > in, 
+    static void expr_to_xdr (const vec<ptr<expr_t> >  *in, 
 			     xpub3_expr_list_t *out);
     
     virtual bool eval_as_bool (eval_t *e) const;
     virtual int64_t eval_as_int (eval_t *e) const;
     virtual u_int64_t eval_as_uint (eval_t *e) const;
     virtual str eval_as_str (eval_t *e) const;
+    virtual str eval_as_str () const { return NULL; }
     virtual scalar_obj_t eval_as_scalar (eval_t *e) const;
     virtual bool is_null (eval_t *e) const;
     virtual ptr<const aarr_t> eval_as_dict (eval_t *e) const;
@@ -235,6 +236,8 @@ namespace pub3 {
     ptr<const aarr_t> eval_as_dict (eval_t *e) const { return NULL; }
     ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const { return NULL; }
 
+    str eval_as_str () const { return _val; }
+
     bool to_xdr (xpub3_expr_t *x) const;
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
@@ -301,6 +304,35 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   typedef vec<ptr<expr_t> > expr_list_t;
+
+  //-----------------------------------------------------------------------
+
+  class expr_shell_str_t : public expr_t {
+  public:
+    expr_shell_str_t (const str &s, int lineno)
+      : expr_t (lineno) 
+    { 
+      _els.push_back (New refcounted<expr_str_t> (s)); 
+    }
+
+    expr_shell_str_t (ptr<expr_t> e, int lineno)
+      : expr_t (lineno)
+    {
+      _els.push_back (e);
+    }
+
+    expr_shell_str_t (const xpub3_shell_str_t &x);
+    
+    ptr<const pval_t> eval_as_pval (eval_t *e) const;
+    scalar_obj_t eval_as_scalar (eval_t *e) const;
+
+    ptr<expr_shell_str_t> compact () const;
+    void add (ptr<expr_t> e) { _els.push_back (e); }
+    bool to_xdr (xpub3_expr_t *x) const;
+
+  protected:
+    expr_list_t _els;
+  };
 
   //-----------------------------------------------------------------------
 

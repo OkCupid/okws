@@ -245,7 +245,7 @@ pub3::expr_t::expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x)
 //-----------------------------------------------------------------------
 
 void
-pub3::expr_t::expr_to_xdr (const ptr<expr_list_t> in, xpub3_expr_list_t *out)
+pub3::expr_t::expr_to_xdr (const expr_list_t *in, xpub3_expr_list_t *out)
 {
   if (in) {
     out->setsize (in->size ());
@@ -454,6 +454,26 @@ pub3::cond_t::to_xdr (xpub_obj_t *x) const
     (*_clauses)[i]->to_xdr (&x->cond->clauses[i]);
   }
   return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_shell_str_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_SHELL_STR);
+  x->shell_str->lineno = _lineno;
+  expr_to_xdr (&_els, &x->shell_str->elements);
+
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_shell_str_t::expr_shell_str_t (const xpub3_shell_str_t &x)
+  : expr_t (x.lineno)
+{
+  // XXX -- Implement me!!
 }
 
 //-----------------------------------------------------------------------

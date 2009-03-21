@@ -349,6 +349,7 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_DICTREF,
    XPUB3_EXPR_VECREF,
    XPUB3_EXPR_REF,
+   XPUB3_EXPR_SHELL_STR,   
    XPUB3_EXPR_STR,
    XPUB3_EXPR_INT,
    XPUB3_EXPR_UINT,
@@ -421,6 +422,11 @@ struct xpub3_ref_t {
    string key<>;
 };
 
+struct xpub3_shell_str_t {
+   int lineno;
+   xpub3_expr_list_t elements;
+};
+
 struct xpub3_str_t {
    string val<>;
 };
@@ -460,6 +466,8 @@ case XPUB3_EXPR_VECREF:
      xpub3_vecref_t vecref;
 case XPUB3_EXPR_REF:
      xpub3_ref_t xref;
+case XPUB3_EXPR_SHELL_STR:
+     xpub3_shell_str_t shell_str;
 case XPUB3_EXPR_STR:
      xpub3_str_t xstr;
 case XPUB3_EXPR_INT:

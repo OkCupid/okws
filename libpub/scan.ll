@@ -9,6 +9,8 @@
 static void begin_PSTR (int i, int mode);
 static void end_PSTR ();
 static void begin_STR (int i, int j);
+static void begin_P3_STR ();
+static void end_P3_STR ();
 static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (const char *c, int l);
@@ -51,7 +53,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
-%x P3 P3_BASE
+%x P3 P3_BASE P3_STR P3_STR_VAR
 
 %%
 
@@ -358,7 +360,20 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		}
 }
 
-<P3>{
+<P3_STR>{
+"${"		{ yy_push_state (P3_STR_VAR); return T_P3_BEGIN_EXPR; }
+\\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
+["]		{ end_P3_STR (); return yytext[0]; }
+[^\\$"]+	{ yylval.str = yytext; return T_P3_STRING; }
+<<EOF>>         { return yyerror (strbuf ("EOF foudnin str started on "
+		  	 	 	  "line %d", yy_ssln)); }
+}
+
+<P3_STR_VAR>{
+[}]		{ yy_pop_state (); return T_P3_END_EXPR; }
+}
+
+<P3,P3_STR_VAR>{
 
 \n		{ PLINC; }
 
@@ -375,7 +390,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 !=		{ return T_P3_NEQ; }
 [<]=		{ return T_P3_LTEQ; }
 >=		{ return T_P3_GTEQ; }
-[!=><,[\].+-]	{ return yytext[0]; }
+=>		{ return yytext[0]; }
+[!=><,[\].+:-]	{ return yytext[0]; }
 [(]		{ yy_push_state (P3); return yytext[0]; }
 [)]		{ yy_pop_state (); return yytext[0]; }
 "||"		{ return T_P3_OR; }
@@ -383,11 +399,10 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 '[^']'		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 
 [ \t]+		{ /* ignore */ }
-["] 		{ begin_STR (STR, 0); }
+["] 		{ begin_P3_STR(); return yytext[0]; }
 
 .		{ return yyerror ("illegal token in Pub v3 environment"); }
 }
-
 
 %%
 
@@ -404,6 +419,19 @@ void
 end_PSTR ()
 {
   yyesc = yy_oldesc;
+  yy_pop_state ();
+}
+
+void
+begin_P3_STR ()
+{
+  yy_push_state (P3_STR);
+  yy_ssln = PLINENO;
+}
+
+void
+end_P3_STR ()
+{
   yy_pop_state ();
 }
 

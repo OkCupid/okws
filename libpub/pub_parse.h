@@ -68,6 +68,7 @@ struct yystype {
   ptr<pub3::cond_clause_t> p3cc;
   ptr<pub3::expr_t> p3expr;
   ptr<pub3::expr_list_t> p3exprlist;
+  ptr<pub3::expr_shell_str_t> p3str;
   bool bl;
   xpub3_relop_t relop;
   double dbl;

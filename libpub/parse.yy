@@ -74,6 +74,8 @@
 %token T_P3_AND
 %token T_P3_COND
 %token T_P3_FALSE
+%token T_P3_BEGIN_EXPR
+%token T_P3_END_EXPR
 
 %token T_P3_FOR
 %token T_P3_TRUE
@@ -91,13 +93,16 @@
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
 %type <p3expr> p3_primary_expr p3_constant p3_additive_expr;
-%type <p3expr> p3_integer_constant;
+%type <p3expr> p3_integer_constant p3_string p3_string_element;
+%type <p3expr> p3_inline_expr;
+%type <p3str>  p3_string_elements_opt p3_string_elements;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
-%type <str> p3_identifier p3_string;
+%type <str> p3_identifier;
 %type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
+
 
 %type <bl> p3_equality_op p3_additive_op;
 
@@ -680,9 +685,9 @@ p3_primary_expr: p3_identifier
 	   { 
 	      $$ = $1;
            }
-	   | p3_string         
+	   | p3_string      
 	   { 
-              $$ = New refcounted<pub3::expr_str_t> ($1);
+              $$ = $1;
 	   }
 	   | '(' p3_expr ')'   { $$ = $2;   }
 	   ;
@@ -764,6 +769,51 @@ p3_floating_constant: T_P3_FLOAT
 	;
 
 p3_character_constant: T_P3_CHAR { $$ = $1; };
-p3_string : T_P3_STRING ;
+
+p3_string: '"' p3_string_elements_opt '"'
+        {
+           $$ = $2->compact ();
+	}
+	;
+
+p3_string_elements_opt:
+          /* empty */
+        {
+           $$ = New refcounted<pub3::expr_shell_str_t> ("", PLINENO);
+	}
+	| p3_string_elements
+	{
+	   $$ = $1;
+	}
+	;
+
+p3_string_elements: 
+          p3_string_element 
+        { 
+           $$ = New refcounted<pub3::expr_shell_str_t> ($1, PLINENO);
+	}
+        | p3_string_elements p3_string_element
+	{
+	   $$->add ($2);
+	}
+	;
+
+p3_string_element: 
+          T_P3_STRING { $$ = New refcounted<pub3::expr_str_t> ($1); }
+	| T_P3_CHAR 
+	{ 
+	   $$ = New refcounted<pub3::expr_str_t> (strbuf ("%c", $1));
+	}
+	| p3_inline_expr 
+        { 
+           $$ = $1; 
+        }
+	;
+
+p3_inline_expr: 
+        T_P3_BEGIN_EXPR p3_expr T_P3_END_EXPR { $$ = $2; }
+        ;
+	
+		  
 
 /*----------------------------------------------------------------------- */
