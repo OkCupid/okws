@@ -24,7 +24,11 @@
  </table>
 
 <h2>Push-Back</h2>
- {% for (r, push) {{val=${r.val}</br>}} %}
+
+{% for (r, push) {{ 
+   {% if (r.iter < 2) {{<i>}} %} ${r.val} {% if (r.iter < 2) {{</i>}} %} 
+   </br>}} 
+%}
 
 <h2>Empty</h2>
  {% for (r, nodice) {{ ${r.notfound} }}, {{Vector was empty!}} %}
