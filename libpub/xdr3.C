@@ -76,6 +76,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_NOT:
     r = New refcounted<pub3::expr_NOT_t> (*x.xnot);
     break;
+  case XPUB3_EXPR_ADD:
+    r = New refcounted<pub3::expr_add_t> (*x.xadd);
+    break;
   case XPUB3_EXPR_FN:
     r = pub3::rfn_factory_t::get ()->alloc (*x.fn);
     break;
@@ -115,19 +118,29 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_OR_t::expr_OR_t (const xpub3_or_t &x)
-  : _t1 (expr_t::alloc (x.t1)),
+  : expr_logical_t (x.lineno),
+    _t1 (expr_t::alloc (x.t1)),
     _t2 (expr_t::alloc (x.t2)) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_AND_t::expr_AND_t (const xpub3_and_t &x)
-  : _f1 (expr_t::alloc (x.f1)),
+  : expr_logical_t (x.lineno),
+    _f1 (expr_t::alloc (x.f1)),
     _f2 (expr_t::alloc (x.f2)) {}
 
 //-----------------------------------------------------------------------
 
+pub3::expr_add_t::expr_add_t (const xpub3_add_t &x)
+  : expr_arithmetic_t (x.lineno),
+    _t1 (expr_t::alloc (x.t1)),
+    _t2 (expr_t::alloc (x.t2)) {}
+
+//-----------------------------------------------------------------------
+
 pub3::expr_NOT_t::expr_NOT_t (const xpub3_not_t &x)
-  : _e (expr_t::alloc (x.e)) {}
+  : expr_logical_t (x.lineno),
+    _e (expr_t::alloc (x.e)) {}
 
 //-----------------------------------------------------------------------
 
@@ -252,6 +265,7 @@ bool
 pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_AND);
+  x->xand->lineno = _lineno;
   expr_to_xdr (_f1, &x->xand->f1);
   expr_to_xdr (_f2, &x->xand->f2);
   return true;
@@ -263,8 +277,22 @@ bool
 pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_OR);
+  x->xxor->lineno = _lineno;
   expr_to_xdr (_t1, &x->xxor->t1);
   expr_to_xdr (_t2, &x->xxor->t2);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_ADD);
+  x->xadd->lineno = _lineno;
+  expr_to_xdr (_t1, &x->xadd->t1);
+  expr_to_xdr (_t2, &x->xadd->t2);
+  x->xadd->pos = _pos;
   return true;
 }
 
@@ -274,6 +302,7 @@ bool
 pub3::expr_NOT_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_NOT);
+  x->xnot->lineno = _lineno;
   expr_to_xdr (_e, &x->xnot->e);
   return true;
 }

@@ -342,6 +342,7 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_AND,
    XPUB3_EXPR_OR,
    XPUB3_EXPR_NOT,
+   XPUB3_EXPR_ADD,
    XPUB3_EXPR_FN,
    XPUB3_EXPR_RELATION,
    XPUB3_EXPR_EQ,
@@ -358,16 +359,26 @@ enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
 %struct xpub3_expr_t;
 
 struct xpub3_and_t {
+   int lineno;
    xpub3_expr_t *f1;
    xpub3_expr_t *f2;   
 };
 
 struct xpub3_or_t {
+   int lineno;
    xpub3_expr_t *t1;
    xpub3_expr_t *t2;   
 };
 
+struct xpub3_add_t {
+   int lineno;
+   xpub3_expr_t *t1;
+   xpub3_expr_t *t2;
+   bool pos;   
+};
+
 struct xpub3_not_t {
+   int lineno;
    xpub3_expr_t *e;
 };
 
@@ -435,6 +446,8 @@ case XPUB3_EXPR_OR:
      xpub3_or_t xxor;
 case XPUB3_EXPR_NOT:
      xpub3_not_t xnot;
+case XPUB3_EXPR_ADD:
+     xpub3_add_t xadd;
 case XPUB3_EXPR_FN:
      xpub3_fn_t fn;
 case XPUB3_EXPR_RELATION:

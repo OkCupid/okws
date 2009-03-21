@@ -127,6 +127,35 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_arithmetic_t : public expr_t {
+  public:
+    expr_arithmetic_t (int l) : expr_t (l) {}
+
+    bool eval_as_bool (eval_t *e) const;
+    str eval_as_str (eval_t *e) const;
+    int64_t eval_as_int (eval_t *e) const;
+    u_int64_t eval_as_uint (eval_t *e) const;
+    ptr<const pval_t> eval_as_pval (eval_t *e) const;
+
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_add_t : public expr_arithmetic_t {
+  public:
+    expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, int lineno)
+      : expr_arithmetic_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
+    expr_add_t (const xpub3_add_t &x);
+
+    bool to_xdr (xpub3_expr_t *x) const;
+    scalar_obj_t eval_to_scalar (eval_t *e) const;
+  protected:
+    ptr<expr_t> _t1, _t2;
+    bool _pos;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_EQ_t : public expr_logical_t {
   public:
     expr_EQ_t (ptr<expr_t> o1, ptr<expr_t> o2, bool pos, int ln) 

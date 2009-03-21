@@ -90,7 +90,7 @@
 
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
-%type <p3expr> p3_primary_expr p3_constant;
+%type <p3expr> p3_primary_expr p3_constant p3_additive_expr;
 %type <p3expr> p3_integer_constant;
 
 %type <relop> p3_relational_op;
@@ -99,7 +99,7 @@
 %type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 
-%type <bl> p3_equality_op;
+%type <bl> p3_equality_op p3_additive_op;
 
 /* ------------------------------------------------ */
 
@@ -609,22 +609,38 @@ p3_equality_op: T_P3_EQEQ   { $$ = true; }
 		;
 
 p3_relational_expr: 
-             p3_unary_expr
+             p3_additive_expr
            {
 	      $$ = $1;
 	   }
-           | p3_relational_expr p3_relational_op p3_unary_expr
+           | p3_relational_expr p3_relational_op p3_additive_expr
 	   {
 	      $$ = New refcounted<pub3::expr_relation_t> ($1, $3, $2, PLINENO);
            }
 	   ;	
-
+	   
 p3_relational_op: 
-              '<'        { $$ = XPUB3_REL_LT; }
-	    | '>'        { $$ = XPUB3_REL_GT; }
-	    | T_P3_GTEQ  { $$ = XPUB3_REL_GTE; }
-            | T_P3_LTEQ  { $$ = XPUB3_REL_LTE; }
-	    ;
+             '<'        { $$ = XPUB3_REL_LT; }
+	   | '>'        { $$ = XPUB3_REL_GT; }
+	   | T_P3_GTEQ  { $$ = XPUB3_REL_GTE; }
+           | T_P3_LTEQ  { $$ = XPUB3_REL_LTE; }
+	   ;
+
+p3_additive_expr:
+             p3_unary_expr
+           {
+	      $$ = $1;
+	   }
+	   | p3_additive_expr p3_additive_op p3_unary_expr
+	   {
+	     $$ = New refcounted<pub3::expr_add_t> ($1, $3, $2, PLINENO);
+	   }
+	   ;
+
+p3_additive_op:
+	     '-'       { $$ = false; }
+	   | '+'       { $$ = true; }
+	   ;
 
 p3_unary_expr: 
              p3_postfix_expr

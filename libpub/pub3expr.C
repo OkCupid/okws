@@ -370,3 +370,83 @@ pub3::eval_t::set_loud (bool b)
 }
 
 //-----------------------------------------------------------------------
+
+scalar_obj_t 
+pub3::expr_add_t::eval_to_scalar (eval_t *e) const
+{
+  scalar_obj_t out;
+  if (_t1 && !_t1->is_null (e) && _t2 && !_t2->is_null (e)) {
+    bool l = e->set_loud (true);
+    scalar_obj_t o1 = _t1->eval_as_scalar (e);
+    scalar_obj_t o2 = _t2->eval_as_scalar (e);
+    e->set_loud (l);
+    int64_t i1, i2;
+    u_int64_t u1, u2;
+    str s1, s2;
+    int mul = _pos ? 1 : -1;
+    if (o1.to_int64 (&i1) && o2.to_int64 (&i2)) {
+      out.set_i (i1 + mul*i2);
+    } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2)) {
+      if (mul > 0) {
+	out.set_u (u1 + u2);
+      } else {
+	out.set_i (u1 + mul *u2);
+      }
+    } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2)) {
+      out.set_i (i1 + mul*u2);
+    } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2)) {
+      out.set_i (u1 + mul*i2);
+    } else if ((s1 = o1.to_str ()) && (s2 = o2.to_str ())) {
+      strbuf b;
+      b << s1 << s2;
+      out.set (b);
+    } else {
+      report_error (e, "no plausible evaluation found!");
+    }
+  } else {
+    report_error (e, "one or more operands were NULL");
+  }
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
+bool 
+pub3::expr_arithmetic_t::eval_as_bool (eval_t *e) const
+{
+  return eval_as_scalar (e).to_bool ();
+}
+
+//-----------------------------------------------------------------------
+
+str 
+pub3::expr_arithmetic_t::eval_as_str (eval_t *e) const
+{
+  return eval_as_scalar (e).to_str ();
+}
+
+//-----------------------------------------------------------------------
+
+int64_t 
+pub3::expr_arithmetic_t::eval_as_int (eval_t *e) const
+{
+  return eval_as_scalar (e).to_int64 ();
+}
+
+//-----------------------------------------------------------------------
+
+u_int64_t
+pub3::expr_arithmetic_t:: eval_as_uint (eval_t *e) const
+{
+  return eval_as_scalar (e).to_uint64 ();
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t> 
+pub3::expr_arithmetic_t::eval_as_pval (eval_t *e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar (e));
+}
+
+//-----------------------------------------------------------------------

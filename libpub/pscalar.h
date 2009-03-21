@@ -67,8 +67,9 @@ private:
 
     void set (const str &s);
     void set (double d);
-    void set (int64_t i);
+    void set (int64_t i) { set_i (i); }
     void set_u (u_int64_t u);
+    void set_i (int64_t i);
     void clear ();
     
     typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
@@ -111,6 +112,7 @@ public:
   void set (double d) { _p->set (d); }
   void set (int64_t i) { _p->set (i); }
   void set_u (u_int64_t u) { _p->set_u (u); }
+  void set_i (int64_t i) { _p->set_i (i); }
 
   void add (const char *c, size_t l);
   void add (const str &s);

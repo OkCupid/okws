@@ -166,7 +166,7 @@ scalar_obj_t::_p_t::set (double d)
 }
 
 void
-scalar_obj_t::_p_t::set (int64_t i)
+scalar_obj_t::_p_t::set_i (int64_t i)
 {
   _s = strbuf () << i;
   _i = i;
