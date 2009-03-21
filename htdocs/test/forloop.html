@@ -32,10 +32,24 @@
 
 <h2>Inline List</h2>
 {% for (r, push)
-  {{{% cond (r.last)   {{ and }},
-            (!r.first) {{,}}     %} 
+  {{{% cond (!r.first && r.last) {{ and }},
+            (!r.first)           {{,}}     %} 
     ${r.val}}}  
 %} 
+
+<h2>Inline List, Single</h2>
+{% for (r, single)
+  {{{% cond (!r.first && r.last) {{ and }},
+            (!r.first)           {{,}}     %} 
+    ${r.val}}}  
+%} 
+
+<h2>Inline List, Double</h2>
+{% for (r, double)
+  {{{% cond (!r.first && r.last) {{ and }},
+            (!r.first)           {{,}}     %} 
+    ${r.val}}}
+%}
 
 <h2>Empty</h2>
  {% for (r, nodice) {{ ${r.notfound} }}, {{Vector was empty!}} %}

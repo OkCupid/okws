@@ -90,7 +90,12 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
     strbuf b ("xx-%zu-xx", i);
     o("val") = b;
   }
+
+  pub_obj("single")[0]("val") = "The-One-True-God";
   
+  pub_obj("double")[0]("val") = "Mike";
+  pub_obj("double")[1]("val") = "Ike";
+
   twait { 
     pub2 ()->run (&out, tstf, mkevent (rc), pub_obj.dict (), opts|P_VISERR); 
   }
