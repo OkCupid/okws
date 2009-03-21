@@ -16,11 +16,12 @@
 </br>
 
 <h2>Simple</h2>
+ <table>
  {% for (r, simple) {{ 
+  <tr><td{% if (r.odd) {{ bgcolor=#80ffff}} %}>
      val=${r.val}; last=${r.last}; iter=${r.iter};
-     odd=${r.odd}; even=${r.even}; count=${r.count}</br>
-      
-}} %}
+     odd=${r.odd}; even=${r.even}; count=${r.count}</td></tr>}} %}
+ </table>
 
 <h2>Push-Back</h2>
  {% for (r, push) {{val=${r.val}</br>}} %}

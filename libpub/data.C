@@ -47,7 +47,7 @@ void pbuf_t::add (zbuf *z) { add (New pbuf_zbuf_t (z)); }
 void pval_zbuf_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const 
 { ps->add (zb); }
 void penv_t::safe_push (ptr<const aarr_t> a) 
-{ estack.push_back (a); hold.push_back (a); }
+{ bump (); estack.push_back (a); hold.push_back (a); }
 
 static void
 explore (pub_exploremode_t mode, const pfnm_t &nm)
@@ -112,6 +112,7 @@ pfile_var_t::output (output_t *o, penv_t *e) const
 void
 penv_t::resize (size_t s)
 {
+  bump ();
   assert (s <= estack.size ());
   while (s != estack.size ()) 
     estack.pop_back (); // don't delete!!
@@ -301,6 +302,7 @@ pfile_t::output (output_t *o, penv_t *genv) const
 void
 penv_t::push_file (bpfcp_t f)
 {
+  bump ();
   if (file) {
     fstack.push_back (file);
   }
@@ -310,6 +312,7 @@ penv_t::push_file (bpfcp_t f)
 void
 penv_t::pop_file ()
 {
+  bump ();
   if (fstack.size ()) {
     file = fstack.pop_back ();
   } else {
@@ -1353,6 +1356,7 @@ penv_t::stack_to_str () const
 bool
 penv_t::i_stack_add (bpfcp_t t)
 {
+  bump ();
   if (istack[t->bnd->hash ()])
     return false;
   istack.insert (t->bnd->hash ());
@@ -1363,6 +1367,7 @@ penv_t::i_stack_add (bpfcp_t t)
 void
 penv_t::i_stack_remove (bpfcp_t t)
 {
+  bump ();
   pop_file ();
   istack.remove (t->bnd->hash ());
 }
@@ -2045,6 +2050,7 @@ aarr_t::overwrite_with (const aarr_t &a)
 penv_state_t *
 penv_t::start_output (aarr_t *a, u_int o)
 {
+  bump ();
   penv_state_t *r = New penv_state_t (getopts (), size (), cerrflag);
   opts = o;
   if (o & P_GLOBALSET) {
@@ -2059,6 +2065,7 @@ penv_t::start_output (aarr_t *a, u_int o)
 bool
 penv_t::finish_output (penv_state_t *s)
 {
+  bump ();
   bool ret = success ();
   opts = s->opts;
   resize (s->estack_size);
@@ -2152,6 +2159,7 @@ penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
 { 
   if (g) push (g);
   if (a) push (a); 
+  bump ();
 }
 
 penv_t::penv_t (const penv_t &e)
@@ -2159,7 +2167,10 @@ penv_t::penv_t (const penv_t &e)
     cerr (e.cerr), opts (e.opts), evm (e.evm),
     estack (e.estack), gvars (e.gvars), fstack (e.fstack), hold (e.hold),
     istack (e.istack), olineno (e.olineno), 
-    _localizer (e._localizer) {}
+    _localizer (e._localizer) 
+{
+  bump ();
+}
 
 //
 //-----------------------------------------------------------------------
@@ -2185,6 +2196,7 @@ pfile_set_func_t::output_runtime (penv_t *e) const
 bool
 penv_t::set_global (const aarr_t &a)
 {
+  bump ();
   bool ret = false;
   if (_global_set) {
     _global_set->overwrite_with (a);

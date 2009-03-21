@@ -22,6 +22,9 @@ namespace pub3 {
     bool set_loud (bool b);
     bool loud () const { return _loud; }
 
+    cache_generation_t cache_generation () const 
+    { return _env->cache_generation (); }
+
   private:
     penv_t *_env;
     output_t *_output;
@@ -32,7 +35,7 @@ namespace pub3 {
 
   class expr_t {
   public:
-    expr_t (int lineno = -1) : _lineno (lineno), _cached (false) {}
+    expr_t (int lineno = -1) : _lineno (lineno) {}
     virtual ~expr_t () {}
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
@@ -62,7 +65,7 @@ namespace pub3 {
 
     int _lineno;
 
-    mutable bool _cached;
+    mutable cache_generation_t _cache_generation;
     mutable scalar_obj_t _so;
   };
   

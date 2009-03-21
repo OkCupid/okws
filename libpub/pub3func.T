@@ -87,6 +87,7 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 	row_aarr->replace ("even", 1 - int64_t (i % 2));
 	frame.replace (_iter, row_aarr);
 
+	e->bump ();
 	twait { _env->publish (iface, o, e, mkevent (res)); }
       }
     }

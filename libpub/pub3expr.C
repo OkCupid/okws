@@ -130,13 +130,13 @@ pub3::expr_vecref_t::eval_as_pval (eval_t *e) const
 scalar_obj_t
 pub3::expr_t::eval_as_scalar (eval_t *e) const
 {
-  if (!_cached) {
+  if (_cache_generation != e->cache_generation ()) {
     ptr<const pval_t> v = eval_as_pval (e);
     ptr<const pub_scalar_t> s;
     if (v && (s = v->to_scalar ())) {
       _so = s->obj ();
     }
-    _cached = true;
+    _cache_generation = e->cache_generation ();
   }
   return _so;
 }
@@ -376,9 +376,9 @@ pub3::eval_t::set_loud (bool b)
 scalar_obj_t
 pub3::expr_arithmetic_t::eval_as_scalar (eval_t *e) const
 {
-  if (!_cached) {
+  if (_cache_generation != e->cache_generation ()) {
     _so = eval_as_scalar_nocache (e);
-    _cached = true;
+    _cache_generation = e->cache_generation ();
   }
   return _so;
 }

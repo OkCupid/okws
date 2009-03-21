@@ -394,6 +394,22 @@ public:
   virtual str localize (const str &infn) const = 0;
 };
 
+//-----------------------------------------------------------------------
+
+class cache_generation_t {
+public:
+  cache_generation_t () : _seq (0) {}
+  void bump () { _seq++; }
+  bool operator== (const cache_generation_t &c) const 
+  { return _seq == c._seq; }
+  bool operator!= (const cache_generation_t &c) const 
+  { return _seq != c._seq; }
+private:
+  u_int64_t _seq;
+};
+
+//-----------------------------------------------------------------------
+
 class penv_t {
 public:
   penv_t (aarr_t *a = NULL, u_int o = 0, aarr_t *g = NULL);
@@ -406,7 +422,7 @@ public:
 
   void resize (size_t s);
   void gresize (size_t gvs);
-  void resize (size_t s, size_t gvs) { resize (s); gresize (gvs); }
+  void resize (size_t s, size_t gvs) { bump (); resize (s); gresize (gvs); }
   size_t size () const { return estack.size (); }
   size_t gvsize () const { return gvars.size (); }
   void push (aarr_t *a) { estack.push_back (a); }
@@ -445,16 +461,21 @@ public:
 
   bool set_tlf (bool b) { bool r = tlf; tlf = b; return r; }
   bool get_tlf () const { return tlf; }
-  void clear () { estack.clear (); gvars.clear (); hold.clear (); }
+  void clear () { bump (); estack.clear (); gvars.clear (); hold.clear (); }
 
-  void set_localizer (ptr<const pub_localizer_t> l) { _localizer = l; }
+  cache_generation_t cache_generation () const { return _cache_generation; }
+
+  void set_localizer (ptr<const pub_localizer_t> l) { bump (); _localizer = l; }
   ptr<const pub_localizer_t> localizer () const { return _localizer; }
+  void bump () { _cache_generation.bump (); }
 
   int aarr_n;
   bpfcp_t file;
   bool needloc;
   str cerr;
   u_int opts;
+
+  cache_generation_t _cache_generation;
 private:
 
   pub_evalmode_t evm;
