@@ -81,10 +81,11 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 	o->output_err (e, b, lineno);
       } else if (_env) {
 	row_aarr->replace ("count", int64_t (len));
-	row_aarr->replace ("iter", int64_t (i));
-	row_aarr->replace ("last", int64_t (len - 1 == i));
-	row_aarr->replace ("odd", int64_t (i % 2));
-	row_aarr->replace ("even", 1 - int64_t (i % 2));
+	row_aarr->replace ("iter",  int64_t (i));
+	row_aarr->replace ("last",  int64_t (len - 1 == i));
+	row_aarr->replace ("first", int64_t (i == 0));
+	row_aarr->replace ("odd",   int64_t (i % 2));
+	row_aarr->replace ("even",  1 - int64_t (i % 2));
 	frame.replace (_iter, row_aarr);
 
 	e->bump ();
