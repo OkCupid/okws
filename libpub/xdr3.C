@@ -134,7 +134,8 @@ pub3::expr_AND_t::expr_AND_t (const xpub3_and_t &x)
 pub3::expr_add_t::expr_add_t (const xpub3_add_t &x)
   : expr_arithmetic_t (x.lineno),
     _t1 (expr_t::alloc (x.t1)),
-    _t2 (expr_t::alloc (x.t2)) {}
+    _t2 (expr_t::alloc (x.t2)),
+    _pos (x.pos) {}
 
 //-----------------------------------------------------------------------
 

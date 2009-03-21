@@ -171,7 +171,14 @@ scalar_obj_t::_p_t::set_i (int64_t i)
   _s = strbuf () << i;
   _i = i;
   _d = i;
-  _u = i;
+
+  if (i >= 0) {
+    _u = i;
+    _uint_cnv = CNV_OK;
+  } else {
+    _uint_cnv = CNV_BAD;
+  }
+
   _double_cnv = CNV_OK;
   _int_cnv = CNV_OK;
 }
@@ -180,11 +187,17 @@ void
 scalar_obj_t::_p_t::set_u (u_int64_t i)
 {
   _s = strbuf () << i;
-  _i = i;
-  _d = i;
   _u = i;
+  _d = i;
+  
+  if (i <= u_int64_t (INT64_MAX)) {
+    _i = i;
+    _int_cnv = CNV_OK;
+  } else {
+    _int_cnv = CNV_BAD;
+  }
+
   _double_cnv = CNV_OK;
-  _int_cnv = CNV_OK;
   _uint_cnv = CNV_OK;
 }
 

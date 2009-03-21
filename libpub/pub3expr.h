@@ -32,7 +32,7 @@ namespace pub3 {
 
   class expr_t {
   public:
-    expr_t (int lineno = -1) : _lineno (lineno) {}
+    expr_t (int lineno = -1) : _lineno (lineno), _cached (false) {}
     virtual ~expr_t () {}
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
@@ -61,6 +61,9 @@ namespace pub3 {
     virtual ptr<const pval_t> eval_as_pval (eval_t *e) const { return NULL; }
 
     int _lineno;
+
+    mutable bool _cached;
+    mutable scalar_obj_t _so;
   };
   
   //-----------------------------------------------------------------------
@@ -136,7 +139,10 @@ namespace pub3 {
     int64_t eval_as_int (eval_t *e) const;
     u_int64_t eval_as_uint (eval_t *e) const;
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
+    scalar_obj_t eval_as_scalar (eval_t *e) const;
 
+  protected:
+    virtual scalar_obj_t eval_as_scalar_nocache (eval_t *e) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -148,7 +154,7 @@ namespace pub3 {
     expr_add_t (const xpub3_add_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
-    scalar_obj_t eval_to_scalar (eval_t *e) const;
+    scalar_obj_t eval_as_scalar_nocache (eval_t *e) const;
   protected:
     ptr<expr_t> _t1, _t2;
     bool _pos;
