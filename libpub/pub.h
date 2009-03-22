@@ -469,6 +469,8 @@ public:
   ptr<const pub_localizer_t> localizer () const { return _localizer; }
   void bump () { _cache_generation.bump (); }
 
+  const vec<const aarr_t *> &get_eval_stack () const { return estack; }
+
   int aarr_n;
   bpfcp_t file;
   bool needloc;
@@ -768,6 +770,12 @@ public:
 
 //-----------------------------------------------------------------------
 
+namespace pub3 {
+  class expr_ref_t;
+};
+
+//-----------------------------------------------------------------------
+
 class pval_t : public arg_t {
 public:
   virtual ~pval_t () {}
@@ -776,6 +784,7 @@ public:
   virtual bool to_xdr (xpub_val_t *x) const { return false; }
   virtual ptr<pval_t> flatten(penv_t *e) ;
   virtual ptr<pstr_t> to_pstr () { return NULL; }
+  virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
 };
 
 //-----------------------------------------------------------------------

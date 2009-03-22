@@ -243,21 +243,9 @@ pub3::expr_t::report_error (eval_t *e, str msg) const
 //-----------------------------------------------------------------------
 
 ptr<const pval_t>
-pub3::expr_ref_t::eval_as_pval (eval_t *e) const
+pub3::expr_varref_t::eval_as_pval (eval_t *e) const
 {
-  penv_t *env = e->penv ();
-  const pval_t *v = env->lookup (_name, false);
-  ptr<const pval_t> ret;
-  if (!v) {
-
-    // if env->debug(), perhaps?
-    // for now, leave it noisy
-    strbuf b ("cannot resolve variable: '%s'", _name.cstr ());
-    report_error (e, b);
-
-  } else {
-    ret = mkref (v);
-  }
+  ptr<const pval_t> ret = e->resolve (this, _name);
   return ret;
 }
 
@@ -544,5 +532,41 @@ pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
     
   return _so;
 }
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+pub3::eval_t::resolve (const expr_t *e, const str &nm)
+{
+  const vec<const aarr_t *> &stk = _env->get_eval_stack ();
+
+  bool top_level = false;
+
+  if (_sp < 0) { 
+    top_level = true;
+    _sp = stk.size () - 1; 
+  } else {
+    assert (_sp < ssize_t (stk.size ()));
+  }
+    
+  ptr<const pval_t> ret, n;
+  while (_sp >= 0 && !(ret = stk[_sp]->lookup_ptr (nm)))  {
+    _sp --;
+  }
+
+  ptr<const expr_ref_t> xref;
+
+  if (!ret) {
+    strbuf b ("cannot resolve variable: '%s'", nm.cstr ());
+    e->report_error (this, b);
+  } else if ((xref = ret->to_ref ())) {
+    ret = xref->deref (this); // mutual recursive call!
+  }
+  
+  if (top_level) { _sp = -1; }
+
+  return ret;
+}
+
 
 //-----------------------------------------------------------------------

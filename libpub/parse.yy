@@ -679,7 +679,7 @@ p3_postfix_expr:
 
 p3_primary_expr: p3_identifier 
            { 
-	      $$ = New refcounted<pub3::expr_ref_t> ($1, PLINENO);
+	      $$ = New refcounted<pub3::expr_varref_t> ($1, PLINENO);
 	   }
            | p3_constant       
 	   { 

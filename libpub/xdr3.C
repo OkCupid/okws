@@ -95,7 +95,7 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     r = New refcounted<pub3::expr_vecref_t> (*x.vecref);
     break;
   case XPUB3_EXPR_REF:
-    r = New refcounted<pub3::expr_ref_t> (*x.xref);
+    r = New refcounted<pub3::expr_varref_t> (*x.xref);
     break;
   case XPUB3_EXPR_STR:
     r = New refcounted<pub3::expr_str_t> (*x.xstr);
@@ -184,21 +184,21 @@ pub3::expr_t::alloc (const xpub3_expr_list_t *x)
 //-----------------------------------------------------------------------
 
 pub3::expr_dictref_t::expr_dictref_t (const xpub3_dictref_t &x)
-  : expr_t (x.lineno),
+  : expr_ref_t (x.lineno),
     _dict (expr_t::alloc (x.dict)),
     _key (x.key) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
-  : expr_t (x.lineno),
+  : expr_ref_t (x.lineno),
     _vec (expr_t::alloc (x.vec)),
     _index (expr_t::alloc (x.index)) {}
 
 //-----------------------------------------------------------------------
 
-pub3::expr_ref_t::expr_ref_t (const xpub3_ref_t &x)
-  : expr_t (x.lineno), _name (x.key) {}
+pub3::expr_varref_t::expr_varref_t (const xpub3_ref_t &x)
+  : expr_ref_t (x.lineno), _name (x.key) {}
 
 //-----------------------------------------------------------------------
 
@@ -381,7 +381,7 @@ pub3::expr_vecref_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_ref_t::to_xdr (xpub3_expr_t *x) const
+pub3::expr_varref_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_REF);
   x->xref->lineno = _lineno;

@@ -12,9 +12,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_t;
+
+  //-----------------------------------------------------------------------
+
   class eval_t {
   public:
-    eval_t (penv_t *e, output_t *o) : _env (e), _output (o), _loud (false) {}
+    eval_t (penv_t *e, output_t *o) 
+      : _env (e), _output (o), _loud (false), _sp (-1) {}
 
     penv_t *penv () const { return _env; }
     output_t *output () const { return _output; }
@@ -25,15 +30,18 @@ namespace pub3 {
     cache_generation_t cache_generation () const 
     { return _env->cache_generation (); }
 
+    ptr<const pval_t> resolve (const expr_t *e, const str &nm);
+
   private:
     penv_t *_env;
     output_t *_output;
     bool _loud;
+    ssize_t _sp; // stack pointer
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_t {
+  class expr_t : public pval_t {
   public:
     expr_t (int lineno = -1) : _lineno (lineno) {}
     virtual ~expr_t () {}
@@ -60,8 +68,13 @@ namespace pub3 {
     virtual ptr<const aarr_t> eval_as_dict (eval_t *e) const;
     virtual ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const;
 
-  protected:
+    virtual str get_obj_name () const { return "generic-pub3-expr"; }
+
+    // legacy v1, v2 eval system; noop!
+    void eval_obj (pbuf_t *s, penv_t *e, u_int d) const {}
+
     void report_error (eval_t *e, str n) const;
+  protected:
     virtual ptr<const pval_t> eval_as_pval (eval_t *e) const { return NULL; }
 
     int _lineno;
@@ -181,12 +194,23 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_dictref_t : public expr_t {
+  class expr_ref_t : public expr_t {
+  public:
+    expr_ref_t (int l) : expr_t (l) {}
+    ptr<const expr_ref_t> to_ref () const { return mkref (this); }
+    ptr<const pval_t> deref (eval_t *e) const 
+    { return eval_as_pval (e); }
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_dictref_t : public expr_ref_t {
   public:
     expr_dictref_t (ptr<expr_t> d, const str &k, int lineno)
-      : expr_t (lineno), _dict (d), _key (k) {}
+      : expr_ref_t (lineno), _dict (d), _key (k) {}
     expr_dictref_t (const xpub3_dictref_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
+
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
     ptr<expr_t> _dict;
@@ -195,25 +219,26 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_vecref_t : public expr_t {
+  class expr_vecref_t : public expr_ref_t {
   public:
     expr_vecref_t (ptr<expr_t> v, ptr<expr_t> i, int l) 
-      : expr_t (l), _vec (v), _index (i) {}
+      : expr_ref_t (l), _vec (v), _index (i) {}
     expr_vecref_t (const xpub3_vecref_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
+    ptr<const pval_t> deref (eval_t *e) const;
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
     ptr<expr_t> _vec;
     ptr<expr_t> _index;
   };
-
+    
   //-----------------------------------------------------------------------
 
-  class expr_ref_t : public expr_t {
+  class expr_varref_t : public expr_ref_t {
   public:
-    expr_ref_t (const str &s, int l) : expr_t (l), _name (s) {}
-    expr_ref_t (const xpub3_ref_t &x);
+    expr_varref_t (const str &s, int l) : expr_ref_t (l), _name (s) {}
+    expr_varref_t (const xpub3_ref_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
