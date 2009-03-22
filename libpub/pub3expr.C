@@ -474,11 +474,50 @@ pub3::expr_shell_str_t::eval_as_pval (eval_t *e) const
 
 //-----------------------------------------------------------------------
 
-ptr<pub3::expr_shell_str_t>
+void
+pub3::expr_shell_str_t::make_str (strbuf *b, vec<str> *v)
+{
+  if (b->tosuio ()->resid ()) {
+    _els.push_back (New refcounted<pub3::expr_str_t> (*b));
+    b->tosuio ()->clear ();
+    v->setsize (0);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
 pub3::expr_shell_str_t::compact () const
 {
-  // IMPLEMENT ME!!
-  return NULL;
+  str s;
+  ptr<expr_t> ret;
+  
+
+  if (_els.size () == 1 && _els[0]->eval_as_str ()) {
+    ret = _els[0];
+  } else {
+    ptr<pub3::expr_shell_str_t> out = 
+      New refcounted<pub3::expr_shell_str_t> (_lineno);
+    
+    strbuf b;
+    vec<str> v;
+    
+    for (size_t i = 0; i < _els.size (); i++) {
+      ptr<expr_t> e = _els[i];
+      str s = e->eval_as_str ();
+      if (s) {
+	b << s;
+	v.push_back (s);
+      } else {
+	out->make_str (&b, &v);
+	out->add (e);
+      }
+    }
+    out->make_str (&b, &v);
+    ret = out;
+  }
+   
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -486,8 +525,24 @@ pub3::expr_shell_str_t::compact () const
 scalar_obj_t
 pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
 {
-  scalar_obj_t so ("UNIMPLEMENTED -- XXX - IMPLEMENT ME!");
-  return so;
+  
+  if (_cache_generation != e->cache_generation ()) {
+
+    strbuf b;
+    vec<str> v;
+    for (size_t i = 0; i < _els.size (); i++) {
+      str s = _els[i]->eval_as_str (e);
+      if (s) {
+	b << s;
+	v.push_back (s);
+      }
+    }
+
+    _so.set (b);
+    _cache_generation = e->cache_generation ();
+  }
+    
+  return _so;
 }
 
 //-----------------------------------------------------------------------

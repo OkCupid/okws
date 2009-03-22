@@ -153,13 +153,21 @@ pub3::rfn_factory_t::alloc (const xpub3_fn_t &x)
 
 //-----------------------------------------------------------------------
 
+static void
+fill_expr_list (pub3::expr_list_t *l, const xpub3_expr_list_t &x)
+{
+  for (size_t i = 0; i < x.size (); i++) {
+    l->push_back (pub3::expr_t::alloc (x[i]));
+  }
+}
+
+//-----------------------------------------------------------------------
+
 ptr<pub3::expr_list_t>
 pub3::expr_t::alloc (const xpub3_expr_list_t &x)
 {
   ptr<expr_list_t> ret = New refcounted<expr_list_t> ();
-  for (size_t i = 0; i < x.size (); i++) {
-    ret->push_back (expr_t::alloc (x[i]));
-  }
+  fill_expr_list (ret, x);
   return ret;
 }
 
@@ -473,7 +481,7 @@ pub3::expr_shell_str_t::to_xdr (xpub3_expr_t *x) const
 pub3::expr_shell_str_t::expr_shell_str_t (const xpub3_shell_str_t &x)
   : expr_t (x.lineno)
 {
-  // XXX -- Implement me!!
+  fill_expr_list (&_els, x.elements);
 }
 
 //-----------------------------------------------------------------------

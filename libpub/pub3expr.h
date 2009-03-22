@@ -309,6 +309,7 @@ namespace pub3 {
 
   class expr_shell_str_t : public expr_t {
   public:
+    expr_shell_str_t (int lineno) : expr_t (lineno) {}
     expr_shell_str_t (const str &s, int lineno)
       : expr_t (lineno) 
     { 
@@ -326,12 +327,15 @@ namespace pub3 {
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
     scalar_obj_t eval_as_scalar (eval_t *e) const;
 
-    ptr<expr_shell_str_t> compact () const;
+    ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els.push_back (e); }
     bool to_xdr (xpub3_expr_t *x) const;
 
   protected:
     expr_list_t _els;
+
+  private:
+    void make_str (strbuf *b, vec<str> *v);
   };
 
   //-----------------------------------------------------------------------
