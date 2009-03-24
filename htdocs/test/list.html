@@ -1,0 +1,5 @@
+{% for (r, list)
+  {{{% cond (!r.first && r.last) {{ and }},
+            (!r.first)           {{,}}     %} 
+    %{r.val}}}  
+%} 
