@@ -19,7 +19,7 @@ namespace pub3 {
   class eval_t {
   public:
     eval_t (penv_t *e, output_t *o) 
-      : _env (e), _output (o), _loud (false), _sp (-1), _silent (false) {}
+      : _env (e), _output (o), _loud (false), _silent (false), _depth (0) {}
 
     penv_t *penv () const { return _env; }
     output_t *output () const { return _output; }
@@ -33,12 +33,15 @@ namespace pub3 {
 
     ptr<const pval_t> resolve (const expr_t *e, const str &nm);
 
+    void dec_stack_depth ();
+    size_t inc_stack_depth ();
+
   private:
     penv_t *_env;
     output_t *_output;
     bool _loud;
-    ssize_t _sp; // stack pointer
     bool _silent;
+    size_t _depth;
   };
 
   //-----------------------------------------------------------------------
@@ -47,6 +50,8 @@ namespace pub3 {
   public:
     expr_t (int lineno = -1) : _lineno (lineno) {}
     virtual ~expr_t () {}
+
+    enum { max_stack_depth = 128 };
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
     bool to_xdr (xpub_obj_t *x) const;
@@ -77,6 +82,9 @@ namespace pub3 {
 
     ptr<expr_t> to_expr () { return mkref (this); }
     ptr<const expr_t> to_expr () const { return mkref (this); }
+
+    bool enter (eval_t *e) const;
+    void leave (eval_t *e) const;
 
   protected:
     virtual ptr<const pval_t> eval_as_pval (eval_t *e) const { return NULL; }

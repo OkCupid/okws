@@ -1,6 +1,10 @@
 
 A => ${a}<br>
 
+{% setl { b : "b now has a=%{a} is all" } %}
+B => ${b}<br>
+
+
 {% include ("inc3.html", 
        { "c" : "[--begin-crap-- a=%{a}; b=%{b} --end-crap---]" } ) %}
 

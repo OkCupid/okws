@@ -122,6 +122,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {TPRFX3}(cond|if)	{ push_p3_func (); return T_P3_COND; }
 {TPRFX3}include		{ push_p3_func (); return T_P3_INCLUDE; }
 {TPRFX3}set		{ push_p3_func (); return T_P3_SET; }
+{TPRFX3}setl		{ push_p3_func (); return T_P3_SETL; }
 }
 
 <POUND_REGEX>{

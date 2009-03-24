@@ -1622,6 +1622,8 @@ public:
   void output_runtime (penv_t *e) const;
 };
 
+//-----------------------------------------------------------------------
+
 class pval_null_t : public pval_t {
 public:
   void eval_obj (pbuf_t *p, penv_t *e, u_int d) const {}

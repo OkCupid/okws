@@ -6,9 +6,52 @@
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_t::enter (eval_t *e) const
+{
+  bool ret = true;
+  if (e->inc_stack_depth () >= size_t (max_stack_depth)) {
+    ret = false;
+    str err = strbuf ("max recursion depth reached (%d)", max_stack_depth);
+    report_error (e, err);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_t::leave (eval_t *e) const
+{
+  e->dec_stack_depth ();
+}
+
+//-----------------------------------------------------------------------
+
+size_t
+pub3::eval_t::inc_stack_depth ()
+{
+  return ++_depth;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::eval_t::dec_stack_depth ()
+{
+  if (_depth >= 0) _depth--;
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_OR_t::eval_as_bool (eval_t *e) const
 {
-  return ((_t1 && _t1->eval_as_bool (e)) || (_t2 && _t2->eval_as_bool (e)));
+  bool ret = false;
+  if (enter (e)) {
+    ret = ((_t1 && _t1->eval_as_bool (e)) || (_t2 && _t2->eval_as_bool (e)));
+  }
+  leave (e);
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -16,7 +59,12 @@ pub3::expr_OR_t::eval_as_bool (eval_t *e) const
 bool
 pub3::expr_AND_t::eval_as_bool (eval_t *e) const
 {
-  return ((_f1 && _f1->eval_as_bool (e)) && (_f2 && _f2->eval_as_bool (e)));
+  bool ret;
+  if (enter (e)) {
+    ret =  ((_f1 && _f1->eval_as_bool (e)) && (_f2 && _f2->eval_as_bool (e)));
+  }
+  leave (e);
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -25,7 +73,10 @@ scalar_obj_t
 pub3::expr_logical_t::eval_as_scalar (eval_t *e) const
 {
   scalar_obj_t o;
-  o.set (eval_as_int (e));
+  if (enter (e)) {
+    o.set (eval_as_int (e));
+  }
+  leave (e);
   return o;
 }
 
@@ -43,21 +94,28 @@ pub3::expr_logical_t::eval_as_str (eval_t *e) const
 bool
 pub3::expr_EQ_t::eval_as_bool (eval_t *e) const
 {
-  int flip = _pos ? 0 : 1;
-  int tmp;
-  bool n1 = !_o1 || _o1->is_null (e);
-  bool n2 = !_o2 || _o2->is_null (e);
+  bool ret = false;
 
-  if (n1 && n2) { tmp = 1; }
-  else if (n1) { tmp = 0; }
-  else if (n2) { tmp = 0; }
-  else {
-    scalar_obj_t o1 = _o1->eval_as_scalar (e);
-    scalar_obj_t o2 = _o2->eval_as_scalar (e);
-    tmp = (o1 == o2) ? 1 : 0;
+  if (enter (e)) {
+
+    int flip = _pos ? 0 : 1;
+    int tmp;
+    bool n1 = !_o1 || _o1->is_null (e);
+    bool n2 = !_o2 || _o2->is_null (e);
+    
+    
+    if (n1 && n2) { tmp = 1; }
+    else if (n1) { tmp = 0; }
+    else if (n2) { tmp = 0; }
+    else {
+      scalar_obj_t o1 = _o1->eval_as_scalar (e);
+      scalar_obj_t o2 = _o2->eval_as_scalar (e);
+      tmp = (o1 == o2) ? 1 : 0;
+    } 
+    ret = (tmp ^ flip);
   }
-
-  return (tmp ^ flip);
+  leave (e);
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -66,7 +124,9 @@ bool
 pub3::expr_relation_t::eval_as_bool (eval_t *e) const
 {
   bool ret = false;
-  if (_l && !_l->is_null (e) && _r && !_r->is_null (e)) {
+  if (!enter (e)) {
+    /* noop */
+  } else if (_l && !_l->is_null (e) && _r && !_r->is_null (e)) {
     int64_t l = _l->eval_as_int (e);
     int64_t r = _r->eval_as_int (e);
     switch (_op) {
@@ -77,6 +137,7 @@ pub3::expr_relation_t::eval_as_bool (eval_t *e) const
     default: panic ("unexpected relational operator!\n");
     }
   }
+  leave (e);
   return ret;
 }
 
@@ -97,7 +158,9 @@ pub3::expr_dictref_t::eval_as_pval (eval_t *e) const
 {
   ptr<const aarr_t> d;
   ptr<const pval_t> v;
-  if (!_dict) {
+  if (!enter (e)) {
+    /* noop */
+  } else if (!_dict) {
     report_error (e, "dict reference into NULL");
   } else if (!(d = _dict->eval_as_dict (e))) {
     report_error (e, "dict reference into non-dict");
@@ -105,6 +168,7 @@ pub3::expr_dictref_t::eval_as_pval (eval_t *e) const
     strbuf b ("cannot resolve key '%s'", _key.cstr ());
     report_error (e, b);
   }
+  leave (e);
   return v;
 }
 
@@ -117,10 +181,13 @@ pub3::expr_vecref_t::eval_as_pval (eval_t *e) const
   ptr<const pval_t> r;
   int64_t i;
 
-  if (_vec && (v = _vec->eval_as_vec (e))) {
+  if (!enter (e)) {
+    /* noop */
+  } else if (_vec && (v = _vec->eval_as_vec (e))) {
     if (_index) i = _index->eval_as_int (e);
     r = (*v)[i];
   }
+  leave (e);
   return r;
 }
 
@@ -130,7 +197,9 @@ pub3::expr_vecref_t::eval_as_pval (eval_t *e) const
 scalar_obj_t
 pub3::expr_t::eval_as_scalar (eval_t *e) const
 {
-  if (_cache_generation != e->cache_generation ()) {
+  if (!enter (e)) {
+    /* noop */
+  } else if (_cache_generation != e->cache_generation ()) {
     ptr<const pval_t> v = eval_as_pval (e);
     ptr<const pub_scalar_t> s;
     if (v && (s = v->to_scalar ())) {
@@ -138,6 +207,7 @@ pub3::expr_t::eval_as_scalar (eval_t *e) const
     }
     _cache_generation = e->cache_generation ();
   }
+  leave (e);
   return _so;
 }
 
@@ -210,8 +280,12 @@ pub3::expr_t::eval_as_dict (eval_t *e) const
 {
   ptr<const aarr_arg_t> r;
   ptr<const pval_t> v;
-  if ((v = eval_as_pval (e))) 
+  if (!enter (e)) {
+    /* noop */
+  } else if ((v = eval_as_pval (e)))  {
     r = v->to_aarr ();
+  }
+  leave (e);
   return r;
 }
 
@@ -222,8 +296,13 @@ pub3::expr_t::eval_as_vec (eval_t *e) const
 {
   ptr<const parr_mixed_t> r;
   ptr<const pval_t> v;
-  if ((v = eval_as_pval (e))) 
+
+  if (enter (e)) {
+    /* noop */
+  } else if ((v = eval_as_pval (e)))  {
     r = v->to_mixed_arr ();
+  }
+  leave (e);
   return r;
 }
 
@@ -247,7 +326,11 @@ pub3::expr_t::report_error (eval_t *e, str msg) const
 ptr<const pval_t>
 pub3::expr_varref_t::eval_as_pval (eval_t *e) const
 {
-  ptr<const pval_t> ret = e->resolve (this, _name);
+  ptr<const pval_t> ret;
+  if (enter (e)) {
+    ret = e->resolve (this, _name);
+  }
+  leave (e);
   return ret;
 }
 
@@ -256,18 +339,24 @@ pub3::expr_varref_t::eval_as_pval (eval_t *e) const
 scalar_obj_t
 pub3::expr_varref_t::eval_as_scalar (eval_t *e) const
 {
-  ptr<const pval_t> v = e->resolve (this, _name);
+  ptr<const pval_t> v;
   ptr<const expr_t> x;
   ptr<const pub_scalar_t> ps;
   scalar_obj_t ret;
-  if (v && (x = v->to_expr ())) {
-    ret = x->eval_as_scalar (e);
-  } else if (v && (ps = v->to_scalar ())) {
-    ret = ps->obj ();
-  } else if (e->loud ()) {
-    strbuf b ("cannot resolve: %s", _name.cstr ());
-    report_error (e, b);
+
+  if (enter (e)) {
+    v = e->resolve (this, _name);
+    if (v && (x = v->to_expr ())) {
+      ret = x->eval_as_scalar (e);
+    } else if (v && (ps = v->to_scalar ())) {
+      ret = ps->obj ();
+    } else if (e->loud ()) {
+      strbuf b ("cannot resolve: %s", _name.cstr ());
+      report_error (e, b);
+    }
   }
+  leave (e);
+
   return ret;
 }
 
@@ -410,7 +499,10 @@ scalar_obj_t
 pub3::expr_add_t::eval_as_scalar_nocache (eval_t *e) const
 {
   scalar_obj_t out;
-  if (_t1 && !_t1->is_null (e) && _t2 && !_t2->is_null (e)) {
+
+  if (!enter (e)) {
+    /* noop */
+  } else if (_t1 && !_t1->is_null (e) && _t2 && !_t2->is_null (e)) {
     bool l = e->set_loud (true);
     scalar_obj_t o1 = _t1->eval_as_scalar (e);
     scalar_obj_t o2 = _t2->eval_as_scalar (e);
@@ -441,6 +533,8 @@ pub3::expr_add_t::eval_as_scalar_nocache (eval_t *e) const
   } else {
     report_error (e, "one or more operands were NULL");
   }
+  leave (e);
+
   return out;
 }
 
@@ -545,8 +639,10 @@ pub3::expr_shell_str_t::compact () const
 scalar_obj_t
 pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
 {
-  
-  if (_cache_generation != e->cache_generation ()) {
+  if (!enter (e)) {
+    _so.set ("XX too much recursion XX");
+
+  } else if (_cache_generation != e->cache_generation ()) { 
 
     strbuf b;
     vec<str> v;
@@ -561,6 +657,8 @@ pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
     _so.set (b);
     _cache_generation = e->cache_generation ();
   }
+
+  leave (e);
     
   return _so;
 }
@@ -570,20 +668,11 @@ pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
 ptr<const pval_t>
 pub3::eval_t::resolve (const expr_t *e, const str &nm)
 {
+  ptr<const pval_t> ret, n;
   const vec<const aarr_t *> &stk = _env->get_eval_stack ();
 
-  bool top_level = false;
-
-  if (_sp < 0) { 
-    top_level = true;
-    _sp = stk.size () - 1; 
-  } else {
-    assert (_sp < ssize_t (stk.size ()));
-  }
-    
-  ptr<const pval_t> ret, n;
-  while (_sp >= 0 && !(ret = stk[_sp]->lookup_ptr (nm)))  {
-    _sp --;
+  for (ssize_t i = stk.size () - 1; !ret && i >= 0; i--) {
+    ret = stk[i]->lookup_ptr (nm);
   }
 
   ptr<const expr_ref_t> xref;
@@ -595,8 +684,6 @@ pub3::eval_t::resolve (const expr_t *e, const str &nm)
     ret = xref->deref (this); // mutual recursive call!
   }
   
-  if (top_level) { _sp = -1; }
-
   return ret;
 }
 
