@@ -2301,3 +2301,23 @@ aarr_t::lookup_ptr (const str &n)
 
 //-----------------------------------------------------------------------
 
+ptr<pub3::expr_t>
+nvpair_t::value_expr ()
+{
+  ptr<pub3::expr_t> r;
+  if (val) { r = val->to_expr (); }
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pub3::expr_t>
+nvpair_t::value_expr () const
+{
+  ptr<const pub3::expr_t> r;
+  if (val) { r = val->to_expr (); }
+  return r;
+}
+
+//-----------------------------------------------------------------------
+

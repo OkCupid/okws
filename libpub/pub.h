@@ -38,13 +38,7 @@
 #include "pscalar.h"
 #include "parseopt.h"
 
-#if defined (SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 10000000
-# include "tame_lock.h"
-# define TAME_LOCKING 1
-#elif defined(SFSLITE_PATCHLEVEL) && SFSLITE_PATCHLEVEL >= 8009003
-# include "lock.h"
-# define TAME_LOCKING 1
-#endif /* SFSLITE_PATCHLEVEL */
+#include "tame_lock.h"
 
 extern int yywss;          /* on if in White-space strip mode, off otherwise */
 
@@ -59,7 +53,8 @@ typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1,
 	       PFILE_GFRAME = 6, PFILE_FILE = 7, 
 	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
 	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
-	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13 } pfile_el_type_t;
+	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13,
+	       PFILE_PUB3_VAR = 14 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_GUY = 1,
@@ -127,7 +122,6 @@ typedef enum { PARR_OK = 0, PARR_BAD_TYPE = 1, PARR_OUT_OF_BOUNDS = 2,
 #define PSTR1      parser->str1
 #define PPSTR      parser->pstr
 #define PARR       parser->parr
-#define ARGLIST2   parser->arglist
 
 #define PUSH_PFUNC(x) do { parser->push_func (x); } while (0)
 #define POP_PFUNC()   parser->pop_func()
@@ -225,6 +219,13 @@ typedef ptr<bound_pfile_t> bpfmp_t;       // mutable pointer
 
 //-----------------------------------------------------------------------
 
+namespace pub3 {
+  class expr_ref_t;
+  class expr_t;
+};
+
+//-----------------------------------------------------------------------
+
 class nvpair_t : public virtual dumpable_t {
 public:
   nvpair_t (const str &n, ptr<pval_t> v) : nm (n), val (v) {}
@@ -244,6 +245,9 @@ public:
 
   ptr<pval_t> value_ptr () { return val; }
   ptr<const pval_t> value_ptr () const { return val; }
+
+  ptr<pub3::expr_t> value_expr ();
+  ptr<const pub3::expr_t> value_expr () const;
 
   const str nm;
   ihash_entry<nvpair_t> hlink;
@@ -490,9 +494,6 @@ private:
   int olineno;
   bool cerrflag; // compile error flag
   bool tlf; // top level flag
-#ifdef TAME_LOCKING
-  lock_t _lock;
-#endif /* TAME_LOCKING */
   ptr<const pub_localizer_t> _localizer;
 
   ptr<aarr_t> _global_set;
@@ -770,10 +771,6 @@ public:
 
 //-----------------------------------------------------------------------
 
-namespace pub3 {
-  class expr_ref_t;
-};
-
 //-----------------------------------------------------------------------
 
 class pval_t : public arg_t {
@@ -785,6 +782,8 @@ public:
   virtual ptr<pval_t> flatten(penv_t *e) ;
   virtual ptr<pstr_t> to_pstr () { return NULL; }
   virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
+  virtual ptr<const pub3::expr_t> to_expr () const { return NULL; }
+  ptr<pub3::expr_t> to_expr () { return NULL; }
 };
 
 //-----------------------------------------------------------------------
@@ -1386,6 +1385,8 @@ public:
   str get_obj_name () const { return "gcode_t"; }
   bool escaped;
 };
+
+//-----------------------------------------------------------------------
 
 class pfile_var_t : public pfile_el_t
 {

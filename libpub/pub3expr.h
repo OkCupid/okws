@@ -47,6 +47,7 @@ namespace pub3 {
     virtual ~expr_t () {}
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
+    bool to_xdr (xpub_obj_t *x) const;
 
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
@@ -54,6 +55,7 @@ namespace pub3 {
     static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t *x);
 
     static void expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x);
+    static void expr_to_xdr (ptr<expr_t> e, xpub3_expr_t *x);
 
     static void expr_to_xdr (const vec<ptr<expr_t> >  *in, 
 			     xpub3_expr_list_t *out);
@@ -63,6 +65,7 @@ namespace pub3 {
     virtual u_int64_t eval_as_uint (eval_t *e) const;
     virtual str eval_as_str (eval_t *e) const;
     virtual str eval_as_str () const { return NULL; }
+    virtual str eval_as_identifier () const { return NULL; }
     virtual scalar_obj_t eval_as_scalar (eval_t *e) const;
     virtual bool is_null (eval_t *e) const;
     virtual ptr<const aarr_t> eval_as_dict (eval_t *e) const;
@@ -74,6 +77,10 @@ namespace pub3 {
     void eval_obj (pbuf_t *s, penv_t *e, u_int d) const {}
 
     void report_error (eval_t *e, str n) const;
+
+    ptr<expr_t> to_expr () { return mkref (this); }
+    ptr<const expr_t> to_expr () const { return mkref (this); }
+
   protected:
     virtual ptr<const pval_t> eval_as_pval (eval_t *e) const { return NULL; }
 
@@ -200,6 +207,7 @@ namespace pub3 {
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
     ptr<const pval_t> deref (eval_t *e) const 
     { return eval_as_pval (e); }
+
   };
 
   //-----------------------------------------------------------------------
@@ -240,6 +248,7 @@ namespace pub3 {
     expr_varref_t (const str &s, int l) : expr_ref_t (l), _name (s) {}
     expr_varref_t (const xpub3_ref_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
+    str eval_as_identifier () const { return _name; }
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
     str _name;
@@ -365,6 +374,40 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_dict_t : public expr_t {
+  public:
+    expr_dict_t (int lineno) 
+      : expr_t (lineno), _dict (New refcounted<aarr_arg_t> ()) {}
+    expr_dict_t (const xpub3_dict_t &x);
+
+    void add (nvpair_t *p);
+    str get_obj_name () const { return "pub3-expr-dict"; }
+    bool to_xdr (xpub3_expr_t *x) const;
+
+    ptr<const aarr_t> eval_as_dict (eval_t *e) const { return _dict; }
+
+  protected:
+    ptr<const pval_t> eval_as_pval (eval_t *e) const { return _dict; }
+    ptr<aarr_arg_t> _dict;
+  }; 
+
+  //-----------------------------------------------------------------------
+
+  class inline_var_t : public pfile_el_t {
+  public:
+    inline_var_t (ptr<pub3::expr_t> e, int l) : _expr (e), _lineno (l) {}
+    inline_var_t (const xpub3_inline_var_t &x);
+    void output (output_t *o, penv_t *e) const;
+    pfile_el_type_t get_type () const { return PFILE_PUB3_VAR; }
+    str get_obj_name () const { return "pfile_pub3_var_t"; }
+    void dump2 (dumper_t *d) const;
+    bool to_xdr (xpub_obj_t *x) const;
+  private:
+    const ptr<expr_t> _expr;
+    const int _lineno;
+  };
+
+  //-----------------------------------------------------------------------
 };
 
 #endif /* _LIBPUB_PUB3EXPR_H_ */

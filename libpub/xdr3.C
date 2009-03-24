@@ -8,10 +8,10 @@
 bool
 pub3::for_t::to_xdr (xpub_obj_t *x) const
 {
-  x->set_typ (XPUB_FOR);
+  x->set_typ (XPUB3_FOR);
   x->forloop->lineno = lineno;
   x->forloop->iter = _iter;
-  x->forloop->arr = _arr;
+  expr_t::expr_to_xdr (_arr, &x->forloop->arr);
   if (_env) {
     _env->to_xdr (&x->forloop->body);
   }
@@ -26,7 +26,7 @@ pub3::for_t::to_xdr (xpub_obj_t *x) const
 pub3::for_t::for_t (const xpub3_for_t &x)
   : pfile_func_t (x.lineno),
     _iter (x.iter),
-    _arr (x.arr),
+    _arr (expr_t::alloc (x.arr)),
     _env (nested_env_t::alloc (x.body)),
     _empty (nested_env_t::alloc (x.empty)) {}
 
@@ -48,6 +48,25 @@ pub3::cond_t::cond_t (const xpub3_cond_t &x)
       _clauses->push_back (New refcounted<cond_clause_t> (x.clauses[i]));
     }
   }
+}
+
+//-----------------------------------------------------------------------
+
+pub3::include_t::include_t (const xpub3_include_t &x)
+  : pfile_func_t (x.lineno),
+    _file (expr_t::alloc (x.file)),
+    _dict (expr_t::alloc (x.dict)) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::include_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB3_INCLUDE);
+  x->pub3_include->lineno = lineno;
+  expr_t::expr_to_xdr (_file, &x->pub3_include->file);
+  expr_t::expr_to_xdr (_dict, &x->pub3_include->dict);
+  return true;
 }
 
 //-----------------------------------------------------------------------
@@ -435,14 +454,21 @@ pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 
 //-----------------------------------------------------------------------
 
+void
+pub3::expr_t::expr_to_xdr (ptr<expr_t> e, xpub3_expr_t *x)
+{
+  if (e) { e->to_xdr (x); }
+  else   { x->set_typ (XPUB3_EXPR_NULL); }
+}
+
+//-----------------------------------------------------------------------
+
 bool
 pub3::cond_clause_t::to_xdr (xpub3_cond_clause_t *x) const
 {
   x->lineno = _lineno;
 
-  if (_expr) { _expr->to_xdr (&x->expr); } 
-  else { x->expr.set_typ (XPUB3_EXPR_NULL); }
-
+  expr_t::expr_to_xdr (_expr, &x->expr);
   if (_env) { _env->to_xdr (&x->body); }
 
   return true;
@@ -453,7 +479,7 @@ pub3::cond_clause_t::to_xdr (xpub3_cond_clause_t *x) const
 bool
 pub3::cond_t::to_xdr (xpub_obj_t *x) const
 {
-  x->set_typ (XPUB_COND);
+  x->set_typ (XPUB3_COND);
   x->cond->lineno = lineno;
 
   size_t s = _clauses ? _clauses->size () : size_t (0);
@@ -485,3 +511,67 @@ pub3::expr_shell_str_t::expr_shell_str_t (const xpub3_shell_str_t &x)
 }
 
 //-----------------------------------------------------------------------
+
+pub3::expr_dict_t::expr_dict_t (const xpub3_dict_t &x)
+  : expr_t (x.lineno),
+    _dict (New refcounted<aarr_arg_t> ())
+{
+  size_t lim = x.entries.size ();
+  for (size_t i = 0; i < lim; i++) {
+    const xpub3_nvpair_t &p = x.entries[i];
+    _dict->add (New nvpair_t (p.key, expr_t::alloc (p.val)));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->dict->lineno = _lineno;
+  x->set_typ (XPUB3_EXPR_DICT);
+  
+  if (_dict) {
+    const nvtab_t *tab = _dict->nvtab ();
+    const nvpair_t *p;
+    for (p = tab->first (); p; p = tab->next (p)) {
+      ptr<const pub3::expr_t> e = p->value_expr ();
+      if (e) {
+	xpub3_nvpair_t &p3 = x->dict->entries.push_back ();
+	p3.key = p->name ();
+	e->to_xdr (p3.val);
+      }
+    }
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB3_EXPR);
+  return to_xdr (x->pub3_expr);
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::inline_var_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB3_INLINE_VAR);
+  x->pub3_inline_var->lineno = _lineno;
+  expr_t::expr_to_xdr (_expr, &x->pub3_inline_var->expr);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::inline_var_t::inline_var_t (const xpub3_inline_var_t &x)
+  : _expr (expr_t::alloc (x.expr)),
+    _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+

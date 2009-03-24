@@ -116,10 +116,14 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pfile_set_local_func_t (*x.set_func);
   case XPUB_RAW:
     return New pfile_raw_el_t (*x.raw);
-  case XPUB_FOR:
+  case XPUB3_FOR:
     return New pub3::for_t (*x.forloop);
-  case XPUB_COND:
+  case XPUB3_COND:
     return New pub3::cond_t (*x.cond);
+  case XPUB3_INCLUDE:
+    return New pub3::include_t (*x.pub3_include);
+  case XPUB3_INLINE_VAR:
+    return New pub3::inline_var_t (*x.pub3_inline_var);
   default:
     return NULL;
   }

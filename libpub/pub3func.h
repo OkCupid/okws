@@ -18,7 +18,8 @@ namespace pub3 {
     for_t (int l) : pfile_func_t (l) {}
     for_t (const xpub3_for_t &x);
     bool to_xdr (xpub_obj_t *x) const;
-    bool add (ptr<arglist_t> l);
+    bool add (ptr<arglist_t> l) { return false; }
+    bool add (ptr<expr_list_t> l);
     bool add_env (ptr<nested_env_t> e) { _env = e; return true; }
     bool add_empty (ptr<nested_env_t> e) { _empty = e; return true; }
     str get_obj_name () const { return "pub3::for_t"; }
@@ -29,11 +30,30 @@ namespace pub3 {
   protected:
   private:
     str _iter;
-    str _arr;
+    ptr<expr_t> _arr;
     ptr<nested_env_t> _env;
     ptr<nested_env_t> _empty;
   };
   
+  //-----------------------------------------------------------------------
+
+  class include_t : public pfile_func_t {
+  public:
+    include_t (int l) : pfile_func_t (l) {}
+    include_t (const xpub3_include_t &x);
+    bool to_xdr (xpub_obj_t *x) const;
+    bool add (ptr<arglist_t> l) { return false; }
+    bool add (ptr<expr_list_t> l);
+    str get_obj_name () const { return "pub3::include_t"; }
+    virtual void publish (pub2_iface_t *, output_t *, penv_t *,
+			  xpub_status_cb_t, CLOSURE) const;
+    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+    void output (output_t *o, penv_t *e) const;
+  protected:
+    ptr<expr_t> _file;
+    ptr<expr_t> _dict;
+  };
+
   //-----------------------------------------------------------------------
 
   class cond_clause_t {

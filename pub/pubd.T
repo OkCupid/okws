@@ -128,6 +128,12 @@ main_T (int argc, char **argv)
     int fdfd (1);
   }
 
+#ifdef PDEBUG
+  if (OKDBG2(PUB_PARSE)) {
+    yydebug = 1;
+  }
+#endif
+
   parent_connect = false;
   primary = true;
 

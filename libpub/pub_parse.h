@@ -69,6 +69,8 @@ struct yystype {
   ptr<pub3::expr_t> p3expr;
   ptr<pub3::expr_list_t> p3exprlist;
   ptr<pub3::expr_shell_str_t> p3str;
+  ptr<pub3::expr_dict_t> p3dict;
+  nvpair_t *p3bind;
   bool bl;
   xpub3_relop_t relop;
   double dbl;

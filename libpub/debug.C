@@ -90,6 +90,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
   case 'C': v = OKWS_DEBUG_PUB2_CACHE; break;
   case 'H': v = OKWS_DEBUG_PUB2_CHUNKS; break;
   case 'E': v = OKWS_DEBUG_PUB_ERRORS; break;
+  case 'P': v = OKWS_DEBUG_PUB_PARSE; break;
   case 'J': v = OKWS_DEBUG_OKD_JAIL; break;
   case 'S': v = OKWS_DEBUG_OKD_SHUTDOWN; break;
   default: ret =  false; break;
@@ -104,7 +105,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
 const char * 
 okdbg_t::allflags () const
 {
-  return "abcdfhimopsuvABCEHJS";
+  return "abcdfhimopsuvABCEHJPS";
 }
 
 //--------------------------------------------------------------------
@@ -119,6 +120,7 @@ okdbg_t::documentation () const
     "\t -E pub subsystem: complain about errors\n"
     "\t -C pb2 subsystem: display messages about pub2's cache\n"
     "\t -H pb2 subsystem: display messages about pub2 chunking\n"
+    "\t -P pub sussystem: bison/parse debug output\n"
     "\n"
     "\t -c okd subsystem: noisy output about new connections\n"
     "\t -J okd subsystem: debug jail2real() calls\n"

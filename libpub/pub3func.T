@@ -4,16 +4,33 @@
 //-----------------------------------------------------------------------
 
 bool
-pub3::for_t::add (ptr<arglist_t> l)
+pub3::for_t::add (ptr<expr_list_t> l)
 {
   bool ret = true;
-  if (_iter || 
-      !l || 
-      l->size () != 2 ||
-      !(_iter = ((*l)[0])->eval ()) ||
-      !(_arr = ((*l)[1])->eval ())) {
-    PWARN ("pub takes 2 arguments (formal variable and array)\n");
+  if (!l || l->size () < 1 || l->size () > 2) {
+    PWARN ("for: takes 2 arguments (simple identifier and array)\n");
     ret = false;
+  } else if (!(_iter = (*l)[0]->eval_as_identifier ()) || !_iter.len ()) {
+    PWARN ("for: argument 1 must be an identifier\n");
+    ret = false;
+  } else if (l->size () > 1) {
+    _arr = (*l)[1];
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::include_t::add (ptr<expr_list_t> l)
+{
+  bool ret = true;
+  if (!l || l->size () < 1 || l->size () > 2) {
+    PWARN ("include takes 1 or 2 arguments (file and dictionary/bindings)");
+    ret = false;
+  } else {
+    _file = (*l)[0];
+    if (l->size () > 1) { _dict = (*l)[1]; }
   }
   return ret;
 }
@@ -27,14 +44,50 @@ pub3::for_t::output (output_t *o, penv_t *e) const
 
 //-----------------------------------------------------------------------
 
+void
+pub3::include_t::output (output_t *o, penv_t *e) const
+{
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+pub3::include_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
+			  xpub_status_cb_t cb) const
+{
+  tvars {
+    xpub_status_t res (XPUB_STATUS_OK);
+    pub3::eval_t eval (e, o);
+    ptr<const aarr_t> d;
+    str fn;
+    aarr_t *ccd;
+  }
+
+  if (!(fn = _file->eval_as_str (&eval)) || fn.len () == 0) {
+    strbuf b ("include: cannot evaluate filename");
+    o->output_err (e, b, lineno);
+  } else if (_dict && !(d = _dict->eval_as_dict (&eval))) {
+    strbuf b ("include: cannot evaluate dictionary argument");
+    o->output_err (e, b, lineno);
+  } else {
+   
+    // unfortunately, don't see a good way around this just now..
+    ccd = const_cast<aarr_t *> (static_cast<const aarr_t *> (d));
+
+    twait { pfile_func_t::publish (iface, o, e, ccd, fn, mkevent (res)); }
+  }
+
+  (*cb) (res);
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 		      xpub_status_cb_t callercv) const
 {
   tvars {
-    const parr_mixed_t *a (NULL);
-    const pval_t *v (NULL);
-    ptr<const pval_t> hold;
+    ptr<const parr_mixed_t> v;
     bool ok (false);
     aarr_t frame;
     size_t i, len;
@@ -42,38 +95,28 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     ptr<aarr_arg_t> row_aarr;
     xpub_status_t res (XPUB_STATUS_OK);
     size_t frame_pointer;
+    pub3::eval_t eval (e, o);
   }
 
-  v = e->lookup (_arr, false);
-  if (v) a = v->to_mixed_arr ();
+  if (!(v = _arr->eval_as_vec (&eval)) && !_empty) {
 
-  if (!v && !_empty) {
-
-    strbuf b ("for: cannot find iteration value (%s)", _arr.cstr ());
-    o->output_err (e, b, lineno);
-
-  } else if (!a && !_empty) {
-
-    strbuf b ("for: given value is not iterable vector (%s)", _arr.cstr ());
+    strbuf b ("for: second argument is not an iterable vector");
     o->output_err (e, b, lineno);
     
-  } else if (!a) {
+  } else if (!v) {
 
     twait { _empty->publish (iface, o, e, mkevent (res)); }
 
   } else {
 
-    hold = mkref (v);
-
     ok = true;
-    assert (a);
-    len = a->size ();
+    len = v->size ();
 
     frame_pointer = e->size ();
     e->push (&frame);
 
     for (i = 0; i < len; i++) {
-      if (!(row = (*a)[i])) {
+      if (!(row = (*v)[i])) {
 	strbuf b ("for: row %zu is undefined!", i);
 	o->output_err (e, b, lineno);
       } else if (!(row_aarr = row->to_aarr ())) {
@@ -96,6 +139,15 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
   }
   
   (*callercv) (res);
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::include_t::publish_nonblock (pub2_iface_t *i, output_t *o, 
+				   penv_t *e) const
+{
+  return false;
 }
 
 //-----------------------------------------------------------------------

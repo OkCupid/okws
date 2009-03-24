@@ -568,5 +568,35 @@ pub3::eval_t::resolve (const expr_t *e, const str &nm)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_dict_t::add (nvpair_t *p)
+{
+  _dict->add (p);
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::inline_var_t::output (output_t *o, penv_t *e) const
+{
+  eval_t eval (e, o);
+  str s;
+  if (_expr){
+    s = _expr->eval_as_str (&eval);
+  }
+  if (s) {
+    o->output (e, s, false);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::inline_var_t::dump2 (dumper_t *d) const
+{
+  DUMP(d, "pub3_var(line=" << _lineno << ")");
+}
 
 //-----------------------------------------------------------------------

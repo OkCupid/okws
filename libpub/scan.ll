@@ -15,6 +15,8 @@ static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (const char *c, int l);
 static void nlcount (int m = 0);
+static void push_p3_func (void);
+static void pop_p3_func (void);
 
 static void bracket_mark_left (int n = 1);
 static void bracket_mark_right (void);
@@ -33,6 +35,7 @@ char *eof_tok;
 int yy_d_brace;
 int yy_d_bracket;
 vec<int> yy_d_bracket_linenos;
+int yy_p3_depth;
 
 %}
 
@@ -49,11 +52,13 @@ WS	[ \t]
 WSN	[ \t\n]
 EOL	[ \t]*\n?
 TPRFX	(<!--#|\{%)[ \t]*
+TPRFX1  (<!--#)[ \t]*
+TPRFX3  \{%[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
-%x P3 P3_BASE P3_STR P3_STR_VAR
+%x P3 P3_STR
 
 %%
 
@@ -99,22 +104,23 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <H>\n			{ PLINC; return (yytext[0]); }
 
 <H,WH>{
-{TPRFX}include		{ yy_push_state (PTAG); return T_PTINCLUDE; }
-{TPRFX}load		{ yy_push_state (PTAG); return T_PTLOAD; }
-{TPRFX}inclist		{ yy_push_state (PTAG); return T_PTINCLIST; }
-{TPRFX}setl		{ yy_push_state (PTAG); return T_PTSETL; }
-{TPRFX}set		{ yy_push_state (PTAG); return T_PTSET; }
-{TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
-{TPRFX}"#"	    	|
-{TPRFX}com(ment)?	{ yy_pt_com = 0; yy_push_state (HCOM); }
-{TPRFX}[Rr][Ee][Mm]	{ 
+{TPRFX1}include		{ yy_push_state (PTAG); return T_PTINCLUDE; }
+{TPRFX1}load		{ yy_push_state (PTAG); return T_PTLOAD; }
+{TPRFX1}inclist		{ yy_push_state (PTAG); return T_PTINCLIST; }
+{TPRFX1}setl		{ yy_push_state (PTAG); return T_PTSETL; }
+{TPRFX1}set		{ yy_push_state (PTAG); return T_PTSET; }
+{TPRFX1}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
+{TPRFX1}"#"	    	|
+{TPRFX1}com(ment)?	{ yy_pt_com = 0; yy_push_state (HCOM); }
+{TPRFX1}[Rr][Ee][Mm]	{ 
 			  yy_pt_com = 1; 
  			  begin_STR (HCOM, 0);
 			  addstr ("<!--", 4);
 	  		}
 
-{TPRFX}for              { yy_push_state (PTAG); return T_P3_FOR; }
-{TPRFX}(cond|if)	{ yy_push_state (P3_BASE); return T_P3_COND; }
+{TPRFX3}for             { push_p3_func (); return T_P3_FOR; }
+{TPRFX3}(cond|if)	{ push_p3_func (); return T_P3_COND; }
+{TPRFX3}include		{ push_p3_func (); return T_P3_INCLUDE; }
 }
 
 <POUND_REGEX>{
@@ -157,7 +163,15 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 
 <H,WH,JS,PSTR,PTAG,HTAG,PSTR_SQ>{
-"${"		{ yy_push_state (PVAR); return T_BVAR; }
+"${"		{ 
+		   if (yy_p3_depth > 0) {
+		      yy_push_state (P3);
+		      return T_P3_BEGIN_EXPR;
+		   } else {
+		      yy_push_state (PVAR); 
+		      return T_BVAR; 
+		   }
+		}
 
 
 "[[[["		{
@@ -343,16 +357,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 .		{ return yyerror ("illegal token found in input"); }
 
 
-<P3_BASE>{
-[(]		{ yy_push_state (P3); return yytext[0]; }
-[,]		{ return yytext[0]; }
-[ \t]+		{ /* ignore */ }
-\n		{ PLINC; }
-.		{ return yyerror ("illegal token in Pub v3 evironment"); }
-"%}"		{ yy_pop_state (); return T_EPTAG; }
-}
-
-<PTAG,P3_BASE>{
+<PTAG,P3>{
 "{{"		{ 
    	     	   yy_d_brace ++; 
 		   yy_push_state (yywss ? WH : H);
@@ -361,19 +366,16 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <P3_STR>{
-"${"		{ yy_push_state (P3_STR_VAR); return T_P3_BEGIN_EXPR; }
+"${"		{ yy_push_state (P3); return T_P3_BEGIN_EXPR; }
+\n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 ["]		{ end_P3_STR (); return yytext[0]; }
-[^\\$"]+	{ yylval.str = yytext; return T_P3_STRING; }
-<<EOF>>         { return yyerror (strbuf ("EOF foudnin str started on "
+[^\\$"\n]+	{ yylval.str = yytext; return T_P3_STRING; }
+<<EOF>>         { return yyerror (strbuf ("EOF found in str started on "
 		  	 	 	  "line %d", yy_ssln)); }
 }
 
-<P3_STR_VAR>{
-[}]		{ yy_pop_state (); return T_P3_END_EXPR; }
-}
-
-<P3,P3_STR_VAR>{
+<P3>{
 
 \n		{ PLINC; }
 
@@ -386,22 +388,23 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 -?[0-9]*\.[0-9]+     { yylval.str = yytext; return T_P3_FLOAT; }
 -[0-9]+              { yylval.str = yytext; return T_P3_INT; }
 
-==		{ return T_P3_EQEQ; }
-!=		{ return T_P3_NEQ; }
-[<]=		{ return T_P3_LTEQ; }
->=		{ return T_P3_GTEQ; }
-=>		{ return yytext[0]; }
-[!=><,[\].+:-]	{ return yytext[0]; }
-[(]		{ yy_push_state (P3); return yytext[0]; }
-[)]		{ yy_pop_state (); return yytext[0]; }
-"||"		{ return T_P3_OR; }
-&&		{ return T_P3_AND; }
-'[^']'		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
+==		 { return T_P3_EQEQ; }
+!=		 { return T_P3_NEQ; }
+[<]=		 { return T_P3_LTEQ; }
+>=		 { return T_P3_GTEQ; }
+=>		 { return yytext[0]; }
+[()!=><,[\].+:-] { return yytext[0]; }
+[{]		 { yy_push_state (P3); return yytext[0]; }
+[}]		 { yy_pop_state (); return yytext[0]; }
+"||"		 { return T_P3_OR; }
+&&		 { return T_P3_AND; }
+'[^']'		 { yylval.ch = yytext[1]; return T_P3_CHAR; }
+"%}"		 { pop_p3_func (); return T_P3_CLOSETAG; }
 
-[ \t]+		{ /* ignore */ }
-["] 		{ begin_P3_STR(); return yytext[0]; }
+[ \t]+		 { /* ignore */ }
+["] 		 { begin_P3_STR(); return yytext[0]; }
 
-.		{ return yyerror ("illegal token in Pub v3 environment"); }
+.		 { return yyerror ("illegal token in Pub v3 environment"); }
 }
 
 %%
@@ -594,6 +597,24 @@ bracket_check_eof (void)
        unbalanced_bracket ()));
   }
   return 0;
+}
+
+void
+push_p3_func (void)
+{
+   yy_p3_depth++;
+   yy_push_state (P3);
+}
+
+void
+pop_p3_func (void)
+{
+  if (yy_p3_depth <= 0) {
+    yyerror ("Unbalanced '{%' Pub3 tag at EOF\n");
+  } else {
+    yy_p3_depth --;
+    yy_pop_state ();
+  }
 }
 
 

@@ -49,5 +49,6 @@
 #define OKWS_DEBUG_SSL_PROXY                      (1 << 17)
 #define OKWS_DEBUG_SSL_INDATA                     (1 << 18)
 #define OKWS_DEBUG_SSL_OUTDATA                    (1 << 19)
+#define OKWS_DEBUG_PUB_PARSE                      (1 << 20)
 
 #endif /* _LIBPUB_OKDEBUG_H */

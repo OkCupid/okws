@@ -17,8 +17,11 @@ enum xpub_obj_typ_t {
   XPUB_RAW = 10,
   XPUB_SET_LOCAL_FUNC = 11,
   XPUB_LOAD = 12,
-  XPUB_FOR = 13,
-  XPUB_COND = 14
+  XPUB3_FOR = 13,
+  XPUB3_COND = 14,
+  XPUB3_INCLUDE = 15,
+  XPUB3_EXPR = 16,
+  XPUB3_INLINE_VAR = 17
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -329,14 +332,6 @@ struct xpub_switch_t {
   bool nulldef;
 };
 
-struct xpub3_for_t {
-  int lineno;
-  xpub_var_t iter;
-  xpub_var_t arr;
-  xpub_section_t body;
-  xpub_section_t empty;
-};
-
 enum xpub3_expr_typ_t {
    XPUB3_EXPR_NULL,
    XPUB3_EXPR_AND,
@@ -345,6 +340,7 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_ADD,
    XPUB3_EXPR_FN,
    XPUB3_EXPR_RELATION,
+   XPUB3_EXPR_DICT,
    XPUB3_EXPR_EQ,
    XPUB3_EXPR_DICTREF,
    XPUB3_EXPR_VECREF,
@@ -443,6 +439,16 @@ struct xpub3_double_t {
    string val<>;
 };
 
+struct xpub3_nvpair_t {
+  xpub_key_t key;
+  xpub3_expr_t *val;
+};
+
+struct xpub3_dict_t {
+  int lineno;
+  xpub3_nvpair_t entries<>;
+};
+
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
@@ -458,6 +464,8 @@ case XPUB3_EXPR_FN:
      xpub3_fn_t fn;
 case XPUB3_EXPR_RELATION:
      xpub3_relation_t relation;
+case XPUB3_EXPR_DICT:
+     xpub3_dict_t dict;
 case XPUB3_EXPR_EQ:
      xpub3_eq_t eq;
 case XPUB3_EXPR_DICTREF:
@@ -478,6 +486,22 @@ case XPUB3_EXPR_DOUBLE:
      xpub3_double_t xdouble;
 };
 
+/* PUB3 language constructs */
+
+struct xpub3_for_t {
+  int lineno;
+  xpub_var_t iter;
+  xpub3_expr_t arr;
+  xpub_section_t body;
+  xpub_section_t empty;
+};
+
+struct xpub3_include_t {
+  int lineno;
+  xpub3_expr_t file;
+  xpub3_expr_t dict;
+};
+
 struct xpub3_cond_clause_t {
   int lineno;
   xpub3_expr_t expr;
@@ -487,6 +511,11 @@ struct xpub3_cond_clause_t {
 struct xpub3_cond_t {
   int lineno;
   xpub3_cond_clause_t clauses<>;
+};
+
+struct xpub3_inline_var_t {
+  int lineno;
+  xpub3_expr_t expr;
 };
 
 union xpub_obj_t switch (xpub_obj_typ_t typ) {
@@ -511,12 +540,18 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
    xpub_set_func_t set_func;
  case XPUB_INCLIST:
    xpub_inclist_t inclist;
- case XPUB_FOR:
+ case XPUB3_FOR:
    xpub3_for_t forloop;
- case XPUB_COND:
+ case XPUB3_COND:
    xpub3_cond_t cond;
+ case XPUB3_INCLUDE:
+   xpub3_include_t pub3_include;
  case XPUB_RAW:
    xpub_raw_t raw;
+ case XPUB3_INLINE_VAR:
+   xpub3_inline_var_t pub3_inline_var;
+ case XPUB3_EXPR:
+   xpub3_expr_t pub3_expr;
 };
 
 enum xpub_status_typ_t {
