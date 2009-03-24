@@ -19,13 +19,14 @@ namespace pub3 {
   class eval_t {
   public:
     eval_t (penv_t *e, output_t *o) 
-      : _env (e), _output (o), _loud (false), _sp (-1) {}
+      : _env (e), _output (o), _loud (false), _sp (-1), _silent (false) {}
 
     penv_t *penv () const { return _env; }
     output_t *output () const { return _output; }
 
     bool set_loud (bool b);
-    bool loud () const { return _loud; }
+    bool loud () const { return _loud && !_silent; }
+    bool set_silent (bool b);
 
     cache_generation_t cache_generation () const 
     { return _env->cache_generation (); }
@@ -37,6 +38,7 @@ namespace pub3 {
     output_t *_output;
     bool _loud;
     ssize_t _sp; // stack pointer
+    bool _silent;
   };
 
   //-----------------------------------------------------------------------
@@ -65,10 +67,10 @@ namespace pub3 {
     virtual ptr<const aarr_t> eval_as_dict (eval_t *e) const;
     virtual ptr<const parr_mixed_t> eval_as_vec (eval_t *e) const;
 
-    virtual str get_obj_name () const { return "generic-pub3-expr"; }
+    // legacy v1, v2 eval system; attempt to do something sensible
+    virtual void eval_obj (pbuf_t *b, penv_t *e, u_int depth) const;
 
-    // legacy v1, v2 eval system; noop!
-    void eval_obj (pbuf_t *s, penv_t *e, u_int d) const {}
+    virtual str get_obj_name () const { return "generic-pub3-expr"; }
 
     void report_error (eval_t *e, str n) const;
 

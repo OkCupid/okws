@@ -236,7 +236,9 @@ pub3::expr_t::report_error (eval_t *e, str msg) const
   output_t *out = e->output ();
   env->setlineno (_lineno);
   env->warning (msg);
-  out->output_err (env, msg);
+  if (out) {
+    out->output_err (env, msg);
+  }
   env->unsetlineno ();
 }
 
@@ -373,6 +375,16 @@ pub3::eval_t::set_loud (bool b)
 {
   bool c = _loud;
   _loud = b;
+  return c;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::eval_t::set_silent (bool b)
+{
+  bool c = _silent;
+  _silent = b;
   return c;
 }
 
@@ -573,10 +585,10 @@ pub3::eval_t::resolve (const expr_t *e, const str &nm)
 
   ptr<const expr_ref_t> xref;
 
-  if (!ret) {
-    strbuf b ("cannot resolve variable: '%s'", nm.cstr ());
-    e->report_error (this, b);
-  } else if ((xref = ret->to_ref ())) {
+  if (!ret && loud ()) {
+      strbuf b ("cannot resolve variable: '%s'", nm.cstr ());
+      e->report_error (this, b);
+  } else if (ret && (xref = ret->to_ref ())) {
     ret = xref->deref (this); // mutual recursive call!
   }
   
@@ -614,6 +626,27 @@ void
 pub3::inline_var_t::dump2 (dumper_t *d) const
 {
   DUMP(d, "pub3_var(line=" << _lineno << ")");
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
+{
+  eval_t eval (e, NULL);
+  ptr<const pval_t> pv = eval_as_pval (&eval);
+  if (pv) {
+    pv->eval_obj (ps, e, d);
+  } else if (e->debug ()) {
+    e->setlineno (_lineno);
+    str nm = eval_as_identifier ();
+    if (!nm) {
+      nm = "-- unknown --";
+    }
+    e->warning (strbuf ("cannot resolve variable: " ) << nm.cstr ());
+    ps->add (strbuf ("<!--UNDEF: ") << nm << " -->");
+    e->unsetlineno ();
+  }
 }
 
 //-----------------------------------------------------------------------

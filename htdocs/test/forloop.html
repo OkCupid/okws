@@ -8,14 +8,14 @@
 
 <h2>Push-Back</h2>
 {% for (r, push) {{ 
-   {% if (r.iter < 2) {{<i>}} %} ${r.val} {% if (r.iter < 2) {{</i>}} %} 
+   {% if (r.iter < 2) {{<i>}} %} %{r.val} {% if (r.iter < 2) {{</i>}} %} 
    </br>}} 
 %}
 
 <h2>Table</h2>
  <table border=3>
   {% for (r, row) {{
-    <tr>{% for (c, r.col) {{<td>${r.val},${c.val}</td>}} %}</tr>
+    <tr>{% for (c, r.col) {{<td>%{r.val},%{c.val}</td>}} %}</tr>
   }} %}
   </table>
 </br>
@@ -24,33 +24,33 @@
  <table>
  {% for (r, simple) {{ 
   <tr><td{% if (r.odd) {{ bgcolor=#80ffff}} %}>
-     val=${r.val}; last=${r.last}; iter=${r.iter};
-     odd=${r.odd}; even=${r.even}; count=${r.count}</td></tr>}} %}
+     val=%{r.val}; last=%{r.last}; iter=%{r.iter};
+     odd=%{r.odd}; even=%{r.even}; count=%{r.count}</td></tr>}} %}
  </table>
 
 <h2>Inline List</h2>
 {% for (r, push)
   {{{% cond (!r.first && r.last) {{ and }},
             (!r.first)           {{,}}     %} 
-    ${r.val}}}  
+    %{r.val}}}  
 %} 
 
 <h2>Inline List, Single</h2>
 {% for (r, single)
   {{{% cond (!r.first && r.last) {{ and }},
             (!r.first)           {{,}}     %} 
-    ${r.val}}}  
+    %{r.val}}}  
 %} 
 
 <h2>Inline List, Double</h2>
 {% for (r, double)
   {{{% cond (!r.first && r.last) {{ and }},
             (!r.first)           {{,}}     %} 
-    ${r.val}}}
+    %{r.val}}}
 %}
 
 <h2>Empty</h2>
- {% for (r, nodice) {{ ${r.notfound} }}, {{Vector was empty!}} %}
+ {% for (r, nodice) {{ %{r.notfound} }}, {{Vector was empty!}} %}
 
  </body>
 </html>

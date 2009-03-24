@@ -98,7 +98,13 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     pub3::eval_t eval (e, o);
   }
 
-  if (!(v = _arr->eval_as_vec (&eval)) && !_empty) {
+  { 
+    bool old_silent = eval.set_silent (true);
+    v = _arr->eval_as_vec (&eval);
+    eval.set_silent (old_silent);
+  }
+
+  if (!v && !_empty) {
 
     strbuf b ("for: second argument is not an iterable vector");
     o->output_err (e, b, lineno);
