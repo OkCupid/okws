@@ -164,13 +164,13 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <H,WH,JS,PSTR,PTAG,HTAG,PSTR_SQ>{
 "${"		{ 
-		   if (yy_p3_depth > 0) {
-		      yy_push_state (P3);
-		      return T_P3_BEGIN_EXPR;
-		   } else {
 		      yy_push_state (PVAR); 
 		      return T_BVAR; 
-		   }
+		}
+
+"%{"		{
+		      yy_push_state (P3);
+		      return T_P3_BEGIN_EXPR;
 		}
 
 
@@ -198,7 +198,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		     yy_push_state (TXLCOM);
 		}
 
-\\+[$]"{"	|
+\\+[$%]"{"	|
 \\"}}"		|
 \\"["{2,4}	|
 \\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
@@ -223,7 +223,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		  }
                 }
 
-[$}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
+[%$}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
 
 }
 <H,WH,JS,PTAG,HTAG,TXLCOM,TXLCOM3>{
@@ -231,7 +231,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <H>{
-[^$}{\\<\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[^%$}{\\<\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 [<{]		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
@@ -267,8 +267,8 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 <JS>{
 "</"{ST}{WS}*\>	{ yy_pop_state (); yylval.str = yytext; return T_EJS; }
 {TPRFX}"/"{ST}{TCLOSE} { yy_pop_state (); return T_EJS_SILENT; }
-[}$@<\\]	{ yylval.ch = yytext[0]; return T_CH; }
-[^\\$@<}]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[}$%<\\]	{ yylval.ch = yytext[0]; return T_CH; }
+[^\\$%<}]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 }
 
 <HCOM>{
@@ -288,7 +288,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <WH>{
-[^$\\<{\n\t}\[\] ]+	{ yylval.str = yytext; return T_HTML; }
+[^$%\\<{\n\t}\[\] ]+	{ yylval.str = yytext; return T_HTML; }
 \\		 	{ yylval.ch = yytext[0]; return T_CH; }
 }
 
@@ -366,11 +366,11 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 <P3_STR>{
-"${"		{ yy_push_state (P3); return T_P3_BEGIN_EXPR; }
+[%$][{]		{ yy_push_state (P3); return T_P3_BEGIN_EXPR; }
 \n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 ["]		{ end_P3_STR (); return yytext[0]; }
-[^\\$"\n]+	{ yylval.str = yytext; return T_P3_STRING; }
+[^\\%$"\n]+	{ yylval.str = yytext; return T_P3_STRING; }
 <<EOF>>         { return yyerror (strbuf ("EOF found in str started on "
 		  	 	 	  "line %d", yy_ssln)); }
 }

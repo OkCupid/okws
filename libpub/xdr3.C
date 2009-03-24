@@ -5,13 +5,51 @@
 
 //-----------------------------------------------------------------------
 
+static void 
+expr_to_rpc_ptr (ptr<const pub3::expr_t> e, rpc_ptr<xpub3_expr_t> *x)
+{
+  if (e) {
+    x->alloc ();
+    e->to_xdr (*x);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+static void
+expr_to_xdr (const pub3::expr_list_t *in, xpub3_expr_list_t *out)
+{
+  if (in) {
+    out->setsize (in->size ());
+    for (size_t i = 0; i < in->size (); i++) {
+      ptr<const pub3::expr_t> x = (*in)[i];
+      if (x) {
+	x->to_xdr (&(*out)[i]);
+      } else {
+	(*out)[i].set_typ (XPUB3_EXPR_NULL);
+      }
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+static void
+expr_to_xdr (ptr<const pub3::expr_t> e, xpub3_expr_t *x)
+{
+  if (e) { e->to_xdr (x); }
+  else   { x->set_typ (XPUB3_EXPR_NULL); }
+}
+
+//-----------------------------------------------------------------------
+
 bool
 pub3::for_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB3_FOR);
   x->forloop->lineno = lineno;
   x->forloop->iter = _iter;
-  expr_t::expr_to_xdr (_arr, &x->forloop->arr);
+  expr_to_xdr (_arr, &x->forloop->arr);
   if (_env) {
     _env->to_xdr (&x->forloop->body);
   }
@@ -64,8 +102,8 @@ pub3::include_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB3_INCLUDE);
   x->pub3_include->lineno = lineno;
-  expr_t::expr_to_xdr (_file, &x->pub3_include->file);
-  expr_t::expr_to_xdr (_dict, &x->pub3_include->dict);
+  expr_to_xdr (_file, &x->pub3_include->file);
+  expr_to_xdr (_dict, &x->pub3_include->dict);
   return true;
 }
 
@@ -103,6 +141,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     break;
   case XPUB3_EXPR_RELATION:
     r = New refcounted<pub3::expr_relation_t> (*x.relation);
+    break;
+  case XPUB3_EXPR_DICT:
+    r = New refcounted<pub3::expr_dict_t> (*x.dict);
     break;
   case XPUB3_EXPR_EQ:
     r = New refcounted<pub3::expr_EQ_t> (*x.eq);
@@ -260,33 +301,6 @@ pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
 
 //-----------------------------------------------------------------------
 
-void 
-pub3::expr_t::expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x)
-{
-  if (e) {
-    x->alloc ();
-    e->to_xdr (*x);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_t::expr_to_xdr (const expr_list_t *in, xpub3_expr_list_t *out)
-{
-  if (in) {
-    out->setsize (in->size ());
-    for (size_t i = 0; i < in->size (); i++) {
-      ptr<const expr_t> x = (*in)[i];
-      if (x) {
-	x->to_xdr (&(*out)[i]);
-      } else {
-	(*out)[i].set_typ (XPUB3_EXPR_NULL);
-      }
-    }
-  }
-}
-
 //-----------------------------------------------------------------------
 
 bool
@@ -294,8 +308,8 @@ pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_AND);
   x->xand->lineno = _lineno;
-  expr_to_xdr (_f1, &x->xand->f1);
-  expr_to_xdr (_f2, &x->xand->f2);
+  expr_to_rpc_ptr (_f1, &x->xand->f1);
+  expr_to_rpc_ptr (_f2, &x->xand->f2);
   return true;
 }
 
@@ -306,8 +320,8 @@ pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_OR);
   x->xxor->lineno = _lineno;
-  expr_to_xdr (_t1, &x->xxor->t1);
-  expr_to_xdr (_t2, &x->xxor->t2);
+  expr_to_rpc_ptr (_t1, &x->xxor->t1);
+  expr_to_rpc_ptr (_t2, &x->xxor->t2);
   return true;
 }
 
@@ -318,8 +332,8 @@ pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_ADD);
   x->xadd->lineno = _lineno;
-  expr_to_xdr (_t1, &x->xadd->t1);
-  expr_to_xdr (_t2, &x->xadd->t2);
+  expr_to_rpc_ptr (_t1, &x->xadd->t1);
+  expr_to_rpc_ptr (_t2, &x->xadd->t2);
   x->xadd->pos = _pos;
   return true;
 }
@@ -331,7 +345,7 @@ pub3::expr_NOT_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_NOT);
   x->xnot->lineno = _lineno;
-  expr_to_xdr (_e, &x->xnot->e);
+  expr_to_rpc_ptr (_e, &x->xnot->e);
   return true;
 }
 
@@ -355,8 +369,8 @@ pub3::expr_relation_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_RELATION);
   x->relation->lineno = _lineno;
   x->relation->relop = _op;
-  expr_to_xdr (_l, &x->relation->left);
-  expr_to_xdr (_r, &x->relation->right);
+  expr_to_rpc_ptr (_l, &x->relation->left);
+  expr_to_rpc_ptr (_r, &x->relation->right);
   return true;
 }
 
@@ -368,8 +382,8 @@ pub3::expr_EQ_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_EQ);
   x->eq->lineno = _lineno;
   x->eq->pos = _pos;
-  expr_to_xdr (_o1, &x->eq->o1);
-  expr_to_xdr (_o2, &x->eq->o2);
+  expr_to_rpc_ptr (_o1, &x->eq->o1);
+  expr_to_rpc_ptr (_o2, &x->eq->o2);
   return true;
 }
 
@@ -381,7 +395,7 @@ pub3::expr_dictref_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_DICTREF);
   x->dictref->lineno = _lineno;
   x->dictref->key = _key;
-  expr_to_xdr (_dict, &x->dictref->dict);
+  expr_to_rpc_ptr (_dict, &x->dictref->dict);
   return true;
 }
 
@@ -392,8 +406,8 @@ pub3::expr_vecref_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_VECREF);
   x->dictref->lineno = _lineno;
-  expr_to_xdr (_index, &x->vecref->index);
-  expr_to_xdr (_vec, &x->vecref->vec);
+  expr_to_rpc_ptr (_index, &x->vecref->index);
+  expr_to_rpc_ptr (_vec, &x->vecref->vec);
   return true;
 }
 
@@ -454,21 +468,12 @@ pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 
 //-----------------------------------------------------------------------
 
-void
-pub3::expr_t::expr_to_xdr (ptr<expr_t> e, xpub3_expr_t *x)
-{
-  if (e) { e->to_xdr (x); }
-  else   { x->set_typ (XPUB3_EXPR_NULL); }
-}
-
-//-----------------------------------------------------------------------
-
 bool
 pub3::cond_clause_t::to_xdr (xpub3_cond_clause_t *x) const
 {
   x->lineno = _lineno;
 
-  expr_t::expr_to_xdr (_expr, &x->expr);
+  expr_to_xdr (_expr, &x->expr);
   if (_env) { _env->to_xdr (&x->body); }
 
   return true;
@@ -528,8 +533,8 @@ pub3::expr_dict_t::expr_dict_t (const xpub3_dict_t &x)
 bool
 pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->dict->lineno = _lineno;
   x->set_typ (XPUB3_EXPR_DICT);
+  x->dict->lineno = _lineno;
   
   if (_dict) {
     const nvtab_t *tab = _dict->nvtab ();
@@ -539,7 +544,7 @@ pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
       if (e) {
 	xpub3_nvpair_t &p3 = x->dict->entries.push_back ();
 	p3.key = p->name ();
-	e->to_xdr (p3.val);
+	expr_to_rpc_ptr (e, &p3.val);
       }
     }
   }
@@ -562,7 +567,7 @@ pub3::inline_var_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB3_INLINE_VAR);
   x->pub3_inline_var->lineno = _lineno;
-  expr_t::expr_to_xdr (_expr, &x->pub3_inline_var->expr);
+  expr_to_xdr (_expr, &x->pub3_inline_var->expr);
   return true;
 }
 

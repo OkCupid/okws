@@ -103,7 +103,7 @@
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_vector;
-%type <str> p3_identifier;
+%type <str> p3_identifier p3_bind_key;
 %type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 
@@ -754,10 +754,14 @@ p3_bindings: p3_binding
 	}
 	;
 
-p3_binding: p3_identifier p3_bindchar p3_expr
+p3_binding: p3_bind_key p3_bindchar p3_expr
 	{
 	   $$ = New nvpair_t ($1, $3);
 	}
+	;
+
+p3_bind_key: p3_identifier { $$ = $1; }
+        | p3_string { $$ = $1->eval_as_str (); }
 	;
 
 p3_bindchar: ':' | '=' ;

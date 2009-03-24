@@ -783,7 +783,7 @@ public:
   virtual ptr<pstr_t> to_pstr () { return NULL; }
   virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
   virtual ptr<const pub3::expr_t> to_expr () const { return NULL; }
-  ptr<pub3::expr_t> to_expr () { return NULL; }
+  virtual ptr<pub3::expr_t> to_expr () { return NULL; }
 };
 
 //-----------------------------------------------------------------------

@@ -53,12 +53,6 @@ namespace pub3 {
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t &x);
     static ptr<vec<ptr<expr_t> > > alloc (const xpub3_expr_list_t *x);
-
-    static void expr_to_xdr (ptr<expr_t> e, rpc_ptr<xpub3_expr_t> *x);
-    static void expr_to_xdr (ptr<expr_t> e, xpub3_expr_t *x);
-
-    static void expr_to_xdr (const vec<ptr<expr_t> >  *in, 
-			     xpub3_expr_list_t *out);
     
     virtual bool eval_as_bool (eval_t *e) const;
     virtual int64_t eval_as_int (eval_t *e) const;
@@ -249,6 +243,7 @@ namespace pub3 {
     expr_varref_t (const xpub3_ref_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     str eval_as_identifier () const { return _name; }
+    scalar_obj_t eval_as_scalar (eval_t *e) const;
   protected:
     ptr<const pval_t> eval_as_pval (eval_t *e) const;
     str _name;
