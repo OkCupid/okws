@@ -62,7 +62,8 @@ enum xpub_val_typ_t {
   XPUB_VAL_INT = 1,
   XPUB_VAL_PSTR = 2,
   XPUB_VAL_MARR = 3,
-  XPUB_VAL_IARR = 4
+  XPUB_VAL_IARR = 4,
+  XPUB3_VAL_EXPR = 5
 };	
 
 enum xpub_pstr_el_typ_t {
@@ -143,6 +144,8 @@ union xpub_parr_t switch (xpub_int_typ_t typ)
    void;
 };
 
+%struct xpub3_expr_t;
+
 union xpub_val_t switch (xpub_val_typ_t typ)
 {
  case XPUB_VAL_INT:
@@ -155,8 +158,9 @@ union xpub_val_t switch (xpub_val_typ_t typ)
    xpub_parr_mixed_t marr;
  case XPUB_VAL_IARR:
    xpub_parr_t iarr;
+ case XPUB3_VAL_EXPR:
+   xpub3_expr_t *expr;
 };
-
 
 struct xpub_nvpair_t {
   xpub_key_t key;
@@ -353,7 +357,6 @@ enum xpub3_expr_typ_t {
 };
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
 
-%struct xpub3_expr_t;
 
 struct xpub3_and_t {
    int lineno;

@@ -828,6 +828,8 @@ concatable_str_t::concat (const str &s)
   return true; 
 }
 
+//-----------------------------------------------------------------------
+
 bool
 concatable_str_t::concat (concatable_t *l)
 {
@@ -838,6 +840,8 @@ concatable_str_t::concat (concatable_t *l)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_g_init_pdl_t::add (ptr<arglist_t> l)
 {
@@ -847,6 +851,8 @@ pfile_g_init_pdl_t::add (ptr<arglist_t> l)
   }
   return (!err);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_inclist_t::add (ptr<arglist_t> l)
@@ -873,6 +879,8 @@ pfile_inclist_t::add (ptr<arglist_t> l)
   return (!err);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_inclist_t::validate ()
 {
@@ -882,6 +890,8 @@ pfile_inclist_t::validate ()
   }
   return (!err);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_include2_t::add (ptr<arglist_t> l)
@@ -909,6 +919,8 @@ pfile_include2_t::add (ptr<arglist_t> l)
   return (!err);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_include_t::add_base (ptr<arglist_t> l) 
 {
@@ -921,6 +933,8 @@ pfile_include_t::add_base (ptr<arglist_t> l)
   }
   return (!err);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_include_t::add (ptr<arglist_t> l)
@@ -948,6 +962,8 @@ pfile_include_t::add (ptr<arglist_t> l)
   return (!err);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_include_t::validate ()
 {
@@ -958,6 +974,8 @@ pfile_include_t::validate ()
   return (!err);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_include2_t::validate ()
 {
@@ -967,6 +985,8 @@ pfile_include2_t::validate ()
   }
   return (!err);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_switch_t::add (ptr<arglist_t> l)
@@ -985,6 +1005,8 @@ pfile_switch_t::add (ptr<arglist_t> l)
   return (!err);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 pfile_switch_t::validate ()
 {
@@ -997,6 +1019,8 @@ pfile_switch_t::validate ()
   }
   return !err;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_set_func_t::add (ptr<arglist_t> l)
@@ -1012,6 +1036,25 @@ pfile_set_func_t::add (ptr<arglist_t> l)
   }
   return (!err);
 }
+
+//-----------------------------------------------------------------------
+
+bool
+pfile_set_func_t::add (ptr<pub3::expr_dict_t> d)
+{
+  if (err)
+    return false;
+  if (aarr) {
+    PWARN("Set command only takes one argument");
+    err = true;
+  } else if (!(aarr = d->dict ())) {
+    PWARN("Bad argument to set command");
+    err = true;
+  }
+  return (!err);
+}
+
+//-----------------------------------------------------------------------
 
 bool
 pfile_switch_t::add_case (ptr<arglist_t> l)

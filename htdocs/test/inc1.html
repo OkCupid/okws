@@ -1,4 +1,12 @@
 
+{% set { d : "DdDdDdDd",
+         e : "EeEeEeEe" } %}
 {% include ("inc2.html", { a : "AaAa",
                            b : "BbBb" } ) %}
+
+<h2>Some local Crap</h2>
+D => %{d}<br>
+D => ${d}<br>
+
+
 

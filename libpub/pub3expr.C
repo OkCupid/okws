@@ -260,10 +260,13 @@ pub3::expr_varref_t::eval_as_scalar (eval_t *e) const
   ptr<const expr_t> x;
   ptr<const pub_scalar_t> ps;
   scalar_obj_t ret;
-  if ((x = v->to_expr ())) {
+  if (v && (x = v->to_expr ())) {
     ret = x->eval_as_scalar (e);
-  } else if ((ps = v->to_scalar ())) {
+  } else if (v && (ps = v->to_scalar ())) {
     ret = ps->obj ();
+  } else if (e->loud ()) {
+    strbuf b ("cannot resolve: %s", _name.cstr ());
+    report_error (e, b);
   }
   return ret;
 }

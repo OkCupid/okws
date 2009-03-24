@@ -222,6 +222,7 @@ typedef ptr<bound_pfile_t> bpfmp_t;       // mutable pointer
 namespace pub3 {
   class expr_ref_t;
   class expr_t;
+  class expr_dict_t;
 };
 
 //-----------------------------------------------------------------------
@@ -1583,6 +1584,8 @@ private:
   pfile_frame_t _frm;
 };
 
+//-----------------------------------------------------------------------
+
 class pfile_set_func_t : public pfile_func_t {
 public:
   pfile_set_func_t (int l) 
@@ -1591,6 +1594,7 @@ public:
   pfile_set_func_t (const xpub_set_func_t &x);
   virtual void output (output_t *o, penv_t *e) const;
   bool add (ptr<arglist_t> a);
+  bool add (ptr<pub3::expr_dict_t> d);
   bool validate () { return true; }
   virtual void output_runtime (penv_t *e) const;
   void output_config (penv_t *e) const ;
@@ -1605,6 +1609,8 @@ protected:
   ptr<aarr_arg_t> aarr;
   mutable penv_t *env;
 };
+
+//-----------------------------------------------------------------------
 
 class pfile_set_local_func_t : public pfile_set_func_t {
 public:

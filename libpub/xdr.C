@@ -516,6 +516,8 @@ pval_t::alloc (const xpub_val_t &x)
     return New refcounted<parr_mixed_t> (*x.marr);
   case XPUB_VAL_IARR:
     return parr_int_t::alloc (*x.iarr);
+  case XPUB3_VAL_EXPR:
+    return pub3::expr_t::alloc (**x.expr);
   default:
     return NULL;
   }

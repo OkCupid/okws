@@ -55,7 +55,7 @@
 %type <pvar> pvar evar 
 %type <pval> bvalue arr i_arr g_arr
 %type <sec> htag htag_list javascript pre b_js_tag
-%type <el> ptag p3_forloop p3_cond p3_include
+%type <el> ptag p3_forloop p3_cond p3_include p3_set
 %type <func> ptag_func
 %type <pstr> pstr pstr_sq
 %type <arg> arg aarr regex range
@@ -77,6 +77,7 @@
 %token T_P3_END_EXPR
 %token T_P3_INCLUDE
 %token T_P3_CLOSETAG
+%token T_P3_SET
 
 %token T_P3_FOR
 %token T_P3_TRUE
@@ -97,9 +98,8 @@
 %type <p3expr> p3_integer_constant p3_string p3_string_element;
 %type <p3expr> p3_inline_expr;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
-%type <p3dict> p3_bindings_opt p3_bindings;
+%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bind> p3_binding;
-%type <p3expr> p3_dictionary;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_vector;
@@ -174,6 +174,7 @@ ptag: ptag_func
 	| p3_forloop
 	| p3_cond
 	| p3_include
+	| p3_set
 	;
 
 ptag_close: ';' T_EPTAG
@@ -822,6 +823,14 @@ p3_include: T_P3_INCLUDE p3_vector T_P3_CLOSETAG
 	   }
            $$ = f;
 	};
+
+p3_set: T_P3_SET p3_dictionary T_P3_CLOSETAG
+	{
+           pfile_set_func_t *f = New pfile_set_func_t (PLINENO);
+           f->add ($2);   
+	   $$ = f;
+	}
+	;
 
 p3_forloop: T_P3_FOR p3_vector nested_env empty_clause T_P3_CLOSETAG
 	 {

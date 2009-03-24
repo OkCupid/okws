@@ -50,6 +50,7 @@ namespace pub3 {
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
     bool to_xdr (xpub_obj_t *x) const;
+    bool to_xdr (xpub_val_t *x) const;
 
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
@@ -378,8 +379,10 @@ namespace pub3 {
     expr_dict_t (const xpub3_dict_t &x);
 
     void add (nvpair_t *p);
-    str get_obj_name () const { return "pub3-expr-dict"; }
+    str get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
+    ptr<aarr_arg_t> dict () { return _dict; }
+    ptr<const aarr_arg_t> dict () const { return _dict; }
 
     ptr<const aarr_t> eval_as_dict (eval_t *e) const { return _dict; }
 
@@ -396,7 +399,7 @@ namespace pub3 {
     inline_var_t (const xpub3_inline_var_t &x);
     void output (output_t *o, penv_t *e) const;
     pfile_el_type_t get_type () const { return PFILE_PUB3_VAR; }
-    str get_obj_name () const { return "pfile_pub3_var_t"; }
+    str get_obj_name () const { return "pub3::inline_var_t"; }
     void dump2 (dumper_t *d) const;
     bool to_xdr (xpub_obj_t *x) const;
   private:

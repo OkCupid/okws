@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 static void 
-expr_to_rpc_ptr (ptr<const pub3::expr_t> e, rpc_ptr<xpub3_expr_t> *x)
+expr_to_rpc_ptr (const pub3::expr_t *e, rpc_ptr<xpub3_expr_t> *x)
 {
   if (e) {
     x->alloc ();
@@ -579,6 +579,16 @@ pub3::inline_var_t::to_xdr (xpub_obj_t *x) const
 pub3::inline_var_t::inline_var_t (const xpub3_inline_var_t &x)
   : _expr (expr_t::alloc (x.expr)),
     _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_t::to_xdr (xpub_val_t *x) const
+{
+  x->set_typ (XPUB3_VAL_EXPR);
+  expr_to_rpc_ptr (this, x->expr);
+  return true;
+}
 
 //-----------------------------------------------------------------------
 
