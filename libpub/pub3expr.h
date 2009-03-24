@@ -51,7 +51,8 @@ namespace pub3 {
     expr_t (int lineno = -1) : _lineno (lineno) {}
     virtual ~expr_t () {}
 
-    enum { max_stack_depth = 128 };
+    enum { max_stack_depth = 128,
+	   max_shell_strlen = 0x100000 };
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
     bool to_xdr (xpub_obj_t *x) const;
@@ -85,6 +86,7 @@ namespace pub3 {
 
     bool enter (eval_t *e) const;
     void leave (eval_t *e) const;
+    bool overflow (eval_t *e) const;
 
   protected:
     virtual ptr<const pval_t> eval_as_pval (eval_t *e) const { return NULL; }

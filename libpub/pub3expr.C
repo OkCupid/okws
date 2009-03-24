@@ -6,10 +6,18 @@
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_t::overflow (eval_t *e) const
+{
+  return (e->inc_stack_depth () >= size_t (max_stack_depth));
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_t::enter (eval_t *e) const
 {
   bool ret = true;
-  if (e->inc_stack_depth () >= size_t (max_stack_depth)) {
+  if (overflow (e)) {
     ret = false;
     str err = strbuf ("max recursion depth reached (%d)", max_stack_depth);
     report_error (e, err);
@@ -639,6 +647,7 @@ pub3::expr_shell_str_t::compact () const
 scalar_obj_t
 pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
 {
+  bool err = false;
   if (!enter (e)) {
     _so.set ("XX too much recursion XX");
 
@@ -646,9 +655,16 @@ pub3::expr_shell_str_t::eval_as_scalar (eval_t *e) const
 
     strbuf b;
     vec<str> v;
-    for (size_t i = 0; i < _els.size (); i++) {
+    for (size_t i = 0; !err && i < _els.size (); i++) {
       str s = _els[i]->eval_as_str (e);
-      if (s) {
+
+      size_t sz = b.tosuio ()->resid ();
+      if (overflow (e)) {
+	err = true;
+      } else if (sz > size_t (max_shell_strlen)) {
+	report_error (e, strbuf ("max-len string encountered (%zu)", sz));
+	err = true;
+      } else if (s) {
 	b << s;
 	v.push_back (s);
       }
