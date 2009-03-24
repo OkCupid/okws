@@ -1,0 +1,46 @@
+
+<html>
+ <head>
+  <title>For Loop Testing Page</title>
+ </head>
+ <body>
+ <h1>For Loop Testing Page</h1>
+
+<h2>Push-Back</h2>
+{% for (r, push) {{ 
+   {% if (r.iter < 2) {{<i>}} %} %{r.val} {% if (r.iter < 2) {{</i>}} %} 
+   </br>}} 
+%}
+
+<h2>Table</h2>
+ <table border=3>
+  {% for (r, row) {{
+    <tr>{% for (c, r.col) {{<td>%{r.val},%{c.val}</td>}} %}</tr>
+  }} %}
+  </table>
+</br>
+
+<h2>Simple</h2>
+ <table>
+ {% for (r, simple) {{ 
+  <tr><td{% if (r.odd) {{ bgcolor=#80ffff}} %}>
+     val=%{r.val}; last=%{r.last}; iter=%{r.iter};
+     odd=%{r.odd}; even=%{r.even}; count=%{r.count}</td></tr>}} %}
+ </table>
+
+<h2>Inline List</h2>
+{% include ("list.html", { list : push }) %}
+
+<h2>Inline List, Single</h2>
+{% include ("list.html", { list : single }) %}
+
+<h2>Inline List, Double</h2>
+{% include ("list.html", { list : double }) %}
+
+<h2>Empty</h2>
+ {% for (r, nodice) {{ %{r.notfound} }}, {{Vector was empty!}} %}
+
+ </body>
+</html>
+    
+
