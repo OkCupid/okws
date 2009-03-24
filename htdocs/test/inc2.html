@@ -1,2 +1,6 @@
 
 A => ${a}<br>
+
+{% include ("inc3.html", 
+       { "c" : "[--begin-crap-- a=%{a}; b=%{b} --end-crap---]" } ) %}
+

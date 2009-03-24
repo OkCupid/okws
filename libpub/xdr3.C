@@ -160,6 +160,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_STR:
     r = New refcounted<pub3::expr_str_t> (*x.xstr);
     break;
+  case XPUB3_EXPR_SHELL_STR:
+    r = New refcounted<pub3::expr_shell_str_t> (*x.shell_str);
+    break;
   case XPUB3_EXPR_INT:
     r = New refcounted<pub3::expr_int_t> (*x.xint);
     break;

@@ -68,7 +68,7 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
     pub3::obj_t o;
   }
 
-  tstf = "/test/forloop.html";
+  tstf = "/test/forloop2.html";
 
   if (cgi.blookup ("wss")) {
     opts |= P_WSS;
