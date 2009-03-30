@@ -1,0 +1,22 @@
+
+[[[ 
+  Pass in username => "username" (required). 
+  Default size is small (12px); pass in size => "medium" for 16px. 
+]]]
+
+{% set { BUTTON_PATH : "XXX" } %}
+
+{% if (ALT_BUTTON == "home") {{ {% set { BUTTON_PATH : "im_button_home.gif" } %} }},
+      (true)                 {{ {% set { BUTTON_PATH : "im_button_12.png"   } %} }} %}
+
+{% if (size == "medium") {{ {% set { IM_BUTTON_SRC : "http://cdn.okcimg.com/media/img/icons/im_button_16.png",
+                                     A_STYLE : "padding: 0 3px;",
+                                     IMG_STYLE : "height: 17px; line-height: 17px; width: 20px;" } %} }},
+      (true)  {{ {% set { IM_BUTTON_SRC : "http://cdn.okcimg.com/media/img/icons/%{BUTTON_PATH}",
+                          A_STYLE : "padding: 0 4px;",
+                          IMG_STYLE : "height: 12px; line-height: 12px; width: 12px; position: relative; top: 2px;" } %} }} %}
+
+{% if (escape == 1) {{ {% set { ESCAPE : "\\" } %} }},
+      (true)        {{ {% set { ESCAPE : "" } %} }} %}
+
+<a href="#" class="im_bubble" onclick="InstantEvents.openAnImWindow(%{ESCAPE}'%{username}%{ESCAPE}'); return false;" style="%{A_STYLE}"><img src="%{IM_BUTTON_SRC}" title="[[[[Instant Message. This should be as short as possible (two characters if possible).]]IM]]" style="float: none; display: inline; border: none; margin: 0; %{IMG_STYLE}" /></a>
