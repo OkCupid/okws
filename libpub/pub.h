@@ -155,7 +155,7 @@ public:
   virtual ~dumpable_t () {}
   virtual void dump (dumper_t *d) const;
   virtual void dump2 (dumper_t *d) const {}
-  virtual str get_obj_name () const = 0;
+  virtual const char *get_obj_name () const = 0;
   virtual int get_lineno () const { return 0; }
 };
 
@@ -195,7 +195,7 @@ public:
   gvars_t () {}
   virtual ~gvars_t () {}
   void add (const str &s) { tab.insert (s); }
-  virtual str get_obj_name () const { return "gvars_t"; }
+  virtual const char *get_obj_name () const { return "gvars_t"; }
   void dump2 (dumper_t *d) const;
   virtual int lookup (const str &s) const { return (tab[s] ? 1 : 0); }
 protected:
@@ -205,7 +205,7 @@ protected:
 class guvars_t : public gvars_t {
 public:
   int lookup (const str &s) const { return (tab[s] ? -1 : 0); }
-  str get_obj_name () const { return "guvars_t"; }
+  const char *get_obj_name () const { return "guvars_t"; }
 };
 
 class aarr_t;
@@ -239,7 +239,7 @@ public:
   void output (output_t *o, penv_t *e, int i = 0) const;
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "nvpair_t"; }
+  const char *get_obj_name () const { return "nvpair_t"; }
   bool to_xdr (xpub_nvpair_t *x) const;
 
   void set_value (ptr<pval_t> r) { val = r; }
@@ -354,7 +354,7 @@ public:
   void output (output_t *o, penv_t *e) const;
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "aarr_t"; }
+  const char *get_obj_name () const { return "aarr_t"; }
   bool to_xdr (xpub_aarr_t *x) const;
   const nvtab_t *nvtab () const { return &aar; }
   nvtab_t *nvtab () { return &aar; }
@@ -468,11 +468,12 @@ public:
   bool get_tlf () const { return tlf; }
   void clear () { bump (); estack.clear (); gvars.clear (); hold.clear (); }
 
-  cache_generation_t cache_generation () const { return _cache_generation; }
+  const cache_generation_t &
+  cache_generation () const { return *_cache_generation; }
 
   void set_localizer (ptr<const pub_localizer_t> l) { bump (); _localizer = l; }
   ptr<const pub_localizer_t> localizer () const { return _localizer; }
-  void bump () { _cache_generation.bump (); }
+  void bump () { _cache_generation->bump (); }
 
   const vec<const aarr_t *> &get_eval_stack () const { return estack; }
 
@@ -482,7 +483,7 @@ public:
   str cerr;
   u_int opts;
 
-  cache_generation_t _cache_generation;
+  cache_generation_t *_cache_generation;
 private:
 
   pub_evalmode_t evm;
@@ -641,7 +642,7 @@ struct bound_pfile_t : public virtual refcount,
   static bpfmp_t alloc (pfile_t *f = NULL)
   { return New refcounted<bound_pfile_t> (f); }
 
-  str get_obj_name () const { return "bound_pfile_t"; }
+  const char *get_obj_name () const { return "bound_pfile_t"; }
   void dump2 (dumper_t *d) const;
   bool open ();
   str read () const;
@@ -733,7 +734,7 @@ public:
   void push_frame (penv_t *p, aarr_t *f, const gvars_t *g = NULL) const;
   void pop_frame (output_t *o, penv_t *p) const 
   { if (o->stack_restore ()) p->resize (sss, sgvss); }
-  virtual str get_obj_name () const { return "pfile_frame_t"; }
+  virtual const char *get_obj_name () const { return "pfile_frame_t"; }
 private:
   mutable int sss;    /* start stack size */
   mutable int sgvss;  /* start gvar stack size */
@@ -798,7 +799,7 @@ public:
   bool match (const str &s);
   ptr<pub_regex_t> to_regex () { return mkref (this); }
   str to_str () const { return _rxx_str; }
-  str get_obj_name () const { return "regex"; }
+  const char *get_obj_name () const { return "regex"; }
   void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
 
 private:
@@ -826,7 +827,7 @@ class pub_irange_t : public pub_range_t {
 public:
   pub_irange_t (int64_t l, int64_t h) : _low (l), _hi (h) {}
   pub_irange_t (const xpub_irange_t &x);
-  str get_obj_name () const { return "irange"; }
+  const char *get_obj_name () const { return "irange"; }
 
   str to_str () const;
   bool match (scalar_obj_t so);
@@ -842,7 +843,7 @@ class pub_urange_t : public pub_range_t {
 public:
   pub_urange_t (u_int64_t l, u_int64_t h) : _low (l), _hi (h) {}
   pub_urange_t (const xpub_urange_t &x);
-  str get_obj_name () const { return "urange"; }
+  const char *get_obj_name () const { return "urange"; }
 
   str to_str () const;
   bool match (scalar_obj_t so);
@@ -857,7 +858,7 @@ class pub_drange_t : public pub_range_t {
 public:
   pub_drange_t (double l, double h) : _low (l), _hi (h) {}
   pub_drange_t (const xpub_drange_t &x);
-  str get_obj_name () const { return "irange"; }
+  const char *get_obj_name () const { return "irange"; }
 
   str to_str () const;
   bool match (scalar_obj_t so);
@@ -918,7 +919,7 @@ public:
   const scalar_obj_t &obj () const { return _obj; }
   scalar_obj_t &obj () { return _obj; }
   void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;
-  str get_obj_name () const { return "pub_scalar_t"; }
+  const char *get_obj_name () const { return "pub_scalar_t"; }
 
   bool eval_to_scalar (penv_t *e, scalar_obj_t *o) const;
 private:
@@ -935,7 +936,7 @@ public:
   pstr_t () : n (0)  {}
   ~pstr_t () { els.deleteall(); }
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pstr_t"; }
+  const char *get_obj_name () const { return "pstr_t"; }
   void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
   void add (const str &s);
   void add (char c);
@@ -960,7 +961,7 @@ public:
   pval_zbuf_t (ptr<zbuf> z) : pval_t (), zb (z), zb_hold (z) {}
   pval_zbuf_t (zbuf *z) : pval_t (), zb (z) {}
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "p_zbuf_val_t"; }
+  const char *get_obj_name () const { return "p_zbuf_val_t"; }
   void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
   str eval_simple () const { return zb->output (); }
 private:
@@ -1059,7 +1060,7 @@ public:
   void explore (pub_exploremode_t mode) const;
   pfile_el_type_t get_type () const { return PFILE_INCLIST; }
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pfile_inclist_t"; }
+  const char *get_obj_name () const { return "pfile_inclist_t"; }
   bool to_xdr (xpub_obj_t *x) const;
 protected:
   bool err;
@@ -1082,7 +1083,7 @@ public:
   virtual pfile_el_type_t get_type () const { return PFILE_INCLUDE; }
 
   virtual void dump2 (dumper_t *d) const;
-  virtual str get_obj_name () const { return "pfile_include_t"; }
+  virtual const char *get_obj_name () const { return "pfile_include_t"; }
   virtual bool to_xdr (xpub_obj_t *x) const;
   void to_xdr_base (xpub_obj_t *x) const;
   bool add_base (ptr<arglist_t> l);
@@ -1109,7 +1110,7 @@ public:
   virtual bool validate ();
   virtual void explore (pub_exploremode_t mode) const {}
   pfile_el_type_t get_type () const { return PFILE_INCLUDE2; }
-  virtual str get_obj_name () const { return "pfile_include2_t"; }
+  virtual const char *get_obj_name () const { return "pfile_include2_t"; }
   virtual bool to_xdr (xpub_obj_t *x) const;
   void dump2 (dumper_t *d) const;
 
@@ -1142,7 +1143,7 @@ public:
   bool add (ptr<arglist_t> l);
   bool validate () { return (!err); }
   void dump2 (dumper_t *d) const {}
-  str get_obj_name () const { return "pfile_g_init_pdl_t"; }
+  const char *get_obj_name () const { return "pfile_g_init_pdl_t"; }
 protected:
   const pfile_t *const file;
   bool err;
@@ -1157,7 +1158,7 @@ public:
   virtual bool ct_read () const { return true; }
 
   virtual void dump2 (dumper_t *d) const;
-  virtual str get_obj_name () const { return "pfile_g_ctinclude_t"; }
+  virtual const char *get_obj_name () const { return "pfile_g_ctinclude_t"; }
 protected:
   str osink;
 };
@@ -1170,7 +1171,7 @@ public:
   void explore (pub_exploremode_t mode) const {}
   bool ct_read () const { return false; }
   void dump2 (dumper_t *d) const;
-  virtual str get_obj_name () const { return "pfile_g_include_t"; }
+  virtual const char *get_obj_name () const { return "pfile_g_include_t"; }
 private:
   str pubobj;
 };
@@ -1192,7 +1193,7 @@ public:
   pfile_html_sec_t (const xpub_section_t &x);
   pfile_html_sec_t *add (char c); 
   pfile_html_sec_t *add (const str &s);
-  str get_obj_name () const { return "pfile_html_sec_t"; }
+  const char *get_obj_name () const { return "pfile_html_sec_t"; }
   bool is_empty () const { return (!els || els->is_empty ()); }
   bool to_xdr (xpub_section_t *x) const;
   inline void hadd_space ();
@@ -1219,7 +1220,7 @@ public:
   bool to_xdr (xpub_obj_t *x) const;
   pfile_el_type_t get_type () const { return PFILE_RAW; }
   void output (output_t *o, penv_t *e) const;
-  str get_obj_name () const { return "pfile_raw_el_t"; }
+  const char *get_obj_name () const { return "pfile_raw_el_t"; }
 private:
   str _dat;
 };
@@ -1234,7 +1235,7 @@ public:
   void output (output_t *o, penv_t *e) const;
   bool to_xdr (xpub_obj_t *x) const;
 
-  str get_obj_name () const { return "pfile_html_el_t"; }
+  const char *get_obj_name () const { return "pfile_html_el_t"; }
   void dump2 (dumper_t *d) const;
 };
 
@@ -1245,7 +1246,7 @@ public:
   void output (output_t *o, penv_t *e) const;
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pfile_gprint_t"; }
+  const char *get_obj_name () const { return "pfile_gprint_t"; }
 private:
   const str outv;
 };
@@ -1259,7 +1260,7 @@ public:
   pfile_el_type_t get_type () const { return PFILE_CCODE; }
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pfile_code_t"; }
+  const char *get_obj_name () const { return "pfile_code_t"; }
 private:
   strbuf sb;
 };
@@ -1276,7 +1277,7 @@ public:
   bool sec_traverse_init () { return true; }
   pfile_el_t *sec_traverse ();
 
-  str get_obj_name () const { return "pfile_pstr_t"; }
+  const char *get_obj_name () const { return "pfile_pstr_t"; }
   void dump2 (dumper_t *d) const { pstr->dump (d); }
   bool to_xdr (xpub_obj_t *x) const;
 private:
@@ -1304,7 +1305,7 @@ public:
 
   void to_xdr (xpub_file_t *x) const;
 
-  str get_obj_name () const { return "pfile_t"; }
+  const char *get_obj_name () const { return "pfile_t"; }
   void dump2 (dumper_t *d) const;
   void explore (pub_exploremode_t mode) const ;
   void setfp (FILE *f);
@@ -1352,7 +1353,7 @@ class pfile_gs_t : public pfile_sec_t {
 public:
   pfile_gs_t (int l) : pfile_sec_t (l) {}
   virtual void output (output_t *o, penv_t *e) const;
-  virtual str get_obj_name () const { return "pfile_gs_t"; }
+  virtual const char *get_obj_name () const { return "pfile_gs_t"; }
 private:
   pfile_frame_t frm;
 };
@@ -1365,7 +1366,7 @@ public:
   pvar_t (pval_t *v) : nm ("**Anonymous PVAR**"), lineno (0), val (v) {}
 
   virtual void eval_obj (pbuf_t *s, penv_t *e, u_int depth) const;
-  virtual str get_obj_name () const { return "pvar_t"; }
+  virtual const char *get_obj_name () const { return "pvar_t"; }
 
   void dump2 (dumper_t *d) const;
   void output (output_t *o, penv_t *e) const;
@@ -1383,7 +1384,7 @@ public:
   gcode_t (const str &v, int l = 0, bool es = false) 
     : pvar_t (v, l), escaped (false) {}
   void eval_obj (pbuf_t *s, penv_t *e, u_int depth = P_INFINITY) const;
-  str get_obj_name () const { return "gcode_t"; }
+  const char *get_obj_name () const { return "gcode_t"; }
   bool escaped;
 };
 
@@ -1396,7 +1397,7 @@ public:
   pfile_var_t (const xpub_file_var_t &x);
   void output (output_t *o, penv_t *e) const; 
   pfile_el_type_t get_type () const { return PFILE_VAR; }
-  str get_obj_name () const { return "pfile_var_t"; }
+  const char *get_obj_name () const { return "pfile_var_t"; }
   void dump2 (dumper_t *d) const { var->dump (d); }
   bool to_xdr (xpub_obj_t *x) const;
 private:
@@ -1427,7 +1428,7 @@ public:
   virtual str get_key () const = 0;
   virtual bool is_exact () const { return false; }
   bool to_xdr_base (xpub_switch_env_base_t *b) const;
-  str get_obj_name () const { return "pswitch_env_t"; }
+  const char *get_obj_name () const { return "pswitch_env_t"; }
   virtual ptr<pswitch_env_nullkey_t> to_nullkey () { return NULL; }
 
   const pfnm_t fn;
@@ -1469,7 +1470,7 @@ public:
 		     ptr<aarr_arg_t> a, ptr<nested_env_t> ne)
     : pswitch_env_base_t (n, a, ne), _rxx (rxx) {}
   pswitch_env_rxx_t (const xpub_switch_env_rxx_t &x);
-  str get_obj_name () const { return "pswitch_env_rxx_t"; }
+  const char *get_obj_name () const { return "pswitch_env_rxx_t"; }
   bool match (const scalar_obj_t &s) const;
 
   str get_key () const { return _rxx->to_str (); }
@@ -1483,7 +1484,7 @@ public:
 		       ptr<aarr_arg_t> a, ptr<nested_env_t> ne)
     : pswitch_env_base_t (n, a, ne), _range (r) {}
   pswitch_env_range_t (const xpub_switch_env_range_t &x);
-  str get_obj_name () const { return "pswitch_env_range_t"; }
+  const char *get_obj_name () const { return "pswitch_env_range_t"; }
   bool match (const scalar_obj_t &s) const;
   str get_key () const { return _range->to_str (); }
   bool to_xdr (xpub_switch_env_union_t *e) const;
@@ -1516,7 +1517,7 @@ public:
   bool to_xdr (xpub_obj_t *x) const;
 
   void dump2 (dumper_t *d) const;
-  str get_obj_name () const { return "pfile_switch_t"; }
+  const char *get_obj_name () const { return "pfile_switch_t"; }
     
   // For pub2
   void publish (pub2_iface_t *, output_t *, penv_t *, xpub_status_cb_t ,
@@ -1552,7 +1553,7 @@ public:
   aarr_arg_t () {}
   ptr<aarr_arg_t> to_aarr () { return mkref (this); }
   ptr<const aarr_arg_t> to_aarr () const { return mkref (this); }
-  str get_obj_name () const { return "aarr_arg_t"; }
+  const char *get_obj_name () const { return "aarr_arg_t"; }
   void eval_obj (pbuf_t *, penv_t *, u_int) const {}
 };
 
@@ -1563,7 +1564,7 @@ class nested_env_t : public arg_t, public pub2able_t
 public:
   nested_env_t (pfile_sec_t *s) : _sec (s) {}
   ~nested_env_t () { delete _sec; }
-  str get_obj_name () const { return "nested_env_t"; }
+  const char *get_obj_name () const { return "nested_env_t"; }
   void eval_obj (pbuf_t *, penv_t *, u_int) const {}
   void dump2 (dumper_t *d) const {}
   ptr<nested_env_t> to_nested_env () { return mkref (this); }
@@ -1600,7 +1601,7 @@ public:
   void output_config (penv_t *e) const ;
 
   void dump2 (dumper_t *d) const;
-  virtual str get_obj_name () const { return "pfile_set_func_t"; }
+  virtual const char *get_obj_name () const { return "pfile_set_func_t"; }
   virtual bool to_xdr (xpub_obj_t *x) const;
   ptr<aarr_arg_t> get_aarr () const { return aarr; }
 protected:
@@ -1617,7 +1618,7 @@ public:
   pfile_set_local_func_t (int l) : pfile_set_func_t (l) {}
   pfile_set_local_func_t (const xpub_set_func_t &x)
     : pfile_set_func_t (x) {}
-  str get_obj_name () const { return "pfile_set_local_func_t"; }
+  const char *get_obj_name () const { return "pfile_set_local_func_t"; }
   bool to_xdr (xpub_obj_t *x) const;
   void output_runtime (penv_t *e) const;
 };
@@ -1628,7 +1629,7 @@ class pval_null_t : public pval_t {
 public:
   void eval_obj (pbuf_t *p, penv_t *e, u_int d) const {}
   bool is_null () const { return true; }
-  str get_obj_name () const { return "pval_null_t"; }
+  const char *get_obj_name () const { return "pval_null_t"; }
   bool to_xdr (xpub_val_t *x) const;
 };
 
@@ -1677,7 +1678,7 @@ public:
   void add (zbuf *z);
 
   void eval_obj (pbuf_t *b, penv_t *e, u_int m) const ;
-  str get_obj_name () const { return "pbuf_t"; }
+  const char *get_obj_name () const { return "pbuf_t"; }
 
 private:
   int n;
@@ -1715,7 +1716,7 @@ public:
   void eval_obj (pbuf_t *p, penv_t *e, u_int d) const 
   { p->add (eval_simple ()); }
 
-  str get_obj_name () const { return "pint_t"; }
+  const char *get_obj_name () const { return "pint_t"; }
   void dump2 (dumper_t *d) const { DUMP(d, "val: " << val); }
   bool to_xdr (xpub_val_t *x) const;
   bool to_int64 (int64_t *i) const { *i = val; return true; }
@@ -1734,7 +1735,7 @@ public:
   pstr_var_t (const xpub_var_t &x) : pvar (New refcounted<pvar_t> (x)) {}
   pfile_el_t *to_pfile_el () { return New pfile_var_t (pvar); }
   void dump2 (dumper_t *d) const { if (pvar) pvar->dump (d); }
-  str get_obj_name () const { return "pstr_var_t"; }
+  const char *get_obj_name () const { return "pstr_var_t"; }
   bool to_xdr (xpub_pstr_el_t *x) const;
 private:
   const ptr<pvar_t> pvar;
@@ -1750,7 +1751,7 @@ public:
   { o->output (e, to_str (), true); }
   pfile_el_t *to_pfile_el () { return New pfile_html_el_t (to_str ()); }
   void dump2 (dumper_t *d) const { DUMP(d, "str: " << to_str ()); }
-  str get_obj_name () const { return "pstr_str_t"; }
+  const char *get_obj_name () const { return "pstr_str_t"; }
   bool to_xdr (xpub_pstr_el_t *x) const;
 };
 

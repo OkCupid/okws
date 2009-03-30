@@ -274,10 +274,20 @@ pub3::expr_varref_t::eval_as_scalar (eval_t e) const
   scalar_obj_t ret;
 
   v = e.resolve (this, _name);
+
+  // For pub v3 objects, they should resolve to an expression...
   if (v && (x = v->to_expr ())) {
     ret = x->eval_as_scalar (e);
+
+
+    // Some pub v1 or v2 objects are actually wrapped scalars.
   } else if (v && (ps = v->to_scalar ())) {
     ret = ps->obj ();
+
+    // And generic pub v1 and v2 are evaluable to scalars...
+  } else if (v && v->eval_to_scalar (e.penv (), &ret)) {
+    /* noop; all good! */
+
   } else if (e.loud ()) {
     strbuf b ("cannot resolve: %s", _name.cstr ());
     report_error (e, b);
@@ -667,5 +677,19 @@ pub3::expr_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
     e->unsetlineno ();
   }
 }
+
+//-----------------------------------------------------------------------
+
+pub3::eval_t::eval_t (penv_t *e, output_t *o)
+  : _env (e), 
+    _output (o), 
+    _loud (false), 
+    _silent (false), 
+    _stack_p (EVAL_INIT) 
+{ 
+  e->bump (); 
+}
+
+
 
 //-----------------------------------------------------------------------

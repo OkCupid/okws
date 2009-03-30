@@ -2194,11 +2194,29 @@ parr_mixed_t::flatten (penv_t *e)
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
+
+static cache_generation_t *_g_gen;
+
+cache_generation_t *
+get_global_cache_generation ()
+{
+  if (!_g_gen) _g_gen = New cache_generation_t ();
+  return _g_gen;
+}
+
+//-----------------------------------------------------------------------
 //
 
 penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
-  : aarr_n (1), file (NULL), needloc (false), opts (o), evm (EVAL_FULL),
-    olineno (-1), cerrflag (false), tlf (true)
+  : aarr_n (1), 
+    file (NULL), 
+    needloc (false), 
+    opts (o), 
+    _cache_generation (get_global_cache_generation ()),
+    evm (EVAL_FULL),
+    olineno (-1), 
+    cerrflag (false), 
+    tlf (true)
 { 
   if (g) push (g);
   if (a) push (a); 
@@ -2206,10 +2224,19 @@ penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
 }
 
 penv_t::penv_t (const penv_t &e)
-  : aarr_n (e.aarr_n), file (e.file), needloc (e.needloc),
-    cerr (e.cerr), opts (e.opts), evm (e.evm),
-    estack (e.estack), gvars (e.gvars), fstack (e.fstack), hold (e.hold),
-    istack (e.istack), olineno (e.olineno), 
+  : aarr_n (e.aarr_n), 
+    file (e.file), 
+    needloc (e.needloc),
+    cerr (e.cerr), 
+    opts (e.opts), 
+    _cache_generation (get_global_cache_generation ()),
+    evm (e.evm),
+    estack (e.estack), 
+    gvars (e.gvars), 
+    fstack (e.fstack), 
+    hold (e.hold),
+    istack (e.istack), 
+    olineno (e.olineno), 
     _localizer (e._localizer) 
 {
   bump ();

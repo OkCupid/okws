@@ -188,7 +188,7 @@ public:
   ptr<parr_int_t> to_int () { return mkref (this); }
   int operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
-  str get_obj_name () const { return "parr_int_t"; }
+  const char *get_obj_name () const { return "parr_int_t"; }
 
   parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
 };
@@ -203,7 +203,7 @@ public:
   ptr<parr_char_t> to_char () { return mkref (this); }
   char operator[] (size_t i ) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
-  str get_obj_name () const { return "parr_char_t"; }
+  const char *get_obj_name () const { return "parr_char_t"; }
 
   parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
   parr_err_t val (size_t i, char *p) const { return _val (v, i, p); }
@@ -220,7 +220,7 @@ public:
   ptr<parr_int16_t> to_int16 () { return mkref (this); }
   int16_t operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
-  str get_obj_name () const { return "parr_int16_t"; }
+  const char *get_obj_name () const { return "parr_int16_t"; }
 
   parr_err_t val (size_t i, int16_t *p) const { return _val (v, i, p); }
   parr_err_t val (size_t i, int *p) const { return _val (v, i, p); }
@@ -236,7 +236,7 @@ public:
   ptr<parr_uint_t> to_uint () { return mkref (this); }
   u_int operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
-  str get_obj_name () const { return "parr_uint_t"; }
+  const char *get_obj_name () const { return "parr_uint_t"; }
 
   parr_err_t val (size_t i, u_int *p) const { return _val (v, i, p); }
 };
@@ -251,7 +251,7 @@ public:
   ptr<parr_uint16_t> to_uint16 () { return mkref (this); }
   u_int16_t operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
-  str get_obj_name () const { return "parr_uint16_t"; }
+  const char *get_obj_name () const { return "parr_uint16_t"; }
 
   parr_err_t val (size_t i, u_int *p) const { return _val (v, i, p); }
   parr_err_t val (size_t i, u_int16_t *p) const { return _val (v, i, p); }
@@ -265,7 +265,7 @@ public:
   ptr<parr_int64_t> to_int64 () { return mkref (this); }
   int64_t operator[] (size_t i) const { return v[i]; }
   bool to_xdr (xpub_parr_t *x) const;
-  str get_obj_name () const { return "parr_int64_t"; }
+  const char *get_obj_name () const { return "parr_int64_t"; }
 };
 
 //-----------------------------------------------------------------------
@@ -290,7 +290,7 @@ public:
   ptr<pval_t> &push_back () { return v.push_back (); }
   void setsize (size_t s) { v.setsize (s); }
 
-  str get_obj_name () const { return "parr_t"; }
+  const char *get_obj_name () const { return "parr_t"; }
   void dump2 (dumper_t *d) const;
   bool to_xdr (xpub_val_t *x) const;
 

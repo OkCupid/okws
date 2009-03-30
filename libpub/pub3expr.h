@@ -21,12 +21,7 @@ namespace pub3 {
 
     enum { EVAL_INIT = -2, EVAL_DONE = -1 };
 
-    eval_t (penv_t *e, output_t *o) 
-      : _env (e), 
-	_output (o), 
-	_loud (false), 
-	_silent (false), 
-	_stack_p (EVAL_INIT) {}
+    eval_t (penv_t *e, output_t *o); ;
 
     penv_t *penv () const { return _env; }
     output_t *output () const { return _output; }
@@ -85,7 +80,7 @@ namespace pub3 {
     // legacy v1, v2 eval system; attempt to do something sensible
     virtual void eval_obj (pbuf_t *b, penv_t *e, u_int depth) const;
 
-    virtual str get_obj_name () const { return "pub3::expr_t (generic)"; }
+    virtual const char *get_obj_name () const { return "pub3::expr_t (generic)"; }
 
     void report_error (eval_t e, str n) const;
     
@@ -411,7 +406,7 @@ namespace pub3 {
     expr_dict_t (const xpub3_dict_t &x);
 
     void add (nvpair_t *p);
-    str get_obj_name () const { return "pub3::expr_dict_t"; }
+    const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
     ptr<aarr_arg_t> dict () { return _dict; }
     ptr<const aarr_arg_t> dict () const { return _dict; }
@@ -432,7 +427,7 @@ namespace pub3 {
     inline_var_t (const xpub3_inline_var_t &x);
     void output (output_t *o, penv_t *e) const;
     pfile_el_type_t get_type () const { return PFILE_PUB3_VAR; }
-    str get_obj_name () const { return "pub3::inline_var_t"; }
+    const char *get_obj_name () const { return "pub3::inline_var_t"; }
     void dump2 (dumper_t *d) const;
     bool to_xdr (xpub_obj_t *x) const;
   private:

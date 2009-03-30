@@ -22,7 +22,7 @@ namespace pub3 {
     bool add (ptr<expr_list_t> l);
     bool add_env (ptr<nested_env_t> e) { _env = e; return true; }
     bool add_empty (ptr<nested_env_t> e) { _empty = e; return true; }
-    str get_obj_name () const { return "pub3::for_t"; }
+    const char *get_obj_name () const { return "pub3::for_t"; }
     virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
 			  xpub_status_cb_t , CLOSURE) const;
     bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
@@ -44,7 +44,7 @@ namespace pub3 {
     bool to_xdr (xpub_obj_t *x) const;
     bool add (ptr<arglist_t> l) { return false; }
     bool add (ptr<expr_list_t> l);
-    str get_obj_name () const { return "pub3::include_t"; }
+    const char *get_obj_name () const { return "pub3::include_t"; }
     virtual void publish (pub2_iface_t *, output_t *, penv_t *,
 			  xpub_status_cb_t, CLOSURE) const;
     bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
@@ -90,7 +90,7 @@ namespace pub3 {
     cond_t (const xpub3_cond_t &x);
 
     void add_clauses (ptr<cond_clause_list_t> c) { _clauses = c; }
-    str get_obj_name () const { return "pub3::cond_t"; }
+    const char *get_obj_name () const { return "pub3::cond_t"; }
     bool to_xdr (xpub_obj_t *x) const;
     void publish (pub2_iface_t *, output_t *, penv_t *, 
 		  xpub_status_cb_t , CLOSURE) const;
