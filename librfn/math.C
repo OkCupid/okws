@@ -39,7 +39,7 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   ptr<const pval_t>
-  random_t::eval_as_pval (eval_t *e) const
+  random_t::eval_as_pval (eval_t e) const
   {
     return New refcounted<pub_scalar_t> (eval_as_scalar (e));
   }
@@ -47,19 +47,19 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   scalar_obj_t
-  random_t::eval_as_scalar (eval_t *e) const
+  random_t::eval_as_scalar (eval_t e) const
   {
     u_int64_t def_range = 10;
     u_int64_t l = 0;
     u_int64_t h = def_range;
     bool loud;
 
-    loud = e->set_loud (true);
+    loud = e.set_loud (true);
     if (_low) {
       l = _low->eval_as_uint (e);
     }
     h = _high->eval_as_uint (e);
-    e->set_loud (loud);
+    e.set_loud (loud);
 
     int64_t d = h - l;
 

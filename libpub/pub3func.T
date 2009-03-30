@@ -63,10 +63,10 @@ pub3::include_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     aarr_t *ccd;
   }
 
-  if (!(fn = _file->eval_as_str (&eval)) || fn.len () == 0) {
+  if (!(fn = _file->eval_as_str (eval)) || fn.len () == 0) {
     strbuf b ("include: cannot evaluate filename");
     o->output_err (e, b, lineno);
-  } else if (_dict && !(d = _dict->eval_as_dict (&eval))) {
+  } else if (_dict && !(d = _dict->eval_as_dict (eval))) {
     strbuf b ("include: cannot evaluate dictionary argument");
     o->output_err (e, b, lineno);
   } else {
@@ -100,7 +100,7 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 
   { 
     bool old_silent = eval.set_silent (true);
-    v = _arr->eval_as_vec (&eval);
+    v = _arr->eval_as_vec (eval);
     eval.set_silent (old_silent);
   }
 
@@ -195,7 +195,7 @@ pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 
     if ((clause = (*_clauses)[i]) &&
 	(expr = clause->expr ()) &&
-	expr->eval_as_bool (&eval)) {
+	expr->eval_as_bool (eval)) {
 
       found = true;
       if ((env = clause->env ())) {
@@ -246,7 +246,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const pval_t>
-  error_fn_t::eval_as_pval (eval_t *e) const
+  error_fn_t::eval_as_pval (eval_t e) const
   {
     report_error (e, _err);
     return NULL;
