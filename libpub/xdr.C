@@ -124,6 +124,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pub3::include_t (*x.pub3_include);
   case XPUB3_INLINE_VAR:
     return New pub3::inline_var_t (*x.pub3_inline_var);
+  case XPUB3_SET_FUNC:
+    return New pub3::set_func_t (*x.set_func);
   default:
     return NULL;
   }
@@ -727,7 +729,9 @@ pfile_set_func_t::to_xdr (xpub_obj_t *x) const
 bool
 pfile_set_func_t::to_xdr_common (xpub_obj_t *x, xpub_obj_typ_t typ) const 
 { 
-  assert (typ == XPUB_SET_FUNC || typ == XPUB_SET_LOCAL_FUNC);
+  assert (typ == XPUB_SET_FUNC || 
+	  typ == XPUB_SET_LOCAL_FUNC ||
+	  typ == XPUB3_SET_FUNC);
   x->set_typ (typ);
   aarr->aarr_t::to_xdr (&x->set_func->aarr);
   x->set_func->lineno = lineno;

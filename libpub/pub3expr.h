@@ -35,6 +35,8 @@ namespace pub3 {
 
     ptr<const pval_t> resolve (const expr_t *e, const str &nm);
 
+    void flatten_dict (const aarr_t *in, aarr_t *out);
+
     void dec_stack_depth ();
     size_t inc_stack_depth ();
 
@@ -77,10 +79,13 @@ namespace pub3 {
     virtual ptr<const aarr_t> eval_as_dict (eval_t e) const;
     virtual ptr<const parr_mixed_t> eval_as_vec (eval_t e) const;
 
+    virtual ptr<pval_t> flatten (eval_t e) const;
+
     // legacy v1, v2 eval system; attempt to do something sensible
     virtual void eval_obj (pbuf_t *b, penv_t *e, u_int depth) const;
 
-    virtual const char *get_obj_name () const { return "pub3::expr_t (generic)"; }
+    virtual const char *get_obj_name () const 
+    { return "pub3::expr_t (generic)"; }
 
     void report_error (eval_t e, str n) const;
     
@@ -118,6 +123,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     bool eval_as_bool (eval_t e) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
+  protected:
     ptr<expr_t> _t1, _t2;
   };
 
@@ -219,6 +225,7 @@ namespace pub3 {
   public:
     expr_ref_t (int l) : expr_t (l) {}
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
+
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
     ptr<const pval_t> deref (eval_t e) const 
     { return eval_as_pval (e); }
@@ -413,6 +420,7 @@ namespace pub3 {
 
     ptr<const aarr_t> eval_as_dict (eval_t e) const { return _dict; }
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
+    ptr<pval_t> flatten (eval_t e) const;
 
   protected:
     ptr<const pval_t> eval_as_pval (eval_t e) const { return _dict; }

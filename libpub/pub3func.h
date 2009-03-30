@@ -103,6 +103,17 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class set_func_t : public pfile_set_func_t {
+  public:
+    set_func_t (int l) : pfile_set_func_t (l) {}
+    set_func_t (const xpub_set_func_t &x) : pfile_set_func_t (x) {}
+    void output_runtime (output_t *o, penv_t *e) const;
+    const char *get_obj_name () const { return "pub3::set_func_t"; }
+    bool to_xdr (xpub_obj_t *x) const;
+  };
+
+  //-----------------------------------------------------------------------
+
   class runtime_fn_t : public expr_t {
   public:
     runtime_fn_t (const str &n, ptr<expr_list_t> a, int l) 

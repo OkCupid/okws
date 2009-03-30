@@ -210,6 +210,22 @@ pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 //-----------------------------------------------------------------------
 
 void
+pub3::set_func_t::output_runtime (output_t *o, penv_t *e) const
+{
+  ptr<aarr_t> aarr_global;
+
+  eval_t eval (e, o);
+  if ((aarr_global = e->get_global_aarr ())) {
+    e->bump ();
+    eval.flatten_dict (aarr, aarr_global);
+  } else {
+    push_frame (e, aarr);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
 pub3::cond_t::output (output_t *o, penv_t *e) const
 {
 }

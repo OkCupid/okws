@@ -433,6 +433,7 @@ public:
   void push (aarr_t *a) { estack.push_back (a); }
   void safe_push (ptr<const aarr_t> a);
   bool set_global (const aarr_t &a);
+  ptr<aarr_t> get_global_aarr () { return _global_set; }
   void push (const gvars_t *g) { gvars.push_back (g); }
   const pval_t *lookup (const str &n, bool recurse = true);
   pval_w_t operator[] (const str &n) { return pval_w_t (n, this); }
@@ -442,6 +443,7 @@ public:
   str loc (int l = -1) const;
   pfnm_t filename () const;
   bool output_info () const { return (opts & P_IINFO); }
+  void overwrite_global_nvpair (nvpair_t *nvp);
 
   void push_file (bpfcp_t f);
   void pop_file ();
@@ -1597,7 +1599,7 @@ public:
   bool add (ptr<arglist_t> a);
   bool add (ptr<pub3::expr_dict_t> d);
   bool validate () { return true; }
-  virtual void output_runtime (penv_t *e) const;
+  virtual void output_runtime (output_t *o, penv_t *e) const;
   void output_config (penv_t *e) const ;
 
   void dump2 (dumper_t *d) const;
@@ -1620,7 +1622,7 @@ public:
     : pfile_set_func_t (x) {}
   const char *get_obj_name () const { return "pfile_set_local_func_t"; }
   bool to_xdr (xpub_obj_t *x) const;
-  void output_runtime (penv_t *e) const;
+  void output_runtime (output_t *o, penv_t *e) const;
 };
 
 //-----------------------------------------------------------------------

@@ -592,4 +592,12 @@ pub3::expr_t::to_xdr (xpub_val_t *x) const
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::set_func_t::to_xdr (xpub_obj_t *x) const
+{
+  return to_xdr_common (x, XPUB3_SET_FUNC);
+}
+
+//-----------------------------------------------------------------------
+
 

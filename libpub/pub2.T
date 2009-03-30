@@ -588,9 +588,11 @@ namespace pub2 {
     _getfile_cache.insert (cached_getfile_t (k, f));
   }
 
+  //-----------------------------------------------------------------------
+
   void oc_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
   {
-    s->output_runtime (e);
+    s->output_runtime (this, e);
     ptr<aarr_t> a = s->get_aarr ();
     nvtab_t *t = a->nvtab ();
     for (nvpair_t *p = t->first (); p ; p = t->next (p)) {
@@ -598,10 +600,14 @@ namespace pub2 {
     }
   }
 
+  //-----------------------------------------------------------------------
+
   void oc_t::output_err (penv_t *e, const str &s, int l) 
   {
     warn << "Conf file eval error (" << e->loc (l) << "): " << s << "\n";
   }
+
+  //-----------------------------------------------------------------------
 
   tamed void 
   ap_t::run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dp)

@@ -828,7 +828,7 @@ p3_include: T_P3_INCLUDE p3_vector T_P3_CLOSETAG
 
 p3_set: T_P3_SET p3_dictionary T_P3_CLOSETAG
 	{
-           pfile_set_func_t *f = New pfile_set_func_t (PLINENO);
+           pub3::set_func_t *f = New pub3::set_func_t (PLINENO);
            f->add ($2);   
 	   $$ = f;
 	}

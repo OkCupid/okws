@@ -1483,11 +1483,15 @@ output_std_t::output_err (penv_t *e, const str &s, int l)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 output_conf_t::output_err (penv_t *e, const str &s, int l)
 {
   warn << "Conf file eval error (" << e->loc (l) << "): " << s << "\n";
 }
+
+//-----------------------------------------------------------------------
 
 void
 pfile_set_func_t::output (output_t *o, penv_t *e) const
@@ -1495,17 +1499,23 @@ pfile_set_func_t::output (output_t *o, penv_t *e) const
   o->output_set_func (e, this);
 }
 
+//-----------------------------------------------------------------------
+
 void
 output_std_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
 {
-  s->output_runtime (e);
+  s->output_runtime (this, e);
 }
+
+//-----------------------------------------------------------------------
 
 void
 output_conf_t::output_set_func (penv_t *e, const pfile_set_func_t *s)
 {
   s->output_config (e);
 }
+
+//-----------------------------------------------------------------------
 
 void
 pfile_g_ctinclude_t::output (output_t *o, penv_t *e) const
@@ -2149,6 +2159,8 @@ nvtab_t::copy (const nvtab_t &in)
   overwrite_with (in);
 }
 
+//-----------------------------------------------------------------------
+
 void
 nvtab_t::overwrite_with (const nvtab_t &in)
 {
@@ -2156,6 +2168,8 @@ nvtab_t::overwrite_with (const nvtab_t &in)
     insert (New nvpair_t (*p));
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 pbuf_t::eval_obj (pbuf_t *b, penv_t *e, u_int m) const
@@ -2246,13 +2260,15 @@ penv_t::penv_t (const penv_t &e)
 //-----------------------------------------------------------------------
 
 void
-pfile_set_local_func_t::output_runtime (penv_t *e) const
+pfile_set_local_func_t::output_runtime (output_t *o, penv_t *e) const
 {
   push_frame (e, aarr);
 }
 
+//-----------------------------------------------------------------------
+
 void
-pfile_set_func_t::output_runtime (penv_t *e) const
+pfile_set_func_t::output_runtime (output_t *o, penv_t *e) const
 {
   // set_global() will return false if global-setting was not enabled
   // for this particular output run.  In that case, revert to the old
@@ -2262,6 +2278,8 @@ pfile_set_func_t::output_runtime (penv_t *e) const
   if (aarr && !e->set_global (*aarr))
     push_frame (e, aarr);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 penv_t::set_global (const aarr_t &a)

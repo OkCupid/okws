@@ -5,6 +5,14 @@
 
 //-----------------------------------------------------------------------
 
+ptr<pval_t>
+pub3::expr_t::flatten (eval_t e) const
+{
+  return New refcounted<pub_scalar_t> (eval_as_scalar (e));
+}
+
+//-----------------------------------------------------------------------
+
 bool
 pub3::expr_OR_t::eval_as_bool (eval_t e) const
 {
@@ -690,6 +698,34 @@ pub3::eval_t::eval_t (penv_t *e, output_t *o)
   e->bump (); 
 }
 
+//-----------------------------------------------------------------------
+
+ptr<pval_t>
+pub3::expr_dict_t::flatten (eval_t e) const
+{
+  ptr<aarr_arg_t> ret = New refcounted<aarr_arg_t> ();
+  if (_dict) {
+    e.flatten_dict (_dict, ret);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::eval_t::flatten_dict (const aarr_t *in, aarr_t *out)
+{
+  ptr<pval_t> val, v;
+  ptr<expr_t> e;
+  const nvtab_t *nvt = in->nvtab ();
+  for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
+    val = p->value_ptr ();
+    if (val && (e = val->to_expr ()) && (v = e->flatten (*this))) {
+      val = v;
+    }
+    out->add (New nvpair_t (p->name (), val));
+  }
+}
 
 
 //-----------------------------------------------------------------------

@@ -21,7 +21,8 @@ enum xpub_obj_typ_t {
   XPUB3_COND = 14,
   XPUB3_INCLUDE = 15,
   XPUB3_EXPR = 16,
-  XPUB3_INLINE_VAR = 17
+  XPUB3_INLINE_VAR = 17,
+  XPUB3_SET_FUNC = 18
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -540,6 +541,7 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
    xpub_switch_t swtch;
  case XPUB_SET_FUNC:
  case XPUB_SET_LOCAL_FUNC:
+ case XPUB3_SET_FUNC:
    xpub_set_func_t set_func;
  case XPUB_INCLIST:
    xpub_inclist_t inclist;
