@@ -96,8 +96,14 @@ namespace pub3 {
 
     // scalar access features: mutable
     obj_t &operator= (int64_t i) { return set_int (i); }
-    obj_t &operator= (int i) { return set_int (i); }
-    obj_t &operator= (size_t s) { return set_int (s); }
+    obj_t &operator= (u_int64_t i) { return set_uint (i); }
+    obj_t &operator= (int32_t i) { return set_int (i); }
+    obj_t &operator= (u_int32_t i) { return set_int (i); }
+    obj_t &operator= (int16_t i) { return set_int (i); }
+    obj_t &operator= (u_int16_t i) { return set_int (i); }
+    obj_t &operator= (int8_t i) { return set_int (i); }
+    obj_t &operator= (u_int8_t i) { return set_int (i); }
+
     obj_t &operator= (const str &s) { return set_str (s); }
     obj_t &operator= (double d) { return set_double (d); }
     obj_t &operator= (ptr<pval_t> z) { return set_value (z); }
@@ -122,6 +128,7 @@ namespace pub3 {
     obj_t &set_value (ptr<pval_t> v);
 
     obj_t &set_int (int64_t i);
+    obj_t &set_uint (u_int64_t i);
     obj_t &set_str (const str &s);
     obj_t &set_double (double d);
     obj_t &set_obj (obj_t o);

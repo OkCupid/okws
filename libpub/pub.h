@@ -907,18 +907,15 @@ class pstr_var_t;
 
 class pub_scalar_t : public pval_t {
 public:
-  pub_scalar_t (const str &n) : _obj (n) {}
-
-  pub_scalar_t (int64_t i) { _obj.set_i (i); }
-  pub_scalar_t (u_int32_t i) { _obj.set_i (i); }
-  pub_scalar_t (int32_t i) { _obj.set_i (i); }
-  pub_scalar_t (u_int16_t i) { _obj.set_i (i); }
-  pub_scalar_t (int16_t i) { _obj.set_i (i); }
-  pub_scalar_t (u_int8_t i) { _obj.set_i (i); }
-  pub_scalar_t (int8_t i) { _obj.set_i (i); }
-
+  pub_scalar_t (str n) : _obj (n) {}
+  pub_scalar_t (const char *s) : _obj (str (s)) {}
+  pub_scalar_t (const char *s, size_t l) : _obj (str (s, l)) {}
+  pub_scalar_t (u_int64_t i) { _obj.set_u (i);}
   pub_scalar_t (const scalar_obj_t &o) : _obj (o) {}
   pub_scalar_t (double d) { _obj.set (d); }
+
+  template<class T>
+  pub_scalar_t (T i) { _obj.set_i (i); }
   pub_scalar_t () {}
 
   template<class T>

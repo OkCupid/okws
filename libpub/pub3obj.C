@@ -327,6 +327,16 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   obj_t &
+  obj_t::set_uint (u_int64_t i)
+  {
+    scalar_obj_t so;
+    so.set_u (i);
+    return set_scalar (so);
+  }
+
+  //-----------------------------------------------------------------------
+
+  obj_t &
   obj_t::set_str (const str &s)
   {
     scalar_obj_t so;
