@@ -910,7 +910,7 @@ public:
   pub_scalar_t (str n) : _obj (n) {}
   pub_scalar_t (const char *s) : _obj (str (s)) {}
   pub_scalar_t (const char *s, size_t l) : _obj (str (s, l)) {}
-  template<size_t n> pub_scalar_t (rpc_str<n> s) : _obj (str (s)) {}
+  template<size_t n> pub_scalar_t (const rpc_str<n> &s) : _obj (str (s)) {}
 
   pub_scalar_t (u_int64_t i) { _obj.set_u (i);}
   pub_scalar_t (const scalar_obj_t &o) : _obj (o) {}

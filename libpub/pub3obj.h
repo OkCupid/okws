@@ -95,8 +95,6 @@ namespace pub3 {
     obj_t operator() (const str &s);
 
     // scalar access features: mutable
-    template<typename T> obj_t &operator= (T i) { return set_int (i); }
-
     obj_t &operator= (u_int64_t i) { return set_uint (i); }
     obj_t &operator= (const str &s) { return set_str (s); }
     obj_t &operator= (const char *s) { return set_str (s); }
@@ -104,6 +102,11 @@ namespace pub3 {
     obj_t &operator= (double d) { return set_double (d); }
     obj_t &operator= (ptr<pval_t> z) { return set_value (z); }
     obj_t &operator= (scalar_obj_t o) { return set_scalar (o); }
+
+    template<typename T> obj_t &operator= (T i) { return set_int (i); }
+
+    template<size_t n> obj_t &operator= (const rpc_str<n> &s) 
+    { return set_str (s); }
 
     // wild card
     obj_t &operator= (obj_t o) { return set_obj (o); }
