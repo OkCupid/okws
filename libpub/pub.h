@@ -905,19 +905,45 @@ class pstr_var_t;
 
 //-----------------------------------------------------------------------
 
+class int_w_t {
+public:
+  int_w_t (int64_t i) : _v (i) {}
+  int_w_t (int32_t i) : _v (i) {}
+  int_w_t (int16_t i) : _v (i) {}
+  int_w_t (int8_t i) : _v (i) {}
+  int_w_t (uint32_t i) : _v (i) {}
+  int_w_t (uint16_t i) : _v (i) {}
+  int_w_t (uint8_t i) : _v (i) {}
+
+  operator int64_t() const { return _v; }
+
+private:
+  int64_t _v;
+};
+
+//-----------------------------------------------------------------------
+
+#define ALL_INT_TYPES(pre,x,post)		\
+  pre (int64_t x) post				\
+  pre (int32_t x) post				\
+  pre (uint32_t x) post				\
+  pre (int16_t x) post				\
+  pre (uint16_t x) post				\
+  pre (int8_t x) post				\
+  pre (uint8_t x) post
+
+
+//-----------------------------------------------------------------------
+
 class pub_scalar_t : public pval_t {
 public:
   pub_scalar_t (str n) : _obj (n) {}
-  pub_scalar_t (const char *s) : _obj (str (s)) {}
-  pub_scalar_t (const char *s, size_t l) : _obj (str (s, l)) {}
-  template<size_t n> pub_scalar_t (const rpc_str<n> &s) : _obj (str (s)) {}
-
   pub_scalar_t (u_int64_t i) { _obj.set_u (i);}
   pub_scalar_t (const scalar_obj_t &o) : _obj (o) {}
   pub_scalar_t (double d) { _obj.set (d); }
 
-  template<class T>
-  pub_scalar_t (T i) { _obj.set_i (i); }
+  ALL_INT_TYPES(pub_scalar_t, i, { _obj.set_i (i); })
+
   pub_scalar_t () {}
 
   template<class T>
