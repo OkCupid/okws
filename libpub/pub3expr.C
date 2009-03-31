@@ -136,7 +136,7 @@ pub3::expr_vecref_t::eval_as_pval (eval_t e) const
   if (_vec && (v = _vec->eval_as_vec (e))) {
     if (_index) 
       i = _index->eval_as_int (e);
-    if (i < v->size ()) 
+    if (i >= 0 && i < int64_t (v->size ()))
       r = (*v)[i];
   }
   return r;
