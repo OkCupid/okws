@@ -908,7 +908,10 @@ class pstr_var_t;
 class pub_scalar_t : public pval_t {
 public:
   pub_scalar_t (const str &n) : _obj (n) {}
-  pub_scalar_t (int64_t i) { _obj.set (i); }
+  pub_scalar_t (int64_t i) { _obj.set_i (i); }
+  pub_scalar_t (int i) { _obj.set_i (i); }
+  pub_scalar_t (int32_t i) { _obj.set_i (i); }
+  pub_scalar_t (u_int32_t i) { _obj.set_i (i); }
   pub_scalar_t (const scalar_obj_t &o) : _obj (o) {}
   pub_scalar_t (double d) { _obj.set (d); }
   pub_scalar_t () {}
