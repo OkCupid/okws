@@ -131,11 +131,13 @@ pub3::expr_vecref_t::eval_as_pval (eval_t e) const
 {
   ptr<const parr_mixed_t> v;
   ptr<const pval_t> r;
-  int64_t i;
+  int64_t i = 0;
 
   if (_vec && (v = _vec->eval_as_vec (e))) {
-    if (_index) i = _index->eval_as_int (e);
-    r = (*v)[i];
+    if (_index) 
+      i = _index->eval_as_int (e);
+    if (i < v->size ()) 
+      r = (*v)[i];
   }
   return r;
 }
