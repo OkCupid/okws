@@ -8,7 +8,7 @@ namespace rfn1 {
 
   random_t::random_t (const str &n, ptr<expr_list_t> al, int ln, 
 		      ptr<expr_t> l, ptr<expr_t> h)
-    : runtime_fn_t (n, al, ln), _low (l), _high (h) {}
+    : scalar_fn_t (n, al, ln), _low (l), _high (h) {}
 
   //-----------------------------------------------------------------------
 
@@ -39,15 +39,23 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   ptr<const pval_t>
-  random_t::eval_as_pval (eval_t e) const
+  scalar_fn_t::eval (eval_t e) const
   {
-    return New refcounted<pub_scalar_t> (eval_as_scalar (e));
+    return expr_t::alloc (eval_internal (e));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t>
+  scalar_fn_t::eval_freeze (eval_t e) const
+  {
+    return expr_t::alloc (eval_internal (e));
   }
 
   //-----------------------------------------------------------------------
 
   scalar_obj_t
-  random_t::eval_as_scalar (eval_t e) const
+  random_t::eval_internal (eval_t e) const
   {
     u_int64_t def_range = 10;
     u_int64_t l = 0;

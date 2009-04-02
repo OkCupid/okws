@@ -6,9 +6,24 @@
  <body>
  <h1>For Loop Testing Page</h1>
 
+
+<h2>Backwards-Compatibility</h2>
+{% for (r, push) {{ 
+   [[[Try $]]]${r.val}<br>
+}} %}
+
+<h2>Inline List</h2>
+{% include ("list.html", { list : push }) %}
+
+<h2>Inline List, Single</h2>
+{% include ("list.html", { list : single }) %}
+
+<h2>Inline List, Double</h2>
+{% include ("list.html", { list : double }) %}
+
 <h2>Push-Back</h2>
 {% for (r, push) {{ 
-   {% if (r.iter < 2) {{<i>}} %} %{r.val} {% if (r.iter < 2) {{</i>}} %} 
+   {% if (r.iter < 2) {{<i>}} %} [[[Try $]]]%{r.val} {% if (r.iter < 2) {{</i>}} %} 
    </br>}} 
 %}
 
@@ -27,15 +42,6 @@
      val=%{r.val}; last=%{r.last}; iter=%{r.iter};
      odd=%{r.odd}; even=%{r.even}; count=%{r.count}</td></tr>}} %}
  </table>
-
-<h2>Inline List</h2>
-{% include ("list.html", { list : push }) %}
-
-<h2>Inline List, Single</h2>
-{% include ("list.html", { list : single }) %}
-
-<h2>Inline List, Double</h2>
-{% include ("list.html", { list : double }) %}
 
 <h2>Empty</h2>
  {% for (r, nodice) {{ %{r.notfound} }}, {{Vector was empty!}} %}

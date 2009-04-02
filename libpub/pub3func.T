@@ -10,7 +10,7 @@ pub3::for_t::add (ptr<expr_list_t> l)
   if (!l || l->size () < 1 || l->size () > 2) {
     PWARN ("for: takes 2 arguments (simple identifier and array)\n");
     ret = false;
-  } else if (!(_iter = (*l)[0]->eval_as_identifier ()) || !_iter.len ()) {
+  } else if (!(_iter = (*l)[0]->to_identifier ()) || !_iter.len ()) {
     PWARN ("for: argument 1 must be an identifier\n");
     ret = false;
   } else if (l->size () > 1) {
@@ -87,15 +87,18 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 		      xpub_status_cb_t callercv) const
 {
   tvars {
-    ptr<const parr_mixed_t> v;
+    ptr<const vec_iface_t> v;
     bool ok (false);
     aarr_t frame;
     size_t i, len;
-    ptr<pval_t> row;
-    ptr<aarr_arg_t> row_aarr;
+    ptr<const pval_t> crow;
+    ptr<const pub3::expr_t> cex;
+    ptr<const pub3::expr_dict_t> row_dict;
     xpub_status_t res (XPUB_STATUS_OK);
     size_t frame_pointer;
     pub3::eval_t eval (e, o);
+    ptr<aarr_arg_t> row_aarr;
+    ptr<pval_t> row_val;
   }
 
   { 
@@ -122,24 +125,39 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     e->push (&frame);
 
     for (i = 0; i < len; i++) {
-      if (!(row = (*v)[i])) {
+
+      row_val = NULL;
+
+      // XXX would like to not have this const-cast, but I don't see
+      // a way around it other than redoing the whole eval_as_pval
+      // mechanism, or to copy the aarr, which is slow.  Revisit.
+      if (!(crow = v->lookup (i))) {
 	strbuf b ("for: row %zu is undefined!", i);
 	o->output_err (e, b, lineno);
-      } else if (!(row_aarr = row->to_aarr ())) {
-	strbuf b ("for: row %zu is not an associative array!", i);
-	o->output_err (e, b, lineno);
-      } else if (_env) {
+      } else if (!_env) {
+	/* noop */
+      } else if ((row_dict = crow->to_expr_dict ())) {
+	row_aarr = row_dict->copy_dict_stub ();
 	row_aarr->replace ("count", int64_t (len));
 	row_aarr->replace ("iter",  int64_t (i));
 	row_aarr->replace ("last",  int64_t (len - 1 == i));
 	row_aarr->replace ("first", int64_t (i == 0));
 	row_aarr->replace ("odd",   int64_t (i % 2));
 	row_aarr->replace ("even",  1 - int64_t (i % 2));
-	frame.replace (_iter, row_aarr);
+	row_val = row_aarr;
+      } else if ((cex = crow->to_expr ())) {
+	row_val = cex->copy_stub ();
+      } else {
+	strbuf b ("for: row %zu cannot be assigned", i);
+	o->output_err (e, b, lineno);
+      }
 
+      if (row_val) {
+	frame.replace (_iter, row_val);
 	e->bump ();
 	twait { _env->publish (iface, o, e, mkevent (res)); }
       }
+
     }
     e->resize (frame_pointer);
   }
@@ -217,7 +235,7 @@ pub3::set_func_t::output_runtime (output_t *o, penv_t *e) const
   eval_t eval (e, o);
   if ((aarr_global = e->get_global_aarr ())) {
     e->bump ();
-    eval.flatten_dict (aarr, aarr_global);
+    eval.eval_freeze_dict (aarr, aarr_global);
   } else {
     push_frame (e, aarr);
   }
@@ -262,7 +280,16 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const pval_t>
-  error_fn_t::eval_as_pval (eval_t e) const
+  error_fn_t::eval (eval_t e) const
+  {
+    report_error (e, _err);
+    return NULL;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t>
+  error_fn_t::eval_freeze (eval_t e) const
   {
     report_error (e, _err);
     return NULL;

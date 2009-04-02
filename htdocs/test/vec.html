@@ -1,0 +1,32 @@
+
+<html>
+ <head>
+  <title>Vec Tester</title>
+ </head>
+<body>
+
+{% set { x : { a : "found me" } } %}
+{% set { v : [ 1, 2, 3, { a: 10, b : 20, c : [ x ]  }, "b" ] } %}
+{% set { i1 : 3, i2: "c", i3 : 0, i4 : "a" } %}
+{% set { j : [ 3, "c", 0, "a" ] } %}
+
+
+x: %{x}<br>
+v: %{v}<br>
+v[0]: %{v[0]}<br>
+x.a: %{x.a}<br>
+x["a"]: %{x["a"]}<br>
+v[3]: %{v[3]}<br>
+v[3].a: %{v[3].a}<br>
+v[3]["a"]: %{v[3]["a"]}<br>
+v[3].c[0]: %{v[3].c[0]}<br>
+v[3].c[4]: %{v[3].c[4]}<br>
+v[3].c[0].a: %{v[3].c[0].a}<br>
+v[i1][i2][i3][i4]: %{v[i1][i2][i3][i4]}<br>
+j[0]: %{j[0]}<br>
+v[j[0]][j[1]][j[2]][j[3]]: %{v[j[0]][j[1]][j[2]][j[3]]}<br>
+v[rand(0,5)]: %{v[rand(0,5)]}<br>
+
+</body>
+</html>
+

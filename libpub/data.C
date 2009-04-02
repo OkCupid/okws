@@ -497,6 +497,8 @@ gcode_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 parr_mixed_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
 {
@@ -2405,6 +2407,60 @@ nvpair_t::value_expr () const
   ptr<const pub3::expr_t> r;
   if (val) { r = val->to_expr (); }
   return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<const pval_t>
+parr_mixed_t::lookup (ssize_t s, bool *ibp) const
+{
+  ptr<const pval_t> r;
+  bool ib;
+  
+  if (s < 0 || s >= ssize_t (v.size ())) {
+    ib = false;
+  } else {
+    ib = true;
+    r = v[s];
+  }
+  if (ibp) *ibp = ib;
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t>
+parr_mixed_t::lookup (ssize_t s, bool *ibp)
+{
+  ptr<pval_t> r;
+  bool ib;
+  if (s < 0 || s >= ssize_t (v.size ())) {
+    ib = false;
+  } else {
+    ib = true;
+    r = v[s];
+  }
+  if (ibp) *ibp = ib;
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+void
+parr_mixed_t::set (size_t i, ptr<pval_t> pv)
+{
+  if (i >= size ()) {
+    setsize (i + 1);
+  }
+  (*this)[i] = pv;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t>
+pval_t::copy_stub () const
+{
+  return mkref (const_cast<pval_t *> (this));
 }
 
 //-----------------------------------------------------------------------

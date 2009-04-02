@@ -6,6 +6,7 @@
 
 #include "pub.h"
 #include "parr.h"
+#include "pub3expr.h"
 
 namespace pub3 {
 
@@ -24,16 +25,19 @@ namespace pub3 {
 
   class obj_ref_dict_t : public obj_ref_t {
   public:
-    obj_ref_dict_t (ptr<aarr_t> d, const str &k) : _dict (d), _key (k) {}
-    void set (ptr<pval_t> v) { _dict->replace (_key, v); }
-    ptr<pval_t> get () { return _dict->lookup_ptr (_key); }
-    ptr<const pval_t> get () const { return _dict->lookup_ptr (_key); }
+    obj_ref_dict_t (ptr<expr_dict_t> d, const str &k) : _dict (d), _key (k) {}
+    void set (ptr<pval_t> v) { dict ()->replace (_key, v); }
+    ptr<pval_t> get () { return dict ()->lookup_ptr (_key); }
+    ptr<const pval_t> get () const { return dict ()->lookup_ptr (_key); }
     
-    static ptr<obj_ref_t> alloc (ptr<aarr_t> d, const str &k)
+    static ptr<obj_ref_t> alloc (ptr<expr_dict_t> d, const str &k)
     { return New refcounted<obj_ref_dict_t> (d, k); }
 
+    ptr<aarr_t> dict () { return _dict->dict (); }
+    ptr<const aarr_t> dict () const { return _dict->dict (); }
+
   private:
-    const ptr<aarr_t> _dict;
+    const ptr<expr_dict_t> _dict;
     const str _key;
   };
 
@@ -41,16 +45,16 @@ namespace pub3 {
 
   class obj_ref_vec_t : public obj_ref_t {
   public:
-    obj_ref_vec_t (ptr<parr_mixed_t> v, size_t i) : _vec (v), _index (i) {}
+    obj_ref_vec_t (ptr<vec_iface_t> v, size_t i) : _vec (v), _index (i) {}
     void set (ptr<pval_t> v);
     ptr<pval_t> get ();
     ptr<const pval_t> get () const;
 
-    static ptr<obj_ref_t> alloc (ptr<parr_mixed_t> v, size_t i)
+    static ptr<obj_ref_t> alloc (ptr<vec_iface_t> v, size_t i)
     { return New refcounted<obj_ref_vec_t> (v, i); }
 
   private:
-    const ptr<parr_mixed_t> _vec;
+    const ptr<vec_iface_t> _vec;
     const size_t _index;
   };
 
@@ -69,9 +73,8 @@ namespace pub3 {
     virtual ptr<const pval_t> obj () const { return _c_obj; }
 
   protected:
-    ptr<const parr_mixed_t> to_vector () const;
-    ptr<const aarr_arg_t> to_dict () const;
-    ptr<const pub_scalar_t> to_scalar () const;
+    ptr<const expr_list_t> to_vector () const;
+    ptr<const expr_dict_t> to_dict () const;
 
   private:
     ptr<const pval_t> _c_obj;
@@ -106,8 +109,8 @@ namespace pub3 {
     // wild card
     obj_t &operator= (obj_t o) { return set_obj (o); }
 
-    ptr<aarr_t> dict () { return _dict; }
-    ptr<const aarr_t> dict () const { return _dict; }
+    ptr<aarr_t> dict ();
+    ptr<const aarr_t> dict () const;
 
     ptr<const pval_t> obj () const;
     ptr<pval_t> obj ();
@@ -115,11 +118,11 @@ namespace pub3 {
   protected:
 
     // Mutations
-    ptr<parr_mixed_t> to_vector () ;
-    ptr<aarr_arg_t> to_dict ();
-    ptr<pub_scalar_t> to_scalar ();
+    ptr<expr_list_t> to_vector () ;
+    ptr<expr_dict_t> to_dict ();
 
     obj_t &set_value (ptr<pval_t> v);
+    obj_t &set_scalar_expr (ptr<expr_t> e);
 
     obj_t &set_int (int64_t i);
     obj_t &set_uint (u_int64_t i);
@@ -139,9 +142,9 @@ namespace pub3 {
   private:
     ptr<pval_t> _obj;
     ptr<obj_ref_t> _ref;
-    ptr<parr_mixed_t> _vec;
-    ptr<aarr_arg_t> _dict;
-    ptr<pub_scalar_t> _scalar;
+    ptr<expr_list_t> _vec;
+    ptr<expr_dict_t> _dict;
+    ptr<expr_t> _scalar;
   };
   
   //-----------------------------------------------------------------------

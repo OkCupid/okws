@@ -123,6 +123,10 @@ namespace pub3 {
     str name () const { return _name; }
 
     bool to_xdr (xpub3_expr_t *x) const;
+    const char *get_obj_name () const { return "pub3::runtime_fn_t"; }
+
+    ptr<const pval_t> eval (eval_t e) const { return NULL; }
+    ptr<pval_t> eval_freeze (eval_t e) const { return NULL; }
 
   protected:
     str _name;
@@ -136,7 +140,9 @@ namespace pub3 {
     error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)
       : runtime_fn_t (n, a, l), _err (err) {}
 
-    ptr<const pval_t> eval_as_pval (eval_t e) const;
+    ptr<const pval_t> eval (eval_t e) const;
+    ptr<pval_t> eval_freeze (eval_t e) const;
+    const char *get_obj_name () const { return "pub3::error_fn_t"; }
   protected:
     str _err;
   };

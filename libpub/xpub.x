@@ -354,7 +354,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_STR,
    XPUB3_EXPR_INT,
    XPUB3_EXPR_UINT,
-   XPUB3_EXPR_DOUBLE
+   XPUB3_EXPR_DOUBLE,
+   XPUB3_EXPR_LIST
 };
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
 
@@ -383,7 +384,10 @@ struct xpub3_not_t {
    xpub3_expr_t *e;
 };
 
-typedef xpub3_expr_t xpub3_expr_list_t<>;
+struct xpub3_expr_list_t {
+   int lineno;
+   xpub3_expr_t list<>;
+};
 
 struct xpub3_fn_t {
    int lineno;
@@ -470,6 +474,8 @@ case XPUB3_EXPR_RELATION:
      xpub3_relation_t relation;
 case XPUB3_EXPR_DICT:
      xpub3_dict_t dict;
+case XPUB3_EXPR_LIST:
+     xpub3_expr_list_t list;
 case XPUB3_EXPR_EQ:
      xpub3_eq_t eq;
 case XPUB3_EXPR_DICTREF:

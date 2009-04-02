@@ -41,14 +41,16 @@ class parr_uint16_t;
 
 //-----------------------------------------------------------------------
 
-class parr_t : public pval_t {
+class parr_t : public pval_t, public vec_iface_t {
 public:
   parr_t () {}
   virtual ~parr_t () {}
   virtual bool add (int64_t i) = 0;
   virtual bool add (ptr<pval_t> v) { return false; }
-  virtual size_t size () const = 0;
   const parr_t *to_arr () const { return this; }
+
+  ptr<const vec_iface_t> to_vec_iface () const { return mkref (this); }
+  ptr<vec_iface_t> to_vec_iface () { return mkref (this); }
 };
 
 //-----------------------------------------------------------------------
@@ -106,9 +108,81 @@ public:
   virtual parr_err_t val (size_t i, int16_t *p) const { return PARR_OVERFLOW; }
   virtual parr_err_t val (size_t i, u_int16_t *p) const { return PARR_OVERFLOW;}
 
+  virtual void 
+  push_back_scalar (ptr<pub_scalar_t> ps)
+  {
+    int64_t i;
+    if (ps->obj ().to_int64 (&i))
+      add (i);
+  }
+
+  bool inbounds (int64_t iv)
+  {
+    return (iv <= maxv && iv >= minv);
+  }
+
+  virtual void
+  set_scalar (size_t i, ptr<pub_scalar_t> ps)
+  {
+    int64_t iv;
+    if (ps->obj ().to_int64 (&iv) && inbounds (iv)) {
+      v[i] = iv;
+    }
+  }
+
+  void 
+  push_back (ptr<pval_t> pv)
+  {
+    ptr<pub_scalar_t> ps = pv->to_pub_scalar ();
+    if (ps) { push_back_scalar (ps); }
+  }
+
+  void
+  set (size_t i, ptr<pval_t> pv)
+  {
+    ptr<pub_scalar_t> ps = pv->to_pub_scalar ();
+    if (ps) {
+      if (i >= size ()) {
+	setsize (i+1);
+      }
+      set_scalar (i, ps);
+    }
+  }
+
+  ptr<const pval_t> 
+  lookup (ssize_t i, bool *ibp = NULL) const
+  {
+    ptr<const pval_t> r;
+    bool ib = false;
+    if (i < 0 || i >= ssize_t (size ())) {
+      ib = true;
+    } else {
+      ib = false;
+      r = New refcounted<pub_scalar_t> (v[i]);
+    }
+    if (ibp) *ibp = ib;
+    return r;
+  }
+
+  ptr<pval_t> 
+  lookup (ssize_t i, bool *ibp = NULL)
+  {
+    ptr<pval_t> r;
+    bool ib = false;
+    if (i < 0 || i >= ssize_t (size ())) {
+      ib = true;
+    } else {
+      ib = false;
+      r = New refcounted<pub_scalar_t> (v[i]);
+    }
+    if (ibp) *ibp = ib;
+    return r;
+  }
+
+
   bool add (int64_t n) 
   { 
-    if (n <= maxv && n >= minv) {
+    if (inbounds (n)) {
       v.push_back (n); 
       return true;
     } else {
@@ -117,6 +191,7 @@ public:
   }
 
   size_t size () const { return v.size (); }
+  void setsize (size_t s) { v.setsize (s); }
 
   bool to_xdr (xpub_val_t *x) const 
   {
@@ -279,6 +354,9 @@ public:
   ptr<const parr_mixed_t> to_mixed_arr () const { return mkref (this); }
   ptr<parr_mixed_t> to_mixed_arr () { return mkref (this); }
 
+  ptr<const pval_t> lookup (ssize_t i, bool *ib = NULL) const;
+  ptr<pval_t> lookup (ssize_t i, bool *ib = NULL);
+
   const ptr<pval_t> &operator[] (size_t i) const { return v[i]; }
   ptr<pval_t> &operator[] (size_t i) { return v[i]; }
 
@@ -289,6 +367,8 @@ public:
 
   ptr<pval_t> &push_back () { return v.push_back (); }
   void setsize (size_t s) { v.setsize (s); }
+  void push_back (ptr<pval_t> pv) { v.push_back (pv); }
+  void set (size_t s, ptr<pval_t> pv);
 
   const char *get_obj_name () const { return "parr_t"; }
   void dump2 (dumper_t *d) const;

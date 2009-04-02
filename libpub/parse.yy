@@ -61,7 +61,7 @@
 %type <arg> arg aarr regex range
 %type <parr> i_arr_open
 %type <buf> regex_body
-%type <nenv> nested_env empty_clause
+%type <nenv> nested_env p3_empty_clause
 
 /* ------------------------------------------------ */
 
@@ -103,7 +103,7 @@
 %type <p3bind> p3_binding;
 
 %type <relop> p3_relational_op;
-%type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_vector;
+%type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_tuple p3_list;
 %type <str> p3_identifier p3_bind_key;
 %type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
@@ -203,12 +203,6 @@ ptag_func: T_PTINCLUDE
 	| T_PTINCLIST	{ $$ = New pfile_inclist_t (PLINENO); }
 	| T_PTLOAD      { $$ = New pfile_load_t (PLINENO); }
 	;
-
-empty_clause: 
-         /* empty */       { $$ = NULL; }
-	 | ','  nested_env { $$ = $2; }
- 	 ;
-
 
 
 e_js_tag: T_EJS		{ PSECTION->add ($1); }
@@ -544,7 +538,7 @@ p3_expr: p3_logical_AND_expr
 	       }
 	       | p3_expr T_P3_OR p3_logical_AND_expr
 	       {
-	          $$ = New refcounted<pub3::expr_OR_t> ($1, $3);
+	          $$ = New refcounted<pub3::expr_OR_t> ($1, $3, PLINENO);
                }
 	       ;
 
@@ -554,7 +548,7 @@ p3_logical_AND_expr: p3_equality_expr
 	       }
 	       | p3_logical_AND_expr T_P3_AND p3_equality_expr
                { 
-	          $$ = New refcounted<pub3::expr_AND_t> ($1, $3);
+	          $$ = New refcounted<pub3::expr_AND_t> ($1, $3, PLINENO);
 	       }
 	       ;
 
@@ -613,7 +607,7 @@ p3_unary_expr:
            }
            | '!' p3_unary_expr
 	   {
-	      $$ = New refcounted<pub3::expr_NOT_t> ($2);
+	      $$ = New refcounted<pub3::expr_NOT_t> ($2, PLINENO);
            }
 	   ;
 
@@ -638,6 +632,10 @@ p3_postfix_expr:
            {
 	      $$ = $1;
            }
+	   | p3_list
+	   {
+	      $$ = $1;
+	   }
 	   ;
 
 p3_primary_expr: p3_identifier 
@@ -661,7 +659,7 @@ p3_argument_expr_list_opt:           { $$ = NULL; }
 
 p3_argument_expr_list: p3_expr
            {
-	      $$ = New refcounted<pub3::expr_list_t> ();
+	      $$ = New refcounted<pub3::expr_list_t> (PLINENO);
 	      $$->push_back ($1);
 	   }
            | p3_argument_expr_list ',' p3_expr
@@ -764,7 +762,7 @@ p3_binding: p3_bind_key p3_bindchar p3_expr
 	;
 
 p3_bind_key: p3_identifier { $$ = $1; }
-        | p3_string { $$ = $1->eval_as_str (); }
+        | p3_string        { $$ = $1->to_str (); }
 	;
 
 p3_bindchar: ':' | '=' ;
@@ -814,9 +812,11 @@ p3_inline_expr:
         T_P3_BEGIN_EXPR p3_expr '}' { $$ = $2; }
         ;
 
-p3_vector: '(' p3_argument_expr_list_opt ')' { $$ = $2; } ;
+p3_list: '[' p3_argument_expr_list_opt ']' { $$ = $2; } ;
+
+p3_tuple: '(' p3_argument_expr_list_opt ')' { $$ = $2; } ;
 	
-p3_include: T_P3_INCLUDE p3_vector T_P3_CLOSETAG
+p3_include: T_P3_INCLUDE p3_tuple T_P3_CLOSETAG
         {
            str err;
            pub3::include_t *f = New pub3::include_t (PLINENO);
@@ -842,7 +842,7 @@ p3_setl: T_P3_SETL p3_dictionary T_P3_CLOSETAG
         }
         ;
 
-p3_forloop: T_P3_FOR p3_vector nested_env empty_clause T_P3_CLOSETAG
+p3_forloop: T_P3_FOR p3_tuple nested_env p3_empty_clause T_P3_CLOSETAG
 	 {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    if (!f->add ($2)) {
@@ -867,12 +867,14 @@ p3_cond_clause_list:
 	     $$ = New refcounted<pub3::cond_clause_list_t> ();
 	     $$->push_back ($1);
           }
-	  | p3_cond_clause_list ',' p3_cond_clause
+	  | p3_cond_clause_list p3_comma_opt p3_cond_clause
 	  {
 	     $1->push_back ($3);
   	     $$ = $1;
           }
 	  ;
+
+p3_comma_opt: /* empty */ | ',' ;
 
 p3_cond_clause: '(' p3_expr ')' nested_env
          {
@@ -882,5 +884,11 @@ p3_cond_clause: '(' p3_expr ')' nested_env
 	    $$ = c;
 	 }
 	 ;
+
+p3_empty_clause: 
+         /* empty */                { $$ = NULL; }
+	 | p3_comma_opt nested_env  { $$ = $2; }
+ 	 ;
+
 		  
 /*----------------------------------------------------------------------- */

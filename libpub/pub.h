@@ -223,6 +223,7 @@ namespace pub3 {
   class expr_ref_t;
   class expr_t;
   class expr_dict_t;
+  class expr_list_t;
 };
 
 //-----------------------------------------------------------------------
@@ -752,6 +753,19 @@ class pub_scalar_t;
 
 //-----------------------------------------------------------------------
 
+class vec_iface_t {
+public:
+  virtual ~vec_iface_t () {}
+  virtual ptr<const pval_t> lookup (ssize_t i, bool *ib = NULL) const = 0;
+  virtual ptr<pval_t> lookup (ssize_t i, bool *ib = NULL) = 0;
+  virtual size_t size () const = 0;
+  virtual void push_back (ptr<pval_t> v) = 0;
+  virtual void setsize (size_t s) = 0;
+  virtual void set (size_t i, ptr<pval_t> v) = 0;
+};
+
+//-----------------------------------------------------------------------
+
 class arg_t : public virtual refcount, public virtual dumpable_t,
 	      public virtual evalable_t
 {
@@ -769,8 +783,11 @@ public:
   virtual const parr_ival_t *to_int_arr () const { return NULL; }
   virtual const parr_t *to_arr () const { return NULL; }
   virtual ptr<nested_env_t> to_nested_env () { return NULL; }
-  virtual ptr<pub_scalar_t> to_scalar () { return NULL; }
-  virtual ptr<const pub_scalar_t> to_scalar () const { return NULL; }
+  virtual ptr<pub_scalar_t> to_pub_scalar () { return NULL; }
+  virtual ptr<const pub_scalar_t> to_pub_scalar () const { return NULL; }
+
+  virtual ptr<const vec_iface_t> to_vec_iface () const { return NULL; }
+  virtual ptr<vec_iface_t> to_vec_iface () { return NULL; }
 };
 
 //-----------------------------------------------------------------------
@@ -785,9 +802,21 @@ public:
   virtual bool to_xdr (xpub_val_t *x) const { return false; }
   virtual ptr<pval_t> flatten(penv_t *e) ;
   virtual ptr<pstr_t> to_pstr () { return NULL; }
+
+  // pub v3
   virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
   virtual ptr<const pub3::expr_t> to_expr () const { return NULL; }
   virtual ptr<pub3::expr_t> to_expr () { return NULL; }
+  virtual ptr<const pub3::expr_dict_t> to_expr_dict () const { return NULL; }
+  virtual ptr<pub3::expr_dict_t> to_expr_dict () { return NULL; }
+  virtual ptr<const pub3::expr_list_t> to_expr_list () const { return NULL; }
+  virtual ptr<pub3::expr_list_t> to_expr_list () { return NULL; }
+  virtual ptr<const aarr_t> to_dict () const { return NULL; }
+  virtual ptr<aarr_t> to_dict () { return NULL; }
+
+  // XXX maybe in the future implement this as a virtual copy
+  // for objects that we need to be immutable.
+  virtual ptr<pval_t> copy_stub () const;
 };
 
 //-----------------------------------------------------------------------
@@ -950,8 +979,8 @@ public:
   static ptr<pub_scalar_t> alloc (T i)
   { return New refcounted<pub_scalar_t> (i); }
 
-  ptr<pub_scalar_t> to_scalar () { return mkref (this); }
-  ptr<const pub_scalar_t> to_scalar () const { return mkref (this); }
+  ptr<pub_scalar_t> to_pub_scalar () { return mkref (this); }
+  ptr<const pub_scalar_t> to_pub_scalar () const { return mkref (this); }
   const scalar_obj_t &obj () const { return _obj; }
   scalar_obj_t &obj () { return _obj; }
   void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;

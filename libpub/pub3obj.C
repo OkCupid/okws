@@ -11,7 +11,7 @@ namespace pub3 {
       if (_vec->size () <= _index) {
 	_vec->setsize (_index + 1);
       }
-      (*_vec)[_index] = v;
+      _vec->set (_index, v);
     }
   }
 
@@ -21,7 +21,7 @@ namespace pub3 {
   obj_ref_vec_t::get () const
   {
     ptr<const pval_t> v;
-    if (_vec && _index < _vec->size ()) { v = (*_vec)[_index]; }
+    if (_vec && _index < _vec->size ()) { v = _vec->lookup (_index); }
     return v;
   }
 
@@ -31,7 +31,7 @@ namespace pub3 {
   obj_ref_vec_t::get () 
   {
     ptr<pval_t> v;
-    if (_vec && _index < _vec->size ()) { v = (*_vec)[_index]; }
+    if (_vec && _index < _vec->size ()) { v = _vec->lookup (_index); }
     return v;
   }
 
@@ -41,10 +41,10 @@ namespace pub3 {
   const_obj_t::size () const 
   {
     size_t r = 0;
-    ptr<const parr_mixed_t> v;
-    ptr<const aarr_arg_t> d;
+    ptr<const expr_list_t> l;
+    ptr<const expr_dict_t> d;
 
-    if ((v = to_vector ())) { r = v->size (); }
+    if ((l = to_vector ())) { r = l->size (); }
     else if ((d = to_dict ())) { r = d->size (); }
 
     return r;
@@ -55,7 +55,7 @@ namespace pub3 {
   const_obj_t
   const_obj_t::operator[] (size_t i) const
   {
-    ptr<const parr_mixed_t> v = to_vector ();
+    ptr<const expr_list_t> v = to_vector ();
     if (v && i < v->size ()) {
       return const_obj_t ((*v)[i]);
     }
@@ -67,40 +67,30 @@ namespace pub3 {
   const_obj_t
   const_obj_t::operator() (const str &s) const
   {
-    ptr<const aarr_arg_t> d = to_dict ();
+    ptr<const expr_dict_t> d = to_dict ();
     if (d) {
-      return const_obj_t (d->lookup_ptr (s));
+      return const_obj_t (d->dict ()->lookup_ptr (s));
     }
     return const_obj_t ();
   }
 
   //-----------------------------------------------------------------------
 
-  ptr<const parr_mixed_t>
+  ptr<const expr_list_t>
   const_obj_t::to_vector () const
   {
-    ptr<const parr_mixed_t> r;
-    if (obj ()) r = obj ()->to_mixed_arr ();
+    ptr<const expr_list_t> r;
+    if (obj ()) r = obj ()->to_expr_list ();
     return r;
   }
 
   //-----------------------------------------------------------------------
 
-  ptr<const aarr_arg_t>
+  ptr<const expr_dict_t>
   const_obj_t::to_dict () const
   {
-    ptr<const aarr_arg_t> r;
-    if (obj ()) r = obj ()->to_aarr ();
-    return r;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<const pub_scalar_t>
-  const_obj_t::to_scalar () const
-  {
-    ptr<const pub_scalar_t> r;
-    if (obj ()) r = obj ()->to_scalar ();
+    ptr<const expr_dict_t> r;
+    if (obj ()) r = obj ()->to_expr_dict ();
     return r;
   }
 
@@ -109,7 +99,7 @@ namespace pub3 {
   obj_t
   obj_t::push_back ()
   {
-    ptr<parr_mixed_t> v = to_vector ();
+    ptr<expr_list_t> v = to_vector ();
     v->push_back ();
     obj_t o (obj_ref_vec_t::alloc (v, v->size () - 1));
     return o;
@@ -120,8 +110,8 @@ namespace pub3 {
   void
   obj_t::push_back (obj_t o)
   {
-    ptr<parr_mixed_t> v = to_vector ();
-    v->add (o.obj ());
+    ptr<expr_list_t> v = to_vector ();
+    v->push_back (o.obj ());
   }
 
   //-----------------------------------------------------------------------
@@ -129,7 +119,7 @@ namespace pub3 {
   obj_t
   obj_t::operator[] (size_t i)
   {
-    ptr<parr_mixed_t> v = to_vector ();
+    ptr<expr_list_t> v = to_vector ();
     return obj_t (obj_ref_vec_t::alloc (v, i)); 
   }
 
@@ -138,8 +128,8 @@ namespace pub3 {
   void
   obj_t::insert (const str &n, obj_t o)
   {
-    ptr<aarr_arg_t> d = to_dict ();
-    d->replace (n, o.obj ());
+    ptr<expr_dict_t> d = to_dict ();
+    d->dict ()->replace (n, o.obj ());
   }
 
   //-----------------------------------------------------------------------
@@ -147,23 +137,23 @@ namespace pub3 {
   obj_t
   obj_t::operator() (const str &s)
   {
-    ptr<aarr_arg_t> d = to_dict ();
+    ptr<expr_dict_t> d = to_dict ();
     return obj_t (obj_ref_dict_t::alloc (d, s));
   }
 
   //-----------------------------------------------------------------------
 
-  ptr<parr_mixed_t> 
+  ptr<expr_list_t> 
   obj_t::to_vector ()
   {
     if (!_vec && obj ()) {
-      _vec = obj ()->to_mixed_arr ();
+      _vec = obj ()->to_expr_list ();
     }
 
     if (!_vec) {
       _scalar = NULL;
       _dict = NULL;
-      _vec = New refcounted<parr_mixed_t> ();
+      _vec = New refcounted<expr_list_t> ();
       update_value (_vec);
     }
     return _vec;
@@ -171,17 +161,17 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<aarr_arg_t>
+  ptr<expr_dict_t>
   obj_t::to_dict ()
   {
     if (!_dict && obj ()) {
-      _dict = obj ()->to_aarr ();
+      _dict = obj ()->to_expr_dict ();
     }
 
     if (!_dict) {
       _scalar = NULL;
       _vec = NULL;
-      _dict = New refcounted<aarr_arg_t> ();
+      _dict = New refcounted<expr_dict_t> ();
       update_value (_dict);
     }
     return _dict;
@@ -189,37 +179,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<pub_scalar_t>
-  obj_t::to_scalar ()
-  {
-    if (!_scalar && obj ()) {
-      _scalar = obj ()->to_scalar ();
-    }
-
-    if (!_scalar) {
-      _vec = NULL;
-      _dict = NULL;
-      _scalar = New refcounted<pub_scalar_t> ();
-      update_value (_scalar);
-    }
-    return _scalar;
-  }
-
-  //-----------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------
-
   obj_t &
   obj_t::set_value (ptr<pval_t> in)
   {
-    if (!in) {
-      /* noop */
-    } else if (set_value_scalar (in)) {
-      /* noop */ 
-    } else if (set_value_dict (in)) {
-      /* noop */ 
-    } else {
-      set_value_vec (in);
+    if (!set_value_dict (in) && !set_value_vec (in)) {
+      set_value_scalar (in);
     }
     return (*this);
   }
@@ -253,11 +217,10 @@ namespace pub3 {
   obj_t::set_value_scalar (ptr<pval_t> in)
   {
     bool ret = true;
-    ptr<pub_scalar_t> s = in->to_scalar ();
-    if (s) {
+    if (in) {
       _vec = NULL;
       _dict = NULL;
-      _scalar = s;
+      _scalar = in->to_expr ();
       update_value (_scalar);
     } else {
       ret = false;
@@ -271,7 +234,7 @@ namespace pub3 {
   obj_t::set_value_vec (ptr<pval_t> in)
   {
     bool ret = true;
-    ptr<parr_mixed_t> v = in->to_mixed_arr ();
+    ptr<expr_list_t> v = in->to_expr_list ();
     if (v) {
       _dict = NULL;
       _scalar = NULL;
@@ -288,7 +251,7 @@ namespace pub3 {
   bool
   obj_t::set_value_dict (ptr<pval_t> in)
   {
-    ptr<aarr_arg_t> d = in->to_aarr ();
+    ptr<expr_dict_t> d = in->to_expr_dict ();
     bool ret = true;
     if (d) {
       _vec = NULL;
@@ -304,9 +267,21 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   obj_t &
+  obj_t::set_scalar_expr (ptr<expr_t> e)
+  {
+    _vec = NULL;
+    _dict = NULL;
+    _scalar = e;
+    update_value (_scalar);
+    return (*this);
+  }
+
+  //-----------------------------------------------------------------------
+
+  obj_t &
   obj_t::set_scalar (scalar_obj_t so)
   {
-    ptr<pub_scalar_t> p = New refcounted<pub_scalar_t> (so);
+    ptr<expr_t> p = expr_t::alloc (so);
     _vec = NULL;
     _dict = NULL;
     _scalar = p;
@@ -319,9 +294,7 @@ namespace pub3 {
   obj_t &
   obj_t::set_int (int64_t i)
   {
-    scalar_obj_t so;
-    so.set (i);
-    return set_scalar (so);
+    return set_scalar_expr (expr_int_t::alloc (i));
   }
 
   //-----------------------------------------------------------------------
@@ -329,9 +302,7 @@ namespace pub3 {
   obj_t &
   obj_t::set_uint (u_int64_t i)
   {
-    scalar_obj_t so;
-    so.set_u (i);
-    return set_scalar (so);
+    return set_scalar_expr (expr_uint_t::alloc (i));
   }
 
   //-----------------------------------------------------------------------
@@ -339,9 +310,7 @@ namespace pub3 {
   obj_t &
   obj_t::set_str (const str &s)
   {
-    scalar_obj_t so;
-    so.set (s);
-    return set_scalar (so);
+    return set_scalar_expr (expr_str_t::alloc (s));
   }
 
   //-----------------------------------------------------------------------
@@ -349,9 +318,7 @@ namespace pub3 {
   obj_t &
   obj_t::set_double (double d)
   {
-    scalar_obj_t so;
-    so.set (d);
-    return set_scalar (so);
+    return set_scalar_expr (expr_double_t::alloc (d));
   }
 
   //-----------------------------------------------------------------------
@@ -379,6 +346,26 @@ namespace pub3 {
   {
     if (_ref) { return _ref->get (); }
     else      { return _obj; }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<aarr_t>
+  obj_t::dict () 
+  {
+    ptr<aarr_t> d;
+    if (_dict) d = _dict->dict ();
+    return d;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const aarr_t>
+  obj_t::dict () const
+  {
+    ptr<const aarr_t> d;
+    if (_dict) d = _dict->dict ();
+    return d;
   }
 
   //-----------------------------------------------------------------------

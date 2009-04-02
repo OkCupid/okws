@@ -17,24 +17,6 @@ expr_to_rpc_ptr (const pub3::expr_t *e, rpc_ptr<xpub3_expr_t> *x)
 //-----------------------------------------------------------------------
 
 static void
-expr_to_xdr (const pub3::expr_list_t *in, xpub3_expr_list_t *out)
-{
-  if (in) {
-    out->setsize (in->size ());
-    for (size_t i = 0; i < in->size (); i++) {
-      ptr<const pub3::expr_t> x = (*in)[i];
-      if (x) {
-	x->to_xdr (&(*out)[i]);
-      } else {
-	(*out)[i].set_typ (XPUB3_EXPR_NULL);
-      }
-    }
-  }
-}
-
-//-----------------------------------------------------------------------
-
-static void
 expr_to_xdr (ptr<const pub3::expr_t> e, xpub3_expr_t *x)
 {
   if (e) { e->to_xdr (x); }
@@ -145,6 +127,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_DICT:
     r = New refcounted<pub3::expr_dict_t> (*x.dict);
     break;
+  case XPUB3_EXPR_LIST:
+    r = New refcounted<pub3::expr_list_t> (*x.list);
+    break;
   case XPUB3_EXPR_EQ:
     r = New refcounted<pub3::expr_EQ_t> (*x.eq);
     break;
@@ -211,33 +196,51 @@ pub3::expr_NOT_t::expr_NOT_t (const xpub3_not_t &x)
 ptr<pub3::runtime_fn_t>
 pub3::rfn_factory_t::alloc (const xpub3_fn_t &x)
 {
-  return alloc (x.name, expr_t::alloc (x.args), x.lineno);
+  return alloc (x.name, expr_list_t::alloc (x.args), x.lineno);
 }
 
 //-----------------------------------------------------------------------
 
-static void
-fill_expr_list (pub3::expr_list_t *l, const xpub3_expr_list_t &x)
+pub3::expr_list_t::expr_list_t (const xpub3_expr_list_t &x)
+  : expr_t (x.lineno)
 {
-  for (size_t i = 0; i < x.size (); i++) {
-    l->push_back (pub3::expr_t::alloc (x[i]));
+  setsize (x.list.size ());
+  for (size_t i = 0; i < x.list.size (); i++) {
+    (*this)[i] = pub3::expr_t::alloc (x.list[i]);
   }
 }
 
 //-----------------------------------------------------------------------
 
-ptr<pub3::expr_list_t>
-pub3::expr_t::alloc (const xpub3_expr_list_t &x)
+bool
+pub3::expr_list_t::to_xdr (xpub3_expr_t *x) const
 {
-  ptr<expr_list_t> ret = New refcounted<expr_list_t> ();
-  fill_expr_list (ret, x);
-  return ret;
+  x->set_typ (XPUB3_EXPR_LIST);
+  return to_xdr (x->list);
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_list_t::to_xdr (xpub3_expr_list_t *l) const
+{
+  l->lineno = _lineno;
+  l->list.setsize (size ());
+  for (size_t i = 0; i < size (); i++) {
+    ptr<const pub3::expr_t> x = (*this)[i];
+    if (x) {
+      x->to_xdr (&l->list[i]);
+    } else {
+      l->list[i].set_typ (XPUB3_EXPR_NULL);
+    }
+  }
+  return true;
 }
 
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_list_t>
-pub3::expr_t::alloc (const xpub3_expr_list_t *x)
+pub3::expr_list_t::alloc (const xpub3_expr_list_t *x)
 {
   ptr<expr_list_t> ret;
   if (x) ret = alloc (*x);
@@ -360,7 +363,9 @@ pub3::runtime_fn_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_FN);
   x->fn->lineno = _lineno;
   x->fn->name = name ();
-  expr_to_xdr (args (), &x->fn->args);
+  if (args ()) {
+    args ()->to_xdr (&x->fn->args);
+  }
   return true;
 }
 
@@ -408,7 +413,7 @@ bool
 pub3::expr_vecref_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_VECREF);
-  x->dictref->lineno = _lineno;
+  x->vecref->lineno = _lineno;
   expr_to_rpc_ptr (_index, &x->vecref->index);
   expr_to_rpc_ptr (_vec, &x->vecref->vec);
   return true;
@@ -505,7 +510,9 @@ pub3::expr_shell_str_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_SHELL_STR);
   x->shell_str->lineno = _lineno;
-  expr_to_xdr (&_els, &x->shell_str->elements);
+  if (_els) {
+    _els->to_xdr (&x->shell_str->elements);
+  }
 
   return true;
 }
@@ -513,10 +520,8 @@ pub3::expr_shell_str_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 pub3::expr_shell_str_t::expr_shell_str_t (const xpub3_shell_str_t &x)
-  : expr_t (x.lineno)
-{
-  fill_expr_list (&_els, x.elements);
-}
+  : expr_t (x.lineno),
+    _els (expr_list_t::alloc (x.elements)) {}
 
 //-----------------------------------------------------------------------
 

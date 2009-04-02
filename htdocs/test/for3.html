@@ -1,0 +1,6 @@
+
+{% setl { v : [ { val : 1 }, { val : 2 }, { val : 3 }, { val : 4 } ] } %}
+
+{% for (i,v) {{ %{i.val} }} %}
+
+{% for (i,range(0,4,2)) {{ %{v[i].val} }} %}
