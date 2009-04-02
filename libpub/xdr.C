@@ -122,6 +122,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pub3::cond_t (*x.cond);
   case XPUB3_INCLUDE:
     return New pub3::include_t (*x.pub3_include);
+  case XPUB3_LOAD:
+    return New pub3::load_t (*x.pub3_include);
   case XPUB3_INLINE_VAR:
     return New pub3::inline_var_t (*x.pub3_inline_var);
   case XPUB3_SET_FUNC:

@@ -41,7 +41,10 @@ namespace pub3 {
   public:
     include_t (int l) : pfile_func_t (l) {}
     include_t (const xpub3_include_t &x);
-    bool to_xdr (xpub_obj_t *x) const;
+
+    virtual bool to_xdr (xpub_obj_t *x) const;
+    bool to_xdr_base (xpub_obj_t *x, xpub_obj_typ_t t) const;
+    
     bool add (ptr<arglist_t> l) { return false; }
     bool add (ptr<expr_list_t> l);
     const char *get_obj_name () const { return "pub3::include_t"; }
@@ -52,6 +55,16 @@ namespace pub3 {
   protected:
     ptr<expr_t> _file;
     ptr<expr_t> _dict;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class load_t : public include_t {
+  public:
+    load_t (int l) : include_t (l) {}
+    load_t (const xpub3_include_t &x);
+    bool to_xdr (xpub_obj_t *x) const;
+    bool muzzle_output () const { return true; }
   };
 
   //-----------------------------------------------------------------------

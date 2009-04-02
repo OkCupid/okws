@@ -74,6 +74,8 @@ struct yystype {
   bool bl;
   xpub3_relop_t relop;
   double dbl;
+  pub3::include_t *p3include;
+
 };
 
 #define YYSTYPE yystype

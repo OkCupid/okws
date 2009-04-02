@@ -79,14 +79,35 @@ pub3::include_t::include_t (const xpub3_include_t &x)
 
 //-----------------------------------------------------------------------
 
+pub3::load_t::load_t (const xpub3_include_t &x)
+  : include_t (x) {}
+
+//-----------------------------------------------------------------------
+
 bool
-pub3::include_t::to_xdr (xpub_obj_t *x) const
+pub3::include_t::to_xdr_base (xpub_obj_t *x, xpub_obj_typ_t typ) const
 {
-  x->set_typ (XPUB3_INCLUDE);
+  x->set_typ (typ);
   x->pub3_include->lineno = lineno;
   expr_to_xdr (_file, &x->pub3_include->file);
   expr_to_xdr (_dict, &x->pub3_include->dict);
   return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::include_t::to_xdr (xpub_obj_t *x) const
+{
+  return to_xdr_base (x, XPUB3_INCLUDE);
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::load_t::to_xdr (xpub_obj_t *x) const
+{
+  return to_xdr_base (x, XPUB3_LOAD);
 }
 
 //-----------------------------------------------------------------------

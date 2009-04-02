@@ -79,6 +79,7 @@
 %token T_P3_CLOSETAG
 %token T_P3_SET
 %token T_P3_SETL
+%token T_P3_LOAD
 
 %token T_P3_FOR
 %token T_P3_TRUE
@@ -102,6 +103,7 @@
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bind> p3_binding;
+%type <p3include> p3_include_or_load;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_tuple p3_list;
@@ -829,11 +831,17 @@ p3_inline_expr:
 p3_list: '[' p3_argument_expr_list_opt ']' { $$ = $2; } ;
 
 p3_tuple: '(' p3_argument_expr_list_opt ')' { $$ = $2; } ;
+
+p3_include_or_load: 
+          T_P3_INCLUDE { $$ = New pub3::include_t (PLINENO); }
+        | T_P3_LOAD    { $$ = New pub3::load_t (PLINENO); }
+	;
+		   
 	
-p3_include: T_P3_INCLUDE p3_tuple T_P3_CLOSETAG
+p3_include: p3_include_or_load p3_tuple T_P3_CLOSETAG
         {
            str err;
-           pub3::include_t *f = New pub3::include_t (PLINENO);
+           pub3::include_t *f = $1;
 	   if (!f->add ($2)) {
 	     PARSEFAIL;
 	   }
