@@ -96,6 +96,7 @@
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
 %type <p3expr> p3_primary_expr p3_constant p3_additive_expr;
+%type <p3expr> p3_multiplicative_expr;
 %type <p3expr> p3_integer_constant p3_string p3_string_element;
 %type <p3expr> p3_inline_expr;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
@@ -585,15 +586,28 @@ p3_relational_op:
 	   ;
 
 p3_additive_expr:
-             p3_unary_expr
-           {
-	      $$ = $1;
+	     p3_multiplicative_expr
+	   {
+	     $$ = $1;
 	   }
-	   | p3_additive_expr p3_additive_op p3_unary_expr
+	   | p3_additive_expr p3_additive_op p3_multiplicative_expr
 	   {
 	     $$ = New refcounted<pub3::expr_add_t> ($1, $3, $2, PLINENO);
 	   }
 	   ;
+
+p3_multiplicative_expr:
+             p3_unary_expr
+           {
+	      $$ = $1;
+	   }
+	   | p3_multiplicative_expr '%' p3_unary_expr
+	   {
+	     $$ = New refcounted<pub3::expr_mod_t> ($1, $3, PLINENO);
+	   }
+	   ;	   
+
+	
 
 p3_additive_op:
 	     '-'       { $$ = false; }

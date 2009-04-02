@@ -359,6 +359,23 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_mod_t : public expr_arithmetic_t {
+  public:
+    expr_mod_t (ptr<expr_t> n, ptr<expr_t> d, int lineno)
+      : expr_arithmetic_t (lineno), _n (n), _d (d) {}
+    expr_mod_t (const xpub3_mod_t &x);
+
+    bool to_xdr (xpub3_expr_t *x) const;
+    void dump2 (dumper_t *d) const { /* XXX implement me */ }
+    const char *get_obj_name () const { return "pub3::expr_add_t"; }
+  protected:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _n, _d;
+    bool _pos;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_ref_t : public expr_t {
   public:
     expr_ref_t (int l) : expr_t (l) {}

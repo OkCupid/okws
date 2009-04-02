@@ -157,6 +157,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_DOUBLE:
     r = New refcounted<pub3::expr_double_t> (*x.xdouble);
     break;
+  case XPUB3_EXPR_MOD:
+    r = New refcounted<pub3::expr_mod_t> (*x.xmod);
+    break;
   default:
     break;
   }
@@ -184,6 +187,13 @@ pub3::expr_add_t::expr_add_t (const xpub3_add_t &x)
     _t1 (expr_t::alloc (x.t1)),
     _t2 (expr_t::alloc (x.t2)),
     _pos (x.pos) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_mod_t::expr_mod_t (const xpub3_mod_t &x)
+  : expr_arithmetic_t (x.lineno),
+    _n (expr_t::alloc (x.numer)),
+    _d (expr_t::alloc (x.denom)) {}
 
 //-----------------------------------------------------------------------
 
@@ -341,6 +351,18 @@ pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
   expr_to_rpc_ptr (_t1, &x->xadd->t1);
   expr_to_rpc_ptr (_t2, &x->xadd->t2);
   x->xadd->pos = _pos;
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_mod_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_MOD);
+  x->xmod->lineno = _lineno;
+  expr_to_rpc_ptr (_n, &x->xmod->numer);
+  expr_to_rpc_ptr (_d, &x->xmod->denom);
   return true;
 }
 

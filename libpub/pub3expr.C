@@ -469,6 +469,45 @@ pub3::expr_t::alloc (scalar_obj_t so)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
+scalar_obj_t
+pub3::expr_mod_t::eval_internal (eval_t e) const
+{
+  scalar_obj_t out;
+  if (_n && !_n->is_null (e) && _d && !_d->is_null (e)) {
+    bool l = e.set_loud (true);
+    scalar_obj_t sn = _n->eval_as_scalar (e);
+    scalar_obj_t sd = _d->eval_as_scalar (e);
+    e.set_loud (l);
+    bool zed = false;
+
+    int64_t n, d;
+    u_int64_t un, ud;
+
+    if (sn.to_uint64 (&un) && sd.to_uint64 (&ud)) {
+      if (ud == 0) { zed = true; }
+      else { out.set_u (un % ud); }
+    } else if (sn.to_int64 (&n) && sd.to_uint64 (&ud)) {
+      if (ud == 0) { zed = true; }
+      else { out.set_u (n % ud); }
+    } else if (sn.to_uint64 (&un) && sd.to_int64 (&d)) {
+      if (d == 0) { zed = true; }
+      else { out.set_i (un % d); }
+    } else if (sn.to_int64 (&n) && sd.to_int64 (&d)) {
+      if (d == 0) { zed = true; }
+      else { out.set_i (n % d); }
+    }
+
+    if (zed) {
+      report_error (e, "refused to mod by 0!");
+    }
+  } else {
+    report_error (e, "one or more operands were NULL");
+  }
+  return out;
+}
+
 
 //-----------------------------------------------------------------------
 

@@ -395,7 +395,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [<]=		 { return T_P3_LTEQ; }
 >=		 { return T_P3_GTEQ; }
 =>		 { return yytext[0]; }
-[()!=><,[\].+:-] { return yytext[0]; }
+[%()!=><,[\].+:-] { return yytext[0]; }
 [{]		 { yy_push_state (P3); return yytext[0]; }
 [}]		 { yy_pop_state (); return yytext[0]; }
 "||"		 { return T_P3_OR; }
