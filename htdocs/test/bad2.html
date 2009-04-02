@@ -1,0 +1,26 @@
+
+{% setl { x : 1 } %}
+{% setl { x : x + 10 } %}
+{% setl { s : "-%{x}-%{x}-" } %}
+{% setl { t : s + s + s } %}
+{% setl { u : "uuu %{s} uuu %{t} uuu %{u}" } %}
+{% setl { v : u + "xxxx" + " " + "yyyy" } %}
+{% setl { A : "--aa--" } %}
+{% setl { A : "aa %{B} %{B} aa" ,
+          B : "bb %{A} %{A} bb" } %}
+{% setl { d : { i : 0, v : [ 0, 1, 2 ], d : { i : 0, v : [0, 1, 2, "XXX" ]}}}%}
+{% setl { C : "CC %{d} CC" } %}
+{% setl { json : { x : "x", i : 0 } } %}
+{% setl { ss : "json: %{json}" } %}
+
+ss: %{ss}<br>
+s : %{s}<br>
+x : %{x}<br>
+t : %{t}<br>
+u : %{u}<br>
+v : %{v}<br>
+A : %{A}<br>
+B : %{B}<br>
+C : %{C}<br>
+len(C) : %{len(C)}<br>
+len(d.v): %{len(d.v)}<br>
