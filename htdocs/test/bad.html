@@ -1,0 +1,9 @@
+
+{% setl { x : 1 } %}
+{% setl { x : x + 10 } %}
+{% setl { a : "AaAaAaAa" } %}
+{% setl { b : "b%{a} 4 4 4",
+          a : "%{b}%{b}" } %}
+
+B => %{b}<br>
+X => %{x}<br>
