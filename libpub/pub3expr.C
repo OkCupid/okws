@@ -820,9 +820,14 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
   ptr<pval_t> val, v;
   ptr<expr_t> e;
   const nvtab_t *nvt = in->nvtab ();
+  nvpair_t *tmp;
   for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
     val = eval_freeze (p->value_ptr ());
-    out->add (New nvpair_t (p->name (), val));
+    if (val) {
+      out->add (New nvpair_t (p->name (), val));
+    } else if ((tmp = out->lookup_nvpair (p->name ()))) {
+      out->remove (tmp);
+    }
   }
 }
 
