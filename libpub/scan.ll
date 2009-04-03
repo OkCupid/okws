@@ -176,7 +176,22 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		      return T_P3_BEGIN_EXPR;
 		}
 
+\\+[$%]"{"	|
+\\"}}"          { yylval.str = yytext + 1; return T_HTML; }
 
+"}}"		{ if (yy_d_brace > 0) {
+		     yy_d_brace -- ;
+		     yy_pop_state ();
+                     return T_2R_BRACE; 
+	          } else {
+	 	     yylval.str = yytext; return T_HTML;
+	          } 
+                } 
+
+[%$}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
+}
+
+<H,WH,JS,PSTR,PTAG,HTAG,PSTR_SQ,P3_STR>{
 "[[[["		{
 		   yy_d_bracket += 2;
 		   bracket_mark_left (2);
@@ -201,21 +216,6 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		     yy_push_state (TXLCOM);
 		}
 
-\\+[$%]"{"	|
-\\"}}"		|
-\\"["{2,4}	|
-\\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
-
-"}}"		{ if (yy_d_brace > 0) {
-		     yy_d_brace -- ;
-		     yy_pop_state ();
-                     return T_2R_BRACE; 
-	          } else {
-	 	     yylval.str = yytext; return T_HTML;
-	          } 
-                } 
-
-
 "]]"		{ 
                   if (yy_d_bracket > 0) {
 		     bracket_mark_right ();
@@ -226,10 +226,12 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		  }
                 }
 
-[%$}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
-
+\\"["{2,4}	|
+\\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
 }
-<H,WH,JS,PTAG,HTAG,TXLCOM,TXLCOM3>{
+
+
+<H,WH,JS,PTAG,HTAG,TXLCOM,TXLCOM3,P3_STR>{
 <<EOF>>		{  return bracket_check_eof(); }
 }
 
@@ -372,8 +374,9 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [%$][{]		{ yy_push_state (P3); return T_P3_BEGIN_EXPR; }
 \n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
+[\[\]]		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 ["]		{ end_P3_STR (); return yytext[0]; }
-[^\\%$"\n]+	{ yylval.str = yytext; return T_P3_STRING; }
+[^\\%$"\n\[\]]+	{ yylval.str = yytext; return T_P3_STRING; }
 <<EOF>>         { return yyerror (strbuf ("EOF found in str started on "
 		  	 	 	  "line %d", yy_ssln)); }
 }
