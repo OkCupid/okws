@@ -231,7 +231,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 }
 
 
-<H,WH,JS,PTAG,HTAG,TXLCOM,TXLCOM3,P3_STR>{
+<H,WH,JS,PTAG,HTAG,TXLCOM,TXLCOM3>{
 <<EOF>>		{  return bracket_check_eof(); }
 }
 
@@ -377,8 +377,11 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [\[\]]		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 ["]		{ end_P3_STR (); return yytext[0]; }
 [^\\%$"\n\[\]]+	{ yylval.str = yytext; return T_P3_STRING; }
-<<EOF>>         { return yyerror (strbuf ("EOF found in str started on "
-		  	 	 	  "line %d", yy_ssln)); }
+<<EOF>>         {   
+		    bracket_check_eof ();
+ 		    return yyerror (strbuf ("EOF found in str started on "
+		  	 	 	  "line %d", yy_ssln)); 
+                }
 }
 
 <P3>{
