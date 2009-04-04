@@ -691,16 +691,26 @@ penv_t::lookup (const str &n, bool recurse)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 void
 penv_t::eval_pop (const str &n)
 {
   vec<ssize_t> *v = evaltab[n];
-  assert (v);
-  if (v->size () == 1)
+  if (!v) {
+    // MK 04/03/09: This used to be an assertion, but I've seen coredumps
+    // here that I can't understand.  This code is slated for deletion
+    // anyways, so I'm just going to move the assertion to a warn
+    // for now...
+    warn << "Unexpected pub v2 evaluation for '" << n << "': empty stack!\n";
+  } else if (v->size () == 1) {
     evaltab.remove (n);
-  else 
+  } else {
     v->pop_back ();
+  }
 }
+
+//-----------------------------------------------------------------------
 
 static void
 _eval (pbuf_t *s, penv_t *e, u_int d, pstr_el_t *el)

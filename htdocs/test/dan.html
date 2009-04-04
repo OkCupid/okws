@@ -1,7 +1,17 @@
-{% set { title : "[[welcome home]]" } %}
-{% set { random : __random_x__ } %}
+
+{% set { x: 1,
+         f : "ff",
+         title : "[[welcome home]]" } %}
+<!--#setl ( { y => "yyyy ${x} yyy" } ) -->
+{% set { stuff : "xx %{y}" }  %}
+{% set { in : 2 } %}
 
 <html>
  <head><title>${title}</title></head>
+</html>
+<body>
+{% include ("dan2.html", { in : "%{in}" }) %}
+<!--#switch (stuff), (1, {{ hi }} ) -->
+</body>
 </html>
 
