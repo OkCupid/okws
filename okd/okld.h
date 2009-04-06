@@ -110,18 +110,19 @@ public:
     : okld_helper_t ("okssld", u, g),
       _certfile (ok_ssl_certfile),
       _keyfile (ok_ssl_keyfile),
-      _timeout (ok_ssl_timeout) 
+      _timeout (ok_ssl_timeout)
   {}
 
-  str _certfile, _keyfile;
+  str _certfile, _keyfile, _chainfile;
   u_int _timeout;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
+  str chainfile_resolved () const { return _chainfile_resolved; }
 private:
   str resolve (const str &in, const char *which) const;
   vec<okws1_port_t> _ports;
-  str _certfile_resolved, _keyfile_resolved;
+  str _certfile_resolved, _keyfile_resolved, _chainfile_resolved;
 };
 
 /**

@@ -643,6 +643,7 @@ okld_t::parse_file (const str &cf)
     .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
     .add ("SslCertFile", &_okssl._certfile)
     .add ("SslKeyFile", &_okssl._keyfile)
+    .add ("SslCertChainFile", &_okssl._chainfile)
     .add ("SslPrimaryPort", wrap (this, (&okld_t::got_ssl_primary_port)))
     .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
 				  &ok_base_t::got_ports, true))
@@ -1249,6 +1250,10 @@ okld_t::launch_okssl (evb_t ev)
       argv.push_back (_okssl.certfile_resolved ());
       argv.push_back ("-k");
       argv.push_back (_okssl.keyfile_resolved ());
+      if (_okssl.chainfile_resolved ()) {
+	argv.push_back ("-n");
+	argv.push_back (_okssl.chainfile_resolved ()); 
+      }
 
       for (size_t i = 0; i < _https_ports.size (); i++) {
 	argv.push_back ("-p");
@@ -1814,7 +1819,9 @@ okld_helper_ssl_t::configure_keys ()
 {
   return (!_active ||
 	  ((_certfile_resolved = resolve (_certfile, "certificate")) &&
-	   (_keyfile_resolved = resolve (_keyfile, "private key"))));
+	   (_keyfile_resolved = resolve (_keyfile, "private key")) &&
+	   (!_chainfile || (_chainfile_resolved = 
+			    resolve (_chainfile, "chain file")))));
 }
 
 //-----------------------------------------------------------------------

@@ -91,7 +91,7 @@ namespace okssl {
 
     int _uid, _gid;
     str _dir, _jaildir;
-    str _certfile, _keyfile;
+    str _certfile, _keyfile, _chainfile;
     int _logfd, _okd_fd;
 
     ptr<axprt_unix> _okd_x;
@@ -409,6 +409,11 @@ namespace okssl {
 					       _certfile.cstr (),
 					       SSL_FILETYPE_PEM))) {
       ssl_complain ("use_certifcate() failed\n");
+    } else if (_chainfile && 
+	       !ssl_ok (SSL_CTX_use_certificate_chain_file 
+			(_ssl_ctx, _chainfile.cstr ()))) {
+      ssl_complain ("use_certificate_chain_file() failed\n");
+
     } else if (!ssl_ok (SSL_CTX_use_PrivateKey_file (_ssl_ctx, 
 						     _keyfile.cstr (), 
 						     SSL_FILETYPE_PEM))) {
@@ -571,7 +576,7 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:j:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:j:n:")) != -1) {
       switch (ch) {
       case 'j':
 	_jaildir = optarg;
@@ -584,6 +589,9 @@ namespace okssl {
 	break;
       case 'c':
 	_certfile = optarg;
+	break;
+      case 'n':
+	_chainfile = optarg;
 	break;
       case 'u':
 	if (!convertint (optarg, &_uid)) {
