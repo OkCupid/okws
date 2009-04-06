@@ -7,7 +7,7 @@ noinst_HEADERS = pubd.h pubd2.h
 
 okwsbin_PROGRAMS = pub treestat
 okwsexec_PROGRAMS = pubd
-pub_SOURCES = pubmain.C
+pub_SOURCES = pub3.C
 pub_LDADD = $(LDADD_PUB)
 pubd_SOURCES = pubd.C pubserv.C pubserv2.C cache2.C 
 pubd_LDADD = $(LDADD_PUB)
@@ -27,13 +27,15 @@ pubserv2.o:	pubserv2.C
 pubserv2.lo:	pubserv2.C
 treestat.o:	treestat.C
 treestat.lo:	treestat.C
+pub3.o:		pub3.C
+pub3.lo:	pub3.C
 
-CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C
-EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T
+CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C pub3.C
+EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T pub3.T
 MAINTAINERCLEANFILES = Makefile.in
 
 dist-hook:
-	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C
+	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C pub3.C
 
 .PHONY: tameclean 
 
