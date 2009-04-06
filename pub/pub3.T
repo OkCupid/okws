@@ -46,11 +46,16 @@ namespace pub3 {
     void init (int argc, char **argv, bool *gop, evi_t ev, CLOSURE);
     void run (evi_t ev, CLOSURE);
   private:
+    void run_file (str s, evi_t ev, CLOSURE);
+
     int _opt;
     str _jaildir;
     str _config;
     pub_parser_t *_ppt;
-    ptr<pub2::local_publisher_t> _cfgparse;
+    ptr<pub2::local_publisher_t> _pub;
+    vec<str> _files;
+    str _argfile;
+    aarr_t _dict;
   };
 
 };
@@ -58,9 +63,48 @@ namespace pub3 {
 //-----------------------------------------------------------------------
 
 tamed void
+pub3::eng_t::run_file (str f, evi_t ev)
+{
+  tvars {
+    bool ok;
+    zbuf out;
+  }
+  twait { _pub->run (&out, f, mkevent (ok), &_dict, _opt); }
+  if (!ok) {
+    warn << "** pub failed on file: " << f << "\n";
+  } else {
+    strbuf b;
+    out.to_strbuf (&b, false);
+    b.tosuio ()->output (1);
+  }
+  ev->trigger ( ok ? 0 : -1);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
 pub3::eng_t::run (evi_t ev)
 {
-  ev->trigger (0);
+  tvars {
+    int rc (0);
+    size_t i;
+    bool b;
+  }
+
+  if (_argfile) {
+    twait { _pub->run_cfg (_argfile, mkevent (b), &_dict); }
+  }
+
+  if (b) { 
+    warn << "** failed to parse arguments file: " << _argfile << "\n";
+    rc = -2;
+  }
+
+  for (i = 0; i < _files.size () && rc == 0; i++) {
+    twait { run_file (_files[i], mkevent (rc)); }
+  }
+
+  ev->trigger (rc);
 }
 
 //-----------------------------------------------------------------------
@@ -69,7 +113,7 @@ static void
 usage ()
 {
   warnx << "usage: " << progname 
-	<< " [-wevh] [-j <jaildir>] [-f <conf>] [-o <objfile>] "
+	<< " [-wevh] [-j <jaildir>] [-f <conf>] [-o <objfile>] [-a <argfile>] "
 	<< "<file-1> <file-2> ..\n";
 }
 
@@ -97,8 +141,17 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     _config = v;
   }
 
-  while ((ch = getopt (argc, argv, "wej:f:vh")) != -1) {
+  while ((ch = getopt (argc, argv, "a:diwej:f:vh")) != -1) {
     switch (ch) {
+    case 'a':
+      _argfile = optarg;
+      break;
+    case 'i':
+      _opt |= P_IINFO;
+      break;
+    case 'd':
+      _opt |= P_DEBUG;
+      break;
     case 'w':
       _opt |= P_WSS; 
       break;
@@ -126,15 +179,22 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     }
   }
 
-  if (!_config) {
-    _config = okws_etcfile (_config);
+  argc -= optind;
+  argv += optind;
+
+  for (int i = 0; i < argc; i++) {
+    _files.push_back (argv[i]);
   }
 
-  _cfgparse = New refcounted<pub2::local_publisher_t> (_ppt, _opt);
+  if (!_config) {
+    _config = okws_etcfile (ok_pub_config);
+  }
+
+  _pub = New refcounted<pub2::local_publisher_t> (_ppt, _opt);
 
   have_cfg = false;
   if (_config) {
-    twait { _cfgparse->run_cfg (_config, mkevent (have_cfg)); }
+    twait { _pub->run_cfg (_config, mkevent (have_cfg)); }
   }
 
   if (!have_cfg)  {
@@ -142,26 +202,32 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
   }
 
   if (!_jaildir) {
-    if (!_cfgparse->cfg ("JailDir", &_jaildir, true)) {
-      warn << "Cannot find a jail directory; none was specified with -j\n"
-	   << "  and no 'JailDir' found in config file.\n";
+    if (!_pub->cfg ("JailDir", &_jaildir, true)) {
+      warn << "XX cannot find a jail directory!!\n";
+      warn << "XX   - none was specified with -j and "
+	   << "no 'JailDir' found in config file.\n";
     }
   }
 
   if (!_jaildir) {
     /* issues ahead! */
   } else if (stat (_jaildir.cstr (), &sb) != 0) {
-    warn << "No directory found for JailDir: " << _jaildir << "\n";
+    warn << "XX no directory found for JailDir: " << _jaildir << "\n";
     _jaildir = NULL;
   } else if (!S_ISDIR(sb.st_mode)) {
-    warn << "Supposed 'JailDir' is not a directory: " << _jaildir << "\n";
+    warn << "XX supposed 'JailDir' is not a directory: " << _jaildir << "\n";
     _jaildir = NULL;
   }
 
   if (!_jaildir) {
     run = false;
     rc = -1;
-  } 
+  } else if (_files.size () == 0) {
+    run = false;
+    rc = -1;
+    warn << "XX no files given! need at least one\n";
+    usage ();
+  }
 
   *gop = run;
   ev->trigger (rc);
