@@ -439,7 +439,7 @@ public:
   const pval_t *lookup (const str &n, bool recurse = true);
   pval_w_t operator[] (const str &n) { return pval_w_t (n, this); }
   pub_evalmode_t init_eval (pub_evalmode_t m = EVAL_FULL);
-  void eval_pop (const str &n);
+  bool eval_pop (const str &n);
   void set_evalmode (pub_evalmode_t m) { evm = m; }
   str loc (int l = -1) const;
   pfnm_t filename () const;

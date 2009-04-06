@@ -563,8 +563,12 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
     ps->add (strbuf ("<!--UNDEF: ") << nm << " -->");
     e->unsetlineno ();
   }
-  if (popit)
-    e->eval_pop (nm);
+  if (popit) {
+    if (!e->eval_pop (nm) && pv) {
+      warn << "XX offending eval_pop pval of type '" << pv->get_obj_name ()
+	   << "\n";
+    }
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -693,21 +697,24 @@ penv_t::lookup (const str &n, bool recurse)
 
 //-----------------------------------------------------------------------
 
-void
+bool
 penv_t::eval_pop (const str &n)
 {
   vec<ssize_t> *v = evaltab[n];
+  bool ret = true;
   if (!v) {
     // MK 04/03/09: This used to be an assertion, but I've seen coredumps
     // here that I can't understand.  This code is slated for deletion
     // anyways, so I'm just going to move the assertion to a warn
     // for now...
     warn << "Unexpected pub v2 evaluation for '" << n << "': empty stack!\n";
+    ret = false;
   } else if (v->size () == 1) {
     evaltab.remove (n);
   } else {
     v->pop_back ();
   }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
