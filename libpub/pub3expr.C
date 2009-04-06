@@ -724,7 +724,7 @@ pub3::eval_t::resolve (const expr_t *e, const str &nm)
     strbuf b ("cannot resolve variable: '%s'", nm.cstr ());
     e->report_error (*this, b);
   }
-  
+
   return ret;
 }
 
@@ -1292,9 +1292,15 @@ pub3::expr_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
 {
   eval_t ev (e, NULL);
   ptr<const pval_t> pv = eval (ev);
-  ptr<const pub_scalar_t> ps;
-  if (pv && (ps = pv->to_pub_scalar ())) {
-    ps->eval_obj (b, e, d);
+  ptr<const expr_t> x;
+
+  if (pv && (x = pv->to_expr ())) {
+    str s = x->to_str ();
+    if (s) b->add (s);
+  } else if (pv) {
+    // v1 and v2 objects; note need to think about corner cases
+    // with infinite recursion.
+    pv->eval_obj (b, e, d);
   } else if (e->debug ()) {
     e->setlineno (_lineno);
     str nm = to_identifier ();

@@ -481,6 +481,8 @@ pub_parser_t::pop_file ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 pub_parser_t::setjail (str jd, bool permissive)
 {
@@ -497,10 +499,30 @@ pub_parser_t::setjail (str jd, bool permissive)
     if (jd != "." && chroot (jd))
       fatal << jd << ": cannot chroot\n";
   }
-  if (jd != "." && be_verbose ())
-    warn << "Top (Jail) Directory is: " << jd << "\n";
   jaildir = jd;
+  jail_warn ();
 }
+
+//-----------------------------------------------------------------------
+
+void
+pub_parser_t::jail_warn () const
+{
+  if (jaildir != "." && be_verbose ())
+    warn << "Top (Jail) Directory is: " << jaildir << "\n";
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub_parser_t::setjail_virtual (str jd)
+{
+  jaildir = jd;
+  jm = JAIL_PERMISSIVE;
+  jail_warn ();
+}
+
+//-----------------------------------------------------------------------
 
 void
 pub_parser_t::setprivs (str jd, str un, str gn)

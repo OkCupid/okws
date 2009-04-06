@@ -802,6 +802,7 @@ public:
   virtual bool to_xdr (xpub_val_t *x) const { return false; }
   virtual ptr<pval_t> flatten(penv_t *e) ;
   virtual ptr<pstr_t> to_pstr () { return NULL; }
+  virtual ptr<const pstr_t> to_pstr () const { return NULL; }
 
   // pub v3
   virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
@@ -1013,6 +1014,7 @@ public:
   bool to_xdr (xpub_pstr_t *x) const;
   bool to_xdr (xpub_val_t *x) const;
   ptr<pstr_t> to_pstr () { return mkref (this); }
+  ptr<const pstr_t> to_pstr () const { return mkref (this); }
   bool is_empty () const { return n == 0; }
 
 protected:
@@ -2106,7 +2108,9 @@ public:
   void export_set (xpub_set_t *xs);
   void setprivs (str jd, str un, str gn);
   void setjail (str jd, bool permissive = false);
+  void setjail_virtual (str jd);
   str jail2real (const str &n) const;
+  void jail_warn () const;
 
   void lock_in_jail () { jailed = true; }
   void free_from_jail () { if (!(get_opts() & P_DAEMON)) jailed = false; }

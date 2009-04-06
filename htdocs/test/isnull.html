@@ -2,6 +2,9 @@
 
 {% setl { x : "", y : 10 + 20 } %}
 
+{% if (isnull (x)) {{ {% set { x : "hi" } %} }} %}
+{% if (isnull (x)) { set { x : "hi" }  } %}
+
 
 {% if (isnull (x)) {{ x is null }}
       (isnull (y)) {{ y is null }}
