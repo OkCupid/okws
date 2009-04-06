@@ -669,7 +669,10 @@ p3_primary_expr: p3_identifier
 	   | '(' p3_expr ')'   { $$ = $2;   }
 	   ;
 
-p3_argument_expr_list_opt:           { $$ = NULL; }
+p3_argument_expr_list_opt:           
+           { 
+              $$ = New refcounted<pub3::expr_list_t> (PLINENO); 
+           }
            | p3_argument_expr_list   { $$ = $1; }
            ;
 

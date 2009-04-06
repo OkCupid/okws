@@ -518,8 +518,9 @@ void
 pub_parser_t::setjail_virtual (str jd)
 {
   jaildir = jd;
-  jm = JAIL_PERMISSIVE;
+  jm = JAIL_VIRTUAL;
   jail_warn ();
+  lock_in_jail ();
 }
 
 //-----------------------------------------------------------------------
@@ -552,6 +553,8 @@ pub_parser_t::setprivs (str jd, str un, str gn)
     if (uid) setuid (uid);
   }
 }
+
+//-----------------------------------------------------------------------
 
 str 
 pub_config_iface_t::cfg (const str &n, bool allownull) const

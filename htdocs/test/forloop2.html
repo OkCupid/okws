@@ -6,10 +6,18 @@
  <body>
  <h1>For Loop Testing Page</h1>
 
+<h2>JSON Dumps</h2>
+push: %{push}<br>
+single: %{single}<br>
+double: %{double}<br>
+simple: %{simple}<br>
+row: %{row}<br>
+
+
 
 <h2>Backwards-Compatibility</h2>
 {% for (r, push) {{ 
-   [[[Try $]]]${r.val}<br>
+   [[[Try $]]]%{r.val}<br>
 }} %}
 
 <h2>Inline List</h2>
