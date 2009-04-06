@@ -1,15 +1,19 @@
 
 
-{% setl { x : "", y : 10 + 20 } %}
+{% setl { x : "", y : 10 + 20,
+          d : { x : "here" } } %}
 
 {% if (isnull (x)) {{ {% set { x : "hi" } %} }} %}
-{% if (isnull (x)) { set { x : "hi" }  } %}
 
 
 {% if (isnull (x)) {{ x is null }}
       (isnull (y)) {{ y is null }}
       (isnull (z)) {{ z is null }}
       (true)       {{ ALL non-null! }} %}<br>
+
+{% if (isnull (d.x)) {{ should not see this! }} %}
+{% if (isnull (d.z)) {{ should see this! }} %}
+
 x: %{isnull(x)}<br>
 y: %{isnull(y)}<br>
 z: %{isnull(z)}<br>

@@ -202,7 +202,7 @@ pub3::expr_dictref_t::deref_step (eval_t *e) const
     report_error (*e, "dict reference into NULL");
   } else if (!(d = _dict->eval_as_dict (*e))) {
     report_error (*e, "dict reference into non-dict");
-  } else if (!(v = d->lookup_ptr (_key))) {
+  } else if (!(v = d->lookup_ptr (_key)) && e->loud ()) {
     strbuf b ("cannot resolve key '%s'", _key.cstr ());
     report_error (*e, b);
   }
@@ -295,14 +295,14 @@ pub3::expr_vecref_t::deref_step (eval_t *e) const
 
   
   if (!_vec) {
-    report_error (*e, "vector is undefined");
+    if (e->loud ()) report_error (*e, "vector is undefined");
   } else if (!_vec->eval_as_vec_or_dict (*e, &vif, &dict)) {
     report_error (*e, "vector reference into non-vector");
   } else if (vif) {
     size_t i = 0;
     if (_index) 
       i = _index->eval_as_int (*e);
-    if (!(r = vif->lookup (i, &in_bounds)) && !in_bounds) {
+    if (!(r = vif->lookup (i, &in_bounds)) && !in_bounds && e->loud ()) {
       report_error (*e, strbuf ("vector reference (%zd) out of bounds", i));
     }
   } else {
@@ -310,7 +310,7 @@ pub3::expr_vecref_t::deref_step (eval_t *e) const
     str k = _index->eval_as_str (*e);
     if (!k) {
       report_error (*e, "cannot resolve dict key");
-    } else if (!(r = dict->lookup_ptr (k))) {
+    } else if (!(r = dict->lookup_ptr (k)) && e->loud ()) {
       report_error (*e, strbuf ("cannot resolve key '%s'", k.cstr ()));
     }
   }
@@ -1172,7 +1172,7 @@ pub3::expr_t::eval_as_scalar (eval_t e) const
     /* noop; all good! */
 
   } else if (e.loud ()) {
-    strbuf b ("cannot to scalar");
+    strbuf b ("cannot convert to scalar");
     report_error (e, b);
   }
 
