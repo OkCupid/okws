@@ -1,0 +1,13 @@
+
+
+{% setl { x : "", y : 10 + 20 } %}
+
+
+{% if (isnull (x)) {{ x is null }}
+      (isnull (y)) {{ y is null }}
+      (isnull (z)) {{ z is null }}
+      (true)       {{ ALL non-null! }} %}<br>
+x: %{isnull(x)}<br>
+y: %{isnull(y)}<br>
+z: %{isnull(z)}<br>
+          
