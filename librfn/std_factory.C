@@ -10,6 +10,7 @@ namespace rfn1 {
     _tab.insert ("rand",   &random_t::constructor);
     _tab.insert ("len",    &len_t::constructor);
     _tab.insert ("range",  &range_t::constructor);
+    _tab.insert ("isnull", &is_null_t::constructor);
   }
 
   //-----------------------------------------------------------------------

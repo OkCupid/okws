@@ -106,6 +106,18 @@ pub3::expr_logical_t::eval (eval_t e) const
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_ref_t::eval_as_null (eval_t e) const
+{
+  bool q = e.set_silent (true);
+  ptr<const pval_t> v = eval_internal (e);
+  bool ret = v ? v->is_null () : true;
+  e.set_silent (q);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_OR_t::eval_internal (eval_t e) const
 {
   bool ret = false;
@@ -132,8 +144,8 @@ pub3::expr_EQ_t::eval_internal (eval_t e) const
 
   int flip = _pos ? 0 : 1;
   int tmp;
-  bool n1 = !_o1 || _o1->is_null (e);
-  bool n2 = !_o2 || _o2->is_null (e);
+  bool n1 = !_o1 || _o1->eval_as_null (e);
+  bool n2 = !_o2 || _o2->eval_as_null (e);
   
   
   if (n1 && n2) { tmp = 1; }
@@ -155,7 +167,7 @@ bool
 pub3::expr_relation_t::eval_internal (eval_t e) const
 {
   bool ret = false;
-  if (_l && !_l->is_null (e) && _r && !_r->is_null (e)) {
+  if (_l && !_l->eval_as_null (e) && _r && !_r->eval_as_null (e)) {
     int64_t l = _l->eval_as_int (e);
     int64_t r = _r->eval_as_int (e);
     switch (_op) {
@@ -307,14 +319,6 @@ pub3::expr_vecref_t::deref_step (eval_t *e) const
 
 //-----------------------------------------------------------------------
 
-bool
-pub3::expr_t::is_null (eval_t e) const
-{
-  return eval (e) == NULL;
-}
-
-//-----------------------------------------------------------------------
-
 void
 pub3::expr_t::report_error (eval_t e, str msg) const
 {
@@ -368,7 +372,15 @@ pub3::expr_str_t::to_scalar () const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_str_t::is_null () const
+pub3::expr_str_t::eval_as_null (eval_t e) const
+{
+  return to_null ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_str_t::to_null () const
 {
   return !_val;
 }
@@ -475,7 +487,7 @@ scalar_obj_t
 pub3::expr_mod_t::eval_internal (eval_t e) const
 {
   scalar_obj_t out;
-  if (_n && !_n->is_null (e) && _d && !_d->is_null (e)) {
+  if (_n && !_n->eval_as_null (e) && _d && !_d->eval_as_null (e)) {
     bool l = e.set_loud (true);
     scalar_obj_t sn = _n->eval_as_scalar (e);
     scalar_obj_t sd = _d->eval_as_scalar (e);
@@ -516,7 +528,7 @@ pub3::expr_add_t::eval_internal (eval_t e) const
 {
   scalar_obj_t out;
 
-  if (_t1 && !_t1->is_null (e) && _t2 && !_t2->is_null (e)) {
+  if (_t1 && !_t1->eval_as_null (e) && _t2 && !_t2->eval_as_null (e)) {
     bool l = e.set_loud (true);
     scalar_obj_t o1 = _t1->eval_as_scalar (e);
     scalar_obj_t o2 = _t2->eval_as_scalar (e);

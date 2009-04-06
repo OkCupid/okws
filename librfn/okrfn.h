@@ -106,6 +106,22 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class is_null_t : public scalar_fn_t {
+  public:
+    is_null_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> e);
+
+    static ptr<runtime_fn_t> 
+    constructor (const str &n, ptr<expr_list_t> e, int lineno, str *err);
+    bool eval_as_bool (eval_t e) const { return eval_internal_bool (e); }
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    bool eval_internal_bool (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
 
 };
 

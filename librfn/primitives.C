@@ -32,6 +32,29 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  //-----------------------------------------------------------------------
+
+  scalar_obj_t
+  is_null_t::eval_internal (eval_t e) const
+  {
+    bool b = eval_internal_bool (e);
+    scalar_obj_t o;
+    o.set_i (b);
+    return o;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  is_null_t::eval_internal_bool (eval_t e) const 
+  {
+    bool b = true;
+    if (_arg) b = _arg->eval_as_null (e);
+    return b;
+  }
+
+  //-----------------------------------------------------------------------
+
   scalar_obj_t
   len_t::eval_internal (eval_t e) const
   {
@@ -90,6 +113,22 @@ namespace rfn1 {
   }
 
   //-----------------------------------------------------------------------
+  
+  ptr<runtime_fn_t>
+  is_null_t::constructor (const str &n, ptr<expr_list_t> e, int ln, str *err)
+  {
+    size_t narg = e ? e->size () : size_t (0);
+    ptr<runtime_fn_t> ret;
+    if (narg == 1) {
+      ret = New refcounted<is_null_t> (n, e, ln, (*e)[0]);
+    } else {
+      *err = "isnull() takes 1 argument";
+    }
+    return ret;
+  }
+
+
+  //-----------------------------------------------------------------------
 
   ptr<expr_list_t>
   range_t::eval_internal (eval_t e) const
@@ -127,6 +166,12 @@ namespace rfn1 {
   {
     return eval_internal (e);
   }
+
+  //-----------------------------------------------------------------------
+
+  is_null_t::is_null_t (const str &n, ptr<expr_list_t> l, int lineno,
+			ptr<expr_t> e)
+    : scalar_fn_t (n, l, lineno), _arg (e) {}
 
   //-----------------------------------------------------------------------
 

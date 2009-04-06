@@ -110,6 +110,7 @@ namespace pub3 {
     virtual int64_t to_int () const { return 0; }
     virtual u_int64_t to_uint () const { return 0; }
     virtual bool to_len (size_t *s) const { return false; }
+    virtual bool is_null () const { return false; }
     
     //
     // and from here, scalars can be converted at will...
@@ -141,16 +142,15 @@ namespace pub3 {
     bool eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp, 
 			      ptr<const aarr_t> *dp) const;
 
-    bool eval_as_bool (eval_t e) const;
+    virtual bool eval_as_bool (eval_t e) const;
     virtual int64_t eval_as_int (eval_t e) const;
     virtual u_int64_t eval_as_uint (eval_t e) const;
     virtual str eval_as_str (eval_t e) const;
+    virtual bool eval_as_null (eval_t e) const { return false; }
 
     //
     //----------------------------------------------------------
     
-    virtual bool is_null (eval_t e) const;
-
     void report_error (eval_t e, str n) const;
     
     //------------------------------------------------------------
@@ -205,6 +205,7 @@ namespace pub3 {
     bool is_null () const { return true; }
     bool to_xdr (xpub3_expr_t *x) const { return false; }
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
+    bool eval_as_null (eval_t e) const { return true; }
   };
 
   //-----------------------------------------------------------------------
@@ -384,6 +385,7 @@ namespace pub3 {
     ptr<const pval_t> eval (eval_t e) const;
     ptr<pval_t> eval_freeze (eval_t e) const;
     str eval_as_str (eval_t e) const;
+    bool eval_as_null (eval_t e) const;
 
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
 
@@ -453,8 +455,8 @@ namespace pub3 {
 
     str to_str () const;
     bool to_bool () const;
-    bool is_null () const;
     scalar_obj_t to_scalar () const;
+    bool to_null () const;
 
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
@@ -462,7 +464,9 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     bool needs_json_quotes () const { return true; }
 
+
     str eval_as_str (eval_t e) const;
+    bool eval_as_null (eval_t e) const;
 
   protected:
     str _val;
@@ -475,7 +479,6 @@ namespace pub3 {
     expr_number_t () : expr_static_t () {}
 
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
-    bool is_null (eval_t e) const { return false; }
     str to_str () const { return to_scalar ().to_str (); }
 
   };
@@ -572,11 +575,14 @@ namespace pub3 {
     size_t size () const { return vec_base_t::size (); }
     void setsize (size_t s) { vec_base_t::setsize (s); }
     bool to_len (size_t *s) const;
+    bool to_bool () const { return size () > 0; }
+    
 
     ptr<pval_t> eval_freeze (eval_t e) const;
     ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
     ptr<const vec_iface_t> eval_as_vec () const { return mkref (this); }
     str eval_as_str (eval_t e) const;
+    bool eval_as_bool (eval_t e) const { return to_bool (); }
 
     // to JSON-style string
     scalar_obj_t to_scalar () const;
