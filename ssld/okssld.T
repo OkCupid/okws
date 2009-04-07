@@ -423,7 +423,12 @@ namespace okssl {
     } else if (!ssl_ok (SSL_CTX_check_private_key (_ssl_ctx))) {
       ssl_complain("check private key failed\n");
     } else {
-      warn << "Using cert: " << _certfile << "\n";
+      if (_certfile) {
+	warn << "Using cert: " << _certfile << "\n";
+      }
+      if (_chainfile) {
+	warn << "Using cert chain: " << _chainfile << "\n";
+      }
       warn << "Using key : " << _keyfile << "\n";
       ret = true;
     }
