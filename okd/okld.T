@@ -1822,11 +1822,10 @@ okld_helper_ssl_t::configure_keys ()
   bool ret = true;
   if (_active) {
 
-    if (_certfile) {
-      _certfile_resolved = resolve (_certfile, "certificate");
-    }
     if (_chainfile)  {
       _chainfile_resolved = resolve (_chainfile, "chain file");
+    } else if (_certfile) {
+      _certfile_resolved = resolve (_certfile, "certificate");
     }
 
     if (!_chainfile_resolved && !_certfile_resolved) {
