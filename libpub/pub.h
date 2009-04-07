@@ -804,6 +804,8 @@ public:
   virtual ptr<pstr_t> to_pstr () { return NULL; }
   virtual ptr<const pstr_t> to_pstr () const { return NULL; }
 
+  virtual ptr<pval_t> set_func_flatten (penv_t *e) { return flatten (e); }
+
   // pub v3
   virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
   virtual ptr<const pub3::expr_t> to_expr () const { return NULL; }

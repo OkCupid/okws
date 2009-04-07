@@ -130,6 +130,19 @@ namespace pub3 {
     //-----------------------------------------------------------
 
     //-----------------------------------------------------------
+    // in pub2::output_conf2_t::output_set_func, there is an attempt
+    // made to flatten objects.  for pub3, objects have already been
+    // flattened, so just noop
+    // 
+
+    ptr<pval_t> set_func_flatten (penv_t *e) { return mkref (this); }
+
+    //
+    //
+    //-----------------------------------------------------------
+
+
+    //-----------------------------------------------------------
     //
     // Shortcuts follow, which for now do the long thing. They
     // might eventually do the short thing, by eliminating intermediary

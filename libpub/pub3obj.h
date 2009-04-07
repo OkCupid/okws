@@ -139,7 +139,6 @@ namespace pub3 {
     bool set_value_dict (ptr<pval_t> v);
     void clear_value ();
 
-  private:
     ptr<pval_t> _obj;
     ptr<obj_ref_t> _ref;
     ptr<expr_list_t> _vec;
@@ -147,6 +146,13 @@ namespace pub3 {
     ptr<expr_t> _scalar;
   };
   
+  //-----------------------------------------------------------------------
+
+  class obj_dict_t : public obj_t {
+  public:
+    obj_dict_t ();
+  };
+
   //-----------------------------------------------------------------------
 
 };

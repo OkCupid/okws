@@ -55,7 +55,7 @@ namespace pub3 {
     ptr<pub2::local_publisher_t> _pub;
     vec<str> _files;
     str _argfile;
-    pub3::obj_t _dict;
+    pub3::obj_dict_t _dict;
   };
 
 };

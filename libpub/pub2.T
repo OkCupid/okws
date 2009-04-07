@@ -596,7 +596,7 @@ namespace pub2 {
     ptr<aarr_t> a = s->get_aarr ();
     nvtab_t *t = a->nvtab ();
     for (nvpair_t *p = t->first (); p ; p = t->next (p)) {
-      _dest->add (New nvpair_t (p->nm, p->value ()->flatten (e)));
+      _dest->add (New nvpair_t (p->nm, p->value ()->set_func_flatten (e)));
     }
   }
 
