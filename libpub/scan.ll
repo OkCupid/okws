@@ -18,6 +18,12 @@ static void nlcount (int m = 0);
 static void push_p3_func (void);
 static void pop_p3_func (void);
 
+static void p3_regex_begin (const char *in);
+static int  p3_regex_is_close_char (char c);
+static void p3_regex_add (const char *in);
+static int  p3_regex_bad_eof ();
+static int  p3_regex_finish (char cmd);
+
 static void bracket_mark_left (int n = 1);
 static void bracket_mark_right (void);
 static int unbalanced_bracket (void);
@@ -57,8 +63,8 @@ TPRFX3  \{%[ \t]*
 TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
-%x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX REGEX_OPTS
-%x P3 P3_STR
+%x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX 
+%x P3 P3_STR P3_REGEX
 
 %%
 
@@ -391,6 +397,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
 {P3IDENT}	{ yylval.str = yytext; return T_P3_IDENTIFIER; }
+r[#/!@{<([]	{ p3_regex_begin (yytext); }
 
 
 ([0-9]+|0x[0-9a-f])  { yylval.str = yytext; return T_P3_UINT; }
@@ -414,6 +421,23 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 ["] 		 { begin_P3_STR(); return yytext[0]; }
 
 .		 { return yyerror ("illegal token in Pub v3 environment"); }
+}
+
+<P3_REGEX>{
+\n			{ PLINC; }
+[#/!@}>)\]][a-zA-Z]?	{ 
+			  if (p3_regex_is_close_char (yytext[0])) {
+			     return p3_regex_finish (yytext[1]);
+			  } else {  
+			     p3_regex_add (yytext);
+			  }
+                        }
+
+[^ /!@}>)\]]+		{ p3_regex_add (yytext); }
+
+<<EOF>>			{
+			   return p3_regex_bad_eof ();
+			}
 }
 
 %%
@@ -626,6 +650,14 @@ pop_p3_func (void)
   }
 }
 
+// P3 perl-style regex's!
+
+void p3_regex_begin (const char *in) {}
+int  p3_regex_is_close_char (char c) { return 0; }
+void p3_regex_add (const char *in) {}
+int  p3_regex_bad_eof () { return 0; }
+int  p3_regex_finish (char cmd) { return T_P3_REGEX; }
+
 
 /*
 // States:
@@ -642,7 +674,6 @@ pop_p3_func (void)
 //   TXLCOM - Translator comment
 //   TXLCOM3 - Translator comment state 3
 //   POUND_REGEX - m#...# regex environment
-//   REGEX_OPTS - parse opts after regex
 //   P3 -- Pub v3 (expanded boolean logic)
 //
 */

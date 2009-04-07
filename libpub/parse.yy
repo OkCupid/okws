@@ -90,6 +90,7 @@
 %token <ch>  T_P3_CHAR
 %token <str> T_P3_FLOAT
 %token <str> T_P3_STRING
+%token <str> T_P3_REGEX
 
 %type <p3cclist> p3_cond_clause_list;
 %type <p3cc> p3_cond_clause;
