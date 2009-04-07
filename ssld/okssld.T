@@ -405,9 +405,11 @@ namespace okssl {
   okssld_t::load_certificate ()
   {
     bool ret = false;
-    if (!ssl_ok (SSL_CTX_use_certificate_file (_ssl_ctx, 
-					       _certfile.cstr (),
-					       SSL_FILETYPE_PEM))) {
+    if (!_certfile && !_chainfile) {
+      warn << "Exepcted either a CertChainFile or a CertFile!!\n";
+    } else if (_certfile &&
+	       !ssl_ok (SSL_CTX_use_certificate_file 
+			(_ssl_ctx, _certfile.cstr (), SSL_FILETYPE_PEM))) {
       ssl_complain ("use_certifcate() failed\n");
     } else if (_chainfile && 
 	       !ssl_ok (SSL_CTX_use_certificate_chain_file 

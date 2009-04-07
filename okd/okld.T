@@ -1246,8 +1246,10 @@ okld_t::launch_okssl (evb_t ev)
       argv.push_back (strbuf () << logfd);
       argv.push_back ("-t");
       argv.push_back (strbuf () << fds[0]);
-      argv.push_back ("-c");
-      argv.push_back (_okssl.certfile_resolved ());
+      if (_okssl.certfile_resolved ()) {
+	argv.push_back ("-c");
+	argv.push_back (_okssl.certfile_resolved ());
+      }
       argv.push_back ("-k");
       argv.push_back (_okssl.keyfile_resolved ());
       if (_okssl.chainfile_resolved ()) {
@@ -1817,11 +1819,29 @@ okld_helper_t::configure_dumpdir (jailable_t *j, const str &d)
 bool
 okld_helper_ssl_t::configure_keys ()
 {
-  return (!_active ||
-	  ((_certfile_resolved = resolve (_certfile, "certificate")) &&
-	   (_keyfile_resolved = resolve (_keyfile, "private key")) &&
-	   (!_chainfile || (_chainfile_resolved = 
-			    resolve (_chainfile, "chain file")))));
+  bool ret = true;
+  if (_active) {
+
+    if (_certfile) {
+      _certfile_resolved = resolve (_certfile, "certificate");
+    }
+    if (_chainfile)  {
+      _chainfile_resolved = resolve (_chainfile, "chain file");
+    }
+
+    if (!_chainfile_resolved && !_certfile_resolved) {
+      ret = false;
+    }
+
+    if (!_keyfile) {
+      ret = false;
+    } else {
+      _keyfile_resolved = resolve (_keyfile, "private key");
+    }
+
+  }
+  return ret;
+    
 }
 
 //-----------------------------------------------------------------------
