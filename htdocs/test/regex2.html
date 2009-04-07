@@ -1,6 +1,6 @@
 
-{% setl { v : [ "aaabcccc", "abc", "aaacccc", "abab", "aAaAbCcCcC" ],
-          rxx : "a+b?c+" } %}
+{% setl { v : [ "aaabcccc", "abc", "aaacccc>", "abab", "aAaAbCcCcC" ],
+          rxx : r<a+b?c+\>?> } %}
 
 regex: %{rxx}<br>
 
@@ -9,3 +9,6 @@ regex: %{rxx}<br>
               (true)                {{ nope }} %}<br>
 }} %}
 
+<br>
+{% setl { x : "XXaabccc>YY" } %}
+search(%{rxx}, %{x}) => %{search(rxx,x)}<br>
