@@ -112,7 +112,7 @@ namespace pub3 {
     virtual u_int64_t to_uint () const { return 0; }
     virtual bool to_len (size_t *s) const { return false; }
     virtual bool is_null () const { return false; }
-    virtual ptr<rxx> to_regex () const { return NULL; }
+    virtual ptr<rxx> to_regex (bool force) const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     
     //
@@ -157,7 +157,7 @@ namespace pub3 {
     virtual scalar_obj_t eval_as_scalar (eval_t e) const;
     bool eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp, 
 			      ptr<const aarr_t> *dp) const;
-    virtual ptr<rxx> eval_as_rxx (eval_t e) const { return NULL; }
+    virtual ptr<rxx> eval_as_regex (eval_t e, bool f) const { return NULL; }
 
     virtual bool eval_as_bool (eval_t e) const;
     virtual int64_t eval_as_int (eval_t e) const;
@@ -402,6 +402,7 @@ namespace pub3 {
     ptr<pval_t> eval_freeze (eval_t e) const;
     str eval_as_str (eval_t e) const;
     bool eval_as_null (eval_t e) const;
+    ptr<rxx> eval_as_regex (eval_t e, bool force) const;
 
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
 
@@ -473,7 +474,7 @@ namespace pub3 {
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
-    ptr<rxx> to_regex () const;
+    ptr<rxx> to_regex (bool force) const;
 
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
@@ -482,7 +483,7 @@ namespace pub3 {
 
     str eval_as_str (eval_t e) const;
     bool eval_as_null (eval_t e) const;
-    ptr<rxx> eval_as_regex (eval_t e) const { return to_regex (); }
+    ptr<rxx> eval_as_regex (eval_t e, bool f) const { return to_regex (f); }
 
   protected:
     str _val;
@@ -598,7 +599,7 @@ namespace pub3 {
     ptr<const vec_iface_t> eval_as_vec () const { return mkref (this); }
     str eval_as_str (eval_t e) const;
     bool eval_as_bool (eval_t e) const { return to_bool (); }
-    ptr<rxx> eval_as_regex (eval_t e) const;
+    ptr<rxx> eval_as_regex (eval_t e, bool f) const;
 
     // to JSON-style string
     scalar_obj_t to_scalar () const;
@@ -641,10 +642,10 @@ namespace pub3 {
     ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
     ptr<pval_t> eval_freeze (eval_t e) const;
     str eval_as_str (eval_t e) const { return _body; }
-    ptr<rxx> eval_as_regex (eval_t e) const { return _rxx; }
+    ptr<rxx> eval_as_regex (eval_t e, bool f) const { return _rxx; }
 
     str to_str () const { return _body; }
-    ptr<rxx> to_regex () const { return _rxx; }
+    ptr<rxx> to_regex (bool f) const { return _rxx; }
     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
     
   private:
@@ -666,7 +667,7 @@ namespace pub3 {
     ptr<pval_t> eval_freeze (eval_t e) const;
     scalar_obj_t eval_as_scalar (eval_t e) const;
     str eval_as_str (eval_t e) const;
-    ptr<rxx> eval_as_regex (eval_t e) const;
+    ptr<rxx> eval_as_regex (eval_t e, bool force) const;
 
     ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els->push_back (e); }

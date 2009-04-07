@@ -655,7 +655,12 @@ pub3::expr_regex_t::expr_regex_t (const xpub3_regex_t &x)
   : expr_t (x.lineno),
     _body (x.body),
     _opts (x.opts)
-{}
+{
+  str err;
+  if (!(_rxx = rxx_factory_t::compile (_body, _opts, &err))) {
+    warn << "Unexpected regex compile error: " << err << "\n";
+  }
+}
 
 //-----------------------------------------------------------------------
 

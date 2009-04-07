@@ -774,7 +774,8 @@ public:
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
   virtual ptr<const aarr_arg_t> to_aarr () const { return NULL; }
   virtual bool is_null () const { return false; }
-  virtual ptr<pub_regex_t> to_regex () { return NULL; }
+  virtual ptr<rxx> to_regex (bool force) const { return NULL; }
+  virtual ptr<pub_regex_t> to_pub_regex () { return NULL; }
   virtual ptr<pub_range_t> to_range () { return NULL; }
   virtual ptr<pval_t> to_pval () { return NULL; }
   virtual bool to_int64 (int64_t *i) const { return false; }
@@ -831,7 +832,8 @@ public:
   bool to_xdr (xpub_regex_t *x) const;
   bool compile (str *err);
   bool match (const str &s);
-  ptr<pub_regex_t> to_regex () { return mkref (this); }
+  ptr<pub_regex_t> to_pub_regex () { return mkref (this); }
+  ptr<rxx> to_regex (bool force) const { return _rxx; }
   str to_str () const { return _rxx_str; }
   const char *get_obj_name () const { return "regex"; }
   void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;

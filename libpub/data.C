@@ -1138,7 +1138,7 @@ pfile_switch_t::add_case (ptr<arglist_t> l)
   if (!err) {
     if (!(*l)[0]->is_null () && 
 	!(ckey = (*l)[0]->eval ()) &&
-	!(rxx = (*l)[0]->to_regex ()) && 
+	!(rxx = (*l)[0]->to_pub_regex ()) && 
 	!(range = (*l)[0]->to_range ())) {
       PWARN("Cannot determine case key");
       err = true;

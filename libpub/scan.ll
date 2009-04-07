@@ -404,7 +404,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
 {P3IDENT}	{ yylval.str = yytext; return T_P3_IDENTIFIER; }
-r[#/!@{<([]	{ p3_regex_begin (yytext[1]); }
+r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 
 
 ([0-9]+|0x[0-9a-f])  { yylval.str = yytext; return T_P3_UINT; }
@@ -432,7 +432,7 @@ r[#/!@{<([]	{ p3_regex_begin (yytext[1]); }
 
 <P3_REGEX>{
 \n			{ PLINC; p3_regex_add (yytext); }
-[#/!@}>)\]][a-zA-Z]*	{ 
+[#/!@%}>)\]][a-zA-Z]*	{ 
 			  if (p3_regex_is_close_char (yytext[0])) {
 			     return p3_regex_finish (yytext + 1);
 			  } else {  
@@ -442,7 +442,7 @@ r[#/!@{<([]	{ p3_regex_begin (yytext[1]); }
 
 \\[#/!@}>)\]]		{ p3_regex_escape_sequence (yytext); }
 
-[^ /!@}>)\]\n\\]+	{ p3_regex_add (yytext); }
+[^/!@%}>)\]\n\\]+	{ p3_regex_add (yytext); }
 
 <<EOF>>			{
 			   return p3_regex_bad_eof ();
@@ -675,6 +675,7 @@ p3_regex_begin (char ch)
   case '!':
   case '@':
   case '/':
+  case '%':
     close = ch;
     break;
   case '{': close = '}'; break;
