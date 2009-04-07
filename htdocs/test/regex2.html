@@ -3,7 +3,7 @@
 
 
 {% for (i, v) {{
-%{i} => {% if (match(r{a+b?c+}, i)) {{ "MATCH!" }}
-              (true)                {{ "nope" }} %}<br>
+%{i} => {% if (match(r{a+b?c+}, i)) {{ MATCH! }}
+              (true)                {{ nope }} %}<br>
 }} %}
 

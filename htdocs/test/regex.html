@@ -22,7 +22,7 @@
 </pre>
 
 <h2>Display</h2>
-{% switch (key),
+<!--#switch (key),
            (r#[0x7fffffffffffffffu-0xffffffffffffffffu]#, {{ "Yes hi bit!" }} ),
            (r#[10-3000]#, {{ You entered an integer in between 10 and 3000 }}),
            (r#[11.1-3111.9]#, {{ You entered a float in [11.1,3111.9] }}),
@@ -31,7 +31,7 @@
 	   (m#http://[a-zA-Z1-9_.-]+#, {{ You entered a valid URL }}),
 	   (m#[a-zA-Z1-9_.-]+#, {{ You entered a valid username }}),
 	   (NULL, {{ You entered nothing/empty}} ),
-	   ( , {{ You entered something else }} ) %} : ${key}
+	   ( , {{ You entered something else }} ) --> : ${key}
 <br><br>
 <b>Try again:<b>
 <form method=get>

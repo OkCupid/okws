@@ -181,6 +181,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_MOD:
     r = New refcounted<pub3::expr_mod_t> (*x.xmod);
     break;
+  case XPUB3_EXPR_REGEX:
+    r = New refcounted<pub3::expr_regex_t> (*x.regex);
+    break;
   default:
     break;
   }

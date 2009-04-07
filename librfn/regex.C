@@ -43,7 +43,7 @@ namespace rfn1 {
       ok = false;
     }
 
-    if ((x = body->to_regex_obj ())) {
+    if (body && (x = body->to_regex_obj ())) {
       if (opts) {
 	*err = "don't specify options when supplying a regex object!";
 	ok = false;
