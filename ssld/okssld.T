@@ -478,8 +478,8 @@ namespace okssl {
 
     if (!init_ssl_internals ()) {
       warn << "Cannot initialize SSL engine internals\n";
-    } else if (!_certfile) {
-      warn << "No certificate file specified\n";
+    } else if (!_certfile && !_chainfile) {
+      warn << "No certificate or certchain file specified\n";
     } else if (!_keyfile) {
       warn << "No private key file specified\n";
     } else if (!(meth = SSLv23_server_method ())) {
