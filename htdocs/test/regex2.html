@@ -1,11 +1,11 @@
 
-{% setl { v : [ "aaabcccc", "abc", "aaacccc", "abab" ],
-          rxx : r!a+b?c+! } %}
+{% setl { v : [ "aaabcccc", "abc", "aaacccc", "abab", "aAaAbCcCcC" ],
+          rxx : "a+b?c+" } %}
 
 regex: %{rxx}<br>
 
 {% for (i, v) {{
-%{i} => {% if (match (rxx, i)) {{ MATCH! }}
+%{i} => {% if (match (rxx, "i", i)) {{ MATCH! }}
               (true)                {{ nope }} %}<br>
 }} %}
 

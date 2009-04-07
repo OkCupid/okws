@@ -118,11 +118,11 @@ pub3::expr_ref_t::eval_as_null (eval_t e) const
 //-----------------------------------------------------------------------
 
 ptr<rxx>
-pub3::expr_ref_t::eval_as_regex (eval_t e, bool force) const
+pub3::expr_ref_t::eval_as_regex (eval_t e) const
 {
   ptr<rxx> ret;
   ptr<const pval_t> v = eval_internal (e);
-  if (v) ret = v->to_regex (force);
+  if (v) ret = v->to_regex ();
   return ret;
 }
 
@@ -1405,24 +1405,22 @@ pub3::expr_regex_t::eval_freeze (eval_t e) const
 //-----------------------------------------------------------------------
 
 ptr<rxx>
-pub3::expr_list_t::eval_as_regex (eval_t e, bool force) const
+pub3::expr_list_t::eval_as_regex (eval_t e) const
 {
   str opts;
   str body;
   ptr<rxx> ret;
 
-  if (force) {
-
-    if (size () >= 2) {
-      opts = (*this)[1]->eval_as_str (e);
-    }
-    
-    if (size () >= 1) {
-      body = (*this)[0]->eval_as_str (e);
-    }
-
-    ret = str2rxx (&e, body, opts);
+  if (size () >= 2) {
+    opts = (*this)[1]->eval_as_str (e);
   }
+  
+  if (size () >= 1) {
+    body = (*this)[0]->eval_as_str (e);
+  }
+  
+  ret = str2rxx (&e, body, opts);
+
   return ret;
 }
 
@@ -1445,25 +1443,21 @@ pub3::expr_t::str2rxx (const eval_t *e, const str &b, const str &o) const
 //-----------------------------------------------------------------------
 
 ptr<rxx>
-pub3::expr_shell_str_t::eval_as_regex (eval_t e, bool force) const
+pub3::expr_shell_str_t::eval_as_regex (eval_t e) const
 {
   ptr<rxx> ret;
-  if (force) {
-    str s = eval_as_str (e);
-    ret = str2rxx (&e, s, NULL);
-  }
+  str s = eval_as_str (e);
+  ret = str2rxx (&e, s, NULL);
   return ret;
 }
 
 //-----------------------------------------------------------------------
 
 ptr<rxx>
-pub3::expr_str_t::to_regex (bool force) const
+pub3::expr_str_t::to_regex () const
 {
   ptr<rxx> ret;
-  if (force) {
-    ret = str2rxx (NULL, _val, NULL);
-  }
+  ret = str2rxx (NULL, _val, NULL);
   return ret;
 }
 

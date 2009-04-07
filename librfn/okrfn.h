@@ -135,7 +135,7 @@ namespace rfn1 {
   class rxx_fn_t : public predicate_t {
   public:
     rxx_fn_t (const str &n, ptr<expr_list_t> l, int lineno,
-	      ptr<expr_t> val, bool match);
+	      ptr<expr_t> rxx, ptr<expr_t> val, bool match);
 
     static ptr<runtime_fn_t> 
     constructor (const str &n, ptr<expr_list_t> e, int lineno, str *err);
@@ -143,6 +143,7 @@ namespace rfn1 {
   protected:
     bool eval_internal_bool (eval_t e) const;
 
+    ptr<expr_t> _rxx;
     ptr<expr_t> _val;
     bool _match;
   };
