@@ -1330,5 +1330,123 @@ pub3::expr_t::to_pub_scalar () const
 }
 
 //=======================================================================
+// regex's
 
-    
+//-----------------------------------------------------------------------
+
+static pub3::rxx_factory_t g_rxx_factory;
+
+//-----------------------------------------------------------------------
+
+ptr<rxx>
+pub3::rxx_factory_t::compile (str body, str opts, str *errp)
+{
+  return g_rxx_factory._compile (body, opts, errp);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<rxx>
+pub3::rxx_factory_t::_compile (str body, str opts, str *errp)
+{
+  const char *b = body;
+  const char *o = "";
+  if (opts) o = opts;
+
+  ptr<rxx> *rp;
+  ptr<rxx> ret;
+
+  strbuf k ("%s-%s", b, o);
+  if ((rp = _cache[k])) { 
+    ret = *rp; 
+  } else {
+    ptr<rrxx> tmp = New refcounted<rrxx> ();
+    if (!tmp->compile (b, o)) {
+      strbuf b;
+      str err = tmp->geterr ();
+      b << "Cannot compile regex '" << b << "' with options '"
+	<< o << "': " << err << "\n";
+      if (errp) *errp = b;
+    }
+    _cache.insert (k, tmp);
+    ret = tmp;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_regex_t::expr_regex_t (int lineno) : expr_t (lineno) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_regex_t::expr_regex_t (ptr<rxx> x, str b, str o, int l)
+  : expr_t (l), _rxx (x), _body (b), _opts (o) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t>
+pub3::expr_regex_t::eval_freeze (eval_t e) const
+{
+  return copy_stub ();
+}
+
+//-----------------------------------------------------------------------
+
+ptr<rxx>
+pub3::expr_list_t::eval_as_regex (eval_t e) const
+{
+  str opts;
+  str body;
+  ptr<rxx> ret;
+
+  if (size () >= 2) {
+    opts = (*this)[1]->eval_as_str (e);
+  }
+
+  if (size () >= 1) {
+    body = (*this)[0]->eval_as_str (e);
+  }
+
+  ret = str2rxx (&e, body, opts);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<rxx>
+pub3::expr_t::str2rxx (const eval_t *e, const str &b, const str &o) const
+{
+  ptr<rxx> ret;
+  if (b) {
+    str err;
+    ret = rxx_factory_t::compile (b, o, &err);
+    if (e && e->loud () && err) {
+      report_error (*e, err);
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<rxx>
+pub3::expr_shell_str_t::eval_as_regex (eval_t e) const
+{
+  str s = eval_as_str (e);
+  ptr<rxx> ret = str2rxx (&e, s, NULL);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<rxx>
+pub3::expr_str_t::to_regex () const
+{
+  ptr<rxx> ret = str2rxx (NULL, _val, NULL);
+  return ret;
+}
+
+//=======================================================================
+
+

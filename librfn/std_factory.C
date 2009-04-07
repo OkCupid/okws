@@ -11,6 +11,8 @@ namespace rfn1 {
     _tab.insert ("len",    &len_t::constructor);
     _tab.insert ("range",  &range_t::constructor);
     _tab.insert ("isnull", &is_null_t::constructor);
+    _tab.insert ("match",  &rxx_fn_t::constructor);
+    _tab.insert ("search", &rxx_fn_t::constructor);
   }
 
   //-----------------------------------------------------------------------

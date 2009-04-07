@@ -90,7 +90,7 @@
 %token <ch>  T_P3_CHAR
 %token <str> T_P3_FLOAT
 %token <str> T_P3_STRING
-%token <str> T_P3_REGEX
+%token <regex> T_P3_REGEX
 
 %type <p3cclist> p3_cond_clause_list;
 %type <p3cc> p3_cond_clause;
@@ -100,7 +100,7 @@
 %type <p3expr> p3_primary_expr p3_constant p3_additive_expr;
 %type <p3expr> p3_multiplicative_expr;
 %type <p3expr> p3_integer_constant p3_string p3_string_element;
-%type <p3expr> p3_inline_expr;
+%type <p3expr> p3_inline_expr p3_regex;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bind> p3_binding;
@@ -643,7 +643,7 @@ p3_postfix_expr:
            } 
 	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
-	      $$ = New refcounted<pub3::runtime_fn_t> ($1, $3, PLINENO);
+	      $$ = pub3::rfn_factory_t::get ()->alloc ($1, $3, PLINENO);
            }
 	   | p3_dictionary
            {
@@ -667,8 +667,29 @@ p3_primary_expr: p3_identifier
 	   { 
               $$ = $1;
 	   }
-	   | '(' p3_expr ')'   { $$ = $2;   }
+	   | '(' p3_expr ')'   
+           { 
+              $$ = $2;   
+           }
+	   | p3_regex
+	   {
+	      $$ = $1; 
+           }
 	   ;
+
+p3_regex: T_P3_REGEX
+	  {
+	     str err;
+	     ptr<rxx> x = 
+                 pub3::rxx_factory_t::compile ($1.regex, $1.opts, &err);
+	     if (err) {
+               PWARN(err);
+	       PARSEFAIL;
+	     }
+	     $$ = New refcounted<pub3::expr_regex_t> 
+                (x, $1.regex, $1.opts, PLINENO);
+	  }
+	  ;
 
 p3_argument_expr_list_opt:           
            { 

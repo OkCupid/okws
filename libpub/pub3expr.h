@@ -12,6 +12,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   class expr_t;
+  class expr_regex_t;
 
   //-----------------------------------------------------------------------
 
@@ -111,6 +112,8 @@ namespace pub3 {
     virtual u_int64_t to_uint () const { return 0; }
     virtual bool to_len (size_t *s) const { return false; }
     virtual bool is_null () const { return false; }
+    virtual ptr<rxx> to_regex () const { return NULL; }
+    virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     
     //
     // and from here, scalars can be converted at will...
@@ -154,6 +157,7 @@ namespace pub3 {
     virtual scalar_obj_t eval_as_scalar (eval_t e) const;
     bool eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp, 
 			      ptr<const aarr_t> *dp) const;
+    virtual ptr<rxx> eval_as_rxx (eval_t e) const { return NULL; }
 
     virtual bool eval_as_bool (eval_t e) const;
     virtual int64_t eval_as_int (eval_t e) const;
@@ -176,9 +180,8 @@ namespace pub3 {
     //
     //-----------------------------------------------------------------------
 
-    virtual bool needs_json_quotes () const { return false; }
-
   protected:
+    ptr<rxx> str2rxx (const eval_t *e, const str &b, const str &o) const;
 
     int _lineno;
 
@@ -470,16 +473,16 @@ namespace pub3 {
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
+    ptr<rxx> to_regex () const;
 
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
-    bool needs_json_quotes () const { return true; }
-
 
     str eval_as_str (eval_t e) const;
     bool eval_as_null (eval_t e) const;
+    ptr<rxx> eval_as_regex (eval_t e) const { return to_regex (); }
 
   protected:
     str _val;
@@ -589,13 +592,13 @@ namespace pub3 {
     void setsize (size_t s) { vec_base_t::setsize (s); }
     bool to_len (size_t *s) const;
     bool to_bool () const { return size () > 0; }
-    
 
     ptr<pval_t> eval_freeze (eval_t e) const;
     ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
     ptr<const vec_iface_t> eval_as_vec () const { return mkref (this); }
     str eval_as_str (eval_t e) const;
     bool eval_as_bool (eval_t e) const { return to_bool (); }
+    ptr<rxx> eval_as_regex (eval_t e) const;
 
     // to JSON-style string
     scalar_obj_t to_scalar () const;
@@ -615,6 +618,43 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  class rxx_factory_t {
+  public:
+    rxx_factory_t () {}
+    static ptr<rxx> compile (str body, str opts, str *err);
+  private:
+    qhash<str, ptr<rxx> > _cache;
+    ptr<rxx> _compile (str body, str opts, str *err);
+  };
+
+  //-----------------------------------------------------------------------
+
+
+  class expr_regex_t : public expr_t {
+  public:
+    expr_regex_t (int lineno);
+    expr_regex_t (const xpub3_regex_t &x);
+    expr_regex_t (ptr<rxx> x, str b, str o, int lineno);
+    const char *get_obj_name () const { return "pub3::expr_regex_t"; }
+    bool to_xdr (xpub3_expr_t *x) const;
+
+    ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
+    ptr<pval_t> eval_freeze (eval_t e) const;
+    str eval_as_str (eval_t e) const { return _body; }
+    ptr<rxx> eval_as_regex (eval_t e) const { return _rxx; }
+
+    str to_str () const { return _body; }
+    ptr<rxx> to_regex () const { return _rxx; }
+    ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
+    
+  private:
+    ptr<rxx> _rxx;
+    str _body, _opts;
+  };
+
+
+  //-----------------------------------------------------------------------
+
   class expr_shell_str_t : public expr_t {
   public:
     expr_shell_str_t (int lineno);
@@ -626,6 +666,7 @@ namespace pub3 {
     ptr<pval_t> eval_freeze (eval_t e) const;
     scalar_obj_t eval_as_scalar (eval_t e) const;
     str eval_as_str (eval_t e) const;
+    ptr<rxx> eval_as_regex (eval_t e) const;
 
     ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els->push_back (e); }
@@ -633,7 +674,6 @@ namespace pub3 {
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_shell_str_t"; }
 
-    bool needs_json_quotes () const { return true; }
   protected:
     ptr<expr_list_t> _els;
     str eval_internal (eval_t e) const;

@@ -357,7 +357,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_UINT,
    XPUB3_EXPR_DOUBLE,
    XPUB3_EXPR_LIST,
-   XPUB3_EXPR_MOD
+   XPUB3_EXPR_MOD,
+   XPUB3_EXPR_REGEX
 };
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
 
@@ -465,6 +466,12 @@ struct xpub3_dict_t {
   xpub3_nvpair_t entries<>;
 };
 
+struct xpub3_regex_t {
+  int lineno;
+  string body<>;
+  string opts<>;
+};
+
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
@@ -504,6 +511,8 @@ case XPUB3_EXPR_DOUBLE:
      xpub3_double_t xdouble;
 case XPUB3_EXPR_MOD:
      xpub3_mod_t xmod;
+case XPUB3_EXPR_REGEX:
+     xpub3_regex_t regex;
 };
 
 /* PUB3 language constructs */

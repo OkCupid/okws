@@ -106,22 +106,52 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  class is_null_t : public scalar_fn_t {
+  class predicate_t : public scalar_fn_t {
+  public:
+    predicate_t (const str &n, ptr<expr_list_t> el, int lineno)
+      : scalar_fn_t (n, el, lineno) {}
+    bool eval_as_bool (eval_t e) const { return eval_internal_bool (e); }
+  protected:
+    scalar_obj_t eval_internal (eval_t e) const;
+    virtual bool eval_internal_bool (eval_t e) const = 0;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class is_null_t : public predicate_t {
   public:
     is_null_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> e);
 
     static ptr<runtime_fn_t> 
     constructor (const str &n, ptr<expr_list_t> e, int lineno, str *err);
-    bool eval_as_bool (eval_t e) const { return eval_internal_bool (e); }
 
-  private:
-    scalar_obj_t eval_internal (eval_t e) const;
+  protected:
     bool eval_internal_bool (eval_t e) const;
     ptr<expr_t> _arg;
   };
 
   //-----------------------------------------------------------------------
 
+  class rxx_fn_t : public predicate_t {
+  public:
+    rxx_fn_t (const str &n, ptr<expr_list_t> l, int lineno,
+		ptr<expr_regex_t> rxx, 
+		ptr<expr_t> body, ptr<expr_t> opts,
+		ptr<expr_t> val, bool match);
+
+    static ptr<runtime_fn_t> 
+    constructor (const str &n, ptr<expr_list_t> e, int lineno, str *err);
+
+  protected:
+    bool eval_internal_bool (eval_t e) const;
+
+    ptr<expr_regex_t> _rxx;
+    ptr<expr_t> _body, _opts;
+    ptr<expr_t> _val;
+    bool _match;
+  };
+
+  //-----------------------------------------------------------------------
 
 };
 

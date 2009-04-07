@@ -48,6 +48,11 @@ void scanner_reset (void);
 extern int yydebug;
 #endif
 
+struct yystype_regex_pair_t {
+  str regex;
+  str opts;
+};
+
 struct yystype {
   ptr<pval_t> pval;
   ptr<arg_t> arg;
@@ -60,6 +65,7 @@ struct yystype {
   char ch;
   int64_t num;
   ::str str;
+  yystype_regex_pair_t regex;
   ptr<strbuf> buf;
   ptr<nested_env_t> nenv;
   ptr<arglist_t> arglist2;

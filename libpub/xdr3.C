@@ -648,4 +648,25 @@ pub3::set_func_t::to_xdr (xpub_obj_t *x) const
 
 //-----------------------------------------------------------------------
 
+pub3::expr_regex_t::expr_regex_t (const xpub3_regex_t &x)
+  : expr_t (x.lineno),
+    _body (x.body),
+    _opts (x.opts)
+{}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_regex_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_REGEX);
+  x->regex->lineno = _lineno;
+  x->regex->body = _body;
+  if (x->regex->opts) {
+    x->regex->opts = _opts;
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------
 

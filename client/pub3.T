@@ -27,14 +27,13 @@
 #include "xpub.h"
 #include <unistd.h>
 #include <stdlib.h>
-#include "pubd.h"
 #include "parseopt.h"
 #include "pslave.h"
-#include "pubd2.h"
 #include "pubutil.h"
 #include "okdbg.h"
 #include "pub2.h"
 #include "pub3.h"
+#include "okrfn.h"
 
 //-----------------------------------------------------------------------
 
@@ -75,9 +74,7 @@ pub3::eng_t::run_file (str f, evi_t ev)
   } else {
     strbuf b;
     out.to_strbuf (&b, false);
-    str s = b;
-    if (!s) s = "empty!";
-    warn << "Result: " << s << "\n";
+    b.tosuio ()->output (1);
   }
   ev->trigger ( ok ? 0 : -1);
 }
@@ -90,7 +87,7 @@ pub3::eng_t::run (evi_t ev)
   tvars {
     int rc (0);
     size_t i;
-    bool b;
+    bool b (true);
   }
 
   if (_argfile) {
@@ -253,6 +250,9 @@ main2 (int argc, char **argv)
     bool go;
     pub3::eng_t eng;
   }
+
+  // set up the runtime library!
+  pub3::rfn_factory_t::set (New refcounted<rfn1::std_factory_t> ());
 
   twait { eng.init (argc, argv, &go, mkevent (rc)); }
   if (go) {

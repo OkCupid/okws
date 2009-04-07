@@ -18,11 +18,12 @@ static void nlcount (int m = 0);
 static void push_p3_func (void);
 static void pop_p3_func (void);
 
-static void p3_regex_begin (const char *in);
+static void p3_regex_begin (char in);
 static int  p3_regex_is_close_char (char c);
 static void p3_regex_add (const char *in);
 static int  p3_regex_bad_eof ();
-static int  p3_regex_finish (char cmd);
+static int  p3_regex_finish (const char *opts);
+static void p3_regex_escape_sequence (const char *c);
 
 static void bracket_mark_left (int n = 1);
 static void bracket_mark_right (void);
@@ -42,6 +43,12 @@ int yy_d_brace;
 int yy_d_bracket;
 vec<int> yy_d_bracket_linenos;
 int yy_p3_depth;
+
+static char yy_p3_regex_close_char;
+static char yy_p3_regex_open_char;
+static int yy_p3_regex_start_line;
+strbuf yy_p3_regex_buf;
+
 
 %}
 
@@ -397,7 +404,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
 {P3IDENT}	{ yylval.str = yytext; return T_P3_IDENTIFIER; }
-r[#/!@{<([]	{ p3_regex_begin (yytext); }
+r[#/!@{<([]	{ p3_regex_begin (yytext[1]); }
 
 
 ([0-9]+|0x[0-9a-f])  { yylval.str = yytext; return T_P3_UINT; }
@@ -424,16 +431,18 @@ r[#/!@{<([]	{ p3_regex_begin (yytext); }
 }
 
 <P3_REGEX>{
-\n			{ PLINC; }
-[#/!@}>)\]][a-zA-Z]?	{ 
+\n			{ PLINC; p3_regex_add (yytext); }
+[#/!@}>)\]][a-zA-Z]*	{ 
 			  if (p3_regex_is_close_char (yytext[0])) {
-			     return p3_regex_finish (yytext[1]);
+			     return p3_regex_finish (yytext + 1);
 			  } else {  
 			     p3_regex_add (yytext);
 			  }
                         }
 
-[^ /!@}>)\]]+		{ p3_regex_add (yytext); }
+\\[#/!@}>)\]]		{ p3_regex_escape_sequence (yytext); }
+
+[^ /!@}>)\]\n\\]+	{ p3_regex_add (yytext); }
 
 <<EOF>>			{
 			   return p3_regex_bad_eof ();
@@ -650,13 +659,77 @@ pop_p3_func (void)
   }
 }
 
+//-----------------------------------------------------------------------
+
 // P3 perl-style regex's!
 
-void p3_regex_begin (const char *in) {}
-int  p3_regex_is_close_char (char c) { return 0; }
-void p3_regex_add (const char *in) {}
-int  p3_regex_bad_eof () { return 0; }
-int  p3_regex_finish (char cmd) { return T_P3_REGEX; }
+void 
+p3_regex_begin (char ch) 
+{
+  yy_p3_regex_start_line = PLINENO;
+  char open, close;
+
+  open = ch;
+  switch (ch) {
+  case '#':
+  case '!':
+  case '@':
+  case '/':
+    close = ch;
+    break;
+  case '{': close = '}'; break;
+  case '<': close = '>'; break;
+  case '(': close = ')'; break;
+  case '[': close = ']'; break;
+  default:
+    yyerror (strbuf ("unexpected P3 regex delimiter: '%c'\n", ch));
+    break;
+  }
+
+  yy_p3_regex_close_char = close;
+  yy_p3_regex_open_char = open;
+  yy_push_state (P3_REGEX);
+}
+
+int  
+p3_regex_is_close_char (char c) 
+{
+  return c == yy_p3_regex_close_char;
+}
+
+void 
+p3_regex_add (const char *in) 
+{
+   yy_p3_regex_buf.cat (in, true);
+}
+
+void
+p3_regex_escape_sequence (const char *in)
+{
+  // if the char being escape is exactly the close sequence, or
+  // the escape character, then strip off the escape!
+  if (in[1] == yy_p3_regex_close_char || in[1] == '\\') { in++; }
+  p3_regex_add (in);
+}
+
+int  
+p3_regex_bad_eof () 
+{
+  yyerror (strbuf ("Found EOF when looking for end of regex, "
+           "started on line %d\n", yy_p3_regex_start_line));
+}
+
+int
+p3_regex_finish (const char *opts) 
+{
+  yylval.regex.regex = yy_p3_regex_buf;
+  yylval.regex.opts = opts;
+  yy_pop_state ();
+  yy_p3_regex_buf.tosuio ()->clear ();
+  return T_P3_REGEX;
+}
+
+//-----------------------------------------------------------------------
 
 
 /*

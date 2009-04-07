@@ -35,7 +35,7 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   scalar_obj_t
-  is_null_t::eval_internal (eval_t e) const
+  predicate_t::eval_internal (eval_t e) const
   {
     bool b = eval_internal_bool (e);
     scalar_obj_t o;
@@ -171,7 +171,7 @@ namespace rfn1 {
 
   is_null_t::is_null_t (const str &n, ptr<expr_list_t> l, int lineno,
 			ptr<expr_t> e)
-    : scalar_fn_t (n, l, lineno), _arg (e) {}
+    : predicate_t (n, l, lineno), _arg (e) {}
 
   //-----------------------------------------------------------------------
 
