@@ -332,6 +332,18 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+  
+  bool 
+  runtime_fn_stub_t::unshift_argument (ptr<expr_t> e)
+  {
+    if (!_arglist) {
+      _arglist = New refcounted<expr_list_t> ();
+    }
+    _arglist->push_front (e);
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
 
 };
 

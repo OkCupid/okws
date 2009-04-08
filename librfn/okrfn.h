@@ -207,6 +207,18 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class substring_t : public scalar_fn_t {
+  public:
+    substring_t (const str &n, ptr<expr_list_t> l, int lineno);
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+    ptr<expr_t> _start, _end;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 
 #endif /* _LIBRFN_OKRFN_H_ */

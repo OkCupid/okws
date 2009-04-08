@@ -157,6 +157,7 @@ namespace pub3 {
 
     ptr<const pval_t> eval (eval_t e) const;
     ptr<pval_t> eval_freeze (eval_t e) const;
+    bool unshift_argument (ptr<expr_t> e);
 
   protected:
     mutable ptr<const expr_t> _rfn;
