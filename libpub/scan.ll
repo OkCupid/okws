@@ -190,6 +190,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		}
 
 \\+[$%]"{"	|
+\\+"{%"		|
 \\"}}"          { yylval.str = yytext + 1; return T_HTML; }
 
 "}}"		{ if (yy_d_brace > 0) {
@@ -419,7 +420,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 [<]=		 { return T_P3_LTEQ; }
 >=		 { return T_P3_GTEQ; }
 =>		 { return yytext[0]; }
-[%()!=><,[\].+:-] { return yytext[0]; }
+[%()!=><,[\].+:;-] { return yytext[0]; }
 [{]		 { yy_push_state (P3); return yytext[0]; }
 [}]		 { yy_pop_state (); return yytext[0]; }
 "||"		 { return T_P3_OR; }
