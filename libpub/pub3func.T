@@ -306,6 +306,33 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  runtime_fn_stub_t::get_rfn () const
+  {
+    if (!_rfn) {
+      _rfn = rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
+    }
+    return _rfn;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const pval_t> 
+  runtime_fn_stub_t::eval (eval_t e) const
+  {
+    return get_rfn ()->eval (e);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t> 
+  runtime_fn_stub_t::eval_freeze (eval_t e) const
+  {
+    return get_rfn ()->eval_freeze (e);
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 
 //

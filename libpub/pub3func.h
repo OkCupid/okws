@@ -148,6 +148,23 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class runtime_fn_stub_t : public runtime_fn_t {
+  public:
+    runtime_fn_stub_t (const str &n, ptr<expr_list_t> a, int l) 
+      : runtime_fn_t (n, a, l) {}
+
+    const char *get_obj_name () const { return "pub3::runtime_fn_stub_t"; }
+
+    ptr<const pval_t> eval (eval_t e) const;
+    ptr<pval_t> eval_freeze (eval_t e) const;
+
+  protected:
+    mutable ptr<const expr_t> _rfn;
+    ptr<const expr_t> get_rfn () const;
+  };
+
+  //-----------------------------------------------------------------------
+
   class error_fn_t : public runtime_fn_t {
   public:
     error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)

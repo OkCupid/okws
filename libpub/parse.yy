@@ -658,7 +658,12 @@ p3_postfix_expr:
            } 
 	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
-	      $$ = pub3::rfn_factory_t::get ()->alloc ($1, $3, PLINENO);
+	      /* Allocate a stub at first, which will be resolved 
+	       * into the true function either at evaluation time
+	       * (in the pub command line client) or upon conversion
+	       * from XDR (in OKWS services)
+	       */
+	      $$ = New refcounted<pub3::runtime_fn_stub_t> ($1, $3, PLINENO);
            }
 	   | p3_dictionary
            {
