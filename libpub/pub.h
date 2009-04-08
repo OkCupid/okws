@@ -1065,6 +1065,7 @@ public:
 
   // functions for adding HTML fragments
   inline void hadd (pfile_sec_t *s);
+  void hadd_el_list (const ptr<vec<pfile_el_t *> > v);
   template<class C> inline void hadd (C c)
   {
     etag_flag = false;

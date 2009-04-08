@@ -4,6 +4,7 @@
 %{
 #include "pub_parse.h"
 #include "parse.h"
+#include "qhash.h"
 #define YY_STR_BUFLEN 20*1024
 
 static void begin_PSTR (int i, int mode);
@@ -15,7 +16,7 @@ static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (const char *c, int l);
 static void nlcount (int m = 0);
-static void push_p3_func ();
+static void push_p3_env ();
 static void pop_p3_func (void);
 
 static void p3_regex_begin (char in);
@@ -24,6 +25,7 @@ static void p3_regex_add (const char *in);
 static int  p3_regex_bad_eof ();
 static int  p3_regex_finish (const char *opts);
 static void p3_regex_escape_sequence (const char *c);
+static int  p3_identifier (const char *yyt);
 
 static void bracket_mark_left (int n = 1);
 static void bracket_mark_right (void);
@@ -66,7 +68,6 @@ WSN	[ \t\n]
 EOL	[ \t]*\n?
 TPRFX	(<!--#|\{%)[ \t]*
 TPRFX1  (<!--#)[ \t]*
-TPRFX3  \{%[ \t\n]*
 TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
@@ -131,12 +132,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 			  addstr ("<!--", 4);
 	  		}
 
-{TPRFX3}for             { push_p3_func (); return T_P3_FOR; }
-{TPRFX3}(cond|if)	{ push_p3_func (); return T_P3_COND; }
-{TPRFX3}include		{ push_p3_func (); return T_P3_INCLUDE; }
-{TPRFX3}load            { push_p3_func (); return T_P3_LOAD; }
-{TPRFX3}set		{ push_p3_func (); return T_P3_SET; }
-{TPRFX3}setl		{ push_p3_func (); return T_P3_SETL; }
+"{%"			{ push_p3_env (); return T_P3_OPEN; }
 }
 
 <POUND_REGEX>{
@@ -407,7 +403,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
-{P3IDENT}	{ yylval.str = yytext; return T_P3_IDENTIFIER; }
+{P3IDENT}	{ return p3_identifier (yytext); }
 r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 
 
@@ -427,7 +423,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 "|"		 { return T_P3_PIPE; }
 &&		 { return T_P3_AND; }
 '[^']'		 { yylval.ch = yytext[1]; return T_P3_CHAR; }
-"%}"		 { pop_p3_func (); return T_P3_CLOSETAG; }
+"%}"		 { pop_p3_func (); return T_P3_CLOSE; }
 
 [ \t]+		 { /* ignore */ }
 ["] 		 { begin_P3_STR(); return yytext[0]; }
@@ -647,9 +643,8 @@ bracket_check_eof (void)
 }
 
 void
-push_p3_func ()
+push_p3_env ()
 {
-   nlcount ();
    yy_p3_depth++;
    yy_push_state (P3);
 }
@@ -735,6 +730,41 @@ p3_regex_finish (const char *opts)
   yy_pop_state ();
   yy_p3_regex_buf.tosuio ()->clear ();
   return T_P3_REGEX;
+}
+
+class p3_identifier_tab_t {
+public:
+  p3_identifier_tab_t () {
+    _tab.insert ("for",   T_P3_FOR);
+    _tab.insert ("if",    T_P3_COND);
+    _tab.insert ("cond",  T_P3_COND);
+    _tab.insert ("set",   T_P3_SET);
+    _tab.insert ("setl",  T_P3_SETL);
+    _tab.insert ("include", T_P3_INCLUDE);
+    _tab.insert ("print", T_P3_PRINT);
+  }
+
+  bool lookup (const char *in, int *out) {
+    bool ret = false;
+    int *outp = _tab[in];
+    if (outp) { ret = true; *out = *outp; }
+    return ret;
+  }
+private:
+  qhash<const char *, int> _tab;
+};
+
+static p3_identifier_tab_t p3_id_tab;
+
+int
+p3_identifier (const char *yyt)
+{
+   int ret;
+   if (!p3_id_tab.lookup (yyt, &ret)) {
+     yylval.str = yyt;
+     ret = T_P3_IDENTIFIER;
+   }
+   return ret;
 }
 
 //-----------------------------------------------------------------------

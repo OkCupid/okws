@@ -55,13 +55,13 @@
 %type <pvar> pvar evar 
 %type <pval> bvalue arr i_arr g_arr
 %type <sec> htag htag_list javascript pre b_js_tag
-%type <el> ptag p3_forloop p3_cond p3_include p3_set p3_setl
+%type <el> ptag 
 %type <func> ptag_func
 %type <pstr> pstr pstr_sq
 %type <arg> arg aarr regex range
 %type <parr> i_arr_open
 %type <buf> regex_body
-%type <nenv> nested_env p3_empty_clause
+%type <nenv> nested_env p3_empty_clause p3_nested_env
 
 /* ------------------------------------------------ */
 
@@ -76,12 +76,13 @@
 %token T_P3_BEGIN_EXPR
 %token T_P3_END_EXPR
 %token T_P3_INCLUDE
-%token T_P3_CLOSETAG
 %token T_P3_SET
 %token T_P3_SETL
 %token T_P3_LOAD
 %token T_P3_PIPE
-
+%token T_P3_OPEN
+%token T_P3_CLOSE
+%token T_P3_PRINT
 %token T_P3_FOR
 %token T_P3_TRUE
 
@@ -107,6 +108,8 @@
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
+%type <func> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
+%type <els> p3_statements p3_statements_opt p3_env;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_tuple p3_list;
@@ -143,6 +146,14 @@ html_part: T_HTML 	{ PSECTION->hadd ($1); }
 	| javascript	{ PSECTION->hadd ($1); } 
 	| ptag		{ PSECTION->hadd ($1); }
 	| pre		{ PSECTION->hadd ($1); }
+	| p3_html_part
+	;
+
+p3_html_part:
+	  p3_env 
+	{ 
+	    PSECTION->hadd_el_list ($1); 
+        }
 	| p3_inline_expr
         { 
 	    PSECTION->hadd (New pub3::inline_var_t ($1, PLINENO)); 
@@ -178,11 +189,6 @@ ptag: ptag_func
 	    PARSEFAIL;
 	  $$ = POP_PFUNC();
 	}
-	| p3_forloop
-	| p3_cond
-	| p3_include
-	| p3_set
-	| p3_setl
 	;
 
 ptag_close: ';' T_EPTAG
@@ -538,6 +544,35 @@ var: T_VAR
  * in {% cond %} statements and also filters.
  */
 
+p3_env: T_P3_OPEN p3_statements_opt T_P3_CLOSE
+	{
+	   $$ = $2;
+        }
+	;
+
+p3_statements_opt: /* empty */      { $$ = NULL; }
+		   | p3_statements  { $$ = $1; }
+		   ;
+
+p3_statements: p3_statement
+	       {
+	          $$ = New refcounted<vec<pfile_el_t *> > ();
+		  $$->push_back ($1);
+	       }
+	       | p3_statements p3_statement
+	       {
+		  $$ = $1;
+	          $$->push_back ($2);
+	       }
+	       ;
+
+p3_statement: p3_for
+	      | p3_cond
+	      | p3_set
+	      | p3_setl
+	      | p3_include
+	      ;
+
 p3_expr: p3_logical_AND_expr
 	       {
 	          $$ = $1;
@@ -887,7 +922,7 @@ p3_include_or_load:
 	;
 		   
 	
-p3_include: p3_include_or_load p3_tuple T_P3_CLOSETAG
+p3_include: p3_include_or_load p3_tuple 
         {
            str err;
            pub3::include_t *f = $1;
@@ -897,7 +932,7 @@ p3_include: p3_include_or_load p3_tuple T_P3_CLOSETAG
            $$ = f;
 	};
 
-p3_set: T_P3_SET p3_dictionary T_P3_CLOSETAG
+p3_set: T_P3_SET p3_dictionary 
 	{
            pub3::set_func_t *f = New pub3::set_func_t (PLINENO);
            f->add ($2);   
@@ -905,7 +940,7 @@ p3_set: T_P3_SET p3_dictionary T_P3_CLOSETAG
 	}
 	;
 
-p3_setl: T_P3_SETL p3_dictionary T_P3_CLOSETAG
+p3_setl: T_P3_SETL p3_dictionary 
 	{
            pfile_set_func_t *f = New pfile_set_local_func_t (PLINENO);
            f->add ($2);   
@@ -913,7 +948,17 @@ p3_setl: T_P3_SETL p3_dictionary T_P3_CLOSETAG
         }
         ;
 
-p3_forloop: T_P3_FOR p3_tuple nested_env p3_empty_clause T_P3_CLOSETAG
+p3_nested_env: nested_env { $$ = $1; }
+	| 
+        '{' p3_statements_opt '}'
+	{
+ 	  pfile_html_sec_t *s = New pfile_html_sec_t (PLINENO);
+	  s->hadd_el_list ($2);
+	  $$ = New refcounted<nested_env_t> (s);
+	}
+	;
+
+p3_for: T_P3_FOR p3_tuple p3_nested_env p3_empty_clause 
 	 {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    if (!f->add ($2)) {
@@ -924,7 +969,7 @@ p3_forloop: T_P3_FOR p3_tuple nested_env p3_empty_clause T_P3_CLOSETAG
 	    $$ = f;
 	 };
 
-p3_cond: T_P3_COND p3_cond_clause_list T_P3_CLOSETAG
+p3_cond: T_P3_COND p3_cond_clause_list 
       {
          pub3::cond_t *c = New pub3::cond_t (PLINENO);
 	 c->add_clauses ($2);
@@ -947,7 +992,7 @@ p3_cond_clause_list:
 
 p3_comma_opt: /* empty */ | ',' ;
 
-p3_cond_clause: '(' p3_expr ')' nested_env
+p3_cond_clause: '(' p3_expr ')' p3_nested_env
          {
 	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
 	    c->add_expr ($2);
@@ -957,8 +1002,8 @@ p3_cond_clause: '(' p3_expr ')' nested_env
 	 ;
 
 p3_empty_clause: 
-         /* empty */                { $$ = NULL; }
-	 | p3_comma_opt nested_env  { $$ = $2; }
+         /* empty */                   { $$ = NULL; }
+	 | p3_comma_opt p3_nested_env  { $$ = $2; }
  	 ;
 
 		  

@@ -62,6 +62,7 @@ struct yystype {
   pfile_el_t *el;
   pfile_sec_t *sec;
   pfile_func_t *func;
+  ptr<vec<pfile_el_t *> > els;
   char ch;
   int64_t num;
   ::str str;

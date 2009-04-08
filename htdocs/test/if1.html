@@ -7,14 +7,23 @@
 
 
 <h2>Random</h2>
-{% if (rand (0,2) == 1) {{Try #1: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #2: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #3: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #4: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #5: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #6: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #7: heads!<br>}} %}
-{% if (rand (0,2) == 1) {{Try #8: heads!<br>}} %}
+{% if (rand (0,2) == 1) {{Try #1: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #2: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #3: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #4: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #5: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #6: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #7: heads!<br>}}
+   if (rand (0,2) == 1) {{Try #8: heads!<br>}} %}
+
+<h2>Random Loop</h2>
+{% for (i, range(0,16)) {
+   setl { j : i+i - 1 }
+   if (i % 2 == 0) {
+     if (rand(0,2) == 1) {{Try #%{i}a (j=%{j}): heads!<br>}}
+     if (rand(0,3) == 1) {{Try #%{i}b (j=%{j}): shits!<br>}}
+   }
+} %}
 
 <h2>Random / Better Odds!</h2>
 {% if (rand (0,2) == 1 || rand(0,2) == 1) {{Try #1: heads!<br>}} %}
@@ -30,16 +39,12 @@
 
 <h2> Multi Cases</h2>
 {% 
-  
    if (true && rand(0,4) == 1) {{ Case #1<br>}}
       (true && rand(0,3) == 1) {{ Case #2<br>}}
       (true && rand(0,2) == 1) {{ Case #3<br>}}
       (true && false)          {{ Never!<br> }}
       (true && true)           {{ Always<br> }} %}
 
-
-
-%{shit}
  </body>
 </html>
     
