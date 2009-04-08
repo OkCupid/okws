@@ -18,6 +18,8 @@ namespace rfn1 {
     _tab.insert ("toupper", &scalar_fn_t::constructor<toupper_t, 1>);
     _tab.insert ("html_escape", &scalar_fn_t::constructor<html_escape_t, 1>);
     _tab.insert ("json_escape", &scalar_fn_t::constructor<json_escape_t, 1>);
+    _tab.insert ("html", &scalar_fn_t::constructor<html_escape_t, 1>);
+    _tab.insert ("json", &scalar_fn_t::constructor<json_escape_t, 1>);
   }
 
   //-----------------------------------------------------------------------
