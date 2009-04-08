@@ -15,7 +15,7 @@ static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (const char *c, int l);
 static void nlcount (int m = 0);
-static void push_p3_func (void);
+static void push_p3_func ();
 static void pop_p3_func (void);
 
 static void p3_regex_begin (char in);
@@ -646,8 +646,9 @@ bracket_check_eof (void)
 }
 
 void
-push_p3_func (void)
+push_p3_func ()
 {
+   nlcount ();
    yy_p3_depth++;
    yy_push_state (P3);
 }
