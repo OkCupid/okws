@@ -85,6 +85,8 @@
 %token T_P3_PRINT
 %token T_P3_FOR
 %token T_P3_TRUE
+%token T_P3_ELIF
+%token T_P3_ELSE
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -991,12 +993,19 @@ p3_cond_clause_list:
 	  ;
 
 p3_comma_opt: /* empty */ | ',' ;
+p3_elif_opt: /* empty */ | T_P3_ELIF ;
 
-p3_cond_clause: '(' p3_expr ')' p3_nested_env
+p3_cond_clause: p3_elif_opt '(' p3_expr ')' p3_nested_env
          {
 	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
-	    c->add_expr ($2);
-	    c->add_env ($4);
+	    c->add_expr ($3);
+	    c->add_env ($5);
+	    $$ = c;
+	 }
+	 | T_P3_ELSE p3_nested_env
+	 {
+	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
+	    c->add_env ($2);
 	    $$ = c;
 	 }
 	 ;

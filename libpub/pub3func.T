@@ -211,9 +211,11 @@ pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 
   for (i = 0; !found && i < len; i++) {
 
+    // Note that expr will be NULL for the last (else) clause if
+    // one was there....
     if ((clause = (*_clauses)[i]) &&
-	(expr = clause->expr ()) &&
-	expr->eval_as_bool (eval)) {
+	(!(expr = clause->expr ()) ||
+	 (expr && expr->eval_as_bool (eval)))) {
 
       found = true;
       if ((env = clause->env ())) {

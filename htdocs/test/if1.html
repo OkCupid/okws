@@ -39,11 +39,11 @@
 
 <h2> Multi Cases</h2>
 {% 
-   if (true && rand(0,4) == 1) {{ Case #1<br>}}
-      (true && rand(0,3) == 1) {{ Case #2<br>}}
-      (true && rand(0,2) == 1) {{ Case #3<br>}}
-      (true && false)          {{ Never!<br> }}
-      (true && true)           {{ Always<br> }} %}
+   if   (true && rand(0,4) == 1) {{ Case #1<br>}}
+   elif (true && rand(0,3) == 1) {{ Case #2<br>}}
+   elif (true && rand(0,2) == 1) {{ Case #3<br>}}
+   elif (true && false)          {{ Never!<br> }}
+   else                          {{ Always<br> }} %}
 
  </body>
 </html>
