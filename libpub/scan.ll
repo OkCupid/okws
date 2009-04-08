@@ -66,7 +66,7 @@ WSN	[ \t\n]
 EOL	[ \t]*\n?
 TPRFX	(<!--#|\{%)[ \t]*
 TPRFX1  (<!--#)[ \t]*
-TPRFX3  \{%[ \t]*
+TPRFX3  \{%[ \t\n]*
 TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS

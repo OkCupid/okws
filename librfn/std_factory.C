@@ -14,13 +14,14 @@ namespace rfn1 {
     _tab.insert ("match",  &rxx_fn_t::constructor);
     _tab.insert ("search", &rxx_fn_t::constructor);
 
-    _tab.insert ("tolower", &scalar_fn_t::constructor<tolower_t, 1>);
-    _tab.insert ("toupper", &scalar_fn_t::constructor<toupper_t, 1>);
-    _tab.insert ("html_escape", &scalar_fn_t::constructor<html_escape_t, 1>);
-    _tab.insert ("json_escape", &scalar_fn_t::constructor<json_escape_t, 1>);
-    _tab.insert ("html", &scalar_fn_t::constructor<html_escape_t, 1>);
-    _tab.insert ("json", &scalar_fn_t::constructor<json_escape_t, 1>);
-    _tab.insert ("substr", &scalar_fn_t::constructor<substring_t, 3>);
+    _tab.insert ("tolower", &scalar_fn_t::constructor<tolower_t, 1, 1>);
+    _tab.insert ("toupper", &scalar_fn_t::constructor<toupper_t, 1, 1>);
+    _tab.insert ("html_escape", &scalar_fn_t::constructor<html_escape_t, 1, 1>);
+    _tab.insert ("json_escape", &scalar_fn_t::constructor<json_escape_t, 1, 1>);
+    _tab.insert ("html", &scalar_fn_t::constructor<html_escape_t, 1, 1>);
+    _tab.insert ("json", &scalar_fn_t::constructor<json_escape_t, 1, 1>);
+    _tab.insert ("substr", &scalar_fn_t::constructor<substring_t, 3, 3>);
+    _tab.insert ("default", &scalar_fn_t::constructor<default_t, 1, 2>);
   }
 
   //-----------------------------------------------------------------------

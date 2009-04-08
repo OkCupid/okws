@@ -47,14 +47,23 @@ namespace rfn1 {
     int64_t eval_as_int (eval_t e) const 
     { return eval_internal (e).to_int (); }
 
-    template<class T, size_t n> static ptr<runtime_fn_t>
+    str eval_as_str (eval_t e) const
+    { return eval_internal (e).to_str (); }
+
+    template<class T, size_t x, size_t y> static ptr<runtime_fn_t>
     constructor (const str &nm, ptr<expr_list_t> e, int lineno, str *err)
     {
       ptr<runtime_fn_t> r;
       size_t narg = e ? e->size () : size_t (0);
-      if (narg != n) {
-	*err = strbuf ("%s() function takes %zu args; %zu given!\n", 
-		       nm.cstr (), n, narg);
+
+      if (narg < x || narg > y) {
+	if (y == x) {
+	  *err = strbuf ("%s() function takes %zu arg%s; %zu given!\n", 
+			 nm.cstr (), x, x == 1 ? "" : "s", narg);
+	} else {
+	  *err = strbuf ("%s() function takes %zu to %zu args; %zu given!\n",
+			 nm.cstr(), x, y, narg);
+	}
       } else {
 	r = New refcounted<T> (nm, e, lineno);
       }
@@ -219,6 +228,16 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class default_t : public scalar_fn_t {
+  public:
+    default_t (const str &n, ptr<expr_list_t> l, int lineno);
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg, _def_val;
+  };
+
+  //-----------------------------------------------------------------------
 };
 
 #endif /* _LIBRFN_OKRFN_H_ */
