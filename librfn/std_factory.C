@@ -13,6 +13,9 @@ namespace rfn1 {
     _tab.insert ("isnull", &is_null_t::constructor);
     _tab.insert ("match",  &rxx_fn_t::constructor);
     _tab.insert ("search", &rxx_fn_t::constructor);
+
+    _tab.insert ("tolower", &scalar_fn_t::constructor<tolower_t, 1>);
+    _tab.insert ("toupper", &scalar_fn_t::constructor<toupper_t, 1>);
   }
 
   //-----------------------------------------------------------------------
@@ -37,7 +40,6 @@ namespace rfn1 {
 
     return ret;
   }
-
 
   //-----------------------------------------------------------------------
 

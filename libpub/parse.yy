@@ -568,6 +568,7 @@ p3_inclusive_OR_expr: p3_equality_expr
 		     PWARN("Cannot push argument onto non-function");
 		     PARSEFAIL;
 		  }
+		  $$ = $3;
 	       }
 	       ;
 

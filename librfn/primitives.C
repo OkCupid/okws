@@ -94,7 +94,7 @@ namespace rfn1 {
 
     if (narg == 0 || narg > 3) {
       ok = false;
-      *err = "random() takes 1, 2 or 3 arguments";
+      *err = "range() takes 1, 2 or 3 arguments";
     } else if (narg == 1) {
       h = (*e)[0];
     } else if (narg == 2) {
