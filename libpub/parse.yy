@@ -80,6 +80,7 @@
 %token T_P3_SET
 %token T_P3_SETL
 %token T_P3_LOAD
+%token T_P3_PIPE
 
 %token T_P3_FOR
 %token T_P3_TRUE
@@ -101,6 +102,7 @@
 %type <p3expr> p3_multiplicative_expr;
 %type <p3expr> p3_integer_constant p3_string p3_string_element;
 %type <p3expr> p3_inline_expr p3_regex;
+%type <p3expr> p3_inclusive_OR_expr;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bind> p3_binding;
@@ -546,13 +548,23 @@ p3_expr: p3_logical_AND_expr
                }
 	       ;
 
-p3_logical_AND_expr: p3_equality_expr
+p3_logical_AND_expr: p3_inclusive_OR_expr
                { 
 	          $$ = $1 ; 
 	       }
-	       | p3_logical_AND_expr T_P3_AND p3_equality_expr
+	       | p3_logical_AND_expr T_P3_AND p3_inclusive_OR_expr
                { 
 	          $$ = New refcounted<pub3::expr_AND_t> ($1, $3, PLINENO);
+	       }
+	       ;
+
+p3_inclusive_OR_expr: p3_equality_expr
+	       {
+	          $$ = $1;
+	       }
+	       | p3_inclusive_OR_expr T_P3_PIPE p3_equality_expr
+	       {
+	          $$ = New refcounted<pub3::expr_pipe_t> ($1, $3, PLINENO);
 	       }
 	       ;
 

@@ -358,10 +358,16 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_DOUBLE,
    XPUB3_EXPR_LIST,
    XPUB3_EXPR_MOD,
-   XPUB3_EXPR_REGEX
+   XPUB3_EXPR_REGEX,
+   XPUB3_EXPR_PIPE
 };
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
 
+struct xpub3_pipe_t {
+   int lineno;
+   xpub3_expr_t *left;
+   xpub3_expr_t *right;
+};
 
 struct xpub3_and_t {
    int lineno;
@@ -513,6 +519,8 @@ case XPUB3_EXPR_MOD:
      xpub3_mod_t xmod;
 case XPUB3_EXPR_REGEX:
      xpub3_regex_t regex;
+case XPUB3_EXPR_PIPE:
+     xpub3_pipe_t pipe;
 };
 
 /* PUB3 language constructs */

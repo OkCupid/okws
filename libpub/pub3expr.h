@@ -273,6 +273,22 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_pipe_t : public expr_frozen_t {
+  public:
+    expr_pipe_t (ptr<expr_t> l, ptr<expr_t> r, int lineno)
+      : expr_frozen_t (lineno), _left (l), _right (r) {}
+    expr_pipe_t (const xpub3_pipe_t &x);
+    const char *get_obj_name () const { return "pub3::expr_pipe_t"; }
+    bool to_xdr (xpub3_expr_t *x) const;
+
+    ptr<const pval_t> eval (eval_t e) const { return NULL; }
+
+  protected:
+    ptr<expr_t> _left, _right;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_AND_t : public expr_logical_t  {
   public:
     expr_AND_t (ptr<expr_t> f1, ptr<expr_t> f2, int lineno) 

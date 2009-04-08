@@ -184,11 +184,21 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_REGEX:
     r = New refcounted<pub3::expr_regex_t> (*x.regex);
     break;
+  case XPUB3_EXPR_PIPE:
+    r = New refcounted<pub3::expr_pipe_t> (*x.pipe);
+    break;
   default:
     break;
   }
   return r;
 }
+
+//-----------------------------------------------------------------------
+
+pub3::expr_pipe_t::expr_pipe_t (const xpub3_pipe_t &x)
+  : expr_frozen_t (x.lineno),
+    _left (expr_t::alloc (x.left)),
+    _right (expr_t::alloc (x.right)) {}
 
 //-----------------------------------------------------------------------
 
@@ -675,6 +685,19 @@ pub3::expr_regex_t::to_xdr (xpub3_expr_t *x) const
   }
   return true;
 }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_pipe_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_PIPE);
+  x->pipe->lineno = _lineno;
+  expr_to_rpc_ptr (_left, &x->pipe->left);
+  expr_to_rpc_ptr (_right, &x->pipe->right);
+  return true;
+}
+
 
 //-----------------------------------------------------------------------
 

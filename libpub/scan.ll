@@ -420,6 +420,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 [{]		 { yy_push_state (P3); return yytext[0]; }
 [}]		 { yy_pop_state (); return yytext[0]; }
 "||"		 { return T_P3_OR; }
+"|"		 { return T_P3_PIPE; }
 &&		 { return T_P3_AND; }
 '[^']'		 { yylval.ch = yytext[1]; return T_P3_CHAR; }
 "%}"		 { pop_p3_func (); return T_P3_CLOSETAG; }
@@ -718,6 +719,7 @@ p3_regex_bad_eof ()
 {
   yyerror (strbuf ("Found EOF when looking for end of regex, "
            "started on line %d\n", yy_p3_regex_start_line));
+  return -1;
 }
 
 int
