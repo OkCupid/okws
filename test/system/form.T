@@ -93,7 +93,7 @@ okclnt_form_t::process_T (okclnt2_t::proc_ev_t ev)
 
     if (cgi.lookup ("nxt_query", &q)) {
       a.add ("query_unesc", q);
-      a.add ("query_esc", xss_filter (q));
+      a.add ("query_esc", xss_escape (q));
     }
     
     int i = 0;

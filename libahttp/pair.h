@@ -31,11 +31,7 @@
 #include "pub.h"
 #include "pubutil.h"
 #include "okscratch.h"
-
-// max buf of 256K
-#define XSS_MAX_BUF 0x40000  
-str xss_filter (const str &in);
-str xss_filter (const char *in, u_int l);
+#include "pescape.h"
 
 struct encode_t {
   encode_t (strbuf *o, ptr<ok::scratch_handle_t> s = NULL)
@@ -161,7 +157,7 @@ pairtab_t<C>::safe_lookup (const str &key) const
   if (s) {
     s = trunc_at_first_null (s);
     if (filter && ok_filter_cgi == XSSFILT_SOME) 
-      s = xss_filter (s);
+      s = xss_escape (s);
   } else {
     s = empty;
   }

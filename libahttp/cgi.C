@@ -500,7 +500,7 @@ cgi_t::parse_key_or_val (str *r, bool use_internal_state)
       ret =  ABUF_OVERFLOW;
     } else {
       if (ok_filter_cgi == XSSFILT_ALL)
-	*r = xss_filter (scratch, pcp - scratch);
+	*r = xss_escape (scratch, pcp - scratch);
       else
 	*r = str (scratch, pcp - scratch);
     }

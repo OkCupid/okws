@@ -185,6 +185,28 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class html_escape_t : public scalar_fn_t {
+  public:
+    html_escape_t (const str &n, ptr<expr_list_t> l, int lineno);
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class json_escape_t : public scalar_fn_t {
+  public:
+    json_escape_t (const str &n, ptr<expr_list_t> l, int lineno);
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 
 #endif /* _LIBRFN_OKRFN_H_ */
