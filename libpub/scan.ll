@@ -385,6 +385,9 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 
 <P3_STR>{
 [%$][{]		{ yy_push_state (P3); return T_P3_BEGIN_EXPR; }
+\\n		{ yylval.ch = '\n'; return T_P3_CHAR; }
+\\t		{ yylval.ch = '\t'; return T_P3_CHAR; }
+\\r		{ yylval.ch = '\r'; return T_P3_CHAR; }
 \n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 [\[\]]		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
