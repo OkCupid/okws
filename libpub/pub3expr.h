@@ -133,6 +133,17 @@ namespace pub3 {
     //-----------------------------------------------------------
 
     //-----------------------------------------------------------
+    // One can push arguments onto a fair number of different objects
+    // (like idenitifers, runtime functions, and in the future, references
+    // to function (like function pointers). 
+    // 
+
+    virtual bool unshift_argument (ptr<expr_t> e) { return false; }
+
+    //
+    //-------------------------------------------------------------
+
+    //-----------------------------------------------------------
     // in pub2::output_conf2_t::output_set_func, there is an attempt
     // made to flatten objects.  for pub3, objects have already been
     // flattened, so just noop
@@ -212,8 +223,7 @@ namespace pub3 {
     int64_t eval_as_int (eval_t e) const { return to_int (); }
     u_int64_t eval_as_uint (eval_t e) const { return to_uint (); }
   };
-
-  //-----------------------------------------------------------------------
+  //----------------------------------------------------------------------
 
   class expr_null_t : public expr_static_t {
   public:
@@ -269,22 +279,6 @@ namespace pub3 {
   protected:
     ptr<expr_t> _t1, _t2;
     bool eval_internal (eval_t e) const;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class expr_pipe_t : public expr_frozen_t {
-  public:
-    expr_pipe_t (ptr<expr_t> l, ptr<expr_t> r, int lineno)
-      : expr_frozen_t (lineno), _left (l), _right (r) {}
-    expr_pipe_t (const xpub3_pipe_t &x);
-    const char *get_obj_name () const { return "pub3::expr_pipe_t"; }
-    bool to_xdr (xpub3_expr_t *x) const;
-
-    ptr<const pval_t> eval (eval_t e) const { return NULL; }
-
-  protected:
-    ptr<expr_t> _left, _right;
   };
 
   //-----------------------------------------------------------------------
@@ -414,18 +408,18 @@ namespace pub3 {
     expr_ref_t (int l) : expr_t (l) {}
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
 
-    ptr<const pval_t> eval (eval_t e) const;
-    ptr<pval_t> eval_freeze (eval_t e) const;
-    str eval_as_str (eval_t e) const;
-    bool eval_as_null (eval_t e) const;
-    ptr<rxx> eval_as_regex (eval_t e) const;
+    virtual ptr<const pval_t> eval (eval_t e) const;
+    virtual ptr<pval_t> eval_freeze (eval_t e) const;
+    virtual str eval_as_str (eval_t e) const;
+    virtual bool eval_as_null (eval_t e) const;
+    virtual ptr<rxx> eval_as_regex (eval_t e) const;
 
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
 
   protected:
     ptr<const pval_t> deref (eval_t *e) const;
     virtual ptr<const pval_t> deref_step (eval_t *e) const = 0;
-    ptr<const pval_t> eval_internal (eval_t e) const;
+    virtual ptr<const pval_t> eval_internal (eval_t e) const;
 
   };
 
@@ -470,13 +464,42 @@ namespace pub3 {
   public:
     expr_varref_t (const str &s, int l) : expr_ref_t (l), _name (s) {}
     expr_varref_t (const xpub3_ref_t &x);
-    bool to_xdr (xpub3_expr_t *x) const;
+    virtual bool to_xdr (xpub3_expr_t *x) const;
     str to_identifier () const { return _name; }
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
-    const char *get_obj_name () const { return "pub3::expr_varref_t"; }
+    virtual const char *get_obj_name () const { return "pub3::expr_varref_t"; }
+
   protected:
     ptr<const pval_t> deref_step (eval_t *e) const;
     str _name;
+  };
+
+  //-----------------------------------------------------------------------
+
+  // The parser doesn't know at allocation time if a variable reference
+  // is a variable reference or rather a function in a pipeline. 
+  // Therefore, this class is used in conjunction with the parser
+  // to capture that dual-nature/uncertainty.  NOTE that we'll never
+  // need to ship one of these over the wire via the xpub protocol,
+  // since by that time, the true nature of this beast is known.
+  class expr_varref_or_rfn_t : public expr_varref_t {
+  public:
+    expr_varref_or_rfn_t (const str &s, int l) : expr_varref_t (s, l) {}
+    virtual bool to_xdr (xpub3_expr_t *x) const;
+    bool unshift_argument (ptr<expr_t> e);
+
+    const char *get_obj_name () const { return "pub3::expr_varref_or_rfn_t"; }
+
+    ptr<const pval_t> eval (eval_t e) const;
+    ptr<pval_t> eval_freeze (eval_t e) const;
+    str eval_as_str (eval_t e) const;
+    ptr<rxx> eval_as_regex (eval_t e) const;
+    bool eval_as_null (eval_t e) const;
+
+  protected:
+    ptr<const expr_t> get_rfn () const;
+    ptr<expr_list_t> _arglist;
+    mutable ptr<expr_t> _rfn;
   };
 
   //-----------------------------------------------------------------------
@@ -616,6 +639,8 @@ namespace pub3 {
     str eval_as_str (eval_t e) const;
     bool eval_as_bool (eval_t e) const { return to_bool (); }
     ptr<rxx> eval_as_regex (eval_t e) const;
+
+    void push_front (ptr<expr_t> e);
 
     // to JSON-style string
     scalar_obj_t to_scalar () const;

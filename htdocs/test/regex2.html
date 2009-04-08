@@ -5,8 +5,8 @@
 regex: %{rxx}<br>
 
 {% for (i, v) {{
-%{i} => {% if (match (rxx, "i", i)) {{ MATCH! }}
-              (true)                {{ nope }} %}<br>
+%{i} => {% if (match (rxx, i)) {{ MATCH! }}
+              (true)           {{ nope }} %}<br>
 }} %}
 
 <br>

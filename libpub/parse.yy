@@ -564,7 +564,10 @@ p3_inclusive_OR_expr: p3_equality_expr
 	       }
 	       | p3_inclusive_OR_expr T_P3_PIPE p3_equality_expr
 	       {
-	          $$ = New refcounted<pub3::expr_pipe_t> ($1, $3, PLINENO);
+	          if (!$3->unshift_argument ($1)) {
+		     PWARN("Cannot push argument onto non-function");
+		     PARSEFAIL;
+		  }
 	       }
 	       ;
 
@@ -669,7 +672,10 @@ p3_postfix_expr:
 
 p3_primary_expr: p3_identifier 
            { 
-	      $$ = New refcounted<pub3::expr_varref_t> ($1, PLINENO);
+              /* See comment in pub3expr.h -- this identifier might be
+	       * a function call in a pipeline; we just don't know yet!
+	       */
+	      $$ = New refcounted<pub3::expr_varref_or_rfn_t> ($1, PLINENO);
 	   }
            | p3_constant       
 	   { 

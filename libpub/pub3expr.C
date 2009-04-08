@@ -2,6 +2,7 @@
 #include "pub3expr.h"
 #include "parseopt.h"
 #include "okformat.h"
+#include "pub3func.h"
 
 //-----------------------------------------------------------------------
 
@@ -1459,6 +1460,65 @@ pub3::expr_str_t::to_regex () const
   ptr<rxx> ret;
   ret = str2rxx (NULL, _val, NULL);
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_varref_or_rfn_t::unshift_argument (ptr<expr_t> x)
+{
+  if (!_arglist) {
+    _arglist = New refcounted<expr_list_t> (_lineno);
+  }
+  _arglist->push_front (x);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+#define EXPR_VARREF_EVAL(ret,func) \
+  ret							\
+  pub3::expr_varref_or_rfn_t::func (eval_t e) const	\
+  {							\
+    ret r;						\
+    ptr<const expr_t> rfn = get_rfn ();			\
+    if (rfn) {						\
+      r = rfn->func (e);				\
+    } else {						\
+      r = expr_varref_t::func (e);			\
+    }							\
+    return r;						\
+  }
+
+EXPR_VARREF_EVAL(ptr<const pval_t>, eval)
+EXPR_VARREF_EVAL(ptr<pval_t>, eval_freeze)
+EXPR_VARREF_EVAL(str, eval_as_str)
+EXPR_VARREF_EVAL(ptr<rxx>, eval_as_regex)
+EXPR_VARREF_EVAL(bool, eval_as_null)
+
+//-----------------------------------------------------------------------
+
+ptr<const pub3::expr_t>
+pub3::expr_varref_or_rfn_t::get_rfn () const
+{
+  if (_arglist && !_rfn) {
+    _rfn = pub3::rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
+  }
+  return _rfn;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_list_t::push_front (ptr<expr_t> e)
+{
+  // XXX - hack -- push_back and then bubble to the front!
+  push_back (e);
+  for (size_t i = size () - 1; i > 0; i--) {
+    ptr<expr_t> tmp = (*this)[i];
+    (*this)[i] = (*this)[i-1];
+    (*this)[i-1] = tmp;
+  }
 }
 
 //=======================================================================
