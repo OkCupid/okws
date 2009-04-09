@@ -54,7 +54,7 @@ typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1,
 	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
 	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
 	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13,
-	       PFILE_PUB3_VAR = 14 } pfile_el_type_t;
+	       PFILE_PUB3_VAR = 14, PFILE_NESTED_ENV = 15 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_GUY = 1,
@@ -1643,7 +1643,9 @@ public:
   const pfile_sec_t *sec () const { return _sec; }
   void output (output_t *o, penv_t *e) const;
   static ptr<nested_env_t> alloc (const xpub_section_t &s);
+  static ptr<nested_env_t> alloc (const xpub_section_t *s);
   bool to_xdr (xpub_section_t *x) const;
+  pfile_sec_t *take ();
 
   // For pub2
   void publish (pub2_iface_t *i, output_t *o, penv_t *g, xpub_status_cb_t cb,
@@ -1655,6 +1657,33 @@ public:
 private:
   pfile_sec_t *_sec;
   pfile_frame_t _frm;
+};
+
+//-----------------------------------------------------------------------
+
+class pfile_nested_env_t : public pfile_el_t {
+public:
+  pfile_nested_env_t (ptr<nested_env_t> e) : _env (e) {}
+  pfile_nested_env_t (const xpub_section_t &s);
+
+  bool to_xdr (xpub_obj_t *x) const;
+  void output (output_t *o, penv_t *e) const {}
+
+  void publish (pub2_iface_t *i, output_t *o, penv_t *g, xpub_status_cb_t cb,
+		CLOSURE) const
+  {
+    if (_env) _env->publish (i, o, g, cb); 
+  }
+
+  pfile_el_type_t get_type () const { return PFILE_NESTED_ENV; }
+
+  bool publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g) const
+  { return _env ? _env->publish_nonblock (i, o, g) : true; }
+  const char *get_obj_name () const { return "pfile_nested_env_t"; }
+
+private:
+  ptr<nested_env_t> _env;
+  
 };
 
 //-----------------------------------------------------------------------

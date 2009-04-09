@@ -2492,3 +2492,13 @@ pfile_sec_t::hadd_el_list (const ptr<vec<pfile_el_t *> > v)
 
 //-----------------------------------------------------------------------
 
+pfile_sec_t *
+nested_env_t::take ()
+{
+  pfile_sec_t *ret = _sec;
+  _sec = NULL;
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+

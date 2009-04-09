@@ -1,8 +1,8 @@
 {% for (r, list) {
 
-   if   (!r.first && r.last) {{ " and " }}
-   elif (!r.first)           {{ ", " }}
+   if   (!r.first && r.last) {{ and  }}
+   elif (!r.first)           {{,  }}
   
-   print r.val
+   {{%{r.val}}}
 }
 %} 

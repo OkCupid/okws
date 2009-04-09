@@ -36,7 +36,8 @@ pub3::for_t::to_xdr (xpub_obj_t *x) const
     _env->to_xdr (&x->forloop->body);
   }
   if (_empty && _empty->sec ()) {
-    _empty->sec ()->to_xdr (&x->forloop->empty);
+    x->forloop->empty.alloc ();
+    _empty->sec ()->to_xdr (x->forloop->empty);
   }
   return true;
 }

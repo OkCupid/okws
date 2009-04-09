@@ -744,6 +744,8 @@ public:
     _tab.insert ("print", T_P3_PRINT);
     _tab.insert ("elif",  T_P3_ELIF);
     _tab.insert ("else",  T_P3_ELSE);
+    _tab.insert ("empty", T_P3_EMPTY);
+    _tab.insert ("load",  T_P3_LOAD);
   }
 
   bool lookup (const char *in, int *out) {

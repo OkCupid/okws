@@ -128,6 +128,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pub3::inline_var_t (*x.pub3_inline_var);
   case XPUB3_SET_FUNC:
     return New pub3::set_func_t (*x.set_func);
+  case XPUB_NESTED_ENV:
+    return New pfile_nested_env_t (*x.nested);
   default:
     return NULL;
   }
@@ -477,6 +479,34 @@ ptr<nested_env_t>
 nested_env_t::alloc (const xpub_section_t &s)
 {
   return New refcounted<nested_env_t> (New pfile_html_sec_t (s));
+}
+//-----------------------------------------------------------------------
+
+ptr<nested_env_t>
+nested_env_t::alloc (const xpub_section_t *s)
+{
+  ptr<nested_env_t> ret;
+  if (s) { 
+    ret = New refcounted<nested_env_t> (New pfile_html_sec_t (*s)); 
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+pfile_nested_env_t::pfile_nested_env_t (const xpub_section_t &s)
+  : _env (nested_env_t::alloc (s)) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pfile_nested_env_t::to_xdr (xpub_obj_t *o) const
+{
+  o->set_typ (XPUB_NESTED_ENV);
+  if (_env) {
+    _env->to_xdr (o->nested);
+  }
+  return true;
 }
 
 //-----------------------------------------------------------------------

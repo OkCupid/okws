@@ -87,6 +87,7 @@
 %token T_P3_TRUE
 %token T_P3_ELIF
 %token T_P3_ELSE
+%token T_P3_EMPTY
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -110,11 +111,13 @@
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <func> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
+%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
 %type <els> p3_statements p3_statements_opt p3_env;
+%type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 
 %type <relop> p3_relational_op;
-%type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list p3_tuple p3_list;
+%type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
+%type <p3exprlist> p3_tuple p3_list;
 %type <str> p3_identifier p3_bind_key;
 %type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
@@ -568,11 +571,17 @@ p3_statements: p3_statement
 	       }
 	       ;
 
+/* XXX - might want to fix the nested_env assignment, implemented 
+ * as such to avoid another object and level of redirection.  The
+ * downside is that scoping rules aren't followed, since the nested
+ * env is flattened into the parent env.
+ */
 p3_statement: p3_for
 	      | p3_cond
 	      | p3_set
 	      | p3_setl
 	      | p3_include
+	      | p3_nested_env { $$ = New pfile_nested_env_t ($1); }
 	      ;
 
 p3_expr: p3_logical_AND_expr
@@ -681,20 +690,19 @@ p3_unary_expr:
            }
 	   ;
 
-p3_postfix_expr:
-           p3_primary_expr 
-	   {
-	      $$ = $1;
-           } 
-	   | p3_postfix_expr '.' p3_identifier
+p3_dictref:  p3_postfix_expr '.' p3_identifier
 	   {
 	      $$ = New refcounted<pub3::expr_dictref_t> ($1, $3, PLINENO);
-           } 
-	   | p3_postfix_expr '['  p3_expr ']'
+	   }
+	   ;
+
+p3_vecref: p3_postfix_expr '['  p3_expr ']'
 	   {
 	      $$ = New refcounted<pub3::expr_vecref_t> ($1, $3, PLINENO);
-           } 
-	   | p3_identifier '(' p3_argument_expr_list_opt ')' 
+	   }
+	   ;
+
+p3_fncall: p3_identifier '(' p3_argument_expr_list_opt ')' 
 	   {
 	      /* Allocate a stub at first, which will be resolved 
 	       * into the true function either at evaluation time
@@ -703,39 +711,33 @@ p3_postfix_expr:
 	       */
 	      $$ = New refcounted<pub3::runtime_fn_stub_t> ($1, $3, PLINENO);
            }
-	   | p3_dictionary
-           {
-	      $$ = $1;
-           }
-	   | p3_list
-	   {
-	      $$ = $1;
-	   }
 	   ;
 
-p3_primary_expr: p3_identifier 
+p3_varref: p3_identifier 
            { 
               /* See comment in pub3expr.h -- this identifier might be
 	       * a function call in a pipeline; we just don't know yet!
 	       */
 	      $$ = New refcounted<pub3::expr_varref_or_rfn_t> ($1, PLINENO);
 	   }
-           | p3_constant       
-	   { 
-	      $$ = $1;
-           }
-	   | p3_string      
-	   { 
-              $$ = $1;
-	   }
-	   | '(' p3_expr ')'   
-           { 
-              $$ = $2;   
-           }
-	   | p3_regex
-	   {
-	      $$ = $1; 
-           }
+	   ;
+
+p3_recursion: '(' p3_expr ')' { $$ = $2; };
+
+p3_postfix_expr:
+             p3_primary_expr { $$ = $1; } 
+	   | p3_dictref      { $$ = $1; }
+	   | p3_vecref       { $$ = $1; }
+	   | p3_fncall       { $$ = $1; }
+	   | p3_dictionary   { $$ = $1; }
+	   | p3_list         { $$ = $1; }
+	   ;
+
+p3_primary_expr: p3_varref   { $$ = $1; }
+           | p3_constant     { $$ = $1; }
+	   | p3_string       { $$ = $1; }
+	   | p3_recursion    { $$ = $1; }
+	   | p3_regex        { $$ = $1; }
 	   ;
 
 p3_regex: T_P3_REGEX
@@ -1012,7 +1014,7 @@ p3_cond_clause: p3_elif_opt '(' p3_expr ')' p3_nested_env
 
 p3_empty_clause: 
          /* empty */                   { $$ = NULL; }
-	 | p3_comma_opt p3_nested_env  { $$ = $2; }
+	 | T_P3_EMPTY p3_nested_env    { $$ = $2; }
  	 ;
 
 		  
