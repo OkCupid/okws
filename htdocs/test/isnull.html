@@ -1,6 +1,7 @@
 
 
-{% setl { x : "", y : 10 + 20,
+{% setl { x : "", 
+          y : 10 + 20,
           d : { x : "here" } } %}
 
 {% if (isnull (x)) {{ {% set { x : "hi" } %} }} %}
@@ -11,10 +12,11 @@
       (isnull (z)) {{ z is null }}
       (true)       {{ ALL non-null! }} %}<br>
 
-{% if (isnull (d.x)) {{ should not see this! }} %}
-{% if (isnull (d.z)) {{ should see this! }} %}
+{% if (isnull (d.x)) {{ should not see this!<br> }} %}
+{% if (isnull (d.z)) {{ should see this!<br> }} %}
 
 x: %{isnull(x)}<br>
 y: %{isnull(y)}<br>
 z: %{isnull(z)}<br>
+%{"      strip it strip it           xx xx        xxx xx "|strip}<br>
           

@@ -88,7 +88,6 @@
 %token T_P3_ELIF
 %token T_P3_ELSE
 %token T_P3_EMPTY
-%token T_P3_PRINT
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT

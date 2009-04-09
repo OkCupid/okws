@@ -238,6 +238,17 @@ namespace rfn1 {
   };
 
   //-----------------------------------------------------------------------
+
+  class strip_t : public scalar_fn_t {
+  public:
+    strip_t (const str &n, ptr<expr_list_t> l, int lineno);
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
 };
 
 #endif /* _LIBRFN_OKRFN_H_ */

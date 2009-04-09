@@ -111,7 +111,6 @@ namespace rfn1 {
 
   //------------------------------------------------------------
 
-
   default_t::default_t (const str &nm, ptr<expr_list_t> e, int lineno)
     : scalar_fn_t (nm, e, lineno), 
       _arg ((*e)[0])
@@ -141,6 +140,51 @@ namespace rfn1 {
     }
 
     return ret;
+  }
+
+  //------------------------------------------------------------
+
+  strip_t::strip_t (const str &nm, ptr<expr_list_t> e, int lineno)
+    : scalar_fn_t (nm, e, lineno), 
+      _arg ((*e)[0]) {}
+
+  //------------------------------------------------------------
+
+  static bool
+  is_empty (const char *s)
+  {
+    for (const char *cp = s; *cp; cp++) {
+      if (!isspace (*cp)) return false;
+    }
+    return true;
+  }
+
+
+  //------------------------------------------------------------
+
+  scalar_obj_t
+  strip_t::eval_internal (eval_t e) const
+  {
+    scalar_obj_t ret;
+    str s = _arg->eval_as_str (e);
+    if (s) {
+      static rxx x ("\\s+");
+      vec<str> v;
+      split (&v, x, s);
+      strbuf b;
+      bool output = false;
+      for (size_t i = 0; i < v.size (); i++) {
+	if (!is_empty (v[i])) {
+	  if (output) { b << " "; }
+	  b << v[i];
+	  output = true;
+	}
+      }
+      s = b;
+    } else {
+      s = "";
+    }
+    return scalar_obj_t (s);
   }
 
   //------------------------------------------------------------
