@@ -130,6 +130,8 @@ pfile_el_t::alloc (const xpub_obj_t &x)
     return New pub3::set_func_t (*x.set_func);
   case XPUB_NESTED_ENV:
     return New pfile_nested_env_t (*x.nested);
+  case XPUB3_PRINT:
+    return New pub3::print_t (*x.print);
   default:
     return NULL;
   }

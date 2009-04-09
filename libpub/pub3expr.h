@@ -102,6 +102,7 @@ namespace pub3 {
     // Once objects are evaluated, they can be turned into....
 
     virtual ptr<const aarr_t> to_dict () const { return NULL; }
+    virtual ptr<aarr_t> to_dict () { return NULL; }
     virtual ptr<const vec_iface_t> to_vec_iface () const { return NULL; }
 
     virtual scalar_obj_t to_scalar () const { return scalar_obj_t (); }

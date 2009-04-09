@@ -116,6 +116,24 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class print_t : public pfile_func_t {
+  public:
+    print_t (int l) : pfile_func_t (l) {}
+    print_t (const xpub3_print_t &x);
+    
+    bool add (ptr<pub3::expr_list_t> l);
+    bool add (ptr<arglist_t> l) { return false; }
+    bool to_xdr (xpub_obj_t *x) const;
+    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+    void output (output_t *o, penv_t *e) const;
+
+  private:
+    ptr<pub3::expr_list_t> _args;
+  };
+
+
+  //-----------------------------------------------------------------------
+
   class set_func_t : public pfile_set_func_t {
   public:
     set_func_t (int l) : pfile_set_func_t (l) {}

@@ -88,6 +88,7 @@
 %token T_P3_ELIF
 %token T_P3_ELSE
 %token T_P3_EMPTY
+%token T_P3_PRINT
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -108,10 +109,10 @@
 %type <p3expr> p3_inline_expr p3_regex;
 %type <p3expr> p3_inclusive_OR_expr;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
-%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
+%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
+%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl p3_print;
 %type <els> p3_statements p3_statements_opt p3_env;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 
@@ -581,6 +582,7 @@ p3_statement: p3_for
 	      | p3_set
 	      | p3_setl
 	      | p3_include
+	      | p3_print
 	      | p3_nested_env { $$ = New pfile_nested_env_t ($1); }
 	      ;
 
@@ -929,6 +931,13 @@ p3_list: '[' p3_argument_expr_list_opt ']' { $$ = $2; } ;
 
 p3_tuple: '(' p3_argument_expr_list_opt ')' { $$ = $2; } ;
 
+/*
+ * A flexituple is a tuple that has the flexibility to drop the surrounding
+ * parentheses.  The p3_tuple is the straight-ahead tuple, while the
+ * implicit_tuple allows you to get away without the wrapper parens
+ * but cripples the flexibility of objects within the tuple (in particular
+ * to expressions wrapped in '()' since that would be ambiguous..
+ */
 p3_flexi_tuple: p3_tuple
 	| p3_implicit_tuple
 	;
@@ -964,7 +973,11 @@ p3_include: p3_include_or_load p3_flexi_tuple
            $$ = f;
 	};
 
-p3_set: T_P3_SET p3_dictionary 
+p3_set_arg: '(' p3_dictionary ')' { $$ = $2; }
+	    | p3_dictionary { $$ = $1; }
+	    ;
+
+p3_set: T_P3_SET p3_set_arg
 	{
            pub3::set_func_t *f = New pub3::set_func_t (PLINENO);
            f->add ($2);   
@@ -972,7 +985,7 @@ p3_set: T_P3_SET p3_dictionary
 	}
 	;
 
-p3_setl: T_P3_SETL p3_dictionary 
+p3_setl: T_P3_SETL p3_set_arg
 	{
            pfile_set_func_t *f = New pfile_set_local_func_t (PLINENO);
            f->add ($2);   
@@ -991,7 +1004,7 @@ p3_nested_env: nested_env { $$ = $1; }
 	;
 
 p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause 
-	 {
+        {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    if (!f->add ($2)) {
 	      PARSEFAIL;
@@ -999,7 +1012,18 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause
 	    f->add_env ($3);
 	    f->add_empty ($4);
 	    $$ = f;
-	 };
+	};
+
+p3_print: T_P3_PRINT p3_flexi_tuple
+       {
+           pub3::print_t *p = New pub3::print_t (PLINENO);
+	   if (!p->add ($2)) {
+	     PWARN("bad arguments passed to print");
+	     PARSEFAIL;
+	   }
+	   $$ = p;
+       }
+       ;
 
 p3_cond: T_P3_COND p3_cond_clause_list 
       {

@@ -229,6 +229,46 @@ pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::print_t::add (ptr<pub3::expr_list_t> l)
+{
+  bool ret = true;
+  if (!_args) {
+    _args = l;
+  } else {
+    ret = false;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::print_t::publish_nonblock (pub2_iface_t *f, output_t *o,
+				 penv_t *e) const
+{
+  pub3::eval_t eval (e, o);
+  for (size_t i = 0; _args && i < _args->size (); i++) {
+    ptr<const expr_t> x = (*_args)[i];
+    if (x) { 
+      str s = x->eval_as_str (eval);
+      if (s) {
+	o->output (e, s, false);
+      }
+    }
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::print_t::output (output_t *o, penv_t *e) const
+{
+}
+
+//-----------------------------------------------------------------------
+
 void
 pub3::set_func_t::output_runtime (output_t *o, penv_t *e) const
 {

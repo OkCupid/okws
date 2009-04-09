@@ -24,7 +24,8 @@ enum xpub_obj_typ_t {
   XPUB3_INLINE_VAR = 17,
   XPUB3_SET_FUNC = 18,
   XPUB3_LOAD = 19,
-  XPUB_NESTED_ENV = 20
+  XPUB_NESTED_ENV = 20,
+  XPUB3_PRINT = 21
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -472,6 +473,11 @@ struct xpub3_regex_t {
   string opts<>;
 };
 
+struct xpub3_print_t {
+   int lineno;
+   xpub3_expr_list_t *args;
+};
+
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
@@ -585,6 +591,8 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
    xpub3_expr_t pub3_expr;
  case XPUB_NESTED_ENV:
    xpub_section_t nested;
+ case XPUB3_PRINT:
+   xpub3_print_t print;
 };
 
 enum xpub_status_typ_t {
