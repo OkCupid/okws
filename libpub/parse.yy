@@ -100,7 +100,7 @@
 %type <p3cclist> p3_cond_clause_list;
 %type <p3cc> p3_cond_clause;
 
-%type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr;
+%type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr p3_nonparen_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
 %type <p3expr> p3_primary_expr p3_constant p3_additive_expr;
 %type <p3expr> p3_multiplicative_expr;
@@ -118,10 +118,10 @@
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
 %type <p3exprlist> p3_tuple p3_list;
+%type <p3exprlist> p3_flexi_tuple p3_implicit_tuple;
 %type <str> p3_identifier p3_bind_key;
 %type <num> p3_character_constant p3_boolean_constant;
 %type <dbl> p3_floating_constant;
-
 
 %type <bl> p3_equality_op p3_additive_op;
 
@@ -740,6 +740,15 @@ p3_primary_expr: p3_varref   { $$ = $1; }
 	   | p3_regex        { $$ = $1; }
 	   ;
 
+p3_nonparen_expr: p3_fncall { $$ = $1; }
+	   | p3_dictionary  { $$ = $1; }
+	   | p3_list        { $$ = $1; }
+	   | p3_constant    { $$ = $1; }
+	   | p3_string      { $$ = $1; }
+	   | p3_regex       { $$ = $1; }
+	   | p3_varref      { $$ = $1; }
+	   ;
+
 p3_regex: T_P3_REGEX
 	  {
 	     str err;
@@ -920,13 +929,32 @@ p3_list: '[' p3_argument_expr_list_opt ']' { $$ = $2; } ;
 
 p3_tuple: '(' p3_argument_expr_list_opt ')' { $$ = $2; } ;
 
+p3_flexi_tuple: p3_tuple
+	| p3_implicit_tuple
+	;
+
+p3_implicit_tuple: 
+          p3_nonparen_expr
+	{
+	  ptr<pub3::expr_list_t> l = 
+             New refcounted<pub3::expr_list_t> (PLINENO);
+	  l->push_back ($1);
+          $$ = l;
+	}
+	| p3_implicit_tuple ',' p3_nonparen_expr
+	{
+	  $1->push_back ($3);
+      	  $$ = $1;
+	}
+	;
+
 p3_include_or_load: 
           T_P3_INCLUDE { $$ = New pub3::include_t (PLINENO); }
         | T_P3_LOAD    { $$ = New pub3::load_t (PLINENO); }
 	;
 		   
 	
-p3_include: p3_include_or_load p3_tuple 
+p3_include: p3_include_or_load p3_flexi_tuple 
         {
            str err;
            pub3::include_t *f = $1;
@@ -962,7 +990,7 @@ p3_nested_env: nested_env { $$ = $1; }
 	}
 	;
 
-p3_for: T_P3_FOR p3_tuple p3_nested_env p3_empty_clause 
+p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause 
 	 {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    if (!f->add ($2)) {
