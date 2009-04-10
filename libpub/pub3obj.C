@@ -211,7 +211,8 @@ namespace pub3 {
   obj_t &
   obj_t::set_obj (obj_t in)
   {
-    if (_ref) { 
+    // XXX not really sure what to do with this!
+    if (_ref && in.obj () && !in._ref) { 
       _ref->set (in.obj ()); 
     } else {
       _ref = in._ref;
