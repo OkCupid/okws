@@ -414,6 +414,7 @@ namespace pub3 {
     virtual str eval_as_str (eval_t e) const;
     virtual bool eval_as_null (eval_t e) const;
     virtual ptr<rxx> eval_as_regex (eval_t e) const;
+    virtual bool eval_as_bool (eval_t e) const;
 
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
 

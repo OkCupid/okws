@@ -107,6 +107,25 @@ pub3::expr_logical_t::eval (eval_t e) const
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_ref_t::eval_as_bool (eval_t e) const
+{
+  bool q = e.set_silent (true);
+  ptr<const pval_t> v = eval_internal (e);
+
+  bool ret = false;
+
+  if (v && !v->is_null ()) {
+    ret = v->to_bool ();
+  }
+
+  e.set_silent (q);
+  return ret;
+}
+
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_ref_t::eval_as_null (eval_t e) const
 {
   bool q = e.set_silent (true);

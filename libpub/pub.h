@@ -776,6 +776,7 @@ public:
   virtual ptr<aarr_arg_t> to_aarr () { return NULL; }
   virtual ptr<const aarr_arg_t> to_aarr () const { return NULL; }
   virtual bool is_null () const { return false; }
+  virtual bool to_bool () const { return true; }
   virtual ptr<rxx> to_regex () const { return NULL; }
   virtual ptr<pub_regex_t> to_pub_regex () { return NULL; }
   virtual ptr<pub_range_t> to_range () { return NULL; }
