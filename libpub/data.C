@@ -463,6 +463,8 @@ pfile_switch_t::eval_for_output (output_t *o, penv_t *e) const
   return pse;
 }
 
+//-----------------------------------------------------------------------
+
 void
 nvtab_t::insert (nvpair_t *p)
 {
@@ -474,17 +476,34 @@ nvtab_t::insert (nvpair_t *p)
   super_t::insert (p);
 }
 
+//-----------------------------------------------------------------------
+
 void
 aarr_t::add (nvpair_t *p)
 {
   aar.insert (p);
 }
 
+//-----------------------------------------------------------------------
+
 void
 aarr_t::remove (nvpair_t *p)
 {
   aar.remove (p);
 }
+
+//-----------------------------------------------------------------------
+
+void
+aarr_t::remove (const str &s)
+{
+  nvpair_t *p = aar[s];
+  if (p) {
+    aar.remove (p);
+  }
+}
+
+//-----------------------------------------------------------------------
 
 void
 gcode_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const

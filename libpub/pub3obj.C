@@ -5,6 +5,15 @@ namespace pub3 {
   //=======================================================================
 
   void
+  obj_ref_dict_t::set (ptr<pval_t> v)
+  {
+    if (!v) v = expr_null_t::alloc ();
+    dict ()->replace (_key, v);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
   obj_ref_vec_t::set (ptr<pval_t> v)
   {
     if (_vec) {
@@ -211,8 +220,20 @@ namespace pub3 {
   obj_t &
   obj_t::set_obj (obj_t in)
   {
-    // XXX not really sure what to do with this!
-    if (_ref && in.obj () && !in._ref) { 
+
+    // Tricky: what happens when A is a reference, B is a reference
+    // and we assign A = B? 
+    //
+    // We're going to mimic C++-style semantics.  If A is just being
+    // constructed, then assign A's reference to point to B's reference.
+    // In such a case, _ref will be NULL, reref will be true, and in._ref
+    // will be true.
+    //
+    // If A is being reassigned, then set *A equal to whatever B
+    // references.
+    //
+    
+    if (_ref && !in._ref) {
       _ref->set (in.obj ()); 
     } else {
       _ref = in._ref;

@@ -233,6 +233,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const { return false; }
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
     bool eval_as_null (eval_t e) const { return true; }
+    static ptr<expr_null_t> alloc (int l = -1);
   };
 
   //-----------------------------------------------------------------------

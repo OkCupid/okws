@@ -64,6 +64,25 @@ pub3::json::quote (const str &s)
 
 //-----------------------------------------------------------------------
 
+static ptr<pub3::expr_null_t> g_null;
+
+ptr<pub3::expr_null_t>
+pub3::expr_null_t::alloc (int l)
+{
+  ptr<pub3::expr_null_t> ret;
+  if (l == -1) {
+    if (!g_null) {
+      g_null = New refcounted<expr_null_t> ();
+    }
+    ret = g_null;
+  } else {
+    ret = New refcounted<expr_null_t> (l);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 ptr<pval_t>
 pub3::expr_frozen_t::eval_freeze (eval_t e) const
 {

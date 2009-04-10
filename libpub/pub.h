@@ -328,6 +328,7 @@ public:
   aarr_t &add (const str &n, ptr<zbuf> zb);
   aarr_t &add (const str &n, const strbuf &b) { return add (n, str (b)); }
   void remove (nvpair_t *p);
+  void remove (const str &s);
 
   aarr_t &replace (const str &n, ptr<pval_t> v);
   ptr<pval_t> &value_ref (const str &n);

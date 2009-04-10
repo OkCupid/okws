@@ -26,7 +26,7 @@ namespace pub3 {
   class obj_ref_dict_t : public obj_ref_t {
   public:
     obj_ref_dict_t (ptr<expr_dict_t> d, const str &k) : _dict (d), _key (k) {}
-    void set (ptr<pval_t> v) { dict ()->replace (_key, v); }
+    void set (ptr<pval_t> v);
     ptr<pval_t> get () { return dict ()->lookup_ptr (_key); }
     ptr<const pval_t> get () const { return dict ()->lookup_ptr (_key); }
     
