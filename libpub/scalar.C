@@ -56,7 +56,7 @@ bool
 scalar_obj_t::_p_t::to_uint64 (u_int64_t *out) const
 {
   bool ret = false;
-  if (_s) {
+  if (_s && _s.len ()) {
     ret = convertuint (_s, out);
   }
   return ret;
@@ -148,6 +148,7 @@ scalar_obj_t::_p_t::set (const str &s)
   _s = s;
   _double_cnv = CNV_NONE;
   _int_cnv = CNV_NONE;
+  _uint_cnv = CNV_NONE;
 }
 
 void
@@ -234,7 +235,7 @@ scalar_obj_t::_p_t::clear ()
   _s = NULL;
   _d = 0.0;
   _i = 0;
-  _double_cnv = _int_cnv = CNV_NONE;
+  _uint_cnv = _double_cnv = _int_cnv = CNV_NONE;
 }
 
 bool
