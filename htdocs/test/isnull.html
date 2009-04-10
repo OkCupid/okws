@@ -2,7 +2,10 @@
 
 {% setl { x : "", 
           y : 10 + 20,
-          d : { x : "here" } } %}
+          d : { x : "here" },
+          ev : [],
+          nev: [ 0 ] } %}
+        
 
 {% if (isnull (x)) {{ {% set { x : "hi" } %} }} %}
 
@@ -30,3 +33,7 @@ z: %{isnull(z)}<br>
           
 !x: %{!x}<br>
 !z: %{!z}<br>
+!d.x: %{!d.x}<br>
+!y: %{!y}<br>
+!ev: %{!ev}<br>
+!nev: %{!nev}<br>
