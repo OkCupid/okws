@@ -249,3 +249,19 @@ xml_gobj_t::xml_gobj_t (ptr<xml_element_t> x)
 
 
 //=======================================================================
+
+void
+xml_obj_const_t::to_pub3 (pub3::obj_t *o) const
+{
+  if (_el) {
+    const char *n = _el->xml_typename ();
+    if (n) {
+      warn << "top type: " << n << "\n";
+    } else {
+      warn << "fuck\n";
+    }
+    _el->to_pub3 (o);
+  }
+}
+
+//=======================================================================

@@ -19,4 +19,12 @@ x: %{isnull(x)}<br>
 y: %{isnull(y)}<br>
 z: %{isnull(z)}<br>
 %{"      strip it strip it           xx xx        xxx xx "|strip}<br>
+
+{% if (isnull(foo)) {{ foo is NULL!}}
+   else             {{ foo is <b>not</b> NULL}} %}<br>
+
+{% if (!isnull(bar)) {{ bar is <b>not</b>NULL}}
+   elif (false)      {{ ok? }}
+   else              {{ always here }}
+%}<br>
           

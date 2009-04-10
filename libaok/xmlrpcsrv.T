@@ -131,7 +131,7 @@ oksrvc_xmlrpc_base_t::init_optmap ()
 static bool
 load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
 	   str *fn, u_int *opts, aarr_t *a, str *lang,
-	   bool *conf)
+	   bool *conf, pub_vers_t vers, pub3::obj_t *p3o)
 {
   static const char *FN = "filename";
   static const char *OPTS = "options";
@@ -157,8 +157,18 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
   }
   for (size_t j = 0; j < x(VARS).size (); j++) {
     xml_obj_const_t o = x(VARS)[j];
-    if (o.name () && o.name ().len ()) {
-      a->add (o.name (), str (o.value ()));
+    str nm = o.name ();
+    if (nm && nm.len ()) {
+      switch (vers) {
+      case PUB_V1:
+	a->add (nm, str (o.value ()));
+	break;
+      case PUB_V3:
+	o.to_pub3 (p3o);
+	break;
+      default:
+	break;
+      }
     }
   }
 
@@ -216,7 +226,8 @@ aarr2xml (ptr<aarr_t> a, penv_t *env)
 }
 
 tamed void
-okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb, 
+				    pub_vers_t vers)
 {
   tvars {
     xml_resp_t r;
@@ -233,6 +244,8 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
     bool conf;
     ptr<pub2::ok_iface_t> iface;
     penv_t *env;
+    pub3::obj_t o;
+    aarr_t *aap;
   }
 
   // need an env for conf files ?
@@ -246,9 +259,10 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
   twait {
     for (i = 0; i < q.size (); i++) {
       aa.deleteall ();
-      if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang, &conf)) {
+      if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang, &conf, vers, &o)) {
 	calls.push_back (i);
 	iface = xml_pub2_local (lang);
+	aap = (vers == PUB_V1) ? &aa : o.dict ();
 	if (conf) {
 	  conf_out[i] = New refcounted<aarr_t> ();
 	  iface->run_cfg_full (fn, mkevent (pub_errc[i], dummy),
@@ -257,7 +271,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
 	  out[i] = New refcounted<zbuf> ();
 	  iface->run_full (out[i], fn, 
 			   mkevent (pub_errc[i], dummy), 
-			   &aa, opts);
+			   aap, opts);
 	}
       } else {
 	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;

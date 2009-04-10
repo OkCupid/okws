@@ -31,6 +31,7 @@
 #include "smartvec.h"
 #include "okws_sfs.h"
 #include "pscalar.h"
+#include "pub3obj.h"
 
 class xml_struct_t;
 class xml_array_t;
@@ -153,6 +154,7 @@ public:
   virtual bool has_cdata () const { return false; }
   virtual bool add (ptr<xml_element_t> e) { return false; }
   virtual bool close_tag () { return true; }
+  virtual void to_pub3 (pub3::obj_t *o) const;
 };
 
 class xml_container_t : public xml_element_t,
@@ -458,6 +460,7 @@ public:
   ptr<xml_double_t> clone_typed () const
   { return New refcounted<xml_double_t> (_val); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
+  void to_pub3 (pub3::obj_t *o) const { *o = _val; }
 private:
   const char *to_const_char (int *sz) const;
   double _val;
@@ -494,6 +497,8 @@ public:
   { return New refcounted<xml_int_t> (_tag, _val); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
 
+  void to_pub3 (pub3::obj_t *o) const { *o = _val; }
+
 private:
   const str _tag;
   int _val;
@@ -525,6 +530,7 @@ public:
   ptr<xml_str_t> clone_typed () const 
   { return New refcounted<xml_str_t> (_val); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
+  void to_pub3 (pub3::obj_t *o) const { *o = _val; }
 private:
   str _val;
 };
@@ -603,6 +609,8 @@ public:
   const char * py_open_container () const { return "{"; }
   const char * py_close_container () const { return "}"; }
 
+  void to_pub3 (pub3::obj_t *o) const;
+
 private:
   qhash<str, size_t> _members;
 };
@@ -639,6 +647,7 @@ public:
   bool assign_to (ptr<xml_element_t> to);
   bool set_pointer_to_me (ptr<xml_data_t> *d);
   bool set_pointer_to_me (ptr<xml_value_t> *v);
+  void to_pub3 (pub3::obj_t *o) const;
 
   ptr<xml_array_t> clone_typed () const ;
   ptr<xml_element_t> clone () const { return clone_typed (); }
@@ -691,6 +700,7 @@ public:
   ptr<xml_value_t> clone_typed () const
   { return New refcounted<xml_value_t> (_e ? _e->clone () : _e); }
   ptr<xml_element_t> clone () const { return clone_typed (); }
+  void to_pub3 (pub3::obj_t *o) const;
   
 private:
   ptr<xml_element_t> _e;
@@ -731,6 +741,8 @@ public:
 
   bool is_type (xml_obj_typ_t t) const 
   { return member_value () && member_value ()->is_type (t); }
+
+  void to_pub3 (pub3::obj_t *o) const;
 
 private:
   ptr<xml_name_t> _member_name;

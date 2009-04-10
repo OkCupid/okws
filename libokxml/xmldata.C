@@ -1084,5 +1084,59 @@ xml_generic_t::make_so ()
 
 //-----------------------------------------------------------------------
 
+void
+xml_array_t::to_pub3 (pub3::obj_t *out) const
+{
+  for (size_t i = 0; _data && i < _data->size (); i++) {
+    ptr<const xml_element_t> el = (*_data)[i];
+    pub3::obj_t o;
+    if (el) { el->to_pub3 (&o); }
+    out->push_back  (o);
+  }
+}
+
 //-----------------------------------------------------------------------
+
+void
+xml_struct_t::to_pub3 (pub3::obj_t *out) const
+{
+  qhash_const_iterator_t<str, size_t> it (_members);
+  const str *k;
+  size_t v;
+  while ((k = it.next (&v))) {
+    ptr<const xml_element_t> el = (*this)[v];
+    if (el) { el->to_pub3 (out); }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+xml_member_t::to_pub3 (pub3::obj_t *out) const
+{
+  str n;
+  pub3::obj_t val;
+  if (_member_name && (n = _member_name->value ()) && _member_value) {
+    _member_value->to_pub3 (&val);
+    (*out)(n) = val;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+xml_element_t::to_pub3 (pub3::obj_t *o) const
+{
+  warn << "failed to convert to pub3: " << xml_typename () << "\n";
+}
+
+//-----------------------------------------------------------------------
+
+void
+xml_value_t::to_pub3 (pub3::obj_t *o) const
+{
+  if (_e) { _e->to_pub3 (o); }
+}
+
+
 //=======================================================================

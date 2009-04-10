@@ -26,6 +26,7 @@
 #define _LIBAHTTP_OKXMLOBJ_H_
 
 #include "okxmldata.h"
+#include "pub3obj.h"
 
 //
 // What's this?
@@ -86,6 +87,7 @@ public:
   xml_obj_const_t () {}
   xml_obj_const_t (const xml_obj_base_t &w) : _el (w.el ()) {}
 
+  void to_pub3 (pub3::obj_t *o) const;
   ptr<const xml_element_t> el () const { return _el; }
 private:
   ptr<const xml_element_t> _el;

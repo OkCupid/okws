@@ -211,11 +211,15 @@ namespace pub3 {
   obj_t &
   obj_t::set_obj (obj_t in)
   {
-    _ref = in._ref;
-    _obj = in._obj;
-    _vec = in._vec;
-    _dict = in._dict;
-    _scalar = in._scalar;
+    if (_ref) { 
+      _ref->set (in.obj ()); 
+    } else {
+      _ref = in._ref;
+      _obj = in._obj;
+      _vec = in._vec;
+      _dict = in._dict;
+      _scalar = in._scalar;
+    }
     return (*this);
   }
 

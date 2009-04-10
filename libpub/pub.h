@@ -71,6 +71,8 @@ typedef enum { PUBSTAT_OK = 0,
 	       PUBSTAT_PARSE_ERROR = 3,
 	       PUBSTAT_READ_ERROR = 4 } pubstat_t;
 
+typedef enum { PUB_V1 = 1, PUB_V2 = 2, PUB_V3 = 3 } pub_vers_t;
+
 xpub_status_typ_t pub_stat2status (pubstat_t in);
 
 typedef enum { EXPLORE_PARSE = 0, EXPLORE_FNCALL = 1,
