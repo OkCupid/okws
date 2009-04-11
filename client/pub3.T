@@ -34,6 +34,7 @@
 #include "pub2.h"
 #include "pub3.h"
 #include "okrfn.h"
+#include "aios.h"
 
 //-----------------------------------------------------------------------
 
@@ -55,6 +56,7 @@ namespace pub3 {
     vec<str> _files;
     str _argfile;
     pub3::obj_dict_t _dict;
+    vec<str> _print_vars;
   };
 
 };
@@ -98,10 +100,15 @@ pub3::eng_t::run (evi_t ev)
     warn << "** failed to parse arguments file: " << _argfile << "\n";
     rc = -2;
   }
-  
 
   for (i = 0; i < _files.size () && rc == 0; i++) {
     twait { run_file (_files[i], mkevent (rc)); }
+  }
+
+  for (i = 0; i < _print_vars.size () && rc == 0; i++) {
+    str v = _pub->cfg (_print_vars [i]);
+    if (!v) { v = "null"; }
+    aout << _print_vars[i] << ": " << v << "\n";
   }
 
   ev->trigger (rc);
@@ -114,7 +121,12 @@ usage ()
 {
   warnx << "usage: " << progname 
 	<< " [-wevh] [-j <jaildir>] [-f <conf>] [-o <objfile>] [-a <argfile>] "
+	<< " [-p <v1> -p <v2> .. ] "
 	<< "<file-1> <file-2> ..\n"
+	<< "\n"
+	<< "    - Variables specified with -p will be printed after all files\n"
+	<< "      are processed.\n"
+	<< "\n"
 	<< "    (Pub v3, OKWS" << OKWS_VERSION << ")\n";
 }
 
@@ -142,8 +154,11 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     _config = v;
   }
 
-  while ((ch = getopt (argc, argv, "a:diwej:f:vh")) != -1) {
+  while ((ch = getopt (argc, argv, "a:diwej:f:vhp:")) != -1) {
     switch (ch) {
+    case 'p':
+      _print_vars.push_back (optarg);
+      break;
     case 'a':
       _argfile = optarg;
       break;
@@ -226,7 +241,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     if (!_jaildir) {
       run = false;
       rc = -1;
-    } else if (_files.size () == 0) {
+    } else if (_files.size () == 0 && _print_vars.size () == 0) {
       run = false;
       rc = -1;
       warn << "XX no files given! need at least one\n";
