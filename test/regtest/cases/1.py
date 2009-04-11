@@ -5,9 +5,16 @@
 #
 #-----------------------------------------------------------------------
 
+#
+# a list of the functions and features to test
+#
 test_fns =  [ "isnull(%s)", "!%s", "%s|default" , '%s|default("")', 
               '%s|default("xx")' ]
 
+#
+# a list of the keys to test, followed by the expected results
+# when the keys are run through the above test functions.
+#
 test_keys = [ ("x", ["0", "0", "hi", "hi", "hi"]),
               ("y.k1", ["0", "0,", "key 1", "key 1", "key 1"]),
               ("y.k4", ["1", "1", "", "", "xx"]),
@@ -45,7 +52,6 @@ isnull(y.k2): 0
 isnull(y.k3): 0
 !y.k2: 1
 """
-
 
 #-----------------------------------------------------------------------
 

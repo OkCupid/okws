@@ -3,6 +3,15 @@ import os
 import time
 import sys
 import signal
+import glob
+
+##=======================================================================
+
+class RegTestError (Exception):
+    def __init__ (self, s):
+        self._s = s
+    def __str__ (self):
+        return repr (self._s)
 
 ##=======================================================================
 
@@ -13,6 +22,14 @@ def msg (m):
         for l in m.split ('\n'):
             print l
 
+
+##=======================================================================
+
+def strip_ext (f, ext):
+    ln = len (ext)
+    if (f[-ln:] == ext):
+        f = f[0:-ln]
+    return f 
 
 ##=======================================================================
 
@@ -31,16 +48,67 @@ class Const:
 
 class TestCase:
 
-    def __init__ (self, f):
-        self._filename = f
+    def __init__ (self, d):
+        for k in d.keys ():
+            setattr (self, "_" + k, d[k])
 
-    def load (self):
-        self._mod = __import__ (f)
+##=======================================================================
 
-    def run (self):
-        self.load ()
-        
-        
+class TestCaseLoader:
+
+    ##----------------------------------------
+
+    def __init__ (self):
+        pass
+
+    ##----------------------------------------
+
+    def load_dir (self, d):
+        v = []
+        files = glob.glob ("%s/*.py" % d)
+        for f in files:
+            v += load_file (f)
+
+    ##----------------------------------------
+
+    def load_file (self, f):
+
+        f = strip_ext (f, ".py")
+        try:
+            mod = __import__ (f)
+        except ImportError, e:
+            raise RegTestError, "failed to import test case: %s", f
+
+        v = []
+        n = 0
+
+        try:
+            for c in mod.cases:
+                v["name"] = "%s.%d" (f, n)
+                v += [ TestCase (c) ]
+                n++;
+        except AttributeError, e:
+            pass
+
+
+
+        return v
+
+    ##----------------------------------------
+
+    def load (self, inlist):
+        out = []
+        for f in inlist:
+            if not os.exists (f):
+                raise RegTestError, "file does not exist: %s" % f
+            elif os.isdir (f):
+                out += self.load_dir (f)
+            elif os.isfile (f):
+                out += self.load_file (f)
+            else:
+                raise RegTestError, "file does not exist: %s" % f
+
+        return out
 
 ##=======================================================================
 
@@ -77,9 +145,10 @@ class OkwsServerInstance:
 
 class RegTester:
     
-    def __init__ (self, cnst):
+    def __init__ (self, cnst, files):
         self._cnst = cnst
         self._okws = OkwsServerInstance (cnst)
+        self._files = files
 
     def run (self):
         self._okws.run ()
@@ -90,7 +159,7 @@ class RegTester:
 
 def main (argv):
     c = Const ()
-    r = RegTester (c)
+    r = RegTester (c, files)
     r.run ()
 
 ##=======================================================================
