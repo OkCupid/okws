@@ -18,13 +18,29 @@ def msg (m):
 
 class Const:
 
-    test = [ "okd/okld", "-f", "test/system/okws_config" ]
+    config = "test/system/okws_config"
+    exe = "okd/okld"
+    test = [ Const.exe, "-f", Const.config ]
     port = 8081
     hostaddr = "127.0.0.1"
 
     def __init__ (self):
         pass
 
+##=======================================================================
+
+class TestCase:
+
+    def __init__ (self, f):
+        self._filename = f
+
+    def load (self):
+        self._mod = __import__ (f)
+
+    def run (self):
+        self.load ()
+        
+        
 
 ##=======================================================================
 
