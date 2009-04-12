@@ -1,4 +1,4 @@
-import os
+import imp
 import time
 import sys
 import signal
@@ -6,6 +6,13 @@ import glob
 import re
 from subprocess import Popen, PIPE
 import copy
+import os
+import urllib
+
+#
+# need this mod to get imp.* working properly...
+#
+sys.path = [''] + sys.path 
 
 ##=======================================================================
 
@@ -24,7 +31,7 @@ ERROR = 3
 report_level = INFO
 
 def msg (m, level = INFO):
-    if verbose or level >= report_level:
+    if level >= report_level:
         for l in m.split ('\n'):
             print l
 
@@ -50,7 +57,7 @@ class Const:
     pub_exe = "client/pub"
     scratch = "regtest-scratch"
     static = "static"
-    failed_files = "regtest-failures"
+    failed_files_dir = "regtest-failures"
     
     okld_test = [ okld_exe, "-f", okws_config ]
     pub_run = [ pub_exe, "-f", pub_config ]
@@ -95,7 +102,7 @@ class Const:
     #-----------------------------------------
 
     def scratch_dir (self):
-        d = self._jail_dir
+        d = self.jail_dir ()
         if d is not None:
             d = d + "/" + self.scratch
         return d
@@ -104,6 +111,11 @@ class Const:
 
     def static_url (self):
         return self.url (self.static)
+
+    #-----------------------------------------
+
+    def scratch_url (self):
+        return self.url ("%s/%s" % (self.static, self.scratch))
 
     #-----------------------------------------
 
@@ -118,9 +130,9 @@ class Const:
     #-----------------------------------------
 
     def write_failure_file (self, nm, data):
-        d = self.failure_dir ()
+        d = self.failed_files_dir
         self.mkdir (d, "failures")
-        fn = "%s/%s-%s" % (self._failure_dir, nm, "response");
+        fn = "%s/%s-%s" % (self.failed_files_dir, nm, "response");
         try:
             f = open (fn, "w")
             f.write (data)
@@ -171,7 +183,7 @@ class TestCase:
         self._outcome_rxx = None
         self._service = None
         self._htdoc = None
-        self._const = const
+        self._const = cnst
         self._scratch_file = None
         self._result = False
 
@@ -203,6 +215,7 @@ class TestCase:
                 v_out += [ e ]
             else:
                 v_out += [ char_subst (e, '$', '%') ]
+            i += 1
         return ''.join (v_out)
         
     ##----------------------------------------
@@ -228,8 +241,8 @@ class TestCase:
             n = self._htdoc
         
         if n:
-            u = self._const.static_url ()
-            r =  "%s/%s" % (u, n)
+            u = self._const.scratch_url ()
+            r =  "%s/%s.html" % (u, n)
         elif self._service:
             r = self._const.service_url (self._service)
         else:
@@ -264,7 +277,9 @@ class TestCase:
 
     def fetch (self):
         u = self.file_url ()
-        self._okws_resp = ''.join (urllib.urlopen (u))
+        print "url: " + u
+        resp = ''.join (urllib.urlopen (u))
+        return resp
 
     ##----------------------------------------
 
@@ -289,8 +304,9 @@ class TestCase:
 
     ##----------------------------------------
 
-    def report_failure (self, msg):
-        msg ("%s .... FAILED!! (%s)" % self.name (), msg, ERROR)
+    def report_failure (self, problem):
+        txt = "%s .... FAILED!! (%s)" % (self.name (), problem)
+        msg (txt, ERROR)
 
     ##----------------------------------------
 
@@ -307,7 +323,7 @@ class TestCase:
                 f = self._const.write_failure_file (self.name (), d)
                 self.report_failure ("data mismatch; got '%s'" % f)
         else:
-            report_failure ("empty reply")
+            self.report_failure ("empty reply")
         return ret
                 
     ##----------------------------------------
@@ -327,22 +343,24 @@ class TestCaseLoader:
         v = []
         files = glob.glob ("%s/*.py" % d)
         for f in files:
-            v += load_file (f)
+            v += self.load_file (f)
+        return v
 
     ##----------------------------------------
 
     def load_file (self, f):
-
         f = strip_ext (f, ".py")
-        try:
-            mod = __import__ (f)
-        except ImportError, e:
-            raise RegTestError, "failed to import test case: %s", f
 
         try:
-            v = self.load_cases (mod) 
+            r = imp.find_module (f)
+            mod = imp.load_module ('rtmod', *r)
+        except ImportError, e:
+            raise RegTestError, "failed to load test case: %s" % f
+
+        try:
+            v = self.load_cases (f, mod) 
             if not v:
-                v = [ self.load_single_case (mod) ]
+                v = [ self.load_single_case (f, mod) ]
         except RegTestError, e:
             myerr (f, e)
             raise RegTestError, "cannot load test case file: %s" % f
@@ -351,7 +369,7 @@ class TestCaseLoader:
             
     ##----------------------------------------
 
-    def load_case (self, mod):
+    def load_single_case (self, f, mod):
         """If the file has a single case, then it must have 
         the required fields as global data fields."""
 
@@ -360,12 +378,13 @@ class TestCaseLoader:
         for n in dir (mod):
             if not rxx.match (n):
                 d[n] = getattr (mod, n)
+                d["name"] = f
 
         return TestCase (self._const, d)
 
     ##----------------------------------------
 
-    def load_cases (self, mod):
+    def load_cases (self, f, mod):
         """If the file has specified multiple cases, then we're
         looking for an array named 'cases' that has one test
         case per entry."""
@@ -375,7 +394,8 @@ class TestCaseLoader:
         try:
             for c in mod.cases:
                 # XXX won't work if more than 26 subcases :)
-                v["name"] = "%s%c" (f, ord('a') + n)
+                # XXX strip out leading dirs...
+                c["name"] = "%s%c" % (f, ord('a') + n)
                 v += [ TestCase (self._const, c) ]
                 n += 1
         except AttributeError, e:
@@ -449,10 +469,6 @@ class RegTester:
 
     def run_file (self, f):
         rc = True
-        v = self._loader.load (f)
-        for c in v:
-            if not c.run ():
-                rc = False
         return rc
 
     ##-----------------------------------------
@@ -462,11 +478,12 @@ class RegTester:
         self._okws.run ()
         time.sleep (2)
 
-        for f in files:
-            if not self.run_file (f):
+        v = self._loader.load (files)
+        for c in v:
+            if not c.run ():
                 rc = False
 
-        self._okws.kill ()
+        #self._okws.kill ()
         return rc
 
 ##=======================================================================
@@ -474,10 +491,10 @@ class RegTester:
 def main (argv):
     c = Const ()
     r = RegTester (c)
-    res = r.run (argv)
+    res = r.run (argv[1:])
     rc = -2
     if res: rc = 0
-    os.exit (rc)
+    sys.exit (rc)
 
 ##=======================================================================
 
