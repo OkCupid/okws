@@ -112,7 +112,7 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     strbuf b ("for: second argument is not an iterable vector");
     o->output_err (e, b, lineno);
     
-  } else if (!v) {
+  } else if (!v || v->size () == 0) {
 
     twait { _empty->publish (iface, o, e, mkevent (res)); }
 
