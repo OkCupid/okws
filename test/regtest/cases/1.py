@@ -62,7 +62,7 @@ filedata_fmt = """
           y : { k1 : "key 1", 
                 k2 : [ "enie", "menie", "minie", "moe"],
                 k3 : [] },
-          e : "" } }
+          e : "" } $}
 """ + teststr
 
 

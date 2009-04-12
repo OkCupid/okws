@@ -214,6 +214,14 @@ class Config:
 
     #-----------------------------------------
 
+    def expand_test_case (self, n):
+        if n[0] != '/' and self._casedir:
+            return '%s/%s' % (self._casedir, n)
+        else:
+            return n
+
+    #-----------------------------------------
+
     def mkdir (self, d, desc):
 
         if d is None:
@@ -235,6 +243,16 @@ def char_subst (s, f, r):
         if c == f: c = r
         out += c
     return out
+
+##=======================================================================
+
+def dig_to_char (n):
+    if n < 26:
+        return "%c" % (ord('a') + n)
+    elif n < 52:
+        return  "%c" % (ord('A') + n - 26)
+    else:
+        return ".%d" % n
 
 ##=======================================================================
 
@@ -265,13 +283,14 @@ class TestCase:
 
     ##----------------------------------------
 
+    @classmethod
     def translate_data (self, in_data):
         """Input data from Python files uses {$, $} and ${, instead
         of the equivalent commands with '%'.  This is to prevent us
         from doing lots of escaping when making test cases. This
         function makes the appropriate translation back."""
 
-        rxx = re.compile ("({$|$}|${)")
+        rxx = re.compile ("({\\$|\\$}|\\${)")
         v_in = rxx.split (in_data)
         v_out = []
         i = 0
@@ -293,7 +312,7 @@ class TestCase:
     def filepath (self):
         n = self.name ()
         d = self._config.scratch_dir ()
-        return "%s/%s" % (d, n)
+        return "%s/%s.html" % (d, n)
 
     ##----------------------------------------
 
@@ -404,37 +423,42 @@ class TestCaseLoader:
 
     ##----------------------------------------
 
-    def load_dir (self, d):
+    def load_dir (self, name, full):
         v = []
-        files = glob.glob ("%s/*.py" % d)
-        for f in files:
-            v += self.load_file (f)
+        files = glob.glob ("%s/*.py" % full)
+        for file in files:
+            this_full = file
+            d,f = os.path.split (file)
+            this_name = "%s/%s" % (name, f)
+            
+            v += self.load_file (this_name, this_full)
         return v
 
     ##----------------------------------------
 
-    def load_file (self, f):
-        f = strip_ext (f, ".py")
+    def load_file (self, name, full):
+        name = strip_ext (name, ".py")
+        full = strip_ext (full, ".py")
 
         try:
-            r = imp.find_module (f)
+            r = imp.find_module (full)
             mod = imp.load_module ('rtmod', *r)
         except ImportError, e:
-            raise RegTestError, "failed to load test case: %s" % f
+            raise RegTestError, "failed to load test case: %s" % full
 
         try:
-            v = self.load_cases (f, mod) 
+            v = self.load_cases (name, full, mod)
             if not v:
-                v = [ self.load_single_case (f, mod) ]
+                v = [ self.load_single_case (name, full, mod) ]
         except RegTestError, e:
-            myerr (f, e)
-            raise RegTestError, "cannot load test case file: %s" % f
+            myerr (full, e)
+            raise RegTestError, "cannot load test case file: %s" % full
 
         return v
             
     ##----------------------------------------
 
-    def load_single_case (self, f, mod):
+    def load_single_case (self, name, full, mod):
         """If the file has a single case, then it must have 
         the required fields as global data fields."""
 
@@ -443,13 +467,14 @@ class TestCaseLoader:
         for n in dir (mod):
             if not rxx.match (n):
                 d[n] = getattr (mod, n)
-                d["name"] = f
+                d["name"] = name
+                d["fullpath"] = full
 
         return TestCase (self._config, d)
 
     ##----------------------------------------
 
-    def load_cases (self, f, mod):
+    def load_cases (self, name, full, mod):
         """If the file has specified multiple cases, then we're
         looking for an array named 'cases' that has one test
         case per entry."""
@@ -458,9 +483,8 @@ class TestCaseLoader:
         n = 0
         try:
             for c in mod.cases:
-                # XXX won't work if more than 26 subcases :)
-                # XXX strip out leading dirs...
-                c["name"] = "%s%c" % (f, ord('a') + n)
+                c["name"] = "%s%c" % (name, dig_to_char (n))
+                c["full"] = full
                 v += [ TestCase (self._config, c) ]
                 n += 1
         except AttributeError, e:
@@ -473,14 +497,15 @@ class TestCaseLoader:
     def load (self, inlist):
         out = []
         for f in inlist:
-            if not os.path.exists (f):
-                raise RegTestError, "file does not exist: %s" % f
-            elif os.path.isdir (f):
-                out += self.load_dir (f)
-            elif os.path.isfile (f):
-                out += self.load_file (f)
+            full = self._config.expand_test_case (f)
+            if not os.path.exists (full):
+                raise RegTestError, "file does not exist: %s" % full
+            elif os.path.isdir (full):
+                out += self.load_dir (f, full)
+            elif os.path.isfile (full):
+                out += self.load_file (f, full)
             else:
-                raise RegTestError, "file does not exist: %s" % f
+                raise RegTestError, "file does not exist: %s" % full
 
         return out
 
@@ -559,6 +584,12 @@ class RegTester:
 ##=======================================================================
 
 def main (argv):
+
+    if False:
+        print \
+            TestCase.translate_data ("  {$ foo foo $}   more ${other} and more" )
+        sys.exit (0)
+
     c = Config ()
     files = c.parseopts (argv[1:])
     r = RegTester (c)
