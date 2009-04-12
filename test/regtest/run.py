@@ -17,13 +17,19 @@ class RegTestError (Exception):
 
 ##=======================================================================
 
-verbose = True
+report_level = INFO
 
-def msg (m):
-    if verbose:
+INFO = 1
+RESULT = 2
+ERROR = 3
+
+def msg (m, level = INFO):
+    if verbose or level >= report_level:
         for l in m.split ('\n'):
             print l
 
+def myerr (f, e):
+    print >>sys.stderr, "XX %s: %s" % (f, e)
 
 ##=======================================================================
 
@@ -44,6 +50,7 @@ class Const:
     pub_exe = "client/pub"
     scratch = "regtest-scratch"
     static = "static"
+    failed_files = "regtest-failures"
     
     okld_test = [ okld_exe, "-f", okws_config ]
     pub_run = [ pub_exe, "-f", pub_config ]
@@ -110,19 +117,38 @@ class Const:
 
     #-----------------------------------------
 
+    def write_failure_file (self, nm, data):
+        d = self.failure_dir ()
+        self.mkdir (d, "failures")
+        fn = "%s/%s-%s" % (self._failure_dir, nm, "response");
+        try:
+            f = open (fn, "w")
+            f.write (data)
+        except OSError, e:
+            raise RegTestError, "failure file failure: %s" % e
+        return fn
+
+    #-----------------------------------------
+
     def make_scratch_dir (self):
         d = self.scratch_dir ()
+        self.mkdir (d, "scratch")
+        return d
+
+    #-----------------------------------------
+
+    def mkdir (self, d, desc):
+
         if d is None:
-            raise RegTestError, "cannot find Pub jail or scratch dir"
+            raise RegTestError, "cannot make empty '%s' dir" % desc
         if os.path.exists (d):
             if !os.path.isdir (d):
-                raise RegTestError, "scratch dir (%s) is not a dir!" % d
+                raise RegTestError, "%s dir (%s) is not a dir!" % (desc, d)
         else:
             try:
                 os.mkdir (d)
             except OSError, e:
                 raise RegTestError, e
-        return d
 
 ##=======================================================================
 
@@ -146,6 +172,8 @@ class TestCase:
         self._service = None
         self._htdoc = None
         self._const = const
+        self._scratch_file = None
+        self._result = False
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
@@ -180,7 +208,7 @@ class TestCase:
     ##----------------------------------------
     
     def name (self):
-        return char_subst (self._name, '/', '-')
+        return char_subst (self._name, '/', '_')
 
     ##----------------------------------------
 
@@ -216,19 +244,73 @@ class TestCase:
         """Some test cases write data out to the htdocs directory, rather
         than requiring that the data exists as part of OKWS.  This function
         is in charge of writing that data if needs be."""
-        
+
+        if not self._filedata:
+            return
         self._const.make_scratch_dir ()
         out = self.filepath ()
         dat = self.translate_data (self._filedata)
-        f = fopen (out, "w")
+        f = open (out, "w")
         f.write (dat)
+        self._scratch_file = out
+
+    ##----------------------------------------
+
+    def cleanup (self):
+        if self._result and self._scratch_file:
+            os.unlink (self._scratch_file)
 
     ##----------------------------------------
 
     def fetch (self):
         u = self.file_url ()
-        return urllib.urlopen (u)
+        self._okws_resp = ''.join (urllib.urlopen (u))
+
+    ##----------------------------------------
+
+    def compare (self, txt):
+        res = False
+        if self._outcome_exact:
+            res = (self._outcome_exact == txt)
+        elif self._outcome_rxx:
+            rxx = re.compile (self._outcome_rxx)
+            res = rxx.match (txt)
+        elif self._outcome:
+            res = self._outcome.split () == txt.split ()
+        else:
+            raise RegTestError, "comparison failed; no outcome found"
+        self._result = res
+        return res
         
+    ##----------------------------------------
+
+    def report_success (self):
+        msg ("%s .... ok" % self.name (), RESULT)
+
+    ##----------------------------------------
+
+    def report_failure (self, msg):
+        msg ("%s .... FAILED!! (%s)" % self.name (), msg, ERROR)
+
+    ##----------------------------------------
+
+    def run (self):
+        self.write_data ()
+        d = self.fetch ()
+        ret = False
+        if d:
+            res = self.compare (d)
+            if res:
+                ret = True
+                self.report_success ()
+            else:
+                f = self._const.write_failure_file (self.name (), d)
+                self.report_failure ("data mismatch; got '%s'" % f)
+        else:
+            report_failure ("empty reply")
+        return ret
+                
+    ##----------------------------------------
 
 ##=======================================================================
 
@@ -292,7 +374,8 @@ class TestCaseLoader:
         n = 0
         try:
             for c in mod.cases:
-                v["name"] = "%s.%d" (f, n)
+                # XXX won't work if more than 26 subcases :)
+                v["name"] = "%s%c" (f, ord('a') + n)
                 v += [ TestCase (self._const, c) ]
                 n += 1
         except AttributeError, e:
@@ -331,7 +414,7 @@ class OkwsServerInstance:
             # child
             log = "okws.log"
             f = open (log, "w")
-            msg ("[%d] running OKWS (to log '%s')" % (os.getpid (), log))
+            msg ("[%d] running OKWS (to log '%s')" % (os.getpid (), log), INFO)
             for i in [ 1, 2 ]:
                 os.close (i)
                 os.dup (f.fileno ())
@@ -345,7 +428,7 @@ class OkwsServerInstance:
         pid = self._pid
         os.kill (pid, signal.SIGTERM)
         rc = os.wait4 (pid, 0)[1]
-        msg ("[%d] OKWS exit with rc=%d" % (pid, rc))
+        msg ("[%d] OKWS exit with rc=%d" % (pid, rc), INFO)
 
 ##=======================================================================
 
