@@ -202,10 +202,21 @@ class Config:
 
     #-----------------------------------------
 
+
     def write_failure_file (self, nm, data):
+        return self.write_debug_file (nm, data, "response")
+
+    #-----------------------------------------
+
+    def write_outcome_file (self, nm, data):
+        return self.write_debug_file (nm, data, "expected")
+
+    #-----------------------------------------
+
+    def write_debug_file (self, nm, data, typ):
         d = self.failed_files_dir
         self.mkdir (d, "failures")
-        fn = "%s/%s-%s" % (self.failed_files_dir, nm, "response");
+        fn = "%s/%s-%s" % (self.failed_files_dir, nm, typ)
         try:
             f = open (fn, "w")
             f.write (data)
@@ -475,7 +486,9 @@ input: %s
     ##----------------------------------------
 
     def run (self):
-        if self._config.explain_only ():
+        cfg = self._config
+
+        if cfg.explain_only ():
             self.explain ()
             return
 
@@ -489,8 +502,10 @@ input: %s
                 self.report_success ()
                 self.cleanup ()
             else:
-                f = self._config.write_failure_file (self.name (), d)
-                self.report_failure ("data mismatch; got '%s'" % f)
+                f = cfg.write_failure_file (self.name (), d)
+                f2 = cfg.write_outcome_file (self.name (), 
+                                             str (self._outcome_obj))
+                self.report_failure ("data mismatch; see '%s' & '%s'" % (f, f2))
         else:
             self.report_failure ("empty reply")
         return ret

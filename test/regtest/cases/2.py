@@ -24,21 +24,21 @@ def filedata_fn (func):
 {$
    %s %s
 
-   for i, v1 { print i, " " }
-   for i, v1 {{ ${i} }}
-   for (i, v1) { print (i, " ") }
-   for (i, v1) {{ ${i} }}
+   for i, v1 { print i, " " } print "\\n"
+   for i, v1 {{ ${i} }} print "\\n"
+   for (i, v1) { print (i, " ") } print "\\n"
+   for (i, v1) {{ ${i} }} print "\\n"
   
-   for (i, v2) {{${i.y}-}}
-   print " "
-   for (i, v2) {{${i.x} ${i.y}; }}
+   for (i, v2) {{${i.y}-}} print "\\n"
+   for (i, v2) {{${i.x} ${i.y}; }} print "\\n"
    
    for (i, v3) {{
      val=${i.val} last=${i.last} iter=${i.iter} odd=${i.odd} count=${i.count}
-   }}
+   }} 
+   print "\\n"
 
-   for (i, v4) { print i } empty {{ empty! }}
-   for (i, v9) { print i } empty {{ empty! }}
+   for (i, v4) { print i } empty {{ empty! }}  print "\\n"
+   for (i, v9) { print i } empty {{ empty! }}  print "\\n"
 
    for (r, table) {
      for (c, r.col) {
@@ -46,7 +46,6 @@ def filedata_fn (func):
      }
      print "\\n"
   }
-
 $}
 """ % (func, d)
 
