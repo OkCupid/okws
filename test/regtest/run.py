@@ -17,11 +17,11 @@ class RegTestError (Exception):
 
 ##=======================================================================
 
-report_level = INFO
-
 INFO = 1
 RESULT = 2
 ERROR = 3
+
+report_level = INFO
 
 def msg (m, level = INFO):
     if verbose or level >= report_level:
@@ -142,7 +142,7 @@ class Const:
         if d is None:
             raise RegTestError, "cannot make empty '%s' dir" % desc
         if os.path.exists (d):
-            if !os.path.isdir (d):
+            if not os.path.isdir (d):
                 raise RegTestError, "%s dir (%s) is not a dir!" % (desc, d)
         else:
             try:
@@ -388,11 +388,11 @@ class TestCaseLoader:
     def load (self, inlist):
         out = []
         for f in inlist:
-            if not os.exists (f):
+            if not os.path.exists (f):
                 raise RegTestError, "file does not exist: %s" % f
-            elif os.isdir (f):
+            elif os.path.isdir (f):
                 out += self.load_dir (f)
-            elif os.isfile (f):
+            elif os.path.isfile (f):
                 out += self.load_file (f)
             else:
                 raise RegTestError, "file does not exist: %s" % f
@@ -403,14 +403,18 @@ class TestCaseLoader:
 
 class OkwsServerInstance:
 
+    ##-----------------------------------------
+
     def __init__ (self, cnst):
         self._cnst = cnst
+
+    ##-----------------------------------------
 
     def run (self):
         pid = os.fork ()
 
         if pid == 0:
-            cmd = self._cnst.test
+            cmd = self._cnst.okld_test
             # child
             log = "okws.log"
             f = open (log, "w")
@@ -424,6 +428,8 @@ class OkwsServerInstance:
         else: 
             self._pid = pid
 
+    ##-----------------------------------------
+
     def kill (self):
         pid = self._pid
         os.kill (pid, signal.SIGTERM)
@@ -434,22 +440,44 @@ class OkwsServerInstance:
 
 class RegTester:
     
-    def __init__ (self, cnst, files):
+    def __init__ (self, cnst):
         self._cnst = cnst
         self._okws = OkwsServerInstance (cnst)
-        self._files = files
+        self._loader = TestCaseLoader (cnst)
 
-    def run (self):
+    ##-----------------------------------------
+
+    def run_file (self, f):
+        rc = True
+        v = self._loader.load (f)
+        for c in v:
+            if not c.run ():
+                rc = False
+        return rc
+
+    ##-----------------------------------------
+
+    def run (self, files):
+        rc = True
         self._okws.run ()
-        time.sleep (3)
+        time.sleep (2)
+
+        for f in files:
+            if not self.run_file (f):
+                rc = False
+
         self._okws.kill ()
+        return rc
 
 ##=======================================================================
 
 def main (argv):
     c = Const ()
-    r = RegTester (c, argv)
-    print c.pub_const ('JailDir')
+    r = RegTester (c)
+    res = r.run (argv)
+    rc = -2
+    if res: rc = 0
+    os.exit (rc)
 
 ##=======================================================================
 
