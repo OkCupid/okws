@@ -17,7 +17,7 @@ row: %{row}<br>
 
 <h2>Backwards-Compatibility</h2>
 {% for (r, push) {{ 
-   [[[Try $]]]%{r.val}<br>
+   [[[Try $]]]${r.val}<br>
 }} %}
 
 <h2>Inline List</h2>
@@ -31,7 +31,7 @@ row: %{row}<br>
 
 <h2>Push-Back</h2>
 {% for (r, push) {{ 
-   {% if (r.iter < 2) {{<i>}} %} [[[Try $]]]%{r.val} {% if (r.iter < 2) {{</i>}} %} 
+   {% if (r.iter < 2) {{<i>}} %} %{r.val} {% if (r.iter < 2) {{</i>}} %} 
    </br>}} 
 %}
 

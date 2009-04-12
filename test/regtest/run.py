@@ -332,7 +332,7 @@ class TestCase:
 
     def __init__ (self, config, d):
         self._filedata = None
-        self._desc = None
+        self._desc = ""
         self._outcome = None
         self._outcome_exact = None
         self._outcome_rxx = None
@@ -375,6 +375,11 @@ class TestCase:
     
     def name (self):
         return char_subst (self._name, '/', '_')
+
+    ##----------------------------------------
+
+    def desc (self):
+        return self._desc
 
     ##----------------------------------------
 
@@ -460,10 +465,12 @@ class TestCase:
 """---------------------------------------------------------------------
 name: %s
 
+desc: %s
+
 input: %s
 
 %s
-""" % (self.name (), self.filepath (), self._outcome_obj)
+""" % (self.name (), self.desc (), self.filepath (), self._outcome_obj)
 
     ##----------------------------------------
 

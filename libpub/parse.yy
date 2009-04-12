@@ -886,6 +886,11 @@ p3_string: '"' p3_string_elements_opt '"'
         {
            $$ = $2->compact ();
 	}
+	|
+	'\'' p3_string_elements_opt '\''
+	{
+	   $$ = $2->compact ();
+	}
 	;
 
 p3_string_elements_opt:

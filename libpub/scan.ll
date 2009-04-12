@@ -10,8 +10,8 @@
 static void begin_PSTR (int i, int mode);
 static void end_PSTR ();
 static void begin_STR (int i, int j);
-static void begin_P3_STR ();
-static void end_P3_STR ();
+static void begin_P3_STR (char ch);
+static bool end_P3_STR (char ch);
 static int  end_STR ();
 static int addch (int c1, int c2);
 static int addstr (const char *c, int l);
@@ -50,6 +50,7 @@ static char yy_p3_regex_close_char;
 static char yy_p3_regex_open_char;
 static int yy_p3_regex_start_line;
 strbuf yy_p3_regex_buf;
+static char yy_p3_str_char;
 
 
 %}
@@ -389,8 +390,16 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 [$]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
 [\[\]]		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
-["]		{ end_P3_STR (); return yytext[0]; }
-[^\\%$"\n\[\]]+	{ yylval.str = yytext; return T_P3_STRING; }
+["']		{ 
+                   if (end_P3_STR (yytext[0])) {
+		      return yytext[0];
+		   } else {
+		      yylval.ch = yytext[0];
+		      return T_P3_CHAR;
+		   }
+                }
+
+[^\\%$"'\n\[\]]+	{ yylval.str = yytext; return T_P3_STRING; }
 <<EOF>>         {   
 		    bracket_check_eof ();
  		    return yyerror (strbuf ("EOF found in str started on "
@@ -423,11 +432,10 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 "||"		 { return T_P3_OR; }
 "|"		 { return T_P3_PIPE; }
 &&		 { return T_P3_AND; }
-'[^']'		 { yylval.ch = yytext[1]; return T_P3_CHAR; }
 "%}"		 { pop_p3_func (); return T_P3_CLOSE; }
 
 [ \t]+		 { /* ignore */ }
-["] 		 { begin_P3_STR(); return yytext[0]; }
+["'] 		 { begin_P3_STR(yytext[0]); return yytext[0]; }
 
 .		 { return yyerror ("illegal token in Pub v3 environment"); }
 }
@@ -470,16 +478,22 @@ end_PSTR ()
 }
 
 void
-begin_P3_STR ()
+begin_P3_STR (char ch)
 {
+  yy_p3_str_char = ch;
   yy_push_state (P3_STR);
   yy_ssln = PLINENO;
 }
 
-void
-end_P3_STR ()
+bool
+end_P3_STR (char ch)
 {
-  yy_pop_state ();
+  bool ret = false;
+  if (yy_p3_str_char == ch) {
+    yy_pop_state (); 
+    ret = true;
+  }
+  return ret;
 }
 
 void
