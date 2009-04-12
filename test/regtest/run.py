@@ -567,7 +567,7 @@ input: %s%s
                 f2 = cfg.write_outcome_file (self.name (), 
                                              str (self._outcome_obj))
 
-                txt = "data mismatch; see '%s' v. '%s'" % (f, f2)
+                txt = "data mismatch: diff -wB %s %s" % (f, f2)
                 self.report_failure (txt)
         else:
             self.report_failure ("empty reply")
