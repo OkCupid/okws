@@ -8,11 +8,16 @@ from subprocess import Popen, PIPE
 import copy
 import os
 import urllib
+import getopt
+
+##=======================================================================
 
 #
 # need this mod to get imp.* working properly...
 #
 sys.path = [''] + sys.path 
+
+progname = sys.argv[0]
 
 ##=======================================================================
 
@@ -48,7 +53,36 @@ def strip_ext (f, ext):
 
 ##=======================================================================
 
-class Const:
+def usage (rc):
+    print \
+"""usage: %s [-q|-v] [-c<casedir>] [-e] <case1> <case2> ...
+
+    Run this testing harness from the top build directory.
+ 
+    Flags
+      -q, --quiet  
+          Only make output on error
+          
+      -v, --verbose
+          Output debug information and so on
+
+      -e, --exaplain 
+          don't run test case, just explain what it is
+
+      -c <casedir>, --casedir=<dir>
+          Supply a casedir to shorten the name of test cases; those
+          cases given without absolute paths with be considered relative
+          to the casedir. Typically set this equal to the top
+          directory in the source code tree that relates to regtesting.
+
+""" % (progname)
+    sys.exit (rc)
+
+
+
+##=======================================================================
+
+class Config:
 
     okws_config = "test/system/okws_config"
     pub_config = "test/system/pub_config"
@@ -68,10 +102,41 @@ class Const:
     #-----------------------------------------
 
     def __init__ (self):
+        self._casedir = None
+        self._explain_only = False
         self._jail_dir = None
         pass
 
     #-----------------------------------------
+
+    def parseopts (self, argv):
+        short_opts = "c:eqv"
+        long_opts = [ 'casedir=',
+                      'explain',
+                      'quiet',
+                      'verbose' ]
+
+        try:
+            opts,args = getopt.getopt (argv, short_opts, long_opts)
+        except getopt.GetoptError:
+            usage (-1)
+
+        for o,a in opts:
+
+            if False: pass
+
+            elif o in ("-c", "--casedir"):
+                self._casedir = a
+            elif o in ("-e", "--explain"):
+                self._explain_only = True
+            elif o in ("-q", "--quiet"):
+                report_level = ERROR
+            elif o in ("-v", "--verbose"):
+                report_level = INFO
+
+        return args
+
+    #----------------------------------------
 
     def pub_const (self, c):
         """Calls upon the pub v3 command-line client to lookup the value
@@ -175,7 +240,7 @@ def char_subst (s, f, r):
 
 class TestCase:
 
-    def __init__ (self, cnst, d):
+    def __init__ (self, config, d):
         self._filedata = None
         self._desc = None
         self._outcome = None
@@ -183,7 +248,7 @@ class TestCase:
         self._outcome_rxx = None
         self._service = None
         self._htdoc = None
-        self._const = cnst
+        self._config = config 
         self._scratch_file = None
         self._result = False
 
@@ -227,7 +292,7 @@ class TestCase:
 
     def filepath (self):
         n = self.name ()
-        d = self._const.scratch_dir ()
+        d = self._config.scratch_dir ()
         return "%s/%s" % (d, n)
 
     ##----------------------------------------
@@ -241,10 +306,10 @@ class TestCase:
             n = self._htdoc
         
         if n:
-            u = self._const.scratch_url ()
+            u = self._config.scratch_url ()
             r =  "%s/%s.html" % (u, n)
         elif self._service:
-            r = self._const.service_url (self._service)
+            r = self._config.service_url (self._service)
         else:
             raise RegTestError, "cannot fine appropriate URL for '%s'" % \
                 self._name
@@ -260,7 +325,7 @@ class TestCase:
 
         if not self._filedata:
             return
-        self._const.make_scratch_dir ()
+        self._config.make_scratch_dir ()
         out = self.filepath ()
         dat = self.translate_data (self._filedata)
         f = open (out, "w")
@@ -320,7 +385,7 @@ class TestCase:
                 ret = True
                 self.report_success ()
             else:
-                f = self._const.write_failure_file (self.name (), d)
+                f = self._config.write_failure_file (self.name (), d)
                 self.report_failure ("data mismatch; got '%s'" % f)
         else:
             self.report_failure ("empty reply")
@@ -335,7 +400,7 @@ class TestCaseLoader:
     ##----------------------------------------
 
     def __init__ (self, c):
-        self._const = c
+        self._config= c
 
     ##----------------------------------------
 
@@ -380,7 +445,7 @@ class TestCaseLoader:
                 d[n] = getattr (mod, n)
                 d["name"] = f
 
-        return TestCase (self._const, d)
+        return TestCase (self._config, d)
 
     ##----------------------------------------
 
@@ -396,7 +461,7 @@ class TestCaseLoader:
                 # XXX won't work if more than 26 subcases :)
                 # XXX strip out leading dirs...
                 c["name"] = "%s%c" % (f, ord('a') + n)
-                v += [ TestCase (self._const, c) ]
+                v += [ TestCase (self._config, c) ]
                 n += 1
         except AttributeError, e:
             pass
@@ -425,8 +490,8 @@ class OkwsServerInstance:
 
     ##-----------------------------------------
 
-    def __init__ (self, cnst):
-        self._cnst = cnst
+    def __init__ (self, config):
+        self._config = config  
 
     ##-----------------------------------------
 
@@ -434,7 +499,7 @@ class OkwsServerInstance:
         pid = os.fork ()
 
         if pid == 0:
-            cmd = self._cnst.okld_test
+            cmd = self._config.okld_test
             # child
             log = "okws.log"
             f = open (log, "w")
@@ -460,10 +525,10 @@ class OkwsServerInstance:
 
 class RegTester:
     
-    def __init__ (self, cnst):
-        self._cnst = cnst
-        self._okws = OkwsServerInstance (cnst)
-        self._loader = TestCaseLoader (cnst)
+    def __init__ (self, config):
+        self._config = config 
+        self._okws = OkwsServerInstance (config)
+        self._loader = TestCaseLoader (config)
 
     ##-----------------------------------------
 
@@ -494,9 +559,10 @@ class RegTester:
 ##=======================================================================
 
 def main (argv):
-    c = Const ()
+    c = Config ()
+    files = c.parseopts (argv[1:])
     r = RegTester (c)
-    res = r.run (argv[1:])
+    res = r.run (files)
     rc = -2
     if res: rc = 0
     sys.exit (rc)
