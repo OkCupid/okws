@@ -243,6 +243,7 @@ namespace pub3 {
     expr_bool_t (bool b) : expr_static_t (), _b (b) {}
     scalar_obj_t to_scalar () const;
     bool to_xdr (xpub3_expr_t *x) const { return false; }
+    static str to_str (bool b);
     str to_str () const;
     int64_t to_int () const { return _b; }
     u_int64_t to_uint () const { return _b; }

@@ -15,11 +15,11 @@ test_fns =  [ "isnull(%s)", "!%s", "%s|default" , '%s|default("")',
 # a list of the keys to test, followed by the expected results
 # when the keys are run through the above test functions.
 #
-test_keys = [ ("x", ["0", "0", "hi", "hi", "hi"]),
-              ("y.k1", ["0", "0,", "key 1", "key 1", "key 1"]),
-              ("y.k4", ["1", "1", "", "", "xx"]),
-              ("z", ["1", "1", "", "", "xx"]),
-              ("e", ["0", "1", "", "", ""]) ]
+test_keys = [ ("x", ["false", "false", "hi", "hi", "hi"]),
+              ("y.k1", ["false", "false", "key 1", "key 1", "key 1"]),
+              ("y.k4", ["true", "true", "", "", "xx"]),
+              ("z", ["true", "true", "", "", "xx"]),
+              ("e", ["false", "true", "", "", ""]) ]
 
 #-----------------------------------------------------------------------
 
@@ -47,10 +47,10 @@ def out_cases (k):
     return '\n'.join (v)
 
 outcome = '\n'.join ([ out_cases (k) for k in test_keys ]) + """
-isnull(y.k2): 0
-!y.k2: 0
-isnull(y.k3): 0
-!y.k2: 1
+isnull(y.k2): false
+!y.k2: false
+isnull(y.k3): false
+!y.k3: true
 """
 
 #-----------------------------------------------------------------------

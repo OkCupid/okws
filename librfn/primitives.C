@@ -32,6 +32,13 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  str
+  predicate_t::eval_as_str (eval_t e) const
+  {
+    bool b = eval_internal_bool (e);
+    return pub3::expr_bool_t::to_str (b);
+  }
+
   //-----------------------------------------------------------------------
 
   scalar_obj_t

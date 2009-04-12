@@ -47,7 +47,7 @@ namespace rfn1 {
     int64_t eval_as_int (eval_t e) const 
     { return eval_internal (e).to_int (); }
 
-    str eval_as_str (eval_t e) const
+    virtual str eval_as_str (eval_t e) const
     { return eval_internal (e).to_str (); }
 
     template<class T, size_t x, size_t y> static ptr<runtime_fn_t>
@@ -133,6 +133,7 @@ namespace rfn1 {
     predicate_t (const str &n, ptr<expr_list_t> el, int lineno)
       : scalar_fn_t (n, el, lineno) {}
     bool eval_as_bool (eval_t e) const { return eval_internal_bool (e); }
+    str eval_as_str (eval_t e) const;
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
     virtual bool eval_internal_bool (eval_t e) const = 0;

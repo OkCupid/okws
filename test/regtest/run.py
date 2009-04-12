@@ -33,7 +33,7 @@ INFO = 1
 RESULT = 2
 ERROR = 3
 
-report_level = INFO
+report_level = RESULT
 
 def msg (m, level = INFO):
     if level >= report_level:
@@ -109,6 +109,11 @@ class Config:
 
     #-----------------------------------------
 
+    def explain_only (self):
+        return self._explain_only
+
+    #-----------------------------------------
+
     def parseopts (self, argv):
         short_opts = "c:eqv"
         long_opts = [ 'casedir=',
@@ -120,6 +125,9 @@ class Config:
             opts,args = getopt.getopt (argv, short_opts, long_opts)
         except getopt.GetoptError:
             usage (-1)
+
+        global report_level
+        report_level = RESULT
 
         for o,a in opts:
 
@@ -256,6 +264,70 @@ def dig_to_char (n):
 
 ##=======================================================================
 
+class Outcome:
+
+    def __init__ (self, dat):
+        self._data = dat
+
+    def __str__ (self):
+        return "Expected Outcome (%s):\n%s" % (self.type (), self._data)
+
+    def compare (self, input):
+        raise NotImplementedError, "method Outcome::compare not implemented"
+
+    @classmethod
+    def alloc (self, k):
+        if k._outcome_exact:
+            return OutcomeExact (k._outcome_exact)
+        elif k._outcome:
+            return OutcomeApprox (k._outcome)
+        elif k._outcome_rxx:
+            return OutcomeRegex (k._outcome_rxx)
+        else:
+            raise RegTestError, "bad test case: no expected outcome given"
+
+##-----------------------------------------------------------------------
+
+class OutcomeExact (Outcome):
+
+    def __init__ (self, dat):
+        Outcome.__init__ (self, dat)
+
+    def type (self):
+        return "exact"
+
+    def compare (self, input):
+        return (input == self._data)
+
+##-----------------------------------------------------------------------
+
+class OutcomeApprox (Outcome):
+
+    def __init__ (self, dat):
+        Outcome.__init__ (self, dat)
+
+    def type (self):
+        return "approx"
+
+    def compare (self, input):
+        return (input.split () == self._data.split ())
+
+##-----------------------------------------------------------------------
+        
+class OutcomeRegex (Outcome):
+
+    def __init__ (self, rxx):
+        Outcome.__init__ (self, rxx)
+        self._rxx = re.compile (rxx)
+
+    def type (self):
+        return "approx"
+
+    def compare (self, input):
+        return self._rxx.match (input)
+
+##=======================================================================
+
 class TestCase:
 
     def __init__ (self, config, d):
@@ -273,10 +345,7 @@ class TestCase:
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
 
-        if not self._outcome \
-                and not self._outcome_exact \
-                and not self._outcome_rxx:
-            raise RegTestError, "bad test case: no expected outcome given"
+        self._outcome_obj = Outcome.alloc (self)
 
         if not self._filedata and not self._htdoc and not self._service:
             raise RegTestError, "bad test case: no input file given"
@@ -350,6 +419,7 @@ class TestCase:
         f = open (out, "w")
         f.write (dat)
         self._scratch_file = out
+        return out
 
     ##----------------------------------------
 
@@ -361,23 +431,13 @@ class TestCase:
 
     def fetch (self):
         u = self.file_url ()
-        print "url: " + u
         resp = ''.join (urllib.urlopen (u))
         return resp
 
     ##----------------------------------------
 
     def compare (self, txt):
-        res = False
-        if self._outcome_exact:
-            res = (self._outcome_exact == txt)
-        elif self._outcome_rxx:
-            rxx = re.compile (self._outcome_rxx)
-            res = rxx.match (txt)
-        elif self._outcome:
-            res = self._outcome.split () == txt.split ()
-        else:
-            raise RegTestError, "comparison failed; no outcome found"
+        res = self._outcome_obj.compare (txt)
         self._result = res
         return res
         
@@ -394,7 +454,24 @@ class TestCase:
 
     ##----------------------------------------
 
+    def explain (self):
+        f = self.write_data ()
+        print \
+"""---------------------------------------------------------------------
+name: %s
+
+input: %s
+
+%s
+""" % (self.name (), self.filepath (), self._outcome_obj)
+
+    ##----------------------------------------
+
     def run (self):
+        if self._config.explain_only ():
+            self.explain ()
+            return
+
         self.write_data ()
         d = self.fetch ()
         ret = False
@@ -403,6 +480,7 @@ class TestCase:
             if res:
                 ret = True
                 self.report_success ()
+                self.cleanup ()
             else:
                 f = self._config.write_failure_file (self.name (), d)
                 self.report_failure ("data mismatch; got '%s'" % f)
@@ -516,7 +594,8 @@ class OkwsServerInstance:
     ##-----------------------------------------
 
     def __init__ (self, config):
-        self._config = config  
+        self._config = config
+        self._pid = -1
 
     ##-----------------------------------------
 
@@ -537,14 +616,16 @@ class OkwsServerInstance:
 
         else: 
             self._pid = pid
+            time.sleep (2)
 
     ##-----------------------------------------
 
     def kill (self):
-        pid = self._pid
-        os.kill (pid, signal.SIGTERM)
-        rc = os.wait4 (pid, 0)[1]
-        msg ("[%d] OKWS exit with rc=%d" % (pid, rc), INFO)
+        if self._pid > 0:
+            pid = self._pid
+            os.kill (pid, signal.SIGTERM)
+            rc = os.wait4 (pid, 0)[1]
+            msg ("[%d] OKWS exit with rc=%d" % (pid, rc), INFO)
 
 ##=======================================================================
 
@@ -565,15 +646,23 @@ class RegTester:
 
     def run (self, files):
         rc = True
-        self._okws.run ()
+
+        if not self._config.explain_only ():
+            self._okws.run ()
 
         try:
-            time.sleep (2)
-
             v = self._loader.load (files)
+            ok = 0
+            tot = len (v)
             for c in v:
-                if not c.run ():
-                    rc = False
+                if c.run ():
+                    ok += 1
+            rc = (tot == ok)
+            if rc:
+                msg ("++ All %d tests passed. YES!!" % tot, RESULT)
+            else:
+                msg ("-- Only %d/%d tests passed. Booo." % (ok, tot), ERROR)
+            
         finally:
             # make sure we alway clean up after ourselves, that way
             # OKWS won't leave a stale socket, etc.
@@ -584,12 +673,6 @@ class RegTester:
 ##=======================================================================
 
 def main (argv):
-
-    if False:
-        print \
-            TestCase.translate_data ("  {$ foo foo $}   more ${other} and more" )
-        sys.exit (0)
-
     c = Config ()
     files = c.parseopts (argv[1:])
     r = RegTester (c)
