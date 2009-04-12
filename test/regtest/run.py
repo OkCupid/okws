@@ -483,7 +483,7 @@ class RegTester:
             if not c.run ():
                 rc = False
 
-        #self._okws.kill ()
+        self._okws.kill ()
         return rc
 
 ##=======================================================================
