@@ -89,7 +89,7 @@ class Config:
     
     okld_exe = "okd/okld"
     pub_exe = "client/pub"
-    scratch = "regtest-scratch"
+    _scratch = "regtest-scratch"
     static = "static"
     failed_files_dir = "regtest-failures"
     
@@ -177,8 +177,13 @@ class Config:
     def scratch_dir (self):
         d = self.jail_dir ()
         if d is not None:
-            d = d + "/" + self.scratch
+            d = d + "/" + self._scratch
         return d
+
+    #-----------------------------------------
+
+    def scratch_include_root(self):
+        return "/" + self._scratch
 
     #-----------------------------------------
 
@@ -188,7 +193,7 @@ class Config:
     #-----------------------------------------
 
     def scratch_url (self):
-        return self.url ("%s/%s" % (self.static, self.scratch))
+        return self.url ("%s/%s" % (self.static, self._scratch))
 
     #-----------------------------------------
 
@@ -343,6 +348,7 @@ class TestCase:
 
     def __init__ (self, config, d):
         self._filedata = None
+        self._filedata_inc = []
         self._desc = ""
         self._outcome = None
         self._outcome_exact = None
@@ -350,7 +356,7 @@ class TestCase:
         self._service = None
         self._htdoc = None
         self._config = config 
-        self._scratch_file = None
+        self._scratch_files = []
         self._result = False
 
         for k in d.keys ():
@@ -361,24 +367,34 @@ class TestCase:
         if not self._filedata and not self._htdoc and not self._service:
             raise RegTestError, "bad test case: no input file given"
 
+        if type (self._filedata) is list:
+            self._filedata_inc = self._filedata[1:]
+            self._filedata = self._filedata[0]
+
     ##----------------------------------------
 
-    @classmethod
     def translate_data (self, in_data):
         """Input data from Python files uses {$, $} and ${, instead
         of the equivalent commands with '%'.  This is to prevent us
         from doing lots of escaping when making test cases. This
         function makes the appropriate translation back."""
 
-        rxx = re.compile ("({\\$|\\$}|\\${)")
+        rxx = re.compile ("({\\$|\\$}|\\${|\\$\\$|\\$\\[\\d+\\])")
         v_in = rxx.split (in_data)
         v_out = []
         i = 0
+        inc_rxx = re.compile ("\\$\\[(\\d+)\\]")
         for e in v_in:
             if (i % 2 == 0):
                 v_out += [ e ]
+            elif e == "$$":
+                v_out += [ "$" ]
             else:
-                v_out += [ char_subst (e, '$', '%') ]
+                m = inc_rxx.match (e)
+                if m:
+                    v_out += [ self.include_path (int (m.group (1))) ]
+                else:
+                    v_out += [ char_subst (e, '$', '%') ]
             i += 1
         return ''.join (v_out)
         
@@ -398,6 +414,19 @@ class TestCase:
         n = self.name ()
         d = self._config.scratch_dir ()
         return "%s/%s.html" % (d, n)
+
+    ##----------------------------------------
+
+    def filepath_inc (self, id):
+        n = self.name ()
+        d = self._config.scratch_dir ()
+        return "%s/%s-%d.html" % ( d, n, id +1 )
+
+    ##----------------------------------------
+
+    def include_path (self, n):
+        p = self._config.scratch_include_root ()
+        return "%s/%s-%d.html" % (p, self.name (), n)
 
     ##----------------------------------------
 
@@ -429,19 +458,44 @@ class TestCase:
 
         if not self._filedata:
             return
+
         self._config.make_scratch_dir ()
         out = self.filepath ()
         dat = self.translate_data (self._filedata)
-        f = open (out, "w")
+        return self.write_data_inner (out, dat)
+
+    ##----------------------------------------
+
+    def write_data_inc (self, n):
+        """Those files that are included by the main test case should
+        also be written out."""
+
+        outfn = self.filepath_inc (n)
+        dat = self.translate_data (self._filedata_inc[n])
+        return self.write_data_inner (outfn, dat)
+
+    ##----------------------------------------
+
+    def write_data_inner (self, outfn, dat):
+        f = open (outfn, "w")
         f.write (dat)
-        self._scratch_file = out
-        return out
+        self._scratch_files += [ outfn ]
+        return outfn
+
+    ##----------------------------------------
+
+    def write_all (self):
+        d = self.write_data ()
+        for i in range (0, len (self._filedata_inc)):
+            self.write_data_inc (i)
+        return d
 
     ##----------------------------------------
 
     def cleanup (self):
-        if self._result and self._scratch_file:
-            os.unlink (self._scratch_file)
+        if self._result and self._scratch_files:
+            for f in self._scratch_files:
+                os.unlink (f)
 
     ##----------------------------------------
 
@@ -471,17 +525,24 @@ class TestCase:
     ##----------------------------------------
 
     def explain (self):
-        f = self.write_data ()
+        f = self.write_all ()
+        incs = ""
+
+        i = 0
+        for f in self._filedata_inc:
+            incs += "\n   -includes: " + self.filepath_inc (i)
+            i += 1
+
         print \
 """---------------------------------------------------------------------
 name: %s
 
 desc: %s
 
-input: %s
+input: %s%s
 
 %s
-""" % (self.name (), self.desc (), self.filepath (), self._outcome_obj)
+""" % (self.name (), self.desc (), self.filepath (), incs, self._outcome_obj)
 
     ##----------------------------------------
 
@@ -492,7 +553,7 @@ input: %s
             self.explain ()
             return
 
-        self.write_data ()
+        self.write_all ()
         d = self.fetch ()
         ret = False
         if d:
@@ -505,7 +566,9 @@ input: %s
                 f = cfg.write_failure_file (self.name (), d)
                 f2 = cfg.write_outcome_file (self.name (), 
                                              str (self._outcome_obj))
-                self.report_failure ("data mismatch; see '%s' & '%s'" % (f, f2))
+
+                txt = "data mismatch; see '%s' v. '%s'" % (f, f2)
+                self.report_failure (txt)
         else:
             self.report_failure ("empty reply")
         return ret
@@ -519,7 +582,8 @@ class TestCaseLoader:
     ##----------------------------------------
 
     def __init__ (self, c):
-        self._config= c
+        self._config = c
+        self._iter = 0
 
     ##----------------------------------------
 
@@ -539,10 +603,10 @@ class TestCaseLoader:
     def load_file (self, name, full):
         name = strip_ext (name, ".py")
         full = strip_ext (full, ".py")
-
+        self._iter += 1
         try:
             r = imp.find_module (full)
-            mod = imp.load_module ('rtmod', *r)
+            mod = imp.load_module ('rtmod-%d' % self._iter, *r)
         except ImportError, e:
             raise RegTestError, "failed to load test case: %s" % full
 
@@ -669,7 +733,9 @@ class RegTester:
     def run (self, files):
         rc = True
 
-        if not self._config.explain_only ():
+        eo = self._config.explain_only ()
+
+        if not eo:
             self._okws.run ()
 
         try:
@@ -680,7 +746,10 @@ class RegTester:
                 if c.run ():
                     ok += 1
             rc = (tot == ok)
-            if rc:
+
+            if eo:
+                pass
+            elif rc: 
                 msg ("++ All %d tests passed. YES!!" % tot, RESULT)
             else:
                 msg ("-- Only %d/%d tests passed. Booo." % (ok, tot), ERROR)
