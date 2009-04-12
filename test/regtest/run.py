@@ -476,14 +476,19 @@ class RegTester:
     def run (self, files):
         rc = True
         self._okws.run ()
-        time.sleep (2)
 
-        v = self._loader.load (files)
-        for c in v:
-            if not c.run ():
-                rc = False
+        try:
+            time.sleep (2)
 
-        self._okws.kill ()
+            v = self._loader.load (files)
+            for c in v:
+                if not c.run ():
+                    rc = False
+        finally:
+            # make sure we alway clean up after ourselves, that way
+            # OKWS won't leave a stale socket, etc.
+            self._okws.kill ()
+
         return rc
 
 ##=======================================================================
