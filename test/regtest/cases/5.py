@@ -1,3 +1,6 @@
+#
+# regtest of pub3 filters
+#
 
 test_str = "AbCdE FghIJKlmNOpQr FfooXx CCCccattTTtT DDogg"
 
