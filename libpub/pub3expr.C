@@ -890,15 +890,33 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
   ptr<pval_t> val, v;
   ptr<expr_t> e;
   const nvtab_t *nvt = in->nvtab ();
-  nvpair_t *tmp;
+
+  vec<nvpair_t *> additions;
+  vec<str> removals;
+
+  // To make this deterministic, we must not make any changes
+  // to out as we go through the table.  Otherwise, the behavior
+  // changes based on the sort order of the hash table, which isn't
+  // pretty.  Just do all changes at the end, after all evaluations
+  // have completed....
   for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
     val = eval_freeze (p->value_ptr ());
     if (val) {
-      out->add (New nvpair_t (p->name (), val));
-    } else if ((tmp = out->lookup_nvpair (p->name ()))) {
-      out->remove (tmp);
+      additions.push_back (New nvpair_t (p->name (), val));
+    } else {
+      removals.push_back (p->name ());
     }
   }
+
+
+  for (size_t i = 0; i < additions.size (); i++) {
+    out->add (additions[i]);
+  }
+
+  for (size_t i = 0; i < removals.size (); i++) {
+    out->remove (removals[i]);
+  }
+
 }
 
 //-----------------------------------------------------------------------
