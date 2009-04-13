@@ -74,6 +74,18 @@ def usage (rc):
           cases given without absolute paths with be considered relative
           to the casedir. Typically set this equal to the top
           directory in the source code tree that relates to regtesting.
+          Note: if no casedir is supplied, we assume the case dir is
+          the same as the directory of sys.argv[0] --- the directory
+          where run.py lives.
+
+       -C, --no-casedir
+          Do not assume a default case dir, as above
+
+    Arguments:
+        A list of files or directories with test cases in them;
+        by default, use 'cases' if no arguments were supplied, which 
+        is the directory (relative to the default casedir) in whic
+        OKWS keeps its regression tests.
 
 """ % (progname)
     sys.exit (rc)
@@ -102,9 +114,9 @@ class Config:
     #-----------------------------------------
 
     def __init__ (self):
-        self._casedir = None
         self._explain_only = False
         self._jail_dir = None
+        self._casedir = os.path.split (progname)[0]
         pass
 
     #-----------------------------------------
@@ -115,8 +127,9 @@ class Config:
     #-----------------------------------------
 
     def parseopts (self, argv):
-        short_opts = "c:eqv"
-        long_opts = [ 'casedir=',
+        short_opts = "Cc:eqv"
+        long_opts = [ 'no-casedir',
+                      'casedir=',
                       'explain',
                       'quiet',
                       'verbose' ]
@@ -133,6 +146,8 @@ class Config:
 
             if False: pass
 
+            elif o in ("-C", "--no-casedir"):
+                self._casedir = None
             elif o in ("-c", "--casedir"):
                 self._casedir = a
             elif o in ("-e", "--explain"):
@@ -731,12 +746,16 @@ class RegTester:
     ##-----------------------------------------
 
     def run (self, files):
+
         rc = True
 
         eo = self._config.explain_only ()
 
         if not eo:
             self._okws.run ()
+
+        if not files:
+            files = [ "cases" ]
 
         try:
             v = self._loader.load (files)

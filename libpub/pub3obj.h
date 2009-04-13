@@ -155,6 +155,30 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+
+  //
+  // A system embedded deep within OkCupid code uses a customized
+  // form of dictionary, that inherits from aarr_arg_t.  This template
+  // allows us to accommodate such a subclass.
+  //
+  template<class D>
+  class obj_dict_tmplt_t : public obj_t {
+  public:
+    obj_dict_tmplt_t ()
+    {
+      _dict_tmplt = New refcounted<expr_dict_tmplt_t<D> > ();
+      _obj = _dict = _dict_tmplt;
+      _obj = _dict;
+    }
+    ptr<D> dict_tmplt () { return _dict_tmplt->dict_tmplt (); }
+    ptr<const D> dict_tmplt () const { return _dict_tmplt->dict_tmplt (); }
+  protected:
+    ptr<expr_dict_tmplt_t<D> > _dict_tmplt;
+  };
+
+
+  //-----------------------------------------------------------------------
+
 };
 
 

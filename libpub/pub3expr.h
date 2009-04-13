@@ -736,6 +736,8 @@ namespace pub3 {
     expr_dict_t (int lineno = -1) 
       : expr_t (lineno), _dict (New refcounted<aarr_arg_t> ()) {}
     expr_dict_t (const xpub3_dict_t &x);
+    expr_dict_t (ptr<aarr_arg_t> d, int lineno = -1)
+      : expr_t (lineno), _dict (d) {}
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;
@@ -767,6 +769,27 @@ namespace pub3 {
   protected:
     ptr<aarr_arg_t> _dict;
   }; 
+
+  //-----------------------------------------------------------------------
+
+  //
+  // A system embedded deep within OkCupid code uses a customized
+  // form of dictionary, that inherits from aarr_arg_t.  This template
+  // allows us to accommodate such a subclass.
+  //
+  template<class D>
+  class expr_dict_tmplt_t : public expr_dict_t {
+  public:
+    expr_dict_tmplt_t () : expr_dict_t (), _dict_tmplt (New refcounted<D> ()) 
+    {
+      _dict = _dict_tmplt;
+    }
+    expr_dict_tmplt_t (ptr<D> d) : expr_dict_t (d), _dict_tmplt (d) {}
+    ptr<D> dict_tmplt () { return _dict_tmplt; }
+    ptr<const D> dict_tmplt () const { return _dict_tmplt; }
+  protected:
+    ptr<D> _dict_tmplt;
+  };
 
   //-----------------------------------------------------------------------
 

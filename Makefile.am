@@ -121,12 +121,15 @@ tameclean:
 		(cd $$dir && $(MAKE) tameclean); \
 	done
 
-.PHONY: test 
-test:	all
+.PHONY: ready_test
+ready_test: all
 	sh $(srcdir)/contrib/okws-test-touch-all.sh ; 	\
 	for dir in test; do			\
 		(cd $$dir && $(MAKE) test); 	\
 	done
+
+.PHONY: test 
+test:	ready_test
 	@echo =======================================================
 	@echo "   Starting up OKWS in place for testing!"
 	@echo "     - config file: test/system/okws_config"
@@ -135,6 +138,10 @@ test:	all
 	@echo "   Hit Control-C to end test."
 	@echo ======================================================= 
 	okd/okld -f test/system/okws_config	
+
+.PHONY: regtest
+regtest: ready_test
+	python $(srcdir)/test/regtest/run.py
 
 .PHONY: roottest
 roottest: install
