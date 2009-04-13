@@ -62,8 +62,13 @@ namespace pub3 {
 
   class const_obj_t {
   public:
-    const_obj_t () {}
+    const_obj_t (ptr<expr_t> x) : _c_obj (x) {}
+    const_obj_t (ptr<const expr_t> x) : _c_obj (x) {}
+    const_obj_t (ptr<obj_ref_t> r);
+    const_obj_t (ptr<const obj_ref_t>  r);
+    const_obj_t (ptr<pval_t> v) : _c_obj (v) {}
     const_obj_t (ptr<const pval_t> v) : _c_obj (v) {}
+    const_obj_t () {}
     virtual ~const_obj_t () {}
 
     size_t size () const;
@@ -71,12 +76,13 @@ namespace pub3 {
     const_obj_t operator() (const str &s) const;
 
     virtual ptr<const pval_t> obj () const { return _c_obj; }
+    bool is_null () const { return _c_obj; }
 
   protected:
     ptr<const expr_list_t> to_vector () const;
     ptr<const expr_dict_t> to_dict () const;
 
-  private:
+  protected:
     ptr<const pval_t> _c_obj;
   };
 
@@ -84,8 +90,8 @@ namespace pub3 {
 
   class obj_t : public const_obj_t {
   public:
-    obj_t (ptr<obj_ref_t> r) : _ref (r) {}
-    obj_t (ptr<pval_t> v) : _obj (v) {}
+    obj_t (ptr<obj_ref_t> r) : const_obj_t (r), _ref (r) {}
+    obj_t (ptr<pval_t> v) : const_obj_t (v), _obj (v) {}
     obj_t () {}
 
     // array access features: mutable
@@ -96,6 +102,8 @@ namespace pub3 {
     // dict access features: mutable
     void insert (const str &n, obj_t o);
     obj_t operator() (const str &s);
+    const_obj_t operator() (const str &s) const;
+    const_obj_t operator[] (size_t s) const;
 
     // scalar access features: mutable
     obj_t &operator= (u_int64_t i) { return set_uint (i); }
@@ -167,8 +175,7 @@ namespace pub3 {
     obj_dict_tmplt_t ()
     {
       _dict_tmplt = New refcounted<expr_dict_tmplt_t<D> > ();
-      _obj = _dict = _dict_tmplt;
-      _obj = _dict;
+      _c_obj = _obj = _dict = _dict_tmplt;
     }
     ptr<D> dict_tmplt () { return _dict_tmplt->dict_tmplt (); }
     ptr<const D> dict_tmplt () const { return _dict_tmplt->dict_tmplt (); }

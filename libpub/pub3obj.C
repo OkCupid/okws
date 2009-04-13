@@ -173,7 +173,7 @@ namespace pub3 {
   obj_dict_t::obj_dict_t ()
   {
     _dict = New refcounted<expr_dict_t> ();
-    _obj = _dict;
+    _c_obj = _obj = _dict;
   }
 
   //-----------------------------------------------------------------------
@@ -212,7 +212,7 @@ namespace pub3 {
   {
     _vec = NULL;
     _dict = NULL;
-    _obj = NULL;
+    _c_obj = _obj = NULL;
   }
 
   //----------------------------------------------------------------------
@@ -237,7 +237,7 @@ namespace pub3 {
       _ref->set (in.obj ()); 
     } else {
       _ref = in._ref;
-      _obj = in._obj;
+      _c_obj = _obj = in._obj;
       _vec = in._vec;
       _dict = in._dict;
       _scalar = in._scalar;
@@ -361,7 +361,7 @@ namespace pub3 {
   obj_t::update_value (ptr<pval_t> v)
   {
     if (_ref) { _ref->set (v); }
-    else      { _obj = v; }
+    else      { _c_obj = _obj = v; }
   }
 
   //-----------------------------------------------------------------------
@@ -400,6 +400,36 @@ namespace pub3 {
     ptr<const aarr_t> d;
     if (_dict) d = _dict->dict ();
     return d;
+  }
+
+  //-----------------------------------------------------------------------
+
+  const_obj_t::const_obj_t (ptr<const obj_ref_t> r)
+    : _c_obj (r ? r->get () : ptr<const pval_t> ())
+  {}
+
+  //-----------------------------------------------------------------------
+
+  const_obj_t::const_obj_t (ptr<obj_ref_t> r)
+    : _c_obj (r ? r->get () : ptr<pval_t> ())
+  {}
+
+  //-----------------------------------------------------------------------
+
+  const_obj_t
+  obj_t::operator() (const str &s) const
+  {
+    const_obj_t co = (*this);
+    return co(s);
+  }
+
+  //-----------------------------------------------------------------------
+
+  const_obj_t
+  obj_t::operator[] (size_t s) const
+  {
+    const_obj_t co = (*this);
+    return co[s];
   }
 
   //-----------------------------------------------------------------------
