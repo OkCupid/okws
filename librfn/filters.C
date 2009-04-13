@@ -30,7 +30,7 @@ namespace rfn1 {
   tolower_t::eval_internal (eval_t e) const
   {
     str s;
-    if (_arg) { _arg->eval_as_str (e); }
+    if (_arg) { s = _arg->eval_as_str (e); }
     if (s) { s = my_tolower (s); }
     return scalar_obj_t (s);
   }
@@ -46,7 +46,7 @@ namespace rfn1 {
   toupper_t::eval_internal (eval_t e) const
   {
     str s;
-    if (_arg) { _arg->eval_as_str (e); }
+    if (_arg) { s = _arg->eval_as_str (e); }
     if (s) { s = my_toupper (s); }
     return scalar_obj_t (s);
   }

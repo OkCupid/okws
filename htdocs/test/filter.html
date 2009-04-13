@@ -1,6 +1,6 @@
 
 {% set { v : u |default } %}
-{% setl { x : "Here is a String With varied Capitalization" } %}
+{% set { x : "Here is a String With varied Capitalization" } %}
 {% setl { lcx : x | tolower,
           ucx : x | tolower | toupper ,
           y   : { a : "a" } } %}
@@ -10,6 +10,7 @@ v = u|default: %{v}<br>
 orig: %{x}<br>
 lowered: %{lcx}<br>
 lowered (encore): %{x|tolower}<br>
+lowered (encore II): %{"what The Figgity Fuck"|tolower}<br>
 lowered-then-uppered: %{ucx}<br>
 
 html filtration: %{"<bad> stuff & more <crap>"|html_escape}<br>
