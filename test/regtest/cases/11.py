@@ -37,10 +37,3 @@ print this $('hello').js_function
 
 desc = "test spacing possibilities"
 
-
-
-
-
-
-
-
