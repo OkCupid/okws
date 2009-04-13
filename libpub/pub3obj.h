@@ -156,6 +156,14 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  class obj_list_t : public obj_t {
+  public:
+    obj_list_t ();
+  };
+
+
+  //-----------------------------------------------------------------------
+
   class obj_dict_t : public obj_t {
   public:
     obj_dict_t ();
