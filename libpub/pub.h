@@ -994,6 +994,7 @@ public:
   scalar_obj_t &obj () { return _obj; }
   void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;
   const char *get_obj_name () const { return "pub_scalar_t"; }
+  bool to_bool () const { return _obj.to_bool (); }
 
   bool eval_to_scalar (penv_t *e, scalar_obj_t *o) const;
 private:

@@ -1,8 +1,6 @@
 {% for r, list {
-
    if   (!r.first && r.last) { print " and " }
-   elif (!r.first)           { print ", " }
-
+   elif (!r.first)           { print  ", " }
    print (r.val)
 }
-%} 
+%}

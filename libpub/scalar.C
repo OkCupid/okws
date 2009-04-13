@@ -102,12 +102,18 @@ scalar_obj_t::_p_t::to_double (double *out) const
   return false;
 }
 
-
 bool
 scalar_obj_t::_p_t::to_bool () const
 {
-  int64_t i = to_int ();
-  return i != 0;
+  int64_t i;
+  bool ret = false;
+  if (to_int64 (&i)) {
+    ret = (i != 0);
+  } else { 
+    str s = to_str ();
+    ret = ( s && s.len () > 0);
+  }
+  return ret;
 }
 
 str

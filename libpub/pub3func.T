@@ -138,12 +138,12 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 	/* noop */
       } else if ((row_dict = crow->to_expr_dict ())) {
 	row_aarr = row_dict->copy_dict_stub ();
-	row_aarr->replace ("count", int64_t (len));
-	row_aarr->replace ("iter",  int64_t (i));
-	row_aarr->replace ("last",  int64_t (len - 1 == i));
-	row_aarr->replace ("first", int64_t (i == 0));
-	row_aarr->replace ("odd",   int64_t (i % 2));
-	row_aarr->replace ("even",  1 - int64_t (i % 2));
+	row_aarr->replace ("count", expr_int_t::alloc (int64_t (len)));
+	row_aarr->replace ("iter",  expr_int_t::alloc (int64_t (i)));
+	row_aarr->replace ("last",  expr_int_t::alloc (int64_t (len - 1 == i)));
+	row_aarr->replace ("first", expr_int_t::alloc (int64_t (i == 0)));
+	row_aarr->replace ("odd",   expr_int_t::alloc (int64_t (i % 2)));
+	row_aarr->replace ("even",  expr_int_t::alloc (1 - int64_t (i % 2)));
 	row_val = row_aarr;
       } else if ((cex = crow->to_expr ())) {
 	row_val = cex->copy_stub ();

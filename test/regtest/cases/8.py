@@ -16,7 +16,7 @@ callee = """
    elif (!r.first)           { print ", " }
 
    print (r.val)
-} empty {{ "emptiness!" }}
+} empty {{ emptiness! }}
 $}
 """
 
