@@ -1,4 +1,7 @@
-
 local x, old: ${local_x}
 local x, new: %{local_x}
+test, old: ${test}
+test, new: %{test}
 js: %{foo}
+
+{% include ("inc6.html", { test : "${test}" } ) %}

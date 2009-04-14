@@ -15,6 +15,9 @@ xmlrpcc_DEPENDENCIES = $(LIBASYNC)
 
 YYFLAGS = -d
 
+parse.h:
+	@:
+
 $(srcdir)/scan.cc: $(srcdir)/scan.ll
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 
@@ -23,9 +26,7 @@ $(srcdir)/parse.cc: $(srcdir)/parse.yy
 	  && mv $@~ $@ \
 	  && mv $(srcdir)/parse.hh~ $(srcdir)/parse.h
 
-$(srcdir)/parse.cc: $(srcdir)/parse.h
-
-scan.o: parse.o $(srcdir)/parse.h $(srcdir)/scan.cc
+scan.o: parse.o $(srcdir)/scan.cc $(srcdir)/parse.cc
 	$(CXXCOMPILE) $(CXXNOERR) -c $(srcdir)/scan.cc
 
 .PHONY: parseclean

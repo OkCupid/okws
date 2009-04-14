@@ -66,12 +66,24 @@ explore (pub_exploremode_t mode, const pfnm_t &nm)
 }
 
 pub_evalmode_t 
-penv_t::init_eval (pub_evalmode_t m)
+penv_t::enter_eval (pub_evalmode_t m)
 {
-  evaltab.clear ();
+  _pub1_eval_depth ++;
   pub_evalmode_t r = evm;
   evm = m;
   return r;
+}
+
+void
+penv_t::exit_eval (pub_evalmode_t m)
+{
+  _pub1_eval_depth --;
+  if (_pub1_eval_depth == 0) {
+    evaltab.clear ();
+  } else if (_pub1_eval_depth < 0) {
+    warn << "XX evaltab depth went negative!!\n";
+  }
+  evm = m;
 }
 
 void 
@@ -338,9 +350,9 @@ evalable_t::eval_to_pbuf (penv_t *e, pub_evalmode_t m) const
 {
   ref<pbuf_t> st (New refcounted<pbuf_t>);
   pub_evalmode_t om = EVAL_FULL;
-  if (e) om = e->init_eval (m);
+  if (e) om = e->enter_eval (m);
   eval_obj (st, e, P_INFINITY);
-  if (e) e->set_evalmode (om);
+  if (e) e->exit_eval (om);
   return st;
 }
 
@@ -584,6 +596,14 @@ pvar_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const
   }
   if (popit) {
     if (!e->eval_pop (nm) && pv) {
+      
+      // We used to see this error if we ever had pub v1 call into
+      // pub v3, which called into pub v1 via shell-style string.  In
+      // that case, we would clear the evaluation state twice, which
+      // caused the outer pop to fail. We're going to fix this by
+      // handling reentrance in the pub v1 eval -- see enter_eval
+      // and exit_eval above.  Note we only clear the evaluation table
+      // when we're at depth == 0.
       warn << "XX offending eval_pop pval of type '" << pv->get_obj_name ()
 	   << "\n";
     }
@@ -2268,7 +2288,8 @@ penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
     evm (EVAL_FULL),
     olineno (-1), 
     cerrflag (false), 
-    tlf (true)
+    tlf (true),
+    _pub1_eval_depth (0)
 { 
   if (g) push (g);
   if (a) push (a); 
@@ -2289,7 +2310,8 @@ penv_t::penv_t (const penv_t &e)
     hold (e.hold),
     istack (e.istack), 
     olineno (e.olineno), 
-    _localizer (e._localizer) 
+    _localizer (e._localizer),
+    _pub1_eval_depth (e._pub1_eval_depth)
 {
   bump ();
 }
