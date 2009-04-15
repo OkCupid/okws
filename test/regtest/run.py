@@ -373,13 +373,15 @@ class TestCase:
         self._config = config 
         self._scratch_files = []
         self._result = False
+        self._script_path = None
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
 
         self._outcome_obj = Outcome.alloc (self)
 
-        if not self._filedata and not self._htdoc and not self._service:
+        if not self._filedata and not self._htdoc and not self._service \
+                and not self._script_path:
             raise RegTestError, "bad test case: no input file given"
 
         if type (self._filedata) is list:
@@ -441,13 +443,26 @@ class TestCase:
 
     def include_path (self, n):
         p = self._config.scratch_include_root ()
-        return "%s/%s-%d.html" % (p, self.name (), n)
+        ret = "%s/%s" % (p, self.name ())
+        if (n > 0):
+            ret += "-%d" % n
+        ret += ".html";
+        return ret
 
     ##----------------------------------------
 
     def file_url (self):
 
         n = None
+
+        #
+        # if the reg test specified the whole URL (after the leading
+        # /), then fetch that here. Translate it first, to 
+        # resolve $[i] as required.
+        #
+        if self._script_path:
+            return self._config.url (self.translate_data (self._script_path))
+
         if self._filedata:
             n = self.name ()
         elif self._htdoc:
