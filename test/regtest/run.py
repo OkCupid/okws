@@ -620,6 +620,7 @@ class TestCaseLoader:
     def load_dir (self, name, full):
         v = []
         files = glob.glob ("%s/*.py" % full)
+        files.sort ()
         for file in files:
             this_full = file
             d,f = os.path.split (file)
