@@ -2543,3 +2543,27 @@ nested_env_t::take ()
 
 //-----------------------------------------------------------------------
 
+void
+pfile_frame_t::mark_frame (penv_t *p) const
+{
+  _env = p;
+  sss = p->size (); 
+  sgvss = p->gvsize (); 
+}
+
+//-----------------------------------------------------------------------
+
+void 
+pfile_frame_t::pop_frame (output_t *o, penv_t *p) const 
+{ 
+  if (o->stack_restore ()) { 
+    assert (_env);
+    assert (_env == p); 
+    p->resize (sss, sgvss); 
+  } 
+  _env = NULL;
+}
+
+
+//-----------------------------------------------------------------------
+

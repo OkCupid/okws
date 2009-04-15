@@ -743,13 +743,12 @@ typedef qhash<str, u_int> qhsi_t;
 class pfile_frame_t : public virtual dumpable_t {
 public:
   pfile_frame_t () : sss (0), sgvss (0) {}
-  void mark_frame (penv_t *p) const 
-  { sss = p->size () ; sgvss = p->gvsize (); }
+  void mark_frame (penv_t *p) const;
   void push_frame (penv_t *p, aarr_t *f, const gvars_t *g = NULL) const;
-  void pop_frame (output_t *o, penv_t *p) const 
-  { if (o->stack_restore ()) p->resize (sss, sgvss); }
+  void pop_frame (output_t *o, penv_t *p) const ;
   virtual const char *get_obj_name () const { return "pfile_frame_t"; }
 private:
+  mutable penv_t *_env; /* for assertions */
   mutable int sss;    /* start stack size */
   mutable int sgvss;  /* start gvar stack size */
 };
