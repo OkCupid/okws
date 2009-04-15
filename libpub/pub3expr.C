@@ -1154,6 +1154,20 @@ pub3::expr_uint_t::to_int () const
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::expr_uint_t::to_int64 (int64_t *out) const
+{
+  bool ret = false;
+  if (_val <= u_int64_t (INT64_MAX)) {
+    ret = true;
+    *out = _val;
+  }
+  return ret;
+}
+
+
+//-----------------------------------------------------------------------
+
 u_int64_t
 pub3::expr_int_t::to_uint () const
 {

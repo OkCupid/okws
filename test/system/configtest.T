@@ -29,11 +29,15 @@
 #include "tame.h"
 #include "rxx.h"
 
+//-----------------------------------------------------------------------
+
 class oksrvc_configtest_t : public oksrvc_t {
 public:
   oksrvc_configtest_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
 };
+
+//-----------------------------------------------------------------------
 
 class okclnt_configtest_t : public okclnt_t {
 public:
@@ -48,7 +52,36 @@ protected:
   oksrvc_configtest_t *ok_configtest;
 };
 
-tamed void okclnt_configtest_t::process_T ()
+//-----------------------------------------------------------------------
+
+bool
+str2ref (str in, str *n, vec<size_t> *out)
+{
+  vec<str> v;
+  static rxx dot ("\\.");
+  split (&v, dot, in);
+  bool ret = true ;
+  if (v.size () > 0) {
+    *n = v.pop_front ();
+    for (size_t i = 0; ret && i < v.size (); i++) {
+      size_t tmp;
+      if (!convertint (v[i], &tmp)) {
+	warn << "Cannot convert to int: " << v[i] << "\n";
+	ret = false;
+      }
+      out->push_back (tmp);
+    }
+  } else {
+    ret = false;
+  }
+  return ret;
+
+}
+
+//-----------------------------------------------------------------------
+
+tamed void 
+okclnt_configtest_t::process_T ()
 {
   tvars {
     bool rc (true);
@@ -62,22 +95,33 @@ tamed void okclnt_configtest_t::process_T ()
     vec<str> vars;
     static rxx comma (",");
     split (&vars, comma, lst);
-    for (u_int i = 0; i < vars.size (); i++) {
-      out << vars[i] << " -> " ;
-      str r = pub2 ()->cfg (vars[i]);
-      if (r) out << r;
-      else out << "NULL";
-      out << "<br>\n";
+    for (size_t i = 0; i < vars.size (); i++) {
+      vec<size_t> indices;
+      str key;
+      if (str2ref (vars[i], &key, &indices)) {
+	pval_w_t tmp = (*pub2 ())[key];
+	for (size_t j = 0; j < indices.size (); j++) {
+	  pval_w_t tmp2 = tmp[indices[j]];
+	  tmp = tmp2;
+	}
+	str s = tmp.to_str ();
+	if (!s) s = "(null)";
+	out << vars[i] << " -> " << s << "\n";
+      }
     }
   }
   output (out);
 }
+
+//-----------------------------------------------------------------------
 
 oksrvc_t::newclnt_t *
 oksrvc_configtest_t::make_newclnt (ptr<ahttpcon> x)
 {
   return New okclnt_configtest_t (x, this);
 }
+
+//-----------------------------------------------------------------------
 
 int
 main (int argc, char *argv[])
@@ -86,3 +130,5 @@ main (int argc, char *argv[])
   oksrvc->launch ();
   amain ();
 }
+
+//-----------------------------------------------------------------------

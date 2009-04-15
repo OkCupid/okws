@@ -287,6 +287,12 @@ public:
   pval_w_t (int i) : 
     val (NULL), int_err (INT_MIN), env (NULL), ival_flag (true), ival (i) {}
 
+  pval_w_t (const pval_w_t &in)
+    : val (in.val), name (in.name), int_err (in.int_err),
+      env (in.env), ival_flag (in.ival_flag), ival (in.ival) {}
+
+  pval_w_t &operator= (const pval_w_t &in);
+
   inline operator int() const { return to_int (); }
   inline operator str() const { return to_str () ; }
   pval_w_t operator[] (size_t i) const { return elem_at (i); }
@@ -298,12 +304,12 @@ public:
 private:
   const pval_t *get_pval () const;
   pval_t *val;
-  const str name;
-  const int int_err;
+  str name;
+  int int_err;
   penv_t *env;
   
-  const bool ival_flag;
-  const int ival;
+  bool ival_flag;
+  int ival;
 };
 
 // a generic interface for classes that support the basic PUB output

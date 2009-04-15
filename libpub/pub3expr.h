@@ -115,7 +115,7 @@ namespace pub3 {
     virtual bool is_null () const { return false; }
     virtual ptr<rxx> to_regex () const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
-    
+
     //
     // and from here, scalars can be converted at will...
     //
@@ -246,6 +246,7 @@ namespace pub3 {
     static str to_str (bool b);
     str to_str () const;
     int64_t to_int () const { return _b; }
+    bool to_int64 (int64_t *i) const { *i = _b; return true; }
     u_int64_t to_uint () const { return _b; }
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
@@ -553,6 +554,7 @@ namespace pub3 {
     bool to_bool () const { return _val; }
     scalar_obj_t to_scalar () const;
     int64_t to_int () const { return _val; }
+    bool to_int64 (int64_t *i) const { *i = _val; return true; }
     u_int64_t to_uint () const;
     bool to_xdr (xpub3_expr_t *x) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
@@ -575,6 +577,7 @@ namespace pub3 {
     bool to_bool () const { return _val; }
     u_int64_t to_uint () const { return _val; }
     int64_t to_int () const;
+    bool to_int64 (int64_t *i) const;
 
     scalar_obj_t to_scalar () const;
 
