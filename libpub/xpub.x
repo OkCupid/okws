@@ -25,7 +25,8 @@ enum xpub_obj_typ_t {
   XPUB3_SET_FUNC = 18,
   XPUB3_LOAD = 19,
   XPUB_NESTED_ENV = 20,
-  XPUB3_PRINT = 21
+  XPUB3_PRINT = 21,
+  XPUB3_EVAL = 22
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -475,6 +476,7 @@ struct xpub3_regex_t {
 
 struct xpub3_print_t {
    int lineno;
+   int silent;
    xpub3_expr_list_t *args;
 };
 

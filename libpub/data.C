@@ -46,8 +46,17 @@ output_conf_t::output_conf_t (bool d)
 void pbuf_t::add (zbuf *z) { add (New pbuf_zbuf_t (z)); }
 void pval_zbuf_t::eval_obj (pbuf_t *ps, penv_t *e, u_int d) const 
 { ps->add (zb); }
-void penv_t::safe_push (ptr<const aarr_t> a) 
-{ bump (); estack.push_back (a); hold.push_back (a); }
+
+
+size_t
+penv_t::safe_push (ptr<const aarr_t> a) 
+{ 
+  bump (); 
+  size_t ret = estack.size ();
+  estack.push_back (a);
+  _hold.insert (ret, a);
+  return ret;
+}
 
 static void
 explore (pub_exploremode_t mode, const pfnm_t &nm)
@@ -128,19 +137,13 @@ penv_t::resize (size_t s)
 {
   bump ();
   assert (s <= estack.size ());
-  while (s != estack.size ()) 
-    estack.pop_back (); // don't delete!!
+  while (s != estack.size ())  {
+    estack.pop_back ();             // don't delete!!
+    _hold.remove (estack.size ());  // deref our hold on that obj
+  }
 }
 
 //-----------------------------------------------------------------------
-
-void
-penv_t::gresize (size_t gvs)
-{
-  assert (gvs <= estack.size ());
-  while (gvs != gvars.size ())
-    gvars.pop_back (); // don't delete!!
-}
 
 void
 pstr_t::add (const str &s)
@@ -2292,7 +2295,7 @@ penv_t::penv_t (const penv_t &e)
     estack (e.estack), 
     gvars (e.gvars), 
     fstack (e.fstack), 
-    hold (e.hold),
+    _hold (e._hold),
     istack (e.istack), 
     olineno (e.olineno), 
     _localizer (e._localizer),
@@ -2535,6 +2538,17 @@ penv_t::push (aarr_t *a)
   size_t ret = estack.size ();
   if (a) { estack.push_back (a); }
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+penv_t::clear ()
+{
+  bump ();
+  estack.clear ();
+  gvars.clear ();
+  _hold.clear ();
 }
 
 //-----------------------------------------------------------------------

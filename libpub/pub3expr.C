@@ -801,10 +801,9 @@ pub3::inline_var_t::output (output_t *o, penv_t *e) const
 {
   eval_t eval (e, o);
   str s;
-  if (_expr) {
-    s = _expr->eval_as_str (eval);
-  }
-  if (s) {
+  if (!_expr) { 
+    /* noop */
+  } else if ((s = _expr->eval_as_str (eval))) {
     o->output (e, s, false);
   }
 }

@@ -247,14 +247,16 @@ bool
 pub3::print_t::publish_nonblock (pub2_iface_t *f, output_t *o,
 				 penv_t *e) const
 {
-  pub3::eval_t eval (e, o);
+  pub3::eval_t evl (e, o);
+  str s;
   for (size_t i = 0; _args && i < _args->size (); i++) {
     ptr<const expr_t> x = (*_args)[i];
-    if (x) { 
-      str s = x->eval_as_str (eval);
-      if (s) {
-	o->output (e, s, false);
-      }
+    if (!x) { 
+      /* noop */
+    } else if (_silent) {
+      (void) x->eval (evl);
+    } else if ((s = x->eval_as_str (evl))) {
+      o->output (e, s, false);
     }
   }
   return true;

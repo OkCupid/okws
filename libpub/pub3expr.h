@@ -798,7 +798,8 @@ namespace pub3 {
 
   class inline_var_t : public pfile_el_t {
   public:
-    inline_var_t (ptr<pub3::expr_t> e, int l) : _expr (e), _lineno (l) {}
+    inline_var_t (ptr<pub3::expr_t> e, bool silent, int l) 
+      : _expr (e), _lineno (l) {}
     inline_var_t (const xpub3_inline_var_t &x);
     void output (output_t *o, penv_t *e) const;
     pfile_el_type_t get_type () const { return PFILE_PUB3_VAR; }

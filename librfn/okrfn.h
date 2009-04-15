@@ -250,6 +250,21 @@ namespace rfn1 {
   };
 
   //-----------------------------------------------------------------------
+
+  class import_t : public runtime_fn_t {
+  public:
+    import_t (const str &n, ptr<expr_list_t> l, int lineno);
+
+    ptr<const pval_t> eval (eval_t e) const;
+    ptr<pval_t> eval_freeze (eval_t e) const;
+
+    static ptr<runtime_fn_t>
+    constructor (const str &nm, ptr<expr_list_t> e, int lineno, str *err);
+  private:
+    ptr<pval_t> eval_internal (eval_t e) const;
+  };
+
+  //-----------------------------------------------------------------------
 };
 
 #endif /* _LIBRFN_OKRFN_H_ */

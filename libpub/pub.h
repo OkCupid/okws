@@ -436,12 +436,9 @@ public:
   bool finish_output (penv_state_t *s);
 
   void resize (size_t s);
-  void gresize (size_t gvs);
-  void resize (size_t s, size_t gvs) { bump (); resize (s); gresize (gvs); }
   size_t size () const { return estack.size (); }
-  size_t gvsize () const { return gvars.size (); }
   size_t push (aarr_t *a);
-  void safe_push (ptr<const aarr_t> a);
+  size_t safe_push (ptr<const aarr_t> a);
   bool set_global (const aarr_t &a);
   ptr<aarr_t> get_global_aarr () { return _global_set; }
   void push (const gvars_t *g) { gvars.push_back (g); }
@@ -479,7 +476,7 @@ public:
 
   bool set_tlf (bool b) { bool r = tlf; tlf = b; return r; }
   bool get_tlf () const { return tlf; }
-  void clear () { bump (); estack.clear (); gvars.clear (); hold.clear (); }
+  void clear ();
 
   const cache_generation_t &
   cache_generation () const { return *_cache_generation; }
@@ -504,7 +501,7 @@ private:
   vec<const aarr_t *> estack; // eval stack
   vec<const gvars_t *> gvars;
   vec<bpfcp_t> fstack;
-  vec<ptr<const aarr_t> > hold;
+  qhash<size_t, ptr<const aarr_t> > _hold;
   bhash_copyable_t<phashp_t> istack;
   int olineno;
   bool cerrflag; // compile error flag

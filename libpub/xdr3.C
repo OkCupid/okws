@@ -696,7 +696,8 @@ pub3::expr_varref_or_rfn_t::to_xdr (xpub3_expr_t *x) const
 
 pub3::print_t::print_t (const xpub3_print_t &x)
   : pfile_func_t (x.lineno),
-    _args (expr_list_t::alloc (x.args))
+    _args (expr_list_t::alloc (x.args)),
+    _silent (x.silent)
 {}
 
 //-----------------------------------------------------------------------
@@ -706,6 +707,7 @@ pub3::print_t::to_xdr (xpub_obj_t *x) const
 {
   x->set_typ (XPUB3_PRINT);
   x->print->lineno = lineno;
+  x->print->silent = _silent;
   if (_args) {
     x->print->args.alloc ();
     _args->to_xdr (x->print->args);

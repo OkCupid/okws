@@ -3,7 +3,13 @@
 
 okwslib_LTLIBRARIES = librfn.la
 
-librfn_la_SOURCES = math.C std_factory.C primitives.C regex.C filters.C
+librfn_la_SOURCES = \
+	math.C \
+	std_factory.C \
+	primitives.C \
+	regex.C \
+	filters.C \
+	import.C
 
 librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 

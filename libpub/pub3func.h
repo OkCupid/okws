@@ -118,7 +118,7 @@ namespace pub3 {
 
   class print_t : public pfile_func_t {
   public:
-    print_t (int l) : pfile_func_t (l) {}
+    print_t (bool silent, int l) : pfile_func_t (l), _silent (silent) {}
     print_t (const xpub3_print_t &x);
     
     bool add (ptr<pub3::expr_list_t> l);
@@ -129,8 +129,8 @@ namespace pub3 {
 
   private:
     ptr<pub3::expr_list_t> _args;
+    bool _silent;
   };
-
 
   //-----------------------------------------------------------------------
 

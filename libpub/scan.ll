@@ -762,6 +762,7 @@ public:
     _tab.insert ("empty", T_P3_EMPTY);
     _tab.insert ("load",  T_P3_LOAD);
     _tab.insert ("print", T_P3_PRINT);
+    _tab.insert ("eval",  T_P3_EVAL);
   }
 
   bool lookup (const char *in, int *out) {

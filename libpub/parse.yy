@@ -74,7 +74,6 @@
 %token T_P3_COND
 %token T_P3_FALSE
 %token T_P3_BEGIN_EXPR
-%token T_P3_END_EXPR
 %token T_P3_INCLUDE
 %token T_P3_SET
 %token T_P3_SETL
@@ -88,6 +87,7 @@
 %token T_P3_ELIF
 %token T_P3_ELSE
 %token T_P3_EMPTY
+%token T_P3_EVAL
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -111,9 +111,11 @@
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl p3_print;
+%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
+%type <el> p3_print_or_eval;
 %type <els> p3_statements p3_statements_opt p3_env;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
+%type <print> p3_print_or_eval_fn;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
@@ -161,7 +163,7 @@ p3_html_part:
         }
 	| p3_inline_expr
         { 
-	    PSECTION->hadd (New pub3::inline_var_t ($1, PLINENO)); 
+	    PSECTION->hadd (New pub3::inline_var_t ($1, true, PLINENO)); 
         }
 	;
 
@@ -576,14 +578,17 @@ p3_statements: p3_statement
  * downside is that scoping rules aren't followed, since the nested
  * env is flattened into the parent env.
  */
-p3_statement: p3_for
-	      | p3_cond
-	      | p3_set
-	      | p3_setl
-	      | p3_include
-	      | p3_print
+p3_statement: p3_for p3_semicolon_opt { $$ = $1 ;}
+	      | p3_cond p3_semicolon_opt { $$ = $1; }
+	      | p3_set p3_semicolon_opt { $$ = $1; }
+	      | p3_setl p3_semicolon_opt { $$ = $1; }
+	      | p3_include p3_semicolon_opt { $$ = $1; }
+	      | p3_print_or_eval p3_semicolon_opt { $$ = $1; }
 	      | p3_nested_env { $$ = New pfile_nested_env_t ($1); }
 	      ;
+
+p3_semicolon_opt: /* empty */ | ';' ;
+
 
 p3_expr: p3_logical_AND_expr
 	       {
@@ -1018,9 +1023,14 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause
 	    $$ = f;
 	};
 
-p3_print: T_P3_PRINT p3_flexi_tuple
+p3_print_or_eval_fn: 
+         T_P3_PRINT { $$ = New pub3::print_t (false, PLINENO); }
+       | T_P3_EVAL { $$ = New pub3::print_t (true, PLINENO); }
+       ;
+
+p3_print_or_eval: p3_print_or_eval_fn p3_flexi_tuple
        {
-           pub3::print_t *p = New pub3::print_t (PLINENO);
+           pub3::print_t *p = $1;
 	   if (!p->add ($2)) {
 	     PWARN("bad arguments passed to print");
 	     PARSEFAIL;
