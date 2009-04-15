@@ -440,7 +440,7 @@ public:
   void resize (size_t s, size_t gvs) { bump (); resize (s); gresize (gvs); }
   size_t size () const { return estack.size (); }
   size_t gvsize () const { return gvars.size (); }
-  void push (aarr_t *a) { estack.push_back (a); }
+  size_t push (aarr_t *a);
   void safe_push (ptr<const aarr_t> a);
   bool set_global (const aarr_t &a);
   ptr<aarr_t> get_global_aarr () { return _global_set; }
@@ -740,18 +740,20 @@ struct publist_t
 
 typedef qhash<str, u_int> qhsi_t;
 
+//-----------------------------------------------------------------------
+
+// Turns out to be useless, due to subtle race conditions.  Never makes
+// sense to store where we were in the eval stack in a pfile_frame_t
+// object, since they're global, and multiple clients can conflict
+// on them.
 class pfile_frame_t : public virtual dumpable_t {
 public:
-  pfile_frame_t () : sss (0), sgvss (0) {}
-  void mark_frame (penv_t *p) const;
-  void push_frame (penv_t *p, aarr_t *f, const gvars_t *g = NULL) const;
-  void pop_frame (output_t *o, penv_t *p) const ;
+  pfile_frame_t ()  {}
   virtual const char *get_obj_name () const { return "pfile_frame_t"; }
 private:
-  mutable penv_t *_env; /* for assertions */
-  mutable int sss;    /* start stack size */
-  mutable int sgvss;  /* start gvar stack size */
 };
+
+//-----------------------------------------------------------------------
 
 class parr_t;
 class parr_mixed_t;
@@ -1260,17 +1262,6 @@ private:
   str pubobj;
 };
 
-class pfile_gframe_t : public pfile_frame_t, public pfile_el_t  {
-public:
-  pfile_gframe_t (gvars_t *g) : vars (g) {}
-  void output (output_t *o, penv_t *e) const { push_frame (e, NULL, vars); }
-  ~pfile_gframe_t () { if (vars) delete vars; }
-  pfile_el_type_t get_type () const { return PFILE_GFRAME; }
-  void dump2 (dumper_t *d) const { if (vars) vars->dump (d); }
-private:
-  gvars_t *vars;
-};
-
 class pfile_html_sec_t : public pfile_sec_t {
 public:
   pfile_html_sec_t (int l, bool n = false) : pfile_sec_t (l), nlgobble (n) {}
@@ -1432,15 +1423,6 @@ protected:
 
 typedef ihash<const phashp_t, pfile_t, &pfile_t::hsh, 
 	      &pfile_t::hlink> pfile_map_t;
-
-class pfile_gs_t : public pfile_sec_t {
-public:
-  pfile_gs_t (int l) : pfile_sec_t (l) {}
-  virtual void output (output_t *o, penv_t *e) const;
-  virtual const char *get_obj_name () const { return "pfile_gs_t"; }
-private:
-  pfile_frame_t frm;
-};
 
 class pvar_t 
   : public virtual evalable_t, public virtual refcount, 

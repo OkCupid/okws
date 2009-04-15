@@ -279,7 +279,7 @@ pub3::set_func_t::output_runtime (output_t *o, penv_t *e) const
     e->bump ();
     eval.eval_freeze_dict (aarr, aarr_global);
   } else {
-    push_frame (e, aarr);
+    e->push (aarr);
   }
 }
 

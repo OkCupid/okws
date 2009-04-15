@@ -121,6 +121,8 @@ pfile_var_t::output (output_t *o, penv_t *e) const
   e->unsetlineno ();
 }
 
+//-----------------------------------------------------------------------
+
 void
 penv_t::resize (size_t s)
 {
@@ -130,20 +132,14 @@ penv_t::resize (size_t s)
     estack.pop_back (); // don't delete!!
 }
 
+//-----------------------------------------------------------------------
+
 void
 penv_t::gresize (size_t gvs)
 {
   assert (gvs <= estack.size ());
   while (gvs != gvars.size ())
     gvars.pop_back (); // don't delete!!
-}
-
-void
-pfile_frame_t::push_frame (penv_t *p, aarr_t *f, const gvars_t *g) const
-{
-  mark_frame (p);
-  if (f) p->push (f);
-  if (g) p->push (g);
 }
 
 void
@@ -263,13 +259,13 @@ pfile_func_t::include (output_t *o, penv_t *g, aarr_t *e, const pfnm_t &nm)
     return;
 
   if ((f = pub->getfile (nm))) {
-    push_frame (g, e);
+    size_t frame_id = g->push (e);
     bool tlf = g->set_tlf (false);
     o->output_info (g, strbuf ("include: ") << f->filename (), lineno);
     f->output (o, g);
     o->output_info (g, strbuf ("/include: ") << f->filename (), lineno);
     g->set_tlf (tlf);
-    pop_frame (o, g);
+    g->resize (frame_id);
   } else {
     o->output_err (g, strbuf (nm) << ": cannot include file", lineno);
   }
@@ -793,17 +789,6 @@ parr_mixed_t::eval_simple () const
   else return NULL;
 }
 
-void
-pfile_gs_t::output (output_t *o, penv_t *e) const
-{
-  frm.mark_frame (e);
-  e->aarr_n = 1;
-  pfile_type_t m = o->switch_mode (PFILE_TYPE_GUY);
-  els->output (o, e);
-  o->switch_mode (m);
-  e->needloc = true;
-  frm.pop_frame (o, e);
-}
 
 pfile_t::pfile_t (const phashp_t &h, pfile_type_t t)
   : err (PUBSTAT_OK), hsh (h), lineno (1), yybs (NULL), fp (NULL),
@@ -2322,7 +2307,7 @@ penv_t::penv_t (const penv_t &e)
 void
 pfile_set_local_func_t::output_runtime (output_t *o, penv_t *e) const
 {
-  push_frame (e, aarr);
+  e->push (aarr);
 }
 
 //-----------------------------------------------------------------------
@@ -2335,8 +2320,9 @@ pfile_set_func_t::output_runtime (output_t *o, penv_t *e) const
   // behavior, as seen in pfile_set_local_func (by pushing on a frame).
   // This case comes up when using pub2::output_conf2_t class, which
   // does its own flattening.
-  if (aarr && !e->set_global (*aarr))
-    push_frame (e, aarr);
+  if (aarr && !e->set_global (*aarr)) {
+    e->push (aarr);
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -2543,27 +2529,12 @@ nested_env_t::take ()
 
 //-----------------------------------------------------------------------
 
-void
-pfile_frame_t::mark_frame (penv_t *p) const
+size_t
+penv_t::push (aarr_t *a)
 {
-  _env = p;
-  sss = p->size (); 
-  sgvss = p->gvsize (); 
+  size_t ret = estack.size ();
+  if (a) { estack.push_back (a); }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
-
-void 
-pfile_frame_t::pop_frame (output_t *o, penv_t *p) const 
-{ 
-  if (o->stack_restore ()) { 
-    assert (_env);
-    assert (_env == p); 
-    p->resize (sss, sgvss); 
-  } 
-  _env = NULL;
-}
-
-
-//-----------------------------------------------------------------------
-
