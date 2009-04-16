@@ -222,11 +222,34 @@ namespace okssl {
   proxy_t::finish (evv_t ev)
   {
     tvars {
-      proxy_event_t which;
+      proxy_event_t which (NONE);
+      size_t i;
     }
-    twait (_rv, which);
-    twait (_rv, which);
-    ev->trigger ();
+    
+    // Someone should call this function to wait on the proxy to finish up.
+    // If that waiter times out, we must make the assumption that the waiter
+    // is going to close up its file descriptors.  Therefore, we MUST 
+    // proactively tell the proxies to stop their proxying, so they know
+    // in particular to stop selecting on file descriptors (and also to 
+    // clean up memory, etc). 
+    //
+    // To implement this policy, we simply wait for the calling process
+    // to cancel his waiting on us; when that happens, we'll cancel
+    // waiting on the proxies, which will clean up their state.
+    ev->set_cancel_notifier (mkevent (_rv, CANCELATION));
+
+    // Keep waiting until the caller cancelled, or we successfully waited twice.
+    for (i = 0; which != CANCELATION && i < 2; i++) {
+      twait (_rv, which); 
+    }
+
+    // Even in the case that the proxy completed, we still need to cancel
+    // this rendezvous, since we're no longer waiting on the cancel notifier
+    // above.
+    _rv.cancel ();
+
+    // Can freely trigger even if the event was cancelled.
+    ev->trigger (); 
   }
 
   //-----------------------------------------------------------------------

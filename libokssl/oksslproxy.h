@@ -76,7 +76,11 @@ namespace okssl {
   
   //=======================================================================
 
-  typedef enum { HANDSHAKE = 1, COMPLETE_A = 2, COMPLETE_B = 3 } proxy_event_t;
+  typedef enum { NONE = 0,
+		 HANDSHAKE = 1, 
+		 COMPLETE_A = 2, 
+		 COMPLETE_B = 3,
+		 CANCELATION = 4 } proxy_event_t;
 
   class proxy_t {
   public:
