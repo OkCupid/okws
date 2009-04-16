@@ -117,6 +117,8 @@ namespace pub3 {
     // wild card
     obj_t &operator= (obj_t o) { return set_obj (o); }
 
+    obj_t &refer_to (obj_t o);
+
     ptr<aarr_t> dict ();
     ptr<const aarr_t> dict () const;
 

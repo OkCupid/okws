@@ -227,6 +227,19 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   obj_t &
+  obj_t::refer_to (obj_t in)
+  {
+    _ref = in._ref;
+    _c_obj = _obj = in._obj;
+    _vec = in._vec;
+    _dict = in._dict;
+    _scalar = in._scalar;
+    return (*this);
+  }
+
+  //----------------------------------------------------------------------
+
+  obj_t &
   obj_t::set_obj (obj_t in)
   {
 
@@ -235,7 +248,7 @@ namespace pub3 {
     //
     // We're going to mimic C++-style semantics.  If A is just being
     // constructed, then assign A's reference to point to B's reference.
-    // In such a case, _ref will be NULL, reref will be true, and in._ref
+    // In such a case, _ref will be NULL and in._ref
     // will be true.
     //
     // If A is being reassigned, then set *A equal to whatever B
