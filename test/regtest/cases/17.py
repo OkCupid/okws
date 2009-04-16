@@ -12,7 +12,7 @@ filedata = """
 ${x}
 ${y}
 ${z}
-%{v}
+${v}
 """
 
 outcome = '\n'.join (["ok to %pass through",
