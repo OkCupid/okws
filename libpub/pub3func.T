@@ -121,9 +121,6 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     ok = true;
     len = v->size ();
 
-    frame_pointer = e->size ();
-    e->push (&frame);
-
     for (i = 0; i < len; i++) {
 
       row_val = NULL;
@@ -153,13 +150,24 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
       }
 
       if (row_val) {
-	frame.replace (_iter, row_val);
-	e->bump ();
-	twait { _env->publish (iface, o, e, mkevent (res)); }
-      }
 
+	// reuse the aarr 'frame' to save on allocations, etc.
+	frame.replace (_iter, row_val);
+
+	// active the frame with the new iteration variables.
+	frame_pointer = e->push (&frame);
+
+	// refresh the version number to cleared cached evaluations
+	e->bump ();
+
+	twait { _env->publish (iface, o, e, mkevent (res)); }
+
+	// restore eval stack once per iteration.  this will also
+	// undo any setl's, import's, etc, from within the body of
+	// this loop.
+	e->resize (frame_pointer);
+      }
     }
-    e->resize (frame_pointer);
   }
   
   (*callercv) (res);

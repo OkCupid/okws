@@ -388,7 +388,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 \\r		{ yylval.ch = '\r'; return T_P3_CHAR; }
 \n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
-[$]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
+[$%]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
 [\[\]]		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 ["']		{ 
                    if (end_P3_STR (yytext[0])) {
@@ -400,6 +400,9 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
                 }
 
 [^\\%$"'\n\[\]]+	{ yylval.str = yytext; return T_P3_STRING; }
+
+.		{ return yyerror ("illegal token found in string"); }
+
 <<EOF>>         {   
 		    bracket_check_eof ();
  		    return yyerror (strbuf ("EOF found in str started on "
