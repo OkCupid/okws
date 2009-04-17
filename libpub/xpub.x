@@ -74,7 +74,8 @@ enum xpub_val_typ_t {
 enum xpub_pstr_el_typ_t {
   XPUB_PSTR_NONE = 0,
   XPUB_PSTR_VAR = 1,
-  XPUB_PSTR_STR = 2
+  XPUB_PSTR_STR = 2,
+  XPUB3_PSTR_EL = 3
 };
 
 enum xpub_req_typ_t {
@@ -99,16 +100,23 @@ struct xpub2_fstat_t {
   xpubhash_t hash;
 };
 
+%struct xpub3_expr_t;
+
+struct xpub3_pstr_el_t {
+  xpub3_expr_t *expr;
+  int lineno;
+};
 
 union xpub_pstr_el_t switch (xpub_pstr_el_typ_t typ) {
  case XPUB_PSTR_VAR:
    xpub_var_t var;
  case XPUB_PSTR_STR:
    xpub_str_t str;
+ case XPUB3_PSTR_EL:
+   xpub3_pstr_el_t p3el;
  default:
    void;
 };
-
 
 struct xpub_pstr_t {
   xpub_pstr_el_t els<>;
@@ -148,8 +156,6 @@ union xpub_parr_t switch (xpub_int_typ_t typ)
  default:
    void;
 };
-
-%struct xpub3_expr_t;
 
 union xpub_val_t switch (xpub_val_typ_t typ)
 {

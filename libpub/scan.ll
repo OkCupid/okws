@@ -88,7 +88,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 \n		{ PLINC; }
 
 =>		|
-[(),{}=;]	return yytext[0];
+[(),{}=;:]	return yytext[0];
 
 
 m#		{ yy_push_state (POUND_REGEX); return T_REGEX_BEGIN; }
@@ -124,7 +124,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 {TPRFX1}inclist		{ yy_push_state (PTAG); return T_PTINCLIST; }
 {TPRFX1}setl		{ yy_push_state (PTAG); return T_PTSETL; }
 {TPRFX1}set		{ yy_push_state (PTAG); return T_PTSET; }
-{TPRFX1}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
+{TPRFX}switch		{ yy_push_state (PTAG); return T_PTSWITCH; }
 {TPRFX1}"#"	    	|
 {TPRFX1}com(ment)?	{ yy_pt_com = 0; yy_push_state (HCOM); }
 {TPRFX1}[Rr][Ee][Mm]	{ 
@@ -344,7 +344,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \"		{ end_PSTR (); return (yytext[0]); }
-[^"\\$}\[\]]+	{ yylval.str = yytext; return T_STR; }
+[^"\\$%}\[\]]+	{ yylval.str = yytext; return T_STR; }
 }
 
 <PSTR_SQ>{
@@ -353,7 +353,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 	  	  else { yylval.str = yytext; return T_STR; } }
 \\.		{ return yyerror ("illegal escape sequence"); }
 \'		{ end_PSTR (); return (yytext[0]); }
-[^'\\$}\[\]]+	{ yylval.str = yytext; return T_STR; }
+[^'\\$%}\[\]]+	{ yylval.str = yytext; return T_STR; }
 }
 
 

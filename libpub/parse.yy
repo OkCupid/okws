@@ -163,7 +163,7 @@ p3_html_part:
         }
 	| p3_inline_expr
         { 
-	    PSECTION->hadd (New pub3::inline_var_t ($1, true, PLINENO)); 
+	    PSECTION->hadd (New pub3::inline_var_t ($1, PLINENO)); 
         }
 	;
 
@@ -423,7 +423,9 @@ bind_list: binding
 	| bind_list ',' binding
 	;
 
-binding: bname '=' bvalue	
+binding_char: '=' | ':' ;
+
+binding: bname binding_char bvalue	
 	{
 	  PAARR->add (New nvpair_t ($1, $3));
 	}
@@ -438,6 +440,7 @@ bvalue:   number   { $$ = New refcounted<pint_t> ($1); }
 	| pstr     { $$ = $1; }
 	| evar     { $$ = New refcounted<pstr_t> ($1); }
 	| arr 	   { $$ = $1; }
+	| p3_inline_expr { $$ = $1; }
 	;
 
 arr: i_arr | g_arr;
@@ -507,6 +510,7 @@ pstr_list: /* empty */ {}
 pstr_el:  T_STR { PPSTR->add ($1); }
 	| T_CH  { PPSTR->add ($1); }
 	| pvar  { PPSTR->add ($1); }
+	| p3_inline_expr { PPSTR->add (New pub3::pstr_el_t ($1, PLINENO)); }
 	;
 
 pvar: T_BVAR T_VAR '}'

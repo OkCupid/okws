@@ -822,6 +822,8 @@ pstr_el_t::alloc (const xpub_pstr_el_t &x)
     return New pstr_var_t (*x.var);
   case XPUB_PSTR_STR:
     return New pstr_str_t (*x.str);
+  case XPUB3_PSTR_EL:
+    return New pub3::pstr_el_t (*x.p3el);
   default:
     return NULL;
   }

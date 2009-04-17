@@ -798,7 +798,7 @@ namespace pub3 {
 
   class inline_var_t : public pfile_el_t {
   public:
-    inline_var_t (ptr<pub3::expr_t> e, bool silent, int l) 
+    inline_var_t (ptr<pub3::expr_t> e, int l) 
       : _expr (e), _lineno (l) {}
     inline_var_t (const xpub3_inline_var_t &x);
     void output (output_t *o, penv_t *e) const;
@@ -810,6 +810,25 @@ namespace pub3 {
     const ptr<expr_t> _expr;
     const int _lineno;
   };
+
+  //-----------------------------------------------------------------------
+
+  class pstr_el_t : public ::pstr_el_t {
+  public:
+    pstr_el_t (ptr<expr_t> e, int lineno) : _expr (e), _lineno (lineno) {}
+    pstr_el_t (const xpub3_pstr_el_t &x);
+    void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;
+    pfile_el_t *to_pfile_el ();
+    void dump2 (dumper_t *d) const;
+    const char *get_obj_name () const { return "pub3::pstr_el_t"; }
+    bool to_xdr (xpub_pstr_el_t *x) const;
+    void output (output_t *o, penv_t *e) const;
+
+  private:
+    const ptr<expr_t> _expr;
+    int _lineno;
+  };
+
 
   //-----------------------------------------------------------------------
 };

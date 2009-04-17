@@ -717,3 +717,19 @@ pub3::print_t::to_xdr (xpub_obj_t *x) const
 
 //-----------------------------------------------------------------------
 
+pub3::pstr_el_t::pstr_el_t (const xpub3_pstr_el_t &x)
+  : _expr (expr_t::alloc (x.expr)), _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::pstr_el_t::to_xdr (xpub_pstr_el_t *x) const
+{
+  x->set_typ (XPUB3_PSTR_EL);
+  expr_to_rpc_ptr (_expr, &x->p3el->expr);
+  x->p3el->lineno = _lineno;
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
