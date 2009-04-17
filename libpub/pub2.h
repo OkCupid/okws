@@ -479,6 +479,7 @@ namespace pub2 {
     void output_set_func (penv_t *e, const pfile_set_func_t *s);
     void output_err (penv_t *e, const str &s, int l = -1);
     void set_dest (aarr_t *d) { _dest = d; }
+    aarr_t *dict_dest () { return _dest; }
   private:
     aarr_t *_dest;
   };

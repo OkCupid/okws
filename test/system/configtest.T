@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "tame.h"
 #include "rxx.h"
+#include "pub3.h"
 
 //-----------------------------------------------------------------------
 
@@ -49,6 +50,8 @@ public:
   void process_T (CLOSURE); 
 
 protected:
+  void run_global (evv_t ev, CLOSURE);
+  void run_local (evv_t ev, CLOSURE);
   oksrvc_configtest_t *ok_configtest;
 };
 
@@ -83,6 +86,87 @@ str2ref (str in, str *n, vec<size_t> *out)
 tamed void 
 okclnt_configtest_t::process_T ()
 {
+  if (cgi.exists ("global")) {
+    twait { run_global (mkevent ()); }
+  } else {
+    twait { run_local (mkevent ()); }
+  }
+  output (out);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_configtest_t::run_local (evv_t ev)
+{
+  tvars {
+    aarr_t dct;
+    bool rc;
+  }
+
+  twait { pub2 ()->run_cfg (cgi["fn"], mkevent (rc), &dct); }
+  if (!rc) {
+    out << "Error including file " << cgi["fn"] << " or file wasn't given\n";
+  } else {
+    str lst = cgi["display"];
+    vec<str> vars;
+    static rxx comma (",");
+    split (&vars, comma, lst);
+    for (size_t i = 0; i < vars.size (); i++) {
+      vec<size_t> indices;
+      str key;
+      if (str2ref (vars[i], &key, &indices)) {
+	ptr<pval_t> v = dct.lookup_ptr (key);
+	ptr<const parr_mixed_t> m;
+	const parr_ival_t *iv;
+	ptr<pub3::expr_list_t> el;
+	str s;
+
+	for (size_t j = 0; v && j < indices.size (); j++) {
+	  size_t indx = indices[j];
+	  if ((m = v->to_mixed_arr ()) && indx < m->size ()) {
+	    v = (*m)[indx];
+	  } else if ((iv = v->to_int_arr ()) && indx < iv->size ()) {
+	    v = NULL;
+	    int64_t x;
+	    if (iv->val (indx, &x)) {
+	      s = strbuf () << x;
+	    }
+	  } else if ((el = v->to_expr_list ())) {
+	    v = (*el)[indx];
+	  }
+	}
+
+	if (v) {
+	  ptr<pub3::expr_t> x;
+	  ptr<pub_scalar_t> ps;
+	  pbuf_t *pb;
+	  if ((x = v->to_expr ())) {
+	    s = x->to_str ();
+	  } else if ((ps = v->to_pub_scalar ())) {
+	    s = ps->obj ().to_str ();
+	  } else if ((pb = dynamic_cast<pbuf_t *>(static_cast<pval_t *> (v)))) {
+	    s = pb->to_str ();
+	  } else {
+	    s = v->eval_simple ();
+	  }
+	}
+	if (!s) s = "(null)";
+	out << vars[i] << " -> " << s << "\n";
+      }
+    }
+  }
+  ev->trigger ();
+
+
+}
+
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_configtest_t::run_global (evv_t ev)
+{
   tvars {
     bool rc (true);
   }
@@ -110,7 +194,7 @@ okclnt_configtest_t::process_T ()
       }
     }
   }
-  output (out);
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------

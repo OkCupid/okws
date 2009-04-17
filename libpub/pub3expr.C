@@ -739,7 +739,8 @@ pub3::expr_shell_str_t::eval_internal (eval_t e) const
 
     strbuf b;
     vec<str> v;
-    for (size_t i = 0; !err && i < _els->size (); i++) {
+    size_t i ;
+    for (i = 0; !err && i < _els->size (); i++) {
       str s = (*_els)[i]->eval_as_str (e);
 
       size_t sz = b.tosuio ()->resid ();

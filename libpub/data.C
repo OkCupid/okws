@@ -2176,8 +2176,7 @@ penv_t::finish_output (penv_state_t *s)
 void
 pfile_set_func_t::output_config (penv_t *e) const
 {
-  env = e;
-  if (aarr) env->safe_push (aarr);
+  if (aarr) e->safe_push (aarr);
 }
 
 xpub_status_typ_t

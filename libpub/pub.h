@@ -539,6 +539,7 @@ public:
   virtual bool stack_restore () const { return true; }
   virtual u_int opts () const { return _opts; }
   virtual bool wss () const { return _opts & P_WSS; }
+  virtual aarr_t *dict_dest () { return NULL; }
 
   virtual bool set_muzzle (bool n);
 
@@ -1690,7 +1691,7 @@ public:
   bool add (ptr<pub3::expr_dict_t> d);
   bool validate () { return true; }
   virtual void output_runtime (output_t *o, penv_t *e) const;
-  void output_config (penv_t *e) const ;
+  virtual void output_config (penv_t *e) const ;
 
   void dump2 (dumper_t *d) const;
   virtual const char *get_obj_name () const { return "pfile_set_func_t"; }

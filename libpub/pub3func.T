@@ -280,15 +280,25 @@ pub3::print_t::output (output_t *o, penv_t *e) const
 //-----------------------------------------------------------------------
 
 void
-pub3::set_func_t::output_runtime (output_t *o, penv_t *e) const
+pub3::set_func_t::output (output_t *o, penv_t *e) const
 {
-  ptr<aarr_t> aarr_global;
-
+  aarr_t *odd; // output dict dest
+  ptr<aarr_t> edd; // env dict dest
+  aarr_t tmp;
+  
   eval_t eval (e, o);
-  if ((aarr_global = e->get_global_aarr ())) {
-    e->bump ();
-    eval.eval_freeze_dict (aarr, aarr_global);
-  } else {
+
+  odd = o->dict_dest ();
+  edd = e->get_global_aarr ();
+
+  if (odd || edd) {
+    eval.eval_freeze_dict (aarr, &tmp);
+  }
+
+  if (odd) { odd->overwrite_with (tmp); }
+  if (edd) { edd->overwrite_with (tmp); }
+
+  if (!edd) {
     e->push (aarr);
   }
 }

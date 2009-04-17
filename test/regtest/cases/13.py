@@ -1,14 +1,32 @@
 
+##-----------------------------------------------------------------------
+
+desc_fmt = "test configuration variables (%s)"
+
+##-----------------------------------------------------------------------
+
 filedata="""
+
+{% set { key : 1 } %}
+
+<!--# switch (key), (1, {{ {$ set { hidden : "hidden" } %} }} ) -->
+
 
 <!--# set ( { "foo" => ( 1, ( "bar", 4, ( "biz" ) ) ),
               "baz" => ( 10, 20, 30),
-              "bar" => 10 } ) -->
+              "bar" => 10,
+              "biz" => "biz" } ) -->
 
 {$ set { x : 10,
          y : [ 20, 180, "hello", "bye", "adios" ],
          z : [ 1, [2, [3, [4, [5, "final" ] ] ] ] ] } $}
+
+{$ set { shell1 : "x${x}",
+         shell2 : "x${x}$${x}biz${biz}$${biz}",
+         legacy : "legacy ${hidden}" } $}
 """
+
+##-----------------------------------------------------------------------
 
 display = [ ("foo.0", 1),
             ("foo.1.0", "bar"),
@@ -27,10 +45,27 @@ display = [ ("foo.0", 1),
             ("z.1.0", 2),
             ("z.1.1.0", 3),
             ("z.1.1.1.0", 4),
-            ("z.1.1.1.1.1", "final") ]
+            ("z.1.1.1.1.1", "final"),
+            ("shell1", "x10"),
+            ("shell2", "x1010bizbizbiz"),
+            ("legacy", "legacy hidden") ]
+
+##-----------------------------------------------------------------------
 
 script_path = "configtest?fn=$[0]&display=" + \
     ','.join ([p[0] for p in display])
 
+##-----------------------------------------------------------------------
+
 outcome= "\n".join (["%s -> %s" % p for p in display ])
 
+##-----------------------------------------------------------------------
+
+cases = [ { "filedata" : filedata,
+            "script_path" : script_path,
+            "outcome" : outcome,
+            "desc" : desc_fmt % "local" },
+          { "filedata" : filedata,
+            "script_path" : script_path + "&global=1" ,
+            "outcome" : outcome,
+            "desc" : desc_fmt % "global" } ]
