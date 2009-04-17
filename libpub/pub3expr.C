@@ -1602,10 +1602,27 @@ pub3::expr_list_t::push_front (ptr<expr_t> e)
 //-----------------------------------------------------------------------
 
 void
-pub3::pstr_el_t::eval_obj (pbuf_t *s, penv_t *e, u_int d) const
+pub3::pstr_el_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
 {
-  if (_expr) {
-    _expr->eval_obj (s, e, d);
+  eval_t ev (e, NULL);
+  ptr<const pval_t> pv;
+  ptr<const expr_t> x;
+
+  if (_expr && (pv = _expr->eval (ev)) && (x = pv->to_expr ())) {
+    str s = x->to_str ();
+    if (s) b->add (s);
+  } else {
+    e->setlineno (_lineno);
+    str nm;
+    if (_expr) {
+      nm = _expr->to_identifier ();
+    }
+    if (!nm) {
+      nm = "-- unknown --";
+    }
+    e->warning (strbuf ("cannot resolve variable: " ) << nm.cstr ());
+    b->add (strbuf ("<!--UNDEF: ") << nm << " -->");
+    e->unsetlineno ();
   }
 }
 
