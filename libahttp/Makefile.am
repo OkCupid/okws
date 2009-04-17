@@ -28,11 +28,9 @@ ahttp2.o: ahttp2.C
 ahttp2.lo: ahttp2.C
 
 EXTRA_DIST = .cvsignore resp.T resp2.T ahttp2.T
-CLEANFILES = core *.core *~ *.rpo err.C resp.C resp2.C ahttp2.C
+CLEANFILES = core *.core *~ *.rpo resp.C resp2.C ahttp2.C
 
-.PHONY: sourceclean tameclean
-sourceclean:
-	rm -f err.C
+.PHONY: tameclean
 
 tameclean:
 	rm -f resp.C resp2.C ahttp2.C
