@@ -21,6 +21,7 @@ json filtration: ${"\\n\\t\\\\"|json_escape}
 substring: ${"abcdefgh"|substr(2,4)}
 substring (encore): ${substr("abcdefgh",2,4)}
 strip-test: X---${z|strip()}---Y
+empty json filtration: ${undef|json_escape}
 """ % (test_str, test_str)
 
 desc = "a test for filters"
@@ -37,5 +38,6 @@ json filtration: "\\n\\t\\\\"
 substring: cdef
 substring (encore): cdef
 strip-test: X---a-floater---Y
+empty json filtration: ""
 """ % (test_str, test_str.lower (), test_str.lower (),  test_str.lower (),
        test_str.upper ())

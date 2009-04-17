@@ -3,6 +3,7 @@
 #include "parseopt.h"
 #include "okformat.h"
 #include "pub3func.h"
+#include "pescape.h"
 
 //-----------------------------------------------------------------------
 
@@ -57,7 +58,7 @@ pub3::json::quote (const str &s)
   if (!s) {
     ret = _null;
   } else {
-    ret = c_escape (s, true);
+    ret = json_escape (s, true);
   }
   return ret;
 }

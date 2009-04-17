@@ -79,7 +79,8 @@ namespace rfn1 {
   {
     str s;
     if (_arg) { s = _arg->eval_as_str (e); }
-    if (s) { s = json_escape (s, true); }
+    if (!s) { s = ""; }
+    s = json_escape (s, true);
     return scalar_obj_t (s);
   }
 
