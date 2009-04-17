@@ -31,7 +31,9 @@ namespace pub3 {
 
     enum { EVAL_INIT = -2, EVAL_DONE = -1 };
 
-    eval_t (penv_t *e, output_t *o); ;
+    eval_t (penv_t *e, output_t *o); 
+    ~eval_t ();
+
 
     penv_t *penv () const { return _env; }
     output_t *output () const { return _output; }
@@ -51,6 +53,9 @@ namespace pub3 {
 
     void set_in_json () { _in_json = true; }
     bool in_json () const { return _in_json; }
+
+    eval_t *link_to_penv ();
+    void unlink_from_penv (eval_t *e);
 
   private:
 

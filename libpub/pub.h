@@ -226,6 +226,7 @@ namespace pub3 {
   class expr_t;
   class expr_dict_t;
   class expr_list_t;
+  class eval_t;
 };
 
 //-----------------------------------------------------------------------
@@ -487,6 +488,9 @@ public:
 
   const vec<const aarr_t *> &get_eval_stack () const { return estack; }
 
+  void set_pub3_eval (pub3::eval_t *e) { _pub3_eval = e; }
+  pub3::eval_t *get_pub3_eval () { return _pub3_eval; }
+
   int aarr_n;
   bpfcp_t file;
   bool needloc;
@@ -510,6 +514,7 @@ private:
 
   ptr<aarr_t> _global_set;
   int _pub1_eval_depth;
+  pub3::eval_t *_pub3_eval;
 };
 
 class pfile_set_func_t;

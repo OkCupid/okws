@@ -2276,7 +2276,8 @@ penv_t::penv_t (aarr_t *a, u_int o, aarr_t *g)
     olineno (-1), 
     cerrflag (false), 
     tlf (true),
-    _pub1_eval_depth (0)
+    _pub1_eval_depth (0),
+    _pub3_eval (NULL)
 { 
   if (g) push (g);
   if (a) push (a); 
@@ -2298,7 +2299,8 @@ penv_t::penv_t (const penv_t &e)
     istack (e.istack), 
     olineno (e.olineno), 
     _localizer (e._localizer),
-    _pub1_eval_depth (e._pub1_eval_depth)
+    _pub1_eval_depth (e._pub1_eval_depth),
+    _pub3_eval (NULL)
 {
   bump ();
 }

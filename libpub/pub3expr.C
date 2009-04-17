@@ -302,8 +302,11 @@ pub3::expr_ref_t::eval_as_str (eval_t e) const
   if (!(v = deref (&e))) {
     /* failed to deref -- warn? */
   } else if (!(x = v->to_expr ())) {
-    // use pub v1/v2 eval mechanism
+
+    eval_t *old = e.link_to_penv ();
     ret = v->eval (e.penv (), EVAL_INTERNAL, true);
+    e.unlink_from_penv (old);
+
   } else {
     ret = x->eval_as_str (e);
   }
@@ -761,6 +764,24 @@ pub3::expr_shell_str_t::eval_internal (eval_t e) const
 
 //-----------------------------------------------------------------------
 
+pub3::eval_t *
+pub3::eval_t::link_to_penv ()
+{
+  eval_t *ret = penv ()->get_pub3_eval ();
+  penv ()->set_pub3_eval (this);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::eval_t::unlink_from_penv (pub3::eval_t *e)
+{
+  penv ()->set_pub3_eval (e);
+}
+
+//-----------------------------------------------------------------------
+
 ptr<const pval_t>
 pub3::eval_t::resolve (const expr_t *e, const str &nm)
 {
@@ -825,10 +846,12 @@ pub3::eval_t::eval_t (penv_t *e, output_t *o)
     _loud (false), 
     _silent (false), 
     _stack_p (EVAL_INIT),
-    _in_json (false)
-{ 
-  e->bump (); 
-}
+    _in_json (false) {}
+
+//-----------------------------------------------------------------------
+
+pub3::eval_t::~eval_t () {}
+
 
 //-----------------------------------------------------------------------
 
@@ -908,7 +931,6 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
     }
   }
 
-
   for (size_t i = 0; i < additions.size (); i++) {
     out->add (additions[i]);
   }
@@ -916,7 +938,6 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
   for (size_t i = 0; i < removals.size (); i++) {
     out->remove (removals[i]);
   }
-
 }
 
 //-----------------------------------------------------------------------
@@ -1381,16 +1402,25 @@ void
 pub3::expr_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
 {
   eval_t ev (e, NULL);
-  ptr<const pval_t> pv = eval (ev);
+  eval_t *evp = e->get_pub3_eval ();
+
+  if (!evp) evp = &ev;
+
+  ptr<const pval_t> pv = eval (*evp);
   ptr<const expr_t> x;
 
   if (pv && (x = pv->to_expr ())) {
     str s = x->to_str ();
     if (s) b->add (s);
   } else if (pv) {
+
     // v1 and v2 objects; note need to think about corner cases
-    // with infinite recursion.
+    // with infinite recursion.  Make sure we pass through our pub
+    // state is the way to solve the issue...
+    eval_t *old = evp->link_to_penv ();
     pv->eval_obj (b, e, d);
+    evp->unlink_from_penv (old);
+
   } else if (e->debug ()) {
     e->setlineno (_lineno);
     str nm = to_identifier ();
@@ -1605,12 +1635,18 @@ void
 pub3::pstr_el_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
 {
   eval_t ev (e, NULL);
+  eval_t *evp;
   ptr<const pval_t> pv;
   ptr<const expr_t> x;
 
+  // In the case of pub v3 calling v1 calling v3, make sure we keep
+  // our state all of the way through....
+  evp = e->get_pub3_eval ();
+  if (!evp) { evp = &ev; }
+
   if (!_expr) {
     /* empty expr -- noop! */
-  } else if (!(pv = _expr->eval (ev))) {
+  } else if (!(pv = _expr->eval (*evp))) {
     /* cannot resolve variable -- d'oh! */
     str nm = _expr->to_identifier ();
     if (!nm) {
@@ -1623,7 +1659,9 @@ pub3::pstr_el_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
     str s = x->to_str ();
     if (s) b->add (s);
   } else {
+    eval_t *old = evp->link_to_penv ();
     pv->eval_obj (b, e, d - 1);
+    evp->unlink_from_penv (old);
   }
 }
 
