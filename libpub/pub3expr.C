@@ -1660,7 +1660,7 @@ pub3::pstr_el_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
     if (s) b->add (s);
   } else {
     eval_t *old = evp->link_to_penv ();
-    pv->eval_obj (b, e, d - 1);
+    pv->eval_obj (b, e, d);
     evp->unlink_from_penv (old);
   }
 }

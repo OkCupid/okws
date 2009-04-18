@@ -26,9 +26,9 @@ derived y: base y; base x
 """, 
              "setl" : """
 derived x: base x; base y
-derived x: derived x: base x; base y; derived y: base y; base x
+derived x: base x; base y
 derived y: base y; base x
-derived y: derived y: base y; base x; derived x: base x; base y
+derived y: base y; base x
 """ } 
 
 desc_fmt = "shell string expansion (via %s)"
