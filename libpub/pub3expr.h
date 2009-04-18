@@ -228,6 +228,7 @@ namespace pub3 {
     virtual str eval_as_str (eval_t e) const { return to_str (); }
     int64_t eval_as_int (eval_t e) const { return to_int (); }
     u_int64_t eval_as_uint (eval_t e) const { return to_uint (); }
+    bool eval_as_bool (eval_t e) const { return to_bool (); }
   };
   //----------------------------------------------------------------------
 
@@ -255,6 +256,13 @@ namespace pub3 {
     u_int64_t to_uint () const { return _b; }
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
+    bool to_bool () const { return _b; }
+
+    // for recycle interface
+    static ptr<expr_bool_t> alloc (bool b);
+    void init (bool b) { _b = b; }
+    void finalize ();
+
   private:
     bool _b;
   };
@@ -563,7 +571,6 @@ namespace pub3 {
 
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     str to_str () const { return to_scalar ().to_str (); }
-
   };
 
   //-----------------------------------------------------------------------
@@ -582,8 +589,9 @@ namespace pub3 {
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
 
-    static ptr<expr_int_t> alloc (int64_t i) 
-    { return New refcounted<expr_int_t> (i); }
+    static ptr<expr_int_t> alloc (int64_t i);
+    void finalize ();
+    void init (int64_t i) { _val = i; }
 
   protected:
     int64_t _val;
@@ -783,7 +791,9 @@ namespace pub3 {
     ptr<const aarr_t> to_dict () const { return _dict; }
     ptr<const aarr_arg_t> dict () const { return _dict; }
     ptr<const aarr_arg_t> to_aarr () const { return _dict; }
-    ptr<aarr_arg_t> copy_dict_stub () const { return _dict; }
+    ptr<expr_dict_t> copy_stub_dict () const;
+
+    void replace (const str &nm, ptr<expr_t> x);
 
     ptr<const expr_dict_t> to_expr_dict () const { return mkref (this); }
     ptr<expr_dict_t> to_expr_dict () { return mkref (this); }

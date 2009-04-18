@@ -11,7 +11,6 @@ caller = "{$ setl %s\n" % d + \
 
 callee = """
 {$ for r, list {
-
    if   (!r.first && r.last) { print " and " }
    elif (!r.first)           { print ", " }
 

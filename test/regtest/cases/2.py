@@ -56,6 +56,14 @@ def smush (v):
 
 #-----------------------------------------------------------------------
 
+def bool2str (b):
+    r = "false"
+    if b:
+        r = "true"
+    return r
+
+#-----------------------------------------------------------------------
+
 test1 = smush ([ "%d " % i for i in d["v1"] ])
 test2 = smush ([ "%d-" % e["y"] for e in d["v2"] ])
 test3 = smush ([ "%s %d; " % ( e["x"], e["y"] ) for e in d["v2"] ])
@@ -63,8 +71,12 @@ test3 = smush ([ "%s %d; " % ( e["x"], e["y"] ) for e in d["v2"] ])
 v = []
 inv = d["v3"]
 for i in range (0, len (inv)):
-    v += [ "val=%s last=%d iter=%d odd=%d count=%d" % \
-               (inv[i]["val"], i == len (inv) - 1, i, i % 2 == 1, len (inv)) ]
+    v += [ "val=%s last=%s iter=%d odd=%s count=%d" % \
+               (inv[i]["val"], 
+                bool2str (i == len (inv) - 1), 
+                i, 
+                bool2str (i % 2 == 1), 
+                len (inv)) ]
 test4 = '\n'.join (v)
 
 test5 = "empty!"

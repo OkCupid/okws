@@ -19,7 +19,7 @@ okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h \
 	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
 	okws_sfs.h timehash.h okstats.h okformat.h ok_adebug.h pscalar.h \
 	axprtfd.h oksync.h pub3obj.h pub3expr.h pub3func.h pub3.h \
-	pescape.h
+	pescape.h precycle.h
 
 noinst_HEADERS =  env.mk
 

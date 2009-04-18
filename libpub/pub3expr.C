@@ -4,6 +4,7 @@
 #include "okformat.h"
 #include "pub3func.h"
 #include "pescape.h"
+#include "precycle.h"
 
 //-----------------------------------------------------------------------
 
@@ -445,6 +446,43 @@ bool
 pub3::expr_str_t::to_null () const
 {
   return !_val;
+}
+
+//-----------------------------------------------------------------------
+
+static recycler_t<pub3::expr_int_t> _int_recycler (1000);
+static recycler_t<pub3::expr_bool_t> _bool_recycler (1000);
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_int_t>
+pub3::expr_int_t::alloc (int64_t i)
+{
+  return _int_recycler.alloc (i);
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_int_t::finalize ()
+{
+  _int_recycler.recycle (this);
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_bool_t::finalize ()
+{
+  _bool_recycler.recycle (this);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_bool_t>
+pub3::expr_bool_t::alloc (bool b)
+{
+  return _bool_recycler.alloc (b);
 }
 
 //-----------------------------------------------------------------------
@@ -1727,6 +1765,22 @@ void
 pub3::pstr_el_t::output (output_t *o, penv_t *e) const 
 {
   assert (false);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_dict_t>
+pub3::expr_dict_t::copy_stub_dict () const
+{
+  return mkref (const_cast<expr_dict_t *> (this));
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_dict_t::replace (const str &nm, ptr<expr_t> x)
+{
+  dict ()->replace (nm, x);
 }
 
 //=======================================================================
