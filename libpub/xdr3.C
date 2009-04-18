@@ -140,6 +140,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_ADD:
     r = New refcounted<pub3::expr_add_t> (*x.xadd);
     break;
+  case XPUB3_EXPR_MULT:
+    r = New refcounted<pub3::expr_mult_t> (*x.xmult);
+    break;
   case XPUB3_EXPR_FN:
     r = pub3::rfn_factory_t::get ()->alloc (*x.fn);
     break;
@@ -212,6 +215,14 @@ pub3::expr_add_t::expr_add_t (const xpub3_add_t &x)
     _t1 (expr_t::alloc (x.t1)),
     _t2 (expr_t::alloc (x.t2)),
     _pos (x.pos) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_mult_t::expr_mult_t (const xpub3_mult_t &x)
+  : expr_arithmetic_t (x.lineno),
+    _f1 (expr_t::alloc (x.f1)),
+    _f2 (expr_t::alloc (x.f2)),
+    _pos (true) {}
 
 //-----------------------------------------------------------------------
 
@@ -379,6 +390,18 @@ pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_mult_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_MULT);
+  x->xmult->lineno = _lineno;
+  expr_to_rpc_ptr (_f1, &x->xmult->f1);
+  expr_to_rpc_ptr (_f2, &x->xmult->f2);
+  x->xmult->pos = 1;
+  return true;
+}
 //-----------------------------------------------------------------------
 
 bool

@@ -582,6 +582,45 @@ pub3::expr_mod_t::eval_internal (eval_t e) const
   return out;
 }
 
+//-----------------------------------------------------------------------
+
+scalar_obj_t 
+pub3::expr_mult_t::eval_internal (eval_t e) const
+{
+  scalar_obj_t out;
+
+  if (_f1 && !_f1->eval_as_null (e) && _f2 && !_f2->eval_as_null (e)) {
+    bool l = e.set_loud (true);
+    scalar_obj_t o1 = _f1->eval_as_scalar (e);
+    scalar_obj_t o2 = _f2->eval_as_scalar (e);
+    e.set_loud (l);
+    int64_t i1, i2;
+    u_int64_t u1, u2;
+    str s1, s2;
+    if (o1.to_int64 (&i1) && o2.to_int64 (&i2)) {
+      out.set_i (i1*i2);
+    } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2)) {
+      out.set_u (u1 * u2);
+    } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2)) {
+      out.set_i (u1 * u2);
+    } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2)) {
+      out.set_i (u1 * u2);
+    } else if ((s1 = o1.to_str ()) && o2.to_int64 (&i2) &&
+	       i2 < 0x100) {
+      strbuf b;
+      for (int64_t i = 0; i < i2; i++) {
+	b << s1;
+      }
+      out.set (b);
+    } else {
+      report_error (e, "no plausible evaluation found!");
+    }
+  } else {
+    report_error (e, "one or more operands were NULL");
+  }
+
+  return out;
+}
 
 //-----------------------------------------------------------------------
 
