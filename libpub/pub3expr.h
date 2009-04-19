@@ -288,7 +288,7 @@ namespace pub3 {
 	_t1 (t1), 
 	_t2 (t2) {}
 
-    expr_OR_t (const xpub3_or_t &x);
+    expr_OR_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_OR_t"; }
@@ -305,7 +305,7 @@ namespace pub3 {
     expr_AND_t (ptr<expr_t> f1, ptr<expr_t> f2, int lineno) 
       : expr_logical_t (lineno), _f1 (f1), _f2 (f2) {}
 
-    expr_AND_t (const xpub3_and_t &x);
+    expr_AND_t (const xpub3_mathop_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_AND_t"; }
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
@@ -367,6 +367,15 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_mathop_t {
+  public:
+    static ptr<expr_t> alloc (const xpub3_mathop_t &x);
+    static bool to_xdr (xpub3_expr_t *x, xpub3_mathop_opcode_t typ,
+			const expr_t *o1, const expr_t *o2, int lineno);
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_arithmetic_t : public expr_frozen_t {
   public:
     expr_arithmetic_t (int l) : expr_frozen_t (l) {}
@@ -390,7 +399,7 @@ namespace pub3 {
   public:
     expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, int lineno)
       : expr_arithmetic_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
-    expr_add_t (const xpub3_add_t &x);
+    expr_add_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
@@ -407,7 +416,7 @@ namespace pub3 {
   public:
     expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, int lineno)
       : expr_arithmetic_t (lineno), _f1 (f1), _f2 (f2), _pos (true) {}
-    expr_mult_t (const xpub3_mult_t &x);
+    expr_mult_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
@@ -424,7 +433,7 @@ namespace pub3 {
   public:
     expr_mod_t (ptr<expr_t> n, ptr<expr_t> d, int lineno)
       : expr_arithmetic_t (lineno), _n (n), _d (d) {}
-    expr_mod_t (const xpub3_mod_t &x);
+    expr_mod_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }

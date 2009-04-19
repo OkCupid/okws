@@ -128,20 +128,11 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
 {
   ptr<pub3::expr_t> r;
   switch (x.typ) {
-  case XPUB3_EXPR_AND:
-    r = New refcounted<pub3::expr_AND_t> (*x.xand);
-    break;
-  case XPUB3_EXPR_OR:
-    r = New refcounted<pub3::expr_OR_t> (*x.xxor);
+  case XPUB3_EXPR_MATHOP:
+    r = expr_mathop_t::alloc (*x.mathop);
     break;
   case XPUB3_EXPR_NOT:
     r = New refcounted<pub3::expr_NOT_t> (*x.xnot);
-    break;
-  case XPUB3_EXPR_ADD:
-    r = New refcounted<pub3::expr_add_t> (*x.xadd);
-    break;
-  case XPUB3_EXPR_MULT:
-    r = New refcounted<pub3::expr_mult_t> (*x.xmult);
     break;
   case XPUB3_EXPR_FN:
     r = pub3::rfn_factory_t::get ()->alloc (*x.fn);
@@ -182,9 +173,6 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_DOUBLE:
     r = New refcounted<pub3::expr_double_t> (*x.xdouble);
     break;
-  case XPUB3_EXPR_MOD:
-    r = New refcounted<pub3::expr_mod_t> (*x.xmod);
-    break;
   case XPUB3_EXPR_REGEX:
     r = New refcounted<pub3::expr_regex_t> (*x.regex);
     break;
@@ -196,40 +184,40 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
 
 //-----------------------------------------------------------------------
 
-pub3::expr_OR_t::expr_OR_t (const xpub3_or_t &x)
+pub3::expr_OR_t::expr_OR_t (const xpub3_mathop_t &x)
   : expr_logical_t (x.lineno),
-    _t1 (expr_t::alloc (x.t1)),
-    _t2 (expr_t::alloc (x.t2)) {}
+    _t1 (expr_t::alloc (x.o1)),
+    _t2 (expr_t::alloc (x.o2)) {}
 
 //-----------------------------------------------------------------------
 
-pub3::expr_AND_t::expr_AND_t (const xpub3_and_t &x)
+pub3::expr_AND_t::expr_AND_t (const xpub3_mathop_t &x)
   : expr_logical_t (x.lineno),
-    _f1 (expr_t::alloc (x.f1)),
-    _f2 (expr_t::alloc (x.f2)) {}
+    _f1 (expr_t::alloc (x.o1)),
+    _f2 (expr_t::alloc (x.o2)) {}
 
 //-----------------------------------------------------------------------
 
-pub3::expr_add_t::expr_add_t (const xpub3_add_t &x)
+pub3::expr_add_t::expr_add_t (const xpub3_mathop_t &x)
   : expr_arithmetic_t (x.lineno),
-    _t1 (expr_t::alloc (x.t1)),
-    _t2 (expr_t::alloc (x.t2)),
-    _pos (x.pos) {}
+    _t1 (expr_t::alloc (x.o1)),
+    _t2 (expr_t::alloc (x.o2)),
+    _pos (x.opcode == XPUB3_MATHOP_ADD) {}
 
 //-----------------------------------------------------------------------
 
-pub3::expr_mult_t::expr_mult_t (const xpub3_mult_t &x)
+pub3::expr_mult_t::expr_mult_t (const xpub3_mathop_t &x)
   : expr_arithmetic_t (x.lineno),
-    _f1 (expr_t::alloc (x.f1)),
-    _f2 (expr_t::alloc (x.f2)),
+    _f1 (expr_t::alloc (x.o1)),
+    _f2 (expr_t::alloc (x.o2)),
     _pos (true) {}
 
 //-----------------------------------------------------------------------
 
-pub3::expr_mod_t::expr_mod_t (const xpub3_mod_t &x)
+pub3::expr_mod_t::expr_mod_t (const xpub3_mathop_t &x)
   : expr_arithmetic_t (x.lineno),
-    _n (expr_t::alloc (x.numer)),
-    _d (expr_t::alloc (x.denom)) {}
+    _n (expr_t::alloc (x.o1)),
+    _d (expr_t::alloc (x.o2)) {}
 
 //-----------------------------------------------------------------------
 
@@ -358,11 +346,7 @@ pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
 bool
 pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_AND);
-  x->xand->lineno = _lineno;
-  expr_to_rpc_ptr (_f1, &x->xand->f1);
-  expr_to_rpc_ptr (_f2, &x->xand->f2);
-  return true;
+  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_AND, _f1, _f2, _lineno);
 }
 
 //-----------------------------------------------------------------------
@@ -370,11 +354,7 @@ pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
 bool
 pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_OR);
-  x->xxor->lineno = _lineno;
-  expr_to_rpc_ptr (_t1, &x->xxor->t1);
-  expr_to_rpc_ptr (_t2, &x->xxor->t2);
-  return true;
+  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_OR, _t1, _t2, _lineno);
 }
 
 //-----------------------------------------------------------------------
@@ -382,12 +362,8 @@ pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
 bool
 pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_ADD);
-  x->xadd->lineno = _lineno;
-  expr_to_rpc_ptr (_t1, &x->xadd->t1);
-  expr_to_rpc_ptr (_t2, &x->xadd->t2);
-  x->xadd->pos = _pos;
-  return true;
+  xpub3_mathop_opcode_t code = _pos ? XPUB3_MATHOP_ADD : XPUB3_MATHOP_SUBTRACT;
+  return expr_mathop_t::to_xdr (x, code, _t1, _t2, _lineno);
 }
 
 //-----------------------------------------------------------------------
@@ -395,23 +371,14 @@ pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
 bool
 pub3::expr_mult_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_MULT);
-  x->xmult->lineno = _lineno;
-  expr_to_rpc_ptr (_f1, &x->xmult->f1);
-  expr_to_rpc_ptr (_f2, &x->xmult->f2);
-  x->xmult->pos = 1;
-  return true;
+  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_MULT, _f1, _f2, _lineno);
 }
 //-----------------------------------------------------------------------
 
 bool
 pub3::expr_mod_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_MOD);
-  x->xmod->lineno = _lineno;
-  expr_to_rpc_ptr (_n, &x->xmod->numer);
-  expr_to_rpc_ptr (_d, &x->xmod->denom);
-  return true;
+  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_MOD, _n, _d, _lineno);
 }
 
 //-----------------------------------------------------------------------
@@ -755,4 +722,51 @@ pub3::pstr_el_t::to_xdr (xpub_pstr_el_t *x) const
 }
 
 //-----------------------------------------------------------------------
+
+bool
+pub3::expr_mathop_t::to_xdr (xpub3_expr_t *out, xpub3_mathop_opcode_t code,
+			     const expr_t *o1, const expr_t *o2,
+			     int lineno)
+{
+  out->set_typ (XPUB3_EXPR_MATHOP);
+  out->mathop->opcode = code;
+  out->mathop->lineno = lineno;
+  expr_to_rpc_ptr (o1, &out->mathop->o1);
+  expr_to_rpc_ptr (o2, &out->mathop->o2);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+pub3::expr_mathop_t::alloc (const xpub3_mathop_t &op)
+{
+  ptr<expr_t> ret;
+  switch (op.opcode) {
+  case XPUB3_MATHOP_ADD:
+  case XPUB3_MATHOP_SUBTRACT:
+    ret = New refcounted<pub3::expr_add_t> (op);
+    break;
+  case XPUB3_MATHOP_OR:
+    ret = New refcounted<pub3::expr_OR_t> (op);
+    break;
+  case XPUB3_MATHOP_AND:
+    ret = New refcounted<pub3::expr_AND_t> (op);
+    break;
+  case XPUB3_MATHOP_MOD:
+    ret = New refcounted<pub3::expr_mod_t> (op);
+    break;
+  case XPUB3_MATHOP_MULT:
+    ret = New refcounted<pub3::expr_mult_t> (op);
+    break;
+  default:
+    break;
+  }
+  return ret;
+}
+
+
+//-----------------------------------------------------------------------
+
+
 

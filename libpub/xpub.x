@@ -349,10 +349,7 @@ struct xpub_switch_t {
 
 enum xpub3_expr_typ_t {
    XPUB3_EXPR_NULL,
-   XPUB3_EXPR_AND,
-   XPUB3_EXPR_OR,
    XPUB3_EXPR_NOT,
-   XPUB3_EXPR_ADD,
    XPUB3_EXPR_FN,
    XPUB3_EXPR_RELATION,
    XPUB3_EXPR_DICT,
@@ -366,42 +363,27 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_UINT,
    XPUB3_EXPR_DOUBLE,
    XPUB3_EXPR_LIST,
-   XPUB3_EXPR_MOD,
    XPUB3_EXPR_REGEX,
-   XPUB3_EXPR_MULT		
+   XPUB3_EXPR_MATHOP
 };
+
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
 
-struct xpub3_and_t {
-   int lineno;
-   xpub3_expr_t *f1;
-   xpub3_expr_t *f2;   
+enum xpub3_mathop_opcode_t {
+     XPUB3_MATHOP_NONE = 0,
+     XPUB3_MATHOP_ADD = 1,
+     XPUB3_MATHOP_SUBTRACT = 2,
+     XPUB3_MATHOP_MULT = 4,
+     XPUB3_MATHOP_MOD = 5,
+     XPUB3_MATHOP_AND = 6,
+     XPUB3_MATHOP_OR = 7
 };
 
-struct xpub3_or_t {
+struct xpub3_mathop_t {
    int lineno;
-   xpub3_expr_t *t1;
-   xpub3_expr_t *t2;   
-};
-
-struct xpub3_add_t {
-   int lineno;
-   xpub3_expr_t *t1;
-   xpub3_expr_t *t2;
-   bool pos;   
-};
-
-struct xpub3_mult_t {
-   int lineno;
-   xpub3_expr_t *f1;
-   xpub3_expr_t *f2;
-   bool pos;   
-};
-
-struct xpub3_mod_t {
-   int lineno;
-   xpub3_expr_t *numer;
-   xpub3_expr_t *denom;
+   xpub3_mathop_opcode_t opcode;
+   xpub3_expr_t *o1;
+   xpub3_expr_t *o2;
 };
 
 struct xpub3_not_t {
@@ -497,14 +479,10 @@ struct xpub3_print_t {
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
-case XPUB3_EXPR_AND:
-     xpub3_and_t xand;
-case XPUB3_EXPR_OR:
-     xpub3_or_t xxor;
 case XPUB3_EXPR_NOT:
      xpub3_not_t xnot;
-case XPUB3_EXPR_ADD:
-     xpub3_add_t xadd;
+case XPUB3_EXPR_MATHOP:
+     xpub3_mathop_t mathop;
 case XPUB3_EXPR_FN:
      xpub3_fn_t fn;
 case XPUB3_EXPR_RELATION:
@@ -531,12 +509,8 @@ case XPUB3_EXPR_UINT:
      xpub3_uint_t xuint;
 case XPUB3_EXPR_DOUBLE:
      xpub3_double_t xdouble;
-case XPUB3_EXPR_MOD:
-     xpub3_mod_t xmod;
 case XPUB3_EXPR_REGEX:
      xpub3_regex_t regex;
-case XPUB3_EXPR_MULT:
-     xpub3_mult_t xmult;
 };
 
 /* PUB3 language constructs */
