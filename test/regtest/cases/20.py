@@ -3,7 +3,7 @@ desc = "test multiplication"
 
 filedata = """
 {$ if (-8 * 9 == 1 - 73) { print "ok" } 
-   set { x : 31 } %}
+   set { x : 31 } $}
 ${4*3}
 ${-4*5}
 ${"foo"*3}
