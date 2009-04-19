@@ -73,7 +73,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX 
-%x P3 P3_STR P3_REGEX
+%x P3 P3_STR P3_REGEX C_COMMENT
 
 %%
 
@@ -440,6 +440,9 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 [ \t]+		 { /* ignore */ }
 ["'] 		 { begin_P3_STR(yytext[0]); return yytext[0]; }
 
+[/][/].*$        { /* comment -- strip out */ }
+[/][*]           { yy_push_state (C_COMMENT); }
+
 .		 { return yyerror ("illegal token in Pub v3 environment"); }
 }
 
@@ -461,6 +464,13 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 			   return p3_regex_bad_eof ();
 			}
 }
+
+<C_COMMENT>{
+\n		{ PLINC; }
+"*/"		{ yy_pop_state (); }
+[^*\n]+		{ /* ignore */ }
+}
+
 
 %%
 
@@ -810,5 +820,6 @@ p3_identifier (const char *yyt)
 //   TXLCOM3 - Translator comment state 3
 //   POUND_REGEX - m#...# regex environment
 //   P3 -- Pub v3 (expanded boolean logic)
+//   C_COMMENT - style C comments
 //
 */
