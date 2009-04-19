@@ -684,6 +684,10 @@ p3_multiplicative_expr:
 	   {
 	     $$ = New refcounted<pub3::expr_mult_t> ($1, $3, PLINENO);
 	   }
+	   | p3_multiplicative_expr '/' p3_unary_expr
+	   {
+             $$ = New refcounted<pub3::expr_div_t> ($1, $3, PLINENO);
+	   }
 	   ;	   
 
 	

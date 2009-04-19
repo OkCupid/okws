@@ -209,8 +209,14 @@ pub3::expr_add_t::expr_add_t (const xpub3_mathop_t &x)
 pub3::expr_mult_t::expr_mult_t (const xpub3_mathop_t &x)
   : expr_arithmetic_t (x.lineno),
     _f1 (expr_t::alloc (x.o1)),
-    _f2 (expr_t::alloc (x.o2)),
-    _pos (true) {}
+    _f2 (expr_t::alloc (x.o2)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_div_t::expr_div_t (const xpub3_mathop_t &x)
+  : expr_arithmetic_t (x.lineno),
+    _n (expr_t::alloc (x.o1)),
+    _d (expr_t::alloc (x.o2)) {}
 
 //-----------------------------------------------------------------------
 
@@ -373,6 +379,15 @@ pub3::expr_mult_t::to_xdr (xpub3_expr_t *x) const
 {
   return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_MULT, _f1, _f2, _lineno);
 }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_div_t::to_xdr (xpub3_expr_t *x) const
+{
+  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_DIV, _n, _d, _lineno);
+}
+
 //-----------------------------------------------------------------------
 
 bool
@@ -758,6 +773,9 @@ pub3::expr_mathop_t::alloc (const xpub3_mathop_t &op)
     break;
   case XPUB3_MATHOP_MULT:
     ret = New refcounted<pub3::expr_mult_t> (op);
+    break;
+  case XPUB3_MATHOP_DIV:
+    ret = New refcounted<pub3::expr_div_t> (op);
     break;
   default:
     break;

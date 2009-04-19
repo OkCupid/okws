@@ -615,7 +615,35 @@ pub3::expr_mod_t::eval_internal (eval_t e) const
       report_error (e, "refused to mod by 0!");
     }
   } else {
-    report_error (e, "one or more operands were NULL");
+    report_error (e, "modulo: one or more operands were NULL");
+  }
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t 
+pub3::expr_div_t::eval_internal (eval_t e) const
+{
+  scalar_obj_t out;
+
+  if (_n && !_n->eval_as_null (e) && _d && !_d->eval_as_null (e)) {
+    bool l = e.set_loud (true);
+    scalar_obj_t n = _n->eval_as_scalar (e);
+    scalar_obj_t d = _d->eval_as_scalar (e);
+    e.set_loud (l);
+    int64_t id, in;
+    u_int64_t un;
+
+    if (!d.to_int64 (&id) || id == 0) {
+      report_error (e, "refusing to divide by 0");
+    } else if (n.to_int64 (&in)) {
+      out.set_i (in / id);
+    } else if (n.to_uint64 (&un)) {
+      out.set_i (un / id);
+    }
+  } else {
+    report_error (e, "division: one or more operands were NULL");
   }
   return out;
 }
@@ -651,10 +679,10 @@ pub3::expr_mult_t::eval_internal (eval_t e) const
       }
       out.set (b);
     } else {
-      report_error (e, "no plausible evaluation found!");
+      report_error (e, "mult: no plausible evaluation found!");
     }
   } else {
-    report_error (e, "one or more operands were NULL");
+    report_error (e, "mult: one or more operands were NULL");
   }
 
   return out;

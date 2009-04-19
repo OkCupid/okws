@@ -415,7 +415,7 @@ namespace pub3 {
   class expr_mult_t : public expr_arithmetic_t {
   public:
     expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, int lineno)
-      : expr_arithmetic_t (lineno), _f1 (f1), _f2 (f2), _pos (true) {}
+      : expr_arithmetic_t (lineno), _f1 (f1), _f2 (f2) {}
     expr_mult_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
@@ -424,9 +424,23 @@ namespace pub3 {
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _f1, _f2;
-    bool _pos;
   };
 
+  //-----------------------------------------------------------------------
+
+  class expr_div_t : public expr_arithmetic_t {
+  public:
+    expr_div_t (ptr<expr_t> n, ptr<expr_t> d, int lineno)
+      : expr_arithmetic_t (lineno), _n (n), _d (d) {}
+    expr_div_t (const xpub3_mathop_t &x);
+
+    bool to_xdr (xpub3_expr_t *x) const;
+    void dump2 (dumper_t *d) const { /* XXX implement me */ }
+    const char *get_obj_name () const { return "pub3::expr_div_t"; }
+  protected:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _n, _d;
+  };
   //-----------------------------------------------------------------------
 
   class expr_mod_t : public expr_arithmetic_t {

@@ -376,7 +376,8 @@ enum xpub3_mathop_opcode_t {
      XPUB3_MATHOP_MULT = 4,
      XPUB3_MATHOP_MOD = 5,
      XPUB3_MATHOP_AND = 6,
-     XPUB3_MATHOP_OR = 7
+     XPUB3_MATHOP_OR = 7,
+     XPUB3_MATHOP_DIV = 8
 };
 
 struct xpub3_mathop_t {
