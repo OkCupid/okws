@@ -37,6 +37,7 @@ def filedata_fn (func):
    }} 
    print "\\n"
 
+   for (i, v4) { print "don't show me and don't crash !" }
    for (i, v4) { print i } empty {{ empty! }}  print "\\n"
    for (i, v9) { print i } empty {{ empty! }}  print "\\n"
 

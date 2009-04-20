@@ -113,9 +113,13 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
     
   } else if (!v || v->size () == 0) {
 
-    twait { _empty->publish (iface, o, e, mkevent (res)); }
+    if (_empty) {
+      twait { _empty->publish (iface, o, e, mkevent (res)); }
+    }
 
   } else {
+
+    assert (v);
 
     ok = true;
     len = v->size ();
