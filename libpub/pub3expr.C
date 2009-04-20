@@ -128,7 +128,7 @@ pub3::expr_logical_t::eval (eval_t e) const
   if (_cache_generation != e.cache_generation ()) {
     _cache_generation = e.cache_generation ();
     _cached_bool = eval_internal (e);
-    _cached_val = New refcounted<expr_bool_t> (_cached_bool);
+    _cached_val = expr_bool_t::alloc (_cached_bool);
   }
   return _cached_val;
 }
@@ -569,7 +569,7 @@ pub3::expr_t::alloc (scalar_obj_t so)
   str s;
 
   if (so.to_int64 (&i)) {
-    ret = New refcounted<expr_int_t> (i);
+    ret = expr_int_t::alloc (i);
   } else if (so.to_uint64 (&u)) {
     ret = New refcounted<expr_uint_t> (u);
   } else if ((s = so.to_str ())) {

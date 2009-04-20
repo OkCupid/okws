@@ -66,6 +66,8 @@ public:
   {
     if (_alive && _v.size () < _lim) {
       _v.push_back (mkref (o));
+    } else {
+      delete o;
     }
   }
 

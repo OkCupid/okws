@@ -46,7 +46,7 @@ namespace rfn1 {
       }
       if (!ok) res = false;
     }
-    return New refcounted<expr_bool_t> (res);
+    return expr_bool_t::alloc (res);
   }
 
   //-----------------------------------------------------------------------
