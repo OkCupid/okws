@@ -24,6 +24,7 @@
 
 #include "zstr.h"
 #include <zconf.h>
+#include "sfs_profiler.h"
 
 ztab_t *ztab = NULL;    // external ztab object
 z_stream zm;            // global zstream object
@@ -52,11 +53,15 @@ zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
     lev = ok_gzip_compress_level;
 
   if (lev != zlev) {
+    sfs_profiler::enter_vomit_lib ();
     deflateParams (&zm, lev, Z_DEFAULT_STRATEGY);
+    sfs_profiler::exit_vomit_lib ();
     zlev = lev;
   }
 
+  sfs_profiler::enter_vomit_lib ();
   int err = deflate (&zm, Z_FULL_FLUSH);
+  sfs_profiler::exit_vomit_lib ();
   *dlenp = dlen - zm.avail_out;
   
   return err;
@@ -145,10 +150,14 @@ zfinish (char *dest, uLong *dlenp)
   zm.next_out = reinterpret_cast<Bytef *> (dest);
   zm.avail_out = dlen;
   
+  sfs_profiler::enter_vomit_lib ();
   int err = deflate (&zm, Z_FINISH);
+  sfs_profiler::exit_vomit_lib ();
   *dlenp = dlen - zm.avail_out;
   
+  sfs_profiler::enter_vomit_lib ();
   int err2 = deflateReset (&zm);
+  sfs_profiler::exit_vomit_lib ();
   if (err2 != Z_OK)
     warn << "deflateReset failed! " << err2 << "\n";
   
@@ -392,8 +401,10 @@ void zinit (bool cache, int lev)
   zm.zfree = (free_func)0;
   zm.opaque = (voidpf )0;
   zdebug = getenv ("GZIP_DEBUG");
+  sfs_profiler::enter_vomit_lib ();
   int err = deflateInit2 (&zm, lev, Z_DEFLATED, -MAX_WBITS, 
 			  ok_gzip_mem_level, Z_DEFAULT_STRATEGY);
+  sfs_profiler::exit_vomit_lib ();
   if (err != Z_OK)
     fatal << "could not initialize zlib stream\n";
 
