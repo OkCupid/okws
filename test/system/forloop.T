@@ -65,7 +65,6 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
     int opts (0);
     bool rc;
     const char *tstf;
-    pub3::obj_t o;
   }
 
   tstf = "/test/forloop2.html";
@@ -86,7 +85,7 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   }
 
   for (size_t i = 0; i < 5; i++) {
-    o = pub_obj("push").push_back ();
+    pub3::ref_t o = pub_obj("push").push_back ();
     strbuf b ("xx-%zu-xx", i);
     o("val") = b;
   }

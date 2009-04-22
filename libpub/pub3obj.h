@@ -158,6 +158,17 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  class ref_t : public obj_t {
+  public:
+    ref_t (ptr<obj_ref_t> r) : obj_t (r) {}
+    ref_t (const obj_t &o) { refer_to (o); }
+  private:
+    // Should never be used!
+    obj_t &operator= (obj_t o);
+  };
+
+  //-----------------------------------------------------------------------
+
   class obj_list_t : public obj_t {
   public:
     obj_list_t ();
