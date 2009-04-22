@@ -374,19 +374,28 @@ class TestCase:
         self._scratch_files = []
         self._result = False
         self._script_path = None
+        self._custom_fetch = None
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
 
         self._outcome_obj = Outcome.alloc (self)
 
-        if not self._filedata and not self._htdoc and not self._service \
-                and not self._script_path:
+        if not self._filedata \
+                and not self._htdoc \
+                and not self._service \
+                and not self._script_path \
+                and not self._custom_fetch:
             raise RegTestError, "bad test case: no input file given"
 
         if type (self._filedata) is list:
             self._filedata_inc = self._filedata[1:]
             self._filedata = self._filedata[0]
+
+    ##----------------------------------------
+
+    def config (self):
+        return self._config
 
     ##----------------------------------------
 
@@ -530,8 +539,11 @@ class TestCase:
     ##----------------------------------------
 
     def fetch (self):
-        u = self.file_url ()
-        resp = ''.join (urllib.urlopen (u))
+        if self._custom_fetch:
+            resp = self._custom_fetch (self)
+        else:
+            u = self.file_url ()
+            resp = ''.join (urllib.urlopen (u))
         return resp
 
     ##----------------------------------------
