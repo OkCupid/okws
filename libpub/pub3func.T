@@ -198,7 +198,47 @@ pub3::for_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
 bool
 pub3::cond_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
 {
-  return false;
+  bool ret = false;
+
+  // XXX - can do better than this.  This means we'll go into blocking
+  // land if ANY clause of the if statement blocks.  It should be
+  // that we'll go into blocking code only if the selected clause needs
+  // to block.
+  if (!might_block ()) {
+    ptr<nested_env_t> ne = find_clause (o, e);
+    if (ne) {
+      ret = ne->publish_nonblock (i, o, e);
+    } else {
+      ret = true;
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<nested_env_t>
+pub3::cond_t::find_clause (output_t *o, penv_t *e) const
+{
+  size_t len = _clauses ? _clauses->size () : size_t (0) ;
+  ptr<nested_env_t> ret;
+  bool found = false;
+  pub3::eval_t eval (e, o);
+  ptr<const cond_clause_t> clause;
+  ptr<const expr_t> x;
+
+  for (size_t i = 0; !found&& i < len; i++) {
+    
+    // Note that expr will be NULL for the last (else) clause if
+    // one was there....
+    if ((clause = (*_clauses)[i]) &&
+	(!(x = clause->expr ()) || (x && x->eval_as_bool (eval)))) {
+      
+      found = true;
+      ret = clause->env ();
+    }
+  }
+    return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -209,32 +249,12 @@ pub3::cond_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 {
   tvars {
     xpub_status_t res (XPUB_STATUS_OK);
-    size_t len;
-    size_t i;
-    ptr<const pub3::expr_t> expr;
-    bool found (false);
-    pub3::eval_t eval (e, o);
-    ptr<pub3::cond_clause_t> clause;
     ptr<nested_env_t> env;
   }
 
-  len = _clauses ? _clauses->size () : size_t (0) ;
-
-  for (i = 0; !found && i < len; i++) {
-
-    // Note that expr will be NULL for the last (else) clause if
-    // one was there....
-    if ((clause = (*_clauses)[i]) &&
-	(!(expr = clause->expr ()) ||
-	 (expr && expr->eval_as_bool (eval)))) {
-
-      found = true;
-      if ((env = clause->env ())) {
-	twait { env->publish (iface, o, e, mkevent (res)); }
-      }
-    }
+  if ((env = find_clause (o, e))) {
+    twait { env->publish (iface, o, e, mkevent (res)); }
   }
-
   (*callercv) (res);
 }
 
@@ -311,6 +331,33 @@ pub3::set_func_t::output (output_t *o, penv_t *e) const
 void
 pub3::cond_t::output (output_t *o, penv_t *e) const
 {
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::cond_clause_t::might_block () const
+{
+  return (_env && _env->might_block ());
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::cond_t::might_block () const
+{
+  if (_might_block < 0) {
+    _might_block = 0;
+
+    for (size_t i = 0; 
+	 _might_block == 0 && _clauses && i < _clauses->size (); 
+	 i++) {
+
+      if ((*_clauses)[i]->might_block ()) { _might_block = 1; }
+    }
+
+  }
+  return (_might_block);
 }
 
 //-----------------------------------------------------------------------

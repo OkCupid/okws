@@ -844,6 +844,19 @@ pfile_sec_t::publish (pub2_iface_t *iface, output_t *o, penv_t *genv,
 
 //-----------------------------------------------------------------------
 
+bool
+pfile_sec_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
+{
+  bool ret = false;
+  if (!might_block ()) {
+    ret = true;
+    els->publish_nonblock (i, o, e);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 void 
 pfile_include_t::publish (pub2_iface_t *iface, output_t *o,
 			  penv_t *genv, xpub_status_cb_t callercv,

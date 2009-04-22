@@ -2553,3 +2553,26 @@ penv_t::clear ()
 }
 
 //-----------------------------------------------------------------------
+
+bool
+pfile_sec_t::might_block () const
+{
+  if (_might_block < 0) {
+    _might_block = 0;
+    for (pfile_el_t *e = els ? els->first : NULL; 
+	 _might_block == 0 && e; e = els->next (e)) {
+      if (e->might_block ()) { _might_block = 1; }
+    }
+  }
+  return _might_block;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+nested_env_t::might_block () const
+{
+  return _sec && _sec->might_block ();
+}
+
+//-----------------------------------------------------------------------

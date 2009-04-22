@@ -80,7 +80,8 @@ pfile_html_sec_t::pfile_html_sec_t (const xpub_section_t &x)
 //-----------------------------------------------------------------------
 
 pfile_sec_t::pfile_sec_t (const xpub_section_t &x)
-  : lineno (x.lineno)
+  : lineno (x.lineno),
+    _might_block (-1)
 {
   // XXX - reconsider this copy and paste
   size_t lim = x.els.size ();

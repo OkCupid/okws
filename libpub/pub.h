@@ -935,6 +935,7 @@ public:
   virtual bool to_xdr (xpub_obj_t *x) const { return false; }
   static pfile_el_t *alloc (const xpub_obj_t &x);
   virtual void explore (pub_exploremode_t mode) const {}
+  virtual bool might_block () const { return false; }
 };
 typedef publist_t<pfile_el_t, &pfile_el_t::lnk> pfile_el_lst_t;
 
@@ -1061,7 +1062,8 @@ class pfile_sec_t : public pfile_el_t {
 public:
   pfile_sec_t (int l, bool ls = true) 
     : els (ls ? New pfile_el_lst_t () : NULL), lineno (l),
-      btag_flag (false), etag_flag (false) {}
+      btag_flag (false), etag_flag (false),
+      _might_block (-1) {}
   pfile_sec_t (const xpub_section_t &x);
   virtual ~pfile_sec_t () { if (els) { els->deleteall(); delete els; } }
   pfile_sec_t *add (pfile_el_t *el, bool combine = true);
@@ -1103,14 +1105,16 @@ public:
 		CLOSURE) const;
 
   // if no elements in this section, can ignore it
-  bool publish_nonblock  (pub2_iface_t *, output_t *, penv_t *) const
-  { return (!els); }
+  bool publish_nonblock  (pub2_iface_t *, output_t *, penv_t *) const;
+
+  bool might_block () const;
 
   pfile_el_lst_t *els;
 protected:
   int lineno;
   bool btag_flag;
   bool etag_flag;
+  mutable int _might_block;
 };
 typedef publist_t<pfile_sec_t, &pfile_sec_t::lnk> pfile_sec_lst_t;
 
@@ -1151,6 +1155,7 @@ public:
   void dump2 (dumper_t *d) const;
   const char *get_obj_name () const { return "pfile_inclist_t"; }
   bool to_xdr (xpub_obj_t *x) const;
+  bool might_block () const { return true; }
 protected:
   bool err;
   vec<pfnm_t> files;
@@ -1176,6 +1181,7 @@ public:
   virtual bool to_xdr (xpub_obj_t *x) const;
   void to_xdr_base (xpub_obj_t *x) const;
   bool add_base (ptr<arglist_t> l);
+  bool might_block () const { return true; }
 
   // For pub2
   virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
@@ -1202,6 +1208,7 @@ public:
   virtual const char *get_obj_name () const { return "pfile_include2_t"; }
   virtual bool to_xdr (xpub_obj_t *x) const;
   void dump2 (dumper_t *d) const;
+  bool might_block () const { return true; }
 
   // For pub2
   virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
@@ -1592,6 +1599,7 @@ public:
   void publish (pub2_iface_t *, output_t *, penv_t *, xpub_status_cb_t ,
 		CLOSURE) const;
   bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+  bool might_block () const { return true; }
 
 private:
   bool add_case(ptr<arglist_t> l);
@@ -1651,6 +1659,9 @@ public:
 
   bool publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g) const
   { return _sec->publish_nonblock (i, o, g); }
+
+  bool might_block () const;
+
 private:
   pfile_sec_t *_sec;
   pfile_frame_t _frm;

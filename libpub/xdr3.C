@@ -61,7 +61,8 @@ pub3::cond_clause_t::cond_clause_t (const xpub3_cond_clause_t &x)
 //-----------------------------------------------------------------------
 
 pub3::cond_t::cond_t (const xpub3_cond_t &x)
-  : pfile_func_t (x.lineno)
+  : pfile_func_t (x.lineno),
+    _might_block (-1)
 {
   if (x.clauses.size ()) {
     _clauses = New refcounted<cond_clause_list_t> ();

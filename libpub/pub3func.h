@@ -27,6 +27,7 @@ namespace pub3 {
 			  xpub_status_cb_t , CLOSURE) const;
     bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
     void output (output_t *o, penv_t *e) const;
+    bool might_block () const { return true; }
   protected:
   private:
     str _iter;
@@ -52,6 +53,7 @@ namespace pub3 {
 			  xpub_status_cb_t, CLOSURE) const;
     bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
     void output (output_t *o, penv_t *e) const;
+    bool might_block () const { return true; }
   protected:
     ptr<expr_t> _file;
     ptr<expr_t> _dict;
@@ -84,6 +86,7 @@ namespace pub3 {
 
     ptr<const expr_t> expr () const { return _expr; }
     ptr<nested_env_t> env () const { return _env; }
+    bool might_block () const;
 
   private:
     int _lineno;
@@ -99,7 +102,7 @@ namespace pub3 {
   
   class cond_t : public pfile_func_t {
   public:
-    cond_t (int l) : pfile_func_t (l) {}
+    cond_t (int l) : pfile_func_t (l), _might_block (-1) {}
     cond_t (const xpub3_cond_t &x);
 
     void add_clauses (ptr<cond_clause_list_t> c) { _clauses = c; }
@@ -110,8 +113,13 @@ namespace pub3 {
     bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
     void output (output_t *o, penv_t *e) const;
     bool add (ptr<arglist_t> al) { return false; }
+    bool might_block () const;
+
   private:
+    ptr<nested_env_t> find_clause (output_t *o, penv_t *e) const;
+
     ptr<cond_clause_list_t> _clauses;
+    mutable int _might_block; // one of: -1 (not set), 0 (no), and 1 (yes)
   };
 
   //-----------------------------------------------------------------------
