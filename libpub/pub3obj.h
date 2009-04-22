@@ -12,6 +12,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  //
+  // In internal class to implement an object refering to another
+  // object.  Applications should never be using these objects
+  // directly.
+  //
   class obj_ref_t {
   public:
     obj_ref_t () {}
@@ -158,6 +163,13 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  //
+  // Applications should use this class when handling references to pub3
+  // objects. Consider:
+  //
+  //   pub3::obj_t o;
+  //   pub3::ref_t r = o.push_back ();
+  //
   class ref_t : public obj_t {
   public:
     ref_t (ptr<obj_ref_t> r) : obj_t (r) {}
