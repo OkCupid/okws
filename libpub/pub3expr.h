@@ -803,6 +803,7 @@ namespace pub3 {
     ptr<pval_t> eval_freeze (eval_t e) const;
     str eval_as_str (eval_t e) const;
     bool to_len (size_t *s) const;
+    bool eval_as_bool (eval_t e) const { return to_bool (); }
 
     void add (nvpair_t *p);
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
@@ -815,6 +816,7 @@ namespace pub3 {
     ptr<const aarr_arg_t> dict () const { return _dict; }
     ptr<const aarr_arg_t> to_aarr () const { return _dict; }
     ptr<expr_dict_t> copy_stub_dict () const;
+    bool to_bool () const { return size () > 0; }
 
     void replace (const str &nm, ptr<expr_t> x);
 
