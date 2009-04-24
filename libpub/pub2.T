@@ -789,7 +789,7 @@ bound_pfile_t::publish (pub2_iface_t *iface, output_t *o,
 
   if (!genv->i_stack_add (rct)) {
     strbuf msg;
-    msg << "circular include detected trying to include file "
+    msg << "include stack depth exceeded when trying to include file "
 	<< rct->bnd->filename ();
     o->output_err_stacktrace (genv, msg);
   } else {

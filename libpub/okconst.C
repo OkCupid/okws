@@ -251,6 +251,9 @@ int ok_pub2_viserr = 1;          // pub errors visible by default
 // check treestat sentinel every two seconds
 int ok_pub2_treestat_interval = 2;   
 
+// maximum depth of file inclusion in pub
+size_t ok_pub_max_include_depth = 32;
+
 // timeout entries in the negative filename lookup cache
 int ok_pub2_neg_cache_timeout = 360;
 int ok_pub2_svc_neg_cache_timeout = 5;

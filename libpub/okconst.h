@@ -291,6 +291,7 @@ extern int ok_pub2_treestat_interval;
 extern size_t ok_pub2_max_datasz;
 extern const char *ok_pub2_treestat_sentinel;
 extern const char *ok_pub2_treestat_heartbeat;
+extern size_t ok_pub_max_include_depth;
 
 
 /**

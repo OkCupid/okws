@@ -1446,7 +1446,7 @@ bool
 penv_t::i_stack_add (bpfcp_t t)
 {
   bump ();
-  if (istack[t->bnd->hash ()])
+  if (istack.size () > ok_pub_max_include_depth)
     return false;
   istack.insert (t->bnd->hash ());
   push_file (t);
