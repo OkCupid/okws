@@ -64,34 +64,26 @@ okclnt_reflect_t::process_T (okclnt2_t::proc_ev_t ev)
     pub3::obj_t pub_obj;
     int opts (0);
     bool rc;
-    const char *tstf;
-    u_int64_t u1, u2, u3;
-    str s1, s3;
+    str file;
+    vec<str> vars;
   }
 
-  tstf = "/test/reflect.html";
+  file = cgi["file"];
+  cgi.lookup ("vars", &vars);
+  for (size_t i = 0; i < vars.size () ; i++) {
+    str val;
+    if (vars[i] && vars[i].len () && (val = cgi[vars[i]]) && val.len ())
+      pub_obj (vars[i]) = val;
+  }
 
-  u1 = 0x89abcdef01234567ULL;
-  u2 = 0xffffffffffffffffULL;
-  u3 = 0xffffffffffff0000ULL;
-
-  s1 = "0x89abcdef01234567";
-  s3 = "0xffffffffffff0000";
-
-  pub_obj("u1") = u1;
-  pub_obj("u2") = u2;
-  pub_obj("u3") = u3;
-
-  pub_obj("s1") = s1;
-  pub_obj("s3") = s3;
-
-  if (cgi.blookup ("wss")) {
-    opts |= P_WSS;
+  if (file && file.len ()) {
+    twait { 
+      pub2 ()->run (&out, file, mkevent (rc), pub_obj.dict (), opts|P_VISERR); 
+    }
+  } else {
+    out << "no file given";
   }
   
-  twait { 
-    pub2 ()->run (&out, tstf, mkevent (rc), pub_obj.dict (), opts|P_VISERR); 
-  }
   twait { output (out, mkevent ()); }
 
   ev->trigger (true, HTTP_OK);
