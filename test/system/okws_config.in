@@ -40,6 +40,7 @@ Service		upload /upload
 Service 	purify /purify
 Service		posttest /posttest
 Service		forloop /forloop
+Service		pub3i64 /i64
 
 #Service	3tier/tst2 /tst2
 

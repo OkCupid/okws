@@ -41,14 +41,14 @@ NO_SSL = \#
 endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T form.T cookie.T \
-	post.T upload.T purify.T purify_lib.T forloop.T
+	post.T upload.T purify.T purify_lib.T forloop.T pub3i64.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C form.C cookie.C \
-	post.C upload.C purify.C purify_lib.C forloop.C
+	post.C upload.C purify.C purify_lib.C forloop.C pub3i64.C
 
 SUBDIRS = $(XML_SUBDIRS) 3tier
 
 okwssvc_PROGRAMS = static configtest simple pub1tst form cookie \
-	post upload $(XMLPROGS) posttest forloop
+	post upload $(XMLPROGS) posttest forloop pub3i64
 
 okwsconf_DATA = okws.crt.dist okws.key.dist
 
@@ -63,6 +63,7 @@ noinst_HEADERS = test_const.h
 upload_SOURCES = upload.C
 posttest_SOURCES = posttest.C
 forloop_SOURCES = forloop.C
+pub3i64_SOURCES = pub3i64.C
 
 SUFFIXES = .g .C .T
 .T.C:
@@ -86,6 +87,8 @@ upload.o:	upload.C
 upload.lo:	upload.C
 forloop.lo:	forloop.C
 forloop.o:	forloop.C
+pub3i64.loo:      pub3i64.C
+pub3i64.o:      pub3i64.C
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUT) 
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN) purify_lib.h \

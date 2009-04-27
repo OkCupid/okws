@@ -3,11 +3,36 @@
 #include "parseopt.h"
 #include "parr.h"
 
+//-----------------------------------------------------------------------
+
+static bool
+my_convertint (const str &s, int64_t *out)
+{
+  bool ret = false;
+  char *ep;
+  errno = 0;
+  if (!s || !s.len ()) {
+    /* no-op -- empty string is not valid */
+  } else {
+    int64_t v = strtoll (s, &ep, 0);
+    if (errno == ERANGE || errno == EINVAL) {
+      /* no-op */
+    } else if (ep && *ep == '\0') {
+      *out = v;
+      ret = true;
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 scalar_obj_t::_p_t::_p_t () 
   : _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE) {}
 
 scalar_obj_t::_p_t::_p_t (const str &s)
   : _s (s), _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE) {}
+
 
 int64_t 
 scalar_obj_t::_p_t::to_int64 () const
@@ -19,7 +44,7 @@ scalar_obj_t::_p_t::to_int64 () const
       _int_cnv = CNV_OK;
     } else {
       _i = 0;
-      _int_cnv = (_s && convertint (_s, &_i)) ? CNV_OK : CNV_BAD;
+      _int_cnv = (_s && my_convertint (_s, &_i)) ? CNV_OK : CNV_BAD;
     }
   }
   return _i;
@@ -249,10 +274,17 @@ convertuint (const str &s, u_int64_t *out)
 {
   bool ret = false;
   char *ep;
-  u_int64_t v = strtoull (s, &ep, 0);
-  if (ep && *ep == '\0') {
-    *out = v;
-    ret = true;
+  errno = 0;
+  if (!s || !s.len ()) {
+    /* no-op -- empty string is not valid */
+  } else {
+    u_int64_t v = strtoull (s, &ep, 0);
+    if (errno == ERANGE || errno == EINVAL) {
+      /* no-op */
+    } else if (ep && *ep == '\0') {
+      *out = v;
+      ret = true;
+    }
   }
   return ret;
 }
