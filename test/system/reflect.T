@@ -73,7 +73,7 @@ okclnt_reflect_t::process_T (okclnt2_t::proc_ev_t ev)
   for (size_t i = 0; i < vars.size () ; i++) {
     str val;
     if (vars[i] && vars[i].len () && (val = cgi[vars[i]]) && val.len ())
-      pub_obj (vars[i]) = val;
+      pub_obj (vars[i]).fancy_assign_to (val);
   }
 
   if (file && file.len ()) {

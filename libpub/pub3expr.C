@@ -1811,6 +1811,14 @@ pub3::expr_dict_t::replace (const str &nm, ptr<expr_t> x)
   dict ()->replace (nm, x);
 }
 
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_str_t>
+pub3::expr_str_t::alloc (const str &s)
+{
+  return New refcounted<expr_str_t> (s);
+}
+
 //=======================================================================
 
 

@@ -117,6 +117,11 @@ namespace pub3 {
     obj_t &operator= (ptr<pval_t> z) { return set_value (z); }
     obj_t &operator= (scalar_obj_t o) { return set_scalar (o); }
 
+    // Use implicit conversions, converting strings that look
+    // like ints into ints. Looks for problems with strings of
+    // the form '0533' which will be looked on as octal.
+    obj_t &fancy_assign_to (const str &s);
+
     ALL_INT_TYPES(obj_t &operator=, i, { return set_int (i); })
 
     // wild card

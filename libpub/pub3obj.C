@@ -364,6 +364,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   obj_t &
+  obj_t::fancy_assign_to (const str &s)
+  {
+    return set_scalar_expr (expr_t::alloc (s));
+  }
+
+  //-----------------------------------------------------------------------
+
+  obj_t &
   obj_t::set_str (const str &s)
   {
     return set_scalar_expr (expr_str_t::alloc (s));

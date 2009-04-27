@@ -581,6 +581,7 @@ namespace pub3 {
     str eval_as_str (eval_t e) const;
     bool eval_as_null (eval_t e) const;
     ptr<rxx> eval_as_regex (eval_t e) const { return to_regex (); }
+    static ptr<expr_str_t> alloc (const str &s);
 
   protected:
     str _val;

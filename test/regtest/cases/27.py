@@ -1,4 +1,9 @@
 
+def convert (x):
+    if (x < 0): return "%d" % x
+    else: return "0x%x" % x
+
+
 desc =  "test casts of uints, ints, etc"
 
 dct = { "u1" :  0x1000,
@@ -10,7 +15,7 @@ dct = { "u1" :  0x1000,
 filedata = '\n'.join (["${%s}" % k for k in dct.keys () ] )
 
 vars = '&'.join (["vars=%s" % k for k in dct.keys () ])
-vals = '&'.join (["%s=%s" % (k, dct[k]) for k in dct.keys () ])
+vals = '&'.join (["%s=%s" % (k, convert (dct[k])) for k in dct.keys () ])
 
 script_path = "reflect?file=$[0]&%s&%s" % (vars, vals)
 

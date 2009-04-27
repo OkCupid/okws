@@ -420,7 +420,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 
 
-([0-9]+|0x[0-9a-f])  { yylval.str = yytext; return T_P3_UINT; }
+([0-9]+|0x[0-9a-f]+) { yylval.str = yytext; return T_P3_UINT; }
 -?[0-9]*\.[0-9]+     { yylval.str = yytext; return T_P3_FLOAT; }
 -[0-9]+              { yylval.str = yytext; return T_P3_INT; }
 
