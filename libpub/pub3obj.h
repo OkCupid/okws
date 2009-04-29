@@ -7,6 +7,7 @@
 #include "pub.h"
 #include "parr.h"
 #include "pub3expr.h"
+#include "okformat.h"
 
 namespace pub3 {
 
@@ -65,6 +66,22 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+#define I2S(typ, prnt) \
+  inline str i2s (typ i) { return strbuf ("%" prnt, i); }
+
+  I2S(int64_t, PRId64)
+  I2S(int32_t, PRId32)
+  I2S(int16_t, PRId16)
+  I2S(int8_t, PRId8)
+  I2S(u_int64_t, PRIu64)
+  I2S(u_int32_t, PRIu32)
+  I2S(u_int16_t, PRIu16)
+  I2S(u_int8_t, PRIu8)
+
+#undef I2S
+
+  //-----------------------------------------------------------------------
+
   class const_obj_t {
   public:
     const_obj_t (ptr<expr_t> x) : _c_obj (x) {}
@@ -79,6 +96,9 @@ namespace pub3 {
     size_t size () const;
     const_obj_t operator[] (size_t s) const;
     const_obj_t operator() (const str &s) const;
+
+    ALL_INT_TYPES (const_obj_t operator(), i, 
+		   const { return (*this)(i2s (i)); });
 
     virtual ptr<const pval_t> obj () const { return _c_obj; }
     bool is_null () const { return _c_obj; }
@@ -110,6 +130,10 @@ namespace pub3 {
     const_obj_t operator() (const str &s) const;
     const_obj_t operator[] (size_t s) const;
 
+    ALL_INT_TYPES (const_obj_t operator(), i, 
+		   const { return (*this)(i2s (i)); });
+    ALL_INT_TYPES (obj_t operator(), i, { return (*this)(i2s (i)); });
+
     // scalar access features: mutable
     obj_t &operator= (u_int64_t i) { return set_uint (i); }
     obj_t &operator= (const str &s) { return set_str (s); }
@@ -134,6 +158,7 @@ namespace pub3 {
 
     ptr<const pval_t> obj () const;
     ptr<pval_t> obj ();
+    void clear ();
     
   protected:
 
