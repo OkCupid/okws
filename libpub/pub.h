@@ -956,24 +956,6 @@ class pstr_var_t;
 
 //-----------------------------------------------------------------------
 
-class int_w_t {
-public:
-  int_w_t (int64_t i) : _v (i) {}
-  int_w_t (int32_t i) : _v (i) {}
-  int_w_t (int16_t i) : _v (i) {}
-  int_w_t (int8_t i) : _v (i) {}
-  int_w_t (uint32_t i) : _v (i) {}
-  int_w_t (uint16_t i) : _v (i) {}
-  int_w_t (uint8_t i) : _v (i) {}
-
-  operator int64_t() const { return _v; }
-
-private:
-  int64_t _v;
-};
-
-//-----------------------------------------------------------------------
-
 #define ALL_INT_TYPES(pre,x,post)		\
   pre (int64_t x) post				\
   pre (int32_t x) post				\
@@ -982,7 +964,6 @@ private:
   pre (uint16_t x) post				\
   pre (int8_t x) post				\
   pre (uint8_t x) post
-
 
 //-----------------------------------------------------------------------
 
