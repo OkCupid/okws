@@ -142,7 +142,7 @@ namespace pub3 {
     obj_t &operator= (scalar_obj_t o) { return set_scalar (o); }
 
     // Use implicit conversions, converting strings that look
-    // like ints into ints. Looks for problems with strings of
+    // like ints into ints. Look for problems with strings of
     // the form '0533' which will be looked on as octal.
     obj_t &fancy_assign_to (const str &s);
 
@@ -159,6 +159,16 @@ namespace pub3 {
     ptr<const pval_t> obj () const;
     ptr<pval_t> obj ();
     void clear ();
+
+    bool to_int (int64_t *i) const;
+    bool to_uint (u_int64_t *u) const;
+    bool to_str (str *s) const;
+    bool to_bool (bool *b) const;
+
+    str to_str () const;
+    bool to_bool () const;
+    int64_t to_int () const;
+    u_int64_t to_uint () const;
     
   protected:
 

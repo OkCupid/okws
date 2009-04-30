@@ -476,4 +476,82 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  obj_t::to_int (int64_t *i) const
+  {
+    return _scalar && _scalar->to_int64 (i);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  obj_t::to_uint (u_int64_t *u) const
+  {
+    scalar_obj_t so;
+    bool ret = false;
+    if (_scalar) {
+      so = _scalar->to_scalar ();
+      ret = so.to_uint64 (u);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  obj_t::to_str (str *s) const
+  {
+    return (_scalar && (*s = _scalar->to_str ()));
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  obj_t::to_bool (bool *b) const
+  {
+    return (_scalar && (*b = _scalar->to_bool ()));
+  }
+
+  //-----------------------------------------------------------------------
+
+  str
+  obj_t::to_str () const 
+  {
+    str ret;
+    to_str (&ret);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  bool
+  obj_t::to_bool () const
+  {
+    bool ret = false;
+    to_bool (&ret);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  int64_t
+  obj_t::to_int () const
+  {
+    int64_t r = 0;
+    to_int (&r);
+    return r;
+  }
+
+  //-----------------------------------------------------------------------
+
+  u_int64_t
+  obj_t::to_uint () const
+  {
+    u_int64_t r = 0;
+    to_uint (&r);
+    return r;
+  }
+
+  //-----------------------------------------------------------------------
+
 };
