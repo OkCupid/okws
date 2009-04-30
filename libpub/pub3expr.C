@@ -1203,7 +1203,8 @@ pub3::expr_dict_t::eval_as_str (eval_t e) const
 	valstr = ps->obj ().to_str ();
       }
       valstr = json::safestr (valstr);
-      strbuf b ("%s : %s", p->name ().cstr (), valstr.cstr ());
+      str namestr = json::quote (p->name ());
+      strbuf b ("%s : %s", namestr.cstr (), valstr.cstr ());
       v.push_back (b);
     }
   }

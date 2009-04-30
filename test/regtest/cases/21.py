@@ -14,7 +14,7 @@ filedata="""
 $}
 """ % v
 
-row="""{val : "val-%d", odd : %s, first : %s, count : %d, even : %s, last : %s, iter : %d}"""
+row="""{"val" : "val-%d", "odd" : %s, "first" : %s, "count" : %d, "even" : %s, "last" : %s, "iter" : %d}"""
 
 def bool2str (b):
     r = "false"
