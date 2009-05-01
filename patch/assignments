@@ -1,0 +1,361 @@
+Index: libpub/xpub.x
+===================================================================
+--- libpub/xpub.x	(revision 4443)
++++ libpub/xpub.x	(working copy)
+@@ -26,7 +26,8 @@
+   XPUB3_LOAD = 19,
+   XPUB_NESTED_ENV = 20,
+   XPUB3_PRINT = 21,
+-  XPUB3_EVAL = 22
++  XPUB3_EVAL = 22,
++  XPUB3_ASSIGN = 23
+ };
+ 
+ typedef opaque xpubhash_t[PUBHASHSIZE];
+@@ -477,6 +478,11 @@
+    xpub3_expr_list_t *args;
+ };
+ 
++struct xpub3_assign_t {
++  int lineno;
++  xpub3_expr_list_t *chain;
++};
++
+ union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
+ case XPUB3_EXPR_NULL:
+      void;
+@@ -586,6 +592,8 @@
+    xpub_section_t nested;
+  case XPUB3_PRINT:
+    xpub3_print_t print;
++ case XPUB3_ASSIGN:
++   xpub3_assign_t assign;
+ };
+ 
+ enum xpub_status_typ_t {
+Index: libpub/scan.ll
+===================================================================
+--- libpub/scan.ll	(revision 4443)
++++ libpub/scan.ll	(working copy)
+@@ -760,9 +760,9 @@
+   return T_P3_REGEX;
+ }
+ 
+-class p3_identifier_tab_t {
++class p3_keyword_tab_t {
+ public:
+-  p3_identifier_tab_t () {
++  p3_keyword_tab_t () {
+     _tab.insert ("for",   T_P3_FOR);
+     _tab.insert ("if",    T_P3_COND);
+     _tab.insert ("cond",  T_P3_COND);
+@@ -776,6 +776,7 @@
+     _tab.insert ("load",  T_P3_LOAD);
+     _tab.insert ("print", T_P3_PRINT);
+     _tab.insert ("eval",  T_P3_EVAL);
++    _tab.insert ("assign", T_P3_ASSIGN);
+   }
+ 
+   bool lookup (const char *in, int *out) {
+@@ -788,13 +789,13 @@
+   qhash<const char *, int> _tab;
+ };
+ 
+-static p3_identifier_tab_t p3_id_tab;
++static p3_keyword_tab_t p3_kw_tab;
+ 
+ int
+ p3_identifier (const char *yyt)
+ {
+    int ret;
+-   if (!p3_id_tab.lookup (yyt, &ret)) {
++   if (!p3_id_kw.lookup (yyt, &ret)) {
+      yylval.str = yyt;
+      ret = T_P3_IDENTIFIER;
+    }
+Index: libpub/pub3func.T
+===================================================================
+--- libpub/pub3func.T	(revision 4443)
++++ libpub/pub3func.T	(working copy)
+@@ -361,6 +361,39 @@
+ }
+ 
+ //-----------------------------------------------------------------------
++
++bool 
++pub3::assign_t::publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const
++{
++  return true;
++}
++
++//-----------------------------------------------------------------------
++
++void 
++pub3::assign_t::output (output_t *o, penv_t *e) const
++{}
++
++//-----------------------------------------------------------------------
++
++pub3::assign_t::assign_t (ptr<expr_t> e, int lineno)
++  : _chain (New refcounted<expr_list_t> (l)), _lineno (l)
++{ add_lhs (e) }
++
++//-----------------------------------------------------------------------
++
++void
++pub3::add_lhs (ptr<expr_t> e)
++{
++  // Build up the chain in reverse order -- 0 is the righthand-most
++  // element.
++  assert (_chain);
++  _chain->push_back (e);
++}
++
++//-----------------------------------------------------------------------
++
++//-----------------------------------------------------------------------
+ //
+ // Functions for allocations runtime functions (rfn's)
+ 
+Index: libpub/pub3expr.h
+===================================================================
+--- libpub/pub3expr.h	(revision 4443)
++++ libpub/pub3expr.h	(working copy)
+@@ -887,7 +887,6 @@
+     int _lineno;
+   };
+ 
+-
+   //-----------------------------------------------------------------------
+ };
+ 
+Index: libpub/xdr3.C
+===================================================================
+--- libpub/xdr3.C	(revision 4443)
++++ libpub/xdr3.C	(working copy)
+@@ -784,8 +784,28 @@
+   return ret;
+ }
+ 
++//-----------------------------------------------------------------------
+ 
++pub3::assign_t::assign_t (const xpub3_expr_list_t &el)
++  : _chain (expr_list_t::alloc (el.chain)),
++    _lineno (el.lineno) {}
++
+ //-----------------------------------------------------------------------
+ 
++bool
++pub3::assign_t::to_xdr (xpub_obj_t *o) const
++{
++  o->set_typ (XPUB3_ASSIGN);
++  o->assign->lineno = _lineno;
++  if (_chain) {
++    x->assign->chain.alloc ();
++    _chain->to_xdr (x->assign->chain);
++  }
++  return true;
++}
+ 
+ 
++//-----------------------------------------------------------------------
++
++
++
+Index: libpub/parse.yy
+===================================================================
+--- libpub/parse.yy	(revision 4443)
++++ libpub/parse.yy	(working copy)
+@@ -76,6 +76,7 @@
+ %token T_P3_BEGIN_EXPR
+ %token T_P3_INCLUDE
+ %token T_P3_SET
++%token T_P3_ASSIGN
+ %token T_P3_SETL
+ %token T_P3_LOAD
+ %token T_P3_PIPE
+@@ -111,9 +112,12 @@
+ %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
+ %type <p3bind> p3_binding;
+ %type <p3include> p3_include_or_load;
+-%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
+-%type <el> p3_print_or_eval;
+-%type <els> p3_statements p3_statements_opt p3_env;
++%type <els> p3_for p3_cond p3_include p3_set p3_setl;
++%type <els> p3_statement p3_assignment_stmts;
++%type <els> p3_print_or_eval;
++%type <p3assign> p3_assignment p3_assignment_stmt;
++%type <els> p3_statements p3_statements_opt p3_env p3_assignments_block;
++%type <els> p3_assignment_stmts;
+ %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
+ %type <print> p3_print_or_eval_fn;
+ 
+@@ -582,13 +586,14 @@
+  * downside is that scoping rules aren't followed, since the nested
+  * env is flattened into the parent env.
+  */
+-p3_statement: p3_for p3_semicolon_opt { $$ = $1 ;}
++p3_statement: p3_for p3_semicolon_opt { $$ = $1; }
+ 	      | p3_cond p3_semicolon_opt { $$ = $1; }
+ 	      | p3_set p3_semicolon_opt { $$ = $1; }
+ 	      | p3_setl p3_semicolon_opt { $$ = $1; }
+ 	      | p3_include p3_semicolon_opt { $$ = $1; }
+ 	      | p3_print_or_eval p3_semicolon_opt { $$ = $1; }
+ 	      | p3_nested_env { $$ = New pfile_nested_env_t ($1); }
++	      | p3_assignments_block { $$ = $1; }
+ 	      ;
+ 
+ p3_semicolon_opt: /* empty */ | ';' ;
+@@ -892,6 +897,34 @@
+ 	}
+ 	;
+ 
++p3_assignment: p3_expr
++	{
++	   $$ = New pub3::assignment_t ($1, PLINENO);
++	}
++	| p3_expr '=' p3_assignment
++	{
++	   $$ = $3;
++	   $$->add_lhs ($1);
++	}
++	;
++
++p3_assignment_stmt : p3_assignment ';' { $$ = $1; }
++
++p3_assignment_stmts: p3_assignment_stmt
++	{
++           $$ = New refcounted<vec<pfile_el_t *> > ();
++	   $$->push_back ($1);
++	}
++	| p3_assignment_stmts p3_assignment_stmt
++	{
++	   $$ = $1;
++	   $$->push_back ($2);
++	}
++	;
++
++p3_assignments_block: T_P3_ASSIGN '{' p3_assignment_stmts '}' { $$ = $3; }
++        ;
++
+ p3_bind_key: p3_identifier { $$ = $1; }
+         | p3_string        { $$ = $1->to_str (); }
+ 	;
+Index: libpub/pub3func.h
+===================================================================
+--- libpub/pub3func.h	(revision 4443)
++++ libpub/pub3func.h	(working copy)
+@@ -193,6 +193,26 @@
+ 
+   //-----------------------------------------------------------------------
+ 
++  class assign_t : public pfile_el_t {
++  public:
++    assign_t (ptr<pub3::expr_t> e, int l);
++    assign_t (const xpub3_expr_list_t &el);
++
++    void add_lhs (ptr<expr_t> e);
++    bool to_xdr (xpub_obj_t *x) const;
++    void dump2 (dumper_t *d) const { /* XXX implement me */ }
++    const char *get_obj_name () const { return "pub3::assign_t"; }
++    pfile_el_type_t get_type () const { return PFILE_PUB3_ASSIGN; }
++
++    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
++    void output (output_t *o, penv_t *e) const;
++  private:
++    ptr<expr_list_t> _chain;
++    int _lineno;
++  };
++
++  //-----------------------------------------------------------------------
++
+   class error_fn_t : public runtime_fn_t {
+   public:
+     error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)
+Index: libpub/pub_parse.h
+===================================================================
+--- libpub/pub_parse.h	(revision 4443)
++++ libpub/pub_parse.h	(working copy)
+@@ -59,10 +59,10 @@
+   ptr<pvar_t> pvar;
+   ptr<pstr_t> pstr;
+   ptr<parr_t> parr;
++  pfile_els_t els;
+   pfile_el_t *el;
+   pfile_sec_t *sec;
+   pfile_func_t *func;
+-  ptr<vec<pfile_el_t *> > els;
+   char ch;
+   int64_t num;
+   ::str str;
+@@ -83,7 +83,7 @@
+   double dbl;
+   pub3::include_t *p3include;
+   pub3::print_t *print;
+-
++  pub3::assign_t *p3assign;
+ };
+ 
+ #define YYSTYPE yystype
+Index: libpub/pub.h
+===================================================================
+--- libpub/pub.h	(revision 4445)
++++ libpub/pub.h	(working copy)
+@@ -54,7 +54,8 @@
+ 	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
+ 	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
+ 	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13,
+-	       PFILE_PUB3_VAR = 14, PFILE_NESTED_ENV = 15 } pfile_el_type_t;
++	       PFILE_PUB3_VAR = 14, PFILE_NESTED_ENV = 15,
++	       PFILE_PUB3_ASSIGN = 16 } pfile_el_type_t;
+ 
+ typedef enum { PFILE_TYPE_NONE = 0,
+ 	       PFILE_TYPE_GUY = 1,
+@@ -950,6 +951,31 @@
+   virtual bool to_xdr (xpub_pstr_el_t *x) const { return false; }
+ };
+ 
++//-----------------------------------------------------------------------
++
++// used in parsing to collect elements.
++class pfile_els_t {
++public:
++  pfile_els_t ()  {}
++  pfile_els_t (pfile_el_t *el) { collect (el); }
++  void collect (pfile_el_t *el);
++  void take (pfile_els_t &in);
++  size_t size () const;
++  void clear ();
++
++  pfile_el_t *operator[] (size_t i);
++  ptr<vec<pfile_el_t *> > _lst;
++};
++
++//-----------------------------------------------------------------------
++
++// used only during parsing..
++
++struct pfile_el_one_or_more_t {
++  pfile_el_t *_el;
++  ptr<vec<pfile_el_t *> > _els;
++};
++
+ class pvar_t;
+ class gcode_t;
+ class pstr_var_t;
+Index: libpub/xdr.C
+===================================================================
+--- libpub/xdr.C	(revision 4443)
++++ libpub/xdr.C	(working copy)
+@@ -133,7 +133,11 @@
+     return New pfile_nested_env_t (*x.nested);
+   case XPUB3_PRINT:
+     return New pub3::print_t (*x.print);
++  case XPUB3_ASSIGN:
++    return New pub3::assign_t (*x.assign);
+   default:
++      warn << "Pub internal error: got unexpected pfile_el_t: " 
++	   << x.typ << "\n";
+     return NULL;
+   }
+ }
