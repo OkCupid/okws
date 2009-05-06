@@ -43,7 +43,7 @@ namespace rfn1 {
       err = b;
     }
 
-    if (!c) {
+    if (!ret) {
       ret = New refcounted<error_fn_t> (s, l, lineno, err);
     }
 
