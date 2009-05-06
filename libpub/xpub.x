@@ -26,7 +26,8 @@ enum xpub_obj_typ_t {
   XPUB3_LOAD = 19,
   XPUB_NESTED_ENV = 20,
   XPUB3_PRINT = 21,
-  XPUB3_EVAL = 22
+  XPUB3_EVAL = 22,
+  XPUB3_EXPR_STATEMENT = 23
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -364,7 +365,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_DOUBLE,
    XPUB3_EXPR_LIST,
    XPUB3_EXPR_REGEX,
-   XPUB3_EXPR_MATHOP
+   XPUB3_EXPR_MATHOP,
+   XPUB3_EXPR_ASSIGNMENT
 };
 
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -477,6 +479,17 @@ struct xpub3_print_t {
    xpub3_expr_list_t *args;
 };
 
+struct xpub3_assignment_t {
+  int lineno;
+  xpub3_expr_t *lhs;
+  xpub3_expr_t *rhs;
+};
+
+struct xpub3_expr_statement_t {
+  int lineno;
+  xpub3_expr_t *expr;
+};
+
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
@@ -512,6 +525,8 @@ case XPUB3_EXPR_DOUBLE:
      xpub3_double_t xdouble;
 case XPUB3_EXPR_REGEX:
      xpub3_regex_t regex;
+case XPUB3_EXPR_ASSIGNMENT:
+     xpub3_assignment_t assignment;
 };
 
 /* PUB3 language constructs */
@@ -586,6 +601,9 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
    xpub_section_t nested;
  case XPUB3_PRINT:
    xpub3_print_t print;
+ case XPUB3_EXPR_STATEMENT:
+   xpub3_expr_statement_t expr_statement;
+      
 };
 
 enum xpub_status_typ_t {

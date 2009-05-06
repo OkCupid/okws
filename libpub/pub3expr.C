@@ -271,6 +271,42 @@ pub3::expr_dictref_t::deref_step (eval_t *e) const
 
 //-----------------------------------------------------------------------
 
+ptr<slot_ref_t>
+pub3::expr_dictref_t::lhs_deref_step (eval_t *e)
+{
+  ptr<const aarr_t> d;
+  aarr_t *dm;
+  ptr<slot_ref_t> r;
+
+  if (!_dict) {
+    report_error (*e, "dict reference into NULL");
+  } else if (!(d = _dict->eval_as_dict (*e))) {
+    report_error (*e, "dict reference into non-dict");
+  } else if (!(dm = d->const_cast_hack ())) {
+    report_error (*e, "hacked const cast failed");
+  } else if (!(r = dm->lookup_slot (_key)) && e->loud ()) {
+    strbuf b ("cannot resolve key '%s'", _key.cstr ());
+    report_error (*e, b);
+  }
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<slot_ref_t>
+pub3::expr_ref_t::lhs_deref (eval_t *e)
+{
+  ptr<slot_ref_t> ret;
+  ptr<expr_ref_t> p = mkref (this);
+  ptr<expr_t> tmp;
+  while (p && (ret = p->lhs_deref_step (e)) && (tmp = ret->deref_expr ())) {
+    p = tmp->to_ref ();
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 ptr<const pval_t>
 pub3::expr_ref_t::deref (eval_t *e) const
 {
@@ -346,6 +382,54 @@ pub3::expr_ref_t::eval_internal (eval_t e) const
 
 //-----------------------------------------------------------------------
 
+ptr<slot_ref_t>
+pub3::expr_vecref_t::lhs_deref_step (eval_t *e) 
+{
+  ptr<const parr_mixed_t> v;
+  ptr<const pval_t> pvv;
+  ptr<const expr_list_t> el;
+  ptr<const vec_iface_t> vif;
+  ptr<const aarr_t> dict;
+  ptr<slot_ref_t> r;
+  bool evr;
+
+  vec_iface_t *mvif = NULL;
+  aarr_t *mdict = NULL;
+
+  scalar_obj_t key;
+
+  if (!_index) {
+    report_error (*e, "vector index is not defined");
+  } else if (!_vec) {
+    if (e->loud ()) report_error (*e, "vector is undefined");
+  } else if ((key = _index->eval_as_scalar (*e)).is_null ()) {
+    report_error (*e, "key to dictionary/vector is undefined");
+  } else if (!(evr = _vec->eval_as_vec_or_dict (*e, &vif, &dict))) {
+    report_error (*e, "vector reference into non-vector");
+  }
+
+  if (vif) mvif = vif->const_cast_hack ();
+  else if (dict) mdict = dict->const_cast_hack ();
+
+  if (mvif) {
+    size_t i = key.to_int ();
+    if (!(r = mvif->lookup_slot (i)) && e->loud ()) {
+      report_error (*e, strbuf ("vector reference (%zd) out of bounds", i));
+    }
+  } else if (mdict) {
+    str k = key.to_str ();
+    if (!k) {
+      report_error (*e, "cannot resolve dict key");
+    } else if (!(r = mdict->lookup_slot (k)) && e->loud ()) {
+      report_error (*e, strbuf ("cannot resolve key '%s'", k.cstr ()));
+    }
+  }
+
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
 ptr<const pval_t>
 pub3::expr_vecref_t::deref_step (eval_t *e) const
 {
@@ -393,6 +477,16 @@ pub3::expr_t::report_error (eval_t e, str msg) const
     out->output_err (env, msg);
   }
   env->unsetlineno ();
+}
+
+//-----------------------------------------------------------------------
+
+ptr<slot_ref_t>
+pub3::expr_varref_t::lhs_deref_step (eval_t *e)
+{
+  ptr<slot_ref_t> ret;
+  ret = e->lhs_resolve (this, _name);
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -887,10 +981,42 @@ pub3::eval_t::unlink_from_penv (pub3::eval_t *e)
 
 //-----------------------------------------------------------------------
 
+ptr<slot_ref_t>
+pub3::eval_t::lhs_resolve (const expr_t *e, const str &nm)
+{
+  ptr<slot_ref_t> ret;
+  vec<const aarr_t *> &stk = _env->get_eval_stack ();
+
+  if (_stack_p == ssize_t (EVAL_INIT)) {
+    _stack_p = stk.size () - 1;
+  }
+
+  while (!ret && _stack_p >= 0) {
+    ret = stk[_stack_p--]->const_cast_hack ()->lookup_slot (nm, false);
+  }
+
+  // If an abject failure, the assignment will allocate (implicitly)
+  // a new GLOBAL variable.
+  if (!ret) {
+    aarr_t *odd; // output dict dest
+    ptr<aarr_t> edd; // env dict dest
+
+    if ((odd = _output->dict_dest ())) {
+      ret = odd->lookup_slot (nm);
+    } else if ((edd = _env->get_global_aarr ())) {
+      ret = edd->lookup_slot (nm);
+    }
+  }
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 ptr<const pval_t>
 pub3::eval_t::resolve (const expr_t *e, const str &nm)
 {
-  ptr<const pval_t> ret, n;
+  ptr<const pval_t> ret;
   const vec<const aarr_t *> &stk = _env->get_eval_stack ();
 
   if (_stack_p == ssize_t (EVAL_INIT)) {
@@ -902,8 +1028,6 @@ pub3::eval_t::resolve (const expr_t *e, const str &nm)
   while (!ret && _stack_p >= 0) { 
     ret = stk[_stack_p--]->lookup_ptr (nm);
   }
-
-  ptr<const expr_ref_t> xref;
 
   if (!ret && loud ()) {
     strbuf b ("cannot resolve variable: '%s'", nm.cstr ());
@@ -1359,8 +1483,8 @@ pub3::expr_t::eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp,
   } else if ((*dp = v->to_aarr ())) {
     ret = true;
   }
-  return ret;
 
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -1819,6 +1943,108 @@ pub3::expr_str_t::alloc (const str &s)
 {
   return New refcounted<expr_str_t> (s);
 }
+
+//-----------------------------------------------------------------------
+
+ptr<slot_ref_t>
+pub3::expr_list_t::lookup_slot (ssize_t i)
+{
+  ptr<slot_ref_t> ret;
+  ssize_t ssz = size ();
+
+  if (i < 0) {
+    i -= ssz;
+    if (i < 0) i = 0;
+  }
+
+  assert (i >= 0);
+  if (i >= ssz) {
+    setsize (i+1);
+  }
+  ret = slot_ref3_t::alloc (&(*this)[i]);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::slot_ref3_t::set_expr (ptr<pub3::expr_t> e)
+{
+  assert (_epp);
+  *_epp = e;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::slot_ref3_t::set_pval (ptr<pval_t> p)
+{
+  assert (_epp);
+  ptr<expr_t> x;
+  if (p) { x = p->to_expr (); }
+  *_epp = x;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t> 
+pub3::slot_ref3_t::deref_pval () const
+{
+  assert (_epp);
+  return *_epp;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+pub3::slot_ref3_t::deref_expr () const
+{
+  assert (_epp);
+  return *_epp;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::expr_assignment_t::expr_assignment_t (ptr<pub3::expr_t> lhs,
+					    ptr<pub3::expr_t> rhs,
+					    int lineno)
+  : _lhs (lhs), _rhs (rhs), _lineno (lineno) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t>
+pub3::expr_assignment_t::eval_internal (eval_t e) const
+{
+  ptr<const pval_t> rhs;
+  ptr<pval_t> mrhs;
+  ptr<slot_ref_t> slot;
+  ptr<expr_ref_t> rf;
+  ptr<const expr_t> x;
+
+  if (_rhs) { mrhs = _rhs->eval_freeze (e); }
+
+  assert (_lhs);
+  ptr<expr_t> mlhs = _lhs->const_cast_hack ();
+
+  if (!(rf = mlhs->to_ref ())) {
+    report_error (e, "left-hand side of assignment was not a reference");
+  } else if (!(slot = rf->lhs_deref (&e))) {
+    report_error (e, "left-hand side of assignment was not settable");
+  } else {
+    slot->set_pval (mrhs);
+  }
+
+  return mrhs;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+pub3::expr_t::const_cast_hack () const
+{
+  return mkref (const_cast<expr_t *> (this));
+}
+
 
 //=======================================================================
 

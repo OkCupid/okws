@@ -13,6 +13,7 @@ namespace pub3 {
 
   class expr_t;
   class expr_regex_t;
+  class expr_assignment_t;
 
   //-----------------------------------------------------------------------
 
@@ -46,6 +47,7 @@ namespace pub3 {
     { return _env->cache_generation (); }
 
     ptr<const pval_t> resolve (const expr_t *e, const str &nm);
+    ptr<slot_ref_t> lhs_resolve (const expr_t *e, const str &nm);
 
     ptr<pval_t> eval_freeze (ptr<const pval_t> in);
     void eval_freeze_dict (const aarr_t *in, aarr_t *out);
@@ -84,6 +86,7 @@ namespace pub3 {
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<expr_t> alloc (scalar_obj_t so);
+    ptr<expr_t> const_cast_hack () const;
 
     //------- Evaluation ZOO --------------------------------------
     //
@@ -120,6 +123,7 @@ namespace pub3 {
     virtual bool is_null () const { return false; }
     virtual ptr<rxx> to_regex () const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
+    virtual ptr<expr_assignment_t> to_assignment () { return NULL; }
 
     //
     // and from here, scalars can be converted at will...
@@ -174,6 +178,7 @@ namespace pub3 {
     virtual scalar_obj_t eval_as_scalar (eval_t e) const;
     bool eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp, 
 			      ptr<const aarr_t> *dp) const;
+			      
     virtual ptr<rxx> eval_as_regex (eval_t e) const { return NULL; }
 
     virtual bool eval_as_bool (eval_t e) const;
@@ -473,10 +478,13 @@ namespace pub3 {
     virtual bool eval_as_bool (eval_t e) const;
 
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
+    ptr<expr_ref_t> to_ref () { return mkref (this); }
+    ptr<slot_ref_t> lhs_deref (eval_t *e) ;
 
   protected:
     ptr<const pval_t> deref (eval_t *e) const;
     virtual ptr<const pval_t> deref_step (eval_t *e) const = 0;
+    virtual ptr<slot_ref_t> lhs_deref_step (eval_t *e) = 0;
     virtual ptr<const pval_t> eval_internal (eval_t e) const;
 
   };
@@ -493,7 +501,8 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_dictref_t"; }
 
   protected:
-    ptr<const pval_t> deref_step (eval_t *e) const ;
+    ptr<const pval_t> deref_step (eval_t *e) const;
+    ptr<slot_ref_t> lhs_deref_step (eval_t *e) ;
     ptr<expr_t> _dict;
     str _key;
   };
@@ -511,6 +520,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_vecref_t"; }
   protected:
     ptr<const pval_t> deref_step (eval_t *e) const;
+    ptr<slot_ref_t> lhs_deref_step (eval_t *e) ;
 
     ptr<expr_t> _vec;
     ptr<expr_t> _index;
@@ -529,6 +539,7 @@ namespace pub3 {
 
   protected:
     ptr<const pval_t> deref_step (eval_t *e) const;
+    ptr<slot_ref_t> lhs_deref_step (eval_t *e) ;
     str _name;
   };
 
@@ -668,6 +679,23 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class slot_ref3_t : public slot_ref_t {
+  public:
+    slot_ref3_t (ptr<expr_t> *e) : _epp (e) {}
+    void set_expr (ptr<pub3::expr_t> e);
+    void set_pval (ptr<pval_t> p);
+    ptr<pval_t> deref_pval () const;
+    ptr<pub3::expr_t> deref_expr () const;
+
+    static ptr<slot_ref3_t> alloc (ptr<expr_t> *e)
+    { return New refcounted<slot_ref3_t> (e); }
+  
+  private:
+    ptr<expr_t> *_epp;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_list_t : public expr_t, 
 		      public vec<ptr<expr_t> > ,
 		      public vec_iface_t {
@@ -684,6 +712,7 @@ namespace pub3 {
     // vec_iface_t interface
     ptr<const pval_t> lookup (ssize_t i, bool *ib = NULL) const;
     ptr<pval_t> lookup (ssize_t i, bool *ib = NULL);
+    ptr<slot_ref_t> lookup_slot (ssize_t i);
     ptr<vec_iface_t> to_vec_iface () { return mkref (this); }
     ptr<const vec_iface_t> to_vec_iface () const { return mkref (this); }
     void set (size_t i, ptr<pval_t> v);
@@ -887,6 +916,24 @@ namespace pub3 {
     int _lineno;
   };
 
+  //-----------------------------------------------------------------------
+
+  class expr_assignment_t : public expr_t {
+  public:
+    expr_assignment_t (ptr<pub3::expr_t> lhs, ptr<pub3::expr_t> rhs, int l);
+    expr_assignment_t (const xpub3_assignment_t &x);
+    const char *get_obj_name () const { return "pub3::assignment_t"; }
+    void dump2 (dumper_t *d) const { /* XXX implement me */ }
+    bool to_xdr (xpub3_expr_t *x) const;
+    ptr<const pval_t> eval (eval_t e) const { return eval_internal (e); }
+    ptr<pval_t> eval_freeze (eval_t e) const { return eval_internal (e); }
+    ptr<expr_assignment_t> to_assignment () { return mkref (this); }
+
+  private:
+    ptr<pval_t> eval_internal (eval_t e) const;
+    ptr<expr_t> _lhs, _rhs;
+    const int _lineno;
+  };
 
   //-----------------------------------------------------------------------
 };

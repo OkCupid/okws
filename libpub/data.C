@@ -2428,6 +2428,23 @@ aarr_t::lookup_ptr (const str &n) const
 
 //-----------------------------------------------------------------------
 
+ptr<slot_ref_t>
+aarr_t::lookup_slot (const str &n, bool creat)
+{
+  nvpair_t *nvp = aar[n];
+  if (!nvp && creat) {
+    nvp = New nvpair_t (n);
+    aar.insert (nvp);
+  }
+  ptr<slot_ref_t> ret;
+  if (nvp) 
+    ret = nvp->value_slot ();
+  return ret;
+}
+
+
+//-----------------------------------------------------------------------
+
 ptr<pval_t> 
 aarr_t::lookup_ptr (const str &n)
 {
@@ -2455,6 +2472,18 @@ nvpair_t::value_expr () const
   ptr<const pub3::expr_t> r;
   if (val) { r = val->to_expr (); }
   return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<slot_ref_t>
+parr_mixed_t::lookup_slot (ssize_t s) 
+{
+  ptr<slot_ref_t> ret;
+  if (s >= 0 && s < ssize_t (v.size ())) {
+    ret = slot_ref_simple_t::alloc (&v[s]);
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -2576,3 +2605,58 @@ nested_env_t::might_block () const
 }
 
 //-----------------------------------------------------------------------
+
+aarr_t *
+aarr_t::const_cast_hack () const
+{
+  return const_cast<aarr_t *> (this);
+}
+
+//-----------------------------------------------------------------------
+
+vec_iface_t *
+vec_iface_t::const_cast_hack () const
+{
+  return const_cast<vec_iface_t *> (this);
+}
+
+//-----------------------------------------------------------------------
+
+void
+slot_ref_simple_t::set_expr (ptr<pub3::expr_t> e)
+{
+  assert (_ppv);
+  *_ppv = e;
+}
+
+//-----------------------------------------------------------------------
+
+void
+slot_ref_simple_t::set_pval (ptr<pval_t> p)
+{
+  assert (_ppv);
+  *_ppv = p;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t>
+slot_ref_simple_t::deref_pval () const
+{
+  ptr<pval_t> ret;
+  if (_ppv) ret = *_ppv;
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+slot_ref_simple_t::deref_expr () const
+{
+  ptr<pub3::expr_t> ret;
+  if (_ppv && *_ppv) ret = (*_ppv)->to_expr ();
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+

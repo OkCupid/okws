@@ -105,7 +105,8 @@ namespace pub3 {
     cond_t (int l) : pfile_func_t (l), _might_block (-1) {}
     cond_t (const xpub3_cond_t &x);
 
-    void add_clauses (ptr<cond_clause_list_t> c) { _clauses = c; }
+    void add_clauses (ptr<cond_clause_list_t> c);
+    void add_clause (ptr<cond_clause_t> c);
     const char *get_obj_name () const { return "pub3::cond_t"; }
     bool to_xdr (xpub_obj_t *x) const;
     void publish (pub2_iface_t *, output_t *, penv_t *, 
@@ -150,6 +151,24 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::set_func_t"; }
     bool to_xdr (xpub_obj_t *x) const;
   private:
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_statement_t : public pfile_el_t {
+  public:
+    expr_statement_t (ptr<pub3::expr_t> e, int l) 
+      : _expr (e), _lineno (l) {}
+    expr_statement_t (const xpub3_expr_statement_t &x);
+    void output (output_t *o, penv_t *e) const;
+    bool publish_nonblock (pub2_iface_t *, output_t *o, penv_t *e) const;
+    pfile_el_type_t get_type () const { return PFILE_PUB3_EXPR_STATEMENT; }
+    const char *get_obj_name () const { return "pub3::expr_statement_t"; }
+    void dump2 (dumper_t *d) const { /* XXX - implement me */ }
+    bool to_xdr (xpub_obj_t *x) const;
+  private:
+    ptr<expr_t> _expr;
+    const int _lineno;
   };
 
   //-----------------------------------------------------------------------

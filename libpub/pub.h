@@ -54,7 +54,8 @@ typedef enum { PFILE_HTML_EL = 0, PFILE_INC = 1,
 	       PFILE_SEC = 8, PFILE_INCLUDE = 9,
 	       PFILE_FUNC = 10, PFILE_INCLIST = 11,
 	       PFILE_INCLUDE2 = 12, PFILE_RAW = 13,
-	       PFILE_PUB3_VAR = 14, PFILE_NESTED_ENV = 15 } pfile_el_type_t;
+	       PFILE_PUB3_VAR = 14, PFILE_NESTED_ENV = 15,
+	       PFILE_PUB3_EXPR_STATEMENT = 16 } pfile_el_type_t;
 
 typedef enum { PFILE_TYPE_NONE = 0,
 	       PFILE_TYPE_GUY = 1,
@@ -231,11 +232,40 @@ namespace pub3 {
 
 //-----------------------------------------------------------------------
 
+class slot_ref_t {
+public:
+  virtual ~slot_ref_t () {}
+  virtual void set_expr (ptr<pub3::expr_t> e) = 0;
+  virtual void set_pval (ptr<pval_t> p) = 0;
+  virtual ptr<pval_t> deref_pval () const = 0;
+  virtual ptr<pub3::expr_t> deref_expr () const = 0;
+};
+
+//-----------------------------------------------------------------------
+
+class slot_ref_simple_t : public slot_ref_t {
+public:
+  slot_ref_simple_t (ptr<pval_t> *v) : _ppv (v) {}
+  void set_expr (ptr<pub3::expr_t> e);
+  void set_pval (ptr<pval_t> p);
+  ptr<pval_t> deref_pval () const;
+  ptr<pub3::expr_t> deref_expr () const;
+
+  static ptr<slot_ref_simple_t> alloc (ptr<pval_t> *v)
+  { return New refcounted<slot_ref_simple_t> (v); }
+  
+private:
+  ptr<pval_t> *_ppv;
+};
+
+//-----------------------------------------------------------------------
+
 class nvpair_t : public virtual dumpable_t {
 public:
   nvpair_t (const str &n, ptr<pval_t> v) : nm (n), val (v) {}
   nvpair_t (const xpub_nvpair_t &x);
   nvpair_t (const nvpair_t &p) : nm (p.nm), val (p.val) {}
+  nvpair_t (const str &n) : nm (n) {}
   virtual ~nvpair_t () {}
   const str &name () const { return nm; }
   const pval_t *value () const { return val; }
@@ -250,6 +280,7 @@ public:
 
   ptr<pval_t> value_ptr () { return val; }
   ptr<const pval_t> value_ptr () const { return val; }
+  ptr<slot_ref_t> value_slot () { return slot_ref_simple_t::alloc (&val); }
 
   ptr<pub3::expr_t> value_expr ();
   ptr<const pub3::expr_t> value_expr () const;
@@ -257,7 +288,7 @@ public:
   const str nm;
   ihash_entry<nvpair_t> hlink;
 private:
-  ref<pval_t> val;
+  ptr<pval_t> val;
 };
 
 //-----------------------------------------------------------------------
@@ -351,11 +382,14 @@ public:
   aarr_t &operator= (const aarr_t &in);
   aarr_t &overwrite_with (const aarr_t &r);
 
+  aarr_t *const_cast_hack () const;
+
   // Lookup Functions ------------------
   pval_t *lookup (const str &n);
   const pval_t *lookup (const str &n) const;
 
   ptr<pval_t> lookup_ptr (const str &n);
+  ptr<slot_ref_t> lookup_slot (const str &n, bool creat = true);
   ptr<const pval_t> lookup_ptr (const str &n) const;
 
   nvpair_t *lookup_nvpair (const str &n) { return aar[n]; }
@@ -487,6 +521,7 @@ public:
   void bump () { _cache_generation->bump (); }
 
   const vec<const aarr_t *> &get_eval_stack () const { return estack; }
+  vec<const aarr_t *> &get_eval_stack () { return estack; }
 
   void set_pub3_eval (pub3::eval_t *e) { _pub3_eval = e; }
   pub3::eval_t *get_pub3_eval () { return _pub3_eval; }
@@ -773,10 +808,12 @@ public:
   virtual ~vec_iface_t () {}
   virtual ptr<const pval_t> lookup (ssize_t i, bool *ib = NULL) const = 0;
   virtual ptr<pval_t> lookup (ssize_t i, bool *ib = NULL) = 0;
+  virtual ptr<slot_ref_t> lookup_slot (ssize_t i) = 0;
   virtual size_t size () const = 0;
   virtual void push_back (ptr<pval_t> v) = 0;
   virtual void setsize (size_t s) = 0;
   virtual void set (size_t i, ptr<pval_t> v) = 0;
+  vec_iface_t *const_cast_hack () const;
 };
 
 //-----------------------------------------------------------------------
@@ -825,6 +862,7 @@ public:
 
   // pub v3
   virtual ptr<const pub3::expr_ref_t> to_ref () const { return NULL; }
+  virtual ptr<pub3::expr_ref_t> to_ref () { return NULL; }
   virtual ptr<const pub3::expr_t> to_expr () const { return NULL; }
   virtual ptr<pub3::expr_t> to_expr () { return NULL; }
   virtual ptr<const pub3::expr_dict_t> to_expr_dict () const { return NULL; }

@@ -177,6 +177,8 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_REGEX:
     r = New refcounted<pub3::expr_regex_t> (*x.regex);
     break;
+  case XPUB3_EXPR_ASSIGNMENT:
+    r = New refcounted<pub3::expr_assignment_t> (*x.assignment);
   default:
     break;
   }
@@ -723,6 +725,25 @@ pub3::print_t::to_xdr (xpub_obj_t *x) const
 
 //-----------------------------------------------------------------------
 
+pub3::expr_assignment_t::expr_assignment_t (const xpub3_assignment_t &x)
+  : _lhs (expr_t::alloc (x.lhs)),
+    _rhs (expr_t::alloc (x.rhs)),
+    _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool 
+pub3::expr_assignment_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_ASSIGNMENT);
+  x->assignment->lineno = _lineno;
+  expr_to_rpc_ptr (_lhs, &x->assignment->lhs);
+  expr_to_rpc_ptr (_rhs, &x->assignment->rhs);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
 pub3::pstr_el_t::pstr_el_t (const xpub3_pstr_el_t &x)
   : _expr (expr_t::alloc (x.expr)), _lineno (x.lineno) {}
 
@@ -784,6 +805,24 @@ pub3::expr_mathop_t::alloc (const xpub3_mathop_t &op)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
+pub3::expr_statement_t::expr_statement_t (const xpub3_expr_statement_t &x)
+  : _expr (expr_t::alloc (x.expr)), _lineno (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_statement_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_STATEMENT);
+  x->expr_statement->lineno = _lineno;
+  if (_expr) {
+    x->expr_statement->expr.alloc ();
+    _expr->to_xdr (x->expr_statement->expr);
+  }
+  return true;
+}
 
 //-----------------------------------------------------------------------
 

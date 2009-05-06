@@ -97,8 +97,8 @@
 %token <str> T_P3_STRING
 %token <regex> T_P3_REGEX
 
-%type <p3cclist> p3_cond_clause_list;
-%type <p3cc> p3_cond_clause;
+%type <p3cclist> p3_cond_elifs p3_cond_elifs_opt;
+%type <p3cc> p3_cond_else p3_cond_else_opt p3_cond_clause p3_cond_elif;
 
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr p3_nonparen_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
@@ -107,15 +107,20 @@
 %type <p3expr> p3_integer_constant p3_string p3_string_element;
 %type <p3expr> p3_inline_expr p3_regex;
 %type <p3expr> p3_inclusive_OR_expr;
+%type <p3expr> p3_assignment_expr;
+%type <p3expr> p3_conditional_expr;
+%type <p3expr> p3_logical_OR_expr;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <el> p3_statement p3_for p3_cond p3_include p3_set p3_setl;
+%type <el> p3_control p3_for p3_cond p3_include p3_set p3_setl;
 %type <el> p3_print_or_eval;
-%type <els> p3_statements p3_statements_opt p3_env;
+%type <els> p3_env p3_zone p3_zone_body;
+%type <elpair> p3_zone_pair;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <print> p3_print_or_eval_fn;
+%type <p3es> p3_expr_statement p3_statement_opt p3_statement;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
@@ -555,50 +560,85 @@ var: T_VAR
  * in {% cond %} statements and also filters.
  */
 
-p3_env: T_P3_OPEN p3_statements_opt T_P3_CLOSE
+p3_env: T_P3_OPEN p3_zone T_P3_CLOSE
 	{
 	   $$ = $2;
         }
 	;
 
-p3_statements_opt: /* empty */      { $$ = NULL; }
-		   | p3_statements  { $$ = $1; }
-		   ;
+p3_zone: p3_statement_opt p3_zone_body
+       {
+         $$ = $2;
+	 if ($1) { (*$$)[0] = $1; }
+         else { $$->pop_front (); }
+       }
+       ;
 
-p3_statements: p3_statement
-	       {
-	          $$ = New refcounted<vec<pfile_el_t *> > ();
-		  $$->push_back ($1);
-	       }
-	       | p3_statements p3_statement
-	       {
-		  $$ = $1;
-	          $$->push_back ($2);
-	       }
-	       ;
+p3_zone_body: p3_zone_pair
+       {
+         $$ = New refcounted<vec<pfile_el_t *> > ();
+	 $$->push_back (NULL);
+	 $1.push ($$);
+       } 
+       | p3_zone_body p3_zone_pair
+       {
+         $$ = $1;
+	 $2.push ($$);
+       }
+       ;
+
+p3_zone_pair: p3_control p3_statement_opt
+       {
+         $$.first = $1;
+	 $$.second = $2;
+       }
+       ;
+
 
 /* XXX - might want to fix the nested_env assignment, implemented 
  * as such to avoid another object and level of redirection.  The
  * downside is that scoping rules aren't followed, since the nested
  * env is flattened into the parent env.
  */
-p3_statement: p3_for p3_semicolon_opt { $$ = $1 ;}
-	      | p3_cond p3_semicolon_opt { $$ = $1; }
-	      | p3_set p3_semicolon_opt { $$ = $1; }
-	      | p3_setl p3_semicolon_opt { $$ = $1; }
-	      | p3_include p3_semicolon_opt { $$ = $1; }
-	      | p3_print_or_eval p3_semicolon_opt { $$ = $1; }
-	      | p3_nested_env { $$ = New pfile_nested_env_t ($1); }
+p3_control: p3_for { $$ = $1 ;}
+	      | p3_cond { $$ = $1; }
+	      | p3_set { $$ = $1; }
+	      | p3_setl { $$ = $1; }
+	      | p3_include { $$ = $1; }
+	      | p3_print_or_eval { $$ = $1; }
+	      | nested_env { $$ = New pfile_nested_env_t ($1); }
+              | ';' { $$ = NULL; }
 	      ;
 
-p3_semicolon_opt: /* empty */ | ';' ;
+p3_statement_opt: /*empty*/ { $$ = NULL; }
+	      | p3_statement
+	      ;
 
+p3_statement: p3_expr_statement { $$ = $1; }
+	      ;
 
-p3_expr: p3_logical_AND_expr
+p3_expr_statement: p3_expr
+	      {
+	         $$ = New pub3::expr_statement_t ($1, PLINENO);
+	      }
+	      ;
+
+p3_expr: p3_assignment_expr;
+
+p3_assignment_expr: p3_conditional_expr { $$ = $1; }
+	       | p3_unary_expr '=' p3_assignment_expr
+	       {
+                  $$ = New refcounted<pub3::expr_assignment_t> ($1, $3, NULL);
+	       }
+	       ;
+
+p3_conditional_expr: p3_logical_OR_expr;
+
+p3_logical_OR_expr: p3_logical_AND_expr
 	       {
 	          $$ = $1;
 	       }
-	       | p3_expr T_P3_OR p3_logical_AND_expr
+	       | p3_logical_OR_expr T_P3_OR p3_logical_AND_expr
 	       {
 	          $$ = New refcounted<pub3::expr_OR_t> ($1, $3, PLINENO);
                }
@@ -758,8 +798,8 @@ p3_primary_expr: p3_varref   { $$ = $1; }
 	   | p3_regex        { $$ = $1; }
 	   ;
 
-p3_nonparen_expr: p3_fncall { $$ = $1; }
-	   | p3_dictionary  { $$ = $1; }
+p3_nonparen_expr: 
+             p3_dictionary  { $$ = $1; }
 	   | p3_list        { $$ = $1; }
 	   | p3_constant    { $$ = $1; }
 	   | p3_string      { $$ = $1; }
@@ -1016,7 +1056,7 @@ p3_setl: T_P3_SETL p3_set_arg
 
 p3_nested_env: nested_env { $$ = $1; }
 	| 
-        '{' p3_statements_opt '}'
+        '{' p3_zone '}'
 	{
  	  pfile_html_sec_t *s = New pfile_html_sec_t (PLINENO);
 	  s->hadd_el_list ($2);
@@ -1051,44 +1091,54 @@ p3_print_or_eval: p3_print_or_eval_fn p3_flexi_tuple
        }
        ;
 
-p3_cond: T_P3_COND p3_cond_clause_list 
-      {
-         pub3::cond_t *c = New pub3::cond_t (PLINENO);
-	 c->add_clauses ($2);
-	 $$ = c;
-      }
-      ;
+p3_cond: T_P3_COND p3_cond_clause p3_cond_elifs_opt p3_cond_else_opt
+       {
+          pub3::cond_t *c = New pub3::cond_t (PLINENO);
+	  c->add_clause ($2);
+	  c->add_clauses ($3);
+	  c->add_clause ($4);
+	  $$ = c;
+       }
+       ;
 
-p3_cond_clause_list: 
-          p3_cond_clause
-	  {
-	     $$ = New refcounted<pub3::cond_clause_list_t> ();
-	     $$->push_back ($1);
-          }
-	  | p3_cond_clause_list p3_comma_opt p3_cond_clause
-	  {
-	     $1->push_back ($3);
-  	     $$ = $1;
-          }
-	  ;
+p3_cond_elifs_opt: /*empty*/ { $$ = NULL; }
+       | p3_cond_elifs { $$ = $1; }
+       ;
 
-p3_comma_opt: /* empty */ | ',' ;
-p3_elif_opt: /* empty */ | T_P3_ELIF ;
+p3_cond_else_opt: /* empty */ { $$ = NULL; }
+       | p3_cond_else { $$ = $1; }
+       ;
 
-p3_cond_clause: p3_elif_opt '(' p3_expr ')' p3_nested_env
-         {
+p3_cond_elifs: p3_cond_elif 
+       {
+           $$ = New refcounted<pub3::cond_clause_list_t> ();
+	   $$->push_back ($1);
+       }
+       | p3_cond_elifs p3_cond_elif
+       {
+           $$ = $1;
+	   $$->push_back ($2);
+       }
+       ;
+
+p3_cond_elif: T_P3_ELIF	p3_cond_clause { $$ = $2; } ;
+
+p3_cond_else: T_P3_ELSE p3_nested_env
+       {
+	   ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
+	   c->add_env ($2);
+	   $$ = c;
+       }
+       ;
+
+p3_cond_clause: '(' p3_expr ')' p3_nested_env
+       {
 	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
-	    c->add_expr ($3);
-	    c->add_env ($5);
+	    c->add_expr ($2);
+	    c->add_env ($4);
 	    $$ = c;
-	 }
-	 | T_P3_ELSE p3_nested_env
-	 {
-	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
-	    c->add_env ($2);
-	    $$ = c;
-	 }
-	 ;
+       }
+       ;
 
 p3_empty_clause: 
          /* empty */                   { $$ = NULL; }
@@ -1097,3 +1147,24 @@ p3_empty_clause:
 
 		  
 /*----------------------------------------------------------------------- */
+
+//
+// New proposal for p3 sections:
+//
+//
+//  p3_zone = p3_assignment_opt (p3_control p3_assignment_opt)*
+//
+//  p3_zone = p3_assignment_opt |
+//  	    p3_zone p3_control p3_assignment_opt ;
+//
+//
+//  p3_assignment_opt = p3_assignment | /* empty */ ;
+//
+//  p3_assignment = p3_statement |
+//  		   p3_assignment '=' p3_statement
+//
+//
+//  p3_control = for | cond | set | setl | include | nested | ';'
+//
+//
+

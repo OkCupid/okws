@@ -154,10 +154,8 @@ public:
   {
     ptr<const pval_t> r;
     bool ib = false;
-    if (i < 0 || i >= ssize_t (size ())) {
+    if (i >= 0 || i < ssize_t (size ())) {
       ib = true;
-    } else {
-      ib = false;
       r = New refcounted<pub_scalar_t> (v[i]);
     }
     if (ibp) *ibp = ib;
@@ -171,12 +169,17 @@ public:
     bool ib = false;
     if (i < 0 || i >= ssize_t (size ())) {
       ib = true;
-    } else {
-      ib = false;
       r = New refcounted<pub_scalar_t> (v[i]);
     }
     if (ibp) *ibp = ib;
     return r;
+  }
+
+  ptr<slot_ref_t>
+  lookup_slot (ssize_t i)
+  {
+    // XXX for now return null, though we can make this better!
+    return NULL;
   }
 
 
@@ -356,6 +359,7 @@ public:
 
   ptr<const pval_t> lookup (ssize_t i, bool *ib = NULL) const;
   ptr<pval_t> lookup (ssize_t i, bool *ib = NULL);
+  ptr<slot_ref_t> lookup_slot (ssize_t i);
 
   const ptr<pval_t> &operator[] (size_t i) const { return v[i]; }
   ptr<pval_t> &operator[] (size_t i) { return v[i]; }
