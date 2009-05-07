@@ -1,5 +1,5 @@
 
-SUBDIRS = unit system
+SUBDIRS = unit system regtest
 
 .PHONY: test tameclean
 

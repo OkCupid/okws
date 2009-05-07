@@ -67,7 +67,7 @@ str2ref (str in, str *n, vec<size_t> *out)
   if (v.size () > 0) {
     *n = v.pop_front ();
     for (size_t i = 0; ret && i < v.size (); i++) {
-      size_t tmp;
+      size_t tmp = 0;
       if (!convertint (v[i], &tmp)) {
 	warn << "Cannot convert to int: " << v[i] << "\n";
 	ret = false;

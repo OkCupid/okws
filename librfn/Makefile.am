@@ -15,6 +15,6 @@ librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = okrfn.h
 
-EXTRA_DIST = .cvsignore 
+EXTRA_DIST =
 CLEANFILES = core *.core *~ *.rpo 
 MAINTAINERCLEANFILES = Makefile.in
