@@ -116,7 +116,7 @@
 %type <p3include> p3_include_or_load;
 %type <el> p3_control p3_for p3_cond p3_include p3_set p3_setl;
 %type <el> p3_print_or_eval;
-%type <els> p3_env p3_zone p3_zone_body;
+%type <els> p3_env p3_zone p3_zone_body p3_zone_body_opt;
 %type <elpair> p3_zone_pair;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <print> p3_print_or_eval_fn;
@@ -566,13 +566,22 @@ p3_env: T_P3_OPEN p3_zone T_P3_CLOSE
         }
 	;
 
-p3_zone: p3_statement_opt p3_zone_body
+p3_zone: p3_statement_opt p3_zone_body_opt
        {
          $$ = $2;
 	 if ($1) { (*$$)[0] = $1; }
          else { $$->pop_front (); }
        }
        ;
+
+
+p3_zone_body_opt: /* empty */ 
+        { 
+ 	    $$ = New refcounted<vec<pfile_el_t *> > (); 
+	    $$->push_back (NULL);
+        }
+	| p3_zone_body        { $$ = $1; }
+        ;
 
 p3_zone_body: p3_zone_pair
        {
