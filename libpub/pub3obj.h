@@ -101,7 +101,7 @@ namespace pub3 {
 		   const { return (*this)(i2s (i)); });
 
     virtual ptr<const pval_t> obj () const { return _c_obj; }
-    bool is_null () const { return _c_obj; }
+    bool isnull () const { return !_c_obj; }
 
   protected:
     ptr<const expr_list_t> to_vector () const;
