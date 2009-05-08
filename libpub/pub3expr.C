@@ -446,9 +446,10 @@ pub3::expr_vecref_t::deref_step (eval_t *e) const
   } else if (!_vec->eval_as_vec_or_dict (*e, &vif, &dict)) {
     report_error (*e, "vector reference into non-vector");
   } else if (vif) {
-    size_t i = 0;
-    if (_index) 
+    ssize_t i = 0;
+    if (_index) {
       i = _index->eval_as_int (*e);
+    }
     if (!(r = vif->lookup (i, &in_bounds)) && !in_bounds && e->loud ()) {
       report_error (*e, strbuf ("vector reference (%zd) out of bounds", i));
     }
@@ -1196,12 +1197,10 @@ pub3::expr_list_t::lookup (ssize_t s, bool *ibp) const
 {
   ptr<const pval_t> r;
   bool ib;
-  if (s < 0 || s >= ssize_t (size ())) {
-    ib = false;
-  } else {
-    ib = true;
+  if ((ib = fixup_index (&s))) {
     r = (*this)[s];
   }
+
   if (ibp) *ibp = ib;
   return r;
 }
@@ -1213,12 +1212,11 @@ pub3::expr_list_t::lookup (ssize_t s, bool *ibp)
 {
   ptr<pval_t> r;
   bool ib;
-  if (s < 0 || s >= ssize_t (size ())) {
-    ib = false;
-  } else {
-    ib = true;
+
+  if ((ib = fixup_index (&s))) {
     r = (*this)[s];
   }
+
   if (ibp) *ibp = ib;
   return r;
 }
@@ -1963,12 +1961,8 @@ pub3::expr_list_t::lookup_slot (ssize_t i)
   ptr<slot_ref_t> ret;
   ssize_t ssz = size ();
 
-  if (i < 0) {
-    i -= ssz;
-    if (i < 0) i = 0;
-  }
+  fixup_index (&i, true);
 
-  assert (i >= 0);
   if (i >= ssz) {
     setsize (i+1);
   }
@@ -2056,6 +2050,37 @@ pub3::expr_t::const_cast_hack () const
   return mkref (const_cast<expr_t *> (this));
 }
 
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_list_t::fixup_index (ssize_t *ip, bool lax) const
+{
+  bool ret = false;
+  ssize_t i = *ip;
+  ssize_t sz = size ();
+
+  if (i >= 0 && i < sz) {
+    ret = true; 
+  } else {
+
+    // apply from-back-indexing.
+    if (i < 0) {
+      i += sz;
+    }
+
+    if (i < 0) {
+      ret = lax;
+      if (lax) i = 0;
+    } else if (i >= sz) {
+      ret = lax;
+    } else {
+      ret = true;
+    }
+
+  }
+  *ip = i;
+  return ret;
+}
 
 //=======================================================================
 

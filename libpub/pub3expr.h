@@ -750,6 +750,9 @@ namespace pub3 {
     ptr<expr_list_t> to_expr_list () { return mkref (this); }
 
     const char *get_obj_name () const { return "pub3::expr_list_t"; }
+
+  private:
+    bool fixup_index (ssize_t *ind, bool lax = false) const;
   };
   
   //-----------------------------------------------------------------------
