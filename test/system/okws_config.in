@@ -41,6 +41,7 @@ Service 	purify /purify
 Service		posttest /posttest
 Service		forloop /forloop
 Service		reflect /reflect
+Service		objtest /objtest
 
 #Service	3tier/tst2 /tst2
 

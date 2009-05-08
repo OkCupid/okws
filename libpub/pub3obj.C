@@ -481,7 +481,18 @@ namespace pub3 {
   bool
   obj_t::to_int (int64_t *i) const
   {
-    return _scalar && _scalar->to_int64 (i);
+    return (obj () && obj ()->to_int64 (i));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  obj_t::expr () const 
+  {
+    ptr<const expr_t> x;
+    ptr<const pval_t> o = obj ();
+    if (o) x = o->to_expr ();
+    return x;
   }
 
   //-----------------------------------------------------------------------
@@ -491,10 +502,15 @@ namespace pub3 {
   {
     scalar_obj_t so;
     bool ret = false;
+    ptr<const expr_t> x;
+
     if (_scalar) {
       so = _scalar->to_scalar ();
       ret = so.to_uint64 (u);
+    } else if ((x = expr ())) {
+      ret = x->to_uint (u);
     }
+
     return ret;
   }
 
@@ -503,7 +519,15 @@ namespace pub3 {
   bool
   obj_t::to_str (str *s) const
   {
-    return (_scalar && (*s = _scalar->to_str ()));
+    bool ret;
+    ptr<const expr_t> x;
+
+    if (_scalar) {
+      ret = (_scalar && (*s = _scalar->to_str ()));
+    } else if ((x = expr ())) {
+      ret = (*s = x->to_str ());
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -511,7 +535,14 @@ namespace pub3 {
   bool
   obj_t::to_bool (bool *b) const
   {
-    return (_scalar && (*b = _scalar->to_bool ()));
+    bool ret;
+    ptr<const expr_t> x;
+    if (_scalar) {
+      ret = _scalar && (*b = _scalar->to_bool ());
+    } else if ((x = expr ())) {
+      ret = (x && (*b = x->to_bool ()));
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -552,6 +583,80 @@ namespace pub3 {
     u_int64_t r = 0;
     to_uint (&r);
     return r;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  const_obj_t::to_int (int64_t *i) const
+  {
+    return _c_obj && _c_obj->to_int64 (i);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  const_obj_t::to_uint (u_int64_t *i) const
+  {
+    ptr<const expr_t> x;
+    return _c_obj && (x = _c_obj->to_expr ()) && x->to_uint (i);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  const_obj_t::to_bool (bool *b) const
+  {
+    return _c_obj && (*b = _c_obj->to_bool ());
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  const_obj_t::to_str (str *s) const
+  {
+    ptr<const expr_t> x;
+    return _c_obj && (x = _c_obj->to_expr ()) && (*s = x->to_str ());
+  }
+
+  //-----------------------------------------------------------------------
+
+  str
+  const_obj_t::to_str () const
+  {
+    str s;
+    to_str (&s);
+    return s;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  const_obj_t::to_bool () const
+  {
+    bool b;
+    to_bool (&b);
+    return b;
+  }
+
+  //-----------------------------------------------------------------------
+
+  int64_t
+  const_obj_t::to_int () const
+  {
+    int64_t i = 0;
+    to_int (&i);
+    return i;
+  }
+
+  //-----------------------------------------------------------------------
+
+  u_int64_t 
+  const_obj_t::to_uint () const
+  {
+    u_int64_t u = 0;
+    to_uint (&u);
+    return u;
   }
 
   //-----------------------------------------------------------------------

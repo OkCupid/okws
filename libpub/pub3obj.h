@@ -103,6 +103,16 @@ namespace pub3 {
     virtual ptr<const pval_t> obj () const { return _c_obj; }
     bool isnull () const { return !_c_obj; }
 
+    bool to_int (int64_t *i) const;
+    bool to_uint (u_int64_t *u) const;
+    bool to_str (str *s) const;
+    bool to_bool (bool *b) const;
+
+    str to_str () const;
+    bool to_bool () const;
+    int64_t to_int () const;
+    u_int64_t to_uint () const;
+
   protected:
     ptr<const expr_list_t> to_vector () const;
     ptr<const expr_dict_t> to_dict () const;
@@ -157,6 +167,7 @@ namespace pub3 {
     ptr<const aarr_t> dict () const;
 
     ptr<const pval_t> obj () const;
+    ptr<const expr_t> expr () const;
     ptr<pval_t> obj ();
     void clear ();
 

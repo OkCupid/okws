@@ -30,4 +30,5 @@ EXTRA_DIST = \
      28.py \
      29.py \
      30.py \
-     31.py 
+     31.py \
+     32.py

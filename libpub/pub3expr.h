@@ -119,6 +119,7 @@ namespace pub3 {
     virtual bool to_bool () const { return false; }
     virtual int64_t to_int () const { return 0; }
     virtual u_int64_t to_uint () const { return 0; }
+    virtual bool to_uint (u_int64_t *u) const { return false; }
     virtual bool to_len (size_t *s) const { return false; }
     virtual bool is_null () const { return false; }
     virtual ptr<rxx> to_regex () const { return NULL; }
@@ -259,6 +260,7 @@ namespace pub3 {
     int64_t to_int () const { return _b; }
     bool to_int64 (int64_t *i) const { *i = _b; return true; }
     u_int64_t to_uint () const { return _b; }
+    bool to_uint (u_int64_t *u) const { *u = _b; return true; }
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     bool to_bool () const { return _b; }
@@ -620,6 +622,7 @@ namespace pub3 {
     int64_t to_int () const { return _val; }
     bool to_int64 (int64_t *i) const { *i = _val; return true; }
     u_int64_t to_uint () const;
+    bool to_uint (u_int64_t *u) const;
     bool to_xdr (xpub3_expr_t *x) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
@@ -643,6 +646,7 @@ namespace pub3 {
     u_int64_t to_uint () const { return _val; }
     int64_t to_int () const;
     bool to_int64 (int64_t *i) const;
+    bool to_uint (u_int64_t *u) const { *u = _val; return true; }
 
     scalar_obj_t to_scalar () const;
 

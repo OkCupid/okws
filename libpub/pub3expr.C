@@ -1423,10 +1423,21 @@ u_int64_t
 pub3::expr_int_t::to_uint () const
 {
   u_int64_t out = 0;
-  if (_val >= 0) {
-    out = _val;
-  }
+  to_uint (&out);
   return out;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_int_t::to_uint (u_int64_t *u) const
+{
+  bool r = false;
+  if (_val >= 0) {
+    *u = _val;
+    r = true;
+  }
+  return r;
 }
 
 //-----------------------------------------------------------------------
