@@ -221,6 +221,7 @@ namespace pub3 {
   {
     _vec = NULL;
     _dict = NULL;
+    _scalar = NULL;
     _c_obj = _obj = NULL;
   }
 
@@ -231,6 +232,7 @@ namespace pub3 {
   {
     _ref = NULL;
     _c_obj = NULL;
+    _obj = NULL;
     _vec = NULL;
     _dict = NULL;
     _scalar = NULL;
