@@ -18,7 +18,7 @@ json_escape (const str &s, bool addq)
     *dp++ = '"';
 
   char c;
-  while ((p2 = strpbrk (p1, "\\\"\n\t"))) {
+  while ((p2 = strpbrk (p1, "\\\"\n\t\r"))) {
     span = p2 - p1;
     strncpy (dp, p1, span);
     dp += span;
@@ -26,6 +26,7 @@ json_escape (const str &s, bool addq)
 
     if (*p2 == '\n') { c = 'n'; } 
     else if (*p2 == '\t') { c = 't'; } 
+    else if (*p2 == '\r') { c = 'r'; }
     else { c = *p2; }
 
     *dp++ = c;
