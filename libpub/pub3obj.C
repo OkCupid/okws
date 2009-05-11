@@ -519,7 +519,7 @@ namespace pub3 {
   bool
   obj_t::to_str (str *s) const
   {
-    bool ret;
+    bool ret = false;
     ptr<const expr_t> x;
 
     if (_scalar) {
