@@ -535,7 +535,7 @@ namespace pub3 {
   bool
   obj_t::to_bool (bool *b) const
   {
-    bool ret;
+    bool ret = false;
     ptr<const expr_t> x;
     if (_scalar) {
       ret = _scalar && (*b = _scalar->to_bool ());
