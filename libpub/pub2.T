@@ -80,6 +80,26 @@ namespace pub2 {
     TRIGGER (cb, status.status == XPUB_STATUS_OK);
   }
 
+  //-----------------------------------------------------------------------
+  
+  tamed void
+  lsp_t::syntax_check_T (pfnm_t nm, str *err, evi_t ev)
+  {
+    tvars {
+      ptr<const pub_localizer_t> old;
+      penv_t *e (NULL);
+      int rc;
+    }
+    e = _ap->get_env ();
+    old = e->localizer ();
+    e->set_localizer (_localizer);
+    twait { _ap->syntax_check (nm, err, mkevent (rc)); }
+    e->set_localizer (old);
+    ev->trigger (rc);
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
   ap_t::publish_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
 		 status_cb_t cb)
@@ -97,7 +117,7 @@ namespace pub2 {
 			getfile_cb_t cb)
   {
     tvars {
-      status_t status (XPUB_STATUS_OK);
+      status_t status (XPUB_STATUS_NOENT);
       ptr<bound_pfile2_t> bpf;
       str err;
       vec<str> files_to_check;
@@ -106,22 +126,19 @@ namespace pub2 {
       ptr<const pub_localizer_t> localizer;
     }
 
+    // generate a list of internationalized files.  if that list is
+    // empty, we'll skip the following loop and we'll just
+    // fall through with status.status == XPUB_STATUS_NOENT
     if (env && !(o->opts () & P_NOLOCALE)) {
       localizer = env->localizer ();
     }
-
     list_files_to_check (fn, &files_to_check, localizer);
-
-    if (files_to_check.size () == 0) {
-      status.set_status (XPUB_STATUS_NOENT);
-      TRIGGER (cb, status, NULL);
-      return;
-    }
 
     for (i = 0; i < files_to_check.size (); i++) {
       twait { getfile (files_to_check[i], mkevent (status, bpf), o->opts ()); }
-      if (status.status != XPUB_STATUS_NOENT)
+      if (status.status != XPUB_STATUS_NOENT) {
 	break;
+      }
     }
 
     switch (status.status) {
@@ -772,6 +789,34 @@ namespace pub2 {
     arg->maxsz = _maxsz;
     return false;
   }
+
+  //-----------------------------------------------------------------------
+
+  tamed void 
+  ap_t::syntax_check_T (str f, str *err, evi_t ev)
+  {
+    tvars {
+      xpub_status_t res;
+      ptr<bound_pfile2_t> dummy;
+      int rc (0);
+    }
+    twait { getfile (f, mkevent (res, dummy), 0); }
+    if (res.status != XPUB_STATUS_OK) {
+      strbuf b;
+      if (res.status == XPUB_STATUS_RPC_ERR) {
+	b << f << ": RPC error:" << clnt_stat (*(res.rpc_err));
+      } else {
+	b << f << ": error: " << *res.error;
+      }
+      *err = b;
+      rc = -1;
+    } else {
+      rc = 0;
+    }
+    ev->trigger (rc);
+  }
+
+  //-----------------------------------------------------------------------
   
 }
 

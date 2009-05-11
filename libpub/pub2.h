@@ -55,6 +55,7 @@ namespace pub2 {
 			       aarr_t *dest = NULL) = 0;
 
     virtual void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL) = 0;
+    virtual void syntax_check (str f, str *err, evi_t ev) = 0;
 
     virtual void cfg_clear () = 0;
     virtual u_int opts () const = 0;
@@ -112,6 +113,9 @@ namespace pub2 {
 			       getfile_cb_t cb)
     { publish_full_T (o, fn, env, lineno, cb); }
 
+    // syntax check the file only
+    virtual void syntax_check (str f, str *err, evi_t ev)
+    { syntax_check_T (f, err, ev); }
 
     /**
      * Read in and process configuration variables from a config file.
@@ -176,6 +180,8 @@ namespace pub2 {
     void run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL,
 			 CLOSURE);
     void run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
+
+    void syntax_check_T (str f, str *err, evi_t ev, CLOSURE);
     
   protected:
 
@@ -205,6 +211,9 @@ namespace pub2 {
     void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL)
     { run_cfg_T (nm, cb, dest); }
 
+    void syntax_check (str f, str *err, evi_t ev)
+    { syntax_check_T (f, err, ev); }
+
     penv_t *get_env () const { return _ap->get_env (); }
 
     void cfg_clear () { _ap->cfg_clear (); }
@@ -221,6 +230,7 @@ namespace pub2 {
     void run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dest = NULL,
 			 CLOSURE);
     void run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dest = NULL, CLOSURE);
+    void syntax_check_T (str f, str *err, evi_t ev, CLOSURE);
 
     ptr<ok_iface_t> _ap;
     ptr<const pub_localizer_t> _localizer;

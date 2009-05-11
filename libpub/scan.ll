@@ -153,6 +153,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 		   yy_pop_state (); 
                 }
 \n		{ PLINC; }
+"]"{1,2}        { /* ignore! */; }
 [^\]\n]+	{ /* ignore */; }
 }
 

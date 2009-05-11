@@ -42,11 +42,16 @@ namespace pub3 {
 
   class eng_t {
   public:
-    eng_t () : _opt (0), _ppt (NULL) {}
+    eng_t () : _opt (0), _ppt (NULL), _syntax_check (false) {}
     void init (int argc, char **argv, bool *gop, evi_t ev, CLOSURE);
     void run (evi_t ev, CLOSURE);
+    void syntax_check (evi_t ev, CLOSURE);
   private:
+
+    void run_pub (evi_t ev, CLOSURE);
+    void check_files (evi_t ev, CLOSURE);
     void run_file (str s, evi_t ev, CLOSURE);
+    void check_file (str s, evi_t ev, CLOSURE);
 
     int _opt;
     str _jaildir;
@@ -57,9 +62,26 @@ namespace pub3 {
     str _argfile;
     pub3::obj_dict_t _dict;
     vec<str> _print_vars;
+    bool _syntax_check;
   };
 
 };
+
+//-----------------------------------------------------------------------
+
+tamed void
+pub3::eng_t::check_file (str f, evi_t ev)
+{
+  tvars {
+    int rc;
+    str err;
+  }
+  twait { _pub->syntax_check (f, &err, mkevent (rc)); }
+  if (rc != 0) {
+    warn << err << "\n";
+  }
+  ev->trigger (rc);
+}
 
 //-----------------------------------------------------------------------
 
@@ -84,7 +106,41 @@ pub3::eng_t::run_file (str f, evi_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
+pub3::eng_t::check_files (evi_t ev)
+{
+  tvars {
+    int frc (0); // final return code
+    int trc (0); // temp return code
+    size_t i;
+  }
+  
+  for (i = 0; i < _files.size (); i++) {
+    twait { check_file (_files[i], mkevent (trc)); }
+    if (trc != 0) { frc = trc; }
+  }
+  ev->trigger (frc);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
 pub3::eng_t::run (evi_t ev)
+{
+  tvars {
+    int rc;
+  }
+  if (_syntax_check) {
+    twait { check_files (mkevent (rc)); }
+  } else {
+    twait { run_pub (mkevent (rc)); }
+  }
+  ev->trigger (rc);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+pub3::eng_t::run_pub (evi_t ev)
 {
   tvars {
     int rc (0);
@@ -143,6 +199,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     const char *e, *v;
     bool have_cfg;
     struct stat sb;
+    bool check_use_jail (false);
   }
 
   zinit ();
@@ -154,8 +211,11 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     _config = v;
   }
 
-  while ((ch = getopt (argc, argv, "a:diwej:f:vhp:")) != -1) {
+  while ((ch = getopt (argc, argv, "a:diwej:f:vhp:sJ")) != -1) {
     switch (ch) {
+    case 's':
+      _syntax_check = true;
+      break;
     case 'p':
       _print_vars.push_back (optarg);
       break;
@@ -176,6 +236,9 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       break;
     case 'j':
       _jaildir = optarg;
+      break;
+    case 'J':
+      check_use_jail = true;
       break;
     case 'f':
       _config = optarg;
@@ -204,6 +267,15 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     for (int i = 0; i < argc; i++) {
       _files.push_back (argv[i]);
     }
+
+    if (_syntax_check) {
+      if (_print_vars.size ()) {
+	warn << "XX print vars have no effect in syntax-check mode\n";
+      }
+      if (_opt) {
+	warn << "XX pub optinos have no effect in syntax-check mode\n";
+      }
+    }
     
     if (!_config) {
       _config = okws_etcfile (ok_pub_config);
@@ -216,11 +288,11 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       twait { _pub->run_cfg (_config, mkevent (have_cfg)); }
     }
     
-    if (!have_cfg)  {
+    if (!have_cfg && !_syntax_check)  {
       warn << "pubd running without default variable bindings\n";
     }
     
-    if (!_jaildir) {
+    if (!_jaildir && (!_syntax_check || check_use_jail)) {
       if (!_pub->cfg ("JailDir", &_jaildir, true)) {
 	warn << "XX cannot find a jail directory!!\n";
 	warn << "XX   - none was specified with -j and "
@@ -229,7 +301,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     }
     
     if (!_jaildir) {
-      /* issues ahead! */
+      /* issues ahead, maybe... */
     } else if (stat (_jaildir.cstr (), &sb) != 0) {
       warn << "XX no directory found for JailDir: " << _jaildir << "\n";
       _jaildir = NULL;
@@ -237,8 +309,10 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       warn << "XX supposed 'JailDir' is not a directory: " << _jaildir << "\n";
       _jaildir = NULL;
     }
-    
-    if (!_jaildir) {
+
+    if (_syntax_check) {
+      /* skip next checks .. */
+    } else if (!_jaildir) {
       run = false;
       rc = -1;
     } else if (_files.size () == 0 && _print_vars.size () == 0) {
@@ -246,9 +320,12 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       rc = -1;
       warn << "XX no files given! need at least one\n";
       usage ();
-    } else {
+    }
+
+    if (rc == 0 && _jaildir) {
       _ppt->setjail_virtual (_jaildir);
     }
+
   }
   
   *gop = run;
