@@ -30,7 +30,7 @@
 //
 // zstr.C constants
 //
-bool  ok_gzip = true;                        // default gzip
+gzip_mode_t ok_gzip_mode = GZIP_SMART;       // default gzip
 int   ok_gzip_compress_level = 2;            // fast compression
 u_int ok_gzip_smallstr = 512;                // combine small strings
 u_int ok_gzip_cache_minstr = 0x0;            // smallest to cache
@@ -346,4 +346,20 @@ okws_etcfile_required (const char *f, const char *env_var, bool d,
   vec2vec (&v2, v1);
 
   return sfsconst_etcfile_required (f, v2.base (), d);
+}
+
+gzip_mode_t
+ok_gzip_str_to_mode (const str &s)
+{
+  gzip_mode_t m = GZIP_NONE;
+  if (!s) {
+    /* nothing */
+  } else if (s == "1" || s == "on" || s == "smart") {
+    m = GZIP_SMART;
+  } else if (s == "0" || s == "off") {
+    m = GZIP_NONE;
+  } else if (s == "naive") {
+    m = GZIP_NAIVE;
+  }
+  return m;
 }

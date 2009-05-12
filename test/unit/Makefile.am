@@ -86,7 +86,8 @@ noinst_PROGRAMS = \
 	pubmemtst \
 	gz \
 	srv \
-	newline
+	newline \
+	gznaive
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
@@ -96,6 +97,7 @@ pubmemtst_SOURCES = pubmemtst.C
 gz_SOURCES = gz.C
 srv_SOURCES = srv.C
 newline_SOURCES = newline.C
+gznaive_SOURCES = gznaive.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)

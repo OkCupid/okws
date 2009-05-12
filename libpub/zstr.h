@@ -125,7 +125,9 @@ public:
   virtual const strbuf &to_strbuf (bool gz) = 0;
   virtual void to_strbuf (strbuf *b, bool gz) = 0;
   virtual size_t inflated_len () const = 0;
+  virtual int naive_compress (strbuf *b, vec<str> *hold, int lev) = 0;
   virtual void clear () = 0;
+  virtual int to_strbuf (strbuf *out, vec<str> *hold, gzip_mode_t mode);
 };
 
 class zbuf : public compressible_t {
@@ -146,7 +148,7 @@ public:
   inline void to_strbuf (strbuf *b, bool gz) 
   { if (gz) compress (b); else output (b); }
   size_t inflated_len () const;
-
+  int naive_compress (strbuf *b, vec<str> *hold, int lev) ;
 
   void clear ();
   const strbuf &output () { output (&out); return out; }

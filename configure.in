@@ -4,10 +4,10 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 
 AC_INIT(config.h.in)
-AM_INIT_AUTOMAKE(okws, 2.0.3pre2)
+AM_INIT_AUTOMAKE(okws, 2.0.3pre3)
 AM_CONFIG_HEADER(config.h)
 
-SFS_INIT_LDVERSION(19)
+SFS_INIT_LDVERSION(20)
 
 AC_CONFIG_MACRO_DIR([m4])
 

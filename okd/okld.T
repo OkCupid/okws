@@ -615,6 +615,7 @@ okld_t::parse_file (const str &cf)
   _config_no_pub_v2_support = false;
   str sys_sel_tmp;
   u_int UIZ = 0;
+  str gzip_tmp;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -703,7 +704,7 @@ okld_t::parse_file (const str &cf)
 
     .add ("ClientTimeout", &ok_clnt_timeout, 1, 400)
 
-    .add ("Gzip", &ok_gzip)
+    .add ("Gzip", &gzip_tmp)
     .add ("GzipLevel", &ok_gzip_compress_level, Z_NO_COMPRESSION,
 	  Z_BEST_COMPRESSION)
     .add ("GzipSmallStrLen", &ok_gzip_smallstr, 0, 0x8000)
@@ -760,6 +761,9 @@ okld_t::parse_file (const str &cf)
   bool ret = ct.run (cf);
   if (ret) {
     ok_sys_sel_policy = sfs_core::select_policy_from_str (sys_sel_tmp);
+  }
+  if (gzip_tmp) {
+    ok_gzip_mode = ok_gzip_str_to_mode (gzip_tmp);
   }
   return ret;
 }
@@ -902,7 +906,7 @@ okld_t::encode_env ()
     .insert ("jailed", int (jaildir && !uid))
     .insert ("logfmt", logd_parms.accesslog_fmt)
     .insert ("svclog", int (logd_parms.svclog))
-    .insert ("gzip", ok_gzip ? 1 : 0)
+    .insert ("gzip", int (ok_gzip_mode))
     .insert ("gziplev", ok_gzip_compress_level)
     .insert ("gzipcsl", ok_gzip_cache_storelimit)
     .insert ("logtick", ok_log_tick)

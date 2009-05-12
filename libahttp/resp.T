@@ -292,7 +292,8 @@ http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
   }
   twait { p->run (&b, fn, mkevent (rc), env, P_WSS); }
   if (rc) {
-    b.to_strbuf (&body, v > 0 && gz);
+    gzip_mode_t gzm = v > 0 && gz ? ok_gzip_mode : GZIP_NONE;
+    b.compressible_t::to_strbuf (&body, &_hold, gzm);
   }
   if (gz) gzip ();
   TRIGGER (cb, rc);
@@ -349,5 +350,19 @@ http_error_t::http_error_t (const http_resp_attributes_t &hra,
 {
   header.fill (false, nbytes); 
 }
+
+//-----------------------------------------------------------------------
+
+http_pub_t::http_pub_t (int n, const pub_base_t &p, const str &fn, 
+			aarr_t *env, htpv_t v, bool gz)
+  : http_response_t (http_resp_header_t (n, v)), zb (),
+    err (!p.include (&zb, fn, 0, env))
+{
+  if (!err)  {
+    gzip_mode_t gzm = v > 0 && gz ? ok_gzip_mode : GZIP_NONE;
+    zb.compressible_t::to_strbuf (&body, &_hold, gzm);
+  }
+}
+
 
 //-----------------------------------------------------------------------

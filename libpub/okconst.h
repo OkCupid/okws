@@ -55,16 +55,20 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_SVC_FD_HIGH_WAT_UL 102400
 #define OK_SVC_FD_LOW_WAT_UL  100000
 
+typedef enum { GZIP_NONE = 0, GZIP_SMART = 1, GZIP_NAIVE = 2 } gzip_mode_t;
+
 //
 // gzip parameters (see zstr.h)
 //
-extern bool    ok_gzip;
+extern gzip_mode_t ok_gzip_mode;
 extern int     ok_gzip_compress_level;
 extern u_int   ok_gzip_smallstr;
 extern u_int   ok_gzip_cache_minstr;
 extern u_int   ok_gzip_cache_maxstr;
 extern u_int   ok_gzip_cache_storelimit;
 extern u_int   ok_gzip_mem_level;
+
+gzip_mode_t ok_gzip_str_to_mode (const str &s);
 
 //
 // user/group constants

@@ -129,7 +129,7 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
     ptr<http_response_base_t> ret;
     http_resp_attributes_t hra (n, v);
   }
-  hra.set_gzip (gz);
+  hra.set_gzip (gz ? GZIP_SMART : GZIP_NONE);
   
   twait { geterr (s, hra, mkevent (ret)); }
   TRIGGER (cb, ret);
@@ -246,6 +246,7 @@ oksrvc_t::init (int argc, char *argv[])
 
   int pub1tmp = 0;
   int seltmp = 0;
+  int gztmp;
 
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
@@ -259,7 +260,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("pub2fd", &pub2fd);
     t->lookup ("pub1", &pub1tmp);
     t->lookup ("logfmt", &logfmt);
-    t->lookup ("gzip", &ok_gzip);
+    t->lookup ("gzip", &gztmp);
     t->lookup ("filtercgi", &ok_filter_cgi);
     t->lookup ("gziplev", &ok_gzip_compress_level);
     t->lookup ("gzipcsl", &ok_gzip_cache_storelimit);
@@ -293,6 +294,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("dps", &dp_str);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
+    ok_gzip_mode = gzip_mode_t (gztmp);
 
     set_sfs_select_policy ();
 
@@ -332,7 +334,7 @@ oksrvc_t::init (int argc, char *argv[])
   init_pub2 ( (ok_pub2_wss > 0 ? P_WSS : 0) |
 	      (ok_pub2_viserr > 0 ? P_VISERR : 0) );
 
-  zinit (ok_gzip, ok_gzip_compress_level);
+  zinit (ok_gzip_mode != GZIP_NONE, ok_gzip_compress_level);
 }
 
 //-----------------------------------------------------------------------
@@ -1057,7 +1059,7 @@ okclnt_base_t::output_hdr (ssize_t len)
 
   http_resp_attributes_t hra (HTTP_OK, hdr_cr ().get_vers ());
   set_attributes (&hra);
-  hra.set_gzip (false);
+  hra.set_gzip (GZIP_NONE);
   rsp = New refcounted<http_response_ok_t> (len, hra);
   fixup_log (rsp);
 
@@ -1174,10 +1176,14 @@ okclnt_base_t::output_done (evb_t::ptr ev)
 
 //-----------------------------------------------------------------------
 
-bool
+gzip_mode_t 
 okclnt_base_t::do_gzip () const
 {
-  return hdr_cr ().takes_gzip () && ok_gzip && rsp_gzip;
+  gzip_mode_t ret = GZIP_NONE;
+  if (hdr_cr ().takes_gzip () && rsp_gzip) {
+    ret = ok_gzip_mode;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -1194,11 +1200,14 @@ tamed void
 okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 {
   tvars {
-    bool gz (_self->do_gzip ());
-    ssize_t prelen (gz ? b->inflated_len () : ssize_t (-1));
-    const strbuf &sb (b->to_strbuf (gz));
+    gzip_mode_t gz (_self->do_gzip ());
+    ssize_t prelen (gz == GZIP_NONE ? b->inflated_len () : ssize_t (-1));
+    vec<str> holdv;
+    strbuf sb;
     http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
   }
+
+  b->to_strbuf (&sb, &holdv, gz);
 
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
@@ -1217,7 +1226,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
       hra.set_gzip (false);
       rsp = New refcounted<http_response_head_t> (sb.tosuio ()->resid (), hra);
     } else {
-      hra.set_gzip (gz);
+      hra.set_gzip (gz != GZIP_NONE);
       rsp = New refcounted<http_response_ok_t> (sb, hra);
     }
     fixup_log (rsp);
@@ -1819,8 +1828,8 @@ tamed void
 okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
 {
   tvars {
-    bool gz (_self->do_gzip ());
-    ssize_t prelen (gz && b ? b->inflated_len () : ssize_t (-1));
+    gzip_mode_t gz (_self->do_gzip ());
+    ssize_t prelen (gz != GZIP_NONE && b ? b->inflated_len () : ssize_t (-1));
     http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
     ptr<ahttpcon> x (_self->client_con ());
     ptr<http_response_base_t> rsp;
@@ -1843,7 +1852,7 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
    
     head = (hdr_cr ().mthd == HTTP_MTHD_HEAD);
     if (head) {
-      gz = false;
+      gz = GZIP_NONE;
       contlen = b ? b->inflated_len () : 0;
       b = NULL;
     }

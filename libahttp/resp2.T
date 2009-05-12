@@ -22,7 +22,7 @@ http_response_ok2_t::fill ()
 {
   strbuf b2;
   if (_body) {
-    _body->to_strbuf (&b2, _compressed);
+    _body->to_strbuf (&b2, &_hold, _compressed ? ok_gzip_mode : GZIP_NONE);
     _n_bytes = b2.tosuio ()->resid ();
     set_inflated_len (_body->inflated_len ());
   } else {
@@ -56,7 +56,7 @@ http_response_ok2_t::send (ptr<ahttpcon> x, cbv::ptr cb)
 {
   strbuf b;
   if (_body) {
-    _body->to_strbuf (&b, _compressed);
+    _body->to_strbuf (&b, &_hold, _compressed ? ok_gzip_mode : GZIP_NONE);
   }
   u_int ret = b.tosuio ()->resid ();
   x->send (b, cb); 
