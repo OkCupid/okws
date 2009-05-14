@@ -868,7 +868,7 @@ void
 json_str_begin ()
 {
   yy_json_str_line = yy_json_lineno;
-  yy_json_strbuf.clear ();
+  yy_json_strbuf.tosuio ()->clear ();
   yy_push_state (JSON_STR);
 }
 
