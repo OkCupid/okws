@@ -908,7 +908,7 @@ int
 json_str_end ()
 {
   yylval.str = str (yy_json_strbuf);
-  yy_json_strbuf.clear ();
+  yy_json_strbuf.tosuio ()->clear ();
   yy_pop_state ();
   return T_P3_STRING;
 }
