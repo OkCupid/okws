@@ -52,6 +52,19 @@ static int yy_p3_regex_start_line;
 strbuf yy_p3_regex_buf;
 static char yy_p3_str_char;
 
+static strbuf yy_json_strbuf;
+static int    yy_json_str_line;
+
+static int  json_str_end ();
+static void json_str_begin ();
+static void json_str_addch (int ch);
+static void json_str_add_unicode (const char *in);
+static void json_str_addstr (const char *in);
+static int  json_str_eof ();
+void json_inc_lineno ();
+static int yy_json_lineno = 1;
+static int yy_json_mode = 0;
+int json_error (str s);
 
 %}
 
@@ -73,7 +86,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX 
-%x P3 P3_STR P3_REGEX C_COMMENT
+%x P3 P3_STR P3_REGEX C_COMMENT JSON JSON_STR
 
 %%
 
@@ -466,6 +479,35 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 			}
 }
 
+<JSON>{
+\n		     { json_inc_lineno (); }
+[ \t\r]+	     { /* ignore */ }
+[[{:,}\]]	     { return yytext[0]; }
+([0-9]+|0x[0-9a-f]+) { yylval.str = yytext; return T_P3_UINT; }
+-?[0-9]*\.[0-9]+     { yylval.str = yytext; return T_P3_FLOAT; }
+-[0-9]+              { yylval.str = yytext; return T_P3_INT; }
+true		     { return T_P3_TRUE; }
+false		     { return T_P3_FALSE; }
+null		     { return T_P3_NULL; }
+["]		     { json_str_begin (); }
+.		     { json_error ("illegal token in JSON environment"); }
+}
+
+<JSON_STR>{
+\n		     { json_inc_lineno (); json_str_addch (yytext[0]); }
+["]		     { return json_str_end (); }
+<<EOF>>		     { return json_str_eof (); }
+\\\\		     { json_str_addch ('\\'); }
+\\n		     { json_str_addch ('\n'); }
+\\r		     { json_str_addch ('\r'); }
+\\t		     { json_str_addch ('\t'); }
+\\\"		     { json_str_addch ('\"'); }
+\\u[a-fA-F0-9]{4}    { json_str_add_unicode (yytext + 2); }
+\\b		     { json_str_addch ('\b'); }
+\\.                  { json_error ("illegal escape sequence in string"); }
+[^\\\\n"]+	     { json_str_addstr (yytext); }
+}
+
 <C_COMMENT>{
 \n		{ PLINC; }
 "*/"		{ yy_pop_state (); }
@@ -570,12 +612,24 @@ nlcount (int m)
 int
 yyerror (str msg)
 {
-  if (!msg) 
-    msg = "bailing out due to earlier warnings";
-  PWARN(msg);
-  PARSEFAIL;	
-  yyterminate ();
+  if (yy_json_mode) {
+    json_error (msg);
+  } else {
+    if (!msg) 
+      msg = "bailing out due to earlier warnings";
+    PWARN(msg);
+    PARSEFAIL;	
+    yyterminate ();
+  }
   return 0;
+}
+
+void
+yy_parse_fail()
+{
+  if (!yy_json_mode) {
+    PARSEFAIL;
+  }
 }
 
 int
@@ -804,6 +858,86 @@ p3_identifier (const char *yyt)
 
 //-----------------------------------------------------------------------
 
+int
+yy_get_json_lineno ()
+{
+  return yy_json_lineno;
+}
+
+void
+json_str_begin ()
+{
+  yy_json_str_line = yy_json_lineno;
+  yy_json_strbuf.clear ();
+  yy_push_state (JSON_STR);
+}
+
+void
+json_str_addch (int ch)
+{
+  char buf[2];
+  buf[1] = '\0';
+  buf[0] = ch;
+  yy_json_strbuf.cat (buf, true);
+}
+
+void
+json_str_addstr (const char *x)
+{
+  yy_json_strbuf.cat (x, true);
+}
+
+void 
+json_str_add_unicode (const char *in)
+{
+   char *ep;
+   long l = strtol (in, &ep, 16);
+   if (*ep == '\0' && l > 0 && l <= 0xff) {
+      json_str_addch (l);
+   }
+}
+
+int
+json_str_eof ()
+{
+  strbuf e ("EOF on JSON string started on line %d", yy_json_str_line);
+  return json_error (e);
+}
+
+int
+json_str_end ()
+{
+  yylval.str = str (yy_json_strbuf);
+  yy_json_strbuf.clear ();
+  yy_pop_state ();
+  return T_P3_STRING;
+}
+
+void
+yy_parse_json (str s)
+{
+  yy_json_lineno = 1;
+  yy_json_mode = 1;
+  yy_push_state (JSON);
+  yy_scan_bytes (s.cstr (), s.len());
+}
+
+void
+json_inc_lineno ()
+{
+  yy_json_lineno ++;
+}
+
+int
+json_error (str s)
+{
+  warn << "json:" << yy_json_lineno <<": parse error: " << s << "\n";
+  yyterminate ();
+  return 0;
+}
+
+//-----------------------------------------------------------------------
+
 
 /*
 // States:
@@ -822,5 +956,6 @@ p3_identifier (const char *yyt)
 //   POUND_REGEX - m#...# regex environment
 //   P3 -- Pub v3 (expanded boolean logic)
 //   C_COMMENT - style C comments
+//   JSON_START JSON JSON_STRING - for Json
 //
 */

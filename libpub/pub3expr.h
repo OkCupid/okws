@@ -252,9 +252,8 @@ namespace pub3 {
 
   class expr_bool_t : public expr_static_t {
   public:
-    expr_bool_t (bool b) : expr_static_t (), _b (b) {}
     scalar_obj_t to_scalar () const;
-    bool to_xdr (xpub3_expr_t *x) const { return false; }
+    bool to_xdr (xpub3_expr_t *x) const;
     static str to_str (bool b);
     str to_str () const;
     int64_t to_int () const { return _b; }
@@ -265,13 +264,17 @@ namespace pub3 {
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     bool to_bool () const { return _b; }
 
-    // for recycle interface
     static ptr<expr_bool_t> alloc (bool b);
-    void init (bool b) { _b = b; }
-    void finalize ();
+    static ptr<expr_bool_t> _false, _true;
+
+    // Allow for calling New refcounted<expr_bool_t> inside of
+    // expr_bool_t::alloc()
+    friend class refcounted<expr_bool_t>;
 
   private:
-    bool _b;
+    expr_bool_t (bool b) : expr_static_t (), _b (b) {}
+
+    const bool _b;
   };
 
   //-----------------------------------------------------------------------
@@ -824,6 +827,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class pair_t {
+  public:
+    pair_t (const str &s, ptr<expr_t> x) : _name (s), _expr (x) {}
+    str name () const { return _name; }
+    ptr<expr_t> expr () { return _expr; }
+    ptr<const expr_t> expr () const { return _expr; }
+  private:
+    str _name;
+    ptr<expr_t> _expr;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_dict_t : public expr_t {
   public:
     expr_dict_t (int lineno = -1) 
@@ -843,6 +859,7 @@ namespace pub3 {
     bool eval_as_bool (eval_t e) const { return to_bool (); }
 
     void add (nvpair_t *p);
+    void add (ptr<pair_t> p);
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
 

@@ -661,4 +661,30 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  obj_t::append (obj_t in)
+  {
+    bool ret = false;
+    ptr<expr_dict_t> d_me, d_in;
+    ptr<expr_list_t> v_me, v_in;
+    ptr<aarr_t> a_me, a_in;
+
+    if ((d_me = to_dict ()) && (d_in = in.to_dict ()) &&
+	(a_me = d_me->dict ()) && (a_in = d_in->dict ())) {
+      ret = true;
+      a_me->overwrite_with (*a_in);
+    } else if ((v_me = to_vector ()) && (v_in == in.to_vector ())) {
+      ret = true;
+      for (size_t i = 0; i < v_in->size (); i++) {
+	v_me->push_back ((*v_in)[i]);
+      }
+    } else {
+      ret = false;
+    }
+    return ret;
+
+  }
+
+  //-----------------------------------------------------------------------
+
 };

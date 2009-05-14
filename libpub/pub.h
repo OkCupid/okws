@@ -2305,5 +2305,6 @@ aarr_t::replace_so (const str &n, T i)
 }
 
 const char * getenvval (const char *s);
+void flex_cleanup ();
 
 #endif /* _LIBPUB_PUB_H */

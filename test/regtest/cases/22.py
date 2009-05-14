@@ -10,4 +10,4 @@ ${!x.val == true}
 ${!x.val}
 """
 
-outcome="1 true false false false"
+outcome="true true false false false"

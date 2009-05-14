@@ -87,7 +87,8 @@ noinst_PROGRAMS = \
 	gz \
 	srv \
 	newline \
-	gznaive
+	gznaive \
+	json
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
@@ -98,6 +99,7 @@ gz_SOURCES = gz.C
 srv_SOURCES = srv.C
 newline_SOURCES = newline.C
 gznaive_SOURCES = gznaive.C
+json_SOURCES = json.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)

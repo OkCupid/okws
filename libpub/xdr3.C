@@ -179,6 +179,10 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     break;
   case XPUB3_EXPR_ASSIGNMENT:
     r = New refcounted<pub3::expr_assignment_t> (*x.assignment);
+    break;
+  case XPUB3_EXPR_BOOL:
+    r = pub3::expr_bool_t::alloc (x.xbool->val);
+    break;
   default:
     break;
   }
@@ -821,6 +825,16 @@ pub3::expr_statement_t::to_xdr (xpub_obj_t *x) const
     x->expr_statement->expr.alloc ();
     _expr->to_xdr (x->expr_statement->expr);
   }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_bool_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_BOOL);
+  x->xbool->val = int (_b);
   return true;
 }
 

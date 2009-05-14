@@ -43,6 +43,9 @@ yy_buffer_state *yycreatebuf (FILE *fp);
 extern int yyparse ();
 extern int yylex ();
 void scanner_reset (void);
+void yy_parse_json (str s);
+int yy_get_json_lineno ();
+void yy_parse_fail();
 
 #ifdef PDEBUG
 extern int yydebug;
@@ -92,6 +95,7 @@ struct yystype {
   ptr<pub3::expr_list_t> p3exprlist;
   ptr<pub3::expr_shell_str_t> p3str;
   ptr<pub3::expr_dict_t> p3dict;
+  ptr<pub3::pair_t> p3pair;
   nvpair_t *p3bind;
   bool bl;
   xpub3_relop_t relop;

@@ -566,22 +566,6 @@ pub3::expr_int_t::finalize ()
 
 //-----------------------------------------------------------------------
 
-void
-pub3::expr_bool_t::finalize ()
-{
-  _bool_recycler.recycle (this);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_bool_t>
-pub3::expr_bool_t::alloc (bool b)
-{
-  return _bool_recycler.alloc (b);
-}
-
-//-----------------------------------------------------------------------
-
 scalar_obj_t
 pub3::expr_int_t::to_scalar () const
 {
@@ -2080,6 +2064,27 @@ pub3::expr_list_t::fixup_index (ssize_t *ip, bool lax) const
   }
   *ip = i;
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::expr_dict_t::add (ptr<pair_t> p)
+{
+  add (New nvpair_t (p->name (), p->expr ()));
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_bool_t> pub3::expr_bool_t::_false;
+ptr<pub3::expr_bool_t> pub3::expr_bool_t::_true;
+
+ptr<pub3::expr_bool_t>
+pub3::expr_bool_t::alloc (bool b)
+{
+  ptr<expr_bool_t> &retref = b ? _true : _false;
+  if (!retref) { retref = New refcounted<expr_bool_t> (b); }
+  return retref;
 }
 
 //=======================================================================

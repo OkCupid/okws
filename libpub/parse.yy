@@ -7,6 +7,7 @@
 #include "parr.h"
 #include "pub3.h"
 #include "pscalar.h"
+#include "pub3parse.h"
 
 %}
 
@@ -88,6 +89,8 @@
 %token T_P3_ELSE
 %token T_P3_EMPTY
 %token T_P3_EVAL
+%token T_P3_NULL
+%token T_P3_JSON
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -132,11 +135,21 @@
 
 %type <bl> p3_equality_op p3_additive_op;
 
+%type <p3expr> json_obj;
+%type <p3dict> json_dict json_dict_pairs_opt json_dict_pairs;
+%type <p3exprlist> json_list json_list_elems_opt json_list_elems;
+%type <p3expr> json_scalar json_string json_int json_float json_bool;
+%type <p3pair> json_dict_pair;
+
 /* ------------------------------------------------ */
 
 %%
 file: hfile {}
 	| conffile {}
+	| json_obj
+	{
+	    pub3::json_parser_t::set_output ($1);
+	}
 	;
 
 conffile: T_BCONF aarr {}
@@ -198,7 +211,7 @@ ptag: ptag_func
 	      PFUNC->explore (EXPLORE_PARSE);
 	    }
 	  } else
-	    PARSEFAIL;
+	    yy_parse_fail();
 	  $$ = POP_PFUNC();
 	}
 	;
@@ -355,7 +368,7 @@ parg:   '('
 	arglist ')'
 	{
 	  if (!PFUNC->add (ARGLIST))
-	    PARSEFAIL;	    
+	    yy_parse_fail();	    
 	  ARGLIST = NULL;
 	}
 	;
@@ -386,7 +399,7 @@ regex:	T_REGEX_BEGIN regex_body T_REGEX_END
 	  str s;
 	  if (!rx->compile (&s)) {
             PWARN(s);
-	    PARSEFAIL;
+	    yy_parse_fail();
           }
 	  $$ = rx;
 	};
@@ -397,7 +410,7 @@ range: T_RANGE_BEGIN regex_body T_REGEX_END
          ptr<pub_range_t> r = pub_range_t::alloc (*$2, $3, &s);
 	 if (!r) {
   	   PWARN(s);
-	   PARSEFAIL;
+	   yy_parse_fail();
 	 }
          $$ = r;
        };
@@ -478,8 +491,8 @@ i_arr_open: T_INT_ARR 	{ $$ = New refcounted<parr_int_t> (); }
 	| T_UINT16_ARR 	{ $$ = New refcounted<parr_uint16_t> (); }
 	;
 
-i_arr_list: number		{ if (!PARR->add ($1)) PARSEFAIL; }
-	| i_arr_list ',' number	{ if (!PARR->add ($3)) PARSEFAIL; }
+i_arr_list: number		{ if (!PARR->add ($1)) yy_parse_fail(); }
+	| i_arr_list ',' number	{ if (!PARR->add ($3)) yy_parse_fail(); }
 	;
 
 g_arr_list: bvalue		{ PARR->add ($1); }
@@ -671,7 +684,7 @@ p3_inclusive_OR_expr: p3_equality_expr
 	       {
 	          if (!$3->unshift_argument ($1)) {
 		     PWARN("Cannot push argument onto non-function");
-		     PARSEFAIL;
+		     yy_parse_fail();
 		  }
 		  $$ = $3;
 	       }
@@ -823,7 +836,7 @@ p3_regex: T_P3_REGEX
                  pub3::rxx_factory_t::compile ($1.regex, $1.opts, &err);
 	     if (err) {
                PWARN(err);
-	       PARSEFAIL;
+	       yy_parse_fail();
 	     }
 	     $$ = New refcounted<pub3::expr_regex_t> 
                 (x, $1.regex, $1.opts, PLINENO);
@@ -863,8 +876,8 @@ p3_constant:
 	      $$ = New refcounted<pub3::expr_double_t> ($1); 
 	   }
            | p3_boolean_constant
-	   {
-	      $$ = New refcounted<pub3::expr_int_t> ($1);
+	   {  
+	      $$ = pub3::expr_bool_t::alloc ($1);
 	   }
 	   ;
 
@@ -879,7 +892,7 @@ p3_integer_constant: T_P3_INT
 	   int64_t i = 0;
 	   if (!convertint ($1, &i)) {
 	      strbuf b ("Cannot convert '%s' to int", $1.cstr ());
-	      PARSEFAIL;
+	      yy_parse_fail();
 	   }
 	   $$ = New refcounted<pub3::expr_int_t> (i);
 	}
@@ -888,7 +901,7 @@ p3_integer_constant: T_P3_INT
 	   u_int64_t u = 0;
 	   if (!convertuint ($1, &u)) {
 	      strbuf b ("Cannot conver '%s' to unsigned int", $1.cstr ());
-	      PARSEFAIL;
+	      yy_parse_fail();
            }
 	   if (u <= u_int64_t (INT64_MAX)) {
 	     $$ = New refcounted<pub3::expr_int_t> (u);
@@ -903,7 +916,7 @@ p3_floating_constant: T_P3_FLOAT
 	   double d = 0;
 	   if (!convertdouble ($1, &d)) {
 	      strbuf b ("Cannot convert '%s' to double", $1.cstr ());
-	      PARSEFAIL;
+	      yy_parse_fail();
            }
 	   $$ = d;
 	}
@@ -1038,7 +1051,7 @@ p3_include: p3_include_or_load p3_flexi_tuple
            str err;
            pub3::include_t *f = $1;
 	   if (!f->add ($2)) {
-	     PARSEFAIL;
+	     yy_parse_fail();
 	   }
            $$ = f;
 	};
@@ -1077,7 +1090,7 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause
         {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    if (!f->add ($2)) {
-	      PARSEFAIL;
+	      yy_parse_fail();
 	    }
 	    f->add_env ($3);
 	    f->add_empty ($4);
@@ -1094,7 +1107,7 @@ p3_print_or_eval: p3_print_or_eval_fn p3_flexi_tuple
            pub3::print_t *p = $1;
 	   if (!p->add ($2)) {
 	     PWARN("bad arguments passed to print");
-	     PARSEFAIL;
+	     yy_parse_fail();
 	   }
 	   $$ = p;
        }
@@ -1155,6 +1168,78 @@ p3_empty_clause:
  	 ;
 
 		  
+/*----------------------------------------------------------------------- */
+
+json_obj:   json_dict { $$ = $1; }
+      | json_list { $$ = $1; }
+      | json_scalar  { $$ = $1; }
+      ;
+
+json_dict: '{' json_dict_pairs_opt '}'  { $$ = $2; } ;
+
+json_dict_pairs_opt: 
+        /* empty */ 
+      { $$ = New refcounted<pub3::expr_dict_t> (yy_get_json_lineno ()); }
+      | json_dict_pairs { $$ = $1; }
+      ;
+
+json_dict_pairs: 
+        json_dict_pair 
+      {
+         ptr<pub3::expr_dict_t> d = 
+	    New refcounted<pub3::expr_dict_t> (yy_get_json_lineno ()); 
+         d->add ($1);
+	 $$ = d;
+      }
+      | json_dict_pairs ',' json_dict_pair
+      {
+         $1->add ($3);
+	 $$ = $1;
+      }
+      ;
+
+json_dict_pair: T_P3_STRING ':' json_obj
+      {
+         $$ = New refcounted<pub3::pair_t> ($1, $3);
+      }
+      ;
+
+json_list: '[' json_list_elems_opt ']' { $$ = $2; } ;
+
+json_list_elems_opt: /* empty */ 
+      {
+         $$ = New refcounted<pub3::expr_list_t> (yy_get_json_lineno ());
+      }
+      | json_list_elems { $$ = $1; }
+      ;
+
+json_list_elems: json_obj
+      {
+         $$ = New refcounted<pub3::expr_list_t> (yy_get_json_lineno ());
+         $$->push_back ($1);
+      }
+      | json_list_elems ',' json_obj
+      {
+         $1->push_back ($3);
+	 $$ = $1;
+      }
+      ;
+
+json_scalar: json_bool
+      | json_int
+      | json_float
+      | json_string
+      ;
+
+json_string: T_P3_STRING { $$ = New refcounted<pub3::expr_str_t> ($1); }
+json_bool : p3_boolean_constant { $$ = pub3::expr_bool_t::alloc ($1); } ;
+
+json_float: p3_floating_constant 
+    { $$ = New refcounted<pub3::expr_double_t> ($1); } ;
+
+json_int  : p3_integer_constant { $$ = $1; } ;
+
+
 /*----------------------------------------------------------------------- */
 
 //

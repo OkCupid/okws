@@ -37,9 +37,9 @@ pub_base_t *pubincluder;
 // dealloc space after each run
 #ifdef HAVE_RECENT_FLEX
 extern int yylex_destroy(void);
-static void flex_cleanup() { yylex_destroy (); }
+void flex_cleanup() { yylex_destroy (); }
 #else
-static void flex_cleanup()
+void flex_cleanup()
 {
   warn << "XXX Flex cleanup can't run! Leaking memory!! XXX\n";
 }

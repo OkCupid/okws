@@ -366,7 +366,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_LIST,
    XPUB3_EXPR_REGEX,
    XPUB3_EXPR_MATHOP,
-   XPUB3_EXPR_ASSIGNMENT
+   XPUB3_EXPR_ASSIGNMENT,
+   XPUB3_EXPR_BOOL
 };
 
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -449,6 +450,10 @@ struct xpub3_int_t {
    hyper val;
 };
 
+struct xpub3_bool_t {
+  int i;
+};
+
 struct xpub3_uint_t {
   unsigned hyper val;
 };
@@ -527,6 +532,8 @@ case XPUB3_EXPR_REGEX:
      xpub3_regex_t regex;
 case XPUB3_EXPR_ASSIGNMENT:
      xpub3_assignment_t assignment;
+case XPUB3_EXPR_BOOL:
+     xpub3_int_t xbool;
 };
 
 /* PUB3 language constructs */

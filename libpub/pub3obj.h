@@ -180,6 +180,8 @@ namespace pub3 {
     bool to_bool () const;
     int64_t to_int () const;
     u_int64_t to_uint () const;
+
+    bool append (obj_t in);
     
   protected:
 
