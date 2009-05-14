@@ -505,7 +505,7 @@ null		     { return T_P3_NULL; }
 \\u[a-fA-F0-9]{4}    { json_str_add_unicode (yytext + 2); }
 \\b		     { json_str_addch ('\b'); }
 \\.                  { json_error ("illegal escape sequence in string"); }
-[^\\\\n"]+	     { json_str_addstr (yytext); }
+[^\\\n"]+	     { json_str_addstr (yytext); }
 }
 
 <C_COMMENT>{
