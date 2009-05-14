@@ -125,6 +125,7 @@ namespace pub3 {
     virtual ptr<rxx> to_regex () const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     virtual ptr<expr_assignment_t> to_assignment () { return NULL; }
+    virtual str type_to_str () const { return "object"; }
 
     //
     // and from here, scalars can be converted at will...
@@ -270,6 +271,8 @@ namespace pub3 {
     // Allow for calling New refcounted<expr_bool_t> inside of
     // expr_bool_t::alloc()
     friend class refcounted<expr_bool_t>;
+
+    str type_to_str () const { return "bool"; }
 
   private:
     expr_bool_t (bool b) : expr_static_t (), _b (b) {}
@@ -598,6 +601,7 @@ namespace pub3 {
     bool eval_as_null (eval_t e) const;
     ptr<rxx> eval_as_regex (eval_t e) const { return to_regex (); }
     static ptr<expr_str_t> alloc (const str &s);
+    str type_to_str () const { return "str"; }
 
   protected:
     str _val;
@@ -633,6 +637,8 @@ namespace pub3 {
     static ptr<expr_int_t> alloc (int64_t i);
     void finalize ();
     void init (int64_t i) { _val = i; }
+
+    str type_to_str () const { return "int"; }
 
   protected:
     int64_t _val;
@@ -680,6 +686,8 @@ namespace pub3 {
 
     static ptr<expr_double_t> alloc (double i) 
     { return New refcounted<expr_double_t> (i); }
+
+    str type_to_str () const { return "float"; }
   private:
     double _val;
   };
@@ -754,6 +762,7 @@ namespace pub3 {
 
     const char *get_obj_name () const { return "pub3::expr_list_t"; }
 
+    str type_to_str () const { return "list"; }
   private:
     bool fixup_index (ssize_t *ind, bool lax = false) const;
   };
@@ -789,6 +798,7 @@ namespace pub3 {
     ptr<rxx> to_regex () const { return _rxx; }
     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
     
+    str type_to_str () const { return "regex"; }
   private:
     ptr<rxx> _rxx;
     str _body, _opts;
@@ -816,6 +826,7 @@ namespace pub3 {
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_shell_str_t"; }
 
+    str type_to_str () const { return "string"; }
   protected:
     ptr<expr_list_t> _els;
     str eval_internal (eval_t e) const;
@@ -880,6 +891,7 @@ namespace pub3 {
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     size_t size () const { return _dict ? _dict->size () : 0; }
 
+    str type_to_str () const { return "dict"; }
   protected:
     ptr<aarr_arg_t> _dict;
   }; 

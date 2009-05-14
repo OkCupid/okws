@@ -127,6 +127,7 @@ namespace pub3 {
   public:
     obj_t (ptr<obj_ref_t> r) : const_obj_t (r), _ref (r) {}
     obj_t (ptr<pval_t> v) : const_obj_t (v), _obj (v) {}
+    obj_t (ptr<expr_t> e) : const_obj_t (e), _obj (e) {}
     obj_t () {}
 
     // array access features: mutable

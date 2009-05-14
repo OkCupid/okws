@@ -182,5 +182,33 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  type_t::type_t (const str &n, ptr<expr_list_t> el, int lineno)
+    : scalar_fn_t (n, el, lineno), _arg ((*el)[0]) {}
+
+  //-----------------------------------------------------------------------
+
+  scalar_obj_t
+  type_t::eval_internal (eval_t e) const
+  {
+    ptr<const vec_iface_t> v;
+    ptr<const expr_t> x;
+    ptr<const pval_t> pv;
+    str typ;
+
+    if (!(pv = _arg->eval (e))) {
+      typ = "undef";
+    } else if (!(x = pv->to_expr ())) {
+      typ = "pub2obj";
+    } else if (!(typ = x->type_to_str ())) {
+      typ = "object";
+    }
+
+    scalar_obj_t o;
+    o.set (typ);
+    return o;
+  }
+
+  //-----------------------------------------------------------------------
+
 
 };

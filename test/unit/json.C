@@ -24,6 +24,8 @@ main (int argc, char *argv[])
     return -1;
   }
 
+  pub3::obj_t o;
+
   for (size_t i = 0; i < 10; i++) {
     ptr<pub3::expr_t> e = pub3::json_parser_t::parse (tmp);
     if (e) {
@@ -32,7 +34,23 @@ main (int argc, char *argv[])
     } else {
       warn << "parse failed!\n";
     }
+    o = pub3::obj_t (e);
   }
+
+  
+  for (int i = 1; i < argc; i++) {
+    ptr<pub3::expr_t> e = pub3::json_parser_t::parse (argv[i]);
+    if (e) {
+      pub3::obj_t o2 (e);
+      o.append (o2);
+    } else {
+      warn << "parse failed on arg: " << argv[i] << "\n";
+    }
+  }
+
+  tmp = o.to_str ();
+  warn << "combined: " << tmp << "\n";
+
   return 0;
 }
 

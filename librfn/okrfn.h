@@ -109,6 +109,16 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class type_t : public scalar_fn_t {
+  public:
+    type_t (const str &n, ptr<expr_list_t> el, int lineno);
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
   class range_t : public runtime_fn_t {
   public:
     range_t (const str &n, ptr<expr_list_t> el, int lineno, 
