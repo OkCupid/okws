@@ -314,7 +314,9 @@ okclnt3_t::resp_t::do_gzip () const
 {
   return (_req && 
 	  _req->hdr_cr ().takes_gzip () && 
-	  ok_gzip_mode != GZIP_NONE && 
+	  ok_gzip_mode != GZIP_NONE &&
+	  _body &&
+	  _body->inflated_len () &&
 	  _rsp_gzip);
 }
 
@@ -423,7 +425,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     head = (req && req->hdr_cr ().mthd == HTTP_MTHD_HEAD);
 
     if (head) { 
-      gz = GZIP_NONE;
+      gz = false;
       contlen = _body ? _body->inflated_len () : 0;
 
       // We're not going to need the body any more; let's force the
@@ -431,7 +433,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
       _body = NULL; 
     }
 
-    hra.set_gzip (gz != GZIP_NONE);
+    hra.set_gzip (gz);
     set_attributes (&hra);
 
     if (head) {

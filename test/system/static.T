@@ -114,6 +114,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     str sffx;
     str mime_type;
     str lang;
+    bool skip_pub (false);
   }
 
   static bool first_time = true;
@@ -141,6 +142,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     error (MIME_TYPES_FILE);
 
   } else {
+   
     
     if (in == "/") {
       ofn = SPLASH_PAGE;
@@ -149,7 +151,9 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
       assert (ofn);
     }
 
-    if (ofn) {
+    if (ofn && ofn == "/null") {
+      skip_pub = true;
+    } else if (ofn) {
 
       if ((mime_type = mtm->lookup (ofn, &sffx))) {
 
@@ -197,7 +201,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 
   }
 
-  if (!rc) {
+  if (!rc && !skip_pub) {
     twait { pub2 ()->run (&out, ofn, mkevent (rc), &aarr, opts|P_VISERR); }
   }
   twait { output (out, mkevent ()); }

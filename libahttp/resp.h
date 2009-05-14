@@ -181,6 +181,7 @@ public:
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", global_okws_server_label); }
   void add_connection ();
+  htpv_t get_version () const { return attributes.get_version (); }
 protected:
   http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;
@@ -368,5 +369,8 @@ public:
 };
 
 //-----------------------------------------------------------------------
+
+gzip_mode_t 
+ok_gzip_get_mode (const compressible_t &b, int v, bool do_gzip = true);
 
 #endif /* _LIBAHTTP_RESP */

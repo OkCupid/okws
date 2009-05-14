@@ -545,7 +545,7 @@ public:
 
   // The following 2 ought be protected, but are not to handle
   // tame warts.
-  gzip_mode_t do_gzip () const;
+  gzip_mode_t do_gzip (const compressible_t *b) const;
 
   void fixup_log (ptr<http_response_base_t> rsp);
 

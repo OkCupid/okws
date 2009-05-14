@@ -1177,10 +1177,10 @@ okclnt_base_t::output_done (evb_t::ptr ev)
 //-----------------------------------------------------------------------
 
 gzip_mode_t 
-okclnt_base_t::do_gzip () const
+okclnt_base_t::do_gzip (const compressible_t *b) const
 {
   gzip_mode_t ret = GZIP_NONE;
-  if (hdr_cr ().takes_gzip () && rsp_gzip) {
+  if (hdr_cr ().takes_gzip () && rsp_gzip && b && b->inflated_len () > 0) {
     ret = ok_gzip_mode;
   }
   return ret;
@@ -1200,7 +1200,7 @@ tamed void
 okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 {
   tvars {
-    gzip_mode_t gz (_self->do_gzip ());
+    gzip_mode_t gz (_self->do_gzip (b));
     ssize_t prelen (gz == GZIP_NONE ? b->inflated_len () : ssize_t (-1));
     vec<str> holdv;
     strbuf sb;
@@ -1828,7 +1828,7 @@ tamed void
 okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
 {
   tvars {
-    gzip_mode_t gz (_self->do_gzip ());
+    gzip_mode_t gz (_self->do_gzip (b));
     ssize_t prelen (gz != GZIP_NONE && b ? b->inflated_len () : ssize_t (-1));
     http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
     ptr<ahttpcon> x (_self->client_con ());

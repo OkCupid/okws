@@ -292,7 +292,7 @@ http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
   }
   twait { p->run (&b, fn, mkevent (rc), env, P_WSS); }
   if (rc) {
-    gzip_mode_t gzm = v > 0 && gz ? ok_gzip_mode : GZIP_NONE;
+    gzip_mode_t gzm = ok_gzip_get_mode (b, v);
     b.compressible_t::to_strbuf (&body, &_hold, gzm);
   }
   if (gz) gzip ();
@@ -359,10 +359,19 @@ http_pub_t::http_pub_t (int n, const pub_base_t &p, const str &fn,
     err (!p.include (&zb, fn, 0, env))
 {
   if (!err)  {
-    gzip_mode_t gzm = v > 0 && gz ? ok_gzip_mode : GZIP_NONE;
+    gzip_mode_t gzm = ok_gzip_get_mode (zb, v);
     zb.compressible_t::to_strbuf (&body, &_hold, gzm);
   }
 }
 
+
+//-----------------------------------------------------------------------
+
+gzip_mode_t 
+ok_gzip_get_mode (const compressible_t &b, int v, bool do_gzip)
+{
+  bool do_gz = b.inflated_len () > 0 && v > 0 && do_gzip;
+  return do_gz ? ok_gzip_mode : GZIP_NONE;
+}
 
 //-----------------------------------------------------------------------
