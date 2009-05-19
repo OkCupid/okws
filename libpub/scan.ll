@@ -56,7 +56,7 @@ static strbuf yy_json_strbuf;
 static int    yy_json_str_line;
 
 static int  json_str_end ();
-static void json_str_begin ();
+static void json_str_begin (int mode);
 static void json_str_addch (int ch);
 static void json_str_add_unicode (const char *in);
 static void json_str_addstr (const char *in);
@@ -86,7 +86,7 @@ TCLOSE	[ \t]*[;]?[ \t]*(-->|%\})
 
 %x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
 %x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX 
-%x P3 P3_STR P3_REGEX C_COMMENT JSON JSON_STR
+%x P3 P3_STR P3_REGEX C_COMMENT JSON JSON_STR JSON_SQ_STR
 
 %%
 
@@ -489,23 +489,33 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 true		     { return T_P3_TRUE; }
 false		     { return T_P3_FALSE; }
 null		     { return T_P3_NULL; }
-["]		     { json_str_begin (); }
+["]		     { json_str_begin (JSON_STR); }
+[']		     { json_str_begin (JSON_SQ_STR); }
 .		     { json_error ("illegal token in JSON environment"); }
 }
 
 <JSON_STR>{
-\n		     { json_inc_lineno (); json_str_addch (yytext[0]); }
 ["]		     { return json_str_end (); }
+\\\"		     { json_str_addch ('\"'); }
+[^\\\n"]+	     { json_str_addstr (yytext); }
+}
+
+<JSON_SQ_STR>{
+[']		     { return json_str_end (); }
+\\\'		     { json_str_addch ('\"'); }
+[^\\\n']+	     { json_str_addstr (yytext); }
+}
+
+<JSON_STR,JSON_SQ_STR>{
+\n		     { json_inc_lineno (); json_str_addch (yytext[0]); }
 <<EOF>>		     { return json_str_eof (); }
 \\\\		     { json_str_addch ('\\'); }
 \\n		     { json_str_addch ('\n'); }
 \\r		     { json_str_addch ('\r'); }
 \\t		     { json_str_addch ('\t'); }
-\\\"		     { json_str_addch ('\"'); }
 \\u[a-fA-F0-9]{4}    { json_str_add_unicode (yytext + 2); }
 \\b		     { json_str_addch ('\b'); }
 \\.                  { json_error ("illegal escape sequence in string"); }
-[^\\\n"]+	     { json_str_addstr (yytext); }
 }
 
 <C_COMMENT>{
@@ -865,11 +875,11 @@ yy_get_json_lineno ()
 }
 
 void
-json_str_begin ()
+json_str_begin (int str_state)
 {
   yy_json_str_line = yy_json_lineno;
   yy_json_strbuf.tosuio ()->clear ();
-  yy_push_state (JSON_STR);
+  yy_push_state (str_state);
 }
 
 void
