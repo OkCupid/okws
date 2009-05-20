@@ -9,7 +9,8 @@ librfn_la_SOURCES = \
 	primitives.C \
 	regex.C \
 	filters.C \
-	import.C
+	import.C \
+	list.C
 
 librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 

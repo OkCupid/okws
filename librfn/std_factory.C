@@ -25,6 +25,7 @@ namespace rfn1 {
     _tab.insert ("strip", &scalar_fn_t::constructor<strip_t, 1, 1>);
 
     _tab.insert ("type", &scalar_fn_t::constructor<type_t, 1, 1>);
+    _tab.insert ("join", &scalar_fn_t::constructor<join_t, 2, 2>);
     _tab.insert ("import", &import_t::constructor);
   }
 

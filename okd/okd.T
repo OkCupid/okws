@@ -54,7 +54,7 @@ common_404_t common_404;
 void
 okd_t::abort ()
 {
-  panic ("cought ABORT trigger\n");
+  panic ("caught ABORT trigger\n");
 }
 
 void
