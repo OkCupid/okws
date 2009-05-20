@@ -1201,7 +1201,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 {
   tvars {
     gzip_mode_t gz (_self->do_gzip (b));
-    ssize_t prelen (gz == GZIP_NONE ? b->inflated_len () : ssize_t (-1));
+    ssize_t prelen (gz != GZIP_NONE ? b->inflated_len () : ssize_t (-1));
     vec<str> holdv;
     strbuf sb;
     http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
