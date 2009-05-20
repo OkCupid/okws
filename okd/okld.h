@@ -254,7 +254,8 @@ struct svc_options_t {
       pub2_viserr (-1),
       wait_for_signal (-1),
       hiwat (-1),
-      lowat (-1) {}
+      lowat (-1),
+      gzip (-1) {}
 
   bool apply_global_defaults (const str &svc);
   bool check_options (const str &loc) const;
@@ -278,6 +279,10 @@ struct svc_options_t {
   int wait_for_signal;
 
   int hiwat, lowat;
+
+  // < 0  => no value set
+  // >=0  => value set, use this value
+  int gzip;
 
   vec<int> ports;
 };

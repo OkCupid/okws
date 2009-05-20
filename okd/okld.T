@@ -130,7 +130,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  const char *opts = "eEcCWwu:r:sSt:p:l:h:";
+  const char *opts = "eEcCWwu:r:sSt:p:l:h:z:";
   while ((ch = getopt (argv.size (), argv, opts)) != -1 && rc) {
     switch (ch) {
     case 'p':
@@ -210,6 +210,18 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       break;
     case 's':
       so->wait_for_signal = 1;
+      break;
+    case 'z': 
+      {
+	bool ok;
+	gzip_mode_t m = ok_gzip_str_to_mode (optarg, &ok); 
+	if (!ok) {
+	  warn << loc << ": -z expects 0,1,2 or (smart, naive)\n";
+	  rc = false;
+	} else {
+	  so->gzip = int (m);
+	}
+      }
       break;
     default:
       warn << loc << ": unrecognized option given\n";
@@ -1680,6 +1692,7 @@ svc_options_t::apply_global_defaults (const str &s)
   if (wait_for_signal < 0) wait_for_signal = 0;
   if (hiwat < 0) hiwat = ok_svc_fds_high_wat;
   if (lowat < 0) lowat = ok_svc_fds_low_wat;
+  if (gzip < 0) gzip = ok_gzip_mode;
 
   if (lowat >= hiwat) {
     warn << "watermark error for service " << s 

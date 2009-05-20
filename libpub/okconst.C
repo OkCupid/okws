@@ -349,9 +349,10 @@ okws_etcfile_required (const char *f, const char *env_var, bool d,
 }
 
 gzip_mode_t
-ok_gzip_str_to_mode (const str &s)
+ok_gzip_str_to_mode (const str &s, bool *okp)
 {
   gzip_mode_t m = GZIP_NONE;
+  bool ok = true;
   if (!s) {
     /* nothing */
   } else if (s == "1" || s == "on" || s == "smart") {
@@ -360,6 +361,10 @@ ok_gzip_str_to_mode (const str &s)
     m = GZIP_NONE;
   } else if (s == "naive") {
     m = GZIP_NAIVE;
+  } else {
+    ok = false;
   }
+
+  if (okp) *okp = ok;
   return m;
 }

@@ -68,7 +68,7 @@ extern u_int   ok_gzip_cache_maxstr;
 extern u_int   ok_gzip_cache_storelimit;
 extern u_int   ok_gzip_mem_level;
 
-gzip_mode_t ok_gzip_str_to_mode (const str &s);
+gzip_mode_t ok_gzip_str_to_mode (const str &s, bool *okp = NULL);
 
 //
 // user/group constants
