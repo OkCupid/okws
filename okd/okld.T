@@ -768,7 +768,9 @@ okld_t::parse_file (const str &cf)
     .ignore ("ShutdownTimeout")
     .ignore ("OkdDebugMsgFreq")
     .ignore ("DemuxTimeout")
-    .ignore ("AcceptDelay");
+    .ignore ("AcceptDelay")
+    .ignore ("TcpNoDelay")
+    ;
 
   bool ret = ct.run (cf);
   if (ret) {

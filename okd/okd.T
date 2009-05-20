@@ -330,6 +330,7 @@ okd_t::parse_file (const str &cf)
     .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
     .add ("LazyStartup", &_lazy_startup)
     .add ("StatPageURL", &_stat_page_url)
+    .add ("TcpNoDelay", &_okd_nodelay)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")
@@ -564,8 +565,9 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   
   nfd_in_xit ++;  // keep track of the number of FDs in transit
   close_on_exec (nfd);
-  if (!proxied)
+  if (!proxied && _okd_nodelay) {
     tcp_nodelay (nfd);
+  }
 
   ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
   ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl));

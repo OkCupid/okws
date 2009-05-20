@@ -206,7 +206,8 @@ public:
     _socket_mode (okd_mgr_socket_mode),
     _accept_ready (false),
     _ssl (this),
-    _lazy_startup (false)
+    _lazy_startup (false),
+    _okd_nodelay (true)
   {
     listenport = p;
   }
@@ -382,6 +383,7 @@ private:
   okd_ssl_t _ssl;
   bool _lazy_startup;
   str _stat_page_url;
+  bool _okd_nodelay;
 };
 
 class okd_mgrsrv_t 
