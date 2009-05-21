@@ -763,7 +763,6 @@ p3_regex_begin (char ch)
   yy_p3_regex_start_line = PLINENO;
   char open = ch, close = '\0';
 
-  open = ch;
   switch (ch) {
   case '#':
   case '!':
