@@ -255,7 +255,8 @@ struct svc_options_t {
       wait_for_signal (-1),
       hiwat (-1),
       lowat (-1),
-      gzip (-1) {}
+      gzip (-1),
+      gzip_level (-1) {}
 
   bool apply_global_defaults (const str &svc);
   bool check_options (const str &loc) const;
@@ -283,6 +284,7 @@ struct svc_options_t {
   // < 0  => no value set
   // >=0  => value set, use this value
   int gzip;
+  int gzip_level;
 
   vec<int> ports;
 };

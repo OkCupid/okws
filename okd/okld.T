@@ -130,7 +130,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  const char *opts = "eEcCWwu:r:sSt:p:l:h:z:";
+  const char *opts = "eEcCWwu:r:sSt:p:l:h:y:z:";
   while ((ch = getopt (argv.size (), argv, opts)) != -1 && rc) {
     switch (ch) {
     case 'p':
@@ -210,6 +210,12 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       break;
     case 's':
       so->wait_for_signal = 1;
+      break;
+    case 'y':
+      if (!convertint (optarg, &so->gzip_level)) {
+	warn << "loc" << ": -y expects an integer argument\n";
+	rc = false;
+      }
       break;
     case 'z': 
       {
@@ -1695,6 +1701,7 @@ svc_options_t::apply_global_defaults (const str &s)
   if (hiwat < 0) hiwat = ok_svc_fds_high_wat;
   if (lowat < 0) lowat = ok_svc_fds_low_wat;
   if (gzip < 0) gzip = ok_gzip_mode;
+  if (gzip_level < 0) gzip_level = ok_gzip_compress_level;
 
   if (lowat >= hiwat) {
     warn << "watermark error for service " << s 

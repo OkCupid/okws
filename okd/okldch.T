@@ -266,6 +266,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.insert ("fdlw", _svc_options.lowat, false);
   okld->env.insert ("fdhw", _svc_options.hiwat, false);
   okld->env.insert ("gzip", _svc_options.gzip, false);
+  okld->env.insert ("gziplev", _svc_options.gzip_level, false);
 
   argv.push_back (okld->env.encode ());
 
@@ -281,6 +282,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.remove ("fdlw");
   okld->env.remove ("fdhw");
   okld->env.remove ("gzip");
+  okld->env.remove ("gziplev");
 
   {
 
