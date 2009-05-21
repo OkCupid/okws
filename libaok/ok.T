@@ -1034,6 +1034,18 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
 
   // set anything else you want
   hra->set_others (hdr_fields);
+
+  browser_specific_fixups (hdr_cr(), hra);
+}
+
+//-----------------------------------------------------------------------
+
+void
+browser_specific_fixups (const http_inhdr_t &in, http_resp_attributes_t *out)
+{
+  if (in.requires_content_len_with_chunking ()) {
+    out->set_requires_content_len (true);
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -1211,6 +1223,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
+
 
   // client might have cancelled as we were waiting for DB
   if (_client_con->closed ()) {

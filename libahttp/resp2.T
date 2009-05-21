@@ -32,7 +32,7 @@ http_response_ok2_t::fill ()
     _compressed = false;
   }
 
-  _header.fill (_compressed, _n_bytes);
+  _header.fill_outer (_compressed, _n_bytes);
   _header.fill_strbuf (_out);
   _out.take (b2);
 }

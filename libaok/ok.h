@@ -379,6 +379,9 @@ protected:
 
 //-----------------------------------------------------------------------
 
+void 
+browser_specific_fixups (const http_inhdr_t &in, http_resp_attributes_t *out);
+
 //
 // OKRRP = OK Request/Response Pair
 //
@@ -408,6 +411,7 @@ public:
 
   virtual ptr<demux_data_t> demux_data () = 0;
   virtual ptr<const demux_data_t> demux_data () const = 0;
+
 };
 
 //-----------------------------------------------------------------------

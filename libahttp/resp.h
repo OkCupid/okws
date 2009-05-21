@@ -120,7 +120,8 @@ public:
     _status (s), _version (v), _content_type ("text/html"), 
     _cache_control ("private"), 
     _gzip (false),
-    _connection ("closed") {}
+    _connection ("closed"),
+    _requires_contlen (false) {}
 
   u_int get_status () const { return _status; }
   htpv_t get_version () const { return _version; }
@@ -131,6 +132,7 @@ public:
   bool get_gzip () const { return _gzip; }
   bool get_others (vec<http_hdr_field_t> *output);
   str get_connection () const { return _connection;  }
+  bool get_requires_content_len () const { return _requires_contlen; }
 
   void get_others (cbs cb);
 
@@ -143,6 +145,7 @@ public:
   void set_content_disposition (const str s) { _contdisp = s; }
   void set_others (ptr<vec<http_hdr_field_t> > p ) { _others = p; }
   void set_connection (str s) { _connection = s; }
+  void set_requires_content_len (bool b) { _requires_contlen = b; }
 
   u_int _status;
   htpv_t _version;
@@ -152,6 +155,7 @@ public:
   str _contdisp;
   bool _gzip;
   str _connection;
+  bool _requires_contlen;
 
   ptr<vec<http_hdr_field_t> > _others;
 
@@ -173,7 +177,7 @@ public:
   const http_resp_header_t & add (const str &n, int64_t i) 
   { fields.push_back (http_hdr_field_t (n, i)); return *this; }
   virtual void fill (bool gz = false);
-  void fill (bool gz, ssize_t len);
+  void fill_outer (bool gz, ssize_t len);
   strbuf to_strbuf () const;
   void fill_strbuf (strbuf &b) const;
   inline int get_status () const { return attributes.get_status (); }
@@ -182,6 +186,7 @@ public:
   void add_server () { add ("Server", global_okws_server_label); }
   void add_connection ();
   htpv_t get_version () const { return attributes.get_version (); }
+
 protected:
   http_resp_attributes_t attributes;
   vec<http_hdr_field_t> fields;
@@ -201,10 +206,7 @@ public:
 
 class http_resp_header_ok_t : public http_resp_header_t {
 public:
-  http_resp_header_ok_t (const http_resp_attributes_t &a)
-    : http_resp_header_t (a) { fill (a.get_gzip ()); }
-  http_resp_header_ok_t (ssize_t s, const http_resp_attributes_t &a)
-    : http_resp_header_t (a) { fill (a.get_gzip (), s); }
+  http_resp_header_ok_t (ssize_t s, const http_resp_attributes_t &a);
 };
 
 //-----------------------------------------------------------------------

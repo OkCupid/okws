@@ -207,14 +207,28 @@ methodmap_t::lookup (const str &s) const
 
 static rxx gzip_rxx ("gzip(,|\\s*$)");
 static rxx netscape4_rxx ("Mozilla/4.0[678]");
+static rxx safari_rxx (".*Safari.*");
 
 bool
 http_inhdr_t::takes_gzip () const
 {
   str s, ua;
-  return (get_vers () > 0 && lookup ("accept-encoding", &s) 
-	  && gzip_rxx.search (s) && lookup ("user-agent", &ua) 
+  ua = get_user_agent ();
+  return (get_vers () > 0 
+	  && lookup ("accept-encoding", &s) 
+	  && gzip_rxx.search (s) 
+	  && ua
 	  && !netscape4_rxx.search (ua));
+}
+
+//-----------------------------------------------------------------------
+
+bool
+http_inhdr_t::requires_content_len_with_chunking () const
+{
+  str ua = get_user_agent ();
+  bool ret =  ua && safari_rxx.match (ua);
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -320,5 +334,17 @@ http_inhdr_t::get_referrer (bool null_ok) const
     ret = "";
   return ret;
 }
+
+//-----------------------------------------------------------------------
+
+str
+http_inhdr_t::get_user_agent (bool null_ok) const
+{
+  str ret;
+  if (!lookup ("user-agent", &ret) && !null_ok)
+    ret = "";
+  return ret;
+}
+
 
 //-----------------------------------------------------------------------

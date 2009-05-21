@@ -94,6 +94,7 @@ public:
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
   bool takes_gzip () const;
+  bool requires_content_len_with_chunking () const;
   inline str get_mthd_str () const { return tmthd; }
   inline str get_vers_str () const { return vers; }
   http_conn_mode_t get_conn_mode () const;
@@ -101,6 +102,7 @@ public:
   str get_connection () const;
   void set_parse_query_string (bool b) { _parse_query_string = b; }
 
+  str get_user_agent (bool null_ok = true) const;
   str get_referrer (bool null_ok = false) const;
 
   http_method_t mthd;  // method code

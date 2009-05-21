@@ -345,7 +345,6 @@ okclnt3_t::resp_t::set_error_attributes (http_resp_attributes_t *hra)
 void
 okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
 {
-
   if (_cache_control) hra->set_cache_control (_cache_control);
   if (_content_type) hra->set_content_type (_content_type);
   if (_expires) hra->set_expires (_expires);
@@ -355,6 +354,8 @@ okclnt3_t::resp_t::set_attributes (http_resp_attributes_t *hra)
 
   // set anything else you want
   hra->set_others (_hdr_fields);
+
+  browser_specific_fixups (req ()->hdr_cr(), hra);
 }
 
 //-----------------------------------------------------------------------

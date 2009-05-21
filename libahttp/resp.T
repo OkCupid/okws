@@ -87,6 +87,8 @@ http_status_set_t::http_status_set_t ()
   add (HTTP_CLIENT_EOF, "Client EOF before response sent.");
 }
 
+//-----------------------------------------------------------------------
+
 void
 http_resp_header_t::fill (bool gz)
 {
@@ -106,6 +108,8 @@ http_resp_header_t::fill (bool gz)
   // over anything put above
   cleanme = attributes.get_others (&fields);
 }
+
+//-----------------------------------------------------------------------
 
 void
 http_resp_header_t::add_connection ()
@@ -131,11 +135,12 @@ http_resp_header_redirect_t::fill (const str &s)
 //-----------------------------------------------------------------------
 
 void
-http_resp_header_t::fill (bool gz, ssize_t len)
+http_resp_header_t::fill_outer (bool gz, ssize_t len)
 {
   fill (gz);
-  if (!gz && len >= 0) 
+  if (len >= 0 && (!gz || attributes.get_requires_content_len ())) {
     add (http_hdr_size_t (len));
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -338,7 +343,7 @@ http_pub2_t::alloc2 (ptr<pub2::remote_publisher_t> p,
 http_error_t::http_error_t (int n, const str &si, const str &aux, htpv_t v)
   : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
 { 
-  header.fill (false, nbytes); 
+  header.fill_outer (false, nbytes);
 }
 
 //-----------------------------------------------------------------------
@@ -348,7 +353,7 @@ http_error_t::http_error_t (const http_resp_attributes_t &hra,
   : http_response_t (http_resp_header_t (hra), 
 		     make_body (hra.get_status (), si, aux)) 
 {
-  header.fill (false, nbytes); 
+  header.fill_outer (false, nbytes);
 }
 
 //-----------------------------------------------------------------------
@@ -373,5 +378,15 @@ ok_gzip_get_mode (const compressible_t &b, int v, bool do_gzip)
   bool do_gz = b.inflated_len () > 0 && v > 0 && do_gzip;
   return do_gz ? ok_gzip_mode : GZIP_NONE;
 }
+
+//-----------------------------------------------------------------------
+
+http_resp_header_ok_t::http_resp_header_ok_t (ssize_t s, 
+					      const http_resp_attributes_t &a)
+  : http_resp_header_t (a) 
+{ 
+  fill_outer (a.get_gzip (), s);
+}
+
 
 //-----------------------------------------------------------------------
