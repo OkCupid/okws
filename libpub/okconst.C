@@ -80,6 +80,13 @@ const char *okd_mgr_socket = "/var/run/okd.sock";
 int okd_mgr_socket_mode = 0600;
 
 //
+// Whether okd turns on TCP_NODELAY on incoming connections.  It used
+// to do so by default, but now we're not turning on TCP_NODELAY
+// by default, meaning, Nagle algorithm still in operation.
+//
+bool okd_tcp_nodelay = false;
+
+//
 // FDFD default command line arg
 //
 const char *ok_fdfd_command_line_flag = "-s";

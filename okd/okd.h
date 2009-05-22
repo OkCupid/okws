@@ -207,7 +207,7 @@ public:
     _accept_ready (false),
     _ssl (this),
     _lazy_startup (false),
-    _okd_nodelay (true)
+    _okd_nodelay (okd_tcp_nodelay)
   {
     listenport = p;
   }
