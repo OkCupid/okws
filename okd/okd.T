@@ -565,6 +565,12 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   
   nfd_in_xit ++;  // keep track of the number of FDs in transit
   close_on_exec (nfd);
+
+
+  // I don't think there's really a good need for this.  Plus,
+  // certail FiOS users complained that they couldn't receive
+  // packets when this flag was enabled.  It's now off by 
+  // default.
   if (!proxied && _okd_nodelay) {
     tcp_nodelay (nfd);
   }
