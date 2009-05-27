@@ -15,7 +15,9 @@ enum adb_status_t {
   ADB_BAD_LOOKUP = 4,
   ADB_BIND_ERROR = 5,
   ADB_EXECUTE_ERROR = 6,
-  ADB_ERROR = 7
+  ADB_ERROR = 7,
+  ADB_BAD_VERSION = 8,
+  ADB_RPC_ERROR = 9
 };
 
 struct x_okdate_time_t {
