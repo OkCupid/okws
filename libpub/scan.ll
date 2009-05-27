@@ -403,7 +403,7 @@ u_int16(_t)?[(]		return T_UINT16_ARR;
 \n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 [$%]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
-[\[\]]		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
+[\[\]]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
 ["']		{ 
                    if (end_P3_STR (yytext[0])) {
 		      return yytext[0];
