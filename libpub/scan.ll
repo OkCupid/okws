@@ -491,7 +491,7 @@ false		     { return T_P3_FALSE; }
 null		     { return T_P3_NULL; }
 ["]		     { json_str_begin (JSON_STR); }
 [']		     { json_str_begin (JSON_SQ_STR); }
-.		     { json_error ("illegal token in JSON environment"); }
+.		     { return json_error ("illegal token in JSON environment");}
 }
 
 <JSON_STR>{
@@ -515,7 +515,11 @@ null		     { return T_P3_NULL; }
 \\t		     { json_str_addch ('\t'); }
 \\u[a-fA-F0-9]{4}    { json_str_add_unicode (yytext + 2); }
 \\b		     { json_str_addch ('\b'); }
-\\.                  { json_error ("illegal escape sequence in string"); }
+\\.                  { 
+		         strbuf b ("illegal escape sequence in string ('%s')",
+			           yytext);
+		          return json_error (b);
+                     }
 }
 
 <C_COMMENT>{
@@ -940,7 +944,7 @@ json_inc_lineno ()
 int
 json_error (str s)
 {
-  warn << "json:" << yy_json_lineno <<": parse error: " << s << "\n";
+  warn << "<json-input>:" << yy_json_lineno << ": " << s << "\n";
   yyterminate ();
   return 0;
 }
