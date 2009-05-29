@@ -517,7 +517,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  obj_t::to_str (str *s) const
+  obj_t::to_str (str *s, bool eval) const
   {
     bool ret = false;
     ptr<const expr_t> x;
@@ -525,7 +525,13 @@ namespace pub3 {
     if (_scalar) {
       ret = (_scalar && (*s = _scalar->to_str ()));
     } else if ((x = expr ())) {
-      ret = (*s = x->to_str ());
+      if (!eval) {
+	ret = (*s = x->to_str ());
+      } else {
+	penv_t tmp_env;
+	pub3::eval_t p3eval (&tmp_env, NULL);
+	ret = (*s = x->eval_as_str (p3eval));
+      }
     }
     return ret;
   }
@@ -548,10 +554,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str
-  obj_t::to_str () const 
+  obj_t::to_str (bool eval) const 
   {
     str ret;
-    to_str (&ret);
+    to_str (&ret, eval);
     return ret;
   }
 

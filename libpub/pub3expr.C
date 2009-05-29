@@ -986,7 +986,7 @@ pub3::eval_t::lhs_resolve (const expr_t *e, const str &nm)
     aarr_t *odd; // output dict dest
     ptr<aarr_t> edd; // env dict dest
 
-    if ((odd = _output->dict_dest ())) {
+    if (_output && (odd = _output->dict_dest ())) {
       ret = odd->lookup_slot (nm);
     } else if ((edd = _env->get_global_aarr ())) {
       ret = edd->lookup_slot (nm);

@@ -174,10 +174,10 @@ namespace pub3 {
 
     bool to_int (int64_t *i) const;
     bool to_uint (u_int64_t *u) const;
-    bool to_str (str *s) const;
+    bool to_str (str *s, bool eval = true) const;
     bool to_bool (bool *b) const;
 
-    str to_str () const;
+    str to_str (bool eval = true) const;
     bool to_bool () const;
     int64_t to_int () const;
     u_int64_t to_uint () const;
