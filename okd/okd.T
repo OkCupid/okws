@@ -402,6 +402,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("SyslogLevels")
     .ignore ("DangerousZbufs")
     .ignore ("OklogdPidfile")
+    .ignore ("Pub3JsonStrictEscaping")
     ;
 
   bool ret = ct.run (cf);

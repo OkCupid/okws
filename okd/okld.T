@@ -678,6 +678,7 @@ okld_t::parse_file (const str &cf)
     .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
     .add ("Pub2SvcNegCacheTimeout", &ok_pub2_svc_neg_cache_timeout,
 	  0, INT_MAX)
+    .add ("Pub3JsonStrictEscaping", &ok_pub3_json_strict_escaping)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
     .add ("ErrorLog", &logd_parms.errorlog)
@@ -949,6 +950,7 @@ okld_t::encode_env ()
     .insert ("pub1", pub_v1_support ? 1 : 0)
     .insert ("sel", int (ok_sys_sel_policy))
     .insert ("nlb", ok_log_nbufs)
+    .insert ("p3jse", ok_pub3_json_strict_escaping)
     .insert ("lqm", ok_listen_queue_max);
 
   if (_opt_daemon) {

@@ -281,6 +281,11 @@ const char *ok_pub2_treestat_sentinel = ".treestat_sentinel";
 const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
 
 //
+// pub3 constants
+//
+bool ok_pub3_json_strict_escaping = true;
+
+//
 // Turn off SUIO recyling by default.  This is a trick to save time in
 // malloc, but for production OKWS, we need memory more than CPU time;
 // of course, we can turn this on via okws_config.

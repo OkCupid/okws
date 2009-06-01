@@ -515,10 +515,15 @@ null		     { return T_P3_NULL; }
 \\t		     { json_str_addch ('\t'); }
 \\u[a-fA-F0-9]{4}    { json_str_add_unicode (yytext + 2); }
 \\b		     { json_str_addch ('\b'); }
+\\[/]		     { json_str_addch ('/'); }
 \\.                  { 
-		         strbuf b ("illegal escape sequence in string ('%s')",
-			           yytext);
-		          return json_error (b);
+		         if (ok_pub3_json_strict_escaping) {
+		            strbuf b ("illegal escape sequence in "
+			              "string ('%s')", yytext);
+		            return json_error (b);
+			 } else {
+			    json_str_addch (yytext[1]);
+			 }
                      }
 }
 

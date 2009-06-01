@@ -298,6 +298,11 @@ extern const char *ok_pub2_treestat_sentinel;
 extern const char *ok_pub2_treestat_heartbeat;
 extern size_t ok_pub_max_include_depth;
 
+//
+// pub3 constants
+//
+extern bool ok_pub3_json_strict_escaping;
+
 
 /**
  * Find an OKWS configuration file in the standard config file search path
