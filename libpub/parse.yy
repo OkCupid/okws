@@ -113,6 +113,7 @@
 %type <p3expr> p3_assignment_expr;
 %type <p3expr> p3_conditional_expr;
 %type <p3expr> p3_logical_OR_expr;
+%type <p3expr> p3_null;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
@@ -135,7 +136,7 @@
 
 %type <bl> p3_equality_op p3_additive_op;
 
-%type <p3expr> json_obj;
+%type <p3expr> json_obj json_null;
 %type <p3dict> json_dict json_dict_pairs_opt json_dict_pairs;
 %type <p3exprlist> json_list json_list_elems_opt json_list_elems;
 %type <p3expr> json_scalar json_string json_int json_float json_bool;
@@ -811,7 +812,11 @@ p3_postfix_expr:
 	   | p3_fncall       { $$ = $1; }
 	   | p3_dictionary   { $$ = $1; }
 	   | p3_list         { $$ = $1; }
+	   | p3_null         { $$ = $1; }
 	   ;
+
+p3_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (PLINENO); }
+	;
 
 p3_primary_expr: p3_varref   { $$ = $1; }
            | p3_constant     { $$ = $1; }
@@ -1173,6 +1178,7 @@ p3_empty_clause:
 json_obj:   json_dict { $$ = $1; }
       | json_list { $$ = $1; }
       | json_scalar  { $$ = $1; }
+      | json_null { $$ = $1; }
       ;
 
 json_dict: '{' json_dict_pairs_opt '}'  { $$ = $2; } ;
@@ -1203,6 +1209,9 @@ json_dict_pair: T_P3_STRING ':' json_obj
          $$ = New refcounted<pub3::pair_t> ($1, $3);
       }
       ;
+
+json_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (yy_get_json_lineno ()); }
+	  ;
 
 json_list: '[' json_list_elems_opt ']' { $$ = $2; } ;
 
