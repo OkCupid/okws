@@ -36,9 +36,10 @@ dnl
 dnl SFS_REQUIRE_THREADS
 
 dnl
-dnl Pthreads now work on all platforms; require them for dbprox
+dnl Pthreads now work on all platforms; but don't interoperate
+dnl well with pth.
 dnl
-OKWS_FIND_PTHREADS
+dnl OKWS_FIND_PTHREADS
 
 dnl
 dnl PTH is still on by default but can be disabled.
