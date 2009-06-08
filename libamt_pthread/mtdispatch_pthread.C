@@ -38,3 +38,12 @@ mpt_dispatch_t::launch (int i, int fdout)
   //close (closeit);
 }
 
+// XXX solve linker errors by making these functions noops...
+#if HAVE_PTH
+#include <pth.h>
+int pth_init (void) { return -1; }
+int pth_attr_set(pth_attr_t attr, int field, ...) { return -1; }
+pth_t pth_spawn(pth_attr_t attr, void *(*entry)(void *), void *arg) 
+{ return NULL; }
+pth_attr_t pth_attr_new (void) { return NULL; }
+#endif
