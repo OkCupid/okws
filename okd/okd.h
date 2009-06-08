@@ -127,6 +127,7 @@ public:
 
   inline int get_n_sent () const { return _n_sent; }
   void reset_n_sent () ;
+  void reset_accounting ();
   inline int inc_n_sent () { return (_n_sent ++) ; }
   void awaken (evb_t ev, CLOSURE);
   void set_state (okc_state_t s) { state = s; }
@@ -147,18 +148,19 @@ protected:
   void start_chld ();
 private:
   void shutdown_cb1 (cbv cb);
-  void closed_fd ();
+  void closed_fd (u_int64_t gen);
 
   vec<ahttpcon_wrapper_t<ahttpcon_clone> > conqueue;
 
   okc_state_t state;
   ptr<bool> destroyed;
   bool srv_disabled;
-  int per_svc_nfd_in_xit;  // per service number FD in transit
-  int _n_sent;             // N sent since reboot
-  time_t _last_restart;    // time when started;
+  int per_svc_nfd_in_xit;   // per service number FD in transit
+  int _n_sent;              // N sent since reboot
+  time_t _last_restart;     // time when started;
   
-  bool _too_busy;          // the server is potentially too busy to get more
+  bool _too_busy;           // the server is potentially too busy to get more
+  u_int64_t _generation_id; // which generation of service this is.
 
   // To be triggered when this service is ready to go.
   evv_t::ptr _ready_trigger; 

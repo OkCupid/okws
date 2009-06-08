@@ -39,7 +39,9 @@ okch_t::okch_t (okd_t *o, const str &s, okc_state_t st)
     destroyed (New refcounted<bool> (false)),
     per_svc_nfd_in_xit (0),
     _n_sent (0), _last_restart (okwstime ()),
-    _too_busy (false)
+    _too_busy (false),
+    _generation_id (0)
+	       
 {
   myokd->insert (this);
 }
@@ -57,9 +59,12 @@ okch_t::~okch_t ()
 }
 
 void
-okch_t::closed_fd ()
+okch_t::closed_fd (u_int64_t gen)
 {
   // warn << "debug: dec:  " << per_svc_nfd_in_xit << "\n";
+  if (gen != _generation_id) {
+    CH_CHATTER ("stale service generation; was there just a restart?");
+  }
   per_svc_nfd_in_xit --;
   myokd->closed_fd ();
 }
@@ -111,7 +116,7 @@ okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     if (ok_svc_fd_quota) {
       // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
       per_svc_nfd_in_xit ++;
-      xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd));
+      xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd, _generation_id));
     }
     assert (ctlx);
     assert (clnt);
@@ -244,7 +249,7 @@ okch_t::start_chld ()
     
     state = OKC_STATE_SERVE;
 
-    reset_n_sent ();
+    reset_accounting ();
 
     // need to check that ctlx is still here every time through the 
     // loop; the service might have crashed as we were servicing
@@ -253,6 +258,24 @@ okch_t::start_chld ()
       send_con_to_service (conqueue.pop_front ());
 
   }
+}
+
+void
+okch_t::reset_accounting ()
+{
+  reset_n_sent ();
+  _too_busy = false;
+  _generation_id ++;
+
+  // MK 2009/06/08: Thought about this:
+  //
+  //    per_svc_nfd_in_xit = 0;
+  //
+  // and changing closed_fd() above to only decrement if the
+  // generation was same as the last.  However, i don't think
+  // it's required.  In order to really know, we'll have to track
+  // down if the sent FDs that never get delivered ever timeout
+  // and therefore get decremented appropriately.
 }
 
 void
