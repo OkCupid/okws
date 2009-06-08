@@ -1,10 +1,10 @@
 dnl $Id$
-dnl1pre2)
+dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
 AC_INIT(config.h.in)
-AM_INIT_AUTOMAKE(okws, 2.0.4pre6)
+AM_INIT_AUTOMAKE(okws, 2.0.4pre7)
 AM_CONFIG_HEADER(config.h)
 
 SFS_INIT_LDVERSION(25)
@@ -36,10 +36,14 @@ dnl
 dnl SFS_REQUIRE_THREADS
 
 dnl
-dnl Since only PTH works, for now just require PTH or nothing
+dnl Pthreads now work on all platforms; require them for dbprox
+dnl
+OKWS_FIND_PTHREADS
+
+dnl
+dnl PTH is still on by default but can be disabled.
 dnl
 OKWS_FIND_PTH
-
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
 test "$XMLRPCC" || XMLRPCC='$(top_builddir)/xmlrpcc/xmlrpcc'

@@ -234,6 +234,9 @@ public:
   str which_procs (); // debugging function
   void set_quiet (bool q) { quiet = q; }
 
+  virtual void giant_lock () {}
+  virtual void giant_unlock () {}
+
   template<class T> void thread_apply (typename callback<void, T *>::ref cb) 
   {
     for (u_int i = 0; i < num; i++) {
@@ -326,6 +329,9 @@ public:
   template<class T> void thread_apply (typename callback<void, T *>::ref cb)
   { mtd->thread_apply<T> (cb); }
 
+  void giant_lock () { mtd->giant_lock (); }
+  void giant_unlock () { mtd->giant_unlock (); }
+
   mtdispatch_t *mtd;
 private:
   const rpc_program *const prog;
@@ -343,6 +349,7 @@ public:
 		  const txa_prog_t *x) 
     : mtdispatch_t (c, n, m, s, x) {}
   void launch (int i, int fdout);
+
 };
 #endif /* HAVE_KTHREADS */
 
@@ -351,13 +358,15 @@ class mpt_dispatch_t : public mtdispatch_t // Posix Threads
 {
 public:
   mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-		  const txa_prog_t *x) :
-    mtdispatch_t (c, n, m, s, x), pts (New pthread_t [n]) {}
+		  const txa_prog_t *x);
 
         ~mpt_dispatch_t () { warn << "in ~mpt_dispatch_t\n"; delete [] pts; } 
   void launch (int i, int fdout);
+  void giant_lock ();
+  void giant_unlock ();
 protected:
   pthread_t *pts;
+  pthread_mutex_t _giant_lock;
 };
 #endif /* HAVE_PTHREADS */
 

@@ -321,7 +321,7 @@ then
 		CPPFLAGS="$CPPFLAGS $sfs_cv_pth_h"
 		AC_DEFINE(HAVE_PTH, 1, Allow libamt to use the GNU Pth library)
 		sfs_have_threads=yes
-		LDADD_THR=$sfs_cv_libpth
+		LDADD_THR="$LDADD_THR $sfs_cv_libpth"
 	else
 		AC_MSG_ERROR("Pth failed. To disable Pth use --without-pth")
 	fi
@@ -382,7 +382,7 @@ if test "$sfs_cv_libpthread" != "no" && test "${sfs_cv_libpthread+set}" ; then
 	AC_DEFINE(HAVE_PTHREADS, 1, Allow libamt to use PTHREADS)
 	sfs_have_threads=yes
 	LIBS="$ac_save_LIBS $sfs_cv_libpthread"
-	LDADD_THR=$sfs_cv_libpthread
+	LDADD_THR="$LDADD_THR $sfs_cv_libpthread"
 fi
 LIBS=$ac_save_LIBS 
 CFLAGS=$ac_save_CFLAGS
