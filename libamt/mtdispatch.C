@@ -338,18 +338,18 @@ mtdispatch_t::init ()
   //close (fds[1]);
 }
 
-static void
-new_threadv (void *av)
+void
+amt_new_threadv (void *av)
 {
   mtd_thread_arg_t *arg = static_cast<mtd_thread_arg_t *> (av);
   arg->mtd->new_thread (arg);
 }
 
-static void *
-vnew_threadv (void *av)
+void *
+amt_vnew_threadv (void *av)
 {
   // warn << "vnew_threadv called.\n"; // debug
-  new_threadv (av);
+  amt_new_threadv (av);
   return (NULL);
 }
 
@@ -357,7 +357,7 @@ static int
 inew_threadv (void *av)
 {
   // warn << "inew_threadv called.\n";  // debug
-  new_threadv (av);
+  amt_new_threadv (av);
   return 0;
 }
 
@@ -365,8 +365,6 @@ inew_threadv (void *av)
 // blah blah blah XXXX blah blah
 void foo ()
 {
-  new_threadv (NULL);
-  vnew_threadv (NULL);
   inew_threadv (NULL);
 }
 
@@ -522,96 +520,11 @@ mgt_dispatch_t::launch (int i, int fdout)
   pth_attr_set (attr, PTH_ATTR_NAME, names[i].cstr ());
   pth_attr_set (attr, PTH_ATTR_STACK_SIZE, MTD_STACKSIZE);
   pth_attr_set (attr, PTH_ATTR_JOINABLE, FALSE);
-  if (!(gts[i] = pth_spawn (attr, vnew_threadv, static_cast<void *> (arg))))
+  if (!(gts[i] = pth_spawn (attr, amt_vnew_threadv, static_cast<void *> (arg))))
     fatal << "mtdispatch::launch: pth_spawn failed\n";
 }
 #endif /* HAVE_PTH */
 
-#ifdef HAVE_PTHREADS
-
-mpt_dispatch_t::mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-				const txa_prog_t *x)
- : mtdispatch_t (c, n, m, s, x), 
-   pts (New pthread_t [n])
-{
-  int rc = pthread_mutex_init (&_giant_lock, NULL);
-  if (rc != 0) {
-    fatal ("pthread_mutex_init() failed (%m)\n");
-  }
-}
-
-void
-mpt_dispatch_t::giant_lock ()
-{
-  pthread_mutex_lock (&_giant_lock);
-}
-
-void
-mpt_dispatch_t::giant_unlock ()
-{
-  pthread_mutex_unlock (&_giant_lock);
-}
-
-void
-mpt_dispatch_t::launch (int i, int fdout)
-{
-  // warn << "mpt_dispatch_t::launch: " << i << "\n"; // debug
-  int closeit;
-  mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
-
-  if (pthread_create (&pts[i], NULL, vnew_threadv, 
-		      static_cast<void *> (arg)) < 0)
-    fatal << "mtdispatch::launch: pthread_create failed\n";
-
-  //close (closeit);
-}
-#endif /* HAVE_PTHREADS */
-
-#ifdef HAVE_KTHREADS
-void
-mkt_dispatch_t::launch (int i, int fdout)
-{
-  // warn << "mkt_dispatch_t::launch: " << i << "\n"; // debug
-
-  int closeit;
-  mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
-#ifdef HAVE_RFORK_THREAD
-  shmem->arr[i].stkp = (void *) xmalloc (MTD_STACKSIZE);
-  int rc = rfork_thread (MTD_STACKSIZE, shmem->arr[i].stkp, inew_threadv,
-			 static_cast<void *> (arg));
-  if (rc < 0) {
-    warn ("mtdispatch::launch: rfork failed: %m\n");
-    exit (1);
-  }
-  shmem->arr[i].pid = rc;
-
-#else
-# ifdef HAVE_RFORK
-  int rc = rfork (RFPROC);
-  warn << "rfork returned: " << rc << "\n"; // debug
-  if (rc == 0) {
-    new_thread (arg);
-    return;
-  } else if (rc < 0) {
-    warn ("mtdispatch::launch: rfork failed: %m\n");
-    exit (1);
-  }
-# else
-#  ifdef HAVE_CLONE
-  shmem->arr[i].stkp = (void *) xmalloc (MTD_STACKSIZE);
-  int rc = clone (inew_threadv, shmem->arr[i].stkp, 
-		  CLONE_FS|CLONE_FILES|CLONE_VM,
-		  static_cast<void *> (arg));
-  if (rc < 0)
-    fatal << "mtdispatch::launch: clone failed\n";
-#else
-  assert (false);
-#endif
-#endif
-#endif
-  //close (closeit);
-}
-#endif /* HAVE_KTHREADS */
 
 void
 ssrv_t::accept (ptr<axprt_stream> x)
@@ -681,55 +594,33 @@ ssrv_client_t::dispatch (svccb *s)
 
 ssrv_client_t::~ssrv_client_t () { ssrv->remove (this); }
 
+ssrv_t::ssrv_t (const rpc_program &p, const txa_prog_t *x)
+  : prog (&p),
+    load_avg (0),
+    txa_prog (x)
+{}
+
+void
+ssrv_t::init (mtdispatch_t *m)
+{
+  mtd = m;
+  mtd->init ();
+}
+
 ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p, 
 		mtd_thread_typ_t typ, int n, int m, const txa_prog_t *x) 
   : mtd (NULL), prog (&p), load_avg (0), txa_prog (x)
 {
-  switch (typ) {
-  case MTD_KTHREADS:
-#ifdef HAVE_KTHREADS 
-    mtd = New mkt_dispatch_t (c, n, m, this, x);
-#else
-    warn << "kthreads are not available with this build!\n";
-#endif /* HAVE_KTHREADS */
-    break;
-  case MTD_PTH:
+
 #ifdef HAVE_PTH
-    assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
-    mtd = New mgt_dispatch_t (c, n, m, this, x);
-#else
-    warn << "pth is not available with this build!\n";
-#endif /* HAVE_PTH */
-    break;
-  case MTD_PTHREADS:
-#ifdef HAVE_PTHREADS
-    mtd = New mpt_dispatch_t (c, n, m, this, x);
-#else 
-    warn << "pthreads are not available with this build!\n";
-#endif /* HAVE_PTHREADS */
-    break;
-  default:
-    break;
-  }
-  if (!mtd) {
-#ifdef HAVE_PTH
-    warn << "Requested thread type not availabe: using GNU Pth\n";
-    mtd = New mgt_dispatch_t (c, n, m, this, x);
-#else
-# ifdef HAVE_PTHREADS
-    warn << "Requested thread type not availabe: using POSIX pthreads\n";
-    mtd = New mpt_dispatch_t (c, n, m, this, x);
-# else
-#  ifdef HAVE_KTHREADS 
-    warn << "Requested thread type not availabe: using kernel threads\n";
-    mtd = New mkt_dispatch_t (c, n, m, this, x);
-#  else
-    panic ("No threading package available!\n");
-#  endif  /* HAVE_KTHREADS */
-# endif   /* HAVE_PTHREADS */
-#endif    /* HAVE_PTH */
-  }
+  assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
+  mtd = New mgt_dispatch_t (c, n, m, this, x);
   mtd->init (); 
+#else
+  panic ("pth is not available with this build; "
+	 "cannot continue without threads\n");
+#endif /* HAVE_PTH */
+
 }
 
 bool

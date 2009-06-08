@@ -31,9 +31,9 @@ mpt_dispatch_t::launch (int i, int fdout)
   int closeit;
   mtd_thread_arg_t *arg = launch_init (i, fdout, &closeit);
 
-  if (pthread_create (&pts[i], NULL, vnew_threadv, 
+  if (pthread_create (&pts[i], NULL, amt_vnew_threadv, 
 		      static_cast<void *> (arg)) < 0)
-    fatal << "mtdispatch::launch: pthread_create failed\n";
+    fatal ("mtdispatch::launch: pthread_create failed: %m\n");
 
   //close (closeit);
 }

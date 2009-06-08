@@ -3,6 +3,10 @@
 
 include $(SFS_LIB_MK)
 
+if USE_PTHREADS
+PTHR = libamt_pthread
+endif
+
 SBD1 = \
 	txarpcc \
 	libpub \
@@ -12,6 +16,7 @@ SBD1 = \
 	libokxml \
 	libaok \
 	libamt \
+	$(PTHR) \
 	libokssl \
 	libweb \
 	librfn

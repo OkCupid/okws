@@ -5,10 +5,7 @@
 #define _LIBAMT_PTHREAD__AMT_PTHREAD_H_
 
 #include "amt.h"
-
-#ifdef HAVE_PTHREADS
 #include <pthread.h>
-#endif /* HAVE_PTHREAD */
 
 class mpt_dispatch_t : public mtdispatch_t // Posix Threads
 {

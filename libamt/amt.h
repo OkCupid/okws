@@ -30,19 +30,6 @@
 #include "litetime.h"
 #include "pubutil.h"
 
-#ifdef HAVE_CLONE
-# include <sched.h>
-#else
-# ifdef HAVE_RFORK
-#  include <unistd.h>
-#  include <sys/param.h>
-# endif /* HAVE_RFORK */
-#endif /* HAVE_CLONE */
-
-#ifdef HAVE_PTHREADS
-#include <pthread.h>
-#endif /* HAVE_PTHREAD */
-
 #ifdef HAVE_PTH
 
 //
@@ -75,8 +62,7 @@
     fprintf (stderr, "%s", s.cstr ()); \
   } while (0)
 
-typedef enum { MTD_KTHREADS = 0, MTD_PTH = 1, 
-	       MTD_PTHREADS = 3 } mtd_thread_typ_t;
+typedef enum { MTD_NONE = 0, MTD_PTH = 1 } mtd_thread_typ_t;
 
 class mtdispatch_t;
 class mtd_shmem_cell_t;
@@ -314,6 +300,11 @@ public:
   ssrv_t (newthrcb_t c, const rpc_program &p, mtd_thread_typ_t typ = MTD_PTH, 
 	  int nthr = MTD_NTHREADS, int mq = MTD_MAXQ, 
 	  const txa_prog_t *tx = NULL);
+
+  // use these two to pass in your own virtual mtdispatch object.
+  ssrv_t (const rpc_program &p, const txa_prog_t *txa);
+  void init (mtdispatch_t *m);
+
   void accept (ptr<axprt_stream> x);
   void insert (ssrv_client_t *c) { lst.insert_head (c); }
   void remove (ssrv_client_t *c) { lst.remove (c); }
@@ -341,35 +332,6 @@ private:
   const txa_prog_t *const txa_prog;
 };
 
-#ifdef HAVE_KTHREADS
-class mkt_dispatch_t : public mtdispatch_t  // Kernel Threads
-{
-public:
-  mkt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-		  const txa_prog_t *x) 
-    : mtdispatch_t (c, n, m, s, x) {}
-  void launch (int i, int fdout);
-
-};
-#endif /* HAVE_KTHREADS */
-
-#ifdef HAVE_PTHREADS
-class mpt_dispatch_t : public mtdispatch_t // Posix Threads
-{
-public:
-  mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-		  const txa_prog_t *x);
-
-        ~mpt_dispatch_t () { warn << "in ~mpt_dispatch_t\n"; delete [] pts; } 
-  void launch (int i, int fdout);
-  void giant_lock ();
-  void giant_unlock ();
-protected:
-  pthread_t *pts;
-  pthread_mutex_t _giant_lock;
-};
-#endif /* HAVE_PTHREADS */
-
 #ifdef HAVE_PTH
 class mgt_dispatch_t : public mtdispatch_t  // Pth Threads
 {
@@ -393,5 +355,8 @@ protected:
 
 bool
 tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff);
+
+void *amt_vnew_threadv (void *arg);
+void amt_new_threadv (void *arg);
 
 #endif /* _LIBAMT_AMT_H */

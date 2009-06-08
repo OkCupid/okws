@@ -320,7 +320,6 @@ then
 	if test "${sfs_cv_libpth+set}" && test "$sfs_cv_libpth" != "no"; then
 		CPPFLAGS="$CPPFLAGS $sfs_cv_pth_h"
 		AC_DEFINE(HAVE_PTH, 1, Allow libamt to use the GNU Pth library)
-		sfs_have_threads=yes
 		LDADD_THR="$LDADD_THR $sfs_cv_libpth"
 	else
 		AC_MSG_ERROR("Pth failed. To disable Pth use --without-pth")
@@ -379,11 +378,11 @@ fi
 if test "$sfs_cv_libpthread" != "no" && test "${sfs_cv_libpthread+set}" ; then
 	CFLAGS=$ac_save_CFLAGS
 	CPPFLAGS="$CPPFLAGS $sfs_cv_pthread_h"
-	AC_DEFINE(HAVE_PTHREADS, 1, Allow libamt to use PTHREADS)
-	sfs_have_threads=yes
 	LIBS="$ac_save_LIBS $sfs_cv_libpthread"
-	LDADD_THR="$LDADD_THR $sfs_cv_libpthread"
+	LDADD_PTHREAD="$sfs_cv_libpthread"
+	use_pthreads=yes
 fi
+AM_CONDITIONAL(USE_PTHREADS, test "${use_pthreads}" != "no")
 LIBS=$ac_save_LIBS 
 CFLAGS=$ac_save_CFLAGS
 ])
@@ -399,18 +398,6 @@ if test $PDEBUG; then
     LDEBUG='-d'
     AC_DEFINE(PDEBUG, 1, Enable parser/lexer debugging messages)
 fi])
-
-dnl
-dnl Check that kernel threads are supported on this platform
-dnl
-AC_DEFUN([OKWS_FIND_KTHREADS],
-[AC_CHECK_HEADERS(unistd.h)
-AC_CHECK_FUNCS(rfork_thread rfork clone) 
-if test $ac_cv_func_rfork = yes || test $ac_cv_func_clone = yes ||
-	test $ac_cv_func_rfork_thread = yes ; then
-    AC_DEFINE(HAVE_KTHREADS, 1, Kernel threads are available)
-    sfs_have_threads=yes
-fi])
 dnl
 dnl Check that some threading exists
 dnl
@@ -425,15 +412,6 @@ dnl work.
 dnl
 OKWS_FIND_PTH	
 
-dnl if test -z "$sfs_have_threads" &&
-dnl 	(test "$enable_pthreads" != "no" || test -n $with_pthreads); 
-dnl then
-dnl 	SFS_FIND_PTHREADS
-dnl fi
-dnl SFS_FIND_KTHREADS
-dnl if test -z "$sfs_have_threads"; then
-dnl 	AC_MSG_ERROR(No threading packages available; cannot proceed.)
-dnl fi
 AC_SUBST(LDADD_THR)
 ])
 #include <unistd.h>
