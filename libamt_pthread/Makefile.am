@@ -10,6 +10,6 @@ libamt_pthread_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = amt_pthread.h
 
-EXTRA_DIST = .cvsignore
+EXTRA_DIST =
 CLEANFILES = core *.core *~ *.rpo
 MAINTAINERCLEANFILES = Makefile.in 
