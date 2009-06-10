@@ -473,7 +473,7 @@ mtd_thread_t::reject ()
 }
 
 void
-mtd_thread_t::reply_classic (ptr<void> d)
+mtd_thread_t::reply (ptr<void> d)
 {
   did_reply ();
   cell->rsp = d;
