@@ -282,8 +282,8 @@ mtdispatch_t::chld_reply (int i)
     break;
   }
   c->sbp = NULL;
-  c->status = MTD_READY;
   c->rsp = NULL;
+  c->status = MTD_READY;
   chld_ready (i);
   g_stats.out ();
 }
@@ -473,10 +473,11 @@ mtd_thread_t::reject ()
 }
 
 void
-mtd_thread_t::reply (ptr<void> d)
+mtd_thread_t::reply_classic (ptr<void> d)
 {
   did_reply ();
   cell->rsp = d;
+  d = NULL;
   cell->status = MTD_REPLY;
   cell->rstat = MTD_RPC_DATA;
   msg_send (MTD_REPLY);

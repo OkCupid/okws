@@ -140,7 +140,11 @@ public:
 
   void replynull ();
   void reject ();
-  void reply (ptr<void> d);
+
+  template<class T> void reply (ptr<T> &p);
+  void reply_classic (ptr<void> d);
+  template<class T> void reply_release (ptr<T> &p);
+
   int getid () const { return tid; }
   ssrv_t *get_ssrv ();
   ssrv_t *get_ssrv () const;
@@ -358,5 +362,27 @@ tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff);
 
 void *amt_vnew_threadv (void *arg);
 void amt_new_threadv (void *arg);
+
+
+template<class T> void
+mtd_thread_t::reply (ptr<T> &obj)
+{
+  if (ok_kthread_safe) {
+    reply_release (obj);
+  } else {
+    reply_classic (obj);
+  }
+}
+
+template<class T> void
+mtd_thread_t::reply_release (ptr<T> &obj)
+{
+  did_reply ();
+  cell->rsp = obj;
+  obj = NULL; // release all worker thread references to it (we hope)
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_DATA;
+  msg_send (MTD_REPLY);
+}
 
 #endif /* _LIBAMT_AMT_H */
