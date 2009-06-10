@@ -244,6 +244,8 @@ extern u_int ok_amt_q_timeout;                  // timeout RPCs sitting in Q
 extern u_int ok_amt_stat_freq;                  // statistics sampling freq
 extern bool ok_amt_rpc_stats;                   // whether to turn on RPC stats
 extern u_int ok_amt_rpc_stats_interval;         // interval to printf
+extern bool ok_kthread_safe;                    // whether to make libs 
+                                                //    kernel-thread-safe
 
 //
 // HTTP constant stuff

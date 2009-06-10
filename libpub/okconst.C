@@ -226,6 +226,7 @@ u_int ok_amt_q_timeout = 60;         // timeout RPCs longer than 1 minute
 u_int ok_amt_stat_freq = 60;         // statistics frequency
 bool ok_amt_rpc_stats = true;        // whether to turn on RPC stats
 u_int ok_amt_rpc_stats_interval = 300;   // interval to printf (5min)
+bool ok_kthread_safe = false;        // by default assume PTH / no kthreads
 
 //
 // OK Service UID limits

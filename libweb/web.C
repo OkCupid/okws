@@ -20,6 +20,7 @@
  * USA
  *
  */
+#include "okconst.h"
 #include "web.h"
 #include "rxx.h"
 #include "parseopt.h"
@@ -85,8 +86,10 @@ char_to_sex (char c)
   }
 }
 
-static rxx date_rxx ("(([0-9]{4})-([0-9]{2})-([0-9]{2}))?" 
-		     "( ([0-9]{2}):([0-9]{2}):([0-9]{2}))?");
+const char *date_rxx_str = "(([0-9]{4})-([0-9]{2})-([0-9]{2}))?" 
+  "( ([0-9]{2}):([0-9]{2}):([0-9]{2}))?";
+
+static rxx g_date_rxx (date_rxx_str);
 
 //
 // this is needed so convertint doesn't think strings like "09" are octal
@@ -119,36 +122,57 @@ okdate_t::clear ()
 void
 okdate_t::set (const str &s)
 {
-  if (!s || !date_rxx.match (s)) {
-    err = true;
-    return;
+  rxx *x = NULL;
+  rxx *new_rxx = NULL;
+
+  if (ok_kthread_safe) {
+    x = new_rxx = New rxx (date_rxx_str);
+  } else {
+    x = &g_date_rxx;
   }
-  err = false;
-  
-  if (date_rxx[1]) {
-    dt_tm |= OK_DATE;
     
-    bool ok = convertint (strip_zero(date_rxx[2]), &year) &&
-      convertint (strip_zero(date_rxx[3]), &mon) &&
-      convertint (strip_zero(date_rxx[4]), &mday);
-    assert (ok);
+  if (!s || !x->match (s)) {
+    err = true;
+  } else {
 
-  }
+    err = false;
   
-  if (date_rxx[5]) {
-    dt_tm |= OK_TIME;
+    if ((*x)[1]) {
+      dt_tm |= OK_DATE;
+    
+      bool ok = convertint (strip_zero((*x)[2]), &year) &&
+	convertint (strip_zero((*x)[3]), &mon) &&
+	convertint (strip_zero((*x)[4]), &mday);
+      assert (ok);
 
-    bool ok = convertint (strip_zero(date_rxx[6]), &hour) &&
-      convertint (strip_zero(date_rxx[7]), &min) &&
-      convertint (strip_zero(date_rxx[8]), &sec);
-    assert (ok);
+    }
+    
+    if ((*x)[5]) {
+      dt_tm |= OK_TIME;
+      
+      bool ok = convertint (strip_zero((*x)[6]), &hour) &&
+	convertint (strip_zero((*x)[7]), &min) &&
+	convertint (strip_zero((*x)[8]), &sec);
+      assert (ok);
+    }
   }
+
+  if (new_rxx) delete new_rxx;
 }
 
 bool
 okdate_t::set (const str &s, long gmt_off)
 {
-  if (!s || !date_rxx.match (s)) { 
+  rxx *x = NULL;
+  rxx *new_rxx = NULL;
+
+  if (ok_kthread_safe) {
+    x = new_rxx = New rxx (date_rxx_str);
+  } else {
+    x = &g_date_rxx;
+  }
+    
+  if (!s || !x->match (s)) { 
     err = true;
   } else {
     struct tm t;
@@ -156,20 +180,20 @@ okdate_t::set (const str &s, long gmt_off)
     bool time = false;
     err = false;
 
-    if (date_rxx[1]) {
+    if ((*x)[1]) {
       bool ok = 
-	convertint (strip_zero(date_rxx[2]), &t.tm_year) &&
-	convertint (strip_zero(date_rxx[3]), &t.tm_mon) &&
-	convertint (strip_zero(date_rxx[4]), &t.tm_mday);
+	convertint (strip_zero((*x)[2]), &t.tm_year) &&
+	convertint (strip_zero((*x)[3]), &t.tm_mon) &&
+	convertint (strip_zero((*x)[4]), &t.tm_mday);
       assert (ok);
     }
     
-    if (date_rxx[5]) {
+    if ((*x)[5]) {
       time = true;
       bool ok = 
-	convertint (strip_zero(date_rxx[6]), &t.tm_hour) &&
-	convertint (strip_zero(date_rxx[7]), &t.tm_min) &&
-	convertint (strip_zero(date_rxx[8]), &t.tm_sec);
+	convertint (strip_zero((*x)[6]), &t.tm_hour) &&
+	convertint (strip_zero((*x)[7]), &t.tm_min) &&
+	convertint (strip_zero((*x)[8]), &t.tm_sec);
       assert (ok);
     }
 
@@ -185,6 +209,7 @@ okdate_t::set (const str &s, long gmt_off)
     }
   }
 
+  if (new_rxx) delete new_rxx;
   return !err;
 }
 
