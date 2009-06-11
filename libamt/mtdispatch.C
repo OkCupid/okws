@@ -268,21 +268,42 @@ mtdispatch_t::chld_reply (int i)
   mtd_shmem_cell_t *c = &(shmem->arr[i]);
   svccb *sbp = c->sbp;
   switch (c->rstat) {
+
   case MTD_RPC_NULL:
     ssrv->post_db_call (sbp, NULL);
     sbp->reply (NULL);
     break;
+
   case MTD_RPC_DATA:
-    ssrv->post_db_call (sbp, c->rsp);
-    sbp->reply (c->rsp);
+    ssrv->post_db_call (sbp, c->rsp_u.p);
+    sbp->reply (c->rsp_u.p);
+    c->rsp_u.p = NULL;
     break;
+
+  case MTD_RPC_BOOL:
+    sbp->replyref (c->rsp_u.b);
+    break;
+
+  case MTD_RPC_UINT32:
+    sbp->replyref (c->rsp_u.i32);
+    break;
+
+  case MTD_RPC_INT32:
+    sbp->replyref (c->rsp_u.u32);
+    break;
+
+  case MTD_RPC_PASSPTR:
+    sbp->reply (c->rsp_u.pp.obj ());
+    c->rsp_u.pp.clear ();
+    break;
+
   case MTD_RPC_REJECT:
     warn << "XXX: rejected by MTD_RPC_REJECT\n"; // DEBUG
     sbp->reject (PROC_UNAVAIL);
     break;
   }
+
   c->sbp = NULL;
-  c->rsp = NULL;
   c->status = MTD_READY;
   chld_ready (i);
   g_stats.out ();
@@ -408,7 +429,7 @@ mtd_thread_t::msg_recv ()
   mtd_msg_t msg;
   int rc = ::msg_recv (fdin, &msg);
   if (rc < 0) {
-    warn ("mtd_thread_t::msg_recv: bad read: %m\n");
+    TWARN ("mtd_thread_t::msg_recv: bad read; (errno=%d" << errno << ")");
     return MTD_ERROR;
   }
   return msg.status;
@@ -473,10 +494,44 @@ mtd_thread_t::reject ()
 }
 
 void
-mtd_thread_t::reply (ptr<void> d)
+mtd_thread_t::reply_b (bool b)
 {
   did_reply ();
-  cell->rsp = d;
+  cell->rsp_u.b = b;
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_BOOL;
+  msg_send (MTD_REPLY);
+}
+
+void
+mtd_thread_t::reply_i32 (int32_t i)
+{
+  did_reply ();
+  cell->rsp_u.i32 = i;
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_INT32;
+  msg_send (MTD_REPLY);
+}
+
+void
+mtd_thread_t::reply_u32 (u_int32_t u)
+{
+  did_reply ();
+  cell->rsp_u.u32 = u;
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_UINT32;
+  msg_send (MTD_REPLY);
+}
+
+void
+mtd_thread_t::reply (ptr<void> d)
+{
+  if (ok_kthread_safe) {
+    TWARN ("XX WARNING!! Do not call mth_thread_t::reply "
+	   "in thread-safe mode!\n");
+  }
+  did_reply ();
+  cell->rsp_u.p = d;
   d = NULL;
   cell->status = MTD_REPLY;
   cell->rstat = MTD_RPC_DATA;

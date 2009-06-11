@@ -29,6 +29,7 @@
 #include "txa.h"
 #include "litetime.h"
 #include "pubutil.h"
+#include "passptr.h"
 
 #ifdef HAVE_PTH
 
@@ -85,8 +86,11 @@ typedef enum { MTD_STARTUP = 0, MTD_READY = 1,
 
 typedef enum { MTD_RPC_NULL = 0,
 	       MTD_RPC_DATA = 1,
-	       MTD_RPC_REJECT = 2 } mtd_rpc_t;
-
+	       MTD_RPC_REJECT = 2,
+	       MTD_RPC_BOOL = 3 ,
+	       MTD_RPC_INT32 = 4,
+	       MTD_RPC_UINT32 = 5, 
+	       MTD_RPC_PASSPTR = 6 } mtd_rpc_t;
 
 struct epoch_t {
   epoch_t () : len_msec (0) {}
@@ -142,9 +146,11 @@ public:
   void reject ();
 
   void reply (ptr<void> d);
+  void reply_b (bool b);
+  void reply_i32 (int32_t i);
+  void reply_u32 (u_int32_t u);
 
-  // kernel-thread-safe reply
-  template<class T> void kts_reply(ptr<T> &p);
+  template<class T> void reply_pass (passptr<T> p);
 
   int getid () const { return tid; }
   ssrv_t *get_ssrv ();
@@ -194,7 +200,17 @@ struct mtd_shmem_cell_t { // Used to communicate between Child and Dispatch
   int pid;             // for kernel threads, the PID of the thread
 
   mtd_rpc_t rstat;     // response status
-  ptr<void> rsp;       // response data
+
+  // Should be a union, but make it a struct since we have a lot of memory,
+  // and there's an issue with C++ objects inside a union.
+  struct {
+    ptr<void> p;       // response data
+    bool b;            // boolean response
+    int32_t i32;       // int32 response
+    u_int32_t u32;     // u_int32 respoonse
+    passptr<void> pp;  // pass-ptr response
+  } rsp_u;             // response is one of the above (or NULL)
+
 };
 
 struct mtd_shmem_t {
@@ -315,7 +331,7 @@ public:
   void remove (ssrv_client_t *c) { lst.remove (c); }
   virtual bool skip_db_call (svccb *c) { return false; }
   virtual void post_db_call (svccb *c, ptr<void> resp) {}
-        virtual ~ssrv_t () { warn << "in ~ssrv_t()\n"; delete mtd; }
+  virtual ~ssrv_t () { warn << "in ~ssrv_t()\n"; delete mtd; }
   void req_made (); // called for accounting purposes
   u_int get_load_avg () const { return load_avg; }
 
@@ -366,18 +382,14 @@ void amt_new_threadv (void *arg);
 
 
 template<class T> void
-mtd_thread_t::kts_reply (ptr<T> &obj)
+mtd_thread_t::reply_pass (passptr<T> p)
 {
-  if (ok_kthread_safe) {
-    did_reply ();
-    cell->rsp = obj;
-    obj = NULL; // release all worker thread references to it (we hope)
-    cell->status = MTD_REPLY;
-    cell->rstat = MTD_RPC_DATA;
-    msg_send (MTD_REPLY);
-  } else {
-    reply (obj);
-  }
+  did_reply ();
+  p.pass_to (cell->rsp_u.pp);
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_PASSPTR;
+  msg_send (MTD_REPLY);
 }
+
 
 #endif /* _LIBAMT_AMT_H */

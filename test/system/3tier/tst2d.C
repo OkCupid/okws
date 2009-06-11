@@ -86,7 +86,9 @@ tst2_srv_t::get (svccb *b)
 {
   const tst2_get_arg_t *arg  = b->Xtmpl getarg<tst2_get_arg_t> ();
   adb_status_t rc;
-  ptr<tst2_get_res_t> res = New refcounted<tst2_get_res_t> (ADB_OK);
+
+  passptr<tst2_get_res_t> res;
+  res = New refcounted<tst2_get_res_t> (ADB_OK);
   
   if (!_q_get->execute (*arg)) {
     rc = ADB_EXECUTE_ERROR;
@@ -101,14 +103,17 @@ tst2_srv_t::get (svccb *b)
     if ((es = _q_get->error ())) 
       TWARN(es);
   }
-  reply (res);
+
+  reply_pass (res);
 }
 
 void
 tst2_srv_t::put (svccb *b)
 {
   const tst2_put_arg_t *arg = b->Xtmpl getarg<tst2_put_arg_t> ();
-  ptr<adb_status_t> res = New refcounted<adb_status_t> (ADB_OK);
+  passptr<adb_status_t> res (New refcounted<adb_status_t> (ADB_OK));
+
+  passptr<adb_status_t> tmp = res;
 
   if (!_q_put->execute (arg->key, arg->data.d, arg->data.i, arg->data.d2)) {
     *res = ADB_EXECUTE_ERROR;
@@ -116,8 +121,11 @@ tst2_srv_t::put (svccb *b)
     if ((es = _q_put->error ())) 
       TWARN("put error: " << es);
   }
-  reply (res);
+  reply_pass (res);
 
+  // see comments in libamt/passptr.h
+  assert (!res);
+  assert (!tmp);
 }
 
 static void
