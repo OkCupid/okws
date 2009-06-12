@@ -130,7 +130,8 @@ public:
   ptr<T> obj_p () const { return _slot->obj (); }
   const T *obj() const { return _slot->obj (); }
   T *obj () { return _slot->obj (); }
-
+  const T *get() const { return obj (); }
+  T *get () { return obj (); }
 
 private:
   ref<passptr_slot<T> > _slot;

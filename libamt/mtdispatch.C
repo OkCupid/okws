@@ -186,7 +186,7 @@ mtdispatch_t::which_procs ()
       u_int proc = shmem->arr[i].sbp->proc ();
       u_int *n;
       if ((n = h[proc])) (*n) ++;
-      else h.insert (proc, 0);
+      else h.insert (proc, 1);
     }
   }
   strbuf b;
