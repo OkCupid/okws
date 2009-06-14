@@ -31,6 +31,10 @@
 #include "pubutil.h"
 #include "passptr.h"
 
+#ifdef HAVE_BOOST_SHARED_PTR
+# include  <boost/shared_ptr.hpp>
+#endif
+
 #ifdef HAVE_PTH
 
 //
@@ -90,7 +94,8 @@ typedef enum { MTD_RPC_NULL = 0,
 	       MTD_RPC_BOOL = 3 ,
 	       MTD_RPC_INT32 = 4,
 	       MTD_RPC_UINT32 = 5, 
-	       MTD_RPC_PASSPTR = 6 } mtd_rpc_t;
+	       MTD_RPC_PASSPTR = 6,
+	       MTD_RPC_BOOST_PTR = 7 } mtd_rpc_t;
 
 struct epoch_t {
   epoch_t () : len_msec (0) {}
@@ -149,6 +154,10 @@ public:
   void reply_b (bool b);
   void reply_i32 (int32_t i);
   void reply_u32 (u_int32_t u);
+
+#ifdef HAVE_BOOST_SHARED_PTR
+  void reply_boost (shared_ptr<T> p);
+#endif
 
   template<class T> void reply_pass (passptr<T> p);
 
@@ -209,6 +218,9 @@ struct mtd_shmem_cell_t { // Used to communicate between Child and Dispatch
     int32_t i32;       // int32 response
     u_int32_t u32;     // u_int32 respoonse
     passptr<void> pp;  // pass-ptr response
+#ifdef HAVE_BOOST_SHARED_PTR
+    boost::shared_ptr<void> bp; // boost shared pointer
+#endif
   } rsp_u;             // response is one of the above (or NULL)
 
 };

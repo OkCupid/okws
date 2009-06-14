@@ -36,6 +36,7 @@ bool
 mysql_t::connect (const str &db, const str &u, const str &h,
 		  const str &pw, u_int prt, u_long fl)
 {
+  bool ret = true;
 #if defined(MYSQL_VERSION_ID) && (MYSQL_VERSION_ID >= 50000)
    my_bool b = 1;
    if (mysql_options (&mysql, MYSQL_OPT_RECONNECT, (const char *)&b) != 0) {
@@ -45,9 +46,9 @@ mysql_t::connect (const str &db, const str &u, const str &h,
 
   if (!mysql_real_connect (&mysql, h, u, pw, db, prt, NULL, fl)) {
     err = strbuf ("connection error: ") << mysql_error (&mysql);
-    return false;
+    ret = false;
   }
-  return true;
+  return ret;
 }
 
 sth_t

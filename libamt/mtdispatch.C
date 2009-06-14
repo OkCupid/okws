@@ -297,8 +297,20 @@ mtdispatch_t::chld_reply (int i)
     c->rsp_u.pp.clear ();
     break;
 
+#ifdef HAVE_BOOST_SHARED_PTR
+  case MTD_RPC_BOOST_PTR:
+    sbp->reply (c->rsp_u.bp.get ());
+    c->rsp_u.bp.reset ();
+    break;
+#endif /* HAVE_BOOST_SHARED_PTR */
+
   case MTD_RPC_REJECT:
     warn << "XXX: rejected by MTD_RPC_REJECT\n"; // DEBUG
+    sbp->reject (PROC_UNAVAIL);
+    break;
+
+  default:
+    warn << "XXX: unhandled case!\n";
     sbp->reject (PROC_UNAVAIL);
     break;
   }
@@ -537,6 +549,19 @@ mtd_thread_t::reply (ptr<void> d)
   cell->rstat = MTD_RPC_DATA;
   msg_send (MTD_REPLY);
 }
+
+#ifdef HAVE_BOOST_SHARED_PTR
+void
+mtd_thread_t::reply (boost::shared_ptr<void> p)
+{
+  did_reply ();
+  cell->rsp_u.bp = p;
+  p.reset ();
+  cell->status = MTD_REPLY;
+  cell->rstat = MTD_RPC_BOOST_PSTR;
+  msg_send (MTD_REPLY);
+}
+#endif /* HAVE_BOOST_SHARED_PTR */
 
 mtd_thread_arg_t *
 mtdispatch_t::launch_init (int i, int fdout, int *closeit)
