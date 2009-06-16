@@ -104,7 +104,19 @@ namespace rfn1 {
     if (_start) { start = _start->eval_as_int (e); }
     if (_end) { end = _end->eval_as_int (e); }
 
-    if (s  && start + end <  s.len()) {
+    if (!s) {
+      r = "";
+    } else if (start >= s.len ()) {
+      strbuf b ("invalid start position in substr('%s',%zd,%zd)",
+		s.cstr (), start, end);
+      report_error (e, b);
+    } else if (end > s.len ()) {
+      strbuf b ("invalid end position in substr ('%s',%zd,%zd)",
+		s.cstr (), start, end);
+      report_error (e, b);
+    } else if (start >= end) {
+      r = "";
+    } else {
       r = str (s.cstr () + start, end);
     }
     return scalar_obj_t (r);
