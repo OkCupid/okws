@@ -246,7 +246,7 @@ namespace rfn1 {
   private:
     scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _arg;
-    ptr<expr_t> _start, _end;
+    ptr<expr_t> _start, _len;
   };
 
   //-----------------------------------------------------------------------

@@ -90,35 +90,25 @@ namespace rfn1 {
     : scalar_fn_t (nm, e, lineno), 
       _arg ((*e)[0]),
       _start ((*e)[1]),
-      _end ((*e)[2]) {}
+      _len ((*e)[2]) {}
 
   //------------------------------------------------------------
 
   scalar_obj_t
   substring_t::eval_internal (eval_t e) const
   {
-    str s, r;
+    str s;
 
     if (_arg) { s = _arg->eval_as_str (e); }
-    size_t start = 0, end = 0;
+    size_t start = 0, len = 0;
     if (_start) { start = _start->eval_as_int (e); }
-    if (_end) { end = _end->eval_as_int (e); }
+    if (_len) { len = _len->eval_as_int (e); }
 
-    if (!s) {
-      r = "";
-    } else if (start >= s.len ()) {
-      strbuf b ("invalid start position in substr('%s',%zd,%zd)",
-		s.cstr (), start, end);
-      report_error (e, b);
-    } else if (end > s.len ()) {
-      strbuf b ("invalid end position in substr ('%s',%zd,%zd)",
-		s.cstr (), start, end);
-      report_error (e, b);
-    } else if (start >= end) {
-      r = "";
-    } else {
-      r = str (s.cstr () + start, end);
-    }
+    if (!s) { s = ""; } 
+    if (start >= s.len ()) { start = s.len (); }
+    if (start + len >= s.len ()) { len = s.len () - start; }
+
+    str r = str (s.cstr () + start, len);
     return scalar_obj_t (r);
   }
 
