@@ -710,6 +710,7 @@ main (int argc, char *argv[])
   bool delay = false;
   timespec startat;
   startat.tv_nsec = 0;
+  startart.tv_sec = 0;
   exited = false;
   hclient_id = 1;
   use_latencies = false;
