@@ -640,7 +640,7 @@ namespace pub3 {
   bool
   const_obj_t::to_bool () const
   {
-    bool b;
+    bool b = false;
     to_bool (&b);
     return b;
   }
