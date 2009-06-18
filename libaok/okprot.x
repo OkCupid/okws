@@ -78,10 +78,25 @@ struct ssl_ctx_t {
        string cipher<>;
 };
 
+typedef opaque okclnt_sin_t<>;
+
 struct okctl_sendcon_arg_t {
+        okclnt_sin_t sin;
+	unsigned port;
+	ssl_ctx_t *ssl;
+};
+
+struct okctl_timespec_t {
+       unsigned ts_sec;
+       unsigned ts_nsec;
+};
+
+struct okctl_sendcon_arg2_t {
 	opaque sin<>;
 	unsigned port;
 	ssl_ctx_t *ssl;
+        okctl_timespec_t time_recv;
+ 	okctl_timespec_t time_sent;
 };
 
 struct okssl_sendcon_arg_t {
@@ -230,6 +245,9 @@ program OKCTL_PROGRAM {
 
 		ok_xstatus_typ_t
 		OKCTL_PROFILER(ok_diagnostic_cmd_t) = 17;
+		
+		okctl_sendcon_res_t
+		OKCTL_SEND_CON2(okctl_sendcon_arg2_t) = 18;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;

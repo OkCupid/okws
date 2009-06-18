@@ -108,31 +108,57 @@ private:
 //-----------------------------------------------------------------------
 
 class demux_data_t {
+private:
+  static struct timespec timespec_null;
+
 public:
 
+  demux_data_t (okws1_port_t p, bool s, const str &i, 
+		const struct timespec &b, 
+		const struct timespec &f)
+    : _port (p), 
+      _ssl (s), 
+      _ssl_info (i), 
+      _born_on (b), 
+      _forwarded_on (f) {}
+
   demux_data_t (okws1_port_t p, bool s, const str &i)
-    : _port (p), _ssl (s), _ssl_info (i) {}
+    : _port (p), 
+      _ssl (s), 
+      _ssl_info (i), 
+      _born_on (timespec_null), 
+      _forwarded_on (timespec_null) {}
 
   demux_data_t (okws1_port_t p, const ssl_ctx_t *ssl)
     : _port (p), 
-      _ssl (ssl ? true : false)
+      _ssl (ssl ? true : false),
+      _born_on (sfs_get_tsnow ()),
+      _forwarded_on (timespec_null) 
   {
     if (ssl) 
       _ssl_info = ssl->cipher;
   }
 
+
+  static ptr<demux_data_t> alloc (const okctl_sendcon_arg2_t &x);
   static ptr<demux_data_t> alloc (const okctl_sendcon_arg_t &x);
-  void to_xdr (okctl_sendcon_arg_t *x);
+  void to_xdr (okctl_sendcon_arg2_t *x);
 
   okws1_port_t port () const { return _port; }
   bool ssl () const { return _ssl; }
   str ssl_info () const { return _ssl_info; }
+  const struct timespec &born_on () const { return _born_on; }
+  const struct timespec &forwarded_on () const { return _forwarded_on; }
+
+  void set_forward_time ();
 
 private:
 
   okws1_port_t _port;
   bool _ssl;
   str _ssl_info;
+  const struct timespec _born_on;
+  struct timespec _forwarded_on;
 };
 
 //-----------------------------------------------------------------------
@@ -144,13 +170,15 @@ public:
     : _con (c), _demux_data (d) {}
   ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg_t &x)
     : _con (c), _demux_data (demux_data_t::alloc (x)) {}
+  ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg2_t &x)
+    : _con (c), _demux_data (demux_data_t::alloc (x)) {}
   ptr<A> con () { return _con; }
   ptr<const A> con () const { return _con; }
   ptr<demux_data_t> demux_data () { return _demux_data; }
   ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
   void
-  to_xdr (okctl_sendcon_arg_t *x)
+  to_xdr (okctl_sendcon_arg2_t *x)
   {
     sockaddr_in *sin = _con->get_sin ();
     x->sin.setsize (sizeof (*sin));
@@ -758,8 +786,8 @@ protected:
   void launch_pub1 (cbb cb, CLOSURE);  // legacy
   void launch_dbs (cbb cb, CLOSURE);
 
-
   void handle_new_con (svccb *sbp);
+  void handle_new_con2 (svccb *sbp);
   void handle_get_stats (svccb *v);
   void handle_leak_checker (svccb *v);
   void handle_profiler (svccb *sbp);
@@ -767,6 +795,9 @@ protected:
   void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);
   void ready_call (bool rc);
+
+  okctl_sendcon_res_t
+  handle_new_con_common (const okclnt_sin_t &sin_in, ptr<ahttpcon> *x_out);
 
   // debug initialization procedure
   void debug_launch (cbv cb, CLOSURE);
@@ -884,6 +915,12 @@ str get_okws_config (bool make_fatal = true);
  *
  */
 void set_sfs_select_policy ();
+
+
+//-----------------------------------------------------------------------
+
+void timespec_to_xdr (const struct timespec &ts, okctl_timespec_t *x);
+void xdr_to_timespec (const okctl_timespec_t &x, struct timespec *ts);
 
 
 //-----------------------------------------------------------------------

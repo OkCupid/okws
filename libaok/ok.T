@@ -388,6 +388,9 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_SEND_CON:
     handle_new_con (v);
     break;
+  case OKCTL_SEND_CON2:
+    handle_new_con2 (v);
+    break;
   case OKCTL_GET_STATS_FROM_SVC:
     handle_get_stats (v);
     break;
@@ -396,7 +399,6 @@ oksrvc_t::ctldispatch (svccb *v)
     break;
   case OKCTL_PROFILER:
     handle_profiler (v);
-    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
@@ -835,28 +837,24 @@ oksrvc_t::closed_fd ()
 
 //-----------------------------------------------------------------------
 
-void
-oksrvc_t::handle_new_con (svccb *sbp)
+okctl_sendcon_res_t
+oksrvc_t::handle_new_con_common (const okclnt_sin_t &sin_in, 
+				 ptr<ahttpcon> *x_out)
 {
-  RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
-
   okctl_sendcon_res_t res = OK_STATUS_OK;
-  const okctl_sendcon_arg_t *arg = srv.getarg ();
-
+  sockaddr_in *sin = NULL;
   int fd = ctlx->recvfd ();
 
   if (fd < 0) {
     warn << "Got bad file descriptor instead of new connection\n";
     res = OK_STATUS_BADFD;
   } else {
-    sockaddr_in *sin = NULL;
-    if (arg->sin.size () != sizeof (sockaddr_in)) {
+    if (sin_in.size () != sizeof (sockaddr_in)) {
       warn << "Got bad sockaddr_in from okd (wrong size)\n";
     } else {
       sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
-      memcpy ((void *)sin, arg->sin.base (), sizeof (*sin));
+      memcpy ((void *)sin, sin_in.base (), sizeof (*sin));
     }
-
     // fd -- the new file descriptor
     // sin -- the sockaddr info
     // -1   -- use SUIOLITE_DEF_BUFLEN for length of incoming buffer
@@ -864,6 +862,39 @@ oksrvc_t::handle_new_con (svccb *sbp)
     // false-- no close on exec
     // true -- reset the socket flags 
     ptr<ahttpcon> x = ahttpcon::alloc (fd, sin, -1, -1, false, true);
+    *x_out = x;
+  }
+
+  return res;
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::handle_new_con (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
+  const okctl_sendcon_arg_t *arg = srv.getarg ();
+  ptr<ahttpcon> x;
+  okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
+  if (res == OK_STATUS_OK) {
+    ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
+    if (!newclnt (acw))
+      res = OK_STATUS_NOMORE;
+  }
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
+void
+oksrvc_t::handle_new_con2 (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_send_con2_srv_t<svccb> srv (sbp);
+  const okctl_sendcon_arg2_t *arg = srv.getarg ();
+  ptr<ahttpcon> x;
+  okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
+  if (res == OK_STATUS_OK) {
     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
     if (!newclnt (acw))
       res = OK_STATUS_NOMORE;
@@ -1731,7 +1762,7 @@ set_sfs_select_policy ()
 //-----------------------------------------------------------------------
 
 void
-demux_data_t::to_xdr (okctl_sendcon_arg_t *arg)
+demux_data_t::to_xdr (okctl_sendcon_arg2_t *arg)
 {
   arg->port = _port;
   if (_ssl) {
@@ -1740,6 +1771,21 @@ demux_data_t::to_xdr (okctl_sendcon_arg_t *arg)
       arg->ssl->cipher = _ssl_info;
     }
   }
+  timespec_to_xdr (_born_on, &arg->time_recv);
+  timespec_to_xdr (_forwarded_on, &arg->time_sent);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<demux_data_t>
+demux_data_t::alloc (const okctl_sendcon_arg2_t &arg)
+{
+  str ssl;
+  if (arg.ssl) ssl = arg.ssl->cipher;
+  struct timespec recv, sent;
+  xdr_to_timespec (arg.time_sent, &sent);
+  xdr_to_timespec (arg.time_recv, &recv);
+  return New refcounted<demux_data_t> (arg.port, arg.ssl, ssl, recv, sent);
 }
 
 //-----------------------------------------------------------------------
@@ -1903,5 +1949,35 @@ oksrvc_t::init_pub3_runtime ()
 //-----------------------------------------------------------------------
 
 okclnt_base_t::~okclnt_base_t () {}
+
+//-----------------------------------------------------------------------
+
+void 
+timespec_to_xdr (const struct timespec &ts, okctl_timespec_t *x)
+{
+  x->ts_sec  = ts.tv_sec;
+  x->ts_nsec = ts.tv_nsec;
+}
+
+//-----------------------------------------------------------------------
+
+void 
+xdr_to_timespec (const okctl_timespec_t &x, struct timespec *ts)
+{
+  ts->tv_sec = x.ts_sec;
+  ts->tv_nsec = x.ts_nsec;
+}
+
+//-----------------------------------------------------------------------
+
+void
+demux_data_t::set_forward_time ()
+{
+  _forwarded_on = sfs_get_tsnow ();
+}
+
+//-----------------------------------------------------------------------
+
+struct timespec demux_data_t::timespec_null = { 0, 0 } ;
 
 //-----------------------------------------------------------------------

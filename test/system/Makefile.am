@@ -42,15 +42,15 @@ endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T pub1tst.T form.T cookie.T \
 	post.T upload.T purify.T purify_lib.T forloop.T reflect.T \
-	objtest.T
+	objtest.T timer.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C pub1tst.C form.C cookie.C \
 	post.C upload.C purify.C purify_lib.C forloop.C reflect.C \
-	objtest.C
+	objtest.C timer.C
 
 SUBDIRS = $(XML_SUBDIRS) 3tier
 
 okwssvc_PROGRAMS = static configtest simple pub1tst form cookie \
-	post upload $(XMLPROGS) posttest forloop reflect objtest
+	post upload $(XMLPROGS) posttest forloop reflect objtest timer
 
 okwsconf_DATA = okws.crt.dist okws.key.dist
 
@@ -67,6 +67,7 @@ posttest_SOURCES = posttest.C
 forloop_SOURCES = forloop.C
 reflect_SOURCES = reflect.C
 objtest_SOURCES = objtest.C
+timer_SOURCES = timer.C
 
 SUFFIXES = .g .C .T
 .T.C:
@@ -94,6 +95,8 @@ reflect.lo:      reflect.C
 reflect.o:      reflect.C
 objtest.o:	objtest.C
 objtest.lo:	objtest.C
+timer.o:	timer.C
+timer.lo:	timer.C
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUT) 
 EXTRA_DIST = .cvsignore okws_config.in pub_config.in $(TAMEIN) purify_lib.h \

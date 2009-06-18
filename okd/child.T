@@ -163,7 +163,7 @@ tamed void
 okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 {
   tvars {
-    okctl_sendcon_arg_t arg;
+    okctl_sendcon_arg2_t arg;
     okctl_sendcon_res_t res;
     clnt_stat err;
     ptr<bool> df;
@@ -183,13 +183,14 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
   } else {
     inc_n_sent ();
 
-    // add in extra SSL and port information; also the remote address
+    // add in extra SSL and port information; also the remote address,
+    // and timestamps
+    acw.demux_data ()->set_forward_time ();
     acw.to_xdr (&arg);
 
     // Hack: reclaim the FD, but hold onto the ahttpcon until
     // after the server has acked it.
     ctlx->sendfd (xc->takefd ());
-
 
     // Note! Calling sendfd above might have revealed an EOF condition,
     // which will callback immediately with ctlx = NULL and clnt = NULL
@@ -204,7 +205,7 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 
     } else {
       twait { 
-	RPC::okctl_program_1::okctl_send_con (clnt, &arg, &res, mkevent(err)); 
+	RPC::okctl_program_1::okctl_send_con2 (clnt, &arg, &res, mkevent(err)); 
       }
       if (err) {
 	CH_ERROR ("Error in RPC for sending connection: " << err);
