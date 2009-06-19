@@ -31,7 +31,7 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [-l | -p | -t | -1 ] [-a?] [-s <socket> | -f <conf> ]"
+  warnx << "usage: okmgr [ -l | -p | -t | -1 ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
 	<< "       okmgr <-c|-p> [ enable | disable | print | clear ] "
 	<< "[-s <socket> | -f <conf>] <svc>\n";
@@ -210,8 +210,9 @@ main (int argc, char *argv[])
   int version = 2;
   bool no_config = false;
   ok_diagnostic_cmd_t cmd = OK_DIAGNOSTIC_NONE;
+  bool verbose = false;
 
-  while ((ch = getopt (argc, argv, "c:p:lts:f:F")) != -1)
+  while ((ch = getopt (argc, argv, "c:p:lts:f:Fv")) != -1)
     switch (ch) {
     case 't':
       m = CTL_MODE_LOGTURN;
@@ -247,6 +248,9 @@ main (int argc, char *argv[])
     case 'a':
       set_typ = OK_SET_ALL;
       break;
+    case 'v':
+      verbose = true;
+      break;
     default:
       usage ();
       break;
@@ -279,7 +283,7 @@ main (int argc, char *argv[])
   }
     
   if (!sockname) fatal << "No socket found to open\n";
-  warn << "Using socket: " << sockname <<"\n";
+  if (verbose) { warn << "Using socket: " << sockname <<"\n"; }
 
   okmgr_clnt_t *t = NULL;
   switch (m) {
