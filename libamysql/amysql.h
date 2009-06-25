@@ -285,6 +285,63 @@ private:
   sex_t sx;
 };
 
+class mybind_double_t : public mybind_t {
+public:
+  mybind_double_t ()
+    : mybind_t (MYSQL_TYPE_DOUBLE), val (0), pntr (NULL) {}
+  mybind_double_t (const double& v)
+    : mybind_t (MYSQL_TYPE_DOUBLE), val (v), pntr (NULL) {}
+  mybind_double_t (double* v)
+    : mybind_t (MYSQL_TYPE_DOUBLE), val (0), pntr (v) {}
+  ~mybind_double_t () {}
+  inline void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) { *b << val; }
+  str to_str () const { strbuf b; b << val; return b; }
+  bool read_str (const char *c, unsigned long l);
+
+#ifdef HAVE_MYSQL_BIND
+  virtual void assign () { if (nullfl) val = 0; pntr_assign (); }
+  inline void pntr_assign () { if (pntr) *pntr = val; }
+  void bind (MYSQL_BIND *bind, bool param);
+private:
+#endif
+
+private:
+  double val;
+  double *pntr;
+  u_long length;
+};
+
+#ifdef HAVE_MYSQL_BIND
+inline void
+mybind_double_t::bind (MYSQL_BIND *bnd, bool param)
+{
+  bnd->buffer_type = ft;
+  bnd->buffer = (char *)&val;
+  bnd->buffer_length = sizeof (val);
+  bnd->is_null = param ? 0 : &nullfl;
+  bnd->length = param ? 0 : &length;
+}
+#endif
+
+inline bool
+mybind_double_t::read_str (const char *c, unsigned long)
+{
+  if (!c) {
+    val = 0;
+    nullfl = true;
+  }
+  else {
+    char *end;
+    val = strtod (c, &end);
+    if (end && *end != '\0') {
+      val = 0;
+      nullfl = true;
+    }
+  }
+  pntr_assign ();
+  return true;
+}
+
 template<typename T, typename M> 
 class mybind_num_t : public mybind_t {
 public:
@@ -503,6 +560,7 @@ public:
   mybind_res_t (x_okdate_time_t *x) { p = New refcounted<mybind_date_t> (x); }
   mybind_res_t (x_okdate_date_t *x) { p = New refcounted<mybind_date_t> (x); }
   mybind_res_t (bool *b) { p = New refcounted<mybind_bool_t> (b); }
+  mybind_res_t (double *d) { p = New refcounted<mybind_double_t> (d); }
         
   template<class C>
   mybind_res_t (union_entry<C> &u) { *this = mybind_res_t ((C *)u); }
@@ -525,6 +583,7 @@ public:
   virtual ~mybind_param_t () {}
   mybind_param_t () {}
   mybind_param_t (str s) { p = New refcounted<mybind_str_t> (s); }
+  mybind_param_t (double d) { p = New refcounted<mybind_double_t> (d); }
   mybind_param_t (int64_t i) { p = New refcounted<mybind_hyper_t> (i); }
   mybind_param_t (u_int64_t i) { p = New refcounted<mybind_u64_t> (i); }
   mybind_param_t (int i) { p = New refcounted<mybind_int_t> (i); }
@@ -551,6 +610,8 @@ public:
   { p = New refcounted<mybind_hyper_t> (i); return (*this); }
   mybind_param_t &operator= (int i) 
   { p = New refcounted<mybind_int_t> (i); return (*this); }
+  mybind_param_t &operator= (double d)
+  { p = New refcounted<mybind_double_t> (d); return (*this); }
   mybind_param_t &operator= (str s)
   { p = New refcounted<mybind_str_t> (s); return (*this); }
   mybind_param_t &operator= (u_int32_t i)

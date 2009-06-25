@@ -122,7 +122,7 @@ pub_parser_t::jail2real (const str &n) const
       break;
     }
   }
-  if (be_verbose ()) 
+  if (be_verbose ())
     warn << "jail2real: " << n << " --> " << ret << "\n";
   return ret;
 }
