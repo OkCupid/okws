@@ -484,7 +484,8 @@ public:
     uid_set (false), 
     rsp_gzip (true),
     output_state (ALL_AT_ONCE),
-    _timeout (to)
+    _timeout (to),
+    _status (HTTP_OK)
   {}
 
   typedef enum { ALL_AT_ONCE = 0, 
@@ -583,6 +584,10 @@ public:
 
   //-----------------------------------------------------------------------
 
+  // get/set the HTTP status
+  void set_status (int s) { _status = s; }
+  int get_status () const { return _status; }
+
 private:
   void serve_T (CLOSURE);
   void output_fragment_T (str s, CLOSURE);
@@ -615,6 +620,7 @@ protected:
   ptr<pub2::locale_specific_publisher_t> _p2_locale;
   ptr<demux_data_t> _demux_data;
   str _custom_log2;
+  int _status;
 };
 
 //-----------------------------------------------------------------------

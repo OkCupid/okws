@@ -77,6 +77,7 @@ tamed void
 okclnt_base_t::error_T (int n, const str &s, bool do_send_complete, 
 			evv_t::ptr ev)
 { 
+  set_status (n);
   twait { 
     oksrvc->error (_client_con, n, s, mkevent (), hdr_p (), this);
   }
@@ -972,6 +973,7 @@ okclnt2_t::serve_T ()
 	panic ("duplicate process called!\n");
       else {
 	twait { process (mkevent (did_output, status)); }
+	if (status <= 0) { status = get_status (); }
       }
     }
 
@@ -1103,7 +1105,7 @@ okclnt_base_t::output_hdr (ssize_t len)
     return false;
   }
 
-  http_resp_attributes_t hra (HTTP_OK, hdr_cr ().get_vers ());
+  http_resp_attributes_t hra (get_status (), hdr_cr ().get_vers ());
   set_attributes (&hra);
   hra.set_gzip (GZIP_NONE);
   rsp = New refcounted<http_response_ok_t> (len, hra);
@@ -1250,7 +1252,8 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     ssize_t prelen (gz != GZIP_NONE ? b->inflated_len () : ssize_t (-1));
     vec<str> holdv;
     strbuf sb;
-    http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
+    holdvar int status (_self->get_status ());
+    http_resp_attributes_t hra (status, _self->hdr_cr ().get_vers ());
   }
 
   b->to_strbuf (&sb, &holdv, gz);
@@ -1892,7 +1895,8 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
   tvars {
     gzip_mode_t gz (_self->do_gzip (b));
     ssize_t prelen (gz != GZIP_NONE && b ? b->inflated_len () : ssize_t (-1));
-    http_resp_attributes_t hra (HTTP_OK, _self->hdr_cr ().get_vers ());
+    holdvar int status (_self->get_status ());
+    http_resp_attributes_t hra (status, _self->hdr_cr ().get_vers ());
     ptr<ahttpcon> x (_self->client_con ());
     ptr<http_response_base_t> rsp;
     size_t contlen;

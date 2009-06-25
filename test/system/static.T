@@ -101,8 +101,8 @@ okclnt_static_t::error (const str &s)
   aarr.add ("target", s);
   ofn = FNF_FILE;
   rc = false;
+  set_status (HTTP_NOT_FOUND);
 }
-
 
 tamed void 
 okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
@@ -205,7 +205,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     twait { pub2 ()->run (&out, ofn, mkevent (rc), &aarr, opts|P_VISERR); }
   }
   twait { output (out, mkevent ()); }
-  ev->trigger (true, HTTP_OK);
+  ev->trigger (true, 0);
 }
 
 oksrvc_t::newclnt_t *
