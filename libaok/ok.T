@@ -326,10 +326,6 @@ oksrvc_t::init (int argc, char *argv[])
   // read in all important constants from argv.
   init_constants ();
 
-  // initialize a set of library routines in pub3 to use for this 
-  // service;  they are customizable...
-  init_pub3_runtime ();
-
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
   init_pub2 ( (ok_pub2_wss > 0 ? P_WSS : 0) |
@@ -594,6 +590,12 @@ oksrvc_t::launch_T ()
 
   enable_coredumps ();
   twait { debug_launch (mkevent ()); }
+
+  // initialize a set of library routines in pub3 to use for this 
+  // service;  they are customizable..
+  // Note, this cannot be done from the constructor (or ::init(), which
+  // is called from the constructor).
+  init_pub3_runtime ();
 
   setsid ();
   connect ();
