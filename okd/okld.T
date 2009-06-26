@@ -1636,7 +1636,7 @@ okld_t::init_jaildir ()
   if (!jail_mkdir ("/etc/", 0755, &root, &wheel) ||  
       !jail_cp ("/etc/resolv.conf", 0644, &root, &wheel) || 
       !jail_mkdir_p (coredumpdir, 0755, &root, &wheel) ||
-      !jail_mkdir (root_coredir, 0700, &root, &wheel) ||
+      !jail_mkdir (root_coredir, 0750, &_coredump_usr, &_coredump_grp) ||
       !jail_mkdir_p (sockdir, 0755, &root, &wheel)) 
     ret = false;
 
@@ -1846,7 +1846,7 @@ okld_helper_t::configure_user ()
 {
   bool rc = true;
   if (!_usr) {
-    warn << "cannot find a user for okd (" << _usr.getname () 
+    warn << "cannot find a user for " << _name << " (" << _usr.getname () 
 	 << " does not exist)\n";
     rc = false;
   }

@@ -360,6 +360,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("CoreDumpDir")
     .ignore ("CoreDumpUser")
     .ignore ("CoreDumpGroup")
+    .ignore ("CoreDumpMode")
     .ignore ("SocketDir")
     .ignore ("ServiceBin")
 
