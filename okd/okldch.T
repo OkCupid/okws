@@ -458,6 +458,7 @@ okld_ch_t::resurrect ()
   }
 }
 
+//-----------------------------------------------------------------------
 
 void
 okld_ch_t::clean_dumps ()
@@ -482,10 +483,15 @@ okld_ch_t::clean_dumps ()
       warn ("could not move file %s: %m\n", from.cstr ());
     else if (unlink (from.cstr ()) != 0)
       warn ("unlink failed for file %s: %m\n", from.cstr ());
-    if (::chown (to.cstr (), 0, 0) != 0)
+
+    if (::chown (to.cstr (), 
+		 okld->coredump_usr ().getid (), 
+		 okld->coredump_grp ().getid ()) != 0)
       warn ("chown failed for file %s: %m\n", to.cstr ());
-    if (::chmod (to.cstr (), 0400) != 0)
+
+    if (::chmod (to.cstr (), okld->coredump_mode ()) != 0)
       warn ("chmod failed for file %s: %m\n", to.cstr ());
+
   }
   if (closedir (dirp) != 0) {
     warn ("close directory failed for %s: %m\n", rundir.cstr ());

@@ -358,6 +358,8 @@ okd_t::parse_file (const str &cf)
     .ignore ("LogTick")
     .ignore ("LogPeriod")
     .ignore ("CoreDumpDir")
+    .ignore ("CoreDumpUser")
+    .ignore ("CoreDumpGroup")
     .ignore ("SocketDir")
     .ignore ("ServiceBin")
 

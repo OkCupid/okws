@@ -634,6 +634,7 @@ okld_t::parse_file (const str &cf)
   str sys_sel_tmp;
   u_int UIZ = 0;
   str gzip_tmp;
+  str tmp_dump_user, tmp_dump_group;
 
   ct.add ("Service", wrap (this, &okld_t::got_service, false))
     .add ("Service2", wrap (this, &okld_t::got_service2))
@@ -653,6 +654,9 @@ okld_t::parse_file (const str &cf)
     .add ("ServiceGroup", &_config_grp)
     .add ("OkdExecPath", wrap (this, &okld_t::got_okd_exec))
     .add ("CoreDumpDir", wrap (got_dir, &coredumpdir))
+    .add ("CoreDumpUser", &tmp_dump_user)
+    .add ("CoreDumpGroup", &tmp_dump_group)
+    .add ("CoreDumpMode", &_coredump_mode, 0, 0777)
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
@@ -786,6 +790,10 @@ okld_t::parse_file (const str &cf)
   if (gzip_tmp) {
     ok_gzip_mode = ok_gzip_str_to_mode (gzip_tmp);
   }
+
+  if (tmp_dump_user) { _coredump_usr = ok_usr_t (tmp_dump_user); }
+  if (tmp_dump_group) { _coredump_grp = ok_grp_t (tmp_dump_group); }
+
   return ret;
 }
 
@@ -1092,8 +1100,37 @@ okld_t::fix_uids ()
 	ret = false;
     }
   }
+
+  if (!fix_coredump_uids ()) {
+    ret = false;
+  }
   return ret;
 }
+
+//-----------------------------------------------------------------------
+
+bool
+okld_t::fix_coredump_uids ()
+{
+  bool ret = true;
+  if (will_jail ()) {
+
+    if (!_coredump_usr) {
+      str s = _coredump_usr.getname ();
+      warn << "Cannot find coredump user: " << s << "\n";
+      ret = false;
+    }
+
+    if (!_coredump_grp) {
+      str s = _coredump_grp.getname ();
+      warn << "Cannot find coredump group: " << s << "\n";
+      ret = false;
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::caught_signal (int sig)
@@ -1101,6 +1138,8 @@ okld_t::caught_signal (int sig)
   warn << "received shutdown signal (" << sig << "); shutting down\n";
   shutdown1 ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::caught_okd_eof ()

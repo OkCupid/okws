@@ -394,7 +394,10 @@ public:
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false),
       _opt_daemon (false),
-      _lazy_startup (false) {}
+      _lazy_startup (false),
+      _coredump_usr (ok_coredump_user),
+      _coredump_grp (ok_coredump_group),
+      _coredump_mode (ok_coredump_mode) {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -448,6 +451,9 @@ public:
 
   okld_helper_t &okd () { return _okd; }
   const okld_helper_t &okd () const { return _okd; }
+  const ok_grp_t &coredump_grp () const { return _coredump_grp; }
+  const ok_usr_t &coredump_usr () const { return _coredump_usr; }
+  int coredump_mode () const { return _coredump_mode; }
 
 protected:
   bool parse_file (const str &fn);
@@ -483,6 +489,7 @@ private:
   bool fixup_ssl_ports ();
 
   bool fix_uids ();
+  bool fix_coredump_uids ();
   void add_svc (ptr<okld_ch_t> c);
   bool config_jaildir ();
   void init_clock_daemon ();
@@ -549,6 +556,9 @@ private:
   bool _opt_daemon;
   bool _lazy_startup;
 
+  ok_usr_t _coredump_usr;
+  ok_grp_t _coredump_grp;
+  int _coredump_mode;
 };
 
 #endif /* _OKD_OKD_H */

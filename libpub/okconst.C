@@ -188,6 +188,9 @@ const char *ok_sockdir = "/var/run";
 const char *ok_jaildir_run = "var/run";
 const char *ok_service_bin = "";
 const char *ok_logd_pidfile = "oklogd.pid";
+const char *ok_coredump_user = ok_root;
+const char *ok_coredump_group = ok_wheel;
+int ok_coredump_mode = 0400;
 
 //
 // log constants for timing

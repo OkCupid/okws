@@ -183,6 +183,9 @@ extern const char *okd_mgr_socket;             // okd's management socket
 extern int okd_mgr_socket_mode;                // chown sock to this mode
 extern u_int okd_accept_delay;                 // delay before enabling accept
 extern bool okd_tcp_nodelay;                   // whether okd disables Nagle
+extern const char *ok_coredump_user;           // whom to chown coredumps to...
+extern const char *ok_coredump_group;          // whom to chgrp coredumps to...
+extern int ok_coredump_mode;                   // what mode to chmod a dump to
 
 //
 // okld constants
