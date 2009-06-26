@@ -1640,6 +1640,10 @@ okld_t::init_jaildir ()
       !jail_mkdir_p (sockdir, 0755, &root, &wheel)) 
     ret = false;
 
+  // try to get the right timezone. it's /etc/localtime
+  // on FreeBSD, might want to do the right thing on linux too.
+  jail_cp ("/etc/localtime", 0644, &root, &wheel);
+
   u_int lim = svcs.size ();
 
   if (!_okd.active ()) {
