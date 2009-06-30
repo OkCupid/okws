@@ -20,7 +20,7 @@ static rxx url_rxx ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
 void
 usage ()
 {
-  warn << "usage: okwc [-t <timeout>] [-o <status>] [-p <proxy>] "
+  warn << "usage: okwc [-c] [-t <timeout>] [-o <status>] [-p <proxy>] "
        << "<url> [<post-file>]\n";
   exit (1);
 }
@@ -94,13 +94,17 @@ main2 (int argc, char **argv)
     vec<int> ok_status;
     int tmp;
     ptr<my_factory_t> factory;
+    bool show_cookies (false);
   }
 
   okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
 
-  while ((ch = getopt (argc, argv, "t:p:h:o:")) != -1) {
+  while ((ch = getopt (argc, argv, "ct:p:h:o:")) != -1) {
     switch (ch) {
+    case 'c':
+      show_cookies = true;
+      break;
     case 't':
       if (!convertint (optarg, &timeout))
 	usage ();
@@ -191,7 +195,7 @@ main2 (int argc, char **argv)
       aout << "\nbody: " << resp->body () << "\n";
     } 
     const okwc_cookie_set_t &cs = resp->incookies ();
-    for (size_t i = 0; i < cs.size (); i++) {
+    for (size_t i = 0; show_cookies && i < cs.size (); i++) {
       const cgi_t *c = cs[i];
       aout << "\nInCookie[" << i << "]:\n";
       for (const pair_t *p = c->lfirst (); p; p = c->lnext (p)) {
