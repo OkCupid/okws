@@ -58,6 +58,20 @@ private:
 
 //-----------------------------------------------------------------------
 
+static str 
+my_join (const vec<str> &v, str sep)
+{
+  strbuf b;
+  for (size_t i = 0; i < v.size (); i++) {
+    if (i) { b << sep; }
+    b << v[i];
+  }
+  return b;
+}
+
+
+//-----------------------------------------------------------------------
+
 tamed static void
 main2 (int argc, char **argv)
 {
@@ -172,8 +186,20 @@ main2 (int argc, char **argv)
   aout << "status: " << status << "\n";
   if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {
     aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
-  } else if (resp && resp->body ())
-    aout << "\nbody: " << resp->body () << "\n";
+  } else if (resp) { 
+    if (resp->body ()) {
+      aout << "\nbody: " << resp->body () << "\n";
+    } 
+    const okwc_cookie_set_t &cs = resp->incookies ();
+    for (size_t i = 0; i < cs.size (); i++) {
+      const cgi_t *c = cs[i];
+      aout << "\nInCookie[" << i << "]:\n";
+      for (const pair_t *p = c->lfirst (); p; p = c->lnext (p)) {
+	str s = my_join (p->vals, ":");
+	aout << "   " << p->key << " -> " << s << "\n";
+      }
+    }
+  }
 
   // delay to find any bugz
   twait { delaycb (2, 0, mkevent ()); }

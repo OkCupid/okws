@@ -244,6 +244,7 @@ public:
   okwc_http_hdr_t *hdr () { return &_hdr; }
   virtual str body () const { return NULL; }
   virtual int get_id () const { return 0; }
+  const okwc_cookie_set_t &incookies () const { return _incookies; }
 
 protected:
 
