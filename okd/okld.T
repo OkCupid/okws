@@ -778,6 +778,9 @@ okld_t::parse_file (const str &cf)
 
     .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
+    .add ("AhttpconZombieWarn", &ok_ahttpcon_zombie_warn)
+    .add ("AhttpconZombieTimeout", &ok_ahttpcon_zombie_timeout, 
+	  time_t (0), time_t (INT_MAX))
 
     .ignore ("OkMgrSocketOwner")
     .ignore ("StatPageURL")

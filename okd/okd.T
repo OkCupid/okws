@@ -406,6 +406,8 @@ okd_t::parse_file (const str &cf)
     .ignore ("DangerousZbufs")
     .ignore ("OklogdPidfile")
     .ignore ("Pub3JsonStrictEscaping")
+    .ignore ("AhttpconZombieWarn")
+    .ignore ("AhttpconZombieTimeout")
     ;
 
   bool ret = ct.run (cf);
