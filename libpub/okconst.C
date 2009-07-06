@@ -235,7 +235,7 @@ bool ok_kthread_safe = false;        // by default assume PTH / no kthreads
 // ahttpcon debug, etc
 //
 bool ok_ahttpcon_zombie_warn = false;
-time_t ok_ahttpcon_zombie_timeout = 300; // 5m timeout for ahttpcons
+time_t ok_ahttpcon_zombie_timeout = 120; // 2m timeout for ahttpcons
 
 //
 // OK Service UID limits

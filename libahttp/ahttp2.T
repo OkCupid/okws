@@ -14,14 +14,24 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
     int rc;
     holdvar ptr<ahttpcon> hold (mkref (_self));
     size_t pre, post;
+    rendezvous_t<bool> rv (__FILE__, __LINE__);
+    bool eof;
+    str ip;
+    const char *ipc;
   }
 
   _state = AHTTPCON_STATE_SEND2;
 
+  ip = get_remote_ip ();
+  if (ip) { ipc = ip; }
+  else { ipc = "<none>"; }
+
+  seteofcb (mkevent (rv, true));
+  
   do {
 
     if (fd < 0) {
-      warn ("write not possible due to EOF\n");
+      warn ("ahttpcon::send2: write not possible due to EOF (%s)\n", ipc);
       ret = -1;
 
     } else {
@@ -44,19 +54,26 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
 
 	assert (!wcbset);
 	wcbset = true;
-	twait { fdcb (fd, selwrite, mkevent ()); }
+	fdcb (fd, selwrite, mkevent (rv, false));
+	twait (rv, eof);
 	if (fd >= 0) {
 	  wcbset = false;
 	  fdcb (fd, selwrite, NULL);
 	}
 
+	if (eof) {
+	  warn ("ahttpcon::send2: EOF while waiting for write (%s)\n", ipc);
+	}
+
       } else {
 
-	warn ("For fd=%d: error in write: %m\n", fd);
+	warn ("ahttpcon::send2: For fd=%d: error in write: %m (%s)\n", fd, ipc);
 	ret = -1;
       }
     }
   } while (ret >= 0 && post);
+
+  rv.cancel ();
   
   ev->trigger (ret);
 }
