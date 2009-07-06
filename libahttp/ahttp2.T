@@ -63,6 +63,7 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
 
 	if (eof) {
 	  warn ("ahttpcon::send2: EOF while waiting for write (%s)\n", ipc);
+	  ret = -1;
 	}
 
       } else {
