@@ -130,9 +130,22 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  const char *opts = "eEcCWwu:r:sSt:p:l:h:y:z:";
+  const char *opts = "eEcCWwu:r:sSt:p:l:h:T:y:z:Z";
   while ((ch = getopt (argv.size (), argv, opts)) != -1 && rc) {
     switch (ch) {
+    case 'T':
+      {
+	int tmp;
+	if (convertint (optarg, &tmp)) {
+	  so->ahttpcon_zombie_timeout = tmp;
+	} else {
+	  warn << loc << ": -t option needs a timeout in seconds\n";
+	}
+      }
+      break;
+    case 'Z':
+      so->ahttpcon_zombie_warn = 1;
+      break;
     case 'p':
       {
 	int tmp_port;
@@ -1747,6 +1760,9 @@ svc_options_t::apply_global_defaults (const str &s)
   if (lowat < 0) lowat = ok_svc_fds_low_wat;
   if (gzip < 0) gzip = ok_gzip_mode;
   if (gzip_level < 0) gzip_level = ok_gzip_compress_level;
+  if (ahttpcon_zombie_warn < 0) ahttpcon_zombie_warn = ok_ahttpcon_zombie_warn;
+  if (ahttpcon_zombie_timeout < 0)
+    ahttpcon_zombie_timeout = ok_ahttpcon_zombie_timeout;
 
   if (lowat >= hiwat) {
     warn << "watermark error for service " << s 

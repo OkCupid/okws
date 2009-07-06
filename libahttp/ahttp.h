@@ -87,7 +87,16 @@ extern byte_counter_t ahttpcon_byte_counter;
 class ahttpcon_clone;
 class ahttpcon : public ok_xprt_base_t
 {
+protected:
 
+  // Keep track of what state this ahttpcon is in, so we can
+  // debug the zombies that are hanging around for too long.
+  typedef enum { AHTTPCON_STATE_NONE = 0,
+		 AHTTPCON_STATE_DEMUX = 1,
+		 AHTTPCON_STATE_RECV = 2,
+		 AHTTPCON_STATE_SEND = 3,
+		 AHTTPCON_STATE_SEND2 = 4,
+		 AHTTPCON_STATE_CLOSED = 5 } state_t; 
 public:
   /**
    * Analogous to axprt in SFS, this is a wrapper around a remote
@@ -175,6 +184,7 @@ protected:
   bool enable_selread ();
   void disable_selread ();
   void call_drained_cb ();
+  void zombie_warn (ptr<bool> df);
 
   int fd;
   cbi::ptr rcb;
@@ -197,6 +207,8 @@ protected:
   bool _timed_out;
   bool _no_more_read;
   bool _delayed_close;
+  timecb_t *_zombie_tcb;
+  state_t _state;
 
 public:
   ptr<bool> destroyed_p;

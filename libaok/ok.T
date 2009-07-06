@@ -294,6 +294,8 @@ oksrvc_t::init (int argc, char *argv[])
     ok_send_sin = t->blookup ("sendsin");
     t->lookup ("sel", &seltmp);
     t->lookup ("dps", &dp_str);
+    t->lookup ("aczw", &ok_ahttpcon_zombie_warn);
+    t->lookup ("aczt", &ok_ahttpcon_zombie_timeout);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);
@@ -1260,7 +1262,6 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
 
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
-
 
   // client might have cancelled as we were waiting for DB
   if (_client_con->closed ()) {

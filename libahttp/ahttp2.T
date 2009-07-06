@@ -16,6 +16,8 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
     size_t pre, post;
   }
 
+  _state = AHTTPCON_STATE_SEND2;
+
   do {
 
     if (fd < 0) {
@@ -57,7 +59,6 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
   } while (ret >= 0 && post);
   
   ev->trigger (ret);
-
 }
 
 //-----------------------------------------------------------------------

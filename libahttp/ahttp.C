@@ -50,6 +50,8 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _timed_out (false), 
     _no_more_read (false),
     _delayed_close (false),
+    _zombie_tcb (NULL),
+    _state (AHTTPCON_STATE_NONE),
     destroyed_p (New refcounted<bool> (false))
 {
   //
@@ -62,6 +64,12 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
   if (mb < 0) mb = SUIOLITE_DEF_BUFLEN;
   in = suiolite_alloc (mb, wrap (this, &ahttpcon::spacecb));
   set_remote_ip ();
+
+  if (ok_ahttpcon_zombie_warn && ok_ahttpcon_zombie_timeout > 0) {
+    _zombie_tcb = delaycb (ok_ahttpcon_zombie_timeout, 0,
+			   wrap (this, &ahttpcon::zombie_warn, destroyed_p));
+  }
+    
 }
 
 int
@@ -96,6 +104,7 @@ void
 ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr drained,
 		 cbv::ptr sent)
 {
+  _state = AHTTPCON_STATE_SEND;
   assert (!destroyed);
   u_int32_t len = iovsize (iov, cnt);
   if (fd < 0) {
@@ -155,6 +164,7 @@ ahttpcon::set_drained_cb (cbv::ptr cb)
 void
 ahttpcon::output (ptr<bool> destroyed_local)
 {
+
   if (*destroyed_local)
     return;
   if (fd < 0)
@@ -191,6 +201,8 @@ ahttpcon::setrcb (cbi::ptr cb)
     rcb = NULL;
     return;
   }
+
+  _state = AHTTPCON_STATE_RECV;
     
   if (enable_selread ()) {
     rcb = cb;
@@ -211,6 +223,8 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
   in->setpeek ();
 }
 
+//-----------------------------------------------------------------------
+
 ahttpcon_clone::~ahttpcon_clone ()
 {
   if (dcb) {
@@ -219,7 +233,25 @@ ahttpcon_clone::~ahttpcon_clone ()
   }
   *destroyed_p = true;
 }
-      
+
+//-----------------------------------------------------------------------
+
+void
+ahttpcon::zombie_warn (ptr<bool> df)
+{
+  static const char *prfx = "XX AHTTPCON_ZOMBIE: ";
+  if (*df) {
+    warn << prfx << "warning fired on deleted object!\n";
+  } else {
+    str ip = get_remote_ip ();
+    if (!ip) ip = "<none>";
+    warn ("%sfd=%d, state=%d, timeout=%d, ip=%s\n", 
+	  prfx, fd, int (_state), int (ok_ahttpcon_zombie_timeout), ip.cstr ());
+    _zombie_tcb = NULL;
+  }
+}
+
+//-----------------------------------------------------------------------
 
 ahttpcon::~ahttpcon ()
 { 
@@ -235,6 +267,10 @@ ahttpcon::~ahttpcon ()
   if (sin && sin_alloced) xfree (sin);
   recycle (in);
   recycle (out);
+  if (_zombie_tcb) {
+    timecb_remove (_zombie_tcb); 
+    _zombie_tcb = NULL;
+  }
 }
 
 void
@@ -294,6 +330,8 @@ void
 ahttpcon_clone::setccb (clonecb_t c)
 {
   assert (!destroyed);
+
+  _state = AHTTPCON_STATE_DEMUX;
   if (enable_selread ()) {
     ccb = c;
   } else {

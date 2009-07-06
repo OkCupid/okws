@@ -232,6 +232,12 @@ u_int ok_amt_rpc_stats_interval = 300;   // interval to printf (5min)
 bool ok_kthread_safe = false;        // by default assume PTH / no kthreads
 
 //
+// ahttpcon debug, etc
+//
+bool ok_ahttpcon_zombie_warn = false;
+time_t ok_ahttpcon_zombie_timeout = 300; // 5m timeout for ahttpcons
+
+//
 // OK Service UID limits
 //
 int ok_svc_uid_low = 51000;

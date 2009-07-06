@@ -256,7 +256,9 @@ struct svc_options_t {
       hiwat (-1),
       lowat (-1),
       gzip (-1),
-      gzip_level (-1) {}
+      gzip_level (-1),
+      ahttpcon_zombie_warn (-1),
+      ahttpcon_zombie_timeout (-1) {}
 
   bool apply_global_defaults (const str &svc);
   bool check_options (const str &loc) const;
@@ -285,6 +287,9 @@ struct svc_options_t {
   // >=0  => value set, use this value
   int gzip;
   int gzip_level;
+
+  int ahttpcon_zombie_warn;
+  int ahttpcon_zombie_timeout;
 
   vec<int> ports;
 };
