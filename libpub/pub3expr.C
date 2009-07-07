@@ -86,7 +86,7 @@ pub3::expr_null_t::alloc (int l)
 //-----------------------------------------------------------------------
 
 ptr<pval_t>
-pub3::expr_frozen_t::eval_freeze (eval_t e) const
+pub3::expr_t::eval_freeze (eval_t e) const
 {
   ptr<pval_t> r;
   ptr<const pval_t> v = eval (e);
@@ -399,13 +399,13 @@ pub3::expr_vecref_t::lhs_deref_step (eval_t *e)
   scalar_obj_t key;
 
   if (!_index) {
-    report_error (*e, "vector index is not defined");
+    report_error (*e, "list index is not defined");
   } else if (!_vec) {
-    if (e->loud ()) report_error (*e, "vector is undefined");
+    if (e->loud ()) report_error (*e, "list is undefined");
   } else if ((key = _index->eval_as_scalar (*e)).is_null ()) {
-    report_error (*e, "key to dictionary/vector is undefined");
+    report_error (*e, "key to dictionary/list is undefined");
   } else if (!(evr = _vec->eval_as_vec_or_dict (*e, &vif, &dict))) {
-    report_error (*e, "vector reference into non-vector");
+    report_error (*e, "list reference into non-list");
   }
 
   if (vif) mvif = vif->const_cast_hack ();
@@ -414,7 +414,7 @@ pub3::expr_vecref_t::lhs_deref_step (eval_t *e)
   if (mvif) {
     size_t i = key.to_int ();
     if (!(r = mvif->lookup_slot (i)) && e->loud ()) {
-      report_error (*e, strbuf ("vector reference (%zd) out of bounds", i));
+      report_error (*e, strbuf ("list reference (%zd) out of bounds", i));
     }
   } else if (mdict) {
     str k = key.to_str ();
@@ -442,16 +442,16 @@ pub3::expr_vecref_t::deref_step (eval_t *e) const
 
   
   if (!_vec) {
-    if (e->loud ()) report_error (*e, "vector is undefined");
+    if (e->loud ()) report_error (*e, "list is undefined");
   } else if (!_vec->eval_as_vec_or_dict (*e, &vif, &dict)) {
-    report_error (*e, "vector reference into non-vector");
+    report_error (*e, "list reference into non-list");
   } else if (vif) {
     ssize_t i = 0;
     if (_index) {
       i = _index->eval_as_int (*e);
     }
     if (!(r = vif->lookup (i, &in_bounds)) && !in_bounds && e->loud ()) {
-      report_error (*e, strbuf ("vector reference (%zd) out of bounds", i));
+      report_error (*e, strbuf ("list reference (%zd) out of bounds", i));
     }
   } else {
     assert (dict);
@@ -633,8 +633,20 @@ pub3::expr_arithmetic_t::eval_as_scalar (eval_t e) const
 ptr<const pval_t> 
 pub3::expr_arithmetic_t::eval (eval_t e) const
 {
-  scalar_obj_t so = eval_as_scalar (e);
-  return expr_t::alloc (so);
+  return eval_freeze (e);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pval_t> 
+pub3::expr_arithmetic_t::eval_freeze (eval_t e) const
+{
+  ptr<expr_t> r = eval_as_frozen_list (e);
+  if (!r) {
+    scalar_obj_t so = eval_as_scalar (e);
+    r = expr_t::alloc (so);
+  }
+  return r;
 }
 
 //-----------------------------------------------------------------------
@@ -769,6 +781,30 @@ pub3::expr_mult_t::eval_internal (eval_t e) const
 
 //-----------------------------------------------------------------------
 
+ptr<pub3::expr_list_t>
+pub3::expr_add_t::eval_as_frozen_list (eval_t e) const
+{
+  ptr<expr_list_t> out;
+  if (_t1 && !_t1->eval_as_null (e) && _t2 && !_t2->eval_as_null (e)) {
+    ptr<pval_t> v1, v2;
+    ptr<expr_list_t> l1, l2;
+    if (!(v1 = _t1->eval_freeze (e)) || !(l1 = v1->to_expr_list ())) {
+      /* noop, we're not dealing with lists! */
+    } else if (!(v2 = _t2->eval_freeze (e)) || !(l2 = v2->to_expr_list ())) {
+      report_error (e, "addition on lists takes two lists");
+    } else if (!_pos) {
+      report_error (e, "cannot subtract lists; can only add them");
+    } else  {
+      out = New refcounted<expr_list_t> (l1->lineno ());
+      (*out) += *l1;
+      (*out) += *l2;
+    }
+  }
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
 scalar_obj_t 
 pub3::expr_add_t::eval_internal (eval_t e) const
 {
@@ -823,6 +859,21 @@ str
 pub3::expr_arithmetic_t::eval_as_str (eval_t e) const
 {
   return eval_as_scalar (e).to_str ();
+}
+
+//-----------------------------------------------------------------------
+
+str
+pub3::expr_add_t::eval_as_str (eval_t e) const
+{
+  ptr<expr_list_t> l = eval_as_frozen_list (e);
+  str s;
+  if (l) {
+    s = l->eval_as_str (e);
+  } else {
+    s = eval_internal (e).to_str ();
+  }
+  return s;
 }
 
 //-----------------------------------------------------------------------
@@ -1065,7 +1116,6 @@ pub3::eval_t::eval_t (penv_t *e, output_t *o)
 //-----------------------------------------------------------------------
 
 pub3::eval_t::~eval_t () {}
-
 
 //-----------------------------------------------------------------------
 
@@ -1451,7 +1501,6 @@ pub3::expr_t::eval_as_vec (eval_t e) const
 {
   ptr<const pval_t> v = eval (e);
   ptr<const vec_iface_t> ret;
-
   if (v) ret = v->to_vec_iface ();
   return ret;
 }

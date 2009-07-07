@@ -78,6 +78,7 @@
 %token T_P3_INCLUDE
 %token T_P3_SET
 %token T_P3_SETL
+%token T_P3_SETLE
 %token T_P3_LOAD
 %token T_P3_PIPE
 %token T_P3_OPEN
@@ -118,7 +119,7 @@
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <el> p3_control p3_for p3_cond p3_include p3_set p3_setl;
+%type <el> p3_control p3_for p3_cond p3_include p3_set p3_setl p3_setle;
 %type <el> p3_print_or_eval;
 %type <els> p3_env p3_zone p3_zone_body p3_zone_body_opt;
 %type <elpair> p3_zone_pair;
@@ -627,6 +628,7 @@ p3_control: p3_for { $$ = $1 ;}
 	      | p3_cond { $$ = $1; }
 	      | p3_set { $$ = $1; }
 	      | p3_setl { $$ = $1; }
+	      | p3_setle { $$ = $1; }
 	      | p3_include { $$ = $1; }
 	      | p3_print_or_eval { $$ = $1; }
 	      | nested_env { $$ = New pfile_nested_env_t ($1); }
@@ -1080,6 +1082,14 @@ p3_setl: T_P3_SETL p3_set_arg
 	   $$ = f;
         }
         ;
+
+p3_setle: T_P3_SETLE p3_set_arg
+	{
+           pfile_set_func_t *f = New pub3::setle_func_t (PLINENO);
+           f->add ($2);   
+	   $$ = f;
+        }
+	;
 
 p3_nested_env: nested_env { $$ = $1; }
 	| 

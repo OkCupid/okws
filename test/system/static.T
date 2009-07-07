@@ -219,5 +219,22 @@ main (int argc, char *argv[])
 {
   oksrvc_t *oksrvc = New oksrvc_static_t (argc, argv);
   oksrvc->launch ();
+
+  // if there are bugs in the pub3 runtime, don't kill a 64-bit
+  // machine due to swap death!
+  struct rlimit rl;
+  rlim_t lim = 600000000; // about 600Mb
+  rl.rlim_cur = lim;
+  rl.rlim_max = lim;
+  if (setrlimit (RLIMIT_AS, &rl) < 0) {
+    warn ("setrlimit() failed: %m\n");
+  }
+
+  void *x = malloc (lim / 8);
+  assert (x);
+  free (x);
+  x = malloc (lim);
+  assert (!x);
+
   amain ();
 }

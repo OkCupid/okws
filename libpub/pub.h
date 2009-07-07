@@ -1646,6 +1646,7 @@ private:
 class aarr_arg_t : public aarr_t, public pval_t {
 public:
   aarr_arg_t (const xpub_aarr_t &x) : aarr_t (x) {}
+  aarr_arg_t (const aarr_arg_t &x) : aarr_t (x) {}
   aarr_arg_t () {}
   ptr<aarr_arg_t> to_aarr () { return mkref (this); }
   ptr<const aarr_arg_t> to_aarr () const { return mkref (this); }
@@ -1710,7 +1711,6 @@ public:
 
 private:
   ptr<nested_env_t> _env;
-  
 };
 
 //-----------------------------------------------------------------------
@@ -1748,7 +1748,7 @@ public:
     : pfile_set_func_t (x) {}
   const char *get_obj_name () const { return "pfile_set_local_func_t"; }
   bool to_xdr (xpub_obj_t *x) const;
-  void output_runtime (output_t *o, penv_t *e) const;
+  virtual void output_runtime (output_t *o, penv_t *e) const;
 };
 
 //-----------------------------------------------------------------------

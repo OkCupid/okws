@@ -87,6 +87,7 @@ namespace pub3 {
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<expr_t> alloc (scalar_obj_t so);
     ptr<expr_t> const_cast_hack () const;
+    int lineno () const { return _lineno; }
 
     //------- Evaluation ZOO --------------------------------------
     //
@@ -98,9 +99,10 @@ namespace pub3 {
 
     //
     // Evaluate, freezing all references in place, but maintaining
-    // the same object structure.
+    // the same object structure. By default, do an eval and then
+    // a copy, but some will have better mechanisms.
     //
-    virtual ptr<pval_t> eval_freeze (eval_t e) const = 0;
+    virtual ptr<pval_t> eval_freeze (eval_t e) const;
 
     //
     //------------------------------------------------------------
@@ -216,19 +218,10 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
   
-  // Expressions for which the frozen repr is the same as the normal repr.
-  class expr_frozen_t : public expr_t {
-  public:
-    expr_frozen_t (int l = -1) : expr_t (l) {}
-    ptr<pval_t> eval_freeze (eval_t e) const;
-  };
-
-  //-----------------------------------------------------------------------
-  
   // Expressions that can be evaluated immediately.
-  class expr_static_t : public expr_frozen_t {
+  class expr_static_t : public expr_t {
   public:
-    expr_static_t (int l = -1) : expr_frozen_t (l) {}
+    expr_static_t (int l = -1) : expr_t (l) {}
     ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
 
     scalar_obj_t eval_as_scalar (eval_t e) const { return to_scalar (); }
@@ -282,9 +275,9 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_logical_t : public expr_frozen_t {
+  class expr_logical_t : public expr_t {
   public:
-    expr_logical_t (int l) : expr_frozen_t (l) {}
+    expr_logical_t (int l) : expr_t (l) {}
     ptr<const pval_t> eval (eval_t e) const;
   private:
     virtual bool eval_internal (eval_t e) const = 0;
@@ -389,18 +382,22 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_arithmetic_t : public expr_frozen_t {
+  class expr_arithmetic_t : public expr_t {
   public:
-    expr_arithmetic_t (int l) : expr_frozen_t (l) {}
+    expr_arithmetic_t (int l) : expr_t (l) {}
 
     ptr<const pval_t> eval (eval_t e) const;
+    ptr<pval_t> eval_freeze (eval_t e) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
 
     scalar_obj_t eval_as_scalar (eval_t e) const;
     int64_t eval_as_int (eval_t e) const;
     u_int64_t eval_as_uint (eval_t e) const;
     bool eval_as_bool (eval_t e) const;
-    str eval_as_str (eval_t e) const;
+    virtual str eval_as_str (eval_t e) const;
+
+    virtual ptr<expr_list_t> eval_as_frozen_list (eval_t e) const 
+    { return NULL; }
 
   protected:
     virtual scalar_obj_t eval_internal (eval_t e) const = 0;
@@ -417,6 +414,10 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
+
+    ptr<expr_list_t> eval_as_frozen_list (eval_t e) const;
+    str eval_as_str (eval_t e) const;
+
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _t1, _t2;

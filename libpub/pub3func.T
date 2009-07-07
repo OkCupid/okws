@@ -330,6 +330,24 @@ pub3::print_t::output (output_t *o, penv_t *e) const
 //-----------------------------------------------------------------------
 
 void
+pub3::setle_func_t::output (output_t *o, penv_t *e) const
+{
+  eval_t eval (e, o);
+  ptr<aarr_t> tmp = New refcounted<aarr_t> ();
+  aarr_t *odd;
+
+  eval.eval_freeze_dict (aarr, tmp);
+
+  // do configuration files -- write to the collected in the output class
+  if ((odd = o->dict_dest ())) { odd->overwrite_with (*tmp); }
+
+  // do runtime output -- push a frozen version of us onto the eval stack
+  e->safe_push (tmp);
+}
+
+//-----------------------------------------------------------------------
+
+void
 pub3::set_func_t::output (output_t *o, penv_t *e) const
 {
   aarr_t *odd; // output dict dest

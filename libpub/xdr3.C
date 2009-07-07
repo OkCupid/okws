@@ -664,6 +664,14 @@ pub3::set_func_t::to_xdr (xpub_obj_t *x) const
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::setle_func_t::to_xdr (xpub_obj_t *x) const
+{
+  return to_xdr_common (x, XPUB3_SETLE_FUNC);
+}
+
+//-----------------------------------------------------------------------
+
 pub3::expr_regex_t::expr_regex_t (const xpub3_regex_t &x)
   : expr_t (x.lineno),
     _body (x.body),

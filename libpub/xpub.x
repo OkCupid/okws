@@ -27,7 +27,8 @@ enum xpub_obj_typ_t {
   XPUB_NESTED_ENV = 20,
   XPUB3_PRINT = 21,
   XPUB3_EVAL = 22,
-  XPUB3_EXPR_STATEMENT = 23
+  XPUB3_EXPR_STATEMENT = 23,
+  XPUB3_SETLE_FUNC = 24
 };
 
 typedef opaque xpubhash_t[PUBHASHSIZE];
@@ -588,6 +589,7 @@ union xpub_obj_t switch (xpub_obj_typ_t typ) {
  case XPUB_SET_FUNC:
  case XPUB_SET_LOCAL_FUNC:
  case XPUB3_SET_FUNC:
+ case XPUB3_SETLE_FUNC:
    xpub_set_func_t set_func;
  case XPUB_INCLIST:
    xpub_inclist_t inclist;

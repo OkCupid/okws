@@ -14,7 +14,7 @@ librfn_la_SOURCES = \
 
 librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = okrfn.h
+okwsinclude_HEADERS = okrfn.h okrfnlib.h
 
 EXTRA_DIST =
 CLEANFILES = core *.core *~ *.rpo 

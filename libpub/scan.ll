@@ -841,6 +841,7 @@ public:
     _tab.insert ("cond",  T_P3_COND);
     _tab.insert ("set",   T_P3_SET);
     _tab.insert ("setl",  T_P3_SETL);
+    _tab.insert ("setle", T_P3_SETLE);
     _tab.insert ("include", T_P3_INCLUDE);
     _tab.insert ("print", T_P3_PRINT);
     _tab.insert ("elif",  T_P3_ELIF);

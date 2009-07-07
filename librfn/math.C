@@ -1,5 +1,5 @@
 
-#include "okrfn.h"
+#include "okrfnlib.h"
 #include "okformat.h"
 
 namespace rfn1 {
