@@ -314,6 +314,8 @@ class Outcome:
             return OutcomeApprox (k._outcome)
         elif k._outcome_rxx:
             return OutcomeRegex (k._outcome_rxx)
+        elif k._outcome_data:
+            return OutcomeData (k._outcome_data)
         else:
             raise RegTestError, "bad test case: no expected outcome given"
 
@@ -357,6 +359,24 @@ class OutcomeRegex (Outcome):
     def compare (self, input):
         return self._rxx.match (input)
 
+##-----------------------------------------------------------------------
+
+class OutcomeData (Outcome):
+
+    def __init__ (self, dat):
+        Outcome.__init__ (self, dat)
+
+    def type (self):
+        return "python-data";
+
+    def compare (self, input):
+        try:
+            input_py = eval (input)
+            return self._data == input_py
+        except Exception, e:
+            print " --> cannot convert to python: '%s'" % input.strip ()
+            return False
+
 ##=======================================================================
 
 class TestCase:
@@ -368,6 +388,7 @@ class TestCase:
         self._outcome = None
         self._outcome_exact = None
         self._outcome_rxx = None
+        self._outcome_data = None
         self._service = None
         self._htdoc = None
         self._config = config 
