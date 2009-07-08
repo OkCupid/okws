@@ -357,14 +357,34 @@ xml_scalar_t::add (const char *b, int len)
   return true;
 }
 
+static str 
+strip_space (const str &in)
+{
+  str out;
+  if (in) {
+    mstr m (in.len ());
+    const char *inp = in.cstr ();
+    char *outp = m.cstr ();
+    const char *endp = inp + in.len ();
+
+    for ( ; inp < endp; inp++) {
+      if (!isspace (*inp)) { *outp++ = *inp; }
+    }
+    m.setlen (outp - m.cstr ());
+    out = m;
+  }
+  return out;
+}
+
 bool
 xml_base64_t::close_tag ()
 {
   bool ret = false;
   str tmp = _buf;
   static rxx strip_rxx ("\\s*(\\S+)\\s*");
-  if (strip_rxx.match (tmp)) {
-    _val = strip_rxx[1];
+  str stmp = strip_space (tmp);
+  if (stmp && stmp.len ()) {
+    _val = stmp;
     assert (_val);
     if (decode ()) {
       ret = true;

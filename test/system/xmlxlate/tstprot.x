@@ -15,6 +15,7 @@ struct long_arg_t {
 	int this_is_a_very_long_name_3;
 	int this_is_a_very_long_name_4;
 	int this_is_a_very_long_name_5;
+	opaque opq<>;
 };
 
 struct tst_res_t {

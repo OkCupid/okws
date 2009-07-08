@@ -2,6 +2,9 @@
 
 import xmlrpclib
 import sys
+import struct
+
+port = 4000
 
 class RpcConst:
 
@@ -30,18 +33,16 @@ C.setall (server.xdr.constants ( [ "tstprot"] ) )
 
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
-      "port" : 4000,
+      "port" : port,
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC9,
       "arg" : { "id" : "ui8:1",
                 "questions" : [ { "questionid" : 10, "data" : "ui4:20" } ] }
       } )
 
-sys.exit (0)
-
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
-      "port" : 4000,
+      "port" : port,
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC3,
       "arg" : { "p1" : [], 
@@ -53,7 +54,7 @@ print (res)
 
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
-      "port" : 4000,
+      "port" : port,
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC2,
       "arg" : { "xx" : C.XXA,
@@ -66,7 +67,7 @@ print (res)
 
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
-      "port" : 4000,
+      "port" : port,
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC1,
       "arg" : { "x" : 40,
@@ -80,7 +81,7 @@ ll = 0 - (2**62  + 33)
 
 res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
-      "port" : 4000,
+      "port" : port,
       "program" : "tst_prog_1",
       "procno" : C.TST_RPC4,
       "arg" : { "x" : "ui4:" + str (8484848),
@@ -107,7 +108,7 @@ try:
     
     res = server.xdr.xlate (
         { "hostname" : "127.0.0.1",
-          "port" : 4000,
+          "port" : port,
           "program" : "tst_prog_1",
           "procno" : C.TST_RPC2,
           "arg" : { "xx" : C.XXA,
@@ -123,7 +124,7 @@ try:
     
     res = server.xdr.xlate (
         { "hostname" : "127.0.0.1",
-          "port" : 4000,
+          "port" : port,
           "program" : "tst_prog_1",
           "procno" : C.TST_RPC2,
           "arg" : { "xx" : C.XXA,
@@ -144,7 +145,10 @@ for i in range(0,10):
 			stuff. Lots more stuff and also more and more and more stuff stuff
 			stuff. Just a few more characters to push over pkt boundary.
 			XXYYZZZ. abcdefwerwerwerwerrrweer. 21321313123939393939""",
-            "c" : "here is a shorter shorter shorter string" }
+            "c" : "here is a shorter shorter shorter string",
+            "opq" : xmlrpclib.Binary (str ([struct.pack ("B", 
+                                                         (i*i*13 + i*3)%256) 
+                                            for i in range (0,1000) ])) }
 
     for i in range (1,6):
         n = "this_is_a_very_long_name_%d" % i
@@ -153,8 +157,11 @@ for i in range(0,10):
  
     res = server.xdr.xlate (
         { "hostname" : "127.0.0.1",
-          "port" : 4000,
+          "port" : port,
           "program" : "tst_prog_1",
           "procno" : C.TST_RPC8,
           "arg" : arg
           })
+
+    if res != 6888:
+        print "XXX Problem: bad base64-decoding!"

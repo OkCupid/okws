@@ -71,7 +71,7 @@ tstsrv_t::dispatch (svccb *sbp)
   case TST_RPC8:
     {
       long_arg_t *la = sbp->Xtmpl getarg<long_arg_t> ();
-      sbp->replyref (la->x);
+      sbp->replyref (la->x + la->opq.size ());
       break;
     }
   case TST_RPC9:
