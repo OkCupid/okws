@@ -2584,6 +2584,14 @@ penv_t::clear ()
 //-----------------------------------------------------------------------
 
 bool
+pfile_nested_env_t::might_block () const
+{
+  return _env && _env->might_block ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pfile_sec_t::might_block () const
 {
   if (_might_block < 0) {

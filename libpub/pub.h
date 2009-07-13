@@ -770,8 +770,10 @@ struct publist_t
   // assertions.
   void publish_nonblock (pub2_iface_t *iface, output_t *o, penv_t *env) const
   {
-    for (T *e = clist_t<T,field>::first; e; e = next (e)) 
-      assert (e->publish_nonblock (iface, o, env));
+    for (T *e = clist_t<T,field>::first; e; e = next (e)) {
+      bool rc = e->publish_nonblock (iface, o, env);
+      assert (rc);
+    }
   }
 
 };
@@ -1708,6 +1710,7 @@ public:
   bool publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *g) const
   { return _env ? _env->publish_nonblock (i, o, g) : true; }
   const char *get_obj_name () const { return "pfile_nested_env_t"; }
+  bool might_block () const; 
 
 private:
   ptr<nested_env_t> _env;
