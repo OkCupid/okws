@@ -27,10 +27,12 @@
 #define _LIBPUB_PESCAPE_H 1
 
 #include "async.h"
+#include "qhash.h"
 
 str json_escape (const str &s, bool qs);
 str xss_escape (const char *s, size_t l);
 str xss_escape (const str &s);
+str filter_tags (const str &in, const bhash<str> &exceptions);
 
 
 #endif /* _LIBPUB_PESCAPEL_H */
