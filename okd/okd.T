@@ -308,6 +308,7 @@ okd_t::parse_file (const str &cf)
     .add ("ShutdownRetries", &ok_shutdown_retries, 1, 10)
     .add ("ShutdownTimeout", &ok_shutdown_timeout, 1, 200)
     .add ("SyslogPriority", &ok_syslog_priority)
+    .add ("SyslogTag", &ok_syslog_tag)
     .add ("RecycleSuioLimit", &ok_recycle_suio_limit, OK_RSL_LL, OK_RSL_UL)
 
     .add ("ServerName", &reported_name)

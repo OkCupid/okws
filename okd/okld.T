@@ -713,6 +713,7 @@ okld_t::parse_file (const str &cf)
     .add ("MmapClockFile", &mmc_file)
     .add ("DangerousZbufs", &ok_dangerous_zbufs)
     .add ("SyslogPriority", &ok_syslog_priority)
+    .add ("SyslogTag", &ok_syslog_tag)
     .add ("SyslogDomain", &ok_syslog_domain)
     .add ("SyslogLevels", wrap (got_syslog_levels))
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
@@ -1503,6 +1504,11 @@ main (int argc, char *argv[])
   // XXX: should fix this.
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
+
+#if SFSLITE_AT_VERSION(1,2,8,4)
+    syslog_tag = ok_syslog_tag;
+#endif
+
     daemonize (pidfile);
   }
 

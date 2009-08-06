@@ -199,6 +199,7 @@ u_int ok_log_tick = 500;             // in milliseconds
 u_int ok_log_period = 8;             // log flushed every 4 seconds
 u_int ok_log_nbufs = 2;              // number of log bufs
 str   ok_syslog_priority = "local3.debug";
+str   ok_syslog_tag = "okws";
 str   ok_syslog_domain = "local3";
 str   ok_access_log_fmt = "ivt1sbz";
 
