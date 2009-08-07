@@ -306,7 +306,7 @@ mtdispatch_t::chld_reply (int i)
 
   case MTD_RPC_REJECT:
     warn << "XXX: rejected by MTD_RPC_REJECT\n"; // DEBUG
-    sbp->reject (PROC_UNAVAIL);
+    sbp->reject (c->err_code);
     break;
 
   default:
@@ -497,11 +497,12 @@ mtd_thread_t::did_reply ()
 }
 
 void
-mtd_thread_t::reject ()
+mtd_thread_t::reject (enum accept_stat err)
 {
   did_reply ();
   cell->status = MTD_REPLY;
   cell->rstat = MTD_RPC_REJECT;
+  cell->err_code = err;
   msg_send (MTD_REPLY);
 }
 

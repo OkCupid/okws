@@ -148,7 +148,7 @@ public:
   void finish ();
 
   void replynull ();
-  void reject ();
+  void reject (enum accept_stat as = PROC_UNAVAIL);
 
   void reply (ptr<void> d);
   void reply_b (bool b);
@@ -209,6 +209,7 @@ struct mtd_shmem_cell_t { // Used to communicate between Child and Dispatch
   int pid;             // for kernel threads, the PID of the thread
 
   mtd_rpc_t rstat;     // response status
+  enum accept_stat err_code; // if rejecting, use this err code.
 
   // Should be a union, but make it a struct since we have a lot of memory,
   // and there's an issue with C++ objects inside a union.
