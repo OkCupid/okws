@@ -104,77 +104,133 @@ xss_escape (const char *in, size_t inlen)
   return str (xss_buf, outlen);
 }
 
-//-----------------------------------------------------------------------
-
-class mybuf_t {
-public:
-  mybuf_t () {}
-  str to_str () { return _b; }
-  void add_s (str s) { _hold.push_back (s); _b << s; }
-  void add_ch (char ch) { _b.buf (&ch, 1); }
-private:
-  strbuf _b;
-  vec<str> _hold;
-};
+//=========================================================================
+//
+//  Various routines for filtering HTML while leaving in some tags.
+//
 
 //-----------------------------------------------------------------------
 
-static bool
-filter_tags_match (const char *start, const char *end, const bhash<str> &list)
+bool
+html_filter_bhash_t::match (const char *start, const char *end) const
 {
   while (start < end && isspace (*start)) start ++;
   while (start < end && isspace (*end)) end--;
-  return list[str (start, end - start + 1)];
+  return (*_tab)[str (start, end - start + 1)];
 }
 
 //-----------------------------------------------------------------------
 
-static bool
-find_space_in (const char *start, const char *end)
+bool
+html_filter_t::find_space_in (const char *start, const char *end)
 {
-  while (start <= end) 
-    if (isspace (*start))
+  while (start < end) 
+    if (isspace (*start++))
       return true;
   return false;
 }
 
 //-----------------------------------------------------------------------
 
-static bhash<str> safe_entity_list;
-
-//-----------------------------------------------------------------------
-
-static void
-init_safe_entity_list ()
+const bhash<str> &
+html_filter_t::safe_entity_list ()
 {
-  static const char *ents[] = { "lt", "gt", "amp", "#35", "quot" , NULL };
-  for (const char **ep = ents; *ep; ep++) {
-    safe_entity_list.insert (*ep);
+  static bhash<str> list;
+  if (!list.size ()) {
+    static const char *ents[] = { "lt", "gt", "amp", "#35", "quot" , NULL };
+    for (const char **ep = ents; *ep; ep++) {
+      list.insert (*ep);
+    }
   }
+  return list;
 }
 
 //-----------------------------------------------------------------------
 
-static bool
-is_safe_entity (const char *start, const char *end)
+bool
+html_filter_t::is_safe_entity (const char *start, const char *end)
 {
-  str s (start, end - start + 1);
-  if (!safe_entity_list.size ()) {
-    init_safe_entity_list ();
+  str s (start, end - start);
+  return safe_entity_list ()[s];
+}
+
+//-----------------------------------------------------------------------
+
+void
+html_filter_bhash_t::handle_tag (buf_t *out, const char **cpp, const char *ep)
+{
+  const char *cp = *cpp;
+  
+  const char *inner = cp + 1;
+  const char *etp = strchr (inner, '>');
+	
+  if (!etp) { 
+    cp = ep;
+  } else {
+    const char *outter = etp - 1;
+    if (inner[1] == '/') { inner++; }
+    if (*outter == '/') { outter++; }
+    if (match (inner, outter)) {
+      out->add_s (str (cp, etp - cp + 1));
+      cp = etp + 1;
+    } else {
+      out->add_cc ("&lt;");
+      cp ++;
+    }
   }
-  return safe_entity_list[s];
+  *cpp = cp;
+}
+
+//-----------------------------------------------------------------------
+
+void
+html_filter_rxx_t::handle_tag (buf_t *out, const char **cpp, const char *ep)
+{
+  const char *cp = *cpp;
+  bool go;
+#if SFSLITE_AT_VERSION(1,2,8,5)
+  go = _rxx->search_cstr (cp, ep - cp, PCRE_ANCHORED);
+#else
+  go = _rxx->search (cp, PCRE_ANCHORED);
+#endif
+  if (go) {
+    size_t len = _rxx->end (0);
+    out->add_cc (cp, len, true);
+    cp += len;
+  } else {
+    out->add_cc ("&lt;");
+    cp ++;
+  }
+  *cpp = cp;
+}
+
+//-----------------------------------------------------------------------
+
+void 
+html_filter_t::buf_t::add_cc (const char *p, ssize_t len, bool cp) {
+  if (len < 0) { len = strlen (p); }
+  if (cp) { _b.tosuio ()->copy (p, len); }
+  else { _b.buf (p, len); }
+}
+
+//-----------------------------------------------------------------------
+
+void 
+html_filter_t::buf_t::add_ch (char c)
+{
+  _b.tosuio ()->copy (&c, 1);
 }
 
 //-----------------------------------------------------------------------
 
 str
-filter_tags (const str &in, const bhash<str> &exceptions)
+html_filter_t::run (const str &in)
 {
   const char *cp = in.cstr ();
   const char *ep = in.cstr () + in.len ();
   if (*ep != '\0') { return NULL; }
 
-  mybuf_t buf;
+  buf_t buf;
 
   while (*cp) {
     
@@ -182,48 +238,30 @@ filter_tags (const str &in, const bhash<str> &exceptions)
     
     switch (*cp) {
     case '<':
-      {
-	
-	const char *inner = cp + 1;
-	const char *etp = strchr (inner, '>');
-	
-	if (!etp) { 
-	  cp = etp;
-	} else {
-	  const char *outter = etp - 1;
-	  if (inner[1] == '/') { inner++; }
-	  if (*outter == '/') { outter++; }
-	  if (filter_tags_match (inner, outter, exceptions)) {
-	    buf.add_s (str (cp, etp - cp + 1));
-	  }
-	  cp = etp + 1;
-	}
-      }
+      handle_tag (&buf, &cp, ep);
       break;
-      
+	
     case '&':
       {
-	
 	const char *inner = cp + 1;
 	const char *etp = strchr (inner, ';');
-	if (!etp || find_space_in (inner, etp)) {
-	  buf.add_ch (*cp++);
-	} else {
-	  if (is_safe_entity (inner, etp)) {
-	    buf.add_s (str (cp, etp - cp + 1));
-	  }
+	if (etp && is_safe_entity (inner, etp)) {
+	  buf.add_s (str (cp, etp - cp + 1));
 	  cp = etp + 1;
+	} else {
+	  buf.add_cc ("&amp;");
+	  cp ++;
 	}
       }
       break;
       
     case '#':
-      buf.add_s ("&#35;");
+      buf.add_cc ("&#35;");
       cp ++;
       break;
       
     case '"':
-      buf.add_s ("&quot;");
+      buf.add_cc ("&quot;");
       cp ++;
       
     default:
@@ -235,5 +273,5 @@ filter_tags (const str &in, const bhash<str> &exceptions)
   return buf.to_str ();
 }
 
-
-//-----------------------------------------------------------------------
+//
+//=======================================================================

@@ -28,11 +28,67 @@
 
 #include "async.h"
 #include "qhash.h"
+#include "rxx.h"
 
 str json_escape (const str &s, bool qs);
 str xss_escape (const char *s, size_t l);
 str xss_escape (const str &s);
 str filter_tags (const str &in, const bhash<str> &exceptions);
 
+
+//-----------------------------------------------------------------------
+
+class html_filter_t {
+public:
+
+  str run (const str &in);
+  virtual ~html_filter_t () {}
+
+protected:
+  html_filter_t () {}
+
+  class buf_t {
+  public:
+    buf_t () {}
+    str to_str () { return _b; }
+    void add_s (str s) { _hold.push_back (s); _b << s; }
+    void add_ch (char ch);
+    void add_cc (const char *p, ssize_t len = -1, bool cp = false);
+  private:
+    strbuf _b;
+    vec<str> _hold;
+  };
+
+  static bool find_space_in (const char *start, const char *end);
+  static const bhash<str> &safe_entity_list ();
+  static bool is_safe_entity (const char *start, const char *end);
+
+protected:
+  virtual void handle_tag (buf_t *out, const char **cpp, const char *ep) = NULL;
+};
+
+//-----------------------------------------------------------------------
+
+class html_filter_rxx_t : public html_filter_t {
+public:
+  html_filter_rxx_t (ptr<rxx> x) : _rxx (x) {}
+  void handle_tag (buf_t *out, const char **cpp, const char *ep);
+private:
+  ptr<rxx> _rxx;
+};
+
+//-----------------------------------------------------------------------
+
+class html_filter_bhash_t : public html_filter_t {
+public:
+  html_filter_bhash_t (ptr<const bhash<str> > bh) : _tab (bh) {}
+protected:
+  void handle_tag (buf_t *out, const char **cpp, const char *ep);
+private:
+  bool match (const char *start, const char *end) const;
+  ptr<const bhash<str> > _tab;
+};
+
+//-----------------------------------------------------------------------
 
 #endif /* _LIBPUB_PESCAPEL_H */

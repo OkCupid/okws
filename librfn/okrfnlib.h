@@ -169,6 +169,18 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class tag_strip_t : public scalar_fn_t {
+  public:
+    tag_strip_t (const str &n, ptr<expr_list_t> l, int lineo);
+
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+    ptr<expr_t> _ok_rxx;
+  };
+
+  //-----------------------------------------------------------------------
+
   class json_escape_t : public scalar_fn_t {
   public:
     json_escape_t (const str &n, ptr<expr_list_t> l, int lineno);

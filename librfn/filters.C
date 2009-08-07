@@ -68,6 +68,48 @@ namespace rfn1 {
   }
 
   //------------------------------------------------------------
+  
+  tag_strip_t::tag_strip_t (const str &nm, ptr<expr_list_t> e, int lineno)
+    : scalar_fn_t (nm, e, lineno),
+      _arg ((*e)[0]) 
+  {
+    if (e->size () == 2) {
+      _ok_rxx = (*e)[1];
+    }
+  }
+
+  //------------------------------------------------------------
+
+  scalar_obj_t
+  tag_strip_t::eval_internal (eval_t e) const
+  {
+    ptr<rxx> p;
+
+    if (_ok_rxx) { 
+      p = _ok_rxx->eval_as_regex (e); 
+    } else { 
+      static ptr<rxx> dflt_rxx;
+      if (!(p = dflt_rxx)) {
+	str x = "<[/\\s]*(b|br|i|p)[/\\s]*>";
+	str err;
+	p = pub3::rxx_factory_t::compile (x, "i", &err);
+	if (!p) {
+	  report_error (e, err);
+	}
+	dflt_rxx = p;
+      }
+    }
+
+    str s;
+    if (p) {
+      html_filter_rxx_t filt (p);
+      str in = _arg->eval_as_str (e);
+      s = filt.run (in);
+    }
+    return scalar_obj_t (s);
+  }
+
+  //------------------------------------------------------------
 
   json_escape_t::json_escape_t (const str &nm, ptr<expr_list_t> e, int lineno)
     : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
