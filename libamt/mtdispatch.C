@@ -802,3 +802,34 @@ mtd_reporting_t::mtd_reporting_t ()
   const char *p = safegetenv ("DBPRX_REPORT_RPCS");
   if (p) set_rpc_reports (p);
 }
+
+//=======================================================================
+
+namespace amt {
+
+  //-----------------------------------------------------------------------
+
+  void
+  thread2_t::dispatch (svccb *sbp)
+  {
+    ptr<req_t> rq = New refcounted<req_t> (this, sbp);
+    dispatch (rq);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void req_t::replynull () { _thr->replynull (); }
+  void req_t::reject (enum accept_stat as) { _thr->reject (as); }
+  void req_t::reply (ptr<void> d) { _thr->reply (d); }
+  void req_t::reply_b (bool b) { _thr->reply_b (b); }
+  void req_t::reply_i32 (int32_t i) { _thr->reply_i32 (i); }
+  void req_t::reply_u32 (u_int32_t i) { _thr->reply_u32 (i); }
+  const void *req_t::getvoidarg () const { return _sbp->getvoidarg (); }
+  void *req_t::getvoidarg () { return _sbp->getvoidarg (); }
+
+  //-----------------------------------------------------------------------
+
+};
+
+
+//=======================================================================

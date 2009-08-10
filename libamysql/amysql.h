@@ -686,34 +686,60 @@ public:
   qhash<str, ptr<mystmt_t> > cache;
 };
 
-class amysql_thread_t : public mtd_thread_t {
+class amysql_thread_guts_t {
 public:
-  amysql_thread_t (mtd_thread_arg_t *a, u_int o = 0);
-  virtual ~amysql_thread_t () {}
+  amysql_thread_guts_t (u_int o);
+  ~amysql_thread_guts_t () {}
   ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
   bool init_phase0 ();
+  virtual bool is_readied () const = 0;
+  virtual int getid () const = 0;
 protected:
   mysql_t mysql;
   tz_corrector_t *_tzc;
+
+  // copy the tid parameter from a sibling class (mtd_thread_t),
+  // so that TWARN() still works.  Sorry for this hack.
+  int tid;
+};
+
+class amysql_thread_t : public mtd_thread_t, public amysql_thread_guts_t {
+public:
+  amysql_thread_t (mtd_thread_arg_t *a, u_int o = 0)
+    : mtd_thread_t (a),
+      amysql_thread_guts_t (o) {}
+  bool is_readied () const { return mtd_thread_t::readied; }
+  int getid () const { return mtd_thread_t::getid (); }
+  virtual ~amysql_thread_t () {}
+};
+
+class amysql_thread2_t : public amt::thread2_t, public amysql_thread_guts_t {
+public:
+  amysql_thread2_t (mtd_thread_arg_t *a, u_int o = 0)
+    : amt::thread2_t (a),
+      amysql_thread_guts_t (o) {}
+  bool is_readied () const { return amt::thread2_t::readied; }
+  int getid () const { return amt::thread2_t::getid (); }
+  virtual ~amysql_thread2_t () {}
 };
 
 class tz_corrector_t {
 public:
-  tz_corrector_t (amysql_thread_t &t) 
-    : _thr (t), _nxt_update (0), _gmtoff (0), tid (t.getid ()), 
+  tz_corrector_t (amysql_thread_guts_t *t) 
+    : _thr (t), _nxt_update (0), _gmtoff (0), 
       _fetching (false) {}
   long gmt_offset () ;
   bool prepare ();
   bool fetching () const { return _fetching; }
+  int getid () const { return _thr->getid (); }
 
 private:
   bool run ();
   void reschedule ();
   time_t next_hour (time_t t);
-  amysql_thread_t &_thr;
+  amysql_thread_guts_t *_thr;
   time_t _nxt_update;
   long _gmtoff;
-  int tid; // so that TWARN works inside of this class
   ptr<mystmt_t> _sth;
   bool _fetching;
 };

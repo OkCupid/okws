@@ -21,6 +21,13 @@
  *
  */
 
+//
+// AMT = Asynchronous Multi-Threading
+//
+//   A generic adaptor framework for interface async-style programs
+//   with a synchronous-style library, like libmysqlclient.
+//
+
 #ifndef _LIBAMT_AMT_H
 #define _LIBAMT_AMT_H
 
@@ -58,16 +65,18 @@
 #define MTD_MAXQ        1000
 #define MTD_STACKSIZE   0x100000
 
-#define TWARN(x) \
-  do { \
-    strbuf b; \
-    b << progname << "[" << tid << "]: " << x << "\n"; \
-    str s = b; \
-    fix_trailing_newlines (&s);	       \
-    fprintf (stderr, "%s", s.cstr ()); \
+#define TWARN(x)						\
+  do {								\
+    strbuf b;							\
+    b << progname << "[" << getid() << "]: " << x << "\n";	\
+    str s = b;							\
+    fix_trailing_newlines (&s);					\
+    fprintf (stderr, "%s", s.cstr ());				\
   } while (0)
 
 typedef enum { MTD_NONE = 0, MTD_PTH = 1 } mtd_thread_typ_t;
+
+// MTD = Mutli-Thread Dispatcher
 
 class mtdispatch_t;
 class mtd_shmem_cell_t;
@@ -179,6 +188,48 @@ private:
   int fdout;
   mtd_shmem_cell_t *cell;
   mtdispatch_t *mtd;
+};
+
+//
+// For Versions 2.0.6pre5 and forward, I'm going to try to put as much
+// code as possible here in the AMT namespace.  For now, just start
+// with the new-style of threads, which are better about hiding the
+// parts of the svccb object that should not be used by threads.
+//
+namespace amt {
+
+  class req_t {
+  public:
+    req_t (mtd_thread_t *thr, svccb *sbp) : _thr (thr), _sbp (sbp) {}
+    
+    void replynull ();
+    void reject (enum accept_stat as = PROC_UNAVAIL);
+    void reply (ptr<void> d);
+    void reply_b (bool b);
+    void reply_i32 (int32_t i);
+    void reply_u32 (u_int32_t u);
+    const void *getvoidarg () const;
+    void *getvoidarg ();
+
+    template<class T> T *
+    getarg () { return static_cast<T *> (getvoidarg ()); }
+    template<class T> const T *
+    getarg () const { return static_cast<T *> (getvoidarg ()); }
+  private:
+    mtd_thread_t *_thr;
+    svccb *_sbp;
+  };
+
+  // This new thread class deals in req_t's, which hide the svccb
+  // and expose a tidier interface to the programmer.
+  class thread2_t : public mtd_thread_t {
+  public:
+    thread2_t (mtd_thread_arg_t *a) : mtd_thread_t (a) {}
+    virtual ~thread2_t () {}
+    virtual void dispatch (ptr<req_t> req) = 0;
+  private:
+    void dispatch (svccb *sbp);
+  };
 };
 
 typedef callback<mtd_thread_t *, mtd_thread_arg_t *>::ref newthrcb_t;
@@ -390,8 +441,8 @@ protected:
 bool
 tsdiff (const struct timespec &ts1, const struct timespec &ts2, int diff);
 
-void *amt_vnew_threadv (void *arg);
-void amt_new_threadv (void *arg);
+void *amt_vnew_threadv (void *av);
+void amt_new_threadv (void *av);
 
 
 template<class T> void

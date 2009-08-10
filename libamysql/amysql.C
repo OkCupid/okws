@@ -88,9 +88,9 @@ mysql_t::prepare (const str &q, u_int l_opts, tz_corrector_t *tzc)
 }
 
 sth_t
-amysql_thread_t::prepare (const str &q, u_int o)
+amysql_thread_guts_t::prepare (const str &q, u_int o)
 {
-  if (readied) {
+  if (is_readied ()) {
     TWARN ("security precaution: cannot prepare queries "
 	   "after servicing requests\n");
     return NULL;
@@ -102,10 +102,9 @@ amysql_thread_t::prepare (const str &q, u_int o)
   return r;
 }
 
-amysql_thread_t::amysql_thread_t (mtd_thread_arg_t *a, u_int o)
-  : mtd_thread_t (a), mysql (o),
-    _tzc ( (o & AMYSQL_NOTZCORRECT) ? NULL : New tz_corrector_t (*this)) 
-{}
+amysql_thread_guts_t::amysql_thread_guts_t (u_int o)
+  : mysql (o),
+    _tzc ( (o & AMYSQL_NOTZCORRECT) ? NULL : New tz_corrector_t (this)) {}
 
 #ifdef HAVE_MYSQL_BIND
 void
@@ -263,7 +262,7 @@ mybind_date_t::read_str (const char *c, unsigned long)
 }
 
 bool
-amysql_thread_t::init_phase0 ()
+amysql_thread_guts_t::init_phase0 ()
 {
   return (!_tzc || _tzc->prepare ());
 }

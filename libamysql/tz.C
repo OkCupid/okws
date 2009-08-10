@@ -12,7 +12,7 @@ tz_corrector_t::prepare ()
     "UNIX_TIMESTAMP(UTC_TIMESTAMP())";
   
   bool rc = true;
-  if (!(_sth = _thr.prepare (qry))) {
+  if (!(_sth = _thr->prepare (qry))) {
     rc = false;
     TZWARN ("failed to prepare query: " << qry);
   }
