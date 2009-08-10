@@ -190,6 +190,8 @@ private:
   mtdispatch_t *mtd;
 };
 
+//=======================================================================
+
 //
 // For Versions 2.0.6pre5 and forward, I'm going to try to put as much
 // code as possible here in the AMT namespace.  For now, just start
@@ -211,6 +213,11 @@ namespace amt {
     const void *getvoidarg () const;
     void *getvoidarg ();
 
+    u_int32_t xid () const { return _sbp->xid (); }
+    u_int32_t prog () const { return _sbp->prog (); }
+    u_int32_t vers () const { return _sbp->vers (); }
+    u_int32_t proc () const { return _sbp->proc (); }
+
     template<class T> T *
     getarg () { return static_cast<T *> (getvoidarg ()); }
     template<class T> const T *
@@ -231,6 +238,8 @@ namespace amt {
     void dispatch (svccb *sbp);
   };
 };
+
+//=======================================================================
 
 typedef callback<mtd_thread_t *, mtd_thread_arg_t *>::ref newthrcb_t;
 
