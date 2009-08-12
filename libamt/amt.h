@@ -210,9 +210,6 @@ namespace amt {
     void reply_b (bool b);
     void reply_i32 (int32_t i);
     void reply_u32 (u_int32_t u);
-    void reply (bool b) { reply_b (b); }
-    void reply (int32_t i) { reply_i32 (i); }
-    void reply (u_int32_t u) { reply_u32 (u); }
     const void *getvoidarg () const;
     void *getvoidarg ();
 
