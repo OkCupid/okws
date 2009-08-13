@@ -192,6 +192,16 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class hidden_escape_t : public scalar_fn_t {
+  public:
+    hidden_escape_t (const str &n, ptr<expr_list_t> l, int lineno);
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
   class substring_t : public scalar_fn_t {
   public:
     substring_t (const str &n, ptr<expr_list_t> l, int lineno);

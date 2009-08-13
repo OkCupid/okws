@@ -233,4 +233,23 @@ namespace rfn1 {
   }
 
   //------------------------------------------------------------
+
+  hidden_escape_t::hidden_escape_t (const str &nm, ptr<expr_list_t> e, 
+				    int lineno)
+    : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
+
+  //------------------------------------------------------------
+
+  scalar_obj_t
+  hidden_escape_t::eval_internal (eval_t e) const
+  {
+    str s;
+    if (_arg) { s = _arg->eval_as_str (e); }
+    if (!s) { s = ""; }
+    s = htmlspecialchars (s);
+    return scalar_obj_t (s);
+  }
+
+  //------------------------------------------------------------
+
 };

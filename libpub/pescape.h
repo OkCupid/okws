@@ -33,8 +33,20 @@
 str json_escape (const str &s, bool qs);
 str xss_escape (const char *s, size_t l);
 str xss_escape (const str &s);
-str filter_tags (const str &in, const bhash<str> &exceptions);
 
+//-----------------------------------------------------------------------
+
+class filter_buf_t {
+public:
+  filter_buf_t () {}
+  str to_str () { return _b; }
+  void add_s (str s) { _hold.push_back (s); _b << s; }
+  void add_ch (char ch);
+  void add_cc (const char *p, ssize_t len = -1, bool cp = false);
+private:
+  strbuf _b;
+  vec<str> _hold;
+};
 
 //-----------------------------------------------------------------------
 
@@ -46,18 +58,7 @@ public:
 
 protected:
   html_filter_t () {}
-
-  class buf_t {
-  public:
-    buf_t () {}
-    str to_str () { return _b; }
-    void add_s (str s) { _hold.push_back (s); _b << s; }
-    void add_ch (char ch);
-    void add_cc (const char *p, ssize_t len = -1, bool cp = false);
-  private:
-    strbuf _b;
-    vec<str> _hold;
-  };
+  typedef filter_buf_t buf_t;
 
   static bool find_space_in (const char *start, const char *end);
   static const bhash<str> &safe_entity_list ();
@@ -88,6 +89,11 @@ private:
   bool match (const char *start, const char *end) const;
   ptr<const bhash<str> > _tab;
 };
+
+//-----------------------------------------------------------------------
+
+// modelled after php's htmlspecialchars
+str htmlspecialchars (const str &in);
 
 //-----------------------------------------------------------------------
 

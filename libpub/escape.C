@@ -207,7 +207,7 @@ html_filter_rxx_t::handle_tag (buf_t *out, const char **cpp, const char *ep)
 //-----------------------------------------------------------------------
 
 void 
-html_filter_t::buf_t::add_cc (const char *p, ssize_t len, bool cp) {
+filter_buf_t::add_cc (const char *p, ssize_t len, bool cp) {
   if (len < 0) { len = strlen (p); }
   if (cp) { _b.tosuio ()->copy (p, len); }
   else { _b.buf (p, len); }
@@ -216,7 +216,7 @@ html_filter_t::buf_t::add_cc (const char *p, ssize_t len, bool cp) {
 //-----------------------------------------------------------------------
 
 void 
-html_filter_t::buf_t::add_ch (char c)
+filter_buf_t::add_ch (char c)
 {
   _b.tosuio ()->copy (&c, 1);
 }
@@ -275,3 +275,26 @@ html_filter_t::run (const str &in)
 
 //
 //=======================================================================
+
+str
+htmlspecialchars (const str &in)
+{
+  filter_buf_t buf;
+  const char *bp = in.cstr ();
+  const char *ep = bp + in.len ();
+
+  for ( ; bp < ep; bp++) {
+    switch (*bp) {
+    case '&': buf.add_cc ("&amp;"); break;
+    case '<': buf.add_cc ("&lt;"); break;
+    case '>': buf.add_cc ("&gt;"); break;
+    case '\"': buf.add_cc ("&quot;"); break;
+    case '\'': buf.add_cc ("&#039;"); break;
+    default: buf.add_ch (*bp); break;
+    }
+  }
+  return buf.to_str ();
+}
+
+//-----------------------------------------------------------------------
+
