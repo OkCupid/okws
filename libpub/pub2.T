@@ -19,6 +19,8 @@ namespace pub2 {
   typedef local_publisher_t lp_t;
   typedef locale_specific_publisher_t lsp_t;
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   lsp_t::run_full_T (zbuf *b, pfnm_t fn, getfile_cb_t cb, 
 		     aarr_t *a, u_int o, penv_t *e)
@@ -36,6 +38,8 @@ namespace pub2 {
     TRIGGER (cb, status, bpf);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   lsp_t::run_T (zbuf *b, pfnm_t fn, cbb cb, 
 		aarr_t *a, u_int o, penv_t *e)
@@ -52,6 +56,8 @@ namespace pub2 {
     TRIGGER (cb, ok);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   lsp_t::run_cfg_full_T (pfnm_t nm, getfile_cb_t cb, aarr_t *dest)
   {
@@ -69,6 +75,8 @@ namespace pub2 {
     TRIGGER (cb, status, bpf);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   lsp_t::run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dest)
   {
@@ -112,6 +120,8 @@ namespace pub2 {
     TRIGGER (cb, status);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void 
   ap_t::publish_full_T (output_t *o, pfnm_t fn, penv_t *env, int lineno,
 			getfile_cb_t cb)
@@ -124,6 +134,7 @@ namespace pub2 {
       size_t i;
       str d,f, cwd_prev;
       ptr<const pub_localizer_t> localizer;
+      str lcl_def;
     }
 
     // generate a list of internationalized files.  if that list is
@@ -135,10 +146,27 @@ namespace pub2 {
     list_files_to_check (fn, &files_to_check, localizer);
 
     for (i = 0; i < files_to_check.size (); i++) {
-      twait { getfile (files_to_check[i], mkevent (status, bpf), o->opts ()); }
-      if (status.status != XPUB_STATUS_NOENT) {
-	break;
+
+      // Localizer can return NULL if it didn't want to localize
+      // the file.
+      if (files_to_check[i]) {
+
+	twait { 
+	  getfile (files_to_check[i], mkevent (status, bpf), o->opts ()); 
+	}
+	if (status.status != XPUB_STATUS_NOENT) {
+	  break;
+	}
       }
+    }
+
+    // Some localizers might have a default file-not-found page
+    // that's locale-specific.  For instance, in the case of JSON,
+    // want to output an error as JSON, and not as HTML.
+    if (status.status == XPUB_STATUS_NOENT && 
+	localizer &&
+	(lcl_def = localizer->get_default_fnf ())) {
+      twait { getfile (lcl_def, mkevent (status, bpf), o->opts ()); }
     }
 
     switch (status.status) {
@@ -178,6 +206,8 @@ namespace pub2 {
     TRIGGER (cb, status, bpf);
   }
   
+  //-----------------------------------------------------------------------
+  
   tamed void 
   ap_t::run_T (zbuf *b, pfnm_t nm, cbb cb, aarr_t *a, 
 	       u_int op, penv_t *e)
@@ -189,6 +219,8 @@ namespace pub2 {
     twait { run_full (b, nm, mkevent (status, dummy), a, op, e); }
     TRIGGER (cb, status.status == XPUB_STATUS_OK);
   }
+
+  //-----------------------------------------------------------------------
   
   tamed void 
   ap_t::run_full_T (zbuf *b, pfnm_t nm, getfile_cb_t cb,
@@ -233,6 +265,8 @@ namespace pub2 {
     TRIGGER (cb, status, bpf);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void 
   rp_t::connect (cbb cb)
   {
@@ -248,6 +282,8 @@ namespace pub2 {
     TRIGGER (cb, ret);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void 
   crp_t::connect (cbb cb)
   {
@@ -265,6 +301,8 @@ namespace pub2 {
     TRIGGER (cb, ret);
   }
 
+  //-----------------------------------------------------------------------
+  
   void rp_t::dispatch (svccb *sbp)
   {
     if (!sbp) {
@@ -285,17 +323,23 @@ namespace pub2 {
     }
   }
 
+  //-----------------------------------------------------------------------
+  
   void rp_t::handle_new_deltas (svccb *sbp)
   {
     sbp->replyref (false);
   }
 
+  //-----------------------------------------------------------------------
+  
   void crp_t::lost_connection ()
   {
     _connected = false;
     clear_cache ();
   }
 
+  //-----------------------------------------------------------------------
+  
   void crp_t::handle_new_deltas (svccb *sbp)
   {
     xpub2_delta_set_t *s = sbp->Xtmpl getarg<xpub2_delta_set_t> ();
@@ -303,12 +347,16 @@ namespace pub2 {
     sbp->replyref (true);
   }
 
+  //-----------------------------------------------------------------------
+  
   void crp_t::rm_file (pfnm_t nm, const u_int &opt)
   {
     cache_key_t k (nm, opt);
     _getfile_cache.remove (k);
   }
 
+  //-----------------------------------------------------------------------
+  
   void crp_t::handle_new_deltas (const xpub2_delta_set_t &s)
   {
     if (_delta_id >= 0 && s.serial != _delta_id + 1) {
@@ -333,6 +381,8 @@ namespace pub2 {
     }
   }
 
+  //-----------------------------------------------------------------------
+  
   bool
   crp_t::is_cached (const pfnm_t &n, u_int o, const phash_t &h) const
   {
@@ -341,6 +391,8 @@ namespace pub2 {
     return c && h == *(c->file ()->hash ());
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed static void
   wait_for_nsignals (u_int n, rendezvous_t<ptr<bool> > *cg, cbb cb)
   {
@@ -355,6 +407,8 @@ namespace pub2 {
     TRIGGER (cb, ok);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   rp_t::getchunk (const xpub2_getfile_data_t *dat, u_int opts, size_t offset, 
 		  size_t sz, char *buf, cbb cb)
@@ -395,6 +449,8 @@ namespace pub2 {
     TRIGGER (cb, ok);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   rp_t::launch_getchunk (rendezvous_t<ptr<bool> > *cg, 
 			 const xpub2_getfile_data_t *dat, u_int opts,
@@ -417,6 +473,8 @@ namespace pub2 {
     TRIGGER (cb, ok);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   rp_t::getfile_chunked (const xpub2_getfile_data_t *dat, u_int opts,
 			 xpub_file_t *file, status_cb_t cb)
@@ -462,6 +520,8 @@ namespace pub2 {
     TRIGGER (cb, status);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void
   rp_t::getfile_body (pfnm_t nm, const xpub2_getfile_res_t *res, 
 		      getfile_cb_t cb, u_int opts)
@@ -486,6 +546,8 @@ namespace pub2 {
     TRIGGER (cb, status, bpf);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void 
   rp_t::getfile_T (pfnm_t nm, getfile_cb_t cb, u_int opts)
   {
@@ -546,6 +608,8 @@ namespace pub2 {
     TRIGGER (cb, status, file);
   }
   
+  //-----------------------------------------------------------------------
+  
   bool crp_t::prepare_getfile (const cache_key_t &k, xpub2_getfile_arg_t *arg,
 			       ptr<bound_pfile2_t> *f, status_t *status)
   {
@@ -571,6 +635,8 @@ namespace pub2 {
     }
   }
 
+  //-----------------------------------------------------------------------
+  
   void crp_t::cache_noent (pfnm_t nm)
   {
     _noent_cache.insert (nm);
@@ -582,6 +648,8 @@ namespace pub2 {
     _opts_map.remove (nm);
   }
 
+  //-----------------------------------------------------------------------
+  
   void crp_t::cache_getfile (const cache_key_t &k, ptr<bound_pfile2_t> f)
   {
     //
@@ -674,6 +742,8 @@ namespace pub2 {
     TRIGGER (cb, status, bpf);
   }
 
+  //-----------------------------------------------------------------------
+  
   tamed void 
   ap_t::run_cfg_T (pfnm_t nm, cbb cb, aarr_t *dp)
   {
@@ -685,6 +755,8 @@ namespace pub2 {
     TRIGGER (cb, status.status == XPUB_STATUS_OK);
   }
 
+  //-----------------------------------------------------------------------
+  
   void
   ap_t::list_files_to_check (const pfnm_t &nm, vec<str> *out, 
 			     ptr<const pub_localizer_t> l)
@@ -692,10 +764,11 @@ namespace pub2 {
     str d,f;
     bool abs = basename_dirname (nm, &d, &f);
     if (!f) return;
+    bool use_defs = !(l && l->strict ()) ;
     
     if (abs) {
-      if (l) out->push_back (l->localize (nm));
-      out->push_back (nm);
+      if (l)        out->push_back (l->localize (nm)); 
+      if (use_defs) out->push_back (nm);
     } else {
       
       str n1, n2;
@@ -707,15 +780,21 @@ namespace pub2 {
       if (_cwd) {
 	n2 = apply_container_dir (_cwd, nm);
       }
+
       if (l) {
 	if (n1) out->push_back (l->localize (n1));
 	if (n2) out->push_back (l->localize (n2));
       }
-      if (n1) out->push_back (n1);
-      if (n2) out->push_back (n2);
+ 
+      if (use_defs) {
+	if (n1) out->push_back (n1);
+	if (n2) out->push_back (n2);
+      }
     }
   }
 
+  //-----------------------------------------------------------------------
+  
   void
   lp_t::getfile (pfnm_t fn2, getfile_cb_t cb,
 		 const xpub2_file_freshcheck_t &fresh, u_int opts)
@@ -777,6 +856,8 @@ namespace pub2 {
     (*cb) (res, f);
   }
 
+  //-----------------------------------------------------------------------
+  
   bool 
   remote_publisher_t::prepare_getfile (const cache_key_t &k, 
 				       xpub2_getfile_arg_t *arg, 

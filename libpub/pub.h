@@ -442,6 +442,8 @@ public:
   pub_localizer_t () {}
   virtual ~pub_localizer_t () {}
   virtual str localize (const str &infn) const = 0;
+  virtual bool strict () const { return false; }
+  virtual str get_default_fnf () const { return NULL; }
 };
 
 //-----------------------------------------------------------------------
