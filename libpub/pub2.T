@@ -134,7 +134,6 @@ namespace pub2 {
       size_t i;
       str d,f, cwd_prev;
       ptr<const pub_localizer_t> localizer;
-      str lcl_def;
     }
 
     // generate a list of internationalized files.  if that list is
@@ -147,32 +146,17 @@ namespace pub2 {
 
     for (i = 0; i < files_to_check.size (); i++) {
 
-      // Localizer can return NULL if it didn't want to localize
-      // the file.
-      if (files_to_check[i]) {
-
-	twait { 
-	  getfile (files_to_check[i], mkevent (status, bpf), o->opts ()); 
-	}
-	if (status.status != XPUB_STATUS_NOENT) {
-	  break;
-	}
+      twait { getfile (files_to_check[i], mkevent (status, bpf), o->opts ()); }
+      if (status.status != XPUB_STATUS_NOENT) {
+	break;
       }
-    }
-
-    // Some localizers might have a default file-not-found page
-    // that's locale-specific.  For instance, in the case of JSON,
-    // want to output an error as JSON, and not as HTML.
-    if (status.status == XPUB_STATUS_NOENT && 
-	localizer &&
-	(lcl_def = localizer->get_default_fnf ())) {
-      twait { getfile (lcl_def, mkevent (status, bpf), o->opts ()); }
     }
 
     switch (status.status) {
     case XPUB_STATUS_OK:
 
       assert (bpf);
+      assert (i < files_to_check.size ());
       basename_dirname (files_to_check[i], &d, &f);
 
       cwd_prev = _cwd;
@@ -754,6 +738,10 @@ namespace pub2 {
   }
 
   //-----------------------------------------------------------------------
+
+  static void use_file (vec<str> *out, str f) { if (f) out->push_back (f); }
+
+  //-----------------------------------------------------------------------
   
   void
   ap_t::list_files_to_check (const pfnm_t &nm, vec<str> *out, 
@@ -763,10 +751,10 @@ namespace pub2 {
     bool abs = basename_dirname (nm, &d, &f);
     if (!f) return;
     bool use_defs = !(l && l->strict ()) ;
-    
+
     if (abs) {
-      if (l)        out->push_back (l->localize (nm)); 
-      if (use_defs) out->push_back (nm);
+      if (l)        use_file (out, l->localize (nm)); 
+      if (use_defs) use_file (out, nm);
     } else {
       
       str n1, n2;
@@ -780,15 +768,17 @@ namespace pub2 {
       }
 
       if (l) {
-	if (n1) out->push_back (l->localize (n1));
-	if (n2) out->push_back (l->localize (n2));
+	if (n1) use_file (out, l->localize (n1));
+	if (n2) use_file (out, l->localize (n2));
       }
  
       if (use_defs) {
-	if (n1) out->push_back (n1);
-	if (n2) out->push_back (n2);
+	if (n1) use_file (out, n1);
+	if (n2) use_file (out, n2);
       }
     }
+
+    if (l) { use_file (out, l->get_default_fnf ()); }
   }
 
   //-----------------------------------------------------------------------
