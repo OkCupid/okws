@@ -173,8 +173,6 @@ namespace pub2 {
     case XPUB_STATUS_OK:
 
       assert (bpf);
-      assert (i < files_to_check.size ());
-
       basename_dirname (files_to_check[i], &d, &f);
 
       cwd_prev = _cwd;
