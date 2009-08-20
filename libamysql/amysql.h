@@ -711,6 +711,7 @@ public:
   bool is_readied () const { return mtd_thread_t::readied; }
   int getid () const { return mtd_thread_t::getid (); }
   virtual ~amysql_thread_t () {}
+  bool init_phase0 () { return amysql_thread_guts_t::init_phase0 (); }
 };
 
 class amysql_thread2_t : public amt::thread2_t, public amysql_thread_guts_t {
