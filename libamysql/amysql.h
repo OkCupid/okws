@@ -722,6 +722,7 @@ public:
   bool is_readied () const { return amt::thread2_t::readied; }
   int getid () const { return amt::thread2_t::getid (); }
   virtual ~amysql_thread2_t () {}
+  bool init_phase0 () { return amysql_thread_guts_t::init_phase0 (); }
 };
 
 class tz_corrector_t {
