@@ -104,6 +104,27 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class map_t : public runtime_fn_t {
+  public:
+    map_t (const str &n, ptr<expr_list_t> el, int lineno, ptr<expr_t> d, 
+	   ptr<expr_t> l);
+
+    static ptr<runtime_fn_t>
+    constructor (const str &n, ptr<expr_list_t> e, int lieno, str *err);
+
+    ptr<pval_t> eval_freeze (eval_t e) const;
+    ptr<const pval_t> eval (eval_t e) const;
+
+  private:
+    ptr<expr_t> eval_internal (eval_t e) const;
+    ptr<expr_t> eval_internal (eval_t e, ptr<const aarr_t> mp, 
+			       ptr<const expr_t> arg) const;
+    ptr<expr_t> _map;
+    ptr<expr_t> _list;
+  };
+
+  //-----------------------------------------------------------------------
+
   class is_null_t : public predicate_t {
   public:
     is_null_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> e);
