@@ -226,6 +226,8 @@ filter_buf_t::add_ch (char c)
 str
 html_filter_t::run (const str &in)
 {
+  if (!in) return in;
+
   const char *cp = in.cstr ();
   const char *ep = in.cstr () + in.len ();
   if (*ep != '\0') { return NULL; }
@@ -279,6 +281,8 @@ html_filter_t::run (const str &in)
 str
 htmlspecialchars (const str &in)
 {
+  if (!in) return in;
+
   filter_buf_t buf;
   const char *bp = in.cstr ();
   const char *ep = bp + in.len ();
