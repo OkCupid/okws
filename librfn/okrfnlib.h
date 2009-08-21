@@ -190,9 +190,9 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  class tag_strip_t : public scalar_fn_t {
+  class tag_escape_t : public scalar_fn_t {
   public:
-    tag_strip_t (const str &n, ptr<expr_list_t> l, int lineo);
+    tag_escape_t (const str &n, ptr<expr_list_t> l, int lineo);
 
   private:
     scalar_obj_t eval_internal (eval_t e) const;

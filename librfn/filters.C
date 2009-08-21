@@ -69,7 +69,7 @@ namespace rfn1 {
 
   //------------------------------------------------------------
   
-  tag_strip_t::tag_strip_t (const str &nm, ptr<expr_list_t> e, int lineno)
+  tag_escape_t::tag_escape_t (const str &nm, ptr<expr_list_t> e, int lineno)
     : scalar_fn_t (nm, e, lineno),
       _arg ((*e)[0]) 
   {
@@ -81,7 +81,7 @@ namespace rfn1 {
   //------------------------------------------------------------
 
   scalar_obj_t
-  tag_strip_t::eval_internal (eval_t e) const
+  tag_escape_t::eval_internal (eval_t e) const
   {
     ptr<rxx> p;
 

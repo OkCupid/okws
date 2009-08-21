@@ -58,7 +58,7 @@ public:
 
   okdate_t (const str &s) 
     : err (false), dt_tm (0), stm_set (false), time_t_set (false)
-  { set (s); }
+  { clear (); set (s); }
 
   okdate_t (const str &s, long gmt_off) 
     : err (false), dt_tm (0), stm_set (false), time_t_set (false)
