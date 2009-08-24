@@ -133,5 +133,20 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  scalar_obj_t 
+  version_str_t::eval_internal (eval_t e) const
+  { return scalar_obj_t (version_str ()); }
+
+  //-----------------------------------------------------------------------
+
+  scalar_obj_t 
+  version_int_t::eval_internal (eval_t e) const
+  { 
+    scalar_obj_t o;
+    o.set_u (version_int ()); 
+    return o;
+  }
+
+  //-----------------------------------------------------------------------
 
 };

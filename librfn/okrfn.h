@@ -13,6 +13,11 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  const char *version_str ();
+  u_int64_t version_int ();
+
+  //-----------------------------------------------------------------------
+
   typedef ptr<runtime_fn_t> (*constructor_t) 
   (const str &n, ptr<expr_list_t> l, int line, str *err);
 

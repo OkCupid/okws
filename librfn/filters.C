@@ -1,6 +1,7 @@
 
 #include "okrfnlib.h"
 #include "pescape.h"
+#include "okcgi.h"
 
 namespace rfn1 {
   
@@ -210,7 +211,6 @@ namespace rfn1 {
   scalar_obj_t
   strip_t::eval_internal (eval_t e) const
   {
-    scalar_obj_t ret;
     str s = _arg->eval_as_str (e);
     if (s) {
       static rxx x ("\\s+");
@@ -247,6 +247,50 @@ namespace rfn1 {
     if (_arg) { s = _arg->eval_as_str (e); }
     if (!s) { s = ""; }
     s = htmlspecialchars (s);
+    return scalar_obj_t (s);
+  }
+
+  //------------------------------------------------------------
+
+  url_escape_t::url_escape_t (const str &n, ptr<expr_list_t> e, int lineno)
+    : scalar_fn_t (n, e, lineno), _arg ((*e)[0]) {}
+
+  //------------------------------------------------------------
+
+  scalar_obj_t 
+  url_escape_t::eval_internal (eval_t e) const
+  {
+    str s = _arg->eval_as_str (e);
+    if (!s) {
+      report_error (e, "cannot evaluate arg to url_escape() as a string");
+      s = "";
+    } else if (s.len () == 0) {
+      s = "";
+    } else {
+      s = cgi_encode (s);
+    }
+    return scalar_obj_t (s);
+  }
+
+  //------------------------------------------------------------
+
+  url_unescape_t::url_unescape_t (const str &n, ptr<expr_list_t> e, int lineno)
+    : scalar_fn_t (n, e, lineno), _arg ((*e)[0]) {}
+
+  //------------------------------------------------------------
+
+  scalar_obj_t 
+  url_unescape_t::eval_internal (eval_t e) const
+  {
+    str s = _arg->eval_as_str (e);
+    if (!s) {
+      report_error (e, "cannot evaluate arg to url_unescape() as a string");
+      s = "";
+    } else if (s.len () == 0) {
+      s = "";
+    } else {
+      s = cgi_decode (s);
+    }
     return scalar_obj_t (s);
   }
 

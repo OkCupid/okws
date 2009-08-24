@@ -23,6 +23,11 @@ namespace rfn1 {
     _tab.insert ("json_escape", &scalar_fn_t::constructor<json_escape_t, 1, 1>);
     _tab.insert ("hidden_escape", 
 		 &scalar_fn_t::constructor<hidden_escape_t, 1, 1>);
+    _tab.insert ("tag_escape", &scalar_fn_t::constructor<tag_escape_t, 1, 2>);
+    _tab.insert ("url_escape", &scalar_fn_t::constructor<url_escape_t, 1, 1>);
+    _tab.insert ("url_unescape", 
+		 &scalar_fn_t::constructor<url_unescape_t, 1, 1>);
+
     _tab.insert ("html", &scalar_fn_t::constructor<html_escape_t, 1, 1>);
     _tab.insert ("json", &scalar_fn_t::constructor<json_escape_t, 1, 1>);
     _tab.insert ("hidden", &scalar_fn_t::constructor<hidden_escape_t, 1, 1>);
@@ -33,7 +38,9 @@ namespace rfn1 {
     _tab.insert ("type", &scalar_fn_t::constructor<type_t, 1, 1>);
     _tab.insert ("join", &scalar_fn_t::constructor<join_t, 2, 2>);
     _tab.insert ("import", &import_t::constructor);
-    _tab.insert ("tag_escape", &scalar_fn_t::constructor<tag_escape_t, 1, 2>);
+
+    _tab.insert ("version_str", &scalar_fn_t::constructor<version_str_t, 0, 0>);
+    _tab.insert ("version_int", &scalar_fn_t::constructor<version_int_t, 0, 0>);
   }
 
   //-----------------------------------------------------------------------
@@ -58,6 +65,11 @@ namespace rfn1 {
 
     return ret;
   }
+
+  //-----------------------------------------------------------------------
+
+  const char *version_str () { return "okrfn 1.0"; }
+  u_int64_t version_int () { return 1000000; }
 
   //-----------------------------------------------------------------------
 

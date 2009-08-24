@@ -257,6 +257,26 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class url_escape_t : public scalar_fn_t {
+  public:
+    url_escape_t (const str &n, ptr<expr_list_t> l, int lineno);
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class url_unescape_t : public scalar_fn_t {
+  public:
+    url_unescape_t (const str &n, ptr<expr_list_t> l, int lineno);
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
   class import_t : public runtime_fn_t {
   public:
     import_t (const str &n, ptr<expr_list_t> l, int lineno);
@@ -271,6 +291,27 @@ namespace rfn1 {
   };
 
   //-----------------------------------------------------------------------
+
+  class version_str_t : public scalar_fn_t {
+  public:
+    version_str_t (const str &n, ptr<expr_list_t> l, int lineno)
+      : scalar_fn_t (n, l, lineno) {}
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class version_int_t : public scalar_fn_t {
+  public:
+    version_int_t (const str &n, ptr<expr_list_t> l, int lineno)
+      : scalar_fn_t (n, l, lineno) {}
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 
 #endif /* _LIBRFN_OKRFNLIB_H_ */
