@@ -72,6 +72,7 @@ namespace rfn1 {
       for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
 	l->push_back (New refcounted<expr_str_t> (p->name ()));
       }
+      ret = l;
     } else {
       ret = expr_null_t::alloc ();
     }
@@ -93,6 +94,7 @@ namespace rfn1 {
 	entry->push_back (eval_pval (e, p->value()));
 	l->push_back (entry);
       }
+      ret = l;
     } else {
       ret = expr_null_t::alloc ();
     }
