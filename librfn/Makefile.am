@@ -10,7 +10,8 @@ librfn_la_SOURCES = \
 	regex.C \
 	filters.C \
 	import.C \
-	list.C
+	list.C \
+	dict.C
 
 librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 

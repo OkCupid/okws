@@ -41,6 +41,10 @@ namespace rfn1 {
 
     _tab.insert ("version_str", &scalar_fn_t::constructor<version_str_t, 0, 0>);
     _tab.insert ("version_int", &scalar_fn_t::constructor<version_int_t, 0, 0>);
+
+    _tab.insert ("items", &dict_fn_t::constructor<items_t>);
+    _tab.insert ("values", &dict_fn_t::constructor<values_t>);
+    _tab.insert ("keys", &dict_fn_t::constructor<keys_t>);
   }
 
   //-----------------------------------------------------------------------
@@ -68,8 +72,8 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "okrfn 1.0"; }
-  u_int64_t version_int () { return 1000000; }
+  const char *version_str () { return "okrfn 1.0.1"; }
+  u_int64_t version_int () { return 1000001; }
 
   //-----------------------------------------------------------------------
 

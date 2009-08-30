@@ -312,6 +312,69 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class dict_fn_t : public runtime_fn_t {
+  public:
+    dict_fn_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> arg)
+      : runtime_fn_t (n, l, lineno), _arg (arg) {}
+
+    template<class T> static ptr<runtime_fn_t>
+    constructor (const str &nm, ptr<expr_list_t> e, int lineno, str *err)
+    {
+      ptr<runtime_fn_t> r;
+      size_t narg = e ? e->size () : size_t (0);
+
+      if (narg != 1) {
+	*err = "values(),keys(),items() take 1 argument (a dict)";
+      } else {
+	r = New refcounted<T> (nm, e, lineno, (*e)[0]);
+      }
+      return r;
+    }
+
+
+    ptr<const pval_t> eval (eval_t e) const { return eval_internal (e); }
+    ptr<pval_t> eval_freeze (eval_t e) const { return eval_internal (e); }
+  protected:
+    virtual ptr<pval_t> eval_internal (eval_t e) const = 0;
+    const nvtab_t *eval_to_nvtab (eval_t e, const char *fn) const;
+    ptr<expr_t> eval_pval (eval_t e, const pval_t *in) const;
+  private:
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class values_t : public dict_fn_t {
+  public:
+    values_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> arg)
+      : dict_fn_t (n, l, lineno, arg) {}
+  protected:
+    ptr<pval_t> eval_internal (eval_t e) const;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class keys_t : public dict_fn_t {
+  public:
+    keys_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> arg)
+      : dict_fn_t (n, l, lineno, arg) {}
+  protected:
+    ptr<pval_t> eval_internal (eval_t e) const;
+
+  };
+
+  //-----------------------------------------------------------------------
+
+  class items_t : public dict_fn_t {
+  public:
+    items_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> arg)
+      : dict_fn_t (n, l, lineno, arg) {}
+  protected:
+    ptr<pval_t> eval_internal (eval_t e) const;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 
 #endif /* _LIBRFN_OKRFNLIB_H_ */

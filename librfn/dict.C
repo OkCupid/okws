@@ -8,14 +8,14 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t> 
-  dict_fn_t::eval_pval (eval_t e, const pval_t *in)
+  dict_fn_t::eval_pval (eval_t e, const pval_t *in) const
   {
     ptr<const expr_t> x;
     ptr<pval_t> v2;
     ptr<expr_t> x2;
 
     if (!in ||
-	!(x = v->to_expr ()) || 
+	!(x = in->to_expr ()) || 
 	!(v2 = x->eval_freeze (e)) ||
 	!(x2 = v2->to_expr ())) {
 
@@ -30,13 +30,12 @@ namespace rfn1 {
   const nvtab_t *
   dict_fn_t::eval_to_nvtab (eval_t e, const char *fn) const
   {
-    ptr<const expr_dict_t> d;
     const nvtab_t *nvt =  NULL;
-    if ((d = _arg->eval_as_dict (e))) {
-      ptr<const aarr_t> aa = d->to_aarr ();
+    ptr<const aarr_t> aa;
+    if ((aa = _arg->eval_as_dict (e))) {
       nvt = aa->nvtab ();
     } else {
-      report_error (e, "%s() take a dictionary argument", fn);
+      report_error (e, strbuf ("%s() take a dictionary argument", fn));
     }
     return nvt;
   }
@@ -90,8 +89,8 @@ namespace rfn1 {
       ptr<expr_list_t> l = New refcounted<expr_list_t> ();
       for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
 	ptr<expr_list_t> entry = New refcounted<expr_list_t> ();
-	entry->push_back (p->name ());
-	entry->push_back (eval_pval (p->value()));
+	entry->push_back (New refcounted<expr_str_t> (p->name ()));
+	entry->push_back (eval_pval (e, p->value()));
 	l->push_back (entry);
       }
     } else {
