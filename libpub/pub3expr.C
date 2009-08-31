@@ -1148,7 +1148,6 @@ pub3::eval_t::eval_freeze_vec (const vec_iface_t *in, vec_iface_t *out)
   ptr<expr_t> e;
   for (size_t i = 0; i < in->size (); i++) {
     v = eval_freeze (in->lookup (i));
-    if (!v) v = expr_null_t::alloc ();
     out->push_back (v);
   }
 }
@@ -1274,10 +1273,10 @@ pub3::expr_list_t::set (size_t i, ptr<pval_t> v)
 void
 pub3::expr_list_t::push_back (ptr<pval_t> v)
 {
-  ptr<expr_t> e = v->to_expr ();
-  if (e) {
-    vec_base_t::push_back (e);
-  }
+  ptr<expr_t> e;
+  if (v) { e = v->to_expr (); }
+  if (!e) { e = expr_null_t::alloc (); }
+  vec_base_t::push_back (e);
 }
 
 //-----------------------------------------------------------------------
