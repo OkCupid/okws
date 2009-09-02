@@ -87,6 +87,24 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class split_t : public runtime_fn_t  {
+  public:
+    split_t (const str &n, ptr<expr_list_t> el, int lineno,
+	     ptr<expr_t> regex, ptr<expr_t> v);
+
+    static ptr<runtime_fn_t>
+    constructor (const str &n, ptr<expr_list_t> e, int lineno, str *err);
+
+    ptr<pval_t> eval_freeze (eval_t e) const;
+    ptr<const pval_t> eval (eval_t e) const;
+
+  private:
+    ptr<expr_list_t> eval_internal (eval_t e) const;
+    ptr<expr_t> _regex, _val;
+  };
+
+  //-----------------------------------------------------------------------
+
   class append_t : public runtime_fn_t {
   public:
     append_t (const str &n, ptr<expr_list_t> el, int lineno);
@@ -270,6 +288,16 @@ namespace rfn1 {
   class url_unescape_t : public scalar_fn_t {
   public:
     url_unescape_t (const str &n, ptr<expr_list_t> l, int lineno);
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<expr_t> _arg;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class sha1_t : public scalar_fn_t {
+  public:
+    sha1_t (const str &n, ptr<expr_list_t> l, int lineno);
   private:
     scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _arg;

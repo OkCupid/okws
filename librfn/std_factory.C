@@ -34,9 +34,11 @@ namespace rfn1 {
     _tab.insert ("substr", &scalar_fn_t::constructor<substring_t, 3, 3>);
     _tab.insert ("default", &scalar_fn_t::constructor<default_t, 1, 2>);
     _tab.insert ("strip", &scalar_fn_t::constructor<strip_t, 1, 1>);
+    _tab.insert ("sha1", &scalar_fn_t::constructor<sha1_t, 1, 1>);
 
     _tab.insert ("type", &scalar_fn_t::constructor<type_t, 1, 1>);
     _tab.insert ("join", &scalar_fn_t::constructor<join_t, 2, 2>);
+    _tab.insert ("split", &split_t::constructor);
     _tab.insert ("import", &import_t::constructor);
 
     _tab.insert ("version_str", &scalar_fn_t::constructor<version_str_t, 0, 0>);
@@ -72,8 +74,8 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "okrfn 1.0.1"; }
-  u_int64_t version_int () { return 1000001; }
+  const char *version_str () { return "okrfn 1.0.2"; }
+  u_int64_t version_int () { return 1000002; }
 
   //-----------------------------------------------------------------------
 

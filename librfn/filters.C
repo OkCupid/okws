@@ -2,6 +2,7 @@
 #include "okrfnlib.h"
 #include "pescape.h"
 #include "okcgi.h"
+#include "crypt.h"
 
 namespace rfn1 {
   
@@ -292,6 +293,31 @@ namespace rfn1 {
       s = cgi_decode (s);
     }
     return scalar_obj_t (s);
+  }
+
+  //------------------------------------------------------------
+
+  sha1_t::sha1_t (const str &n, ptr<expr_list_t> e, int lineno)
+    : scalar_fn_t (n, e, lineno), _arg ((*e)[0]) {}
+
+  //------------------------------------------------------------
+
+  scalar_obj_t
+  sha1_t::eval_internal (eval_t e) const
+  {
+    str s = _arg->eval_as_str (e);
+    str ret;
+    if (!s) {
+      report_error (e, "cannot evaluate arg to sha() as a string");
+      ret = "";
+    } else {
+      char buf[sha1::hashsize];
+      sha1_hash (buf, s.cstr (), s.len ());
+      strbuf b;
+      b << hexdump (buf, sha1::hashsize);
+      ret = b;
+    }
+    return scalar_obj_t (ret);
   }
 
   //------------------------------------------------------------

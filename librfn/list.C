@@ -321,8 +321,65 @@ namespace rfn1 {
     return ret;
   }
 
+  //-----------------------------------------------------------------------
+
+  split_t::split_t (const str &n, ptr<expr_list_t> el, int lineno,
+		    ptr<expr_t> r, ptr<expr_t> v)
+    : runtime_fn_t (n, el, lineno), _regex (r), _val (v) {}
 
   //-----------------------------------------------------------------------
 
+  ptr<runtime_fn_t>
+  split_t::constructor (const str &n, ptr<expr_list_t> el, int lineno, str *err)
+  {
+    size_t narg = el ? el->size () : size_t (0);
+    ptr<runtime_fn_t> ret;
+    if (narg != 2) {
+      *err = "split() takes two arguments: a regex and string";
+    } else {
+      ret = New refcounted<split_t> (n, el, lineno, (*el)[0], (*el)[1]);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_list_t>
+  split_t::eval_internal (eval_t e) const
+  {
+    ptr<expr_list_t> ret;
+    ptr<expr_regex_t> ex;
+    ptr<rxx> rx;
+    str s;
+
+    if (!_regex || !(rx = _regex->eval_as_regex (e))) {
+      report_error (e, "cannot evaluate first arg to split() as a regex");
+    } else if (!_val || !(s = _val->eval_as_str (e))) {
+      report_error (e, "cannot evaluate second arg to split() as a string");
+    } else {
+      ret = New refcounted<expr_list_t> ();
+      vec<str> v;
+      split (&v, *rx, s);
+      for (size_t i = 0; i < v.size (); i++) {
+	ptr<expr_t> e;
+	if (v[i]) e = New refcounted<expr_str_t> (v[i]);
+	else e = expr_null_t::alloc ();
+	ret->push_back (e);
+      }
+    }
+    return ret;
+
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t> split_t::eval_freeze (eval_t e) const 
+  { return eval_internal (e); }
+  
+  //-----------------------------------------------------------------------
+
+  ptr<const pval_t> split_t::eval (eval_t e) const { return eval_internal (e); }
+
+  //-----------------------------------------------------------------------
 };
 
