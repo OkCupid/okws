@@ -689,7 +689,7 @@ public:
 class amysql_thread_guts_t {
 public:
   amysql_thread_guts_t (u_int o);
-  ~amysql_thread_guts_t () {}
+  virtual ~amysql_thread_guts_t () {}
   ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
   bool init_phase0 ();
   virtual bool is_readied () const = 0;
