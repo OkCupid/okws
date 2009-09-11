@@ -14,7 +14,9 @@ namespace rfn1 {
   //-----------------------------------------------------------------------
 
   const char *version_str ();
+  const char *okws_version_str ();
   u_int64_t version_int ();
+  u_int64_t okws_version_int ();
 
   //-----------------------------------------------------------------------
 

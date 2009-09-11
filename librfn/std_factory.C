@@ -41,8 +41,14 @@ namespace rfn1 {
     _tab.insert ("split", &split_t::constructor);
     _tab.insert ("import", &import_t::constructor);
 
+    _tab.insert ("okws_version_str", 
+		 &scalar_fn_t::constructor<okws_version_str_t, 0, 0>);
     _tab.insert ("version_str", &scalar_fn_t::constructor<version_str_t, 0, 0>);
-    _tab.insert ("version_int", &scalar_fn_t::constructor<version_int_t, 0, 0>);
+
+    _tab.insert ("okws_version_int", 
+		 &scalar_fn_t::constructor<okws_version_int_t, 0, 0>);
+    _tab.insert ("version_int", 
+		 &scalar_fn_t::constructor<version_int_t, 0, 0>);
 
     _tab.insert ("items", &dict_fn_t::constructor<items_t>);
     _tab.insert ("values", &dict_fn_t::constructor<values_t>);
@@ -74,8 +80,18 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "okrfn 1.0.2"; }
-  u_int64_t version_int () { return 1000002; }
+  const char *version_str () { return "okrfn 1.0.3"; }
+  u_int64_t version_int () { return 1000003; }
+  const char *okws_version_str () { return OKWS_VERSION; }
+
+  u_int64_t okws_version_int () {
+    return VERSION_FLATTEN(OKWS_VERSION_MAJOR,	
+			    OKWS_VERSION_MINOR,	
+			    OKWS_VERSION_PATCHLEVEL,
+			    OKWS_VERSION_PRE); 
+  }
+
+  
 
   //-----------------------------------------------------------------------
 

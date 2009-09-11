@@ -340,6 +340,25 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+  class okws_version_str_t : public scalar_fn_t {
+  public:
+    okws_version_str_t (const str &n, ptr<expr_list_t> l, int lineno)
+      : scalar_fn_t (n, l, lineno) {}
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class okws_version_int_t : public scalar_fn_t {
+  public:
+    okws_version_int_t (const str &n, ptr<expr_list_t> l, int lineno)
+      : scalar_fn_t (n, l, lineno) {}
+  private:
+    scalar_obj_t eval_internal (eval_t e) const;
+  };
+  //-----------------------------------------------------------------------
+
   class dict_fn_t : public runtime_fn_t {
   public:
     dict_fn_t (const str &n, ptr<expr_list_t> l, int lineno, ptr<expr_t> arg)
