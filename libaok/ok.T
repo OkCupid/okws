@@ -398,6 +398,7 @@ oksrvc_t::ctldispatch (svccb *v)
     break;
   case OKCTL_PROFILER:
     handle_profiler (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
