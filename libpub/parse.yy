@@ -123,31 +123,41 @@ file: p3_html_zoner_inner
 hfile: p3_html_zone_inner
 	;
 
-p3_html_zone: T_2L_BRACE p3_html_zone_inner T_2R_BRACE
+p3_html_zone: T_2L_BRACE p3_html_zone_inner T_2R_BRACE { $$ = $2; }
         ;
 
 p3_html_zone_inner: p3_html_blocks;
 
-p3_html_blocks:  /* empty */
+p3_html_blocks:  { $$ = NULL; }
 	| p3_html_blocks p3_html_block
+	{
+	   ptr<pub3::zone_t> z = $1;
+	   if (z) {
+	     z = pub3::zone_html_t::alloc (true);
+	     z->add ($1);
+	   }
+	   $$ = z;
+	}
 	;
 
-p3_html_block: p3_html_text
-	| p3_html_pre
-	| p3_inline_expr
-	| p3_pub_zone
+p3_html_block: p3_html_text { $$ = pub3::zone_text_t::alloc ($1); }
+	| p3_html_pre       { $$ = $1; }
+	| p3_inline_expr    { $$ = pub3::zone_inline_expr_t::alloc ($1); }
+	| p3_pub_zone       { $$ = $1; }
 	;
 
 p3_html_pre: T_P3_BEGIN_PRE p3_html_block T_P3_END_PRE
 	{
 	   ptr<pub3::html_zone_t> x = 
-	     pub3::html_zone_t::alloc (false);
+	     pub3::zone_html_t::alloc (false);
 	     x->add ($1);
 	     x->add ($2);
 	     x->add ($3);
  	     $$ = $1;
 	}
 	;
+
+/* ---------------------------------------------------------------------- */
 
 p3_inline_expr: 
         T_P3_BEGIN_EXPR p3_expr '}' { $$ = $2; }
