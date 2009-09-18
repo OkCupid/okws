@@ -131,19 +131,36 @@ p3_zone:  p3_html_zone
 	| p3_pub_zone
 	;
 
-p3_html_zone: p3_html_part
-	| p3_html_zone p3_html_part
-	;
-
-p3_html_part: p3_html_part_free
-	| p3_html_part_spaced
-	;
-
-p3_html_part_spaced: p3_html_pre
+p3_html_zone: p3_html_pre
 	| p3_html_script
+	| p3_html_block
 	;
 
-p3_html_free: 
+p3_html_pre: T_P3_PRE_BEGIN p3_html_block T_P3_PRE_END
+	{
+	   ptr<pub3::html_zone_t> x = 
+	     pub3::html_zone_t::alloc (false);
+	     x->add ($1);
+	     x->add ($2);
+	     x->add ($3);
+ 	     $$ = $1;
+	}
+	;
+
+p3_html_text: p3_html_atom
+	| p3_html_text p3_html_atom
+	;
+
+p3_html_atom: T_HTML | T_CH;
+
+p3_html_block: p3_html_element
+	| p3_html_block p3_html_element
+	;
+
+p3_html_element: p3_html_text
+	| p3_inline_expr
+	| p3_pub_zone
+	;
 
 html: /* empty */ {}
 	| html html_part
