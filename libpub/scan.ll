@@ -112,8 +112,11 @@ PRETAG     [Pp][Rr][Ee]
 <({SCRIPTTAG}|{PRETAG})[^>]*>
 		{
 		  yylval.str = yytext; 
-		  yy_push_state (PRE);
+
+		  // might go many lines, so make sure to increment
+		  // the line counter.
 		  nlcount (0);
+
 		  // just keep track of which tag it was.
 		  if (tolower (yytext[1]) == 'p')  {
 		      pre_mode = PRE_PRE;
@@ -144,8 +147,6 @@ PRETAG     [Pp][Rr][Ee]
 		   }
 		   return ret;
 		}
-
-
 
 <<EOF>>		{  return bracket_check_eof(); }
 }
