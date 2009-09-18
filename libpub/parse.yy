@@ -127,9 +127,12 @@ p3_zones: /* empty */
 	| p3_zones p3_zone
 	;
 
-p3_zone:  p3_html_zone 
+p3_zone:  p3_html_zone_inner
 	| p3_pub_zone
 	;
+
+p3_html_zone_inner: T_2L_BRACE p3_html_zon T_2R_BRACE
+        ;
 
 p3_html_zone: p3_html_pre
 	| p3_html_script
@@ -226,7 +229,7 @@ p3_control: p3_for { $$ = $1 ;}
 	      | p3_setle { $$ = $1; }
 	      | p3_include { $$ = $1; }
 	      | p3_print_or_eval { $$ = $1; }
-	      | nested_env { $$ = New pfile_nested_env_t ($1); }
+	      | p3_html_zone { $$ = New pfile_nested_env_t ($1); }
               | ';' { $$ = NULL; }
 	      ;
 
@@ -686,7 +689,7 @@ p3_setle: T_P3_SETLE p3_set_arg
         }
 	;
 
-p3_nested_env: nested_env { $$ = $1; }
+p3_nested_env: p3_html_zone { $$ = $1; }
 	| 
         '{' p3_zone '}'
 	{
@@ -723,9 +726,9 @@ p3_print_or_eval: p3_print_or_eval_fn p3_flexi_tuple
        }
        ;
 
-p3_cond: T_P3_COND p3_cond_clause p3_cond_elifs_opt p3_cond_else_opt
+p3_if: T_P3_IF p3_if_clause p3_elifs_opt p3_else_opt
        {
-          pub3::cond_t *c = New pub3::cond_t (PLINENO);
+          pub3::if_t *c = New pub3::if_t (PLINENO);
 	  c->add_clause ($2);
 	  c->add_clauses ($3);
 	  c->add_clause ($4);
@@ -733,39 +736,39 @@ p3_cond: T_P3_COND p3_cond_clause p3_cond_elifs_opt p3_cond_else_opt
        }
        ;
 
-p3_cond_elifs_opt: /*empty*/ { $$ = NULL; }
-       | p3_cond_elifs { $$ = $1; }
+p3_elifs_opt: /*empty*/ { $$ = NULL; }
+       | p3_elifs { $$ = $1; }
        ;
 
-p3_cond_else_opt: /* empty */ { $$ = NULL; }
-       | p3_cond_else { $$ = $1; }
+p3_else_opt: /* empty */ { $$ = NULL; }
+       | p3_else { $$ = $1; }
        ;
 
-p3_cond_elifs: p3_cond_elif 
+p3_elifs: p3_elif 
        {
-           $$ = New refcounted<pub3::cond_clause_list_t> ();
+           $$ = New refcounted<pub3::if_clause_list_t> ();
 	   $$->push_back ($1);
        }
-       | p3_cond_elifs p3_cond_elif
+       | p3_elifs p3_elif
        {
            $$ = $1;
 	   $$->push_back ($2);
        }
        ;
 
-p3_cond_elif: T_P3_ELIF	p3_cond_clause { $$ = $2; } ;
+p3_elif: T_P3_ELIF	p3_if_clause { $$ = $2; } ;
 
-p3_cond_else: T_P3_ELSE p3_nested_env
+p3_else: T_P3_ELSE p3_nested_env
        {
-	   ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
+	   ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc (PLINENO);
 	   c->add_env ($2);
 	   $$ = c;
        }
        ;
 
-p3_cond_clause: '(' p3_expr ')' p3_nested_env
+p3_if_clause: '(' p3_expr ')' p3_nested_env
        {
-	    ptr<pub3::cond_clause_t> c = pub3::cond_clause_t::alloc (PLINENO);
+	    ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc (PLINENO);
 	    c->add_expr ($2);
 	    c->add_env ($4);
 	    $$ = c;
