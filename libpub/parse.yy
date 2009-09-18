@@ -72,14 +72,12 @@
 %token T_P3_LTEQ
 %token T_P3_OR
 %token T_P3_AND
-%token T_P3_COND
+%token T_P3_IF
 %token T_P3_FALSE
 %token T_P3_BEGIN_EXPR
 %token T_P3_INCLUDE
-%token T_P3_SET
-%token T_P3_SETL
-%token T_P3_SETLE
-%token T_P3_LOAD
+%token T_P3_LOCALS
+%token T_P3_UNIVERSALS
 %token T_P3_PIPE
 %token T_P3_OPEN
 %token T_P3_CLOSE

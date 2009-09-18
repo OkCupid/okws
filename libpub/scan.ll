@@ -519,16 +519,16 @@ p3_regex_finish (const char *opts)
 class p3_identifier_tab_t {
 public:
   p3_identifier_tab_t () {
-    _tab.insert ("for",   T_P3_FOR);
-    _tab.insert ("if",    T_P3_COND);
-    _tab.insert ("locals", T_P3_SETLE);
+    _tab.insert ("for", T_P3_FOR);
+    _tab.insert ("if", T_P3_IF);
+    _tab.insert ("locals", T_P3_LOCALS);
     _tab.insert ("include", T_P3_INCLUDE);
     _tab.insert ("universals", T_P3_UNIVERSALS);
     _tab.insert ("print", T_P3_PRINT);
-    _tab.insert ("elif",  T_P3_ELIF);
-    _tab.insert ("else",  T_P3_ELSE);
+    _tab.insert ("elif", T_P3_ELIF);
+    _tab.insert ("else", T_P3_ELSE);
     _tab.insert ("empty", T_P3_EMPTY);
-    _tab.insert ("load",  T_P3_LOAD);
+    _tab.insert ("load", T_P3_LOAD);
     _tab.insert ("print", T_P3_PRINT);
     _tab.insert ("case", T_P3_CASE);
     _tab.insert ("switch", T_P3_SWITCH);
