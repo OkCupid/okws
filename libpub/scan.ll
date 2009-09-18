@@ -57,6 +57,10 @@ static int yy_json_lineno = 1;
 static int yy_json_mode = 0;
 int json_error (str s);
 
+typedef enum { PRE_NONE = 0, PRE_PRE = 1, PRE_SCRIPT = 2} pre_mode_t;
+
+static pre_mode_t pre_mode;
+
 %}
 
 %option stack
@@ -67,9 +71,13 @@ WS	[ \t]
 WSN	[ \t\n]
 EOL	[ \t]*\n?
 
+SCRIPTTAG  [Ss][Cc][Rr][Ii][Pp][Tt]
+PRETAG     [Pp][Rr][Ee]
+
 %x H TXLCOM TXLCOM3 
 %x P3 P3_STR P3_REGEX 
 %x C_COMMENT JSON JSON_STR JSON_SQ_STR
+%x PRE
 
 %%
 
@@ -98,11 +106,50 @@ EOL	[ \t]*\n?
                 } 
 
 
-[^%}{\\\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
-[%}\\{\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
+[^%}{\\\[\]<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[%}\\{\[\]<]	{ yylval.ch = yytext[0]; return T_CH; }
+
+<({SCRIPTTAG}|{PRETAG})[^>]*>
+		{
+		  yylval.str = yytext; 
+		  yy_push_state (PRE);
+		  nlcount (0);
+		  // just keep track of which tag it was.
+		  if (tolower (yytext[1]) == 'p')  {
+		      pre_mode = PRE_PRE;
+                  } else {
+		      pre_mode = PRE_SCRIPT;
+		  }
+		  return T_P3_BEGIN_PRE;
+		}
+
+</{WS}*{PRETAG}{WS}*>
+	        {
+		   yylval.str = yytext;
+		   int ret = T_HTML;
+		   if (pre_mode == PRE_PRE) {
+		      pre_mode = PRE_NONE;
+		      ret = T_P3_END_PRE;
+		   } 
+		   return ret;
+		}
+
+</{WS}*{SCRIPTTAG}{WS}*>
+		{
+		   yylval.str = yytext;
+		   int ret = T_HTML;
+		   if (pre_mode = PRE_SCRIPT) {
+		      pre_mode = PRE_NONE;
+		      ret = T_P3_END_PRE;
+		   }
+		   return ret;
+		}
+
+
 
 <<EOF>>		{  return bracket_check_eof(); }
 }
+
 
 <H,P3_STR>{
 "[[[["		{
@@ -651,5 +698,6 @@ json_error (str s)
 //   P3_REGEX -- For parsing p3-style regex's
 //   C_COMMENT - style C comments
 //   JSON JSON_STR JSON_SQ_STR - For json
+//   PRE - <pre> or <script> tags mode (where White space matters)
 //
 */

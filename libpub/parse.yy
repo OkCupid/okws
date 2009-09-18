@@ -136,7 +136,7 @@ p3_html_zone: p3_html_pre
 	| p3_html_block
 	;
 
-p3_html_pre: T_P3_PRE_BEGIN p3_html_block T_P3_PRE_END
+p3_html_pre: T_P3_BEGIN_PRE p3_html_block T_P3_END_PRE
 	{
 	   ptr<pub3::html_zone_t> x = 
 	     pub3::html_zone_t::alloc (false);
@@ -162,32 +162,10 @@ p3_html_element: p3_html_text
 	| p3_pub_zone
 	;
 
-html: /* empty */ {}
-	| html html_part
-	;
+p3_inline_expr: 
+        T_P3_BEGIN_EXPR p3_expr '}' { $$ = $2; }
+        ;
 
-html_part: T_HTML 	{ PSECTION->hadd ($1); }
-	| '\n'		{ PSECTION->hadd ('\n'); }	
-	| evar		{ PSECTION->hadd (New pfile_var_t ($1, PLINENO)); }
-	| T_CH		{ PSECTION->hadd ($1); }
-	| htag		{ PSECTION->hadd ($1); PLASTHTAG = PHTAG; }
-	| ' ' 		{ PSECTION->hadd_space (); }
-	| javascript	{ PSECTION->hadd ($1); } 
-	| ptag		{ PSECTION->hadd ($1); }
-	| pre		{ PSECTION->hadd ($1); }
-	| p3_html_part
-	;
-
-p3_html_part:
-	  p3_env 
-	{ 
-	    PSECTION->hadd_el_list ($1); 
-        }
-	| p3_inline_expr
-        { 
-	    PSECTION->hadd (New pub3::inline_var_t ($1, PLINENO)); 
-        }
-	;
 
 nested_env: T_2L_BRACE
 	{ 
