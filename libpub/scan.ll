@@ -67,9 +67,9 @@ WS	[ \t]
 WSN	[ \t\n]
 EOL	[ \t]*\n?
 
-%x STR SSTR H HTAG PTAG PSTR PVAR WH HCOM JS
-%x PRE PSTR_SQ TXLCOM TXLCOM3 POUND_REGEX 
-%x P3 P3_STR P3_REGEX C_COMMENT JSON JSON_STR JSON_SQ_STR
+%x H TXLCOM TXLCOM3 
+%x P3 P3_STR P3_REGEX 
+%x C_COMMENT JSON JSON_STR JSON_SQ_STR
 
 %%
 
@@ -97,21 +97,85 @@ EOL	[ \t]*\n?
 	          } 
                 } 
 
-[%}\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
+
+[^%}{\\\[\]]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
+[%}\\{\[\]]	{ yylval.ch = yytext[0]; return T_CH; }
 
 <<EOF>>		{  return bracket_check_eof(); }
-
-[^%}{\\]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
-[{]		{ yylval.ch = yytext[0]; return T_CH; }
-\\		{ yylval.ch = yytext[0]; return T_CH; }
 }
 
-<P3>{
-"{{"		{ 
-   	     	   yy_d_brace ++; 
-		   yy_push_state (yywss ? WH : H);
-	 	   return T_2L_BRACE; 
+<H,P3_STR>{
+"[[[["		{
+		   yy_d_bracket += 2;
+		   bracket_mark_left (2);
+		   yy_push_state (TXLCOM);
 		}
+
+"[[["		{
+		   yy_d_bracket += 1;
+		   bracket_mark_left (1);
+
+		   if (yy_d_bracket == 1) {
+		      yy_push_state (TXLCOM3);
+		   } else {
+		      yy_push_state (TXLCOM);
+		   }
+		}
+
+"[["		{
+		   yy_d_bracket ++;
+		   bracket_mark_left (1);
+		   if (yy_d_bracket > 1) 
+		     yy_push_state (TXLCOM);
+		}
+
+"]]"		{ 
+                  if (yy_d_bracket > 0) {
+		     bracket_mark_right ();
+		     yy_d_bracket--;
+                  } else {
+		     yylval.str = yytext;
+		     return T_HTML;
+		  }
+                }
+
+\\"["{2,4}	|
+\\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
+}
+
+
+<TXLCOM3>{
+"]"{3}		{ 
+		   yy_d_bracket --;
+                   bracket_mark_right ();
+		   yy_pop_state (); 
+                }
+\n		{ PLINC; }
+"]"{1,2}        { /* ignore! */; }
+[^\]\n]+	{ /* ignore */; }
+}
+
+<TXLCOM>{
+"[["		{ yy_d_bracket++; bracket_mark_left (); }
+\\"[""["+	{ /* ignore */ ; }
+
+"["		|
+"\\"		|
+"]"		|
+[^\]\[\\\n]+	{ /* ignore */ ; }
+
+"]]"		{ 
+		   yy_d_bracket--; 
+		   bracket_mark_right();
+		   if (yy_d_bracket <= 1) { yy_pop_state (); } 
+                }
+
+\n		{ PLINC; }
+}
+
+
+<H,TXLCOM,TXLCOM3>{
+<<EOF>>		{  return bracket_check_eof(); }
 }
 
 <P3_STR>{
@@ -170,13 +234,18 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 &&		 { return T_P3_AND; }
 "%}"		 { pop_p3_func (); return T_P3_CLOSE; }
 
-[ \t]+		 { /* ignore */ }
+[ \t\r]+	 { /* ignore */ }
 ["'] 		 { begin_P3_STR(yytext[0]); return yytext[0]; }
 
 [/][/].*$        { /* comment -- strip out */ }
 [/][*]           { yy_push_state (C_COMMENT); }
 
-.		 { return yyerror ("illegal token in Pub v3 environment"); }
+"{{"		{ 
+   	     	   yy_d_brace ++; 
+		   yy_push_state (yywss ? WH : H);
+	 	   return T_2L_BRACE; 
+		}
+.		{ return yyerror ("illegal token in Pub v3 environment"); }
 }
 
 <P3_REGEX>{
@@ -254,25 +323,6 @@ null		     { return T_P3_NULL; }
 
 
 %%
-
-void
-begin_P3_STR (char ch)
-{
-  yy_p3_str_char = ch;
-  yy_push_state (P3_STR);
-  yy_ssln = PLINENO;
-}
-
-bool
-end_P3_STR (char ch)
-{
-  bool ret = false;
-  if (yy_p3_str_char == ch) {
-    yy_pop_state (); 
-    ret = true;
-  }
-  return ret;
-}
 
 void
 nlcount (int m)
@@ -590,21 +640,13 @@ json_error (str s)
 
 /*
 // States:
-//   STR - string within an HTML tag or within regular mode
-//   SSTR - string with single quotes around it
 //   H - HTML w/ includes and variables and switches and such
-//   HTAG - Regular tag within HTML mode
-//   PTAG - Pub tag within HTML
-//   PSTR - Parsed string
-//   PVAR - Variable state (within ${...})
-//   WH - White-space-stripped HTML
-//   HCOM - HTML Comment
-//   JS - JavaScript
 //   TXLCOM - Translator comment
 //   TXLCOM3 - Translator comment state 3
-//   POUND_REGEX - m#...# regex environment
 //   P3 -- Pub v3 (expanded boolean logic)
+//   P3_STR -- Pub v3 string (with shell-like expansions)
+//   P3_REGEX -- For parsing p3-style regex's
 //   C_COMMENT - style C comments
-//   JSON_START JSON JSON_STRING - for Json
+//   JSON JSON_STR JSON_SQ_STR - For json
 //
 */
