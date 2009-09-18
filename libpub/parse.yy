@@ -110,7 +110,7 @@
 /* ------------------------------------------------ */
 
 %%
-file: hfile 
+file: p3_html_zoner_inner
       	{
 	    pub3::pub_parser_t::set_output ($1);
 	}
@@ -120,23 +120,22 @@ file: hfile
 	}
 	;
 
-hfile: p3_zones
+hfile: p3_html_zone_inner
 	;
 
-p3_zones: /* empty */
-	| p3_zones p3_zone
-	;
-
-p3_zone:  p3_html_zone_inner
-	| p3_pub_zone
-	;
-
-p3_html_zone_inner: T_2L_BRACE p3_html_zon T_2R_BRACE
+p3_html_zone: T_2L_BRACE p3_html_zone_inner T_2R_BRACE
         ;
 
-p3_html_zone: p3_html_pre
-	| p3_html_script
-	| p3_html_block
+p3_html_zone_inner: p3_html_blocks;
+
+p3_html_blocks:  /* empty */
+	| p3_html_blocks p3_html_block
+	;
+
+p3_html_block: p3_html_text
+	| p3_html_pre
+	| p3_inline_expr
+	| p3_pub_zone
 	;
 
 p3_html_pre: T_P3_BEGIN_PRE p3_html_block T_P3_END_PRE
@@ -148,21 +147,6 @@ p3_html_pre: T_P3_BEGIN_PRE p3_html_block T_P3_END_PRE
 	     x->add ($3);
  	     $$ = $1;
 	}
-	;
-
-p3_html_text: p3_html_atom
-	| p3_html_text p3_html_atom
-	;
-
-p3_html_atom: T_HTML | T_CH;
-
-p3_html_block: p3_html_element
-	| p3_html_block p3_html_element
-	;
-
-p3_html_element: p3_html_text
-	| p3_inline_expr
-	| p3_pub_zone
 	;
 
 p3_inline_expr: 
