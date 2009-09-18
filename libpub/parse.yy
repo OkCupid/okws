@@ -92,6 +92,9 @@
 %token T_P3_EVAL
 %token T_P3_NULL
 %token T_P3_JSON
+%token T_P3_CASE
+%token T_P3_SWITCH
+%token T_P3_DEFAULT
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
