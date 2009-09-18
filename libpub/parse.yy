@@ -11,45 +11,8 @@
 
 %}
 
-%token <str> T_NUM
-%token <str> T_HNAM
-%token <str> T_HVAL
-%token <str> T_STR
-%token <str> T_VAR
-%token <ch>  T_CH
-%token <str> T_ETAG
-%token <str> T_BJST
-%token <str> T_EJS
-%token <str> T_HTML
-%token <str> T_BTAG
-%token <str> T_BPRE
-%token <str> T_EPRE
-%token <str> T_REGEX_BODY
-%token <str> T_REGEX_END
-
-%token T_PTINCLUDE
-%token T_PTLOAD
-%token T_PTINCLIST
-%token T_PTSET
-%token T_PTSETL
-%token T_PTSWITCH
-%token T_EPTAG
-%token T_BVAR
-%token T_BCONF
-%token T_EJS_SILENT
-%token T_BJS_SILENT
 %token T_2L_BRACE
 %token T_2R_BRACE
-
-%token T_REGEX_BEGIN
-%token T_RANGE_BEGIN
-
-%token T_INT_ARR
-%token T_UINT_ARR
-%token T_CHAR_ARR
-%token T_INT16_ARR
-%token T_UINT16_ARR
-%token T_INT64_ARR
 
 %type <str> var str1 bname 
 %type <num> number
@@ -147,19 +110,40 @@
 /* ------------------------------------------------ */
 
 %%
-file: hfile {}
-	| conffile {}
+file: hfile 
+      	{
+	    pub3::pub_parser_t::set_output ($1);
+	}
 	| json_obj
 	{
 	    pub3::json_parser_t::set_output ($1);
 	}
 	;
 
-conffile: T_BCONF aarr {}
+hfile: p3_zones
 	;
 
-hfile: html 
+p3_zones: /* empty */
+	| p3_zones p3_zone
 	;
+
+p3_zone:  p3_html_zone 
+	| p3_pub_zone
+	;
+
+p3_html_zone: p3_html_part
+	| p3_html_zone p3_html_part
+	;
+
+p3_html_part: p3_html_part_free
+	| p3_html_part_spaced
+	;
+
+p3_html_part_spaced: p3_html_pre
+	| p3_html_script
+	;
+
+p3_html_free: 
 
 html: /* empty */ {}
 	| html html_part

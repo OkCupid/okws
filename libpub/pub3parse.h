@@ -19,6 +19,25 @@ namespace pub3 {
     static ptr<expr_t> parse (const str &in);
   };
 
+  //-----------------------------------------------------------------------
+  
+  class zones_t {
+  public:
+
+  };
+
+  //-----------------------------------------------------------------------
+
+  class pub_parser_t {
+  public:
+    static void set_output (ptr<zones_t> z);
+    static ptr<zones_t> parse ();
+  };
+
+  //-----------------------------------------------------------------------
+
+  
+
 };
 
 
