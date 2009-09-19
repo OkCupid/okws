@@ -52,10 +52,9 @@ static void json_str_addch (int ch);
 static void json_str_add_unicode (const char *in);
 static void json_str_addstr (const char *in);
 static int  json_str_eof ();
-void json_inc_lineno ();
-static int yy_json_lineno = 1;
 static int yy_json_mode = 0;
 int json_error (str s);
+static void inc_lineno (int c = 1);
 
 typedef enum { PRE_NONE = 0, PRE_PRE = 1, PRE_SCRIPT = 2} pre_mode_t;
 
@@ -81,7 +80,7 @@ PRETAG     [Pp][Rr][Ee]
 
 %%
 
-<INITIAL>\n	{ PLINC; return ('\n'); }
+<INITIAL>\n	{ inc_lineno (); return ('\n'); }
 
 
 <H>{
@@ -198,7 +197,7 @@ PRETAG     [Pp][Rr][Ee]
                    bracket_mark_right ();
 		   yy_pop_state (); 
                 }
-\n		{ PLINC; }
+\n		{ inc_lineno (); }
 "]"{1,2}        { /* ignore! */; }
 [^\]\n]+	{ /* ignore */; }
 }
@@ -218,7 +217,7 @@ PRETAG     [Pp][Rr][Ee]
 		   if (yy_d_bracket <= 1) { yy_pop_state (); } 
                 }
 
-\n		{ PLINC; }
+\n		{ inc_lineno (); }
 }
 
 
@@ -231,7 +230,7 @@ PRETAG     [Pp][Rr][Ee]
 \\n		{ yylval.ch = '\n'; return T_P3_CHAR; }
 \\t		{ yylval.ch = '\t'; return T_P3_CHAR; }
 \\r		{ yylval.ch = '\r'; return T_P3_CHAR; }
-\n		{ PLINC; yylval.ch = yytext[0]; return T_P3_CHAR; }
+\n		{ inc_lineno (); yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 [%]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
 [\[\]]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
@@ -257,7 +256,7 @@ PRETAG     [Pp][Rr][Ee]
 
 <P3>{
 
-\n		{ PLINC; }
+\n		{ inc_lineno (); }
 
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
@@ -297,7 +296,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 }
 
 <P3_REGEX>{
-\n			{ PLINC; p3_regex_add (yytext); }
+\n			{ inc_lineno (); p3_regex_add (yytext); }
 [#/!@%}>)\]][a-zA-Z]*	{ 
 			  if (p3_regex_is_close_char (yytext[0])) {
 			     return p3_regex_finish (yytext + 1);
@@ -316,7 +315,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 }
 
 <JSON>{
-\n		     { json_inc_lineno (); }
+\n		     { inc_lineno (); }
 [ \t\r]+	     { /* ignore */ }
 [[{:,}\]]	     { return yytext[0]; }
 ([0-9]+|0x[0-9a-f]+) { yylval.str = yytext; return T_P3_UINT; }
@@ -343,7 +342,7 @@ null		     { return T_P3_NULL; }
 }
 
 <JSON_STR,JSON_SQ_STR>{
-\n		     { json_inc_lineno (); json_str_addch (yytext[0]); }
+\n		     { inc_lineno (); json_str_addch (yytext[0]); }
 <<EOF>>		     { return json_str_eof (); }
 \\\\		     { json_str_addch ('\\'); }
 \\n		     { json_str_addch ('\n'); }
@@ -364,13 +363,20 @@ null		     { return T_P3_NULL; }
 }
 
 <C_COMMENT>{
-\n		{ PLINC; }
+\n		{ inc_lineno (); }
 "*/"		{ yy_pop_state (); }
 [^*\n]+		{ /* ignore */ }
 }
 
-
+//-----------------------------------------------------------------------
+//=======================================================================
 %%
+
+void
+inc_lineno (int c)
+{
+   pub3::parser_t::current()->inc_lineno (c);
+}
 
 void
 nlcount (int m)
@@ -382,7 +388,7 @@ nlcount (int m)
       if (m && m == n) 
         break;
     }
-  PFILE->inc_lineno (n);
+  inc_lineno (n);
 }
 
 int
@@ -608,16 +614,9 @@ p3_identifier (const char *yyt)
 
 //-----------------------------------------------------------------------
 
-int
-yy_get_json_lineno ()
-{
-  return yy_json_lineno;
-}
-
 void
 json_str_begin (int str_state)
 {
-  yy_json_str_line = yy_json_lineno;
   yy_json_strbuf.tosuio ()->clear ();
   yy_push_state (str_state);
 }
@@ -666,16 +665,9 @@ json_str_end ()
 void
 yy_parse_json (str s)
 {
-  yy_json_lineno = 1;
   yy_json_mode = 1;
   yy_push_state (JSON);
   yy_scan_bytes (s.cstr (), s.len());
-}
-
-void
-json_inc_lineno ()
-{
-  yy_json_lineno ++;
 }
 
 int

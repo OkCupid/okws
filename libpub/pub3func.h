@@ -165,7 +165,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_statement_t : public pfile_el_t {
+  class expr_statement_t {
   public:
     expr_statement_t (ptr<pub3::expr_t> e, int l) 
       : _expr (e), _lineno (l) {}

@@ -112,8 +112,9 @@
 
 %type <zone> hfile p3_html_zone p3_html_zone_inner
 %type <zone> p3_html_blocks p3_html_block
-%type <zone> p3_html_pre p3_pub_zone
-%type <zone> p3_html_text p3_inline_expr
+%type <zone> p3_html_pre p3_pub_zone p3_pub_zone_inner
+%type <zone> p3_html_text p3_inline_expr 
+%type <pub_zone> p3_pub_zone_body_opt p3_pub_zone_body
 
 
 /* ------------------------------------------------ */
@@ -121,11 +122,11 @@
 %%
 file: p3_html_zoner_inner
       	{
-	    pub3::pub_parser_t::set_output ($1);
+	    pub3::parser_t::current ()->set_zone_output ($1);
 	}
 	| json_obj
 	{
-	    pub3::json_parser_t::set_output ($1);
+	    pub3::parser_t::current ()->set_expr_output ($1);
 	}
 	;
 
@@ -186,29 +187,23 @@ p3_pub_zone: T_P3_OPEN p3_pub_zone_inner T_P3_CLOSE
 p3_pub_zone_inner: p3_statement_opt p3_pub_zone_body_opt
        {
          $$ = $2;
-	 if ($1) { (*$$)[0] = $1; }
-         else { $$->pop_front (); }
+	 $$->take_reserved_slot ($1);
        }
        ;
 
-p3_pub_zone_body_opt: /* empty */ 
-        { 
- 	    $$ = New refcounted<vec<pfile_el_t *> > (); 
-	    $$->push_back (NULL);
-        }
+p3_pub_zone_body_opt: /* empty */ { $$ = zone_pub_t::alloc (); }
 	| p3_pub_zone_body        { $$ = $1; }
         ;
 
 p3_pub_zone_body: p3_pub_zone_pair
        {
-         $$ = New refcounted<vec<pfile_el_t *> > ();
-	 $$->push_back (NULL);
-	 $1.push ($$);
+         $$ = zone_pub_t::alloc ();
+	 $$->add ($1);
        } 
        | p3_pub_zone_body p3_pub_zone_pair
        {
          $$ = $1;
-	 $2.push ($$);
+	 $$->add($2);
        }
        ;
 

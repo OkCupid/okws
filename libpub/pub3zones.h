@@ -19,19 +19,21 @@ namespace pub3 {
   
   class zone_t {
   public:
-    zone_t () {}
+    zone_t (location_t l) : _location (l) {}
     virtual ~zone_t () {}
     virtual bool add (ptr<zone_t> z) { return false; }
     virtual str to_str () { return NULL; }
     virtual vec<ptr<zone_t> > *children () { return NULL; }
     virtual zone_html_t *zone_html () { return NULL; }
+
+    location_t _location; 
   };
 
   //-----------------------------------------------------------------------
 
   class zone_container_t : public zone_t {
   public:
-    zone_container_t () : zone_t () {}
+    zone_container_t (location_t l) : zone_t (l) {}
     vec<ptr<zone_t> > *children () { return &_children; }
   protected:
     vec<ptr<zone_t> > _children;
@@ -41,7 +43,7 @@ namespace pub3 {
 
   class zone_html_t : public zone_container_t {
   public:
-    zone_html_t (bool pws) : zone_container_t (), _preserve_white_space (pws) {}
+    zone_html_t (location_t l, bool pws);
     bool add (ptr<zone_t> z);
     zone_html_t *zone_html () { return this; }
     static ptr<zone_html_t> alloc (int pws);
@@ -55,7 +57,7 @@ namespace pub3 {
 
   class zone_text_t : public zone_t {
   public:
-    zone_text_t () : zone_t () {}
+    zone_text_t (location_t l) : zone_t (l) {}
     static ptr<zone_text_t> alloc ();
     bool add (ptr<zone_t> z);
     str to_str () const { return _b; }
@@ -68,10 +70,33 @@ namespace pub3 {
 
   class zone_inline_expr_t : public zone_t {
   public:
-    zone_inline_expr_t (ptr<expr_t> e) : zone_t (), _expr (e) {}
+    zone_inline_expr_t (location_t l, ptr<expr_t> e);
     static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
   protected:
     ptr<expr_t> _expr;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class zone_pub_t : public zone_t {
+  public:
+    zone_pub_t (location_t l);
+    static ptr<zone_pub_t> alloc (ptr<expr_t> e);
+
+    struct pair_t {
+      ptr<expr_statement_t> first;
+      ptr<expr_statement_t> second;
+    };
+
+    // reserve one spot extra, and get rid of it if not required
+    void reserve ();
+    void unreserve ();
+    void take_reserved_slot (ptr<expr_statement_t> s);
+    void add (ptr<expr_statement_t> s);
+    void add (zone_pair_t zp);
+    
+  protected:
+    vec<ptr<expr_statement_t> > _statements;
   };
 
   //-----------------------------------------------------------------------
