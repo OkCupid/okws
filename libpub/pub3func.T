@@ -195,33 +195,6 @@ pub3::for_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
 
 //-----------------------------------------------------------------------
 
-void
-pub3::cond_t::add_clauses (ptr<cond_clause_list_t> ccl)
-{
-  if (!_clauses) {
-    _clauses = ccl;
-  } else if (ccl) {
-    for (size_t i = 0; i < ccl->size (); i++) {
-      _clauses->push_back ((*ccl)[i]);
-    }
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::cond_t::add_clause (ptr<cond_clause_t> cc)
-{
-  if (cc) {
-    if (!_clauses) {
-      _clauses = New refcounted<cond_clause_list_t> ();
-    }
-    _clauses->push_back (cc);
-  }
-}
-
-//-----------------------------------------------------------------------
-
 bool
 pub3::cond_t::publish_nonblock (pub2_iface_t *i, output_t *o, penv_t *e) const
 {

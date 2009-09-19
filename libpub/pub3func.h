@@ -45,31 +45,6 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
-  
-  class if_t : public pfile_func_t {
-  public:
-    if_t (int l) : pfile_func_t (l), _might_block (-1) {}
-    if_t (const xpub3_if_t &x);
-
-    void add_clauses (ptr<if_clause_list_t> c);
-    void add_clause (ptr<if_clause_t> c);
-    const char *get_obj_name () const { return "pub3::if_t"; }
-    bool to_xdr (xpub_obj_t *x) const;
-    void publish (pub2_iface_t *, output_t *, penv_t *, 
-		  xpub_status_cb_t , CLOSURE) const;
-    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
-    void output (output_t *o, penv_t *e) const;
-    bool add (ptr<arglist_t> al) { return false; }
-    bool might_block () const;
-
-  private:
-    ptr<nested_env_t> find_clause (output_t *o, penv_t *e) const;
-
-    ptr<if_clause_list_t> _clauses;
-    mutable int _might_block; // one of: -1 (not set), 0 (no), and 1 (yes)
-  };
-
-  //-----------------------------------------------------------------------
 
   class print_t : public pfile_func_t {
   public:

@@ -731,7 +731,7 @@ p3_elif: T_P3_ELIF	p3_if_clause { $$ = $2; } ;
 p3_else: T_P3_ELSE p3_nested_zone
        {
 	   ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc ();
-	   c->add_env ($2);
+	   c->add_body ($2);
 	   $$ = c;
        }
        ;
@@ -740,7 +740,7 @@ p3_if_clause: '(' p3_expr ')' p3_nested_zone
        {
 	    ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc ();
 	    c->add_expr ($2);
-	    c->add_env ($4);
+	    c->add_body ($4);
 	    $$ = c;
        }
        ;

@@ -156,5 +156,32 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<if_t> if_t::alloc () { return New refcounted<if_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  void
+  if_t::add_clauses (ptr<cond_clause_list_t> ccl)
+  {
+    if (!_clauses) { _clauses = ccl; } 
+    else if (ccl) { *_clauses += *ccl; }
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void
+  if_t::add_clause (ptr<cond_clause_t> cc)
+  {
+    if (cc) {
+      if (!_clauses) {
+	_clauses = New refcounted<cond_clause_list_t> ();
+      }
+      _clauses->push_back (cc);
+    }
+  }
+  
+  //-----------------------------------------------------------------------
+  //-----------------------------------------------------------------------
+
 };
 
