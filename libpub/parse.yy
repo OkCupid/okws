@@ -133,7 +133,7 @@ p3_html_blocks:  { $$ = NULL; }
 	{
 	   ptr<pub3::zone_t> z = $1;
 	   if (z) {
-	     z = pub3::zone_html_t::alloc (true);
+	     z = pub3::zone_html_t::alloc (false);
 	     z->add ($1);
 	   }
 	   $$ = z;
@@ -148,8 +148,8 @@ p3_html_block: p3_html_text { $$ = pub3::zone_text_t::alloc ($1); }
 
 p3_html_pre: T_P3_BEGIN_PRE p3_html_block T_P3_END_PRE
 	{
-	   ptr<pub3::html_zone_t> x = 
-	     pub3::zone_html_t::alloc (false);
+	   ptr<pub3::zone_html_t> x = 
+	     pub3::zone_html_t::alloc (true);
 	     x->add ($1);
 	     x->add ($2);
 	     x->add ($3);
