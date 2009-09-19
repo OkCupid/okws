@@ -14,6 +14,8 @@
 namespace pub3 {
 
   //-----------------------------------------------------------------------
+
+  class zone_html_t;
   
   class zone_t {
   public:
@@ -22,6 +24,7 @@ namespace pub3 {
     virtual bool add (ptr<zone_t> z) { return false; }
     virtual str to_str () { return NULL; }
     virtual vec<ptr<zone_t> > *children () { return NULL; }
+    virtual zone_html_t *zone_html () { return NULL; }
   };
 
   //-----------------------------------------------------------------------
@@ -40,6 +43,7 @@ namespace pub3 {
   public:
     zone_html_t (bool pws) : zone_container_t (), _preserve_white_space (pws) {}
     bool add (ptr<zone_t> z);
+    zone_html_t *zone_html () { return this; }
 
   private:
     bool _preserve_white_space;

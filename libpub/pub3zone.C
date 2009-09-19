@@ -26,7 +26,11 @@ namespace pub3 {
   zone_html_t::add (ptr<zone_t> z)
   {
     ptr<zone_t> l;
-    if (!_children.size () || !_children.back ().add (z)) {
+    zone_html_t *zh;
+
+    if ((zh = z->zone_html ())) {
+      _children += *zh->children ();
+    } else if (!_children.size () || !_children.back ().add (z)) {
       _childen.push_back (z);
     }
     return true;
