@@ -25,10 +25,10 @@ namespace pub3 {
   bool
   zone_html_t::add (ptr<zone_t> z)
   {
-    ptr<zone_t> l;
     zone_html_t *zh;
 
-    if ((zh = z->zone_html ())) {
+    if ((zh = z->zone_html ()) && 
+	zh->preserve_white_space () == preserve_white_space ()) {
       _children += *zh->children ();
     } else if (!_children.size () || !_children.back ().add (z)) {
       _childen.push_back (z);
@@ -37,8 +37,20 @@ namespace pub3 {
   }
   
   //-----------------------------------------------------------------------
+
+  ptr<zone_html_t> zone_html_t::alloc (int pws)
+  { return New refcounted<zone_html_t> (pws) }
+
   //-----------------------------------------------------------------------
+
+  ptr<zone_text_t> zone_text_t::alloc ()
+  { return New refcounted<zone_text_t> (); }
+
   //-----------------------------------------------------------------------
+
+  ptr<zone_inline_expr_t> zone_inline_expr_t::alloc ()
+  { return New refcounted<zone_inline_expr_t> (); }
+
   //-----------------------------------------------------------------------
   //-----------------------------------------------------------------------
   //-----------------------------------------------------------------------

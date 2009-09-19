@@ -65,6 +65,9 @@
 %token <str> T_P3_STRING
 %token <regex> T_P3_REGEX
 
+%token <str> T_P3_BEGIN_PRE
+%token <str> T_P3_END_PRE
+
 %type <p3cclist> p3_cond_elifs p3_cond_elifs_opt;
 %type <p3cc> p3_cond_else p3_cond_else_opt p3_cond_clause p3_cond_elif;
 
@@ -106,6 +109,12 @@
 %type <p3exprlist> json_list json_list_elems_opt json_list_elems;
 %type <p3expr> json_scalar json_string json_int json_float json_bool;
 %type <p3pair> json_dict_pair;
+
+%type <zone> hfile p3_html_zone p3_html_zone_inner
+%type <zone> p3_html_blocks p3_html_block
+%type <zone> p3_html_pre p3_pub_zone
+%type <zone> p3_html_text p3_inline_expr
+
 
 /* ------------------------------------------------ */
 

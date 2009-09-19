@@ -70,23 +70,10 @@ struct pfile_el_pair_t {
 };
 
 struct yystype {
-  ptr<pval_t> pval;
-  ptr<arg_t> arg;
-  ptr<pvar_t> pvar;
-  ptr<pstr_t> pstr;
-  ptr<parr_t> parr;
-  pfile_el_t *el;
-  pfile_el_pair_t elpair;
-  pfile_sec_t *sec;
-  pfile_func_t *func;
-  ptr<vec<pfile_el_t *> > els;
   char ch;
   int64_t num;
   ::str str;
   yystype_regex_pair_t regex;
-  ptr<strbuf> buf;
-  ptr<nested_env_t> nenv;
-  ptr<arglist_t> arglist2;
   pub3::expr_statement_t *p3es;
 
   ptr<pub3::cond_clause_list_t> p3cclist;
@@ -96,12 +83,12 @@ struct yystype {
   ptr<pub3::expr_shell_str_t> p3str;
   ptr<pub3::expr_dict_t> p3dict;
   ptr<pub3::pair_t> p3pair;
-  nvpair_t *p3bind;
   bool bl;
   xpub3_relop_t relop;
   double dbl;
   pub3::include_t *p3include;
   pub3::print_t *print;
+  ptr<pub3::zone_t> zone;
 
 };
 

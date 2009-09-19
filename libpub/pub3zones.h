@@ -44,6 +44,8 @@ namespace pub3 {
     zone_html_t (bool pws) : zone_container_t (), _preserve_white_space (pws) {}
     bool add (ptr<zone_t> z);
     zone_html_t *zone_html () { return this; }
+    static ptr<zone_html_t> alloc (int pws);
+    bool preserve_white_space () const { return _preserve_white_space; }
 
   private:
     bool _preserve_white_space;
@@ -54,11 +56,22 @@ namespace pub3 {
   class zone_text_t : public zone_t {
   public:
     zone_text_t () : zone_t () {}
+    static ptr<zone_text_t> alloc ();
     bool add (ptr<zone_t> z);
     str to_str () const { return _b; }
   protected:
     strbuf _b;
     vec<str> _hold;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class zone_inline_expr_t : public zone_t {
+  public:
+    zone_inline_expr_t (ptr<expr_t> e) : zone_t (), _expr (e) {}
+    static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
+  protected:
+    ptr<expr_t> _expr;
   };
 
   //-----------------------------------------------------------------------
