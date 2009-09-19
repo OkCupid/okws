@@ -68,8 +68,8 @@
 %token <str> T_P3_BEGIN_PRE
 %token <str> T_P3_END_PRE
 
-%type <p3cclist> p3_cond_elifs p3_cond_elifs_opt;
-%type <p3cc> p3_cond_else p3_cond_else_opt p3_cond_clause p3_cond_elif;
+%type <p3cclist> p3_if_elifs p3_if_elifs_opt;
+%type <p3cc> p3_if_else p3_if_else_opt p3_if_clause p3_if_elif;
 
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr p3_nonparen_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
@@ -86,12 +86,12 @@
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <el> p3_control p3_for p3_cond p3_include p3_set p3_setl p3_setle;
-%type <el> p3_print_or_eval;
+%type <el> p3_control p3_for p3_if p3_include p3_set p3_setl p3_setle;
+%type <el> p3_print;
 %type <els> p3_env p3_zone p3_zone_body p3_zone_body_opt;
 %type <elpair> p3_zone_pair;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
-%type <print> p3_print_or_eval_fn;
+%type <print> p3_print_fn;
 %type <p3es> p3_expr_statement p3_statement_opt p3_statement;
 
 %type <relop> p3_relational_op;
@@ -226,7 +226,7 @@ p3_control: p3_for { $$ = $1 ;}
 	      | p3_setl { $$ = $1; }
 	      | p3_setle { $$ = $1; }
 	      | p3_include { $$ = $1; }
-	      | p3_print_or_eval { $$ = $1; }
+	      | p3_print { $$ = $1; }
 	      | p3_html_zone { $$ = New pfile_nested_env_t ($1); }
               | ';' { $$ = NULL; }
 	      ;
@@ -708,12 +708,10 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause
 	    $$ = f;
 	};
 
-p3_print_or_eval_fn: 
-         T_P3_PRINT { $$ = New pub3::print_t (false, PLINENO); }
-       | T_P3_EVAL { $$ = New pub3::print_t (true, PLINENO); }
+p3_print_fn: T_P3_PRINT { $$ = New pub3::print_t (false, PLINENO); }
        ;
 
-p3_print_or_eval: p3_print_or_eval_fn p3_flexi_tuple
+p3_print: p3_print_fn p3_flexi_tuple
        {
            pub3::print_t *p = $1;
 	   if (!p->add ($2)) {

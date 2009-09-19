@@ -84,19 +84,19 @@ namespace pub3 {
     static ptr<zone_pub_t> alloc (ptr<expr_t> e);
 
     struct pair_t {
-      ptr<expr_statement_t> first;
-      ptr<expr_statement_t> second;
+      ptr<statement_t> first;
+      ptr<statement_t> second;
     };
 
     // reserve one spot extra, and get rid of it if not required
     void reserve ();
     void unreserve ();
-    void take_reserved_slot (ptr<expr_statement_t> s);
-    void add (ptr<expr_statement_t> s);
+    void take_reserved_slot (ptr<statement_t> s);
+    void add (ptr<statement_t> s);
     void add (zone_pair_t zp);
     
   protected:
-    vec<ptr<expr_statement_t> > _statements;
+    vec<ptr<statement_t> > _statements;
   };
 
   //-----------------------------------------------------------------------

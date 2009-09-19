@@ -79,8 +79,8 @@ namespace pub3 {
   void
   zone_pub_t::add (zone_pair_t p)
   {
-    add (p.first);
-    add (p.second);
+    if (p.first)  add (p.first);
+    if (p.second) add (p.second);
   }
 
   //-----------------------------------------------------------------------

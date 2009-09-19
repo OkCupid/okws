@@ -71,18 +71,18 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class cond_clause_t {
+  class if_clause_t {
   public:
-    cond_clause_t (int l) : _lineno (l) {}
-    cond_clause_t (const xpub3_cond_clause_t &x);
+    if_clause_t (int l) : _lineno (l) {}
+    if_clause_t (const xpub3_if_clause_t &x);
 
-    static ptr<cond_clause_t> alloc (int l) 
-    { return New refcounted<cond_clause_t> (l); }
+    static ptr<if_clause_t> alloc (int l) 
+    { return New refcounted<if_clause_t> (l); }
 
     void add_expr (ptr<expr_t> e) { _expr = e; }
     void add_env (ptr<nested_env_t> e) { _env = e; }
 
-    bool to_xdr (xpub3_cond_clause_t *x) const;
+    bool to_xdr (xpub3_if_clause_t *x) const;
 
     ptr<const expr_t> expr () const { return _expr; }
     ptr<nested_env_t> env () const { return _env; }
@@ -96,18 +96,18 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  typedef vec<ptr<cond_clause_t> > cond_clause_list_t;
+  typedef vec<ptr<if_clause_t> > if_clause_list_t;
 
   //-----------------------------------------------------------------------
   
-  class cond_t : public pfile_func_t {
+  class if_t : public pfile_func_t {
   public:
-    cond_t (int l) : pfile_func_t (l), _might_block (-1) {}
-    cond_t (const xpub3_cond_t &x);
+    if_t (int l) : pfile_func_t (l), _might_block (-1) {}
+    if_t (const xpub3_if_t &x);
 
-    void add_clauses (ptr<cond_clause_list_t> c);
-    void add_clause (ptr<cond_clause_t> c);
-    const char *get_obj_name () const { return "pub3::cond_t"; }
+    void add_clauses (ptr<if_clause_list_t> c);
+    void add_clause (ptr<if_clause_t> c);
+    const char *get_obj_name () const { return "pub3::if_t"; }
     bool to_xdr (xpub_obj_t *x) const;
     void publish (pub2_iface_t *, output_t *, penv_t *, 
 		  xpub_status_cb_t , CLOSURE) const;
@@ -119,7 +119,7 @@ namespace pub3 {
   private:
     ptr<nested_env_t> find_clause (output_t *o, penv_t *e) const;
 
-    ptr<cond_clause_list_t> _clauses;
+    ptr<if_clause_list_t> _clauses;
     mutable int _might_block; // one of: -1 (not set), 0 (no), and 1 (yes)
   };
 

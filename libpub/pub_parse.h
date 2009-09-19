@@ -56,19 +56,6 @@ struct yystype_regex_pair_t {
   str opts;
 };
 
-struct pfile_el_pair_t {
-  pfile_el_pair_t (pfile_el_t *f = NULL, pfile_el_t *s = NULL) 
-    : first (f), second (s) {}
-
-  void push (ptr<vec<pfile_el_t *> > v) 
-  {
-    if (first) v->push_back (first);
-    if (second) v->push_back (second);
-  }
-
-  pfile_el_t *first, *second;
-};
-
 struct yystype {
   char ch;
   int64_t num;
@@ -82,7 +69,7 @@ struct yystype {
   ptr<pub3::expr_list_t> p3exprlist;
   ptr<pub3::expr_shell_str_t> p3str;
   ptr<pub3::expr_dict_t> p3dict;
-  ptr<pub3::pair_t> p3pair;
+  pub3::zone_pub_t::pair_t p3pair;
   bool bl;
   xpub3_relop_t relop;
   double dbl;
