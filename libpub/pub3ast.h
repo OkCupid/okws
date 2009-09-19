@@ -15,20 +15,27 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class ast_node_t {
+  public: 
+    ast_node_t (location_t l) : _location (l) {}
+  protected:
+    location_t _location; 
+  };
+
+  //-----------------------------------------------------------------------
+
   class zone_html_t;
   class zone_pub_t;
   
-  class zone_t {
+  class zone_t : public ast_node_t {
   public:
-    zone_t (location_t l) : _location (l) {}
+    zone_t (location_t l) : ast_node_t (l) {}
     virtual ~zone_t () {}
     virtual bool add (ptr<zone_t> z) { return false; }
     virtual str to_str () { return NULL; }
     virtual vec<ptr<zone_t> > *children () { return NULL; }
     virtual zone_html_t *zone_html () { return NULL; }
     virtual zone_pub_t *zone_pub () { return NULL; }
-
-    location_t _location; 
   };
 
   //-----------------------------------------------------------------------
@@ -106,6 +113,13 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class statement_t : public ast_node_t {
+  public:
+    statement_t (location_t l) : ast_node_t (l) {}
+  };
+
+  //-----------------------------------------------------------------------
+
   class statement_zone_t : public statement_t {
   public:
     statement_zone_t (location_t l, ptr<zone_t> z);
@@ -114,6 +128,61 @@ namespace pub3 {
     location_t _location;
     ptr<zone_t> _zone;
   };
+
+  //-----------------------------------------------------------------------
+
+  class for_t : public statement_t {
+  public:
+    for_t (location_t l) : statement_t (l) {}
+    for_t (const xpub3_for_t &x);
+    bool to_xdr (xpub_obj_t *x) const;
+
+    static ptr<for_t> alloc ();
+
+    bool add_params (ptr<expr_list_t> l);
+    bool add_body (ptr<zone_t> z);
+    bool add_empty (ptr<zone_t> z);
+
+    const char *get_obj_name () const { return "pub3::for_t"; }
+    virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
+			  xpub_status_cb_t , CLOSURE) const;
+    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+    void output (output_t *o, penv_t *e) const;
+    bool might_block () const { return true; }
+  protected:
+    str _iter;
+    ptr<expr_t> _arr;
+    ptr<zone_t> _body;
+    ptr<zone_t> _empty;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class if_clause_t : public statement_t {
+  public:
+    if_clause_t (location_t l) : statement_t (l) {}
+    if_clause_t (const xpub3_if_clause_t &x);
+
+    static ptr<if_clause_t> alloc ();
+
+    void add_expr (ptr<expr_t> e) { _expr = e; }
+    void add_body (ptr<zone_t> e) { _body = e; }
+
+    bool to_xdr (xpub3_if_clause_t *x) const;
+
+    ptr<const expr_t> expr () const { return _expr; }
+    ptr<nested_env_t> env () const { return _env; }
+    bool might_block () const;
+
+  private:
+    int _lineno;
+    ptr<expr_t> _expr;
+    ptr<zone_t> _body;
+  };
+
+  //-----------------------------------------------------------------------
+
+  typedef vec<ptr<if_clause_t> > if_clause_list_t;
 
   //-----------------------------------------------------------------------
 

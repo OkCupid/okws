@@ -127,10 +127,33 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  bool
+  for_t::add_params (ptr<expr_list_t> l)
+  {
 
+    bool ret = true;
+    if (!l || l->size () < 1 || l->size () > 2) {
+      PWARN ("for: takes 2 arguments (simple identifier and array)\n");
+      ret = false;
+    } else if (!(_iter = (*l)[0]->to_identifier ()) || !_iter.len ()) {
+      PWARN ("for: argument 1 must be an identifier\n");
+      ret = false;
+    } else if (l->size () > 1) {
+      _arr = (*l)[1];
+    }
+    return ret;
+  }
 
   //-----------------------------------------------------------------------
+
+  bool for_t::add_body (ptr<zone_t> z) { _body = z; return true; }
+  bool for_t::add_empty (ptr<zone_t> z) { _empty = z; return true; }
+
   //-----------------------------------------------------------------------
+
+  ptr<if_clause_t> if_clause_t::alloc () 
+  { return New refcounted<if_clause_t> (location ()); }
+
   //-----------------------------------------------------------------------
 
 };

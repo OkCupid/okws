@@ -109,11 +109,12 @@
 %type <p3expr> json_scalar json_string json_int json_float json_bool;
 %type <p3pair> json_dict_pair;
 
-%type <p3zone> hfile p3_html_zone p3_html_zone_inner
-%type <p3zone> p3_html_blocks p3_html_block
-%type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner
-%type <p3zone> p3_html_text p3_inline_expr 
-%type <p3pubizone> p3_pub_zone_body_opt p3_pub_zone_body
+%type <p3zone> hfile p3_html_zone p3_html_zone_inner;
+%type <p3zone> p3_html_blocks p3_html_block;
+%type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner;
+%type <p3zone> p3_html_text p3_inline_expr;
+%type <p3zone> p3_pub_zone_body_opt p3_pub_zone_body p3_nested_zone;
+%type <p3zone> p3_empty_clause;
 
 
 /* ------------------------------------------------ */
@@ -675,11 +676,11 @@ p3_nested_zone: p3_html_zone { $$ = $1; }
 
 p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause 
         {
-	    pub3::for_t *f = New pub3::for_t (PLINENO);
+	    ptr<pub3::for_t> f = pub3::for_t::alloc ();
 	    if (!f->add ($2)) {
 	      yy_parse_fail();
 	    }
-	    f->add_env ($3);
+	    f->add_body ($3);
 	    f->add_empty ($4);
 	    $$ = f;
 	};
@@ -697,11 +698,11 @@ p3_print: T_P3_PRINT p3_flexi_tuple
 
 p3_if: T_P3_IF p3_if_clause p3_elifs_opt p3_else_opt
        {
-          pub3::if_t *c = New pub3::if_t (PLINENO);
-	  c->add_clause ($2);
-	  c->add_clauses ($3);
-	  c->add_clause ($4);
-	  $$ = c;
+          ptr<pub3::if_t> i = pub3::if_t::alloc ();
+	  i->add_clause ($2);
+	  i->add_clauses ($3);
+	  i->add_clause ($4);
+	  $$ = i;
        }
        ;
 
@@ -729,7 +730,7 @@ p3_elif: T_P3_ELIF	p3_if_clause { $$ = $2; } ;
 
 p3_else: T_P3_ELSE p3_nested_zone
        {
-	   ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc (PLINENO);
+	   ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc ();
 	   c->add_env ($2);
 	   $$ = c;
        }
@@ -737,7 +738,7 @@ p3_else: T_P3_ELSE p3_nested_zone
 
 p3_if_clause: '(' p3_expr ')' p3_nested_zone
        {
-	    ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc (PLINENO);
+	    ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc ();
 	    c->add_expr ($2);
 	    c->add_env ($4);
 	    $$ = c;
