@@ -25,7 +25,6 @@
 %type <arg> arg regex range
 %type <parr> i_arr_open
 %type <buf> regex_body
-%type <nenv> nested_env p3_empty_clause p3_nested_env
 
 /* ------------------------------------------------ */
 
@@ -86,8 +85,8 @@
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <el> p3_control p3_for p3_if p3_include p3_set p3_setl p3_setle;
-%type <el> p3_print;
+%type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
+%type <p3statement> p3_universals p3_print;
 %type <els> p3_env p3_zone p3_zone_body p3_zone_body_opt;
 %type <elpair> p3_zone_pair;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
@@ -110,11 +109,11 @@
 %type <p3expr> json_scalar json_string json_int json_float json_bool;
 %type <p3pair> json_dict_pair;
 
-%type <zone> hfile p3_html_zone p3_html_zone_inner
-%type <zone> p3_html_blocks p3_html_block
-%type <zone> p3_html_pre p3_pub_zone p3_pub_zone_inner
-%type <zone> p3_html_text p3_inline_expr 
-%type <pub_zone> p3_pub_zone_body_opt p3_pub_zone_body
+%type <p3zone> hfile p3_html_zone p3_html_zone_inner
+%type <p3zone> p3_html_blocks p3_html_block
+%type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner
+%type <p3zone> p3_html_text p3_inline_expr 
+%type <p3pubizone> p3_pub_zone_body_opt p3_pub_zone_body
 
 
 /* ------------------------------------------------ */
@@ -214,20 +213,13 @@ p3_pub_zone_pair: p3_control p3_statement_opt
        }
        ;
 
-
-/* XXX - might want to fix the nested_env assignment, implemented 
- * as such to avoid another object and level of redirection.  The
- * downside is that scoping rules aren't followed, since the nested
- * env is flattened into the parent env.
- */
-p3_control: p3_for { $$ = $1 ;}
-	      | p3_cond { $$ = $1; }
-	      | p3_set { $$ = $1; }
-	      | p3_setl { $$ = $1; }
-	      | p3_setle { $$ = $1; }
+p3_control:     p3_for { $$ = $1; }
+	      | p3_if { $$ = $1; }
+	      | p3_locals { $$ = $1; }
+	      | p3_universals { $$ = $1; }
 	      | p3_include { $$ = $1; }
 	      | p3_print { $$ = $1; }
-	      | p3_html_zone { $$ = New pfile_nested_env_t ($1); }
+	      | p3_html_zone { $$ = pub3::statement_zone_t::alloc ($1); }
               | ';' { $$ = NULL; }
 	      ;
 
@@ -350,8 +342,6 @@ p3_multiplicative_expr:
              $$ = New refcounted<pub3::expr_div_t> ($1, $3, PLINENO);
 	   }
 	   ;	   
-
-	
 
 p3_additive_op:
 	     '-'       { $$ = false; }
@@ -663,15 +653,7 @@ p3_set_arg: '(' p3_dictionary ')' { $$ = $2; }
 	    | p3_dictionary { $$ = $1; }
 	    ;
 
-p3_set: T_P3_SET p3_set_arg
-	{
-           pub3::set_func_t *f = New pub3::set_func_t (PLINENO);
-           f->add ($2);   
-	   $$ = f;
-	}
-	;
-
-p3_setl: T_P3_SETL p3_set_arg
+p3_universals: T_P3_UNIVERALS p3_set_arg
 	{
            pfile_set_func_t *f = New pfile_set_local_func_t (PLINENO);
            f->add ($2);   
@@ -679,7 +661,7 @@ p3_setl: T_P3_SETL p3_set_arg
         }
         ;
 
-p3_setle: T_P3_SETLE p3_set_arg
+p3_locals: T_P3_LOCALS p3_set_arg
 	{
            pfile_set_func_t *f = New pub3::setle_func_t (PLINENO);
            f->add ($2);   
@@ -687,17 +669,11 @@ p3_setle: T_P3_SETLE p3_set_arg
         }
 	;
 
-p3_nested_env: p3_html_zone { $$ = $1; }
-	| 
-        '{' p3_zone '}'
-	{
- 	  pfile_html_sec_t *s = New pfile_html_sec_t (PLINENO);
-	  s->hadd_el_list ($2);
-	  $$ = New refcounted<nested_env_t> (s);
-	}
+p3_nested_zone: p3_html_zone { $$ = $1; }
+	| '{' p3_pub_zone_inner '}' { $$ = $1; }
 	;
 
-p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause 
+p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause 
         {
 	    pub3::for_t *f = New pub3::for_t (PLINENO);
 	    if (!f->add ($2)) {
@@ -708,12 +684,9 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_env p3_empty_clause
 	    $$ = f;
 	};
 
-p3_print_fn: T_P3_PRINT { $$ = New pub3::print_t (false, PLINENO); }
-       ;
-
-p3_print: p3_print_fn p3_flexi_tuple
+p3_print: T_P3_PRINT p3_flexi_tuple
        {
-           pub3::print_t *p = $1;
+           ptr<pub3::print_t> p = pub3::print_t:alloc ();
 	   if (!p->add ($2)) {
 	     PWARN("bad arguments passed to print");
 	     yy_parse_fail();
@@ -754,7 +727,7 @@ p3_elifs: p3_elif
 
 p3_elif: T_P3_ELIF	p3_if_clause { $$ = $2; } ;
 
-p3_else: T_P3_ELSE p3_nested_env
+p3_else: T_P3_ELSE p3_nested_zone
        {
 	   ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc (PLINENO);
 	   c->add_env ($2);
@@ -762,7 +735,7 @@ p3_else: T_P3_ELSE p3_nested_env
        }
        ;
 
-p3_if_clause: '(' p3_expr ')' p3_nested_env
+p3_if_clause: '(' p3_expr ')' p3_nested_zone
        {
 	    ptr<pub3::if_clause_t> c = pub3::if_clause_t::alloc (PLINENO);
 	    c->add_expr ($2);
@@ -773,7 +746,7 @@ p3_if_clause: '(' p3_expr ')' p3_nested_env
 
 p3_empty_clause: 
          /* empty */                   { $$ = NULL; }
-	 | T_P3_EMPTY p3_nested_env    { $$ = $2; }
+	 | T_P3_EMPTY p3_nested_zone   { $$ = $2; }
  	 ;
 
 		  

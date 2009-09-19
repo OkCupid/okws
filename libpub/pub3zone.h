@@ -16,6 +16,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   class zone_html_t;
+  class zone_pub_t;
   
   class zone_t {
   public:
@@ -25,6 +26,7 @@ namespace pub3 {
     virtual str to_str () { return NULL; }
     virtual vec<ptr<zone_t> > *children () { return NULL; }
     virtual zone_html_t *zone_html () { return NULL; }
+    virtual zone_pub_t *zone_pub () { return NULL; }
 
     location_t _location; 
   };
@@ -94,9 +96,23 @@ namespace pub3 {
     void take_reserved_slot (ptr<statement_t> s);
     void add (ptr<statement_t> s);
     void add (zone_pair_t zp);
+    bool add (ptr<zone_t> z);
+    vec<ptr<statement_t> > *statements () { return &_statements; }
+    zone_pub_t *zone_pub () { return this; }
     
   protected:
     vec<ptr<statement_t> > _statements;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class statement_zone_t : public statement_t {
+  public:
+    statement_zone_t (location_t l, ptr<zone_t> z);
+    static ptr<statement_zone_t> alloc (ptr<zone_t> z);
+  protected:
+    location_t _location;
+    ptr<zone_t> _zone;
   };
 
   //-----------------------------------------------------------------------

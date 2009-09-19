@@ -75,7 +75,8 @@ struct yystype {
   double dbl;
   pub3::include_t *p3include;
   pub3::print_t *print;
-  ptr<pub3::zone_t> zone;
+  ptr<pub3::zone_t> p3zone;
+  ptr<pub3::statement_t> p3statement;
 
 };
 
