@@ -232,5 +232,42 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class case_t : public statement_t {
+  public:
+    case_t (location_t l) : statement_t (l) {}
+    static ptr<case_t> alloc ();
+    void add_key (const str &k);
+    void add_zone (ptr<zone_t> z);
+  protected:
+    str _key;
+    ptr<zone_t> _zone;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class case_list_t : public vec<ptr<case_t > > {
+  public:
+    case_list_t (location_t l) : statement_t (l) {}
+    static ptr<case_list_t> alloc ();
+    void add_case (ptr<case_t> c);
+  };
+
+  //-----------------------------------------------------------------------
+
+  class switch_t : public statement_t {
+  public:
+    switch_t (location_t l) : statement_t (l) {}
+    static ptr<switch_t> alloc ();
+    void add_cases (ptr<case_list_t> l);
+    void add_key (ptr<expr_t> x);
+  protected:
+    ptr<expr_t> _key;
+    ptr<vec<case_list_t> > _cases;
+    qhash<str, ptr<case_t> > _map;
+    ptr<case_t> _default;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 

@@ -94,6 +94,8 @@
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <print> p3_print_fn;
 %type <p3es> p3_expr_statement p3_statement_opt p3_statement;
+%type <p3cl> p3_switch_case_list p3_switch_cases;
+%type <p3case> p3_switch_case p3_switch_default p3_switch_default_opt; 
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
@@ -230,7 +232,7 @@ p3_control:     p3_for { $$ = $1; }
 p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_case_list '}'
 	  {
 	     ptr<pub3::switch_t> s = pub3::switch_t::alloc ();
-	     s->add_expr ($3);
+	     s->add_key ($3);
 	     s->add_cases ($6);
 	     $$ = s;
 	  }
@@ -239,7 +241,7 @@ p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_case_list '}'
 p3_switch_case_list:  p3_switch_cases p3_switch_default_opt
           {
 	     ptr<pub3::case_list_t> l = $1;
-	     $1->add ($2);
+	     $1->add_case ($2);
 	     $$ = $1;
 	  }
 	  ;
@@ -265,11 +267,11 @@ p3_switch_case: T_P3_CASE '(' p3_constant_or_string ')' p3_nested_zone
 	  }
 	  ;
 
-p3_default_opt: /* empty */ { $$ = NULL; }
-          | p3_default { $$ = $1; }
+p3_switch_default_opt: /* empty */ { $$ = NULL; }
+          | p3_switch_default { $$ = $1; }
 	  ;
 
-p3_default: T_P3_DEFAULT p3_nested_zone
+p3_switch_default: T_P3_DEFAULT p3_nested_zone
 	  {
 	     ptr<pub3::case_t> c = pub3::case_t::alloc ();
 	     c->add_zone ($2);

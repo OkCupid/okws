@@ -192,8 +192,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<pair_t> pair_t::alloc (const str &k, ptr<expr_t> x)
-  { return New refcounted<pair_t> (k, x); }
+  void case_list_t::add_case (ptr<case_t> c) { if (c) { push_back (c); } }
+  void switch_t::add_cases (ptr<case_list_t> l) { _cases = l; }
+  void switch_t::add_key (ptr<expr_t> x) { _key = x; }
+  void case_t::add_key (const str &k) { _key = k; }
+  void case_t::add_zone (ptr<zone_t> z) { _zone = z; }
+
+  //-----------------------------------------------------------------------
+
+  ptr<case_t> case_t::alloc () { return New refcounted<case_t> (location ()); }
+  ptr<case_list_t> case_list_t::alloc ()
+  { return New refcounted<case_list_t> (location ()); }
+  ptr<switch_t> switch_t::alloc () 
+  { return New refcounted<switch_t> (location ()); }
 
   //-----------------------------------------------------------------------
 

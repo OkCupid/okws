@@ -77,6 +77,8 @@ struct yystype {
   pub3::print_t *print;
   ptr<pub3::zone_t> p3zone;
   ptr<pub3::statement_t> p3statement;
+  ptr<pub3::case_t> p3case;
+  ptr<pub3::case_list_t> p3cl;
 
 };
 
