@@ -60,9 +60,14 @@ struct bb_t {
 
 typedef bb_t cc_t<>;
 
+struct rpc_10_arg_t {
+       bb_t bb;
+       unsigned iters;
+};
+
 struct mote_t {
        int questionid;
-       unsigned int data;
+       unsigned data;
 };
 
 typedef mote_t motes_t<>;
@@ -107,6 +112,9 @@ program TST_PROG {
 
 		int
 		TST_RPC9(aston_t) = 9;
+		
+		cc_t
+		TST_RPC10(rpc_10_arg_t) = 10;
 
 	} = 1;
 } = 34291;

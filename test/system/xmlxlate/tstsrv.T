@@ -80,6 +80,17 @@ tstsrv_t::dispatch (svccb *sbp)
       sbp->replyref (a->questions.size ()); 
       break;
     }
+  case TST_RPC10:
+    {
+      const rpc_10_arg_t *a = sbp->Xtmpl getarg<rpc_10_arg_t> ();
+      cc_t res;
+      size_t n = a->iters;
+      for (size_t i = 0; i < n; i++) {
+	res.push_back (a->bb);
+      }
+      sbp->replyref (res);
+      break;
+    }
   default:
     sbp->reject (PROC_UNAVAIL);
     break;

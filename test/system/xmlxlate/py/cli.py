@@ -165,3 +165,30 @@ for i in range(0,10):
 
     if res != 6888:
         print "XXX Problem: bad base64-decoding!"
+
+
+res = server.xdr.xlate (
+    { "hostname" : "127.0.0.1",
+      "port" : port,
+      "program" : "tst_prog_1",
+      "procno" : C.TST_RPC10,
+      "arg" : { "iters" : "ui4:1",
+                "bb" : { "x" : "ui4:1000", "y" : "i8:100000", 
+                         "z" : "ui8:300000000"} 
+                }
+      } )
+
+print (res)
+
+res = server.xdr.xlate (
+    { "hostname" : "127.0.0.1",
+      "port" : port,
+      "program" : "tst_prog_1",
+      "procno" : C.TST_RPC10,
+      "arg" : { "iters" : "ui4:0",
+                "bb" : { "x" : "ui4:1000", "y" : "i8:100000", 
+                         "z" : "ui8:300000000"} 
+                }
+      } )
+
+print (res)
