@@ -223,8 +223,62 @@ p3_control:     p3_for { $$ = $1; }
 	      | p3_include { $$ = $1; }
 	      | p3_print { $$ = $1; }
 	      | p3_html_zone { $$ = pub3::statement_zone_t::alloc ($1); }
+	      | p3_switch { $$ = $1; }
               | ';' { $$ = NULL; }
 	      ;
+
+p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_case_list '}'
+	  {
+	     ptr<pub3::switch_t> s = pub3::switch_t::alloc ();
+	     s->add_expr ($3);
+	     s->add_cases ($6);
+	     $$ = s;
+	  }
+	  ;
+
+p3_switch_case_list:  p3_switch_cases p3_switch_default_opt
+          {
+	     ptr<pub3::case_list_t> l = $1;
+	     $1->add ($2);
+	     $$ = $1;
+	  }
+	  ;
+
+p3_switch_cases: /*empty */
+          {
+ 	     ptr<pub3::case_list_t> l = pub3::case_list_t::alloc ();
+	     $$ = $1;
+	  }
+	  | p3_switch_cases p3_switch_case
+	  {
+	     $1->add ($2);
+	     $$ = $1;
+	  }
+	  ;
+
+p3_switch_case: T_P3_CASE '(' p3_constant_or_string ')' p3_nested_zone
+          {
+	     ptr<pub3::case_t> c = pub3::case_t::alloc ();
+	     c->add_key ($3);
+	     c->add_zone ($5);
+	     $$ = c;
+	  }
+	  ;
+
+p3_default_opt: /* empty */ { $$ = NULL; }
+          | p3_default { $$ = $1; }
+	  ;
+
+p3_default: T_P3_DEFAULT p3_nested_zone
+	  {
+	     ptr<pub3::case_t> c = pub3::case_t::alloc ();
+	     c->add_zone ($2);
+	     $$ = c;
+	  }
+	  ;
+
+p3_scalar: p3_int | p3_string;
+
 
 p3_statement_opt: /*empty*/ { $$ = NULL; }
 	      | p3_statement
@@ -477,6 +531,8 @@ p3_constant:
 	   }
 	   ;
 
+p3_constant_or_string: p3_constant | p3_string_constant;
+
 p3_identifier: T_P3_IDENTIFIER { $$ = $1; } ;
 
 p3_boolean_constant: 
@@ -630,6 +686,18 @@ p3_string_element:
            $$ = $1; 
         }
 	;
+
+p3_string_constant: /* empty */ { $$ = pub3::expr_str_t::alloc (); }
+        | p3_string_constant p3_string_constant_element
+	{
+	   $1->add ($2);
+	   $$ = $1;
+	}
+	;
+
+p3_string_constant_element: T_P3_STRING { $$ = $1; }
+        | T_P3_CHAR { $$ = strbuf ("%c", $1); }
+        ;
 
 p3_inline_expr: 
         T_P3_BEGIN_EXPR p3_expr '}' { $$ = $2; }
