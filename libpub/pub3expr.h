@@ -844,7 +844,8 @@ namespace pub3 {
 
   class pair_t {
   public:
-    pair_t (const str &s, ptr<expr_t> x) : _name (s), _expr (x) {}
+    pair_t (const str &s, ptr<expr_t> x);
+    static ptr<pair_t> alloc (const str &s, ptr<expr_t> x);
     str name () const { return _name; }
     ptr<expr_t> expr () { return _expr; }
     ptr<const expr_t> expr () const { return _expr; }

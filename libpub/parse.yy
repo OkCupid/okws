@@ -552,7 +552,7 @@ p3_half_binding: p3_bind_key p3_bind_value_opt
 	;
 
 p3_bind_value_opt : /* empty */ { $$ = NULL; }
-	| ':' p3_expr { $$ = $2; }
+	| p3_bindchar p3_expr { $$ = $2; }
 	;
 
 p3_bindings_opt: 
@@ -575,7 +575,7 @@ p3_bindings: p3_binding
 
 p3_binding: p3_bind_key p3_bindchar p3_expr
 	{
-	   $$ = New nvpair_t ($1, $3);
+	   $$ = pub3::pair_t::alloc ($1, $3);
 	}
 	;
 
