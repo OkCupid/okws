@@ -198,6 +198,11 @@ int
 XML_creator_t::push_array (size_t s, size_t capac, bool fixed, 
 			   ssize_t *sz)
 {
+  if (s == 0) {
+    // In this case, need to push something useful so that the 
+    // higher-level object knows that something is here.
+    top () = xml_empty_array_t ();
+  }
   *sz = -1;
   return 0;
 }
