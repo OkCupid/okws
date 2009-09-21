@@ -14,6 +14,8 @@ namespace pub3 {
   class expr_t;
   class expr_regex_t;
   class expr_assignment_t;
+  class expr_dict_t;
+  class expr_list_t;
 
   //-----------------------------------------------------------------------
 
@@ -71,7 +73,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_t : public pval_t {
+  class expr_t : public refcount {
   public:
     expr_t (int lineno = -1) : _lineno (lineno) {}
     virtual ~expr_t () {}
@@ -111,9 +113,10 @@ namespace pub3 {
     //
     // Once objects are evaluated, they can be turned into....
 
-    virtual ptr<const aarr_t> to_dict () const { return NULL; }
-    virtual ptr<aarr_t> to_dict () { return NULL; }
-    virtual ptr<const vec_iface_t> to_vec_iface () const { return NULL; }
+    virtual ptr<const expr_dict_t> to_dict () const { return NULL; }
+    virtual ptr<expr_dict_t> to_dict () { return NULL; }
+    virtual ptr<const expr_list_t> to_list () const { return NULL; }
+    virtual ptr<expr_list_t> to_list () { return NULL; }
 
     virtual scalar_obj_t to_scalar () const { return scalar_obj_t (); }
     virtual str to_identifier () const { return NULL; }
@@ -852,10 +855,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_dict_t : public expr_t {
+  class expr_dict_t : public expr_t,
+		      public qhash<str, ptr<expr_t> > {
   public:
-    expr_dict_t (int lineno = -1) 
-      : expr_t (lineno), _dict (New refcounted<aarr_arg_t> ()) {}
+    expr_dict_t (int lineno = -1) : expr_t (lineno) {}
     expr_dict_t (const xpub3_dict_t &x);
     expr_dict_t (ptr<aarr_arg_t> d, int lineno = -1)
       : expr_t (lineno), _dict (d) {}
@@ -874,6 +877,9 @@ namespace pub3 {
     void add (ptr<pair_t> p);
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
+
+    ptr<expr_dict_t> to_dict () { return mkref (this); }
+    ptr<const expr_dict_t> to_dict () const { return mrkef (this); }
 
     ptr<aarr_t> to_dict () { return _dict; }
     ptr<aarr_arg_t> dict () { return _dict; }
@@ -894,7 +900,7 @@ namespace pub3 {
 
     str type_to_str () const { return "dict"; }
   protected:
-    ptr<aarr_arg_t> _dict;
+    qhash<str, ptr<expr_t> > _h;
   }; 
 
   //-----------------------------------------------------------------------

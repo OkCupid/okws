@@ -181,6 +181,15 @@ namespace pub3 {
   }
   
   //-----------------------------------------------------------------------
+
+  ptr<locals_t> locals_t::alloc () 
+  { return New refcounted<locals_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<universals_t> univerals_t::alloc () 
+  { return New refcounted<universals_t> (location ()); }
+
   //-----------------------------------------------------------------------
 
 };

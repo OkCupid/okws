@@ -1,8 +1,7 @@
 // -*-c++-*-
 /* $Id: parr.h 2784 2007-04-20 16:32:00Z max $ */
 
-#ifndef _LIBPUB_PUB3PARSE_H_
-#define _LIBPUB_PUB3PARSE_H_
+#pragma once
 
 #include "pub.h"
 #include "parr.h"
@@ -213,8 +212,25 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class locals_t : public statement_t {
+  public:
+    locals_t (location_t l) : statement_t (l) {}
+    static ptr<locals_t> alloc ();
+  protected:
+    ptr<expr_dict_t> _bindings;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class universals_t : public statement_t {
+  public:
+    universals_t (location_t l) : statement_t (l) {}
+    static ptr<universals_t> alloc ();
+  protected:
+    ptr<expr_dict_t> _bindings;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
-
-
-#endif /* _LIBPUB_PUB3OBJ_H_ */
 

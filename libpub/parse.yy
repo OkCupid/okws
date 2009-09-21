@@ -80,10 +80,12 @@
 %type <p3expr> p3_assignment_expr;
 %type <p3expr> p3_conditional_expr;
 %type <p3expr> p3_logical_OR_expr;
+%type <p3expr> p3_bind_value_opt;
 %type <p3expr> p3_null;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
-%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_set_arg;
-%type <p3bind> p3_binding;
+%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_locals_arg;
+%type <p3dict> p3_half_bindings_opt p3_half_bingins;
+%type <p3bind> p3_binding p3_half_binding p3_half_dictionary;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
 %type <p3statement> p3_universals p3_print;
@@ -521,17 +523,46 @@ p3_character_constant: T_P3_CHAR { $$ = $1; };
 p3_dictionary: '{' p3_bindings_opt '}' { $$ = $2; }
 	       ;
 
+p3_half_dictionary : '{' p3_half_bindings_opt '}' { $$ = $2 } 
+  	   ;
+
+p3_half_bindings_opt : /* empty */ { $$ = pub3::expr_dict_t::parse_alloc (); }
+	| p3_half_bindigs { $$ = $1; }
+	;
+
+p3_half_bindings : p3_half_binding
+	{
+	   ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::parse_alloc (); 
+	   d->add ($1);
+	   $$ = d;
+
+	}
+	| p3_half_bindings ',' p3_half_binding
+	{
+	   $1->add ($3);
+	   $$ = $1;
+	}
+	;
+
+p3_half_binding: p3_bind_key p3_bind_value_opt
+	{
+	   $1->add ($2);
+	   $$ = $1;
+	}
+	;
+
+p3_bind_value_opt : /* empty */ { $$ = NULL; }
+	| ':' p3_expr { $$ = $2; }
+	;
+
 p3_bindings_opt: 
-         /* empty */     
-        { $$ = New refcounted<pub3::expr_dict_t> (PLINENO); }
-	| p3_bindings 
-        { $$ = $1; }
+         /* empty */  { $$ = pub3::expr_dict_t::parse_alloc (); }
+	| p3_bindings { $$ = $1; }
 	;
 
 p3_bindings: p3_binding
         {
-	   ptr<pub3::expr_dict_t> d = 
-               New refcounted<pub3::expr_dict_t> (PLINENO);
+	   ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::parse_alloc ();
            d->add ($1);
 	   $$ = d;	 
 	}
@@ -650,23 +681,23 @@ p3_include: p3_include_or_load p3_flexi_tuple
            $$ = f;
 	};
 
-p3_set_arg: '(' p3_dictionary ')' { $$ = $2; }
-	    | p3_dictionary { $$ = $1; }
+p3_locals_arg: '(' p3_half_dictionary ')' { $$ = $2; }
+	    | p3_half_dictionary { $$ = $1; }
 	    ;
 
-p3_universals: T_P3_UNIVERALS p3_set_arg
+p3_universals: T_P3_UNIVERALS p3_locals_arg
 	{
-           pfile_set_func_t *f = New pfile_set_local_func_t (PLINENO);
-           f->add ($2);   
-	   $$ = f;
+	   ptr<pub3::universals_t> u = pub3::universals_t::alloc ();
+	   u->add ($2);
+	   $$ = u;
         }
         ;
 
-p3_locals: T_P3_LOCALS p3_set_arg
+p3_locals: T_P3_LOCALS p3_locals_arg
 	{
-           pfile_set_func_t *f = New pub3::setle_func_t (PLINENO);
-           f->add ($2);   
-	   $$ = f;
+	   ptr<pub3::locals_t> l = pub3::locals_t::alloc ();
+           l->add ($2);   
+	   $$ = l;
         }
 	;
 
