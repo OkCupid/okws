@@ -1,0 +1,7 @@
+
+OKWS 3.0 Notes
+--------------
+   - WSS:
+        - don't strip textareas, either.
+		- don't strip JSON output (i.e., output that's entirely JS without any
+		  surrounding script tags.)
