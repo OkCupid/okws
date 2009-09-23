@@ -34,17 +34,6 @@ pub_parser_t *parser;
 pub_client_t *pcli;
 pub_base_t *pubincluder;
 
-// dealloc space after each run
-#ifdef HAVE_RECENT_FLEX
-extern int yylex_destroy(void);
-void flex_cleanup() { yylex_destroy (); }
-#else
-void flex_cleanup()
-{
-  warn << "XXX Flex cleanup can't run! Leaking memory!! XXX\n";
-}
-#endif
-
 char dwarnbuf[1024];
 
 bound_pfile_t::~bound_pfile_t ()

@@ -311,6 +311,7 @@ extern size_t ok_pub_max_include_depth;
 // pub3 constants
 //
 extern bool ok_pub3_json_strict_escaping;
+extern size_t ok_pub3_yy_buffer_size;
 
 
 /**

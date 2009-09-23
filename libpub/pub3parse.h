@@ -20,7 +20,9 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   struct location_t {
+    location_t () : _lineno (0) {}
     location_t (str f, lineno_t l) : _filename (f), _lineno (l) {}
+    str to_str () const;
     str _filename;
     lineno_t _lineno;
   };
@@ -62,11 +64,16 @@ namespace pub3 {
   class pub_parser_t : public parser_t {
   public:
     pub_parser_t (str f) : parser_t (f) {}
-    void set_output (ptr<zones_t> z);
-    ptr<zones_t> parse ();
+    void set_zone_output (ptr<zone_t> z);
+    ptr<file_t> parse (ptr<metadata_t> m);
     bool set_zone_output (ptr<pub3::zone_t> z);
-  private:
+    const vec<str> &errors () const;
+    void error (str d);
+  protected:
+    FILE *open_file (const str &fn);
+    location_t _location;
     ptr<zone_t> _out;
+    vec<str> _errors;
   };
 
   //-----------------------------------------------------------------------

@@ -85,22 +85,6 @@ public:
   void prune ();
 };
 
-struct phash_t {
-  phash_t () {}
-  phash_t (const char *s) { memcpy (val, s, PUBHASHSIZE); }
-  phash_t (const xpubhash_t &h) { memcpy (val, h.base (), PUBHASHSIZE); }
-  static ptr<phash_t> alloc (const xpubhash_t &x) 
-  { return New refcounted<phash_t> (x); }
-  char val[PUBHASHSIZE];
-  str to_str () const { return armor64 (val, PUBHASHSIZE); }
-  hash_t hash_hash () const;
-  bool operator== (const phash_t &ph) const;
-  bool operator== (const xpubhash_t &ph) const;
-  bool operator!= (const xpubhash_t &ph) const;
-  bool operator!= (const phash_t &ph) const;
-  void to_xdr (xpubhash_t *ph) const;
-};
-
 typedef ptr<phash_t> phashp_t;
 typedef callback<void, phashp_t>::ref phash_cb;
 
@@ -117,49 +101,7 @@ template<> struct equals<phashp_t> {
   { return (*s1 == *s2); }
 };
 
-// binds filenames to content-hashes
-struct pbinding_t : public okdbg_dumpable_t { 
-  pbinding_t () : toplev (false) {}
-  virtual ~pbinding_t () {}
-  pbinding_t (const pfnm_t &f, const phashp_t &h, bool tl = false) 
-    : fn (f), hsh (h), toplev (tl) {}
-  pbinding_t (const xpub_pbinding_t &x);
-
-  void to_xdr (xpub_pbinding_t *x) const;
-
-  inline phashp_t hash () const { return hsh; }
-  inline pfnm_t filename () const { return fn; }
-
-  bool operator== (const phash_t &ph) { return *hsh == ph; }
-  bool operator!= (const phash_t &ph) { return !(*hsh == ph); }
-
-  void okdbg_dump_vec (vec<str> *s) const;
-
-  const pfnm_t fn;
-  const phashp_t hsh;
-  const bool toplev;
-  mutable ihash_entry<pbinding_t> hlink;
-};
-
-typedef ihash<const pfnm_t, pbinding_t, &pbinding_t::fn,
-	      &pbinding_t::hlink> _bindmap_t;
-
-typedef callback<void, pbinding_t *>::ref bindcb;
-
-struct bindtab_t : public _bindmap_t , public okdbg_dumpable_t {
-public:
-  bindtab_t (phash_cb::ptr cb = NULL) : _bindmap_t () , delcb (cb) {}
-  virtual ~bindtab_t () {}
-  void bind (const pbinding_t *p);
-  void unbind (const pbinding_t *p);
-  void clear2 () { cnt.clear (); clear (); }
-  void okdbg_dump_vec (vec<str> *s) const;
-private:
-  phash_cb::ptr delcb;
-  inline void inc (phashp_t h);
-  inline void dec (phashp_t h);
-  qhash<phashp_t, u_int> cnt;
-};
+typedef event<ptr<binding_t> >::ref bind_ev_t;
 
 
 bool file2hash (const str &fn, phash_t *ph, struct stat *sbp = NULL);
