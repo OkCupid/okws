@@ -56,9 +56,9 @@ static int yy_json_mode = 0;
 int json_error (str s);
 static void inc_lineno (int c = 1);
 
-typedef enum { PRE_NONE = 0, PRE_PRE = 1, PRE_SCRIPT = 2} pre_mode_t;
-
-static pre_mode_t pre_mode;
+static void open_pre_tag (const char *tag);
+static bool close_pre_tag (const char *tag);
+static str current_pre_tag;
 
 %}
 
@@ -72,6 +72,7 @@ EOL	[ \t]*\n?
 
 SCRIPTTAG  [Ss][Cc][Rr][Ii][Pp][Tt]
 PRETAG     [Pp][Rr][Ee]
+TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 
 %x H TXLCOM TXLCOM3 
 %x P3 P3_STR P3_REGEX 
@@ -108,7 +109,7 @@ PRETAG     [Pp][Rr][Ee]
 [^%}{\\\[\]<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
 [%}\\{\[\]<]	{ yylval.ch = yytext[0]; return T_CH; }
 
-<({SCRIPTTAG}|{PRETAG})[^>]*>
+<({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*>
 		{
 		  yylval.str = yytext; 
 
@@ -116,32 +117,18 @@ PRETAG     [Pp][Rr][Ee]
 		  // the line counter.
 		  nlcount (0);
 
-		  // just keep track of which tag it was.
-		  if (tolower (yytext[1]) == 'p')  {
-		      pre_mode = PRE_PRE;
-                  } else {
-		      pre_mode = PRE_SCRIPT;
-		  }
+		  // keep track of which tag it is so we can match it
+		  // later on.  Also, return which tag 
+		  open_pre_tag (yytext);
+
 		  return T_P3_BEGIN_PRE;
 		}
 
-</{WS}*{PRETAG}{WS}*>
+</{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*>
 	        {
 		   yylval.str = yytext;
 		   int ret = T_HTML;
-		   if (pre_mode == PRE_PRE) {
-		      pre_mode = PRE_NONE;
-		      ret = T_P3_END_PRE;
-		   } 
-		   return ret;
-		}
-
-</{WS}*{SCRIPTTAG}{WS}*>
-		{
-		   yylval.str = yytext;
-		   int ret = T_HTML;
-		   if (pre_mode = PRE_SCRIPT) {
-		      pre_mode = PRE_NONE;
+		   if (close_pre_tag (yytext + 2)) {
 		      ret = T_P3_END_PRE;
 		   }
 		   return ret;
@@ -676,6 +663,41 @@ json_error (str s)
   warn << "<json-input>:" << yy_json_lineno << ": " << s << "\n";
   yyterminate ();
   return 0;
+}
+
+//-----------------------------------------------------------------------
+
+static str normalize_tag (const char *in)
+{
+   size_t ln = strlen (in);
+   mstr buf (ln);
+   char *bp = buf.cstr ();
+
+   // zoom past any leading white space
+   while (*in && isspace (*in)) { in++; }
+
+   for ( ; *in && isalpha (*in); bp++, in++) {
+      *bp = tolower (*in);
+   }
+   buf.setlen (bp - buf);
+   return buf;
+}
+
+void
+open_pre_tag (const char *in)
+{
+   current_pre_tag = normalize_tag (in);
+}
+
+bool
+close_pre_tag (const char *in)
+{
+   bool ret = false;
+   if (current_pre_tag && normalize_tag (in) == current_pre_tag) {
+      ret = true;
+      current_pre_tag = NULL;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
