@@ -736,19 +736,19 @@ p3_implicit_tuple:
 	;
 
 p3_include_or_load: 
-          T_P3_INCLUDE { $$ = New pub3::include_t (PLINENO); }
-        | T_P3_LOAD    { $$ = New pub3::load_t (PLINENO); }
+          T_P3_INCLUDE { $$ = pub3::include_t::alloc (); }
+        | T_P3_LOAD    { $$ = pub3::load_t::alloc (); }
 	;
 		   
 	
 p3_include: p3_include_or_load p3_flexi_tuple 
         {
-           str err;
-           pub3::include_t *f = $1;
-	   if (!f->add ($2)) {
-	     yy_parse_fail();
+	   str err
+	   ptr<pub3::include_t> i = $1;
+	   if (!i->add_args ($2, &err)) {
+	      pub3::parser_t::current ()->error (err);
 	   }
-           $$ = f;
+           $$ = i;
 	};
 
 p3_locals_arg: '(' p3_half_dictionary ')' { $$ = $2; }

@@ -125,7 +125,7 @@ namespace pub3 {
 
     // must do this before trying to open the file (or anything else
     // for that matter).
-    _location.._filename = rfn;
+    _location._filename = rfn;
 
     // Sanity check and call fopen()
     FILE *fp = open_file (rfn);
@@ -140,6 +140,10 @@ namespace pub3 {
       _out = NULL;
     }
 
+    // don't return data if there were problems.
+    if (_errors.size ()) {
+      ret = NULL;
+    }
 
     return ret;
   }

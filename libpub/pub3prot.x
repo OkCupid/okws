@@ -569,13 +569,13 @@ struct xpub3_inline_var_t {
   xpub3_expr_t expr;
 };
 
-union xpub_obj_t switch (xpub_obj_typ_t typ) {
- case XPUB_NONE:
+union xpub3_obj_t switch (xpub3_obj_typ_t typ) {
+ case XPUB3_NONE:
    void;
- case XPUB_INCLUDE:
- case XPUB_INCLUDE2:
- case XPUB_LOAD:
-   xpub_include_t include;
+ case XPUB3_INCLUDE:
+ case XPUB3_LOAD:
+   xpub3_include_t include;
+   
  case XPUB_SECTION:
    xpub_section_t section;
  case XPUB_HTML_EL:

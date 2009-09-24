@@ -13,39 +13,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class include_t : public pfile_func_t {
-  public:
-    include_t (int l) : pfile_func_t (l) {}
-    include_t (const xpub3_include_t &x);
-
-    virtual bool to_xdr (xpub_obj_t *x) const;
-    bool to_xdr_base (xpub_obj_t *x, xpub_obj_typ_t t) const;
-    
-    bool add (ptr<arglist_t> l) { return false; }
-    bool add (ptr<expr_list_t> l);
-    const char *get_obj_name () const { return "pub3::include_t"; }
-    virtual void publish (pub2_iface_t *, output_t *, penv_t *,
-			  xpub_status_cb_t, CLOSURE) const;
-    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
-    void output (output_t *o, penv_t *e) const;
-    bool might_block () const { return true; }
-  protected:
-    ptr<expr_t> _file;
-    ptr<expr_t> _dict;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class load_t : public include_t {
-  public:
-    load_t (int l) : include_t (l) {}
-    load_t (const xpub3_include_t &x);
-    bool to_xdr (xpub_obj_t *x) const;
-    bool muzzle_output () const { return true; }
-  };
-
-  //-----------------------------------------------------------------------
-
   class print_t : public pfile_func_t {
   public:
     print_t (bool silent, int l) : pfile_func_t (l), _silent (silent) {}

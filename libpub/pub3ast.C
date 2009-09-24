@@ -208,5 +208,31 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<include_t> include_t::alloc () 
+  { return New refcounted<include_t> (location ()); }
+  ptr<load_t> load_t::alloc () { return New refcounted<load_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  include_t::add_args (ptr<expr_list_t> l, str *errp)
+  {
+    bool ret = true;
+    str err;
+    if (l && (l->size () >= 1 && l->size () <= 2)) {
+      _file = (*l)[0];
+      if (l->size () > 2) 
+	_dict = (*l)[1];
+    } else {
+      str f = fnname ()
+      err = strbuf ("%s take 1 or 2 arguments; a filename and an optional "
+		    "binding list", f.cstr ());
+      if (errp) *errp = err;
+      ret = false;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
 };
 

@@ -269,5 +269,29 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class include_t : public statement_t {
+  public:
+    include_t (location_t l) : statement_t (l) {}
+    include_t (const xpub3_include_t &x);
+    bool might_block () const { return true; }
+    static ptr<include_t> alloc ();
+    bool add_args (ptr<expr_list_t> l, str *errp);
+    virtual str fnname () const { return "include"; }
+  protected:
+    ptr<expr_t> _file;
+    ptr<expr_t> _dict;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class load_t : public include_t {
+  public:
+    load_t (location_t l) : include_t (l) {}
+    load_t (const xpub3_include_t &x);
+    bool to_xdr (xpub_obj_t *x) const;
+    bool muzzle_output () const { return true; }
+    str fnname () const { return "load"; }
+  };
+
 };
 
