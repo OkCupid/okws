@@ -293,5 +293,23 @@ namespace pub3 {
     str fnname () const { return "load"; }
   };
 
+  //-----------------------------------------------------------------------
+
+  class print_t : public statement_t {
+  public:
+    print_t (location_t l) : statement_t (l) {}
+    print_t (const xpub3_print_t &x);
+    
+    bool add (ptr<pub3::expr_list_t> l);
+    bool to_xdr (xpub_obj_t *x) const;
+    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
+    void output (output_t *o, penv_t *e) const;
+
+  private:
+    ptr<pub3::expr_list_t> _args;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 

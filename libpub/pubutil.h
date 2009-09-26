@@ -90,17 +90,6 @@ typedef callback<void, phashp_t>::ref phash_cb;
 
 typedef str pfnm_t;
 
-template<> struct hashfn<phashp_t> {
-  hashfn () {}
-  hash_t operator() (const phash_t *s) const { return s->hash_hash (); } 
-};
-
-template<> struct equals<phashp_t> {
-  equals () {}
-  bool operator() (const phashp_t &s1, const phashp_t &s2) const
-  { return (*s1 == *s2); }
-};
-
 typedef event<ptr<binding_t> >::ref bind_ev_t;
 
 

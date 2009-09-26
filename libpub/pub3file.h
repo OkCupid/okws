@@ -13,16 +13,16 @@ namespace pub3 {
   public:
     fhash_t () {}
     fhash_t (const char *s) { memcpy (val, s, PUBHASHSIZE); }
-    fhash_t (const xpubhash_t &h) { memcpy (val, h.base (), PUBHASHSIZE); }
-    static ptr<fhash_t> alloc (const xpubhash_t &x) 
+    fhash_t (const xpub3_hash_t &h) { memcpy (val, h.base (), PUBHASHSIZE); }
+    static ptr<fhash_t> alloc (const xpub3_hash_t &x) 
     { return New refcounted<fhash_t> (x); }
     str to_str () const { return armor64 (val, PUBHASHSIZE); }
     hash_t hash_hash () const;
     bool operator== (const fhash_t &ph) const;
-    bool operator== (const xpubhash_t &ph) const;
-    bool operator!= (const xpubhash_t &ph) const;
+    bool operator== (const xpub3_hash_t &ph) const;
+    bool operator!= (const xpub3_hash_t &ph) const;
     bool operator!= (const fhash_t &ph) const;
-    void to_xdr (xpubhash_t *ph) const;
+    void to_xdr (xpub3_hash_t *ph) const;
 
   private:
     char val[PUBHASHSIZE];
@@ -71,5 +71,16 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+};
+
+template<> struct hashfn<pub3::fhash_t> {
+  hashfn () {}
+  hash_t operator() (const pub3::fhash_t *s) const { return s->hash_hash (); } 
+};
+
+template<> struct equals<pub3::fhash_t> {
+  equals () {}
+  bool operator() (const pub3::fhash_t &s1, const pub3::fhash_t &s2) const
+  { return (*s1 == *s2); }
 };
 
