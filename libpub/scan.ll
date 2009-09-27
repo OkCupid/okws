@@ -94,22 +94,22 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 
 \\+[%]"{"	|
 \\+"{%"		|
-\\"}}"          { yylval.str = yytext + 1; return T_HTML; }
+\\"}}"          { yylval.str = yytext + 1; return T_P3_HTML; }
 
 "}}"		{ if (yy_d_brace > 0) {
 		     yy_d_brace -- ;
 		     yy_pop_state ();
                      return T_2R_BRACE; 
 	          } else {
-	 	     yylval.str = yytext; return T_HTML;
+	 	     yylval.str = yytext; return T_P3_HTML;
 	          } 
                 } 
 
 
-[^%}{\\\[\]<]+	{ yylval.str = yytext; nlcount (); return T_HTML; }
-[%}\\{\[\]<]	{ yylval.ch = yytext[0]; return T_CH; }
+[^%}{\\\[\]<]+	{ yylval.str = yytext; nlcount (); return T_P3_HTML; }
+[%}\\{\[\]<]	{ yylval.ch = yytext[0]; return T_P3_HTML_CH; }
 
-<({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*>
+\<({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*\>
 		{
 		  yylval.str = yytext; 
 
@@ -124,10 +124,10 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 		  return T_P3_BEGIN_PRE;
 		}
 
-</{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*>
+\</{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*\>
 	        {
 		   yylval.str = yytext;
-		   int ret = T_HTML;
+		   int ret = T_P3_HTML;
 		   if (close_pre_tag (yytext + 2)) {
 		      ret = T_P3_END_PRE;
 		   }
@@ -169,12 +169,12 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 		     yy_d_bracket--;
                   } else {
 		     yylval.str = yytext;
-		     return T_HTML;
+		     return T_P3_HTML;
 		  }
                 }
 
 \\"["{2,4}	|
-\\"]]"	        { yylval.str = yytext + 1; return T_HTML; }
+\\"]]"	        { yylval.str = yytext + 1; return T_P3_HTML; }
 }
 
 

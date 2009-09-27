@@ -52,6 +52,8 @@
 %token <str> T_P3_FLOAT
 %token <str> T_P3_STRING
 %token <regex> T_P3_REGEX
+%token <str> T_P3_HTML
+%token <ch> T_P3_HTML_CH
 
 %token <str> T_P3_BEGIN_PRE
 %token <str> T_P3_END_PRE
@@ -83,6 +85,7 @@
 %type <p3cl> p3_switch_case_list p3_switch_cases;
 %type <p3case> p3_switch_case p3_switch_default p3_switch_default_opt; 
 %type <p3pair> p3_pub_zone_pair;
+%type <p3text> p3_text p3_text_base;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
@@ -100,10 +103,10 @@
 %type <p3expr> json_scalar json_string json_int json_float json_bool;
 %type <p3pair> json_dict_pair;
 
-%type <p3zone> hfile p3_html_zone p3_html_zone_inner;
+%type <p3zone> p3_html_zone p3_html_zone_inner;
 %type <p3zone> p3_html_blocks p3_html_block;
 %type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner;
-%type <p3zone> p3_html_text p3_inline_expr;
+%type <p3zone> p3_inline_expr;
 %type <p3zone> p3_pub_zone_body_opt p3_pub_zone_body p3_nested_zone;
 %type <p3zone> p3_empty_clause;
 
@@ -119,9 +122,6 @@ file: p3_html_zone_inner
 	{
 	    pub3::parser_t::current ()->set_expr_output ($1);
 	}
-	;
-
-hfile: p3_html_zone_inner
 	;
 
 p3_html_zone: T_2L_BRACE p3_html_zone_inner T_2R_BRACE { $$ = $2; }
@@ -141,17 +141,17 @@ p3_html_blocks:  { $$ = NULL; }
 	}
 	;
 
-p3_text_base:  T_HTML { $$ = pub3::zone_text_t::alloc ($1); }
-	|      T_CH   { $$ = pub3::zone_text_t::alloc ($1); }
+p3_text_base:  T_P3_HTML      { $$ = pub3::zone_text_t::alloc ($1); }
+	|      T_P3_HTML_CH   { $$ = pub3::zone_text_t::alloc ($1); }
 	;
 
 p3_text: p3_text_base     { $$ = $1; }
-	| p3_text T_HTML
+	| p3_text T_P3_HTML
 	{
 	   $1->add ($2);
 	   $$ = $1;
         }
-	| p3_text T_CH
+	| p3_text T_P3_HTML_CH
 	{
 	   $1->add ($2);
 	   $$ = $1;
@@ -699,10 +699,6 @@ p3_string_constant: /* empty */ { $$ = pub3::expr_str_t::alloc (); }
 
 p3_string_constant_element: T_P3_STRING { $$ = $1; }
         | T_P3_CHAR { $$ = strbuf ("%c", $1); }
-        ;
-
-p3_inline_expr: 
-        T_P3_BEGIN_EXPR p3_expr '}' { $$ = $2; }
         ;
 
 p3_list: '[' p3_argument_expr_list_opt ']' { $$ = $2; } ;
