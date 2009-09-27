@@ -5,8 +5,14 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libpub.la
 
-libpub_la_SOURCES = pub3prot.C data.C scan.ll parse.yy pubutil.C \
-	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
+libpub_la_SOURCES = \
+	pub3prot.C \
+	scan.ll \
+	parse.yy \
+	pubutil.C \
+	pub3xdr.C \
+	slave.C \
+	rclient.C proxy.C zstr.C okconst.C \
 	pvalw.C jail.C lbalance.C rpcwindow.C pub2.C clone.C \
 	debug.C stats.C adebug.C scalar.C ranges.C sync.C \
 	pub3obj.C pub3expr.C pub3func.C xdr3.C escape.C pub3parse.C
