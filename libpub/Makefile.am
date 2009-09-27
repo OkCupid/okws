@@ -35,13 +35,42 @@ libpub_la_SOURCES = \
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = \
-	pub.h pubutil.h pub3prot.h okconst.h \
-	fhash.h fhash.h holdtab.h lbalance.h parr.h \
-	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
-	pslave.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
-	okws_sfs.h timehash.h okstats.h okformat.h ok_adebug.h pscalar.h \
-	axprtfd.h oksync.h pub3obj.h pub3expr.h pub3func.h pub3.h \
-	pescape.h precycle.h pub3parse.h
+	pub.h \
+	pubutil.h \
+	pub3prot.h \
+	okconst.h \
+	fhash.h \
+	holdtab.h \
+	lbalance.h \
+	parse.h \
+	pjail.h \
+	pub_parse.h \
+	puberr.h \
+	zstr.h \
+	clist.h \
+	pslave.h \
+	okdbg.h \
+	okdbg-int.h \
+	rpcwindow.h \
+	pub2.h \
+	okclone.h \
+	okws_sfs.h \
+	timehash.h \
+	okstats.h \
+	okformat.h \
+	ok_adebug.h \
+	pscalar.h \
+	axprtfd.h \
+	oksync.h \
+	pub3.h \
+	pub3obj.h \
+	pub3expr.h \
+	pub3func.h \
+	pescape.h \
+	precycle.h \
+	pub3parse.h \
+	pub3ast.h \
+	pub3file.h
 
 noinst_HEADERS =  env.mk
 

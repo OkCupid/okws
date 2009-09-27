@@ -3,8 +3,17 @@
 
 #pragma once
 
-#include "pub3prot.h"
-#include "pub3ast.h"
-#include "pub3file.h"
-#include "pub3obj.h"
-#include "pub3expr.h"
+#include "okws_sfs.h"
+#include "vec.h"
+#include "qhash.h"
+#include "clist.h"
+#include "pubutil.h"
+#include "arpc.h"
+#include "puberr.h"
+#include "holdtab.h"
+#include "zstr.h"
+#include "tame.h"
+#include "pscalar.h"
+#include "parseopt.h"
+#include "tame_lock.h"
+#include "pub3.h"
