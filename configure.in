@@ -213,7 +213,7 @@ PUB_PDEBUG
 PUBFLAGS='-rF'
 AC_SUBST(PUBFLAGS)
 
-AC_OUTPUT(txarpcc/Makefile libpub/Makefile pub/Makefile 
+AC_OUTPUT(libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile conf/Makefile
