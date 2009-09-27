@@ -141,7 +141,24 @@ p3_html_blocks:  { $$ = NULL; }
 	}
 	;
 
-p3_html_block: p3_html_text { $$ = pub3::zone_text_t::alloc ($1); }
+p3_text_base:  T_HTML { $$ = pub3::zone_text_t::alloc ($1); }
+	|      T_CH   { $$ = pub3::zone_text_t::alloc ($1); }
+	;
+
+p3_text: p3_text_base     { $$ = $1; }
+	| p3_text T_HTML
+	{
+	   $1->add ($2);
+	   $$ = $1;
+        }
+	| p3_text T_CH
+	{
+	   $1->add ($2);
+	   $$ = $1;
+	}
+	;
+
+p3_html_block: p3_text      { $$ = pub3::zone_text_t::alloc ($1); }
 	| p3_html_pre       { $$ = $1; }
 	| p3_inline_expr    { $$ = pub3::zone_inline_expr_t::alloc ($1); }
 	| p3_pub_zone       { $$ = $1; }

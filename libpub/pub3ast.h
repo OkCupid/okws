@@ -66,9 +66,15 @@ namespace pub3 {
   class zone_text_t : public zone_t {
   public:
     zone_text_t (location_t l) : zone_t (l) {}
+
     static ptr<zone_text_t> alloc ();
+    static ptr<zone_text_t> alloc (str s);
+    static ptr<zone_text_t> alloc (char c);
+
     bool add (ptr<zone_t> z);
     str to_str () const { return _b; }
+    void add (str s);
+    void add (char c);
   protected:
 
     // while parsing, use the following representation:

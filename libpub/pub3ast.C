@@ -54,6 +54,39 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<zone_text_t> zone_text_t::alloc (char c)
+  { 
+    ptr<zone_text_t> z = New refcounted<zone_text_t> (location ()); 
+    z->add (c);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<zone_text_t> zone_text_t::alloc (str s)
+  { 
+    ptr<zone_text_t> z = New refcounted<zone_text_t> (location ()); 
+    z->add (s);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_text_t::add (str s)
+  {
+    _hold.push_back (s);
+    _b << s;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_text_t::add (char c)
+  {
+    _b.fmt ("%c", c);
+  }
+
+  //-----------------------------------------------------------------------
+
   ptr<zone_inline_expr_t> zone_inline_expr_t::alloc (ptr<expr_t> x)
   { return New refcounted<zone_inline_expr_t> (location (), x); }
 
