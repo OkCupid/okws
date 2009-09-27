@@ -11,15 +11,31 @@ libpub_la_SOURCES = \
 	parse.yy \
 	pubutil.C \
 	pub3xdr.C \
+	pub3obj.C \
+	pub3expr.C \
+	pub3func.C \
+	pub3parse.C \
+	pub3ast.C \
+	pub3file.C
 	slave.C \
-	rclient.C proxy.C zstr.C okconst.C \
-	pvalw.C jail.C lbalance.C rpcwindow.C pub2.C clone.C \
-	debug.C stats.C adebug.C scalar.C ranges.C sync.C \
-	pub3obj.C pub3expr.C pub3func.C xdr3.C escape.C pub3parse.C
+	zstr.C \
+	okconst.C \
+	jail.C \
+	lbalance.C \
+	rpcwindow.C \
+	pub2.C \
+	clone.C \
+	debug.C \
+	stats.C \
+	adebug.C \
+	scalar.C \
+	sync.C \
+	escape.C \
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = pub.h pubutil.h pub3prot.h okconst.h \
+okwsinclude_HEADERS = \
+	pub.h pubutil.h pub3prot.h okconst.h \
 	fhash.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
 	pslave.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
