@@ -79,6 +79,7 @@ struct yystype {
   ptr<pub3::statement_t> p3statement;
   ptr<pub3::case_t> p3case;
   ptr<pub3::case_list_t> p3cl;
+  pub3::binding_t p3bind;
 
 };
 

@@ -1,8 +1,0 @@
-.deps
-.libs
-Makefile
-Makefile.in
-parse.cc
-parse.h
-rpcc
-scan.cc

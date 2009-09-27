@@ -845,7 +845,6 @@ namespace pub3 {
   class binding_t {
   public:
     binding_t (const str &s, ptr<expr_t> x);
-    static ptr<binding_t> alloc (const str &s, ptr<expr_t> x);
     str name () const { return _name; }
     ptr<expr_t> expr () { return _expr; }
     ptr<const expr_t> expr () const { return _expr; }
@@ -861,7 +860,7 @@ namespace pub3 {
     bindlist_t (const xpub3_bindlist_t &x);
     static ptr<bindlist_t> alloc ();
     void to_xdr (xpub3_bindlist_t *x);
-    void add (ptr<binding_t> b);
+    void add (binding_t b);
   };
 
   //-----------------------------------------------------------------------
@@ -884,8 +883,8 @@ namespace pub3 {
     bool to_len (size_t *s) const;
     bool eval_as_bool (eval_t e) const { return to_bool (); }
 
-    void add (nvpair_t *p);
-    void add (ptr<pair_t> p);
+    void add (binding_t p);
+    void add (ptr<binding_t> p);
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
 

@@ -604,7 +604,7 @@ p3_half_bindings : p3_half_binding
 
 p3_half_binding: p3_bind_key p3_bind_value_opt
 	{
-	   $$ = pub3::binding_t::alloc ($1, $2);
+	   $$ = pub3::binding_t ($1, $2);
 	}
 	;
 
@@ -632,7 +632,7 @@ p3_bindings: p3_binding
 
 p3_binding: p3_bind_key p3_bindchar p3_expr
 	{
-	   $$ = pub3::binding_t::alloc ($1, $3);
+	   $$ = pub3::binding_t ($1, $3);
 	}
 	;
 
@@ -884,7 +884,7 @@ json_dict_pairs:
 
 json_dict_pair: T_P3_STRING ':' json_obj
       {
-         $$ = New refcounted<pub3::binding_t> ($1, $3);
+         $$ = pub3::binding_t ($1, $3);
       }
       ;
 

@@ -8,7 +8,6 @@ PTHR = libamt_pthread
 endif
 
 SBD1 = \
-	txarpcc \
 	libpub \
 	pub \
 	xmlrpcc \

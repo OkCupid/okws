@@ -1076,9 +1076,9 @@ pub3::eval_t::resolve (const expr_t *e, const str &nm)
 //-----------------------------------------------------------------------
 
 void
-pub3::expr_dict_t::add (nvpair_t *p)
+pub3::expr_dict_t::add (binding_t p)
 {
-  _dict->add (p);
+  (*this)[p.name ()] = p.expr ();
 }
 
 //-----------------------------------------------------------------------
@@ -1178,7 +1178,7 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
   ptr<expr_t> e;
   const nvtab_t *nvt = in->nvtab ();
 
-  vec<nvpair_t *> additions;
+  vec<binding_t *> additions;
   vec<str> removals;
 
   // To make this deterministic, we must not make any changes
@@ -1186,7 +1186,7 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
   // changes based on the sort order of the hash table, which isn't
   // pretty.  Just do all changes at the end, after all evaluations
   // have completed....
-  for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
+  for (binding_t *p = nvt->first (); p; p = nvt->next (p)) {
     val = eval_freeze (p->value_ptr ());
     if (val) {
       additions.push_back (New nvpair_t (p->name (), val));
@@ -1345,7 +1345,7 @@ pub3::expr_dict_t::eval_as_str (eval_t e) const
 
   if (_dict) {
     const nvtab_t *nvt = _dict->nvtab ();
-    for (const nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
+    for (const binding_t *p = nvt->first (); p; p = nvt->next (p)) {
       str valstr;
       ptr<const pval_t> pv = p->value_ptr ();
       ptr<const expr_t> x;
@@ -2117,14 +2117,6 @@ pub3::expr_list_t::fixup_index (ssize_t *ip, bool lax) const
 
 //-----------------------------------------------------------------------
 
-void
-pub3::expr_dict_t::add (ptr<pair_t> p)
-{
-  add (New nvpair_t (p->name (), p->expr ()));
-}
-
-//-----------------------------------------------------------------------
-
 ptr<pub3::expr_bool_t> pub3::expr_bool_t::_false;
 ptr<pub3::expr_bool_t> pub3::expr_bool_t::_true;
 
@@ -2142,6 +2134,10 @@ namespace pub3 {
   ptr<pair_t> pair_t::alloc (const str &k, ptr<expr_t> x)
   { return New refcounted<pair_t> (k, x); }
 };
+
+//-----------------------------------------------------------------------
+
+void bindlist_t::add (binding_t b) { push_back (b); }
 
 //-----------------------------------------------------------------------
 

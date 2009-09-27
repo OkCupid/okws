@@ -30,7 +30,7 @@ libpub_la_SOURCES = \
 	adebug.C \
 	scalar.C \
 	sync.C \
-	escape.C \
+	escape.C 
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
