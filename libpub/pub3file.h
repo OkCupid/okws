@@ -44,7 +44,7 @@ namespace pub3 {
     
     inline fhash_t hash () const { return hsh; }
     inline str filename () const { return fn; }
-    
+
     bool operator== (const fhash_t &ph) { return *hsh == ph; }
     bool operator!= (const fhash_t &ph) { return !(*hsh == ph); }
     
@@ -63,6 +63,8 @@ namespace pub3 {
   public:
     file_t (ptr<metadata_t> m, ptr<zone_t> z) : _metadata (m), _data_root (z) {}
     static ptr<file_t> alloc (ptr<metadata_t> m, ptr<zone_t> z);
+    file_t (const xpub3_file_t &x);
+    void to_xdr (xpub3_file_t *x) const;
 
   protected:
     ptr<metadata_t> _metadata;

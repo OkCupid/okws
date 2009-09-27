@@ -44,11 +44,6 @@ struct xpub_zstr_t {
   int clev;
 };
 
-struct xpub3_file_t {
-  xpub3_hash_t hsh;
-  xpub3_zone_t root;
-};
-
 enum xpub3_expr_typ_t {
    XPUB3_EXPR_NULL,
    XPUB3_EXPR_NOT,
@@ -179,21 +174,10 @@ struct xpub3_regex_t {
   string opts<>;
 };
 
-struct xpub3_print_t {
-   int lineno;
-   int silent;
-   xpub3_expr_list_t *args;
-};
-
 struct xpub3_assignment_t {
   int lineno;
   xpub3_expr_t *lhs;
   xpub3_expr_t *rhs;
-};
-
-struct xpub3_expr_statement_t {
-  int lineno;
-  xpub3_expr_t *expr;
 };
 
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
@@ -237,14 +221,29 @@ case XPUB3_EXPR_BOOL:
      xpub3_int_t xbool;
 };
 
-/* PUB3 language constructs */
+/* ======================================================================= */
+/* Pub3 File Structures */
+
+struct xpub3_metdata_t {
+  xpub_fn_t jailed_filename;
+  xpub_fn_t real_filename;
+  xpub3_hash_t hash;
+};
+
+struct xpub3_file_t {
+  xpub3_metadata_t metadata;
+  xpub3_zone_t root;
+};
+
+/* ======================================================================= */
+/* PUB3 statements */
 
 struct xpub3_for_t {
   int lineno;
   xpub_var_t iter;
   xpub3_expr_t arr;
-  xpub_section_t body;
-  xpub_section_t *empty;
+  xpub3_zone_t body;
+  xpub3_zone_t *empty;
 };
 
 struct xpub3_include_t {
@@ -253,23 +252,48 @@ struct xpub3_include_t {
   xpub3_expr_t dict;
 };
 
-struct xpub3_cond_clause_t {
+struct xpub3_if_clause_t {
   int lineno;
   xpub3_expr_t expr;
   xpub_section_t body;
 };
 
-struct xpub3_cond_t {
+struct xpub3_if_t {
   int lineno;
-  xpub3_cond_clause_t clauses<>;
+  xpub3_if_clause_t clauses<>;
 };
 
-struct xpub3_inline_var_t {
+struct xpub3_decls_t {
   int lineno;
-  xpub3_expr_t expr;
+  xpub3_dict_t decls;
 };
 
-union xpub3_statement_t switch (xpub3_obj_typ_t typ) {
+struct xpub3_print_t {
+   int lineno;
+   xpub3_expr_list_t args;
+};
+
+struct xpub3_expr_statement_t {
+  int lineno;
+  xpub3_expr_t *expr;
+};
+
+enum xpub3_statement_typ_t {
+   XPUB3_STATEMENT_NONE = 0,	
+   XPUB3_STATEMENT_INCLUDE = 1,
+   XPUB3_STATEMENT_LOAD = 2,
+   XPUB3_STATEMENT_ZONE = 3,
+   XPUB3_STATEMENT_FOR = 4,
+   XPUB3_STATEMENT_LOCALS = 5,
+   XPUB3_STATEMENT_UNIVERSALS = 6,
+   XPUB3_STATEMENT_IF = 7,
+   XPUB3_STATEMENT_PRINT = 8,
+   XPUB3_EXPR_STATEMENT = 9
+};
+
+%struct xpub3_zone_t;
+
+union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_STATEMENT_NONE:
    void;
 
@@ -285,17 +309,63 @@ union xpub3_statement_t switch (xpub3_obj_typ_t typ) {
 
  case XPUB3_STATEMENT_LOCALS:
  case XPUB3_STATEMENT_UNIVERSALS:
-   xpub3_locals_t locals;
+   xpub3_decls_t decls;
 
  case XPUB3_STATEMENT_IF:
    xpub3_if_t if_statement;
  
  case XPUB3_STATEMENT_PRINT:
    xpub3_print_t print;
+
  case XPUB3_EXPR_STATEMENT:
    xpub3_expr_statement_t expr_statement;
-      
 };
+
+/* ======================================================================= */
+/* PUB3 Zones */
+
+struct zpub3_zone_html_t {
+  int lineno;
+  bool preserve_white_space;
+  xpub3_zone_t zones<>;
+};
+
+struct xpub3_zone_text_t {
+  int lineno;
+  xpub3_zstr_t original_text;
+  xpub3_zstr_t wss_text;
+};
+
+struct xpub3_zone_pub_t {
+  int lineno;
+  xpub3_statement_t statements<>;
+};
+
+struct xpub3_zone_inline_expr_t {
+  int lineno;
+  xpub3_expr_t expr;
+};
+
+enum xpub3_zone_typ_t {
+    XPUB3_ZONE_NONE = 0,
+    XPUB3_ZONE_HTML = 1,
+    XPUB3_ZONE_TEXT = 2,
+    XPUB3_ZONE_INLINE_EXPR = 3,
+    XPUB3_ZONE_PUB = 4
+};
+
+union xpub3_zone_t (xpub3_zone_typ_t typ) {
+case XPUB3_ZONE_HTML:
+   xpub3_zone_html_t html;
+case XPUB3_ZONE_TEXT:
+   xpub3_zone_text_t text;
+case XPUB3_ZONE_INLINE:
+   xpub3_zone_inline_expr_t zone_inline;
+case XPUB3_ZONE_PUB:
+   xpub3_zone_pub_t zone_pub;
+};
+
+/* ======================================================================= */
 
 enum xpub_status_typ_t {
   XPUB_STATUS_OK = 0,

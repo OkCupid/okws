@@ -70,8 +70,14 @@ namespace pub3 {
     bool add (ptr<zone_t> z);
     str to_str () const { return _b; }
   protected:
+
+    // while parsing, use the following representation:
     strbuf _b;
     vec<str> _hold;
+
+    // otherwise, here are the buffers to use:
+    zstr _original;
+    zstr _wss;
   };
 
   //-----------------------------------------------------------------------
