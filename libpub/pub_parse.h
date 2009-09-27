@@ -58,10 +58,8 @@ struct yystype_regex_pair_t {
 
 struct yystype {
   char ch;
-  int64_t num;
   ::str str;
   yystype_regex_pair_t regex;
-  pub3::expr_statement_t *p3es;
 
   ptr<pub3::cond_clause_list_t> p3cclist;
   ptr<pub3::cond_clause_t> p3cc;
@@ -73,14 +71,11 @@ struct yystype {
   bool bl;
   xpub3_relop_t relop;
   double dbl;
-  pub3::include_t *p3include;
-  pub3::print_t *print;
   ptr<pub3::zone_t> p3zone;
   ptr<pub3::statement_t> p3statement;
   ptr<pub3::case_t> p3case;
   ptr<pub3::case_list_t> p3cl;
   pub3::binding_t p3bind;
-
 };
 
 #define YYSTYPE yystype

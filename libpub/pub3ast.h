@@ -136,6 +136,17 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_statement_t : public statement_t {
+  public:
+    expr_statement_t (location l) : statement_t (l) {}
+    static ptr<expr_statement_t> alloc (ptr<expr_t> x);
+    void add (ptr<expr_t> x);
+  protected:
+    ptr<expr_t> _expr;
+  };
+
+  //-----------------------------------------------------------------------
+
   class for_t : public statement_t {
   public:
     for_t (location_t l) : statement_t (l) {}

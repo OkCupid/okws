@@ -14,18 +14,6 @@
 %token T_2L_BRACE
 %token T_2R_BRACE
 
-%type <str> var str1 bname 
-%type <num> number
-%type <pvar> pvar evar 
-%type <pval> bvalue arr i_arr g_arr
-%type <sec> htag htag_list javascript pre b_js_tag
-%type <el> ptag 
-%type <func> ptag_func
-%type <pstr> pstr pstr_sq
-%type <arg> arg regex range
-%type <parr> i_arr_open
-%type <buf> regex_body
-
 /* ------------------------------------------------ */
 
 %token T_P3_EQEQ
@@ -38,6 +26,7 @@
 %token T_P3_FALSE
 %token T_P3_BEGIN_EXPR
 %token T_P3_INCLUDE
+%token T_P3_LOAD
 %token T_P3_LOCALS
 %token T_P3_UNIVERSALS
 %token T_P3_PIPE
@@ -67,15 +56,15 @@
 %token <str> T_P3_BEGIN_PRE
 %token <str> T_P3_END_PRE
 
-%type <p3cclist> p3_if_elifs p3_if_elifs_opt;
-%type <p3cc> p3_if_else p3_if_else_opt p3_if_clause p3_if_elif;
+%type <p3cclist> p3_elifs p3_elifs_opt;
+%type <p3cc> p3_if_clause p3_elif p3_else p3_else_opt;
 
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr p3_nonparen_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
 %type <p3expr> p3_primary_expr p3_constant p3_additive_expr;
 %type <p3expr> p3_multiplicative_expr;
 %type <p3expr> p3_integer_constant p3_string p3_string_element;
-%type <p3expr> p3_inline_expr p3_regex;
+%type <p3expr> p3_regex;
 %type <p3expr> p3_inclusive_OR_expr;
 %type <p3expr> p3_assignment_expr;
 %type <p3expr> p3_conditional_expr;
@@ -89,13 +78,11 @@
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
 %type <p3statement> p3_universals p3_print;
-%type <els> p3_env p3_zone p3_zone_body p3_zone_body_opt;
-%type <elpair> p3_zone_pair;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
-%type <print> p3_print_fn;
-%type <p3es> p3_expr_statement p3_statement_opt p3_statement;
+%type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
 %type <p3cl> p3_switch_case_list p3_switch_cases;
 %type <p3case> p3_switch_case p3_switch_default p3_switch_default_opt; 
+%type <p3pair> p3_pub_zone_pair;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
@@ -124,7 +111,7 @@
 /* ------------------------------------------------ */
 
 %%
-file: p3_html_zoner_inner
+file: p3_html_zone_inner
       	{
 	    pub3::parser_t::current ()->set_zone_output ($1);
 	}
@@ -249,7 +236,7 @@ p3_switch_case_list:  p3_switch_cases p3_switch_default_opt
 p3_switch_cases: /*empty */
           {
  	     ptr<pub3::case_list_t> l = pub3::case_list_t::alloc ();
-	     $$ = $1;
+	     $$ = l;
 	  }
 	  | p3_switch_cases p3_switch_case
 	  {
@@ -279,9 +266,6 @@ p3_switch_default: T_P3_DEFAULT p3_nested_zone
 	  }
 	  ;
 
-p3_scalar: p3_int | p3_string;
-
-
 p3_statement_opt: /*empty*/ { $$ = NULL; }
 	      | p3_statement
 	      ;
@@ -291,7 +275,7 @@ p3_statement: p3_expr_statement { $$ = $1; }
 
 p3_expr_statement: p3_expr
 	      {
-	         $$ = New pub3::expr_statement_t ($1, PLINENO);
+	         $$ = pub3::expr_statement_t::alloc ($1);
 	      }
 	      ;
 
@@ -585,7 +569,7 @@ p3_bind_list : '{' p3_half_bindings_opt '}' { $$ = $2 }
   	   ;
 
 p3_half_bindings_opt : /* empty */ { $$ = pub3::bindlist_t::alloc (); }
-	| p3_half_bindigs { $$ = $1; }
+	| p3_half_bindings { $$ = $1; }
 	;
 
 p3_half_bindings : p3_half_binding
@@ -750,11 +734,11 @@ p3_include: p3_include_or_load p3_flexi_tuple
            $$ = i;
 	};
 
-p3_locals_arg: '(' p3_half_dictionary ')' { $$ = $2; }
-	    | p3_half_dictionary { $$ = $1; }
+p3_locals_arg: '(' p3_bind_list ')' { $$ = $2; }
+	    | p3_bind_list { $$ = $1; }
 	    ;
 
-p3_universals: T_P3_UNIVERALS p3_locals_arg
+p3_universals: T_P3_UNIVERSALS p3_locals_arg
 	{
 	   ptr<pub3::universals_t> u = pub3::universals_t::alloc ();
 	   u->add ($2);

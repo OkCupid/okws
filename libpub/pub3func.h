@@ -13,28 +13,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class set_func_t : public pfile_set_func_t {
-  public:
-    set_func_t (int l) : pfile_set_func_t (l) {}
-    set_func_t (const xpub_set_func_t &x) : pfile_set_func_t (x) {}
-    void output (output_t *o, penv_t *e) const;
-    const char *get_obj_name () const { return "pub3::set_func_t"; }
-    virtual bool to_xdr (xpub_obj_t *x) const;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class setle_func_t : public pfile_set_func_t {
-  public:
-    setle_func_t (int l) : pfile_set_func_t (l) {}
-    setle_func_t (const xpub_set_func_t &x) : pfile_set_func_t (x) {}
-    void output (output_t *o, penv_t *e) const;
-    bool to_xdr (xpub_obj_t *x) const;
-    const char *get_obj_name () const { return "pub3::setle_func_t"; }
-  };
-
-  //-----------------------------------------------------------------------
-
   class expr_statement_t {
   public:
     expr_statement_t (ptr<pub3::expr_t> e, int l) 
