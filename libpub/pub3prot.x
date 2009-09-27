@@ -158,14 +158,19 @@ struct xpub3_double_t {
    string val<>;
 };
 
-struct xpub3_nvpair_t {
+struct xpub3_binding_t {
   xpub_key_t key;
   xpub3_expr_t *val;
 };
 
 struct xpub3_dict_t {
   int lineno;
-  xpub3_nvpair_t entries<>;
+  xpub3_binding_t entries<>;
+};
+
+struct xpub3_bindlist_t {
+  int lineno;
+  xpub3_binding_t bindings<>;
 };
 
 struct xpub3_regex_t {

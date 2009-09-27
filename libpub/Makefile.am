@@ -5,7 +5,7 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libpub.la
 
-libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
+libpub_la_SOURCES = pub3prot.C data.C scan.ll parse.yy pubutil.C \
 	pub.C xdr.C slave.C rclient.C proxy.C zstr.C okconst.C \
 	pvalw.C jail.C lbalance.C rpcwindow.C pub2.C clone.C \
 	debug.C stats.C adebug.C scalar.C ranges.C sync.C \
@@ -13,10 +13,10 @@ libpub_la_SOURCES = xpub.C txa_prot.C data.C scan.ll parse.yy pubutil.C \
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = pub.h pubutil.h xpub.h txa_prot.h okconst.h \
+okwsinclude_HEADERS = pub.h pubutil.h pub3prot.h okconst.h \
 	fhash.h fhash.h holdtab.h lbalance.h parr.h \
 	parse.h pjail.h pub_parse.h puberr.h zstr.h clist.h \
-	pslave.h txa.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
+	pslave.h okdbg.h okdbg-int.h rpcwindow.h pub2.h okclone.h \
 	okws_sfs.h timehash.h okstats.h okformat.h ok_adebug.h pscalar.h \
 	axprtfd.h oksync.h pub3obj.h pub3expr.h pub3func.h pub3.h \
 	pescape.h precycle.h pub3parse.h
@@ -37,8 +37,8 @@ SUFFIXES = .T .C .h .x
 
 TAMEIN = pub2.T clone.T adebug.T sync.T pub3func.T
 TAMEOUT = pub2.C clone.C adebug.C sync.C pub3func.C
-RPCCIN = xpub.x txa_prot.x
-RPCCOUT = xpub.C xpub.h txa_prot.C txa_prot.h
+RPCCIN = pub3prot.x 
+RPCCOUT = pub3prot.C pub3prot.h 
 
 pub2.o: pub2.C
 pub2.lo: pub2.C
@@ -51,15 +51,10 @@ adebug.lo: adebug.C
 pub3func.lo: pub3func.C
 pub3func.o: pub3func.C
 
-xpub.h: xpub.x
-xpub.C: xpub.x
-xpub.o: xpub.h
-xpub.lo: xpub.h
-
-txa_prot.h: txa_prot.x
-txa_prot.C: txa_prot.x
-txa_prot.o: txa_prot.h
-txa_prot.lo: txa_prot.h
+pub3prot.h: pub3prot.x
+pub3prot.C: pub3prot.x
+pub3prot.o: pub3prot.h
+pub3prot.lo: pub3prot.h
 
 AM_YFLAGS = -d $(YDEBUG)
 AM_LFLAGS = $(LDEBUG)

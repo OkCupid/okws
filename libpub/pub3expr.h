@@ -842,16 +842,26 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class pair_t {
+  class binding_t {
   public:
-    pair_t (const str &s, ptr<expr_t> x);
-    static ptr<pair_t> alloc (const str &s, ptr<expr_t> x);
+    binding_t (const str &s, ptr<expr_t> x);
+    static ptr<binding_t> alloc (const str &s, ptr<expr_t> x);
     str name () const { return _name; }
     ptr<expr_t> expr () { return _expr; }
     ptr<const expr_t> expr () const { return _expr; }
   private:
     str _name;
     ptr<expr_t> _expr;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class bindlist_t : public vec<binding_t> {
+  public:
+    bindlist_t (const xpub3_bindlist_t &x);
+    static ptr<bindlist_t> alloc ();
+    void to_xdr (xpub3_bindlist_t *x);
+    void add (ptr<binding_t> b);
   };
 
   //-----------------------------------------------------------------------
@@ -897,11 +907,8 @@ namespace pub3 {
     ptr<expr_dict_t> to_expr_dict () { return mkref (this); }
 
     void dump2 (dumper_t *d) const { /* XXX implement me */ }
-    size_t size () const { return _dict ? _dict->size () : 0; }
 
     str type_to_str () const { return "dict"; }
-  protected:
-    qhash<str, ptr<expr_t> > _h;
   }; 
 
   //-----------------------------------------------------------------------

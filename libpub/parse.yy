@@ -84,8 +84,8 @@
 %type <p3expr> p3_null;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_locals_arg;
-%type <p3dict> p3_half_bindings_opt p3_half_bingins;
-%type <p3bind> p3_binding p3_half_binding p3_half_dictionary;
+%type <p3dict> p3_half_bindings_opt p3_half_bindings;
+%type <p3bind> p3_binding p3_half_binding p3_bind_list;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
 %type <p3statement> p3_universals p3_print;
@@ -581,16 +581,16 @@ p3_character_constant: T_P3_CHAR { $$ = $1; };
 p3_dictionary: '{' p3_bindings_opt '}' { $$ = $2; }
 	       ;
 
-p3_half_dictionary : '{' p3_half_bindings_opt '}' { $$ = $2 } 
+p3_bind_list : '{' p3_half_bindings_opt '}' { $$ = $2 } 
   	   ;
 
-p3_half_bindings_opt : /* empty */ { $$ = pub3::expr_dict_t::parse_alloc (); }
+p3_half_bindings_opt : /* empty */ { $$ = pub3::bindlist_t::alloc (); }
 	| p3_half_bindigs { $$ = $1; }
 	;
 
 p3_half_bindings : p3_half_binding
 	{
-	   ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::parse_alloc (); 
+	   ptr<pub3::expr_dict_t> d = pub3::bindlist_t::alloc (); 
 	   d->add ($1);
 	   $$ = d;
 
@@ -604,8 +604,7 @@ p3_half_bindings : p3_half_binding
 
 p3_half_binding: p3_bind_key p3_bind_value_opt
 	{
-	   $1->add ($2);
-	   $$ = $1;
+	   $$ = pub3::binding_t::alloc ($1, $2);
 	}
 	;
 
@@ -633,7 +632,7 @@ p3_bindings: p3_binding
 
 p3_binding: p3_bind_key p3_bindchar p3_expr
 	{
-	   $$ = pub3::pair_t::alloc ($1, $3);
+	   $$ = pub3::binding_t::alloc ($1, $3);
 	}
 	;
 
@@ -885,7 +884,7 @@ json_dict_pairs:
 
 json_dict_pair: T_P3_STRING ':' json_obj
       {
-         $$ = New refcounted<pub3::pair_t> ($1, $3);
+         $$ = New refcounted<pub3::binding_t> ($1, $3);
       }
       ;
 
