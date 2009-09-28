@@ -38,9 +38,7 @@
 %token T_P3_ELIF
 %token T_P3_ELSE
 %token T_P3_EMPTY
-%token T_P3_EVAL
 %token T_P3_NULL
-%token T_P3_JSON
 %token T_P3_CASE
 %token T_P3_SWITCH
 %token T_P3_DEFAULT
@@ -85,14 +83,13 @@
 %type <p3cl> p3_switch_case_list p3_switch_cases;
 %type <p3case> p3_switch_case p3_switch_default p3_switch_default_opt; 
 %type <p3pair> p3_pub_zone_pair;
-%type <p3text> p3_text p3_text_base;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
 %type <p3exprlist> p3_tuple p3_list;
 %type <p3exprlist> p3_flexi_tuple p3_implicit_tuple;
 %type <str> p3_identifier p3_bind_key;
-%type <num> p3_character_constant p3_boolean_constant;
+%type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 
 %type <bl> p3_equality_op p3_additive_op;
@@ -132,46 +129,37 @@ p3_html_zone_inner: p3_html_blocks;
 p3_html_blocks:  { $$ = NULL; }
 	| p3_html_blocks p3_html_block
 	{
-	   ptr<pub3::zone_t> z = $1;
-	   if (z) {
-	     z = pub3::zone_html_t::alloc (false);
-	     z->add ($1);
-	   }
+	   ptr<pub3::zone_html_t> z = pub3::zone_html_t::alloc ($1);
+           z->add ($2);
 	   $$ = z;
 	}
-	;
-
-p3_text_base:  T_P3_HTML      { $$ = pub3::zone_text_t::alloc ($1); }
-	|      T_P3_HTML_CH   { $$ = pub3::zone_text_t::alloc ($1); }
-	;
-
-p3_text: p3_text_base     { $$ = $1; }
-	| p3_text T_P3_HTML
+	| p3_html_blocks T_P3_HTML
 	{
-	   $1->add ($2);
-	   $$ = $1;
-        }
-	| p3_text T_P3_HTML_CH
-	{
-	   $1->add ($2);
-	   $$ = $1;
+	   ptr<pub3::zone_html_t> z = pub3::zone_html_t::alloc ($1);
+	   z->add ($2);
+	   $$ = z;
 	}
+	| p3_html_blocks T_P3_HTML_CH
+	{
+	   ptr<pub3::zone_html_t> z = pub3::zone_html_t::alloc ($1);
+	   z->add ($2);
+	   $$ = z;
+        }
 	;
 
-p3_html_block: p3_text      { $$ = pub3::zone_text_t::alloc ($1); }
-	| p3_html_pre       { $$ = $1; }
+p3_html_block: p3_html_pre  { $$ = $1; }
 	| p3_inline_expr    { $$ = pub3::zone_inline_expr_t::alloc ($1); }
 	| p3_pub_zone       { $$ = $1; }
 	;
 
-p3_html_pre: T_P3_BEGIN_PRE p3_html_block T_P3_END_PRE
+p3_html_pre: T_P3_BEGIN_PRE p3_html_blocks T_P3_END_PRE
 	{
-	   ptr<pub3::zone_html_t> x = 
-	     pub3::zone_html_t::alloc (true);
-	     x->add ($1);
-	     x->add ($2);
-	     x->add ($3);
- 	     $$ = $1;
+	   ptr<pub3::zone_html_t> r = $2;
+	   if (!r) { r = pub3::zone_html_t::alloc (); }
+	   r->set_preserve_white_space (true);
+           r->unshift ($1);
+           r->add ($3);
+           $$ = r;
 	}
 	;
 
@@ -520,10 +508,6 @@ p3_constant:
            {
 	      $$ = $1;
 	   }
-           | p3_character_constant
-           {
-	      $$ = New refcounted<pub3::expr_int_t> ($1); 
-	   }
 	   | p3_floating_constant
 	   {
 	      $$ = New refcounted<pub3::expr_double_t> ($1); 
@@ -576,8 +560,6 @@ p3_floating_constant: T_P3_FLOAT
 	   $$ = d;
 	}
 	;
-
-p3_character_constant: T_P3_CHAR { $$ = $1; };
 
 p3_dictionary: '{' p3_bindings_opt '}' { $$ = $2; }
 	       ;

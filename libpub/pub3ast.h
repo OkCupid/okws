@@ -14,7 +14,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class ast_node_t {
+  class ast_node_t : public virtual refcount {
   public: 
     ast_node_t (location_t l) : _location (l) {}
   protected:
@@ -30,11 +30,11 @@ namespace pub3 {
   public:
     zone_t (location_t l) : ast_node_t (l) {}
     virtual ~zone_t () {}
-    virtual bool add (ptr<zone_t> z) { return false; }
     virtual str to_str () { return NULL; }
     virtual vec<ptr<zone_t> > *children () { return NULL; }
-    virtual zone_html_t *zone_html () { return NULL; }
+    virtual ptr<zone_html_t> zone_html () { return NULL; }
     virtual zone_pub_t *zone_pub () { return NULL; }
+    virtual ptr<zone_text_t> zone_text () { return NULL; }
   };
 
   //-----------------------------------------------------------------------
@@ -51,12 +51,16 @@ namespace pub3 {
 
   class zone_html_t : public zone_container_t {
   public:
-    zone_html_t (location_t l, bool pws);
-    bool add (ptr<zone_t> z);
-    zone_html_t *zone_html () { return this; }
-    static ptr<zone_html_t> alloc (int pws);
+    zone_html_t (location_t l);
+    void add (ptr<zone_t> z);
+    void add (str s);
+    void add (char ch);
+    ptr<zone_html_t> zone_html () { return mkref (this); }
+    static ptr<zone_html_t> alloc (ptr<zone_t> z);
     bool preserve_white_space () const { return _preserve_white_space; }
-
+    void set_preserve_white_space (bool b) { _preserve_white_space = b; }
+  protected:
+    ptr<zone_text_t> push_zone_text ();
   private:
     bool _preserve_white_space;
   };
@@ -75,6 +79,7 @@ namespace pub3 {
     str to_str () const { return _b; }
     void add (str s);
     void add (char c);
+    ptr<zone_text_t> zone_text () { return this; }
   protected:
 
     // while parsing, use the following representation:

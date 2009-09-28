@@ -28,20 +28,69 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool
+  zone_html_t::zone_html_t (location_t l) : 
+    zone_container_t (l),
+    _preserve_white_space (false)
+  {
+    // reserve one free slot!
+    _children.push_back (NULL);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<zone_html_t>
+  zone_html_t::alloc (ptr<zone_t> z)
+  {
+    ptr<zone_html_t> ret;
+    if (z) { ret = z->zone_html (); }
+    if (!ret) { 
+      ret = New refcounted<zone_html_t> (location ()); 
+      if (z) { ret->add (z); }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void
   zone_html_t::add (ptr<zone_t> z)
   {
-    zone_html_t *zh;
-
-    if ((zh = z->zone_html ()) && 
-	zh->preserve_white_space () == preserve_white_space ()) {
-      _children += *zh->children ();
-    } else if (!_children.size () || !_children.back ().add (z)) {
-      _childen.push_back (z);
-    }
-    return true;
+    _childen.push_back (z);
   }
   
+  //-----------------------------------------------------------------------
+
+  ptr<zone_text_t>
+  zone_html_t::push_zone_text ()
+  {
+    ptr<zone_text_t> x;
+    if (!_children.size () || 
+	!_chidren.back ()  || 
+	!(x = _children.back ().zone_text ())) {
+      x = zone_text_t::alloc (location ());
+      _children.push_back (x);
+    }
+    return x;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_html_t::add (str s)
+  {
+    ptr<zone_text_t> x = push_zone_text ();
+    x->add (s);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_html_t::add (char c)
+  {
+    ptr<zone_text_t> x = push_zone_text ();
+    x->add (c);
+  }
+
   //-----------------------------------------------------------------------
 
   ptr<zone_html_t> zone_html_t::alloc (int pws)
@@ -83,6 +132,17 @@ namespace pub3 {
   zone_text_t::add (char c)
   {
     _b.fmt ("%c", c);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  zone_text_t::add (ptr<zone_t> z)
+  {
+    z2 = z->zone_text ();
+    if (
+
+
   }
 
   //-----------------------------------------------------------------------
