@@ -85,16 +85,8 @@ public:
   void prune ();
 };
 
-typedef ptr<phash_t> phashp_t;
-typedef callback<void, phashp_t>::ref phash_cb;
-
 typedef str pfnm_t;
 
-typedef event<ptr<binding_t> >::ref bind_ev_t;
-
-
-bool file2hash (const str &fn, phash_t *ph, struct stat *sbp = NULL);
-phashp_t file2hash (const str &fn, struct stat *sbp = NULL);
 int uname2uid (const str &un);
 str uid2uname (int i);
 int gname2gid (const str &gn);

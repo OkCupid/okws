@@ -5,7 +5,6 @@
 #define _LIBPUB_PUB3OBJ_H_
 
 #include "pub.h"
-#include "parr.h"
 #include "pub3expr.h"
 #include "okformat.h"
 

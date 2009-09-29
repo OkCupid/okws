@@ -27,7 +27,6 @@
 
 #include "pub.h"
 #include "pubutil.h"
-#include "parr.h"
 #include "pub3.h"
 
 extern int yy_wss_nl;      /* 1 over the fraction of \n to leave in */

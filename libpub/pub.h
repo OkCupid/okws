@@ -8,7 +8,6 @@
 #include "qhash.h"
 #include "pubutil.h"
 #include "arpc.h"
-#include "puberr.h"
 #include "zstr.h"
 #include "tame.h"
 #include "pscalar.h"

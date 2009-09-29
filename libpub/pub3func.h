@@ -6,7 +6,6 @@
 #define _LIBPUB_PUB3FUNC_H_
 
 #include "pub.h"
-#include "parr.h"
 #include "pub3expr.h"
 
 namespace pub3 {

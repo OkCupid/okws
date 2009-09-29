@@ -23,6 +23,7 @@ namespace pub3 {
     bool operator!= (const xpub3_hash_t &ph) const;
     bool operator!= (const fhash_t &ph) const;
     void to_xdr (xpub3_hash_t *ph) const;
+    char *buffer () { return val; }
 
   private:
     char val[PUBHASHSIZE];
@@ -70,6 +71,11 @@ namespace pub3 {
     ptr<metadata_t> _metadata;
     ptr<zone_t> _data_root;
   };
+
+  //-----------------------------------------------------------------------
+
+  ptr<fhash_t> file2hash (const str &fn, struct stat *sbp = NULL);
+  bool file2hash (const str &fn, fhash_t *h, struct stat *sbp);
 
   //-----------------------------------------------------------------------
 

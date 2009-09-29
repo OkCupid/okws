@@ -28,11 +28,8 @@
 #include "okws_sfs.h"
 #include "vec.h"
 #include "qhash.h"
-#include "clist.h"
 #include "pubutil.h"
 #include "arpc.h"
-#include "puberr.h"
-#include "holdtab.h"
 #include "zstr.h"
 #include "tame.h"
 
