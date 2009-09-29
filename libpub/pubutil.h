@@ -27,7 +27,7 @@
 
 #include "okws_sfs.h"
 #include "ihash.h"
-#include "xpub.h"
+#include "pub3prot.h"
 #include "qhash.h"
 #include <dirent.h>
 #include "okdbg-int.h"

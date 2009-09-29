@@ -38,7 +38,7 @@ struct xpub2_fstat_t {
 
 %struct xpub3_expr_t;
 
-struct xpub_zstr_t {
+struct xpub3_zstr_t {
   xpub_str_t s;
   opaque zs<>;
   int clev;
@@ -227,9 +227,56 @@ case XPUB3_EXPR_BOOL:
 };
 
 /* ======================================================================= */
+/* PUB3 Zones */
+
+%struct xpub3_zone_t;
+%struct xpub3_statement_t;
+
+struct xpub3_zone_html_t {
+  int lineno;
+  bool preserve_white_space;
+  xpub3_zone_t zones<>;
+};
+
+struct xpub3_zone_text_t {
+  int lineno;
+  xpub3_zstr_t original_text;
+  xpub3_zstr_t wss_text;
+};
+
+struct xpub3_zone_pub_t {
+  int lineno;
+  xpub3_statement_t statements<>;
+};
+
+struct xpub3_zone_inline_expr_t {
+  int lineno;
+  xpub3_expr_t expr;
+};
+
+enum xpub3_zone_typ_t {
+    XPUB3_ZONE_NONE = 0,
+    XPUB3_ZONE_HTML = 1,
+    XPUB3_ZONE_TEXT = 2,
+    XPUB3_ZONE_INLINE_EXPR = 3,
+    XPUB3_ZONE_PUB = 4
+};
+
+union xpub3_zone_t switch (xpub3_zone_typ_t typ) {
+case XPUB3_ZONE_HTML:
+   xpub3_zone_html_t html;
+case XPUB3_ZONE_TEXT:
+   xpub3_zone_text_t text;
+case XPUB3_ZONE_INLINE_EXPR:
+   xpub3_zone_inline_expr_t zone_inline;
+case XPUB3_ZONE_PUB:
+   xpub3_zone_pub_t zone_pub;
+};
+
+/* ======================================================================= */
 /* Pub3 File Structures */
 
-struct xpub3_metdata_t {
+struct xpub3_metadata_t {
   xpub_fn_t jailed_filename;
   xpub_fn_t real_filename;
   xpub3_hash_t hash;
@@ -260,7 +307,7 @@ struct xpub3_include_t {
 struct xpub3_if_clause_t {
   int lineno;
   xpub3_expr_t expr;
-  xpub_section_t body;
+  xpub3_zone_t body;
 };
 
 struct xpub3_if_t {
@@ -324,50 +371,6 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
 
  case XPUB3_EXPR_STATEMENT:
    xpub3_expr_statement_t expr_statement;
-};
-
-/* ======================================================================= */
-/* PUB3 Zones */
-
-struct zpub3_zone_html_t {
-  int lineno;
-  bool preserve_white_space;
-  xpub3_zone_t zones<>;
-};
-
-struct xpub3_zone_text_t {
-  int lineno;
-  xpub3_zstr_t original_text;
-  xpub3_zstr_t wss_text;
-};
-
-struct xpub3_zone_pub_t {
-  int lineno;
-  xpub3_statement_t statements<>;
-};
-
-struct xpub3_zone_inline_expr_t {
-  int lineno;
-  xpub3_expr_t expr;
-};
-
-enum xpub3_zone_typ_t {
-    XPUB3_ZONE_NONE = 0,
-    XPUB3_ZONE_HTML = 1,
-    XPUB3_ZONE_TEXT = 2,
-    XPUB3_ZONE_INLINE_EXPR = 3,
-    XPUB3_ZONE_PUB = 4
-};
-
-union xpub3_zone_t (xpub3_zone_typ_t typ) {
-case XPUB3_ZONE_HTML:
-   xpub3_zone_html_t html;
-case XPUB3_ZONE_TEXT:
-   xpub3_zone_text_t text;
-case XPUB3_ZONE_INLINE:
-   xpub3_zone_inline_expr_t zone_inline;
-case XPUB3_ZONE_PUB:
-   xpub3_zone_pub_t zone_pub;
 };
 
 /* ======================================================================= */

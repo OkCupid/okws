@@ -105,27 +105,18 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 	          } 
                 } 
 
-
 [^%}{\\\[\]<]+	{ yylval.str = yytext; nlcount (); return T_P3_HTML; }
-[%}\\{\[\]<]	{ yylval.ch = yytext[0]; return T_P3_HTML_CH; }
+[%}{\\\[\]<]	{ yylval.ch = yytext[0]; return T_P3_HTML_CH; }
 
-\<({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*\>
-		{
+
+[<]({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*[>] {
 		  yylval.str = yytext; 
-
-		  // might go many lines, so make sure to increment
-		  // the line counter.
 		  nlcount (0);
-
-		  // keep track of which tag it is so we can match it
-		  // later on.  Also, return which tag 
 		  open_pre_tag (yytext);
-
 		  return T_P3_BEGIN_PRE;
 		}
 
-\</{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*\>
-	        {
+[<]/{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*[>] {
 		   yylval.str = yytext;
 		   int ret = T_P3_HTML;
 		   if (close_pre_tag (yytext + 2)) {
@@ -133,8 +124,6 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 		   }
 		   return ret;
 		}
-
-<<EOF>>		{  return bracket_check_eof(); }
 }
 
 
@@ -355,9 +344,10 @@ null		     { return T_P3_NULL; }
 [^*\n]+		{ /* ignore */ }
 }
 
-//-----------------------------------------------------------------------
-//=======================================================================
 %%
+
+/* ----------------------------------------------------------------------- */
+/* ======================================================================= */
 
 void
 inc_lineno (int c)
