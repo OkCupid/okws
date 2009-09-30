@@ -1,8 +1,7 @@
 // -*-c++-*-
 /* $Id: parr.h 2784 2007-04-20 16:32:00Z max $ */
 
-#ifndef _LIBPUB_PUB3DATA_H_
-#define _LIBPUB_PUB3DATA_H_
+#pragma once
 
 #include "pub3expr.h"
 #include "pub3base.h"
@@ -56,6 +55,10 @@ namespace pub3 {
     ptr<ref_t>  eval_to_ref (eval_t e) const;
     //
     //------------------------------------------------------------
+
+    virtual ptr<expr_t> copy () const ;
+    virtual ptr<expr_t> mutable_expr () = 0;
+    virtual ptr<const expr_t> const_expr () const = 0;
 
     //------------------------------------------------------------
     //
@@ -111,6 +114,21 @@ namespace pub3 {
     virtual ptr<expr_t> get_value () = 0;
     virtual bool set_value (ptr<expr_t> x) = 0;
   };
+
+  //----------------------------------------------------------------------
+
+  class expr_cow_t : public expr_t {
+  public:
+    expr_cow_t (ptr<const expr_t> x) : _orig (x) {}
+    static ptr<expr_cow_t> alloc (ptr<const expr_t> x);
+    ptr<expr_t> mutable_expr ();
+    ptr<const expr_t> const_expr ();
+    
+  protected:
+    ptr<expr_t> _copy;
+    ptr<const expr_t> _orig;
+  };
+
 
   //----------------------------------------------------------------------
 
@@ -469,7 +487,7 @@ namespace pub3 {
     str type_to_str () const { return "str"; }
 
   protected:
-    str _val;
+    const str _val;
   };
 
   //-----------------------------------------------------------------------
@@ -506,7 +524,7 @@ namespace pub3 {
     str type_to_str () const { return "int"; }
 
   protected:
-    int64_t _val;
+    const int64_t _val;
   };
 
   //-----------------------------------------------------------------------
@@ -531,7 +549,7 @@ namespace pub3 {
     static ptr<expr_uint_t> alloc (u_int64_t i) 
     { return New refcounted<expr_uint_t> (i); }
   private:
-    u_int64_t _val;
+    const u_int64_t _val;
   };
 
   //-----------------------------------------------------------------------
@@ -554,7 +572,7 @@ namespace pub3 {
 
     str type_to_str () const { return "float"; }
   private:
-    double _val;
+    const double _val;
   };
 
   //-----------------------------------------------------------------------
@@ -855,6 +873,4 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 };
-
-#endif /* _LIBPUB_PUB3EXPR_H_ */
 
