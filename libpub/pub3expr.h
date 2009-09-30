@@ -5,12 +5,19 @@
 #define _LIBPUB_PUB3DATA_H_
 
 #include "pub3expr.h"
+#include "pub3base.h"
 
 namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_t;
+  // See pub3eval.h for a definition of eval_t; but don't included it
+  // here to prevent circular inclusions.
+  class eval_t;
+  class ref_t;
+
+  //-----------------------------------------------------------------------
+
   class expr_regex_t;
   class expr_assignment_t;
   class expr_dict_t;
@@ -28,83 +35,25 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class eval_t {
-  public:
-
-    enum { EVAL_INIT = -2, EVAL_DONE = -1 };
-
-    eval_t (penv_t *e, output_t *o); 
-    ~eval_t ();
-
-
-    penv_t *penv () const { return _env; }
-    output_t *output () const { return _output; }
-
-    bool set_loud (bool b);
-    bool loud () const { return _loud && !_silent; }
-    bool set_silent (bool b);
-
-    cache_generation_t cache_generation () const 
-    { return _env->cache_generation (); }
-
-    ptr<const pval_t> resolve (const expr_t *e, const str &nm);
-    ptr<slot_ref_t> lhs_resolve (const expr_t *e, const str &nm);
-
-    ptr<pval_t> eval_freeze (ptr<const pval_t> in);
-    void eval_freeze_dict (const aarr_t *in, aarr_t *out);
-    void eval_freeze_vec (const vec_iface_t *in, vec_iface_t *out);
-
-    void set_in_json () { _in_json = true; }
-    bool in_json () const { return _in_json; }
-
-    eval_t *link_to_penv ();
-    void unlink_from_penv (eval_t *e);
-
-  private:
-
-    penv_t *_env;
-    output_t *_output;
-    bool _loud;
-    bool _silent;
-    ssize_t _stack_p;
-    bool _in_json;
-  };
-
-  //-----------------------------------------------------------------------
-
   class expr_t : public refcount {
   public:
-    expr_t (int lineno = -1) : _lineno (lineno) {}
+    expr_t (lineno_t lineno = 0) : _lineno (lineno) {}
     virtual ~expr_t () {}
 
     enum { max_stack_depth = 128,
 	   max_shell_strlen = 0x100000 };
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
-    bool to_xdr (xpub_obj_t *x) const;
-    bool to_xdr (xpub_val_t *x) const;
-
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<expr_t> alloc (scalar_obj_t so);
     ptr<expr_t> const_cast_hack () const;
     int lineno () const { return _lineno; }
 
-    //------- Evaluation ZOO --------------------------------------
+    //------- Evaluation ------------------------------------------
     //
-    // The main evaluation system; evalute an expression completely
-    // so that the object is a scalar that's fit for output or
-    // for immediate evaluation.
-    //
-    virtual ptr<const pval_t> eval (eval_t e) const = 0;
-
-    //
-    // Evaluate, freezing all references in place, but maintaining
-    // the same object structure. By default, do an eval and then
-    // a copy, but some will have better mechanisms.
-    //
-    virtual ptr<pval_t> eval_freeze (eval_t e) const;
-
+    ptr<expr_t> eval_to_val (eval_t e) const;
+    ptr<ref_t>  eval_to_ref (eval_t e) const;
     //
     //------------------------------------------------------------
 
@@ -128,23 +77,10 @@ namespace pub3 {
     virtual bool is_null () const { return false; }
     virtual ptr<rxx> to_regex () const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
-    virtual ptr<expr_assignment_t> to_assignment () { return NULL; }
     virtual str type_to_str () const { return "object"; }
 
     //
     // and from here, scalars can be converted at will...
-    //
-    //-----------------------------------------------------------
-
-    //-----------------------------------------------------------
-    //
-    // So that pub v3 objects works in pub v1 and pub v2
-    //
-
-    void eval_obj (pbuf_t *ps, penv_t *e, u_int d) const;
-    ptr<pub_scalar_t> to_pub_scalar ();
-    ptr<const pub_scalar_t> to_pub_scalar () const;
-
     //
     //-----------------------------------------------------------
 
@@ -158,152 +94,78 @@ namespace pub3 {
 
     //
     //-------------------------------------------------------------
-
-    //-----------------------------------------------------------
-    // in pub2::output_conf2_t::output_set_func, there is an attempt
-    // made to flatten objects.  for pub3, objects have already been
-    // flattened, so just noop
-    // 
-
-    ptr<pval_t> set_func_flatten (penv_t *e) { return mkref (this); }
-
-    //
-    //
-    //-----------------------------------------------------------
-
-
-    //-----------------------------------------------------------
-    //
-    // Shortcuts follow, which for now do the long thing. They
-    // might eventually do the short thing, by eliminating intermediary
-    // objects.
-    //
-
-    ptr<const aarr_t> eval_as_dict (eval_t e) const;
-    ptr<const vec_iface_t> eval_as_vec (eval_t e) const;
-    virtual scalar_obj_t eval_as_scalar (eval_t e) const;
-    bool eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp, 
-			      ptr<const aarr_t> *dp) const;
-			      
-    virtual ptr<rxx> eval_as_regex (eval_t e) const { return NULL; }
-
-    virtual bool eval_as_bool (eval_t e) const;
-    virtual int64_t eval_as_int (eval_t e) const;
-    virtual u_int64_t eval_as_uint (eval_t e) const;
-    virtual str eval_as_str (eval_t e) const;
-    virtual bool eval_as_null (eval_t e) const { return false; }
-
-    //
-    //----------------------------------------------------------
     
     void report_error (eval_t e, str n) const;
     
-    //------------------------------------------------------------
-    //
-    // For pub v1/v2 compatibility
-    
-    ptr<expr_t> to_expr () { return mkref (this); }
-    ptr<const expr_t> to_expr () const { return mkref (this); }
-
-    //
-    //-----------------------------------------------------------------------
-
   protected:
     ptr<rxx> str2rxx (const eval_t *e, const str &b, const str &o) const;
-
-    int _lineno;
-
-    mutable cache_generation_t _cache_generation;
-    mutable scalar_obj_t _so;
-    mutable ptr<expr_t> _cached_result;
+    lineno_t _lineno;
   };
   
   //-----------------------------------------------------------------------
-  
-  // Expressions that can be evaluated immediately.
-  class expr_static_t : public expr_t {
-  public:
-    expr_static_t (int l = -1) : expr_t (l) {}
-    ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
 
-    scalar_obj_t eval_as_scalar (eval_t e) const { return to_scalar (); }
-    virtual str eval_as_str (eval_t e) const { return to_str (); }
-    int64_t eval_as_int (eval_t e) const { return to_int (); }
-    u_int64_t eval_as_uint (eval_t e) const { return to_uint (); }
-    bool eval_as_bool (eval_t e) const { return to_bool (); }
+  class ref_t {
+  public:
+    ref_t () {}
+    virtual ~ref_t () {}
+    virtual ptr<expr_t> get_value () = 0;
+    virtual bool set_value (ptr<expr_t> x) = 0;
   };
+
   //----------------------------------------------------------------------
 
-  class expr_null_t : public expr_static_t {
+  class const_ref_t : public ref_t {
   public:
-    expr_null_t (int l = -1) : expr_static_t (l) {}
+    const_ref_t (ptr<expr_t> x) : ref_t (), _x (x) {}
+    ptr<expr_t> get_value () { return _x; }
+    bool set_value (ptr<expr_t> x) { return false; }
+  protected:
+    ptr<expr_t> _x;
+  };
+
+  //----------------------------------------------------------------------
+
+  class expr_null_t : public expr_t {
+  public:
+    expr_null_t (int l = -1) : expr_t (l) {}
     bool is_null () const { return true; }
     bool to_xdr (xpub3_expr_t *x) const { return false; }
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
-    bool eval_as_null (eval_t e) const { return true; }
     static ptr<expr_null_t> alloc (int l = -1);
+    str type_to_str () const { return "null"; }
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_bool_t : public expr_static_t {
+  class expr_bool_t : public expr_t {
   public:
     scalar_obj_t to_scalar () const;
     bool to_xdr (xpub3_expr_t *x) const;
-    static str to_str (bool b);
-    str to_str () const;
-    int64_t to_int () const { return _b; }
-    bool to_int64 (int64_t *i) const { *i = _b; return true; }
-    u_int64_t to_uint () const { return _b; }
-    bool to_uint (u_int64_t *u) const { *u = _b; return true; }
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
-    bool to_bool () const { return _b; }
-
     static ptr<expr_bool_t> alloc (bool b);
     static ptr<expr_bool_t> _false, _true;
 
     // Allow for calling New refcounted<expr_bool_t> inside of
     // expr_bool_t::alloc()
     friend class refcounted<expr_bool_t>;
-
     str type_to_str () const { return "bool"; }
-
   private:
-    expr_bool_t (bool b) : expr_static_t (), _b (b) {}
+    expr_bool_t (bool b) : expr_t (), _b (b) {}
 
     const bool _b;
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_logical_t : public expr_t {
-  public:
-    expr_logical_t (int l) : expr_t (l) {}
-    ptr<const pval_t> eval (eval_t e) const;
-  private:
-    virtual bool eval_internal (eval_t e) const = 0;
-    mutable bool _cached_bool;
-    mutable ptr<expr_t> _cached_val;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class expr_OR_t : public expr_logical_t {
+  class expr_OR_t : public expr_t {
   public:
     expr_OR_t (ptr<expr_t> t1, ptr<expr_t> t2, int l) 
-      : expr_logical_t (l), 
-	_t1 (t1), 
-	_t2 (t2) {}
-
+      : expr_t (l), _t1 (t1), _t2 (t2) {}
     expr_OR_t (const xpub3_mathop_t &x);
-
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_OR_t"; }
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
   protected:
     ptr<expr_t> _t1, _t2;
-    bool eval_internal (eval_t e) const;
   };
 
   //-----------------------------------------------------------------------
@@ -854,6 +716,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class bindtab_t : public qhash<str, ptr<expr_t> >  {
+  public:
+    void overwrite_with (const bindtab_t &in);
+    bindtab_t &operator+= (const bindtab_t &in);
+  };
+
+  //-----------------------------------------------------------------------
+
   class bindlist_t : public vec<binding_t> {
   public:
     bindlist_t (const xpub3_bindlist_t &x);
@@ -864,8 +734,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_dict_t : public expr_t,
-		      public qhash<str, ptr<expr_t> > {
+  class expr_dict_t : public expr_t, public bindtab_t {
   public:
     expr_dict_t (int lineno = -1) : expr_t (lineno) {}
     expr_dict_t (const xpub3_dict_t &x);

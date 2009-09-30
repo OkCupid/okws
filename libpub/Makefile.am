@@ -10,9 +10,11 @@ libpub_la_SOURCES = \
 	scan.ll \
 	parse.yy \
 	pubutil.C \
+	pub3base.C \
 	pub3xdr.C \
-	pub3obj.C \
+	pub3eval.C \
 	pub3expr.C \
+	pub3obj.C \
 	pub3func.C \
 	pub3parse.C \
 	pub3ast.C \
@@ -30,14 +32,15 @@ libpub_la_SOURCES = \
 	adebug.C \
 	scalar.C \
 	sync.C \
-	escape.C 
+	escape.C  
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = \
 	pub.h \
 	pubutil.h \
-	pub3prot.h \
+	pub3prot.h \ 
+	pub3base.h \
 	okconst.h \
 	fhash.h \
 	holdtab.h \
@@ -70,7 +73,8 @@ okwsinclude_HEADERS = \
 	precycle.h \
 	pub3parse.h \
 	pub3ast.h \
-	pub3file.h
+	pub3file.h \
+	pub3eval.h
 
 noinst_HEADERS =  env.mk
 

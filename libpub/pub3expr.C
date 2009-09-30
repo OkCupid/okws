@@ -5,6 +5,7 @@
 #include "pub3func.h"
 #include "pescape.h"
 #include "precycle.h"
+#include "pub3eval.h"
 
 //-----------------------------------------------------------------------
 
@@ -1903,67 +1904,6 @@ pub3::expr_list_t::push_front (ptr<expr_t> e)
 
 //-----------------------------------------------------------------------
 
-void
-pub3::pstr_el_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
-{
-  eval_t ev (e, NULL);
-  eval_t *evp;
-  ptr<const pval_t> pv;
-  ptr<const expr_t> x;
-
-  // In the case of pub v3 calling v1 calling v3, make sure we keep
-  // our state all of the way through....
-  evp = e->get_pub3_eval ();
-  if (!evp) { evp = &ev; }
-
-  if (!_expr) {
-    /* empty expr -- noop! */
-  } else if (!(pv = _expr->eval (*evp))) {
-    /* cannot resolve variable -- d'oh! */
-    str nm = _expr->to_identifier ();
-    if (!nm) {
-      nm = "-- unknown --";
-    }
-    e->setlineno (_lineno);
-    e->warning (strbuf ("cannot resolve variable: " ) << nm.cstr ());
-    e->unsetlineno ();
-  } else if ((x = pv->to_expr ())) {
-    str s = x->to_str ();
-    if (s) b->add (s);
-  } else {
-    eval_t *old = evp->link_to_penv ();
-    pv->eval_obj (b, e, d);
-    evp->unlink_from_penv (old);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::pstr_el_t::dump2 (dumper_t *d) const
-{
-
-}
-
-
-//-----------------------------------------------------------------------
-
-pfile_el_t *
-pub3::pstr_el_t::to_pfile_el ()
-{
-  return New inline_var_t (_expr, -1);
-}
-
-//-----------------------------------------------------------------------
-
-void 
-pub3::pstr_el_t::output (output_t *o, penv_t *e) const 
-{
-  assert (false);
-}
-
-//-----------------------------------------------------------------------
-
 ptr<pub3::expr_dict_t>
 pub3::expr_dict_t::copy_stub_dict () const
 {
@@ -2131,15 +2071,39 @@ pub3::expr_bool_t::alloc (bool b)
 //-----------------------------------------------------------------------
 
 namespace pub3 {
+
+  //-----------------------------------------------------------------------
+
   ptr<pair_t> pair_t::alloc (const str &k, ptr<expr_t> x)
   { return New refcounted<pair_t> (k, x); }
+
+  //-----------------------------------------------------------------------
+
+  void bindlist_t::add (binding_t b) { push_back (b); }
+  
+  //-----------------------------------------------------------------------
+
+  void
+  bindtab_t::overwrite_with (const bindtab_t &t)
+  {
+    qhash_const_iterator_t<str, ptr<expr_t> > it (t);
+    str k;
+    ptr<expr_t> v;
+    while ((k = it.next (&v))) { insert (k, v); }
+  }
+
+  //-----------------------------------------------------------------------
+
+  bindtab_t &
+  bindtab_t::operator+= (const bindtab_t &t)
+  {
+    overwrite_with (b);
+    return *this;
+  }
+
+  //-----------------------------------------------------------------------
+
 };
-
-//-----------------------------------------------------------------------
-
-void bindlist_t::add (binding_t b) { push_back (b); }
-
-//-----------------------------------------------------------------------
 
 //=======================================================================
 

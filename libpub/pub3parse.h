@@ -4,28 +4,12 @@
 #ifndef _LIBPUB_PUB3PARSE_H_
 #define _LIBPUB_PUB3PARSE_H_
 
-#include "pub.h"
+#include "pub3base.h"
 #include "pub3expr.h"
-#include "okformat.h"
-#include "pub3expr.h"
-#include "pub3obj.h"
+#include "pub3ast.h"
 
 namespace pub3 {
 
-  //-----------------------------------------------------------------------
-  
-  typedef int lineno_t;
-
-  //-----------------------------------------------------------------------
-
-  struct location_t {
-    location_t () : _lineno (0) {}
-    location_t (str f, lineno_t l) : _filename (f), _lineno (l) {}
-    str to_str () const;
-    str _filename;
-    lineno_t _lineno;
-  };
-  
   //-----------------------------------------------------------------------
 
   class parser_t {

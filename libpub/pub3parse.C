@@ -18,18 +18,6 @@ void flex_cleanup()
 
 namespace pub3 {
 
-  // =================================================== location_t =======
-
-  str
-  location_t::to_str () const
-  {
-    strbuf b (_filename);
-    if (_lineno) {
-      b << ":" << _lineno;
-    }
-    return b;
-  }
-
   // ===================================================== parser_t =======
 
   ptr<parser_t> g_current;

@@ -223,10 +223,10 @@ namespace pub3 {
   //   pub3::obj_t o;
   //   pub3::ref_t r = o.push_back ();
   //
-  class ref_t : public obj_t {
+  class obj_ref_t : public obj_t {
   public:
-    ref_t (ptr<obj_ref_t> r) : obj_t (r) {}
-    ref_t (const obj_t &o) { refer_to (o); }
+    obj_ref_t (ptr<ref_t> r) : obj_t (r) {}
+    obj_ref_t (const obj_t &o) { refer_to (o); }
   private:
     // Should never be used!
     obj_t &operator= (obj_t o);
