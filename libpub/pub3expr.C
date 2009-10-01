@@ -2113,6 +2113,45 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<expr_t>
+  expr_dict_t::eval_rhs (eval_t e) const
+  {
+    bool sttc = true;
+    qhash_const_iterator_t<str, ptr<expr_t> > it (*this);
+    str *key;
+    ptr<expr_t> value;
+
+    // First see if any keys are static.  Note that this computation
+    // will be memoized, so it's fast enough to do a full DFS here.
+    while (sttc && it.next (&value)) {
+      if (value && !value->is_static ()) {
+	sttc = false;
+      }
+    }
+
+    ptr<expr_t> ret;
+
+    // For static objects, make a COW version
+    if (sttc) { 
+      ret = expr_cow_t::alloc (mkref (this)); 
+    } else {
+
+      // Otherwise, recurse --- evaluate next layer down...
+      ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
+      it.reset ();
+      while ((key = it.next (&value))) {
+	ptr<expr_t> nv;
+	if (value) { 
+	  nv = value->eval_rhs (e);
+	}
+	d->insert (*key, nv);
+      }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 
 //=======================================================================
