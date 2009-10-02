@@ -41,6 +41,7 @@
 %token T_P3_CASE
 %token T_P3_SWITCH
 %token T_P3_DEFAULT
+%token T_P3_DEF
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -76,7 +77,7 @@
 %type <p3bind> p3_binding p3_half_binding p3_bind_list;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
-%type <p3statement> p3_universals p3_print;
+%type <p3statement> p3_universals p3_print p3_def;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
 %type <p3cl> p3_switch_case_list p3_switch_cases;
@@ -85,7 +86,7 @@
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
-%type <p3exprlist> p3_tuple p3_list;
+%type <p3exprlist> p3_tuple p3_list; p3_identifier_list;
 %type <p3exprlist> p3_flexi_tuple p3_implicit_tuple;
 %type <str> p3_identifier p3_bind_key;
 %type <num> p3_boolean_constant;
@@ -217,8 +218,18 @@ p3_control:     p3_for { $$ = $1; }
 	      | p3_print { $$ = $1; }
 	      | p3_html_zone { $$ = pub3::statement_zone_t::alloc ($1); }
 	      | p3_switch { $$ = $1; }
+	      | p3_def { $$ = $1; }
               | ';' { $$ = NULL; }
 	      ;
+
+p3_def : T_P3_DEF p3_identifier '(' p3_identifier_list ')' p3_nested_zone
+       {
+          ptr<pub3::fndef_t> d = pub3::fndef_t::alloc ($2);
+	  d->set_params ($4);
+	  d->set_body ($6);
+	  $$ = d;
+       }
+       ;
 
 p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_case_list '}'
 	  {
@@ -468,6 +479,14 @@ p3_nonparen_expr:
 	   | p3_regex       { $$ = $1; }
 	   | p3_varref      { $$ = $1; }
 	   ;
+
+p3_identifier_list: /* empty */ { $$ = pub3::expr_list_t::alloc (); }
+	  | p3_identifier_list ',' p3_identifier
+	  {
+	     $1->add ($3);
+	     $$ = $1;
+	  }
+	  ;
 
 p3_regex: T_P3_REGEX
 	  {
