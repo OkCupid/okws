@@ -65,74 +65,189 @@ pub3::json::quote (const str &s)
   return ret;
 }
 
-//-----------------------------------------------------------------------
+//----------------------------------------------------------------------
 
-static ptr<pub3::expr_null_t> g_null;
+namespace pub3 {
 
-ptr<pub3::expr_null_t>
-pub3::expr_null_t::alloc (int l)
-{
-  ptr<pub3::expr_null_t> ret;
-  if (l == -1) {
-    if (!g_null) {
-      g_null = New refcounted<expr_null_t> ();
+  //====================================================================
+
+  ptr<expr_t> expr_t::eval_to_rhs (eval_t e) { return eval_to_val (e); }
+  ptr<expr_t> expr_t::eval_to_val (eval_t e) { return copy (e); } 
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> expr_t::copy (eval_t e) const
+  { reutrn expr_cow_t::alloc (mkref (this)); }
+
+  //--------------------------------------------------------------------
+
+  bool 
+  expr_t::eval_as_bool (eval_t e) const
+  {
+    bool ret = false;
+    ptr<expr_t> x = eval_to_val (e);
+    if (x) ret = x->to_bool ();
+    return ret;
+  }
+
+  //====================================================================
+
+  bool
+  expr_t::eval_as_null (eval_t e) const
+  {
+    bool ret = true;
+    ptr<expr_t> x = eval_to_val (e);
+    if (x) ret = x->is_null ();
+    return ret;
+  }
+
+  //====================================================================
+
+  scalar_obj_t
+  expr_t::eval_as_scalar (eval_t e) const
+  {
+    scalar_obj_t ret;
+    ptr<expr_t> x = eval_to_val (e);
+    if (x) { ret = x->to_scalar (); }
+    return ret;
+  }
+
+  //====================================================================
+
+  // For constants, we can't change them anyway, so copy's are no-ops
+  ptr<expr_t> expr_constant_t::copy () const 
+  { return mkref (const_cast<expr_constant_t *> (this)); }
+  
+  //====================================================================
+
+  ptr<expr_null_t>
+  pub3::expr_null_t::alloc (lineno_t l)
+  {
+    static ptr<expr_null_t> s_null;
+    if (!s_null) {
+      s_null = New refcounted<expr_null_t> ();
     }
-    ret = g_null;
-  } else {
-    ret = New refcounted<expr_null_t> (l);
+    return s_null;
   }
-  return ret;
-}
 
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_t::eval_freeze (eval_t e) const
-{
-  ptr<pval_t> r;
-  ptr<const pval_t> v = eval (e);
-  if (v) r = v->copy_stub ();
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_bool_t::to_scalar () const
-{
-  scalar_obj_t so;
-  so.set_i (_b);
-  return so;
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_bool_t::to_str (bool b)
-{
-  return b ? "true" : "false";
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_bool_t::to_str () const
-{
-  return to_str (_b);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_logical_t::eval (eval_t e) const
-{
-  if (_cache_generation != e.cache_generation ()) {
-    _cache_generation = e.cache_generation ();
-    _cached_bool = eval_internal (e);
-    _cached_val = expr_bool_t::alloc (_cached_bool);
+  //====================================================================
+  
+  scalar_obj_t
+  expr_bool_t::to_scalar () const
+  {
+    scalar_obj_t so;
+    so.set_i (_b);
+    return so;
   }
-  return _cached_val;
-}
+  
+  //--------------------------------------------------------------------
+  
+  str expr_bool_t::to_str (bool b) { return b ? "true" : "false"; }
+  str expr_bool_t::to_str () const { return to_str (_b); }
+  
+  //--------------------------------------------------------------------
+  
+  ptr<expr_bool_t> expr_bool_t::_false;
+  ptr<expr_bool_t> expr_bool_t::_true;
+  
+  //---------------------------------------------------------------------
+
+  ptr<pub3::expr_bool_t>
+  pub3::expr_bool_t::alloc (bool b)
+  {
+    ptr<expr_bool_t> &retref = b ? _true : _false;
+    if (!retref) { retref = New refcounted<expr_bool_t> (b); }
+    return retref;
+  }
+
+  //====================================================================
+
+  ptr<expr_t>
+  expr_OR_t::eval_to_val (eval_t e) const
+  {
+    return expr_bool_t::alloc (eval_logical (e));
+  }
+
+  //====================================================================
+
+  bool
+  expr_OR_t::eval_logical (eval_t e) const
+  {
+    bool ret = false;
+    ret = ((_t1 && _t1->eval_as_bool (e)) || (_t2 && _t2->eval_as_bool (e)));
+    return ret;
+  }
+
+  //====================================================================
+  
+  bool
+  expr_AND_t::eval_logical (eval_t e) const
+  {
+    bool ret;
+    ret = ((_f1 && _f1->eval_as_bool (e)) && (_f2 && _f2->eval_as_bool (e)));
+    return ret;
+  }
+
+  //====================================================================
+  
+  bool
+  expr_NOT_t::eval_logical (eval_t e) const
+  {
+    bool ret = true;
+    if (_e) ret = !(_e->eval_as_bool (e));
+    return ret;
+  }
+
+  //====================================================================
+  
+  bool
+  expr_EQ_t::eval_logical (eval_t e) const
+  {
+    bool ret = false;
+
+    int flip = _pos ? 0 : 1;
+    int tmp;
+    bool n1 = !_o1 || _o1->eval_as_null (e);
+    bool n2 = !_o2 || _o2->eval_as_null (e);
+  
+    if (n1 && n2) { tmp = 1; }
+    else if (n1) { tmp = 0; }
+    else if (n2) { tmp = 0; }
+    else {
+      scalar_obj_t o1 = _o1->eval_as_scalar (e);
+      scalar_obj_t o2 = _o2->eval_as_scalar (e);
+      tmp = (o1 == o2) ? 1 : 0;
+    } 
+    ret = (tmp ^ flip);
+    
+    return ret;
+  }
+
+  //====================================================================
+  
+  bool
+  pub3::expr_relation_t::eval_internal (eval_t e) const
+  {
+    bool ret = false;
+    if (_l && !_l->eval_as_null (e) && _r && !_r->eval_as_null (e)) {
+      scalar_obj_t l = _l->eval_as_scalar (e);
+      scalar_obj_t r = _r->eval_as_scalar (e);
+      int64_t l = _l->eval_as_int (e);
+      int64_t r = _r->eval_as_int (e);
+      switch (_op) {
+      case XPUB3_REL_LT : ret = (l < r);  break;
+      case XPUB3_REL_GT : ret = (l > r);  break;
+      case XPUB3_REL_LTE: ret = (l <= r); break;
+      case XPUB3_REL_GTE: ret = (l >= r); break;
+      default: panic ("unexpected relational operator!\n");
+      }
+    }
+    return ret;
+  }
+
+  //====================================================================
+  
+};
 
 //-----------------------------------------------------------------------
 
@@ -173,82 +288,6 @@ pub3::expr_ref_t::eval_as_regex (eval_t e) const
   ptr<rxx> ret;
   ptr<const pval_t> v = eval_internal (e);
   if (v) ret = v->to_regex ();
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_OR_t::eval_internal (eval_t e) const
-{
-  bool ret = false;
-  ret = ((_t1 && _t1->eval_as_bool (e)) || (_t2 && _t2->eval_as_bool (e)));
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_AND_t::eval_internal (eval_t e) const
-{
-  bool ret;
-  ret = ((_f1 && _f1->eval_as_bool (e)) && (_f2 && _f2->eval_as_bool (e)));
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_EQ_t::eval_internal (eval_t e) const
-{
-  bool ret = false;
-
-  int flip = _pos ? 0 : 1;
-  int tmp;
-  bool n1 = !_o1 || _o1->eval_as_null (e);
-  bool n2 = !_o2 || _o2->eval_as_null (e);
-  
-  
-  if (n1 && n2) { tmp = 1; }
-  else if (n1) { tmp = 0; }
-  else if (n2) { tmp = 0; }
-  else {
-    scalar_obj_t o1 = _o1->eval_as_scalar (e);
-    scalar_obj_t o2 = _o2->eval_as_scalar (e);
-    tmp = (o1 == o2) ? 1 : 0;
-  } 
-  ret = (tmp ^ flip);
-
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_relation_t::eval_internal (eval_t e) const
-{
-  bool ret = false;
-  if (_l && !_l->eval_as_null (e) && _r && !_r->eval_as_null (e)) {
-    int64_t l = _l->eval_as_int (e);
-    int64_t r = _r->eval_as_int (e);
-    switch (_op) {
-    case XPUB3_REL_LT : ret = (l < r);  break;
-    case XPUB3_REL_GT : ret = (l > r);  break;
-    case XPUB3_REL_LTE: ret = (l <= r); break;
-    case XPUB3_REL_GTE: ret = (l >= r); break;
-    default: panic ("unexpected relational operator!\n");
-    }
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_NOT_t::eval_internal (eval_t e) const
-{
-  bool ret = true;
-  if (_e) ret = !(_e->eval_as_bool (e));
   return ret;
 }
 
@@ -547,7 +586,6 @@ pub3::expr_str_t::to_null () const
 //-----------------------------------------------------------------------
 
 static recycler_t<pub3::expr_int_t> _int_recycler (1000);
-static recycler_t<pub3::expr_bool_t> _bool_recycler (1000);
 
 //-----------------------------------------------------------------------
 
@@ -2053,19 +2091,6 @@ pub3::expr_list_t::fixup_index (ssize_t *ip, bool lax) const
   }
   *ip = i;
   return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_bool_t> pub3::expr_bool_t::_false;
-ptr<pub3::expr_bool_t> pub3::expr_bool_t::_true;
-
-ptr<pub3::expr_bool_t>
-pub3::expr_bool_t::alloc (bool b)
-{
-  ptr<expr_bool_t> &retref = b ? _true : _false;
-  if (!retref) { retref = New refcounted<expr_bool_t> (b); }
-  return retref;
 }
 
 //-----------------------------------------------------------------------

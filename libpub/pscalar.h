@@ -57,6 +57,8 @@ private:
     double to_double () const;
     bool to_bool () const;
     bool is_null () const { return !_s; }
+    bool is_explicit_double () const;
+    bool is_explicit_int () const;
 
     bool to_int64 (int64_t *out) const;
     bool to_double (double *out) const;
@@ -68,8 +70,12 @@ private:
     void set_u (u_int64_t u);
     void set_i (int64_t i);
     void clear ();
+    type_t natural_type () const;
     
     typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
+
+    typedef enum { TYP_NONE = 0, TYP_STR = 1, TYP_INT = 2, 
+		   TYP_UINT = 3, TYP_DOUBLE = 4} type_t;
     
   private:
     str _s;
@@ -78,6 +84,8 @@ private:
     mutable double _d;
     mutable int64_t _i;
     mutable u_int64_t _u;
+    mutable bool _d_explicit;
+    mutable type_t _natural_type;
   };
 
   //-----------------------------------------------------------------------
@@ -102,8 +110,10 @@ public:
   double to_double () const { return _p->to_double (); }
   bool to_bool () const { return _p->to_bool (); }
   bool is_null () const { return _p->is_null (); }
+  bool is_explicit_double () const { return _p->is_explicit_double (); }
   str trim () const;
   str to_str_n () const { return _p->to_str_n (); }
+  type_t natural_type () const { return _p->natural_type (); }
 
   void set (const str &s) { _p->set (s); }
   void set (double d) { _p->set (d); }
@@ -117,6 +127,11 @@ public:
   bool is_frozen () const { return _frozen; }
 
   bool operator== (const scalar_obj_t &o2) const;
+  bool operator!= (const scalar_obj_t &o2) const;
+  bool operator<= (const scalar_obj_t &o2) const;
+  bool operator>= (const scalar_obj_t &o2) const;
+  bool operator<  (const scalar_obj_t &o2) const;
+  bool operator>  (const scalar_obj_t &o2) const;
   
   virtual bool strip_add (const char *s, int l) const { return true; }
 

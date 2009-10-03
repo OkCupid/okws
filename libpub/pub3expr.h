@@ -46,19 +46,30 @@ namespace pub3 {
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<expr_t> alloc (scalar_obj_t so);
-    ptr<expr_t> const_cast_hack () const;
-    int lineno () const { return _lineno; }
+    lineno_t lineno () const { return _lineno; }
 
     //------- Evaluation ------------------------------------------
     //
-    ptr<expr_t> eval_to_val (eval_t e) const;
-    ptr<ref_t>  eval_to_ref (eval_t e) const;
+    virtual ptr<expr_t> eval_to_val (eval_t e) const;
+    virtual ptr<ref_t>  eval_to_ref (eval_t e) const { return NULL; }
+    virtual ptr<expr_t> eval_to_rhs (eval_t e) const = 0;
+    virtual ptr<ref_t>  eval_to_lhs (eval_t e) const { return NULL; }
     //
     //------------------------------------------------------------
 
     virtual ptr<expr_t> copy () const ;
-    virtual ptr<expr_t> mutable_expr () = 0;
-    virtual ptr<const expr_t> const_expr () const = 0;
+
+    //------------------------------------------------------------
+
+    //------------------------------------------------------------
+    // shortcuts
+
+    virtual bool eval_as_bool (eval_t e) const;
+    virtual bool eval_as_null (eval_t e) const;
+    virtual bool eval_as_scalar (eval_t e) const;
+
+    //
+    //------------------------------------------------------------
 
     //------------------------------------------------------------
     //
@@ -129,7 +140,6 @@ namespace pub3 {
     ptr<const expr_t> _orig;
   };
 
-
   //----------------------------------------------------------------------
 
   class const_ref_t : public ref_t {
@@ -143,46 +153,67 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
-  class expr_null_t : public expr_t {
+  class expr_constant_t : public expr_t {
   public:
-    expr_null_t (int l = -1) : expr_t (l) {}
+    expr_constant_t () : expr_t () {}
+    ptr<expr_t> copy () const;
+  };
+
+  //----------------------------------------------------------------------
+
+  class expr_null_t : public expr_constant_t {
+  public:
+    expr_null_t () : expr_constant_t () {}
     bool is_null () const { return true; }
     bool to_xdr (xpub3_expr_t *x) const { return false; }
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
-    static ptr<expr_null_t> alloc (int l = -1);
+    static ptr<expr_null_t> alloc ();
     str type_to_str () const { return "null"; }
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_bool_t : public expr_t {
+  class expr_bool_t : public expr_constant_t {
   public:
     scalar_obj_t to_scalar () const;
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     static ptr<expr_bool_t> alloc (bool b);
-    static ptr<expr_bool_t> _false, _true;
+    static str to_str (bool b);
+    str to_str (bool b) const;
+    ptr<expr_t> copy () const;
 
     // Allow for calling New refcounted<expr_bool_t> inside of
     // expr_bool_t::alloc()
     friend class refcounted<expr_bool_t>;
     str type_to_str () const { return "bool"; }
-  private:
-    expr_bool_t (bool b) : expr_t (), _b (b) {}
 
+  private:
+    static ptr<expr_bool_t> _false, _true;
+    expr_bool_t (bool b) : expr_t (), _b (b) {}
     const bool _b;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_logical_t : public expr_t {
+  public:
+    expr_logical_t (lineno_t lineno) : expr_t (lineno) {}
+  protected:
+    bool eval_logical (eval_t e) const;
   };
 
   //-----------------------------------------------------------------------
 
   class expr_OR_t : public expr_t {
   public:
-    expr_OR_t (ptr<expr_t> t1, ptr<expr_t> t2, int l) 
+    expr_OR_t (ptr<expr_t> t1, ptr<expr_t> t2, lineno_t l) 
       : expr_t (l), _t1 (t1), _t2 (t2) {}
     expr_OR_t (const xpub3_mathop_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_OR_t"; }
   protected:
+    bool eval_logical (eval_t e) const;
     ptr<expr_t> _t1, _t2;
   };
 
@@ -190,32 +221,30 @@ namespace pub3 {
 
   class expr_AND_t : public expr_logical_t  {
   public:
-    expr_AND_t (ptr<expr_t> f1, ptr<expr_t> f2, int lineno) 
+    expr_AND_t (ptr<expr_t> f1, ptr<expr_t> f2, lineno_t lineno) 
       : expr_logical_t (lineno), _f1 (f1), _f2 (f2) {}
 
     expr_AND_t (const xpub3_mathop_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_AND_t"; }
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
   protected:
     ptr<expr_t> _f1, _f2;
-    bool eval_internal (eval_t e) const;
+    bool eval_logical (eval_t e) const;
   };
 
   //-----------------------------------------------------------------------
 
   class expr_NOT_t : public expr_logical_t  {
   public:
-    expr_NOT_t (ptr<expr_t> e, int lineno) 
+    expr_NOT_t (ptr<expr_t> e, lineno_t lineno) 
       : expr_logical_t (lineno), _e (e) {}
 
     expr_NOT_t (const xpub3_not_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_NOT_t"; }
   protected:
     ptr<expr_t> _e;
-    bool eval_internal (eval_t e) const;
+    bool eval_logical (eval_t e) const;
   };
 
   //-----------------------------------------------------------------------
@@ -227,24 +256,23 @@ namespace pub3 {
     expr_EQ_t (const xpub3_eq_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_EQ_t"; }
   protected:
     ptr<expr_t> _o1, _o2;
     bool _pos;
-    bool eval_internal (eval_t e) const;
+    bool eval_logical (eval_t e) const;
   };
 
   //-----------------------------------------------------------------------
 
   class expr_relation_t : public expr_logical_t {
   public:
-    expr_relation_t (ptr<expr_t> l, ptr<expr_t> r, xpub3_relop_t op, int lineno)
+    expr_relation_t (ptr<expr_t> l, ptr<expr_t> r, xpub3_relop_t op, 
+		     lineno_t lineno)
       : expr_logical_t (lineno), _l (l), _r (r), _op (op) {}
     expr_relation_t (const xpub3_relation_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_relation_t"; }
 
   protected:
@@ -259,7 +287,7 @@ namespace pub3 {
   public:
     static ptr<expr_t> alloc (const xpub3_mathop_t &x);
     static bool to_xdr (xpub3_expr_t *x, xpub3_mathop_opcode_t typ,
-			const expr_t *o1, const expr_t *o2, int lineno);
+			const expr_t *o1, const expr_t *o2, lineno_t lineno);
   };
 
   //-----------------------------------------------------------------------
@@ -268,18 +296,7 @@ namespace pub3 {
   public:
     expr_arithmetic_t (int l) : expr_t (l) {}
 
-    ptr<const pval_t> eval (eval_t e) const;
-    ptr<pval_t> eval_freeze (eval_t e) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
-
-    scalar_obj_t eval_as_scalar (eval_t e) const;
-    int64_t eval_as_int (eval_t e) const;
-    u_int64_t eval_as_uint (eval_t e) const;
-    bool eval_as_bool (eval_t e) const;
-    virtual str eval_as_str (eval_t e) const;
-
-    virtual ptr<expr_list_t> eval_as_frozen_list (eval_t e) const 
-    { return NULL; }
+    ptr<expr_t> eval_to_val (eval_t e) const;
 
   protected:
     virtual scalar_obj_t eval_internal (eval_t e) const = 0;
@@ -289,12 +306,11 @@ namespace pub3 {
 
   class expr_add_t : public expr_arithmetic_t {
   public:
-    expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, int lineno)
+    expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, lineno_t lineno)
       : expr_arithmetic_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
     expr_add_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
 
     ptr<expr_list_t> eval_as_frozen_list (eval_t e) const;
@@ -310,12 +326,11 @@ namespace pub3 {
 
   class expr_mult_t : public expr_arithmetic_t {
   public:
-    expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, int lineno)
+    expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, lineno_t lineno)
       : expr_arithmetic_t (lineno), _f1 (f1), _f2 (f2) {}
     expr_mult_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_mult_t"; }
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
@@ -326,27 +341,11 @@ namespace pub3 {
 
   class expr_div_t : public expr_arithmetic_t {
   public:
-    expr_div_t (ptr<expr_t> n, ptr<expr_t> d, int lineno)
+    expr_div_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
       : expr_arithmetic_t (lineno), _n (n), _d (d) {}
     expr_div_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
-    const char *get_obj_name () const { return "pub3::expr_div_t"; }
-  protected:
-    scalar_obj_t eval_internal (eval_t e) const;
-    ptr<expr_t> _n, _d;
-  };
-  //-----------------------------------------------------------------------
-
-  class expr_mod_t : public expr_arithmetic_t {
-  public:
-    expr_mod_t (ptr<expr_t> n, ptr<expr_t> d, int lineno)
-      : expr_arithmetic_t (lineno), _n (n), _d (d) {}
-    expr_mod_t (const xpub3_mathop_t &x);
-
-    bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
@@ -359,14 +358,12 @@ namespace pub3 {
   class expr_ref_t : public expr_t {
   public:
     expr_ref_t (int l) : expr_t (l) {}
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
 
     virtual ptr<const pval_t> eval (eval_t e) const;
     virtual ptr<pval_t> eval_freeze (eval_t e) const;
     virtual str eval_as_str (eval_t e) const;
     virtual bool eval_as_null (eval_t e) const;
     virtual ptr<rxx> eval_as_regex (eval_t e) const;
-    virtual bool eval_as_bool (eval_t e) const;
 
     ptr<const expr_ref_t> to_ref () const { return mkref (this); }
     ptr<expr_ref_t> to_ref () { return mkref (this); }
@@ -384,11 +381,10 @@ namespace pub3 {
 
   class expr_dictref_t : public expr_ref_t {
   public:
-    expr_dictref_t (ptr<expr_t> d, const str &k, int lineno)
+    expr_dictref_t (ptr<expr_t> d, const str &k, lineno_t lineno)
       : expr_ref_t (lineno), _dict (d), _key (k) {}
     expr_dictref_t (const xpub3_dictref_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_dictref_t"; }
 
   protected:
@@ -405,7 +401,6 @@ namespace pub3 {
     expr_vecref_t (ptr<expr_t> v, ptr<expr_t> i, int l) 
       : expr_ref_t (l), _vec (v), _index (i) {}
     expr_vecref_t (const xpub3_vecref_t &x);
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_vecref_t"; }
@@ -425,7 +420,6 @@ namespace pub3 {
     expr_varref_t (const xpub3_ref_t &x);
     virtual bool to_xdr (xpub3_expr_t *x) const;
     str to_identifier () const { return _name; }
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     virtual const char *get_obj_name () const { return "pub3::expr_varref_t"; }
 
   protected:
@@ -475,7 +469,6 @@ namespace pub3 {
     bool to_null () const;
     ptr<rxx> to_regex () const;
 
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
@@ -496,7 +489,6 @@ namespace pub3 {
   public:
     expr_number_t () : expr_static_t () {}
 
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     str to_str () const { return to_scalar ().to_str (); }
   };
 
@@ -514,7 +506,6 @@ namespace pub3 {
     u_int64_t to_uint () const;
     bool to_uint (u_int64_t *u) const;
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
 
     static ptr<expr_int_t> alloc (int64_t i);
@@ -542,7 +533,6 @@ namespace pub3 {
 
     scalar_obj_t to_scalar () const;
 
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_uint_t"; }
 
@@ -559,7 +549,6 @@ namespace pub3 {
     expr_double_t (double d) : _val (d) {}
     expr_double_t (const xpub3_double_t &d);
 
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     bool to_bool () const { return _val != 0; }
     double to_double () const { return _val; }
     scalar_obj_t to_scalar () const;
@@ -601,7 +590,7 @@ namespace pub3 {
 
     typedef vec<ptr<expr_t> > vec_base_t;
 
-    expr_list_t (int lineno = -1) : expr_t (lineno) {}
+    expr_list_t (lineno_t lineno = -1) : expr_t (lineno) {}
     expr_list_t (const xpub3_expr_list_t &x);
 
     bool to_xdr (xpub3_expr_t *) const;
@@ -625,7 +614,6 @@ namespace pub3 {
     ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
     ptr<const vec_iface_t> eval_as_vec () const { return mkref (this); }
     str eval_as_str (eval_t e) const;
-    bool eval_as_bool (eval_t e) const { return to_bool (); }
     ptr<rxx> eval_as_regex (eval_t e) const;
 
     void push_front (ptr<expr_t> e);
@@ -666,9 +654,9 @@ namespace pub3 {
 
   class expr_regex_t : public expr_t {
   public:
-    expr_regex_t (int lineno);
+    expr_regex_t (lineno_t lineno);
     expr_regex_t (const xpub3_regex_t &x);
-    expr_regex_t (ptr<rxx> x, str b, str o, int lineno);
+    expr_regex_t (ptr<rxx> x, str b, str o, lineno_t lineno);
     const char *get_obj_name () const { return "pub3::expr_regex_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
 
@@ -692,9 +680,9 @@ namespace pub3 {
 
   class expr_shell_str_t : public expr_t {
   public:
-    expr_shell_str_t (int lineno);
-    expr_shell_str_t (const str &s, int lineno);
-    expr_shell_str_t (ptr<expr_t> e, int lineno);
+    expr_shell_str_t (lineno_t lineno);
+    expr_shell_str_t (const str &s, lineno_t lineno);
+    expr_shell_str_t (ptr<expr_t> e, lineno_t lineno);
     expr_shell_str_t (const xpub3_shell_str_t &x);
     
     ptr<const pval_t> eval (eval_t e) const { return eval_freeze (e); }
@@ -706,7 +694,6 @@ namespace pub3 {
     ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els->push_back (e); }
     bool to_xdr (xpub3_expr_t *x) const;
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     const char *get_obj_name () const { return "pub3::expr_shell_str_t"; }
 
     str type_to_str () const { return "string"; }
@@ -754,9 +741,9 @@ namespace pub3 {
 
   class expr_dict_t : public expr_t, public bindtab_t {
   public:
-    expr_dict_t (int lineno = -1) : expr_t (lineno) {}
+    expr_dict_t (lineno_t lineno = -1) : expr_t (lineno) {}
     expr_dict_t (const xpub3_dict_t &x);
-    expr_dict_t (ptr<aarr_arg_t> d, int lineno = -1)
+    expr_dict_t (ptr<aarr_arg_t> d, lineno_t lineno = -1)
       : expr_t (lineno), _dict (d) {}
 
     // To JSON-style string
@@ -767,7 +754,6 @@ namespace pub3 {
     ptr<pval_t> eval_freeze (eval_t e) const;
     str eval_as_str (eval_t e) const;
     bool to_len (size_t *s) const;
-    bool eval_as_bool (eval_t e) const { return to_bool (); }
 
     void add (binding_t p);
     void add (ptr<binding_t> p);
@@ -791,7 +777,6 @@ namespace pub3 {
     ptr<const expr_dict_t> to_expr_dict () const { return mkref (this); }
     ptr<expr_dict_t> to_expr_dict () { return mkref (this); }
 
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
 
     str type_to_str () const { return "dict"; }
   }; 
@@ -827,7 +812,6 @@ namespace pub3 {
     void output (output_t *o, penv_t *e) const;
     pfile_el_type_t get_type () const { return PFILE_PUB3_VAR; }
     const char *get_obj_name () const { return "pub3::inline_var_t"; }
-    void dump2 (dumper_t *d) const;
     bool to_xdr (xpub_obj_t *x) const;
   private:
     const ptr<expr_t> _expr;
@@ -838,11 +822,10 @@ namespace pub3 {
 
   class pstr_el_t : public ::pstr_el_t {
   public:
-    pstr_el_t (ptr<expr_t> e, int lineno) : _expr (e), _lineno (lineno) {}
+    pstr_el_t (ptr<expr_t> e, lineno_t lineno) : _expr (e), _lineno (lineno) {}
     pstr_el_t (const xpub3_pstr_el_t &x);
     void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;
     pfile_el_t *to_pfile_el ();
-    void dump2 (dumper_t *d) const;
     const char *get_obj_name () const { return "pub3::pstr_el_t"; }
     bool to_xdr (xpub_pstr_el_t *x) const;
     void output (output_t *o, penv_t *e) const;
@@ -859,7 +842,6 @@ namespace pub3 {
     expr_assignment_t (ptr<pub3::expr_t> lhs, ptr<pub3::expr_t> rhs, int l);
     expr_assignment_t (const xpub3_assignment_t &x);
     const char *get_obj_name () const { return "pub3::assignment_t"; }
-    void dump2 (dumper_t *d) const { /* XXX implement me */ }
     bool to_xdr (xpub3_expr_t *x) const;
     ptr<const pval_t> eval (eval_t e) const { return eval_internal (e); }
     ptr<pval_t> eval_freeze (eval_t e) const { return eval_internal (e); }
