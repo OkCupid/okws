@@ -92,6 +92,7 @@ namespace pub3 {
     virtual ptr<rxx> to_regex () const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     virtual str type_to_str () const { return "object"; }
+    virtual bool to_int (int64_t *out) const { return false; }
 
     //
     // and from here, scalars can be converted at will...
@@ -293,10 +294,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_add_t : public expr_arithmetic_t {
+  class expr_add_t : public expr_t {
   public:
     expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, lineno_t lineno)
-      : expr_arithmetic_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
+      : expr_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
     expr_add_t (const xpub3_mathop_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
@@ -310,30 +311,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_arithmetic_t : public expr_t {
-  public:
-    expr_arithmetic_t (int l) : expr_t (l) {}
-
-    ptr<expr_t> eval_to_val (eval_t e) const;
-
-  protected:
-    virtual scalar_obj_t eval_internal (eval_t e) const = 0;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class expr_mult_t : public expr_arithmetic_t {
+  class expr_mult_t : public expr_t {
   public:
     expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, lineno_t lineno)
-      : expr_arithmetic_t (lineno), _f1 (f1), _f2 (f2) {}
+      : expr_t (lineno), _f1 (f1), _f2 (f2) {}
     expr_mult_t (const xpub3_mathop_t &x);
-
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_mult_t"; }
+    ptr<expr_t> eval_as_val (eval_t e) const;
   protected:
-    scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _f1, _f2;
   };
+
+  // MK 10/3/09 -- leave off here!
 
   //-----------------------------------------------------------------------
 

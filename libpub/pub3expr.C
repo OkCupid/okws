@@ -242,6 +242,8 @@ namespace pub3 {
       case XPUB3_REL_GTE: ret = (l >= r); break;
       default: panic ("unexpected relational operator!\n");
       }
+    } else {
+      report_error (e, "one or more relational arguments were null");
     }
     return ret;
   }
@@ -308,6 +310,47 @@ namespace pub3 {
   
   //====================================================================
 
+  ptr<expr_t>
+  expr_mult_t::eval_as_val (eval_t e) const
+  {
+    scalar_obj_t out;
+    ptr<expr_t> e1, ptr<expr_t> e2;
+    int64_t n;
+    
+    if (!_f1 || !(e1 = _f1->eval_as_val (e)) || e1->is_null ()) {
+      report_error (e, "mult: left-hand factor was NULL");
+    } else if (!_f2 || !(e2 = _f2->eval_as_val (e)) || e2->is_null ()) {
+      report_error (e, "mult: right-hand factor was NULL");
+      } else if (e1->to_dict () || e2->to_dict ()) {
+      report_error (e, "cannot multiply dictionaries");
+    } else if ((l = e1->to_list ()) && e2->to_int (&n) && n < 0x100) {
+      ptr<expr_list_t> lo = New refcounted<expr_list_t> (_lineno);
+      for (int64_t i = 0; i < n; i++) {
+	*lo += *l;
+      }
+      out = lo;
+    } else if (e1->to_list () || e2->to_list ()) {
+      report_error (e, "can only multiply lists by small integers");
+    } else {
+      scalar_obj_t o1 = _e1->to_scalar ();
+      scalar_obj_t o2 = _e2->to_scalar ();
+      
+      if (o1.is_null ()) {
+	report_error (e, "mult: left-hand factor was not multipliable");
+      } else if (o2.is_null ()) {
+	report_error (e, "mutl: right-hand factor was not multipliable");
+      } else {
+	out = o1 * o2;
+	if (out.is_null ()) {
+	  report_error (e, "mult: no plausible evaluation found!");
+	}
+      }
+    }
+    return out;
+  }
+
+  //====================================================================
+
   bindtab_t &
   bindtab_t::operator+= (const bindtab_t &in) 
   {
@@ -329,6 +372,7 @@ namespace pub3 {
     str *key;
     while ((key = in.next ())) { remove (*key); }
     return this;
+  }
 
   //====================================================================
 };
@@ -863,44 +907,6 @@ pub3::expr_div_t::eval_internal (eval_t e) const
 }
 
 //-----------------------------------------------------------------------
-
-scalar_obj_t 
-pub3::expr_mult_t::eval_internal (eval_t e) const
-{
-  scalar_obj_t out;
-
-  if (_f1 && !_f1->eval_as_null (e) && _f2 && !_f2->eval_as_null (e)) {
-    bool l = e.set_loud (true);
-    scalar_obj_t o1 = _f1->eval_as_scalar (e);
-    scalar_obj_t o2 = _f2->eval_as_scalar (e);
-    e.set_loud (l);
-    int64_t i1, i2;
-    u_int64_t u1, u2;
-    str s1, s2;
-    if (o1.to_int64 (&i1) && o2.to_int64 (&i2)) {
-      out.set_i (i1*i2);
-    } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2)) {
-      out.set_u (u1 * u2);
-    } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2)) {
-      out.set_i (u1 * u2);
-    } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2)) {
-      out.set_i (u1 * u2);
-    } else if ((s1 = o1.to_str ()) && o2.to_int64 (&i2) &&
-	       i2 < 0x100) {
-      strbuf b;
-      for (int64_t i = 0; i < i2; i++) {
-	b << s1;
-      }
-      out.set (b);
-    } else {
-      report_error (e, "mult: no plausible evaluation found!");
-    }
-  } else {
-    report_error (e, "mult: one or more operands were NULL");
-  }
-
-  return out;
-}
 
 //-----------------------------------------------------------------------
 

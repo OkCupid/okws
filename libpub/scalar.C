@@ -316,13 +316,13 @@ scalar_obj_t::operator+ (const scalar_obj_t &s) const
     int64_t i1, i2;
     u_int64_t u1, u2;
 
-    if (to_int64 (&i1) && to_int64 (&i2)) {
+    if (to_int64 (&i1) && o.to_int64 (&i2)) {
       ret.set_i (i1 + i2);
-    } else if (to_uint64 (&u1) && to_uint64 (&u2)) {
+    } else if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
       ret.set_u (u1 + u2);
-    } else if (to_int64 (&i1) && to_uint64 (&u2)) {
+    } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
       ret.set_i (i1 + u2);
-    } else if (to_uint64 (&u1) && to_int64 (&i2)) {
+    } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
       ret.set_i (u1 + i2);
     }
   }
@@ -352,13 +352,13 @@ scalar_obj_t::operator- (const scalar_obj_t &s) const
   } else {
     int64_t i1, i2;
     u_int64_t u1, u2;
-    if (to_int64 (&i1) && to_int64 (&i2)) {
+    if (to_int64 (&i1) && o.to_int64 (&i2)) {
       ret.set_i (i1 - i2);
-    } else if (to_uint64 (&u1) && to_uint64 (&u2)) {
+    } else if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
       ret.set_i (u1 - u2);
-    } else if (to_int64 (&i1) && to_uint64 (&u2)) {
+    } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
       ret.set_i (i1 - u2);
-    } else if (to_uint64 (&u1) && to_int64 (&i2)) {
+    } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
       ret.set_i (u1 - i2);
     }
   }
@@ -392,13 +392,13 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
     int64_t i1, i2;
     u_int64_t u1, u2;
 
-    if (to_uint64 (&u1) && to_uint64 (&u2)) {
+    if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
       res = CMP (u1, u2);
-    } else if (to_int64 (&i1) && to_int64 (&i2)) {
+    } else if (to_int64 (&i1) && o.to_int64 (&i2)) {
       res = CMP (i1, u2);
-    } else if (to_uint64 (&u1) && to_int64 (&i2)) {
+    } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
       res = CMP (1, -1);
-    } else if (to_int64 (&i1) && to_uint64 (&u2)) {
+    } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
       res = CMP (-1, 1);
     } else {
       res = 1;
@@ -406,7 +406,52 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
   }
 
   return res;
-
 }
+
+#undef CMP
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t 
+scalar_obj_t::operator* (const scalar_obj_t &o) const
+{
+  type_t me = natural_type ();
+  type_t him = o.natural_type ();
+
+  int64_t i1, i2;
+  u_int64_t u1, u2;
+  str s1, s2;
+  scalar_obj_t out;
+
+  if (me == _p_t::TYPE_STR && o.to_int64 (&i2) && i2 < 0x100) {
+    strbuf b;
+    for (int64_t i = 0; i < i2; i++) {
+      b << s1;
+    }
+    out.set (b);
+
+  } else if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+    /* noop!!! */
+
+  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+    double d1 = to_double ();
+    double d2 = to_double ();
+    out.set (d1 * d2);
+
+  } else if (o1.to_int64 (&i1) && o2.to_int64 (&i2)) {
+    out.set_i (i1*i2);
+  } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2)) {
+    out.set_u (u1 * u2);
+  } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2)) {
+    out.set_i (u1 * u2);
+  } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2)) {
+    out.set_i (u1 * u2);
+  } 
+
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
 
 //=======================================================================
