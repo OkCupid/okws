@@ -278,28 +278,17 @@ namespace pub3 {
   protected:
     ptr<expr_t> _l, _r;
     xpub3_relop_t _op;
-    bool eval_internal (eval_t e) const;
+    bool eval_logical (eval_t e) const;
   };
 
   //-----------------------------------------------------------------------
 
+  // a convenience class for moving to and from XDR representation
   class expr_mathop_t {
   public:
     static ptr<expr_t> alloc (const xpub3_mathop_t &x);
     static bool to_xdr (xpub3_expr_t *x, xpub3_mathop_opcode_t typ,
 			const expr_t *o1, const expr_t *o2, lineno_t lineno);
-  };
-
-  //-----------------------------------------------------------------------
-
-  class expr_arithmetic_t : public expr_t {
-  public:
-    expr_arithmetic_t (int l) : expr_t (l) {}
-
-    ptr<expr_t> eval_to_val (eval_t e) const;
-
-  protected:
-    virtual scalar_obj_t eval_internal (eval_t e) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -313,13 +302,22 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
 
-    ptr<expr_list_t> eval_as_frozen_list (eval_t e) const;
-    str eval_as_str (eval_t e) const;
-
+    ptr<expr_t> eval_as_val (eval_t e) const;
   protected:
-    scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _t1, _t2;
     bool _pos;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_arithmetic_t : public expr_t {
+  public:
+    expr_arithmetic_t (int l) : expr_t (l) {}
+
+    ptr<expr_t> eval_to_val (eval_t e) const;
+
+  protected:
+    virtual scalar_obj_t eval_internal (eval_t e) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -725,6 +723,7 @@ namespace pub3 {
   public:
     void overwrite_with (const bindtab_t &in);
     bindtab_t &operator+= (const bindtab_t &in);
+    bindtab_t &operator-= (const bindtab_t &in);
   };
 
   //-----------------------------------------------------------------------
@@ -776,7 +775,6 @@ namespace pub3 {
 
     ptr<const expr_dict_t> to_expr_dict () const { return mkref (this); }
     ptr<expr_dict_t> to_expr_dict () { return mkref (this); }
-
 
     str type_to_str () const { return "dict"; }
   }; 

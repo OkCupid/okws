@@ -125,13 +125,19 @@ public:
   void add (const str &s);
   void freeze ();
   bool is_frozen () const { return _frozen; }
+  bool cmp (const scalar_obj_t &o) const;
 
-  bool operator== (const scalar_obj_t &o2) const;
-  bool operator!= (const scalar_obj_t &o2) const;
-  bool operator<= (const scalar_obj_t &o2) const;
-  bool operator>= (const scalar_obj_t &o2) const;
-  bool operator<  (const scalar_obj_t &o2) const;
-  bool operator>  (const scalar_obj_t &o2) const;
+  bool operator== (const scalar_obj_t &o2) const { return cmp (o2) == 0; }
+  bool operator!= (const scalar_obj_t &o2) const { return cmp (o2) != 0; }
+  bool operator<= (const scalar_obj_t &o2) const { return cmp (o2) <= 0; }
+  bool operator>= (const scalar_obj_t &o2) const { return cmp (o2) >= 0; }
+  bool operator<  (const scalar_obj_t &o2) const { return cmp (o2) <  0; }
+  bool operator>  (const scalar_obj_t &o2) const { return cmp (o2) >  0; }
+
+  scalar_obj_t operator+ (const scalar_obj_t &s) const;
+  scalar_obj_t operator- (const scalar_obj_t &s) const;
+  scalar_obj_t operator* (const scalar_obj_t &s) const;
+  scalar_obj_t operator/ (const scalar_obj_t &s) const;
   
   virtual bool strip_add (const char *s, int l) const { return true; }
 

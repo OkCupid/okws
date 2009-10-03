@@ -226,14 +226,15 @@ namespace pub3 {
   //====================================================================
   
   bool
-  pub3::expr_relation_t::eval_internal (eval_t e) const
+  expr_relation_t::eval_logical (eval_t e) const
   {
     bool ret = false;
     if (_l && !_l->eval_as_null (e) && _r && !_r->eval_as_null (e)) {
       scalar_obj_t l = _l->eval_as_scalar (e);
       scalar_obj_t r = _r->eval_as_scalar (e);
-      int64_t l = _l->eval_as_int (e);
-      int64_t r = _r->eval_as_int (e);
+
+      // perform relations as scalars, to accommdate double v. int,
+      // string v. double, etc...
       switch (_op) {
       case XPUB3_REL_LT : ret = (l < r);  break;
       case XPUB3_REL_GT : ret = (l > r);  break;
@@ -246,7 +247,90 @@ namespace pub3 {
   }
 
   //====================================================================
+
+  ptr<expr_t> 
+  expr_add_t::eval_as_val (eval_t e) const
+  {
+    ptr<expr_t> out;
+    ptr<expr_t> e1, e2;
+    ptr<expr_list_t> l1, l2;
+    ptr<expr_dict_t> d1, d2;
+    ptr<
+    str s1, s2;
+
+    const char *op = _pos = "addition" : "subtraction";
+
+    if (!_t1 || !(e1 = t1->eval_as_val (e))) {
+      report_error (e, strbuf ("left-hand term of %s evaluates to null", op));
+    } else if (!_t2 || !(e2 = t2->eval_as_val (e))) {
+      report_error (e, strbuf ("right-hand term of %s evaluates to null", op));
+
+      // Two lists added (but not subtracted)
+    } else if ((l1 = e1->to_list ()) || (l2 = e2->to_list ())) {
+      if (!l1 || !l2) {
+	report_error (e, "addition on lists only works with 2 lists");
+      } else if (!_pos) { 
+	report_error (e, "cannot subtract lists");
+      } else {
+	ptr<expr_list_t> s = New refcounted<expr_list_t> (_lineno);
+	*s += *l1;
+	*s += *l2;
+	out = s;
+      }
+
+      // Two dicts added or subtracted
+    } else if ((d1 = e1->to_dict ()) || (d2 = e2->to_dict ())) {
+      if (!d1 || !d2) {
+	report_error (e, "addition on dicts only work with 2 dicts");
+      } else {
+	ptr<expr_dict_t> d = New refcounted<expr_dict_t> (_lineno, *d1);
+	if (_pos) {
+	  *d += *d2;
+	} else {
+	  *d -= *d2;
+	}
+	out = d;
+      }
+
+    } else {
+      scalar_obj_t s1 = e1->to_scalar ();
+      scalar_obj_t s2 = e2->to_scalar ();
+      
+      scalar_obj_t res;
+      if (_pos) { res = s1 + s2; }
+      else      { res = s1 - s2; }
+
+      out = expr_t::alloc (res, _lineno);
+    }
+
+    return out;
+  }
   
+  //====================================================================
+
+  bindtab_t &
+  bindtab_t::operator+= (const bindtab_t &in) 
+  {
+    qhash_const_iterator_t<str, ptr<expr_t> > it (in);
+    str *key;
+    ptr<expr_t> val;
+    while ((key = in.next (val))) {
+      insert (*key, val);
+    }
+    return this;
+  }
+
+  //--------------------------------------------------------------------
+
+  bindtab_t &
+  bindtab_t::operator-= (const bindtab_t &in) 
+  {
+    qhash_const_iterator_t<str, ptr<expr_t> > it (in);
+    str *key;
+    while ((key = in.next ())) { remove (*key); }
+    return this;
+
+  //====================================================================
 };
 
 //-----------------------------------------------------------------------

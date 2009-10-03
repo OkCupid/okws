@@ -291,28 +291,122 @@ convertuint (const str &s, u_int64_t *out)
 
 //-----------------------------------------------------------------------
 
-bool
-scalar_obj_t::operator== (const scalar_obj_t &o2) const
+scalar_obj_t
+scalar_obj_t::operator+ (const scalar_obj_t &s) const
 {
-  int64_t i1, i2;
-  u_int64_t u1, u2;
-  double d1, d2;
-  str s1, s2;
-  bool ret;
+  type_t me = natural_type ();
+  type_t him = s.natural_type ();
+  
+  scalar_obj_t ret;
 
-  if (to_int64 (&i1) && o2.to_int64 (&i2)) { ret = (i1 == i2); }
-  else if (to_uint64 (&u1) && o2.to_uint64 (&u2)) { ret = (u1 == u2); }
-  else if (to_double (&d1) && o2.to_double (&d2)) { ret = (d1 == d2); }
-  else {
-    s1 = to_str ();
-    s2 = o2.to_str ();
-    if (s1 && s2) { ret = (s1 == s2); }
-    else if (!s1 && !s2) { ret = true; }
-    else { ret = false; }
+  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+    strbuf b;
+    str s1 = to_str ();
+    str s2 = s.to_str ();
+    b << s1 << s2;
+    ret.set (b);
+
+  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+    double d1 = to_double ();
+    double d2 = s.to_double ();
+    double r = d1 + d2;
+    ret.set (r);
+
+  } else {
+    int64_t i1, i2;
+    u_int64_t u1, u2;
+
+    if (to_int64 (&i1) && to_int64 (&i2)) {
+      ret.set_i (i1 + i2);
+    } else if (to_uint64 (&u1) && to_uint64 (&u2)) {
+      ret.set_u (u1 + u2);
+    } else if (to_int64 (&i1) && to_uint64 (&u2)) {
+      ret.set_i (i1 + u2);
+    } else if (to_uint64 (&u1) && to_int64 (&i2)) {
+      ret.set_i (u1 + i2);
+    }
   }
+
   return ret;
 }
 
 //-----------------------------------------------------------------------
+
+scalar_obj_t
+scalar_obj_t::operator- (const scalar_obj_t &s) const
+{
+  type_t me = natural_type ();
+  type_t him = s.natural_type ();
+  
+  scalar_obj_t ret;
+
+  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+    /* can't subtract strings! */
+
+  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+    double d1 = to_double ();
+    double d2 = s.to_double ();
+    double r = d1 - d2;
+    ret.set (r);
+
+  } else {
+    int64_t i1, i2;
+    u_int64_t u1, u2;
+    if (to_int64 (&i1) && to_int64 (&i2)) {
+      ret.set_i (i1 - i2);
+    } else if (to_uint64 (&u1) && to_uint64 (&u2)) {
+      ret.set_i (u1 - u2);
+    } else if (to_int64 (&i1) && to_uint64 (&u2)) {
+      ret.set_i (i1 - u2);
+    } else if (to_uint64 (&u1) && to_int64 (&i2)) {
+      ret.set_i (u1 - i2);
+    }
+  }
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+#define CMP(x,y) (x > y) ? 1 : ((x < y) ? -1 : 0)
+
+int
+scalar_obj_t::cmp (const scalar_obj_t &o) const
+{
+  type_t me = natural_type ();
+  type_t him = o.natural_type ();
+  int res;
+
+  if (me == _p_t::TYPE_STR || them == _p_t::TYPE_STR) {
+    str s1 = to_str ();
+    str s2 = o.to_str ();
+    res = s1.cmp (s2);
+
+  } else if (me == _p_t::TYPE_DOUBLE || them == _p_t::TYPE_DOUBLE) {
+    double d1 = to_double ();
+    double d2 = o.to_double ();
+
+    res = CMP (d1, d2);
+
+  } else {
+    int64_t i1, i2;
+    u_int64_t u1, u2;
+
+    if (to_uint64 (&u1) && to_uint64 (&u2)) {
+      res = CMP (u1, u2);
+    } else if (to_int64 (&i1) && to_int64 (&i2)) {
+      res = CMP (i1, u2);
+    } else if (to_uint64 (&u1) && to_int64 (&i2)) {
+      res = CMP (1, -1);
+    } else if (to_int64 (&i1) && to_uint64 (&u2)) {
+      res = CMP (-1, 1);
+    } else {
+      res = 1;
+    }
+  }
+
+  return res;
+
+}
 
 //=======================================================================
