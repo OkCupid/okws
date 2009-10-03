@@ -75,6 +75,7 @@ struct yystype {
   ptr<pub3::case_t> p3case;
   ptr<pub3::case_list_t> p3cl;
   pub3::binding_t p3bind;
+  ptr<pub3::idenitifer_list_t> p3strv;
 };
 
 #define YYSTYPE yystype

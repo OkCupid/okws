@@ -39,7 +39,7 @@ libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 okwsinclude_HEADERS = \
 	pub.h \
 	pubutil.h \
-	pub3prot.h \ 
+	pub3prot.h \
 	pub3base.h \
 	okconst.h \
 	fhash.h \

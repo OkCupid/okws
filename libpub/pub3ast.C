@@ -136,17 +136,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool
-  zone_text_t::add (ptr<zone_t> z)
-  {
-    z2 = z->zone_text ();
-    if (
-
-
-  }
-
-  //-----------------------------------------------------------------------
-
   ptr<zone_inline_expr_t> zone_inline_expr_t::alloc (ptr<expr_t> x)
   { return New refcounted<zone_inline_expr_t> (location (), x); }
 
@@ -327,5 +316,26 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  void
+  fndef_t::add_params (ptr<indentifier_list_t> l)
+  {
+    if (!_params) {
+      _params = l;
+    } else if (l) { 
+      *_params += *l;
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  fndef_t::add_body (ptr<zone_t> z) 
+  {
+    _body = z;
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 
