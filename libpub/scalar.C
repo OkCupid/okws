@@ -472,6 +472,24 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
 scalar_obj_t 
 scalar_obj_t::operator/ (const scalar_obj_t &o) const
 {
+  return div_or_mod (s, true);
+}
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t 
+scalar_obj_t::operator% (const scalar_obj_t &o) const
+{
+  return div_or_mod (s, false);
+}
+
+//-----------------------------------------------------------------------
+
+#define OP(a1,a2) (div ? ((a1) / (a2)) : ((a1) % (a2)))
+
+scalar_obj_t
+scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div)
+{
   type_t me = natural_type ();
   type_t him = o.natural_type ();
 
@@ -488,23 +506,66 @@ scalar_obj_t::operator/ (const scalar_obj_t &o) const
     double d1 = to_double ();
     double d2 = to_double ();
 
-    if (d2) { out.set (d1 / d2); }
+    if (d2) { out.set (OP (d1, d2)); }
     else { ok = false; }
 
   } else if (o1.to_int64 (&i1) && o2.to_int64 (&i2) && (ok = (i2 != 0))) {
-    out.set_i (i1 / i2);
+    out.set_i (OP (i1, i2));
   } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2) && (ok = (u2 != 0))) {
-    out.set_u (u1 / u2);
+    out.set_u (OP (u1, u2));
   } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2) && (ok == (u2 != 0))) {
-    out.set_i (i1 / u2);
+    out.set_i (OP (i1, u2));
   } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2) && (ok  == (i2 != 0))) {
-    out.set_i (u1 / i2);
+    out.set_i (OP (u1, i2));
   } 
 
   if (!ok) out.set_inf ();
 
   return out;
 }
+
+#undef OP
+
+//-----------------------------------------------------------------------
+
+scalar_obj_t 
+scalar_obj_t::operator% (const scalar_obj_t &o) const
+{
+  type_t me = natural_type ();
+  type_t him = o.natural_type ();
+
+  int64_t i1, i2;
+  u_int64_t u1, u2;
+  str s1, s2;
+  scalar_obj_t out;
+  bool ok = true;
+
+  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+    /* noop!!! */
+
+  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+    double d1 = to_double ();
+    double d2 = to_double ();
+
+    if (d2) { out.set (d1 % d2); }
+    else { ok = false; }
+
+  } else if (o1.to_int64 (&i1) && o2.to_int64 (&i2) && (ok = (i2 != 0))) {
+    out.set_i (i1 % i2);
+  } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2) && (ok = (u2 != 0))) {
+    out.set_u (u1 % u2);
+  } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2) && (ok == (u2 != 0))) {
+    out.set_i (i1 % u2);
+  } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2) && (ok  == (i2 != 0))) {
+    out.set_i (u1 % i2);
+  } 
+
+  if (!ok) out.set_inf ();
+
+  return out;
+}
+
+//-----------------------------------------------------------------------
 
 
 //=======================================================================

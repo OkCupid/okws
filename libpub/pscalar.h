@@ -140,10 +140,12 @@ public:
   scalar_obj_t operator- (const scalar_obj_t &s) const;
   scalar_obj_t operator* (const scalar_obj_t &s) const;
   scalar_obj_t operator/ (const scalar_obj_t &s) const;
+  scalar_obj_t operator% (const scalar_obj_t &s) const;
   
   virtual bool strip_add (const char *s, int l) const { return true; }
 
 private:
+  scalar_obj_t div_or_mod (scalar_obj_t &s, bool div) const;
   void ready_append ();
   ptr<strbuf> _b;
   ptr<_p_t> _p;

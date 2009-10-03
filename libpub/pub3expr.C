@@ -352,7 +352,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<expr_t>
-  expr_div_t::eval_as_val (eval_t e) const
+  expr_div_or_mod_t::eval_as_val (eval_t e) const
   {
     ptr<expr_t> ret;
     scalar_obj_t o = eval_internal (e);
@@ -363,7 +363,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   scalar_obj_t
-  expr_div_t::eval_as_scalar (eval_t e) const
+  expr_div_or_mod_t::eval_as_scalar (eval_t e) const
   {
     return eval_internal (e);
   }
@@ -371,28 +371,32 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   scalar_obj_t
-  expr_div_t::eval_internal (eval_t e) const
+  expr_div_or_mod_t::eval_internal (eval_t e) const
   {
     scalar_obj_t out;
     ptr<expr_t> en, ed;
     scalar_obj_t n, d;
+    const char *op = operation ();
     
     if (!_n || !(en = _n->eval_as_val (e))) {
-      report_error (e, "division: numerator was NULL");
+      report_error (e, strbuf ("%s: numerator was NULL", op));
     } else if (!_d || !(ed = _d->eval_as_val (e))) {
-      report_error (e, "division: denominator was NULL");
+      report_error (e, strbuf ("%s: denominator was NULL", op));
     } else if (!en->to_scalar (&n)) {
-      report_error (e, "division: numerator was not a scalar");
+      report_error (e, strbuf ("%s: numerator was not a scalar", op));
     } else if (!ed->to_scalar (&d)) {
-      report_error (e, "division: denominator was not a scalar");
+      report_error (e, strbuf ("%s: denominator was not a scalar", op));
     } else {
-      out = n / d;
+     
+      if (div ()) { out = n / d; }
+      else { out = n % d; }
+      
       if (!res.is_null ()) {
 	/* good! */
       } else if (res.is_inf ()) {
-	report_error (e, "division by zero");
+	report_error (e, strbuf ("%s by zero", op));
       } else {
-	report_error (e, "can't divide strings");
+	report_error (e, strbuf ("can't perform %s on strings", op));
       }
     }
   }
@@ -885,113 +889,6 @@ pub3::expr_t::alloc (scalar_obj_t so)
   }
 
   return ret;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_mod_t::eval_internal (eval_t e) const
-{
-  scalar_obj_t out;
-  if (_n && !_n->eval_as_null (e) && _d && !_d->eval_as_null (e)) {
-    bool l = e.set_loud (true);
-    scalar_obj_t sn = _n->eval_as_scalar (e);
-    scalar_obj_t sd = _d->eval_as_scalar (e);
-    e.set_loud (l);
-    bool zed = false;
-
-    int64_t n, d;
-    u_int64_t un, ud;
-
-    if (sn.to_uint64 (&un) && sd.to_uint64 (&ud)) {
-      if (ud == 0) { zed = true; }
-      else { out.set_u (un % ud); }
-    } else if (sn.to_int64 (&n) && sd.to_uint64 (&ud)) {
-      if (ud == 0) { zed = true; }
-      else { out.set_u (n % ud); }
-    } else if (sn.to_uint64 (&un) && sd.to_int64 (&d)) {
-      if (d == 0) { zed = true; }
-      else { out.set_i (un % d); }
-    } else if (sn.to_int64 (&n) && sd.to_int64 (&d)) {
-      if (d == 0) { zed = true; }
-      else { out.set_i (n % d); }
-    }
-
-    if (zed) {
-      report_error (e, "refused to mod by 0!");
-    }
-  } else {
-    report_error (e, "modulo: one or more operands were NULL");
-  }
-  return out;
-}
-
-//-----------------------------------------------------------------------
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_list_t>
-pub3::expr_add_t::eval_as_frozen_list (eval_t e) const
-{
-  ptr<expr_list_t> out;
-  if (_t1 && !_t1->eval_as_null (e) && _t2 && !_t2->eval_as_null (e)) {
-    ptr<pval_t> v1, v2;
-    ptr<expr_list_t> l1, l2;
-    if (!(v1 = _t1->eval_freeze (e)) || !(l1 = v1->to_expr_list ())) {
-      /* noop, we're not dealing with lists! */
-    } else if (!(v2 = _t2->eval_freeze (e)) || !(l2 = v2->to_expr_list ())) {
-      report_error (e, "addition on lists takes two lists");
-    } else if (!_pos) {
-      report_error (e, "cannot subtract lists; can only add them");
-    } else  {
-      out = New refcounted<expr_list_t> (l1->lineno ());
-      (*out) += *l1;
-      (*out) += *l2;
-    }
-  }
-  return out;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t 
-pub3::expr_add_t::eval_internal (eval_t e) const
-{
-  scalar_obj_t out;
-
-  if (_t1 && !_t1->eval_as_null (e) && _t2 && !_t2->eval_as_null (e)) {
-    bool l = e.set_loud (true);
-    scalar_obj_t o1 = _t1->eval_as_scalar (e);
-    scalar_obj_t o2 = _t2->eval_as_scalar (e);
-    e.set_loud (l);
-    int64_t i1, i2;
-    u_int64_t u1, u2;
-    str s1, s2;
-    int mul = _pos ? 1 : -1;
-    if (o1.to_int64 (&i1) && o2.to_int64 (&i2)) {
-      out.set_i (i1 + mul*i2);
-    } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2)) {
-      if (mul > 0) {
-	out.set_u (u1 + u2);
-      } else {
-	out.set_i (u1 + mul *u2);
-      }
-    } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2)) {
-      out.set_i (i1 + mul*u2);
-    } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2)) {
-      out.set_i (u1 + mul*i2);
-    } else if ((s1 = o1.to_str ()) && (s2 = o2.to_str ())) {
-      strbuf b;
-      b << s1 << s2;
-      out.set (b);
-    } else {
-      report_error (e, "no plausible evaluation found!");
-    }
-  } else {
-    report_error (e, "one or more operands were NULL");
-  }
-
-  return out;
 }
 
 //-----------------------------------------------------------------------

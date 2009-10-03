@@ -325,24 +325,54 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_div_t : public expr_arithmetic_t {
+  class expr_div_or_mod_t : public expr_t {
   public:
-    expr_div_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
+    expr_div_or_mod_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
       : expr_arithmetic_t (lineno), _n (n), _d (d) {}
-    expr_div_t (const xpub3_mathop_t &x);
 
-    bool to_xdr (xpub3_expr_t *x) const;
-    const char *get_obj_name () const { return "pub3::expr_add_t"; }
     ptr<expr_t> eval_as_val (eval_t e)  const;
     scalar_obj_t eval_as_scalar (eval_t e) const;
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
+
+    virtual bool div () const = 0;
+    virtual const char *operation () const = 0;
     ptr<expr_t> _n, _d;
   };
 
-  // MK 10/3/09 -- leave off here!
+  //-----------------------------------------------------------------------
+
+  class expr_div_t : public expr_div_or_mod_t {
+  public:
+    expr_div_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
+      : expr_div_or_mod_t (n, d, lineno) {}
+    expr_div_t (const xpub3_mathop_t &x);
+
+    bool to_xdr (xpub3_expr_t *x) const;
+    const char *get_obj_name () const { return "pub3::expr_div_t"; }
+  protected:
+    bool div () const { return true; }
+    const char *operation () const { return "division"; }
+  };
 
   //-----------------------------------------------------------------------
+
+  class expr_mod_t : public expr_div_or_mod_t {
+  public:
+    expr_mod_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
+      : expr_div_or_mod_t (n, d, lineno) {}
+    expr_mod_t (const xpub3_mathop_t &x);
+
+    bool to_xdr (xpub3_expr_t *x) const;
+    const char *get_obj_name () const { return "pub3::expr_add_t"; }
+  protected:
+    bool div () const { return false; }
+    const char *operation () const { return "modulo"; }
+  };
+
+  //-----------------------------------------------------------------------
+
+  // MK stop 10/03
 
   class expr_ref_t : public expr_t {
   public:
