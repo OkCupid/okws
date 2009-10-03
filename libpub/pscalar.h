@@ -71,11 +71,12 @@ private:
     void set_i (int64_t i);
     void clear ();
     type_t natural_type () const;
+    void set_inf ();
     
     typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
 
-    typedef enum { TYP_NONE = 0, TYP_STR = 1, TYP_INT = 2, 
-		   TYP_UINT = 3, TYP_DOUBLE = 4} type_t;
+    typedef enum { TYPE_NONE = 0, TYPE_STR = 1, TYPE_INT = 2, 
+		   TYPE_UINT = 3, TYPE_DOUBLE = 4, TYPE_INF = 5 } type_t;
     
   private:
     str _s;
@@ -84,7 +85,6 @@ private:
     mutable double _d;
     mutable int64_t _i;
     mutable u_int64_t _u;
-    mutable bool _d_explicit;
     mutable type_t _natural_type;
   };
 
@@ -120,6 +120,8 @@ public:
   void set (int64_t i) { _p->set (i); }
   void set_u (u_int64_t u) { _p->set_u (u); }
   void set_i (int64_t i) { _p->set_i (i); }
+  void set_inf () { _p->set_inf (); }
+  bool is_inf () const { return natural_type () == _p_t::TYPE_INF; }
 
   void add (const char *c, size_t l);
   void add (const str &s);

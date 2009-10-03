@@ -351,6 +351,46 @@ namespace pub3 {
 
   //====================================================================
 
+  ptr<expr_t>
+  expr_dict_t::eval_as_val (eval_t e) const
+  {
+    ptr<expr_t> ret;
+    scalar_obj_t o = eval_internal (e);
+    if (!o.is_null ()) { ret = expr_t::alloc (o); }
+    return ret;
+  }
+  
+  //====================================================================
+
+  scalar_obj_t
+  expr_div_t::eval_internal (eval_t e) const
+  {
+    scalar_obj_t out;
+    ptr<expr_t> en, ed;
+    scalar_obj_t n, d;
+    
+    if (!_n || !(en = _n->eval_as_val (e))) {
+      report_error (e, "division: numerator was NULL");
+    } else if (!_d || !(ed = _d->eval_as_val (e))) {
+      report_error (e, "division: denominator was NULL");
+    } else if (!en->to_scalar (&n)) {
+      report_error (e, "division: numerator was not a scalar");
+    } else if (!ed->to_scalar (&d)) {
+      report_error (e, "division: denominator was not a scalar");
+    } else {
+      out = n / d;
+      if (!res.is_null ()) {
+	/* good! */
+      } else if (res.is_inf ()) {
+	report_error (e, "division by zero");
+      } else {
+	report_error (e, "can't divide strings");
+      }
+    }
+  }
+  
+  //====================================================================
+
   bindtab_t &
   bindtab_t::operator+= (const bindtab_t &in) 
   {
@@ -874,34 +914,6 @@ pub3::expr_mod_t::eval_internal (eval_t e) const
     }
   } else {
     report_error (e, "modulo: one or more operands were NULL");
-  }
-  return out;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t 
-pub3::expr_div_t::eval_internal (eval_t e) const
-{
-  scalar_obj_t out;
-
-  if (_n && !_n->eval_as_null (e) && _d && !_d->eval_as_null (e)) {
-    bool l = e.set_loud (true);
-    scalar_obj_t n = _n->eval_as_scalar (e);
-    scalar_obj_t d = _d->eval_as_scalar (e);
-    e.set_loud (l);
-    int64_t id, in;
-    u_int64_t un;
-
-    if (!d.to_int64 (&id) || id == 0) {
-      report_error (e, "refusing to divide by 0");
-    } else if (n.to_int64 (&in)) {
-      out.set_i (in / id);
-    } else if (n.to_uint64 (&un)) {
-      out.set_i (un / id);
-    }
-  } else {
-    report_error (e, "division: one or more operands were NULL");
   }
   return out;
 }
