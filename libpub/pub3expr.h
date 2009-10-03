@@ -323,8 +323,6 @@ namespace pub3 {
     ptr<expr_t> _f1, _f2;
   };
 
-  // MK 10/3/09 -- leave off here!
-
   //-----------------------------------------------------------------------
 
   class expr_div_t : public expr_arithmetic_t {
@@ -335,11 +333,14 @@ namespace pub3 {
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
+    ptr<expr_t> eval_as_val (eval_t e)  const;
+    scalar_obj_t eval_as_scalar (eval_t e) const;
   protected:
     scalar_obj_t eval_internal (eval_t e) const;
     ptr<expr_t> _n, _d;
-    bool _pos;
   };
+
+  // MK 10/3/09 -- leave off here!
 
   //-----------------------------------------------------------------------
 

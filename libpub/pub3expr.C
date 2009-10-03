@@ -352,16 +352,24 @@ namespace pub3 {
   //====================================================================
 
   ptr<expr_t>
-  expr_dict_t::eval_as_val (eval_t e) const
+  expr_div_t::eval_as_val (eval_t e) const
   {
     ptr<expr_t> ret;
     scalar_obj_t o = eval_internal (e);
     if (!o.is_null ()) { ret = expr_t::alloc (o); }
     return ret;
   }
-  
-  //====================================================================
 
+  //--------------------------------------------------------------------
+
+  scalar_obj_t
+  expr_div_t::eval_as_scalar (eval_t e) const
+  {
+    return eval_internal (e);
+  }
+
+  //--------------------------------------------------------------------
+  
   scalar_obj_t
   expr_div_t::eval_internal (eval_t e) const
   {
