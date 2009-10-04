@@ -99,7 +99,9 @@ namespace pub3 {
   expr_t::eval_as_bool (eval_t e) const
   {
     bool ret = false;
+    bool l = e.set_silent (true);
     ptr<const expr_t> x = eval_to_val (e);
+    e.set_silent (l);
     if (x) ret = x->to_bool ();
     return ret;
   }
@@ -110,7 +112,9 @@ namespace pub3 {
   expr_t::eval_as_null (eval_t e) const
   {
     bool ret = true;
+    bool l = e.set_silent (true);
     ptr<const expr_t> x = eval_to_val (e);
+    e.set_silent (l);
     if (x) ret = x->is_null ();
     return ret;
   }

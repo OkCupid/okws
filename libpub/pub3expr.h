@@ -444,7 +444,6 @@ namespace pub3 {
     bool eval_val_prepare (ptr<const expr_dict_t> *d, ptr<const expr_list_t> *l,
 			   str *k, int64_t *i) const;
 
-
     ptr<expr_t> _vec;
     ptr<expr_t> _index;
   };
