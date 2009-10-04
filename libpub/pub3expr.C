@@ -535,6 +535,25 @@ namespace pub3 {
     return out;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<mref_t>
+  expr_dictref_t::eval_to_lhs (eval_t e) const
+  {
+    ptr<expr_t> x;
+    ptr<expr_dict_t> d;
+    ptr<mref_t> r;
+    assert (_dict);
+    if (!(x = _dict_eval_to_rhs (e))) {
+      report_error (e, "failed to evaluate expression (as a dictionary)");
+    } else if (!(d = x->to_dict ())) {
+      report_error (e, "can't coerce value to dictionary");
+    } else {
+      r = New refcounted<mref_dict_t> (d, _key);
+    }
+    return r;
+  }
+
   //====================================================================
 
   ptr<const expr_t>
