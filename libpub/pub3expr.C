@@ -494,92 +494,6 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<const expr_t> 
-  expr_dictref_t::eval_to_val (eval_t e) const
-  {
-    ptr<const expr_t> x;
-    ptr<const expr_dict_t> d;
-    ptr<const expr_t> *valp;
-    ptr<expr_t> out;
-    assert (_dict);
-    if (!(x = _dict->eval_to_val (e))) {
-      report_error (e, "failed to evaluate expression (as a dictionary)");
-    } else if (!(d = x->to_dict ())) {
-      report_error (e, "can't coerce value to dictionary");
-    } else if ((valp = (*d)[_key])) {
-      out = *valp;
-    } else {
-      out = expr_null_t::alloc ();
-    }
-    return out;
-  }
-
-  //--------------------------------------------------------------------
-
-  ptr<expr_t>
-  expr_dictref_t::eval_to_rhs (eval_t e) const
-  {
-    ptr<expr_t> x;
-    ptr<expr_dict_t> d;
-    ptr<expr_t> *valp;
-    assert (_dict);
-    if (!(x = _dict->eval_to_rhs (e))) {
-      report_error (e, "failed to evaluate expression (as a dictionary)");
-    } else if (!(d = x->to_dict ())) {
-      report_error (e, "can't coerce value to dictionary");
-    } else if ((valp = (*d)[_key])) {
-      out = *valp;
-    } else {
-      out = expr_null_t::alloc ();
-    }
-    return out;
-  }
-
-  //--------------------------------------------------------------------
-
-  ptr<mref_t>
-  expr_dictref_t::eval_to_lhs (eval_t e) const
-  {
-    ptr<expr_t> x;
-    ptr<expr_dict_t> d;
-    ptr<mref_t> r;
-    assert (_dict);
-    if (!(x = _dict_eval_to_rhs (e))) {
-      report_error (e, "failed to evaluate expression (as a dictionary)");
-    } else if (!(d = x->to_dict ())) {
-      report_error (e, "can't coerce value to dictionary");
-    } else {
-      r = New refcounted<mref_dict_t> (d, _key);
-    }
-    return r;
-  }
-
-  //====================================================================
-
-  ptr<const expr_t>
-  expr_varref_t::eval_to_val (eval_t e) const
-  {
-    return e.lookup_val (_name);
-  }
-
-  //--------------------------------------------------------------------
-
-  ptr<mref_t>
-  expr_varref_t::eval_to_lhs (eval_t e) const
-  {
-    return e.lookup_ref (e);
-  }
-
-  //====================================================================
-
-  ptr<expr_t>
-  expr_vecref_t::eval_to_rhs (eval_t e) const
-  {
-
-  }
-
-  //====================================================================
-
   void bindlist_t::add (binding_t b) { push_back (b); }
   
   //--------------------------------------------------------------------
@@ -618,6 +532,7 @@ namespace pub3 {
   }
 
   //====================================================================
+
 };
 
 //-----------------------------------------------------------------------
@@ -664,220 +579,6 @@ pub3::expr_ref_t::eval_as_regex (eval_t e) const
 
 //-----------------------------------------------------------------------
 
-ptr<const pval_t>
-pub3::expr_dictref_t::deref_step (eval_t *e) const
-{
-  ptr<const aarr_t> d;
-  ptr<const pval_t> v;
-  if (!_dict) {
-    report_error (*e, "dict reference into NULL");
-  } else if (!(d = _dict->eval_as_dict (*e))) {
-    report_error (*e, "dict reference into non-dict");
-  } else if (!(v = d->lookup_ptr (_key)) && e->loud ()) {
-    strbuf b ("cannot resolve key '%s'", _key.cstr ());
-    report_error (*e, b);
-  }
-  return v;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<slot_ref_t>
-pub3::expr_dictref_t::lhs_deref_step (eval_t *e)
-{
-  ptr<const aarr_t> d;
-  aarr_t *dm;
-  ptr<slot_ref_t> r;
-
-  if (!_dict) {
-    report_error (*e, "dict reference into NULL");
-  } else if (!(d = _dict->eval_as_dict (*e))) {
-    report_error (*e, "dict reference into non-dict");
-  } else if (!(dm = d->const_cast_hack ())) {
-    report_error (*e, "hacked const cast failed");
-  } else if (!(r = dm->lookup_slot (_key)) && e->loud ()) {
-    strbuf b ("cannot resolve key '%s'", _key.cstr ());
-    report_error (*e, b);
-  }
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<slot_ref_t>
-pub3::expr_ref_t::lhs_deref (eval_t *e)
-{
-  ptr<slot_ref_t> ret;
-  ptr<expr_ref_t> p = mkref (this);
-  ptr<expr_t> tmp;
-  while (p && (ret = p->lhs_deref_step (e)) && (tmp = ret->deref_expr ())) {
-    p = tmp->to_ref ();
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_ref_t::deref (eval_t *e) const
-{
-  ptr<const expr_ref_t> p = mkref (this);
-  ptr<const pval_t> r;
-
-  while (p && (r = p->deref_step (e))) {
-    p = r->to_ref (); 
-  }
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_ref_t::eval (eval_t e) const
-{
-  return eval_internal (e);
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_ref_t::eval_as_str (eval_t e) const
-{
-  str ret;
-  ptr<const pval_t> v;
-  ptr<const expr_t> x;
-
-  if (!(v = deref (&e))) {
-    /* failed to deref -- warn? */
-  } else if (!(x = v->to_expr ())) {
-
-    eval_t *old = e.link_to_penv ();
-    ret = v->eval (e.penv (), EVAL_INTERNAL, true);
-    e.unlink_from_penv (old);
-
-  } else {
-    ret = x->eval_as_str (e);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_ref_t::eval_freeze (eval_t e) const
-{
-  ptr<pval_t> ret;
-  ptr<const pval_t> v = eval_internal (e);
-  if (v) ret = v->copy_stub ();
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_ref_t::eval_internal (eval_t e) const
-{
-  ptr<const pval_t> v;
-  ptr<const expr_t> x;
-
-  if (!(v = deref (&e))) {
-    /* failed to deref -- warn? */
-  } else if (!(x = v->to_expr ())) {
-    /* leave it as if it's a v1 or v2 pval */
-  } else {
-    /* if it's a full expression, we might still need to evaluate it */
-    v = x->eval (e);
-  }
-  return v;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<slot_ref_t>
-pub3::expr_vecref_t::lhs_deref_step (eval_t *e) 
-{
-  ptr<const parr_mixed_t> v;
-  ptr<const pval_t> pvv;
-  ptr<const expr_list_t> el;
-  ptr<const vec_iface_t> vif;
-  ptr<const aarr_t> dict;
-  ptr<slot_ref_t> r;
-  bool evr;
-
-  vec_iface_t *mvif = NULL;
-  aarr_t *mdict = NULL;
-
-  scalar_obj_t key;
-
-  if (!_index) {
-    report_error (*e, "list index is not defined");
-  } else if (!_vec) {
-    if (e->loud ()) report_error (*e, "list is undefined");
-  } else if ((key = _index->eval_as_scalar (*e)).is_null ()) {
-    report_error (*e, "key to dictionary/list is undefined");
-  } else if (!(evr = _vec->eval_as_vec_or_dict (*e, &vif, &dict))) {
-    report_error (*e, "list reference into non-list");
-  }
-
-  if (vif) mvif = vif->const_cast_hack ();
-  else if (dict) mdict = dict->const_cast_hack ();
-
-  if (mvif) {
-    size_t i = key.to_int ();
-    if (!(r = mvif->lookup_slot (i)) && e->loud ()) {
-      report_error (*e, strbuf ("list reference (%zd) out of bounds", i));
-    }
-  } else if (mdict) {
-    str k = key.to_str ();
-    if (!k) {
-      report_error (*e, "cannot resolve dict key");
-    } else if (!(r = mdict->lookup_slot (k)) && e->loud ()) {
-      report_error (*e, strbuf ("cannot resolve key '%s'", k.cstr ()));
-    }
-  }
-
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_vecref_t::deref_step (eval_t *e) const
-{
-  ptr<const parr_mixed_t> v;
-  ptr<const pval_t> pvv, r;
-  ptr<const expr_list_t> el;
-  ptr<const vec_iface_t> vif;
-  ptr<const aarr_t> dict;
-  bool in_bounds;
-
-  
-  if (!_vec) {
-    if (e->loud ()) report_error (*e, "list is undefined");
-  } else if (!_vec->eval_as_vec_or_dict (*e, &vif, &dict)) {
-    report_error (*e, "list reference into non-list");
-  } else if (vif) {
-    ssize_t i = 0;
-    if (_index) {
-      i = _index->eval_as_int (*e);
-    }
-    if (!(r = vif->lookup (i, &in_bounds)) && !in_bounds && e->loud ()) {
-      report_error (*e, strbuf ("list reference (%zd) out of bounds", i));
-    }
-  } else {
-    assert (dict);
-    str k = _index->eval_as_str (*e);
-    if (!k) {
-      report_error (*e, "cannot resolve dict key");
-    } else if (!(r = dict->lookup_ptr (k)) && e->loud ()) {
-      report_error (*e, strbuf ("cannot resolve key '%s'", k.cstr ()));
-    }
-  }
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
 void
 pub3::expr_t::report_error (eval_t e, str msg) const
 {
@@ -889,26 +590,6 @@ pub3::expr_t::report_error (eval_t e, str msg) const
     out->output_err (env, msg);
   }
   env->unsetlineno ();
-}
-
-//-----------------------------------------------------------------------
-
-ptr<slot_ref_t>
-pub3::expr_varref_t::lhs_deref_step (eval_t *e)
-{
-  ptr<slot_ref_t> ret;
-  ret = e->lhs_resolve (this, _name);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_varref_t::deref_step (eval_t *e) const
-{
-  ptr<const pval_t> ret;
-  ret = e->resolve (this, _name);
-  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -2366,8 +2047,6 @@ namespace pub3 {
     }
     return ret;
   }
-
-  //=======================================================================
 
   //=======================================================================
 

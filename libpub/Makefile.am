@@ -18,7 +18,8 @@ libpub_la_SOURCES = \
 	pub3func.C \
 	pub3parse.C \
 	pub3ast.C \
-	pub3file.C
+	pub3file.C \
+	pub3ref.C \
 	slave.C \
 	zstr.C \
 	okconst.C \

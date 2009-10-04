@@ -389,20 +389,40 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_dictref_t : public expr_ref_t {
+  class expr_dictref_t : public expr_t {
   public:
     expr_dictref_t (ptr<expr_t> d, const str &k, lineno_t lineno)
-      : expr_ref_t (lineno), _dict (d), _key (k) {}
+      : expr_t (lineno), _dict (d), _key (k) {}
     expr_dictref_t (const xpub3_dictref_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_dictref_t"; }
+
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<expr_t> eval_to_rhs (eval_t e) const;
+    ptr<mref_t> eval_to_lhs (eval_t e) const;
 
   protected:
     ptr<expr_t> _dict;
     str _key;
   };
 
-  // MK stop 10/03
+  //-----------------------------------------------------------------------
+
+  class expr_varref_t : public expr_t {
+  public:
+    expr_varref_t (const str &s, int l) : expr_ref_t (l), _name (s) {}
+    expr_varref_t (const xpub3_ref_t &x);
+    virtual bool to_xdr (xpub3_expr_t *x) const;
+    str to_identifier () const { return _name; }
+    virtual const char *get_obj_name () const { return "pub3::expr_varref_t"; }
+
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<expr_t> eval_to_rhs (eval_t e) const;
+    ptr<mref_t> eval_to_lhs (eval_t e) const;
+
+  protected:
+    str _name;
+  };
 
   //-----------------------------------------------------------------------
 
@@ -414,28 +434,21 @@ namespace pub3 {
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_vecref_t"; }
+
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<expr_t> eval_to_rhs (eval_t e) const;
+    ptr<mref_t> eval_to_lhs (eval_t e) const;
   protected:
-    ptr<const pval_t> deref_step (eval_t *e) const;
-    ptr<slot_ref_t> lhs_deref_step (eval_t *e) ;
+    bool eval_rhs_prepare (ptr<expr_dict_t> *d, ptr<expr_list_t> *l,
+			   str *k, int64_t *i) const;
+    bool eval_val_prepare (ptr<const expr_dict_t> *d, ptr<const expr_list_t> *l,
+			   str *k, int64_t *i) const;
+
 
     ptr<expr_t> _vec;
     ptr<expr_t> _index;
   };
     
-  //-----------------------------------------------------------------------
-
-  class expr_varref_t : public expr_ref_t {
-  public:
-    expr_varref_t (const str &s, int l) : expr_ref_t (l), _name (s) {}
-    expr_varref_t (const xpub3_ref_t &x);
-    virtual bool to_xdr (xpub3_expr_t *x) const;
-    str to_identifier () const { return _name; }
-    virtual const char *get_obj_name () const { return "pub3::expr_varref_t"; }
-    ptr<expr_t> eval_to_rhs (eval_t e) const;
-  protected:
-    str _name;
-  };
-
   //-----------------------------------------------------------------------
 
   // The parser doesn't know at allocation time if a variable reference
@@ -605,10 +618,9 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_list_t *) const;
 
     // vec_iface_t interface
-    ptr<const pval_t> lookup (ssize_t i, bool *ib = NULL) const;
-    ptr<pval_t> lookup (ssize_t i, bool *ib = NULL);
+    ptr<const expr_t> lookup (ssize_t i, bool *ib = NULL) const;
+    ptr<expr_t> lookup (ssize_t i, bool *ib = NULL);
     ptr<slot_ref_t> lookup_slot (ssize_t i);
-    ptr<vec_iface_t> to_vec_iface () { return mkref (this); }
     ptr<const vec_iface_t> to_vec_iface () const { return mkref (this); }
     void set (size_t i, ptr<pval_t> v);
     void push_back (ptr<pval_t> v);
@@ -618,10 +630,6 @@ namespace pub3 {
     bool to_len (size_t *s) const;
     bool to_bool () const { return size () > 0; }
 
-    ptr<pval_t> eval_freeze (eval_t e) const;
-    ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
-    ptr<const vec_iface_t> eval_as_vec () const { return mkref (this); }
-    str eval_as_str (eval_t e) const;
     ptr<rxx> eval_as_regex (eval_t e) const;
 
     void push_front (ptr<expr_t> e);
@@ -763,8 +771,9 @@ namespace pub3 {
     scalar_obj_t to_scalar () const;
     str to_str () const;
 
-    ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
-    ptr<pval_t> eval_freeze (eval_t e) const;
+    ptr<expr_t> lookup (str k);
+    ptr<const expr_t> lookup (str k) const;
+
     str eval_as_str (eval_t e) const;
     bool to_len (size_t *s) const;
 
