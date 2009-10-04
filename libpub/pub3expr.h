@@ -13,7 +13,7 @@ namespace pub3 {
   // See pub3eval.h for a definition of eval_t; but don't included it
   // here to prevent circular inclusions.
   class eval_t;
-  class ref_t;
+  class mref_t;
 
   //-----------------------------------------------------------------------
 
@@ -51,14 +51,15 @@ namespace pub3 {
     //------- Evaluation ------------------------------------------
     //
     virtual ptr<const expr_t> eval_to_val (eval_t e) const;
-    virtual ptr<ref_t>  eval_to_ref (eval_t e) const { return NULL; }
+    virtual ptr<mref_t> eval_to_ref (eval_t e) const { return NULL; }
     virtual ptr<expr_t> eval_to_rhs (eval_t e) const = 0;
-    virtual ptr<ref_t>  eval_to_lhs (eval_t e) const { return NULL; }
+    virtual ptr<mref_t> eval_to_lhs (eval_t e) const { return NULL; }
     //
     //------------------------------------------------------------
 
     virtual ptr<expr_t> copy () const ;
     virtual ptr<expr_t> deep_copy () const;
+    virtual ptr<expr_t> mutate () { return mkref (this); }
 
     //------------------------------------------------------------
 
@@ -120,10 +121,10 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  class ref_t {
+  class mref_t {
   public:
-    ref_t () {}
-    virtual ~ref_t () {}
+    mref_t () {}
+    virtual ~mref_t () {}
     virtual ptr<expr_t> get_value () = 0;
     virtual bool set_value (ptr<expr_t> x) = 0;
   };
@@ -138,19 +139,34 @@ namespace pub3 {
     ptr<const expr_dict_t> to_dict () const;
     
   protected:
+    ptr<expr_t> mutable_ptr ();
+    ptr<const expr_t> const_ptr () const;
+
     ptr<expr_t> _copy;
     ptr<const expr_t> _orig;
   };
 
   //----------------------------------------------------------------------
 
-  class const_ref_t : public ref_t {
+  class const_mref_t : public mref_t {
   public:
-    const_ref_t (ptr<expr_t> x) : ref_t (), _x (x) {}
+    const_mref_t (ptr<expr_t> x) : mref_t (), _x (x) {}
     ptr<expr_t> get_value () { return _x; }
     bool set_value (ptr<expr_t> x) { return false; }
   protected:
     ptr<expr_t> _x;
+  };
+
+  //----------------------------------------------------------------------
+
+  class mref_dict_t : public mref_t {
+  public:
+    mref_dict_t (ptr<expr_dict_t> d, const str &n) : _dict (d), _slot (n) {}
+    ptr<expr_t> get_value ();
+    bool set_value (ptr<expr_t> x);
+  protected:
+    const ptr<expr_dict_t> _dict;
+    const str _slot;
   };
 
   //----------------------------------------------------------------------
@@ -373,32 +389,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  // MK stop 10/03
-
-  class expr_ref_t : public expr_t {
-  public:
-    expr_ref_t (int l) : expr_t (l) {}
-
-    virtual ptr<const pval_t> eval (eval_t e) const;
-    virtual ptr<pval_t> eval_freeze (eval_t e) const;
-    virtual str eval_as_str (eval_t e) const;
-    virtual bool eval_as_null (eval_t e) const;
-    virtual ptr<rxx> eval_as_regex (eval_t e) const;
-
-    ptr<const expr_ref_t> to_ref () const { return mkref (this); }
-    ptr<expr_ref_t> to_ref () { return mkref (this); }
-    ptr<slot_ref_t> lhs_deref (eval_t *e) ;
-
-  protected:
-    ptr<const pval_t> deref (eval_t *e) const;
-    virtual ptr<const pval_t> deref_step (eval_t *e) const = 0;
-    virtual ptr<slot_ref_t> lhs_deref_step (eval_t *e) = 0;
-    virtual ptr<const pval_t> eval_internal (eval_t e) const;
-
-  };
-
-  //-----------------------------------------------------------------------
-
   class expr_dictref_t : public expr_ref_t {
   public:
     expr_dictref_t (ptr<expr_t> d, const str &k, lineno_t lineno)
@@ -408,11 +398,11 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_dictref_t"; }
 
   protected:
-    ptr<const pval_t> deref_step (eval_t *e) const;
-    ptr<slot_ref_t> lhs_deref_step (eval_t *e) ;
     ptr<expr_t> _dict;
     str _key;
   };
+
+  // MK stop 10/03
 
   //-----------------------------------------------------------------------
 
@@ -441,10 +431,8 @@ namespace pub3 {
     virtual bool to_xdr (xpub3_expr_t *x) const;
     str to_identifier () const { return _name; }
     virtual const char *get_obj_name () const { return "pub3::expr_varref_t"; }
-
+    ptr<expr_t> eval_to_rhs (eval_t e) const;
   protected:
-    ptr<const pval_t> deref_step (eval_t *e) const;
-    ptr<slot_ref_t> lhs_deref_step (eval_t *e) ;
     str _name;
   };
 
@@ -867,12 +855,10 @@ namespace pub3 {
     expr_assignment_t (const xpub3_assignment_t &x);
     const char *get_obj_name () const { return "pub3::assignment_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
-    ptr<const pval_t> eval (eval_t e) const { return eval_internal (e); }
-    ptr<pval_t> eval_freeze (eval_t e) const { return eval_internal (e); }
-    ptr<expr_assignment_t> to_assignment () { return mkref (this); }
-
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<expr_t> eval_to_rhs (eval_t e) const;
+    ptr<mref_t> eval_to_lhs (eval_t e) const;
   private:
-    ptr<pval_t> eval_internal (eval_t e) const;
     ptr<expr_t> _lhs, _rhs;
     const int _lineno;
   };

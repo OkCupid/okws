@@ -9,20 +9,36 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  //-----------------------------------------------------------------------
+
   class env_t {
   public:
 
     enum { FRAME_UNIVERSALS = 0, FRAME_GLOBALS = 1 };
 
     env_t (ptr<bindtab_t> u) : _universals (u) {}
-    size_t push_frame (ptr<bindtab_t> t);
-    void pop_to_frame (size_t i);
-    size_t stack_size () const;
+    size_t push_locals (ptr<bindtab_t> t);
+    size_t push_universal_refs (ptr<bindtab_t> t);
+    void pop_to (size_t s);
+    ptr<const expr_t> lookup_val (const str &nm) const;
+    ptr<mref_t> lookup_ref (const str &nm) const;
+
+    typedef enum { LAYER_UNIVERSALS = 0,
+		   LAYER_GLOBALS = 1,
+		   LAYER_LOCALS = 2,
+		   LAYER_UNIREFS = 3 } layer_type_t;
+    
+    struct stack_layer_t {
+      stack_layer_t (ptr<bindtab_t> b, layer_type_t t) 
+	: _bindings (b), _typ (t) {}
+      ptr<bindtab_t> _bindings;
+      layer_type_t _typ;
+    };
 
   protected:
     ptr<bindtab_t> _universals;
     ptr<bindtab_t> _globals;
-    vec<ptr<bindtab_t> > _locals_stack;
+    vec<stack_layer_t> _stack;
   };
 
   //-----------------------------------------------------------------------
@@ -45,6 +61,7 @@ namespace pub3 {
 
     void set_in_json () { _in_json = true; }
     bool in_json () const { return _in_json; }
+    ptr<const expr_t> lookup_val (const str &nm) const;
 
   private:
 

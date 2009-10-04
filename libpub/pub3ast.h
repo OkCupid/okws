@@ -244,7 +244,7 @@ namespace pub3 {
     locals_t (location_t l) : statement_t (l) {}
     static ptr<locals_t> alloc ();
   protected:
-    ptr<expr_dict_t> _bindings;
+    ptr<bindtab_t> _bindings;
   };
 
   //-----------------------------------------------------------------------
@@ -254,7 +254,7 @@ namespace pub3 {
     universals_t (location_t l) : statement_t (l) {}
     static ptr<universals_t> alloc ();
   protected:
-    ptr<expr_dict_t> _bindings;
+    ptr<bindtab_t> _bindings;
   };
 
   //-----------------------------------------------------------------------

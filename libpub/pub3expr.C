@@ -128,6 +128,80 @@ namespace pub3 {
 
   //====================================================================
 
+  ptr<expr_t>
+  expr_cow_t::mutable_ptr ()
+  {
+    if (_orig) {
+      assert (!_copy);
+      _copy = _orig->deep_copy ();
+      _orig = NULL;
+    }
+    return _copy;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_t> 
+  expr_cow_t::const_ptr () const
+  {
+    assert (!_copy || !_orig);
+    ptr<const expr_t> ret;
+    if (_copy) ret = _copy;
+    else if (_orig) ret = orig;
+    return ret;
+  }
+  
+  //--------------------------------------------------------------------
+
+  ptr<expr_dict_t> 
+  expr_cow_t::to_dict ()
+  {
+    ptr<expr_dict_t> r;
+    ptr<expr_t> x = mutable_ptr ();
+    if (x) r = x->to_dict ();
+    return r;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_dict_t>
+  expr_cow_t::to_dict () const
+  {
+    ptr<const expr_dict_t> r;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) r = x->to_dict ();
+    return r;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_list_t> 
+  expr_cow_t::to_list ()
+  {
+    ptr<expr_list_t> r;
+    ptr<expr_t> x = mutable_ptr ();
+    if (x) r = x->to_list ();
+    return x;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_list_t>
+  expr_cow_t::to_list () const
+  {
+    ptr<const expr_list_t> r;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) r = x->to_list ();
+    return x;
+  }
+
+  //====================================================================
+
+  ptr<expr_t> mref_dict_t::get_value () { return (*_dict)[_slot]; }
+  void mref_dict_t::set_value (ptr<expr_t> x) { _dict->insert (_slot, x); }
+
+  //====================================================================
+
   // For constants, we can't change them anyway, so copy's are no-ops
   ptr<expr_t> expr_constant_t::copy () const 
   { return mkref (const_cast<expr_constant_t *> (this)); }
@@ -463,17 +537,24 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_t>
-  expr_varref_t::eval_to_rhs (eval_t e) const
+  ptr<const expr_t>
+  expr_varref_t::eval_to_val (eval_t e) const
   {
+    return e.lookup_val (_name);
+  }
 
+  //--------------------------------------------------------------------
 
+  ptr<mref_t>
+  expr_varref_t::eval_to_lhs (eval_t e) const
+  {
+    return e.lookup_ref (e);
   }
 
   //====================================================================
 
   ptr<expr_t>
-  expr_dictref_t::eval_to_rhs (eval_t e) const
+  expr_vecref_t::eval_to_rhs (eval_t e) const
   {
 
   }
@@ -2268,31 +2349,6 @@ namespace pub3 {
   }
 
   //=======================================================================
-
-  ptr<expr_dict_t> 
-  expr_cow_t::to_dict ()
-  {
-    assert (!_copy || !_orig);
-    if (_orig && _orig->to_dict ()) {
-      _copy = _orig->deep_copy ();
-      _orig = NULL;
-    }
-    ptr<expr_dict_t> ret;
-    if (_copy) ret = _copy->to_dict ();
-    return ret;
-  }
-
-  //--------------------------------------------------------------------
-
-  ptr<const expr_dict_t>
-  expr_cow_t::to_dict () const
-  {
-    assert (!_copy || !_orig);
-    ptr<const expr_dict_t> ret;
-    if (_copy) ret = _copy->to_dict ();
-    else if (_orig) ret = _orig->to_dict ();
-    return ret;
-  }
 
   //=======================================================================
 
