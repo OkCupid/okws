@@ -50,7 +50,7 @@ namespace pub3 {
 
     //------- Evaluation ------------------------------------------
     //
-    virtual ptr<expr_t> eval_to_val (eval_t e) const;
+    virtual ptr<const expr_t> eval_to_val (eval_t e) const;
     virtual ptr<ref_t>  eval_to_ref (eval_t e) const { return NULL; }
     virtual ptr<expr_t> eval_to_rhs (eval_t e) const = 0;
     virtual ptr<ref_t>  eval_to_lhs (eval_t e) const { return NULL; }
@@ -58,6 +58,7 @@ namespace pub3 {
     //------------------------------------------------------------
 
     virtual ptr<expr_t> copy () const ;
+    virtual ptr<expr_t> deep_copy () const;
 
     //------------------------------------------------------------
 
@@ -133,8 +134,8 @@ namespace pub3 {
   public:
     expr_cow_t (ptr<const expr_t> x) : _orig (x) {}
     static ptr<expr_cow_t> alloc (ptr<const expr_t> x);
-    ptr<expr_t> mutable_expr ();
-    ptr<const expr_t> const_expr ();
+    ptr<expr_dict_t> to_dict ();
+    ptr<const expr_dict_t> to_dict () const;
     
   protected:
     ptr<expr_t> _copy;
@@ -747,6 +748,9 @@ namespace pub3 {
     bindtab_t &operator-= (const bindtab_t &in);
   };
 
+  typedef qhash_const_iterator<str, ptr<expr_t> > bindtab_const_iterator_t;
+  typedef qhash_iterator<str, ptr<expr_t> > bindtab_iterator_t;
+
   //-----------------------------------------------------------------------
 
   class bindlist_t : public vec<binding_t> {
@@ -758,6 +762,7 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
+
 
   class expr_dict_t : public expr_t, public bindtab_t {
   public:

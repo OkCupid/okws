@@ -71,12 +71,26 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_t> expr_t::eval_to_rhs (eval_t e) { return eval_to_val (e); }
-  ptr<expr_t> expr_t::eval_to_val (eval_t e) { return copy (e); } 
+  // By default, we are already evaluated -- this is true for static
+  // values like bools, strings, and integers.
+  ptr<const expr_t> expr_t::eval_to_val (eval_t e) const 
+  { return mkref (*this); }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> expr_t::eval_to_rhs (eval_t e) const
+  { 
+    ptr<expr_t> ret;
+    ptr<const expr_t> v = eval_to_val (e);
+    if (v) ret = v->copy ();
+    return ret;
+  }
 
   //--------------------------------------------------------------------
 
   ptr<expr_t> expr_t::copy (eval_t e) const
+  { reutrn expr_cow_t::alloc (mkref (this)); }
+  ptr<expr_t> expr_t::deep_copy (eval_t e) const
   { reutrn expr_cow_t::alloc (mkref (this)); }
 
   //--------------------------------------------------------------------
@@ -85,7 +99,7 @@ namespace pub3 {
   expr_t::eval_as_bool (eval_t e) const
   {
     bool ret = false;
-    ptr<expr_t> x = eval_to_val (e);
+    ptr<const expr_t> x = eval_to_val (e);
     if (x) ret = x->to_bool ();
     return ret;
   }
@@ -96,7 +110,7 @@ namespace pub3 {
   expr_t::eval_as_null (eval_t e) const
   {
     bool ret = true;
-    ptr<expr_t> x = eval_to_val (e);
+    ptr<const expr_t> x = eval_to_val (e);
     if (x) ret = x->is_null ();
     return ret;
   }
@@ -107,7 +121,7 @@ namespace pub3 {
   expr_t::eval_as_scalar (eval_t e) const
   {
     scalar_obj_t ret;
-    ptr<expr_t> x = eval_to_val (e);
+    ptr<const expr_t> x = eval_to_val (e);
     if (x) { ret = x->to_scalar (); }
     return ret;
   }
@@ -116,6 +130,8 @@ namespace pub3 {
 
   // For constants, we can't change them anyway, so copy's are no-ops
   ptr<expr_t> expr_constant_t::copy () const 
+  { return mkref (const_cast<expr_constant_t *> (this)); }
+  ptr<expr_t> expr_constant_t::deep_copy () const 
   { return mkref (const_cast<expr_constant_t *> (this)); }
   
   //====================================================================
@@ -162,7 +178,7 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_t>
+  ptr<const expr_t>
   expr_OR_t::eval_to_val (eval_t e) const
   {
     return expr_bool_t::alloc (eval_logical (e));
@@ -250,21 +266,21 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_t> 
-  expr_add_t::eval_as_val (eval_t e) const
+  ptr<const expr_t> 
+  expr_add_t::eval_to_val (eval_t e) const
   {
     ptr<expr_t> out;
-    ptr<expr_t> e1, e2;
-    ptr<expr_list_t> l1, l2;
-    ptr<expr_dict_t> d1, d2;
+    ptr<const expr_t> e1, e2;
+    ptr<const expr_list_t> l1, l2;
+    ptr<const expr_dict_t> d1, d2;
     ptr<
     str s1, s2;
 
     const char *op = _pos = "addition" : "subtraction";
 
-    if (!_t1 || !(e1 = t1->eval_as_val (e))) {
+    if (!_t1 || !(e1 = t1->eval_to_val (e))) {
       report_error (e, strbuf ("left-hand term of %s evaluates to null", op));
-    } else if (!_t2 || !(e2 = t2->eval_as_val (e))) {
+    } else if (!_t2 || !(e2 = t2->eval_to_val (e))) {
       report_error (e, strbuf ("right-hand term of %s evaluates to null", op));
 
       // Two lists added (but not subtracted)
@@ -310,16 +326,16 @@ namespace pub3 {
   
   //====================================================================
 
-  ptr<expr_t>
-  expr_mult_t::eval_as_val (eval_t e) const
+  ptr<const expr_t>
+  expr_mult_t::eval_to_val (eval_t e) const
   {
     scalar_obj_t out;
-    ptr<expr_t> e1, ptr<expr_t> e2;
+    ptr<const expr_t> e1, e2;
     int64_t n;
     
-    if (!_f1 || !(e1 = _f1->eval_as_val (e)) || e1->is_null ()) {
+    if (!_f1 || !(e1 = _f1->eval_to_val (e)) || e1->is_null ()) {
       report_error (e, "mult: left-hand factor was NULL");
-    } else if (!_f2 || !(e2 = _f2->eval_as_val (e)) || e2->is_null ()) {
+    } else if (!_f2 || !(e2 = _f2->eval_to_val (e)) || e2->is_null ()) {
       report_error (e, "mult: right-hand factor was NULL");
       } else if (e1->to_dict () || e2->to_dict ()) {
       report_error (e, "cannot multiply dictionaries");
@@ -351,8 +367,8 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_t>
-  expr_div_or_mod_t::eval_as_val (eval_t e) const
+  ptr<const expr_t>
+  expr_div_or_mod_t::eval_to_val (eval_t e) const
   {
     ptr<expr_t> ret;
     scalar_obj_t o = eval_internal (e);
@@ -374,13 +390,13 @@ namespace pub3 {
   expr_div_or_mod_t::eval_internal (eval_t e) const
   {
     scalar_obj_t out;
-    ptr<expr_t> en, ed;
+    ptr<const expr_t> en, ed;
     scalar_obj_t n, d;
     const char *op = operation ();
     
-    if (!_n || !(en = _n->eval_as_val (e))) {
+    if (!_n || !(en = _n->eval_to_val (e))) {
       report_error (e, strbuf ("%s: numerator was NULL", op));
-    } else if (!_d || !(ed = _d->eval_as_val (e))) {
+    } else if (!_d || !(ed = _d->eval_to_val (e))) {
       report_error (e, strbuf ("%s: denominator was NULL", op));
     } else if (!en->to_scalar (&n)) {
       report_error (e, strbuf ("%s: numerator was not a scalar", op));
@@ -399,20 +415,95 @@ namespace pub3 {
 	report_error (e, strbuf ("can't perform %s on strings", op));
       }
     }
+    return out;
   }
-  
+
   //====================================================================
 
-  bindtab_t &
-  bindtab_t::operator+= (const bindtab_t &in) 
+  ptr<const expr_t> 
+  expr_dictref_t::eval_to_val (eval_t e) const
   {
-    qhash_const_iterator_t<str, ptr<expr_t> > it (in);
-    str *key;
-    ptr<expr_t> val;
-    while ((key = in.next (val))) {
-      insert (*key, val);
+    ptr<const expr_t> x;
+    ptr<const expr_dict_t> d;
+    ptr<const expr_t> *valp;
+    ptr<expr_t> out;
+    assert (_dict);
+    if (!(x = _dict->eval_to_val (e))) {
+      report_error (e, "failed to evaluate expression (as a dictionary)");
+    } else if (!(d = x->to_dict ())) {
+      report_error (e, "can't coerce value to dictionary");
+    } else if ((valp = (*d)[_key])) {
+      out = *valp;
+    } else {
+      out = expr_null_t::alloc ();
     }
-    return this;
+    return out;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t>
+  expr_dictref_t::eval_to_rhs (eval_t e) const
+  {
+    ptr<expr_t> x;
+    ptr<expr_dict_t> d;
+    ptr<expr_t> *valp;
+    assert (_dict);
+    if (!(x = _dict->eval_to_rhs (e))) {
+      report_error (e, "failed to evaluate expression (as a dictionary)");
+    } else if (!(d = x->to_dict ())) {
+      report_error (e, "can't coerce value to dictionary");
+    } else if ((valp = (*d)[_key])) {
+      out = *valp;
+    } else {
+      out = expr_null_t::alloc ();
+    }
+    return out;
+  }
+
+  //====================================================================
+
+  ptr<expr_t>
+  expr_varref_t::eval_to_rhs (eval_t e) const
+  {
+
+
+  }
+
+  //====================================================================
+
+  ptr<expr_t>
+  expr_dictref_t::eval_to_rhs (eval_t e) const
+  {
+
+  }
+
+  //====================================================================
+
+  void bindlist_t::add (binding_t b) { push_back (b); }
+  
+  //--------------------------------------------------------------------
+
+  void
+  bindtab_t::overwrite_with (const bindtab_t &t)
+  {
+    bhash_const_iterator_t it (t);
+    str *k;
+    ptr<const expr_t> v;
+    ptr<expr_t> nv;
+    while ((k = it.next (&v))) { 
+      if (v) nv = v->copy ();
+      insert (*k, v); 
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  bindtab_t &
+  bindtab_t::operator+= (const bindtab_t &t)
+  {
+    overwrite_with (t);
+    return *this;
   }
 
   //--------------------------------------------------------------------
@@ -420,7 +511,7 @@ namespace pub3 {
   bindtab_t &
   bindtab_t::operator-= (const bindtab_t &in) 
   {
-    qhash_const_iterator_t<str, ptr<expr_t> > it (in);
+    bhash_const_iterator_t it (in);
     str *key;
     while ((key = in.next ())) { remove (*key); }
     return this;
@@ -2111,30 +2202,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  void bindlist_t::add (binding_t b) { push_back (b); }
-  
-  //-----------------------------------------------------------------------
-
-  void
-  bindtab_t::overwrite_with (const bindtab_t &t)
-  {
-    qhash_const_iterator_t<str, ptr<expr_t> > it (t);
-    str k;
-    ptr<expr_t> v;
-    while ((k = it.next (&v))) { insert (k, v); }
-  }
-
-  //-----------------------------------------------------------------------
-
-  bindtab_t &
-  bindtab_t::operator+= (const bindtab_t &t)
-  {
-    overwrite_with (b);
-    return *this;
-  }
-
-  //-----------------------------------------------------------------------
-
   ptr<expr_t> expr_t::copy () const 
   { return expr_cow_t::alloc (mkref (this)); }
 
@@ -2146,12 +2213,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t>
-  expr_dict_t::eval_rhs (eval_t e) const
+  expr_dict_t::eval_to_rhs (eval_t e) const
   {
     bool sttc = true;
-    qhash_const_iterator_t<str, ptr<expr_t> > it (*this);
+    bindtab_const_iterator_t it (*this);
     str *key;
-    ptr<expr_t> value;
+    ptr<const expr_t> value;
 
     // First see if any keys are static.  Note that this computation
     // will be memoized, so it's fast enough to do a full DFS here.
@@ -2165,7 +2232,7 @@ namespace pub3 {
 
     // For static objects, make a COW version
     if (sttc) { 
-      ret = expr_cow_t::alloc (mkref (this)); 
+      ret = expr_cow_t::alloc (mkref (*this));
     } else {
 
       // Otherwise, recurse --- evaluate next layer down...
@@ -2174,7 +2241,7 @@ namespace pub3 {
       while ((key = it.next (&value))) {
 	ptr<expr_t> nv;
 	if (value) { 
-	  nv = value->eval_rhs (e);
+	  nv = value->eval_to_rhs (e);
 	}
 	d->insert (*key, nv);
       }
@@ -2182,7 +2249,52 @@ namespace pub3 {
     return ret;
   }
 
-  //-----------------------------------------------------------------------
+  //--------------------------------------------------------------------
+
+  ptr<expr_dict_t>
+  expr_dict_t::deep_copy () const
+  {
+    bindtab_const_iterator_t it (*this);
+    str *key;
+    ptr<const expr_t> value;
+    ptr<expr_dict_t> ret = New refcounted<expr_dict_t> ();
+
+    while ((key = it.next (&value))) {
+      ptr<expr_t> nv;
+      if (value) nv = value->copy ();
+      ret->insert (*key, nv);
+    }
+    return ret;
+  }
+
+  //=======================================================================
+
+  ptr<expr_dict_t> 
+  expr_cow_t::to_dict ()
+  {
+    assert (!_copy || !_orig);
+    if (_orig && _orig->to_dict ()) {
+      _copy = _orig->deep_copy ();
+      _orig = NULL;
+    }
+    ptr<expr_dict_t> ret;
+    if (_copy) ret = _copy->to_dict ();
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_dict_t>
+  expr_cow_t::to_dict () const
+  {
+    assert (!_copy || !_orig);
+    ptr<const expr_dict_t> ret;
+    if (_copy) ret = _copy->to_dict ();
+    else if (_orig) ret = _orig->to_dict ();
+    return ret;
+  }
+
+  //=======================================================================
 
 };
 
