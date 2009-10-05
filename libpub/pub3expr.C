@@ -237,7 +237,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   str expr_bool_t::to_str (bool b) { return b ? "true" : "false"; }
-  str expr_bool_t::to_str () const { return to_str (_b); }
+  str expr_bool_t::to_str (bool q) const { return to_str (_b); }
   
   //--------------------------------------------------------------------
   
@@ -497,6 +497,92 @@ namespace pub3 {
   }
 
   //====================================================================
+  // see pub3ref.C for implementation of ref classes
+  //====================================================================
+
+  bool
+  expr_varref_or_rfn_t::unshift_argument (ptr<expr_t> x)
+  {
+    if (!_arglist) {
+      _arglist = New refcounted<expr_list_t> (_lineno);
+    }
+    _arglist->push_front (x);
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
+  
+#define EXPR_VARREF_EVAL(ret,func)			\
+  ret							\
+  expr_varref_or_rfn_t::func (eval_t e) const		\
+  {							\
+    ret r;						\
+    ptr<const expr_t> rfn = get_rfn ();			\
+    if (rfn) { r = rfn->func (e); }			\
+    else { r = expr_varref_t::func (e) }                \
+    return r;						\
+  }
+  
+  EXPR_VARREF_EVAL(ptr<const expr_t>, eval_to_val)
+  EXPR_VARREF_EVAL(ptr<expr_t>, eval_to_rhs)
+  EXPR_VARREF_EVAL(ptr<mref_t> eval_to_lhs)
+
+#undef EXPR_VARREF_EVAL
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_varref_or_rfn_t::get_rfn () const
+  {
+    if (_arglist && !_rfn) {
+      _rfn = pub3::rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
+    }
+    return _rfn;
+  }
+  
+  //====================================================================
+
+  bool expr_str_t::to_bool () const { return (_val && _val.len ()); }
+  scalar_obj_t expr_str_t::to_scalar () const { return scalar_obj_t (_val); }
+  bool expr_str_t::to_null () const { return !_val; }
+
+  //--------------------------------------------------------------------
+
+  str
+  expr_str_t::to_str (bool q) const 
+  { 
+    str ret = q ? json::quote (_val) : _val;
+    return ret; 
+  }
+
+  //--------------------------------------------------------------------
+  
+  bool
+  expr_str_t::to_len (size_t *s) const
+  {
+    *s = _val ? _val.len () : 0;
+    return true;
+  }
+  
+  //--------------------------------------------------------------------
+
+  ptr<rxx>
+  expr_str_t::to_regex () const
+  {
+    ptr<rxx> ret;
+    ret = str2rxx (NULL, _val, NULL);
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+  
+  ptr<expr_str_t>
+  expr_str_t::alloc (const str &s)
+  {
+    return New refcounted<expr_str_t> (s);
+  }
+  
+  //====================================================================
 
   void bindlist_t::add (binding_t b) { push_back (b); }
   
@@ -595,51 +681,6 @@ pub3::expr_t::report_error (eval_t e, str msg) const
   }
   env->unsetlineno ();
 }
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_str_t::to_bool () const
-{
-  return (_val && _val.len ());
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_str_t::to_str () const
-{
-  return _val;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_str_t::to_scalar () const
-{
-  DEBUG_ENTER ();
-  scalar_obj_t so = scalar_obj_t (_val);
-  DEBUG_EXIT ("");
-  return so;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_str_t::eval_as_null (eval_t e) const
-{
-  return to_null ();
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_str_t::to_null () const
-{
-  return !_val;
-}
-
-//-----------------------------------------------------------------------
 
 static recycler_t<pub3::expr_int_t> _int_recycler (1000);
 
@@ -1552,26 +1593,6 @@ pub3::expr_t::eval_as_str (eval_t e) const
 
 //-----------------------------------------------------------------------
 
-str 
-pub3::expr_str_t::eval_as_str (eval_t e) const
-{
-  str ret;
-  ret = to_str ();
-  if (e.in_json ()) ret = json::quote (ret);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_str_t::to_len (size_t *s) const
-{
-  *s = _val ? _val.len () : 0;
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
 bool
 pub3::expr_list_t::to_len (size_t *s) const
 {
@@ -1586,61 +1607,6 @@ pub3::expr_dict_t::to_len (size_t *s) const
 {
   *s = _dict ? _dict->size () : 0;
   return true;
-}
-
-//=======================================================================
-
-// Pub v1/v2
-
-void
-pub3::expr_t::eval_obj (pbuf_t *b, penv_t *e, u_int d) const
-{
-  eval_t ev (e, NULL);
-  eval_t *evp = e->get_pub3_eval ();
-
-  if (!evp) evp = &ev;
-
-  ptr<const pval_t> pv = eval (*evp);
-  ptr<const expr_t> x;
-
-  if (pv && (x = pv->to_expr ())) {
-    str s = x->to_str ();
-    if (s) b->add (s);
-  } else if (pv) {
-
-    // v1 and v2 objects; note need to think about corner cases
-    // with infinite recursion.  Make sure we pass through our pub
-    // state is the way to solve the issue...
-    eval_t *old = evp->link_to_penv ();
-    pv->eval_obj (b, e, d);
-    evp->unlink_from_penv (old);
-
-  } else if (e->debug ()) {
-    e->setlineno (_lineno);
-    str nm = to_identifier ();
-    if (!nm) {
-      nm = "-- unknown --";
-    }
-    e->warning (strbuf ("cannot resolve variable: " ) << nm.cstr ());
-    b->add (strbuf ("<!--UNDEF: ") << nm << " -->");
-    e->unsetlineno ();
-  }
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub_scalar_t>
-pub3::expr_t::to_pub_scalar ()
-{
-  return New refcounted<pub_scalar_t> (to_scalar ());
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pub_scalar_t>
-pub3::expr_t::to_pub_scalar () const
-{
-  return New refcounted<pub_scalar_t> (to_scalar ());
 }
 
 //=======================================================================
@@ -1756,61 +1722,6 @@ pub3::expr_shell_str_t::eval_as_regex (eval_t e) const
 
 //-----------------------------------------------------------------------
 
-ptr<rxx>
-pub3::expr_str_t::to_regex () const
-{
-  ptr<rxx> ret;
-  ret = str2rxx (NULL, _val, NULL);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_varref_or_rfn_t::unshift_argument (ptr<expr_t> x)
-{
-  if (!_arglist) {
-    _arglist = New refcounted<expr_list_t> (_lineno);
-  }
-  _arglist->push_front (x);
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-#define EXPR_VARREF_EVAL(ret,func) \
-  ret							\
-  pub3::expr_varref_or_rfn_t::func (eval_t e) const	\
-  {							\
-    ret r;						\
-    ptr<const expr_t> rfn = get_rfn ();			\
-    if (rfn) {						\
-      r = rfn->func (e);				\
-    } else {						\
-      r = expr_varref_t::func (e);			\
-    }							\
-    return r;						\
-  }
-
-EXPR_VARREF_EVAL(ptr<const pval_t>, eval)
-EXPR_VARREF_EVAL(ptr<pval_t>, eval_freeze)
-EXPR_VARREF_EVAL(str, eval_as_str)
-EXPR_VARREF_EVAL(ptr<rxx>, eval_as_regex)
-EXPR_VARREF_EVAL(bool, eval_as_null)
-
-//-----------------------------------------------------------------------
-
-ptr<const pub3::expr_t>
-pub3::expr_varref_or_rfn_t::get_rfn () const
-{
-  if (_arglist && !_rfn) {
-    _rfn = pub3::rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
-  }
-  return _rfn;
-}
-
-//-----------------------------------------------------------------------
-
 void
 pub3::expr_list_t::push_front (ptr<expr_t> e)
 {
@@ -1840,12 +1751,6 @@ pub3::expr_dict_t::replace (const str &nm, ptr<expr_t> x)
 }
 
 //-----------------------------------------------------------------------
-
-ptr<pub3::expr_str_t>
-pub3::expr_str_t::alloc (const str &s)
-{
-  return New refcounted<expr_str_t> (s);
-}
 
 //-----------------------------------------------------------------------
 

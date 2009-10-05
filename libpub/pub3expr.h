@@ -51,7 +51,6 @@ namespace pub3 {
     //------- Evaluation ------------------------------------------
     //
     virtual ptr<const expr_t> eval_to_val (eval_t e) const;
-    virtual ptr<mref_t> eval_to_ref (eval_t e) const { return NULL; }
     virtual ptr<expr_t> eval_to_rhs (eval_t e) const = 0;
     virtual ptr<mref_t> eval_to_lhs (eval_t e) const { return NULL; }
     //
@@ -84,7 +83,7 @@ namespace pub3 {
 
     virtual scalar_obj_t to_scalar () const { return scalar_obj_t (); }
     virtual str to_identifier () const { return NULL; }
-    virtual str to_str () const { return NULL; }
+    virtual str to_str (bool q = false) const { return NULL; }
     virtual bool to_bool () const { return false; }
     virtual int64_t to_int () const { return 0; }
     virtual u_int64_t to_uint () const { return 0; }
@@ -198,7 +197,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     static ptr<expr_bool_t> alloc (bool b);
     static str to_str (bool b);
-    str to_str (bool b) const;
+    str to_str (bool q = false) const;
     ptr<expr_t> copy () const;
 
     // Allow for calling New refcounted<expr_bool_t> inside of
@@ -459,17 +458,13 @@ namespace pub3 {
   class expr_varref_or_rfn_t : public expr_varref_t {
   public:
     expr_varref_or_rfn_t (const str &s, int l) : expr_varref_t (s, l) {}
-    virtual bool to_xdr (xpub3_expr_t *x) const;
+    bool to_xdr (xpub3_expr_t *x) const;
     bool unshift_argument (ptr<expr_t> e);
 
     const char *get_obj_name () const { return "pub3::expr_varref_or_rfn_t"; }
 
-    ptr<const pval_t> eval (eval_t e) const;
-    ptr<pval_t> eval_freeze (eval_t e) const;
-    str eval_as_str (eval_t e) const;
-    ptr<rxx> eval_as_regex (eval_t e) const;
-    bool eval_as_null (eval_t e) const;
-
+    ptr<const expr_t> eval_as_val (eval_t e) const;
+    ptr<expr_t> eval_as_rhs (eval_t e) const;
   protected:
     ptr<const expr_t> get_rfn () const;
     ptr<expr_list_t> _arglist;
@@ -478,12 +473,12 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_str_t : public expr_static_t {
+  class expr_str_t : public expr_constant_t {
   public:
-    expr_str_t (const str &s) : _val (s) {}
+    expr_str_t (const str &s) : expr_constant_t(), _val (s) {}
     expr_str_t (const xpub3_str_t &x);
 
-    str to_str () const;
+    str to_str (bool q) const;
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
@@ -494,14 +489,13 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
 
     str eval_as_str (eval_t e) const;
-    bool eval_as_null (eval_t e) const;
-    ptr<rxx> eval_as_regex (eval_t e) const { return to_regex (); }
     static ptr<expr_str_t> alloc (const str &s);
-    str type_to_str () const { return "str"; }
 
   protected:
     const str _val;
   };
+
+  // MK Left off 10/4/09
 
   //-----------------------------------------------------------------------
 
@@ -522,7 +516,7 @@ namespace pub3 {
     bool to_bool () const { return _val; }
     scalar_obj_t to_scalar () const;
     int64_t to_int () const { return _val; }
-    bool to_int64 (int64_t *i) const { *i = _val; return true; }
+    bool to_int (int64_t *i) const { *i = _val; return true; }
     u_int64_t to_uint () const;
     bool to_uint (u_int64_t *u) const;
     bool to_xdr (xpub3_expr_t *x) const;
@@ -548,7 +542,7 @@ namespace pub3 {
     bool to_bool () const { return _val; }
     u_int64_t to_uint () const { return _val; }
     int64_t to_int () const;
-    bool to_int64 (int64_t *i) const;
+    bool to_int (int64_t *i) const;
     bool to_uint (u_int64_t *u) const { *u = _val; return true; }
 
     scalar_obj_t to_scalar () const;
