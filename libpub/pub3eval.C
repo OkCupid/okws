@@ -80,7 +80,7 @@ namespace pub3 {
     for (ssize_t i = _stack.size () - 1; !found && i >= 0; i--) {
       stack_layer_t l = _stack[i];
       if (l._bindings && (xp = (*l._bindings)[nm])) {
-	if (l._typ == LAYER_UNIREFS) { found = _univerals; }
+	if (l._typ == LAYER_UNIREFS) { found = _universals; }
 	else { found = l._bindings; }
       }
     }
