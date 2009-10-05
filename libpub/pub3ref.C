@@ -26,29 +26,8 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<expr_t>
-  expr_dictref_t::eval_to_rhs (eval_t e) const
-  {
-    ptr<expr_t> x;
-    ptr<expr_dict_t> d;
-    ptr<expr_t> *valp;
-    assert (_dict);
-    if (!(x = _dict->eval_to_rhs (e))) {
-      report_error (e, "failed to evaluate expression (as a dictionary)");
-    } else if (!(d = x->to_dict ())) {
-      report_error (e, "can't coerce value to dictionary");
-    } else if ((valp = (*d)[_key])) {
-      out = *valp;
-    } else {
-      out = expr_null_t::alloc ();
-    }
-    return out;
-  }
-
-  //--------------------------------------------------------------------
-
   ptr<mref_t>
-  expr_dictref_t::eval_to_lhs (eval_t e) const
+  expr_dictref_t::eval_to_ref (eval_t e) const
   {
     ptr<expr_t> x;
     ptr<expr_dict_t> d;
@@ -75,41 +54,21 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_varref_t::eval_to_lhs (eval_t e) const
+  expr_varref_t::eval_to_ref (eval_t e) const
   {
     return e.lookup_ref (e);
   }
 
   //====================================================================
 
-  ptr<expr_t>
-  expr_vecref_t::eval_to_rhs (eval_t e) const
-  {
-    ptr<expr_dict_t> d;
-    ptr<expr_list_t> l;
-    ptr<expr_t> out;
-    int64_t i;
-    str k;
-
-    if (!eval_rhs_prepare (&d, &l, &k, &i)) {
-      /* noop */
-    } else if (d && k) {
-      out = d->lookup (k);
-    } else if (l) {
-      out = d->lookup (i);
-    }
-    return out;
-  }
-
-  //--------------------------------------------------------------------
-
-  bool
-  expr_vecref_t::eval_rhs_prepare (ptr<expr_dict_t> *dp, ptr<expr_list_t> *lp,
-				   str *kp, int64_t *ip)
+  ptr<mref_t>
+  expr_vecref_t::eval_to_ref (eval_t e) const
   {
     ptr<expr_t> c;
     ptr<const expr_t> i;
-    bool ret = false;
+    ptr<expr_dict_t> d;
+    ptr<expr_list_t> l;
+    ptr<mref_t> ret;
 
     assert (_vec);
     assert (_index);
@@ -118,51 +77,17 @@ namespace pub3 {
       report_error (e, "container evaluates to null");
     } else if (!(i = _index->eval_to_val (e))) {
       report_error (e, "cannot evaluate key for lookup");
-    } else if ((*dp = c->to_dict ())) {
-      if ((*kp = i->to_str ())) {
-	ret = true;
+    } else if ((d = c->to_dict ())) {
+      str k;
+      if ((k = i->to_str ())) {
+	ret = mref_dict_t::alloc (d, k);
       } else {
 	report_error (e, "cannot coerce dictionary index to string");
       }
-    } else if ((*lp = c->to_list ())) {
-      if (i->to_int (ip)) {
-	ret = true;
-      } else {
-	report_error (e, "indices into lists must be integers");
-      }
-    } else {
-      report_error (e, "[]-reference into an object not a dict or list");
-    }
-    return ret;
-  }
-
-  //--------------------------------------------------------------------
-
-  bool
-  expr_vecref_t::eval_val_prepare (ptr<const expr_dict_t> *dp, 
-				   ptr<const expr_list_t> *lp,
-				   str *kp, int64_t *ip)
-  {
-    ptr<const expr_t> c;
-    ptr<const expr_t> i;
-    bool ret = false;
-
-    assert (_vec);
-    assert (_index);
-
-    if (!(c = _vec->eval_to_val (e))) {
-      report_error (e, "container evaluates to null");
-    } else if (!(i = _index->eval_to_val (e))) {
-      report_error (e, "cannot evaluate key for lookup");
-    } else if ((*dp = c->to_dict ())) {
-      if ((*kp = i->to_str ())) {
-	ret = true;
-      } else {
-	report_error (e, "cannot coerce dictionary index to string");
-      }
-    } else if ((*lp = c->to_list ())) {
-      if (i->to_int (ip)) {
-	ret = true;
+    } else if ((l = c->to_list ())) {
+      int64_t ii;
+      if (i->to_int (&ii)) {
+	ret = mref_list_t::alloc (l, ii);
       } else {
 	report_error (e, "indices into lists must be integers");
       }
@@ -177,44 +102,38 @@ namespace pub3 {
   ptr<const expr_t>
   expr_vecref_t::eval_to_val (eval_t e) const
   {
+    ptr<const expr_t> c;
+    ptr<const expr_t> i;
     ptr<const expr_dict_t> d;
     ptr<const expr_list_t> l;
-    str k;
-    int64_t i;
-    ptr<const expr_t> out;
+    ptr<const expr_t> ret;
 
-    if (!eval_val_prepare (&d, &l, &k, &i)) {
-      /* noop */
-    } else if (d && k) {
-      out = d->lookup (k);
-    } else if (l) {
-      out = l->lookup (i);
+    assert (_vec);
+    assert (_index);
+
+    if (!(c = _vec->eval_to_val (e))) {
+      report_error (e, "container evaluates to null");
+    } else if (!(i = _index->eval_to_val (e))) {
+      report_error (e, "cannot evaluate key for lookup");
+    } else if ((d = c->to_dict ())) {
+      str k;
+      if ((k = i->to_str ())) {
+	ret = mref_dict_t::alloc (d, k);
+      } else {
+	report_error (e, "cannot coerce dictionary index to string");
+      }
+    } else if ((l = c->to_list ())) {
+      int64_t ii;
+      if (i->to_int (ip)) {
+	ret = mref_list_t::alloc (l, ii);
+      } else {
+	report_error (e, "indices into lists must be integers");
+      }
+    } else {
+      report_error (e, "[]-reference into an object not a dict or list");
     }
-
-    return out;
+    return ret;
   }
-
-  //--------------------------------------------------------------------
-
-  ptr<mref_t>
-  expr_vecref_t::eval_to_lhs (eval_t e) const
-  {
-    ptr<expr_dict_t> d;
-    ptr<expr_list_t> l;
-    str k;
-    int64_t i;
-    ptr<mref_t> out;
-
-    if (!eval_rhs_prepare (&d, &l, &k, &i)) {
-      /* noop */
-    } else if (d && k) {
-      out = New refcounted<mref_dict_t> (d, k);
-    } else if (l) {
-      out = New refcounted<mref_list_t> (l, ii);
-    }
-    return out;
-  }
-
   //====================================================================
   
 };

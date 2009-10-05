@@ -78,11 +78,12 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<expr_t> expr_t::eval_to_rhs (eval_t e) const
+  ptr<mref_t> expr_t::eval_to_ref (eval_t e) const
   { 
-    ptr<expr_t> ret;
+    ptr<expr_t> e;
     ptr<const expr_t> v = eval_to_val (e);
-    if (v) ret = v->copy ();
+    if (v) e = v->copy ();
+    ptr<const_mref_t> ret = const_mref_t::alloc (e);
     return ret;
   }
 
@@ -524,8 +525,7 @@ namespace pub3 {
   }
   
   EXPR_VARREF_EVAL(ptr<const expr_t>, eval_to_val)
-  EXPR_VARREF_EVAL(ptr<expr_t>, eval_to_rhs)
-  EXPR_VARREF_EVAL(ptr<mref_t> eval_to_lhs)
+  EXPR_VARREF_EVAL(ptr<mref_t> eval_to_ref)
 
 #undef EXPR_VARREF_EVAL
 
@@ -1902,8 +1902,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<expr_t>
-  expr_dict_t::eval_to_rhs (eval_t e) const
+  ptr<mref_t>
+  expr_dict_t::eval_to_ref (eval_t e) const
   {
     bool sttc = true;
     bindtab_const_iterator_t it (*this);
@@ -1918,11 +1918,11 @@ namespace pub3 {
       }
     }
 
-    ptr<expr_t> ret;
+    ptr<expr_t> out;
 
     // For static objects, make a COW version
     if (sttc) { 
-      ret = expr_cow_t::alloc (mkref (*this));
+      out = expr_cow_t::alloc (mkref (*this));
     } else {
 
       // Otherwise, recurse --- evaluate next layer down...
@@ -1930,12 +1930,19 @@ namespace pub3 {
       it.reset ();
       while ((key = it.next (&value))) {
 	ptr<expr_t> nv;
+	ptr<mref_t> r;
 	if (value) { 
-	  nv = value->eval_to_rhs (e);
+	  r = value->eval_to_ref (e);
+	  if (r) nv = r->get_value ();
 	}
-	d->insert (*key, nv);
+	if (nv) {
+	  d->insert (*key, nv);
+	}
       }
+      out = d;
     }
+
+    ptr<const_mref_t> ret = New refcounted<const_ref_t> (out);
     return ret;
   }
 
