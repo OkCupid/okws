@@ -106,7 +106,23 @@ namespace pub3 {
     if (x) ret = x->to_bool ();
     return ret;
   }
-
+  
+  //---------------------------------------------------------------------
+  
+  ptr<rxx>
+  expr_t::str2rxx (const eval_t *e, const str &b, const str &o) const
+  {
+    ptr<rxx> ret;
+    if (b) {
+      str err;
+      ret = rxx_factory_t::compile (b, o, &err);
+      if (e && e->loud () && err) {
+	report_error (*e, err);
+      }
+    }
+    return ret;
+  }
+  
   //====================================================================
 
   bool
@@ -204,6 +220,11 @@ namespace pub3 {
 
   ptr<expr_t> mref_dict_t::get_value () { return (*_dict)[_slot]; }
   void mref_dict_t::set_value (ptr<expr_t> x) { _dict->insert (_slot, x); }
+
+  //====================================================================
+  
+  ptr<expr_t> mref_list_t::get_value () { return _list->lookup (_index); }
+  void mref_list_t::set_value (ptr<expr_t> x) { _list->set (_index, x); }
 
   //====================================================================
 
@@ -583,6 +604,268 @@ namespace pub3 {
   }
   
   //====================================================================
+  
+  static recycler_t<pub3::expr_int_t> _int_recycler (1000);
+  
+  //-----------------------------------------------------------------------
+  
+  ptr<expr_int_t>
+  expr_int_t::alloc (int64_t i)
+  {
+    return _int_recycler.alloc (i);
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  void
+  expr_int_t::finalize ()
+  {
+    _int_recycler.recycle (this);
+  }
+  
+  //-----------------------------------------------------------------------
+
+  scalar_obj_t
+  expr_int_t::to_scalar () const
+  {
+    scalar_obj_t so;
+    so.set (_val);
+    return so;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  u_int64_t
+  expr_int_t::to_uint () const
+  {
+    u_int64_t out = 0;
+    to_uint (&out);
+    return out;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  bool
+  expr_int_t::to_uint (u_int64_t *u) const
+  {
+ 
+    bool r = false;
+    if (_val >= 0) {
+      *u = _val;
+      r = true;
+    }
+    return r;
+  }
+  
+  //====================================================================
+  
+  scalar_obj_t
+  expr_uint_t::to_scalar () const
+  {
+    scalar_obj_t so;
+    so.set_u (_val);
+    return so;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  int64_t
+  expr_uint_t::to_int () const
+  {
+    int64_t out = 0;
+    to_int (&out);
+    return out;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  bool
+  expr_uint_t::to_int64 (int64_t *out) const
+  {
+    bool ret = false;
+    if (_val <= u_int64_t (INT64_MAX)) {
+      ret = true;
+      *out = _val;
+    }
+    return ret;
+  }
+
+  //====================================================================
+  
+  scalar_obj_t
+  expr_double_t::to_scalar () const
+  {
+    scalar_obj_t so;
+    so.set (_val);
+    return so;
+  }
+
+  //====================================================================
+
+  void
+  expr_list_t::push_front (ptr<expr_t> e)
+  {
+    // XXX - hack -- push_back and then bubble to the front!
+    push_back (e);
+    for (size_t i = size () - 1; i > 0; i--) {
+      ptr<expr_t> tmp = (*this)[i];
+      (*this)[i] = (*this)[i-1];
+      (*this)[i-1] = tmp;
+    }
+  }
+  
+  //--------------------------------------------------------------------
+
+  bool
+  expr_list_t::to_len (size_t *s) const
+  {
+    *s = size ();
+    return true;
+  }
+
+  //---------------------------------------------------------------------
+
+  scalar_obj_t 
+  pub3::expr_list_t::to_scalar () const
+  {
+    scalar_obj_t so = scalar_obj_t (to_str ());
+    return so;
+  }
+  
+  //--------------------------------------------------------------------
+
+  bool
+  expr_list_t::fixup_index (ssize_t *ip, bool lax) const
+  {
+    bool ret = false;
+    ssize_t i = *ip;
+    ssize_t sz = size ();
+    
+    if (i >= 0 && i < sz) {
+      ret = true; 
+    } else {
+      
+      // apply from-back-indexing.
+      if (i < 0) {
+	i += sz;
+      }
+      
+      if (i < 0) {
+	ret = lax;
+	if (lax) i = 0;
+      } else if (i >= sz) {
+	ret = lax;
+      } else {
+	ret = true;
+      }
+      
+    }
+    *ip = i;
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+  
+  ptr<const expr_t>
+  expr_list_t::lookup (ssize_t s, bool *ibp) const
+  {
+    ptr<expr_t pval_t> r;
+    bool ib;
+    if ((ib = fixup_index (&s))) {
+      r = (*this)[s];
+    }
+    
+    if (ibp) *ibp = ib;
+    return r;
+  }
+  
+  //---------------------------------------------------------------------
+
+  ptr<expr_t>
+  expr_list_t::lookup (ssize_t s, bool *ibp)
+  {
+    ptr<expr_t> r;
+    bool ib;
+    
+    if ((ib = fixup_index (&s))) {
+      r = (*this)[s];
+    }
+    
+    if (ibp) *ibp = ib;
+    return r;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  void
+  pub3::expr_list_t::set (ssize_t i, ptr<pval_t> v)
+  {
+    ptr<expr_t> e = v->to_expr ();
+    if (e && fixup_index (&i, true)) {
+      if (i >= size ())
+	setsize (i + 1);
+      (*this)[i] = e;
+    }
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  void
+  expr_list_t::push_back (ptr<expr_t> v)
+  {
+    ptr<expr_t> e;
+    if (v) { e = v->to_expr (); }
+    if (!e) { e = expr_null_t::alloc (); }
+    vec_base_t::push_back (e);
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  static str
+  vec2str (const vec<str> &v, char o, char c)
+  {
+    strbuf b ("%c", o);
+    for (size_t i = 0; i < v.size (); i++) {
+      if (i != 0) b << ", ";
+      b << v[i];
+    }
+    b.fmt ("%c", c);
+    return b;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  str
+  expr_list_t::to_str (bool q) const
+  {
+    vec<str> v;
+    size_t sz = size ();
+    for (size_t i = 0; i < szi++) {
+      ptr<const expr_t> x = (*this)[i];
+      str s;
+      if (x) { s = x->to_str (true); }
+      v.push_back (json::safestr (s));
+    }
+    str ret = vec2str (v, '[', ']');
+    return ret;
+  }
+  
+  //--------------------------------------------------------------------
+  
+  ptr<rxx>
+  expr_list_t::to_regex (const eval_t *e) const
+  {
+    str opts, body;
+    ptr<rxx> ret;
+    ptr<const expr_t> x;
+    
+    if (size () >= 2 && (x = (*this)[1])) { opts = x->to_str (); }
+    if (size () >= 1 && (x = (*this)[0])) { body = x->to_str (); }
+    if (body) { ret = str2rxx (e, body, opts); }
+    return ret;
+  }
+  
+  //====================================================================
 
   void bindlist_t::add (binding_t b) { push_back (b); }
   
@@ -680,56 +963,6 @@ pub3::expr_t::report_error (eval_t e, str msg) const
     out->output_err (env, msg);
   }
   env->unsetlineno ();
-}
-
-static recycler_t<pub3::expr_int_t> _int_recycler (1000);
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_int_t>
-pub3::expr_int_t::alloc (int64_t i)
-{
-  return _int_recycler.alloc (i);
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_int_t::finalize ()
-{
-  _int_recycler.recycle (this);
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_int_t::to_scalar () const
-{
-  DEBUG_ENTER ();
-  scalar_obj_t so;
-  so.set (_val);
-  DEBUG_EXIT ("");
-  return so;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_double_t::to_scalar () const
-{
-  scalar_obj_t so;
-  so.set (_val);
-  return so;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_uint_t::to_scalar () const
-{
-  scalar_obj_t so;
-  so.set_u (_val);
-  return so;
 }
 
 //-----------------------------------------------------------------------
@@ -1094,16 +1327,6 @@ pub3::expr_dict_t::eval_freeze (eval_t e) const
 
 //-----------------------------------------------------------------------
 
-ptr<pval_t>
-pub3::expr_list_t::eval_freeze (eval_t e) const
-{
-  ptr<expr_list_t> ret = New refcounted<expr_list_t> (_lineno);
-  e.eval_freeze_vec (this, ret);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
 void
 pub3::eval_t::eval_freeze_vec (const vec_iface_t *in, vec_iface_t *out)
 {
@@ -1187,117 +1410,6 @@ pub3::expr_shell_str_t::expr_shell_str_t (ptr<expr_t> e, int lineno)
     _els (expr_list_t::alloc (lineno)) 
 { _els->push_back (e); }
 
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::expr_list_t::lookup (ssize_t s, bool *ibp) const
-{
-  ptr<const pval_t> r;
-  bool ib;
-  if ((ib = fixup_index (&s))) {
-    r = (*this)[s];
-  }
-
-  if (ibp) *ibp = ib;
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_list_t::lookup (ssize_t s, bool *ibp)
-{
-  ptr<pval_t> r;
-  bool ib;
-
-  if ((ib = fixup_index (&s))) {
-    r = (*this)[s];
-  }
-
-  if (ibp) *ibp = ib;
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_list_t::set (size_t i, ptr<pval_t> v)
-{
-  ptr<expr_t> e = v->to_expr ();
-  if (e) {
-    if (i >= size ())
-      setsize (i + 1);
-    (*this)[i] = e;
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_list_t::push_back (ptr<pval_t> v)
-{
-  ptr<expr_t> e;
-  if (v) { e = v->to_expr (); }
-  if (!e) { e = expr_null_t::alloc (); }
-  vec_base_t::push_back (e);
-}
-
-//-----------------------------------------------------------------------
-
-static str
-vec2str (const vec<str> &v, char o, char c)
-{
-  strbuf b ("%c", o);
-  for (size_t i = 0; i < v.size (); i++) {
-    if (i != 0) b << ", ";
-    b << v[i];
-  }
-  b.fmt ("%c", c);
-  return b;
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_list_t::eval_as_str (eval_t e) const
-{
-  DEBUG_ENTER ();
-  vec<str> v;
-  e.set_in_json ();
-  for (size_t i = 0; i < size (); i++) {
-    ptr<const expr_t> x = (*this)[i];
-    str s;
-    if (x) { s = x->eval_as_str (e); }
-    v.push_back (json::safestr (s));
-  }
-
-  str ret = vec2str (v, '[', ']');
-  DEBUG_EXIT (ret);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_list_t::to_str () const
-{
-  DEBUG_ENTER ();
-  vec<str> v;
-
-  for (size_t i = 0; i < size (); i++) {
-    ptr<const expr_t> x = (*this)[i];
-    str s;
-    if (x) { s = x->to_str (); }
-    v.push_back (json::safestr (s));
-  }
-
-  str ret = vec2str (v, '[', ']');
-  DEBUG_EXIT (ret);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
 str
 pub3::expr_dict_t::eval_as_str (eval_t e) const
 {
@@ -1367,17 +1479,6 @@ pub3::expr_dict_t::to_str () const
 //-----------------------------------------------------------------------
 
 scalar_obj_t 
-pub3::expr_list_t::to_scalar () const
-{
-  DEBUG_ENTER ();
-  scalar_obj_t so = scalar_obj_t (to_str ());
-  DEBUG_EXIT ("");
-  return so;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t 
 pub3::expr_dict_t::to_scalar () const
 {
   DEBUG_ENTER ();
@@ -1385,57 +1486,6 @@ pub3::expr_dict_t::to_scalar () const
   DEBUG_EXIT ("");
   return so;
 }
-
-//-----------------------------------------------------------------------
-
-int64_t
-pub3::expr_uint_t::to_int () const
-{
-  int64_t out = 0;
-  if (_val <= u_int64_t (INT64_MAX)) {
-    out = _val;
-  }
-  return out;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_uint_t::to_int64 (int64_t *out) const
-{
-  bool ret = false;
-  if (_val <= u_int64_t (INT64_MAX)) {
-    ret = true;
-    *out = _val;
-  }
-  return ret;
-}
-
-
-//-----------------------------------------------------------------------
-
-u_int64_t
-pub3::expr_int_t::to_uint () const
-{
-  u_int64_t out = 0;
-  to_uint (&out);
-  return out;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_int_t::to_uint (u_int64_t *u) const
-{
-  bool r = false;
-  if (_val >= 0) {
-    *u = _val;
-    r = true;
-  }
-  return r;
-}
-
-//-----------------------------------------------------------------------
     
 //=======================================================================
 // Shortcuts
@@ -1594,15 +1644,6 @@ pub3::expr_t::eval_as_str (eval_t e) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_list_t::to_len (size_t *s) const
-{
-  *s = size ();
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-bool
 pub3::expr_dict_t::to_len (size_t *s) const 
 {
   *s = _dict ? _dict->size () : 0;
@@ -1674,64 +1715,12 @@ pub3::expr_regex_t::eval_freeze (eval_t e) const
 //-----------------------------------------------------------------------
 
 ptr<rxx>
-pub3::expr_list_t::eval_as_regex (eval_t e) const
-{
-  str opts;
-  str body;
-  ptr<rxx> ret;
-
-  if (size () >= 2) {
-    opts = (*this)[1]->eval_as_str (e);
-  }
-  
-  if (size () >= 1) {
-    body = (*this)[0]->eval_as_str (e);
-  }
-  
-  ret = str2rxx (&e, body, opts);
-
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<rxx>
-pub3::expr_t::str2rxx (const eval_t *e, const str &b, const str &o) const
-{
-  ptr<rxx> ret;
-  if (b) {
-    str err;
-    ret = rxx_factory_t::compile (b, o, &err);
-    if (e && e->loud () && err) {
-      report_error (*e, err);
-    }
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<rxx>
 pub3::expr_shell_str_t::eval_as_regex (eval_t e) const
 {
   ptr<rxx> ret;
   str s = eval_as_str (e);
   ret = str2rxx (&e, s, NULL);
   return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_list_t::push_front (ptr<expr_t> e)
-{
-  // XXX - hack -- push_back and then bubble to the front!
-  push_back (e);
-  for (size_t i = size () - 1; i > 0; i--) {
-    ptr<expr_t> tmp = (*this)[i];
-    (*this)[i] = (*this)[i-1];
-    (*this)[i-1] = tmp;
-  }
 }
 
 //-----------------------------------------------------------------------
@@ -1751,61 +1740,6 @@ pub3::expr_dict_t::replace (const str &nm, ptr<expr_t> x)
 }
 
 //-----------------------------------------------------------------------
-
-//-----------------------------------------------------------------------
-
-ptr<slot_ref_t>
-pub3::expr_list_t::lookup_slot (ssize_t i)
-{
-  ptr<slot_ref_t> ret;
-  ssize_t ssz = size ();
-
-  fixup_index (&i, true);
-
-  if (i >= ssz) {
-    setsize (i+1);
-  }
-  ret = slot_ref3_t::alloc (&(*this)[i]);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::slot_ref3_t::set_expr (ptr<pub3::expr_t> e)
-{
-  assert (_epp);
-  *_epp = e;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::slot_ref3_t::set_pval (ptr<pval_t> p)
-{
-  assert (_epp);
-  ptr<expr_t> x;
-  if (p) { x = p->to_expr (); }
-  *_epp = x;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t> 
-pub3::slot_ref3_t::deref_pval () const
-{
-  assert (_epp);
-  return *_epp;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-pub3::slot_ref3_t::deref_expr () const
-{
-  assert (_epp);
-  return *_epp;
-}
 
 //-----------------------------------------------------------------------
 
@@ -1849,40 +1783,8 @@ pub3::expr_t::const_cast_hack () const
   return mkref (const_cast<expr_t *> (this));
 }
 
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_list_t::fixup_index (ssize_t *ip, bool lax) const
-{
-  bool ret = false;
-  ssize_t i = *ip;
-  ssize_t sz = size ();
-
-  if (i >= 0 && i < sz) {
-    ret = true; 
-  } else {
-
-    // apply from-back-indexing.
-    if (i < 0) {
-      i += sz;
-    }
-
-    if (i < 0) {
-      ret = lax;
-      if (lax) i = 0;
-    } else if (i >= sz) {
-      ret = lax;
-    } else {
-      ret = true;
-    }
-
-  }
-  *ip = i;
-  return ret;
-}
 
 //-----------------------------------------------------------------------
-
 namespace pub3 {
 
   //-----------------------------------------------------------------------

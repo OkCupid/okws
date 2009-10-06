@@ -470,8 +470,8 @@ namespace pub3 {
 
     const char *get_obj_name () const { return "pub3::expr_varref_or_rfn_t"; }
 
-    ptr<const expr_t> eval_as_val (eval_t e) const;
-    ptr<expr_t> eval_as_rhs (eval_t e) const;
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<expr_t> eval_to_rhs (eval_t e) const;
   protected:
     ptr<const expr_t> get_rfn () const;
     ptr<expr_list_t> _arglist;
@@ -485,7 +485,7 @@ namespace pub3 {
     expr_str_t (const str &s) : expr_constant_t(), _val (s) {}
     expr_str_t (const xpub3_str_t &x);
 
-    str to_str (bool q) const;
+    str to_str (bool q = false) const;
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
@@ -501,8 +501,6 @@ namespace pub3 {
   protected:
     const str _val;
   };
-
-  // MK Left off 10/4/09
 
   //-----------------------------------------------------------------------
 
@@ -587,23 +585,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class slot_ref3_t : public slot_ref_t {
-  public:
-    slot_ref3_t (ptr<expr_t> *e) : _epp (e) {}
-    void set_expr (ptr<pub3::expr_t> e);
-    void set_pval (ptr<pval_t> p);
-    ptr<pval_t> deref_pval () const;
-    ptr<pub3::expr_t> deref_expr () const;
-
-    static ptr<slot_ref3_t> alloc (ptr<expr_t> *e)
-    { return New refcounted<slot_ref3_t> (e); }
-  
-  private:
-    ptr<expr_t> *_epp;
-  };
-
-  //-----------------------------------------------------------------------
-
   class expr_list_t : public expr_t, 
 		      public vec<ptr<expr_t> > ,
 		      public vec_iface_t {
@@ -620,8 +601,6 @@ namespace pub3 {
     // vec_iface_t interface
     ptr<const expr_t> lookup (ssize_t i, bool *ib = NULL) const;
     ptr<expr_t> lookup (ssize_t i, bool *ib = NULL);
-    ptr<slot_ref_t> lookup_slot (ssize_t i);
-    ptr<const vec_iface_t> to_vec_iface () const { return mkref (this); }
     void set (size_t i, ptr<pval_t> v);
     void push_back (ptr<pval_t> v);
     ptr<expr_t> &push_back () { return vec_base_t::push_back (); }
@@ -629,14 +608,13 @@ namespace pub3 {
     void setsize (size_t s) { vec_base_t::setsize (s); }
     bool to_len (size_t *s) const;
     bool to_bool () const { return size () > 0; }
-
-    ptr<rxx> eval_as_regex (eval_t e) const;
+    ptr<rxx> to_regex (const eval_t *e = NULL) const;
+    scalar_obj_t to_scalar () const;
+    str to_str (bool q = false) const;
 
     void push_front (ptr<expr_t> e);
 
     // to JSON-style string
-    scalar_obj_t to_scalar () const;
-    str to_str () const;
 
     static ptr<expr_list_t> alloc (int l) 
     { return New refcounted<expr_list_t> (l); }
@@ -644,8 +622,8 @@ namespace pub3 {
     { return New refcounted<expr_list_t> (x); }
     static ptr<expr_list_t> alloc (const xpub3_expr_list_t *x);
 
-    ptr<const expr_list_t> to_expr_list () const { return mkref (this); }
-    ptr<expr_list_t> to_expr_list () { return mkref (this); }
+    ptr<const expr_list_t> to_list () const { return mkref (this); }
+    ptr<expr_list_t> to_list () { return mkref (this); }
 
     const char *get_obj_name () const { return "pub3::expr_list_t"; }
 
