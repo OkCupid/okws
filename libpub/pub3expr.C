@@ -237,7 +237,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<expr_null_t>
-  pub3::expr_null_t::alloc (lineno_t l)
+  expr_null_t::alloc (lineno_t l)
   {
     static ptr<expr_null_t> s_null;
     if (!s_null) {
@@ -268,8 +268,8 @@ namespace pub3 {
   
   //---------------------------------------------------------------------
 
-  ptr<pub3::expr_bool_t>
-  pub3::expr_bool_t::alloc (bool b)
+  ptr<expr_bool_t>
+  expr_bool_t::alloc (bool b)
   {
     ptr<expr_bool_t> &retref = b ? _true : _false;
     if (!retref) { retref = New refcounted<expr_bool_t> (b); }
@@ -556,7 +556,7 @@ namespace pub3 {
   expr_varref_or_rfn_t::get_rfn () const
   {
     if (_arglist && !_rfn) {
-      _rfn = pub3::rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
+      _rfn = rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
     }
     return _rfn;
   }
@@ -605,7 +605,7 @@ namespace pub3 {
   
   //====================================================================
   
-  static recycler_t<pub3::expr_int_t> _int_recycler (1000);
+  static recycler_t<expr_int_t> _int_recycler (1000);
   
   //-----------------------------------------------------------------------
   
@@ -726,7 +726,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   scalar_obj_t 
-  pub3::expr_list_t::to_scalar () const
+  expr_list_t::to_scalar () const
   {
     scalar_obj_t so = scalar_obj_t (to_str ());
     return so;
@@ -798,7 +798,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   void
-  pub3::expr_list_t::set (ssize_t i, ptr<pval_t> v)
+  expr_list_t::set (ssize_t i, ptr<pval_t> v)
   {
     ptr<expr_t> e = v->to_expr ();
     if (e && fixup_index (&i, true)) {
@@ -864,6 +864,153 @@ namespace pub3 {
     if (body) { ret = str2rxx (e, body, opts); }
     return ret;
   }
+
+  //====================================================================
+
+  static rxx_factory_t g_rxx_factory;
+
+  //--------------------------------------------------------------------
+
+  ptr<rxx>
+  rxx_factory_t::compile (str body, str opts, str *errp)
+  {
+    return g_rxx_factory._compile (body, opts, errp);
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<rxx>
+  rxx_factory_t::_compile (str body, str opts, str *errp)
+  {
+    const char *b = body;
+    const char *o = "";
+    if (opts) o = opts;
+    
+    ptr<rxx> *rp;
+    ptr<rxx> ret;
+    
+    strbuf k ("%s-%s", b, o);
+    if ((rp = _cache[k])) { 
+      ret = *rp; 
+    } else {
+      ptr<rrxx> tmp = New refcounted<rrxx> ();
+      if (!tmp->compile (b, o)) {
+	strbuf b;
+	str err = tmp->geterr ();
+	b << "Cannot compile regex '" << b << "' with options '"
+	  << o << "': " << err << "\n";
+	if (errp) *errp = b;
+      }
+      _cache.insert (k, tmp);
+      ret = tmp;
+    }
+    return ret;
+  }
+  
+  //====================================================================
+
+  expr_regex_t::expr_regex_t (int lineno) : expr_t (lineno) {}
+
+  //--------------------------------------------------------------------
+
+  expr_regex_t::expr_regex_t (ptr<rxx> x, str b, str o, int l)
+    : expr_t (l), _rxx (x), _body (b), _opts (o) {}
+
+  //====================================================================
+
+  ptr<const expr_t>
+  expr_shell_str_t::eval_to_val (eval_t e) const
+  {
+    ptr<expr_t> out;
+
+    if (_els) {
+      vec<str> hold;
+      strbuf b;
+      size_t sz = _els->size ();
+      bool ok = true;
+
+      for (size_t i = 0; ok && i < sz; i++) {
+	ptr<const expr_t> x = (*_els)[i];
+	if (!x) { x = expr_null_t::alloc (); }
+	x = x->eval_to_val (e);
+	if (!x) { x = expr_null_t::alloc (); }
+	str s = x->to_str (false);
+	hold.push_back (s);
+	b << s;
+	
+      }
+      if (ok) { out = expr_str_t::alloc (b); }
+    }
+    
+    if (!out) { out = expr_str_t::alloc (expr_null_t::alloc ()->to_str ()); }
+    
+    return out;
+  }
+  
+  //-----------------------------------------------------------------------
+
+  void
+  expr_shell_str_t::make_str (strbuf *b, vec<str> *v)
+  {
+    if (b->tosuio ()->resid ()) {
+      _els->push_back (New refcounted<expr_str_t> (*b));
+      b->tosuio ()->clear ();
+      v->setsize (0);
+    }
+  }
+  
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t>
+  xpr_shell_str_t::compact () const
+  {
+    str s;
+    ptr<expr_t> ret;
+    
+    if (_els->size () == 1 && (*_els)[0]->to_str ()) {
+      ret = (*_els)[0];
+    } else {
+      ptr<expr_shell_str_t> out = New refcounted<expr_shell_str_t> (_lineno);
+    
+      strbuf b;
+      vec<str> v;
+      
+      for (size_t i = 0; i < _els->size (); i++) {
+	ptr<expr_t> e = (*_els)[i];
+	str s = e->to_str ();
+	if (s) {
+	  b << s;
+	  v.push_back (s);
+	} else {
+	  out->make_str (&b, &v);
+	  out->add (e);
+	}
+      }
+      out->make_str (&b, &v);
+      ret = out;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  expr_shell_str_t::expr_shell_str_t (int lineno)
+    : expr_t (lineno), 
+      _els (expr_list_t::alloc (lineno))  {}
+  
+  //----------------------------------------------------------------------
+  
+  expr_shell_str_t::expr_shell_str_t (const str &s, int lineno)
+    : expr_t (lineno), 
+      _els (expr_list_t::alloc (lineno)) 
+  { _els->push_back (New refcounted<expr_str_t> (s)); }
+  
+  //----------------------------------------------------------------------
+  
+  expr_shell_str_t::expr_shell_str_t (ptr<expr_t> e, int lineno)
+    : expr_t (lineno),
+      _els (expr_list_t::alloc (lineno)) 
+  { _els->push_back (e); }
   
   //====================================================================
 
@@ -911,25 +1058,6 @@ namespace pub3 {
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_ref_t::eval_as_bool (eval_t e) const
-{
-  bool q = e.set_silent (true);
-  ptr<const pval_t> v = eval_internal (e);
-
-  bool ret = false;
-
-  if (v && !v->is_null ()) {
-    ret = v->to_bool ();
-  }
-
-  e.set_silent (q);
-  return ret;
-}
-
-
-//-----------------------------------------------------------------------
-
-bool
 pub3::expr_ref_t::eval_as_null (eval_t e) const
 {
   bool q = e.set_silent (true);
@@ -937,85 +1065,6 @@ pub3::expr_ref_t::eval_as_null (eval_t e) const
   bool ret = v ? v->is_null () : true;
   e.set_silent (q);
   return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<rxx>
-pub3::expr_ref_t::eval_as_regex (eval_t e) const
-{
-  ptr<rxx> ret;
-  ptr<const pval_t> v = eval_internal (e);
-  if (v) ret = v->to_regex ();
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_t::report_error (eval_t e, str msg) const
-{
-  penv_t *env = e.penv ();
-  output_t *out = e.output ();
-  env->setlineno (_lineno);
-  env->warning (msg);
-  if (out) {
-    out->output_err (env, msg);
-  }
-  env->unsetlineno ();
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::eval_t::set_loud (bool b)
-{
-  bool c = _loud;
-  _loud = b;
-  return c;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::eval_t::set_silent (bool b)
-{
-  bool c = _silent;
-  _silent = b;
-  return c;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_arithmetic_t::eval_as_scalar (eval_t e) const
-{
-  if (_cache_generation != e.cache_generation ()) {
-    _so = eval_internal (e);
-    _cache_generation = e.cache_generation ();
-  }
-  return _so;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t> 
-pub3::expr_arithmetic_t::eval (eval_t e) const
-{
-  return eval_freeze (e);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t> 
-pub3::expr_arithmetic_t::eval_freeze (eval_t e) const
-{
-  ptr<expr_t> r = eval_as_frozen_list (e);
-  if (!r) {
-    scalar_obj_t so = eval_as_scalar (e);
-    r = expr_t::alloc (so);
-  }
-  return r;
 }
 
 //-----------------------------------------------------------------------
@@ -1036,234 +1085,6 @@ pub3::expr_t::alloc (scalar_obj_t so)
     ret = New refcounted<expr_str_t> (s);
   } else {
     ret = New refcounted<expr_null_t> ();
-  }
-
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool 
-pub3::expr_arithmetic_t::eval_as_bool (eval_t e) const
-{
-  return eval_as_scalar (e).to_bool ();
-}
-
-//-----------------------------------------------------------------------
-
-str 
-pub3::expr_arithmetic_t::eval_as_str (eval_t e) const
-{
-  return eval_as_scalar (e).to_str ();
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_add_t::eval_as_str (eval_t e) const
-{
-  ptr<expr_list_t> l = eval_as_frozen_list (e);
-  str s;
-  if (l) {
-    s = l->eval_as_str (e);
-  } else {
-    s = eval_internal (e).to_str ();
-  }
-  return s;
-}
-
-//-----------------------------------------------------------------------
-
-int64_t 
-pub3::expr_arithmetic_t::eval_as_int (eval_t e) const
-{
-  return eval_as_scalar (e).to_int64 ();
-}
-
-//-----------------------------------------------------------------------
-
-u_int64_t
-pub3::expr_arithmetic_t::eval_as_uint (eval_t e) const
-{
-  return eval_as_scalar (e).to_uint64 ();
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_shell_str_t::make_str (strbuf *b, vec<str> *v)
-{
-  if (b->tosuio ()->resid ()) {
-    _els->push_back (New refcounted<pub3::expr_str_t> (*b));
-    b->tosuio ()->clear ();
-    v->setsize (0);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-pub3::expr_shell_str_t::compact () const
-{
-  str s;
-  ptr<expr_t> ret;
-
-  if (_els->size () == 1 && (*_els)[0]->to_str ()) {
-    ret = (*_els)[0];
-  } else {
-    ptr<pub3::expr_shell_str_t> out = 
-      New refcounted<pub3::expr_shell_str_t> (_lineno);
-    
-    strbuf b;
-    vec<str> v;
-    
-    for (size_t i = 0; i < _els->size (); i++) {
-      ptr<expr_t> e = (*_els)[i];
-      str s = e->to_str ();
-      if (s) {
-	b << s;
-	v.push_back (s);
-      } else {
-	out->make_str (&b, &v);
-	out->add (e);
-      }
-    }
-    out->make_str (&b, &v);
-    ret = out;
-  }
-   
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_shell_str_t::eval_freeze (eval_t e) const
-{
-  str s = eval_internal (e);
-  return New refcounted<expr_str_t> (s);
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_shell_str_t::eval_as_scalar (eval_t e) const
-{
-  return scalar_obj_t (eval_internal (e));
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_shell_str_t::eval_as_str (eval_t e) const
-{
-  str s = eval_internal (e);
-  if (e.in_json ()) s = json::quote (s);
-  return s;
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_shell_str_t::eval_internal (eval_t e) const
-{
-  bool err = false;
-  DEBUG_ENTER ();
-  if (_cache_generation != e.cache_generation ()) { 
-
-    strbuf b;
-    vec<str> v;
-    for (size_t i = 0; !err && i < _els->size (); i++) {
-      str s = (*_els)[i]->eval_as_str (e);
-
-      size_t sz = b.tosuio ()->resid ();
-      if (sz > size_t (max_shell_strlen)) {
-	report_error (e, strbuf ("max-len string encountered (%zu)", sz));
-	err = true;
-      } else if (s) {
-	b << s;
-	v.push_back (s);
-      }
-    }
-
-    _cache = b;
-    _cache_generation = e.cache_generation ();
-  }
-  DEBUG_EXIT ("");
-  return _cache;
-}
-
-//-----------------------------------------------------------------------
-
-pub3::eval_t *
-pub3::eval_t::link_to_penv ()
-{
-  eval_t *ret = penv ()->get_pub3_eval ();
-  penv ()->set_pub3_eval (this);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::eval_t::unlink_from_penv (pub3::eval_t *e)
-{
-  penv ()->set_pub3_eval (e);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<slot_ref_t>
-pub3::eval_t::lhs_resolve (const expr_t *e, const str &nm)
-{
-  ptr<slot_ref_t> ret;
-  vec<const aarr_t *> &stk = _env->get_eval_stack ();
-
-  if (_stack_p == ssize_t (EVAL_INIT)) {
-    _stack_p = stk.size () - 1;
-  }
-
-  while (!ret && _stack_p >= 0) {
-    ret = stk[_stack_p--]->const_cast_hack ()->lookup_slot (nm, false);
-  }
-
-  // If an abject failure, the assignment will allocate (implicitly)
-  // a new GLOBAL variable.
-  if (!ret) {
-    aarr_t *odd; // output dict dest
-    ptr<aarr_t> edd; // env dict dest
-
-    if (_output && (odd = _output->dict_dest ())) {
-      ret = odd->lookup_slot (nm);
-    } else if ((edd = _env->get_global_aarr ())) {
-      ret = edd->lookup_slot (nm);
-    }
-  }
-
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const pval_t>
-pub3::eval_t::resolve (const expr_t *e, const str &nm)
-{
-  ptr<const pval_t> ret;
-  const vec<const aarr_t *> &stk = _env->get_eval_stack ();
-
-  if (_stack_p == ssize_t (EVAL_INIT)) {
-    _stack_p = stk.size () - 1;
-  }
-
-  // After every lookup, go down one frame in the stack, regardless
-  // of whether we found what we were looking for or not.
-  while (!ret && _stack_p >= 0) { 
-    ret = stk[_stack_p--]->lookup_ptr (nm);
-  }
-
-  if (!ret && loud ()) {
-    strbuf b ("cannot resolve variable: '%s'", nm.cstr ());
-    e->report_error (*this, b);
   }
 
   return ret;
@@ -1389,26 +1210,6 @@ pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
     out->remove (removals[i]);
   }
 }
-
-//-----------------------------------------------------------------------
-
-pub3::expr_shell_str_t::expr_shell_str_t (int lineno)
-  : expr_t (lineno), 
-    _els (expr_list_t::alloc (lineno))  {}
-
-//-----------------------------------------------------------------------
-
-pub3::expr_shell_str_t::expr_shell_str_t (const str &s, int lineno)
-  : expr_t (lineno), 
-    _els (expr_list_t::alloc (lineno)) 
-{ _els->push_back (New refcounted<expr_str_t> (s)); }
-
-//-----------------------------------------------------------------------
-
-pub3::expr_shell_str_t::expr_shell_str_t (ptr<expr_t> e, int lineno)
-  : expr_t (lineno),
-    _els (expr_list_t::alloc (lineno)) 
-{ _els->push_back (e); }
 
 str
 pub3::expr_dict_t::eval_as_str (eval_t e) const
@@ -1648,79 +1449,6 @@ pub3::expr_dict_t::to_len (size_t *s) const
 {
   *s = _dict ? _dict->size () : 0;
   return true;
-}
-
-//=======================================================================
-// regex's
-
-//-----------------------------------------------------------------------
-
-static pub3::rxx_factory_t g_rxx_factory;
-
-//-----------------------------------------------------------------------
-
-ptr<rxx>
-pub3::rxx_factory_t::compile (str body, str opts, str *errp)
-{
-  return g_rxx_factory._compile (body, opts, errp);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<rxx>
-pub3::rxx_factory_t::_compile (str body, str opts, str *errp)
-{
-  const char *b = body;
-  const char *o = "";
-  if (opts) o = opts;
-
-  ptr<rxx> *rp;
-  ptr<rxx> ret;
-
-  strbuf k ("%s-%s", b, o);
-  if ((rp = _cache[k])) { 
-    ret = *rp; 
-  } else {
-    ptr<rrxx> tmp = New refcounted<rrxx> ();
-    if (!tmp->compile (b, o)) {
-      strbuf b;
-      str err = tmp->geterr ();
-      b << "Cannot compile regex '" << b << "' with options '"
-	<< o << "': " << err << "\n";
-      if (errp) *errp = b;
-    }
-    _cache.insert (k, tmp);
-    ret = tmp;
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-pub3::expr_regex_t::expr_regex_t (int lineno) : expr_t (lineno) {}
-
-//-----------------------------------------------------------------------
-
-pub3::expr_regex_t::expr_regex_t (ptr<rxx> x, str b, str o, int l)
-  : expr_t (l), _rxx (x), _body (b), _opts (o) {}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_regex_t::eval_freeze (eval_t e) const
-{
-  return copy_stub ();
-}
-
-//-----------------------------------------------------------------------
-
-ptr<rxx>
-pub3::expr_shell_str_t::eval_as_regex (eval_t e) const
-{
-  ptr<rxx> ret;
-  str s = eval_as_str (e);
-  ret = str2rxx (&e, s, NULL);
-  return ret;
 }
 
 //-----------------------------------------------------------------------

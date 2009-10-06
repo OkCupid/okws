@@ -90,4 +90,39 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  expr_t::report_error (eval_t e, str msg) const
+  {
+    penv_t *env = e.penv ();
+    output_t *out = e.output ();
+    env->setlineno (_lineno);
+    env->warning (msg);
+    if (out) {
+      out->output_err (env, msg);
+    }
+    env->unsetlineno ();
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  bool
+  eval_t::set_loud (bool b)
+  {
+    bool c = _loud;
+    _loud = b;
+    return c;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  bool
+  eval_t::set_silent (bool b)
+  {
+    bool c = _silent;
+    _silent = b;
+    return c;
+  }
+
+  //-----------------------------------------------------------------------
+
 };

@@ -359,7 +359,7 @@ namespace pub3 {
   class expr_div_or_mod_t : public expr_t {
   public:
     expr_div_or_mod_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
-      : expr_arithmetic_t (lineno), _n (n), _d (d) {}
+      : expr_t (lineno), _n (n), _d (d) {}
 
     ptr<expr_t> eval_as_val (eval_t e)  const;
     scalar_obj_t eval_as_scalar (eval_t e) const;
@@ -645,7 +645,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-
   class expr_regex_t : public expr_t {
   public:
     expr_regex_t (lineno_t lineno);
@@ -653,11 +652,6 @@ namespace pub3 {
     expr_regex_t (ptr<rxx> x, str b, str o, lineno_t lineno);
     const char *get_obj_name () const { return "pub3::expr_regex_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
-
-    ptr<const pval_t> eval (eval_t e) const { return mkref (this); }
-    ptr<pval_t> eval_freeze (eval_t e) const;
-    str eval_as_str (eval_t e) const { return _body; }
-    ptr<rxx> eval_as_regex (eval_t e) const { return _rxx; }
 
     str to_str () const { return _body; }
     ptr<rxx> to_regex () const { return _rxx; }
@@ -669,7 +663,6 @@ namespace pub3 {
     str _body, _opts;
   };
 
-
   //-----------------------------------------------------------------------
 
   class expr_shell_str_t : public expr_t {
@@ -678,12 +671,8 @@ namespace pub3 {
     expr_shell_str_t (const str &s, lineno_t lineno);
     expr_shell_str_t (ptr<expr_t> e, lineno_t lineno);
     expr_shell_str_t (const xpub3_shell_str_t &x);
-    
-    ptr<const pval_t> eval (eval_t e) const { return eval_freeze (e); }
-    ptr<pval_t> eval_freeze (eval_t e) const;
-    scalar_obj_t eval_as_scalar (eval_t e) const;
-    str eval_as_str (eval_t e) const;
-    ptr<rxx> eval_as_regex (eval_t e) const;
+
+    ptr<const expr_t> eval_to_val (eval_t e) const;
 
     ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els->push_back (e); }
@@ -693,12 +682,12 @@ namespace pub3 {
     str type_to_str () const { return "string"; }
   protected:
     ptr<expr_list_t> _els;
-    str eval_internal (eval_t e) const;
 
   private:
     void make_str (strbuf *b, vec<str> *v);
-    mutable str _cache;
   };
+
+  // MK 10/05 leave off here
 
   //-----------------------------------------------------------------------
 
