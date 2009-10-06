@@ -709,10 +709,10 @@ namespace pub3 {
     void overwrite_with (const bindtab_t &in);
     bindtab_t &operator+= (const bindtab_t &in);
     bindtab_t &operator-= (const bindtab_t &in);
+    typedef qhash_const_iterator<str, ptr<expr_t> > const_iterator_t;
+    typedef qhash_iterator<str, ptr<expr_t> > iterator_t;
   };
 
-  typedef qhash_const_iterator<str, ptr<expr_t> > bindtab_const_iterator_t;
-  typedef qhash_iterator<str, ptr<expr_t> > bindtab_iterator_t;
 
   //-----------------------------------------------------------------------
 

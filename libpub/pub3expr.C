@@ -1021,7 +1021,7 @@ namespace pub3 {
   void
   bindtab_t::overwrite_with (const bindtab_t &t)
   {
-    bhash_const_iterator_t it (t);
+    bindtab_t::const_iterator_t it (t);
     str *k;
     ptr<const expr_t> v;
     ptr<expr_t> nv;
@@ -1045,7 +1045,7 @@ namespace pub3 {
   bindtab_t &
   bindtab_t::operator-= (const bindtab_t &in) 
   {
-    bhash_const_iterator_t it (in);
+    bindtab_t::const_iterator_t it (in);
     str *key;
     while ((key = in.next ())) { remove (*key); }
     return this;
@@ -1536,7 +1536,7 @@ namespace pub3 {
   expr_dict_t::eval_to_ref (eval_t e) const
   {
     bool sttc = true;
-    bindtab_const_iterator_t it (*this);
+    bindtab_t::const_iterator_t it (*this);
     str *key;
     ptr<const expr_t> value;
 
@@ -1581,7 +1581,7 @@ namespace pub3 {
   ptr<expr_dict_t>
   expr_dict_t::deep_copy () const
   {
-    bindtab_const_iterator_t it (*this);
+    bindtab_t::const_iterator_t it (*this);
     str *key;
     ptr<const expr_t> value;
     ptr<expr_dict_t> ret = New refcounted<expr_dict_t> ();
