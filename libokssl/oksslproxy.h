@@ -33,6 +33,7 @@ namespace okssl {
     virtual void force_read ()  { panic ("not implemented!\n"); }
     void force_eof () { _eof = true; poke (); }
     void set_eof () ;
+    bool allow_unclean_shutdowns () const { return true; }
   protected:
     SSL *_ssl;
     base_proxy_t *_other_way;

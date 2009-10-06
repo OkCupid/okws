@@ -289,7 +289,6 @@ namespace okssl {
 	  prx.cancel ();
 	if (_logd)  {
 	  _logd->log_ssl (cli, cipher, msg);
-	  _logd->flush ();
 	}
       }
       close (fds[0]);

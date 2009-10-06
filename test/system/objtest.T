@@ -60,6 +60,8 @@ okclnt_objtest_t::process_T ()
 {
   tvars {
     pub3::obj_t o;
+    pub3::obj_t row;
+    str s;
   }
   
   o("z") = 1;
@@ -73,6 +75,16 @@ okclnt_objtest_t::process_T ()
   out << o("y")[2].to_int () << "\n";
   out << o("y")[1].to_int () << "\n";
   out << o("x")[3].to_str () << "\n";
+
+  for (i = 0; i < 20; i++) {
+    row.refer_to (o("badass")[i]);
+    row("dog") = strbuf ("DOG-#-%d", i);
+    row("cat") = "meow";
+    row("lion")[2]("giraffe") = "moo";
+  }
+  s = o.to_str ();
+
+  out << "\n\no = " <<  s << "\n";
 
   output (out);
 }

@@ -449,7 +449,7 @@ logd_t::turn ()
    
     if (access2) delete access2;
     if (error2) delete error2;
-    if (ssl2) return ssl2;
+    if (ssl2) delete ssl2;
   } 
 
   // else access2 autodeleted

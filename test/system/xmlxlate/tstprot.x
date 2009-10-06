@@ -77,6 +77,12 @@ struct aston_t {
        motes_t questions;
 };
 
+struct match_arg_t {
+       unsigned hyper h1;
+       unsigned hyper h2;
+       bool sub;
+};
+
 
 namespace RPC {
 
@@ -115,6 +121,9 @@ program TST_PROG {
 		
 		cc_t
 		TST_RPC10(rpc_10_arg_t) = 10;
+
+		unsigned hyper 
+		TST_RPC11(match_arg_t) = 11;
 
 	} = 1;
 } = 34291;

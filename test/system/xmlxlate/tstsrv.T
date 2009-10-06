@@ -89,8 +89,17 @@ tstsrv_t::dispatch (svccb *sbp)
 	res.push_back (a->bb);
       }
       sbp->replyref (res);
-      break;
     }
+    break;
+  case TST_RPC11:
+    {
+      const match_arg_t *a = sbp->Xtmpl getarg<match_arg_t> ();
+      u_int64_t o = a->h1;
+      if (a->sub) { o-= a->h2; }
+      else { o += a->h2; }
+      sbp->replyref (o);
+    }
+    break;
   default:
     sbp->reject (PROC_UNAVAIL);
     break;

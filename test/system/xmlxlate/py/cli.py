@@ -35,6 +35,17 @@ res = server.xdr.xlate (
     { "hostname" : "127.0.0.1",
       "port" : port,
       "program" : "tst_prog_1",
+      "procno" : C.TST_RPC11,
+      "arg" : { "h1" : "ui8:10000000000",
+                "h2" :  "ui8:9999999992",
+                "sub" : True }
+      } )
+print res
+
+res = server.xdr.xlate (
+    { "hostname" : "127.0.0.1",
+      "port" : port,
+      "program" : "tst_prog_1",
       "procno" : C.TST_RPC9,
       "arg" : { "id" : "ui8:1",
                 "questions" : [ { "questionid" : 10, "data" : "ui4:20" } ] }

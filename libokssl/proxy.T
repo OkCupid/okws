@@ -28,7 +28,7 @@ namespace okssl {
   {
     if (!_eof) {
       _eof = true;
-      _other_way->force_eof ();
+      if (_other_way) _other_way->force_eof (); 
     }
   }
   
