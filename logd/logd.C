@@ -437,7 +437,7 @@ logd_t::turn ()
 
   if (logfile_setup (&access2, parms.accesslog, "access") &&
       logfile_setup (&error2, parms.errorlog, "error") &&
-      logfile_setup (&ssl2, parms.errorlog, "ssl")) {
+      logfile_setup (&ssl2, parms.ssllog, "ssl")) {
 
     ret = true;
     close_logfiles ();
