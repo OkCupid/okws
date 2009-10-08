@@ -47,6 +47,7 @@ namespace pub3 {
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<expr_t> alloc (scalar_obj_t so);
     lineno_t lineno () const { return _lineno; }
+    static str safe_to_str (ptr<const expr_t> x, bool q = true);
 
     //------- Evaluation ------------------------------------------
     //
@@ -80,7 +81,7 @@ namespace pub3 {
     virtual ptr<const expr_list_t> to_list () const { return NULL; }
     virtual ptr<expr_list_t> to_list () { return NULL; }
 
-    virtual scalar_obj_t to_scalar () const { return scalar_obj_t (); }
+    virtual scalar_obj_t to_scalar () const;
     virtual str to_identifier () const { return NULL; }
     virtual str to_str (bool q = false) const { return NULL; }
     virtual bool to_bool () const { return false; }
@@ -283,7 +284,7 @@ namespace pub3 {
 
   class expr_EQ_t : public expr_logical_t {
   public:
-    expr_EQ_t (ptr<expr_t> o1, ptr<expr_t> o2, bool pos, int ln) 
+    expr_EQ_t (ptr<expr_t> o1, ptr<expr_t> o2, bool pos, lineno_t ln) 
       : expr_logical_t (ln), _o1 (o1), _o2 (o2), _pos (pos) {}
     expr_EQ_t (const xpub3_eq_t &x);
 
@@ -614,8 +615,6 @@ namespace pub3 {
 
     void push_front (ptr<expr_t> e);
 
-    // to JSON-style string
-
     static ptr<expr_list_t> alloc (int l) 
     { return New refcounted<expr_list_t> (l); }
     static ptr<expr_list_t> alloc (const xpub3_expr_list_t &x) 
@@ -628,6 +627,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_list_t"; }
 
     str type_to_str () const { return "list"; }
+    ptr<mref_t> eval_to_ref (eval_t e) const;
   private:
     bool fixup_index (ssize_t *ind, bool lax = false) const;
   };
@@ -687,8 +687,6 @@ namespace pub3 {
     void make_str (strbuf *b, vec<str> *v);
   };
 
-  // MK 10/05 leave off here
-
   //-----------------------------------------------------------------------
 
   class binding_t {
@@ -713,15 +711,17 @@ namespace pub3 {
     typedef qhash_iterator<str, ptr<expr_t> > iterator_t;
   };
 
-
   //-----------------------------------------------------------------------
 
   class bindlist_t : public vec<binding_t> {
   public:
+    bindlist_t (lineno_t l) : _lineno (l) {}
     bindlist_t (const xpub3_bindlist_t &x);
     static ptr<bindlist_t> alloc ();
     void to_xdr (xpub3_bindlist_t *x);
     void add (binding_t b);
+  private:
+    lineno_t _lineno;
   };
 
   //-----------------------------------------------------------------------
@@ -731,8 +731,8 @@ namespace pub3 {
   public:
     expr_dict_t (lineno_t lineno = -1) : expr_t (lineno) {}
     expr_dict_t (const xpub3_dict_t &x);
-    expr_dict_t (ptr<aarr_arg_t> d, lineno_t lineno = -1)
-      : expr_t (lineno), _dict (d) {}
+
+    static ptr<expr_dict_t> parse_alloc ();
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;
@@ -752,83 +752,23 @@ namespace pub3 {
     ptr<expr_dict_t> to_dict () { return mkref (this); }
     ptr<const expr_dict_t> to_dict () const { return mrkef (this); }
 
-    ptr<aarr_t> to_dict () { return _dict; }
-    ptr<aarr_arg_t> dict () { return _dict; }
-    ptr<aarr_arg_t> to_aarr () { return _dict; }
-    ptr<const aarr_t> to_dict () const { return _dict; }
-    ptr<const aarr_arg_t> dict () const { return _dict; }
-    ptr<const aarr_arg_t> to_aarr () const { return _dict; }
-    ptr<expr_dict_t> copy_stub_dict () const;
     bool to_bool () const { return size () > 0; }
-
     void replace (const str &nm, ptr<expr_t> x);
-
-    ptr<const expr_dict_t> to_expr_dict () const { return mkref (this); }
-    ptr<expr_dict_t> to_expr_dict () { return mkref (this); }
+    ptr<const expr_dict_t> to_dict () const { return mkref (this); }
+    ptr<expr_dict_t> to_dict () { return mkref (this); }
 
     str type_to_str () const { return "dict"; }
+    ptr<mref_t> eval_to_ref (eval_t e) const;
+    ptr<expr_dict_t> deep_copy () const;
   }; 
-
-  //-----------------------------------------------------------------------
-
-  //
-  // A system embedded deep within OkCupid code uses a customized
-  // form of dictionary, that inherits from aarr_arg_t.  This template
-  // allows us to accommodate such a subclass.
-  //
-  template<class D>
-  class expr_dict_tmplt_t : public expr_dict_t {
-  public:
-    expr_dict_tmplt_t () : expr_dict_t (), _dict_tmplt (New refcounted<D> ()) 
-    {
-      _dict = _dict_tmplt;
-    }
-    expr_dict_tmplt_t (ptr<D> d) : expr_dict_t (d), _dict_tmplt (d) {}
-    ptr<D> dict_tmplt () { return _dict_tmplt; }
-    ptr<const D> dict_tmplt () const { return _dict_tmplt; }
-  protected:
-    ptr<D> _dict_tmplt;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class inline_var_t : public pfile_el_t {
-  public:
-    inline_var_t (ptr<pub3::expr_t> e, int l) 
-      : _expr (e), _lineno (l) {}
-    inline_var_t (const xpub3_inline_var_t &x);
-    void output (output_t *o, penv_t *e) const;
-    pfile_el_type_t get_type () const { return PFILE_PUB3_VAR; }
-    const char *get_obj_name () const { return "pub3::inline_var_t"; }
-    bool to_xdr (xpub_obj_t *x) const;
-  private:
-    const ptr<expr_t> _expr;
-    const int _lineno;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class pstr_el_t : public ::pstr_el_t {
-  public:
-    pstr_el_t (ptr<expr_t> e, lineno_t lineno) : _expr (e), _lineno (lineno) {}
-    pstr_el_t (const xpub3_pstr_el_t &x);
-    void eval_obj (pbuf_t *s, penv_t *e, u_int d) const;
-    pfile_el_t *to_pfile_el ();
-    const char *get_obj_name () const { return "pub3::pstr_el_t"; }
-    bool to_xdr (xpub_pstr_el_t *x) const;
-    void output (output_t *o, penv_t *e) const;
-
-  private:
-    const ptr<expr_t> _expr;
-    int _lineno;
-  };
 
   //-----------------------------------------------------------------------
 
   class expr_assignment_t : public expr_t {
   public:
-    expr_assignment_t (ptr<pub3::expr_t> lhs, ptr<pub3::expr_t> rhs, int l);
+    expr_assignment_t (ptr<expr_t> lhs, ptr<expr_t> rhs, lineno_t l);
     expr_assignment_t (const xpub3_assignment_t &x);
+    static ptr<expr_assignment_t> alloc (ptr<expr_t> l, ptr<expr_t> r);
     const char *get_obj_name () const { return "pub3::assignment_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
     ptr<const expr_t> eval_to_val (eval_t e) const;

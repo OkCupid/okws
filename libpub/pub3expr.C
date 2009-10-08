@@ -1,4 +1,3 @@
-
 #include "pub3expr.h"
 #include "parseopt.h"
 #include "okformat.h"
@@ -6,6 +5,7 @@
 #include "pescape.h"
 #include "precycle.h"
 #include "pub3eval.h"
+#include "pub3parse.h"
 
 //-----------------------------------------------------------------------
 
@@ -71,10 +71,48 @@ namespace pub3 {
 
   //====================================================================
 
+  static lineno_t plineno ()
+  { return parser_t::current ()->lineno (); }
+
+  //====================================================================
+
   // By default, we are already evaluated -- this is true for static
   // values like bools, strings, and integers.
   ptr<const expr_t> expr_t::eval_to_val (eval_t e) const 
   { return mkref (*this); }
+
+  //--------------------------------------------------------------------
+  
+  ptr<expr_t>
+  expr_t::alloc (scalar_obj_t so)
+  {
+    ptr<expr_t> ret;
+    int64_t i;
+    u_int64_t u;
+    str s;
+    
+    if (so.to_int64 (&i)) {
+      ret = expr_int_t::alloc (i);
+    } else if (so.to_uint64 (&u)) {
+      ret = New refcounted<expr_uint_t> (u);
+    } else if ((s = so.to_str ())) {
+      ret = New refcounted<expr_str_t> (s);
+    } else {
+      ret = New refcounted<expr_null_t> ();
+    }
+    return ret;
+  }
+
+  //-------------------------------------------------------------------
+
+  str
+  expr_t::safe_to_str (ptr<const expr_t> x, bool q)
+  {
+    str ret;
+    if (!x) x = expr_null_t::alloc ();
+    ret = x->to_str (true);
+    return ret;
+  }
 
   //--------------------------------------------------------------------
 
@@ -122,6 +160,10 @@ namespace pub3 {
     }
     return ret;
   }
+
+  //---------------------------------------------------------------------
+
+  scalar_obj_t expr_t::to_scalar () const { return to_str (); }
   
   //====================================================================
 
@@ -841,10 +883,7 @@ namespace pub3 {
     vec<str> v;
     size_t sz = size ();
     for (size_t i = 0; i < szi++) {
-      ptr<const expr_t> x = (*this)[i];
-      str s;
-      if (x) { s = x->to_str (true); }
-      v.push_back (json::safestr (s));
+      v.push_back (expr_t::safe_to_str ((*this)[i]));
     }
     str ret = vec2str (v, '[', ']');
     return ret;
@@ -865,6 +904,42 @@ namespace pub3 {
     return ret;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<mref_t>
+  expr_list_t::eval_to_ref (eval_t e) const
+  {
+    bool sttc = true;
+    size_t l = len ();
+
+    for (size_t i = 0; sttc && i < l ; i++) {
+      if ((*this)[i] && (*this)[i]->is_static ()) {
+	sttc = false;
+      }
+    }
+    ptr<expr_t> out;
+
+    if (sttc) {
+      out = expr_cow_t::alloc (mkref (*this));
+    } else {
+      ptr<expr_list_t> nl = New refcounted<expr_list_t> ();
+      for (size_t i = 0; i < l; i++) {
+	ptr<expr_t> nv;
+	ptr<mref_t> r;
+	ptr<expr_t> value = (*this)[i];
+
+	if (!value || !(r = value->eval_to_ref (e)) || 
+	    !(nv = r->get_value ())) {
+	  nv = expr_null_t::alloc ();
+	}
+	nl->push_back (nv);
+      }
+      out = nl;
+    }
+    ptr<const_mref_t> ret = New refcounted<const_ref_t> (out);
+    return ret;
+  }
+  
   //====================================================================
 
   static rxx_factory_t g_rxx_factory;
@@ -1014,10 +1089,6 @@ namespace pub3 {
   
   //====================================================================
 
-  void bindlist_t::add (binding_t b) { push_back (b); }
-  
-  //--------------------------------------------------------------------
-
   void
   bindtab_t::overwrite_with (const bindtab_t &t)
   {
@@ -1053,490 +1124,20 @@ namespace pub3 {
 
   //====================================================================
 
-};
+  void bindlist_t::add (binding_t b) { push_back (b); }
 
-//-----------------------------------------------------------------------
+  //--------------------------------------------------------------------
 
-bool
-pub3::expr_ref_t::eval_as_null (eval_t e) const
-{
-  bool q = e.set_silent (true);
-  ptr<const pval_t> v = eval_internal (e);
-  bool ret = v ? v->is_null () : true;
-  e.set_silent (q);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-pub3::expr_t::alloc (scalar_obj_t so)
-{
-  ptr<expr_t> ret;
-  int64_t i;
-  u_int64_t u;
-  str s;
-
-  if (so.to_int64 (&i)) {
-    ret = expr_int_t::alloc (i);
-  } else if (so.to_uint64 (&u)) {
-    ret = New refcounted<expr_uint_t> (u);
-  } else if ((s = so.to_str ())) {
-    ret = New refcounted<expr_str_t> (s);
-  } else {
-    ret = New refcounted<expr_null_t> ();
-  }
-
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_dict_t::add (binding_t p)
-{
-  (*this)[p.name ()] = p.expr ();
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::inline_var_t::output (output_t *o, penv_t *e) const
-{
-  eval_t eval (e, o);
-  str s;
-  if (!_expr) { 
-    /* noop */
-  } else if ((s = _expr->eval_as_str (eval))) {
-    o->output (e, s, false);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::inline_var_t::dump2 (dumper_t *d) const
-{
-  DUMP(d, "pub3::inline_var_t (line=" << _lineno << ")");
-}
-
-//-----------------------------------------------------------------------
-
-pub3::eval_t::eval_t (penv_t *e, output_t *o)
-  : _env (e), 
-    _output (o), 
-    _loud (false), 
-    _silent (false), 
-    _stack_p (EVAL_INIT),
-    _in_json (false) {}
-
-//-----------------------------------------------------------------------
-
-pub3::eval_t::~eval_t () {}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_dict_t::eval_freeze (eval_t e) const
-{
-  ptr<expr_dict_t> ret = New refcounted<expr_dict_t> (_lineno);
-  if (_dict) {
-    e.eval_freeze_dict (_dict, ret->dict ());
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::eval_t::eval_freeze_vec (const vec_iface_t *in, vec_iface_t *out)
-{
-  ptr<pval_t> v;
-  ptr<expr_t> e;
-  for (size_t i = 0; i < in->size (); i++) {
-    v = eval_freeze (in->lookup (i));
-    out->push_back (v);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::eval_t::eval_freeze (ptr<const pval_t> in)
-{
-  ptr<pval_t> out;
-  ptr<const expr_t> e;
-  if (!in) { 
-    /* noop */
-  } else if ((e = in->to_expr ())) {
-    out = e->eval_freeze (*this);
-  } else {
-    out = in->copy_stub ();
-  }
-  return out;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::eval_t::eval_freeze_dict (const aarr_t *in, aarr_t *out)
-{
-  ptr<pval_t> val, v;
-  ptr<expr_t> e;
-  const nvtab_t *nvt = in->nvtab ();
-
-  vec<binding_t *> additions;
-  vec<str> removals;
-
-  // To make this deterministic, we must not make any changes
-  // to out as we go through the table.  Otherwise, the behavior
-  // changes based on the sort order of the hash table, which isn't
-  // pretty.  Just do all changes at the end, after all evaluations
-  // have completed....
-  for (binding_t *p = nvt->first (); p; p = nvt->next (p)) {
-    val = eval_freeze (p->value_ptr ());
-    if (val) {
-      additions.push_back (New nvpair_t (p->name (), val));
-    } else {
-      removals.push_back (p->name ());
-    }
-  }
-
-  for (size_t i = 0; i < additions.size (); i++) {
-    out->add (additions[i]);
-  }
-
-  for (size_t i = 0; i < removals.size (); i++) {
-    out->remove (removals[i]);
-  }
-}
-
-str
-pub3::expr_dict_t::eval_as_str (eval_t e) const
-{
-  vec<str> v;
-  DEBUG_ENTER ();
-
-  e.set_in_json ();
-
-  if (_dict) {
-    const nvtab_t *nvt = _dict->nvtab ();
-    for (const binding_t *p = nvt->first (); p; p = nvt->next (p)) {
-      str valstr;
-      ptr<const pval_t> pv = p->value_ptr ();
-      ptr<const expr_t> x;
-      ptr<const pub_scalar_t> ps;
-
-      if (!pv) {
-	/* noop */ 
-      } else if ((x = pv->to_expr ())) {
-	valstr = x->eval_as_str (e);
-      } else if ((ps = pv->to_pub_scalar ())) {
-	valstr = ps->obj ().to_str ();
-      }
-      valstr = json::safestr (valstr);
-      str namestr = json::quote (p->name ());
-      strbuf b ("%s : %s", namestr.cstr (), valstr.cstr ());
-      v.push_back (b);
-    }
-  }
-  str ret = vec2str (v, '{', '}');
-  DEBUG_EXIT (ret);
-  return ret;
-}
-
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_dict_t::to_str () const
-{
-  vec<str> v;
-  DEBUG_ENTER ();
-  if (_dict) {
-    const nvtab_t *nvt = _dict->nvtab ();
-    for (const nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
-      str valstr;
-      ptr<const pval_t> pv = p->value_ptr ();
-      ptr<const expr_t> x;
-      ptr<const pub_scalar_t> ps;
-      if (!pv) {
-	/* noop */ 
-      } else if ((x = pv->to_expr ())) {
-	valstr = x->to_str ();
-      } else if ((ps = pv->to_pub_scalar ())) {
-	valstr = ps->obj ().to_str ();
-      }
-      valstr = json::safestr (valstr);
-      strbuf b ("%s : %s", p->name ().cstr (), valstr.cstr ());
-      v.push_back (b);
-    }
-  }
-  str ret = vec2str (v, '{', '}');
-  DEBUG_EXIT (ret);
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t 
-pub3::expr_dict_t::to_scalar () const
-{
-  DEBUG_ENTER ();
-  scalar_obj_t so = scalar_obj_t (to_str ());
-  DEBUG_EXIT ("");
-  return so;
-}
-    
-//=======================================================================
-// Shortcuts
-
-ptr<const aarr_t>
-pub3::expr_t::eval_as_dict (eval_t e) const
-{
-  ptr<const pval_t> v;
-  ptr<const expr_t> x;
-  ptr<const aarr_t> ret;
-
-  if (!(v = eval (e))) {
-    /* noop */
-  } else if ((x = v->to_expr ())) {
-    ret = x->to_dict ();
-  } else {
-    ret = v->to_aarr ();
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<const vec_iface_t>
-pub3::expr_t::eval_as_vec (eval_t e) const
-{
-  ptr<const pval_t> v = eval (e);
-  ptr<const vec_iface_t> ret;
-  if (v) ret = v->to_vec_iface ();
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool 
-pub3::expr_t::eval_as_vec_or_dict (eval_t e, ptr<const vec_iface_t> *vp, 
-				   ptr<const aarr_t> *dp) const
-{
-  ptr<const pval_t> v;
-  ptr<const expr_t> x;
-
-  bool ret = false;
-
-  if (!(v = eval (e))) {
-    ret = false;
-  } else if ((*vp = v->to_vec_iface ())) {
-    ret = true;
-  } else if ((x = v->to_expr ()) && (*dp = x->to_dict ())) {
-    ret = true; 
-  } else if ((*dp = v->to_aarr ())) {
-    ret = true;
-  }
-
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t
-pub3::expr_t::eval_as_scalar (eval_t e) const
-{
-  ptr<const pval_t> v;
-  ptr<const expr_t> x;
-  ptr<const pub_scalar_t> ps;
-  scalar_obj_t ret;
-
-  DEBUG_ENTER();
-  v = eval_freeze (e);
-
-  // For pub v3 objects, they should resolve to an expression...
-  if (v && (x = v->to_expr ())) {
-    ret = x->to_scalar ();
-
-    // Some pub v1 or v2 objects are actually wrapped scalars.
-  } else if (v && (ps = v->to_pub_scalar ())) {
-    ret = ps->obj ();
-
-    // And generic pub v1 and v2 are evaluable to scalars...
-  } else if (v && v->eval_to_scalar (e.penv (), &ret)) {
-    /* noop; all good! */
-
-  } else if (e.loud ()) {
-    strbuf b ("cannot convert to scalar");
-    report_error (e, b);
-  }
-
-  DEBUG_EXIT ("");
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_t::eval_as_bool (eval_t e) const
-{
-  scalar_obj_t so = eval_as_scalar (e);
-  return so.to_bool ();
-}
-
-//-----------------------------------------------------------------------
-
-int64_t
-pub3::expr_t::eval_as_int (eval_t e) const
-{
-  scalar_obj_t so = eval_as_scalar (e);
-  int64_t r = 0;
-
-  if (!so.to_int64 (&r) && e.loud ()) {
-    str tmp = so.to_str ();
-    if (!tmp) tmp = "<none>";
-    strbuf b ("cannot convert '%s' to int64", tmp.cstr ());
-    report_error (e, b);
-  }
-
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-u_int64_t
-pub3::expr_t::eval_as_uint (eval_t e) const
-{
-  scalar_obj_t so = eval_as_scalar (e);
-  u_int64_t r = 0;
-
-  if (!so.to_uint64 (&r) && e.loud ()) {
-    str tmp = so.to_str ();
-    if (!tmp) tmp = "<none>";
-    strbuf b ("cannot convert '%s' to uint64", tmp.cstr ());
-    report_error (e, b);
-  }
-
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-str
-pub3::expr_t::eval_as_str (eval_t e) const
-{
-  str r;
-  ptr<const pval_t> v;
-  ptr<const expr_t> x;
-
-  if (!(v = eval_freeze (e))) {
-    /* noop */
-  } else if ((x = v->to_expr ())) {
-    r = x->to_str ();
-  } else {
-    // shouldn't get here!
-    r = eval_as_scalar (e).to_str ();
-  }
-  return r;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_dict_t::to_len (size_t *s) const 
-{
-  *s = _dict ? _dict->size () : 0;
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_dict_t>
-pub3::expr_dict_t::copy_stub_dict () const
-{
-  return mkref (const_cast<expr_dict_t *> (this));
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::expr_dict_t::replace (const str &nm, ptr<expr_t> x)
-{
-  dict ()->replace (nm, x);
-}
-
-//-----------------------------------------------------------------------
-
-//-----------------------------------------------------------------------
-
-pub3::expr_assignment_t::expr_assignment_t (ptr<pub3::expr_t> lhs,
-					    ptr<pub3::expr_t> rhs,
-					    int lineno)
-  : _lhs (lhs), _rhs (rhs), _lineno (lineno) {}
-
-//-----------------------------------------------------------------------
-
-ptr<pval_t>
-pub3::expr_assignment_t::eval_internal (eval_t e) const
-{
-  ptr<const pval_t> rhs;
-  ptr<pval_t> mrhs;
-  ptr<slot_ref_t> slot;
-  ptr<expr_ref_t> rf;
-  ptr<const expr_t> x;
-
-  if (_rhs) { mrhs = _rhs->eval_freeze (e); }
-
-  assert (_lhs);
-  ptr<expr_t> mlhs = _lhs->const_cast_hack ();
-
-  if (!(rf = mlhs->to_ref ())) {
-    report_error (e, "left-hand side of assignment was not a reference");
-  } else if (!(slot = rf->lhs_deref (&e))) {
-    report_error (e, "left-hand side of assignment was not settable");
-  } else {
-    slot->set_pval (mrhs);
-  }
-
-  return mrhs;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-pub3::expr_t::const_cast_hack () const
-{
-  return mkref (const_cast<expr_t *> (this));
-}
-
-
-//-----------------------------------------------------------------------
-namespace pub3 {
-
-  //-----------------------------------------------------------------------
-
-  ptr<pair_t> pair_t::alloc (const str &k, ptr<expr_t> x)
-  { return New refcounted<pair_t> (k, x); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<expr_t> expr_t::copy () const 
-  { return expr_cow_t::alloc (mkref (this)); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<expr_cow_t> expr_cow_t::alloc (ptr<const expr_t> x)
-  { return New refcounted<expr_cow_t> (x); }
-
-  //-----------------------------------------------------------------------
+  ptr<bindlist_t> bindlist_t::alloc () 
+  { return New refcounted<bindlist_t> (plineno ()); }
+  
+  //====================================================================
 
   ptr<mref_t>
   expr_dict_t::eval_to_ref (eval_t e) const
   {
     bool sttc = true;
-    bindtab_t::const_iterator_t it (*this);
+    const_iterator_t it (*this);
     str *key;
     ptr<const expr_t> value;
 
@@ -1581,7 +1182,7 @@ namespace pub3 {
   ptr<expr_dict_t>
   expr_dict_t::deep_copy () const
   {
-    bindtab_t::const_iterator_t it (*this);
+    const_iterator_t it (*this);
     str *key;
     ptr<const expr_t> value;
     ptr<expr_dict_t> ret = New refcounted<expr_dict_t> ();
@@ -1593,6 +1194,105 @@ namespace pub3 {
     }
     return ret;
   }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_dict_t> expr_dict_t::parse_alloc ()
+  { return New refcounted<expr_dict_t> (plineno ()); }
+  
+  //--------------------------------------------------------------------
+
+  void
+  expr_dict_t::add (binding_t p)
+  {
+    (*this)[p.name ()] = p.expr ();
+  }
+
+  //--------------------------------------------------------------------
+  
+  str
+  expr_dict_t::to_str (bool q) const
+  {
+    vec<str> v;
+    const_iterator_t it (*this);
+    str *key;
+    ptr<const expr_t> val;
+    str ret;
+
+    while ((key = it.next (&val))) {
+      str vs = expr_t::safe_to_str (val);
+      str ks = json::quote (key);
+      strbuf b ("%s : %s", ks.cstr (), vs.cstr ());
+      v.push_back (b);
+    }
+    str ret = vec2str (v, '{', '}');
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  bool
+  expr_dict_t::to_len (size_t *s) const 
+  {
+    *s = size ();
+    return true;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  void
+  expr_dict_t::replace (const str &nm, ptr<expr_t> x)
+  {
+    (*this)[nm] = x;
+  }
+
+  //====================================================================
+
+  expr_assignment_t::expr_assignment_t (ptr<expr_t> lhs, ptr<expr_t> rhs,
+					lineno_t lineno)
+    : _lhs (lhs), _rhs (rhs), _lineno (lineno) {}
+
+  //---------------------------------------------------------------------
+
+  ptr<expr_assignment_t> 
+  expr_assignment_t::alloc (ptr<expr_t> l, ptr<expr_t> r)
+  { return New refcounted<expr_assignment_t> (l, r, plineno ()); }
+
+  //---------------------------------------------------------------------
+  
+  ptr<mref_t>
+  expr_assignment_t::eval_as_ref (eval_t e) const
+  {
+    ptr<mref_t> rhs = _rhs->eval_as_ref (e);
+    ptr<mref_t> lhs = _lhs->eval_as_ref (e);
+    ptr<mref_t> ret;
+    ptr<expr_t> v;
+    if (!lhs) {
+      report_error (e, "error in assignment: LHS evaluates to null");
+    } else if (!(v = rhs->get_value ())) {
+      report_error (e, "error in assignment: RHS evaluates to null");
+    } else if (!(lhs->set_value (v))) {
+      report_error (e, "error in assignment: invalid LHS");
+    } else {
+      ret = rhs;
+    }
+    return ret;
+  }
+  
+  //====================================================================
+  
+  ptr<pair_t> pair_t::alloc (const str &k, ptr<expr_t> x)
+  { return New refcounted<pair_t> (k, x); }
+
+  //====================================================================
+
+  ptr<expr_t> expr_t::copy () const 
+  { return expr_cow_t::alloc (mkref (this)); }
+
+  //====================================================================
+
+  ptr<expr_cow_t> expr_cow_t::alloc (ptr<const expr_t> x)
+  { return New refcounted<expr_cow_t> (x); }
 
   //=======================================================================
 

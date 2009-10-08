@@ -73,6 +73,7 @@
 %type <p3expr> p3_null;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_locals_arg;
+%type <p3bl> p3_bindlist p3_bindlist_bindings;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
@@ -299,7 +300,7 @@ p3_expr: p3_assignment_expr;
 p3_assignment_expr: p3_conditional_expr { $$ = $1; }
 	       | p3_unary_expr '=' p3_assignment_expr
 	       {
-                  $$ = New refcounted<pub3::expr_assignment_t> ($1, $3, NULL);
+                  $$ = pub3::expr_assignment_t::alloc ($1, $3);
 	       }
 	       ;
 
@@ -585,6 +586,8 @@ p3_floating_constant: T_P3_FLOAT
 p3_dictionary: '{' p3_bindings_opt '}' { $$ = $2; }
 	       ;
 
+p3_bindlist: '{' p3_bindlist_bindings '}' { $$ = $2; }
+
 p3_bind_value_opt : /* empty */ { $$ = NULL; }
 	| p3_bindchar p3_expr { $$ = $2; }
 	;
@@ -592,6 +595,18 @@ p3_bind_value_opt : /* empty */ { $$ = NULL; }
 p3_bindings_opt: 
          /* empty */  { $$ = pub3::expr_dict_t::parse_alloc (); }
 	| p3_bindings { $$ = $1; }
+	;
+
+p3_bindlist_bindings: p3_binding 
+        { 
+	   $$ = pub3::bindlist_t::alloc (); 
+	   $$->add ($1);
+        }
+        | p3_bindlist_bindings p3_binding
+	{
+	   $$ = $1;
+	   $$->add ($2;
+	}
 	;
 
 p3_bindings: p3_binding
@@ -723,8 +738,8 @@ p3_include: p3_include_or_load p3_flexi_tuple
            $$ = i;
 	};
 
-p3_locals_arg: '(' p3_dictionary ')' { $$ = $2; }
-	    | p3_dictionary { $$ = $1; }
+p3_locals_arg: '(' p3_bindlist ')' { $$ = $2; }
+	    | p3_bindlist { $$ = $1; }
 	    ;
 
 p3_universals: T_P3_UNIVERSALS p3_locals_arg
