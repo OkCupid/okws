@@ -40,6 +40,10 @@ bool convertdouble (const str &x, double *dp);
 //-----------------------------------------------------------------------
 
 class scalar_obj_t {
+public:
+  typedef enum { TYPE_NONE = 0, TYPE_STR = 1, TYPE_INT = 2, 
+		 TYPE_UINT = 3, TYPE_DOUBLE = 4, TYPE_INF = 5 } type_t;
+
 private:
 
   //-----------------------------------------------------------------------
@@ -48,6 +52,8 @@ private:
   public:
     _p_t ();
     _p_t (const str &s);
+    
+    typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
 
     int to_int () const;
     int64_t to_int64 () const;
@@ -72,11 +78,6 @@ private:
     void clear ();
     type_t natural_type () const;
     void set_inf ();
-    
-    typedef enum { CNV_NONE = 0, CNV_OK = 1, CNV_BAD = 2 } cnv_status_t;
-
-    typedef enum { TYPE_NONE = 0, TYPE_STR = 1, TYPE_INT = 2, 
-		   TYPE_UINT = 3, TYPE_DOUBLE = 4, TYPE_INF = 5 } type_t;
     
   private:
     str _s;
@@ -121,7 +122,7 @@ public:
   void set_u (u_int64_t u) { _p->set_u (u); }
   void set_i (int64_t i) { _p->set_i (i); }
   void set_inf () { _p->set_inf (); }
-  bool is_inf () const { return natural_type () == _p_t::TYPE_INF; }
+  bool is_inf () const { return natural_type () == TYPE_INF; }
 
   void add (const char *c, size_t l);
   void add (const str &s);

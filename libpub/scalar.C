@@ -315,14 +315,14 @@ scalar_obj_t::operator+ (const scalar_obj_t &s) const
   
   scalar_obj_t ret;
 
-  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+  if (me == TYPE_STR || him == TYPE_STR) {
     strbuf b;
     str s1 = to_str ();
     str s2 = s.to_str ();
     b << s1 << s2;
     ret.set (b);
 
-  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = s.to_double ();
     double r = d1 + d2;
@@ -356,10 +356,10 @@ scalar_obj_t::operator- (const scalar_obj_t &s) const
   
   scalar_obj_t ret;
 
-  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+  if (me == TYPE_STR || him == TYPE_STR) {
     /* can't subtract strings! */
 
-  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = s.to_double ();
     double r = d1 - d2;
@@ -393,12 +393,12 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
   type_t him = o.natural_type ();
   int res;
 
-  if (me == _p_t::TYPE_STR || them == _p_t::TYPE_STR) {
+  if (me == TYPE_STR || them == TYPE_STR) {
     str s1 = to_str ();
     str s2 = o.to_str ();
     res = s1.cmp (s2);
 
-  } else if (me == _p_t::TYPE_DOUBLE || them == _p_t::TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || them == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = o.to_double ();
 
@@ -439,17 +439,17 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
   str s1, s2;
   scalar_obj_t out;
 
-  if (me == _p_t::TYPE_STR && o.to_int64 (&i2) && i2 < 0x100) {
+  if (me == TYPE_STR && o.to_int64 (&i2) && i2 < 0x100) {
     strbuf b;
     for (int64_t i = 0; i < i2; i++) {
       b << s1;
     }
     out.set (b);
 
-  } else if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+  } else if (me == TYPE_STR || him == TYPE_STR) {
     /* noop!!! */
 
-  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = to_double ();
     out.set (d1 * d2);
@@ -499,10 +499,10 @@ scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div)
   scalar_obj_t out;
   bool ok = true;
 
-  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+  if (me == TYPE_STR || him == TYPE_STR) {
     /* noop!!! */
 
-  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = to_double ();
 
@@ -540,10 +540,10 @@ scalar_obj_t::operator% (const scalar_obj_t &o) const
   scalar_obj_t out;
   bool ok = true;
 
-  if (me == _p_t::TYPE_STR || him == _p_t::TYPE_STR) {
+  if (me == TYPE_STR || him == TYPE_STR) {
     /* noop!!! */
 
-  } else if (me == _p_t::TYPE_DOUBLE || him == _p_t::TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = to_double ();
 

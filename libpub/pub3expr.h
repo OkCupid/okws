@@ -34,7 +34,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_t : public refcount {
+  class expr_t : virtual public refcount {
   public:
     expr_t (lineno_t lineno = 0) : _lineno (lineno) {}
     virtual ~expr_t () {}
@@ -52,7 +52,7 @@ namespace pub3 {
     //------- Evaluation ------------------------------------------
     //
     virtual ptr<const expr_t> eval_to_val (eval_t e) const;
-    virtual ptr<mref_t> eval_to_ref (eval_t e) const { return NULL; }
+    virtual ptr<mref_t> eval_to_ref (eval_t e) const;
     //
     //------------------------------------------------------------
 
@@ -67,7 +67,7 @@ namespace pub3 {
 
     virtual bool eval_as_bool (eval_t e) const;
     virtual bool eval_as_null (eval_t e) const;
-    virtual bool eval_as_scalar (eval_t e) const;
+    virtual scalar_obj_t eval_as_scalar (eval_t e) const;
 
     //
     //------------------------------------------------------------
@@ -212,7 +212,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     static ptr<expr_bool_t> alloc (bool b);
-    static str to_str (bool b);
+    static str static_to_str (bool b);
     str to_str (bool q = false) const;
     ptr<expr_t> copy () const;
 
@@ -223,7 +223,7 @@ namespace pub3 {
 
   private:
     static ptr<expr_bool_t> _false, _true;
-    expr_bool_t (bool b) : expr_t (), _b (b) {}
+    expr_bool_t (bool b) : expr_constant_t (), _b (b) {}
     const bool _b;
   };
 
@@ -424,7 +424,7 @@ namespace pub3 {
 
   class expr_varref_t : public expr_t {
   public:
-    expr_varref_t (const str &s, int l) : expr_ref_t (l), _name (s) {}
+    expr_varref_t (const str &s, lineno_t l) : expr_t (l), _name (s) {}
     expr_varref_t (const xpub3_ref_t &x);
     virtual bool to_xdr (xpub3_expr_t *x) const;
     str to_identifier () const { return _name; }
@@ -439,10 +439,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_vecref_t : public expr_ref_t {
+  class expr_vecref_t : public expr_t {
   public:
-    expr_vecref_t (ptr<expr_t> v, ptr<expr_t> i, int l) 
-      : expr_ref_t (l), _vec (v), _index (i) {}
+    expr_vecref_t (ptr<expr_t> v, ptr<expr_t> i, lineno_t l) 
+      : expr_t (l), _vec (v), _index (i) {}
     expr_vecref_t (const xpub3_vecref_t &x);
 
     bool to_xdr (xpub3_expr_t *x) const;
@@ -505,9 +505,9 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_number_t : public expr_static_t {
+  class expr_number_t : public expr_constant_t {
   public:
-    expr_number_t () : expr_static_t () {}
+    expr_number_t () : expr_constant_t () {}
 
     str to_str () const { return to_scalar ().to_str (); }
   };
@@ -529,13 +529,15 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
 
     static ptr<expr_int_t> alloc (int64_t i);
-    void finalize ();
+
+    // need this only to implement recycling
     void init (int64_t i) { _val = i; }
+    void finalize ();
 
     str type_to_str () const { return "int"; }
 
-  protected:
-    const int64_t _val;
+  private:
+    int64_t _val;
   };
 
   //-----------------------------------------------------------------------
@@ -587,8 +589,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   class expr_list_t : public expr_t, 
-		      public vec<ptr<expr_t> > ,
-		      public vec_iface_t {
+		      public vec<ptr<expr_t> > {
   public:
 
     typedef vec<ptr<expr_t> > vec_base_t;
@@ -602,9 +603,11 @@ namespace pub3 {
     // vec_iface_t interface
     ptr<const expr_t> lookup (ssize_t i, bool *ib = NULL) const;
     ptr<expr_t> lookup (ssize_t i, bool *ib = NULL);
-    void set (size_t i, ptr<pval_t> v);
-    void push_back (ptr<pval_t> v);
+    void set (size_t i, ptr<expr_t> v);
     ptr<expr_t> &push_back () { return vec_base_t::push_back (); }
+    ptr<expr_t> &push_back (ptr<expr_t> x) { return vec_base_t::push_back (x); }
+    ptr<expr_t> deep_copy () const;
+    
     size_t size () const { return vec_base_t::size (); }
     void setsize (size_t s) { vec_base_t::setsize (s); }
     bool to_len (size_t *s) const;
@@ -707,8 +710,8 @@ namespace pub3 {
     void overwrite_with (const bindtab_t &in);
     bindtab_t &operator+= (const bindtab_t &in);
     bindtab_t &operator-= (const bindtab_t &in);
-    typedef qhash_const_iterator<str, ptr<expr_t> > const_iterator_t;
-    typedef qhash_iterator<str, ptr<expr_t> > iterator_t;
+    typedef qhash_const_iterator_t<str, ptr<expr_t> > const_iterator_t;
+    typedef qhash_iterator_t<str, ptr<expr_t> > iterator_t;
   };
 
   //-----------------------------------------------------------------------
@@ -750,16 +753,14 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
 
     ptr<expr_dict_t> to_dict () { return mkref (this); }
-    ptr<const expr_dict_t> to_dict () const { return mrkef (this); }
+    ptr<const expr_dict_t> to_dict () const { return mkref (this); }
 
     bool to_bool () const { return size () > 0; }
     void replace (const str &nm, ptr<expr_t> x);
-    ptr<const expr_dict_t> to_dict () const { return mkref (this); }
-    ptr<expr_dict_t> to_dict () { return mkref (this); }
 
     str type_to_str () const { return "dict"; }
     ptr<mref_t> eval_to_ref (eval_t e) const;
-    ptr<expr_dict_t> deep_copy () const;
+    ptr<expr_t> deep_copy () const;
   }; 
 
   //-----------------------------------------------------------------------

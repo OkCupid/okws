@@ -300,7 +300,7 @@ namespace pub3 {
   
   //--------------------------------------------------------------------
   
-  str expr_bool_t::to_str (bool b) { return b ? "true" : "false"; }
+  str expr_bool_t::static_to_str (bool b) { return b ? "true" : "false"; }
   str expr_bool_t::to_str (bool q) const { return to_str (_b); }
   
   //--------------------------------------------------------------------
@@ -755,6 +755,20 @@ namespace pub3 {
       (*this)[i-1] = tmp;
     }
   }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> 
+  expr_list_t::deep_copy () const
+  {
+    ptr<expr_list_t> out;
+    size_t l = size ();
+    for (size_t i = 0; i < l; i++) {
+      ptr<expr_t> nv = (*this)[i]->copy ();
+      out->push_back (nv);
+    }
+    return out;
+  }
   
   //--------------------------------------------------------------------
 
@@ -1179,7 +1193,7 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<expr_dict_t>
+  ptr<expr_t>
   expr_dict_t::deep_copy () const
   {
     const_iterator_t it (*this);
