@@ -16,10 +16,10 @@ namespace pub3 {
   // object.  Applications should never be using these objects
   // directly.
   //
-  class oref_t {
+  class obj_ref_t {
   public:
-    oref_t () {}
-    virtual ~oref_t () {}
+    obj_ref_t () {}
+    virtual ~obj_ref_t () {}
     virtual void set (ptr<expr_t> v) = 0;
     virtual ptr<expr_t> get () = 0;
     virtual ptr<const expr_t> get () const = 0;
@@ -27,7 +27,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class obj_ref_dict_t : public oref_t {
+  class obj_ref_dict_t : public obj_ref_t {
   public:
     obj_ref_dict_t (ptr<expr_dict_t> d, const str &k) : _dict (d), _key (k) {}
     void set (ptr<expr_t> v);
@@ -49,16 +49,16 @@ namespace pub3 {
 
   class obj_ref_vec_t : public obj_ref_t {
   public:
-    obj_ref_vec_t (ptr<vec_iface_t> v, size_t i) : _vec (v), _index (i) {}
+    obj_ref_vec_t (ptr<expr_list_t> v, size_t i) : _vec (v), _index (i) {}
     void set (ptr<expr_t> v);
     ptr<expr_t> get ();
     ptr<const expr_t> get () const;
 
-    static ptr<obj_ref_t> alloc (ptr<vec_iface_t> v, size_t i)
+    static ptr<obj_ref_t> alloc (ptr<expr_list_t> v, size_t i)
     { return New refcounted<obj_ref_vec_t> (v, i); }
 
   private:
-    const ptr<vec_iface_t> _vec;
+    const ptr<expr_list_t> _vec;
     const size_t _index;
   };
 
