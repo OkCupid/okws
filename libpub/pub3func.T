@@ -457,6 +457,13 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<runtime_fn_stub_t> 
+  runtime_fn_stub_t::alloc (const str &n, ptr<expr_list_t> l)
+  { return New refcounted<runtime_fn_stub_t> (n, l, plineno ()); }
+
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   runtime_fn_stub_t::get_rfn () const
   {

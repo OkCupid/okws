@@ -71,11 +71,6 @@ namespace pub3 {
 
   //====================================================================
 
-  static lineno_t plineno ()
-  { return parser_t::current ()->lineno (); }
-
-  //====================================================================
-
   // By default, we are already evaluated -- this is true for static
   // values like bools, strings, and integers.
   ptr<const expr_t> expr_t::eval_to_val (eval_t e) const 
@@ -225,6 +220,7 @@ namespace pub3 {
     return r;
   }
 
+
   //--------------------------------------------------------------------
 
   ptr<const expr_dict_t>
@@ -321,12 +317,20 @@ namespace pub3 {
   //====================================================================
 
   ptr<const expr_t>
-  expr_OR_t::eval_to_val (eval_t e) const
+  expr_logical_t::eval_to_val (eval_t e) const
   {
     return expr_bool_t::alloc (eval_logical (e));
   }
 
   //====================================================================
+
+  ptr<expr_OR_t>
+  expr_OR_t::alloc (ptr<expr_t> t1, ptr<expr_t> t2) 
+  {
+    return New refcounted<expr_OR_t> (t1, t2, plineno ());
+  }
+
+  //--------------------------------------------------------------------
 
   bool
   expr_OR_t::eval_logical (eval_t e) const
@@ -346,6 +350,14 @@ namespace pub3 {
     return ret;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<expr_AND_t>
+  expr_AND_t::alloc (ptr<expr_t> f1, ptr<expr_t> f2)
+  {
+    return New refcounted<expr_AND_t> (f1, f2, plineno ());
+  }
+
   //====================================================================
   
   bool
@@ -354,6 +366,14 @@ namespace pub3 {
     bool ret = true;
     if (_e) ret = !(_e->eval_as_bool (e));
     return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_NOT_t>
+  expr_NOT_t::alloc (ptr<expr_t> x)
+  {
+    return New refcounted<expr_NOT_t> (x, plineno ());
   }
 
   //====================================================================
@@ -381,6 +401,14 @@ namespace pub3 {
     return ret;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<expr_EQ_t>
+  expr_EQ_t::alloc (ptr<expr_t> o1, ptr<expr_t> o2, bool pos)
+  {
+    return New refcounted<expr_EQ_t> (o1, o2, pos, plineno ());
+  }
+
   //====================================================================
   
   bool
@@ -404,6 +432,14 @@ namespace pub3 {
       report_error (e, "one or more relational arguments were null");
     }
     return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_relation_t>
+  expr_relation_t::alloc (ptr<expr_t> o1, ptr<expr_t> o2, xpub3_relop_t op)
+  {
+    return New refcounted<expr_relation_t> (o1, o2, op, plineno ());
   }
 
   //====================================================================
@@ -465,7 +501,7 @@ namespace pub3 {
 
     return out;
   }
-  
+
   //====================================================================
 
   ptr<const expr_t>
@@ -505,6 +541,30 @@ namespace pub3 {
       }
     }
     return out;
+  }
+
+  //====================================================================
+
+  ptr<expr_mod_t>
+  expr_mod_t::alloc (ptr<expr_t> d, ptr<expr_t> n)
+  {
+    return New refcounted<expr_mod_t> (d, n, plineno ());
+  }
+
+  //====================================================================
+
+  ptr<expr_div_t>
+  expr_div_t::alloc (ptr<expr_t> d, ptr<expr_t> n)
+  {
+    return New refcounted<expr_div_t> (d, n, plineno ());
+  }
+
+  //====================================================================
+
+  ptr<expr_mult_t>
+  expr_mult_t::alloc (ptr<expr_t> f1, ptr<expr_t> f2)
+  {
+    return New refcounted<expr_mult_t> (f1, f2, plineno ());
   }
 
   //====================================================================
@@ -575,7 +635,15 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  ptr<expr_varref_or_rfn_t> 
+  expr_varref_or_rfn_t::alloc (const str &l)
+  {
+    return New refcounted<expr_varref_or_rfn_t> (l, plineno ());
+  }
   
+  //-----------------------------------------------------------------------
+
 #define EXPR_VARREF_EVAL(ret,func)			\
   ret							\
   expr_varref_or_rfn_t::func (eval_t e) const		\
@@ -755,6 +823,11 @@ namespace pub3 {
       (*this)[i-1] = tmp;
     }
   }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_list_t> expr_list_t::alloc ()
+  { return New refcounted<expr_list_t> (plineno ()); } 
 
   //--------------------------------------------------------------------
 
@@ -1002,10 +1075,23 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<expr_regex_t> expr_regex_t::alloc (ptr<rxx> x, str b, str o)
+  { return New refcounted<expr_regex_t> (x, b, o plineno ()); }
+
+  //--------------------------------------------------------------------
+
   expr_regex_t::expr_regex_t (ptr<rxx> x, str b, str o, int l)
     : expr_t (l), _rxx (x), _body (b), _opts (o) {}
 
   //====================================================================
+
+  ptr<expr_shell_str_t> expr_shell_str_t::alloc (str s)
+  {
+    if (!s) s = "";
+    return New refcounted<expr_shell_str_t> (s, plineno ());
+  }
+
+  //--------------------------------------------------------------------
 
   ptr<const expr_t>
   expr_shell_str_t::eval_to_val (eval_t e) const

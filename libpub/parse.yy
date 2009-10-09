@@ -312,7 +312,7 @@ p3_logical_OR_expr: p3_logical_AND_expr
 	       }
 	       | p3_logical_OR_expr T_P3_OR p3_logical_AND_expr
 	       {
-	          $$ = New refcounted<pub3::expr_OR_t> ($1, $3, PLINENO);
+	          $$ = pub3::expr_OR_t::alloc ($1, $3);
                }
 	       ;
 
@@ -322,7 +322,7 @@ p3_logical_AND_expr: p3_inclusive_OR_expr
 	       }
 	       | p3_logical_AND_expr T_P3_AND p3_inclusive_OR_expr
                { 
-	          $$ = New refcounted<pub3::expr_AND_t> ($1, $3, PLINENO);
+	          $$ = pub3::expr_AND_t::alloc ($1, $3);
 	       }
 	       ;
 
@@ -346,7 +346,7 @@ p3_equality_expr: p3_relational_expr
 		}
 	 	| p3_equality_expr p3_equality_op p3_relational_expr
 		{
-		   $$ = New refcounted<pub3::expr_EQ_t> ($1, $3, $2, PLINENO);
+		   $$ = pub3::expr_EQ_t::alloc ($1, $3, $2);
 		}
 		;	
 
@@ -361,7 +361,7 @@ p3_relational_expr:
 	   }
            | p3_relational_expr p3_relational_op p3_additive_expr
 	   {
-	      $$ = New refcounted<pub3::expr_relation_t> ($1, $3, $2, PLINENO);
+	      $$ = pub3::expr_relation_t::alloc ($1, $3, $2);
            }
 	   ;	
 	   
@@ -379,7 +379,7 @@ p3_additive_expr:
 	   }
 	   | p3_additive_expr p3_additive_op p3_multiplicative_expr
 	   {
-	     $$ = New refcounted<pub3::expr_add_t> ($1, $3, $2, PLINENO);
+	     $$ = pub3::expr_add_t::alloc ($1, $3, $2);
 	   }
 	   ;
 
@@ -390,15 +390,15 @@ p3_multiplicative_expr:
 	   }
 	   | p3_multiplicative_expr '%' p3_unary_expr
 	   {
-	     $$ = New refcounted<pub3::expr_mod_t> ($1, $3, PLINENO);
+	     $$ = pub3::expr_mod_t::alloc ($1, $3);
 	   }
 	   | p3_multiplicative_expr '*' p3_unary_expr
 	   {
-	     $$ = New refcounted<pub3::expr_mult_t> ($1, $3, PLINENO);
+	     $$ = pub3::expr_mult_t::alloc ($1, $3);
 	   }
 	   | p3_multiplicative_expr '/' p3_unary_expr
 	   {
-             $$ = New refcounted<pub3::expr_div_t> ($1, $3, PLINENO);
+             $$ = pub3::expr_div_t::alloc ($1, $3);
 	   }
 	   ;	   
 
@@ -414,19 +414,19 @@ p3_unary_expr:
            }
            | '!' p3_unary_expr
 	   {
-	      $$ = New refcounted<pub3::expr_NOT_t> ($2, PLINENO);
+	      $$ = pub3::expr_NOT_t::alloc ($2);
            }
 	   ;
 
 p3_dictref:  p3_postfix_expr '.' p3_identifier
 	   {
-	      $$ = New refcounted<pub3::expr_dictref_t> ($1, $3, PLINENO);
+	      $$ = pub3::expr_dictref_t::alloc ($1, $3);
 	   }
 	   ;
 
-p3_vecref: p3_postfix_expr '['  p3_expr ']'
+p3_vecref: p3_postfix_expr '[' p3_expr ']'
 	   {
-	      $$ = New refcounted<pub3::expr_vecref_t> ($1, $3, PLINENO);
+	      $$ = pub3::expr_vecref_t::alloc ($1, $3);
 	   }
 	   ;
 
@@ -437,7 +437,7 @@ p3_fncall: p3_identifier '(' p3_argument_expr_list_opt ')'
 	       * (in the pub command line client) or upon conversion
 	       * from XDR (in OKWS services)
 	       */
-	      $$ = New refcounted<pub3::runtime_fn_stub_t> ($1, $3, PLINENO);
+	      $$ = pub3::runtime_fn_stub_t::alloc ($1, $3);
            }
 	   ;
 
@@ -446,7 +446,7 @@ p3_varref: p3_identifier
               /* See comment in pub3expr.h -- this identifier might be
 	       * a function call in a pipeline; we just don't know yet!
 	       */
-	      $$ = New refcounted<pub3::expr_varref_or_rfn_t> ($1, PLINENO);
+	      $$ = pub3::expr_varref_or_rfn_t::alloc ($1);
 	   }
 	   ;
 
@@ -462,7 +462,7 @@ p3_postfix_expr:
 	   | p3_null         { $$ = $1; }
 	   ;
 
-p3_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (PLINENO); }
+p3_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (); }
 	;
 
 p3_primary_expr: p3_varref   { $$ = $1; }
@@ -495,27 +495,26 @@ p3_identifier_list: /* empty */
 p3_regex: T_P3_REGEX
 	  {
 	     str err;
-	     ptr<rxx> x = 
-                 pub3::rxx_factory_t::compile ($1.regex, $1.opts, &err);
+	     ptr<rxx> x;
+             x =  pub3::rxx_factory_t::compile ($1.regex, $1.opts, &err);
 	     if (err) {
                PWARN(err);
 	       yy_parse_fail();
 	     }
-	     $$ = New refcounted<pub3::expr_regex_t> 
-                (x, $1.regex, $1.opts, PLINENO);
+	     $$ = pub3::expr_regex_t::alloc (x, $1.regex, $1.opts);
 	  }
 	  ;
 
 p3_argument_expr_list_opt:           
            { 
-              $$ = New refcounted<pub3::expr_list_t> (PLINENO); 
+              $$ = pub3::expr_list_t::alloc ();
            }
            | p3_argument_expr_list   { $$ = $1; }
            ;
 
 p3_argument_expr_list: p3_expr
            {
-	      $$ = New refcounted<pub3::expr_list_t> (PLINENO);
+	      $$ = pub3::expr_list_t::alloc ();
 	      $$->push_back ($1);
 	   }
            | p3_argument_expr_list ',' p3_expr
@@ -649,7 +648,7 @@ p3_string: '"' p3_string_elements_opt '"'
 p3_string_elements_opt:
           /* empty */
         {
-           $$ = New refcounted<pub3::expr_shell_str_t> ("", PLINENO);
+           $$ = pub3::expr_shell_str_t::alloc ();
 	}
 	| p3_string_elements
 	{
@@ -660,7 +659,7 @@ p3_string_elements_opt:
 p3_string_elements: 
           p3_string_element 
         { 
-           $$ = New refcounted<pub3::expr_shell_str_t> ($1, PLINENO);
+           $$ = pub3::expr_shell_str_t::alloc ($1);
 	}
         | p3_string_elements p3_string_element
 	{
@@ -710,8 +709,7 @@ p3_flexi_tuple: p3_tuple
 p3_implicit_tuple: 
           p3_nonparen_expr
 	{
-	  ptr<pub3::expr_list_t> l = 
-             New refcounted<pub3::expr_list_t> (PLINENO);
+	  ptr<pub3::expr_list_t> l = pub3::expr_list_t::alloc ();
 	  l->push_back ($1);
           $$ = l;
 	}

@@ -56,6 +56,8 @@ namespace pub3 {
     runtime_fn_stub_t (const str &n, ptr<expr_list_t> a, int l) 
       : runtime_fn_t (n, a, l) {}
 
+    static ptr<runtime_fn_stub_t> alloc (const str &n, ptr<expr_list_t> l);
+
     const char *get_obj_name () const { return "pub3::runtime_fn_stub_t"; }
 
     ptr<const pval_t> eval (eval_t e) const;

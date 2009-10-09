@@ -4,6 +4,14 @@ namespace pub3 {
 
   //====================================================================
 
+  ptr<expr_dictref_t>
+  expr_dictref_t::alloc (ptr<expr_t> d, const str &n)
+  {
+    return New refcounted<expr_dictref_t> (d, n, plineno ());
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<const expr_t> 
   expr_dictref_t::eval_to_val (eval_t e) const
   {
@@ -45,6 +53,11 @@ namespace pub3 {
 
   //====================================================================
 
+  ptr<expr_varref_t> expr_varref_t::alloc (const str &n)
+  { return New refcounted<expr_varref_t> (n, plineno ()); }
+
+  //--------------------------------------------------------------------
+
   ptr<const expr_t>
   expr_varref_t::eval_to_val (eval_t e) const
   {
@@ -60,6 +73,14 @@ namespace pub3 {
   }
 
   //====================================================================
+
+  ptr<expr_vecref_t>
+  expr_vecref_t::alloc (ptr<expr_t> v, ptr<expr_t> i)
+  {
+    return New refcounted<expr_vecref_t> (v, i, plineno ());
+  }
+
+  //--------------------------------------------------------------------
 
   ptr<mref_t>
   expr_vecref_t::eval_to_ref (eval_t e) const
