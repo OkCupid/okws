@@ -16,10 +16,10 @@ namespace pub3 {
   // object.  Applications should never be using these objects
   // directly.
   //
-  class _ref_t {
+  class oref_t {
   public:
-    _ref_t () {}
-    virtual ~_ref_t () {}
+    oref_t () {}
+    virtual ~oref_t () {}
     virtual void set (ptr<expr_t> v) = 0;
     virtual ptr<expr_t> get () = 0;
     virtual ptr<const expr_t> get () const = 0;
@@ -27,7 +27,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class obj_ref_dict_t : public _ref_t {
+  class obj_ref_dict_t : public oref_t {
   public:
     obj_ref_dict_t (ptr<expr_dict_t> d, const str &k) : _dict (d), _key (k) {}
     void set (ptr<expr_t> v);
@@ -37,8 +37,8 @@ namespace pub3 {
     static ptr<obj_ref_t> alloc (ptr<expr_dict_t> d, const str &k)
     { return New refcounted<obj_ref_dict_t> (d, k); }
 
-    ptr<aarr_t> dict () { return _dict->dict (); }
-    ptr<const aarr_t> dict () const { return _dict->dict (); }
+    ptr<expr_dict_t> dict () { return _dict; }
+    ptr<const expr_dict_t> dict () const { return _dict; }
 
   private:
     const ptr<expr_dict_t> _dict;
