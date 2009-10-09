@@ -7,6 +7,16 @@
 #include "pub3expr.h"
 #include "okformat.h"
 
+#define ALL_INT_TYPES(pre,x,post)   \
+  pre (int64_t x) post              \
+  pre (int32_t x) post              \
+  pre (uint32_t x) post             \
+  pre (int16_t x) post              \
+  pre (uint16_t x) post             \
+  pre (int8_t x) post               \
+  pre (uint8_t x) post
+
+
 namespace pub3 {
 
   //-----------------------------------------------------------------------
@@ -31,8 +41,8 @@ namespace pub3 {
   public:
     obj_ref_dict_t (ptr<expr_dict_t> d, const str &k) : _dict (d), _key (k) {}
     void set (ptr<expr_t> v);
-    ptr<expr_t> get () { return dict ()->lookup_ptr (_key); }
-    ptr<const expr_t> get () const { return dict ()->lookup_ptr (_key); }
+    ptr<expr_t> get () { return dict ()->lookup (_key); }
+    ptr<const expr_t> get () const { return dict ()->lookup (_key); }
     
     static ptr<obj_ref_t> alloc (ptr<expr_dict_t> d, const str &k)
     { return New refcounted<obj_ref_dict_t> (d, k); }
@@ -47,18 +57,18 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class obj_ref_vec_t : public obj_ref_t {
+  class obj_ref_list_t : public obj_ref_t {
   public:
-    obj_ref_vec_t (ptr<expr_list_t> v, size_t i) : _vec (v), _index (i) {}
+    obj_ref_list_t (ptr<expr_list_t> v, size_t i) : _list (v), _index (i) {}
     void set (ptr<expr_t> v);
     ptr<expr_t> get ();
     ptr<const expr_t> get () const;
 
     static ptr<obj_ref_t> alloc (ptr<expr_list_t> v, size_t i)
-    { return New refcounted<obj_ref_vec_t> (v, i); }
+    { return New refcounted<obj_ref_list_t> (v, i); }
 
   private:
-    const ptr<expr_list_t> _vec;
+    const ptr<expr_list_t> _list;
     const size_t _index;
   };
 
@@ -86,8 +96,6 @@ namespace pub3 {
     const_obj_t (ptr<const expr_t> x) : _c_obj (x) {}
     const_obj_t (ptr<obj_ref_t> r);
     const_obj_t (ptr<const obj_ref_t>  r);
-    const_obj_t (ptr<expr_t> v) : _c_obj (v) {}
-    const_obj_t (ptr<const expr_t> v) : _c_obj (v) {}
     const_obj_t () {}
     virtual ~const_obj_t () {}
 
@@ -112,7 +120,7 @@ namespace pub3 {
     u_int64_t to_uint () const;
 
   protected:
-    ptr<const expr_list_t> to_vector () const;
+    ptr<const expr_list_t> to_list () const;
     ptr<const expr_dict_t> to_dict () const;
 
   protected:
@@ -125,7 +133,6 @@ namespace pub3 {
   public:
     obj_t (ptr<obj_ref_t> r) : const_obj_t (r), _ref (r) {}
     obj_t (ptr<expr_t> v) : const_obj_t (v), _obj (v) {}
-    obj_t (ptr<expr_t> e) : const_obj_t (e), _obj (e) {}
     obj_t () {}
 
     // array access features: mutable
@@ -162,8 +169,8 @@ namespace pub3 {
 
     obj_t &refer_to (obj_t o);
 
-    ptr<aarr_t> dict ();
-    ptr<const aarr_t> dict () const;
+    ptr<expr_dict_t> dict ();
+    ptr<const expr_dict_t> dict () const;
 
     ptr<const expr_t> obj () const;
     ptr<const expr_t> expr () const;
@@ -172,10 +179,10 @@ namespace pub3 {
 
     bool to_int (int64_t *i) const;
     bool to_uint (u_int64_t *u) const;
-    bool to_str (str *s, bool eval = true) const;
+    bool to_str (str *s) const;
     bool to_bool (bool *b) const;
 
-    str to_str (bool eval = true) const;
+    str to_str () const;
     bool to_bool () const;
     int64_t to_int () const;
     u_int64_t to_uint () const;
@@ -185,7 +192,7 @@ namespace pub3 {
   protected:
 
     // Mutations
-    ptr<expr_list_t> to_vector () ;
+    ptr<expr_list_t> to_list () ;
     ptr<expr_dict_t> to_dict ();
 
     obj_t &set_value (ptr<expr_t> v);
@@ -222,10 +229,10 @@ namespace pub3 {
   //   pub3::obj_t o;
   //   pub3::ref_t r = o.push_back ();
   //
-  class obj_ref_t : public obj_t {
+  class ref_t : public obj_t {
   public:
-    obj_ref_t (ptr<ref_t> r) : obj_t (r) {}
-    obj_ref_t (const obj_t &o) { refer_to (o); }
+    ref_t (ptr<obj_ref_t> r) : obj_t (r) {}
+    ref_t (const obj_t &o) { refer_to (o); }
   private:
     // Should never be used!
     obj_t &operator= (obj_t o);
@@ -248,31 +255,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-
-  //
-  // A system embedded deep within OkCupid code uses a customized
-  // form of dictionary, that inherits from aarr_arg_t.  This template
-  // allows us to accommodate such a subclass.
-  //
-  template<class D>
-  class obj_dict_tmplt_t : public obj_t {
-  public:
-    obj_dict_tmplt_t ()
-    {
-      _dict_tmplt = New refcounted<expr_dict_tmplt_t<D> > ();
-      _c_obj = _obj = _dict = _dict_tmplt;
-    }
-    ptr<D> dict_tmplt () { return _dict_tmplt->dict_tmplt (); }
-    ptr<const D> dict_tmplt () const { return _dict_tmplt->dict_tmplt (); }
-  protected:
-    ptr<expr_dict_tmplt_t<D> > _dict_tmplt;
-  };
-
-
-  //-----------------------------------------------------------------------
-
 };
 
+#undef ALL_INT_TYPES
 
-#endif /* _LIBPUB_PUB3OBJ_H_ */
 
