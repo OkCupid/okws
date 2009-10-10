@@ -2,12 +2,15 @@
 /* $Id$ */
 
 %{
+#define __STDC_LIMIT_MACROS 1
+#include <stdint.h>
+#include <limits.h>
+
 #include "pub.h"
 #include "pub_parse.h"
 #include "pub3.h"
 #include "pscalar.h"
 #include "pub3parse.h"
-#include <limits.h>
 #include "okformat.h"
 
 %}
@@ -617,7 +620,7 @@ p3_bindlist_bindings: p3_binding
         | p3_bindlist_bindings p3_binding
 	{
 	   $$ = $1;
-	   $$->add ($2;
+	   $$->add ($2);
 	}
 	;
 
@@ -672,7 +675,8 @@ p3_string_elements_opt:
 p3_string_elements: 
           p3_string_element 
         { 
-           $$ = pub3::expr_shell_str_t::alloc ($1);
+           $$ = pub3::expr_shell_str_t::alloc ();
+	   $$->add ($1);
 	}
         | p3_string_elements p3_string_element
 	{
@@ -681,7 +685,7 @@ p3_string_elements:
 	;
 
 p3_string_element: 
-          T_P3_STRING { $$ = New refcounted<pub3::expr_str_t> ($1); }
+          T_P3_STRING { $$ = pub3::expr_str_t::alloc ($1); }
 	| T_P3_CHAR 
 	{ 
 	   $$ = New refcounted<pub3::expr_str_t> (strbuf ("%c", $1));

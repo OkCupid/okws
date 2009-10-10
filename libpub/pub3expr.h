@@ -507,6 +507,7 @@ namespace pub3 {
     scalar_obj_t to_scalar () const;
     bool to_null () const;
     ptr<rxx> to_regex () const;
+    static ptr<expr_str_t> alloc ();
 
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
@@ -693,7 +694,7 @@ namespace pub3 {
     expr_shell_str_t (ptr<expr_t> e, lineno_t lineno);
     expr_shell_str_t (const xpub3_shell_str_t &x);
 
-    ptr<expr_shell_str_t> alloc (str s = NULL);
+    static ptr<expr_shell_str_t> alloc (str s = NULL);
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
 
