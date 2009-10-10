@@ -339,6 +339,7 @@ namespace pub3 {
     expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, lineno_t lineno)
       : expr_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
     expr_add_t (const xpub3_mathop_t &x);
+    static ptr<expr_add_t> alloc (ptr<expr_t> t1, ptr<expr_t> t2, bool pos);
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
@@ -388,6 +389,7 @@ namespace pub3 {
     expr_div_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
       : expr_div_or_mod_t (n, d, lineno) {}
     expr_div_t (const xpub3_mathop_t &x);
+    static ptr<expr_div_t> alloc (ptr<expr_t> n, ptr<expr_t> d);
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_div_t"; }

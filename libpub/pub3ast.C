@@ -94,8 +94,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<zone_html_t> zone_html_t::alloc (int pws)
-  { return New refcounted<zone_html_t> (location (), pws) }
+  ptr<zone_html_t> zone_html_t::alloc ()
+  { return New refcounted<zone_html_t> (location ()); }
 
   //-----------------------------------------------------------------------
 

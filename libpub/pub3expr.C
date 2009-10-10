@@ -502,6 +502,11 @@ namespace pub3 {
     return out;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<expr_add_t> expr_add_t::alloc (ptr<expr_t> x1, ptr<expr_t> x2, bool pos)
+  { return New refcounted<expr_add_t> (x1, x2, pos, plineno ()); }
+
   //====================================================================
 
   ptr<const expr_t>
@@ -552,6 +557,14 @@ namespace pub3 {
   }
 
   //====================================================================
+
+  ptr<expr_div_t>
+  expr_div_t::alloc (ptr<expr_t> d, ptr<expr_t> n)
+  {
+    return New refcounted<expr_div_t> (d, n, plineno ());
+  }
+
+  //-----------------------------------------------------------------------
 
   ptr<expr_div_t>
   expr_div_t::alloc (ptr<expr_t> d, ptr<expr_t> n)

@@ -7,6 +7,8 @@
 #include "pub3.h"
 #include "pscalar.h"
 #include "pub3parse.h"
+#include <limits.h>
+#include "okformat.h"
 
 %}
 
@@ -77,7 +79,7 @@
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
-%type <p3statement> p3_universals p3_print p3_fndef;
+%type <p3statement> p3_universals p3_print p3_fndef p3_switch;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
 %type <p3cl> p3_switch_case_list p3_switch_cases;
@@ -92,7 +94,9 @@
 %type <p3strv> p3_identifier_list;
 %type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
-
+%type <str> p3_constant_or_string;
+%type <p3expr> p3_string_constant;
+ 
 %type <bl> p3_equality_op p3_additive_op;
 
 %type <p3expr> json_obj json_null;
@@ -105,7 +109,8 @@
 %type <p3zone> p3_html_blocks p3_html_block;
 %type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner;
 %type <p3zone> p3_inline_expr;
-%type <p3zone> p3_pub_zone_body_opt p3_pub_zone_body p3_nested_zone;
+%type <p3zp> p3_pub_zone_body_opt p3_pub_zone_body;
+%type <p3zone> p3_nested_zone;
 %type <p3zone> p3_empty_clause;
 
 
@@ -155,10 +160,10 @@ p3_html_block: p3_html_pre  { $$ = $1; }
 
 p3_html_pre: T_P3_BEGIN_PRE p3_html_blocks T_P3_END_PRE
 	{
-	   ptr<pub3::zone_html_t> r = $2;
-	   if (!r) { r = pub3::zone_html_t::alloc (); }
+	   ptr<pub3::zone_html_t> r = pub3::zone_html_t::alloc ();
 	   r->set_preserve_white_space (true);
-           r->unshift ($1);
+	   r->add ($1);
+	   r->add ($2);
            r->add ($3);
            $$ = r;
 	}
@@ -183,19 +188,21 @@ p3_pub_zone: T_P3_OPEN p3_pub_zone_inner T_P3_CLOSE
 
 p3_pub_zone_inner: p3_statement_opt p3_pub_zone_body_opt
        {
-         $$ = $2;
-	 $$->take_reserved_slot ($1);
+	 ptr<pub3::zone_pub_t> r = $2;
+	 r->take_reserved_slot ($1);
+	 $$ = r;
        }
        ;
 
-p3_pub_zone_body_opt: /* empty */ { $$ = zone_pub_t::alloc (); }
+p3_pub_zone_body_opt: /* empty */ { $$ = pub3::zone_pub_t::alloc (); }
 	| p3_pub_zone_body        { $$ = $1; }
         ;
 
 p3_pub_zone_body: p3_pub_zone_pair
        {
-         $$ = zone_pub_t::alloc ();
-	 $$->add ($1);
+         ptr<pub3::zone_pub_t> r = pub3::zone_pub_t::alloc ();
+	 r->add ($1);
+	 $$ = r;
        } 
        | p3_pub_zone_body p3_pub_zone_pair
        {
@@ -256,7 +263,7 @@ p3_switch_cases: /*empty */
 	  }
 	  | p3_switch_cases p3_switch_case
 	  {
-	     $1->add ($2);
+	     $1->push_back ($2);
 	     $$ = $1;
 	  }
 	  ;
@@ -335,7 +342,6 @@ p3_inclusive_OR_expr: p3_equality_expr
 	          if (!$3->unshift_argument ($1)) {
 		     str err = "Cannot push argument onto non-function";
 		     pub3::parse_error (err);
-		     yy_parse_fail();
 		  }
 		  $$ = $3;
 	       }
@@ -540,7 +546,12 @@ p3_constant:
 	   }
 	   ;
 
-p3_constant_or_string: p3_constant | p3_string_constant;
+p3_constant_or_string: p3_integer_constant 
+           { 
+	      $$ = strbuf ("%" PRId64, $1->to_int ());
+	   }
+	   | p3_boolean_constant { $$ = $1 ? "1" : "0"; }
+	   | p3_string_constant { $$ = $1->to_str (); }
 
 p3_identifier: T_P3_IDENTIFIER { $$ = $1; } ;
 

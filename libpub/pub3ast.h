@@ -62,8 +62,10 @@ namespace pub3 {
     void add (char ch);
     ptr<zone_html_t> zone_html () { return mkref (this); }
     static ptr<zone_html_t> alloc (ptr<zone_t> z);
+    static ptr<zone_html_t> alloc ();
     bool preserve_white_space () const { return _preserve_white_space; }
     void set_preserve_white_space (bool b) { _preserve_white_space = b; }
+    void unshift (str s);
   protected:
     ptr<zone_text_t> push_zone_text ();
   private:
@@ -111,7 +113,7 @@ namespace pub3 {
   class zone_pub_t : public zone_t {
   public:
     zone_pub_t (location_t l);
-    static ptr<zone_pub_t> alloc (ptr<expr_t> e);
+    static ptr<zone_pub_t> alloc ();
 
     struct pair_t {
       ptr<statement_t> first;

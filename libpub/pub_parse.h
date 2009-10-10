@@ -73,12 +73,14 @@ struct yystype {
   xpub3_relop_t relop;
   double dbl;
   ptr<pub3::zone_t> p3zone;
+  ptr<pub3::zone_pub_t> p3zp;
   ptr<pub3::statement_t> p3statement;
   ptr<pub3::case_t> p3case;
   ptr<pub3::case_list_t> p3cl;
   pub3::binding_t p3bind;
   ptr<pub3::identifier_list_t> p3strv;
   ptr<pub3::bindlist_t> p3bl;
+  int64_t num;
 };
 
 #define YYSTYPE yystype
