@@ -189,6 +189,7 @@ namespace pub3 {
   class expr_constant_t : public expr_t {
   public:
     expr_constant_t () : expr_t () {}
+    expr_constant_t (lineno_t l) : expr_t (l) {}
     ptr<expr_t> copy () const;
   };
 
@@ -497,9 +498,37 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_strbuf_t : public expr_constant_t {
+  public:
+    expr_strbuf_t (const str &s = NULL, lineno_t l = 0) 
+      : expr_constant_t (l) { if (s) add (s); }
+
+    str to_str (bool q = false) const;
+    bool to_bool () const;
+    scalar_obj_t to_scalar () const;
+    bool to_null () const;
+    ptr<rxx> to_regex () const;
+    static ptr<expr_strbuf_t> alloc ();
+
+    void add (char ch);
+    void add (str s);
+
+    const char *get_obj_name () const { return "pub3::expr_str_t"; }
+    bool to_len (size_t *s) const;
+    bool to_xdr (xpub3_expr_t *x) const;
+
+    static ptr<expr_strbuf_t> alloc (const str &s);
+
+  protected:
+    vec<str> _hold;
+    strbuf _b;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_str_t : public expr_constant_t {
   public:
-    expr_str_t (const str &s) : expr_constant_t(), _val (s) {}
+    expr_str_t (str s = NULL) : expr_constant_t(), _val (s) {}
     expr_str_t (const xpub3_str_t &x);
 
     str to_str (bool q = false) const;
@@ -507,14 +536,11 @@ namespace pub3 {
     scalar_obj_t to_scalar () const;
     bool to_null () const;
     ptr<rxx> to_regex () const;
-    static ptr<expr_str_t> alloc ();
+    static ptr<expr_str_t> alloc (str s = NULL);
 
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
-
-    str eval_as_str (eval_t e) const;
-    static ptr<expr_str_t> alloc (const str &s);
 
   protected:
     const str _val;
@@ -715,6 +741,7 @@ namespace pub3 {
 
   class binding_t {
   public:
+    binding_t () {}
     binding_t (const str &s, ptr<expr_t> x);
     str name () const { return _name; }
     ptr<expr_t> expr () { return _expr; }

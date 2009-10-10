@@ -686,6 +686,54 @@ namespace pub3 {
   
   //====================================================================
 
+  bool expr_strbuf_t::to_bool () const { return _b.len () > 0; }
+  scalar_obj_t expr_strbuf_t::to_scalar () const { return scalar_obj_t (_b); }
+  bool expr_strbuf_t::to_null () const { return false; }
+  bool expr_str_t::to_len (size_t *s) const { *s = _b.len (); return true; }
+
+  //--------------------------------------------------------------------
+
+  str
+  expr_strbuf_t::to_str (bool q) const 
+  { 
+    str ret = q ? json::quote (_b) : _b;
+    return ret; 
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<rxx>
+  expr_strbuf_t::to_regex () const
+  {
+    ptr<rxx> ret;
+    if (_b.len ()) ret = str2rxx (NULL, _b, NULL);
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+  
+  ptr<expr_strbuf_t>
+  expr_strbuf_t::alloc (str s)
+  {
+    return New refcounted<expr_strbuf_t> (s, plineno ());
+  }
+
+  //--------------------------------------------------------------------
+
+  void expr_strbuf_t::add (char ch) { _b.fmt ("%c", ch); }
+
+  //--------------------------------------------------------------------
+
+  void expr_strbuf_t::add (str s) 
+  {
+    if (s) {
+      _hold.push_back (s);
+      _b << s;
+    }
+  }
+
+  //====================================================================
+
   bool expr_str_t::to_bool () const { return (_val && _val.len ()); }
   scalar_obj_t expr_str_t::to_scalar () const { return scalar_obj_t (_val); }
   bool expr_str_t::to_null () const { return !_val; }
@@ -714,17 +762,14 @@ namespace pub3 {
   expr_str_t::to_regex () const
   {
     ptr<rxx> ret;
-    ret = str2rxx (NULL, _val, NULL);
+    if (_val) { ret = str2rxx (NULL, _val, NULL); }
     return ret;
   }
 
   //--------------------------------------------------------------------
   
-  ptr<expr_str_t>
-  expr_str_t::alloc (const str &s)
-  {
-    return New refcounted<expr_str_t> (s);
-  }
+  ptr<expr_str_t> expr_str_t::alloc (str s) 
+  { return New refcounted<expr_str_t> (s); }
   
   //====================================================================
   

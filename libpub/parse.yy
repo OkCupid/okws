@@ -77,8 +77,8 @@
 %type <p3expr> p3_bind_value_opt;
 %type <p3expr> p3_null;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
-%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary p3_locals_arg;
-%type <p3bl> p3_bindlist p3_bindlist_bindings;
+%type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
+%type <p3bl> p3_bindlist p3_bindlist_bindings p3_locals_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
@@ -98,7 +98,8 @@
 %type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 %type <str> p3_constant_or_string;
-%type <p3expr> p3_string_constant;
+%type <p3strbuf> p3_string_constant;
+%type <str> p3_string_constant_element;
  
 %type <bl> p3_equality_op p3_additive_op;
 
@@ -106,12 +107,12 @@
 %type <p3dict> json_dict json_dict_pairs_opt json_dict_pairs;
 %type <p3exprlist> json_list json_list_elems_opt json_list_elems;
 %type <p3expr> json_scalar json_string json_int json_float json_bool;
-%type <p3pair> json_dict_pair;
+%type <p3bind> json_dict_pair;
 
 %type <p3zone> p3_html_zone p3_html_zone_inner;
 %type <p3zone> p3_html_blocks p3_html_block;
 %type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner;
-%type <p3zone> p3_inline_expr;
+%type <p3expr> p3_inline_expr;
 %type <p3zp> p3_pub_zone_body_opt p3_pub_zone_body;
 %type <p3zone> p3_nested_zone;
 %type <p3zone> p3_empty_clause;
@@ -157,7 +158,7 @@ p3_html_blocks:  { $$ = NULL; }
 	;
 
 p3_html_block: p3_html_pre  { $$ = $1; }
-	| p3_inline_expr    { $$ = pub3::zone_inline_expr_t::alloc ($1); }
+	| p3_inline_expr { $$ = pub3::zone_inline_expr_t::alloc ($1); }
 	| p3_pub_zone       { $$ = $1; }
 	;
 
@@ -550,10 +551,7 @@ p3_constant:
 	   }
 	   ;
 
-p3_constant_or_string: p3_integer_constant 
-           { 
-	      $$ = strbuf ("%" PRId64, $1->to_int ());
-	   }
+p3_constant_or_string: p3_integer_constant { $$ = $1->to_str (); }
 	   | p3_boolean_constant { $$ = $1 ? "1" : "0"; }
 	   | p3_string_constant { $$ = $1->to_str (); }
 
@@ -688,7 +686,7 @@ p3_string_element:
           T_P3_STRING { $$ = pub3::expr_str_t::alloc ($1); }
 	| T_P3_CHAR 
 	{ 
-	   $$ = New refcounted<pub3::expr_str_t> (strbuf ("%c", $1));
+	   $$ = pub3::expr_str_t::alloc (strbuf ("%c", $1));
 	}
 	| p3_inline_expr 
         { 
@@ -696,7 +694,7 @@ p3_string_element:
         }
 	;
 
-p3_string_constant: /* empty */ { $$ = pub3::expr_str_t::alloc (); }
+p3_string_constant: /* empty */ { $$ = pub3::expr_strbuf_t::alloc (); }
         | p3_string_constant p3_string_constant_element
 	{
 	   $1->add ($2);
@@ -745,7 +743,7 @@ p3_include_or_load:
 	
 p3_include: p3_include_or_load p3_flexi_tuple 
         {
-	   str err
+	   str err;
 	   ptr<pub3::include_t> i = $1;
 	   if (!i->add_args ($2, &err)) {
 	      pub3::parser_t::current ()->error (err);
@@ -774,13 +772,13 @@ p3_locals: T_P3_LOCALS p3_locals_arg
 	;
 
 p3_nested_zone: p3_html_zone { $$ = $1; }
-	| '{' p3_pub_zone_inner '}' { $$ = $1; }
+	| '{' p3_pub_zone_inner '}' { $$ = $2; }
 	;
 
 p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause 
         {
 	    ptr<pub3::for_t> f = pub3::for_t::alloc ();
-	    if (!f->add ($2)) {
+	    if (!f->add_params ($2)) {
 	      yy_parse_fail();
 	    }
 	    f->add_body ($3);
@@ -790,7 +788,7 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause
 
 p3_print: T_P3_PRINT p3_flexi_tuple
        {
-           ptr<pub3::print_t> p = pub3::print_t:alloc ();
+           ptr<pub3::print_t> p = pub3::print_t::alloc ();
 	   if (!p->add ($2)) {
 	     pub3::parse_error ("bad arguments passed to print");
 	     yy_parse_fail();
@@ -891,21 +889,21 @@ json_dict_pair: T_P3_STRING ':' json_obj
       }
       ;
 
-json_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (yy_get_json_lineno ()); }
+json_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (); }
 	  ;
 
 json_list: '[' json_list_elems_opt ']' { $$ = $2; } ;
 
 json_list_elems_opt: /* empty */ 
       {
-         $$ = New refcounted<pub3::expr_list_t> (yy_get_json_lineno ());
+         $$ = pub3::expr_list_t::alloc ();
       }
       | json_list_elems { $$ = $1; }
       ;
 
 json_list_elems: json_obj
       {
-         $$ = New refcounted<pub3::expr_list_t> (yy_get_json_lineno ());
+         $$ = pub3::expr_list_t::alloc ();
          $$->push_back ($1);
       }
       | json_list_elems ',' json_obj

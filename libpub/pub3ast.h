@@ -249,6 +249,7 @@ namespace pub3 {
   public:
     locals_t (location_t l) : statement_t (l) {}
     static ptr<locals_t> alloc ();
+    void add (ptr<bindlist_t> l) { _bindings = l; }
   protected:
     ptr<bindlist_t> _bindings;
   };
@@ -259,6 +260,7 @@ namespace pub3 {
   public:
     universals_t (location_t l) : statement_t (l) {}
     static ptr<universals_t> alloc ();
+    void add (ptr<bindlist_t> l) { _bindings = l; }
   protected:
     ptr<bindlist_t> _bindings;
   };
@@ -332,6 +334,7 @@ namespace pub3 {
   public:
     print_t (location_t l) : statement_t (l) {}
     print_t (const xpub3_print_t &x);
+    static ptr<print_t> alloc ();
     
     bool add (ptr<pub3::expr_list_t> l);
     bool to_xdr (xpub3_statement_t *x) const;

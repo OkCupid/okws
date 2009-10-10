@@ -68,6 +68,7 @@ struct yystype {
   ptr<pub3::expr_list_t> p3exprlist;
   ptr<pub3::expr_shell_str_t> p3str;
   ptr<pub3::expr_dict_t> p3dict;
+  ptr<pub3::expr_strbuf_t> p3strbuf;
   pub3::zone_pub_t::pair_t p3pair;
   bool bl;
   xpub3_relop_t relop;
@@ -80,6 +81,7 @@ struct yystype {
   pub3::binding_t p3bind;
   ptr<pub3::identifier_list_t> p3strv;
   ptr<pub3::bindlist_t> p3bl;
+  ptr<pub3::include_t> p3include;
   int64_t num;
 };
 
