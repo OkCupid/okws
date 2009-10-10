@@ -33,19 +33,16 @@ extern int yy_wss_nl;      /* 1 over the fraction of \n to leave in */
 extern int yyesc;          /* on if we're to gobble up espaces in strings */
 
 /* scan.ll */
-int yyerror (str s = NULL);
-int yywarn (str s);
-
 struct yy_buffer_state;
 yy_buffer_state *yy_new_buffer (FILE *ip, size_t sz);
 void yyswitch_to_buffer (yy_buffer_state *s);
+int yyerror (str s = NULL);
 
 extern int yyparse ();
 extern int yylex ();
 void scanner_reset (void);
 void yy_parse_json (str s);
 int yy_get_json_lineno ();
-void yy_parse_fail();
 void scanner_terminate (void);
 
 #ifdef PDEBUG

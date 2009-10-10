@@ -156,63 +156,6 @@ str_split (vec<str> *r, const str &s, bool quoted, int sz)
   return true;
 }
 
-void
-pbinding_t::to_xdr (xpub_pbinding_t *x) const
-{
-  x->fn = fn;
-  hsh->to_xdr (&x->hash);
-}
-
-void
-phash_t::to_xdr (xpubhash_t *x) const
-{
-  memcpy (x->base (), val, PUBHASHSIZE);
-}
-
-pbinding_t::pbinding_t (const xpub_pbinding_t &x) 
-  : fn (x.fn), hsh (New refcounted<phash_t> (x.hash.base ())), 
-		      toplev (false) {}
-
-void
-bindtab_t::unbind (const pbinding_t *p)
-{
-  dec (p->hash ());
-  remove (const_cast<pbinding_t *> (p));
-}
-
-void
-bindtab_t::bind (const pbinding_t *p)
-{
-  pbinding_t *p2;
-  if ((p2 = (*this)[p->filename ()])) {
-    dec (p2->hash ());
-    remove (p2);
-    delete p2;
-  }
-  inc (p->hash ());
-  insert (const_cast<pbinding_t *> (p));
-}
-
-void
-bindtab_t::inc (phashp_t h)
-{
-  u_int *i = cnt[h];
-  if (i) (*i)++;
-  else cnt.insert (h, 1);
-}
-
-void
-bindtab_t::dec (phashp_t h)
-{
-  u_int *i = cnt[h];
-  assert (i);
-  if (!--(*i)) {
-    if (delcb)
-      (*delcb) (h);
-    cnt.remove (h);
-  }
-}
-
 int
 uname2uid (const str &n)
 {
@@ -415,41 +358,6 @@ ls (const str &d)
   while ((ent = readdir (dir))) 
     warn << ent->d_name << "\n";
   closedir (dir);
-}
-
-static void
-okdbg_dump_iterator (vec<str> *b, const pbinding_t &x)
-{
-  x.okdbg_dump_vec (b);
-}
-
-
-void
-bindtab_t::okdbg_dump_vec (vec<str> *s) const 
-{
-  strbuf b;
-  b.fmt ("===================== Begin Bindtab Dump (%p) "
-	 "=====================\n",
-	 this);
-  s->push_back (b);
-  traverse (wrap (okdbg_dump_iterator, s));
-  b.tosuio ()->clear ();
-  b.fmt ("===================== End Bindtab Dump (%p) "
-	 "=====================\n",
-	 this);
-  s->push_back (b);
-}
-
-void
-pbinding_t::okdbg_dump_vec (vec<str> *s) const 
-{
-  if (!fn) {
-    s->push_back ("** EMPTY PBINDING **");
-  } else {
-    strbuf b;
-    b << fn << " -> " << hsh->to_str () << " (" << (toplev ? 1 : 0) << ")\n";
-    s->push_back (b);
-  }
 }
 
 int

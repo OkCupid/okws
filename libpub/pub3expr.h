@@ -5,6 +5,8 @@
 
 #include "pub3expr.h"
 #include "pub3base.h"
+#include "pub3prot.h"
+#include "pscalar.h"
 
 namespace pub3 {
 

@@ -4,6 +4,7 @@
 %{
 #include "pub_parse.h"
 #include "parse.h"
+#include "pub3parse.h"
 #include "qhash.h"
 #define YY_STR_BUFLEN 20*1024
 
@@ -21,7 +22,10 @@ static int  p3_regex_finish (const char *opts);
 static void p3_regex_escape_sequence (const char *c);
 static int  p3_identifier (const char *yyt);
 
+static void bracket_mark_left (int n = 1);
 static int bracket_check_eof (void);
+static void bracket_mark_right (void);
+static int unbalanced_bracket (void);
 
 int yy_ssln;
 int yy_wss_nl;
@@ -265,7 +269,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 
 "{{"		{ 
    	     	   yy_d_brace ++; 
-		   yy_push_state (yywss ? WH : H);
+		   yy_push_state (H);
 	 	   return T_2L_BRACE; 
 		}
 .		{ return yyerror ("illegal token in Pub v3 environment"); }
@@ -302,7 +306,7 @@ false		     { return T_P3_FALSE; }
 null		     { return T_P3_NULL; }
 ["]		     { json_str_begin (JSON_STR); }
 [']		     { json_str_begin (JSON_SQ_STR); }
-.		     { return json_error ("illegal token in JSON environment");}
+.		     { return yyerror ("illegal token in JSON environment"); }
 }
 
 <JSON_STR>{
@@ -368,32 +372,33 @@ nlcount (int m)
   inc_lineno (n);
 }
 
+void
+begin_P3_STR (char ch)
+{
+  yy_p3_str_char = ch;
+  yy_push_state (P3_STR);
+  yy_ssln = pub3::plineno ();
+}
+
+bool
+end_P3_STR (char ch)
+{
+  bool ret = false;
+  if (yy_p3_str_char == ch) {
+    yy_pop_state (); 
+    ret = true;
+  }
+  return ret;
+}
+
 int
 yyerror (str msg)
 {
-  if (yy_json_mode) {
-    json_error (msg);
-  } else {
-    if (!msg) msg = "bailing out due to earlier warnings";
-    pub3::parse_error (msg);
-  }
+  if (!msg) msg = "bailing out due to earlier warnings";
+  pub3::parse_error (msg);
   return 0;
 }
 
-void
-yy_parse_fail()
-{
-  if (!yy_json_mode) {
-    PARSEFAIL;
-  }
-}
-
-int
-yywarn (str msg)
-{
-  PWARN("lexer warning: " << msg);
-  return 0;
-}
 
 void
 gcc_hack_use_static_functions ()
@@ -411,6 +416,29 @@ scanner_reset (void)
    yy_d_bracket_linenos.clear ();
 }
 
+void
+bracket_mark_left (int l)
+{
+   for (int i = 0; i < l; i++) {
+     yy_d_bracket_linenos.push_back (pub3::plineno());
+   }
+}
+
+void
+bracket_mark_right (void)
+{
+   if (yy_d_bracket_linenos.size ())
+     yy_d_bracket_linenos.pop_back ();
+}
+
+int
+unbalanced_bracket (void)
+{
+  int ret = 0;
+  if (yy_d_bracket_linenos.size ())
+    ret = yy_d_bracket_linenos.back ();
+  return ret;
+}
 
 int
 bracket_check_eof (void)
@@ -447,7 +475,7 @@ pop_p3_func (void)
 void 
 p3_regex_begin (char ch) 
 {
-  yy_p3_regex_start_line = PLINENO;
+  yy_p3_regex_start_line = pub3::plineno ();
   char open = ch, close = '\0';
 
   switch (ch) {
@@ -612,14 +640,6 @@ yy_parse_json (str s)
   yy_scan_bytes (s.cstr (), s.len());
 }
 
-int
-json_error (str s)
-{
-  warn << "<json-input>:" << yy_json_lineno << ": " << s << "\n";
-  yyterminate ();
-  return 0;
-}
-
 //-----------------------------------------------------------------------
 
 static str normalize_tag (const char *in)
@@ -653,12 +673,6 @@ close_pre_tag (const char *in)
       current_pre_tag = NULL;
   }
   return ret;
-}
-
-void 
-scanner_terminate ()
-{
-   yyterminate ();
 }
 
 //-----------------------------------------------------------------------

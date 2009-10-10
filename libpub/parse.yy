@@ -566,7 +566,7 @@ p3_integer_constant: T_P3_INT
 	   int64_t i = 0;
 	   if (!convertint ($1, &i)) {
 	      strbuf b ("Cannot convert '%s' to int", $1.cstr ());
-	      yy_parse_fail();
+	      pub3::parse_error (b);
 	   }
 	   $$ = New refcounted<pub3::expr_int_t> (i);
 	}
@@ -574,8 +574,8 @@ p3_integer_constant: T_P3_INT
 	{
 	   u_int64_t u = 0;
 	   if (!convertuint ($1, &u)) {
-	      strbuf b ("Cannot conver '%s' to unsigned int", $1.cstr ());
-	      yy_parse_fail();
+	      strbuf b ("Cannot convert '%s' to unsigned int", $1.cstr ());
+	      pub3::parse_error (b);
            }
 	   if (u <= u_int64_t (INT64_MAX)) {
 	     $$ = New refcounted<pub3::expr_int_t> (u);
@@ -590,7 +590,7 @@ p3_floating_constant: T_P3_FLOAT
 	   double d = 0;
 	   if (!convertdouble ($1, &d)) {
 	      strbuf b ("Cannot convert '%s' to double", $1.cstr ());
-	      yy_parse_fail();
+	      pub3::parse_error (b);
            }
 	   $$ = d;
 	}
@@ -779,7 +779,7 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause
         {
 	    ptr<pub3::for_t> f = pub3::for_t::alloc ();
 	    if (!f->add_params ($2)) {
-	      yy_parse_fail();
+	       pub3::parse_error ("failed to set parameters for for() loop");
 	    }
 	    f->add_body ($3);
 	    f->add_empty ($4);
@@ -791,7 +791,6 @@ p3_print: T_P3_PRINT p3_flexi_tuple
            ptr<pub3::print_t> p = pub3::print_t::alloc ();
 	   if (!p->add ($2)) {
 	     pub3::parse_error ("bad arguments passed to print");
-	     yy_parse_fail();
 	   }
 	   $$ = p;
        }
