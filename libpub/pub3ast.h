@@ -39,6 +39,7 @@ namespace pub3 {
     virtual void publish_nonblock (publish_t p) const {}
     virtual void publish (publish_t p, status_ev_t ev, CLOSURE) const {}
     virtual bool might_block () const { return true; }
+    static ptr<zone_t> alloc (const xpub3_zone_t &z);
 
   };
 
@@ -57,6 +58,7 @@ namespace pub3 {
   class zone_html_t : public zone_container_t {
   public:
     zone_html_t (location_t l);
+    zone_html_t (const xpub3_zone_html_t &z);
     void add (ptr<zone_t> z);
     void add (str s);
     void add (char ch);
@@ -77,6 +79,7 @@ namespace pub3 {
   class zone_text_t : public zone_t {
   public:
     zone_text_t (location_t l) : zone_t (l) {}
+    zone_text_t (const xpub3_zone_text_t &z);
 
     static ptr<zone_text_t> alloc ();
     static ptr<zone_text_t> alloc (str s);
@@ -103,6 +106,7 @@ namespace pub3 {
   class zone_inline_expr_t : public zone_t {
   public:
     zone_inline_expr_t (location_t l, ptr<expr_t> e);
+    zone_inline_expr_t (const xpub3_zone_inline_expr_t &z);
     static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
   protected:
     ptr<expr_t> _expr;
@@ -113,6 +117,7 @@ namespace pub3 {
   class zone_pub_t : public zone_t {
   public:
     zone_pub_t (location_t l);
+    zone_pub_t (const xpub3_zone_pub_t &z);
     static ptr<zone_pub_t> alloc ();
 
     struct pair_t {

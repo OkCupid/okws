@@ -26,15 +26,13 @@ expr_to_xdr (ptr<const pub3::expr_t> e, xpub3_expr_t *x)
 //-----------------------------------------------------------------------
 
 bool
-pub3::for_t::to_xdr (xpub_obj_t *x) const
+pub3::for_t::to_xdr (xpub3_statement_t *x) const
 {
-  x->set_typ (XPUB3_FOR);
-  x->forloop->lineno = lineno;
+  x->set_typ (XPUB3_STATEMENT_FOR);
+  x->forloop->lineno = _lineno;
   x->forloop->iter = _iter;
   expr_to_xdr (_arr, &x->forloop->arr);
-  if (_env) {
-    _env->to_xdr (&x->forloop->body);
-  }
+  if (_body) { _body->to_xdr (&x->forloop->body); }
   if (_empty && _empty->sec ()) {
     x->forloop->empty.alloc ();
     _empty->sec ()->to_xdr (x->forloop->empty);
@@ -45,11 +43,11 @@ pub3::for_t::to_xdr (xpub_obj_t *x) const
 //-----------------------------------------------------------------------
 
 pub3::for_t::for_t (const xpub3_for_t &x)
-  : pfile_func_t (x.lineno),
+  : statement_t (x.lineno),
     _iter (x.iter),
     _arr (expr_t::alloc (x.arr)),
-    _env (nested_env_t::alloc (x.body)),
-    _empty (nested_env_t::alloc (x.empty)) {}
+    _body (zone_t::alloc (x.body)),
+    _empty (zone_t::alloc (x.empty)) {}
 
 //-----------------------------------------------------------------------
 
@@ -120,6 +118,31 @@ pub3::expr_t::alloc (const xpub3_expr_t *x)
   ptr<pub3::expr_t> ret;
   if (x) ret = expr_t::alloc (*x);
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_t>
+pub3::zone_t::alloc (const xpub3_zone_t &z)
+{
+  ptr<pub3::zone_t> r;
+  switch (z.typ) {
+  case XPUB3_ZONE_HTML:
+    r = New refcounted<zone_html_t> (*z.html);
+    break;
+  case XPUB3_ZONE_TEXT:
+    r = New refcounted<zone_text_t> (*z.text);
+    break;
+  case XPUB3_ZONE_INLINE_EXPR:
+    r = New refcounted<zone_inline_expr_t> (*z.text);
+    break;
+  case XPUB3_ZONE_PUB:
+    r = New refcounted<zone_pub_t> (*z.text);
+    break;
+  default:
+    break;
+  }
+  return r;
 }
 
 //-----------------------------------------------------------------------
