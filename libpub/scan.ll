@@ -374,11 +374,8 @@ yyerror (str msg)
   if (yy_json_mode) {
     json_error (msg);
   } else {
-    if (!msg) 
-      msg = "bailing out due to earlier warnings";
-    PWARN(msg);
-    PARSEFAIL;	
-    yyterminate ();
+    if (!msg) msg = "bailing out due to earlier warnings";
+    pub3::parse_error (msg);
   }
   return 0;
 }
@@ -396,39 +393,6 @@ yywarn (str msg)
 {
   PWARN("lexer warning: " << msg);
   return 0;
-}
-
-void
-yy_push_pubstate (pfile_type_t t)
-{
-  switch (t) {
-  case PFILE_TYPE_CONF:
-    yy_push_state (H);
-    break;
-  case PFILE_TYPE_H:
-    yy_push_state (H);
-    break;
-  default:
-    fatal << "unknown lexer state\n";
-  }
-}
-
-void
-yy_pop_pubstate ()
-{
-  yy_pop_state ();
-}
-
-void
-yyswitch (yy_buffer_state *s)
-{
-  yy_switch_to_buffer (s);
-}
-
-yy_buffer_state *
-yycreatebuf (FILE *fp)
-{
-  return (yy_create_buffer (fp, YY_BUF_SIZE));
 }
 
 void
@@ -689,6 +653,12 @@ close_pre_tag (const char *in)
       current_pre_tag = NULL;
   }
   return ret;
+}
+
+void 
+scanner_terminate ()
+{
+   yyterminate ();
 }
 
 //-----------------------------------------------------------------------

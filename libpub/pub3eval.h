@@ -43,15 +43,27 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  typedef event<xpub_status_t>::ref status_ev_t;
+
+  //-----------------------------------------------------------------------
+
+  // Not sure what's going to be here yet...
+  class output_t {
+
+
+  };
+
+  //-----------------------------------------------------------------------
+
   class eval_t {
   public:
 
     enum { EVAL_INIT = -2, EVAL_DONE = -1 };
 
-    eval_t (ptr<env_t> e, output_t *o); 
+    eval_t (ptr<env_t> e, ptr<output_t> o); 
     ~eval_t ();
 
-    output_t *output () const { return _output; }
+    ptr<output_t> output () const { return _output; }
     ptr<env_t> env () { return _env; }
     ptr<const env_t> env () const { return _env; }
 
@@ -66,7 +78,7 @@ namespace pub3 {
   private:
 
     ptr<env_t> _env;
-    output_t *_output;
+    ptr<output_t> _output;
     bool _loud;
     bool _silent;
     ssize_t _stack_p;
@@ -75,4 +87,9 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class publish_t : public eval_t {
+
+  };
+
+  //-----------------------------------------------------------------------
 };

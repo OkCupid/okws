@@ -7,26 +7,9 @@
 
 #include "pub.h"
 #include "pub3expr.h"
+#include "pub3eval.h"
 
 namespace pub3 {
-
-  //-----------------------------------------------------------------------
-
-  class expr_statement_t {
-  public:
-    expr_statement_t (ptr<pub3::expr_t> e, int l) 
-      : _expr (e), _lineno (l) {}
-    expr_statement_t (const xpub3_expr_statement_t &x);
-    void output (output_t *o, penv_t *e) const;
-    bool publish_nonblock (pub2_iface_t *, output_t *o, penv_t *e) const;
-    pfile_el_type_t get_type () const { return PFILE_PUB3_EXPR_STATEMENT; }
-    const char *get_obj_name () const { return "pub3::expr_statement_t"; }
-    void dump2 (dumper_t *d) const { /* XXX - implement me */ }
-    bool to_xdr (xpub_obj_t *x) const;
-  private:
-    ptr<expr_t> _expr;
-    const int _lineno;
-  };
 
   //-----------------------------------------------------------------------
 
@@ -41,8 +24,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::runtime_fn_t"; }
 
-    ptr<const pval_t> eval (eval_t e) const { return NULL; }
-    ptr<pval_t> eval_freeze (eval_t e) const { return NULL; }
+    ptr<const expr_t> eval_to_val (eval_t e) const { return NULL; }
 
   protected:
     str _name;
@@ -57,11 +39,8 @@ namespace pub3 {
       : runtime_fn_t (n, a, l) {}
 
     static ptr<runtime_fn_stub_t> alloc (const str &n, ptr<expr_list_t> l);
-
     const char *get_obj_name () const { return "pub3::runtime_fn_stub_t"; }
-
-    ptr<const pval_t> eval (eval_t e) const;
-    ptr<pval_t> eval_freeze (eval_t e) const;
+    ptr<const expr_t> eval_to_val (eval_t e) const;
     bool unshift_argument (ptr<expr_t> e);
 
   protected:
@@ -75,9 +54,7 @@ namespace pub3 {
   public:
     error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)
       : runtime_fn_t (n, a, l), _err (err) {}
-
-    ptr<const pval_t> eval (eval_t e) const;
-    ptr<pval_t> eval_freeze (eval_t e) const;
+    ptr<const expr_t> eval_to_val (eval_t e) const;
     const char *get_obj_name () const { return "pub3::error_fn_t"; }
   protected:
     str _err;

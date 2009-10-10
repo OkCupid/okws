@@ -160,7 +160,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  zone_pub_t::add (zone_pair_t p)
+  zone_pub_t::add (zone_pub_t::pair_t p)
   {
     if (p.first)  add (p.first);
     if (p.second) add (p.second);
@@ -216,10 +216,10 @@ namespace pub3 {
 
     bool ret = true;
     if (!l || l->size () < 1 || l->size () > 2) {
-      PWARN ("for: takes 2 arguments (simple identifier and array)\n");
+      parse_error ("for: takes 2 arguments (simple identifier and array)\n");
       ret = false;
     } else if (!(_iter = (*l)[0]->to_identifier ()) || !_iter.len ()) {
-      PWARN ("for: argument 1 must be an identifier\n");
+      parse_error ("for: argument 1 must be an identifier\n");
       ret = false;
     } else if (l->size () > 1) {
       _arr = (*l)[1];

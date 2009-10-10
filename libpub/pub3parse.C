@@ -26,7 +26,8 @@ namespace pub3 {
 
   ptr<parser_t> parser_t::current () { return g_current; }
   void parser_t::set_current (ptr<parser_t> p) { g_current = p; }
-  parser_t::parser_t (str f) : _location (f, 1) {}
+  parser_t::parser_t (str f) : _location (f, 1), _error (false) {}
+  parser_t::parser_t () : _location (), _error (false) {}
   lineno_t parser_t::location () const { return _location._lineno; }
   void parser_t::inc_lineno (lineno_t l) { _location._lineno += l; }
   const location_t &location () const { return _location; }
@@ -54,6 +55,9 @@ namespace pub3 {
     yyparse ();
     flex_cleanup ();
     ptr<expr_t> ret = _out;
+    if (error_condition ()) {
+      ret = NULL;
+    }
     _out = NULL;
     return ret;
   }
@@ -87,7 +91,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   void
-  pub_parser_t::error (str m)
+  parser_t::error (str m)
   {
     strbuf b;
     s = _location.to_str ();
@@ -113,7 +117,7 @@ namespace pub3 {
 
     // must do this before trying to open the file (or anything else
     // for that matter).
-    _location._filename = rfn;
+    _location.set_filename (rfn);
 
     // Sanity check and call fopen()
     FILE *fp = open_file (rfn);
@@ -129,7 +133,7 @@ namespace pub3 {
     }
 
     // don't return data if there were problems.
-    if (_errors.size ()) {
+    if (error_condition ()) {
       ret = NULL;
     }
 
@@ -139,6 +143,10 @@ namespace pub3 {
   //====================================================================
 
   lineno_t plineno () { return parser_t::current ()->lineno (); }
+
+  //====================================================================
+
+  void parse_error (str s) { parser_t::current ()->error (s); }
 
   //====================================================================
 

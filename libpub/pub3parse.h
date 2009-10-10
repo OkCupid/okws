@@ -6,6 +6,7 @@
 #include "pub3base.h"
 #include "pub3expr.h"
 #include "pub3ast.h"
+#include "pub3file.h"
 
 namespace pub3 {
 
@@ -13,6 +14,7 @@ namespace pub3 {
 
   class parser_t {
   public:
+    parser_t ();
     parser_t (str f);
     lineno_t lineno () const;
     const location_t &location () const;
@@ -22,16 +24,27 @@ namespace pub3 {
     static void set_current (ptr<parser_t> p);
 
     // callbacks from bison
-    virtual bool set_zone_output (ptr<pub3::zone_t> z) { return false; }
-    virtual bool set_expr_output (ptr<pub3::expr_t> x) { return false; }
+    virtual bool set_zone_output (ptr<zone_t> z) { return false; }
+    virtual bool set_expr_output (ptr<expr_t> x) { return false; }
+
+    // report an error;
+    virtual void error (str d);
+    virtual void error ();
+
+    const vec<str> &errors () const;
 
   protected:
+    bool error_condition () const { return _errors.size () || _error; }
+
     location_t _location;
+    vec<str> _errors;
+    bool _error;
   };
 
   //-----------------------------------------------------------------------
 
   lineno_t plineno ();
+  void parse_error ();
 
   //-----------------------------------------------------------------------
 
@@ -49,17 +62,13 @@ namespace pub3 {
 
   class pub_parser_t : public parser_t {
   public:
-    pub_parser_t (str f) : parser_t (f) {}
-    void set_zone_output (ptr<zone_t> z);
+    pub_parser_t () : parser_t () {}
+    bool set_zone_output (ptr<zone_t> z);
     ptr<file_t> parse (ptr<metadata_t> m);
-    bool set_zone_output (ptr<pub3::zone_t> z);
-    const vec<str> &errors () const;
-    void error (str d);
   protected:
     FILE *open_file (const str &fn);
     location_t _location;
     ptr<zone_t> _out;
-    vec<str> _errors;
   };
 
   //-----------------------------------------------------------------------

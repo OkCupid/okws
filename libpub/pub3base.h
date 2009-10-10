@@ -14,6 +14,7 @@ namespace pub3 {
   struct location_t {
     location_t () : _lineno (0) {}
     location_t (str f, lineno_t l) : _filename (f), _lineno (l) {}
+    void set_filename (str f) { _filename = f; _lineno = 1; }
     str to_str () const;
     str _filename;
     lineno_t _lineno;

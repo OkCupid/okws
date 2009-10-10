@@ -1,53 +1,6 @@
 // -*-c++-*-
 #include "pub3func.h"
 
-//-----------------------------------------------------------------------
-
-bool
-pub3::for_t::add (ptr<expr_list_t> l)
-{
-  bool ret = true;
-  if (!l || l->size () < 1 || l->size () > 2) {
-    PWARN ("for: takes 2 arguments (simple identifier and array)\n");
-    ret = false;
-  } else if (!(_iter = (*l)[0]->to_identifier ()) || !_iter.len ()) {
-    PWARN ("for: argument 1 must be an identifier\n");
-    ret = false;
-  } else if (l->size () > 1) {
-    _arr = (*l)[1];
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::include_t::add (ptr<expr_list_t> l)
-{
-  bool ret = true;
-  if (!l || l->size () < 1 || l->size () > 2) {
-    PWARN ("include takes 1 or 2 arguments (file and dictionary/bindings)");
-    ret = false;
-  } else {
-    _file = (*l)[0];
-    if (l->size () > 1) { _dict = (*l)[1]; }
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::for_t::output (output_t *o, penv_t *e) const
-{
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::include_t::output (output_t *o, penv_t *e) const
-{
-}
 
 //-----------------------------------------------------------------------
 

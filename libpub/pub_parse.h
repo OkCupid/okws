@@ -35,16 +35,18 @@ extern int yyesc;          /* on if we're to gobble up espaces in strings */
 /* scan.ll */
 int yyerror (str s = NULL);
 int yywarn (str s);
-void yy_push_pubstate (pfile_type_t t);
-void yy_pop_pubstate ();
-void yyswitch (yy_buffer_state *s);
-yy_buffer_state *yycreatebuf (FILE *fp);
+
+struct yy_buffer_state;
+yy_buffer_state *yy_new_buffer (FILE *ip, size_t sz);
+void yyswitch_to_buffer (yy_buffer_state *s);
+
 extern int yyparse ();
 extern int yylex ();
 void scanner_reset (void);
 void yy_parse_json (str s);
 int yy_get_json_lineno ();
 void yy_parse_fail();
+void scanner_terminate (void);
 
 #ifdef PDEBUG
 extern int yydebug;
@@ -60,8 +62,8 @@ struct yystype {
   ::str str;
   yystype_regex_pair_t regex;
 
-  ptr<pub3::cond_clause_list_t> p3cclist;
-  ptr<pub3::cond_clause_t> p3cc;
+  ptr<pub3::if_clause_list_t> p3iclist;
+  ptr<pub3::if_clause_t> p3ic;
   ptr<pub3::expr_t> p3expr;
   ptr<pub3::expr_list_t> p3exprlist;
   ptr<pub3::expr_shell_str_t> p3str;
@@ -75,7 +77,7 @@ struct yystype {
   ptr<pub3::case_t> p3case;
   ptr<pub3::case_list_t> p3cl;
   pub3::binding_t p3bind;
-  ptr<pub3::idenitifer_list_t> p3strv;
+  ptr<pub3::identifier_list_t> p3strv;
   ptr<pub3::bindlist_t> p3bl;
 };
 

@@ -43,11 +43,11 @@ namespace pub3 {
     
     void to_xdr (xpub3_metadata_t *x) const;
     
-    inline fhash_t hash () const { return hsh; }
-    inline str filename () const { return fn; }
+    inline fhash_t hash () const { return *_hsh; }
+    inline str filename () const { return _jfn; }
 
-    bool operator== (const fhash_t &ph) { return *hsh == ph; }
-    bool operator!= (const fhash_t &ph) { return !(*hsh == ph); }
+    bool operator== (const fhash_t &ph) { return _hsh && *_hsh == ph; }
+    bool operator!= (const fhash_t &ph) { return !_hsh || !(*_hsh == ph); }
     
     void okdbg_dump_vec (vec<str> *s) const;
     
@@ -88,7 +88,7 @@ template<> struct hashfn<pub3::fhash_t> {
 
 template<> struct equals<pub3::fhash_t> {
   equals () {}
-  bool operator() (const pub3::fhash_t &s1, const pub3::fhash_t &s2) const
+  bool operator() (const pub3::fhash_t *s1, const pub3::fhash_t *s2) const
   { return (*s1 == *s2); }
 };
 

@@ -23,6 +23,8 @@ namespace pub3 {
 
   class zone_html_t;
   class zone_pub_t;
+  class zone_text_t;
+  class statement_t;
   
   class zone_t : public ast_node_t {
   public:
@@ -33,6 +35,11 @@ namespace pub3 {
     virtual ptr<zone_html_t> zone_html () { return NULL; }
     virtual zone_pub_t *zone_pub () { return NULL; }
     virtual ptr<zone_text_t> zone_text () { return NULL; }
+
+    virtual void publish_nonblock (publish_t p) const {}
+    virtual void publish (publish_t p, status_ev_t ev, CLOSURE) const {}
+    virtual bool might_block () const { return true; }
+
   };
 
   //-----------------------------------------------------------------------
@@ -77,7 +84,7 @@ namespace pub3 {
     str to_str () const { return _b; }
     void add (str s);
     void add (char c);
-    ptr<zone_text_t> zone_text () { return this; }
+    ptr<zone_text_t> zone_text () { return mkref (this); }
   protected:
 
     // while parsing, use the following representation:
@@ -116,7 +123,7 @@ namespace pub3 {
     void unreserve ();
     void take_reserved_slot (ptr<statement_t> s);
     void add (ptr<statement_t> s);
-    void add (zone_pair_t zp);
+    void add (pair_t zp);
     bool add (ptr<zone_t> z);
     vec<ptr<statement_t> > *statements () { return &_statements; }
     zone_pub_t *zone_pub () { return this; }
@@ -147,7 +154,7 @@ namespace pub3 {
 
   class expr_statement_t : public statement_t {
   public:
-    expr_statement_t (location l) : statement_t (l) {}
+    expr_statement_t (location_t l) : statement_t (l) {}
     static ptr<expr_statement_t> alloc (ptr<expr_t> x);
     void add (ptr<expr_t> x);
   protected:
@@ -160,7 +167,7 @@ namespace pub3 {
   public:
     for_t (location_t l) : statement_t (l) {}
     for_t (const xpub3_for_t &x);
-    bool to_xdr (xpub_obj_t *x) const;
+    bool to_xdr (xpub3_statement_t *x) const;
 
     static ptr<for_t> alloc ();
 
@@ -169,11 +176,9 @@ namespace pub3 {
     bool add_empty (ptr<zone_t> z);
 
     const char *get_obj_name () const { return "pub3::for_t"; }
-    virtual void publish (pub2_iface_t *, output_t *, penv_t *, 
-			  xpub_status_cb_t , CLOSURE) const;
-    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
-    void output (output_t *o, penv_t *e) const;
-    bool might_block () const { return true; }
+    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    void publish_nonblock (publish_t p) const;
+    bool might_block () const;
   protected:
     str _iter;
     ptr<expr_t> _arr;
@@ -196,7 +201,7 @@ namespace pub3 {
     bool to_xdr (xpub3_if_clause_t *x) const;
 
     ptr<const expr_t> expr () const { return _expr; }
-    ptr<nested_env_t> env () const { return _env; }
+    ptr<zone_t> body () const { return _body; }
     bool might_block () const;
 
   private:
@@ -223,15 +228,14 @@ namespace pub3 {
     void add_clause (ptr<if_clause_t> c);
 
     const char *get_obj_name () const { return "pub3::if_t"; }
-    bool to_xdr (xpub_obj_t *x) const;
-    void publish (pub2_iface_t *, output_t *, penv_t *, 
-		  xpub_status_cb_t , CLOSURE) const;
-    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
-    void output (output_t *o, penv_t *e) const;
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    void publish_nonblock (publish_t p) const;
     bool might_block () const;
 
   private:
-    ptr<zone_t> find_clause (output_t *o, penv_t *e) const;
+    ptr<zone_t> find_clause (publish_t p) const;
 
     ptr<if_clause_list_t> _clauses;
     mutable int _might_block; // one of: -1 (not set), 0 (no), and 1 (yes)
@@ -274,7 +278,7 @@ namespace pub3 {
 
   class case_list_t : public vec<ptr<case_t > > {
   public:
-    case_list_t (location_t l) : statement_t (l) {}
+    case_list_t () {}
     static ptr<case_list_t> alloc ();
     void add_case (ptr<case_t> c);
   };
@@ -315,7 +319,7 @@ namespace pub3 {
   public:
     load_t (location_t l) : include_t (l) {}
     load_t (const xpub3_include_t &x);
-    bool to_xdr (xpub_obj_t *x) const;
+    bool to_xdr (xpub3_statement_t *x) const;
     bool muzzle_output () const { return true; }
     str fnname () const { return "load"; }
   };
@@ -328,9 +332,10 @@ namespace pub3 {
     print_t (const xpub3_print_t &x);
     
     bool add (ptr<pub3::expr_list_t> l);
-    bool to_xdr (xpub_obj_t *x) const;
-    bool publish_nonblock (pub2_iface_t *, output_t *, penv_t *) const;
-    void output (output_t *o, penv_t *e) const;
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    void publish_nonblock (publish_t p) const;
+    bool might_block () const { return false; }
 
   private:
     ptr<pub3::expr_list_t> _args;
@@ -341,7 +346,7 @@ namespace pub3 {
   class fndef_t : public statement_t {
   public:
     fndef_t (str nm, location_t l) : statement_t (l), _name (nm) {}
-    fndef_t (const xpub3_fndef_t &x) {}
+    fndef_t (const xpub3_fndef_t &x) ;
     static ptr<fndef_t> alloc (str nm);
     void add_params (ptr<identifier_list_t> p);
     void add_body (ptr<zone_t> z);

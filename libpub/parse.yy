@@ -56,8 +56,8 @@
 %token <str> T_P3_BEGIN_PRE
 %token <str> T_P3_END_PRE
 
-%type <p3cclist> p3_elifs p3_elifs_opt;
-%type <p3cc> p3_if_clause p3_elif p3_else p3_else_opt;
+%type <p3iclist> p3_elifs p3_elifs_opt;
+%type <p3ic> p3_if_clause p3_elif p3_else p3_else_opt;
 
 %type <p3expr> p3_expr p3_logical_AND_expr p3_equality_expr p3_nonparen_expr;
 %type <p3expr> p3_relational_expr p3_unary_expr p3_postfix_expr;
@@ -333,7 +333,8 @@ p3_inclusive_OR_expr: p3_equality_expr
 	       | p3_inclusive_OR_expr T_P3_PIPE p3_equality_expr
 	       {
 	          if (!$3->unshift_argument ($1)) {
-		     PWARN("Cannot push argument onto non-function");
+		     str err = "Cannot push argument onto non-function";
+		     pub3::parse_error (err);
 		     yy_parse_fail();
 		  }
 		  $$ = $3;
@@ -498,10 +499,10 @@ p3_regex: T_P3_REGEX
 	     ptr<rxx> x;
              x =  pub3::rxx_factory_t::compile ($1.regex, $1.opts, &err);
 	     if (err) {
-               PWARN(err);
-	       yy_parse_fail();
-	     }
-	     $$ = pub3::expr_regex_t::alloc (x, $1.regex, $1.opts);
+               pub3::parse_error (err);
+	     } else {
+	       $$ = pub3::expr_regex_t::alloc (x, $1.regex, $1.opts);
+             }
 	  }
 	  ;
 
@@ -775,7 +776,7 @@ p3_print: T_P3_PRINT p3_flexi_tuple
        {
            ptr<pub3::print_t> p = pub3::print_t:alloc ();
 	   if (!p->add ($2)) {
-	     PWARN("bad arguments passed to print");
+	     pub3::parse_error ("bad arguments passed to print");
 	     yy_parse_fail();
 	   }
 	   $$ = p;
