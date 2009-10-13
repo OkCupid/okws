@@ -242,10 +242,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_OR_t : public expr_t {
+  class expr_OR_t : public expr_logical_t {
   public:
     expr_OR_t (ptr<expr_t> t1, ptr<expr_t> t2, lineno_t l) 
-      : expr_t (l), _t1 (t1), _t2 (t2) {}
+      : expr_logical_t (l), _t1 (t1), _t2 (t2) {}
     expr_OR_t (const xpub3_mathop_t &x);
     static ptr<expr_OR_t> alloc (ptr<expr_t> t1, ptr<expr_t> t2);
     bool to_xdr (xpub3_expr_t *x) const;
@@ -423,8 +423,8 @@ namespace pub3 {
   public:
     expr_dictref_t (ptr<expr_t> d, const str &k, lineno_t lineno)
       : expr_t (lineno), _dict (d), _key (k) {}
-    static ptr<expr_dictref_t> alloc (ptr<expr_t> d, const str &k);
     expr_dictref_t (const xpub3_dictref_t &x);
+    static ptr<expr_dictref_t> alloc (ptr<expr_t> d, const str &k);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_dictref_t"; }
 
@@ -745,6 +745,7 @@ namespace pub3 {
   public:
     binding_t () {}
     binding_t (const str &s, ptr<expr_t> x);
+    binding_t (const xpub3_binding_t &x);
     str name () const { return _name; }
     ptr<expr_t> expr () { return _expr; }
     ptr<const expr_t> expr () const { return _expr; }
@@ -778,7 +779,6 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
-
 
   class expr_dict_t : public expr_t, public bindtab_t {
   public:

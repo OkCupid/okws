@@ -123,6 +123,14 @@ convertdouble (const str &x, double *dp)
 }
 
 double
+convertdouble (const str &x)
+{
+  double ret = 0.0;
+  convertdouble (x, &ret);
+  return ret;
+}
+
+double
 scalar_obj_t::_p_t::to_double () const
 {
   if (_double_cnv == CNV_NONE) {

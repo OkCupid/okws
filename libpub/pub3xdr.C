@@ -29,13 +29,13 @@ bool
 pub3::for_t::to_xdr (xpub3_statement_t *x) const
 {
   x->set_typ (XPUB3_STATEMENT_FOR);
-  x->forloop->lineno = _lineno;
-  x->forloop->iter = _iter;
-  expr_to_xdr (_arr, &x->forloop->arr);
-  if (_body) { _body->to_xdr (&x->forloop->body); }
-  if (_empty && _empty->sec ()) {
-    x->forloop->empty.alloc ();
-    _empty->sec ()->to_xdr (x->forloop->empty);
+  x->for_statement->lineno = lineno ();
+  x->for_statement->iter = _iter;
+  expr_to_xdr (_arr, &x->for_statement->arr);
+  if (_body) { _body->to_xdr (&x->for_statement->body); }
+  if (_empty) {
+    x->for_statement->empty.alloc ();
+    _empty->to_xdr (x->for_statement->empty);
   }
   return true;
 }
@@ -51,21 +51,19 @@ pub3::for_t::for_t (const xpub3_for_t &x)
 
 //-----------------------------------------------------------------------
 
-pub3::cond_clause_t::cond_clause_t (const xpub3_cond_clause_t &x)
-  : _lineno (x.lineno),
+pub3::if_clause_t::if_clause_t (const xpub3_if_clause_t &x)
+  : statement_t (x.lineno),
     _expr (expr_t::alloc (x.expr)),
-    _env (nested_env_t::alloc (x.body)) {}
+    _body (zone_t::alloc (x.body)) {}
 
 //-----------------------------------------------------------------------
 
-pub3::cond_t::cond_t (const xpub3_cond_t &x)
-  : pfile_func_t (x.lineno),
-    _might_block (-1)
+pub3::if_t::if_t (const xpub3_if_t &x) : statement_t (x.lineno)
 {
   if (x.clauses.size ()) {
-    _clauses = New refcounted<cond_clause_list_t> ();
+    _clauses = New refcounted<if_clause_list_t> ();
     for (size_t i = 0; i < x.clauses.size (); i++) {
-      _clauses->push_back (New refcounted<cond_clause_t> (x.clauses[i]));
+      _clauses->push_back (New refcounted<if_clause_t> (x.clauses[i]));
     }
   }
 }
@@ -73,7 +71,7 @@ pub3::cond_t::cond_t (const xpub3_cond_t &x)
 //-----------------------------------------------------------------------
 
 pub3::include_t::include_t (const xpub3_include_t &x)
-  : pfile_func_t (x.lineno),
+  : statement_t (x.lineno),
     _file (expr_t::alloc (x.file)),
     _dict (expr_t::alloc (x.dict)) {}
 
@@ -85,29 +83,30 @@ pub3::load_t::load_t (const xpub3_include_t &x)
 //-----------------------------------------------------------------------
 
 bool
-pub3::include_t::to_xdr_base (xpub_obj_t *x, xpub_obj_typ_t typ) const
+pub3::include_t::to_xdr_base (xpub3_statement_t *x, 
+			      xpub3_statement_typ_t typ) const
 {
   x->set_typ (typ);
-  x->pub3_include->lineno = lineno;
-  expr_to_xdr (_file, &x->pub3_include->file);
-  expr_to_xdr (_dict, &x->pub3_include->dict);
+  x->include->lineno = lineno ();
+  expr_to_xdr (_file, &x->include->file);
+  expr_to_xdr (_dict, &x->include->dict);
   return true;
 }
 
 //-----------------------------------------------------------------------
 
 bool
-pub3::include_t::to_xdr (xpub_obj_t *x) const
+pub3::include_t::to_xdr (xpub3_statement_t *x) const
 {
-  return to_xdr_base (x, XPUB3_INCLUDE);
+  return to_xdr_base (x, XPUB3_STATEMENT_INCLUDE);
 }
 
 //-----------------------------------------------------------------------
 
 bool
-pub3::load_t::to_xdr (xpub_obj_t *x) const
+pub3::load_t::to_xdr (xpub3_statement_t *x) const
 {
-  return to_xdr_base (x, XPUB3_LOAD);
+  return to_xdr_base (x, XPUB3_STATEMENT_LOAD);
 }
 
 //-----------------------------------------------------------------------
@@ -134,14 +133,24 @@ pub3::zone_t::alloc (const xpub3_zone_t &z)
     r = New refcounted<zone_text_t> (*z.text);
     break;
   case XPUB3_ZONE_INLINE_EXPR:
-    r = New refcounted<zone_inline_expr_t> (*z.text);
+    r = New refcounted<zone_inline_expr_t> (*z.zone_inline);
     break;
   case XPUB3_ZONE_PUB:
-    r = New refcounted<zone_pub_t> (*z.text);
+    r = New refcounted<zone_pub_t> (*z.zone_pub);
     break;
   default:
     break;
   }
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_t>
+pub3::zone_t::alloc (const xpub3_zone_t *z)
+{
+  ptr<zone_t> r;
+  if (z) { r = alloc (*z); }
   return r;
 }
 
@@ -229,7 +238,7 @@ pub3::expr_AND_t::expr_AND_t (const xpub3_mathop_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_add_t::expr_add_t (const xpub3_mathop_t &x)
-  : expr_arithmetic_t (x.lineno),
+  : expr_t (x.lineno),
     _t1 (expr_t::alloc (x.o1)),
     _t2 (expr_t::alloc (x.o2)),
     _pos (x.opcode == XPUB3_MATHOP_ADD) {}
@@ -237,23 +246,19 @@ pub3::expr_add_t::expr_add_t (const xpub3_mathop_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_mult_t::expr_mult_t (const xpub3_mathop_t &x)
-  : expr_arithmetic_t (x.lineno),
+  : expr_t (x.lineno),
     _f1 (expr_t::alloc (x.o1)),
     _f2 (expr_t::alloc (x.o2)) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_div_t::expr_div_t (const xpub3_mathop_t &x)
-  : expr_arithmetic_t (x.lineno),
-    _n (expr_t::alloc (x.o1)),
-    _d (expr_t::alloc (x.o2)) {}
+  : expr_div_or_mod_t (expr_t::alloc (x.o1), expr_t::alloc (x.o2), x.lineno) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_mod_t::expr_mod_t (const xpub3_mathop_t &x)
-  : expr_arithmetic_t (x.lineno),
-    _n (expr_t::alloc (x.o1)),
-    _d (expr_t::alloc (x.o2)) {}
+  : expr_div_or_mod_t (expr_t::alloc (x.o1), expr_t::alloc (x.o2), x.lineno) {}
 
 //-----------------------------------------------------------------------
 
@@ -320,21 +325,21 @@ pub3::expr_list_t::alloc (const xpub3_expr_list_t *x)
 //-----------------------------------------------------------------------
 
 pub3::expr_dictref_t::expr_dictref_t (const xpub3_dictref_t &x)
-  : expr_ref_t (x.lineno),
+  : expr_t (x.lineno),
     _dict (expr_t::alloc (x.dict)),
     _key (x.key) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
-  : expr_ref_t (x.lineno),
+  : expr_t (x.lineno),
     _vec (expr_t::alloc (x.vec)),
     _index (expr_t::alloc (x.index)) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_varref_t::expr_varref_t (const xpub3_ref_t &x)
-  : expr_ref_t (x.lineno), _name (x.key) {}
+  : expr_t (x.lineno), _name (x.key) {}
 
 //-----------------------------------------------------------------------
 
@@ -370,12 +375,7 @@ pub3::expr_uint_t::expr_uint_t (const xpub3_uint_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
-  : _val (0)
-{
-  convertdouble (x.val, &_val);
-}
-
-//-----------------------------------------------------------------------
+  : _val (convertdouble (x.val)) {}
 
 //-----------------------------------------------------------------------
 
@@ -559,12 +559,12 @@ pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::cond_clause_t::to_xdr (xpub3_cond_clause_t *x) const
+pub3::if_clause_t::to_xdr (xpub3_if_clause_t *x) const
 {
-  x->lineno = _lineno;
+  x->lineno = lineno ();
 
   expr_to_xdr (_expr, &x->expr);
-  if (_env) { _env->to_xdr (&x->body); }
+  if (_body) { _body->to_xdr (&x->body); }
 
   return true;
 }
@@ -572,15 +572,15 @@ pub3::cond_clause_t::to_xdr (xpub3_cond_clause_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::cond_t::to_xdr (xpub_obj_t *x) const
+pub3::if_t::to_xdr (xpub3_statement_t *x) const
 {
-  x->set_typ (XPUB3_COND);
-  x->cond->lineno = lineno;
+  x->set_typ (XPUB3_STATEMENT_IF);
+  x->if_statement->lineno = lineno ();
 
   size_t s = _clauses ? _clauses->size () : size_t (0);
-  x->cond->clauses.setsize (s);
+  x->if_statement->clauses.setsize (s);
   for (size_t i = 0; i < s; i++) {
-    (*_clauses)[i]->to_xdr (&x->cond->clauses[i]);
+    (*_clauses)[i]->to_xdr (&x->if_statement->clauses[i]);
   }
   return true;
 }
@@ -608,15 +608,19 @@ pub3::expr_shell_str_t::expr_shell_str_t (const xpub3_shell_str_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_dict_t::expr_dict_t (const xpub3_dict_t &x)
-  : expr_t (x.lineno),
-    _dict (New refcounted<aarr_arg_t> ())
+  : expr_t (x.lineno)
 {
   size_t lim = x.entries.size ();
   for (size_t i = 0; i < lim; i++) {
-    const xpub3_nvpair_t &p = x.entries[i];
-    _dict->add (New nvpair_t (p.key, expr_t::alloc (p.val)));
+    add (binding_t (x.entries [i]));
   }
 }
+
+//-----------------------------------------------------------------------
+
+pub3::binding_t::binding_t (const xpub3_binding_t &x)
+  : _name (x.key),
+    _expr (expr_t::alloc(x.val)) {}
 
 //-----------------------------------------------------------------------
 
@@ -625,18 +629,14 @@ pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_DICT);
   x->dict->lineno = _lineno;
-  
-  if (_dict) {
-    const nvtab_t *tab = _dict->nvtab ();
-    const nvpair_t *p;
-    for (p = tab->first (); p; p = tab->next (p)) {
-      ptr<const pub3::expr_t> e = p->value_expr ();
-      if (e) {
-	xpub3_nvpair_t &p3 = x->dict->entries.push_back ();
-	p3.key = p->name ();
-	expr_to_rpc_ptr (e, &p3.val);
-      }
-    }
+  bindtab_t::const_iterator_t it (*this);
+  const str *key;
+  ptr<expr_t> val;
+
+  while ((key = it.next (&val))) {
+    xpub3_binding_t &b3 = x->dict->entries.push_back ();
+    b3.key = *key;
+    expr_to_rpc_ptr (val, &b3.val);
   }
   return true;
 }
@@ -644,54 +644,18 @@ pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_t::to_xdr (xpub_obj_t *x) const
+pub3::zone_inline_expr_t::to_xdr (xpub3_zone_t *x) const
 {
-  x->set_typ (XPUB3_EXPR);
-  return to_xdr (x->pub3_expr);
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::inline_var_t::to_xdr (xpub_obj_t *x) const
-{
-  x->set_typ (XPUB3_INLINE_VAR);
-  x->pub3_inline_var->lineno = _lineno;
-  expr_to_xdr (_expr, &x->pub3_inline_var->expr);
+  x->set_typ (XPUB3_ZONE_INLINE_EXPR);
+  x->zone_inline->lineno = lineno ();
+  expr_to_xdr (_expr, &x->zone_inline->expr);
   return true;
 }
 
 //-----------------------------------------------------------------------
 
-pub3::inline_var_t::inline_var_t (const xpub3_inline_var_t &x)
-  : _expr (expr_t::alloc (x.expr)),
-    _lineno (x.lineno) {}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_t::to_xdr (xpub_val_t *x) const
-{
-  x->set_typ (XPUB3_VAL_EXPR);
-  expr_to_rpc_ptr (this, x->expr);
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::set_func_t::to_xdr (xpub_obj_t *x) const
-{
-  return to_xdr_common (x, XPUB3_SET_FUNC);
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::setle_func_t::to_xdr (xpub_obj_t *x) const
-{
-  return to_xdr_common (x, XPUB3_SETLE_FUNC);
-}
+pub3::zone_inline_expr_t::zone_inline_expr_t (const xpub3_zone_inline_expr_t &x)
+  : zone_t (x.lineno), _expr (expr_t::alloc (x.expr)) {}
 
 //-----------------------------------------------------------------------
 
@@ -738,22 +702,18 @@ pub3::expr_varref_or_rfn_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 pub3::print_t::print_t (const xpub3_print_t &x)
-  : pfile_func_t (x.lineno),
-    _args (expr_list_t::alloc (x.args)),
-    _silent (x.silent)
-{}
+  : statement_t (x.lineno),
+    _args (expr_list_t::alloc (x.args)) {}
 
 //-----------------------------------------------------------------------
 
 bool
-pub3::print_t::to_xdr (xpub_obj_t *x) const
+pub3::print_t::to_xdr (xpub3_statement_t *x) const
 {
-  x->set_typ (XPUB3_PRINT);
-  x->print->lineno = lineno;
-  x->print->silent = _silent;
+  x->set_typ (XPUB3_STATEMENT_PRINT);
+  x->print->lineno = lineno ();
   if (_args) {
-    x->print->args.alloc ();
-    _args->to_xdr (x->print->args);
+    _args->to_xdr (&x->print->args);
   }
   return true;
 }
@@ -774,22 +734,6 @@ pub3::expr_assignment_t::to_xdr (xpub3_expr_t *x) const
   x->assignment->lineno = _lineno;
   expr_to_rpc_ptr (_lhs, &x->assignment->lhs);
   expr_to_rpc_ptr (_rhs, &x->assignment->rhs);
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-pub3::pstr_el_t::pstr_el_t (const xpub3_pstr_el_t &x)
-  : _expr (expr_t::alloc (x.expr)), _lineno (x.lineno) {}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::pstr_el_t::to_xdr (xpub_pstr_el_t *x) const
-{
-  x->set_typ (XPUB3_PSTR_EL);
-  expr_to_rpc_ptr (_expr, &x->p3el->expr);
-  x->p3el->lineno = _lineno;
   return true;
 }
 
@@ -843,15 +787,15 @@ pub3::expr_mathop_t::alloc (const xpub3_mathop_t &op)
 //-----------------------------------------------------------------------
 
 pub3::expr_statement_t::expr_statement_t (const xpub3_expr_statement_t &x)
-  : _expr (expr_t::alloc (x.expr)), _lineno (x.lineno) {}
+  : statement_t (x.lineno), _expr (expr_t::alloc (x.expr)) {}
 
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_statement_t::to_xdr (xpub_obj_t *x) const
+pub3::expr_statement_t::to_xdr (xpub3_statement_t *x) const
 {
   x->set_typ (XPUB3_EXPR_STATEMENT);
-  x->expr_statement->lineno = _lineno;
+  x->expr_statement->lineno = lineno ();
   if (_expr) {
     x->expr_statement->expr.alloc ();
     _expr->to_xdr (x->expr_statement->expr);

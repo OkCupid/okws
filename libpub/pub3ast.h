@@ -15,6 +15,8 @@ namespace pub3 {
   class ast_node_t : public virtual refcount {
   public: 
     ast_node_t (location_t l) : _location (l) {}
+    ast_node_t (lineno_t l) : _location (l) {}
+    lineno_t lineno () const { return _location._lineno; }
   protected:
     location_t _location; 
   };
@@ -29,18 +31,20 @@ namespace pub3 {
   class zone_t : public ast_node_t {
   public:
     zone_t (location_t l) : ast_node_t (l) {}
+    zone_t (lineno_t l) : ast_node_t (l) {}
     virtual ~zone_t () {}
     virtual str to_str () { return NULL; }
     virtual vec<ptr<zone_t> > *children () { return NULL; }
     virtual ptr<zone_html_t> zone_html () { return NULL; }
     virtual zone_pub_t *zone_pub () { return NULL; }
     virtual ptr<zone_text_t> zone_text () { return NULL; }
+    virtual bool to_xdr (xpub3_zone_t *z) const = 0;
 
     virtual void publish_nonblock (publish_t p) const {}
     virtual void publish (publish_t p, status_ev_t ev, CLOSURE) const {}
     virtual bool might_block () const { return true; }
     static ptr<zone_t> alloc (const xpub3_zone_t &z);
-
+    static ptr<zone_t> alloc (const xpub3_zone_t *z);
   };
 
   //-----------------------------------------------------------------------
@@ -68,6 +72,7 @@ namespace pub3 {
     bool preserve_white_space () const { return _preserve_white_space; }
     void set_preserve_white_space (bool b) { _preserve_white_space = b; }
     void unshift (str s);
+    bool to_xdr (xpub3_zone_t *z) const;
   protected:
     ptr<zone_text_t> push_zone_text ();
   private:
@@ -90,6 +95,7 @@ namespace pub3 {
     void add (str s);
     void add (char c);
     ptr<zone_text_t> zone_text () { return mkref (this); }
+    bool to_xdr (xpub3_zone_t *z) const;
   protected:
 
     // while parsing, use the following representation:
@@ -108,6 +114,7 @@ namespace pub3 {
     zone_inline_expr_t (location_t l, ptr<expr_t> e);
     zone_inline_expr_t (const xpub3_zone_inline_expr_t &z);
     static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
+    bool to_xdr (xpub3_zone_t *z) const;
   protected:
     ptr<expr_t> _expr;
   };
@@ -134,6 +141,7 @@ namespace pub3 {
     bool add (ptr<zone_t> z);
     vec<ptr<statement_t> > *statements () { return &_statements; }
     zone_pub_t *zone_pub () { return this; }
+    bool to_xdr (xpub3_zone_t *z) const;
     
   protected:
     vec<ptr<statement_t> > _statements;
@@ -144,6 +152,8 @@ namespace pub3 {
   class statement_t : public ast_node_t {
   public:
     statement_t (location_t l) : ast_node_t (l) {}
+    statement_t (lineno_t l) : ast_node_t (l) {}
+    virtual bool to_xdr (xpub3_statement_t *x) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -162,7 +172,9 @@ namespace pub3 {
   class expr_statement_t : public statement_t {
   public:
     expr_statement_t (location_t l) : statement_t (l) {}
+    expr_statement_t (const xpub3_expr_statement_t &x);
     static ptr<expr_statement_t> alloc (ptr<expr_t> x);
+    bool to_xdr (xpub3_statement_t *x) const;
     void add (ptr<expr_t> x);
   protected:
     ptr<expr_t> _expr;
@@ -173,6 +185,7 @@ namespace pub3 {
   class for_t : public statement_t {
   public:
     for_t (location_t l) : statement_t (l) {}
+    for_t (lineno_t l) : statement_t (l) {}
     for_t (const xpub3_for_t &x);
     bool to_xdr (xpub3_statement_t *x) const;
 
@@ -198,6 +211,7 @@ namespace pub3 {
   class if_clause_t : public statement_t {
   public:
     if_clause_t (location_t l) : statement_t (l) {}
+    if_clause_t (lineno_t l) : statement_t (l) {}
     if_clause_t (const xpub3_if_clause_t &x);
 
     static ptr<if_clause_t> alloc ();
@@ -206,13 +220,13 @@ namespace pub3 {
     void add_body (ptr<zone_t> e) { _body = e; }
 
     bool to_xdr (xpub3_if_clause_t *x) const;
+    bool to_xdr (xpub3_statement_t *x) const { return false; }
 
     ptr<const expr_t> expr () const { return _expr; }
     ptr<zone_t> body () const { return _body; }
     bool might_block () const;
 
   private:
-    int _lineno;
     ptr<expr_t> _expr;
     ptr<zone_t> _body;
   };
@@ -226,7 +240,7 @@ namespace pub3 {
   
   class if_t : public statement_t {
   public:
-    if_t (location_t l) : statement_t (l), _might_block (-1) {}
+    if_t (location_t l) : statement_t (l) {}
     if_t (const xpub3_if_t &x);
 
     static ptr<if_t> alloc ();
@@ -243,9 +257,8 @@ namespace pub3 {
 
   private:
     ptr<zone_t> find_clause (publish_t p) const;
-
     ptr<if_clause_list_t> _clauses;
-    mutable int _might_block; // one of: -1 (not set), 0 (no), and 1 (yes)
+    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
@@ -317,7 +330,9 @@ namespace pub3 {
     static ptr<include_t> alloc ();
     bool add_args (ptr<expr_list_t> l, str *errp);
     virtual str fnname () const { return "include"; }
+    bool to_xdr (xpub3_statement_t *x) const;
   protected:
+    bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;
     ptr<expr_t> _dict;
   };
