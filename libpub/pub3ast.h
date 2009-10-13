@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pub3expr.h"
+#include "pub3eval.h"
 #include "okformat.h"
 #include "pub3expr.h"
 #include "pub3obj.h"

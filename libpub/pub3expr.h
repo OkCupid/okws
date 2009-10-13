@@ -139,6 +139,8 @@ namespace pub3 {
     static ptr<expr_cow_t> alloc (ptr<const expr_t> x);
     ptr<expr_dict_t> to_dict ();
     ptr<const expr_dict_t> to_dict () const;
+    ptr<expr_list_t> to_list ();
+    ptr<const expr_list_t> to_list () const;
     
   protected:
     ptr<expr_t> mutable_ptr ();
@@ -194,6 +196,7 @@ namespace pub3 {
     expr_constant_t () : expr_t () {}
     expr_constant_t (lineno_t l) : expr_t (l) {}
     ptr<expr_t> copy () const;
+    ptr<expr_t> deep_copy () const;
   };
 
   //----------------------------------------------------------------------
@@ -348,7 +351,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
 
-    ptr<expr_t> eval_as_val (eval_t e) const;
+    ptr<const expr_t> eval_to_val (eval_t e) const;
   protected:
     ptr<expr_t> _t1, _t2;
     bool _pos;
@@ -364,7 +367,7 @@ namespace pub3 {
     static ptr<expr_relation_t> alloc (ptr<expr_t> l, ptr<expr_t> r);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_mult_t"; }
-    ptr<expr_t> eval_as_val (eval_t e) const;
+    ptr<const expr_t> eval_to_val (eval_t e) const;
   protected:
     ptr<expr_t> _f1, _f2;
   };
@@ -376,7 +379,7 @@ namespace pub3 {
     expr_div_or_mod_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
       : expr_t (lineno), _n (n), _d (d) {}
 
-    ptr<expr_t> eval_as_val (eval_t e)  const;
+    ptr<const expr_t> eval_to_val (eval_t e)  const;
     scalar_obj_t eval_as_scalar (eval_t e) const;
   protected:
     scalar_obj_t eval_internal (eval_t e) const;

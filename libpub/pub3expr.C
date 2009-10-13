@@ -74,7 +74,7 @@ namespace pub3 {
   // By default, we are already evaluated -- this is true for static
   // values like bools, strings, and integers.
   ptr<const expr_t> expr_t::eval_to_val (eval_t e) const 
-  { return mkref (*this); }
+  { return mkref (this); }
 
   //--------------------------------------------------------------------
   
@@ -113,19 +113,19 @@ namespace pub3 {
 
   ptr<mref_t> expr_t::eval_to_ref (eval_t e) const
   { 
-    ptr<expr_t> e;
+    ptr<expr_t> x;
     ptr<const expr_t> v = eval_to_val (e);
-    if (v) e = v->copy ();
-    ptr<const_mref_t> ret = const_mref_t::alloc (e);
+    if (v) x = v->copy ();
+    ptr<const_mref_t> ret = const_mref_t::alloc (x);
     return ret;
   }
 
   //--------------------------------------------------------------------
 
-  ptr<expr_t> expr_t::copy (eval_t e) const
-  { reutrn expr_cow_t::alloc (mkref (this)); }
-  ptr<expr_t> expr_t::deep_copy (eval_t e) const
-  { reutrn expr_cow_t::alloc (mkref (this)); }
+  ptr<expr_t> expr_t::copy () const 
+  { return expr_cow_t::alloc (mkref (this)); }
+  ptr<expr_t> expr_t::deep_copy () const 
+  { return expr_cow_t::alloc (mkref (this)); }
 
   //--------------------------------------------------------------------
 
@@ -205,7 +205,7 @@ namespace pub3 {
     assert (!_copy || !_orig);
     ptr<const expr_t> ret;
     if (_copy) ret = _copy;
-    else if (_orig) ret = orig;
+    else if (_orig) ret = _orig;
     return ret;
   }
   
@@ -235,7 +235,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<expr_list_t> 
-  expr_cow_t::to_list ()
+  expr_cow_t::to_list () 
   {
     ptr<expr_list_t> r;
     ptr<expr_t> x = mutable_ptr ();
@@ -256,17 +256,40 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_t> mref_dict_t::get_value () { return (*_dict)[_slot]; }
-  void mref_dict_t::set_value (ptr<expr_t> x) { _dict->insert (_slot, x); }
+  ptr<expr_t> 
+  mref_dict_t::get_value () 
+  { 
+    ptr<expr_t> ret;
+    ptr<expr_t> *xp =(*_dict)[_slot]; 
+    if (xp) { ret = *xp; }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  bool 
+  mref_dict_t::set_value (ptr<expr_t> x) 
+  { 
+    _dict->insert (_slot, x); 
+    return true;
+  }
 
   //====================================================================
   
   ptr<expr_t> mref_list_t::get_value () { return _list->lookup (_index); }
-  void mref_list_t::set_value (ptr<expr_t> x) { _list->set (_index, x); }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  mref_list_t::set_value (ptr<expr_t> x) 
+  { 
+    _list->set (_index, x); 
+    return true;
+  }
   
   //-----------------------------------------------------------------------
   
-  ptr<mref_dict_t> mref_dict_t::alloc (ptr<bindtab_t> b, str n)
+  ptr<mref_dict_t> mref_dict_t::alloc (ptr<bindtab_t> b, const str &n)
   { return New refcounted<mref_dict_t> (b, n); }
 
   //====================================================================
@@ -280,7 +303,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<expr_null_t>
-  expr_null_t::alloc (lineno_t l)
+  expr_null_t::alloc ()
   {
     static ptr<expr_null_t> s_null;
     if (!s_null) {
@@ -456,14 +479,13 @@ namespace pub3 {
     ptr<const expr_t> e1, e2;
     ptr<const expr_list_t> l1, l2;
     ptr<const expr_dict_t> d1, d2;
-    ptr<
     str s1, s2;
 
-    const char *op = _pos = "addition" : "subtraction";
+    const char *op = _pos ? "addition" : "subtraction";
 
-    if (!_t1 || !(e1 = t1->eval_to_val (e))) {
+    if (!_t1 || !(e1 = _t1->eval_to_val (e))) {
       report_error (e, strbuf ("left-hand term of %s evaluates to null", op));
-    } else if (!_t2 || !(e2 = t2->eval_to_val (e))) {
+    } else if (!_t2 || !(e2 = _t2->eval_to_val (e))) {
       report_error (e, strbuf ("right-hand term of %s evaluates to null", op));
 
       // Two lists added (but not subtracted)
@@ -501,7 +523,7 @@ namespace pub3 {
       if (_pos) { res = s1 + s2; }
       else      { res = s1 - s2; }
 
-      out = expr_t::alloc (res, _lineno);
+      out = expr_t::alloc (res);
     }
 
     return out;
@@ -517,22 +539,23 @@ namespace pub3 {
   ptr<const expr_t>
   expr_mult_t::eval_to_val (eval_t e) const
   {
-    scalar_obj_t out;
+    ptr<const expr_t> ret;
     ptr<const expr_t> e1, e2;
+    ptr<const expr_list_t> l;
     int64_t n;
     
     if (!_f1 || !(e1 = _f1->eval_to_val (e)) || e1->is_null ()) {
       report_error (e, "mult: left-hand factor was NULL");
     } else if (!_f2 || !(e2 = _f2->eval_to_val (e)) || e2->is_null ()) {
       report_error (e, "mult: right-hand factor was NULL");
-      } else if (e1->to_dict () || e2->to_dict ()) {
+    } else if (e1->to_dict () || e2->to_dict ()) {
       report_error (e, "cannot multiply dictionaries");
     } else if ((l = e1->to_list ()) && e2->to_int (&n) && n < 0x100) {
       ptr<expr_list_t> lo = New refcounted<expr_list_t> (_lineno);
       for (int64_t i = 0; i < n; i++) {
 	*lo += *l;
       }
-      out = lo;
+      ret = lo;
     } else if (e1->to_list () || e2->to_list ()) {
       report_error (e, "can only multiply lists by small integers");
     } else {
@@ -544,9 +567,11 @@ namespace pub3 {
       } else if (o2.is_null ()) {
 	report_error (e, "mutl: right-hand factor was not multipliable");
       } else {
-	out = o1 * o2;
+	scalar_obj_t out = o1 * o2;
 	if (out.is_null ()) {
 	  report_error (e, "mult: no plausible evaluation found!");
+	} else {
+	  ret = expr_t::alloc (out);
 	}
       }
     }
@@ -662,21 +687,27 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-#define EXPR_VARREF_EVAL(ret,func)			\
-  ret							\
-  expr_varref_or_rfn_t::func (eval_t e) const		\
-  {							\
-    ret r;						\
-    ptr<const expr_t> rfn = get_rfn ();			\
-    if (rfn) { r = rfn->func (e); }			\
-    else { r = expr_varref_t::func (e) }                \
-    return r;						\
+  ptr<const expr_t>	
+  expr_varref_or_rfn_t::eval_to_val (eval_t e) const
+  {
+    ptr<const expr_t> r;
+    ptr<const expr_t> rfn = get_rfn ();
+    if (rfn) { r = rfn->eval_to_val (e); }
+    else { r = expr_varref_t::eval_to_val (e) }
+    return r;
   }
   
-  EXPR_VARREF_EVAL(ptr<const expr_t>, eval_to_val)
-  EXPR_VARREF_EVAL(ptr<mref_t> eval_to_ref)
+  //-----------------------------------------------------------------------
 
-#undef EXPR_VARREF_EVAL
+  ptr<mref_t>	
+  expr_varref_or_rfn_t::eval_to_ref (eval_t e) const
+  {
+    ptr<mref_t> r;
+    ptr<const expr_t> rfn = get_rfn ();
+    if (rfn) { r = rfn->eval_to_ref (e); }
+    else { r = expr_varref_t::eval_to_ref (e) }
+    return r;
+  }
 
   //-----------------------------------------------------------------------
 
