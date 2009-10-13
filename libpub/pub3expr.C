@@ -263,6 +263,11 @@ namespace pub3 {
   
   ptr<expr_t> mref_list_t::get_value () { return _list->lookup (_index); }
   void mref_list_t::set_value (ptr<expr_t> x) { _list->set (_index, x); }
+  
+  //-----------------------------------------------------------------------
+  
+  ptr<mref_dict_t> mref_dict_t::alloc (ptr<bindtab_t> b, str n)
+  { return New refcounted<mref_dict_t> (b, n); }
 
   //====================================================================
 

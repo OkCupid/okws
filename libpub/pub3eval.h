@@ -16,14 +16,16 @@ namespace pub3 {
 
     enum { FRAME_UNIVERSALS = 0, FRAME_GLOBALS = 1 };
 
-    env_t (ptr<bindtab_t> u) : _universals (u) {}
+    env_t (ptr<bindtab_t> u);
     size_t push_locals (ptr<bindtab_t> t);
     size_t push_universal_refs (ptr<bindtab_t> t);
     void pop_to (size_t s);
     ptr<const expr_t> lookup_val (const str &nm) const;
+    size_t stack_size () const;
     ptr<mref_t> lookup_ref (const str &nm) const;
 
-    typedef enum { LAYER_UNIVERSALS = 0,
+    typedef enum { LAYER_NONE = -1,
+		   LAYER_UNIVERSALS = 0,
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
 		   LAYER_UNIREFS = 3 } layer_type_t;
@@ -31,6 +33,7 @@ namespace pub3 {
     struct stack_layer_t {
       stack_layer_t (ptr<bindtab_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
+      stack_layer_t () : _typ (LAYER_NONE) {}
       ptr<bindtab_t> _bindings;
       layer_type_t _typ;
     };
@@ -49,6 +52,8 @@ namespace pub3 {
 
   // Not sure what's going to be here yet...
   class output_t {
+  public:
+    void output_err (location_t loc, str msg);
 
 
   };
@@ -71,9 +76,10 @@ namespace pub3 {
     bool loud () const { return _loud && !_silent; }
     bool set_silent (bool b);
 
-    void set_in_json () { _in_json = true; }
-    bool in_json () const { return _in_json; }
     ptr<const expr_t> lookup_val (const str &nm) const;
+
+    location_t location (lineno_t l) const;
+    void report_error (lineno_t l);
 
   private:
 
@@ -82,7 +88,6 @@ namespace pub3 {
     bool _loud;
     bool _silent;
     ssize_t _stack_p;
-    bool _in_json;
   };
 
   //-----------------------------------------------------------------------

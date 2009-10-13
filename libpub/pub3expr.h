@@ -23,6 +23,7 @@ namespace pub3 {
   class expr_assignment_t;
   class expr_dict_t;
   class expr_list_t;
+  class bindtab_t;
 
   //-----------------------------------------------------------------------
 
@@ -164,12 +165,12 @@ namespace pub3 {
 
   class mref_dict_t : public mref_t {
   public:
-    static ptr<mref_dict_t> alloc (ptr<expr_dict_t> d, const str &n);
-    mref_dict_t (ptr<expr_dict_t> d, const str &n) : _dict (d), _slot (n) {}
+    static ptr<mref_dict_t> alloc (ptr<bindtab_t> d, const str &n);
+    mref_dict_t (ptr<bindtab_t> d, const str &n) : _dict (d), _slot (n) {}
     ptr<expr_t> get_value ();
     bool set_value (ptr<expr_t> x);
   protected:
-    const ptr<expr_dict_t> _dict;
+    const ptr<bindtab_t> _dict;
     const str _slot;
   };
 
