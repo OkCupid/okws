@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "pub3expr.h"
 #include "pub3base.h"
 #include "pub3prot.h"
 #include "pscalar.h"
@@ -49,6 +48,7 @@ namespace pub3 {
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
     static ptr<expr_t> alloc (scalar_obj_t so);
+    static ptr<expr_t> safe_expr (ptr<expr_t> in);
     lineno_t lineno () const { return _lineno; }
     static str safe_to_str (ptr<const expr_t> x, bool q = true);
 
@@ -62,6 +62,7 @@ namespace pub3 {
     virtual ptr<expr_t> copy () const ;
     virtual ptr<expr_t> deep_copy () const;
     virtual ptr<expr_t> mutate () { return mkref (this); }
+    virtual bool is_static () const { return false; }
 
     //------------------------------------------------------------
 
@@ -84,7 +85,6 @@ namespace pub3 {
     virtual ptr<const expr_list_t> to_list () const { return NULL; }
     virtual ptr<expr_list_t> to_list () { return NULL; }
 
-    virtual scalar_obj_t to_scalar () const;
     virtual str to_identifier () const { return NULL; }
     virtual str to_str (bool q = false) const { return NULL; }
     virtual bool to_bool () const { return false; }
@@ -97,6 +97,7 @@ namespace pub3 {
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     virtual str type_to_str () const { return "object"; }
     virtual bool to_int (int64_t *out) const { return false; }
+    virtual scalar_obj_t to_scalar () const;
 
     //
     // and from here, scalars can be converted at will...
@@ -141,6 +142,8 @@ namespace pub3 {
     ptr<const expr_dict_t> to_dict () const;
     ptr<expr_list_t> to_list ();
     ptr<const expr_list_t> to_list () const;
+    bool to_xdr (xpub3_expr_t *x) const;
+    bool is_static () const;
     
   protected:
     ptr<expr_t> mutable_ptr ();
@@ -197,6 +200,7 @@ namespace pub3 {
     expr_constant_t (lineno_t l) : expr_t (l) {}
     ptr<expr_t> copy () const;
     ptr<expr_t> deep_copy () const;
+    bool is_static () const { return true; }
   };
 
   //----------------------------------------------------------------------
@@ -364,7 +368,7 @@ namespace pub3 {
     expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, lineno_t lineno)
       : expr_t (lineno), _f1 (f1), _f2 (f2) {}
     expr_mult_t (const xpub3_mathop_t &x);
-    static ptr<expr_relation_t> alloc (ptr<expr_t> l, ptr<expr_t> r);
+    static ptr<expr_mult_t> alloc (ptr<expr_t> l, ptr<expr_t> r);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_mult_t"; }
     ptr<const expr_t> eval_to_val (eval_t e) const;
@@ -412,7 +416,7 @@ namespace pub3 {
     expr_mod_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
       : expr_div_or_mod_t (n, d, lineno) {}
     expr_mod_t (const xpub3_mathop_t &x);
-    static ptr<expr_relation_t> alloc (ptr<expr_t> n, ptr<expr_t> d);
+    static ptr<expr_mod_t> alloc (ptr<expr_t> n, ptr<expr_t> d);
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
@@ -495,7 +499,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_varref_or_rfn_t"; }
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
-    ptr<expr_t> eval_to_rhs (eval_t e) const;
+    ptr<mref_t> eval_to_ref (eval_t e) const;
   protected:
     ptr<const expr_t> get_rfn () const;
     ptr<expr_list_t> _arglist;
@@ -514,7 +518,7 @@ namespace pub3 {
     scalar_obj_t to_scalar () const;
     bool to_null () const;
     ptr<rxx> to_regex () const;
-    static ptr<expr_strbuf_t> alloc ();
+    static ptr<expr_strbuf_t> alloc (const str &s = NULL);
 
     void add (char ch);
     void add (str s);
@@ -522,8 +526,6 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
-
-    static ptr<expr_strbuf_t> alloc (const str &s);
 
   protected:
     vec<str> _hold;
@@ -652,9 +654,9 @@ namespace pub3 {
     // vec_iface_t interface
     ptr<const expr_t> lookup (ssize_t i, bool *ib = NULL) const;
     ptr<expr_t> lookup (ssize_t i, bool *ib = NULL);
-    void set (size_t i, ptr<expr_t> v);
+    void set (ssize_t i, ptr<expr_t> v);
     ptr<expr_t> &push_back () { return vec_base_t::push_back (); }
-    ptr<expr_t> &push_back (ptr<expr_t> x) { return vec_base_t::push_back (x); }
+    ptr<expr_t> &push_back (ptr<expr_t> x);
     ptr<expr_t> deep_copy () const;
     
     size_t size () const { return vec_base_t::size (); }
@@ -681,8 +683,10 @@ namespace pub3 {
 
     str type_to_str () const { return "list"; }
     ptr<mref_t> eval_to_ref (eval_t e) const;
+    bool is_static () const;
   private:
     bool fixup_index (ssize_t *ind, bool lax = false) const;
+    mutable tri_bool_t _static;
   };
   
   //-----------------------------------------------------------------------
@@ -712,6 +716,7 @@ namespace pub3 {
     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
     
     str type_to_str () const { return "regex"; }
+    bool is_static () const { return true; }
   private:
     ptr<rxx> _rxx;
     str _body, _opts;
@@ -793,12 +798,11 @@ namespace pub3 {
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;
-    str to_str () const;
+    str to_str (bool q) const;
 
     ptr<expr_t> lookup (str k);
     ptr<const expr_t> lookup (str k) const;
 
-    str eval_as_str (eval_t e) const;
     bool to_len (size_t *s) const;
 
     void add (binding_t p);
@@ -815,6 +819,9 @@ namespace pub3 {
     str type_to_str () const { return "dict"; }
     ptr<mref_t> eval_to_ref (eval_t e) const;
     ptr<expr_t> deep_copy () const;
+    bool is_static () const;
+  private:
+    mutable tri_bool_t _static;
   }; 
 
   //-----------------------------------------------------------------------

@@ -1,3 +1,4 @@
+#include "okformat.h"
 #include "pub3expr.h"
 #include "parseopt.h"
 #include "okformat.h"
@@ -9,7 +10,7 @@
 
 //-----------------------------------------------------------------------
 
-static size_t depth;
+//static size_t depth;
 #define DEBUG_ENTER()					\
   do {							\
   if (0) {						\
@@ -160,7 +161,16 @@ namespace pub3 {
 
   scalar_obj_t expr_t::to_scalar () const { return to_str (); }
   
-  //====================================================================
+  //---------------------------------------------------------------------
+
+  ptr<expr_t>
+  expr_t::safe_expr (ptr<expr_t> x)
+  {
+    if (!x) x = expr_null_t::alloc ();
+    return x;
+  }
+  
+  //---------------------------------------------------------------------
 
   bool
   expr_t::eval_as_null (eval_t e) const
@@ -173,7 +183,7 @@ namespace pub3 {
     return ret;
   }
 
-  //====================================================================
+  //---------------------------------------------------------------------
 
   scalar_obj_t
   expr_t::eval_as_scalar (eval_t e) const
@@ -240,7 +250,7 @@ namespace pub3 {
     ptr<expr_list_t> r;
     ptr<expr_t> x = mutable_ptr ();
     if (x) r = x->to_list ();
-    return x;
+    return r;
   }
 
   //--------------------------------------------------------------------
@@ -251,7 +261,7 @@ namespace pub3 {
     ptr<const expr_list_t> r;
     ptr<const expr_t> x = const_ptr ();
     if (x) r = x->to_list ();
-    return x;
+    return r;
   }
 
   //====================================================================
@@ -506,7 +516,7 @@ namespace pub3 {
       if (!d1 || !d2) {
 	report_error (e, "addition on dicts only work with 2 dicts");
       } else {
-	ptr<expr_dict_t> d = New refcounted<expr_dict_t> (_lineno, *d1);
+	ptr<expr_dict_t> d = New refcounted<expr_dict_t> (*d1);
 	if (_pos) {
 	  *d += *d2;
 	} else {
@@ -559,8 +569,8 @@ namespace pub3 {
     } else if (e1->to_list () || e2->to_list ()) {
       report_error (e, "can only multiply lists by small integers");
     } else {
-      scalar_obj_t o1 = _e1->to_scalar ();
-      scalar_obj_t o2 = _e2->to_scalar ();
+      scalar_obj_t o1 = _f1->to_scalar ();
+      scalar_obj_t o2 = _f2->to_scalar ();
       
       if (o1.is_null ()) {
 	report_error (e, "mult: left-hand factor was not multipliable");
@@ -575,7 +585,7 @@ namespace pub3 {
 	}
       }
     }
-    return out;
+    return ret;
   }
 
   //====================================================================
@@ -587,14 +597,6 @@ namespace pub3 {
   }
 
   //====================================================================
-
-  ptr<expr_div_t>
-  expr_div_t::alloc (ptr<expr_t> d, ptr<expr_t> n)
-  {
-    return New refcounted<expr_div_t> (d, n, plineno ());
-  }
-
-  //-----------------------------------------------------------------------
 
   ptr<expr_div_t>
   expr_div_t::alloc (ptr<expr_t> d, ptr<expr_t> n)
@@ -643,18 +645,18 @@ namespace pub3 {
       report_error (e, strbuf ("%s: numerator was NULL", op));
     } else if (!_d || !(ed = _d->eval_to_val (e))) {
       report_error (e, strbuf ("%s: denominator was NULL", op));
-    } else if (!en->to_scalar (&n)) {
+    } else if ((n = en->to_scalar ()).is_null ()) {
       report_error (e, strbuf ("%s: numerator was not a scalar", op));
-    } else if (!ed->to_scalar (&d)) {
+    } else if ((d = ed->to_scalar ()).is_null ()) {
       report_error (e, strbuf ("%s: denominator was not a scalar", op));
     } else {
      
       if (div ()) { out = n / d; }
       else { out = n % d; }
       
-      if (!res.is_null ()) {
+      if (!out.is_null ()) {
 	/* good! */
-      } else if (res.is_inf ()) {
+      } else if (out.is_inf ()) {
 	report_error (e, strbuf ("%s by zero", op));
       } else {
 	report_error (e, strbuf ("can't perform %s on strings", op));
@@ -693,7 +695,7 @@ namespace pub3 {
     ptr<const expr_t> r;
     ptr<const expr_t> rfn = get_rfn ();
     if (rfn) { r = rfn->eval_to_val (e); }
-    else { r = expr_varref_t::eval_to_val (e) }
+    else { r = expr_varref_t::eval_to_val (e); }
     return r;
   }
   
@@ -705,7 +707,7 @@ namespace pub3 {
     ptr<mref_t> r;
     ptr<const expr_t> rfn = get_rfn ();
     if (rfn) { r = rfn->eval_to_ref (e); }
-    else { r = expr_varref_t::eval_to_ref (e) }
+    else { r = expr_varref_t::eval_to_ref (e); }
     return r;
   }
 
@@ -725,14 +727,14 @@ namespace pub3 {
   bool expr_strbuf_t::to_bool () const { return _b.len () > 0; }
   scalar_obj_t expr_strbuf_t::to_scalar () const { return scalar_obj_t (_b); }
   bool expr_strbuf_t::to_null () const { return false; }
-  bool expr_str_t::to_len (size_t *s) const { *s = _b.len (); return true; }
+  bool expr_strbuf_t::to_len (size_t *s) const { *s = _b.len (); return true; }
 
   //--------------------------------------------------------------------
 
   str
   expr_strbuf_t::to_str (bool q) const 
   { 
-    str ret = q ? json::quote (_b) : _b;
+    str ret = q ? json::quote (_b) : str (_b);
     return ret; 
   }
 
@@ -749,7 +751,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   ptr<expr_strbuf_t>
-  expr_strbuf_t::alloc (str s)
+  expr_strbuf_t::alloc (const str &s)
   {
     return New refcounted<expr_strbuf_t> (s, plineno ());
   }
@@ -884,7 +886,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   bool
-  expr_uint_t::to_int64 (int64_t *out) const
+  expr_uint_t::to_int (int64_t *out) const
   {
     bool ret = false;
     if (_val <= u_int64_t (INT64_MAX)) {
@@ -905,6 +907,22 @@ namespace pub3 {
   }
 
   //====================================================================
+
+  bool
+  expr_list_t::is_static () const
+  {
+    if (_static.is_set ()) { return _static.value (); }
+    bool sttc = true;
+    for (size_t i = 0; sttc && i < vec_base_t::size (); i++) {
+      ptr<const expr_t> x;
+      x = (*this)[i];
+      if (x && !x->is_static ()) sttc = false;
+    }
+    _static.set (sttc);
+    return sttc;
+  }
+
+  //--------------------------------------------------------------------
 
   void
   expr_list_t::push_front (ptr<expr_t> e)
@@ -992,7 +1010,7 @@ namespace pub3 {
   ptr<const expr_t>
   expr_list_t::lookup (ssize_t s, bool *ibp) const
   {
-    ptr<expr_t pval_t> r;
+    ptr<const expr_t> r;
     bool ib;
     if ((ib = fixup_index (&s))) {
       r = (*this)[s];
@@ -1017,29 +1035,26 @@ namespace pub3 {
     if (ibp) *ibp = ib;
     return r;
   }
-  
+
   //-----------------------------------------------------------------------
-  
-  void
-  expr_list_t::set (ssize_t i, ptr<pval_t> v)
+
+  ptr<expr_t> &
+  expr_list_t::push_back (ptr<expr_t> x)
   {
-    ptr<expr_t> e = v->to_expr ();
-    if (e && fixup_index (&i, true)) {
-      if (i >= size ())
-	setsize (i + 1);
-      (*this)[i] = e;
-    }
+    return vec_base_t::push_back (expr_t::safe_expr (x));
   }
-  
+
   //-----------------------------------------------------------------------
   
   void
-  expr_list_t::push_back (ptr<expr_t> v)
+  expr_list_t::set (ssize_t i, ptr<expr_t> v)
   {
-    ptr<expr_t> e;
-    if (v) { e = v->to_expr (); }
-    if (!e) { e = expr_null_t::alloc (); }
-    vec_base_t::push_back (e);
+    if (fixup_index (&i, true)) {
+      while (i >= ssize_t (vec_base_t::size ())) {
+	vec_base_t::push_back (NULL);
+      }
+      (*this)[i] = expr_t::safe_expr (v);
+    }
   }
   
   //-----------------------------------------------------------------------
@@ -1063,7 +1078,7 @@ namespace pub3 {
   {
     vec<str> v;
     size_t sz = size ();
-    for (size_t i = 0; i < szi++) {
+    for (size_t i = 0; i < sz; i++) {
       v.push_back (expr_t::safe_to_str ((*this)[i]));
     }
     str ret = vec2str (v, '[', ']');
@@ -1091,7 +1106,7 @@ namespace pub3 {
   expr_list_t::eval_to_ref (eval_t e) const
   {
     bool sttc = true;
-    size_t l = len ();
+    size_t l = vec_base_t::size ();
 
     for (size_t i = 0; sttc && i < l ; i++) {
       if ((*this)[i] && (*this)[i]->is_static ()) {
@@ -1101,7 +1116,7 @@ namespace pub3 {
     ptr<expr_t> out;
 
     if (sttc) {
-      out = expr_cow_t::alloc (mkref (*this));
+      out = expr_cow_t::alloc (mkref (this));
     } else {
       ptr<expr_list_t> nl = New refcounted<expr_list_t> ();
       for (size_t i = 0; i < l; i++) {
@@ -1117,7 +1132,7 @@ namespace pub3 {
       }
       out = nl;
     }
-    ptr<const_mref_t> ret = New refcounted<const_ref_t> (out);
+    ptr<const_mref_t> ret = New refcounted<const_mref_t> (out);
     return ret;
   }
   
@@ -1170,7 +1185,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<expr_regex_t> expr_regex_t::alloc (ptr<rxx> x, str b, str o)
-  { return New refcounted<expr_regex_t> (x, b, o plineno ()); }
+  { return New refcounted<expr_regex_t> (x, b, o, plineno ()); }
 
   //--------------------------------------------------------------------
 
@@ -1231,7 +1246,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t>
-  xpr_shell_str_t::compact () const
+  expr_shell_str_t::compact () const
   {
     str s;
     ptr<expr_t> ret;
@@ -1287,12 +1302,12 @@ namespace pub3 {
   bindtab_t::overwrite_with (const bindtab_t &t)
   {
     bindtab_t::const_iterator_t it (t);
-    str *k;
-    ptr<const expr_t> v;
-    ptr<expr_t> nv;
+    const str *k;
+    ptr<expr_t> v;
     while ((k = it.next (&v))) { 
+      ptr<expr_t> nv;
       if (v) nv = v->copy ();
-      insert (*k, v); 
+      insert (*k, nv); 
     }
   }
 
@@ -1311,9 +1326,9 @@ namespace pub3 {
   bindtab_t::operator-= (const bindtab_t &in) 
   {
     bindtab_t::const_iterator_t it (in);
-    str *key;
-    while ((key = in.next ())) { remove (*key); }
-    return this;
+    const str *key;
+    while ((key = it.next ())) { remove (*key); }
+    return *this;
   }
 
   //====================================================================
@@ -1327,13 +1342,29 @@ namespace pub3 {
   
   //====================================================================
 
+  bool
+  expr_dict_t::is_static () const
+  {
+    if (_static.is_set ()) { return _static.value (); }
+    bool sttc = false;
+    ptr<expr_t> value;
+    const_iterator_t it (*this);
+    while (it.next (&value) && sttc) {
+      if (value && !value->is_static ()) sttc = false;
+    }
+    _static.set (sttc);
+    return sttc;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<mref_t>
   expr_dict_t::eval_to_ref (eval_t e) const
   {
     bool sttc = true;
     const_iterator_t it (*this);
-    str *key;
-    ptr<const expr_t> value;
+    const str *key;
+    ptr<expr_t> value;
 
     // First see if any keys are static.  Note that this computation
     // will be memoized, so it's fast enough to do a full DFS here.
@@ -1347,7 +1378,7 @@ namespace pub3 {
 
     // For static objects, make a COW version
     if (sttc) { 
-      out = expr_cow_t::alloc (mkref (*this));
+      out = expr_cow_t::alloc (mkref (this));
     } else {
 
       // Otherwise, recurse --- evaluate next layer down...
@@ -1367,7 +1398,7 @@ namespace pub3 {
       out = d;
     }
 
-    ptr<const_mref_t> ret = New refcounted<const_ref_t> (out);
+    ptr<const_mref_t> ret = New refcounted<const_mref_t> (out);
     return ret;
   }
 
@@ -1377,8 +1408,8 @@ namespace pub3 {
   expr_dict_t::deep_copy () const
   {
     const_iterator_t it (*this);
-    str *key;
-    ptr<const expr_t> value;
+    const str *key;
+    ptr<expr_t> value;
     ptr<expr_dict_t> ret = New refcounted<expr_dict_t> ();
 
     while ((key = it.next (&value))) {
@@ -1399,7 +1430,7 @@ namespace pub3 {
   void
   expr_dict_t::add (binding_t p)
   {
-    (*this)[p.name ()] = p.expr ();
+    insert (p.name (), p.expr ());
   }
 
   //--------------------------------------------------------------------
@@ -1409,17 +1440,17 @@ namespace pub3 {
   {
     vec<str> v;
     const_iterator_t it (*this);
-    str *key;
-    ptr<const expr_t> val;
+    const str *key;
+    ptr<expr_t> val;
     str ret;
 
     while ((key = it.next (&val))) {
       str vs = expr_t::safe_to_str (val);
-      str ks = json::quote (key);
+      str ks = json::quote (*key);
       strbuf b ("%s : %s", ks.cstr (), vs.cstr ());
       v.push_back (b);
     }
-    str ret = vec2str (v, '{', '}');
+    ret = vec2str (v, '{', '}');
     return ret;
   }
 
@@ -1437,7 +1468,7 @@ namespace pub3 {
   void
   expr_dict_t::replace (const str &nm, ptr<expr_t> x)
   {
-    (*this)[nm] = x;
+    insert (nm, x);
   }
 
   //====================================================================
@@ -1455,10 +1486,10 @@ namespace pub3 {
   //---------------------------------------------------------------------
   
   ptr<mref_t>
-  expr_assignment_t::eval_as_ref (eval_t e) const
+  expr_assignment_t::eval_to_ref (eval_t e) const
   {
-    ptr<mref_t> rhs = _rhs->eval_as_ref (e);
-    ptr<mref_t> lhs = _lhs->eval_as_ref (e);
+    ptr<mref_t> rhs = _rhs->eval_to_ref (e);
+    ptr<mref_t> lhs = _lhs->eval_to_ref (e);
     ptr<mref_t> ret;
     ptr<expr_t> v;
     if (!lhs) {
@@ -1474,20 +1505,21 @@ namespace pub3 {
   }
   
   //====================================================================
-  
-  ptr<pair_t> pair_t::alloc (const str &k, ptr<expr_t> x)
-  { return New refcounted<pair_t> (k, x); }
-
-  //====================================================================
-
-  ptr<expr_t> expr_t::copy () const 
-  { return expr_cow_t::alloc (mkref (this)); }
-
-  //====================================================================
 
   ptr<expr_cow_t> expr_cow_t::alloc (ptr<const expr_t> x)
   { return New refcounted<expr_cow_t> (x); }
 
+  //--------------------------------------------------------------------
+
+  bool 
+  expr_cow_t::to_xdr (xpub3_expr_t *x) const
+  {
+    ptr<const expr_t> p = const_ptr ();
+    bool ret = false;
+    if (p) { ret = p->to_xdr (x); } 
+    return ret;
+  }
+  
   //=======================================================================
 
 };

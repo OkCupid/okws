@@ -22,8 +22,7 @@
  *
  */
 
-#ifndef _LIBPUB_PSCALAR_H
-#define _LIBPUB_PSCALAR_H 1
+#pragma once
 
 #include "okws_sfs.h"
 #include "vec.h"
@@ -160,4 +159,3 @@ bool convertuint (const str &s, u_int64_t *out);
 
 //-----------------------------------------------------------------------
 
-#endif /* _LIBPUB_PSCALAR_H_ */

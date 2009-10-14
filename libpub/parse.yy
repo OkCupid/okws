@@ -2,9 +2,7 @@
 /* $Id$ */
 
 %{
-#define __STDC_LIMIT_MACROS 1
-#include <stdint.h>
-#include <limits.h>
+#include "okformat.h"
 
 #include "pub.h"
 #include "pub_parse.h"
