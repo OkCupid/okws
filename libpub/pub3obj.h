@@ -208,14 +208,14 @@ namespace pub3 {
     void update_value (ptr<expr_t> v);
     ptr<expr_t> value () { return obj (); }
 
-    bool set_value_vec (ptr<expr_t> v);
+    bool set_value_list (ptr<expr_t> v);
     bool set_value_scalar (ptr<expr_t> v);
     bool set_value_dict (ptr<expr_t> v);
     void clear_value ();
 
     ptr<expr_t> _obj;
     ptr<obj_ref_t> _ref;
-    ptr<expr_list_t> _vec;
+    ptr<expr_list_t> _list;
     ptr<expr_dict_t> _dict;
     ptr<expr_t> _scalar;
   };

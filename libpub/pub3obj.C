@@ -7,21 +7,16 @@ namespace pub3 {
   void
   obj_ref_dict_t::set (ptr<expr_t> x)
   {
-    if (!v) v = expr_null_t::alloc ();
+    if (!x) x = expr_null_t::alloc ();
     dict ()->replace (_key, x);
   }
 
   //-----------------------------------------------------------------------
 
   void
-  obj_ref_vec_t::set (ptr<expr_t> x)
+  obj_ref_list_t::set (ptr<expr_t> x)
   {
-    if (_list) {
-      if (_list->size () <= _index) {
-	_list->setsize (_index + 1);
-      }
-      _list->set (_index, v);
-    }
+    _list->set (_index, expr_t::safe_expr (x));
   }
 
   //-----------------------------------------------------------------------
@@ -31,7 +26,7 @@ namespace pub3 {
   {
     ptr<const expr_t> x;
     if (_list && _index < _list->size ()) { x = _list->lookup (_index); }
-    return v;
+    return x;
   }
 
   //-----------------------------------------------------------------------
@@ -39,9 +34,9 @@ namespace pub3 {
   ptr<expr_t>
   obj_ref_list_t::get () 
   {
-    ptr<expr_t> v;
-    if (_list && _index < _list ->size ()) { v = _list ->lookup (_index); }
-    return v;
+    ptr<expr_t> x;
+    if (_list && _index < _list ->size ()) { x = _list->lookup (_index); }
+    return x;
   }
 
   //=======================================================================
@@ -78,7 +73,7 @@ namespace pub3 {
   {
     ptr<const expr_dict_t> d = to_dict ();
     if (d) {
-      return const_obj_t (d->lookup_ptr (s));
+      return const_obj_t (d->lookup (s));
     }
     return const_obj_t ();
   }
@@ -191,7 +186,7 @@ namespace pub3 {
   obj_t::to_dict ()
   {
     if (!_dict && obj ()) {
-      _dict = obj ()->to_expr_dict ();
+      _dict = obj ()->to_dict ();
     }
 
     if (!_dict) {
@@ -208,7 +203,7 @@ namespace pub3 {
   obj_t &
   obj_t::set_value (ptr<expr_t> in)
   {
-    if (!set_value_dict (in) && !set_value_vec (in)) {
+    if (!set_value_dict (in) && !set_value_list (in)) {
       set_value_scalar (in);
     }
     return (*this);
@@ -219,7 +214,7 @@ namespace pub3 {
   void
   obj_t::clear_value ()
   {
-    _vec = NULL;
+    _list = NULL;
     _dict = NULL;
     _scalar = NULL;
     _c_obj = _obj = NULL;
@@ -233,7 +228,7 @@ namespace pub3 {
     _ref = NULL;
     _c_obj = NULL;
     _obj = NULL;
-    _vec = NULL;
+    _list =  NULL;
     _dict = NULL;
     _scalar = NULL;
   }
@@ -245,7 +240,7 @@ namespace pub3 {
   {
     _ref = in._ref;
     _c_obj = _obj = in._obj;
-    _vec = in._vec;
+    _list = in._list;
     _dict = in._dict;
     _scalar = in._scalar;
     return (*this);
@@ -274,7 +269,7 @@ namespace pub3 {
     } else {
       _ref = in._ref;
       _c_obj = _obj = in._obj;
-      _vec = in._vec;
+      _list = in._list;
       _dict = in._dict;
       _scalar = in._scalar;
     }
@@ -284,13 +279,13 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   bool
-  obj_t::set_value_scalar (ptr<pval_t> in)
+  obj_t::set_value_scalar (ptr<expr_t> in)
   {
     bool ret = true;
     if (in) {
-      _vec = NULL;
+      _list = NULL;
       _dict = NULL;
-      _scalar = in->to_expr ();
+      _scalar = in;
       update_value (_scalar);
     } else {
       ret = false;
@@ -301,15 +296,15 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  obj_t::set_value_vec (ptr<pval_t> in)
+  obj_t::set_value_list (ptr<expr_t> in)
   {
     bool ret = true;
-    ptr<expr_list_t> v = in->to_expr_list ();
+    ptr<expr_list_t> v = in->to_list ();
     if (v) {
       _dict = NULL;
       _scalar = NULL;
-      _vec = v;
-      update_value (_vec);
+      _list = v;
+      update_value (_list);
     } else {
       ret = false;
     }
@@ -410,7 +405,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const pval_t>
+  ptr<const expr_t>
   obj_t::obj () const
   {
     if (_ref) { return _ref->get (); }
@@ -419,7 +414,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<pval_t>
+  ptr<expr_t>
   obj_t::obj ()
   {
     if (_ref) { return _ref->get (); }
@@ -428,21 +423,21 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<aarr_t>
+  ptr<expr_dict_t>
   obj_t::dict () 
   {
-    ptr<aarr_t> d;
-    if (_dict) d = _dict->dict ();
+    ptr<expr_dict_t> d;
+    if (_dict) d = _dict->to_dict ();
     return d;
   }
 
   //-----------------------------------------------------------------------
 
-  ptr<const aarr_t>
+  ptr<const expr_dict_t>
   obj_t::dict () const
   {
-    ptr<const aarr_t> d;
-    if (_dict) d = _dict->dict ();
+    ptr<const expr_dict_t> d;
+    if (_dict) d = _dict->to_dict ();
     return d;
   }
 
@@ -481,7 +476,7 @@ namespace pub3 {
   bool
   obj_t::to_int (int64_t *i) const
   {
-    return (obj () && obj ()->to_int64 (i));
+    return (obj () && obj ()->to_int (i));
   }
 
   //-----------------------------------------------------------------------
@@ -583,7 +578,7 @@ namespace pub3 {
   bool
   const_obj_t::to_int (int64_t *i) const
   {
-    return _c_obj && _c_obj->to_int64 (i);
+    return _c_obj && _c_obj->to_int (i);
   }
 
   //-----------------------------------------------------------------------
@@ -591,8 +586,7 @@ namespace pub3 {
   bool
   const_obj_t::to_uint (u_int64_t *i) const
   {
-    ptr<const expr_t> x;
-    return _c_obj && (x = _c_obj->to_expr ()) && x->to_uint (i);
+    return _c_obj && _c_obj->to_uint (i);
   }
 
   //-----------------------------------------------------------------------
@@ -608,8 +602,7 @@ namespace pub3 {
   bool
   const_obj_t::to_str (str *s) const
   {
-    ptr<const expr_t> x;
-    return _c_obj && (x = _c_obj->to_expr ()) && (*s = x->to_str ());
+    return _c_obj && (*s = _c_obj->to_str ());
   }
 
   //-----------------------------------------------------------------------
@@ -657,20 +650,14 @@ namespace pub3 {
   bool
   obj_t::append (obj_t in)
   {
-    bool ret = false;
+    bool ret = true;
     ptr<expr_dict_t> d_me, d_in;
     ptr<expr_list_t> v_me, v_in;
-    ptr<aarr_t> a_me, a_in;
 
-    if ((d_me = to_dict ()) && (d_in = in.to_dict ()) &&
-	(a_me = d_me->dict ()) && (a_in = d_in->dict ())) {
-      ret = true;
-      a_me->overwrite_with (*a_in);
+    if ((d_me = to_dict ()) && (d_in = in.to_dict ())) {
+      d_me->overwrite_with (*d_in);
     } else if ((v_me = to_list ()) && (v_in == in.to_list ())) {
-      ret = true;
-      for (size_t i = 0; i < v_in->size (); i++) {
-	v_me->push_back ((*v_in)[i]);
-      }
+      (*v_me) += (*v_in);
     } else {
       ret = false;
     }
