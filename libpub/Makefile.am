@@ -15,9 +15,9 @@ libpub_la_SOURCES = \
 	pub3eval.C \
 	pub3expr.C \
 	pub3obj.C \
+	pub3ast.C \
 	pub3func.C \
 	pub3parse.C \
-	pub3ast.C \
 	pub3file.C \
 	pub3ref.C \
 	slave.C \

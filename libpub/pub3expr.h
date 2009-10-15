@@ -72,6 +72,8 @@ namespace pub3 {
     virtual bool eval_as_bool (eval_t e) const;
     virtual bool eval_as_null (eval_t e) const;
     virtual scalar_obj_t eval_as_scalar (eval_t e) const;
+    virtual str eval_as_str (eval_t e) const;
+    virtual ptr<const expr_t> eval_as_dict (eval_t e) const;
 
     //
     //------------------------------------------------------------

@@ -142,6 +142,29 @@ namespace pub3 {
   }
   
   //---------------------------------------------------------------------
+
+  str
+  expr_t::eval_as_str (eval_t e) const
+  {
+    ptr<const expr_t> x = eval_to_val (e);
+    str ret;
+    if (x) ret = x->to_str ();
+    return ret;
+  }
+
+  //---------------------------------------------------------------------
+
+  ptr<const expr_dict_t>
+  expr_t::eval_as_dict (eval_t e) const
+  {
+    ptr<const expr_t> x = eval_to_val (e);
+    ptr<const expr_t> ret;
+    if (x) { ret = x->to_dict (); }
+    return ret;
+  }
+
+
+  //---------------------------------------------------------------------
   
   ptr<rxx>
   expr_t::str2rxx (const eval_t *e, const str &b, const str &o) const

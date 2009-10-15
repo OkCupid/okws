@@ -1,6 +1,6 @@
+// -*-c++-*-
 #include "pub3ast.h"
 #include "pub3parser.h"
-
 
 namespace pub3 {
 
@@ -294,6 +294,32 @@ namespace pub3 {
   ptr<include_t> include_t::alloc () 
   { return New refcounted<include_t> (location ()); }
   ptr<load_t> load_t::alloc () { return New refcounted<load_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  include_t::publish (publish_t p, status_ev_t ev)
+  {
+    tvars {
+      xpub_status_t rs (XPUB_STATUS_OK);
+      str fn;
+      ptr<expr_dict_t> md;
+      ptr<const expr_dict_t> cd;
+    }
+    
+    if (!_file || !(fn = _file->eval_as_str (eval)) || fn.len () == 0) {
+      str e = "include: cannot evaluate filename";
+      p.report_error (e, _location);
+    } else if (_dict && !(cd = _dict->eval_as_dict (eval))) {
+      str e = "include: cannot evalute parameters";
+      p.report_error (e, _location);
+    } else {
+      if (cd) md = cd->copy ();
+      twait { p.publish (fn, md, mkevent (rs)); }
+    }
+    ev->trigger (rs);
+  }
+ 
 
   //-----------------------------------------------------------------------
 
