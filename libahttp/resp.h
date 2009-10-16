@@ -120,7 +120,7 @@ public:
     _status (s), _version (v), _content_type ("text/html"), 
     _cache_control ("private"), 
     _gzip (false),
-    _connection ("closed"),
+    _connection ("close"),
     _requires_contlen (false) {}
 
   u_int get_status () const { return _status; }
