@@ -163,8 +163,8 @@ namespace pub3 {
   public:
     statement_zone_t (location_t l, ptr<zone_t> z);
     static ptr<statement_zone_t> alloc (ptr<zone_t> z);
+    bool to_xdr (xpub3_statement_t *x) const;
   protected:
-    location_t _location;
     ptr<zone_t> _zone;
   };
 
@@ -264,10 +264,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class locals_t : public statement_t {
+  class decl_block_t_t : public statement_t {
   public:
-    locals_t (location_t l) : statement_t (l) {}
-    static ptr<locals_t> alloc ();
+    decl_block_t_t (location_t l) : statement_t (l) {}
+    bool to_xdr (xpub3_statement_t *x) const;
+    virtual xpub3_statement_typ_t statement_typ () const = 0;
     void add (ptr<bindlist_t> l) { _bindings = l; }
   protected:
     ptr<bindlist_t> _bindings;
@@ -275,13 +276,22 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class universals_t : public statement_t {
+  class locals_t : public decl_block_t_t {
   public:
-    universals_t (location_t l) : statement_t (l) {}
+    locals_t (location_t l) : decl_block_t_t (l) {}
+    static ptr<locals_t> alloc ();
+    xpub3_statement_typ_t statement_typ () const 
+    { return XPUB3_STATEMENT_LOCALS; }
+  };
+
+  //-----------------------------------------------------------------------
+
+  class universals_t : public decl_block_t_t {
+  public:
+    universals_t (location_t l) : decl_block_t_t (l) {}
     static ptr<universals_t> alloc ();
-    void add (ptr<bindlist_t> l) { _bindings = l; }
-  protected:
-    ptr<bindlist_t> _bindings;
+    xpub3_statement_typ_t statement_typ () const 
+    { return XPUB3_STATEMENT_UNIVERSALS; }
   };
 
   //-----------------------------------------------------------------------
@@ -292,6 +302,7 @@ namespace pub3 {
     static ptr<case_t> alloc ();
     void add_key (const str &k);
     void add_zone (ptr<zone_t> z);
+    bool to_xdr (xpub3_statement_t *x) const;
   protected:
     str _key;
     ptr<zone_t> _zone;
@@ -314,9 +325,10 @@ namespace pub3 {
     static ptr<switch_t> alloc ();
     void add_cases (ptr<case_list_t> l);
     void add_key (ptr<expr_t> x);
+    bool to_xdr (xpub3_statement_t *x) const;
   protected:
     ptr<expr_t> _key;
-    ptr<vec<case_list_t> > _cases;
+    ptr<case_list_t> _cases;
     qhash<str, ptr<case_t> > _map;
     ptr<case_t> _default;
   };
@@ -332,6 +344,7 @@ namespace pub3 {
     bool add_args (ptr<expr_list_t> l, str *errp);
     virtual str fnname () const { return "include"; }
     bool to_xdr (xpub3_statement_t *x) const;
+    void publish (publish_t p, status_ev_t ev, CLOSURE);
   protected:
     bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;
@@ -347,6 +360,7 @@ namespace pub3 {
     bool to_xdr (xpub3_statement_t *x) const;
     bool muzzle_output () const { return true; }
     str fnname () const { return "load"; }
+    static ptr<load_t> alloc ();
   };
 
   //-----------------------------------------------------------------------

@@ -73,7 +73,7 @@ namespace pub3 {
     virtual bool eval_as_null (eval_t e) const;
     virtual scalar_obj_t eval_as_scalar (eval_t e) const;
     virtual str eval_as_str (eval_t e) const;
-    virtual ptr<const expr_t> eval_as_dict (eval_t e) const;
+    virtual ptr<const expr_dict_t> eval_as_dict (eval_t e) const;
 
     //
     //------------------------------------------------------------
@@ -821,6 +821,7 @@ namespace pub3 {
     str type_to_str () const { return "dict"; }
     ptr<mref_t> eval_to_ref (eval_t e) const;
     ptr<expr_t> deep_copy () const;
+    ptr<expr_dict_t> copy_dict () const;
     bool is_static () const;
   private:
     mutable tri_bool_t _static;

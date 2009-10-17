@@ -1,6 +1,7 @@
 // -*-c++-*-
+
 #include "pub3ast.h"
-#include "pub3parser.h"
+#include "pub3parse.h"
 
 namespace pub3 {
 
@@ -56,7 +57,7 @@ namespace pub3 {
   void
   zone_html_t::add (ptr<zone_t> z)
   {
-    _childen.push_back (z);
+    _children.push_back (z);
   }
   
   //-----------------------------------------------------------------------
@@ -65,11 +66,15 @@ namespace pub3 {
   zone_html_t::push_zone_text ()
   {
     ptr<zone_text_t> x;
-    if (!_children.size () || 
-	!_chidren.back ()  || 
-	!(x = _children.back ().zone_text ())) {
-      x = zone_text_t::alloc (location ());
+
+
+    if (!_children.size ()  || 
+	!_children.back ()  || 
+	!(x = _children.back ()->zone_text ())) {
+
+      x = zone_text_t::alloc ();
       _children.push_back (x);
+
     }
     return x;
   }
@@ -108,6 +113,7 @@ namespace pub3 {
   { 
     ptr<zone_text_t> z = New refcounted<zone_text_t> (location ()); 
     z->add (c);
+    return z;
   }
 
   //-----------------------------------------------------------------------
@@ -116,6 +122,7 @@ namespace pub3 {
   { 
     ptr<zone_text_t> z = New refcounted<zone_text_t> (location ()); 
     z->add (s);
+    return z;
   }
 
   //-----------------------------------------------------------------------
@@ -148,13 +155,13 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void zone_pub_t::reserve () { _statements.push_back (NULL); }
-  void zone_pub_t::add (ptr<expr_statemenet_t> s) { _statements.push_back (s); }
+  void zone_pub_t::add (ptr<statement_t> s) { _statements.push_back (s); }
 
   //-----------------------------------------------------------------------
 
   void zone_pub_t::unreserve ()
   {
-    if (!_statements.front ()) _statement.pop_front ();
+    if (!_statements.front ()) _statements.pop_front ();
   }
 
   //-----------------------------------------------------------------------
@@ -169,7 +176,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  zone_pub_t:::take_reserved_slot (ptr<expr_statement_t> s)
+  zone_pub_t::take_reserved_slot (ptr<statement_t> s)
   {
     assert (_statements.size ());
     assert (!_statements[0]);
@@ -206,7 +213,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   statement_zone_t::statement_zone_t (location_t l, ptr<zone_t> z)
-    : _location (l), _zone (z) {}
+    : statement_t (l), _zone (z) {}
   
   //-----------------------------------------------------------------------
 
@@ -244,7 +251,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  if_t::add_clauses (ptr<cond_clause_list_t> ccl)
+  if_t::add_clauses (ptr<if_clause_list_t> ccl)
   {
     if (!_clauses) { _clauses = ccl; } 
     else if (ccl) { *_clauses += *ccl; }
@@ -253,11 +260,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   void
-  if_t::add_clause (ptr<cond_clause_t> cc)
+  if_t::add_clause (ptr<if_clause_t> cc)
   {
     if (cc) {
       if (!_clauses) {
-	_clauses = New refcounted<cond_clause_list_t> ();
+	_clauses = New refcounted<if_clause_list_t> ();
       }
       _clauses->push_back (cc);
     }
@@ -270,7 +277,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<universals_t> univerals_t::alloc () 
+  ptr<universals_t> universals_t::alloc () 
   { return New refcounted<universals_t> (location ()); }
 
   //-----------------------------------------------------------------------
@@ -284,8 +291,8 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<case_t> case_t::alloc () { return New refcounted<case_t> (location ()); }
-  ptr<case_list_t> case_list_t::alloc ()
-  { return New refcounted<case_list_t> (location ()); }
+  ptr<case_list_t> case_list_t::alloc () 
+  { return New refcounted<case_list_t> (); }
   ptr<switch_t> switch_t::alloc () 
   { return New refcounted<switch_t> (location ()); }
 
@@ -303,19 +310,17 @@ namespace pub3 {
     tvars {
       xpub_status_t rs (XPUB_STATUS_OK);
       str fn;
-      ptr<expr_dict_t> md;
       ptr<const expr_dict_t> cd;
     }
     
-    if (!_file || !(fn = _file->eval_as_str (eval)) || fn.len () == 0) {
+    if (!_file || !(fn = _file->eval_as_str (p)) || fn.len () == 0) {
       str e = "include: cannot evaluate filename";
       p.report_error (e, _location);
-    } else if (_dict && !(cd = _dict->eval_as_dict (eval))) {
+    } else if (_dict && !(cd = _dict->eval_as_dict (p))) {
       str e = "include: cannot evalute parameters";
       p.report_error (e, _location);
     } else {
-      if (cd) md = cd->copy ();
-      twait { p.publish (fn, md, mkevent (rs)); }
+      twait { p.publish (fn, cd, mkevent (rs)); }
     }
     ev->trigger (rs);
   }
@@ -333,7 +338,7 @@ namespace pub3 {
       if (l->size () > 2) 
 	_dict = (*l)[1];
     } else {
-      str f = fnname ()
+      str f = fnname ();
       err = strbuf ("%s take 1 or 2 arguments; a filename and an optional "
 		    "binding list", f.cstr ());
       if (errp) *errp = err;
@@ -345,7 +350,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  fndef_t::add_params (ptr<indentifier_list_t> l)
+  fndef_t::add_params (ptr<identifier_list_t> l)
   {
     if (!_params) {
       _params = l;

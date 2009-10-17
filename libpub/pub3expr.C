@@ -158,7 +158,7 @@ namespace pub3 {
   expr_t::eval_as_dict (eval_t e) const
   {
     ptr<const expr_t> x = eval_to_val (e);
-    ptr<const expr_t> ret;
+    ptr<const expr_dict_t> ret;
     if (x) { ret = x->to_dict (); }
     return ret;
   }

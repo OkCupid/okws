@@ -4,37 +4,6 @@
 //-----------------------------------------------------------------------
 
 tamed void
-pub3::include_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
-			  xpub_status_cb_t cb) const
-{
-  tvars {
-    xpub_status_t res (XPUB_STATUS_OK);
-    pub3::eval_t eval (e, o);
-    ptr<const aarr_t> d;
-    str fn;
-    aarr_t *ccd;
-  }
-
-  if (!(fn = _file->eval_as_str (eval)) || fn.len () == 0) {
-    strbuf b ("include: cannot evaluate filename");
-    o->output_err (e, b, lineno);
-  } else if (_dict && !(d = _dict->eval_as_dict (eval))) {
-    strbuf b ("include: cannot evaluate dictionary argument");
-    o->output_err (e, b, lineno);
-  } else {
-   
-    // unfortunately, don't see a good way around this just now..
-    ccd = const_cast<aarr_t *> (static_cast<const aarr_t *> (d));
-
-    twait { pfile_func_t::publish (iface, o, e, ccd, fn, mkevent (res)); }
-  }
-
-  (*cb) (res);
-}
-
-//-----------------------------------------------------------------------
-
-tamed void
 pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 		      xpub_status_cb_t callercv) const
 {

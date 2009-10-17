@@ -80,6 +80,7 @@ namespace pub3 {
 
     location_t location (lineno_t l) const;
     void report_error (lineno_t l);
+    void report_error (str e, location_t l);
 
   private:
 
@@ -93,7 +94,8 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   class publish_t : public eval_t {
-
+  public:
+    void publish (str nm, ptr<const expr_dict_t> d, status_ev_t ev, CLOSURE);
   };
 
   //-----------------------------------------------------------------------
