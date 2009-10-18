@@ -16,6 +16,7 @@ libpub_la_SOURCES = \
 	pub3expr.C \
 	pub3obj.C \
 	pub3ast.C \
+	pub3pub.C \
 	pub3func.C \
 	pub3parse.C \
 	pub3file.C \
@@ -75,7 +76,8 @@ okwsinclude_HEADERS = \
 	pub3parse.h \
 	pub3ast.h \
 	pub3file.h \
-	pub3eval.h
+	pub3eval.h \
+	pub3pub.h
 
 noinst_HEADERS =  env.mk
 

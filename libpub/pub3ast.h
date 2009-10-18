@@ -8,6 +8,7 @@
 #include "okformat.h"
 #include "pub3expr.h"
 #include "pub3obj.h"
+#include "pub3pub.h"
 
 namespace pub3 {
 

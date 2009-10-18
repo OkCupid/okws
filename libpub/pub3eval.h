@@ -17,8 +17,8 @@ namespace pub3 {
     enum { FRAME_UNIVERSALS = 0, FRAME_GLOBALS = 1 };
 
     env_t (ptr<bindtab_t> u);
-    size_t push_locals (ptr<bindtab_t> t);
-    size_t push_universal_refs (ptr<bindtab_t> t);
+    size_t push_locals (ptr<bind_interface_t> t);
+    size_t push_universal_refs (ptr<bind_interface_t> t);
     void pop_to (size_t s);
     ptr<const expr_t> lookup_val (const str &nm) const;
     size_t stack_size () const;
@@ -31,7 +31,7 @@ namespace pub3 {
 		   LAYER_UNIREFS = 3 } layer_type_t;
     
     struct stack_layer_t {
-      stack_layer_t (ptr<bindtab_t> b, layer_type_t t) 
+      stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
       stack_layer_t () : _typ (LAYER_NONE) {}
       ptr<bind_interface_t> _bindings;
@@ -89,13 +89,6 @@ namespace pub3 {
     bool _loud;
     bool _silent;
     ssize_t _stack_p;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class publish_t : public eval_t {
-  public:
-    void publish (str nm, ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
   };
 
   //-----------------------------------------------------------------------

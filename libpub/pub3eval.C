@@ -15,7 +15,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   size_t
-  env_t::push_locals (ptr<bindtab_t> t)
+  env_t::push_locals (ptr<bind_interface_t> t)
   {
     size_t ret = _stack.size ();
     _stack.push_back (stack_layer_t (t, LAYER_LOCALS));
@@ -25,7 +25,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   size_t 
-  env_t::push_universal_refs (ptr<bindtab_t> t)
+  env_t::push_universal_refs (ptr<bind_interface_t> t)
   {
     size_t ret = _stack.size ();
     _stack.push_back (stack_layer_t (t, LAYER_UNIREFS));
