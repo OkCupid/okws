@@ -34,7 +34,7 @@ namespace pub3 {
       stack_layer_t (ptr<bindtab_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
       stack_layer_t () : _typ (LAYER_NONE) {}
-      ptr<const_bind_interface_t> _bindings;
+      ptr<bind_interface_t> _bindings;
       layer_type_t _typ;
     };
 
@@ -95,7 +95,7 @@ namespace pub3 {
 
   class publish_t : public eval_t {
   public:
-    void publish (str nm, ptr<const expr_dict_t> d, status_ev_t ev, CLOSURE);
+    void publish (str nm, ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
   };
 
   //-----------------------------------------------------------------------

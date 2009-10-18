@@ -1321,6 +1321,34 @@ namespace pub3 {
   
   //====================================================================
 
+  ptr<bindtab_t>
+  cow_bindtab_t::mutate ()
+  {
+    ptr<bindtab_t> out;
+    bindtab_t::const_iterator_t it (*_tab);
+    ptr<expr_t> x;
+    const str *keyp;
+
+    while ((keyp = it.next (&x))) {
+      ptr<expr_t> np;
+      if (x) np = x->copy ();
+      out->insert (*keyp, np);
+    }
+    return out;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<cow_bindtab_t> cow_bindtab_t::alloc (ptr<const bindtab_t> x)
+  { return New refcounted<cow_bindtab_t> (x); }
+
+  //--------------------------------------------------------------------
+
+  bool cow_bindtab_t::lookup (const str &nm, ptr<const expr_t> *x) const
+  { return _tab->lookup (nm, x); }
+
+  //====================================================================
+
   void
   bindtab_t::overwrite_with (const bindtab_t &t)
   {

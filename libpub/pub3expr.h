@@ -767,7 +767,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class const_bind_interface_t {
+  class bind_interface_t {
   public:
     virtual bool lookup (const str &nm, ptr<const expr_t> *x = NULL)
       const = 0;
@@ -777,7 +777,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   class bindtab_t : public qhash<str, ptr<expr_t> >,
-		    public const_bind_interface_t,
+		    public bind_interface_t,
 		    public virtual refcount {
   public:
     void overwrite_with (const bindtab_t &in);
@@ -787,6 +787,18 @@ namespace pub3 {
     ptr<bindtab_t> mutate () { return mkref (this); }
     typedef qhash_const_iterator_t<str, ptr<expr_t> > const_iterator_t;
     typedef qhash_iterator_t<str, ptr<expr_t> > iterator_t;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class cow_bindtab_t : public bind_interface_t {
+  public:
+    cow_bindtab_t (ptr<const bindtab_t> t) : _tab (t) {}
+    static ptr<cow_bindtab_t> alloc (ptr<const bindtab_t> t);
+    bool lookup (const str &nm, ptr<const expr_t> *x = NULL) const;
+    ptr<bindtab_t> mutate ();
+  protected:
+    ptr<const bindtab_t> _tab;
   };
 
   //-----------------------------------------------------------------------
