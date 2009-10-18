@@ -34,7 +34,7 @@ namespace pub3 {
       stack_layer_t (ptr<bindtab_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
       stack_layer_t () : _typ (LAYER_NONE) {}
-      ptr<bindtab_t> _bindings;
+      ptr<const_bind_interface_t> _bindings;
       layer_type_t _typ;
     };
 

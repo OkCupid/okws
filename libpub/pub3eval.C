@@ -58,14 +58,11 @@ namespace pub3 {
   env_t::lookup_val (const str &nm) const
   {
     ptr<const expr_t> x;
-
     for (ssize_t i = _stack.size () - 1; !x && i >= 0; i--) {
       stack_layer_t l = _stack[i];
-      ptr<expr_t> *xp = NULL;
-      if (l._bindings && (xp = (*l._bindings)[nm])) {
-	if (l._typ == LAYER_UNIREFS) { xp = (*_universals)[nm]; }
-	if (xp) { x = *xp; }
-	if (!x) x = expr_null_t::alloc ();
+      if (l._bindings && l._bindings->lookup (nm, &x)) {
+	if (l._typ == LAYER_UNIREFS) { _universals->lookup (nm, &x); }
+	if (!x) { x = expr_null_t::alloc (); }
       }
     }
     return x;
@@ -79,9 +76,9 @@ namespace pub3 {
     ptr<bindtab_t> found;
     for (ssize_t i = _stack.size () - 1; !found && i >= 0; i--) {
       stack_layer_t l = _stack[i];
-      if (l._bindings && (*l._bindings)[nm]) {
+      if (l._bindings && l._bindings->lookup (nm)) {
 	if (l._typ == LAYER_UNIREFS) { found = _universals; }
-	else { found = l._bindings; }
+	else { found = l._bindings->mutate (); }
       }
     }
     if (!found) { found = _globals; }

@@ -767,11 +767,24 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class bindtab_t : public qhash<str, ptr<expr_t> >  {
+  class const_bind_interface_t {
+  public:
+    virtual bool lookup (const str &nm, ptr<const expr_t> *x = NULL)
+      const = 0;
+    virtual ptr<bindtab_t> mutate () = 0;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class bindtab_t : public qhash<str, ptr<expr_t> >,
+		    public const_bind_interface_t,
+		    public virtual refcount {
   public:
     void overwrite_with (const bindtab_t &in);
     bindtab_t &operator+= (const bindtab_t &in);
     bindtab_t &operator-= (const bindtab_t &in);
+    bool lookup (const str &nm, ptr<const expr_t> *x = NULL) const;
+    ptr<bindtab_t> mutate () { return mkref (this); }
     typedef qhash_const_iterator_t<str, ptr<expr_t> > const_iterator_t;
     typedef qhash_iterator_t<str, ptr<expr_t> > iterator_t;
   };

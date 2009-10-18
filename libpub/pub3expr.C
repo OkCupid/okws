@@ -1354,6 +1354,18 @@ namespace pub3 {
     return *this;
   }
 
+  //--------------------------------------------------------------------
+
+  bool
+  bindtab_t::lookup (const str &nm, ptr<const expr_t> *outp) const
+  {
+    const ptr<expr_t> *xp = (*this)[nm];
+    bool ret = xp;
+    if (outp && xp) { *outp = *xp; }
+    else if (outp) { *outp  = NULL; }
+    return ret;
+  }
+
   //====================================================================
 
   void bindlist_t::add (binding_t b) { push_back (b); }
