@@ -53,9 +53,9 @@ namespace okssl {
 	ev->trigger ();
       }
 
-      int sz = room_left ();
+      ssize_t sz = room_left ();
       assert (sz > 0 || _force_read);
-      rc = SSL_read (_ssl, buf, sz);
+      rc = SSL_read (_ssl, buf, min<ssize_t> (sz, BUFSZ));
       if (_force_read)
 	_force_read = false;
       doing_accept = false;
