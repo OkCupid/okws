@@ -526,6 +526,26 @@ namespace okssl {
   }
 
   //-----------------------------------------------------------------------
+
+  void
+  okssld_t::sig_ignore (int i)
+  {
+    warn << "ignoring signal " << i << "\n";
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  okssld_t::init_signals ()
+  {
+    int sigs[] = { SIGUSR1, SIGUSR2, 0 };
+    for (int *sp = sigs; *sp; sp++) {
+      sigcb (*sp, wrap (this, &okssld_t::sig_ignore, *sp));
+    }
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
   
   tamed void
   okssld_t::init (evb_t ev)
