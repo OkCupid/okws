@@ -305,7 +305,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  include_t::publish (publish_t p, status_ev_t ev)
+  include_t::publish (publish_t p, status_ev_t ev) const
   {
     tvars {
       xpub_status_t rs (XPUB_STATUS_OK);
@@ -373,6 +373,69 @@ namespace pub3 {
   { return New refcounted<print_t> (plineno ()); }
 
   //-----------------------------------------------------------------------
+
+  /*
+  tamed void
+  for_t::publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      bool old_silent;
+      ptr<expr_list_t> v;
+      xpub_status_t status (XPUB_STATUS_OK);
+      size_t i;
+      bool ok;
+      ptr<mref_t> list_ref;
+    }
+
+    old_silent = p.set_silent (true);
+    list_ref = _arr->eval_as_ref (p);
+    p.set_silent (old_silent);
+
+    if (!v && !_empty) {
+      
+      strbuf b ("for: second argument is not an iterable vector");
+      p.report_error (b, _location);
+      
+    } else if (!v || v->size () == 0) {
+      
+      if (_empty) {
+	twait { _empty->publish (p, mkevent (res)); }
+      }
+      
+    } else {
+      
+      assert (v);
+      
+      ok = true;
+      len = v->size ();
+      
+      for (i = 0; i < len; i++) {
+	row = (*v)[i];
+	if (!row) {
+	  strbuf b ("for: row %zu is undefined!", i);
+	  p.report_error (b, _location);
+	} else if (!_body) {
+	// noop
+	} else {
+	  
+	  // reuse the aarr 'frame' to save on allocations, etc.
+	  frame.replace (_iter, row_val);
+
+	// active the frame with the new iteration variables.
+	frame_pointer = e->push (&frame);
+
+	// refresh the version number to cleared cached evaluations
+	e->bump ();
+
+	twait { _env->publish (iface, o, e, mkevent (res)); }
+
+	// restore eval stack once per iteration.  this will also
+	// undo any setl's, import's, etc, from within the body of
+	// this loop.
+	e->resize (frame_pointer);
+	ev->trigger (status);
+      }
+*/
 
 };
 

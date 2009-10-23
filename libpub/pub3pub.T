@@ -1,3 +1,4 @@
+// -*-c++-*-
 #include "pub3pub.h"
 
 namespace pub3 {

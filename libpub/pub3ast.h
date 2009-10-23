@@ -345,7 +345,7 @@ namespace pub3 {
     bool add_args (ptr<expr_list_t> l, str *errp);
     virtual str fnname () const { return "include"; }
     bool to_xdr (xpub3_statement_t *x) const;
-    void publish (publish_t p, status_ev_t ev, CLOSURE);
+    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
   protected:
     bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;

@@ -2,7 +2,7 @@
 #include "pub3func.h"
 
 //-----------------------------------------------------------------------
-
+/*
 tamed void
 pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
 		      xpub_status_cb_t callercv) const
@@ -96,6 +96,7 @@ pub3::for_t::publish (pub2_iface_t *iface, output_t *o, penv_t *e,
   
   (*callercv) (res);
 }
+*/
 
 //-----------------------------------------------------------------------
 
