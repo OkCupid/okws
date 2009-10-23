@@ -1490,6 +1490,11 @@ namespace pub3 {
   
   //--------------------------------------------------------------------
 
+  ptr<expr_dict_t> expr_dict_t::alloc ()
+  { return New refcounted<expr_dict_t> (); }
+
+  //--------------------------------------------------------------------
+
   void
   expr_dict_t::add (binding_t p)
   {

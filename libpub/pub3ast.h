@@ -202,6 +202,7 @@ namespace pub3 {
     void publish_nonblock (publish_t p) const;
     bool might_block () const;
   protected:
+    ptr<expr_list_t> eval_list (publish_t p) const;
     str _iter;
     ptr<expr_t> _arr;
     ptr<zone_t> _body;
@@ -346,6 +347,7 @@ namespace pub3 {
     virtual str fnname () const { return "include"; }
     bool to_xdr (xpub3_statement_t *x) const;
     void publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    bool publish_nonblock (publish_t p) const { return false; }
   protected:
     bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;

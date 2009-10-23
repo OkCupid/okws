@@ -374,23 +374,35 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  /*
+  ptr<expr_list_t>
+  for_t::eval_list (publish_t p) const
+  {
+    bool old_silent = p.set_silent (true);
+    ptr<mref_t> m = _arr->eval_to_ref (p);
+    ptr<expr_t> x;
+    if (m) x = m->get_value ();
+    ptr<expr_list_t> ret;
+    if (x) ret = x->to_list ();
+    p.set_silent (old_silent);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
   for_t::publish (publish_t p, status_ev_t ev) const
   {
     tvars {
-      bool old_silent;
       ptr<expr_list_t> v;
       xpub_status_t status (XPUB_STATUS_OK);
+      xpub_status_t res;
       size_t i;
-      bool ok;
-      ptr<mref_t> list_ref;
+      ptr<expr_t> row;
+      ptr<expr_dict_t> locals;
+      size_t stcksz;
     }
 
-    old_silent = p.set_silent (true);
-    list_ref = _arr->eval_as_ref (p);
-    p.set_silent (old_silent);
-
+    v = eval_list (p);
     if (!v && !_empty) {
       
       strbuf b ("for: second argument is not an iterable vector");
@@ -399,43 +411,37 @@ namespace pub3 {
     } else if (!v || v->size () == 0) {
       
       if (_empty) {
-	twait { _empty->publish (p, mkevent (res)); }
+	twait { _empty->publish (p, mkevent (status)); }
       }
       
     } else {
       
       assert (v);
+      locals = expr_dict_t::alloc ();
       
-      ok = true;
-      len = v->size ();
-      
-      for (i = 0; i < len; i++) {
+      for (i = 0; i < v->size (); i++) {
+	
 	row = (*v)[i];
 	if (!row) {
 	  strbuf b ("for: row %zu is undefined!", i);
 	  p.report_error (b, _location);
 	} else if (!_body) {
-	// noop
+	  // noop
 	} else {
-	  
-	  // reuse the aarr 'frame' to save on allocations, etc.
-	  frame.replace (_iter, row_val);
-
-	// active the frame with the new iteration variables.
-	frame_pointer = e->push (&frame);
-
-	// refresh the version number to cleared cached evaluations
-	e->bump ();
-
-	twait { _env->publish (iface, o, e, mkevent (res)); }
-
-	// restore eval stack once per iteration.  this will also
-	// undo any setl's, import's, etc, from within the body of
-	// this loop.
-	e->resize (frame_pointer);
-	ev->trigger (status);
+	  locals->replace (_iter, row);
+	  stcksz = p.env ()->push_locals (locals);
+	  twait { _body->publish (p, mkevent (res)); }
+	  if (res.status != XPUB_STATUS_OK) {
+	    status = res;
+	  }
+	  p.env ()->pop_to (stcksz);
+	}
       }
-*/
+    }
+    ev->trigger (status);
+  }
 
+  //-----------------------------------------------------------------------
+  
 };
 

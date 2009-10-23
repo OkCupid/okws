@@ -840,6 +840,7 @@ namespace pub3 {
 
     static ptr<expr_dict_t> parse_alloc ();
     static ptr<expr_dict_t> alloc (const xpub3_json_dict_t &x);
+    static ptr<expr_dict_t> alloc ();
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;
