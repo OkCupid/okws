@@ -1409,7 +1409,7 @@ namespace pub3 {
   expr_dict_t::is_static () const
   {
     if (_static.is_set ()) { return _static.value (); }
-    bool sttc = false;
+    bool sttc = true;
     ptr<expr_t> value;
     const_iterator_t it (*this);
     while (it.next (&value) && sttc) {
@@ -1424,23 +1424,15 @@ namespace pub3 {
   ptr<mref_t>
   expr_dict_t::eval_to_ref (eval_t e) const
   {
-    bool sttc = true;
     const_iterator_t it (*this);
     const str *key;
     ptr<expr_t> value;
+    ptr<expr_t> out;
 
     // First see if any keys are static.  Note that this computation
     // will be memoized, so it's fast enough to do a full DFS here.
-    while (sttc && it.next (&value)) {
-      if (value && !value->is_static ()) {
-	sttc = false;
-      }
-    }
-
-    ptr<expr_t> out;
-
     // For static objects, make a COW version
-    if (sttc) { 
+    if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
     } else {
 

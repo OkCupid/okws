@@ -3,66 +3,6 @@
 
 //-----------------------------------------------------------------------
 
-bool
-pub3::print_t::add (ptr<pub3::expr_list_t> l)
-{
-  bool ret = true;
-  if (!_args) {
-    _args = l;
-  } else {
-    ret = false;
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::print_t::publish_nonblock (pub2_iface_t *f, output_t *o,
-				 penv_t *e) const
-{
-  pub3::eval_t evl (e, o);
-  str s;
-  for (size_t i = 0; _args && i < _args->size (); i++) {
-    ptr<const expr_t> x = (*_args)[i];
-    if (!x) { 
-      /* noop */
-    } else if (_silent) {
-      (void) x->eval (evl);
-    } else if ((s = x->eval_as_str (evl))) {
-      o->output (e, s, false);
-    }
-  }
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::print_t::output (output_t *o, penv_t *e) const
-{
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::setle_func_t::output (output_t *o, penv_t *e) const
-{
-  eval_t eval (e, o);
-  ptr<aarr_t> tmp = New refcounted<aarr_t> ();
-  aarr_t *odd;
-
-  eval.eval_freeze_dict (aarr, tmp);
-
-  // do configuration files -- write to the collected in the output class
-  if ((odd = o->dict_dest ())) { odd->overwrite_with (*tmp); }
-
-  // do runtime output -- push a frozen version of us onto the eval stack
-  e->safe_push (tmp);
-}
-
-//-----------------------------------------------------------------------
-
 void
 pub3::set_func_t::output (output_t *o, penv_t *e) const
 {
@@ -85,13 +25,6 @@ pub3::set_func_t::output (output_t *o, penv_t *e) const
   if (!edd) {
     e->push (aarr);
   }
-}
-
-//-----------------------------------------------------------------------
-
-void
-pub3::cond_t::output (output_t *o, penv_t *e) const
-{
 }
 
 //-----------------------------------------------------------------------

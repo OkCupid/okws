@@ -13,6 +13,7 @@ namespace pub3 {
   public:
     void publish (str nm, ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void publish2 (str nm, status_ev_t ev, CLOSURE);
+    void output (str s);
   };
 
   //--------------------------------------------------------------------

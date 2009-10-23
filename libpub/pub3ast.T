@@ -506,6 +506,94 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  bool
+  print_t::add (ptr<pub3::expr_list_t> l)
+  {
+    bool ret = true;
+    if (!_args) {
+      _args = l;
+    } else {
+      ret = false;
+    }
+    return ret;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  bool
+  print_t::publish_nonblock (publish_t p) const
+  {
+    str s;
+    for (size_t i = 0; _args && i < _args->size (); i++) {
+      ptr<const expr_t> x = (*_args)[i];
+      if (x && (s = x->eval_as_str (p))) {
+	p.output (s);
+      }
+    }
+    return true;
+  }
+  
+  //-----------------------------------------------------------------------
+
+  bool
+  decl_block_t::is_static () const
+  {
+    bool sttc = true;
+    if (!_static.is_set ()) {
+      for (size_t i = 0; sttc && _bindings && i < _bindings->size (); i++) {
+	const binding_t &b = (*_bindings)[i];
+	if (b.expr () && !b.expr ()->is_static ()) {
+	  sttc = false;
+	}
+      }
+      _static.set (sttc);
+    }
+    return _static.value ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  decl_block_t::add (ptr<bindlist_t> l) 
+  {
+    _bindings = l;
+    _tab = New refcounted<bindtab_t> ();
+    for (size_t i = 0; l && i < l->size (); i++) {
+      binding_t &b = (*l)[i];
+      _tab->insert (b.name (), b.expr ());
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  locals_t::publish_nonblock (publish_t p) const
+  {
+    if (is_static ()) {
+      p.env ()->push_locals (_tab);
+    } else {
+      ptr<bindtab_t> frame = New refcounted<bindtab_t> ();
+      p.env ()->push_locals (frame);
+
+      // Construct the stack frame as we go! This way we can
+      // use the previous binding in evaluating the next. This
+      // is quite clever, check it.
+      for (size_t i = 0; _bindings && i < _bindings->size (); i++) {
+	const binding_t &b = (*_bindings)[i];
+	ptr<expr_t> nv;
+	ptr<const expr_t> cx;
+	ptr<mref_t> r;
+	if ((cx = b.expr ()) && (r = cx->eval_to_ref (p))) {
+	  nv = r->get_value ();
+	}
+	frame->insert (b.name (), nv);
+      }
+    }
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
   
 };
 

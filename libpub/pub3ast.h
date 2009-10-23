@@ -267,31 +267,35 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class decl_block_t_t : public statement_t {
+  class decl_block_t : public statement_t {
   public:
-    decl_block_t_t (location_t l) : statement_t (l) {}
+    decl_block_t (location_t l) : statement_t (l) {}
     bool to_xdr (xpub3_statement_t *x) const;
     virtual xpub3_statement_typ_t statement_typ () const = 0;
-    void add (ptr<bindlist_t> l) { _bindings = l; }
+    void add (ptr<bindlist_t> l);
+    bool is_static () const;
   protected:
     ptr<bindlist_t> _bindings;
+    ptr<bindtab_t> _tab;
+    mutable tri_bool_t _static;
   };
 
   //-----------------------------------------------------------------------
 
-  class locals_t : public decl_block_t_t {
+  class locals_t : public decl_block_t {
   public:
-    locals_t (location_t l) : decl_block_t_t (l) {}
+    locals_t (location_t l) : decl_block_t (l) {}
     static ptr<locals_t> alloc ();
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_LOCALS; }
+    bool publish_nonblock (publish_t p) const;
   };
 
   //-----------------------------------------------------------------------
 
-  class universals_t : public decl_block_t_t {
+  class universals_t : public decl_block_t {
   public:
-    universals_t (location_t l) : decl_block_t_t (l) {}
+    universals_t (location_t l) : decl_block_t (l) {}
     static ptr<universals_t> alloc ();
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_UNIVERSALS; }
@@ -378,7 +382,7 @@ namespace pub3 {
     bool add (ptr<pub3::expr_list_t> l);
     bool to_xdr (xpub3_statement_t *x) const;
 
-    void publish_nonblock (publish_t p) const;
+    bool publish_nonblock (publish_t p) const;
     bool might_block () const { return false; }
 
   private:
