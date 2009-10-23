@@ -442,6 +442,70 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  bool
+  if_t::publish_nonblock (publish_t p) const
+  {
+    bool ret = false;
+
+    // XXX - can do better than this.  This means we'll go into blocking
+    // land if ANY clause of the if statement blocks.  It should be
+    // that we'll go into blocking code only if the selected clause needs
+    // to block.
+    if (!might_block ()) {
+      ptr<const zone_t> ne = find_clause (p);
+      if (ne) {
+	ret = ne->publish_nonblock (p);
+      } else {
+	ret = true;
+      }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  if_t::publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      xpub_status_t status (XPUB_STATUS_OK);
+      ptr<const zone_t> z;
+    }
+    if ((z = find_clause (p))) {
+      twait { z->publish (p, mkevent (status)); }
+    }
+    ev->trigger (status);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  if_clause_t::fits (publish_t p) const
+  {
+    return (!_expr || _expr->eval_as_bool (p));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const zone_t>
+  if_t::find_clause (publish_t p) const
+  {
+    size_t len = _clauses ? _clauses->size () : size_t (0) ;
+    ptr<const if_clause_t> c;
+    ptr<const zone_t> ret;
+    bool found = false;
+
+    for (size_t i = 0; !found && i < len; i++) {
+      if ((c = (*_clauses)[i]) && (c->fits (p))) {
+	found = true;
+	ret = c->body ();
+      }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
   
 };
 

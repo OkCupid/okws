@@ -42,7 +42,7 @@ namespace pub3 {
     virtual ptr<zone_text_t> zone_text () { return NULL; }
     virtual bool to_xdr (xpub3_zone_t *z) const = 0;
 
-    virtual void publish_nonblock (publish_t p) const {}
+    virtual bool publish_nonblock (publish_t p) const { return false; }
     virtual void publish (publish_t p, status_ev_t ev, CLOSURE) const {}
     virtual bool might_block () const { return true; }
     static ptr<zone_t> alloc (const xpub3_zone_t &z);
@@ -199,7 +199,7 @@ namespace pub3 {
 
     const char *get_obj_name () const { return "pub3::for_t"; }
     void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    void publish_nonblock (publish_t p) const;
+    bool publish_nonblock (publish_t p) const { return false; }
     bool might_block () const;
   protected:
     ptr<expr_list_t> eval_list (publish_t p) const;
@@ -226,8 +226,9 @@ namespace pub3 {
     bool to_xdr (xpub3_statement_t *x) const { return false; }
 
     ptr<const expr_t> expr () const { return _expr; }
-    ptr<zone_t> body () const { return _body; }
+    ptr<const zone_t> body () const { return _body; }
     bool might_block () const;
+    bool fits (publish_t p) const;
 
   private:
     ptr<expr_t> _expr;
@@ -255,11 +256,11 @@ namespace pub3 {
     bool to_xdr (xpub3_statement_t *x) const;
 
     void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    void publish_nonblock (publish_t p) const;
+    bool publish_nonblock (publish_t p) const;
     bool might_block () const;
 
   private:
-    ptr<zone_t> find_clause (publish_t p) const;
+    ptr<const zone_t> find_clause (publish_t p) const;
     ptr<if_clause_list_t> _clauses;
     mutable tri_bool_t _might_block;
   };
