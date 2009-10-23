@@ -25,16 +25,22 @@
 #ifndef _LIBPUB_OKWS_SFS_H
 #define _LIBPUB_OKWS_SFS_H 1
 
+
+/* annoying, need to always do this first */
+#define __STDC_LIMIT_MACROS 1
+#include <stdint.h>
+
+
 #include "async.h"
 #include "amisc.h"
 #include "refcnt.h"
 #include "str.h"
 
 #if !defined(SFSLITE_AT_VERSION) 
-# error "Need sfslite patchlevel of 1.2.8pre8 or greater!"
+# error "Need sfslite patchlevel of 1.2.8pre10 or greater!"
 #else
-# if !SFSLITE_AT_VERSION(1,2,8,8)
-#  error "Need sfslite patchlevel of 1.2.8pre8 or greater!"
+# if !SFSLITE_AT_VERSION(1,2,8,10)
+#  error "Need sfslite patchlevel of 1.2.8pre10 or greater!"
 # endif
 #endif
 

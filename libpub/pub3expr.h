@@ -45,8 +45,13 @@ namespace pub3 {
 	   max_shell_strlen = 0x100000 };
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
+    virtual bool to_xdr (xpub3_json_t *x) const;
+
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
+    static ptr<expr_t> alloc (const xpub3_json_t *x);
+    static ptr<expr_t> alloc (const xpub3_json_t &x);
+
     static ptr<expr_t> alloc (scalar_obj_t so);
     static ptr<expr_t> safe_expr (ptr<expr_t> in);
     lineno_t lineno () const { return _lineno; }
@@ -212,6 +217,7 @@ namespace pub3 {
     expr_null_t () : expr_constant_t () {}
     bool is_null () const { return true; }
     bool to_xdr (xpub3_expr_t *x) const { return false; }
+    bool to_xdr (xpub3_json_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
     static ptr<expr_null_t> alloc ();
     str type_to_str () const { return "null"; }
@@ -224,6 +230,7 @@ namespace pub3 {
     scalar_obj_t to_scalar () const;
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
+    bool to_xdr (xpub3_json_t *j) const;
     static ptr<expr_bool_t> alloc (bool b);
     static str static_to_str (bool b);
     str to_str (bool q = false) const;
@@ -547,10 +554,12 @@ namespace pub3 {
     bool to_null () const;
     ptr<rxx> to_regex () const;
     static ptr<expr_str_t> alloc (str s = NULL);
+    static ptr<expr_str_t> alloc (const xpub3_json_str_t &x);
 
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_xdr (xpub3_json_t *j) const;
 
   protected:
     const str _val;
@@ -588,6 +597,7 @@ namespace pub3 {
     void finalize ();
 
     str type_to_str () const { return "int"; }
+    bool to_xdr (xpub3_json_t *j) const;
 
   private:
     int64_t _val;
@@ -613,6 +623,7 @@ namespace pub3 {
 
     static ptr<expr_uint_t> alloc (u_int64_t i) 
     { return New refcounted<expr_uint_t> (i); }
+    bool to_xdr (xpub3_json_t *x) const;
   private:
     const u_int64_t _val;
   };
@@ -633,8 +644,12 @@ namespace pub3 {
 
     static ptr<expr_double_t> alloc (double i) 
     { return New refcounted<expr_double_t> (i); }
+    static ptr<expr_double_t> alloc (const xpub3_double_t &x)
+    { return New refcounted<expr_double_t> (x); }
 
     str type_to_str () const { return "float"; }
+    bool to_xdr (xpub3_json_t *j) const;
+    bool to_xdr (xpub3_double_t *j) const;
   private:
     const double _val;
   };
@@ -652,6 +667,7 @@ namespace pub3 {
 
     bool to_xdr (xpub3_expr_t *) const;
     bool to_xdr (xpub3_expr_list_t *) const;
+    bool to_xdr (xpub3_json_t *j) const;
 
     // vec_iface_t interface
     ptr<const expr_t> lookup (ssize_t i, bool *ib = NULL) const;
@@ -677,6 +693,7 @@ namespace pub3 {
     static ptr<expr_list_t> alloc (const xpub3_expr_list_t &x) 
     { return New refcounted<expr_list_t> (x); }
     static ptr<expr_list_t> alloc (const xpub3_expr_list_t *x);
+    static ptr<expr_list_t> alloc (const xpub3_json_list_t &x);
 
     ptr<const expr_list_t> to_list () const { return mkref (this); }
     ptr<expr_list_t> to_list () { return mkref (this); }
@@ -822,6 +839,7 @@ namespace pub3 {
     expr_dict_t (const xpub3_dict_t &x);
 
     static ptr<expr_dict_t> parse_alloc ();
+    static ptr<expr_dict_t> alloc (const xpub3_json_dict_t &x);
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;
@@ -836,6 +854,7 @@ namespace pub3 {
     void add (ptr<binding_t> p);
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_xdr (xpub3_json_t *x) const;
 
     ptr<expr_dict_t> to_dict () { return mkref (this); }
     ptr<const expr_dict_t> to_dict () const { return mkref (this); }

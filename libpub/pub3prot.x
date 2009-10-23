@@ -385,6 +385,63 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
 
 };
 
+/* ====================================================================== */
+/* pure JSON */
+
+enum xpub3_json_typ_t { XPUB3_JSON_ERROR,
+     		      	XPUB3_JSON_BOOL,
+     		        XPUB3_JSON_INT32,
+			XPUB3_JSON_UINT32,
+     		      	XPUB3_JSON_INT64,
+			XPUB3_JSON_UINT64,
+			XPUB3_JSON_DOUBLE,
+			XPUB3_JSON_STRING,
+			XPUB3_JSON_DICT,
+			XPUB3_JSON_LIST, 
+			XPUB3_JSON_NULL };
+
+%struct xpub3_json_t;
+
+typedef opaque xpub3_json_str_t<>;
+
+struct xpub3_json_list_t {
+       xpub3_json_t entries<>;
+};
+
+struct xpub3_json_pair_t {
+       xpub3_json_str_t key;
+       xpub3_json_t *value;
+};
+
+struct xpub3_json_dict_t {
+       xpub3_json_pair_t entries<>;
+};
+
+union xpub3_json_t switch (xpub3_json_typ_t typ) {
+case XPUB3_JSON_BOOL:
+     bool json_bool;
+case XPUB3_JSON_INT32:
+     int json_int32;
+case XPUB3_JSON_UINT32:
+     unsigned json_uint32;
+case XPUB3_JSON_INT64:
+     hyper json_int64;
+case XPUB3_JSON_UINT64:
+     unsigned hyper json_uint64;
+case XPUB3_JSON_STRING:
+     xpub3_json_str_t json_string;
+case XPUB3_JSON_DICT:
+     xpub3_json_dict_t json_dict;
+case XPUB3_JSON_LIST:
+     xpub3_json_list_t json_list;
+case XPUB3_JSON_DOUBLE:
+     xpub3_double_t json_double;
+default:
+     void;
+};
+
+/* ----------------------------------------------------------------------- */
+
 /* ======================================================================= */
 
 enum xpub_status_typ_t {

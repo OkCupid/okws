@@ -17,6 +17,7 @@ libpub_la_SOURCES = \
 	pub3obj.C \
 	pub3ast.C \
 	pub3pub.C \
+	pub3json2xdr.C \
 	pub3func.C \
 	pub3parse.C \
 	pub3file.C \
