@@ -29,6 +29,8 @@ namespace pub3 {
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
 		   LAYER_UNIREFS = 3 } layer_type_t;
+
+    size_t push_bindings (ptr<bind_interface_t> t, layer_type_t lt);
     
     struct stack_layer_t {
       stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 

@@ -568,13 +568,13 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  locals_t::publish_nonblock (publish_t p) const
+  decl_block_t::publish_nonblock (publish_t p) const
   {
     if (is_static ()) {
-      p.env ()->push_locals (_tab);
+      p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), get_decl_type ());
     } else {
       ptr<bindtab_t> frame = New refcounted<bindtab_t> ();
-      p.env ()->push_locals (frame);
+      p.env ()->push_bindings (frame, get_decl_type ());
 
       // Construct the stack frame as we go! This way we can
       // use the previous binding in evaluating the next. This

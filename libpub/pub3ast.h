@@ -274,6 +274,8 @@ namespace pub3 {
     virtual xpub3_statement_typ_t statement_typ () const = 0;
     void add (ptr<bindlist_t> l);
     bool is_static () const;
+    bool publish_nonblock (publish_t p) const;
+    virtual env_t::layer_type_t get_decl_type () const = 0;
   protected:
     ptr<bindlist_t> _bindings;
     ptr<bindtab_t> _tab;
@@ -288,7 +290,7 @@ namespace pub3 {
     static ptr<locals_t> alloc ();
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_LOCALS; }
-    bool publish_nonblock (publish_t p) const;
+    env_t::layer_type_t get_decl_type () const { return env_t::LAYER_LOCALS; }
   };
 
   //-----------------------------------------------------------------------
@@ -299,6 +301,9 @@ namespace pub3 {
     static ptr<universals_t> alloc ();
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_UNIVERSALS; }
+
+    env_t::layer_type_t get_decl_type () const 
+    { return env_t::LAYER_UNIVERSALS; }
   };
 
   //-----------------------------------------------------------------------

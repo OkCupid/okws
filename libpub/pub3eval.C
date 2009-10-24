@@ -1,4 +1,5 @@
 
+
 #include "pub3eval.h"
 
 namespace pub3 {
@@ -17,9 +18,7 @@ namespace pub3 {
   size_t
   env_t::push_locals (ptr<bind_interface_t> t)
   {
-    size_t ret = _stack.size ();
-    _stack.push_back (stack_layer_t (t, LAYER_LOCALS));
-    return ret;
+    return push_bindings (t, LAYER_LOCALS);
   }
 
   //-----------------------------------------------------------------------
@@ -27,8 +26,16 @@ namespace pub3 {
   size_t 
   env_t::push_universal_refs (ptr<bind_interface_t> t)
   {
+    return push_bindings (t, LAYER_UNIVERSALS);
+  }
+
+  //-----------------------------------------------------------------------
+
+  size_t
+  env_t::push_bindings (ptr<bind_interface_t> bi, layer_type_t typ)
+  {
     size_t ret = _stack.size ();
-    _stack.push_back (stack_layer_t (t, LAYER_UNIREFS));
+    _stack.push_back (stack_layer_t (bi, typ));
     return ret;
   }
 
