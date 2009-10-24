@@ -67,13 +67,6 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  bool fhash_t::operator!= (const xpub3_hash_t &p2) const
-  {
-    return !(*this == p2);
-  }
-
-  //-----------------------------------------------------------------------
-
   hash_t
   fhash_t::hash_hash () const
   {
@@ -88,10 +81,10 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  ptr<phash_t>
+  ptr<fhash_t>
   file2hash (const str &fn, struct stat *sbp)
   {
-    ptr<phash_t> p = New refcounted<phash_t> ();
+    ptr<fhash_t> p = New refcounted<fhash_t> ();
     if (!file2hash (fn, p, sbp)) p = NULL;
     return p;
   }

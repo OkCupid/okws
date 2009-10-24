@@ -27,10 +27,8 @@
 
 #include "arpc.h"
 #include "async.h"
-#include "xpub.h"
+#include "pub3prot.h"
 #include "okconst.h"
-#include "txa.h"
-#include "txa_prot.h"
 #include "pubutil.h"
 
 typedef enum { PSLAVE_ERR = 0,
@@ -67,7 +65,7 @@ str status2str (hlp_status_t);
 
 class helper_base_t {
 public:
-  helper_base_t () : txa_login_rpc (0), authtoks (NULL) {}
+  helper_base_t ()  {}
   virtual ~helper_base_t () {}
   virtual void connect (cbb::ptr c = NULL) = 0;
   virtual void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
@@ -78,16 +76,7 @@ public:
   virtual str getname () const = 0;
   void hwarn (const str &s) const;
 
-  void set_txa (u_int32_t rpc, vec<str> *v) 
-  { 
-    txa_login_rpc = rpc; authtoks = v; 
-  }
-
 protected:
-
-  u_int32_t txa_login_rpc;
-  vec<str> *authtoks;
-  
 };
 
 class helper_t : public helper_base_t {
@@ -141,9 +130,6 @@ protected:
 	     time_t duration = 0);
   void didcall (aclnt_cb cb, clnt_stat st);
 
-  void login (cbb::ptr cb);
-  void logged_in (cbb::ptr cb, ptr<bool> df, ptr<txa_login_res_t> res, 
-		  clnt_stat s);
   void connect_success (cbb::ptr cb);
 
   const rpc_program rpcprog;

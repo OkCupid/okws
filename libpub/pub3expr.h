@@ -188,6 +188,13 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
+  class const_mref_dict : public mref_t {
+
+
+  };
+
+  //----------------------------------------------------------------------
+
   class mref_list_t : public mref_t {
   public:
     mref_list_t (ptr<expr_list_t> l, ssize_t i) : _list (l), _index (i) {}

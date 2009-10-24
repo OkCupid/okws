@@ -26,8 +26,6 @@ libpub_la_SOURCES = \
 	zstr.C \
 	okconst.C \
 	jail.C \
-	lbalance.C \
-	rpcwindow.C \
 	pub2.C \
 	clone.C \
 	debug.C \
@@ -47,7 +45,6 @@ okwsinclude_HEADERS = \
 	okconst.h \
 	fhash.h \
 	holdtab.h \
-	lbalance.h \
 	parse.h \
 	pjail.h \
 	pub_parse.h \
@@ -57,7 +54,6 @@ okwsinclude_HEADERS = \
 	pslave.h \
 	okdbg.h \
 	okdbg-int.h \
-	rpcwindow.h \
 	pub2.h \
 	okclone.h \
 	okws_sfs.h \

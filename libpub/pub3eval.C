@@ -61,6 +61,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<mref_t>
+  eval_t::lookup_ref (const str &nm) const
+  {
+    return _env->lookup_ref (nm);
+  }
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   env_t::lookup_val (const str &nm) const
   {

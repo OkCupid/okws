@@ -4,6 +4,8 @@
 #pragma once
 
 #include "pub3prot.h"
+#include "okdbg.h"
+#include "pub3ast.h"
 
 namespace pub3 {
 

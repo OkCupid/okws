@@ -1531,6 +1531,27 @@ namespace pub3 {
     insert (nm, x);
   }
 
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_dict_t::lookup (str nm) const
+  {
+    const ptr<expr_t> *rp;
+    ptr<const expr_t> r;
+    if ((rp = (*this)[nm])) r = *rp;
+    return r;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t>
+  expr_dict_t::lookup (str nm) 
+  {
+    ptr<expr_t> r, *rp;
+    if ((rp = (*this)[nm])) r = *rp;
+    return r;
+  }
+
   //====================================================================
 
   expr_assignment_t::expr_assignment_t (ptr<expr_t> lhs, ptr<expr_t> rhs,
@@ -1580,6 +1601,14 @@ namespace pub3 {
     return ret;
   }
   
+  //=======================================================================
+
+  void 
+  expr_t::report_error (eval_t e, str n) const
+  {
+    e.report_error (n, _lineno);
+  }
+
   //=======================================================================
 
 };

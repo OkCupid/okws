@@ -339,6 +339,8 @@ namespace pub3 {
     void add_cases (ptr<case_list_t> l);
     void add_key (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
+    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    bool publish_nonblock (publish_t p) const { return false; }
   protected:
     ptr<expr_t> _key;
     ptr<case_list_t> _cases;

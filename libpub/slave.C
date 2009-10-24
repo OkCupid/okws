@@ -383,49 +383,7 @@ helper_t::connected (cbb::ptr cb, ptr<bool> df, bool b)
   assert (clnt);
   clnt->seteofcb (wrap (this, &helper_t::eofcb, destroyed));
 
-  if (authtoks && txa_login_rpc > 0) 
-    login (cb);
-  else
-    connect_success (cb);
-}
-
-void
-helper_t::login (cbb::ptr cb)
-{
-  txa_login_arg_t arg;
-  arg.setsize (authtoks->size ());
-  for (u_int i = 0; i < authtoks->size (); i++) {
-    arg[i] = (*authtoks)[i];
-  }
-  ptr<txa_login_res_t> res = New refcounted<txa_login_res_t> ();
-  call (txa_login_rpc, &arg, res, 
-	wrap (this, &helper_t::logged_in, cb, destroyed, res));
-}
-
-void
-helper_t::logged_in (cbb::ptr cb, ptr<bool> df, ptr<txa_login_res_t> res, 
-		     clnt_stat err)
-{
-  bool b = false;
-  if (*df) {
-    (*cb) (false);
-    return;
-  } else if (err) {
-    hwarn (strbuf ("login failed: ") <<  err);
-  } else if (!*res) {
-    hwarn ("server rejected login tokens\n");
-  } else {
-    b = true;
-  }
-
-  if (b) {
-    connect_success (cb);
-  } else {
-    status_change (HLP_STATUS_DENIED);
-    if (cb)
-      (*cb) (false);
-  }
-
+  connect_success (cb);
 }
 
 void

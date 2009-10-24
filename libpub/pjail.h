@@ -27,7 +27,7 @@
 
 #include "arpc.h"
 #include "async.h"
-#include "xpub.h"
+#include "pub3prot.h"
 #include <sys/stat.h>
 #include "pubutil.h"
 

@@ -79,6 +79,7 @@ namespace pub3 {
     bool set_silent (bool b);
 
     ptr<const expr_t> lookup_val (const str &nm) const;
+    ptr<mref_t> lookup_ref (const str &nm) const;
 
     location_t location (lineno_t l) const;
     void report_error (lineno_t l);

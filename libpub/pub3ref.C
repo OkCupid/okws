@@ -1,4 +1,5 @@
 #include "pub3expr.h"
+#include "pub3parse.h"
 
 namespace pub3 {
 
@@ -17,7 +18,7 @@ namespace pub3 {
   {
     ptr<const expr_t> x;
     ptr<const expr_dict_t> d;
-    ptr<const expr_t> *valp;
+    const ptr<expr_t> *valp;
     ptr<expr_t> out;
     assert (_dict);
     if (!(x = _dict->eval_to_val (e))) {
@@ -37,12 +38,15 @@ namespace pub3 {
   ptr<mref_t>
   expr_dictref_t::eval_to_ref (eval_t e) const
   {
+    ptr<mref_t> dr;
     ptr<expr_t> x;
     ptr<expr_dict_t> d;
     ptr<mref_t> r;
     assert (_dict);
-    if (!(x = _dict->eval_to_rhs (e))) {
-      report_error (e, "failed to evaluate expression (as a dictionary)");
+    if (!(dr = _dict->eval_to_ref (e))) {
+      report_error (e, "failed to evaluate dictionary");
+    } else if (!(x = dr->get_value ())) {
+      report_error (e, "the dictionary referred to was null");
     } else if (!(d = x->to_dict ())) {
       report_error (e, "can't coerce value to dictionary");
     } else {
@@ -69,7 +73,7 @@ namespace pub3 {
   ptr<mref_t>
   expr_varref_t::eval_to_ref (eval_t e) const
   {
-    return e.lookup_ref (e);
+    return e.lookup_ref (_name);
   }
 
   //====================================================================
@@ -90,11 +94,12 @@ namespace pub3 {
     ptr<expr_dict_t> d;
     ptr<expr_list_t> l;
     ptr<mref_t> ret;
+    ptr<mref_t> cr;
 
     assert (_vec);
     assert (_index);
-
-    if (!(c = _vec->eval_to_rhs (e))) {
+    
+    if (!(cr = _vec->eval_to_ref (e)) || !(c = cr->get_value ())) {
       report_error (e, "container evaluates to null");
     } else if (!(i = _index->eval_to_val (e))) {
       report_error (e, "cannot evaluate key for lookup");
@@ -139,14 +144,16 @@ namespace pub3 {
     } else if ((d = c->to_dict ())) {
       str k;
       if ((k = i->to_str ())) {
-	ret = mref_dict_t::alloc (d, k);
+	ret = d->lookup (k);
+	if (!ret) ret = expr_null_t::alloc ();
       } else {
 	report_error (e, "cannot coerce dictionary index to string");
       }
     } else if ((l = c->to_list ())) {
       int64_t ii;
-      if (i->to_int (ip)) {
-	ret = mref_list_t::alloc (l, ii);
+      if (i->to_int (&ii)) {
+	ret = l->lookup (ii);
+	if (!ret) ret = expr_null_t::alloc ();
       } else {
 	report_error (e, "indices into lists must be integers");
       }
