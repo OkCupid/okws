@@ -15,6 +15,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  env_t::add_global_binding (const str &n, ptr<expr_t> x)
+  {
+    _globals->insert (n, x);
+  }
+
+  //-----------------------------------------------------------------------
+
   size_t
   env_t::push_locals (ptr<bind_interface_t> t)
   {

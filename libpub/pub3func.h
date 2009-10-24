@@ -1,15 +1,34 @@
 // -*-c++-*-
 /* $Id: parr.h 2784 2007-04-20 16:32:00Z max $ */
 
-
-#ifndef _LIBPUB_PUB3FUNC_H_
-#define _LIBPUB_PUB3FUNC_H_
+#pragma once
 
 #include "pub.h"
-#include "pub3expr.h"
+#include "pub3ast.h"
 #include "pub3eval.h"
 
 namespace pub3 {
+
+  //-----------------------------------------------------------------------
+
+  class fndef_t : public statement_t, public expr_t {
+  public:
+    fndef_t (str nm, location_t l) : statement_t (l), _name (nm) {}
+    fndef_t (const xpub3_fndef_t &x) ;
+    static ptr<fndef_t> alloc (str nm);
+    void add_params (ptr<identifier_list_t> p);
+    void add_body (ptr<zone_t> z);
+
+    str to_str (bool q = false) const;
+    bool publish_nonblock (publish_t p) const;
+    bool might_block () const { return false; }
+    ptr<const fndef_t> to_fndef () const { return mkref (this); }
+    ptr<fndef_t> to_fndef () { return mkref (this); }
+  protected:
+    str _name;
+    ptr<identifier_list_t> _params;
+    ptr<zone_t> _body;
+  };
 
   //-----------------------------------------------------------------------
 
@@ -101,4 +120,3 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 };
 
-#endif /* _LIBPUB_PUB3FUNC_H_ */

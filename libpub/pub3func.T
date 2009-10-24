@@ -89,6 +89,43 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  fndef_t::add_params (ptr<identifier_list_t> l)
+  {
+    if (!_params) {
+      _params = l;
+    } else if (l) { 
+      *_params += *l;
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  fndef_t::add_body (ptr<zone_t> z) 
+  {
+    _body = z;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  fndef_t::publish_nonblock (publish_t p) const
+  {
+    p.env ()->add_global_binding (_name, expr_cow_t::alloc (mkref (this)));
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
+
+  str
+  fndef_t::to_str (bool q) const
+  {
+    return strbuf ("pub-defined runtime function <%s>", _name.cstr ());
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 
 //

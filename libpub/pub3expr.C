@@ -267,6 +267,17 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<const fndef_t>
+  expr_cow_t::to_fndef () const
+  {
+    ptr<const fndef_t> ret;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) { ret = x->to_fndef (); }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<expr_list_t> 
   expr_cow_t::to_list () 
   {

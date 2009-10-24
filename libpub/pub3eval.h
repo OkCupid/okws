@@ -23,6 +23,7 @@ namespace pub3 {
     ptr<const expr_t> lookup_val (const str &nm) const;
     size_t stack_size () const;
     ptr<mref_t> lookup_ref (const str &nm) const;
+    void add_global_binding (const str &nm, ptr<expr_t> v);
 
     typedef enum { LAYER_NONE = -1,
 		   LAYER_UNIVERSALS = 0,

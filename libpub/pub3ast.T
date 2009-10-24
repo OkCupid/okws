@@ -349,26 +349,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  void
-  fndef_t::add_params (ptr<identifier_list_t> l)
-  {
-    if (!_params) {
-      _params = l;
-    } else if (l) { 
-      *_params += *l;
-    }
-  }
-
-  //-----------------------------------------------------------------------
-
-  void
-  fndef_t::add_body (ptr<zone_t> z) 
-  {
-    _body = z;
-  }
-
-  //-----------------------------------------------------------------------
-
   ptr<print_t> print_t::alloc () 
   { return New refcounted<print_t> (plineno ()); }
 

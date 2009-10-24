@@ -396,22 +396,6 @@ namespace pub3 {
   private:
     ptr<pub3::expr_list_t> _args;
   };
-
-  //-----------------------------------------------------------------------
-
-  class fndef_t : public statement_t {
-  public:
-    fndef_t (str nm, location_t l) : statement_t (l), _name (nm) {}
-    fndef_t (const xpub3_fndef_t &x) ;
-    static ptr<fndef_t> alloc (str nm);
-    void add_params (ptr<identifier_list_t> p);
-    void add_body (ptr<zone_t> z);
-  protected:
-    str _name;
-    ptr<identifier_list_t> _params;
-    ptr<zone_t> _body;
-  };
-
   //-----------------------------------------------------------------------
 
 };
