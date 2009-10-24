@@ -7,6 +7,7 @@
 #include "pub3expr.h"
 #include "pub3ast.h"
 #include "pub3file.h"
+#include <stdio.h>
 
 namespace pub3 {
 

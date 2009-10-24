@@ -35,7 +35,8 @@ extern int yyesc;          /* on if we're to gobble up espaces in strings */
 /* scan.ll */
 struct yy_buffer_state;
 yy_buffer_state *yy_new_buffer (FILE *ip, size_t sz);
-void yyswitch_to_buffer (yy_buffer_state *s);
+void yy_switch_to_buffer (yy_buffer_state *s);
+void yy_delete_buffer (yy_buffer_state *s);
 int yyerror (str s = NULL);
 
 extern int yyparse ();

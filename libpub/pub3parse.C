@@ -28,9 +28,9 @@ namespace pub3 {
   void parser_t::set_current (ptr<parser_t> p) { g_current = p; }
   parser_t::parser_t (str f) : _location (f, 1), _error (false) {}
   parser_t::parser_t () : _location (), _error (false) {}
-  lineno_t parser_t::location () const { return _location._lineno; }
+  lineno_t parser_t::lineno () const { return _location._lineno; }
   void parser_t::inc_lineno (lineno_t l) { _location._lineno += l; }
-  const location_t &location () const { return _location; }
+  const location_t &parser_t::location () const { return _location; }
 
   // =============================================== json_parser_t ========
 
@@ -41,7 +41,7 @@ namespace pub3 {
   bool
   json_parser_t::set_expr_output (ptr<expr_t> e)
   {
-    _out = x;
+    _out = e;
     return true;
   }
 
@@ -74,11 +74,11 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   FILE *
-  pub_parser_t:open_file (const str &f)
+  pub_parser_t::open_file (const str &f)
   {
     FILE *ret = NULL;
     struct stat sb;
-    if (stat (rfn.cstr (), &sb) != 0) {
+    if (stat (f.cstr (), &sb) != 0) {
       error ("no such file exists");
     } else if (!S_ISREG (sb.st_mode)) {
       error ("file exists but is not a regular file");
@@ -94,7 +94,7 @@ namespace pub3 {
   parser_t::error (str m)
   {
     strbuf b;
-    s = _location.to_str ();
+    str s = _location.to_str ();
     b << s << ": " << m;
     _errors.push_back (b);
   }
