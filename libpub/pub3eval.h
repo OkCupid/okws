@@ -83,6 +83,7 @@ namespace pub3 {
     location_t location (lineno_t l) const;
     void report_error (lineno_t l);
     void report_error (str e, location_t l);
+    void report_error (str e, lineno_t l);
 
   private:
 

@@ -444,6 +444,33 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
+  if_t::might_block () const 
+  {
+    bool mb = false;
+    if (!_might_block.is_set ()) {
+      for (size_t i = 0;  !mb && _clauses && _clauses->size (); i++) {
+	if ((*_clauses)[i]->might_block ()) {
+	  mb = true;
+	}
+      }
+      _might_block.set (mb);
+    } else {
+      mb = _might_block.value ();
+    }
+    return mb;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  if_clause_t::might_block () const
+  {
+    return _body && _body->might_block ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
   if_t::publish_nonblock (publish_t p) const
   {
     bool ret = false;
@@ -590,6 +617,16 @@ namespace pub3 {
 	frame->insert (b.name (), nv);
       }
     }
+    return true;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  expr_statement_t::publish_nonblock (publish_t p) const
+  {
+    // Evaluate for any side effects.
+    if (_expr) { (void) _expr->eval_to_ref (p); }
     return true;
   }
 

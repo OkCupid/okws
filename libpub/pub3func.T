@@ -1,78 +1,6 @@
 // -*-c++-*-
 #include "pub3func.h"
-
-//-----------------------------------------------------------------------
-
-void
-pub3::set_func_t::output (output_t *o, penv_t *e) const
-{
-  aarr_t *odd; // output dict dest
-  ptr<aarr_t> edd; // env dict dest
-  aarr_t tmp;
-  
-  eval_t eval (e, o);
-
-  odd = o->dict_dest ();
-  edd = e->get_global_aarr ();
-
-  if (odd || edd) {
-    eval.eval_freeze_dict (aarr, &tmp);
-  }
-
-  if (odd) { odd->overwrite_with (tmp); }
-  if (edd) { edd->overwrite_with (tmp); }
-
-  if (!edd) {
-    e->push (aarr);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::cond_clause_t::might_block () const
-{
-  return (_env && _env->might_block ());
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::cond_t::might_block () const
-{
-  if (_might_block < 0) {
-    _might_block = 0;
-
-    for (size_t i = 0; 
-	 _might_block == 0 && _clauses && i < _clauses->size (); 
-	 i++) {
-
-      if ((*_clauses)[i]->might_block ()) { _might_block = 1; }
-    }
-
-  }
-  return (_might_block);
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_statement_t::publish_nonblock (pub2_iface_t *i, output_t *o, 
-					  penv_t *e) const
-{
-  pub3::eval_t evl (e, o);
-  if (_expr) {
-    (void)_expr->eval (evl);
-  }
-  return true;
-}
-  
-//-----------------------------------------------------------------------
-
-void 
-pub3::expr_statement_t::output (output_t *o, penv_t *e) const
-{
-}
+#include "pub3parse.h"
 
 
 //-----------------------------------------------------------------------
@@ -106,19 +34,10 @@ namespace pub3 {
     
   //-----------------------------------------------------------------------
 
-  ptr<const pval_t>
-  error_fn_t::eval (eval_t e) const
+  ptr<const expr_t>
+  error_fn_t::eval_to_val (eval_t e) const
   {
-    report_error (e, _err);
-    return NULL;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<pval_t>
-  error_fn_t::eval_freeze (eval_t e) const
-  {
-    report_error (e, _err);
+    e.report_error (_err, _lineno);
     return NULL;
   }
 
@@ -137,7 +56,6 @@ namespace pub3 {
   runtime_fn_stub_t::alloc (const str &n, ptr<expr_list_t> l)
   { return New refcounted<runtime_fn_stub_t> (n, l, plineno ()); }
 
-
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -151,18 +69,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const pval_t> 
-  runtime_fn_stub_t::eval (eval_t e) const
+  ptr<const expr_t> 
+  runtime_fn_stub_t::eval_to_val (eval_t e) const
   {
-    return get_rfn ()->eval (e);
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<pval_t> 
-  runtime_fn_stub_t::eval_freeze (eval_t e) const
-  {
-    return get_rfn ()->eval_freeze (e);
+    return get_rfn ()->eval_to_val (e);
   }
 
   //-----------------------------------------------------------------------

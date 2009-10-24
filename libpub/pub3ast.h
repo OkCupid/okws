@@ -178,6 +178,7 @@ namespace pub3 {
     static ptr<expr_statement_t> alloc (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
     void add (ptr<expr_t> x);
+    bool publish_nonblock (publish_t p) const;
   protected:
     ptr<expr_t> _expr;
   };
