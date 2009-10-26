@@ -267,17 +267,6 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<const fndef_t>
-  expr_cow_t::to_fndef () const
-  {
-    ptr<const fndef_t> ret;
-    ptr<const expr_t> x = const_ptr ();
-    if (x) { ret = x->to_fndef (); }
-    return ret;
-  }
-
-  //--------------------------------------------------------------------
-
   ptr<expr_list_t> 
   expr_cow_t::to_list () 
   {
@@ -726,10 +715,21 @@ namespace pub3 {
   ptr<const expr_t>	
   expr_varref_or_rfn_t::eval_to_val (eval_t e) const
   {
-    ptr<const expr_t> r;
-    ptr<const expr_t> rfn = get_rfn ();
-    if (rfn) { r = rfn->eval_to_val (e); }
-    else { r = expr_varref_t::eval_to_val (e); }
+    ptr<const expr_t> r, v;
+    ptr<const proc_call_t> fnd;
+    ptr<const expr_t> rfn;
+    bool make_silent = _arglist;
+
+    bool old_silent = e.set_silent (make_silent);
+    v = expr_varref_t::eval_to_val (e);
+    e.set_silent (old_silent);
+
+    if (!_arglist) { r = v; }
+    else if (v && (fnd = v->to_proc_call ())) {
+      r = fnd->eval_to_val (e, _arglist);
+    } else if ((rfn = get_rfn ())) {
+      r = rfn->eval_to_val (e);
+    }
     return r;
   }
   
@@ -738,13 +738,25 @@ namespace pub3 {
   ptr<mref_t>	
   expr_varref_or_rfn_t::eval_to_ref (eval_t e) const
   {
-    ptr<mref_t> r;
-    ptr<const expr_t> rfn = get_rfn ();
-    if (rfn) { r = rfn->eval_to_ref (e); }
-    else { r = expr_varref_t::eval_to_ref (e); }
+    ptr<mref_t> r, v;
+    ptr<expr_t> x;
+    ptr<const proc_call_t> fnd;
+    ptr<const expr_t> rfn;
+    bool make_silent = _arglist;
+
+    bool old_silent = e.set_silent (make_silent);
+    v = expr_varref_t::eval_to_ref (e);
+    e.set_silent (old_silent);
+
+    if (!_arglist) { r = v; }
+    else if (v && (x = v->get_value ()) && (fnd = x->to_proc_call ())) { 
+      r = fnd->eval_to_ref (e, _arglist); 
+    } else if ((rfn = get_rfn ())) {
+      r = rfn->eval_to_ref (e);
+    }
     return r;
   }
-
+  
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>

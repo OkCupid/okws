@@ -330,7 +330,7 @@ struct xpub3_expr_statement_t {
   xpub3_expr_t *expr;
 };
 
-struct xpub3_fndef_t {
+struct xpub3_proc_def_t {
    int lineno;
    xpub_fn_t name;
    xpub_str_t params<>;
@@ -348,7 +348,7 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_IF = 7,
    XPUB3_STATEMENT_PRINT = 8,
    XPUB3_EXPR_STATEMENT = 9,
-   XBPU3_STATEMENT_FNDEF = 10
+   XBPU3_STATEMENT_PROC_DEF = 10
 };
 
 %struct xpub3_zone_t;
@@ -380,8 +380,8 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_EXPR_STATEMENT:
    xpub3_expr_statement_t expr_statement;
 
- case XBPU3_STATEMENT_FNDEF:
-   xpub3_fndef_t fndef;
+ case XBPU3_STATEMENT_PROC_DEF:
+   xpub3_proc_def_t proc_def;
 
 };
 

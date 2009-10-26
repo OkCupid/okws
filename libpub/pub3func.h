@@ -11,23 +11,50 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class fndef_t : public statement_t, public expr_t {
-  public:
-    fndef_t (str nm, location_t l) : statement_t (l), _name (nm) {}
-    fndef_t (const xpub3_fndef_t &x) ;
-    static ptr<fndef_t> alloc (str nm);
-    void add_params (ptr<identifier_list_t> p);
-    void add_body (ptr<zone_t> z);
-
-    str to_str (bool q = false) const;
-    bool publish_nonblock (publish_t p) const;
-    bool might_block () const { return false; }
-    ptr<const fndef_t> to_fndef () const { return mkref (this); }
-    ptr<fndef_t> to_fndef () { return mkref (this); }
-  protected:
+  struct proc_core_t {
+    proc_core_t (str nm) : _name (nm) {}
+    static ptr<proc_core_t> alloc (str nm) 
+    { return New refcounted<proc_core_t> (nm); }
+    void add_params (ptr<identifier_list_t> l);
     str _name;
     ptr<identifier_list_t> _params;
     ptr<zone_t> _body;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class proc_call_t : public expr_t {
+  public:
+    proc_call_t (ptr<proc_core_t> c, const location_t &l) 
+      : _core (c), _location (l) {}
+    str to_str (bool q = false) const;
+    str to_str_short () const;
+    ptr<const expr_t> eval_to_val (eval_t e, ptr<const expr_list_t> l) const;
+    ptr<mref_t> eval_to_ref (eval_t e, ptr<const expr_list_t> l) const;
+    bool to_xdr (xpub3_expr_t *x) const;
+  protected:
+    const ptr<const proc_core_t> _core;
+    const location_t _location;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class proc_def_t : public statement_t {
+  public:
+    proc_def_t (str nm, location_t l) 
+      : statement_t (l),
+	_core (proc_core_t::alloc (nm)) {}
+    proc_def_t (const xpub3_proc_def_t &x) ;
+    static ptr<proc_def_t> alloc (str nm);
+    void add_params (ptr<identifier_list_t> p);
+    void add_body (ptr<zone_t> z);
+    
+    bool publish_nonblock (publish_t p) const;
+    bool might_block () const { return false; }
+    ptr<const proc_core_t> core () const { return _core; }
+    ptr<proc_call_t> alloc_call () const;
+  protected:
+    ptr<proc_core_t> _core;
   };
 
   //-----------------------------------------------------------------------

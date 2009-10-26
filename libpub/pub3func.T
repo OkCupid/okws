@@ -90,7 +90,15 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  fndef_t::add_params (ptr<identifier_list_t> l)
+  proc_def_t::add_params (ptr<identifier_list_t> l)
+  {
+    _core->add_params (l);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void 
+  proc_core_t::add_params (ptr<identifier_list_t> l)
   {
     if (!_params) {
       _params = l;
@@ -102,26 +110,61 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  fndef_t::add_body (ptr<zone_t> z) 
+  proc_def_t::add_body (ptr<zone_t> z) 
   {
-    _body = z;
+    _core->_body = z;
   }
 
   //-----------------------------------------------------------------------
 
   bool
-  fndef_t::publish_nonblock (publish_t p) const
+  proc_def_t::publish_nonblock (publish_t p) const
   {
-    p.env ()->add_global_binding (_name, expr_cow_t::alloc (mkref (this)));
+    p.env ()->add_global_binding (_core->_name, alloc_call ());
     return true;
   }
 
   //-----------------------------------------------------------------------
 
-  str
-  fndef_t::to_str (bool q) const
+  ptr<proc_call_t> proc_def_t::alloc_call () const
+  { return New refcounted<proc_call_t> (_core, _location); }
+
+  //-----------------------------------------------------------------------
+
+  str 
+  proc_call_t::to_str_short () const
   {
-    return strbuf ("pub-defined runtime function <%s>", _name.cstr ());
+    str ls = _location.to_str ();
+    return strbuf ("<%s @ %s>", _core->_name.cstr (), ls.cstr ());
+  }
+
+
+  //-----------------------------------------------------------------------
+
+  str
+  proc_call_t::to_str (bool q) const
+  {
+    str ss = to_str_short ();
+    return strbuf ("pub-defined runtime procedure %s", ss.cstr ());
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  proc_call_t::eval_to_val (eval_t e, ptr<const expr_list_t> l) const
+  {
+    size_t gs = l->size ();
+    size_t es = _core->_params->size ();
+    str s = to_str_short ();
+    ptr<const expr_t> ret;
+    if (gs != es) {
+      strbuf b ("Wrong number of parameters to function call %s "
+		"(expected %zd, got %zd)", s.cstr (), es, gs);
+      report_error (e, b);
+    } else {
+
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------

@@ -23,7 +23,7 @@ namespace pub3 {
   class expr_dict_t;
   class expr_list_t;
   class bindtab_t;
-  class fndef_t;
+  class proc_call_t; // declared in pub3ast.h
 
   //-----------------------------------------------------------------------
 
@@ -106,8 +106,8 @@ namespace pub3 {
     virtual str type_to_str () const { return "object"; }
     virtual bool to_int (int64_t *out) const { return false; }
     virtual scalar_obj_t to_scalar () const;
-    virtual ptr<const fndef_t> to_fndef () const { return NULL; }
-    virtual ptr<fndef_t> to_fndef () { return NULL; }
+    virtual ptr<const proc_call_t> to_proc_call () const { return NULL; }
+    virtual ptr<proc_call_t> to_proc_call () { return NULL; }
 
     //
     // and from here, scalars can be converted at will...
@@ -152,7 +152,6 @@ namespace pub3 {
     ptr<const expr_dict_t> to_dict () const;
     ptr<expr_list_t> to_list ();
     ptr<const expr_list_t> to_list () const;
-    ptr<const fndef_t> to_fndef () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_static () const;
     

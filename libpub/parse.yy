@@ -235,7 +235,7 @@ p3_control:     p3_for { $$ = $1; }
 
 p3_fndef : T_P3_DEF p3_identifier '(' p3_identifier_list ')' p3_nested_zone
        {
-          ptr<pub3::fndef_t> d = pub3::fndef_t::alloc ($2);
+          ptr<pub3::proc_def_t> d = pub3::proc_def_t::alloc ($2);
 	  d->add_params ($4);
 	  d->add_body ($6);
 	  $$ = d;
