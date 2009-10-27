@@ -113,6 +113,33 @@ pub3::expr_list_t::to_xdr (xpub3_json_t *j) const
 
 //-----------------------------------------------------------------------
 
+static int
+xjp_cmp (const void *cva, const void *cvb)
+{
+  void *va = const_cast<void *> (cva);
+  void *vb = const_cast<void *> (cvb);
+  const xpub3_json_pair_t *a = static_cast<xpub3_json_pair_t *> (va);
+  const xpub3_json_pair_t *b = static_cast<xpub3_json_pair_t *> (vb);
+
+  size_t len = min<size_t> (a->key.size (), b->key.size ());
+  int r = memcmp (a->key.base (), b->key.base (), len);
+
+  // We really shouldn't have equality!
+  if (r == 0) { r = a->key.size () - b->key.size (); }
+
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+static void
+sort (xpub3_json_pairs_t &l)
+{
+  qsort (l.base (), l.size (), sizeof (xpub3_json_pair_t), xjp_cmp);
+}
+
+//-----------------------------------------------------------------------
+
 bool
 pub3::expr_dict_t::to_xdr (xpub3_json_t *j) const
 {
@@ -130,6 +157,7 @@ pub3::expr_dict_t::to_xdr (xpub3_json_t *j) const
     }
     j->json_dict->entries.push_back (jp);
   }
+  sort (j->json_dict->entries);
   return true;
 }
 

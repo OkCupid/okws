@@ -413,8 +413,10 @@ struct xpub3_json_pair_t {
        xpub3_json_t *value;
 };
 
+typedef xpub3_json_pair_t xpub3_json_pairs_t<>;
+
 struct xpub3_json_dict_t {
-       xpub3_json_pair_t entries<>;
+       xpub3_json_pairs_t entries;
 };
 
 union xpub3_json_t switch (xpub3_json_typ_t typ) {
