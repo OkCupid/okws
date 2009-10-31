@@ -1,5 +1,4 @@
 // -*-c++-*-
-/* $Id: parr.h 2784 2007-04-20 16:32:00Z max $ */
 
 #pragma once
 
@@ -14,16 +13,22 @@ namespace pub3 {
   // See pub3eval.h for a definition of eval_t; but don't included it
   // here to prevent circular inclusions.
   class eval_t;
+  class publish_t;
   class mref_t;
 
   //-----------------------------------------------------------------------
 
+  class expr_t;
   class expr_regex_t;
   class expr_assignment_t;
   class expr_dict_t;
   class expr_list_t;
   class bindtab_t;
   class proc_call_t; // declared in pub3ast.h
+
+  //-----------------------------------------------------------------------
+
+  typedef event<ptr<const expr_t> >::ref cxev_t;
 
   //-----------------------------------------------------------------------
 
@@ -68,8 +73,12 @@ namespace pub3 {
     virtual ptr<expr_t> copy () const ;
     virtual ptr<expr_t> deep_copy () const;
     virtual ptr<expr_t> mutate () { return mkref (this); }
-    virtual bool is_static () const { return false; }
 
+    virtual bool is_static () const { return false; }
+    bool might_block () const;
+    virtual bool might_block_uncached () const { return false; }
+    static bool might_block (ptr<const expr_t> x1, ptr<const expr_t> x2 = NULL);
+    
     //------------------------------------------------------------
 
     //------------------------------------------------------------
@@ -83,6 +92,10 @@ namespace pub3 {
 
     //
     //------------------------------------------------------------
+
+    virtual void pub_to_val (publish_t pub, cxev_t ev, CLOSURE) const;
+    void pub_as_bool (publish_t pub, evb_t ev, CLOSURE) const;
+    void pub_as_null (publish_t pub, evb_t ev, CLOSURE) const;
 
     //------------------------------------------------------------
     //
@@ -130,6 +143,7 @@ namespace pub3 {
   protected:
     ptr<rxx> str2rxx (const eval_t *e, const str &b, const str &o) const;
     lineno_t _lineno;
+    mutable tri_bool_t _might_block;
   };
   
   //-----------------------------------------------------------------------
@@ -154,6 +168,7 @@ namespace pub3 {
     ptr<const expr_list_t> to_list () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_static () const;
+    bool might_block () const;
     
   protected:
     ptr<expr_t> mutable_ptr ();
@@ -263,8 +278,10 @@ namespace pub3 {
   public:
     expr_logical_t (lineno_t lineno) : expr_t (lineno) {}
     ptr<const expr_t> eval_to_val (eval_t e) const;
+    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
   protected:
-    bool eval_logical (eval_t e) const;
+    virtual bool eval_logical (eval_t e) const = 0;
+    virtual void pub_logical (publish_t p, evb_t, CLOSURE) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -277,8 +294,10 @@ namespace pub3 {
     static ptr<expr_OR_t> alloc (ptr<expr_t> t1, ptr<expr_t> t2);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_OR_t"; }
+    bool might_block_uncached () const { return might_block (_t1, _t2); }
   protected:
     bool eval_logical (eval_t e) const;
+    void pub_logical (publish_t p, evb_t, CLOSURE) const;
     ptr<expr_t> _t1, _t2;
   };
 
@@ -296,6 +315,7 @@ namespace pub3 {
   protected:
     ptr<expr_t> _f1, _f2;
     bool eval_logical (eval_t e) const;
+    void pub_logical (publish_t p, evb_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -312,6 +332,7 @@ namespace pub3 {
   protected:
     ptr<expr_t> _e;
     bool eval_logical (eval_t e) const;
+    void pub_logical (publish_t p, evb_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -329,6 +350,8 @@ namespace pub3 {
     ptr<expr_t> _o1, _o2;
     bool _pos;
     bool eval_logical (eval_t e) const;
+    void pub_logical (publish_t p, evb_t, CLOSURE) const;
+    bool eval_final (ptr<const expr_t> x1, ptr<const expr_t> x2) const;
   };
 
   //-----------------------------------------------------------------------
@@ -350,6 +373,8 @@ namespace pub3 {
     ptr<expr_t> _l, _r;
     xpub3_relop_t _op;
     bool eval_logical (eval_t e) const;
+    void pub_logical (publish_t pub, evb_t ev, CLOSURE) const;
+    bool eval_final (eval_t e, ptr<const expr_t> l, ptr<const expr_t> r) const;
   };
 
   //-----------------------------------------------------------------------

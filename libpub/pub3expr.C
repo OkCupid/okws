@@ -78,7 +78,15 @@ namespace pub3 {
   { return mkref (this); }
 
   //--------------------------------------------------------------------
+
+  void
+  expr_t::report_error (eval_t e, str msg) const
+  {
+    e.report_error (msg, _lineno);
+  }
   
+  //--------------------------------------------------------------------
+
   ptr<expr_t>
   expr_t::alloc (scalar_obj_t so)
   {
@@ -217,7 +225,30 @@ namespace pub3 {
     return ret;
   }
 
+  //---------------------------------------------------------------------
+
+  bool expr_t::might_block (ptr<const expr_t> x1, ptr<const expr_t> x2) 
+  { 
+    return (x1 && x1->might_block ()) || (x2 && x2->might_block ()); 
+  }
+
+  //---------------------------------------------------------------------
+
+  bool 
+  expr_t::might_block () const
+  {
+    if (!_might_block.is_set ()) {
+      _might_block.set (might_block_uncached ()); 
+    }
+    return _might_block.value ();
+  }
+
   //====================================================================
+
+  bool expr_cow_t::might_block () const
+  { return expr_t::might_block (const_ptr ()); }
+
+  //-----------------------------------------------------------------------
 
   ptr<expr_t>
   expr_cow_t::mutable_ptr ()
@@ -442,23 +473,30 @@ namespace pub3 {
   bool
   expr_EQ_t::eval_logical (eval_t e) const
   {
-    bool ret = false;
+    ptr<const expr_t> x1, x2;
+    if (_o1) x1 = _o1->eval_to_val (e); 
+    if (_o2) x2 = _o2->eval_to_val (e);
+    return eval_final (x1, x2);
+  }
 
+  //--------------------------------------------------------------------
+
+  bool
+  expr_EQ_t::eval_final (ptr<const expr_t> x1, ptr<const expr_t> x2) const
+  {
+    int tmp = 0;
     int flip = _pos ? 0 : 1;
-    int tmp;
-    bool n1 = !_o1 || _o1->eval_as_null (e);
-    bool n2 = !_o2 || _o2->eval_as_null (e);
-  
+    
+    bool n1 = !x1 || x1->is_null ();
+    bool n2 = !x2 || x2->is_null ();
+
     if (n1 && n2) { tmp = 1; }
-    else if (n1) { tmp = 0; }
-    else if (n2) { tmp = 0; }
-    else {
-      scalar_obj_t o1 = _o1->eval_as_scalar (e);
-      scalar_obj_t o2 = _o2->eval_as_scalar (e);
+    else if (!n1 && !n2) {
+      scalar_obj_t o1 = x1->to_scalar ();
+      scalar_obj_t o2 = x2->to_scalar ();
       tmp = (o1 == o2) ? 1 : 0;
     } 
-    ret = (tmp ^ flip);
-    
+    bool ret = (tmp ^ flip);
     return ret;
   }
 
@@ -475,18 +513,30 @@ namespace pub3 {
   bool
   expr_relation_t::eval_logical (eval_t e) const
   {
+    ptr<const expr_t> l, r;
+    if (_l) l = _l->eval_to_val (e);
+    if (_r) r = _r->eval_to_val (e);
+    return eval_final (e, l, r);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  expr_relation_t::eval_final (eval_t e, ptr<const expr_t> l, 
+			       ptr<const expr_t> r) const
+  {
     bool ret = false;
-    if (_l && !_l->eval_as_null (e) && _r && !_r->eval_as_null (e)) {
-      scalar_obj_t l = _l->eval_as_scalar (e);
-      scalar_obj_t r = _r->eval_as_scalar (e);
+    if (l && !l->is_null () && r && !r->is_null ()) {
+      scalar_obj_t sl = l->to_scalar ();
+      scalar_obj_t sr = r->to_scalar ();
 
       // perform relations as scalars, to accommdate double v. int,
       // string v. double, etc...
       switch (_op) {
-      case XPUB3_REL_LT : ret = (l < r);  break;
-      case XPUB3_REL_GT : ret = (l > r);  break;
-      case XPUB3_REL_LTE: ret = (l <= r); break;
-      case XPUB3_REL_GTE: ret = (l >= r); break;
+      case XPUB3_REL_LT : ret = (sl < sr);  break;
+      case XPUB3_REL_GT : ret = (sl > sr);  break;
+      case XPUB3_REL_LTE: ret = (sl <= sr); break;
+      case XPUB3_REL_GTE: ret = (sl >= sr); break;
       default: panic ("unexpected relational operator!\n");
       }
     } else {
@@ -1622,14 +1672,6 @@ namespace pub3 {
     bool ret = false;
     if (p) { ret = p->to_xdr (x); } 
     return ret;
-  }
-  
-  //=======================================================================
-
-  void 
-  expr_t::report_error (eval_t e, str n) const
-  {
-    e.report_error (n, _lineno);
   }
 
   //=======================================================================

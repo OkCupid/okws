@@ -1,0 +1,138 @@
+// -*-c++-*-
+#include "pub3pub.h"
+#include "pub3expr.h"
+
+namespace pub3 {
+
+  //=======================================================================
+
+  void
+  expr_t::pub_to_val (publish_t pub, cxev_t ev, ptr<closure_t> dummy) const
+  {
+    ev->trigger (eval_to_val (pub));
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void 
+  expr_t::pub_as_bool (publish_t pub, evb_t ev) const
+  {
+    tvars {
+      bool ret (false);
+      bool l;
+      ptr<const expr_t> x;
+    }
+
+    l = pub.set_silent (true);
+    twait { pub_to_val (pub, mkevent (x)); }
+    pub.set_silent (l);
+    if (x) ret = x->to_bool ();
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  expr_t::pub_as_null (publish_t pub, evb_t ev) const
+  {
+    tvars {
+      bool ret (true);
+      bool l;
+      ptr<const expr_t> x;
+    }
+    l = pub.set_silent (true);
+    twait { pub_to_val (pub, mkevent (x)); }
+    pub.set_silent (l);
+    if (x) ret = x->is_null ();
+    ev->trigger (ret);
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_logical_t::pub_to_val (publish_t p, cxev_t ev) const
+  {
+    tvars {
+      bool res;
+    }
+    if (!might_block ()) { res = eval_logical (p); }
+    else { twait { pub_logical (p, mkevent (res)); } }
+    ev->trigger (expr_bool_t::alloc (res));
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_OR_t::pub_logical (publish_t p, evb_t ev) const
+  {
+    tvars {
+      bool res;
+      bool b1 (false), b2 (false);
+    }
+    if (_t1) { twait { _t1->pub_as_bool (p, mkevent (b1)); } }
+    if (!b1 && _t2) { twait { _t2->pub_as_bool (p, mkevent (b2)); } }
+    res = b1 || b2;
+    ev->trigger (res);
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_AND_t::pub_logical (publish_t p, evb_t ev) const
+  {
+    tvars {
+      bool res;
+      bool b1 (false), b2 (false);
+    }
+    if (_f1) { twait { _f1->pub_as_bool (p, mkevent (b1)); } }
+    if (b1 && _f2) { twait { _f2->pub_as_bool (p, mkevent (b2)); } }
+    res = b1 && b2;
+    ev->trigger (res);
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_NOT_t::pub_logical (publish_t p, evb_t ev) const
+  {
+    tvars {
+      bool res (false);
+    }
+    if (_e) { twait { pub_as_bool (p, mkevent (res)); } }
+    ev->trigger (!res);
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_EQ_t::pub_logical (publish_t p, evb_t ev) const
+  {
+    tvars {
+      bool ret (false);
+      ptr<const expr_t> x1, x2;
+    }
+    if (_o1) { twait { _o1->pub_to_val (p, mkevent (x1)); } }
+    if (_o2) { twait { _o2->pub_to_val (p, mkevent (x2)); } }
+    ret = eval_final (x1, x2);
+    ev->trigger (ret);
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_relation_t::pub_logical (publish_t p, evb_t ev) const
+  {
+    tvars {
+      bool ret (false);
+      ptr<const expr_t> l, r;
+    }
+    if (_l) { twait { _l->pub_to_val (p, mkevent (l)); } }
+    if (_r) { twait { _r->pub_to_val (p, mkevent (r)); } }
+    ret = eval_final (p, l, r);
+    ev->trigger (ret);
+  }
+
+  //=======================================================================
+
+
+};

@@ -1,7 +1,6 @@
 
 #include "pscalar.h"
 #include "parseopt.h"
-#include "parr.h"
 
 //-----------------------------------------------------------------------
 
