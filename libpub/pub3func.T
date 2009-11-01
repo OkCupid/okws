@@ -150,13 +150,20 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  proc_call_t::eval_to_val (eval_t e, ptr<const expr_list_t> l) const
+  tamed void
+  proc_call_t::pub_to_val (publish_t e, ptr<const expr_list_t> l, 
+			   cxev_t ev) const
   {
-    size_t gs = l->size ();
-    size_t es = _core->_params->size ();
-    str s = to_str_short ();
-    ptr<const expr_t> ret;
+    tvars {
+      size_t gs, es;
+      str s;
+      ptr<const expr_t> ret;
+    }
+
+    gs = l->size ();
+    es = _core->_params->size ();
+    s = to_str_short ();
+
     if (gs != es) {
       strbuf b ("Wrong number of parameters to function call %s "
 		"(expected %zd, got %zd)", s.cstr (), es, gs);
@@ -166,7 +173,7 @@ namespace pub3 {
       // figured out what to do about calling 
 
     }
-    return ret;
+    ev->trigger (ret);
   }
 
   //-----------------------------------------------------------------------

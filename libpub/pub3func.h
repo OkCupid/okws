@@ -29,8 +29,12 @@ namespace pub3 {
       : _core (c), _location (l) {}
     str to_str (bool q = false) const;
     str to_str_short () const;
-    ptr<const expr_t> eval_to_val (eval_t e, ptr<const expr_list_t> l) const;
-    ptr<mref_t> eval_to_ref (eval_t e, ptr<const expr_list_t> l) const;
+
+    void pub_to_val (publish_t e, ptr<const expr_list_t> l, cxev_t ev, CLOSURE) 
+      const;
+    void pub_to_ref (publish_t e, ptr<const expr_list_t> l, mrev_t ev, CLOSURE)
+      const;
+
     bool to_xdr (xpub3_expr_t *x) const;
   protected:
     const ptr<const proc_core_t> _core;

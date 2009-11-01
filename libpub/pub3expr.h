@@ -29,6 +29,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   typedef event<ptr<const expr_t> >::ref cxev_t;
+  typedef event<ptr<mref_t> >::ref mrev_t;
 
   //-----------------------------------------------------------------------
 
@@ -94,6 +95,7 @@ namespace pub3 {
     //------------------------------------------------------------
 
     virtual void pub_to_val (publish_t pub, cxev_t ev, CLOSURE) const;
+    virtual void pub_to_ref (publish_t pub, mrev_t ev, CLOSURE) const;
     void pub_as_bool (publish_t pub, evb_t ev, CLOSURE) const;
     void pub_as_null (publish_t pub, evb_t ev, CLOSURE) const;
 
@@ -168,7 +170,7 @@ namespace pub3 {
     ptr<const expr_list_t> to_list () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_static () const;
-    bool might_block () const;
+    bool might_block_uncached () const;
     
   protected:
     ptr<expr_t> mutable_ptr ();
@@ -396,7 +398,7 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     void pub_to_val (publish_t pub, cxev_t ev, CLOSURE);
-    bool might_block () const;
+    bool might_block_uncached () const;
     bool to_xdr (xpub3_expr_t *x) const;
 
   protected:
@@ -540,7 +542,11 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
+    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
   protected:
+    ptr<const expr_t> eval_to_val_final (eval_t e, ptr<const expr_t> container,
+					 ptr<const expr_t> index) const;
+
     ptr<expr_t> _vec;
     ptr<expr_t> _index;
   };
@@ -564,7 +570,12 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
+    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
+
+
   protected:
+    bool might_block_uncached () const { return true; }
     ptr<const expr_t> get_rfn () const;
     ptr<expr_list_t> _arglist;
     mutable ptr<expr_t> _rfn;

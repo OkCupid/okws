@@ -128,18 +128,24 @@ namespace pub3 {
   ptr<const expr_t>
   expr_vecref_t::eval_to_val (eval_t e) const
   {
-    ptr<const expr_t> c;
-    ptr<const expr_t> i;
+    ptr<const expr_t> c = _vec->eval_to_val (e);
+    ptr<const expr_t> i = _index->eval_to_val (e);
+    return eval_to_val_final (e, c, i);
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_vecref_t::eval_to_val_final (eval_t e, ptr<const expr_t> c, 
+				    ptr<const expr_t> i) const
+  {
     ptr<const expr_dict_t> d;
     ptr<const expr_list_t> l;
     ptr<const expr_t> ret;
 
-    assert (_vec);
-    assert (_index);
-
-    if (!(c = _vec->eval_to_val (e))) {
+    if (!c || c->is_null ()) {
       report_error (e, "container evaluates to null");
-    } else if (!(i = _index->eval_to_val (e))) {
+    } else if (!i || i->is_null ()) {
       report_error (e, "cannot evaluate key for lookup");
     } else if ((d = c->to_dict ())) {
       str k;

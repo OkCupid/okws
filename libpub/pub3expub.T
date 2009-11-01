@@ -1,6 +1,7 @@
 // -*-c++-*-
 #include "pub3pub.h"
 #include "pub3expr.h"
+#include "pub3func.h"
 
 namespace pub3 {
 
@@ -10,6 +11,14 @@ namespace pub3 {
   expr_t::pub_to_val (publish_t pub, cxev_t ev, ptr<closure_t> dummy) const
   {
     ev->trigger (eval_to_val (pub));
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  expr_t::pub_to_ref (publish_t pub, mrev_t ev, ptr<closure_t> dummy) const
+  {
+    ev->trigger (eval_to_ref (pub));
   }
 
   //-----------------------------------------------------------------------
@@ -151,4 +160,71 @@ namespace pub3 {
 
   //=======================================================================
 
+  tamed void
+  expr_varref_or_rfn_t::pub_to_val (publish_t e, cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> r, v;
+      ptr<const proc_call_t> fnd;
+      ptr<const expr_t> rfn;
+      bool make_silent;
+      bool old_silent;
+    }
+
+    make_silent = _arglist;
+    old_silent = e.set_silent (make_silent);
+    twait { expr_varref_t::pub_to_val (e, mkevent (v)); }
+    e.set_silent (old_silent);
+
+    if (!_arglist) { r = v; }
+    else if (v && (fnd = v->to_proc_call ())) {
+      twait { fnd->pub_to_val (e, _arglist, mkevent (r)); }
+    } else if ((rfn = get_rfn ())) {
+      twait { rfn->pub_to_val (e, mkevent (r)); }
+    }
+    ev->trigger (r);
+  }
+  
+  //-----------------------------------------------------------------------
+
+  tamed void
+  expr_varref_or_rfn_t::pub_to_ref (publish_t e, mrev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> r, v;
+      ptr<expr_t> x;
+      ptr<const proc_call_t> fnd;
+      ptr<const expr_t> rfn;
+      bool make_silent, old_silent;
+    }
+
+    make_silent = _arglist;
+    old_silent = e.set_silent (make_silent);
+    twait { expr_varref_t::pub_to_ref (e, mkevent (v)); }
+    e.set_silent (old_silent);
+
+    if (!_arglist) { r = v; }
+    else if (v && (x = v->get_value ()) && (fnd = x->to_proc_call ())) { 
+      twait { fnd->pub_to_ref (e, _arglist, mkevent (r)); }
+    } else if ((rfn = get_rfn ())) {
+      twait { rfn->pub_to_ref (e, mkevent (r)); }
+    }
+    ev->trigger (r);
+  }
+  
+  //=======================================================================
+
+  tamed void
+  expr_vecref_t::pub_to_val (publish_t p, cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> c, i, r;
+    }
+    twait { _vec->pub_to_val (p, mkevent (c)); }
+    twait { _index->pub_to_val (p, mkevent (i)); }
+    r = eval_to_val_final (p, c, i);
+    ev->trigger (r);
+  }
+
+  //=======================================================================
 };

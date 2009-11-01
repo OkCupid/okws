@@ -245,7 +245,7 @@ namespace pub3 {
 
   //====================================================================
 
-  bool expr_cow_t::might_block () const
+  bool expr_cow_t::might_block_uncached () const
   { return expr_t::might_block (const_ptr ()); }
 
   //-----------------------------------------------------------------------
@@ -555,7 +555,7 @@ namespace pub3 {
 
   //====================================================================
 
-  bool expr_binaryop_t::might_block () const 
+  bool expr_binaryop_t::might_block_uncached () const 
   { return expr_t::might_block (_o1, _o2); }
 
   //---------------------------------------------------------------------
@@ -761,53 +761,6 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>	
-  expr_varref_or_rfn_t::eval_to_val (eval_t e) const
-  {
-    ptr<const expr_t> r, v;
-    ptr<const proc_call_t> fnd;
-    ptr<const expr_t> rfn;
-    bool make_silent = _arglist;
-
-    bool old_silent = e.set_silent (make_silent);
-    v = expr_varref_t::eval_to_val (e);
-    e.set_silent (old_silent);
-
-    if (!_arglist) { r = v; }
-    else if (v && (fnd = v->to_proc_call ())) {
-      r = fnd->eval_to_val (e, _arglist);
-    } else if ((rfn = get_rfn ())) {
-      r = rfn->eval_to_val (e);
-    }
-    return r;
-  }
-  
-  //-----------------------------------------------------------------------
-
-  ptr<mref_t>	
-  expr_varref_or_rfn_t::eval_to_ref (eval_t e) const
-  {
-    ptr<mref_t> r, v;
-    ptr<expr_t> x;
-    ptr<const proc_call_t> fnd;
-    ptr<const expr_t> rfn;
-    bool make_silent = _arglist;
-
-    bool old_silent = e.set_silent (make_silent);
-    v = expr_varref_t::eval_to_ref (e);
-    e.set_silent (old_silent);
-
-    if (!_arglist) { r = v; }
-    else if (v && (x = v->get_value ()) && (fnd = x->to_proc_call ())) { 
-      r = fnd->eval_to_ref (e, _arglist); 
-    } else if ((rfn = get_rfn ())) {
-      r = rfn->eval_to_ref (e);
-    }
-    return r;
-  }
-  
-  //-----------------------------------------------------------------------
-
   ptr<const expr_t>
   expr_varref_or_rfn_t::get_rfn () const
   {
@@ -816,6 +769,13 @@ namespace pub3 {
     }
     return _rfn;
   }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t> expr_varref_or_rfn_t::eval_to_val (eval_t e) const 
+  { return NULL; }
+  ptr<mref_t> expr_varref_or_rfn_t::eval_to_ref (eval_t e) const 
+  { return NULL; }
   
   //====================================================================
 
