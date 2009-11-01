@@ -400,7 +400,12 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
+    void pub_to_val (publish_t pub, cxev_t ev, CLOSURE);
+    ptr<const expr_t> eval_final (eval_t e, ptr<const expr_t> e1, 
+				  ptr<const expr_t> e2) const;
+    bool might_block () const;
   protected:
+
     ptr<expr_t> _t1, _t2;
     bool _pos;
   };

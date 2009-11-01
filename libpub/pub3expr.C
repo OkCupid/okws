@@ -555,20 +555,37 @@ namespace pub3 {
 
   //====================================================================
 
+  bool expr_add_t::might_block () const 
+  { return expr_t::might_block (_t1, _t2); }
+
+  //---------------------------------------------------------------------
+
   ptr<const expr_t> 
   expr_add_t::eval_to_val (eval_t e) const
   {
-    ptr<expr_t> out;
     ptr<const expr_t> e1, e2;
+    if (_t1) { e1 = _t1->eval_to_val (e); }
+    if (_t2) { e2 = _t2->eval_to_val (e); }
+
+    return eval_final (e, e1, e2);
+  }
+
+  //---------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_add_t::eval_final (eval_t e, ptr<const expr_t> e1, 
+			  ptr<const expr_t> e2) const
+  {
+    ptr<expr_t> out;
     ptr<const expr_list_t> l1, l2;
     ptr<const expr_dict_t> d1, d2;
     str s1, s2;
 
     const char *op = _pos ? "addition" : "subtraction";
 
-    if (!_t1 || !(e1 = _t1->eval_to_val (e))) {
+    if (!e1) {
       report_error (e, strbuf ("left-hand term of %s evaluates to null", op));
-    } else if (!_t2 || !(e2 = _t2->eval_to_val (e))) {
+    } else if (!e2) {
       report_error (e, strbuf ("right-hand term of %s evaluates to null", op));
 
       // Two lists added (but not subtracted)
