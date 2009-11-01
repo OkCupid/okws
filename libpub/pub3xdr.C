@@ -238,17 +238,13 @@ pub3::expr_AND_t::expr_AND_t (const xpub3_mathop_t &x)
 //-----------------------------------------------------------------------
 
 pub3::expr_add_t::expr_add_t (const xpub3_mathop_t &x)
-  : expr_t (x.lineno),
-    _t1 (expr_t::alloc (x.o1)),
-    _t2 (expr_t::alloc (x.o2)),
+  : expr_binaryop_t (expr_t::alloc (x.o1), expr_t::alloc (x.o2), x.lineno),
     _pos (x.opcode == XPUB3_MATHOP_ADD) {}
 
 //-----------------------------------------------------------------------
 
 pub3::expr_mult_t::expr_mult_t (const xpub3_mathop_t &x)
-  : expr_t (x.lineno),
-    _f1 (expr_t::alloc (x.o1)),
-    _f2 (expr_t::alloc (x.o2)) {}
+  : expr_binaryop_t (expr_t::alloc (x.o1), expr_t::alloc (x.o2), x.lineno) {}
 
 //-----------------------------------------------------------------------
 
@@ -396,35 +392,21 @@ pub3::expr_OR_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::expr_add_t::to_xdr (xpub3_expr_t *x) const
+pub3::expr_binaryop_t::to_xdr (xpub3_expr_t *x) const
 {
-  xpub3_mathop_opcode_t code = _pos ? XPUB3_MATHOP_ADD : XPUB3_MATHOP_SUBTRACT;
-  return expr_mathop_t::to_xdr (x, code, _t1, _t2, _lineno);
+  return expr_mathop_t::to_xdr (x, opcode (), _o1, _o2, _lineno);
 }
 
 //-----------------------------------------------------------------------
 
-bool
-pub3::expr_mult_t::to_xdr (xpub3_expr_t *x) const
-{
-  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_MULT, _f1, _f2, _lineno);
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_div_t::to_xdr (xpub3_expr_t *x) const
-{
-  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_DIV, _n, _d, _lineno);
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_mod_t::to_xdr (xpub3_expr_t *x) const
-{
-  return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_MOD, _n, _d, _lineno);
-}
+xpub3_mathop_opcode_t pub3::expr_add_t::opcode () const
+{ return _pos ? XPUB3_MATHOP_ADD : XPUB3_MATHOP_SUBTRACT; }
+xpub3_mathop_opcode_t pub3::expr_mult_t::opcode () const
+{ return XPUB3_MATHOP_MULT; }
+xpub3_mathop_opcode_t pub3::expr_div_t::opcode () const
+{ return XPUB3_MATHOP_DIV; }
+xpub3_mathop_opcode_t pub3::expr_mod_t::opcode () const
+{ return XPUB3_MATHOP_MOD; }
 
 //-----------------------------------------------------------------------
 

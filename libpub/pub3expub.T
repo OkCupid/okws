@@ -135,15 +135,15 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_add_t::pub_to_val (publish_t pub, cxev_t ev)
+  expr_binaryop_t::pub_to_val (publish_t pub, cxev_t ev)
   {
     tvars {
       ptr<const expr_t> e1, e2;
       ptr<const expr_t> res;
     }
     
-    if (_t1) { twait { _t1->pub_to_val (pub, mkevent (e1)); } }
-    if (_t2) { twait { _t2->pub_to_val (pub, mkevent (e2)); } }
+    if (_o1) { twait { _o1->pub_to_val (pub, mkevent (e1)); } }
+    if (_o2) { twait { _o2->pub_to_val (pub, mkevent (e2)); } }
 
     res = eval_final (pub, e1, e2);
     ev->trigger (res);

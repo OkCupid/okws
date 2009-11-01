@@ -555,22 +555,22 @@ namespace pub3 {
 
   //====================================================================
 
-  bool expr_add_t::might_block () const 
-  { return expr_t::might_block (_t1, _t2); }
+  bool expr_binaryop_t::might_block () const 
+  { return expr_t::might_block (_o1, _o2); }
 
   //---------------------------------------------------------------------
 
   ptr<const expr_t> 
-  expr_add_t::eval_to_val (eval_t e) const
+  expr_binaryop_t::eval_to_val (eval_t e) const
   {
     ptr<const expr_t> e1, e2;
-    if (_t1) { e1 = _t1->eval_to_val (e); }
-    if (_t2) { e2 = _t2->eval_to_val (e); }
+    if (_o1) { e1 = _o1->eval_to_val (e); }
+    if (_o2) { e2 = _o2->eval_to_val (e); }
 
     return eval_final (e, e1, e2);
   }
 
-  //---------------------------------------------------------------------
+  //====================================================================
 
   ptr<const expr_t>
   expr_add_t::eval_final (eval_t e, ptr<const expr_t> e1, 
@@ -583,9 +583,9 @@ namespace pub3 {
 
     const char *op = _pos ? "addition" : "subtraction";
 
-    if (!e1) {
+    if (!e1 || e1->is_null ()) {
       report_error (e, strbuf ("left-hand term of %s evaluates to null", op));
-    } else if (!e2) {
+    } else if (!e2 || e2->is_null ()) {
       report_error (e, strbuf ("right-hand term of %s evaluates to null", op));
 
       // Two lists added (but not subtracted)
@@ -637,16 +637,16 @@ namespace pub3 {
   //====================================================================
 
   ptr<const expr_t>
-  expr_mult_t::eval_to_val (eval_t e) const
+  expr_mult_t::eval_final (eval_t e, ptr<const expr_t> e1, 
+			   ptr<const expr_t> e2) const
   {
     ptr<const expr_t> ret;
-    ptr<const expr_t> e1, e2;
     ptr<const expr_list_t> l;
     int64_t n;
-    
-    if (!_f1 || !(e1 = _f1->eval_to_val (e)) || e1->is_null ()) {
+
+    if (!e1 || e1->is_null ()) {
       report_error (e, "mult: left-hand factor was NULL");
-    } else if (!_f2 || !(e2 = _f2->eval_to_val (e)) || e2->is_null ()) {
+    } else if (!e2 || e2->is_null ()) {
       report_error (e, "mult: right-hand factor was NULL");
     } else if (e1->to_dict () || e2->to_dict ()) {
       report_error (e, "cannot multiply dictionaries");
@@ -659,8 +659,8 @@ namespace pub3 {
     } else if (e1->to_list () || e2->to_list ()) {
       report_error (e, "can only multiply lists by small integers");
     } else {
-      scalar_obj_t o1 = _f1->to_scalar ();
-      scalar_obj_t o2 = _f2->to_scalar ();
+      scalar_obj_t o1 = e1->to_scalar ();
+      scalar_obj_t o2 = e2->to_scalar ();
       
       if (o1.is_null ()) {
 	report_error (e, "mult: left-hand factor was not multipliable");
@@ -704,55 +704,37 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<const expr_t>
-  expr_div_or_mod_t::eval_to_val (eval_t e) const
+  ptr<const expr_t> 
+  expr_div_or_mod_t::eval_final (eval_t e, ptr<const expr_t> en, 
+				    ptr<const expr_t> ed) const
   {
-    ptr<expr_t> ret;
-    scalar_obj_t o = eval_internal (e);
-    if (!o.is_null ()) { ret = expr_t::alloc (o); }
-    return ret;
-  }
-
-  //--------------------------------------------------------------------
-
-  scalar_obj_t
-  expr_div_or_mod_t::eval_as_scalar (eval_t e) const
-  {
-    return eval_internal (e);
-  }
-
-  //--------------------------------------------------------------------
-  
-  scalar_obj_t
-  expr_div_or_mod_t::eval_internal (eval_t e) const
-  {
-    scalar_obj_t out;
-    ptr<const expr_t> en, ed;
+    ptr<const expr_t> ret;
     scalar_obj_t n, d;
     const char *op = operation ();
-    
-    if (!_n || !(en = _n->eval_to_val (e))) {
+
+    if (!en || en->is_null ()) {
       report_error (e, strbuf ("%s: numerator was NULL", op));
-    } else if (!_d || !(ed = _d->eval_to_val (e))) {
+    } else if (!ed || ed->is_null ()) {
       report_error (e, strbuf ("%s: denominator was NULL", op));
     } else if ((n = en->to_scalar ()).is_null ()) {
       report_error (e, strbuf ("%s: numerator was not a scalar", op));
     } else if ((d = ed->to_scalar ()).is_null ()) {
       report_error (e, strbuf ("%s: denominator was not a scalar", op));
     } else {
+      scalar_obj_t out;
      
       if (div ()) { out = n / d; }
       else { out = n % d; }
       
       if (!out.is_null ()) {
-	/* good! */
+	ret = expr_t::alloc (out);
       } else if (out.is_inf ()) {
 	report_error (e, strbuf ("%s by zero", op));
       } else {
 	report_error (e, strbuf ("can't perform %s on strings", op));
       }
     }
-    return out;
+    return ret;
   }
 
   //====================================================================

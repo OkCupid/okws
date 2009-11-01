@@ -389,57 +389,71 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_add_t : public expr_t {
+  class expr_binaryop_t : public expr_t {
   public:
-    expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, lineno_t lineno)
-      : expr_t (lineno), _t1 (t1), _t2 (t2), _pos (pos) {}
-    expr_add_t (const xpub3_mathop_t &x);
-    static ptr<expr_add_t> alloc (ptr<expr_t> t1, ptr<expr_t> t2, bool pos);
-
-    bool to_xdr (xpub3_expr_t *x) const;
-    const char *get_obj_name () const { return "pub3::expr_add_t"; }
+    expr_binaryop_t (ptr<expr_t> o1, ptr<expr_t> o2, lineno_t lineno)
+      : expr_t (lineno), _o1 (o1), _o2 (o2) {}
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     void pub_to_val (publish_t pub, cxev_t ev, CLOSURE);
-    ptr<const expr_t> eval_final (eval_t e, ptr<const expr_t> e1, 
-				  ptr<const expr_t> e2) const;
     bool might_block () const;
-  protected:
+    bool to_xdr (xpub3_expr_t *x) const;
 
-    ptr<expr_t> _t1, _t2;
+  protected:
+    virtual ptr<const expr_t> 
+    eval_final (eval_t e, ptr<const expr_t> o1, ptr<const expr_t> o2) const = 0;
+
+    virtual xpub3_mathop_opcode_t opcode () const = 0;
+
+    ptr<expr_t> _o1, _o2;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class expr_add_t : public expr_binaryop_t {
+  public:
+    expr_add_t (ptr<expr_t> t1, ptr<expr_t> t2, bool pos, lineno_t lineno)
+      : expr_binaryop_t (t1, t2, lineno), _pos (pos) {}
+    expr_add_t (const xpub3_mathop_t &x);
+    static ptr<expr_add_t> alloc (ptr<expr_t> t1, ptr<expr_t> t2, bool pos);
+    bool to_xdr (xpub3_expr_t *x) const;
+    const char *get_obj_name () const { return "pub3::expr_add_t"; }
+
+  protected:
+    ptr<const expr_t> eval_final (eval_t e, ptr<const expr_t> o1, 
+				  ptr<const expr_t> o2) const;
+    xpub3_mathop_opcode_t opcode () const;
     bool _pos;
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_mult_t : public expr_t {
+  class expr_mult_t : public expr_binaryop_t {
   public:
     expr_mult_t (ptr<expr_t> f1, ptr<expr_t> f2, lineno_t lineno)
-      : expr_t (lineno), _f1 (f1), _f2 (f2) {}
+      : expr_binaryop_t (f1, f2, lineno) {}
     expr_mult_t (const xpub3_mathop_t &x);
     static ptr<expr_mult_t> alloc (ptr<expr_t> l, ptr<expr_t> r);
-    bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_mult_t"; }
-    ptr<const expr_t> eval_to_val (eval_t e) const;
   protected:
-    ptr<expr_t> _f1, _f2;
+    ptr<const expr_t> eval_final (eval_t e, ptr<const expr_t> o1, 
+				  ptr<const expr_t> o2) const;
+    xpub3_mathop_opcode_t opcode () const;
   };
 
   //-----------------------------------------------------------------------
 
-  class expr_div_or_mod_t : public expr_t {
+  class expr_div_or_mod_t : public expr_binaryop_t {
   public:
     expr_div_or_mod_t (ptr<expr_t> n, ptr<expr_t> d, lineno_t lineno)
-      : expr_t (lineno), _n (n), _d (d) {}
+      : expr_binaryop_t (n, d, lineno) {}
 
-    ptr<const expr_t> eval_to_val (eval_t e)  const;
-    scalar_obj_t eval_as_scalar (eval_t e) const;
   protected:
-    scalar_obj_t eval_internal (eval_t e) const;
+    ptr<const expr_t> eval_final (eval_t e, ptr<const expr_t> o1, 
+				  ptr<const expr_t> o2) const;
 
     virtual bool div () const = 0;
     virtual const char *operation () const = 0;
-    ptr<expr_t> _n, _d;
   };
 
   //-----------------------------------------------------------------------
@@ -451,11 +465,11 @@ namespace pub3 {
     expr_div_t (const xpub3_mathop_t &x);
     static ptr<expr_div_t> alloc (ptr<expr_t> n, ptr<expr_t> d);
 
-    bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_div_t"; }
   protected:
     bool div () const { return true; }
     const char *operation () const { return "division"; }
+    xpub3_mathop_opcode_t opcode () const;
   };
 
   //-----------------------------------------------------------------------
@@ -471,6 +485,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
   protected:
     bool div () const { return false; }
+    xpub3_mathop_opcode_t opcode () const;
     const char *operation () const { return "modulo"; }
   };
 
