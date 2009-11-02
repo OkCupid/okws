@@ -226,5 +226,21 @@ namespace pub3 {
     ev->trigger (r);
   }
 
+  //--------------------------------------------------------------------
+
+  tamed void
+  expr_vecref_t::pub_to_ref (publish_t p, mrev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> cr;
+      ptr<const expr_t> i;
+      ptr<mref_t> r;
+    }
+    twait { _vec->pub_to_ref (p, mkevent (cr)); }
+    twait { _index->pub_to_val (p, mkevent (i)); }
+    r = eval_to_ref_final (p, cr, i);
+    ev->trigger (r);
+  }
+
   //=======================================================================
 };

@@ -543,9 +543,12 @@ namespace pub3 {
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
     void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
   protected:
     ptr<const expr_t> eval_to_val_final (eval_t e, ptr<const expr_t> container,
 					 ptr<const expr_t> index) const;
+    ptr<mref_t> eval_to_ref_final (eval_t e, ptr<mref_t> cr,
+				   ptr<const expr_t> i) const;
 
     ptr<expr_t> _vec;
     ptr<expr_t> _index;
