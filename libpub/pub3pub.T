@@ -20,6 +20,12 @@ namespace pub3 {
 
   //====================================================================
 
+  publish_t::publish_t (ptr<bindtab_t> universals, zbuf *z)
+    : eval_t (New refcounted<env_t> (universals), output_t::alloc (z)),
+      _opts (0) {}
+
+  //====================================================================
+
 };
 
 

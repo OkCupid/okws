@@ -53,12 +53,12 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  // Not sure what's going to be here yet...
   class output_t {
   public:
-    void output_err (location_t loc, str msg);
-
-
+    output_t () {}
+    virtual ~output_t () {}
+    virtual void output_err (location_t loc, str msg) = 0;
+    static ptr<output_t> alloc (zbuf *z);
   };
 
   //-----------------------------------------------------------------------
