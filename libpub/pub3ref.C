@@ -70,6 +70,11 @@ namespace pub3 {
     return r;
   }
 
+  //--------------------------------------------------------------------
+
+  bool expr_dictref_t::might_block_uncached () const
+  { return expr_t::might_block (_dict); }
+
   //====================================================================
 
   ptr<expr_varref_t> expr_varref_t::alloc (const str &n)
@@ -189,6 +194,11 @@ namespace pub3 {
     }
     return ret;
   }
+  //--------------------------------------------------------------------
+
+  bool expr_vecref_t::might_block_uncached () const
+  { return expr_t::might_block (_vec, _index); }
+
   //====================================================================
   
 };

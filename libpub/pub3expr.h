@@ -506,8 +506,8 @@ namespace pub3 {
     ptr<mref_t> eval_to_ref (eval_t e) const;
     void pub_to_ref (publish_t pub, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t pub, cxev_t ev, CLOSURE) const;
-
   protected:
+    bool might_block_uncached () const;
     ptr<mref_t> eval_to_ref_final (eval_t e, ptr<mref_t> dr) const;
     ptr<const expr_t> eval_to_val_final (eval_t e, ptr<const expr_t> d) const;
     ptr<expr_t> _dict;
@@ -549,6 +549,7 @@ namespace pub3 {
     void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
     void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
   protected:
+    bool might_block_uncached () const;
     ptr<const expr_t> eval_to_val_final (eval_t e, ptr<const expr_t> container,
 					 ptr<const expr_t> index) const;
     ptr<mref_t> eval_to_ref_final (eval_t e, ptr<mref_t> cr,
@@ -956,7 +957,11 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
+    bool might_block_uncached () const;
+    void pub_to_ref (publish_t pub, mrev_t ev, CLOSURE) const;
   private:
+    ptr<mref_t> eval_to_ref_final (eval_t e, ptr<mref_t> lhs,
+				   ptr<mref_t> rhs) const;
     ptr<expr_t> _lhs, _rhs;
     const int _lineno;
   };
