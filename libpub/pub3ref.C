@@ -16,12 +16,19 @@ namespace pub3 {
   ptr<const expr_t> 
   expr_dictref_t::eval_to_val (eval_t e) const
   {
-    ptr<const expr_t> x;
+    ptr<const expr_t> d = _dict->eval_to_val (e);
+    return eval_to_val_final (e, d);
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_dictref_t::eval_to_val_final (eval_t e, ptr<const expr_t> x) const
+  {
     ptr<const expr_dict_t> d;
     const ptr<expr_t> *valp;
     ptr<expr_t> out;
-    assert (_dict);
-    if (!(x = _dict->eval_to_val (e))) {
+    if (!x) {
       report_error (e, "failed to evaluate expression (as a dictionary)");
     } else if (!(d = x->to_dict ())) {
       report_error (e, "can't coerce value to dictionary");
@@ -38,12 +45,20 @@ namespace pub3 {
   ptr<mref_t>
   expr_dictref_t::eval_to_ref (eval_t e) const
   {
-    ptr<mref_t> dr;
+    ptr<mref_t> dr = _dict->eval_to_ref (e);
+    return eval_to_ref_final (e, dr);
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<mref_t>
+  expr_dictref_t::eval_to_ref_final (eval_t e, ptr<mref_t> dr) const
+  {
     ptr<expr_t> x;
     ptr<expr_dict_t> d;
     ptr<mref_t> r;
-    assert (_dict);
-    if (!(dr = _dict->eval_to_ref (e))) {
+
+    if (!dr) {
       report_error (e, "failed to evaluate dictionary");
     } else if (!(x = dr->get_value ())) {
       report_error (e, "the dictionary referred to was null");

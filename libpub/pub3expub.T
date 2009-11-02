@@ -243,4 +243,32 @@ namespace pub3 {
   }
 
   //=======================================================================
+
+  tamed void
+  expr_dictref_t::pub_to_ref (publish_t pub, mrev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> v;
+      ptr<mref_t> r;
+    }
+    twait { _dict->pub_to_ref (pub, mkevent (v)); }
+    r = eval_to_ref_final (pub, v);
+    ev->trigger (r);
+  }
+
+  //--------------------------------------------------------------------
+
+  tamed void
+  expr_dictref_t::pub_to_val (publish_t pub, cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> d;
+      ptr<const expr_t> r;
+    }
+    twait { _dict->pub_to_val (pub, mkevent (d)); }
+    r = eval_to_val_final (pub, d);
+    ev->trigger (r);
+  }
+
+  //=======================================================================
 };
