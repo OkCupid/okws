@@ -27,7 +27,7 @@ libpub_la_SOURCES = \
 	zstr.C \
 	okconst.C \
 	jail.C \
-	pub2.C \
+	pub3hilev.C \
 	clone.C \
 	debug.C \
 	stats.C \
@@ -55,7 +55,6 @@ okwsinclude_HEADERS = \
 	pslave.h \
 	okdbg.h \
 	okdbg-int.h \
-	pub2.h \
 	okclone.h \
 	okws_sfs.h \
 	timehash.h \
@@ -75,7 +74,8 @@ okwsinclude_HEADERS = \
 	pub3ast.h \
 	pub3file.h \
 	pub3eval.h \
-	pub3pub.h
+	pub3pub.h \
+	pub3hilev.h
 
 noinst_HEADERS =  env.mk
 
