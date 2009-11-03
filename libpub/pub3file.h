@@ -5,9 +5,12 @@
 
 #include "pub3prot.h"
 #include "okdbg.h"
-#include "pub3ast.h"
 
 namespace pub3 {
+
+  //-----------------------------------------------------------------------
+
+  class zone_t;
 
   //-----------------------------------------------------------------------
 
@@ -68,6 +71,8 @@ namespace pub3 {
     static ptr<file_t> alloc (ptr<metadata_t> m, ptr<zone_t> z);
     file_t (const xpub3_file_t &x);
     void to_xdr (xpub3_file_t *x) const;
+    ptr<const metadata_t> metadata () const { return _metadata; }
+    ptr<const zone_t> data () const { return _data_root; }
 
   protected:
     ptr<metadata_t> _metadata;

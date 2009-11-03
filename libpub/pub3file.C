@@ -1,4 +1,5 @@
 #include "pub3file.h"
+#include "pub3ast.h"
 #include "sha1.h"
 
 namespace pub3 {

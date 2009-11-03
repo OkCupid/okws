@@ -105,8 +105,8 @@ namespace pub3 {
 		  status_t *sp = NULL, CLOSURE);
 
     void syntax_check (str f, str *err, evi_t ev, CLOSURE);
-    opts_t opts () const = 0;
-    void set_opts (opts_t i) = 0;
+    opts_t opts () const { return _opts; }
+    void set_opts (opts_t o) { _opts = o; }
 
   protected:
     // to be filled in by the sub classes
@@ -115,6 +115,8 @@ namespace pub3 {
 
     void publish_full (publish_t p, str fn, lineno_t lineno, getfile_ev_t ev, 
 		       CLOSURE);
+    void list_files_to_check (str cwd, str n, vec<str> *out, 
+			      ptr<const localizer_t> l);
   private:
     opts_t _opts;
   };
