@@ -1,20 +1,27 @@
 // -*-c++-*-
 #include "pub3pub.h"
+#include "pub3file.h"
+#include "pub3ast.h"
+#include "pub3hilev.h"
 
 namespace pub3 {
 
   //====================================================================
 
   tamed void
-  publish_t::publish (str nm, ptr<bind_interface_t> d, status_ev_t ev)
+  publish_t::publish (str nm, location_t loc, ptr<bind_interface_t> d, 
+		      status_ev_t ev)
   {
     tvars {
       size_t sz;
       xpub_status_t status;
+      ptr<file_t> dummy;
     }
+    push_include_location (loc);
     sz = env ()->push_locals (d);
-    twait { publish2 (nm, mkevent (status)); }
+    twait { _pub_iface->publish (*this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
+    pop_include_location ();
     ev->trigger (status);
   }
 
@@ -38,6 +45,52 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  tamed void
+  publish_t::publish_file (ptr<const file_t> file, status_ev_t ev)
+  {
+    tvars {
+      xpub_status_t status;
+    }
+
+    if (_include_stack.size () > ok_pub_max_include_depth) {
+      str fn = file->metadata ()->jailed_filename ();
+      strbuf msg;
+      msg << "maximum include stack depth (" << ok_pub_max_include_depth 
+	  << ") exceeded when trying to include file " << fn;
+      output_err_stacktrace (msg);
+    } else {
+      twait { file->data ()->publish (*this, mkevent (status)); }
+    }
+    ev->trigger (status);
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  publish_t::push_include_location (location_t l)
+  {
+    _include_stack.push_back (l);
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  publish_t::pop_include_location ()
+  {
+    _include_stack.pop_back ();
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  publish_t::output_err_stacktrace (str msg)
+  {
+
+
+  }
+
+  //--------------------------------------------------------------------
+
   str
   publish_t::set_cwd (str s)
   {
@@ -45,6 +98,11 @@ namespace pub3 {
     _cwd = s;
     return ret;
   }
+
+  //--------------------------------------------------------------------
+
+
+  
 
   //====================================================================
 

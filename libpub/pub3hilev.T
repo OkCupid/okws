@@ -34,19 +34,22 @@ namespace pub3 {
     if (opts < 0) opts = _opts;
 
     pub.set_opts (opts);
+    pub.set_pub_iface (mkref (this));
 
-    twait { publish_full (pub, fn, 0, mkevent (status, file)); }
+    twait { publish (pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;
     if (fp) *fp = file;
+
+    pub.set_pub_iface (NULL);
+
     ev->trigger (status.status == XPUB_STATUS_OK);
   }
 
   //-----------------------------------------------------------------------
   
   tamed void 
-  ap_t::publish_full (publish_t pub, str fn, lineno_t lineno,
-		      getfile_ev_t ev)
+  ap_t::publish (publish_t pub, str fn, getfile_ev_t ev)
   {
     tvars {
       status_t status (XPUB_STATUS_NOENT);
@@ -83,7 +86,7 @@ namespace pub3 {
 
       cwd_prev = pub.set_cwd (d);
 
-      twait { pub.publish (file, mkevent (status)); }
+      twait { pub.publish_file (file, mkevent (status)); }
       if (status.status != XPUB_STATUS_OK) 
 	err = strbuf () << "error in publishing file: " << fn;
 

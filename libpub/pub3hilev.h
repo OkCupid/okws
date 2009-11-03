@@ -37,7 +37,7 @@ namespace pub3 {
   // in expr_dict_t's rather than 
   //
 
-  class ok_iface_t {
+  class ok_iface_t : public virtual refcount {
   public:
     virtual ~ok_iface_t () {}
 
@@ -82,6 +82,14 @@ namespace pub3 {
      */
     virtual void syntax_check (str f, str *err, evi_t ev, CLOSURE) = 0;
 
+    /**
+     * Publish the given file
+     * @param p the publishing state
+     * @param fn the file to publish
+     * @param ev the event to trigger with the status
+     */
+    virtual void publish (publish_t p, str fn, getfile_ev_t ev, CLOSURE) = 0;
+
     // set/get global ops for this publishing interface.
     virtual opts_t opts () const = 0;
     virtual void set_opts (opts_t i) = 0;
@@ -113,8 +121,7 @@ namespace pub3 {
     virtual void getfile (pfnm_t fn, getfile_ev_t cb, u_int o = 0) = 0;
     virtual bool is_remote () const = 0;
 
-    void publish_full (publish_t p, str fn, lineno_t lineno, getfile_ev_t ev, 
-		       CLOSURE);
+    void publish (publish_t p, str fn, getfile_ev_t ev, CLOSURE);
     void list_files_to_check (str cwd, str n, vec<str> *out, 
 			      ptr<const localizer_t> l);
   private:

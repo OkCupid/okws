@@ -320,7 +320,9 @@ namespace pub3 {
       str e = "include: cannot evalute parameters";
       p.report_error (e, _location);
     } else {
-      twait { p.publish (fn, cow_bindtab_t::alloc (cd), mkevent (rs)); }
+      twait { 
+	p.publish (fn, _location, cow_bindtab_t::alloc (cd), mkevent (rs)); 
+      }
     }
     ev->trigger (rs);
   }

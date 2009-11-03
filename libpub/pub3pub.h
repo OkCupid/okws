@@ -10,6 +10,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   class file_t;
+  class ok_iface_t;
 
   //-----------------------------------------------------------------------
 
@@ -42,24 +43,30 @@ namespace pub3 {
 
   class publish_t : public eval_t {
   public:
-    publish_t (ptr<bindtab_t> univerals, zbuf *z = NULL);
+    publish_t (ptr<bindtab_t> universals, zbuf *z = NULL);
     publish_t (ptr<env_t> e, ptr<output_t> o) : eval_t (e, o) {}
-    void publish (str nm, ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
-    void publish2 (str nm, status_ev_t ev, CLOSURE);
+    void publish (str nm, location_t loc,
+		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_opts (opts_t o) { _opts = o; }
+    void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
     void output (str s);
     void output_err (str s);
+    void output_err_stacktrace (str s);
     ptr<localizer_t> localizer ();
     void set_localizer (ptr<localizer_t> l) { _localizer = l; }
     opts_t opts () const { return _opts; }
     str set_cwd (str s) ;
     str cwd () const { return _cwd; }
-    void publish (ptr<const file_t> file, status_ev_t ev);
+    void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
+    void push_include_location (location_t l);
+    void pop_include_location ();
   private:
     ptr<localizer_t> _localizer;
-    vec<str> _include_stack;
+    vec<location_t> _include_stack;
     opts_t _opts;
     str _cwd;
+    location_t _location;        // current location
+    ptr<ok_iface_t> _pub_iface;  // publisher interface
   };
 
   //--------------------------------------------------------------------
