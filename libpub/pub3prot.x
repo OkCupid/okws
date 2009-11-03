@@ -315,6 +315,19 @@ struct xpub3_if_t {
   xpub3_if_clause_t clauses<>;
 };
 
+struct xpub3_case_t {
+  int lineno;
+  xpub3_str_t key;
+  xpub3_zone_t body;
+};
+
+struct xpub3_switch_t {
+  int lineno;
+  xpub3_expr_t key;
+  xpub3_case_t cases<>;
+  xpub3_case_t *defcase;
+};
+
 struct xpub3_decls_t {
   int lineno;
   xpub3_dict_t decls;
@@ -348,7 +361,8 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_IF = 7,
    XPUB3_STATEMENT_PRINT = 8,
    XPUB3_EXPR_STATEMENT = 9,
-   XBPU3_STATEMENT_PROC_DEF = 10
+   XBPU3_STATEMENT_PROC_DEF = 10,
+   XPUB3_STATEMENT_SWITCH = 11
 };
 
 %struct xpub3_zone_t;
@@ -382,6 +396,9 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
 
  case XBPU3_STATEMENT_PROC_DEF:
    xpub3_proc_def_t proc_def;
+
+ case XPUB3_STATEMENT_SWITCH:
+   xpub3_switch_t switch_statement;
 
 };
 

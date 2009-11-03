@@ -335,6 +335,7 @@ namespace pub3 {
   class switch_t : public statement_t {
   public:
     switch_t (location_t l) : statement_t (l) {}
+    switch_t (const xpub3_switch_t &x);
     static ptr<switch_t> alloc ();
     void add_cases (ptr<case_list_t> l);
     void add_key (ptr<expr_t> x);
