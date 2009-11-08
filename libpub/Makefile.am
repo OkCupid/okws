@@ -44,14 +44,11 @@ okwsinclude_HEADERS = \
 	pub3prot.h \
 	pub3base.h \
 	okconst.h \
-	fhash.h \
 	holdtab.h \
 	parse.h \
 	pjail.h \
 	pub_parse.h \
-	puberr.h \
 	zstr.h \
-	clist.h \
 	pslave.h \
 	okdbg.h \
 	okdbg-int.h \
