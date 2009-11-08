@@ -128,7 +128,7 @@ public:
   void add (const str &s);
   void freeze ();
   bool is_frozen () const { return _frozen; }
-  bool cmp (const scalar_obj_t &o) const;
+  int cmp (const scalar_obj_t &o) const;
 
   bool operator== (const scalar_obj_t &o2) const { return cmp (o2) == 0; }
   bool operator!= (const scalar_obj_t &o2) const { return cmp (o2) != 0; }
@@ -146,7 +146,7 @@ public:
   virtual bool strip_add (const char *s, int l) const { return true; }
 
 private:
-  scalar_obj_t div_or_mod (scalar_obj_t &s, bool div) const;
+  scalar_obj_t div_or_mod (const scalar_obj_t &s, bool div) const;
   void ready_append ();
   ptr<strbuf> _b;
   ptr<_p_t> _p;

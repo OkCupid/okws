@@ -44,7 +44,7 @@ scalar_obj_t::_p_t::set_inf ()
   _d = 0.0;
   _i = 0;
   _u = 0;
-  _natural_type = TYP_INF;
+  _natural_type = TYPE_INF;
 }
 
 //-----------------------------------------------------------------------
@@ -339,13 +339,13 @@ scalar_obj_t::operator+ (const scalar_obj_t &s) const
     int64_t i1, i2;
     u_int64_t u1, u2;
 
-    if (to_int64 (&i1) && o.to_int64 (&i2)) {
+    if (to_int64 (&i1) && s.to_int64 (&i2)) {
       ret.set_i (i1 + i2);
-    } else if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
+    } else if (to_uint64 (&u1) && s.to_uint64 (&u2)) {
       ret.set_u (u1 + u2);
-    } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
+    } else if (to_int64 (&i1) && s.to_uint64 (&u2)) {
       ret.set_i (i1 + u2);
-    } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
+    } else if (to_uint64 (&u1) && s.to_int64 (&i2)) {
       ret.set_i (u1 + i2);
     }
   }
@@ -375,13 +375,13 @@ scalar_obj_t::operator- (const scalar_obj_t &s) const
   } else {
     int64_t i1, i2;
     u_int64_t u1, u2;
-    if (to_int64 (&i1) && o.to_int64 (&i2)) {
+    if (to_int64 (&i1) && s.to_int64 (&i2)) {
       ret.set_i (i1 - i2);
-    } else if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
+    } else if (to_uint64 (&u1) && s.to_uint64 (&u2)) {
       ret.set_i (u1 - u2);
-    } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
+    } else if (to_int64 (&i1) && s.to_uint64 (&u2)) {
       ret.set_i (i1 - u2);
-    } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
+    } else if (to_uint64 (&u1) && s.to_int64 (&i2)) {
       ret.set_i (u1 - i2);
     }
   }
@@ -400,12 +400,12 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
   type_t him = o.natural_type ();
   int res;
 
-  if (me == TYPE_STR || them == TYPE_STR) {
+  if (me == TYPE_STR || him == TYPE_STR) {
     str s1 = to_str ();
     str s2 = o.to_str ();
     res = s1.cmp (s2);
 
-  } else if (me == TYPE_DOUBLE || them == TYPE_DOUBLE) {
+  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
     double d2 = o.to_double ();
 
@@ -418,7 +418,7 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
     if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
       res = CMP (u1, u2);
     } else if (to_int64 (&i1) && o.to_int64 (&i2)) {
-      res = CMP (i1, u2);
+      res = CMP (i1, i2);
     } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
       res = CMP (1, -1);
     } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
@@ -461,13 +461,13 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
     double d2 = to_double ();
     out.set (d1 * d2);
 
-  } else if (o1.to_int64 (&i1) && o2.to_int64 (&i2)) {
+  } else if (to_int64 (&i1) && o.to_int64 (&i2)) {
     out.set_i (i1*i2);
-  } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2)) {
+  } else if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
     out.set_u (u1 * u2);
-  } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2)) {
+  } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
     out.set_i (i1 * u2);
-  } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2)) {
+  } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
     out.set_i (u1 * i2);
   } 
 
@@ -479,7 +479,7 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
 scalar_obj_t 
 scalar_obj_t::operator/ (const scalar_obj_t &o) const
 {
-  return div_or_mod (s, true);
+  return div_or_mod (o, true);
 }
 
 //-----------------------------------------------------------------------
@@ -487,7 +487,7 @@ scalar_obj_t::operator/ (const scalar_obj_t &o) const
 scalar_obj_t 
 scalar_obj_t::operator% (const scalar_obj_t &o) const
 {
-  return div_or_mod (s, false);
+  return div_or_mod (o, false);
 }
 
 //-----------------------------------------------------------------------
@@ -495,7 +495,7 @@ scalar_obj_t::operator% (const scalar_obj_t &o) const
 #define OP(a1,a2) (div ? ((a1) / (a2)) : ((a1) % (a2)))
 
 scalar_obj_t
-scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div)
+scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div) const
 {
   type_t me = natural_type ();
   type_t him = o.natural_type ();
@@ -513,16 +513,16 @@ scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div)
     double d1 = to_double ();
     double d2 = to_double ();
 
-    if (d2) { out.set (OP (d1, d2)); }
+    if (d2 && div) { out.set (d1 / d2); }
     else { ok = false; }
 
-  } else if (o1.to_int64 (&i1) && o2.to_int64 (&i2) && (ok = (i2 != 0))) {
+  } else if (to_int64 (&i1) && o.to_int64 (&i2) && (ok = (i2 != 0))) {
     out.set_i (OP (i1, i2));
-  } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2) && (ok = (u2 != 0))) {
+  } else if (to_uint64 (&u1) && o.to_uint64 (&u2) && (ok = (u2 != 0))) {
     out.set_u (OP (u1, u2));
-  } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2) && (ok == (u2 != 0))) {
+  } else if (to_int64 (&i1) && o.to_uint64 (&u2) && (ok = (u2 != 0))) {
     out.set_i (OP (i1, u2));
-  } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2) && (ok  == (i2 != 0))) {
+  } else if (to_uint64 (&u1) && o.to_int64 (&i2) && (ok = (i2 != 0))) {
     out.set_i (OP (u1, i2));
   } 
 
@@ -532,45 +532,6 @@ scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div)
 }
 
 #undef OP
-
-//-----------------------------------------------------------------------
-
-scalar_obj_t 
-scalar_obj_t::operator% (const scalar_obj_t &o) const
-{
-  type_t me = natural_type ();
-  type_t him = o.natural_type ();
-
-  int64_t i1, i2;
-  u_int64_t u1, u2;
-  str s1, s2;
-  scalar_obj_t out;
-  bool ok = true;
-
-  if (me == TYPE_STR || him == TYPE_STR) {
-    /* noop!!! */
-
-  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
-    double d1 = to_double ();
-    double d2 = to_double ();
-
-    if (d2) { out.set (d1 % d2); }
-    else { ok = false; }
-
-  } else if (o1.to_int64 (&i1) && o2.to_int64 (&i2) && (ok = (i2 != 0))) {
-    out.set_i (i1 % i2);
-  } else if (o1.to_uint64 (&u1) && o2.to_uint64 (&u2) && (ok = (u2 != 0))) {
-    out.set_u (u1 % u2);
-  } else if (o1.to_int64 (&i1) && o2.to_uint64 (&u2) && (ok == (u2 != 0))) {
-    out.set_i (i1 % u2);
-  } else if (o1.to_uint64 (&u1) && o2.to_int64 (&i2) && (ok  == (i2 != 0))) {
-    out.set_i (u1 % i2);
-  } 
-
-  if (!ok) out.set_inf ();
-
-  return out;
-}
 
 //-----------------------------------------------------------------------
 
