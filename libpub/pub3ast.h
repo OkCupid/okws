@@ -315,8 +315,8 @@ namespace pub3 {
     case_t (const xpub3_case_t &x);
     static ptr<case_t> alloc ();
     static ptr<case_t> alloc (const xpub3_case_t *x);
-    void add_key (ptr<expr_t> x) { _key = x; }
-    void add_zone (ptr<zone_t> z) { _zone = z; }
+    void add_key (ptr<expr_t> x);
+    void add_zone (ptr<zone_t> z);
     bool to_xdr (xpub3_case_t *x) const;
     ptr<zone_t> zone () { return  _zone; }
     ptr<const zone_t> zone () const { return _zone; }
@@ -335,9 +335,9 @@ namespace pub3 {
     case_list_t () {}
     case_list_t (const xpub3_cases_t &x);
     static ptr<case_list_t> alloc ();
-    static ptr<case_list_t> alloc (const xpub3_cases_t &x)
-    { return New refcounted<case_list_t> (x); } 
-    void add_case (ptr<case_t> c) { push_back (c); }
+    static ptr<case_list_t> alloc (const xpub3_cases_t &x);
+    void add_case (ptr<case_t> c);
+    bool to_xdr (xpub3_cases_t *x) const;
   };
 
   //-----------------------------------------------------------------------
@@ -351,9 +351,10 @@ namespace pub3 {
     void add_key (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
     void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    bool publish_nonblock (publish_t p) const { return false; }
+    bool publish_nonblock (publish_t p) const;
     bool might_block () const;
   protected:
+    ptr<const zone_t> find_case (publish_t pub) const;
     bool populate_cases ();
     ptr<expr_t> _key;
     ptr<case_list_t> _cases;

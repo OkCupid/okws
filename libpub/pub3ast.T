@@ -357,11 +357,11 @@ namespace pub3 {
   switch_t::might_block () const
   {
     if (!_might_block.is_set ()) {
-      mb = false;
+      bool mb = false;
       for (size_t i = 0; !mb && _cases && i < _cases->size (); i++) {
 	if ((*_cases)[i]->might_block ()) { mb = true; }
       }
-      _might_block.set_value (mb);
+      _might_block.set (mb);
     }
     return _might_block.value ();
   }
@@ -383,21 +383,21 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void 
-  switch_t::publish (pubish_t pub, status_ev_t ev) const
+  switch_t::publish (publish_t pub, status_ev_t ev) const
   {
     tvars {
       xpub_status_t res (XPUB_STATUS_OK);
-      ptr<zone_t> zone;
+      ptr<const zone_t> zone;
     }
-    if ((zone = find_case (o, e))) {
-      twait { zone->publish (pif, o, e, mkevent (res)); }
+    if ((zone = find_case (pub))) {
+      twait { zone->publish (pub, mkevent (res)); }
     }
     ev->trigger (res);
   }
   
   //=======================================================================
 
-  ptr<case_t> case_t::alloc () { return New refcounted<case_t> (location ()); }
+  ptr<case_t> case_t::alloc () { return New refcounted<case_t> (plineno ()); }
   ptr<case_list_t> case_list_t::alloc () 
   { return New refcounted<case_list_t> (); }
   ptr<switch_t> switch_t::alloc () 

@@ -847,13 +847,13 @@ pub3::case_list_t::case_list_t (const xpub3_cases_t &xl)
 
 //-----------------------------------------------------------------------
 
-ptr<case_list_t> pub3::case_list_t::alloc (const xpub3_cases_t &x)
+ptr<pub3::case_list_t> pub3::case_list_t::alloc (const xpub3_cases_t &x)
 { return New refcounted<case_list_t> (x); } 
 
 //-----------------------------------------------------------------------
 
 bool
-pub3::case_list_t::to_xdr (xpub3_cases_t *x)
+pub3::case_list_t::to_xdr (xpub3_cases_t *x) const
 {
   x->setsize (size ());
   for (size_t i = 0; i < size (); i++) {
@@ -865,7 +865,7 @@ pub3::case_list_t::to_xdr (xpub3_cases_t *x)
 //-----------------------------------------------------------------------
 
 pub3::switch_t::switch_t (const xpub3_switch_t &x)
-  : pfile_func_t (x.lineno),
+  : statement_t (x.lineno),
     _key (expr_t::alloc (x.key)),
     _cases (case_list_t::alloc (x.cases))
 {
@@ -875,10 +875,10 @@ pub3::switch_t::switch_t (const xpub3_switch_t &x)
 //-----------------------------------------------------------------------
 
 bool
-pub3::switch_t::to_xdr (xpub_obj_t *x) const
+pub3::switch_t::to_xdr (xpub3_statement_t *x) const
 {
-  x->set_typ (XPUB3_SWITCH);
-  x->switch_statement->lineno = lineno;
+  x->set_typ (XPUB3_STATEMENT_SWITCH);
+  x->switch_statement->lineno = lineno ();
   expr_to_xdr (_key, &x->switch_statement->key);
 
   if (_cases) {
