@@ -51,6 +51,7 @@ namespace pub3 {
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
     void output (str s);
     void output_err (str s);
+    void output_err (str s, location_t loc);
     void output_err_stacktrace (str s);
     ptr<localizer_t> localizer ();
     void set_localizer (ptr<localizer_t> l) { _localizer = l; }

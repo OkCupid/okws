@@ -555,8 +555,8 @@ public:
     _tab.insert ("print", T_P3_PRINT);
     _tab.insert ("case", T_P3_CASE);
     _tab.insert ("switch", T_P3_SWITCH);
-    _tab.insert ("deafult", T_P3_DEFAULT);
     _tab.insert ("def", T_P3_DEF);
+    _tab.insert ("null", T_P3_NULL);
   }
 
   bool lookup (const char *in, int *out) {

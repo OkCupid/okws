@@ -43,7 +43,6 @@
 %token T_P3_NULL
 %token T_P3_CASE
 %token T_P3_SWITCH
-%token T_P3_DEFAULT
 %token T_P3_DEF
 
 %token <str> T_P3_IDENTIFIER
@@ -83,8 +82,8 @@
 %type <p3statement> p3_universals p3_print p3_fndef p3_switch;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
-%type <p3cl> p3_switch_case_list p3_switch_cases;
-%type <p3case> p3_switch_case p3_switch_default p3_switch_default_opt; 
+%type <p3cl> p3_switch_cases;
+%type <p3case> p3_switch_case ;
 %type <p3pair> p3_pub_zone_pair;
 
 %type <relop> p3_relational_op;
@@ -95,7 +94,7 @@
 %type <p3strv> p3_identifier_list;
 %type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
-%type <str> p3_constant_or_string;
+%type <p3expr> p3_constant_or_string p3_case_key_opt;
 %type <p3strbuf> p3_string_constant;
 %type <str> p3_string_constant_element;
  
@@ -242,20 +241,15 @@ p3_fndef : T_P3_DEF p3_identifier '(' p3_identifier_list ')' p3_nested_zone
        }
        ;
 
-p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_case_list '}'
+p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_cases '}'
 	  {
 	     ptr<pub3::switch_t> s = pub3::switch_t::alloc ();
 	     s->add_key ($3);
-	     s->add_cases ($6);
+	     if (!s->add_cases ($6)) {
+	     	  str err = "Got 2 or more default cases for switch()";
+	     	  pub3::parse_error (err);
+	     }
 	     $$ = s;
-	  }
-	  ;
-
-p3_switch_case_list:  p3_switch_cases p3_switch_default_opt
-          {
-	     ptr<pub3::case_list_t> l = $1;
-	     $1->add_case ($2);
-	     $$ = $1;
 	  }
 	  ;
 
@@ -271,26 +265,18 @@ p3_switch_cases: /*empty */
 	  }
 	  ;
 
-p3_switch_case: T_P3_CASE '(' p3_constant_or_string ')' p3_nested_zone
+p3_switch_case: T_P3_CASE p3_case_key_opt p3_nested_zone
           {
 	     ptr<pub3::case_t> c = pub3::case_t::alloc ();
-	     c->add_key ($3);
-	     c->add_zone ($5);
+	     c->add_key ($2);
+	     c->add_zone ($3);
 	     $$ = c;
 	  }
 	  ;
 
-p3_switch_default_opt: /* empty */ { $$ = NULL; }
-          | p3_switch_default { $$ = $1; }
-	  ;
-
-p3_switch_default: T_P3_DEFAULT p3_nested_zone
-	  {
-	     ptr<pub3::case_t> c = pub3::case_t::alloc ();
-	     c->add_zone ($2);
-	     $$ = c;
-	  }
-	  ;
+p3_case_key_opt : '(' p3_constant_or_string ')' { $$ = $2; }
+		| /* empty */		        { $$ = NULL; }
+		;
 
 p3_statement_opt: /*empty*/ { $$ = NULL; }
 	      | p3_statement
@@ -549,9 +535,11 @@ p3_constant:
 	   }
 	   ;
 
-p3_constant_or_string: p3_integer_constant { $$ = $1->to_str (); }
-	   | p3_boolean_constant { $$ = $1 ? "1" : "0"; }
-	   | p3_string_constant { $$ = $1->to_str (); }
+p3_constant_or_string: p3_integer_constant { $$ = $1; }
+	   | p3_boolean_constant       { $$ = pub3::expr_bool_t::alloc ($1); }
+	   | p3_string_constant            { $$ = $1; }
+	   | p3_null		           { $$ = $1; }
+	   ;
 
 p3_identifier: T_P3_IDENTIFIER { $$ = $1; } ;
 

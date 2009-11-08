@@ -66,19 +66,18 @@
      T_P3_NULL = 282,
      T_P3_CASE = 283,
      T_P3_SWITCH = 284,
-     T_P3_DEFAULT = 285,
-     T_P3_DEF = 286,
-     T_P3_IDENTIFIER = 287,
-     T_P3_INT = 288,
-     T_P3_UINT = 289,
-     T_P3_CHAR = 290,
-     T_P3_FLOAT = 291,
-     T_P3_STRING = 292,
-     T_P3_REGEX = 293,
-     T_P3_HTML = 294,
-     T_P3_HTML_CH = 295,
-     T_P3_BEGIN_PRE = 296,
-     T_P3_END_PRE = 297
+     T_P3_DEF = 285,
+     T_P3_IDENTIFIER = 286,
+     T_P3_INT = 287,
+     T_P3_UINT = 288,
+     T_P3_CHAR = 289,
+     T_P3_FLOAT = 290,
+     T_P3_STRING = 291,
+     T_P3_REGEX = 292,
+     T_P3_HTML = 293,
+     T_P3_HTML_CH = 294,
+     T_P3_BEGIN_PRE = 295,
+     T_P3_END_PRE = 296
    };
 #endif
 /* Tokens.  */
@@ -109,19 +108,18 @@
 #define T_P3_NULL 282
 #define T_P3_CASE 283
 #define T_P3_SWITCH 284
-#define T_P3_DEFAULT 285
-#define T_P3_DEF 286
-#define T_P3_IDENTIFIER 287
-#define T_P3_INT 288
-#define T_P3_UINT 289
-#define T_P3_CHAR 290
-#define T_P3_FLOAT 291
-#define T_P3_STRING 292
-#define T_P3_REGEX 293
-#define T_P3_HTML 294
-#define T_P3_HTML_CH 295
-#define T_P3_BEGIN_PRE 296
-#define T_P3_END_PRE 297
+#define T_P3_DEF 285
+#define T_P3_IDENTIFIER 286
+#define T_P3_INT 287
+#define T_P3_UINT 288
+#define T_P3_CHAR 289
+#define T_P3_FLOAT 290
+#define T_P3_STRING 291
+#define T_P3_REGEX 292
+#define T_P3_HTML 293
+#define T_P3_HTML_CH 294
+#define T_P3_BEGIN_PRE 295
+#define T_P3_END_PRE 296
 
 
 

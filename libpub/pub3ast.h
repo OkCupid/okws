@@ -309,15 +309,22 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class case_t : public statement_t {
+  class case_t {
   public:
-    case_t (location_t l) : statement_t (l) {}
+    case_t (lineno_t l) : _lineno (l) {}
+    case_t (const xpub3_case_t &x);
     static ptr<case_t> alloc ();
-    void add_key (const str &k);
-    void add_zone (ptr<zone_t> z);
-    bool to_xdr (xpub3_statement_t *x) const;
+    static ptr<case_t> alloc (const xpub3_case_t *x);
+    void add_key (ptr<expr_t> x) { _key = x; }
+    void add_zone (ptr<zone_t> z) { _zone = z; }
+    bool to_xdr (xpub3_case_t *x) const;
+    ptr<zone_t> zone () { return  _zone; }
+    ptr<const zone_t> zone () const { return _zone; }
+    ptr<const expr_t> key () const { return _key; }
+    bool might_block () const;
   protected:
-    str _key;
+    lineno_t _lineno;
+    ptr<expr_t> _key;
     ptr<zone_t> _zone;
   };
 
@@ -326,8 +333,11 @@ namespace pub3 {
   class case_list_t : public vec<ptr<case_t > > {
   public:
     case_list_t () {}
+    case_list_t (const xpub3_cases_t &x);
     static ptr<case_list_t> alloc ();
-    void add_case (ptr<case_t> c);
+    static ptr<case_list_t> alloc (const xpub3_cases_t &x)
+    { return New refcounted<case_list_t> (x); } 
+    void add_case (ptr<case_t> c) { push_back (c); }
   };
 
   //-----------------------------------------------------------------------
@@ -337,16 +347,19 @@ namespace pub3 {
     switch_t (location_t l) : statement_t (l) {}
     switch_t (const xpub3_switch_t &x);
     static ptr<switch_t> alloc ();
-    void add_cases (ptr<case_list_t> l);
+    bool add_cases (ptr<case_list_t> l);
     void add_key (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
     void publish (publish_t p, status_ev_t ev, CLOSURE) const;
     bool publish_nonblock (publish_t p) const { return false; }
+    bool might_block () const;
   protected:
+    bool populate_cases ();
     ptr<expr_t> _key;
     ptr<case_list_t> _cases;
     qhash<str, ptr<case_t> > _map;
-    ptr<case_t> _default;
+    ptr<case_t> _default, _null;
+    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------

@@ -280,15 +280,122 @@ namespace pub3 {
   ptr<universals_t> universals_t::alloc () 
   { return New refcounted<universals_t> (location ()); }
 
-  //-----------------------------------------------------------------------
+  //=======================================================================
 
   void case_list_t::add_case (ptr<case_t> c) { if (c) { push_back (c); } }
-  void switch_t::add_cases (ptr<case_list_t> l) { _cases = l; }
   void switch_t::add_key (ptr<expr_t> x) { _key = x; }
-  void case_t::add_key (const str &k) { _key = k; }
+  void case_t::add_key (ptr<expr_t> x) { _key = x; }
   void case_t::add_zone (ptr<zone_t> z) { _zone = z; }
 
   //-----------------------------------------------------------------------
+
+  bool case_t::might_block () const { return _zone && _zone->might_block (); }
+
+  //-----------------------------------------------------------------------
+
+  bool 
+  switch_t::add_cases (ptr<case_list_t> l) 
+  { 
+    _cases = l; 
+    return populate_cases ();
+  }
+
+  //-----------------------------------------------------------------------
+  
+  bool
+  switch_t::populate_cases ()
+  {
+    _map.clear ();
+    size_t n_defaults = 0;
+    for (size_t i = 0; _cases && i < _cases->size (); i++) {
+      ptr<case_t> c = (*_cases)[i];
+      assert (c);
+      ptr<const expr_t> k = c->key ();
+      str ks;
+      if (!k) {
+	n_defaults ++;
+	_default = c;
+      } else if (k->is_null () || !(ks = k->to_switch_str ())) {
+	_null = c;
+      } else {
+	_map.insert (ks, c);
+      }
+    }
+    return (n_defaults <= 1);
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  ptr<const zone_t>
+  switch_t::find_case (publish_t pub) const
+  {
+    ptr<const zone_t> ret;
+    str k;
+    if (_key) {
+      k = _key->eval_as_str (pub);
+      if (k) {
+	const ptr<case_t> *c = _map[k];
+	if (c && *c) { ret = (*c)->zone (); }
+      } else if (_null) {
+	ret = _null->zone ();
+      }
+    }
+    
+    if (!ret && _default) { ret = _default->zone (); }
+    
+    if (!ret) {
+      if (!k) k = "(null)";
+      strbuf err ("no case found for key ='%s'", k.cstr ());
+      pub.output_err (err, _location);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  bool
+  switch_t::might_block () const
+  {
+    if (!_might_block.is_set ()) {
+      mb = false;
+      for (size_t i = 0; !mb && _cases && i < _cases->size (); i++) {
+	if ((*_cases)[i]->might_block ()) { mb = true; }
+      }
+      _might_block.set_value (mb);
+    }
+    return _might_block.value ();
+  }
+
+  //-----------------------------------------------------------------------
+  
+  bool 
+  switch_t::publish_nonblock (publish_t pub) const
+  {
+    bool ret = false;
+    if (!might_block ()) {
+      ret = true;
+      ptr<const zone_t> zone = find_case (pub);
+      if (zone) { zone->publish_nonblock (pub); }
+    }
+    return ret;
+  }
+  
+  //-----------------------------------------------------------------------
+
+  tamed void 
+  switch_t::publish (pubish_t pub, status_ev_t ev) const
+  {
+    tvars {
+      xpub_status_t res (XPUB_STATUS_OK);
+      ptr<zone_t> zone;
+    }
+    if ((zone = find_case (o, e))) {
+      twait { zone->publish (pif, o, e, mkevent (res)); }
+    }
+    ev->trigger (res);
+  }
+  
+  //=======================================================================
 
   ptr<case_t> case_t::alloc () { return New refcounted<case_t> (location ()); }
   ptr<case_list_t> case_list_t::alloc () 

@@ -161,6 +161,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
 {
   ptr<pub3::expr_t> r;
   switch (x.typ) {
+  case XPUB3_EXPR_PUBNULL:
+    r = expr_null_t::alloc () ;
+    break;
   case XPUB3_EXPR_MATHOP:
     r = expr_mathop_t::alloc (*x.mathop);
     break;
@@ -302,7 +305,7 @@ pub3::expr_list_t::to_xdr (xpub3_expr_list_t *l) const
     if (x) {
       x->to_xdr (&l->list[i]);
     } else {
-      l->list[i].set_typ (XPUB3_EXPR_NULL);
+      l->list[i].set_typ (XPUB3_EXPR_PUBNULL);
     }
   }
   return true;
@@ -796,6 +799,102 @@ pub3::expr_bool_t::to_xdr (xpub3_expr_t *x) const
 }
 
 //-----------------------------------------------------------------------
+ 
+bool
+pub3::expr_strbuf_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_STR);
+  x->xstr->val = _b;
+  return true;
+}
+ 
+//-----------------------------------------------------------------------
+ 
+pub3::case_t::case_t (const xpub3_case_t &x)
+  : _lineno (x.lineno),
+    _key (expr_t::alloc (x.key)),
+    _zone (zone_t::alloc (x.body)) {}
 
+//-----------------------------------------------------------------------
 
+ptr<pub3::case_t>
+pub3::case_t::alloc (const xpub3_case_t *x)
+{
+  ptr<case_t> ret;
+  if (x) { ret = New refcounted<pub3::case_t> (*x); }
+  return ret;
+}
 
+//-----------------------------------------------------------------------
+
+bool
+pub3::case_t::to_xdr (xpub3_case_t *x) const
+{
+  x->lineno = _lineno;
+  expr_to_rpc_ptr (_key, &x->key);
+  if (_zone) { _zone->to_xdr (&x->body); }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::case_list_t::case_list_t (const xpub3_cases_t &xl)
+{
+  for (size_t i = 0; i < xl.size (); i++) {
+    push_back (New refcounted<case_t> (xl[i]));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<case_list_t> pub3::case_list_t::alloc (const xpub3_cases_t &x)
+{ return New refcounted<case_list_t> (x); } 
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::case_list_t::to_xdr (xpub3_cases_t *x)
+{
+  x->setsize (size ());
+  for (size_t i = 0; i < size (); i++) {
+    (*this)[i]->to_xdr (&(*x)[i]);
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::switch_t::switch_t (const xpub3_switch_t &x)
+  : pfile_func_t (x.lineno),
+    _key (expr_t::alloc (x.key)),
+    _cases (case_list_t::alloc (x.cases))
+{
+  populate_cases ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::switch_t::to_xdr (xpub_obj_t *x) const
+{
+  x->set_typ (XPUB3_SWITCH);
+  x->switch_statement->lineno = lineno;
+  expr_to_xdr (_key, &x->switch_statement->key);
+
+  if (_cases) {
+    _cases->to_xdr (&x->switch_statement->cases);
+  }
+
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_null_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_PUBNULL);
+  return true;
+}
+
+//-----------------------------------------------------------------------

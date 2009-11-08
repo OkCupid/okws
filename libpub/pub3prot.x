@@ -63,7 +63,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_REGEX,
    XPUB3_EXPR_MATHOP,
    XPUB3_EXPR_ASSIGNMENT,
-   XPUB3_EXPR_BOOL
+   XPUB3_EXPR_BOOL,
+   XPUB3_EXPR_PUBNULL
 };
 
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -187,6 +188,8 @@ struct xpub3_assignment_t {
 
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
+     void;
+case XPUB3_EXPR_PUBNULL:
      void;
 case XPUB3_EXPR_NOT:
      xpub3_not_t xnot;
@@ -317,14 +320,16 @@ struct xpub3_if_t {
 
 struct xpub3_case_t {
   int lineno;
-  xpub3_str_t key;
+  xpub3_expr_t *key;
   xpub3_zone_t body;
 };
+
+typedef xpub3_case_t xpub3_cases_t<>;
 
 struct xpub3_switch_t {
   int lineno;
   xpub3_expr_t key;
-  xpub3_case_t cases<>;
+  xpub3_cases_t cases;
   xpub3_case_t *defcase;
 };
 

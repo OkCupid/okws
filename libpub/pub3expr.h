@@ -110,6 +110,7 @@ namespace pub3 {
 
     virtual str to_identifier () const { return NULL; }
     virtual str to_str (bool q = false) const { return NULL; }
+    virtual str to_switch_str () const { return to_str (); }
     virtual bool to_bool () const { return false; }
     virtual int64_t to_int () const { return 0; }
     virtual u_int64_t to_uint () const { return 0; }
@@ -243,7 +244,7 @@ namespace pub3 {
   public:
     expr_null_t () : expr_constant_t () {}
     bool is_null () const { return true; }
-    bool to_xdr (xpub3_expr_t *x) const { return false; }
+    bool to_xdr (xpub3_expr_t *x) const ;
     bool to_xdr (xpub3_json_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
     static ptr<expr_null_t> alloc ();
@@ -261,6 +262,7 @@ namespace pub3 {
     static ptr<expr_bool_t> alloc (bool b);
     static str static_to_str (bool b);
     str to_str (bool q = false) const;
+    str to_switch_str () const { return _b ? "1" : "0"; }
     ptr<expr_t> copy () const;
 
     // Allow for calling New refcounted<expr_bool_t> inside of
@@ -606,7 +608,7 @@ namespace pub3 {
     void add (char ch);
     void add (str s);
 
-    const char *get_obj_name () const { return "pub3::expr_str_t"; }
+    const char *get_obj_name () const { return "pub3::expr_strbuf_t"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
 
