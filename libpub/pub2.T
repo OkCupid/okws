@@ -5,6 +5,7 @@
 #include "okdbg.h"
 #include "crypt.h"
 #include "parr.h"
+#include "pub3.h"
 
 //-----------------------------------------------------------------------
 
@@ -1120,6 +1121,24 @@ pfile_switch_t::publish (pub2_iface_t *i, output_t *o, penv_t *g,
       (*callercv) (xpub_status_t (XPUB_STATUS_OK));
     }
   }
+}
+
+//-----------------------------------------------------------------------
+
+pub3::obj_dict_t
+pub2::ap_t::pub3_config_obj (bool deep) const
+{
+    pub3::obj_dict_t ret;
+    const aarr_t *bc = NULL;
+    if (!deep) {
+      if ((bc = base_cfg ())) { ret.dict ()->overwrite_with (*bc); }
+    } else {
+      const vec<const aarr_t *> &stk = get_env ()->get_eval_stack ();
+      for (size_t i = 0; i < stk.size (); i++) {
+	if (stk[i]) { ret.dict ()->overwrite_with (*stk[i]); }
+      }
+    }
+    return ret;
 }
 
 //-----------------------------------------------------------------------

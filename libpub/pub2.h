@@ -29,6 +29,10 @@
 #include "tame.h"
 #include "timehash.h"
 
+namespace pub3 {
+  class obj_dict_t;
+};
+
 namespace pub2 {
 
   typedef xpub_status_t status_t;
@@ -65,7 +69,6 @@ namespace pub2 {
     /* also must implement get_env */
   };
 
-  
   /**
    * Abstract version of classes that dump Pub output, given
    * access to a simple lookup/getfile interface.
@@ -132,17 +135,25 @@ namespace pub2 {
     void run_cfg (pfnm_t nm, cbb cb, aarr_t *dest = NULL)
     { run_cfg_T (nm, cb, dest); }
 
-
     /**
      * Clear the base layer of pub variable bindings (read in by run_cfg).
      */
     void cfg_clear () { _base_cfg.deleteall (); }
 
+    /**
+     * fetch the base configuration information into a pub3 dictionary
+     */
+    pub3::obj_dict_t pub3_config_obj (bool deep = false) const;
 
     /**
      * In case this should be mutated....
      */
     aarr_t *base_cfg () { return &_base_cfg; }
+
+    /**
+     * A const version as well
+     */
+    const aarr_t *base_cfg () const { return &_base_cfg; }
 
 
     penv_t *get_env () const { return &_genv; }

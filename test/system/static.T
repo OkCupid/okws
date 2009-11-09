@@ -77,17 +77,20 @@ oksrvc_static_t::post_launch_pub2_T (cbb cb)
 {
   tvars {
     bool res1, res2, res3;
+    pub3::obj_dict_t d;
   }
   twait { 
     oksrvc_t::post_launch_pub2 (mkevent (res1));
     pub2 ()->run_cfg (INTL_CONF_FILE,  mkevent (res2));
     pub2 ()->run_cfg (MIME_TYPES_FILE, mkevent (res3));
   }
+  d = pub2 ()->pub3_config_obj ();
+
   if (res3) {
-    _mtm = New mime_type_map_t ((*(pub2 ()))["MimeTypes"]);
+    _mtm = New mime_type_map_t (d("MimeTypes"));
   }
   if (res2) {
-    str fmt = (*(pub2 ()))["LocaleFormat"];
+    str fmt = d("LocaleFormat").to_str ();
     if (fmt)
       _lfact = std_locale::localizer_factory_t::alloc (fmt);
   }
