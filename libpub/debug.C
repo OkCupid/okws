@@ -88,7 +88,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
   case 'A': v = OKWS_DEBUG_SVC_ARGS; break;
   case 'B': v = OKWS_DEBUG_PUB_BINDTAB_ACCESS; break;
   case 'C': v = OKWS_DEBUG_PUB2_CACHE; break;
-  case 'H': v = OKWS_DEBUG_PUB2_CHUNKS; break;
+  case 'H': v = OKWS_DEBUG_PUB3_CHUNKS; break;
   case 'E': v = OKWS_DEBUG_PUB_ERRORS; break;
   case 'P': v = OKWS_DEBUG_PUB_PARSE; break;
   case 'J': v = OKWS_DEBUG_OKD_JAIL; break;

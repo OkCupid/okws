@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "pub3base.h"
 #include "pub3expr.h"
 #include "pub3eval.h"
 
@@ -10,11 +11,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   class file_t;
+  class metadata_t;
   class ok_iface_t;
 
   //-----------------------------------------------------------------------
-
-  typedef int opts_t;
   
   // Opts can be be a bitmask of the following:
   enum {
@@ -61,9 +61,17 @@ namespace pub3 {
     void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
     void push_include_location (location_t l);
     void pop_include_location ();
+    void push_metadata (ptr<const metadata_t> md);
+    void pop_metadata ();
   private:
     ptr<localizer_t> _localizer;
+
+    // A stack of all of the files being published, with their actual
+    vec<ptr<const metadata_t> > _metadata_stack;
+
+    // A stack of locations of file inclusions.
     vec<location_t> _include_stack;
+
     opts_t _opts;
     str _cwd;
     location_t _location;        // current location

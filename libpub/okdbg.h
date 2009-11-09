@@ -41,7 +41,7 @@
 #define OKWS_DEBUG_OKD_JAIL                       (1 << 9)
 #define OKWS_DEBUG_OKLD_FD_PASSING                (1 << 10)
 #define OKWS_DEBUG_PUB2_CACHE                     (1 << 11)
-#define OKWS_DEBUG_PUB2_CHUNKS                    (1 << 12)
+#define OKWS_DEBUG_PUB3_CHUNKS                    (1 << 12)
 #define OKWS_DEBUG_STALL_SIGCONT                  (1 << 13)
 #define OKWS_DEBUG_SVC_DATABASES                  (1 << 14)
 #define OKWS_DEBUG_SVC_STARTUP                    (1 << 15)

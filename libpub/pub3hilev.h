@@ -7,6 +7,7 @@
 #include "pub3ast.h"
 #include "pub3expr.h"
 #include "pub3eval.h"
+#include "pub3cache.h"
 
 namespace pub3 {
 
@@ -128,5 +129,61 @@ namespace pub3 {
     opts_t _opts;
   };
 
-  //--------------------------------------------------------------------
+  //=======================================================================
+
+  /**
+   * The most basic remote publisher.  Never caches anything.
+   */
+  class remote_publisher_t : public abstract_publisher_t {
+  public:
+    remote_publisher_t (ptr<axprt_stream> x, u_int o = 0);
+    virtual ~remote_publisher_t () {}
+
+    virtual void connect (evb_t cb, CLOSURE);
+
+    void getfile (pfnm_t fn, getfile_ev_t cb, u_int o = 0) = 0;
+
+    void dispatch (svccb *sbp);
+    virtual void lost_connection () {}
+    virtual void handle_new_deltas (svccb *sbp);
+    
+
+  protected:
+
+    //------------------------------------------------------------
+    // All involved with getting a file, and dealing with its
+    // chunks, if necessary.
+    //
+    void getfile_body (str nm, const xpub3_getfile_res_t *res, 
+		       getfile_ev_t cb, u_int opt, CLOSURE);
+
+    void getfile_chunked (const xpub3_chunkshdr_t &hdr, u_int opts,
+			  xpub3_file_t *file, status_ev_t cb, CLOSURE);
+
+    void getchunk (const xpub3_hash_t &key, u_int opts,
+		   size_t offset, size_t sz, char *buf, evb_t ok, CLOSURE);
+    //
+    //-----------------------------------------------------------------------
+
+
+    bool is_remote () const { return true; }
+
+    virtual bool prepare_getfile (const cache_key_t &k, 
+				  xpub3_getfile_arg_t *arg, 
+				  ptr<file_t> *f,
+				  status_t *status);
+
+    virtual void cache_getfile (const cache_key_t &k, ptr<file_t> file) {}
+    virtual ptr<file_t> file_nochange (const cache_key_t &k) { return NULL; }
+    virtual void cache_noent (str nm) {}
+
+  protected:
+    ptr<axprt_stream> _x;
+    ptr<aclnt> _cli;
+    ptr<asrv> _srv;
+    size_t _maxsz;
+  };
+
+  //=======================================================================
+
 };

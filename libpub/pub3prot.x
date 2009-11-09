@@ -29,8 +29,9 @@ typedef string xpub_var_t <>;
 typedef string xpub_str_t <>;
 typedef string xpub_key_t <>;
 typedef string xpub_fn_t  <>;
+typedef unsigned hyper ok_xtime_t;
 
-struct xpub2_fstat_t {
+struct xpub3_fstat_t {
   xpub_fn_t  fn;
   u_int32_t  ctime;
   xpub3_hash_t hash;
@@ -283,6 +284,7 @@ struct xpub3_metadata_t {
   xpub_fn_t jailed_filename;
   xpub_fn_t real_filename;
   xpub3_hash_t hash;
+  ok_xtime_t ctime;
 };
 
 struct xpub3_file_t {
@@ -480,7 +482,7 @@ enum xpub_status_typ_t {
   XPUB_STATUS_CORRUPTION = 8
 };
 
-enum xpub2_xfer_mode_t {
+enum xpub3_xfer_mode_t {
   XPUB_XFER_WHOLE = 0,
   XPUB_XFER_CHUNKED = 1
 };
@@ -495,88 +497,83 @@ union xpub_status_t switch (xpub_status_typ_t status)
    string error<>;
 };
 
-union xpub2_lookup_res_t switch (xpub_status_typ_t status)
+union xpub3_lookup_res_t switch (xpub_status_typ_t status)
 {
  case XPUB_STATUS_OK:
-   xpub2_fstat_t stat;
+   xpub3_fstat_t stat;
  case XPUB_STATUS_ERR:
    string error<>;
  default:
    void;
 };
 
-struct xpub2_chunk_t {
+struct xpub3_chunk_t {
   unsigned 		offset;
   opaque		data<>;
 };
 
-struct xpub2_chunkshdr_t {
-  xpub3_hash_t            xdrhash;   /* a hash of the file's XDR repr */
+struct xpub3_chunkshdr_t {
+  xpub3_hash_t          xdrhash;   /* a hash of the file's XDR repr */
   int                   leasetime; /* time until flush possibility from cache*/
   unsigned		datasize;  /* size of the XDR repr */
+  xpub3_hash_t          dathash;   /* hash of the file's data */
 };
 
-union xpub2_xfered_file_t switch (xpub2_xfer_mode_t mode) {
+union xpub3_xfered_file_t switch (xpub3_xfer_mode_t mode) {
 case XPUB_XFER_WHOLE:
   xpub3_file_t whole;
 case XPUB_XFER_CHUNKED:
-  xpub2_chunkshdr_t chunked;  
+  xpub3_chunkshdr_t chunked;  
 };
 
-
-struct xpub2_getfile_data_t {
-   xpub2_fstat_t       stat;
-   xpub2_xfered_file_t file;
+enum xpub3_freshness_typ_t {
+  XPUB3_FRESH_NONE = 0,
+  XPUB3_FRESH_CTIME = 1,
+  XPUB3_FRESH_HASH = 2
 };
 
-enum xpub2_freshness_typ_t {
-  XPUB2_FRESH_NONE = 0,
-  XPUB2_FRESH_CTIME = 1,
-  XPUB2_FRESH_HASH = 2
-};
-
-union xpub2_file_freshcheck_t switch (xpub2_freshness_typ_t mode) {
-case XPUB2_FRESH_NONE:
+union xpub3_file_freshcheck_t switch (xpub3_freshness_typ_t mode) {
+case XPUB3_FRESH_NONE:
   void;
-case XPUB2_FRESH_CTIME:
+case XPUB3_FRESH_CTIME:
   u_int32_t ctime;
-case XPUB2_FRESH_HASH:
+case XPUB3_FRESH_HASH:
   xpub3_hash_t hash;
 };
 
-struct xpub2_getfile_arg_t {
+struct xpub3_getfile_arg_t {
   xpub_fn_t               filename;
   unsigned                options;
-  xpub2_file_freshcheck_t fresh;
+  xpub3_file_freshcheck_t fresh;
   unsigned		  maxsz;
 };
 
-struct xpub2_getchunk_arg_t {
+struct xpub3_getchunk_arg_t {
   xpub3_hash_t hash;
   unsigned opts;
   unsigned offset;
   unsigned size;
 };
 
-union xpub2_getchunk_res_t switch (xpub_status_typ_t status) {
+union xpub3_getchunk_res_t switch (xpub_status_typ_t status) {
 case XPUB_STATUS_OK:
-  xpub2_chunk_t chunk;
+  xpub3_chunk_t chunk;
 case XPUB_STATUS_ERR:
   string error<>;
 default:
   void;
 };
 
-union xpub2_getfile_res_t switch (xpub_status_typ_t status) {
+union xpub3_getfile_res_t switch (xpub_status_typ_t status) {
 case XPUB_STATUS_OK:
-  xpub2_getfile_data_t data;
+  xpub3_xfered_file_t file;
 case XPUB_STATUS_ERR:
   string error<>;
 default:
   void;
 };
 
-union xpub2_get_root_config_res_t switch (xpub_status_typ_t status) {
+union xpub3_get_root_config_res_t switch (xpub_status_typ_t status) {
 case XPUB_STATUS_OK:
    xpub_fn_t fn;
 case XPUB_STATUS_ERR:
@@ -585,9 +582,9 @@ default:
    void;
 };
 
-struct xpub2_fstat_set_t {
+struct xpub3_fstat_set_t {
    unsigned timestamp;
-   xpub2_fstat_t fstats<>;
+   xpub3_fstat_t fstats<>;
    xpub_fn_t misses<>;
 };
 
@@ -595,7 +592,7 @@ struct xpub2_fstat_set_t {
  * All files in the delta set should be removed from the service's
  * cache, either because the disappered, or because they were updated.
  */
-struct xpub2_delta_set_t {
+struct xpub3_delta_set_t {
    hyper serial;
    unsigned start;
    unsigned stop;
@@ -603,71 +600,71 @@ struct xpub2_delta_set_t {
 };
 
 
-union xpub2_get_fstats_res_t switch (xpub_status_typ_t status) {
+union xpub3_get_fstats_res_t switch (xpub_status_typ_t status) {
 case XPUB_STATUS_OK:
-  xpub2_fstat_set_t stats;
+  xpub3_fstat_set_t stats;
 case XPUB_STATUS_ERR:
   string error<>;
 default:
   void;
 };
 
-namespace RPC {
+namespace rpc {
 
-program PUB_PROGRAM {
+program PUB_PROG {
 	/*
 	 * Version 2 of Pub. Simplified protocol, and a simplified
 	 * server, too.
 	 */
-	version PUB_VERS2 {
+	version PUB_VERS3 {
 
 		void
-		PUB2_NULL (void) = 0;
+		PUB3_NULL (void) = 0;
 
-		xpub2_get_root_config_res_t
-		PUB2_GET_ROOT_CONFIG (void) = 1;
+		xpub3_get_root_config_res_t
+		PUB3_GET_ROOT_CONFIG (void) = 1;
 
-		xpub2_getfile_res_t
-		PUB2_GETFILE (xpub2_getfile_arg_t) = 2;
+		xpub3_getfile_res_t
+		PUB3_GETFILE (xpub3_getfile_arg_t) = 2;
 
 		/*
 		 * Input an mtime, and get all changes since that
 		 * mtime (or perhaps all fstat's if there was a mod
 		 * since the given mtime).
 		 */
-		xpub2_get_fstats_res_t
-		PUB2_GET_FSTATS (u_int32_t) = 3;
+		xpub3_get_fstats_res_t
+		PUB3_GET_FSTATS (u_int32_t) = 3;
 
 		/*
 	  	 * If the file is too big to be returned all at once,
 		 * we need to get it by chunks.
 		 */
-		xpub2_getchunk_res_t 
-		PUB2_GETCHUNK(xpub2_getchunk_arg_t) = 8;
+		xpub3_getchunk_res_t 
+		PUB3_GETCHUNK(xpub3_getchunk_arg_t) = 8;
 
 		/*
 		 * for each service, pubd needs to send a socket pair
 		 * end over a pipe.
 		 */
  	  	bool
-		PUB2_CLONE (void) = 4;
+		PUB3_CLONE (void) = 4;
 		
 		bool
-		PUB2_PUSH_DELTAS(xpub2_delta_set_t) = 5;	
+		PUB3_PUSH_DELTAS(xpub3_delta_set_t) = 5;	
 
 		bool
-		PUB2_GET_PUSHES (void) = 6;
+		PUB3_GET_PUSHES (void) = 6;
 
 		/*
 	 	 * Get a file hash, and ctime, but bypass NFS
 		 * so go from pubd<->pubd.
 		 */
-		xpub2_lookup_res_t
-		PUB2_LOOKUP (xpub_fn_t) = 7;
+		xpub3_lookup_res_t
+		PUB3_LOOKUP (xpub_fn_t) = 7;
 
 		void
-		PUB2_KILL (ok_killsig_t) = 99;
-	} = 2;
+		PUB3_KILL (ok_killsig_t) = 99;
+	} = 3;
 
 } = 11277;
 

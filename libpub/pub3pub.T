@@ -59,26 +59,21 @@ namespace pub3 {
 	  << ") exceeded when trying to include file " << fn;
       output_err_stacktrace (msg);
     } else {
+      push_metadata (file->metadata ());
       twait { file->data ()->publish (*this, mkevent (status)); }
+      pop_metadata ();
     }
     ev->trigger (status);
   }
 
   //--------------------------------------------------------------------
 
-  void
-  publish_t::push_include_location (location_t l)
-  {
-    _include_stack.push_back (l);
-  }
-
-  //--------------------------------------------------------------------
-
-  void
-  publish_t::pop_include_location ()
-  {
-    _include_stack.pop_back ();
-  }
+  void publish_t::push_include_location (location_t l) 
+  { _include_stack.push_back (l); }
+  void publish_t::push_metadata (ptr<const metadata_t> md)
+  { _metadata_stack.push_back (md); }
+  void publish_t::pop_include_location () { _include_stack.pop_back (); }
+  void publish_t::pop_metadata () { _metadata_stack.pop_back (); }
 
   //--------------------------------------------------------------------
 

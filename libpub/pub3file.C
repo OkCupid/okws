@@ -6,8 +6,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<file_t> file_t::alloc (ptr<metadata_t> m, ptr<zone_t> z)
-  { return New refcounted<file_t> (m, z); }
+  ptr<file_t> file_t::alloc (ptr<metadata_t> m, ptr<zone_t> z, opts_t o)
+  { return New refcounted<file_t> (m, z, o); }
 
   //-----------------------------------------------------------------------
 

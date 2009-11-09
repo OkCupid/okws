@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pub3prot.h"
+#include "pub3base.h"
 #include "okdbg.h"
 
 namespace pub3 {
@@ -37,11 +38,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   struct metadata_t : public okdbg_dumpable_t { 
-    metadata_t () : _toplev (false) {}
+    metadata_t () : _toplev (false), _ctime (0) {}
     virtual ~metadata_t () {}
     metadata_t (const str &f, ptr<const fhash_t> h, bool tl = false) 
-      : _jfn (f), _hsh (h), _toplev (tl) {}
+      : _jfn (f), _hsh (h), _toplev (tl) , _ctime (0) {}
+
     metadata_t (const xpub3_metadata_t &x);
+    static ptr<metadata_t> alloc (const xpub3_metadata_t &x);
+
 
     str jailed_filename () const;
     str real_filename () const;
@@ -61,15 +65,18 @@ namespace pub3 {
 
     ptr<const fhash_t> _hsh;
     bool _toplev;
+    time_t _ctime;
   };
 
   //-----------------------------------------------------------------------
 
   class file_t {
   public:
-    file_t (ptr<metadata_t> m, ptr<zone_t> z) : _metadata (m), _data_root (z) {}
-    static ptr<file_t> alloc (ptr<metadata_t> m, ptr<zone_t> z);
-    file_t (const xpub3_file_t &x);
+    file_t (ptr<metadata_t> m, ptr<zone_t> z, opts_t o = 0) 
+      : _metadata (m), _data_root (z), _opts (o) {}
+    static ptr<file_t> alloc (const xpub3_file_t &file, opts_t o = 0);
+    static ptr<file_t> alloc (ptr<metadata_t> m, ptr<zone_t> z, opts_t o = 0);
+    file_t (const xpub3_file_t &x, opts_t o = 0);
     void to_xdr (xpub3_file_t *x) const;
     ptr<const metadata_t> metadata () const { return _metadata; }
     ptr<const zone_t> data () const { return _data_root; }
@@ -77,6 +84,7 @@ namespace pub3 {
   protected:
     ptr<metadata_t> _metadata;
     ptr<zone_t> _data_root;
+    opts_t _opts;
   };
 
   //-----------------------------------------------------------------------

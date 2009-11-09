@@ -1,5 +1,6 @@
 
 #include "pub3.h"
+#include "pub3file.h"
 
 // XDR functions for pub3 objects
 
@@ -896,5 +897,31 @@ pub3::expr_null_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_PUBNULL);
   return true;
 }
+
+//-----------------------------------------------------------------------
+
+pub3::metadata_t::metadata_t (const xpub3_metadata_t &x)
+  : _jfn (x.jailed_filename),
+    _rfn (x.real_filename),
+    _hsh (pub3::fhash_t::alloc (x.hash)),
+    _toplev (false),
+    _ctime (x.ctime) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::metadata_t> pub3::metadata_t::alloc (const xpub3_metadata_t &x)
+{ return New refcounted<pub3::metadata_t> (x); }
+
+//-----------------------------------------------------------------------
+
+pub3::file_t::file_t (const xpub3_file_t &file, opts_t o)
+  : _metadata (metadata_t::alloc (file.metadata)),
+    _data_root (zone_t::alloc (file.root)),
+    _opts (o) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::file_t> pub3::file_t::alloc (const xpub3_file_t &f, opts_t o)
+{ return New refcounted<pub3::file_t> (f, o); }
 
 //-----------------------------------------------------------------------

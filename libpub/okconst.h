@@ -85,7 +85,7 @@ extern const char *ok_ssl_gname;
 //
 // default packet size for all axprts
 //
-extern u_int ok_axprt_ps;
+extern size_t ok_axprt_ps;
 
 //
 // port constants
@@ -302,10 +302,11 @@ extern int ok_pub2_svc_neg_cache_timeout;
 extern int ok_pub2_getfile_object_lifetime;
 extern int ok_pub2_chunk_lease_time;
 extern int ok_pub2_treestat_interval;
-extern size_t ok_pub2_max_datasz;
+extern size_t ok_pub3_max_datasz;
 extern const char *ok_pub2_treestat_sentinel;
 extern const char *ok_pub2_treestat_heartbeat;
 extern size_t ok_pub_max_include_depth;
+extern size_t ok_pub3_chunk_window_size;
 
 //
 // pub3 constants

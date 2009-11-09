@@ -1,10 +1,13 @@
 // -*-c++-*-
 
 #include "pub3hilev.h"
+#include "pub3prot.h"
+#include "crypt.h"
 
 namespace pub3 {
 
   typedef abstract_publisher_t ap_t;
+  typedef remote_publisher_t rp_t;
 
   //=======================================================================
 
@@ -155,7 +158,193 @@ namespace pub3 {
     if (l) { use_file (out, l->get_default_fnf ()); }
   }
 
-  //---------------------------------------------------------------------
+  //=======================================================================
+  
+  remote_publisher_t::remote_publisher_t (ptr<axprt_stream> x, u_int o)
+    : ap_t (o),
+      _x (x),
+      _cli (aclnt::alloc (x, pub_prog_3)),
+      _srv (asrv::alloc (x, pub_prog_3, wrap (this, &rp_t::dispatch))),
+      _maxsz (min<size_t> (ok_pub3_max_datasz, ok_axprt_ps >> 1)) {}
 
+  //-----------------------------------------------------------------------
+  
+  tamed void 
+  rp_t::connect (evb_t ev)
+  {
+    tvars {
+      clnt_stat err;
+      bool ret (true);
+    }
+    twait { rpc::pub_prog_3::pub3_null (_cli, mkevent (err)); }
+    if (err) {
+      warn << "NULL call to pubd failed: " << err << "\n";
+      ret = false;
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void rp_t::dispatch (svccb *sbp)
+  {
+    if (!sbp) {
+      lost_connection ();
+      warn << "connection to pubd unexpectedly died!\n";
+      // XXX- might make sense to do something less extreme.
+      exit (0);
+    } else {
+      switch (sbp->proc ()) {
+      case PUB3_PUSH_DELTAS:
+	handle_new_deltas (sbp);
+	break;
+      default:
+	sbp->reject (PROC_UNAVAIL);
+	break;
+      }
+    }
+  }
+
+  //-----------------------------------------------------------------------
+  
+  tamed void
+  rp_t::getchunk (const xpub3_hash_t &key, u_int opts, size_t offset, 
+		  size_t sz, char *buf, evb_t ev)
+  {
+    tvars {
+      clnt_stat err;
+      xpub3_getchunk_arg_t arg;
+      xpub3_getchunk_res_t res;
+      bool ok (false);
+      strbuf b;
+    }
+    memcpy (arg.hash.base (), key.base (), PUBHASHSIZE);
+    arg.offset = offset;
+    arg.size = sz;
+    arg.opts = opts;
+
+    twait { rpc::pub_prog_3::pub3_getchunk (_cli, arg, &res, mkevent (err) ); }
+
+    if (err) {
+      b << "RPC error in PUB3_GETCHUNK: " << err << "\n";
+      OKDBG3(PUB3_CHUNKS, ERROR, b);
+
+    } else if (res.status != XPUB_STATUS_OK) {
+      b << "PUB error in PUB3_GETCHUNK: " << res.status;
+      if (res.status == XPUB_STATUS_ERR)
+	b << ": " << *res.error;
+      OKDBG3(PUB3_CHUNKS, ERROR, b);
+
+    } else if (res.chunk->data.size () != sz) {
+      OKDBG3(PUB3_CHUNKS, ERROR, 
+	     "Error in PUB3_GETCHUNK: datasize mismatch");
+      
+    } else {
+      ok = true;
+      memcpy (buf + offset, res.chunk->data.base (), res.chunk->data.size ());
+
+    }
+    ev->trigger (ok);
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void rp_t::handle_new_deltas (svccb *sbp)
+  {
+    rpc::pub_prog_3::pub3_push_deltas_srv_t<svccb> srv (sbp);
+    srv.reply (false);
+  }
+
+  //-----------------------------------------------------------------------
+  
+  tamed void
+  rp_t::getfile_chunked (const xpub3_chunkshdr_t &hdr, u_int opts,
+			 xpub3_file_t *file, status_ev_t ev)
+  {
+    tvars {
+      status_t status (XPUB_STATUS_OK);
+      size_t dsz (hdr.datasize);
+      mstr buf (dsz);
+      rendezvous_t<ptr<bool> > rv (__FILE__, __LINE__);
+      bool ok (true);
+      str m;
+      size_t cs;
+      size_t i (0);
+      size_t nsent (0), nrecv (0);
+      size_t ws (ok_pub3_chunk_window_size);
+      ptr<bool> nok;
+    }
+
+    for ( ; (i < dsz || nrecv < nsent) && ok; i += _maxsz) {
+
+      if (i < dsz && nsent - nrecv < ws) {
+	nsent ++;
+	cs = min<size_t> (_maxsz, dsz - i);
+	nok = New refcounted<bool> (true);
+
+	getchunk (hdr.dathash, opts, i, cs, buf.cstr (), 
+		  mkevent (rv, nok, *nok));
+      } else {
+	nrecv++;
+	twait (rv, nok);
+	if (!*nok) ok = false;
+      }
+    }
+
+    if (!ok) {
+      rv.cancel ();
+      m = "Not all chunks retrieved"; 
+    } else {
+      char h[PUBHASHSIZE];
+      sha1_hash (h, buf.cstr (), buf.len ());
+      if (memcmp (h, hdr.xdrhash.base (), PUBHASHSIZE)) {
+	m = "Hash mismatch";
+      } else if (!str2xdr (*file, buf)) {
+	m = "Demarshall of chunks failed";
+      }
+    }
+
+    if (m) {
+      status.set_status (XPUB_STATUS_CORRUPTION);
+      *status.error = m;
+    }
+
+    ev->trigger (status);
+  }
+
+  //-----------------------------------------------------------------------
+  
+  tamed void
+  rp_t::getfile_body (str nm, const xpub3_getfile_res_t *res, 
+		      getfile_ev_t ev, u_int opts)
+  {
+    tvars {
+      ptr<file_t> out;
+      status_t status (XPUB_STATUS_OK);
+      const xpub3_file_t *filep (NULL);
+      xpub3_file_t file;
+    }
+    if (res->file->mode == XPUB_XFER_WHOLE) {
+      filep = res->file->whole;
+    } else if (res->file->mode == XPUB_XFER_CHUNKED) {
+      twait { 
+	getfile_chunked (*res->file->chunked, opts, &file, mkevent (status)); 
+      }
+      if (status.status == XPUB_STATUS_OK) {
+	filep = &file;
+      }
+    } else {
+      status.set_status (XPUB_STATUS_ERR);
+      *status.error = "Unknown transfer mode";
+    }
+
+    if (filep) { out = file_t::alloc (*filep, opts); }
+
+    ev->trigger (status, out);
+  }
+
+  //-----------------------------------------------------------------------
+
+  //=======================================================================
 
 };

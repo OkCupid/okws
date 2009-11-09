@@ -94,7 +94,7 @@ const char *ok_fdfd_command_line_flag = "-s";
 //
 // default packet size for all axprts
 //
-u_int ok_axprt_ps = 0x1000000;   // 16MB -- big for now
+size_t ok_axprt_ps = 0x1000000;   // 16MB -- big for now
 
 //
 // http constants
@@ -286,7 +286,10 @@ int ok_pub2_getfile_object_lifetime = 3600;
 int ok_pub2_chunk_lease_time = 120;
 
 // largest possible file/chunk size (should be less than ok_axprt_ps)
-size_t ok_pub2_max_datasz = 0x1000;
+size_t ok_pub3_max_datasz = 0x1000;
+
+// the number of oustanding chunk requests to pubd
+size_t ok_pub3_chunk_window_size = 5;
 
 // yy buffer to use when parsing pub files
 size_t ok_pub3_yy_buffer_size = 0x100000;
