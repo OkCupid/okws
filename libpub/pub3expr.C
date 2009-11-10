@@ -70,7 +70,7 @@ pub3::json::quote (const str &s)
 
 namespace pub3 {
 
-  //====================================================================
+  //=====================================================================
 
   // By default, we are already evaluated -- this is true for static
   // values like bools, strings, and integers.
@@ -859,6 +859,42 @@ namespace pub3 {
     return ret;
   }
 
+  //-----------------------------------------------------------------------
+  
+  int64_t
+  expr_str_t::to_int () const
+  {
+    scalar_obj_t so = to_scalar ();
+    return so.to_int64 ();
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  bool
+  expr_str_t::to_int64 (int64_t *i) const
+  {
+    scalar_obj_t so = to_scalar ();
+    return so.to_int64 (i);
+  }
+  
+  //-----------------------------------------------------------------------
+
+  bool 
+  expr_str_t::to_uint (u_int64_t *u) const
+  {
+    scalar_obj_t so = to_scalar ();
+    return so.to_uint64 (u);
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  u_int64_t 
+  expr_str_t::to_uint () const
+  {
+    scalar_obj_t so = to_scalar ();
+    return so.to_uint64 ();
+  }
+  
   //--------------------------------------------------------------------
   
   ptr<expr_str_t> expr_str_t::alloc (str s) 

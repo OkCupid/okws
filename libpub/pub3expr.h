@@ -637,6 +637,11 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_xdr (xpub3_json_t *j) const;
 
+    int64_t to_int () const;
+    u_int64_t to_uint () const;
+    bool to_uint (u_int64_t *u) const;
+    bool to_int64 (int64_t *u) const;
+
   protected:
     const str _val;
   };
