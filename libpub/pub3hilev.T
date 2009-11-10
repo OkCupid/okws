@@ -8,6 +8,7 @@ namespace pub3 {
 
   typedef abstract_publisher_t ap_t;
   typedef remote_publisher_t rp_t;
+  typedef local_publisher_t lp_t;
 
   //=======================================================================
 
@@ -343,8 +344,32 @@ namespace pub3 {
     ev->trigger (status, out);
   }
 
+  //=======================================================================
+
+  local_publisher_t::local_publisher_t (ptr<file_lookup_t> l, opts_t opts)
+    : abstract_publisher_t (opts),
+      _lookup (l ? l : file_lookup_t::alloc ()) {}
+
   //-----------------------------------------------------------------------
 
+  void
+  local_publisher_t::getfile (str fn, getfile_ev_t ev, opts_t o)
+  {
+    xpub3_file_freshcheck_t frsh (XPUB3_FRESH_NONE);
+    getfile (fn, ev, frsh, o);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  local_publisher_t::getfile (str fn, getfile_ev_t ev, 
+			      const xpub3_file_freshcheck_t &fres, opts_t o)
+  {
+
+
+  }
+
   //=======================================================================
+
 
 };

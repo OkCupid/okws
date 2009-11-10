@@ -51,4 +51,35 @@ namespace pub3 {
 
   //=======================================================================
 
+  /**
+   * A global lookup class for looking up cached pubfile
+   * attributes.  See pub/pubd2.h for an example of a useful
+   * global_t.
+   *
+   */
+  class file_lookup_t {
+  public:
+    file_lookup_t () {}
+    virtual ~file_lookup_t () {}
+
+    static ptr<file_lookup_t> alloc ();
+
+    virtual bool lookup (str nm, ptr<fhash_t> *hsh, time_t *ctime) 
+    { return false; }
+
+    virtual void cache_lookup (str j, str r, ptr<fhash_t> hsh, time_t ctime,
+			       off_t sz) {}
+
+    virtual bool getfile (ptr<fhash_t> h, opts_t opts, ptr<file_t> *f, 
+			  stat_t *s, str *em) { return false; }
+
+    virtual void cache_getfile (ptr<fhash_t> h, opts_t opts, ptr<file_t> f, 
+				stat_t s, str em) {}
+
+    virtual int hold_chunks (ptr<file_t> p) { return -1; }
+    virtual ptr<file_t> get_chunks (ptr<fhash_t> h, opts_t opts) 
+    { return NULL; }
+  };
+
+  //=======================================================================
 };

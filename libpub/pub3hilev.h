@@ -119,7 +119,7 @@ namespace pub3 {
 
   protected:
     // to be filled in by the sub classes
-    virtual void getfile (pfnm_t fn, getfile_ev_t cb, u_int o = 0) = 0;
+    virtual void getfile (str fn, getfile_ev_t ev, u_int o = 0) = 0;
     virtual bool is_remote () const = 0;
 
     void publish (publish_t p, str fn, getfile_ev_t ev, CLOSURE);
@@ -141,7 +141,7 @@ namespace pub3 {
 
     virtual void connect (evb_t cb, CLOSURE);
 
-    void getfile (pfnm_t fn, getfile_ev_t cb, u_int o = 0) = 0;
+    void getfile (pfnm_t fn, getfile_ev_t cb, u_int o = 0);
 
     void dispatch (svccb *sbp);
     virtual void lost_connection () {}
@@ -186,4 +186,20 @@ namespace pub3 {
 
   //=======================================================================
 
+  class local_publisher_t : public abstract_publisher_t {
+  public:
+    local_publisher_t (ptr<file_lookup_t> l = NULL, opts_t opts = 0);
+    virtual ~local_publisher_t () {}
+
+    // read a file off the disk, without any caching
+    void getfile (str fn, getfile_ev_t cb, opts_t o = 0);
+    void getfile (str fn, getfile_ev_t cb,
+		  const xpub3_file_freshcheck_t &fres, opts_t o = 0);
+    
+  protected:
+    bool is_remote () const { return false; }
+    ptr<file_lookup_t> _lookup;
+  };
+
+  //=======================================================================
 };
