@@ -89,12 +89,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class obj_t;
+
   class const_obj_t {
   public:
     const_obj_t (ptr<expr_t> x) : _c_obj (x) {}
     const_obj_t (ptr<const expr_t> x) : _c_obj (x) {}
     const_obj_t (ptr<obj_ref_t> r);
     const_obj_t (ptr<const obj_ref_t>  r);
+
+    // Can't just copy pointers since the other side of this
+    // might be a reference (and won't have _c_obj set).
+    const_obj_t (const obj_t &in);
+
     const_obj_t () {}
     virtual ~const_obj_t () {}
 

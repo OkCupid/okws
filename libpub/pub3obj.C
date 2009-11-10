@@ -449,6 +449,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  const_obj_t::const_obj_t (const obj_t &in)
+    : _c_obj (in.obj ()) {}
+
+  //-----------------------------------------------------------------------
+
   const_obj_t::const_obj_t (ptr<obj_ref_t> r)
     : _c_obj (r ? r->get () : ptr<expr_t> ())
   {}
