@@ -30,6 +30,23 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  zone_html_t::might_block () const
+  {
+    if (!_might_block.is_set ()) {
+      bool bl = false;
+      for (size_t i = 0; !bl && i < _children.size  (); i++) {
+	if (_children[i]->might_block ()) {
+	  bl = true;
+	}
+      }
+      _might_block.set (bl);
+    }
+    return _might_block.value ();
+  }
+
+  //-----------------------------------------------------------------------
+
   zone_html_t::zone_html_t (location_t l) : 
     zone_container_t (l),
     _preserve_white_space (false)

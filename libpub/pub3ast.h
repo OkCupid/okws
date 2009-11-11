@@ -75,10 +75,12 @@ namespace pub3 {
     void set_preserve_white_space (bool b) { _preserve_white_space = b; }
     void unshift (str s);
     bool to_xdr (xpub3_zone_t *z) const;
+    bool might_block () const;
   protected:
     ptr<zone_text_t> push_zone_text ();
   private:
     bool _preserve_white_space;
+    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
