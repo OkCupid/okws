@@ -13,6 +13,26 @@ namespace pub3 {
 
   //=======================================================================
 
+  static void
+  status2evec (const xpub_status_t &res, vec<str> *out) 
+  {
+    if (res.status == XPUB_STATUS_RPC_ERR) {
+      strbuf b;
+      b << "RPC error:" << clnt_stat (*(res.rpc_err));
+      out->push_back (b);
+    } else if (res.status == XPUB_STATUS_NOENT ||
+	       res.status == XPUB_STATUS_EPARSE || 
+	       res.status == XPUB_STATUS_EIO) {
+      for (size_t i = 0; i < res.errors->size (); i++) {
+	out->push_back ((*res.errors)[i]);
+      }
+    } else {
+      out->push_back (*res.error);
+    }
+  }
+
+  //=======================================================================
+
   global_t::global_t () : _universals (New refcounted<bindtab_t> ()) {}
   
   //-----------------------------------------------------------------------
@@ -159,7 +179,27 @@ namespace pub3 {
 
     if (l) { use_file (out, l->get_default_fnf ()); }
   }
+  
+  //-----------------------------------------------------------------------
 
+  tamed void 
+  ap_t::syntax_check (str f, vec<str> *err, evi_t ev)
+  {
+    tvars {
+      xpub_status_t res;
+      ptr<file_t> dummy;
+      int rc (0);
+    }
+    twait { getfile (f, mkevent (res, dummy), 0); }
+    if (res.status != XPUB_STATUS_OK) {
+      status2evec (res, err);
+      rc = -1;
+    } else {
+      rc = 0;
+    }
+    ev->trigger (rc);
+  }
+  
   //=======================================================================
   
   remote_publisher_t::remote_publisher_t (ptr<axprt_stream> x, u_int o)
@@ -344,6 +384,19 @@ namespace pub3 {
     ev->trigger (status, out);
   }
 
+  //-----------------------------------------------------------------------
+  
+  bool 
+  rp_t::prepare_getfile (const cache_key_t &k, xpub3_getfile_arg_t *arg, 
+			 ptr<file_t> *f, status_t *status)
+  {
+    arg->filename = k.fn ();
+    arg->options = k.opts();
+    arg->fresh.set_mode (XPUB3_FRESH_NONE);
+    arg->maxsz = _maxsz;
+    return false;
+  }
+
   //=======================================================================
 
   local_publisher_t::local_publisher_t (ptr<pub_parser_t> p, 
@@ -446,7 +499,7 @@ namespace pub3 {
       status->set_status (XPUB_STATUS_NOENT);
       strbuf b;
       b << s << ": file not found (failure cached)";
-      *status->error = b;
+      *status->errors->push_back (b);
       *f = NULL;
       return true;
     } else {

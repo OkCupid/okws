@@ -15,7 +15,7 @@ namespace pub3 {
   typedef xpub_status_t status_t;
   typedef event<status_t, ptr<file_t> >::ref getfile_ev_t;
 
-  //-----------------------------------------------------------------------
+  //======================================================================
   //
   // Global data shared across all pub objects -- such as global bindings
   // published from config files are startup.
@@ -30,13 +30,13 @@ namespace pub3 {
   };
 
   //
-  //-----------------------------------------------------------------------
+  //======================================================================
 
-  //-----------------------------------------------------------------------
+  //======================================================================
   //
   // Hi-level interface for all okpublishers, copied for the most part
   // from pub v2.  There are a few changes here --- first, we're passing
-  // in expr_dict_t's rather than 
+  // in expr_dict_t's rather than aarrs.
   //
 
   class ok_iface_t : public virtual refcount {
@@ -82,7 +82,7 @@ namespace pub3 {
      * @param err report the error here (if the caller specified non-null)
      * @param ev trigger this event with 0 for success and -1 for error
      */
-    virtual void syntax_check (str f, str *err, evi_t ev, CLOSURE) = 0;
+    virtual void syntax_check (str f, vec<str> *err, evi_t ev, CLOSURE) = 0;
 
     /**
      * Publish the given file
@@ -98,7 +98,7 @@ namespace pub3 {
 
   };
 
-  //--------------------------------------------------------------------
+  //=======================================================================
   //
   // The abstract publisher implements most of the above functions,
   // but depends on a subclass to implement getfile().
@@ -117,6 +117,7 @@ namespace pub3 {
     void syntax_check (str f, str *err, evi_t ev, CLOSURE);
     opts_t opts () const { return _opts; }
     void set_opts (opts_t o) { _opts = o; }
+    void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);
 
   protected:
     // to be filled in by the sub classes
