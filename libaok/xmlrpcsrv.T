@@ -184,14 +184,7 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
 
 #define XML_PUB_ARGLOAD_FAILED  401
 
-static str
-expr2str (ptr<const pub3::expr_t> x, penv_t *env)
-{
-  pub3::eval_t eval (env, NULL);
-  str ret;
-  if (x) { ret = x->eval_as_str (eval); }
-  return ret;
-}
+static xml_obj_t aarr2xml (ptr<const aarr_t> a, penv_t *env);
 
 static void
 pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
@@ -202,10 +195,22 @@ pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
   const parr_mixed_t *ma;
   const parr_ival_t *ia;
   ptr<const pub3::expr_t> x;
+  ptr<const pub3::expr_dict_t> xd;
+  ptr<const pub3::expr_list_t> xl;
   int64_t t;
 
-  if ((x = v->to_expr ())) {
-    o = expr2str (x, env);
+  pub3::eval_t eval (env, NULL);
+
+  if ((xd = v->to_expr_dict ())) {
+    o = aarr2xml (xd->dict (), env);
+  } else if ((xl = v->to_expr_list ())) {
+    for (size_t i = 0; i < xl->size (); i++) {
+      pval2xml (o[i], (*xl)[i], env);
+    }
+  } else if (v->to_int64 (&t)) {
+    o = int (t);
+  } else if ((x = v->to_expr ())) {
+    o = x->eval_as_str (eval); 
   } else if ((ma = v->to_mixed_arr ())) {
     for (size_t i = 0; i < ma->size (); i++) {
       pval2xml (o[i], (*ma)[i], env);
@@ -224,8 +229,8 @@ pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
   }
 }
 
-static xml_obj_t
-aarr2xml (ptr<aarr_t> a, penv_t *env)
+xml_obj_t
+aarr2xml (ptr<const aarr_t> a, penv_t *env)
 {
   xml_obj_t ret (New refcounted<xml_struct_t> ());
   if (a) {
