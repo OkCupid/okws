@@ -32,6 +32,17 @@ namespace pub3 {
   void parser_t::inc_lineno (lineno_t l) { _location._lineno += l; }
   const location_t &parser_t::location () const { return _location; }
 
+  //---------------------------------------------------------------------
+  
+  void
+  parser_t::error (str m)
+  {
+    strbuf b;
+    str s = _location.to_str ();
+    b << s << ": " << m;
+    get_errors ().push_back (b);
+  }
+
   // =============================================== json_parser_t ========
 
   json_parser_t::json_parser_t () : parser_t ("<json>") {}
@@ -74,44 +85,45 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   FILE *
-  pub_parser_t::open_file (const str &f, stat_t *sp)
+  pub_parser_t::open_file (const str &f)
   {
-    FILE *ret = NULL;
+    FILE *fp = NULL;
     struct stat sb;
     if (stat (f.cstr (), &sb) != 0) {
-      *sp = STAT_FNF;
-      error ("no such file exists");
+      error ("no such file exists", PARSE_ENOENT);
     } else if (!S_ISREG (sb.st_mode)) {
-      *sp = STAT_READ_ERROR;
-      error ("file exists but is not a regular file");
-    } else if (!(ret = fopen (f.cstr (), "r"))) {
-      *sp = STAT_READ_ERROR;
-      error (strbuf ("open failed: %m\n"));
+      error ("file exists but is not a regular file", PARSE_EIO);
+    } else if (!(fp = fopen (f.cstr (), "r"))) {
+      error (strbuf ("open failed: %m\n"), PARSE_EIO);
     }
-    return ret;
+    return fp;
   }
 
   //---------------------------------------------------------------------
 
-  void
-  parser_t::error (str m)
+  const vec<str> &pub_parser_t::get_errors () const 
+  { return _ret->get_errors (); }
+  vec<str> &pub_parser_t::get_errors () { return _ret->get_errors (); }
+
+  //---------------------------------------------------------------------
+  
+  void pub_parser_t::error (str d) { error (d, PARSE_EPARSE); }
+  void pub_parser_t::error () { _ret->set_status (PARSE_EPARSE); }
+  
+  //---------------------------------------------------------------------
+
+  void 
+  pub_parser_t::error (str d, parse_status_t st)
   {
-    strbuf b;
-    str s = _location.to_str ();
-    b << s << ": " << m;
-    _errors.push_back (b);
+    _ret->set_status (st);
+    parser_t::error (d);
   }
 
   //---------------------------------------------------------------------
   
-  ptr<file_t>
-  pub_parser_t::parse (ptr<metadata_t> d, stat_t *sp, opts_t opts)
+  bool
+  pub_parser_t::parse (ptr<metadata_t> d, parse_ret_t *r, opts_t opts)
   {
-    ptr<file_t> ret;
-    stat_t stat = STAT_PARSE_ERROR;
-
-    _errors.clear ();
-
     // Figure out the relative pathname, listed in the content file
     str jfn = d->jailed_filename ();
 
@@ -124,28 +136,23 @@ namespace pub3 {
     _location.set_filename (rfn);
 
     // Sanity check and call fopen()
-    FILE *fp = open_file (rfn, &stat);
+    FILE *fp = open_file (rfn);
     if (fp) {
       yy_buffer_state *yb = yy_new_buffer (fp, ok_pub3_yy_buffer_size);
       yy_switch_to_buffer (yb);
+      _ret = r;
       yyparse ();
+      _ret = NULL;
       flex_cleanup ();
       yy_delete_buffer (yb);
       fclose (fp);
-      ret = file_t::alloc (d, _out);
+
+      r->set_file (file_t::alloc (d, _out));
+
       _out = NULL;
     }
 
-    // don't return data if there were problems.
-    if (error_condition ()) {
-      ret = NULL;
-    } else {
-      stat = STAT_OK;
-    }
-
-    if (sp) { *sp = stat; }
-
-    return ret;
+    return r->ok ();
   }
 
   //--------------------------------------------------------------------

@@ -4,6 +4,7 @@
 
 #include "async.h"
 #include "pub3pub.h"
+#include "pub3parse.h"
 #include "pub3file.h"
 
 namespace pub3 {
@@ -71,10 +72,10 @@ namespace pub3 {
 			       off_t sz) {}
 
     virtual bool getfile (ptr<fhash_t> h, opts_t opts, ptr<file_t> *f, 
-			  stat_t *s, str *em) { return false; }
+			  parse_status_t *s, str *em) { return false; }
 
     virtual void cache_getfile (ptr<fhash_t> h, opts_t opts, ptr<file_t> f, 
-				stat_t s, str em) {}
+				parse_status_t s, str em) {}
 
     virtual int hold_chunks (ptr<file_t> p) { return -1; }
     virtual ptr<file_t> get_chunks (ptr<fhash_t> h, opts_t opts) 

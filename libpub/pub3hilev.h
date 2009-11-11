@@ -203,8 +203,8 @@ namespace pub3 {
     
   protected:
     bool is_remote () const { return false; }
-    ptr<file_lookup_t> _lookup;
     ptr<pub_parser_t> _parser;
+    ptr<file_lookup_t> _lookup;
     ptr<jailer_t> _jailer;
   };
 

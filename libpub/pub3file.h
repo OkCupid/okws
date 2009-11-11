@@ -43,10 +43,10 @@ namespace pub3 {
 
     metadata_t (const str &j, const str &r, ptr<const fhash_t> h, 
 		bool tl = false) 
-      : _jfn (f), _rfn (r), _hsh (h), _toplev (tl) , _ctime (0) {}
+      : _jfn (j), _rfn (r), _hsh (h), _toplev (tl) , _ctime (0) {}
 
     metadata_t (const str &j, ptr<const fhash_t> h, bool tl = false) 
-      : _jfn (f), _hsh (h), _toplev (tl) , _ctime (0) {}
+      : _jfn (j), _hsh (h), _toplev (tl) , _ctime (0) {}
 
     metadata_t (const xpub3_metadata_t &x);
     static ptr<metadata_t> alloc (const xpub3_metadata_t &x);
@@ -63,6 +63,8 @@ namespace pub3 {
     bool operator!= (const fhash_t &ph) { return !_hsh || !(*_hsh == ph); }
     
     void okdbg_dump_vec (vec<str> *s) const;
+
+    void set_ctime (time_t t) { _ctime = t; }
     
     str _jfn;
     mutable str _rfn;
@@ -106,8 +108,8 @@ namespace pub3 {
   class jailer_t {
   public:
     jailer_t (jail_mode_t m = JAIL_NONE, str d = NULL);
-    void set (jail_mode m = JAIL_NONE, str d = NULL);
-    str jail2real () const;
+    void set (jail_mode_t m = JAIL_NONE, str d = NULL);
+    str jail2real (str s) const;
     static ptr<jailer_t> alloc ();
   protected:
     static bool be_verbose ();

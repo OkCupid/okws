@@ -368,7 +368,7 @@ namespace pub3 {
 
   void
   local_publisher_t::getfile (str jfn, getfile_ev_t ev, 
-			      const xpub3_file_freshcheck_t &fres, opts_t o)
+			      const xpub3_file_freshcheck_t &fresh, opts_t o)
   {
     str rfn = _jailer->jail2real (jfn);
 
@@ -390,38 +390,39 @@ namespace pub3 {
       // this file is the most up-to-date as of right now.
       time_t now = okwstime ();
       ctime = now;
-      _lookup->cache_lookup (fn2, fn3, hsh, time, sb.st_size);
+      _lookup->cache_lookup (jfn, rfn, hsh, now, sb.st_size);
     }
     
     if (hsh) {
       
       // It could be that the asked for a new file only if we have one
       // fresher than the given arguments.
-      if ((fresh.mode == XPUB2_FRESH_CTIME && ctime < time_t (*fresh.ctime)) ||
-	  (fresh.mode == XPUB2_FRESH_HASH  && *hsh == *fresh.hash)) {
+      if ((fresh.mode == XPUB3_FRESH_CTIME && ctime < time_t (*fresh.ctime)) ||
+	  (fresh.mode == XPUB3_FRESH_HASH  && *hsh == *fresh.hash)) {
 
 	res.set_status (XPUB_STATUS_NOCHANGE);
 	
       } else {
 	
-	stat_t s;
+	parse_status_t s;
 	str em;
+	parse_ret_t pr;
 
 	ptr<metadata_t> meta = New refcounted<metadata_t> (jfn, rfn, hsh);
-	if (!_lookup->getfile (hsh, opts, &f, &s, &em)) {
+	if (!_lookup->getfile (hsh, o, &f, &s, &em)) {
 
 	  // this might need to go over the network, too,
 	  // if we're bypassing NFS
-	  if ((f = _parser->parse (meta, opts & opt_mask, &s))) {
-	    f->set_ctime (ctime);
-	    _lookup->cache_getfile (hsh, opts, f, STAT_OK, NULL);
+	  if (_parser->parse (meta, &pr, o & opt_mask)) {
+	    f = pr.file ();
+	    meta->set_ctime (ctime);
+	    _lookup->cache_getfile (hsh, o, f, PARSE_OK, NULL);
 	  }
 	}
 	
-	if (!f) {
-	  assert (s != PUBSTAT_OK);
-	  res.set_status (pub_stat2status (s));
-	  if (em) *res.error = em;
+	if (pr.ok ()) {
+	  assert (!f);
+	  pr.to_xdr (&res);
 	}
       }
     } else {

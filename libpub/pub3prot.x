@@ -479,7 +479,8 @@ enum xpub_status_typ_t {
   XPUB_STATUS_NOT_IMPLEMENTED = 5,
   XPUB_STATUS_RPC_ERR = 6,
   XPUB_UNAVAILABLE = 7,                /* disabled at runtime */
-  XPUB_STATUS_CORRUPTION = 8
+  XPUB_STATUS_CORRUPTION = 8,
+  XPUB_STATUS_EPARSE = 9
 };
 
 enum xpub3_xfer_mode_t {
@@ -487,14 +488,19 @@ enum xpub3_xfer_mode_t {
   XPUB_XFER_CHUNKED = 1
 };
 
+typedef string xpub3_errstr_t<>;
+typedef xpub3_errstr_t xpub3_errstrs_t<>;
+
 union xpub_status_t switch (xpub_status_typ_t status)
 {
  case XPUB_STATUS_OK:
    void;
  case XPUB_STATUS_RPC_ERR:
    u_int32_t rpc_err;
+ case XPUB_STATUS_EPARSE:
+   xpub3_errstrs_t errors;
  default:
-   string error<>;
+   xpub3_errstr_t error;
 };
 
 union xpub3_lookup_res_t switch (xpub_status_typ_t status)
