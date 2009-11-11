@@ -6,6 +6,7 @@
 #include "pub3pub.h"
 #include "pub3parse.h"
 #include "pub3file.h"
+#include "timehash.h"
 
 namespace pub3 {
 
@@ -49,6 +50,27 @@ namespace pub3 {
     ptr<file_t> file () const { return _file; }
     ptr<file_t> _file;
   };
+
+  //=======================================================================
+
+};
+
+//-----------------------------------------------------------------------
+
+template<> struct keyfn<pub3::cached_getfile_t, pub3::cache_key_t> {
+  keyfn () {}
+  const pub3::cache_key_t &operator() (const pub3::cached_getfile_t *o) 
+    const { return o->_key; }
+};
+
+//-----------------------------------------------------------------------
+
+namespace pub3 {
+
+  //=======================================================================
+
+  typedef timehash_t<str,str> negcache_t;
+  typedef timehash_t<cache_key_t, cached_getfile_t> getfile_cache_t;
 
   //=======================================================================
 

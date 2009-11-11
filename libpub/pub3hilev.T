@@ -8,6 +8,7 @@ namespace pub3 {
 
   typedef abstract_publisher_t ap_t;
   typedef remote_publisher_t rp_t;
+  typedef caching_remote_publisher_t crp_t;
   typedef local_publisher_t lp_t;
 
   //=======================================================================
@@ -192,7 +193,6 @@ namespace pub3 {
     if (!sbp) {
       lost_connection ();
       warn << "connection to pubd unexpectedly died!\n";
-      // XXX- might make sense to do something less extreme.
       exit (0);
     } else {
       switch (sbp->proc ()) {
@@ -432,6 +432,104 @@ namespace pub3 {
   }
 
   //=======================================================================
+  
+  bool 
+  crp_t::prepare_getfile (const cache_key_t &k, xpub3_getfile_arg_t *arg,
+			  ptr<file_t> *f, status_t *status)
+  {
+    cached_getfile_t *c = _getfile_cache[k];
+    str s = k.fn ();
+    if (c) {
+      *f = c->file ();
+      return true;
+    } else if (_noent_cache[s]) {
+      status->set_status (XPUB_STATUS_NOENT);
+      strbuf b;
+      b << s << ": file not found (failure cached)";
+      *status->error = b;
+      *f = NULL;
+      return true;
+    } else {
+      if (OKDBG2(PUB3_CACHE)) {
+	str tmp = k.fn ();
+	if (!tmp) tmp = "<NONE>";
+	okdbg_warn (CHATTER, "cache MISS: %s:%x\n", tmp.cstr (), k.opts ());
+      }
+      return rp_t::prepare_getfile (k, arg, f, status);
+    }
+  }
 
+  //=======================================================================
+
+  tamed void 
+  crp_t::connect (evb_t ev)
+  {
+    tvars { 
+      clnt_stat stat;
+      bool ret (true);
+    }
+
+    twait { 
+      rpc::pub_prog_3::pub3_get_pushes (_cli, &_connected, mkevent (stat)); 
+    }
+
+    if (stat) {
+      warn << "Intial RPC call to pubd failed: " << stat << "\n";
+      ret = false;
+    } else if (!_connected) {
+      warn << "pubd denied request for file status pushes!\n";
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void 
+  crp_t::handle_new_deltas (const xpub3_delta_set_t &s)
+  {
+    if (_delta_id >= 0 && s.serial != _delta_id + 1) {
+      okdbg_warn (ERROR, "Missed a delta update! Clearing cache!");
+      _opts_map.clear ();
+      _getfile_cache.clear ();
+    } else {
+      _delta_id = s.serial;
+      for (size_t i = 0; i < s.files.size (); i++) {
+	const str &n = s.files[i];
+	ptr<bhash<opts_t> > *h = _opts_map[n];
+	if (h) {
+	  (*h)->traverse (wrap (this, &crp_t::rm_file, n));
+	  _opts_map.remove (n);
+	  if (OKDBG2(PUB3_CACHE)) {
+	    strbuf b;
+	    b << "Removing file '" << n << "' from GETFILE cache";
+	    okdbg_warn (CHATTER, b);
+	  }
+	}
+      }
+    }
+  }
+
+  //-----------------------------------------------------------------------
+  
+  bool
+  crp_t::is_cached (str n, opts_t o, const fhash_t &h) const
+  {
+    cache_key_t k (n, o);
+    const cached_getfile_t *c = _getfile_cache[k];
+    return c && h == c->file ()->metadata ()->hash ();
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void 
+  crp_t::handle_new_deltas (svccb *sbp)
+  {
+    rpc::pub_prog_3::pub3_push_deltas_srv_t<svccb> srv (sbp);
+    const xpub3_delta_set_t *s = srv.getarg ();
+    handle_new_deltas (*s);
+    srv.reply (true);
+  }
+
+  //=====================================================================
 
 };

@@ -209,4 +209,45 @@ namespace pub3 {
   };
 
   //=======================================================================
+  
+  /**
+   * A more advanced remote publisher that caches what it can,
+   * periodically flushing the cache by accepting status updates
+   * from pubd2.
+   */
+  class caching_remote_publisher_t : public remote_publisher_t {
+  public:
+    caching_remote_publisher_t (ptr<axprt_stream> x, opts_t o = 0)
+      : remote_publisher_t (x, o), 
+	_connected (false),
+	_delta_id (-1), 
+	_noent_cache (ok_pub3_svc_neg_cache_timeout) {}
+
+    bool prepare_getfile (const cache_key_t &k, xpub3_getfile_arg_t *arg,
+			  ptr<file_t> *f, status_t *status);
+    void cache_getfile (const cache_key_t &k, ptr<file_t> file);
+    void cache_noent (str nm);
+
+    void connect (evb_t cb, CLOSURE);
+    void dispatch (svccb *sbp);
+
+    void lost_connection ();
+    void handle_new_deltas (svccb *sbp);
+    bool is_cached (str n, opts_t o, const fhash_t &hsh) const;
+  protected:
+    void handle_new_deltas (const xpub3_delta_set_t &s);
+    void clear_cache () { _getfile_cache.clear (); }
+    void do_file (xpub3_fstat_t st, bool *keep_me, opts_t opt);
+    void rm_file (str nm, const opts_t &opt);
+
+    bool _connected;
+    int64_t _delta_id;
+
+  private:
+    getfile_cache_t _getfile_cache;
+    negcache_t _noent_cache;
+    qhash<str, ptr<bhash<opts_t> > > _opts_map;
+  };
+
+  //=======================================================================
 };

@@ -273,8 +273,8 @@ int ok_pub2_treestat_interval = 2;
 size_t ok_pub_max_include_depth = 32;
 
 // timeout entries in the negative filename lookup cache
-int ok_pub2_neg_cache_timeout = 360;
-int ok_pub2_svc_neg_cache_timeout = 5;
+int ok_pub3_neg_cache_timeout = 360;
+int ok_pub3_svc_neg_cache_timeout = 5;
 
 // clean the cache out every 10 seconds
 int ok_pub2_clean_cache_interval = 10;
