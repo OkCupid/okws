@@ -2,6 +2,7 @@
 
 #include "xmlrpcsrv.h"
 #include "parseopt.h"
+#include "pub3.h"
 
 #ifdef HAVE_EXPAT
 
@@ -183,6 +184,15 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
 
 #define XML_PUB_ARGLOAD_FAILED  401
 
+static str
+expr2str (ptr<const pub3::expr_t> x, penv_t *env)
+{
+  pub3::eval_t eval (env, NULL);
+  str ret;
+  if (x) { ret = x->eval_as_str (eval); }
+  return ret;
+}
+
 static void
 pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
 {
@@ -191,9 +201,12 @@ pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
 
   const parr_mixed_t *ma;
   const parr_ival_t *ia;
+  ptr<const pub3::expr_t> x;
   int64_t t;
-  
-  if ((ma = v->to_mixed_arr ())) {
+
+  if ((x = v->to_expr ())) {
+    o = expr2str (x, env);
+  } else if ((ma = v->to_mixed_arr ())) {
     for (size_t i = 0; i < ma->size (); i++) {
       pval2xml (o[i], (*ma)[i], env);
     }

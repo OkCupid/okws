@@ -31,6 +31,6 @@ print (res['data'])
 
 res = server.okws.pub3 ( { "filename" : "/conf/test.conf",
                            "conf" : True } )
-print (res['data'])
+print (eval (str (res['data'])))
 
 
