@@ -49,7 +49,9 @@ namespace pub3 {
   publish_t::publish_file (ptr<const file_t> file, status_ev_t ev)
   {
     tvars {
+      ptr<const metadata_t> md;
       xpub_status_t status;
+      size_t sz;
     }
 
     if (_include_stack.size () > ok_pub_max_include_depth) {
@@ -59,8 +61,11 @@ namespace pub3 {
 	  << ") exceeded when trying to include file " << fn;
       output_err_stacktrace (msg);
     } else {
-      push_metadata (file->metadata ());
+      md = file->metadata ();
+      push_metadata (md);
+      sz = env ()->push_locals (md->to_dict ());
       twait { file->data ()->publish (*this, mkevent (status)); }
+      env ()->pop_to (sz);
       pop_metadata ();
     }
     ev->trigger (status);

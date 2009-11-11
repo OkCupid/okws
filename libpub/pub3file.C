@@ -92,5 +92,19 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  ptr<expr_dict_t>
+  metadata_t::to_dict () const
+  {
+    pub3::obj_dict_t d;
+    pub3::obj_dict_t i;
+    if (_ifn) { i ("input_filename") = _ifn; }
+    if (_jfn) { i ("jailed_filename")  = _jfn; }
+    if (_rfn) { i ("real_filename") = _rfn; }
+    d ("metadata") = i;
+    return d.to_dict ();
+  }
+
+  //-----------------------------------------------------------------------
+
 
 };

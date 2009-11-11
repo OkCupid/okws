@@ -106,6 +106,7 @@ namespace pub3 {
     case XPUB_STATUS_OK:
 
       assert (file);
+      file->metadata ()->set_input_filename (fn);
       assert (i < files_to_check.size ());
       basename_dirname (files_to_check[i], &d, &f);
 

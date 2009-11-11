@@ -580,6 +580,9 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  obj_t &obj_t::operator= (obj_dict_t o) { return set_obj (o); }
+  obj_t &obj_t::operator= (obj_list_t o) { return set_obj (o); }
+
   bool
   const_obj_t::to_int (int64_t *i) const
   {

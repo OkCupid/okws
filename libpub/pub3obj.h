@@ -125,7 +125,6 @@ namespace pub3 {
     int64_t to_int () const;
     u_int64_t to_uint () const;
 
-  protected:
     ptr<const expr_list_t> to_list () const;
     ptr<const expr_dict_t> to_dict () const;
 
@@ -134,6 +133,10 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
+
+  class obj_dict_t;
+  class obj_list_t;
+  class obj_ref_t;
 
   class obj_t : public const_obj_t {
   public:
@@ -172,6 +175,8 @@ namespace pub3 {
 
     // wild card
     obj_t &operator= (obj_t o) { return set_obj (o); }
+    obj_t &operator= (obj_dict_t o);
+    obj_t &operator= (obj_list_t o);
 
     obj_t &refer_to (obj_t o);
 
@@ -195,12 +200,12 @@ namespace pub3 {
 
     bool append (obj_t in);
     
-  protected:
 
     // Mutations
     ptr<expr_list_t> to_list () ;
     ptr<expr_dict_t> to_dict ();
 
+  protected:
     obj_t &set_value (ptr<expr_t> v);
     obj_t &set_scalar_expr (ptr<expr_t> e);
 

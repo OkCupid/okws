@@ -5,6 +5,7 @@
 
 #include "pub3prot.h"
 #include "pub3base.h"
+#include "pub3expr.h"
 #include "okdbg.h"
 
 namespace pub3 {
@@ -53,11 +54,14 @@ namespace pub3 {
 
     str jailed_filename () const;
     str real_filename () const;
+    void set_input_filename (str s) { _ifn = s; }
     
     void to_xdr (xpub3_metadata_t *x) const;
     
     inline fhash_t hash () const { return *_hsh; }
     inline str filename () const { return _jfn; }
+    str input_filename () const { return _ifn; }
+    ptr<expr_dict_t> to_dict () const;
 
     bool operator== (const fhash_t &ph) { return _hsh && *_hsh == ph; }
     bool operator!= (const fhash_t &ph) { return !_hsh || !(*_hsh == ph); }
@@ -72,6 +76,7 @@ namespace pub3 {
     ptr<const fhash_t> _hsh;
     bool _toplev;
     time_t _ctime;
+    str _ifn;  // input filename, before localization
   };
 
   //-----------------------------------------------------------------------
@@ -85,6 +90,7 @@ namespace pub3 {
     file_t (const xpub3_file_t &x, opts_t o = 0);
     void to_xdr (xpub3_file_t *x) const;
     ptr<const metadata_t> metadata () const { return _metadata; }
+    ptr<metadata_t> metadata () { return _metadata; }
     ptr<const zone_t> data () const { return _data_root; }
 
   protected:
