@@ -168,6 +168,33 @@ namespace pub3 {
 
   void parse_error (str s) { parser_t::current ()->error (s); }
 
+  //========================================== parse_ret_t =============
+
+  parse_ret_t::parse_ret_t () : _status (PARSE_OK) {}
+
+  //--------------------------------------------------------------------
+
+  bool 
+  parse_ret_t::to_xdr (xpub_status_t *status)
+  {
+    if (_status == PARSE_OK) {
+      status->set_status (XPUB_STATUS_OK); 
+    } else {
+      xpub_status_typ_t x;
+      switch (_status) {
+      case PARSE_ENOENT: x = XPUB_STATUS_NOENT; break;
+      case PARSE_EIO:    x = XPUB_STATUS_EIO;   break;
+      case PARSE_EPARSE: x = XPUB_STATUS_EPARSE; break;
+      default:  panic ("unexepcted parse_status type\n"); break;
+      }
+      status->set_status (x);
+      for (size_t i = 0; i < _errors.size (); i++) {
+	status->errors->push_back (_errors[i]);
+      }
+    }
+    return true;
+  }
+
   //====================================================================
 
 };

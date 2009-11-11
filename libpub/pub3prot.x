@@ -480,7 +480,8 @@ enum xpub_status_typ_t {
   XPUB_STATUS_RPC_ERR = 6,
   XPUB_UNAVAILABLE = 7,                /* disabled at runtime */
   XPUB_STATUS_CORRUPTION = 8,
-  XPUB_STATUS_EPARSE = 9
+  XPUB_STATUS_EPARSE = 9,
+  XPUB_STATUS_EIO = 10
 };
 
 enum xpub3_xfer_mode_t {
@@ -497,7 +498,9 @@ union xpub_status_t switch (xpub_status_typ_t status)
    void;
  case XPUB_STATUS_RPC_ERR:
    u_int32_t rpc_err;
+ case XPUB_STATUS_NOENT:
  case XPUB_STATUS_EPARSE:
+ case XPUB_STATUS_EIO:
    xpub3_errstrs_t errors;
  default:
    xpub3_errstr_t error;
