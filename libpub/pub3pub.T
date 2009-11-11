@@ -41,7 +41,22 @@ namespace pub3 {
 
   publish_t::publish_t (ptr<bindtab_t> universals, zbuf *z)
     : eval_t (New refcounted<env_t> (universals), output_t::alloc (z)),
-      _opts (0) {}
+      _opts (0),
+      _pws (false) {}
+
+  //--------------------------------------------------------------------
+
+  bool publish_t::pws () const { return _pws; }
+
+  //--------------------------------------------------------------------
+
+  bool
+  publish_t::set_pws (bool b)
+  {
+    bool ret = _pws;
+    _pws = b;
+    return ret;
+  }
 
   //--------------------------------------------------------------------
 

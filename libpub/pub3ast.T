@@ -30,12 +30,33 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  tamed void 
+  zone_t::publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      xpub_status_t status;
+    }
+    if (!might_block ()) {
+      status = zone_publish_nonblock (p);
+    } else {
+      twait { zone_publish (p, mkevent (status)); }
+    }
+    ev->trigger (status);
+  }
+
+  //-----------------------------------------------------------------------
+
+  status_t zone_t::publish_nonblock (publish_t p) const
+  { return zone_publish_nonblock (p); }
+
+  //-----------------------------------------------------------------------
+  
   bool
   zone_html_t::might_block () const
   {
     if (!_might_block.is_set ()) {
       bool bl = false;
-      for (size_t i = 0; !bl && i < _children.size  (); i++) {
+      for (size_t i = 0; !bl && i < _children.size (); i++) {
 	if (_children[i]->might_block ()) {
 	  bl = true;
 	}
@@ -43,6 +64,45 @@ namespace pub3 {
       _might_block.set (bl);
     }
     return _might_block.value ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  status_t
+  zone_html_t::zone_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    bool pws = p.set_pws (_preserve_white_space);
+    for (size_t i = 0; i < _children.size (); i++) {
+      status_t tmp = _children[i]->publish_nonblock (p);
+      if (tmp.status != XPUB_STATUS_OK) {
+	ret = tmp;
+      }
+    }
+    p.set_pws (pws);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  zone_html_t::zone_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t ret (XPUB_STATUS_OK);
+      status_t tmp;
+      size_t i;
+      bool pws;
+    }
+    pws = p.set_pws (_preserve_white_space);
+    for (i = 0; i < _children.size (); i++) {
+      twait { _children[i]->publish (p, mkevent (tmp)); }
+      if (tmp.status != XPUB_STATUS_OK) {
+	ret = tmp;
+      }
+    }
+    p.set_pws (pws);
+    ev->trigger (ret);
   }
 
   //-----------------------------------------------------------------------
@@ -588,7 +648,8 @@ namespace pub3 {
     if (!might_block ()) {
       ptr<const zone_t> ne = find_clause (p);
       if (ne) {
-	ret = ne->publish_nonblock (p);
+	status_t s = ne->publish_nonblock (p);
+	ret = (s.status == XPUB_STATUS_OK);
       } else {
 	ret = true;
       }

@@ -63,6 +63,8 @@ namespace pub3 {
     void pop_include_location ();
     void push_metadata (ptr<const metadata_t> md);
     void pop_metadata ();
+    bool set_pws (bool b);
+    bool pws () const;
   private:
     ptr<localizer_t> _localizer;
 
@@ -76,6 +78,7 @@ namespace pub3 {
     str _cwd;
     location_t _location;        // current location
     ptr<ok_iface_t> _pub_iface;  // publisher interface
+    bool _pws;                   // preserve white space
   };
 
   //--------------------------------------------------------------------

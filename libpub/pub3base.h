@@ -4,6 +4,8 @@
 #pragma once
 
 #include "async.h"
+#include "tame.h"
+#include "pub3prot.h"
 
 namespace pub3 {
 
@@ -13,6 +15,12 @@ namespace pub3 {
   typedef int opts_t;
 
   //-----------------------------------------------------------------------
+
+  typedef xpub_status_t status_t;
+  typedef event<xpub_status_t>::ref status_ev_t;
+
+  //-----------------------------------------------------------------------
+
 
   struct location_t {
     location_t () : _lineno (0) {}

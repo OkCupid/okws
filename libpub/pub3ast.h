@@ -42,11 +42,16 @@ namespace pub3 {
     virtual ptr<zone_text_t> zone_text () { return NULL; }
     virtual bool to_xdr (xpub3_zone_t *z) const = 0;
 
-    virtual bool publish_nonblock (publish_t p) const { return false; }
-    virtual void publish (publish_t p, status_ev_t ev, CLOSURE) const {}
-    virtual bool might_block () const { return true; }
+    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t publish_nonblock (publish_t p) const;
+    virtual bool might_block () const = 0;
+
     static ptr<zone_t> alloc (const xpub3_zone_t &z);
     static ptr<zone_t> alloc (const xpub3_zone_t *z);
+
+  protected:
+    virtual status_t zone_publish_nonblock (publish_t p) const = 0;
+    virtual void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -75,8 +80,12 @@ namespace pub3 {
     void set_preserve_white_space (bool b) { _preserve_white_space = b; }
     void unshift (str s);
     bool to_xdr (xpub3_zone_t *z) const;
-    bool might_block () const;
+
   protected:
+    bool might_block () const;
+    status_t zone_publish_nonblock (publish_t p) const;
+    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+
     ptr<zone_text_t> push_zone_text ();
   private:
     bool _preserve_white_space;
@@ -100,7 +109,11 @@ namespace pub3 {
     void add (char c);
     ptr<zone_text_t> zone_text () { return mkref (this); }
     bool to_xdr (xpub3_zone_t *z) const;
+
   protected:
+    bool might_block () const;
+    status_t zone_publish_nonblock (publish_t p) const;
+    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
 
     // while parsing, use the following representation:
     strbuf _b;
@@ -119,7 +132,11 @@ namespace pub3 {
     zone_inline_expr_t (const xpub3_zone_inline_expr_t &z);
     static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
     bool to_xdr (xpub3_zone_t *z) const;
+
   protected:
+    bool might_block () const;
+    status_t zone_publish_nonblock (publish_t p) const;
+    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     ptr<expr_t> _expr;
   };
 
@@ -148,6 +165,9 @@ namespace pub3 {
     bool to_xdr (xpub3_zone_t *z) const;
     
   protected:
+    bool might_block () const;
+    status_t zone_publish_nonblock (publish_t p) const;
+    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     vec<ptr<statement_t> > _statements;
   };
 
