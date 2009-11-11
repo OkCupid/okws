@@ -74,15 +74,18 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   FILE *
-  pub_parser_t::open_file (const str &f)
+  pub_parser_t::open_file (const str &f, stat_t *sp)
   {
     FILE *ret = NULL;
     struct stat sb;
     if (stat (f.cstr (), &sb) != 0) {
+      *sp = STAT_FNF;
       error ("no such file exists");
     } else if (!S_ISREG (sb.st_mode)) {
+      *sp = STAT_READ_ERROR;
       error ("file exists but is not a regular file");
     } else if (!(ret = fopen (f.cstr (), "r"))) {
+      *sp = STAT_READ_ERROR;
       error (strbuf ("open failed: %m\n"));
     }
     return ret;
@@ -102,9 +105,10 @@ namespace pub3 {
   //---------------------------------------------------------------------
   
   ptr<file_t>
-  pub_parser_t::parse (ptr<metadata_t> d)
+  pub_parser_t::parse (ptr<metadata_t> d, stat_t *sp, opts_t opts)
   {
     ptr<file_t> ret;
+    stat_t stat = STAT_PARSE_ERROR;
 
     _errors.clear ();
 
@@ -120,7 +124,7 @@ namespace pub3 {
     _location.set_filename (rfn);
 
     // Sanity check and call fopen()
-    FILE *fp = open_file (rfn);
+    FILE *fp = open_file (rfn, &stat);
     if (fp) {
       yy_buffer_state *yb = yy_new_buffer (fp, ok_pub3_yy_buffer_size);
       yy_switch_to_buffer (yb);
@@ -135,10 +139,19 @@ namespace pub3 {
     // don't return data if there were problems.
     if (error_condition ()) {
       ret = NULL;
+    } else {
+      stat = STAT_OK;
     }
+
+    if (sp) { *sp = stat; }
 
     return ret;
   }
+
+  //--------------------------------------------------------------------
+
+  ptr<pub_parser_t> pub_parser_t::alloc () 
+  { return New refcounted<pub_parser_t> (); }
 
   //====================================================================
 

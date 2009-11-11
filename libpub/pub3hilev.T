@@ -346,10 +346,15 @@ namespace pub3 {
 
   //=======================================================================
 
-  local_publisher_t::local_publisher_t (ptr<file_lookup_t> l, opts_t opts)
+  local_publisher_t::local_publisher_t (ptr<pub_parser_t> p, 
+					opts_t opts,
+					ptr<file_lookup_t> l,
+					ptr<jailer_t> j)
     : abstract_publisher_t (opts),
-      _lookup (l ? l : file_lookup_t::alloc ()) {}
-
+      _parser (p ? p : pub_parser_t::alloc ()), 
+      _lookup (l ? l : file_lookup_t::alloc ()),
+      _jailer (j ? j : jailer_t::alloc ()) {}
+  
   //-----------------------------------------------------------------------
 
   void
@@ -362,11 +367,67 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  local_publisher_t::getfile (str fn, getfile_ev_t ev, 
+  local_publisher_t::getfile (str jfn, getfile_ev_t ev, 
 			      const xpub3_file_freshcheck_t &fres, opts_t o)
   {
+    str rfn = _jailer->jail2real (jfn);
 
+    ptr<fhash_t> hsh;
+    ptr<file_t> f;
+    time_t ctime;
+    xpub_status_t res (XPUB_STATUS_OK);
+    opts_t opt_mask (int (P_WSS) | int (P_NOPARSE));
+    
+    struct ::stat sb;
+    
+    // Store the jailed file names in the cache!
+    if (!_lookup->lookup (jfn, &hsh, &ctime)) {
 
+      // This might need to go over the network
+      hsh = file2hash (rfn, &sb);
+      
+      // pass 'timenow' (not sb.st_ctime) as the ctime of the file, since 
+      // this file is the most up-to-date as of right now.
+      time_t now = okwstime ();
+      ctime = now;
+      _lookup->cache_lookup (fn2, fn3, hsh, time, sb.st_size);
+    }
+    
+    if (hsh) {
+      
+      // It could be that the asked for a new file only if we have one
+      // fresher than the given arguments.
+      if ((fresh.mode == XPUB2_FRESH_CTIME && ctime < time_t (*fresh.ctime)) ||
+	  (fresh.mode == XPUB2_FRESH_HASH  && *hsh == *fresh.hash)) {
+
+	res.set_status (XPUB_STATUS_NOCHANGE);
+	
+      } else {
+	
+	stat_t s;
+	str em;
+
+	ptr<metadata_t> meta = New refcounted<metadata_t> (jfn, rfn, hsh);
+	if (!_lookup->getfile (hsh, opts, &f, &s, &em)) {
+
+	  // this might need to go over the network, too,
+	  // if we're bypassing NFS
+	  if ((f = _parser->parse (meta, opts & opt_mask, &s))) {
+	    f->set_ctime (ctime);
+	    _lookup->cache_getfile (hsh, opts, f, STAT_OK, NULL);
+	  }
+	}
+	
+	if (!f) {
+	  assert (s != PUBSTAT_OK);
+	  res.set_status (pub_stat2status (s));
+	  if (em) *res.error = em;
+	}
+      }
+    } else {
+      res.set_status (XPUB_STATUS_NOENT);
+    }
+    ev->trigger (res, f);
   }
 
   //=======================================================================

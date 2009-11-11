@@ -40,12 +40,16 @@ namespace pub3 {
   struct metadata_t : public okdbg_dumpable_t { 
     metadata_t () : _toplev (false), _ctime (0) {}
     virtual ~metadata_t () {}
-    metadata_t (const str &f, ptr<const fhash_t> h, bool tl = false) 
+
+    metadata_t (const str &j, const str &r, ptr<const fhash_t> h, 
+		bool tl = false) 
+      : _jfn (f), _rfn (r), _hsh (h), _toplev (tl) , _ctime (0) {}
+
+    metadata_t (const str &j, ptr<const fhash_t> h, bool tl = false) 
       : _jfn (f), _hsh (h), _toplev (tl) , _ctime (0) {}
 
     metadata_t (const xpub3_metadata_t &x);
     static ptr<metadata_t> alloc (const xpub3_metadata_t &x);
-
 
     str jailed_filename () const;
     str real_filename () const;
@@ -91,6 +95,25 @@ namespace pub3 {
 
   ptr<fhash_t> file2hash (const str &fn, struct stat *sbp = NULL);
   bool file2hash (const str &fn, fhash_t *h, struct stat *sbp);
+
+  //-----------------------------------------------------------------------
+
+  typedef enum { JAIL_NONE = 0, JAIL_VIRTUAL = 1, 
+		 JAIL_REAL = 2, JAIL_PERMISSIVE = 3 } jail_mode_t;
+
+  //-----------------------------------------------------------------------
+
+  class jailer_t {
+  public:
+    jailer_t (jail_mode_t m = JAIL_NONE, str d = NULL);
+    void set (jail_mode m = JAIL_NONE, str d = NULL);
+    str jail2real () const;
+    static ptr<jailer_t> alloc ();
+  protected:
+    static bool be_verbose ();
+    str _dir;
+    jail_mode_t _mode;
+  };
 
   //-----------------------------------------------------------------------
 

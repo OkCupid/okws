@@ -32,7 +32,7 @@ namespace pub3 {
     virtual void error (str d);
     virtual void error ();
 
-    const vec<str> &errors () const;
+    const vec<str> &get_errors () const { reurn _errors; }
 
   protected:
     bool error_condition () const { return _errors.size () || _error; }
@@ -63,13 +63,18 @@ namespace pub3 {
 
   class pub_parser_t : public parser_t {
   public:
+
     pub_parser_t () : parser_t () {}
     bool set_zone_output (ptr<zone_t> z);
-    ptr<file_t> parse (ptr<metadata_t> m);
+    ptr<file_t> parse (ptr<metadata_t> m, opts_t opts = 0);
+    static ptr<pub_parser_t> alloc ();
+    stat_t stat () const { return _stat; }
+
   protected:
     FILE *open_file (const str &fn);
     location_t _location;
     ptr<zone_t> _out;
+    stat_t _stat;
   };
 
   //-----------------------------------------------------------------------

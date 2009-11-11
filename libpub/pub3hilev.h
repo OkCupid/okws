@@ -8,6 +8,7 @@
 #include "pub3expr.h"
 #include "pub3eval.h"
 #include "pub3cache.h"
+#include "pub3parse.h"
 
 namespace pub3 {
 
@@ -188,7 +189,11 @@ namespace pub3 {
 
   class local_publisher_t : public abstract_publisher_t {
   public:
-    local_publisher_t (ptr<file_lookup_t> l = NULL, opts_t opts = 0);
+    local_publisher_t (ptr<pub_parser_t> p = NULL, 
+		       opts_t opts = 0,
+		       ptr<file_lookup_t> fl = NULL,
+		       ptr<jailer_t> jl = NULL);
+
     virtual ~local_publisher_t () {}
 
     // read a file off the disk, without any caching
@@ -199,6 +204,8 @@ namespace pub3 {
   protected:
     bool is_remote () const { return false; }
     ptr<file_lookup_t> _lookup;
+    ptr<pub_parser_t> _parser;
+    ptr<jailer_t> _jailer;
   };
 
   //=======================================================================
