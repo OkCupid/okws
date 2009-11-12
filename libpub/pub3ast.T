@@ -521,6 +521,16 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  for_t::might_block_uncached () const
+  {
+    return ((_arr && _arr->might_block ()) ||
+	    (_empty && _empty->might_block ()) ||
+	    (_body && _body->might_block ()));
+  }
+
+  //-----------------------------------------------------------------------
+
   status_t 
   for_t::v_publish_nonblock (publish_t p) const
   {
