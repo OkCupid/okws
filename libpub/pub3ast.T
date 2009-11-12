@@ -5,88 +5,81 @@
 
 namespace pub3 {
 
-  //-----------------------------------------------------------------------
+  //================================================== ast_node_t =========
 
   static const location_t &location () 
   { return parser_t::current ()->location (); }
 
   //-----------------------------------------------------------------------
 
-  bool
-  zone_text_t::add (ptr<zone_t> z)
-  {
-    bool ret = true;
-    str s = z->to_str ();
-
-    if (!s) {
-      ret = false;
-    } else if (s.len ()) {
-      _hold.push_back (s);
-      _b << s;
-    }
-
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
   tamed void 
-  zone_t::publish (publish_t p, status_ev_t ev) const
+  ast_node_t::publish (publish_t p, status_ev_t ev) const
   {
     tvars {
       xpub_status_t status;
     }
     if (!might_block ()) {
-      status = zone_publish_nonblock (p);
+      status = v_publish_nonblock (p);
     } else {
-      twait { zone_publish (p, mkevent (status)); }
+      twait { v_publish (p, mkevent (status)); }
     }
     ev->trigger (status);
   }
 
   //-----------------------------------------------------------------------
 
-  status_t zone_t::publish_nonblock (publish_t p) const
-  { return zone_publish_nonblock (p); }
+  status_t ast_node_t::publish_nonblock (publish_t p) const
+  { return v_publish_nonblock (p); }
 
   //-----------------------------------------------------------------------
-  
+
   bool
-  zone_html_t::might_block () const
+  ast_node_t::might_block () const
   {
     if (!_might_block.is_set ()) {
-      bool bl = false;
-      for (size_t i = 0; !bl && i < _children.size (); i++) {
-	if (_children[i]->might_block ()) {
-	  bl = true;
-	}
-      }
-      _might_block.set (bl);
+      bool mb = might_block_uncached ();
+      _might_block.set (mb);
     }
     return _might_block.value ();
+  }
+
+  //================================================== ast_node_t =========
+
+  //============================================= zone_html_t =============
+  
+  bool
+  zone_html_t::might_block_uncached () const
+  {
+    bool bl = false;
+    for (size_t i = 0; !bl && i < _children.size (); i++) {
+      if (_children[i]->might_block ()) {
+	bl = true;
+      }
+    }
+    return bl;
   }
 
   //-----------------------------------------------------------------------
 
   status_t
-  zone_html_t::zone_publish_nonblock (publish_t p) const
+  zone_html_t::v_publish_nonblock (publish_t p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    bool pws = p.set_pws (_preserve_white_space);
+    bool pws = p.push_pws (_preserve_white_space);
     for (size_t i = 0; i < _children.size (); i++) {
       status_t tmp = _children[i]->publish_nonblock (p);
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
       }
     }
-    p.set_pws (pws);
+    p.pop_pws (pws);
     return ret;
   }
 
   //-----------------------------------------------------------------------
 
   tamed void
-  zone_html_t::zone_publish (publish_t p, status_ev_t ev) const
+  zone_html_t::v_publish (publish_t p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -94,14 +87,14 @@ namespace pub3 {
       size_t i;
       bool pws;
     }
-    pws = p.set_pws (_preserve_white_space);
+    pws = p.push_pws (_preserve_white_space);
     for (i = 0; i < _children.size (); i++) {
       twait { _children[i]->publish (p, mkevent (tmp)); }
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
       }
     }
-    p.set_pws (pws);
+    p.pop_pws (pws);
     ev->trigger (ret);
   }
 
@@ -179,6 +172,24 @@ namespace pub3 {
   ptr<zone_html_t> zone_html_t::alloc ()
   { return New refcounted<zone_html_t> (location ()); }
 
+  //============================================== zone_text_t ============
+
+  bool
+  zone_text_t::add (ptr<zone_t> z)
+  {
+    bool ret = true;
+    str s = z->to_str ();
+
+    if (!s) {
+      ret = false;
+    } else if (s.len ()) {
+      _hold.push_back (s);
+      _b << s;
+    }
+
+    return ret;
+  }
+
   //-----------------------------------------------------------------------
 
   ptr<zone_text_t> zone_text_t::alloc ()
@@ -221,20 +232,70 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  status_t 
+  zone_text_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    if (p.pws ()) { p.output (_original); }
+    else          { p.output (_wss); }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void zone_text_t::v_publish (publish_t p, status_ev_t ev, 
+				  ptr<closure_t> dummy) const
+  { ev->trigger (v_publish_nonblock (p)); }
+
+  //=======================================================================
+
   ptr<zone_inline_expr_t> zone_inline_expr_t::alloc (ptr<expr_t> x)
   { return New refcounted<zone_inline_expr_t> (location (), x); }
 
-  //-----------------------------------------------------------------------
+  //----------------------------------------------------------------------
+
+  bool
+  zone_inline_expr_t::might_block_uncached () const
+  {
+    return _expr && _expr->might_block ();
+  }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  zone_inline_expr_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t res (XPUB_STATUS_OK);
+      str s;
+    }
+    twait { _expr->pub_as_str (p, mkevent (s)); }
+    if (s) { p.output (s); }
+    ev->trigger (res);
+  }
+
+  //----------------------------------------------------------------------
+
+  status_t
+  zone_inline_expr_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t res (XPUB_STATUS_OK);
+    str s = _expr->eval_as_str (p);
+    if (s) { p.output (s); }
+    return res;
+  }
+
+  //======================================================================
 
   ptr<zone_pub_t> zone_pub_t::alloc ()
   { return New refcounted<zone_pub_t> (location ()); }
 
-  //-----------------------------------------------------------------------
+  //----------------------------------------------------------------------
 
   void zone_pub_t::reserve () { _statements.push_back (NULL); }
   void zone_pub_t::add (ptr<statement_t> s) { _statements.push_back (s); }
 
-  //-----------------------------------------------------------------------
+  //----------------------------------------------------------------------
 
   void zone_pub_t::unreserve ()
   {
@@ -281,18 +342,88 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  zone_pub_t::might_block_uncached () const
+  {
+    bool bl = false;
+    for (size_t i = 0; i < _statements.size () && !bl; i++) {
+      if (!_statements[i]->might_block ()) {
+	bl = true;
+      }
+    }
+    return bl;
+  }
+
+  //-----------------------------------------------------------------------
+
+  status_t 
+  zone_pub_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    for (size_t i= 0; i < _statements.size (); i++) {
+      status_t tmp = _statements[i]->publish_nonblock (p);
+      if (tmp.status != XPUB_STATUS_OK) {
+	ret = tmp;
+      }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  zone_pub_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t ret (XPUB_STATUS_OK);
+      status_t tmp;
+      size_t i;
+    }
+    for (i = 0; i < _statements.size (); i++) {
+      twait { _statements[i]->publish (p, mkevent (tmp)); }
+      if (tmp.status != XPUB_STATUS_OK) {
+	ret = tmp;
+      }
+    }
+    ev->trigger (ret);
+  }
+
+  //======================================================================
+
   ptr<statement_zone_t> 
   statement_zone_t::alloc (ptr<zone_t> z)
   {
     return New refcounted<statement_zone_t> (location (), z);
   }
 
-  //-----------------------------------------------------------------------
+  //---------------------------------------------------------------------
 
   statement_zone_t::statement_zone_t (location_t l, ptr<zone_t> z)
     : statement_t (l), _zone (z) {}
+
+  //---------------------------------------------------------------------
   
-  //-----------------------------------------------------------------------
+  bool statement_zone_t::might_block_uncached () const
+  { return _zone && _zone->might_block (); }
+
+  //---------------------------------------------------------------------
+
+  status_t statement_zone_t::v_publish_nonblock (publish_t p) const
+  { return _zone->publish_nonblock (p); }
+
+  //---------------------------------------------------------------------
+
+  tamed void
+  statement_zone_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t status;
+    }
+    twait { _zone->publish (p, mkevent (status)); }
+    return ev->trigger (status);
+  }
+  
+  //======================================================================
 
   bool
   for_t::add_params (ptr<expr_list_t> l)
@@ -319,7 +450,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<if_clause_t> if_clause_t::alloc () 
-  { return New refcounted<if_clause_t> (location ()); }
+  { return New refcounted<if_clause_t> (plineno ()); }
 
   //-----------------------------------------------------------------------
 
@@ -431,39 +562,34 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   bool
-  switch_t::might_block () const
+  switch_t::might_block_uncached () const
   {
-    if (!_might_block.is_set ()) {
-      bool mb = false;
-      for (size_t i = 0; !mb && _cases && i < _cases->size (); i++) {
-	if ((*_cases)[i]->might_block ()) { mb = true; }
-      }
-      _might_block.set (mb);
+    bool mb = false;
+    for (size_t i = 0; !mb && _cases && i < _cases->size (); i++) {
+      if ((*_cases)[i]->might_block ()) { mb = true; }
     }
-    return _might_block.value ();
+    return mb;
   }
 
   //-----------------------------------------------------------------------
-  
-  bool 
-  switch_t::publish_nonblock (publish_t pub) const
+
+  status_t 
+  switch_t::v_publish_nonblock (publish_t pub) const
   {
-    bool ret = false;
-    if (!might_block ()) {
-      ret = true;
-      ptr<const zone_t> zone = find_case (pub);
-      if (zone) { zone->publish_nonblock (pub); }
-    }
+    status_t ret (XPUB_STATUS_OK);
+    assert (!might_block ());
+    ptr<const zone_t> zone = find_case (pub);
+    if (zone) { zone->publish_nonblock (pub); }
     return ret;
   }
   
   //-----------------------------------------------------------------------
 
   tamed void 
-  switch_t::publish (publish_t pub, status_ev_t ev) const
+  switch_t::v_publish (publish_t pub, status_ev_t ev) const
   {
     tvars {
-      xpub_status_t res (XPUB_STATUS_OK);
+      status_t res (XPUB_STATUS_OK);
       ptr<const zone_t> zone;
     }
     if ((zone = find_case (pub))) {
@@ -489,10 +615,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  include_t::publish (publish_t p, status_ev_t ev) const
+  include_t::v_publish (publish_t p, status_ev_t ev) const
   {
     tvars {
-      xpub_status_t rs (XPUB_STATUS_OK);
+      status_t rs (XPUB_STATUS_OK);
       str fn;
       ptr<const expr_dict_t> cd;
     }
@@ -556,7 +682,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  for_t::publish (publish_t p, status_ev_t ev) const
+  for_t::v_publish (publish_t p, status_ev_t ev) const
   {
     tvars {
       ptr<expr_list_t> v;
@@ -610,18 +736,13 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  if_t::might_block () const 
+  if_t::might_block_uncached () const 
   {
     bool mb = false;
-    if (!_might_block.is_set ()) {
-      for (size_t i = 0;  !mb && _clauses && _clauses->size (); i++) {
-	if ((*_clauses)[i]->might_block ()) {
-	  mb = true;
-	}
+    for (size_t i = 0;  !mb && _clauses && _clauses->size (); i++) {
+      if ((*_clauses)[i]->might_block ()) {
+	mb = true;
       }
-      _might_block.set (mb);
-    } else {
-      mb = _might_block.value ();
     }
     return mb;
   }
@@ -631,36 +752,29 @@ namespace pub3 {
   bool
   if_clause_t::might_block () const
   {
-    return _body && _body->might_block ();
+    if (!_might_block.is_set ()) {
+      bool mb = ((_expr && _expr->might_block ()) ||
+		 (_body && _body->might_block ()));
+      _might_block.set (mb);
+    }
+    return _might_block.value ();
   }
 
   //-----------------------------------------------------------------------
 
-  bool
-  if_t::publish_nonblock (publish_t p) const
+  status_t 
+  if_t::v_publish_nonblock (publish_t p) const
   {
-    bool ret = false;
-
-    // XXX - can do better than this.  This means we'll go into blocking
-    // land if ANY clause of the if statement blocks.  It should be
-    // that we'll go into blocking code only if the selected clause needs
-    // to block.
-    if (!might_block ()) {
-      ptr<const zone_t> ne = find_clause (p);
-      if (ne) {
-	status_t s = ne->publish_nonblock (p);
-	ret = (s.status == XPUB_STATUS_OK);
-      } else {
-	ret = true;
-      }
-    }
-    return ret;
+    assert (!might_block ());
+    ptr<const zone_t> ne = find_clause (p);
+    status_t s = ne->publish_nonblock (p);
+    return s;
   }
 
   //-----------------------------------------------------------------------
 
   tamed void
-  if_t::publish (publish_t p, status_ev_t ev) const
+  if_t::v_publish (publish_t p, status_ev_t ev) const
   {
     tvars {
       xpub_status_t status (XPUB_STATUS_OK);
@@ -715,9 +829,10 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
   
-  bool
-  print_t::publish_nonblock (publish_t p) const
+  status_t 
+  print_t::v_publish_nonblock (publish_t p) const
   {
+    status_t ret (XPUB_STATUS_OK);
     str s;
     for (size_t i = 0; _args && i < _args->size (); i++) {
       ptr<const expr_t> x = (*_args)[i];
@@ -725,10 +840,18 @@ namespace pub3 {
 	p.output (s);
       }
     }
-    return true;
+    return ret;
   }
   
-  //-----------------------------------------------------------------------
+  //====================================================================
+
+  bool
+  decl_block_t::might_block_uncached () const
+  {
+    return _tab && _tab->might_block ();
+  }
+
+  //--------------------------------------------------------------------
 
   bool
   decl_block_t::is_static () const
@@ -752,7 +875,7 @@ namespace pub3 {
   decl_block_t::add (ptr<bindlist_t> l) 
   {
     _bindings = l;
-    _tab = New refcounted<bindtab_t> ();
+    _tab = New refcounted<expr_dict_t> ();
     for (size_t i = 0; l && i < l->size (); i++) {
       binding_t &b = (*l)[i];
       _tab->insert (b.name (), b.expr ());
@@ -761,9 +884,53 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool
-  decl_block_t::publish_nonblock (publish_t p) const
+  tamed void
+  decl_block_t::v_publish (publish_t p, status_ev_t ev) const
   {
+    tvars {
+      status_t ret (XPUB_STATUS_OK);
+      size_t i;
+      ptr<expr_t> nv;
+      ptr<const expr_t> cx;
+      ptr<mref_t> r;
+      ptr<bindtab_t> frame;
+      str nm;
+      binding_t b;
+    }
+
+    if (is_static ()) {
+      p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), get_decl_type ());
+    } else {
+      frame = New refcounted<bindtab_t> ();
+      p.env ()->push_bindings (frame, get_decl_type ());
+
+      // Construct the stack frame as we go! This way we can
+      // use the previous binding in evaluating the next. This
+      // is quite clever, check it.
+      for (i = 0; _bindings && i < _bindings->size (); i++) {
+	nv = NULL;
+
+	b = (*_bindings)[i];
+	cx = b.expr ();
+	nm = b.name ();
+
+	if ((cx = b.expr ())) {
+	  twait { cx->pub_to_ref (p, mkevent (r)); }
+	  if (r) { nv = r->get_value (); }
+	}
+	frame->insert (nm, nv);
+      }
+    }
+    ev->trigger (ret);
+  }
+
+
+  //-----------------------------------------------------------------------
+
+  status_t
+  decl_block_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
     if (is_static ()) {
       p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), get_decl_type ());
     } else {
@@ -784,20 +951,41 @@ namespace pub3 {
 	frame->insert (b.name (), nv);
       }
     }
-    return true;
+    return ret;
   }
 
-  //-----------------------------------------------------------------------
+  //======================================================================
 
-  bool
-  expr_statement_t::publish_nonblock (publish_t p) const
+  status_t
+  expr_statement_t::v_publish_nonblock (publish_t p) const
   {
+    status_t ret (XPUB_STATUS_OK);
     // Evaluate for any side effects.
     if (_expr) { (void) _expr->eval_to_ref (p); }
-    return true;
+    return ret;
   }
 
-  //-----------------------------------------------------------------------
+  //----------------------------------------------------------------------
+
+  bool expr_statement_t::might_block_uncached () const
+  { return _expr->might_block (); }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  expr_statement_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t ret (XPUB_STATUS_OK);
+      ptr<mref_t> dummy;
+    }
+    if (_expr) {
+      twait { _expr->pub_to_ref (p, mkevent (dummy)); }
+    }
+    ev->trigger (ret);
+  }
+
+  //======================================================================
   
 };
 

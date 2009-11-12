@@ -19,8 +19,18 @@ namespace pub3 {
     ast_node_t (location_t l) : _location (l) {}
     ast_node_t (lineno_t l) : _location (l) {}
     lineno_t lineno () const { return _location._lineno; }
+
+    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t publish_nonblock (publish_t p) const;
+
+    bool might_block () const;
   protected:
+    virtual bool might_block_uncached () const = 0;
+
     location_t _location; 
+    virtual status_t v_publish_nonblock (publish_t p) const = 0;
+    virtual void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
@@ -42,16 +52,10 @@ namespace pub3 {
     virtual ptr<zone_text_t> zone_text () { return NULL; }
     virtual bool to_xdr (xpub3_zone_t *z) const = 0;
 
-    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    status_t publish_nonblock (publish_t p) const;
-    virtual bool might_block () const = 0;
 
     static ptr<zone_t> alloc (const xpub3_zone_t &z);
     static ptr<zone_t> alloc (const xpub3_zone_t *z);
-
   protected:
-    virtual status_t zone_publish_nonblock (publish_t p) const = 0;
-    virtual void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -82,14 +86,13 @@ namespace pub3 {
     bool to_xdr (xpub3_zone_t *z) const;
 
   protected:
-    bool might_block () const;
-    status_t zone_publish_nonblock (publish_t p) const;
-    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    bool might_block_uncached () const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
 
     ptr<zone_text_t> push_zone_text ();
   private:
     bool _preserve_white_space;
-    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
@@ -110,10 +113,10 @@ namespace pub3 {
     ptr<zone_text_t> zone_text () { return mkref (this); }
     bool to_xdr (xpub3_zone_t *z) const;
 
+    bool might_block_uncached () const { return false; }
   protected:
-    bool might_block () const;
-    status_t zone_publish_nonblock (publish_t p) const;
-    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
 
     // while parsing, use the following representation:
     strbuf _b;
@@ -133,10 +136,10 @@ namespace pub3 {
     static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
     bool to_xdr (xpub3_zone_t *z) const;
 
+    bool might_block_uncached () const;
   protected:
-    bool might_block () const;
-    status_t zone_publish_nonblock (publish_t p) const;
-    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     ptr<expr_t> _expr;
   };
 
@@ -163,11 +166,11 @@ namespace pub3 {
     vec<ptr<statement_t> > *statements () { return &_statements; }
     zone_pub_t *zone_pub () { return this; }
     bool to_xdr (xpub3_zone_t *z) const;
+    bool might_block_uncached () const;
     
   protected:
-    bool might_block () const;
-    status_t zone_publish_nonblock (publish_t p) const;
-    void zone_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     vec<ptr<statement_t> > _statements;
   };
 
@@ -187,6 +190,10 @@ namespace pub3 {
     statement_zone_t (location_t l, ptr<zone_t> z);
     static ptr<statement_zone_t> alloc (ptr<zone_t> z);
     bool to_xdr (xpub3_statement_t *x) const;
+
+    bool might_block_uncached () const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
   protected:
     ptr<zone_t> _zone;
   };
@@ -200,7 +207,10 @@ namespace pub3 {
     static ptr<expr_statement_t> alloc (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
     void add (ptr<expr_t> x);
-    bool publish_nonblock (publish_t p) const;
+
+    bool might_block_uncached () const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
   protected:
     ptr<expr_t> _expr;
   };
@@ -221,9 +231,9 @@ namespace pub3 {
     bool add_empty (ptr<zone_t> z);
 
     const char *get_obj_name () const { return "pub3::for_t"; }
-    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    bool publish_nonblock (publish_t p) const { return false; }
-    bool might_block () const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    bool might_block_uncached () const;
   protected:
     ptr<expr_list_t> eval_list (publish_t p) const;
     str _iter;
@@ -234,10 +244,9 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class if_clause_t : public statement_t {
+  class if_clause_t {
   public:
-    if_clause_t (location_t l) : statement_t (l) {}
-    if_clause_t (lineno_t l) : statement_t (l) {}
+    if_clause_t (lineno_t l) : _lineno (l) {}
     if_clause_t (const xpub3_if_clause_t &x);
 
     static ptr<if_clause_t> alloc ();
@@ -254,8 +263,10 @@ namespace pub3 {
     bool fits (publish_t p) const;
 
   private:
+    lineno_t _lineno;
     ptr<expr_t> _expr;
     ptr<zone_t> _body;
+    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
@@ -278,14 +289,13 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::if_t"; }
     bool to_xdr (xpub3_statement_t *x) const;
 
-    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    bool publish_nonblock (publish_t p) const;
-    bool might_block () const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    bool might_block_uncached () const;
 
   private:
     ptr<const zone_t> find_clause (publish_t p) const;
     ptr<if_clause_list_t> _clauses;
-    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
@@ -297,11 +307,13 @@ namespace pub3 {
     virtual xpub3_statement_typ_t statement_typ () const = 0;
     void add (ptr<bindlist_t> l);
     bool is_static () const;
-    bool publish_nonblock (publish_t p) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     virtual env_t::layer_type_t get_decl_type () const = 0;
+    bool might_block_uncached () const;
   protected:
     ptr<bindlist_t> _bindings;
-    ptr<bindtab_t> _tab;
+    ptr<expr_dict_t> _tab;
     mutable tri_bool_t _static;
   };
 
@@ -372,9 +384,9 @@ namespace pub3 {
     bool add_cases (ptr<case_list_t> l);
     void add_key (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
-    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    bool publish_nonblock (publish_t p) const;
-    bool might_block () const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    bool might_block_uncached () const;
   protected:
     ptr<const zone_t> find_case (publish_t pub) const;
     bool populate_cases ();
@@ -382,7 +394,6 @@ namespace pub3 {
     ptr<case_list_t> _cases;
     qhash<str, ptr<case_t> > _map;
     ptr<case_t> _default, _null;
-    mutable tri_bool_t _might_block;
   };
 
   //-----------------------------------------------------------------------
@@ -391,13 +402,13 @@ namespace pub3 {
   public:
     include_t (location_t l) : statement_t (l) {}
     include_t (const xpub3_include_t &x);
-    bool might_block () const { return true; }
     static ptr<include_t> alloc ();
     bool add_args (ptr<expr_list_t> l, str *errp);
     virtual str fnname () const { return "include"; }
     bool to_xdr (xpub3_statement_t *x) const;
-    void publish (publish_t p, status_ev_t ev, CLOSURE) const;
-    bool publish_nonblock (publish_t p) const { return false; }
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t p) const;
+    bool might_block_uncached () const { return true; }
   protected:
     bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;
@@ -427,8 +438,8 @@ namespace pub3 {
     bool add (ptr<pub3::expr_list_t> l);
     bool to_xdr (xpub3_statement_t *x) const;
 
-    bool publish_nonblock (publish_t p) const;
-    bool might_block () const { return false; }
+    status_t v_publish_nonblock (publish_t p) const;
+    bool might_block_uncached () const;
 
   private:
     ptr<pub3::expr_list_t> _args;

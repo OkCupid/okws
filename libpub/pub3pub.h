@@ -49,6 +49,7 @@ namespace pub3 {
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_opts (opts_t o) { _opts = o; }
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
+    void output (zstr s);
     void output (str s);
     void output_err (str s);
     void output_err (str s, location_t loc);
@@ -63,7 +64,8 @@ namespace pub3 {
     void pop_include_location ();
     void push_metadata (ptr<const metadata_t> md);
     void pop_metadata ();
-    bool set_pws (bool b);
+    bool push_pws (bool b);
+    void pop_pws (bool b);
     bool pws () const;
   private:
     ptr<localizer_t> _localizer;

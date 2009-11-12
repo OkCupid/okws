@@ -42,6 +42,23 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
+  expr_t::pub_as_str (publish_t pub, evs_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> x;
+      str ret;
+    }
+    twait { pub_to_val (pub, mkevent (x)); }
+    if (x) {
+      bool q = !x->is_str ();
+      ret = x->to_str (q);
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
   expr_t::pub_as_null (publish_t pub, evb_t ev) const
   {
     tvars {

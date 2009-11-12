@@ -53,7 +53,7 @@ pub3::for_t::for_t (const xpub3_for_t &x)
 //-----------------------------------------------------------------------
 
 pub3::if_clause_t::if_clause_t (const xpub3_if_clause_t &x)
-  : statement_t (x.lineno),
+  : _lineno (x.lineno),
     _expr (expr_t::alloc (x.expr)),
     _body (zone_t::alloc (x.body)) {}
 
@@ -547,8 +547,7 @@ pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 bool
 pub3::if_clause_t::to_xdr (xpub3_if_clause_t *x) const
 {
-  x->lineno = lineno ();
-
+  x->lineno = _lineno;
   expr_to_xdr (_expr, &x->expr);
   if (_body) { _body->to_xdr (&x->body); }
 

@@ -47,14 +47,18 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   bool publish_t::pws () const { return _pws; }
+  void publish_t::pop_pws (bool b) { _pws = b; }
 
   //--------------------------------------------------------------------
 
   bool
-  publish_t::set_pws (bool b)
+  publish_t::push_pws (bool b)
   {
     bool ret = _pws;
-    _pws = b;
+
+    // Only allow, on a push, to go from non-preserve to 
+    // preserve mode.
+    if (b && !_pws) { _pws = b; }
     return ret;
   }
 

@@ -98,6 +98,7 @@ namespace pub3 {
     virtual void pub_to_ref (publish_t pub, mrev_t ev, CLOSURE) const;
     void pub_as_bool (publish_t pub, evb_t ev, CLOSURE) const;
     void pub_as_null (publish_t pub, evb_t ev, CLOSURE) const;
+    void pub_as_str (publish_t pub, evs_t ev, CLOSURE) const;
 
     //------------------------------------------------------------
     //
@@ -117,6 +118,7 @@ namespace pub3 {
     virtual bool to_uint (u_int64_t *u) const { return false; }
     virtual bool to_len (size_t *s) const { return false; }
     virtual bool is_null () const { return false; }
+    virtual bool is_str () const { return false; }
     virtual ptr<rxx> to_regex () const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     virtual str type_to_str () const { return "object"; }
@@ -598,6 +600,7 @@ namespace pub3 {
     expr_strbuf_t (const str &s = NULL, lineno_t l = 0) 
       : expr_constant_t (l) { if (s) add (s); }
 
+    bool is_str () const { return true; }
     str to_str (bool q = false) const;
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
@@ -624,6 +627,7 @@ namespace pub3 {
     expr_str_t (str s = NULL) : expr_constant_t(), _val (s) {}
     expr_str_t (const xpub3_str_t &x);
 
+    bool is_str () const { return true; }
     str to_str (bool q = false) const;
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
@@ -784,6 +788,7 @@ namespace pub3 {
     str type_to_str () const { return "list"; }
     ptr<mref_t> eval_to_ref (eval_t e) const;
     bool is_static () const;
+    bool might_block_uncached () const;
   private:
     bool fixup_index (ssize_t *ind, bool lax = false) const;
     mutable tri_bool_t _static;
@@ -841,6 +846,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_shell_str_t"; }
 
     str type_to_str () const { return "string"; }
+    bool might_block_uncached () const;
   protected:
     ptr<expr_list_t> _els;
 
@@ -949,6 +955,7 @@ namespace pub3 {
     ptr<expr_t> deep_copy () const;
     ptr<expr_dict_t> copy_dict () const;
     bool is_static () const;
+    bool might_block_uncached () const;
   private:
     mutable tri_bool_t _static;
   }; 

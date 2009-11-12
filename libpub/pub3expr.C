@@ -156,7 +156,10 @@ namespace pub3 {
   {
     ptr<const expr_t> x = eval_to_val (e);
     str ret;
-    if (x) ret = x->to_str ();
+    if (x) {
+      bool q = !x->is_str ();
+      ret = x->to_str (q);
+    }
     return ret;
   }
 
@@ -1015,6 +1018,20 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  bool
+  expr_list_t::might_block_uncached () const
+  {
+    bool mb = false;
+    for (size_t i = 0; !mb && i < vec_base_t::size (); i++) {
+      ptr<const expr_t> x;
+      x = (*this)[i];
+      if (x && !x->might_block()) mb = true;
+    }
+    return mb;
+  }
+
+  //--------------------------------------------------------------------
+
   void
   expr_list_t::push_front (ptr<expr_t> e)
   {
@@ -1485,6 +1502,20 @@ namespace pub3 {
     }
     _static.set (sttc);
     return sttc;
+  }
+
+  //--------------------------------------------------------------------
+
+  bool
+  expr_dict_t::might_block_uncached () const
+  {
+    bool mb = false;
+    ptr<expr_t> value;
+    const_iterator_t it (*this);
+    while (it.next (&value) && !mb) {
+      if (value && !value->is_static ()) mb = true;
+    }
+    return mb;
   }
 
   //--------------------------------------------------------------------
