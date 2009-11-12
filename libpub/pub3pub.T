@@ -16,6 +16,18 @@ namespace pub3 {
     return go;
   }
 
+  //-------------------------------------------------------------------
+
+  bool
+  control_t::handle_zone () 
+  {
+    return !_break && !_return && !_continue;
+  }
+
+  //-------------------------------------------------------------------
+
+  void control_t::reset_forloop () { _break = _continue = false; }
+
   //====================================================================
 
   tamed void

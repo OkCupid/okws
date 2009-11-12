@@ -167,6 +167,7 @@ namespace pub3 {
     zone_pub_t *zone_pub () { return this; }
     bool to_xdr (xpub3_zone_t *z) const;
     bool might_block_uncached () const;
+    bool handle_control (publish_t p) const;
     
   protected:
     status_t v_publish_nonblock (publish_t p) const;
@@ -185,6 +186,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  // usful for {{ html }} zones inside of {% pub areas %}
   class statement_zone_t : public statement_t {
   public:
     statement_zone_t (location_t l, ptr<zone_t> z);
@@ -245,6 +247,7 @@ namespace pub3 {
     void err_empty (publish_t pub) const;
     void err_badrow (publish_t pub, size_t i) const;
     bool handle_control (publish_t p) const;
+    void reset_control (publish_t p) const;
   };
 
   //-----------------------------------------------------------------------
@@ -450,6 +453,50 @@ namespace pub3 {
 
   private:
     ptr<pub3::expr_list_t> _args;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class break_t : public statement_t {
+  public:
+    break_t (location_t l) : statement_t (l) {}
+    break_t (const xpub3_break_t &x);
+    static ptr<break_t> alloc ();
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    bool might_block_uncached () const { return false; }
+  };
+
+  //-----------------------------------------------------------------------
+
+  class return_t : public statement_t {
+  public:
+    return_t (location_t l, ptr<expr_t> x) : statement_t (l), _val (x) {}
+    return_t (const xpub3_return_t &x);
+    static ptr<return_t> alloc (ptr<expr_t> x);
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    bool might_block_uncached () const;
+  private:
+    ptr<expr_t> _val;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class continue_t : public statement_t {
+  public:
+    continue_t (location_t l) : statement_t (l) {}
+    continue_t (const xpub3_continue_t &x);
+    static ptr<continue_t> alloc ();
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    bool might_block_uncached () const { return false; }
   };
 
   //-----------------------------------------------------------------------

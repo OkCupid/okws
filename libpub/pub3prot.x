@@ -335,6 +335,19 @@ struct xpub3_switch_t {
   xpub3_case_t *defcase;
 };
 
+struct xpub3_return_t {
+  int lineno;
+  xpub3_expr_t retval;
+};
+
+struct xpub3_break_t {
+  int lineno;
+};
+
+struct xpub3_continue_t {
+  int lineno;
+};
+
 struct xpub3_decls_t {
   int lineno;
   xpub3_dict_t decls;
@@ -369,7 +382,10 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_PRINT = 8,
    XPUB3_EXPR_STATEMENT = 9,
    XBPU3_STATEMENT_PROC_DEF = 10,
-   XPUB3_STATEMENT_SWITCH = 11
+   XPUB3_STATEMENT_SWITCH = 11,
+   XPUB3_STATEMENT_BREAK = 12,
+   XPUB3_STATEMENT_RETURN = 13,
+   XPUB3_STATEMENT_CONTINUE = 14
 };
 
 %struct xpub3_zone_t;
@@ -406,6 +422,16 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
 
  case XPUB3_STATEMENT_SWITCH:
    xpub3_switch_t switch_statement;
+
+ case XPUB3_STATEMENT_BREAK:
+   xpub3_break_t break_statement;
+
+ case XPUB3_STATEMENT_CONTINUE:
+   xpub3_continue_t continue_statement;
+
+ case XPUB3_STATEMENT_RETURN:
+   xpub3_return_t return_statement;
+   
 
 };
 

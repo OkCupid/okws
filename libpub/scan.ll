@@ -557,6 +557,9 @@ public:
     _tab.insert ("switch", T_P3_SWITCH);
     _tab.insert ("def", T_P3_DEF);
     _tab.insert ("null", T_P3_NULL);
+    _tab.insert ("break", T_P3_BREAK);
+    _tab.insert ("return", T_P3_RETURN);
+    _tab.insert ("continue", T_P3_CONTINUE);
   }
 
   bool lookup (const char *in, int *out) {

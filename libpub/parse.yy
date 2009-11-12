@@ -44,6 +44,9 @@
 %token T_P3_CASE
 %token T_P3_SWITCH
 %token T_P3_DEF
+%token T_P3_BREAK
+%token T_P3_RETURN
+%token T_P3_CONTINUE
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -73,6 +76,7 @@
 %type <p3expr> p3_logical_OR_expr;
 %type <p3expr> p3_bind_value_opt;
 %type <p3expr> p3_null;
+%type <p3expr> p3_return_value;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
 %type <p3bl> p3_bindlist p3_bindlist_bindings p3_locals_arg;
@@ -80,6 +84,7 @@
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
 %type <p3statement> p3_universals p3_print p3_fndef p3_switch;
+%type <p3statement> p3_break p3_return p3_continue;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
 %type <p3cl> p3_switch_cases;
@@ -229,6 +234,9 @@ p3_control:     p3_for { $$ = $1; }
 	      | p3_html_zone { $$ = pub3::statement_zone_t::alloc ($1); }
 	      | p3_switch { $$ = $1; }
 	      | p3_fndef { $$ = $1; }
+	      | p3_break { $$ = $1; }
+	      | p3_return { $$ = $1; }
+	      | p3_continue { $$ = $1; }
               | ';' { $$ = NULL; }
 	      ;
 
@@ -240,6 +248,22 @@ p3_fndef : T_P3_DEF p3_identifier '(' p3_identifier_list ')' p3_nested_zone
 	  $$ = d;
        }
        ;
+
+p3_break : T_P3_BREAK
+       { $$ = pub3::break_t::alloc (); } 
+       ;
+
+p3_continue : T_P3_CONTINUE
+       { $$ = pub3::continue_t::alloc (); }
+       ;
+
+p3_return: T_P3_RETURN p3_return_value ';'
+       { $$ = pub3::return_t::alloc ($2); } 
+       ;
+
+p3_return_value:                   { $$ = NULL; }
+	         | p3_expr         { $$ = $1; }
+		 ;
 
 p3_switch : T_P3_SWITCH '(' p3_expr ')' '{' p3_switch_cases '}'
 	  {

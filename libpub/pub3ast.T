@@ -244,7 +244,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void zone_text_t::v_publish (publish_t p, status_ev_t ev, 
-				  ptr<closure_t> dummy) const
+			       ptr<closure_t> dummy) const
   { ev->trigger (v_publish_nonblock (p)); }
 
   //=======================================================================
@@ -360,7 +360,7 @@ namespace pub3 {
   zone_pub_t::v_publish_nonblock (publish_t p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    for (size_t i= 0; i < _statements.size (); i++) {
+    for (size_t i= 0; handle_control (p) && i < _statements.size (); i++) {
       status_t tmp = _statements[i]->publish_nonblock (p);
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
@@ -379,7 +379,7 @@ namespace pub3 {
       status_t tmp;
       size_t i;
     }
-    for (i = 0; i < _statements.size (); i++) {
+    for (i = 0; handle_control (p) && i < _statements.size (); i++) {
       twait { _statements[i]->publish (p, mkevent (tmp)); }
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
@@ -387,6 +387,11 @@ namespace pub3 {
     }
     ev->trigger (ret);
   }
+
+  //-----------------------------------------------------------------------
+
+  bool zone_pub_t::handle_control (publish_t p) const
+  { return p.control ()->handle_zone (); }
 
   //======================================================================
 
@@ -459,7 +464,6 @@ namespace pub3 {
   bool
   for_t::add_params (ptr<expr_list_t> l)
   {
-
     bool ret = true;
     if (!l || l->size () < 1 || l->size () > 2) {
       parse_error ("for: takes 2 arguments (simple identifier and array)\n");
@@ -518,6 +522,11 @@ namespace pub3 {
   {
     return p.control ()->handle_forloop ();
   }
+
+  //-----------------------------------------------------------------------
+
+  void for_t::reset_control (publish_t p) const
+  { p.control ()->reset_forloop ();  }
 
   //-----------------------------------------------------------------------
 
@@ -593,7 +602,9 @@ namespace pub3 {
       
       assert (v);
       locals = expr_dict_t::alloc ();
-      
+
+      reset_control (p);
+
       for (i = 0; handle_control (p) && i < v->size (); i++) {
 	
 	row = (*v)[i];
@@ -1093,7 +1104,87 @@ namespace pub3 {
     ev->trigger (ret);
   }
 
-  //======================================================================
+  //=============================================== return_t =============
 
+  ptr<return_t> return_t::alloc (ptr<expr_t> x)
+  { return New refcounted<return_t> (plineno (), x); }
+
+  //----------------------------------------------------------------------
+
+  bool return_t::might_block_uncached () const
+  { return _val && _val->might_block (); }
+  
+  //----------------------------------------------------------------------
+
+  status_t
+  return_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    ptr<const expr_t> x;
+    if (_val) { x = _val->eval_to_val (p); }
+    if (!x) { x = expr_null_t::alloc (); }
+    p.control ()->set_rtrn (x);
+    return ret;
+  }
+  
+  //----------------------------------------------------------------------
+
+  tamed void
+  return_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t ret (XPUB_STATUS_OK);
+      ptr<const expr_t> x;
+    }
+    if (_val) { twait { _val->pub_to_val (p, mkevent (x)); } }
+    if (!x) { x = expr_null_t::alloc (); }
+
+    p.control ()->set_rtrn (x);
+
+    ev->trigger (ret);
+  }
+
+  //=============================================== break_t ==============
+
+  ptr<break_t> break_t::alloc () 
+  { return New refcounted<break_t> (plineno ()); }
+  
+  //----------------------------------------------------------------------
+  
+  status_t
+  break_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    p.control ()->set_break (true);
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
+  void break_t::v_publish (publish_t p, status_ev_t ev, ptr<closure_t> d) const
+  { ev->trigger (v_publish_nonblock (p)); }
+
+  //======================================== continue_t ==================
+
+  ptr<continue_t> continue_t::alloc ()
+  { return New refcounted<continue_t> (plineno ()); }
+
+  //----------------------------------------------------------------------
+  
+  status_t
+  continue_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    p.control ()->set_continue (true);
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
+  void continue_t::v_publish (publish_t p, status_ev_t ev, ptr<closure_t> d) 
+    const
+  { ev->trigger (v_publish_nonblock (p)); }
+
+  //======================================================================
 };
 

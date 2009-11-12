@@ -924,3 +924,50 @@ ptr<pub3::file_t> pub3::file_t::alloc (const xpub3_file_t &f, opts_t o)
 { return New refcounted<pub3::file_t> (f, o); }
 
 //-----------------------------------------------------------------------
+
+pub3::return_t::return_t (const xpub3_return_t &x)
+  : statement_t (x.lineno),
+    _val (expr_t::alloc (x.retval)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::break_t::break_t (const xpub3_break_t &x)
+  : statement_t (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::break_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_BREAK);
+  x->break_statement->lineno = lineno ();
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::return_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_RETURN);
+  x->return_statement->lineno = lineno ();
+  expr_to_xdr (_val, &x->return_statement->retval);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::continue_t::continue_t (const xpub3_continue_t &x)
+  : statement_t (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::continue_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_CONTINUE);
+  x->break_statement->lineno = lineno ();
+  return true;
+}
+
+//-----------------------------------------------------------------------
