@@ -7,6 +7,6 @@ OKWS 3.0 Notes
 		  surrounding script tags.)
 
 TODOs
-   - double support for arithmetic
-   - standardize pub3dict output order.
+   X double support for arithmetic
+   X standardize pub3dict output order.
    - return / break
