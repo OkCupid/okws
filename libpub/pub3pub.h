@@ -41,6 +41,17 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class control_t {
+  public:
+    control_t () : _break (false), _continue (false), _return (false) {}
+    bool handle_forloop ();
+    bool _break;
+    bool _continue;
+    bool _return;
+  };
+
+  //-----------------------------------------------------------------------
+
   class publish_t : public eval_t {
   public:
     publish_t (ptr<bindtab_t> universals, zbuf *z = NULL);
@@ -67,6 +78,8 @@ namespace pub3 {
     bool push_pws (bool b);
     void pop_pws (bool b);
     bool pws () const;
+    ptr<control_t> control () { return _control; }
+
   private:
     ptr<localizer_t> _localizer;
 
@@ -81,6 +94,7 @@ namespace pub3 {
     location_t _location;        // current location
     ptr<ok_iface_t> _pub_iface;  // publisher interface
     bool _pws;                   // preserve white space
+    ptr<control_t> _control;     // control flow control
   };
 
   //--------------------------------------------------------------------

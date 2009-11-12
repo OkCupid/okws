@@ -425,6 +425,37 @@ namespace pub3 {
   
   //======================================================================
 
+  status_t
+  expr_statement_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    // Evaluate for any side effects.
+    if (_expr) { (void) _expr->eval_to_ref (p); }
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
+  bool expr_statement_t::might_block_uncached () const
+  { return _expr->might_block (); }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  expr_statement_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t ret (XPUB_STATUS_OK);
+      ptr<mref_t> dummy;
+    }
+    if (_expr) {
+      twait { _expr->pub_to_ref (p, mkevent (dummy)); }
+    }
+    ev->trigger (ret);
+  }
+  
+  //================================================ for_t ================
+
   bool
   for_t::add_params (ptr<expr_list_t> l)
   {
@@ -446,224 +477,7 @@ namespace pub3 {
 
   bool for_t::add_body (ptr<zone_t> z) { _body = z; return true; }
   bool for_t::add_empty (ptr<zone_t> z) { _empty = z; return true; }
-
-  //-----------------------------------------------------------------------
-
-  ptr<if_clause_t> if_clause_t::alloc () 
-  { return New refcounted<if_clause_t> (plineno ()); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<if_t> if_t::alloc () { return New refcounted<if_t> (location ()); }
-
-  //-----------------------------------------------------------------------
-
-  void
-  if_t::add_clauses (ptr<if_clause_list_t> ccl)
-  {
-    if (!_clauses) { _clauses = ccl; } 
-    else if (ccl) { *_clauses += *ccl; }
-  }
-
-  //-----------------------------------------------------------------------
   
-  void
-  if_t::add_clause (ptr<if_clause_t> cc)
-  {
-    if (cc) {
-      if (!_clauses) {
-	_clauses = New refcounted<if_clause_list_t> ();
-      }
-      _clauses->push_back (cc);
-    }
-  }
-  
-  //-----------------------------------------------------------------------
-
-  ptr<locals_t> locals_t::alloc () 
-  { return New refcounted<locals_t> (location ()); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<universals_t> universals_t::alloc () 
-  { return New refcounted<universals_t> (location ()); }
-
-  //=======================================================================
-
-  void case_list_t::add_case (ptr<case_t> c) { if (c) { push_back (c); } }
-  void switch_t::add_key (ptr<expr_t> x) { _key = x; }
-  void case_t::add_key (ptr<expr_t> x) { _key = x; }
-  void case_t::add_zone (ptr<zone_t> z) { _zone = z; }
-
-  //-----------------------------------------------------------------------
-
-  bool case_t::might_block () const { return _zone && _zone->might_block (); }
-
-  //-----------------------------------------------------------------------
-
-  bool 
-  switch_t::add_cases (ptr<case_list_t> l) 
-  { 
-    _cases = l; 
-    return populate_cases ();
-  }
-
-  //-----------------------------------------------------------------------
-  
-  bool
-  switch_t::populate_cases ()
-  {
-    _map.clear ();
-    size_t n_defaults = 0;
-    for (size_t i = 0; _cases && i < _cases->size (); i++) {
-      ptr<case_t> c = (*_cases)[i];
-      assert (c);
-      ptr<const expr_t> k = c->key ();
-      str ks;
-      if (!k) {
-	n_defaults ++;
-	_default = c;
-      } else if (k->is_null () || !(ks = k->to_switch_str ())) {
-	_null = c;
-      } else {
-	_map.insert (ks, c);
-      }
-    }
-    return (n_defaults <= 1);
-  }
-  
-  //-----------------------------------------------------------------------
-  
-  ptr<const zone_t>
-  switch_t::find_case (publish_t pub) const
-  {
-    ptr<const zone_t> ret;
-    str k;
-    if (_key) {
-      k = _key->eval_as_str (pub);
-      if (k) {
-	const ptr<case_t> *c = _map[k];
-	if (c && *c) { ret = (*c)->zone (); }
-      } else if (_null) {
-	ret = _null->zone ();
-      }
-    }
-    
-    if (!ret && _default) { ret = _default->zone (); }
-    
-    if (!ret) {
-      if (!k) k = "(null)";
-      strbuf err ("no case found for key ='%s'", k.cstr ());
-      pub.output_err (err, _location);
-    }
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-  
-  bool
-  switch_t::might_block_uncached () const
-  {
-    bool mb = false;
-    for (size_t i = 0; !mb && _cases && i < _cases->size (); i++) {
-      if ((*_cases)[i]->might_block ()) { mb = true; }
-    }
-    return mb;
-  }
-
-  //-----------------------------------------------------------------------
-
-  status_t 
-  switch_t::v_publish_nonblock (publish_t pub) const
-  {
-    status_t ret (XPUB_STATUS_OK);
-    assert (!might_block ());
-    ptr<const zone_t> zone = find_case (pub);
-    if (zone) { zone->publish_nonblock (pub); }
-    return ret;
-  }
-  
-  //-----------------------------------------------------------------------
-
-  tamed void 
-  switch_t::v_publish (publish_t pub, status_ev_t ev) const
-  {
-    tvars {
-      status_t res (XPUB_STATUS_OK);
-      ptr<const zone_t> zone;
-    }
-    if ((zone = find_case (pub))) {
-      twait { zone->publish (pub, mkevent (res)); }
-    }
-    ev->trigger (res);
-  }
-  
-  //=======================================================================
-
-  ptr<case_t> case_t::alloc () { return New refcounted<case_t> (plineno ()); }
-  ptr<case_list_t> case_list_t::alloc () 
-  { return New refcounted<case_list_t> (); }
-  ptr<switch_t> switch_t::alloc () 
-  { return New refcounted<switch_t> (location ()); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<include_t> include_t::alloc () 
-  { return New refcounted<include_t> (location ()); }
-  ptr<load_t> load_t::alloc () { return New refcounted<load_t> (location ()); }
-
-  //-----------------------------------------------------------------------
-
-  tamed void
-  include_t::v_publish (publish_t p, status_ev_t ev) const
-  {
-    tvars {
-      status_t rs (XPUB_STATUS_OK);
-      str fn;
-      ptr<const expr_dict_t> cd;
-    }
-    
-    if (!_file || !(fn = _file->eval_as_str (p)) || fn.len () == 0) {
-      str e = "include: cannot evaluate filename";
-      p.report_error (e, _location);
-    } else if (_dict && !(cd = _dict->eval_as_dict (p))) {
-      str e = "include: cannot evalute parameters";
-      p.report_error (e, _location);
-    } else {
-      twait { 
-	p.publish (fn, _location, cow_bindtab_t::alloc (cd), mkevent (rs)); 
-      }
-    }
-    ev->trigger (rs);
-  }
- 
-
-  //-----------------------------------------------------------------------
-
-  bool
-  include_t::add_args (ptr<expr_list_t> l, str *errp)
-  {
-    bool ret = true;
-    str err;
-    if (l && (l->size () >= 1 && l->size () <= 2)) {
-      _file = (*l)[0];
-      if (l->size () > 2) 
-	_dict = (*l)[1];
-    } else {
-      str f = fnname ();
-      err = strbuf ("%s take 1 or 2 arguments; a filename and an optional "
-		    "binding list", f.cstr ());
-      if (errp) *errp = err;
-      ret = false;
-    }
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<print_t> print_t::alloc () 
-  { return New refcounted<print_t> (plineno ()); }
-
   //-----------------------------------------------------------------------
 
   ptr<expr_list_t>
@@ -677,6 +491,67 @@ namespace pub3 {
     if (x) ret = x->to_list ();
     p.set_silent (old_silent);
     return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  for_t::err_empty (publish_t p) const
+  {
+      strbuf b ("for: second argument is not an iterable vector");
+      p.report_error (b, _location);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  for_t::err_badrow (publish_t p, size_t i) const
+  {
+    strbuf b ("for: row %zu is undefined!", i);
+    p.report_error (b, _location);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  for_t::handle_control (publish_t p) const
+  {
+    return p.control ()->handle_forloop ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  status_t 
+  for_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t status (XPUB_STATUS_OK);
+    ptr<expr_list_t> v = eval_list (p);
+    if (!v && !_empty) {
+      err_empty (p);
+    } else if (!v || v->size () == 0) {
+      if (_empty) { status = _empty->publish_nonblock (p); }
+    } else {
+      
+      assert (v);
+      ptr<expr_dict_t> locals = expr_dict_t::alloc ();
+      
+      for (size_t i = 0; handle_control (p) && i < v->size (); i++) {
+	
+	ptr<expr_t> row = (*v)[i];
+	if (!row) {
+	  err_badrow (p, i);
+	} else if (!_body) {
+	  // noop
+	} else {
+	  locals->replace (_iter, row);
+	  size_t stcksz = p.env ()->push_locals (locals);
+	  status_t tmp = _body->publish_nonblock (p);
+	  if (tmp.status != XPUB_STATUS_OK) { status = tmp; }
+	  p.env ()->pop_to (stcksz);
+	}
+      }
+    }
+    return status;
   }
 
   //-----------------------------------------------------------------------
@@ -696,9 +571,7 @@ namespace pub3 {
 
     v = eval_list (p);
     if (!v && !_empty) {
-      
-      strbuf b ("for: second argument is not an iterable vector");
-      p.report_error (b, _location);
+      err_empty (p);
       
     } else if (!v || v->size () == 0) {
       
@@ -711,12 +584,11 @@ namespace pub3 {
       assert (v);
       locals = expr_dict_t::alloc ();
       
-      for (i = 0; i < v->size (); i++) {
+      for (i = 0; handle_control (p) && i < v->size (); i++) {
 	
 	row = (*v)[i];
 	if (!row) {
-	  strbuf b ("for: row %zu is undefined!", i);
-	  p.report_error (b, _location);
+	  err_badrow (p, i);
 	} else if (!_body) {
 	  // noop
 	} else {
@@ -733,7 +605,7 @@ namespace pub3 {
     ev->trigger (status);
   }
 
-  //-----------------------------------------------------------------------
+  //==================================================== if_t ==============
 
   bool
   if_t::might_block_uncached () const 
@@ -815,35 +687,36 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool
-  print_t::add (ptr<pub3::expr_list_t> l)
+  ptr<if_clause_t> if_clause_t::alloc () 
+  { return New refcounted<if_clause_t> (plineno ()); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<if_t> if_t::alloc () { return New refcounted<if_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  void
+  if_t::add_clauses (ptr<if_clause_list_t> ccl)
   {
-    bool ret = true;
-    if (!_args) {
-      _args = l;
-    } else {
-      ret = false;
-    }
-    return ret;
+    if (!_clauses) { _clauses = ccl; } 
+    else if (ccl) { *_clauses += *ccl; }
   }
-  
+
   //-----------------------------------------------------------------------
   
-  status_t 
-  print_t::v_publish_nonblock (publish_t p) const
+  void
+  if_t::add_clause (ptr<if_clause_t> cc)
   {
-    status_t ret (XPUB_STATUS_OK);
-    str s;
-    for (size_t i = 0; _args && i < _args->size (); i++) {
-      ptr<const expr_t> x = (*_args)[i];
-      if (x && (s = x->eval_as_str (p))) {
-	p.output (s);
+    if (cc) {
+      if (!_clauses) {
+	_clauses = New refcounted<if_clause_list_t> ();
       }
+      _clauses->push_back (cc);
     }
-    return ret;
   }
-  
-  //====================================================================
+
+  //========================================== decl_block_t =============
 
   bool
   decl_block_t::might_block_uncached () const
@@ -954,38 +827,263 @@ namespace pub3 {
     return ret;
   }
 
-  //======================================================================
+  //============================== locals / universals ====================
 
-  status_t
-  expr_statement_t::v_publish_nonblock (publish_t p) const
+  ptr<locals_t> locals_t::alloc () 
+  { return New refcounted<locals_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<universals_t> universals_t::alloc () 
+  { return New refcounted<universals_t> (location ()); }
+
+  //============================================= switch_t ================
+
+  void case_list_t::add_case (ptr<case_t> c) { if (c) { push_back (c); } }
+  void case_t::add_key (ptr<expr_t> x) { _key = x; }
+  void case_t::add_zone (ptr<zone_t> z) { _zone = z; }
+  bool case_t::might_block () const { return _zone && _zone->might_block (); }
+
+  //-----------------------------------------------------------------------
+
+  void switch_t::add_key (ptr<expr_t> x) { _key = x; }
+
+  //-----------------------------------------------------------------------
+
+  bool 
+  switch_t::add_cases (ptr<case_list_t> l) 
+  { 
+    _cases = l; 
+    return populate_cases ();
+  }
+
+  //-----------------------------------------------------------------------
+  
+  bool
+  switch_t::populate_cases ()
   {
-    status_t ret (XPUB_STATUS_OK);
-    // Evaluate for any side effects.
-    if (_expr) { (void) _expr->eval_to_ref (p); }
+    _map.clear ();
+    size_t n_defaults = 0;
+    for (size_t i = 0; _cases && i < _cases->size (); i++) {
+      ptr<case_t> c = (*_cases)[i];
+      assert (c);
+      ptr<const expr_t> k = c->key ();
+      str ks;
+      if (!k) {
+	n_defaults ++;
+	_default = c;
+      } else if (k->is_null () || !(ks = k->to_switch_str ())) {
+	_null = c;
+      } else {
+	_map.insert (ks, c);
+      }
+    }
+    return (n_defaults <= 1);
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  ptr<const zone_t>
+  switch_t::find_case (publish_t pub) const
+  {
+    ptr<const zone_t> ret;
+    str k;
+    if (_key) {
+      k = _key->eval_as_str (pub);
+      if (k) {
+	const ptr<case_t> *c = _map[k];
+	if (c && *c) { ret = (*c)->zone (); }
+      } else if (_null) {
+	ret = _null->zone ();
+      }
+    }
+    
+    if (!ret && _default) { ret = _default->zone (); }
+    
+    if (!ret) {
+      if (!k) k = "(null)";
+      strbuf err ("no case found for key ='%s'", k.cstr ());
+      pub.output_err (err, _location);
+    }
     return ret;
   }
 
-  //----------------------------------------------------------------------
+  //-----------------------------------------------------------------------
+  
+  bool
+  switch_t::might_block_uncached () const
+  {
+    bool mb = false;
+    for (size_t i = 0; !mb && _cases && i < _cases->size (); i++) {
+      if ((*_cases)[i]->might_block ()) { mb = true; }
+    }
+    return mb;
+  }
 
-  bool expr_statement_t::might_block_uncached () const
-  { return _expr->might_block (); }
+  //-----------------------------------------------------------------------
 
-  //----------------------------------------------------------------------
+  status_t 
+  switch_t::v_publish_nonblock (publish_t pub) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    assert (!might_block ());
+    ptr<const zone_t> zone = find_case (pub);
+    if (zone) { zone->publish_nonblock (pub); }
+    return ret;
+  }
+  
+  //-----------------------------------------------------------------------
+
+  tamed void 
+  switch_t::v_publish (publish_t pub, status_ev_t ev) const
+  {
+    tvars {
+      status_t res (XPUB_STATUS_OK);
+      ptr<const zone_t> zone;
+    }
+    if ((zone = find_case (pub))) {
+      twait { zone->publish (pub, mkevent (res)); }
+    }
+    ev->trigger (res);
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<switch_t> switch_t::alloc () 
+  { return New refcounted<switch_t> (location ()); }
+
+  //--------------------------------------------------------------------
+
+  ptr<case_t> case_t::alloc () { return New refcounted<case_t> (plineno ()); }
+  ptr<case_list_t> case_list_t::alloc () 
+  { return New refcounted<case_list_t> (); }
+
+  //============================================== include_t ==============
+
+  ptr<include_t> include_t::alloc () 
+  { return New refcounted<include_t> (location ()); }
+  ptr<load_t> load_t::alloc () { return New refcounted<load_t> (location ()); }
+
+  //-----------------------------------------------------------------------
+
+  status_t
+  include_t::v_publish_nonblock (publish_t ev) const
+  {
+    panic ("include_t called in nonblock context; should never happen\n");
+    return status_t ();
+  }
+
+  //-----------------------------------------------------------------------
 
   tamed void
-  expr_statement_t::v_publish (publish_t p, status_ev_t ev) const
+  include_t::v_publish (publish_t p, status_ev_t ev) const
+  {
+    tvars {
+      status_t rs (XPUB_STATUS_OK);
+      str fn;
+      ptr<const expr_dict_t> cd;
+      bool mz;
+    }
+    
+    if (!_file || !(fn = _file->eval_as_str (p)) || fn.len () == 0) {
+      str e = "include: cannot evaluate filename";
+      p.report_error (e, _location);
+    } else if (_dict && !(cd = _dict->eval_as_dict (p))) {
+      str e = "include: cannot evalute parameters";
+      p.report_error (e, _location);
+    } else {
+      mz = p.push_muzzle (muzzle_output ());
+      twait { 
+	p.publish (fn, _location, cow_bindtab_t::alloc (cd), mkevent (rs)); 
+      }
+      p.pop_muzzle (mz);
+    }
+    ev->trigger (rs);
+  }
+ 
+
+  //-----------------------------------------------------------------------
+
+  bool
+  include_t::add_args (ptr<expr_list_t> l, str *errp)
+  {
+    bool ret = true;
+    str err;
+    if (l && (l->size () >= 1 && l->size () <= 2)) {
+      _file = (*l)[0];
+      if (l->size () > 2) 
+	_dict = (*l)[1];
+    } else {
+      str f = fnname ();
+      err = strbuf ("%s take 1 or 2 arguments; a filename and an optional "
+		    "binding list", f.cstr ());
+      if (errp) *errp = err;
+      ret = false;
+    }
+    return ret;
+  }
+
+  //============================================== print_t ================
+
+  ptr<print_t> print_t::alloc () 
+  { return New refcounted<print_t> (plineno ()); }
+  
+  //-----------------------------------------------------------------------
+
+  bool
+  print_t::add (ptr<pub3::expr_list_t> l)
+  {
+    bool ret = true;
+    if (!_args) {
+      _args = l;
+    } else {
+      ret = false;
+    }
+    return ret;
+  }
+  
+  //-----------------------------------------------------------------------
+  
+  status_t 
+  print_t::v_publish_nonblock (publish_t p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    str s;
+    for (size_t i = 0; _args && i < _args->size (); i++) {
+      ptr<const expr_t> x = (*_args)[i];
+      if (x && (s = x->eval_as_str (p))) {
+	p.output (s);
+      }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool print_t::might_block_uncached () const 
+  { return _args && _args->might_block (); }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  print_t::v_publish (publish_t p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
-      ptr<mref_t> dummy;
+      str s;
+      size_t i;
+      ptr<const expr_t> x;
     }
-    if (_expr) {
-      twait { _expr->pub_to_ref (p, mkevent (dummy)); }
+
+    for (i = 0; _args && i < _args->size (); i++) {
+      x = (*_args)[i];
+      twait { x->pub_as_str (p, mkevent (s)); }
+      if (s) { p.output (s); }
     }
     ev->trigger (ret);
   }
 
   //======================================================================
-  
+
 };
 

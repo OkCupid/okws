@@ -6,6 +6,16 @@
 
 namespace pub3 {
 
+  //======================================= control_t ==================
+
+  bool
+  control_t::handle_forloop () 
+  {
+    bool go = !_break && !_return;
+    _break = _continue = false;
+    return go;
+  }
+
   //====================================================================
 
   tamed void
@@ -118,11 +128,6 @@ namespace pub3 {
     return ret;
   }
 
-  //--------------------------------------------------------------------
-
-
-  
-
   //====================================================================
 
   ptr<output_t>
@@ -133,6 +138,20 @@ namespace pub3 {
     else   { ret = New refcounted<output_silent_t> (); }
     return ret;
   }
+
+  //--------------------------------------------------------------------
+
+  bool
+  output_t::push_muzzle (bool b)
+  {
+    bool ret = _muzzle;
+    if (b && !_muzzle) { _muzzle = b; }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  void output_t::pop_muzzle (bool b) { _muzzle = b; }
 
   //====================================================================
 

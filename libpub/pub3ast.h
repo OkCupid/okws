@@ -240,6 +240,11 @@ namespace pub3 {
     ptr<expr_t> _arr;
     ptr<zone_t> _body;
     ptr<zone_t> _empty;
+
+  private:
+    void err_empty (publish_t pub) const;
+    void err_badrow (publish_t pub, size_t i) const;
+    bool handle_control (publish_t p) const;
   };
 
   //-----------------------------------------------------------------------
@@ -409,6 +414,7 @@ namespace pub3 {
     void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     status_t v_publish_nonblock (publish_t p) const;
     bool might_block_uncached () const { return true; }
+    virtual bool muzzle_output () const { return false; }
   protected:
     bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;
@@ -439,11 +445,13 @@ namespace pub3 {
     bool to_xdr (xpub3_statement_t *x) const;
 
     status_t v_publish_nonblock (publish_t p) const;
+    void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
     bool might_block_uncached () const;
 
   private:
     ptr<pub3::expr_list_t> _args;
   };
+
   //-----------------------------------------------------------------------
 
 };
