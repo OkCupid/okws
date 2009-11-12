@@ -2,6 +2,7 @@
 
 #include "okrfnlib.h"
 #include "okformat.h"
+#include "pub3parse.h"
 
 namespace rfn1 {
 
@@ -100,6 +101,51 @@ namespace rfn1 {
     }
     return ret;
   }
+
+  //-----------------------------------------------------------------------
+
+  json2pub_t::json2pub_t (const str &n, ptr<expr_list_t> el, int l, 
+			  ptr<expr_t> x)
+    : runtime_fn_t (n, el, l), _json (x) {}
+
+  //-----------------------------------------------------------------------
+
+  ptr<runtime_fn_t>
+  json2pub_t::constructor (const str &n, ptr<expr_list_t> e, int lineno,
+			   str *err)
+  {
+    ptr<runtime_fn_t> ret;
+    size_t narg = e ? e->size () : size_t (0);
+
+    if (narg != 1) {
+      *err = "json2pub() takes one argument (a string)";
+    } else {
+      ret = New refcounted<json2pub_t> (n, e, lineno, (*e)[0]);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  ptr<expr_t> 
+  json2pub_t::eval_internal (eval_t e) const
+  {
+    ptr<expr_t> ret;
+    str s = _json->eval_as_str (e);
+    if (s) { ret = json_parser_t::parse (s); }
+    if (!ret) ret = expr_null_t::alloc ();
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<pval_t> json2pub_t::eval_freeze (eval_t e) const 
+  { return eval_internal (e); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const pval_t> json2pub_t::eval (eval_t e) const 
+  { return eval_internal (e); }
 
   //-----------------------------------------------------------------------
 

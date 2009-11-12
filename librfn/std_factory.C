@@ -53,6 +53,8 @@ namespace rfn1 {
     _tab.insert ("items", &dict_fn_t::constructor<items_t>);
     _tab.insert ("values", &dict_fn_t::constructor<values_t>);
     _tab.insert ("keys", &dict_fn_t::constructor<keys_t>);
+
+    _tab.insert ("json2pub", &json2pub_t::constructor);
   }
 
   //-----------------------------------------------------------------------
@@ -80,8 +82,8 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "okrfn 1.0.3"; }
-  u_int64_t version_int () { return 1000003; }
+  const char *version_str () { return "okrfn 1.0.7"; }
+  u_int64_t version_int () { return 1000007; }
   const char *okws_version_str () { return OKWS_VERSION; }
 
   u_int64_t okws_version_int () {

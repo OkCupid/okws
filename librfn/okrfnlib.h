@@ -422,6 +422,24 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
+
+  class json2pub_t : public runtime_fn_t {
+  public:
+    json2pub_t (const str &n, ptr<expr_list_t> el, int l, ptr<expr_t> x);
+
+    static ptr<runtime_fn_t>
+    constructor (const str &n, ptr<expr_list_t> e, int l, str *err);
+
+    ptr<pval_t> eval_freeze (eval_t e) const;
+    ptr<const pval_t> eval (eval_t e) const;
+
+  private:
+    ptr<expr_t> eval_internal (eval_t e) const;
+    ptr<expr_t> _json;
+  };
+
+
+  //-----------------------------------------------------------------------
 };
 
 #endif /* _LIBRFN_OKRFNLIB_H_ */
