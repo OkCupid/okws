@@ -138,6 +138,14 @@ namespace pub3 {
     return strbuf ("<%s @ %s>", _core->_name.cstr (), ls.cstr ());
   }
 
+  //-----------------------------------------------------------------------
+
+  bool
+  proc_call_t::might_block_uncached () const
+  {
+    ptr<const zone_t> b;
+    return (b = _core->body ()) && b->might_block ();
+  }
 
   //-----------------------------------------------------------------------
 
@@ -150,28 +158,39 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  tamed void
-  proc_call_t::pub_to_val (publish_t e, ptr<const expr_list_t> l, 
-			   cxev_t ev) const
+  bool
+  proc_call_t::check_args (publish_t e, ptr<const expr_list_t> l) const
   {
-    tvars {
-      size_t gs, es;
-      str s;
-      ptr<const expr_t> ret;
-    }
-
+    size_t gs, es;
     gs = l->size ();
     es = _core->_params->size ();
-    s = to_str_short ();
+    str s = to_str_short ();
+    bool ret = true;
 
     if (gs != es) {
       strbuf b ("Wrong number of parameters to function call %s "
 		"(expected %zd, got %zd)", s.cstr (), es, gs);
       report_error (e, b);
-    } else {
-      // Do some eval here; for now, don't do anything because I haven't
-      // figured out what to do about calling 
+      ret = false;
+    } 
+    return ret;
+  }
 
+  //-----------------------------------------------------------------------
+
+  tamed void
+  proc_call_t::pub_to_val (publish_t e, ptr<const expr_list_t> l, 
+			   cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> ret;
+      ptr<control_t> old_ctrl;
+    }
+
+    if (check_args (e, l)) {
+      old_ctrl = e.push_control ();
+      ret = e.control ()->rtrn ();
+      e.restore_control (old_ctrl);
     }
     ev->trigger (ret);
   }

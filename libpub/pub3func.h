@@ -11,11 +11,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  // Procedures are defined in pub/html code via the 'def' keyword.
   struct proc_core_t {
     proc_core_t (str nm) : _name (nm) {}
     static ptr<proc_core_t> alloc (str nm) 
     { return New refcounted<proc_core_t> (nm); }
     void add_params (ptr<identifier_list_t> l);
+    ptr<zone_t> body () { return _body; }
+    ptr<const zone_t> body () const { return _body; }
     str _name;
     ptr<identifier_list_t> _params;
     ptr<zone_t> _body;
@@ -34,9 +37,11 @@ namespace pub3 {
       const;
     void pub_to_ref (publish_t e, ptr<const expr_list_t> l, mrev_t ev, CLOSURE)
       const;
+    bool might_block_uncached () const;
 
     bool to_xdr (xpub3_expr_t *x) const;
   protected:
+    bool check_args (publish_t e, ptr<const expr_list_t> l) const;
     const ptr<const proc_core_t> _core;
     const location_t _location;
   };

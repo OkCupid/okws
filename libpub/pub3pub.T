@@ -28,6 +28,10 @@ namespace pub3 {
 
   void control_t::reset_forloop () { _break = _continue = false; }
 
+  //-------------------------------------------------------------------
+
+  ptr<control_t> control_t::alloc () { return New refcounted<control_t> (); }
+
   //====================================================================
 
   tamed void
@@ -64,7 +68,31 @@ namespace pub3 {
   publish_t::publish_t (ptr<bindtab_t> universals, zbuf *z)
     : eval_t (New refcounted<env_t> (universals), output_t::alloc (z)),
       _opts (0),
-      _pws (false) {}
+      _pws (false),
+      _control (control_t::alloc ()) {}
+
+  //--------------------------------------------------------------------
+
+  publish_t::publish_t (ptr<env_t> e, ptr<output_t> o)
+    : eval_t (e, o),
+      _opts (0),
+      _pws (false),
+      _control (control_t::alloc ()) {}
+
+  //--------------------------------------------------------------------
+
+  ptr<control_t> publish_t::control () { return _control; }
+  void publish_t::restore_control (ptr<control_t> c) { _control = c; }
+
+  //--------------------------------------------------------------------
+
+  ptr<control_t>
+  publish_t::push_control ()
+  {
+    ptr<control_t> c = _control;
+    _control = control_t::alloc ();
+    return c;
+  }
 
   //--------------------------------------------------------------------
 

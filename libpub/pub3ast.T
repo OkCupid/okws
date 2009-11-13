@@ -1004,6 +1004,7 @@ namespace pub3 {
       str fn;
       ptr<const expr_dict_t> cd;
       bool mz;
+      ptr<control_t> ctrl;
     }
     
     if (!_file || !(fn = _file->eval_as_str (p)) || fn.len () == 0) {
@@ -1014,9 +1015,11 @@ namespace pub3 {
       p.report_error (e, _location);
     } else {
       mz = p.push_muzzle (muzzle_output ());
+      ctrl = p.push_control ();
       twait { 
 	p.publish (fn, _location, cow_bindtab_t::alloc (cd), mkevent (rs)); 
       }
+      p.restore_control (ctrl);
       p.pop_muzzle (mz);
     }
     ev->trigger (rs);

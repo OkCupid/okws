@@ -44,12 +44,14 @@ namespace pub3 {
   class control_t {
   public:
     control_t () : _break (false), _continue (false) {}
+    static ptr<control_t> alloc ();
     bool handle_forloop ();
     void reset_forloop ();
     bool handle_zone ();
     bool _break;
     bool _continue;
     void set_rtrn (ptr<const expr_t> x) { _return = x; }
+    ptr<const expr_t> rtrn () const { return _return; }
     void set_continue (bool b) { _continue = b;  }
     void set_break (bool b) { _break = b; }
     ptr<const expr_t> _return;
@@ -60,7 +62,7 @@ namespace pub3 {
   class publish_t : public eval_t {
   public:
     publish_t (ptr<bindtab_t> universals, zbuf *z = NULL);
-    publish_t (ptr<env_t> e, ptr<output_t> o) : eval_t (e, o) {}
+    publish_t (ptr<env_t> e, ptr<output_t> o); // : eval_t (e, o) {}
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_opts (opts_t o) { _opts = o; }
@@ -83,7 +85,12 @@ namespace pub3 {
     bool push_pws (bool b);
     void pop_pws (bool b);
     bool pws () const;
-    ptr<control_t> control () { return _control; }
+
+    // manipulate control stack
+
+    ptr<control_t> control ();
+    ptr<control_t> push_control ();
+    void restore_control (ptr<control_t> c);
 
   private:
     ptr<localizer_t> _localizer;
