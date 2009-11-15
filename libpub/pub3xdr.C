@@ -171,8 +171,8 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_NOT:
     r = New refcounted<pub3::expr_NOT_t> (*x.xnot);
     break;
-  case XPUB3_EXPR_FN:
-    r = pub3::rfn_factory_t::get ()->alloc (*x.fn);
+  case XPUB3_EXPR_CALL:
+    r = call_t::alloc (*x.call);
     break;
   case XPUB3_EXPR_RELATION:
     r = New refcounted<pub3::expr_relation_t> (*x.relation);
@@ -265,14 +265,6 @@ pub3::expr_mod_t::expr_mod_t (const xpub3_mathop_t &x)
 pub3::expr_NOT_t::expr_NOT_t (const xpub3_not_t &x)
   : expr_logical_t (x.lineno),
     _e (expr_t::alloc (x.e)) {}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::runtime_fn_t>
-pub3::rfn_factory_t::alloc (const xpub3_fn_t &x)
-{
-  return alloc (x.name, expr_list_t::alloc (x.args), x.lineno);
-}
 
 //-----------------------------------------------------------------------
 
@@ -426,13 +418,13 @@ pub3::expr_NOT_t::to_xdr (xpub3_expr_t *x) const
 //-----------------------------------------------------------------------
 
 bool
-pub3::runtime_fn_t::to_xdr (xpub3_expr_t *x) const
+pub3::call_t::to_xdr (xpub3_expr_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_FN);
-  x->fn->lineno = _lineno;
-  x->fn->name = name ();
+  x->set_typ (XPUB3_EXPR_CALL);
+  x->call->lineno = _lineno;
+  x->call->name = name ();
   if (args ()) {
-    args ()->to_xdr (&x->fn->args);
+    args ()->to_xdr (&x->call->args);
   }
   return true;
 }
@@ -674,14 +666,9 @@ pub3::expr_regex_t::to_xdr (xpub3_expr_t *x) const
 bool
 pub3::expr_varref_or_rfn_t::to_xdr (xpub3_expr_t *x) const
 {
-  ptr<const expr_t> f = get_rfn ();
-  bool ret;
-  if (f) {
-    ret = f->to_xdr (x);
-  } else {
-    ret = expr_varref_t::to_xdr (x);
-  }
-  return x;
+  // Strategy -- see if we have args, in which case, we're
+  // an rfn, otherwise, we're a varref.
+  return false;
 }
 
 //-----------------------------------------------------------------------
@@ -969,5 +956,17 @@ pub3::continue_t::to_xdr (xpub3_statement_t *x) const
   x->break_statement->lineno = lineno ();
   return true;
 }
+
+//-----------------------------------------------------------------------
+
+pub3::call_t::call_t (const xpub3_call_t &x)
+  : expr_t (x.lineno),
+    _name (x.name),
+    _arglist (expr_list_t::alloc (x.args)) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::call_t> pub3::call_t::alloc (const xpub3_call_t &x)
+{ return New refcounted<call_t> (x); }
 
 //-----------------------------------------------------------------------

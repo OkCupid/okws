@@ -764,17 +764,6 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  expr_varref_or_rfn_t::get_rfn () const
-  {
-    if (_arglist && !_rfn) {
-      _rfn = rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
-    }
-    return _rfn;
-  }
-
-  //-----------------------------------------------------------------------
-
   ptr<const expr_t> expr_varref_or_rfn_t::eval_to_val (eval_t e) const 
   { return NULL; }
   ptr<mref_t> expr_varref_or_rfn_t::eval_to_ref (eval_t e) const 

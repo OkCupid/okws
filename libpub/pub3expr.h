@@ -124,8 +124,10 @@ namespace pub3 {
     virtual str type_to_str () const { return "object"; }
     virtual bool to_int (int64_t *out) const { return false; }
     virtual scalar_obj_t to_scalar () const;
-    virtual ptr<const proc_call_t> to_proc_call () const { return NULL; }
-    virtual ptr<proc_call_t> to_proc_call () { return NULL; }
+    
+    // alloc a call
+    virtual ptr<proc_call_t> alloc_call (ptr<const expr_list_t> a, lineno_t l) 
+      const { return NULL; }
 
     //
     // and from here, scalars can be converted at will...
@@ -571,26 +573,23 @@ namespace pub3 {
   // to capture that dual-nature/uncertainty.  NOTE that we'll never
   // need to ship one of these over the wire via the xpub protocol,
   // since by that time, the true nature of this beast is known.
-  class expr_varref_or_rfn_t : public expr_varref_t {
+  class expr_varref_or_call_t : public expr_varref_t {
   public:
-    expr_varref_or_rfn_t (const str &s, lineno_t l) : expr_varref_t (s, l) {}
+    expr_varref_or_call_t (const str &s, lineno_t l) : expr_varref_t (s, l) {}
     bool to_xdr (xpub3_expr_t *x) const;
     bool unshift_argument (ptr<expr_t> e);
-    static ptr<expr_varref_or_rfn_t> alloc (const str &l);
+    static ptr<expr_varref_or_call_t> alloc (const str &l);
 
-    const char *get_obj_name () const { return "pub3::expr_varref_or_rfn_t"; }
+    const char *get_obj_name () const { return "pub3::expr_varref_or_call_t"; }
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
     void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
     void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
 
-
   protected:
     bool might_block_uncached () const { return true; }
-    ptr<const expr_t> get_rfn () const;
     ptr<expr_list_t> _arglist;
-    mutable ptr<expr_t> _rfn;
   };
 
   //-----------------------------------------------------------------------

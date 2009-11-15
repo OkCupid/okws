@@ -178,12 +178,12 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_varref_or_rfn_t::pub_to_val (publish_t e, cxev_t ev) const
+  expr_varref_or_call_t::pub_to_val (publish_t e, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> r, v;
-      ptr<const proc_call_t> fnd;
-      ptr<const expr_t> rfn;
+      ptr<const proc_call_t> prc;
+      ptr<const fn_call_t> fnc;
       bool make_silent;
       bool old_silent;
     }
@@ -194,7 +194,7 @@ namespace pub3 {
     e.set_silent (old_silent);
 
     if (!_arglist) { r = v; }
-    else if (v && (fnd = v->to_proc_call ())) {
+    else if (v && (fnd = v->alloc_call (_arglist, _lineno))) {
       twait { fnd->pub_to_val (e, _arglist, mkevent (r)); }
     } else if ((rfn = get_rfn ())) {
       twait { rfn->pub_to_val (e, mkevent (r)); }
@@ -205,7 +205,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_varref_or_rfn_t::pub_to_ref (publish_t e, mrev_t ev) const
+  expr_varref_or_call_t::pub_to_ref (publish_t e, mrev_t ev) const
   {
     tvars {
       ptr<mref_t> r, v;

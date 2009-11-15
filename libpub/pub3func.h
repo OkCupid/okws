@@ -28,22 +28,25 @@ namespace pub3 {
 
   class proc_call_t : public expr_t {
   public:
-    proc_call_t (ptr<proc_core_t> c, const location_t &l) 
-      : _core (c), _location (l) {}
+    proc_call_t (ptr<proc_core_t> c, ptr<const expr_list_t> args, 
+		 const location_t &l) 
+      : _core (c), _args (args), _location (l) {}
     str to_str (bool q = false) const;
     str to_str_short () const;
-
-    void pub_to_val (publish_t e, ptr<const expr_list_t> l, cxev_t ev, CLOSURE) 
-      const;
-    void pub_to_ref (publish_t e, ptr<const expr_list_t> l, mrev_t ev, CLOSURE)
-      const;
+    
+    void pub_to_val (publish_t e, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (publish_t e, mrev_t ev, CLOSURE) const;
     bool might_block_uncached () const;
+
+    ptr<proc_call_t> to_proc_call () { return mkref (this); }
+    ptr<const proc_call_t> to_proc_call () const { return mkref (this); }
 
     bool to_xdr (xpub3_expr_t *x) const;
   protected:
     bool check_args (publish_t e, ptr<const expr_list_t> l) const;
     const ptr<const proc_core_t> _core;
-    const location_t _location;
+    const ptr<const expr_list_t> _args;
+    const lineno_t _location;
   };
 
   //-----------------------------------------------------------------------
@@ -61,25 +64,33 @@ namespace pub3 {
     bool publish_nonblock (publish_t p) const;
     bool might_block () const { return false; }
     ptr<const proc_core_t> core () const { return _core; }
-    ptr<proc_call_t> alloc_call () const;
+    ptr<proc_call_t> alloc_call (ptr<const expr_list_t> a, lineno_t l) const;
   protected:
     ptr<proc_core_t> _core;
   };
 
   //-----------------------------------------------------------------------
 
-  class runtime_fn_t : public expr_t {
+  class call_t : public expr_t {
   public:
-    runtime_fn_t (const str &n, ptr<expr_list_t> a, int l) 
+    call_t (const str &n, ptr<expr_list_t> a, int l) 
       : expr_t (l), _name (n), _arglist (a) {}
-
+    call_t (const xpub3_call_t &call);
+    
     ptr<expr_list_t> args () const { return _arglist; }
     str name () const { return _name; }
 
-    bool to_xdr (xpub3_expr_t *x) const;
-    const char *get_obj_name () const { return "pub3::runtime_fn_t"; }
+    static ptr<call_t> alloc (const xpub3_call_t &call);
+    static ptr<call_t> alloc (const str &nm, ptr<expr_list_t> l);
 
-    ptr<const expr_t> eval_to_val (eval_t e) const { return NULL; }
+    bool to_xdr (xpub3_expr_t *x) const;
+    const char *get_obj_name () const { return "pub3::call_t"; }
+
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<mref_t> eval_to_ref (eval_t e) const;
+
+    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
 
   protected:
     str _name;
@@ -88,34 +99,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class runtime_fn_stub_t : public runtime_fn_t {
-  public:
-    runtime_fn_stub_t (const str &n, ptr<expr_list_t> a, int l) 
-      : runtime_fn_t (n, a, l) {}
-
-    static ptr<runtime_fn_stub_t> alloc (const str &n, ptr<expr_list_t> l);
-    const char *get_obj_name () const { return "pub3::runtime_fn_stub_t"; }
-    ptr<const expr_t> eval_to_val (eval_t e) const;
-    bool unshift_argument (ptr<expr_t> e);
-
-  protected:
-    mutable ptr<const expr_t> _rfn;
-    ptr<const expr_t> get_rfn () const;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class error_fn_t : public runtime_fn_t {
-  public:
-    error_fn_t (const str &n, ptr<expr_list_t> a, int l, const str &err)
-      : runtime_fn_t (n, a, l), _err (err) {}
-    ptr<const expr_t> eval_to_val (eval_t e) const;
-    const char *get_obj_name () const { return "pub3::error_fn_t"; }
-  protected:
-    str _err;
-  };
-
-  //-----------------------------------------------------------------------
+  // temp
+  class runtime_fn_t;
 
   //
   // rfn_factory: runtime function factory
@@ -133,8 +118,6 @@ namespace pub3 {
 
     virtual ptr<runtime_fn_t>
     alloc (const str &s, ptr<expr_list_t> l, int lineno) = 0;
-
-    ptr<runtime_fn_t> alloc (const xpub3_fn_t &x);
 
     // Access the singleton runtime function factory; by default
     // it's set to a null factory, but can be explanded any which

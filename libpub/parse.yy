@@ -457,7 +457,7 @@ p3_fncall: p3_identifier '(' p3_argument_expr_list_opt ')'
 	       * (in the pub command line client) or upon conversion
 	       * from XDR (in OKWS services)
 	       */
-	      $$ = pub3::runtime_fn_stub_t::alloc ($1, $3);
+	      $$ = pub3::call_t::alloc ($1, $3);
            }
 	   ;
 
@@ -466,7 +466,7 @@ p3_varref: p3_identifier
               /* See comment in pub3expr.h -- this identifier might be
 	       * a function call in a pipeline; we just don't know yet!
 	       */
-	      $$ = pub3::expr_varref_or_rfn_t::alloc ($1);
+	      $$ = pub3::expr_varref_or_call_t::alloc ($1);
 	   }
 	   ;
 

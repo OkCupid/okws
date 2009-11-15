@@ -48,7 +48,7 @@ struct xpub3_zstr_t {
 enum xpub3_expr_typ_t {
    XPUB3_EXPR_NULL,
    XPUB3_EXPR_NOT,
-   XPUB3_EXPR_FN,
+   XPUB3_EXPR_CALL,
    XPUB3_EXPR_RELATION,
    XPUB3_EXPR_DICT,
    XPUB3_EXPR_EQ,
@@ -98,7 +98,7 @@ struct xpub3_expr_list_t {
    xpub3_expr_t list<>;
 };
 
-struct xpub3_fn_t {
+struct xpub3_call_t {
    int lineno;
    string name<>;
    xpub3_expr_list_t args;
@@ -196,8 +196,8 @@ case XPUB3_EXPR_NOT:
      xpub3_not_t xnot;
 case XPUB3_EXPR_MATHOP:
      xpub3_mathop_t mathop;
-case XPUB3_EXPR_FN:
-     xpub3_fn_t fn;
+case XPUB3_EXPR_CALL:
+     xpub3_call_t call;
 case XPUB3_EXPR_RELATION:
      xpub3_relation_t relation;
 case XPUB3_EXPR_DICT:

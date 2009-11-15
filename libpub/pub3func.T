@@ -34,58 +34,8 @@ namespace pub3 {
     
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  error_fn_t::eval_to_val (eval_t e) const
-  {
-    e.report_error (_err, _lineno);
-    return NULL;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<runtime_fn_t> 
-  null_rfn_factory_t::alloc (const str &s, ptr<expr_list_t> l, int lineno)
-  {
-    strbuf b ("null library; function '%s' does not exist here", s.cstr ());
-    return New refcounted<error_fn_t> (s, l, lineno, b);
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<runtime_fn_stub_t> 
-  runtime_fn_stub_t::alloc (const str &n, ptr<expr_list_t> l)
-  { return New refcounted<runtime_fn_stub_t> (n, l, plineno ()); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<const expr_t>
-  runtime_fn_stub_t::get_rfn () const
-  {
-    if (!_rfn) {
-      _rfn = rfn_factory_t::get ()->alloc (_name, _arglist, _lineno);
-    }
-    return _rfn;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<const expr_t> 
-  runtime_fn_stub_t::eval_to_val (eval_t e) const
-  {
-    return get_rfn ()->eval_to_val (e);
-  }
-
-  //-----------------------------------------------------------------------
-  
-  bool 
-  runtime_fn_stub_t::unshift_argument (ptr<expr_t> e)
-  {
-    if (!_arglist) {
-      _arglist = New refcounted<expr_list_t> ();
-    }
-    _arglist->push_front (e);
-    return true;
-  }
+  ptr<call_t> call_t::alloc (const str &n, ptr<expr_list_t> l)
+  { return New refcounted<call_t> (n, l, plineno ()); }
 
   //-----------------------------------------------------------------------
 
@@ -120,7 +70,7 @@ namespace pub3 {
   bool
   proc_def_t::publish_nonblock (publish_t p) const
   {
-    p.env ()->add_global_binding (_core->_name, alloc_call ());
+    p.env ()->add_global_binding (_core->_name, mkref (this)); }
     return true;
   }
 
@@ -159,9 +109,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  proc_call_t::check_args (publish_t e, ptr<const expr_list_t> l) const
+  proc_call_t::check_args (publish_t e) const
   {
     size_t gs, es;
+    ptr<const expr_list_t> l = _args;
     gs = l->size ();
     es = _core->_params->size ();
     str s = to_str_short ();
@@ -179,13 +130,15 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  proc_call_t::pub_to_val (publish_t e, ptr<const expr_list_t> l, 
-			   cxev_t ev) const
+  proc_call_t::pub_to_val (publish_t e, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
       ptr<control_t> old_ctrl;
+      ptr<const expr_list_t> l;
     }
+
+    l = _args;
 
     if (check_args (e, l)) {
       old_ctrl = e.push_control ();
