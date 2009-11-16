@@ -236,6 +236,7 @@ namespace pub3 {
   zone_text_t::v_publish_nonblock (publish_t p) const
   {
     status_t ret (XPUB_STATUS_OK);
+    strip ();
     if (p.pws ()) { p.output (_original); }
     else          { p.output (_wss); }
     return ret;
@@ -246,6 +247,11 @@ namespace pub3 {
   void zone_text_t::v_publish (publish_t p, status_ev_t ev, 
 			       ptr<closure_t> dummy) const
   { ev->trigger (v_publish_nonblock (p)); }
+
+  //-----------------------------------------------------------------------
+  
+  void zone_text_t::strip () const 
+  { if (!_wss) { _wss = html_wss (_original.to_str ()); } }
 
   //=======================================================================
 

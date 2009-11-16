@@ -51,6 +51,7 @@ int nfs_safe_stat (const char *f, struct stat *sb);
 inline time_t okwstime () { return sfs_get_timenow(); }
 str errcode2str (const xpub_status_t &e);
 bool to_hostname_and_port (const str &in, str *out, int *port);
+str html_wss (str in);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL

@@ -34,6 +34,7 @@
 #include "okconst.h"
 
 #define ZSTR_ENDBUF_SIZE       0x10
+#define Z_DISABLE -2
 
 class ztab;
 class zstrobj {
@@ -71,10 +72,19 @@ public:
   zstr (const strbuf &bb) : 
     b (New refcounted<zstrobj> (bb)), _scc_p (0) {}
 
-  zstr &operator= (const zstr &z) { b = z.b; return *this; }
+  zstr &operator= (const zstr &z) { b = z.b; _scc_p = 0; return *this; }
+
   zstr &operator= (const char *p) 
   { 
     b = p ? New refcounted<zstrobj> (p) : NULL; 
+    _scc_p = 0;
+    return *this;
+  }
+
+  zstr &operator= (const str &s) 
+  { 
+    b = s ? New refcounted<zstrobj> (s) : NULL; 
+    _scc_p = 0;
     return *this;
   }
 

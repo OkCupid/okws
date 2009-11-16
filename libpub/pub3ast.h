@@ -63,6 +63,7 @@ namespace pub3 {
   class zone_container_t : public zone_t {
   public:
     zone_container_t (location_t l) : zone_t (l) {}
+    zone_container_t (lineno_t l) : zone_t (l) {}
     vec<ptr<zone_t> > *children () { return &_children; }
   protected:
     vec<ptr<zone_t> > _children;
@@ -73,6 +74,7 @@ namespace pub3 {
   class zone_html_t : public zone_container_t {
   public:
     zone_html_t (location_t l);
+    zone_html_t (lineno_t l);
     zone_html_t (const xpub3_zone_html_t &z);
     void add (ptr<zone_t> z);
     void add (str s);
@@ -80,6 +82,7 @@ namespace pub3 {
     ptr<zone_html_t> zone_html () { return mkref (this); }
     static ptr<zone_html_t> alloc (ptr<zone_t> z);
     static ptr<zone_html_t> alloc ();
+    static ptr<zone_html_t> alloc (const xpub3_zone_html_t &x);
     bool preserve_white_space () const { return _preserve_white_space; }
     void set_preserve_white_space (bool b) { _preserve_white_space = b; }
     void unshift (str s);
@@ -105,6 +108,7 @@ namespace pub3 {
     static ptr<zone_text_t> alloc ();
     static ptr<zone_text_t> alloc (str s);
     static ptr<zone_text_t> alloc (char c);
+    static ptr<zone_text_t> alloc (const xpub3_zone_text_t &z);
 
     bool add (ptr<zone_t> z);
     str to_str () const { return _b; }
@@ -117,6 +121,7 @@ namespace pub3 {
   protected:
     status_t v_publish_nonblock (publish_t p) const;
     void v_publish (publish_t p, status_ev_t ev, CLOSURE) const;
+    void strip () const;
 
     // while parsing, use the following representation:
     strbuf _b;
@@ -124,7 +129,7 @@ namespace pub3 {
 
     // otherwise, here are the buffers to use:
     zstr _original;
-    zstr _wss;
+    mutable zstr _wss;
   };
 
   //-----------------------------------------------------------------------
@@ -134,6 +139,7 @@ namespace pub3 {
     zone_inline_expr_t (location_t l, ptr<expr_t> e);
     zone_inline_expr_t (const xpub3_zone_inline_expr_t &z);
     static ptr<zone_inline_expr_t> alloc (ptr<expr_t> e);
+    static ptr<zone_inline_expr_t> alloc (const xpub3_zone_inline_expr_t &x);
     bool to_xdr (xpub3_zone_t *z) const;
 
     bool might_block_uncached () const;
@@ -155,6 +161,7 @@ namespace pub3 {
       ptr<statement_t> first;
       ptr<statement_t> second;
     };
+    static ptr<zone_pub_t> alloc (const xpub3_zone_pub_t &x);
 
     // reserve one spot extra, and get rid of it if not required
     void reserve ();
@@ -182,6 +189,7 @@ namespace pub3 {
     statement_t (location_t l) : ast_node_t (l) {}
     statement_t (lineno_t l) : ast_node_t (l) {}
     virtual bool to_xdr (xpub3_statement_t *x) const = 0;
+    static ptr<statement_t> alloc (const xpub3_statement_t &x);
   };
 
   //-----------------------------------------------------------------------
@@ -190,6 +198,7 @@ namespace pub3 {
   class statement_zone_t : public statement_t {
   public:
     statement_zone_t (location_t l, ptr<zone_t> z);
+    statement_zone_t (const xpub3_statement_zone_t &z);
     static ptr<statement_zone_t> alloc (ptr<zone_t> z);
     bool to_xdr (xpub3_statement_t *x) const;
 

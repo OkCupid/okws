@@ -380,6 +380,11 @@ struct xpub3_expr_statement_t {
   xpub3_expr_t *expr;
 };
 
+struct xpub3_statement_zone_t {
+  int lineno;
+  xpub3_zone_t zone;
+};
+
 enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_NONE = 0,	
    XPUB3_STATEMENT_INCLUDE = 1,
@@ -409,7 +414,7 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
    xpub3_include_t include;
 
  case XPUB3_STATEMENT_ZONE:
-   xpub3_zone_t zone;
+   xpub3_statement_zone_t zone;
 
  case XPUB3_STATEMENT_FOR:
    xpub3_for_t for_statement;

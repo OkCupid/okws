@@ -590,3 +590,33 @@ env_argv_t::prune ()
 }
 
 //-----------------------------------------------------------------------
+
+str
+html_wss (str in)
+{
+  if (!in) return in;
+  mstr out (in.len ());
+  char *op = out.cstr ();
+  const char *ip = in.cstr ();
+  const char *ep = ip + in.len ();
+  
+  bool eat_ws_state = false;
+  for ( ; ip < ep; ip++) {
+    if (isspace (*ip)) {
+      if (!eat_ws_state) {
+	eat_ws_state = true;
+      }
+    } else {
+      if (eat_ws_state) {
+	*op++ = ' ';
+	eat_ws_state = false;
+      }
+      *op++ = *ip;
+    }
+  }
+  out.setlen (op - out.cstr ());
+  return out;
+}
+
+
+//-----------------------------------------------------------------------

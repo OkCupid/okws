@@ -1,8 +1,28 @@
 
+#include "zstr.h"
 #include "pub3.h"
 #include "pub3file.h"
 
 // XDR functions for pub3 objects
+
+//-----------------------------------------------------------------------
+
+void
+zstr_to_xdr (const zstr &z, xpub3_zstr_t *x, int l)
+{
+  x->s = z.to_str ();
+  if (l != Z_DISABLE) x->zs = z.compress (l);
+  x->clev = l;
+}
+
+//-----------------------------------------------------------------------
+
+zstr
+xdr_to_zstr (const xpub3_zstr_t &x)
+{
+  str zs (x.zs.base (), x.zs.size ()); 
+  return zstr (x.s, zs, x.clev);
+}
 
 //-----------------------------------------------------------------------
 
@@ -144,22 +164,46 @@ pub3::expr_t::alloc (const xpub3_expr_t *x)
 
 //-----------------------------------------------------------------------
 
+ptr<pub3::statement_t>
+pub3::statement_t::alloc (const xpub3_statement_t &x)
+{
+  ptr<pub3::statement_t> r;
+  switch (x.typ) {
+  case XPUB3_STATEMENT_NONE: 
+    break;
+  case XPUB3_STATEMENT_INCLUDE: 
+    r = New refcounted<include_t> (*x.include); 
+    break;
+  case XPUB3_STATEMENT_LOAD:
+    r = New refcounted<load_t> (*x.include); 
+    break;
+  case XPUB3_STATEMENT_ZONE:
+    r = New refcounted<statement_zone_t> (*x.zone);
+    break;
+  default: 
+    break;
+  }
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
 ptr<pub3::zone_t>
 pub3::zone_t::alloc (const xpub3_zone_t &z)
 {
   ptr<pub3::zone_t> r;
   switch (z.typ) {
   case XPUB3_ZONE_HTML:
-    r = New refcounted<zone_html_t> (*z.html);
+    r = zone_html_t::alloc (*z.html);
     break;
   case XPUB3_ZONE_TEXT:
-    r = New refcounted<zone_text_t> (*z.text);
+    r = zone_text_t::alloc (*z.text);
     break;
   case XPUB3_ZONE_INLINE_EXPR:
-    r = New refcounted<zone_inline_expr_t> (*z.zone_inline);
+    r = zone_inline_expr_t::alloc (*z.zone_inline);
     break;
   case XPUB3_ZONE_PUB:
-    r = New refcounted<zone_pub_t> (*z.zone_pub);
+    r = zone_pub_t::alloc (*z.zone_pub);
     break;
   default:
     break;
@@ -240,6 +284,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     break;
   case XPUB3_EXPR_BOOL:
     r = pub3::expr_bool_t::alloc (x.xbool->val);
+    break;
+  case XPUB3_EXPR_LAMBDA:
+    r = pub3::lambda_t::alloc (*x.lambda);
     break;
   default:
     break;
@@ -658,6 +705,12 @@ pub3::zone_inline_expr_t::zone_inline_expr_t (const xpub3_zone_inline_expr_t &x)
 
 //-----------------------------------------------------------------------
 
+ptr<pub3::zone_inline_expr_t> 
+pub3::zone_inline_expr_t::alloc (const xpub3_zone_inline_expr_t &x)
+{ return New refcounted<zone_inline_expr_t> (x); }
+
+//-----------------------------------------------------------------------
+
 pub3::expr_regex_t::expr_regex_t (const xpub3_regex_t &x)
   : expr_t (x.lineno),
     _body (x.body),
@@ -1036,5 +1089,98 @@ pub3::lambda_t::to_xdr (xpub3_expr_t *x) const
   x->set_typ (XPUB3_EXPR_LAMBDA);
   return to_xdr (x->lambda);
 }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::zone_text_t::to_xdr (xpub3_zone_t *z) const
+{
+  z->set_typ (XPUB3_ZONE_TEXT);
+  z->text->lineno = lineno ();
+  strip ();
+  zstr_to_xdr (_original, &z->text->original_text, Z_BEST_COMPRESSION);
+  zstr_to_xdr (_wss, &z->text->wss_text, Z_BEST_COMPRESSION);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_text_t> pub3::zone_text_t::alloc (const xpub3_zone_text_t &x)
+{ return New refcounted<zone_text_t> (x); }
+
+//-----------------------------------------------------------------------
+
+pub3::zone_text_t::zone_text_t (const xpub3_zone_text_t &x)
+  : zone_t (x.lineno),
+    _original (xdr_to_zstr (x.original_text)),
+    _wss (xdr_to_zstr (x.wss_text)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::zone_pub_t::zone_pub_t (const xpub3_zone_pub_t &z)
+  : zone_t (z.lineno)
+{
+  for (size_t i = 0; i < z.statements.size (); i++) {
+    _statements.push_back (statement_t::alloc (z.statements[i])); 
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_pub_t> pub3::zone_pub_t::alloc (const xpub3_zone_pub_t &x)
+{ return New refcounted<zone_pub_t> (x); }
+
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::zone_pub_t::to_xdr (xpub3_zone_t *x) const
+{
+  x->set_typ (XPUB3_ZONE_PUB);
+  x->zone_pub->lineno = lineno ();
+  x->zone_pub->statements.setsize (_statements.size ());
+  for (size_t i = 0; i < _statements.size (); i++) {
+    _statements[i]->to_xdr (&x->zone_pub->statements[i]);
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::zone_html_t::zone_html_t (const xpub3_zone_html_t &z)
+  : zone_container_t (z.lineno),
+    _preserve_white_space (z.preserve_white_space)
+{
+  for (size_t i = 0; i < z.zones.size (); i++) {
+    _children.push_back (zone_t::alloc (z.zones[i]));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_html_t> pub3::zone_html_t::alloc (const xpub3_zone_html_t &x)
+{ return New refcounted<zone_html_t> (x); }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::zone_html_t::to_xdr (xpub3_zone_t *z) const
+{
+  z->set_typ (XPUB3_ZONE_HTML);
+  z->html->lineno = lineno ();
+  z->html->preserve_white_space = _preserve_white_space;
+  z->html->zones.setsize (_children.size ());
+  for (size_t i = 0; i < _children.size (); i++) {
+    _children[i]->to_xdr (&z->html->zones[i]);
+  }
+  return true;
+
+}
+
+//-----------------------------------------------------------------------
+
+pub3::statement_zone_t::statement_zone_t (const xpub3_statement_zone_t &z)
+  : statement_t (z.lineno),
+    _zone (zone_t::alloc (z.zone)) {}
 
 //-----------------------------------------------------------------------
