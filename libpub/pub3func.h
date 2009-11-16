@@ -40,7 +40,7 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (publish_t p, args_t args) const;
     void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
-    ptr<const callable_t> to_fndef () const { return mkref (this); }
+    ptr<const callable_t> to_callable () const { return mkref (this); }
   protected:
     bool check_args (publish_t p, args_t a) const;
     ptr<bindtab_t> bind_args_nonblock (publish_t p, args_t a) const;

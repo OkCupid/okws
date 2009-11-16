@@ -130,7 +130,7 @@ namespace pub3 {
     // Used during parsing; coerces an arbitrary expression
     // into a function call.
     virtual ptr<call_t> coerce_to_call () ;
-    virtual ptr<const callable_t> to_fndef () const;
+    virtual ptr<const callable_t> to_callable () const { return NULL; }
 
     //
     //-----------------------------------------------------------

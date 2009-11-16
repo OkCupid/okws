@@ -239,7 +239,7 @@ namespace pub3 {
     
     if (!f) { 
       report_error (p, "cannot resolve function"); 
-    } else if (!(fnd = f->to_fndef ())) {
+    } else if (!(fnd = f->to_callable ())) {
       report_error (p, "expected a function; got something else");
     }
     ev->trigger (fnd);
