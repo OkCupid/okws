@@ -871,9 +871,10 @@ namespace pub3 {
   class bindlist_t : public vec<binding_t> {
   public:
     bindlist_t (lineno_t l) : _lineno (l) {}
-    bindlist_t (const xpub3_bindlist_t &x);
+    bindlist_t (const xpub3_dict_t &x);
     static ptr<bindlist_t> alloc ();
-    void to_xdr (xpub3_bindlist_t *x);
+    static ptr<bindlist_t> alloc (const xpub3_dict_t &x);
+    bool to_xdr (xpub3_dict_t *x) const;
     void add (binding_t b);
   private:
     lineno_t _lineno;
@@ -889,6 +890,7 @@ namespace pub3 {
     static ptr<expr_dict_t> parse_alloc ();
     static ptr<expr_dict_t> alloc (const xpub3_json_dict_t &x);
     static ptr<expr_dict_t> alloc ();
+    static ptr<expr_dict_t> alloc (const xpub3_dict_t &x);
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;

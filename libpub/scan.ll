@@ -547,6 +547,7 @@ public:
     _tab.insert ("locals", T_P3_LOCALS);
     _tab.insert ("include", T_P3_INCLUDE);
     _tab.insert ("universals", T_P3_UNIVERSALS);
+    _tab.insert ("globals", T_P3_GLOBALS);
     _tab.insert ("print", T_P3_PRINT);
     _tab.insert ("elif", T_P3_ELIF);
     _tab.insert ("else", T_P3_ELSE);

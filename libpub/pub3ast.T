@@ -864,6 +864,11 @@ namespace pub3 {
   ptr<universals_t> universals_t::alloc () 
   { return New refcounted<universals_t> (location ()); }
 
+  //-----------------------------------------------------------------------
+
+  ptr<globals_t> globals_t::alloc ()
+  { return New refcounted<globals_t> (location ()); }
+
   //============================================= switch_t ================
 
   void case_list_t::add_case (ptr<case_t> c) { if (c) { push_back (c); } }

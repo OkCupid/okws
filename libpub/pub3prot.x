@@ -168,14 +168,11 @@ struct xpub3_binding_t {
   xpub3_expr_t *val;
 };
 
+typedef xpub3_binding_t xpub3_bindings_t<>;
+
 struct xpub3_dict_t {
   int lineno;
-  xpub3_binding_t entries<>;
-};
-
-struct xpub3_bindlist_t {
-  int lineno;
-  xpub3_binding_t bindings<>;
+  xpub3_bindings_t entries;
 };
 
 struct xpub3_regex_t {
@@ -400,7 +397,8 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_SWITCH = 11,
    XPUB3_STATEMENT_BREAK = 12,
    XPUB3_STATEMENT_RETURN = 13,
-   XPUB3_STATEMENT_CONTINUE = 14
+   XPUB3_STATEMENT_CONTINUE = 14,
+   XPUB3_STATEMENT_GLOBALS = 15
 };
 
 %struct xpub3_zone_t;
@@ -420,6 +418,7 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
    xpub3_for_t for_statement;
 
  case XPUB3_STATEMENT_LOCALS:
+ case XPUB3_STATEMENT_GLOBALS:
  case XPUB3_STATEMENT_UNIVERSALS:
    xpub3_decls_t decls;
 

@@ -319,6 +319,7 @@ namespace pub3 {
 
   class decl_block_t : public statement_t {
   public:
+    decl_block_t (const xpub3_decls_t &x);
     decl_block_t (location_t l) : statement_t (l) {}
     bool to_xdr (xpub3_statement_t *x) const;
     virtual xpub3_statement_typ_t statement_typ () const = 0;
@@ -338,6 +339,7 @@ namespace pub3 {
 
   class locals_t : public decl_block_t {
   public:
+    locals_t (const xpub3_decls_t &x) : decl_block_t (x) {}
     locals_t (location_t l) : decl_block_t (l) {}
     static ptr<locals_t> alloc ();
     xpub3_statement_typ_t statement_typ () const 
@@ -347,8 +349,23 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class globals_t : public decl_block_t {
+  public:
+    globals_t (const xpub3_decls_t &x) : decl_block_t (x) {}
+    globals_t (location_t l) : decl_block_t (l) {}
+    static ptr<globals_t> alloc ();
+    xpub3_statement_typ_t statement_typ () const 
+    { return XPUB3_STATEMENT_GLOBALS; }
+
+    env_t::layer_type_t get_decl_type () const 
+    { return env_t::LAYER_GLOBALS; }
+  };
+
+  //-----------------------------------------------------------------------
+
   class universals_t : public decl_block_t {
   public:
+    universals_t (const xpub3_decls_t &x) : decl_block_t (x) {}
     universals_t (location_t l) : decl_block_t (l) {}
     static ptr<universals_t> alloc ();
     xpub3_statement_typ_t statement_typ () const 

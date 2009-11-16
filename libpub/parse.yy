@@ -31,6 +31,7 @@
 %token T_P3_LOAD
 %token T_P3_LOCALS
 %token T_P3_UNIVERSALS
+%token T_P3_GLOBALS
 %token T_P3_PIPE
 %token T_P3_OPEN
 %token T_P3_CLOSE
@@ -84,7 +85,7 @@
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
-%type <p3statement> p3_universals p3_print p3_fndef p3_switch;
+%type <p3statement> p3_universals p3_print p3_fndef p3_switch p3_globals;
 %type <p3statement> p3_break p3_return p3_continue;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
@@ -231,6 +232,7 @@ p3_control:     p3_for { $$ = $1; }
 	      | p3_if { $$ = $1; }
 	      | p3_locals { $$ = $1; }
 	      | p3_universals { $$ = $1; }
+	      | p3_globals { $$ = $1; }
 	      | p3_include { $$ = $1; }
 	      | p3_print { $$ = $1; }
 	      | p3_html_zone { $$ = pub3::statement_zone_t::alloc ($1); }
@@ -787,6 +789,13 @@ p3_universals: T_P3_UNIVERSALS p3_locals_arg
         }
         ;
 
+p3_globals: T_P3_GLOBALS p3_locals_arg
+	{
+	   ptr<pub3::globals_t> u = pub3::globals_t::alloc ();
+	   u->add ($2);
+	   $$ = u;
+        }
+        ;
 p3_locals: T_P3_LOCALS p3_locals_arg
 	{
 	   ptr<pub3::locals_t> l = pub3::locals_t::alloc ();

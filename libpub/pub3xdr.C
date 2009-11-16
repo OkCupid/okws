@@ -180,6 +180,18 @@ pub3::statement_t::alloc (const xpub3_statement_t &x)
   case XPUB3_STATEMENT_ZONE:
     r = New refcounted<statement_zone_t> (*x.zone);
     break;
+  case XPUB3_STATEMENT_FOR:
+    r = New refcounted<for_t> (*x.for_statement);
+    break;
+  case XPUB3_STATEMENT_LOCALS:
+    r = New refcounted<locals_t> (*x.decls);
+    break;
+  case XPUB3_STATEMENT_GLOBALS:
+    r = New refcounted<globals_t> (*x.decls);
+    break;
+  case XPUB3_STATEMENT_UNIVERSALS:
+    r = New refcounted<universals_t> (*x.decls);
+    break;
   default: 
     break;
   }
@@ -661,6 +673,12 @@ pub3::expr_dict_t::expr_dict_t (const xpub3_dict_t &x)
     add (binding_t (x.entries [i]));
   }
 }
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_dict_t>
+pub3::expr_dict_t::alloc (const xpub3_dict_t &d)
+{ return New refcounted<expr_dict_t> (d); }
 
 //-----------------------------------------------------------------------
 
@@ -1182,5 +1200,45 @@ pub3::zone_html_t::to_xdr (xpub3_zone_t *z) const
 pub3::statement_zone_t::statement_zone_t (const xpub3_statement_zone_t &z)
   : statement_t (z.lineno),
     _zone (zone_t::alloc (z.zone)) {}
+
+//-----------------------------------------------------------------------
+
+pub3::decl_block_t::decl_block_t (const xpub3_decls_t &x)
+  : statement_t (x.lineno),
+    _bindings (bindlist_t::alloc (x.decls)), 
+    _tab (expr_dict_t::alloc (x.decls)) {}
+
+//-----------------------------------------------------------------------
+
+
+pub3::bindlist_t::bindlist_t (const xpub3_dict_t &x)
+  : _lineno (x.lineno)
+{
+  for (size_t i = 0; i < x.entries.size (); i++) {
+    push_back (binding_t (x.entries[i]));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::bindlist_t>
+pub3::bindlist_t::alloc (const xpub3_dict_t &x)
+{ return New refcounted<bindlist_t> (x);  }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::bindlist_t::to_xdr (xpub3_dict_t *x) const
+{
+  x->lineno = _lineno;
+  x->entries.setsize (size ());
+  for (size_t i = 0; i < size (); i++) {
+    xpub3_binding_t &b = x->entries[i];
+    const binding_t &me = (*this)[i];
+    b.key = me.name ();
+    expr_to_rpc_ptr (me.expr (), &b.val);
+  }
+  return true;
+}
 
 //-----------------------------------------------------------------------
