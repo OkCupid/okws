@@ -15,6 +15,13 @@ namespace pub3 {
   static const location_t &location () 
   { return parser_t::current ()->location (); }
 
+  //=================================================== callable_t ========
+
+  void 
+  callable_t::pub_to_val (publish_t p, args_t args, cxev_t ev, 
+			  ptr<closure_t> dummy) const 
+  { ev->trigger (eval_to_val (p, args)); }
+
   //======================================== lambda_t =====================
 
   lambda_t::lambda_t (ptr<identifier_list_t> p, ptr<zone_t> z, location_t loc)

@@ -17,11 +17,10 @@ namespace pub3 {
     callable_t () {}
     virtual ~callable_t () {}
     
-    virtual bool might_block () const = 0;
+    virtual bool might_block () const { return false; }
 
     virtual ptr<const expr_t> eval_to_val (publish_t p, args_t args) const = 0;
-    virtual void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) 
-      const = 0;
+    virtual void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
