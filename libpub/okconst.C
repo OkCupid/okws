@@ -272,6 +272,9 @@ int ok_pub2_treestat_interval = 2;
 // maximum depth of file inclusion in pub
 size_t ok_pub_max_include_depth = 32;
 
+// In evaluating lambdas, how deep we're permitted to go.
+size_t ok_pub_max_call_stack_depth = 128;
+
 // timeout entries in the negative filename lookup cache
 int ok_pub3_neg_cache_timeout = 360;
 int ok_pub3_svc_neg_cache_timeout = 5;

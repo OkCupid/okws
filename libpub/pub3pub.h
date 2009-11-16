@@ -59,6 +59,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class lambda_state_t {
+  public:
+    lambda_state_t () : _binding_stack_size (0), _overflow (false) {}
+    bool is_ok () const { return !_overflow; }
+    friend class publish_t;
+  private:
+    size_t _binding_stack_size;
+    ptr<control_t> _old_control;
+    bool _overflow;
+  };
+
+  //-----------------------------------------------------------------------
+
   class publish_t : public eval_t {
   public:
     publish_t (ptr<bindtab_t> universals, zbuf *z = NULL);
@@ -92,6 +105,12 @@ namespace pub3 {
     ptr<control_t> push_control ();
     void restore_control (ptr<control_t> c);
 
+    lambda_state_t push_lambda_call (str fn, ptr<bindtab_t> bindings);
+    ptr<const expr_t> pop_lambda_call (lambda_state_t state);
+
+    // Keep track of where the last call was
+    void update_call_location (const expr_t &x);
+
   private:
     ptr<localizer_t> _localizer;
 
@@ -100,6 +119,12 @@ namespace pub3 {
 
     // A stack of locations of file inclusions.
     vec<location_t> _include_stack;
+
+    // A stack of all lambda calls
+    vec<str> _lambda_stack;
+
+    // Where the last call happened
+    location_t _call_location;
 
     opts_t _opts;
     str _cwd;

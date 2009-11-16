@@ -154,8 +154,7 @@ namespace pub3 {
   void
   publish_t::output_err_stacktrace (str msg)
   {
-
-
+    // XXX TODO
   }
 
   //--------------------------------------------------------------------
@@ -165,6 +164,35 @@ namespace pub3 {
   {
     str ret = _cwd;
     _cwd = s;
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  lambda_state_t
+  publish_t::push_lambda_call (str fn, ptr<bindtab_t> bindings)
+  {
+    lambda_state_t ret;
+    if (_lambda_stack.size () >= ok_pub_max_call_stack_depth) {
+      ret._overflow = true;
+      output_err ("lambda call stack overflow", _call_location);
+    } else {
+      ret._binding_stack_size = env ()->push_locals (bindings);
+      ret._old_control = push_control ();
+      _lambda_stack.push_back (fn);
+    }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_t>
+  publish_t::pop_lambda_call (lambda_state_t state)
+  {
+    ptr<const expr_t> ret = control ()->rtrn ();
+    _lambda_stack.pop_back ();
+    restore_control (state._old_control);
+    env()->pop_to (state._binding_stack_size);
     return ret;
   }
 

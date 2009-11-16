@@ -123,20 +123,16 @@ namespace pub3 {
     ptr<const expr_t> ret;
     ptr<control_t> old_ctrl;
     ptr<bindtab_t> bindings;
-    size_t sz;
+    str ss = to_str ();
+    lambda_state_t state;
 
     if (check_args (p, args)) {
-
       bindings = bind_args_nonblock (p, args);
-      sz = p.env ()->push_locals (bindings);
-
-      old_ctrl = p.push_control ();
-      // XXX check stack depth
-      _body->publish_nonblock (p);
-      ret = p.control ()->rtrn ();
-      p.restore_control (old_ctrl);
-
-      p.env ()->pop_to (sz);
+      state = p.push_lambda_call (ss, bindings);
+      if (state.is_ok ()) { 
+	_body->publish_nonblock (p);
+	ret = p.pop_lambda_call (state);
+      }
     }
     return expr_t::safe_expr (ret);
   }
@@ -148,26 +144,19 @@ namespace pub3 {
   {
     tvars {
       ptr<const expr_t> ret;
-      ptr<control_t> old_ctrl;
       ptr<bindtab_t> bindings;
-      size_t sz;
+      lambda_state_t state;
       status_t status;
+      str ss (_self->to_str ());
     }
 
     if (check_args (p, args)) {
-      sz = p.env ()->push_locals (bindings);
-
-      old_ctrl = p.push_control ();
       twait { bind_args (p, args, mkevent (bindings)); }
-
-      // XXX check stack depth
-      twait { _body->publish (p, mkevent (status)); }
-
-      ret = p.control ()->rtrn ();
-      p.restore_control (old_ctrl);
-
-      p.env ()->pop_to (sz);
-
+      state = p.push_lambda_call (ss, bindings);
+      if (state.is_ok ()) {
+	twait { _body->publish (p, mkevent (status)); }
+	ret = p.pop_lambda_call (state);
+      }
     }
     ev->trigger (expr_t::safe_expr (ret));
   }
@@ -239,7 +228,7 @@ namespace pub3 {
       ptr<const callable_t> fnd;
     }
 
-    p.update_location (*this);
+    p.update_call_location (*this);
 
     if (_fn->might_block ()) { twait { _fn->pub_to_val (p, mkevent (f)); } }
     else { f = _fn->eval_to_val (p); }
