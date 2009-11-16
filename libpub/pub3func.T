@@ -76,7 +76,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lambda_t::bind_args (publish_t p, fndef_base_t::args_t a, 
+  lambda_t::bind_args (publish_t p, callable_t::args_t a, 
 		       event<ptr<bindtab_t> >::ref ev) const
   {
     tvars {
@@ -130,7 +130,35 @@ namespace pub3 {
       ret = p.control ()->rtrn ();
       p.restore_control (old_ctrl);
     }
-    return ret;
+    return expr_t::safe_expr (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  lambda_t::pub_to_val (publish_t p, callable_t::args_t args, cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> ret;
+      ptr<control_t> old_ctrl;
+      ptr<bindtab_t> bindings;
+      size_t sz;
+      status_t status;
+    }
+
+    if (check_args (p, args)) {
+      old_ctrl = p.push_control ();
+      twait { bind_args (p, args, mkevent (bindings)); }
+      sz = p.env ()->push_locals (bindings);
+
+      // XXX check stack depth
+      twait { _body->publish (p, mkevent (status)); }
+      p.env ()->pop_to (sz);
+
+      ret = p.control ()->rtrn ();
+      p.restore_control (old_ctrl);
+    }
+    ev->trigger (expr_t::safe_expr (ret));
   }
 
   //======================================== fndef_t ======================
@@ -160,7 +188,7 @@ namespace pub3 {
   {
     tvars {
       ptr<const expr_t> ret;
-      ptr<const fndef_base_t> fnd;
+      ptr<const callable_t> fnd;
     }
 
     twait { pub_prepare (p, mkevent (fnd)); }
@@ -193,11 +221,11 @@ namespace pub3 {
 
   tamed void
   call_t::pub_prepare (publish_t p, 
-		       event<ptr<const fndef_base_t> >::ref ev) const
+		       event<ptr<const callable_t> >::ref ev) const
   {
     tvars {
       ptr<const expr_t> f;
-      ptr<const fndef_base_t> fnd;
+      ptr<const callable_t> fnd;
     }
 
     p.update_location (*this);

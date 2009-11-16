@@ -11,11 +11,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class fndef_base_t {
+  class callable_t {
   public:
     typedef ptr<const expr_list_t> args_t;
-    fndef_base_t () {}
-    virtual ~fndef_base_t () {}
+    callable_t () {}
+    virtual ~callable_t () {}
     
     virtual bool might_block () const = 0;
 
@@ -26,7 +26,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class lambda_t : public expr_t, public fndef_base_t {
+  class lambda_t : public expr_t, public callable_t {
   public:
     lambda_t (ptr<identifier_list_t> p, ptr<zone_t> z, location_t loc);
     lambda_t (const xpub3_lambda_t &l);
@@ -40,7 +40,7 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (publish_t p, args_t args) const;
     void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
-    ptr<const fndef_base_t> to_fndef () const { return mkref (this); }
+    ptr<const callable_t> to_fndef () const { return mkref (this); }
   protected:
     bool check_args (publish_t p, args_t a) const;
     ptr<bindtab_t> bind_args_nonblock (publish_t p, args_t a) const;
@@ -98,7 +98,7 @@ namespace pub3 {
     ptr<call_t> coerce_to_call () { return mkref (this); }
 
   protected:
-    void pub_prepare (publish_t p, event<ptr<const fndef_base_t> >::ref ev, 
+    void pub_prepare (publish_t p, event<ptr<const callable_t> >::ref ev, 
 		      CLOSURE) const;
     ptr<expr_t> _fn;
     ptr<expr_list_t> _arglist;

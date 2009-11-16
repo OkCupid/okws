@@ -25,7 +25,7 @@ namespace pub3 {
   class expr_list_t;
   class bindtab_t;
   class call_t;   // declared in pub3func.h
-  class fndef_base_t;  // declared in pub3func.h -- a custom-defined function
+  class callable_t;  // declared in pub3func.h -- a custom-defined function
 
   //-----------------------------------------------------------------------
 
@@ -62,6 +62,7 @@ namespace pub3 {
 
     static ptr<expr_t> alloc (scalar_obj_t so);
     static ptr<expr_t> safe_expr (ptr<expr_t> in);
+    static ptr<const expr_t> safe_expr (ptr<const expr_t> in);
     lineno_t lineno () const { return _lineno; }
     static str safe_to_str (ptr<const expr_t> x, bool q = true);
 
@@ -129,7 +130,7 @@ namespace pub3 {
     // Used during parsing; coerces an arbitrary expression
     // into a function call.
     virtual ptr<call_t> coerce_to_call () ;
-    virtual ptr<const fndef_base_t> to_fndef () const;
+    virtual ptr<const callable_t> to_fndef () const;
 
     //
     //-----------------------------------------------------------

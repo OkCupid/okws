@@ -203,6 +203,15 @@ namespace pub3 {
     if (!x) x = expr_null_t::alloc ();
     return x;
   }
+
+  //---------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_t::safe_expr (ptr<const expr_t> x)
+  {
+    if (!x) x = expr_null_t::alloc ();
+    return x;
+  }
   
   //---------------------------------------------------------------------
 
