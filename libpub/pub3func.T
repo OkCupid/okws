@@ -119,16 +119,17 @@ namespace pub3 {
     size_t sz;
 
     if (check_args (p, args)) {
-      old_ctrl = p.push_control ();
+
       bindings = bind_args_nonblock (p, args);
       sz = p.env ()->push_locals (bindings);
 
+      old_ctrl = p.push_control ();
       // XXX check stack depth
       _body->publish_nonblock (p);
-      p.env ()->pop_to (sz);
-
       ret = p.control ()->rtrn ();
       p.restore_control (old_ctrl);
+
+      p.env ()->pop_to (sz);
     }
     return expr_t::safe_expr (ret);
   }
@@ -147,16 +148,19 @@ namespace pub3 {
     }
 
     if (check_args (p, args)) {
+      sz = p.env ()->push_locals (bindings);
+
       old_ctrl = p.push_control ();
       twait { bind_args (p, args, mkevent (bindings)); }
-      sz = p.env ()->push_locals (bindings);
 
       // XXX check stack depth
       twait { _body->publish (p, mkevent (status)); }
-      p.env ()->pop_to (sz);
 
       ret = p.control ()->rtrn ();
       p.restore_control (old_ctrl);
+
+      p.env ()->pop_to (sz);
+
     }
     ev->trigger (expr_t::safe_expr (ret));
   }
