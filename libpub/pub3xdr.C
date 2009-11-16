@@ -192,6 +192,30 @@ pub3::statement_t::alloc (const xpub3_statement_t &x)
   case XPUB3_STATEMENT_UNIVERSALS:
     r = New refcounted<universals_t> (*x.decls);
     break;
+  case XPUB3_STATEMENT_IF:
+    r = New refcounted<if_t> (*x.if_statement);
+    break;
+  case XPUB3_STATEMENT_PRINT:
+    r = New refcounted<print_t> (*x.print);
+    break;
+  case XPUB3_EXPR_STATEMENT:
+    r = New refcounted<expr_statement_t> (*x.expr_statement);
+    break;
+  case XPUB3_STATEMENT_FNDEF:
+    r = New refcounted<fndef_t> (*x.fndef);
+    break;
+  case XPUB3_STATEMENT_SWITCH:
+    r = New refcounted<switch_t> (*x.switch_statement);
+    break;
+  case XPUB3_STATEMENT_BREAK:
+    r = New refcounted<break_t> (*x.break_statement);
+    break;
+  case XPUB3_STATEMENT_CONTINUE:
+    r = New refcounted<continue_t> (*x.continue_statement);
+    break;
+  case XPUB3_STATEMENT_RETURN:
+    r = New refcounted<return_t> (*x.return_statement);
+    break;
   default: 
     break;
   }
