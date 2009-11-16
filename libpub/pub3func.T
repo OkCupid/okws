@@ -135,11 +135,12 @@ namespace pub3 {
 
   //======================================== fndef_t ======================
 
-  bool
-  fndef_t::publish_nonblock (publish_t p) const
+  status_t
+  fndef_t::v_publish_nonblock (publish_t p) const
   {
+    status_t ret (XPUB_STATUS_OK);
     p.env ()->add_global_binding (_name, _lambda);
-    return true;
+    return ret;
   }
 
   //============================================= call_t  ================

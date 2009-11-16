@@ -26,6 +26,28 @@ expr_to_xdr (ptr<const pub3::expr_t> e, xpub3_expr_t *x)
 
 //-----------------------------------------------------------------------
 
+static ptr<pub3::identifier_list_t>
+xdr_to_idlist (const xpub3_identifier_list_t &x)
+{
+  ptr<pub3::identifier_list_t> ret = New refcounted<pub3::identifier_list_t> ();
+  for (size_t i = 0; i < x.size (); i++) {
+    ret->push_back (x[i]);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+static void
+idlist_to_xdr (const pub3::identifier_list_t &in, xpub3_identifier_list_t *out)
+{
+  for (size_t i = 0; i < in.size (); i++){
+    out->push_back (in[i]);
+  }
+}
+
+//-----------------------------------------------------------------------
+
 bool
 pub3::for_t::to_xdr (xpub3_statement_t *x) const
 {
@@ -958,5 +980,61 @@ pub3::call_t::call_t (const xpub3_call_t &x)
 
 ptr<pub3::call_t> pub3::call_t::alloc (const xpub3_call_t &x)
 { return New refcounted<call_t> (x); }
+
+//-----------------------------------------------------------------------
+
+pub3::fndef_t::fndef_t (const xpub3_fndef_t &f)
+  :  statement_t (f.lineno),
+     _name (f.name),
+     _lambda (lambda_t::alloc (f.lambda)) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::fndef_t> pub3::fndef_t::alloc (const xpub3_fndef_t &x)
+{ return New refcounted<fndef_t> (x); }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::fndef_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_FNDEF);
+  x->fndef->name = _name;
+  _lambda->to_xdr (&x->fndef->lambda);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::lambda_t::lambda_t (const xpub3_lambda_t &l)
+  : expr_t (l.lineno),
+    _params (xdr_to_idlist (l.params)),
+    _body (zone_t::alloc (l.body)) {}
+    
+//-----------------------------------------------------------------------
+
+ptr<pub3::lambda_t> pub3::lambda_t::alloc (const xpub3_lambda_t &l)
+{ return New refcounted<lambda_t> (l); } 
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::lambda_t::to_xdr (xpub3_lambda_t *l) const
+{
+  l->lineno = _lineno;
+  idlist_to_xdr (*_params, &l->params);
+  l->body.alloc ();
+  _body->to_xdr (l->body);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::lambda_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_LAMBDA);
+  return to_xdr (x->lambda);
+}
 
 //-----------------------------------------------------------------------

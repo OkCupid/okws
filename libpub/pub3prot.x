@@ -30,6 +30,7 @@ typedef string xpub_str_t <>;
 typedef string xpub_key_t <>;
 typedef string xpub_fn_t  <>;
 typedef unsigned hyper ok_xtime_t;
+typedef xpub_str_t xpub3_identifier_list_t<>;
 
 struct xpub3_fstat_t {
   xpub_fn_t  fn;
@@ -192,7 +193,7 @@ struct xpub3_assignment_t {
 struct xpub3_lambda_t {
    int lineno;
    xpub_fn_t name;
-   xpub_str_t params<>;
+   xpub3_identifier_list_t params;
    xpub3_zone_t *body;
 };
 
@@ -357,7 +358,7 @@ struct xpub3_break_t {
 struct xpub3_fndef_t {
   int lineno;
   string name<>;
-  xpub3_lambda_t l;
+  xpub3_lambda_t lambda;
 };
 
 struct xpub3_continue_t {
@@ -390,7 +391,7 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_IF = 7,
    XPUB3_STATEMENT_PRINT = 8,
    XPUB3_EXPR_STATEMENT = 9,
-   XBPU3_STATEMENT_FNDEF = 10,
+   XPUB3_STATEMENT_FNDEF = 10,
    XPUB3_STATEMENT_SWITCH = 11,
    XPUB3_STATEMENT_BREAK = 12,
    XPUB3_STATEMENT_RETURN = 13,
@@ -426,9 +427,6 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_EXPR_STATEMENT:
    xpub3_expr_statement_t expr_statement;
 
- case XBPU3_STATEMENT_FNDEF:
-   xpub3_fndef_t fndef;
-
  case XPUB3_STATEMENT_SWITCH:
    xpub3_switch_t switch_statement;
 
@@ -440,7 +438,9 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
 
  case XPUB3_STATEMENT_RETURN:
    xpub3_return_t return_statement;
-   
+
+ case XPUB3_STATEMENT_FNDEF:
+   xpub3_fndef_t fndef;
 
 };
 

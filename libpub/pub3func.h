@@ -30,6 +30,7 @@ namespace pub3 {
   public:
     lambda_t (ptr<identifier_list_t> p, ptr<zone_t> z, location_t loc);
     lambda_t (const xpub3_lambda_t &l);
+    bool to_xdr (xpub3_lambda_t *x) const;
     bool to_xdr (xpub3_expr_t *x) const;
     static ptr<lambda_t> alloc (ptr<identifier_list_t> p, ptr<zone_t> z);
     static ptr<lambda_t> alloc (const xpub3_lambda_t &l);
@@ -55,14 +56,15 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class fndef_t : public statement_t, public fndef_base_t  {
+  class fndef_t : public statement_t  {
   public:
     fndef_t (str nm, ptr<lambda_t> d, location_t l) 
       : statement_t (l), _name (nm), _lambda (d) { d->set_name (nm); }
     fndef_t (const xpub3_fndef_t &x) ;
+    static ptr<fndef_t> alloc (const xpub3_fndef_t &x);
     static ptr<fndef_t> alloc (str nm, ptr<lambda_t> d);
-    bool publish_nonblock (publish_t p) const;
-    bool might_block () const { return false; }
+    status_t v_publish_nonblock (publish_t p) const;
+    bool might_block_uncached () const { return false; }
     bool to_xdr (xpub3_statement_t *x) const;
   protected:
     str _name;
