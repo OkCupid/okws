@@ -560,6 +560,7 @@ public:
     _tab.insert ("break", T_P3_BREAK);
     _tab.insert ("return", T_P3_RETURN);
     _tab.insert ("continue", T_P3_CONTINUE);
+    _tab.insert ("lambda", T_P3_LAMBDA);
   }
 
   bool lookup (const char *in, int *out) {

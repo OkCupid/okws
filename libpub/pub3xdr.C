@@ -422,7 +422,7 @@ pub3::call_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_CALL);
   x->call->lineno = _lineno;
-  x->call->name = name ();
+  expr_to_rpc_ptr (_fn, &x->call->fn);
   if (args ()) {
     args ()->to_xdr (&x->call->args);
   }
@@ -659,16 +659,6 @@ pub3::expr_regex_t::to_xdr (xpub3_expr_t *x) const
     x->regex->opts = _opts;
   }
   return true;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-pub3::expr_varref_or_rfn_t::to_xdr (xpub3_expr_t *x) const
-{
-  // Strategy -- see if we have args, in which case, we're
-  // an rfn, otherwise, we're a varref.
-  return false;
 }
 
 //-----------------------------------------------------------------------
@@ -961,7 +951,7 @@ pub3::continue_t::to_xdr (xpub3_statement_t *x) const
 
 pub3::call_t::call_t (const xpub3_call_t &x)
   : expr_t (x.lineno),
-    _name (x.name),
+    _fn (expr_t::alloc (x.fn)),
     _arglist (expr_list_t::alloc (x.args)) {}
 
 //-----------------------------------------------------------------------

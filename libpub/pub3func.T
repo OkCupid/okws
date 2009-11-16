@@ -9,117 +9,52 @@
 
 namespace pub3 {
 
-  //-----------------------------------------------------------------------
+  //======================================================================
 
-  ptr<rfn_factory_t> rfn_factory_t::_curr;
+  // XXX copy-pasted from pub3ast.T
+  static const location_t &location () 
+  { return parser_t::current ()->location (); }
 
-  //-----------------------------------------------------------------------
-  
-  void
-  rfn_factory_t::set (ptr<rfn_factory_t> f)
-  {
-    _curr = f;
-  }
-  
-  //-----------------------------------------------------------------------
-  
-  ptr<rfn_factory_t>
-  rfn_factory_t::get ()
-  {
-    if (!_curr) {
-      _curr = New refcounted<null_rfn_factory_t> ();
-    }
-    return _curr;
-  }
-    
-  //-----------------------------------------------------------------------
+  //======================================== lambda_t =====================
 
-  ptr<call_t> call_t::alloc (const str &n, ptr<expr_list_t> l)
-  { return New refcounted<call_t> (n, l, plineno ()); }
+  lambda_t::lambda_t (ptr<identifier_list_t> p, ptr<zone_t> z, location_t loc)
+    : _loc (loc), 
+      _name ("(anonymous lambda)"),
+      _params (p), 
+      _body (z) {}
 
   //-----------------------------------------------------------------------
 
-  void
-  proc_def_t::add_params (ptr<identifier_list_t> l)
-  {
-    _core->add_params (l);
-  }
-
-  //-----------------------------------------------------------------------
-
-  void 
-  proc_core_t::add_params (ptr<identifier_list_t> l)
-  {
-    if (!_params) {
-      _params = l;
-    } else if (l) { 
-      *_params += *l;
-    }
-  }
-
-  //-----------------------------------------------------------------------
-
-  void
-  proc_def_t::add_body (ptr<zone_t> z) 
-  {
-    _core->_body = z;
-  }
-
-  //-----------------------------------------------------------------------
-
-  bool
-  proc_def_t::publish_nonblock (publish_t p) const
-  {
-    p.env ()->add_global_binding (_core->_name, mkref (this)); }
-    return true;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<proc_call_t> proc_def_t::alloc_call () const
-  { return New refcounted<proc_call_t> (_core, _location); }
+  ptr<lambda_t> lambda_t::alloc (ptr<identifier_list_t> il, ptr<zone_t> z)
+  { return New refcounted<lambda_t> (il, z, location ()); }
 
   //-----------------------------------------------------------------------
 
   str 
-  proc_call_t::to_str_short () const
+  lambda_t::to_str () const
   {
-    str ls = _location.to_str ();
-    return strbuf ("<%s @ %s>", _core->_name.cstr (), ls.cstr ());
+    str ls = _loc.to_str ();
+    return strbuf ("<%s @ %s>", _name.cstr (), ls.cstr ());
   }
 
   //-----------------------------------------------------------------------
 
+  bool lambda_t::might_block () const 
+  { return (_body && _body->might_block ()); }
+
+  //-----------------------------------------------------------------------
+  
   bool
-  proc_call_t::might_block_uncached () const
-  {
-    ptr<const zone_t> b;
-    return (b = _core->body ()) && b->might_block ();
-  }
-
-  //-----------------------------------------------------------------------
-
-  str
-  proc_call_t::to_str (bool q) const
-  {
-    str ss = to_str_short ();
-    return strbuf ("pub-defined runtime procedure %s", ss.cstr ());
-  }
-
-  //-----------------------------------------------------------------------
-
-  bool
-  proc_call_t::check_args (publish_t e) const
+  lambda_t::check_args (publish_t e, args_t a) const
   {
     size_t gs, es;
-    ptr<const expr_list_t> l = _args;
-    gs = l->size ();
-    es = _core->_params->size ();
-    str s = to_str_short ();
+    gs = a->size ();
+    es = _params->size ();
+    str s = to_str ();
     bool ret = true;
 
     if (gs != es) {
-      strbuf b ("Wrong number of parameters to function call %s "
+      strbuf b ("Wrong number of parameters to call %s "
 		"(expected %zd, got %zd)", s.cstr (), es, gs);
       report_error (e, b);
       ret = false;
@@ -129,26 +64,155 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  lambda_t::bind_arg (ptr<bindtab_t> ret, size_t index, ptr<mref_t> r) const
+  {
+    ptr<expr_t> x;
+    if (r) { x = r->get_value (); }
+    if (x) { x = expr_null_t::alloc (); }
+    ret->insert ((*_params)[index], x);
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
-  proc_call_t::pub_to_val (publish_t e, cxev_t ev) const
+  lambda_t::bind_args (publish_t p, fndef_base_t::args_t a, 
+		       event<ptr<bindtab_t> >::ref ev) const
   {
     tvars {
-      ptr<const expr_t> ret;
-      ptr<control_t> old_ctrl;
-      ptr<const expr_list_t> l;
+      ptr<bindtab_t> ret (New refcounted<bindtab_t> ());
+      size_t i;
+      ptr<mref_t> r;
     }
 
-    l = _args;
-
-    if (check_args (e, l)) {
-      old_ctrl = e.push_control ();
-      ret = e.control ()->rtrn ();
-      e.restore_control (old_ctrl);
+    for (i = 0; i < a->size (); i++) {
+      twait { (*a)[i]->pub_to_ref (p, mkevent (r)); }
+      // XXX -- some warning?
+      bind_arg (ret, i, r);
     }
     ev->trigger (ret);
   }
 
+
   //-----------------------------------------------------------------------
+
+  ptr<bindtab_t>
+  lambda_t::bind_args_nonblock  (publish_t p, args_t args) const
+  {
+    ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
+    for (size_t i = 0; i < args->size (); i++) {
+      // XXX -- some warning?
+      ptr<mref_t> r = (*args)[i]->eval_to_ref (p);
+      bind_arg (ret, i, r);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t> 
+  lambda_t::eval_to_val (publish_t p, args_t args) const
+  {
+    ptr<const expr_t> ret;
+    ptr<control_t> old_ctrl;
+    ptr<bindtab_t> bindings;
+    size_t sz;
+
+    if (check_args (p, args)) {
+      old_ctrl = p.push_control ();
+      bindings = bind_args_nonblock (p, args);
+      sz = p.env ()->push_locals (bindings);
+
+      // XXX check stack depth
+      _body->publish_nonblock (p);
+      p.env ()->pop_to (sz);
+
+      ret = p.control ()->rtrn ();
+      p.restore_control (old_ctrl);
+    }
+    return ret;
+  }
+
+  //======================================== fndef_t ======================
+
+  bool
+  fndef_t::publish_nonblock (publish_t p) const
+  {
+    p.env ()->add_global_binding (_name, _lambda);
+    return true;
+  }
+
+  //============================================= call_t  ================
+
+  ptr<call_t> call_t::alloc (ptr<expr_t> x, ptr<expr_list_t> l)
+  { return New refcounted<call_t> (x, l, plineno ()); }
+
+  //----------------------------------------------------------------------
+
+  void call_t::unshift_argument (ptr<expr_t> x)
+  { _arglist->push_front (x); }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  call_t::pub_to_val (publish_t p, cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> ret;
+      ptr<const fndef_base_t> fnd;
+    }
+
+    twait { pub_prepare (p, mkevent (fnd)); }
+    if (!fnd) { /* noop */ }
+    else if (fnd->might_block () || _arglist->might_block ()) {
+      twait { fnd->pub_to_val (p, _arglist, mkevent (ret)); }
+    } else {
+      ret = fnd->eval_to_val (p, _arglist);
+    }
+    ev->trigger (ret);
+  }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  call_t::pub_to_ref (publish_t p, mrev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> x;
+      ptr<expr_t> copy;
+      ptr<mref_t> ret;
+    }
+    twait { pub_to_val (p, mkevent (x)); }
+    if (x) copy = x->copy ();
+    ret = const_mref_t::alloc (copy);
+    ev->trigger (ret);
+  }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  call_t::pub_prepare (publish_t p, 
+		       event<ptr<const fndef_base_t> >::ref ev) const
+  {
+    tvars {
+      ptr<const expr_t> f;
+      ptr<const fndef_base_t> fnd;
+    }
+
+    p.update_location (*this);
+
+    if (_fn->might_block ()) { twait { _fn->pub_to_val (p, mkevent (f)); } }
+    else { f = _fn->eval_to_val (p); }
+    
+    if (!f) { 
+      report_error (p, "cannot resolve function"); 
+    } else if (!(fnd = f->to_fndef ())) {
+      report_error (p, "expected a function; got something else");
+    }
+    ev->trigger (fnd);
+  }
+
+  //======================================================================
 
 };
 

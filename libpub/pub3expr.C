@@ -744,33 +744,6 @@ namespace pub3 {
   // see pub3ref.C for implementation of ref classes
   //====================================================================
 
-  bool
-  expr_varref_or_rfn_t::unshift_argument (ptr<expr_t> x)
-  {
-    if (!_arglist) {
-      _arglist = New refcounted<expr_list_t> (_lineno);
-    }
-    _arglist->push_front (x);
-    return true;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<expr_varref_or_rfn_t> 
-  expr_varref_or_rfn_t::alloc (const str &l)
-  {
-    return New refcounted<expr_varref_or_rfn_t> (l, plineno ());
-  }
-  
-  //-----------------------------------------------------------------------
-
-  ptr<const expr_t> expr_varref_or_rfn_t::eval_to_val (eval_t e) const 
-  { return NULL; }
-  ptr<mref_t> expr_varref_or_rfn_t::eval_to_ref (eval_t e) const 
-  { return NULL; }
-  
-  //====================================================================
-
   bool expr_strbuf_t::to_bool () const { return _b.len () > 0; }
   scalar_obj_t expr_strbuf_t::to_scalar () const { return scalar_obj_t (_b); }
   bool expr_strbuf_t::to_null () const { return false; }

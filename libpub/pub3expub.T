@@ -178,60 +178,6 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_varref_or_call_t::pub_to_val (publish_t e, cxev_t ev) const
-  {
-    tvars {
-      ptr<const expr_t> r, v;
-      ptr<const proc_call_t> prc;
-      ptr<const fn_call_t> fnc;
-      bool make_silent;
-      bool old_silent;
-    }
-
-    make_silent = _arglist;
-    old_silent = e.set_silent (make_silent);
-    twait { expr_varref_t::pub_to_val (e, mkevent (v)); }
-    e.set_silent (old_silent);
-
-    if (!_arglist) { r = v; }
-    else if (v && (fnd = v->alloc_call (_arglist, _lineno))) {
-      twait { fnd->pub_to_val (e, _arglist, mkevent (r)); }
-    } else if ((rfn = get_rfn ())) {
-      twait { rfn->pub_to_val (e, mkevent (r)); }
-    }
-    ev->trigger (r);
-  }
-  
-  //-----------------------------------------------------------------------
-
-  tamed void
-  expr_varref_or_call_t::pub_to_ref (publish_t e, mrev_t ev) const
-  {
-    tvars {
-      ptr<mref_t> r, v;
-      ptr<expr_t> x;
-      ptr<const proc_call_t> fnd;
-      ptr<const expr_t> rfn;
-      bool make_silent, old_silent;
-    }
-
-    make_silent = _arglist;
-    old_silent = e.set_silent (make_silent);
-    twait { expr_varref_t::pub_to_ref (e, mkevent (v)); }
-    e.set_silent (old_silent);
-
-    if (!_arglist) { r = v; }
-    else if (v && (x = v->get_value ()) && (fnd = x->to_proc_call ())) { 
-      twait { fnd->pub_to_ref (e, _arglist, mkevent (r)); }
-    } else if ((rfn = get_rfn ())) {
-      twait { rfn->pub_to_ref (e, mkevent (r)); }
-    }
-    ev->trigger (r);
-  }
-  
-  //=======================================================================
-
-  tamed void
   expr_vecref_t::pub_to_val (publish_t p, cxev_t ev) const
   {
     tvars {

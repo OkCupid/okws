@@ -38,6 +38,7 @@ struct xpub3_fstat_t {
 };
 
 %struct xpub3_expr_t;
+%struct xpub3_zone_t;
 
 struct xpub3_zstr_t {
   xpub_str_t s;
@@ -65,7 +66,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_MATHOP,
    XPUB3_EXPR_ASSIGNMENT,
    XPUB3_EXPR_BOOL,
-   XPUB3_EXPR_PUBNULL
+   XPUB3_EXPR_PUBNULL,
+   XPUB3_EXPR_LAMBDA
 };
 
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -100,7 +102,7 @@ struct xpub3_expr_list_t {
 
 struct xpub3_call_t {
    int lineno;
-   string name<>;
+   xpub3_expr_t *fn;
    xpub3_expr_list_t args;
 };
 
@@ -187,6 +189,13 @@ struct xpub3_assignment_t {
   xpub3_expr_t *rhs;
 };
 
+struct xpub3_lambda_t {
+   int lineno;
+   xpub_fn_t name;
+   xpub_str_t params<>;
+   xpub3_zone_t *body;
+};
+
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
@@ -228,12 +237,13 @@ case XPUB3_EXPR_ASSIGNMENT:
      xpub3_assignment_t assignment;
 case XPUB3_EXPR_BOOL:
      xpub3_int_t xbool;
+case XPUB3_EXPR_LAMBDA:
+     xpub3_lambda_t lambda;
 };
 
 /* ======================================================================= */
 /* PUB3 Zones */
 
-%struct xpub3_zone_t;
 %struct xpub3_statement_t;
 
 struct xpub3_zone_html_t {
@@ -344,6 +354,12 @@ struct xpub3_break_t {
   int lineno;
 };
 
+struct xpub3_fndef_t {
+  int lineno;
+  string name<>;
+  xpub3_lambda_t l;
+};
+
 struct xpub3_continue_t {
   int lineno;
 };
@@ -363,13 +379,6 @@ struct xpub3_expr_statement_t {
   xpub3_expr_t *expr;
 };
 
-struct xpub3_proc_def_t {
-   int lineno;
-   xpub_fn_t name;
-   xpub_str_t params<>;
-   xpub3_zone_t body;
-};
-
 enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_NONE = 0,	
    XPUB3_STATEMENT_INCLUDE = 1,
@@ -381,7 +390,7 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_IF = 7,
    XPUB3_STATEMENT_PRINT = 8,
    XPUB3_EXPR_STATEMENT = 9,
-   XBPU3_STATEMENT_PROC_DEF = 10,
+   XBPU3_STATEMENT_FNDEF = 10,
    XPUB3_STATEMENT_SWITCH = 11,
    XPUB3_STATEMENT_BREAK = 12,
    XPUB3_STATEMENT_RETURN = 13,
@@ -417,8 +426,8 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_EXPR_STATEMENT:
    xpub3_expr_statement_t expr_statement;
 
- case XBPU3_STATEMENT_PROC_DEF:
-   xpub3_proc_def_t proc_def;
+ case XBPU3_STATEMENT_FNDEF:
+   xpub3_fndef_t fndef;
 
  case XPUB3_STATEMENT_SWITCH:
    xpub3_switch_t switch_statement;

@@ -24,7 +24,8 @@ namespace pub3 {
   class expr_dict_t;
   class expr_list_t;
   class bindtab_t;
-  class proc_call_t; // declared in pub3ast.h
+  class call_t;   // declared in pub3func.h
+  class fndef_base_t;  // declared in pub3func.h -- a custom-defined function
 
   //-----------------------------------------------------------------------
 
@@ -124,26 +125,14 @@ namespace pub3 {
     virtual str type_to_str () const { return "object"; }
     virtual bool to_int (int64_t *out) const { return false; }
     virtual scalar_obj_t to_scalar () const;
-    
-    // alloc a call
-    virtual ptr<proc_call_t> alloc_call (ptr<const expr_list_t> a, lineno_t l) 
-      const { return NULL; }
 
-    //
-    // and from here, scalars can be converted at will...
+    // Used during parsing; coerces an arbitrary expression
+    // into a function call.
+    virtual ptr<call_t> coerce_to_call () ;
+    virtual ptr<const fndef_base_t> to_fndef () const;
+
     //
     //-----------------------------------------------------------
-
-    //-----------------------------------------------------------
-    // One can push arguments onto a fair number of different objects
-    // (like idenitifers, runtime functions, and in the future, references
-    // to function (like function pointers). 
-    // 
-
-    virtual bool unshift_argument (ptr<expr_t> e) { return false; }
-
-    //
-    //-------------------------------------------------------------
     
     void report_error (eval_t e, str n) const;
     
@@ -567,33 +556,6 @@ namespace pub3 {
     
   //-----------------------------------------------------------------------
 
-  // The parser doesn't know at allocation time if a variable reference
-  // is a variable reference or rather a function in a pipeline. 
-  // Therefore, this class is used in conjunction with the parser
-  // to capture that dual-nature/uncertainty.  NOTE that we'll never
-  // need to ship one of these over the wire via the xpub protocol,
-  // since by that time, the true nature of this beast is known.
-  class expr_varref_or_call_t : public expr_varref_t {
-  public:
-    expr_varref_or_call_t (const str &s, lineno_t l) : expr_varref_t (s, l) {}
-    bool to_xdr (xpub3_expr_t *x) const;
-    bool unshift_argument (ptr<expr_t> e);
-    static ptr<expr_varref_or_call_t> alloc (const str &l);
-
-    const char *get_obj_name () const { return "pub3::expr_varref_or_call_t"; }
-
-    ptr<const expr_t> eval_to_val (eval_t e) const;
-    ptr<mref_t> eval_to_ref (eval_t e) const;
-    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
-    void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
-
-  protected:
-    bool might_block_uncached () const { return true; }
-    ptr<expr_list_t> _arglist;
-  };
-
-  //-----------------------------------------------------------------------
-
   class expr_strbuf_t : public expr_constant_t {
   public:
     expr_strbuf_t (const str &s = NULL, lineno_t l = 0) 
@@ -753,7 +715,6 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_list_t *) const;
     bool to_xdr (xpub3_json_t *j) const;
 
-    // vec_iface_t interface
     ptr<const expr_t> lookup (ssize_t i, bool *ib = NULL) const;
     ptr<expr_t> lookup (ssize_t i, bool *ib = NULL);
     void set (ssize_t i, ptr<expr_t> v);

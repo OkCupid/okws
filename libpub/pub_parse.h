@@ -80,6 +80,7 @@ struct yystype {
   ptr<pub3::identifier_list_t> p3strv;
   ptr<pub3::bindlist_t> p3bl;
   ptr<pub3::include_t> p3include;
+  ptr<pub3::lambda_t> p3lambda;
   int64_t num;
 };
 

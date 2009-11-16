@@ -44,6 +44,7 @@
 %token T_P3_CASE
 %token T_P3_SWITCH
 %token T_P3_DEF
+%token T_P3_LAMBDA
 %token T_P3_BREAK
 %token T_P3_RETURN
 %token T_P3_CONTINUE
@@ -118,6 +119,7 @@
 %type <p3zp> p3_pub_zone_body_opt p3_pub_zone_body;
 %type <p3zone> p3_nested_zone;
 %type <p3zone> p3_empty_clause;
+%type <p3lambda> p3_lambda p3_fndef_body;
 
 
 /* ------------------------------------------------ */
@@ -240,12 +242,19 @@ p3_control:     p3_for { $$ = $1; }
               | ';' { $$ = NULL; }
 	      ;
 
-p3_fndef : T_P3_DEF p3_identifier '(' p3_identifier_list ')' p3_nested_zone
+p3_fndef : T_P3_DEF p3_identifier p3_fndef_body
+	 {
+	    $$ = pub3::fndef_t::alloc ($2, $3);
+	 }
+	 ;
+
+p3_lambda: T_P3_LAMBDA p3_fndef_body { $$ = $2; } ;
+
+
+p3_fndef_body: '(' p3_identifier_list ')' p3_nested_zone
        {
-          ptr<pub3::proc_def_t> d = pub3::proc_def_t::alloc ($2);
-	  d->add_params ($4);
-	  d->add_body ($6);
-	  $$ = d;
+          ptr<pub3::lambda_t> l = pub3::lambda_t::alloc ($2, $4);
+	  $$ = l;
        }
        ;
 
@@ -352,11 +361,15 @@ p3_inclusive_OR_expr: p3_equality_expr
 	       }
 	       | p3_inclusive_OR_expr T_P3_PIPE p3_equality_expr
 	       {
-	          if (!$3->unshift_argument ($1)) {
-		     str err = "Cannot push argument onto non-function";
+	          ptr<pub3::call_t> c = $3->coerce_to_call ();
+ 		  if (!c) {
+		     str err = "Cannot coerce expression into a function call";
 		     pub3::parse_error (err);
+	             $$ = NULL;
+                  } else {
+                     c->unshift_argument ($1);
+		     $$ = c;
 		  }
-		  $$ = $3;
 	       }
 	       ;
 
@@ -450,7 +463,7 @@ p3_vecref: p3_postfix_expr '[' p3_expr ']'
 	   }
 	   ;
 
-p3_fncall: p3_identifier '(' p3_argument_expr_list_opt ')' 
+p3_fncall: p3_postfix_expr '(' p3_argument_expr_list_opt ')' 
 	   {
 	      /* Allocate a stub at first, which will be resolved 
 	       * into the true function either at evaluation time
@@ -466,7 +479,7 @@ p3_varref: p3_identifier
               /* See comment in pub3expr.h -- this identifier might be
 	       * a function call in a pipeline; we just don't know yet!
 	       */
-	      $$ = pub3::expr_varref_or_call_t::alloc ($1);
+	      $$ = pub3::expr_varref_t::alloc ($1);
 	   }
 	   ;
 
@@ -499,6 +512,7 @@ p3_nonparen_expr:
 	   | p3_string      { $$ = $1; }
 	   | p3_regex       { $$ = $1; }
 	   | p3_varref      { $$ = $1; }
+	   | p3_lambda      { $$ = $1; }
 	   ;
 
 p3_identifier_list: /* empty */ 

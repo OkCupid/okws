@@ -88,6 +88,7 @@ namespace pub3 {
     void report_error (str e, lineno_t l);
     bool push_muzzle (bool b) { return _output->push_muzzle (b); }
     void pop_muzzle (bool b) { _output->pop_muzzle (b); }
+    void update_location (const expr_t &x);
   private:
 
     ptr<env_t> _env;
