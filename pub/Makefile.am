@@ -6,6 +6,7 @@ $(PROGRAMS): $(LDEPS_PUB)
 okwsbin_PROGRAMS = pub3stage1
 pub3stage1_SOURCES = pub3stage1.C
 SUFFIXES = .T .C .h
+pub3stage1_LDADD = $(LDADD_PUB)
 
 .T.C:
 	-$(TAME) -o $@ $< || rm -f $@

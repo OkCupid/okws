@@ -117,10 +117,11 @@ namespace pub3 {
     void set (jail_mode_t m = JAIL_NONE, str d = NULL);
     str jail2real (str s) const;
     static ptr<jailer_t> alloc ();
+    void setjail (jail_mode_t m, str d);
   protected:
     static bool be_verbose ();
-    str _dir;
     jail_mode_t _mode;
+    str _dir;
   };
 
   //-----------------------------------------------------------------------

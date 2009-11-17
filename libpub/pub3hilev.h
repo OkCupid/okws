@@ -20,13 +20,13 @@ namespace pub3 {
   // Global data shared across all pub objects -- such as global bindings
   // published from config files are startup.
   //
-  class global_t {
+  class singleton_t {
   public:
-    global_t ();
-    static ptr<global_t> get ();
-    ptr<bindtab_t> universals () { return _universals; }
+    singleton_t ();
+    static ptr<singleton_t> get ();
+    ptr<expr_dict_t> universals () { return _universals; }
   private:
-    ptr<bindtab_t> _universals;
+    ptr<expr_dict_t> _universals;
   };
 
   //
@@ -119,9 +119,12 @@ namespace pub3 {
     void set_opts (opts_t o) { _opts = o; }
     void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);
 
+    static ptr<expr_dict_t> get_universals ();
+    static pub3::obj_t get_universals_obj ();
+
   protected:
     // to be filled in by the sub classes
-    virtual void getfile (str fn, getfile_ev_t ev, u_int o = 0) = 0;
+    virtual void getfile (str fn, getfile_ev_t ev, opts_t o = 0) = 0;
     virtual bool is_remote () const = 0;
 
     void publish (publish_t p, str fn, getfile_ev_t ev, CLOSURE);
@@ -138,12 +141,12 @@ namespace pub3 {
    */
   class remote_publisher_t : public abstract_publisher_t {
   public:
-    remote_publisher_t (ptr<axprt_stream> x, u_int o = 0);
+    remote_publisher_t (ptr<axprt_stream> x, opts_t o = 0);
     virtual ~remote_publisher_t () {}
 
     virtual void connect (evb_t cb, CLOSURE);
 
-    void getfile (pfnm_t fn, getfile_ev_t cb, u_int o = 0);
+    void getfile (pfnm_t fn, getfile_ev_t cb, opts_t o = 0);
 
     void dispatch (svccb *sbp);
     virtual void lost_connection () {}
@@ -157,12 +160,12 @@ namespace pub3 {
     // chunks, if necessary.
     //
     void getfile_body (str nm, const xpub3_getfile_res_t *res, 
-		       getfile_ev_t cb, u_int opt, CLOSURE);
+		       getfile_ev_t cb, opts_t opt, CLOSURE);
 
-    void getfile_chunked (const xpub3_chunkshdr_t &hdr, u_int opts,
+    void getfile_chunked (const xpub3_chunkshdr_t &hdr, opts_t opts,
 			  xpub3_file_t *file, status_ev_t cb, CLOSURE);
 
-    void getchunk (const xpub3_hash_t &key, u_int opts,
+    void getchunk (const xpub3_hash_t &key, opts_t opts,
 		   size_t offset, size_t sz, char *buf, evb_t ok, CLOSURE);
     //
     //-----------------------------------------------------------------------

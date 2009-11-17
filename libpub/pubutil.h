@@ -161,8 +161,9 @@ void ls (const str &s);
 // strip comments after getline returns
 void strip_comments (vec<str> *in);
 
-
 str trunc_at_first_null (const str &s);
 void fix_trailing_newlines (str *s);
+
+const char * getenvval (const char *s);
 
 #endif /* _LIBPUB_PUBUTIL_H */

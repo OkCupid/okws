@@ -33,26 +33,40 @@ namespace pub3 {
 
   //=======================================================================
 
-  global_t::global_t () : _universals (New refcounted<bindtab_t> ()) {}
+  singleton_t::singleton_t() :
+    _universals (New refcounted<expr_dict_t> ()) {}
   
   //-----------------------------------------------------------------------
 
-  ptr<global_t> 
-  global_t::get ()
+  ptr<singleton_t> 
+  singleton_t::get ()
   {
-    static ptr<global_t> g;
-    if (!g) { g = New refcounted<global_t> (); }
+    static ptr<singleton_t> g;
+    if (!g) { g = New refcounted<singleton_t> (); }
     return g;
   }
 
   //=======================================================================
+
+  ptr<expr_dict_t>
+  ap_t::get_universals () 
+  {
+    return singleton_t::get ()->universals ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  obj_t ap_t::get_universals_obj () 
+  { return pub3::obj_dict_t (get_universals ()); }
+
+  //-----------------------------------------------------------------------
   
   tamed void 
   ap_t::run (zbuf *b, str fn, evb_t ev, ptr<expr_dict_t> d, opts_t opts, 
 	     status_t *sp, ptr<file_t> *fp)
   {
     tvars {
-      publish_t pub (global_t::get ()->universals (), b);
+      publish_t pub (singleton_t::get ()->universals (), b);
       status_t status;
       ptr<file_t> file;
     }
@@ -203,7 +217,7 @@ namespace pub3 {
   
   //=======================================================================
   
-  remote_publisher_t::remote_publisher_t (ptr<axprt_stream> x, u_int o)
+  remote_publisher_t::remote_publisher_t (ptr<axprt_stream> x, opts_t o)
     : ap_t (o),
       _x (x),
       _cli (aclnt::alloc (x, pub_prog_3)),
@@ -250,7 +264,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void
-  rp_t::getchunk (const xpub3_hash_t &key, u_int opts, size_t offset, 
+  rp_t::getchunk (const xpub3_hash_t &key, opts_t opts, size_t offset, 
 		  size_t sz, char *buf, evb_t ev)
   {
     tvars {
@@ -300,7 +314,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void
-  rp_t::getfile_chunked (const xpub3_chunkshdr_t &hdr, u_int opts,
+  rp_t::getfile_chunked (const xpub3_chunkshdr_t &hdr, opts_t opts,
 			 xpub3_file_t *file, status_ev_t ev)
   {
     tvars {
@@ -358,7 +372,7 @@ namespace pub3 {
   
   tamed void
   rp_t::getfile_body (str nm, const xpub3_getfile_res_t *res, 
-		      getfile_ev_t ev, u_int opts)
+		      getfile_ev_t ev, opts_t opts)
   {
     tvars {
       ptr<file_t> out;

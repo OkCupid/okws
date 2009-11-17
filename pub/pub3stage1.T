@@ -143,6 +143,7 @@ pub3::eng_t::run_pub (evi_t ev)
     int rc (0);
     size_t i;
     bool b (true);
+    pub3::obj_t uo;
   }
 
   if (_argfile) {
@@ -158,8 +159,11 @@ pub3::eng_t::run_pub (evi_t ev)
     twait { run_file (_files[i], mkevent (rc)); }
   }
 
+  uo = _pub->get_universals_obj ();
+
   for (i = 0; i < _print_vars.size () && rc == 0; i++) {
-    str v = _pub->cfg (_print_vars [i]);
+    
+    str v = uo (_print_vars [i]).to_str ();
     if (!v) { v = "null"; }
     aout << _print_vars[i] << ": " << v << "\n";
   }
@@ -197,6 +201,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     bool have_cfg;
     struct stat sb;
     bool check_use_jail (false);
+    pub3::obj_dict_t tmp_d;
   }
 
   zinit ();
@@ -282,7 +287,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     
     have_cfg = false;
     if (_config) {
-      twait { _pub->run_cfg (_config, mkevent (have_cfg)); }
+      twait { _pub->run_cfg (_config, mkevent (have_cfg), tmp_d.dict ()); }
     }
     
     if (!have_cfg && !_syntax_check)  {
@@ -290,7 +295,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     }
     
     if (!_jaildir && (!_syntax_check || check_use_jail)) {
-      if (!_pub->cfg ("JailDir", &_jaildir, true)) {
+      if (!tmp_d("JailDir").to_str (&_jaildir)) {
 	warn << "XX cannot find a jail directory!!\n";
 	warn << "XX   - none was specified with -j and "
 	     << "no 'JailDir' found in config file.\n";
@@ -320,7 +325,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     }
 
     if (rc == 0 && _jaildir) {
-      _ppt->setjail_virtual (_jaildir);
+      _pub->jailer ()->setjail (JAIL_VIRTUAL, _jaildir);
     }
 
   }

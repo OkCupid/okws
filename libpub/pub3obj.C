@@ -165,6 +165,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  obj_dict_t::obj_dict_t (ptr<expr_dict_t> d)
+  { _c_obj = _obj = _dict = d; }
+
+  //-----------------------------------------------------------------------
+
   obj_dict_t::obj_dict_t ()
   {
     _dict = New refcounted<expr_dict_t> ();

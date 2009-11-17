@@ -262,6 +262,7 @@ namespace pub3 {
   class obj_dict_t : public obj_t {
   public:
     obj_dict_t ();
+    obj_dict_t (ptr<expr_dict_t> d);
   };
 
   //-----------------------------------------------------------------------
