@@ -201,6 +201,9 @@ namespace pub3 {
     void getfile (str fn, getfile_ev_t cb, opts_t o = 0);
     void getfile (str fn, getfile_ev_t cb,
 		  const xpub3_file_freshcheck_t &fres, opts_t o = 0);
+    void set_jailer (ptr<jailer_t> j) { _jailer = j; }
+    ptr<jailer_t> jailer () { return _jailer; }
+    ptr<const jailer_t> jailer () const { return _jailer; }
     
   protected:
     bool is_remote () const { return false; }
