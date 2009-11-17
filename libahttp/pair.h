@@ -269,9 +269,9 @@ pairtab_t<C>::remove (const str &k)
 template<class C> pairtab_t<C> &
 pairtab_t<C>::insert (const str &key, const str &val, bool append, bool encode)
 {
-  assert (key);
-  if (!key.len ())
-    return *this;
+  // Can get a NULL key if parsing during an interrupted upload (due to
+  // channel limit being exceeded).
+  if (!key || !key.len ()) return *this;
   pair_t *p = tab[key];
   if (p && val) {
     if (append) {
