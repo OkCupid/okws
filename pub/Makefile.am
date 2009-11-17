@@ -3,37 +3,21 @@
 
 $(PROGRAMS): $(LDEPS_PUB)
 
-noinst_HEADERS = pubd.h pubd2.h
-
-okwsbin_PROGRAMS = treestat
-okwsexec_PROGRAMS = pubd
-pubd_SOURCES = pubd.C pubserv.C pubserv2.C cache2.C 
-pubd_LDADD = $(LDADD_PUB)
-treestat_SOURCES = treestat.C
-treestat_LDADD = $(LDADD_PUB)
-
+okwsbin_PROGRAMS = pub3stage1
+pub3stage1_SOURCES = pub3stage1.C
 SUFFIXES = .T .C .h
 
 .T.C:
 	-$(TAME) -o $@ $< || rm -f $@
 
-cache2.o:	cache2.C
-cache2.lo:	cache2.C
-pubd.o:		pubd.C
-pubd.lo:	pubd.C
-pubserv2.o:	pubserv2.C
-pubserv2.lo:	pubserv2.C
-treestat.o:	treestat.C
-treestat.lo:	treestat.C
-
-CLEANFILES = core *.core *~ cache2.C pubserv2.C pubd.C treestat.C 
-EXTRA_DIST = .cvsignore cache2.T pubserv2.T pubd.T treestat.T
+CLEANFILES = core *.core *~ pub3stage1.C
+EXTRA_DIST = .cvsignore pub3stage1.T
 MAINTAINERCLEANFILES = Makefile.in
 
 dist-hook:
-	cd $(distdir) && rm -f cache2.C pubd.C treestat.C pubserv2.C 
+	cd $(distdir) && rm -f pub3stage1.C
 
 .PHONY: tameclean 
 
 tameclean:
-	rm -f cache2.C pubd.C treestat.C pubserv2.C
+	rm -f pub3stage1.C

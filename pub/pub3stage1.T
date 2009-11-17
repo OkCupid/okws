@@ -22,18 +22,14 @@
  *
  */
 
-#include "pub.h"
-#include "pub_parse.h"
-#include "xpub.h"
+#include "pub3.h"
+#include "pub3hilev.h"
+#include "pub3parse.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include "parseopt.h"
 #include "pslave.h"
 #include "pubutil.h"
-#include "okdbg.h"
-#include "pub2.h"
-#include "pub3.h"
-#include "okrfn.h"
 #include "aios.h"
 
 //-----------------------------------------------------------------------
