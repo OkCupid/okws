@@ -57,7 +57,6 @@ static void json_str_add_unicode (const char *in);
 static void json_str_addstr (const char *in);
 static int  json_str_eof ();
 static int yy_json_mode = 0;
-int json_error (str s);
 static void inc_lineno (int c = 1);
 
 static void open_pre_tag (const char *tag);
@@ -335,7 +334,7 @@ null		     { return T_P3_NULL; }
 		         if (ok_pub3_json_strict_escaping) {
 		            strbuf b ("illegal escape sequence in "
 			              "string ('%s')", yytext);
-		            return json_error (b);
+		            return yyerror (b);
 			 } else {
 			    json_str_addch (yytext[1]);
 			 }
@@ -625,7 +624,7 @@ int
 json_str_eof ()
 {
   strbuf e ("EOF on JSON string started on line %d", yy_json_str_line);
-  return json_error (e);
+  return yyerror (e);
 }
 
 int
