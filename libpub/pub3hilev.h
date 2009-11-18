@@ -116,7 +116,6 @@ namespace pub3 {
     void run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d = NULL,
 		  opts_t opts = -1, status_t *sp = NULL, CLOSURE);
 
-    void syntax_check (str f, str *err, evi_t ev, CLOSURE);
     opts_t opts () const { return _opts; }
     void set_opts (opts_t o) { _opts = o; }
     void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);

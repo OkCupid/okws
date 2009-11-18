@@ -71,11 +71,13 @@ pub3::eng_t::check_file (str f, evi_t ev)
 {
   tvars {
     int rc;
-    str err;
+    vec<str> err;
   }
   twait { _pub->syntax_check (f, &err, mkevent (rc)); }
   if (rc != 0) {
-    warn << err << "\n";
+    for (size_t i = 0; i < err.size (); i++) {
+      warn << err[i] << "\n";
+    }
   }
   ev->trigger (rc);
 }
