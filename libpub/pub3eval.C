@@ -4,10 +4,10 @@
 
 namespace pub3 {
 
-  //-----------------------------------------------------------------------
+  //=======================================================================
 
-  env_t::env_t  (ptr<bindtab_t> u) : 
-    _universals (u), _globals (New refcounted<bindtab_t> ())
+  env_t::env_t  (ptr<bindtab_t> u, ptr<bindtab_t> g) : 
+    _universals (u), _globals (g ? g : New refcounted<bindtab_t> ())
   {
     _stack.push_back (stack_layer_t (_universals, LAYER_UNIVERSALS));
     _stack.push_back (stack_layer_t (_globals, LAYER_GLOBALS));
@@ -80,6 +80,32 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<mref_t>
+  env_t::lookup_ref (const str &nm) const
+  {
+    ptr<bindtab_t> found;
+    for (ssize_t i = _stack.size () - 1; !found && i >= 0; i--) {
+      stack_layer_t l = _stack[i];
+      if (l._bindings && l._bindings->lookup (nm)) {
+	if (l._typ == LAYER_UNIREFS) { found = _universals; }
+	else { found = l._bindings->mutate (); }
+      }
+    }
+    if (!found) { found = _globals; }
+    return New refcounted<mref_dict_t> (found, nm);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  env_t::replace_universals (ptr<bindtab_t> t)
+  {
+    push_bindings (t, LAYER_UNIVERSALS);
+    _universals = t;
+  }
+
+  //=======================================================================
+
   ptr<const expr_t>
   eval_t::lookup_val (const str &nm) const
   {
@@ -110,25 +136,6 @@ namespace pub3 {
     return x;
   }
 
-  //-----------------------------------------------------------------------
-
-  ptr<mref_t>
-  env_t::lookup_ref (const str &nm) const
-  {
-    ptr<bindtab_t> found;
-    for (ssize_t i = _stack.size () - 1; !found && i >= 0; i--) {
-      stack_layer_t l = _stack[i];
-      if (l._bindings && l._bindings->lookup (nm)) {
-	if (l._typ == LAYER_UNIREFS) { found = _universals; }
-	else { found = l._bindings->mutate (); }
-      }
-    }
-    if (!found) { found = _globals; }
-    return New refcounted<mref_dict_t> (found, nm);
-  }
-
-  //-----------------------------------------------------------------------
-  
   //-----------------------------------------------------------------------
   
   bool

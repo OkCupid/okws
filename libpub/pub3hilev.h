@@ -72,7 +72,9 @@ namespace pub3 {
      *      caller specified a non-null slot.
      *
      */  
-    virtual void run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d = NULL,
+    virtual void run_cfg (str fn, evb_t ev, 
+			  ptr<expr_dict_t> d = NULL,
+			  opts_t opts = -1,
 			  status_t *sp = NULL, CLOSURE) = 0;
 
     /**
@@ -112,7 +114,7 @@ namespace pub3 {
 	      CLOSURE);
 
     void run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d = NULL,
-		  status_t *sp = NULL, CLOSURE);
+		  opts_t opts = -1, status_t *sp = NULL, CLOSURE);
 
     void syntax_check (str f, str *err, evi_t ev, CLOSURE);
     opts_t opts () const { return _opts; }

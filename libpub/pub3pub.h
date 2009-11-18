@@ -25,7 +25,8 @@ namespace pub3 {
     P_WSS =      0x10,    /* white space stripping */
     P_NOPARSE =  0x20,    /* don't parse file at all */
     P_NOLOCALE = 0x40,    /* Don't localize file */
-    P_INFINITY = 0x80
+    P_COPY_CONF = 0x80,   /* copy the config over to universals */
+    P_INFINITY = 0x100
   };
     
   //-----------------------------------------------------------------------
@@ -74,8 +75,9 @@ namespace pub3 {
 
   class publish_t : public eval_t {
   public:
-    publish_t (ptr<bindtab_t> universals, zbuf *z = NULL);
-    publish_t (ptr<env_t> e, ptr<output_t> o); // : eval_t (e, o) {}
+    publish_t (ptr<bindtab_t> universals, zbuf *z); // for output
+    publish_t (ptr<bindtab_t> universals);          // for cfg
+    publish_t (ptr<env_t> e, ptr<output_t> o);
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_opts (opts_t o) { _opts = o; }
@@ -150,6 +152,7 @@ namespace pub3 {
   public:
     output_silent_t () : output_t () {}
     void output_err (location_t loc, str msg);
+    static ptr<output_silent_t> alloc ();
   };
 
   //-----------------------------------------------------------------------

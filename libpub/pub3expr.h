@@ -166,6 +166,10 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_static () const;
     bool might_block_uncached () const;
+
+    // Copy a copy, get a copy?
+    ptr<expr_t> copy () const;
+    ptr<expr_t> deep_copy () const;
     
   protected:
     ptr<expr_t> mutable_ptr ();

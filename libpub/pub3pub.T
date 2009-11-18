@@ -65,8 +65,18 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  // For regular file publishing!
   publish_t::publish_t (ptr<bindtab_t> universals, zbuf *z)
     : eval_t (New refcounted<env_t> (universals), output_t::alloc (z)),
+      _opts (0),
+      _pws (false),
+      _control (control_t::alloc ()) {}
+
+  //--------------------------------------------------------------------
+
+  // For configuration file publishing!
+  publish_t::publish_t (ptr<bindtab_t> out)
+    : eval_t (New refcounted<env_t> (out, out), output_silent_t::alloc ()),
       _opts (0),
       _pws (false),
       _control (control_t::alloc ()) {}
@@ -220,6 +230,11 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void output_t::pop_muzzle (bool b) { _muzzle = b; }
+
+  //====================================================================
+
+  ptr<output_silent_t> output_silent_t::alloc () 
+  { return New refcounted<output_silent_t> (); }
 
   //====================================================================
 

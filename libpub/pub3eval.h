@@ -9,14 +9,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  //-----------------------------------------------------------------------
-
   class env_t {
   public:
 
-    enum { FRAME_UNIVERSALS = 0, FRAME_GLOBALS = 1 };
-
-    env_t (ptr<bindtab_t> u);
+    env_t (ptr<bindtab_t> u, ptr<bindtab_t> g = NULL);
     size_t push_locals (ptr<bind_interface_t> t);
     size_t push_universal_refs (ptr<bind_interface_t> t);
     void pop_to (size_t s);
@@ -24,6 +20,10 @@ namespace pub3 {
     size_t stack_size () const;
     ptr<mref_t> lookup_ref (const str &nm) const;
     void add_global_binding (const str &nm, ptr<expr_t> v);
+
+    // Replace the universals with this bindtab;  no way to undo
+    // this yet since it's not needed, but eventually might be nice.
+    void replace_universals (ptr<bindtab_t> u);
 
     typedef enum { LAYER_NONE = -1,
 		   LAYER_UNIVERSALS = 0,
@@ -41,8 +41,9 @@ namespace pub3 {
       layer_type_t _typ;
     };
 
-  protected:
     void overwrite_universals (ptr<const bind_interface_t> t);
+
+  protected:
 
     ptr<bindtab_t> _universals;
     ptr<bindtab_t> _globals;
@@ -90,6 +91,7 @@ namespace pub3 {
     void report_error (str e, lineno_t l);
     bool push_muzzle (bool b) { return _output->push_muzzle (b); }
     void pop_muzzle (bool b) { _output->pop_muzzle (b); }
+
   private:
 
     ptr<env_t> _env;

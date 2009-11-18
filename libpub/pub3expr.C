@@ -255,10 +255,20 @@ namespace pub3 {
     return _might_block.value ();
   }
 
-  //====================================================================
+  //================================== expr_cow_t =========================
 
   bool expr_cow_t::might_block_uncached () const
   { return expr_t::might_block (const_ptr ()); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t> expr_cow_t::copy () const
+  { return New refcounted<expr_cow_t> (*this); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t> expr_cow_t::deep_copy () const
+  { return New refcounted<expr_cow_t> (*this); }
 
   //-----------------------------------------------------------------------
 
