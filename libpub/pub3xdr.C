@@ -1227,6 +1227,17 @@ pub3::statement_zone_t::statement_zone_t (const xpub3_statement_zone_t &z)
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::statement_zone_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_ZONE);
+  x->zone->lineno = lineno ();
+  _zone->to_xdr (&x->zone->zone);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
 pub3::decl_block_t::decl_block_t (const xpub3_decls_t &x)
   : statement_t (x.lineno),
     _bindings (bindlist_t::alloc (x.decls)), 
