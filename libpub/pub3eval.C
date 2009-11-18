@@ -104,7 +104,12 @@ namespace pub3 {
     _universals = t;
   }
 
-  //=======================================================================
+  //================================================ eval_t ================
+
+  eval_t::eval_t (ptr<env_t> e, ptr<output_t> o)
+    : _env (e), _output (o), _loud (false), _silent (false) {}
+
+  //-----------------------------------------------------------------------
 
   ptr<const expr_t>
   eval_t::lookup_val (const str &nm) const

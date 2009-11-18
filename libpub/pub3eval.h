@@ -96,7 +96,6 @@ namespace pub3 {
     ptr<output_t> _output;
     bool _loud;
     bool _silent;
-    ssize_t _stack_p;
   };
 
   //-----------------------------------------------------------------------

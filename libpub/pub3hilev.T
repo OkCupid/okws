@@ -639,6 +639,31 @@ namespace pub3 {
     _connected = false;
     clear_cache ();
   }
+
+  //-----------------------------------------------------------------------
+  
+  void
+  crp_t::cache_getfile (const cache_key_t &k, ptr<file_t> f)
+  {
+    //
+    // Make a mapping of filenames -> options, so that we know which
+    // cache entries are associated with a given filename (in case it's
+    // later removed from the cache.
+    //
+    ptr<bhash<opts_t> > *hp, h;
+    if (!( hp = _opts_map[k.fn ()] )) {
+      h = New refcounted<bhash<opts_t> > ();
+      _opts_map.insert (k.fn (), h);
+      hp = &h;
+    }
+    (*hp)->insert (k.opts ());
+    
+    OKDBG4(PUB3_CACHE, CHATTER, 
+	   "cache INSERT: %s:%x\n", k.fn ().cstr (), k.opts ());
+    
+    _noent_cache.remove (k.fn ());
+    _getfile_cache.insert (cached_getfile_t (k, f));
+  }
   
   //=====================================================================
 

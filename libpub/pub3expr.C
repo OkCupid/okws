@@ -268,6 +268,15 @@ namespace pub3 {
   { return New refcounted<expr_cow_t> (*this); }
 
   //-----------------------------------------------------------------------
+  
+  bool
+  expr_cow_t::is_static () const
+  {
+    ptr<const expr_t> x = const_ptr ();
+    return (x && x->is_static ());
+  }
+
+  //-----------------------------------------------------------------------
 
   ptr<expr_t>
   expr_cow_t::mutable_ptr ()
