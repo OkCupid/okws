@@ -44,7 +44,26 @@ namespace pub3 {
   {
     size_t ret = _stack.size ();
     _stack.push_back (stack_layer_t (bi, typ));
+
+    if (typ == LAYER_UNIVERSALS) {
+      overwrite_universals (bi);
+    }
     return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  env_t::overwrite_universals (ptr<const bind_interface_t> bi)
+  {
+    const str *key;
+    ptr<expr_t> val;
+    ptr<bindtab_t::const_iterator_t> it = bi->iter ();
+    
+    while ((key = it->next (&val))) {
+      // don't insert the actual object, just insert a copy.
+      if (val) { _universals->insert (*key, val->copy ()); }
+    }
   }
 
   //-----------------------------------------------------------------------

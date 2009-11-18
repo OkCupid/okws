@@ -86,6 +86,16 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  tamed void
+  ap_t::run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d, status_t *sp)
+  {
+
+
+  }
+
+
+  //-----------------------------------------------------------------------
   
   tamed void 
   ap_t::publish (publish_t pub, str fn, getfile_ev_t ev)

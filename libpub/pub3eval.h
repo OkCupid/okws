@@ -32,7 +32,7 @@ namespace pub3 {
 		   LAYER_UNIREFS = 3 } layer_type_t;
 
     size_t push_bindings (ptr<bind_interface_t> t, layer_type_t lt);
-    
+
     struct stack_layer_t {
       stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
@@ -42,6 +42,8 @@ namespace pub3 {
     };
 
   protected:
+    void overwrite_universals (ptr<const bind_interface_t> t);
+
     ptr<bindtab_t> _universals;
     ptr<bindtab_t> _globals;
     vec<stack_layer_t> _stack;

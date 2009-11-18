@@ -1403,6 +1403,11 @@ namespace pub3 {
   bool cow_bindtab_t::lookup (const str &nm, ptr<const expr_t> *x) const
   { return _tab->lookup (nm, x); }
 
+  //--------------------------------------------------------------------
+  
+  ptr<bindtab_t::const_iterator_t> cow_bindtab_t::iter () const 
+  { return New refcounted<bindtab_t::const_iterator_t> (*_tab); }
+
   //====================================================================
 
   void
@@ -1458,6 +1463,11 @@ namespace pub3 {
 
   ptr<bindlist_t> bindlist_t::alloc () 
   { return New refcounted<bindlist_t> (plineno ()); }
+
+  //--------------------------------------------------------------------
+  
+  ptr<bindtab_t::const_iterator_t> bindtab_t::iter () const 
+  { return New refcounted<bindtab_t::const_iterator_t> (*this); }
   
   //====================================================================
 
