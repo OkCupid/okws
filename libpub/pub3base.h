@@ -34,6 +34,7 @@ namespace pub3 {
     location_t (str f, lineno_t l) : _filename (f), _lineno (l) {}
     location_t (lineno_t l) : _lineno (l) {}
     void set_filename (str f) { _filename = f; _lineno = 1; }
+    void toplevel ();
     str to_str () const;
     str _filename;
     lineno_t _lineno;

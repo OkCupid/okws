@@ -65,7 +65,7 @@ namespace pub3 {
     eval_t (ptr<env_t> e, ptr<output_t> o); 
     ~eval_t ();
 
-    ptr<output_t> output () const { return _output; }
+    ptr<output_t> out () const { return _output; }
     ptr<env_t> env () { return _env; }
     ptr<const env_t> env () const { return _env; }
 
@@ -83,7 +83,7 @@ namespace pub3 {
     bool push_muzzle (bool b);
     void pop_muzzle (bool b);
 
-  private:
+  protected:
 
     ptr<env_t> _env;
     ptr<output_t> _output;

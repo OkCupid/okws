@@ -61,10 +61,29 @@ namespace pub3 {
     _err_obj.push_back (o);
   }
 
+  //=================================== output_std_t ====================
+
+  void output_std_t::output (zstr z) { _out->cat (z); }
+  void output_std_t::output (str s) { _out->cat (s); }
+
+  //--------------------------------------------------------------------
+
+  void
+  output_std_t::output_err (location_t loc, str msg, err_type_t t)
+  {
+
+
+  }
+
   //=================================== output_silent_t ================
 
   ptr<output_silent_t> output_silent_t::alloc () 
   { return New refcounted<output_silent_t> (); }
+
+  //--------------------------------------------------------------------
+
+  void output_silent_t::output (zstr z) {}
+  void output_silent_t::output (str s) {}
 
   //====================================================================
 

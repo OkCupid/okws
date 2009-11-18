@@ -162,22 +162,6 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  void
-  publish_t::output_err_stacktrace (str msg, err_type_t typ)
-  {
-    // XXX TODO
-  }
-
-  //--------------------------------------------------------------------
-
-  void
-  publish_t::output_err_lambda_stacktrace (str msg, err_type_t typ)
-  {
-
-  }
-
-  //--------------------------------------------------------------------
-
   str
   publish_t::set_cwd (str s)
   {
@@ -218,6 +202,27 @@ namespace pub3 {
   }
 
   //--------------------------------------------------------------------
+
+  void publish_t::output (zstr z) { out ()->output (z); }
+  void publish_t::output (str z) { out ()->output (z); }
+  void publish_t::output_err (location_t loc, str msg, err_type_t typ)
+  { out ()->output_err (loc, msg, typ); }
+  void publish_t::output_err_stacktrace (str s, err_type_t t)
+  { out ()->output_err_stacktrace (_include_stack, s, t); }
+  void publish_t::output_err_lambda_stacktrace (str s, err_type_t t)
+  { out ()->output_err_lambda_stacktrace (_lambda_stack, s, t); }
+
+  //----------------------------------------------------------------------
+
+  void publish_t::output_err (str msg, err_type_t typ)
+  { 
+    location_t loc;
+    if (_include_stack.size ()) { loc = _include_stack.back (); }
+    else { loc.toplevel (); }
+    out ()->output_err (loc, msg, typ); 
+  }
+
+  //====================================================================
 
 };
 

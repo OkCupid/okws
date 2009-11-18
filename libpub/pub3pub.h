@@ -122,6 +122,7 @@ namespace pub3 {
     ptr<localizer_t> _localizer;
 
     // A stack of all of the files being published, with their actual
+    // metadata.
     vec<ptr<const metadata_t> > _metadata_stack;
 
     // A stack of locations of file inclusions.
@@ -142,5 +143,4 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
-
 };
