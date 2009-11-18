@@ -1612,6 +1612,15 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  scalar_obj_t
+  expr_dict_t::to_scalar () const
+  {
+    str s = to_str (true);
+    return scalar_obj_t (s);
+  }
+
+  //--------------------------------------------------------------------
+
   bool
   expr_dict_t::to_len (size_t *s) const 
   {
