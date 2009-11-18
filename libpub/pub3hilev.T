@@ -3,6 +3,7 @@
 #include "pub3hilev.h"
 #include "pub3prot.h"
 #include "crypt.h"
+#include "pub3hilev.h"
 
 namespace pub3 {
 
@@ -92,7 +93,7 @@ namespace pub3 {
 		 status_t *sp)
   {
     tvars {
-      holdvar ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
+      ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
       publish_t pub (d);
       status_t status;
       ptr<file_t> file;
@@ -111,7 +112,7 @@ namespace pub3 {
     // Finally, if requested, copy the universal pub information
     // back into the universals slot...
     if (!d_in || (opts & P_COPY_CONF)) {
-      *(singleton_t::get ()->universals ()) += *d_in;
+      *(singleton_t::get ()->universals ()) += *d;
     }
 
     ev->trigger (status.status == XPUB_STATUS_OK);
@@ -179,7 +180,7 @@ namespace pub3 {
     }
     
     if (err) {
-      pub.output_err (err);
+      pub.output_err (err, P_ERR_ERROR);
     }
     ev->trigger (status, file);
   }
@@ -560,7 +561,7 @@ namespace pub3 {
     }
   }
 
-  //=======================================================================
+  //----------------------------------------------------------------------
 
   tamed void 
   crp_t::connect (evb_t ev)
@@ -631,6 +632,14 @@ namespace pub3 {
     srv.reply (true);
   }
 
+  //-----------------------------------------------------------------------
+
+  void crp_t::lost_connection ()
+  {
+    _connected = false;
+    clear_cache ();
+  }
+  
   //=====================================================================
 
 };

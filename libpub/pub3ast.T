@@ -935,7 +935,7 @@ namespace pub3 {
     if (!ret) {
       if (!k) k = "(null)";
       strbuf err ("no case found for key ='%s'", k.cstr ());
-      pub.output_err (err, _location);
+      pub.output_err (_location, err, P_ERR_WARNING);
     }
     return ret;
   }

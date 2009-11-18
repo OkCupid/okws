@@ -8,6 +8,13 @@
 #include "pub3prot.h"
 
 namespace pub3 {
+    
+  //-----------------------------------------------------------------------
+
+  typedef enum { P_ERR_NONE = 0,
+		 P_ERR_ERROR = 1,
+		 P_ERR_PARSE = 2,
+		 P_ERR_WARNING = 3 } err_type_t;
 
   //-----------------------------------------------------------------------
   
@@ -32,6 +39,14 @@ namespace pub3 {
     lineno_t _lineno;
   };
   
+  //-----------------------------------------------------------------------
+
+  struct call_location_t {
+    call_location_t (const location_t &l, str cn) : _loc(l), _name (cn) {}
+    location_t _loc;
+    str _name;
+  };
+
   //-----------------------------------------------------------------------
 
   class tri_bool_t {

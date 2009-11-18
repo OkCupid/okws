@@ -3,6 +3,7 @@
 #include "pub3file.h"
 #include "pub3ast.h"
 #include "pub3hilev.h"
+#include "pub3out.h"
 
 namespace pub3 {
 
@@ -138,7 +139,7 @@ namespace pub3 {
       strbuf msg;
       msg << "maximum include stack depth (" << ok_pub_max_include_depth 
 	  << ") exceeded when trying to include file " << fn;
-      output_err_stacktrace (msg);
+      output_err_stacktrace (msg, P_ERR_ERROR);
     } else {
       md = file->metadata ();
       push_metadata (md);
@@ -162,9 +163,17 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  publish_t::output_err_stacktrace (str msg)
+  publish_t::output_err_stacktrace (str msg, err_type_t typ)
   {
     // XXX TODO
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  publish_t::output_err_lambda_stacktrace (str msg, err_type_t typ)
+  {
+
   }
 
   //--------------------------------------------------------------------
@@ -183,13 +192,15 @@ namespace pub3 {
   publish_t::push_lambda_call (str fn, ptr<bindtab_t> bindings)
   {
     lambda_state_t ret;
-    if (_lambda_stack.size () >= ok_pub_max_call_stack_depth) {
+
+    _lambda_stack.push_back (call_location_t (_call_location, fn));
+    ret._binding_stack_size = env ()->push_locals (bindings);
+    ret._old_control = push_control ();
+
+    if (_lambda_stack.size () > ok_pub_max_call_stack_depth) {
       ret._overflow = true;
-      output_err ("lambda call stack overflow", _call_location);
-    } else {
-      ret._binding_stack_size = env ()->push_locals (bindings);
-      ret._old_control = push_control ();
-      _lambda_stack.push_back (fn);
+      str msg = "call stack overflow";
+      output_err_lambda_stacktrace (msg, P_ERR_ERROR);
     }
     return ret;
   }
@@ -206,37 +217,7 @@ namespace pub3 {
     return ret;
   }
 
-  //====================================================================
-
-  ptr<output_t>
-  output_t::alloc (zbuf *z)
-  {
-    ptr<output_t> ret;
-    if (z) { ret = New refcounted<output_std_t> (z);   }
-    else   { ret = New refcounted<output_silent_t> (); }
-    return ret;
-  }
-
   //--------------------------------------------------------------------
-
-  bool
-  output_t::push_muzzle (bool b)
-  {
-    bool ret = _muzzle;
-    if (b && !_muzzle) { _muzzle = b; }
-    return ret;
-  }
-
-  //--------------------------------------------------------------------
-
-  void output_t::pop_muzzle (bool b) { _muzzle = b; }
-
-  //====================================================================
-
-  ptr<output_silent_t> output_silent_t::alloc () 
-  { return New refcounted<output_silent_t> (); }
-
-  //====================================================================
 
 };
 

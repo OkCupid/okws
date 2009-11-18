@@ -26,9 +26,13 @@ namespace pub3 {
     P_NOPARSE =  0x20,    /* don't parse file at all */
     P_NOLOCALE = 0x40,    /* Don't localize file */
     P_COPY_CONF = 0x80,   /* copy the config over to universals */
-    P_INFINITY = 0x100
+
+    P_OUTPUT_ERR_IN_PLACE = 0x100,          /* output errors in place */
+    P_OUTPUT_ERR_PLACEHOLDERS = 0x200,      /* output placeholders in place */
+
+    P_INFINITY = 0x400
   };
-    
+
   //-----------------------------------------------------------------------
 
   class localizer_t : public virtual refcount {
@@ -84,9 +88,10 @@ namespace pub3 {
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
     void output (zstr s);
     void output (str s);
-    void output_err (str s);
-    void output_err (str s, location_t loc);
-    void output_err_stacktrace (str s);
+    void output_err (str s, err_type_t t);
+    void output_err (location_t loc, str s, err_type_t t);
+    void output_err_stacktrace (str s, err_type_t t);
+    void output_err_lambda_stacktrace (str s, err_type_t t);
     ptr<localizer_t> localizer ();
     void set_localizer (ptr<localizer_t> l) { _localizer = l; }
     opts_t opts () const { return _opts; }
@@ -123,7 +128,7 @@ namespace pub3 {
     vec<location_t> _include_stack;
 
     // A stack of all lambda calls
-    vec<str> _lambda_stack;
+    vec<call_location_t> _lambda_stack;
 
     // Where the last call happened
     location_t _call_location;
@@ -134,25 +139,6 @@ namespace pub3 {
     ptr<ok_iface_t> _pub_iface;  // publisher interface
     bool _pws;                   // preserve white space
     ptr<control_t> _control;     // control flow control
-  };
-
-  //--------------------------------------------------------------------
-
-  class output_std_t : public output_t {
-  public:
-    output_std_t (zbuf *z) : output_t (), _out (z) {}
-    void output_err (location_t loc, str msg);
-  private:
-    zbuf *_out;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class output_silent_t : public output_t {
-  public:
-    output_silent_t () : output_t () {}
-    void output_err (location_t loc, str msg);
-    static ptr<output_silent_t> alloc ();
   };
 
   //-----------------------------------------------------------------------

@@ -131,8 +131,8 @@ namespace pub3 {
       state = p.push_lambda_call (ss, bindings);
       if (state.is_ok ()) { 
 	_body->publish_nonblock (p);
-	ret = p.pop_lambda_call (state);
       }
+      ret = p.pop_lambda_call (state);
     }
     return expr_t::safe_expr (ret);
   }
@@ -155,8 +155,8 @@ namespace pub3 {
       state = p.push_lambda_call (ss, bindings);
       if (state.is_ok ()) {
 	twait { _body->publish (p, mkevent (status)); }
-	ret = p.pop_lambda_call (state);
       }
+      ret = p.pop_lambda_call (state);
     }
     ev->trigger (expr_t::safe_expr (ret));
   }

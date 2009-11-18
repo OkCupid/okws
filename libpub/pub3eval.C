@@ -1,6 +1,6 @@
 
-
 #include "pub3eval.h"
+#include "pub3out.h"
 
 namespace pub3 {
 
@@ -155,6 +155,11 @@ namespace pub3 {
     _silent = b;
     return c;
   }
+
+  //-----------------------------------------------------------------------
+
+  bool eval_t::push_muzzle (bool b) { return _output->push_muzzle (b); }
+  void eval_t::pop_muzzle (bool b) { _output->pop_muzzle (b); }
 
   //-----------------------------------------------------------------------
 

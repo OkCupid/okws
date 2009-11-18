@@ -1,5 +1,5 @@
 // -*-c++-*-
-/* $Id: parr.h 2784 2007-04-20 16:32:00Z max $ */
+/* $Id$ */
 
 #pragma once
 
@@ -52,17 +52,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class output_t {
-  public:
-    output_t () : _muzzle (false) {}
-    virtual ~output_t () {}
-    virtual void output_err (location_t loc, str msg) = 0;
-    static ptr<output_t> alloc (zbuf *z);
-    bool push_muzzle (bool b);
-    void pop_muzzle (bool b);
-  protected:
-    bool _muzzle;
-  };
+  // Forward-declared; more information available in pub3out.h
+  class output_t;
 
   //-----------------------------------------------------------------------
 
@@ -89,8 +80,8 @@ namespace pub3 {
     void report_error (lineno_t l);
     void report_error (str e, location_t l);
     void report_error (str e, lineno_t l);
-    bool push_muzzle (bool b) { return _output->push_muzzle (b); }
-    void pop_muzzle (bool b) { _output->pop_muzzle (b); }
+    bool push_muzzle (bool b);
+    void pop_muzzle (bool b);
 
   private:
 
