@@ -32,7 +32,7 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  static const char *
+  static str
   typ2str (err_type_t typ)
   {
     const char *ret = "other";
@@ -43,19 +43,105 @@ namespace pub3 {
     case P_ERR_EVAL: ret = "eval"; break;
     default: break;
     }
-    return ret;
+    return str (ret);
   }
 
   //--------------------------------------------------------------------
 
   void
-  output_t::pub3_add_error (runloc_t loc, str msg, err_type_t typ)
+  output_t::pub3_add_error (const loc_stack_t &stk, str msg, err_type_t typ)
   {
     pub3::obj_dict_t o;
-    loc.pub (o);
+    stk.back ().pub (o);
     o("error") = msg;
     o("type") = typ2str (typ);
+    pub3::obj_list_t ps = stk.pub (-1);
+    o("stack") = ps;
     _err_obj.push_back (o);
+  }
+
+  //--------------------------------------------------------------------
+
+  static str 
+  html_err (str s)
+  {
+    strbuf b;
+    b << "<font color=\"red\">[" << s << "]</font>";
+    return b;
+  }
+
+  //--------------------------------------------------------------------
+
+  static str
+  html_comment (str s)
+  {
+    strbuf b;
+    b << "<!-- " << s << "-->";
+    return b;
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  output_t::output_visible_error (str s)
+  {
+    if (_opts & P_OUTPUT_ERR_PLACEHOLDERS) {
+      strbuf b; 
+      b << "[" << _err_obj.size () << "]";
+      output (html_err (b));
+    }
+
+    if (_opts & P_OUTPUT_ERR_IN_PLACE) {
+      output (html_err (s));
+    }
+
+    if (_opts & P_OUTPUT_ERR_COMMENTS) {
+      output (html_comment (s)); 
+    }
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  output_t::output_err (runloc_t loc, str msg, err_type_t t)
+  {
+    loc_stack_t tmp_stack;
+    tmp_stack.push_back (loc);
+    output_err (tmp_stack, msg, t);
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  output_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
+  {
+    pub3_add_error (stk, msg, t);
+
+    runloc_t top = stk.back ();
+    str typ = typ2str (t);
+    str loc = top.to_str ();
+
+    strbuf tmp;
+    tmp << "okws-pub3 [ " << typ << "]: ";
+    str prfx = tmp;
+
+    strbuf logline;
+
+    logline << prfx << loc << ": " << msg;
+
+    output_visible_error (logline);
+
+    if (!(_opts & P_OUTPUT_ERR_NOLOG)) {
+      warn << logline << "\n";
+
+      ssize_t i = stk.size () - 1;
+      ssize_t lim = max<ssize_t> (0, i - 10);
+
+      for ( ; i >= lim; i--) {
+	loc = stk[i].to_str ();
+	warn << prfx << "    #" << i << ": " << loc << "\n";
+      }
+    }
   }
 
   //=================================== output_std_t ====================
@@ -63,49 +149,10 @@ namespace pub3 {
   void output_std_t::output (zstr z) { _out->cat (z); }
   void output_std_t::output (str s) { _out->cat (s); }
 
-  //--------------------------------------------------------------------
-
-  void
-  output_std_t::output_err (runloc_t loc, str msg, err_type_t t)
-  {
-
-  }
-
-  //--------------------------------------------------------------------
-
-  void
-  output_std_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
-  {
-
-
-  }
-
   //=================================== output_silent_t ================
 
   ptr<output_silent_t> output_silent_t::alloc () 
   { return New refcounted<output_silent_t> (); }
-
-  //--------------------------------------------------------------------
-
-  void output_silent_t::output (zstr z) {}
-  void output_silent_t::output (str s) {}
-
-  //--------------------------------------------------------------------
-
-  void
-  output_silent_t::output_err (runloc_t loc, str msg, err_type_t t)
-  {
-
-  }
-
-  //--------------------------------------------------------------------
-
-  void
-  output_silent_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
-  {
-
-
-  }
 
   //====================================================================
 

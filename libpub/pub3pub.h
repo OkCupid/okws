@@ -29,8 +29,10 @@ namespace pub3 {
 
     P_OUTPUT_ERR_IN_PLACE = 0x100,          /* output errors in place */
     P_OUTPUT_ERR_PLACEHOLDERS = 0x200,      /* output placeholders in place */
+    P_OUTPUT_ERR_COMMENTS = 0x400,          /* output errors in comments */
+    P_OUTPUT_ERR_NOLOG= 0x800,              /* don't warn to stderr */
 
-    P_INFINITY = 0x400
+    P_INFINITY = 0x1000
   };
 
   //-----------------------------------------------------------------------
@@ -89,6 +91,7 @@ namespace pub3 {
     str funcname () const { return _func; }
     lineno_t lineno () const { return _lineno; }
     void pub (obj_t &out) const;
+    str to_str () const;
   private:
     ptr<const metadata_t> _metadata;
     str _func;

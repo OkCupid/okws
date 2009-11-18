@@ -231,6 +231,18 @@ namespace pub3 {
     o("filename") = filename ();
   }
 
+  //--------------------------------------------------------------------
+
+  str
+  runloc_t::to_str () const
+  {
+    strbuf b;
+    str fn = filename ();
+    b << fn << ":" << lineno ();
+    if (_func) { b << " (in " << _func << ")"; }
+    return b;
+  }
+
   //====================================== loc_stack_t ==================
 
   obj_list_t 
