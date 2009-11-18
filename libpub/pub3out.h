@@ -23,8 +23,10 @@ namespace pub3 {
     bool push_muzzle (bool b);
     void pop_muzzle (bool b);
 
-    void add_error (location_t loc, str msg);
+    void pub3_add_error (location_t loc, str msg);
+    void pub3_add_error (call_location_t loc, str msg);
   protected:
+    pub3::obj_dict_t error_to_pub3 (location_t loc, str msg);
     opts_t _opts;
     pub3::obj_list_t _err_obj;
     bool _muzzle;
