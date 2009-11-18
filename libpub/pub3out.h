@@ -17,7 +17,7 @@ namespace pub3 {
     virtual ~output_t () {}
 
     virtual void output_err (runloc_t loc, str msg, err_type_t t) = 0;
-    virtual void output_err (const vec<runloc_t> &stack, str msg, 
+    virtual void output_err (const loc_stack_t &stack, str msg, 
 			     err_type_t t) = 0;
 
     virtual void output (zstr s) = 0;
@@ -26,10 +26,8 @@ namespace pub3 {
     bool push_muzzle (bool b);
     void pop_muzzle (bool b);
 
-    void pub3_add_error (location_t loc, str msg);
-    void pub3_add_error (call_location_t loc, str msg);
+    void pub3_add_error (runloc_t loc, str msg, err_type_t typ);
   protected:
-    pub3::obj_dict_t error_to_pub3 (location_t loc, str msg);
     opts_t _opts;
     pub3::obj_list_t _err_obj;
     bool _muzzle;
@@ -41,7 +39,7 @@ namespace pub3 {
   public:
     output_std_t (zbuf *z, opts_t o = 0) : output_t (o), _out (z) {}
     void output_err (runloc_t loc, str msg, err_type_t t);
-    void output_err (const vec<runloc_t> &stack, str msg, err_type_t t);
+    void output_err (const loc_stack_t &stack, str msg, err_type_t t);
     void output (zstr s);
     void output (str s);
 
@@ -56,7 +54,7 @@ namespace pub3 {
     output_silent_t (opts_t o = 0) : output_t (o) {}
 
     void output_err (runloc_t loc, str msg, err_type_t t);
-    void output_err (const vec<runloc_t> &stack, str msg, err_type_t t);
+    void output_err (const loc_stack_t &stack, str msg, err_type_t t);
     void output (zstr s);
     void output (str s);
 

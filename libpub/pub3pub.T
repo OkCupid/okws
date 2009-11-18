@@ -209,6 +209,43 @@ namespace pub3 {
   void publish_t::output_err_stacktrace (str s, err_type_t t)
   { out ()->output_err (_stack, s, t); }
 
+  //========================================= runloc_t =================
+
+  str
+  runloc_t::filename () const
+  {
+    str r;
+    if (_metadata) r = _metadata->jailed_filename (); 
+    if (!r) r = "<top-level>";
+    return r;
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  runloc_t::pub (obj_t &o) const
+  {
+    o("lineno") = lineno ();
+    str f = funcname ();
+    if (f) o("function") = f;
+    o("filename") = filename ();
+  }
+
+  //====================================== loc_stack_t ==================
+
+  obj_list_t 
+  loc_stack_t::pub (ssize_t stop) const
+  {
+    obj_list_t stk;
+    ssize_t lim = size () + stop;
+    for (ssize_t i = 0 ; i < lim; i++) {
+      obj_dict_t d;
+      (*this)[i].pub (d);
+      stk.push_back (d);
+    }
+    return stk;
+  }
+
   //====================================================================
 
 };

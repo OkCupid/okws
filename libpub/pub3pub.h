@@ -4,6 +4,7 @@
 
 #include "pub3base.h"
 #include "pub3expr.h"
+#include "pub3obj.h"
 #include "pub3eval.h"
 
 namespace pub3 {
@@ -82,12 +83,23 @@ namespace pub3 {
   class runloc_t {
   public:
     runloc_t (ptr<const metadata_t> md, str fn = NULL) 
-      : _metadata (md), _fn (fn), _lineno (0) {}
+      : _metadata (md), _func (fn), _lineno (0) {}
     void set_lineno (lineno_t l) { _lineno = l; }
+    str filename () const;
+    str funcname () const { return _func; }
+    lineno_t lineno () const { return _lineno; }
+    void pub (obj_t &out) const;
   private:
     ptr<const metadata_t> _metadata;
-    str _fn;
+    str _func;
     lineno_t _lineno;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class loc_stack_t : public vec<runloc_t> {
+  public:
+    obj_list_t pub (ssize_t stop = -1) const;
   };
 
   //-----------------------------------------------------------------------
@@ -138,7 +150,7 @@ namespace pub3 {
 
     // A stack of all of the files being published, with their actual
     // metadata.
-    vec<runloc_t> _stack;
+    loc_stack_t _stack;
 
     opts_t _opts;
     str _cwd;

@@ -32,32 +32,29 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  void
-  output_t::pub3_add_error (location_t loc, str msg)
+  static const char *
+  typ2str (err_type_t typ)
   {
-    pub3::obj_dict_t o = error_to_pub3 (loc, msg);
-    _err_obj.push_back (o);
-  }
-
-  //--------------------------------------------------------------------
-
-  pub3::obj_dict_t
-  output_t::error_to_pub3 (location_t loc, str msg)
-  {
-    pub3::obj_dict_t ret;
-    ret ("file") = loc._filename;
-    ret ("lineno") = loc._lineno;
-    ret ("msg") = msg;
+    const char *ret = "other";
+    switch (typ) {
+    case P_ERR_WARNING: ret = "warning"; break;
+    case P_ERR_PARSE: ret = "parse"; break;
+    case P_ERR_ERROR: ret = "error"; break;
+    case P_ERR_EVAL: ret = "eval"; break;
+    default: break;
+    }
     return ret;
   }
 
   //--------------------------------------------------------------------
 
   void
-  output_t::pub3_add_error (call_location_t loc, str msg)
+  output_t::pub3_add_error (runloc_t loc, str msg, err_type_t typ)
   {
-    pub3::obj_t o = error_to_pub3 (loc._loc, msg);
-    o("function") = loc._name;
+    pub3::obj_dict_t o;
+    loc.pub (o);
+    o("error") = msg;
+    o("type") = typ2str (typ);
     _err_obj.push_back (o);
   }
 
@@ -77,7 +74,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  output_std_t::output_err (const vec<runloc_t> &stk, str msg, err_type_t t)
+  output_std_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
   {
 
 
@@ -104,7 +101,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  output_silent_t::output_err (const vec<runloc_t> &stk, str msg, err_type_t t)
+  output_silent_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
   {
 
 
