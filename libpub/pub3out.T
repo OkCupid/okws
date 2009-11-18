@@ -69,7 +69,15 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  output_std_t::output_err (location_t loc, str msg, err_type_t t)
+  output_std_t::output_err (runloc_t loc, str msg, err_type_t t)
+  {
+
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  output_std_t::output_err (const vec<runloc_t> &stk, str msg, err_type_t t)
   {
 
 
@@ -84,6 +92,23 @@ namespace pub3 {
 
   void output_silent_t::output (zstr z) {}
   void output_silent_t::output (str s) {}
+
+  //--------------------------------------------------------------------
+
+  void
+  output_silent_t::output_err (runloc_t loc, str msg, err_type_t t)
+  {
+
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  output_silent_t::output_err (const vec<runloc_t> &stk, str msg, err_type_t t)
+  {
+
+
+  }
 
   //====================================================================
 

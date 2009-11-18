@@ -123,12 +123,11 @@ namespace pub3 {
     ptr<const expr_t> ret;
     ptr<control_t> old_ctrl;
     ptr<bindtab_t> bindings;
-    str ss = to_str ();
     lambda_state_t state;
 
     if (check_args (p, args)) {
       bindings = bind_args_nonblock (p, args);
-      state = p.push_lambda_call (ss, bindings);
+      state = p.push_lambda_call (_md, _name, bindings);
       if (state.is_ok ()) { 
 	_body->publish_nonblock (p);
       }
@@ -147,12 +146,11 @@ namespace pub3 {
       ptr<bindtab_t> bindings;
       lambda_state_t state;
       status_t status;
-      str ss (_self->to_str ());
     }
 
     if (check_args (p, args)) {
       twait { bind_args (p, args, mkevent (bindings)); }
-      state = p.push_lambda_call (ss, bindings);
+      state = p.push_lambda_call (_md, _name, bindings);
       if (state.is_ok ()) {
 	twait { _body->publish (p, mkevent (status)); }
       }
@@ -161,13 +159,33 @@ namespace pub3 {
     ev->trigger (expr_t::safe_expr (ret));
   }
 
+  //-----------------------------------------------------------------------
+
+  ptr<lambda_t>
+  lambda_t::copy (eval_t e) const
+  {
+    ptr<lambda_t> l = New refcounted<lambda_t> (*this);
+    l->_md = e.current_metadata ();
+    return l;
+  }
+  
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t> lambda_t::eval_to_val (eval_t e) const
+  { return copy (e); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<mref_t> lambda_t::eval_to_ref (eval_t e) const
+  { return const_mref_t::alloc (copy (e)); }
+
   //======================================== fndef_t ======================
 
   status_t
   fndef_t::v_publish_nonblock (publish_t p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    p.env ()->add_global_binding (_name, _lambda);
+    p.env ()->add_global_binding (_name, _lambda->copy (p));
     return ret;
   }
 
@@ -228,7 +246,7 @@ namespace pub3 {
       ptr<const callable_t> fnd;
     }
 
-    p.update_call_location (*this);
+    p.set_lineno (_lineno);
 
     if (_fn->might_block ()) { twait { _fn->pub_to_val (p, mkevent (f)); } }
     else { f = _fn->eval_to_val (p); }

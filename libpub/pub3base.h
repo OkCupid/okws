@@ -14,7 +14,8 @@ namespace pub3 {
   typedef enum { P_ERR_NONE = 0,
 		 P_ERR_ERROR = 1,
 		 P_ERR_PARSE = 2,
-		 P_ERR_WARNING = 3 } err_type_t;
+		 P_ERR_WARNING = 3,
+		 P_ERR_EVAL = 4 } err_type_t;
 
   //-----------------------------------------------------------------------
   

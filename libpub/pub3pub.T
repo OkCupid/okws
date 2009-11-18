@@ -44,11 +44,9 @@ namespace pub3 {
       xpub_status_t status;
       ptr<file_t> dummy;
     }
-    push_include_location (loc);
     sz = env ()->push_locals (d);
     twait { _pub_iface->publish (*this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
-    pop_include_location ();
     ev->trigger (status);
   }
 
@@ -134,10 +132,10 @@ namespace pub3 {
       size_t sz;
     }
 
-    if (_include_stack.size () > ok_pub_max_include_depth) {
+    if (_stack.size () > ok_pub_max_stack) {
       str fn = file->metadata ()->jailed_filename ();
       strbuf msg;
-      msg << "maximum include stack depth (" << ok_pub_max_include_depth 
+      msg << "maximum include stack depth (" << ok_pub_max_stack
 	  << ") exceeded when trying to include file " << fn;
       output_err_stacktrace (msg, P_ERR_ERROR);
     } else {
@@ -153,12 +151,11 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  void publish_t::push_include_location (location_t l) 
-  { _include_stack.push_back (l); }
-  void publish_t::push_metadata (ptr<const metadata_t> md)
-  { _metadata_stack.push_back (md); }
-  void publish_t::pop_include_location () { _include_stack.pop_back (); }
-  void publish_t::pop_metadata () { _metadata_stack.pop_back (); }
+  void publish_t::push_metadata (ptr<const metadata_t> md) 
+  { _stack.push_back (runloc_t (md)); }
+  void publish_t::pop_metadata () { _stack.pop_back (); }
+  void publish_t::set_lineno (lineno_t lineno) 
+  { _stack.back ().set_lineno (lineno); }
 
   //--------------------------------------------------------------------
 
@@ -173,18 +170,19 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   lambda_state_t
-  publish_t::push_lambda_call (str fn, ptr<bindtab_t> bindings)
+  publish_t::push_lambda_call (ptr<const metadata_t> md,
+			       str fn, ptr<bindtab_t> bindings)
   {
     lambda_state_t ret;
 
-    _lambda_stack.push_back (call_location_t (_call_location, fn));
+    _stack.push_back (runloc_t (md, fn));
     ret._binding_stack_size = env ()->push_locals (bindings);
     ret._old_control = push_control ();
 
-    if (_lambda_stack.size () > ok_pub_max_call_stack_depth) {
+    if (_stack.size () > ok_pub_max_stack) {
       ret._overflow = true;
       str msg = "call stack overflow";
-      output_err_lambda_stacktrace (msg, P_ERR_ERROR);
+      output_err_stacktrace (msg, P_ERR_ERROR);
     }
     return ret;
   }
@@ -195,9 +193,9 @@ namespace pub3 {
   publish_t::pop_lambda_call (lambda_state_t state)
   {
     ptr<const expr_t> ret = control ()->rtrn ();
-    _lambda_stack.pop_back ();
     restore_control (state._old_control);
     env()->pop_to (state._binding_stack_size);
+    _stack.pop_back ();
     return ret;
   }
 
@@ -205,22 +203,11 @@ namespace pub3 {
 
   void publish_t::output (zstr z) { out ()->output (z); }
   void publish_t::output (str z) { out ()->output (z); }
-  void publish_t::output_err (location_t loc, str msg, err_type_t typ)
-  { out ()->output_err (loc, msg, typ); }
-  void publish_t::output_err_stacktrace (str s, err_type_t t)
-  { out ()->output_err_stacktrace (_include_stack, s, t); }
-  void publish_t::output_err_lambda_stacktrace (str s, err_type_t t)
-  { out ()->output_err_lambda_stacktrace (_lambda_stack, s, t); }
-
-  //----------------------------------------------------------------------
 
   void publish_t::output_err (str msg, err_type_t typ)
-  { 
-    location_t loc;
-    if (_include_stack.size ()) { loc = _include_stack.back (); }
-    else { loc.toplevel (); }
-    out ()->output_err (loc, msg, typ); 
-  }
+  { out ()->output_err (_stack.back (), msg, typ); }
+  void publish_t::output_err_stacktrace (str s, err_type_t t)
+  { out ()->output_err (_stack, s, t); }
 
   //====================================================================
 

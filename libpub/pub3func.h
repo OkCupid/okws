@@ -38,19 +38,27 @@ namespace pub3 {
     bool might_block () const;
 
     ptr<const expr_t> eval_to_val (publish_t p, args_t args) const;
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+    ptr<mref_t> eval_to_ref (eval_t e) const;
     void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
     ptr<const callable_t> to_callable () const { return mkref (this); }
+    ptr<lambda_t> copy (eval_t e) const;
   protected:
     bool check_args (publish_t p, args_t a) const;
     ptr<bindtab_t> bind_args_nonblock (publish_t p, args_t a) const;
     void bind_arg (ptr<bindtab_t> t, size_t i, ptr<mref_t> r) const;
     void bind_args (publish_t p, args_t a, event<ptr<bindtab_t> >::ref ev,
 		    CLOSURE) const;
+    bool is_static () const { return false; }
 
     location_t _loc;
     str _name;
     ptr<identifier_list_t> _params;
     ptr<zone_t> _body;
+
+    // Evaluated lambdas have the metadata of where they came from
+    // all populated.  Those that haven't been evaluated do not.
+    ptr<const metadata_t> _md;
   };
 
   //-----------------------------------------------------------------------

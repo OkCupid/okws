@@ -54,6 +54,9 @@ namespace pub3 {
 
   // Forward-declared; more information available in pub3out.h
   class output_t;
+  
+  // Forward-declared class available in pub3file.h
+  class metadata_t;
 
   //-----------------------------------------------------------------------
 
@@ -77,11 +80,15 @@ namespace pub3 {
     ptr<mref_t> lookup_ref (const str &nm) const;
 
     location_t location (lineno_t l) const;
-    void report_error (lineno_t l);
-    void report_error (str e, location_t l);
-    void report_error (str e, lineno_t l);
     bool push_muzzle (bool b);
     void pop_muzzle (bool b);
+
+    void report_error (str msg, location_t l);
+    void report_error (str msg, lineno_t l);
+
+    virtual void set_lineno (lineno_t l) {}
+    virtual void output_err (str msg, err_type_t typ) {}
+    virtual ptr<const metadata_t> current_metadata () const { return NULL; }
 
   protected:
 

@@ -5,6 +5,7 @@
 
 #include "pub3expr.h"
 #include "pub3obj.h"
+#include "pub3pub.h"
 
 namespace pub3 {
 
@@ -14,12 +15,10 @@ namespace pub3 {
   public:
     output_t (opts_t o = 0) : _opts (o), _muzzle (false) {}
     virtual ~output_t () {}
-    virtual void output_err (location_t loc, str msg, err_type_t t) = 0;
 
-    virtual void output_err_stacktrace (const vec<location_t> &stack, 
-					str msg, err_type_t t) = 0;
-    virtual void output_err_lambda_stacktrace (const vec<call_location_t> &stk,
-					       str msg, err_type_t t) = 0;
+    virtual void output_err (runloc_t loc, str msg, err_type_t t) = 0;
+    virtual void output_err (const vec<runloc_t> &stack, str msg, 
+			     err_type_t t) = 0;
 
     virtual void output (zstr s) = 0;
     virtual void output (str s) = 0;
@@ -41,12 +40,8 @@ namespace pub3 {
   class output_std_t : public output_t {
   public:
     output_std_t (zbuf *z, opts_t o = 0) : output_t (o), _out (z) {}
-
-    void output_err (location_t loc, str msg, err_type_t t);
-    void output_err_stacktrace (const vec<location_t> &stack, 
-				str msg, err_type_t t);
-    void output_err_lambda_stacktrace (const vec<call_location_t> &stack,
-				       str msg, err_type_t t);
+    void output_err (runloc_t loc, str msg, err_type_t t);
+    void output_err (const vec<runloc_t> &stack, str msg, err_type_t t);
     void output (zstr s);
     void output (str s);
 
@@ -60,11 +55,8 @@ namespace pub3 {
   public:
     output_silent_t (opts_t o = 0) : output_t (o) {}
 
-    void output_err (location_t loc, str msg, err_type_t t);
-    void output_err_stacktrace (const vec<location_t> &stack, 
-				str msg, err_type_t t);
-    void output_err_lambda_stacktrace (const vec<call_location_t> &stack,
-				       str msg, err_type_t t);
+    void output_err (runloc_t loc, str msg, err_type_t t);
+    void output_err (const vec<runloc_t> &stack, str msg, err_type_t t);
     void output (zstr s);
     void output (str s);
 

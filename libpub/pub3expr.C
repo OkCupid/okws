@@ -79,11 +79,8 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  void
-  expr_t::report_error (eval_t e, str msg) const
-  {
-    e.report_error (msg, _lineno);
-  }
+  void expr_t::report_error (eval_t e, str msg) const
+  { e.report_error (msg, _lineno); }
   
   //--------------------------------------------------------------------
 

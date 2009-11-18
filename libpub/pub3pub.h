@@ -11,7 +11,6 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   class file_t;
-  class metadata_t;
   class ok_iface_t;
 
   //-----------------------------------------------------------------------
@@ -77,6 +76,22 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  // A runtime location, with the file filled in (metadata), 
+  // the currention function call if applicable, and finally,
+  // the line number of the file we're currently on;
+  class runloc_t {
+  public:
+    runloc_t (ptr<const metadata_t> md, str fn = NULL) 
+      : _metadata (md), _fn (fn), _lineno (0) {}
+    void set_lineno (lineno_t l) { _lineno = l; }
+  private:
+    ptr<const metadata_t> _metadata;
+    str _fn;
+    lineno_t _lineno;
+  };
+
+  //-----------------------------------------------------------------------
+
   class publish_t : public eval_t {
   public:
     publish_t (ptr<bindtab_t> universals, zbuf *z); // for output
@@ -86,25 +101,25 @@ namespace pub3 {
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_opts (opts_t o) { _opts = o; }
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
+
     void output (zstr s);
     void output (str s);
     void output_err (str s, err_type_t t);
-    void output_err (location_t loc, str s, err_type_t t);
     void output_err_stacktrace (str s, err_type_t t);
-    void output_err_lambda_stacktrace (str s, err_type_t t);
+
     ptr<localizer_t> localizer ();
     void set_localizer (ptr<localizer_t> l) { _localizer = l; }
     opts_t opts () const { return _opts; }
     str set_cwd (str s) ;
     str cwd () const { return _cwd; }
     void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
-    void push_include_location (location_t l);
-    void pop_include_location ();
     void push_metadata (ptr<const metadata_t> md);
     void pop_metadata ();
     bool push_pws (bool b);
     void pop_pws (bool b);
     bool pws () const;
+
+    void set_lineno (lineno_t line);
 
     // manipulate control stack
 
@@ -112,27 +127,18 @@ namespace pub3 {
     ptr<control_t> push_control ();
     void restore_control (ptr<control_t> c);
 
-    lambda_state_t push_lambda_call (str fn, ptr<bindtab_t> bindings);
+    lambda_state_t push_lambda_call (ptr<const metadata_t>, str fn, 
+				     ptr<bindtab_t> bindings);
     ptr<const expr_t> pop_lambda_call (lambda_state_t state);
 
-    // Keep track of where the last call was
-    void update_call_location (const expr_t &x);
+    ptr<const metadata_t> current_metadata () const;
 
   private:
     ptr<localizer_t> _localizer;
 
     // A stack of all of the files being published, with their actual
     // metadata.
-    vec<ptr<const metadata_t> > _metadata_stack;
-
-    // A stack of locations of file inclusions.
-    vec<location_t> _include_stack;
-
-    // A stack of all lambda calls
-    vec<call_location_t> _lambda_stack;
-
-    // Where the last call happened
-    location_t _call_location;
+    vec<runloc_t> _stack;
 
     opts_t _opts;
     str _cwd;

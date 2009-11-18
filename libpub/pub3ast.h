@@ -52,7 +52,6 @@ namespace pub3 {
     virtual ptr<zone_text_t> zone_text () { return NULL; }
     virtual bool to_xdr (xpub3_zone_t *z) const = 0;
 
-
     static ptr<zone_t> alloc (const xpub3_zone_t &z);
     static ptr<zone_t> alloc (const xpub3_zone_t *z);
   protected:

@@ -18,6 +18,9 @@ namespace pub3 {
     tvars {
       xpub_status_t status;
     }
+
+    p.set_lineno (lineno ());
+
     if (!might_block ()) {
       status = v_publish_nonblock (p);
     } else {
@@ -137,7 +140,6 @@ namespace pub3 {
   {
     ptr<zone_text_t> x;
 
-
     if (!_children.size ()  || 
 	!_children.back ()  || 
 	!(x = _children.back ()->zone_text ())) {
@@ -186,7 +188,6 @@ namespace pub3 {
       _hold.push_back (s);
       _b << s;
     }
-
     return ret;
   }
 
@@ -935,7 +936,7 @@ namespace pub3 {
     if (!ret) {
       if (!k) k = "(null)";
       strbuf err ("no case found for key ='%s'", k.cstr ());
-      pub.output_err (_location, err, P_ERR_WARNING);
+      pub.output_err (err, P_ERR_WARNING);
     }
     return ret;
   }

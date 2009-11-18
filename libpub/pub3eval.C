@@ -163,4 +163,18 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  eval_t::report_error (str msg, lineno_t ln)
+  {
+    set_lineno (ln);
+    output_err (msg, P_ERR_EVAL);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void eval_t::report_error (str msg, location_t l) 
+  { report_error (msg, l._lineno); }
+
+  //-----------------------------------------------------------------------
+
 };
