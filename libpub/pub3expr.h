@@ -466,7 +466,6 @@ namespace pub3 {
       : expr_div_or_mod_t (n, d, lineno) {}
     expr_div_t (const xpub3_mathop_t &x);
     static ptr<expr_div_t> alloc (ptr<expr_t> n, ptr<expr_t> d);
-
     const char *get_obj_name () const { return "pub3::expr_div_t"; }
   protected:
     bool div () const { return true; }
@@ -482,9 +481,7 @@ namespace pub3 {
       : expr_div_or_mod_t (n, d, lineno) {}
     expr_mod_t (const xpub3_mathop_t &x);
     static ptr<expr_mod_t> alloc (ptr<expr_t> n, ptr<expr_t> d);
-
-    bool to_xdr (xpub3_expr_t *x) const;
-    const char *get_obj_name () const { return "pub3::expr_add_t"; }
+    const char *get_obj_name () const { return "pub3::expr_mod_t"; }
   protected:
     bool div () const { return false; }
     xpub3_mathop_opcode_t opcode () const;
