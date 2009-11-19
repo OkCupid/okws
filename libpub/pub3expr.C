@@ -171,7 +171,6 @@ namespace pub3 {
     return ret;
   }
 
-
   //---------------------------------------------------------------------
   
   ptr<rxx>
@@ -250,6 +249,18 @@ namespace pub3 {
       _might_block.set (might_block_uncached ()); 
     }
     return _might_block.value ();
+  }
+
+  //---------------------------------------------------------------------
+
+  ptr<call_t>
+  expr_t::coerce_to_call () 
+  {
+    ptr<call_t> ret;
+    if (is_call_coercable ()) {
+      ret = call_t::alloc (mkref (this), _lineno);
+    }
+    return ret;
   }
 
   //================================== expr_cow_t =========================
@@ -438,6 +449,11 @@ namespace pub3 {
     if (!retref) { retref = New refcounted<expr_bool_t> (b); }
     return retref;
   }
+
+  //---------------------------------------------------------------------
+  
+  ptr<expr_t> expr_bool_t::copy () const
+  { return _b ? _true : _false; }
 
   //====================================================================
 
@@ -1693,6 +1709,17 @@ namespace pub3 {
 
   bool expr_assignment_t::might_block_uncached () const
   { return expr_t::might_block (_lhs, _rhs); }
+
+  //---------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_assignment_t::eval_to_val (eval_t e) const
+  {
+    ptr<mref_t> r = eval_to_ref (e);
+    ptr<const expr_t> x;
+    if (r) x = r->get_value ();
+    return x;
+  }
 
   //---------------------------------------------------------------------
 

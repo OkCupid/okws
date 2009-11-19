@@ -446,6 +446,85 @@ namespace pub3 {
     return false;
   }
 
+  //-----------------------------------------------------------------------
+
+  void rp_t::getfile (str fn, getfile_ev_t ev, opts_t o)
+  { getfile_T (fn, ev, o); }
+  
+  //-----------------------------------------------------------------------
+
+  tamed void
+  rp_t::getfile_T (str nm, getfile_ev_t ev, opts_t opts)
+  {
+    tvars {
+      clnt_stat err;
+      ptr<file_t> file;
+      xpub3_getfile_arg_t arg;
+      xpub3_getfile_res_t res;
+      status_t status (XPUB_STATUS_OK);
+      cache_key_t k (nm, opts);
+    }
+    if (!prepare_getfile (k, &arg, &file, &status)) {
+      twait { rpc::pub_prog_3::pub3_getfile(_cli, arg, &res, mkevent (err)); }
+      if (err) {
+	warn << nm << ": error in RPC call to PUB2_GETFILE: " 
+	     << err << "\n";
+	status.set_status(XPUB_STATUS_RPC_ERR);
+	*status.rpc_err = err;
+      } else {
+
+	switch (res.status) {
+
+	case XPUB_STATUS_OK:
+	  twait { getfile_body (nm, &res, mkevent (status, file), opts); }
+	  if (status.status == XPUB_STATUS_OK) {
+	    cache_getfile (k, file);
+	  }
+	  break;
+
+	case XPUB_STATUS_NOCHANGE:
+	  file = file_nochange (k);
+	  assert (file);
+	  break;
+
+	case XPUB_STATUS_NOENT: 
+	  {
+	    cache_noent (nm);
+	    strbuf b;
+	    b << nm << ": file not found";
+
+	    // it's OK to fail here, since we can be checking for many
+	    // files in the path.
+	    // warn << b << "\n";
+
+	    status.set_status (XPUB_STATUS_NOENT);
+	    status.errors->push_back (b);
+	  }
+	  break;
+
+	case XPUB_STATUS_ERR:
+	  status.set_status (XPUB_STATUS_ERR);
+	  status.errors->push_back (*res.error);
+	  break;
+
+	default:
+	  warn << __FILE__ << ":" << __LOC__ 
+	       << ": unexpected error condition\n";
+	  strbuf b;
+	  b << nm << ": unspecified error";
+	  status.set_status (res.status);
+	  if (status.status == XPUB_STATUS_EIO) {
+	    status.errors->push_back (b);
+	  } else {
+	    *status.error = b;
+	  }
+	  break;
+	}
+      }
+    }
+    ev->trigger (status, file);
+  }
+
   //=======================================================================
 
   local_publisher_t::local_publisher_t (ptr<pub_parser_t> p, 

@@ -38,7 +38,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  struct metadata_t : public okdbg_dumpable_t { 
+  struct metadata_t {
     metadata_t () : _toplev (false), _ctime (0) {}
     virtual ~metadata_t () {}
 

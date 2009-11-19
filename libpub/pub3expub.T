@@ -247,6 +247,20 @@ namespace pub3 {
     ev->trigger (ret);
   }
 
+  //--------------------------------------------------------------------
+
+  tamed void
+  expr_assignment_t::pub_to_val (publish_t pub, cxev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> r;
+      ptr<const expr_t> x;
+    }
+    twait { pub_to_ref (pub, mkevent (r)); }
+    if (r) x = r->get_value ();
+    ev->trigger (x);
+  }
+
   //=======================================================================
 
 };

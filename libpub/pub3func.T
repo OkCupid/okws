@@ -242,6 +242,11 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
+  ptr<call_t> call_t::alloc (ptr<expr_t> x, lineno_t l) 
+  { return New refcounted<call_t> (x, expr_list_t::alloc (), l); }
+
+  //----------------------------------------------------------------------
+
   tamed void
   call_t::pub_prepare (publish_t p, 
 		       event<ptr<const callable_t> >::ref ev) const

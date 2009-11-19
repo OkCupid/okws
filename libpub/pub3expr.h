@@ -131,6 +131,7 @@ namespace pub3 {
     // into a function call.
     virtual ptr<call_t> coerce_to_call () ;
     virtual ptr<const callable_t> to_callable () const { return NULL; }
+    virtual bool is_call_coercable () const { return true; }
 
     //
     //-----------------------------------------------------------
@@ -234,6 +235,7 @@ namespace pub3 {
     ptr<expr_t> copy () const;
     ptr<expr_t> deep_copy () const;
     bool is_static () const { return true; }
+    bool is_call_coercable () const { return false; }
   };
 
   //----------------------------------------------------------------------
@@ -281,6 +283,7 @@ namespace pub3 {
     expr_logical_t (lineno_t lineno) : expr_t (lineno) {}
     ptr<const expr_t> eval_to_val (eval_t e) const;
     void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
+    bool is_call_coercable () const { return false; }
   protected:
     virtual bool eval_logical (eval_t e) const = 0;
     virtual void pub_logical (publish_t p, evb_t, CLOSURE) const = 0;
@@ -370,6 +373,7 @@ namespace pub3 {
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_relation_t"; }
+    bool is_call_coercable () const { return false; }
 
   protected:
     ptr<expr_t> _l, _r;
@@ -400,6 +404,7 @@ namespace pub3 {
     void pub_to_val (publish_t pub, cxev_t ev, CLOSURE);
     bool might_block_uncached () const;
     bool to_xdr (xpub3_expr_t *x) const;
+    bool is_call_coercable () const { return false; }
 
   protected:
     virtual ptr<const expr_t> 
@@ -750,6 +755,7 @@ namespace pub3 {
     ptr<mref_t> eval_to_ref (eval_t e) const;
     bool is_static () const;
     bool might_block_uncached () const;
+    bool is_call_coercable () const { return false; }
   private:
     bool fixup_index (ssize_t *ind, bool lax = false) const;
     mutable tri_bool_t _static;
@@ -940,6 +946,7 @@ namespace pub3 {
     ptr<mref_t> eval_to_ref (eval_t e) const;
     bool might_block_uncached () const;
     void pub_to_ref (publish_t pub, mrev_t ev, CLOSURE) const;
+    void pub_to_val (publish_t pub, cxev_t ev, CLOSURE) const;
   private:
     ptr<mref_t> eval_to_ref_final (eval_t e, ptr<mref_t> lhs,
 				   ptr<mref_t> rhs) const;

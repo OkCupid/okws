@@ -90,6 +90,7 @@ namespace pub3 {
 
     static ptr<call_t> alloc (const xpub3_call_t &call);
     static ptr<call_t> alloc (ptr<expr_t> x, ptr<expr_list_t> l);
+    static ptr<call_t> alloc (ptr<expr_t> x, lineno_t l);
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::call_t"; }
@@ -109,18 +110,6 @@ namespace pub3 {
 		      CLOSURE) const;
     ptr<expr_t> _fn;
     ptr<expr_list_t> _arglist;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class fn_call_t : public expr_t {
-  public:
-    fn_call_t (str &n, ptr<expr_list_t> a, lineno_t l);
-    bool to_xdr (xpub3_expr_t *x) const { return false; }
-    static ptr<fn_call_t> alloc (const str &n, ptr<expr_list_t> a, lineno_t l);
-
-  protected:
-    ptr<const expr_list_t> _arglist;
   };
 
   //-----------------------------------------------------------------------

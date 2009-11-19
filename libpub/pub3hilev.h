@@ -147,7 +147,7 @@ namespace pub3 {
 
     virtual void connect (evb_t cb, CLOSURE);
 
-    void getfile (pfnm_t fn, getfile_ev_t cb, opts_t o = 0);
+    void getfile (str fn, getfile_ev_t cb, opts_t o = 0);
 
     void dispatch (svccb *sbp);
     virtual void lost_connection () {}
@@ -182,6 +182,7 @@ namespace pub3 {
     virtual void cache_getfile (const cache_key_t &k, ptr<file_t> file) {}
     virtual ptr<file_t> file_nochange (const cache_key_t &k) { return NULL; }
     virtual void cache_noent (str nm) {}
+    void getfile_T (str fn, getfile_ev_t cb, opts_t o, CLOSURE);
 
   protected:
     ptr<axprt_stream> _x;
