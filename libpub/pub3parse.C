@@ -138,7 +138,7 @@ namespace pub3 {
     // Sanity check and call fopen()
     FILE *fp = open_file (rfn);
     if (fp) {
-      yy_buffer_state *yb = yy_new_buffer (fp, ok_pub3_yy_buffer_size);
+      yy_buffer_state *yb = yy_create_buffer (fp, ok_pub3_yy_buffer_size);
       yy_switch_to_buffer (yb);
       _ret = r;
       yyparse ();

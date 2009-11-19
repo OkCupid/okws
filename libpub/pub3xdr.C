@@ -1258,6 +1258,16 @@ pub3::decl_block_t::decl_block_t (const xpub3_decls_t &x)
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::decl_block_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (statement_typ ());
+  x->decls->lineno = lineno ();
+  _bindings->to_xdr (&x->decls->decls);
+  return true;
+}
+
+//-----------------------------------------------------------------------
 
 pub3::bindlist_t::bindlist_t (const xpub3_dict_t &x)
   : _lineno (x.lineno)

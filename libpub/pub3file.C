@@ -106,8 +106,36 @@ namespace pub3 {
 
   //================================================= jailer_t ==========
 
+  bool jailer_t::_in_jail;
+
+  //---------------------------------------------------------------------
+
+  void jailer_t::set_in_jail (bool b) { _in_jail = b; }
+
+  //---------------------------------------------------------------------
+
   void jailer_t::setjail (jail_mode_t m, str d)
   { _mode = m; _dir = d; }
+
+  //---------------------------------------------------------------------
+
+  bool jailer_t::be_verbose () { return OKDBG2(OKD_JAIL); }
+
+  //---------------------------------------------------------------------
+
+  str
+  jailer_t::jail2real (str in) const
+  {
+    str ret = in;
+    if (in && !_in_jail && _mode == JAIL_VIRTUAL) { 
+      ret = dir_merge (_dir, in); 
+    }
+    if (in && ret) {
+      OKDBG4(OKD_JAIL, CHATTER,  "okws-jail: %s -> %s\n", 
+	     in.cstr (), ret.cstr ());
+    }
+    return ret;
+  }
 
   //=====================================================================
 

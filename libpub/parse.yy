@@ -896,15 +896,14 @@ json_dict: '{' json_dict_pairs_opt '}'  { $$ = $2; } ;
 
 json_dict_pairs_opt: 
         /* empty */ 
-      { $$ = New refcounted<pub3::expr_dict_t> (yy_get_json_lineno ()); }
+      { $$ = pub3::expr_dict_t::parse_alloc (); }
       | json_dict_pairs { $$ = $1; }
       ;
 
 json_dict_pairs: 
         json_dict_pair 
       {
-         ptr<pub3::expr_dict_t> d = 
-	    New refcounted<pub3::expr_dict_t> (yy_get_json_lineno ()); 
+         ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::parse_alloc ();
          d->add ($1);
 	 $$ = d;
       }

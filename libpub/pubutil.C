@@ -296,6 +296,24 @@ apply_container_dir (const str &d, const str &f)
     return (strbuf (d) << "/" << f);
 }
 
+static bool is_ok_str (str s) { return s && s.len (); }
+
+str dir_merge (str d, str f)
+{
+  str ret;
+  if (!is_ok_str (d) && !is_ok_str (f)) {}
+  else if (!is_ok_str (d) && is_ok_str (f)) { ret = f; }
+  else if (is_ok_str (d) && !is_ok_str (f)) { ret = d; }
+  else {
+    strbuf b;
+    b << d;
+    if (d[d.len () - 1] !=  '/' && f[0] != '/') { b << "/"; }
+    b << f;
+    ret = b;
+  }
+  return ret;
+}
+
 static rxx safe_rxx ("(/\\.|\\./)");
 
 bool
