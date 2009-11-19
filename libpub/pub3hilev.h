@@ -246,7 +246,7 @@ namespace pub3 {
     void handle_new_deltas (const xpub3_delta_set_t &s);
     void clear_cache () { _getfile_cache.clear (); }
     void do_file (xpub3_fstat_t st, bool *keep_me, opts_t opt);
-    void rm_file (str nm, const opts_t &opt);
+    void rm_file (str nm, opts_t opt);
 
     bool _connected;
     int64_t _delta_id;

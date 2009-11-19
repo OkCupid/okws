@@ -92,6 +92,7 @@ namespace pub3 {
     lineno_t lineno () const { return _lineno; }
     void pub (obj_t &out) const;
     str to_str () const;
+    ptr<const metadata_t> metadata () const { return _metadata; }
   private:
     ptr<const metadata_t> _metadata;
     str _func;

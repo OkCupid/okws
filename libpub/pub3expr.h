@@ -418,7 +418,6 @@ namespace pub3 {
       : expr_binaryop_t (t1, t2, lineno), _pos (pos) {}
     expr_add_t (const xpub3_mathop_t &x);
     static ptr<expr_add_t> alloc (ptr<expr_t> t1, ptr<expr_t> t2, bool pos);
-    bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_add_t"; }
 
   protected:

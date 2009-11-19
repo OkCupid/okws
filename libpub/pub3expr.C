@@ -346,7 +346,7 @@ namespace pub3 {
     return r;
   }
 
-  //====================================================================
+  //========================================= mref_dict_t ================
 
   ptr<expr_t> 
   mref_dict_t::get_value () 
@@ -365,8 +365,13 @@ namespace pub3 {
     _dict->insert (_slot, x); 
     return true;
   }
+  
+  //-----------------------------------------------------------------------
+  
+  ptr<mref_dict_t> mref_dict_t::alloc (ptr<bindtab_t> b, const str &n)
+  { return New refcounted<mref_dict_t> (b, n); }
 
-  //====================================================================
+  //======================================== mref_list_t =================
   
   ptr<expr_t> mref_list_t::get_value () { return _list->lookup (_index); }
 
@@ -378,11 +383,11 @@ namespace pub3 {
     _list->set (_index, x); 
     return true;
   }
-  
+
   //-----------------------------------------------------------------------
-  
-  ptr<mref_dict_t> mref_dict_t::alloc (ptr<bindtab_t> b, const str &n)
-  { return New refcounted<mref_dict_t> (b, n); }
+
+  ptr<mref_list_t> mref_list_t::alloc (ptr<expr_list_t> d, ssize_t i)
+  { return New refcounted<mref_list_t> (d, i); }
 
   //====================================================================
 
@@ -1470,6 +1475,10 @@ namespace pub3 {
     else if (outp) { *outp  = NULL; }
     return ret;
   }
+
+  //============================================= binding_t ============
+
+  binding_t::binding_t (const str &s, ptr<expr_t> x) : _name (s), _expr (x) {}
 
   //====================================================================
 

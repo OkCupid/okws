@@ -214,6 +214,7 @@ namespace pub3 {
   public:
     expr_statement_t (location_t l) : statement_t (l) {}
     expr_statement_t (const xpub3_expr_statement_t &x);
+    expr_statement_t (ptr<expr_t> x, location_t l);
     static ptr<expr_statement_t> alloc (ptr<expr_t> x);
     bool to_xdr (xpub3_statement_t *x) const;
     void add (ptr<expr_t> x);

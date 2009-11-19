@@ -65,6 +65,8 @@ scalar_obj_t::_p_t::to_int64 () const
   return _i;
 }
 
+//-----------------------------------------------------------------------
+
 u_int64_t 
 scalar_obj_t::_p_t::to_uint64 () const 
 {
@@ -81,6 +83,8 @@ scalar_obj_t::_p_t::to_uint64 () const
   return _u;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 scalar_obj_t::_p_t::to_int64 (int64_t *out) const
 {
@@ -92,6 +96,8 @@ scalar_obj_t::_p_t::to_int64 (int64_t *out) const
   return false;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 scalar_obj_t::_p_t::to_uint64 (u_int64_t *out) const
 {
@@ -102,12 +108,21 @@ scalar_obj_t::_p_t::to_uint64 (u_int64_t *out) const
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
+scalar_obj_t::type_t
+scalar_obj_t::_p_t::natural_type () const { return _natural_type; }
+
+//-----------------------------------------------------------------------
+
 int
 scalar_obj_t::_p_t::to_int () const
 {
   int64_t i = to_int64 ();
   return i;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 convertdouble (const str &x, double *dp)
@@ -121,6 +136,8 @@ convertdouble (const str &x, double *dp)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 double
 convertdouble (const str &x)
 {
@@ -128,6 +145,8 @@ convertdouble (const str &x)
   convertdouble (x, &ret);
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 double
 scalar_obj_t::_p_t::to_double () const
@@ -139,6 +158,8 @@ scalar_obj_t::_p_t::to_double () const
   return _d;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 scalar_obj_t::_p_t::to_double (double *out) const
 {
@@ -149,6 +170,8 @@ scalar_obj_t::_p_t::to_double (double *out) const
   }
   return false;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 scalar_obj_t::_p_t::to_bool () const
@@ -164,6 +187,8 @@ scalar_obj_t::_p_t::to_bool () const
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 str
 scalar_obj_t::_p_t::to_str () const
 {
@@ -171,10 +196,14 @@ scalar_obj_t::_p_t::to_str () const
   return _s;
 }
 
+//-----------------------------------------------------------------------
+
 scalar_obj_t::scalar_obj_t () 
   : _p (New refcounted<_p_t> ()), _frozen (false) {}
 scalar_obj_t::scalar_obj_t (const str &s) 
   : _p (New refcounted<_p_t> (s)), _frozen (false) {}
+
+//-----------------------------------------------------------------------
 
 str
 scalar_obj_t::trim () const
@@ -196,6 +225,8 @@ scalar_obj_t::trim () const
   return str (bp, ep - bp);
 }
 
+//-----------------------------------------------------------------------
+
 void
 scalar_obj_t::_p_t::set (const str &s)
 {
@@ -204,6 +235,8 @@ scalar_obj_t::_p_t::set (const str &s)
   _int_cnv = CNV_NONE;
   _uint_cnv = CNV_NONE;
 }
+
+//-----------------------------------------------------------------------
 
 void
 scalar_obj_t::_p_t::set (double d)
@@ -219,6 +252,8 @@ scalar_obj_t::_p_t::set (double d)
   _int_cnv = CNV_BAD;
 #undef BUFSZ
 }
+
+//-----------------------------------------------------------------------
 
 void
 scalar_obj_t::_p_t::set_i (int64_t i)
@@ -238,6 +273,8 @@ scalar_obj_t::_p_t::set_i (int64_t i)
   _int_cnv = CNV_OK;
 }
 
+//-----------------------------------------------------------------------
+
 void
 scalar_obj_t::_p_t::set_u (u_int64_t i)
 {
@@ -256,6 +293,8 @@ scalar_obj_t::_p_t::set_u (u_int64_t i)
   _uint_cnv = CNV_OK;
 }
 
+//-----------------------------------------------------------------------
+
 void
 scalar_obj_t::add (const char *c, size_t s)
 {
@@ -266,11 +305,15 @@ scalar_obj_t::add (const char *c, size_t s)
   _b->tosuio ()->copy (c, s);
 }
 
+//-----------------------------------------------------------------------
+
 void
 scalar_obj_t::add (const str &s)
 {
   add (s.cstr (), s.len ());
 }
+
+//-----------------------------------------------------------------------
 
 void
 scalar_obj_t::freeze ()
@@ -283,6 +326,8 @@ scalar_obj_t::freeze ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 scalar_obj_t::_p_t::clear ()
 {
@@ -291,6 +336,8 @@ scalar_obj_t::_p_t::clear ()
   _i = 0;
   _uint_cnv = _double_cnv = _int_cnv = CNV_NONE;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 convertuint (const str &s, u_int64_t *out)

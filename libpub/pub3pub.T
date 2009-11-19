@@ -33,7 +33,7 @@ namespace pub3 {
 
   ptr<control_t> control_t::alloc () { return New refcounted<control_t> (); }
 
-  //====================================================================
+  //================================== publish_t =======================
 
   tamed void
   publish_t::publish (str nm, location_t loc, ptr<bind_interface_t> d, 
@@ -204,10 +204,17 @@ namespace pub3 {
   void publish_t::output (zstr z) { out ()->output (z); }
   void publish_t::output (str z) { out ()->output (z); }
 
+  //--------------------------------------------------------------------
+
   void publish_t::output_err (str msg, err_type_t typ)
   { out ()->output_err (_stack.back (), msg, typ); }
   void publish_t::output_err_stacktrace (str s, err_type_t t)
   { out ()->output_err (_stack, s, t); }
+
+  //--------------------------------------------------------------------
+
+  ptr<const metadata_t> publish_t::current_metadata () const
+  { return _stack.back ().metadata (); }
 
   //========================================= runloc_t =================
 

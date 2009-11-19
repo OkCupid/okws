@@ -596,10 +596,13 @@ namespace pub3 {
     } else {
       _delta_id = s.serial;
       for (size_t i = 0; i < s.files.size (); i++) {
-	const str &n = s.files[i];
+	str n = s.files[i];
 	ptr<bhash<opts_t> > *h = _opts_map[n];
 	if (h) {
-	  (*h)->traverse (wrap (this, &crp_t::rm_file, n));
+	  assert (*h);
+	  bhash_const_iterator_t<opts_t> it (**h);
+	  const opts_t *o;
+	  while ((o = it.next ())) { rm_file (n, *o); }
 	  _opts_map.remove (n);
 	  if (OKDBG2(PUB3_CACHE)) {
 	    strbuf b;
@@ -665,6 +668,15 @@ namespace pub3 {
     _getfile_cache.insert (cached_getfile_t (k, f));
   }
   
+
+  //-----------------------------------------------------------------------
+  
+  void crp_t::rm_file (str nm, opts_t opt)
+  {
+    cache_key_t k (nm, opt);
+    _getfile_cache.remove (k);
+  }
+
   //=====================================================================
 
 };

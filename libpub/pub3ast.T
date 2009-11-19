@@ -46,7 +46,13 @@ namespace pub3 {
     return _might_block.value ();
   }
 
-  //================================================== ast_node_t =========
+  //-----------------------------------------------------------------------
+
+  void
+  ast_node_t::v_publish (publish_t p, status_ev_t ev, ptr<closure_t> dum) const
+  { 
+    return ev->trigger (v_publish_nonblock (p));
+  }
 
   //============================================= zone_html_t =============
   
@@ -435,7 +441,7 @@ namespace pub3 {
     return ev->trigger (status);
   }
   
-  //======================================================================
+  //======================================= expr_statement_t =============
 
   status_t
   expr_statement_t::v_publish_nonblock (publish_t p) const
@@ -466,6 +472,16 @@ namespace pub3 {
     ev->trigger (ret);
   }
   
+  //----------------------------------------------------------------------
+  
+  expr_statement_t::expr_statement_t (ptr<expr_t> x, location_t l)
+    : statement_t (l), _expr (x) {}
+
+  //----------------------------------------------------------------------
+
+  ptr<expr_statement_t> expr_statement_t::alloc (ptr<expr_t> x) 
+  { return New refcounted<expr_statement_t> (x, location ()); }
+
   //================================================ for_t ================
 
   bool

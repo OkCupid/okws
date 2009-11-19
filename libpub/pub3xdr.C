@@ -477,6 +477,19 @@ pub3::expr_double_t::expr_double_t (const xpub3_double_t &x)
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_double_t::to_xdr (xpub3_double_t *x) const
+{
+#define BUFSZ 128
+  char buf[BUFSZ];
+  snprintf (buf, BUFSZ, "%g", _val);
+  x->val = buf;
+#undef BUFSZ
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_AND_t::to_xdr (xpub3_expr_t *x) const
 {
   return expr_mathop_t::to_xdr (x, XPUB3_MATHOP_AND, _f1, _f2, _lineno);
