@@ -71,7 +71,7 @@ namespace pub3 {
     void set_ctime (time_t t) { _ctime = t; }
     
     str _jfn;
-    mutable str _rfn;
+    str _rfn;
 
     ptr<const fhash_t> _hsh;
     bool _toplev;

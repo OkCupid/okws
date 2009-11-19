@@ -1318,6 +1318,19 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  bool
+  expr_shell_str_t::might_block_uncached () const
+  {
+    bool ret = false;
+    for (size_t i = 0; !ret && _els && i < _els->size (); i++) {
+      ptr<const expr_t> x = (*_els)[i];
+      if (x && x->might_block ()) ret = true;
+    }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<const expr_t>
   expr_shell_str_t::eval_to_val (eval_t e) const
   {

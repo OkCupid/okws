@@ -49,6 +49,10 @@ namespace pub3 {
 
   //=======================================================================
 
+  abstract_publisher_t::abstract_publisher_t (opts_t o) : _opts (o) {}
+
+  //-----------------------------------------------------------------------
+
   ptr<expr_dict_t>
   ap_t::get_universals () 
   {
@@ -664,6 +668,33 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  bool
+  crp_t::invalidate_cache (str n) 
+  {
+    bool ret = false;
+    ptr<bhash<opts_t> > *h = _opts_map[n];
+    if (h) {
+
+      ret = true;
+      assert (*h);
+      bhash_const_iterator_t<opts_t> it (**h);
+      const opts_t *o;
+      while ((o = it.next ())) { rm_file (n, *o); }
+      _opts_map.remove (n);
+
+      if (OKDBG2(PUB3_CACHE)) {
+	strbuf b;
+	b << "Removing file '" << n << "' from GETFILE cache";
+	okdbg_warn (CHATTER, b);
+      }
+    }
+    return ret;
+
+  }
+
+
+  //-----------------------------------------------------------------------
   
   void 
   crp_t::handle_new_deltas (const xpub3_delta_set_t &s)
@@ -676,23 +707,20 @@ namespace pub3 {
       _delta_id = s.serial;
       for (size_t i = 0; i < s.files.size (); i++) {
 	str n = s.files[i];
-	ptr<bhash<opts_t> > *h = _opts_map[n];
-	if (h) {
-	  assert (*h);
-	  bhash_const_iterator_t<opts_t> it (**h);
-	  const opts_t *o;
-	  while ((o = it.next ())) { rm_file (n, *o); }
-	  _opts_map.remove (n);
-	  if (OKDBG2(PUB3_CACHE)) {
-	    strbuf b;
-	    b << "Removing file '" << n << "' from GETFILE cache";
-	    okdbg_warn (CHATTER, b);
-	  }
-	}
+	invalidate_cache (n);
       }
     }
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  crp_t::cache_noent (str s)
+  {
+    _noent_cache.insert (s);
+    invalidate_cache (s);
+  }
+  
   //-----------------------------------------------------------------------
   
   bool

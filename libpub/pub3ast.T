@@ -267,6 +267,11 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
+  zone_inline_expr_t::zone_inline_expr_t (location_t l, ptr<expr_t> x)
+    : zone_t (l), _expr (x) {}
+
+  //----------------------------------------------------------------------
+
   bool
   zone_inline_expr_t::might_block_uncached () const
   {
@@ -499,6 +504,10 @@ namespace pub3 {
     }
     return ret;
   }
+
+  //-----------------------------------------------------------------------
+
+  ptr<for_t> for_t::alloc () { return New refcounted<for_t> (location ()); }
 
   //-----------------------------------------------------------------------
 

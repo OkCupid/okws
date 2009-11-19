@@ -248,6 +248,7 @@ namespace pub3 {
     void clear_cache () { _getfile_cache.clear (); }
     void do_file (xpub3_fstat_t st, bool *keep_me, opts_t opt);
     void rm_file (str nm, opts_t opt);
+    bool invalidate_cache (str nm);
 
     bool _connected;
     int64_t _delta_id;
