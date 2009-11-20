@@ -173,6 +173,8 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
 
+    ptr<const expr_t> eval_to_val (eval_t e) const;
+
     // Copy a copy, get a copy?
     ptr<expr_t> copy () const;
     ptr<expr_t> deep_copy () const;
@@ -540,7 +542,7 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
-
+    void v_dump (dumper_t *d) const;
   protected:
     str _name;
   };

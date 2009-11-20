@@ -96,6 +96,14 @@ namespace pub3 {
     return e.lookup_ref (_name);
   }
 
+  //--------------------------------------------------------------------
+
+  void
+  expr_varref_t::v_dump (dumper_t *d) const
+  {
+    d->dump (_name, true);
+  }
+
   //====================================================================
 
   ptr<expr_vecref_t>

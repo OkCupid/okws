@@ -265,6 +265,17 @@ namespace pub3 {
 
   //================================== expr_cow_t =========================
 
+  ptr<const expr_t>
+  expr_cow_t::eval_to_val (eval_t e) const
+  {
+    ptr<const expr_t> r;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) r = x->eval_to_val (e);
+    return r;
+  }
+
+  //--------------------------------------------------------------------
+
   bool expr_cow_t::might_block_uncached () const
   { return expr_t::might_block (const_ptr ()); }
 
@@ -290,7 +301,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t>
-  expr_cow_t::mutable_ptr ()
+  expr_cow_t::mutable_ptr () 
   {
     if (_orig) {
       assert (!_copy);
@@ -421,7 +432,7 @@ namespace pub3 {
   void
   expr_constant_t::v_dump (dumper_t *d) const
   {
-    str s = to_str (false);
+    str s = to_str (true);
     d->dump (s, true);
   }
   

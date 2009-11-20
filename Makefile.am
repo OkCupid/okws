@@ -24,17 +24,19 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = \
-	$(SBD1) \
-	$(SBD2) \
-	okd \
-	ssld \
-	logd \
-	client \
-	test \
-	conf \
-	htdocs \
-	contrib
+SUBDIRS = libpub pub
+
+
+#	$(SBD1) \
+#	$(SBD2) \
+#	okd \
+#	ssld \
+#	logd \
+#	client \
+#	test \
+#	conf \
+#	htdocs \
+#	contrib
 
 ##
 ## New aclocal (1.10+) is asking for this...

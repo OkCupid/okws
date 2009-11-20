@@ -362,9 +362,7 @@ namespace pub3 {
   {
     bool bl = false;
     for (size_t i = 0; i < _statements.size () && !bl; i++) {
-      if (!_statements[i]->might_block ()) {
-	bl = true;
-      }
+      if (_statements[i]->might_block ()) { bl = true; }
     }
     return bl;
   }
@@ -562,9 +560,10 @@ namespace pub3 {
   bool
   for_t::might_block_uncached () const
   {
-    return ((_arr && _arr->might_block ()) ||
-	    (_empty && _empty->might_block ()) ||
-	    (_body && _body->might_block ()));
+    bool b1 = _arr && _arr->might_block ();
+    bool b2 = _empty && _empty->might_block ();
+    bool b3 = _body && _body->might_block ();
+    return b1 || b2 || b3;
   }
 
   //-----------------------------------------------------------------------
@@ -587,6 +586,7 @@ namespace pub3 {
       for (size_t i = 0; handle_control (p) && i < v->size (); i++) {
 	
 	ptr<expr_t> row = (*v)[i];
+	dumper_t::dump_to_stderr (row);
 	ptr<mref_t> rr;
 	ptr<expr_t> rev;
 	if (!row || !(rr = row->eval_to_ref (p)) || !(rev = rr->get_value ())) {
@@ -671,9 +671,7 @@ namespace pub3 {
   {
     bool mb = false;
     for (size_t i = 0;  !mb && _clauses && _clauses->size (); i++) {
-      if ((*_clauses)[i]->might_block ()) {
-	mb = true;
-      }
+      if ((*_clauses)[i]->might_block ()) { mb = true; }
     }
     return mb;
   }
@@ -684,9 +682,9 @@ namespace pub3 {
   if_clause_t::might_block () const
   {
     if (!_might_block.is_set ()) {
-      bool mb = ((_expr && _expr->might_block ()) ||
-		 (_body && _body->might_block ()));
-      _might_block.set (mb);
+      bool b1 = _expr && _expr->might_block ();
+      bool b2 = _body && _body->might_block ();
+      _might_block.set (b1 && b2);
     }
     return _might_block.value ();
   }

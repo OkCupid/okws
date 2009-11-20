@@ -1,0 +1,8 @@
+{%
+    locals { x : "x1",
+             y : "y2",
+             z : "z3" }
+    for (i, [ "x %{x}", "y %{y}", "z %{z}" ] ) {
+	  print "xxx %{i}\n";
+    }
+%}
