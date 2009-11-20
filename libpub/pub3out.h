@@ -19,6 +19,7 @@ namespace pub3 {
     virtual void output (zstr s) = 0;
     virtual void output (str s) = 0;
     void output_err (runloc_t loc, str msg, err_type_t t);
+    void output_err (str msg, err_type_t t);
     void output_err (const loc_stack_t &stack, str msg, err_type_t t);
 
     static ptr<output_t> alloc (zbuf *z);

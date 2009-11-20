@@ -121,6 +121,7 @@ namespace pub3 {
     void output (zstr s);
     void output (str s);
     void output_err (str s, err_type_t t);
+    void output_errs (const xpub3_errstrs_t &e, err_type_t t);
     void output_err_stacktrace (str s, err_type_t t);
 
     ptr<localizer_t> localizer ();

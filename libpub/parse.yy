@@ -641,10 +641,10 @@ p3_bindlist_bindings: p3_binding
 	   $$ = pub3::bindlist_t::alloc (); 
 	   $$->add ($1);
         }
-        | p3_bindlist_bindings p3_binding
+        | p3_bindlist_bindings ',' p3_binding
 	{
 	   $$ = $1;
-	   $$->add ($2);
+	   $$->add ($3);
 	}
 	;
 

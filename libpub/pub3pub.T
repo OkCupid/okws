@@ -206,8 +206,27 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void
+  publish_t::output_errs (const xpub3_errstrs_t &errs, err_type_t typ)
+  {
+    for (size_t i = 0; i < errs.size (); i++) {
+      output_err (errs[i], typ);
+    }
+  }
+
+  //--------------------------------------------------------------------
+
   void publish_t::output_err (str msg, err_type_t typ)
-  { out ()->output_err (_stack.back (), msg, typ); }
+  { 
+    if (_stack.size ()) {
+      out ()->output_err (_stack.back (), msg, typ); 
+    } else {
+      out ()->output_err (msg, typ);
+    }
+  }
+
+  //--------------------------------------------------------------------
+
   void publish_t::output_err_stacktrace (str s, err_type_t t)
   { out ()->output_err (_stack, s, t); }
 

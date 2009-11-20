@@ -51,13 +51,15 @@ namespace pub3 {
   void
   output_t::pub3_add_error (const loc_stack_t &stk, str msg, err_type_t typ)
   {
-    pub3::obj_dict_t o;
-    stk.back ().pub (o);
-    o("error") = msg;
-    o("type") = typ2str (typ);
-    pub3::obj_list_t ps = stk.pub (-1);
-    o("stack") = ps;
-    _err_obj.push_back (o);
+    if (stk.size ()) {
+      pub3::obj_dict_t o;
+      stk.back ().pub (o);
+      o("error") = msg;
+      o("type") = typ2str (typ);
+      pub3::obj_list_t ps = stk.pub (-1);
+      o("stack") = ps;
+      _err_obj.push_back (o);
+    }
   }
 
   //--------------------------------------------------------------------
@@ -113,28 +115,47 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
+  output_t::output_err (str msg, err_type_t t)
+  {
+    loc_stack_t tmp_stack;
+    output_err (tmp_stack, msg, t);
+  }
+
+  //--------------------------------------------------------------------
+
+  void
   output_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
   {
     pub3_add_error (stk, msg, t);
 
-    runloc_t top = stk.back ();
     str typ = typ2str (t);
-    str loc = top.to_str ();
+
+    str loc;
+    if (stk.size ()) {
+      strbuf b;
+      runloc_t top = stk.back ();
+      str tl = top.to_str ();
+      b <<  tl << ": ";
+      loc = b;
+    } else {
+      loc = "";
+    }
+    
 
     strbuf tmp;
-    tmp << "okws-pub3 [ " << typ << "]: ";
+    tmp << "okws-pub3[" << typ << "]: ";
     str prfx = tmp;
 
     strbuf logline;
 
-    logline << prfx << loc << ": " << msg;
+    logline << prfx << loc << msg;
 
     output_visible_error (logline);
 
     if (!(_opts & P_OUTPUT_ERR_NOLOG)) {
       warn << logline << "\n";
 
-      ssize_t i = stk.size () - 1;
+      ssize_t i = stk.size () - 2;
       ssize_t lim = max<ssize_t> (0, i - 10);
 
       for ( ; i >= lim; i--) {

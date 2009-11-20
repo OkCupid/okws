@@ -178,6 +178,10 @@ namespace pub3 {
     case XPUB_STATUS_NOENT:
       err = strbuf () << fn << ": file not found";
       break;
+    case XPUB_STATUS_EIO:
+    case XPUB_STATUS_EPARSE:
+      pub.output_errs (*status.errors, P_ERR_ERROR);
+      break;
     default:
       err = *status.error;
       break;
@@ -543,7 +547,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  local_publisher_t::getfile (str fn, getfile_ev_t ev, opts_t o)
+  lp_t::getfile (str fn, getfile_ev_t ev, opts_t o)
   {
     xpub3_file_freshcheck_t frsh (XPUB3_FRESH_NONE);
     getfile (fn, ev, frsh, o);
@@ -552,8 +556,8 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  local_publisher_t::getfile (str jfn, getfile_ev_t ev, 
-			      const xpub3_file_freshcheck_t &fresh, opts_t o)
+  lp_t::getfile (str jfn, getfile_ev_t ev, 
+		 const xpub3_file_freshcheck_t &fresh, opts_t o)
   {
     str rfn = _jailer->jail2real (jfn);
 
