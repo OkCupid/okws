@@ -255,7 +255,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   void zone_text_t::strip () const 
-  { if (!_wss) { _wss = html_wss (_original.to_str ()); } }
+  { if (!_wss && _original) { _wss = html_wss (_original.to_str ()); } }
 
   //=======================================================================
 

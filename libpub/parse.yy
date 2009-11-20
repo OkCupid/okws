@@ -543,14 +543,14 @@ p3_regex: T_P3_REGEX
 
 p3_argument_expr_list_opt:           
            { 
-              $$ = pub3::expr_list_t::alloc ();
+              $$ = pub3::expr_list_t::parse_alloc ();
            }
            | p3_argument_expr_list   { $$ = $1; }
            ;
 
 p3_argument_expr_list: p3_expr
            {
-	      $$ = pub3::expr_list_t::alloc ();
+	      $$ = pub3::expr_list_t::parse_alloc ();
 	      $$->push_back ($1);
 	   }
            | p3_argument_expr_list ',' p3_expr
@@ -750,7 +750,7 @@ p3_flexi_tuple: p3_tuple
 p3_implicit_tuple: 
           p3_nonparen_expr
 	{
-	  ptr<pub3::expr_list_t> l = pub3::expr_list_t::alloc ();
+	  ptr<pub3::expr_list_t> l = pub3::expr_list_t::parse_alloc ();
 	  l->push_back ($1);
           $$ = l;
 	}
@@ -927,14 +927,14 @@ json_list: '[' json_list_elems_opt ']' { $$ = $2; } ;
 
 json_list_elems_opt: /* empty */ 
       {
-         $$ = pub3::expr_list_t::alloc ();
+         $$ = pub3::expr_list_t::parse_alloc ();
       }
       | json_list_elems { $$ = $1; }
       ;
 
 json_list_elems: json_obj
       {
-         $$ = pub3::expr_list_t::alloc ();
+         $$ = pub3::expr_list_t::parse_alloc ();
          $$->push_back ($1);
       }
       | json_list_elems ',' json_obj

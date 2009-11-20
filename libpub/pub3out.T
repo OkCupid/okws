@@ -146,8 +146,8 @@ namespace pub3 {
 
   //=================================== output_std_t ====================
 
-  void output_std_t::output (zstr z) { _out->cat (z); }
-  void output_std_t::output (str s) { _out->cat (s); }
+  void output_std_t::output (zstr z) { if (z) _out->cat (z); }
+  void output_std_t::output (str s) { if (s) _out->cat (s); }
 
   //=================================== output_silent_t ================
 

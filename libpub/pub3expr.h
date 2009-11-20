@@ -167,6 +167,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_static () const;
     bool might_block_uncached () const;
+    str to_str (bool q = false) const;
 
     // Copy a copy, get a copy?
     ptr<expr_t> copy () const;
@@ -739,6 +740,7 @@ namespace pub3 {
     void push_front (ptr<expr_t> e);
 
     static ptr<expr_list_t> alloc ();
+    static ptr<expr_list_t> parse_alloc ();
     static ptr<expr_list_t> alloc (lineno_t l) 
     { return New refcounted<expr_list_t> (l); }
     static ptr<expr_list_t> alloc (const xpub3_expr_list_t &x) 

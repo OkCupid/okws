@@ -1054,8 +1054,13 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<expr_list_t> expr_list_t::alloc ()
+  ptr<expr_list_t> expr_list_t::parse_alloc ()
   { return New refcounted<expr_list_t> (plineno ()); } 
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_list_t> expr_list_t::alloc ()
+  { return New refcounted<expr_list_t> (); }
 
   //--------------------------------------------------------------------
 
@@ -1344,12 +1349,13 @@ namespace pub3 {
 
       for (size_t i = 0; ok && i < sz; i++) {
 	ptr<const expr_t> x = (*_els)[i];
-	if (!x) { x = expr_null_t::alloc (); }
-	x = x->eval_to_val (e);
-	if (!x) { x = expr_null_t::alloc (); }
-	str s = x->to_str (false);
-	hold.push_back (s);
-	b << s;
+	str s;
+	if (x) { x = x->eval_to_val (e); }
+	if (x) { s = x->to_str (false); }
+	if (s) {
+	  hold.push_back (s);
+	  b << s;
+	}
 	
       }
       if (ok) { out = expr_str_t::alloc (b); }
@@ -1754,7 +1760,7 @@ namespace pub3 {
     return ret;
   }
   
-  //====================================================================
+  //=========================================== expr_cow_t =============
 
   ptr<expr_cow_t> expr_cow_t::alloc (ptr<const expr_t> x)
   { return New refcounted<expr_cow_t> (x); }
@@ -1768,6 +1774,17 @@ namespace pub3 {
     bool ret = false;
     if (p) { ret = p->to_xdr (x); } 
     return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  str
+  expr_cow_t::to_str (bool q) const 
+  {
+    str s;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) { s = x->to_str (q); }
+    return s;
   }
 
   //=======================================================================
