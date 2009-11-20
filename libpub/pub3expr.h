@@ -45,7 +45,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_t : virtual public refcount, virtual dumpable_t {
+  class expr_t : public virtual refcount, public virtual dumpable_t {
   public:
     expr_t (lineno_t lineno = 0) : _lineno (lineno) {}
     virtual ~expr_t () {}
@@ -171,6 +171,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     str to_str (bool q = false) const;
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
+    void v_dump (dumper_t *d) const;
 
     // Copy a copy, get a copy?
     ptr<expr_t> copy () const;
@@ -240,6 +241,7 @@ namespace pub3 {
     ptr<expr_t> deep_copy () const;
     bool is_static () const { return true; }
     bool is_call_coercable () const { return false; }
+    virtual void v_dump (dumper_t *d) const;
   };
 
   //----------------------------------------------------------------------
@@ -253,6 +255,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
     static ptr<expr_null_t> alloc ();
     str type_to_str () const { return "null"; }
+    void v_dump (dumper_t *d) const;
   };
 
   //-----------------------------------------------------------------------
@@ -288,6 +291,7 @@ namespace pub3 {
     ptr<const expr_t> eval_to_val (eval_t e) const;
     void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
     bool is_call_coercable () const { return false; }
+    void l_dump (dumper_t *d, ptr<const expr_t> a1, ptr<const expr_t> a2) const;
   protected:
     virtual bool eval_logical (eval_t e) const = 0;
     virtual void pub_logical (publish_t p, evb_t, CLOSURE) const = 0;
@@ -304,6 +308,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_OR_t"; }
     bool might_block_uncached () const { return might_block (_t1, _t2); }
+    void v_dump (dumper_t *d) const { l_dump (d, _t1, _t2); }
   protected:
     bool eval_logical (eval_t e) const;
     void pub_logical (publish_t p, evb_t, CLOSURE) const;
@@ -321,6 +326,7 @@ namespace pub3 {
     expr_AND_t (const xpub3_mathop_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_AND_t"; }
+    void v_dump (dumper_t *d) const { l_dump (d, _f1, _f2); }
   protected:
     ptr<expr_t> _f1, _f2;
     bool eval_logical (eval_t e) const;
@@ -355,6 +361,7 @@ namespace pub3 {
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_EQ_t"; }
+    void v_dump (dumper_t *d) const { l_dump (d, _o1, _o2); }
   protected:
     ptr<expr_t> _o1, _o2;
     bool _pos;
@@ -378,6 +385,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_relation_t"; }
     bool is_call_coercable () const { return false; }
+    void v_dump (dumper_t *d) const { l_dump (d, _l, _r); }
 
   protected:
     ptr<expr_t> _l, _r;
@@ -409,7 +417,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_call_coercable () const { return false; }
-
+    void v_dump (dumper_t *d) const;
   protected:
     virtual ptr<const expr_t> 
     eval_final (eval_t e, ptr<const expr_t> o1, ptr<const expr_t> o2) const = 0;
@@ -739,7 +747,7 @@ namespace pub3 {
     ptr<rxx> to_regex (const eval_t *e = NULL) const;
     scalar_obj_t to_scalar () const;
     str to_str (bool q = false) const;
-
+    void v_dump (dumper_t *d) const;
     void push_front (ptr<expr_t> e);
 
     static ptr<expr_list_t> alloc ();
@@ -804,11 +812,11 @@ namespace pub3 {
   class expr_shell_str_t : public expr_t {
   public:
     expr_shell_str_t (lineno_t lineno);
-    expr_shell_str_t (const str &s, lineno_t lineno);
+    expr_shell_str_t (str s, lineno_t lineno);
     expr_shell_str_t (ptr<expr_t> e, lineno_t lineno);
     expr_shell_str_t (const xpub3_shell_str_t &x);
 
-    static ptr<expr_shell_str_t> alloc (str s = NULL);
+    static ptr<expr_shell_str_t> alloc ();
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
 
@@ -819,6 +827,7 @@ namespace pub3 {
 
     str type_to_str () const { return "string"; }
     bool might_block_uncached () const;
+    void v_dump (dumper_t *d) const;
   protected:
     ptr<expr_list_t> _els;
 
@@ -841,7 +850,6 @@ namespace pub3 {
     ptr<expr_t> _expr;
   };
 
-  //-----------------------------------------------------------------------
   //-----------------------------------------------------------------------
 
   class bind_interface_t {
@@ -906,6 +914,8 @@ namespace pub3 {
     static ptr<expr_dict_t> alloc (const xpub3_json_dict_t &x);
     static ptr<expr_dict_t> alloc ();
     static ptr<expr_dict_t> alloc (const xpub3_dict_t &x);
+
+    void v_dump (dumper_t *d) const;
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;

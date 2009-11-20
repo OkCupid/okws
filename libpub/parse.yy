@@ -704,6 +704,7 @@ p3_string_elements:
 	}
         | p3_string_elements p3_string_element
 	{
+	   $$ = $1;
 	   $$->add ($2);
 	}
 	;

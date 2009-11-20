@@ -357,13 +357,21 @@ namespace pub3 {
     return r;
   }
 
+  //--------------------------------------------------------------------
+
+  void
+  expr_cow_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "expr:", _orig);
+  }
+
   //========================================= mref_dict_t ================
 
   ptr<expr_t> 
   mref_dict_t::get_value () 
   { 
     ptr<expr_t> ret;
-    ptr<expr_t> *xp =(*_dict)[_slot]; 
+    ptr<expr_t> *xp = (*_dict)[_slot]; 
     if (xp) { ret = *xp; }
     return ret;
   }
@@ -407,6 +415,15 @@ namespace pub3 {
   { return mkref (const_cast<expr_constant_t *> (this)); }
   ptr<expr_t> expr_constant_t::deep_copy () const 
   { return mkref (const_cast<expr_constant_t *> (this)); }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_constant_t::v_dump (dumper_t *d) const
+  {
+    str s = to_str (false);
+    d->dump (s, true);
+  }
   
   //====================================================================
 
@@ -418,6 +435,14 @@ namespace pub3 {
       s_null = New refcounted<expr_null_t> ();
     }
     return s_null;
+  }
+
+  //-------------------------------------------------------------------
+
+  void
+  expr_null_t::v_dump (dumper_t *d) const
+  {
+    d->dump ("(null pub3 obj)", true);
   }
 
   //====================================================================
@@ -461,6 +486,16 @@ namespace pub3 {
   expr_logical_t::eval_to_val (eval_t e) const
   {
     return expr_bool_t::alloc (eval_logical (e));
+  }
+
+  //-----------------------------------------------------------------------
+
+  void 
+  expr_logical_t::l_dump (dumper_t *d, ptr<const expr_t> a1, 
+			  ptr<const expr_t> a2) const
+  {
+    s_dump (d, "left-arg", a1);
+    s_dump (d, "right-arg", a2);
   }
 
   //====================================================================
@@ -606,6 +641,15 @@ namespace pub3 {
 
   bool expr_binaryop_t::might_block_uncached () const 
   { return expr_t::might_block (_o1, _o2); }
+
+  //---------------------------------------------------------------------
+
+  void
+  expr_binaryop_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "left-arg", _o1);
+    s_dump (d, "right-arg", _o2);
+  }
 
   //---------------------------------------------------------------------
 
@@ -1010,6 +1054,16 @@ namespace pub3 {
 
   //====================================================================
 
+  void
+  expr_list_t::v_dump (dumper_t *d) const
+  {
+    for (size_t i = 0; i < vec_base_t::size (); i++) {
+      s_dump (d, "item:", (*this)[i]);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+  
   bool
   expr_list_t::is_static () const
   {
@@ -1315,11 +1369,8 @@ namespace pub3 {
 
   //====================================================================
 
-  ptr<expr_shell_str_t> expr_shell_str_t::alloc (str s)
-  {
-    if (!s) s = "";
-    return New refcounted<expr_shell_str_t> (s, plineno ());
-  }
+  ptr<expr_shell_str_t> expr_shell_str_t::alloc ()
+  { return New refcounted<expr_shell_str_t> (plineno ()); }
 
   //--------------------------------------------------------------------
 
@@ -1332,6 +1383,18 @@ namespace pub3 {
       if (x && x->might_block ()) ret = true;
     }
     return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_shell_str_t::v_dump (dumper_t *d) const
+  {
+    if (_els) {
+      for (size_t i = 0; i < _els->size (); i++) {
+	s_dump (d, "item:", (*_els)[i]);
+      }
+    }
   }
 
   //--------------------------------------------------------------------
@@ -1419,7 +1482,7 @@ namespace pub3 {
   
   //----------------------------------------------------------------------
   
-  expr_shell_str_t::expr_shell_str_t (const str &s, int lineno)
+  expr_shell_str_t::expr_shell_str_t (str s, int lineno)
     : expr_t (lineno), 
       _els (expr_list_t::alloc (lineno)) 
   { _els->push_back (New refcounted<expr_str_t> (s)); }
@@ -1436,7 +1499,7 @@ namespace pub3 {
   ptr<bindtab_t>
   cow_bindtab_t::mutate ()
   {
-    ptr<bindtab_t> out;
+    ptr<bindtab_t> out = New refcounted<bindtab_t> ();
     bindtab_t::const_iterator_t it (*_tab);
     ptr<expr_t> x;
     const str *keyp;
@@ -1530,6 +1593,19 @@ namespace pub3 {
   { return New refcounted<bindtab_t::const_iterator_t> (*this); }
   
   //====================================================================
+
+  void
+  expr_dict_t::v_dump (dumper_t *d) const
+  {
+    const_iterator_t it (*this);
+    const str *key;
+    ptr<expr_t> value;
+    while ((key = it.next (&value))) {
+      s_dump (d, *key, value);
+    }
+  }
+
+  //--------------------------------------------------------------------
 
   bool
   expr_dict_t::is_static () const

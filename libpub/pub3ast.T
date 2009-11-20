@@ -582,16 +582,19 @@ namespace pub3 {
       
       assert (v);
       ptr<expr_dict_t> locals = expr_dict_t::alloc ();
+      dumper_t::dump_to_stderr (v);
       
       for (size_t i = 0; handle_control (p) && i < v->size (); i++) {
 	
 	ptr<expr_t> row = (*v)[i];
-	if (!row) {
+	ptr<mref_t> rr;
+	ptr<expr_t> rev;
+	if (!row || !(rr = row->eval_to_ref (p)) || !(rev = rr->get_value ())) {
 	  err_badrow (p, i);
 	} else if (!_body) {
 	  // noop
 	} else {
-	  locals->replace (_iter, row);
+	  locals->replace (_iter, rev);
 	  size_t stcksz = p.env ()->push_locals (locals);
 	  status_t tmp = _body->publish_nonblock (p);
 	  if (tmp.status != XPUB_STATUS_OK) { status = tmp; }
@@ -612,7 +615,8 @@ namespace pub3 {
       xpub_status_t status (XPUB_STATUS_OK);
       xpub_status_t res;
       size_t i;
-      ptr<expr_t> row;
+      ptr<expr_t> row, rev;
+      ptr<mref_t> rr;
       ptr<expr_dict_t> locals;
       size_t stcksz;
     }
@@ -639,16 +643,21 @@ namespace pub3 {
 	row = (*v)[i];
 	if (!row) {
 	  err_badrow (p, i);
-	} else if (!_body) {
-	  // noop
-	} else {
-	  locals->replace (_iter, row);
-	  stcksz = p.env ()->push_locals (locals);
-	  twait { _body->publish (p, mkevent (res)); }
-	  if (res.status != XPUB_STATUS_OK) {
-	    status = res;
-	  }
+	} else { 
+	  twait { row->pub_to_ref (p, mkevent (rr)); }
+	  if (!rr || !(rev = rr->get_value ())) {
+	    err_badrow (p, i);
+	  } else if (!_body) {
+	    // noop
+	  } else {
+	    locals->replace (_iter, rev);
+	    stcksz = p.env ()->push_locals (locals);
+	    twait { _body->publish (p, mkevent (res)); }
+	    if (res.status != XPUB_STATUS_OK) {
+	      status = res;
+	    }
 	  p.env ()->pop_to (stcksz);
+	  }
 	}
       }
     }
