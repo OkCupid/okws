@@ -1087,7 +1087,7 @@ namespace pub3 {
     for (size_t i = 0; !mb && i < vec_base_t::size (); i++) {
       ptr<const expr_t> x;
       x = (*this)[i];
-      if (x && !x->might_block()) mb = true;
+      if (x && x->might_block()) mb = true;
     }
     return mb;
   }
