@@ -65,7 +65,7 @@ public:
   {
     vec<str> v;
     okdbg_dump_vec (&v);
-    for (u_int i = 0; i < v.size () ; i++) {
+    for (size_t i = 0; i < v.size () ; i++) {
       okdbg_warn (l, v[i]);
     }
   }

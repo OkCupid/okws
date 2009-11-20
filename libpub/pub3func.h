@@ -43,6 +43,7 @@ namespace pub3 {
     void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
     ptr<const callable_t> to_callable () const { return mkref (this); }
     ptr<lambda_t> copy (eval_t e) const;
+    const char *get_obj_name () const { return "pub3::lambda_t"; }
   protected:
     bool check_args (publish_t p, args_t a) const;
     ptr<bindtab_t> bind_args_nonblock (publish_t p, args_t a) const;

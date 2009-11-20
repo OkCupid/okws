@@ -5,6 +5,7 @@
 #include "pub3base.h"
 #include "pub3prot.h"
 #include "pscalar.h"
+#include "pub3debug.h"
 
 namespace pub3 {
 
@@ -44,7 +45,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class expr_t : virtual public refcount {
+  class expr_t : virtual public refcount, virtual dumpable_t {
   public:
     expr_t (lineno_t lineno = 0) : _lineno (lineno) {}
     virtual ~expr_t () {}
@@ -65,6 +66,7 @@ namespace pub3 {
     static ptr<const expr_t> safe_expr (ptr<const expr_t> in);
     lineno_t lineno () const { return _lineno; }
     static str safe_to_str (ptr<const expr_t> x, bool q = true);
+    lineno_t dump_get_lineno () const { return lineno (); }
 
     //------- Evaluation ------------------------------------------
     //
@@ -168,6 +170,7 @@ namespace pub3 {
     bool is_static () const;
     bool might_block_uncached () const;
     str to_str (bool q = false) const;
+    const char *get_obj_name () const { return "pub3::expr_cow_t"; }
 
     // Copy a copy, get a copy?
     ptr<expr_t> copy () const;
