@@ -605,7 +605,7 @@ namespace pub3 {
 	  }
 	}
 	
-	if (pr.ok ()) {
+	if (!pr.ok ()) {
 	  assert (!f);
 	  pr.to_xdr (&res);
 	}

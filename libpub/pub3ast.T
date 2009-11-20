@@ -112,10 +112,7 @@ namespace pub3 {
   zone_html_t::zone_html_t (location_t l) : 
     zone_container_t (l),
     _preserve_white_space (false)
-  {
-    // reserve one free slot!
-    _children.push_back (NULL);
-  }
+  {}
 
   //-----------------------------------------------------------------------
 

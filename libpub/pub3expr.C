@@ -1062,7 +1062,7 @@ namespace pub3 {
   ptr<expr_t> 
   expr_list_t::deep_copy () const
   {
-    ptr<expr_list_t> out;
+    ptr<expr_list_t> out = expr_list_t::alloc ();
     size_t l = size ();
     for (size_t i = 0; i < l; i++) {
       ptr<expr_t> nv = (*this)[i]->copy ();

@@ -355,6 +355,14 @@ null		     { return T_P3_NULL; }
 void yy_push_html_state () { yy_push_state (H); }
 
 void
+yy_pop_all ()
+{
+   while (yy_start_stack_ptr > 0) {
+     yy_pop_state ();
+   }
+}
+
+void
 inc_lineno (int c)
 {
    pub3::parser_t::current()->inc_lineno (c);

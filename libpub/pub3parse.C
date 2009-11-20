@@ -68,6 +68,7 @@ namespace pub3 {
     _out = NULL;
     yy_parse_json (in);
     yyparse ();
+    yy_pop_all ();
     flex_cleanup ();
     ptr<expr_t> ret = _out;
     if (error_condition ()) {

@@ -37,6 +37,7 @@ struct yy_buffer_state;
 yy_buffer_state *yy_create_buffer (FILE *ip, int sz);
 void yy_switch_to_buffer (yy_buffer_state *s);
 void yy_delete_buffer (yy_buffer_state *s);
+void yy_pop_all ();
 int yyerror (str s = NULL);
 
 

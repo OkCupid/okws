@@ -9,4 +9,5 @@ OKWS 3.0 Notes
 TODOs
    X double support for arithmetic
    X standardize pub3dict output order.
-   - return / break
+   X return / break
+   - scope barriers
