@@ -202,7 +202,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     const char *e, *v;
     bool have_cfg;
     struct stat sb;
-    bool check_use_jail (false);
+    bool check_use_jail (true);
     pub3::obj_dict_t tmp_d;
   }
 
@@ -242,7 +242,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       _jaildir = optarg;
       break;
     case 'J':
-      check_use_jail = true;
+      check_use_jail = false;
       break;
     case 'f':
       _config = optarg;
@@ -296,7 +296,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       warn << "pub running without default variable bindings\n";
     }
     
-    if (!_jaildir && (!_syntax_check || check_use_jail)) {
+    if (!_jaildir && !_syntax_check && check_use_jail) {
       if (!tmp_d("JailDir").to_str (&_jaildir)) {
 	warn << "XX cannot find a jail directory!!\n";
 	warn << "XX   - none was specified with -j and "
@@ -316,7 +316,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
 
     if (_syntax_check) {
       /* skip next checks .. */
-    } else if (!_jaildir) {
+    } else if (!_jaildir && check_use_jail) {
       run = false;
       rc = -1;
     } else if (_files.size () == 0 && _print_vars.size () == 0) {

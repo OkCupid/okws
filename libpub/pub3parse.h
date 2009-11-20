@@ -20,7 +20,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class parser_t {
+  class parser_t : public virtual refcount {
   public:
     parser_t ();
     parser_t (str f);
@@ -44,7 +44,6 @@ namespace pub3 {
 
   protected:
     bool error_condition () const { return get_errors ().size () || _error; }
-
     location_t _location;
     bool _error;
   };
@@ -107,7 +106,6 @@ namespace pub3 {
 
   protected:
     FILE *open_file (const str &fn);
-    location_t _location;
     ptr<zone_t> _out;
     parse_ret_t *_ret;
   };

@@ -86,7 +86,7 @@ namespace rfn1 {
   items_t::eval_internal (eval_t e) const
   {
     ptr<pval_t> ret;
-    const nvtab_t *nvt = eval_to_nvtab (e, "itesm");
+    const nvtab_t *nvt = eval_to_nvtab (e, "items");
     if (nvt) {
       ptr<expr_list_t> l = New refcounted<expr_list_t> ();
       for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {

@@ -61,6 +61,10 @@ namespace pub3 {
   ptr<expr_t>
   json_parser_t::parse (const str &in)
   {
+    ptr<parser_t> old = current ();
+    set_current (mkref (this));
+    _location.set_filename ("<json>");
+    
     _out = NULL;
     yy_parse_json (in);
     yyparse ();
@@ -70,6 +74,8 @@ namespace pub3 {
       ret = NULL;
     }
     _out = NULL;
+
+    set_current (old);
     return ret;
   }
   
@@ -124,6 +130,9 @@ namespace pub3 {
   bool
   pub_parser_t::parse (ptr<metadata_t> d, parse_ret_t *r, opts_t opts)
   {
+    ptr<parser_t> old = current ();
+    set_current (mkref (this));
+
     // Figure out the relative pathname, listed in the content file
     str jfn = d->jailed_filename ();
 
@@ -151,6 +160,8 @@ namespace pub3 {
 
       _out = NULL;
     }
+
+    set_current (old);
 
     return r->ok ();
   }
