@@ -148,6 +148,7 @@ namespace pub3 {
     FILE *fp = open_file (rfn);
     if (fp) {
       yy_buffer_state *yb = yy_create_buffer (fp, ok_pub3_yy_buffer_size);
+      yy_push_html_state ();
       yy_switch_to_buffer (yb);
       _ret = r;
       yyparse ();

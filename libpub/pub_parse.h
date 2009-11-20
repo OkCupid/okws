@@ -39,11 +39,13 @@ void yy_switch_to_buffer (yy_buffer_state *s);
 void yy_delete_buffer (yy_buffer_state *s);
 int yyerror (str s = NULL);
 
+
 extern int yyparse ();
 extern int yylex ();
 void scanner_reset (void);
 void yy_parse_json (str s);
 void scanner_terminate (void);
+void yy_push_html_state ();
 
 #ifdef PDEBUG
 extern int yydebug;
