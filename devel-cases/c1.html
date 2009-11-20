@@ -1,0 +1,6 @@
+{%
+    locals { lst : [ "hi", "x", "b" ,"c", "ddddd" ] }
+    for (i, lst) {
+	  print "xxx %{i}\n";
+    }
+%}
