@@ -87,8 +87,10 @@ namespace pub3 {
   void
   dumper_t::line_t::append (str s)
   {
-    _v.push_back (s);
-    _b << s;
+    if (s) {
+      _v.push_back (s);
+      _b << s;
+    }
   }
 
   //----------------------------------------------------------------------
