@@ -32,7 +32,7 @@ scalar_obj_t::_p_t::_p_t ()
 
 scalar_obj_t::_p_t::_p_t (const str &s)
   : _s (s), _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE),
-    _natural_type (TYPE_NONE) {}
+    _natural_type (TYPE_STR) {}
 
 //-----------------------------------------------------------------------
 
@@ -231,6 +231,7 @@ void
 scalar_obj_t::_p_t::set (const str &s)
 {
   _s = s;
+  _natural_type = TYPE_STR;
   _double_cnv = CNV_NONE;
   _int_cnv = CNV_NONE;
   _uint_cnv = CNV_NONE;
@@ -250,6 +251,7 @@ scalar_obj_t::_p_t::set (double d)
   _d = d;
   _double_cnv = CNV_OK;
   _int_cnv = CNV_BAD;
+  _natural_type = TYPE_DOUBLE;
 #undef BUFSZ
 }
 
@@ -271,6 +273,7 @@ scalar_obj_t::_p_t::set_i (int64_t i)
 
   _double_cnv = CNV_OK;
   _int_cnv = CNV_OK;
+  _natural_type = TYPE_INT;
 }
 
 //-----------------------------------------------------------------------
@@ -291,6 +294,7 @@ scalar_obj_t::_p_t::set_u (u_int64_t i)
 
   _double_cnv = CNV_OK;
   _uint_cnv = CNV_OK;
+  _natural_type = TYPE_UINT;
 }
 
 //-----------------------------------------------------------------------

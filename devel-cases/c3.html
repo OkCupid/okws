@@ -1,9 +1,10 @@
 {%
     locals { v  : [ [ 1, "a" ], [ 2, "b"], [3 , "c" ] ] }
-    print ("X" + "y");
+    print ("X" + "y", "\n");
     for (p, v) {
       p[1] = p[1] + "x";
-      print (p[1]);
-      print "\n";
+    }
+    for (p, v) {
+       print (p, "\n");
     }
 %}

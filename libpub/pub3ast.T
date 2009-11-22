@@ -581,7 +581,6 @@ namespace pub3 {
       
       assert (v);
       ptr<expr_dict_t> locals = expr_dict_t::alloc ();
-      dumper_t::dump_to_stderr (v);
       
       for (size_t i = 0; handle_control (p) && i < v->size (); i++) {
 	

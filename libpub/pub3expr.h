@@ -636,8 +636,7 @@ namespace pub3 {
   class expr_number_t : public expr_constant_t {
   public:
     expr_number_t () : expr_constant_t () {}
-
-    str to_str () const { return to_scalar ().to_str (); }
+    str to_str (bool q = false) const { return to_scalar ().to_str (); }
   };
 
   //-----------------------------------------------------------------------
