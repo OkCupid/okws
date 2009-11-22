@@ -1,0 +1,11 @@
+{%
+
+    def foo (x) {
+       if (x <= 0) { return x; }
+       locals { y }
+       y = x * foo (x-1)
+       return y;
+    }
+    locals { t : foo (8) }
+    print (t, "\n");
+%}
