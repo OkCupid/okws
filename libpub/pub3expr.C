@@ -372,7 +372,7 @@ namespace pub3 {
   void
   expr_cow_t::v_dump (dumper_t *d) const
   {
-    s_dump (d, "expr:", _orig);
+    s_dump (d, "expr:", const_ptr ());
   }
 
   //========================================= mref_dict_t ================
@@ -1509,17 +1509,29 @@ namespace pub3 {
   ptr<bindtab_t>
   cow_bindtab_t::mutate ()
   {
-    ptr<bindtab_t> out = New refcounted<bindtab_t> ();
-    bindtab_t::const_iterator_t it (*_tab);
-    ptr<expr_t> x;
-    const str *keyp;
-
-    while ((keyp = it.next (&x))) {
-      ptr<expr_t> np;
-      if (x) np = x->copy ();
-      out->insert (*keyp, np);
+    if (!_copy) {
+      _copy = New refcounted<bindtab_t> ();
+      bindtab_t::const_iterator_t it (*_orig);
+      ptr<expr_t> x;
+      const str *keyp;
+      
+      while ((keyp = it.next (&x))) {
+	ptr<expr_t> np;
+	if (x) np = x->copy ();
+	_copy->insert (*keyp, np);
+      }
     }
-    return out;
+    return _copy;
+  }
+
+  //--------------------------------------------------------------------
+  
+  ptr<const bindtab_t>
+  cow_bindtab_t::tab () const
+  {
+    ptr<const bindtab_t> ret = _copy;
+    if (!ret) ret = _orig;
+    return ret;
   }
 
   //--------------------------------------------------------------------
@@ -1530,12 +1542,12 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   bool cow_bindtab_t::lookup (const str &nm, ptr<const expr_t> *x) const
-  { return _tab->lookup (nm, x); }
+  { return tab ()->lookup (nm, x); }
 
   //--------------------------------------------------------------------
   
   ptr<bindtab_t::const_iterator_t> cow_bindtab_t::iter () const 
-  { return New refcounted<bindtab_t::const_iterator_t> (*_tab); }
+  { return New refcounted<bindtab_t::const_iterator_t> (*tab ()); }
 
   //====================================================================
 

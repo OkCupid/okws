@@ -881,13 +881,15 @@ namespace pub3 {
 
   class cow_bindtab_t : public bind_interface_t {
   public:
-    cow_bindtab_t (ptr<const bindtab_t> t) : _tab (t) {}
+    cow_bindtab_t (ptr<const bindtab_t> t) : _orig (t) {}
     static ptr<cow_bindtab_t> alloc (ptr<const bindtab_t> t);
     bool lookup (const str &nm, ptr<const expr_t> *x = NULL) const;
     ptr<bindtab_t> mutate ();
     ptr<bindtab_t::const_iterator_t> iter () const;
   protected:
-    ptr<const bindtab_t> _tab;
+    ptr<const bindtab_t> tab () const;
+    ptr<const bindtab_t> _orig;
+    ptr<bindtab_t> _copy;
   };
 
   //-----------------------------------------------------------------------

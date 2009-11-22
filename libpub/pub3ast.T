@@ -585,7 +585,6 @@ namespace pub3 {
       for (size_t i = 0; handle_control (p) && i < v->size (); i++) {
 	
 	ptr<expr_t> row = (*v)[i];
-	dumper_t::dump_to_stderr (row);
 	ptr<mref_t> rr;
 	ptr<expr_t> rev;
 	if (!row || !(rr = row->eval_to_ref (p)) || !(rev = rr->get_value ())) {
@@ -598,6 +597,9 @@ namespace pub3 {
 	  status_t tmp = _body->publish_nonblock (p);
 	  if (tmp.status != XPUB_STATUS_OK) { status = tmp; }
 	  p.env ()->pop_to (stcksz);
+
+	  // In case the row was actually modified, we should reassign it.
+	  (*v)[i] = rev;
 	}
       }
     }
