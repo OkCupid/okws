@@ -177,6 +177,16 @@ namespace pub3 {
   ptr<zone_html_t> zone_html_t::alloc ()
   { return New refcounted<zone_html_t> (location ()); }
 
+  //-----------------------------------------------------------------------
+
+  void 
+  zone_html_t::v_dump (dumper_t *d) const
+  {
+    for (size_t i = 0; i < _children.size (); i++) {
+      s_dump (d, "zone:", _children[i]);
+    }
+  }
+
   //============================================== zone_text_t ============
 
   bool
@@ -256,6 +266,33 @@ namespace pub3 {
   
   void zone_text_t::strip () const 
   { if (!_wss && _original) { _wss = html_wss (_original.to_str ()); } }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_text_t::v_dump (dumper_t *d) const
+  {
+    strip ();
+    strbuf b;
+    if (_original) {
+      str tmp = _original;
+      b << "orig: " << tmp;
+      d->dump (b, true);
+    }
+    if (_wss) {
+      str tmp = _wss;
+      b << "wss: " << tmp;
+      d->dump (b, true);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_inline_expr_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "expr:", _expr);
+  }
 
   //=======================================================================
 
@@ -406,6 +443,16 @@ namespace pub3 {
   bool zone_pub_t::handle_control (publish_t p) const
   { return p.control ()->handle_zone (); }
 
+  //-----------------------------------------------------------------------
+
+  void
+  zone_pub_t::v_dump (dumper_t *d) const
+  {
+    for (size_t i = 0; i < _statements.size (); i++) {
+      s_dump (d, "statement:", _statements[i]);
+    }
+  }
+
   //======================================================================
 
   ptr<statement_zone_t> 
@@ -441,6 +488,14 @@ namespace pub3 {
     return ev->trigger (status);
   }
   
+  //---------------------------------------------------------------------
+
+  void
+  statement_zone_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "zone:", _zone);
+  }
+
   //======================================= expr_statement_t =============
 
   status_t
@@ -481,6 +536,14 @@ namespace pub3 {
 
   ptr<expr_statement_t> expr_statement_t::alloc (ptr<expr_t> x) 
   { return New refcounted<expr_statement_t> (x, location ()); }
+
+  //----------------------------------------------------------------------
+
+  void
+  expr_statement_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "expr:", _expr);
+  }
 
   //================================================ for_t ================
 
@@ -664,6 +727,19 @@ namespace pub3 {
     ev->trigger (status);
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  for_t::v_dump (dumper_t *d) const
+  {
+    strbuf b;
+    b << "iter: " << _iter;
+    d->dump (b, true);
+    s_dump (d, "arr:", _arr);
+    s_dump (d, "body:", _body);
+    s_dump (d, "empty:", _empty);
+  }
+
   //==================================================== if_t ==============
 
   bool
@@ -687,6 +763,15 @@ namespace pub3 {
       _might_block.set (b1 && b2);
     }
     return _might_block.value ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  if_clause_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "expr:", _expr);
+    s_dump (d, "body:", _body);
   }
 
   //-----------------------------------------------------------------------
@@ -774,6 +859,16 @@ namespace pub3 {
     }
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  if_t::v_dump (dumper_t *d) const
+  {
+    for (size_t i = 0; i < _clauses->size (); i++) {
+      s_dump (d, "clause:", (*_clauses)[i]);
+    }
+  }
+  
   //========================================== decl_block_t =============
 
   bool
@@ -885,6 +980,14 @@ namespace pub3 {
     return ret;
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  decl_block_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "bindings", _tab);
+  }
+
   //============================== locals / universals ====================
 
   ptr<locals_t> locals_t::alloc () 
@@ -908,6 +1011,16 @@ namespace pub3 {
   bool case_t::might_block () const { return _zone && _zone->might_block (); }
 
   //-----------------------------------------------------------------------
+
+  void
+  case_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "key", _key);
+    s_dump (d, "zone", _zone);
+  }
+
+  //-----------------------------------------------------------------------
+
 
   void switch_t::add_key (ptr<expr_t> x) { _key = x; }
 
@@ -1021,6 +1134,17 @@ namespace pub3 {
   ptr<case_list_t> case_list_t::alloc () 
   { return New refcounted<case_list_t> (); }
 
+  //-----------------------------------------------------------------------
+
+  void
+  switch_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "key:", _key);
+    for (size_t i = 0; i < _cases->size (); i++) {
+      s_dump (d, "case:", (*_cases)[i]);
+    }
+  }
+
   //============================================== include_t ==============
 
   ptr<include_t> include_t::alloc () 
@@ -1066,7 +1190,6 @@ namespace pub3 {
     }
     ev->trigger (rs);
   }
- 
 
   //-----------------------------------------------------------------------
 
@@ -1087,6 +1210,15 @@ namespace pub3 {
       ret = false;
     }
     return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  include_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "file:", _file);
+    s_dump (d, "dict:", _dict);
   }
 
   //============================================== print_t ================
@@ -1149,6 +1281,14 @@ namespace pub3 {
     ev->trigger (ret);
   }
 
+  //----------------------------------------------------------------------
+
+  void
+  print_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "args", _args);
+  }
+
   //=============================================== return_t =============
 
   ptr<return_t> return_t::alloc (ptr<expr_t> x)
@@ -1187,6 +1327,14 @@ namespace pub3 {
     p.control ()->set_rtrn (x);
 
     ev->trigger (ret);
+  }
+
+  //----------------------------------------------------------------------
+
+  void
+  return_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "val:", _val);
   }
 
   //=============================================== break_t ==============

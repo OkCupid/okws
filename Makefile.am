@@ -24,7 +24,7 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = libpub pub
+SUBDIRS = libpub pub test
 
 
 #	$(SBD1) \
@@ -149,8 +149,8 @@ test:	ready_test
 regtest: ready_test
 	python $(srcdir)/test/regtest/run.py
 
-regtest-stage1: all
-	python $(srdcir)/test/regtest/run.py -m
+regtest-stage1: ready_test
+	python $(srcdir)/test/regtest/run.py -m
 
 .PHONY: roottest
 roottest: install

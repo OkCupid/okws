@@ -63,7 +63,7 @@ def strip_ext (f, ext):
 
 def usage (rc):
     print \
-"""usage: %s [-q|-v] [-c<casedir>] [-e] <case1> <case2> ...
+"""usage: %s [-m] [-q|-v] [-c<casedir>] [-e] <case1> <case2> ...
 
     Run this testing harness from the top build directory.
  
@@ -140,7 +140,7 @@ class Config:
     #-----------------------------------------
 
     def parseopts (self, argv):
-        short_opts = "Cc:eqv"
+        short_opts = "mCc:eqv"
         long_opts = [ 'no-casedir',
                       'casedir=',
                       'explain',
@@ -195,7 +195,7 @@ class Config:
 
     #-----------------------------------------
 
-    def pub_run (self, f):
+    def pub_file (self, f):
         """Calls pub v3 on a file and spits out the results to 
         standard output."""
 
@@ -418,7 +418,7 @@ class TestCase:
 
     ##-----------------------------------------
 
-    def __init__ (self, config, d, fetcher):
+    def __init__ (self, config, d):
         self._filedata = None
         self._filedata_inc = []
         self._desc = ""
@@ -433,7 +433,6 @@ class TestCase:
         self._result = False
         self._script_path = None
         self._custom_fetch = None
-        self._fetcher = config.fetcher ()
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
@@ -719,7 +718,7 @@ class TestCaseLocal (TestCase):
             raise RegTestError, "cannot find path for '%s'" % self._name
 
         jp = self._config.jailed_casepath (n)
-        return self._config.pub_run (jp)
+        return self._config.pub_file (jp)
 
 ##=======================================================================
 

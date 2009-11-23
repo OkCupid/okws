@@ -1,5 +1,6 @@
 
-<!--##
+{% 
+
 //-----------------------------------------------------------------------
 // $Id$
 // -----------------------------------------------------------------------
@@ -31,13 +32,14 @@
 //
 //   This file should be placed into /usr/local/etc/okws by default.
 //
--->
 
-<!--#set ({
+globals {
 
-HomeDir		=>	"@@TOP_SRCDIR@@",	// Not necessary 
-JailDir		=> 	"${HomeDir}/htdocs",	// Pubd variable
-RunAsUser	=>	"www",			// likewise
-RunAsGroup	=>	${RunAsUser}		// ditto
+HomeDir		:	"@@TOP_SRCDIR@@",	// Not necessary 
+JailDir		: 	"%{HomeDir}/htdocs",	// Pubd variable
+RunAsUser	:	"www",			// likewise
+RunAsGroup	:	RunAsUser		// ditto
 
-}) -->
+} 
+
+%}

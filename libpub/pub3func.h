@@ -74,6 +74,8 @@ namespace pub3 {
     status_t v_publish_nonblock (publish_t p) const;
     bool might_block_uncached () const { return false; }
     bool to_xdr (xpub3_statement_t *x) const;
+    const char *get_obj_name () const { return "fndef_t"; }
+    void v_dump (dumper_t *d) const;
   protected:
     str _name;
     ptr<lambda_t> _lambda;

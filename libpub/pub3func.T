@@ -194,6 +194,15 @@ namespace pub3 {
   ptr<fndef_t> fndef_t::alloc (str nm, ptr<lambda_t> d)
   { return New refcounted<fndef_t> (nm, d, location ()); }
 
+  //-----------------------------------------------------------------------
+
+  void
+  fndef_t::v_dump (dumper_t *d) const
+  {
+    d->dump (strbuf ("name: %s", _name.cstr ()), true);
+    s_dump (d, "lambda:", _lambda);
+  }
+
   //============================================= call_t  ================
 
   ptr<call_t> call_t::alloc (ptr<expr_t> x, ptr<expr_list_t> l)
