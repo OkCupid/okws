@@ -597,7 +597,6 @@ namespace pub3 {
 	  status_t tmp = _body->publish_nonblock (p);
 	  if (tmp.status != XPUB_STATUS_OK) { status = tmp; }
 	  p.env ()->pop_to (stcksz);
-
 	  // In case the row was actually modified, we should reassign it.
 	  (*v)[i] = rev;
 	}
@@ -654,10 +653,10 @@ namespace pub3 {
 	    locals->replace (_iter, rev);
 	    stcksz = p.env ()->push_locals (locals);
 	    twait { _body->publish (p, mkevent (res)); }
-	    if (res.status != XPUB_STATUS_OK) {
-	      status = res;
-	    }
-	  p.env ()->pop_to (stcksz);
+	    if (res.status != XPUB_STATUS_OK) { status = res; }
+	    p.env ()->pop_to (stcksz);
+	    // In case the row was actually modified, we should reassign it.
+	    (*v)[i] = rev;
 	  }
 	}
       }
@@ -671,7 +670,7 @@ namespace pub3 {
   if_t::might_block_uncached () const 
   {
     bool mb = false;
-    for (size_t i = 0;  !mb && _clauses && _clauses->size (); i++) {
+    for (size_t i = 0;  !mb && _clauses && i < _clauses->size (); i++) {
       if ((*_clauses)[i]->might_block ()) { mb = true; }
     }
     return mb;
@@ -697,7 +696,8 @@ namespace pub3 {
   {
     assert (!might_block ());
     ptr<const zone_t> ne = find_clause (p);
-    status_t s = ne->publish_nonblock (p);
+    status_t s (XPUB_STATUS_OK);
+    if (ne) { s = ne->publish_nonblock (p); }
     return s;
   }
 

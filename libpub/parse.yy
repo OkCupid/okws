@@ -98,7 +98,7 @@
 %type <p3exprlist> p3_tuple p3_list;
 %type <p3exprlist> p3_flexi_tuple p3_implicit_tuple;
 %type <str> p3_identifier p3_bind_key;
-%type <p3strv> p3_identifier_list;
+%type <p3strv> p3_identifier_list p3_identifier_list_opt;
 %type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 %type <p3expr> p3_constant_or_string p3_case_key_opt;
@@ -253,7 +253,7 @@ p3_fndef : T_P3_DEF p3_identifier p3_fndef_body
 p3_lambda: T_P3_LAMBDA p3_fndef_body { $$ = $2; } ;
 
 
-p3_fndef_body: '(' p3_identifier_list ')' p3_nested_zone
+p3_fndef_body: '(' p3_identifier_list_opt ')' p3_nested_zone
        {
           ptr<pub3::lambda_t> l = pub3::lambda_t::alloc ($2, $4);
 	  $$ = l;
@@ -517,9 +517,16 @@ p3_nonparen_expr:
 	   | p3_lambda      { $$ = $1; }
 	   ;
 
-p3_identifier_list: /* empty */ 
+p3_identifier_list_opt: /*empty */
+          { $$ = New refcounted<pub3::identifier_list_t> (); }
+          | p3_identifier_list 
+          { $$ = $1; }
+	  ;
+
+p3_identifier_list: p3_identifier
           { 
 	      $$ = New refcounted<pub3::identifier_list_t> (); 
+	      $$->push_back ($1);
           }
 	  | p3_identifier_list ',' p3_identifier
 	  {
