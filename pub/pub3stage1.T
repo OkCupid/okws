@@ -38,7 +38,7 @@ namespace pub3 {
 
   class eng_t {
   public:
-    eng_t () : _opt (0), _ppt (NULL), _syntax_check (false) {}
+    eng_t () : _opt (P_COPY_CONF), _ppt (NULL), _syntax_check (false) {}
     void init (int argc, char **argv, bool *gop, evi_t ev, CLOSURE);
     void run (evi_t ev, CLOSURE);
     void syntax_check (evi_t ev, CLOSURE);

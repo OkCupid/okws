@@ -139,6 +139,11 @@ class Config:
 
     #-----------------------------------------
 
+    def command_line (self):
+        return self._command_line
+
+    #-----------------------------------------
+
     def parseopts (self, argv):
         short_opts = "mCc:eqv"
         long_opts = [ 'no-casedir',
@@ -280,6 +285,7 @@ class Config:
 
     def make_scratch_dir (self):
         d = self.scratch_dir ()
+        print "DDD " + d
         self.mkdir (d, "scratch")
         return d
 
@@ -535,6 +541,7 @@ class TestCase:
 
         self._config.make_scratch_dir ()
         out = self.filepath ()
+        print "XXX " + out
         dat = self.translate_data (self._filedata)
         return self.write_data_inner (out, dat)
 
@@ -623,28 +630,41 @@ input: %s%s
 
         if cfg.explain_only ():
             self.explain ()
-            return
+            return RESULT_OK
 
         self.write_all ()
-        d = self.fetch ()
-        ret = False
-        if d:
-            res = self.compare (d)
+        ret = RESULT_FAILED
+
+        (status, data) = self.fetch ()
+
+        if status == RESULT_OK and data:
+            res = self.compare (data)
             if res:
-                ret = True
+                ret = status 
                 self.report_success ()
                 self.cleanup ()
             else:
-                f = cfg.write_failure_file (self.name (), d)
+                f = cfg.write_failure_file (self.name (), data)
                 f2 = cfg.write_outcome_file (self.name (), 
                                              str (self._outcome_obj))
-
+                
                 txt = "data mismatch: diff -wB %s %s " % (f, f2)
                 self.report_failure (txt)
+
+        elif status == RESULT_SKIPPED:
+            ret = status
+
         else:
             self.report_failure ("empty reply")
+
         return ret
                 
+##=======================================================================
+
+RESULT_OK = 0
+RESULT_FAILED = 1
+RESULT_SKIPPED = -1
+
 ##=======================================================================
 
 class TestCaseRemote (TestCase):
@@ -694,7 +714,7 @@ class TestCaseRemote (TestCase):
         else:
             u = self.file_url ()
             resp = ''.join (urllib.urlopen (u))
-        return resp
+        return (RESULT_OK, resp)
 
 ##=======================================================================
 
@@ -709,7 +729,7 @@ class TestCaseLocal (TestCase):
 
     def fetch (self):
         if self._custom_fetch or self._script_path or self._htdoc:
-            raise RegTestSkipped, "not command-line compatible"
+            return (RESULT_SKIPPED, None)
 
         n = None
         if self._filedata:
@@ -718,7 +738,7 @@ class TestCaseLocal (TestCase):
             raise RegTestError, "cannot find path for '%s'" % self._name
 
         jp = self._config.jailed_casepath (n)
-        return self._config.pub_file (jp)
+        return (RESULT_OK, self._config.pub_file (jp))
 
 ##=======================================================================
 
@@ -769,8 +789,12 @@ class TestCaseLoader:
     ##----------------------------------------
 
     def make_test_case (self, d):
-        if self._command_line: return TestCaseLocal (self._config, d)
-        else:                  return TestCaseRemove (self._config, d)
+        ret = None
+        if self._config.command_line (): 
+            ret = TestCaseLocal (self._config, d)
+        else:
+            ret = TestCaseRemove (self._config, d)
+        return ret
 
     ##----------------------------------------
 
@@ -786,7 +810,7 @@ class TestCaseLoader:
                 d["name"] = name
                 d["fullpath"] = full
 
-        return TestCase (self._config, d)
+        return self.make_test_case (d)
 
     ##----------------------------------------
 
@@ -801,7 +825,7 @@ class TestCaseLoader:
             for c in mod.cases:
                 c["name"] = "%s%c" % (name, dig_to_char (n))
                 c["full"] = full
-                v += [ TestCase (self._config, c) ]
+                v += [ self.make_test_case (c) ]
                 n += 1
         except AttributeError, e:
             pass
@@ -876,13 +900,21 @@ class RegTester:
 
     ##-----------------------------------------
 
+        
+    def run_server (self):
+        return not self._config.command_line ()
+
+    ##-----------------------------------------
+
     def run (self, files):
 
         rc = True
+        server = False
 
         eo = self._config.explain_only ()
 
-        if not eo:
+        if not eo and self.run_server ():
+            server = True
             self._okws.run ()
 
         if not files:
@@ -891,23 +923,34 @@ class RegTester:
         try:
             v = self._loader.load (files)
             ok = 0
+            skipped = 0
             tot = len (v)
             for c in v:
-                if c.run ():
+                code = c.run ()
+                if code == RESULT_OK:
                     ok += 1
-            rc = (tot == ok)
+                elif code == RESULT_SKIPPED:
+                    skipped += 1
+            rc = (tot == (ok + skipped))
 
             if eo:
                 pass
             elif rc: 
-                msg ("++ All %d tests passed. YES!!" % tot, RESULT)
+                if skipped == 0:
+                    msg ("++ All %d tests passed. YES!!" % tot, RESULT)
+                else:
+                    msg ("++ All %d tests passed (with %d skipped)" \
+                             % (tot, skipped), RESULT)
             else:
-                msg ("-- Only %d/%d tests passed. Booo." % (ok, tot), ERROR)
+                msg ("-- Only %d/%d tests passed (with %d skipped). Booo." \
+                         % (ok, tot - skipped, skipped), ERROR)
             
         finally:
-            # make sure we alway clean up after ourselves, that way
-            # OKWS won't leave a stale socket, etc.
-            self._okws.kill ()
+
+            if server:
+                # make sure we alway clean up after ourselves, that way
+                # OKWS won't leave a stale socket, etc.
+                self._okws.kill ()
 
         return rc
 
