@@ -76,7 +76,7 @@ namespace pub3 {
   {
     ptr<expr_t> x;
     if (r) { x = r->get_value (); }
-    if (x) { x = expr_null_t::alloc (); }
+    if (!x) { x = expr_null_t::alloc (); }
     ret->insert ((*_params)[index], x);
   }
 
@@ -148,6 +148,7 @@ namespace pub3 {
       status_t status;
     }
 
+    dumper_t::dump_to_stderr (_body);
     if (check_args (p, args)) {
       twait { bind_args (p, args, mkevent (bindings)); }
       state = p.push_lambda_call (_md, _name, bindings);
@@ -276,6 +277,15 @@ namespace pub3 {
       report_error (p, "expected a function; got something else");
     }
     ev->trigger (fnd);
+  }
+
+  //----------------------------------------------------------------------
+
+  void
+  call_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "args:", _arglist);
+    s_dump (d, "func:", _fn);
   }
 
   //======================================================================

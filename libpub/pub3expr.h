@@ -966,6 +966,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void pub_to_ref (publish_t pub, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t pub, cxev_t ev, CLOSURE) const;
+    void v_dump (dumper_t *d) const;
   private:
     ptr<mref_t> eval_to_ref_final (eval_t e, ptr<mref_t> lhs,
 				   ptr<mref_t> rhs) const;

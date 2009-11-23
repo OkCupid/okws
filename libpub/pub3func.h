@@ -107,6 +107,7 @@ namespace pub3 {
 
     void unshift_argument (ptr<expr_t> x);
     ptr<call_t> coerce_to_call () { return mkref (this); }
+    void v_dump (dumper_t *d) const;
 
   protected:
     void pub_prepare (publish_t p, event<ptr<const callable_t> >::ref ev, 

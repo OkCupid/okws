@@ -1,12 +1,17 @@
 {%
-
-    def foo (x) {
-       if (x <= 0) { return x; }
+    def fact (x) {
+       print "A\n";
+       if (x <= 0) { return 1; }
+       print "B\n";
        locals { y }
-       y = x * foo (x - 1)
+       y = x * fact (x - 1)
+       print "C\n";
        return y;
     }
+    def foo (x) { return x; }
+
     locals { t }
-    t = foo (8);
+    t = fact (8);
+
     print (t, "\n");
 %}

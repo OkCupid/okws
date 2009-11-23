@@ -1870,6 +1870,15 @@ namespace pub3 {
     return ret;
   }
   
+  //---------------------------------------------------------------------
+
+  void
+  expr_assignment_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "lhs:", _lhs);
+    s_dump (d, "rhs:", _rhs);
+  }
+
   //=========================================== expr_cow_t =============
 
   ptr<expr_cow_t> expr_cow_t::alloc (ptr<const expr_t> x)

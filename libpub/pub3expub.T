@@ -15,10 +15,20 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  void
-  expr_t::pub_to_ref (publish_t pub, mrev_t ev, ptr<closure_t> dummy) const
+  tamed void
+  expr_t::pub_to_ref (publish_t pub, mrev_t ev) const
   {
-    ev->trigger (eval_to_ref (pub));
+    tvars {
+      ptr<expr_t> x;
+      ptr<const expr_t> v;
+      ptr<const_mref_t> ret;
+    }
+    // XX
+    dumper_t::dump_to_stderr (this);
+    twait { pub_to_val (pub, mkevent (v)); }
+    if (v) { x = v->copy (); }
+    ret = const_mref_t::alloc (x);
+    ev->trigger (ret);
   }
 
   //-----------------------------------------------------------------------
