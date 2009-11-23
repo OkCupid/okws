@@ -108,7 +108,6 @@ namespace pub3 {
     pub.set_pub_iface (mkref (this));
 
     twait { publish (pub, fn, mkevent (status, file)); }
-    dumper_t::dump_to_stderr (d);
 
     if (sp) *sp = status;
     

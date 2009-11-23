@@ -142,7 +142,6 @@ namespace pub3 {
       md = file->metadata ();
       push_metadata (md);
       sz = env ()->push_locals (md->to_dict ());
-      dumper_t::dump_to_stderr (file->data ());
       twait { file->data ()->publish (*this, mkevent (status)); }
       env ()->pop_to (sz);
       pop_metadata ();

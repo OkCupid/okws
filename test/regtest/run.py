@@ -285,7 +285,6 @@ class Config:
 
     def make_scratch_dir (self):
         d = self.scratch_dir ()
-        print "DDD " + d
         self.mkdir (d, "scratch")
         return d
 
@@ -541,7 +540,6 @@ class TestCase:
 
         self._config.make_scratch_dir ()
         out = self.filepath ()
-        print "XXX " + out
         dat = self.translate_data (self._filedata)
         return self.write_data_inner (out, dat)
 
