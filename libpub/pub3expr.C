@@ -1600,7 +1600,7 @@ namespace pub3 {
 
   binding_t::binding_t (const str &s, ptr<expr_t> x) : _name (s), _expr (x) {}
 
-  //====================================================================
+  //============================================== bindlist_t ==========
 
   void bindlist_t::add (binding_t b) { push_back (b); }
 
@@ -1610,6 +1610,18 @@ namespace pub3 {
   { return New refcounted<bindlist_t> (plineno ()); }
 
   //--------------------------------------------------------------------
+
+  ptr<bindtab_t> 
+  bindlist_t::keys_only () const
+  {
+    ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
+    for (size_t i = 0; i < size (); i++) {
+      ret->insert ((*this)[i].name (), NULL);
+    }
+    return ret;
+  }
+
+  //============================================= bindtab_t ============
   
   ptr<bindtab_t::const_iterator_t> bindtab_t::iter () const 
   { return New refcounted<bindtab_t::const_iterator_t> (*this); }
@@ -1652,7 +1664,7 @@ namespace pub3 {
     ptr<expr_t> value;
     const_iterator_t it (*this);
     while (it.next (&value) && !mb) {
-      if (value && !value->is_static ()) mb = true;
+      if (value && value->might_block ()) { mb = true; }
     }
     return mb;
   }

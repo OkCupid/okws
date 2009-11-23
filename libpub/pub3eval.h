@@ -32,6 +32,8 @@ namespace pub3 {
 		   LAYER_UNIREFS = 3 } layer_type_t;
 
     size_t push_bindings (ptr<bind_interface_t> t, layer_type_t lt);
+    ptr<bindtab_t> push_bindings (layer_type_t typ);
+    void push_references (ptr<const bindlist_t> l, layer_type_t lt);
 
     struct stack_layer_t {
       stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 

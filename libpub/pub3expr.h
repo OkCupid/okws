@@ -902,6 +902,7 @@ namespace pub3 {
     static ptr<bindlist_t> alloc (const xpub3_dict_t &x);
     bool to_xdr (xpub3_dict_t *x) const;
     void add (binding_t b);
+    ptr<bindtab_t> keys_only () const;
   private:
     lineno_t _lineno;
   };

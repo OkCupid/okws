@@ -922,13 +922,15 @@ namespace pub3 {
       ptr<bindtab_t> frame;
       str nm;
       binding_t b;
+      env_t::layer_type_t lt (_self->get_decl_type ());
+      bool locals (lt == env_t::LAYER_LOCALS);
     }
 
-    if (is_static ()) {
-      p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), get_decl_type ());
+
+    if (is_static () && locals) {
+      p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), lt);
     } else {
-      frame = New refcounted<bindtab_t> ();
-      p.env ()->push_bindings (frame, get_decl_type ());
+      frame = p.env ()->push_bindings (get_decl_type ());
 
       // Construct the stack frame as we go! This way we can
       // use the previous binding in evaluating the next. This
@@ -937,15 +939,18 @@ namespace pub3 {
 	nv = NULL;
 
 	b = (*_bindings)[i];
-	cx = b.expr ();
 	nm = b.name ();
 
 	if ((cx = b.expr ())) {
 	  twait { cx->pub_to_ref (p, mkevent (r)); }
 	  if (r) { nv = r->get_value (); }
 	}
-	frame->insert (nm, nv);
+	if (cx || locals) {
+	  if (!nv) nv = expr_null_t::alloc ();
+	  frame->insert (nm, nv);
+	}
       }
+      p.env ()->push_references (_bindings, lt);
     }
     ev->trigger (ret);
   }
@@ -957,11 +962,13 @@ namespace pub3 {
   decl_block_t::v_publish_nonblock (publish_t p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    if (is_static ()) {
-      p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), get_decl_type ());
+    env_t::layer_type_t lt = get_decl_type ();
+    bool locals (lt == env_t::LAYER_LOCALS);
+
+    if (is_static () && locals) {
+      p.env ()->push_bindings (cow_bindtab_t::alloc (_tab), lt);
     } else {
-      ptr<bindtab_t> frame = New refcounted<bindtab_t> ();
-      p.env ()->push_bindings (frame, get_decl_type ());
+      ptr<bindtab_t> frame = p.env ()->push_bindings (lt);
 
       // Construct the stack frame as we go! This way we can
       // use the previous binding in evaluating the next. This
@@ -974,8 +981,15 @@ namespace pub3 {
 	if ((cx = b.expr ()) && (r = cx->eval_to_ref (p))) {
 	  nv = r->get_value ();
 	}
-	frame->insert (b.name (), nv);
+	if (cx || locals) {
+	  if (!nv) nv = expr_null_t::alloc ();
+	  frame->insert (b.name (), nv);
+	}
       }
+
+      // universals are both set at the base level, and pushed
+      // on as a layer of empty references.
+      p.env ()->push_references (_bindings, lt);
     }
     return ret;
   }

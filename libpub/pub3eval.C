@@ -52,6 +52,36 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+  
+  ptr<bindtab_t>
+  env_t::push_bindings (layer_type_t typ)
+  {
+    ptr<bindtab_t> ret;
+    switch (typ) {
+    case LAYER_UNIVERSALS: ret = _universals; break;
+    case LAYER_GLOBALS: ret = _globals; break;
+    case LAYER_LOCALS:
+      ret = New refcounted<bindtab_t> ();
+      _stack.push_back (stack_layer_t (ret, typ));
+      break;
+    default:
+      fatal << "unexpected stack layer type!\n";
+      break;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  env_t::push_references (ptr<const bindlist_t> l, layer_type_t typ)
+  {
+    if (typ == LAYER_UNIVERSALS) {
+      _stack.push_back (stack_layer_t (l->keys_only (), LAYER_UNIREFS));
+    }
+  }
+  
+  //-----------------------------------------------------------------------
 
   void
   env_t::overwrite_universals (ptr<const bind_interface_t> bi)
