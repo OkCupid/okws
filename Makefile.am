@@ -145,9 +145,12 @@ test:	ready_test
 	@echo ======================================================= 
 	okd/okld -f test/system/okws_config	
 
-.PHONY: regtest
+.PHONY: regtest regtest-stage1
 regtest: ready_test
 	python $(srcdir)/test/regtest/run.py
+
+regtest-stage1: all
+	python $(srdcir)/test/regtest/run.py -m
 
 .PHONY: roottest
 roottest: install

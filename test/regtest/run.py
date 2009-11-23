@@ -29,6 +29,14 @@ class RegTestError (Exception):
 
 ##=======================================================================
 
+class RegTestSkipped (Exception):
+    def __init__ (self, s):
+        self._s = s
+    def __str__ (self):
+        return repr (self._s)
+
+##=======================================================================
+
 INFO = 1
 RESULT = 2
 ERROR = 3
@@ -60,6 +68,9 @@ def usage (rc):
     Run this testing harness from the top build directory.
  
     Flags
+      -m, --command-line
+          Run the command line pub (not the full server end-to-end test)
+
       -q, --quiet  
           Only make output on error
           
@@ -84,13 +95,11 @@ def usage (rc):
     Arguments:
         A list of files or directories with test cases in them;
         by default, use 'cases' if no arguments were supplied, which 
-        is the directory (relative to the default casedir) in whic
+        is the directory (relative to the default casedir) in which
         OKWS keeps its regression tests.
 
 """ % (progname)
     sys.exit (rc)
-
-
 
 ##=======================================================================
 
@@ -100,7 +109,10 @@ class Config:
     pub_config = "test/system/pub_config"
     
     okld_exe = "okd/okld"
-    pub_exe = "client/pub"
+    
+    # the stage-1 tester, upgrade this as okws3 becomes more mature.
+    pub_exe = "pub/pub3stage1"
+
     _scratch = "regtest-scratch"
     static = "static"
     failed_files_dir = "regtest-failures"
@@ -117,6 +129,7 @@ class Config:
         self._explain_only = False
         self._jail_dir = None
         self._casedir = os.path.split (progname)[0]
+        self._command_line = False
         pass
 
     #-----------------------------------------
@@ -132,7 +145,8 @@ class Config:
                       'casedir=',
                       'explain',
                       'quiet',
-                      'verbose' ]
+                      'verbose',
+                      'command-line' ]
 
         try:
             opts,args = getopt.getopt (argv, short_opts, long_opts)
@@ -156,6 +170,8 @@ class Config:
                 report_level = ERROR
             elif o in ("-v", "--verbose"):
                 report_level = INFO
+            elif o in ('-m', '--command-line'):
+                self._command_line = True
 
         return args
 
@@ -179,6 +195,18 @@ class Config:
 
     #-----------------------------------------
 
+    def pub_run (self, f):
+        """Calls pub v3 on a file and spits out the results to 
+        standard output."""
+
+        v = copy.copy (self.pub_run)
+        v += [ f ]
+        pipe = Popen(v, stdout=PIPE).communicate()
+        return str (pipe[0])
+
+
+    #-----------------------------------------
+
     def jail_dir (self):
         """Lookup the pub jail dir by calling into the pub v3 command
         line client.  Cache the result after we're done."""
@@ -194,6 +222,11 @@ class Config:
         if d is not None:
             d = d + "/" + self._scratch
         return d
+
+    #-----------------------------------------
+
+    def jailed_casepath (self, f):
+        return "/%s/%s.html" % (self._scratch, f)
 
     #-----------------------------------------
 
@@ -221,7 +254,6 @@ class Config:
         return "http://%s:%d/%s" % ( self.hostname, self.port, loc)
 
     #-----------------------------------------
-
 
     def write_failure_file (self, nm, data):
         return self.write_debug_file (nm, data, "response")
@@ -380,8 +412,13 @@ class OutcomeData (Outcome):
 ##=======================================================================
 
 class TestCase:
+    """A class that corresponds to a single test case.  It's an abstract
+    class since the subclasses needed to implement how to fetch the case ---
+    via command-line interface, or via HTTP interface."""
 
-    def __init__ (self, config, d):
+    ##-----------------------------------------
+
+    def __init__ (self, config, d, fetcher):
         self._filedata = None
         self._filedata_inc = []
         self._desc = ""
@@ -396,6 +433,7 @@ class TestCase:
         self._result = False
         self._script_path = None
         self._custom_fetch = None
+        self._fetcher = config.fetcher ()
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
@@ -417,6 +455,13 @@ class TestCase:
 
     def config (self):
         return self._config
+
+    ##----------------------------------------
+
+    def custom_fetch (self):
+        """The test case file might set a _custom_fetch attribute,
+        which can be accessed via this method."""
+        return self._custom_fetch
 
     ##----------------------------------------
 
@@ -481,36 +526,6 @@ class TestCase:
 
     ##----------------------------------------
 
-    def file_url (self):
-
-        n = None
-
-        #
-        # if the reg test specified the whole URL (after the leading
-        # /), then fetch that here. Translate it first, to 
-        # resolve $[i] as required.
-        #
-        if self._script_path:
-            return self._config.url (self.translate_data (self._script_path))
-
-        if self._filedata:
-            n = self.name ()
-        elif self._htdoc:
-            n = self._htdoc
-        
-        if n:
-            u = self._config.scratch_url ()
-            r =  "%s/%s.html" % (u, n)
-        elif self._service:
-            r = self._config.service_url (self._service)
-        else:
-            raise RegTestError, "cannot fine appropriate URL for '%s'" % \
-                self._name
-
-        return r
-
-    ##----------------------------------------
-
     def write_data (self):
         """Some test cases write data out to the htdocs directory, rather
         than requiring that the data exists as part of OKWS.  This function
@@ -560,12 +575,7 @@ class TestCase:
     ##----------------------------------------
 
     def fetch (self):
-        if self._custom_fetch:
-            resp = self._custom_fetch (self)
-        else:
-            u = self.file_url ()
-            resp = ''.join (urllib.urlopen (u))
-        return resp
+        raise NotImplementedError, "pure virtual method"
 
     ##----------------------------------------
 
@@ -636,7 +646,80 @@ input: %s%s
             self.report_failure ("empty reply")
         return ret
                 
+##=======================================================================
+
+class TestCaseRemote (TestCase):
+    """Test case that's fetched via HTTP, with the full end-to-end
+    tests enabled."""
+
     ##----------------------------------------
+
+    def __init__ (self, config, d):
+        TestCase.__init__ (self, config, d)
+
+    ##----------------------------------------
+
+    def file_url (self):
+
+        n = None
+
+        #
+        # if the reg test specified the whole URL (after the leading
+        # /), then fetch that here. Translate it first, to 
+        # resolve $[i] as required.
+        #
+        if self._script_path:
+            return self._config.url (self.translate_data (self._script_path))
+
+        if self._filedata:
+            n = self.name ()
+        elif self._htdoc:
+            n = self._htdoc
+        
+        if n:
+            u = self._config.scratch_url ()
+            r =  "%s/%s.html" % (u, n)
+        elif self._service:
+            r = self._config.service_url (self._service)
+        else:
+            raise RegTestError, "cannot find appropriate URL for '%s'" % \
+                self._name
+
+        return r
+
+    ##----------------------------------------
+
+    def fetch (self):
+        if self._custom_fetch:
+            resp = self._custom_fetch (self)
+        else:
+            u = self.file_url ()
+            resp = ''.join (urllib.urlopen (u))
+        return resp
+
+##=======================================================================
+
+class TestCaseLocal (TestCase):
+    """Test case that's fetched via HTTP, with the full end-to-end
+    tests enabled."""
+
+    def __init__ (self, config, d):
+        TestCase.__init__ (self, config, d)
+
+    ##----------------------------------------
+
+    def fetch (self):
+        if self._custom_fetch or self._script_path or self._htdoc:
+            raise RegTestSkipped, "not command-line compatible"
+
+        n = None
+        if self._filedata:
+            n = self.name ()
+        if not n:
+            raise RegTestError, "cannot find path for '%s'" % self._name
+
+        jp = self._config.jailed_casepath (n)
+        return self._config.pub_run (jp)
 
 ##=======================================================================
 
@@ -684,6 +767,12 @@ class TestCaseLoader:
 
         return v
             
+    ##----------------------------------------
+
+    def make_test_case (self, d):
+        if self._command_line: return TestCaseLocal (self._config, d)
+        else:                  return TestCaseRemove (self._config, d)
+
     ##----------------------------------------
 
     def load_single_case (self, name, full, mod):
@@ -785,12 +874,6 @@ class RegTester:
         self._config = config 
         self._okws = OkwsServerInstance (config)
         self._loader = TestCaseLoader (config)
-
-    ##-----------------------------------------
-
-    def run_file (self, f):
-        rc = True
-        return rc
 
     ##-----------------------------------------
 
