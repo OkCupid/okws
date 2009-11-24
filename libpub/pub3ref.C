@@ -14,7 +14,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<const expr_t> 
-  expr_dictref_t::eval_to_val (eval_t e) const
+  expr_dictref_t::eval_to_val (eval_t *e) const
   {
     ptr<const expr_t> d = _dict->eval_to_val (e);
     return eval_to_val_final (e, d);
@@ -23,7 +23,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<const expr_t>
-  expr_dictref_t::eval_to_val_final (eval_t e, ptr<const expr_t> x) const
+  expr_dictref_t::eval_to_val_final (eval_t *e, ptr<const expr_t> x) const
   {
     ptr<const expr_dict_t> d;
     const ptr<expr_t> *valp;
@@ -43,7 +43,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_dictref_t::eval_to_ref (eval_t e) const
+  expr_dictref_t::eval_to_ref (eval_t *e) const
   {
     ptr<mref_t> dr = _dict->eval_to_ref (e);
     return eval_to_ref_final (e, dr);
@@ -52,7 +52,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_dictref_t::eval_to_ref_final (eval_t e, ptr<mref_t> dr) const
+  expr_dictref_t::eval_to_ref_final (eval_t *e, ptr<mref_t> dr) const
   {
     ptr<expr_t> x;
     ptr<expr_dict_t> d;
@@ -83,29 +83,29 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<const expr_t>
-  expr_varref_t::eval_to_val (eval_t e) const
+  expr_varref_t::eval_to_val (eval_t *e) const
   {
-    return e.lookup_val (_name);
+    return e->lookup_val (_name);
   }
 
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_varref_t::eval_to_ref (eval_t e) const
+  expr_varref_t::eval_to_ref (eval_t *e) const
   {
-    return e.lookup_ref (_name);
+    return e->lookup_ref (_name);
   }
 
   //--------------------------------------------------------------------
 
   void
-  expr_varref_t::pub_to_ref (publish_t p, mrev_t ev, ptr<closure_t> d) const
+  expr_varref_t::pub_to_ref (publish_t *p, mrev_t ev, ptr<closure_t> d) const
   { ev->trigger (eval_to_ref (p)); }
 
   //--------------------------------------------------------------------
 
   void
-  expr_varref_t::pub_to_val (publish_t p, cxev_t ev, ptr<closure_t> d) const
+  expr_varref_t::pub_to_val (publish_t *p, cxev_t ev, ptr<closure_t> d) const
   { ev->trigger (eval_to_val (p)); }
 
   //--------------------------------------------------------------------
@@ -127,7 +127,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_vecref_t::eval_to_ref (eval_t e) const
+  expr_vecref_t::eval_to_ref (eval_t *e) const
   {
     ptr<mref_t> cr = _vec->eval_to_ref (e);
     ptr<const expr_t> i = _index->eval_to_val (e);
@@ -137,7 +137,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_vecref_t::eval_to_ref_final (eval_t e, ptr<mref_t> cr, 
+  expr_vecref_t::eval_to_ref_final (eval_t *e, ptr<mref_t> cr, 
 				    ptr<const expr_t> i) const
   {
     ptr<expr_t> c;
@@ -172,7 +172,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<const expr_t>
-  expr_vecref_t::eval_to_val (eval_t e) const
+  expr_vecref_t::eval_to_val (eval_t *e) const
   {
     ptr<const expr_t> c = _vec->eval_to_val (e);
     ptr<const expr_t> i = _index->eval_to_val (e);
@@ -182,7 +182,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<const expr_t>
-  expr_vecref_t::eval_to_val_final (eval_t e, ptr<const expr_t> c, 
+  expr_vecref_t::eval_to_val_final (eval_t *e, ptr<const expr_t> c, 
 				    ptr<const expr_t> i) const
   {
     ptr<const expr_dict_t> d;

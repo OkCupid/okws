@@ -140,7 +140,6 @@ namespace pub3 {
     } else {
       loc = "";
     }
-    
 
     strbuf tmp;
     tmp << "okws-pub3[" << typ << "]: ";

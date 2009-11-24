@@ -92,7 +92,7 @@ namespace pub3 {
      * @param fn the file to publish
      * @param ev the event to trigger with the status
      */
-    virtual void publish (publish_t p, str fn, getfile_ev_t ev, CLOSURE) = 0;
+    virtual void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE) = 0;
 
     // set/get global ops for this publishing interface.
     virtual opts_t opts () const = 0;
@@ -128,7 +128,7 @@ namespace pub3 {
     virtual void getfile (str fn, getfile_ev_t ev, opts_t o = 0) = 0;
     virtual bool is_remote () const = 0;
 
-    void publish (publish_t p, str fn, getfile_ev_t ev, CLOSURE);
+    void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE);
     void list_files_to_check (str cwd, str n, vec<str> *out, 
 			      ptr<const localizer_t> l);
   private:

@@ -80,7 +80,7 @@ namespace pub3 {
     pub.set_opts (opts);
     pub.set_pub_iface (mkref (this));
 
-    twait { publish (pub, fn, mkevent (status, file)); }
+    twait { publish (&pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;
     if (fp) *fp = file;
@@ -107,7 +107,7 @@ namespace pub3 {
     pub.set_opts (opts);
     pub.set_pub_iface (mkref (this));
 
-    twait { publish (pub, fn, mkevent (status, file)); }
+    twait { publish (&pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;
     
@@ -126,7 +126,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void 
-  ap_t::publish (publish_t pub, str fn, getfile_ev_t ev)
+  ap_t::publish (publish_t *pub, str fn, getfile_ev_t ev)
   {
     tvars {
       status_t status (XPUB_STATUS_NOENT);
@@ -141,13 +141,13 @@ namespace pub3 {
     // generate a list of internationalized files.  if that list is
     // empty, we'll skip the following loop and we'll just
     // fall through with status.status == XPUB_STATUS_NOENT
-    localizer = pub.localizer ();
-    list_files_to_check (pub.cwd (), fn, &files_to_check, localizer);
+    localizer = pub->localizer ();
+    list_files_to_check (pub->cwd (), fn, &files_to_check, localizer);
 
     for (i = 0; i < files_to_check.size (); i++) {
 
       twait { 
-	getfile (files_to_check[i], mkevent (status, file), pub.opts ()); 
+	getfile (files_to_check[i], mkevent (status, file), pub->opts ()); 
       }
       if (status.status != XPUB_STATUS_NOENT) {
 	break;
@@ -162,14 +162,14 @@ namespace pub3 {
       assert (i < files_to_check.size ());
       basename_dirname (files_to_check[i], &d, &f);
 
-      cwd_prev = pub.set_cwd (d);
+      cwd_prev = pub->set_cwd (d);
 
-      twait { pub.publish_file (file, mkevent (status)); }
+      twait { pub->publish_file (file, mkevent (status)); }
       if (status.status != XPUB_STATUS_OK) 
 	err = strbuf () << "error in publishing file: " << fn;
 
       // Reset the working directory to whatever it was previously.
-      pub.set_cwd (cwd_prev);
+      pub->set_cwd (cwd_prev);
       break;
 
     case XPUB_STATUS_RPC_ERR:
@@ -180,7 +180,7 @@ namespace pub3 {
       break;
     case XPUB_STATUS_EIO:
     case XPUB_STATUS_EPARSE:
-      pub.output_errs (*status.errors, P_ERR_ERROR);
+      pub->output_errs (*status.errors, P_ERR_ERROR);
       break;
     default:
       err = *status.error;
@@ -188,7 +188,7 @@ namespace pub3 {
     }
     
     if (err) {
-      pub.output_err (err, P_ERR_ERROR);
+      pub->output_err (err, P_ERR_ERROR);
     }
     ev->trigger (status, file);
   }

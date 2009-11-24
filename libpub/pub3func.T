@@ -18,7 +18,7 @@ namespace pub3 {
   //=================================================== callable_t ========
 
   void 
-  callable_t::pub_to_val (publish_t p, args_t args, cxev_t ev, 
+  callable_t::pub_to_val (publish_t *p, args_t args, cxev_t ev, 
 			  ptr<closure_t> dummy) const 
   { ev->trigger (eval_to_val (p, args)); }
 
@@ -52,7 +52,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   bool
-  lambda_t::check_args (publish_t e, args_t a) const
+  lambda_t::check_args (publish_t *p, args_t a) const
   {
     size_t gs, es;
     gs = a->size ();
@@ -63,7 +63,7 @@ namespace pub3 {
     if (gs != es) {
       strbuf b ("Wrong number of parameters to call %s "
 		"(expected %zd, got %zd)", s.cstr (), es, gs);
-      report_error (e, b);
+      report_error (p, b);
       ret = false;
     } 
     return ret;
@@ -83,7 +83,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lambda_t::bind_args (publish_t p, callable_t::args_t a, 
+  lambda_t::bind_args (publish_t *p, callable_t::args_t a, 
 		       event<ptr<bindtab_t> >::ref ev) const
   {
     tvars {
@@ -104,7 +104,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<bindtab_t>
-  lambda_t::bind_args_nonblock  (publish_t p, args_t args) const
+  lambda_t::bind_args_nonblock  (publish_t *p, args_t args) const
   {
     ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
     for (size_t i = 0; i < args->size (); i++) {
@@ -118,7 +118,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t> 
-  lambda_t::eval_to_val (publish_t p, args_t args) const
+  lambda_t::eval_to_val (publish_t *p, args_t args) const
   {
     ptr<const expr_t> ret;
     ptr<control_t> old_ctrl;
@@ -127,11 +127,11 @@ namespace pub3 {
 
     if (check_args (p, args)) {
       bindings = bind_args_nonblock (p, args);
-      state = p.push_lambda_call (_md, _name, bindings);
+      state = p->push_lambda_call (_md, _name, bindings);
       if (state.is_ok ()) { 
 	_body->publish_nonblock (p);
       }
-      ret = p.pop_lambda_call (state);
+      ret = p->pop_lambda_call (state);
     }
     return expr_t::safe_expr (ret);
   }
@@ -139,7 +139,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lambda_t::pub_to_val (publish_t p, callable_t::args_t args, cxev_t ev) const
+  lambda_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
@@ -150,11 +150,11 @@ namespace pub3 {
 
     if (check_args (p, args)) {
       twait { bind_args (p, args, mkevent (bindings)); }
-      state = p.push_lambda_call (_md, _name, bindings);
+      state = p->push_lambda_call (_md, _name, bindings);
       if (state.is_ok ()) {
 	twait { _body->publish (p, mkevent (status)); }
       }
-      ret = p.pop_lambda_call (state);
+      ret = p->pop_lambda_call (state);
     }
     ev->trigger (expr_t::safe_expr (ret));
   }
@@ -162,30 +162,30 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<lambda_t>
-  lambda_t::copy (eval_t e) const
+  lambda_t::copy (eval_t *e) const
   {
     ptr<lambda_t> l = New refcounted<lambda_t> (*this);
-    l->_md = e.current_metadata ();
+    l->_md = e->current_metadata ();
     return l;
   }
   
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t> lambda_t::eval_to_val (eval_t e) const
+  ptr<const expr_t> lambda_t::eval_to_val (eval_t *e) const
   { return copy (e); }
 
   //-----------------------------------------------------------------------
 
-  ptr<mref_t> lambda_t::eval_to_ref (eval_t e) const
+  ptr<mref_t> lambda_t::eval_to_ref (eval_t *e) const
   { return const_mref_t::alloc (copy (e)); }
 
   //======================================== fndef_t ======================
 
   status_t
-  fndef_t::v_publish_nonblock (publish_t p) const
+  fndef_t::v_publish_nonblock (publish_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    p.env ()->add_global_binding (_name, _lambda->copy (p));
+    p->env ()->add_global_binding (_name, _lambda->copy (p));
     return ret;
   }
 
@@ -216,7 +216,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_to_val (publish_t p, cxev_t ev) const
+  call_t::pub_to_val (publish_t *p, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
@@ -236,7 +236,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_to_ref (publish_t p, mrev_t ev) const
+  call_t::pub_to_ref (publish_t *p, mrev_t ev) const
   {
     tvars {
       ptr<const expr_t> x;
@@ -257,7 +257,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_prepare (publish_t p, 
+  call_t::pub_prepare (publish_t *p, 
 		       event<ptr<const callable_t> >::ref ev) const
   {
     tvars {
@@ -265,7 +265,7 @@ namespace pub3 {
       ptr<const callable_t> fnd;
     }
 
-    p.set_lineno (_lineno);
+    p->set_lineno (_lineno);
 
     if (_fn->might_block ()) { twait { _fn->pub_to_val (p, mkevent (f)); } }
     else { f = _fn->eval_to_val (p); }

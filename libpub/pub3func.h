@@ -19,8 +19,8 @@ namespace pub3 {
     
     virtual bool might_block () const { return false; }
 
-    virtual ptr<const expr_t> eval_to_val (publish_t p, args_t args) const = 0;
-    virtual void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
+    virtual ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const = 0;
+    virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -37,18 +37,18 @@ namespace pub3 {
     str to_str () const;
     bool might_block () const;
 
-    ptr<const expr_t> eval_to_val (publish_t p, args_t args) const;
-    ptr<const expr_t> eval_to_val (eval_t e) const;
-    ptr<mref_t> eval_to_ref (eval_t e) const;
-    void pub_to_val (publish_t p, args_t args, cxev_t, CLOSURE) const;
+    ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const;
+    ptr<const expr_t> eval_to_val (eval_t *e) const;
+    ptr<mref_t> eval_to_ref (eval_t *e) const;
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
     ptr<const callable_t> to_callable () const { return mkref (this); }
-    ptr<lambda_t> copy (eval_t e) const;
+    ptr<lambda_t> copy (eval_t *e) const;
     const char *get_obj_name () const { return "pub3::lambda_t"; }
   protected:
-    bool check_args (publish_t p, args_t a) const;
-    ptr<bindtab_t> bind_args_nonblock (publish_t p, args_t a) const;
+    bool check_args (publish_t *p, args_t a) const;
+    ptr<bindtab_t> bind_args_nonblock (publish_t *p, args_t a) const;
     void bind_arg (ptr<bindtab_t> t, size_t i, ptr<mref_t> r) const;
-    void bind_args (publish_t p, args_t a, event<ptr<bindtab_t> >::ref ev,
+    void bind_args (publish_t *p, args_t a, event<ptr<bindtab_t> >::ref ev,
 		    CLOSURE) const;
     bool is_static () const { return false; }
 
@@ -71,7 +71,7 @@ namespace pub3 {
     fndef_t (const xpub3_fndef_t &x) ;
     static ptr<fndef_t> alloc (const xpub3_fndef_t &x);
     static ptr<fndef_t> alloc (str nm, ptr<lambda_t> d);
-    status_t v_publish_nonblock (publish_t p) const;
+    status_t v_publish_nonblock (publish_t *p) const;
     bool might_block_uncached () const { return false; }
     bool to_xdr (xpub3_statement_t *x) const;
     const char *get_obj_name () const { return "fndef_t"; }
@@ -98,19 +98,19 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::call_t"; }
 
-    ptr<const expr_t> eval_to_val (eval_t e) const { return NULL; }
-    ptr<mref_t> eval_to_ref (eval_t e) const { return NULL; }
+    ptr<const expr_t> eval_to_val (eval_t *e) const { return NULL; }
+    ptr<mref_t> eval_to_ref (eval_t *e) const { return NULL; }
     bool might_block_uncached () const { return true; }
 
-    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
-    void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
+    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
 
     void unshift_argument (ptr<expr_t> x);
     ptr<call_t> coerce_to_call () { return mkref (this); }
     void v_dump (dumper_t *d) const;
 
   protected:
-    void pub_prepare (publish_t p, event<ptr<const callable_t> >::ref ev, 
+    void pub_prepare (publish_t *p, event<ptr<const callable_t> >::ref ev, 
 		      CLOSURE) const;
     ptr<expr_t> _fn;
     ptr<expr_list_t> _arglist;

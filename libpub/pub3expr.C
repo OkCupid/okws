@@ -74,13 +74,13 @@ namespace pub3 {
 
   // By default, we are already evaluated -- this is true for static
   // values like bools, strings, and integers.
-  ptr<const expr_t> expr_t::eval_to_val (eval_t e) const 
+  ptr<const expr_t> expr_t::eval_to_val (eval_t *e) const 
   { return mkref (this); }
 
   //--------------------------------------------------------------------
 
-  void expr_t::report_error (eval_t e, str msg) const
-  { e.report_error (msg, _lineno); }
+  void expr_t::report_error (eval_t *e, str msg) const
+  { e->report_error (msg, _lineno); }
   
   //--------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<mref_t> expr_t::eval_to_ref (eval_t e) const
+  ptr<mref_t> expr_t::eval_to_ref (eval_t *e) const
   { 
     ptr<expr_t> x;
     ptr<const expr_t> v = eval_to_val (e);
@@ -136,12 +136,12 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   bool 
-  expr_t::eval_as_bool (eval_t e) const
+  expr_t::eval_as_bool (eval_t *e) const
   {
     bool ret = false;
-    bool l = e.set_silent (true);
+    bool l = e->set_silent (true);
     ptr<const expr_t> x = eval_to_val (e);
-    e.set_silent (l);
+    e->set_silent (l);
     if (x) ret = x->to_bool ();
     return ret;
   }
@@ -149,7 +149,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   str
-  expr_t::eval_as_str (eval_t e) const
+  expr_t::eval_as_str (eval_t *e) const
   {
     ptr<const expr_t> x = eval_to_val (e);
     str ret;
@@ -163,7 +163,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   ptr<const expr_dict_t>
-  expr_t::eval_as_dict (eval_t e) const
+  expr_t::eval_as_dict (eval_t *e) const
   {
     ptr<const expr_t> x = eval_to_val (e);
     ptr<const expr_dict_t> ret;
@@ -174,14 +174,14 @@ namespace pub3 {
   //---------------------------------------------------------------------
   
   ptr<rxx>
-  expr_t::str2rxx (const eval_t *e, const str &b, const str &o) const
+  expr_t::str2rxx (eval_t *e, const str &b, const str &o) const
   {
     ptr<rxx> ret;
     if (b) {
       str err;
       ret = rxx_factory_t::compile (b, o, &err);
       if (e && e->loud () && err) {
-	report_error (*e, err);
+	report_error (e, err);
       }
     }
     return ret;
@@ -212,12 +212,12 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   bool
-  expr_t::eval_as_null (eval_t e) const
+  expr_t::eval_as_null (eval_t *e) const
   {
     bool ret = true;
-    bool l = e.set_silent (true);
+    bool l = e->set_silent (true);
     ptr<const expr_t> x = eval_to_val (e);
-    e.set_silent (l);
+    e->set_silent (l);
     if (x) ret = x->is_null ();
     return ret;
   }
@@ -225,7 +225,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   scalar_obj_t
-  expr_t::eval_as_scalar (eval_t e) const
+  expr_t::eval_as_scalar (eval_t *e) const
   {
     scalar_obj_t ret;
     ptr<const expr_t> x = eval_to_val (e);
@@ -266,7 +266,7 @@ namespace pub3 {
   //================================== expr_cow_t =========================
 
   ptr<const expr_t>
-  expr_cow_t::eval_to_val (eval_t e) const
+  expr_cow_t::eval_to_val (eval_t *e) const
   {
     ptr<const expr_t> r;
     ptr<const expr_t> x = const_ptr ();
@@ -493,7 +493,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<const expr_t>
-  expr_logical_t::eval_to_val (eval_t e) const
+  expr_logical_t::eval_to_val (eval_t *e) const
   {
     return expr_bool_t::alloc (eval_logical (e));
   }
@@ -519,7 +519,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   bool
-  expr_OR_t::eval_logical (eval_t e) const
+  expr_OR_t::eval_logical (eval_t *e) const
   {
     bool ret = false;
     ret = ((_t1 && _t1->eval_as_bool (e)) || (_t2 && _t2->eval_as_bool (e)));
@@ -529,7 +529,7 @@ namespace pub3 {
   //====================================================================
   
   bool
-  expr_AND_t::eval_logical (eval_t e) const
+  expr_AND_t::eval_logical (eval_t *e) const
   {
     bool ret;
     ret = ((_f1 && _f1->eval_as_bool (e)) && (_f2 && _f2->eval_as_bool (e)));
@@ -547,7 +547,7 @@ namespace pub3 {
   //====================================================================
   
   bool
-  expr_NOT_t::eval_logical (eval_t e) const
+  expr_NOT_t::eval_logical (eval_t *e) const
   {
     bool ret = true;
     if (_e) ret = !(_e->eval_as_bool (e));
@@ -565,7 +565,7 @@ namespace pub3 {
   //====================================================================
   
   bool
-  expr_EQ_t::eval_logical (eval_t e) const
+  expr_EQ_t::eval_logical (eval_t *e) const
   {
     ptr<const expr_t> x1, x2;
     if (_o1) x1 = _o1->eval_to_val (e); 
@@ -605,7 +605,7 @@ namespace pub3 {
   //====================================================================
   
   bool
-  expr_relation_t::eval_logical (eval_t e) const
+  expr_relation_t::eval_logical (eval_t *e) const
   {
     ptr<const expr_t> l, r;
     if (_l) l = _l->eval_to_val (e);
@@ -616,7 +616,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  expr_relation_t::eval_final (eval_t e, ptr<const expr_t> l, 
+  expr_relation_t::eval_final (eval_t *e, ptr<const expr_t> l, 
 			       ptr<const expr_t> r) const
   {
     bool ret = false;
@@ -664,7 +664,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   ptr<const expr_t> 
-  expr_binaryop_t::eval_to_val (eval_t e) const
+  expr_binaryop_t::eval_to_val (eval_t *e) const
   {
     ptr<const expr_t> e1, e2;
     if (_o1) { e1 = _o1->eval_to_val (e); }
@@ -676,7 +676,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<const expr_t>
-  expr_add_t::eval_final (eval_t e, ptr<const expr_t> e1, 
+  expr_add_t::eval_final (eval_t *e, ptr<const expr_t> e1, 
 			  ptr<const expr_t> e2) const
   {
     ptr<expr_t> out;
@@ -740,7 +740,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<const expr_t>
-  expr_mult_t::eval_final (eval_t e, ptr<const expr_t> e1, 
+  expr_mult_t::eval_final (eval_t *e, ptr<const expr_t> e1, 
 			   ptr<const expr_t> e2) const
   {
     ptr<const expr_t> ret;
@@ -808,7 +808,7 @@ namespace pub3 {
   //====================================================================
 
   ptr<const expr_t> 
-  expr_div_or_mod_t::eval_final (eval_t e, ptr<const expr_t> en, 
+  expr_div_or_mod_t::eval_final (eval_t *e, ptr<const expr_t> en, 
 				    ptr<const expr_t> ed) const
   {
     ptr<const expr_t> ret;
@@ -1273,7 +1273,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   ptr<rxx>
-  expr_list_t::to_regex (const eval_t *e) const
+  expr_list_t::to_regex (eval_t *e) const
   {
     str opts, body;
     ptr<rxx> ret;
@@ -1288,7 +1288,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_list_t::eval_to_ref (eval_t e) const
+  expr_list_t::eval_to_ref (eval_t *e) const
   {
     bool sttc = true;
     size_t l = vec_base_t::size ();
@@ -1410,7 +1410,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<const expr_t>
-  expr_shell_str_t::eval_to_val (eval_t e) const
+  expr_shell_str_t::eval_to_val (eval_t *e) const
   {
     ptr<expr_t> out;
 
@@ -1672,7 +1672,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_dict_t::eval_to_ref (eval_t e) const
+  expr_dict_t::eval_to_ref (eval_t *e) const
   {
     const_iterator_t it (*this);
     const str *key;
@@ -1815,7 +1815,7 @@ namespace pub3 {
 
   expr_assignment_t::expr_assignment_t (ptr<expr_t> lhs, ptr<expr_t> rhs,
 					lineno_t lineno)
-    : _lhs (lhs), _rhs (rhs), _lineno (lineno) {}
+    : expr_t (lineno), _lhs (lhs), _rhs (rhs) {}
 
   //---------------------------------------------------------------------
 
@@ -1826,7 +1826,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
   
   ptr<mref_t>
-  expr_assignment_t::eval_to_ref (eval_t e) const
+  expr_assignment_t::eval_to_ref (eval_t *e) const
   {
     ptr<mref_t> rhs = _rhs->eval_to_ref (e);
     ptr<mref_t> lhs = _lhs->eval_to_ref (e);
@@ -1842,7 +1842,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   ptr<const expr_t>
-  expr_assignment_t::eval_to_val (eval_t e) const
+  expr_assignment_t::eval_to_val (eval_t *e) const
   {
     ptr<mref_t> r = eval_to_ref (e);
     ptr<const expr_t> x;
@@ -1853,7 +1853,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   ptr<mref_t>
-  expr_assignment_t::eval_to_ref_final (eval_t e, ptr<mref_t> lhs,
+  expr_assignment_t::eval_to_ref_final (eval_t *e, ptr<mref_t> lhs,
 					ptr<mref_t> rhs) const
   {
     ptr<mref_t> ret;
@@ -1861,7 +1861,7 @@ namespace pub3 {
 
     if (!lhs) {
       report_error (e, "error in assignment: LHS evaluates to null");
-    } else if (!(v = rhs->get_value ())) {
+    } else if (!rhs || !(v = rhs->get_value ())) {
       report_error (e, "error in assignment: RHS evaluates to null");
     } else if (!(lhs->set_value (v))) {
       report_error (e, "error in assignment: invalid LHS");

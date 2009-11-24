@@ -45,7 +45,7 @@ namespace pub3 {
       ptr<file_t> dummy;
     }
     sz = env ()->push_locals (d);
-    twait { _pub_iface->publish (*this, nm, mkevent (status, dummy)); }
+    twait { _pub_iface->publish (this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
     ev->trigger (status);
   }
@@ -142,7 +142,7 @@ namespace pub3 {
       md = file->metadata ();
       push_metadata (md);
       sz = env ()->push_locals (md->to_dict ());
-      twait { file->data ()->publish (*this, mkevent (status)); }
+      twait { file->data ()->publish (this, mkevent (status)); }
       env ()->pop_to (sz);
       pop_metadata ();
     }

@@ -813,9 +813,9 @@ pub3::print_t::to_xdr (xpub3_statement_t *x) const
 //-----------------------------------------------------------------------
 
 pub3::expr_assignment_t::expr_assignment_t (const xpub3_assignment_t &x)
-  : _lhs (expr_t::alloc (x.lhs)),
-    _rhs (expr_t::alloc (x.rhs)),
-    _lineno (x.lineno) {}
+  : expr_t (x.lineno),
+    _lhs (expr_t::alloc (x.lhs)),
+    _rhs (expr_t::alloc (x.rhs)) {}
 
 //-----------------------------------------------------------------------
 
