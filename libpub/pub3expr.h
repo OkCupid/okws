@@ -258,6 +258,7 @@ namespace pub3 {
     static ptr<expr_null_t> alloc ();
     str type_to_str () const { return "null"; }
     void v_dump (dumper_t *d) const;
+    str to_str (bool q = false) const { return "null"; }
   };
 
   //-----------------------------------------------------------------------
