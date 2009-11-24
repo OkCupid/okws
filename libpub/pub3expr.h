@@ -31,6 +31,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   typedef event<ptr<const expr_t> >::ref cxev_t;
+  typedef event<ptr<const expr_dict_t> >::ref cdev_t;
   typedef event<ptr<mref_t> >::ref mrev_t;
 
   //-----------------------------------------------------------------------
@@ -103,6 +104,7 @@ namespace pub3 {
     void pub_as_bool (publish_t *pub, evb_t ev, CLOSURE) const;
     void pub_as_null (publish_t *pub, evb_t ev, CLOSURE) const;
     void pub_as_str (publish_t *pub, evs_t ev, CLOSURE) const;
+    void pub_as_dict (publish_t *pub, cdev_t ev, CLOSURE) const;
 
     //------------------------------------------------------------
     //
@@ -947,7 +949,12 @@ namespace pub3 {
     void replace (const str &nm, ptr<expr_t> x);
 
     str type_to_str () const { return "dict"; }
+
     ptr<mref_t> eval_to_ref (eval_t *e) const;
+    ptr<const expr_t> eval_to_val (eval_t *e) const;
+    void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
+    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+
     ptr<expr_t> deep_copy () const;
     ptr<expr_dict_t> copy_dict () const;
     bool is_static () const;

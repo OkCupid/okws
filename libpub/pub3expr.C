@@ -1671,12 +1671,39 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<const expr_t>
+  expr_dict_t::eval_to_val (eval_t *e) const
+  {
+    ptr<expr_t> out;
+
+    // First see if any keys are static.  Note that this computation
+    // will be memoized, so it's fast enough to do a full DFS here.
+    // For static objects, make a COW version
+    if (is_static ()) {
+      out = expr_cow_t::alloc (mkref (this));
+    } else {
+
+      // Otherwise, recurse --- evaluate next layer down...
+      const_iterator_t it (*this);
+      const str *key;
+      ptr<expr_t> value;
+      ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
+      while ((key = it.next (&value))) {
+	ptr<const expr_t> cx;
+	if (value) { cx = value->eval_to_val (e); }
+	if (cx) { d->insert (*key, cx->copy ()); }
+      }
+      out = d;
+    }
+
+    return out;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<mref_t>
   expr_dict_t::eval_to_ref (eval_t *e) const
   {
-    const_iterator_t it (*this);
-    const str *key;
-    ptr<expr_t> value;
     ptr<expr_t> out;
 
     // First see if any keys are static.  Note that this computation
@@ -1688,7 +1715,10 @@ namespace pub3 {
 
       // Otherwise, recurse --- evaluate next layer down...
       ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
-      it.reset ();
+      const str *key;
+      ptr<expr_t> value;
+      const_iterator_t it (*this);
+
       while ((key = it.next (&value))) {
 	ptr<expr_t> nv;
 	ptr<mref_t> r;

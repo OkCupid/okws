@@ -28,8 +28,10 @@ namespace pub3 {
   env_t::push_locals (ptr<bind_interface_t> t, bool barrier)
   {
     size_t ret = _stack.size ();
-    layer_type_t lt = barrier ? LAYER_LOCALS_BARRIER : LAYER_LOCALS;
-    _stack.push_back (stack_layer_t (t, lt));
+    if (t) {
+      layer_type_t lt = barrier ? LAYER_LOCALS_BARRIER : LAYER_LOCALS;
+      _stack.push_back (stack_layer_t (t, lt));
+    }
     return ret;
   }
 

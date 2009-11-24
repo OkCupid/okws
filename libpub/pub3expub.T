@@ -67,6 +67,20 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
+  expr_t::pub_as_dict (publish_t *pub, cdev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> x;
+      ptr<const expr_dict_t> d;
+    }
+    twait { pub_to_val (pub, mkevent (x)); }
+    if (x) { d = x->to_dict (); }
+    ev->trigger (d);
+  }
+      
+  //-----------------------------------------------------------------------
+
+  tamed void
   expr_t::pub_as_null (publish_t *pub, evb_t ev) const
   {
     tvars {
@@ -269,6 +283,82 @@ namespace pub3 {
     twait { pub_to_ref (pub, mkevent (r)); }
     if (r) x = r->get_value ();
     ev->trigger (x);
+  }
+
+  //=======================================================================
+
+  tamed void
+  expr_dict_t::pub_to_val (publish_t *p, cxev_t ev) const
+  {
+    tvars {
+      ptr<expr_t> out;
+      const str *key;
+      ptr<expr_t> value;
+      ptr<expr_dict_t> d;
+      expr_dict_t::const_iterator_t it (*_self);
+      ptr<const expr_t> cx;
+    }
+
+    // First see if any keys are static.  Note that this computation
+    // will be memoized, so it's fast enough to do a full DFS here.
+    // For static objects, make a COW version
+    if (is_static ()) {
+      out = expr_cow_t::alloc (mkref (this));
+    } else {
+
+      // Otherwise, recurse --- evaluate next layer down...
+      d = New refcounted<expr_dict_t> ();
+      while ((key = it.next (&value))) {
+	cx = NULL;
+	if (value) { twait { value->pub_to_val (p, mkevent (cx)); } }
+	if (cx) { d->insert (*key, cx->copy ()); }
+      }
+      out = d;
+    }
+    ev->trigger (out);
+  }
+
+  //--------------------------------------------------------------------
+
+  tamed void
+  expr_dict_t::pub_to_ref (publish_t *p, mrev_t ev) const
+  {
+    tvars {
+      ptr<expr_t> out;
+      ptr<expr_dict_t> d;
+      const str *key;
+      ptr<expr_t> value;
+      expr_dict_t::const_iterator_t it (*_self);
+      ptr<expr_t> nv;
+      ptr<mref_t> r;
+      ptr<const_mref_t> ret;
+    }
+
+    // First see if any keys are static.  Note that this computation
+    // will be memoized, so it's fast enough to do a full DFS here.
+    // For static objects, make a COW version
+    if (is_static ()) {
+      out = expr_cow_t::alloc (mkref (this));
+    } else {
+
+      // Otherwise, recurse --- evaluate next layer down...
+      d = New refcounted<expr_dict_t> ();
+
+      while ((key = it.next (&value))) {
+	if (value) { 
+	  r = NULL;
+	  nv = NULL;
+
+	  twait { value->pub_to_ref (p, mkevent (r)); }
+	  if (r) nv = r->get_value ();
+	  if (nv) { d->insert (*key, nv); }
+	}
+      }
+      out = d;
+    }
+
+    ret = New refcounted<const_mref_t> (out);
+    ev->trigger (ret);
   }
 
   //=======================================================================

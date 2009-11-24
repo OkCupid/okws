@@ -1184,20 +1184,23 @@ namespace pub3 {
       ptr<const expr_dict_t> cd;
       bool mz;
       ptr<control_t> ctrl;
+      ptr<bind_interface_t> bi;
     }
+
+    if (_file) { twait { _file->pub_as_str (p, mkevent (fn)); } }
+    if (_dict) { twait { _dict->pub_as_dict (p, mkevent (cd)); } }
     
-    if (!_file || !(fn = _file->eval_as_str (p)) || fn.len () == 0) {
+    if (!fn || fn.len () == 0) {
       str e = "include: cannot evaluate filename";
       p->report_error (e, _location);
-    } else if (_dict && !(cd = _dict->eval_as_dict (p))) {
+    } else if (_dict && !cd) {
       str e = "include: cannot evalute parameters";
       p->report_error (e, _location);
     } else {
       mz = p->push_muzzle (muzzle_output ());
       ctrl = p->push_control ();
-      twait { 
-	p->publish (fn, _location, cow_bindtab_t::alloc (cd), mkevent (rs)); 
-      }
+      if (cd) bi = cow_bindtab_t::alloc (cd);
+      twait { p->publish (fn, _location, bi, mkevent (rs)); }
       p->restore_control (ctrl);
       p->pop_muzzle (mz);
     }
@@ -1213,11 +1216,10 @@ namespace pub3 {
     str err;
     if (l && (l->size () >= 1 && l->size () <= 2)) {
       _file = (*l)[0];
-      if (l->size () > 2) 
-	_dict = (*l)[1];
+      if (l->size () == 2) _dict = (*l)[1];
     } else {
       str f = fnname ();
-      err = strbuf ("%s take 1 or 2 arguments; a filename and an optional "
+      err = strbuf ("%s takes 1 or 2 arguments; a filename and an optional "
 		    "binding list", f.cstr ());
       if (errp) *errp = err;
       ret = false;
