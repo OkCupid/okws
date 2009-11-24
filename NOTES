@@ -7,7 +7,6 @@ OKWS 3.0 Notes
 		  surrounding script tags.)
 
 TODOs
-   X double support for arithmetic
-   X standardize pub3dict output order.
-   X return / break
    - scope barriers
+   - RHS of assignments should evaluated to values, not refs, no?
+
