@@ -273,6 +273,7 @@ namespace pub3 {
     str to_str (bool q = false) const;
     str to_switch_str () const { return _b ? "1" : "0"; }
     ptr<expr_t> copy () const;
+    bool to_bool () const { return _b; }
 
     // Allow for calling New refcounted<expr_bool_t> inside of
     // expr_bool_t::alloc()

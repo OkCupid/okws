@@ -1,4 +1,8 @@
-{%
+desc = "basic function calls and recursion"
+
+filedata = \
+"""
+{$
     def fact (x) {
        if (x <= 0) { 
            return 1; 
@@ -17,9 +21,11 @@
       return y;
     }
 
-    locals { t }
+    locals { t, u }
     t = fact (8);
-    print (t, "\n");
-    t = fact2 (8);
-    print (t, "\n");
-%}
+    u = fact2 (8);
+    print (t, "\n", u, "\n");
+$}
+"""
+
+outcome = "40320 " * 2

@@ -104,7 +104,7 @@ scalar_obj_t::_p_t::to_int64 (int64_t *out) const
     *out = t;
     ret = true;
   }
-  return false;
+  return ret;
 }
 
 //-----------------------------------------------------------------------
