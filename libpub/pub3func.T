@@ -104,7 +104,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<bindtab_t>
-  lambda_t::bind_args_nonblock  (publish_t *p, args_t args) const
+  lambda_t::bind_args_nonblock (publish_t *p, args_t args) const
   {
     ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
     for (size_t i = 0; i < args->size (); i++) {
@@ -172,7 +172,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t> lambda_t::eval_to_val (eval_t *e) const
-  { return copy (e); }
+  { 
+    // TODO: Flatten the local variables, making a closure.  Shove
+    // this closure into the new lambda object.  Will be really
+    // cool.
+    return copy (e); 
+  }
 
   //-----------------------------------------------------------------------
 
