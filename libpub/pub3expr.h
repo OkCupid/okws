@@ -973,7 +973,7 @@ namespace pub3 {
     void v_dump (dumper_t *d) const;
   private:
     ptr<mref_t> eval_to_ref_final (eval_t *e, ptr<mref_t> lhs,
-				   ptr<mref_t> rhs) const;
+				   ptr<const expr_t> rhs) const;
     ptr<expr_t> _lhs, _rhs;
   };
 

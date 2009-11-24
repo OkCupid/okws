@@ -1828,7 +1828,7 @@ namespace pub3 {
   ptr<mref_t>
   expr_assignment_t::eval_to_ref (eval_t *e) const
   {
-    ptr<mref_t> rhs = _rhs->eval_to_ref (e);
+    ptr<const expr_t> rhs = _rhs->eval_to_val (e);
     ptr<mref_t> lhs = _lhs->eval_to_ref (e);
     ptr<mref_t> ret = eval_to_ref_final (e, lhs, rhs);
     return ret;
@@ -1854,19 +1854,19 @@ namespace pub3 {
 
   ptr<mref_t>
   expr_assignment_t::eval_to_ref_final (eval_t *e, ptr<mref_t> lhs,
-					ptr<mref_t> rhs) const
+					ptr<const expr_t> rhs) const
   {
     ptr<mref_t> ret;
     ptr<expr_t> v;
 
     if (!lhs) {
       report_error (e, "error in assignment: LHS evaluates to null");
-    } else if (!rhs || !(v = rhs->get_value ())) {
+    } else if (!rhs) {
       report_error (e, "error in assignment: RHS evaluates to null");
-    } else if (!(lhs->set_value (v))) {
+    } else if (!(lhs->set_value (rhs->copy ()))) {
       report_error (e, "error in assignment: invalid LHS");
     } else {
-      ret = rhs;
+      ret = lhs;
     }
 
     return ret;

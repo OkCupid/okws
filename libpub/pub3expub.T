@@ -247,10 +247,11 @@ namespace pub3 {
   expr_assignment_t::pub_to_ref (publish_t *pub, mrev_t ev) const
   {
     tvars {
-      ptr<mref_t> lhs, rhs, ret;
+      ptr<mref_t> lhs, ret;
+      ptr<const expr_t> rhs;
     }
     
-    twait { _rhs->pub_to_ref (pub, mkevent (rhs)); }
+    twait { _rhs->pub_to_val (pub, mkevent (rhs)); }
     twait { _lhs->pub_to_ref (pub, mkevent (lhs)); }
     ret = eval_to_ref_final (pub, lhs, rhs);
     ev->trigger (ret);

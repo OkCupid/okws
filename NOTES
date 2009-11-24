@@ -8,5 +8,3 @@ OKWS 3.0 Notes
 
 TODOs
    - scope barriers
-   - RHS of assignments should evaluated to values, not refs, no?
-
