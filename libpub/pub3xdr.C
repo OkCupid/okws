@@ -1152,7 +1152,7 @@ pub3::zone_text_t::to_xdr (xpub3_zone_t *z) const
 {
   z->set_typ (XPUB3_ZONE_TEXT);
   z->text->lineno = lineno ();
-  strip ();
+  cook_text ();
   zstr_to_xdr (_original, &z->text->original_text, Z_BEST_COMPRESSION);
   zstr_to_xdr (_wss, &z->text->wss_text, Z_BEST_COMPRESSION);
   return true;

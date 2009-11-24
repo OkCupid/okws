@@ -250,7 +250,7 @@ namespace pub3 {
   zone_text_t::v_publish_nonblock (publish_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    strip ();
+    cook_text ();
     if (p->pws ()) { p->output (_original); }
     else           { p->output (_wss); }
     return ret;
@@ -264,15 +264,18 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
   
-  void zone_text_t::strip () const 
-  { if (!_wss && _original) { _wss = html_wss (_original.to_str ()); } }
+  void zone_text_t::cook_text () const 
+  { 
+    if (!_original && _b.len ()) { _original = str (_b); }
+    if (!_wss && _original) { _wss = html_wss (_original.to_str ()); }
+  }
 
   //-----------------------------------------------------------------------
 
   void
   zone_text_t::v_dump (dumper_t *d) const
   {
-    strip ();
+    cook_text ();
     strbuf b;
     if (_original) {
       str tmp = _original;

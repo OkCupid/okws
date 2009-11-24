@@ -125,14 +125,14 @@ namespace pub3 {
   protected:
     status_t v_publish_nonblock (publish_t *p) const;
     void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
-    void strip () const;
+    void cook_text () const;
 
     // while parsing, use the following representation:
     strbuf _b;
     vec<str> _hold;
 
     // otherwise, here are the buffers to use:
-    zstr _original;
+    mutable zstr _original;
     mutable zstr _wss;
   };
 
