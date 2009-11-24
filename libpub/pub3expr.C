@@ -468,7 +468,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   str expr_bool_t::static_to_str (bool b) { return b ? "true" : "false"; }
-  str expr_bool_t::to_str (bool q) const { return to_str (_b); }
+  str expr_bool_t::to_str (bool q) const { return static_to_str (_b); }
   
   //--------------------------------------------------------------------
   

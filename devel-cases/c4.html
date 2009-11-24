@@ -1,13 +1,18 @@
 {%
     def fact (x) {
        print "FFF %{x}\n";
-       if (x <= 0) { return 1; }
-       locals { y }
-       y = x * fact (x - 1)
-       return y;
+       if (x <= 0) { 
+           print "PPP\n"; return 1; 
+       }
+       else { 
+	  print "QQQ\n";
+          locals { y }
+          y = x * fact (x - 1)
+          return y;
+        }
     }
 
     locals { t }
-    t = fact (8);
+    t = fact (3);
     print (t, "\n");
 %}

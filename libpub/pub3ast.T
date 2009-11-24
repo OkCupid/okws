@@ -760,7 +760,7 @@ namespace pub3 {
     if (!_might_block.is_set ()) {
       bool b1 = _expr && _expr->might_block ();
       bool b2 = _body && _body->might_block ();
-      _might_block.set (b1 && b2);
+      _might_block.set (b1 || b2);
     }
     return _might_block.value ();
   }

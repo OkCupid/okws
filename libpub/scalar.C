@@ -54,9 +54,14 @@ scalar_obj_t::_p_t::to_int64 () const
 {
   if (_int_cnv == CNV_NONE) {
 
-    if (_uint_cnv == CNV_OK && (_u <= u_int64_t (INT64_MAX))) {
-      _i = _u;
-      _int_cnv = CNV_OK;
+    if (_uint_cnv == CNV_OK) {
+      if (_u <= u_int64_t (INT64_MAX)) {
+	_i = _u;
+	_int_cnv = CNV_OK;
+      } else {
+	_i = 0;
+	_int_cnv = CNV_BAD;
+      }
     } else {
       _i = 0;
       _int_cnv = (_s && my_convertint (_s, &_i)) ? CNV_OK : CNV_BAD;
@@ -72,12 +77,17 @@ scalar_obj_t::_p_t::to_uint64 () const
 {
   if (_uint_cnv == CNV_NONE) {
 
-    if (_int_cnv == CNV_OK && _i >= 0) {
-      _u = _i;
-      _uint_cnv = CNV_OK;
+    if (_int_cnv == CNV_OK) {
+      if (_i >= 0) {
+	_u = _i;
+	_uint_cnv = CNV_OK;
+      } else {
+	_u = 0;
+	_uint_cnv = CNV_BAD;
+      }
     } else {
       _u = 0;
-      _uint_cnv = (_s && to_uint64 (&_u)) ? CNV_OK : CNV_BAD;
+      _uint_cnv = (_s && convertuint (_s, &_u)) ? CNV_OK : CNV_BAD;
     }
   }
   return _u;
@@ -88,10 +98,11 @@ scalar_obj_t::_p_t::to_uint64 () const
 bool
 scalar_obj_t::_p_t::to_int64 (int64_t *out) const
 {
+  bool ret = false;
   int64_t t = to_int64 ();
   if (_int_cnv == CNV_OK) {
     *out = t;
-    return true;
+    ret = true;
   }
   return false;
 }
@@ -101,9 +112,11 @@ scalar_obj_t::_p_t::to_int64 (int64_t *out) const
 bool
 scalar_obj_t::_p_t::to_uint64 (u_int64_t *out) const
 {
+  u_int64_t u = to_uint64 ();
   bool ret = false;
-  if (_s && _s.len ()) {
-    ret = convertuint (_s, out);
+  if (_uint_cnv == CNV_OK) {
+    *out = u;
+    ret = true;
   }
   return ret;
 }
@@ -351,6 +364,9 @@ convertuint (const str &s, u_int64_t *out)
   errno = 0;
   if (!s || !s.len ()) {
     /* no-op -- empty string is not valid */
+  } else if (s[0] == '-') {
+    /* negative numbers are not welcome here (thought strtoull will
+       strangely accept them */
   } else {
     u_int64_t v = strtoull (s, &ep, 0);
     if (errno == ERANGE || errno == EINVAL) {
