@@ -148,7 +148,6 @@ namespace pub3 {
       status_t status;
     }
 
-    dumper_t::dump_to_stderr (_body);
     if (check_args (p, args)) {
       twait { bind_args (p, args, mkevent (bindings)); }
       state = p.push_lambda_call (_md, _name, bindings);

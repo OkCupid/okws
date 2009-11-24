@@ -148,12 +148,13 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  class mref_t {
+  class mref_t : public virtual dumpable_t {
   public:
     mref_t () {}
     virtual ~mref_t () {}
     virtual ptr<expr_t> get_value () = 0;
     virtual bool set_value (ptr<expr_t> x) = 0;
+    lineno_t dump_get_lineno () const { return 0; }
   };
 
   //----------------------------------------------------------------------
@@ -196,6 +197,8 @@ namespace pub3 {
     bool set_value (ptr<expr_t> x) { return false; }
     static ptr<const_mref_t> alloc (ptr<expr_t> x)
     { return New refcounted<const_mref_t> (x); }
+    const char *get_obj_name () const { return "const_mref_t"; }
+    void v_dump (dumper_t *d) const;
   protected:
     ptr<expr_t> _x;
   };
@@ -208,16 +211,11 @@ namespace pub3 {
     mref_dict_t (ptr<bindtab_t> d, const str &n) : _dict (d), _slot (n) {}
     ptr<expr_t> get_value ();
     bool set_value (ptr<expr_t> x);
+    const char *get_obj_name () const { return "mref_dict_t"; }
+    void v_dump (dumper_t *d) const;
   protected:
     const ptr<bindtab_t> _dict;
     const str _slot;
-  };
-
-  //----------------------------------------------------------------------
-
-  class const_mref_dict : public mref_t {
-
-
   };
 
   //----------------------------------------------------------------------
@@ -228,6 +226,8 @@ namespace pub3 {
     static ptr<mref_list_t> alloc (ptr<expr_list_t> d, ssize_t i);
     ptr<expr_t> get_value ();
     bool set_value (ptr<expr_t> x);
+    const char *get_obj_name () const { return "mref_list_t"; }
+    void v_dump (dumper_t *d) const;
   protected:
     const ptr<expr_list_t> _list;
     const ssize_t _index;
@@ -415,7 +415,7 @@ namespace pub3 {
       : expr_t (lineno), _o1 (o1), _o2 (o2) {}
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
-    void pub_to_val (publish_t pub, cxev_t ev, CLOSURE);
+    void pub_to_val (publish_t pub, cxev_t ev, CLOSURE) const;
     bool might_block_uncached () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_call_coercable () const { return false; }
@@ -542,6 +542,8 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t e) const;
     ptr<mref_t> eval_to_ref (eval_t e) const;
+    void pub_to_ref (publish_t p, mrev_t ev, CLOSURE) const;
+    void pub_to_val (publish_t p, cxev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
   protected:
     str _name;

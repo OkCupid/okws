@@ -3,7 +3,7 @@
 
 namespace pub3 {
 
-  //====================================================================
+  //=============================== expr_dictref_t ========================
 
   ptr<expr_dictref_t>
   expr_dictref_t::alloc (ptr<expr_t> d, const str &n)
@@ -95,6 +95,18 @@ namespace pub3 {
   {
     return e.lookup_ref (_name);
   }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_varref_t::pub_to_ref (publish_t p, mrev_t ev, ptr<closure_t> d) const
+  { ev->trigger (eval_to_ref (p)); }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_varref_t::pub_to_val (publish_t p, cxev_t ev, ptr<closure_t> d) const
+  { ev->trigger (eval_to_val (p)); }
 
   //--------------------------------------------------------------------
 
@@ -207,6 +219,34 @@ namespace pub3 {
   bool expr_vecref_t::might_block_uncached () const
   { return expr_t::might_block (_vec, _index); }
 
-  //====================================================================
+  //================================= const_mref_t =====================
+
+  void
+  const_mref_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "expr", _x);
+  }
+
+  //========================== mref_dict_t =============================
+
+  void
+  mref_dict_t::v_dump (dumper_t *d) const
+  {
+    d->dump (strbuf ("slot: %s", _slot.cstr ()), true);
+    // XXX print dict at some point.
+  }
   
+  //========================== mref_list_t =============================
+
+  void
+  mref_list_t::v_dump (dumper_t *d) const
+  {
+    d->dump (strbuf ("index: %zd", _index), true);
+    s_dump (d, "list", _list);
+  }
+
+  //===================================================================
+  
+  
+
 };

@@ -134,6 +134,24 @@ namespace pub3 {
     _universals = t;
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  env_t::v_dump (dumper_t *d) const
+  {
+    for (ssize_t i = _stack.size () - 1; i >=0 ; i--) {
+      d->dump (strbuf ("layer(%d) ", int (_stack[i]._typ)), false);
+      ptr<bindtab_t::const_iterator_t> it  = _stack[i]._bindings->iter ();
+      const str *key;
+      ptr<expr_t> value;
+      d->begin_obj ("bindtab", NULL, 0);
+      while ((key = it->next (&value))) {
+	s_dump (d, *key, value);
+      }
+      d->end_obj ();
+    }
+  }
+
   //================================================ eval_t ================
 
   eval_t::eval_t (ptr<env_t> e, ptr<output_t> o)

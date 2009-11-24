@@ -1858,6 +1858,7 @@ namespace pub3 {
   {
     ptr<mref_t> ret;
     ptr<expr_t> v;
+
     if (!lhs) {
       report_error (e, "error in assignment: LHS evaluates to null");
     } else if (!(v = rhs->get_value ())) {
@@ -1867,6 +1868,7 @@ namespace pub3 {
     } else {
       ret = rhs;
     }
+
     return ret;
   }
   

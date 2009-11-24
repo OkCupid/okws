@@ -4,12 +4,13 @@
 #pragma once
 
 #include "pub3expr.h"
+#include "pub3debug.h"
 
 namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class env_t {
+  class env_t : public virtual dumpable_t {
   public:
 
     env_t (ptr<bindtab_t> u, ptr<bindtab_t> g = NULL);
@@ -44,6 +45,9 @@ namespace pub3 {
     };
 
     void overwrite_universals (ptr<const bind_interface_t> t);
+    const char *get_obj_name () const { return "env_t"; }
+    lineno_t dump_get_lineno () const { return 0; }
+    void v_dump (dumper_t *d) const;
 
   protected:
 

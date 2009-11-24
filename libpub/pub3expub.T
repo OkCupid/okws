@@ -23,8 +23,6 @@ namespace pub3 {
       ptr<const expr_t> v;
       ptr<const_mref_t> ret;
     }
-    // XX
-    dumper_t::dump_to_stderr (this);
     twait { pub_to_val (pub, mkevent (v)); }
     if (v) { x = v->copy (); }
     ret = const_mref_t::alloc (x);
@@ -171,7 +169,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_binaryop_t::pub_to_val (publish_t pub, cxev_t ev)
+  expr_binaryop_t::pub_to_val (publish_t pub, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> e1, e2;
@@ -251,6 +249,7 @@ namespace pub3 {
     tvars {
       ptr<mref_t> lhs, rhs, ret;
     }
+    
     twait { _rhs->pub_to_ref (pub, mkevent (rhs)); }
     twait { _lhs->pub_to_ref (pub, mkevent (lhs)); }
     ret = eval_to_ref_final (pub, lhs, rhs);
