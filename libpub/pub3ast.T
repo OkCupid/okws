@@ -656,7 +656,7 @@ namespace pub3 {
 	  // noop
 	} else {
 	  locals->replace (_iter, rev);
-	  size_t stcksz = p->env ()->push_locals (locals);
+	  size_t stcksz = p->env ()->push_locals (locals, false);
 	  status_t tmp = _body->publish_nonblock (p);
 	  if (tmp.status != XPUB_STATUS_OK) { status = tmp; }
 	  p->env ()->pop_to (stcksz);
@@ -714,7 +714,7 @@ namespace pub3 {
 	    // noop
 	  } else {
 	    locals->replace (_iter, rev);
-	    stcksz = p->env ()->push_locals (locals);
+	    stcksz = p->env ()->push_locals (locals, false);
 	    twait { _body->publish (p, mkevent (res)); }
 	    if (res.status != XPUB_STATUS_OK) { status = res; }
 	    p->env ()->pop_to (stcksz);
@@ -926,9 +926,8 @@ namespace pub3 {
       bool locals (lt == env_t::LAYER_LOCALS);
     }
 
-
     if (is_static () && locals) {
-      p->env ()->push_bindings (cow_bindtab_t::alloc (_tab), lt);
+      p->env ()->push_locals (cow_bindtab_t::alloc (_tab), false);
     } else {
       frame = p->env ()->push_bindings (get_decl_type ());
 
@@ -966,7 +965,7 @@ namespace pub3 {
     bool locals (lt == env_t::LAYER_LOCALS);
 
     if (is_static () && locals) {
-      p->env ()->push_bindings (cow_bindtab_t::alloc (_tab), lt);
+      p->env ()->push_locals (cow_bindtab_t::alloc (_tab), false);
     } else {
       ptr<bindtab_t> frame = p->env ()->push_bindings (lt);
 

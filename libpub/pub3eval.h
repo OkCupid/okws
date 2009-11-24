@@ -14,25 +14,20 @@ namespace pub3 {
   public:
 
     env_t (ptr<bindtab_t> u, ptr<bindtab_t> g = NULL);
-    size_t push_locals (ptr<bind_interface_t> t);
-    size_t push_universal_refs (ptr<bind_interface_t> t);
+    size_t push_locals (ptr<bind_interface_t> t, bool barrier);
     void pop_to (size_t s);
     ptr<const expr_t> lookup_val (const str &nm) const;
     size_t stack_size () const;
     ptr<mref_t> lookup_ref (const str &nm) const;
     void add_global_binding (const str &nm, ptr<expr_t> v);
 
-    // Replace the universals with this bindtab;  no way to undo
-    // this yet since it's not needed, but eventually might be nice.
-    void replace_universals (ptr<bindtab_t> u);
-
     typedef enum { LAYER_NONE = -1,
 		   LAYER_UNIVERSALS = 0,
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
-		   LAYER_UNIREFS = 3 } layer_type_t;
+		   LAYER_LOCALS_BARRIER = 3,
+		   LAYER_UNIREFS = 4 } layer_type_t;
 
-    size_t push_bindings (ptr<bind_interface_t> t, layer_type_t lt);
     ptr<bindtab_t> push_bindings (layer_type_t typ);
     void push_references (ptr<const bindlist_t> l, layer_type_t lt);
 
@@ -42,18 +37,19 @@ namespace pub3 {
       stack_layer_t () : _typ (LAYER_NONE) {}
       ptr<bind_interface_t> _bindings;
       layer_type_t _typ;
+      bool is_barrier () const { return _typ == LAYER_LOCALS_BARRIER; } 
     };
 
-    void overwrite_universals (ptr<const bind_interface_t> t);
     const char *get_obj_name () const { return "env_t"; }
     lineno_t dump_get_lineno () const { return 0; }
     void v_dump (dumper_t *d) const;
-
   protected:
+    size_t dec_stack_pointer (stack_layer_t l, size_t i) const;
 
     ptr<bindtab_t> _universals;
     ptr<bindtab_t> _globals;
     vec<stack_layer_t> _stack;
+    size_t _global_frames;
   };
 
   //-----------------------------------------------------------------------

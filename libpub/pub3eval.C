@@ -11,6 +11,7 @@ namespace pub3 {
   {
     _stack.push_back (stack_layer_t (_universals, LAYER_UNIVERSALS));
     _stack.push_back (stack_layer_t (_globals, LAYER_GLOBALS));
+    _global_frames = _stack.size () - 1;
   }
 
   //-----------------------------------------------------------------------
@@ -24,30 +25,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   size_t
-  env_t::push_locals (ptr<bind_interface_t> t)
-  {
-    return push_bindings (t, LAYER_LOCALS);
-  }
-
-  //-----------------------------------------------------------------------
-
-  size_t 
-  env_t::push_universal_refs (ptr<bind_interface_t> t)
-  {
-    return push_bindings (t, LAYER_UNIVERSALS);
-  }
-
-  //-----------------------------------------------------------------------
-
-  size_t
-  env_t::push_bindings (ptr<bind_interface_t> bi, layer_type_t typ)
+  env_t::push_locals (ptr<bind_interface_t> t, bool barrier)
   {
     size_t ret = _stack.size ();
-    _stack.push_back (stack_layer_t (bi, typ));
-
-    if (typ == LAYER_UNIVERSALS) {
-      overwrite_universals (bi);
-    }
+    layer_type_t lt = barrier ? LAYER_LOCALS_BARRIER : LAYER_LOCALS;
+    _stack.push_back (stack_layer_t (t, lt));
     return ret;
   }
 
@@ -83,30 +65,19 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  void
-  env_t::overwrite_universals (ptr<const bind_interface_t> bi)
-  {
-    const str *key;
-    ptr<expr_t> val;
-    ptr<bindtab_t::const_iterator_t> it = bi->iter ();
-    
-    while ((key = it->next (&val))) {
-      // don't insert the actual object, just insert a copy.
-      if (val) { _universals->insert (*key, val->copy ()); }
-    }
-  }
-
-  //-----------------------------------------------------------------------
-
-  void
-  env_t::pop_to (size_t i)
-  {
-    _stack.setsize (i);
-  }
-
-  //-----------------------------------------------------------------------
-
+  void env_t::pop_to (size_t i) { _stack.setsize (i); }
   size_t env_t::stack_size () const { return _stack.size (); }
+
+  //-----------------------------------------------------------------------
+
+  size_t
+  env_t::dec_stack_pointer (stack_layer_t l, size_t i) const
+  {
+    size_t ret;
+    if (l.is_barrier ()) { ret = _global_frames; }
+    else                 { ret = i - 1; }
+    return ret;
+  }
 
   //-----------------------------------------------------------------------
 
@@ -114,24 +85,23 @@ namespace pub3 {
   env_t::lookup_ref (const str &nm) const
   {
     ptr<bindtab_t> found;
-    for (ssize_t i = _stack.size () - 1; !found && i >= 0; i--) {
+    ssize_t i = _stack.size () - 1;
+
+    while (!found && i >= 0) {
       stack_layer_t l = _stack[i];
       if (l._bindings && l._bindings->lookup (nm)) {
 	if (l._typ == LAYER_UNIREFS) { found = _universals; }
 	else { found = l._bindings->mutate (); }
       }
+
+      // When we hit a scope barrier -- like a file inclusion or
+      // a lambda call -- then jump over stack frames until we get
+      // to the base layers (with the globals and universals).
+      i = dec_stack_pointer (l, i);
     }
+
     if (!found) { found = _globals; }
     return New refcounted<mref_dict_t> (found, nm);
-  }
-
-  //-----------------------------------------------------------------------
-
-  void
-  env_t::replace_universals (ptr<bindtab_t> t)
-  {
-    push_bindings (t, LAYER_UNIVERSALS);
-    _universals = t;
   }
 
   //-----------------------------------------------------------------------
@@ -183,12 +153,14 @@ namespace pub3 {
   env_t::lookup_val (const str &nm) const
   {
     ptr<const expr_t> x;
-    for (ssize_t i = _stack.size () - 1; !x && i >= 0; i--) {
+    ssize_t i = _stack.size () - 1;
+    while (!x && i >= 0) {
       stack_layer_t l = _stack[i];
       if (l._bindings && l._bindings->lookup (nm, &x)) {
 	if (l._typ == LAYER_UNIREFS) { _universals->lookup (nm, &x); }
 	if (!x) { x = expr_null_t::alloc (); }
       }
+      i = dec_stack_pointer (l, i);
     }
     return x;
   }

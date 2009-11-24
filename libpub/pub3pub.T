@@ -44,7 +44,7 @@ namespace pub3 {
       xpub_status_t status;
       ptr<file_t> dummy;
     }
-    sz = env ()->push_locals (d);
+    sz = env ()->push_locals (d, true);
     twait { _pub_iface->publish (this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
     ev->trigger (status);
@@ -141,7 +141,7 @@ namespace pub3 {
     } else {
       md = file->metadata ();
       push_metadata (md);
-      sz = env ()->push_locals (md->to_dict ());
+      sz = env ()->push_locals (md->to_dict (), false);
       twait { file->data ()->publish (this, mkevent (status)); }
       env ()->pop_to (sz);
       pop_metadata ();
@@ -176,7 +176,7 @@ namespace pub3 {
     lambda_state_t ret;
 
     _stack.push_back (runloc_t (md, fn));
-    ret._binding_stack_size = env ()->push_locals (bindings);
+    ret._binding_stack_size = env ()->push_locals (bindings, true);
     ret._old_control = push_control ();
 
     if (_stack.size () > ok_pub_max_stack) {
