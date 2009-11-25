@@ -176,6 +176,7 @@ namespace pub3 {
     ptr<const callable_t> to_callable () const;
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
+    bool to_bool () const;
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
 

@@ -276,6 +276,14 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  bool expr_cow_t::to_bool () const 
+  { 
+    ptr<const expr_t> x = const_ptr ();
+    return x && x->to_bool ();
+  }
+
+  //--------------------------------------------------------------------
+
   bool expr_cow_t::might_block_uncached () const
   { return expr_t::might_block (const_ptr ()); }
 

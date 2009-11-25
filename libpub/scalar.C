@@ -510,10 +510,10 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
 
   int64_t i1, i2;
   u_int64_t u1, u2;
-  str s1, s2;
+  str s1;
   scalar_obj_t out;
 
-  if (me == TYPE_STR && o.to_int64 (&i2) && i2 < 0x100) {
+  if (me == TYPE_STR && (s1 = to_str ()) && o.to_int64 (&i2) && i2 < 0x100) {
     strbuf b;
     for (int64_t i = 0; i < i2; i++) {
       b << s1;
@@ -569,7 +569,7 @@ scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div) const
 
   int64_t i1, i2;
   u_int64_t u1, u2;
-  str s1, s2;
+  str s1;
   scalar_obj_t out;
   bool ok = true;
 

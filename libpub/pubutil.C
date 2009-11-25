@@ -632,6 +632,7 @@ html_wss (str in)
       *op++ = *ip;
     }
   }
+  if (eat_ws_state) { *op++ = ' '; }
   out.setlen (op - out.cstr ());
   return out;
 }
