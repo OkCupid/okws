@@ -9,23 +9,23 @@ filedata = \
     }
 
     def g() { 
-       locals { tmp : 5 }
+       locals { tmp : 4 }
        return tmp + h ();
     }
 
     def f() {
-      locals { tmp : 10 }
+      locals { tmp : 16 }
       return tmp + g ();
     }
 
-    tmp = 3;
+    tmp = 1;
     print (f(), "\n");
 
-    globals { tmp : 1 }
+    globals { tmp : 2 }
     print (f(), "\n");
 $}
 """
 
-outcome = "18 16"
+outcome = "21 22"
 
   

@@ -60,7 +60,7 @@ namespace pub3 {
       _stack += *cls_stk; 
     }
 
-    push_locals (bi, false);
+    push_locals (bi, true);
     return ret;
   }
 

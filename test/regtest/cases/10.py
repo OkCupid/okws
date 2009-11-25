@@ -12,8 +12,9 @@ filedata = \
            }
         return r;
      }
-     locals { fn : make_adder (10); }
-     print (fn (3));
+     locals { fn : make_adder (10) }
+     locals { v  : fn (3) }
+     print (v, "\n");
 $}
 """
 

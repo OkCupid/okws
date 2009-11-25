@@ -170,13 +170,7 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t> lambda_t::eval_to_val (eval_t *e) const
-  { 
-    // TODO: Flatten the local variables, making a closure.  Shove
-    // this closure into the new lambda object.  Will be really
-    // cool.
-    return copy (e); 
-  }
+  ptr<const expr_t> lambda_t::eval_to_val (eval_t *e) const { return copy (e); }
 
   //-----------------------------------------------------------------------
 
@@ -185,7 +179,7 @@ namespace pub3 {
 
   //======================================== closed_lambda_t ==============
 
-  closed_lambda_t::closed_lambda_t (const lambda_t &l, eval_t *e) 
+  closed_lambda_t::closed_lambda_t (const lambda_t &l, eval_t *e)
     : lambda_t (l)
   { 
     _md = e->current_metadata (); 
