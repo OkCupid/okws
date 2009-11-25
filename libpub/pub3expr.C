@@ -1306,22 +1306,39 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<const expr_t>
+  expr_list_t::eval_to_val (eval_t *e) const
+  {
+    ptr<expr_t> out;
+    if (is_static ()) {
+      out = expr_cow_t::alloc (mkref (this));
+    } else {
+      size_t l = vec_base_t::size ();
+      ptr<expr_list_t> nl = New refcounted<expr_list_t> ();
+      for (size_t i = 0; i < l; i++) {
+	ptr<expr_t> value = (*this)[i];
+	ptr<const expr_t> cx;
+	ptr<expr_t> nv;
+	if (!value || !(cx = value->eval_to_val (e)) || !(nv = cx->copy ())) {
+	  nv = expr_null_t::alloc ();
+	}
+	nl->push_back (nv);
+      }
+      out = nl;
+    }
+    return out;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<mref_t>
   expr_list_t::eval_to_ref (eval_t *e) const
   {
-    bool sttc = true;
-    size_t l = vec_base_t::size ();
-
-    for (size_t i = 0; sttc && i < l ; i++) {
-      if ((*this)[i] && (*this)[i]->is_static ()) {
-	sttc = false;
-      }
-    }
     ptr<expr_t> out;
-
-    if (sttc) {
+    if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
     } else {
+      size_t l = vec_base_t::size ();
       ptr<expr_list_t> nl = New refcounted<expr_list_t> ();
       for (size_t i = 0; i < l; i++) {
 	ptr<expr_t> nv;

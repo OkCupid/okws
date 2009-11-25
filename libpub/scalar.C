@@ -466,35 +466,29 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
   type_t me = natural_type ();
   type_t him = o.natural_type ();
   int res;
+  int64_t i1, i2;
+  u_int64_t u1, u2;
 
-  if (me == TYPE_STR || him == TYPE_STR) {
+  if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
+    double d1 = to_double ();
+    double d2 = o.to_double ();
+    
+    res = CMP (d1, d2);
+    
+  } else if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
+    res = CMP (u1, u2);
+  } else if (to_int64 (&i1) && o.to_int64 (&i2)) {
+    res = CMP (i1, i2);
+  } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
+    res = CMP (1, -1);
+  } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
+    res = CMP (-1, 1);
+  } else {
     str s1 = to_str ();
     str s2 = o.to_str ();
     res = s1.cmp (s2);
-
-  } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
-    double d1 = to_double ();
-    double d2 = o.to_double ();
-
-    res = CMP (d1, d2);
-
-  } else {
-    int64_t i1, i2;
-    u_int64_t u1, u2;
-
-    if (to_uint64 (&u1) && o.to_uint64 (&u2)) {
-      res = CMP (u1, u2);
-    } else if (to_int64 (&i1) && o.to_int64 (&i2)) {
-      res = CMP (i1, i2);
-    } else if (to_uint64 (&u1) && o.to_int64 (&i2)) {
-      res = CMP (1, -1);
-    } else if (to_int64 (&i1) && o.to_uint64 (&u2)) {
-      res = CMP (-1, 1);
-    } else {
-      res = 1;
-    }
+    res = 1;
   }
-
   return res;
 }
 

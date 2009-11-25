@@ -775,6 +775,7 @@ namespace pub3 {
 
     str type_to_str () const { return "list"; }
     ptr<mref_t> eval_to_ref (eval_t *e) const;
+    ptr<const expr_t> eval_to_val (eval_t *e) const;
     bool is_static () const;
     bool might_block_uncached () const;
     bool is_call_coercable () const { return false; }
