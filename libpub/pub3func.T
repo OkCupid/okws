@@ -127,7 +127,7 @@ namespace pub3 {
 
     if (check_args (p, args)) {
       bindings = bind_args_nonblock (p, args);
-      state = p->push_lambda_call (_md, _name, bindings);
+      state = p->push_lambda_call (_md, _name, bindings, closure_stack ());
       if (state.is_ok ()) { 
 	_body->publish_nonblock (p);
       }
@@ -150,7 +150,7 @@ namespace pub3 {
 
     if (check_args (p, args)) {
       twait { bind_args (p, args, mkevent (bindings)); }
-      state = p->push_lambda_call (_md, _name, bindings);
+      state = p->push_lambda_call (_md, _name, bindings, closure_stack ());
       if (state.is_ok ()) {
 	twait { _body->publish (p, mkevent (status)); }
       }
@@ -164,8 +164,7 @@ namespace pub3 {
   ptr<lambda_t>
   lambda_t::copy (eval_t *e) const
   {
-    ptr<lambda_t> l = New refcounted<lambda_t> (*this);
-    l->_md = e->current_metadata ();
+    ptr<lambda_t> l = New refcounted<closed_lambda_t> (*this, e);
     return l;
   }
   
@@ -183,6 +182,15 @@ namespace pub3 {
 
   ptr<mref_t> lambda_t::eval_to_ref (eval_t *e) const
   { return const_mref_t::alloc (copy (e)); }
+
+  //======================================== closed_lambda_t ==============
+
+  closed_lambda_t::closed_lambda_t (const lambda_t &l, eval_t *e) 
+    : lambda_t (l)
+  { 
+    _md = e->current_metadata (); 
+    e->env ()->capture_closure (&_stack); 
+  }
 
   //======================================== fndef_t ======================
 

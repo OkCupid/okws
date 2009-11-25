@@ -36,6 +36,35 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  size_t
+  env_t::push_barrier ()
+  {
+    size_t ret = _stack.size ();
+    _stack.push_back (stack_layer_t (NULL, LAYER_LOCALS_BARRIER));
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  size_t
+  env_t::push_lambda (ptr<bind_interface_t> bi, const env_t::stack_t *cls_stk)
+  {
+    size_t ret = _stack.size ();
+
+    if (cls_stk) {
+      if (cls_stk->size () == 0 || 
+	  (*cls_stk)[0]._typ != LAYER_LOCALS_BARRIER)  {
+	push_barrier ();
+      }
+      _stack += *cls_stk; 
+    }
+
+    push_locals (bi, false);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
   
   ptr<bindtab_t>
   env_t::push_bindings (layer_type_t typ)
@@ -122,6 +151,44 @@ namespace pub3 {
       }
       d->end_obj ();
     }
+  }
+
+  //-----------------------------------------------------------------------
+  
+  void
+  env_t::capture_closure (stack_t *out) const
+  {
+    size_t b = descend_to_barrier ();
+    for (size_t i = b; i < _stack.size (); i++) {
+      out->push_back (_stack[i]);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+  
+  ssize_t
+  env_t::descend_to_barrier () const
+  {
+    ssize_t bottom_frame = _stack.size () - 1;
+    bool go = true;
+    while (go && bottom_frame >= 0) {
+      switch (_stack[bottom_frame]._typ) {
+      case LAYER_UNIREFS:
+      case LAYER_LOCALS:
+	bottom_frame--;
+	break;
+      case LAYER_NONE:
+      case LAYER_UNIVERSALS:
+      case LAYER_GLOBALS:
+	bottom_frame++;
+	go = false;
+	break;
+      case LAYER_LOCALS_BARRIER:
+	go = false;
+	break;
+      }
+    }
+    return bottom_frame;
   }
 
   //================================================ eval_t ================

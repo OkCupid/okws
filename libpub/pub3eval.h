@@ -43,12 +43,18 @@ namespace pub3 {
     const char *get_obj_name () const { return "env_t"; }
     lineno_t dump_get_lineno () const { return 0; }
     void v_dump (dumper_t *d) const;
+    typedef vec<stack_layer_t> stack_t;
+
+    size_t push_lambda (ptr<bind_interface_t>, const stack_t *stk);
+    size_t push_barrier ();
+    void capture_closure (stack_t *out) const;
   protected:
     size_t dec_stack_pointer (stack_layer_t l, size_t i) const;
+    ssize_t descend_to_barrier () const;
 
     ptr<bindtab_t> _universals;
     ptr<bindtab_t> _globals;
-    vec<stack_layer_t> _stack;
+    stack_t _stack;
     size_t _global_frames;
   };
 

@@ -45,12 +45,14 @@ namespace pub3 {
     ptr<lambda_t> copy (eval_t *e) const;
     const char *get_obj_name () const { return "pub3::lambda_t"; }
   protected:
+    
     bool check_args (publish_t *p, args_t a) const;
     ptr<bindtab_t> bind_args_nonblock (publish_t *p, args_t a) const;
     void bind_arg (ptr<bindtab_t> t, size_t i, ptr<mref_t> r) const;
     void bind_args (publish_t *p, args_t a, event<ptr<bindtab_t> >::ref ev,
 		    CLOSURE) const;
     bool is_static () const { return false; }
+    const env_t::stack_t *closure_stack () const { return NULL; }
 
     location_t _loc;
     str _name;
@@ -60,6 +62,17 @@ namespace pub3 {
     // Evaluated lambdas have the metadata of where they came from
     // all populated.  Those that haven't been evaluated do not.
     ptr<const metadata_t> _md;
+  };
+
+  //-----------------------------------------------------------------------
+
+  // A lambda that has an environment / closure baked in
+  class closed_lambda_t : public lambda_t {
+  public:
+    closed_lambda_t (const lambda_t &in, eval_t *e);
+  protected:
+    const env_t::stack_t *closure_stack () const { return &_stack; }
+    env_t::stack_t _stack;
   };
 
   //-----------------------------------------------------------------------

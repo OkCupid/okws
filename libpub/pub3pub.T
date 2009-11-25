@@ -171,12 +171,13 @@ namespace pub3 {
 
   lambda_state_t
   publish_t::push_lambda_call (ptr<const metadata_t> md,
-			       str fn, ptr<bindtab_t> bindings)
+			       str fn, ptr<bindtab_t> bindings,
+			       const env_t::stack_t *cls_stk)
   {
     lambda_state_t ret;
 
     _stack.push_back (runloc_t (md, fn));
-    ret._binding_stack_size = env ()->push_locals (bindings, true);
+    ret._binding_stack_size = env ()->push_lambda (bindings, cls_stk);
     ret._old_control = push_control ();
 
     if (_stack.size () > ok_pub_max_stack) {

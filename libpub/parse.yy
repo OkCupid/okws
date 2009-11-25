@@ -494,6 +494,7 @@ p3_postfix_expr:
 	   | p3_fncall       { $$ = $1; }
 	   | p3_dictionary   { $$ = $1; }
 	   | p3_list         { $$ = $1; }
+	   | p3_lambda       { $$ = $1; }
 	   | p3_null         { $$ = $1; }
 	   ;
 
@@ -514,7 +515,6 @@ p3_nonparen_expr:
 	   | p3_string      { $$ = $1; }
 	   | p3_regex       { $$ = $1; }
 	   | p3_varref      { $$ = $1; }
-	   | p3_lambda      { $$ = $1; }
 	   ;
 
 p3_identifier_list_opt: /*empty */

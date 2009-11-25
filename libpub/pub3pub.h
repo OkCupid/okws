@@ -144,8 +144,11 @@ namespace pub3 {
     ptr<control_t> push_control ();
     void restore_control (ptr<control_t> c);
 
-    lambda_state_t push_lambda_call (ptr<const metadata_t>, str fn, 
-				     ptr<bindtab_t> bindings);
+    lambda_state_t 
+    push_lambda_call (ptr<const metadata_t>, str fn, 
+		      ptr<bindtab_t> bindings, 
+		      const env_t::stack_t *cls_stk);
+
     ptr<const expr_t> pop_lambda_call (lambda_state_t state);
 
     ptr<const metadata_t> current_metadata () const;
