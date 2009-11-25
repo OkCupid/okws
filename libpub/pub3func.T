@@ -26,7 +26,7 @@ namespace pub3 {
 
   lambda_t::lambda_t (ptr<identifier_list_t> p, ptr<zone_t> z, location_t loc)
     : _loc (loc), 
-      _name ("(anonymous lambda)"),
+      _name ("anonymous-lambda"),
       _params (p), 
       _body (z) {}
 
@@ -276,7 +276,7 @@ namespace pub3 {
 
     if (_fn->might_block ()) { twait { _fn->pub_to_val (p, mkevent (f)); } }
     else { f = _fn->eval_to_val (p); }
-    
+
     if (!f) { 
       report_error (p, "cannot resolve function"); 
     } else if (!(fnd = f->to_callable ())) {

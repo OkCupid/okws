@@ -51,7 +51,6 @@ namespace pub3 {
   env_t::push_lambda (ptr<bind_interface_t> bi, const env_t::stack_t *cls_stk)
   {
     size_t ret = _stack.size ();
-
     if (cls_stk) {
       if (cls_stk->size () == 0 || 
 	  (*cls_stk)[0]._typ != LAYER_LOCALS_BARRIER)  {
@@ -60,7 +59,7 @@ namespace pub3 {
       _stack += *cls_stk; 
     }
 
-    push_locals (bi, true);
+    push_locals (bi, false);
     return ret;
   }
 
@@ -142,14 +141,19 @@ namespace pub3 {
   {
     for (ssize_t i = _stack.size () - 1; i >=0 ; i--) {
       d->dump (strbuf ("layer(%d) ", int (_stack[i]._typ)), false);
-      ptr<bindtab_t::const_iterator_t> it  = _stack[i]._bindings->iter ();
-      const str *key;
-      ptr<expr_t> value;
-      d->begin_obj ("bindtab", NULL, 0);
-      while ((key = it->next (&value))) {
-	s_dump (d, *key, value);
+      ptr<bind_interface_t> bi;
+      if ((bi = _stack[i]._bindings)) { 
+	ptr<bindtab_t::const_iterator_t> it = bi->iter ();
+	const str *key;
+	ptr<expr_t> value;
+	d->begin_obj ("bindtab", NULL, 0);
+	while ((key = it->next (&value))) {
+	  s_dump (d, *key, value);
+	}
+	d->end_obj ();
+      } else {
+	d->dump ("{}", true);
       }
-      d->end_obj ();
     }
   }
 

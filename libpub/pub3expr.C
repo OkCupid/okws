@@ -375,6 +375,17 @@ namespace pub3 {
     s_dump (d, "expr:", const_ptr ());
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<const callable_t>
+  expr_cow_t::to_callable () const 
+  {
+    ptr<const callable_t> r;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) r = x->to_callable ();
+    return r;
+  }
+
   //========================================= mref_dict_t ================
 
   ptr<expr_t> 

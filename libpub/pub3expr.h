@@ -173,6 +173,7 @@ namespace pub3 {
     bool is_static () const;
     bool might_block_uncached () const;
     str to_str (bool q = false) const;
+    ptr<const callable_t> to_callable () const;
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
 

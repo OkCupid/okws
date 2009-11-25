@@ -52,7 +52,7 @@ namespace pub3 {
     void bind_args (publish_t *p, args_t a, event<ptr<bindtab_t> >::ref ev,
 		    CLOSURE) const;
     bool is_static () const { return false; }
-    const env_t::stack_t *closure_stack () const { return NULL; }
+    virtual const env_t::stack_t *closure_stack () const { return NULL; }
 
     location_t _loc;
     str _name;
