@@ -1329,34 +1329,6 @@ namespace pub3 {
     return out;
   }
 
-  //--------------------------------------------------------------------
-
-  ptr<mref_t>
-  expr_list_t::eval_to_ref (eval_t *e) const
-  {
-    ptr<expr_t> out;
-    if (is_static ()) {
-      out = expr_cow_t::alloc (mkref (this));
-    } else {
-      size_t l = vec_base_t::size ();
-      ptr<expr_list_t> nl = New refcounted<expr_list_t> ();
-      for (size_t i = 0; i < l; i++) {
-	ptr<expr_t> nv;
-	ptr<mref_t> r;
-	ptr<expr_t> value = (*this)[i];
-
-	if (!value || !(r = value->eval_to_ref (e)) || 
-	    !(nv = r->get_value ())) {
-	  nv = expr_null_t::alloc ();
-	}
-	nl->push_back (nv);
-      }
-      out = nl;
-    }
-    ptr<const_mref_t> ret = New refcounted<const_mref_t> (out);
-    return ret;
-  }
-  
   //====================================================================
 
   static rxx_factory_t g_rxx_factory;
@@ -1733,44 +1705,6 @@ namespace pub3 {
     }
 
     return out;
-  }
-
-  //--------------------------------------------------------------------
-
-  ptr<mref_t>
-  expr_dict_t::eval_to_ref (eval_t *e) const
-  {
-    ptr<expr_t> out;
-
-    // First see if any keys are static.  Note that this computation
-    // will be memoized, so it's fast enough to do a full DFS here.
-    // For static objects, make a COW version
-    if (is_static ()) {
-      out = expr_cow_t::alloc (mkref (this));
-    } else {
-
-      // Otherwise, recurse --- evaluate next layer down...
-      ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
-      const str *key;
-      ptr<expr_t> value;
-      const_iterator_t it (*this);
-
-      while ((key = it.next (&value))) {
-	ptr<expr_t> nv;
-	ptr<mref_t> r;
-	if (value) { 
-	  r = value->eval_to_ref (e);
-	  if (r) nv = r->get_value ();
-	}
-	if (nv) {
-	  d->insert (*key, nv);
-	}
-      }
-      out = d;
-    }
-
-    ptr<const_mref_t> ret = New refcounted<const_mref_t> (out);
-    return ret;
   }
 
   //--------------------------------------------------------------------

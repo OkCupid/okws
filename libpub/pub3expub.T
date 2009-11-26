@@ -318,47 +318,36 @@ namespace pub3 {
     ev->trigger (out);
   }
 
-  //--------------------------------------------------------------------
+  //=======================================================================
 
   tamed void
-  expr_dict_t::pub_to_ref (publish_t *p, mrev_t ev) const
+  expr_list_t::pub_to_val (publish_t *p, cxev_t ev) const
   {
     tvars {
       ptr<expr_t> out;
-      ptr<expr_dict_t> d;
-      const str *key;
-      ptr<expr_t> value;
-      expr_dict_t::const_iterator_t it (*_self);
-      ptr<expr_t> nv;
-      ptr<mref_t> r;
-      ptr<const_mref_t> ret;
+      size_t l;
+      ptr<expr_list_t> nl;
+      size_t i;
+      ptr<expr_t> value, nv;
+      ptr<const expr_t> cx;
     }
-
-    // First see if any keys are static.  Note that this computation
-    // will be memoized, so it's fast enough to do a full DFS here.
-    // For static objects, make a COW version
     if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
     } else {
-
-      // Otherwise, recurse --- evaluate next layer down...
-      d = New refcounted<expr_dict_t> ();
-
-      while ((key = it.next (&value))) {
-	if (value) { 
-	  r = NULL;
-	  nv = NULL;
-
-	  twait { value->pub_to_ref (p, mkevent (r)); }
-	  if (r) nv = r->get_value ();
-	  if (nv) { d->insert (*key, nv); }
-	}
+      l = vec_base_t::size ();
+      nl = New refcounted<expr_list_t> ();
+      for (i = 0; i < l; i++) {
+	value = (*this)[i];
+	cx = NULL;
+	nv = NULL;
+	if (value) { twait { value->pub_to_val (p, mkevent (cx)); } }
+	if (cx) { nv = cx->copy (); }
+	if (!nv) { nv = expr_null_t::alloc (); }
+	nl->push_back (nv);
       }
-      out = d;
+      out = nl;
     }
-
-    ret = New refcounted<const_mref_t> (out);
-    ev->trigger (ret);
+    ev->trigger (out);
   }
 
   //=======================================================================

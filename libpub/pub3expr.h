@@ -774,8 +774,8 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_list_t"; }
 
     str type_to_str () const { return "list"; }
-    ptr<mref_t> eval_to_ref (eval_t *e) const;
     ptr<const expr_t> eval_to_val (eval_t *e) const;
+    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
     bool is_static () const;
     bool might_block_uncached () const;
     bool is_call_coercable () const { return false; }
@@ -953,9 +953,7 @@ namespace pub3 {
 
     str type_to_str () const { return "dict"; }
 
-    ptr<mref_t> eval_to_ref (eval_t *e) const;
     ptr<const expr_t> eval_to_val (eval_t *e) const;
-    void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
 
     ptr<expr_t> deep_copy () const;
