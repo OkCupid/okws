@@ -483,110 +483,25 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool
-  obj_t::to_int (int64_t *i) const
-  {
-    return (obj () && obj ()->to_int (i));
-  }
-
-  //-----------------------------------------------------------------------
-
   ptr<const expr_t> obj_t::expr () const { return obj (); }
-
-  //-----------------------------------------------------------------------
-
-  bool
-  obj_t::to_uint (u_int64_t *u) const
-  {
-    scalar_obj_t so;
-    bool ret = false;
-    ptr<const expr_t> x;
-
-    if (_scalar) {
-      so = _scalar->to_scalar ();
-      ret = so.to_uint64 (u);
-    } else if ((x = expr ())) {
-      ret = x->to_uint (u);
-    }
-
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
-  bool
-  obj_t::to_str (str *s) const
-  {
-    bool ret = false;
-    ptr<const expr_t> x;
-
-    if (_scalar) {
-      ret = (_scalar && (*s = _scalar->to_str ()));
-    } else if ((x = expr ())) {
-      ret = (*s = x->to_str ());
-    }
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
-  bool
-  obj_t::to_bool (bool *b) const
-  {
-    bool ret = false;
-    ptr<const expr_t> x;
-    if (_scalar) {
-      ret = _scalar && (*b = _scalar->to_bool ());
-    } else if ((x = expr ())) {
-      ret = (x && (*b = x->to_bool ()));
-    }
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
-  str
-  obj_t::to_str () const 
-  {
-    str ret;
-    to_str (&ret);
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-  
-  bool
-  obj_t::to_bool () const
-  {
-    bool ret = false;
-    to_bool (&ret);
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
-  int64_t
-  obj_t::to_int () const
-  {
-    int64_t r = 0;
-    to_int (&r);
-    return r;
-  }
-
-  //-----------------------------------------------------------------------
-
-  u_int64_t
-  obj_t::to_uint () const
-  {
-    u_int64_t r = 0;
-    to_uint (&r);
-    return r;
-  }
 
   //-----------------------------------------------------------------------
 
   obj_t &obj_t::operator= (obj_dict_t o) { return set_obj (o); }
   obj_t &obj_t::operator= (obj_list_t o) { return set_obj (o); }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  const_obj_t::to_int (int *i) const
+  {
+    int64_t tmp;
+    bool ret = to_int (&tmp);
+    if (ret) *i = tmp;
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
 
   bool
   const_obj_t::to_int (int64_t *i) const

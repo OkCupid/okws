@@ -23,57 +23,18 @@
  */
 
 #include "pub.h"
-#include "pub_parse.h"
-#include "xpub.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include "pubd.h"
 #include "parseopt.h"
 #include "pslave.h"
-#include "pubd2.h"
+#include "pubd.h"
 #include "pubutil.h"
 #include "okdbg.h"
-#include "pub2.h"
+#include "pub3.h"
+#include "pub3obj.h"
 
-// Version 1 - global variables used to time out connection if no 
-// contact from parent
-pslave_status_t slave_status;
-bool parent_connect;
-bool primary;
-
-int version = 1;
-
-/*
- *
-extern char **environ;
-static void
-dump_env ()
-{
-  for (char **ep = environ; *ep; ep++) {
-    warn << "env: " << *ep << "\n";
-  }
-}
-*
-*/
-
-template<class T> bool
-config_var (pub_config_iface_t *p, const char *vname, T *out)
-{
-  str s = p->cfg (vname);
-  return (s && convertint (s, out));
-}
-
-void
-client_accept (ptr<axprt_stream> x)
-{
-  assert (version == 1);
-  if (!x)
-    fatal ("EOF from parent process.\n");
-  parent_connect = true;
-  bool p = primary && slave_status == PSLAVE_SLAVE;
-  vNew pubserv_t (x, p);
-  primary = false;
-}
+//-----------------------------------------------------------------------
 
 static void 
 pubshutdown (int sig)
@@ -82,12 +43,16 @@ pubshutdown (int sig)
   exit (0);
 }
 
+//-----------------------------------------------------------------------
+
 static void
 set_signals ()
 {
   sigcb (SIGTERM, wrap (pubshutdown, SIGTERM));
   sigcb (SIGINT,  wrap (pubshutdown, SIGINT));
 }
+
+//-----------------------------------------------------------------------
 
 static void
 usage ()
@@ -96,12 +61,7 @@ usage ()
   exit (1);
 }
 
-static void
-pubd_slave_cb ()
-{
-  if (!parent_connect)
-    fatal << "exitting; no parent process found\n";
-}
+//-----------------------------------------------------------------------
 
 tamed static void
 main_T (int argc, char **argv)
@@ -113,19 +73,22 @@ main_T (int argc, char **argv)
     str uname;
     str gname;
     str configfile;
-    u_int opts (P_DAEMON);
+    pub3::opts_t opts (0);
     const char *e, *v;
-    bool pub2_cache (true);
+    bool use_cache (true);
     bool have_cfg (false);
 
     // Is activated only if we are doing caching and in pub2
-    pubserv2::cache_t *cache (NULL);
-    pubserv2::file_lookup_t *fl (NULL);
+    ptr<pub3::srv_cache_t> cache;
+    ptr<pub3::srv_file_lookup_t> fl;
 
     str tss, tsh; // treestat sentinel and heartbeat files
-    pub_parser_t *ppt;
-    ptr<pub2::local_publisher_t> cfgparse;
+    ptr<pub3::pub_parser_t> ppt;
+    ptr<pub3::local_publisher_t> cfgparse;
     int fdfd (1);
+    pub3::obj_dict_t cfg_d;
+    ptr<pub3::primary_srv_t> srv;
+    int rc;
   }
 
 #ifdef PDEBUG
@@ -133,9 +96,6 @@ main_T (int argc, char **argv)
     yydebug = 1;
   }
 #endif
-
-  parent_connect = false;
-  primary = true;
 
   /* need this call to setup global gzip table */
   zinit ();
@@ -149,33 +109,26 @@ main_T (int argc, char **argv)
     sigcb (SIGCONT, NULL);
   }
 
-  /* 
-   * set up global pub variables 
-   * arg true = this pubd is an exporter.
-   */
-  ppt = pub_parser_t::alloc (true);
+  ppt = pub3::pub_parser_t::alloc ();
 
   if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
     configfile = v;
-
-  while ((ch = getopt (argc, argv, "2vp:wj:u:g:f:s:x:CH:S:")) != -1)
+ 
+  while ((ch = getopt (argc, argv, "vp:wj:u:g:f:s:x:CH:S:")) != -1) {
     switch (ch) {
-    case '2':
-      version = 2;
-      break;
     case 'p':
-      if (!convertint (optarg, &port))
+      if (!convertint (optarg, &port)) 
 	usage ();
       break;
     case 'C':
-      pub2_cache = false;
+      use_cache = false;
       break;
     case 's':
       if (!convertint (optarg, &ok_axprt_ps))
 	usage ();
       break;
     case 'w':
-      opts |= P_WSS;
+      opts |= pub3::P_WSS;
       break;
     case 'j':
       jaildir = optarg;
@@ -190,7 +143,7 @@ main_T (int argc, char **argv)
       configfile = optarg;
       break;
     case 'v':
-      opts |= P_VERBOSE;
+      opts |= pub3::P_VERBOSE;
       break;
     case 'x':
       if (!convertint (optarg, &fdfd)) {
@@ -207,65 +160,45 @@ main_T (int argc, char **argv)
     default:
       usage ();
     }
-  ppt->set_opts (opts);
+  }
 
   if (!configfile) 
     configfile = okws_etcfile (ok_pub_config);
 
-  if (version == 2) {
-    if (fdfd < 0) {
-      warn << "pubd -2 also needs a -x with a Unix FD\n";
-      exit (1);
-    }
+  if (fdfd < 0) {
+    warn << "pubd needs a -x with a Unix FD\n";
+    exit (1);
   }
   
   /*
    * A parse for parsing config files
    */
-  cfgparse = New refcounted<pub2::local_publisher_t> (ppt, opts);
+  cfgparse = New refcounted<pub3::local_publisher_t> (ppt, opts);
 
   have_cfg = false;
   if (configfile) {
-    twait { cfgparse->run_cfg (configfile, mkevent (have_cfg)); }
+    twait { cfgparse->run_cfg (configfile, mkevent (have_cfg), cfg_d.dict ()); }
   }
+
   if (!have_cfg) 
     warn << "pubd running without default variable bindings\n";
 
-  if (version == 1) {
-    if (!configfile || !ppt->parse_config (configfile))
-      warn << "v1 error: cannot answer CONFIG RPC's\n";
-
-    if (port == ok_pubd_port) {
-      config_var (cfgparse, "PORT", &port);
-    }
-  }
-
-  if (version == 2) {
-    if (pub2_cache) {
-      config_var (cfgparse, "RefreshIntervalMin", &ok_pub2_refresh_min);
-      config_var (cfgparse, "RefreshIntervalMax", &ok_pub2_refresh_max);
-      config_var (cfgparse, "RefreshIntervalIncr", &ok_pub2_refresh_incr);
-      config_var (cfgparse, "NegativeLookupCacheTimeout",
-		  &ok_pub2_neg_cache_timeout);
-      config_var (cfgparse, "CleanCacheInterval", 
-		  &ok_pub2_clean_cache_interval);
-      config_var (cfgparse, "GetfileObjectLifetime", 
-		  &ok_pub2_getfile_object_lifetime);
-      config_var (cfgparse, "TreestatCheckInterval",
-		  &ok_pub2_treestat_interval);
-
-      fl = cache = New pubserv2::cache_t ();
-    } else {
-      fl = New pubserv2::chunkholder_t ();
-    }
+  if (use_cache) {
+    cfg_d ("RefreshIntervalMin").to_int (&ok_pub3_refresh_min);
+    cfg_d ("RefreshIntervalMax").to_int (&ok_pub3_refresh_max);
+    cfg_d ("RefreshIntervalIncr").to_int (&ok_pub3_refresh_incr);
+    cfg_d ("NegativeLookupCacheTimeout").to_int (&ok_pub3_neg_cache_timeout);
+    cfg_d ("CleanCacheInterval").to_int (&ok_pub3_clean_cache_interval);
+    cfg_d ("GetfileObjectLifetime").to_int (&ok_pub3_getfile_object_lifetime);
+    cfg_d ("TreestatCheckInterval").to_int (&ok_pub3_treestat_interval);
     
-  } else if (!pub2_cache) {
-    warn << "Can only use -C with -2!\n";
-    usage ();
+    fl = cache = pub3::srv_cache_t::alloc ();
+  } else {
+    fl = pub3::chunkholder_t::alloc ();
   }
 
   if (!jaildir) {
-    if (!cfgparse->cfg ("JailDir", &jaildir, true)) {
+    if (!cfg_d ("JailDir").to_str (&jaildir)) {
       warn << "Cannot find a jail directory; none was specified with -j\n"
 	   << "  and no 'JailDir' found in config file.\n";
       exit (1);
@@ -281,43 +214,37 @@ main_T (int argc, char **argv)
     exit (1);
   }
 
-  if (!uname) uname = cfgparse->cfg ("RunAsUser", true);
-  if (!gname) gname = cfgparse->cfg ("RunAsGroup", true);
+  if (!uname) uname = cfg_d ("RunAsUser").to_str ();
+  if (!gname) gname = cfg_d ("RunAsGroup").to_str ();
 
+  warn ("OKWS version %s, Pub v3, pid %d\n", 
+	OKWS_PATCHLEVEL_STR, int (getpid ()));
 
-  warn ("OKWS version %s, Pub v%d, pid %d\n", 
-	OKWS_PATCHLEVEL_STR, version, int (getpid ()));
-
-  if (version == 1) {
-    if ((slave_status = pub_slave (wrap (client_accept), port, &slave_status)) 
-	== PSLAVE_ERR) {
-      warn << port << ": port already in use / can't bind to port\n";
-      exit (1);
-    }
-  } else {
-    // Since we're spawned via axprt_unix_dospawnv, that means
-    // that our parent is going to be sending us RPCs on
-    // standard input.
-    ptr<axprt_unix> x (axprt_unix::alloc (0, ok_axprt_ps));
-    vNew pubserv2::primary_srv_t (x, fl, fdfd);
+  // Since we're spawned via axprt_unix_dospawnv, that means
+  // that our parent is going to be sending us RPCs on
+  // standard input.
+  {
+    ptr<axprt_unix> x = axprt_unix::alloc (0, ok_axprt_ps);
+    srv = New refcounted<pub3::primary_srv_t> (x, ppt, opts, fl, fdfd);
   }
-	  
 
   setsid ();
 
   // set the privileges for the regular parse running
-  ppt->setprivs (jaildir, uname, gname);
+  srv->do_chroot (jaildir, uname, gname);
 
   // After we set the jail directory, then we can start messing around
   // with sentinel files.
   if (cache) {
     
-    if (!tss && !cfgparse->cfg ("TreeStatSentinel",  &tss, true))
-      tss = ppt->jail2real (ok_pub2_treestat_sentinel);
-    if (!tsh && !cfgparse->cfg ("TreeStatHeartbeat", &tsh, true))
-      tsh = ppt->jail2real (ok_pub2_treestat_heartbeat);
+    if (!tss && !cfg_d("TreeStatSentinel").to_str (&tss)) {
+      tss = srv->jail2real (ok_pub3_treestat_sentinel);
+    }
+    if (!tsh && !cfg_d("TreeStatHeartbeat").to_str (&tsh)) {
+      tsh = srv->jail2real (ok_pub3_treestat_heartbeat);
+    }
     
-    OKDBG4(PUB2_CACHE, CHATTER, 
+    OKDBG4(PUB3_CACHE, CHATTER, 
 	   "treestat sentinel file: %s\n"
 	   "treestat heartbeat file: %s\n",
 	   tss.cstr (), tsh.cstr ());
@@ -327,10 +254,13 @@ main_T (int argc, char **argv)
 
   cfgparse = NULL;
   set_signals ();
-  if (version == 1 && slave_status == PSLAVE_SLAVE)
-    delaycb (ok_connect_wait, 0, wrap (pubd_slave_cb));
+
+  twait { srv->run (mkevent (rc)); }
+  exit (rc);
+  
 }
 
+//-----------------------------------------------------------------------
 
 int
 main (int argc, char *argv[])
@@ -340,3 +270,4 @@ main (int argc, char *argv[])
   amain ();
 }
 
+//-----------------------------------------------------------------------

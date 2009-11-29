@@ -22,89 +22,64 @@
  *
  */
 
-#ifndef _PUB_PUBD2_H
-#define _PUB_PUBD2_H
+#pragma once
 
 #include "arpc.h"
 #include "pub.h"
-#include "xpub.h"
 #include "okclone.h"
 #include "timehash.h"
-#include "xpub.h"
-#include "pub2.h"
+#include "pub3.h"
 
-namespace pubserv2 {
-  struct cache_key_t {
+//=======================================================================
 
-    cache_key_t (phashp_t h, u_int o) : 
-      _filehash (h), _opts (op_mask (o)), _hshkey (hash_me ()) {}
-
-    cache_key_t (ptr<const bound_pfile2_t> f) :
-      _filehash (f->hash ()), _opts (op_mask (f->opts ())), 
-      _hshkey (hash_me ()) {}
-
-    hash_t hash_me () const;
-    
-    static u_int op_mask (u_int in) { return in & ( P_WSS | P_NOPARSE); }
-    operator hash_t () const { return _hshkey; }
-    bool operator== (const cache_key_t &k) const 
-    { return _opts == k._opts && *_filehash == *k._filehash; }
-    
-    phashp_t _filehash;
-    u_int _opts;
-    hash_t _hshkey;
-  };
-
-  struct cached_getfile_t {
-    cached_getfile_t (ptr<bound_pfile2_t> f)
-      : _key (f), _file (f) {}
-    cache_key_t _key;
-    ptr<bound_pfile2_t> _file;
-  };
+namespace pub3 {
 
   struct cached_badfile_t {
-    cached_badfile_t (const cache_key_t &k, pubstat_t s, const str &m)
+    cached_badfile_t (const cache_key_t &k, parse_status_t s, const str &m)
       : _key (k), _stat (s), _msg (m) {}
     cache_key_t _key;
-    pubstat_t _stat;
+    parse_status_t _stat;
     str _msg;
   };
+
 };
 
-template<> struct keyfn<pubserv2::cached_getfile_t, pubserv2::cache_key_t> {
+//=======================================================================
+
+template<> struct keyfn<pub3::cached_badfile_t, pub3::cache_key_t> {
   keyfn () {}
-  const pubserv2::cache_key_t &operator() (const pubserv2::cached_getfile_t *o)
+  const pub3::cache_key_t &operator() (const pub3::cached_badfile_t *o)
     const { return o->_key; }
 };
 
-template<> struct keyfn<pubserv2::cached_badfile_t, pubserv2::cache_key_t> {
-  keyfn () {}
-  const pubserv2::cache_key_t &operator() (const pubserv2::cached_badfile_t *o)
-    const { return o->_key; }
-};
+//=======================================================================
 
-
-namespace pubserv2 {
+namespace pub3 {
 
   class srv_t;
 
-  class file_lookup_t : public pub2::file_lookup_t {
+  //-----------------------------------------------------------------------
+
+  class srv_file_lookup_t : public file_lookup_t {
   public:
-    virtual ~file_lookup_t () {}
+    virtual ~srv_file_lookup_t () {}
     virtual bool do_pushes () const { return false; }
     virtual void register_client (srv_t *c) {}
     virtual void unregister_client (srv_t *c) {}
   };
   
-  class srv_t : public pub2::local_publisher_t {
+  //-----------------------------------------------------------------------
+
+  class srv_t : public pub3::local_publisher_t {
   public:
-    srv_t (ptr<axprt_stream> x, file_lookup_t *l);
+    srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, opts_t o, 
+	   ptr<srv_file_lookup_t> l);
     virtual ~srv_t ();
     void dispatch (svccb *sbp);
     void getfile (svccb *sbp, CLOSURE) ;
     void config (svccb *sbp) {}
     void get_fstats (svccb *sbp) {}
-    void push_deltas (ptr<xpub2_delta_set_t> s, cbb cb, CLOSURE);
+    void push_deltas (ptr<xpub3_delta_set_t> s, evb_t cb, CLOSURE);
     void getchunk (svccb *sbp);
 
     virtual void handle_clonefd (svccb *sbp);
@@ -120,15 +95,21 @@ namespace pubserv2 {
     bool _push_deltas;
     bool _registered;
     bool _push_deltas_lock;
-    file_lookup_t *_file_lookup;
+    ptr<srv_file_lookup_t> _file_lookup;
   };
 
-  class primary_srv_t : public clone_server_t, public srv_t {
+  //-----------------------------------------------------------------------
+
+  class primary_srv_t : public srv_t, public clone_server_t {
   public:
-    primary_srv_t (ptr<axprt_stream> x, file_lookup_t *l, int fdfd);
+    primary_srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, opts_t o, 
+		   ptr<srv_file_lookup_t> l, int fdfd);
     void register_newclient (ptr<axprt_stream> x);
     void handle_clonefd (svccb *cbp);
     void handle_eof ();
+    void do_chroot (str d, str uname, str gname);
+    void run (evi_t ev, CLOSURE);
+    str jail2real (str d) const;
   };
   
   //-----------------------------------------------------------------------
@@ -137,19 +118,14 @@ namespace pubserv2 {
   
   class cached_lookup_obj_t {
   public:
-    cached_lookup_obj_t (pfnm_t j, pfnm_t r, phashp_t h, time_t m, off_t sz)
+    cached_lookup_obj_t (str j, str r, ptr<fhash_t> h, time_t m, off_t sz)
       : _jfn (j), _rfn (r), _hsh (h), _ctime (m), _size (sz) {}
     
-    void to_xdr (xpub2_fstat_t *x)
-    {
-      x->fn = _jfn;
-      x->ctime = _ctime;
-      _hsh->to_xdr (&x->hash);
-    }
+    void to_xdr (xpub3_fstat_t *x);
     time_t ctime () const { return _ctime; }
-    phashp_t hash () const { return _hsh; }
-    const pfnm_t &real_fn () const { return _rfn; }
-    const pfnm_t &jailed_fn () const { return _jfn; }
+    ptr<fhash_t> hash () const { return _hsh; }
+    const str &real_fn () const { return _rfn; }
+    const str &jailed_fn () const { return _jfn; }
     off_t size () const { return _size; }
     
     // hack around files modified twice in the same minute
@@ -158,38 +134,46 @@ namespace pubserv2 {
   private:
     str _jfn;  // jailed filed name
     str _rfn;  // real file name
-    phashp_t _hsh;
+    ptr<fhash_t> _hsh;
     time_t _ctime;
     off_t _size;
   };
 };
 
+//=======================================================================
   
-template<> struct keyfn<pubserv2::cached_lookup_obj_t, str> {
+template<> struct keyfn<pub3::cached_lookup_obj_t, str> {
   keyfn () {}
-  const str &operator() (const pubserv2::cached_lookup_obj_t *o) const 
+  const str &operator() (const pub3::cached_lookup_obj_t *o) const 
   { return o->jailed_fn (); }
 };
   
-namespace pubserv2 {
+//=======================================================================
+
+namespace pub3 {
   class jailed_file_t {
   public:
-    jailed_file_t (pfnm_t j, pfnm_t r) : _jfn (j), _rfn (r) {}
-    const pfnm_t &real_fn () const { return _rfn; }
-    const pfnm_t &jailed_fn () const { return _jfn;}
+    jailed_file_t (str j, str r) : _jfn (j), _rfn (r) {}
+    const str &real_fn () const { return _rfn; }
+    const str &jailed_fn () const { return _jfn;}
   private:
     str _jfn, _rfn;
   };
 };
   
-template<> struct keyfn<pubserv2::jailed_file_t, str> {
+//=======================================================================
+
+template<> struct keyfn<pub3::jailed_file_t, str> {
   keyfn () {}
-  const str &operator() (const pubserv2::jailed_file_t *j) const
+  const str &operator() (const pub3::jailed_file_t *j) const
   { return j->jailed_fn (); }
 };
 
+//=======================================================================
 
-namespace pubserv2 {
+namespace pub3 {
+
+  //-----------------------------------------------------------------------
 
   typedef enum { STAMP_NOCHANGE = 0, 
 		 STAMP_TIMEOUT = 1, 
@@ -198,6 +182,8 @@ namespace pubserv2 {
 		 STAMP_CHANGED = 4,
 		 STAMP_DISABLED = 5,
 		 STAMP_UNINIT = 6 } stamp_status_t;
+
+  //-----------------------------------------------------------------------
 
   class stampfile_t {
   public:
@@ -224,39 +210,48 @@ namespace pubserv2 {
     time_t _last_change_local;    // local time of the last change
   };
 
-  class chunkholder_t: public file_lookup_t {
-  public:
-    chunkholder_t () :  file_lookup_t (),
-      _chunk_cache (ok_pub2_chunk_lease_time, true) {}
+  //-----------------------------------------------------------------------
 
-    int hold_chunks (ptr<bound_pfile2_t> p);
-    ptr<bound_pfile2_t> get_chunks (phashp_t h, u_int opts);
+  class chunkholder_t: public srv_file_lookup_t {
+  public:
+    chunkholder_t () :  
+      srv_file_lookup_t (),
+      _chunk_cache (ok_pub3_chunk_lease_time, true) {}
+
+    int hold_chunks (ptr<file_t> p);
+    ptr<file_t> get_chunks (ptr<fhash_t> h, u_int opts);
+    static ptr<chunkholder_t> alloc ();
   private:
     timehash_t<cache_key_t, cached_getfile_t> _chunk_cache;
 
   };
   
-  class cache_t : public file_lookup_t {
+  //-----------------------------------------------------------------------
+
+  class srv_cache_t : public srv_file_lookup_t {
   public:
-    cache_t () : file_lookup_t (), 
-		 _getfile_cache (ok_pub2_getfile_object_lifetime, true),
-		 _badfile_cache (ok_pub2_getfile_object_lifetime, true),
-		 _last_update (0), _delta_id (0) {}
+    srv_cache_t () : 
+      srv_file_lookup_t (), 
+      _getfile_cache (ok_pub3_getfile_object_lifetime, true),
+      _badfile_cache (ok_pub3_getfile_object_lifetime, true),
+      _last_update (0), 
+      _delta_id (0) {}
     
-    virtual ~cache_t () { if (_timer) *_timer = false; }
+    virtual ~srv_cache_t () { if (_timer) *_timer = false; }
     
     bool do_pushes () const { return true; }
     
-    bool lookup (pfnm_t nm, phashp_t *hsh, time_t *ctime) ;
-    void cache_lookup (pfnm_t j, pfnm_t r, phashp_t hsh, time_t ctime,
+    bool lookup (str nm, ptr<fhash_t> *hsh, time_t *ctime) ;
+    void cache_lookup (str j, str r, ptr<fhash_t> hsh, time_t ctime,
 		       off_t sz) ;
-    bool getfile (phashp_t h, u_int opts, ptr<bound_pfile2_t> *f, pubstat_t *s,
-		  str *em);
-    void cache_getfile (phashp_t h, u_int opts, ptr<bound_pfile2_t> f, 
-			pubstat_t s, str em);
+    bool getfile (ptr<fhash_t> h, opts_t opts, ptr<file_t> *f, 
+		  parse_status_t *s, str *em);
+    void cache_getfile (ptr<fhash_t> h, opts_t opts, ptr<file_t> f, 
+			parse_status_t s, str em);
+    static ptr<srv_cache_t> alloc ();
 
-    int hold_chunks (ptr<bound_pfile2_t> p) ;
-    ptr<bound_pfile2_t> get_chunks (phashp_t h, u_int opts);
+    int hold_chunks (ptr<file_t> p) ;
+    ptr<file_t> get_chunks (ptr<fhash_t> h, u_int opts);
 
     void set_ts_files (const str &s, const str &h)
     {
@@ -270,11 +265,11 @@ namespace pubserv2 {
     
     void register_client (srv_t *c) { _list.insert_head (c); }
     void unregister_client (srv_t *c) { _list.remove (c); }
-    void add_delta (pfnm_t nm) { _delta_set.insert (nm); }
+    void add_delta (str nm) { _delta_set.insert (nm); }
 
   protected:
-    virtual void refresh_delta_set (cbb cb, CLOSURE);
-    virtual void push_deltas (ptr<xpub2_delta_set_t> s, cbb cb, CLOSURE);
+    virtual void refresh_delta_set (evb_t ev, CLOSURE);
+    virtual void push_deltas (ptr<xpub3_delta_set_t> s, evb_t cb, CLOSURE);
     void trav_key (str k);
     void trav_nkey (str k);
     
@@ -316,11 +311,8 @@ namespace pubserv2 {
 
     // for treestat, stampfiles for sentinel and for heartbeat.
     stampfile_t _tss, _tsh;
-
   };
 };
 
 //
 //-----------------------------------------------------------------------
-
-#endif /* _PUB_PUBD2_H */

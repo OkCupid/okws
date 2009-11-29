@@ -290,21 +290,21 @@ extern u_int ok_recycle_suio_limit ;
 //
 // pub2 constants
 //
-extern int ok_pub2_wss;
-extern int ok_pub2_refresh_min;
-extern int ok_pub2_refresh_max;
-extern int ok_pub2_refresh_incr;
-extern int ok_pub2_caching;
-extern int ok_pub2_viserr;
+extern int ok_pub3_wss;
+extern int ok_pub3_refresh_min;
+extern int ok_pub3_refresh_max;
+extern int ok_pub3_refresh_incr;
+extern int ok_pub3_caching;
+extern int ok_pub3_viserr;
 extern int ok_pub3_neg_cache_timeout;
-extern int ok_pub2_clean_cache_interval;
+extern int ok_pub3_clean_cache_interval;
 extern int ok_pub3_svc_neg_cache_timeout;
-extern int ok_pub2_getfile_object_lifetime;
-extern int ok_pub2_chunk_lease_time;
-extern int ok_pub2_treestat_interval;
+extern int ok_pub3_getfile_object_lifetime;
+extern int ok_pub3_chunk_lease_time;
+extern int ok_pub3_treestat_interval;
 extern size_t ok_pub3_max_datasz;
-extern const char *ok_pub2_treestat_sentinel;
-extern const char *ok_pub2_treestat_heartbeat;
+extern const char *ok_pub3_treestat_sentinel;
+extern const char *ok_pub3_treestat_heartbeat;
 extern size_t ok_pub_max_stack;
 extern size_t ok_pub3_chunk_window_size;
 

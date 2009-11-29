@@ -7,4 +7,8 @@
 #include "pub3obj.h"
 #include "pub3func.h"
 #include "pub3ast.h"
+#include "pub3prot.h"
+#include "pub3file.h"
+#include "pub3cache.h"
+#include "pub3hilev.h"
 

@@ -647,7 +647,6 @@ struct xpub3_delta_set_t {
    xpub_fn_t files<>;
 };
 
-
 union xpub3_get_fstats_res_t switch (xpub_status_typ_t status) {
 case XPUB_STATUS_OK:
   xpub3_fstat_set_t stats;

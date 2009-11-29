@@ -259,15 +259,15 @@ const char *ok_wheel = "wheel";
 //
 // pub2 constants
 //
-int ok_pub2_wss = 0;
-int ok_pub2_refresh_max = 60;    // maximum time to wait between refreshes
-int ok_pub2_refresh_min = 5;     // minimum time to wait
-int ok_pub2_refresh_incr = 2;    // value to increment by if inactivity
-int ok_pub2_caching = 1;         // turn caching on by default
-int ok_pub2_viserr = 1;          // pub errors visible by default
+int ok_pub3_wss = 0;
+int ok_pub3_refresh_max = 60;    // maximum time to wait between refreshes
+int ok_pub3_refresh_min = 5;     // minimum time to wait
+int ok_pub3_refresh_incr = 2;    // value to increment by if inactivity
+int ok_pub3_caching = 1;         // turn caching on by default
+int ok_pub3_viserr = 1;          // pub errors visible by default
 
 // check treestat sentinel every two seconds
-int ok_pub2_treestat_interval = 2;   
+int ok_pub3_treestat_interval = 2;   
 
 // In evaluating lambdas, how deep we're permitted to go.
 size_t ok_pub_max_stack = 256;
@@ -277,13 +277,13 @@ int ok_pub3_neg_cache_timeout = 360;
 int ok_pub3_svc_neg_cache_timeout = 5;
 
 // clean the cache out every 10 seconds
-int ok_pub2_clean_cache_interval = 10;
+int ok_pub3_clean_cache_interval = 10;
 
 // how long a getfile object lives in the cache (1 hour)
-int ok_pub2_getfile_object_lifetime = 3600;
+int ok_pub3_getfile_object_lifetime = 3600;
 
 // amount of time a client has to gather all chunks (2 minutes)
-int ok_pub2_chunk_lease_time = 120;
+int ok_pub3_chunk_lease_time = 120;
 
 // largest possible file/chunk size (should be less than ok_axprt_ps)
 size_t ok_pub3_max_datasz = 0x1000;
@@ -294,8 +294,8 @@ size_t ok_pub3_chunk_window_size = 5;
 // yy buffer to use when parsing pub files
 size_t ok_pub3_yy_buffer_size = 0x100000;
 
-const char *ok_pub2_treestat_sentinel = ".treestat_sentinel";
-const char *ok_pub2_treestat_heartbeat = ".treestat_heartbeat";
+const char *ok_pub3_treestat_sentinel = ".treestat_sentinel";
+const char *ok_pub3_treestat_heartbeat = ".treestat_heartbeat";
 
 //
 // pub3 constants

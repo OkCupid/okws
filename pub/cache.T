@@ -6,9 +6,12 @@
 #include "okdbg.h"
 #include "parseopt.h"
 
-namespace pubserv2 {
+namespace pub3 {
+
+  //-----------------------------------------------------------------------
+
   bool
-  cache_t::lookup (pfnm_t nm, phashp_t *hsh, time_t *ctime)
+  srv_cache_t::lookup (str nm, ptr<fhash_t> *hsh, time_t *ctime)
   {
     cached_lookup_obj_t *o;
     if ((o = _lookup_cache[nm])) {
@@ -23,9 +26,11 @@ namespace pubserv2 {
     }
   }
   
+  //-----------------------------------------------------------------------
+
   void
-  cache_t::cache_lookup (pfnm_t jfn, pfnm_t rfn, 
-			 phashp_t hsh, time_t ctime, off_t sz)
+  srv_cache_t::cache_lookup (str jfn, str rfn, 
+			 ptr<fhash_t>_t hsh, time_t ctime, off_t sz)
   {
     cached_lookup_obj_t *op = _lookup_cache[jfn];
     if (hsh) {
@@ -51,16 +56,20 @@ namespace pubserv2 {
     }
   }
   
+  //-----------------------------------------------------------------------
+
   void
-  cache_t::expire_old_entries (time_t timeout)
+  srv_cache_t::expire_old_entries (time_t timeout)
   {
     time_t l = okwstime () - timeout;
     _noent_cache.expire (l);
     _lookup_cache.expire (l);
   }
   
+  //-----------------------------------------------------------------------
+
   void
-  cache_t::trav_key (str k)
+  srv_cache_t::trav_key (str k)
   {
     struct stat sb;
     cached_lookup_obj_t *o = _lookup_cache[k];
@@ -89,7 +98,7 @@ namespace pubserv2 {
       // hack around this by bumping the ctime artificially up on the
       // cached version of the file.
       else if (o->ctime () == sb.st_ctime && okwstime () > sb.st_ctime) {
-	phashp_t h = file2hash (rfn);
+	ptr<fhash_t>_t h = file2hash (rfn);
 	if (!h || *h != *o->hash ()) {
 	  dirty = true;
 	  
@@ -113,9 +122,11 @@ namespace pubserv2 {
       } 
     }  
   }
+
+  //-----------------------------------------------------------------------
   
   void
-  cache_t::trav_nkey (str k)
+  srv_cache_t::trav_nkey (str k)
   {
     struct stat sb;
     jailed_file_t *o = _noent_cache[k];
@@ -138,12 +149,17 @@ namespace pubserv2 {
     */
   }
   
+  //-----------------------------------------------------------------------
+  
   static void fill_delta_set (ptr<xpub2_delta_set_t> d, const str &s)
   {
     d->files.push_back (s);
   }
   
-  tamed void cache_t::refresh_delta_set (cbb cb)
+  //-----------------------------------------------------------------------
+  
+  tamed void 
+  srv_cache_t::refresh_delta_set (evb_t ev)
   {
     tvars { 
       bool edit (false);
@@ -153,8 +169,8 @@ namespace pubserv2 {
     
     OKDBG3 (PUB2_CACHE, CHATTER, "Timer fired; calling refresh_delta_set()");
     
-    _lookup_cache.traverse_keys (wrap (this, &cache_t::trav_key));
-    _noent_cache.traverse_keys (wrap (this, &cache_t::trav_nkey));
+    _lookup_cache.traverse_keys (wrap (this, &srv_cache_t::trav_key));
+    _noent_cache.traverse_keys (wrap (this, &srv_cache_t::trav_nkey));
     
     if (_delta_set.size ()) {
       s = New refcounted<xpub2_delta_set_t> ();
@@ -167,12 +183,15 @@ namespace pubserv2 {
       edit = true;
     }
     
-    TRIGGER (cb, edit);
+    ev->trigger (edit);
     if (edit)
       twait { push_deltas (s, mkevent (dummy)); }
   }
+
+  //-----------------------------------------------------------------------
   
-  tamed void srv_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
+  tamed void 
+  srv_t::push_deltas (ptr<xpub2_delta_set_t> s, evb_t ev)
   {
     tvars {
       clnt_stat err;
@@ -195,11 +214,13 @@ namespace pubserv2 {
 	okdbg_warn (ERROR, "Service unexepectedly rejected stats push!\n");
       }
     }
-    TRIGGER (cb, rc);
+    ev->trigger (rc);
   }
+
+  //-----------------------------------------------------------------------
   
   tamed void 
-  cache_t::push_deltas (ptr<xpub2_delta_set_t> s, cbb cb)
+  srv_cache_t::push_deltas (ptr<xpub2_delta_set_t> s, evb_t ev)
   {
     tvars { 
       rendezvous_t<ptr<bool> > rv (__FL__);
@@ -208,15 +229,17 @@ namespace pubserv2 {
     }
     for (srv_t *e = _list.first; e; e = _list.next (e)) {
       b = New refcounted<bool> ();
-      e->push_deltas (s, mkevent (rv,b, *b));
+      e->push_deltas (s, mkevent (rv, b, *b));
     }
     while (rv.need_wait ()) {
       twait (rv, b); 
       if (!*b) 
 	rc = false; 
     }
-    TRIGGER (cb, rc);
+    ev->trigger (rc);
   }
+
+  //------------------------------------------------------------------------
 
   stamp_status_t
   stampfile_t::stat (int timeout)
@@ -248,6 +271,8 @@ namespace pubserv2 {
     return ret;
   }
   
+  //------------------------------------------------------------------------
+
   //
   // check the sentinel file and the heartbeat message.  if the sentinel
   // file has changed since the last run, then we need to update our
@@ -260,7 +285,7 @@ namespace pubserv2 {
   //  a stamp_status_t explaining what happened.
   // 
   stamp_status_t
-  cache_t::check_sentinel (int timeout)
+  srv_cache_t::check_sentinel (int timeout)
   {
     stamp_status_t hbt = _tsh.stat (timeout);
     if (!(hbt == STAMP_CHANGED || hbt == STAMP_NOCHANGE)) {
@@ -276,6 +301,8 @@ namespace pubserv2 {
     return _tss.stat ();
   }
 
+  //------------------------------------------------------------------------
+
   /**
    * @brief loop for running the refresh timer for refreshing the cache.
    * @param n the minimum allowable freshness
@@ -284,7 +311,7 @@ namespace pubserv2 {
    * @param t if > 0, t gives the interval for checking the tree heartbeats
    */
   tamed void
-  cache_t::run_refresh_timer (ptr<bool> *out, 
+  srv_cache_t::run_refresh_timer (ptr<bool> *out, 
 			      u_int n, u_int x, u_int i, u_int t)
   {
     tvars {
@@ -347,14 +374,16 @@ namespace pubserv2 {
     }
   }
 
+  //------------------------------------------------------------------------
+
   void
-  cache_t::start_timer (u_int n, u_int x, u_int i, u_int c, u_int t)
+  srv_cache_t::start_timer (u_int n, u_int x, u_int i, u_int c, u_int t)
   {
-    if (!n) n = ok_pub2_refresh_min;
-    if (!x) x = ok_pub2_refresh_max;
-    if (!i) i = ok_pub2_refresh_incr;
-    if (!c) c = ok_pub2_neg_cache_timeout;
-    if (!t) t = ok_pub2_treestat_interval;
+    if (!n) n = ok_pub3_refresh_min;
+    if (!x) x = ok_pub3_refresh_max;
+    if (!i) i = ok_pub3_refresh_incr;
+    if (!c) c = ok_pub3_neg_cache_timeout;
+    if (!t) t = ok_pub3_treestat_interval;
 
     if (t > n) {
       okdbg_warn (ERROR,
@@ -371,11 +400,12 @@ namespace pubserv2 {
     _noent_cache.set_timeout (c);
   }
   
+  //------------------------------------------------------------------------
   
   bool 
-  cache_t::getfile (phashp_t h, u_int opts,
-		    ptr<bound_pfile2_t> *f, pubstat_t *s,
-		    str *em)
+  srv_cache_t::getfile (ptr<fhash_t>_t h, opts_t opts,
+			ptr<file_t> *f, parse_status_t *s,
+			str *em)
   {
     bool ret (false);
     cache_key_t k (h, opts);
@@ -394,10 +424,12 @@ namespace pubserv2 {
     return ret;
   }
 
+  //-----------------------------------------------------------------------
+
   void 
-  cache_t::cache_getfile (phashp_t h, u_int opts,
-			  ptr<bound_pfile2_t> f, pubstat_t s,
-			  str em) 
+  srv_cache_t::cache_getfile (ptr<fhash_t>_t h, opts_t opts,
+			      ptr<file_t> f, parse_status_t s,
+			      str em) 
   {
     cache_key_t k (h, opts);
     if (f) {
@@ -411,6 +443,8 @@ namespace pubserv2 {
     }
   }
   
+  //-----------------------------------------------------------------------
+
   hash_t 
   cache_key_t::hash_me () const
   {
@@ -424,34 +458,53 @@ namespace pubserv2 {
     return hash_bytes (reinterpret_cast<const void *> (&tmp), sizeof (tmp));
   }
 
+  //-----------------------------------------------------------------------
+
   int
-  cache_t::hold_chunks (ptr<bound_pfile2_t> f) 
+  srv_cache_t::hold_chunks (ptr<file_t> f) 
   {
     return _getfile_cache.timeout ();
   }
   
-  ptr<bound_pfile2_t>
-  cache_t::get_chunks (phashp_t h, u_int opts)
+  //-----------------------------------------------------------------------
+
+  ptr<file_t>
+  srv_cache_t::get_chunks (ptr<fhash_t>_t h, u_int opts)
   {
-    ptr<bound_pfile2_t> ret;
+    ptr<file_t> ret;
     getfile (h, opts, &ret, NULL, NULL);
     return ret;
   }
 
+  //-----------------------------------------------------------------------
 
   int
-  chunkholder_t::hold_chunks (ptr<bound_pfile2_t> f)
+  chunkholder_t::hold_chunks (ptr<file_t> f)
   {
     _chunk_cache.insert (cached_getfile_t (f));
     return _chunk_cache.timeout ();
   }
 
-  ptr<bound_pfile2_t> 
-  chunkholder_t::get_chunks (phashp_t h, u_int opts)
+  //-----------------------------------------------------------------------
+
+  ptr<file_t> 
+  chunkholder_t::get_chunks (ptr<fhash_t>_t h, u_int opts)
   {
     cache_key_t k (h, opts);
     cached_getfile_t *cfg = _chunk_cache[k];
     return cfg ? cfg->_file : NULL;
   }
+
+  //-----------------------------------------------------------------------
+
+  void 
+  cached_lookup_obj_t::to_xdr (xpub3_fstat_t *x);
+  {
+    x->fn = _jfn;
+    x->ctime = _ctime;
+    _hsh->to_xdr (&x->hash);
+  }
+
+  //-----------------------------------------------------------------------
 
 };

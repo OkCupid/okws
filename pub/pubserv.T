@@ -21,26 +21,30 @@
  * USA
  *
  */
-#include "pubd2.h"
 #include "pubd.h"
-#include "puberr.h"
 
-namespace pubserv2 {
+namespace pub3 {
 
-  primary_srv_t::primary_srv_t (ptr<axprt_stream> x, file_lookup_t *fl,
-				int fdfd)
-    : clone_server_t (fdfd), srv_t (x, fl)
+  //-----------------------------------------------------------------------
+
+  primary_srv_t::primary_srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, 
+				opts_t o, ptr<srv_file_lookup_t> fl, int fdfd)
+    : srv_t (x, pp, o, fl), 
+      clone_server_t (fdfd)
   {
     if (!clone_server_t::setup ()) {
       warn << "no socket setup for file descriptor passing!\n";
     }
   }
 
-  srv_t::srv_t (ptr<axprt_stream> x, file_lookup_t *fl)
-    : local_publisher_t (parser, 0, fl),
+  //-----------------------------------------------------------------------
+
+  srv_t::srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, opts_t o,
+		ptr<srv_file_lookup_t> fl)
+    : local_publisher_t (pp, o, fl),
       _x (x), 
-      _cli (aclnt::alloc (_x, pub_program_2)),
-      _srv (asrv_delayed_eof::alloc (_x, pub_program_2, 
+      _cli (aclnt::alloc (_x, pub_prog_3)),
+      _srv (asrv_delayed_eof::alloc (_x, pub_prog_3, 
 				     wrap (this, &srv_t::dispatch))),
       _last_update (0),
       _push_deltas (false),
@@ -50,8 +54,12 @@ namespace pubserv2 {
   {
     _file_lookup->register_client (this);
   }
+ 
+  //-----------------------------------------------------------------------
 
   void srv_t::handle_eof () { delete this; }
+
+  //-----------------------------------------------------------------------
 
   void primary_srv_t::handle_eof ()
   {
@@ -60,10 +68,14 @@ namespace pubserv2 {
     exit (0);
   }
 
+  //-----------------------------------------------------------------------
+
   void srv_t::handle_clonefd (svccb *sbp)
   {
     sbp->reject (PROC_UNAVAIL);
   }
+
+  //-----------------------------------------------------------------------
 
   void primary_srv_t::handle_clonefd (svccb *sbp)
   {
@@ -71,6 +83,8 @@ namespace pubserv2 {
     clonefd (sbp);
   }
   
+  //-----------------------------------------------------------------------
+
   void
   srv_t::dispatch (svccb *sbp)
   {
@@ -81,22 +95,22 @@ namespace pubserv2 {
 
     u_int p = sbp->proc ();
     switch (p) {
-    case PUB_NULL:
+    case PUB3_NULL:
       sbp->reply (NULL);
       break;
-    case PUB2_GET_ROOT_CONFIG:
+    case PUB3_GET_ROOT_CONFIG:
       config (sbp);
       break;
-    case PUB2_GETFILE:
+    case PUB3_GETFILE:
       getfile (sbp);
       break;
-    case PUB2_GET_FSTATS:
+    case PUB3_GET_FSTATS:
       get_fstats (sbp);
       break;
-    case PUB2_CLONE:
+    case PUB3_CLONE:
       handle_clonefd (sbp);
       break;
-    case PUB2_GET_PUSHES:
+    case PUB3_GET_PUSHES:
       { 
 	bool f = _file_lookup->do_pushes ();
 	if (f)
@@ -104,10 +118,10 @@ namespace pubserv2 {
 	sbp->replyref (f);
       }
       break;
-    case PUB2_GETCHUNK:
+    case PUB3_GETCHUNK:
       getchunk (sbp);
       break;
-    case PUB2_PUSH_DELTAS:
+    case PUB3_PUSH_DELTAS:
       // Another Pub server (that local on the NFS server) might
       // be pushing deltas to US, which we should, turn around
       // and send to our clients.
@@ -120,15 +134,17 @@ namespace pubserv2 {
     return;
   }
 
+  //-----------------------------------------------------------------------
+
   void
   srv_t::getchunk (svccb *sbp)
   {
-    RPC::pub_program_2::pub2_getchunk_srv_t<svccb> srv (sbp);
+    rpc::pub_prog_3::pub3_getchunk_srv_t<svccb> srv (sbp);
 
-    xpub2_getchunk_arg_t *arg = srv.getarg ();
-    xpub2_getchunk_res_t res;
-    phashp_t h = phash_t::alloc (arg->hash);
-    ptr<bound_pfile2_t> f = _lookup->get_chunks (h, arg->opts);
+    xpub3_getchunk_arg_t *arg = srv.getarg ();
+    xpub3_getchunk_res_t res;
+    ptr<fhash_t> h = fhash_t::alloc (arg->hash);
+    ptr<file_t> f = _lookup->get_chunks (h, arg->opts);
     if (!f) {
       res.set_status (XPUB_STATUS_NOENT);
     } else {
@@ -146,22 +162,24 @@ namespace pubserv2 {
     srv.reply (res);
   }
   
+  //-----------------------------------------------------------------------
+
   tamed void
   srv_t::getfile (svccb *sbp)
   {
     tvars {
-      RPC::pub_program_2::pub2_getfile_srv_t<svccb> srv (sbp);
-      xpub2_getfile_arg_t *arg (srv.getarg ());
-      ptr<bound_pfile2_t> f;
+      rpc::pub_prog_3::pub3_getfile_srv_t<svccb> srv (sbp);
+      xpub3_getfile_arg_t *arg (srv.getarg ());
+      ptr<file_t> f;
       xpub_status_t s;
-      xpub2_getfile_res_t res (XPUB_STATUS_OK);
+      xpub3_getfile_res_t res (XPUB_STATUS_OK);
       u_int o;
       ssize_t sz;
     }
     o = arg->options;
 
     twait { 
-      pub2::local_publisher_t::getfile (arg->filename, mkevent (s,f), 
+      pub3::local_publisher_t::getfile (arg->filename, mkevent (s,f), 
 					arg->fresh, o); 
     }
 
@@ -192,17 +210,23 @@ namespace pubserv2 {
     srv.reply (res);
   }
 
+  //-----------------------------------------------------------------------
+
   void
   primary_srv_t::register_newclient (ptr<axprt_stream> x)
   {
     vNew srv_t (x, _file_lookup);
   }
   
+  //-----------------------------------------------------------------------
+
   srv_t::~srv_t ()
   {
     if (_registered) {
       _file_lookup->unregister_client (this);
     }
   }
+
+  //-----------------------------------------------------------------------
 
 };

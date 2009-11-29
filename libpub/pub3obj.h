@@ -116,6 +116,7 @@ namespace pub3 {
     bool isnull () const { return !_c_obj; }
 
     bool to_int (int64_t *i) const;
+    bool to_int (int *i) const;
     bool to_uint (u_int64_t *u) const;
     bool to_str (str *s) const;
     bool to_bool (bool *b) const;
@@ -187,16 +188,6 @@ namespace pub3 {
     ptr<const expr_t> expr () const;
     ptr<expr_t> obj ();
     void clear ();
-
-    bool to_int (int64_t *i) const;
-    bool to_uint (u_int64_t *u) const;
-    bool to_str (str *s) const;
-    bool to_bool (bool *b) const;
-
-    str to_str () const;
-    bool to_bool () const;
-    int64_t to_int () const;
-    u_int64_t to_uint () const;
 
     bool append (obj_t in);
     
