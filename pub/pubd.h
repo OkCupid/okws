@@ -29,6 +29,7 @@
 #include "okclone.h"
 #include "timehash.h"
 #include "pub3.h"
+#include "list.h"
 
 //=======================================================================
 
@@ -56,7 +57,7 @@ template<> struct keyfn<pub3::cached_badfile_t, pub3::cache_key_t> {
 
 namespace pub3 {
 
-  class srv_t;
+  class slave_srv_t;
 
   //-----------------------------------------------------------------------
 
@@ -64,28 +65,32 @@ namespace pub3 {
   public:
     virtual ~srv_file_lookup_t () {}
     virtual bool do_pushes () const { return false; }
-    virtual void register_client (srv_t *c) {}
-    virtual void unregister_client (srv_t *c) {}
+    virtual void register_client (slave_srv_t *c) {}
+    virtual void unregister_client (slave_srv_t *c) {}
   };
   
   //-----------------------------------------------------------------------
 
-  class srv_t : public pub3::local_publisher_t {
+  class master_srv_t;
+
+  //-----------------------------------------------------------------------
+
+  class slave_srv_t {
   public:
-    srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, opts_t o, 
-	   ptr<srv_file_lookup_t> l);
-    virtual ~srv_t ();
+    slave_srv_t (ptr<axprt_stream> x, master_srv_t *m, bool do_srv);
+    slave_srv_t ();
     void dispatch (svccb *sbp);
     void getfile (svccb *sbp, CLOSURE) ;
     void config (svccb *sbp) {}
     void get_fstats (svccb *sbp) {}
     void push_deltas (ptr<xpub3_delta_set_t> s, evb_t cb, CLOSURE);
     void getchunk (svccb *sbp);
-
-    virtual void handle_clonefd (svccb *sbp);
-    virtual void handle_eof ();
+    void handle_eof ();
     
-    list_entry<srv_t> _lnk;
+    ptr<srv_file_lookup_t> file_lookup ();
+    ptr<local_publisher_t> pub () ;
+
+    list_entry<slave_srv_t> _lnk;
     
   protected:
     ptr<axprt_stream> _x;
@@ -95,21 +100,36 @@ namespace pub3 {
     bool _push_deltas;
     bool _registered;
     bool _push_deltas_lock;
-    ptr<srv_file_lookup_t> _file_lookup;
+    ptr<local_publisher_t> _pub;
+    master_srv_t *_master;
   };
 
   //-----------------------------------------------------------------------
 
-  class primary_srv_t : public srv_t, public clone_server_t {
+  class master_srv_t : public clone_server_t {
   public:
-    primary_srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, opts_t o, 
-		   ptr<srv_file_lookup_t> l, int fdfd);
+    master_srv_t (ptr<axprt_stream> x, ptr<local_publisher_t> lp, 
+		  ptr<srv_file_lookup_t> fl, int fdfd);
+    ~master_srv_t ();
     void register_newclient (ptr<axprt_stream> x);
+
+    slave_srv_t *new_slave (ptr<axprt_stream> x, bool do_srv);
+    void delete_slave (slave_srv_t *s);
+    
+    void dispatch (svccb *sbp);
     void handle_clonefd (svccb *cbp);
     void handle_eof ();
     void do_chroot (str d, str uname, str gname);
     void run (evi_t ev, CLOSURE);
     str jail2real (str d) const;
+    ptr<srv_file_lookup_t> file_lookup () { return _file_lookup; }
+    ptr<local_publisher_t> pub () { return _pub; }
+  protected:
+    ptr<axprt_stream> _x;
+    ptr<asrv> _srv;
+    ptr<local_publisher_t> _pub;
+    ptr<srv_file_lookup_t> _file_lookup;
+    slave_srv_t *_personal_slave;
   };
   
   //-----------------------------------------------------------------------
@@ -263,8 +283,8 @@ namespace pub3 {
     void start_timer (u_int n = 0, u_int x = 0, u_int i = 0, u_int nc = 0,
 		      u_int t = 0);
     
-    void register_client (srv_t *c) { _list.insert_head (c); }
-    void unregister_client (srv_t *c) { _list.remove (c); }
+    void register_client (slave_srv_t *c) { _list.insert_head (c); }
+    void unregister_client (slave_srv_t *c) { _list.remove (c); }
     void add_delta (str nm) { _delta_set.insert (nm); }
 
   protected:
@@ -304,7 +324,7 @@ namespace pub3 {
     timehash_t<str, cached_lookup_obj_t> _lookup_cache;
     timehash_t<cache_key_t, cached_getfile_t> _getfile_cache;
     timehash_t<cache_key_t, cached_badfile_t> _badfile_cache;
-    list<srv_t, &srv_t::_lnk> _list;
+    list<slave_srv_t, &slave_srv_t::_lnk> _list;
     bhash<str> _delta_set;
     time_t _last_update;
     int64_t _delta_id;

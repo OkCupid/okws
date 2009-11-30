@@ -27,10 +27,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  primary_srv_t::primary_srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, 
-				opts_t o, ptr<srv_file_lookup_t> fl, int fdfd)
-    : srv_t (x, pp, o, fl), 
-      clone_server_t (fdfd)
+  master_srv_t::master_srv_t (ptr<axprt_stream> x, ptr<local_publisher_t> p,
+			      ptr<srv_file_lookup_t> lkp, int fdfd)
+    : clone_server_t (fdfd),
+      _x (x),
+      _srv (asrv::alloc (_x, pub_prog_3, wrap (this, &master_srv_t::dispatch))),
+      _pub (p),
+      _file_lookup (lkp),
+      _personal_slave (new_slave (x, false))
   {
     if (!clone_server_t::setup ()) {
       warn << "no socket setup for file descriptor passing!\n";
@@ -39,54 +43,83 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  srv_t::srv_t (ptr<axprt_stream> x, ptr<pub_parser_t> pp, opts_t o,
-		ptr<srv_file_lookup_t> fl)
-    : local_publisher_t (pp, o, fl),
-      _x (x), 
+  ptr<srv_file_lookup_t> slave_srv_t::file_lookup () 
+  { return _master->file_lookup (); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<local_publisher_t> slave_srv_t::pub () { return _master->pub (); }
+
+  //-----------------------------------------------------------------------
+  
+  slave_srv_t::slave_srv_t (ptr<axprt_stream> x, master_srv_t *m, bool do_srv)
+    : _x (x), 
       _cli (aclnt::alloc (_x, pub_prog_3)),
-      _srv (asrv_delayed_eof::alloc (_x, pub_prog_3, 
-				     wrap (this, &srv_t::dispatch))),
       _last_update (0),
       _push_deltas (false),
       _registered (true),
       _push_deltas_lock (false),
-      _file_lookup (fl)
+      _master (m)
   {
-    _file_lookup->register_client (this);
+    if (do_srv) {
+      _srv = asrv::alloc (_x, pub_prog_3, wrap (this, &slave_srv_t::dispatch));
+    }
   }
  
   //-----------------------------------------------------------------------
 
-  void srv_t::handle_eof () { delete this; }
+  master_srv_t::~master_srv_t ()
+  {
+    if (_personal_slave) { delete_slave (_personal_slave); }
+  }
+  
+  //-----------------------------------------------------------------------
+
+  void slave_srv_t::handle_eof () { _master->delete_slave (this); }
 
   //-----------------------------------------------------------------------
 
-  void primary_srv_t::handle_eof ()
+  void master_srv_t::handle_eof ()
   {
     warn << "Caught EOF; shutting down.\n";
-    delete this;
     exit (0);
   }
 
   //-----------------------------------------------------------------------
 
-  void srv_t::handle_clonefd (svccb *sbp)
+  void master_srv_t::handle_clonefd (svccb *sbp)
   {
-    sbp->reject (PROC_UNAVAIL);
-  }
-
-  //-----------------------------------------------------------------------
-
-  void primary_srv_t::handle_clonefd (svccb *sbp)
-  {
-    // Handled by base class clone_server_t
-    clonefd (sbp);
+    clone_server_t::clonefd (sbp);
   }
   
   //-----------------------------------------------------------------------
 
   void
-  srv_t::dispatch (svccb *sbp)
+  master_srv_t::dispatch (svccb *sbp)
+  {
+    if (!sbp) {
+      handle_eof ();
+    } else {
+      u_int p = sbp->proc ();
+      switch (p) {
+      case PUB3_CLONE:
+	handle_clonefd (sbp);
+	break;
+      default:
+	if (_personal_slave) {
+	  _personal_slave->dispatch (sbp);
+	} else {
+	  sbp->reject (PROC_UNAVAIL);
+	  break;
+	}
+      }
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  slave_srv_t::dispatch (svccb *sbp)
   {
     if (!sbp) {
       handle_eof ();
@@ -107,12 +140,9 @@ namespace pub3 {
     case PUB3_GET_FSTATS:
       get_fstats (sbp);
       break;
-    case PUB3_CLONE:
-      handle_clonefd (sbp);
-      break;
     case PUB3_GET_PUSHES:
       { 
-	bool f = _file_lookup->do_pushes ();
+	bool f = file_lookup ()->do_pushes ();
 	if (f)
 	  _push_deltas = true;
 	sbp->replyref (f);
@@ -137,22 +167,22 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  srv_t::getchunk (svccb *sbp)
+  slave_srv_t::getchunk (svccb *sbp)
   {
     rpc::pub_prog_3::pub3_getchunk_srv_t<svccb> srv (sbp);
 
     xpub3_getchunk_arg_t *arg = srv.getarg ();
     xpub3_getchunk_res_t res;
     ptr<fhash_t> h = fhash_t::alloc (arg->hash);
-    ptr<file_t> f = _lookup->get_chunks (h, arg->opts);
+    ptr<file_t> f = file_lookup ()->get_chunks (h, arg->opts);
     if (!f) {
       res.set_status (XPUB_STATUS_NOENT);
     } else {
       res.set_status (XPUB_STATUS_OK);
       res.chunk->data.setsize (arg->size);
       res.chunk->offset = arg->offset;
-      ssize_t r = f->file ()->get_chunk (arg->offset, res.chunk->data.base (),
-					 arg->size);
+      ssize_t r = f->get_chunk (arg->offset, res.chunk->data.base (), 
+				arg->size);
       res.chunk->offset = arg->offset;
       if (r != ssize_t (arg->size)) {
 	res.set_status (XPUB_STATUS_ERR) ;
@@ -165,7 +195,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  srv_t::getfile (svccb *sbp)
+  slave_srv_t::getfile (svccb *sbp)
   {
     tvars {
       rpc::pub_prog_3::pub3_getfile_srv_t<svccb> srv (sbp);
@@ -179,8 +209,7 @@ namespace pub3 {
     o = arg->options;
 
     twait { 
-      pub3::local_publisher_t::getfile (arg->filename, mkevent (s,f), 
-					arg->fresh, o); 
+      _pub->getfile (arg->filename, mkevent (s,f), arg->fresh, o); 
     }
 
     if (!f) {
@@ -190,21 +219,17 @@ namespace pub3 {
 	*res.error = *s.error;
       }
     } else {
-      res.data->stat.ctime = f->ctime ();
-      res.data->stat.fn = f->filename ();
-      f->hash ()->to_xdr (&res.data->stat.hash);
-
-      f->file ()->init_xdr_opaque ();
-      sz = f->file ()->len ();
+      f->init_xdr_opaque ();
+      sz = f->xdr_len ();
       assert (sz >= 0);
       if (sz > ssize_t (arg->maxsz)) {
-	res.data->file.set_mode (XPUB_XFER_CHUNKED);
-	res.data->file.chunked->datasize = sz;
-	f->file ()->get_xdr_hash (&res.data->file.chunked->xdrhash);
-	res.data->file.chunked->leasetime = _lookup->hold_chunks (f);
+	res.file->set_mode (XPUB_XFER_CHUNKED);
+	res.file->chunked->datasize = sz;
+	f->get_xdr_hash (&res.file->chunked->xdrhash);
+	res.file->chunked->leasetime = file_lookup ()->hold_chunks (f);
       } else {
-	res.data->file.set_mode (XPUB_XFER_WHOLE);
-	f->file ()->to_xdr (res.data->file.whole);
+	res.file->set_mode (XPUB_XFER_WHOLE);
+	f->to_xdr (res.file->whole);
       }
     }
     srv.reply (res);
@@ -213,18 +238,29 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  primary_srv_t::register_newclient (ptr<axprt_stream> x)
+  master_srv_t::register_newclient (ptr<axprt_stream> x)
   {
-    vNew srv_t (x, _file_lookup);
+    new_slave (x, true);
+  }
+
+  //-----------------------------------------------------------------------
+
+  slave_srv_t *
+  master_srv_t::new_slave (ptr<axprt_stream> x, bool do_srv)
+  {
+    slave_srv_t *s = New slave_srv_t (x, this, do_srv);
+    _file_lookup->register_client (s);
+    return s;
   }
   
   //-----------------------------------------------------------------------
 
-  srv_t::~srv_t ()
+  void
+  master_srv_t::delete_slave (slave_srv_t *s)
   {
-    if (_registered) {
-      _file_lookup->unregister_client (this);
-    }
+    _file_lookup->unregister_client (s);
+    if (s == _personal_slave) { _personal_slave = NULL; }
+    delete s;
   }
 
   //-----------------------------------------------------------------------

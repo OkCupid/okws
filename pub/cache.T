@@ -191,7 +191,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void 
-  srv_t::push_deltas (ptr<xpub2_delta_set_t> s, evb_t ev)
+  slave_srv_t::push_deltas (ptr<xpub3_delta_set_t> s, evb_t ev)
   {
     tvars {
       clnt_stat err;
@@ -203,7 +203,9 @@ namespace pub3 {
       rc = false; 
     } else {
       _push_deltas_lock = true;
-      twait { _cli->call (PUB2_PUSH_DELTAS, s, &rc, mkevent (err)); }
+      twait { 
+	rpc::pub_prog_3::pub3_push_deltas (_cli, s, &rc, mkevent (err)); 
+      }
       _push_deltas_lock = false;
       if (err) {
 	strbuf b;

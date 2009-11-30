@@ -1,18 +1,64 @@
+
+#include "async.h"
+#include "crypt.h"
+#include "arpc.h"
 #include "pub3file.h"
 #include "pub3ast.h"
 #include "sha1.h"
 
 namespace pub3 {
 
-  //-----------------------------------------------------------------------
+  //================================== file_t =============================
 
   ptr<file_t> file_t::alloc (ptr<metadata_t> m, ptr<zone_t> z, opts_t o)
   { return New refcounted<file_t> (m, z, o); }
 
   //-----------------------------------------------------------------------
 
-#define BUFSIZE 4096
+  void
+  file_t::init_xdr_opaque ()
+  {
+    if (!_xdr_opaque) {
+      xpub3_file_t file;
+      to_xdr (&file);
+      _xdr_opaque = xdr2str (file);
+      sha1_hash (_xdr_opaque_hash.buffer (), 
+		 _xdr_opaque.cstr (), _xdr_opaque.len ());
+    }
+  }
 
+  //-----------------------------------------------------------------------
+
+  ssize_t 
+  file_t::xdr_len () const 
+  { 
+    ssize_t ret = _xdr_opaque ? _xdr_opaque.len () : -1;
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void file_t::get_xdr_hash (xpub3_hash_t *x) const 
+  { _xdr_opaque_hash.to_xdr (x); }
+
+  //-----------------------------------------------------------------------
+
+  ssize_t
+  file_t::get_chunk (size_t offset, char *buf, size_t capacity) const
+  {
+    ssize_t ret;
+    if (!_xdr_opaque || offset >= _xdr_opaque.len ()) {
+      ret = -1;
+    } else {
+      ret = min<ssize_t> (_xdr_opaque.len () - offset, capacity);
+      memcpy (buf, _xdr_opaque.cstr () + offset, ret);
+    }
+    return ret;
+  }
+
+  //============================= fhash_t =================================
+
+#define BUFSIZE 4096
   bool
   file2hash (const str &fn, fhash_t *h, struct stat *sbp)
   {
@@ -42,6 +88,14 @@ namespace pub3 {
     return ret;
   }
 #undef BUFSIZE
+
+  //-----------------------------------------------------------------------
+
+  void
+  fhash_t::to_xdr (xpub3_hash_t *ph) const
+  {
+    memcpy (ph->base (), val, PUBHASHSIZE);
+  }
 
   //-----------------------------------------------------------------------
 

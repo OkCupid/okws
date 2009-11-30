@@ -283,6 +283,8 @@ case XPUB3_ZONE_INLINE_EXPR:
    xpub3_zone_inline_expr_t zone_inline;
 case XPUB3_ZONE_PUB:
    xpub3_zone_pub_t zone_pub;
+default: 
+   void;
 };
 
 /* ======================================================================= */
@@ -298,6 +300,7 @@ struct xpub3_metadata_t {
 struct xpub3_file_t {
   xpub3_metadata_t metadata;
   xpub3_zone_t root;
+  unsigned opts;
 };
 
 /* ======================================================================= */

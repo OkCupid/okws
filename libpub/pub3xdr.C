@@ -1020,6 +1020,17 @@ ptr<pub3::metadata_t> pub3::metadata_t::alloc (const xpub3_metadata_t &x)
 
 //-----------------------------------------------------------------------
 
+void
+pub3::metadata_t::to_xdr (xpub3_metadata_t *x) const
+{
+  if (_jfn) x->jailed_filename = _jfn;
+  if (_rfn) x->real_filename = _rfn;
+  if (_hsh) _hsh->to_xdr (&x->hash);
+  x->ctime = _ctime;
+}
+
+//-----------------------------------------------------------------------
+
 pub3::file_t::file_t (const xpub3_file_t &file, opts_t o)
   : _metadata (metadata_t::alloc (file.metadata)),
     _data_root (zone_t::alloc (file.root)),
@@ -1029,6 +1040,16 @@ pub3::file_t::file_t (const xpub3_file_t &file, opts_t o)
 
 ptr<pub3::file_t> pub3::file_t::alloc (const xpub3_file_t &f, opts_t o)
 { return New refcounted<pub3::file_t> (f, o); }
+
+//-----------------------------------------------------------------------
+
+void
+pub3::file_t::to_xdr (xpub3_file_t *x) const
+{
+  _metadata->to_xdr (&x->metadata);
+  _data_root->to_xdr (&x->root);
+  x->opts = _opts;
+}
 
 //-----------------------------------------------------------------------
 

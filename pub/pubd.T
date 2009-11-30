@@ -87,7 +87,7 @@ main_T (int argc, char **argv)
     ptr<pub3::local_publisher_t> cfgparse;
     int fdfd (1);
     pub3::obj_dict_t cfg_d;
-    ptr<pub3::primary_srv_t> srv;
+    ptr<pub3::master_srv_t> srv;
     int rc;
   }
 
@@ -220,12 +220,16 @@ main_T (int argc, char **argv)
   warn ("OKWS version %s, Pub v3, pid %d\n", 
 	OKWS_PATCHLEVEL_STR, int (getpid ()));
 
+
   // Since we're spawned via axprt_unix_dospawnv, that means
   // that our parent is going to be sending us RPCs on
   // standard input.
   {
     ptr<axprt_unix> x = axprt_unix::alloc (0, ok_axprt_ps);
-    srv = New refcounted<pub3::primary_srv_t> (x, ppt, opts, fl, fdfd);
+    ptr<pub3::local_publisher_t> pub = 
+      New refcounted<pub3::local_publisher_t> (ppt, opts, fl);
+
+    srv = New refcounted<pub3::master_srv_t> (x, pub, fl, fdfd);
   }
 
   setsid ();

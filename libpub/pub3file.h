@@ -93,10 +93,19 @@ namespace pub3 {
     ptr<metadata_t> metadata () { return _metadata; }
     ptr<const zone_t> data () const { return _data_root; }
 
+    // for chunked file xfer from pubd to services...
+    void init_xdr_opaque ();
+    ssize_t xdr_len () const;
+    ssize_t get_chunk (size_t offset, char *buf, size_t capacity) const;
+    void get_xdr_hash (xpub3_hash_t *x) const;
+
   protected:
     ptr<metadata_t> _metadata;
     ptr<zone_t> _data_root;
     opts_t _opts;
+
+    str _xdr_opaque;
+    fhash_t _xdr_opaque_hash;
   };
 
   //-----------------------------------------------------------------------
