@@ -1,10 +1,10 @@
 // -*-c++-*-
 /* $Id$ */
 
-#include "pubd2.h"
-#include "xpub.h"
+#include "pubd.h"
 #include "okdbg.h"
 #include "parseopt.h"
+#include "pub3.h"
 
 namespace pub3 {
 
@@ -29,8 +29,8 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  srv_cache_t::cache_lookup (str jfn, str rfn, 
-			 ptr<fhash_t>_t hsh, time_t ctime, off_t sz)
+  srv_cache_t::cache_lookup (str jfn, str rfn, ptr<fhash_t> hsh, 
+			     time_t ctime, off_t sz)
   {
     cached_lookup_obj_t *op = _lookup_cache[jfn];
     if (hsh) {
@@ -98,7 +98,7 @@ namespace pub3 {
       // hack around this by bumping the ctime artificially up on the
       // cached version of the file.
       else if (o->ctime () == sb.st_ctime && okwstime () > sb.st_ctime) {
-	ptr<fhash_t>_t h = file2hash (rfn);
+	ptr<fhash_t> h = file2hash (rfn);
 	if (!h || *h != *o->hash ()) {
 	  dirty = true;
 	  
@@ -109,7 +109,7 @@ namespace pub3 {
       }
       
       if (dirty) {
-	OKDBG4(PUB2_CACHE, CHATTER, "Cached file modified: %s\n", k.cstr ());
+	OKDBG4(PUB3_CACHE, CHATTER, "Cached file modified: %s\n", k.cstr ());
 
 	// a file has be modified!
 	_lookup_cache.remove (k);
@@ -151,7 +151,7 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
   
-  static void fill_delta_set (ptr<xpub2_delta_set_t> d, const str &s)
+  static void fill_delta_set (ptr<xpub3_delta_set_t> d, const str &s)
   {
     d->files.push_back (s);
   }
@@ -164,16 +164,16 @@ namespace pub3 {
     tvars { 
       bool edit (false);
       bool dummy;
-      ptr<xpub2_delta_set_t> s;
+      ptr<xpub3_delta_set_t> s;
     }
     
-    OKDBG3 (PUB2_CACHE, CHATTER, "Timer fired; calling refresh_delta_set()");
+    OKDBG3 (PUB3_CACHE, CHATTER, "Timer fired; calling refresh_delta_set()");
     
     _lookup_cache.traverse_keys (wrap (this, &srv_cache_t::trav_key));
     _noent_cache.traverse_keys (wrap (this, &srv_cache_t::trav_nkey));
     
     if (_delta_set.size ()) {
-      s = New refcounted<xpub2_delta_set_t> ();
+      s = New refcounted<xpub3_delta_set_t> ();
       _delta_set.traverse (wrap (fill_delta_set, s));
       s->start = _last_update;
       s->stop = okwstime ();
@@ -222,14 +222,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void 
-  srv_cache_t::push_deltas (ptr<xpub2_delta_set_t> s, evb_t ev)
+  srv_cache_t::push_deltas (ptr<xpub3_delta_set_t> s, evb_t ev)
   {
     tvars { 
       rendezvous_t<ptr<bool> > rv (__FL__);
       ptr<bool> b;
       bool rc (true);
     }
-    for (srv_t *e = _list.first; e; e = _list.next (e)) {
+    for (slave_srv_t *e = _list.first; e; e = _list.next (e)) {
       b = New refcounted<bool> ();
       e->push_deltas (s, mkevent (rv, b, *b));
     }
@@ -293,7 +293,7 @@ namespace pub3 {
     if (!(hbt == STAMP_CHANGED || hbt == STAMP_NOCHANGE)) {
 
       if (_tsh.fn () && hbt != STAMP_UNINIT)
-	OKDBG4 (PUB2_CACHE, ERROR,
+	OKDBG4 (PUB3_CACHE, ERROR,
 		"heartbeat file (%s) failed us, with status: %d",
 		_tsh.fn ().cstr (), int (hbt));
 
@@ -344,7 +344,7 @@ namespace pub3 {
 	  if (tol > int (x)) tol = x;
 	}
 	if (old != tol) 
-	  OKDBG4(PUB2_CACHE,CHATTER, 
+	  OKDBG4(PUB3_CACHE,CHATTER, 
 		 "Tolerance at time level %d reset to %d", old, tol);
 
 	running_refresh = false;
@@ -364,7 +364,7 @@ namespace pub3 {
 	  diff > int (x)) {
 
 	if (status == STAMP_CHANGED) 
-	  OKDBG3(PUB2_CACHE, CHATTER, "stamp file changed; refresh forced");
+	  OKDBG3(PUB3_CACHE, CHATTER, "stamp file changed; refresh forced");
 
 	last_check = okwstime ();
 	running_refresh = true;
@@ -405,7 +405,7 @@ namespace pub3 {
   //------------------------------------------------------------------------
   
   bool 
-  srv_cache_t::getfile (ptr<fhash_t>_t h, opts_t opts,
+  srv_cache_t::getfile (ptr<fhash_t> h, opts_t opts,
 			ptr<file_t> *f, parse_status_t *s,
 			str *em)
   {
@@ -429,7 +429,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void 
-  srv_cache_t::cache_getfile (ptr<fhash_t>_t h, opts_t opts,
+  srv_cache_t::cache_getfile (ptr<fhash_t> h, opts_t opts,
 			      ptr<file_t> f, parse_status_t s,
 			      str em) 
   {
@@ -471,7 +471,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<file_t>
-  srv_cache_t::get_chunks (ptr<fhash_t>_t h, u_int opts)
+  srv_cache_t::get_chunks (ptr<fhash_t> h, u_int opts)
   {
     ptr<file_t> ret;
     getfile (h, opts, &ret, NULL, NULL);
@@ -490,7 +490,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<file_t> 
-  chunkholder_t::get_chunks (ptr<fhash_t>_t h, u_int opts)
+  chunkholder_t::get_chunks (ptr<fhash_t> h, u_int opts)
   {
     cache_key_t k (h, opts);
     cached_getfile_t *cfg = _chunk_cache[k];
