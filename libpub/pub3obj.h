@@ -114,6 +114,7 @@ namespace pub3 {
 
     virtual ptr<const expr_t> obj () const { return _c_obj; }
     bool isnull () const { return !obj (); }
+    obj_t copy () const;
 
     bool to_int (int64_t *i) const;
     bool to_int (int *i) const;
