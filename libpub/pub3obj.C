@@ -269,7 +269,7 @@ namespace pub3 {
     // references.
     //
     
-    if (_ref && !in._ref) {
+    if (_ref) {
       _ref->set (in.obj ()); 
     } else {
       _ref = in._ref;
