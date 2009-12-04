@@ -59,6 +59,7 @@ namespace pub3 {
     void to_xdr (xpub3_metadata_t *x) const;
     
     inline fhash_t hash () const { return *_hsh; }
+    ptr<const fhash_t> hashp () const { return _hsh; }
     inline str filename () const { return _jfn; }
     str input_filename () const { return _ifn; }
     ptr<expr_dict_t> to_dict () const;
@@ -98,6 +99,7 @@ namespace pub3 {
     ssize_t xdr_len () const;
     ssize_t get_chunk (size_t offset, char *buf, size_t capacity) const;
     void get_xdr_hash (xpub3_hash_t *x) const;
+    opts_t opts () const { return _opts; }
 
   protected:
     ptr<metadata_t> _metadata;

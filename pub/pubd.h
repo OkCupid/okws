@@ -42,18 +42,19 @@ namespace pub3 {
     srv_cache_key_t (ptr<fhash_t> h, u_int o) : 
       _filehash (h), _opts (op_mask (o)), _hshkey (hash_me ()) {}
 
-    cache_key_t (ptr<const file_t> f) :
-      _filehash (f->hash ()), _opts (op_mask (f->opts ())), 
+    srv_cache_key_t (ptr<const file_t> f) :
+      _filehash (f->metadata ()->hashp ()), 
+      _opts (op_mask (f->opts ())), 
       _hshkey (hash_me ()) {}
 
     hash_t hash_me () const;
     
     static u_int op_mask (u_int in) { return in & ( P_WSS | P_NOPARSE); }
     operator hash_t () const { return _hshkey; }
-    bool operator== (const cache_key_t &k) const 
+    bool operator== (const srv_cache_key_t &k) const 
     { return _opts == k._opts && *_filehash == *k._filehash; }
     
-    ptr<fhash_t> _filehash;
+    ptr<const fhash_t> _filehash;
     u_int _opts;
     hash_t _hshkey;
   };
@@ -61,15 +62,16 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   struct srv_cached_getfile_t {
-    cached_getfile_t (ptr<file_t> f) : _key (f), _file (f) {} 
+    srv_cached_getfile_t (ptr<file_t> f) : _key (f), _file (f) {} 
     srv_cache_key_t _key;
     ptr<file_t> _file;
   };
 
   //-----------------------------------------------------------------------
 
-  struct cached_badfile_t {
-    cached_badfile_t (const srv_cache_key_t &k, parse_status_t s, const str &m)
+  struct srv_cached_badfile_t {
+    srv_cached_badfile_t (const srv_cache_key_t &k, 
+			  parse_status_t s, const str &m)
       : _key (k), _stat (s), _msg (m) {}
     srv_cache_key_t _key;
     parse_status_t _stat;
@@ -79,17 +81,17 @@ namespace pub3 {
 
 //=======================================================================
 
-template<> struct keyfn<pubserv2::cached_getfile_t, pubserv2::cache_key_t> {
+template<> struct keyfn<pub3::srv_cached_getfile_t, pub3::srv_cache_key_t> {
   keyfn () {}
-  const pubserv2::cache_key_t &operator() (const pubserv2::cached_getfile_t *o)
+  const pub3::srv_cache_key_t &operator() (const pub3::srv_cached_getfile_t *o)
     const { return o->_key; }
 };
 
 //=======================================================================
 
-template<> struct keyfn<pubserv2::cached_badfile_t, pubserv2::cache_key_t> {
+template<> struct keyfn<pub3::srv_cached_badfile_t, pub3::srv_cache_key_t> {
   keyfn () {}
-  const pubserv2::cache_key_t &operator() (const pubserv2::cached_badfile_t *o)
+  const pub3::srv_cache_key_t &operator() (const pub3::srv_cached_badfile_t *o)
     const { return o->_key; }
 };
 
@@ -282,7 +284,7 @@ namespace pub3 {
     ptr<file_t> get_chunks (ptr<fhash_t> h, u_int opts);
     static ptr<chunkholder_t> alloc ();
   private:
-    timehash_t<srv_cache_key_t, cached_getfile_t> _chunk_cache;
+    timehash_t<srv_cache_key_t, srv_cached_getfile_t> _chunk_cache;
 
   };
   
@@ -362,8 +364,8 @@ namespace pub3 {
   private:
     timehash_t<str, jailed_file_t> _noent_cache;
     timehash_t<str, cached_lookup_obj_t> _lookup_cache;
-    timehash_t<srv_cache_key_t, cached_getfile_t> _getfile_cache;
-    timehash_t<srv_cache_key_t, cached_badfile_t> _badfile_cache;
+    timehash_t<srv_cache_key_t, srv_cached_getfile_t> _getfile_cache;
+    timehash_t<srv_cache_key_t, srv_cached_badfile_t> _badfile_cache;
     list<slave_srv_t, &slave_srv_t::_lnk> _list;
     bhash<str> _delta_set;
     time_t _last_update;
