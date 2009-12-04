@@ -246,6 +246,7 @@ namespace pub3 {
   class obj_list_t : public obj_t {
   public:
     obj_list_t ();
+    void clear ();
   };
 
 
@@ -255,6 +256,7 @@ namespace pub3 {
   public:
     obj_dict_t ();
     obj_dict_t (ptr<expr_dict_t> d);
+    void clear ();
   };
 
   //-----------------------------------------------------------------------
