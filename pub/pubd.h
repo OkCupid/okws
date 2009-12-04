@@ -183,7 +183,7 @@ namespace pub3 {
     cached_lookup_obj_t (str j, str r, ptr<fhash_t> h, time_t m, off_t sz)
       : _jfn (j), _rfn (r), _hsh (h), _ctime (m), _size (sz) {}
     
-    void to_xdr (xpub3_fstat_t *x);
+    void to_xdr (xpub3_fstat_t *x) const;
     time_t ctime () const { return _ctime; }
     ptr<fhash_t> hash () const { return _hsh; }
     const str &real_fn () const { return _rfn; }

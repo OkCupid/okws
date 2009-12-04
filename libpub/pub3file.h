@@ -19,21 +19,22 @@ namespace pub3 {
   class fhash_t {
   public:
     fhash_t () {}
-    fhash_t (const char *s) { memcpy (val, s, PUBHASHSIZE); }
-    fhash_t (const xpub3_hash_t &h) { memcpy (val, h.base (), PUBHASHSIZE); }
+    fhash_t (const char *s) { memcpy (_b, s, PUBHASHSIZE); }
+    fhash_t (const xpub3_hash_t &h) { memcpy (_b, h.base (), PUBHASHSIZE); }
     static ptr<fhash_t> alloc (const xpub3_hash_t &x) 
     { return New refcounted<fhash_t> (x); }
-    str to_str () const { return armor64 (val, PUBHASHSIZE); }
+    str to_str () const { return armor64 (_b, PUBHASHSIZE); }
     hash_t hash_hash () const;
     bool operator== (const fhash_t &ph) const;
     bool operator== (const xpub3_hash_t &ph) const;
     bool operator!= (const xpub3_hash_t &ph) const;
     bool operator!= (const fhash_t &ph) const;
     void to_xdr (xpub3_hash_t *ph) const;
-    char *buffer () { return val; }
+    char *buf () { return _b; }
+    const char *buf () const { return _b; }
 
   private:
-    char val[PUBHASHSIZE];
+    char _b[PUBHASHSIZE];
   };
 
   //-----------------------------------------------------------------------

@@ -22,7 +22,7 @@ namespace pub3 {
       xpub3_file_t file;
       to_xdr (&file);
       _xdr_opaque = xdr2str (file);
-      sha1_hash (_xdr_opaque_hash.buffer (), 
+      sha1_hash (_xdr_opaque_hash.buf (), 
 		 _xdr_opaque.cstr (), _xdr_opaque.len ());
     }
   }
@@ -81,7 +81,7 @@ namespace pub3 {
       while ((n = read (fd, buf, BUFSIZE))) {
 	sc.update (buf, n);
       }
-      sc.final (h->buffer ());
+      sc.final (h->buf ());
       close (fd);
       ret = true;
     }
@@ -94,7 +94,7 @@ namespace pub3 {
   void
   fhash_t::to_xdr (xpub3_hash_t *ph) const
   {
-    memcpy (ph->base (), val, PUBHASHSIZE);
+    memcpy (ph->base (), _b, PUBHASHSIZE);
   }
 
   //-----------------------------------------------------------------------
@@ -102,7 +102,7 @@ namespace pub3 {
   bool
   fhash_t::operator== (const fhash_t &p2) const
   {
-    return (!memcmp ((void *)val, (void *)p2.val, PUBHASHSIZE));
+    return (!memcmp ((const void *)_b, (const void *)p2._b, PUBHASHSIZE));
   }
   
   //-----------------------------------------------------------------------
@@ -110,24 +110,27 @@ namespace pub3 {
   bool 
   fhash_t::operator== (const xpub3_hash_t &ph) const
   {
-    return (!memcmp ((void *)val, (void *)ph.base (), PUBHASHSIZE));
+    return (!memcmp ((const void *)_b, (void *)ph.base (), PUBHASHSIZE));
   }
 
   //-----------------------------------------------------------------------
 
   bool fhash_t::operator!= (const xpub3_hash_t &ph) const
-  {
-    return !(*this == ph);
-  }
+  { return !(*this == ph); }
   
+  //-----------------------------------------------------------------------
+
+  bool fhash_t::operator!= (const fhash_t &ph) const
+  { return !(*this == ph); }
+
   //-----------------------------------------------------------------------
 
   hash_t
   fhash_t::hash_hash () const
   {
-    u_int *p = (u_int *)val;
-    const char *end_c = val + PUBHASHSIZE;
-    u_int *end_i = (u_int *)end_c;
+    const u_int *p = (const u_int *)_b;
+    const char *end_c = _b + PUBHASHSIZE;
+    const u_int *end_i = (const u_int *)end_c;
     u_int r = 0;
     while (p < end_i)
       r = r ^ *p++;

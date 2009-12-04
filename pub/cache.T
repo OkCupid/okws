@@ -410,13 +410,13 @@ namespace pub3 {
 			str *em)
   {
     bool ret (false);
-    cache_key_t k (h, opts);
-    cached_getfile_t *cgf = _getfile_cache[k];
+    srv_cache_key_t k (h, opts);
+    srv_cached_getfile_t *cgf = _getfile_cache[k];
     if (cgf) {
       if (f) *f = cgf->_file;
       ret = true;
     } else {
-      cached_badfile_t *bf = _badfile_cache[k];
+      srv_cached_badfile_t *bf = _badfile_cache[k];
       if (bf) {
 	if (s) *s = bf->_stat;
 	if (em) *em = bf->_msg;
@@ -433,13 +433,13 @@ namespace pub3 {
 			      ptr<file_t> f, parse_status_t s,
 			      str em) 
   {
-    cache_key_t k (h, opts);
+    srv_cache_key_t k (h, opts);
     if (f) {
       _badfile_cache.remove (k);
-      _getfile_cache.insert (cached_getfile_t (f));
-    } else if (s != PUBSTAT_OK) {
+      _getfile_cache.insert (srv_cached_getfile_t (f));
+    } else if (s != PARSE_OK) {
       _getfile_cache.remove (k);
-      _badfile_cache.insert (cached_badfile_t (k, s, em));
+      _badfile_cache.insert (srv_cached_badfile_t (k, s, em));
     } else {
       panic ("got a file neither good nor bad!\n");
     }
@@ -448,14 +448,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   hash_t 
-  cache_key_t::hash_me () const
+  srv_cache_key_t::hash_me () const
   {
     struct {
       char buf[PUBHASHSIZE];
       int opts;
     } tmp;
 
-    memcpy (tmp.buf, _filehash->val, PUBHASHSIZE);
+    memcpy (tmp.buf, _filehash->buf (), PUBHASHSIZE);
     tmp.opts = _opts;
     return hash_bytes (reinterpret_cast<const void *> (&tmp), sizeof (tmp));
   }
@@ -483,7 +483,7 @@ namespace pub3 {
   int
   chunkholder_t::hold_chunks (ptr<file_t> f)
   {
-    _chunk_cache.insert (cached_getfile_t (f));
+    _chunk_cache.insert (srv_cached_getfile_t (f));
     return _chunk_cache.timeout ();
   }
 
@@ -492,15 +492,15 @@ namespace pub3 {
   ptr<file_t> 
   chunkholder_t::get_chunks (ptr<fhash_t> h, u_int opts)
   {
-    cache_key_t k (h, opts);
-    cached_getfile_t *cfg = _chunk_cache[k];
+    srv_cache_key_t k (h, opts);
+    srv_cached_getfile_t *cfg = _chunk_cache[k];
     return cfg ? cfg->_file : NULL;
   }
 
   //-----------------------------------------------------------------------
 
   void 
-  cached_lookup_obj_t::to_xdr (xpub3_fstat_t *x);
+  cached_lookup_obj_t::to_xdr (xpub3_fstat_t *x) const
   {
     x->fn = _jfn;
     x->ctime = _ctime;
