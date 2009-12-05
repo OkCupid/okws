@@ -172,6 +172,7 @@ namespace pub3 {
     ptr<local_publisher_t> _pub;
     ptr<srv_file_lookup_t> _file_lookup;
     slave_srv_t *_personal_slave;
+    evv_t::ptr _shutdown_ev;
   };
   
   //-----------------------------------------------------------------------

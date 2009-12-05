@@ -79,10 +79,16 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  void master_srv_t::handle_eof ()
+  void master_srv_t::handle_eof () { _shutdown_ev->trigger (); }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  master_srv_t::run (evi_t ev)
   {
+    twait { _shutdown_ev = mkevent (); }
     warn << "Caught EOF; shutting down.\n";
-    exit (0);
+    ev->trigger (0);
   }
 
   //-----------------------------------------------------------------------
