@@ -7,7 +7,7 @@
 #include "pub3.h"
 #include "qhash.h"
 
-namespace rfn1 {
+namespace rfn2 {
 
   using namespace pub3;
 
@@ -17,6 +17,27 @@ namespace rfn1 {
   const char *okws_version_str ();
   u_int64_t version_int ();
   u_int64_t okws_version_int ();
+
+  //-----------------------------------------------------------------------
+
+  class runtime_fn_t : public expr_t, public callable_t {
+  public:
+    runtime_fn_t (str n, str lib);
+    bool might_block () const { return false; }
+
+    virtual ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const = 0;
+    virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
+
+  protected:
+    ptr<const expr_t> eval_to_val (eval_t *e) const;
+    ptr<mref_t> eval_to_ref (eval_t *e) const;
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
+    ptr<const callable_t> to_callable () const { return mkref (this); }
+    ptr<runtime_fn_t> copy (eval_t *e) const;
+    const char *get_obj_name () const { return "rfn1::runtime_fn_t"; }
+  private:
+    str n, str v;
+  };
 
   //-----------------------------------------------------------------------
 
