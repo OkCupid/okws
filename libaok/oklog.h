@@ -30,7 +30,6 @@
 #include "arpc.h"
 #include "ahttp.h"
 #include "resp.h"
-#include "okerr.h"
 #include "okclone.h"
 #include "okformat.h"
 

@@ -1,6 +1,6 @@
 /* $Id$ */
 
-%#include "xpub.h"
+%#include "pub3prot.h"
 %#include "okprotext.h"
 
 struct xpub_errdoc_t {
@@ -198,21 +198,6 @@ program OKCTL_PROGRAM {
 		void
 		OKCTL_READY (void) = 1;
 
-		xpub_errdoc_set_t
-		OKCTL_REQ_ERRDOCS (void) = 2;
-
-		ok_xstatus_t
-	        OKCTL_UPDATE (xpub_fnset_t) = 3;
-
-		xpub_getfile_res_t
-		OKCTL_GETFILE (xpubhash_t) = 4;
-
-		xpub_lookup_res_t
-		OKCTL_LOOKUP (xpub_fn_t) = 5;
-
-		xpub_getfile_res_t
-		OKCTL_PUBCONF (void) = 6;
-
 		ok_xstatus_t
 		OKCTL_CUSTOM_1_IN (ok_custom_arg_t) = 7;
 	
@@ -288,9 +273,6 @@ program OKMGR_PROGRAM {
 		OKMGR_NULL (void) = 0;
 
 		ok_xstatus_t
-		OKMGR_REPUB (xpub_fnset_t) = 1;
-
-		ok_xstatus_t
 		OKMGR_RELAUNCH (ok_progs_t) = 2;
 
 		ok_xstatus_t
@@ -301,9 +283,6 @@ program OKMGR_PROGRAM {
 
 		ok_custom_res_t
 		OKMGR_CUSTOM_2 (ok_custom_arg_t) = 5;
-
-		ok_xstatus_t
-		OKMGR_REPUB2 (xpub_fnset_t) = 6;
 
 		ok_xstatus_t
 		OKMGR_LEAK_CHECKER(okmgr_diagnostic_arg_t) = 7;

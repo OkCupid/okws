@@ -27,7 +27,6 @@
 
 #include "arpc.h"
 #include "pub.h"
-#include "parr.h"
 #include "ahttp.h"
 #include "okcgi.h"
 #include "resp.h"
@@ -39,9 +38,8 @@
 #include "zstr.h"
 #include "ahparse.h"
 #include "pjail.h"
-#include "lbalance.h"
 #include "tame.h"
-#include "pub2.h"
+#include "pub3.h"
 #include "oklocale.h"
 
 //-----------------------------------------------------------------------
@@ -251,7 +249,7 @@ public:
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
       reported_name (ok_wsname),
-      logd (NULL), logfd (lfd), pub2fd (pfd),
+      logd (NULL), logfd (lfd), pub3fd (pfd),
       bind_addr_set (false),
       _ssl_primary_port (ok_ssl_port)
       //jaildir_run (ok_jaildir_run) 
@@ -290,7 +288,7 @@ protected:
   log_t *logd;
 
   int logfd;
-  int pub2fd;
+  int pub3fd;
   //str jaildir_run;  // nested jaildir for okd and services
   bool bind_addr_set; // called after got_bindaddr;
   okws1_port_t _ssl_primary_port;
@@ -304,8 +302,8 @@ class okclnt_interface_t;
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
-  ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub2fd = -1) 
-    : ok_con_t (), ok_base_t (h, fd, pub2fd), svclog (true),
+  ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub3fd = -1) 
+    : ok_con_t (), ok_base_t (h, fd, pub3fd), svclog (true),
       accept_enabled (false), accept_msgs (true),
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}
@@ -342,12 +340,12 @@ public:
 
 
   // can overide this on a service-by-service basis
-  virtual bool init_pub2 (u_int opts = 0);
-  virtual void launch_pub2 (cbb cb) { launch_pub2_T (cb); }
-  virtual void post_launch_pub2 (cbb cb) { (*cb) (true); }
+  virtual bool init_pub (u_int opts = 0);
+  virtual void launch_pub (evb_t ev, CLOSURE);
+  virtual void post_launch_pub (evb_t ev, CLOSURE) { ev->trigger (true); }
 
-  virtual ptr<pub2::remote_publisher_t> pub2 () { return _pub2; }
-  virtual ptr<const pub2::remote_publisher_t> pub2 () const { return _pub2; }
+  virtual ptr<pub3::remote_publisher_t> pub3 () { return _pub3; }
+  virtual ptr<const pub3::remote_publisher_t> pub3 () const { return _pub3; }
 
 private:
   void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
@@ -357,8 +355,6 @@ private:
   void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
 		http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL, 
 		CLOSURE);
-
-  void launch_pub2_T (cbb cb, CLOSURE);
 
 protected:
 
@@ -377,7 +373,7 @@ protected:
   sfs_clock_t clock_mode;
   str mmc_file;
 
-  ptr<pub2::remote_publisher_t> _pub2;
+  ptr<pub3::remote_publisher_t> _pub3;
 
 };
 
@@ -547,7 +543,8 @@ public:
   bool output_hdr (ssize_t sz = -1);
   bool output_fragment (str s);
   bool output_fragment (compressible_t &b, cbv::ptr done = NULL);
-  void output_file (const char *fn, cbb::ptr cb = NULL, aarr_t *a = NULL,
+  void output_file (const char *fn, cbb::ptr cb = NULL, 
+		    ptr<pub3::dict_t> a = NULL,
 		    u_int opt = 0, penv_t *e = NULL, CLOSURE);
 
   void output_done (evb_t::ptr ev, CLOSURE);
@@ -569,9 +566,9 @@ public:
   bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
   str ssl_cipher () const;
 
-  virtual ptr<pub2::ok_iface_t> pub2 () ;
-  virtual ptr<pub2::ok_iface_t> pub2_local ();
-  void set_localizer (ptr<const pub_localizer_t> l);
+  virtual ptr<pub3::ok_iface_t> pub3 () ;
+  virtual ptr<pub3::ok_iface_t> pub3_local ();
+  void set_localizer (ptr<const pub3::localizer_t> l);
 
   ptr<ahttpcon> client_con () { return _client_con; }
   ptr<const ahttpcon> client_con () const { return _client_con; }
@@ -617,7 +614,7 @@ protected:
 
   output_state_t output_state;
   u_int _timeout;
-  ptr<pub2::locale_specific_publisher_t> _p2_locale;
+  ptr<pub3::locale_specific_publisher_t> _p3_locale;
   ptr<demux_data_t> _demux_data;
   str _custom_log2;
   int _status;
@@ -705,15 +702,6 @@ public:
   virtual void launch () { launch_T (); }
   virtual newclnt_t *make_newclnt (ptr<ahttpcon> lx) = 0;
 
-  // if we didn't give init_publist, then we're using pub2 for
-  // everything, including CFG variables.
-  virtual void init_publist () { _pub1_cfg = false; }
-
-  // Subclasses that specialize this method to true can
-  // always use pub2 configuration.
-  virtual bool use_pub2_cfg () const { return false; }
-
-
   // Initialized the pub3 runtime library; by default, it's 
   // the standard librfn library, but you can add your own,
   // or disable as you see fit.
@@ -725,7 +713,7 @@ public:
   virtual void custom_init0 (cbv cb) { (*cb) (); }
   virtual void init_constants () {}
 
-  virtual void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
+  virtual void post_launch_pub (evb_t ev, CLOSURE);
 
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
@@ -742,25 +730,11 @@ public:
   void add (okclnt_interface_t *c);
   void end_program (); 
 
-  void add_pubfiles (const char *arr[], u_int sz, bool conf = false);
-  void add_pubfiles (const char *arr[], bool conf = false);
-  void add_pubfile (const str &s, bool conf = false);
-
-  str cfg (const str &n) const ;
-  template<class C> bool cfg (const str &n, C *v) const ;
-  template<typename T> parr_err_t cfg (const str &n, u_int i, T *p) const;
-
-  void pubfiles (cbb cb);
   dbcon_t *add_db (const str &host, u_int port, const rpc_program &p,
 		   int32_t txa_login_rpc = -1);
   lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
 
-  pval_w_t operator[] (const str &s) const;
-    
-
   ptr<aclnt> get_okd_aclnt () { return clnt; }
-  pub_rclient_t *get_rpcli () { return rpcli; }
-  bool supports_pub1 () const { return pub1_supported; }
 
   // for accept direct connections (not via okd)
   void accept_new_con (ok_portpair_t *p);
@@ -787,9 +761,6 @@ protected:
   virtual void call_exit (int rc) 
 	{ exit (rc); } // Python needs to override this
 
-  void pubbed (cbb cb, ptr<pub_res_t> res);
-
-  void launch_pub1 (cbb cb, CLOSURE);  // legacy
   void launch_dbs (cbb cb, CLOSURE);
 
   void handle_new_con (svccb *sbp);
@@ -798,7 +769,6 @@ protected:
   void handle_leak_checker (svccb *v);
   void handle_profiler (svccb *sbp);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
-  void update (svccb *sbp, CLOSURE);
   void kill (svccb *v);
   void ready_call (bool rc);
 
@@ -830,7 +800,6 @@ protected:
   bool _pub1_cfg;
 
 private:
-  void post_launch_pub2_T (cbb cb, CLOSURE);
 };
 
 //-----------------------------------------------------------------------

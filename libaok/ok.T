@@ -23,7 +23,6 @@
  */
 
 #include "ok.h"
-#include "okerr.h"
 #include "pubutil.h"
 #include "parseopt.h"
 #include "resp.h"
@@ -145,17 +144,18 @@ ok_httpsrv_t::geterr2_T (str s, const http_resp_attributes_t &hra,
   tvars {
     errdoc_t *e;
     ptr<http_response_t> ret;
-    ptr<http_pub2_t> hp2;
-    aarr_t ar;
+    ptr<http_pub_t> hp;
+    ptr<pub3::dict_t> ar (pub3::dict_t::alloc ());
     int n (hra.get_status ());
   }
   e = errdocs[n];
-  if (e && pub2 ()) {
-    ar.add ("STATUS", n)
-      .add ("SERVINFO", servinfo ());
-    if (s)
-      ar.add ("AUXSTR", s);
-    twait { http_pub2_t::alloc2 (pub2 (), hra, e->fn, mkevent (hp2), &ar); }
+  if (e && pub3 ()) {
+    ar->insert ("STATUS", n);
+    ar->insert ("SERVINFO", servinfo ());
+    if (s) {
+      ar->insert ("AUXSTR", s);
+    }
+    twait { http_pub_t::alloc2 (pub3 (), hra, e->fn, mkevent (hp2), ar); }
     ret = hp2;
   }
 
@@ -258,7 +258,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("okwsname", &reported_name);
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
-    t->lookup ("pub2fd", &pub2fd);
+    t->lookup ("pub3fd", &pub3fd);
     t->lookup ("pub1", &pub1tmp);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &gztmp);
@@ -279,10 +279,10 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("rsl", &ok_recycle_suio_limit);
     t->lookup ("lifetime", &ok_svc_life_time);
     t->lookup ("lifereqs", &ok_svc_life_reqs);
-    t->lookup ("wss", &ok_pub2_wss);
-    t->lookup ("caching", &ok_pub2_caching);
-    t->lookup ("ncto", &ok_pub2_svc_neg_cache_timeout);
-    t->lookup ("pub2chnk", &ok_pub2_max_datasz);
+    t->lookup ("wss", &ok_pub3_wss);
+    t->lookup ("caching", &ok_pub3_caching);
+    t->lookup ("ncto", &ok_pub3_svc_neg_cache_timeout);
+    t->lookup ("pub3chnk", &ok_pub3_max_datasz);
     t->lookup ("wfs", &wait_for_signal_in_startup);
     t->lookup ("loggers", &loggers);
     t->lookup ("lqm", &ok_listen_queue_max);
@@ -331,8 +331,8 @@ oksrvc_t::init (int argc, char *argv[])
 
   init_syscall_stats ();
   init_sfs_clock (mmc_file);
-  init_pub2 ( (ok_pub2_wss > 0 ? P_WSS : 0) |
-	      (ok_pub2_viserr > 0 ? P_VISERR : 0) );
+  init_pub ( (ok_pub3_wss > 0 ? pub3::P_WSS : 0) |
+	     (ok_pub3_viserr > 0 ? pub3::P_VISERR : 0) );
 
   zinit (ok_gzip_mode != GZIP_NONE, ok_gzip_compress_level);
 }
@@ -402,33 +402,6 @@ oksrvc_t::ctldispatch (svccb *v)
   default:
     v->reject (PROC_UNAVAIL);
     break;
-  }
-}
-
-//-----------------------------------------------------------------------
-
-tamed void
-oksrvc_t::update (svccb *sbp)
-{
-  tvars {
-    RPC::okctl_program_1::okctl_update_srv_t<svccb> x (sbp);
-    xpub_fnset_t *s (x.getarg ());
-    ptr<pub_res_t> pr;
-  }
-
-  if (supports_pub1 ()) {
-
-    twait { rpcli->publish (*s, mkevent (pr)); }
-
-    {
-      ok_res_t okr (pr);
-      ok_xstatus_t st = okr.to_xdr ();
-      x.reply (st);
-    }
-
-  } else {
-    SVC_ERROR ("Cannot answer UPDATE RPC without Pub v1 support.\n");
-    x.reject (PROC_UNAVAIL);
   }
 }
 
@@ -588,7 +561,7 @@ tamed void
 oksrvc_t::launch_T ()
 {
   tvars {
-    bool pub1_rc, logd_rc, dbs_rc (true), pub2_rc (true);
+    bool pub1_rc, logd_rc, dbs_rc (true), pub_rc (true);
     clnt_stat err;
   }
 
@@ -616,14 +589,13 @@ oksrvc_t::launch_T ()
   if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ launching pub and log\n");
 
   twait {
-    launch_pub2 (mkevent (pub2_rc));
-    launch_pub1 (mkevent (pub1_rc));
+    launch_pub (mkevent (pub_rc));
     logd->connect (mkevent (logd_rc));
   }
 
   if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("- launched pub and log\n");
 
-  if (!pub2_rc) {
+  if (!pub_rc) {
     SVC_FATAL_ERROR ("could not establish connection with pubd version 2");
     exit (1);
   }
@@ -636,7 +608,7 @@ oksrvc_t::launch_T ()
     exit (1);
   }
 
-  // Allow work after pub2 init, but before we connect to DBs.
+  // Allow work after pub init, but before we connect to DBs.
   if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ custom_init0\n");
   twait { custom_init0 (mkevent ()); }
   if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ launch_dbs\n");
@@ -666,48 +638,6 @@ oksrvc_t::launch_T ()
 		   "service lifetime expired", 
 		   ok_shutdown_timeout_fast));
   }
-}
-
-//-----------------------------------------------------------------------
-
-tamed void 
-oksrvc_t::launch_pub1 (cbb cb)
-{
-  tvars {
-    ptr<pub_res_t> pr;
-    bool rc;
-    bool res (true);
-  }
-
-  // Still need to allocate this even for Pub v1 disabled, since
-  // otherwise the legacy calls to pub->include will segfault (with
-  // pub unitialized).  When pub v1 phased out, we can remove this.
-  rpcli = pub_rclient_t::alloc (clnt, OKCTL_LOOKUP, OKCTL_GETFILE,
-				OKCTL_PUBCONF, 
-				get_andmask (), get_ormask ());
-
-  if (pub1_supported) {
-    // setup and launch Remote Pub Client
-    
-    twait { rpcli->config (mkevent (pr)); }
-    if (!*pr) {
-      strbuf b;
-      b << "Pub v1: config failed: " << pr->to_str ();
-      str s = b;
-      SVC_ERROR (s);
-    }
-
-    init_publist ();
-    
-    twait { pubfiles (mkevent (rc)); }
-    if (!rc) res = false;
-  } else {
-
-    // Call anyway to force warnings. This function should be empty.
-    init_publist ();
-  }
-
-  TRIGGER (cb, res);
 }
 
 //-----------------------------------------------------------------------
@@ -1176,8 +1106,8 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
 //-----------------------------------------------------------------------
 
 tamed void
-okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
-			    penv_t *e)
+okclnt_base_t::output_file (const char *f, cbb::ptr cb, ptr<pub3::dict_t> a, 
+			    u_int opt, penv_t *e)
 {
   tvars {
     zbuf z;
@@ -1188,7 +1118,7 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, aarr_t *a, u_int opt,
   if (!output_frag_prepare ()) {
     ret = false;
   } else {
-    twait { pub2 ()->run (&z, f, mkevent (ret), a, opt, e); }
+    twait { pub3 ()->run (&z, f, mkevent (ret), a, opt, e); }
     if (ret) {
       z.to_strbuf (&b, false);
       twait { _client_con->send (b, NULL, mkevent ()); }
@@ -1305,63 +1235,6 @@ okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 
   oksrvc->log (_client_con, hdr_p (), rsp);
   rsp->send (_client_con, cb);
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::add_pubfiles (const char *arr[], u_int sz, bool c)
-{
-  for (u_int i = 0; i < sz; i++) 
-    add_pubfile (arr[i]);
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::add_pubfiles (const char *arr[], bool c)
-{
-  for (const char **p = arr; p && *p; p++)
-    add_pubfile (*p, c);
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::add_pubfile (const str &s, bool c)
-{
-  // warn << "add_pubfile:" << s << "\n"; // debug
-  if (supports_pub1 ())
-    rpcli->add_rootfile (s, c);
-  else {
-    SVC_ERROR ("Cannot call add_pubfile() without Pub v1 support");
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::pubfiles (cbb cb) 
-{
-  if (supports_pub1 ()) {
-    rpcli->publish (wrap (this, &oksrvc_t::pubbed, cb));
-  } else {
-    SVC_ERROR ("Cannot call pubfiles() without Pub v1 support");
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::pubbed (cbb cb, ptr<pub_res_t> res)
-{
-  bool ret (true);
-  if (!*res) {
-    SVC_ERROR ("Pub of Rootfiles Failed");
-    res->cluck ();
-	ret = false;
-  }
-  (*cb) (ret);
 }
 
 //-----------------------------------------------------------------------
@@ -1535,18 +1408,17 @@ get_okws_config (bool fat)
 //-----------------------------------------------------------------------
 
 bool
-ok_httpsrv_t::init_pub2 (u_int opts)
+ok_httpsrv_t::init_pub (u_int opts)
 {
   bool ret = false;
-  if (pub2fd > 0) {
-    ptr<axprt_stream> x (axprt_stream::alloc (pub2fd, ok_axprt_ps));
+  if (pub3fd > 0) {
+    ptr<axprt_stream> x (axprt_stream::alloc (pub3fd, ok_axprt_ps));
 
-    if (ok_pub2_caching) {
-      _pub2 = New refcounted<pub2::caching_remote_publisher_t> (x, opts);
+    if (ok_pub3_caching) {
+      _pub3 = New refcounted<pub3::caching_remote_publisher_t> (x, opts);
     } else {
-      _pub2 = New refcounted<pub2::remote_publisher_t> (x, opts);
+      _pub3 = New refcounted<pub3::remote_publisher_t> (x, opts);
     }
-
     ret = true;
   }
   return ret;
@@ -1555,32 +1427,29 @@ ok_httpsrv_t::init_pub2 (u_int opts)
 //-----------------------------------------------------------------------
 
 tamed void
-ok_httpsrv_t::launch_pub2_T (cbb cb)
+ok_httpsrv_t::launch_pub (evb_t ev)
 {
   tvars {
     bool rc (false);
   }
-  if (pub2 ()) {
-    twait { pub2 ()->connect (mkevent (rc)); }
-    if (rc) {
-      twait { post_launch_pub2 (mkevent (rc)); }
-    }
-    if (!rc) 
-      okdbg_warn (ERROR, "Connection/initialization to pub2 failed!");
+  twait { pub3 ()->connect (mkevent (rc)); }
+  if (rc) {
+    twait { post_launch_pub (mkevent (rc)); }
   }
-  TRIGGER (cb, rc);
+  if (!rc) 
+    okdbg_warn (ERROR, "Connection/initialization to pub3 failed!");
+  ev->trigger (rc);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-oksrvc_t::post_launch_pub2_T (cbb cb)
+oksrvc_t::post_launch_pub (evb_t ev)
 {
   tvars {
     clnt_stat s;
     bool rc (true);
   }
-  assert (pub2 ());
   twait {
     RPC::okctl_program_1::okctl_req_errdocs_2 (clnt, &errdocs_x, mkevent (s)); 
   }
@@ -1590,57 +1459,29 @@ oksrvc_t::post_launch_pub2_T (cbb cb)
     okdbg_warn (ERROR, b);
     rc = false;
   }
-  TRIGGER (cb, rc);
+  ev->trigger (rc);
 }
 
 //-----------------------------------------------------------------------
 
-ptr<pub2::ok_iface_t>
-okclnt_base_t::pub2 ()
-{
-  return oksrvc->pub2 ();
-}
+ptr<pub3::ok_iface_t> okclnt_base_t::pub3 () { return oksrvc->pub3 (); }
 
 //-----------------------------------------------------------------------
 
-ptr<pub2::ok_iface_t>
-okclnt_base_t::pub2_local ()
+ptr<pub3::ok_iface_t>
+okclnt_base_t::pub3_local ()
 {
-  if (!_p2_locale)
-    _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 ());
-  return _p2_locale;
+  if (!_p3_locale)
+    _p3_locale = New refcounted<pub3::locale_specific_publisher_t> (pub3 ());
+  return _p3_locale;
 }
 
 //-----------------------------------------------------------------------
 
 void
-okclnt_base_t::set_localizer (ptr<const pub_localizer_t> l)
+okclnt_base_t::set_localizer (ptr<const pub3::localizer_t> l)
 {
-  _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 (), l);
-}
-
-//-----------------------------------------------------------------------
-
-pval_w_t 
-oksrvc_t::operator[] (const str &s) const 
-{ 
-  if (!supports_pub1 () || !_pub1_cfg || use_pub2_cfg ()) {
-    return ((*pub2 ()))[s];
-  } else {
-    return (*rpcli)[s] ;
-  }
-}
-
-//-----------------------------------------------------------------------
-
-str 
-oksrvc_t::cfg (const str &n) const 
-{ 
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n);
+  _p3_locale = New refcounted<pub3::locale_specific_publisher_t> (pub3 (), l);
 }
 
 //-----------------------------------------------------------------------
