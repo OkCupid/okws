@@ -32,6 +32,7 @@
 #include "abuf.h"
 #include "pair.h"
 #include "aparse.h"
+#include "pub3expr.h"
 
 #define CGI_DEF_SCRATCH  0x10000
 
@@ -150,7 +151,7 @@ public:
   { c->insert (k, v, ap); return (*this); }
   cgi_t *cgi () const { return c; }
   bool flookup (const str &k, cgi_files_t **v) { return c->flookup (k,v); }
-  void load_aarr (aarr_t *a) const { return c->load_aarr (a); }
+  void load_dict (pub3::dict_t *d) const { return c->load_dict (d); }
   
 private:
   cgi_t *c;

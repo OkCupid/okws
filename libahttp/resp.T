@@ -230,17 +230,6 @@ http_status_set_t::get_desc (int n, str *l) const
 
 //-----------------------------------------------------------------------
 
-ptr<http_pub_t>
-http_pub_t::alloc (int n, const pub_base_t &p, const str &fn, aarr_t *env, 
-		   htpv_t v)
-{
-  ptr<http_pub_t> ret (New refcounted<http_pub_t> (n, p, fn, env, v));
-  if (ret->err) return NULL;
-  else return ret;
-}
-
-//-----------------------------------------------------------------------
-
 u_int
 http_response_t::send (ptr<ahttpcon> x, cbv::ptr cb)
 { 
@@ -287,15 +276,15 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
 //-----------------------------------------------------------------------
 
 tamed void
-http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
-		      cbb cb, aarr_t *env, htpv_t v,
+http_pub_t::publish (ptr<pub3::remote_publisher_t> p, str fn,
+		      cbb cb, ptr<pub3::dict_t> env, htpv_t v,
 		      bool gz)
 {
   tvars {
     zbuf b;
     bool rc;
   }
-  twait { p->run (&b, fn, mkevent (rc), env, P_WSS); }
+  twait { p->run (&b, fn, mkevent (rc), env, pub3::P_WSS); }
   if (rc) {
     gzip_mode_t gzm = ok_gzip_get_mode (b, v);
     b.compressible_t::to_strbuf (&body, &_hold, gzm);
@@ -306,14 +295,15 @@ http_pub2_t::publish (ptr<pub2::remote_publisher_t> p, str fn,
 
 //-----------------------------------------------------------------------
 
-typedef event<ptr<http_pub2_t> >::ref  http_pub2_ev_t;
+typedef event<ptr<http_pub_t> >::ref  http_pub2_ev_t;
 
 tamed static void
-http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
-		    http_pub2_ev_t ev, aarr_t *env, htpv_t v, bool gz)
+http_pub_t::alloc (ptr<pub3::remote_publisher_t> p, int n, str fn,
+		    http_pub2_ev_t ev, ptr<pub3::dict_t> env, htpv_t v, 
+		    bool gz)
 {
   tvars {
-    ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (n, v)); 
+    ptr<http_pub_t> ret (New refcounted<http_pub_t> (n, v)); 
     bool rc;
   }
   twait { ret->publish (p, fn, mkevent (rc), env, v, gz); }
@@ -323,12 +313,12 @@ http_pub2_t::alloc (ptr<pub2::remote_publisher_t> p, int n, str fn,
 //-----------------------------------------------------------------------
 
 tamed static void
-http_pub2_t::alloc2 (ptr<pub2::remote_publisher_t> p, 
+http_pub_t::alloc2 (ptr<pub3::remote_publisher_t> p, 
 		     const http_resp_attributes_t &hra, str fn, 
-		     http_pub2_ev_t ev, aarr_t *env)
+		     http_pub2_ev_t ev, ptr<pub3::dict_t> env)
 {
   tvars {
-    ptr<http_pub2_t> ret (New refcounted<http_pub2_t> (hra));
+    ptr<http_pub_t> ret (New refcounted<http_pub_t> (hra));
     bool rc;
   }
   twait { 
@@ -358,20 +348,6 @@ http_error_t::http_error_t (const http_resp_attributes_t &hra,
 
 //-----------------------------------------------------------------------
 
-http_pub_t::http_pub_t (int n, const pub_base_t &p, const str &fn, 
-			aarr_t *env, htpv_t v, bool gz)
-  : http_response_t (http_resp_header_t (n, v)), zb (),
-    err (!p.include (&zb, fn, 0, env))
-{
-  if (!err)  {
-    gzip_mode_t gzm = ok_gzip_get_mode (zb, v);
-    zb.compressible_t::to_strbuf (&body, &_hold, gzm);
-  }
-}
-
-
-//-----------------------------------------------------------------------
-
 gzip_mode_t 
 ok_gzip_get_mode (const compressible_t &b, int v, bool do_gzip)
 {
@@ -387,6 +363,5 @@ http_resp_header_ok_t::http_resp_header_ok_t (ssize_t s,
 { 
   fill_outer (a.get_gzip (), s);
 }
-
 
 //-----------------------------------------------------------------------

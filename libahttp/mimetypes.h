@@ -32,7 +32,6 @@
 
 class mime_type_map_t {
 public:
-  mime_type_map_t (const pval_w_t &in);
   mime_type_map_t (const pub3::obj_t &in);
   str lookup (const str &in, str *sffx = NULL) const;
 protected:

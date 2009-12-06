@@ -941,6 +941,8 @@ namespace pub3 {
 
     void add (binding_t p);
     void add (ptr<binding_t> p);
+    void insert (str k, str v);
+    void insert (str k, ptr<expr_t> x) { bindtab_t::insert (k, x); }
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_xdr (xpub3_json_t *x) const;
@@ -965,6 +967,8 @@ namespace pub3 {
   }; 
 
   //-----------------------------------------------------------------------
+
+  typedef expr_dict_t dict_t;
 
   class expr_assignment_t : public expr_t {
   public:

@@ -1811,6 +1811,11 @@ namespace pub3 {
     return r;
   }
 
+  //-----------------------------------------------------------------------
+
+  void expr_dict_t::insert (str k, str v)
+  { insert (k, expr_str_t::alloc (v)); }
+
   //====================================================================
 
   expr_assignment_t::expr_assignment_t (ptr<expr_t> lhs, ptr<expr_t> rhs,

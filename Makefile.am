@@ -24,7 +24,7 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = libpub pub test
+SUBDIRS = libpub pub test libahttp
 
 
 #	$(SBD1) \

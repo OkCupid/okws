@@ -32,6 +32,7 @@
 #include "pubutil.h"
 #include "okscratch.h"
 #include "pescape.h"
+#include "pub3expr.h"
 
 struct encode_t {
   encode_t (strbuf *o, ptr<ok::scratch_handle_t> s = NULL)
@@ -123,12 +124,12 @@ public:
   const pair_t *lfirst () const { return lst.first ; }
   const pair_t *lnext (const pair_t *p) const { return lst.cnext (p); }
 
-  void load_aarr (aarr_t *in) const
+  void load_dict (pub3::dict_t *in) const
   {
     const pair_t *p;
     for (p = lst.first; p; p = lst.cnext (p)) {
       if (p->vals.size ()) {
-	in->add (p->key, p->vals.back ());
+	in->insert (p->key, p->vals.back ());
       }
     }
   }

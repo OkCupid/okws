@@ -1,19 +1,5 @@
 #include "mimetypes.h"
 
-mime_type_map_t::mime_type_map_t (const pval_w_t &a)
-{
-  for (size_t i = 0; i < a.size (); i++) {
-    // Format is:
-    //   ("image/jpeg", "jpe", "jpeg", "jpg")
-    //   ("text/html", "html")
-    if (a[i].size () >= 2) {
-      for (size_t j = 1; j < a[i].size (); j++) {
-	add (a[i][j], a[i][0]);
-      }
-    }
-  }
-}
-
 mime_type_map_t::mime_type_map_t (const pub3::obj_t &a)
 {
   for (size_t i = 0; i < a.size (); i++) {
