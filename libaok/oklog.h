@@ -189,12 +189,12 @@ public:
 		    http_response_base_t *res,
 		    const str &s) = 0;
   int getfd () const { return h->getfd (); }
-  virtual void clone (cbi cb) { (*cb) (-1); }
-  virtual void turn (okrescb cb) { turn_T (cb); }
-  void kill (cbv c, ptr<okauthtok_t> tok, 
+  virtual void clone (evi_t ev) { ev->trigger (-1); }
+  virtual void turn (evs_t ev) { turn_T (ev); }
+  void kill (evv_t c, ptr<okauthtok_t> tok, 
 	     oksig_t s = OK_SIG_KILL) { h->kill (c, tok, s); }
 protected:
-  void turn_T (okrescb cb, CLOSURE);
+  void turn_T (evs_t cb, CLOSURE);
   void connect_T (evb_t ev, CLOSURE);
   helper_t *h;
 };
@@ -207,8 +207,8 @@ public:
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   virtual void connect (evb_t ev) { rpc_log_t::connect_T (ev); }
-  void connect_cb1 (cbb cb, bool b);
-  void connect_cb2 (cbb cb, clnt_stat err);
+  void connect_cb1 (evb_t cb, bool b);
+  void connect_cb2 (evb_t cb, clnt_stat err);
  
 protected:
   void connect_T (evb_t ev, CLOSURE);

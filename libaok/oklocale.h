@@ -58,11 +58,11 @@ namespace std_locale {
     const str _partition;
   };
   
-  class localizer_t : public pub_localizer_t {
+  class localizer_t : public pub3::localizer_t {
   public:
     localizer_t (insert_type_t d, insert_type_t s1, insert_type_t s2,
 		 ptr<const locale_t> l)
-      : pub_localizer_t (), _dir (d), _sffx1 (s1), _sffx2 (s2), _locale (l) {}
+      : pub3::localizer_t (), _dir (d), _sffx1 (s1), _sffx2 (s2), _locale (l) {}
     
     virtual str localize (const str &infn) const;
     
