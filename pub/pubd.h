@@ -161,7 +161,7 @@ namespace pub3 {
     void dispatch (svccb *sbp);
     void handle_clonefd (svccb *cbp);
     void handle_eof ();
-    void do_chroot (str d, str uname, str gname);
+    bool do_chroot (str d, str uname, str gname);
     void run (evi_t ev, CLOSURE);
     str jail2real (str d) const;
     ptr<srv_file_lookup_t> file_lookup () { return _file_lookup; }

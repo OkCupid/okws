@@ -235,7 +235,10 @@ main_T (int argc, char **argv)
   setsid ();
 
   // set the privileges for the regular parse running
-  srv->do_chroot (jaildir, uname, gname);
+  if (!srv->do_chroot (jaildir, uname, gname)) {
+    warn << "Failed to jail and drop privileges\n";
+    exit (1);
+  }
 
   // After we set the jail directory, then we can start messing around
   // with sentinel files.

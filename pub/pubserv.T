@@ -271,4 +271,65 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+
+  bool
+  master_srv_t::do_chroot (str dir, str uname, str gname) 
+  {
+    bool rc = false;
+    ptr<jailer_t> j = _pub->jailer ();
+    if (getuid ()) {
+      j->setjail (JAIL_VIRTUAL, dir);
+      rc = true;
+    } else {
+      const char *dc = dir.cstr ();
+      if (!uname) {
+	uname = ok_pubd_uname;
+	warn << "No pub username given; defaulting to '" <<  uname << "'\n";
+      }
+      if (!gname) {
+	gname = ok_pubd_gname;
+	warn << "No pub groupname given; defaulting to '" << gname << "'\n";
+      }
+      uid_t uid = 0;
+      gid_t gid = 0;
+
+      // need to call this before chroot'ing! otherwise, 
+      // we can't open /etc/passwd
+      if ((uid = uname2uid (uname)) < 0) {
+	warn << uname << ": no such user\n";
+      }
+      if ((gid = gname2gid (gname)) < 0) {
+	warn << gname << ": no such group\n";
+      }
+
+      if (uid < 0 || gid < 0) {
+	warn ("cannot continue due to bad groups or users\n");
+      } else if ((uid || gid) && setgroups (0, NULL)) {
+	warn ("failed to void grouplist: %m\n");
+      } else if (!chroot (dc)) {
+	warn ("chroot (%s) failed: %m\n", dc);
+      } else if (setgid (gid) != 0) {
+	warn ("setgid (%s) failed: %m\n", gname.cstr ());
+      } else if (setuid (uid) != 0) {
+	warn ("setuid (%s) failed: %m\n", uname.cstr ());
+      } else {
+	j->setjail (JAIL_REAL, NULL);
+	rc = true;
+      }
+    }
+    if (rc) j->set_in_jail (true);
+    return rc;
+  }
+
+  //-----------------------------------------------------------------------
+
+  str
+  master_srv_t::jail2real (str s) const
+  {
+    str ret = _pub->jailer ()->jail2real (s);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
 };

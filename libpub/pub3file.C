@@ -197,7 +197,7 @@ namespace pub3 {
   jailer_t::jail2real (str in) const
   {
     str ret = in;
-    if (in && !_in_jail && _mode == JAIL_VIRTUAL) { 
+    if (in && _dir && !_in_jail && _mode == JAIL_VIRTUAL) { 
       ret = dir_merge (_dir, in); 
     }
     if (in && ret) {
