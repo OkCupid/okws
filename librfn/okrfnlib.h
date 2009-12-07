@@ -25,7 +25,6 @@ namespace rfn3 {
   PUB3_COMPILED_FN(join, "sl",);
   PUB3_COMPILED_FN(range, "i|ii");
   PUB3_COMPILED_FN(split, "rs");
-  PUB3_COMPILED_FN(append, "lO.");
   PUB3_COMPILED_FN(map, "dl");
   PUB3_COMPILED_FN(search, "rs");
   PUB3_COMPILED_FN(match, "rs");
@@ -35,7 +34,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(tag_escape, "s");
   PUB3_COMPILED_FN(json_escape, "s");
   PUB3_COMPILED_FN(hidden_escape, "s");
-  PUB3_COMPILED_FN(substring, "s");
+  PUB3_COMPILED_FN(substring, "si|i");
   PUB3_COMPILED_FN(default, "O|O");
   PUB3_COMPILED_FN(strip, "s");
   PUB3_COMPILED_FN(url_escape, "s");
@@ -52,12 +51,25 @@ namespace rfn3 {
   PUB3_COMPILED_FN(json2pub, "s");
   PUB3_COMPILED_FN(is_null, "n");
 
+  //-----------------------------------------------------------------------
+
   class is_null_t : public compiled_fn_t {
   public:
     is_null_t () : compiled_fn_t ("is_null") {}
     ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
     void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
   };
+
+  //-----------------------------------------------------------------------
+
+  class append_t : public compiled_fn_t {
+  public:
+    append_t () : compiled_fn_t ("append") {}
+    ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
+  };
+
+  //-----------------------------------------------------------------------
 
 };
 

@@ -57,14 +57,17 @@ namespace rfn3 {
   protected:
 
     struct arg_t {
+      arg_t () : _i (0), _u (0), _b (-1), _n (-1) {}
+      ptr<mref_t> _r;
       ptr<expr_t> _O;
-      int64_t _i;
-      u_int64_t _u;
-      bool _b;
       ptr<regex_t> _r;
       str _s;
       ptr<expr_dict_t> _d;
       ptr<expr_list_t> _l;
+      int64_t _i;
+      u_int64_t _u;
+      short _b;
+      short _n;
     };
 
     // evaluate, given that the arguments have been prevaluted...

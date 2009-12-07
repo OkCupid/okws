@@ -121,12 +121,12 @@ namespace rfn3 {
     
     const char *cp = _arg_pat;
     size_t i = 0;
-    bool pipe = false, dot = true;
+    bool pipe = false;
 
     size_t min_len = 0;
     size_t max_len = 0;
     
-    for ( ; !dot && *cp && i < args.size (); cp++) {
+    for ( ; *cp && i < args.size (); cp++) {
       bool adv = true;
       args_t a;
 
@@ -190,11 +190,6 @@ namespace rfn3 {
 	adv = false;
 	break;
 
-      case '.':
-	dot = true;
-	adv = false;
-	break;
-
       default:
 	err.push_back (strbuf ("internal pattern error: bad character: %c", 
 			       *cp));
@@ -210,21 +205,9 @@ namespace rfn3 {
       _checked->push_back (a);
     }
 
-    if (*cp && !dot) {
-      err.push_back ("internal pattern error: '.' must be last character");
-    }
-
-    for ( ; dot && i < args.size (); i++) {
-      args_t a;
-      a._O = args[i];
-      _checked_args->push_back (a);
-    }
-
     if (*cp || i < args.size ()) {
       str ex;
-      if (dot) {
-	ex = strbuf ("%zd or more", min_args);
-      } else if (min_args == max_args) {
+      if (min_args == max_args) {
 	ex = strbuf ("%zd", min_args);
       } else {
 	ex = strbuf ("%zd to %zd", min_args, max_args);

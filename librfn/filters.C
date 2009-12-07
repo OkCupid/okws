@@ -19,75 +19,46 @@ namespace rfn3 {
     out.setlen (in.len ());
     return out;
   }
-  
-  //------------------------------------------------------------
-
-  tolower_t::tolower_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
 
   //------------------------------------------------------------
 
-  scalar_obj_t
-  tolower_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  toupper_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s;
-    if (_arg) { s = _arg->eval_as_str (e); }
-    if (s) { s = my_tolower (s); }
-    return scalar_obj_t (s);
-  }
-
-  //------------------------------------------------------------
-
-  toupper_t::toupper_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t
-  toupper_t::eval_internal (eval_t e) const
-  {
-    str s;
-    if (_arg) { s = _arg->eval_as_str (e); }
+    str s = args[0]._s;
     if (s) { s = my_toupper (s); }
-    return scalar_obj_t (s);
+    return expr_str_t::safe_alloc (s);
   }
-
-  //------------------------------------------------------------
-
-  html_escape_t::html_escape_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t
-  html_escape_t::eval_internal (eval_t e) const
-  {
-    str s;
-    if (_arg) { s = _arg->eval_as_str (e); }
-    if (s) { s = xss_escape (s); }
-    return scalar_obj_t (s);
-  }
-
-  //------------------------------------------------------------
   
-  tag_escape_t::tag_escape_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno),
-      _arg ((*e)[0]) 
+  //------------------------------------------------------------
+
+  ptr<const expr_t>
+  tolower_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    if (e->size () == 2) {
-      _ok_rxx = (*e)[1];
-    }
+    str s = args[0]._s;
+    if (s) { s= my_tolower (s); }
+    return expr_str_t::safe_alloc (s);
   }
 
   //------------------------------------------------------------
 
-  scalar_obj_t
-  tag_escape_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  html_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    str s = args[0]._s;
+    if (s) { s = xss_escape (s); }
+    return expr_str_t::safe_alloc (s);
+  }
+
+  //------------------------------------------------------------
+
+  ptr<const expr_t>
+  tag_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     ptr<rxx> p;
 
-    if (_ok_rxx) { 
-      p = _ok_rxx->eval_as_regex (e); 
+    if (args.size () >= 2) {
+      p = args[1]._r;
     } else { 
       static ptr<rxx> dflt_rxx;
       if (!(p = dflt_rxx)) {
@@ -104,55 +75,40 @@ namespace rfn3 {
     str s;
     if (p) {
       html_filter_rxx_t filt (p);
-      str in = _arg->eval_as_str (e);
+      str in = args[0]._s;
       s = filt.run (in);
     }
-    return scalar_obj_t (s);
+    return expr_str_t::safe_alloc (s);
   }
 
   //------------------------------------------------------------
 
-  json_escape_t::json_escape_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t
-  json_escape_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  json_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s;
-    if (_arg) { s = _arg->eval_as_str (e); }
-    if (!s) { s = ""; }
+    str s = args[0]._s;
     s = json_escape (s, true);
-    return scalar_obj_t (s);
+    return expr_str_t::safe_alloc (s);
   }
-
-  //------------------------------------------------------------
-
-  substring_t::substring_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), 
-      _arg ((*e)[0]),
-      _start ((*e)[1]),
-      _len ((*e)[2]) {}
   
   //------------------------------------------------------------
 
-  scalar_obj_t
-  substring_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  substring_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s;
-
-    if (_arg) { s = _arg->eval_as_str (e); }
+    str s = args[0]._s;
+    if (!s) s = "";
     size_t start = 0, len = 0;
-    if (_start) { start = _start->eval_as_int (e); }
-    if (_len) { len = _len->eval_as_int (e); }
+    start = args[1]._i;
 
-    if (!s) { s = ""; } 
+    if (args.size () >= 3) { len = args[2]._i; }
+    else { len = s.len (); }
+
     if (start >= s.len ()) { start = s.len (); }
     if (start + len >= s.len ()) { len = s.len () - start; }
 
     str r = str (s.cstr () + start, len);
-    return scalar_obj_t (r);
+    return expr_str_t::safe_alloc (r);
   }
 
   //------------------------------------------------------------

@@ -983,6 +983,17 @@ namespace pub3 {
   
   ptr<expr_str_t> expr_str_t::alloc (str s) 
   { return New refcounted<expr_str_t> (s); }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> 
+  expr_str_t::safe_alloc (str s)
+  {
+    ptr<expr_t> ret;
+    if (s) ret = alloc (s);
+    else ret = expr_null_t::alloc ();
+    return ret;
+  }
   
   //====================================================================
   

@@ -625,6 +625,7 @@ namespace pub3 {
     ptr<rxx> to_regex () const;
     static ptr<expr_str_t> alloc (str s = NULL);
     static ptr<expr_str_t> alloc (const xpub3_json_str_t &x);
+    static ptr<expr_t> safe_alloc (str s);
 
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
     bool to_len (size_t *s) const;
