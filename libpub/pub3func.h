@@ -131,41 +131,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  // temp
   class runtime_fn_t;
 
   //
-  // rfn_factory: runtime function factory
+  //  A library of runtime functions.  These functions can be
+  //  bound into a specified environment.
   //
-  //  allocates runtime functions.  OKWS core supports some of them
-  //  but specific okws instances are welcome to support more.  
-  //  details still uncertain, but it will most likely involve
-  //  local changes to pubd (via dynamic loading?) and also changes
-  //  to specific services -- similar to the Apache module system...
-  //
-  class rfn_factory_t {
+  class library_t {
   public:
-    rfn_factory_t () {}
-    virtual ~rfn_factory_t () {}
-
-    virtual ptr<runtime_fn_t>
-    alloc (const str &s, ptr<expr_list_t> l, int lineno) = 0;
-
-    // Access the singleton runtime function factory; by default
-    // it's set to a null factory, but can be explanded any which
-    // way.
-    static ptr<rfn_factory_t> _curr;
-    static void set (ptr<rfn_factory_t> f);
-    static ptr<rfn_factory_t> get ();
-  };
-
-  //-----------------------------------------------------------------------
-
-  class null_rfn_factory_t : public rfn_factory_t {
-  public:
-    null_rfn_factory_t  () : rfn_factory_t () {}
-    ptr<runtime_fn_t> alloc (const str &s, ptr<expr_list_t> l, int lineno);
-
+    library_t () {}
+    ~library_t () {}
+    void bind (ptr<bindtab_t> b);
+  private:
+    vec<ptr<runtime_fn_t> > _functions;
   };
 
   //-----------------------------------------------------------------------

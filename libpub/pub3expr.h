@@ -117,6 +117,7 @@ namespace pub3 {
 
     virtual str to_identifier () const { return NULL; }
     virtual str to_str (bool q = false) const { return NULL; }
+    virtual bool can_be_str ()
     virtual str to_switch_str () const { return to_str (); }
     virtual bool to_bool () const { return false; }
     virtual int64_t to_int () const { return 0; }
