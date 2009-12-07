@@ -23,7 +23,7 @@ namespace rfn3 {
     return b;
   }
 
-  //-----------------------------------------------------------------------
+  //---------------------------------------------------------------------
 
   bool
   compiled_fn_t::check_args (publish_t *p, args_t a) const
@@ -39,7 +39,7 @@ namespace rfn3 {
 	e = strbuf ("%zd to %zd", min_args (), max_args ());
       }
       strbuf b ("Wrong number of parameters to call %s "
-		"(expected %s, got %zd)", _name.cstr (), e.cstr (), n);
+		"(expected %s, got %zu)", _name.cstr (), e.cstr (), n);
       report_error (p, b);
     }
     return ret;

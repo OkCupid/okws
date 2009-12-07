@@ -50,11 +50,13 @@ namespace rfn3 {
   PUB3_COMPILED_FN(keys, "d");
   PUB3_COMPILED_FN(items, "d");
   PUB3_COMPILED_FN(json2pub, "s");
+  PUB3_COMPILED_FN(is_null, "n");
 
   class is_null_t : public compiled_fn_t {
   public:
     is_null_t () : compiled_fn_t ("is_null") {}
-
+    ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
   };
 
 };
