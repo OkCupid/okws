@@ -105,6 +105,8 @@ namespace pub3 {
     void pub_as_null (publish_t *pub, evb_t ev, CLOSURE) const;
     void pub_as_str (publish_t *pub, evs_t ev, CLOSURE) const;
     void pub_as_dict (publish_t *pub, cdev_t ev, CLOSURE) const;
+    void pub_as_scalar (publish_t *pub, event<scalar_obj_t>::ref ev, 
+			CLOSURE) const;
 
     //------------------------------------------------------------
     //

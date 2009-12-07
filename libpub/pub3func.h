@@ -14,6 +14,7 @@ namespace pub3 {
   class callable_t {
   public:
     typedef ptr<const expr_list_t> args_t;
+    typedef vec<ptr<const expr_t> > cargs_t;
     callable_t () {}
     virtual ~callable_t () {}
     

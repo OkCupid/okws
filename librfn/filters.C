@@ -26,7 +26,7 @@ namespace rfn3 {
   toupper_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
-    if (s) { s = my_toupper (s); }
+    s = my_toupper (s);
     return expr_str_t::safe_alloc (s);
   }
   
@@ -36,7 +36,7 @@ namespace rfn3 {
   tolower_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
-    if (s) { s= my_tolower (s); }
+    s = my_tolower (s);
     return expr_str_t::safe_alloc (s);
   }
 
@@ -46,7 +46,7 @@ namespace rfn3 {
   html_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
-    if (s) { s = xss_escape (s); }
+    s = xss_escape (s);
     return expr_str_t::safe_alloc (s);
   }
 
@@ -97,7 +97,6 @@ namespace rfn3 {
   substring_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
-    if (!s) s = "";
     size_t start = 0, len = 0;
     start = args[1]._i;
 
@@ -113,42 +112,39 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  default_t::default_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), 
-      _arg ((*e)[0])
+  tamed void
+  default_t::pub_to_val (publish_t *e, args_t args, cxev_t ev) const
   {
-    if (e->size () > 1) {
-      _def_val = (*e)[1];
+    tvars {
+      scalar_obj_t ret;
+      bool is_null;
+      scalar_obj_t def;
     }
-  }
+    if (args->size () < 1 || args->size () > 2) {
+      report_error (e, "default() expects 1 or 2 args");
 
-  //------------------------------------------------------------
-
-  scalar_obj_t
-  default_t::eval_internal (eval_t e) const
-  {
-    scalar_obj_t ret;
-
-    bool isnull = !_arg || _arg->eval_as_null (e);
-    if (isnull) {
-      if (_def_val) { 
-	str v = _def_val->eval_as_str (e); 
-	ret.set (v);
-      } else { 
-	ret.set ("");
-      }
     } else {
-      ret = _arg->eval_as_scalar (e);
+     
+      if (!(*args)[0]) { 
+	is_null = true; 
+      } else { 
+	twait { (*args)[0]->pub_to_null (e, mkevent (is_null)); } 
+      }
+
+      if (args->size () > 1) { 
+	twait { (*args)[1]->pub_as_scalar (p, mkevent (def)); }
+      } else { 
+	def.set (""); 
+      }
+
+      if (is_null) { 
+	ret = def; 
+      } else { 
+	twait { (*args)[0]->pub_as_scalar (p, mkevent (ret)); }
+      }
     }
-
-    return ret;
+    return expr_t::alloc (ret);
   }
-
-  //------------------------------------------------------------
-
-  strip_t::strip_t (const str &nm, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (nm, e, lineno), 
-      _arg ((*e)[0]) {}
 
   //------------------------------------------------------------
 
@@ -161,118 +157,68 @@ namespace rfn3 {
     return true;
   }
 
-
   //------------------------------------------------------------
 
-  scalar_obj_t
-  strip_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  strip_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s = _arg->eval_as_str (e);
-    if (s) {
-      static rxx x ("\\s+");
-      vec<str> v;
-      split (&v, x, s);
-      strbuf b;
-      bool output = false;
-      for (size_t i = 0; i < v.size (); i++) {
-	if (!is_empty (v[i])) {
-	  if (output) { b << " "; }
-	  b << v[i];
-	  output = true;
-	}
+    str s = args[0]._s;
+    static rxx x ("\\s+");
+    vec<str> v;
+    split (&v, x, s);
+    strbuf b;
+    bool output = false;
+    for (size_t i = 0; i < v.size (); i++) {
+      if (!is_empty (v[i])) {
+	if (output) { b << " "; }
+	b << v[i];
+	output = true;
       }
-      s = b;
-    } else {
-      s = "";
     }
-    return scalar_obj_t (s);
+    s = b;
+    return expr_str_t::safe_alloc (s);
   }
 
   //------------------------------------------------------------
 
-  hidden_escape_t::hidden_escape_t (const str &nm, ptr<expr_list_t> e, 
-				    int lineno)
-    : scalar_fn_t (nm, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t
-  hidden_escape_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  hidden_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s;
-    if (_arg) { s = _arg->eval_as_str (e); }
-    if (!s) { s = ""; }
+    str s = args[0]._s;
     s = htmlspecialchars (s);
-    return scalar_obj_t (s);
+    return expr_str_t::safe_alloc (s);
   }
 
   //------------------------------------------------------------
 
-  url_escape_t::url_escape_t (const str &n, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (n, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t 
-  url_escape_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  url_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s = _arg->eval_as_str (e);
-    if (!s) {
-      report_error (e, "cannot evaluate arg to url_escape() as a string");
-      s = "";
-    } else if (s.len () == 0) {
-      s = "";
-    } else {
-      s = cgi_encode (s);
-    }
-    return scalar_obj_t (s);
+    str s = args[0]._s;
+    s = cgi_encode (s);
+    return expr_str_t::safe_alloc (s);
   }
 
   //------------------------------------------------------------
 
-  url_unescape_t::url_unescape_t (const str &n, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (n, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t 
-  url_unescape_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  url_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s = _arg->eval_as_str (e);
-    if (!s) {
-      report_error (e, "cannot evaluate arg to url_unescape() as a string");
-      s = "";
-    } else if (s.len () == 0) {
-      s = "";
-    } else {
-      s = cgi_decode (s);
-    }
-    return scalar_obj_t (s);
+    str s = args[0]._s;
+    s = cgi_decode (s);
+    return expr_str_t::safe_alloc (s);
   }
 
   //------------------------------------------------------------
 
-  sha1_t::sha1_t (const str &n, ptr<expr_list_t> e, int lineno)
-    : scalar_fn_t (n, e, lineno), _arg ((*e)[0]) {}
-
-  //------------------------------------------------------------
-
-  scalar_obj_t
-  sha1_t::eval_internal (eval_t e) const
+  ptr<const expr_t>
+  sha1_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str s = _arg->eval_as_str (e);
-    str ret;
-    if (!s) {
-      report_error (e, "cannot evaluate arg to sha() as a string");
-      ret = "";
-    } else {
-      char buf[sha1::hashsize];
-      sha1_hash (buf, s.cstr (), s.len ());
-      strbuf b;
-      b << hexdump (buf, sha1::hashsize);
-      ret = b;
-    }
-    return scalar_obj_t (ret);
+    str s = args[0]._s;
+    sha1_hash (buf, s.cstr (), s.len ());
+    strbuf b;
+    b << hexdump (buf, sha1::hashsize);
+    return expr_str_t::safe_alloc (b);
   }
 
   //------------------------------------------------------------

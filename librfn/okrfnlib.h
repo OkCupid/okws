@@ -16,10 +16,17 @@ namespace rfn3 {
     ptr<const expr_t>							\
     v_eval_2 (publish_t *p, const vec<arg_t> &args) const;		\ 
   }
+
+#define PUB3_COMPILED_HANDROLLED_FN(x)					\
+    class x##_t : public compiled_handrolled_fn_t {			\
+    public:								\
+    x##_t () : compiled_handrolled_fn_t (#x) {}				\
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;	\
+    }
   
   using namespace pub3;
 
-  PUB3_COMPILED_FN(random, "|ii");
+  PUB3_COMPILED_FN(random, "|uu");
   PUB3_COMPILED_FN(len, "O");
   PUB3_COMPILED_FN(type, "O");
   PUB3_COMPILED_FN(join, "sl",);
@@ -35,7 +42,6 @@ namespace rfn3 {
   PUB3_COMPILED_FN(json_escape, "s");
   PUB3_COMPILED_FN(hidden_escape, "s");
   PUB3_COMPILED_FN(substring, "si|i");
-  PUB3_COMPILED_FN(default, "O|O");
   PUB3_COMPILED_FN(strip, "s");
   PUB3_COMPILED_FN(url_escape, "s");
   PUB3_COMPILED_FN(url_unescape, "s");
@@ -49,26 +55,11 @@ namespace rfn3 {
   PUB3_COMPILED_FN(keys, "d");
   PUB3_COMPILED_FN(items, "d");
   PUB3_COMPILED_FN(json2pub, "s");
-  PUB3_COMPILED_FN(is_null, "n");
 
-  //-----------------------------------------------------------------------
-
-  class is_null_t : public compiled_fn_t {
-  public:
-    is_null_t () : compiled_fn_t ("is_null") {}
-    ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
-    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class append_t : public compiled_fn_t {
-  public:
-    append_t () : compiled_fn_t ("append") {}
-    ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
-    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
-  };
-
+  PUB3_COMPILED_HANDROLLED_FN(is_null);
+  PUB3_COMPILED_HANDROLLED_FN(default);
+  PUB3_COMPILED_HANDROLLED_FN(append);
+  
   //-----------------------------------------------------------------------
 
 };

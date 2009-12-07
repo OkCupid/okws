@@ -31,7 +31,8 @@ namespace rfn3 {
 
   protected:
     // evaluate, given that the arguments have been prevaluted...
-    virtual ptr<const expr_t> v_eval_1 (publish_t *e, args_t args) const = 0;
+    virtual ptr<const expr_t> 
+    v_eval_1 (publish_t *e, const cargs_t &args) const = 0;
 
     ptr<const callable_t> to_callable () const { return mkref (this); }
     const char *get_obj_name () const { return "rfn1::runtime_fn_t"; }
@@ -40,11 +41,21 @@ namespace rfn3 {
     virtual size_t min_args () const { return 0; }
     virtual size_t max_args () const { return 0; }
 
-    void pub_args (publish_t *p, args_t in, event<args_t>::ref ev, CLOSURE) 
+    void pub_args (publish_t *p, args_t in, cargs_t *out, evv_t ev, CLOSURE) 
       const;
-    args_t eval_args (publish_t *p, args_t in) const;
+    void eval_args (publish_t *p, args_t in, cargs_t *out) const;
 
     str _name, _lib;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class compiled_handrolled_fn_t : public compiled_fn_t {
+  public:
+    compiled_handrolled_fn_t (str n) : compiled_fn_t (n) {}
+    bool might_block () const { return true; }
+    ptr<const expr_t> eval_to_val (publish_t *e, args_t args) 
+      const { return NULL; }
   };
 
   //-----------------------------------------------------------------------
@@ -59,11 +70,11 @@ namespace rfn3 {
     struct arg_t {
       arg_t () : _i (0), _u (0), _b (-1), _n (-1) {}
       ptr<mref_t> _r;
-      ptr<expr_t> _O;
-      ptr<regex_t> _r;
+      ptr<const expr_t> _O;
+      ptr<const regex_t> _r;
       str _s;
-      ptr<expr_dict_t> _d;
-      ptr<expr_list_t> _l;
+      ptr<const expr_dict_t> _d;
+      ptr<const expr_list_t> _l;
       int64_t _i;
       u_int64_t _u;
       short _b;
@@ -71,12 +82,13 @@ namespace rfn3 {
     };
 
     // evaluate, given that the arguments have been prevaluted...
-    ptr<const expr_t> v_eval_1 (publish_t *e, args_t args) const;
+    ptr<const expr_t> v_eval_1 (publish_t *e, const cargs_t &args) const;
 
     // evaluate, given that the args have been preevaluated and type-checked
-    virtual ptr<const expr_t> v_eval_2 (publish_t *e, args_t args) const = 0;
+    virtual ptr<const expr_t> 
+    v_eval_2 (publish_t *e, const vec<arg_t> &args) const = 0;
 
-    virtual bool check_args (publish_t *p, args_t a) const;
+    virtual bool check_args (publish_t *p, vec<arg_t> *a) const;
 
     str _arg_pat;
   };

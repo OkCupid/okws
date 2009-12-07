@@ -48,10 +48,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  compiled_fn_t::pub_args (publish_t *p, args_t in, event<args_t>::ref ev) const
+  compiled_fn_t::pub_args (publish_t *p, args_t in, cargs_t *out, 
+			   evv_t ev) const
   {
     tvars {
-      args_t out (expr_list_t::alloc ());
       size_t i;
       ptr<const expr_t> x;
     }
@@ -59,20 +59,18 @@ namespace rfn3 {
       twait { (*in)[i]->pub_to_val (p, mkevent (x)); }
       out->push_back (x);
     }
-    ev->trigger (out);
+    ev->trigger ();
   }
 
   //-----------------------------------------------------------------------
 
-  args_t
-  compile_fn_t::eval_args (publish_t *p, args_t in) const
+  void
+  compile_fn_t::eval_args (publish_t *p, args_t in, cargs_t *out) const
   {
-    args_t out = expr_list_t::alloc ();
     for (size_t i = 0; i < in->size (); i++) {
       ptr<const expr_t> x = eval_to_val (p, (*in)[i]);
       out->push_back (x);
     }
-    return out;
   }
 
   //-----------------------------------------------------------------------
@@ -80,7 +78,8 @@ namespace rfn3 {
   ptr<const expr_t>
   compiled_fn_t::eval_to_val (publish_t *p, args_t ai) const
   {
-    args_t ao = eval_args (p, ai);
+    cargs_t ao;
+    eval_args (p, ai, &ao);
     ptr<const expr_t> ret = v_eval_1 (p, ao);
     return ret;
   }
@@ -91,10 +90,10 @@ namespace rfn3 {
   compiled_fn_t::pub_to_val (publish_t *p, args_t ai, cxev_t ev) const
   {
     tvars {
-      args_t ao;
+      cargs_t ao;
       ptr<const expr_t> ret;
     }
-    twait { pub_args (p, ai, mkevent (ao)); }
+    twait { pub_args (p, ai, &ao, mkevent ()); }
     ret = v_eval_1 (p, ao);
     ev->trigger (ret);
   }
@@ -102,11 +101,11 @@ namespace rfn3 {
   //===================================== patterned_fn_t ==================
 
   ptr<const expr_t>
-  patterned_fn_t::v_eval_1 (publish_t *e, args_t args) const
+  patterned_fn_t::v_eval_1 (publish_t *e, const cargs_t &args) const
   {
     ptr<const expr_t> ret;
     vec<arg_t> checked;
-    if (check_args (*args, &checked)) {
+    if (check_args (args, &checked)) {
       ret = v_eval_2 (e, checked);
     }
     return ret;
@@ -115,7 +114,7 @@ namespace rfn3 {
   //----------------------------------------------------------------------
 
   bool
-  patterned_fn_t::check_args (const expr_list_t &args, vec<arg_t> *_checked)
+  patterned_fn_t::check_args (const cargs_t &args, vec<arg_t> *_checked)
   {
     vec<str> err;
     
@@ -128,7 +127,7 @@ namespace rfn3 {
     
     for ( ; *cp && i < args.size (); cp++) {
       bool adv = true;
-      args_t a;
+      arg_t a;
 
       switch (*cp) {
 	
@@ -201,8 +200,9 @@ namespace rfn3 {
 	max_size ++;
 	if (!pipe) min_size ++;
 	i++;
+	_checked->push_back (a);
       }
-      _checked->push_back (a);
+
     }
 
     if (*cp || i < args.size ()) {
@@ -225,9 +225,6 @@ namespace rfn3 {
     return (e.size () == 0);
   }
 
-  //=======================================================================
-  //=======================================================================
-  //=======================================================================
   //=======================================================================
 
 };
