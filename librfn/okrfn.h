@@ -71,7 +71,7 @@ namespace rfn3 {
       arg_t () : _i (0), _u (0), _b (-1), _n (-1) {}
       ptr<mref_t> _r;
       ptr<const expr_t> _O;
-      ptr<const regex_t> _r;
+      ptr<rxx> _r;
       str _s;
       ptr<const expr_dict_t> _d;
       ptr<const expr_list_t> _l;

@@ -32,7 +32,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(join, "sl",);
   PUB3_COMPILED_FN(range, "i|ii");
   PUB3_COMPILED_FN(split, "rs");
-  PUB3_COMPILED_FN(map, "dl");
+  PUB3_COMPILED_FN(map, "dO");
   PUB3_COMPILED_FN(search, "rs");
   PUB3_COMPILED_FN(match, "rs");
   PUB3_COMPILED_FN(tolower, "s");
@@ -58,8 +58,16 @@ namespace rfn3 {
 
   PUB3_COMPILED_HANDROLLED_FN(is_null);
   PUB3_COMPILED_HANDROLLED_FN(default);
-  PUB3_COMPILED_HANDROLLED_FN(append);
   
+  //-----------------------------------------------------------------------
+  class map_t : public compiled_handrolled_fn_t {
+  public:
+    map_t () : compiled_handrolled_fn_t ("map") {}
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
+    ptr<expr_t> eval_internal (publish_t *p, ptr<const expr_dict_t> m, 
+			       ptr<const expr_t> x) const;
+    
+  };
   //-----------------------------------------------------------------------
 
 };

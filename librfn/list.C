@@ -52,255 +52,116 @@ namespace rfn1 {
 
   //-----------------------------------------------------------------------
 
-  append_t::append_t (const str &n, ptr<expr_list_t> el, int lineno)
-    : runtime_fn_t (n, el, lineno),
-      _list ((*el)[0]) {}
-
-  //-----------------------------------------------------------------------
-  
-  ptr<runtime_fn_t>
-  append_t::constructor (const str &n, ptr<expr_list_t> el, int lineno,
-			    str *err)
+  tamed void
+  append_t::pub_to_val (publish_t *p, args_t args, cvex_t ev) const
   {
-    ptr<runtime_fn_t> r;
-    if (el->size () < 2) {
-      *err = "append() takes two are more arguments";
-    } else {
-      r = New refcounted<append_t> (n, el, lineno);
+    tvars {
+      ptr<mref_t> r;
+      ptr<expr_t> x;
+      ptr<expr_list_t> l;
+      ptr<const expr_t> cel;
+      ptr<expr_t> el;
     }
-    return r;
-  }
+    if (args->size () < 2) {
+      report_error (e, "append() takes 2 or more arguments");
+    } else {
+      twait { (*args)[0]->pub_to_ref (p, mkevent (r)); }
+    }
 
-  //-----------------------------------------------------------------------
-
-  ptr<const pval_t> append_t::eval (eval_t e) const 
-  { return eval_internal (e); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<pval_t> append_t::eval_freeze (eval_t e) const 
-  { return eval_internal (e); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<expr_t>
-  append_t::eval_internal (eval_t e) const
-  {
-    ptr<expr_ref_t> rf;
-    ptr<slot_ref_t> slot;
-    ptr<expr_t> x;
-    ptr<expr_list_t> outlist;
-    ptr<pval_t> v;
-
-    eval_t lhs_eval = e;
-
-    if (!(rf = _list->to_ref ())) {
-      report_error (e, "first argument to append must be a reference");
-    } else if (!(slot = rf->lhs_deref (&lhs_eval))) {
-      report_error (e, "first argument to append was not settable");
-    } else if (!(x = slot->deref_expr ()) || !(v = x->eval_freeze (lhs_eval))) {
-      outlist = New refcounted<expr_list_t> (rf->lineno ());
-    } else if (!(outlist = v->to_expr_list ())) {
-      report_error (e, "first argument to append must be a list");
-    } 
-    
-    if (outlist && rf) {
-      for (size_t i = 1; i < _arglist->size (); i++) {
-	ptr<expr_t> in = (*_arglist)[i];
-	ptr<expr_t> out;
-	if (!in || !(v = in->eval_freeze (e)) || !(out = v->to_expr ())) {
-	  out = expr_null_t::alloc (rf->lineno ());
-	}
-	outlist->push_back (out);
+    if (!r || !(x = r->get_value ())) {
+      report_error (e, "first argument to append() must be non-null");
+    } else if (!(l = x->to_list ())) {
+      report_error (e, "first argument to append() must be a list");
+    } else {
+      for (size_t i = 1; i < args->size (); i++) {
+	twait { (*args)[i]->pub_to_val (p, mkevent (cel)); }
+	if (cel) el = cel->copy ();
+	if (!el) el = expr_null_t::alloc ();
+	l->push_back (el);
       }
-      slot->set_expr (outlist);
     }
-    return expr_null_t::alloc (rf ? rf->lineno () : -1);
+    ev->trigger (l);
   }
 
   //-----------------------------------------------------------------------
 
-  ptr<runtime_fn_t>
-  map_t::constructor (const str &n, ptr<expr_list_t> e, int lineno,
-		      str *err)
+  ptr<const expr_t>
+  map_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    bool ok = true;
-    size_t narg = e ? e->size () : size_t (0);
-    ptr<runtime_fn_t> ret;
-    ptr<expr_t> d, l;
+    ptr<const expr_dict_t> d = args[0]._d;
+    ptr<const expr_t> x = args[1]._O;
 
-    if (narg != 2) {
-      ok = false;
-      *err = "map() takes 2 arguments; a dict and a list";
-    } else {
-      d = (*e)[0];
-      l = (*e)[1];
-    }
-
-    if (ok) {
-      ret = New refcounted<map_t> (n, e, lineno, d, l);
-    }
-    return ret;
+    return eval_internal (p, d, x);
   }
-
-  //-----------------------------------------------------------------------
-
-  map_t::map_t (const str &n, ptr<expr_list_t> el, int lineno,
-		ptr<expr_t> d, ptr<expr_t> l)
-    : runtime_fn_t (n, el, lineno),
-      _map (d), _list (l) {}
 
   //-----------------------------------------------------------------------
 
   ptr<expr_t>
-  map_t::eval_internal (eval_t e) const
+  map_t::eval_internal (publish_t *p, ptr<const expr_dict_t> m, 
+			ptr<const expr_t> x) const
   {
+    ptr<const expr_list_t> l;
+    ptr<const expr_dict_t> d;
+    str s;
     ptr<expr_t> ret;
-    ptr<const aarr_t> m;
 
-    if (!(m = _map->eval_as_dict (e))) {
-      report_error (e, "first argument to map() must be a dict");
-    } else {
-      ret = eval_internal (e, m, _list);
-    }
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<const pval_t> map_t::eval (eval_t e) const { return eval_internal (e); }
-  ptr<pval_t> map_t::eval_freeze (eval_t e) const { return eval_internal (e); }
-
-  //-----------------------------------------------------------------------
-
-  ptr<expr_t>
-  map_t::eval_internal (eval_t e, ptr<const aarr_t> mp, 
-			ptr<const expr_t> arg) const
-  {
-    str k;
-    ptr<expr_t> ret;
-    ptr<const vec_iface_t> targ_v;
-    ptr<const aarr_t> targ_d;
-      
-    if (arg->eval_as_vec_or_dict (e, &targ_v, &targ_d)) {
-
-      // Handle the case in which the arg is a vector.
-      if (targ_v) {
-	ptr<expr_list_t> out = New refcounted<expr_list_t> ();
-	for (size_t i = 0; i < targ_v->size (); i++) {
-	  ptr<const pval_t> v;
-	  ptr<const expr_t> cx;
-	  ptr<expr_t> x;
-	  if ((v = targ_v->lookup (i)) && (cx = v->to_expr ())) {
-	    x = eval_internal (e, mp, cx);
-	  }
-	  if (!x) { x = expr_null_t::alloc (); }
-	  out->push_back (x);
-	}
-	ret = out;
-
-      } else {
-	// Handle the case in which the arg is a dict
-	const nvtab_t *nvt = targ_d->nvtab ();
-	ptr<expr_dict_t> out = New refcounted<expr_dict_t> ();
-	for (nvpair_t *p = nvt->first (); p; p = nvt->next (p)) {
-	  ptr<const pval_t> v;
-	  ptr<const expr_t> cx;
-	  ptr<expr_t> x;
-	  if ((v = p->value_ptr ()) && (cx = v->to_expr ())) {
-	    x = eval_internal (e, mp, cx);
-	  }
-	  if (!x) { x = expr_null_t::alloc (); }
-	  out->to_dict ()->replace (p->name (), x);
-	}
-	ret = out;
+    if ((l = x->to_list ())) {
+      ptr<expr_list_t> out = New refcounted<expr_list_t> ();
+      for (size_t i = 0; i < l->size (); i++) {
+	ptr<const expr_t> cx = (*l)[i];
+	ptr<const expr_t> cn = eval_interal (p, m, cx);
+	ptr<expr_t> n;
+	if (cn) n = cn->copy ();
+	if (!n) n = expr_null_t::alloc ();
+	out->push_back (n);
       }
-
-    } else if ((k = arg->eval_as_str (e))) {
-      ptr<const pval_t> cv;
-      ptr<pval_t> v;
+      ret = out;
+    } else if ((d = x->to_dict ())) {
+      bintab_t::const_iterator_t it (*id);
+      ptr<expr_dict_t> d = expr_dict_t::alloc ();
+      str *k;
+      ptr<expr_t> cx;
+      while ((k = it.next (&cx))) {
+	ptr<const expr_t> cn = eval_interal (p, m, cx);
+	ptr<expr_t> n;
+	if (cn) n = cn->copy ();
+	if (!n) n = expr_null_t::alloc ();
+	d->insert (*k, n);
+      }
+      ret = d;
+    } else if ((s = x->to_str (false))) {
+      ptr<const expr_t> *cxp = m->lookup (s);
       ptr<const expr_t> cx;
-
-      // need to eval scalars at the end of the day, since the dict might
-      // have live expressions in it --- we never froze the dict!
-      if ((cv = mp->lookup_ptr (k)) && 
-	  (cx = cv->to_expr ()) &&
-	  (v = cx->eval_freeze (e))) {
-	ret = v->to_expr ();
-      }
-
-    } else if (arg->eval_as_null (e)) {
+      if (cxp) { cx = *cxp; }
+      if (cx) { ret = cx->copy (); }
+    } else if (x->is_null ()) {
       /* noop */
     } else {
       report_error (e, "second argument to map() must be a vec, "
 		    "dict or string");
     }
-
-    if (!ret) {
-      ret = expr_null_t::alloc ();
-    }
-
+    if (!ret) { ret = expr_null_t::alloc (); }
     return ret;
   }
 
   //-----------------------------------------------------------------------
 
-  split_t::split_t (const str &n, ptr<expr_list_t> el, int lineno,
-		    ptr<expr_t> r, ptr<expr_t> v)
-    : runtime_fn_t (n, el, lineno), _regex (r), _val (v) {}
-
-  //-----------------------------------------------------------------------
-
-  ptr<runtime_fn_t>
-  split_t::constructor (const str &n, ptr<expr_list_t> el, int lineno, str *err)
+  ptr<const expr_t>
+  split_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    size_t narg = el ? el->size () : size_t (0);
-    ptr<runtime_fn_t> ret;
-    if (narg != 2) {
-      *err = "split() takes two arguments: a regex and string";
-    } else {
-      ret = New refcounted<split_t> (n, el, lineno, (*el)[0], (*el)[1]);
+    ptr<rxx> rx = args[0]._r;
+    str s = args[1]._s;
+    ptr<expr_list_t> ret = New refcounted<expr_list_t> ();
+    vec<str> v;
+    split (&v, *rx, s);
+    for (size_t i = 0; i < v.size (); i++) {
+      ptr<expr_t> e;
+      if (v[i]) e = New refcounted<expr_str_t> (v[i]);
+      else e = expr_null_t::alloc ();
+      ret->push_back (e);
     }
     return ret;
   }
-
-  //-----------------------------------------------------------------------
-
-  ptr<expr_list_t>
-  split_t::eval_internal (eval_t e) const
-  {
-    ptr<expr_list_t> ret;
-    ptr<expr_regex_t> ex;
-    ptr<rxx> rx;
-    str s;
-
-    if (!_regex || !(rx = _regex->eval_as_regex (e))) {
-      report_error (e, "cannot evaluate first arg to split() as a regex");
-    } else if (!_val || !(s = _val->eval_as_str (e))) {
-      report_error (e, "cannot evaluate second arg to split() as a string");
-    } else {
-      ret = New refcounted<expr_list_t> ();
-      vec<str> v;
-      split (&v, *rx, s);
-      for (size_t i = 0; i < v.size (); i++) {
-	ptr<expr_t> e;
-	if (v[i]) e = New refcounted<expr_str_t> (v[i]);
-	else e = expr_null_t::alloc ();
-	ret->push_back (e);
-      }
-    }
-    return ret;
-
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<pval_t> split_t::eval_freeze (eval_t e) const 
-  { return eval_internal (e); }
-  
-  //-----------------------------------------------------------------------
-
-  ptr<const pval_t> split_t::eval (eval_t e) const { return eval_internal (e); }
 
   //-----------------------------------------------------------------------
 };

@@ -234,7 +234,7 @@ namespace pub3 {
     ptr<expr_t> get_value ();
     bool set_value (ptr<expr_t> x);
     const char *get_obj_name () const { return "mref_list_t"; }
-    void v_dump (dumper_t *d) const;
+    void v_dump (dumper_t *d) const; 
   protected:
     const ptr<expr_list_t> _list;
     const ssize_t _index;
