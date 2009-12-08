@@ -1,8 +1,8 @@
 
-#include "okrfnlib.h"
+#include "okrfn.h"
 #include "okformat.h"
 
-namespace rfn1 {
+namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ namespace rfn1 {
 
     if (d <= 0) {
       strbuf b ("range for random must be greater than 0 (got %" PRId64 ")", d);
-      report_error (e, b);
+      report_error (p, b);
       h = l + def_range;
     }
 

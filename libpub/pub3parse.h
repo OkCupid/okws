@@ -59,7 +59,8 @@ namespace pub3 {
   public:
     json_parser_t ();
     void set_output (ptr<expr_t> e);
-    ptr<expr_t> parse (const str &in);
+    ptr<expr_t> mparse (const str &in);
+    static ptr<expr_t> parse (const str &in);
     bool set_expr_output (ptr<pub3::expr_t> x);
     const vec<str> &get_errors () const { return _errors; }
     vec<str> &get_errors () { return _errors; }

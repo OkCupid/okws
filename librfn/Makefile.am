@@ -1,11 +1,15 @@
 
 -include $(SFS_LIB_MK)
 
+SUFFIXES = .T .C 
+.T.C:
+	$(TAME) -o $@ $< || (rm -f $@ && false)
+
 okwslib_LTLIBRARIES = librfn.la
 
 librfn_la_SOURCES = \
 	math.C \
-	std_factory.C \
+	rfn3.C \
 	primitives.C \
 	regex.C \
 	filters.C \
@@ -15,7 +19,7 @@ librfn_la_SOURCES = \
 
 librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = okrfn.h okrfnlib.h
+okwsinclude_HEADERS = okrfn.h 
 
 EXTRA_DIST =
 CLEANFILES = core *.core *~ *.rpo 

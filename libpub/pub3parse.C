@@ -57,9 +57,19 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
-  
+
   ptr<expr_t>
   json_parser_t::parse (const str &in)
+  {
+    ptr<json_parser_t> p = New refcounted<json_parser_t> ();
+    ptr<expr_t> ret = p->mparse (in);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  ptr<expr_t>
+  json_parser_t::mparse (const str &in)
   {
     ptr<parser_t> old = current ();
     set_current (mkref (this));

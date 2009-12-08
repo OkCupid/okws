@@ -931,6 +931,7 @@ namespace pub3 {
     static ptr<expr_dict_t> alloc (const xpub3_json_dict_t &x);
     static ptr<expr_dict_t> alloc ();
     static ptr<expr_dict_t> alloc (const xpub3_dict_t &x);
+    static ptr<expr_dict_t> safe_copy (ptr<const expr_dict_t> d);
 
     void v_dump (dumper_t *d) const;
 

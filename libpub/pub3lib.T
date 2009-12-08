@@ -23,28 +23,6 @@ namespace pub3 {
     return b;
   }
 
-  //---------------------------------------------------------------------
-
-  bool
-  compiled_fn_t::check_args (publish_t *p, args_t a) const
-  {
-    size_t n = a->size ();
-    bool ret = true;
-    if (n < min_args () || n > max_args ()) {
-      ret = false;
-      str e;
-      if (min_args () == max_args ()) {
-	e = strbuf ("%zd", min_args ());
-      } else {
-	e = strbuf ("%zd to %zd", min_args (), max_args ());
-      }
-      strbuf b ("Wrong number of parameters to call %s "
-		"(expected %s, got %zu)", _name.cstr (), e.cstr (), n);
-      report_error (p, b);
-    }
-    return ret;
-  }
-  
   //-----------------------------------------------------------------------
 
   tamed void

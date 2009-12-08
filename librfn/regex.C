@@ -1,6 +1,6 @@
-#include "okrfnlib.h"
+#include "okrfn.h"
 
-namespace rfn1 {
+namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
@@ -9,7 +9,8 @@ namespace rfn1 {
   {
     ptr<rxx> x = args[0]._r;
     str s = args[1]._s;
-    return x->match (s);
+    bool b = x->match (s);
+    return expr_bool_t::alloc (b);
   }
 
   //-----------------------------------------------------------------------
@@ -19,7 +20,8 @@ namespace rfn1 {
   {
     ptr<rxx> x = args[0]._r;
     str s = args[1]._s;
-    return x->search (s);
+    bool b = x->search (s);
+    return expr_bool_t::alloc (b);
   }
 
   //-----------------------------------------------------------------------

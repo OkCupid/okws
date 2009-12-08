@@ -1,6 +1,6 @@
-#include "okrfnlib.h"
+#include "okrfn.h"
 
-namespace rfn1 {
+namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
@@ -8,12 +8,12 @@ namespace rfn1 {
   import_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_dict_t> d = args[0]._d;
-    ptr<expr_dict_t> c = d->copy ();
+    ptr<expr_dict_t> c = expr_dict_t::safe_copy (d);
     bool res = true;
     if (!p->env ()) {
-      report_error (e, "empty env in import()");
+      report_error (p, "empty env in import()");
       res = false;
-    } else {
+    } else if (c->size ()) {
       p->env ()->push_locals (c, false);
     }
     return expr_bool_t::alloc (res);

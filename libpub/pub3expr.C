@@ -1671,6 +1671,17 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<expr_dict_t>
+  expr_dict_t::safe_copy (ptr<const expr_dict_t> in)
+  {
+    ptr<expr_dict_t> out;
+    if (in) { out = in->copy ()->to_dict (); }
+    else { out = expr_dict_t::alloc (); }
+    return out;
+  }
+
+  //--------------------------------------------------------------------
+
   bool
   expr_dict_t::is_static () const
   {

@@ -1,10 +1,10 @@
 // -*-c++-*-
 
-#include "okrfnlib.h"
+#include "okrfn.h"
 #include "okformat.h"
 #include "pub3parse.h"
 
-namespace rfn1 {
+namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ namespace rfn1 {
     ptr<expr_list_t> l = New refcounted<expr_list_t> ();
     ptr<const expr_dict_t> d = args[0]._d;
     bindtab_t::const_iterator_t it (*d);
-    str *key;
+    const str *key;
     ptr<expr_t> cval;
     while ((key = it.next (&cval))) {
       ptr<expr_t> val;
@@ -33,9 +33,9 @@ namespace rfn1 {
     ptr<expr_list_t> l = New refcounted<expr_list_t> ();
     ptr<const expr_dict_t> d = args[0]._d;
     bindtab_t::const_iterator_t it (*d);
-    str *key;
+    const str *key;
     while ((key = it.next ())) {
-      l->push_back (expr_str_t::safe_str (*key));
+      l->push_back (expr_str_t::alloc (*key));
     }
     return l;
   }
@@ -48,7 +48,7 @@ namespace rfn1 {
     ptr<expr_list_t> l = New refcounted<expr_list_t> ();
     ptr<const expr_dict_t> d = args[0]._d;
     bindtab_t::const_iterator_t it (*d);
-    str *key;
+    const str *key;
     ptr<expr_t> cval;
     while ((key = it.next (&cval))) {
       ptr<expr_t> val;
@@ -69,9 +69,8 @@ namespace rfn1 {
   {
     str s = args[0]._s;
     ptr<expr_t> ret;
-    json_parser_t parser;
-    ret = parser.parse (s);
-    return expr_str_t::safe_alloc (ret);
+    ret = json_parser_t::parse (s);
+    return ret;
   }
 
   //-----------------------------------------------------------------------
