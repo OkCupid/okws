@@ -1,16 +1,16 @@
 // -*-c++-*-
 
-#include "okrfn.h"
+#include "pub3lib.h"
 
-namespace rfn3 {
+namespace pub3 {
 
   //================================== compiled_fn_t ======================
 
-  compiled_fn_t::compiled_fn_t (str n, str lib) : _name (n) {}
+  compiled_fn_t::compiled_fn_t (str n) : _name (n) {}
 
   //-----------------------------------------------------------------------
   
-  void complied_fn_t::set_lib (str l) { _lib = l; }
+  void compiled_fn_t::set_lib (str l) { _lib = l; }
   
   //-----------------------------------------------------------------------
 
@@ -48,14 +48,15 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  compiled_fn_t::pub_args (publish_t *p, args_t in, cargs_t *out, 
+  compiled_fn_t::pub_args (publish_t *p, callable_t::args_t in, 
+			   callable_t::cargs_t *out, 
 			   evv_t ev) const
   {
     tvars {
       size_t i;
       ptr<const expr_t> x;
     }
-    for (i = 0; args && i < in->size (); i++) {
+    for (i = 0; i < in->size (); i++) {
       twait { (*in)[i]->pub_to_val (p, mkevent (x)); }
       out->push_back (x);
     }
@@ -65,10 +66,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   void
-  compile_fn_t::eval_args (publish_t *p, args_t in, cargs_t *out) const
+  compiled_fn_t::eval_args (publish_t *p, args_t in, cargs_t *out) const
   {
     for (size_t i = 0; i < in->size (); i++) {
-      ptr<const expr_t> x = eval_to_val (p, (*in)[i]);
+      ptr<const expr_t> x = (*in)[i]->eval_to_val (p);
       out->push_back (x);
     }
   }
@@ -87,10 +88,11 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void 
-  compiled_fn_t::pub_to_val (publish_t *p, args_t ai, cxev_t ev) const
+  compiled_fn_t::pub_to_val (publish_t *p, callable_t::args_t ai, 
+			     cxev_t ev) const
   {
     tvars {
-      cargs_t ao;
+      callable_t::cargs_t ao;
       ptr<const expr_t> ret;
     }
     twait { pub_args (p, ai, &ao, mkevent ()); }
@@ -105,7 +107,7 @@ namespace rfn3 {
   {
     ptr<const expr_t> ret;
     vec<arg_t> checked;
-    if (check_args (args, &checked)) {
+    if (check_args (e, args, &checked)) {
       ret = v_eval_2 (e, checked);
     }
     return ret;
@@ -114,7 +116,8 @@ namespace rfn3 {
   //----------------------------------------------------------------------
 
   bool
-  patterned_fn_t::check_args (const cargs_t &args, vec<arg_t> *_checked)
+  patterned_fn_t::check_args (publish_t *p, const cargs_t &args, 
+			      vec<arg_t> *_checked) const
   {
     vec<str> err;
     
@@ -122,9 +125,8 @@ namespace rfn3 {
     size_t i = 0;
     bool pipe = false;
 
-    size_t min_len = 0;
-    size_t max_len = 0;
-    
+    size_t min_args = 0, max_args = 0;
+
     for ( ; *cp && i < args.size (); cp++) {
       bool adv = true;
       arg_t a;
@@ -138,8 +140,7 @@ namespace rfn3 {
 	}
 	break;
 	
-      case 'u':
-	u_int64_t du;
+      case 'u': 
 	if (!args[i]->to_uint (&a._u)) {
 	  strbuf b ("argument %zd: expected an unsigned int", i);
 	  err.push_back (b);
@@ -182,7 +183,6 @@ namespace rfn3 {
 	if (pipe) {
 	  err.push_back ("internal pattern error: "
 			 "'|' can only be specified once");
-	  pok = false;
 	} else {
 	  pipe = true;
 	}
@@ -197,8 +197,8 @@ namespace rfn3 {
       }
 
       if (adv) {
-	max_size ++;
-	if (!pipe) min_size ++;
+	max_args ++;
+	if (!pipe) min_args ++;
 	i++;
 	_checked->push_back (a);
       }
@@ -218,11 +218,11 @@ namespace rfn3 {
     }
 
     for (size_t e = 0; e < err.size (); e++) {
-      strbuf b ("%s: %s", _name.cstr (), e.cstr ());
+      strbuf b ("%s: %s", _name.cstr (), err[e].cstr ());
       report_error (p, b);
     }
 
-    return (e.size () == 0);
+    return (err.size () == 0);
   }
 
   //=======================================================================

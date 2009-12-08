@@ -202,6 +202,17 @@ namespace pub3 {
 
   //---------------------------------------------------------------------
 
+  ptr<expr_t>
+  expr_t::safe_copy (ptr<const expr_t> x)
+  {
+    ptr<expr_t> ret;
+    if (x) ret = x->copy ();
+    if (!ret) ret = expr_null_t::alloc ();
+    return ret;
+  }
+
+  //---------------------------------------------------------------------
+
   ptr<const expr_t>
   expr_t::safe_expr (ptr<const expr_t> x)
   {

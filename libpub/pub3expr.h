@@ -64,6 +64,7 @@ namespace pub3 {
 
     static ptr<expr_t> alloc (scalar_obj_t so);
     static ptr<expr_t> safe_expr (ptr<expr_t> in);
+    static ptr<expr_t> safe_copy (ptr<const expr_t> in);
     static ptr<const expr_t> safe_expr (ptr<const expr_t> in);
     lineno_t lineno () const { return _lineno; }
     static str safe_to_str (ptr<const expr_t> x, bool q = true);
@@ -119,7 +120,6 @@ namespace pub3 {
 
     virtual str to_identifier () const { return NULL; }
     virtual str to_str (bool q = false) const { return NULL; }
-    virtual bool can_be_str ()
     virtual str to_switch_str () const { return to_str (); }
     virtual bool to_bool () const { return false; }
     virtual int64_t to_int () const { return 0; }
