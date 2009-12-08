@@ -375,18 +375,20 @@ fast_log_t::flush_T ()
 }
 
 tamed void
-log_t::turn_T (okrescb cb)
+log_t::turn_T (evs_t ev)
 {
   tvars {
     bool ok;
     clnt_stat err;
-    ptr<ok_res_t> res (New refcounted<ok_res_t> ());
+    str ret;
   }
   twait { RPC::oklog_program_1::oklog_turn (h, &ok, mkevent (err)); }
   if (err) {
-    *res << (strbuf ("RPC Error: ") << err);
+    strbuf b;
+    b << "RPC Error: " << err;
+    ret = b;
   } else if (!ok) {
-    *res << strbuf ("logger failed to turn over logs");
+    ret = "logger failed to turn over logs";
   }
-  (*cb) (res);
+  ev->trigger (ret);
 }

@@ -120,8 +120,14 @@ oksrvc_xmlrpc_base_t::init_optmap ()
   const char *options[] = { "debug", "includeInfo", "verbose",
 			    "visibleErrors", "WSS", "raw", 
 			    "conf", "config", NULL };
-  u_int optvals[] = { P_DEBUG, P_IINFO, P_VERBOSE, P_VISERR,
-		      P_WSS, P_NOPARSE, P_CONFIG, P_CONFIG };
+  u_int optvals[] = { pub3::P_DEBUG, 
+		      pub3::P_IINFO, 
+		      pub3::P_VERBOSE, 
+		      pub3::P_VISERR,
+		      pub3::P_WSS, 
+		      pub3::P_NOPARSE, 
+		      pub3::P_CONFIG, 
+		      pub3::P_CONFIG };
   u_int *vp;
   const char **o;
   for (o = options, vp = optvals; *o; o++, vp++) {
@@ -160,16 +166,7 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
     xml_obj_const_t o = x(VARS)[j];
     str nm = o.name ();
     if (nm && nm.len ()) {
-      switch (vers) {
-      case PUB_V1:
-	a->add (nm, str (o.value ()));
-	break;
-      case PUB_V3:
 	o.to_pub3 (p3o);
-	break;
-      default:
-	break;
-      }
     }
   }
 
@@ -177,7 +174,7 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
   if (l && l.len () > 0) 
     *lang = l;
 
-  *conf = x(CONF) || x(CONFIG) || (*opts & P_CONFIG);
+  *conf = x(CONF) || x(CONFIG) || (*opts & pub3::P_CONFIG);
 
   return (*fn && fn->len () > 0);
 }
@@ -244,8 +241,7 @@ aarr2xml (ptr<const aarr_t> a, penv_t *env)
 }
 
 tamed void
-okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb, 
-				    pub_vers_t vers)
+okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
 {
   tvars {
     xml_resp_t r;
@@ -267,7 +263,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb,
   }
 
   // need an env for conf files ?
-  env = pub2 ()->get_env ();
+  env = pub3 ()->get_env ();
 
   r.setsize (q.size ());
   out.setsize (q.size ());
@@ -280,7 +276,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb,
       if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang, &conf, vers, &o)) {
 	calls.push_back (i);
 	iface = xml_pub2_local (lang);
-	aap = (vers == PUB_V1) ? &aa : o.dict ();
+	aap =  o.dict ();
 	if (conf) {
 	  conf_out[i] = New refcounted<aarr_t> ();
 	  iface->run_cfg_full (fn, mkevent (pub_errc[i], dummy),

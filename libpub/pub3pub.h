@@ -26,13 +26,14 @@ namespace pub3 {
     P_NOPARSE =  0x20,    /* don't parse file at all */
     P_NOLOCALE = 0x40,    /* Don't localize file */
     P_COPY_CONF = 0x80,   /* copy the config over to universals */
+    P_CONFIG =   0x100,   /* run config variables (needed for xml interface) */
 
-    P_OUTPUT_ERR_IN_PLACE = 0x100,          /* output errors in place */
-    P_OUTPUT_ERR_PLACEHOLDERS = 0x200,      /* output placeholders in place */
-    P_OUTPUT_ERR_COMMENTS = 0x400,          /* output errors in comments */
-    P_OUTPUT_ERR_NOLOG= 0x800,              /* don't warn to stderr */
+    P_OUTPUT_ERR_IN_PLACE = 0x200,          /* output errors in place */
+    P_OUTPUT_ERR_PLACEHOLDERS = 0x400,      /* output placeholders in place */
+    P_OUTPUT_ERR_COMMENTS = 0x800,          /* output errors in comments */
+    P_OUTPUT_ERR_NOLOG= 0x1000,             /* don't warn to stderr */
 
-    P_INFINITY = 0x1000
+    P_INFINITY = 0x2000
   };
 
   //-----------------------------------------------------------------------
