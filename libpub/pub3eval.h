@@ -8,6 +8,29 @@
 
 namespace pub3 {
 
+  //======================================================================
+  //
+  // Global data shared across all pub objects -- such as global bindings
+  // published from config files are startup.
+  //
+  class singleton_t {
+  public:
+    singleton_t ();
+    static ptr<singleton_t> get ();
+    ptr<expr_dict_t> universals () { return _universals; }
+
+    const vec<ptr<bindtab_t> > *libraries () const { return &_libraries; }
+    vec<ptr<bindtab_t> > *libraries () { return &_libraries; }
+    void import (ptr<bindtab_t> l) { _libraries.push_back (l); }
+
+  private:
+    ptr<expr_dict_t> _universals;
+    vec<ptr<bindtab_t> > _libraries;
+  };
+
+  //
+  //======================================================================
+
   //-----------------------------------------------------------------------
 
   class env_t : public virtual dumpable_t {
@@ -20,13 +43,15 @@ namespace pub3 {
     size_t stack_size () const;
     ptr<mref_t> lookup_ref (const str &nm) const;
     void add_global_binding (const str &nm, ptr<expr_t> v);
+    ptr<bindtab_t> library () { return _library; }
 
     typedef enum { LAYER_NONE = -1,
 		   LAYER_UNIVERSALS = 0,
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
 		   LAYER_LOCALS_BARRIER = 3,
-		   LAYER_UNIREFS = 4 } layer_type_t;
+		   LAYER_UNIREFS = 4, 
+		   LAYER_LIBRARY = 5 } layer_type_t;
 
     ptr<bindtab_t> push_bindings (layer_type_t typ);
     void push_references (ptr<const bindlist_t> l, layer_type_t lt);
@@ -52,6 +77,7 @@ namespace pub3 {
     size_t dec_stack_pointer (stack_layer_t l, size_t i) const;
     ssize_t descend_to_barrier () const;
 
+    ptr<bindtab_t> _library;
     ptr<bindtab_t> _universals;
     ptr<bindtab_t> _globals;
     stack_t _stack;

@@ -110,8 +110,8 @@ namespace pub3 {
 
   class publish_t : public eval_t {
   public:
-    publish_t (ptr<bindtab_t> universals, zbuf *z); // for output
-    publish_t (ptr<bindtab_t> universals);          // for cfg
+    publish_t (ptr<bindtab_t> unis, zbuf *z); // for output
+    publish_t (ptr<bindtab_t> universals);    // for cfg
     publish_t (ptr<env_t> e, ptr<output_t> o);
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
@@ -124,8 +124,6 @@ namespace pub3 {
     void output_errs (const xpub3_errstrs_t &e, err_type_t t);
     void output_err_stacktrace (str s, err_type_t t);
 
-    ptr<localizer_t> localizer ();
-    void set_localizer (ptr<localizer_t> l) { _localizer = l; }
     opts_t opts () const { return _opts; }
     str set_cwd (str s) ;
     str cwd () const { return _cwd; }
@@ -154,7 +152,6 @@ namespace pub3 {
     ptr<const metadata_t> current_metadata () const;
 
   private:
-    ptr<localizer_t> _localizer;
 
     // A stack of all of the files being published, with their actual
     // metadata.

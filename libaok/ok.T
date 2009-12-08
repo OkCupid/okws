@@ -150,13 +150,13 @@ ok_httpsrv_t::geterr2_T (str s, const http_resp_attributes_t &hra,
   }
   e = errdocs[n];
   if (e && pub3 ()) {
-    ar->insert ("STATUS", n);
+    ar->insert ("STATUS", strbuf ("%d", n));
     ar->insert ("SERVINFO", servinfo ());
     if (s) {
       ar->insert ("AUXSTR", s);
     }
-    twait { http_pub_t::alloc2 (pub3 (), hra, e->fn, mkevent (hp2), ar); }
-    ret = hp2;
+    twait { http_pub_t::alloc2 (pub3 (), hra, e->fn, mkevent (hp), ar); }
+    ret = hp;
   }
 
   if (!ret) {
@@ -371,9 +371,6 @@ oksrvc_t::ctldispatch (svccb *v)
   switch (p) {
   case OKCTL_NULL:
     v->reply (NULL);
-    break;
-  case OKCTL_UPDATE:
-    update (v);
     break;
   case OKCTL_KILL:
     kill (v);
@@ -685,31 +682,11 @@ oksrvc_t::launch_dbs (cbb cb)
 //-----------------------------------------------------------------------
 
 dbcon_t *
-oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p,
-		  int32_t l)
+oksrvc_t::add_db (const str &host, u_int port, const rpc_program &p)
 {
   dbcon_t *d = New dbcon_t (p, host, port);
-  if (authtoks.size () > 0 && l > 0) {
-    d->set_txa (l, &authtoks);
-  }
-
   dbs.push_back (d);
   return d;
-}
-
-//-----------------------------------------------------------------------
-
-lblnc_t *
-oksrvc_t::add_lb (const str &i, const rpc_program &p, int port)
-{
-  if (supports_pub1 ()) {
-    lblnc_t *l = New lblnc_t (rpcli, i, p, port);
-    dbs.push_back (l);
-    return l;
-  } else {
-    SVC_ERROR ("Cannot use load balacned services with Pub v1");
-    return NULL;
-  }
 }
 
 //-----------------------------------------------------------------------
@@ -1107,7 +1084,7 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
 
 tamed void
 okclnt_base_t::output_file (const char *f, cbb::ptr cb, ptr<pub3::dict_t> a, 
-			    u_int opt, penv_t *e)
+			    pub3::opts_t opt)
 {
   tvars {
     zbuf z;
@@ -1118,7 +1095,7 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, ptr<pub3::dict_t> a,
   if (!output_frag_prepare ()) {
     ret = false;
   } else {
-    twait { pub3 ()->run (&z, f, mkevent (ret), a, opt, e); }
+    twait { pub3 ()->run (&z, f, mkevent (ret), a, opt); }
     if (ret) {
       z.to_strbuf (&b, false);
       twait { _client_con->send (b, NULL, mkevent ()); }
@@ -1556,11 +1533,11 @@ bool
 config_parser_t::do_file (const str &fn)
 {
   bool rc = false;
-  phash_t ph;
-  if (!file2hash (fn, &ph)) {
+  ptr<pub3::fhash_t> ph;
+  if (!(ph = pub3::file2hash (fn))) {
     warn << "Cannot open config file: " << fn << "\n";
   } else {
-    str s = ph.to_str ();
+    str s = ph->to_str ();
     if (_seen[s]) {
       warn << "File included more than once: " << fn << "\n";
     } else {
@@ -1792,7 +1769,7 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
 void
 oksrvc_t::init_pub3_runtime ()
 {
-  pub3::rfn_factory_t::set (New refcounted<rfn1::std_factory_t> ());
+  pub3::library_t::import (rfn3::lib_t::alloc ());
 }
 
 //-----------------------------------------------------------------------

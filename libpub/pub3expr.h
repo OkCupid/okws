@@ -880,6 +880,7 @@ namespace pub3 {
 		    public bind_interface_t,
 		    public virtual refcount {
   public:
+    static ptr<bindtab_t> alloc ();
     void overwrite_with (const bindtab_t &in);
     bindtab_t &operator+= (const bindtab_t &in);
     bindtab_t &operator-= (const bindtab_t &in);

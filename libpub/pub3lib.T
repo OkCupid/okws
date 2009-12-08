@@ -6,12 +6,8 @@ namespace pub3 {
 
   //================================== compiled_fn_t ======================
 
-  compiled_fn_t::compiled_fn_t (str n) : _name (n) {}
+  compiled_fn_t::compiled_fn_t (str l, str n) : _lib (l), _name (n) {}
 
-  //-----------------------------------------------------------------------
-  
-  void compiled_fn_t::set_lib (str l) { _lib = l; }
-  
   //-----------------------------------------------------------------------
 
   str
@@ -202,6 +198,37 @@ namespace pub3 {
 
     return (err.size () == 0);
   }
+
+  //========================================== library_t ==================
+
+  void
+  library_t::bind (ptr<bindtab_t> t)
+  {
+    for (size_t i = 0; i < _functions.size (); i++) {
+      ptr<compiled_fn_t> f = _functions[i];
+      t->insert (f->name (), f);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<bindtab_t>
+  library_t::bind ()
+  {
+    ptr<bindtab_t> t = bindtab_t::alloc ();
+    bind (t);
+    return t;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void library_t::import (ptr<library_t> l)
+  { singleton_t::get ()->import (l->bind ()); }
+
+  //-----------------------------------------------------------------------
+
+  void library_t::clear_all ()
+  { singleton_t::get ()->libraries ()->clear (); }
 
   //=======================================================================
 

@@ -52,21 +52,9 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<localizer_t>
-  publish_t::localizer () 
-  {
-    ptr<localizer_t> ret;
-    if (!(_opts & int (P_NOLOCALE))) {
-      ret = _localizer;
-    }
-    return ret;
-  }
-
-  //--------------------------------------------------------------------
-
   // For regular file publishing!
-  publish_t::publish_t (ptr<bindtab_t> universals, zbuf *z)
-    : eval_t (New refcounted<env_t> (universals), output_t::alloc (z)),
+  publish_t::publish_t (ptr<bindtab_t> unis, zbuf *z)
+    : eval_t (New refcounted<env_t> (unis), output_t::alloc (z)),
       _opts (0),
       _pws (false),
       _control (control_t::alloc ()) {}

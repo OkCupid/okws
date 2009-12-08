@@ -34,21 +34,6 @@ namespace pub3 {
 
   //=======================================================================
 
-  singleton_t::singleton_t() :
-    _universals (New refcounted<expr_dict_t> ()) {}
-  
-  //-----------------------------------------------------------------------
-
-  ptr<singleton_t> 
-  singleton_t::get ()
-  {
-    static ptr<singleton_t> g;
-    if (!g) { g = New refcounted<singleton_t> (); }
-    return g;
-  }
-
-  //=======================================================================
-
   abstract_publisher_t::abstract_publisher_t (opts_t o) : _opts (o) {}
 
   //-----------------------------------------------------------------------
@@ -71,7 +56,8 @@ namespace pub3 {
 	     status_t *sp, ptr<file_t> *fp)
   {
     tvars {
-      publish_t pub (singleton_t::get ()->universals (), b);
+      holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
+      publish_t pub (unis, b);
       status_t status;
       ptr<file_t> file;
     }
@@ -121,8 +107,7 @@ namespace pub3 {
 
     ev->trigger (status.status == XPUB_STATUS_OK);
   }
-
-
+  
   //-----------------------------------------------------------------------
   
   tamed void 
@@ -141,7 +126,7 @@ namespace pub3 {
     // generate a list of internationalized files.  if that list is
     // empty, we'll skip the following loop and we'll just
     // fall through with status.status == XPUB_STATUS_NOENT
-    localizer = pub->localizer ();
+    localizer = get_localizer (pub);
     list_files_to_check (pub->cwd (), fn, &files_to_check, localizer);
 
     for (i = 0; i < files_to_check.size (); i++) {

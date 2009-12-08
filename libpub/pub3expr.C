@@ -1626,6 +1626,10 @@ namespace pub3 {
     return ret;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<bindtab_t> bindtab_t::alloc () { return New refcounted<bindtab_t> (); }
+
   //============================================= binding_t ============
 
   binding_t::binding_t (const str &s, ptr<expr_t> x) : _name (s), _expr (x) {}

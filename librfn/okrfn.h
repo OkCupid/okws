@@ -11,12 +11,14 @@ namespace rfn3 {
 
   using namespace pub3;
 
+  extern const char *libname;
+
   //-----------------------------------------------------------------------
   
 #define PUB3_COMPILED_FN(x,pat)				                \
   class x##_t : public patterned_fn_t {                                 \
   public:								\
-    x##_t () : patterned_fn_t (#x, pat) {}				\
+  x##_t () : patterned_fn_t (libname, #x, pat) {}			\
     ptr<const expr_t>							\
     v_eval_2 (publish_t *p, const vec<arg_t> &args) const;		\
   }
@@ -24,7 +26,7 @@ namespace rfn3 {
 #define PUB3_COMPILED_HANDROLLED_FN(x)					\
     class x##_t : public compiled_handrolled_fn_t {			\
     public:								\
-    x##_t () : compiled_handrolled_fn_t (#x) {}				\
+    x##_t () : compiled_handrolled_fn_t (libname, #x) {}		\
     void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;	\
     }
   
@@ -68,7 +70,7 @@ namespace rfn3 {
 
   class map_t : public patterned_fn_t {
   public:
-    map_t () : patterned_fn_t ("map", "dO") {}
+    map_t () : patterned_fn_t (libname, "map", "dO") {}
     ptr<const expr_t> v_eval_2 (publish_t *p, const vec<arg_t> &args) const;
   protected:
     ptr<expr_t> eval_internal (publish_t *p, ptr<const expr_dict_t> m, 

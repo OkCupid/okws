@@ -17,23 +17,6 @@ namespace pub3 {
 
   //======================================================================
   //
-  // Global data shared across all pub objects -- such as global bindings
-  // published from config files are startup.
-  //
-  class singleton_t {
-  public:
-    singleton_t ();
-    static ptr<singleton_t> get ();
-    ptr<expr_dict_t> universals () { return _universals; }
-  private:
-    ptr<expr_dict_t> _universals;
-  };
-
-  //
-  //======================================================================
-
-  //======================================================================
-  //
   // Hi-level interface for all okpublishers, copied for the most part
   // from pub v2.  There are a few changes here --- first, we're passing
   // in expr_dict_t's rather than aarrs.
@@ -97,7 +80,7 @@ namespace pub3 {
     // set/get global ops for this publishing interface.
     virtual opts_t opts () const = 0;
     virtual void set_opts (opts_t i) = 0;
-
+    virtual ptr<const localizer_t> get_localizer (publish_t *p) { return NULL; }
   };
 
   //=======================================================================
@@ -257,6 +240,42 @@ namespace pub3 {
     getfile_cache_t _getfile_cache;
     negcache_t _noent_cache;
     qhash<str, ptr<bhash<opts_t> > > _opts_map;
+  };
+
+  //=======================================================================
+
+  /*
+   * A localized version of the publishing interface; wraps an
+   * existing publisher.
+   */
+  class locale_specific_publisher_t : public ok_iface_t {
+  public:
+    locale_specific_publisher_t (ptr<ok_iface_t> i, 
+				 ptr<const localizer_t> l = NULL)
+      : _iface (i), _localizer (l) {}
+
+    void run (zbuf *b, str fn, evb_t ev, ptr<expr_dict_t> d = NULL, 
+	      opts_t opts = -1, status_t *sp = NULL, ptr<file_t> *fp = NULL, 
+	      CLOSURE) 
+    { _iface->run (b, fn, ev, d, opts, sp, fp); }
+
+    void run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d = NULL, 
+		  opts_t opts = -1, status_t *sp = NULL, CLOSURE)
+    { _iface->run_cfg (fn, ev, d, opts, sp); }
+
+    void syntax_check (str f, vec<str> *err, evi_t ev, CLOSURE) 
+    { _iface->syntax_check (f, err, ev); }
+
+    void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE) 
+    { _iface->publish (p, fn, ev); }
+
+    opts_t opts () const { return _iface->opts (); }
+    void set_opts (opts_t i) { _iface->set_opts (i); }
+    ptr<const localizer_t> get_localizer (publish_t *p) { return _localizer; }
+
+  protected:
+    ptr<ok_iface_t> _iface;
+    ptr<const localizer_t> _localizer;
   };
 
   //=======================================================================

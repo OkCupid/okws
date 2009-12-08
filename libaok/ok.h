@@ -545,7 +545,7 @@ public:
   bool output_fragment (compressible_t &b, cbv::ptr done = NULL);
   void output_file (const char *fn, cbb::ptr cb = NULL, 
 		    ptr<pub3::dict_t> a = NULL,
-		    u_int opt = 0, penv_t *e = NULL, CLOSURE);
+		    pub3::opts_t opt = 0, CLOSURE);
 
   void output_done (evb_t::ptr ev, CLOSURE);
 
@@ -730,10 +730,7 @@ public:
   void add (okclnt_interface_t *c);
   void end_program (); 
 
-  dbcon_t *add_db (const str &host, u_int port, const rpc_program &p,
-		   int32_t txa_login_rpc = -1);
-  lblnc_t *add_lb (const str &i, const rpc_program &p, int port = -1);
-
+  dbcon_t *add_db (const str &host, u_int port, const rpc_program &p);
   ptr<aclnt> get_okd_aclnt () { return clnt; }
 
   // for accept direct connections (not via okd)
@@ -783,7 +780,6 @@ protected:
 
   u_int nclients;
   bool sdflag;
-  pub_rclient_t *rpcli;
 
   vec<helper_base_t *> dbs;
   bool dbstatus;
@@ -791,7 +787,6 @@ protected:
   u_int lnum;
   int pid;
 
-  vec<str> authtoks;
   int n_fd_out;
   u_int n_reqs; // total number of requests served
   bool pub1_supported;
@@ -823,36 +818,6 @@ do {                                           \
 #define SVC_ERROR(x) SVC_MSG(ERROR, x)
 #define SVC_CHATTER(x) SVC_MSG(CHATTER,x)
 #define SVC_FATAL_ERROR(x) SVC_MSG(FATAL_ERROR,x)
-
-//-----------------------------------------------------------------------
-
-template<typename T> parr_err_t 
-oksrvc_t::cfg (const str &n, u_int i, T *p) const
-{
-  pval_t *v;
-  const parr_ival_t *arr;
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call oksrvc_t::cfg() without Pub v1 support.\n");
-    return PARR_NOT_FOUND;
-  }
-  if (!rpcli->cfg (n, &v))
-    return PARR_NOT_FOUND;
-  if (!(arr = v->to_int_arr ()))
-    return PARR_BAD_TYPE;
-  return arr->val (i, p);
-}
-
-//-----------------------------------------------------------------------
-
-template<class C> bool 
-oksrvc_t::cfg (const str &n, C *v) const 
-{ 
-  if (!supports_pub1 ()) {
-    SVC_ERROR ("Cannot call cfg() without Pub v1 support.");
-    return sNULL;
-  }
-  return rpcli->cfg (n, v);
-}
 
 //-----------------------------------------------------------------------
 

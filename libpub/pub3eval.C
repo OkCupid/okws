@@ -1,14 +1,35 @@
 
 #include "pub3eval.h"
 #include "pub3out.h"
+#include "pub3hilev.h"
 
 namespace pub3 {
 
-  //=======================================================================
+  //===================================== singleton_t =====================
 
-  env_t::env_t  (ptr<bindtab_t> u, ptr<bindtab_t> g) : 
-    _universals (u), _globals (g ? g : New refcounted<bindtab_t> ())
+  singleton_t::singleton_t () :
+    _universals (New refcounted<expr_dict_t> ()) {}
+  
+  //-----------------------------------------------------------------------
+
+  ptr<singleton_t> 
+  singleton_t::get ()
   {
+    static ptr<singleton_t> g;
+    if (!g) { g = New refcounted<singleton_t> (); }
+    return g;
+  }
+
+  //======================================== env_t ========================
+
+  env_t::env_t  (ptr<bindtab_t> u, ptr<bindtab_t> g) 
+    : _universals (u), 
+      _globals (g ? g : New refcounted<bindtab_t> ())
+  {
+    const vec<ptr<bindtab_t> > *lib = singleton_t::get ()->libraries ();
+    for (size_t i = 0; i < lib->size (); i++) {
+      _stack.push_back (stack_layer_t ((*lib)[i], LAYER_LIBRARY));
+    }
     _stack.push_back (stack_layer_t (_universals, LAYER_UNIVERSALS));
     _stack.push_back (stack_layer_t (_globals, LAYER_GLOBALS));
     _global_frames = _stack.size () - 1;
@@ -70,6 +91,7 @@ namespace pub3 {
   {
     ptr<bindtab_t> ret;
     switch (typ) {
+    case LAYER_LIBRARY: ret = _library; break;
     case LAYER_UNIVERSALS: ret = _universals; break;
     case LAYER_GLOBALS: ret = _globals; break;
     case LAYER_LOCALS:
@@ -184,6 +206,7 @@ namespace pub3 {
       case LAYER_NONE:
       case LAYER_UNIVERSALS:
       case LAYER_GLOBALS:
+      case LAYER_LIBRARY:
 	bottom_frame++;
 	go = false;
 	break;
