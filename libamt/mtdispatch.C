@@ -285,11 +285,11 @@ mtdispatch_t::chld_reply (int i)
     break;
 
   case MTD_RPC_UINT32:
-    sbp->replyref (c->rsp_u.i32);
+    sbp->replyref (c->rsp_u.u32);
     break;
 
   case MTD_RPC_INT32:
-    sbp->replyref (c->rsp_u.u32);
+    sbp->replyref (c->rsp_u.i32);
     break;
 
   case MTD_RPC_PASSPTR:
