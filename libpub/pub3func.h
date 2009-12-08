@@ -131,22 +131,5 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
-
-  class runtime_fn_t;
-
-  //
-  //  A library of runtime functions.  These functions can be
-  //  bound into a specified environment.
-  //
-  class library_t {
-  public:
-    library_t () {}
-    ~library_t () {}
-    void bind (ptr<bindtab_t> b);
-  private:
-    vec<ptr<runtime_fn_t> > _functions;
-  };
-
-  //-----------------------------------------------------------------------
 };
 
