@@ -50,6 +50,20 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
+  expr_t::pub_as_scalar (publish_t *pub, event<scalar_obj_t>::ref ev) const
+  {
+    tvars {
+      scalar_obj_t ret;
+      ptr<const expr_t> x;
+    }
+    twait { pub_to_val (pub, mkevent (x)); }
+    if (x) { ret = x->to_scalar (); }
+    ev->trigger (ret);
+  }
+
+  //---------------------------------------------------------------------
+
+  tamed void
   expr_t::pub_as_str (publish_t *pub, evs_t ev) const
   {
     tvars {

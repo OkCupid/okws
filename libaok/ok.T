@@ -245,7 +245,6 @@ oksrvc_t::init (int argc, char *argv[])
   str loggers;
   str dp_str;
 
-  int pub1tmp = 0;
   int seltmp = 0;
   int gztmp;
 
@@ -259,7 +258,6 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
     t->lookup ("pub3fd", &pub3fd);
-    t->lookup ("pub1", &pub1tmp);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &gztmp);
     t->lookup ("filtercgi", &ok_filter_cgi);
@@ -317,8 +315,6 @@ oksrvc_t::init (int argc, char *argv[])
     int tmp = 0;
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);
-
-    pub1_supported = pub1tmp;
 
     if (OKDBG2 (SVC_ARGS))
       t->dump1 ();
@@ -558,7 +554,7 @@ tamed void
 oksrvc_t::launch_T ()
 {
   tvars {
-    bool pub1_rc, logd_rc, dbs_rc (true), pub_rc (true);
+    bool logd_rc, dbs_rc (true), pub_rc (true);
     clnt_stat err;
   }
 
@@ -598,10 +594,6 @@ oksrvc_t::launch_T ()
   }
   if (!logd_rc) {
     SVC_FATAL_ERROR ("Could not establish connection to logd\n");
-    exit (1);
-  }
-  if (!pub1_rc) {
-    SVC_FATAL_ERROR ("Launch of legacy publisher (pubd v1) failed\n");
     exit (1);
   }
 

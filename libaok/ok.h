@@ -687,10 +687,8 @@ class oksrvc_t : public ok_httpsrv_t, public ok_con_acceptor_t  { // OK Service
 public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
-      pub1_supported (true),
       wait_for_signal_in_startup (false),
-      _n_newcli (0),
-      _pub1_cfg (true)
+      _n_newcli (0)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -789,10 +787,8 @@ protected:
 
   int n_fd_out;
   u_int n_reqs; // total number of requests served
-  bool pub1_supported;
   bool wait_for_signal_in_startup;
   int _n_newcli;
-  bool _pub1_cfg;
 
 private:
 };

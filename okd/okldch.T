@@ -177,7 +177,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   if (startup_time == 0)
     startup_time = sfs_get_timenow();
   state = OKC_STATE_LAUNCH;
-  p = okld->get_pubd2 ();
+  p = okld->get_pubd ();
 
   twait { 
     okld->get_logd ()->clone (mkevent (logfd));
@@ -260,7 +260,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.insert ("lifereqs", _svc_options.svc_reqs, false);
   okld->env.insert ("lifetime", _svc_options.svc_time, false);
   okld->env.insert ("wss", _svc_options.wss, false);
-  okld->env.insert ("caching", _svc_options.pub2_caching, false);
+  okld->env.insert ("caching", _svc_options.pub3_caching, false);
   okld->env.insert ("wfs", _svc_options.wait_for_signal, false);
   okld->env.insert ("dps", _direct_ports.encode_as_str (), false);
   okld->env.insert ("fdlw", _svc_options.lowat, false);

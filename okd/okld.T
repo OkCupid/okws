@@ -200,10 +200,10 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       }
       break;
     case 'e':
-      so->pub2_viserr = 1;
+      so->pub3_viserr = 1;
       break;
     case 'E':
-      so->pub2_viserr = 0;
+      so->pub3_viserr = 0;
       break;
     case 'w':
       so->wss = 1;
@@ -212,10 +212,10 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
       so->wss = 0;
       break;
     case 'C':
-      so->pub2_caching = 0;
+      so->pub3_caching = 0;
       break;
     case 'c':
-      so->pub2_caching = 1;
+      so->pub3_caching = 1;
       break;
     case 'S':
       so->wait_for_signal = 0;
@@ -769,10 +769,6 @@ okld_t::parse_file (const str &cf)
     .add ("StartupBatchSize", &okld_startup_batch_size, 0, 128)
     .add ("StartupBatchWait", &okld_startup_batch_wait, 0, 128)
     .add ("LazyStartup", &_lazy_startup)
-
-    .add ("PubdInet", wrap (this, &okld_t::got_pubd_v1))
-    .add ("PubUnix", wrap (this, &okld_t::got_pubd_v1))
-    .add ("PubdExecPath", wrap (this, &okld_t::got_pubd_v1))
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
     .add ("PubChunkSize", &ok_pub3_max_datasz, 0, INT_MAX)
@@ -854,13 +850,8 @@ okld_t::post_config (const str &cf)
     errors = true;
   }
 
-  if (!_pubd_error && !_pubd_exc) {
-    if (!guess_pubd (cf)) {
-      errors = true;
-    }
-  }
-
-  if (!_pubd_exec) {
+  if (!_pubd_exc) { guess_pubd (cf); }
+  if (!_pubd_exc) {
     warn << "Cannot continue without pubd support\n";
     errors = true;
   }
@@ -885,7 +876,7 @@ okld_t::post_config (const str &cf)
 //-----------------------------------------------------------------------
 
 tamed void 
-okld_t::launch_pubd (evi_t cb)
+okld_t::launch_pubd (evi_t ev)
 {
   tvars {
     bool b;
@@ -978,9 +969,8 @@ okld_t::encode_env ()
     .insert ("dz", ok_dangerous_zbufs ? 1 : 0)
     .insert ("ps", ok_axprt_ps)
     .insert ("clock", int (clock_mode))
-    .insert ("ncto", ok_pub2_svc_neg_cache_timeout)
-    .insert ("pub2chnk", ok_pub2_max_datasz)
-    .insert ("pub1", pub_v1_support ? 1 : 0)
+    .insert ("ncto", ok_pub3_svc_neg_cache_timeout)
+    .insert ("pub3chnk", ok_pub3_max_datasz)
     .insert ("sel", int (ok_sys_sel_policy))
     .insert ("nlb", ok_log_nbufs)
     .insert ("p3jse", ok_pub3_json_strict_escaping)
@@ -1012,7 +1002,7 @@ okld_t::guess_pubd (const str &cf)
   bool err (false);
   vec<str> v;
   
-  warn << "No '" << PUBD_KEY << "' given; guessing where to find pubd2.\n";
+  warn << "No '" << PUBD_KEY << "' given; guessing where to find pubd.\n";
   v.push_back (PUBD_KEY);
   v.push_back ("pubd");
   got_pubd_exec (v, cf, &err);
@@ -1021,20 +1011,17 @@ okld_t::guess_pubd (const str &cf)
 }
 
 void
-okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
+okld_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
   ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) {
-    pubd2exc = New helper_exec_t (pub_program_2, s, 1,
-				  HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
-				  env);
-
+    _pubd_exc = New helper_exec_t (pub_prog_3, s, 1,
+				   HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
+				   env);
+    
     // pubd already uses -s, so we supply a different command line flag
     // to pass pubd its end of the Unix domain socket
-    pub_dexc->set_command_line_flag ("-x");
-    _pubd_error = false;
-  } else {
-    _pubd_error = true;
+    _pubd_exc->set_command_line_flag ("-x");
   }
 }
 
@@ -1582,11 +1569,11 @@ okld_t::launch (str cf)
 
   // If specified, pubd2 must succeed in its initalization
   if (pub3fd < 0) {
-    warn << "launch of pub daemon (pubd -2) failed\n";
+    warn << "launch of pub daemon (pubd) failed\n";
     okld_exit (1);
   }
 
-  if (!launch_okd (logfd, pub2fd))
+  if (!launch_okd (logfd, pub3fd))
     okld_exit (1);
 
   twait { launch_okssl (mkevent (ok)); }
@@ -1767,9 +1754,9 @@ svc_options_t::apply_global_defaults (const str &s)
 
   if (svc_reqs < 0) svc_reqs = ok_svc_life_reqs;
   if (svc_time < 0) svc_time = ok_svc_life_time;
-  if (wss < 0) wss = ok_pub2_wss;
-  if (pub2_caching < 0) pub2_caching = ok_pub2_caching;
-  if (pub2_viserr < 0) pub2_viserr = ok_pub2_viserr;
+  if (wss < 0) wss = ok_pub3_wss;
+  if (pub3_caching < 0) pub3_caching = ok_pub3_caching;
+  if (pub3_viserr < 0) pub3_viserr = ok_pub3_viserr;
   if (wait_for_signal < 0) wait_for_signal = 0;
   if (hiwat < 0) hiwat = ok_svc_fds_high_wat;
   if (lowat < 0) lowat = ok_svc_fds_low_wat;

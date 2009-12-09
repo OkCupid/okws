@@ -55,6 +55,11 @@ namespace rfn3 {
   ptr<lib_t> lib_t::alloc () {  return New refcounted<lib_t> (); }
 
   //-----------------------------------------------------------------------
+
+  const char *version_str () { return "3.0.0"; }
+  u_int64_t version_int () { return 3000000000ULL; }
+
+  //-----------------------------------------------------------------------
 };
 
 

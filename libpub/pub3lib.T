@@ -232,4 +232,12 @@ namespace pub3 {
 
   //=======================================================================
 
+  const char *okws_version_str () { return OKWS_VERSION; }
+
+  u_int64_t okws_version_int () 
+  { return VERSION_FLATTEN (OKWS_VERSION_MAJOR, OKWS_VERSION_MINOR, 
+			    OKWS_VERSION_PATCHLEVEL, OKWS_VERSION_PRE); }
+
+  //=======================================================================
+
 };
