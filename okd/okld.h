@@ -33,7 +33,6 @@
 #include "resp.h"
 #include "ok.h"
 #include "pslave.h"
-#include "okerr.h"
 #include "svq.h"
 #include "okconst.h"
 #include "okclone.h"
@@ -250,8 +249,8 @@ struct svc_options_t {
     : svc_reqs (-1), 
       svc_time (-1), 
       wss (-1),
-      pub2_caching (-1),
-      pub2_viserr (-1),
+      pub3_caching (-1),
+      pub3_viserr (-1),
       wait_for_signal (-1),
       hiwat (-1),
       lowat (-1),
@@ -276,8 +275,8 @@ struct svc_options_t {
   //  1 => ON
   int wss;
 
-  int pub2_caching;
-  int pub2_viserr;
+  int pub3_caching;
+  int pub3_viserr;
 
   int wait_for_signal;
 
@@ -385,7 +384,7 @@ public:
   okld_t () 
     : config_parser_t (), 
       svc_grp (ok_okd_gname),
-      nxtuid (ok_svc_uid_low), logexc (NULL), pubd2exc (NULL),
+      nxtuid (ok_svc_uid_low), logexc (NULL), _pubd_exc (NULL),
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), 
       sdflag (false), service_bin (ok_service_bin),
       unsafe_mode (false), safe_startup_fl (true),
@@ -394,7 +393,7 @@ public:
       clock_mode (SFS_CLOCK_GETTIME),
       mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
       used_primary_port (false),
-      pubd2 (NULL),
+      _pubd (NULL),
       pub_v1_support (false),
       _okd_mgr_socket (okd_mgr_socket),
       _pub_v2_error (false),
@@ -413,16 +412,14 @@ public:
   void got_okssl_exec (vec<str> s, str loc, bool *errp);
   void got_generic_exec (okld_helper_t *h, vec<str> s, str loc, bool *errp);
   void got_logd_exec (vec<str> s, str log, bool *errp);
-  void got_pubd2_exec (vec<str> s, str log, bool *errp);
+  void got_pubd_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
 
-  void got_pubd_v1 (vec<str> s, str log, bool *errp) { pub_v1_support = true; }
-  
   void okld_exit (int rc);
 
   void launch (str s, CLOSURE);
-  void launch_logd (cbi cb, CLOSURE);
-  void launch_pubd2 (cbi cb, CLOSURE);
+  void launch_logd (evi_t ev, CLOSURE);
+  void launch_pubd (evi_t ev, CLOSURE);
 
   bool launch_okd (int logfd, int pubd);
   void launch_okssl (evb_t ev, CLOSURE);
@@ -443,7 +440,7 @@ public:
   str get_root_coredir () const { return root_coredir; }
   bool init_ssl ();
 
-  clone_only_client_t *get_pubd2 () const { return pubd2; }
+  clone_only_client_t *get_pubd () const { return pubd3; }
 
   logd_parms_t logd_parms;
 
@@ -468,7 +465,7 @@ protected:
 
 private:
 
-  bool guess_pubd2 (const str &cf);
+  bool guess_pubd (const str &cf);
 
   struct alias_t {
     alias_t (const str &t, const str &f, const str &l, okws1_port_t p)
@@ -515,7 +512,7 @@ private:
 
   int nxtuid;
   str coredump_path;
-  helper_exec_t *logexc, *pubd2exc;
+  helper_exec_t *logexc, *_pubd_exc;
 
   str coredumpdir;
   str sockdir;
@@ -546,7 +543,7 @@ private:
 	&okld_interpreter_t::_name,
 	&okld_interpreter_t::_link> interpreters;
 
-  clone_only_client_t *pubd2;
+  clone_only_client_t *_pubd;
   bool pub_v1_support;
   str _okd_mgr_socket;
   bool _pub_v2_error;

@@ -23,10 +23,7 @@
  *
  */
 
-
-
 #include "email.h"
-#include "okerr.h"
 
 static rxx 
 valid_pattern("^(([a-zA-Z0-9_\\.\\-])+)\\@((([a-zA-Z0-9\\-])+\\.)+"

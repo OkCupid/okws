@@ -5,12 +5,12 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libweb.la
 
-libweb_la_SOURCES = web_prot.C form.C inputcheck.C web.C email.C okwc.C \
+libweb_la_SOURCES = web_prot.C inputcheck.C web.C email.C okwc.C \
 	 okwcxml.C okwc3.C okwc4.C
 
 libweb_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = web_prot.h web.h form.h email.h okwc.h  \
+okwsinclude_HEADERS = web_prot.h web.h email.h okwc.h  \
 	okwcxml.h okwc3.h okwc4.h
 
 SUFFIXES = .C .T .h .x

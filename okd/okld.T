@@ -32,7 +32,6 @@
 #include "okprot.h"
 #include "ahutil.h"
 #include "pub.h"
-#include "xpub.h"
 #include "pubutil.h"
 #include "rxx.h"
 #include "ok_adebug.h"
@@ -41,7 +40,7 @@
 extern char ** environ;
 extern int optind;
 
-#define PUBD2_KEY "Pubd2ExecPath"
+#define PUBD_KEY "PubdExecPath"
 
 void
 okld_t::set_signals ()
@@ -688,14 +687,13 @@ okld_t::parse_file (const str &cf)
     .add ("SslGroup", &_config_ssl_gr)
 
     .add ("OklogdExecPath", wrap (this, &okld_t::got_logd_exec))
-    .add (PUBD2_KEY, wrap (this, &okld_t::got_pubd2_exec))
-    .add ("NoPub2", &_config_no_pub_v2_support)
-    .add ("Pub2WSS", &ok_pub2_wss, -1, 1)
-    .add ("Pub2Caching" , &ok_pub2_caching, -1, 1)
-    .add ("Pub2VisibileErrors", &ok_pub2_viserr, -1, 1)
-    .add ("Pub2SvcNegCacheTimeout", &ok_pub2_svc_neg_cache_timeout,
+    .add (PUBD_KEY, wrap (this, &okld_t::got_pubd_exec))
+    .add ("PubWSS", &ok_pub3_wss, -1, 1)
+    .add ("PubCaching" , &ok_pub3_caching, -1, 1)
+    .add ("PubVisibileErrors", &ok_pub3_viserr, -1, 1)
+    .add ("PubSvcNegCacheTimeout", &ok_pub3_svc_neg_cache_timeout,
 	  0, INT_MAX)
-    .add ("Pub3JsonStrictEscaping", &ok_pub3_json_strict_escaping)
+    .add ("PubJsonStrictEscaping", &ok_pub3_json_strict_escaping)
     .add ("LogDir", &logd_parms.logdir)
     .add ("AccessLog", &logd_parms.accesslog)
     .add ("ErrorLog", &logd_parms.errorlog)
@@ -777,7 +775,7 @@ okld_t::parse_file (const str &cf)
     .add ("PubdExecPath", wrap (this, &okld_t::got_pubd_v1))
     .add ("OkMgrSocket", &_okd_mgr_socket)
 
-    .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
+    .add ("PubChunkSize", &ok_pub3_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
     .add ("AhttpconZombieWarn", &ok_ahttpcon_zombie_warn)
     .add ("AhttpconZombieTimeout", &ok_ahttpcon_zombie_timeout, 
@@ -856,13 +854,15 @@ okld_t::post_config (const str &cf)
     errors = true;
   }
 
-  if (!_config_no_pub_v2_support) {
-    if (!_pub_v2_error && !pubd2exc) {
-      if (!guess_pubd2 (cf))
-	errors = true;
+  if (!_pubd_error && !_pubd_exc) {
+    if (!guess_pubd (cf)) {
+      errors = true;
     }
-  } else {
-    warn << "Disabling Pub v2 support.\n";
+  }
+
+  if (!_pubd_exec) {
+    warn << "Cannot continue without pubd support\n";
+    errors = true;
   }
 
   if (_all_ports_map.size () == 0) {
@@ -882,38 +882,44 @@ okld_t::post_config (const str &cf)
   return (!errors);
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
-okld_t::launch_pubd2 (cbi cb)
+okld_t::launch_pubd (evi_t cb)
 {
   tvars {
     bool b;
     int ret (-1);
+    bool ok;
   }
-  assert (pubd2exc);
-  pubd2 = New clone_only_client_t (pubd2exc, PUB2_CLONE);
+  assert (_pubd_exc);
+  _pubd = New clone_only_client_t (_pubd_exc, PUB3_CLONE);
 
 
-  twait { pubd2->connect (mkevent (b)); }
+  twait { _pubd->connect (mkevent (b)); }
   if (b) {
 
     // calling clone_client_t::init() sets up the FD source so we
     // can accept incoming file descriptors.  the log_primary_t 
     // class does this implicitly, so we have to do it explicitly
     // here for pub2
-    assert (pubd2->init ());
+    ok = _pubd->init ();
+    assert (ok);
 
-    twait { pubd2->clone (mkevent (ret)); }
+    twait { _pubd->clone (mkevent (ret)); }
     if (ret < 0) {
-      warn << "pubd -2 did not send a file descriptor; failing\n";
+      warn << "pubd did not send a file descriptor; failing\n";
     }
   } else {
-    warn << "cannot connect to pub daemon version 2 (pubd -2)\n";
+    warn << "cannot connect to pubd\n";
   }
-  TRIGGER (cb, ret);
+  ev->trigger (ret);
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
-okld_t::launch_logd (cbi cb)
+okld_t::launch_logd (evi_t cb)
 {
   tvars {
     vec<str> *argv;
@@ -937,8 +943,10 @@ okld_t::launch_logd (cbi cb)
   } else {
     warn << "cannot connect to launched log daemon (oklogd)\n";
   }
-  TRIGGER (cb, ret);
+  cb->trigger (ret);
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::encode_env ()
@@ -999,16 +1007,15 @@ okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 }
 
 bool
-okld_t::guess_pubd2 (const str &cf)
+okld_t::guess_pubd (const str &cf)
 {
   bool err (false);
   vec<str> v;
   
-  warn << "No '" << PUBD2_KEY << "' given; guessing where to find pubd2.\n";
-  v.push_back (PUBD2_KEY);
+  warn << "No '" << PUBD_KEY << "' given; guessing where to find pubd2.\n";
+  v.push_back (PUBD_KEY);
   v.push_back ("pubd");
-  v.push_back ("-2");
-  got_pubd2_exec (v, cf, &err);
+  got_pubd_exec (v, cf, &err);
   
   return !err;
 }
@@ -1024,10 +1031,10 @@ okld_t::got_pubd2_exec (vec<str> s, str loc, bool *errp)
 
     // pubd already uses -s, so we supply a different command line flag
     // to pass pubd its end of the Unix domain socket
-    pubd2exc->set_command_line_flag ("-x");
-    _pub_v2_error = false;
+    pub_dexc->set_command_line_flag ("-x");
+    _pubd_error = false;
   } else {
-    _pub_v2_error = true;
+    _pubd_error = true;
   }
 }
 
@@ -1562,11 +1569,10 @@ okld_t::launch (str cf)
   if (jaildir)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
 
-  pub2fd = -1;
+  pub3fd = -1;
   twait {
     launch_logd (mkevent (logfd));
-    if (pubd2exc)
-      launch_pubd2 (mkevent (pub2fd));
+    launch_pubd (mkevent (pub3fd));
   }
 
   if (logfd < 0) {
@@ -1575,7 +1581,7 @@ okld_t::launch (str cf)
   }
 
   // If specified, pubd2 must succeed in its initalization
-  if (pubd2exc && pub2fd < 0) {
+  if (pub3fd < 0) {
     warn << "launch of pub daemon (pubd -2) failed\n";
     okld_exit (1);
   }

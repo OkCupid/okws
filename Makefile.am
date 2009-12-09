@@ -24,12 +24,9 @@ if USE_MYSQL
 SBD2 = libamysql
 endif
 
-SUBDIRS = $(SBD1)
-
-
-#	$(SBD1) \
-#	$(SBD2) \
-#	okd \
+SUBDIRS = $(SBD1) \
+	$(SBD2) \
+	okd 
 #	ssld \
 #	logd \
 #	client \
