@@ -1,10 +1,9 @@
 
 #include "amt_pthread.h"
 
-mpt_dispatch_t::mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-				const txa_prog_t *x)
- : mtdispatch_t (c, n, m, s, x), 
-   pts (New pthread_t [n])
+mpt_dispatch_t::mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s)
+  : mtdispatch_t (c, n, m, s),
+    pts (New pthread_t [n])
 {
   int rc = pthread_mutex_init (&_giant_lock, NULL);
   if (rc != 0) {

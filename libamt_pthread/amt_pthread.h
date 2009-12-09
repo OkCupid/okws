@@ -10,10 +10,8 @@
 class mpt_dispatch_t : public mtdispatch_t // Posix Threads
 {
 public:
-  mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-		  const txa_prog_t *x);
-
-        ~mpt_dispatch_t () { warn << "in ~mpt_dispatch_t\n"; delete [] pts; } 
+  mpt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s);
+  ~mpt_dispatch_t () { warn << "in ~mpt_dispatch_t\n"; delete [] pts; } 
   void launch (int i, int fdout);
   void giant_lock ();
   void giant_unlock ();

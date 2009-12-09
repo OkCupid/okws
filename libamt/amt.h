@@ -32,8 +32,6 @@
 #define _LIBAMT_AMT_H
 
 #include "okwsconf.h"
-#include "lbalance.h"
-#include "txa.h"
 #include "litetime.h"
 #include "pubutil.h"
 #include "passptr.h"
@@ -302,8 +300,7 @@ struct queue_el_t {
 class ssrv_client_t;
 class mtdispatch_t { // Multi-Thread Dispatch
 public:
-  mtdispatch_t (newthrcb_t c, u_int nthr, u_int mq, ssrv_t *s, 
-		const txa_prog_t *x);
+  mtdispatch_t (newthrcb_t c, u_int nthr, u_int mq, ssrv_t *s);
   void dispatch (svccb *b);
   mtd_thread_t *new_thread (mtd_thread_arg_t *a) const;
   virtual ~mtdispatch_t ();
@@ -362,26 +359,20 @@ public:
   mtd_reporting_t g_reporting;  // Report about who is making these rpcs
 
 protected:
-  const txa_prog_t * const txa_prog; // for Thin XDR Authentication
   bool quiet;              // on if should make no noise
 };
 
 class ssrv_client_t {
 public:
-  ssrv_client_t (ssrv_t *s, const rpc_program *const p, ptr<axprt_stream> x,
-		 const txa_prog_t *t);
+  ssrv_client_t (ssrv_t *s, const rpc_program *const p, ptr<axprt_stream> x);
   ~ssrv_client_t ();
   void dispatch (svccb *s);
   list_entry<ssrv_client_t> lnk;
-  bool authorized (u_int32_t procno) ;
 protected:
   void init_reporting_info ();
 private:
   ssrv_t *ssrv;
   ptr<asrv> srv;
-  const txa_prog_t *const txa_prog;
-  vec<str> authtoks;
-  qhash<u_int32_t, bool> authcache;
   ptr<axprt_stream> _x;
 
   // hostname/port of the guy on the other end
@@ -392,11 +383,10 @@ private:
 class ssrv_t { // Synchronous Server (I.e. its threads can block)
 public:
   ssrv_t (newthrcb_t c, const rpc_program &p, mtd_thread_typ_t typ = MTD_PTH, 
-	  int nthr = MTD_NTHREADS, int mq = MTD_MAXQ, 
-	  const txa_prog_t *tx = NULL);
+	  int nthr = MTD_NTHREADS, int mq = MTD_MAXQ);
 
   // use these two to pass in your own virtual mtdispatch object.
-  ssrv_t (const rpc_program &p, const txa_prog_t *txa);
+  ssrv_t (const rpc_program &p);
   void init (mtdispatch_t *m);
 
   void accept (ptr<axprt_stream> x);
@@ -423,16 +413,14 @@ private:
   list<ssrv_client_t, &ssrv_client_t::lnk> lst;
   vec<struct timespec> reqtimes;
   u_int load_avg;
-  const txa_prog_t *const txa_prog;
 };
 
 #ifdef HAVE_PTH
 class mgt_dispatch_t : public mtdispatch_t  // Pth Threads
 {
 public:
-  mgt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s, 
-		  const txa_prog_t *x) :
-    mtdispatch_t (c, n, m, s, x), names (New str [n]), gts (New pth_t [n]) {}
+  mgt_dispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s) :
+    mtdispatch_t (c, n, m, s), names (New str [n]), gts (New pth_t [n]) {}
   ~mgt_dispatch_t () 
   { 
     warn << "in ~mgt_dispatch_t\n"; 

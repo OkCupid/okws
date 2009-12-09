@@ -22,7 +22,6 @@
  */
 
 #include "amt.h"
-#include "txa_prot.h"
 #include "rxx.h"
 #include "parseopt.h"
 #include "rpc_stats.h"
@@ -67,11 +66,9 @@ msg_send (int fd, mtd_msg_t *msg)
   return sz;
 }
 
-mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s,
-			    const txa_prog_t *x)
+mtdispatch_t::mtdispatch_t (newthrcb_t c, u_int n, u_int m, ssrv_t *s)
   : num (n), shmem (New mtd_shmem_t (n)), ntcb (c), maxq (m),
-    nalive (n), sdflag (false), ssrv (s), txa_prog (x),
-    quiet (false)
+    nalive (n), sdflag (false), ssrv (s), quiet (false)
 {}
 
 mtdispatch_t::~mtdispatch_t ()
@@ -83,38 +80,7 @@ mtdispatch_t::~mtdispatch_t ()
 bool
 mtdispatch_t::async_serv (svccb *b)
 {
-  u_int p = b->proc ();
-  u_int la;
-  switch (p) {
-  case LOAD_AVG_RPC:
-    la = ssrv ? ssrv->get_load_avg () : UINT_MAX;
-    b->replyref (la);
-    return true;
-    break;
-  case Q_LEN_RPC: 
-    {
-      u_int ql = queue.size ();
-      b->replyref (ql);
-      return true;
-      break;
-    }
-  default:
-    return false;
-    break;
-  }
-}
-
-bool
-ssrv_client_t::authorized (u_int32_t procno)
-{
-  bool *b = authcache[procno];
-  if (b) {
-    return (*b);
-  } else {
-    bool ans = txa_prog->authorized (authtoks, procno);
-    authcache.insert (procno, ans);
-    return ans;
-  }
+  return false;
 }
 
 void
@@ -613,12 +579,12 @@ ssrv_t::accept (ptr<axprt_stream> x)
 {
   if (!x)
     fatal << "listen port closed.\n";
-  vNew ssrv_client_t (this, prog, x, txa_prog);
+  vNew ssrv_client_t (this, prog, x);
 }
 
 ssrv_client_t::ssrv_client_t (ssrv_t *s, const rpc_program *const p, 
-			      ptr<axprt_stream> x, const txa_prog_t *t) 
-  : ssrv (s), txa_prog (t), _x (x)
+			      ptr<axprt_stream> x)
+  : ssrv (s), _x (x)
 {
   ssrv->insert (this);
   srv = asrv::alloc (x, *p, wrap (this, &ssrv_client_t::dispatch));
@@ -653,19 +619,7 @@ ssrv_client_t::dispatch (svccb *s)
   else {
     u_int32_t procno = s->proc ();
     ssrv->mtd->g_reporting.rpc_report (procno, _hostname, _port);
-    if (txa_prog && txa_prog->get_login_rpc () == procno) {
-	txa_login_arg_t *arg = s->Xtmpl getarg<txa_login_arg_t> ();
-	authtoks.clear ();
-	for (u_int i = 0; i < arg->size (); i++) {
-	  str tok ((*arg)[i].base (), (*arg)[i].size ());
-	  authtoks.push_back (tok);
-	}
-	s->replyref (true);
-    } else if (txa_prog && !authorized (procno)) {
-      // XXX better debug message needed
-      warn << "RPC rejected due to insufficient credentials!\n";
-      s->reject (PROC_UNAVAIL);
-    } else if (ssrv->skip_db_call (s)) {
+    if (ssrv->skip_db_call (s)) {
       ssrv->mtd->g_stats.async_serv ();
     } else {
       ssrv->req_made ();
@@ -676,11 +630,8 @@ ssrv_client_t::dispatch (svccb *s)
 
 ssrv_client_t::~ssrv_client_t () { ssrv->remove (this); }
 
-ssrv_t::ssrv_t (const rpc_program &p, const txa_prog_t *x)
-  : prog (&p),
-    load_avg (0),
-    txa_prog (x)
-{}
+ssrv_t::ssrv_t (const rpc_program &p)
+  : prog (&p), load_avg (0) {}
 
 void
 ssrv_t::init (mtdispatch_t *m)
@@ -690,13 +641,13 @@ ssrv_t::init (mtdispatch_t *m)
 }
 
 ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p, 
-		mtd_thread_typ_t typ, int n, int m, const txa_prog_t *x) 
-  : mtd (NULL), prog (&p), load_avg (0), txa_prog (x)
+		mtd_thread_typ_t typ, int n, int m)
+  : mtd (NULL), prog (&p), load_avg (0)
 {
 
 #ifdef HAVE_PTH
   assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
-  mtd = New mgt_dispatch_t (c, n, m, this, x);
+  mtd = New mgt_dispatch_t (c, n, m, this);
   mtd->init (); 
 #else
   panic ("pth is not available with this build; "
