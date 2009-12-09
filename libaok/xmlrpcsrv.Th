@@ -68,7 +68,7 @@ public:
    * the default, which is to ignore the lang parameter.
    *
    */
-  virtual ptr<pub3::ok_iface_t> xml_pub2_local (const str &lang) 
+  virtual ptr<pub3::ok_iface_t> xml_pub3_local (const str &lang) 
   { return pub3(); }
 
   ptr<xml_top_level_t> top_level () { return _parser.top_level (); }
@@ -92,7 +92,7 @@ public:
   virtual ~oksrvc_xmlrpc_base_t () {}
   virtual void handle (okclnt_xmlrpc_base_t *b) = 0;
   virtual void handle (okclnt_xmlrpc_base_t *b, str nm,
-		       xml_req_t q, xml_resp_cb_t cb) = 0;
+		       xml_req_t q, xml_resp_ev_t cb) = 0;
 
   void do_debug (ptr<const xml_element_t> e, const char *m, u_int64_t id);
 
@@ -115,17 +115,17 @@ public:
 
   virtual bool is_authorized (xml_req_t q) { return true; }
 
-  virtual void handle_multicall (xml_req_t q, xml_resp_cb_t cb) 
+  virtual void handle_multicall (xml_req_t q, xml_resp_ev_t cb) 
   { handle_multicall_T (q, cb); }
-  virtual void handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb);
-  virtual void handle_okws_pub (xml_req_t q, xml_resp_cb_t cb)
+  virtual void handle_set_debug_level (xml_req_t q, xml_resp_ev_t cb);
+  virtual void handle_okws_pub (xml_req_t q, xml_resp_ev_t cb)
   { handle_okws_pub_T (q, cb); }
 
 protected:
   oksrvc_xmlrpc_base_t *_srvc;
 private:
-  void handle_multicall_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
-  void handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+  void handle_multicall_T (xml_req_t q, xml_resp_ev_t cb, CLOSURE);
+  void handle_okws_pub_T (xml_req_t q, xml_resp_ev_t cb, CLOSURE);
 };
 
 // See additional codes in "libokxml/okxmlparse.h" and <expat.h>
@@ -142,10 +142,10 @@ enum { OK_XMLRPC_OK = 0,
 template<class C, class S>
 class oksrvc_xmlrpc_t : public oksrvc_xmlrpc_base_t {
 public:
-  typedef void (C::*handler_t) (xml_req_t, xml_resp_cb_t);
+  typedef void (C::*handler_t) (xml_req_t, xml_resp_ev_t);
 
   void handle (okclnt_xmlrpc_base_t *c) { handle_T (c); }
-  void handle (okclnt_xmlrpc_base_t *c, str nm, xml_req_t q, xml_resp_cb_t cb)
+  void handle (okclnt_xmlrpc_base_t *c, str nm, xml_req_t q, xml_resp_ev_t cb)
   { handle2_T (c, nm, q, cb); }
   
   oksrvc_xmlrpc_t (int argc, char *argv[]) 
@@ -154,7 +154,7 @@ public:
     regh (MULTICALL,      &okclnt_xmlrpc_t::handle_multicall);
     regh (SET_DEBUG_LEV,  &okclnt_xmlrpc_t::handle_set_debug_level);
     regh (OKWS_PUB,       &okclnt_xmlrpc_t::handle_okws_pub);
-    regh (OKWS_PUB3,      &okclnt_xmlrpc_t::handle_okws_pub3);
+    regh (OKWS_PUB3,      &okclnt_xmlrpc_t::handle_okws_pub);
   }
   
   newclnt_t *make_newclnt (ptr<ahttpcon> lx) 
@@ -169,7 +169,7 @@ protected:
 private:
   void handle_T (okclnt_xmlrpc_base_t *c, CLOSURE);
   void handle2_T (okclnt_xmlrpc_base_t *c, str nm,
-		  xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+		  xml_req_t q, xml_resp_ev_t cb, CLOSURE);
 };
 
 tamed template<class C, class S> void
@@ -215,7 +215,7 @@ oksrvc_xmlrpc_t<C,S>::handle_T (okclnt_xmlrpc_base_t *c)
 
 tamed template<class C, class S> void
 oksrvc_xmlrpc_t<C,S>::handle2_T (okclnt_xmlrpc_base_t *c, 
-				 str nm, xml_req_t q, xml_resp_cb_t cb)
+				 str nm, xml_req_t q, xml_resp_ev_t cb)
 {
   tvars {
     C *cli (reinterpret_cast<C *> (c));
@@ -229,7 +229,7 @@ oksrvc_xmlrpc_t<C,S>::handle2_T (okclnt_xmlrpc_base_t *c,
   } else {
     twait { ((*cli).*(*h)) (q, mkevent (resp)); }
   }
-  (*cb) (resp);
+  cb->trigger (resp);
 }
 
 # endif /* HAVE_EXPAT */

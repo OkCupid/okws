@@ -259,3 +259,38 @@ xml_obj_const_t::to_pub3 (pub3::obj_t *o) const
 }
 
 //=======================================================================
+
+xml_obj_t
+xml_obj_t::from_pub3 (ptr<const pub3::expr_t> in)
+{
+  xml_obj_t xd (New refcounted<xml_struct_t> ());
+  if (!in) return xd;
+
+  ptr<const pub3::expr_dict_t> d;
+  ptr<const pub3::expr_list_t> l;
+  int64_t t;
+  str s;
+
+  if ((d = in->to_dict ())) {
+    pub3::bindtab_t::const_iterator_t it (*d);
+    const str *key;
+    ptr<pub3::expr_t> x;
+    while ((key = it.next (&x))) {
+      xd(*key) = from_pub3 (x);
+    }
+  } else if ((l = in->to_list ())) {
+    xml_obj_t ret (New refcounted<xml_array_t> ());
+    for (size_t i = 0; i < l->size (); i++) {
+      ret[i] = from_pub3 ((*l)[i]);
+    }
+    return ret;
+  } else if ((in->to_int (&t))) {
+    return xml_obj_t (New refcounted<xml_int_t> (t)); 
+  } else if ((s = in->to_str (false))) {
+    return xml_obj_t (New refcounted<xml_str_t> (s));
+  } 
+
+  return xd;
+}
+
+//=======================================================================

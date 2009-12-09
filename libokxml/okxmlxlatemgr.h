@@ -94,10 +94,10 @@ namespace okxml {
     void add_file (const xml_rpc_file &file);
     void add_files (const xml_rpc_file *const * list);
 
-    void get_types(xml_req_t input, xml_resp_cb_t cb);
-    void get_prog_info(xml_req_t input, xml_resp_cb_t cb);
-    void xlate (xml_obj_const_t input, xml_resp_cb_t cb, CLOSURE);
-    void get_constants (xml_req_t input, xml_resp_cb_t cb);
+    void get_types(xml_req_t input, xml_resp_ev_t cb);
+    void get_prog_info(xml_req_t input, xml_resp_ev_t cb);
+    void xlate (xml_obj_const_t input, xml_resp_ev_t cb, CLOSURE);
+    void get_constants (xml_req_t input, xml_resp_ev_t cb);
 
   protected:
     virtual void do_rpc (str hostname, int port, 

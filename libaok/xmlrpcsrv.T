@@ -24,7 +24,7 @@ xml_rpc_new_global_id ()
 }
 
 tamed void
-okclnt_xmlrpc_t::handle_multicall_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xmlrpc_t::handle_multicall_T (xml_req_t q, xml_resp_ev_t cb)
 {
   tvars {
     size_t i;
@@ -58,17 +58,17 @@ okclnt_xmlrpc_t::handle_multicall_T (xml_req_t q, xml_resp_cb_t cb)
   for (i = 0; i < calls.size (); i++)
     r[calls[i]][0] = r2[calls[i]];
 
-  (*cb) (r);
+  cb->trigger (r);
 }
 
 void
-okclnt_xmlrpc_t::handle_set_debug_level (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xmlrpc_t::handle_set_debug_level (xml_req_t q, xml_resp_ev_t cb)
 {
   xml_resp_t r;
   r[0] = true;
   int i = q[0];
   _srvc->set_debug_level (i);
-  (*cb) (r);
+  cb->trigger (r);
 }
 
 void
@@ -137,8 +137,8 @@ oksrvc_xmlrpc_base_t::init_optmap ()
 
 static bool
 load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
-	   str *fn, u_int *opts, aarr_t *a, str *lang,
-	   bool *conf, pub_vers_t vers, pub3::obj_t *p3o)
+	   str *fn, pub3::opts_t *opts, str *lang,
+	   bool *conf, pub3::obj_t *p3o)
 {
   static const char *FN = "filename";
   static const char *OPTS = "options";
@@ -181,133 +181,55 @@ load_args (xml_obj_const_t x, const oksrvc_xmlrpc_base_t *svc,
 
 #define XML_PUB_ARGLOAD_FAILED  401
 
-static xml_obj_t aarr2xml (ptr<const aarr_t> a, penv_t *env);
-
-static void
-pval2xml (xml_obj_ref_t o, pval_t *v, penv_t *env)
-{
-  if (!v) 
-    return;
-
-  const parr_mixed_t *ma;
-  const parr_ival_t *ia;
-  ptr<const pub3::expr_t> x;
-  ptr<const pub3::expr_dict_t> xd;
-  ptr<const pub3::expr_list_t> xl;
-  int64_t t;
-
-  pub3::eval_t eval (env, NULL);
-
-  if ((xd = v->to_expr_dict ())) {
-    o = aarr2xml (xd->dict (), env);
-  } else if ((xl = v->to_expr_list ())) {
-    for (size_t i = 0; i < xl->size (); i++) {
-      pval2xml (o[i], (*xl)[i], env);
-    }
-  } else if (v->to_int64 (&t)) {
-    o = int (t);
-  } else if ((x = v->to_expr ())) {
-    o = x->eval_as_str (eval); 
-  } else if ((ma = v->to_mixed_arr ())) {
-    for (size_t i = 0; i < ma->size (); i++) {
-      pval2xml (o[i], (*ma)[i], env);
-    }
-  } else if ((ia = v->to_int_arr ())) {
-    for (size_t i = 0; i < ia->size (); i++) {
-      int t = 0;
-      ia->val (i, &t);
-      o[i] = t;
-    }
-  } else if (v->to_int64(&t)) {
-    o = int (t);
-  } else {
-    // everything should be flattened anyways....
-    o = v->eval (env, EVAL_INTERNAL);
-  }
-}
-
-xml_obj_t
-aarr2xml (ptr<const aarr_t> a, penv_t *env)
-{
-  xml_obj_t ret (New refcounted<xml_struct_t> ());
-  if (a) {
-    const nvtab_t *nvt = a->nvtab ();
-    nvpair_t *p;
-    for (p = nvt->first (); p; p = nvt->next (p)) {
-      pval2xml ( ret(p->name()), p->value (), env);
-    }
-  }
-  return ret;
-}
-
 tamed void
-okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_ev_t cb)
 {
   tvars {
     xml_resp_t r;
     size_t i;
     str fn;
-    u_int opts;
-    vec<ptr<zbuf> > out;
-    vec<ptr<aarr_t> > conf_out;
-    vec<xpub_status_t> pub_errc;
-    aarr_t aa;
-    vec<size_t> calls;
-    ptr<bound_pfile2_t> dummy;
+    pub3::opts_t opts;
+    ptr<zbuf> zb;
     str lang;
     bool conf;
-    ptr<pub2::ok_iface_t> iface;
-    penv_t *env;
+    ptr<pub3::ok_iface_t> iface;
     pub3::obj_t o;
-    aarr_t *aap;
+    bool ok;
+    ptr<pub3::dict_t> conf_out;
+    pub3::status_t status;
   }
-
-  // need an env for conf files ?
-  env = pub3 ()->get_env ();
 
   r.setsize (q.size ());
-  out.setsize (q.size ());
-  conf_out.setsize (q.size ());
-  pub_errc.setsize (q.size ());
 
-  twait {
-    for (i = 0; i < q.size (); i++) {
-      aa.deleteall ();
-      if (load_args (q[i], _srvc, &fn, &opts, &aa, &lang, &conf, vers, &o)) {
-	calls.push_back (i);
-	iface = xml_pub2_local (lang);
-	aap =  o.dict ();
-	if (conf) {
-	  conf_out[i] = New refcounted<aarr_t> ();
-	  iface->run_cfg_full (fn, mkevent (pub_errc[i], dummy),
-			       conf_out[i]);
-	} else {
-	  out[i] = New refcounted<zbuf> ();
-	  iface->run_full (out[i], fn, 
-			   mkevent (pub_errc[i], dummy), 
-			   aap, opts);
+  for (i = 0; i < q.size (); i++) {
+    if (load_args (q[i], _srvc, &fn, &opts, &lang, &conf, &o)) {
+      iface = xml_pub3_local (lang);
+      ok = true;
+      if (conf) {
+	conf_out = pub3::dict_t::alloc ();
+	twait { iface->run_cfg (fn, mkevent (ok), conf_out, opts, &status); }
+	if (ok) {
+	  r[i]("data") = xml_obj_t::from_pub3 (conf_out);
 	}
       } else {
-	r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
-	r[i]("error")("desc") = "failed to load Pub arguments";
+	zb = New refcounted<zbuf> ();
+	twait { iface->run (zb, fn, mkevent (ok), o.dict (), opts, &status); }
+	if (ok) {
+	  strbuf b ;
+	  zb->to_strbuf (&b, false);
+	  r[i]("data") = base64_str_t (b);
+	}
       }
-    }
-  }
-  for (i = 0; i < calls.size (); i++) {
-    size_t j = calls[i];
-    if (pub_errc[j].status != XPUB_STATUS_OK) {
-      r[j]("error")("code") = int (pub_errc[j].status);
-      r[j]("error")("desc") = errcode2str (pub_errc[j]);
-    } else if (out[j]) {
-      strbuf b ;
-      out[j]->to_strbuf (&b, false);
-      r[j]("data") = base64_str_t (b);
+      if (!ok) {
+	r[i]("error")("code") = int (status.status);
+	r[i]("error")("desc") = errcode2str (status);
+      }
     } else {
-      assert (conf_out[j]);
-      r[j]("data") = aarr2xml (conf_out[j], env);
+      r[i]("error")("code") = XML_PUB_ARGLOAD_FAILED;
+      r[i]("error")("desc") = "failed to load Pub arguments";
     }
   }
-  TRIGGER (cb, r);
+  cb->trigger (r);
 }
 
 #endif /* HAVE_EXPAT */

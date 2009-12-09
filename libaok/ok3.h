@@ -204,9 +204,9 @@ public:
 
   //------------------------------------------------------------------------
 
-  void set_localizer (ptr<const pub_localizer_t> l);
-  ptr<pub2::ok_iface_t> pub2 ();
-  ptr<pub2::ok_iface_t> pub2_local ();
+  void set_localizer (ptr<const pub3::localizer_t> l);
+  ptr<pub3::ok_iface_t> pub3 ();
+  ptr<pub3::ok_iface_t> pub3_local ();
   ptr<ahttpcon> con () { return _x; }
 
   //------------------------------------------------------------------------
@@ -247,7 +247,7 @@ protected:
   u_int _timeout;
 
   ptr<demux_data_t> _demux_data;
-  ptr<pub2::locale_specific_publisher_t> _p2_locale;
+  ptr<pub3::locale_specific_publisher_t> _p3_locale;
   vec<ptr<resp_t> > _resps;
 
   bool _union_cgi_mode;

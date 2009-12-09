@@ -259,7 +259,7 @@ namespace okxml {
   }
 
   void
-  xlate_mgr_t::get_types(xml_req_t in, xml_resp_cb_t cb)
+  xlate_mgr_t::get_types(xml_req_t in, xml_resp_ev_t cb)
   {
     xml_resp_t resp;
     bhash<str> seen;
@@ -279,11 +279,11 @@ namespace okxml {
       fill_type_info(resp[0](out[i]), *_types[out[i]], out, seen);
     }
 
-    cb(resp);
+    cb->trigger(resp);
   }
 
   void
-  xlate_mgr_t::get_prog_info (xml_req_t in, xml_resp_cb_t cb)
+  xlate_mgr_t::get_prog_info (xml_req_t in, xml_resp_ev_t cb)
   {
     xml_resp_t resp;
     for (size_t i = 0; i < in.size (); i++) {
@@ -302,11 +302,11 @@ namespace okxml {
         }
       }
     }
-    cb(resp);
+    cb->trigger (resp);
   }
 
   void
-  xlate_mgr_t::get_constants (xml_req_t in, xml_resp_cb_t cb)
+  xlate_mgr_t::get_constants (xml_req_t in, xml_resp_ev_t cb)
   {
     xml_resp_t resp;
     size_t k = 0;
@@ -445,7 +445,7 @@ namespace okxml {
 
 
   tamed void
-  xlate_mgr_t::xlate (xml_obj_const_t input, xml_resp_cb_t cb)
+  xlate_mgr_t::xlate (xml_obj_const_t input, xml_resp_ev_t cb)
   {
     tvars {
       str hostname;
@@ -522,7 +522,7 @@ namespace okxml {
       resp = xml_fault_obj_t (int (stat), errm);
     }
       
-    (*cb) (resp);
+    cb->trigger (resp);
   }
 
 }

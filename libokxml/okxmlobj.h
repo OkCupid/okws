@@ -26,6 +26,7 @@
 #define _LIBAHTTP_OKXMLOBJ_H_
 
 #include "okxmldata.h"
+#include "pub3expr.h"
 #include "pub3obj.h"
 
 //
@@ -169,6 +170,7 @@ public:
   xml_obj_t (ptr<xml_element_t> p) : xml_obj_ref_t (_el), _el (p) {}
   const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
   { return set_fault (w); }
+  static xml_obj_t from_pub3 (ptr<const pub3::expr_t> in);
 protected:
   ptr<xml_element_t> _el;
 };
@@ -200,7 +202,7 @@ public:
   bool is_fault (int *code, str *msg) const;
 };
 
-typedef callback<void, xml_resp_t>::ref xml_resp_cb_t;
+typedef event<xml_resp_t>::ref xml_resp_ev_t;
 
 //=======================================================================
 

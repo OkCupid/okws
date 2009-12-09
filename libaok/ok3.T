@@ -84,27 +84,27 @@ okclnt3_t::ssl_cipher () const
 //-----------------------------------------------------------------------
 
 void
-okclnt3_t::set_localizer (ptr<const pub_localizer_t> l)
+okclnt3_t::set_localizer (ptr<const pub3::localizer_t> l)
 {
-  _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 (), l);
+  _p3_locale = New refcounted<pub3::locale_specific_publisher_t> (pub3 (), l);
 }
 
 //-----------------------------------------------------------------------
 
-ptr<pub2::ok_iface_t>
-okclnt3_t::pub2 ()
+ptr<pub3::ok_iface_t>
+okclnt3_t::pub3 ()
 {
-  return oksrvc->pub2 ();
+  return oksrvc->pub3 ();
 }
 
 //-----------------------------------------------------------------------
 
-ptr<pub2::ok_iface_t>
-okclnt3_t::pub2_local ()
+ptr<pub3::ok_iface_t>
+okclnt3_t::pub3_local ()
 {
-  if (!_p2_locale)
-    _p2_locale = New refcounted<pub2::locale_specific_publisher_t> (pub2 ());
-  return _p2_locale;
+  if (!_p3_locale)
+    _p3_locale = New refcounted<pub3::locale_specific_publisher_t> (pub3 ());
+  return _p3_locale;
 }
 
 //-----------------------------------------------------------------------
