@@ -82,7 +82,7 @@ public:
   void launch ();
   void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
   void send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
-  void shutdown (oksig_t sig, cbv cb);
+  void shutdown (oksig_t sig, evv_t ev, CLOSURE);
 
   void got_new_ctlx_fd (int fd, int p);
   void dispatch (ptr<bool> destroyed, svccb *b);
@@ -108,6 +108,7 @@ public:
 			    event<ok_xstatus_typ_t>::ref ev, CLOSURE);
   void toggle_profiler (ok_diagnostic_cmd_t cmd, 
 			event<ok_xstatus_typ_t>::ref ev, CLOSURE);
+  ptr<bool> get_destroyed_flag () { return destroyed; }
   
   okd_t *myokd;
   int pid;
@@ -117,7 +118,6 @@ protected:
   void handle_reenable_accept (svccb *sbp);
   void start_chld ();
 private:
-  void shutdown_cb1 (cbv cb);
   void closed_fd (u_int64_t gen);
 
   vec<ahttpcon_wrapper_t<ahttpcon_clone> > conqueue;
@@ -165,8 +165,7 @@ public:
     pubd (NULL), 
     configfile (cf),
     okldfd (okldfd_in),
-    sdflag (false), sd2 (false), dcb (NULL), 
-    sdattempt (0),
+    sdflag (false), 
     cntr (0),
     coredumpdir (cdd),
     nfd_in_xit (0),
@@ -209,7 +208,8 @@ public:
   void newserv (int fd);
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
 		 const ssl_ctx_t *ssl);
-  void shutdown (int sig);
+  void shutdown (int sig) { shutdown_T (sig); }
+  void shutdown_T (int sig, CLOSURE);
   void awaken (str nm, evb_t ev, CLOSURE);
 
   typedef ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab_t;
@@ -242,7 +242,6 @@ public:
 
   void strip_privileges ();
 
-  void kill_srvcs_cb ();
   bool in_shutdown () const { return sdflag; }
   void set_signals ();
 
@@ -250,6 +249,8 @@ public:
   void req_errdoc_set_2 (svccb *sbp);
 
   void closed_fd ();
+
+  typedef rendezvous_t<okch_t *,ptr<bool> > shutdown_rv_t;
 
 protected:
   // queueing stuff
@@ -274,12 +275,9 @@ private:
   void check_runas ();
 
   // shutdown functions
-  void kill_srvcs (oksig_t sig);
+  void kill_srvcs (oksig_t sig, shutdown_rv_t *rv);
+  void shutdown_wait (shutdown_rv_t *rv, evb_t ev, CLOSURE);
   void stop_listening ();
-  void shutdown_retry ();
-  void shutdown2 ();
-  void shutdown3 ();
-  void shutdown_cb1 ();
 
   void got_child_fd (int fd, const okws_svc_descriptor_t &d);
   bool listen_from_ssl (int fd);
@@ -290,10 +288,8 @@ private:
   bool bdlnch;
   u_int chkcnt;
   u_int sdcbcnt;
-  bool sdflag, sd2;
-  timecb_t *dcb;
+  bool sdflag;
   bool jailed;
-  int sdattempt;
   int cntr;
 
   ptr<axprt_unix> _okld_x;

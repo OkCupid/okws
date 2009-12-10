@@ -133,29 +133,36 @@ okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 
 //-----------------------------------------------------------------------
 
-void
-okch_t::shutdown (oksig_t g, cbv cb)
+tamed void
+okch_t::shutdown (oksig_t g, evv_t ev)
 {
-  if (clnt) {
+  tvars {
+    ptr<bool> df;
+  }
+  df = destroyed;
+
+  if (!*df && clnt) {
     // note that no authentication needed for this kill signal.
     if (g == OK_SIG_ABORT) {
       CH_ERROR ("aborting unresponsive child\n");
       kill ();
-      (*cb) ();
     } else {
       if (OKDBG2(OKD_SHUTDOWN)) {
 	CH_CHATTER ("sending OKCTL_KILL to client");
       }
 	
-      clnt->seteofcb (wrap (this, &okch_t::shutdown_cb1, cb));
       RPC::okctl_program_1::okctl_kill (clnt, &g, aclnt_cb_null);
-
       // don't answer any more pub messages
       state = OKC_STATE_KILLING;
+      twait { clnt->seteofcb (mkevent ()); }
     }
-  } else {
-    shutdown_cb1 (cb);
   }
+
+  if (!*df && OKDBG2(OKD_SHUTDOWN)) {
+    CH_CHATTER ("clent shutdown completed");
+  }
+
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -304,18 +311,6 @@ okch_t::reset_n_sent ()
 {
     _n_sent = 0; 
     _last_restart = okwstime ();
-}
-
-//-----------------------------------------------------------------------
-
-void
-okch_t::shutdown_cb1 (cbv cb)
-{
-  if (OKDBG2(OKD_SHUTDOWN)) {
-    CH_CHATTER ("in shutdown_cb1");
-  }
-  delete this;
-  (*cb) ();
 }
 
 //-----------------------------------------------------------------------
