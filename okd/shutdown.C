@@ -25,7 +25,6 @@
 #include "okd.h"
 #include "pslave.h"
 #include "okprot.h"
-#include "xpub.h"
 #include "okdbg.h"
 
 static void shutdown_srvc (oksig_t g, okd_t *d, okch_t *s) 

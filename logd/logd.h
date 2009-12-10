@@ -25,7 +25,6 @@
 #define _LOGD_LOGD_H
 
 #include "ok.h"
-#include "okerr.h"
 #include "okprot.h"
 #include "list.h"
 #include "okclone.h"

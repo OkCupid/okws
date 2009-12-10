@@ -77,6 +77,7 @@ namespace okssl {
     void okld_eof ();
     bool init_perms ();
     bool init_ports ();
+    bool init_signals ();
     bool init_ssl ();
     bool init_okld ();
     void init_okd (evb_t ev, CLOSURE);
@@ -86,6 +87,7 @@ namespace okssl {
     void shutdown ();
     void sendcon (ptr<con_t> c, int fd, const port_t &p,
 		  const str &cipher, evb_t ev, CLOSURE);
+    void sig_ignore (int i);
 
     vec<port_t> _ports;
 

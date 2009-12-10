@@ -26,9 +26,9 @@ endif
 
 SUBDIRS = $(SBD1) \
 	$(SBD2) \
-	okd 
-#	ssld \
-#	logd \
+	okd \
+	ssld \
+	logd 
 #	client \
 #	test \
 #	conf \

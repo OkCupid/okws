@@ -25,6 +25,7 @@
 #include "okprot.h"
 #include "ok.h"
 #include "okd.h"
+#include "okmgr.h"
 
 static void
 usage ()
@@ -185,7 +186,6 @@ main (int argc, char *argv[])
   str configfile;
   vec<str> files;
   ok_set_typ_t set_typ = OK_SET_SOME;
-  int version = 2;
   bool no_config = false;
   ok_diagnostic_cmd_t cmd = OK_DIAGNOSTIC_NONE;
   bool verbose = false;

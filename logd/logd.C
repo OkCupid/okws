@@ -23,7 +23,6 @@
 
 #include "okprot.h"
 #include "ok.h"
-#include "okerr.h"
 #include "rxx.h"
 #include "svq.h"
 #include "logd.h"

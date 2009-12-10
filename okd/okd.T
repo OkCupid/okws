@@ -32,30 +32,33 @@
 #include "okprot.h"
 #include "ahutil.h"
 #include "pub.h"
-#include "xpub.h"
 #include "pubutil.h"
 #include "axprtfd.h"
 #include "okdbg.h"
-#include "rpcwindow.h"
 #include "ok_adebug.h"
 
 okd_t *global_okd;
 
-static void srepub (ptr<ok_repub_t> rpb, okch_t *ch) { ch->repub (rpb); }
+//-----------------------------------------------------------------------
 
 common_404_t::common_404_t ()
 {
   tab.insert ("/favicon.ico");
 }
 
+//-----------------------------------------------------------------------
 
 common_404_t common_404;
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::abort ()
 {
   panic ("caught ABORT trigger\n");
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::set_signals ()
@@ -65,29 +68,15 @@ okd_t::set_signals ()
   sigcb (SIGABRT, wrap (this, &okd_t::abort));
 }
 
+//-----------------------------------------------------------------------
+
 okd_t::~okd_t ()
 {
   if (logd) delete logd;
   if (pubd) delete pubd;
-  delete pprox;
 }
 
-void
-okd_t::got_pubd_unix (vec<str> s, str loc, bool *errp)
-{
-  str name;
-  strip_comments (&s);
-  if (s.size () != 2 || access (s[1], R_OK) != 0) {
-    warn << loc << ": usage: PubdUnix <socketpath>\n";
-    *errp = true;
-  } else if (!is_safe (s[1])) {
-    warn << loc << ": Pubd socket path (" << s[1]
-	 << ") contains unsafe substrings\n";
-    *errp = true;
-  } else {
-    pubd = New helper_unix_t (pub_program_1, s[1]);
-  }
-}
+//-----------------------------------------------------------------------
 
 void
 okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
@@ -107,78 +96,22 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
     ed.status = status;
     ed.fn = s[2];
     errdocs_x.docs.push_back (ed);
-    
-    // for pub v1
-    errdocs.insert (New errdoc_t (status, s[2]));
   }
 }
 
-void
-okd_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
-{
-  ptr<env_argv_t> env;
-  if (got_generic_exec (s, loc, errp, &env)) {
-    // push back the packet size
-    s.push_back ("-s");
-    s.push_back (strbuf("0x%x", ok_axprt_ps));
-    pubd = New helper_exec_t (pub_program_1, s, 0,
-			      HLP_OPT_PING|HLP_OPT_NORETRY, env);
-  } else {
-    pubd = NULL;
-  }
-}
-
-void
-okd_t::got_pubd_inet (vec<str> s, str loc, bool *errp)
-{
-  strip_comments (&s);
-  u_int port = ok_pubd_port;
-  str name = "localhost";
-  if (s.size () == 2) {
-    if (!convertint (s[1], &port))
-      name = s[1];
-  } else if (s.size () != 3 || !convertint (s[2], &port) || !(name = s[1])) {
-    warn << loc << ": usage: PubdInet <hostname> <port>\n";
-    *errp = true;
-    return;
-  }
-  pubd = New helper_inet_t (pub_program_1, name, port);
-}
+//-----------------------------------------------------------------------
 
 tamed void 
-okd_t::launch_pubd (cbb cb)
-{
-  tvars {
-    bool rc (true);
-  }
-  if (pubd) {
-    twait { pubd->connect (mkevent (rc)); }
-    if (!rc) {
-      warn << "launch of pub daemon (pubd) failed.\n";
-    }
-  } else {
-    warn << "Pub v1 is off since no Pubd was specified; "
-	 << "Pub v1 calls will fail\n";
-  }
-  TRIGGER (cb, rc);
-}
-
-
-void
-okd_t::req_errdoc_set_2 (svccb *sbp)
-{
-  sbp->replyref (errdocs_x);
-}
-
-tamed void 
-okd_t::launch_logd (cbb cb)
+okd_t::launch_logd (evb_t ev)
 {
   tvars { bool rc; }
   assert (logfd > 0);
   logd = New fast_log_t (logfd, logfmt);
   twait { logd->connect (mkevent (rc)); }
-  TRIGGER (cb, rc);
+  ev->trigger (rc);
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::got_alias (vec<str> s, str loc, bool *errp)
@@ -191,6 +124,8 @@ okd_t::got_alias (vec<str> s, str loc, bool *errp)
   }
   aliases.insert (fix_uri (s[2]), fix_uri (s[1]));
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::got_regex_alias (vec<str> s, str loc, bool *errp)
@@ -210,6 +145,8 @@ okd_t::got_regex_alias (vec<str> s, str loc, bool *errp)
   }
   regex_aliases.push_back (regex_alias_t (fix_uri (s[1]), x));
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::open_mgr_socket ()
@@ -256,11 +193,15 @@ okd_t::open_mgr_socket ()
        << " (jail2real: " << s << ")\n";
 }
 
+//-----------------------------------------------------------------------
+
 void
 okd_t::newmgrsrv (ptr<axprt_stream> x)
 {
   vNew okd_mgrsrv_t (x, this);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okd_t::parse_file (const str &cf)
@@ -298,9 +239,6 @@ okd_t::parse_file (const str &cf)
     .add ("SyscallStatDumpInterval", &ok_ssdi, 0, 1000)
     .add ("OkdAcceptMessages", &accept_msgs)
 
-    .add ("PubdUnix", wrap (this, &okd_t::got_pubd_unix))
-    .add ("PubdInet", wrap (this, &okd_t::got_pubd_inet))
-    .add ("PubdExecPath", wrap (this, &okd_t::got_pubd_exec))
     .add ("ErrorDoc", wrap (this, &okd_t::got_err_doc))
     .add ("SendSockAddrIn", &ok_send_sin)
 
@@ -325,7 +263,7 @@ okd_t::parse_file (const str &cf)
     .add ("DemuxTimeout", &ok_demux_timeout, 0, 360)
     .add ("OkdDebugMsgFreq", &okd_debug_msg_freq, 0, 0x10000)
     .add ("AxprtPacketSize", &ok_axprt_ps, 0, INT_MAX)
-    .add ("Pub2ChunkSize", &ok_pub2_max_datasz, 0, INT_MAX)
+    .add ("PubChunkSize", &ok_pub3_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
     .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
     .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
@@ -378,12 +316,11 @@ okd_t::parse_file (const str &cf)
     .ignore ("FilterCGI")
     .ignore ("ChannelLimit")
     .ignore ("CgiValueLenLimit")
-    .ignore ("Pubd2ExecPath")
-    .ignore ("NoPub2")
-    .ignore ("Pub2WSS")
-    .ignore ("Pub2Caching")
-    .ignore ("Pub2VisibleErrors")
-    .ignore ("Pub2SvcNegCacheTimeout")
+    .ignore ("PubdExecPath")
+    .ignore ("PubWSS")
+    .ignore ("PubCaching")
+    .ignore ("PubVisibleErrors")
+    .ignore ("PubSvcNegCacheTimeout")
 
     .ignore ("ServiceLifeRequests")
     .ignore ("ServiceLifeTime")
@@ -418,6 +355,8 @@ okd_t::parse_file (const str &cf)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okd_t::post_config (const str &fn)
 {
@@ -430,6 +369,8 @@ okd_t::post_config (const str &fn)
   init_syscall_stats ();
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::closed_fd ()
@@ -444,6 +385,8 @@ okd_t::closed_fd ()
 
     enable_accept ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::strip_privileges ()
@@ -467,6 +410,8 @@ okd_t::strip_privileges ()
     }
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
@@ -532,6 +477,8 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 okd_t::newserv (int fd)
 {
@@ -553,6 +500,8 @@ okd_t::newserv (int fd)
     newserv2 (*portmap[fd], nfd, sin, false, NULL);
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
@@ -607,6 +556,8 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 okd_t::disable_accept_guts ()
 {
@@ -615,6 +566,8 @@ okd_t::disable_accept_guts ()
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, NULL);
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::enable_accept_guts ()
@@ -628,6 +581,8 @@ okd_t::enable_accept_guts ()
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, wrap (this, &okd_t::newserv, listenfds[i]));
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::stop_listening ()
@@ -643,13 +598,17 @@ okd_t::stop_listening ()
   listenfds.clear ();
 }
 
+//-----------------------------------------------------------------------
+
 static void
 usage ()
 {
-  warnx << "usage: okd [-D <dbg-file>] [-x <pub2fd>] "
+  warnx << "usage: okd [-D <dbg-file>] [-x <pub-fd>] "
 	<< " -l <logfd> -f <configfile>\n";
   exit (NO_SOCKET_ALLOCATED);
 }
+
+//-----------------------------------------------------------------------
 
 tamed static 
 void start_okd (int argc, char **argv)
@@ -657,7 +616,7 @@ void start_okd (int argc, char **argv)
   tvars {
     str cf;
     int logfd  (-1);
-    int pub2fd (-1);
+    int pub3fd (-1);
     str cdd;  // core dump dir
     okws1_port_t port (ok_dport);
     bool debug_startup (false);
@@ -690,7 +649,7 @@ void start_okd (int argc, char **argv)
 	usage ();
       break;
     case 'x':
-      if (!convertint (optarg, &pub2fd))
+      if (!convertint (optarg, &pub3fd))
 	usage ();
       break;
     case '?':
@@ -720,17 +679,19 @@ void start_okd (int argc, char **argv)
 
   zinit ();
   warn ("version %s, pid %d\n", OKWS_PATCHLEVEL_STR, int (getpid ()));
-  okd = New okd_t (cf, logfd, 0, cdd, port, pub2fd);
+  okd = New okd_t (cf, logfd, 0, cdd, port, pub3fd);
   global_okd = okd;
   okd->set_signals ();
   okd->launch ();
 }
 
+//-----------------------------------------------------------------------
+
 tamed void 
 okd_t::launch ()
 {
   tvars {
-    bool pubd_rc, logd_rc, pub2_rc (true);
+    bool pub_rc, logd_rc;
     bool do_exit (false);
   }
 
@@ -741,24 +702,19 @@ okd_t::launch ()
   
   check_runas ();
   open_mgr_socket ();
-  init_pub2 ();
+  init_pub ();
 
   twait {
-    launch_pubd (mkevent (pubd_rc));
     launch_logd (mkevent (logd_rc));
-    launch_pub2 (mkevent (pub2_rc));
+    launch_pub (mkevent (pub_rc));
   }
 
-  if (!pubd_rc) {
-    warn << "Pubd, version 1, failed to launch: aborting\n";
-    do_exit = true;
-  } 
   if (!logd_rc) {
     warn << "failed to connect to oklogd; aborting\n";
     do_exit = true;
   }
-  if (!pub2_rc) {
-    warn << "failed to launch pub2, for setup that requires it; aborting\n";
+  if (!pub_rc) {
+    warn << "failed to launch pubd; aborting\n";
     do_exit = true;
   }
 
@@ -806,6 +762,8 @@ okd_t::launch ()
 
   enable_accept ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::okld_dispatch (svccb *sbp)
@@ -867,6 +825,8 @@ okd_t::okld_dispatch (svccb *sbp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okd_t::listen_from_ssl (int fd)
 {
@@ -879,6 +839,8 @@ okd_t::listen_from_ssl (int fd)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okd_t::got_child_fd (int fd, const okws_svc_descriptor_t &d)
 {
@@ -890,6 +852,8 @@ okd_t::got_child_fd (int fd, const okws_svc_descriptor_t &d)
   }
   ch->got_new_ctlx_fd (fd, d.pid);
 }
+
+//-----------------------------------------------------------------------
 
 ok_xstatus_typ_t
 okd_t::reserve_child (const str &nm, bool lazy)
@@ -906,6 +870,8 @@ okd_t::reserve_child (const str &nm, bool lazy)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okd_t::check_runas ()
 {
@@ -920,275 +886,224 @@ okd_t::check_runas ()
 }
 
 //=======================================================================
-//
-// Repub v2
-//
-//   In repub v2, we ask pubd for the complete file set descending from
-//   the given repub filesets, as before.  However, we find a workaround
-//   to the problem that the returned set is often quite large. 
-//   
-//   In v2, pubd returns a 'summary' of the file set it really wanted to
-//   return, composed of the set of filename->content hash bindings,
-//   the number of files to fetch, and also a 'cookie.'
-//
-//   okd then sends follow-up RPCs to get the files in the requested 
-//   fileset, using the cookie to indentify the pubd-resident state.
-//   
-//   Once all files are collected (or an abortive error has occured),
-//   okd must be certain to trigger pubd to clean up, and therefore calls
-//   PUB_FILES2_CLOSE with the session cookie.
-//
-//   Eventually, v2 should replace v1 entirely.
-//
-void
-okd_t::repub2 (const xpub_fnset_t &f, okrescb cb)
-{
-  ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
-  pubd->call (PUB_FILES2, &f, &rpb->xpr2, 
-	      wrap (this, &okd_t::repub2_cb1, rpb));
-}
 
-void
-okd_t::repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
+tamed void
+okd_t::turnlog (svccb *sbp)
 {
-  if (err || rpb->xpr2.status.status != XPUB_STATUS_OK) {
-    strbuf sb;
-    sb << "RPC Error from PUB_FILES2: " << err ;
-    okdbg_warn (ERROR, sb);
-    repub_cb1 (rpb, err);
-  } else {
-    rpb->xpr.set.bindings = rpb->xpr2.set.bindings;
-    rpb->nfiles = rpb->xpr2.set.nfiles;
-    rpb->cache.setsize (rpb->nfiles);
-    rpb->cookie = rpb->xpr2.set.cookie;
-    rpb->xpr.set.files.setsize (rpb->nfiles);
-    repub2_getfiles (rpb);
+  tvars {
+    RPC::okmgr_program_1::okmgr_turnlog_srv_t<svccb> srv (sbp);
+    ok_xstatus_t status (OK_STATUS_OK);
+    str s;
   }
-}
-
-void
-okd_t::repub2_getfiles (ptr<ok_repub_t> rpb)
-{
-  rpc_windower_t *w = 
-    New rpc_windower_t (rpb->nfiles, 30, 
-			wrap (this, &okd_t::repub2_getfile, rpb),
-			wrap (this, &okd_t::repub2_gotfile, rpb),
-			wrap (this, &okd_t::repub2_done, rpb));
-  w->run ();
-
-  // w will delete itself once repub2_done() is called.
-}
-
-bool
-okd_t::repub2_getfile (ptr<ok_repub_t> rpb, int i, aclnt_cb cb)
-{
-  xpub_files2_getfile_arg_t arg;
-  arg.cookie = rpb->cookie;
-  arg.fileno = i;
-  pubd->call (PUB_FILES2_GETFILE, &arg, &rpb->cache[i], cb);
-  return true;
-}
-
-bool
-okd_t::repub2_gotfile (ptr<ok_repub_t> rpb, int i, clnt_stat err)
-{
-  bool ret = false;
-  if (err) {
-    strbuf sb;
-    sb << "Repub RPC error for filenumber " << i << ": " << err;
-    rpb->res->pub_res_t::add (sb);
-    okdbg_warn (ERROR, sb) ;
-  } else {
-    int rc = rpb->cache[i].status;
-    if (rc != XPUB_STATUS_OK) {
-      strbuf sb;
-      sb << "Pubd error " << rc << " for filenumber " << i ;
-      if (rc == XPUB_STATUS_ERR)
-	sb << ": " << *rpb->cache[i].error;
-      okdbg_warn (ERROR, sb);
-      rpb->res->pub_res_t::add (sb);
-    } else {
-      rpb->xpr.set.files[i] = *(rpb->cache[i].file);
-      ret = true;
-    }
+  twait { logd->turn (mkevent (s)); }
+  if (s) {
+    status.set_status (OK_STATUS_ERR);
+    *status.error = s;
   }
-  return ret;
+  srv.reply (status);
 }
 
-static void
-close_cb (xpub_status_typ_t *t, clnt_stat err)
-{
-  if (err) {
-    strbuf sb;
-    sb << "RPC Error for PUB_FILES2_CLOSE: " << err << "\n";
-    okdbg_warn (ERROR, sb);
-  } else if (*t != XPUB_STATUS_OK) {
-    strbuf sb;
-    sb << "PUB_FILES2_CLOSE failed with result code: " << *t << "\n";
-    okdbg_warn (ERROR, sb);
-  }
-  delete t;
-}
-
-
-void
-okd_t::repub2_done (ptr<ok_repub_t> rpb, bool rc)
-{
-  xpub_status_typ_t *t = New xpub_status_typ_t ();
-  pubd->call (PUB_FILES2_CLOSE, &rpb->cookie, &t, wrap (close_cb, t));
-  repub_cb1 (rpb, static_cast<clnt_stat> (0));
-}
-
-//
-// End Repub v2
-//
 //=======================================================================
 
-void
-okd_t::repub (const xpub_fnset_t &f, okrescb cb)
-{
-  ptr<ok_repub_t> rpb = New refcounted<ok_repub_t> (f, cb);
-  pubd->call (PUB_FILES, &f, &rpb->xpr, wrap (this, &okd_t::repub_cb1, rpb));
-}
+class child_applicator_t {
+public:
+  child_applicator_t () : _ok (true) {}
+  virtual ~child_applicator_t () {}
+  void run (okd_t::servtab_t *t, const ok_progs_t &x, evv_t ev, CLOSURE);
+  virtual void apply (const ok_prog_t &p, okch_t *ch, evs_t ev, CLOSURE) = 0;
+  virtual void nochild (const ok_prog_t &p, evv_t ev, CLOSURE) {}
+  void fill_status (ok_xstatus_t *out);
+  void hit_error (str prog, str e);
+private:
+  bool _ok;
+  vec<str> _err;
+};
 
+//-----------------------------------------------------------------------
 
-void
-okd_t::repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err)
+tamed void
+child_applicator_t::run (okd_t::servtab_t *t, const ok_progs_t &x, evv_t ev)
 {
-  if (err) {
-    *rpb->res << (strbuf ("RPC error in repubbing: ") << err);
-    return;
+  tvars {
+    size_t lim (0), j (0);
+    ok_prog_t prog; 
+    okch_t *o;
+    vec<str> progs;
+    vec<str> errors;
+    ihash_iterator_t<okch_t, okd_t::servtab_t> it (*t);
   }
-  rpb->res->pub_res_t::add (rpb->xpr.status);
-  pprox->cache (rpb->xpr.set);
-  rpb->set_new_fnset ();
-  servtab.traverse (wrap (srepub, rpb));
-}
 
-void
-ok_repub_t::set_new_fnset ()
-{
-  u_int lim = xpr.set.bindings.size ();
-  new_fnset.files.setsize (lim);
-  for (u_int i = 0; i < lim; i++)
-    new_fnset.files[i] = xpr.set.bindings[i].fn;
-  new_fnset.rebind = true;
-}
-
-void
-okd_t::turnlog (okrescb cb)
-{
-  ptr<bool> b = New refcounted<bool> (true);
-  logd->turn (cb);
-}
-
-static void 
-s_relaunch_cb (okch_t *ch) { ch->kill (); }
-
-void
-okd_t::relaunch (const ok_progs_t &x, okrescb cb)
-{
-  ptr<ok_res_t> res = New refcounted<ok_res_t> ();
-  apply_to_children (x, wrap (s_relaunch_cb), res);
-  (*cb) (res);
-}
-
-static void
-s_custom1_cb (ok_custom_data_t data, okch_t *ch) 
-{ 
-  ch->custom1_out (data); 
-}
-
-static void
-s_custom2_cb (ptr<ok_custom2_trig_t> trig, ok_custom_data_t data, okch_t *ch)
-{
-  ch->custom2_out (trig, data);
-}
-
-// receive and handle an incoming CUSTOM1 RPC request
-void
-okd_t::custom1_in (svccb *sbp)
-{
-  ok_custom_arg_t *c = sbp->Xtmpl getarg<ok_custom_arg_t> ();
-  custom1_in (*c, wrap (replystatus, sbp));
-}
-
-static void
-replytrig (svccb *sbp, ptr<ok_custom_res_set_t> res)
-{
-  sbp->reply (res);
-}
-
-static void
-s_notfound_cb (ptr<ok_custom2_trig_t> trig, str s)
-{
-  trig->add_err (s, OK_STATUS_NOSUCHCHILD);
-}
-
-void
-okd_t::custom2_in (svccb *sbp)
-{
-  ok_custom_arg_t *c = sbp->Xtmpl getarg<ok_custom_arg_t> ();
-
-  ptr<ok_custom2_trig_t> trig = New refcounted<ok_custom2_trig_t> ();
-
-  // when the trig counts down to 0, this cb will be called,
-  // which will send a reply back to the caller
-  trig->setcb (wrap (replytrig, sbp, trig->get_custom_res ()));
-
-  apply_to_children (c->progs, 
-		     wrap (s_custom2_cb, trig, c->data), 
-		     trig->get_ok_res (),
-		     wrap (s_notfound_cb, trig));
-}
-
-void
-okd_t::custom1_in (const ok_custom_arg_t &x, okrescb cb)
-{
-  ptr<ok_res_t> res = New refcounted<ok_res_t> ();
-  apply_to_children (x.progs, wrap (s_custom1_cb, x.data), res);
-  (*cb) (res);
-}
-
-void
-okd_t::apply_to_children (const ok_progs_t &x, cb_okch_t apply_cb,
-			  ptr<ok_res_t> res, cbs::ptr notfoundcb)
-{
   if (x.typ == OK_SET_ALL) {
-    servtab.traverse (apply_cb);
+    lim = t->size ();
+    errors.setsize (lim);
+    twait {
+      while ((o = it.next ())) {
+	progs.push_back (o->servpath);
+	apply (o->servpath, o, mkevent (errors[j++]));
+      }
+    }
+
   } else if (x.typ == OK_SET_SOME) {
-    u_int lim = x.progs->size ();
-    for (u_int j = 0; j < lim; j++) {
-      str prog = (*x.progs)[j];
-      okch_t *o = servtab[prog];
-      if (!o) {
-	*res << (strbuf ("cannot find program: ") << prog);
-	if (notfoundcb)
-	  (*notfoundcb) (prog);
-      } else 
-	(*apply_cb) (o);
+    lim = x.progs->size ();
+    errors.setsize (lim);
+    twait { 
+      for (j = 0; j < lim; j++) {
+	prog = (*x.progs)[j];
+	progs.push_back (prog);
+	if ((o = (*t)[prog])) {
+	  apply (prog, o, mkevent (errors[j]));
+	} else {
+	  strbuf b ("cannot find program: ");
+	  b << prog;
+	  errors[j] = b;
+	  nochild (prog, mkevent ());
+	}
+      }
     }
   }
+
+  for (j = 0; j < lim; j++) {
+    hit_error (progs[j], errors[j]);
+  }
+
+  ev->trigger ();
 }
 
-void
-ok_custom2_trig_t::add_err (const str &svc, ok_xstatus_typ_t t)
-{
-  ok_custom_res_t el;
-  el.prog = svc;
-  el.res.set_status (t);
-  _custom_res->results.push_back (el);
-}
+//-----------------------------------------------------------------------
 
 void
-ok_custom2_trig_t::add_succ (const str &svc, const ok_custom_data_t &d)
+child_applicator_t::hit_error (str prog, str e)
 {
-  ok_custom_res_t el;
-  el.prog = svc;
-  el.res.set_status (OK_STATUS_OK);
-  *el.res.dat = d;
-  _custom_res->results.push_back (el);
+  if (e) { 
+    strbuf ("in service %s: %s", prog.cstr (), e.cstr ());
+    _ok = false;
+    _err.push_back (e);
+  }
 }
+
+//-----------------------------------------------------------------------
+
+void
+child_applicator_t::fill_status (ok_xstatus_t *out)
+{
+  if (_ok) {
+    out->set_status (OK_STATUS_OK);
+  } else {
+    str s = join ("\n", _err);
+    out->set_status (OK_STATUS_ERR);
+    *out->error = s;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+class kill_applicator_t : public child_applicator_t {
+public:
+  kill_applicator_t () {}
+  void apply (const ok_prog_t &p, okch_t *ch, evs_t ev, CLOSURE);
+};
+
+//-----------------------------------------------------------------------
+
+tamed void 
+kill_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev) 
+{ 
+  ch->kill (); 
+  ev->trigger (NULL);
+}
+
+//-----------------------------------------------------------------------
+ 
+class custom1_applicator_t : public child_applicator_t {
+public:
+  custom1_applicator_t (const ok_custom_data_t *dat) : _data (dat) {}
+  void apply (const ok_prog_t &prog, okch_t *ch, evs_t ev, CLOSURE);
+private:
+  const ok_custom_data_t *_data;
+};
+ 
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::custom1_in (svccb *sbp)
+{
+  tvars {
+    RPC::okctl_program_1::okctl_custom_1_in_srv_t<svccb> srv (sbp);
+    const ok_custom_arg_t *arg (srv.getarg ());
+    custom1_applicator_t ca (&arg->data);
+  ok_xstatus_t res;
+  }
+  twait { ca.run (&servtab, arg->progs, mkevent ()); }
+  ca.fill_status (&res);
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+custom1_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev)
+{
+  tvars {
+    str s;
+  }
+  twait { ch->custom1_out (*_data, mkevent (s)); }
+  ev->trigger (s);
+}
+
+//-----------------------------------------------------------------------
+
+class custom2_applicator_t : public child_applicator_t {
+public:
+  custom2_applicator_t (const ok_custom_data_t *dat) : _data (dat) {}
+  void apply (const ok_prog_t &prog, okch_t *ch, evs_t ev, CLOSURE);
+  void nochild (const ok_prog_t &p, evv_t ev, CLOSURE);
+  const ok_custom_res_set_t &res () const { return _res; }
+private:
+  ok_custom_res_set_t _res;
+  const ok_custom_data_t *_data;
+};
+
+//-----------------------------------------------------------------------
+
+tamed void
+custom2_applicator_t::nochild (const ok_prog_t &p, evv_t ev)
+{
+  ok_custom_res_t res;
+  res.prog = p;
+  res.res.set_status (OK_STATUS_NOSUCHCHILD);
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed void 
+custom2_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev)
+{
+  tvars {
+    str s;
+    ok_custom_res_t res;
+  }
+  twait { ch->custom2_out (*_data, &res.res, mkevent (s)); }
+  res.prog = p;
+  _res.results.push_back (res);
+  ev->trigger (s);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::custom2_in (svccb *sbp)
+{
+  tvars {
+    RPC::okctl_program_1::okctl_custom_2_in_srv_t<svccb> srv (sbp);
+    const ok_custom_arg_t *arg (srv.getarg ());
+    custom2_applicator_t ca (&arg->data);
+  }
+  twait { ca.run (&servtab, arg->progs, mkevent ()); }
+  srv.reply (ca.res ());
+}
+
+//-----------------------------------------------------------------------
 
 void
 okd_t::okctl_get_stats (svccb *sbp)
@@ -1200,8 +1115,9 @@ okd_t::okctl_get_stats (svccb *sbp)
     p->to_status_xdr (&res.status[i]);
   }
   sbp->replyref (res);
-
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okd_ssl_t::init (int fd)
@@ -1219,6 +1135,55 @@ okd_ssl_t::init (int fd)
   }
   return rc;
 }
+
+//-----------------------------------------------------------------------
+
+okd_mgrsrv_t::okd_mgrsrv_t (ptr<axprt_stream> xx, okd_t *p) : 
+  x (xx), myokd (p)
+{
+  srv = asrv::alloc (x, okmgr_program_1, wrap (this, &okd_mgrsrv_t::dispatch));
+}
+
+//-----------------------------------------------------------------------
+
+void
+okd_mgrsrv_t::dispatch (svccb *sbp)
+{
+  if (!sbp) {
+    delete this;
+    return;
+  }
+  u_int p = sbp->proc ();
+  switch (p) {
+  case OKMGR_NULL:
+    sbp->reply (NULL);
+    break;
+  case OKMGR_RELAUNCH:
+    myokd->relaunch (sbp);
+    break;
+  case OKMGR_TURNLOG:
+    myokd->turnlog (sbp);
+    break;
+  case OKMGR_CUSTOM_1:
+    myokd->custom1_in (sbp);
+    break;
+  case OKMGR_CUSTOM_2:
+    myokd->custom2_in (sbp);
+    break;
+  case OKMGR_LEAK_CHECKER:
+    myokd->toggle_leak_checker (sbp);
+    break;
+  case OKMGR_PROFILER:
+    myokd->toggle_profiler (sbp);
+    break;
+  default:
+    sbp->reject (PROC_UNAVAIL);
+    break;
+  }
+}
+
+//-----------------------------------------------------------------------
+
 
 void
 okd_ssl_t::dispatch (svccb *sbp)
@@ -1260,6 +1225,8 @@ okd_ssl_t::dispatch (svccb *sbp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 okd_ssl_t::toggle_accept (bool arg)
 {
@@ -1282,6 +1249,8 @@ okd_ssl_t::toggle_accept (bool arg)
     }
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 okd_ssl_t::hangup ()
@@ -1321,6 +1290,22 @@ okd_t::awaken (str nm, evb_t ev)
     }
   }
   ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::relaunch (svccb *sbp)
+{
+  tvars {
+    RPC::okmgr_program_1::okmgr_relaunch_srv_t<svccb> srv (sbp);
+    const ok_progs_t *progs (srv.getarg ());
+    kill_applicator_t ka;
+    ok_xstatus_t ret;
+  }
+  twait { ka.run (&servtab, *progs, mkevent ()); }
+  ka.fill_status (&ret);
+  srv.reply (ret);
 }
 
 //-----------------------------------------------------------------------

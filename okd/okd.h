@@ -88,13 +88,11 @@ public:
   void dispatch (ptr<bool> destroyed, svccb *b);
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
-  void custom1_out (const ok_custom_data_t &x);
-  void custom2_out (ptr<ok_custom2_trig_t> trig, const ok_custom_data_t &x);
-  void chld_eof ();
-  void custom2_out_cb (ptr<ok_custom2_trig_t> trig, 
-		       ptr<ok_custom_data_t> res,
-		       clnt_stat err);
+  void custom1_out (const ok_custom_data_t &x, evs_t ev, CLOSURE);
+  void custom2_out (const ok_custom_data_t &in, ok_custom_res_union_t *out, 
+		    evs_t ev, CLOSURE);
 
+  void chld_eof ();
   void to_status_xdr (oksvc_status_t *out);
 
   inline int get_n_sent () const { return _n_sent; }
@@ -167,7 +165,6 @@ public:
     pubd (NULL), 
     configfile (cf),
     okldfd (okldfd_in),
-    pprox (pub_proxy_t::alloc ()),
     sdflag (false), sd2 (false), dcb (NULL), 
     sdattempt (0),
     cntr (0),
@@ -196,9 +193,6 @@ public:
 
   void got_alias (vec<str> s, str loc, bool *errp);
   void got_regex_alias (vec<str> s, str loc, bool *errp);
-  void got_pubd_unix (vec<str> s, str loc, bool *errp);
-  void got_pubd_inet (vec<str> s, str loc, bool *errp);
-  void got_pubd_exec (vec<str> s, str loc, bool *errp);
   void got_err_doc (vec<str> s, str loc, bool *errp);
   void got_service (vec<str> s, str loc, bool *errp);
   void got_service2 (vec<str> s, str loc, bool *errp);
@@ -209,8 +203,7 @@ public:
   // Well, no one ever said event-driven programming was pretty
   void launch (CLOSURE);
 
-  void launch_logd (cbb cb, CLOSURE);
-  void launch_pubd (cbb cb, CLOSURE);
+  void launch_logd (evb_t ev, CLOSURE);
 
   void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status);
   void newserv (int fd);
@@ -219,7 +212,8 @@ public:
   void shutdown (int sig);
   void awaken (str nm, evb_t ev, CLOSURE);
 
-  ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab;
+  typedef ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab_t;
+  servtab_t servtab;
   qhash<str, str> aliases;
 
   struct regex_alias_t {
@@ -238,13 +232,13 @@ public:
   void open_mgr_socket ();
 
   // functions for the OKMGR interface
-  void relaunch (const ok_progs_t &x, okrescb cb);
-  void custom1_in (svccb *sbp);
-  void custom2_in (svccb *sbp);
+  void relaunch (svccb *sbp, CLOSURE);
+  void custom1_in (svccb *sbp, CLOSURE);
+  void custom2_in (svccb *sbp, CLOSURE);
   void toggle_leak_checker (svccb *sbp, CLOSURE);
   void toggle_profiler (svccb *sbp, CLOSURE);
   void okctl_get_stats (svccb *sbp);
-  void turnlog (okrescb cb);
+  void turnlog (svccb *sbp, CLOSURE);
 
   void strip_privileges ();
 
@@ -274,7 +268,7 @@ protected:
 			 evv_t ev, CLOSURE);
 
 private:
-  void custom1_in (const ok_custom_arg_t &x, okrescb cb);
+  void custom1_in (const ok_custom_arg_t &x, evs_t cb);
 
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();
@@ -293,12 +287,6 @@ private:
   str configfile;
   int okldfd;
   
-  pub_proxy_t *pprox;
-
-  svq_t   <ptr<xpub_getfile_res_t> >            cfq;  // conf fetch Q
-  svqtab_t<pfnm_t, ptr<xpub_lookup_res_t> >     luq;  // lookup Q
-  svqtab_t<phashp_t, ptr<xpub_getfile_res_t> >  gfq;  // Getfile Q
-
   bool bdlnch;
   u_int chkcnt;
   u_int sdcbcnt;
@@ -341,7 +329,6 @@ public:
   void dispatch (svccb *b);
 private:
   void repub (svccb *b, int v);
-  void relaunch (svccb *b);
   void turnlog (svccb *b);
   ptr<asrv> srv;
   ptr<axprt_stream> x;

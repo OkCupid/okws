@@ -7,7 +7,7 @@ noinst_HEADERS = okld.h okd.h okmgr.h
 
 okwsbin_PROGRAMS = okld okmgr
 okwsexec_PROGRAMS =  okd
-okd_SOURCES = okd.C mgrsrv.C child.C shutdown.C stats.C
+okd_SOURCES = okd.C child.C shutdown.C stats.C
 okmgr_SOURCES = okmgr.C
 okld_SOURCES = okld.C okldch.C okld_script.C
 
