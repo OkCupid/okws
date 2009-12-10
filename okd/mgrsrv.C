@@ -43,12 +43,6 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_NULL:
     sbp->reply (NULL);
     break;
-  case OKMGR_REPUB:
-    repub (sbp, 1);  // version # == 1
-    break;
-  case OKMGR_REPUB2:
-    repub (sbp, 2);  // version # == 2
-    break;
   case OKMGR_RELAUNCH:
     relaunch (sbp);
     break;

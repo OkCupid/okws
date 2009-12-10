@@ -27,7 +27,6 @@
 
 #include "okprot.h"
 #include "ok.h"
-#include "okerr.h"
 #include "vec.h"
 #include "arpc.h"
 #include "tame.h"
@@ -51,17 +50,6 @@ public:
 private:
   bool _err;
   const str _sockname;
-};
-
-//-----------------------------------------------------------------------
-
-class okmgr_pub_t : public okmgr_clnt_t {
-public:
-  okmgr_pub_t (const str &s, const vec<str> &f, int v);
-  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
-private:
-  xpub_fnset_t _fns;
-  int _version;
 };
 
 //-----------------------------------------------------------------------

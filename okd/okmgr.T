@@ -24,14 +24,12 @@
 
 #include "okprot.h"
 #include "ok.h"
-#include "okerr.h"
-#include "okmgr.h"
 #include "okd.h"
 
 static void
 usage ()
 {
-  warnx << "usage: okmgr [ -l | -p | -t | -1 ] [-av] [-s <socket> | -f <conf> ]"
+  warnx << "usage: okmgr [ -l | -t | -1 ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
 	<< "       okmgr <-c|-p> [ enable | disable | print | clear ] "
 	<< "[-s <socket> | -f <conf>] <svc>\n";
@@ -73,26 +71,6 @@ okmgr_launch_t::okmgr_launch_t (const str &s, const vec<str> &f,
 
 okmgr_logturn_t::okmgr_logturn_t (const str &s)
   : okmgr_clnt_t (s) {}
-
-//-----------------------------------------------------------------------
-
-okmgr_pub_t::okmgr_pub_t (const str &s, const vec<str> &f, int v)
-  : okmgr_clnt_t (s), _version (v)
-{
-  _fns.rebind = true;
-  _fns.files.setsize (f.size ());
-  for (size_t i = 0; i < f.size (); i++)
-    _fns.files[i] = f[i];
-}
-
-//-----------------------------------------------------------------------
-
-void
-okmgr_pub_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
-{
-  int procno = (_version == 2 ? OKMGR_REPUB2 : OKMGR_REPUB);
-  h->call (procno, &_fns, s, cb);
-}
 
 //-----------------------------------------------------------------------
 
@@ -292,9 +270,6 @@ main (int argc, char *argv[])
     break;
   case CTL_MODE_PROFILER:
     t = New okmgr_profiler_t (sockname, files[0], cmd);
-    break;
-  case CTL_MODE_PUB:
-    t = New okmgr_pub_t (sockname, files, version);
     break;
   case CTL_MODE_LAUNCH:
     t = New okmgr_launch_t (sockname, files, set_typ);

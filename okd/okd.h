@@ -22,8 +22,7 @@
  *
  */
 
-#ifndef _OKD_OKD_H
-#define _OKD_OKD_H
+#pragma once
 
 #include <sys/time.h>
 #include "async.h"
@@ -33,7 +32,6 @@
 #include "resp.h"
 #include "ok.h"
 #include "pslave.h"
-#include "okerr.h"
 #include "svq.h"
 #include "okconst.h"
 #include "arpc.h"
@@ -51,7 +49,6 @@ typedef enum { OKD_JAILED_NEVER = 0,
 
 class okch_t;
 typedef callback<void, okch_t *>::ref cb_okch_t;
-typedef callback<cb_okch_t, ptr<ok_res_t> >::ref okch_apply_cb_t;
 
 struct okd_stats_t {
   void to_strbuf (strbuf &b) const;
@@ -62,40 +59,18 @@ struct okd_stats_t {
   size_t _n_tot;
 };
 
-struct ok_repub_t {
-  ok_repub_t (const xpub_fnset_t &f, okrescb c)
-    : fnset (f), cb (c), res (New refcounted<ok_res_t> ()), cookie (0) {}
-  ~ok_repub_t () { (*cb) (res); } 
-  void set_new_fnset ();
-  const xpub_fnset_t &fnset;
-  xpub_fnset_t new_fnset;
-  const okrescb cb;
-  ptr<ok_res_t> res;
-  xpub_result_t xpr;
-  ok_xstatus_t xst;
-
-  // for use with the second version of the repub protocol
-  xpub_cookie_t cookie;           // "session cookie" during repub
-  u_int nfiles;                   // the number of files we need to fetch
-  xpub_result2_t xpr2;            // put the initial result in here
-  vec<xpub_getfile_res_t> cache;  // temp array to stick solutions into
-};
-
 class ok_custom2_trig_t {
 public:
   ok_custom2_trig_t () :
-    _ok_res (New refcounted<ok_res_t> ()),
     _custom_res (New refcounted<ok_custom_res_set_t> ()) {}
 
   void add_err (const str &svc, ok_xstatus_typ_t t);
   void add_succ (const str &svc, const ok_custom_data_t &dat);
   ~ok_custom2_trig_t () { _cb (); }
-  ptr<ok_res_t> get_ok_res () { return _ok_res; }
   ptr<ok_custom_res_set_t> get_custom_res () { return _custom_res; }
   void setcb (cbv c) { _cb = c; }
 private:
   cbv::ptr _cb;
-  ptr<ok_res_t> _ok_res;
   ptr<ok_custom_res_set_t> _custom_res;
 };
 
@@ -110,10 +85,7 @@ public:
   void shutdown (oksig_t sig, cbv cb);
 
   void got_new_ctlx_fd (int fd, int p);
-
   void dispatch (ptr<bool> destroyed, svccb *b);
-  void repub (ptr<ok_repub_t> rpb, CLOSURE);
-
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
   void custom1_out (const ok_custom_data_t &x);
@@ -234,14 +206,6 @@ public:
 
   void okld_dispatch (svccb *sbp);
 
-  void pubconf (svccb *sbp);
-  void getfile (svccb *sbp);
-  void lookup (svccb *sbp);
-
-  void pubconfed (ptr<xpub_getfile_res_t> r, clnt_stat err);
-  void lookedup (str fn, ptr<xpub_lookup_res_t> r, clnt_stat err);
-  void gotfile (phashp_t hsh, ptr<xpub_getfile_res_t> r, clnt_stat err);
-
   // Well, no one ever said event-driven programming was pretty
   void launch (CLOSURE);
 
@@ -269,15 +233,11 @@ public:
   ok_usr_t okd_usr; 
   ok_grp_t okd_grp;
 
-  bool supports_pub1 () const { return pubd ? true : false; }
-
   helper_t *pubd;
 
   void open_mgr_socket ();
 
   // functions for the OKMGR interface
-  void repub (const xpub_fnset_t &x, okrescb cb);
-  void repub2 (const xpub_fnset_t &x, okrescb cb);
   void relaunch (const ok_progs_t &x, okrescb cb);
   void custom1_in (svccb *sbp);
   void custom2_in (svccb *sbp);
@@ -314,21 +274,7 @@ protected:
 			 evv_t ev, CLOSURE);
 
 private:
-  // Callbacks for Repub, Version 1
-  void repub_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
-  void repub_cb2 (ptr<int> i, okrescb cb, ptr<ok_res_t> res);
-
-  // Callbacks for Repub, Version 2
-  void repub2_cb1 (ptr<ok_repub_t> rpb, clnt_stat err);
-  void repub2_getfiles (ptr<ok_repub_t> rpb);
-  bool repub2_getfile (ptr<ok_repub_t> rpb, int i, aclnt_cb cb);
-  bool repub2_gotfile (ptr<ok_repub_t> rpb, int i, clnt_stat err);
-  void repub2_done (ptr<ok_repub_t> rpb, bool rc);
-
   void custom1_in (const ok_custom_arg_t &x, okrescb cb);
-
-  void apply_to_children (const ok_progs_t &x, cb_okch_t acb,
-			  ptr<ok_res_t> res, cbs::ptr notfoundcb = NULL);
 
   void newmgrsrv (ptr<axprt_stream> x);
   void check_runas ();
@@ -409,10 +355,3 @@ public:
   bhash<str> tab;
 };
 
-inline void 
-replystatus (svccb *s, ptr<ok_res_t> res) 
-{ 
-  s->replyref (res->to_xdr ()); 
-}
-
-#endif /* _OKD_OKD_H */
