@@ -28,8 +28,8 @@ SUBDIRS = $(SBD1) \
 	$(SBD2) \
 	okd \
 	ssld \
-	logd 
-#	client \
+	logd \
+	client
 #	test \
 #	conf \
 #	htdocs \
