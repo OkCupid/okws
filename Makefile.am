@@ -29,11 +29,11 @@ SUBDIRS = $(SBD1) \
 	okd \
 	ssld \
 	logd \
-	client
-#	test \
-#	conf \
-#	htdocs \
-#	contrib
+	client \
+	test \
+	conf \
+	htdocs \
+	contrib
 
 ##
 ## New aclocal (1.10+) is asking for this...
