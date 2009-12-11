@@ -100,11 +100,11 @@ tamed void
 okclnt_configtest_t::run_local (evv_t ev)
 {
   tvars {
-    aarr_t dct;
+    ptr<pub3::dict_t> dct (pub3::dict_t::alloc ());
     bool rc;
   }
 
-  twait { pub2 ()->run_cfg (cgi["fn"], mkevent (rc), &dct); }
+  twait { pub3 ()->run_cfg (cgi["fn"], mkevent (rc), dct); }
   if (!rc) {
     out << "Error including file " << cgi["fn"] << " or file wasn't given\n";
   } else {
@@ -116,49 +116,25 @@ okclnt_configtest_t::run_local (evv_t ev)
       vec<size_t> indices;
       str key;
       if (str2ref (vars[i], &key, &indices)) {
-	ptr<pval_t> v = dct.lookup_ptr (key);
-	ptr<const parr_mixed_t> m;
-	const parr_ival_t *iv;
-	ptr<pub3::expr_list_t> el;
+
+	ptr<pub3::expr_t> x = dct->lookup (key);
 	str s;
 
-	for (size_t j = 0; v && j < indices.size (); j++) {
+	for (size_t j = 0; x && j < indices.size (); j++) {
 	  size_t indx = indices[j];
-	  if ((m = v->to_mixed_arr ()) && indx < m->size ()) {
-	    v = (*m)[indx];
-	  } else if ((iv = v->to_int_arr ()) && indx < iv->size ()) {
-	    v = NULL;
-	    int64_t x;
-	    if (iv->val (indx, &x)) {
-	      s = strbuf () << x;
-	    }
-	  } else if ((el = v->to_expr_list ())) {
-	    v = (*el)[indx];
+	  ptr<pub3::expr_list_t> el;
+	  if ((el = x->to_list ())) {
+	    x = el->lookup (indx);
 	  }
 	}
 
-	if (v) {
-	  ptr<pub3::expr_t> x;
-	  ptr<pub_scalar_t> ps;
-	  pbuf_t *pb;
-	  if ((x = v->to_expr ())) {
-	    s = x->to_str ();
-	  } else if ((ps = v->to_pub_scalar ())) {
-	    s = ps->obj ().to_str ();
-	  } else if ((pb = dynamic_cast<pbuf_t *>(static_cast<pval_t *> (v)))) {
-	    s = pb->to_str ();
-	  } else {
-	    s = v->eval_simple ();
-	  }
-	}
+	if (x) { s = x->to_str (); } 
 	if (!s) s = "(null)";
 	out << vars[i] << " -> " << s << "\n";
       }
     }
   }
   ev->trigger ();
-
-
 }
 
 
@@ -171,7 +147,7 @@ okclnt_configtest_t::run_global (evv_t ev)
     bool rc (true);
   }
 
-  twait { pub2 ()->run_cfg (cgi["fn"], mkevent (rc)); }
+  twait { pub3 ()->run_cfg (cgi["fn"], mkevent (rc)); }
   if (!rc) {
     out << "Error including file " << cgi["fn"] << " or file wasn't given\n";
   } else {
@@ -183,12 +159,11 @@ okclnt_configtest_t::run_global (evv_t ev)
       vec<size_t> indices;
       str key;
       if (str2ref (vars[i], &key, &indices)) {
-	pval_w_t tmp = (*pub2 ())[key];
+	pub3::obj_t obj = pub3 ()->pub3_config_obj ()(key);
 	for (size_t j = 0; j < indices.size (); j++) {
-	  pval_w_t tmp2 = tmp[indices[j]];
-	  tmp = tmp2;
+	  obj = obj[indices[j]];
 	}
-	str s = tmp.to_str ();
+	str s = obj.to_str ();
 	if (!s) s = "(null)";
 	out << vars[i] << " -> " << s << "\n";
       }

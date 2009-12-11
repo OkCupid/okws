@@ -81,6 +81,10 @@ namespace pub3 {
     virtual opts_t opts () const = 0;
     virtual void set_opts (opts_t i) = 0;
     virtual ptr<const localizer_t> get_localizer (publish_t *p) { return NULL; }
+
+    static ptr<expr_dict_t> get_universals ();
+    static pub3::obj_t get_universals_obj ();
+    static pub3::obj_dict_t pub3_config_obj ();
   };
 
   //=======================================================================
@@ -102,9 +106,6 @@ namespace pub3 {
     opts_t opts () const { return _opts; }
     void set_opts (opts_t o) { _opts = o; }
     void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);
-
-    static ptr<expr_dict_t> get_universals ();
-    static pub3::obj_t get_universals_obj ();
 
   protected:
     // to be filled in by the sub classes
@@ -271,7 +272,7 @@ namespace pub3 {
 
     opts_t opts () const { return _iface->opts (); }
     void set_opts (opts_t i) { _iface->set_opts (i); }
-    ptr<const localizer_t> get_localizer (publish_t *p) { return _localizer; }
+    ptr<const localizer_t> get_localizer (publish_t *p);
 
   protected:
     ptr<ok_iface_t> _iface;

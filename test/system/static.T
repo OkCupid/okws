@@ -43,8 +43,8 @@ public:
     : oksrvc_t (argc, argv), _mtm (NULL) {}
 
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
-  void post_launch_pub2_T (cbb cb, CLOSURE);
-  void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
+  void post_launch_pub_T (evb_t cb, CLOSURE);
+  void post_launch_pub (evb_t cb) { post_launch_pub_T (cb); }
 
   const mime_type_map_t *mime_type_map () const { return _mtm; }
   ptr<const std_locale::localizer_factory_t> lfact () const { return _lfact; }
@@ -57,7 +57,7 @@ private:
 class okclnt_static_t : public okclnt2_t {
 public:
   okclnt_static_t (ptr<ahttpcon> x, oksrvc_static_t *o)
-    : okclnt2_t (x, o), ok_static (o) {}
+    : okclnt2_t (x, o), ok_static (o), _dict (pub3::dict_t::alloc ()) {}
   ~okclnt_static_t () {}
 
   void process (proc_ev_t ev) { process_T (ev); }
@@ -67,24 +67,25 @@ protected:
   void error (const str &desc);
   str ofn;
   bool rc;
-  aarr_t aarr;
   oksrvc_static_t *ok_static;
+  ptr<pub3::dict_t> _dict;
 };
 
 
 tamed void 
-oksrvc_static_t::post_launch_pub2_T (cbb cb)
+oksrvc_static_t::post_launch_pub_T (evb_t ev)
 {
   tvars {
     bool res1, res2, res3;
     pub3::obj_dict_t d;
+    pub3::opts_t o (pub3::P_COPY_CONF);
   }
   twait { 
-    oksrvc_t::post_launch_pub2 (mkevent (res1));
-    pub2 ()->run_cfg (INTL_CONF_FILE,  mkevent (res2));
-    pub2 ()->run_cfg (MIME_TYPES_FILE, mkevent (res3));
+    oksrvc_t::post_launch_pub (mkevent (res1));
+    pub3 ()->run_cfg (INTL_CONF_FILE,  mkevent (res2), NULL, o);
+    pub3 ()->run_cfg (MIME_TYPES_FILE, mkevent (res3), NULL, o);
   }
-  d = pub2 ()->pub3_config_obj ();
+  d = pub3 ()->pub3_config_obj ();
 
   if (res3) {
     _mtm = New mime_type_map_t (d("MimeTypes"));
@@ -95,13 +96,13 @@ oksrvc_static_t::post_launch_pub2_T (cbb cb)
       _lfact = std_locale::localizer_factory_t::alloc (fmt);
   }
 
-  TRIGGER (cb, res1 && res2);
+  ev->trigger (res1 && res2);
 }
 
 void
 okclnt_static_t::error (const str &s)
 {
-  aarr.add ("target", s);
+  _dict->insert ("target", s);
   ofn = FNF_FILE;
   rc = false;
   set_status (HTTP_NOT_FOUND);
@@ -132,10 +133,10 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     first_time = false;
   }
 
-  if (cgi.blookup ("wss")) { opts |= P_WSS; }
-  if (cgi.blookup ("viserr")) { opts |= P_VISERR; }
-  if (cgi.blookup ("iinfo")) { opts |= P_IINFO; }
-  if (cgi.blookup ("verbose")) { opts |= P_VERBOSE; }
+  if (cgi.blookup ("wss")) { opts |= pub3::P_WSS; }
+  if (cgi.blookup ("viserr")) { opts |= pub3::P_VISERR; }
+  if (cgi.blookup ("iinfo")) { opts |= pub3::P_IINFO; }
+  if (cgi.blookup ("verbose")) { opts |= pub3::P_VERBOSE; }
 
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
@@ -163,17 +164,17 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 	if (cicmp (sffx, "html")) {
 
 	  // XXX - note that this is unsafe vis-a-vis XSS attacks.
-	  cgi.load_aarr (&aarr);
+	  cgi.load_dict (_dict);
 
 	  {
 	    str s;
 	    if (is_ssl () && (s = ssl_cipher ())) {
-	      aarr.add ("CIPHER", s);
+	      _dict->insert ("CIPHER", s);
 	    }
 	  }
 
 	} else {
-	  opts |= (P_NOPARSE|P_NOLOCALE);
+	  opts |= (pub3::P_NOPARSE|pub3::P_NOLOCALE);
 	}
 	set_content_type (mime_type);
 
@@ -181,7 +182,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 	  set_localizer (ok_static->lfact ()->mk_localizer (lang));
 	}
 	
-	twait { pub2_local ()->run (&out, ofn, mkevent (rc), &aarr, opts); }
+	twait { pub3_local ()->run (&out, ofn, mkevent (rc), _dict, opts); }
 
 	if (!rc) 
 	  error (ofn);
@@ -205,7 +206,9 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   }
 
   if (!rc && !skip_pub) {
-    twait { pub2 ()->run (&out, ofn, mkevent (rc), &aarr, opts|P_VISERR); }
+    twait { 
+      pub3 ()->run (&out, ofn, mkevent (rc), _dict, opts|pub3::P_VISERR); 
+    }
   }
   twait { output (out, mkevent ()); }
   ev->trigger (true, 0);

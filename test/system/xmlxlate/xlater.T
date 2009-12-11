@@ -41,12 +41,12 @@ class okclnt_xlater_t : public okclnt_xmlrpc_t {
 public:
   okclnt_xlater_t (ptr<ahttpcon> x, oksrvc_xlater_t *s) ;
 
-  void xlate (xml_req_t q, xml_resp_cb_t cb) { xlate_T (q, cb); }
-  void constants (xml_req_t q, xml_resp_cb_t cb) { constants_T (q, cb); }
+  void xlate (xml_req_t q, xml_resp_ev_t ev) { xlate_T (q, ev); }
+  void constants (xml_req_t q, xml_resp_ev_t ev) { constants_T (q, ev); }
   
 private:
-  void xlate_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
-  void constants_T (xml_req_t q, xml_resp_cb_t cb, CLOSURE);
+  void xlate_T (xml_req_t q, xml_resp_ev_t ev, CLOSURE);
+  void constants_T (xml_req_t q, xml_resp_ev_t cb, CLOSURE);
 
 
   oksrvc_xlater_t *_service;
@@ -82,7 +82,7 @@ main (int argc, char *argv[])
 }
 
 tamed void
-okclnt_xlater_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xlater_t::xlate_T (xml_req_t q, xml_resp_ev_t ev)
 {
   tvars {
     xml_resp_t res;
@@ -90,11 +90,11 @@ okclnt_xlater_t::xlate_T (xml_req_t q, xml_resp_cb_t cb)
   twait {
     _service->xlmgr ()->xlate (q[0], mkevent (res));
   }
-  (*cb) (res);
+  ev->trigger (res);
 }
 
 tamed void
-okclnt_xlater_t::constants_T (xml_req_t q, xml_resp_cb_t cb)
+okclnt_xlater_t::constants_T (xml_req_t q, xml_resp_ev_t ev)
 {
   tvars {
     xml_resp_t res;
@@ -102,5 +102,5 @@ okclnt_xlater_t::constants_T (xml_req_t q, xml_resp_cb_t cb)
   twait {
     _service->xlmgr ()->get_constants (q, mkevent (res));
   }
-  (*cb) (res);
+  ev->trigger (res);
 }

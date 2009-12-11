@@ -38,15 +38,17 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<expr_dict_t>
-  ap_t::get_universals () 
-  {
-    return singleton_t::get ()->universals ();
-  }
+  ptr<expr_dict_t> ok_iface_t::get_universals () 
+  { return singleton_t::get ()->universals (); }
 
   //-----------------------------------------------------------------------
 
-  obj_t ap_t::get_universals_obj () 
+  obj_t ok_iface_t::get_universals_obj () 
+  { return pub3::obj_dict_t (get_universals ()); }
+
+  //-----------------------------------------------------------------------
+
+  obj_dict_t ok_iface_t::pub3_config_obj ()
   { return pub3::obj_dict_t (get_universals ()); }
 
   //-----------------------------------------------------------------------
@@ -774,5 +776,17 @@ namespace pub3 {
   }
 
   //=====================================================================
+
+  ptr<const localizer_t> 
+  locale_specific_publisher_t:: get_localizer (publish_t *p)
+  {
+    ptr<const localizer_t> ret;
+    if (!(p->opts () & P_NOLOCALE)) {
+      ret = _localizer;
+    }
+    return ret;
+  }
+
+  //=======================================================================
 
 };
