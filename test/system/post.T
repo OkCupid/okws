@@ -78,7 +78,7 @@ okclnt_form_t::process_T ()
 {
   tvars {
     bool ok;
-    aarr_t a;
+    ptr<pub3::dict_t> d (pub3::dict_t::alloc ());
   }
   
   {
@@ -87,12 +87,12 @@ okclnt_form_t::process_T ()
     for (const char **p = fields; *p; p++) {
       cgi.lookup (*p, &v);
       str s = v2s(v);
-      a.add (*p, s);
+      d->insert (*p, s);
     }
   }
   
 
-  twait { pub2 ()->run (&out, "/post.html", mkevent (ok), &a); }
+  twait { pub3 ()->run (&out, "/post.html", mkevent (ok), d); }
 
   output (out);
 }

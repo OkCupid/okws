@@ -52,7 +52,7 @@ namespace purify {
   public:
     
     purifier_t () : _timeout (10) {}
-    void init (pub2::ok_iface_t *pub,
+    void init (pub3::ok_iface_t *pub,
 	       str file, evb_t ev, str key = NULL, CLOSURE);
     bool init (const str &s);
     void purify (str in, ev_t ev, CLOSURE);

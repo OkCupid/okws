@@ -32,7 +32,7 @@ namespace purify {
   const char *conf_file_key = "PURIFY_URL";
 
   tamed void
-  purifier_t::init (pub2::ok_iface_t *pub, 
+  purifier_t::init (pub3::ok_iface_t *pub, 
 		    str file, evb_t ev, str key)
   {
     tvars {
@@ -46,7 +46,8 @@ namespace purify {
 
     if (rc) {
       rc = false;
-      if (!pub->cfg (key, &_url) || !_url || _url.len() == 0) {
+      if (!pub->pub3_config_obj ()(key).to_str (&_url) || 
+	  !_url || _url.len() == 0) {
 	warn << "purifier: No " << key << " specifed!\n";
       } else if (!init ()) {
 	warn << "purifier: Bad URL specified: " << key << " => " 

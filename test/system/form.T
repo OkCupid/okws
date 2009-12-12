@@ -78,7 +78,7 @@ okclnt_form_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     bool ok;
-    aarr_t a;
+    ptr<pub3::dict_t> d (pub3::dict_t::alloc ());
     str q;
   }
   
@@ -88,12 +88,12 @@ okclnt_form_t::process_T (okclnt2_t::proc_ev_t ev)
     for (const char **p = fields; *p; p++) {
       cgi.lookup (*p, &v);
       str s = v2s(v);
-      a.add (*p, s);
+      d->insert (*p, s);
     }
 
     if (cgi.lookup ("nxt_query", &q)) {
-      a.add ("query_unesc", q);
-      a.add ("query_esc", xss_escape (q));
+      d->insert ("query_unesc", q);
+      d->insert ("query_esc", xss_escape (q));
     }
     
     int i = 0;
@@ -101,11 +101,11 @@ okclnt_form_t::process_T (okclnt2_t::proc_ev_t ev)
       ok_form->_union_cgi = i;
     }
 
-    a.add ("union", ok_form->_union_cgi);
+    d->insert ("union", pub3::expr_bool_t::alloc (ok_form->_union_cgi));
   }
   
 
-  twait { pub2 ()->run (&out, "/form.html", mkevent (ok), &a); }
+  twait { pub3 ()->run (&out, "/form.html", mkevent (ok), d); }
   twait { output (out, mkevent ()); }
   ev->trigger (true, HTTP_OK);
 }

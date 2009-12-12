@@ -54,7 +54,7 @@ tamed void
 okclnt_upload_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
-    aarr_t aarr;
+    ptr<pub3::dict_t> d (pub3::dict_t::alloc ());
     cgi_files_t *f;
     const char *field ("upfile");
     const char *file ("/upload.html");
@@ -66,9 +66,9 @@ okclnt_upload_t::process_T (okclnt2_t::proc_ev_t ev)
     cgi_file_t file = f->pop_back ();
     sz = file.dat.len ();
   } 
-  aarr.add ("sz", sz);
+  d->insert ("sz", pub3::expr_int_t::alloc (sz));
 
-  twait { pub2 ()->run (&out, file, mkevent (rc), &aarr); }
+  twait { pub3 ()->run (&out, file, mkevent (rc), d); }
   twait { output (out, mkevent ()); }
   ev->trigger (true, HTTP_OK);
 }

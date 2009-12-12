@@ -38,10 +38,10 @@ class oksrvc_purify_t : public oksrvc_t {
 public:
   oksrvc_purify_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
-  void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
+  void post_launch_pub (evb_t ev) { post_launch_pub_T (ev); }
   purify::purifier_t *purifier () { return &_purifier; }
 protected:
-  void post_launch_pub2_T (cbb cb,  CLOSURE);
+  void post_launch_pub_T (evb_t ev,  CLOSURE);
   purify::purifier_t _purifier;
 };
 
@@ -60,20 +60,19 @@ protected:
 
 
 tamed void 
-oksrvc_purify_t::post_launch_pub2_T (cbb cb)
+oksrvc_purify_t::post_launch_pub_T (evb_t ev)
 {
   tvars {
     bool res1, res2;
   }
   twait { 
-    oksrvc_t::post_launch_pub2 (mkevent (res1));
-    _purifier.init (pub2 (), "/conf/purify.conf", mkevent (res2));
+    oksrvc_t::post_launch_pub (mkevent (res1));
+    _purifier.init (pub3 (), "/conf/purify.conf", mkevent (res2));
   }
   if (!res2) {
     warn << "purifier failed to initialize\n";
   }
-
-  TRIGGER (cb, res1 && res2);
+  ev->trigger (res1 && res2);
 }
 
 
@@ -81,9 +80,9 @@ tamed void
 okclnt_purify_t::process_T ()
 {
   tvars {
-    aarr_t aarr;
+    ptr<pub3::dict_t> d (pub3::dict_t::alloc ());
     bool rc (true);
-    u_int opts (P_IINFO|P_VERBOSE);
+    u_int opts (pub3::P_IINFO|pub3::P_VERBOSE);
     str file ("/test/purify.html");
     str dirtyhtml;
     str outhtml;
@@ -99,9 +98,9 @@ okclnt_purify_t::process_T ()
   } else {
     outhtml = dirtyhtml;
   }
-  aarr.add ("out", outhtml);
+  d->insert ("out", outhtml);
 
-  twait { pub2 ()->run (&out, file, mkevent (rc), &aarr, opts|P_VISERR); }
+  twait { pub3 ()->run (&out, file, mkevent (rc), d, opts|pub3::P_VISERR); }
   output (out);
 }
 

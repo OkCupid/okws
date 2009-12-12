@@ -70,7 +70,7 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   tstf = "/test/forloop2.html";
 
   if (cgi.blookup ("wss")) {
-    opts |= P_WSS;
+    opts |= pub3::P_WSS;
   }
   
   for (size_t i = 0; i < 3; i++) {
@@ -96,7 +96,8 @@ okclnt_forloop_t::process_T (okclnt2_t::proc_ev_t ev)
   pub_obj("double")[1]("val") = "Ike";
 
   twait { 
-    pub2 ()->run (&out, tstf, mkevent (rc), pub_obj.dict (), opts|P_VISERR); 
+    pub3 ()->run (&out, tstf, mkevent (rc), pub_obj.dict (), 
+		  opts|pub3::P_VISERR); 
   }
   twait { output (out, mkevent ()); }
 

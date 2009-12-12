@@ -35,9 +35,9 @@ class oksrvc_simple_t : public oksrvc_t {
 public:
   oksrvc_simple_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
-  void post_launch_pub2 (cbb cb) { post_launch_pub2_T (cb); }
+  void post_launch_pub (evb_t ev) { post_launch_pub_T (ev); }
 protected:
-  void post_launch_pub2_T (cbb cb,  CLOSURE);
+  void post_launch_pub_T (evb_t ev,  CLOSURE);
 };
 
 class okclnt_simple_t : public okclnt2_t {
@@ -54,25 +54,25 @@ protected:
 };
 
 tamed void 
-oksrvc_simple_t::post_launch_pub2_T (cbb cb)
+oksrvc_simple_t::post_launch_pub_T (evb_t ev)
 {
   tvars {
     bool res1, res2;
   }
   twait { 
-    oksrvc_t::post_launch_pub2 (mkevent (res1));
-    pub2 ()->run_cfg (INTL_CONF_FILE, mkevent (res2)); 
+    oksrvc_t::post_launch_pub (mkevent (res1));
+    pub3 ()->run_cfg (INTL_CONF_FILE, mkevent (res2)); 
   }
-  TRIGGER (cb, res1 && res2);
+  ev->trigger (res1 && res2);
 }
 
 tamed void 
 okclnt_simple_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
-    aarr_t aarr;
+    ptr<pub3::dict_t> d (pub3::dict_t::alloc ());
     bool rc (true);
-    u_int opts (P_IINFO|P_VERBOSE);
+    u_int opts (pub3::P_IINFO|pub3::P_VERBOSE);
     str file;
   }
   file = cgi["file"];
@@ -84,21 +84,21 @@ okclnt_simple_t::process_T (okclnt2_t::proc_ev_t ev)
   syslog_crit << "Test P Q R\n";
 
   if (file) {
-    cgi.load_aarr (&aarr);
+    cgi.load_dict (d);
 
-    twait { pub2 ()->run (&out, file, mkevent (rc), &aarr, opts); }
+    twait { pub3 ()->run (&out, file, mkevent (rc), d, opts); }
 
     if (!rc) {
-      aarr.add ("target", file);
+      d->insert ("target", file);
       file = FNF_FILE;
     }
   } else {
-    aarr.add ("target", "&lt; <i>no <tt>file</tt> specified</i> &gt;");
+    d->insert ("target", "&lt; <i>no <tt>file</tt> specified</i> &gt;");
     file = FNF_FILE;
     rc = false;
   }
   if (!rc) {
-    twait { pub2 ()->run (&out, file, mkevent (rc), &aarr, opts|P_VISERR); }
+    twait { pub3 ()->run (&out, file, mkevent (rc), d, opts|pub3::P_VISERR); }
   }
   twait { output (out, mkevent ()); }
   ev->trigger (true, HTTP_OK);

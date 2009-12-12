@@ -1,5 +1,5 @@
 // -*-c++-*-
-/* $Id: pub1tst.T 1990 2006-06-13 12:53:36Z max $ */
+/* $Id: objtest.T 2314 2006-11-08 20:22:44Z max $ */
 
 /*
  *
@@ -28,58 +28,68 @@
 #include <unistd.h>
 #include "tame.h"
 #include "rxx.h"
+#include "pub3.h"
 
-class oksrvc_pub1tst_t : public oksrvc_t {
+//-----------------------------------------------------------------------
+
+class oksrvc_objtest_t : public oksrvc_t {
 public:
-  oksrvc_pub1tst_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
+  oksrvc_objtest_t (int argc, char *argv[]) : oksrvc_t (argc, argv) {}
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
-  void init_publist ()
-  {
-    add_pubfile ("/conf/test.conf", true);
-  }
-
-  void custom_init (cbv cb)
-  {
-    str s = (*this)["foo"];
-    warn << "foo -> " << s << "\n";
-    (*cb) ();
-  }
-protected:
-  void post_launch_pub2_T (cbb cb,  CLOSURE);
 };
 
-class okclnt_pub1tst_t : public okclnt_t {
+//-----------------------------------------------------------------------
+
+class okclnt_objtest_t : public okclnt_t {
 public:
-  okclnt_pub1tst_t (ptr<ahttpcon> x, oksrvc_pub1tst_t *o)
-    : okclnt_t (x, o), ok_pub1tst (o) {}
-  ~okclnt_pub1tst_t () {}
+  okclnt_objtest_t (ptr<ahttpcon> x, oksrvc_objtest_t *o)
+    : okclnt_t (x, o), ok_objtest (o) {}
+  ~okclnt_objtest_t () {}
 
   void process () { process_T (); }
   void process_T (CLOSURE); 
 
 protected:
-  oksrvc_pub1tst_t *ok_pub1tst;
+  oksrvc_objtest_t *ok_objtest;
 };
 
+//-----------------------------------------------------------------------
+
 tamed void 
-okclnt_pub1tst_t::process_T ()
+okclnt_objtest_t::process_T ()
 {
   tvars {
+    pub3::obj_t o;
+    pub3::obj_dict_t d;
+    pub3::obj_t o2;
+    bool rc;
   }
-  out << "hi\n";
+  
+  {
+    o("bar")("a") = "A";
+    o("bar")("b") = 2;
+    pub3::ref_t x = o("bar");
+    o2 = x;
+    d("o") = o2;
+  }
+
+  twait { 
+    pub3 ()->run (&out, "/test/objtest2.html", mkevent (rc), d.dict ());
+  }
+
   output (out);
 }
 
 oksrvc_t::newclnt_t *
-oksrvc_pub1tst_t::make_newclnt (ptr<ahttpcon> x)
+oksrvc_objtest_t::make_newclnt (ptr<ahttpcon> x)
 {
-  return New okclnt_pub1tst_t (x, this);
+  return New okclnt_objtest_t (x, this);
 }
 
 int
 main (int argc, char *argv[])
 {
-  oksrvc_t *oksrvc = New oksrvc_pub1tst_t (argc, argv);
+  oksrvc_t *oksrvc = New oksrvc_objtest_t (argc, argv);
   oksrvc->launch ();
   amain ();
 }

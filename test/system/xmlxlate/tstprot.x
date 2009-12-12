@@ -1,5 +1,4 @@
 
-
 struct tst_arg_t {
 	int x;
 	string y<>;

@@ -78,7 +78,8 @@ okclnt_reflect_t::process_T (okclnt2_t::proc_ev_t ev)
 
   if (file && file.len ()) {
     twait { 
-      pub2 ()->run (&out, file, mkevent (rc), pub_obj.dict (), opts|P_VISERR); 
+      pub3 ()->run (&out, file, mkevent (rc), pub_obj.dict (), 
+		    opts|pub3::P_VISERR); 
     }
   } else {
     out << "no file given";

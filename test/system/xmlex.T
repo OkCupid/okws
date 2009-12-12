@@ -36,13 +36,12 @@ class okclnt_xmlex_t : public okclnt_xmlrpc_t {
 public:
   okclnt_xmlex_t (ptr<ahttpcon> x, oksrvc_xmlex_t *s) ;
 
-  void hello (xml_req_t q, xml_resp_cb_t cb) {
+  void hello (xml_req_t q, xml_resp_ev_t ev) {
     xml_resp_t s;
     s[0]("zero") = q[0];
     s[0]("one") = q[1];
     s[1] = "<testing><this&that>";
-
-    TRIGGER (cb, s);
+    ev->trigger (s);
   };
 
 private:

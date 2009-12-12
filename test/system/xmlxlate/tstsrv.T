@@ -2,12 +2,13 @@
 // -*-c++-*-
 /* $Id: tstsrv.T 2718 2007-04-15 13:45:19Z max $ */
 
-#include "tstprot.h"
 #include "async.h"
 #include "arpc.h"
+#include "okws_sfs.h"
 #include "parseopt.h"
 #include "tame.h"
 #include "tame_rpcserver.h"
+#include "tstprot.h"
 
 class tstsrv_t : public tame::server_t {
 public:
