@@ -202,6 +202,7 @@ public:
   pid_t pid () const { return _pid; }
   bool make_pidfile (const str &s);
   bool remove_pidfile ();
+  int recvfd () { return _x_unix->recvfd (); }
   rpc_ptr<int> uid;
   rpc_ptr<int> gid;
 protected:
@@ -215,6 +216,7 @@ private:
   str _command_line_flag;
   ptr<argv_t> _env;
   str _pidfile;
+  ptr<axprt_unix> _x_unix;
 };
 
 class helper_unix_t : public helper_t {

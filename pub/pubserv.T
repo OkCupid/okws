@@ -27,19 +27,15 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  master_srv_t::master_srv_t (ptr<axprt_stream> x, ptr<local_publisher_t> p,
+  master_srv_t::master_srv_t (ptr<axprt_unix> x, ptr<local_publisher_t> p,
 			      ptr<srv_file_lookup_t> lkp, int fdfd)
-    : clone_server_t (fdfd),
+    : clone_server_t (x),
       _x (x),
       _srv (asrv::alloc (_x, pub_prog_3, wrap (this, &master_srv_t::dispatch))),
       _pub (p),
       _file_lookup (lkp),
       _personal_slave (new_slave (x, false))
-  {
-    if (!clone_server_t::setup ()) {
-      warn << "no socket setup for file descriptor passing!\n";
-    }
-  }
+  {}
 
   //-----------------------------------------------------------------------
 

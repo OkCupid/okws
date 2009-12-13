@@ -26,7 +26,6 @@
 #define _LIBPUB_OKCLONE_H
 
 #include "arpc.h"
-#include "axprtfd.h"
 #include "pslave.h"
 #include "tame.h"
 
@@ -35,22 +34,18 @@
  * new clients to connect over Unix FD passing.  Can be plugged into
  * RPC servers that have a RPC procedure of the form:
  *
- *   bool XXX_CLONE_FD_XXX (void) = 5;
+ *   int XXX_CLONE_FD_XXX (int) = 5;
+ *
+ * Will send back the input on success, or -1 on failure.
  */
 class clone_server_t {
 public:
   virtual ~clone_server_t () {}
-  clone_server_t (int f) : _fdfd (f), _fdseqno (0) {}
-  void close ();
-  bool setup ();
-
+  clone_server_t (ptr<axprt_unix> x) : _x (x) {}
   void clonefd (svccb *sbp);
   virtual void register_newclient (ptr<axprt_stream> cli) = 0;
 private:
-  void eofcb ();
-  int _fdfd;
-  ptr<fdsink_t> _fdsnk;
-  u_int32_t _fdseqno;
+  ptr<axprt_unix> _x;
 };
 
 /**
@@ -58,20 +53,12 @@ private:
  */
 class clone_client_t {
 public:
-  clone_client_t (helper_exec_t *h, int p) : _he (h), _procno (p) {}
-  bool init ();
+  clone_client_t (helper_exec_t *h, int p) : _he (h), _procno (p), _seqno (1) {}
   void clone (evi_t ev, CLOSURE);
-  
 protected:
-
   helper_exec_t *_he;
   int _procno;
-
-private:
-  void gotfd (int nfd, ptr<u_int32_t> id);
-  vec<evi_t> _evq;
-  vec<int> _fds;
-  ptr<fdsource_t<u_int32_t> > _fdsrc;
+  int32_t _seqno;
 };
 
 /**

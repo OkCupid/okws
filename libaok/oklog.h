@@ -207,8 +207,6 @@ public:
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   virtual void connect (evb_t ev) { rpc_log_t::connect_T (ev); }
-  void connect_cb1 (evb_t cb, bool b);
-  void connect_cb2 (evb_t cb, clnt_stat err);
  
 protected:
   void connect_T (evb_t ev, CLOSURE);
@@ -229,7 +227,6 @@ public:
   void connect (evb_t ev) { connect_T (ev); }
 private:
   void connect_T (evb_t ev, CLOSURE);
-  void connect_cb3 ();
   helper_exec_t *he;
 };
 

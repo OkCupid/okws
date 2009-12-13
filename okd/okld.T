@@ -881,7 +881,6 @@ okld_t::launch_pubd (evi_t ev)
   tvars {
     bool b;
     int ret (-1);
-    bool ok;
   }
   assert (_pubd_exc);
   _pubd = New clone_only_client_t (_pubd_exc, PUB3_CLONE);
@@ -889,14 +888,6 @@ okld_t::launch_pubd (evi_t ev)
 
   twait { _pubd->connect (mkevent (b)); }
   if (b) {
-
-    // calling clone_client_t::init() sets up the FD source so we
-    // can accept incoming file descriptors.  the log_primary_t 
-    // class does this implicitly, so we have to do it explicitly
-    // here for pub2
-    ok = _pubd->init ();
-    assert (ok);
-
     twait { _pubd->clone (mkevent (ret)); }
     if (ret < 0) {
       warn << "pubd did not send a file descriptor; failing\n";
@@ -918,7 +909,7 @@ okld_t::launch_logd (evi_t cb)
     int ret (-1);
   }
   if (!logexc) 
-    logexc = New helper_exec_t (oklog_program_1, "oklogd", 1,
+    logexc = New helper_exec_t (oklog_program_1, "oklogd", 0,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY);
   argv = logexc->get_argv ();
   assert (argv);
@@ -991,7 +982,7 @@ okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 {
   ptr<env_argv_t> env;
   if (ok_base_t::got_generic_exec (s, loc, errp, &env)) 
-    logexc = New helper_exec_t (oklog_program_1, s, 1,
+    logexc = New helper_exec_t (oklog_program_1, s, 0,
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
 				env);
 }

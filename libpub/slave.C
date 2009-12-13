@@ -194,6 +194,7 @@ helper_exec_t::launch (cbb c)
   _pid = axprt_unix_spawn_pid;
   fd = ux->getfd ();
   x = ux;
+  _x_unix = ux;
 
   for (u_int i = 0; i < n_add_socks; i++) {
     close (sps[i][1]);

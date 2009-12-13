@@ -150,7 +150,7 @@ namespace pub3 {
 
   class master_srv_t : public clone_server_t {
   public:
-    master_srv_t (ptr<axprt_stream> x, ptr<local_publisher_t> lp, 
+    master_srv_t (ptr<axprt_unix> x, ptr<local_publisher_t> lp, 
 		  ptr<srv_file_lookup_t> fl, int fdfd);
     ~master_srv_t ();
     void register_newclient (ptr<axprt_stream> x);
@@ -167,7 +167,7 @@ namespace pub3 {
     ptr<srv_file_lookup_t> file_lookup () { return _file_lookup; }
     ptr<local_publisher_t> pub () { return _pub; }
   protected:
-    ptr<axprt_stream> _x;
+    ptr<axprt_unix> _x;
     ptr<asrv> _srv;
     ptr<local_publisher_t> _pub;
     ptr<srv_file_lookup_t> _file_lookup;

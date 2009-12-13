@@ -33,7 +33,6 @@
 #include "ahutil.h"
 #include "pub.h"
 #include "pubutil.h"
-#include "axprtfd.h"
 #include "okdbg.h"
 #include "ok_adebug.h"
 

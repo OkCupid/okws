@@ -62,10 +62,6 @@ log_primary_t::connect_T (evb_t ev)
     bool ok;
   }
   twait { rpc_log_t::connect_T (mkevent (ok)); }
-  if (ok) {
-    ok = clone_client_t::init ();
-    assert (ok);
-  }
   ev->trigger (ok);
 } 
 

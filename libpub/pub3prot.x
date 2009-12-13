@@ -696,8 +696,8 @@ program PUB_PROG {
 		 * for each service, pubd needs to send a socket pair
 		 * end over a pipe.
 		 */
- 	  	bool
-		PUB3_CLONE (void) = 4;
+ 	  	int 	
+		PUB3_CLONE (int) = 4;
 		
 		bool
 		PUB3_PUSH_DELTAS(xpub3_delta_set_t) = 5;	

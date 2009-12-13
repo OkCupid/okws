@@ -133,8 +133,8 @@ private:
 
 class logd_t : public clone_server_t {
 public:
-  logd_t (const str &in, int f = -1) 
-    : clone_server_t (f),
+  logd_t (ptr<axprt_unix> x, const str &in)
+    : clone_server_t (x),
       tmr (wrap (this, &logd_t::flush)), 
       parms (in), logset (0), error (NULL), access (NULL), ssl (NULL),
       dcb (NULL), 

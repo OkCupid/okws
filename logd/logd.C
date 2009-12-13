@@ -69,7 +69,6 @@ logd_client_t::dispatch (svccb *sbp)
 void
 logd_t::shutdown ()
 {
-  clone_server_t::close ();
   clean_pidfile ();
   delete this;
   exit (0);
@@ -109,7 +108,7 @@ logd_t::dispatch (svccb *sbp)
     shutdown ();
     break;
   case OKLOG_CLONE:
-    clonefd (sbp);
+    clone_server_t::clonefd (sbp);
     break;
   case OKLOG_FAST:
     fastlog (sbp);
@@ -262,8 +261,7 @@ logd_t::setup ()
   if (!(perms_setup () && 
 	logfile_setup () && 
 	pidfile_setup () && 
-	slave_setup () 
-	&& clone_server_t::setup ()))
+	slave_setup ()))
     return false;
   timer_setup ();
   
@@ -343,12 +341,8 @@ main (int argc, char *argv[])
   vec<str> hosts;
   vec<str> files;
   int fdfd (0);
-  while ((ch = getopt (argc, argv, "s:?")) != -1)
+  while ((ch = getopt (argc, argv, "?")) != -1)
     switch (ch) {
-    case 's':
-      if (!convertint (optarg, &fdfd))
-	usage ();
-      break;
     case '?':
     default:
       usage ();
@@ -365,7 +359,8 @@ main (int argc, char *argv[])
 
   setsid ();
   warn ("OKWS version %s, pid %d\n", VERSION, int (getpid ()));
-  glogd = New logd_t (argv[optind], fdfd);
+  ptr<axprt_unix> x = axprt_unix::alloc (0, ok_axprt_ps);
+  glogd = New logd_t (x, argv[optind]);
   sigcb (SIGHUP, wrap (glogd, &logd_t::handle_sighup));
   glogd->launch ();
   amain ();

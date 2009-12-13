@@ -258,8 +258,8 @@ program OKLOG_PROGRAM {
 		bool
 		OKLOG_FAST (oklog_fast_arg_t) = 4;
 
-		bool
-		OKLOG_CLONE (void) = 5;
+		int
+		OKLOG_CLONE (int) = 5;
 		
 		void
 		OKLOG_KILL (ok_killsig_t) = 99;

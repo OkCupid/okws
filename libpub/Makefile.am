@@ -64,7 +64,6 @@ okwsinclude_HEADERS = \
 	okformat.h \
 	ok_adebug.h \
 	pscalar.h \
-	axprtfd.h \
 	oksync.h \
 	pub3.h \
 	pub3obj.h \
