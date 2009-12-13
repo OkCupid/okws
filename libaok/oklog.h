@@ -225,7 +225,7 @@ public:
     : rpc_log_t (hh),
       clone_client_t (hh, OKLOG_CLONE), 
       he (hh) {}
-  void clone (cbi cb) { clone_client_t::clone (cb); }
+  void clone (evi_t ev) { clone_client_t::clone (ev); }
   void connect (evb_t ev) { connect_T (ev); }
 private:
   void connect_T (evb_t ev, CLOSURE);

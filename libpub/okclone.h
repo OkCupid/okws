@@ -60,7 +60,7 @@ class clone_client_t {
 public:
   clone_client_t (helper_exec_t *h, int p) : _he (h), _procno (p) {}
   bool init ();
-  void clone (cbi cb, CLOSURE);
+  void clone (evi_t ev, CLOSURE);
   
 protected:
 
@@ -69,7 +69,7 @@ protected:
 
 private:
   void gotfd (int nfd, ptr<u_int32_t> id);
-  vec<cbi> _cbq;
+  vec<evi_t> _evq;
   vec<int> _fds;
   ptr<fdsource_t<u_int32_t> > _fdsrc;
 };

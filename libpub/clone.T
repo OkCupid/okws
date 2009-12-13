@@ -79,32 +79,31 @@ clone_client_t::gotfd (int nfd, ptr<u_int32_t> id)
   }
 
   // 'if' and not 'while', since the callback should always be there before
-  if (_cbq.size ()) {
-    cbi cb = _cbq.pop_front ();
+  if (_evq.size ()) {
+    evi_t ev = _evq.pop_front ();
     nfd = _fds.size () ? _fds.pop_front () : -1;
-    (*cb) (nfd);
+    ev->trigger (nfd);
   }
 }
 
 tamed void 
-clone_client_t::clone (cbi cb)
+clone_client_t::clone (evi_t ev)
 {
   tvars {
     bool b;
     clnt_stat err;
   }
-
   twait { _he->call (_procno, NULL, &b, mkevent (err)); }
 
   if (err) {
     warn << "clone RPC failed: " << err << "\n";
-    (*cb) (-1);
+    ev->trigger (-1);
   } else if (!b) {
     warn << "clone server returned failure on clone request.\n";
-    (*cb) (-1);
+    ev->trigger (-1);
   } else if (_fds.size ()) {
-    (*cb) (_fds.pop_front ());
+    ev->trigger (_fds.pop_front ());
   } else {
-    _cbq.push_back (cb);
+    _evq.push_back (ev);
   }
 }

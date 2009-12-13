@@ -45,8 +45,8 @@ logd_t::newclnt (bool p, ptr<axprt_stream> x)
 }
 
 logd_client_t::logd_client_t (ptr<axprt_stream> x, logd_t *d, bool p)
-  : srv (asrv_delayed_eof::alloc (x, oklog_program_1, 
-				  wrap (this, &logd_client_t::dispatch))),
+  : srv (asrv::alloc (x, oklog_program_1, 
+		      wrap (this, &logd_client_t::dispatch))),
     logd (d), primary (p) {}
 
 logd_client_t::~logd_client_t () { logd->remove (this); }
