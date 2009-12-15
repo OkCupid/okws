@@ -239,7 +239,6 @@ public:
   void toggle_profiler (svccb *sbp, CLOSURE);
   void okctl_get_stats (svccb *sbp);
   void turnlog (svccb *sbp, CLOSURE);
-
   void strip_privileges ();
 
   bool in_shutdown () const { return sdflag; }

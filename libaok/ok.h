@@ -362,7 +362,7 @@ protected:
   virtual void disable_accept_guts () = 0;
 
   ihash<int, errdoc_t, &errdoc_t::status, &errdoc_t::lnk> errdocs;
-  xpub_errdoc_set_t errdocs_x;
+  xpub_errdoc_set_t _errdocs_x;
   mutable str si;
   str logfmt;
   bool svclog;

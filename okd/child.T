@@ -357,6 +357,9 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     }
     sbp->reply (NULL);
     break;
+  case OKCTL_REQ_ERRDOCS_2:
+    myokd->req_errdoc_set_2 (sbp);
+    break;
   case OKCTL_CUSTOM_1_IN: 
     myokd->custom1_in (sbp);
     break;

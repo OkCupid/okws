@@ -1420,7 +1420,7 @@ oksrvc_t::post_launch_pub (evb_t ev)
     bool rc (true);
   }
   twait {
-    RPC::okctl_program_1::okctl_req_errdocs_2 (clnt, &errdocs_x, mkevent (s)); 
+    RPC::okctl_program_1::okctl_req_errdocs_2 (clnt, &_errdocs_x, mkevent (s)); 
   }
   if (s) {
     strbuf b;

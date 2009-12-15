@@ -94,7 +94,7 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
     xpub_errdoc_t ed;
     ed.status = status;
     ed.fn = s[2];
-    errdocs_x.docs.push_back (ed);
+    _errdocs_x.docs.push_back (ed);
   }
 }
 
@@ -1349,6 +1349,15 @@ okd_t::toggle_profiler (svccb *sbp)
   }
   ret.set_status (status);
   srv.reply (ret);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okd_t::req_errdoc_set_2 (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_req_errdocs_2_srv_t<svccb> srv (sbp);
+  srv.reply (_errdocs_x);
 }
 
 //-----------------------------------------------------------------------

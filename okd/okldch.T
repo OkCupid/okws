@@ -162,7 +162,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 {
   tvars {
     int logfd;
-    int pub2fd (-1);
+    int pub3fd (-1);
     clone_only_client_t *p;
     okws_svc_descriptor_t arg;
     ok_xstatus_typ_t res;
@@ -181,7 +181,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 
   twait { 
     okld->get_logd ()->clone (mkevent (logfd));
-    if (p) p->clone (mkevent (pub2fd));
+    if (p) p->clone (mkevent (pub3fd));
   }
 
   if (logfd < 0) {
@@ -193,7 +193,7 @@ okld_ch_t::launch (evv_t::ptr ev)
     return; 
   }
 
-  if (p && pub2fd < 0) {
+  if (p && pub3fd < 0) {
     strbuf b;
     b << "HOSED: Cannot connect to pubd -2 for server: (" << servpath << ","
       << rexecpath << ")\n";
@@ -204,7 +204,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 
   if (okld->in_shutdown ()) {
     close (logfd);
-    if (pub2fd >= 0) close (pub2fd);
+    if (pub3fd >= 0) close (pub3fd);
     strbuf b;
     b << "HOSED: shutdown received while relaunching service: ("
       << servpath << "," << rexecpath << ")\n";
@@ -238,7 +238,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   argv.push_back (get_execpath ());
 
   okld->env.insert ("logfd", logfd, false);
-  okld->env.insert ("pub2fd", pub2fd, false);
+  okld->env.insert ("pub3fd", pub3fd, false);
 
   // for Service2-style command lands, we can have many arguments
   // here specified in okws_config.  make sure to add the encoded
@@ -274,7 +274,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 
   // undo all of the damage
   okld->env.remove ("logfd");
-  okld->env.remove ("pub2fd");
+  okld->env.remove ("pub3fd");
   okld->env.remove ("lifetime");
   okld->env.remove ("lifereqs");
   okld->env.remove ("wss");
@@ -301,7 +301,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 
   pid = axprt_unix_spawn_pid;
   close (logfd);
-  if (pub2fd >= 0) close (pub2fd);
+  if (pub3fd >= 0) close (pub3fd);
   _direct_ports.close ();
 
   if (!x) {
