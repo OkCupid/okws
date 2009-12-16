@@ -131,6 +131,7 @@ namespace pub3 {
     
     ptr<srv_file_lookup_t> file_lookup ();
     ptr<local_publisher_t> pub () ;
+    ptr<const local_publisher_t> pub () const;
 
     list_entry<slave_srv_t> _lnk;
     
@@ -142,7 +143,6 @@ namespace pub3 {
     bool _push_deltas;
     bool _registered;
     bool _push_deltas_lock;
-    ptr<local_publisher_t> _pub;
     master_srv_t *_master;
   };
 
@@ -166,6 +166,7 @@ namespace pub3 {
     str jail2real (str d) const;
     ptr<srv_file_lookup_t> file_lookup () { return _file_lookup; }
     ptr<local_publisher_t> pub () { return _pub; }
+    ptr<const local_publisher_t> pub () const { return _pub; }
   protected:
     ptr<axprt_unix> _x;
     ptr<asrv> _srv;

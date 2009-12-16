@@ -33,9 +33,7 @@
 #include "okws_sfs.h"
 #include "test_const.h"
 
-#if !defined(OKWS_AT_VERSION) || !OKWS_AT_VERSION(1,2,0,0)
-# error "This service requires OKWS version 1.2.0 or greater!"
-#endif
+//=======================================================================
 
 class oksrvc_static_t : public oksrvc_t {
 public:
@@ -54,6 +52,8 @@ private:
   ptr<std_locale::localizer_factory_t> _lfact;
 };
 
+//=======================================================================
+
 class okclnt_static_t : public okclnt2_t {
 public:
   okclnt_static_t (ptr<ahttpcon> x, oksrvc_static_t *o)
@@ -71,6 +71,7 @@ protected:
   ptr<pub3::dict_t> _dict;
 };
 
+//-----------------------------------------------------------------------
 
 tamed void 
 oksrvc_static_t::post_launch_pub_T (evb_t ev)
@@ -99,6 +100,8 @@ oksrvc_static_t::post_launch_pub_T (evb_t ev)
   ev->trigger (res1 && res2);
 }
 
+//-----------------------------------------------------------------------
+
 void
 okclnt_static_t::error (const str &s)
 {
@@ -107,6 +110,8 @@ okclnt_static_t::error (const str &s)
   rc = false;
   set_status (HTTP_NOT_FOUND);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
@@ -214,11 +219,15 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   ev->trigger (true, 0);
 }
 
+//-----------------------------------------------------------------------
+
 oksrvc_t::newclnt_t *
 oksrvc_static_t::make_newclnt (ptr<ahttpcon> x)
 {
   return New okclnt_static_t (x, this);
 }
+
+//-----------------------------------------------------------------------
 
 int
 main (int argc, char *argv[])

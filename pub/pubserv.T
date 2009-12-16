@@ -46,6 +46,9 @@ namespace pub3 {
 
   ptr<local_publisher_t> slave_srv_t::pub () { return _master->pub (); }
 
+  ptr<const local_publisher_t> slave_srv_t::pub () const 
+  { return _master->pub (); }
+
   //-----------------------------------------------------------------------
   
   slave_srv_t::slave_srv_t (ptr<axprt_stream> x, master_srv_t *m, bool do_srv)
@@ -211,7 +214,7 @@ namespace pub3 {
     o = arg->options;
 
     twait { 
-      _pub->getfile (arg->filename, mkevent (s,f), arg->fresh, o); 
+      pub ()->getfile (arg->filename, mkevent (s,f), arg->fresh, o); 
     }
 
     if (!f) {
@@ -272,7 +275,7 @@ namespace pub3 {
   master_srv_t::do_chroot (str dir, str uname, str gname) 
   {
     bool rc = false;
-    ptr<jailer_t> j = _pub->jailer ();
+    ptr<jailer_t> j = pub ()->jailer ();
     if (getuid ()) {
       j->setjail (JAIL_VIRTUAL, dir);
       rc = true;
@@ -322,7 +325,7 @@ namespace pub3 {
   str
   master_srv_t::jail2real (str s) const
   {
-    str ret = _pub->jailer ()->jail2real (s);
+    str ret = pub ()->jailer ()->jail2real (s);
     return ret;
   }
 
