@@ -301,6 +301,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("CoreDumpMode")
     .ignore ("SocketDir")
     .ignore ("ServiceBin")
+    .ignore ("JsonIntBitMax")
 
     .ignore ("Gzip")
     .ignore ("GzipLevel")

@@ -286,6 +286,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("lqm", &ok_listen_queue_max);
     t->lookup ("nlb", &ok_log_nbufs);
     t->lookup ("p3jse", &ok_pub3_json_strict_escaping);
+    t->lookup ("jsibm", &ok_pub3_json_int_bitmax);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");

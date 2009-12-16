@@ -313,6 +313,7 @@ extern size_t ok_pub3_chunk_window_size;
 //
 extern bool ok_pub3_json_strict_escaping;
 extern size_t ok_pub3_yy_buffer_size;
+extern int  ok_pub3_json_int_bitmax;
 
 
 /**

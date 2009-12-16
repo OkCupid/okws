@@ -111,7 +111,7 @@ namespace pub3 {
   {
     str ret;
     if (!x) x = expr_null_t::alloc ();
-    ret = x->to_str (true);
+    ret = x->to_str (q);
     return ret;
   }
 
@@ -1060,6 +1060,26 @@ namespace pub3 {
     return r;
   }
   
+  //-----------------------------------------------------------------------
+
+  str
+  expr_int_t::to_str (bool js_safe) const
+  {
+    str ret;
+    if (js_safe && ok_pub3_json_int_bitmax > 0) {
+      int64_t x = 1;
+      x = x << ok_pub3_json_int_bitmax;
+      int64_t n = x * -1;
+      if (_val >= x || _val <= n) {
+	ret = strbuf ("\"%" PRId64 "\"", _val);
+      }
+    }
+    if (!ret) {
+      ret = strbuf ("%" PRId64, _val);
+    }
+    return ret;
+  }
+  
   //====================================================================
   
   scalar_obj_t
@@ -1092,6 +1112,25 @@ namespace pub3 {
     }
     return ret;
   }
+ 
+  //-----------------------------------------------------------------------
+
+  str
+  expr_uint_t::to_str (bool js_safe) const
+  {
+    str ret;
+    if (js_safe && ok_pub3_json_int_bitmax > 0) {
+      u_int64_t x = 1;
+      x = x << ok_pub3_json_int_bitmax;
+      if (_val >= x) {
+	ret = strbuf ("\"%" PRIu64 "\"", _val);
+      }
+    }
+    if (!ret) {
+      ret = strbuf ("%" PRIu64, _val);
+    }
+    return ret;
+  }
 
   //====================================================================
   
@@ -1103,6 +1142,18 @@ namespace pub3 {
     return so;
   }
 
+  //-----------------------------------------------------------------------
+  
+  str
+  pub3::expr_double_t::to_str (bool q) const
+  {
+#define BUFSZ 128
+    char buf[BUFSZ];
+    snprintf (buf, BUFSZ, "%g", _val);
+#undef BUFSZ
+    return buf;
+  }
+  
   //====================================================================
 
   void
@@ -1792,7 +1843,7 @@ namespace pub3 {
     str ret;
 
     while ((key = it.next (&val))) {
-      str vs = expr_t::safe_to_str (val);
+      str vs = expr_t::safe_to_str (val, true);
       str ks = json::quote (*key);
       strbuf b ("%s : %s", ks.cstr (), vs.cstr ());
       v.push_back (b);

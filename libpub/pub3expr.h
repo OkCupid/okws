@@ -648,7 +648,6 @@ namespace pub3 {
   class expr_number_t : public expr_constant_t {
   public:
     expr_number_t () : expr_constant_t () {}
-    str to_str (bool q = false) const { return to_scalar ().to_str (); }
   };
 
   //-----------------------------------------------------------------------
@@ -666,6 +665,7 @@ namespace pub3 {
     bool to_uint (u_int64_t *u) const;
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
+    str to_str (bool q = false) const;
 
     static ptr<expr_int_t> alloc (int64_t i);
 
@@ -692,6 +692,7 @@ namespace pub3 {
     int64_t to_int () const;
     bool to_int (int64_t *i) const;
     bool to_uint (u_int64_t *u) const { *u = _val; return true; }
+    str to_str (bool q = false) const;
 
     scalar_obj_t to_scalar () const;
 
@@ -715,6 +716,7 @@ namespace pub3 {
     bool to_bool () const { return _val != 0; }
     double to_double () const { return _val; }
     scalar_obj_t to_scalar () const;
+    str to_str (bool q = false) const;
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_double_t"; }

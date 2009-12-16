@@ -776,6 +776,7 @@ okld_t::parse_file (const str &cf)
     .add ("AhttpconZombieWarn", &ok_ahttpcon_zombie_warn)
     .add ("AhttpconZombieTimeout", &ok_ahttpcon_zombie_timeout, 
 	  time_t (0), time_t (INT_MAX))
+    .add ("JsonIntBitMax", &ok_pub3_json_int_bitmax, -4, 128)
 
     .ignore ("OkMgrSocketOwner")
     .ignore ("StatPageURL")
@@ -965,7 +966,8 @@ okld_t::encode_env ()
     .insert ("sel", int (ok_sys_sel_policy))
     .insert ("nlb", ok_log_nbufs)
     .insert ("p3jse", ok_pub3_json_strict_escaping)
-    .insert ("lqm", ok_listen_queue_max);
+    .insert ("lqm", ok_listen_queue_max)
+    .insert ("jsibm", ok_pub3_json_int_bitmax);
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();

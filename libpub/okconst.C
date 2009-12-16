@@ -301,6 +301,7 @@ const char *ok_pub3_treestat_heartbeat = ".treestat_heartbeat";
 // pub3 constants
 //
 bool ok_pub3_json_strict_escaping = true;
+int  ok_pub3_json_int_bitmax = 52;
 
 //
 // Turn off SUIO recyling by default.  This is a trick to save time in
