@@ -342,7 +342,7 @@ public:
   // can overide this on a service-by-service basis
   virtual bool init_pub (u_int opts = 0);
   virtual void launch_pub (evb_t ev, CLOSURE);
-  virtual void post_launch_pub (evb_t ev, CLOSURE) { ev->trigger (true); }
+  virtual void post_launch_pub (evb_t ev) { ev->trigger (true); }
 
   virtual ptr<pub3::remote_publisher_t> pub3 () { return _pub3; }
   virtual ptr<const pub3::remote_publisher_t> pub3 () const { return _pub3; }
@@ -711,7 +711,8 @@ public:
   virtual void custom_init0 (cbv cb) { (*cb) (); }
   virtual void init_constants () {}
 
-  virtual void post_launch_pub (evb_t ev, CLOSURE);
+  virtual void post_launch_pub (evb_t ev) { post_launch_pub_T (ev); }
+  void post_launch_pub_T (evb_t ev, CLOSURE);
 
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }

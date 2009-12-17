@@ -1414,7 +1414,7 @@ ok_httpsrv_t::launch_pub (evb_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-oksrvc_t::post_launch_pub (evb_t ev)
+oksrvc_t::post_launch_pub_T (evb_t ev)
 {
   tvars {
     clnt_stat s;
