@@ -15,6 +15,16 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<file_t>
+  file_t::raw_alloc (ptr<metadata_t> m, zstr z, opts_t o)
+  {
+    location_t l (m->jailed_filename (), 1);
+    ptr<zone_raw_t> zone = zone_raw_t::alloc (l, z);
+    return New refcounted<file_t> (m, zone, o);
+  }
+
+  //-----------------------------------------------------------------------
+
   void
   file_t::init_xdr_opaque ()
   {

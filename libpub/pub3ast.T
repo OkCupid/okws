@@ -54,6 +54,42 @@ namespace pub3 {
     return ev->trigger (v_publish_nonblock (p));
   }
 
+  //============================================= zone_raw_t ==============
+
+  zone_raw_t::zone_raw_t (location_t l, zstr z) : zone_t (l), _data (z) {}
+
+  //-----------------------------------------------------------------------
+
+  ptr<zone_raw_t> zone_raw_t::alloc (location_t l, zstr z) 
+  { return New refcounted<zone_raw_t> (l, z); }
+
+  //-----------------------------------------------------------------------
+
+  void 
+  zone_raw_t::v_dump (dumper_t *d) const
+  {
+    d->dump ("<binary data>", true);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool zone_raw_t::might_block_uncached () const { return false; }
+
+  //-----------------------------------------------------------------------
+
+  status_t 
+  zone_raw_t::v_publish_nonblock (publish_t *p) const
+  {
+    p->output (_data);
+    return XPUB_STATUS_OK;
+  }
+
+  //-----------------------------------------------------------------------
+ 
+  void
+  zone_raw_t::v_publish (publish_t *p, status_ev_t ev, ptr<closure_t> d) const
+  { ev->trigger (v_publish_nonblock (p)); }
+
   //============================================= zone_html_t =============
   
   bool

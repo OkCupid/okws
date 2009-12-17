@@ -118,6 +118,30 @@ namespace pub3 {
 
   //---------------------------------------------------------------------
 
+  bool
+  pub_parser_t::file2zstr (FILE *fp, zstr *out)
+  {
+    enum { BUFSZ = 8192 };
+    char buf [BUFSZ];
+    strbuf b;
+    bool ret = false;
+
+    while (!feof (fp) && !ferror (fp)) {
+      size_t sz = fread (buf, 1, BUFSZ, fp);
+      b.tosuio ()->copy (buf, sz);
+    }
+    
+    if (ferror (fp)) {
+      error (strbuf ("read failure in file: %m\n"), PARSE_EIO);
+    } else {
+      *out = zstr (str (b));
+      ret = true;
+    }
+    return ret;
+  }
+
+  //---------------------------------------------------------------------
+
   const vec<str> &pub_parser_t::get_errors () const 
   { return _ret->get_errors (); }
   vec<str> &pub_parser_t::get_errors () { return _ret->get_errors (); }
@@ -157,7 +181,14 @@ namespace pub3 {
 
     // Sanity check and call fopen()
     FILE *fp = open_file (rfn);
-    if (fp) {
+    if (!fp) {
+      /* noop */
+    } else if (opts & P_NOPARSE) {
+      zstr z;
+      if (file2zstr (fp, &z)) {
+	r->set_file (file_t::raw_alloc (d, z, opts));
+      }
+    } else {
       yy_buffer_state *yb = yy_create_buffer (fp, ok_pub3_yy_buffer_size);
       yy_push_html_state ();
       yy_switch_to_buffer (yb);
@@ -168,7 +199,7 @@ namespace pub3 {
       yy_delete_buffer (yb);
       fclose (fp);
 
-      r->set_file (file_t::alloc (d, _out));
+      r->set_file (file_t::alloc (d, _out, opts));
 
       _out = NULL;
     }

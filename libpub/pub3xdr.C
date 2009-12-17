@@ -21,7 +21,8 @@ zstr
 xdr_to_zstr (const xpub3_zstr_t &x)
 {
   str zs (x.zs.base (), x.zs.size ()); 
-  return zstr (x.s, zs, x.clev);
+  str ss (x.s.base (), x.s.size ());
+  return zstr (ss, zs, x.clev);
 }
 
 //-----------------------------------------------------------------------
@@ -1206,7 +1207,6 @@ pub3::zone_pub_t::zone_pub_t (const xpub3_zone_pub_t &z)
 ptr<pub3::zone_pub_t> pub3::zone_pub_t::alloc (const xpub3_zone_pub_t &x)
 { return New refcounted<zone_pub_t> (x); }
 
-
 //-----------------------------------------------------------------------
 
 bool
@@ -1317,6 +1317,28 @@ pub3::bindlist_t::to_xdr (xpub3_dict_t *x) const
     b.key = me.name ();
     expr_to_rpc_ptr (me.expr (), &b.val);
   }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+pub3::zone_raw_t::zone_raw_t (const xpub3_zone_raw_t &x)
+  : zone_t (x.lineno),
+    _data (xdr_to_zstr (x.data)) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_raw_t> pub3::zone_raw_t::alloc (const xpub3_zone_raw_t &x)
+{ return New refcounted<zone_raw_t> (x); }
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::zone_raw_t::to_xdr (xpub3_zone_t *z) const
+{
+  z->set_typ (XPUB3_ZONE_RAW);
+  z->zone_raw->lineno = lineno ();
+  zstr_to_xdr (_data, &z->zone_raw->data, Z_BEST_COMPRESSION);
   return true;
 }
 

@@ -40,6 +40,7 @@ namespace pub3 {
   class zone_pub_t;
   class zone_text_t;
   class statement_t;
+  class zone_raw_t;
   
   class zone_t : public ast_node_t {
   public:
@@ -71,33 +72,21 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class zone_html_t : public zone_container_t {
+  class zone_raw_t : public zone_t {
   public:
-    zone_html_t (location_t l);
-    zone_html_t (lineno_t l);
-    zone_html_t (const xpub3_zone_html_t &z);
-    void add (ptr<zone_t> z);
-    void add (str s);
-    void add (char ch);
-    ptr<zone_html_t> zone_html () { return mkref (this); }
-    static ptr<zone_html_t> alloc (ptr<zone_t> z);
-    static ptr<zone_html_t> alloc ();
-    static ptr<zone_html_t> alloc (const xpub3_zone_html_t &x);
-    bool preserve_white_space () const { return _preserve_white_space; }
-    void set_preserve_white_space (bool b) { _preserve_white_space = b; }
-    void unshift (str s);
+    zone_raw_t (location_t l, zstr s);
+    zone_raw_t (const xpub3_zone_raw_t &r);
+    static ptr<zone_raw_t> alloc (location_t l, zstr s);
+    static ptr<zone_raw_t> alloc (const xpub3_zone_raw_t &x);
     bool to_xdr (xpub3_zone_t *z) const;
     void v_dump (dumper_t *d) const;
-    const char *get_obj_name () const { return "zone_html_t"; }
-
+    const char *get_obj_name () const { return "zone_raw_t"; }
   protected:
     bool might_block_uncached () const;
     status_t v_publish_nonblock (publish_t *p) const;
     void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
-
-    ptr<zone_text_t> push_zone_text ();
   private:
-    bool _preserve_white_space;
+    zstr _data;
   };
 
   //-----------------------------------------------------------------------
@@ -134,6 +123,38 @@ namespace pub3 {
     // otherwise, here are the buffers to use:
     mutable zstr _original;
     mutable zstr _wss;
+  };
+
+
+  //-----------------------------------------------------------------------
+
+  class zone_html_t : public zone_container_t {
+  public:
+    zone_html_t (location_t l);
+    zone_html_t (lineno_t l);
+    zone_html_t (const xpub3_zone_html_t &z);
+    void add (ptr<zone_t> z);
+    void add (str s);
+    void add (char ch);
+    ptr<zone_html_t> zone_html () { return mkref (this); }
+    static ptr<zone_html_t> alloc (ptr<zone_t> z);
+    static ptr<zone_html_t> alloc ();
+    static ptr<zone_html_t> alloc (const xpub3_zone_html_t &x);
+    bool preserve_white_space () const { return _preserve_white_space; }
+    void set_preserve_white_space (bool b) { _preserve_white_space = b; }
+    void unshift (str s);
+    bool to_xdr (xpub3_zone_t *z) const;
+    void v_dump (dumper_t *d) const;
+    const char *get_obj_name () const { return "zone_html_t"; }
+
+  protected:
+    bool might_block_uncached () const;
+    status_t v_publish_nonblock (publish_t *p) const;
+    void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
+
+    ptr<zone_text_t> push_zone_text ();
+  private:
+    bool _preserve_white_space;
   };
 
   //-----------------------------------------------------------------------

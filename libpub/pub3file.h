@@ -89,6 +89,7 @@ namespace pub3 {
       : _metadata (m), _data_root (z), _opts (o) {}
     static ptr<file_t> alloc (const xpub3_file_t &file, opts_t o = 0);
     static ptr<file_t> alloc (ptr<metadata_t> m, ptr<zone_t> z, opts_t o = 0);
+    static ptr<file_t> raw_alloc (ptr<metadata_t> m, zstr z, opts_t o = 0);
     file_t (const xpub3_file_t &x, opts_t o = 0);
     void to_xdr (xpub3_file_t *x) const;
     ptr<const metadata_t> metadata () const { return _metadata; }

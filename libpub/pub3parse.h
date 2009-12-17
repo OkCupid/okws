@@ -104,6 +104,7 @@ namespace pub3 {
     void error (str d);
     void error ();
     void error (str d, parse_status_t code);
+    bool file2zstr (FILE *fp, zstr *out);
 
   protected:
     FILE *open_file (const str &fn);

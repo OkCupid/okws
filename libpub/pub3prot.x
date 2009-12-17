@@ -42,7 +42,7 @@ struct xpub3_fstat_t {
 %struct xpub3_zone_t;
 
 struct xpub3_zstr_t {
-  xpub_str_t s;
+  opaque s<>;
   opaque zs<>;
   int clev;
 };
@@ -256,6 +256,11 @@ struct xpub3_zone_text_t {
   xpub3_zstr_t wss_text;
 };
 
+struct xpub3_zone_raw_t {
+  int lineno;
+  xpub3_zstr_t data;
+};
+
 struct xpub3_zone_pub_t {
   int lineno;
   xpub3_statement_t statements<>;
@@ -271,7 +276,8 @@ enum xpub3_zone_typ_t {
     XPUB3_ZONE_HTML = 1,
     XPUB3_ZONE_TEXT = 2,
     XPUB3_ZONE_INLINE_EXPR = 3,
-    XPUB3_ZONE_PUB = 4
+    XPUB3_ZONE_PUB = 4,
+    XPUB3_ZONE_RAW = 5
 };
 
 union xpub3_zone_t switch (xpub3_zone_typ_t typ) {
@@ -283,6 +289,8 @@ case XPUB3_ZONE_INLINE_EXPR:
    xpub3_zone_inline_expr_t zone_inline;
 case XPUB3_ZONE_PUB:
    xpub3_zone_pub_t zone_pub;
+case XPUB3_ZONE_RAW:
+   xpub3_zone_raw_t zone_raw;
 default: 
    void;
 };
