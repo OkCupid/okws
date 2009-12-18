@@ -791,7 +791,7 @@ class TestCaseLoader:
         if self._config.command_line (): 
             ret = TestCaseLocal (self._config, d)
         else:
-            ret = TestCaseRemove (self._config, d)
+            ret = TestCaseRemote (self._config, d)
         return ret
 
     ##----------------------------------------
