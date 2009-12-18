@@ -242,6 +242,9 @@ pub3::zone_t::alloc (const xpub3_zone_t &z)
   case XPUB3_ZONE_PUB:
     r = zone_pub_t::alloc (*z.zone_pub);
     break;
+  case XPUB3_ZONE_RAW:
+    r = zone_raw_t::alloc (*z.zone_raw);
+    break;
   default:
     break;
   }

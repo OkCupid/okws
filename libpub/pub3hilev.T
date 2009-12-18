@@ -327,7 +327,9 @@ namespace pub3 {
     } else {
       ok = true;
       memcpy (buf + offset, res.chunk->data.base (), res.chunk->data.size ());
-
+      warn << "HH: " << offset << " -> " 
+	   << hexdump (res.chunk->data.base (), 20)
+	   << "\n";
     }
     ev->trigger (ok);
   }
@@ -360,6 +362,8 @@ namespace pub3 {
       ptr<bool> nok;
     }
 
+    memset (buf, 0xcd, dsz);
+
     for ( ; (i < dsz || nrecv < nsent) && ok; i += _maxsz) {
 
       if (i < dsz && nsent - nrecv < ws) {
@@ -376,13 +380,16 @@ namespace pub3 {
       }
     }
 
+    buf.setlen (dsz);
+
     if (!ok) {
       rv.cancel ();
       m = "Not all chunks retrieved"; 
     } else {
       char h[PUBHASHSIZE];
       sha1_hash (h, buf.cstr (), buf.len ());
-      if (memcmp (h, hdr.xdrhash.base (), PUBHASHSIZE)) {
+      warn << "JJJ: " << hexdump (h, 20) << "\n";
+      if (memcmp (h, hdr.xdrhash.base (), PUBHASHSIZE) != 0) {
 	m = "Hash mismatch";
       } else if (!str2xdr (*file, buf)) {
 	m = "Demarshall of chunks failed";

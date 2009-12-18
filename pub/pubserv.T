@@ -188,7 +188,9 @@ namespace pub3 {
       res.chunk->offset = arg->offset;
       ssize_t r = f->get_chunk (arg->offset, res.chunk->data.base (), 
 				arg->size);
-      res.chunk->offset = arg->offset;
+      warn << "GG: " << arg->offset << " -> " 
+	   << hexdump (res.chunk->data.base (), 20)
+	   << "\n";
       if (r != ssize_t (arg->size)) {
 	res.set_status (XPUB_STATUS_ERR) ;
 	*res.error = "Datasize overflow";
@@ -231,6 +233,7 @@ namespace pub3 {
 	res.file->set_mode (XPUB_XFER_CHUNKED);
 	res.file->chunked->datasize = sz;
 	f->get_xdr_hash (&res.file->chunked->xdrhash);
+	f->metadata ()->hash ().to_xdr (&res.file->chunked->dathash);
 	res.file->chunked->leasetime = file_lookup ()->hold_chunks (f);
       } else {
 	res.file->set_mode (XPUB_XFER_WHOLE);

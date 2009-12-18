@@ -411,6 +411,7 @@ namespace pub3 {
   {
     bool ret (false);
     srv_cache_key_t k (h, opts);
+    warn << "getting file: " << k.to_str () << "\n";
     srv_cached_getfile_t *cgf = _getfile_cache[k];
     if (cgf) {
       if (f) *f = cgf->_file;
@@ -434,6 +435,7 @@ namespace pub3 {
 			      str em) 
   {
     srv_cache_key_t k (h, opts);
+    warn << "caching file: " << k.to_str () << "\n";
     if (f) {
       _badfile_cache.remove (k);
       _getfile_cache.insert (srv_cached_getfile_t (f));
@@ -455,9 +457,20 @@ namespace pub3 {
       int opts;
     } tmp;
 
+    memset (&tmp, 0, sizeof (tmp));
     memcpy (tmp.buf, _filehash->buf (), PUBHASHSIZE);
     tmp.opts = _opts;
     return hash_bytes (reinterpret_cast<const void *> (&tmp), sizeof (tmp));
+  }
+
+  //-----------------------------------------------------------------------
+
+  str
+  srv_cache_key_t::to_str () const
+  {
+    strbuf b;
+    b << _filehash->to_str () << ":" << _opts << " (" << _hshkey << ")";
+    return b;
   }
 
   //-----------------------------------------------------------------------
@@ -471,7 +484,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<file_t>
-  srv_cache_t::get_chunks (ptr<fhash_t> h, u_int opts)
+  srv_cache_t::get_chunks (ptr<fhash_t> h, opts_t opts)
   {
     ptr<file_t> ret;
     getfile (h, opts, &ret, NULL, NULL);
@@ -495,7 +508,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<file_t> 
-  chunkholder_t::get_chunks (ptr<fhash_t> h, u_int opts)
+  chunkholder_t::get_chunks (ptr<fhash_t> h, opts_t opts)
   {
     srv_cache_key_t k (h, opts);
     srv_cached_getfile_t *cfg = _chunk_cache[k];

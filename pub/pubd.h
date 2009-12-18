@@ -53,6 +53,7 @@ namespace pub3 {
     operator hash_t () const { return _hshkey; }
     bool operator== (const srv_cache_key_t &k) const 
     { return _opts == k._opts && *_filehash == *k._filehash; }
+    str to_str () const;
     
     ptr<const fhash_t> _filehash;
     u_int _opts;
@@ -283,7 +284,7 @@ namespace pub3 {
       _chunk_cache (ok_pub3_chunk_lease_time, true) {}
 
     int hold_chunks (ptr<file_t> p);
-    ptr<file_t> get_chunks (ptr<fhash_t> h, u_int opts);
+    ptr<file_t> get_chunks (ptr<fhash_t> h, opts_t opts);
     static ptr<chunkholder_t> alloc ();
   private:
     timehash_t<srv_cache_key_t, srv_cached_getfile_t> _chunk_cache;
@@ -315,7 +316,7 @@ namespace pub3 {
     static ptr<srv_cache_t> alloc ();
 
     int hold_chunks (ptr<file_t> p) ;
-    ptr<file_t> get_chunks (ptr<fhash_t> h, u_int opts);
+    ptr<file_t> get_chunks (ptr<fhash_t> h, opts_t opts);
 
     void set_ts_files (const str &s, const str &h)
     {
