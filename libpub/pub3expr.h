@@ -33,6 +33,7 @@ namespace pub3 {
 
   typedef event<ptr<const expr_t> >::ref cxev_t;
   typedef event<ptr<const expr_dict_t> >::ref cdev_t;
+  typedef event<ptr<expr_list_t> >::ref xlev_t;
   typedef event<ptr<mref_t> >::ref mrev_t;
 
   //-----------------------------------------------------------------------

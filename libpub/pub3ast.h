@@ -289,6 +289,7 @@ namespace pub3 {
     virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<expr_list_t> eval_list (publish_t *p) const;
+    void pub_list (publish_t *p, xlev_t ev, CLOSURE) const;
     str _iter;
     ptr<expr_t> _arr;
     ptr<zone_t> _body;

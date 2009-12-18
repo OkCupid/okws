@@ -4,6 +4,33 @@
 
 namespace rfn3 {
 
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  decorate_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<expr_list_t> out = expr_list_t::alloc ();
+    ptr<const expr_list_t> in = args[0]._l;
+    size_t len = in ? in->size () : size_t (0);
+    for (size_t i = 0; i < len; i++) {
+      ptr<const expr_t> x = (*in)[i];
+      ptr<const expr_dict_t> xd;
+      ptr<expr_t> el;
+      if (!x) { el = expr_null_t::alloc (); }
+      else if ((xd = x->to_dict ())) {
+	ptr<expr_dict_t> nxd = xd->copy_dict ();
+	nxd->insert ("iter", expr_int_t::alloc (i));
+	nxd->insert ("odd", expr_bool_t::alloc (i % 2 != 0));
+	nxd->insert ("even", expr_bool_t::alloc (i % 2 == 0));
+	nxd->insert ("count", expr_int_t::alloc (len));
+	nxd->insert ("first", expr_bool_t::alloc (i == 0));
+	nxd->insert ("last", expr_bool_t::alloc (len - 1 == i));
+	el = nxd;
+      }
+      out->push_back (el);
+    }
+    return out;
+  }
 
   //-----------------------------------------------------------------------
 

@@ -122,6 +122,8 @@ namespace pub3 {
     bool to_str (str *s) const;
     bool to_bool (bool *b) const;
 
+    ptr<vec<str> > keys () const;
+
     str to_str () const;
     bool to_bool () const;
     int64_t to_int () const;

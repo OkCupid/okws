@@ -684,6 +684,24 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  tamed void
+  for_t::pub_list (publish_t *p, xlev_t ev) const
+  {
+    tvars {
+      bool old_silent (p->set_silent (true));
+      ptr<mref_t> m;
+      ptr<expr_t> x;
+      ptr<expr_list_t> ret;
+    }
+    twait { _arr->pub_to_ref (p, mkevent (m)); }
+    if (m) x = m->get_value ();
+    if (x) ret = x->to_list ();
+    p->set_silent (old_silent);
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
   void
   for_t::err_empty (publish_t *p) const
   {
@@ -779,7 +797,8 @@ namespace pub3 {
       size_t stcksz;
     }
 
-    v = eval_list (p);
+    twait { pub_list (p, mkevent (v)); }
+
     if (!v && !_empty) {
       err_empty (p);
       

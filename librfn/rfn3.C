@@ -44,6 +44,10 @@ namespace rfn3 {
     F(keys);
     F(items);
     F(json2pub);
+    F(now);
+    F(days_from_now);
+    F(time_from_now);
+    F(decorate);
     F(is_null);
     F(default);
 

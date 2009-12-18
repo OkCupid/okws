@@ -87,7 +87,6 @@ oksrvc_static_t::post_launch_pub_T (evb_t ev)
     pub3 ()->run_cfg (MIME_TYPES_FILE, mkevent (res3), NULL, o);
   }
   d = pub3 ()->pub3_config_obj ();
-  warn << "CFGS: " << d.to_str() << "\n";
 
   if (res3) {
     _mtm = New mime_type_map_t (d("MimeTypes"));

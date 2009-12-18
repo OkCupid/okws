@@ -1843,8 +1843,8 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  ptr<expr_t>
-  expr_dict_t::deep_copy () const
+  ptr<expr_dict_t>
+  expr_dict_t::copy_dict () const
   {
     const_iterator_t it (*this);
     const str *key;
@@ -1858,6 +1858,10 @@ namespace pub3 {
     }
     return ret;
   }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> expr_dict_t::deep_copy () const { return copy_dict (); }
 
   //--------------------------------------------------------------------
 

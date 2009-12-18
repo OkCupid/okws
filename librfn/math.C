@@ -13,8 +13,12 @@ namespace rfn3 {
     u_int64_t l = 0;
     u_int64_t h = def_range;
 
-    if (args.size () > 0) { l = args[0]._u; }
-    if (args.size () > 1) { l = args[1]._u; }
+    if (args.size () == 2) {
+      l = args[0]._u;
+      h = args[1]._u;
+    } else if (args.size () == 1) {
+      h = args[0]._u;
+    }
 
     int64_t d = h - l;
 

@@ -60,6 +60,11 @@ namespace rfn3 {
   PUB3_COMPILED_FN(keys, "d");
   PUB3_COMPILED_FN(items, "d");
   PUB3_COMPILED_FN(json2pub, "s");
+  PUB3_COMPILED_FN(now, "");
+  PUB3_COMPILED_FN(time_format, "s|u");
+  PUB3_COMPILED_FN(days_from_now, "i");
+  PUB3_COMPILED_FN(time_from_now, "|iiii"); // D,H,M,S args
+  PUB3_COMPILED_FN(decorate, "l");
 
   PUB3_COMPILED_HANDROLLED_FN(is_null);
   PUB3_COMPILED_HANDROLLED_FN(append);

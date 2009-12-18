@@ -98,6 +98,23 @@ namespace pub3 {
     return r;
   }
 
+  //-----------------------------------------------------------------------
+
+  ptr<vec<str> >
+  const_obj_t::keys () const
+  {
+    ptr<const expr_dict_t> d = to_dict ();
+    ptr<vec<str> > ret;
+    if (d) {
+      expr_dict_t::const_iterator_t it (*d);
+      const str *key;
+      while ((key = it.next ())) {
+	ret->push_back (*key);
+      }
+    }
+    return ret;
+  }
+
   //=======================================================================
 
   obj_t

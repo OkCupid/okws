@@ -95,59 +95,65 @@ namespace pub3 {
   {
     vec<str> err;
     
-    const char *cp = _arg_pat;
+    const char *cp;
     size_t i = 0;
     bool pipe = false;
 
     size_t min_args = 0, max_args = 0;
 
-    for ( ; *cp && i < args.size (); cp++) {
-      bool adv = true;
+    for (cp = _arg_pat; *cp ; cp++) {
       arg_t a;
+      bool ib = i < args.size (); 
+
+      // only advance in the arg is in bounds.  
+      // and then, maybe it won't work.
+      bool adv = ib;
 
       switch (*cp) {
 	
       case 'i':
-	if (!args[i]->to_int (&a._i)) {
+	if (ib && !args[i]->to_int (&a._i)) {
 	  strbuf b ("argument %zd: expected an integer", i);
 	  err.push_back (b);
 	}
 	break;
 	
       case 'u': 
-	if (!args[i]->to_uint (&a._u)) {
+	if (ib && !args[i]->to_uint (&a._u)) {
 	  strbuf b ("argument %zd: expected an unsigned int", i);
 	  err.push_back (b);
 	}
 	break;
 
       case 's': 
-	if (!(a._s = args[i]->to_str ())) {
+	if (ib && !(a._s = args[i]->to_str ())) {
 	  strbuf b ("argument %zd: expected a string", i);
 	  err.push_back (b);
 	}
 	break;
 
       case 'O':  
-	a._O = args[i];
+	if (ib) {
+	  a._O = args[i];
+	}
 	break;
 
       case 'r':
-	if (!(a._r = args[i]->to_regex ())) {
+	if (ib && !(a._r = args[i]->to_regex ())) {
 	  strbuf b ("argument %zd: expected a regex", i);
 	  err.push_back (b);
 	}
 	break;
 
       case 'd':
-	if (!(a._d = args[i]->to_dict ())) {
+	if (ib && !(a._d = args[i]->to_dict ())) {
 	  strbuf b ("argument %zd: expected a dict", i);
 	  err.push_back (b);
 	}
 	break;
 
       case 'l':
-	if (!(a._l = args[i]->to_list ())) {
+	if (ib && !(a._l = args[i]->to_list ())) {
 	  strbuf b ("argument %zd: expected a list", i);
 	  err.push_back (b);
 	}
@@ -179,7 +185,7 @@ namespace pub3 {
 
     }
 
-    if (*cp || i < args.size ()) {
+    if (args.size () < min_args || args.size () > max_args) {
       str ex;
       if (min_args == max_args) {
 	ex = strbuf ("%zd", min_args);
@@ -206,6 +212,7 @@ namespace pub3 {
   {
     for (size_t i = 0; i < _functions.size (); i++) {
       ptr<compiled_fn_t> f = _functions[i];
+      warn << "binding: " << f->name () << "\n";
       t->insert (f->name (), f);
     }
   }

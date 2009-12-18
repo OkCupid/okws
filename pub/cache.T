@@ -411,7 +411,9 @@ namespace pub3 {
   {
     bool ret (false);
     srv_cache_key_t k (h, opts);
-    warn << "getting file: " << k.to_str () << "\n";
+
+    OKDBG3(PUB3_CACHE, CHATTER, strbuf ("getting file: ") << k.to_str ());
+
     srv_cached_getfile_t *cgf = _getfile_cache[k];
     if (cgf) {
       if (f) *f = cgf->_file;
@@ -435,7 +437,7 @@ namespace pub3 {
 			      str em) 
   {
     srv_cache_key_t k (h, opts);
-    warn << "caching file: " << k.to_str () << "\n";
+    OKDBG3(PUB3_CACHE, CHATTER, strbuf ("caching file: ") <<  k.to_str ());
     if (f) {
       _badfile_cache.remove (k);
       _getfile_cache.insert (srv_cached_getfile_t (f));
