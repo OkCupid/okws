@@ -624,13 +624,11 @@ default:
   void;
 };
 
-union xpub3_getfile_res_t switch (xpub_status_typ_t status) {
+union xpub3_getfile_res_t switch (xpub_status_typ_t code) {
 case XPUB_STATUS_OK:
   xpub3_xfered_file_t file;
-case XPUB_STATUS_ERR:
-  string error<>;
 default:
-  void;
+  xpub_status_t error_status;
 };
 
 union xpub3_get_root_config_res_t switch (xpub_status_typ_t status) {

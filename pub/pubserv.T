@@ -218,10 +218,8 @@ namespace pub3 {
 
     if (!f) {
       assert (s.status != XPUB_STATUS_OK);
-      res.set_status (s.status);
-      if (s.status == XPUB_STATUS_ERR) {
-	*res.error = *s.error;
-      }
+      res.set_code (s.status);
+      *res.error_status = s;
     } else {
       f->init_xdr_opaque ();
       sz = f->xdr_len ();

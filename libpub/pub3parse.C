@@ -177,7 +177,7 @@ namespace pub3 {
 
     // must do this before trying to open the file (or anything else
     // for that matter).
-    _location.set_filename (rfn);
+    _location.set_filename (jfn);
 
     // Sanity check and call fopen()
     FILE *fp = open_file (rfn);

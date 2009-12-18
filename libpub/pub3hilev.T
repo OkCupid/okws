@@ -472,7 +472,7 @@ namespace pub3 {
 	*status.rpc_err = err;
       } else {
 
-	switch (res.status) {
+	switch (res.code) {
 
 	case XPUB_STATUS_OK:
 	  twait { getfile_body (nm, &res, mkevent (status, file), opts); }
@@ -501,22 +501,8 @@ namespace pub3 {
 	  }
 	  break;
 
-	case XPUB_STATUS_ERR:
-	  status.set_status (XPUB_STATUS_ERR);
-	  status.errors->push_back (*res.error);
-	  break;
-
 	default:
-	  warn << __FILE__ << ":" << __LOC__ 
-	       << ": unexpected error condition\n";
-	  strbuf b;
-	  b << nm << ": unspecified error";
-	  status.set_status (res.status);
-	  if (status.status == XPUB_STATUS_EIO) {
-	    status.errors->push_back (b);
-	  } else {
-	    *status.error = b;
-	  }
+	  status = *res.error_status;
 	  break;
 	}
       }
