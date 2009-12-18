@@ -188,9 +188,6 @@ namespace pub3 {
       res.chunk->offset = arg->offset;
       ssize_t r = f->get_chunk (arg->offset, res.chunk->data.base (), 
 				arg->size);
-      warn << "GG: " << arg->offset << " -> " 
-	   << hexdump (res.chunk->data.base (), 20)
-	   << "\n";
       if (r != ssize_t (arg->size)) {
 	res.set_status (XPUB_STATUS_ERR) ;
 	*res.error = "Datasize overflow";

@@ -364,7 +364,7 @@ namespace pub3 {
 
     memset (buf, 0xcd, dsz);
 
-    for ( ; (i < dsz || nrecv < nsent) && ok; i += _maxsz) {
+    for ( ; (i < dsz || nrecv < nsent) && ok;) {
 
       if (i < dsz && nsent - nrecv < ws) {
 	nsent ++;
@@ -373,6 +373,7 @@ namespace pub3 {
 
 	getchunk (hdr.dathash, opts, i, cs, buf.cstr (), 
 		  mkevent (rv, nok, *nok));
+	i += _maxsz;
       } else {
 	nrecv++;
 	twait (rv, nok);
@@ -388,7 +389,6 @@ namespace pub3 {
     } else {
       char h[PUBHASHSIZE];
       sha1_hash (h, buf.cstr (), buf.len ());
-      warn << "JJJ: " << hexdump (h, 20) << "\n";
       if (memcmp (h, hdr.xdrhash.base (), PUBHASHSIZE) != 0) {
 	m = "Hash mismatch";
       } else if (!str2xdr (*file, buf)) {
