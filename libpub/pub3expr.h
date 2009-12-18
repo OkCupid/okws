@@ -25,8 +25,9 @@ namespace pub3 {
   class expr_dict_t;
   class expr_list_t;
   class bindtab_t;
-  class call_t;   // declared in pub3func.h
+  class call_t;      // declared in pub3func.h
   class callable_t;  // declared in pub3func.h -- a custom-defined function
+  class metadata_t;  // declared in pub3file.h
 
   //-----------------------------------------------------------------------
 
@@ -69,6 +70,7 @@ namespace pub3 {
     lineno_t lineno () const { return _lineno; }
     static str safe_to_str (ptr<const expr_t> x, bool q = true);
     lineno_t dump_get_lineno () const { return lineno (); }
+    virtual void propogate_metadata (ptr<const metadata_t> md) {}
 
     //------- Evaluation ------------------------------------------
     //
@@ -186,6 +188,7 @@ namespace pub3 {
     // Copy a copy, get a copy?
     ptr<expr_t> copy () const;
     ptr<expr_t> deep_copy () const;
+    void propogate_metadata (ptr<const metadata_t> md);
     
   protected:
     ptr<expr_t> mutable_ptr ();
@@ -785,6 +788,7 @@ namespace pub3 {
     bool is_static () const;
     bool might_block_uncached () const;
     bool is_call_coercable () const { return false; }
+    void propogate_metadata (ptr<const metadata_t> md);
   private:
     bool fixup_index (ssize_t *ind, bool lax = false) const;
     mutable tri_bool_t _static;
@@ -844,6 +848,7 @@ namespace pub3 {
     str type_to_str () const { return "string"; }
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
+    void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<expr_list_t> _els;
 
@@ -970,6 +975,7 @@ namespace pub3 {
     ptr<expr_dict_t> copy_dict () const;
     bool is_static () const;
     bool might_block_uncached () const;
+    void propogate_metadata (ptr<const metadata_t> md);
   private:
     mutable tri_bool_t _static;
   }; 
@@ -991,6 +997,7 @@ namespace pub3 {
     void pub_to_ref (publish_t *pub, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t *pub, cxev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
+    void propogate_metadata (ptr<const metadata_t> md);
   private:
     ptr<mref_t> eval_to_ref_final (eval_t *e, ptr<mref_t> lhs,
 				   ptr<const expr_t> rhs) const;

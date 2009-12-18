@@ -32,6 +32,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void lambda_t::propogate_metadata (ptr<const metadata_t> md)
+  { _loc.set_filename (md->jailed_filename ()); }
+
+  //-----------------------------------------------------------------------
+
   ptr<lambda_t> lambda_t::alloc (ptr<identifier_list_t> il, ptr<zone_t> z)
   { return New refcounted<lambda_t> (il, z, location ()); }
 
@@ -198,6 +203,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void fndef_t::propogate_metadata (ptr<const metadata_t> md)
+  { if (_lambda) _lambda->propogate_metadata (md); }
+
+  //-----------------------------------------------------------------------
+
   ptr<fndef_t> fndef_t::alloc (str nm, ptr<lambda_t> d)
   { return New refcounted<fndef_t> (nm, d, location ()); }
 
@@ -214,6 +224,15 @@ namespace pub3 {
 
   ptr<call_t> call_t::alloc (ptr<expr_t> x, ptr<expr_list_t> l)
   { return New refcounted<call_t> (x, l, plineno ()); }
+
+  //----------------------------------------------------------------------
+
+  void
+  call_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_arglist) _arglist->propogate_metadata (md);
+    if (_fn) _fn->propogate_metadata (md);
+  }
 
   //----------------------------------------------------------------------
 

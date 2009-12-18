@@ -189,6 +189,7 @@ struct xpub3_assignment_t {
 
 struct xpub3_lambda_t {
    int lineno;
+   xpub3_str_t filename;
    xpub_fn_t name;
    xpub3_identifier_list_t params;
    xpub3_zone_t *body;

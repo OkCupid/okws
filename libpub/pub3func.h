@@ -45,6 +45,7 @@ namespace pub3 {
     ptr<const callable_t> to_callable () const { return mkref (this); }
     ptr<lambda_t> copy (eval_t *e) const;
     const char *get_obj_name () const { return "pub3::lambda_t"; }
+    void propogate_metadata (ptr<const metadata_t> md);
   protected:
     
     bool check_args (publish_t *p, args_t a) const;
@@ -90,6 +91,7 @@ namespace pub3 {
     bool to_xdr (xpub3_statement_t *x) const;
     const char *get_obj_name () const { return "fndef_t"; }
     void v_dump (dumper_t *d) const;
+    void propogate_metadata (ptr<const metadata_t> md);
   protected:
     str _name;
     ptr<lambda_t> _lambda;
@@ -122,6 +124,7 @@ namespace pub3 {
     void unshift_argument (ptr<expr_t> x);
     ptr<call_t> coerce_to_call () { return mkref (this); }
     void v_dump (dumper_t *d) const;
+    void propogate_metadata (ptr<const metadata_t> md);
 
   protected:
     void pub_prepare (publish_t *p, event<ptr<const callable_t> >::ref ev, 

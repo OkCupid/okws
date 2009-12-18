@@ -7,6 +7,7 @@
 #include "precycle.h"
 #include "pub3eval.h"
 #include "pub3parse.h"
+#include "pub3file.h"
 
 //-----------------------------------------------------------------------
 
@@ -70,7 +71,7 @@ pub3::json::quote (const str &s)
 
 namespace pub3 {
 
-  //=====================================================================
+  //============================== expr_t ================================
 
   // By default, we are already evaluated -- this is true for static
   // values like bools, strings, and integers.
@@ -403,6 +404,15 @@ namespace pub3 {
     ptr<const expr_t> x = const_ptr ();
     if (x) r = x->to_callable ();
     return r;
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_cow_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ptr<expr_t> mp = mutable_ptr ();
+    if (mp) { mp->propogate_metadata (md); }
   }
 
   //========================================= mref_dict_t ================
@@ -1165,6 +1175,18 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  void
+  expr_list_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    for (size_t i = 0; i < vec_base_t::size (); i++) {
+      ptr<expr_t> x = (*this)[i];
+      if (x) { x->propogate_metadata (md); }
+    }
+  }
+
+  //-----------------------------------------------------------------------
+  
   
   bool
   expr_list_t::is_static () const
@@ -1465,6 +1487,18 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void
+  expr_shell_str_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    for (size_t i = 0; _els && i < _els->size (); i++) {
+      ptr<expr_t> x = (*_els)[i];
+      if (x) x->propogate_metadata (md);
+    }
+
+  }
+
+  //--------------------------------------------------------------------
+
   bool
   expr_shell_str_t::might_block_uncached () const
   {
@@ -1726,6 +1760,18 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void
+  expr_dict_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    iterator_t it (*this);
+    ptr<expr_t> value;
+    while (it.next (&value)) {
+      if (value) value->propogate_metadata (md);
+    }
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<expr_dict_t>
   expr_dict_t::safe_copy (ptr<const expr_dict_t> in)
   {
@@ -1915,6 +1961,15 @@ namespace pub3 {
   ptr<expr_assignment_t> 
   expr_assignment_t::alloc (ptr<expr_t> l, ptr<expr_t> r)
   { return New refcounted<expr_assignment_t> (l, r, plineno ()); }
+
+  //---------------------------------------------------------------------
+
+  void
+  expr_assignment_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_lhs) _lhs->propogate_metadata (md);
+    if (_rhs) _rhs->propogate_metadata (md);
+  }
 
   //---------------------------------------------------------------------
   

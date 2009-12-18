@@ -31,6 +31,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  ast_node_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    _location.set_filename (md->jailed_filename ());
+  }
+
+  //-----------------------------------------------------------------------
+
   status_t ast_node_t::publish_nonblock (publish_t *p) const
   { return v_publish_nonblock (p); }
 
@@ -89,6 +97,17 @@ namespace pub3 {
   void
   zone_raw_t::v_publish (publish_t *p, status_ev_t ev, ptr<closure_t> d) const
   { ev->trigger (v_publish_nonblock (p)); }
+
+  //============================================= zone_conainer_t =========
+
+  void
+  zone_container_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    zone_t::propogate_metadata (md);
+    for (size_t i = 0; i < _children.size (); i++) {
+      _children[i]->propogate_metadata (md);
+    }
+  }
 
   //============================================= zone_html_t =============
   
@@ -325,14 +344,6 @@ namespace pub3 {
     }
   }
 
-  //-----------------------------------------------------------------------
-
-  void
-  zone_inline_expr_t::v_dump (dumper_t *d) const
-  {
-    s_dump (d, "expr:", _expr);
-  }
-
   //=======================================================================
 
   ptr<zone_inline_expr_t> zone_inline_expr_t::alloc (ptr<expr_t> x)
@@ -374,6 +385,22 @@ namespace pub3 {
     str s = _expr->eval_as_str (p);
     if (s) { p->output (s); }
     return res;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_inline_expr_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "expr:", _expr);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_inline_expr_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_expr) _expr->propogate_metadata (md);
   }
 
   //======================================================================
@@ -492,6 +519,17 @@ namespace pub3 {
     }
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  zone_pub_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    zone_t::propogate_metadata (md);
+    for (size_t i = 0; i < _statements.size (); i++) {
+      _statements[i]->propogate_metadata (md);
+    }
+  }
+
   //======================================================================
 
   ptr<statement_zone_t> 
@@ -533,6 +571,15 @@ namespace pub3 {
   statement_zone_t::v_dump (dumper_t *d) const
   {
     s_dump (d, "zone:", _zone);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  statement_zone_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_zone) { _zone->propogate_metadata (md); }
   }
 
   //======================================= expr_statement_t =============
@@ -582,6 +629,15 @@ namespace pub3 {
   expr_statement_t::v_dump (dumper_t *d) const
   {
     s_dump (d, "expr:", _expr);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  expr_statement_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_expr) { _expr->propogate_metadata (md); }
   }
 
   //================================================ for_t ================
@@ -779,6 +835,17 @@ namespace pub3 {
     s_dump (d, "empty:", _empty);
   }
 
+  //-----------------------------------------------------------------------
+
+  void
+  for_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_arr) { _arr->propogate_metadata (md); }
+    if (_body) { _body->propogate_metadata (md); }
+    if (_empty) { _empty->propogate_metadata (md); }
+  }
+
   //==================================================== if_t ==============
 
   bool
@@ -789,6 +856,26 @@ namespace pub3 {
       if ((*_clauses)[i]->might_block ()) { mb = true; }
     }
     return mb;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  if_clause_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_expr) { _expr->propogate_metadata (md); }
+    if (_body) { _body->propogate_metadata (md); }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  if_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    for (size_t i = 0; _clauses && i < _clauses->size (); i++) {
+      (*_clauses)[i]->propogate_metadata (md);
+    }
   }
 
   //-----------------------------------------------------------------------
@@ -915,6 +1002,15 @@ namespace pub3 {
   {
     return _tab && _tab->might_block ();
   }
+
+  //--------------------------------------------------------------------
+
+  void
+  decl_block_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_tab) _tab->propogate_metadata (md);
+  }
+
 
   //--------------------------------------------------------------------
 
@@ -1065,6 +1161,35 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
+  switch_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_key) _key->propogate_metadata (md);
+    if (_cases) _cases->propogate_metadata (md);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  case_list_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    for (size_t i = 0; i < size (); i++) {
+      (*this)[i]->propogate_metadata (md);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  case_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_key) _key->propogate_metadata (md);
+    if (_zone) _zone->propogate_metadata (md);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
   case_t::v_dump (dumper_t *d) const
   {
     s_dump (d, "key", _key);
@@ -1205,6 +1330,15 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  include_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    if (_file) _file->propogate_metadata (md);
+    if (_dict) _dict->propogate_metadata (md);
+  }
+
+  //-----------------------------------------------------------------------
+
   status_t
   include_t::v_publish_nonblock (publish_t *ev) const
   {
@@ -1282,6 +1416,15 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
+  void
+  print_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_args) _args->propogate_metadata (md);
+  }
+  
+  //-----------------------------------------------------------------------
+
   bool
   print_t::add (ptr<pub3::expr_list_t> l)
   {
@@ -1353,6 +1496,15 @@ namespace pub3 {
   bool return_t::might_block_uncached () const
   { return _val && _val->might_block (); }
   
+  //----------------------------------------------------------------------
+
+  void
+  return_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_val) _val->propogate_metadata (md);
+  }
+
   //----------------------------------------------------------------------
 
   status_t

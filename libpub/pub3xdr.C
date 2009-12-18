@@ -1038,7 +1038,15 @@ pub3::metadata_t::to_xdr (xpub3_metadata_t *x) const
 pub3::file_t::file_t (const xpub3_file_t &file, opts_t o)
   : _metadata (metadata_t::alloc (file.metadata)),
     _data_root (zone_t::alloc (file.root)),
-    _opts (o) {}
+    _opts (o) 
+{
+  // Some of the elements inside this file might need pieces of the
+  // metadata.  Like lambda's need the name of their containing files.
+  // So we'll propogate that data here.
+  if (_data_root) {
+    _data_root->propogate_metadata (_metadata);
+  }
+}
 
 //-----------------------------------------------------------------------
 
@@ -1141,8 +1149,15 @@ pub3::fndef_t::to_xdr (xpub3_statement_t *x) const
 
 pub3::lambda_t::lambda_t (const xpub3_lambda_t &l)
   : expr_t (l.lineno),
+    _loc (l.lineno),
+    _name (l.name),
     _params (xdr_to_idlist (l.params)),
-    _body (zone_t::alloc (l.body)) {}
+    _body (zone_t::alloc (l.body)) 
+{
+  if (l.filename.val.len ()) {
+    _loc.set_filename (l.filename.val);
+  }
+}
     
 //-----------------------------------------------------------------------
 
@@ -1155,6 +1170,8 @@ bool
 pub3::lambda_t::to_xdr (xpub3_lambda_t *l) const
 {
   l->lineno = _lineno;
+  if (_loc._filename) l->filename.val = _loc._filename;
+  if (_name) l->name = _name;
   idlist_to_xdr (*_params, &l->params);
   l->body.alloc ();
   _body->to_xdr (l->body);

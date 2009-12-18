@@ -25,6 +25,7 @@ namespace pub3 {
     lineno_t dump_get_lineno () const { return lineno (); }
 
     bool might_block () const;
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     virtual bool might_block_uncached () const = 0;
 
@@ -66,6 +67,7 @@ namespace pub3 {
     zone_container_t (location_t l) : zone_t (l) {}
     zone_container_t (lineno_t l) : zone_t (l) {}
     vec<ptr<zone_t> > *children () { return &_children; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     vec<ptr<zone_t> > _children;
   };
@@ -170,6 +172,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "zone_inline_expr_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     status_t v_publish_nonblock (publish_t *p) const;
     void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
@@ -204,6 +207,7 @@ namespace pub3 {
     bool handle_control (publish_t *p) const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "zone_pub_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
     
   protected:
     status_t v_publish_nonblock (publish_t *p) const;
@@ -236,6 +240,7 @@ namespace pub3 {
     void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "statement_zone_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<zone_t> _zone;
   };
@@ -256,6 +261,7 @@ namespace pub3 {
     void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "expr_statement_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<expr_t> _expr;
   };
@@ -280,6 +286,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "for_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<expr_list_t> eval_list (publish_t *p) const;
     str _iter;
@@ -317,6 +324,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "if_clause_t"; }
     lineno_t dump_get_lineno () const { return _lineno; }
     void v_dump (dumper_t *d) const;
+    virtual void propogate_metadata (ptr<const metadata_t> md);
 
   private:
     lineno_t _lineno;
@@ -348,6 +356,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "if_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   private:
     ptr<const zone_t> find_clause (publish_t *p) const;
     ptr<if_clause_list_t> _clauses;
@@ -368,6 +377,7 @@ namespace pub3 {
     virtual env_t::layer_type_t get_decl_type () const = 0;
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<bindlist_t> _bindings;
     ptr<expr_dict_t> _tab;
@@ -435,6 +445,7 @@ namespace pub3 {
     lineno_t dump_get_lineno () const { return _lineno; }
     const char *get_obj_name () const { return "case_t"; }
     void v_dump (dumper_t *d) const;
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     lineno_t _lineno;
     ptr<expr_t> _key;
@@ -451,6 +462,7 @@ namespace pub3 {
     static ptr<case_list_t> alloc (const xpub3_cases_t &x);
     void add_case (ptr<case_t> c);
     bool to_xdr (xpub3_cases_t *x) const;
+    void propogate_metadata (ptr<const metadata_t> md);
   };
 
   //-----------------------------------------------------------------------
@@ -468,6 +480,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "switch_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     ptr<const zone_t> find_case (publish_t *pub) const;
     bool populate_cases ();
@@ -493,6 +506,7 @@ namespace pub3 {
     virtual bool muzzle_output () const { return false; }
     void v_dump (dumper_t *d) const;
     virtual const char *get_obj_name () const { return "include_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   protected:
     bool to_xdr_base (xpub3_statement_t *x, xpub3_statement_typ_t typ) const;
     ptr<expr_t> _file;
@@ -528,6 +542,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "print_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
 
   private:
     ptr<pub3::expr_list_t> _args;
@@ -562,6 +577,7 @@ namespace pub3 {
     bool might_block_uncached () const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "return_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
   private:
     ptr<expr_t> _val;
   };
