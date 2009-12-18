@@ -327,9 +327,6 @@ namespace pub3 {
     } else {
       ok = true;
       memcpy (buf + offset, res.chunk->data.base (), res.chunk->data.size ());
-      warn << "HH: " << offset << " -> " 
-	   << hexdump (res.chunk->data.base (), 20)
-	   << "\n";
     }
     ev->trigger (ok);
   }

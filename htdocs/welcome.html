@@ -1,12 +1,11 @@
 
 <html>
 <head>
-<title>
-OKWS Welcome Page</title>
+<title>OKWS Welcome Page</title>
 </head>
 <body>
 <h1>OKWS Welcome Page</h1>
-{% include("lang/welcome.${LANG}.html") %}
+{% include("lang/welcome.%{LANG}.html") %}
 {% include("cipher.html") %}
 <hr>
 <h2>A Picture of a Boat</h2>
@@ -14,6 +13,6 @@ OKWS Welcome Page</title>
 <br /><br />
 <hr/>
 <h2>Language</h2>
-Your lang code: <b>${LANG}</b> (%{LANG})<br><br>
+Your lang code: <b>%{LANG}</b> (%{LANG})<br><br>
 </body>
 </html>
