@@ -40,8 +40,11 @@ namespace rfn3 {
   type_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     str ret;
-    if (!(ret = args[0]._O->type_to_str ())) {
-      ret = "object";
+    ptr<const expr_t> x;
+    if (!(x = args[0]._O)) {
+      ret = "undef";
+    } else { 
+      ret = x->type_to_str ();
     }
     return expr_str_t::alloc (ret);
   }

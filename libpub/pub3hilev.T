@@ -67,6 +67,8 @@ namespace pub3 {
 
     pub.set_opts (opts);
     pub.set_pub_iface (mkref (this));
+    if (d)
+      pub.env ()->push_locals (d, false);
 
     twait { publish (&pub, fn, mkevent (status, file)); }
 

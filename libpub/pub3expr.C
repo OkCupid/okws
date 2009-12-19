@@ -155,8 +155,7 @@ namespace pub3 {
     ptr<const expr_t> x = eval_to_val (e);
     str ret;
     if (x) {
-      bool q = !x->is_str ();
-      ret = x->to_str (q);
+      ret = x->to_str (false);
     }
     return ret;
   }
@@ -1378,7 +1377,7 @@ namespace pub3 {
     vec<str> v;
     size_t sz = size ();
     for (size_t i = 0; i < sz; i++) {
-      v.push_back (expr_t::safe_to_str ((*this)[i]));
+      v.push_back (expr_t::safe_to_str ((*this)[i], true));
     }
     str ret = vec2str (v, '[', ']');
     return ret;
@@ -2046,6 +2045,18 @@ namespace pub3 {
     ptr<const expr_t> p = const_ptr ();
     bool ret = false;
     if (p) { ret = p->to_xdr (x); } 
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  str
+  expr_cow_t::type_to_str () const
+  {
+    str ret;
+    ptr<const expr_t> x = const_ptr ();
+    if (!x) { ret = "undef"; }
+    else { ret = x->type_to_str (); }
     return ret;
   }
 

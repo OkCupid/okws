@@ -212,8 +212,9 @@ namespace pub3 {
   {
     for (size_t i = 0; i < _functions.size (); i++) {
       ptr<compiled_fn_t> f = _functions[i];
-      warn << "binding: " << f->name () << "\n";
-      t->insert (f->name (), f);
+      str n = f->name ();
+      OKDBG3(PUB_RFN3, CHATTER, strbuf ("binding library function: ") << n);
+      t->insert (n, f);
     }
   }
 

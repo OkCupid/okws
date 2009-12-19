@@ -69,7 +69,7 @@ namespace pub3 {
     static ptr<expr_t> safe_copy (ptr<const expr_t> in);
     static ptr<const expr_t> safe_expr (ptr<const expr_t> in);
     lineno_t lineno () const { return _lineno; }
-    static str safe_to_str (ptr<const expr_t> x, bool q = true);
+    static str safe_to_str (ptr<const expr_t> x, bool q = false);
     lineno_t dump_get_lineno () const { return lineno (); }
     virtual void propogate_metadata (ptr<const metadata_t> md) {}
 
@@ -183,6 +183,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
     bool to_bool () const;
+    str type_to_str () const;
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
 
@@ -634,6 +635,7 @@ namespace pub3 {
     static ptr<expr_t> safe_alloc (str s);
 
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
+    str type_to_str () const { return "string"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_xdr (xpub3_json_t *j) const;

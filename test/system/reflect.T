@@ -75,6 +75,7 @@ okclnt_reflect_t::process_T (okclnt2_t::proc_ev_t ev)
     if (vars[i] && vars[i].len () && (val = cgi[vars[i]]) && val.len ())
       pub_obj (vars[i]).fancy_assign_to (val);
   }
+  warn << "XXXX : " << pub_obj.to_str () << "\n";
 
   if (file && file.len ()) {
     twait { 
