@@ -3,7 +3,7 @@ desc = "test the dictionary functions: items(), keys, values()"
 
 filedata = """
 {$
-    setle { d : { "a" : 1, "b" : [ 1, 2, 3], "c" : "C" } }
+    locals { d : { "a" : 1, "b" : [ 1, 2, 3], "c" : "C" } }
     print (join (",", keys (d)), "\n");
     for (p, items (d)) {
       print (p[0], " -> ", p[1], "\n");

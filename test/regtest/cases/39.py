@@ -5,9 +5,9 @@ desc = "test the url_escape() library function"
 
 filedata = """
 {$
-    setle { in : "%(test_str)s" }
-    setle { esc : in|url_escape }
-    setle { orig : esc|url_unescape }
+    locals { in : "%(test_str)s" }
+    locals { esc : in|url_escape }
+    locals { orig : esc|url_unescape }
     print esc, "\\n";
     print orig;
 $}""" % { "test_str" : test_str }

@@ -12,10 +12,9 @@ regex = "r<a+b?c+\\>?>"
 # an int.  sneaky, i know!
 #
 filedata = """
-{$ setl { v   : %s,
-          rxx : %s } $}
-
-{$ for (i, v) {
+{$ locals { v   : %s,
+            rxx : %s } 
+   for (i, decorate (v)) {
 
    print (i.iter + ": ")
 
@@ -27,7 +26,7 @@ filedata = """
 
 } $}
 
-{$ setl { x : "XXaabccc>YY" } $}
+{$ locals { x : "XXaabccc>YY" } $}
 %d: ${search(rxx,x) + 0}
 
 """ % (d, regex, len (inputs))
