@@ -82,10 +82,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  class regex_fn_t : public compiled_handrolled_fn_t {
+  class regex_fn_t : public patterned_fn_t {
   public:
-    regex_fn_t (str n) : compiled_handrolled_fn_t (libname, n) {}
-    ptr<const expr_t> v_eval_1 (publish_t *e, const cargs_t &args) const;
+    regex_fn_t (str n) : patterned_fn_t (libname, n, "ss|s") {}
+    ptr<const expr_t> v_eval_2 (publish_t *e, const vec<arg_t> &args) const;
     virtual bool match () const = 0;
   };
     

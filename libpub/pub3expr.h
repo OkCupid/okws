@@ -819,7 +819,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     static ptr<expr_regex_t> alloc (ptr<rxx>, str b, str o); 
 
-    str to_str () const { return _body; }
+    str to_str (bool q = false) const { return _body; }
     ptr<rxx> to_regex () const { return _rxx; }
     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
     

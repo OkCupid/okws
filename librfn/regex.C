@@ -4,53 +4,28 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t> 
-  regex_fn_t::v_eval_1 (publish_t *e, const cargs_t &args) const
+  ptr<const expr_t>
+  regex_fn_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    ptr<rxx> my_rxx;
-    str target;
+    str target, opts, body;
     ptr<const expr_t> ret;
-    bool ok = true;
-
+    body = args[0]._s;
     if (args.size () == 2) {
-      my_rxx = args[0]->to_regex ();
-      target = args[1]->to_str ();
-    } else if (args.size () == 3) {
-      str b = args[0]->to_str ();
-      str opts = args[1]->to_str ();
-      target = args[2]->to_str ();
-      if (b) {
-	my_rxx = str2rxx (e, b, opts);
-      }
+      target = args[1]._s;
     } else {
-      ok = false;
-      strbuf prob ("expected 2-3 arguments to %s; got %zu",
-		   _name.cstr (), args.size ());
-      report_error (e, prob);
+      target = args[2]._s;
+      opts = args[1]._s;
     }
-
-    if (!ok) {
-      /* noop */
-
-    } else if (!my_rxx) {
-      str b = args[0]->to_str ();
-      
-      if (b) { 
-	report_error (e, strbuf ("failed to compile regex: %s", b.cstr ()));
-      } else {
-	report_error (e, "null regex given");
-      }
-
-    } else if (!target) {
-      report_error (e, "null target given for regex operation");
-
+    ptr<rxx> x = str2rxx (p, body, opts);
+    if (!x) {
+      report_error (p, "cannot parse regular expression");
     } else {
-      bool b = match() ? my_rxx->match (target) : my_rxx->search (target);
+      bool b = match() ? x->match (target) : x->search (target);
       ret = expr_bool_t::alloc (b);
     }
     return ret;
   }
-  
-  //-----------------------------------------------------------------------
 
+  //-----------------------------------------------------------------------
 };
+
