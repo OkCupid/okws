@@ -364,6 +364,39 @@ namespace pub3 {
     ev->trigger (out);
   }
 
+  //========================================= expr_shell_str_t ============
+
+  tamed void
+  expr_shell_str_t::pub_to_val (publish_t *p, cxev_t ev) const
+  {
+    tvars {
+      ptr<expr_t> out;
+      vec<str> hold;
+      strbuf b;
+      size_t sz;
+      bool ok (true);
+      size_t i;
+      ptr<const expr_t> x;
+      str s;
+    }
+
+    if (_els) {
+      sz = _els->size ();
+      for (i = 0; ok && i < sz; i++) {
+	x = (*_els)[i];
+	if (x) { twait { x->pub_to_val (p, mkevent (x)); } }
+	if (x) { s = x->to_str (false); }
+	if (s) { 
+	  hold.push_back (s);
+	  b << s; 
+	}
+      }
+      if (ok) { out = expr_str_t::alloc (b); }
+    }
+    if (!out) { out = expr_null_t::alloc (); }
+    ev->trigger (out);
+  }
+
   //=======================================================================
 
 };

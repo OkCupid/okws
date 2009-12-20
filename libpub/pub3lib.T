@@ -105,9 +105,11 @@ namespace pub3 {
       arg_t a;
       bool ib = i < args.size (); 
 
+      bool adv = true;
+
       // only advance in the arg is in bounds.  
       // and then, maybe it won't work.
-      bool adv = ib;
+      bool push = ib;
 
       switch (*cp) {
 	
@@ -166,13 +168,13 @@ namespace pub3 {
 	} else {
 	  pipe = true;
 	}
-	adv = false;
+	adv = push = false;
 	break;
 
       default:
 	err.push_back (strbuf ("internal pattern error: bad character: %c", 
 			       *cp));
-	adv = false;
+	adv = push = false;
 	break;
       }
 
@@ -180,6 +182,8 @@ namespace pub3 {
 	max_args ++;
 	if (!pipe) min_args ++;
 	i++;
+      }
+      if (push) {
 	_checked->push_back (a);
       }
 

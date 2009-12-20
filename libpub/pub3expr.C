@@ -1549,7 +1549,7 @@ namespace pub3 {
       if (ok) { out = expr_str_t::alloc (b); }
     }
     
-    if (!out) { out = expr_str_t::alloc (expr_null_t::alloc ()->to_str ()); }
+    if (!out) { out = expr_null_t::alloc (); }
     
     return out;
   }
