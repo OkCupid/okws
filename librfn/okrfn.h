@@ -38,8 +38,6 @@ namespace rfn3 {
   PUB3_COMPILED_FN(join, "sl");
   PUB3_COMPILED_FN(range, "i|ii");
   PUB3_COMPILED_FN(split, "rs");
-  PUB3_COMPILED_FN(search, "rs");
-  PUB3_COMPILED_FN(match, "rs");
   PUB3_COMPILED_FN(tolower, "s");
   PUB3_COMPILED_FN(toupper, "s");
   PUB3_COMPILED_FN(html_escape, "s");
@@ -80,6 +78,31 @@ namespace rfn3 {
   protected:
     ptr<expr_t> eval_internal (publish_t *p, ptr<const expr_dict_t> m, 
 			       ptr<const expr_t> x) const;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class regex_fn_t : public compiled_handrolled_fn_t {
+  public:
+    regex_fn_t (str n) : compiled_handrolled_fn_t (libname, n) {}
+    ptr<const expr_t> v_eval_1 (publish_t *e, const cargs_t &args) const;
+    virtual bool match () const = 0;
+  };
+    
+  //-----------------------------------------------------------------------
+  
+  class match_t : public regex_fn_t {
+  public:
+    match_t () : regex_fn_t ("match") {}
+    bool match () const { return true; }
+  };
+    
+  //-----------------------------------------------------------------------
+
+  class search_t : public regex_fn_t {
+  public:
+    search_t () : regex_fn_t ("search") {}
+    bool match () const { return false; }
   };
 
   //-----------------------------------------------------------------------
