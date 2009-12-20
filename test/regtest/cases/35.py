@@ -3,9 +3,9 @@ d = "test addition on vectors!"
 
 f = """
 {$
-    setle { v1 : [ 1, 2, 3 ] }
-    setle { v2 : [ "dog", "cat", [ "turkey" ] ] }
-    setle { v3 : v1 + v2 + [ "pig" ] }
+    locals { v1 : [ 1, 2, 3 ] }
+    locals { v2 : [ "dog", "cat", [ "turkey" ] ] }
+    locals { v3 : v1 + v2 + [ "pig" ] }
 
     v3[0] = 10;
     print ("[" + join (",", [ v3, v1, "'" + (v1+v2)[v1[2]] + "'" ] ) + "]" )

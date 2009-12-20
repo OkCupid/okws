@@ -731,10 +731,8 @@ namespace pub3 {
       report_error (e, strbuf ("right-hand term of %s evaluates to null", op));
 
       // Two lists added (but not subtracted)
-    } else if ((l1 = e1->to_list ()) || (l2 = e2->to_list ())) {
-      if (!l1 || !l2) {
-	report_error (e, "addition on lists only works with 2 lists");
-      } else if (!_pos) { 
+    } else if ((l1 = e1->to_list ()) && (l2 = e2->to_list ())) {
+      if (!_pos) { 
 	report_error (e, "cannot subtract lists");
       } else {
 	ptr<expr_list_t> s = New refcounted<expr_list_t> (_lineno);
@@ -742,6 +740,9 @@ namespace pub3 {
 	*s += *l2;
 	out = s;
       }
+
+    } else if (e1->to_list () || e2->to_list ()) {
+      report_error (e, "addition on lists only works with 2 lists");
 
       // Two dicts added or subtracted
     } else if ((d1 = e1->to_dict ()) || (d2 = e2->to_dict ())) {

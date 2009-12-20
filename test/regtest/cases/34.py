@@ -3,8 +3,8 @@ d = "test of the append() library function"
 
 f ="""
 {$
-   setle { v  : [ 1, "hi" ] }
-   setle { x  : [ 1, 2, 3, 4 ] }
+   locals { v  : [ 1, "hi" ] }
+   locals { x  : [ 1, 2, 3, 4 ] }
    append (v, 3, { x : "y" }, "bye");
    append (v, 10, x);
    append (v[6], 20);

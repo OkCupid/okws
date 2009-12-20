@@ -3,7 +3,7 @@ desc = "basic test of the tag_escape() filter"
 
 filedata = """
 {$
-    setl { text: "here is some <b>text<div>and more</div></b>text <i>fin</i> & done" }
+    locals { text: "here is some <b>text<div>and more</div></b>text <i>fin</i> & done" }
 $}
 ${text|tag_escape}
 ${text|tag_escape|tag_escape}

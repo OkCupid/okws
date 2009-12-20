@@ -19,6 +19,7 @@ namespace rfn3 {
     F(len);
     F(type);
     F(join);
+    F(append);
     F(range);
     F(split);
     F(map);
