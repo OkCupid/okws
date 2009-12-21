@@ -1,5 +1,5 @@
 
-desc = "test XML/RPC Pub interface"
+desc = "test XML/RPC Pub interface (case 25.py from OKWS 2.1)"
 
 n = 10
 m = 5
@@ -9,7 +9,7 @@ v  = [ { "val" : range (i, i+m) }  for i in  range (0, n) ]
 ##-----------------------------------------------------------------------
 
 filedata = """
-{% for (o, objs) {{
+{% for (o, decorate (objs)) {{
     %{o.val} %{o.iter}
 }}
 %}
