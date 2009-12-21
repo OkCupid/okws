@@ -438,6 +438,7 @@ class TestCase:
         self._result = False
         self._script_path = None
         self._custom_fetch = None
+        self._nowss = False
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
@@ -665,6 +666,14 @@ RESULT_SKIPPED = -1
 
 ##=======================================================================
 
+def query_str (d):
+    s = ""
+    if d:
+        s = "?" + "=".join ([ "%s=%s" % p for p in d.items ()] )
+    return s
+
+##=======================================================================
+
 class TestCaseRemote (TestCase):
     """Test case that's fetched via HTTP, with the full end-to-end
     tests enabled."""
@@ -692,10 +701,14 @@ class TestCaseRemote (TestCase):
             n = self.name ()
         elif self._htdoc:
             n = self._htdoc
+
+        opts = {}
+        if self._nowss:
+            opts["nowss"] = 1
         
         if n:
             u = self._config.scratch_url ()
-            r =  "%s/%s.html" % (u, n)
+            r =  "%s/%s.html%s" % (u, n, query_str (opts))
         elif self._service:
             r = self._config.service_url (self._service)
         else:

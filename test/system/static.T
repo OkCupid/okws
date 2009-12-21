@@ -118,7 +118,8 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 {
   tvars {
     str in;
-    u_int opts (0);
+    bool wss (true);
+    pub3::opts_t opts (0);
     const mime_type_map_t *mtm;
     str sffx;
     str mime_type;
@@ -138,10 +139,12 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     first_time = false;
   }
 
-  if (cgi.blookup ("wss")) { opts |= pub3::P_WSS; }
+  if (cgi.blookup ("nowss")) { wss = false; }
   if (cgi.blookup ("viserr")) { opts |= pub3::P_VISERR; }
   if (cgi.blookup ("iinfo")) { opts |= pub3::P_IINFO; }
   if (cgi.blookup ("verbose")) { opts |= pub3::P_VERBOSE; }
+
+  if (wss) { opts |= pub3::P_WSS; }
 
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
