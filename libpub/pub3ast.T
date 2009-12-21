@@ -940,7 +940,8 @@ namespace pub3 {
       xpub_status_t status (XPUB_STATUS_OK);
       ptr<const zone_t> z;
     }
-    if ((z = find_clause (p))) {
+    twait { find_clause (p, mkevent (z)); }
+    if (z) {
       twait { z->publish (p, mkevent (status)); }
     }
     ev->trigger (status);
@@ -952,6 +953,46 @@ namespace pub3 {
   if_clause_t::fits (publish_t *p) const
   {
     return (!_expr || _expr->eval_as_bool (p));
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  if_clause_t::fits (publish_t *p, evb_t ev) const
+  {
+    tvars {
+      bool ret (true);
+    }
+    if (_expr) {
+      twait { _expr->pub_as_bool (p, mkevent (ret)); }
+    } 
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+  
+  tamed void
+  if_t::find_clause (publish_t *p, czev_t ev) const
+  {
+    tvars {
+      size_t len;
+      ptr<const if_clause_t> c;
+      ptr<const zone_t> ret;
+      bool found (false);
+      size_t i;
+    }
+
+    len = _clauses ? _clauses->size () : size_t (0) ;
+
+    for (i = 0; !found && i < len; i++) {
+      if ((c = (*_clauses)[i])) {
+	twait { c->fits (p, mkevent (found)); }
+	if (found) {
+	  ret = c->body ();
+	}
+      }
+    }
+    ev->trigger (ret);
   }
 
   //-----------------------------------------------------------------------

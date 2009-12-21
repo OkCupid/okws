@@ -62,6 +62,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  typedef event<ptr<const zone_t> >::ref czev_t;
+
+  //-----------------------------------------------------------------------
+
   class zone_container_t : public zone_t {
   public:
     zone_container_t (location_t l) : zone_t (l) {}
@@ -321,6 +325,7 @@ namespace pub3 {
     ptr<const zone_t> body () const { return _body; }
     bool might_block () const;
     bool fits (publish_t *p) const;
+    void fits (publish_t *p, evb_t ev, CLOSURE) const;
 
     const char *get_obj_name () const { return "if_clause_t"; }
     lineno_t dump_get_lineno () const { return _lineno; }
@@ -360,6 +365,7 @@ namespace pub3 {
     virtual void propogate_metadata (ptr<const metadata_t> md);
   private:
     ptr<const zone_t> find_clause (publish_t *p) const;
+    void find_clause (publish_t *p, czev_t ev, CLOSURE) const;
     ptr<if_clause_list_t> _clauses;
   };
 
