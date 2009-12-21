@@ -7,6 +7,23 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  enumerate_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<expr_list_t> out = expr_list_t::alloc ();
+    ptr<const expr_list_t> in = args[0]._l;
+    size_t len = in ? in->size () : size_t (0);
+    for (size_t i = 0; i < len; i++) {
+      ptr<expr_list_t> tuple = expr_list_t::alloc ();
+      tuple->push_back (expr_uint_t::alloc (i));
+      tuple->push_back (safe_copy ((*in)[i]));
+      out->push_back (tuple);
+    }
+    return out;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   decorate_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> out = expr_list_t::alloc ();

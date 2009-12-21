@@ -51,6 +51,7 @@ namespace rfn3 {
     F(decorate);
     F(isnull);
     F(default);
+    F(enumerate);
 
 #undef F
   }
