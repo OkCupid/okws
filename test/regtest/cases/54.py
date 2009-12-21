@@ -8,7 +8,7 @@ indices = "range(10,28,3)"
 d = { "v" : [ { "val" : i } for i in vals ] }
 
 filedata =  """
-{$ setl %s $}
+{$ locals %s $}
 {$ for (i, %s) {{ ${v[i].val} }} $}
 """ % (d, indices)
 
