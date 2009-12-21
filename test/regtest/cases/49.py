@@ -9,8 +9,8 @@ filedata="""
      *  C-style comments also work
      *  fine if that sort of things floats your baot.
      */
-     set { /*comment here */ x : "[[[[comment]]inX[[out]]inX]]",
-           y /* comment here */ : "[[[trips are gone]]]inY" } 
+     locals { /*comment here */ x : "[[[[comment]]inX[[out]]inX]]",
+             y /* comment here */ : "[[[trips are gone]]]inY" } 
 $}
 
 [[ in1 in2 in3 ${x} ${y} [[ out1 out2 [[ out3 ]] out4 ]] in4 [in5] 
