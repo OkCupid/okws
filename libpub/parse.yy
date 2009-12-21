@@ -102,7 +102,7 @@
 %type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 %type <p3expr> p3_constant_or_string p3_case_key_opt;
-%type <p3strbuf> p3_string_constant;
+%type <p3strbuf> p3_string_constant p3_string_constant_inner;
 %type <str> p3_string_constant_element;
  
 %type <bl> p3_equality_op p3_additive_op;
@@ -728,8 +728,10 @@ p3_string_element:
         }
 	;
 
-p3_string_constant: /* empty */ { $$ = pub3::expr_strbuf_t::alloc (); }
-        | p3_string_constant p3_string_constant_element
+p3_string_constant: '"' p3_string_constant_inner '"' { $$ = $2; }
+
+p3_string_constant_inner: /* empty */ { $$ = pub3::expr_strbuf_t::alloc (); }
+        | p3_string_constant_inner p3_string_constant_element
 	{
 	   $1->add ($2);
 	   $$ = $1;
