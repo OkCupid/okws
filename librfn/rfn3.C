@@ -49,7 +49,7 @@ namespace rfn3 {
     F(days_from_now);
     F(time_from_now);
     F(decorate);
-    F(is_null);
+    F(isnull);
     F(default);
 
 #undef F

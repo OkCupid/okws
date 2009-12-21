@@ -63,7 +63,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(time_from_now, "|iiii"); // D,H,M,S args
   PUB3_COMPILED_FN(decorate, "l");
 
-  PUB3_COMPILED_HANDROLLED_FN(is_null);
+  PUB3_COMPILED_HANDROLLED_FN(isnull);
   PUB3_COMPILED_HANDROLLED_FN(append);
   PUB3_COMPILED_HANDROLLED_FN(default);
 

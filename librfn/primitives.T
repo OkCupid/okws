@@ -8,7 +8,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  is_null_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  isnull_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;

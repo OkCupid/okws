@@ -68,11 +68,11 @@ filedata_fmt = """
 
 #-----------------------------------------------------------------------
 
-cases = [ { "filedata" : filedata_fmt % "setl",
-            "desc" : desc_fmt % "setl",
+cases = [ { "filedata" : filedata_fmt % "locals",
+            "desc" : desc_fmt % "locals",
             "outcome" : outcome },
-          { "filedata" : filedata_fmt % "set",
-            "desc" : desc_fmt % "set",
+          { "filedata" : filedata_fmt % "globals",
+            "desc" : desc_fmt % "globals",
             "outcome" : outcome } ]
 
 #-----------------------------------------------------------------------
