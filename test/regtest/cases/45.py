@@ -9,7 +9,7 @@ filedata="""
     if (false)  {{ no }}
     else        {{ yes }}
 
-    set 
+   locals 
        
          { 
 
@@ -21,7 +21,7 @@ filedata="""
 
      }
 
-   set {
+   locals {
         js: "print this 
               $('${inner}').js_function" }
 $}
