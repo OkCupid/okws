@@ -76,7 +76,7 @@ okclnt_objtest_t::process_T ()
   out << o("y")[1].to_int () << "\n";
   out << o("x")[3].to_str () << "\n";
 
-  for (i = 0; i < 20; i++) {
+  for (i = 0; i < 3; i++) {
     row.refer_to (o("badass")[i]);
     row("dog") = strbuf ("DOG-#-%d", i);
     row("cat") = "meow";
