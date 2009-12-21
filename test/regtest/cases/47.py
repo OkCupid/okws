@@ -4,7 +4,7 @@ filedata = [
 {$ load ("$[1]") $}
 {$ include (fn) $}
 """,
-"""{$ set { fn : "$[2]" } $}""",
+"""{$ globals { fn : "$[2]" } $}""",
 "found me" ]
 
 outcome = "found me"
