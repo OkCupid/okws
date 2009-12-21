@@ -1721,7 +1721,7 @@ namespace pub3 {
 
   //============================================== bindlist_t ==========
 
-  void bindlist_t::add (binding_t b) { push_back (b); }
+  void bindlist_t::insert (binding_t b) { push_back (b); }
 
   //--------------------------------------------------------------------
 
@@ -1876,10 +1876,20 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  expr_dict_t::add (binding_t p)
+  expr_dict_t::insert (binding_t p)
   {
     insert (p.name (), p.expr ());
   }
+
+  //--------------------------------------------------------------------
+
+  void expr_dict_t::insert (str k, int64_t i) 
+  { insert (k, expr_int_t::alloc (i)); }
+
+  //--------------------------------------------------------------------
+
+  void expr_dict_t::insert (str k, u_int64_t u) 
+  { insert (k, expr_uint_t::alloc (u)); }
 
   //--------------------------------------------------------------------
   

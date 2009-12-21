@@ -440,8 +440,10 @@ namespace pub3 {
     bool is_call_coercable () const { return false; }
     void v_dump (dumper_t *d) const;
   protected:
+
     virtual ptr<const expr_t> 
-    eval_final (eval_t *e, ptr<const expr_t> o1, ptr<const expr_t> o2) const = 0;
+    eval_final (eval_t *e, ptr<const expr_t> o1, ptr<const expr_t> o2) 
+      const = 0;
 
     virtual xpub3_mathop_opcode_t opcode () const = 0;
 
@@ -932,7 +934,7 @@ namespace pub3 {
     static ptr<bindlist_t> alloc ();
     static ptr<bindlist_t> alloc (const xpub3_dict_t &x);
     bool to_xdr (xpub3_dict_t *x) const;
-    void add (binding_t b);
+    void insert (binding_t b);
     ptr<bindtab_t> keys_only () const;
   private:
     lineno_t _lineno;
@@ -962,10 +964,13 @@ namespace pub3 {
 
     bool to_len (size_t *s) const;
 
-    void add (binding_t p);
-    void add (ptr<binding_t> p);
+    void insert (binding_t p);
+    void insert (ptr<binding_t> p);
     void insert (str k, str v);
     void insert (str k, ptr<expr_t> x) { bindtab_t::insert (k, x); }
+    void insert (str k, int64_t i);
+    void insert (str k, u_int64_t i);
+
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_xdr (xpub3_json_t *x) const;

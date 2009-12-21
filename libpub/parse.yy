@@ -646,24 +646,24 @@ p3_bindings_opt:
 p3_bindlist_bindings: p3_binding 
         { 
 	   $$ = pub3::bindlist_t::alloc (); 
-	   $$->add ($1);
+	   $$->insert ($1);
         }
         | p3_bindlist_bindings ',' p3_binding
 	{
 	   $$ = $1;
-	   $$->add ($3);
+	   $$->insert ($3);
 	}
 	;
 
 p3_bindings: p3_binding
         {
 	   ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::parse_alloc ();
-           d->add ($1);
+           d->insert ($1);
 	   $$ = d;	 
 	}
 	| p3_bindings ',' p3_binding
 	{
-	   $1->add ($3);
+	   $1->insert ($3);
            $$ = $1;
 	}
 	;
@@ -914,12 +914,12 @@ json_dict_pairs:
         json_dict_pair 
       {
          ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::parse_alloc ();
-         d->add ($1);
+         d->insert ($1);
 	 $$ = d;
       }
       | json_dict_pairs ',' json_dict_pair
       {
-         $1->add ($3);
+         $1->insert ($3);
 	 $$ = $1;
       }
       ;

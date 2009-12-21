@@ -711,7 +711,7 @@ pub3::expr_dict_t::expr_dict_t (const xpub3_dict_t &x)
 {
   size_t lim = x.entries.size ();
   for (size_t i = 0; i < lim; i++) {
-    add (binding_t (x.entries [i]));
+    insert (binding_t (x.entries [i]));
   }
 }
 
