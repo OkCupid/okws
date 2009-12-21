@@ -306,8 +306,8 @@ namespace pub3 {
   {
     status_t ret (XPUB_STATUS_OK);
     cook_text ();
-    if (p->pws ()) { p->output (_original); }
-    else           { p->output (_wss); }
+    if (p->pws () || !(p->opts () & P_WSS)) { p->output (_original); }
+    else                                    { p->output (_wss); }
     return ret;
   }
 

@@ -147,10 +147,11 @@ okclnt_configtest_t::run_global (evv_t ev)
     bool rc (true);
   }
 
-  twait { pub3 ()->run_cfg (cgi["fn"], mkevent (rc)); }
+  twait { pub3 ()->run_cfg (cgi["fn"], mkevent (rc), NULL, pub3::P_COPY_CONF); }
   if (!rc) {
     out << "Error including file " << cgi["fn"] << " or file wasn't given\n";
   } else {
+    pub3::obj_t obj = pub3 ()->pub3_config_obj ();
     str lst = cgi["display"];
     vec<str> vars;
     static rxx comma (",");
@@ -159,7 +160,7 @@ okclnt_configtest_t::run_global (evv_t ev)
       vec<size_t> indices;
       str key;
       if (str2ref (vars[i], &key, &indices)) {
-	pub3::obj_t obj = pub3 ()->pub3_config_obj ()(key);
+	pub3::const_obj_t obj = pub3 ()->pub3_config_obj ()(key);
 	for (size_t j = 0; j < indices.size (); j++) {
 	  obj = obj[indices[j]];
 	}

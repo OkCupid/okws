@@ -532,7 +532,7 @@ namespace pub3 {
   bool
   const_obj_t::to_int (int64_t *i) const
   {
-    return _c_obj && _c_obj->to_int (i);
+    return obj () && obj ()->to_int (i);
   }
 
   //-----------------------------------------------------------------------
@@ -540,7 +540,7 @@ namespace pub3 {
   bool
   const_obj_t::to_uint (u_int64_t *i) const
   {
-    return _c_obj && _c_obj->to_uint (i);
+    return obj () && obj ()->to_uint (i);
   }
 
   //-----------------------------------------------------------------------
@@ -548,7 +548,7 @@ namespace pub3 {
   bool
   const_obj_t::to_bool (bool *b) const
   {
-    return _c_obj && (*b = _c_obj->to_bool ());
+    return obj () && (*b = obj ()->to_bool ());
   }
 
   //-----------------------------------------------------------------------
@@ -556,7 +556,7 @@ namespace pub3 {
   bool
   const_obj_t::to_str (str *s) const
   {
-    return _c_obj && (*s = _c_obj->to_str ());
+    return obj () && (*s = obj ()->to_str ());
   }
 
   //-----------------------------------------------------------------------

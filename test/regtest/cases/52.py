@@ -6,24 +6,22 @@ desc_fmt = "test configuration variables (%s)"
 ##-----------------------------------------------------------------------
 
 filedata="""
+{$ 
+   key = 1; 
+   if (key) { hidden = "hidden"; }
 
-{% set { key : 1 } %}
+   foo = [ 1, [ "bar", 4, [ "biz" ] ] ];
+   baz =  [ 10, 20, 30 ];
+   bar = 10;
+   biz = "biz";
+   x = 10;
+   y = [ 20, 180, "hello", "bye", "adios" ];
+   z = [ 1, [2, [3, [4, [5, "final" ] ] ] ] ];
+   shell1 = "x${x}";
+   shell2 = "x${x}${x}biz${biz}${biz}";
+   legacy = "legacy ${hidden}";
 
-<!--# switch (key), (1, {{ {$ set { hidden : "hidden" } %} }} ) -->
-
-
-<!--# set ( { "foo" => ( 1, ( "bar", 4, ( "biz" ) ) ),
-              "baz" => ( 10, 20, 30),
-              "bar" => 10,
-              "biz" => "biz" } ) -->
-
-{$ set { x : 10,
-         y : [ 20, 180, "hello", "bye", "adios" ],
-         z : [ 1, [2, [3, [4, [5, "final" ] ] ] ] ] } $}
-
-{$ set { shell1 : "x${x}",
-         shell2 : "x${x}$${x}biz${biz}$${biz}",
-         legacy : "legacy ${hidden}" } $}
+$}
 """
 
 ##-----------------------------------------------------------------------
