@@ -348,6 +348,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_AND_t"; }
     void v_dump (dumper_t *d) const { l_dump (d, _f1, _f2); }
+    bool might_block_uncached () const { return might_block (_f1, _f2); }
   protected:
     ptr<expr_t> _f1, _f2;
     bool eval_logical (eval_t *e) const;
@@ -365,6 +366,7 @@ namespace pub3 {
     expr_NOT_t (const xpub3_not_t &x);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_NOT_t"; }
+    bool might_block_uncached () const { return _e && _e->might_block (); }
   protected:
     ptr<expr_t> _e;
     bool eval_logical (eval_t *e) const;
@@ -383,6 +385,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_EQ_t"; }
     void v_dump (dumper_t *d) const { l_dump (d, _o1, _o2); }
+    bool might_block_uncached () const { return might_block (_o1, _o2); }
   protected:
     ptr<expr_t> _o1, _o2;
     bool _pos;
@@ -407,7 +410,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_relation_t"; }
     bool is_call_coercable () const { return false; }
     void v_dump (dumper_t *d) const { l_dump (d, _l, _r); }
-
+    bool might_block_uncached () const { return might_block (_l, _r); }
   protected:
     ptr<expr_t> _l, _r;
     xpub3_relop_t _op;
