@@ -221,7 +221,7 @@ namespace pub3 {
   //================================================ eval_t ================
 
   eval_t::eval_t (ptr<env_t> e, ptr<output_t> o)
-    : _env (e), _output (o), _loud (false), _silent (false) {}
+    : _env (e), _output (o), _loud (true), _silent (false) {}
 
   //-----------------------------------------------------------------------
 
@@ -291,7 +291,7 @@ namespace pub3 {
   void
   eval_t::report_error (str msg, lineno_t ln)
   {
-    set_lineno (ln);
+    if (ln) set_lineno (ln);
     output_err (msg, P_ERR_EVAL);
   }
 

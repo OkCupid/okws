@@ -34,7 +34,6 @@ namespace rfn3 {
 
   PUB3_COMPILED_FN(random, "|uu");
   PUB3_COMPILED_FN(len, "O");
-  PUB3_COMPILED_FN(type, "O");
   PUB3_COMPILED_FN(join, "sl");
   PUB3_COMPILED_FN(range, "i|ii");
   PUB3_COMPILED_FN(split, "rs");
@@ -44,7 +43,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(tag_escape, "s");
   PUB3_COMPILED_FN(json_escape, "s");
   PUB3_COMPILED_FN(hidden_escape, "s");
-  PUB3_COMPILED_FN(substring, "si|i");
+  PUB3_COMPILED_FN(substr, "si|i");
   PUB3_COMPILED_FN(strip, "s");
   PUB3_COMPILED_FN(url_escape, "s");
   PUB3_COMPILED_FN(url_unescape, "s");
@@ -103,6 +102,15 @@ namespace rfn3 {
   public:
     search_t () : regex_fn_t ("search") {}
     bool match () const { return false; }
+  };
+
+  //-----------------------------------------------------------------------
+
+  class type_t : public patterned_fn_t {
+  public:
+    type_t () : patterned_fn_t (libname, "type", "O") {}
+    ptr<const expr_t> v_eval_2 (publish_t *e, const vec<arg_t> &args) const;
+    bool safe_args () const { return false; }
   };
 
   //-----------------------------------------------------------------------

@@ -137,6 +137,10 @@ namespace pub3 {
     virtual bool to_int (int64_t *out) const { return false; }
     virtual scalar_obj_t to_scalar () const;
 
+    // Evaluating an argument to string, internally to the 
+    // evaluation mechanism. Only overidden in the case of null
+    virtual str arg_to_str () const { return to_str (false); }
+
     // Used during parsing; coerces an arbitrary expression
     // into a function call.
     virtual ptr<call_t> coerce_to_call () ;
@@ -271,6 +275,7 @@ namespace pub3 {
     str type_to_str () const { return "null"; }
     void v_dump (dumper_t *d) const;
     str to_str (bool q = false) const { return "null"; }
+    str arg_to_str () const { return ""; }
   };
 
   //-----------------------------------------------------------------------
@@ -559,6 +564,7 @@ namespace pub3 {
     void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
+    void report (eval_t *e, bool is_defined) const;
   protected:
     str _name;
   };

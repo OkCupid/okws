@@ -82,10 +82,23 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void
+  expr_varref_t::report (eval_t *e, bool out) const
+  {
+    if (!out && e->loud ()) {
+      strbuf b ("cannot resolve variable: '%s'", _name.cstr ());
+      report_error (e, b);
+    }
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<const expr_t>
   expr_varref_t::eval_to_val (eval_t *e) const
   {
-    return e->lookup_val (_name);
+    ptr<const expr_t> ret = e->lookup_val (_name);
+    report (e, ret);
+    return ret;
   }
 
   //--------------------------------------------------------------------
@@ -93,7 +106,9 @@ namespace pub3 {
   ptr<mref_t>
   expr_varref_t::eval_to_ref (eval_t *e) const
   {
-    return e->lookup_ref (_name);
+    ptr<mref_t> ret = e->lookup_ref (_name);
+    report (e, ret);
+    return ret;
   }
 
   //--------------------------------------------------------------------

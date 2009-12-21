@@ -97,7 +97,7 @@ namespace rfn3 {
   //------------------------------------------------------------
 
   ptr<const expr_t>
-  substring_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  substr_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
     size_t start = 0, len = 0;

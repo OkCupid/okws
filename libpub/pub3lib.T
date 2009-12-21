@@ -32,6 +32,7 @@ namespace pub3 {
     }
     for (i = 0; i < in->size (); i++) {
       twait { (*in)[i]->pub_to_val (p, mkevent (x)); }
+      if (!x && safe_args ()) x = expr_null_t::alloc ();
       out->push_back (x);
     }
     ev->trigger ();
@@ -44,6 +45,7 @@ namespace pub3 {
   {
     for (size_t i = 0; i < in->size (); i++) {
       ptr<const expr_t> x = (*in)[i]->eval_to_val (p);
+      if (!x && safe_args ()) x = expr_null_t::alloc ();
       out->push_back (x);
     }
   }
@@ -111,56 +113,60 @@ namespace pub3 {
       // and then, maybe it won't work.
       bool push = ib;
 
+      size_t hi = i + 1; // argument index for humans
+
+      if (ib && safe_args ()) assert (args[i]);
+
       switch (*cp) {
 	
       case 'i':
 	if (ib && !args[i]->to_int (&a._i)) {
-	  strbuf b ("argument %zd: expected an integer", i);
+	  strbuf b ("argument %zd: expected an integer", hi);
 	  err.push_back (b);
 	}
 	break;
 	
       case 'u': 
 	if (ib && !args[i]->to_uint (&a._u)) {
-	  strbuf b ("argument %zd: expected an unsigned int", i);
+	  strbuf b ("argument %zd: expected an unsigned int", hi);
 	  err.push_back (b);
 	}
 	break;
-
+	
       case 's': 
-	if (ib && !(a._s = args[i]->to_str ())) {
-	  strbuf b ("argument %zd: expected a string", i);
+	if (ib && !(a._s = args[i]->arg_to_str ())) {
+	  strbuf b ("argument %zd: expected a string", hi);
 	  err.push_back (b);
 	}
 	break;
-
+	
       case 'O':  
 	if (ib) {
 	  a._O = args[i];
 	}
 	break;
-
+	
       case 'r':
 	if (ib && !(a._r = args[i]->to_regex ())) {
-	  strbuf b ("argument %zd: expected a regex", i);
+	  strbuf b ("argument %zd: expected a regex", hi);
 	  err.push_back (b);
 	}
 	break;
-
+	
       case 'd':
 	if (ib && !(a._d = args[i]->to_dict ())) {
-	  strbuf b ("argument %zd: expected a dict", i);
+	  strbuf b ("argument %zd: expected a dict", hi);
 	  err.push_back (b);
 	}
 	break;
-
+	
       case 'l':
 	if (ib && !(a._l = args[i]->to_list ())) {
-	  strbuf b ("argument %zd: expected a list", i);
+	  strbuf b ("argument %zd: expected a list", hi);
 	  err.push_back (b);
 	}
 	break;
-
+	
       case '|':
 	if (pipe) {
 	  err.push_back ("internal pattern error: "
@@ -170,14 +176,14 @@ namespace pub3 {
 	}
 	adv = push = false;
 	break;
-
+	
       default:
 	err.push_back (strbuf ("internal pattern error: bad character: %c", 
 			       *cp));
 	adv = push = false;
 	break;
       }
-
+    
       if (adv) {
 	max_args ++;
 	if (!pipe) min_args ++;
@@ -186,8 +192,8 @@ namespace pub3 {
       if (push) {
 	_checked->push_back (a);
       }
-
     }
+    
 
     if (args.size () < min_args || args.size () > max_args) {
       str ex;

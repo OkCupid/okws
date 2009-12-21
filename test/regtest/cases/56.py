@@ -5,12 +5,12 @@
 test_str = "AbCdE FghIJKlmNOpQr FfooXx CCCccattTTtT DDogg"
 
 filedata ="""
-{$ setl { x : "%s" } $}
-{$ setl { lcx : x | tolower,
+{$ locals { x : "%s" } $}
+{$ locals { lcx : x | tolower,
           ucx : x | tolower | toupper ,
           z = "     a-floater    " } $}
 
-{$ setl { input : "abcdefgh" } $}
+{$ locals { input : "abcdefgh" } $}
 
 orig: ${x}
 lowered: ${lcx}

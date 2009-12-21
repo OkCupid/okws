@@ -26,6 +26,7 @@ namespace pub3 {
     str name () const { return _name; }
 
   protected:
+    virtual bool safe_args () const { return true; }
 
     // evaluate, given that the arguments have been prevaluted...
     virtual ptr<const expr_t> 
