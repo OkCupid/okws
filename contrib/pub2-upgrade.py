@@ -52,27 +52,45 @@ def nlcount (s):
 
 ##=======================================================================
 
-PUB1_TOKENS = [ 'PTSWITCH', 
-                'PTSET', 
-                'PTINCLUDE', 
-                'PTLOAD',
+PUB2_TOKENS = [ 'SWITCH', 
+                'SET', 
+                'SETL',
+                'SETLE',
+                'IF',
+                'ELSE',
+                'FOR',
+                'INCLUDE', 
+                'LOAD',
                 'HTML',
                 'COMMA', 
-                'LPAREN', 'RPAREN', 
-                'DQUOTE', 'SQUOTE' ,
+                'LPAREN', 
+                'RPAREN', 
+                'DQUOTE', 
+                'SQUOTE' ,
                 'INTEGER',
-                'DLBRACE', 'DRBRACE', 
-                'PERLARROW', 'COLON', 'EQUALS',
-                'LBRACE', 'RBRACE', 
+                'DLBRACE', 
+                'DRBRACE', 
+                'COLON', 
+                'PERLARROW',
+                'EQUALS',
+                'LBRACE', 
+                'RBRACE', 
                 'VAR',
+                'POPEN',
                 'PCLOSE',
                 'STRING',
-                'ARRAY_OPEN',
-                'PASS_LBRACE',
-                'PASS_RBRACE',
-                'TLBRACKET', 'TRBRACKET', 'COMMENT',
-                'RANGE',
-                'NULL' ]
+                'TLBRACKET', 
+                'TRBRACKET', 
+                'COMMENT',
+                'NULL',
+                'LOCALS',
+                'GLOBALS',
+                'UNIVERSALS',
+                'DEF',
+                'LAMBDA',
+                'BREAK',
+                'RETURN',
+                'CONTINUE' ]
 
 ##=======================================================================
 
@@ -90,9 +108,6 @@ class Pub1Lexer (object):
         """Ply magic to turn this class into a scanner
         given the class variables we set below."""
 
-        for t in [ "PTSWITCH", "PTSET", "PTINCLUDE", "PTLOAD", "HTML" ]:
-            setattr (self, "t_nhtml_" + t, getattr (self, "t_" + t))
-
         self.lexer = ply.lex.lex (module = self, **kwargs)
         self._lineno = 1
 
@@ -100,56 +115,22 @@ class Pub1Lexer (object):
         self._filename = n
 
     # Tokens
-    tokens = PUB1_TOKENS
+    tokens = PUB2_TOKENS
 
     # The default state is HTML mode.  We transition to pub mode within
-    # <!--# tags
+    # {% tags
     states = ( ("sstring", "exclusive"),
                ("dstring", "exclusive"),
                ("pub",    "exclusive"),
-               ("nhtml",  "exclusive"),
                ("comment", "exclusive") )
-    
-    # tokens found in HTML mode that force a push to pub mode
-    def t_PTSWITCH(self, t):
-        r'(<!--\#|\{%)[ \t]*switch'
-        t.lexer.push_state ('pub')
-        return t
-    def t_PTSET(self, t):
-        r'<!--\#[ \t]*set'
-        t.lexer.push_state ('pub')
-        return t
-    def t_PTINCLUDE(self, t):
-        r'<!--\#[ \t]*include'
-        t.lexer.push_state ('pub')
-        return t
-    def t_PTLOAD(self, t):
-        r'<!--\#[ \t]*load'
+
+    def t_POPEN (self, t):
+        r'\{%'
         t.lexer.push_state ('pub')
         return t
 
-    def t_PASS_LBRACE (self, t):
-        r'\{'
-        t.lexer.push_state ('INITIAL')
-        return t
-    def t_PASS_RBRACE (self, t):
-        r'\}'
-        try:
-            t.lexer.pop_state ()
-        except IndexError, e:
-            raise Pub1Error, "Unbalanced '}' (@ %s)" % t
-        return t
-
-    def t_nhtml_DRBRACE(self, t):
+    def t_DRBRACE (self, t):
         r'\}\}'
-        t.lexer.pop_state ()
-        return t
-    def t_nhtml_PASS_LBRACE (self, t):
-        r'\{'
-        t.lexer.push_state ('INITIAL')
-        return t
-    def t_nhtml_PASS_RBRACE (self, t):
-        r'\}'
         t.lexer.pop_state ()
         return t
 
@@ -158,7 +139,7 @@ class Pub1Lexer (object):
     # first.  In this jam, the order does matter, and this rules
     # needs to show up last.
     def t_HTML (self, t):
-        r'([^{<%}]+|[<%])'
+        r'([^{]+|[{])'
         t.lexer.lineno += nlcount (t.value)
         return t
 
@@ -172,14 +153,26 @@ class Pub1Lexer (object):
     t_pub_EQUALS     = r'='
     t_pub_LBRACE     = r'\{'
     t_pub_RBRACE     = r'\}'
-    t_pub_ARRAY_OPEN = r'(u_)?(int|char)(16|32|64)?(_t)?\('
     t_pub_NULL       = r'NULL'
+    t_pub_SETLE      = r'setle'
+    t_pub_SETL       = r'setl'
+    t_pub_SET        = r'set'
+    t_pub_IF         = r'if'
+    t_pub_ELSE       = r'else'
+    t_pub_FOR        = r'for'
+    t_pub_INCLUDE    = r'include'
+    t_pub_LOAD       = r'load'
+    t_pub_LOCALS     = r'locals'
+    t_pub_GLOBALGS   = r'globals'
+    t_pub_UNIVERSALS = r'universals'
+    t_pub_DEF        = r'def'
+    t_pub_LAMBDA     = r'lambda'
+    t_pub_BREAK      = r'break'
+    t_pub_RETURN     = r'return'
+    t_pub_CONTINUE   = r'continue'
+    
 
     t_pub_ignore = ' \t'
-
-    def t_pub_RANGE(self, t):
-        r'r\#\[\d+-\d+\]\#'
-        return t
 
     def t_pub_VAR(self, t):
         r'[a-zA-Z_][a-zA-Z_0-9.]*'
@@ -190,10 +183,10 @@ class Pub1Lexer (object):
     # transitions out of pub1 mode into other modes
     def t_pub_DLBRACE(self, t):
         r'\{\{'
-        t.lexer.push_state ('nhtml')
+        t.lexer.push_state ('INITIAL')
         return t
     def t_pub_PCLOSE(self, t):
-        r'(-->|%})'
+        r'%}'
         t.lexer.pop_state ()
         return t
     def t_pub_DQUOTE(self, t):
@@ -1035,10 +1028,6 @@ class Pub1Parser (object):
     def p_env (self, p):
         '''env : DLBRACE blocks DRBRACE'''
         p[0] = NestedHtml (HtmlBlock (p[2]))
-
-    def p_range (self, p):
-        '''range : RANGE'''
-        p[0] = PubRange (p[1], p.lineno (1))
 
     def p_error(self, p):
         where = "EOF"
