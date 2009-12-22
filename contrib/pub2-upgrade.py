@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-'''pub1-upgrade.py
+'''pub2-upgrade.py
 
-     A tranlsator script that purges your code of the follwing pub1
-     constructs:
+     A tranlsator script that peforms the following upgrades:
 
-        <!--#switch -->  / {% switch %}
-        <!--#set --> 
-        <!--#load -->
-        <!--#include -->
+        ${x} -> %{x}
+        setl,setle -> locals
+        set -> globals
+        for (i, l) { i.iter } -> for (i, decorate (l)) { i.iter }
 
      Meant as a stage in a series of translations you can apply to
      purge old-style pub constructs...
@@ -16,7 +15,7 @@
 
 
 __author__ = 'max@okcupid.com'
-__version__ = '0.1'
+__version__ = '2.1'
 
 import ply
 import ply.lex
@@ -52,45 +51,53 @@ def nlcount (s):
 
 ##=======================================================================
 
-PUB2_TOKENS = [ 'SWITCH', 
-                'SET', 
-                'SETL',
-                'SETLE',
-                'IF',
-                'ELSE',
-                'FOR',
-                'INCLUDE', 
-                'LOAD',
-                'HTML',
-                'COMMA', 
-                'LPAREN', 
-                'RPAREN', 
-                'DQUOTE', 
-                'SQUOTE' ,
-                'INTEGER',
-                'DLBRACE', 
-                'DRBRACE', 
-                'COLON', 
-                'PERLARROW',
-                'EQUALS',
-                'LBRACE', 
-                'RBRACE', 
-                'VAR',
-                'POPEN',
-                'PCLOSE',
-                'STRING',
-                'TLBRACKET', 
-                'TRBRACKET', 
-                'COMMENT',
-                'NULL',
-                'LOCALS',
-                'GLOBALS',
-                'UNIVERSALS',
-                'DEF',
-                'LAMBDA',
-                'BREAK',
-                'RETURN',
-                'CONTINUE' ]
+PUB2_TOKENS = [ 
+
+    'BREAK',
+    'COLON', 
+    'COMMA', 
+    'CONTINUE',
+    'DEF',
+    'ELSE',
+    'EQUALS',
+    'FOR',
+    'GLOBALS',
+    'IF',
+    'INCLUDE', 
+    'INTEGER',
+    'LAMBDA',
+    'LBRACE', 
+    'LOAD',
+    'LOCALS',
+    'LPAREN', 
+    'MATHOP',
+    'NULL',
+    'PERLARROW',
+    'RBRACE', 
+    'RETURN',
+    'RPAREN', 
+    'SWITCH', 
+    'RETURN',
+    'UNIVERSALS',
+    'VAR',
+
+    'DQUOTE', 
+    'SQUOTE' ,
+    'DLBRACE', 
+    'DRBRACE', 
+
+    'PUB3OPEN',
+    'PUB3CLOSE',
+
+    'STRING',
+    'TLBRACKET', 
+    'TRBRACKET', 
+
+    'COMMENT',
+
+    'HTML',
+    'PUB1INLINE' 
+]
 
 ##=======================================================================
 
@@ -124,9 +131,13 @@ class Pub1Lexer (object):
                ("pub",    "exclusive"),
                ("comment", "exclusive") )
 
-    def t_POPEN (self, t):
+    def t_PUB3OPEN (self, t):
         r'\{%'
         t.lexer.push_state ('pub')
+        return t
+
+    def t_PUB1INLINE (self, t):
+        r'${':
         return t
 
     def t_DRBRACE (self, t):
@@ -139,39 +150,38 @@ class Pub1Lexer (object):
     # first.  In this jam, the order does matter, and this rules
     # needs to show up last.
     def t_HTML (self, t):
-        r'([^{]+|[{])'
+        r'([^{$]+|[{$])'
         t.lexer.lineno += nlcount (t.value)
         return t
 
     # tokens found in PUB mode
-    t_pub_COMMA      = r','
-    t_pub_RPAREN     = r'\)'
-    t_pub_LPAREN     = r'\('
-    t_pub_INTEGER    = r'[+-]?([0-9]+|0x[0-9a-f]+)'
-    t_pub_PERLARROW  = r'=>'
-    t_pub_COLON      = r':'
-    t_pub_EQUALS     = r'='
-    t_pub_LBRACE     = r'\{'
-    t_pub_RBRACE     = r'\}'
-    t_pub_NULL       = r'NULL'
-    t_pub_SETLE      = r'setle'
-    t_pub_SETL       = r'setl'
-    t_pub_SET        = r'set'
-    t_pub_IF         = r'if'
-    t_pub_ELSE       = r'else'
-    t_pub_FOR        = r'for'
-    t_pub_INCLUDE    = r'include'
-    t_pub_LOAD       = r'load'
-    t_pub_LOCALS     = r'locals'
-    t_pub_GLOBALGS   = r'globals'
-    t_pub_UNIVERSALS = r'universals'
-    t_pub_DEF        = r'def'
-    t_pub_LAMBDA     = r'lambda'
     t_pub_BREAK      = r'break'
-    t_pub_RETURN     = r'return'
+    t_pub_COLON      = r':'
+    t_pub_COMMA      = r','
     t_pub_CONTINUE   = r'continue'
-    
+    t_pub_DEF        = r'def'
+    t_pub_ELSE       = r'else'
+    t_pub_EQUALS     = r'='
+    t_pub_FOR        = r'for'
+    t_pub_IF         = r'if'
+    t_pub_INCLUDE    = r'include'
+    t_pub_INTEGER    = r'[+-]?([0-9]+|0x[0-9a-f]+)'
+    t_pub_LAMBDA     = r'lambda'
+    t_pub_LBRACE     = r'\{'
+    t_pub_LOCALS     = r'(setl|setle|locals)'
+    t_pub_GLOBALS    = r'(set|globals)'
+    t_pub_LOAD       = r'load'
+    t_pub_LPAREN     = r'\('
+    t_pub_NULL       = r'NULL'
+    t_pub_PERLARROW  = r'=>'
+    t_pub_RBRACE     = r'\}'
+    t_pub_RPAREN     = r'\)'
+    t_pub_RETURN     = r'return'
+    t_pub_SWITCH     = r'(Switch21Tmp|switch)'
+    t_pub_UNIVERSALS = r'universals'
 
+    t_pub_MATHOP     = r'[%*+/-]'
+    
     t_pub_ignore = ' \t'
 
     def t_pub_VAR(self, t):
@@ -829,7 +839,7 @@ class Pub1Parser (object):
         self.parser = ply.yacc.yacc(module=self, **kwargs)
 
     # interface between parse and lexer
-    tokens = PUB1_TOKENS
+    tokens = PUB2_TOKENS
 
     # Define the parser
     def p_file(self, p):
@@ -858,8 +868,7 @@ class Pub1Parser (object):
 
     def p_html_frag (self, p):
         '''html_frag : HTML
-                     | PASS_LBRACE
-                     | PASS_RBRACE'''
+                     | PUB1INLINE'''
         p[0] = p[1]
         
     def p_pub (self, p):
