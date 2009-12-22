@@ -571,6 +571,13 @@ public:
     _tab.insert ("return", T_P3_RETURN);
     _tab.insert ("continue", T_P3_CONTINUE);
     _tab.insert ("lambda", T_P3_LAMBDA);
+
+    if (ok_pub2_compatibility_mode) {
+      _tab.insert ("Switch21Tmp", T_P3_SWITCH);
+      _tab.insert ("setl", T_P3_LOCALS);
+      _tab.insert ("setle", T_P3_LOCALS);
+      _tab.insert ("set", T_P3_GLOBALS);
+    }
   }
 
   bool lookup (const char *in, int *out) {

@@ -291,6 +291,9 @@ size_t ok_pub3_max_datasz = 0x1000;
 // the number of oustanding chunk requests to pubd
 size_t ok_pub3_chunk_window_size = 5;
 
+// compatibility mode
+bool ok_pub2_compatibility_mode = false;
+
 // yy buffer to use when parsing pub files
 size_t ok_pub3_yy_buffer_size = 0x100000;
 

@@ -679,7 +679,6 @@ p3_bind_key: p3_identifier { $$ = $1; }
 	;
 
 p3_bindchar: ':' | '=' ;
-	
 
 p3_string: '"' p3_string_elements_opt '"'
         {

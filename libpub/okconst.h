@@ -307,6 +307,7 @@ extern const char *ok_pub3_treestat_sentinel;
 extern const char *ok_pub3_treestat_heartbeat;
 extern size_t ok_pub_max_stack;
 extern size_t ok_pub3_chunk_window_size;
+extern bool ok_pub2_compatibility_mode;
 
 //
 // pub3 constants
