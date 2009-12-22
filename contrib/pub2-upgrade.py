@@ -173,6 +173,16 @@ class Block (Node):
                             [self._close])
         return ret
 
+    def for_loop_decorate (self, nxt = None):
+        ret = False
+        for (i,e) in enumerate (self._els):
+            nxt = None
+            if (i + 1 < len (self._els)):
+                nxt = self._els[i+1]
+            if e.for_loop_decorate (nxt):
+                ret = True
+        return ret
+
 ##-----------------------------------------------------------------------
 
 class HtmlBlock (Block):
@@ -197,6 +207,26 @@ class Code (Node):
         return self._s
     def add (self, s):
         self._v += [ s ]
+    def for_loop_decorate (self, nxt = None):
+        ret = False
+        b = r'(?P<pre>.*)' + \
+            r'for\s*\((?P<iter>[a-zA-Z0-9_]+)\s*,\s*(?P<vec>.*)\s*\)' + \
+            r'(?P<post>\s*)'
+        x = re.compile (b)
+        s = str (self)
+        m = x.match (s)
+        if nxt and m:
+            d = m.groupdict ()
+            i = r'\b' + d["iter"] + "\\.(first|last|count|iter|even|odd)" + \
+                r'\b'
+            ix = re.compile (i)
+            if ix.search (str (nxt)):
+                self._s = \
+                    "%(pre)sfor (%(iter)s, decorate (%(vec)s))%(post)s" % d
+                self._v = [ self._s ]
+                ret = True
+        return ret
+    
 
 ##=======================================================================
 
@@ -307,16 +337,27 @@ def info (s):
 
 ##=======================================================================
 
+class ForLoopDecorator:
+
+    def __init__ (self):
+        pass
+
+    def convert (self, obj):
+        return obj.for_loop_decorate ()
+
+##=======================================================================
+
 class Runner:
     
     ##----------------------------------------
 
-    def __init__ (self, debug = False):
+    def __init__ (self, converter = None, debug = False):
         self._parser = PubParser ()
         self._debug = debug
         self._regex = r'.*\.(html|conf|js)$'
         self._exclude = r'\.svn'
         self._verbose = False
+        self._converter = converter
 
     ##----------------------------------------
 
@@ -328,7 +369,12 @@ class Runner:
             sys.stderr.write (raw)
 
         obj = self._parser.parse (data)
-        ret = str (obj)
+
+        # returns None if there were no changes made
+        ret = None
+        if self._converter and self._converter.convert (obj):
+            ret = str (obj)
+
         return ret
 
     ##----------------------------------------
@@ -460,7 +506,7 @@ class Runner:
 ##=======================================================================
 
 def main (argv):
-    runner = Runner ()
+    runner = Runner (ForLoopDecorator ())
     runner.config (argv)
     ok = runner.run ()
     rc = 0
