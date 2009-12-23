@@ -115,11 +115,11 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 [<]({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*[>] {
 		  yylval.str = yytext; 
 		  nlcount (0);
-		  open_pre_tag (yytext);
+		  open_pre_tag (yytext + 1);
 		  return T_P3_BEGIN_PRE;
 		}
 
-[<]/{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*[>] {
+[<][/]{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*[>] {
 		   yylval.str = yytext;
 		   int ret = T_P3_HTML;
 		   if (close_pre_tag (yytext + 2)) {
@@ -670,7 +670,7 @@ static str normalize_tag (const char *in)
    char *bp = buf.cstr ();
 
    // zoom past any leading white space
-   while (*in && isspace (*in)) { in++; }
+   while (*in && (isspace (*in))) { in++; }
 
    for ( ; *in && isalpha (*in); bp++, in++) {
       *bp = tolower (*in);

@@ -34,6 +34,8 @@
 #include "pub3.h"
 #include "pub3obj.h"
 
+extern int yydebug;
+
 //-----------------------------------------------------------------------
 
 static void 
