@@ -47,7 +47,7 @@ okwssvc_PROGRAMS = static configtest simple form cookie \
 
 okwsconf_DATA = okws.crt.dist okws.key.dist
 
-static_SOURCES = static.C
+static_SOURCES = static.C okclib.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
 form_SOURCES = form.C

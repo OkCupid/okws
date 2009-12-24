@@ -109,4 +109,32 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  //
+  // use the macros to define a lot of library methods at the same time,
+  // without much effort. Should be used in a namespace that's different
+  // from pub3.  The nasespace ought to have:
+  //
+  //   extern conat char *libname;
+  //
+  // so that the following macros might work.  See librfn/okrfn.h for
+  // an example.
+  //
+  
+#define PUB3_COMPILED_FN(x,pat)				                \
+  class x##_t : public pub3::patterned_fn_t {				\
+  public:								\
+    x##_t () : patterned_fn_t (libname, #x, pat) {}			\
+    ptr<const expr_t>							\
+    v_eval_2 (publish_t *p, const vec<arg_t> &args) const;		\
+  }
+
+#define PUB3_COMPILED_HANDROLLED_FN(x)					\
+  class x##_t : public pub3::compiled_handrolled_fn_t {			\
+  public:								\
+    x##_t () : compiled_handrolled_fn_t (libname, #x) {}		\
+    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;	\
+  }
+
+  //-----------------------------------------------------------------------
+
 };
