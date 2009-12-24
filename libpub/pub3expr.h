@@ -894,6 +894,7 @@ namespace pub3 {
       const = 0;
     virtual ptr<bindtab_t> mutate () = 0;
     virtual ptr<qhash_const_iterator_t<str, ptr<expr_t> > > iter() const = 0;
+    ptr<expr_dict_t> copy_to_dict () const;
   };
 
   //-----------------------------------------------------------------------

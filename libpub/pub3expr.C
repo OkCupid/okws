@@ -1664,7 +1664,22 @@ namespace pub3 {
   ptr<bindtab_t::const_iterator_t> cow_bindtab_t::iter () const 
   { return New refcounted<bindtab_t::const_iterator_t> (*tab ()); }
 
-  //====================================================================
+  //==================================== bind_interface_t ==============
+
+  ptr<expr_dict_t>
+  bind_interface_t::copy_to_dict () const
+  {
+    ptr<expr_dict_t> d = expr_dict_t::alloc ();
+    ptr<bindtab_t::const_iterator_t> it = iter ();
+    const str *key;
+    ptr<expr_t> x;
+    while ((key = it->next (&x))) {
+      d->insert (*key, x);
+    }
+    return d;
+  }
+
+  //========================================= bindtab_t ================
 
   void
   bindtab_t::overwrite_with (const bindtab_t &t)

@@ -53,6 +53,8 @@ namespace pub3 {
 		   LAYER_UNIREFS = 4, 
 		   LAYER_LIBRARY = 5 } layer_type_t;
 
+    static str layer_type_to_str (layer_type_t lt);
+
     ptr<bindtab_t> push_bindings (layer_type_t typ);
     void push_references (ptr<const bindlist_t> l, layer_type_t lt);
 
@@ -63,6 +65,7 @@ namespace pub3 {
       ptr<bind_interface_t> _bindings;
       layer_type_t _typ;
       bool is_barrier () const { return _typ == LAYER_LOCALS_BARRIER; } 
+      ptr<expr_list_t> to_list () const;
     };
 
     const char *get_obj_name () const { return "env_t"; }
@@ -73,6 +76,8 @@ namespace pub3 {
     size_t push_lambda (ptr<bind_interface_t>, const stack_t *stk);
     size_t push_barrier ();
     void capture_closure (stack_t *out) const;
+    ptr<expr_list_t> to_list () const;
+    
   protected:
     size_t dec_stack_pointer (stack_layer_t l, size_t i) const;
     ssize_t descend_to_barrier () const;

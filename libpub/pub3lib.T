@@ -11,7 +11,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str
-  compiled_fn_t::to_str () const
+  compiled_fn_t::to_str (bool q) const
   {
     str l = _lib;
     if (!l) l = "";

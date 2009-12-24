@@ -78,4 +78,13 @@ namespace rfn3 {
   { return expr_uint_t::alloc (okws_version_int ()); }
 
   //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  dump_env_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<expr_list_t> l = p->env ()->to_list ();
+    return l;
+  }
+
+  //-----------------------------------------------------------------------
 };

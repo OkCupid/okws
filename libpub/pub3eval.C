@@ -37,6 +37,52 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<expr_list_t>
+  env_t::stack_layer_t::to_list () const
+  {
+    ptr<expr_list_t> ret = expr_list_t::alloc ();
+    ret->push_back (expr_str_t::alloc (layer_type_to_str (_typ)));
+    ptr<expr_t> b;
+    if (_bindings) { b = _bindings->copy_to_dict (); }
+    else { b = expr_null_t::alloc (); }
+    ret->push_back (b);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  str
+  env_t::layer_type_to_str (layer_type_t lt)
+  {
+    str ret;
+    switch (lt) {
+    case LAYER_NONE: ret = "none"; break;
+    case LAYER_UNIVERSALS: ret = "universals"; break;
+    case LAYER_GLOBALS: ret = "globals"; break;
+    case LAYER_LOCALS: ret = "locals"; break;
+    case LAYER_LOCALS_BARRIER: ret = "locals_barrier"; break;
+    case LAYER_UNIREFS: ret = "unirefs"; break;
+    case LAYER_LIBRARY: ret = "library"; break;
+    default: ret = "none"; break;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_list_t>
+  env_t::to_list () const
+  {
+    ptr<expr_list_t> l = expr_list_t::alloc ();
+    for (size_t i = 0; i < _stack.size (); i++) {
+      ptr<expr_list_t> layer = _stack[i].to_list ();
+      l->push_back (layer);
+    }
+    return l;
+  }
+
+  //-----------------------------------------------------------------------
+
   void
   env_t::add_global_binding (const str &n, ptr<expr_t> x)
   {
@@ -162,7 +208,8 @@ namespace pub3 {
   env_t::v_dump (dumper_t *d) const
   {
     for (ssize_t i = _stack.size () - 1; i >=0 ; i--) {
-      d->dump (strbuf ("layer(%d) ", int (_stack[i]._typ)), false);
+      str t = layer_type_to_str (_stack[i]._typ);
+      d->dump (strbuf ("layer(%s) ", t.cstr ()), false);
       ptr<bind_interface_t> bi;
       if ((bi = _stack[i]._bindings)) { 
 	ptr<bindtab_t::const_iterator_t> it = bi->iter ();

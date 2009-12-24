@@ -21,7 +21,7 @@ namespace pub3 {
 
     virtual ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
     virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
-    str to_str () const;
+    str to_str (bool q = false) const;
     bool to_xdr (xpub3_expr_t *x) const { return false; }
     str name () const { return _name; }
 
