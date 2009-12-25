@@ -617,8 +617,16 @@ namespace pub3 {
   bool
   expr_EQ_t::eval_final (ptr<const expr_t> x1, ptr<const expr_t> x2) const
   {
+    return eval_static (x1, x2, _pos);
+  }
+
+  //--------------------------------------------------------------------
+
+  bool
+  expr_EQ_t::eval_static (ptr<const expr_t> x1, ptr<const expr_t> x2, bool pos) 
+  {
     int tmp = 0;
-    int flip = _pos ? 0 : 1;
+    int flip = pos ? 0 : 1;
     
     bool n1 = !x1 || x1->is_null ();
     bool n2 = !x2 || x2->is_null ();

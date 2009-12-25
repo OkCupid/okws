@@ -53,6 +53,7 @@ namespace rfn3 {
     F(default);
     F(enumerate);
     F(dump_env);
+    F(contains);
 
 #undef F
   }

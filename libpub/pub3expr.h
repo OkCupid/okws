@@ -386,6 +386,8 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_EQ_t"; }
     void v_dump (dumper_t *d) const { l_dump (d, _o1, _o2); }
     bool might_block_uncached () const { return might_block (_o1, _o2); }
+    static bool eval_static (ptr<const expr_t> x1, ptr<const expr_t> x2, 
+			    bool pos = true);
   protected:
     ptr<expr_t> _o1, _o2;
     bool _pos;

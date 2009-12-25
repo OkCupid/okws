@@ -31,6 +31,12 @@ namespace okclib {
 
   //-----------------------------------------------------------------------
 
+  
+  // This is an example of a pub3 filter that can be used like this:
+  //      Your balance is: %{-1234567|money("$")}
+  // which will produce the following as output:
+  //      Your balance is: -$12,345.67
+  //
   ptr<const expr_t>
   money_t::v_eval_2 (publish_t *pub, const vec<arg_t> &args) const
   {
@@ -53,13 +59,35 @@ namespace okclib {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  commafy_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    int64_t n = args[0]._i;
+    const char *sign = "";
+    
+    if (n < 0) {
+      sign = "-";
+      n = 0 - n;
+    }
+ 
+    str ns = comma_delimit (n);
+    strbuf b ("%s%s", sign, ns.cstr ());
+    return expr_str_t::alloc (b);
+  }
+  
+  //-----------------------------------------------------------------------
+  
   const char *libname = "okclib";
 
   //-----------------------------------------------------------------------
 
   lib_t::lib_t () : library_t () 
   {
-    _functions.push_back (New refcounted<money_t> ());
+#define F(f) \
+    _functions.push_back (New refcounted<f##_t> ())
+    F(money);
+    F(commafy);
+#undef F
 
   }
 

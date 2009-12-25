@@ -204,5 +204,20 @@ namespace rfn3 {
   }
 
   //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  contains_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const expr_list_t> l = args[0]._l;
+    ptr<const expr_t> o = args[1]._O;
+    bool ret = false;
+    for (size_t i = 0; !ret && i < l->size (); i++) {
+      ptr<const expr_t> val = (*l)[i];
+      if (val) { ret = expr_EQ_t::eval_static (val, o); }
+    }
+    return expr_bool_t::alloc (ret);
+  }
+
+  //-----------------------------------------------------------------------
 };
 

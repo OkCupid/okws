@@ -16,6 +16,7 @@ namespace okclib {
   extern const char *libname;
 
   PUB3_COMPILED_FN(money, "i|s");
+  PUB3_COMPILED_FN(commafy, "i");
 
   //-----------------------------------------------------------------------
   
