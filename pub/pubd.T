@@ -76,7 +76,7 @@ main_T (int argc, char **argv)
     str gname;
     str configfile;
     pub3::opts_t opts (0);
-    const char *e, *v;
+    const char  *v;
     bool use_cache (true);
     bool have_cfg (false);
 
@@ -113,8 +113,13 @@ main_T (int argc, char **argv)
 
   ppt = pub3::pub_parser_t::alloc ();
 
-  if ((e = getenv ("PUBCONF")) && (v = getenvval (e)) && *v)
+  if ((v = getenv ("OKWS_PUB_CONFFILE")) && strlen (v)) {
     configfile = v;
+  }
+  
+  if ((v = getenv ("OKWS_PUB_JAILDIR")) && strlen (v)) {
+    configfile = v;
+  }
  
   while ((ch = getopt (argc, argv, "vp:wj:u:g:f:s:x:CH:S:")) != -1) {
     switch (ch) {
