@@ -181,6 +181,7 @@ namespace pub3 {
     obj_t &operator= (obj_t o) { return set_obj (o); }
     obj_t &operator= (obj_dict_t o);
     obj_t &operator= (obj_list_t o);
+    void remove (str k);
 
     obj_t &refer_to (obj_t o);
 
@@ -193,11 +194,10 @@ namespace pub3 {
     void clear ();
 
     bool append (obj_t in);
-    
 
     // Mutations
     ptr<expr_list_t> to_list () ;
-    ptr<expr_dict_t> to_dict ();
+    ptr<expr_dict_t> to_dict (bool cajole = true);
 
   protected:
     obj_t &set_value (ptr<expr_t> v);

@@ -214,13 +214,13 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_dict_t>
-  obj_t::to_dict ()
+  obj_t::to_dict (bool cajole)
   {
-    if (!_dict && obj ()) {
+    if (!_dict && obj () && cajole) {
       _dict = obj ()->to_dict ();
     }
 
-    if (!_dict) {
+    if (!_dict && cajole) {
       _scalar = NULL;
       _list = NULL;
       _dict = New refcounted<expr_dict_t> ();
@@ -407,6 +407,15 @@ namespace pub3 {
   obj_t::fancy_assign_to (const str &s)
   {
     return set_scalar_expr (expr_t::alloc (s));
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  obj_t::remove (str k)
+  {
+    ptr<expr_dict_t> d = to_dict (false);
+    if (d) { d->remove (k); }
   }
 
   //-----------------------------------------------------------------------
