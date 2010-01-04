@@ -7,3 +7,7 @@ OKWS 3.0 Notes
 		  surrounding script tags.)
 
 TODOs
+    - requested filters:
+	    - inet_ntoa, inet_aton
+		- assert, wart
+    - deprecated variable warnings.

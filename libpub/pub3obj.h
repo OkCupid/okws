@@ -181,7 +181,7 @@ namespace pub3 {
     obj_t &operator= (obj_t o) { return set_obj (o); }
     obj_t &operator= (obj_dict_t o);
     obj_t &operator= (obj_list_t o);
-    void remove (str k);
+    void remove_key (str k);
 
     obj_t &refer_to (obj_t o);
 

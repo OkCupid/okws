@@ -412,7 +412,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  obj_t::remove (str k)
+  obj_t::remove_key (str k)
   {
     ptr<expr_dict_t> d = to_dict (false);
     if (d) { d->remove (k); }
