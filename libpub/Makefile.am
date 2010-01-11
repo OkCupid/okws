@@ -45,6 +45,7 @@ libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = \
 	pub.h \
+	pub2.h \
 	pubutil.h \
 	pub3prot.h \
 	pub3base.h \
@@ -80,8 +81,10 @@ okwsinclude_HEADERS = \
 	pub3cache.h \
 	pub3out.h \
 	pub3debug.h \
+	pub3debug.h \
 	pub3lib.h \
-	pub3eng.h
+	pub3eng.h \
+	clist.h  
 
 noinst_HEADERS =  env.mk
 

@@ -25,9 +25,10 @@
 #ifndef _LIBPUB_OKWS_SFS_H
 #define _LIBPUB_OKWS_SFS_H 1
 
-
 /* annoying, need to always do this first */
-#define __STDC_LIMIT_MACROS 1
+#ifndef __STDC_LIMIT_MACROS
+# define __STDC_LIMIT_MACROS 1
+#endif
 #include <stdint.h>
 
 
