@@ -33,6 +33,8 @@ namespace pub3 {
     P_OUTPUT_ERR_COMMENTS = 0x800,          /* output errors in comments */
     P_OUTPUT_ERR_NOLOG= 0x1000,             /* don't warn to stderr */
 
+    P_WARN_INLINE_NULL = 0x2000,            /* warn if %{foo} is NULL */
+
     P_INFINITY = 0x2000
   };
 

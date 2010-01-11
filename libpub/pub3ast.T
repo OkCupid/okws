@@ -370,10 +370,27 @@ namespace pub3 {
     tvars {
       status_t res (XPUB_STATUS_OK);
       str s;
+      bool dowarn, old_loud;
     }
+
+    dowarn = p->opts () & P_WARN_INLINE_NULL;
+    if (dowarn) { old_loud = p->set_loud (true); }
+
     twait { _expr->pub_as_str (p, mkevent (s)); }
     if (s) { p->output (s); }
+    else if (dowarn) { null_warn (p); }
+
+    if (dowarn) { p->set_loud (old_loud); }
+
     ev->trigger (res);
+  }
+
+  //----------------------------------------------------------------------
+
+  void
+  zone_inline_expr_t::null_warn (publish_t *p) const
+  {
+    p->report_error ("Inline expression %{} evaluates to NULL", _location);
   }
 
   //----------------------------------------------------------------------
@@ -381,9 +398,17 @@ namespace pub3 {
   status_t
   zone_inline_expr_t::v_publish_nonblock (publish_t *p) const
   {
+    bool dowarn, old_loud;
     status_t res (XPUB_STATUS_OK);
+
+    dowarn = p->opts () & P_WARN_INLINE_NULL;
+    if (dowarn) { old_loud = p->set_loud (true); }
+
     str s = _expr->eval_as_str (p);
     if (s) { p->output (s); }
+    else if (dowarn) { null_warn (p); }
+
+    if (dowarn) { p->set_loud (old_loud); }
     return res;
   }
 

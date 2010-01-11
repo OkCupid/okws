@@ -180,6 +180,7 @@ namespace pub3 {
   protected:
     status_t v_publish_nonblock (publish_t *p) const;
     void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
+    void null_warn (publish_t *p) const;
     ptr<expr_t> _expr;
   };
 

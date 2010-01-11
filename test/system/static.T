@@ -146,6 +146,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   if (cgi.blookup ("viserr")) { opts |= pub3::P_VISERR; }
   if (cgi.blookup ("iinfo")) { opts |= pub3::P_IINFO; }
   if (cgi.blookup ("verbose")) { opts |= pub3::P_VERBOSE; }
+  if (cgi.blookup ("warninline")) { opts |= pub3::P_WARN_INLINE_NULL; }
 
   if (wss) { opts |= pub3::P_WSS; }
 
