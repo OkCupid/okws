@@ -263,6 +263,33 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  //
+  // A system embedded deep within OkCupid code uses a customized
+  // form of dictionary, that inherits from expr_dict_t.  This template
+  // allows us to accommodate such a subclass.
+  //
+  // D must inherit from expr_dict_t
+  //
+  // TODO: remove this cruft
+  //
+  template<class D>
+  class obj_dict_tmplt_t : public obj_t {
+  public:
+    obj_dict_tmplt_t () { clear (); }
+
+    ptr<D> dict_tmplt () { return _dict_tmplt; }
+    ptr<const D> dict_tmplt () const { return _dict_tmplt;  }
+
+    void clear () {
+      _dict_tmplt = New refcounted<D> ();
+      _c_obj = _obj = _dict = _dict_tmplt;
+    }
+  protected:
+    ptr<D> _dict_tmplt;
+  };
+
+  //-----------------------------------------------------------------------
+
 };
 
 #undef ALL_INT_TYPES
