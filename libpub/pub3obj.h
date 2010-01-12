@@ -113,7 +113,7 @@ namespace pub3 {
 		   const { return (*this)(i2s (i)); });
 
     virtual ptr<const expr_t> obj () const { return _c_obj; }
-    bool isnull () const { return !obj (); }
+    bool isnull () const;
     obj_t copy () const;
 
     bool to_int (int64_t *i) const;
