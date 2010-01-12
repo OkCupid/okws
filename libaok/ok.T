@@ -81,11 +81,11 @@ okclnt_base_t::error_T (int n, const str &s, bool do_send_complete,
     oksrvc->error (_client_con, n, s, mkevent (), hdr_p (), this);
   }
 
-  if (ev) 
-    ev->trigger ();
-
   if (do_send_complete)
     send_complete ();
+
+  if (ev) 
+    ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -123,7 +123,7 @@ ok_httpsrv_t::servinfo () const
 
 tamed void
 ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
-			ok_httpsrv_t::http_resp_cb_t cb)
+			ok_httpsrv_t::http_resp_ev_t ev)
 {
   tvars {
     ptr<http_response_base_t> ret;
@@ -132,30 +132,30 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
   hra.set_gzip (gz ? GZIP_SMART : GZIP_NONE);
   
   twait { geterr (s, hra, mkevent (ret)); }
-  TRIGGER (cb, ret);
+  ev->trigger (ret);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
 ok_httpsrv_t::geterr2_T (str s, const http_resp_attributes_t &hra,
-			 ok_httpsrv_t::http_resp_cb_t cb)
+			 ok_httpsrv_t::http_resp_ev_t ev)
 {
   tvars {
-    errdoc_t *e;
+    str *fnp;
     ptr<http_response_t> ret;
     ptr<http_pub_t> hp;
-    ptr<pub3::dict_t> ar (pub3::dict_t::alloc ());
+    pub3::obj_dict_t d;
     int n (hra.get_status ());
   }
-  e = errdocs[n];
-  if (e && pub3 ()) {
-    ar->insert ("STATUS", strbuf ("%d", n));
-    ar->insert ("SERVINFO", servinfo ());
+  fnp = _errdocs[n];
+  if ((fnp = _errdocs[n]) && *fnp && pub3 ()) {
+    d ("STATUS") = n;
+    d ("SERVINFO") = servinfo ();
     if (s) {
-      ar->insert ("AUXSTR", s);
+      d ("AUXSTR") = s;
     }
-    twait { http_pub_t::alloc2 (pub3 (), hra, e->fn, mkevent (hp), ar); }
+    twait { http_pub_t::alloc2 (pub3 (), hra, *fnp, mkevent (hp), d.dict ()); }
     ret = hp;
   }
 
@@ -163,14 +163,14 @@ ok_httpsrv_t::geterr2_T (str s, const http_resp_attributes_t &hra,
     ret = New refcounted<http_error_t> (hra, servinfo (), s);
   }
 
-  TRIGGER (cb, ret);
+  ev->trigger (ret);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
 ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s, 
-		       cbv::ptr c, http_inhdr_t *h, okclnt_interface_t *b) 
+		       evv_t::ptr ev, http_inhdr_t *h, okclnt_interface_t *b) 
 {
   tvars {
     ptr<http_parser_raw_t> prs;
@@ -195,8 +195,9 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
   if (!x->closed ()) {
     twait { e->send (x, mkevent ()); }
   }
-  if (c) 
-    (*c) ();
+  if (ev) { 
+    ev->trigger ();
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -520,14 +521,14 @@ ok_con_t::ctlclose ()
 //-----------------------------------------------------------------------
 
 tamed void
-oksrvc_t::debug_launch (cbv cb)
+oksrvc_t::debug_launch (evv_t ev)
 {
   if (wait_for_signal_in_startup) {
     SVC_CHATTER ("waiting for SIGCONT before continuing...");
     twait { sigcb (SIGCONT, mkevent ()); }
     sigcb (SIGCONT, NULL);
   }
-  (*cb) ();
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -633,7 +634,7 @@ oksrvc_t::launch_T ()
 //-----------------------------------------------------------------------
 
 tamed void 
-oksrvc_t::launch_dbs (cbb cb)
+oksrvc_t::launch_dbs (evb_t ev)
 {
   tvars { 
     vec<bool> rc; 
@@ -669,7 +670,7 @@ oksrvc_t::launch_dbs (cbb cb)
   if (OKDBG2(SVC_DATABASES)) {
     SVC_CHATTER ("- launched databases\n");
   }
-  TRIGGER (cb, ret);
+  ev->trigger (ret);
 }
 
 //-----------------------------------------------------------------------
@@ -947,10 +948,11 @@ okclnt_base_t::redirect_T (const str &l, int ht_in, evv_t::ptr ev)
   if (uid_set) rsp->set_uid (uid);
   twait { send (rsp, mkevent ()); }
 
+  send_complete ();
+
   if (ev) {
     ev->trigger ();
   }
-  send_complete ();
 }
 
 //-----------------------------------------------------------------------
@@ -1076,7 +1078,7 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
 //-----------------------------------------------------------------------
 
 tamed void
-okclnt_base_t::output_file (const char *f, cbb::ptr cb, ptr<pub3::dict_t> a, 
+okclnt_base_t::output_file (const char *f, evb_t::ptr ev, ptr<pub3::dict_t> a, 
 			    pub3::opts_t opt)
 {
   tvars {
@@ -1095,9 +1097,10 @@ okclnt_base_t::output_file (const char *f, cbb::ptr cb, ptr<pub3::dict_t> a,
     }
   }
 
-  if (cb)
-    TRIGGER (cb, ret);
   send_complete ();
+
+  if (ev)
+    ev->trigger (ret);
 }
 
 //-----------------------------------------------------------------------
@@ -1119,10 +1122,11 @@ okclnt_base_t::output_done (evb_t::ptr ev)
     ret = true;
   }
 
+  send_complete ();
+
   if (ev) {
     ev->trigger (ret);
   } 
-  send_complete ();
 }
 
 //-----------------------------------------------------------------------
@@ -1428,6 +1432,10 @@ oksrvc_t::post_launch_pub_T (evb_t ev)
     b << "In getting error documents: " << s;
     okdbg_warn (ERROR, b);
     rc = false;
+  } else {
+    for (size_t i = 0; i < _errdocs_x.docs.size (); i++) {
+      _errdocs.insert (_errdocs_x.docs[i].status, _errdocs_x.docs[i].fn);
+    }
   }
   ev->trigger (rc);
 }

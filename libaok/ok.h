@@ -60,15 +60,6 @@ typedef enum { OKC_STATE_NONE = 0,
 
 //-----------------------------------------------------------------------
 
-struct errdoc_t {
-  errdoc_t (int n, const str &f) : status (n), fn (f) {}
-  int status;
-  str fn;
-  ihash_entry<errdoc_t> lnk;
-};
-
-//-----------------------------------------------------------------------
-
 #define PORT_MAX USHRT_MAX
 
 typedef event<ok_xstatus_typ_t>::ref okstat_ev_t;
@@ -308,23 +299,23 @@ public:
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}
 
-  typedef callback<void, ptr<http_response_base_t> >::ref http_resp_cb_t;
+  typedef event<ptr<http_response_base_t> >::ref http_resp_ev_t;
       
-  virtual ~ok_httpsrv_t () { errdocs.deleteall (); }
+  virtual ~ok_httpsrv_t () { }
   virtual void add_pubfile (const str &s, bool conf = false) {}
 
-  virtual void error (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
+  virtual void error (ref<ahttpcon> x, int n, str s = NULL, evv_t::ptr e = NULL,
 		      http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL)
-  { error_T (x, n, s, c, h, cli); }
+  { error_T (x, n, s, e, h, cli); }
 
   virtual str servinfo () const;
   
-  virtual void geterr (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb)
-  { geterr_T (n, s, v, gz, cb); }
+  virtual void geterr (int n, str s, htpv_t v, bool gz, http_resp_ev_t ev)
+  { geterr_T (n, s, v, gz, ev); }
 
   virtual void 
-  geterr (str s, const http_resp_attributes_t &hra, http_resp_cb_t cb) 
-  { geterr2_T (s, hra, cb); }
+  geterr (str s, const http_resp_attributes_t &hra, http_resp_ev_t ev) 
+  { geterr2_T (s, hra, ev); }
 
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
 		    http_response_base_t *res,
@@ -348,11 +339,11 @@ public:
   virtual ptr<const pub3::remote_publisher_t> pub3 () const { return _pub3; }
 
 private:
-  void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_cb_t cb, CLOSURE);
+  void geterr_T (int n, str s, htpv_t v, bool gz, http_resp_ev_t ev, CLOSURE);
   void geterr2_T (str s, const http_resp_attributes_t &hra, 
-		 http_resp_cb_t cb, CLOSURE);
+		 http_resp_ev_t ev, CLOSURE);
 
-  void error_T (ref<ahttpcon> x, int n, str s = NULL, cbv::ptr c = NULL,
+  void error_T (ref<ahttpcon> x, int n, str s = NULL, evv_t::ptr c = NULL,
 		http_inhdr_t *h = NULL, okclnt_interface_t *cli = NULL, 
 		CLOSURE);
 
@@ -361,7 +352,7 @@ protected:
   virtual void enable_accept_guts () = 0;
   virtual void disable_accept_guts () = 0;
 
-  ihash<int, errdoc_t, &errdoc_t::status, &errdoc_t::lnk> errdocs;
+  qhash<int,str> _errdocs;
   xpub_errdoc_set_t _errdocs_x;
   mutable str si;
   str logfmt;
@@ -543,7 +534,7 @@ public:
   bool output_hdr (ssize_t sz = -1);
   bool output_fragment (str s);
   bool output_fragment (compressible_t &b, cbv::ptr done = NULL);
-  void output_file (const char *fn, cbb::ptr cb = NULL, 
+  void output_file (const char *fn, evb_t::ptr cb = NULL, 
 		    ptr<pub3::dict_t> a = NULL,
 		    pub3::opts_t opt = 0, CLOSURE);
 
@@ -757,7 +748,7 @@ protected:
   virtual void call_exit (int rc) 
 	{ exit (rc); } // Python needs to override this
 
-  void launch_dbs (cbb cb, CLOSURE);
+  void launch_dbs (evb_t ev, CLOSURE);
 
   void handle_new_con (svccb *sbp);
   void handle_new_con2 (svccb *sbp);
@@ -772,7 +763,7 @@ protected:
   handle_new_con_common (const okclnt_sin_t &sin_in, ptr<ahttpcon> *x_out);
 
   // debug initialization procedure
-  void debug_launch (cbv cb, CLOSURE);
+  void debug_launch (evv_t ev, CLOSURE);
 
   str name;
   list<okclnt_interface_t, &okclnt_interface_t::lnk> clients;

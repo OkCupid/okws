@@ -85,7 +85,7 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
   if (s.size () != 3 || !convertint (s[1], &status)) {
     warn << loc << ": usage: ErrorDoc <status> <pub-path>\n";
     *errp = true;
-  } else if (errdocs[status]) {
+  } else if (_errdocs[status]) {
     warn << loc << ": duplicate ErrorDoc ID: " << status << "\n";
     *errp = true;
   } else {
@@ -95,6 +95,7 @@ okd_t::got_err_doc (vec<str> s, str loc, bool *errp)
     ed.status = status;
     ed.fn = s[2];
     _errdocs_x.docs.push_back (ed);
+    _errdocs.insert (status, s[2]);
   }
 }
 

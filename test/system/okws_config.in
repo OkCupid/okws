@@ -42,6 +42,7 @@ Service		forloop /forloop
 Service		reflect /reflect
 Service		objtest /objtest
 Service		timer /timer
+Service		errortest /errortest
 
 #Service	3tier/tst2 /tst2
 

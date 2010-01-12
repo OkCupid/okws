@@ -284,7 +284,7 @@ http_pub_t::publish (ptr<pub3::remote_publisher_t> p, str fn,
     zbuf b;
     bool rc;
   }
-  twait { p->run (&b, fn, mkevent (rc), env, pub3::P_WSS); }
+  twait { p->run (&b, fn, mkevent (rc), env); }
   if (rc) {
     gzip_mode_t gzm = ok_gzip_get_mode (b, v);
     b.compressible_t::to_strbuf (&body, &_hold, gzm);
