@@ -326,7 +326,7 @@ public:
     queue.push_back (queue_el_t (b, sfs_get_timenow()));
   }
 
-  void set_max_q (u_int32_t q) { maxq = min<u_int> (q, MTD_MAXQ); }
+  void set_max_q (u_int32_t q);
   u_int32_t get_max_q () const { return maxq; }
   
 protected:

@@ -147,4 +147,18 @@ sex_t char_to_sex (char c);
 str check_email (const str &in);
 str check_zipcode (const str &in);
 
+
+// When connecting to a mysql server, these are some useful parameters
+// to have all in one place.  We're not keeping them in libamysql to
+// make them more accessible to other parts of the system, though this
+// a somewhat unfortunate hack.
+struct dbparam_t {
+  dbparam_t () : _port (0), _flags (0) {}
+
+  str       _database, _user, _host, _pw;
+  u_int     _port;
+  u_long    _flags;
+  str       _report_rpcs;
+};
+
 #endif /* _LIBWEB_WEB_H */

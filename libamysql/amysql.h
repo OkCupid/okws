@@ -651,15 +651,6 @@ public:
   ptr<mybind_t> p;
 };
 
-struct dbparam_t {
-  dbparam_t () : _port (0), _flags (0) {}
-
-  str       _database, _user, _host, _pw;
-  u_int     _port;
-  u_long    _flags;
-  str       _report_rpcs;
-};
-
 class tz_corrector_t;
 
 class mystmt_t;

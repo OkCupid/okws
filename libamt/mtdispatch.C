@@ -77,6 +77,9 @@ mtdispatch_t::~mtdispatch_t ()
   delete shmem;
 }
 
+void mtdispatch_t::set_max_q (u_int32_t q)
+{ maxq = min<u_int> (q, MTD_MAXQ); }
+
 bool
 mtdispatch_t::async_serv (svccb *b)
 {
