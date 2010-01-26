@@ -10,4 +10,6 @@ TODOs
     - requested filters:
 	    - inet_ntoa, inet_aton
 		- assert, wart
+		- sprintf, int, str
     - deprecated variable warnings.
+	- XDR/json translators.
