@@ -132,6 +132,13 @@ namespace pub3 {
 	  err.push_back (b);
 	}
 	break;
+
+      case 'f':
+	if (ib && !args[i]->to_double (&a._f)) {
+	  strbuf b ("argument %zd: expected a double", hi);
+	  err.push_back (b);
+	}
+	break;
 	
       case 's': 
 	if (ib && !(a._s = args[i]->arg_to_str ())) {

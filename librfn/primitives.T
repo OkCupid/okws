@@ -87,4 +87,27 @@ namespace rfn3 {
   }
 
   //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  int_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const pub3::expr_t> e = args[0]._O;
+    int64_t i = 0;
+    if (e) i = e->to_int ();
+    return expr_int_t::alloc (i);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  str_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const pub3::expr_t> e = args[0]._O;
+    str s;
+    if (e) s = e->to_str (false);
+    return expr_str_t::safe_alloc (s);
+  }
+
+  //-----------------------------------------------------------------------
+
 };

@@ -1,6 +1,7 @@
 
 #include "okrfn.h"
 #include "okformat.h"
+#include <math.h>
 
 namespace rfn3 {
 
@@ -37,5 +38,31 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  round_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    double d = args[0]._f;
+    return expr_double_t::alloc (round (d));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  ceil_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    double d = args[0]._f;
+    return expr_double_t::alloc (ceil (d));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  floor_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    double d = args[0]._f;
+    return expr_double_t::alloc (floor (d));
+  }
+
+  //-----------------------------------------------------------------------
 
 };

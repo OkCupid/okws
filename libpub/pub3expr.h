@@ -136,6 +136,8 @@ namespace pub3 {
     virtual str type_to_str () const { return "object"; }
     virtual bool to_int (int64_t *out) const { return false; }
     virtual scalar_obj_t to_scalar () const;
+    virtual bool to_double (double *out) const { return false; }
+    virtual double to_double () const { return 0.0; }
 
     // Evaluating an argument to string, internally to the 
     // evaluation mechanism. Only overidden in the case of null
@@ -734,6 +736,7 @@ namespace pub3 {
 
     bool to_bool () const { return _val != 0; }
     double to_double () const { return _val; }
+    bool to_double (double *d) const;
     scalar_obj_t to_scalar () const;
     str to_str (bool q = false) const;
 

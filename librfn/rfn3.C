@@ -54,6 +54,10 @@ namespace rfn3 {
     F(enumerate);
     F(dump_env);
     F(contains);
+    F(int);
+    F(round);
+    F(ceil);
+    F(str);
 
 #undef F
   }

@@ -1171,6 +1171,15 @@ namespace pub3 {
 #undef BUFSZ
     return buf;
   }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  expr_double_t::to_double (double *out) const
+  {
+    *out = _val;
+    return true;
+  }
   
   //====================================================================
 

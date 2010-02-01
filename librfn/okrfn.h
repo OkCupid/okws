@@ -49,6 +49,11 @@ namespace rfn3 {
   PUB3_COMPILED_FN(enumerate, "l");
   PUB3_COMPILED_FN(dump_env, "");
   PUB3_COMPILED_FN(contains, "lO");
+  PUB3_COMPILED_FN(int, "O");
+  PUB3_COMPILED_FN(round, "d");
+  PUB3_COMPILED_FN(ceil, "d");
+  PUB3_COMPILED_FN(floor, "d");
+  PUB3_COMPILED_FN(str, "O");
   
   //-----------------------------------------------------------------------
 
