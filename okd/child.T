@@ -188,6 +188,7 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     clnt_stat err;
     ptr<bool> df;
     ref<ahttpcon_clone> xc (acw.con ());
+    int fd (-1);
   }
 
   df = destroyed;
@@ -208,9 +209,12 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     acw.demux_data ()->set_forward_time ();
     acw.to_xdr (&arg);
 
-    // Hack: reclaim the FD, but hold onto the ahttpcon until
-    // after the server has acked it.
-    ctlx->sendfd (xc->takefd ());
+    // Take the FD away from the ahttpcon; is OURS now.
+    fd = xc->takefd ();
+
+    // Second argument false: DON'T close the FD inside of sfs libs,
+    // do it explicitly below...
+    ctlx->sendfd (fd, false);
 
     // Note! Calling sendfd above might have revealed an EOF condition,
     // which will callback immediately with ctlx = NULL and clnt = NULL
@@ -240,16 +244,14 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 	CH_ERROR ("Service rejected new connection: " << res);
       }
     }
-
-    //
-    // XXX core-0-2 note:
-    //
-    // Hold on xc until we've heard back, which will trigger a callback
-    // saying that one fewer FD is in transit; however, we'd do best
-    // to simplify this mechanism.
-    //
-
   }
+
+  // Only close the FD once it's been ACK'ed by the service (i.e., the RPC
+  // has returned).  Note that we can simplify ALOT here, by updating
+  // per_svc_nfd_in_xit here, and not as a result of the callback that fires
+  // when acw goes out of scope below as this method exits.  However, just
+  // leave it lie for now.
+  if (fd >= 0) { close (fd); }
 }
 
 //-----------------------------------------------------------------------
