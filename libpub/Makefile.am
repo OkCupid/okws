@@ -28,6 +28,7 @@ libpub_la_SOURCES = \
 	pub3debug.C \
 	pub3lib.C \
 	pub3eng.C \
+	pub3heredoc.C \
 	slave.C \
 	zstr.C \
 	okconst.C \
@@ -39,7 +40,7 @@ libpub_la_SOURCES = \
 	adebug.C \
 	scalar.C \
 	sync.C \
-	escape.C  
+	escape.C 
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
@@ -84,7 +85,8 @@ okwsinclude_HEADERS = \
 	pub3debug.h \
 	pub3lib.h \
 	pub3eng.h \
-	clist.h  
+	clist.h \
+	pub3heredoc.h
 
 noinst_HEADERS =  env.mk
 

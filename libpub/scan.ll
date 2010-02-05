@@ -266,10 +266,10 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 [/][/].*$        { /* comment -- strip out */ }
 [/][*]           { yy_push_state (C_COMMENT); }
 
-"{{"		{ 
+"=?{{"		{ 
    	     	   yy_d_brace ++; 
 		   yy_push_state (H);
-	 	   return T_2L_BRACE; 
+	 	   return (yytext[0] == '=') ? T_P3_HEREDOC : T_2L_BRACE; 
 		}
 .		{ return yyerror ("illegal token in Pub v3 environment"); }
 }

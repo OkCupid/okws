@@ -49,6 +49,7 @@
 %token T_P3_BREAK
 %token T_P3_RETURN
 %token T_P3_CONTINUE
+%token T_P3_HEREDOC
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -77,7 +78,7 @@
 %type <p3expr> p3_conditional_expr;
 %type <p3expr> p3_logical_OR_expr;
 %type <p3expr> p3_bind_value_opt;
-%type <p3expr> p3_null;
+%type <p3expr> p3_null p3_heredoc;
 %type <p3expr> p3_return_value;
 %type <p3str>  p3_string_elements_opt p3_string_elements;
 %type <p3dict> p3_bindings_opt p3_bindings p3_dictionary;
@@ -496,9 +497,16 @@ p3_postfix_expr:
 	   | p3_list         { $$ = $1; }
 	   | p3_lambda       { $$ = $1; }
 	   | p3_null         { $$ = $1; }
+	   | p3_heredoc      { $$ = $1; }
 	   ;
 
 p3_null : T_P3_NULL { $$ = pub3::expr_null_t::alloc (); }
+	;
+
+p3_heredoc : T_P3_HEREDOC p3_html_zone_inner T_2R_BRACE
+        {
+	   $$ = pub3::expr_heredoc_t::alloc ($2);
+	}
 	;
 
 p3_primary_expr: p3_varref   { $$ = $1; }
