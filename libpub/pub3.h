@@ -11,4 +11,5 @@
 #include "pub3file.h"
 #include "pub3cache.h"
 #include "pub3hilev.h"
+#include "pub3heredoc.h"
 

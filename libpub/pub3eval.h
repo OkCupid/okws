@@ -129,6 +129,9 @@ namespace pub3 {
     virtual void output_err (str msg, err_type_t typ) {}
     virtual ptr<const metadata_t> current_metadata () const { return NULL; }
 
+    // replace the output with a new output engine.
+    ptr<output_t> set_output (ptr<output_t> no);
+
   protected:
 
     ptr<env_t> _env;

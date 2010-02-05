@@ -328,6 +328,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
   case XPUB3_EXPR_LAMBDA:
     r = pub3::lambda_t::alloc (*x.lambda);
     break;
+  case XPUB3_EXPR_HEREDOC:
+    r = pub3::heredoc_t::alloc (*x.heredoc);
+    break;
   default:
     break;
   }
@@ -1359,6 +1362,32 @@ pub3::zone_raw_t::to_xdr (xpub3_zone_t *z) const
   z->set_typ (XPUB3_ZONE_RAW);
   z->zone_raw->lineno = lineno ();
   zstr_to_xdr (_data, &z->zone_raw->data, Z_BEST_COMPRESSION);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::heredoc_t> 
+pub3::heredoc_t::alloc (const xpub3_heredoc_t &x)
+{ return New refcounted<heredoc_t> (x); }
+
+//-----------------------------------------------------------------------
+
+pub3::heredoc_t::heredoc_t (const xpub3_heredoc_t &x)
+  : expr_t (x.lineno),
+    _body (zone_t::alloc (x.body)) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::heredoc_t::to_xdr (xpub3_expr_t *x) const
+{
+  x->set_typ (XPUB3_EXPR_HEREDOC);
+  x->heredoc->lineno = lineno ();
+  if (_body) { 
+    x->heredoc->body.alloc ();
+    _body->to_xdr (x->heredoc->body); 
+  }
   return true;
 }
 

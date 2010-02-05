@@ -68,7 +68,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_ASSIGNMENT,
    XPUB3_EXPR_BOOL,
    XPUB3_EXPR_PUBNULL,
-   XPUB3_EXPR_LAMBDA
+   XPUB3_EXPR_LAMBDA,
+   XPUB3_EXPR_HEREDOC
 };
 
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -195,6 +196,11 @@ struct xpub3_lambda_t {
    xpub3_zone_t *body;
 };
 
+struct xpub3_heredoc_t {
+   int lineno;
+   xpub3_zone_t *body;
+};
+
 union xpub3_expr_t switch (xpub3_expr_typ_t typ) {
 case XPUB3_EXPR_NULL:
      void;
@@ -238,6 +244,8 @@ case XPUB3_EXPR_BOOL:
      xpub3_int_t xbool;
 case XPUB3_EXPR_LAMBDA:
      xpub3_lambda_t lambda;
+case XPUB3_EXPR_HEREDOC:
+     xpub3_heredoc_t heredoc;
 };
 
 /* ======================================================================= */

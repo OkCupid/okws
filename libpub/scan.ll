@@ -253,6 +253,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 >=		 { return T_P3_GTEQ; }
 =>		 { return yytext[0]; }
 [%()!=><,[\].+*:;/-] { return yytext[0]; }
+"={"		 { yy_push_state (P3); return T_P3_PUB_HEREDOC; }
 [{]		 { yy_push_state (P3); return yytext[0]; }
 [}]		 { yy_pop_state (); return yytext[0]; }
 "||"		 { return T_P3_OR; }
@@ -266,10 +267,10 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 [/][/].*$        { /* comment -- strip out */ }
 [/][*]           { yy_push_state (C_COMMENT); }
 
-"=?{{"		{ 
+=?"{{"		{ 
    	     	   yy_d_brace ++; 
 		   yy_push_state (H);
-	 	   return (yytext[0] == '=') ? T_P3_HEREDOC : T_2L_BRACE; 
+	 	   return (yytext[0] == '=') ? T_P3_HTML_HEREDOC : T_2L_BRACE; 
 		}
 .		{ return yyerror ("illegal token in Pub v3 environment"); }
 }
