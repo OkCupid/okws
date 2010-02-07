@@ -46,6 +46,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(floor, "d");
   PUB3_COMPILED_FN(str, "O");
   PUB3_COMPILED_FN(tag_escape, "s|r");
+  PUB3_COMPILED_FN(replace, "srs");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);

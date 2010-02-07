@@ -21,6 +21,15 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void
+  compiled_fn_t::set_name (str l, str n)
+  {
+    if (l) _lib = l;
+    if (n) _name = n;
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
   compiled_fn_t::pub_args (publish_t *p, callable_t::args_t in, 
 			   callable_t::cargs_t *out, 

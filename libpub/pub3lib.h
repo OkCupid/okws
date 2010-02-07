@@ -23,7 +23,8 @@ namespace pub3 {
     virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
     str to_str (bool q = false) const;
     bool to_xdr (xpub3_expr_t *x) const { return false; }
-    str name () const { return _name; }
+    virtual str name () const { return _name; }
+    void set_name (str lib, str n);
 
   protected:
     virtual bool safe_args () const { return true; }

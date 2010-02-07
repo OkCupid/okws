@@ -27,5 +27,17 @@ namespace rfn3 {
   }
 
   //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  replace_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    str input = args[0]._s;
+    ptr<rxx> pat = args[1]._r;
+    str repl = args[2]._s;
+
+    return expr_str_t::safe_alloc (rxx_replace (input, *pat, repl));
+  }
+
+  //-----------------------------------------------------------------------
 };
 

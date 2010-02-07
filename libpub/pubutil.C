@@ -650,3 +650,17 @@ getenvval (const char *s)
 }
 
 //-----------------------------------------------------------------------
+
+str
+rxx_replace (str input, rxx pattern, str repl)
+{
+  str ret;
+  if (input) {
+    vec<str> v;
+    split (&v, pattern, input, -1, true);
+    ret = join (repl, v);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
