@@ -4,6 +4,7 @@
 #include "pescape.h"
 #include "okcgi.h"
 #include "crypt.h"
+#include "wide_str.h"
 
 namespace rfn3 {
   
@@ -24,33 +25,14 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  ptr<const expr_t>
-  toupper_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
-    s = my_toupper (s);
-    return expr_str_t::safe_alloc (s);
-  }
-  
-  //------------------------------------------------------------
-
-  ptr<const expr_t>
-  tolower_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
-    s = my_tolower (s);
-    return expr_str_t::safe_alloc (s);
-  }
-
-  //------------------------------------------------------------
-
-  ptr<const expr_t>
-  html_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
-    s = xss_escape (s);
-    return expr_str_t::safe_alloc (s);
-  }
+  str toupper_t::filter (str s) { return my_toupper (s); }
+  str tolower_t::filter (str s) { return my_tolower (s); }
+  str html_escape_t::filter (str s) { return xss_escape (s); }
+  str json_escape_t::filter (str s) { return json_escape (s, true); }
+  str hidden_escape_t::filter (str s) { return htmlspecialchars (s); }
+  str url_escape_t::filter (str s) { return cgi_encode (s); }
+  str url_unescape_t::filter (str s) { return cgi_decode (s);  }
+  str utf8_fix_t::filter (str s) { return utf8_fix (s); }
 
   //------------------------------------------------------------
 
@@ -84,16 +66,6 @@ namespace rfn3 {
     return expr_str_t::safe_alloc (s);
   }
 
-  //------------------------------------------------------------
-
-  ptr<const expr_t>
-  json_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
-    s = json_escape (s, true);
-    return expr_str_t::safe_alloc (s);
-  }
-  
   //------------------------------------------------------------
 
   ptr<const expr_t>
@@ -164,10 +136,8 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  ptr<const expr_t>
-  strip_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  str strip_t::filter (str s)
   {
-    str s = args[0]._s;
     static rxx x ("\\s+");
     vec<str> v;
     split (&v, x, s);
@@ -180,51 +150,18 @@ namespace rfn3 {
 	output = true;
       }
     }
-    s = b;
-    return expr_str_t::safe_alloc (s);
+    return b;
   }
 
   //------------------------------------------------------------
 
-  ptr<const expr_t>
-  hidden_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  str sha1_t::filter (str s) 
   {
-    str s = args[0]._s;
-    s = htmlspecialchars (s);
-    return expr_str_t::safe_alloc (s);
-  }
-
-  //------------------------------------------------------------
-
-  ptr<const expr_t>
-  url_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
-    s = cgi_encode (s);
-    return expr_str_t::safe_alloc (s);
-  }
-
-  //------------------------------------------------------------
-
-  ptr<const expr_t>
-  url_unescape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
-    s = cgi_decode (s);
-    return expr_str_t::safe_alloc (s);
-  }
-
-  //------------------------------------------------------------
-
-  ptr<const expr_t>
-  sha1_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
-  {
-    str s = args[0]._s;
     char buf[sha1::hashsize];
     sha1_hash (buf, s.cstr (), s.len ());
     strbuf b;
     b << hexdump (buf, sha1::hashsize);
-    return expr_str_t::safe_alloc (b);
+    return b;
   }
 
   //------------------------------------------------------------

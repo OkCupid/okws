@@ -48,6 +48,7 @@ namespace rfn3 {
     F(now);
     F(days_from_now);
     F(time_from_now);
+    F(strptime);
     F(decorate);
     F(isnull);
     F(default);

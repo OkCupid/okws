@@ -70,4 +70,28 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  strptime_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    str timestr = args[0]._s;
+    str fmt = "%F"; // YYYY-MM-DD
+    struct tm stm;
+    if (args.size () > 1) { fmt = args[1]._s; }
+    memset ((void *)&stm, 0, sizeof (stm));
+
+    const char *t = timestr.cstr ();
+    const char *f = fmt.cstr ();
+
+    ptr<expr_t> ret;
+    if (!strptime (t, f, &stm)) {
+      report_error (p, strbuf ("strptime(%s,%s) failed", t,f));
+      ret = expr_null_t::alloc ();
+    } else {
+      ret = expr_int_t::alloc (mktime (&stm));
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
 };

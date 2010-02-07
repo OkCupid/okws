@@ -21,17 +21,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(join, "sl");
   PUB3_COMPILED_FN(range, "i|ii");
   PUB3_COMPILED_FN(split, "rs");
-  PUB3_COMPILED_FN(tolower, "s");
-  PUB3_COMPILED_FN(toupper, "s");
-  PUB3_COMPILED_FN(html_escape, "s");
-  PUB3_COMPILED_FN(tag_escape, "s");
-  PUB3_COMPILED_FN(json_escape, "s");
-  PUB3_COMPILED_FN(hidden_escape, "s");
   PUB3_COMPILED_FN(substr, "si|i");
-  PUB3_COMPILED_FN(strip, "s");
-  PUB3_COMPILED_FN(url_escape, "s");
-  PUB3_COMPILED_FN(url_unescape, "s");
-  PUB3_COMPILED_FN(sha1, "s");
   PUB3_COMPILED_FN(import, "d");
   PUB3_COMPILED_FN(version_str, "");
   PUB3_COMPILED_FN(version_int, "");
@@ -45,6 +35,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(time_format, "s|u");
   PUB3_COMPILED_FN(days_from_now, "i");
   PUB3_COMPILED_FN(time_from_now, "|iiii"); // D,H,M,S args
+  PUB3_COMPILED_FN(strptime, "s|s"); 
   PUB3_COMPILED_FN(decorate, "l");
   PUB3_COMPILED_FN(enumerate, "l");
   PUB3_COMPILED_FN(dump_env, "");
@@ -54,6 +45,18 @@ namespace rfn3 {
   PUB3_COMPILED_FN(ceil, "d");
   PUB3_COMPILED_FN(floor, "d");
   PUB3_COMPILED_FN(str, "O");
+  PUB3_COMPILED_FN(tag_escape, "s|r");
+
+  PUB3_FILTER(utf8_fix);
+  PUB3_FILTER(strip);
+  PUB3_FILTER(url_escape);
+  PUB3_FILTER(url_unescape);
+  PUB3_FILTER(sha1);
+  PUB3_FILTER(tolower);
+  PUB3_FILTER(toupper);
+  PUB3_FILTER(html_escape);
+  PUB3_FILTER(json_escape);
+  PUB3_FILTER(hidden_escape);
   
   //-----------------------------------------------------------------------
 

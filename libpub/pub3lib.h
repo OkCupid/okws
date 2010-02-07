@@ -128,6 +128,16 @@ namespace pub3 {
     ptr<const expr_t>							\
     v_eval_2 (publish_t *p, const vec<arg_t> &args) const;		\
   }
+  
+#define PUB3_FILTER(x)					     \
+  class x##_t : public pub3::patterned_fn_t {		     \
+  public:						     \
+  x##_t () : patterned_fn_t (libname, #x, "s") {}	     \
+  static str filter (str s);				     \
+  ptr<const expr_t>					     \
+  v_eval_2 (publish_t *p, const vec<arg_t> &args) const	     \
+    { return expr_str_t::safe_alloc (filter (args[0]._s)); } \
+  }
 
 #define PUB3_COMPILED_HANDROLLED_FN(x)					\
   class x##_t : public pub3::compiled_handrolled_fn_t {			\
