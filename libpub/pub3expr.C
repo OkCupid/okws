@@ -1504,6 +1504,22 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  str
+  expr_shell_str_t::to_str (bool q) const
+  {
+    strbuf b;
+    for (size_t i = 0; _els && i < _els->size (); i++) {
+      ptr<const expr_t> x = (*_els)[i];
+      if (x) { 
+	str s = x->to_str ();
+	b << s;
+      }
+    }
+    return b;
+  }
+
+  //--------------------------------------------------------------------
+
   void
   expr_shell_str_t::propogate_metadata (ptr<const metadata_t> md)
   {
@@ -1511,7 +1527,6 @@ namespace pub3 {
       ptr<expr_t> x = (*_els)[i];
       if (x) x->propogate_metadata (md);
     }
-
   }
 
   //--------------------------------------------------------------------

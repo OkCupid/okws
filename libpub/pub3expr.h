@@ -859,6 +859,7 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    str to_str (bool q = false) const;
 
     ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els->push_back (e); }

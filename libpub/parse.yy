@@ -692,8 +692,8 @@ p3_binding: p3_bind_key p3_bind_value_opt
 	}
 	;
 
-p3_bind_key: p3_identifier { $$ = $1; }
-        | p3_string        { $$ = $1->to_str (); }
+p3_bind_key: p3_identifier    { $$ = $1; }
+        | p3_string_constant  { $$ = $1->to_str (); }
 	;
 
 p3_bindchar: ':' | '=' ;
@@ -745,7 +745,9 @@ p3_string_element:
         }
 	;
 
-p3_string_constant: '"' p3_string_constant_inner '"' { $$ = $2; }
+p3_string_constant: '"' p3_string_constant_inner '"'   { $$ = $2; }
+        |           '\'' p3_string_constant_inner '\'' { $$ = $2; }
+	;
 
 p3_string_constant_inner: /* empty */ { $$ = pub3::expr_strbuf_t::alloc (); }
         | p3_string_constant_inner p3_string_constant_element
