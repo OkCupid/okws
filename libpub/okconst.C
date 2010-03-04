@@ -299,6 +299,8 @@ size_t ok_pub3_yy_buffer_size = 0x100000;
 
 const char *ok_pub3_treestat_sentinel = ".treestat_sentinel";
 const char *ok_pub3_treestat_heartbeat = ".treestat_heartbeat";
+const char *ok_pub3_err_obj_key = "pub3_error";
+
 
 //
 // pub3 constants

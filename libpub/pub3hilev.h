@@ -106,6 +106,7 @@ namespace pub3 {
     opts_t opts () const { return _opts; }
     void set_opts (opts_t o) { _opts = o; }
     void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);
+    void set_err_obj_key (str s) { _pub3_err_obj_key = s; }
 
   protected:
     // to be filled in by the sub classes
@@ -117,6 +118,7 @@ namespace pub3 {
 			      ptr<const localizer_t> l);
   private:
     opts_t _opts;
+    str _pub3_err_obj_key;
   };
 
   //=======================================================================

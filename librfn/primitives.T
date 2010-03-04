@@ -122,4 +122,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  warn_trace_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const expr_t> ret = expr_null_t::alloc ();
+    str s = args[0]._s;
+    if (!s) s = "";
+    p->output_err_stacktrace (s, P_ERR_EVAL);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
 };

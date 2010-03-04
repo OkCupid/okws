@@ -32,10 +32,13 @@ namespace pub3 {
     P_OUTPUT_ERR_PLACEHOLDERS = 0x400,      /* output placeholders in place */
     P_OUTPUT_ERR_COMMENTS = 0x800,          /* output errors in comments */
     P_OUTPUT_ERR_NOLOG= 0x1000,             /* don't warn to stderr */
+    P_OUTPUT_ERR_OBJ = 0x2000,              /* pupulate and pub the err-obj */
 
-    P_WARN_INLINE_NULL = 0x2000,            /* warn if %{foo} is NULL */
+    P_WARN_INLINE_NULL = 0x4000,            /* warn if %{foo} is NULL */
 
-    P_INFINITY = 0x2000
+    P_LOOSE_INCLUDE_SCOPING = 0x8000,       /* don't scope barrier */
+
+    P_INFINITY = 0x10000
   };
 
   //-----------------------------------------------------------------------

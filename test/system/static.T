@@ -128,6 +128,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     str mime_type;
     str lang;
     bool skip_pub (false);
+    pub3::opts_t oe;
   }
 
   static bool first_time = true;
@@ -142,10 +143,13 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     first_time = false;
   }
 
+  oe = pub3::P_OUTPUT_ERR_PLACEHOLDERS | pub3::P_OUTPUT_ERR_OBJ;
+
   if (cgi.blookup ("nowss")) { wss = false; }
   if (cgi.blookup ("viserr")) { opts |= pub3::P_OUTPUT_ERR_IN_PLACE; }
   if (cgi.blookup ("iinfo")) { opts |= pub3::P_IINFO; }
   if (cgi.blookup ("verbose")) { opts |= pub3::P_VERBOSE; }
+  if (cgi.blookup ("errobj")) { opts |= oe; }
   if (cgi.blookup ("warninline")) { opts |= pub3::P_WARN_INLINE_NULL; }
 
   if (wss) { opts |= pub3::P_WSS; }

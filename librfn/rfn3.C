@@ -60,6 +60,7 @@ namespace rfn3 {
     F(ceil);
     F(str);
     F(warn);
+    F(warn_trace);
 
 #undef F
   }

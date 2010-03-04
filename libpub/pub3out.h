@@ -27,6 +27,7 @@ namespace pub3 {
     void pop_muzzle (bool b);
 
     void pub3_add_error (const loc_stack_t &stk, str msg, err_type_t typ);
+    ptr<expr_t> err_obj ();
   protected:
     void output_visible_error (str s);
     opts_t _opts;

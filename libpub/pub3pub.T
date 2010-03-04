@@ -43,8 +43,12 @@ namespace pub3 {
       size_t sz;
       xpub_status_t status;
       ptr<file_t> dummy;
+      bool barrier (true);
     }
-    sz = env ()->push_locals (d, true);
+
+    barrier = !(_opts & P_LOOSE_INCLUDE_SCOPING);
+
+    sz = env ()->push_locals (d, barrier);
     twait { _pub_iface->publish (this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
     ev->trigger (status);

@@ -265,6 +265,24 @@ namespace pub3 {
     return bottom_frame;
   }
 
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  env_t::lookup_val (const str &nm) const
+  {
+    ptr<const expr_t> x;
+    ssize_t i = _stack.size () - 1;
+    while (!x && i >= 0) {
+      stack_layer_t l = _stack[i];
+      if (l._bindings && l._bindings->lookup (nm, &x)) {
+	if (l._typ == LAYER_UNIREFS) { _universals->lookup (nm, &x); }
+	if (!x) { x = expr_null_t::alloc (); }
+      }
+      i = dec_stack_pointer (l, i);
+    }
+    return x;
+  }
+
   //================================================ eval_t ================
 
   eval_t::eval_t (ptr<env_t> e, ptr<output_t> o)
@@ -292,20 +310,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  env_t::lookup_val (const str &nm) const
+  void
+  eval_t::add_err_obj (str n)
   {
-    ptr<const expr_t> x;
-    ssize_t i = _stack.size () - 1;
-    while (!x && i >= 0) {
-      stack_layer_t l = _stack[i];
-      if (l._bindings && l._bindings->lookup (nm, &x)) {
-	if (l._typ == LAYER_UNIREFS) { _universals->lookup (nm, &x); }
-	if (!x) { x = expr_null_t::alloc (); }
-      }
-      i = dec_stack_pointer (l, i);
-    }
-    return x;
+    env ()->add_global_binding (n, out ()->err_obj ());
   }
 
   //-----------------------------------------------------------------------

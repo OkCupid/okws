@@ -126,7 +126,9 @@ namespace pub3 {
   void
   output_t::output_err (const loc_stack_t &stk, str msg, err_type_t t)
   {
-    pub3_add_error (stk, msg, t);
+    if (_opts & P_OUTPUT_ERR_OBJ) {
+      pub3_add_error (stk, msg, t);
+    }
 
     str typ = typ2str (t);
 
@@ -163,6 +165,10 @@ namespace pub3 {
       }
     }
   }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t> output_t::err_obj () { return _err_obj.obj (); }
 
   //=================================== output_std_t ====================
 

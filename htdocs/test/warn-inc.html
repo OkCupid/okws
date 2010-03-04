@@ -1,0 +1,17 @@
+{%
+
+   if (iter == 0) {
+      warn ("foo " + 40 + " bar");
+      warn_trace ("jumble jimble");
+
+      if (pub3_error) {{
+<hr/>
+<b>errors</b>: %{pub3_error}
+
+<hr/>
+
+     }}
+   } else {
+      include ("warn-inc.html", { iter : iter - 1 })
+   }
+%}

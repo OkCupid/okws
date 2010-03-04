@@ -4,6 +4,7 @@
 #include "pub3prot.h"
 #include "crypt.h"
 #include "pub3hilev.h"
+#include "pub3out.h"
 
 namespace pub3 {
 
@@ -34,7 +35,9 @@ namespace pub3 {
 
   //=======================================================================
 
-  abstract_publisher_t::abstract_publisher_t (opts_t o) : _opts (o) {}
+  abstract_publisher_t::abstract_publisher_t (opts_t o) : 
+    _opts (o), 
+    _pub3_err_obj_key (ok_pub3_err_obj_key) {}
 
   //-----------------------------------------------------------------------
 
@@ -67,8 +70,19 @@ namespace pub3 {
 
     pub.set_opts (opts);
     pub.set_pub_iface (mkref (this));
-    if (d)
+
+
+    // In "placeholders" mode, there's a little red placeholder published
+    // and then the error object is published into the page, for the 
+    // designer to style as desired.
+    if ((opts & P_OUTPUT_ERR_OBJ) && _pub3_err_obj_key) {
+      pub.add_err_obj (_pub3_err_obj_key);
+    }
+
+    if (d) {
       pub.env ()->push_locals (d, false);
+    }
+    
 
     twait { publish (&pub, fn, mkevent (status, file)); }
 

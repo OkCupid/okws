@@ -129,6 +129,10 @@ namespace pub3 {
     virtual void output_err (str msg, err_type_t typ) {}
     virtual ptr<const metadata_t> current_metadata () const { return NULL; }
 
+    // Add the error object from output into the global bindings list
+    // (in the environment)
+    void add_err_obj (str key);
+
     // replace the output with a new output engine.
     ptr<output_t> set_output (ptr<output_t> no);
 
