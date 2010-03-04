@@ -59,7 +59,7 @@ namespace pub3 {
   {
     tvars {
       holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
-      publish_t pub (unis, b);
+      publish_t pub (unis, b, opts);
       status_t status;
       ptr<file_t> file;
     }
@@ -88,7 +88,7 @@ namespace pub3 {
   {
     tvars {
       ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
-      publish_t pub (d);
+      publish_t pub (d, opts);
       status_t status;
       ptr<file_t> file;
     }

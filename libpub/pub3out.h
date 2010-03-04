@@ -22,7 +22,7 @@ namespace pub3 {
     void output_err (str msg, err_type_t t);
     void output_err (const loc_stack_t &stack, str msg, err_type_t t);
 
-    static ptr<output_t> alloc (zbuf *z);
+    static ptr<output_t> alloc (zbuf *z, opts_t o = 0);
     bool push_muzzle (bool b);
     void pop_muzzle (bool b);
 
@@ -52,7 +52,7 @@ namespace pub3 {
     output_silent_t (opts_t o = 0) : output_t (o) {}
     void output (str s) {}
     void output (zstr s) {}
-    static ptr<output_silent_t> alloc ();
+    static ptr<output_silent_t> alloc (opts_t o = 0);
   };
 
   //--------------------------------------------------------------------

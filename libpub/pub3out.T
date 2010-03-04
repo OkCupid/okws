@@ -8,11 +8,11 @@ namespace pub3 {
   //========================================== output_t ==================
 
   ptr<output_t>
-  output_t::alloc (zbuf *z)
+  output_t::alloc (zbuf *z, opts_t o)
   {
     ptr<output_t> ret;
-    if (z) { ret = New refcounted<output_std_t> (z);   }
-    else   { ret = New refcounted<output_silent_t> (); }
+    if (z) { ret = New refcounted<output_std_t> (z, o);   }
+    else   { ret = New refcounted<output_silent_t> (o); }
     return ret;
   }
 
@@ -171,8 +171,8 @@ namespace pub3 {
 
   //=================================== output_silent_t ================
 
-  ptr<output_silent_t> output_silent_t::alloc () 
-  { return New refcounted<output_silent_t> (); }
+  ptr<output_silent_t> output_silent_t::alloc (opts_t o) 
+  { return New refcounted<output_silent_t> (o); }
 
   //====================================================================
 

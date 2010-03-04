@@ -113,9 +113,9 @@ namespace pub3 {
 
   class publish_t : public eval_t {
   public:
-    publish_t (ptr<bindtab_t> unis, zbuf *z); // for output
-    publish_t (ptr<bindtab_t> universals);    // for cfg
-    publish_t (ptr<env_t> e, ptr<output_t> o);
+    publish_t (ptr<bindtab_t> unis, zbuf *z, opts_t o = 0); // for output
+    publish_t (ptr<bindtab_t> universals, opts_t o = 0);    // for cfg
+    publish_t (ptr<env_t> e, ptr<output_t> o, opts_t opts = 0);
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_opts (opts_t o) { _opts = o; }

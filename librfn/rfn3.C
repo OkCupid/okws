@@ -59,6 +59,7 @@ namespace rfn3 {
     F(round);
     F(ceil);
     F(str);
+    F(warn);
 
 #undef F
   }

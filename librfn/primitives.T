@@ -110,4 +110,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  warn_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const expr_t> ret = expr_null_t::alloc ();
+    str s = args[0]._s;
+    if (!s) s = "";
+    report_error (p, s);
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
 };
