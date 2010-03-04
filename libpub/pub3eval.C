@@ -108,8 +108,12 @@ namespace pub3 {
   env_t::bind_globals (ptr<bindtab_t> t)
   {
     size_t ret = _stack.size ();
-    if (!t) { /* noop */ }
-    else if (!_globals || !_globals->size ()) {
+    if (!t) { 
+      /* noop */ 
+    } else if (!_globals || !_globals->size ()) {
+      // This is a skeezy optimization -- if there's nothing in the
+      // globals array, then it's ok to just replace it.  but make
+      // sure we replace it in both places!
       _globals = t; 
       _stack[_global_frames]._bindings = t;
     } else {
