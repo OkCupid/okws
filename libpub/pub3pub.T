@@ -43,12 +43,14 @@ namespace pub3 {
       size_t sz;
       xpub_status_t status;
       ptr<file_t> dummy;
-      bool barrier (true);
+      env_t::layer_type_t lt;
     }
 
-    barrier = !(_opts & P_LOOSE_INCLUDE_SCOPING);
+    lt = (_opts & P_LOOSE_INCLUDE_SCOPING) ? 
+      env_t::LAYER_LOCALS_BARRIER_WEAK :
+      env_t::LAYER_LOCALS_BARRIER;
 
-    sz = env ()->push_locals (d, barrier);
+    sz = env ()->push_locals (d, lt);
     twait { _pub_iface->publish (this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
     ev->trigger (status);
@@ -133,7 +135,7 @@ namespace pub3 {
     } else {
       md = file->metadata ();
       push_metadata (md);
-      sz = env ()->push_locals (md->to_dict (), false);
+      sz = env ()->push_locals (md->to_dict ());
       twait { file->data ()->publish (this, mkevent (status)); }
       env ()->pop_to (sz);
       pop_metadata ();

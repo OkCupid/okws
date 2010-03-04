@@ -37,7 +37,6 @@ namespace pub3 {
   public:
 
     env_t (ptr<bindtab_t> u, ptr<bindtab_t> g = NULL);
-    size_t push_locals (ptr<bind_interface_t> t, bool barrier);
     void pop_to (size_t s);
     ptr<const expr_t> lookup_val (const str &nm) const;
     size_t stack_size () const;
@@ -46,13 +45,27 @@ namespace pub3 {
     ptr<bindtab_t> library () { return _library; }
     size_t bind_globals (ptr<bindtab_t> t);
 
+    //
+    // LAYER_LOCALS_BARRIER -- stops resolution from descending past
+    //   the barrier, whether during and evaluation or a closure capture.
+    //   Is used by default to push on a new file or function call.
+    //
+    // LAYER_LOCALS_BARRIER_WEAK -- doesn't stop resolution from 
+    //   descending past, but does stop a closure capture.
+    //   Is used when P_LOOSE_INCLUDE_SCOPING is turned on to 
+    //   mark include file boundaries in the stack
+    //
     typedef enum { LAYER_NONE = -1,
 		   LAYER_UNIVERSALS = 0,
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
 		   LAYER_LOCALS_BARRIER = 3,
-		   LAYER_UNIREFS = 4, 
-		   LAYER_LIBRARY = 5 } layer_type_t;
+		   LAYER_LOCALS_BARRIER_WEAK = 4,
+		   LAYER_UNIREFS = 5, 
+		   LAYER_LIBRARY = 6 } layer_type_t;
+
+    size_t push_locals (ptr<bind_interface_t> t, 
+			layer_type_t typ = LAYER_LOCALS);
 
     static str layer_type_to_str (layer_type_t lt);
 

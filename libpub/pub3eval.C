@@ -61,6 +61,7 @@ namespace pub3 {
     case LAYER_GLOBALS: ret = "globals"; break;
     case LAYER_LOCALS: ret = "locals"; break;
     case LAYER_LOCALS_BARRIER: ret = "locals_barrier"; break;
+    case LAYER_LOCALS_BARRIER_WEAK: ret = "locals_barrier_weak"; break;
     case LAYER_UNIREFS: ret = "unirefs"; break;
     case LAYER_LIBRARY: ret = "library"; break;
     default: ret = "none"; break;
@@ -92,11 +93,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   size_t
-  env_t::push_locals (ptr<bind_interface_t> t, bool barrier)
+  env_t::push_locals (ptr<bind_interface_t> t, layer_type_t lt)
   {
     size_t ret = _stack.size ();
     if (t) {
-      layer_type_t lt = barrier ? LAYER_LOCALS_BARRIER : LAYER_LOCALS;
       _stack.push_back (stack_layer_t (t, lt));
     }
     return ret;
@@ -146,7 +146,7 @@ namespace pub3 {
       _stack += *cls_stk; 
     }
 
-    push_locals (bi, false);
+    push_locals (bi, LAYER_LOCALS);
     return ret;
   }
 
@@ -278,6 +278,7 @@ namespace pub3 {
 	go = false;
 	break;
       case LAYER_LOCALS_BARRIER:
+      case LAYER_LOCALS_BARRIER_WEAK:
 	go = false;
 	break;
       }

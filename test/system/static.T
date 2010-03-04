@@ -132,7 +132,6 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   }
 
   static bool first_time = true;
- 
 
   if (first_time)
   {

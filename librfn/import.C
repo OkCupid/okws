@@ -14,7 +14,7 @@ namespace rfn3 {
       report_error (p, "empty env in import()");
       res = false;
     } else if (c->size ()) {
-      p->env ()->push_locals (c, false);
+      p->env ()->push_locals (c);
     }
     return expr_bool_t::alloc (res);
   }
