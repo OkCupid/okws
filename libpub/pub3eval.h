@@ -44,6 +44,7 @@ namespace pub3 {
     ptr<mref_t> lookup_ref (const str &nm) const;
     void add_global_binding (const str &nm, ptr<expr_t> v);
     ptr<bindtab_t> library () { return _library; }
+    size_t bind_globals (ptr<bindtab_t> t);
 
     typedef enum { LAYER_NONE = -1,
 		   LAYER_UNIVERSALS = 0,

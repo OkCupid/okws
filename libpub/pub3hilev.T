@@ -71,6 +71,9 @@ namespace pub3 {
     pub.set_opts (opts);
     pub.set_pub_iface (mkref (this));
 
+    if (d) {
+      pub.env ()->bind_globals (d);
+    }
 
     // In "placeholders" mode, there's a little red placeholder published
     // and then the error object is published into the page, for the 
@@ -78,12 +81,7 @@ namespace pub3 {
     if ((opts & P_OUTPUT_ERR_OBJ) && _pub3_err_obj_key) {
       pub.add_err_obj (_pub3_err_obj_key);
     }
-
-    if (d) {
-      pub.env ()->push_locals (d, false);
-    }
     
-
     twait { publish (&pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;

@@ -105,6 +105,22 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   size_t
+  env_t::bind_globals (ptr<bindtab_t> t)
+  {
+    size_t ret = _stack.size ();
+    if (!t) { /* noop */ }
+    else if (!_globals || !_globals->size ()) {
+      _globals = t; 
+      _stack[_global_frames]._bindings = t;
+    } else {
+      (*_globals) += *t; 
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  size_t
   env_t::push_barrier ()
   {
     size_t ret = _stack.size ();
