@@ -55,6 +55,36 @@ namespace pub3 {
   { return pub3::obj_dict_t (get_universals ()); }
 
   //-----------------------------------------------------------------------
+
+  void
+  ap_t::init_for_run (publish_t *p, opts_t opts, ptr<expr_dict_t> d)
+  {
+    if (opts < 0) opts = _opts;
+    
+    p->set_opts (opts);
+    p->set_pub_iface (mkref (this));
+
+    if (d) {
+      p->env ()->bind_globals (d);
+    }
+
+    // In "placeholders" mode, there's a little red placeholder published
+    // and then the error object is published into the page, for the 
+    // designer to style as desired.
+    if ((opts & P_OUTPUT_ERR_OBJ) && _pub3_err_obj_key) {
+      p->add_err_obj (_pub3_err_obj_key);
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  ap_t::uninit_for_run (publish_t *p)
+  {
+    p->set_pub_iface (NULL);
+  }
+
+  //-----------------------------------------------------------------------
   
   tamed void 
   ap_t::run (zbuf *b, str fn, evb_t ev, ptr<expr_dict_t> d, opts_t opts, 
@@ -66,28 +96,15 @@ namespace pub3 {
       status_t status;
       ptr<file_t> file;
     }
-    if (opts < 0) opts = _opts;
 
-    pub.set_opts (opts);
-    pub.set_pub_iface (mkref (this));
-
-    if (d) {
-      pub.env ()->bind_globals (d);
-    }
-
-    // In "placeholders" mode, there's a little red placeholder published
-    // and then the error object is published into the page, for the 
-    // designer to style as desired.
-    if ((opts & P_OUTPUT_ERR_OBJ) && _pub3_err_obj_key) {
-      pub.add_err_obj (_pub3_err_obj_key);
-    }
+    init_for_run (&pub, opts, d);
     
     twait { publish (&pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;
     if (fp) *fp = file;
 
-    pub.set_pub_iface (NULL);
+    uninit_for_run (&pub);
 
     ev->trigger (status.status == XPUB_STATUS_OK);
   }

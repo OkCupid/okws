@@ -100,6 +100,10 @@ namespace pub3 {
 	      opts_t opts = 0, status_t *sp = NULL, ptr<file_t> *fp = NULL,
 	      CLOSURE);
 
+    void run_pub (publish_t *p, str fn, evb_t ev,
+		  status_t *sp = NULL, ptr<file_t> *fp = NULL,
+		  CLOSURE);
+
     void run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d = NULL,
 		  opts_t opts = -1, status_t *sp = NULL, CLOSURE);
 
@@ -108,12 +112,15 @@ namespace pub3 {
     void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);
     void set_err_obj_key (str s) { _pub3_err_obj_key = s; }
 
+    void init_for_run (publish_t *p, opts_t o, ptr<expr_dict_t> d);
+    void uninit_for_run (publish_t *p);
+    void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE);
+
   protected:
     // to be filled in by the sub classes
     virtual void getfile (str fn, getfile_ev_t ev, opts_t o = 0) = 0;
     virtual bool is_remote () const = 0;
 
-    void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE);
     void list_files_to_check (str cwd, str n, vec<str> *out, 
 			      ptr<const localizer_t> l);
   private:
