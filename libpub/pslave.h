@@ -94,6 +94,7 @@ public:
   void set_max_retries (u_int i) { max_retries = i; }
   void set_retry_delay (u_int i) { rdelay = i; }
   void set_max_qlen (u_int i) { max_qlen = i; }
+  size_t get_n_calls_out () const { return calls; }
   void set_max_calls (u_int i) { max_calls = i; }
 
   virtual int get_axprt (u_int i = 0) { return -1; }
