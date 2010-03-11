@@ -946,6 +946,7 @@ okclnt_base_t::redirect_T (const str &l, int ht_in, evv_t::ptr ev)
 
   rsp = New refcounted<http_response_redirect_t> (l, hra);
   if (uid_set) rsp->set_uid (uid);
+  fixup_log (rsp);
   twait { send (rsp, mkevent ()); }
 
   send_complete ();

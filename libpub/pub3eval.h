@@ -52,7 +52,7 @@ namespace pub3 {
     //
     // LAYER_LOCALS_BARRIER_WEAK -- doesn't stop resolution from 
     //   descending past, but does stop a closure capture.
-    //   Is used when P_LOOSE_INCLUDE_SCOPING is turned on to 
+    //   Is used when P_STRICT_INCLUDE_SCOPING is turned off to 
     //   mark include file boundaries in the stack
     //
     typedef enum { LAYER_NONE = -1,

@@ -36,7 +36,7 @@ namespace pub3 {
 
     P_WARN_INLINE_NULL = 0x4000,            /* warn if %{foo} is NULL */
 
-    P_LOOSE_INCLUDE_SCOPING = 0x8000,       /* don't scope barrier */
+    P_STRICT_INCLUDE_SCOPING = 0x8000,      /* add scope barrier */
 
     P_INFINITY = 0x10000
   };

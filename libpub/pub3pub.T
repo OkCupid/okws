@@ -46,9 +46,9 @@ namespace pub3 {
       env_t::layer_type_t lt;
     }
 
-    lt = (_opts & P_LOOSE_INCLUDE_SCOPING) ? 
-      env_t::LAYER_LOCALS_BARRIER_WEAK :
-      env_t::LAYER_LOCALS_BARRIER;
+    lt = (_opts & P_STRICT_INCLUDE_SCOPING) ? 
+      env_t::LAYER_LOCALS_BARRIER : 
+      env_t::LAYER_LOCALS_BARRIER_WEAK ;
 
     sz = env ()->push_locals (d, lt);
     twait { _pub_iface->publish (this, nm, mkevent (status, dummy)); }
