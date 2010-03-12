@@ -118,7 +118,7 @@ main_T (int argc, char **argv)
   }
   
   if ((v = getenv ("OKWS_PUB_JAILDIR")) && strlen (v)) {
-    configfile = v;
+    jaildir = v;
   }
  
   while ((ch = getopt (argc, argv, "vp:wj:u:g:f:s:x:CH:S:")) != -1) {
