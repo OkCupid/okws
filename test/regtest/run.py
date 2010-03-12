@@ -343,6 +343,9 @@ class Outcome:
     def compare (self, input):
         raise NotImplementedError, "method Outcome::compare not implemented"
 
+    def empty_is_ok (self):
+        return False
+
     @classmethod
     def alloc (self, k):
         if k._outcome_exact:
@@ -353,8 +356,22 @@ class Outcome:
             return OutcomeRegex (k._outcome_rxx)
         elif k._outcome_data:
             return OutcomeData (k._outcome_data)
+        elif k._outcome_empty:
+            return OutcomeEmpty ()
         else:
             raise RegTestError, "bad test case: no expected outcome given"
+
+##-----------------------------------------------------------------------
+
+class OutcomeEmpty (Outcome):
+    def __init__ (self):
+        Outcome.__init__ (self, None)
+    def compare (self, input):
+        return false
+    def type (self):
+        return "empty"
+    def empty_is_ok (self):
+        return True
 
 ##-----------------------------------------------------------------------
 
@@ -585,7 +602,10 @@ class TestCase:
     ##----------------------------------------
 
     def compare (self, txt):
-        res = self._outcome_obj.compare (txt)
+        if txt:
+            res = self._outcome_obj.compare (txt)
+        else:
+            res = self._outcome_obj.empty_is_ok ()
         self._result = res
         return res
         
@@ -636,12 +656,14 @@ input: %s%s
 
         (status, data) = self.fetch ()
 
-        if status == RESULT_OK and data:
+        if status == RESULT_OK:
             res = self.compare (data)
             if res:
                 ret = status 
                 self.report_success ()
                 self.cleanup ()
+            elif not data:
+                self.report_failure ("empty reply")
             else:
                 f = cfg.write_failure_file (self.name (), data)
                 f2 = cfg.write_outcome_file (self.name (), 
@@ -652,9 +674,6 @@ input: %s%s
 
         elif status == RESULT_SKIPPED:
             ret = status
-
-        else:
-            self.report_failure ("empty reply")
 
         return ret
                 

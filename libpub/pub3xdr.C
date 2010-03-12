@@ -1062,7 +1062,10 @@ void
 pub3::file_t::to_xdr (xpub3_file_t *x) const
 {
   _metadata->to_xdr (&x->metadata);
-  _data_root->to_xdr (&x->root);
+  if (_data_root) {
+    x->root.alloc ();
+    _data_root->to_xdr (x->root);
+  }
   x->opts = _opts;
 }
 

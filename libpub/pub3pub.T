@@ -132,6 +132,8 @@ namespace pub3 {
       msg << "maximum include stack depth (" << ok_pub_max_stack
 	  << ") exceeded when trying to include file " << fn;
       output_err_stacktrace (msg, P_ERR_ERROR);
+    } else if (!file->data ()) {
+      // skip an empty file
     } else {
       md = file->metadata ();
       push_metadata (md);

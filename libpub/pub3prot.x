@@ -316,7 +316,7 @@ struct xpub3_metadata_t {
 
 struct xpub3_file_t {
   xpub3_metadata_t metadata;
-  xpub3_zone_t root;
+  xpub3_zone_t *root;
   unsigned opts;
 };
 
