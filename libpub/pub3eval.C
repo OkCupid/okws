@@ -153,12 +153,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   ptr<bindtab_t>
-  env_t::push_bindings (layer_type_t typ)
+  env_t::push_bindings (layer_type_t typ, bool is_cfg)
   {
     ptr<bindtab_t> ret;
     switch (typ) {
     case LAYER_LIBRARY: ret = _library; break;
-    case LAYER_UNIVERSALS: ret = _universals; break;
+    case LAYER_UNIVERSALS: ret = is_cfg ? _globals : _universals; break;
     case LAYER_GLOBALS: ret = _globals; break;
     case LAYER_LOCALS:
       ret = New refcounted<bindtab_t> ();

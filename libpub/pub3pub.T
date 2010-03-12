@@ -68,8 +68,8 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   // For configuration file publishing!
-  publish_t::publish_t (ptr<bindtab_t> out, opts_t o)
-    : eval_t (New refcounted<env_t> (out, out), output_silent_t::alloc (o)),
+  publish_t::publish_t (ptr<bindtab_t> unis, ptr<bindtab_t> out, opts_t o)
+    : eval_t (New refcounted<env_t> (unis, out), output_silent_t::alloc (o)),
       _opts (o),
       _pws (false),
       _control (control_t::alloc ()) {}
@@ -231,6 +231,18 @@ namespace pub3 {
 
   ptr<const metadata_t> publish_t::current_metadata () const
   { return _stack.back ().metadata (); }
+
+  //--------------------------------------------------------------------
+
+  ptr<bindtab_t>
+  publish_t::push_bindings (env_t::layer_type_t lt)
+  {
+    return env ()->push_bindings (lt, is_config ());
+  }
+
+  //--------------------------------------------------------------------
+  
+  bool publish_t::is_config () const { return _opts & P_CONFIG; }
 
   //========================================= runloc_t =================
 

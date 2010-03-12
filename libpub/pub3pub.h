@@ -117,7 +117,8 @@ namespace pub3 {
   class publish_t : public eval_t {
   public:
     publish_t (ptr<bindtab_t> unis, zbuf *z, opts_t o = 0); // for output
-    publish_t (ptr<bindtab_t> universals, opts_t o = 0);    // for cfg
+    publish_t (ptr<bindtab_t> unis, ptr<bindtab_t> glbs, 
+	       opts_t o = 0);    // for cfg
     publish_t (ptr<env_t> e, ptr<output_t> o, opts_t opts = 0);
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
@@ -139,6 +140,8 @@ namespace pub3 {
     bool push_pws (bool b);
     void pop_pws (bool b);
     bool pws () const;
+    ptr<bindtab_t> push_bindings (env_t::layer_type_t lt);
+    bool is_config () const;
 
     void set_lineno (lineno_t line);
 

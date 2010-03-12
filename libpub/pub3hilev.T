@@ -112,12 +112,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  ap_t::run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d_in, opts_t opts, 
+  ap_t::run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d_in, opts_t o, 
 		 status_t *sp)
   {
     tvars {
+      holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
       ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
-      publish_t pub (d, opts);
+      opts_t opts (o | P_CONFIG);
+      publish_t pub (unis, d, opts);
       status_t status;
       ptr<file_t> file;
     }

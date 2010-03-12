@@ -1149,7 +1149,7 @@ namespace pub3 {
     if (is_static () && locals) {
       p->env ()->push_locals (cow_bindtab_t::alloc (_tab));
     } else {
-      frame = p->env ()->push_bindings (get_decl_type ());
+      frame = p->push_bindings (lt);
 
       // Construct the stack frame as we go! This way we can
       // use the previous binding in evaluating the next. This
@@ -1187,7 +1187,7 @@ namespace pub3 {
     if (is_static () && locals) {
       p->env ()->push_locals (cow_bindtab_t::alloc (_tab));
     } else {
-      ptr<bindtab_t> frame = p->env ()->push_bindings (lt);
+      ptr<bindtab_t> frame = p->push_bindings (lt);
 
       // Construct the stack frame as we go! This way we can
       // use the previous binding in evaluating the next. This
