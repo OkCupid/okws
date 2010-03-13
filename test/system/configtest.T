@@ -86,7 +86,7 @@ str2ref (str in, str *n, vec<size_t> *out)
 tamed void 
 okclnt_configtest_t::process_T ()
 {
-  if (cgi.exists ("global")) {
+  if (cgi.blookup ("global")) {
     twait { run_global (mkevent ()); }
   } else {
     twait { run_local (mkevent ()); }
@@ -145,13 +145,26 @@ okclnt_configtest_t::run_global (evv_t ev)
 {
   tvars {
     bool rc (true);
+    vec<str> files;
+    size_t i;
+    pub3::opts_t o;
+    str f;
+    bool ok (true);
   }
 
-  twait { pub3 ()->run_cfg (cgi["fn"], mkevent (rc), NULL, pub3::P_COPY_CONF); }
-  if (!rc) {
-    out << "Error including file " << cgi["fn"] << " or file wasn't given\n";
-  } else {
-    pub3::obj_t obj = pub3 ()->pub3_config_obj ();
+  cgi.lookup ("fn", &files);
+  o = pub3::P_COPY_CONF;
+
+  for (i = 0; i < files.size (); i++) {
+    f = files[i];
+    twait { pub3 ()->run_cfg (f, mkevent (rc), NULL, o); }
+    if (!rc) {
+      out << "Error including file " << f << "\n";
+      ok = false;
+    }
+  }
+
+  if (ok) {
     str lst = cgi["display"];
     vec<str> vars;
     static rxx comma (",");
