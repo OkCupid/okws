@@ -17,9 +17,9 @@ filedata= [
        universals {
             jazz : "all"
        }
+       switch_on = false;
    }
    universals { "pickle" : "half-sour" }
-   switch_on = false;
 $}
 """, 
 """
