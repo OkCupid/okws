@@ -33,6 +33,9 @@ $}
    if (jam) {
        globals { "whoop" : 100 }
    }
+   if (!jazz) {
+      whoop = 200;
+   }
    locals { "jazz" : false }
    if (!jazz) {
       pickle = "dill";
