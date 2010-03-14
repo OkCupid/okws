@@ -1,0 +1,1393 @@
+Index: libokxml/xmlxlate.C
+===================================================================
+--- libokxml/xmlxlate.C	(revision 5149)
++++ libokxml/xmlxlate.C	(working copy)
+@@ -21,7 +21,7 @@
+ XML_reader_t::enter_field (const char *f)
+ {
+   if (is_empty ())         return error_empty ("struct");
+-  if (!top().is_struct ()) return error_wrong_type ("struct", top());
++  if (!top().is_struct ()) return error_wrong_type ("struct");
+ 
+   push (top()(f));
+   debug_push (f);
+@@ -46,31 +46,31 @@
+ 
+ 
+ bool 
+-rpc_traverse (XML_RPC_obj_t *obj, bool &b)
++rpc_traverse (FLEX_RPC_obj_t *obj, bool &b)
+ {
+   return obj->traverse (b);
+ }
+ 
+ bool 
+-rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) 
++rpc_traverse (FLEX_RPC_obj_t *obj, int32_t &i) 
+ { 
+   return obj->traverse (i);
+ }
+ 
+ bool 
+-rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) 
++rpc_traverse (FLEX_RPC_obj_t *obj, u_int32_t &i) 
+ { 
+   return obj->traverse (i);
+ }
+ 
+ bool
+-rpc_traverse (XML_RPC_obj_t *obj, int64_t &i)
++rpc_traverse (FLEX_RPC_obj_t *obj, int64_t &i)
+ {
+   return obj->traverse (i);
+ }
+ 
+ bool
+-rpc_traverse (XML_RPC_obj_t *obj, u_int64_t &i)
++rpc_traverse (FLEX_RPC_obj_t *obj, u_int64_t &i)
+ {
+   return obj->traverse (i);
+ }
+@@ -112,7 +112,7 @@
+ XML_reader_t::t_traverse (const char *prfx, T &i, bool sig)
+ {
+   if (is_empty ())      return error_empty ("string");
+-  if (!top().is_str ()) return error_wrong_type ("string", top());
++  if (!top().is_str ()) return error_wrong_type ("string");
+ 
+   if (!xml_decode_int_repr (top (), prfx, i, sig)) {
+     strbuf b ("%s decoding error", prfx);
+@@ -160,7 +160,7 @@
+ XML_reader_t::traverse (int32_t &i)
+ {
+   if (is_empty ())      return error_empty ("int");
+-  if (!top().is_int ()) return error_wrong_type ("int", top());
++  if (!top().is_int ()) return error_wrong_type ("int");
+   i = top();
+   return true;
+ }
+@@ -171,7 +171,7 @@
+   if (is_empty ())      
+     return error_empty ("bool");
+   if (!top().is_bool() && !top().is_int ()) 
+-    return error_wrong_type ("bool", top());
++    return error_wrong_type ("bool");
+   b = top();
+   return true;
+ }
+@@ -214,7 +214,7 @@
+   *szp = -1;
+ 
+   if (is_empty ())        return error_empty ("array/vector", -1);
+-  if (!top().is_array ()) return error_wrong_type ("array/vector", top(), -1);
++  if (!top().is_array ()) return error_wrong_type ("array/vector", -1);
+ 
+   size_t sz = top ().size ();
+   
+@@ -247,7 +247,7 @@
+ XML_reader_t::traverse_opaque (str &s)
+ {
+   if (is_empty ())         return error_empty ("base64");
+-  if (!top().is_base64 ()) return error_wrong_type ("base64", top());
++  if (!top().is_base64 ()) return error_wrong_type ("base64");
+   s = top ();
+   return true;
+ }
+@@ -256,7 +256,7 @@
+ XML_reader_t::traverse_string (str &s)
+ {
+   if (is_empty ())         return error_empty ("string");
+-  if (!top().is_str ())    return error_wrong_type ("string", top());
++  if (!top().is_str ())    return error_wrong_type ("string");
+   s = top ();
+   return true;
+ }
+@@ -281,7 +281,7 @@
+   int ret = -1;
+   *alloc = false;
+   if (is_empty ())         return error_empty ("array/ptr", -1);
+-  if (!top ().is_array ()) return error_wrong_type ("array/ptr", top(), -1);
++  if (!top ().is_array ()) return error_wrong_type ("array/ptr", -1);
+ 
+   switch (top ().size ()) {
+   case 0: 
+@@ -313,19 +313,19 @@
+ }
+ 
+ void
+-XML_RPC_obj_t::debug_push (const str &s)
++FLEX_RPC_obj_t::debug_push (const str &s)
+ {
+   _debug_stack.push_back (s);
+ }
+ 
+ void
+-XML_RPC_obj_t::debug_push (int i)
++FLEX_RPC_obj_t::debug_push (int i)
+ {
+   _debug_stack.push_back (strbuf ("%d", i));
+ }
+ 
+ str
+-XML_RPC_obj_t::error_msg (const str &arg)
++FLEX_RPC_obj_t::error_msg (const str &arg)
+ {
+   if (!_err_msg) {
+     return "generic error";
+@@ -337,7 +337,7 @@
+ }
+ 
+ void
+-XML_RPC_obj_t::freeze_err_msg (str s)
++FLEX_RPC_obj_t::freeze_err_msg (str s)
+ {
+   if (!s) s = "generic error";
+   strbuf b;
+@@ -353,47 +353,52 @@
+ }
+ 
+ int
+-XML_RPC_obj_t::error_generic (const char *f, int rc)
++FLEX_RPC_obj_t::error_generic (const char *f, int rc)
+ {
+   freeze_err_msg (f);
+   return rc;
+ }
+ 
+ int
+-XML_RPC_obj_t::error_empty (const char *f, int rc)
++FLEX_RPC_obj_t::error_empty (const char *f, int rc)
+ {
+   strbuf b ("Expected type '%s'; got nothing", f);
+   freeze_err_msg (b);
+   return rc;
+ }
+ 
++str
++XML_reader_t::top_to_type_str () const
++{
++  str s = top ().xml_typename (true);
++  return s;
++}
++
++str
++XML_creator_t::top_to_type_str () const
++{
++  str s = top ().xml_typename (true);
++  return s;
++}
++
+ int
+-XML_RPC_obj_t::error_wrong_type (const char *f, const xml_obj_base_t &o, 
+-                                 int rc)
++FLEX_RPC_obj_t::error_wrong_type (const char *f, int rc)
+ {
+-  const char *e = o.xml_typename (true);
++  str s = top_to_type_str ();
+   
+-  strbuf b ("Expected type '%s'; got '%s' instead", f, e);
++  strbuf b ("Expected type '%s'; got '%s' instead", f, s.cstr ());
+   freeze_err_msg (b);
+   return rc;
+ }
+ 
+-/*
+-int
+-XML_RPC_obj_t::error_wrong_type (const char *f, int rc)
+-{
+-  return error_wrong_type (f, NULL, rc);
+-}
+-*/
++#define PRIM(x) flex_typeinfo_t flex_typeinfo_ ## x =	\
++    { #x, flex_typeinfo_t::PRIMITIVE, NULL }
+ 
+-#define PRIM(x) xml_typeinfo_t xml_typeinfo_ ## x =	\
+-    { #x, xml_typeinfo_t::PRIMITIVE, NULL }
+-
+ #define DEF(x, y) \
+-  static xml_struct_entry_t _xml_typedef_ ## x =			\
+-    { NULL, #x, &xml_typeinfo_ ## y, 0, 0 };				\
+-  xml_typeinfo_t xml_typeinfo_ ## x =					\
+-    { #x, xml_typeinfo_t::TYPEDEF, &_xml_typedef_ ## x }
++  static flex_struct_entry_t _flex_typedef_ ## x =			\
++    { NULL, #x, &flex_typeinfo_ ## y, 0, 0 };				\
++  flex_typeinfo_t flex_typeinfo_ ## x =					\
++    { #x, flex_typeinfo_t::TYPEDEF, &_flex_typedef_ ## x }
+ 
+ PRIM(void);
+ PRIM(bool);
+@@ -410,18 +415,18 @@
+ DEF(uint32_t, u_int32_t);
+ DEF(uint64_t, u_int64_t);
+ 
+-const xml_typeinfo_t *xml_typeinfo_base_types[] = {
+-    &xml_typeinfo_void,
+-    &xml_typeinfo_bool,
+-    &xml_typeinfo_int,
+-    &xml_typeinfo_u_int32_t,
+-    &xml_typeinfo_hyper,
+-    &xml_typeinfo_u_int64_t,
+-    &xml_typeinfo_string,
+-    &xml_typeinfo_opaque,
+-    &xml_typeinfo_int32_t,
+-    &xml_typeinfo_int64_t,
+-    &xml_typeinfo_uint32_t,
+-    &xml_typeinfo_uint64_t,
++const flex_typeinfo_t *flex_typeinfo_base_types[] = {
++    &flex_typeinfo_void,
++    &flex_typeinfo_bool,
++    &flex_typeinfo_int,
++    &flex_typeinfo_u_int32_t,
++    &flex_typeinfo_hyper,
++    &flex_typeinfo_u_int64_t,
++    &flex_typeinfo_string,
++    &flex_typeinfo_opaque,
++    &flex_typeinfo_int32_t,
++    &flex_typeinfo_int64_t,
++    &flex_typeinfo_uint32_t,
++    &flex_typeinfo_uint64_t,
+ };
+ 
+Index: libokxml/okxmlxlatemgr.h
+===================================================================
+--- libokxml/okxmlxlatemgr.h	(revision 5149)
++++ libokxml/okxmlxlatemgr.h	(working copy)
+@@ -91,8 +91,8 @@
+     xlate_mgr_t ();
+     virtual ~xlate_mgr_t () {}
+ 
+-    void add_file (const xml_rpc_file &file);
+-    void add_files (const xml_rpc_file *const * list);
++    void add_file (const flex_rpc_file &file);
++    void add_files (const flex_rpc_file *const * list);
+ 
+     void get_types(xml_req_t input, xml_resp_ev_t cb);
+     void get_prog_info(xml_req_t input, xml_resp_ev_t cb);
+@@ -107,14 +107,14 @@
+     { do_rpc_T (hostname, port, prog, procno, arg, res, cb); }
+ 
+ 
+-    void add_const (const xml_rpc_const_t *c);
+-    void add_program (const xml_rpc_program *p);
+-    void add_type (const xml_typeinfo_t *t);
++    void add_const (const flex_rpc_const_t *c);
++    void add_program (const flex_rpc_program *p);
++    void add_type (const flex_typeinfo_t *t);
+ 
+-    qhash<str, const xml_rpc_program *> _programs;
++    qhash<str, const flex_rpc_program *> _programs;
+     qhash<str, int> _constants;
+-    qhash<str, const xml_rpc_file *> _files;
+-    qhash<str, const xml_typeinfo_t *> _types;
++    qhash<str, const flex_rpc_file *> _files;
++    qhash<str, const flex_typeinfo_t *> _types;
+ 
+     connmgr_t _cmgr;
+ 
+@@ -124,9 +124,9 @@
+ 		   int procno, const void *arg, void *res,
+ 		   aclnt_cb cb, CLOSURE);
+ 
+-    void fill_struct_info(xml_obj_ref_t x, const xml_struct_entry_t *entries,
++    void fill_struct_info(xml_obj_ref_t x, const flex_struct_entry_t *entries,
+                           int type, vec<str> &out, bhash<str> &seen);
+-    void fill_type_info(xml_obj_ref_t x, const xml_typeinfo_t *type,
++    void fill_type_info(xml_obj_ref_t x, const flex_typeinfo_t *type,
+                         vec<str> &out, bhash<str> &seen);
+   };
+ 
+Index: libokxml/xmlxlatemgr.T
+===================================================================
+--- libokxml/xmlxlatemgr.T	(revision 5149)
++++ libokxml/xmlxlatemgr.T	(working copy)
+@@ -100,47 +100,47 @@
+   }
+ 
+   void
+-  xlate_mgr_t::add_program (const xml_rpc_program *p)
++  xlate_mgr_t::add_program (const flex_rpc_program *p)
+   {
+     _programs.insert (p->xdr_prog->name, p);
+   }
+ 
+   void
+-  xlate_mgr_t::add_const (const xml_rpc_const_t *c)
++  xlate_mgr_t::add_const (const flex_rpc_const_t *c)
+   {
+     _constants.insert (c->name, c->val);
+   }
+ 
+   void
+-  xlate_mgr_t::add_type (const xml_typeinfo_t *t)
++  xlate_mgr_t::add_type (const flex_typeinfo_t *t)
+   {
+     _types.insert (t->name, t);
+   }
+ 
+   void
+-  xlate_mgr_t::add_files (const xml_rpc_file *const *list)
++  xlate_mgr_t::add_files (const flex_rpc_file *const *list)
+   {
+-    for (const xml_rpc_file *const *p = list; *p; p++) {
++    for (const flex_rpc_file *const *p = list; *p; p++) {
+       add_file (**p);
+     }
+   }
+ 
+   void
+-  xlate_mgr_t::add_file (const xml_rpc_file &file)
++  xlate_mgr_t::add_file (const flex_rpc_file &file)
+   {
+     _files.insert (file.filename, &file);
+-    for (const xml_rpc_program **p = file.programs; *p; p++) {
++    for (const flex_rpc_program **p = file.programs; *p; p++) {
+       add_program (*p);
+     }
+-    for (const xml_rpc_const_t *c = file.constants; c->name; c++) {
++    for (const flex_rpc_const_t *c = file.constants; c->name; c++) {
+       add_const (c);
+     }
+-    for (const xml_typeinfo_t **t = file.types; *t; t++) {
++    for (const flex_typeinfo_t **t = file.types; *t; t++) {
+       add_type (*t);
+     }
+   }
+ 
+-  class collector_t : public xml_pound_def_collector_t {
++  class collector_t : public flex_pound_def_collector_t {
+   public:
+ 
+     struct xml_pair_t {
+@@ -194,14 +194,14 @@
+ 
+   xlate_mgr_t::xlate_mgr_t()
+   {
+-    for (const xml_typeinfo_t **t = xml_typeinfo_base_types; *t; t++) {
++    for (const flex_typeinfo_t **t = flex_typeinfo_base_types; *t; t++) {
+       add_type (*t);
+     }
+   }
+ 
+   void
+   xlate_mgr_t::fill_struct_info(xml_obj_ref_t x, 
+-				const xml_struct_entry_t *entries, int type, 
++				const flex_struct_entry_t *entries, int type, 
+ 				vec<str> &out, bhash<str> &seen)
+   {
+     size_t i = 0;
+@@ -228,33 +228,33 @@
+         x[i]("qual") = entries[i].qual;
+         x[i]("bound") = entries[i].bound;
+       }
+-      done = !hasAny || (type == xml_typeinfo_t::TYPEDEF);
++      done = !hasAny || (type == flex_typeinfo_t::TYPEDEF);
+       i++;
+     }
+   }
+ 
+   void
+-  xlate_mgr_t::fill_type_info(xml_obj_ref_t x, const xml_typeinfo_t *type, 
++  xlate_mgr_t::fill_type_info(xml_obj_ref_t x, const flex_typeinfo_t *type, 
+ 			      vec<str> &out, bhash<str> &seen)
+   {
+     x("type") = type->name;
+     switch (type->category) {
+-    case xml_typeinfo_t::PRIMITIVE: x("category") = str("PRIMITIVE"); break;
+-    case xml_typeinfo_t::ENUM: x("category") = str("ENUM"); break;
+-    case xml_typeinfo_t::STRUCT:
++    case flex_typeinfo_t::PRIMITIVE: x("category") = str("PRIMITIVE"); break;
++    case flex_typeinfo_t::ENUM: x("category") = str("ENUM"); break;
++    case flex_typeinfo_t::STRUCT:
+       x("category") = str("STRUCT");
+       fill_struct_info(x("members"), type->contents, 
+-		       xml_typeinfo_t::STRUCT, out, seen);
++		       flex_typeinfo_t::STRUCT, out, seen);
+       break;
+-    case xml_typeinfo_t::UNION:
++    case flex_typeinfo_t::UNION:
+       x("category") = str("UNION");
+       fill_struct_info(x("members"), type->contents, 
+-		       xml_typeinfo_t::UNION, out, seen);
++		       flex_typeinfo_t::UNION, out, seen);
+       break;
+-    case xml_typeinfo_t::TYPEDEF:
++    case flex_typeinfo_t::TYPEDEF:
+       x("category") = str("TYPEDEF");
+       fill_struct_info(x("alias"), type->contents, 
+-		       xml_typeinfo_t::TYPEDEF, out, seen);
++		       flex_typeinfo_t::TYPEDEF, out, seen);
+     };
+   }
+ 
+@@ -267,7 +267,7 @@
+     for (size_t i = 0; i < in.size (); i++) {
+       for (size_t j = 0; j < in[i].size (); j++) {
+ 	str n = in[i][j];
+-	const xml_typeinfo_t **t;
++	const flex_typeinfo_t **t;
+ 	if (!n || !(t = _types[n])) continue;
+ 
+         if (seen[(*t)->name]) continue;
+@@ -289,16 +289,16 @@
+     for (size_t i = 0; i < in.size (); i++) {
+       for (size_t j = 0; j < in[i].size (); j++) {
+         str p = in[i][j];
+-        const xml_rpc_program **x;
++        const flex_rpc_program **x;
+         if (!p || !(x = _programs[p])) continue;
+         for (size_t k = 0; k < (*x)->nproc; k++) {
+-          if (! (*x)->xml_tbl[k].name) { 
++          if (! (*x)->flex_tbl[k].name) { 
+             resp(p)[k]("name") = "null";
+             continue;
+           }
+-          resp[0](p)[k]("name") = (*x)->xml_tbl[k].name;
+-          resp[0](p)[k]("arg") = (*x)->xml_tbl[k].xml_arg_type->name;
+-          resp[0](p)[k]("res")= (*x)->xml_tbl[k].xml_res_type->name;
++          resp[0](p)[k]("name") = (*x)->flex_tbl[k].name;
++          resp[0](p)[k]("arg") = (*x)->flex_tbl[k].flex_arg_type->name;
++          resp[0](p)[k]("res")= (*x)->flex_tbl[k].flex_res_type->name;
+         }
+       }
+     }
+@@ -314,9 +314,9 @@
+     for (size_t i = 0; i < in.size (); i++) {
+       for (size_t j = 0; j < in[i].size (); j++) {
+ 	str f = in[i][j];
+-	const xml_rpc_file **x;
++	const flex_rpc_file **x;
+ 	if (f && (x = _files[f])) {
+-	  for (const xml_rpc_const_t *c = (*x)->constants; c->name; c++) {
++	  for (const flex_rpc_const_t *c = (*x)->constants; c->name; c++) {
+ 	    resp[0][k][0] = c->name;
+ 	    resp[0][k][1] = c->val;
+ 	    k++;
+@@ -454,10 +454,10 @@
+       int procno;
+       xml_obj_const_t arg;
+       clnt_stat stat;
+-      const xml_rpc_program **progp;
++      const flex_rpc_program **progp;
+       void *xdr_arg (NULL), *xdr_res (NULL);
+       const rpcgen_table *tblent_xdr;
+-      const xml_rpcgen_table *tblent_xml;
++      const flex_rpcgen_table *tblent_xml;
+       xml_resp_t resp;
+       XML_reader_t xml_arg;
+       XML_creator_t xml_res;
+@@ -478,11 +478,11 @@
+     } else if (procno < 0 || procno > int ((*progp)->xdr_prog->nproc)) {
+       stat = RPC_PROCUNAVAIL;
+     } else {
+-      tblent_xml = (*progp)->xml_tbl + procno;
++      tblent_xml = (*progp)->flex_tbl + procno;
+       tblent_xdr = (*progp)->xdr_prog->tbl + procno;
+ 
+       xdr_arg = (*tblent_xdr->alloc_arg) ();
+-      if (!tblent_xml->xml_arg_proc (&xml_arg, xdr_arg)) {
++      if (!tblent_xml->flex_arg_proc (&xml_arg, xdr_arg)) {
+ 	stat = RPC_CANTDECODEARGS;
+ 	errm = xml_arg.error_msg (my_clnt_sperrno (stat));
+       } else {
+@@ -493,7 +493,7 @@
+ 	}
+ 	if (!stat) {
+ 	  xml_res.setroot (resp[0]);
+-	  if (!tblent_xml->xml_res_proc (&xml_res, xdr_res)) {
++	  if (!tblent_xml->flex_res_proc (&xml_res, xdr_res)) {
+ 	    stat = RPC_CANTDECODERES;
+ 	    errm = xml_res.error_msg (my_clnt_sperrno (stat));
+ 	  }
+Index: libokxml/okxmlxlate.h
+===================================================================
+--- libokxml/okxmlxlate.h	(revision 5149)
++++ libokxml/okxmlxlate.h	(working copy)
+@@ -22,8 +22,7 @@
+  *
+  */
+ 
+-#ifndef _LIBAHTTP_OKXMLXLATE_H
+-#define _LIBAHTTP_OKXMLXLATE_H
++#pragma once
+ 
+ #include "async.h"
+ #include "xdrmisc.h"
+@@ -37,7 +36,7 @@
+ // class (automatically) via includes.
+ //
+ 
+-typedef enum { XML_2_XDR = 1, XDR_2_XML = 2 } XML_RPC_op_t;
++typedef enum { FLEX_2_XDR = 1, XDR_2_FLEX = 2 } FLEX_RPC_op_t;
+ 
+ typedef enum {
+   XDR_STRUCT = 1,
+@@ -48,7 +47,7 @@
+   XDR_SCALAR = 6
+ } xdr_phylum_t;
+ 
+-class XML_RPC_obj_t {
++class FLEX_RPC_obj_t {
+ public:
+   virtual bool enter_field (const char *f) = 0;
+   virtual bool exit_field () = 0;
+@@ -60,9 +59,9 @@
+   virtual bool traverse (u_int64_t &i) = 0;
+   virtual bool traverse_opaque (str &s) = 0;
+   virtual bool traverse_string (str &s) = 0;
+-  virtual ~XML_RPC_obj_t () {}
+-  virtual XML_RPC_op_t mode () const = 0;
+-
++  virtual ~FLEX_RPC_obj_t () {}
++  virtual FLEX_RPC_op_t mode () const = 0;
++  virtual str top_to_type_str () const = 0;
+   // 
+   // Push routines return # of stack frames pushed on success,
+   // and -1 on failure.
+@@ -82,7 +81,7 @@
+   str error_msg (const str &prfx);
+ 
+   //int error_wrong_type (const char *f, int rc = 0);
+-  int error_wrong_type (const char *f, const xml_obj_base_t &o, int rc = 0);
++  int error_wrong_type (const char *f, int rc = 0);
+   int error_empty (const char *f, int rc = 0);
+   int error_generic(const char *f, int rc = 0);
+ 
+@@ -93,7 +92,7 @@
+   str _err_msg;
+ };
+ 
+-class XML_creator_t : public XML_RPC_obj_t {
++class XML_creator_t : public FLEX_RPC_obj_t {
+ public:
+   XML_creator_t () {}
+ 
+@@ -104,7 +103,7 @@
+   bool traverse (u_int32_t &i);
+   bool traverse (int64_t &i);
+   bool traverse (u_int64_t &i);
+-  XML_RPC_op_t mode () const { return XDR_2_XML; }
++  FLEX_RPC_op_t mode () const { return XDR_2_FLEX; }
+ 
+   bool traverse_opaque (str &s);
+   bool traverse_string (str &s);
+@@ -119,17 +118,19 @@
+   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
+   int push_array_slot (int i);
+   int push_ptr (bool exists, bool *alloc);
+-
++  str top_to_type_str () const;
+ private:
+ 
+   xml_obj_ref_t &top () { return _stack.back (); }
++  const xml_obj_ref_t &top () const { return _stack.back (); }
++
+   bool is_empty () const { return _stack.size () == 0; }
+   void push (const xml_obj_ref_t &o) { _stack.push_back (o); }
+ 
+   vec<xml_obj_ref_t> _stack;
+ };
+ 
+-class XML_reader_t : public XML_RPC_obj_t {
++class XML_reader_t : public FLEX_RPC_obj_t {
+ public:
+   XML_reader_t (xml_obj_const_t r) : _root (r)
+   { _stack.push_back (_root); }
+@@ -152,9 +153,8 @@
+   bool traverse (int64_t &i);
+   bool traverse (u_int64_t &i);
+ 
++  FLEX_RPC_op_t mode () const { return FLEX_2_XDR; }
+ 
+-  XML_RPC_op_t mode () const { return XML_2_XDR; }
+-
+   bool traverse_opaque (str &s);
+   bool traverse_string (str &s);
+ 
+@@ -163,7 +163,7 @@
+   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
+   int push_array_slot (int i);
+   int push_ptr (bool dummy, bool *alloc);
+-
++  str top_to_type_str () const;
+ private:
+   template<class T> bool t_traverse (const char *prfx, T &i, bool sig);
+   
+@@ -175,50 +175,50 @@
+   vec<xml_obj_const_t> _stack;
+ };
+ 
+-typedef bool (*xml_xdrproc_t) (XML_RPC_obj_t *, void *);
++typedef bool (*flex_xdrproc_t) (FLEX_RPC_obj_t *, void *);
+ 
+-struct xml_rpc_const_t {
++struct flex_rpc_const_t {
+   const char *name;
+   int val;
+ };
+ 
+-struct xml_typeinfo_t;
++struct flex_typeinfo_t;
+ 
+-struct xml_struct_entry_t {
++struct flex_struct_entry_t {
+   const char *swval; // <-- for union members only
+   const char *name;
+-  xml_typeinfo_t *type;
++  flex_typeinfo_t *type;
+   int qual, bound;
+ };
+ 
+-struct xml_typeinfo_t {
++struct flex_typeinfo_t {
+   const char *name;
+   enum { PRIMITIVE, STRUCT, UNION, ENUM, TYPEDEF } category;
+-  xml_struct_entry_t *contents;
++  flex_struct_entry_t *contents;
+ };
+ 
+-struct xml_rpcgen_table {
++struct flex_rpcgen_table {
+   const char *name;
+   const std::type_info *type_arg;
+-  const xml_typeinfo_t *xml_arg_type;
+-  xml_xdrproc_t xml_arg_proc;
++  const flex_typeinfo_t *flex_arg_type;
++  flex_xdrproc_t flex_arg_proc;
+   const std::type_info *type_res;
+-  const xml_typeinfo_t *xml_res_type;
+-  xml_xdrproc_t xml_res_proc;
++  const flex_typeinfo_t *flex_res_type;
++  flex_xdrproc_t flex_res_proc;
+ };
+ 
+-struct xml_rpc_program {
++struct flex_rpc_program {
+   u_int32_t progno;
+   u_int32_t versno;
+   const rpc_program *xdr_prog;
+-  const struct xml_rpcgen_table *xml_tbl;
++  const struct flex_rpcgen_table *flex_tbl;
+   size_t nproc;
+   const char *name;
+ };
+ 
+-class xml_pound_def_collector_t {
++class flex_pound_def_collector_t {
+ public:
+-  virtual ~xml_pound_def_collector_t () {}
++  virtual ~flex_pound_def_collector_t () {}
+   
+   template<class T> void collect (const str &s, T t) {}
+   virtual void collect (const str &s, int i) = 0;
+@@ -226,32 +226,26 @@
+   virtual void collect (const str &s, const char *c) = 0;
+ };
+ 
+-typedef void (*xml_pound_def_collect_fn_t) (xml_pound_def_collector_t *c);
++typedef void (*flex_pound_def_collect_fn_t) (flex_pound_def_collector_t *c);
+ 
+-struct xml_rpc_file {
+-  const struct xml_rpc_program **programs;
+-  const struct xml_rpc_const_t *constants;
+-  const struct xml_typeinfo_t **types;
++struct flex_rpc_file {
++  const struct flex_rpc_program **programs;
++  const struct flex_rpc_const_t *constants;
++  const struct flex_typeinfo_t **types;
+   const char *filename;
+-  xml_pound_def_collect_fn_t pound_def_collector;
++  flex_pound_def_collect_fn_t pound_def_collector;
+ };
+ 
+-#define XMLTBL_DECL(proc, arg, res)                               \
++#define FLEX_TBL_DECL(proc, arg, res)				  \
+   {								  \
+     #proc,							  \
+-      &typeid (arg), &xml_typeinfo_##arg, xml_##arg,		  \
+-      &typeid (res), &xml_typeinfo_##res, xml_##res		  \
++      &typeid (arg), &flex_typeinfo_##arg, flex_##arg,		  \
++      &typeid (res), &flex_typeinfo_##res, flex_##res		  \
+       },							  \
+     
+-ptr<xml_element_t>
+-xml_enter_field (XML_RPC_obj_t *obj, const char *field_name);
+-
+-void xml_exit_field (XML_RPC_obj_t *obj, ptr<xml_element_t> el);
+-
+ template<class T> bool
+-xml_rpc_traverse (XML_RPC_obj_t *obj, T &t, const char *field_name)
++flex_rpc_traverse (FLEX_RPC_obj_t *obj, T &t, const char *field_name)
+ {
+-  ptr<xml_element_t> old;
+   bool ret = true;
+   
+   if (field_name && !obj->enter_field (field_name))
+@@ -273,58 +267,58 @@
+ _array_setsize (rpc_vec<T,n> &v, size_t nsz) { v.setsize (nsz); }
+ 
+ template<class V> bool
+-_rpc_traverse_array (XML_RPC_obj_t *xml, V &v, size_t n, bool fixed)
++_rpc_traverse_array (FLEX_RPC_obj_t *flex, V &v, size_t n, bool fixed)
+ {
+   ssize_t nsz;
+   int n_frames;
+   int a;
+   
+-  if ((n_frames = xml->push_array (v.size (), n, fixed, &nsz)) < 0)
++  if ((n_frames = flex->push_array (v.size (), n, fixed, &nsz)) < 0)
+     return false;
+   
+   if (nsz >= 0)
+     _array_setsize (v, nsz);
+   
+   for (size_t i = 0; i < v.size (); i++) {
+-    if ((a = xml->push_array_slot (i)) < 0 ||
+-	!xml_rpc_traverse (xml, v[i], NULL) ||
+-	!xml->pop (a))
++    if ((a = flex->push_array_slot (i)) < 0 ||
++	!flex_rpc_traverse (flex, v[i], NULL) ||
++	!flex->pop (a))
+       return false;
+   }
+   
+-  if (!xml->pop (n_frames))
++  if (!flex->pop (n_frames))
+     return false;
+   
+   return true;
+ }
+ 
+ template<class T, size_t n> bool
+-rpc_traverse (XML_RPC_obj_t *xml, rpc_vec<T,n> &v)
++rpc_traverse (FLEX_RPC_obj_t *flex, rpc_vec<T,n> &v)
+ {
+-  return _rpc_traverse_array (xml, v, n, false);
++  return _rpc_traverse_array (flex, v, n, false);
+ }
+ 
+ template<class T, size_t n> bool
+-rpc_traverse (XML_RPC_obj_t *xml, array<T,n> &v)
++rpc_traverse (FLEX_RPC_obj_t *flex, array<T,n> &v)
+ {
+-  return _rpc_traverse_array (xml, v, n, true);
++  return _rpc_traverse_array (flex, v, n, true);
+ }
+ 
+-bool rpc_traverse (XML_RPC_obj_t *obj, bool &b);
+-bool rpc_traverse (XML_RPC_obj_t *obj, int32_t &i) ; 
+-bool rpc_traverse (XML_RPC_obj_t *obj, int64_t &i);
+-bool rpc_traverse (XML_RPC_obj_t *obj, u_int32_t &i) ;
+-bool rpc_traverse (XML_RPC_obj_t *obj, u_int64_t &i);
++bool rpc_traverse (FLEX_RPC_obj_t *obj, bool &b);
++bool rpc_traverse (FLEX_RPC_obj_t *obj, int32_t &i) ; 
++bool rpc_traverse (FLEX_RPC_obj_t *obj, int64_t &i);
++bool rpc_traverse (FLEX_RPC_obj_t *obj, u_int32_t &i) ;
++bool rpc_traverse (FLEX_RPC_obj_t *obj, u_int64_t &i);
+ 
+ template<size_t n> bool
+-rpc_traverse (XML_RPC_obj_t *xml, rpc_str<n> &obj)
++rpc_traverse (FLEX_RPC_obj_t *flex, rpc_str<n> &obj)
+ {
+   bool ret = false;
+-  switch (xml->mode ()) {
+-  case XML_2_XDR:
++  switch (flex->mode ()) {
++  case FLEX_2_XDR:
+     {
+       str s;
+-      ret = xml->traverse_string (s);
++      ret = flex->traverse_string (s);
+       if (ret && s.len () <= n) {
+ 	obj = s;
+       } else {
+@@ -332,42 +326,42 @@
+       }
+     }
+     break;
+-  case XDR_2_XML:
+-    ret = xml->traverse_string (obj);
++  case XDR_2_FLEX:
++    ret = flex->traverse_string (obj);
+     break;
+   default:
+-    panic ("Unexpected XML conversion mode\n");
++    panic ("Unexpected FLEX conversion mode\n");
+     break;
+   }
+   return ret;
+ }
+ 
+ template<class T> bool
+-rpc_traverse (XML_RPC_obj_t *xml, rpc_ptr<T> &obj)
++rpc_traverse (FLEX_RPC_obj_t *flex, rpc_ptr<T> &obj)
+ {
+   int rc;
+   bool alloc = false;
+-  if ((rc = xml->push_ptr (obj, &alloc)) < 0)
++  if ((rc = flex->push_ptr (obj, &alloc)) < 0)
+     return false;
+   bool ret = true;
+   if (rc > 0) {
+     if (alloc)
+       obj.alloc ();
+-    ret = rpc_traverse (xml, *obj);
++    ret = rpc_traverse (flex, *obj);
+   }
+-  xml->pop (rc);
++  flex->pop (rc);
+   return ret;
+ }
+ 
+ template<class T> bool
+-rpc_traverse (XML_RPC_obj_t *xml, T &obj, size_t n)
++rpc_traverse (FLEX_RPC_obj_t *flex, T &obj, size_t n)
+ {
+   bool ret = false;
+-  switch (xml->mode ()) {
+-  case XML_2_XDR:
++  switch (flex->mode ()) {
++  case FLEX_2_XDR:
+     {
+       str s;
+-      ret = xml->traverse_opaque (s);
++      ret = flex->traverse_opaque (s);
+       if (ret && s.len () <= n) {
+         _array_setsize (obj, s.len ()); 
+ 	memcpy (obj.base (), s.cstr (), s.len ());
+@@ -377,10 +371,10 @@
+     }
+     break;
+ 	
+-  case XDR_2_XML:
++  case XDR_2_FLEX:
+     {
+       str s (obj.base (), obj.size ());
+-      ret = xml->traverse_opaque (s);
++      ret = flex->traverse_opaque (s);
+     }
+     break;
+ 
+@@ -392,56 +386,54 @@
+ }
+ 
+ template<size_t n> bool
+-rpc_traverse (XML_RPC_obj_t *xml, rpc_opaque<n> &obj)
++rpc_traverse (FLEX_RPC_obj_t *flex, rpc_opaque<n> &obj)
+ {
+-  return rpc_traverse (xml, obj, n);
++  return rpc_traverse (flex, obj, n);
+ }
+ 
+ template<size_t n> bool
+-rpc_traverse (XML_RPC_obj_t *xml, rpc_bytes<n> &obj)
++rpc_traverse (FLEX_RPC_obj_t *flex, rpc_bytes<n> &obj)
+ {
+-  return rpc_traverse (xml, obj, n);
++  return rpc_traverse (flex, obj, n);
+ }
+ 
+-#define XML_STUB(xdrTyp,cTyp)                                      \
+-inline bool                                                        \
+-xml_##xdrTyp (XML_RPC_obj_t *x, void *objp)                        \
+-{                                                                  \
+-  return xml_rpc_traverse (x, *static_cast<cTyp *> (objp), NULL);  \
+-}                                                                  \
+-extern xml_typeinfo_t xml_typeinfo_ ## xdrTyp;
++#define FLEX_STUB(xdrTyp,cTyp)					      \
++  inline bool							      \
++  flex_##xdrTyp (FLEX_RPC_obj_t *x, void *objp)			      \
++  {								      \
++    return flex_rpc_traverse (x, *static_cast<cTyp *> (objp), NULL);  \
++  }								      \
++  extern flex_typeinfo_t flex_typeinfo_##xdrTyp;
+ 
+-XML_STUB(bool, bool);
+-XML_STUB(int, int32_t);
+-XML_STUB(int32_t, int32_t);
+-XML_STUB(unsigned, u_int32_t);
+-XML_STUB(u_int32_t, u_int32_t);
+-XML_STUB(hyper, int64_t);
+-XML_STUB(int64_t, int64_t);
+-XML_STUB(u_int64_t, u_int64_t);
++FLEX_STUB(bool, bool);
++FLEX_STUB(int, int32_t);
++FLEX_STUB(int32_t, int32_t);
++FLEX_STUB(unsigned, u_int32_t);
++FLEX_STUB(u_int32_t, u_int32_t);
++FLEX_STUB(hyper, int64_t);
++FLEX_STUB(int64_t, int64_t);
++FLEX_STUB(u_int64_t, u_int64_t);
+ 
+-extern xml_typeinfo_t xml_typeinfo_void;
+-extern xml_typeinfo_t xml_typeinfo_string;
+-extern xml_typeinfo_t xml_typeinfo_uint32_t;
+-extern xml_typeinfo_t xml_typeinfo_uint64_t;
+-extern xml_typeinfo_t xml_typeinfo_opaque;
+-extern xml_typeinfo_t xml_typeinfo_false;
+-extern const xml_typeinfo_t *xml_typeinfo_base_types[];
++#undef FLEX_STUB
+ 
++extern flex_typeinfo_t flex_typeinfo_void;
++extern flex_typeinfo_t flex_typeinfo_string;
++extern flex_typeinfo_t flex_typeinfo_uint32_t;
++extern flex_typeinfo_t flex_typeinfo_uint64_t;
++extern flex_typeinfo_t flex_typeinfo_opaque;
++extern flex_typeinfo_t flex_typeinfo_false;
++extern const flex_typeinfo_t *flex_typeinfo_base_types[];
++
+ inline bool
+-xml_void (XML_RPC_obj_t *obj, void *v)
++flex_void (FLEX_RPC_obj_t *obj, void *v)
+ {
+   return true;
+ }
+ 
+-#undef XML_STUB
+ 
+ //
+ // Needed for empty slots in the RPC table (analogue of xdr_false
+ // in rpcc).
+ //
+-inline bool xml_false (XML_RPC_obj_t *x, void *p) { return false; }
++inline bool flex_false (FLEX_RPC_obj_t *x, void *p) { return false; }
+ 
+-
+-
+-#endif /* _LIBAHTTP_OKXMLXLATE_H */
+Index: xmlrpcc/genheader.C
+===================================================================
+--- xmlrpcc/genheader.C	(revision 5149)
++++ xmlrpcc/genheader.C	(working copy)
+@@ -25,13 +25,13 @@
+ #include "rxx.h"
+ 
+ static void
+-start_xml_guard ()
++start_flex_guard ()
+ {
+   aout << "#ifdef ENABLE_XML_XDR\n";
+ }
+ 
+ static void
+-end_xml_guard ()
++end_flex_guard ()
+ {
+   aout << "#endif // ENABLE_XML_XDR\n";
+ }
+@@ -39,9 +39,9 @@
+ static void
+ pmshl_xml (str id)
+ {
+-  start_xml_guard ();
+-  aout << "bool xml_" << id << " (XML_RPC_obj_t *, void *);\n";
+-  end_xml_guard ();
++  start_flex_guard ();
++  aout << "bool flex_" << id << " (FLEX_RPC_obj_t *, void *);\n";
++  end_flex_guard ();
+ }
+ 
+ static void
+@@ -99,12 +99,12 @@
+ static void
+ dumpstruct_xml (const rpc_sym *s)
+ {
+-  start_xml_guard ();
++  start_flex_guard ();
+   const rpc_struct *rs = s->sstruct.addr ();
+   aout << "bool rpc_traverse (" XML_OBJ "*t, " << rs->id << " &obj);\n" ;
+ 
+-  aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
+-  end_xml_guard ();
++  aout << "extern flex_typeinfo_t flex_typeinfo_" << rs->id << ";\n";
++  end_flex_guard ();
+ }
+ 
+ static void
+@@ -219,10 +219,10 @@
+ dumpunion_xml (const rpc_sym *s)
+ {
+   const rpc_union *rs = s->sunion.addr ();
+-  start_xml_guard ();
++  start_flex_guard ();
+   aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n";
+-  aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
+-  end_xml_guard ();
++  aout << "extern flex_typeinfo_t flex_typeinfo_" << rs->id << ";\n";
++  end_flex_guard ();
+ }
+ 
+ static void
+@@ -322,10 +322,10 @@
+ dumpenum_xml (const rpc_sym *s)
+ {
+   const rpc_enum *rs = s->senum.addr ();
+-  start_xml_guard ();
++  start_flex_guard ();
+   aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj);\n";
+-  aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
+-  end_xml_guard ();
++  aout << "extern flex_typeinfo_t flex_typeinfo_" << rs->id << ";\n";
++  end_flex_guard ();
+ }
+ 
+ static void
+@@ -376,19 +376,19 @@
+   pdecl ("typedef ", rd);
+   pmshl (rd->id);
+   aout << "RPC_TYPEDEF_DECL (" << rd->id << ")\n";
+-  start_xml_guard ();
+-  aout << "extern xml_typeinfo_t xml_typeinfo_" << rd->id << ";\n";
+-  end_xml_guard ();
++  start_flex_guard ();
++  aout << "extern flex_typeinfo_t flex_typeinfo_" << rd->id << ";\n";
++  end_flex_guard ();
+ }
+ 
+ static void
+ dumpprog_xml (const rpc_program *rs)
+ {
+-  start_xml_guard ();
++  start_flex_guard ();
+   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
+-    aout << "extern const xml_rpc_program xml_" << rpcprog (rs, rv) << ";\n";
++    aout << "extern const flex_rpc_program flex_" << rpcprog (rs, rv) << ";\n";
+   }
+-  end_xml_guard ();
++  end_flex_guard ();
+   aout << "\n";
+ }
+ 
+@@ -685,9 +685,9 @@
+        << "#define " << guard << " 1\n\n"
+        << "#include \"xdrmisc.h\"\n";
+ 
+-  start_xml_guard ();
++  start_flex_guard ();
+   aout << "#include \"okxmlxlate.h\"\n";
+-  end_xml_guard ();
++  end_flex_guard ();
+ 
+   int last = rpc_sym::LITERAL;
+   for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++) {
+@@ -702,10 +702,10 @@
+     dumpsym (s);
+   }
+ 
+-  start_xml_guard ();
+-  aout << "extern xml_rpc_file " << stripfname (fname, false)
++  start_flex_guard ();
++  aout << "extern flex_rpc_file " << stripfname (fname, false)
+        << "_rpc_file;\n";
+-  end_xml_guard ();
++  end_flex_guard ();
+ 
+   aout << "#endif /* !" << guard << " */\n";
+ }
+Index: xmlrpcc/gencfile.C
+===================================================================
+--- xmlrpcc/gencfile.C	(revision 5149)
++++ xmlrpcc/gencfile.C	(working copy)
+@@ -25,12 +25,12 @@
+ #include "rxx.h"
+ 
+ static void
+-mkmshl_xml (str id)
++mkmshl_flex (str id)
+ {
+   aout << "bool\n"
+-       << "xml_" << id << " (" << XML_OBJ << " *xml, void *objp)\n"
++       << "flex_" << id << " (" << XML_OBJ << " *flex, void *objp)\n"
+        << "{\n"
+-       << "  return xml_rpc_traverse (xml, *static_cast<" 
++       << "  return flex_rpc_traverse (flex, *static_cast<" 
+        << id << " *> (objp), NULL);\n"
+        << "}\n"
+        << "\n";
+@@ -72,7 +72,7 @@
+        << "}\n"
+        << "\n";
+   
+-  mkmshl_xml (id);
++  mkmshl_flex (id);
+ }
+ 
+ vec<str> const_tab;
+@@ -86,15 +86,15 @@
+ }
+ 
+ static void
+-mktbl_xml (const rpc_program *rs)
++mktbl_flex (const rpc_program *rs)
+ {
+   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
+     str xdr_name = rpcprog (rs, rv);
+-    str name = strbuf ("xml_%s", xdr_name.cstr ());
+-    aout << "static const xml_rpcgen_table " << name << "_tbl[] = {\n"
+-	 << "  " << rs->id << "_" << rv->val << "_APPLY (XMLTBL_DECL)\n"
++    str name = strbuf ("flex_%s", xdr_name.cstr ());
++    aout << "static const flex_rpcgen_table " << name << "_tbl[] = {\n"
++	 << "  " << rs->id << "_" << rv->val << "_APPLY (FLEX_TBL_DECL)\n"
+ 	 << "};\n"
+-	 << "const xml_rpc_program " << name << " = {\n"
++	 << "const flex_rpc_program " << name << " = {\n"
+ 	 << "  " << rs->id << ", " << rv->id << ", " 
+ 	 << "&" << xdr_name << ", " 
+ 	 << name << "_tbl,\n"
+@@ -123,11 +123,11 @@
+ 	 << "};\n";
+   }
+   aout << "\n";
+-  mktbl_xml (rs);
++  mktbl_flex (rs);
+ }
+ 
+ static void
+-dumpstructmember_xml(str swval, const rpc_decl *rd)
++dumpstructmember_flex(str swval, const rpc_decl *rd)
+ {
+   if (swval)
+     aout << "  { \"" << swval << "\", ";
+@@ -138,7 +138,7 @@
+   else
+     aout << "NULL, ";
+   if (rd->type)
+-    aout << "&xml_typeinfo_" << rd->type << ", ";
++    aout << "&flex_typeinfo_" << rd->type << ", ";
+   else
+     aout << "NULL, ";
+   aout << (int)rd->qual << ", "
+@@ -146,7 +146,7 @@
+ }
+ 
+ static void
+-dumpstruct_xml (const rpc_sym *s)
++dumpstruct_flex (const rpc_sym *s)
+ {
+   const rpc_struct *rs = s->sstruct.addr ();
+   aout << "bool\n"
+@@ -154,85 +154,85 @@
+        << "{\n";
+   const rpc_decl *rd = rs->decls.base ();
+   for ( ; rd < rs->decls.lim (); rd++) {
+-    aout << "  if (!xml_rpc_traverse (t, obj." << rd->id << ", \""
++    aout << "  if (!flex_rpc_traverse (t, obj." << rd->id << ", \""
+ 	 << rd->id << "\")) return false;\n";
+   }
+   aout << "  return true;\n"
+        << "}\n\n";
+ 
+- aout << "static xml_struct_entry_t _xml_contents_" << rs->id << "[] = {\n";
++ aout << "static flex_struct_entry_t _flex_contents_" << rs->id << "[] = {\n";
+   for (rd = rs->decls.base (); rd < rs->decls.lim (); rd++) {
+-    dumpstructmember_xml(NULL, rd);
++    dumpstructmember_flex(NULL, rd);
+     aout << ",\n";
+   }
+   aout << "  { NULL, NULL, NULL, 0, 0 }\n";
+   aout << "};\n\n";
+ 
+-  aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
++  aout << "flex_typeinfo_t flex_typeinfo_" << rs->id << " = {\n"
+        << "  \"" << rs->id << "\",\n"
+-       << "  xml_typeinfo_t::STRUCT,\n"
+-       << "  _xml_contents_" << rs->id << ",\n"
++       << "  flex_typeinfo_t::STRUCT,\n"
++       << "  _flex_contents_" << rs->id << ",\n"
+        << "};\n\n";
+   type_tab.push_back(rs->id);
+ }
+ 
+ static void
+-punionmacro_xml (str prefix, const rpc_union *rs, const rpc_utag *rt)
++punionmacro_flex (str prefix, const rpc_union *rs, const rpc_utag *rt)
+ {
+   if (rt->tag.type == "void")
+     aout << prefix << "res = true;\n";
+   else
+-    aout << prefix << "res = xml_rpc_traverse (t, *obj."
++    aout << prefix << "res = flex_rpc_traverse (t, *obj."
+ 	 << rt->tag.id << ", \"" << rt->tag.id << "\");\n";
+   aout << prefix << "break;\n";
+ }
+ 
+ static void
+-punionmacrodefault_xml (str prefix, const rpc_union *rs)
++punionmacrodefault_flex (str prefix, const rpc_union *rs)
+ {
+   aout << prefix << "res = true;\n";
+   aout << prefix << "break;\n";
+ }
+ 
+ static void
+-dumpunion_xml (const rpc_sym *s)
++dumpunion_flex (const rpc_sym *s)
+ {
+   const rpc_union *rs = s->sunion.addr ();
+   aout << "bool\n"
+        << "rpc_traverse (" XML_OBJ " *t, " << rs->id << " &obj)\n"
+        << "{\n"
+        << "  " << rs->tagtype << " tag = obj." << rs->tagid << ";\n"
+-       << "  if (!xml_rpc_traverse (t, tag, \"" << rs->tagid << "\"))\n"
++       << "  if (!flex_rpc_traverse (t, tag, \"" << rs->tagid << "\"))\n"
+        << "    return false;\n"
+        << "  if (tag != obj." << rs->tagid << ")\n"
+        << "    obj.set_" << rs->tagid << " (tag);\n\n"
+        << "  bool res = true;\n";
+ 
+-  pswitch ("  ", rs, "tag", punionmacro_xml, "\n", punionmacrodefault_xml);
++  pswitch ("  ", rs, "tag", punionmacro_flex, "\n", punionmacrodefault_flex);
+     
+   aout << "  return res;\n"
+        << "}\n\n";
+ 
+-  aout << "xml_struct_entry_t _xml_contents_" << rs->id << "[] = {\n"
+-       << "  { NULL, \"" << rs->tagid << "\", &xml_typeinfo_" 
++  aout << "flex_struct_entry_t _flex_contents_" << rs->id << "[] = {\n"
++       << "  { NULL, \"" << rs->tagid << "\", &flex_typeinfo_" 
+        << rs->tagtype << ", 0, 0},\n";
+   for (const rpc_utag *rc = rs->cases.base(); rc < rs->cases.lim(); rc++) {
+-    dumpstructmember_xml(rc->swval, &rc->tag);
++    dumpstructmember_flex(rc->swval, &rc->tag);
+     aout << ",\n";
+   }
+   aout << "  { NULL, NULL, NULL, 0, 0 }," 
+        << "};\n\n";
+ 
+-  aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
++  aout << "flex_typeinfo_t flex_typeinfo_" << rs->id << " = {\n"
+        << "  \"" << rs->id << "\",\n"
+-       << "  xml_typeinfo_t::UNION,\n"
+-       << "  _xml_contents_" << rs->id << ",\n"
++       << "  flex_typeinfo_t::UNION,\n"
++       << "  _flex_contents_" << rs->id << ",\n"
+        << "};\n\n";
+   type_tab.push_back(rs->id);
+ }
+ 
+ static void
+-dumpenum_xml (const rpc_sym *s)
++dumpenum_flex (const rpc_sym *s)
+ {
+   const rpc_enum *rs = s->senum.addr ();
+   aout << "bool rpc_traverse (" XML_OBJ " *t, " << rs->id << "&obj)\n"
+@@ -244,9 +244,9 @@
+        << "  return true;\n"
+        << "}\n\n";
+ 
+-  aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
++  aout << "flex_typeinfo_t flex_typeinfo_" << rs->id << " = {\n"
+        << "  \"" << rs->id << "\",\n"
+-       << "  xml_typeinfo_t::ENUM,\n"
++       << "  flex_typeinfo_t::ENUM,\n"
+        << "  NULL\n"
+        << "};\n\n";
+ 
+@@ -295,7 +295,7 @@
+ dump_pound_defs (str fn)
+ {
+   aout << "static void\n"
+-       << fn << "_pound_defs_fn (xml_pound_def_collector_t *c)\n"
++       << fn << "_pound_defs_fn (flex_pound_def_collector_t *c)\n"
+        << "{\n";
+   for (size_t i = 0; i < pound_defs.size (); i++) {
+     aout << "  c->collect (\"" << pound_defs[i] << "\", "
+@@ -315,16 +315,16 @@
+ }
+ 
+ static void
+-dumptypedef_xml (const rpc_sym *s)
++dumptypedef_flex (const rpc_sym *s)
+ {
+   const rpc_decl *rd = s->stypedef.addr ();
+-  aout << "static xml_struct_entry_t _xml_typedef_" << rd->id << " = \n";
+-  dumpstructmember_xml(NULL, rd);
++  aout << "static flex_struct_entry_t _flex_typedef_" << rd->id << " = \n";
++  dumpstructmember_flex(NULL, rd);
+   aout << ";\n\n";
+-  aout << "xml_typeinfo_t xml_typeinfo_" << rd->id << " = {\n"
++  aout << "flex_typeinfo_t flex_typeinfo_" << rd->id << " = {\n"
+        << "  \"" << rd->id << "\",\n"
+-       << "  xml_typeinfo_t::TYPEDEF,\n"
+-       << "  &_xml_typedef_" << rd->id << "\n"
++       << "  flex_typeinfo_t::TYPEDEF,\n"
++       << "  &_flex_typedef_" << rd->id << "\n"
+        << "};\n\n";
+ 
+   type_tab.push_back(rd->id);
+@@ -339,20 +339,20 @@
+     break;
+   case rpc_sym::STRUCT:
+     mkmshl (s->sstruct->id);
+-    dumpstruct_xml (s);
++    dumpstruct_flex (s);
+     break;
+   case rpc_sym::UNION:
+     mkmshl (s->sunion->id);
+-    dumpunion_xml (s);
++    dumpunion_flex (s);
+     break;
+   case rpc_sym::ENUM:
+     mkmshl (s->senum->id);
+-    dumpenum_xml (s);
++    dumpenum_flex (s);
+     populate_const_table_enum (s);
+     break;
+   case rpc_sym::TYPEDEF:
+     mkmshl (s->stypedef->id);
+-    dumptypedef_xml (s);
++    dumptypedef_flex (s);
+     break;
+   case rpc_sym::PROGRAM:
+     {
+@@ -569,7 +569,7 @@
+ static void
+ dump_const_table (str fname)
+ {
+-  aout << "xml_rpc_const_t " << fname << "_rpc_constants[] = {\n";
++  aout << "flex_rpc_const_t " << fname << "_rpc_constants[] = {\n";
+   for (size_t i = 0; i < const_tab.size (); i++) {
+     aout << "  { \"" << const_tab[i] << "\", " << const_tab[i]  << " },\n";
+   }
+@@ -580,7 +580,7 @@
+ static void
+ dump_prog_table (str fname)
+ {
+-  aout << "static const xml_rpc_program *" << fname << "_rpc_programs[] = {\n";
++  aout << "static const flex_rpc_program *" << fname << "_rpc_programs[] = {\n";
+   for (size_t i = 0; i < prog_tab.size (); i++) {
+     aout << "  &" << prog_tab[i] << ",\n";
+   }
+@@ -591,9 +591,9 @@
+ static void
+ dump_type_table (str fname)
+ {
+-  aout << "static const xml_typeinfo_t *" << fname << "_rpc_types[] = {\n";
++  aout << "static const flex_typeinfo_t *" << fname << "_rpc_types[] = {\n";
+   for (size_t i = 0; i < type_tab.size (); i++) {
+-    aout << "  &xml_typeinfo_" << type_tab[i] << ",\n";
++    aout << "  &flex_typeinfo_" << type_tab[i] << ",\n";
+   }
+   aout << "  NULL\n"
+        << "};\n\n";
+@@ -602,7 +602,7 @@
+ static void
+ dump_file_struct (str prfx)
+ {
+-  aout << "xml_rpc_file " << prfx << "_rpc_file = {\n"
++  aout << "flex_rpc_file " << prfx << "_rpc_file = {\n"
+        << "  " << prfx << "_rpc_programs,\n"
+        << "  " << prfx << "_rpc_constants,\n"
+        << "  " << prfx << "_rpc_types,\n"
+Index: xmlrpcc/rpcc.h
+===================================================================
+--- xmlrpcc/rpcc.h	(revision 5149)
++++ xmlrpcc/rpcc.h	(working copy)
+@@ -227,7 +227,7 @@
+ 	      str suffix = "\n",
+ 	      void (*defac) (str, const rpc_union *rs) = NULL);
+ 
+-#define XML_OBJ "XML_RPC_obj_t"
++#define XML_OBJ "FLEX_RPC_obj_t"
+ 
+ extern bool guess_defines;
+ 
