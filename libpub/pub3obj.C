@@ -122,6 +122,7 @@ namespace pub3 {
     ptr<const expr_dict_t> d = to_dict ();
     ptr<vec<str> > ret;
     if (d) {
+      ret = New refcounted<vec<str> > ();
       expr_dict_t::const_iterator_t it (*d);
       const str *key;
       while ((key = it.next ())) {
