@@ -160,7 +160,7 @@ namespace pub3 {
     tvars {
       bool res (false);
     }
-    if (_e) { twait { pub_as_bool (p, mkevent (res)); } }
+    if (_e) { twait { _e->pub_as_bool (p, mkevent (res)); } }
     ev->trigger (!res);
   }
 
