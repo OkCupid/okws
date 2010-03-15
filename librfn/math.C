@@ -8,7 +8,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  random_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  rand_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     u_int64_t def_range = 10;
     u_int64_t l = 0;

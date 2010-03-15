@@ -15,7 +15,7 @@ namespace rfn3 {
 #define F(f) \
   _functions.push_back (New refcounted<f##_t> ())
 
-    F(random);
+    F(rand);
     F(len);
     F(type);
     F(join);

@@ -16,7 +16,7 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  PUB3_COMPILED_FN(random, "|uu");
+  PUB3_COMPILED_FN(rand, "|uu");
   PUB3_COMPILED_FN(len, "O");
   PUB3_COMPILED_FN(join, "sl");
   PUB3_COMPILED_FN(range, "i|ii");
