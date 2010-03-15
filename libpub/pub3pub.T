@@ -60,8 +60,7 @@ namespace pub3 {
 
   // For regular file publishing!
   publish_t::publish_t (ptr<bindtab_t> unis, zbuf *z, opts_t o)
-    : eval_t (New refcounted<env_t> (unis), output_t::alloc (z, o)),
-      _opts (o),
+    : eval_t (New refcounted<env_t> (unis), output_t::alloc (z, o), o),
       _pws (false),
       _control (control_t::alloc ()) {}
 
@@ -69,16 +68,15 @@ namespace pub3 {
 
   // For configuration file publishing!
   publish_t::publish_t (ptr<bindtab_t> unis, ptr<bindtab_t> out, opts_t o)
-    : eval_t (New refcounted<env_t> (unis, out), output_silent_t::alloc (o)),
-      _opts (o),
+    : eval_t (New refcounted<env_t> (unis, out), 
+	      output_silent_t::alloc (o), o),
       _pws (false),
       _control (control_t::alloc ()) {}
 
   //--------------------------------------------------------------------
 
   publish_t::publish_t (ptr<env_t> e, ptr<output_t> o, opts_t opts)
-    : eval_t (e, o),
-      _opts (opts),
+    : eval_t (e, o, opts),
       _pws (false),
       _control (control_t::alloc ()) {}
 

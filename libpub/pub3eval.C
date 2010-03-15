@@ -306,8 +306,8 @@ namespace pub3 {
 
   //================================================ eval_t ================
 
-  eval_t::eval_t (ptr<env_t> e, ptr<output_t> o)
-    : _env (e), _output (o), _loud (true), _silent (false) {}
+  eval_t::eval_t (ptr<env_t> e, ptr<output_t> o, opts_t opts)
+    : _env (e), _output (o), _loud (true), _silent (false), _opts (opts) {}
 
   //-----------------------------------------------------------------------
 

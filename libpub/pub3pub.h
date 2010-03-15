@@ -35,10 +35,11 @@ namespace pub3 {
     P_OUTPUT_ERR_OBJ = 0x2000,              /* pupulate and pub the err-obj */
 
     P_WARN_INLINE_NULL = 0x4000,            /* warn if %{foo} is NULL */
+    P_WARN_NULL = 0x8000,                   /* warn if ever we eval to NULL */
 
-    P_STRICT_INCLUDE_SCOPING = 0x8000,      /* add scope barrier */
+    P_STRICT_INCLUDE_SCOPING = 0x10000,      /* add scope barrier */
 
-    P_INFINITY = 0x10000
+    P_INFINITY = 0x20000
   };
 
   //-----------------------------------------------------------------------
@@ -122,7 +123,6 @@ namespace pub3 {
     publish_t (ptr<env_t> e, ptr<output_t> o, opts_t opts = 0);
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
-    void set_opts (opts_t o) { _opts = o; }
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
 
     void output (zstr s);
@@ -131,7 +131,6 @@ namespace pub3 {
     void output_errs (const xpub3_errstrs_t &e, err_type_t t);
     void output_err_stacktrace (str s, err_type_t t);
 
-    opts_t opts () const { return _opts; }
     str set_cwd (str s) ;
     str cwd () const { return _cwd; }
     void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
@@ -166,7 +165,6 @@ namespace pub3 {
     // metadata.
     loc_stack_t _stack;
 
-    opts_t _opts;
     str _cwd;
     location_t _location;        // current location
     ptr<ok_iface_t> _pub_iface;  // publisher interface

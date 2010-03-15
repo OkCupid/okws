@@ -85,7 +85,7 @@ namespace pub3 {
   void
   expr_varref_t::report (eval_t *e, bool out) const
   {
-    if (!out && e->loud ()) {
+    if (!out && !e->silent() && (e->opts () & P_WARN_NULL)) {
       strbuf b ("cannot resolve variable: '%s'", _name.cstr ());
       report_error (e, b);
     }

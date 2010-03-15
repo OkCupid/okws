@@ -118,7 +118,7 @@ namespace pub3 {
 
     enum { EVAL_INIT = -2, EVAL_DONE = -1 };
 
-    eval_t (ptr<env_t> e, ptr<output_t> o); 
+    eval_t (ptr<env_t> e, ptr<output_t> o, opts_t opts = 0); 
     ~eval_t ();
 
     ptr<output_t> out () const { return _output; }
@@ -128,6 +128,10 @@ namespace pub3 {
     bool set_loud (bool b);
     bool loud () const { return _loud && !_silent; }
     bool set_silent (bool b);
+    bool silent () const { return _silent; }
+
+    void set_opts (opts_t o) { _opts = o; }
+    opts_t opts () const { return _opts; }
 
     ptr<const expr_t> lookup_val (const str &nm) const;
     ptr<mref_t> lookup_ref (const str &nm) const;
@@ -156,6 +160,7 @@ namespace pub3 {
     ptr<output_t> _output;
     bool _loud;
     bool _silent;
+    opts_t _opts;
   };
 
   //-----------------------------------------------------------------------
