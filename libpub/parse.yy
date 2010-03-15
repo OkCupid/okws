@@ -175,7 +175,7 @@ p3_html_pre: T_P3_BEGIN_PRE p3_html_blocks T_P3_END_PRE
 	   ptr<pub3::zone_html_t> r = pub3::zone_html_t::alloc ();
 	   r->set_preserve_white_space (true);
 	   r->add ($1);
-	   r->add ($2);
+	   if ($2) r->add ($2);
            r->add ($3);
            $$ = r;
 	}
