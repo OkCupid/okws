@@ -574,7 +574,9 @@ namespace pub3 {
   bool
   const_obj_t::to_bool (bool *b) const
   {
-    return obj () && (*b = obj ()->to_bool ());
+    bool ret = obj ();
+    if (ret) { *b = obj ()->to_bool (); }
+    return ret;
   }
 
   //-----------------------------------------------------------------------
