@@ -650,7 +650,7 @@ namespace pub3 {
     static ptr<expr_t> safe_alloc (str s);
 
     const char *get_obj_name () const { return "pub3::expr_str_t"; }
-    str type_to_str () const { return "string"; }
+    str type_to_str () const { return "str"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_xdr (xpub3_json_t *j) const;
