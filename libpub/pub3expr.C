@@ -2129,6 +2129,17 @@ namespace pub3 {
     return s;
   }
 
+  //--------------------------------------------------------------------
+
+  bool
+  expr_cow_t::to_len (size_t *s) const
+  {
+    bool ret = false;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) { ret = x->to_len (s); }
+    return ret;
+  }
+
   //=======================================================================
 
 };
