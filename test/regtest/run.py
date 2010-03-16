@@ -456,6 +456,7 @@ class TestCase:
         self._script_path = None
         self._custom_fetch = None
         self._nowss = False
+        self._viserr = False
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
@@ -724,6 +725,8 @@ class TestCaseRemote (TestCase):
         opts = {}
         if self._nowss:
             opts["nowss"] = 1
+        if self._viserr:
+            opts["viserr"] = 1
         
         if n:
             u = self._config.scratch_url ()

@@ -487,7 +487,6 @@ scalar_obj_t::cmp (const scalar_obj_t &o) const
     str s1 = to_str ();
     str s2 = o.to_str ();
     res = s1.cmp (s2);
-    res = 1;
   }
   return res;
 }
