@@ -12,6 +12,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  static location_t location (lineno_t l) 
+  { return parser_t::current ()->location (l); }
+
+  //-----------------------------------------------------------------------
+
   tamed void 
   ast_node_t::publish (publish_t *p, status_ev_t ev) const
   {
@@ -34,7 +39,7 @@ namespace pub3 {
   void
   ast_node_t::propogate_metadata (ptr<const metadata_t> md)
   {
-    _location.set_filename (md->jailed_filename ());
+    _location.set_filename (md->jailed_filename (), true);
   }
 
   //-----------------------------------------------------------------------
@@ -685,7 +690,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<for_t> for_t::alloc () { return New refcounted<for_t> (location ()); }
+  ptr<for_t> for_t::alloc (lineno_t l) 
+  { 
+    return New refcounted<for_t> (location (l));
+  }
 
   //-----------------------------------------------------------------------
 
@@ -1046,7 +1054,8 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<if_t> if_t::alloc () { return New refcounted<if_t> (location ()); }
+  ptr<if_t> if_t::alloc (lineno_t l) 
+  { return New refcounted<if_t> (location (l)); }
 
   //-----------------------------------------------------------------------
 
@@ -1223,18 +1232,18 @@ namespace pub3 {
 
   //============================== locals / universals ====================
 
-  ptr<locals_t> locals_t::alloc () 
-  { return New refcounted<locals_t> (location ()); }
+  ptr<locals_t> locals_t::alloc (lineno_t l) 
+  { return New refcounted<locals_t> (location (l)); }
 
   //-----------------------------------------------------------------------
 
-  ptr<universals_t> universals_t::alloc () 
-  { return New refcounted<universals_t> (location ()); }
+  ptr<universals_t> universals_t::alloc (lineno_t l) 
+  { return New refcounted<universals_t> (location (l)); }
 
   //-----------------------------------------------------------------------
 
-  ptr<globals_t> globals_t::alloc ()
-  { return New refcounted<globals_t> (location ()); }
+  ptr<globals_t> globals_t::alloc (lineno_t l)
+  { return New refcounted<globals_t> (location (l)); }
 
   //============================================= switch_t ================
 
@@ -1496,8 +1505,8 @@ namespace pub3 {
 
   //============================================== print_t ================
 
-  ptr<print_t> print_t::alloc () 
-  { return New refcounted<print_t> (plineno ()); }
+  ptr<print_t> print_t::alloc (lineno_t l) 
+  { return New refcounted<print_t> (l); }
   
   //-----------------------------------------------------------------------
 

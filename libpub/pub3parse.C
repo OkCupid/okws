@@ -34,6 +34,17 @@ namespace pub3 {
 
   //---------------------------------------------------------------------
   
+  location_t
+  parser_t::location (lineno_t l) const
+  {
+    location_t ret;
+    ret._filename = _location._filename;
+    ret._lineno = l;
+    return ret;
+  }
+
+  //---------------------------------------------------------------------
+  
   void
   parser_t::error (str m)
   {

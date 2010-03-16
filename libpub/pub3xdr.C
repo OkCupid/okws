@@ -91,7 +91,8 @@ pub3::for_t::for_t (const xpub3_for_t &x)
     _iter (x.iter),
     _arr (expr_t::alloc (x.arr)),
     _body (zone_t::alloc (x.body)),
-    _empty (zone_t::alloc (x.empty)) {}
+    _empty (zone_t::alloc (x.empty)) 
+{}
 
 //-----------------------------------------------------------------------
 

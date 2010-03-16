@@ -280,7 +280,7 @@ namespace pub3 {
     for_t (const xpub3_for_t &x);
     bool to_xdr (xpub3_statement_t *x) const;
 
-    static ptr<for_t> alloc ();
+    static ptr<for_t> alloc (lineno_t l);
 
     bool add_params (ptr<expr_list_t> l);
     bool add_body (ptr<zone_t> z);
@@ -352,7 +352,7 @@ namespace pub3 {
     if_t (location_t l) : statement_t (l) {}
     if_t (const xpub3_if_t &x);
 
-    static ptr<if_t> alloc ();
+    static ptr<if_t> alloc (lineno_t l);
 
     void add_clauses (ptr<if_clause_list_t> c);
     void add_clause (ptr<if_clause_t> c);
@@ -398,7 +398,7 @@ namespace pub3 {
   public:
     locals_t (const xpub3_decls_t &x) : decl_block_t (x) {}
     locals_t (location_t l) : decl_block_t (l) {}
-    static ptr<locals_t> alloc ();
+    static ptr<locals_t> alloc (lineno_t l);
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_LOCALS; }
     env_t::layer_type_t get_decl_type () const { return env_t::LAYER_LOCALS; }
@@ -411,7 +411,7 @@ namespace pub3 {
   public:
     globals_t (const xpub3_decls_t &x) : decl_block_t (x) {}
     globals_t (location_t l) : decl_block_t (l) {}
-    static ptr<globals_t> alloc ();
+    static ptr<globals_t> alloc (lineno_t l);
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_GLOBALS; }
 
@@ -426,7 +426,7 @@ namespace pub3 {
   public:
     universals_t (const xpub3_decls_t &x) : decl_block_t (x) {}
     universals_t (location_t l) : decl_block_t (l) {}
-    static ptr<universals_t> alloc ();
+    static ptr<universals_t> alloc (lineno_t l);
     xpub3_statement_typ_t statement_typ () const 
     { return XPUB3_STATEMENT_UNIVERSALS; }
 
@@ -540,7 +540,7 @@ namespace pub3 {
   public:
     print_t (location_t l) : statement_t (l) {}
     print_t (const xpub3_print_t &x);
-    static ptr<print_t> alloc ();
+    static ptr<print_t> alloc (lineno_t l);
     
     bool add (ptr<pub3::expr_list_t> l);
     bool to_xdr (xpub3_statement_t *x) const;

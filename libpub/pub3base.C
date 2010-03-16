@@ -24,6 +24,15 @@ namespace pub3 {
     _lineno = 0;
   }
 
+  //----------------------------------------------------------------------
+
+  void
+  location_t::set_filename (str n, bool preserve_lineno)
+  {
+    _filename = n;
+    if (!preserve_lineno) _lineno = 1;
+  }
+
   // ======================================================================
 
 };

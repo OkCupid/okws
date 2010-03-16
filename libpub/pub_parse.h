@@ -84,6 +84,7 @@ struct yystype {
   ptr<pub3::include_t> p3include;
   ptr<pub3::lambda_t> p3lambda;
   int64_t num;
+  int lineno;
 };
 
 #define YYSTYPE yystype

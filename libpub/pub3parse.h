@@ -26,6 +26,7 @@ namespace pub3 {
     parser_t (str f);
     lineno_t lineno () const;
     const location_t &location () const;
+    location_t location (lineno_t l) const;
     void inc_lineno (lineno_t i = 1);
 
     static ptr<parser_t> current ();

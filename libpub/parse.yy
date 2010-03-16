@@ -94,6 +94,8 @@
 %type <p3cl> p3_switch_cases;
 %type <p3case> p3_switch_case ;
 %type <p3pair> p3_pub_zone_pair;
+%type <lineno> p3_t_for p3_t_if p3_t_print p3_t_locals p3_t_universals;
+%type <lineno> p3_t_globals;
 
 %type <relop> p3_relational_op;
 %type <p3exprlist> p3_argument_expr_list_opt p3_argument_expr_list;
@@ -810,24 +812,31 @@ p3_locals_arg: '(' p3_bindlist ')' { $$ = $2; }
 	    | p3_bindlist { $$ = $1; }
 	    ;
 
-p3_universals: T_P3_UNIVERSALS p3_locals_arg
+p3_t_universals : T_P3_UNIVERSALS { $$ = pub3::plineno (); } ;
+
+p3_universals: p3_t_universals p3_locals_arg
 	{
-	   ptr<pub3::universals_t> u = pub3::universals_t::alloc ();
+	   ptr<pub3::universals_t> u = pub3::universals_t::alloc ($1);
 	   u->add ($2);
 	   $$ = u;
         }
         ;
 
-p3_globals: T_P3_GLOBALS p3_locals_arg
+p3_t_globals: T_P3_GLOBALS { $$ = pub3::plineno (); } ;
+
+p3_globals: p3_t_globals p3_locals_arg
 	{
-	   ptr<pub3::globals_t> u = pub3::globals_t::alloc ();
+	   ptr<pub3::globals_t> u = pub3::globals_t::alloc ($1);
 	   u->add ($2);
 	   $$ = u;
         }
         ;
-p3_locals: T_P3_LOCALS p3_locals_arg
+
+p3_t_locals : T_P3_LOCALS { $$ = pub3::plineno (); } ;
+ 
+p3_locals: p3_t_locals p3_locals_arg
 	{
-	   ptr<pub3::locals_t> l = pub3::locals_t::alloc ();
+	   ptr<pub3::locals_t> l = pub3::locals_t::alloc ($1);
            l->add ($2);   
 	   $$ = l;
         }
@@ -837,9 +846,11 @@ p3_nested_zone: p3_html_zone { $$ = $1; }
 	| '{' p3_pub_zone_inner '}' { $$ = $2; }
 	;
 
-p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause 
+p3_t_for : T_P3_FOR { $$ = pub3::plineno (); } ;
+
+p3_for: p3_t_for p3_flexi_tuple p3_nested_zone p3_empty_clause 
         {
-	    ptr<pub3::for_t> f = pub3::for_t::alloc ();
+	    ptr<pub3::for_t> f = pub3::for_t::alloc ($1);
 	    if (!f->add_params ($2)) {
 	       pub3::parse_error ("failed to set parameters for for() loop");
 	    }
@@ -848,9 +859,11 @@ p3_for: T_P3_FOR p3_flexi_tuple p3_nested_zone p3_empty_clause
 	    $$ = f;
 	};
 
-p3_print: T_P3_PRINT p3_flexi_tuple
+p3_t_print: T_P3_PRINT { $$ = pub3::plineno (); } ;
+
+p3_print: p3_t_print p3_flexi_tuple
        {
-           ptr<pub3::print_t> p = pub3::print_t::alloc ();
+           ptr<pub3::print_t> p = pub3::print_t::alloc ($1);
 	   if (!p->add ($2)) {
 	     pub3::parse_error ("bad arguments passed to print");
 	   }
@@ -858,9 +871,11 @@ p3_print: T_P3_PRINT p3_flexi_tuple
        }
        ;
 
-p3_if: T_P3_IF p3_if_clause p3_elifs_opt p3_else_opt
+p3_t_if : T_P3_IF { $$ = pub3::plineno (); } ;
+
+p3_if: p3_t_if p3_if_clause p3_elifs_opt p3_else_opt
        {
-          ptr<pub3::if_t> i = pub3::if_t::alloc ();
+          ptr<pub3::if_t> i = pub3::if_t::alloc ($1);
 	  i->add_clause ($2);
 	  i->add_clauses ($3);
 	  i->add_clause ($4);
