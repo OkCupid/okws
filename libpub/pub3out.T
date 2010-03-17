@@ -170,6 +170,16 @@ namespace pub3 {
 
   ptr<expr_t> output_t::err_obj () { return _err_obj.obj (); }
 
+  //-----------------------------------------------------------------------
+
+  int
+  output_t::override_wss (int i)
+  {
+    int ret = _override_wss;
+    _override_wss = i;
+    return ret;
+  }
+
   //=================================== output_std_t ====================
 
   void output_std_t::output (zstr z) { if (z && !_muzzle) _out->cat (z); }

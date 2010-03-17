@@ -175,6 +175,12 @@ namespace pub3 {
 	  err.push_back (b);
 	}
 	break;
+
+      case 'b':
+	if (ib) {
+	  a._b = args[i]->to_bool ();
+	}
+	break;
 	
       case 'l':
 	if (ib && !(a._l = args[i]->to_list ())) {

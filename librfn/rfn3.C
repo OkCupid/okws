@@ -61,6 +61,7 @@ namespace rfn3 {
     F(str);
     F(warn);
     F(warn_trace);
+    F(toggle_wss);
 
 #undef F
   }

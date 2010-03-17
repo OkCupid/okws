@@ -2,6 +2,7 @@
 
 #include "okrfn.h"
 #include "okformat.h"
+#include "pub3out.h"
 
 namespace rfn3 {
 
@@ -130,6 +131,19 @@ namespace rfn3 {
     if (!s) s = "";
     p->output_err_stacktrace (s, P_ERR_EVAL);
     return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  // -1 = no override
+  //  0 = override, turn off
+  //  1 = override, turn on (if WSS is on in pub)
+  //  2 = override, turn on (even if WSS is turned off!)
+  ptr<const expr_t>
+  toggle_wss_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    int i = p->out ()->override_wss (args[0]._i);
+    return expr_int_t::alloc (i);
   }
 
   //-----------------------------------------------------------------------

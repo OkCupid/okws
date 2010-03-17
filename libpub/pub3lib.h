@@ -63,7 +63,7 @@ namespace pub3 {
   protected:
 
     struct arg_t {
-      arg_t () : _i (0), _u (0), _b (-1), _n (-1), _f (0) {}
+      arg_t () : _i (0), _u (0), _b (false), _n (-1), _f (0) {}
       ptr<const expr_t> _O;
       ptr<rxx> _r;
       str _s;
@@ -71,7 +71,7 @@ namespace pub3 {
       ptr<const expr_list_t> _l;
       int64_t _i;
       u_int64_t _u;
-      short _b;
+      bool _b;
       short _n;
       double _f;
     };

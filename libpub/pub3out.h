@@ -13,7 +13,11 @@ namespace pub3 {
 
   class output_t {
   public:
-    output_t (opts_t o = 0) : _opts (o), _muzzle (false) {}
+    output_t (opts_t o = 0) : 
+      _opts (o), 
+      _muzzle (false), 
+      _override_wss (-1) {}
+
     virtual ~output_t () {}
 
     virtual void output (zstr s) = 0;
@@ -28,11 +32,13 @@ namespace pub3 {
 
     void pub3_add_error (const loc_stack_t &stk, str msg, err_type_t typ);
     ptr<expr_t> err_obj ();
+    int override_wss (int i);
   protected:
     void output_visible_error (str s);
     opts_t _opts;
     pub3::obj_list_t _err_obj;
     bool _muzzle;
+    int _override_wss;
   };
 
   //-----------------------------------------------------------------------
