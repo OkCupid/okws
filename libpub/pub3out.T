@@ -200,9 +200,10 @@ namespace pub3 {
       while (_wss_boundaries.size () && !found) {
 	if (cicmp (_wss_boundaries.back (), tag)) {
 	  found = true;
-	}
+	} 
+	_wss_boundaries.pop_back ();
       }
-      ret = !found;
+      ret = found;
     }
     return ret;
   }
