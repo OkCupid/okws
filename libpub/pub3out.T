@@ -7,6 +7,13 @@ namespace pub3 {
 
   //========================================== output_t ==================
 
+  output_t::output_t (opts_t o) :
+    _opts (o),
+    _muzzle (false),
+    _wss_enabled (o & P_WSS) {}
+
+  //--------------------------------------------------------------------
+
   ptr<output_t>
   output_t::alloc (zbuf *z, opts_t o)
   {
@@ -172,12 +179,48 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  int
-  output_t::override_wss (int i)
+  bool
+  output_t::enable_wss (bool b)
   {
-    int ret = _override_wss;
-    _override_wss = i;
+    bool ret = _wss_enabled;
+    _wss_enabled = b;
     return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  output_t::wss_boundary (bool on, str tag)
+  {
+    bool ret = true;
+    if (on) {
+      _wss_boundaries.push_back (tag);
+    } else  {
+      bool found = false;
+      while (_wss_boundaries.size () && !found) {
+	if (cicmp (_wss_boundaries.back (), tag)) {
+	  found = true;
+	}
+      }
+      ret = !found;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  output_t::output (zstr orig, zstr wss) 
+  {
+    output (do_wss () ? wss : orig);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  output_t::do_wss () const
+  {
+    return _wss_enabled && _wss_boundaries.size () == 0;
   }
 
   //=================================== output_std_t ====================

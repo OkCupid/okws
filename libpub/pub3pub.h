@@ -22,10 +22,10 @@ namespace pub3 {
     P_IINFO =    0x2,     /* include info output w/ text */
     P_VERBOSE =  0x4,     /* debug messages, etc */
     P_VISERR =   0x8,     /* visible HTML errors */
-    P_WSS =      0x10,    /* white space stripping */
+    P_WSS =      0x10,    /* white-space stripping initializes to **on** */
     P_NOPARSE =  0x20,    /* don't parse file at all */
     P_NOLOCALE = 0x40,    /* Don't localize file */
-    P_COPY_CONF = 0x80,   /* copy the config over to universals */
+    P_COPY_CONF= 0x80,    /* copy the config over to universals */
     P_CONFIG =   0x100,   /* run config variables (needed for xml interface) */
 
     P_OUTPUT_ERR_IN_PLACE = 0x200,          /* output errors in place */
@@ -126,6 +126,7 @@ namespace pub3 {
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
 
     void output (zstr s);
+    void output (zstr orig, zstr wss);
     void output (str s);
     void output_err (str s, err_type_t t);
     void output_errs (const xpub3_errstrs_t &e, err_type_t t);
@@ -136,9 +137,6 @@ namespace pub3 {
     void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
     void push_metadata (ptr<const metadata_t> md);
     void pop_metadata ();
-    bool push_pws (bool b);
-    void pop_pws (bool b);
-    bool pws () const;
     ptr<bindtab_t> push_bindings (env_t::layer_type_t lt);
     bool is_config () const;
 
@@ -168,7 +166,6 @@ namespace pub3 {
     str _cwd;
     location_t _location;        // current location
     ptr<ok_iface_t> _pub_iface;  // publisher interface
-    bool _pws;                   // preserve white space
     ptr<control_t> _control;     // control flow control
   };
 

@@ -61,7 +61,6 @@ namespace pub3 {
   // For regular file publishing!
   publish_t::publish_t (ptr<bindtab_t> unis, zbuf *z, opts_t o)
     : eval_t (New refcounted<env_t> (unis), output_t::alloc (z, o), o),
-      _pws (false),
       _control (control_t::alloc ()) {}
 
   //--------------------------------------------------------------------
@@ -70,14 +69,12 @@ namespace pub3 {
   publish_t::publish_t (ptr<bindtab_t> unis, ptr<bindtab_t> out, opts_t o)
     : eval_t (New refcounted<env_t> (unis, out), 
 	      output_silent_t::alloc (o), o),
-      _pws (false),
       _control (control_t::alloc ()) {}
 
   //--------------------------------------------------------------------
 
   publish_t::publish_t (ptr<env_t> e, ptr<output_t> o, opts_t opts)
     : eval_t (e, o, opts),
-      _pws (false),
       _control (control_t::alloc ()) {}
 
   //--------------------------------------------------------------------
@@ -93,24 +90,6 @@ namespace pub3 {
     ptr<control_t> c = _control;
     _control = control_t::alloc ();
     return c;
-  }
-
-  //--------------------------------------------------------------------
-
-  bool publish_t::pws () const { return _pws; }
-  void publish_t::pop_pws (bool b) { _pws = b; }
-
-  //--------------------------------------------------------------------
-
-  bool
-  publish_t::push_pws (bool b)
-  {
-    bool ret = _pws;
-
-    // Only allow, on a push, to go from non-preserve to 
-    // preserve mode.
-    if (b && !_pws) { _pws = b; }
-    return ret;
   }
 
   //--------------------------------------------------------------------
@@ -198,6 +177,7 @@ namespace pub3 {
 
   void publish_t::output (zstr z) { out ()->output (z); }
   void publish_t::output (str z) { out ()->output (z); }
+  void publish_t::output (zstr orig, zstr wss) { out ()->output (orig, wss); }
 
   //--------------------------------------------------------------------
 

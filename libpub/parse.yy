@@ -62,8 +62,7 @@
 %token <str> T_P3_HTML
 %token <ch> T_P3_HTML_CH
 
-%token <str> T_P3_BEGIN_PRE
-%token <str> T_P3_END_PRE
+%token <str> T_P3_WSS_BOUNDARY
 
 %type <p3iclist> p3_elifs p3_elifs_opt;
 %type <p3ic> p3_if_clause p3_elif p3_else p3_else_opt;
@@ -119,7 +118,7 @@
 
 %type <p3zone> p3_html_zone p3_html_zone_inner;
 %type <p3zone> p3_html_blocks p3_html_block;
-%type <p3zone> p3_html_pre p3_pub_zone p3_pub_zone_inner;
+%type <p3zone> p3_pub_zone p3_pub_zone_inner;
 %type <p3expr> p3_inline_expr;
 %type <p3zp> p3_pub_zone_body_opt p3_pub_zone_body;
 %type <p3zone> p3_nested_zone;
@@ -164,23 +163,16 @@ p3_html_blocks:  { $$ = NULL; }
 	   z->add ($2);
 	   $$ = z;
         }
-	;
-
-p3_html_block: p3_html_pre  { $$ = $1; }
-	| p3_inline_expr { $$ = pub3::zone_inline_expr_t::alloc ($1); }
-	| p3_pub_zone       { $$ = $1; }
-	;
-
-p3_html_pre: T_P3_BEGIN_PRE p3_html_blocks T_P3_END_PRE
+	| p3_html_blocks T_P3_WSS_BOUNDARY
 	{
-	   // XXX might revisit this and flatten now!
-	   ptr<pub3::zone_html_t> r = pub3::zone_html_t::alloc ();
-	   r->set_preserve_white_space (true);
-	   r->add ($1);
-	   if ($2) r->add ($2);
-           r->add ($3);
-           $$ = r;
+	  ptr<pub3::zone_html_t> z = pub3::zone_html_t::alloc ($1);
+	  z->add_boundary ($2);
+	  $$ = z;
 	}
+	;
+
+p3_html_block: p3_inline_expr { $$ = pub3::zone_inline_expr_t::alloc ($1); }
+	|      p3_pub_zone       { $$ = $1; }
 	;
 
 /* ---------------------------------------------------------------------- */

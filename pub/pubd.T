@@ -121,7 +121,7 @@ main_T (int argc, char **argv)
     jaildir = v;
   }
  
-  while ((ch = getopt (argc, argv, "vp:wj:u:g:f:s:x:CH:S:")) != -1) {
+  while ((ch = getopt (argc, argv, "vp:j:u:g:f:s:x:CH:S:")) != -1) {
     switch (ch) {
     case 'p':
       if (!convertint (optarg, &port)) 
@@ -133,9 +133,6 @@ main_T (int argc, char **argv)
     case 's':
       if (!convertint (optarg, &ok_axprt_ps))
 	usage ();
-      break;
-    case 'w':
-      opts |= pub3::P_WSS;
       break;
     case 'j':
       jaildir = optarg;

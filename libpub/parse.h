@@ -83,8 +83,7 @@
      T_P3_REGEX = 299,
      T_P3_HTML = 300,
      T_P3_HTML_CH = 301,
-     T_P3_BEGIN_PRE = 302,
-     T_P3_END_PRE = 303
+     T_P3_WSS_BOUNDARY = 302
    };
 #endif
 /* Tokens.  */
@@ -132,8 +131,7 @@
 #define T_P3_REGEX 299
 #define T_P3_HTML 300
 #define T_P3_HTML_CH 301
-#define T_P3_BEGIN_PRE 302
-#define T_P3_END_PRE 303
+#define T_P3_WSS_BOUNDARY 302
 
 
 

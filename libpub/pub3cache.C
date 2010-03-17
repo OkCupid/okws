@@ -10,7 +10,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   // mask in only those options that matter for indexing.
-  u_int cache_key_t::op_mask (u_int in) { return in & (P_WSS | P_NOPARSE); }
+  u_int cache_key_t::op_mask (u_int in) { return in & (P_NOPARSE); }
 
   //-----------------------------------------------------------------------
 

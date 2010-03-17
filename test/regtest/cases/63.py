@@ -15,4 +15,6 @@ outcome_exact = \
 """ blah foo bar <pre>x    y  11
 z
 n
-</pre> <script>1 2  3    4</script><script>1 2  3    4</script> """
+</pre>
+<script>1 2  3    4</script><script>1 2  3    4</script>
+"""

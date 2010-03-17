@@ -135,15 +135,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  // -1 = no override
-  //  0 = override, turn off
-  //  1 = override, turn on (if WSS is on in pub)
-  //  2 = override, turn on (even if WSS is turned off!)
   ptr<const expr_t>
-  toggle_wss_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  enable_wss_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    int i = p->out ()->override_wss (args[0]._i);
-    return expr_int_t::alloc (i);
+    bool ret = p->out ()->enable_wss (args[0]._b);
+    return expr_bool_t::alloc (ret);
   }
 
   //-----------------------------------------------------------------------

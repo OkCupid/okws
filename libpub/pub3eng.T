@@ -163,7 +163,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     _config = v;
   }
 
-  while ((ch = getopt (argc, argv, "a:diwej:f:vhp:sJ")) != -1) {
+  while ((ch = getopt (argc, argv, "a:diej:f:vhp:sJ")) != -1) {
     switch (ch) {
     case 's':
       _syntax_check = true;
@@ -179,9 +179,6 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       break;
     case 'd':
       _opt |= P_DEBUG;
-      break;
-    case 'w':
-      _opt |= P_WSS; 
       break;
     case 'e':
       _opt |= P_VISERR;

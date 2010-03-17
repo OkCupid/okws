@@ -59,10 +59,6 @@ static int  json_str_eof ();
 static int yy_json_mode = 0;
 static void inc_lineno (int c = 1);
 
-static void open_pre_tag (const char *tag);
-static bool close_pre_tag (const char *tag);
-static str current_pre_tag;
-
 %}
 
 %option stack
@@ -112,20 +108,9 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 [%}{\\\[\]<]	{ yylval.ch = yytext[0]; return T_P3_HTML_CH; }
 
 
-[<]({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG})[^>]*[>] {
-		  yylval.str = yytext; 
-		  nlcount (0);
-		  open_pre_tag (yytext + 1);
-		  return T_P3_BEGIN_PRE;
-		}
-
-[<][/]{WS}*({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}){WS}*[>] {
-		   yylval.str = yytext;
-		   int ret = T_P3_HTML;
-		   if (close_pre_tag (yytext + 2)) {
-		      ret = T_P3_END_PRE;
-		   }
-		   return ret;
+[<][/]?({SCRIPTTAG}|{PRETAG}|{TEXTAREATAG}) {
+		  yylval.str = yytext;  
+		  return T_P3_WSS_BOUNDARY;
 		}
 }
 
@@ -663,42 +648,6 @@ yy_parse_json (str s)
 }
 
 //-----------------------------------------------------------------------
-
-static str normalize_tag (const char *in)
-{
-   size_t ln = strlen (in);
-   mstr buf (ln);
-   char *bp = buf.cstr ();
-
-   // zoom past any leading white space
-   while (*in && (isspace (*in))) { in++; }
-
-   for ( ; *in && isalpha (*in); bp++, in++) {
-      *bp = tolower (*in);
-   }
-   buf.setlen (bp - buf);
-   return buf;
-}
-
-void
-open_pre_tag (const char *in)
-{
-   current_pre_tag = normalize_tag (in);
-}
-
-bool
-close_pre_tag (const char *in)
-{
-   bool ret = false;
-   if (current_pre_tag && normalize_tag (in) == current_pre_tag) {
-      ret = true;
-      current_pre_tag = NULL;
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
 
 /*
 // States:

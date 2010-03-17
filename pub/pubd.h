@@ -49,7 +49,7 @@ namespace pub3 {
 
     hash_t hash_me () const;
     
-    static u_int op_mask (u_int in) { return in & ( P_WSS | P_NOPARSE); }
+    static u_int op_mask (u_int in) { return in & P_NOPARSE; }
     operator hash_t () const { return _hshkey; }
     bool operator== (const srv_cache_key_t &k) const 
     { return _opts == k._opts && *_filehash == *k._filehash; }

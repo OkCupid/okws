@@ -2,6 +2,7 @@
 
 #include "pub3ast.h"
 #include "pub3parse.h"
+#include "pub3out.h"
 
 namespace pub3 {
 
@@ -134,14 +135,12 @@ namespace pub3 {
   zone_html_t::v_publish_nonblock (publish_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    bool pws = p->push_pws (_preserve_white_space);
     for (size_t i = 0; i < _children.size (); i++) {
       status_t tmp = _children[i]->publish_nonblock (p);
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
       }
     }
-    p->pop_pws (pws);
     return ret;
   }
 
@@ -154,25 +153,20 @@ namespace pub3 {
       status_t ret (XPUB_STATUS_OK);
       status_t tmp;
       size_t i;
-      bool pws;
     }
-    pws = p->push_pws (_preserve_white_space);
     for (i = 0; i < _children.size (); i++) {
       twait { _children[i]->publish (p, mkevent (tmp)); }
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
       }
     }
-    p->pop_pws (pws);
     ev->trigger (ret);
   }
 
   //-----------------------------------------------------------------------
 
   zone_html_t::zone_html_t (location_t l) : 
-    zone_container_t (l),
-    _preserve_white_space (false)
-  {}
+    zone_container_t (l) {}
 
   //-----------------------------------------------------------------------
 
@@ -217,6 +211,28 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
+  zone_html_t::add_boundary (str s)
+  {
+    bool on = true;
+    size_t offset = 1;            // skip past '<'
+
+    if (s[offset] == '/') {
+      on = false;
+      offset ++;                  // skip past '/'
+    }
+
+    str tag = s + offset;
+
+    _children.push_back (zone_wss_boundary_t::alloc (on, tag));
+
+    // can optimize this; no need to push_zone_text since we know
+    // that the proceeding will not be text (since it's a wss boundary!)
+    add (s);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
   zone_html_t::add (str s)
   {
     ptr<zone_text_t> x = push_zone_text ();
@@ -245,6 +261,44 @@ namespace pub3 {
     for (size_t i = 0; i < _children.size (); i++) {
       s_dump (d, "zone:", _children[i]);
     }
+  }
+
+  //============================================== zone_wss_boundary_t ====
+
+  void
+  zone_wss_boundary_t::v_dump (dumper_t *d) const
+  {
+    d->dump (strbuf ("zone_wss_boundary_t: %s", _on ? "on" : "off"));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<zone_wss_boundary_t>
+  zone_wss_boundary_t::alloc (bool on, str tag)
+  {
+    return New refcounted<zone_wss_boundary_t> (location (), on, tag);
+  }
+
+  //-----------------------------------------------------------------------
+
+  status_t
+  zone_wss_boundary_t::v_publish_nonblock (publish_t *p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    if (!p->out ()->wss_boundary (_on, _tag)) {
+      p->report_error ("Unbalanced </script>, </textarea> OR </pre>", 
+		       _location);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  zone_wss_boundary_t::v_publish (publish_t *p, status_ev_t ev, 
+				  ptr<closure_t> dummy) const
+  {
+    ev->trigger (v_publish_nonblock (p)); 
   }
 
   //============================================== zone_text_t ============
@@ -311,8 +365,7 @@ namespace pub3 {
   {
     status_t ret (XPUB_STATUS_OK);
     cook_text ();
-    if (p->pws () || !(p->opts () & P_WSS)) { p->output (_original); }
-    else                                    { p->output (_wss); }
+    p->output (_original, _wss);
     return ret;
   }
 

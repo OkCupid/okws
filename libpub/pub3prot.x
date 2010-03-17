@@ -255,7 +255,6 @@ case XPUB3_EXPR_HEREDOC:
 
 struct xpub3_zone_html_t {
   int lineno;
-  bool preserve_white_space;
   xpub3_zone_t zones<>;
 };
 
@@ -275,6 +274,12 @@ struct xpub3_zone_pub_t {
   xpub3_statement_t statements<>;
 };
 
+struct xpub3_zone_wss_boundary_t {
+  int lineno;
+  bool on;
+  string tag<>;
+};
+
 struct xpub3_zone_inline_expr_t {
   int lineno;
   xpub3_expr_t expr;
@@ -286,7 +291,8 @@ enum xpub3_zone_typ_t {
     XPUB3_ZONE_TEXT = 2,
     XPUB3_ZONE_INLINE_EXPR = 3,
     XPUB3_ZONE_PUB = 4,
-    XPUB3_ZONE_RAW = 5
+    XPUB3_ZONE_RAW = 5,
+    XPUB3_ZONE_WSS_BOUNDARY = 6
 };
 
 union xpub3_zone_t switch (xpub3_zone_typ_t typ) {
@@ -300,6 +306,8 @@ case XPUB3_ZONE_PUB:
    xpub3_zone_pub_t zone_pub;
 case XPUB3_ZONE_RAW:
    xpub3_zone_raw_t zone_raw;
+case XPUB3_ZONE_WSS_BOUNDARY:
+   xpub3_zone_wss_boundary_t zone_wss_boundary;
 default: 
    void;
 };

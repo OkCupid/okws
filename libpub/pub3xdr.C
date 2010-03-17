@@ -246,6 +246,9 @@ pub3::zone_t::alloc (const xpub3_zone_t &z)
   case XPUB3_ZONE_RAW:
     r = zone_raw_t::alloc (*z.zone_raw);
     break;
+  case XPUB3_ZONE_WSS_BOUNDARY:
+    r = zone_wss_boundary_t::alloc (*z.zone_wss_boundary);
+    break;
   default:
     break;
   }
@@ -1251,8 +1254,7 @@ pub3::zone_pub_t::to_xdr (xpub3_zone_t *x) const
 //-----------------------------------------------------------------------
 
 pub3::zone_html_t::zone_html_t (const xpub3_zone_html_t &z)
-  : zone_container_t (z.lineno),
-    _preserve_white_space (z.preserve_white_space)
+  : zone_container_t (z.lineno)
 {
   for (size_t i = 0; i < z.zones.size (); i++) {
     _children.push_back (zone_t::alloc (z.zones[i]));
@@ -1271,13 +1273,40 @@ pub3::zone_html_t::to_xdr (xpub3_zone_t *z) const
 {
   z->set_typ (XPUB3_ZONE_HTML);
   z->html->lineno = lineno ();
-  z->html->preserve_white_space = _preserve_white_space;
   z->html->zones.setsize (_children.size ());
   for (size_t i = 0; i < _children.size (); i++) {
     _children[i]->to_xdr (&z->html->zones[i]);
   }
   return true;
 
+}
+
+//-----------------------------------------------------------------------
+
+pub3::
+zone_wss_boundary_t::zone_wss_boundary_t (const xpub3_zone_wss_boundary_t &x)
+  : zone_t (x.lineno),
+    _on (x.on),
+    _tag (x.tag) {}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::zone_wss_boundary_t>
+pub3::zone_wss_boundary_t::alloc (const xpub3_zone_wss_boundary_t &x)
+{
+  return New refcounted<zone_wss_boundary_t> (x);
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::zone_wss_boundary_t::to_xdr (xpub3_zone_t *x) const
+{
+  x->set_typ (XPUB3_ZONE_WSS_BOUNDARY);
+  x->zone_wss_boundary->lineno = lineno ();
+  x->zone_wss_boundary->on = _on;
+  x->zone_wss_boundary->tag = _tag;
+  return true;
 }
 
 //-----------------------------------------------------------------------

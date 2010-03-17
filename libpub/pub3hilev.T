@@ -575,7 +575,7 @@ namespace pub3 {
     ptr<file_t> f;
     time_t ctime;
     xpub_status_t res (XPUB_STATUS_OK);
-    opts_t opt_mask (int (P_WSS) | int (P_NOPARSE));
+    opts_t opt_mask (P_NOPARSE);
     
     struct ::stat sb;
     
