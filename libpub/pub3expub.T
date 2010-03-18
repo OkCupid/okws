@@ -50,6 +50,39 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
+  expr_t::pub_to_bindtab (publish_t *pub, biev_t ev) const
+  {
+    tvars {
+      ptr<const expr_dict_t> d;
+      ptr<bind_interface_t> bi;
+    }
+    twait { pub_as_dict (pub, mkevent (d)); }
+    if (d) {
+      bi = cow_bindtab_t::alloc (d);
+    }
+    ev->trigger (bi);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  expr_t::pub_as_refwrap (publish_t *pub, xrw_ev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> r;
+      ptr<expr_refwrap_t> ret;
+    }
+
+    twait { pub_to_ref (pub, mkevent (r)); }
+    if (r) {
+      ret = expr_refwrap_t::alloc (r, _lineno);
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
   expr_t::pub_as_scalar (publish_t *pub, event<scalar_obj_t>::ref ev) const
   {
     tvars {
@@ -326,6 +359,39 @@ namespace pub3 {
 	cx = NULL;
 	if (value) { twait { value->pub_to_val (p, mkevent (cx)); } }
 	if (cx) { d->insert (*key, cx->copy ()); }
+      }
+      out = d;
+    }
+    ev->trigger (out);
+  }
+
+  //---------------------------------------------------------------------
+
+  tamed void
+  expr_dict_t::pub_to_bindtab (publish_t *p, biev_t ev) const
+  {
+    tvars {
+      ptr<bind_interface_t> out;
+      const str *key;
+      ptr<expr_t> value;
+      ptr<expr_dict_t> d;
+      expr_dict_t::const_iterator_t it (*_self);
+      ptr<expr_refwrap_t> cx;
+    }
+
+    // First see if any keys are static.  Note that this computation
+    // will be memoized, so it's fast enough to do a full DFS here.
+    // For static objects, make a COW version
+    if (is_static ()) {
+      out = cow_bindtab_t::alloc (mkref (this));
+    } else {
+
+      // Otherwise, recurse --- evaluate next layer down...
+      d = New refcounted<expr_dict_t> ();
+      while ((key = it.next (&value))) {
+	cx = NULL;
+	if (value) { twait { value->pub_as_refwrap (p, mkevent (cx)); } }
+	if (cx) { d->insert (*key, cx); }
       }
       out = d;
     }

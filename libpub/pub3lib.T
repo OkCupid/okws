@@ -53,7 +53,8 @@ namespace pub3 {
   compiled_fn_t::eval_args (publish_t *p, args_t in, cargs_t *out) const
   {
     for (size_t i = 0; i < in->size (); i++) {
-      ptr<const expr_t> x = (*in)[i]->eval_to_val (p);
+      const expr_t *a = (*in)[i];
+      ptr<const expr_t> x = a->eval_to_val (p);
       if (!x && safe_args ()) x = expr_null_t::alloc ();
       out->push_back (x);
     }

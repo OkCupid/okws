@@ -80,6 +80,10 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  str expr_t::undef_str = "undef";
+
+  //--------------------------------------------------------------------
+
   void expr_t::report_error (eval_t *e, str msg) const
   { e->report_error (msg, _lineno); }
   
@@ -129,6 +133,19 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<expr_refwrap_t>
+  expr_t::eval_as_refwrap (eval_t *e) const
+  {
+    ptr<mref_t> r = eval_to_ref (e);
+    ptr<expr_refwrap_t> ret;
+    if (r) {
+      ret = expr_refwrap_t::alloc (r, _lineno);
+    }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<expr_t> expr_t::copy () const 
   { return expr_cow_t::alloc (mkref (this)); }
   ptr<expr_t> expr_t::deep_copy () const 
@@ -157,6 +174,17 @@ namespace pub3 {
     if (x) {
       ret = x->to_str (false);
     }
+    return ret;
+  }
+
+  //---------------------------------------------------------------------
+
+  ptr<bind_interface_t>
+  expr_t::eval_to_bindtab (eval_t *e) const
+  {
+    ptr<const expr_dict_t> d = eval_as_dict (e);
+    ptr<bind_interface_t> ret;
+    if (d) { ret = cow_bindtab_t::alloc (d); }
     return ret;
   }
 
@@ -1204,7 +1232,6 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
   
-  
   bool
   expr_list_t::is_static () const
   {
@@ -1860,6 +1887,36 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  ptr<bind_interface_t>
+  expr_dict_t::eval_to_bindtab (eval_t *e) const
+  {
+    ptr<bind_interface_t> out;
+
+    // First see if any keys are static.  Note that this computation
+    // will be memoized, so it's fast enough to do a full DFS here.
+    // For static objects, make a COW version
+    if (is_static ()) {
+      out = cow_bindtab_t::alloc (mkref (this));
+    } else {
+
+      // Otherwise, recurse --- evaluate next layer down...
+      const_iterator_t it (*this);
+      const str *key;
+      ptr<expr_t> value;
+      ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
+      while ((key = it.next (&value))) {
+	ptr<expr_t> cx;
+	if (value && (cx = value->eval_as_refwrap (e))) {
+	  d->insert (*key, cx); 
+	}
+      }
+      out = d;
+    }
+    return out;
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<const expr_t>
   expr_dict_t::eval_to_val (eval_t *e) const
   {
@@ -2113,7 +2170,7 @@ namespace pub3 {
   {
     str ret;
     ptr<const expr_t> x = const_ptr ();
-    if (!x) { ret = "undef"; }
+    if (!x) { ret = expr_t::undef_str; }
     else { ret = x->type_to_str (); }
     return ret;
   }
@@ -2140,7 +2197,75 @@ namespace pub3 {
     return ret;
   }
 
-  //=======================================================================
+  //================================== expr_refwrap_t ===================
+
+  ptr<expr_refwrap_t> expr_refwrap_t::alloc (ptr<mref_t> m, lineno_t l)
+  { return New refcounted<expr_refwrap_t> (m, l); }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_refwrap_t::val () const
+  {
+    ptr<const expr_t> ret;
+    if (_ref) ret = _ref->get_value ();
+    if (!ret) ret = expr_null_t::alloc ();
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t>
+  expr_refwrap_t::val ()
+  {
+    ptr<expr_t> ret;
+    if (_ref) ret = _ref->get_value ();
+    if (!ret) ret = expr_null_t::alloc ();
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<mref_t> expr_refwrap_t::eval_to_ref (eval_t *e) const { return _ref; }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t> expr_refwrap_t::eval_to_val (eval_t *e) const 
+  { return val (); }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> 
+  expr_refwrap_t::copy () const
+  {
+    ptr<const expr_t> x = val ();
+    ptr<expr_t> ret;
+    if (x) { ret = x->copy (); }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> 
+  expr_refwrap_t::deep_copy () const
+  {
+    ptr<const expr_t> x = val ();
+    ptr<expr_t> ret;
+    if (x) { ret = x->deep_copy (); }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  void 
+  expr_refwrap_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ptr<expr_t> x = val ();
+    if (x) { x->propogate_metadata (md); }
+  }
+  
+  //=====================================================================
+  
 
 };
 

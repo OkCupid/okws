@@ -1501,25 +1501,23 @@ namespace pub3 {
     tvars {
       status_t rs (XPUB_STATUS_OK);
       str fn;
-      ptr<const expr_dict_t> cd;
       bool mz;
       ptr<control_t> ctrl;
       ptr<bind_interface_t> bi;
     }
 
     if (_file) { twait { _file->pub_as_str (p, mkevent (fn)); } }
-    if (_dict) { twait { _dict->pub_as_dict (p, mkevent (cd)); } }
+    if (_dict) { twait { _dict->pub_to_bindtab (p, mkevent (bi)); } }
     
     if (!fn || fn.len () == 0) {
       str e = "include: cannot evaluate filename";
       p->report_error (e, _location);
-    } else if (_dict && !cd) {
+    } else if (_dict && !bi) {
       str e = "include: cannot evalute parameters";
       p->report_error (e, _location);
     } else {
       mz = p->push_muzzle (muzzle_output ());
       ctrl = p->push_control ();
-      if (cd) bi = cow_bindtab_t::alloc (cd);
       twait { p->publish (fn, _location, bi, mkevent (rs)); }
       p->restore_control (ctrl);
       p->pop_muzzle (mz);

@@ -24,7 +24,9 @@ namespace pub3 {
   class expr_assignment_t;
   class expr_dict_t;
   class expr_list_t;
+  class expr_refwrap_t;
   class bindtab_t;
+  class bind_interface_t;
   class call_t;      // declared in pub3func.h
   class callable_t;  // declared in pub3func.h -- a custom-defined function
   class metadata_t;  // declared in pub3file.h
@@ -32,9 +34,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   typedef event<ptr<const expr_t> >::ref cxev_t;
+  typedef event<ptr<bind_interface_t> >::ref biev_t;
   typedef event<ptr<const expr_dict_t> >::ref cdev_t;
   typedef event<ptr<expr_list_t> >::ref xlev_t;
+  typedef event<ptr<expr_dict_t> >::ref xdev_t;
   typedef event<ptr<mref_t> >::ref mrev_t;
+  typedef event<ptr<expr_refwrap_t> >::ref xrw_ev_t;
 
   //-----------------------------------------------------------------------
 
@@ -77,6 +82,7 @@ namespace pub3 {
     //
     virtual ptr<const expr_t> eval_to_val (eval_t *e) const;
     virtual ptr<mref_t> eval_to_ref (eval_t *e) const;
+    virtual ptr<bind_interface_t> eval_to_bindtab (eval_t *e) const;
     //
     //------------------------------------------------------------
 
@@ -99,18 +105,21 @@ namespace pub3 {
     virtual scalar_obj_t eval_as_scalar (eval_t *e) const;
     virtual str eval_as_str (eval_t *e) const;
     virtual ptr<const expr_dict_t> eval_as_dict (eval_t *e) const;
+    virtual ptr<expr_refwrap_t> eval_as_refwrap (eval_t *e) const;
 
     //
     //------------------------------------------------------------
-
+    
     virtual void pub_to_val (publish_t *pub, cxev_t ev, CLOSURE) const;
     virtual void pub_to_ref (publish_t *pub, mrev_t ev, CLOSURE) const;
+    virtual void pub_to_bindtab (publish_t *p, biev_t ev, CLOSURE) const;
     void pub_as_bool (publish_t *pub, evb_t ev, CLOSURE) const;
     void pub_as_null (publish_t *pub, evb_t ev, CLOSURE) const;
     void pub_as_str (publish_t *pub, evs_t ev, CLOSURE) const;
     void pub_as_dict (publish_t *pub, cdev_t ev, CLOSURE) const;
     void pub_as_scalar (publish_t *pub, event<scalar_obj_t>::ref ev, 
 			CLOSURE) const;
+    void pub_as_refwrap (publish_t *pub, xrw_ev_t ev, CLOSURE) const;
 
     //------------------------------------------------------------
     //
@@ -158,6 +167,7 @@ namespace pub3 {
     ptr<rxx> str2rxx (eval_t *e, const str &b, const str &o) const;
     lineno_t _lineno;
     mutable tri_bool_t _might_block;
+    static str undef_str;
   };
   
   //-----------------------------------------------------------------------
@@ -177,6 +187,7 @@ namespace pub3 {
   public:
     expr_cow_t (ptr<const expr_t> x) : _orig (x) {}
     static ptr<expr_cow_t> alloc (ptr<const expr_t> x);
+
     ptr<expr_dict_t> to_dict ();
     ptr<const expr_dict_t> to_dict () const;
     ptr<expr_list_t> to_list ();
@@ -250,6 +261,57 @@ namespace pub3 {
   protected:
     const ptr<expr_list_t> _list;
     const ssize_t _index;
+  };
+
+  //----------------------------------------------------------------------
+
+  // take a reference, and wrap it in an expression, so we can put it
+  // into dictionaries and the like.
+  class expr_refwrap_t : public expr_t {
+  public:
+    expr_refwrap_t (ptr<mref_t> r, lineno_t l) : expr_t (l), _ref (r) {}
+    static ptr<expr_refwrap_t> alloc (ptr<mref_t> r, lineno_t l);
+    bool to_xdr (xpub3_expr_t *x) const { return false; }
+    const char *get_obj_name () const { return "pub3::expr_refwrap_t"; }
+    ptr<const expr_t> eval_to_val (eval_t *e) const;
+    ptr<mref_t> eval_to_ref (eval_t *e) const;
+
+    ptr<expr_dict_t> to_dict () { return val ()->to_dict (); }
+    ptr<const expr_dict_t> to_dict () const { return val ()->to_dict (); }
+    ptr<expr_list_t> to_list () { return val ()->to_list (); }
+    ptr<const expr_list_t> to_list () const { return val ()->to_list (); }
+
+    str type_to_str () const { return val ()->type_to_str (); }
+    str to_identifier () const { return val ()->to_identifier (); }
+    str to_str (bool q = false) const { return val ()->to_str (q); }
+    str to_switch_str () const { return val ()->to_switch_str (); }
+    bool to_bool () const { return val ()->to_bool (); }
+    int64_t to_int () const { return val ()->to_int (); }
+    u_int64_t to_uint () const { return val ()->to_uint (); }
+    bool to_len (size_t *s) const { return val ()->to_len (s); }
+    bool is_null () const { return val ()->is_null ();  }
+    bool is_str () const { return val ()->is_str(); }
+    ptr<rxx> to_regex () const { return val ()->to_regex (); }
+    ptr<expr_regex_t> to_regex_obj () { return val ()->to_regex_obj (); }
+    bool to_int (int64_t *out) const { return val ()->to_int (out); }
+    scalar_obj_t to_scalar () const { return val ()->to_scalar (); }
+    bool to_double (double *out) const { return val ()->to_double (out); }
+    double to_double () const { return val ()->to_double (); }
+    ptr<const callable_t> to_callable () const 
+    { return val ()->to_callable (); }
+    bool is_call_coercable () const { return val ()->is_call_coercable (); }
+
+    // Evaluating an argument to string, internally to the 
+    // evaluation mechanism. Only overidden in the case of null
+
+    ptr<expr_t> copy () const;
+    ptr<expr_t> deep_copy () const;
+    void propogate_metadata (ptr<const metadata_t> md);
+    
+  private:
+    ptr<const expr_t> val () const;
+    ptr<expr_t> val ();
+    const ptr<mref_t> _ref;
   };
 
   //----------------------------------------------------------------------
@@ -996,6 +1058,8 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    ptr<bind_interface_t> eval_to_bindtab (eval_t *e) const;
+    void pub_to_bindtab (publish_t *p, biev_t ev, CLOSURE) const;
 
     ptr<expr_t> deep_copy () const;
     ptr<expr_dict_t> copy_dict () const;
