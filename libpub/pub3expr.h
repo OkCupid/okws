@@ -1059,6 +1059,8 @@ namespace pub3 {
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
     ptr<bind_interface_t> eval_to_bindtab (eval_t *e) const;
+    ptr<expr_dict_t> eval_to_val_final (eval_t *e) const;
+    void pub_to_val_final (publish_t *p, xdev_t ev, CLOSURE) const;
     void pub_to_bindtab (publish_t *p, biev_t ev, CLOSURE) const;
 
     ptr<expr_t> deep_copy () const;

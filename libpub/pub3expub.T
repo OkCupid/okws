@@ -339,11 +339,7 @@ namespace pub3 {
   {
     tvars {
       ptr<expr_t> out;
-      const str *key;
-      ptr<expr_t> value;
       ptr<expr_dict_t> d;
-      expr_dict_t::const_iterator_t it (*_self);
-      ptr<const expr_t> cx;
     }
 
     // First see if any keys are static.  Note that this computation
@@ -352,14 +348,7 @@ namespace pub3 {
     if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
     } else {
-
-      // Otherwise, recurse --- evaluate next layer down...
-      d = New refcounted<expr_dict_t> ();
-      while ((key = it.next (&value))) {
-	cx = NULL;
-	if (value) { twait { value->pub_to_val (p, mkevent (cx)); } }
-	if (cx) { d->insert (*key, cx->copy ()); }
-      }
+      twait { pub_to_val_final (p, mkevent (d)); }
       out = d;
     }
     ev->trigger (out);
@@ -372,30 +361,36 @@ namespace pub3 {
   {
     tvars {
       ptr<bind_interface_t> out;
-      const str *key;
-      ptr<expr_t> value;
       ptr<expr_dict_t> d;
-      expr_dict_t::const_iterator_t it (*_self);
-      ptr<expr_refwrap_t> cx;
     }
-
-    // First see if any keys are static.  Note that this computation
-    // will be memoized, so it's fast enough to do a full DFS here.
-    // For static objects, make a COW version
     if (is_static ()) {
       out = cow_bindtab_t::alloc (mkref (this));
     } else {
-
-      // Otherwise, recurse --- evaluate next layer down...
-      d = New refcounted<expr_dict_t> ();
-      while ((key = it.next (&value))) {
-	cx = NULL;
-	if (value) { twait { value->pub_as_refwrap (p, mkevent (cx)); } }
-	if (cx) { d->insert (*key, cx); }
-      }
+      twait { pub_to_val_final (p, mkevent (d)); }
       out = d;
     }
     ev->trigger (out);
+  }
+
+  //---------------------------------------------------------------------
+
+  tamed void
+  expr_dict_t::pub_to_val_final (publish_t *p, xdev_t ev) const
+  {
+    tvars {
+      ptr<expr_dict_t> d;
+      ptr<expr_t> value;
+      expr_dict_t::const_iterator_t it (*_self);
+      const str *key;
+      ptr<expr_refwrap_t> x;
+    }
+    d = New refcounted<expr_dict_t> ();
+    while ((key = it.next (&value))) {
+      x = NULL;
+      if (value) { twait { value->pub_as_refwrap (p, mkevent (x)); } }
+      if (x) { d->insert (*key, x); }
+    }
+    ev->trigger (d);
   }
 
   //=======================================================================
@@ -409,7 +404,7 @@ namespace pub3 {
       ptr<expr_list_t> nl;
       size_t i;
       ptr<expr_t> value, nv;
-      ptr<const expr_t> cx;
+      ptr<expr_refwrap_t> w;
     }
     if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
@@ -418,11 +413,11 @@ namespace pub3 {
       nl = New refcounted<expr_list_t> ();
       for (i = 0; i < l; i++) {
 	value = (*this)[i];
-	cx = NULL;
+	w = NULL;
 	nv = NULL;
-	if (value) { twait { value->pub_to_val (p, mkevent (cx)); } }
-	if (cx) { nv = cx->copy (); }
-	if (!nv) { nv = expr_null_t::alloc (); }
+	if (value) { twait { value->pub_as_refwrap (p, mkevent (w)); } }
+	if (w) { nv = w; }
+	else   { nv = expr_null_t::alloc (); }
 	nl->push_back (nv);
       }
       out = nl;

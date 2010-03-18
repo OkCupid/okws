@@ -1456,9 +1456,8 @@ namespace pub3 {
       ptr<expr_list_t> nl = New refcounted<expr_list_t> ();
       for (size_t i = 0; i < l; i++) {
 	ptr<expr_t> value = (*this)[i];
-	ptr<const expr_t> cx;
 	ptr<expr_t> nv;
-	if (!value || !(cx = value->eval_to_val (e)) || !(nv = cx->copy ())) {
+	if (!value || !(nv = value->eval_as_refwrap (e))) {
 	  nv = expr_null_t::alloc ();
 	}
 	nl->push_back (nv);
@@ -1898,19 +1897,7 @@ namespace pub3 {
     if (is_static ()) {
       out = cow_bindtab_t::alloc (mkref (this));
     } else {
-
-      // Otherwise, recurse --- evaluate next layer down...
-      const_iterator_t it (*this);
-      const str *key;
-      ptr<expr_t> value;
-      ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
-      while ((key = it.next (&value))) {
-	ptr<expr_t> cx;
-	if (value && (cx = value->eval_as_refwrap (e))) {
-	  d->insert (*key, cx); 
-	}
-      }
-      out = d;
+      out = eval_to_val_final (e);
     }
     return out;
   }
@@ -1928,21 +1915,28 @@ namespace pub3 {
     if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
     } else {
-
       // Otherwise, recurse --- evaluate next layer down...
-      const_iterator_t it (*this);
-      const str *key;
-      ptr<expr_t> value;
-      ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
-      while ((key = it.next (&value))) {
-	ptr<const expr_t> cx;
-	if (value) { cx = value->eval_to_val (e); }
-	if (cx) { d->insert (*key, cx->copy ()); }
-      }
-      out = d;
+      out = eval_to_val_final (e);
     }
-
     return out;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_dict_t>
+  expr_dict_t::eval_to_val_final (eval_t *e) const
+  {
+    ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
+    const_iterator_t it (*this);
+    const str *key;
+    ptr<expr_t> value;
+    while ((key = it.next (&value))) {
+      ptr<expr_t> cx;
+      if (value && (cx = value->eval_as_refwrap (e))) {
+	d->insert (*key, cx);
+      }
+    }
+    return d;
   }
 
   //--------------------------------------------------------------------
