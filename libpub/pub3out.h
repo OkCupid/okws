@@ -40,7 +40,7 @@ namespace pub3 {
     bool _muzzle;
 
     bool _wss_enabled;
-    vec<str> _wss_boundaries;
+    str _wss_boundary;
   };
 
   //-----------------------------------------------------------------------

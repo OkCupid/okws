@@ -192,20 +192,12 @@ namespace pub3 {
   bool
   output_t::wss_boundary (bool on, str tag)
   {
-    bool ret = true;
-    if (on) {
-      _wss_boundaries.push_back (tag);
-    } else  {
-      bool found = false;
-      while (_wss_boundaries.size () && !found) {
-	if (cicmp (_wss_boundaries.back (), tag)) {
-	  found = true;
-	} 
-	_wss_boundaries.pop_back ();
-      }
-      ret = found;
+    if (on && !_wss_boundary) {
+      _wss_boundary = tag;
+    } else if (!on && _wss_boundary && cicmp (_wss_boundary, tag)) {
+      _wss_boundary = NULL;
     }
-    return ret;
+    return true;
   }
 
   //-----------------------------------------------------------------------
@@ -221,7 +213,7 @@ namespace pub3 {
   bool
   output_t::do_wss () const
   {
-    return _wss_enabled && _wss_boundaries.size () == 0;
+    return _wss_enabled && !_wss_boundary;
   }
 
   //=================================== output_std_t ====================
