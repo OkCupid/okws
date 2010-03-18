@@ -680,7 +680,7 @@ namespace pub3 {
       case XPUB3_REL_GTE: ret = (sl >= sr); break;
       default: panic ("unexpected relational operator!\n");
       }
-    } else {
+    } else if (e->opts () & P_WARN_RELARG_NULL) {
       report_error (e, "one or more relational arguments were null");
     }
     return ret;

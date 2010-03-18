@@ -142,7 +142,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     first_time = false;
   }
 
-  opts |= (pub3::P_STRICT_INCLUDE_SCOPING | pub3::P_WARN_NULL);
+  opts |= (pub3::P_STRICT_INCLUDE_SCOPING | pub3::P_WARN_STRICT);
   oe = pub3::P_OUTPUT_ERR_PLACEHOLDERS | pub3::P_OUTPUT_ERR_OBJ;
 
   if (cgi.blookup ("nowss")) { wss = false; }

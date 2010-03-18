@@ -36,10 +36,14 @@ namespace pub3 {
 
     P_WARN_INLINE_NULL = 0x4000,            /* warn if %{foo} is NULL */
     P_WARN_NULL = 0x8000,                   /* warn if ever we eval to NULL */
+    P_WARN_RELARG_NULL = 0x10000,           /* warn if a relat. arg is NULL */
 
-    P_STRICT_INCLUDE_SCOPING = 0x10000,      /* add scope barrier */
+    P_STRICT_INCLUDE_SCOPING = 0x20000,      /* add scope barrier */
 
-    P_INFINITY = 0x20000
+    P_INFINITY = 0x40000,
+
+    // All warnings I can think of....
+    P_WARN_STRICT = P_WARN_INLINE_NULL | P_WARN_NULL | P_WARN_RELARG_NULL
   };
 
   //-----------------------------------------------------------------------
