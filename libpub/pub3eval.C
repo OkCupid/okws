@@ -28,7 +28,8 @@ namespace pub3 {
   {
     const vec<ptr<bindtab_t> > *lib = singleton_t::get ()->libraries ();
     for (size_t i = 0; i < lib->size (); i++) {
-      _stack.push_back (stack_layer_t ((*lib)[i], LAYER_LIBRARY));
+      _stack.push_back (stack_layer_t (cow_bindtab_t::alloc ((*lib)[i]), 
+				       LAYER_LIBRARY));
     }
     _stack.push_back (stack_layer_t (_universals, LAYER_UNIVERSALS));
     _stack.push_back (stack_layer_t (_globals, LAYER_GLOBALS));
