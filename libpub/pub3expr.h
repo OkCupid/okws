@@ -201,6 +201,7 @@ namespace pub3 {
     bool to_bool () const;
     bool to_len (size_t *s) const;
     str type_to_str () const;
+    bool is_null () const;
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
 
