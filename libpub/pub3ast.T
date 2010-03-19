@@ -1200,7 +1200,6 @@ namespace pub3 {
       size_t i;
       ptr<expr_t> nv;
       ptr<const expr_t> cx;
-      ptr<mref_t> r;
       ptr<bindtab_t> frame;
       str nm;
       binding_t b;
@@ -1223,8 +1222,7 @@ namespace pub3 {
 	nm = b.name ();
 
 	if ((cx = b.expr ())) {
-	  twait { cx->pub_to_ref (p, mkevent (r)); }
-	  if (r) { nv = r->get_value (); }
+	  twait { cx->pub_to_mval (p, mkevent (nv)); }
 	}
 	if (cx || locals) {
 	  if (!nv) nv = expr_null_t::alloc ();
@@ -1258,10 +1256,7 @@ namespace pub3 {
 	const binding_t &b = (*_bindings)[i];
 	ptr<expr_t> nv;
 	ptr<const expr_t> cx;
-	ptr<mref_t> r;
-	if ((cx = b.expr ()) && (r = cx->eval_to_ref (p))) {
-	  nv = r->get_value ();
-	}
+	if ((cx = b.expr ())) { nv = cx->eval_to_mval (p); }
 	if (cx || locals) {
 	  if (!nv) nv = expr_null_t::alloc ();
 	  frame->insert (b.name (), nv);

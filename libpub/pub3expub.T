@@ -5,7 +5,7 @@
 
 namespace pub3 {
 
-  //=======================================================================
+  //====================================== expr_t ==========================
 
   void
   expr_t::pub_to_val (publish_t *pub, cxev_t ev, ptr<closure_t> dummy) const
@@ -61,23 +61,6 @@ namespace pub3 {
       bi = cow_bindtab_t::alloc (d);
     }
     ev->trigger (bi);
-  }
-
-  //-----------------------------------------------------------------------
-
-  tamed void
-  expr_t::pub_as_refwrap (publish_t *pub, xrw_ev_t ev) const
-  {
-    tvars {
-      ptr<mref_t> r;
-      ptr<expr_refwrap_t> ret;
-    }
-
-    twait { pub_to_ref (pub, mkevent (r)); }
-    if (r) {
-      ret = expr_refwrap_t::alloc (r, _lineno);
-    }
-    ev->trigger (ret);
   }
 
   //-----------------------------------------------------------------------
@@ -142,7 +125,21 @@ namespace pub3 {
     ev->trigger (ret);
   }
 
-  //=======================================================================
+  //-----------------------------------------------------------------------
+
+  tamed void
+  expr_t::pub_to_mval (publish_t *p, xev_t ev) const
+  { 
+    tvars {
+      ptr<const expr_t> x;
+      ptr<expr_t> ret;
+    }
+    twait { pub_to_val (p, mkevent (x)); }
+    if (x) { ret = x->copy (); }
+    ev->trigger (ret);
+  }
+
+  //================================== expr_logical_t =====================
 
   tamed void
   expr_logical_t::pub_to_val (publish_t *p, cxev_t ev) const
@@ -309,10 +306,10 @@ namespace pub3 {
   {
     tvars {
       ptr<mref_t> lhs, ret;
-      ptr<const expr_t> rhs;
+      ptr<expr_t> rhs;
     }
     
-    twait { _rhs->pub_to_val (pub, mkevent (rhs)); }
+    twait { _rhs->pub_to_mval (pub, mkevent (rhs)); }
     twait { _lhs->pub_to_ref (pub, mkevent (lhs)); }
     ret = eval_to_ref_final (pub, lhs, rhs);
     ev->trigger (ret);
@@ -335,7 +332,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_dict_t::pub_to_val (publish_t *p, cxev_t ev) const
+  expr_dict_t::pub_to_mval (publish_t *p, xev_t ev) const
   {
     tvars {
       ptr<expr_t> out;
@@ -352,6 +349,16 @@ namespace pub3 {
       out = d;
     }
     ev->trigger (out);
+  }
+
+  //---------------------------------------------------------------------
+
+  tamed void
+  expr_dict_t::pub_to_val (publish_t *p, cxev_t ev) const
+  {
+    tvars { ptr<expr_t> x; }
+    twait { pub_to_mval (p, mkevent (x)); }
+    ev->trigger (x);
   }
 
   //---------------------------------------------------------------------
@@ -379,15 +386,14 @@ namespace pub3 {
   {
     tvars {
       ptr<expr_dict_t> d;
-      ptr<expr_t> value;
+      ptr<expr_t> value, x;
       expr_dict_t::const_iterator_t it (*_self);
       const str *key;
-      ptr<expr_refwrap_t> x;
     }
     d = New refcounted<expr_dict_t> ();
     while ((key = it.next (&value))) {
       x = NULL;
-      if (value) { twait { value->pub_as_refwrap (p, mkevent (x)); } }
+      if (value) { twait { value->pub_to_mval (p, mkevent (x)); } }
       if (x) { d->insert (*key, x); }
     }
     ev->trigger (d);
@@ -398,13 +404,22 @@ namespace pub3 {
   tamed void
   expr_list_t::pub_to_val (publish_t *p, cxev_t ev) const
   {
+    tvars { ptr<expr_t> x; }
+    twait { pub_to_mval (p, mkevent (x)); }
+    ev->trigger (x);
+  }
+
+  //----------------------------------------------------------------------
+
+  tamed void
+  expr_list_t::pub_to_mval (publish_t *p, xev_t ev) const
+  {
     tvars {
       ptr<expr_t> out;
       size_t l;
       ptr<expr_list_t> nl;
       size_t i;
       ptr<expr_t> value, nv;
-      ptr<expr_refwrap_t> w;
     }
     if (is_static ()) {
       out = expr_cow_t::alloc (mkref (this));
@@ -413,11 +428,9 @@ namespace pub3 {
       nl = New refcounted<expr_list_t> ();
       for (i = 0; i < l; i++) {
 	value = (*this)[i];
-	w = NULL;
 	nv = NULL;
-	if (value) { twait { value->pub_as_refwrap (p, mkevent (w)); } }
-	if (w) { nv = w; }
-	else   { nv = expr_null_t::alloc (); }
+	if (value) { twait { value->pub_to_mval (p, mkevent (nv)); } }
+	if (!nv) { nv = expr_null_t::alloc (); }
 	nl->push_back (nv);
       }
       out = nl;
@@ -458,6 +471,20 @@ namespace pub3 {
     ev->trigger (out);
   }
 
-  //=======================================================================
+  //=========================== expr_ref_t ===============================
+
+  tamed void
+  expr_ref_t::pub_to_mval (publish_t *p, xev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> r;
+      ptr<expr_t> ret;
+    }
+    twait { pub_to_ref (p, mkevent (r)); }
+    if (r) { ret = r->get_value (); }
+    ev->trigger (ret);
+  }
+
+  //======================================================================
 
 };

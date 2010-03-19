@@ -62,6 +62,7 @@ namespace rfn3 {
     F(warn);
     F(warn_trace);
     F(enable_wss);
+    F(internal_dump);
 
 #undef F
   }

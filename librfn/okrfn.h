@@ -50,6 +50,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(warn, "s");
   PUB3_COMPILED_FN(warn_trace, "s");
   PUB3_COMPILED_FN(enable_wss, "b");
+  PUB3_COMPILED_FN(internal_dump, "O");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);

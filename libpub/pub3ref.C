@@ -3,6 +3,17 @@
 
 namespace pub3 {
 
+  //=============================== expr_ref_t ============================
+
+  ptr<expr_t>
+  expr_ref_t::eval_to_mval (eval_t *e) const
+  {
+    ptr<expr_t> ret;
+    ptr<mref_t> r = eval_to_ref (e);
+    if (r) ret = r->get_value ();
+    return ret;
+  }
+
   //=============================== expr_dictref_t ========================
 
   ptr<expr_dictref_t>

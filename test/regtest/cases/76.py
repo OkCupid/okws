@@ -6,9 +6,7 @@ filedata = """
    locals { l : [1, 2, 3 ],
             d : { a : 1 , b : 2 } }
 
-   locals { r1 : { x : l },
-            r2 : [ d ] }
-
+   locals { r2 : [ d ], r1 : null }
    r1 = { x : l };
 
    r1.x[0] = 100;

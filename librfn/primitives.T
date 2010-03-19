@@ -136,6 +136,18 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  internal_dump_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    dumper_t d;
+    args[0]._O->dump (&d);
+    strbuf b;
+    d.dump_to (b);
+    return expr_str_t::alloc (b);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   enable_wss_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     bool ret = p->out ()->enable_wss (args[0]._b);
