@@ -6,13 +6,17 @@ filedata = """
    locals { l : [1, 2, 3 ],
             d : { a : 1 , b : 2 } }
 
-   locals { r2 : [ d ], r1 : null }
+   locals { r2 : [ d ], r1 : null,
+            v  : [ l ] }
    r1 = { x : l };
 
    r1.x[0] = 100;
    r2[0].b = 200;
 
-   print (l[0], " " , d.b);
+   print (l[0], " " , d.b, " ");
+
+   v[0][0] = 1000;
+   print (l[0]);
 $}
 """
-outcome = "100 200"
+outcome = "100 200 1000"
