@@ -192,6 +192,7 @@ namespace pub3 {
     ptr<expr_list_t> to_list ();
     ptr<const expr_list_t> to_list () const;
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_xdr (xpub3_json_t *x) const;
     bool is_static () const;
     bool might_block_uncached () const;
     str to_str (bool q = false) const;

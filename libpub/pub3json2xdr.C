@@ -37,6 +37,22 @@ pub3::expr_t::to_xdr (xpub3_json_t *j) const
 //-----------------------------------------------------------------------
 
 bool
+pub3::expr_cow_t::to_xdr (xpub3_json_t *j) const
+{
+  bool ret;
+  ptr<const expr_t> x = const_ptr ();
+  if (x) {
+    ret = x->to_xdr (j);
+  } else {
+    j->set_typ (XPUB3_JSON_ERROR);
+    ret = false;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
 pub3::expr_str_t::to_xdr (xpub3_json_t *j) const
 {
   j->set_typ (XPUB3_JSON_STRING);
