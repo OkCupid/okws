@@ -46,7 +46,7 @@ namespace pub3 {
     } else if ((valp = (*d)[_key])) {
       out = *valp;
     } else {
-      out = expr_null_t::alloc ();
+      //out = expr_null_t::alloc ();
     }
     return out;
   }
