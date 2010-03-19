@@ -668,20 +668,4 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool
-  const_obj_t::is_empty () const
-  {
-    ptr<const expr_list_t> l;
-    ptr<const expr_dict_t> d;
-    bool ret = false;
-
-    if (isnull ()) { ret = true; }
-    else if ((l = to_list ())) { ret = (l->size () == 0); }
-    else if ((d = to_dict ())) { ret = (d->size () == 0); }
-
-    return ret;
-  }
-
-  //-----------------------------------------------------------------------
-
 };

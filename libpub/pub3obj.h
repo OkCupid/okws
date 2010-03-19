@@ -115,7 +115,6 @@ namespace pub3 {
     virtual ptr<const expr_t> obj () const { return _c_obj; }
     bool isnull () const;
     bool is_null () const { return isnull (); }
-    bool is_empty () const;
     obj_t copy () const;
     bool is_empty () const;
 
