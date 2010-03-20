@@ -1,0 +1,35 @@
+{%
+    locals { version : 5 }
+    
+    if (version > loaded_version) {
+	
+	universals { 
+	    basic : {
+		
+		abs : lambda (x) {
+		    if (x < 0) { return -1 * x; }
+		    return x;
+		},
+		    
+	        factorial : lambda (x) { 
+		    locals { ret : 1 }
+		    while (x > 1) {
+			ret = ret * x;
+			x = x - 1;
+		    }
+		    return ret;
+		},
+		    
+		sign : lambda (x) {
+		    if (x > 0) { return 1; }
+		    elif (x == 0) { return 0; }
+		    else { return -1; }
+		},
+
+                version : version
+	    } 
+	}
+	warn ("loaded 'basic' libarary v%{version}");
+     }
+     out.lib = basic;
+%}

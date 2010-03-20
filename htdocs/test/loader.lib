@@ -1,0 +1,10 @@
+{%
+    def libload (n) {
+	universals { loaded }
+	if (!loaded) { loaded = {} }
+	if (!loaded[n]) { loaded[n] = 0; }
+	locals { tmp : {} }
+	load ("/test/%{n}.lib", { loaded_version : loaded[n], out : tmp });
+	if (tmp.lib.version > loaded[n]) { loaded[n] = tmp.lib.version; }
+    }
+%}
