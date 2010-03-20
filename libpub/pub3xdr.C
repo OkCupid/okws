@@ -86,12 +86,32 @@ pub3::for_t::to_xdr (xpub3_statement_t *x) const
 
 //-----------------------------------------------------------------------
 
+bool
+pub3::while_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_WHILE);
+  x->while_statement->lineno = lineno ();
+  expr_to_xdr (_cond, &x->while_statement->cond);
+  if (_body) { _body->to_xdr (&x->while_statement->body); }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
 pub3::for_t::for_t (const xpub3_for_t &x)
   : statement_t (x.lineno),
     _iter (x.iter),
     _arr (expr_t::alloc (x.arr)),
     _body (zone_t::alloc (x.body)),
     _empty (zone_t::alloc (x.empty)) 
+{}
+
+//-----------------------------------------------------------------------
+
+pub3::while_t::while_t (const xpub3_while_t &x)
+  : statement_t (x.lineno),
+    _cond (expr_t::alloc (x.cond)),
+    _body (zone_t::alloc (x.body))
 {}
 
 //-----------------------------------------------------------------------
@@ -184,6 +204,9 @@ pub3::statement_t::alloc (const xpub3_statement_t &x)
     break;
   case XPUB3_STATEMENT_FOR:
     r = New refcounted<for_t> (*x.for_statement);
+    break;
+  case XPUB3_STATEMENT_WHILE:
+    r = New refcounted<while_t> (*x.while_statement);
     break;
   case XPUB3_STATEMENT_LOCALS:
     r = New refcounted<locals_t> (*x.decls);
@@ -1116,7 +1139,7 @@ bool
 pub3::continue_t::to_xdr (xpub3_statement_t *x) const
 {
   x->set_typ (XPUB3_STATEMENT_CONTINUE);
-  x->break_statement->lineno = lineno ();
+  x->continue_statement->lineno = lineno ();
   return true;
 }
 

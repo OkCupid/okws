@@ -37,6 +37,7 @@
 %token T_P3_CLOSE
 %token T_P3_PRINT
 %token T_P3_FOR
+%token T_P3_WHILE
 %token T_P3_TRUE
 %token T_P3_ELIF
 %token T_P3_ELSE
@@ -85,7 +86,7 @@
 %type <p3bl> p3_bindlist p3_bindlist_bindings p3_locals_arg;
 %type <p3bind> p3_binding;
 %type <p3include> p3_include_or_load;
-%type <p3statement> p3_control p3_for p3_if p3_include p3_locals;
+%type <p3statement> p3_control p3_for p3_if p3_include p3_locals p3_while;
 %type <p3statement> p3_universals p3_print p3_fndef p3_switch p3_globals;
 %type <p3statement> p3_break p3_return p3_continue;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
@@ -94,6 +95,7 @@
 %type <p3case> p3_switch_case ;
 %type <p3pair> p3_pub_zone_pair;
 %type <lineno> p3_t_for p3_t_if p3_t_print p3_t_locals p3_t_universals;
+%type <lineno> p3_t_while;
 %type <lineno> p3_t_globals;
 
 %type <relop> p3_relational_op;
@@ -237,6 +239,7 @@ p3_control:     p3_for { $$ = $1; }
 	      | p3_break { $$ = $1; }
 	      | p3_return { $$ = $1; }
 	      | p3_continue { $$ = $1; }
+	      | p3_while { $$ = $1; }
               | ';' { $$ = NULL; }
 	      ;
 
@@ -839,6 +842,7 @@ p3_nested_zone: p3_html_zone { $$ = $1; }
 	;
 
 p3_t_for : T_P3_FOR { $$ = pub3::plineno (); } ;
+p3_t_while : T_P3_WHILE { $$ = pub3::plineno (); } ;
 
 p3_for: p3_t_for p3_flexi_tuple p3_nested_zone p3_empty_clause 
         {
@@ -849,6 +853,16 @@ p3_for: p3_t_for p3_flexi_tuple p3_nested_zone p3_empty_clause
 	    f->add_body ($3);
 	    f->add_empty ($4);
 	    $$ = f;
+	};
+
+p3_while : p3_t_while '(' p3_expr  ')' p3_nested_zone
+        {
+            ptr<pub3::while_t> w = pub3::while_t::alloc ($1);
+            if (!w->add_cond ($3)) {
+	       pub3::parse_error ("failed to set condition for while() loop");
+	    }
+	    w->add_body ($5);
+	    $$ = w;
 	};
 
 p3_t_print: T_P3_PRINT { $$ = pub3::plineno (); } ;

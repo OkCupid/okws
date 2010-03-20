@@ -723,6 +723,107 @@ namespace pub3 {
     if (_expr) { _expr->propogate_metadata (md); }
   }
 
+  //============================================== while_t ================
+
+  ptr<while_t> while_t::alloc (lineno_t l) 
+  { 
+    return New refcounted<while_t> (location (l));
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool while_t::add_cond (ptr<expr_t> x) { _cond = x; return true; }
+  bool while_t::add_body (ptr<zone_t> z) { _body = z; return true; }
+  
+  //-----------------------------------------------------------------------
+
+  bool
+  while_t::handle_control (publish_t *p) const
+  {
+    return p->control ()->handle_forloop ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  void while_t::reset_control (publish_t *p) const
+  { p->control ()->reset_forloop ();  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  while_t::might_block_uncached () const
+  {
+    bool b1 = _cond && _cond->might_block ();
+    bool b2 = _body && _body->might_block ();
+    return b1 || b2;
+  }
+
+  //-----------------------------------------------------------------------
+
+  status_t 
+  while_t::v_publish_nonblock (publish_t *p) const
+  {
+    status_t status (XPUB_STATUS_OK);
+
+    reset_control (p);
+
+    while (handle_control (p) && _cond && _cond->eval_as_bool (p)) {
+      if (_body) {
+	size_t stcksz = p->env ()->stack_size ();
+	status_t tmp = _body->publish_nonblock (p);
+	p->env ()->pop_to (stcksz);
+      }
+    }
+    return status;
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  while_t::v_publish (publish_t *p, status_ev_t ev) const
+  {
+    tvars {
+      xpub_status_t status (XPUB_STATUS_OK);
+      xpub_status_t tmp;
+      size_t stcksz;
+      bool go (true);
+    }
+
+    reset_control (p);
+
+    while (go && handle_control (p)) {
+
+      if (!_cond) { go = false; }
+      else { twait { _cond->pub_as_bool (p, mkevent (go)); } }
+
+      if (go && _body) {
+	stcksz = p->env ()->stack_size ();
+	twait { _body->publish (p, mkevent (tmp)); }
+	p->env ()->pop_to (stcksz);
+      }
+    }
+    ev->trigger (status);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  while_t::v_dump (dumper_t *d) const
+  {
+    s_dump (d, "cond:", _cond);
+    s_dump (d, "body:", _body);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  while_t::propogate_metadata (ptr<const metadata_t> md)
+  {
+    ast_node_t::propogate_metadata (md);
+    if (_cond) { _cond->propogate_metadata (md); }
+    if (_body) { _body->propogate_metadata (md); }
+  }
+
   //================================================ for_t ================
 
   bool
@@ -843,6 +944,7 @@ namespace pub3 {
       
       assert (v);
       ptr<expr_dict_t> locals = expr_dict_t::alloc ();
+      reset_control (p);
       
       for (size_t i = 0; handle_control (p) && i < v->size (); i++) {
 	

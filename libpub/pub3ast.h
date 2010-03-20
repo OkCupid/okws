@@ -292,6 +292,35 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class while_t : public statement_t {
+  public:
+    while_t (location_t l) : statement_t (l) {}
+    while_t (lineno_t l) : statement_t (l) {}
+    while_t (const xpub3_while_t &x);
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    static ptr<while_t> alloc (lineno_t l);
+
+    bool add_cond (ptr<expr_t> c);
+    bool add_body (ptr<zone_t> z);
+
+    void v_publish (publish_t *p, status_ev_t ev, CLOSURE) const;
+    status_t v_publish_nonblock (publish_t *p) const;
+    bool might_block_uncached () const;
+    void v_dump (dumper_t *d) const;
+    const char *get_obj_name () const { return "while_t"; }
+    virtual void propogate_metadata (ptr<const metadata_t> md);
+  protected:
+    ptr<expr_t> _cond;
+    ptr<zone_t> _body;
+
+  private:
+    bool handle_control (publish_t *p) const;
+    void reset_control (publish_t *p) const;
+  };
+
+  //-----------------------------------------------------------------------
+
   class for_t : public statement_t {
   public:
     for_t (location_t l) : statement_t (l) {}

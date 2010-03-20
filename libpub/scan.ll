@@ -538,6 +538,7 @@ class p3_identifier_tab_t {
 public:
   p3_identifier_tab_t () {
     _tab.insert ("for", T_P3_FOR);
+    _tab.insert ("while", T_P3_WHILE);
     _tab.insert ("if", T_P3_IF);
     _tab.insert ("locals", T_P3_LOCALS);
     _tab.insert ("include", T_P3_INCLUDE);

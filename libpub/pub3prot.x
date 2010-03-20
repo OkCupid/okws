@@ -339,6 +339,12 @@ struct xpub3_for_t {
   xpub3_zone_t *empty;
 };
 
+struct xpub3_while_t {
+  int lineno;
+  xpub3_expr_t cond;
+  xpub3_zone_t body;
+};
+
 struct xpub3_include_t {
   int lineno;
   xpub3_expr_t file;
@@ -426,7 +432,8 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_BREAK = 12,
    XPUB3_STATEMENT_RETURN = 13,
    XPUB3_STATEMENT_CONTINUE = 14,
-   XPUB3_STATEMENT_GLOBALS = 15
+   XPUB3_STATEMENT_GLOBALS = 15,
+   XPUB3_STATEMENT_WHILE = 16
 };
 
 %struct xpub3_zone_t;
@@ -444,6 +451,9 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
 
  case XPUB3_STATEMENT_FOR:
    xpub3_for_t for_statement;
+
+ case XPUB3_STATEMENT_WHILE:
+   xpub3_while_t while_statement;
 
  case XPUB3_STATEMENT_LOCALS:
  case XPUB3_STATEMENT_GLOBALS:

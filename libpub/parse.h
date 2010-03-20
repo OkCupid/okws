@@ -60,30 +60,31 @@
      T_P3_CLOSE = 276,
      T_P3_PRINT = 277,
      T_P3_FOR = 278,
-     T_P3_TRUE = 279,
-     T_P3_ELIF = 280,
-     T_P3_ELSE = 281,
-     T_P3_EMPTY = 282,
-     T_P3_NULL = 283,
-     T_P3_CASE = 284,
-     T_P3_SWITCH = 285,
-     T_P3_DEF = 286,
-     T_P3_LAMBDA = 287,
-     T_P3_BREAK = 288,
-     T_P3_RETURN = 289,
-     T_P3_CONTINUE = 290,
-     T_P3_HTML_HEREDOC = 291,
-     T_P3_PUB_HEREDOC = 292,
-     T_P3_IDENTIFIER = 293,
-     T_P3_INT = 294,
-     T_P3_UINT = 295,
-     T_P3_CHAR = 296,
-     T_P3_FLOAT = 297,
-     T_P3_STRING = 298,
-     T_P3_REGEX = 299,
-     T_P3_HTML = 300,
-     T_P3_HTML_CH = 301,
-     T_P3_WSS_BOUNDARY = 302
+     T_P3_WHILE = 279,
+     T_P3_TRUE = 280,
+     T_P3_ELIF = 281,
+     T_P3_ELSE = 282,
+     T_P3_EMPTY = 283,
+     T_P3_NULL = 284,
+     T_P3_CASE = 285,
+     T_P3_SWITCH = 286,
+     T_P3_DEF = 287,
+     T_P3_LAMBDA = 288,
+     T_P3_BREAK = 289,
+     T_P3_RETURN = 290,
+     T_P3_CONTINUE = 291,
+     T_P3_HTML_HEREDOC = 292,
+     T_P3_PUB_HEREDOC = 293,
+     T_P3_IDENTIFIER = 294,
+     T_P3_INT = 295,
+     T_P3_UINT = 296,
+     T_P3_CHAR = 297,
+     T_P3_FLOAT = 298,
+     T_P3_STRING = 299,
+     T_P3_REGEX = 300,
+     T_P3_HTML = 301,
+     T_P3_HTML_CH = 302,
+     T_P3_WSS_BOUNDARY = 303
    };
 #endif
 /* Tokens.  */
@@ -108,30 +109,31 @@
 #define T_P3_CLOSE 276
 #define T_P3_PRINT 277
 #define T_P3_FOR 278
-#define T_P3_TRUE 279
-#define T_P3_ELIF 280
-#define T_P3_ELSE 281
-#define T_P3_EMPTY 282
-#define T_P3_NULL 283
-#define T_P3_CASE 284
-#define T_P3_SWITCH 285
-#define T_P3_DEF 286
-#define T_P3_LAMBDA 287
-#define T_P3_BREAK 288
-#define T_P3_RETURN 289
-#define T_P3_CONTINUE 290
-#define T_P3_HTML_HEREDOC 291
-#define T_P3_PUB_HEREDOC 292
-#define T_P3_IDENTIFIER 293
-#define T_P3_INT 294
-#define T_P3_UINT 295
-#define T_P3_CHAR 296
-#define T_P3_FLOAT 297
-#define T_P3_STRING 298
-#define T_P3_REGEX 299
-#define T_P3_HTML 300
-#define T_P3_HTML_CH 301
-#define T_P3_WSS_BOUNDARY 302
+#define T_P3_WHILE 279
+#define T_P3_TRUE 280
+#define T_P3_ELIF 281
+#define T_P3_ELSE 282
+#define T_P3_EMPTY 283
+#define T_P3_NULL 284
+#define T_P3_CASE 285
+#define T_P3_SWITCH 286
+#define T_P3_DEF 287
+#define T_P3_LAMBDA 288
+#define T_P3_BREAK 289
+#define T_P3_RETURN 290
+#define T_P3_CONTINUE 291
+#define T_P3_HTML_HEREDOC 292
+#define T_P3_PUB_HEREDOC 293
+#define T_P3_IDENTIFIER 294
+#define T_P3_INT 295
+#define T_P3_UINT 296
+#define T_P3_CHAR 297
+#define T_P3_FLOAT 298
+#define T_P3_STRING 299
+#define T_P3_REGEX 300
+#define T_P3_HTML 301
+#define T_P3_HTML_CH 302
+#define T_P3_WSS_BOUNDARY 303
 
 
 
