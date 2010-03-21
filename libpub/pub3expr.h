@@ -203,6 +203,8 @@ namespace pub3 {
     bool to_len (size_t *s) const;
     str type_to_str () const;
     bool is_null () const;
+    ptr<rxx> to_regex () const;
+    ptr<expr_regex_t> to_regex_obj ();
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
 

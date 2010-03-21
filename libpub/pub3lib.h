@@ -31,14 +31,14 @@ namespace pub3 {
 
     // evaluate, given that the arguments have been prevaluted...
     virtual ptr<const expr_t> 
-    v_eval_1 (publish_t *e, const cargs_t &args) const { return NULL; }
+    v_eval_1 (publish_t *e, const margs_t &args) const { return NULL; }
 
     ptr<const callable_t> to_callable () const { return mkref (this); }
     const char *get_obj_name () const { return "rfn1::runtime_fn_t"; }
 
-    void pub_args (publish_t *p, args_t in, cargs_t *out, evv_t ev, CLOSURE) 
+    void pub_args (publish_t *p, args_t in, margs_t *out, evv_t ev, CLOSURE) 
       const;
-    void eval_args (publish_t *p, args_t in, cargs_t *out) const;
+    void eval_args (publish_t *p, args_t in, margs_t *out) const;
 
     str _lib, _name;
   };
@@ -64,11 +64,11 @@ namespace pub3 {
 
     struct arg_t {
       arg_t () : _i (0), _u (0), _b (false), _n (-1), _f (0) {}
-      ptr<const expr_t> _O;
+      ptr<expr_t> _O;
       ptr<rxx> _r;
       str _s;
-      ptr<const expr_dict_t> _d;
-      ptr<const expr_list_t> _l;
+      ptr<expr_dict_t> _d;
+      ptr<expr_list_t> _l;
       int64_t _i;
       u_int64_t _u;
       bool _b;
@@ -77,13 +77,13 @@ namespace pub3 {
     };
 
     // evaluate, given that the arguments have been prevaluted...
-    ptr<const expr_t> v_eval_1 (publish_t *e, const cargs_t &args) const;
+    ptr<const expr_t> v_eval_1 (publish_t *e, const margs_t &args) const;
 
     // evaluate, given that the args have been preevaluated and type-checked
     virtual ptr<const expr_t> 
     v_eval_2 (publish_t *e, const vec<arg_t> &args) const = 0;
 
-    virtual bool check_args (publish_t *p, const cargs_t &args, 
+    virtual bool check_args (publish_t *p, const margs_t &args, 
 			     vec<arg_t> *a) const;
 
     str _arg_pat;

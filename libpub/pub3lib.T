@@ -32,15 +32,15 @@ namespace pub3 {
 
   tamed void
   compiled_fn_t::pub_args (publish_t *p, callable_t::args_t in, 
-			   callable_t::cargs_t *out, 
+			   callable_t::margs_t *out, 
 			   evv_t ev) const
   {
     tvars {
       size_t i;
-      ptr<const expr_t> x;
+      ptr<expr_t> x;
     }
     for (i = 0; i < in->size (); i++) {
-      twait { (*in)[i]->pub_to_val (p, mkevent (x)); }
+      twait { (*in)[i]->pub_to_mval (p, mkevent (x)); }
       if (!x && safe_args ()) x = expr_null_t::alloc ();
       out->push_back (x);
     }
@@ -50,11 +50,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  compiled_fn_t::eval_args (publish_t *p, args_t in, cargs_t *out) const
+  compiled_fn_t::eval_args (publish_t *p, args_t in, margs_t *out) const
   {
     for (size_t i = 0; i < in->size (); i++) {
       ptr<const expr_t> a = (*in)[i];
-      ptr<const expr_t> x = a->eval_to_val (p);
+      ptr<expr_t> x = a->eval_to_mval (p);
       if (!x && safe_args ()) x = expr_null_t::alloc ();
       out->push_back (x);
     }
@@ -65,7 +65,7 @@ namespace pub3 {
   ptr<const expr_t>
   compiled_fn_t::eval_to_val (publish_t *p, args_t ai) const
   {
-    cargs_t ao;
+    margs_t ao;
     eval_args (p, ai, &ao);
     ptr<const expr_t> ret = v_eval_1 (p, ao);
     return ret;
@@ -78,7 +78,7 @@ namespace pub3 {
 			     cxev_t ev) const
   {
     tvars {
-      callable_t::cargs_t ao;
+      callable_t::margs_t ao;
       ptr<const expr_t> ret;
     }
     twait { pub_args (p, ai, &ao, mkevent ()); }
@@ -89,7 +89,7 @@ namespace pub3 {
   //===================================== patterned_fn_t ==================
 
   ptr<const expr_t>
-  patterned_fn_t::v_eval_1 (publish_t *e, const cargs_t &args) const
+  patterned_fn_t::v_eval_1 (publish_t *e, const margs_t &args) const
   {
     ptr<const expr_t> ret;
     vec<arg_t> checked;
@@ -102,7 +102,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   bool
-  patterned_fn_t::check_args (publish_t *p, const cargs_t &args, 
+  patterned_fn_t::check_args (publish_t *p, const margs_t &args, 
 			      vec<arg_t> *_checked) const
   {
     vec<str> err;

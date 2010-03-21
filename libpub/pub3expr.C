@@ -2209,6 +2209,27 @@ namespace pub3 {
     return ret;
   }
 
+  //--------------------------------------------------------------------
+
+  ptr<rxx>
+  expr_cow_t::to_regex () const
+  {
+    ptr<rxx> ret;
+    ptr<const expr_t> x = const_ptr ();
+    if (x) { ret = x->to_regex (); }
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_regex_t>
+  expr_cow_t::to_regex_obj () 
+  {
+    ptr<expr_regex_t> ret;
+    ptr<expr_t> x = mutable_ptr ();
+    if (x) { ret = x->to_regex_obj (); }
+    return ret;
+  }
   //=====================================================================
   
 
