@@ -69,6 +69,10 @@ namespace pub3 {
 
     static str layer_type_to_str (layer_type_t lt);
 
+    // Used primarily by bind() and unbind() library functions
+    ptr<bindtab_t> lookup_layer (const str &nm, layer_type_t lt, 
+				 bool creat) const;
+
     ptr<bindtab_t> push_bindings (layer_type_t typ, bool is_cfg);
     void push_references (ptr<const bindlist_t> l, layer_type_t lt);
 
@@ -78,6 +82,7 @@ namespace pub3 {
       stack_layer_t () : _typ (LAYER_NONE) {}
       ptr<bind_interface_t> _bindings;
       layer_type_t _typ;
+      bool is_local () const;
       bool is_barrier () const { return _typ == LAYER_LOCALS_BARRIER; } 
       ptr<expr_list_t> to_list () const;
     };

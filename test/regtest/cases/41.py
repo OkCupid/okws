@@ -5,7 +5,7 @@ filedata = """
 {$
     locals { v : [ "dog", "cat", "", "bar" ] }
     locals { y  : join ("-", v) }
-    locals { z  : split (r/-/, y) }
+    locals { z  : split (r/-/ , y) }
     print z;
 $}"""
 

@@ -21,7 +21,9 @@ namespace pub3 {
     virtual bool might_block () const { return false; }
 
     virtual ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const = 0;
+    virtual ptr<mref_t> eval_to_ref (publish_t *p, args_t args) const;
     virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
+    virtual void pub_to_ref (publish_t *p, args_t a, mrev_t ev, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------

@@ -22,6 +22,37 @@ namespace pub3 {
 			  ptr<closure_t> dummy) const 
   { ev->trigger (eval_to_val (p, args)); }
 
+  //-----------------------------------------------------------------------
+
+  tamed void
+  callable_t::pub_to_ref (publish_t *p, callable_t::args_t args, 
+			  mrev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> cx;
+      ptr<expr_t> copy;
+      ptr<mref_t> ret;
+    }
+    twait { pub_to_val (p, args, mkevent (cx)); }
+    if (cx) { copy = cx->copy (); }
+    if (copy) { ret = const_mref_t::alloc (copy); }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<mref_t>
+  callable_t::eval_to_ref (publish_t *p, args_t args) const
+  {
+    ptr<expr_t> copy;
+    ptr<mref_t> ret;
+    ptr<const expr_t> cx = eval_to_val (p, args);
+    if (cx) { copy = cx->copy (); }
+    if (copy) { ret = const_mref_t::alloc (copy); }
+    return ret;
+  }
+
+
   //======================================== lambda_t =====================
 
   lambda_t::lambda_t (ptr<identifier_list_t> p, ptr<zone_t> z, location_t loc)
@@ -265,13 +296,16 @@ namespace pub3 {
   call_t::pub_to_ref (publish_t *p, mrev_t ev) const
   {
     tvars {
-      ptr<const expr_t> x;
-      ptr<expr_t> copy;
       ptr<mref_t> ret;
+      ptr<const callable_t> fnd;
     }
-    twait { pub_to_val (p, mkevent (x)); }
-    if (x) copy = x->copy ();
-    ret = const_mref_t::alloc (copy);
+    twait { pub_prepare (p, mkevent (fnd)); }
+    if (!fnd) { /* noop */ }
+    else if (fnd->might_block () || _arglist->might_block ()) {
+      twait { fnd->pub_to_ref (p, _arglist, mkevent (ret)); }
+    } else {
+      ret = fnd->eval_to_ref (p, _arglist);
+    }
     ev->trigger (ret);
   }
 

@@ -51,6 +51,8 @@ namespace rfn3 {
   PUB3_COMPILED_FN(warn_trace, "s");
   PUB3_COMPILED_FN(enable_wss, "b");
   PUB3_COMPILED_FN(internal_dump, "O");
+  PUB3_COMPILED_FN(unbind, "s|s");
+  PUB3_COMPILED_FN(copy, "O");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);
@@ -68,6 +70,7 @@ namespace rfn3 {
   PUB3_COMPILED_HANDROLLED_FN(isnull);
   PUB3_COMPILED_HANDROLLED_FN(append);
   PUB3_COMPILED_HANDROLLED_FN(default);
+  PUB3_COMPILED_HANDROLLED_FN(bind); // Signature 'sO|s'
   
   //-----------------------------------------------------------------------
 

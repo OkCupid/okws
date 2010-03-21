@@ -1,7 +1,18 @@
 {%
+    // Load the library that's in charge of loading other libraries:
     load ("/test/loader.lib");
+
+    // After loading that library, we now have access to function 'libload'
+    // Calling 'libload("basic")' will load the library "basic.lib".
     libload ("basic");
+
+    // Print which version of the library we loaded.
+    print ("basic.version = %{basic.version}\n");
+
+    // Once basic.lib is loaded, we can now access the functions defined
+    // inside of it --- in this case basic.factorial and others...
     print (basic.factorial (5), "\n");
     print (basic.factorial (-100), "\n");
-    print ("basic.version = %{basic.version}\n");
+    print (basic.sign (-400.4), "\n");
+
 %}

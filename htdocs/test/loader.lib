@@ -1,10 +1,24 @@
 {%
+    // Loader.lib loads this one function into the main namespace:
     def libload (n) {
+
+	// loaded is a dictionary of all libraries that have already been
+	// loaded, and what versions of those libraries have been loaded.
+	// initialize to 0 if no entry is there for the requested library,
+	// 'n'
 	universals { loaded }
 	if (!loaded) { loaded = {} }
 	if (!loaded[n]) { loaded[n] = 0; }
-	locals { tmp : {} }
+
+	locals { tmp : {} }  
+
+	// load the library, passing in the version of the library that
+	// we've alread loaded.
 	load ("/test/%{n}.lib", { loaded_version : loaded[n], out : tmp });
+
+	// after loading, the variable 'tmp.lib' is populated with the
+	// library that we just loaded.  update the last loaded version
+	// of the library if needs be.
 	if (tmp.lib.version > loaded[n]) { loaded[n] = tmp.lib.version; }
     }
 %}

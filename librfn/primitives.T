@@ -156,4 +156,88 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  static bool
+  str_to_scope (str s, env_t::layer_type_t *outp)
+  {
+    bool ok = true;
+    env_t::layer_type_t out = env_t::LAYER_GLOBALS;
+    if (!s) {}
+    else if (s == "l") { out = env_t::LAYER_LOCALS; }
+    else if (s == "u") { out = env_t::LAYER_UNIVERSALS; }
+    else if (s == "g") {}
+    else { ok = false; }
+    *outp = out;
+    return ok;
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  bind_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  {
+    tvars {
+      str key, scope_str;
+      ptr<pub3::expr_t> o;
+      env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
+      bool found (false);
+      ptr<bindtab_t> layer;
+    }
+
+    if (args->size () != 2 && args->size () != 3) {
+      report_error (p, "bind() takes 2 or 3 arguments");
+    } else {
+      twait { (*args)[0]->pub_as_str (p, mkevent (key)); }
+      twait { (*args)[1]->pub_to_mval (p, mkevent (o)); }
+      if (args->size () == 3) {
+	twait { (*args)[2]->pub_as_str (p, mkevent (scope_str)); }
+      }
+      if (!key) {
+	report_error (p, "cannot resolve key to bind()\n");
+      } else if (scope_str && !str_to_scope (scope_str, &scope)) {
+	report_error (p, strbuf ("bad scope specifier given: '%s'", 
+				 scope_str.cstr ()));
+      } else {
+	if (!o) { o = expr_null_t::alloc (); }
+	layer = p->env ()->lookup_layer (key, scope, true);
+	if (layer) {
+	  found = true;
+	  layer->insert (key, o);
+	}
+      }
+    }
+
+    ev->trigger (expr_bool_t::alloc (found));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  unbind_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    str key = args[0]._s;
+    env_t::layer_type_t scope = env_t::LAYER_GLOBALS;
+    bool found = false;
+    if (args.size () > 1 && !str_to_scope (args[1]._s, &scope)) {
+      report_error (p, strbuf ("bad scope specifier given: '%s'", 
+			       args[1]._s.cstr ()));
+    } else {
+      ptr<bindtab_t> layer = p->env ()->lookup_layer (key, scope, true);
+      if (layer && (*layer)[key]) {
+	found = true;
+	layer->remove (key);
+      }
+    }
+    return expr_bool_t::alloc (found);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  copy_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    return args[0]._O->copy ();
+  }
+
+  //-----------------------------------------------------------------------
+
 };

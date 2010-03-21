@@ -52,6 +52,15 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  env_t::stack_layer_t::is_local () const
+  {
+    return _typ == LAYER_LOCALS || _typ == LAYER_LOCALS_BARRIER ||
+      _typ == LAYER_LOCALS_BARRIER_WEAK;
+  }
+
+  //-----------------------------------------------------------------------
+
   str
   env_t::layer_type_to_str (layer_type_t lt)
   {
@@ -196,6 +205,53 @@ namespace pub3 {
     if (l.is_barrier ()) { ret = _global_frames; }
     else                 { ret = i - 1; }
     return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  //
+  // Lookup the first feasible bindtab that refers to 'nm', where
+  // the bindtab is of the specified scope (local, global, universals...)
+  //
+  // For unis, and globals, this is pretty straight forward.  For
+  // locals, find an applicable binding, and if none found, create one
+  // on the topmost local layer.
+  //
+  // Used primarily by the runtime function 'bind' and 'unbind'
+  //
+  ptr<bindtab_t>
+  env_t::lookup_layer (const str &nm, env_t::layer_type_t lt, bool creat) const
+  {
+    ptr<bindtab_t> found;
+    ssize_t i = _stack.size () - 1;
+
+    switch (lt) {
+    case LAYER_LOCALS:
+      {
+	bool go = true;
+	ptr<bind_interface_t> top;
+	while (go && !found && i >= 0 && _stack[i].is_local ()) {
+	  stack_layer_t l = _stack[i];
+	  if (!top) { top = l._bindings; }
+	  if (l._bindings && l._bindings->lookup (nm)) { 
+	    found = l._bindings->mutate ();
+	  } 
+	  else if (l.is_barrier ()) { go = false; }
+	  else { i--; }
+	}
+	if (!found && top && creat) { found = top->mutate (); }
+      }
+      break;
+    case LAYER_GLOBALS:
+      found = _globals;
+      break;
+    case LAYER_UNIVERSALS:
+      found = _universals;
+      break;
+    default:
+      break;
+    }
+    return found;
   }
 
   //-----------------------------------------------------------------------

@@ -1,11 +1,20 @@
 {%
+    // The version of this library -- should monotonically increase
     locals { version : 5 }
     
+    // Only go through and load this library if its version is greater
+    // than the version already loaded.
     if (version > loaded_version) {
 	
+	// actually load the library: stick a dictionary into the 'universal'
+	// namespace. each entry in the dictionary is a function to call.
+	// "basic" is the name of this dictionary.
 	universals { 
 	    basic : {
-		
+	
+		// abs(), factorial() and sign() are the 3 functions
+		// in this library
+
 		abs : lambda (x) {
 		    if (x < 0) { return -1 * x; }
 		    return x;
@@ -26,10 +35,16 @@
 		    else { return -1; }
 		},
 
+   	        // specify in the library itself, its version
                 version : version
 	    } 
 	}
+
+	// For debug, say when the library is loaded, and which version
 	warn ("loaded 'basic' libarary v%{version}");
-     }
-     out.lib = basic;
+    }
+
+    // The caller might want to see which library was loaded and which
+    // version was loaded.  So pass back the library here.
+    out.lib = basic;
 %}
