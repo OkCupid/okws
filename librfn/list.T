@@ -219,5 +219,64 @@ namespace rfn3 {
   }
 
   //-----------------------------------------------------------------------
+
+  tamed void
+  pop_front_t::pub_to_mval (publish_t *p, callable_t::args_t args, 
+			    xev_t ev) const
+  {
+    tvars {
+      ptr<expr_list_t> l;
+      ptr<expr_t> x;
+      ptr<expr_t> ret;
+    }
+    if (args->size () != 1) {
+      report_error (p, "pop_front() takes one argument");
+    } else {
+      twait { (*args)[0]->pub_to_mval (p, mkevent (x)); }
+    }
+
+    if (!x) {
+      report_error (p, "first argument to pop_front() must be non-null");
+    } else if (!(l = x->to_list ())) {
+      report_error (p, "first argument to pop_front() must be a list");
+    } else if (l->size ()) {
+      ret = l->pop_front ();
+    } else {
+      ret = expr_null_t::alloc ();
+
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  pop_front_t::pub_to_val (publish_t *p, callable_t::args_t args, 
+			   cxev_t ev) const
+  {
+    tvars {
+      ptr<expr_t> out;
+    }
+    twait { pub_to_mval (p, args, mkevent (out)); }
+    ev->trigger (out);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  pop_front_t::pub_to_ref (publish_t *p, callable_t::args_t args, 
+			   mrev_t ev) const
+  {
+    tvars {
+      ptr<expr_t> out;
+      ptr<mref_t> r;
+    }
+    twait { pub_to_mval (p, args, mkevent (out)); }
+    if (out) { r = const_mref_t::alloc (out); }
+    ev->trigger (r);
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 

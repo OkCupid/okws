@@ -2139,9 +2139,7 @@ namespace pub3 {
 
     if (!lhs) {
       report_error (e, "error in assignment: LHS evaluates to null");
-    } else if (!rhs) {
-      report_error (e, "error in assignment: RHS evaluates to null");
-    } else if (!(lhs->set_value (rhs))) {
+    } else if (!(lhs->set_value (safe_expr (rhs)))) {
       report_error (e, "error in assignment: invalid LHS");
     } else {
       ret = lhs;

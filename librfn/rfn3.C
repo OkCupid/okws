@@ -67,6 +67,7 @@ namespace rfn3 {
     F(unbind);
     F(copy);
     F(lookup);
+    F(pop_front);
 
 #undef F
   }

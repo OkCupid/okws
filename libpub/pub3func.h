@@ -23,8 +23,10 @@ namespace pub3 {
 
     virtual ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const = 0;
     virtual ptr<mref_t> eval_to_ref (publish_t *p, args_t args) const;
+    virtual ptr<expr_t> eval_to_mval (publish_t *p, args_t args) const;
     virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
     virtual void pub_to_ref (publish_t *p, args_t a, mrev_t ev, CLOSURE) const;
+    virtual void pub_to_mval (publish_t *p, args_t a, xev_t ev, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -123,6 +125,7 @@ namespace pub3 {
 
     void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
     void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
+    void pub_to_mval (publish_t *p, xev_t ev, CLOSURE) const;
 
     void unshift_argument (ptr<expr_t> x);
     ptr<call_t> coerce_to_call () { return mkref (this); }

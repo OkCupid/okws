@@ -131,6 +131,19 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  class pop_front_t : public compiled_handrolled_fn_t {
+  public:
+    
+    // Signature "l" -- the list to pop from
+    pop_front_t () : compiled_handrolled_fn_t (libname, "pop_front") {}
+
+    void pub_to_ref (publish_t *p, args_t args, mrev_t ev, CLOSURE) const;
+    void pub_to_val (publish_t *p, args_t args, cxev_t ev, CLOSURE) const;
+    void pub_to_mval (publish_t *p, args_t args, xev_t ev, CLOSURE) const;
+  };
+
+  //-----------------------------------------------------------------------
+
   const char *version_str ();
   u_int64_t version_int ();
 
