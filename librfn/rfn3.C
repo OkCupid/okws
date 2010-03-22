@@ -79,7 +79,6 @@ namespace rfn3 {
 
   const char *version_str () { return "3.0.0"; }
   u_int64_t version_int () { return 3000000; }
-  u_int64_t version_int () { return 1000009; }
 
   //-----------------------------------------------------------------------
 };
