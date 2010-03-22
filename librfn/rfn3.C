@@ -66,6 +66,7 @@ namespace rfn3 {
     F(bind);
     F(unbind);
     F(copy);
+    F(lookup);
 
 #undef F
   }

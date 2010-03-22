@@ -70,7 +70,7 @@ namespace rfn3 {
   PUB3_COMPILED_HANDROLLED_FN(isnull);
   PUB3_COMPILED_HANDROLLED_FN(append);
   PUB3_COMPILED_HANDROLLED_FN(default);
-  PUB3_COMPILED_HANDROLLED_FN(bind); // Signature 'sO|s'
+  PUB3_COMPILED_HANDROLLED_FN(bind);    // Signature 'sO|s'
   
   //-----------------------------------------------------------------------
 
@@ -115,6 +115,18 @@ namespace rfn3 {
     type_t () : patterned_fn_t (libname, "type", "O") {}
     ptr<const expr_t> v_eval_2 (publish_t *e, const vec<arg_t> &args) const;
     bool safe_args () const { return false; }
+  };
+
+  //-----------------------------------------------------------------------
+
+  class lookup_t : public compiled_handrolled_fn_t {
+  public:
+    
+    // Signature "s|s" -- key to lookup, and optional scope
+    lookup_t () : compiled_handrolled_fn_t (libname, "lookup") {}
+
+    void pub_to_ref (publish_t *p, args_t args, mrev_t ev, CLOSURE) const;
+    void pub_to_val (publish_t *p, args_t args, cxev_t ev, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------

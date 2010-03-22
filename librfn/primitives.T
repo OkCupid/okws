@@ -192,7 +192,7 @@ namespace rfn3 {
 	twait { (*args)[2]->pub_as_str (p, mkevent (scope_str)); }
       }
       if (!key) {
-	report_error (p, "cannot resolve key to bind()\n");
+	report_error (p, "cannot resolve key to bind()");
       } else if (scope_str && !str_to_scope (scope_str, &scope)) {
 	report_error (p, strbuf ("bad scope specifier given: '%s'", 
 				 scope_str.cstr ()));
@@ -236,6 +236,55 @@ namespace rfn3 {
   copy_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
     return args[0]._O->copy ();
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  lookup_t::pub_to_ref (publish_t *p, callable_t::args_t args, mrev_t ev) const
+  {
+    tvars {
+      str key, scope_str;
+      ptr<bindtab_t> layer;
+      ptr<mref_t> ret;
+      env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
+    }
+    if (args->size () != 1 && args->size () != 2) {
+      report_error (p, "lookup() takes 1 or 2 arguments");
+    } else {
+      twait { (*args)[0]->pub_as_str (p, mkevent (key)); }
+      if (args->size () == 2) {
+	twait { (*args)[1]->pub_as_str (p, mkevent (scope_str)); }
+      }
+      if (!key) {
+	report_error (p, "cannot resolve key to lookup()");
+      } else if (scope_str && !str_to_scope (scope_str, &scope)) {
+	report_error (p, strbuf ("bad scope specifier given: '%s'",
+				 scope_str.cstr ()));
+      } else if (scope_str) {
+	layer = p->env ()->lookup_layer (key, scope, false);
+	if (layer) {
+	  ret = New refcounted<mref_dict_t> (layer, key);
+	}
+      } else {
+	ret = p->env ()->lookup_ref (key);
+      }
+    }
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  lookup_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  {
+    tvars {
+      ptr<mref_t> r;
+      ptr<const expr_t> out;
+    }
+    twait { pub_to_ref (p, args, mkevent (r)); }
+    if (r) { out = r->get_value (); }
+    ev->trigger (out);
   }
 
   //-----------------------------------------------------------------------
