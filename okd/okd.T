@@ -344,7 +344,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("SyslogLevels")
     .ignore ("DangerousZbufs")
     .ignore ("OklogdPidfile")
-    .ignore ("Pub3JsonStrictEscaping")
+    .ignore ("PubJsonStrictEscaping")
     .ignore ("AhttpconZombieWarn")
     .ignore ("AhttpconZombieTimeout")
     ;
