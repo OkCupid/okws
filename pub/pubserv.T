@@ -303,7 +303,7 @@ namespace pub3 {
 	warn ("cannot continue due to bad groups or users\n");
       } else if ((uid || gid) && setgroups (0, NULL)) {
 	warn ("failed to void grouplist: %m\n");
-      } else if (!chroot (dc)) {
+      } else if (chroot (dc) != 0) {
 	warn ("chroot (%s) failed: %m\n", dc);
       } else if (setgid (gid) != 0) {
 	warn ("setgid (%s) failed: %m\n", gname.cstr ());
