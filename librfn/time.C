@@ -18,8 +18,8 @@ namespace rfn3 {
   {
     str fmt = args[0]._s;
     time_t t;
-    if (args.size () > 1) { t = args[0]._u; }
-    else { t = sfs_get_timenow (); }
+    t = args[0]._u;
+    if (!t) { t = sfs_get_timenow (); }
       
     enum { BUFSZ = 1024 };
     char buf[BUFSZ];
