@@ -16,7 +16,7 @@ namespace rfn3 {
   ptr<const expr_t>
   time_format_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    str fmt = args[0]._s;
+    str fmt = args[1]._s;
     time_t t;
     t = args[0]._u;
     if (!t) { t = sfs_get_timenow (); }
