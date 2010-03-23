@@ -86,7 +86,15 @@ okclnt3_t::ssl_cipher () const
 void
 okclnt3_t::set_localizer (ptr<const pub3::localizer_t> l)
 {
-  _p3_locale = New refcounted<pub3::locale_specific_publisher_t> (pub3 (), l);
+  // Clone the service object's remote publisher....
+  ptr<pub3::remote_publisher_t> r = 
+    New refcounted<pub3::remote_publisher_t> (*oksrvc->pub3 ());
+
+  // In our own private copy, set the localizer...
+  r->set_localizer (l);
+
+  // And store it away in our slot for a generic publisher...
+  _p3_locale = r;
 }
 
 //-----------------------------------------------------------------------
@@ -102,8 +110,7 @@ okclnt3_t::pub3 ()
 ptr<pub3::ok_iface_t>
 okclnt3_t::pub3_local ()
 {
-  if (!_p3_locale)
-    _p3_locale = New refcounted<pub3::locale_specific_publisher_t> (pub3 ());
+  if (!_p3_locale) { _p3_locale = pub3 (); }
   return _p3_locale;
 }
 

@@ -247,7 +247,7 @@ protected:
   u_int _timeout;
 
   ptr<demux_data_t> _demux_data;
-  ptr<pub3::locale_specific_publisher_t> _p3_locale;
+  ptr<pub3::ok_iface_t> _p3_locale;
   vec<ptr<resp_t> > _resps;
 
   bool _union_cgi_mode;

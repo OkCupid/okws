@@ -605,7 +605,7 @@ protected:
 
   output_state_t output_state;
   u_int _timeout;
-  ptr<pub3::locale_specific_publisher_t> _p3_locale;
+  ptr<pub3::ok_iface_t> _p3_locale;
   ptr<demux_data_t> _demux_data;
   str _custom_log2;
   int _status;

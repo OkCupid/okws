@@ -35,9 +35,11 @@ namespace pub3 {
 
   //=======================================================================
 
-  abstract_publisher_t::abstract_publisher_t (opts_t o) : 
+  abstract_publisher_t::abstract_publisher_t (opts_t o, 
+					      ptr<const localizer_t> l) : 
     _opts (o), 
-    _pub3_err_obj_key (ok_pub3_err_obj_key) {}
+    _pub3_err_obj_key (ok_pub3_err_obj_key),
+    _localizer (l) {}
 
   //-----------------------------------------------------------------------
 
@@ -256,7 +258,19 @@ namespace pub3 {
 
     if (l) { use_file (out, l->get_default_fnf ()); }
   }
-  
+
+  //-----------------------------------------------------------------------
+
+  ptr<const localizer_t> 
+  ap_t::get_localizer (publish_t *p)
+  {
+    ptr<const localizer_t> ret;
+    if (!(p->opts () & P_NOLOCALE)) {
+      ret = _localizer;
+    }
+    return ret;
+  }
+
   //-----------------------------------------------------------------------
 
   tamed void 
@@ -796,18 +810,6 @@ namespace pub3 {
   {
     cache_key_t k (nm, opt);
     _getfile_cache.remove (k);
-  }
-
-  //=====================================================================
-
-  ptr<const localizer_t> 
-  locale_specific_publisher_t:: get_localizer (publish_t *p)
-  {
-    ptr<const localizer_t> ret;
-    if (!(p->opts () & P_NOLOCALE)) {
-      ret = _localizer;
-    }
-    return ret;
   }
 
   //=======================================================================

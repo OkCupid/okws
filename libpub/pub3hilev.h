@@ -80,7 +80,6 @@ namespace pub3 {
     // set/get global ops for this publishing interface.
     virtual opts_t opts () const = 0;
     virtual void set_opts (opts_t i) = 0;
-    virtual ptr<const localizer_t> get_localizer (publish_t *p) { return NULL; }
 
     static ptr<expr_dict_t> get_universals ();
     static pub3::obj_t get_universals_obj ();
@@ -94,7 +93,7 @@ namespace pub3 {
   //
   class abstract_publisher_t : public ok_iface_t {
   public:
-    abstract_publisher_t (opts_t o = 0);
+    abstract_publisher_t (opts_t o = 0, ptr<const localizer_t> l = NULL);
 
     void run (zbuf *b, str fn, evb_t ev, ptr<expr_dict_t> d = NULL, 
 	      opts_t opts = 0, status_t *sp = NULL, ptr<file_t> *fp = NULL,
@@ -115,6 +114,8 @@ namespace pub3 {
     void init_for_run (publish_t *p, opts_t o, ptr<expr_dict_t> d);
     void uninit_for_run (publish_t *p);
     void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE);
+    ptr<const localizer_t> get_localizer (publish_t *p);
+    void set_localizer (ptr<const localizer_t> l) { _localizer = l; }
 
   protected:
     // to be filled in by the sub classes
@@ -126,6 +127,7 @@ namespace pub3 {
   private:
     opts_t _opts;
     str _pub3_err_obj_key;
+    ptr<const localizer_t> _localizer;
   };
 
   //=======================================================================
@@ -250,42 +252,6 @@ namespace pub3 {
     getfile_cache_t _getfile_cache;
     negcache_t _noent_cache;
     qhash<str, ptr<bhash<opts_t> > > _opts_map;
-  };
-
-  //=======================================================================
-
-  /*
-   * A localized version of the publishing interface; wraps an
-   * existing publisher.
-   */
-  class locale_specific_publisher_t : public ok_iface_t {
-  public:
-    locale_specific_publisher_t (ptr<ok_iface_t> i, 
-				 ptr<const localizer_t> l = NULL)
-      : _iface (i), _localizer (l) {}
-
-    void run (zbuf *b, str fn, evb_t ev, ptr<expr_dict_t> d = NULL, 
-	      opts_t opts = -1, status_t *sp = NULL, ptr<file_t> *fp = NULL, 
-	      CLOSURE) 
-    { _iface->run (b, fn, ev, d, opts, sp, fp); }
-
-    void run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d = NULL, 
-		  opts_t opts = -1, status_t *sp = NULL, CLOSURE)
-    { _iface->run_cfg (fn, ev, d, opts, sp); }
-
-    void syntax_check (str f, vec<str> *err, evi_t ev, CLOSURE) 
-    { _iface->syntax_check (f, err, ev); }
-
-    void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE) 
-    { _iface->publish (p, fn, ev); }
-
-    opts_t opts () const { return _iface->opts (); }
-    void set_opts (opts_t i) { _iface->set_opts (i); }
-    ptr<const localizer_t> get_localizer (publish_t *p);
-
-  protected:
-    ptr<ok_iface_t> _iface;
-    ptr<const localizer_t> _localizer;
   };
 
   //=======================================================================
