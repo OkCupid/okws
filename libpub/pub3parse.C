@@ -207,7 +207,6 @@ namespace pub3 {
       yyparse ();
       _ret = NULL;
       flex_cleanup ();
-      yy_delete_buffer (yb);
       fclose (fp);
 
       r->set_file (file_t::alloc (d, _out, opts));
