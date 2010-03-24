@@ -456,7 +456,7 @@ namespace pub3 {
   status_t
   zone_inline_expr_t::v_publish_nonblock (publish_t *p) const
   {
-    bool dowarn, old_loud;
+    bool dowarn = false, old_loud = false;
     status_t res (XPUB_STATUS_OK);
 
     dowarn = p->opts () & P_WARN_INLINE_NULL;
