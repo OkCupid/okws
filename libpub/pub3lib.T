@@ -243,13 +243,21 @@ namespace pub3 {
   void
   library_t::bind (ptr<bindtab_t> t)
   {
+    ptr<expr_dict_t> all;
+    if (_all_libname) { all = expr_dict_t::alloc (); }
     for (size_t i = 0; i < _functions.size (); i++) {
       ptr<compiled_fn_t> f = _functions[i];
       str n = f->name ();
       OKDBG3(PUB_RFN3, CHATTER, strbuf ("binding library function: ") << n);
       t->insert (n, f);
+      if (all) { all->insert (n, f); }
     }
+    if (all) { t->insert (_all_libname, all); }
   }
+
+  //-----------------------------------------------------------------------
+
+  void library_t::bind_all (str s) { _all_libname = s; }
 
   //-----------------------------------------------------------------------
 

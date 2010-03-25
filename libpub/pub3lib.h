@@ -105,8 +105,10 @@ namespace pub3 {
     ptr<bindtab_t> bind ();
     static void import (ptr<library_t> l);
     static void clear_all ();
+    void bind_all (str s);
   protected:
     vec<ptr<compiled_fn_t> > _functions;
+    str _all_libname;
   };
 
   //-----------------------------------------------------------------------

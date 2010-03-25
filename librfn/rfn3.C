@@ -71,6 +71,9 @@ namespace rfn3 {
     F(pop_front);
 
 #undef F
+
+    // Bind the whole library into "rfn3.foo"
+    bind_all (libname);
   }
 
   //-----------------------------------------------------------------------
