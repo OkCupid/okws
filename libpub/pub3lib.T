@@ -31,7 +31,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  compiled_fn_t::pub_args (publish_t *p, callable_t::args_t in, 
+  compiled_fn_t::pub_args (eval_t *p, callable_t::args_t in, 
 			   callable_t::margs_t *out, 
 			   evv_t ev) const
   {
@@ -74,7 +74,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void 
-  compiled_fn_t::pub_to_val (publish_t *p, callable_t::args_t ai, 
+  compiled_fn_t::pub_to_val (eval_t *p, callable_t::args_t ai, 
 			     cxev_t ev) const
   {
     tvars {
@@ -102,7 +102,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   bool
-  patterned_fn_t::check_args (publish_t *p, const margs_t &args, 
+  patterned_fn_t::check_args (eval_t *p, const margs_t &args, 
 			      vec<arg_t> *_checked) const
   {
     vec<str> err;

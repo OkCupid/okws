@@ -19,7 +19,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void 
-  ast_node_t::publish (publish_t *p, status_ev_t ev) const
+  ast_node_t::publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       xpub_status_t status;
@@ -45,7 +45,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  status_t ast_node_t::publish_nonblock (publish_t *p) const
+  status_t ast_node_t::publish_nonblock (eval_t *p) const
   { return v_publish_nonblock (p); }
 
   //-----------------------------------------------------------------------
@@ -63,7 +63,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  ast_node_t::v_publish (publish_t *p, status_ev_t ev, ptr<closure_t> dum) const
+  ast_node_t::v_publish (eval_t *p, status_ev_t ev, ptr<closure_t> dum) const
   { 
     return ev->trigger (v_publish_nonblock (p));
   }
@@ -92,7 +92,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  zone_raw_t::v_publish_nonblock (publish_t *p) const
+  zone_raw_t::v_publish_nonblock (eval_t *p) const
   {
     p->output (_data);
     return XPUB_STATUS_OK;
@@ -101,7 +101,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
  
   void
-  zone_raw_t::v_publish (publish_t *p, status_ev_t ev, ptr<closure_t> d) const
+  zone_raw_t::v_publish (eval_t *p, status_ev_t ev, ptr<closure_t> d) const
   { ev->trigger (v_publish_nonblock (p)); }
 
   //============================================= zone_conainer_t =========
@@ -132,7 +132,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t
-  zone_html_t::v_publish_nonblock (publish_t *p) const
+  zone_html_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     for (size_t i = 0; i < _children.size (); i++) {
@@ -147,7 +147,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  zone_html_t::v_publish (publish_t *p, status_ev_t ev) const
+  zone_html_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -282,7 +282,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t
-  zone_wss_boundary_t::v_publish_nonblock (publish_t *p) const
+  zone_wss_boundary_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     if (!p->out ()->wss_boundary (_on, _tag)) {
@@ -295,7 +295,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  zone_wss_boundary_t::v_publish (publish_t *p, status_ev_t ev, 
+  zone_wss_boundary_t::v_publish (eval_t *p, status_ev_t ev, 
 				  ptr<closure_t> dummy) const
   {
     ev->trigger (v_publish_nonblock (p)); 
@@ -361,7 +361,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  zone_text_t::v_publish_nonblock (publish_t *p) const
+  zone_text_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     cook_text ();
@@ -371,7 +371,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  void zone_text_t::v_publish (publish_t *p, status_ev_t ev, 
+  void zone_text_t::v_publish (eval_t *p, status_ev_t ev, 
 			       ptr<closure_t> dummy) const
   { ev->trigger (v_publish_nonblock (p)); }
 
@@ -423,7 +423,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  zone_inline_expr_t::v_publish (publish_t *p, status_ev_t ev) const
+  zone_inline_expr_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t res (XPUB_STATUS_OK);
@@ -446,7 +446,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   void
-  zone_inline_expr_t::null_warn (publish_t *p) const
+  zone_inline_expr_t::null_warn (eval_t *p) const
   {
     p->report_error ("Inline expression %{} evaluates to NULL", _location);
   }
@@ -454,7 +454,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   status_t
-  zone_inline_expr_t::v_publish_nonblock (publish_t *p) const
+  zone_inline_expr_t::v_publish_nonblock (eval_t *p) const
   {
     bool dowarn = false, old_loud = false;
     status_t res (XPUB_STATUS_OK);
@@ -556,7 +556,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  zone_pub_t::v_publish_nonblock (publish_t *p) const
+  zone_pub_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     for (size_t i= 0; handle_control (p) && i < _statements.size (); i++) {
@@ -571,7 +571,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  zone_pub_t::v_publish (publish_t *p, status_ev_t ev) const
+  zone_pub_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -589,7 +589,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  bool zone_pub_t::handle_control (publish_t *p) const
+  bool zone_pub_t::handle_control (eval_t *p) const
   { return p->control ()->handle_zone (); }
 
   //-----------------------------------------------------------------------
@@ -633,13 +633,13 @@ namespace pub3 {
 
   //---------------------------------------------------------------------
 
-  status_t statement_zone_t::v_publish_nonblock (publish_t *p) const
+  status_t statement_zone_t::v_publish_nonblock (eval_t *p) const
   { return _zone->publish_nonblock (p); }
 
   //---------------------------------------------------------------------
 
   tamed void
-  statement_zone_t::v_publish (publish_t *p, status_ev_t ev) const
+  statement_zone_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t status;
@@ -668,7 +668,7 @@ namespace pub3 {
   //======================================= expr_statement_t =============
 
   status_t
-  expr_statement_t::v_publish_nonblock (publish_t *p) const
+  expr_statement_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     // Evaluate for any side effects.
@@ -684,7 +684,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  expr_statement_t::v_publish (publish_t *p, status_ev_t ev) const
+  expr_statement_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -738,14 +738,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  while_t::handle_control (publish_t *p) const
+  while_t::handle_control (eval_t *p) const
   {
     return p->control ()->handle_forloop ();
   }
 
   //-----------------------------------------------------------------------
 
-  void while_t::reset_control (publish_t *p) const
+  void while_t::reset_control (eval_t *p) const
   { p->control ()->reset_forloop ();  }
 
   //-----------------------------------------------------------------------
@@ -761,7 +761,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  while_t::v_publish_nonblock (publish_t *p) const
+  while_t::v_publish_nonblock (eval_t *p) const
   {
     status_t status (XPUB_STATUS_OK);
 
@@ -780,7 +780,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  while_t::v_publish (publish_t *p, status_ev_t ev) const
+  while_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       xpub_status_t status (XPUB_STATUS_OK);
@@ -857,7 +857,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_list_t>
-  for_t::eval_list (publish_t *p) const
+  for_t::eval_list (eval_t *p) const
   {
     bool old_silent = p->set_silent (true);
     ptr<mref_t> m = _arr->eval_to_ref (p);
@@ -872,7 +872,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  for_t::pub_list (publish_t *p, xlev_t ev) const
+  for_t::pub_list (eval_t *p, xlev_t ev) const
   {
     tvars {
       bool old_silent (p->set_silent (true));
@@ -890,7 +890,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  for_t::err_empty (publish_t *p) const
+  for_t::err_empty (eval_t *p) const
   {
       strbuf b ("for: second argument is not an iterable vector");
       p->report_error (b, _location);
@@ -899,7 +899,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  for_t::err_badrow (publish_t *p, size_t i) const
+  for_t::err_badrow (eval_t *p, size_t i) const
   {
     strbuf b ("for: row %zu is undefined!", i);
     p->report_error (b, _location);
@@ -908,14 +908,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  for_t::handle_control (publish_t *p) const
+  for_t::handle_control (eval_t *p) const
   {
     return p->control ()->handle_forloop ();
   }
 
   //-----------------------------------------------------------------------
 
-  void for_t::reset_control (publish_t *p) const
+  void for_t::reset_control (eval_t *p) const
   { p->control ()->reset_forloop ();  }
 
   //-----------------------------------------------------------------------
@@ -932,7 +932,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  for_t::v_publish_nonblock (publish_t *p) const
+  for_t::v_publish_nonblock (eval_t *p) const
   {
     status_t status (XPUB_STATUS_OK);
     ptr<expr_list_t> v = eval_list (p);
@@ -972,7 +972,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  for_t::v_publish (publish_t *p, status_ev_t ev) const
+  for_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       ptr<expr_list_t> v;
@@ -1110,7 +1110,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  if_t::v_publish_nonblock (publish_t *p) const
+  if_t::v_publish_nonblock (eval_t *p) const
   {
     assert (!might_block ());
     ptr<const zone_t> ne = find_clause (p);
@@ -1122,7 +1122,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  if_t::v_publish (publish_t *p, status_ev_t ev) const
+  if_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       xpub_status_t status (XPUB_STATUS_OK);
@@ -1138,7 +1138,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
-  if_clause_t::fits (publish_t *p) const
+  if_clause_t::fits (eval_t *p) const
   {
     return (!_expr || _expr->eval_as_bool (p));
   }
@@ -1146,7 +1146,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  if_clause_t::fits (publish_t *p, evb_t ev) const
+  if_clause_t::fits (eval_t *p, evb_t ev) const
   {
     tvars {
       bool ret (true);
@@ -1160,7 +1160,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void
-  if_t::find_clause (publish_t *p, czev_t ev) const
+  if_t::find_clause (eval_t *p, czev_t ev) const
   {
     tvars {
       size_t len;
@@ -1186,7 +1186,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const zone_t>
-  if_t::find_clause (publish_t *p) const
+  if_t::find_clause (eval_t *p) const
   {
     size_t len = _clauses ? _clauses->size () : size_t (0) ;
     ptr<const if_clause_t> c;
@@ -1295,7 +1295,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  decl_block_t::v_publish (publish_t *p, status_ev_t ev) const
+  decl_block_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -1340,7 +1340,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t
-  decl_block_t::v_publish_nonblock (publish_t *p) const
+  decl_block_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     env_t::layer_type_t lt = get_decl_type ();
@@ -1481,7 +1481,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   ptr<const zone_t>
-  switch_t::find_case (publish_t *pub) const
+  switch_t::find_case (eval_t *pub) const
   {
     ptr<const zone_t> ret;
     str k;
@@ -1520,7 +1520,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t 
-  switch_t::v_publish_nonblock (publish_t *pub) const
+  switch_t::v_publish_nonblock (eval_t *pub) const
   {
     status_t ret (XPUB_STATUS_OK);
     assert (!might_block ());
@@ -1532,7 +1532,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void 
-  switch_t::v_publish (publish_t *pub, status_ev_t ev) const
+  switch_t::v_publish (eval_t *pub, status_ev_t ev) const
   {
     tvars {
       status_t res (XPUB_STATUS_OK);
@@ -1584,7 +1584,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t
-  include_t::v_publish_nonblock (publish_t *p) const
+  include_t::v_publish_nonblock (eval_t *p) const
   {
     p->report_error ("include skipped in nonblock context", _location);
     return status_t ();
@@ -1593,7 +1593,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  include_t::v_publish (publish_t *p, status_ev_t ev) const
+  include_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t rs (XPUB_STATUS_OK);
@@ -1682,7 +1682,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   status_t 
-  print_t::v_publish_nonblock (publish_t *p) const
+  print_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     str s;
@@ -1703,7 +1703,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  print_t::v_publish (publish_t *p, status_ev_t ev) const
+  print_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -1750,7 +1750,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   status_t
-  return_t::v_publish_nonblock (publish_t *p) const
+  return_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     ptr<const expr_t> x;
@@ -1763,7 +1763,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  return_t::v_publish (publish_t *p, status_ev_t ev) const
+  return_t::v_publish (eval_t *p, status_ev_t ev) const
   {
     tvars {
       status_t ret (XPUB_STATUS_OK);
@@ -1793,7 +1793,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
   
   status_t
-  break_t::v_publish_nonblock (publish_t *p) const
+  break_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     p->control ()->set_break (true);
@@ -1802,7 +1802,7 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
-  void break_t::v_publish (publish_t *p, status_ev_t ev, ptr<closure_t> d) const
+  void break_t::v_publish (eval_t *p, status_ev_t ev, ptr<closure_t> d) const
   { ev->trigger (v_publish_nonblock (p)); }
 
   //======================================== continue_t ==================
@@ -1813,7 +1813,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
   
   status_t
-  continue_t::v_publish_nonblock (publish_t *p) const
+  continue_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     p->control ()->set_continue (true);
@@ -1822,7 +1822,7 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
-  void continue_t::v_publish (publish_t *p, status_ev_t ev, ptr<closure_t> d) 
+  void continue_t::v_publish (eval_t *p, status_ev_t ev, ptr<closure_t> d) 
     const
   { ev->trigger (v_publish_nonblock (p)); }
 

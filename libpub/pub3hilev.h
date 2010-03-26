@@ -86,7 +86,7 @@ namespace pub3 {
      * @param fn the file to publish
      * @param ev the event to trigger with the status
      */
-    virtual void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE) = 0;
+    virtual void publish (eval_t *p, str fn, getfile_ev_t ev, CLOSURE) = 0;
 
     // set/get global ops for this publishing interface.
     virtual opts_t opts () const = 0;
@@ -110,7 +110,7 @@ namespace pub3 {
 	      opts_t opts = 0, status_t *sp = NULL, ptr<file_t> *fp = NULL,
 	      CLOSURE);
 
-    void run_pub (publish_t *p, str fn, evb_t ev,
+    void run_pub (eval_t *p, str fn, evb_t ev,
 		  status_t *sp = NULL, ptr<file_t> *fp = NULL,
 		  CLOSURE);
 
@@ -122,10 +122,10 @@ namespace pub3 {
     void syntax_check (str f, vec<str> *errors, evi_t ev, CLOSURE);
     void set_err_obj_key (str s) { _pub3_err_obj_key = s; }
 
-    void init_for_run (publish_t *p, opts_t o, ptr<expr_dict_t> d);
-    void uninit_for_run (publish_t *p);
-    void publish (publish_t *p, str fn, getfile_ev_t ev, CLOSURE);
-    ptr<const localizer_t> get_localizer (publish_t *p);
+    void init_for_run (eval_t *p, opts_t o, ptr<expr_dict_t> d);
+    void uninit_for_run (eval_t *p);
+    void publish (eval_t *p, str fn, getfile_ev_t ev, CLOSURE);
+    ptr<const localizer_t> get_localizer (eval_t *p);
     void set_localizer (ptr<const localizer_t> l) { _localizer = l; }
 
   protected:

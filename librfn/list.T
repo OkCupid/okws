@@ -7,7 +7,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  enumerate_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  enumerate_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> out = expr_list_t::alloc ();
     ptr<const expr_list_t> in = args[0]._l;
@@ -24,7 +24,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  decorate_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  decorate_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> out = expr_list_t::alloc ();
     ptr<const expr_list_t> in = args[0]._l;
@@ -52,7 +52,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  range_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  range_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     int64_t s = args.size () >= 3 ? args[2]._i : 1;
     int64_t l = args.size () >= 2 ? args[0]._i : 0;
@@ -68,7 +68,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  join_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  join_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     strbuf b;
     vec<str> hold;
@@ -94,7 +94,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  append_t::v_eval_1 (publish_t *p, const margs_t &args) const
+  append_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
     ptr<expr_t> x;
     ptr<expr_list_t> l;
@@ -122,7 +122,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
   
   ptr<const expr_t>
-  map_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  map_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_dict_t> d = args[0]._d;
     ptr<const expr_t> x = args[1]._O;
@@ -133,7 +133,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t>
-  map_t::eval_internal (publish_t *p, ptr<const expr_dict_t> m, 
+  map_t::eval_internal (eval_t *p, ptr<const expr_dict_t> m, 
 			ptr<const expr_t> x) const
   {
     ptr<const expr_list_t> l;
@@ -181,7 +181,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  split_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  split_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<rxx> rx = args[0]._r;
     str s = args[1]._s;
@@ -200,7 +200,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  contains_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  contains_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_list_t> l = args[0]._l;
     ptr<const expr_t> o = args[1]._O;
@@ -215,7 +215,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  pop_front_t::pub_to_mval (publish_t *p, callable_t::args_t args, 
+  pop_front_t::pub_to_mval (eval_t *p, callable_t::args_t args, 
 			    xev_t ev) const
   {
     tvars {
@@ -234,7 +234,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t> 
-  pop_front_t::eval_final (publish_t *p, ptr<expr_t> x) const
+  pop_front_t::eval_final (eval_t *p, ptr<expr_t> x) const
   {
     ptr<expr_t> ret;
     ptr<expr_list_t> l;
@@ -253,7 +253,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  pop_front_t::pub_to_val (publish_t *p, callable_t::args_t args, 
+  pop_front_t::pub_to_val (eval_t *p, callable_t::args_t args, 
 			   cxev_t ev) const
   {
     tvars {
@@ -266,7 +266,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  pop_front_t::pub_to_ref (publish_t *p, callable_t::args_t args, 
+  pop_front_t::pub_to_ref (eval_t *p, callable_t::args_t args, 
 			   mrev_t ev) const
   {
     tvars {
@@ -281,7 +281,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<mref_t> 
-  pop_front_t::eval_to_ref (publish_t *p, args_t args) const
+  pop_front_t::eval_to_ref (eval_t *p, args_t args) const
   {
     ptr<mref_t> ret;
     ptr<expr_t> x = eval_to_mval (p, args);
@@ -291,13 +291,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t> pop_front_t::eval_to_val (publish_t *p, args_t args) const
+  ptr<const expr_t> pop_front_t::eval_to_val (eval_t *p, args_t args) const
   { return eval_to_mval (p, args); }
 
   //-----------------------------------------------------------------------
 
   bool
-  pop_front_t::count_args (publish_t *p, size_t s) const
+  pop_front_t::count_args (eval_t *p, size_t s) const
   {
     bool ret = true;
     if (s != 1) {
@@ -310,7 +310,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
   
   ptr<expr_t> 
-  pop_front_t::eval_to_mval (publish_t *p, args_t args) const
+  pop_front_t::eval_to_mval (eval_t *p, args_t args) const
   {
     ptr<expr_t> x , ret;
 

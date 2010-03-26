@@ -19,7 +19,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  heredoc_t::pub_to_val (publish_t *p, cxev_t ev) const
+  heredoc_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars {
       ptr<output_t> old_output;

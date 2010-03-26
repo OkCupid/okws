@@ -38,7 +38,7 @@ namespace okclib {
   //      Your balance is: -$12,345.67
   //
   ptr<const expr_t>
-  money_t::v_eval_2 (publish_t *pub, const vec<arg_t> &args) const
+  money_t::v_eval_2 (eval_t *pub, const vec<arg_t> &args) const
   {
     int64_t cents = args[0]._i;
     str currency = args[0]._s;
@@ -60,7 +60,7 @@ namespace okclib {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  commafy_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  commafy_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     int64_t n = args[0]._i;
     const char *sign = "";

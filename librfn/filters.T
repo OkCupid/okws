@@ -37,7 +37,7 @@ namespace rfn3 {
   //------------------------------------------------------------
 
   ptr<const expr_t>
-  tag_escape_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  tag_escape_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<rxx> r;
 
@@ -69,7 +69,7 @@ namespace rfn3 {
   //------------------------------------------------------------
 
   ptr<const expr_t>
-  substr_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  substr_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
     size_t start = 0, len = 0;
@@ -88,7 +88,7 @@ namespace rfn3 {
   //------------------------------------------------------------
 
   bool
-  default_t::count_args (publish_t *p, size_t sz) const
+  default_t::count_args (eval_t *p, size_t sz) const
   {
     bool ret = true;
     if (sz < 1 || sz > 2) {
@@ -101,7 +101,7 @@ namespace rfn3 {
   //------------------------------------------------------------
 
   ptr<const expr_t>
-  default_t::eval_to_val (publish_t *p, args_t args) const
+  default_t::eval_to_val (eval_t *p, args_t args) const
   {
     ptr<const expr_t> ret, def;
     bool is_null;
@@ -121,7 +121,7 @@ namespace rfn3 {
   //------------------------------------------------------------
 
   tamed void
-  default_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  default_t::pub_to_val (eval_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret, def;

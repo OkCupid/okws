@@ -5,7 +5,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  import_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  import_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_dict_t> d = args[0]._d;
     ptr<expr_dict_t> c = expr_dict_t::safe_copy (d);

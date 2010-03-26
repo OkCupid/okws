@@ -5,7 +5,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t> 
-  now_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  now_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   { 
     time_t t = sfs_get_timenow ();
     return expr_uint_t::alloc (t);
@@ -14,7 +14,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  time_format_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  time_format_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str fmt = args[1]._s;
     time_t t;
@@ -42,7 +42,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  days_from_now_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  days_from_now_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     u_int64_t u = sfs_get_timenow () + 60 * 60 * 24 * args[0]._i;
     return expr_uint_t::alloc (u);
@@ -51,7 +51,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  time_from_now_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  time_from_now_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     scalar_obj_t so; 
     time_t t = sfs_get_timenow ();
@@ -71,7 +71,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  strptime_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  strptime_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str timestr = args[0]._s;
     str fmt = "%F"; // YYYY-MM-DD

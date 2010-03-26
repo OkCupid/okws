@@ -59,7 +59,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  ap_t::init_for_run (publish_t *p, opts_t opts, ptr<expr_dict_t> d)
+  ap_t::init_for_run (eval_t *p, opts_t opts, ptr<expr_dict_t> d)
   {
     if (opts < 0) opts = _opts;
     
@@ -81,7 +81,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  ap_t::uninit_for_run (publish_t *p)
+  ap_t::uninit_for_run (eval_t *p)
   {
     p->set_pub_iface (NULL);
   }
@@ -94,7 +94,7 @@ namespace pub3 {
   {
     tvars {
       holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
-      publish_t pub (unis, b, opts);
+      eval_t pub (unis, b, opts);
       status_t status;
       ptr<file_t> file;
     }
@@ -121,7 +121,7 @@ namespace pub3 {
       holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
       ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
       opts_t opts (o | P_CONFIG);
-      publish_t pub (unis, d, opts);
+      eval_t pub (unis, d, opts);
       status_t status;
       ptr<file_t> file;
     }
@@ -148,7 +148,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void 
-  ap_t::publish (publish_t *pub, str fn, getfile_ev_t ev)
+  ap_t::publish (eval_t *pub, str fn, getfile_ev_t ev)
   {
     tvars {
       status_t status (XPUB_STATUS_NOENT);
@@ -262,7 +262,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const localizer_t> 
-  ap_t::get_localizer (publish_t *p)
+  ap_t::get_localizer (eval_t *p)
   {
     ptr<const localizer_t> ret;
     if (!(p->opts () & P_NOLOCALE)) {

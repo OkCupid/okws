@@ -9,7 +9,7 @@ namespace pub3 {
   //====================================== expr_t ==========================
 
   void
-  expr_t::pub_to_val (publish_t *pub, cxev_t ev, ptr<closure_t> dummy) const
+  expr_t::pub_to_val (eval_t *pub, cxev_t ev, ptr<closure_t> dummy) const
   {
     ev->trigger (eval_to_val (pub));
   }
@@ -17,7 +17,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_to_ref (publish_t *pub, mrev_t ev) const
+  expr_t::pub_to_ref (eval_t *pub, mrev_t ev) const
   {
     tvars {
       ptr<expr_t> x;
@@ -33,7 +33,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void 
-  expr_t::pub_as_bool (publish_t *pub, evb_t ev) const
+  expr_t::pub_as_bool (eval_t *pub, evb_t ev) const
   {
     tvars {
       bool ret (false);
@@ -51,7 +51,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_to_bindtab (publish_t *pub, biev_t ev) const
+  expr_t::pub_to_bindtab (eval_t *pub, biev_t ev) const
   {
     tvars {
       ptr<const expr_dict_t> d;
@@ -67,7 +67,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_as_scalar (publish_t *pub, event<scalar_obj_t>::ref ev) const
+  expr_t::pub_as_scalar (eval_t *pub, event<scalar_obj_t>::ref ev) const
   {
     tvars {
       scalar_obj_t ret;
@@ -81,7 +81,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_as_str (publish_t *pub, evs_t ev) const
+  expr_t::pub_as_str (eval_t *pub, evs_t ev) const
   {
     tvars {
       ptr<const expr_t> x;
@@ -98,7 +98,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_as_dict (publish_t *pub, cdev_t ev) const
+  expr_t::pub_as_dict (eval_t *pub, cdev_t ev) const
   {
     tvars {
       ptr<const expr_t> x;
@@ -112,7 +112,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_as_null (publish_t *pub, evb_t ev) const
+  expr_t::pub_as_null (eval_t *pub, evb_t ev) const
   {
     tvars {
       bool ret (true);
@@ -129,7 +129,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  expr_t::pub_to_mval (publish_t *p, xev_t ev) const
+  expr_t::pub_to_mval (eval_t *p, xev_t ev) const
   { 
     tvars {
       ptr<const expr_t> x;
@@ -143,7 +143,7 @@ namespace pub3 {
   //================================== expr_logical_t =====================
 
   tamed void
-  expr_logical_t::pub_to_val (publish_t *p, cxev_t ev) const
+  expr_logical_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars {
       bool res;
@@ -156,7 +156,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_OR_t::pub_logical (publish_t *p, evb_t ev) const
+  expr_OR_t::pub_logical (eval_t *p, evb_t ev) const
   {
     tvars {
       bool res;
@@ -171,7 +171,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_AND_t::pub_logical (publish_t *p, evb_t ev) const
+  expr_AND_t::pub_logical (eval_t *p, evb_t ev) const
   {
     tvars {
       bool res;
@@ -186,7 +186,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_NOT_t::pub_logical (publish_t *p, evb_t ev) const
+  expr_NOT_t::pub_logical (eval_t *p, evb_t ev) const
   {
     tvars {
       bool res (false);
@@ -198,7 +198,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_EQ_t::pub_logical (publish_t *p, evb_t ev) const
+  expr_EQ_t::pub_logical (eval_t *p, evb_t ev) const
   {
     tvars {
       bool ret (false);
@@ -213,7 +213,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_relation_t::pub_logical (publish_t *p, evb_t ev) const
+  expr_relation_t::pub_logical (eval_t *p, evb_t ev) const
   {
     tvars {
       bool ret (false);
@@ -228,7 +228,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_binaryop_t::pub_to_val (publish_t *pub, cxev_t ev) const
+  expr_binaryop_t::pub_to_val (eval_t *pub, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> e1, e2;
@@ -245,7 +245,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_vecref_t::pub_to_val (publish_t *p, cxev_t ev) const
+  expr_vecref_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> c, i, r;
@@ -259,7 +259,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   tamed void
-  expr_vecref_t::pub_to_ref (publish_t *p, mrev_t ev) const
+  expr_vecref_t::pub_to_ref (eval_t *p, mrev_t ev) const
   {
     tvars {
       ptr<mref_t> cr;
@@ -275,7 +275,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_dictref_t::pub_to_ref (publish_t *pub, mrev_t ev) const
+  expr_dictref_t::pub_to_ref (eval_t *pub, mrev_t ev) const
   {
     tvars {
       ptr<mref_t> v;
@@ -289,7 +289,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   tamed void
-  expr_dictref_t::pub_to_val (publish_t *pub, cxev_t ev) const
+  expr_dictref_t::pub_to_val (eval_t *pub, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> d;
@@ -303,7 +303,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void 
-  expr_assignment_t::pub_to_ref (publish_t *pub, mrev_t ev) const
+  expr_assignment_t::pub_to_ref (eval_t *pub, mrev_t ev) const
   {
     tvars {
       ptr<mref_t> lhs, ret;
@@ -319,7 +319,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   tamed void
-  expr_assignment_t::pub_to_val (publish_t *pub, cxev_t ev) const
+  expr_assignment_t::pub_to_val (eval_t *pub, cxev_t ev) const
   {
     tvars {
       ptr<mref_t> r;
@@ -333,7 +333,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_dict_t::pub_to_mval (publish_t *p, xev_t ev) const
+  expr_dict_t::pub_to_mval (eval_t *p, xev_t ev) const
   {
     tvars {
       ptr<expr_t> out;
@@ -355,7 +355,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   tamed void
-  expr_dict_t::pub_to_val (publish_t *p, cxev_t ev) const
+  expr_dict_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars { ptr<expr_t> x; }
     twait { pub_to_mval (p, mkevent (x)); }
@@ -365,7 +365,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   tamed void
-  expr_dict_t::pub_to_bindtab (publish_t *p, biev_t ev) const
+  expr_dict_t::pub_to_bindtab (eval_t *p, biev_t ev) const
   {
     tvars {
       ptr<bind_interface_t> out;
@@ -383,7 +383,7 @@ namespace pub3 {
   //---------------------------------------------------------------------
 
   tamed void
-  expr_dict_t::pub_to_val_final (publish_t *p, xdev_t ev) const
+  expr_dict_t::pub_to_val_final (eval_t *p, xdev_t ev) const
   {
     tvars {
       ptr<expr_dict_t> d;
@@ -403,7 +403,7 @@ namespace pub3 {
   //=======================================================================
 
   tamed void
-  expr_list_t::pub_to_val (publish_t *p, cxev_t ev) const
+  expr_list_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars { ptr<expr_t> x; }
     twait { pub_to_mval (p, mkevent (x)); }
@@ -413,7 +413,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  expr_list_t::pub_to_mval (publish_t *p, xev_t ev) const
+  expr_list_t::pub_to_mval (eval_t *p, xev_t ev) const
   {
     tvars {
       ptr<expr_t> out;
@@ -442,7 +442,7 @@ namespace pub3 {
   //========================================= expr_shell_str_t ============
 
   tamed void
-  expr_shell_str_t::pub_to_val (publish_t *p, cxev_t ev) const
+  expr_shell_str_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars {
       ptr<expr_t> out;
@@ -475,7 +475,7 @@ namespace pub3 {
   //=========================== expr_ref_t ===============================
 
   tamed void
-  expr_ref_t::pub_to_mval (publish_t *p, xev_t ev) const
+  expr_ref_t::pub_to_mval (eval_t *p, xev_t ev) const
   {
     tvars {
       ptr<mref_t> r;

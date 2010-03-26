@@ -20,7 +20,7 @@ namespace pub3 {
     virtual ~compiled_fn_t () {}
 
     virtual ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;
-    virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
+    virtual void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const;
     str to_str (bool q = false) const;
     bool to_xdr (xpub3_expr_t *x) const { return false; }
     virtual str name () const { return _name; }
@@ -36,7 +36,7 @@ namespace pub3 {
     ptr<const callable_t> to_callable () const { return mkref (this); }
     const char *get_obj_name () const { return "rfn1::runtime_fn_t"; }
 
-    void pub_args (publish_t *p, args_t in, margs_t *out, evv_t ev, CLOSURE) 
+    void pub_args (eval_t *p, args_t in, margs_t *out, evv_t ev, CLOSURE) 
       const;
     void eval_args (eval_t *e, args_t in, margs_t *out) const;
 
@@ -73,7 +73,7 @@ namespace pub3 {
     virtual ptr<const expr_t> 
     v_eval_2 (eval_t *e, const vec<arg_t> &args) const = 0;
 
-    virtual bool check_args (publish_t *p, const margs_t &args, 
+    virtual bool check_args (eval_t *p, const margs_t &args, 
 			     vec<arg_t> *a) const;
 
     str _arg_pat;
@@ -137,8 +137,8 @@ namespace pub3 {
   public:								\
   x##_t () : compiled_fn_t (libname, #x) {}				\
   ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;		\
-  void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;	\
-  bool count_args (publish_t *p, size_t s) const;			\
+  void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const;	\
+  bool count_args (eval_t *p, size_t s) const;			\
   }
   
 #define PUB3_COMPILED_UNPATTERNED_FN(x)					\

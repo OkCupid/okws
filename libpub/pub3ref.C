@@ -125,13 +125,13 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  expr_varref_t::pub_to_ref (publish_t *p, mrev_t ev, ptr<closure_t> d) const
+  expr_varref_t::pub_to_ref (eval_t *p, mrev_t ev, ptr<closure_t> d) const
   { ev->trigger (eval_to_ref (p)); }
 
   //--------------------------------------------------------------------
 
   void
-  expr_varref_t::pub_to_val (publish_t *p, cxev_t ev, ptr<closure_t> d) const
+  expr_varref_t::pub_to_val (eval_t *p, cxev_t ev, ptr<closure_t> d) const
   { ev->trigger (eval_to_val (p)); }
 
   //--------------------------------------------------------------------

@@ -9,7 +9,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   bool
-  isnull_t::count_args (publish_t *p, size_t sz) const
+  isnull_t::count_args (eval_t *p, size_t sz) const
   {
     bool ret = true;
     if (sz != 1) {
@@ -22,7 +22,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  isnull_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  isnull_t::pub_to_val (eval_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
@@ -38,7 +38,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  isnull_t::eval_to_val (publish_t *p, callable_t::args_t args) const
+  isnull_t::eval_to_val (eval_t *p, callable_t::args_t args) const
   {
     bool b = true;
     if (count_args (p, args->size ())) { b = (*args)[0]->eval_as_null (p); }
@@ -49,7 +49,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  len_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  len_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     int ret = -1;
     size_t l; 
@@ -64,7 +64,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  type_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  type_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str ret;
     ptr<const expr_t> x;
@@ -79,7 +79,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  version_str_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  version_str_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     return expr_str_t::alloc (version_str ());
   }
@@ -87,7 +87,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  version_int_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  version_int_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   { 
     return expr_uint_t::alloc (version_int ());
   }
@@ -95,19 +95,19 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  okws_version_str_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  okws_version_str_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   { return expr_str_t::alloc (okws_version_str ()); }
 
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  okws_version_int_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  okws_version_int_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   { return expr_uint_t::alloc (okws_version_int ()); }
 
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  dump_env_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  dump_env_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> l = p->env ()->to_list ();
     return l;
@@ -116,7 +116,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  int_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  int_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const pub3::expr_t> e = args[0]._O;
     int64_t i = 0;
@@ -127,7 +127,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  str_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  str_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const pub3::expr_t> e = args[0]._O;
     str s;
@@ -138,7 +138,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  warn_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  warn_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_t> ret = expr_null_t::alloc ();
     str s = args[0]._s;
@@ -150,7 +150,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  warn_trace_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  warn_trace_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_t> ret = expr_null_t::alloc ();
     str s = args[0]._s;
@@ -162,7 +162,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  internal_dump_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  internal_dump_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     dumper_t d;
     args[0]._O->dump (&d);
@@ -174,7 +174,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  enable_wss_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  enable_wss_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     bool ret = p->out ()->enable_wss (args[0]._b);
     return expr_bool_t::alloc (ret);
@@ -199,7 +199,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  bind_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  bind_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str key, scope_str;
     ptr<pub3::expr_t> o;
@@ -227,7 +227,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  unbind_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  unbind_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str key = args[0]._s;
     env_t::layer_type_t scope = env_t::LAYER_GLOBALS;
@@ -248,7 +248,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  copy_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  copy_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     return args[0]._O->copy ();
   }
@@ -256,7 +256,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lookup_t::pub_to_ref (publish_t *p, callable_t::args_t args, mrev_t ev) const
+  lookup_t::pub_to_ref (eval_t *p, callable_t::args_t args, mrev_t ev) const
   {
     tvars {
       str key, scope_str;
@@ -275,7 +275,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<mref_t>
-  lookup_t::eval_final (publish_t *p, str key, str scope_str) const
+  lookup_t::eval_final (eval_t *p, str key, str scope_str) const
   {
     env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
     ptr<bindtab_t> layer;
@@ -300,7 +300,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lookup_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  lookup_t::pub_to_val (eval_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<mref_t> r;
@@ -314,7 +314,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   bool
-  lookup_t::count_args (publish_t *p, size_t s) const
+  lookup_t::count_args (eval_t *p, size_t s) const
   {
     bool ret = true;
     if (s != 1 && s != 2) {
@@ -327,7 +327,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<mref_t>
-  lookup_t::eval_to_ref (publish_t *p, args_t args) const
+  lookup_t::eval_to_ref (eval_t *p, args_t args) const
   {
     str key, scope_str;
     ptr<mref_t> ret;
@@ -344,7 +344,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  lookup_t::eval_to_val (publish_t *p, args_t args) const
+  lookup_t::eval_to_val (eval_t *p, args_t args) const
   {
     ptr<mref_t> r = eval_to_ref (p, args);
     ptr<const expr_t> out;

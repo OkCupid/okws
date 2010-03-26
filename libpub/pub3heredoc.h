@@ -21,7 +21,7 @@ namespace pub3 {
     ptr<const expr_t> eval_to_val (eval_t *e) const { return NULL; }
     ptr<mref_t> eval_to_ref (eval_t *e) const { return NULL; }
     bool might_block_uncached () const { return true; }
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
 
     void v_dump (dumper_t *d) const;
   private:

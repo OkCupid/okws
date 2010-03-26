@@ -109,16 +109,16 @@ namespace pub3 {
     //
     //------------------------------------------------------------
     
-    virtual void pub_to_val (publish_t *pub, cxev_t ev, CLOSURE) const;
-    virtual void pub_to_ref (publish_t *pub, mrev_t ev, CLOSURE) const;
-    virtual void pub_to_bindtab (publish_t *p, biev_t ev, CLOSURE) const;
-    void pub_as_bool (publish_t *pub, evb_t ev, CLOSURE) const;
-    void pub_as_null (publish_t *pub, evb_t ev, CLOSURE) const;
-    void pub_as_str (publish_t *pub, evs_t ev, CLOSURE) const;
-    void pub_as_dict (publish_t *pub, cdev_t ev, CLOSURE) const;
-    void pub_as_scalar (publish_t *pub, event<scalar_obj_t>::ref ev, 
+    virtual void pub_to_val (eval_t *pub, cxev_t ev, CLOSURE) const;
+    virtual void pub_to_ref (eval_t *pub, mrev_t ev, CLOSURE) const;
+    virtual void pub_to_bindtab (eval_t *p, biev_t ev, CLOSURE) const;
+    void pub_as_bool (eval_t *pub, evb_t ev, CLOSURE) const;
+    void pub_as_null (eval_t *pub, evb_t ev, CLOSURE) const;
+    void pub_as_str (eval_t *pub, evs_t ev, CLOSURE) const;
+    void pub_as_dict (eval_t *pub, cdev_t ev, CLOSURE) const;
+    void pub_as_scalar (eval_t *pub, event<scalar_obj_t>::ref ev, 
 			CLOSURE) const;
-    virtual void pub_to_mval (publish_t *p, xev_t ev, CLOSURE) const;
+    virtual void pub_to_mval (eval_t *p, xev_t ev, CLOSURE) const;
 
     //------------------------------------------------------------
     //
@@ -327,12 +327,12 @@ namespace pub3 {
   public:
     expr_logical_t (lineno_t lineno) : expr_t (lineno) {}
     ptr<const expr_t> eval_to_val (eval_t *e) const;
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
     bool is_call_coercable () const { return false; }
     void l_dump (dumper_t *d, ptr<const expr_t> a1, ptr<const expr_t> a2) const;
   protected:
     virtual bool eval_logical (eval_t *e) const = 0;
-    virtual void pub_logical (publish_t *p, evb_t, CLOSURE) const = 0;
+    virtual void pub_logical (eval_t *p, evb_t, CLOSURE) const = 0;
   };
 
   //-----------------------------------------------------------------------
@@ -349,7 +349,7 @@ namespace pub3 {
     void v_dump (dumper_t *d) const { l_dump (d, _t1, _t2); }
   protected:
     bool eval_logical (eval_t *e) const;
-    void pub_logical (publish_t *p, evb_t, CLOSURE) const;
+    void pub_logical (eval_t *p, evb_t, CLOSURE) const;
     ptr<expr_t> _t1, _t2;
   };
 
@@ -369,7 +369,7 @@ namespace pub3 {
   protected:
     ptr<expr_t> _f1, _f2;
     bool eval_logical (eval_t *e) const;
-    void pub_logical (publish_t *p, evb_t, CLOSURE) const;
+    void pub_logical (eval_t *p, evb_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -387,7 +387,7 @@ namespace pub3 {
   protected:
     ptr<expr_t> _e;
     bool eval_logical (eval_t *e) const;
-    void pub_logical (publish_t *p, evb_t, CLOSURE) const;
+    void pub_logical (eval_t *p, evb_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -409,7 +409,7 @@ namespace pub3 {
     ptr<expr_t> _o1, _o2;
     bool _pos;
     bool eval_logical (eval_t *e) const;
-    void pub_logical (publish_t *p, evb_t, CLOSURE) const;
+    void pub_logical (eval_t *p, evb_t, CLOSURE) const;
     bool eval_final (ptr<const expr_t> x1, ptr<const expr_t> x2) const;
   };
 
@@ -434,7 +434,7 @@ namespace pub3 {
     ptr<expr_t> _l, _r;
     xpub3_relop_t _op;
     bool eval_logical (eval_t *e) const;
-    void pub_logical (publish_t *pub, evb_t ev, CLOSURE) const;
+    void pub_logical (eval_t *pub, evb_t ev, CLOSURE) const;
     bool eval_final (eval_t *e, ptr<const expr_t> l, ptr<const expr_t> r) const;
   };
 
@@ -456,7 +456,7 @@ namespace pub3 {
       : expr_t (lineno), _o1 (o1), _o2 (o2) {}
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
-    void pub_to_val (publish_t *pub, cxev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *pub, cxev_t ev, CLOSURE) const;
     bool might_block_uncached () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool is_call_coercable () const { return false; }
@@ -555,7 +555,7 @@ namespace pub3 {
   public:
     expr_ref_t (lineno_t l) : expr_t (l) {}
     ptr<expr_t> eval_to_mval (eval_t *e) const;
-    void pub_to_mval (publish_t *p, xev_t ev, CLOSURE) const;
+    void pub_to_mval (eval_t *p, xev_t ev, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -571,8 +571,8 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<mref_t> eval_to_ref (eval_t *e) const;
-    void pub_to_ref (publish_t *pub, mrev_t ev, CLOSURE) const;
-    void pub_to_val (publish_t *pub, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (eval_t *pub, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *pub, cxev_t ev, CLOSURE) const;
   protected:
     bool might_block_uncached () const;
     ptr<mref_t> eval_to_ref_final (eval_t *e, ptr<mref_t> dr) const;
@@ -594,8 +594,8 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<mref_t> eval_to_ref (eval_t *e) const;
-    void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (eval_t *p, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
     void report (eval_t *e, bool is_defined) const;
   protected:
@@ -616,8 +616,8 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<mref_t> eval_to_ref (eval_t *e) const;
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
-    void pub_to_ref (publish_t *p, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (eval_t *p, mrev_t ev, CLOSURE) const;
   protected:
     bool might_block_uncached () const;
     ptr<const expr_t> eval_to_val_final (eval_t *e, ptr<const expr_t> container,
@@ -828,8 +828,8 @@ namespace pub3 {
     str type_to_str () const { return "list"; }
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<expr_t> eval_to_mval (eval_t *e) const;
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
-    void pub_to_mval (publish_t *p, xev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_mval (eval_t *p, xev_t ev, CLOSURE) const;
     bool is_static () const;
     bool might_block_uncached () const;
     bool is_call_coercable () const { return false; }
@@ -884,7 +884,7 @@ namespace pub3 {
     static ptr<expr_shell_str_t> alloc ();
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
     str to_str (bool q = false) const;
 
     ptr<expr_t> compact () const;
@@ -1021,12 +1021,12 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<expr_t> eval_to_mval (eval_t *e) const;
-    void pub_to_val (publish_t *p, cxev_t ev, CLOSURE) const;
-    void pub_to_mval (publish_t *p, xev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
+    void pub_to_mval (eval_t *p, xev_t ev, CLOSURE) const;
     ptr<bind_interface_t> eval_to_bindtab (eval_t *e) const;
     ptr<expr_dict_t> eval_to_val_final (eval_t *e) const;
-    void pub_to_val_final (publish_t *p, xdev_t ev, CLOSURE) const;
-    void pub_to_bindtab (publish_t *p, biev_t ev, CLOSURE) const;
+    void pub_to_val_final (eval_t *p, xdev_t ev, CLOSURE) const;
+    void pub_to_bindtab (eval_t *p, biev_t ev, CLOSURE) const;
 
     ptr<expr_t> deep_copy () const;
     ptr<expr_dict_t> copy_dict () const;
@@ -1051,8 +1051,8 @@ namespace pub3 {
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<mref_t> eval_to_ref (eval_t *e) const;
     bool might_block_uncached () const;
-    void pub_to_ref (publish_t *pub, mrev_t ev, CLOSURE) const;
-    void pub_to_val (publish_t *pub, cxev_t ev, CLOSURE) const;
+    void pub_to_ref (eval_t *pub, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *pub, cxev_t ev, CLOSURE) const;
     void v_dump (dumper_t *d) const;
     void propogate_metadata (ptr<const metadata_t> md);
   private:

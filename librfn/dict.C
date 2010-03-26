@@ -9,7 +9,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  values_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  values_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> l = New refcounted<expr_list_t> ();
     ptr<const expr_dict_t> d = args[0]._d;
@@ -28,7 +28,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  keys_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  keys_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> l = New refcounted<expr_list_t> ();
     ptr<const expr_dict_t> d = args[0]._d;
@@ -43,7 +43,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  items_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  items_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> l = New refcounted<expr_list_t> ();
     ptr<const expr_dict_t> d = args[0]._d;
@@ -65,7 +65,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
   
   ptr<const expr_t>
-  json2pub_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  json2pub_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     str s = args[0]._s;
     ptr<expr_t> ret;

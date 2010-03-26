@@ -77,9 +77,9 @@ namespace rfn3 {
   class map_t : public patterned_fn_t {
   public:
     map_t () : patterned_fn_t (libname, "map", "dO") {}
-    ptr<const expr_t> v_eval_2 (publish_t *p, const vec<arg_t> &args) const;
+    ptr<const expr_t> v_eval_2 (eval_t *p, const vec<arg_t> &args) const;
   protected:
-    ptr<expr_t> eval_internal (publish_t *p, ptr<const expr_dict_t> m, 
+    ptr<expr_t> eval_internal (eval_t *p, ptr<const expr_dict_t> m, 
 			       ptr<const expr_t> x) const;
   };
 
@@ -88,7 +88,7 @@ namespace rfn3 {
   class regex_fn_t : public patterned_fn_t {
   public:
     regex_fn_t (str n) : patterned_fn_t (libname, n, "ss|s") {}
-    ptr<const expr_t> v_eval_2 (publish_t *e, const vec<arg_t> &args) const;
+    ptr<const expr_t> v_eval_2 (eval_t *e, const vec<arg_t> &args) const;
     virtual bool match () const = 0;
   };
     
@@ -113,7 +113,7 @@ namespace rfn3 {
   class type_t : public patterned_fn_t {
   public:
     type_t () : patterned_fn_t (libname, "type", "O") {}
-    ptr<const expr_t> v_eval_2 (publish_t *e, const vec<arg_t> &args) const;
+    ptr<const expr_t> v_eval_2 (eval_t *e, const vec<arg_t> &args) const;
     bool safe_args () const { return false; }
   };
 
@@ -125,13 +125,13 @@ namespace rfn3 {
     // Signature "s|s" -- key to lookup, and optional scope
     lookup_t () : compiled_fn_t (libname, "lookup") {}
 
-    void pub_to_ref (publish_t *p, args_t args, mrev_t ev, CLOSURE) const;
-    void pub_to_val (publish_t *p, args_t args, cxev_t ev, CLOSURE) const;
-    ptr<mref_t> eval_to_ref (publish_t *p, args_t args) const;
-    ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const;
+    void pub_to_ref (eval_t *p, args_t args, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
+    ptr<mref_t> eval_to_ref (eval_t *p, args_t args) const;
+    ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
   protected:
-    bool count_args (publish_t *p, size_t s) const;
-    ptr<mref_t> eval_final (publish_t *p, str k, str s) const;
+    bool count_args (eval_t *p, size_t s) const;
+    ptr<mref_t> eval_final (eval_t *p, str k, str s) const;
   };
 
   //-----------------------------------------------------------------------
@@ -141,15 +141,15 @@ namespace rfn3 {
     // Signature "l" -- the list to pop from
     pop_front_t () : compiled_fn_t (libname, "pop_front") {}
 
-    void pub_to_ref (publish_t *p, args_t args, mrev_t ev, CLOSURE) const;
-    void pub_to_val (publish_t *p, args_t args, cxev_t ev, CLOSURE) const;
-    void pub_to_mval (publish_t *p, args_t args, xev_t ev, CLOSURE) const;
-    ptr<mref_t> eval_to_ref (publish_t *p, args_t args) const;
-    ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const;
-    ptr<expr_t> eval_to_mval (publish_t *p, args_t args) const;
+    void pub_to_ref (eval_t *p, args_t args, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
+    void pub_to_mval (eval_t *p, args_t args, xev_t ev, CLOSURE) const;
+    ptr<mref_t> eval_to_ref (eval_t *p, args_t args) const;
+    ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
+    ptr<expr_t> eval_to_mval (eval_t *p, args_t args) const;
   protected:
-    bool count_args (publish_t *p, size_t s) const;
-    ptr<expr_t> eval_final (publish_t *p, ptr<expr_t> x) const;
+    bool count_args (eval_t *p, size_t s) const;
+    ptr<expr_t> eval_final (eval_t *p, ptr<expr_t> x) const;
   };
 
   //-----------------------------------------------------------------------

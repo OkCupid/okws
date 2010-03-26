@@ -18,14 +18,14 @@ namespace pub3 {
   //=================================================== callable_t ========
 
   void 
-  callable_t::pub_to_val (publish_t *p, args_t args, cxev_t ev, 
+  callable_t::pub_to_val (eval_t *p, args_t args, cxev_t ev, 
 			  ptr<closure_t> dummy) const 
   { ev->trigger (eval_to_val (p, args)); }
 
   //-----------------------------------------------------------------------
 
   tamed void
-  callable_t::pub_to_ref (publish_t *p, callable_t::args_t args, 
+  callable_t::pub_to_ref (eval_t *p, callable_t::args_t args, 
 			  mrev_t ev) const
   {
     tvars {
@@ -53,7 +53,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  callable_t::pub_to_mval (publish_t *p, callable_t::args_t args,
+  callable_t::pub_to_mval (eval_t *p, callable_t::args_t args,
 			   xev_t ev) const
   {
     tvars {
@@ -144,7 +144,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lambda_t::bind_args (publish_t *p, callable_t::args_t a, 
+  lambda_t::bind_args (eval_t *p, callable_t::args_t a, 
 		       event<ptr<bindtab_t> >::ref ev) const
   {
     tvars {
@@ -200,7 +200,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  lambda_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  lambda_t::pub_to_val (eval_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
@@ -250,7 +250,7 @@ namespace pub3 {
   //======================================== fndef_t ======================
 
   status_t
-  fndef_t::v_publish_nonblock (publish_t *p) const
+  fndef_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
     p->env ()->add_global_binding (_name, _lambda->copy (p));
@@ -298,7 +298,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_to_val (publish_t *p, cxev_t ev) const
+  call_t::pub_to_val (eval_t *p, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
@@ -318,7 +318,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_to_ref (publish_t *p, mrev_t ev) const
+  call_t::pub_to_ref (eval_t *p, mrev_t ev) const
   {
     tvars {
       ptr<mref_t> ret;
@@ -370,7 +370,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_to_mval (publish_t *p, xev_t ev) const
+  call_t::pub_to_mval (eval_t *p, xev_t ev) const
   {
     tvars {
       ptr<expr_t> ret;
@@ -410,7 +410,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_prepare (publish_t *p, 
+  call_t::pub_prepare (eval_t *p, 
 		       event<ptr<const callable_t> >::ref ev) const
   {
     tvars {
