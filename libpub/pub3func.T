@@ -278,8 +278,8 @@ namespace pub3 {
 
   //============================================= call_t  ================
 
-  ptr<call_t> call_t::alloc (ptr<expr_t> x, ptr<expr_list_t> l)
-  { return New refcounted<call_t> (x, l, plineno ()); }
+  ptr<call_t> call_t::alloc (ptr<expr_t> x, ptr<expr_list_t> l, bool bl)
+  { return New refcounted<call_t> (x, l, bl, plineno ()); }
 
   //----------------------------------------------------------------------
 
@@ -389,7 +389,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   ptr<call_t> call_t::alloc (ptr<expr_t> x, lineno_t l) 
-  { return New refcounted<call_t> (x, expr_list_t::alloc (), l); }
+  { return New refcounted<call_t> (x, expr_list_t::alloc (), false, l); }
 
   //----------------------------------------------------------------------
 
@@ -433,16 +433,7 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
-
-  bool
-  call_t::might_block_uncached () const
-  {
-    // Only turn this on if you are **sure** that none of your function
-    // calls block.  This is mainly useful in testing a performance
-    // hypothesis --- that having a blocking, tamed path is slowing down
-    // OKWS in a head-to-head comparison...
-    return !ok_pub3_no_blocking_calls;
-  }
+  bool call_t::might_block_uncached () const { return _blocking; }
 
   //----------------------------------------------------------------------
 

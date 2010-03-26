@@ -574,6 +574,7 @@ pub3::call_t::to_xdr (xpub3_expr_t *x) const
 {
   x->set_typ (XPUB3_EXPR_CALL);
   x->call->lineno = _lineno;
+  x->call->blocking = _blocking;
   expr_to_rpc_ptr (_fn, &x->call->fn);
   if (args ()) {
     args ()->to_xdr (&x->call->args);
@@ -1148,7 +1149,8 @@ pub3::continue_t::to_xdr (xpub3_statement_t *x) const
 pub3::call_t::call_t (const xpub3_call_t &x)
   : expr_t (x.lineno),
     _fn (expr_t::alloc (x.fn)),
-    _arglist (expr_list_t::alloc (x.args)) {}
+    _arglist (expr_list_t::alloc (x.args)),
+    _blocking (x.blocking) {}
 
 //-----------------------------------------------------------------------
 

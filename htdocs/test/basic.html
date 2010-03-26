@@ -4,7 +4,7 @@
 
     // After loading that library, we now have access to function 'libload'
     // Calling 'libload("basic")' will load the library "basic.lib".
-    libload ("basic");
+    libload (* "basic" *);
 
     // Print which version of the library we loaded.
     print ("basic.version = %{basic.version}\n");

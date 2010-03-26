@@ -8,9 +8,9 @@ filedata = [
         include (x);
         return true;
     }
-    include_foo ("$[1]");
-    include_foo ("$[2]");
-    if (include_foo ("$[3]") && include_foo ("$[4]")) { print "ok"; }
+    include_foo (* "$[1]" *);
+    include_foo (* "$[2]" *);
+    if (include_foo (* "$[3]" *) && include_foo (* "$[4]" *)) { print "ok"; }
 $}
 
 """,

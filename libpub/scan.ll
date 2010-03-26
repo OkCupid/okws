@@ -239,12 +239,15 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 =>		 { return yytext[0]; }
 [%()!=><,[\].+*:;/-] { return yytext[0]; }
 "={"		 { yy_push_state (P3); return T_P3_PUB_HEREDOC; }
+[(][*]		 { return T_P3_BCALL_OPEN; }
+[*][)]		 { return T_P3_BCALL_CLOSE; }
 [{]		 { yy_push_state (P3); return yytext[0]; }
 [}]		 { yy_pop_state (); return yytext[0]; }
 "||"		 { return T_P3_OR; }
 "|"		 { return T_P3_PIPE; }
 &&		 { return T_P3_AND; }
 "%}"		 { pop_p3_func (); return T_P3_CLOSE; }
+
 
 [ \t\r]+	 { /* ignore */ }
 ["'] 		 { begin_P3_STR(yytext[0]); return yytext[0]; }

@@ -52,6 +52,8 @@
 %token T_P3_CONTINUE
 %token T_P3_HTML_HEREDOC
 %token T_P3_PUB_HEREDOC
+%token T_P3_BCALL_OPEN
+%token T_P3_BCALL_CLOSE
 
 %token <str> T_P3_IDENTIFIER
 %token <str> T_P3_INT
@@ -471,7 +473,12 @@ p3_fncall: p3_postfix_expr '(' p3_argument_expr_list_opt ')'
 	       * (in the pub command line client) or upon conversion
 	       * from XDR (in OKWS services)
 	       */
-	      $$ = pub3::call_t::alloc ($1, $3);
+	      $$ = pub3::call_t::alloc ($1, $3, false);
+           } 
+           | p3_postfix_expr T_P3_BCALL_OPEN p3_argument_expr_list_opt 
+               T_P3_BCALL_CLOSE
+	   {
+	      $$ = pub3::call_t::alloc ($1, $3, true);
            }
 	   ;
 

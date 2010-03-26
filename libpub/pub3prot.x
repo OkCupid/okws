@@ -106,6 +106,7 @@ struct xpub3_call_t {
    int lineno;
    xpub3_expr_t *fn;
    xpub3_expr_list_t args;
+   bool blocking;
 };
 
 struct xpub3_eq_t {
