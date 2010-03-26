@@ -61,6 +61,7 @@ reflect_SOURCES = reflect.C
 objtest_SOURCES = objtest.C
 objtest2_SOURCES = objtest2.C
 timer_SOURCES = timer.C
+errortest_SOURCES = errortest.C
 
 SUFFIXES = .g .C .T
 .T.C:
