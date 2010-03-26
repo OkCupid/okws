@@ -84,6 +84,7 @@ okwsinclude_HEADERS = \
 	pub3debug.h \
 	pub3lib.h \
 	pub3eng.h \
+	pub3env.h \
 	clist.h \
 	pub3heredoc.h
 
