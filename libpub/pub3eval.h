@@ -5,108 +5,9 @@
 
 #include "pub3expr.h"
 #include "pub3debug.h"
+#include "pub3env.h"
 
 namespace pub3 {
-
-  //======================================================================
-  //
-  // Global data shared across all pub objects -- such as global bindings
-  // published from config files are startup.
-  //
-  class singleton_t {
-  public:
-    singleton_t ();
-    static ptr<singleton_t> get ();
-    ptr<expr_dict_t> universals () { return _universals; }
-
-    const vec<ptr<bindtab_t> > *libraries () const { return &_libraries; }
-    vec<ptr<bindtab_t> > *libraries () { return &_libraries; }
-    void import (ptr<bindtab_t> l) { _libraries.push_back (l); }
-
-  private:
-    ptr<expr_dict_t> _universals;
-    vec<ptr<bindtab_t> > _libraries;
-  };
-
-  //
-  //======================================================================
-
-  //-----------------------------------------------------------------------
-
-  class env_t : public virtual dumpable_t {
-  public:
-
-    env_t (ptr<bindtab_t> u, ptr<bindtab_t> g = NULL);
-    void pop_to (size_t s);
-    ptr<const expr_t> lookup_val (const str &nm) const;
-    size_t stack_size () const;
-    ptr<mref_t> lookup_ref (const str &nm) const;
-    void add_global_binding (const str &nm, ptr<expr_t> v);
-    ptr<bindtab_t> library () { return _library; }
-    size_t bind_globals (ptr<bindtab_t> t);
-
-    //
-    // LAYER_LOCALS_BARRIER -- stops resolution from descending past
-    //   the barrier, whether during and evaluation or a closure capture.
-    //   Is used by default to push on a new file or function call.
-    //
-    // LAYER_LOCALS_BARRIER_WEAK -- doesn't stop resolution from 
-    //   descending past, but does stop a closure capture.
-    //   Is used when P_STRICT_INCLUDE_SCOPING is turned off to 
-    //   mark include file boundaries in the stack
-    //
-    typedef enum { LAYER_NONE = -1,
-		   LAYER_UNIVERSALS = 0,
-		   LAYER_GLOBALS = 1,
-		   LAYER_LOCALS = 2,
-		   LAYER_LOCALS_BARRIER = 3,
-		   LAYER_LOCALS_BARRIER_WEAK = 4,
-		   LAYER_UNIREFS = 5, 
-		   LAYER_LIBRARY = 6 } layer_type_t;
-
-    size_t push_locals (ptr<bind_interface_t> t, 
-			layer_type_t typ = LAYER_LOCALS);
-
-    static str layer_type_to_str (layer_type_t lt);
-
-    // Used primarily by bind() and unbind() library functions
-    ptr<bindtab_t> lookup_layer (const str &nm, layer_type_t lt, 
-				 bool creat) const;
-
-    ptr<bindtab_t> push_bindings (layer_type_t typ, bool is_cfg);
-    void push_references (ptr<const bindlist_t> l, layer_type_t lt);
-
-    struct stack_layer_t {
-      stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 
-	: _bindings (b), _typ (t) {}
-      stack_layer_t () : _typ (LAYER_NONE) {}
-      ptr<bind_interface_t> _bindings;
-      layer_type_t _typ;
-      bool is_local () const;
-      bool is_barrier () const { return _typ == LAYER_LOCALS_BARRIER; } 
-      ptr<expr_list_t> to_list () const;
-    };
-
-    const char *get_obj_name () const { return "env_t"; }
-    lineno_t dump_get_lineno () const { return 0; }
-    void v_dump (dumper_t *d) const;
-    typedef vec<stack_layer_t> stack_t;
-
-    size_t push_lambda (ptr<bind_interface_t>, const stack_t *stk);
-    size_t push_barrier ();
-    void capture_closure (stack_t *out) const;
-    ptr<expr_list_t> to_list () const;
-    
-  protected:
-    size_t dec_stack_pointer (stack_layer_t l, size_t i) const;
-    ssize_t descend_to_barrier () const;
-
-    ptr<bindtab_t> _library;
-    ptr<bindtab_t> _universals;
-    ptr<bindtab_t> _globals;
-    stack_t _stack;
-    size_t _global_frames;
-  };
 
   //-----------------------------------------------------------------------
 
@@ -115,6 +16,106 @@ namespace pub3 {
   
   // Forward-declared class available in pub3file.h
   class metadata_t;
+  class file_t;
+
+  // Forward-declared classes available in pub3obj.h
+  class obj_list_t;
+  class obj_t;
+
+  // Forward-declared class available in pub3hilev.h
+  class ok_iface_t;
+
+  //-----------------------------------------------------------------------
+  
+  // Opts can be be a bitmask of the following:
+  enum {
+    P_DEBUG =    0x1,     /* debug info output w/ text */
+    P_IINFO =    0x2,     /* include info output w/ text */
+    P_VERBOSE =  0x4,     /* debug messages, etc */
+    P_VISERR =   0x8,     /* visible HTML errors */
+    P_WSS =      0x10,    /* white-space stripping initializes to **on** */
+    P_NOPARSE =  0x20,    /* don't parse file at all */
+    P_NOLOCALE = 0x40,    /* Don't localize file */
+    P_COPY_CONF= 0x80,    /* copy the config over to universals */
+    P_CONFIG =   0x100,   /* run config variables (needed for xml interface) */
+
+    P_OUTPUT_ERR_IN_PLACE = 0x200,          /* output errors in place */
+    P_OUTPUT_ERR_PLACEHOLDERS = 0x400,      /* output placeholders in place */
+    P_OUTPUT_ERR_COMMENTS = 0x800,          /* output errors in comments */
+    P_OUTPUT_ERR_NOLOG= 0x1000,             /* don't warn to stderr */
+    P_OUTPUT_ERR_OBJ = 0x2000,              /* pupulate and pub the err-obj */
+
+    P_WARN_INLINE_NULL = 0x4000,            /* warn if %{foo} is NULL */
+    P_WARN_NULL = 0x8000,                   /* warn if ever we eval to NULL */
+    P_WARN_RELARG_NULL = 0x10000,           /* warn if a relat. arg is NULL */
+
+    P_STRICT_INCLUDE_SCOPING = 0x20000,      /* add scope barrier */
+
+    P_INFINITY = 0x40000,
+
+    // All warnings I can think of....
+    P_WARN_STRICT = P_WARN_INLINE_NULL | P_WARN_NULL | P_WARN_RELARG_NULL
+  };
+
+  //-----------------------------------------------------------------------
+
+  class control_t {
+  public:
+    control_t () : _break (false), _continue (false) {}
+    static ptr<control_t> alloc ();
+    bool handle_forloop ();
+    void reset_forloop ();
+    bool handle_zone ();
+    bool _break;
+    bool _continue;
+    void set_rtrn (ptr<const expr_t> x) { _return = x; }
+    ptr<const expr_t> rtrn () const { return _return; }
+    void set_continue (bool b) { _continue = b;  }
+    void set_break (bool b) { _break = b; }
+    ptr<const expr_t> _return;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class lambda_state_t {
+  public:
+    lambda_state_t () : _binding_stack_size (0), _overflow (false) {}
+    bool is_ok () const { return !_overflow; }
+    friend class eval_t;
+  protected:
+    size_t _binding_stack_size;
+    ptr<control_t> _old_control;
+    bool _overflow;
+  };
+
+  //-----------------------------------------------------------------------
+
+  // A runtime location, with the file filled in (metadata), 
+  // the currention function call if applicable, and finally,
+  // the line number of the file we're currently on;
+  class runloc_t {
+  public:
+    runloc_t (ptr<const metadata_t> md, str fn = NULL) 
+      : _metadata (md), _func (fn), _lineno (0) {}
+    void set_lineno (lineno_t l) { _lineno = l; }
+    str filename () const;
+    str funcname () const { return _func; }
+    lineno_t lineno () const { return _lineno; }
+    void pub (obj_t &out) const;
+    str to_str () const;
+    ptr<const metadata_t> metadata () const { return _metadata; }
+  private:
+    ptr<const metadata_t> _metadata;
+    str _func;
+    lineno_t _lineno;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class loc_stack_t : public vec<runloc_t> {
+  public:
+    obj_list_t pub (ssize_t stop = -1) const;
+  };
 
   //-----------------------------------------------------------------------
 
@@ -122,9 +123,30 @@ namespace pub3 {
   public:
 
     enum { EVAL_INIT = -2, EVAL_DONE = -1 };
-
-    eval_t (ptr<env_t> e, ptr<output_t> o, opts_t opts = 0); 
     ~eval_t ();
+
+    eval_t (ptr<bindtab_t> unis, zbuf *z, opts_t o = 0); // for output
+    eval_t (ptr<bindtab_t> unis, ptr<bindtab_t> glbs, 
+	    opts_t o = 0);    // for cfg
+
+    eval_t (ptr<env_t> e, ptr<output_t> o, opts_t opts = 0); //everything else
+
+    void publish (str nm, location_t loc,
+		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
+    void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
+
+    void output (zstr s);
+    void output (zstr orig, zstr wss);
+    void output (str s);
+    void output_errs (const xpub3_errstrs_t &e, err_type_t t);
+    void output_err_stacktrace (str s, err_type_t t);
+    void output_err (str s, err_type_t t);
+
+    str set_cwd (str s) ;
+    str cwd () const { return _cwd; }
+    void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
+    ptr<bindtab_t> push_bindings (env_t::layer_type_t lt);
+    bool is_config () const;
 
     ptr<output_t> out () const { return _output; }
     ptr<env_t> env () { return _env; }
@@ -148,10 +170,6 @@ namespace pub3 {
     void report_error (str msg, location_t l);
     void report_error (str msg, lineno_t l);
 
-    virtual void set_lineno (lineno_t l) {}
-    virtual void output_err (str msg, err_type_t typ) {}
-    virtual ptr<const metadata_t> current_metadata () const { return NULL; }
-
     // Add the error object from output into the global bindings list
     // (in the environment)
     void add_err_obj (str key);
@@ -159,13 +177,39 @@ namespace pub3 {
     // replace the output with a new output engine.
     ptr<output_t> set_output (ptr<output_t> no);
 
+    lambda_state_t 
+    push_lambda_call (ptr<const metadata_t>, str fn, 
+		      ptr<bindtab_t> bindings, 
+		      const env_t::stack_t *cls_stk);
+
+    ptr<const expr_t> pop_lambda_call (lambda_state_t state);
+
+    // manipulate control stack
+    ptr<control_t> control ();
+    ptr<control_t> push_control ();
+    void restore_control (ptr<control_t> c);
+    ptr<const metadata_t> current_metadata () const;
+    void push_metadata (ptr<const metadata_t> md);
+    void pop_metadata ();
+    void set_lineno (lineno_t line);
   protected:
+
+    // A stack of all of the files being published, with their actual
+    // metadata.
+    location_t _location;        // current location 
+    loc_stack_t _stack;
 
     ptr<env_t> _env;
     ptr<output_t> _output;
     bool _loud;
     bool _silent;
     opts_t _opts;
+
+    ptr<control_t> _control;     // control flow control
+
+    str _cwd;
+    ptr<ok_iface_t> _pub_iface;  // publisher interface
+
   };
 
   //-----------------------------------------------------------------------

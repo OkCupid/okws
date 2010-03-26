@@ -53,6 +53,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(internal_dump, "O");
   PUB3_COMPILED_FN(unbind, "s|s");
   PUB3_COMPILED_FN(copy, "O");
+  PUB3_COMPILED_FN(bind, "sO|s");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);
@@ -68,9 +69,8 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   PUB3_COMPILED_HANDROLLED_FN(isnull);
-  PUB3_COMPILED_HANDROLLED_FN(append);
+  PUB3_COMPILED_UNPATTERNED_FN(append);
   PUB3_COMPILED_HANDROLLED_FN(default);
-  PUB3_COMPILED_HANDROLLED_FN(bind);    // Signature 'sO|s'
   
   //-----------------------------------------------------------------------
 
@@ -119,27 +119,37 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  class lookup_t : public compiled_handrolled_fn_t {
+  class lookup_t : public compiled_fn_t {
   public:
     
     // Signature "s|s" -- key to lookup, and optional scope
-    lookup_t () : compiled_handrolled_fn_t (libname, "lookup") {}
+    lookup_t () : compiled_fn_t (libname, "lookup") {}
 
     void pub_to_ref (publish_t *p, args_t args, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t *p, args_t args, cxev_t ev, CLOSURE) const;
+    ptr<mref_t> eval_to_ref (publish_t *p, args_t args) const;
+    ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const;
+  protected:
+    bool count_args (publish_t *p, size_t s) const;
+    ptr<mref_t> eval_final (publish_t *p, str k, str s) const;
   };
 
   //-----------------------------------------------------------------------
 
-  class pop_front_t : public compiled_handrolled_fn_t {
+  class pop_front_t : public compiled_fn_t {
   public:
-    
     // Signature "l" -- the list to pop from
-    pop_front_t () : compiled_handrolled_fn_t (libname, "pop_front") {}
+    pop_front_t () : compiled_fn_t (libname, "pop_front") {}
 
     void pub_to_ref (publish_t *p, args_t args, mrev_t ev, CLOSURE) const;
     void pub_to_val (publish_t *p, args_t args, cxev_t ev, CLOSURE) const;
     void pub_to_mval (publish_t *p, args_t args, xev_t ev, CLOSURE) const;
+    ptr<mref_t> eval_to_ref (publish_t *p, args_t args) const;
+    ptr<const expr_t> eval_to_val (publish_t *p, args_t args) const;
+    ptr<expr_t> eval_to_mval (publish_t *p, args_t args) const;
+  protected:
+    bool count_args (publish_t *p, size_t s) const;
+    ptr<expr_t> eval_final (publish_t *p, ptr<expr_t> x) const;
   };
 
   //-----------------------------------------------------------------------

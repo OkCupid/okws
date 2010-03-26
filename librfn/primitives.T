@@ -8,16 +8,42 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  isnull_t::count_args (publish_t *p, size_t sz) const
+  {
+    bool ret = true;
+    if (sz != 1) {
+      ret = false;
+      report_error (p, "isnull() takes 1 argument");
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
   tamed void
   isnull_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
       ptr<const expr_t> ret;
-      bool b;
+      bool b (true);
     }
-    twait { (*args)[0]->pub_as_null (p, mkevent (b)); }
+    if (count_args (p, args->size ())) {
+      twait { (*args)[0]->pub_as_null (p, mkevent (b)); }
+    }
     ret = expr_bool_t::alloc (b);
     ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  isnull_t::eval_to_val (publish_t *p, callable_t::args_t args) const
+  {
+    bool b = true;
+    if (count_args (p, args->size ())) { b = (*args)[0]->eval_as_null (p); }
+    ptr<const expr_t> ret = expr_bool_t::alloc (b);
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -172,41 +198,30 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  tamed void
-  bind_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  ptr<const expr_t>
+  bind_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
   {
-    tvars {
-      str key, scope_str;
-      ptr<pub3::expr_t> o;
-      env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
-      bool found (false);
-      ptr<bindtab_t> layer;
-    }
+    str key, scope_str;
+    ptr<pub3::expr_t> o;
+    env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
+    bool found (false);
+    ptr<bindtab_t> layer;
 
-    if (args->size () != 2 && args->size () != 3) {
-      report_error (p, "bind() takes 2 or 3 arguments");
+    key = args[0]._s;
+    o = args[1]._O;
+    if (args.size () == 3 && !str_to_scope (args[2]._s, &scope)) {
+      report_error (p, strbuf ("bad scope specifier given: '%s'", 
+			       args[2]._s.cstr ()));
+				 
     } else {
-      twait { (*args)[0]->pub_as_str (p, mkevent (key)); }
-      twait { (*args)[1]->pub_to_mval (p, mkevent (o)); }
-      if (args->size () == 3) {
-	twait { (*args)[2]->pub_as_str (p, mkevent (scope_str)); }
-      }
-      if (!key) {
-	report_error (p, "cannot resolve key to bind()");
-      } else if (scope_str && !str_to_scope (scope_str, &scope)) {
-	report_error (p, strbuf ("bad scope specifier given: '%s'", 
-				 scope_str.cstr ()));
-      } else {
-	if (!o) { o = expr_null_t::alloc (); }
-	layer = p->env ()->lookup_layer (key, scope, true);
-	if (layer) {
-	  found = true;
-	  layer->insert (key, o);
-	}
+      if (!o) { o = expr_null_t::alloc (); }
+      layer = p->env ()->lookup_layer (key, scope, true);
+      if (layer) {
+	found = true;
+	layer->insert (key, o);
       }
     }
-
-    ev->trigger (expr_bool_t::alloc (found));
+    return expr_bool_t::alloc (found);
   }
 
   //-----------------------------------------------------------------------
@@ -245,32 +260,41 @@ namespace rfn3 {
   {
     tvars {
       str key, scope_str;
-      ptr<bindtab_t> layer;
       ptr<mref_t> ret;
-      env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
     }
-    if (args->size () != 1 && args->size () != 2) {
-      report_error (p, "lookup() takes 1 or 2 arguments");
-    } else {
+    if (count_args (p, args->size ())) {
       twait { (*args)[0]->pub_as_str (p, mkevent (key)); }
       if (args->size () == 2) {
 	twait { (*args)[1]->pub_as_str (p, mkevent (scope_str)); }
       }
-      if (!key) {
-	report_error (p, "cannot resolve key to lookup()");
-      } else if (scope_str && !str_to_scope (scope_str, &scope)) {
-	report_error (p, strbuf ("bad scope specifier given: '%s'",
-				 scope_str.cstr ()));
-      } else if (scope_str) {
-	layer = p->env ()->lookup_layer (key, scope, false);
-	if (layer) {
-	  ret = New refcounted<mref_dict_t> (layer, key);
-	}
-      } else {
-	ret = p->env ()->lookup_ref (key);
-      }
+      ret = eval_final (p, key, scope_str);
     }
     ev->trigger (ret);
+  }
+    
+  //-----------------------------------------------------------------------
+
+  ptr<mref_t>
+  lookup_t::eval_final (publish_t *p, str key, str scope_str) const
+  {
+    env_t::layer_type_t scope (env_t::LAYER_GLOBALS);
+    ptr<bindtab_t> layer;
+    ptr<mref_t> ret;
+
+    if (!key) {
+      report_error (p, "cannot resolve key to lookup()");
+    } else if (scope_str && !str_to_scope (scope_str, &scope)) {
+      report_error (p, strbuf ("bad scope specifier given: '%s'",
+			       scope_str.cstr ()));
+    } else if (scope_str) {
+      layer = p->env ()->lookup_layer (key, scope, false);
+      if (layer) {
+	ret = New refcounted<mref_dict_t> (layer, key);
+      }
+    } else {
+      ret = p->env ()->lookup_ref (key);
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -289,4 +313,44 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  bool
+  lookup_t::count_args (publish_t *p, size_t s) const
+  {
+    bool ret = true;
+    if (s != 1 && s != 2) {
+      report_error (p, "lookup() takes 1 or 2 arguments");
+      ret = false;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<mref_t>
+  lookup_t::eval_to_ref (publish_t *p, args_t args) const
+  {
+    str key, scope_str;
+    ptr<mref_t> ret;
+    if (count_args (p, args->size ())) {
+      key = (*args)[0]->eval_as_str (p);
+      if (args->size () == 2) {
+	scope_str = (*args)[1]->eval_as_str (p);
+      }
+      ret = eval_final (p, key, scope_str);
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  lookup_t::eval_to_val (publish_t *p, args_t args) const
+  {
+    ptr<mref_t> r = eval_to_ref (p, args);
+    ptr<const expr_t> out;
+    if (r) { out = r->get_value (); }
+    return out;
+  }
+
+  //-----------------------------------------------------------------------
 };

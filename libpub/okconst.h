@@ -309,6 +309,7 @@ extern size_t ok_pub_max_stack;
 extern size_t ok_pub3_chunk_window_size;
 extern bool ok_pub2_compatibility_mode;
 extern const char *ok_pub3_err_obj_key;
+extern bool ok_pub3_no_blocking_calls;
 
 //
 // pub3 constants

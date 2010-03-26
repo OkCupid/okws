@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "pub3pub.h"
+#include "pub3eval.h"
 #include "pub3file.h"
 #include "pub3ast.h"
 #include "pub3expr.h"
@@ -14,6 +14,17 @@ namespace pub3 {
 
   typedef xpub_status_t status_t;
   typedef event<status_t, ptr<file_t> >::ref getfile_ev_t;
+
+  //=======================================================================
+
+  class localizer_t : public virtual refcount {
+  public:
+    localizer_t () {}
+    virtual ~localizer_t () {}
+    virtual str localize (const str &infn) const = 0;
+    virtual bool strict () const { return false; }
+    virtual str get_default_fnf () const { return NULL; }
+  };
 
   //======================================================================
   //

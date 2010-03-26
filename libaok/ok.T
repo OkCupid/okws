@@ -267,6 +267,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("logtick", &ok_log_tick);
     t->lookup ("logprd", &ok_log_period);
     t->lookup ("clito", &ok_clnt_timeout);
+    t->lookup ("nbc", &ok_pub3_no_blocking_calls);
     t->lookup ("ps", &ok_axprt_ps);
     t->lookup ("reqszlimit", &ok_reqsize_limit);
     t->lookup ("cgilimit" , &ok_cgibuf_limit);

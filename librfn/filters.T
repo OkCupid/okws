@@ -87,20 +87,48 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  bool
+  default_t::count_args (publish_t *p, size_t sz) const
+  {
+    bool ret = true;
+    if (sz < 1 || sz > 2) {
+      report_error (p, "default() expects 1 or 2 args");
+      ret = false;
+    }
+    return ret;
+  }
+
+  //------------------------------------------------------------
+
+  ptr<const expr_t>
+  default_t::eval_to_val (publish_t *p, args_t args) const
+  {
+    ptr<const expr_t> ret, def;
+    bool is_null;
+
+    if (count_args (p, args->size ())) {
+     
+      is_null = (*args)[0] ? (*args)[0]->eval_as_null (p) : true;
+      
+      if (args->size () > 1) { def = (*args)[1]->eval_to_val (p); } 
+      else { def = expr_str_t::alloc (""); }
+      
+      ret = is_null ? def : (*args)[0]->eval_to_val (p);
+    }
+    return ret;
+  }
+
+  //------------------------------------------------------------
+
   tamed void
   default_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
   {
     tvars {
-      scalar_obj_t ret;
+      ptr<const expr_t> ret, def;
       bool is_null;
-      scalar_obj_t def;
-      ptr<expr_t> er;
     }
-    if (args->size () < 1 || args->size () > 2) {
-      report_error (p, "default() expects 1 or 2 args");
 
-    } else {
-     
+    if (count_args (p, args->size ())) {
       if (!(*args)[0]) { 
 	is_null = true; 
       } else { 
@@ -108,19 +136,18 @@ namespace rfn3 {
       }
 
       if (args->size () > 1) { 
-	twait { (*args)[1]->pub_as_scalar (p, mkevent (def)); }
+	twait { (*args)[1]->pub_to_val (p, mkevent (def)); }
       } else { 
-	def.set (""); 
+	def =  expr_str_t::alloc ("");
       }
 
       if (is_null) { 
 	ret = def; 
       } else { 
-	twait { (*args)[0]->pub_as_scalar (p, mkevent (ret)); }
+	twait { (*args)[0]->pub_to_val (p, mkevent (ret)); }
       }
     }
-    er = expr_t::alloc (ret);
-    ev->trigger (er);
+    ev->trigger (ret);
   }
 
   //------------------------------------------------------------

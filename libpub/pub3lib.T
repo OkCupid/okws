@@ -50,11 +50,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void
-  compiled_fn_t::eval_args (publish_t *p, args_t in, margs_t *out) const
+  compiled_fn_t::eval_args (eval_t *e, args_t in, margs_t *out) const
   {
     for (size_t i = 0; i < in->size (); i++) {
       ptr<const expr_t> a = (*in)[i];
-      ptr<expr_t> x = a->eval_to_mval (p);
+      ptr<expr_t> x = a->eval_to_mval (e);
       if (!x && safe_args ()) x = expr_null_t::alloc ();
       out->push_back (x);
     }
@@ -63,11 +63,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  compiled_fn_t::eval_to_val (publish_t *p, args_t ai) const
+  compiled_fn_t::eval_to_val (eval_t *e, args_t ai) const
   {
     margs_t ao;
-    eval_args (p, ai, &ao);
-    ptr<const expr_t> ret = v_eval_1 (p, ao);
+    eval_args (e, ai, &ao);
+    ptr<const expr_t> ret = v_eval_1 (e, ao);
     return ret;
   }
 
@@ -89,7 +89,7 @@ namespace pub3 {
   //===================================== patterned_fn_t ==================
 
   ptr<const expr_t>
-  patterned_fn_t::v_eval_1 (publish_t *e, const margs_t &args) const
+  patterned_fn_t::v_eval_1 (eval_t *e, const margs_t &args) const
   {
     ptr<const expr_t> ret;
     vec<arg_t> checked;

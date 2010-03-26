@@ -42,10 +42,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<expr_t>
-  callable_t::eval_to_mval (publish_t *p, args_t args) const
+  callable_t::eval_to_mval (eval_t *e, args_t args) const
   {
     ptr<expr_t> ret;
-    ptr<const expr_t> x = eval_to_val (p, args);
+    ptr<const expr_t> x = eval_to_val (e, args);
     if (x) { ret = x->copy (); }
     return ret;
   }
@@ -68,11 +68,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<mref_t>
-  callable_t::eval_to_ref (publish_t *p, args_t args) const
+  callable_t::eval_to_ref (eval_t *e, args_t args) const
   {
     ptr<expr_t> copy;
     ptr<mref_t> ret;
-    ptr<const expr_t> cx = eval_to_val (p, args);
+    ptr<const expr_t> cx = eval_to_val (e, args);
     if (cx) { copy = cx->copy (); }
     if (copy) { ret = const_mref_t::alloc (copy); }
     return ret;
@@ -113,7 +113,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   bool
-  lambda_t::check_args (publish_t *p, args_t a) const
+  lambda_t::check_args (eval_t *p, args_t a) const
   {
     size_t gs, es;
     gs = a->size ();
@@ -165,12 +165,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<bindtab_t>
-  lambda_t::bind_args_nonblock (publish_t *p, args_t args) const
+  lambda_t::bind_args_nonblock (eval_t *e, args_t args) const
   {
     ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
     for (size_t i = 0; i < args->size (); i++) {
       // XXX -- some warning?
-      ptr<mref_t> r = (*args)[i]->eval_to_ref (p);
+      ptr<mref_t> r = (*args)[i]->eval_to_ref (e);
       bind_arg (ret, i, r);
     }
     return ret;
@@ -179,20 +179,20 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t> 
-  lambda_t::eval_to_val (publish_t *p, args_t args) const
+  lambda_t::eval_to_val (eval_t *e, args_t args) const
   {
     ptr<const expr_t> ret;
     ptr<control_t> old_ctrl;
     ptr<bindtab_t> bindings;
     lambda_state_t state;
 
-    if (check_args (p, args)) {
-      bindings = bind_args_nonblock (p, args);
-      state = p->push_lambda_call (_md, _name, bindings, closure_stack ());
+    if (check_args (e, args)) {
+      bindings = bind_args_nonblock (e, args);
+      state = e->push_lambda_call (_md, _name, bindings, closure_stack ());
       if (state.is_ok ()) { 
-	_body->publish_nonblock (p);
+	_body->publish_nonblock (e);
       }
-      ret = p->pop_lambda_call (state);
+      ret = e->pop_lambda_call (state);
     }
     return expr_t::safe_expr (ret);
   }
@@ -336,6 +336,39 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  call_t::eval_to_val (eval_t *e) const
+  {
+    ptr<const expr_t> ret;
+    ptr<const callable_t> fnd;
+    if ((fnd = eval_prepare (e))) { ret = fnd->eval_to_val (e, _arglist); }
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
+  ptr<mref_t>
+  call_t::eval_to_ref (eval_t *e) const
+  {
+    ptr<mref_t> ret;
+    ptr<const callable_t> fnd;
+    if ((fnd = eval_prepare (e))) { ret = fnd->eval_to_ref (e, _arglist); }
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
+  ptr<expr_t>
+  call_t::eval_to_mval (eval_t *e) const
+  {
+    ptr<expr_t> ret;
+    ptr<const callable_t> fnd;
+    if ((fnd = eval_prepare (e))) { ret = fnd->eval_to_mval (e, _arglist); }
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
   tamed void
   call_t::pub_to_mval (publish_t *p, xev_t ev) const
   {
@@ -360,6 +393,22 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
+  ptr<const callable_t>
+  call_t::eval_prepare (eval_t *e) const
+  {
+    e->set_lineno (_lineno);
+    ptr<const expr_t> f = _fn->eval_to_val (e);
+    ptr<const callable_t> fnd;
+    if (!f) { 
+      report_error (e, "cannot resolve function"); 
+    } else if (!(fnd = f->to_callable ())) {
+      report_error (e, "expected a function; got something else");
+    }
+    return fnd;
+  }
+
+  //----------------------------------------------------------------------
+
   tamed void
   call_t::pub_prepare (publish_t *p, 
 		       event<ptr<const callable_t> >::ref ev) const
@@ -380,6 +429,19 @@ namespace pub3 {
       report_error (p, "expected a function; got something else");
     }
     ev->trigger (fnd);
+  }
+
+  //----------------------------------------------------------------------
+
+
+  bool
+  call_t::might_block_uncached () const
+  {
+    // Only turn this on if you are **sure** that none of your function
+    // calls block.  This is mainly useful in testing a performance
+    // hypothesis --- that having a blocking, tamed path is slowing down
+    // OKWS in a head-to-head comparison...
+    return !ok_pub3_no_blocking_calls;
   }
 
   //----------------------------------------------------------------------

@@ -1584,9 +1584,9 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   status_t
-  include_t::v_publish_nonblock (publish_t *ev) const
+  include_t::v_publish_nonblock (publish_t *p) const
   {
-    panic ("include_t called in nonblock context; should never happen\n");
+    p->report_error ("include skipped in nonblock context", _location);
     return status_t ();
   }
 

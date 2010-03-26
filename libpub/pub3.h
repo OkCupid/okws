@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pub3expr.h"
+#include "pub3env.h"
 #include "pub3obj.h"
 #include "pub3func.h"
 #include "pub3ast.h"

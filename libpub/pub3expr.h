@@ -14,7 +14,7 @@ namespace pub3 {
   // See pub3eval.h for a definition of eval_t; but don't included it
   // here to prevent circular inclusions.
   class eval_t;
-  class publish_t;
+  typedef eval_t publish_t;
   class mref_t;
 
   //-----------------------------------------------------------------------

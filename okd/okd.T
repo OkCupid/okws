@@ -277,6 +277,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("Script")
     .ignore ("LogBuffers")
 
+    .ignore ("NoBlockingCalls")
     .ignore ("MmapClockDaemon")
     .ignore ("Interpreter")
     .ignore ("CrashSamplingInterval")

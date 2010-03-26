@@ -19,7 +19,7 @@ namespace pub3 {
     compiled_fn_t (str lib, str n);
     virtual ~compiled_fn_t () {}
 
-    virtual ptr<const expr_t> eval_to_val (publish_t *e, args_t args) const;
+    virtual ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;
     virtual void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;
     str to_str (bool q = false) const;
     bool to_xdr (xpub3_expr_t *x) const { return false; }
@@ -31,26 +31,16 @@ namespace pub3 {
 
     // evaluate, given that the arguments have been prevaluted...
     virtual ptr<const expr_t> 
-    v_eval_1 (publish_t *e, const margs_t &args) const { return NULL; }
+    v_eval_1 (eval_t *e, const margs_t &args) const { return NULL; }
 
     ptr<const callable_t> to_callable () const { return mkref (this); }
     const char *get_obj_name () const { return "rfn1::runtime_fn_t"; }
 
     void pub_args (publish_t *p, args_t in, margs_t *out, evv_t ev, CLOSURE) 
       const;
-    void eval_args (publish_t *p, args_t in, margs_t *out) const;
+    void eval_args (eval_t *e, args_t in, margs_t *out) const;
 
     str _lib, _name;
-  };
-
-  //-----------------------------------------------------------------------
-
-  class compiled_handrolled_fn_t : public compiled_fn_t {
-  public:
-    compiled_handrolled_fn_t (str lib, str n) : compiled_fn_t (lib, n) {}
-    bool might_block () const { return true; }
-    ptr<const expr_t> eval_to_val (publish_t *e, args_t args) 
-      const { return NULL; }
   };
 
   //-----------------------------------------------------------------------
@@ -77,11 +67,11 @@ namespace pub3 {
     };
 
     // evaluate, given that the arguments have been prevaluted...
-    ptr<const expr_t> v_eval_1 (publish_t *e, const margs_t &args) const;
+    ptr<const expr_t> v_eval_1 (eval_t *e, const margs_t &args) const;
 
     // evaluate, given that the args have been preevaluated and type-checked
     virtual ptr<const expr_t> 
-    v_eval_2 (publish_t *e, const vec<arg_t> &args) const = 0;
+    v_eval_2 (eval_t *e, const vec<arg_t> &args) const = 0;
 
     virtual bool check_args (publish_t *p, const margs_t &args, 
 			     vec<arg_t> *a) const;
@@ -129,7 +119,7 @@ namespace pub3 {
   public:								\
     x##_t () : patterned_fn_t (libname, #x, pat) {}			\
     ptr<const expr_t>							\
-    v_eval_2 (publish_t *p, const vec<arg_t> &args) const;		\
+    v_eval_2 (eval_t *p, const vec<arg_t> &args) const;			\
   }
   
 #define PUB3_FILTER(x)					     \
@@ -138,17 +128,27 @@ namespace pub3 {
   x##_t () : patterned_fn_t (libname, #x, "s") {}	     \
   static str filter (str s);				     \
   ptr<const expr_t>					     \
-  v_eval_2 (publish_t *p, const vec<arg_t> &args) const	     \
+  v_eval_2 (eval_t *e, const vec<arg_t> &args) const	     \
     { return expr_str_t::safe_alloc (filter (args[0]._s)); } \
   }
 
 #define PUB3_COMPILED_HANDROLLED_FN(x)					\
-  class x##_t : public pub3::compiled_handrolled_fn_t {			\
+  class x##_t : public pub3::compiled_fn_t {				\
   public:								\
-    x##_t () : compiled_handrolled_fn_t (libname, #x) {}		\
-    void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;	\
+  x##_t () : compiled_fn_t (libname, #x) {}				\
+  ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;		\
+  void pub_to_val (publish_t *p, args_t args, cxev_t, CLOSURE) const;	\
+  bool count_args (publish_t *p, size_t s) const;			\
   }
-
+  
+#define PUB3_COMPILED_UNPATTERNED_FN(x)					\
+  class x##_t : public pub3::compiled_fn_t {				\
+  public:								\
+  x##_t () : compiled_fn_t (libname, #x) {}				\
+  ptr<const expr_t>							\
+  v_eval_1 (eval_t *p, const margs_t &args) const;			\
+  }
+  
   //-----------------------------------------------------------------------
 
 };

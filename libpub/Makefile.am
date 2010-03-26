@@ -10,6 +10,7 @@ libpub_la_SOURCES = \
 	scan.ll \
 	parse.yy \
 	pubutil.C \
+	pub3env.C \
 	pub3base.C \
 	pub3xdr.C \
 	pub3eval.C \
@@ -17,7 +18,6 @@ libpub_la_SOURCES = \
 	pub3expub.C \
 	pub3obj.C \
 	pub3ast.C \
-	pub3pub.C \
 	pub3json2xdr.C \
 	pub3func.C \
 	pub3parse.C \
@@ -77,7 +77,6 @@ okwsinclude_HEADERS = \
 	pub3ast.h \
 	pub3file.h \
 	pub3eval.h \
-	pub3pub.h \
 	pub3hilev.h \
 	pub3cache.h \
 	pub3out.h \
@@ -102,8 +101,8 @@ SUFFIXES = .T .C .h .x
 .x.C:
 	-$(RPCC) -c $< || rm -f $@
 
-TAMEIN = pub2.T clone.T adebug.T sync.T pub3func.T
-TAMEOUT = pub2.C clone.C adebug.C sync.C pub3func.C
+TAMEIN = pub2.T clone.T adebug.T sync.T pub3func.T pub3eval.T
+TAMEOUT = pub2.C clone.C adebug.C sync.C pub3func.C pub3eval.C
 RPCCIN = pub3prot.x 
 RPCCOUT = pub3prot.C pub3prot.h 
 

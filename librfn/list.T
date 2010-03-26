@@ -93,36 +93,30 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  tamed void
-  append_t::pub_to_val (publish_t *p, callable_t::args_t args, cxev_t ev) const
+  ptr<const expr_t>
+  append_t::v_eval_1 (publish_t *p, const margs_t &args) const
   {
-    tvars {
-      ptr<mref_t> r;
-      ptr<expr_t> x;
-      ptr<expr_list_t> l;
-      ptr<const expr_t> cel;
-      ptr<expr_t> el;
-      size_t i;
-    }
-    if (args->size () < 2) {
-      report_error (p, "append() takes 2 or more arguments");
-    } else {
-      twait { (*args)[0]->pub_to_ref (p, mkevent (r)); }
-    }
+    ptr<expr_t> x;
+    ptr<expr_list_t> l;
+    ptr<const expr_t> cel;
+    ptr<expr_t> el;
+    size_t i;
 
-    if (!r || !(x = r->get_value ())) {
+    if (args.size () < 2) {
+      report_error (p, "append() takes 2 or more arguments");
+    } else if (!(x = args[0])) {
       report_error (p, "first argument to append() must be non-null");
     } else if (!(l = x->to_list ())) {
       report_error (p, "first argument to append() must be a list");
     } else {
-      for (i = 1; i < args->size (); i++) {
-	twait { (*args)[i]->pub_to_val (p, mkevent (cel)); }
-	if (cel) el = cel->copy ();
-	if (!el) el = expr_null_t::alloc ();
-	l->push_back (el);
-      }
+      for (i = 1; i < args.size (); i++) {
+	  cel = args[i];
+	  if (cel) el = cel->copy ();
+	  if (!el) el = expr_null_t::alloc ();
+	  l->push_back (el);
+	}
     }
-    ev->trigger (l);
+    return l;
   }
 
   //-----------------------------------------------------------------------
@@ -225,16 +219,25 @@ namespace rfn3 {
 			    xev_t ev) const
   {
     tvars {
-      ptr<expr_list_t> l;
       ptr<expr_t> x;
       ptr<expr_t> ret;
     }
-    if (args->size () != 1) {
-      report_error (p, "pop_front() takes one argument");
-    } else {
+
+    if (count_args (p, args->size ())) {
       twait { (*args)[0]->pub_to_mval (p, mkevent (x)); }
+      ret = eval_final (p, x);
     }
 
+    ev->trigger (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<expr_t> 
+  pop_front_t::eval_final (publish_t *p, ptr<expr_t> x) const
+  {
+    ptr<expr_t> ret;
+    ptr<expr_list_t> l;
     if (!x) {
       report_error (p, "first argument to pop_front() must be non-null");
     } else if (!(l = x->to_list ())) {
@@ -243,9 +246,8 @@ namespace rfn3 {
       ret = l->pop_front ();
     } else {
       ret = expr_null_t::alloc ();
-
     }
-    ev->trigger (ret);
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -274,6 +276,49 @@ namespace rfn3 {
     twait { pub_to_mval (p, args, mkevent (out)); }
     if (out) { r = const_mref_t::alloc (out); }
     ev->trigger (r);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<mref_t> 
+  pop_front_t::eval_to_ref (publish_t *p, args_t args) const
+  {
+    ptr<mref_t> ret;
+    ptr<expr_t> x = eval_to_mval (p, args);
+    if (x) { ret = const_mref_t::alloc (x); }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t> pop_front_t::eval_to_val (publish_t *p, args_t args) const
+  { return eval_to_mval (p, args); }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  pop_front_t::count_args (publish_t *p, size_t s) const
+  {
+    bool ret = true;
+    if (s != 1) {
+      ret = false;
+      report_error (p, "pop_front() takes one argument");
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+  
+  ptr<expr_t> 
+  pop_front_t::eval_to_mval (publish_t *p, args_t args) const
+  {
+    ptr<expr_t> x , ret;
+
+    if (count_args (p, args->size ())) {
+      x = (*args)[0]->eval_to_mval (p); 
+      ret = eval_final (p, x);
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------

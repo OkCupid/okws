@@ -55,6 +55,7 @@ SyslogLevels	emerg alert crit info warning debug err notice
 @@NO_XML@@Service		xmlxlate/xlater /xlater
 
 ErrorDoc	404	/err/404.html
+#NoBlockingCalls 1
 
 FilterCGI 0
 
