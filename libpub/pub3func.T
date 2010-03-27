@@ -433,7 +433,11 @@ namespace pub3 {
 
   //----------------------------------------------------------------------
 
-  bool call_t::might_block_uncached () const { return _blocking; }
+  bool 
+  call_t::might_block_uncached () const 
+  { 
+    return _blocking || _fn->might_block () || _arglist->might_block ();
+  }
 
   //----------------------------------------------------------------------
 
