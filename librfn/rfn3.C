@@ -59,6 +59,7 @@ namespace rfn3 {
     F(int);
     F(round);
     F(ceil);
+    F(floor);
     F(str);
     F(warn);
     F(warn_trace);
