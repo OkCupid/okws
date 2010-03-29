@@ -912,7 +912,8 @@ public:
   virtual ~child_applicator_t () {}
   void run (okd_t::servtab_t *t, const ok_progs_t &x, evv_t ev, CLOSURE);
   virtual void apply (const ok_prog_t &p, okch_t *ch, evs_t ev, CLOSURE) = 0;
-  virtual void nochild (const ok_prog_t &p, evv_t ev, CLOSURE) {}
+  virtual void nochild (const ok_prog_t &p, evv_t ev, CLOSURE) 
+  { ev->trigger (); }
   void fill_status (ok_xstatus_t *out);
   void hit_error (str prog, str e);
 private:
