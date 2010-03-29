@@ -200,7 +200,12 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
     bool to_bool () const;
+
     bool to_len (size_t *s) const;
+    bool to_int (int64_t *v) const;
+    bool to_uint (u_int64_t *u) const;
+    bool to_double (double *out) const;
+
     str type_to_str () const;
     bool is_null () const;
     ptr<rxx> to_regex () const;
@@ -682,7 +687,7 @@ namespace pub3 {
     int64_t to_int () const;
     u_int64_t to_uint () const;
     bool to_uint (u_int64_t *u) const;
-    bool to_int64 (int64_t *u) const;
+    bool to_int (int64_t *u) const;
 
   protected:
     const str _val;

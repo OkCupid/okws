@@ -1018,7 +1018,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   bool
-  expr_str_t::to_int64 (int64_t *i) const
+  expr_str_t::to_int (int64_t *i) const
   {
     scalar_obj_t so = to_scalar ();
     return so.to_int64 (i);
@@ -2198,15 +2198,23 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
-  bool
-  expr_cow_t::to_len (size_t *s) const
-  {
-    bool ret = false;
-    ptr<const expr_t> x = const_ptr ();
-    if (x) { ret = x->to_len (s); }
-    return ret;
+#define F(typ,nm)				\
+  bool						\
+  expr_cow_t::to_##nm (typ *s) const		\
+  {						\
+    bool ret = false;				\
+    ptr<const expr_t> x = const_ptr ();		\
+    if (x) { ret = x->to_##nm (s); }		\
+    return ret;					\
   }
 
+  F(size_t, len);
+  F(int64_t, int);
+  F(u_int64_t, uint);
+  F(double, double);
+
+#undef F
+  
   //--------------------------------------------------------------------
 
   ptr<rxx>
