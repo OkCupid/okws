@@ -6,7 +6,7 @@ filedata = """
    print (v[-1], " ", v[-3], " ");
    v[10] = 100;
    v[-2] = 102;
-   print (v[-1], " ", v[6], " " , v[9], " ");
+   print (v[-1], " ", v[6], " " , v[9], " ", isnull (v[6]));
 $}"""
 
-outcome = "13 11 100 null 102"
+outcome = "13 11 100 102 true"

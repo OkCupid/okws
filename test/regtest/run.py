@@ -367,7 +367,7 @@ class OutcomeEmpty (Outcome):
     def __init__ (self):
         Outcome.__init__ (self, None)
     def compare (self, input):
-        return false
+        return False
     def type (self):
         return "empty"
     def empty_is_ok (self):
@@ -603,7 +603,7 @@ class TestCase:
     ##----------------------------------------
 
     def compare (self, txt):
-        if txt:
+        if txt and len (txt):
             res = self._outcome_obj.compare (txt)
         else:
             res = self._outcome_obj.empty_is_ok ()

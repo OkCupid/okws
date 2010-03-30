@@ -223,7 +223,6 @@ namespace pub3 {
       str k;
       if ((k = i->to_str ())) {
 	ret = d->lookup (k);
-	if (!ret) ret = expr_null_t::alloc ();
       } else {
 	report_error (e, "cannot coerce dictionary index to string");
       }
@@ -231,7 +230,6 @@ namespace pub3 {
       int64_t ii;
       if (i->to_int (&ii)) {
 	ret = l->lookup (ii);
-	if (!ret) ret = expr_null_t::alloc ();
       } else {
 	report_error (e, "indices into lists must be integers");
       }
