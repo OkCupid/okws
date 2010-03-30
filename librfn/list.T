@@ -323,5 +323,47 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  list_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const expr_list_t> cret;
+    ptr<expr_list_t> ret;
+    ptr<const expr_t> o = args[0]._O;
+    ptr<const expr_dict_t> dict;
+    str s;
+
+    if ((cret = o->to_list ())) { /* noop */ }
+    else if ((dict = o->to_dict ())) {
+      ret = expr_list_t::alloc ();
+      bindtab_t::const_iterator_t it (*dict);
+      const str *key;
+      ptr<expr_t> x;
+      while ((key = it.next (&x))) {
+	ptr<expr_list_t> t = expr_list_t::alloc ();
+	t->push_back (expr_str_t::alloc (*key));
+	t->push_back (expr_cow_t::alloc (x));
+	ret->push_back (t);
+      }
+      cret = ret;
+    } else if ((s = o->to_str ())) {
+      ret = expr_list_t::alloc ();
+      for (const char *cp = s.cstr (); *cp; cp++) {
+	char buf[2];
+	buf[1] = 0;
+	buf[0] = *cp;
+	ret->push_back (expr_str_t::alloc (buf));
+      }
+      cret = ret;
+    } else {
+      str t = o->type_to_str ();
+      report_error (p, strbuf("cannot convert object of type '%s' to list",
+			      t.cstr ()));
+      
+    }
+    return cret;
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 
