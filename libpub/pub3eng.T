@@ -152,6 +152,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
     struct stat sb;
     bool check_use_jail (true);
     pub3::obj_dict_t tmp_d;
+    pub3::opts_t cmd_opt (0);
   }
 
   zinit ();
@@ -175,13 +176,13 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       _argfile = optarg;
       break;
     case 'i':
-      _opt |= P_IINFO;
+      cmd_opt |= P_IINFO;
       break;
     case 'd':
-      _opt |= P_DEBUG;
+      cmd_opt |= P_DEBUG;
       break;
     case 'e':
-      _opt |= P_VISERR;
+      cmd_opt |= P_VISERR;
       break;
     case 'j':
       _jaildir = optarg;
@@ -193,7 +194,7 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       _config = optarg;
       break;
     case 'v':
-      _opt |= P_VERBOSE;
+      cmd_opt |= P_VERBOSE;
       break;
     case 'h':
       usage ();
@@ -206,6 +207,9 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       break;
     }
   }
+
+  // OR in the command opts
+  _opt |= cmd_opt;
 
   if (!run) {
     /* noop */
@@ -221,8 +225,8 @@ pub3::eng_t::init (int argc, char **argv, bool *gop, evi_t ev)
       if (_print_vars.size ()) {
 	warn << "XX print vars have no effect in syntax-check mode\n";
       }
-      if (_opt) {
-	warn << "XX pub optinos have no effect in syntax-check mode\n";
+      if (cmd_opt) {
+	warn << "XX pub options have no effect in syntax-check mode\n";
       }
     }
     

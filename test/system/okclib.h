@@ -17,6 +17,7 @@ namespace okclib {
 
   PUB3_COMPILED_FN(money, "i|s");
   PUB3_COMPILED_FN(commafy, "i");
+  PUB3_COMPILED_FN(bit_set, "u|u");
 
   //-----------------------------------------------------------------------
   

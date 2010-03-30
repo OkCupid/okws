@@ -74,6 +74,23 @@ namespace okclib {
     strbuf b ("%s%s", sign, ns.cstr ());
     return expr_str_t::alloc (b);
   }
+
+  //-------------------------------------------------------------------
+  
+  ptr<const expr_t>
+  bit_set_t::v_eval_2 (publish_t *p, const vec<arg_t> &args) const
+  {
+    u_int64_t num = args[0]._u;
+    size_t len = args.size () > 1 ? size_t (args[1]._i) : 8 * sizeof (num);
+    ptr<expr_list_t> out = expr_list_t::alloc ();
+    for (size_t i = 0; i < len; i++) {
+      if (num & (1ULL << i)) {
+	ptr<expr_t> x = New refcounted<expr_int_t>(i);
+	out->push_back(x);
+      }
+    }
+    return out;
+  }
   
   //-----------------------------------------------------------------------
   
@@ -87,6 +104,7 @@ namespace okclib {
     _functions.push_back (New refcounted<f##_t> ())
     F(money);
     F(commafy);
+    F(bit_set);
 #undef F
 
   }
