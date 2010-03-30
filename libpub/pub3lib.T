@@ -128,6 +128,13 @@ namespace pub3 {
       if (ib && safe_args ()) assert (args[i]);
 
       switch (*cp) {
+
+      case 'F':
+	if (ib && !(a._F = args[i]->to_callable ())) {
+	  strbuf b ("argument %zd: expected a lambda or built-in", hi);
+	  err.push_back (b);
+	}
+	break;
 	
       case 'i':
 	if (ib && !args[i]->to_int (&a._i)) {

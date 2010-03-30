@@ -365,5 +365,72 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  static ptr<const callable_t> g_cmp;
+  static ptr<expr_list_t> g_target;
+  static ptr<expr_list_t> g_tmp_args;
+  static eval_t *g_eval;
+
+  static int cmp_fn (const void *a, const void *b)
+  {
+    size_t *sa = const_cast<size_t *> (static_cast<const size_t *> (a));
+    size_t *sb = const_cast<size_t *> (static_cast<const size_t *> (b));
+
+    (*g_tmp_args)[0] = (*g_target)[*sa];
+    (*g_tmp_args)[1] = (*g_target)[*sb];
+    ptr<const expr_t> x = g_cmp->eval_to_val (g_eval, g_tmp_args);
+    int r = x ? x->to_int () : -1;
+    return r;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  sort_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    g_target = args[0]._l;
+    g_tmp_args = expr_list_t::alloc ();
+    g_tmp_args->setsize (2);
+
+    g_eval = p;
+
+    if (args.size () > 1) { g_cmp = args[1]._F; } 
+    else { g_cmp = New refcounted<cmp_t> (); }
+
+    size_t n = g_target->size ();
+    vec<size_t> v;
+    v.setsize (n);
+    for (size_t i = 0; i < n; i++) { v[i] = i; }
+    qsort (v.base (), n, sizeof (size_t), cmp_fn);
+    
+    ptr<expr_list_t> ret = expr_list_t::alloc ();
+    ret->setsize (n);
+    for (size_t i = 0; i < n; i++) {
+      warn << "XX " << i << " -> " << v[i] << "\n";
+      (*ret)[i] = (*g_target)[v[i]];
+    }
+
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  cmp_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const expr_t> a1 = args[0]._O;
+    ptr<const expr_t> a2 = args[1]._O;
+    
+    int res = 0;
+    if (expr_relation_t::eval_final (p, a1, a2, XPUB3_REL_LT, this)) {
+      res = -1; 
+    } else if (expr_relation_t::eval_final (p, a1, a2, XPUB3_REL_GT, this)) {
+      res = 1;
+    }
+
+    return expr_int_t::alloc (res);
+  }
+
+  //-----------------------------------------------------------------------
+
 };
 

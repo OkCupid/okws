@@ -221,7 +221,7 @@ namespace pub3 {
     }
     if (_l) { twait { _l->pub_to_val (p, mkevent (l)); } }
     if (_r) { twait { _r->pub_to_val (p, mkevent (r)); } }
-    ret = eval_final (p, l, r);
+    ret = eval_final (p, l, r, _op, this);
     ev->trigger (ret);
   }
 

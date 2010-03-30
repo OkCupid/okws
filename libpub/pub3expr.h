@@ -409,7 +409,7 @@ namespace pub3 {
     void v_dump (dumper_t *d) const { l_dump (d, _o1, _o2); }
     bool might_block_uncached () const { return might_block (_o1, _o2); }
     static bool eval_static (ptr<const expr_t> x1, ptr<const expr_t> x2, 
-			    bool pos = true);
+			     bool pos = true);
   protected:
     ptr<expr_t> _o1, _o2;
     bool _pos;
@@ -435,12 +435,16 @@ namespace pub3 {
     bool is_call_coercable () const { return false; }
     void v_dump (dumper_t *d) const { l_dump (d, _l, _r); }
     bool might_block_uncached () const { return might_block (_l, _r); }
+
+    static bool eval_final (eval_t *e, ptr<const expr_t> l, 
+			    ptr<const expr_t> r, 
+			    xpub3_relop_t op, 
+			    const expr_t *self);
   protected:
     ptr<expr_t> _l, _r;
     xpub3_relop_t _op;
     bool eval_logical (eval_t *e) const;
     void pub_logical (eval_t *pub, evb_t ev, CLOSURE) const;
-    bool eval_final (eval_t *e, ptr<const expr_t> l, ptr<const expr_t> r) const;
   };
 
   //-----------------------------------------------------------------------

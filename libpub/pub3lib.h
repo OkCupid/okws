@@ -64,6 +64,7 @@ namespace pub3 {
       bool _b;
       short _n;
       double _f;
+      ptr<const callable_t> _F;
     };
 
     // evaluate, given that the arguments have been prevaluted...

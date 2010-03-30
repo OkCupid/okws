@@ -55,6 +55,8 @@ namespace rfn3 {
   PUB3_COMPILED_FN(copy, "O");
   PUB3_COMPILED_FN(bind, "sO|s");
   PUB3_COMPILED_FN(list, "O");
+  PUB3_COMPILED_FN(sort, "l|F");
+  PUB3_COMPILED_FN(cmp, "OO");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);

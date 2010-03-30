@@ -71,6 +71,8 @@ namespace rfn3 {
     F(lookup);
     F(pop_front);
     F(list);
+    F(sort);
+    F(cmp);
 
 #undef F
 
@@ -84,8 +86,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.1"; }
-  u_int64_t version_int () { return 3000001; }
+  const char *version_str () { return "3.0.2"; }
+  u_int64_t version_int () { return 3000002; }
 
   //-----------------------------------------------------------------------
 };

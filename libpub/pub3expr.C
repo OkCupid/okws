@@ -691,14 +691,15 @@ namespace pub3 {
     ptr<const expr_t> l, r;
     if (_l) l = _l->eval_to_val (e);
     if (_r) r = _r->eval_to_val (e);
-    return eval_final (e, l, r);
+    return eval_final (e, l, r, _op, this);
   }
 
   //-----------------------------------------------------------------------
 
   bool
   expr_relation_t::eval_final (eval_t *e, ptr<const expr_t> l, 
-			       ptr<const expr_t> r) const
+			       ptr<const expr_t> r, xpub3_relop_t op,
+			       const expr_t *self)
   {
     bool ret = false;
     if (l && !l->is_null () && r && !r->is_null ()) {
@@ -707,7 +708,7 @@ namespace pub3 {
 
       // perform relations as scalars, to accommdate double v. int,
       // string v. double, etc...
-      switch (_op) {
+      switch (op) {
       case XPUB3_REL_LT : ret = (sl < sr);  break;
       case XPUB3_REL_GT : ret = (sl > sr);  break;
       case XPUB3_REL_LTE: ret = (sl <= sr); break;
@@ -715,7 +716,7 @@ namespace pub3 {
       default: panic ("unexpected relational operator!\n");
       }
     } else if (e->opts () & P_WARN_RELARG_NULL) {
-      report_error (e, "one or more relational arguments were null");
+      self->report_error (e, "one or more relational arguments were null");
     }
     return ret;
   }
