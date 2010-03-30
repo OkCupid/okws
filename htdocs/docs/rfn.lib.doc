@@ -1,0 +1,69 @@
+{%
+    locals { rfn3_lib_doc : {} }
+
+    rfn3_lib_doc = {
+	
+	rand : {
+	    input : [ { a1 : "i" }, { a2 : "i", opt : true } ],
+	    output : "i",
+	    desc : "Given one argument (//a1//), outputs an integer randomly
+between 0 and //a1//.  Given two (a1 and a1), outputs an integer randomly
+between //a1// and //a2//"
+	},
+	
+	len : {
+	    input : [ { o : "O" } ],
+	    output : "u",
+	    desc : "Given an input object //o//, returns its length.  
+If //o// is a string, return the length of //s//.  If it is a list,
+return the number of elements in the list.  If it is a dictionary,
+return the number of bound pairs in the dictionary."
+	},
+
+	range : { 
+	    input : [ { a1 : "i" }, { a2 : "i", opt : true }, { a3 : i } ],
+	    output : "l",
+	    desc : "If called with one argument (//a1//), output a integers
+in [0,//a1//). If called with two arguments (//a1// and //a2//), output 
+a list of integers in [//a1//, //a2). If called with three arguments, 
+//a3// is the step between elements."
+	},
+
+	isnull : {
+	    input : [ { o : "O" } ],
+	    output : "b",
+	    desc : "Output //True// if //o// is //null// and false otherwise."
+	},
+
+	join : {
+	    input : [ { delim : "s", list : "l" }],
+	    output : "s",
+	    desc : "Take the list of strings //l// and join them together
+with the delimiter //delim//.  Output a string."
+	},
+
+	strip : {
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Strips leading, trailing spaces and reduce in-between 
+spaces to just one space"
+	},
+	
+	substr : {
+	    input : [ { s : "s", start : "i", len : "i" } ],
+	    output : "s",
+	    desc : "Output a substring of //s//, starting at 
+character //start// and //len// bytes long."
+	},
+	    
+	split : { 
+	    input: [ { r : "r"} , { s : "s"} ],
+	    output : "l",
+	    desc : "Given a regex //r// and a string //s//, split //s// into
+a list of strings, akin to the Python function 'split'.  Return a list
+of strings."
+	},
+    }
+
+    docs["rfn3"] = rfn_lib_doc;
+%}
