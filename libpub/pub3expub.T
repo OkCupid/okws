@@ -458,6 +458,7 @@ namespace pub3 {
     if (_els) {
       sz = _els->size ();
       for (i = 0; ok && i < sz; i++) {
+	s = NULL;
 	x = (*_els)[i];
 	if (x) { twait { x->pub_to_val (p, mkevent (x)); } }
 	if (x) { s = x->to_str (false); }
