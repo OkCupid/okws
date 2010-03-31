@@ -275,7 +275,7 @@ r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
 
 \\[#/!@%}>)\]]		{ p3_regex_escape_sequence (yytext); }
 
-[^#/!@%}>)\]\n\\]+	{ p3_regex_add (yytext); }
+[^#/!@%}>)\]\n\\]+|[\\]	{ p3_regex_add (yytext); }
 
 <<EOF>>			{
 			   return p3_regex_bad_eof ();

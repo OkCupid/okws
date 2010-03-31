@@ -405,7 +405,6 @@ namespace rfn3 {
     ptr<expr_list_t> ret = expr_list_t::alloc ();
     ret->setsize (n);
     for (size_t i = 0; i < n; i++) {
-      warn << "XX " << i << " -> " << v[i] << "\n";
       (*ret)[i] = (*g_target)[v[i]];
     }
 

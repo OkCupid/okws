@@ -1512,11 +1512,12 @@ namespace pub3 {
       if (!tmp->compile (b, o)) {
 	strbuf b;
 	str err = tmp->geterr ();
-	b << "Cannot compile regex '" << b << "' with options '"
-	  << o << "': " << err << "\n";
+	b << "Cannot compile regex '" << body << "' with options '"
+	  << opts << "': " << err << "\n"; 
 	if (errp) *errp = b;
+      } else {
+	_cache.insert (k, tmp);
       }
-      _cache.insert (k, tmp);
       ret = tmp;
     }
     return ret;

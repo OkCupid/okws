@@ -1,0 +1,8 @@
+{%
+    locals { dat : {} }
+    load ("/docs/rfn.lib.doc", { docs : dat });
+    load ("/docs/docs.lib");
+
+    docs.format_library (dat.rfn3);
+
+%}
