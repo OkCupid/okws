@@ -25,7 +25,7 @@ return the number of bound pairs in the dictionary."
 	    output : "l",
 	    desc : "If called with one argument (//a1//), output a integers
 in [0,//a1//). If called with two arguments (//a1// and //a2//), output 
-a list of integers in [//a1//, //a2). If called with three arguments, 
+a list of integers in [//a1//, //a2//). If called with three arguments, 
 //a3// is the step between elements."
 	},
 
@@ -63,7 +63,35 @@ character //start// and //len// bytes long."
 a list of strings, akin to the Python function 'split'.  Return a list
 of strings."
 	},
+	
+	match : {
+	    input : [ { r : "r" }, {s : "s" } ],
+	    output : "b",
+	    desc : "Given a regex //r// and a string //s//, return //true//
+if //r// matches the whole string //s// and //false// otherwise."
+	},
+
+	search : {
+	    input : [ { r : "r", { s : "s"} }],
+	    output : "b",
+	    desc : "Given a regex //r// and a string //s//, return //true//
+if //r// is found in //s// and //false// otherwise."
+	},
+
+	tolower : {
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Convert all alpha characters in //s// to lowercase",
+	},
+
+	toupper : {
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Convert all alpha characters in //s// to uppercase",
+	}
+
+	
     }
 
-    docs["rfn3"] = rfn_lib_doc;
+    docs.rfn3 = rfn_lib_doc;
 %}
