@@ -21,18 +21,57 @@
 	},
 
 	format_wiki : lambda (s) {
-	    return s|docs.format_markup ("//", "i")|docs.format_markup(r{\*\*}, "b");
+	    return s|docs.format_markup ("//", "i")|
+	       docs.format_markup(r{\*\*}, "b");
 	},
 
 	h : lambda (i, s) {
 	    return ("<h%{i}>%{s}</h%{i}>");
 	},
 
+	format_args : lambda (args) {
+	    locals { optional : "", tmp  : [] }
+	    append (tmp, "<ul>");
+	    
+	    for (arg, args) {
+		if (arg.opt) { optional = "(optional)"; }
+		append (tmp, docs.format_arg (arg, optional));
+	    }
+	    append (tmp, "</ul>");
+	    return (join ("\n", tmp));
+	}, 
+	
+	types : { "i" : "integer",
+		  "O" : "generic object",
+		  "t" : "time",
+		  "s" : "string",
+		  "l" : "list",
+		  "r" : "regular expression",
+		  "u" : "unsigned integer",
+		  "b" : "boolean" },
+
+	format_arg : lambda (arg, optional) {
+
+	    for (p, items (arg)) {
+		if (p[0] != "opt") {
+		    return ("<li><i>%{p[0]}</i> &hellip; " +
+			    "%{docs.types[p[1]]} %{optional}</li>");
+		}
+	    }
+	    return ("none");
+	},
+
+	format_ret : lambda (s) {
+	    return ("<ul><li>%{docs.types[s]}</li></ul>");
+	},
+
 	format_function : lambda (k, v) {
 	    locals { fields : [] }
 	    append (fields, docs.h (2, k));
 	    append (fields, docs.h (3, "Input Arguments"));
+	    append (fields, docs.format_args (v.input));
 	    append (fields, docs.h (3, "Output"));
+	    append (fields, docs.format_ret (v.output));
 	    append (fields, docs.h (3, "Description"));
 	    append (fields, docs.format_wiki (v.desc));
 	    print (join ("\n", fields));

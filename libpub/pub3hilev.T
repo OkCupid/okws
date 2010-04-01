@@ -498,7 +498,7 @@ namespace pub3 {
     // are XDR strings and not opaques.  The quick solution is just to
     // trim off any trailing null bytes and stop the string at the first
     // one, upholding the required assertion.
-    arg->filename = trim_null_bytes (k);
+    arg->filename = trim_null_bytes (k.fn ());
 
     arg->options = k.opts();
     arg->fresh.set_mode (XPUB3_FRESH_NONE);
