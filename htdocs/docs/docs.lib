@@ -67,9 +67,32 @@
 	    return ("<ul><li>%{docs.types[s]}</li></ul>");
 	},
 
+	format_func : lambda (f, args) {
+	    locals { v : [], in_opt : false }
+	    for (arg, args) {
+		locals { x : "" }
+		if (arg.opt && !in_opt) {
+		    x = "[";
+		    in_opt = true;
+		}
+		for (i, keys (arg)) {
+		    if (i != "opt") { 
+			x = x + i ;
+			append (v, x); 
+			break; 
+		    }
+		}
+	    }
+	    if (in_opt) {
+		v[-1] = v[-1] + "]";
+	    }
+	    locals { r = f + " (" + join (", ", v) + ")" }
+	    return (r) ;
+	},
+
 	format_function : lambda (k, v) {
 	    locals { fields : [] }
-	    append (fields, docs.h (2, k));
+	    append (fields, docs.h (2, docs.format_func (k, v.input)));
 	    append (fields, docs.h (3, "Input Arguments"));
 	    append (fields, docs.format_args (v.input));
 	    append (fields, docs.h (3, "Output"));

@@ -143,7 +143,61 @@ values of //o// through //d//.",
 	    input : [ { s : "s" } ],
 	    output : "s",
 	    desc : "Escape all tags except for <b>, <i>, <br> and <p>."
+	},
+
+	url_escape : {
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Produce a URL-encoded version of the string //s//"
+	},
+
+	url_unescape : {
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Take a URL-escaped string //s// and return the unescaping
+of it."
+	},
+
+	sha1 : {
+	    input : [ { s : "s"} ],
+	    output : "s",
+	    desc : "Produce the SHA-1 hash of //s//, outputting a 
+hexidecimal-encoded digest."
+	},
+
+	type : {
+	    input : [ { o : "O" } ],
+	    output : "s",
+	    desc : "Given object //o//, output its type.
+Possible values are undef, list, str, dict."
+	},
+
+	items : {
+	    input : [ { d : "d" } ],
+	    output : "l",
+	    desc : "Return the list of items in the dictionary. Each
+item is represented as a list of 2 elemenents, the first being the
+key and the second being the value."
+	},
+
+	keys : {
+	    input : [ { d : "d" } ],
+	    output : "l",
+	    desc : "Returns a list of keys in a dictionary"
+	},
+
+	values : {
+	    input : [ { d : "d" } ],
+	    output : "l",
+	    desc : "Returns a list of values in a dictionary"
+	},
+	
+	json2pub : {
+	    input : [ { s : "s" } ],
+	    output : "O",
+	    desc : "Converts a string into a JSON-encoded object"
 	}
+
     };
 
     docs.rfn3 = rfn3_lib_doc;
