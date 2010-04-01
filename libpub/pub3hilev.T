@@ -6,6 +6,14 @@
 #include "pub3hilev.h"
 #include "pub3out.h"
 
+static str
+trim_null_bytes (str s)
+{
+  const char *c = s;
+  if (s.len () != strlen (c)) s = c;
+  return s;
+}
+
 namespace pub3 {
 
   typedef abstract_publisher_t ap_t;
@@ -485,7 +493,13 @@ namespace pub3 {
   rp_t::prepare_getfile (const cache_key_t &k, xpub3_getfile_arg_t *arg, 
 			 ptr<file_t> *f, status_t *status)
   {
-    arg->filename = k.fn ();
+    // We've had some attacks wherein attackers ask for files of the
+    // form "/fooo\0\0\0\0". This causes an XDR failure since filenames
+    // are XDR strings and not opaques.  The quick solution is just to
+    // trim off any trailing null bytes and stop the string at the first
+    // one, upholding the required assertion.
+    arg->filename = trim_null_bytes (k);
+
     arg->options = k.opts();
     arg->fresh.set_mode (XPUB3_FRESH_NONE);
     arg->maxsz = _maxsz;
