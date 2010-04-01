@@ -1,8 +1,15 @@
+<html>
+ <head>
+  <title>OKWS v3.0 Library</title>
+ </head>
+ <body>
 {%
     locals { dat : {} }
     load ("/docs/rfn.lib.doc", { docs : dat });
     load ("/docs/docs.lib");
 
-    docs.format_library (dat.rfn3);
+    docs.format_library ("rfn3", dat.rfn3);
 
 %}
+ </body>
+</html>

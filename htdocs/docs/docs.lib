@@ -48,13 +48,15 @@
 		  "l" : "list",
 		  "r" : "regular expression",
 		  "u" : "unsigned integer",
-		  "b" : "boolean" },
+		  "b" : "boolean",
+		  "n" : "null",
+		  "d" : "dictionary" },
 
 	format_arg : lambda (arg, optional) {
 
 	    for (p, items (arg)) {
 		if (p[0] != "opt") {
-		    return ("<li><i>%{p[0]}</i> &hellip; " +
+		    return ("<li><i>%{p[0]}</i> &mdash; " +
 			    "%{docs.types[p[1]]} %{optional}</li>");
 		}
 	    }
@@ -73,11 +75,16 @@
 	    append (fields, docs.h (3, "Output"));
 	    append (fields, docs.format_ret (v.output));
 	    append (fields, docs.h (3, "Description"));
-	    append (fields, docs.format_wiki (v.desc));
+	    append (fields, docs.format_wiki (v.desc|html_escape));
+	    if (v.example) {
+		append (fields, docs.h (3, "Example"));
+		append (fields, "<pre>%{v.example}</pre>\n" );
+	    }
 	    print (join ("\n", fields));
 	},
 
-	format_library : lambda (lib) {
+	format_library : lambda (name, lib) {
+	    print (docs.h (1, "Runtime Libray %{name}"), "\n");
 	    for (k, sort (keys (lib))) {
 		docs.format_function (k, lib[k]);
 		print ("<br/><br/><hr/>\n");

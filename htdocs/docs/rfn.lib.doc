@@ -36,7 +36,7 @@ a list of integers in [//a1//, //a2//). If called with three arguments,
 	},
 
 	join : {
-	    input : [ { delim : "s", list : "l" }],
+	    input : [ { delim : "s", l : "l" }],
 	    output : "s",
 	    desc : "Take the list of strings //l// and join them together
 with the delimiter //delim//.  Output a string."
@@ -50,7 +50,7 @@ spaces to just one space"
 	},
 	
 	substr : {
-	    input : [ { s : "s", start : "i", len : "i" } ],
+	    input : [ { s : "s"}, {start : "i"}, {len : "i" } ],
 	    output : "s",
 	    desc : "Output a substring of //s//, starting at 
 character //start// and //len// bytes long."
@@ -88,9 +88,62 @@ if //r// is found in //s// and //false// otherwise."
 	    input : [ { s : "s" } ],
 	    output : "s",
 	    desc : "Convert all alpha characters in //s// to uppercase"
-	}
+	},
 
-	
+	html_escape : {
+	    input : [ { s : "s"} ],
+	    output : "s",
+	    desc : "Take the input //s// and escape it so that it's
+safe to output in HTML without it being interpreted as markup. For 
+instance, when outputting forum posts or personal essays. Mainly, 
+escape '<', '>' and '&' tags. Output the escaped string."
+	},
+
+	json_escape : {
+	    input : [ { s : "s"} ],
+	    output : "s",
+	    desc : "Take the input text s and escape all double-quotes, 
+backslashes, newlines and tabs. Output the escaped string."
+	},
+
+	"default" : {
+	    input : [ { in : "O" }, { val : "O", opt : true } ],
+	    output : "O",
+	    desc : "Given the input value //in//, check to see if it's 
+//null.//  If //null//, then output //val//, outherwise, output //in//.
+If //val// wasn't specified and //in// is null, then output the empty
+string ''"
+	},
+
+	append : {
+	    input : [ { v : "l" }, { o : "O" } ],
+	    output : "n",
+	    desc : "Given the list //v//, append onto it the
+object //o//.  There is no output; changes are made to //v// directly.",
+	    example : '{% locals { d : { x : "hi" } } %}
+\%{d.y|default("bye")} will output "bye"
+\%{d.z|default} will output "" and will not produce any warnings.'
+	},
+
+	map : {
+
+	    input : [ { d : "d" }, { o : "O" }],
+	    output : "O",
+	    desc : "Map every element in //o// to the value in the
+dictionary //d//, more or less. If //o// is a list, then map each
+element of the list via //d//.  If //o// is a dictionary, map the 
+values of //o// through //d//.",
+	    example : '{% locals { x : { "a" : "A", "b" : "B" }, v : [ "a", "b", "c" ], d : { "xx" : "a" } } %}
+\%{map(x,v)} will output ["A", "B", null]
+\%{map(x,d)} will output { "xx" : "A" }'
+	},
+
+	tag_escape : {
+	    
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Escape all tags except for <b>, <i>, <br> and <p>."
+	}
     };
 
     docs.rfn3 = rfn3_lib_doc;
