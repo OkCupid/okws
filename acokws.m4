@@ -632,6 +632,7 @@ okwshtdocsconfdir='${okwshtdocsdir}/conf'
 okwshtdocserrdir='${okwshtdocsdir}/err'
 okwshtdocsimgdir='${okwshtdocsdir}/img'
 okwshtdocslangdir='${okwshtdocsdir}/lang'
+okwshtdocsdocsdir='${okwshtdocsdir}/docs'
 okwsutildir='${okws_prefix}/bin'
 
 AC_SUBST(okws_prefix)
@@ -643,6 +644,7 @@ AC_SUBST(okwshtdocserrdir)
 AC_SUBST(okwshtdocslangdir)
 AC_SUBST(okwshtdocsconfdir)
 AC_SUBST(okwshtdocsimgdir)
+AC_SUBST(okwshtdocsdocsdir)
 AC_SUBST(okwsutildir)
 ])
 
