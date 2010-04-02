@@ -50,7 +50,9 @@
 		  "u" : "unsigned integer",
 		  "b" : "boolean",
 		  "n" : "null",
-		  "d" : "dictionary" },
+		  "d" : "dictionary",
+		  "f" : "float",
+		  "F" : "function" },
 
 	format_arg : lambda (arg, optional) {
 
@@ -82,7 +84,7 @@
 			break; 
 		    }
 		}
-	    }
+	    } empty {}
 	    if (in_opt) {
 		v[-1] = v[-1] + "]";
 	    }
@@ -93,8 +95,10 @@
 	format_function : lambda (k, v) {
 	    locals { fields : [] }
 	    append (fields, docs.h (2, docs.format_func (k, v.input)));
-	    append (fields, docs.h (3, "Input Arguments"));
-	    append (fields, docs.format_args (v.input));
+	    if (v.input) {
+		append (fields, docs.h (3, "Input Arguments"));
+		append (fields, docs.format_args (v.input));
+	    }
 	    append (fields, docs.h (3, "Output"));
 	    append (fields, docs.format_ret (v.output));
 	    append (fields, docs.h (3, "Description"));

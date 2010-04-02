@@ -196,9 +196,232 @@ key and the second being the value."
 	    input : [ { s : "s" } ],
 	    output : "O",
 	    desc : "Converts a string into a JSON-encoded object"
+	},
+
+	import : {
+	    input : [ { d : "d" } ],
+	    output : "n",
+	    desc : "Take the given dictionary and import it into the environment
+as local bindings."
+	},
+
+	version_str : {
+	    output : "s",
+	    desc : "Output the version of this rfn3 library (%{version_str()})
+in dotted string notation." 
+	},
+	
+	version_int : {
+	    output : "i",
+	    desc : "Output the version of this rfn3 library (%{version_int()})
+in integer representation."
+
+	},
+
+	okws_version_str : {
+	    output : "s",
+	    desc : "Output the version of this OKWS instance 
+(%{okws_version_str()}) in dotted string notation." 
+	},
+	
+	okws_version_int : {
+	    output : "i",
+	    desc : "Output the version of this OKWS library 
+(%{okws_version_int()}) in integer representation."
+
+	},
+
+	now :  {
+	    output : "u",
+	    desc : "Output the time now in Unix-timestamp"
+	},
+
+	time_format : {
+	    input : [ { time : "u" }, { fmt : "s" } ],
+	    output : "s",
+	    desc : "Like strftime, format the Unix timestamp //time//
+according to the format  //fmt//",
+	    example : ={{ \%{time_format (now(), '%a, %d %b %Y %H:%M:%S GMT')} : %{time_format (now(), '%a, %d %b %Y %H:%M:%S GMT')} }}
+	    },
+
+	days_from_now : {
+	    input : [ { days : "i" }],
+	    output : "u",
+	    desc : "Return the Unix timestamp of //days// days from now"
+	},
+
+	time_from_now : {
+	    input : [ { d: "i", opt : true }, { h: "i" }, { m : "i" }, { s: "i" } ],
+	    output : "u",
+	    desc : "Output the Unix timestamp at //d// days, //h// hours,
+//m// minutes and //s// seconds from now"
+	},
+
+	strptime : {
+	    input : [ { time : "s" }, { fmt : "s", opt : true } ],
+	    output : "s",
+	    desc : "Read from the string //time//, formatted 
+according to the format string //fmt//, into a UNIX timestamp.
+If no //fmt// is given, assume '%F', which means 'YYYY-MM-DD'"
+	},
+
+	decorate : {
+	    input : [ { l : "l" } ],
+	    output : "l",
+	    desc : "Given a list of dictionaries //l//, annotate each
+row in the dictionary with a //first//, //last//, //iter//, //even//
+and //odd// field.  This is mainly a holdover from a previous OKWS."
+	},
+
+	enumerate : {
+	    input : [ { l : "l" } ],
+	    output : "l",
+	    desc : "Given a list //l//, output a list of lists,
+in which the //i//th element is the pair [//i//, //l//[//i//] ]"
+	},
+
+	dump_env :  {
+	    output : "d",
+	    desc : "Return a dump of the environment; useful for 
+debugging purposes."
+	},
+
+	contains : {
+	    input : [ { l : "l" }, { o : "O" } ],
+	    output : "b",
+	    desc : "Return //true// if the list //l// contains the object
+//o// and //false// otherwise.  If you find yourself using this a lot,
+consider using a dictionary instead, which has faster lookup times."
+	},
+
+	int : {
+	    input : [ { o : "O" } ],
+	    output : "i",
+	    desc : "Coerces the object //o// into an integer, if at all possible.  Returns 0 on failure and the conversion otherwise."
+	},
+
+	round : {
+	    input : [ { f : "f" } ],
+	    output : "i",
+	    desc : "Round the input float //f// to the nearest integer."
+	},
+
+	ceil : {
+	    input : [ { f : "f" } ],
+	    output : "i",
+	    desc : "Return the smallest integer //i// such that //i >= f//."
+	},
+
+	floor : {
+	    input : [ { f : "f" } ],
+	    output : "i",
+	    desc : "Return the largest integer //i// such that //i <= f//."
+	},
+
+	str : {
+	    input : [ { o : "O" } ],
+	    output : "s",
+	    desc : "Return the stringified version of the object //o//."
+	},
+
+	warn : {
+	    input : [ { s : "s" } ],
+	    output : "n",
+	    desc : "Output the string //s// as an error, both to the page
+and to the log."
+	},
+
+	warn_trace : {
+	    input : [ { s : "s" } ],
+	    output : "n",
+	    desc : "Output the string //s// and the current include
+stacktrace as an error, both to the page and to the log."
+	},
+
+	enable_wss : {
+	    input : [ { b : "b" } ],
+	    output : "n",
+	    desc : "Set white-space-stripping mode to //b//, either
+enabling it or disabled it.  WSS is off by default."
+	},
+	
+	internal_dump : {
+	    input : [ { o : "O" } ],
+	    output : "s",
+	    desc : "Return the okws-pub3 internals of the object //o//"
+	},
+
+	unbind : {
+	    input : [ { var : "s" }, { scope : "s", opt : true } ],
+	    output : "n",
+	    desc : "Unbind the variable //var// from the environment.
+If //scope// is not specified, then assume first found binding.  Can
+explicitly specify 'l' for 'local', 'g' for 'global', or 'u'
+for 'universals."
+	},
+
+	copy : {
+	    input : [ { o : "o" } ],
+	    output : "o",
+	    desc : "Return a copy of the input object //o//."
+	},
+
+	bind : {
+	    input : [ { key : "s" }, { obj : "o" }, { scope : "s", opt : true } ],
+	    output : "n",
+	    desc : "Bind the object //obj// to the key //key// in the 
+environment. If //scope// is not specified, make it a local binding.  Otherwise,
+can specify the scope explicitly: 'l' for 'local', 'g' for 'global',
+or 'u' for 'universals."
+	},
+
+	list : {
+	    input : [ { o : "O" } ],
+	    output : "l",
+	    desc : "Output object //o// as a list.  If //o// is
+a list to begin with, just output //o//.  If //o// is a string,
+output the list of characters that compose //o//. If //o//
+is a dictionary, act like the //items// call."
+	},
+	sort : { 
+	    input : [ { l : "l" }, { cmp : "F", opt : true } ],
+	    output : "l",
+	    desc : "Sort the given list //l//, given the comparison
+function //cmp//.  If //cmp// isn't specified, then use the 
+default comparison operatore.  If it is, use it!"
+	},
+
+	cmp : {
+	    input : [ { a : "O" }, { b : "O" } ],
+	    output : "i",
+	    desc : "The standard comparison function. Will return
+-1 for a < b, 1 for a > b and 0 for a == b.  Will compare strings
+or integers, nothing else."
+	},
+
+	utf8_fix : {
+	    input : [ { s : "s" } ],
+	    output : "s",
+	    desc : "Strips out any malformed UTF-8 characters from //s//
+and returns the fixed string." 
+	},
+
+	lookup : {
+	    input : [ { k : "s" }, {"scope" : s } ],
+	    output : "O",
+	    desc : "Lookup the key //k// in the environment.
+If no //scope// is specified, find the first natural result.
+Otherwise, limit the search to the scope given by //scope//.
+See //unbind// or //bind// for how to specify scope."
+	},
+	
+	pop_front : {
+	    input : [ { l : "l" } ],
+	    output : "O",
+	    desc : "Pop the first object off the list //l//
+and return it."
 	}
-
     };
-
+    
     docs.rfn3 = rfn3_lib_doc;
 %}
