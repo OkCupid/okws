@@ -263,7 +263,8 @@ xml_obj_const_t::to_pub3 (pub3::obj_t *o) const
 xml_obj_t
 xml_obj_t::from_pub3 (ptr<const pub3::expr_t> in)
 {
-  xml_obj_t xd (New refcounted<xml_struct_t> ());
+  ptr<xml_struct_t> st = New refcounted<xml_struct_t> ();
+  xml_obj_t xd (st);
   if (!in) return xd;
 
   ptr<const pub3::expr_dict_t> d;
@@ -276,14 +277,16 @@ xml_obj_t::from_pub3 (ptr<const pub3::expr_t> in)
     const str *key;
     ptr<pub3::expr_t> x;
     while ((key = it.next (&x))) {
-      xd(*key) = from_pub3 (x);
+      xml_obj_t tmp = from_pub3 (x);
+      st->put (*key, tmp.el ());
     }
   } else if ((l = in->to_list ())) {
-    xml_obj_t ret (New refcounted<xml_array_t> ());
+    ptr<xml_array_t> a = New refcounted<xml_array_t> ();
     for (size_t i = 0; i < l->size (); i++) {
-      ret[i] = from_pub3 ((*l)[i]);
+      xml_obj_t tmp = from_pub3 ((*l)[i]);
+      a->put (i, tmp.el ());
     }
-    return ret;
+    return xml_obj_t (a);
   } else if ((in->to_int (&t))) {
     return xml_obj_t (New refcounted<xml_int_t> (t)); 
   } else if ((s = in->to_str (false))) {

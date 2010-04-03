@@ -209,7 +209,8 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_ev_t cb)
 	conf_out = pub3::dict_t::alloc ();
 	twait { iface->run_cfg (fn, mkevent (ok), conf_out, opts, &status); }
 	if (ok) {
-	  r[i]("data") = xml_obj_t::from_pub3 (conf_out);
+	  xml_obj_t tmp = xml_obj_t::from_pub3 (conf_out);
+	  r[i]("data") = tmp.el ();
 	}
       } else {
 	zb = New refcounted<zbuf> ();

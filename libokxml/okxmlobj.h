@@ -171,6 +171,7 @@ public:
   const xml_obj_ref_t &operator=(const xml_fault_obj_t &w)
   { return set_fault (w); }
   static xml_obj_t from_pub3 (ptr<const pub3::expr_t> in);
+  ptr<xml_element_t> el () { return _el; }
 protected:
   ptr<xml_element_t> _el;
 };
