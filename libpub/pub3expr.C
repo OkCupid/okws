@@ -96,11 +96,14 @@ namespace pub3 {
     int64_t i;
     u_int64_t u;
     str s;
+    double d;
     
     if (so.to_int64 (&i)) {
       ret = expr_int_t::alloc (i);
     } else if (so.to_uint64 (&u)) {
       ret = New refcounted<expr_uint_t> (u);
+    } else if (so.to_double (&d)) {
+      ret = New refcounted<expr_double_t> (d); 
     } else if ((s = so.to_str ())) {
       ret = New refcounted<expr_str_t> (s);
     } else {

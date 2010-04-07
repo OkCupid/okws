@@ -27,11 +27,16 @@ my_convertint (const str &s, int64_t *out)
 //-----------------------------------------------------------------------
 
 scalar_obj_t::_p_t::_p_t () 
-  : _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE),
+  : _double_cnv (CNV_NONE), 
+    _int_cnv (CNV_NONE), 
+    _uint_cnv (CNV_NONE),
     _natural_type (TYPE_NONE) {}
 
 scalar_obj_t::_p_t::_p_t (const str &s)
-  : _s (s), _double_cnv (CNV_NONE), _int_cnv (CNV_NONE), _uint_cnv (CNV_NONE),
+  : _s (s), 
+    _double_cnv (CNV_NONE), 
+    _int_cnv (CNV_NONE), 
+    _uint_cnv (CNV_NONE),
     _natural_type (TYPE_STR) {}
 
 //-----------------------------------------------------------------------
@@ -506,7 +511,8 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
   str s1;
   scalar_obj_t out;
 
-  if (me == TYPE_STR && (s1 = to_str ()) && o.to_int64 (&i2) && i2 < 0x100) {
+  if (me == TYPE_STR && (s1 = to_str ()) && 
+      o.to_int64 (&i2) && i2 < 0x100) {
     strbuf b;
     for (int64_t i = 0; i < i2; i++) {
       b << s1;
@@ -518,7 +524,7 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
 
   } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
-    double d2 = to_double ();
+    double d2 = o.to_double ();
     out.set (d1 * d2);
 
   } else if (to_int64 (&i1) && o.to_int64 (&i2)) {
