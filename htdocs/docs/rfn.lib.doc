@@ -420,7 +420,22 @@ See //unbind// or //bind// for how to specify scope."
 	    output : "O",
 	    desc : "Pop the first object off the list //l//
 and return it."
+	},
+	
+	format_float : {
+	    input : [ { fmt : "s" }, { val : "f" } ],
+	    output : "s",
+	    desc : "Format the float //val// accoring to the given sprintf-style
+format string //fmt//."
+	},
+
+	format_int : {
+	    input : [ { fmt : "s" }, { val : "i" } ],
+	    output : "s",
+	    desc : "Format the int //val// accoring to the given sprintf-style
+format string //fmt//."
 	}
+    
     };
     
     docs.rfn3 = rfn3_lib_doc;
