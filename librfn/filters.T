@@ -193,4 +193,30 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  ptr<const expr_t>
+  format_float_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+#define BUFSZ 1024
+    char buf[BUFSZ];
+    str fmt = args[0]._s;
+    double d = args[1]._f;
+    snprintf (buf, BUFSZ, fmt.cstr (), d);
+    return expr_str_t::alloc (buf);
+  }
+
+  //------------------------------------------------------------
+
+  ptr<const expr_t>
+  format_int_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    char buf[BUFSZ];
+    str fmt = args[0]._s;
+    int i = args[1]._i;
+    snprintf (buf, BUFSZ, fmt.cstr (), i);
+    return expr_str_t::alloc (buf);
+#undef BUFSZ
+  }
+
+  //------------------------------------------------------------
+
 };

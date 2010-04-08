@@ -57,6 +57,8 @@ namespace rfn3 {
   PUB3_COMPILED_FN(list, "O");
   PUB3_COMPILED_FN(sort, "l|F");
   PUB3_COMPILED_FN(cmp, "OO");
+  PUB3_COMPILED_FN(format_float, "sf");
+  PUB3_COMPILED_FN(format_int, "si");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);
