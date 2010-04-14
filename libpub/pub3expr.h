@@ -756,6 +756,7 @@ namespace pub3 {
     static ptr<expr_uint_t> alloc (u_int64_t i) 
     { return New refcounted<expr_uint_t> (i); }
     bool to_xdr (xpub3_json_t *x) const;
+    str type_to_str () const { return "uint"; }
   private:
     const u_int64_t _val;
   };
