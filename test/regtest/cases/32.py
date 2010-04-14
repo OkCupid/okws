@@ -6,7 +6,8 @@ filedata="""
            d : { "a" : [1,2,3] },
            i : 10,
            f : 10.01,
-           b : true
+           b : true,
+           u : 0xeeffeeffaabbaabb
          }
 
     locals { ar1 : a,
@@ -25,6 +26,7 @@ filedata="""
 %{type(f)} %{type(fr)}
 %{type(b)} %{type(br)}
 %{type(foo)}
+%{type(u)}
 """
 
 outcome = """
@@ -34,6 +36,7 @@ int int
 float float
 bool bool
 undef
+uint
 """
 
           
