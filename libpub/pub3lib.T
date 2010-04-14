@@ -110,6 +110,7 @@ namespace pub3 {
     const char *cp;
     size_t i = 0;
     bool pipe = false;
+    str e;
 
     size_t min_args = 0, max_args = 0;
 
@@ -171,7 +172,8 @@ namespace pub3 {
 	break;
 	
       case 'r':
-	if (ib && !(a._r = args[i]->to_regex ())) {
+	if (ib && !(a._r = args[i]->to_regex (&e))) {
+	  if (e) err.push_back (e);
 	  strbuf b ("argument %zd: expected a regex", hi);
 	  err.push_back (b);
 	}

@@ -203,15 +203,16 @@ namespace pub3 {
   //---------------------------------------------------------------------
   
   ptr<rxx>
-  expr_t::str2rxx (eval_t *e, const str &b, const str &o) const
+  expr_t::str2rxx (eval_t *e, const str &b, const str &o, str *errp) const
   {
     ptr<rxx> ret;
     if (b) {
       str err;
       ret = rxx_factory_t::compile (b, o, &err);
-      if (e && e->loud () && err) {
+      if (e && !e->silent () && err) {
 	report_error (e, err);
       }
+      if (err && errp) *errp = err;
     }
     return ret;
   }
@@ -947,10 +948,10 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<rxx>
-  expr_strbuf_t::to_regex () const
+  expr_strbuf_t::to_regex (str *errp) const
   {
     ptr<rxx> ret;
-    if (_b.len ()) ret = str2rxx (NULL, _b, NULL);
+    if (_b.len ()) ret = str2rxx (NULL, _b, NULL, errp);
     return ret;
   }
 
@@ -1003,10 +1004,10 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<rxx>
-  expr_str_t::to_regex () const
+  expr_str_t::to_regex (str *errp) const
   {
     ptr<rxx> ret;
-    if (_val) { ret = str2rxx (NULL, _val, NULL); }
+    if (_val) { ret = str2rxx (NULL, _val, NULL, errp); }
     return ret;
   }
 
@@ -1515,9 +1516,13 @@ namespace pub3 {
       if (!tmp->compile (b, o)) {
 	strbuf b;
 	str err = tmp->geterr ();
-	b << "Cannot compile regex '" << body << "' with options '"
-	  << opts << "': " << err << "\n"; 
+	b << "Cannot compile regex '" << body << "'";
+	if (opts) {
+	  b << " with options '" << opts << "'";
+	}
+	b << ": " << err << "\n"; 
 	if (errp) *errp = b;
+	tmp = NULL;
       } else {
 	_cache.insert (k, tmp);
       }
@@ -2223,11 +2228,11 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<rxx>
-  expr_cow_t::to_regex () const
+  expr_cow_t::to_regex (str *errp) const
   {
     ptr<rxx> ret;
     ptr<const expr_t> x = const_ptr ();
-    if (x) { ret = x->to_regex (); }
+    if (x) { ret = x->to_regex (errp); }
     return ret;
   }
 

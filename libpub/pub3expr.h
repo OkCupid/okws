@@ -139,7 +139,7 @@ namespace pub3 {
     virtual bool to_len (size_t *s) const { return false; }
     virtual bool is_null () const { return false; }
     virtual bool is_str () const { return false; }
-    virtual ptr<rxx> to_regex () const { return NULL; }
+    virtual ptr<rxx> to_regex (str *errp = NULL) const { return NULL; }
     virtual ptr<expr_regex_t> to_regex_obj () { return NULL; }
     virtual str type_to_str () const { return "object"; }
     virtual bool to_int (int64_t *out) const { return false; }
@@ -163,7 +163,8 @@ namespace pub3 {
     void report_error (eval_t *e, str n) const;
     
   protected:
-    ptr<rxx> str2rxx (eval_t *e, const str &b, const str &o) const;
+    ptr<rxx> str2rxx (eval_t *e, const str &b, const str &o, str *errp = NULL) 
+      const;
     lineno_t _lineno;
     mutable tri_bool_t _might_block;
     static str undef_str;
@@ -208,7 +209,7 @@ namespace pub3 {
 
     str type_to_str () const;
     bool is_null () const;
-    ptr<rxx> to_regex () const;
+    ptr<rxx> to_regex (str *errp = NULL) const;
     ptr<expr_regex_t> to_regex_obj ();
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
@@ -650,7 +651,7 @@ namespace pub3 {
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
-    ptr<rxx> to_regex () const;
+    ptr<rxx> to_regex (str *errp = NULL) const;
     static ptr<expr_strbuf_t> alloc (const str &s = NULL);
 
     void add (char ch);
@@ -677,7 +678,7 @@ namespace pub3 {
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
-    ptr<rxx> to_regex () const;
+    ptr<rxx> to_regex (str *errp = NULL) const;
     static ptr<expr_str_t> alloc (str s = NULL);
     static ptr<expr_str_t> alloc (const xpub3_json_str_t &x);
     static ptr<expr_t> safe_alloc (str s);
@@ -872,7 +873,7 @@ namespace pub3 {
     static ptr<expr_regex_t> alloc (ptr<rxx>, str b, str o); 
 
     str to_str (bool q = false) const { return _body; }
-    ptr<rxx> to_regex () const { return _rxx; }
+    ptr<rxx> to_regex (str *errp = NULL) const { return _rxx; }
     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
     
     str type_to_str () const { return "regex"; }
