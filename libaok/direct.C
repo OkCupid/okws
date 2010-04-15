@@ -40,7 +40,9 @@ ok_direct_ports_t::init (const vec<int> &v, size_t id, size_t n)
   //
   // MK 4/9/2010
   //
-  // There are two allowable cases, for now.
+  // There are three allowable cases, for now.
+  //
+  // The simple & common case is no direct-bind ports.
   //
   // If there are multiple "brother" processes, then n > 1, and the
   // id is the ID of the current brother.  In this case, there must
@@ -53,7 +55,8 @@ ok_direct_ports_t::init (const vec<int> &v, size_t id, size_t n)
   // This is all a little bit of a hack, but the more general
   // alternative doesn't seem quite useful...
   //
-  if (n == 1) {
+  if (v.size () == 0) { /* then skip it all */ }
+  else if (n == 1) {
     assert (id == 0);
     for (size_t i = 0; i < v.size (); i++) {
       add_port_pair (ok_portpair_t (v[i]));

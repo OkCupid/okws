@@ -32,6 +32,8 @@
 
 extern char ** environ;
 
+//-----------------------------------------------------------------------
+
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		      ok_usr_t *u, vec<str> env_in, u_int16_t p)
   : okld_jailed_exec_t (e, o, cfl),
@@ -46,11 +48,15 @@ okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl,
     _lazy_lock (tame::lock_t::OPEN)
 {}
 
+//-----------------------------------------------------------------------
+
 str
 okld_jailed_exec_t::get_execpath () const
 {
   return okld->jail2real (rexecpath);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_jailed_exec_t::get_unix_stat ()
@@ -68,6 +74,8 @@ okld_jailed_exec_t::get_unix_stat ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_ch_t::can_exec ()
 {
@@ -83,12 +91,16 @@ okld_ch_t::can_exec ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 int
 okld_jailed_exec_t::get_exec_mode ()
 {
   assert (have_ustat);
   return ustat.st_mode;
 }
+
+//-----------------------------------------------------------------------
 
 int
 okld_jailed_exec_t::get_exec_uid ()
@@ -97,6 +109,8 @@ okld_jailed_exec_t::get_exec_uid ()
   return ustat.st_uid;
 }
 
+//-----------------------------------------------------------------------
+
 int 
 okld_jailed_exec_t::get_exec_gid ()
 {
@@ -104,12 +118,16 @@ okld_jailed_exec_t::get_exec_gid ()
   return ustat.st_gid;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_jailed_exec_t::assign_exec_ownership (int u, int g)
 {
   exec_uid = u;
   exec_gid = g;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_jailed_exec_t::chown ()
@@ -130,6 +148,8 @@ okld_jailed_exec_t::chown ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_ch_t::assign_uid (int new_uid)
 {
@@ -138,6 +158,8 @@ okld_ch_t::assign_uid (int new_uid)
   else
     uid = New ok_usr_t (new_uid);
 }
+
+//-----------------------------------------------------------------------
 
 
 bool
@@ -396,6 +418,8 @@ okld_ch_t::set_svc_ids ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_ch_t::chldcb (int status)
 {
@@ -428,12 +452,16 @@ okld_ch_t::chldcb (int status)
   }
 }
 
+//-----------------------------------------------------------------------
+
 static inline bool
 secdiff (struct timeval *tv0, struct timeval *tv1, int diff)
 {
   long sd = tv1->tv_sec - tv0->tv_sec;
   return (sd > diff || (sd == diff && tv1->tv_usec > tv0->tv_usec));
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_jailed_exec_t::fix_exec ()
@@ -451,6 +479,8 @@ okld_jailed_exec_t::fix_exec ()
     return false;
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_ch_t::resurrect ()
@@ -520,6 +550,8 @@ okld_ch_t::clean_dumps ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_jailed_exec_t::fixup (int uid_new, int gid_new, int new_mode)
 {
@@ -530,6 +562,8 @@ okld_jailed_exec_t::fixup (int uid_new, int gid_new, int new_mode)
   // really matter....
   return fix_exec ();
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_ch_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,

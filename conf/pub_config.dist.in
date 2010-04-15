@@ -33,10 +33,10 @@
 //	
 -->
 
-<!--#set ({
+{%
 
-JailDir		=> 	"%%okwshtdocsdir%%",	// Pubd Required variable
-RunAsUser	=>	"www",			// Pubd Required variable
-RunAsGroup	=>	${RunAsUser}		// Pubd Required variable
+JailDir		= 	"%%okwshtdocsdir%%";	// Pubd Required variable
+RunAsUser	=	"www";			// Pubd Required variable
+RunAsGroup	=	RunAsUser;		// Pubd Required variable
 
-}) -->
+%}
