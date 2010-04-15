@@ -258,7 +258,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("okwsname", &reported_name);
     t->lookup ("server", &global_okws_server_label);
     t->lookup ("logfd", &logfd);
-    t->lookup ("pub3fd", &pub3fd);
+    t->lookup ("pubfd", &_pub_fd);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &gztmp);
     t->lookup ("filtercgi", &ok_filter_cgi);
@@ -1387,8 +1387,8 @@ bool
 ok_httpsrv_t::init_pub (u_int opts)
 {
   bool ret = false;
-  if (pub3fd > 0) {
-    ptr<axprt_stream> x (axprt_stream::alloc (pub3fd, ok_axprt_ps));
+  if (_pub_fd > 0) {
+    ptr<axprt_stream> x (axprt_stream::alloc (_pub_fd, ok_axprt_ps));
 
     if (ok_pub3_caching) {
       _pub3 = New refcounted<pub3::caching_remote_publisher_t> (x, opts);

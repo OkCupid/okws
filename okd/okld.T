@@ -403,14 +403,10 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
     warnx << " " << s[i];
   warnx << ")\n";
 
-  for (size_t i = 0; i < so.n_procs (); i++) {
-    chld = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, env, port);
-    chld->add_args (s);
-    chld->set_service_options (so);
-    chld->set_brother_id (i, so.n_procs ());
-    add_svc (chld);
-  }
-
+  chld = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, 
+					    env, port, so.n_procs ());
+  chld->add_args (s);
+  chld->set_service_options (so);
   return;
 
  usage:
@@ -436,7 +432,6 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   okld_interpreter_t *ipret = NULL;
   str ipret_str;
   ptr<okld_ch_cluster_t> ch;
-  ptr<okld_ch_cluster_t> primary;
   svc_options_t so;
 
   // Remove the '#' and everything after...
@@ -506,19 +501,16 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
 
   warn << cmd << ": URI(" << httppath << ") --> unix(" << exe << ")\n";
 
-  for (size_t i = 0; i < so.n_procs (); i++) {
-    if (script) {
-      ch = New refcounted<okld_ch_script_t> (exe, httppath, this, loc, 
-					     ipret, u, env, port);
-    } else {
-      ch = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, env, port);
-    }
-    ch->set_service_options (so);
-    ch->set_brother_id (i, so.n_procs ());
-    ch->set_primary (primary);
-    add_svc (ch);
-    primary = ch;
+  if (script) {
+    ch = New refcounted<okld_ch_script_t> (exe, httppath, this, loc, 
+					   ipret, u, env, port, so.n_procs ());
+  } else {
+    ch = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, 
+					    env, port, so.n_procs ());
   }
+  ch->add_args (s);
+  ch->set_service_options (so);
+  add_svc (ch);
 
   return;
 
@@ -2088,8 +2080,8 @@ okld_t::got_ssl_primary_port (vec<str> v, str loc, bool *errp)
 void
 okld_t::add_svc (ptr<okld_ch_cluster_t> ch)
 {
-  svcs.push_back (ch);
-  _svc_lookup.insert (ch->unique_proc_name (), ch);
+  _svcs.push_back (ch);
+  _svc_lookup.insert (ch->servpath (), ch);
 }
 
 //-----------------------------------------------------------------------

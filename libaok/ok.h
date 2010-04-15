@@ -216,7 +216,7 @@ struct ok_portpair_t {
 struct ok_direct_ports_t {
 public:
   ok_direct_ports_t () {}
-  void init (const vec<int> &p, size_t id, size_t n);
+  void init (const vec<int> &p, size_t n);
   bool bind (const str &prog, u_int32_t listenaddr);
   str encode_as_str () const;
   void close ();
@@ -242,7 +242,7 @@ public:
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
       reported_name (ok_wsname),
-      logd (NULL), logfd (lfd), pub3fd (pfd),
+      logd (NULL), logfd (lfd), _pub_fd (pfd),
       bind_addr_set (false),
       _ssl_primary_port (ok_ssl_port)
       //jaildir_run (ok_jaildir_run) 
@@ -281,7 +281,7 @@ protected:
   log_t *logd;
 
   int logfd;
-  int pub3fd;
+  int _pub_fd;
   //str jaildir_run;  // nested jaildir for okd and services
   bool bind_addr_set; // called after got_bindaddr;
   okws1_port_t _ssl_primary_port;
@@ -295,8 +295,8 @@ class okclnt_interface_t;
 
 class ok_httpsrv_t : public ok_con_t, public ok_base_t { 
 public:
-  ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub3fd = -1) 
-    : ok_con_t (), ok_base_t (h, fd, pub3fd), svclog (true),
+  ok_httpsrv_t (const str &h = NULL, int fd = -1, int pub_fd = -1) 
+    : ok_con_t (), ok_base_t (h, fd, pub_fd), svclog (true),
       accept_enabled (false), accept_msgs (true),
       clock_mode (SFS_CLOCK_GETTIME),
       mmc_file (ok_mmc_file) {}

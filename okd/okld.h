@@ -177,6 +177,8 @@ public:
 
   const str & get_execpath_relative_to_chroot () { return rexecpath; }
 
+  okld_t *okld () { return _okld; }
+
 protected:
 
   /**
@@ -187,7 +189,7 @@ protected:
   bool fix_exec ();
 
   const str rexecpath;      // execpath relative to jaildir (starts with '/')
-  okld_t *okld;
+  okld_t *_okld;
   str cfgfile_loc;
   bool have_ustat;
   struct stat ustat;
@@ -309,20 +311,41 @@ struct svc_options_t {
   size_t _n_procs;
 };
 
-// Each child process can have multiple instances. 
-class okld_ch_instance_t {
-public:
-  okld_ch_instance_t ();
-  
-  void launch (evv_t::ptr ev = NULL, CLOSURE);
-  void run_loop (evv_t ev);
+//=======================================================================
 
-  int pid;
-  int xfd, ctlfd;
-  okc_state_t state;
-  timecb_t *rcb;
-  vec<struct timeval *> timevals;
-  time_t startup_time;
+class okld_ch_cluster_t;
+
+class okld_ch_t {
+public:
+  okld_ch_t (okld_ch_cluster_t *c, size_t i) : _cluster (c) , _id (i) {}
+
+  void launch (evv_t ev, CLOSURE);
+  void reserve (bool lazy, evb_t ev, CLOSURE);
+  void sig_chld_cb (int status);
+  void chldcb (int status);
+  void clean_dumps ();
+  okws1_port_t get_port () const { return port; }
+  void lazy_startup (evb_t ev, CLOSURE);
+  str v_id () const;
+
+  str unique_proc_name () const;
+  static str unique_proc_name (const oksvc_proc_t &x);
+  okld_t *okld () { return _cluster->okld (); }
+
+private:
+  void resurrect ();
+  void relaunch ();
+
+  okld_ch_cluster_t *_cluster;
+  size_t _id;
+  str _servpath;
+  int _pid;
+  okc_state_t _state;
+  timecb_t *_rcb;
+  vec<struct timeval *> _timevals;
+  int _nsent;
+  ok_direct_ports_t _direct_ports;
+  tame::lock_t _lazy_lock;
 };
 
 //=======================================================================
@@ -332,81 +355,58 @@ class okld_ch_cluster_t :
   public okld_jailed_exec_t { // OK Launch Daemon Child Handle
 public:
   okld_ch_cluster_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-	     ok_usr_t *u, vec<str> env, okws1_port_t p = 0) ;
-  virtual ~okld_ch_cluster_t () { if (uid) delete uid ;  }
-  void launch (evv_t::ptr ev = NULL, CLOSURE);
-  void reserve (bool lazy, evb_t ev, CLOSURE);
-  void sig_chld_cb (int status);
+		     ok_usr_t *u, vec<str> env, okws1_port_t p, size_t n) ;
+  virtual ~okld_ch_cluster_t ();
 
-  int _pid;
+  str servpath () const { return _servpath; }
 
   // no longer const -- can change after we get the listen port
   str _servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
+  okws1_port_t _port;  // Which port to accept as in :81/foo
 
   // who we will setuid to after the spawn
-  ok_usr_t *uid;           // UID of whoever will be running this thing
-  int gid;                 // GID of whever will be running this thing
+  ok_usr_t *_uid;           // UID of whoever will be running this thing
+  int _gid;                 // GID of whever will be running this thing
 
-  void set_brother_id (size_t id, size_t total);
-  void set_primary (ptr<okld_ch_cluster_t> c) { _primary = c; }
   void set_svc_ids ();
-  void set_run_dir (const str &d) { rundir = d; }
-  void chldcb (int status);
-  void clean_dumps ();
+  void set_run_dir (const str &d) { _rundir = d; }
   void add_args (const vec<str> &a);
-  void lazy_startup (evb_t ev, CLOSURE);
-  bool has_direct_ports () const { return _svc_options.ports.size () > 0; }
-  str unique_proc_name () const;
   static str unique_proc_name (str s, size_t i);
-  static str unique_proc_name (const oksvc_proc_t &x);
-  bool is_primary () const { return _brother_id == 0; }
+  bool has_direct_ports () const { return _svc_options.ports.size () > 0; }
 
-  okws1_port_t get_port () const { return port; }
   void set_service_options (const svc_options_t &so)
   { _svc_options = so; }
 
   // add more arguments as we can parse for more options
   //bool parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc);
 
+  void gather_helper_fds (str s, int *log, int *pub, evb_t ev, CLOSURE);
+  void launch (evv_t ev, CLOSURE);
   bool can_exec ();
   void assign_uid (int u);
-  void assign_gid (int u) { gid = u; }
-  ok_usr_t *usr () { return uid; }
+  void assign_gid (int u) { _gid = u; }
+  ok_usr_t *usr () { return _uid; }
   virtual int get_desired_execfile_mode () const { return ok_svc_mode; }
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
+  size_t n_children () const { return _children.size (); }
 
 protected:
   svc_options_t _svc_options;
 
 private:
-  void resurrect ();
-  void relaunch ();
+  bool _have_ustat;
+  struct stat _ustat;
+  time_t _startup_time;
+  str _rundir;
 
-  int xfd;
-  int cltxfd;
-  okc_state_t state;
-  timecb_t *rcb;
-  vec<struct timeval *> timevals;
-  bool have_ustat;
-  struct stat ustat;
-  time_t startup_time;
-  str rundir;
-
-  vec<str> env;
-  okws1_port_t port;
-  int nsent;
+  vec<str> _env;
 
   // arguments given to the executable (such as 'python filename')
-  vec<str> args;
+  vec<str> _args;
+  vec<ptr<okld_ch_t> > _children;
+  okld_t *_okld;
   ok_direct_ports_t _direct_ports;
-
-  size_t _brother_id, _n_brothers;
-
-  // the primary brother, or NULL if this is the primary
-  ptr<okld_ch_cluster_t> _primary; 
-
-  tame::lock_t _lazy_lock;
 };
 
 //=======================================================================
@@ -557,7 +557,7 @@ private:
   void launch2 (int fd);
   void launchservices (CLOSURE);
 
-  vec<ptr<okld_ch_cluster_t> > svcs;
+  vec<ptr<okld_ch_cluster_t> > _svcs;
   qhash<str, ptr<okld_ch_cluster_t> > _svc_lookup;
 
   int nxtuid;
