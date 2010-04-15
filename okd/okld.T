@@ -2097,12 +2097,6 @@ svc_options_t::check_options (const str &loc) const
     ok = false;
   }
 
-  if (n_procs() > 1 && ports.size () > 0 && ports.size () != n_procs ()) {
-    warn << loc << ": if specifying -n and -p, must specify the same "
-	 << "number of ports as processes (implying a 1-to-1 mapping)\n";
-    ok = false;
-  }
-
   return ok;
 }
 

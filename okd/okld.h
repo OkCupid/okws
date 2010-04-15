@@ -142,7 +142,7 @@ private:
 class okld_jailed_exec_t {
 public:
   okld_jailed_exec_t (const str &e, okld_t *o, const str &l) :
-    rexecpath (e), okld (o), cfgfile_loc (l), have_ustat (false),
+    _rexecpath (e), okld (o), cfgfile_loc (l), have_ustat (false),
     exec_uid (-1), exec_gid (-1), mode (-1), _unsafe (false) {}
   ~okld_jailed_exec_t () {}
 
@@ -175,7 +175,7 @@ public:
    */
   bool fixup (int uid_new, int gid_new, int mode_new);
 
-  const str & get_execpath_relative_to_chroot () { return rexecpath; }
+  const str & get_execpath_relative_to_chroot () { return _rexecpath; }
 
   okld_t *okld () { return _okld; }
 
@@ -188,7 +188,7 @@ protected:
    */
   bool fix_exec ();
 
-  const str rexecpath;      // execpath relative to jaildir (starts with '/')
+  const str _rexecpath;      // execpath relative to jaildir (starts with '/')
   okld_t *_okld;
   str cfgfile_loc;
   bool have_ustat;
@@ -227,7 +227,7 @@ public:
    * @param gid the gid that the new interpreter will belong to
    */
   okld_interpreter_t (const okld_interpreter_t &i, int uid, int gid)
-    : okld_jailed_exec_t (strbuf ("%s-%d", i.rexecpath.cstr (), gid), 
+    : okld_jailed_exec_t (strbuf ("%s-%d", i._rexecpath.cstr (), gid), 
 			  i.okld, i.cfgfile_loc),
       _name (i._name),
       _user (uid), _group (gid), _args (i._args) {}
@@ -331,6 +331,7 @@ public:
   str unique_proc_name () const;
   static str unique_proc_name (const oksvc_proc_t &x);
   okld_t *okld () { return _cluster->okld (); }
+  void add_direct_port (int p);
 
 private:
   void resurrect ();

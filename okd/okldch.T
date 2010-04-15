@@ -69,7 +69,7 @@ okld_ch_cluster_t::okld_ch_cluster_t (const str &e, const str &s, okld_t *o,
 str
 okld_jailed_exec_t::get_execpath () const
 {
-  return okld ()->jail2real (rexecpath);
+  return okld ()->jail2real (_rexecpath);
 }
 
 //-----------------------------------------------------------------------
@@ -264,22 +264,112 @@ okld_t::gather_helper_fds (str s, int *lp, int *pp, evb_t ev)
 
 //-----------------------------------------------------------------------
 
+tamed void
+okld_ch_t::spawn_child (int logfd, int pubfd, 
+			event<ptr<axpr_unix>, bool>::ref ev)
+{
+  tvars {
+    str report_exe;
+    str exe;
+    str i;
+    vec<str> argv;
+    bool ok (true);
+    ptr<axprt_unix> x;
+    str s_id;
+    argv_t env_tmp;
+  }
+
+  s_id = v_id ();
+  
+  // the first argument to aspawn ()...
+  report_exe = exe = get_execpath ();
+  
+  // only do something in the case of a script; true => we are now
+  // chrooted
+  i = get_interpreter ();
+  if (i) {
+    exe = i;
+    _argv.push_back (i);
+  }
+      
+  // pass true signifying that we've been jailed (if we are to be jailed)
+  argv.push_back (get_execpath ());
+      
+  genv ()->insert ("logfd", logfd, false);
+  genv ()->insert ("pubfd", pubfd, false);
+  
+  // for Service2-style command lands, we can have many arguments
+  // here specified in okws_config.  make sure to add the encoded
+  // parameters last
+  for (size_t i = 0; i < _args.size (); i++) {
+    argv.push_back (_args[i]);
+  }
+      
+  // per-service options might override global options here
+  if (!_svc_options.apply_global_defaults (_servpath)) {
+    okdbg_warn (ERROR, "%s: cannot apply conf params\n", s_id.cstr ());
+    ok = false;
+  } else {
+    
+    genv ()->insert ("lifereqs", _svc_options.svc_reqs, false);
+    genv ()->insert ("lifetime", _svc_options.svc_time, false);
+    genv ()->insert ("wss", _svc_options.wss, false);
+    genv ()->insert ("caching", _svc_options.pub3_caching, false);
+    genv ()->insert ("wfs", _svc_options.wait_for_signal, false);
+    genv ()->insert ("dps", _direct_ports.encode_as_str (), false);
+    genv ()->insert ("fdlw", _svc_options.lowat, false);
+    genv ()->insert ("fdhw", _svc_options.hiwat, false);
+    genv ()->insert ("gzip", _svc_options.gzip, false);
+    genv ()->insert ("gziplev", _svc_options.gzip_level, false);
+    genv ()->insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
+    genv ()->insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
+    
+    _argv.push_back (genv ()->encode ());
+    
+    // undo all of the damage
+    genv ()->remove ("logfd");
+    genv ()->remove ("pubfd");
+    genv ()->remove ("lifetime");
+    genv ()->remove ("lifereqs");
+    genv ()->remove ("wss");
+    genv ()->remove ("caching");
+    genv ()->remove ("wfs");
+    genv ()->remove ("dps");
+    genv ()->remove ("fdlw");
+    genv ()->remove ("fdhw");
+    genv ()->remove ("gzip");
+    genv ()->remove ("gziplev");
+    genv ()->remove ("aczw");
+
+      
+    OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
+	   report_exe.cstr ());
+    
+    env_tmp.init (env, environ);
+    x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
+			    wrap (this, &okld_ch_t::set_svc_ids), 
+			    env_tmp);
+    _pid = axprt_unix_spawn_pid;
+    if (!x) {
+      okdbg_warn (ERROR, "%s: cannot launch service (HOSED)\n", s_id.cstr ());
+      ok = false;
+    }
+  }
+  ev->trigger (x, ok);
+}
+
+//-----------------------------------------------------------------------
+
 tamed void 
 okld_ch_t::launch (evv_t ev)
 {
   tvars {
-    int logfd;
-    int pubfd (-1);
-    bool ok;
-    oksvc_descriptor_t arg;
-    ok_xstatus_typ_t res;
+    bool ok (true);
     clnt_stat err;
-    vec<str> argv;
-    str exe, i;
-    ptr<axprt_unix> x;
     int ctlfd;
     str report_exe;
     str s_id;
+    ptr<axpr_unix> x;
   }
 
   s_id = v_id ();
@@ -288,141 +378,79 @@ okld_ch_t::launch (evv_t ev)
   _state = OKC_STATE_LAUNCH;
 
   twait { okld ()->gather_helper_fds (s_id, &logfd, &pubfd, mkevent (ok)); }
-
   if (!ok) {
     _state = OKC_STATE_HOSED;
-  } else {
-    // Pass the brother arrangement, so in the case of brothers, 
-    // only the appropriate one will bind to the appropriate port.
-    _direct_ports.init (_svc_options.ports, _brother_id, _n_brothers);
-    
-    if (!_direct_ports.bind (_servpath, okld->listenaddr)) {
-      strbuf b;
-      b << "cannot bind to all direct ports (" << s_id  
-	<< "," << rexecpath << ")\n";
-      okdbg_warn (ERROR, b);
-      _state = OKC_STATE_BADPORTS;
-    } else {
-
-      // the first argument to aspawn ()...
-      report_exe = exe = get_execpath ();
-      
-      // only do something in the case of a script; true => we are now
-      // chrooted
-      i = get_interpreter ();
-      if (i) {
-	exe = i;
-	_argv.push_back (i);
-      }
-      
-      // pass true signifying that we've been jailed (if we are to be jailed)
-      _argv.push_back (get_execpath ());
-      
-      genv ()->insert ("logfd", logfd, false);
-      genv ()->insert ("pubfd", pub_fd, false);
-      
-      // for Service2-style command lands, we can have many arguments
-      // here specified in okws_config.  make sure to add the encoded
-      // parameters last
-      for (size_t i = 0; i < args.size (); i++)
-	_argv.push_back (args[i]);
-      
-      // per-service options might override global options here
-      if (!_svc_options.apply_global_defaults (_servpath)) {
-	strbuf b;
-	b << "cannot apply configuration parameters (" << s_id  
-	  << "); aborting service\n";
-	okdbg_warn (ERROR, b);
-	_state = OKC_STATE_BADPORTS;
-      } else {
-
-	genv ()->insert ("lifereqs", _svc_options.svc_reqs, false);
-	genv ()->insert ("lifetime", _svc_options.svc_time, false);
-	genv ()->insert ("wss", _svc_options.wss, false);
-	genv ()->insert ("caching", _svc_options.pub3_caching, false);
-	genv ()->insert ("wfs", _svc_options.wait_for_signal, false);
-	genv ()->insert ("dps", _direct_ports.encode_as_str (), false);
-	genv ()->insert ("fdlw", _svc_options.lowat, false);
-	genv ()->insert ("fdhw", _svc_options.hiwat, false);
-	genv ()->insert ("gzip", _svc_options.gzip, false);
-	genv ()->insert ("gziplev", _svc_options.gzip_level, false);
-	genv ()->insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
-	genv ()->insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
-	genv ()->insert ("bid", _brother_id);
-	
-	_argv.push_back (genv ()->encode ());
-
-  // undo all of the damage
-  genv ()->remove ("logfd");
-  genv ()->remove ("pub3fd");
-  genv ()->remove ("lifetime");
-  genv ()->remove ("lifereqs");
-  genv ()->remove ("wss");
-  genv ()->remove ("caching");
-  genv ()->remove ("wfs");
-  okld->env.remove ("dps");
-  okld->env.remove ("fdlw");
-  okld->env.remove ("fdhw");
-  okld->env.remove ("gzip");
-  okld->env.remove ("gziplev");
-  okld->env.remove ("aczw");
-  okld->env.remove ("bid");
-
-  {
-
-    OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
-	   report_exe.cstr ());
-
-    argv_t env_tmp;
-    env_tmp.init (env, environ);
-    x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
-			     wrap (this, &okld_ch_cluster_t::set_svc_ids), 
-			     env_tmp);
   }
 
-  _pid = axprt_unix_spawn_pid;
-  close (logfd);
-  if (pub_fd >= 0) close (pub_fd);
-  _direct_ports.close ();
+  if (ok && !_direct_ports.bind (_servpath, okld->listenaddr)) {
+    ok = false;
+    _state = OKC_STATE_BADPORTS; 
+    okdbg_warn (ERROR, "%s: cannot bind to all direct ports\n", s_id.cstr ());
+  }
 
-  if (!x) {
-    warn << "HOSED: Cannot launch service: (" << s_id << "," 
-	 << rexecpath << ")\n";
-    state = OKC_STATE_HOSED;
-  } else {
-   
+
+  if (ok) {
+    twait { spawn_child (logfd, pubfd, mkevent (x, ok)); }
+    if (!ok) { _state = OKC_STATE_HOSED; }
+  }
+
+  if (ok) {
+
     OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
 	   report_exe.cstr (), int (_pid));
-
-    ::chldcb (_pid, wrap (this, &okld_ch_cluster_t::chldcb));
-
-    // if we're shutting down, okld->_okd_cli will be NULL
-    if (okld->okd ().cli ()) {
-      ctlfd = x->reclaim ();
-      arg.pid = _pid;
-      arg.proc.brother_id = _brother_id;
-      arg.proc.num_brothers = _n_brothers;
-      arg.proc.name = _servpath;
-      twait {
-	okld->okd ().x ()->sendfd (ctlfd);
-	RPC::okld_program_1::okld_new_service (okld->okd ().cli (),
-					       arg, &res, mkevent (err));
-      }
-     
-      state = OKC_STATE_HOSED;
-      if (err) {
-	warn << "HOSED: Cannot send service to okd (" << s_id << "): "
-	     << err << "\n";
-      } else if (res != OK_STATUS_OK) {
-	warn << "HOSED: Okd rejected service (" << s_id << ") with code="
-	     << int (res) << "\n";
-      } else {
-	state = OKC_STATE_SERVE;
-      }
+    
+    twait { post_spawn (x->reclaim (), mkevent (ok)); }
+    if (!ok) {
+      _state = OKC_STATE_HOSED;
     }
   }
-  if (ev)
-    ev->trigger ();
+
+  if (ok) { _state = OKC_STATE_SERVE; }
+
+  close (logfd);
+  if (pub_fd >= 0) close (pubfd);
+  _direct_ports.close ();
+
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okld_ch_t::post_spawn (int fd, evb_t ev)
+{
+  tvars {
+    clnt_stat err;
+    ok_xstatus_typ_t res;
+    oksvc_descriptor_t arg;
+    bool ok (false);
+  }
+
+  ::chldcb (_pid, wrap (this, &okld_ch_t::chldcb));
+    
+  // if we're shutting down, okld->_okd_cli will be NULL
+  if (okld->okd ().cli ()) {
+    arg.pid = _pid;
+    arg.proc.brother_id = _id;
+    arg.proc.num_brothers = _cluster->n_children ();
+    arg.proc.name = _servpath;
+    twait {
+      okld->okd ().x ()->sendfd (ctlfd);
+      RPC::okld_program_1::okld_new_service (okld->okd ().cli (),
+					     arg, &res, mkevent (err));
+    }
+    
+    if (err) {
+      warn << "HOSED: Cannot send service to okd (" << s_id << "): "
+	   << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn << "HOSED: Okd rejected service (" << s_id << ") with code="
+	   << int (res) << "\n";
+    } else {
+      ok = true;
+    }
+  }
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -433,7 +461,7 @@ okld_ch_cluster_t::set_svc_ids ()
   // after fork, we need to set our PID
   _pid = getpid ();
 
-  if (!okld->is_superuser ())
+  if (!okld ()->is_superuser ())
     return;
 
   // unsubscribe from all groups
@@ -732,38 +760,16 @@ okld_ch_cluster_t::set_brother_id (size_t id, size_t total)
  { 
    _svc_options = so; 
 
-   //
-   // MK 4/9/2010
-   //
-   // There are three allowable cases, for now.
-   //
-   // The simple & common case is no direct-bind ports.
-   //
-   // If there are multiple "brother" processes, then n > 1, and the
-   // id is the ID of the current brother.  In this case, there must
-   // be the same number of ports as there are brothers, each taking a 
-   // port in sequence.
-   //
-   // If it's a single-child, then it's OK to have multiple port, that
-   // single process binding to all ports.
-   //
-   // This is all a little bit of a hack, but the more general
-   // alternative doesn't seem quite useful...
-   //
-
-   // XXX finish me
-   if (!so.ports.size ()) { /* noop */ }
-
-   else if (_children.size () > 1) {
-     assert (_children.size () == so.ports.size ());
-     for (size_t i = 0; i < _children.size (); i++) {
-       
-     }
-
-   } else {
-
+   // distribute the ports event about the running processes
+   size_t n = _children.size ();
+   for (size_t i = 0; i < so.ports.size (); i++) {
+     _children[i % n]->add_direct_port (so.ports[i]);
    }
  }
+
+//-----------------------------------------------------------------------
+
+void okld_ch_t::add_direct_port (int p) { _direct_ports.add_port (p); }
 
 //-----------------------------------------------------------------------
 

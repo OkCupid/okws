@@ -216,7 +216,8 @@ struct ok_portpair_t {
 struct ok_direct_ports_t {
 public:
   ok_direct_ports_t () {}
-  void init (const vec<int> &p, size_t n);
+  void init (const vec<int> &p);
+  void add_port (int p);
   bool bind (const str &prog, u_int32_t listenaddr);
   str encode_as_str () const;
   void close ();

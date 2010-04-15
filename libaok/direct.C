@@ -36,18 +36,12 @@ void
 ok_direct_ports_t::init (const vec<int> &v)
 {
   _ports.clear (); // if reiniting after a crash
-  if (v.size () == 0) { /* then skip it all */ }
-  else if (n == 1) {
-    assert (id == 0);
-    for (size_t i = 0; i < v.size (); i++) {
-      add_port_pair (ok_portpair_t (v[i]));
-    }
-  } else {
-    assert (n != 0);
-    assert (n == v.size ());
-    add_port_pair (ok_portpair_t (v[id]));
-  }
+  for (size_t i = 0; i < v.size (); i++) { add_port (v[i]); }
 }
+
+//-----------------------------------------------------------------------
+
+void ok_direct_ports_t::add_port (int p) { add_port_pair (ok_port_pair_t (p)); }
 
 //-----------------------------------------------------------------------
 
