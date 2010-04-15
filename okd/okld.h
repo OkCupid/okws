@@ -328,11 +328,12 @@ public:
 //=======================================================================
 
 class okld_t;
-class okld_ch_t : public okld_jailed_exec_t { // OK Launch Daemon Child Handle
+class okld_ch_cluster_t : 
+  public okld_jailed_exec_t { // OK Launch Daemon Child Handle
 public:
-  okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
+  okld_ch_cluster_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 	     ok_usr_t *u, vec<str> env, okws1_port_t p = 0) ;
-  virtual ~okld_ch_t () { if (uid) delete uid ;  }
+  virtual ~okld_ch_cluster_t () { if (uid) delete uid ;  }
   void launch (evv_t::ptr ev = NULL, CLOSURE);
   void reserve (bool lazy, evb_t ev, CLOSURE);
   void sig_chld_cb (int status);
@@ -347,7 +348,7 @@ public:
   int gid;                 // GID of whever will be running this thing
 
   void set_brother_id (size_t id, size_t total);
-  void set_primary (ptr<okld_ch_t> c) { _primary = c; }
+  void set_primary (ptr<okld_ch_cluster_t> c) { _primary = c; }
   void set_svc_ids ();
   void set_run_dir (const str &d) { rundir = d; }
   void chldcb (int status);
@@ -401,20 +402,22 @@ private:
   ok_direct_ports_t _direct_ports;
 
   size_t _brother_id, _n_brothers;
-  ptr<okch_t> _primary; // the primary brother, or NULL if this is the primary
+
+  // the primary brother, or NULL if this is the primary
+  ptr<okld_ch_cluster_t> _primary; 
 
   tame::lock_t _lazy_lock;
 };
 
 //=======================================================================
 
-class okld_ch_script_t : public okld_ch_t {
+class okld_ch_script_t : public okld_ch_cluster_t {
 public:
   okld_ch_script_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		    okld_interpreter_t *ipret,
 		    ok_usr_t *u, vec<str> env,
 		    okws1_port_t p = 0)
-    : okld_ch_t (e, s, o, cfl, u, env, p), _ipret (ipret), 
+    : okld_ch_cluster_t (e, s, o, cfl, u, env, p), _ipret (ipret), 
       _free_ipret (false) {}
   ~okld_ch_script_t () { if (_free_ipret && _ipret) delete _ipret; }
   int get_desired_execfile_mode () const { return ok_script_mode; }
@@ -539,7 +542,7 @@ private:
 
   bool fix_uids ();
   bool fix_coredump_uids ();
-  void add_svc (ptr<okld_ch_t> c);
+  void add_svc (ptr<okld_ch_cluster_t> c);
   bool config_jaildir ();
   void init_clock_daemon ();
   void relaunch_clock_daemon (int sig);
@@ -554,8 +557,8 @@ private:
   void launch2 (int fd);
   void launchservices (CLOSURE);
 
-  vec<ptr<okld_ch_t> > svcs;
-  qhash<str, ptr<okld_ch_t> > _svc_lookup;
+  vec<ptr<okld_ch_cluster_t> > svcs;
+  qhash<str, ptr<okld_ch_cluster_t> > _svc_lookup;
 
   int nxtuid;
   str coredump_path;

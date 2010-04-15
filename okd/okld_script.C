@@ -79,6 +79,6 @@ okld_ch_script_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
   if (!fixup (uid_new, gid_new, ok_script_mode))
     return false;
   
-  return okld_ch_t::fixup_doall (uid_orig, uid_new, gid_orig,
-				 gid_new, mode_orig);
+  return okld_ch_cluster_t::fixup_doall (uid_orig, uid_new, gid_orig,
+					 gid_new, mode_orig);
 }

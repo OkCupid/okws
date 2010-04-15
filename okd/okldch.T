@@ -34,7 +34,7 @@ extern char ** environ;
 
 //-----------------------------------------------------------------------
 
-okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
+okld_ch_cluster_t::okld_ch_cluster_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		      ok_usr_t *u, vec<str> env_in, u_int16_t p)
   : okld_jailed_exec_t (e, o, cfl),
     _servpath (s), 
@@ -77,7 +77,7 @@ okld_jailed_exec_t::get_unix_stat ()
 //-----------------------------------------------------------------------
 
 bool
-okld_ch_t::can_exec ()
+okld_ch_cluster_t::can_exec ()
 {
   if (!get_unix_stat ())
     return false;
@@ -151,7 +151,7 @@ okld_jailed_exec_t::chown ()
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::assign_uid (int new_uid)
+okld_ch_cluster_t::assign_uid (int new_uid)
 {
   if (uid)
     assert (uid->getid () == new_uid);
@@ -185,7 +185,7 @@ okld_jailed_exec_t::chmod (int currmode)
 //-----------------------------------------------------------------------
 
 tamed void 
-okld_ch_t::launch (evv_t::ptr ev)
+okld_ch_cluster_t::launch (evv_t::ptr ev)
 {
   tvars {
     int logfd;
@@ -334,7 +334,7 @@ okld_ch_t::launch (evv_t::ptr ev)
     argv_t env_tmp;
     env_tmp.init (env, environ);
     x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
-			     wrap (this, &okld_ch_t::set_svc_ids), 
+			     wrap (this, &okld_ch_cluster_t::set_svc_ids), 
 			     env_tmp);
   }
 
@@ -352,7 +352,7 @@ okld_ch_t::launch (evv_t::ptr ev)
     OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
 	   report_exe.cstr (), int (_pid));
 
-    ::chldcb (_pid, wrap (this, &okld_ch_t::chldcb));
+    ::chldcb (_pid, wrap (this, &okld_ch_cluster_t::chldcb));
 
     // if we're shutting down, okld->_okd_cli will be NULL
     if (okld->okd ().cli ()) {
@@ -386,7 +386,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::set_svc_ids ()
+okld_ch_cluster_t::set_svc_ids ()
 {
   // after fork, we need to set our PID
   _pid = getpid ();
@@ -421,7 +421,7 @@ okld_ch_t::set_svc_ids ()
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::chldcb (int status)
+okld_ch_cluster_t::chldcb (int status)
 {
   if (status != 0)
     clean_dumps ();
@@ -448,7 +448,7 @@ okld_ch_t::chldcb (int status)
     resurrect ();
   else {
     rcb = delaycb (ok_resurrect_delay, ok_resurrect_delay_ms * 1000000,
-		   wrap (this, &okld_ch_t::resurrect));
+		   wrap (this, &okld_ch_cluster_t::resurrect));
   }
 }
 
@@ -483,7 +483,7 @@ okld_jailed_exec_t::fix_exec ()
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::resurrect ()
+okld_ch_cluster_t::resurrect ()
 {
   rcb = NULL;
   if (state == OKC_STATE_LAUNCH)
@@ -513,7 +513,7 @@ okld_ch_t::resurrect ()
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::clean_dumps ()
+okld_ch_cluster_t::clean_dumps ()
 {
   if (!rundir)
     return;
@@ -566,7 +566,7 @@ okld_jailed_exec_t::fixup (int uid_new, int gid_new, int new_mode)
 //-----------------------------------------------------------------------
 
 bool
-okld_ch_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
+okld_ch_cluster_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
 			int gid_new, int mode_orig)
 {
   if (!fixup (uid_new, gid_new, get_desired_execfile_mode ()))
@@ -583,7 +583,7 @@ okld_ch_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
 //-----------------------------------------------------------------------
 
 tamed void
-okld_ch_t::lazy_startup (evb_t ev)
+okld_ch_cluster_t::lazy_startup (evb_t ev)
 {
   tvars {
     bool ret (true);
@@ -607,7 +607,7 @@ okld_ch_t::lazy_startup (evb_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-okld_ch_t::reserve (bool lazy, evb_t ev)
+okld_ch_cluster_t::reserve (bool lazy, evb_t ev)
 {
   tvars {
     ptr<aclnt> cli;
@@ -649,7 +649,7 @@ okld_ch_t::reserve (bool lazy, evb_t ev)
 //-----------------------------------------------------------------------
 
 str
-okld_ch_t::unique_proc_name () const
+okld_ch_cluster_t::unique_proc_name () const
 {
   return unique_proc_name (_servpath, _brother_id);
 }
@@ -657,7 +657,7 @@ okld_ch_t::unique_proc_name () const
 //-----------------------------------------------------------------------
 
 str 
-okld_ch_t::unique_proc_name (const oksvc_proc_t &p)
+okld_ch_cluster_t::unique_proc_name (const oksvc_proc_t &p)
 {
   size_t i = p.brother_id >= 0 ? p.brother_id : 0;
   return unique_proc_name (p.name, i);
@@ -666,7 +666,7 @@ okld_ch_t::unique_proc_name (const oksvc_proc_t &p)
 //-----------------------------------------------------------------------
 
 str
-okld_ch_t::unique_proc_name (str p, size_t i)
+okld_ch_cluster_t::unique_proc_name (str p, size_t i)
 {
   strbuf b;
   b << p << "-" << i;
@@ -676,7 +676,7 @@ okld_ch_t::unique_proc_name (str p, size_t i)
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::set_brother_id (size_t id, size_t total)
+okld_ch_cluster_t::set_brother_id (size_t id, size_t total)
 {
   assert (id < total);
   _brother_id = id;

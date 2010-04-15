@@ -64,7 +64,7 @@ get_env_params (vec<str> *in, vec<str> *out)
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::add_args (const vec<str> &v)
+okld_ch_cluster_t::add_args (const vec<str> &v)
 {
   for (u_int i = 0; i < v.size (); i++) 
     args.push_back (v[i]);
@@ -350,7 +350,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   str exe, httppath;
 
   okws1_port_t port;
-  ptr<okld_ch_t> chld;
+  ptr<okld_ch_cluster_t> chld;
   svc_options_t so;
 
   strip_comments (&s);
@@ -404,7 +404,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   warnx << ")\n";
 
   for (size_t i = 0; i < so.n_procs (); i++) {
-    chld = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
+    chld = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, env, port);
     chld->add_args (s);
     chld->set_service_options (so);
     chld->set_brother_id (i, so.n_procs ());
@@ -435,8 +435,8 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   okws1_port_t port;
   okld_interpreter_t *ipret = NULL;
   str ipret_str;
-  ptr<okld_ch_t> ch;
-  ptr<okld_ch_t> primary;
+  ptr<okld_ch_cluster_t> ch;
+  ptr<okld_ch_cluster_t> primary;
   svc_options_t so;
 
   // Remove the '#' and everything after...
@@ -511,7 +511,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
       ch = New refcounted<okld_ch_script_t> (exe, httppath, this, loc, 
 					     ipret, u, env, port);
     } else {
-      ch = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
+      ch = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, env, port);
     }
     ch->set_service_options (so);
     ch->set_brother_id (i, so.n_procs ());
@@ -598,7 +598,7 @@ okld_t::check_services_and_aliases ()
   // first perform sanity check among services
   u_int sz = svcs.size ();
   for (u_int i = 0; i < sz; i++) {
-    okld_ch_t *svc = svcs[i];
+    okld_ch_cluster_t *svc = svcs[i];
     str s = fix_uri (svc->_servpath);
     str loc = svc->loc ();
     if (!svc->is_primary ()) { /* noop */ }
@@ -1105,7 +1105,7 @@ okld_t::fix_uids ()
 
   // struct passwd *pw;
   // struct group *gr;
-  okld_ch_t *svc;
+  okld_ch_cluster_t *svc;
   for (int i = 0; i < lim; i++) {
     svc = svcs[i];
 
@@ -1227,13 +1227,13 @@ tamed void
 okld_t::poke_lazy_service_2 (const oksvc_proc_t &p, okstat_ev_t ev)
 {
   tvars {
-    ptr<okld_ch_t> *ch;
+    ptr<okld_ch_cluster_t> *ch;
     ok_xstatus_typ_t ret;
     bool ok;
     str un;
   }
 
-  un = okld_ch_t::unique_proc_name (p);
+  un = okld_ch_cluster_t::unique_proc_name (p);
 
   if ((ch = _svc_lookup[un])) {
     if (sdflag) {
@@ -2086,7 +2086,7 @@ okld_t::got_ssl_primary_port (vec<str> v, str loc, bool *errp)
 //-----------------------------------------------------------------------
 
 void
-okld_t::add_svc (ptr<okld_ch_t> ch)
+okld_t::add_svc (ptr<okld_ch_cluster_t> ch)
 {
   svcs.push_back (ch);
   _svc_lookup.insert (ch->unique_proc_name (), ch);
