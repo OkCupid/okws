@@ -347,6 +347,7 @@ public:
   int gid;                 // GID of whever will be running this thing
 
   void set_brother_id (size_t id, size_t total);
+  void set_primary (ptr<okld_ch_t> c) { _primary = c; }
   void set_svc_ids ();
   void set_run_dir (const str &d) { rundir = d; }
   void chldcb (int status);
@@ -400,6 +401,7 @@ private:
   ok_direct_ports_t _direct_ports;
 
   size_t _brother_id, _n_brothers;
+  ptr<okch_t> _primary; // the primary brother, or NULL if this is the primary
 
   tame::lock_t _lazy_lock;
 };

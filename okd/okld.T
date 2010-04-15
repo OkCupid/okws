@@ -436,6 +436,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   okld_interpreter_t *ipret = NULL;
   str ipret_str;
   ptr<okld_ch_t> ch;
+  ptr<okld_ch_t> primary;
   svc_options_t so;
 
   // Remove the '#' and everything after...
@@ -514,7 +515,9 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     }
     ch->set_service_options (so);
     ch->set_brother_id (i, so.n_procs ());
+    ch->set_primary (primary);
     add_svc (ch);
+    primary = ch;
   }
 
   return;
