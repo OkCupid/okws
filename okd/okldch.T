@@ -35,10 +35,15 @@ extern char ** environ;
 okld_ch_t::okld_ch_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		      ok_usr_t *u, vec<str> env_in, u_int16_t p)
   : okld_jailed_exec_t (e, o, cfl),
-    servpath (s), uid (u), gid (-1),
-    state (OKC_STATE_NONE), rcb (NULL),
+    _servpath (s), 
+    uid (u), 
+    gid (-1),
+    state (OKC_STATE_NONE), 
+    rcb (NULL),
     startup_time (0), 
-    env (env_in), port (p)
+    env (env_in), 
+    port (p),
+    _lazy_lock (tame::lock_t::OPEN)
 {}
 
 str
@@ -164,7 +169,7 @@ okld_ch_t::launch (evv_t::ptr ev)
     int logfd;
     int pub3fd (-1);
     clone_only_client_t *p;
-    okws_svc_descriptor_t arg;
+    oksvc_descriptor_t arg;
     ok_xstatus_typ_t res;
     clnt_stat err;
     vec<str> argv;
@@ -172,6 +177,13 @@ okld_ch_t::launch (evv_t::ptr ev)
     ptr<axprt_unix> x;
     int ctlfd;
     str report_exe;
+    str s_id;
+  }
+
+  if (_n_brothers > 1) { 
+    s_id = strbuf ("%s-%zd", _servpath.cstr (), _brother_id);
+  } else {
+    s_id = _servpath;
   }
 
   if (startup_time == 0)
@@ -186,7 +198,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 
   if (logfd < 0) {
     strbuf b;
-    b << "HOSED: Cannot connect to oklogd for server: (" << servpath << ","
+    b << "HOSED: Cannot connect to oklogd for server: (" << s_id << ","
       << rexecpath << ")\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
@@ -195,7 +207,7 @@ okld_ch_t::launch (evv_t::ptr ev)
 
   if (p && pub3fd < 0) {
     strbuf b;
-    b << "HOSED: Cannot connect to pubd -2 for server: (" << servpath << ","
+    b << "HOSED: Cannot connect to pubd for server: (" << s_id << ","
       << rexecpath << ")\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
@@ -207,16 +219,19 @@ okld_ch_t::launch (evv_t::ptr ev)
     if (pub3fd >= 0) close (pub3fd);
     strbuf b;
     b << "HOSED: shutdown received while relaunching service: ("
-      << servpath << "," << rexecpath << ")\n";
+      << s_id << "," << rexecpath << ")\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_HOSED;
     return;
   }
 
-  _direct_ports.init (_svc_options.ports);
-  if (!_direct_ports.bind (servpath, okld->listenaddr)) {
+  // Pass the brother arrangement, so in the case of brothers, 
+  // only the appropriate one will bind to the appropriate port.
+  _direct_ports.init (_svc_options.ports, _brother_id, _n_brothers);
+
+  if (!_direct_ports.bind (_servpath, okld->listenaddr)) {
     strbuf b;
-    b << "cannot bind to all direct ports (" << servpath 
+    b << "cannot bind to all direct ports (" << s_id  
       << "," << rexecpath << ")\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_BADPORTS;
@@ -247,9 +262,9 @@ okld_ch_t::launch (evv_t::ptr ev)
     argv.push_back (args[i]);
 
   // per-service options might override global options here
-  if (!_svc_options.apply_global_defaults (servpath)) {
+  if (!_svc_options.apply_global_defaults (_servpath)) {
     strbuf b;
-    b << "cannot apply configuration parameters (" << servpath 
+    b << "cannot apply configuration parameters (" << s_id  
       << "); aborting service\n";
     okdbg_warn (ERROR, b);
     state = OKC_STATE_BADPORTS;
@@ -269,6 +284,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.insert ("gziplev", _svc_options.gzip_level, false);
   okld->env.insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
   okld->env.insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
+  okld->env.insert ("bid", _brother_id);
 
   argv.push_back (okld->env.encode ());
 
@@ -286,6 +302,7 @@ okld_ch_t::launch (evv_t::ptr ev)
   okld->env.remove ("gzip");
   okld->env.remove ("gziplev");
   okld->env.remove ("aczw");
+  okld->env.remove ("bid");
 
   {
 
@@ -299,27 +316,29 @@ okld_ch_t::launch (evv_t::ptr ev)
 			     env_tmp);
   }
 
-  pid = axprt_unix_spawn_pid;
+  _pid = axprt_unix_spawn_pid;
   close (logfd);
   if (pub3fd >= 0) close (pub3fd);
   _direct_ports.close ();
 
   if (!x) {
-    warn << "HOSED: Cannot launch service: (" << servpath << "," 
+    warn << "HOSED: Cannot launch service: (" << s_id << "," 
 	 << rexecpath << ")\n";
     state = OKC_STATE_HOSED;
   } else {
    
     OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
-	   report_exe.cstr (), int (pid));
+	   report_exe.cstr (), int (_pid));
 
-    ::chldcb (pid, wrap (this, &okld_ch_t::chldcb));
+    ::chldcb (_pid, wrap (this, &okld_ch_t::chldcb));
 
     // if we're shutting down, okld->_okd_cli will be NULL
     if (okld->okd ().cli ()) {
       ctlfd = x->reclaim ();
-      arg.pid = pid;
-      arg.name = servpath;
+      arg.pid = _pid;
+      arg.proc.brother_id = _brother_id;
+      arg.proc.num_brothers = _n_brothers;
+      arg.proc.name = _servpath;
       twait {
 	okld->okd ().x ()->sendfd (ctlfd);
 	RPC::okld_program_1::okld_new_service (okld->okd ().cli (),
@@ -328,10 +347,10 @@ okld_ch_t::launch (evv_t::ptr ev)
      
       state = OKC_STATE_HOSED;
       if (err) {
-	warn << "HOSED: Cannot send service to okd (" << servpath << "): "
+	warn << "HOSED: Cannot send service to okd (" << s_id << "): "
 	     << err << "\n";
       } else if (res != OK_STATUS_OK) {
-	warn << "HOSED: Okd rejected service (" << servpath << ") with code="
+	warn << "HOSED: Okd rejected service (" << s_id << ") with code="
 	     << int (res) << "\n";
       } else {
 	state = OKC_STATE_SERVE;
@@ -348,7 +367,7 @@ void
 okld_ch_t::set_svc_ids ()
 {
   // after fork, we need to set our PID
-  pid = getpid ();
+  _pid = getpid ();
 
   if (!okld->is_superuser ())
     return;
@@ -535,12 +554,19 @@ okld_ch_t::lazy_startup (evb_t ev)
   tvars {
     bool ret (true);
   }
-  if (state == OKC_STATE_STANDBY) {
+  twait { _lazy_lock.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
+
+  if (state == OKC_STATE_SERVE) {
+    ret = true;
+  } else if (state == OKC_STATE_STANDBY) {
     twait { launch (mkevent ());  }
     ret = (state == OKC_STATE_SERVE);
   } else {
     ret = false;
   }
+
+  _lazy_lock.release ();
+
   ev->trigger (ret);
 }
 
@@ -552,7 +578,7 @@ okld_ch_t::reserve (bool lazy, evb_t ev)
   tvars {
     ptr<aclnt> cli;
     clnt_stat err;
-    okws_svc_reserve_arg_t arg;
+    oksvc_reserve_arg_t arg;
     ok_xstatus_typ_t res;
     bool ret (true);
   }
@@ -561,26 +587,66 @@ okld_ch_t::reserve (bool lazy, evb_t ev)
     state = OKC_STATE_STANDBY;
   }
   if (cli) {
-    arg.name = servpath;
+    arg.proc.name = _servpath;
+    arg.proc.num_brothers = _n_brothers;
+    arg.proc.brother_id = _brother_id;
+    assert (is_primary ());
     arg.lazy = lazy;
     twait { RPC::okld_program_1::okld_reserve (cli, arg, &res, mkevent (err)); }
     if (err) {
-      warn << "HOSED: Cannot reserve space for service (" << servpath << "): "
+      warn << "HOSED: Cannot reserve space for service (" << _servpath << "): "
 	   << err << "\n";
     } else if (res != OK_STATUS_OK) {
-      warn << "HOSED: Okd rejected resevation (" << servpath << ") with code="
+      warn << "HOSED: Okd rejected resevation (" << _servpath << ") with code="
 	   << int (res) << "\n";
     } else {
       state = OKC_STATE_STANDBY;
     }
   } else {
-    warn << "HOSED: Cannot launch service (" << servpath << ") since "
+    warn << "HOSED: Cannot launch service (" << _servpath << ") since "
 	 << "okd went away\n";
   }
   if (!ret) {
     state = OKC_STATE_HOSED;
   }
   ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
+str
+okld_ch_t::unique_proc_name () const
+{
+  return unique_proc_name (_servpath, _brother_id);
+}
+
+//-----------------------------------------------------------------------
+
+str 
+okld_ch_t::unique_proc_name (const oksvc_proc_t &p)
+{
+  size_t i = p.brother_id >= 0 ? p.brother_id : 0;
+  return unique_proc_name (p.name, i);
+}
+
+//-----------------------------------------------------------------------
+
+str
+okld_ch_t::unique_proc_name (str p, size_t i)
+{
+  strbuf b;
+  b << p << "-" << i;
+  return b;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_ch_t::set_brother_id (size_t id, size_t total)
+{
+  assert (id < total);
+  _brother_id = id;
+  _n_brothers = total;
 }
 
 //-----------------------------------------------------------------------

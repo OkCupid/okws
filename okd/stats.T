@@ -18,7 +18,7 @@ okch_t::stats_collect (okd_stats_t *s, evv_t ev)
 	(clnt, &resp, mkevent (err)); 
     }
     if (err) {
-      warn << servpath << ": error in collecting stats for service: "
+      warn << _servpath << ": error in collecting stats for service: "
 	   << err << "\n";
     } else {
       s->_n_recv += resp.n_recv;
@@ -36,12 +36,17 @@ okd_t::stats_collect (okd_stats_t *s, evv_t ev)
 {
   tvars {
     okch_t *p;
+    vec<okch_t *> all;
+    size_t i;
   }
+
+  servtab.dump (&all);
 
   s->_n_recv = s->_n_sent = s->_n_tot = 0;
 
   twait { 
-    for (p = servtab.first (); p; p = servtab.next (p)) {
+    for (i = 0; i < all.size (); i++) {
+      p = all[i];
       p->stats_collect (s, mkevent ());
     }
   }
@@ -51,7 +56,7 @@ okd_t::stats_collect (okd_stats_t *s, evv_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
-okd_t::render_stats_page (ptr<ahttpcon_clone> x)
+okd_t::render_stats_page (ptr<ahttpcon_clone> x, evv_t ev)
 {
   tvars {
     ptr<http_parser_raw_t> prs;
@@ -75,6 +80,7 @@ okd_t::render_stats_page (ptr<ahttpcon_clone> x)
   v = h ? h->get_vers () : 0;
 
   twait { send_stats_reply (x, stats, v, mkevent ()); }
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------

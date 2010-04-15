@@ -125,6 +125,8 @@ public:
   int getfd () const { return fd; }
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
+  inline int get_remote_port () const { return _remote_port; }
+  hash_t source_hash () const;
   virtual ~ahttpcon ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
@@ -214,6 +216,10 @@ public:
   ptr<bool> destroyed_p;
   void kill ();
   void hit_timeout ();
+
+private:
+  int _remote_port;
+  mutable hash_t _source_hash;
 };
 
 // for parent dispatcher, which will send fd's

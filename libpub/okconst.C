@@ -191,6 +191,7 @@ const char *ok_logd_pidfile = "oklogd.pid";
 const char *ok_coredump_user = ok_root;
 const char *ok_coredump_group = ok_wheel;
 int ok_coredump_mode = 0400;
+size_t ok_max_brother_procs = 20;
 
 //
 // log constants for timing

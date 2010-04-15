@@ -33,11 +33,35 @@ ok_direct_ports_t::add_port_pair (const ok_portpair_t &p)
 //-----------------------------------------------------------------------
 
 void
-ok_direct_ports_t::init (const vec<int> &v)
+ok_direct_ports_t::init (const vec<int> &v, size_t id, size_t n)
 {
   _ports.clear (); // if reiniting after a crash
-  for (size_t i = 0; i < v.size (); i++) {
-    add_port_pair (ok_portpair_t (v[i]));
+
+  //
+  // MK 4/9/2010
+  //
+  // There are two allowable cases, for now.
+  //
+  // If there are multiple "brother" processes, then n > 1, and the
+  // id is the ID of the current brother.  In this case, there must
+  // be the same number of ports as there are brothers, each taking a 
+  // port in sequence.
+  //
+  // If it's a single-child, then it's OK to have multiple port, that
+  // single process binding to all ports.
+  //
+  // This is all a little bit of a hack, but the more general
+  // alternative doesn't seem quite useful...
+  //
+  if (n == 1) {
+    assert (id == 0);
+    for (size_t i = 0; i < v.size (); i++) {
+      add_port_pair (ok_portpair_t (v[i]));
+    }
+  } else {
+    assert (n != 0);
+    assert (n == v.size ());
+    add_port_pair (ok_portpair_t (v[id]));
   }
 }
 

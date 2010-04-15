@@ -42,12 +42,16 @@ extern int optind;
 
 #define PUBD_KEY "PubdExecPath"
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::set_signals ()
 {
   sigcb (SIGTERM, wrap (this, &okld_t::caught_signal, SIGTERM));
   sigcb (SIGINT,  wrap (this, &okld_t::caught_signal, SIGINT));
 }
+
+//-----------------------------------------------------------------------
 
 static void
 get_env_params (vec<str> *in, vec<str> *out)
@@ -57,12 +61,16 @@ get_env_params (vec<str> *in, vec<str> *out)
 }
 
 
+//-----------------------------------------------------------------------
+
 void
 okld_ch_t::add_args (const vec<str> &v)
 {
   for (u_int i = 0; i < v.size (); i++) 
     args.push_back (v[i]);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
@@ -95,12 +103,16 @@ okld_t::check_uri (const str &loc, const str &in, okws1_port_t *port) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::got_okd_exec (vec<str> s, str loc, bool *errp)
 {
   okld_t::got_generic_exec (&_okd, s, loc, errp);
   _okd.activate ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
@@ -112,12 +124,16 @@ okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp)
 {
   okld_t::got_generic_exec (&_okssl, s, loc, errp);
   _okssl.activate ();
 }
+
+//-----------------------------------------------------------------------
 
 static bool
 parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
@@ -129,7 +145,7 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   int ch;
 
   argv_t argv (*v);
-  const char *opts = "eEcCWwu:r:sSt:p:l:h:T:y:z:Z";
+  const char *opts = "eEcCWwu:r:sSt:p:l:h:T:y:z:Zn:";
   while ((ch = getopt (argv.size (), argv, opts)) != -1 && rc) {
     switch (ch) {
     case 'T':
@@ -199,6 +215,21 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
 	rc = false;
       }
       break;
+    case 'n':
+      {
+	size_t tmp; 
+	if (!convertint (optarg, &tmp)) {
+	  warn << loc << ": -n expects an integer argument\n";
+	  rc = false;
+	} else if (tmp < 1 || tmp > ok_max_brother_procs) {
+	  warn << loc << ": -n must be greater than 0 and no more than "
+	       << ok_max_brother_procs << "\n";
+	  rc = false;
+	} else {
+	  so->_n_procs = tmp;
+	}
+      }
+      break;
     case 'e':
       so->pub3_viserr = 1;
       break;
@@ -259,6 +290,8 @@ parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc,
   return rc;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::got_interpreter (vec<str> s, str loc, bool *errp)
 {
@@ -304,7 +337,7 @@ okld_t::got_interpreter (vec<str> s, str loc, bool *errp)
   *errp = true;
 }
 
-
+//-----------------------------------------------------------------------
 
 void
 okld_t::got_service2 (vec<str> s, str loc, bool *errp)
@@ -369,12 +402,15 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   for (u_int i = 0; i < s.size (); i++) 
     warnx << " " << s[i];
   warnx << ")\n";
- 
-  chld = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
-  chld->add_args (s);
-  chld->set_service_options (so);
 
-  add_svc (chld);
+  for (size_t i = 0; i < so.n_procs (); i++) {
+    chld = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
+    chld->add_args (s);
+    chld->set_service_options (so);
+    chld->set_brother_id (i, so.n_procs ());
+    add_svc (chld);
+  }
+
   return;
 
  usage:
@@ -383,6 +419,8 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   *errp = true;
   if (u) delete u;
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
@@ -466,14 +504,18 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   }
 
   warn << cmd << ": URI(" << httppath << ") --> unix(" << exe << ")\n";
-  if (script)
-    ch = New refcounted<okld_ch_script_t> (exe, httppath, this, loc, 
-					   ipret, u, env, port);
-  else
-    ch = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
-  ch->set_service_options (so);
 
-  add_svc (ch);
+  for (size_t i = 0; i < so.n_procs (); i++) {
+    if (script) {
+      ch = New refcounted<okld_ch_script_t> (exe, httppath, this, loc, 
+					     ipret, u, env, port);
+    } else {
+      ch = New refcounted<okld_ch_t> (exe, httppath, this, loc, u, env, port);
+    }
+    ch->set_service_options (so);
+    ch->set_brother_id (i, so.n_procs ());
+    add_svc (ch);
+  }
 
   return;
 
@@ -486,6 +528,8 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
   *errp = true;
   if (u) delete u;
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::got_regex_alias (vec<str> s, str loc, bool *errp)
@@ -513,6 +557,8 @@ okld_t::got_regex_alias (vec<str> s, str loc, bool *errp)
   regex_aliases_tmp.push_back (alias_t (s[1], s[2], loc, 0));
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::got_alias (vec<str> s, str loc, bool *errp)
 {
@@ -536,6 +582,8 @@ okld_t::got_alias (vec<str> s, str loc, bool *errp)
   aliases_tmp.push_back (alias_t (s[1], s[2], loc, port));
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::check_services_and_aliases ()
 {
@@ -548,18 +596,20 @@ okld_t::check_services_and_aliases ()
   u_int sz = svcs.size ();
   for (u_int i = 0; i < sz; i++) {
     okld_ch_t *svc = svcs[i];
-    str s = fix_uri (svc->servpath);
+    str s = fix_uri (svc->_servpath);
     str loc = svc->loc ();
-    if (svctab[s]) {
+    if (!svc->is_primary ()) { /* noop */ }
+    else if (svctab[s]) {
       warn << loc << ": service (" << s << ") specified more than once\n";
       ret = false;
     } else {
       svctab.insert (s);
     }
-    svc->servpath = s;
+    svc->_servpath = s;
 
     s = svc->get_execpath_relative_to_chroot ();
-    if (exetab[s]) {
+    if (!svc->is_primary ()) { /* noop */ }
+    else if (exetab[s]) {
       warn << loc << ": executable (" << s << ") specified more than once\n";
     } else {
       exetab.insert (s);
@@ -606,6 +656,8 @@ okld_t::check_services_and_aliases ()
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::check_ports ()
 {
@@ -627,6 +679,8 @@ okld_t::check_ports ()
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 static
 void got_syslog_levels (vec<str> s, str loc, bool *errp)
 {
@@ -637,6 +691,8 @@ void got_syslog_levels (vec<str> s, str loc, bool *errp)
     }
   }
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_t::parse_file (const str &cf)
@@ -809,6 +865,8 @@ okld_t::parse_file (const str &cf)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::post_config (const str &cf)
 {
@@ -978,6 +1036,8 @@ okld_t::encode_env ()
     env.insert ("mmcf", mmc_file);
 }
 
+//-----------------------------------------------------------------------
+
 
 void
 okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
@@ -988,6 +1048,8 @@ okld_t::got_logd_exec (vec<str> s, str loc, bool *errp)
 				HLP_OPT_PING|HLP_OPT_QUEUE|HLP_OPT_NORETRY,
 				env);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_t::guess_pubd (const str &cf)
@@ -1003,6 +1065,8 @@ okld_t::guess_pubd (const str &cf)
   return !err;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
 {
@@ -1017,6 +1081,8 @@ okld_t::got_pubd_exec (vec<str> s, str loc, bool *errp)
     _pubd_exc->set_command_line_flag ("-x");
   }
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_t::fix_uids ()
@@ -1056,12 +1122,12 @@ okld_t::fix_uids ()
 	uegid = svc->usr ()->getid ();
 	if (uids_in_use[uegid]) {
 	  warn << "The UID " << uegid
-	       << " that you specified for service " << svc->servpath << "\n"
+	       << " that you specified for service " << svc->_servpath << "\n"
 	       << "\t is in use by another, and I'm refusing to use it.\n";
 	  return false;
 	} else if (owners[uegid]) {
 	  warn << "The UID " << uegid
-	       << " that you specified for service " << svc->servpath << "\n"
+	       << " that you specified for service " << svc->_servpath << "\n"
 	       << "\towns the executable of another service, so it's unsafe "
 	       << "to use.\n";
 	  return false;
@@ -1155,16 +1221,20 @@ okld_t::caught_okd_eof ()
 //-----------------------------------------------------------------------
 
 tamed void 
-okld_t::poke_lazy_service_2 (str name, okstat_ev_t ev)
+okld_t::poke_lazy_service_2 (const oksvc_proc_t &p, okstat_ev_t ev)
 {
   tvars {
     ptr<okld_ch_t> *ch;
     ok_xstatus_typ_t ret;
     bool ok;
+    str un;
   }
-  if ((ch = _svc_lookup[name])) {
+
+  un = okld_ch_t::unique_proc_name (p);
+
+  if ((ch = _svc_lookup[un])) {
     if (sdflag) {
-      warn << "Cannot start service " << name << " due to okld shutdown\n";
+      warn << "Cannot start service " << p.name << " due to okld shutdown\n";
       ret = OK_STATUS_DEADCHILD;
     } else {
       twait { (*ch)->lazy_startup (mkevent (ok)); }
@@ -1201,10 +1271,10 @@ okld_t::poke_lazy_service (svccb *sbp)
 {
   tvars {
     RPC::okld_program_1::okld_poke_lazy_service_srv_t<svccb> srv (sbp);
-    const okws_svc_descriptor_t *arg (srv.getarg ());
+    const oksvc_descriptor_t *arg (srv.getarg ());
     ok_xstatus_typ_t typ;
   }
-  twait { poke_lazy_service_2 (arg->name, mkevent (typ)); }
+  twait { poke_lazy_service_2 (arg->proc, mkevent (typ)); }
   srv.reply (typ);
 }
 
@@ -1217,6 +1287,8 @@ okld_t::shutdown1 ()
   sdflag = true;
   _okd.disconnect ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::shutdown2 (int status)
@@ -1260,6 +1332,8 @@ okld_t::okld_exit (int code)
   exit (code);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::fixup_ssl_ports ()
 {
@@ -1276,6 +1350,8 @@ okld_t::fixup_ssl_ports ()
   }
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 okld_t::launch_okssl (evb_t ev)
@@ -1360,6 +1436,8 @@ okld_t::launch_okssl (evb_t ev)
   ev->trigger (rc);
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::launch_okd (int logfd, int pub2fd)
 {
@@ -1403,6 +1481,8 @@ okld_t::launch_okd (int logfd, int pub2fd)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::check_service_ports ()
 {
@@ -1420,6 +1500,8 @@ okld_t::check_service_ports ()
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::check_exes ()
 {
@@ -1436,12 +1518,16 @@ okld_t::check_exes ()
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 static void
 usage ()
 {
   warnx << "usage: okld [-q?] [-D <dbg>] [-f <configfile>]\n";
   exit (1);
 }
+
+//-----------------------------------------------------------------------
 
 int
 main (int argc, char *argv[])
@@ -1510,11 +1596,15 @@ main (int argc, char *argv[])
   amain ();
 }
 
+//-----------------------------------------------------------------------
+
 bool
 okld_t::init_ssl ()
 {
   return _okssl.configure_keys ();
 }
+
+//-----------------------------------------------------------------------
 
 tamed void 
 okld_t::launch (str cf)
@@ -1577,6 +1667,8 @@ okld_t::launch (str cf)
   launchservices ();
 }
   
+//-----------------------------------------------------------------------
+
 tamed
 void okld_t::launchservices ()
 {
@@ -1590,7 +1682,7 @@ void okld_t::launchservices ()
     if (sdflag) {
       warn << "Skipping service reservation due to shutdown flag.\n";
       return;
-    } else {
+    } else if (svcs[i]->is_primary ()) {
       twait { svcs[i]->reserve (lazy_startup (), mkevent (ok)); }
     }
   }
@@ -1675,6 +1767,8 @@ okld_t::init_jaildir ()
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::clock_daemon_died (int sig)
 {
@@ -1684,6 +1778,8 @@ okld_t::clock_daemon_died (int sig)
   mmcd_pid = -1;
 }
 
+//-----------------------------------------------------------------------
+
 void
 okld_t::relaunch_clock_daemon (int sig)
 {
@@ -1691,6 +1787,8 @@ okld_t::relaunch_clock_daemon (int sig)
   init_clock_daemon ();
 }
 
+
+//-----------------------------------------------------------------------
 
 void
 okld_t::init_clock_daemon ()
@@ -1720,12 +1818,16 @@ okld_t::init_clock_daemon ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 static void
 init_interpreter (bool *ok, okld_interpreter_t *i)
 {
   if (!i->base_init ())
     *ok = false;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_t::init_interpreters ()
@@ -1739,6 +1841,8 @@ okld_t::init_interpreters ()
 
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 svc_options_t::apply_global_defaults (const str &s)
@@ -1982,7 +2086,7 @@ void
 okld_t::add_svc (ptr<okld_ch_t> ch)
 {
   svcs.push_back (ch);
-  _svc_lookup.insert (ch->servpath, ch);
+  _svc_lookup.insert (ch->unique_proc_name (), ch);
 }
 
 //-----------------------------------------------------------------------
@@ -1997,6 +2101,13 @@ svc_options_t::check_options (const str &loc) const
 	 << "must be less than high watermark (" << hiwat << ")\n";
     ok = false;
   }
+
+  if (n_procs() > 1 && ports.size () > 0 && ports.size () != n_procs ()) {
+    warn << loc << ": if specifying -n and -p, must specify the same "
+	 << "number of ports as processes (implying a 1-to-1 mapping)\n";
+    ok = false;
+  }
+
   return ok;
 }
 

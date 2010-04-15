@@ -64,22 +64,22 @@ public:
 
 class okmgr_launch_t : public okmgr_clnt_t {
 public:
-  okmgr_launch_t (const str &s, const vec<str> &f, 
+  okmgr_launch_t (const str &s, const oksvc_procs_t &p,
 		  ok_set_typ_t t = OK_SET_SOME);
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
-  ok_progs_t _progs;
+  oksvc_procs_t _procs;
 };
 
 //-----------------------------------------------------------------------
 
 class okmgr_leak_checker_t : public okmgr_clnt_t {
 public:
-  okmgr_leak_checker_t (const str &s, const str &prog,
+  okmgr_leak_checker_t (const str &s, const oksvc_proc_t &p,
 			ok_diagnostic_cmd_t cmd);
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
-  ok_prog_t _prog;
+  oksvc_proc_t _proc;
   ok_diagnostic_cmd_t _cmd;
 };
 
@@ -90,11 +90,11 @@ private:
 
 class okmgr_profiler_t : public okmgr_clnt_t {
 public:
-  okmgr_profiler_t (const str &s, const str &prog,
-			ok_diagnostic_cmd_t cmd);
+  okmgr_profiler_t (const str &s, const oksvc_proc_t &p,
+		    ok_diagnostic_cmd_t cmd);
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
-  ok_prog_t _prog;
+  oksvc_proc_t _proc;
   ok_diagnostic_cmd_t _cmd;
 };
 

@@ -30,7 +30,7 @@
 static void
 usage ()
 {
-  warnx << "usage: okmgr [ -l | -t | -1 ] [-av] [-s <socket> | -f <conf> ]"
+  warnx << "usage: okmgr [ -l | -t ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
 	<< "       okmgr <-c|-p> [ enable | disable | print | clear ] "
 	<< "[-s <socket> | -f <conf>] <svc>\n";
@@ -45,27 +45,53 @@ okmgr_clnt_t::okmgr_clnt_t (const str &s)
 
 //-----------------------------------------------------------------------
 
-okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, const str &prog,
+okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, 
+					    const oksvc_proc_t &p,
 					    ok_diagnostic_cmd_t cmd)
-  : okmgr_clnt_t (s), _prog (prog), _cmd (cmd) {}
+  : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
 
 //-----------------------------------------------------------------------
 
-okmgr_profiler_t::okmgr_profiler_t (const str &s, const str &prog,
+okmgr_profiler_t::okmgr_profiler_t (const str &s, 
+				    const oksvc_proc_t &p,
 				    ok_diagnostic_cmd_t cmd)
-  : okmgr_clnt_t (s), _prog (prog), _cmd (cmd) {}
+  : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
 
 //-----------------------------------------------------------------------
 
-okmgr_launch_t::okmgr_launch_t (const str &s, const vec<str> &f,
+okmgr_launch_t::okmgr_launch_t (const str &s, const oksvc_procs_t &p,
 				ok_set_typ_t t) 
-  : okmgr_clnt_t (s), _progs (t)
+  : okmgr_clnt_t (s), _procs (p)
+{}
+
+//-----------------------------------------------------------------------
+
+static oksvc_proc_t
+str2proc (const str &in, int def)
 {
-  if (t == OK_SET_SOME) {
-    _progs.progs->setsize (f.size ());
-    for (size_t i = 0; i < f.size (); i++)
-      (*_progs.progs)[i] = f[i];
+  oksvc_proc_t ret;
+  ret.num_brothers = 0;
+  static rxx x ("^(\\S+):([0-9]+)$");
+  if (x.match (in) && convertint (x[2], &ret.brother_id)) {
+    ret.name = x[1];
+  } else {
+    ret.name = in;
+    ret.brother_id = def;
   }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+static oksvc_procs_t 
+strs2procs (const vec<str> &files, int def)
+{
+  oksvc_procs_t ret (OK_SET_SOME);
+  ret.procs->setsize (files.size ());
+  for (size_t i = 0; i < files.size (); i++) {
+    (*ret.procs)[i] = str2proc (files[i], def);
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -86,7 +112,7 @@ okmgr_logturn_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 void
 okmgr_launch_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
-  h->call (OKMGR_RELAUNCH, &_progs, s, cb);
+  h->call (OKMGR_RELAUNCH, &_procs, s, cb);
 }
 
 //-----------------------------------------------------------------------
@@ -266,13 +292,13 @@ main (int argc, char *argv[])
   okmgr_clnt_t *t = NULL;
   switch (m) {
   case CTL_MODE_LEAK_CHECKER:
-    t = New okmgr_leak_checker_t (sockname, files[0], cmd);
+    t = New okmgr_leak_checker_t (sockname, str2proc (files[0], 0), cmd);
     break;
   case CTL_MODE_PROFILER:
-    t = New okmgr_profiler_t (sockname, files[0], cmd);
+    t = New okmgr_profiler_t (sockname, str2proc (files[0], 0), cmd);
     break;
   case CTL_MODE_LAUNCH:
-    t = New okmgr_launch_t (sockname, files, set_typ);
+    t = New okmgr_launch_t (sockname, strs2procs (files, -1), set_typ);
     break;
   case CTL_MODE_LOGTURN:
     t = New okmgr_logturn_t (sockname);
@@ -293,7 +319,7 @@ void
 okmgr_leak_checker_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
   okmgr_diagnostic_arg_t arg;
-  arg.prog = _prog;
+  arg.proc = _proc;
   arg.cmd = _cmd;
 
   RPC::okmgr_program_1::okmgr_leak_checker (h, arg, s, cb);
@@ -305,7 +331,7 @@ void
 okmgr_profiler_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
   okmgr_diagnostic_arg_t arg;
-  arg.prog = _prog;
+  arg.proc = _proc;
   arg.cmd = _cmd;
 
   RPC::okmgr_program_1::okmgr_profiler (h, arg, s, cb);

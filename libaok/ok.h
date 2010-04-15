@@ -55,7 +55,8 @@ typedef enum { OKC_STATE_NONE = 0,
                OKC_STATE_KILLING = 8,
 	       OKC_STATE_TOOBUSY = 9,
 	       OKC_STATE_STANDBY = 10,
-		   OKC_STATE_BADPORTS = 11 } okc_state_t;
+	       OKC_STATE_BADPORTS = 11,
+	       OKC_STATE_KILLED = 12 } okc_state_t;
 
 
 //-----------------------------------------------------------------------
@@ -161,6 +162,7 @@ public:
     : _con (c), _demux_data (demux_data_t::alloc (x)) {}
   ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg2_t &x)
     : _con (c), _demux_data (demux_data_t::alloc (x)) {}
+  ahttpcon_wrapper_t () {}
   ptr<A> con () { return _con; }
   ptr<const A> con () const { return _con; }
   ptr<demux_data_t> demux_data () { return _demux_data; }
@@ -214,7 +216,7 @@ struct ok_portpair_t {
 struct ok_direct_ports_t {
 public:
   ok_direct_ports_t () {}
-  void init (const vec<int> &p);
+  void init (const vec<int> &p, size_t id, size_t n);
   bool bind (const str &prog, u_int32_t listenaddr);
   str encode_as_str () const;
   void close ();
@@ -679,7 +681,7 @@ public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
       wait_for_signal_in_startup (false),
-      _n_newcli (0)
+      _n_newcli (0), _brother_id (0)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -781,6 +783,7 @@ protected:
   u_int n_reqs; // total number of requests served
   bool wait_for_signal_in_startup;
   int _n_newcli;
+  size_t _brother_id;
 
 private:
 };
@@ -817,7 +820,7 @@ do {                                           \
 #define CH_MSG(M,x)                            \
 do {                                           \
   strbuf b;                                    \
-  b << servpath << ":" << pid << ": " << x ;   \
+  b << _servpath << ":" << _pid << ": " << x ; \
   okdbg_warn (M, b);                           \
 } while (0)
 
@@ -849,7 +852,6 @@ void set_sfs_select_policy ();
 
 void timespec_to_xdr (const struct timespec &ts, okctl_timespec_t *x);
 void xdr_to_timespec (const okctl_timespec_t &x, struct timespec *ts);
-
 
 //-----------------------------------------------------------------------
 

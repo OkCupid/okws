@@ -40,7 +40,7 @@ okd_t::shutdown_wait (okd_t::shutdown_rv_t *rv, evb_t ev)
   while (servtab.size () && !timeout) { 
     twait (*rv, ch, df);
     if (!ch) timeout = true;
-    else if (!*df) delete ch;
+    else if (!*df) { ch->killed (); }
   }
   ev->trigger (timeout);
 }
@@ -112,8 +112,10 @@ void
 okd_t::kill_srvcs (oksig_t sig, shutdown_rv_t *rv)
 {
   okch_t *ch;
-  ihash_iterator_t<okch_t, servtab_t> it (servtab);
-  while ((ch = it.next ())) {
+  vec<okch_t *> all;
+  servtab.dump (&all);
+  for (size_t i = 0; i < all.size(); i++) {
+    ch = all[i];
     ch->shutdown (sig, mkevent (*rv, ch, ch->get_destroyed_flag ()));
   }
 }

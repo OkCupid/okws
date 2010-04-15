@@ -374,22 +374,6 @@ okd_t::post_config (const str &fn)
 //-----------------------------------------------------------------------
 
 void
-okd_t::closed_fd ()
-{
-  nfd_in_xit --;
-
-  //warn << "debug/global: dec: " << nfd_in_xit << "\n";
-
-  if (_accept_ready &&
-      nfd_in_xit < int (okd_fds_low_wat) && 
-      !accept_enabled)
-
-    enable_accept ();
-}
-
-//-----------------------------------------------------------------------
-
-void
 okd_t::strip_privileges ()
 {
   if (!uid) {
@@ -414,11 +398,17 @@ okd_t::strip_privileges ()
 
 //-----------------------------------------------------------------------
 
-void
-okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
+tamed void
+okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status, 
+	       evv_t ev)
 {
-  ref<ahttpcon_clone> x (acw.con ());
-  okws1_port_t port = acw.demux_data ()->port ();
+  tvars {
+    ref<ahttpcon_clone> x (acw.con ());
+    okws1_port_t port (acw.demux_data ()->port ());
+    size_t i;
+    okch_cluster_t *c;
+    str *s2;
+  }
 
   if (!s && status == HTTP_OK)
     status = HTTP_TIMEOUT;
@@ -427,7 +417,7 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
     x->declone ();
     error (x, status);
   } else if (_stat_page_url && s == _stat_page_url) {
-    render_stats_page (acw.con ());
+    twait { render_stats_page (acw.con (), mkevent ()); }
   } else {
     
     // for services not on the default port, rewrite the request
@@ -439,16 +429,16 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
     }
 
     // first check the aliases table
-    str *s2 = aliases[s];
+    s2 = aliases[s];
     
     // if no alias, then maybe the real name was used
     if (!s2) s2 = &s;
 
-    okch_t *c = servtab[*s2];
+    c = servtab[*s2];
 
     // check the regex table, as a last resort, if no
     // child was found
-    for (u_int i = 0; !c && i < regex_aliases.size (); i++) {
+    for (i = 0; !c && i < regex_aliases.size (); i++) {
       regex_alias_t &ra = regex_aliases[i];
       if (ra._rxx.match (s)) {
 	c = servtab[ra._target];
@@ -473,9 +463,10 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status)
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
     } else {
-      c->clone (acw);
+      twait { c->clone (acw, mkevent ()); }
     }
   }
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -504,11 +495,19 @@ okd_t::newserv (int fd)
 
 //-----------------------------------------------------------------------
 
-void
+tamed void
 okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
 		 const ssl_ctx_t *ssl)
 {
-  u_int freq = okd_debug_msg_freq;
+  tvars {
+    ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
+    holdvar ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl));
+    ahttpcon_wrapper_t<ahttpcon_clone> acw (x, dd);
+    u_int freq (okd_debug_msg_freq);
+    str s;
+    int status;
+  }
+
   reqid ++;
 
   // debug messaging
@@ -521,8 +520,11 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   }
   
   nfd_in_xit ++;  // keep track of the number of FDs in transit
-  close_on_exec (nfd);
+  if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
+    disable_accept ();
+  }
 
+  close_on_exec (nfd);
 
   // I don't think there's really a good need for this.  Plus,
   // certail FiOS users complained that they couldn't receive
@@ -531,30 +533,26 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   if (!proxied && _okd_nodelay) {
     tcp_nodelay (nfd);
   }
-
-  ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
-  ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl));
-  ahttpcon_wrapper_t<ahttpcon_clone> acw (x, dd);
   
   xtab.reg (x, x->destroyed_p);
-  
-  //
-  // when this file descriptor is closed on our end, we need
-  // to decrement nfd_in_xit
-  //
-  // No longer necesary; for now leave it in
-  //
-  x->set_close_fd_cb (wrap (this, &okd_t::closed_fd));
-  
   
   OKDBG4(OKD_NOISY_CONNECTIONS, CHATTER,
 	 "accepted connection from %s\n", x->get_remote_ip ().cstr ());
   
-  x->setccb (wrap (this, &okd_t::sclone, acw));
-  
-  if (nfd_in_xit > int (okd_fds_high_wat) && accept_enabled) {
-    disable_accept ();
+  // Listen for enough data on x until we're ready to demux the 
+  // incoming connection.
+  twait { x->setccb (mkevent (s, status)); }
+
+  // Handle the result of that demux in 'sclone', which might eventually
+  // clone the connection and pass it on to a child OKWS service.
+  twait { sclone (acw, s, status, mkevent ()); }
+
+  nfd_in_xit--;
+  if (_accept_ready && nfd_in_xit < int (okd_fds_low_wat) && 
+      !accept_enabled) {
+    enable_accept ();
   }
+
 }
 
 //-----------------------------------------------------------------------
@@ -777,7 +775,7 @@ okd_t::okld_dispatch (svccb *sbp)
     case OKLD_NEW_SERVICE:
       {
 	RPC::okld_program_1::okld_new_service_srv_t<svccb> srv (sbp);
-	const okws_svc_descriptor_t *arg = srv.getarg ();
+	const oksvc_descriptor_t *arg = srv.getarg ();
 	int fd = _okld_x->recvfd ();
 	ok_xstatus_typ_t st;
 	if (fd >= 0)  {
@@ -792,8 +790,8 @@ okd_t::okld_dispatch (svccb *sbp)
     case OKLD_RESERVE:
       {
 	RPC::okld_program_1::okld_reserve_srv_t<svccb> srv (sbp);
-	const okws_svc_reserve_arg_t *arg = srv.getarg ();
-	ok_xstatus_typ_t st = reserve_child (arg->name, arg->lazy);
+	const oksvc_reserve_arg_t *arg = srv.getarg ();
+	ok_xstatus_typ_t st = reserve_child (arg->proc, arg->lazy);
 	srv.reply (st);
       }
       break;
@@ -843,29 +841,30 @@ okd_t::listen_from_ssl (int fd)
 //-----------------------------------------------------------------------
 
 void
-okd_t::got_child_fd (int fd, const okws_svc_descriptor_t &d)
+okd_t::got_child_fd (int fd, const oksvc_descriptor_t &d)
 {
-  str uri = fix_uri (d.name);
-  okch_t *ch;
+  str uri = fix_uri (d.proc.name);
+  okch_cluster_t *ch;
   if (!(ch = servtab[uri])) {
     // calling New will insert the object into the table
-    ch = New okch_t (this, uri);
+    ch = New okch_cluster_t (this, uri, OKC_STATE_NONE, d.proc.num_brothers);
   }
-  ch->got_new_ctlx_fd (fd, d.pid);
+  assert (d.proc.brother_id < d.proc.num_brothers);
+  ch->child (d.proc.brother_id)->got_new_ctlx_fd (fd, d.pid);
 }
 
 //-----------------------------------------------------------------------
 
 ok_xstatus_typ_t
-okd_t::reserve_child (const str &nm, bool lazy)
+okd_t::reserve_child (const oksvc_proc_t &p, bool lazy)
 {
-  okch_t *ch;
+  okch_cluster_t *ch;
   ok_xstatus_typ_t ret = OK_STATUS_OK;
   okc_state_t st = lazy ? OKC_STATE_STANDBY : OKC_STATE_NONE;
-  if (!(ch = servtab[nm])) {
-    ch = New okch_t (this, nm, st);
+  if (!(ch = servtab[p.name])) {
+    ch = New okch_cluster_t (this, p.name, st, p.num_brothers);
   } else {
-    ch->set_state (st);
+    ch->set_states (st);
     ret = OK_STATUS_DUP;
   }
   return ret;
@@ -910,12 +909,10 @@ class child_applicator_t {
 public:
   child_applicator_t () : _ok (true) {}
   virtual ~child_applicator_t () {}
-  void run (okd_t::servtab_t *t, const ok_progs_t &x, evv_t ev, CLOSURE);
-  virtual void apply (const ok_prog_t &p, okch_t *ch, evs_t ev, CLOSURE) = 0;
-  virtual void nochild (const ok_prog_t &p, evv_t ev, CLOSURE) 
-  { ev->trigger (); }
+  void run (servtab_t *t, const oksvc_procs_t &x, evv_t ev, CLOSURE);
+  virtual void apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev, CLOSURE) = 0;
   void fill_status (ok_xstatus_t *out);
-  void hit_error (str prog, str e);
+  void hit_error (const oksvc_proc_t &p, str e);
 private:
   bool _ok;
   vec<str> _err;
@@ -924,60 +921,66 @@ private:
 //-----------------------------------------------------------------------
 
 tamed void
-child_applicator_t::run (okd_t::servtab_t *t, const ok_progs_t &x, evv_t ev)
+child_applicator_t::run (servtab_t *t, const oksvc_procs_t &x, evv_t ev)
 {
   tvars {
-    size_t lim (0), j (0);
-    ok_prog_t prog; 
-    okch_t *o;
-    vec<str> progs;
+    size_t lim (0), j (0), i (0);
+    oksvc_proc_t proc; 
+    vec<oksvc_proc_t> procs;
     vec<str> errors;
-    ihash_iterator_t<okch_t, okd_t::servtab_t> it (*t);
+    okch_t *ch;
+    oksvc_proc_t xp;
+    vec<okch_t *> chs;
+    size_t n;
   }
 
   if (x.typ == OK_SET_ALL) {
-    lim = t->size ();
-    errors.setsize (lim);
-    twait {
-      while ((o = it.next ())) {
-	progs.push_back (o->servpath);
-	apply (o->servpath, o, mkevent (errors[j++]));
-      }
-    }
+
+    t->dump (&chs);
+    errors.setsize (chs.size ());
 
   } else if (x.typ == OK_SET_SOME) {
-    lim = x.progs->size ();
-    errors.setsize (lim);
-    twait { 
-      for (j = 0; j < lim; j++) {
-	prog = (*x.progs)[j];
-	progs.push_back (prog);
-	if ((o = (*t)[prog])) {
-	  apply (prog, o, mkevent (errors[j]));
-	} else {
-	  strbuf b ("cannot find program: ");
-	  b << prog;
-	  errors[j] = b;
-	  nochild (prog, mkevent ());
-	}
+
+    lim = x.procs->size ();
+    for (j = 0; j < lim; j++) {
+      proc = (*x.procs)[j];
+      n = t->mget (proc, &chs);
+
+      if (!t->mget (proc, &chs)) {
+	strbuf b ("cannot find program: ");
+	b << proc.name;
+	_err.push_back (b);
+	_ok = false;
       }
     }
   }
 
-  for (j = 0; j < lim; j++) {
-    hit_error (progs[j], errors[j]);
-  }
+  errors.setsize (chs.size ());
 
+  twait {
+    for (i = 0; i < chs.size (); i++) {
+      ch = chs[i];
+      ch->proc_to_xdr (&xp);
+      procs.push_back (xp);
+      apply (xp, ch, mkevent (errors[i]));
+    }
+  }
+  
+  for (j = 0; j < chs.size (); j++) {
+    hit_error (procs[j], errors[j]);
+  }
+  
   ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
 
 void
-child_applicator_t::hit_error (str prog, str e)
+child_applicator_t::hit_error (const oksvc_proc_t &p, str e)
 {
   if (e) { 
-    strbuf ("in service %s: %s", prog.cstr (), e.cstr ());
+    strbuf ("in service %s:%d: %s", p.name.cstr (), 
+	    p.brother_id, e.cstr ());
     _ok = false;
     _err.push_back (e);
   }
@@ -1002,13 +1005,13 @@ child_applicator_t::fill_status (ok_xstatus_t *out)
 class kill_applicator_t : public child_applicator_t {
 public:
   kill_applicator_t () {}
-  void apply (const ok_prog_t &p, okch_t *ch, evs_t ev, CLOSURE);
+  void apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev, CLOSURE);
 };
 
 //-----------------------------------------------------------------------
 
 tamed void 
-kill_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev) 
+kill_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev) 
 { 
   ch->kill (); 
   ev->trigger (NULL);
@@ -1019,7 +1022,7 @@ kill_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev)
 class custom1_applicator_t : public child_applicator_t {
 public:
   custom1_applicator_t (const ok_custom_data_t *dat) : _data (dat) {}
-  void apply (const ok_prog_t &prog, okch_t *ch, evs_t ev, CLOSURE);
+  void apply (const oksvc_proc_t &proc, okch_t *ch, evs_t ev, CLOSURE);
 private:
   const ok_custom_data_t *_data;
 };
@@ -1033,9 +1036,9 @@ okd_t::custom1_in (svccb *sbp)
     RPC::okctl_program_1::okctl_custom_1_in_srv_t<svccb> srv (sbp);
     const ok_custom_arg_t *arg (srv.getarg ());
     custom1_applicator_t ca (&arg->data);
-  ok_xstatus_t res;
+    ok_xstatus_t res;
   }
-  twait { ca.run (&servtab, arg->progs, mkevent ()); }
+  twait { ca.run (&servtab, arg->procs, mkevent ()); }
   ca.fill_status (&res);
   srv.reply (res);
 }
@@ -1043,7 +1046,7 @@ okd_t::custom1_in (svccb *sbp)
 //-----------------------------------------------------------------------
 
 tamed void
-custom1_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev)
+custom1_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev)
 {
   tvars {
     str s;
@@ -1057,8 +1060,7 @@ custom1_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev)
 class custom2_applicator_t : public child_applicator_t {
 public:
   custom2_applicator_t (const ok_custom_data_t *dat) : _data (dat) {}
-  void apply (const ok_prog_t &prog, okch_t *ch, evs_t ev, CLOSURE);
-  void nochild (const ok_prog_t &p, evv_t ev, CLOSURE);
+  void apply (const oksvc_proc_t &proc, okch_t *ch, evs_t ev, CLOSURE);
   const ok_custom_res_set_t &res () const { return _res; }
 private:
   ok_custom_res_set_t _res;
@@ -1067,26 +1069,15 @@ private:
 
 //-----------------------------------------------------------------------
 
-tamed void
-custom2_applicator_t::nochild (const ok_prog_t &p, evv_t ev)
-{
-  ok_custom_res_t res;
-  res.prog = p;
-  res.res.set_status (OK_STATUS_NOSUCHCHILD);
-  ev->trigger ();
-}
-
-//-----------------------------------------------------------------------
-
 tamed void 
-custom2_applicator_t::apply (const ok_prog_t &p, okch_t *ch, evs_t ev)
+custom2_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev)
 {
   tvars {
     str s;
     ok_custom_res_t res;
   }
   twait { ch->custom2_out (*_data, &res.res, mkevent (s)); }
-  res.prog = p;
+  res.proc = p;
   _res.results.push_back (res);
   ev->trigger (s);
 }
@@ -1101,7 +1092,7 @@ okd_t::custom2_in (svccb *sbp)
     const ok_custom_arg_t *arg (srv.getarg ());
     custom2_applicator_t ca (&arg->data);
   }
-  twait { ca.run (&servtab, arg->progs, mkevent ()); }
+  twait { ca.run (&servtab, arg->procs, mkevent ()); }
   srv.reply (ca.res ());
 }
 
@@ -1111,10 +1102,11 @@ void
 okd_t::okctl_get_stats (svccb *sbp)
 {
   okctl_stats_t res;
-  res.status.setsize (servtab.size ());
-  int i = 0;
-  for (okch_t *p = servtab.first (); p; i++, p = servtab.next (p) ) {
-    p->to_status_xdr (&res.status[i]);
+  vec<okch_t *> ch;
+  servtab.dump (&ch);
+  res.status.setsize (ch.size ());
+  for (size_t i = 0; i < ch.size (); i++) {
+    ch[i]->to_status_xdr (&res.status[i]);
   }
   sbp->replyref (res);
 }
@@ -1266,26 +1258,28 @@ okd_ssl_t::hangup ()
 //-----------------------------------------------------------------------
 
 tamed void
-okd_t::awaken (str nm, evb_t ev)
+okd_t::awaken (const oksvc_proc_t &p, evb_t ev)
 {
   tvars {
-    okws_svc_descriptor_t arg;
+    oksvc_descriptor_t arg;
     ok_xstatus_typ_t res;
     clnt_stat err;
     bool ok (false);
+    str s_id;
   }
   
   if (_okld_cli) {
     arg.pid = 0;
-    arg.name = nm;
+    arg.proc = p;
+    s_id = strbuf ("%s:%d", p.name.cstr (), p.brother_id);
     twait {
-      RPC::okld_program_1::okld_poke_lazy_service (_okld_cli, arg, &res, 
-						   mkevent (err)); 
+      RPC::okld_program_1::
+	okld_poke_lazy_service (_okld_cli, arg, &res, mkevent (err)); 
     }
     if (err) {
-      warn << "RPC error awakening service " << nm << ": " << err << "\n";
+      warn << "RPC error awakening service " << s_id << ": " << err << "\n";
     } else if (res != OK_STATUS_OK) {
-      warn << "okld did not awaken service " << nm 
+      warn << "okld did not awaken service " << s_id
 	   << ": rc=" << int (res) << "\n";
     } else {
       ok = true;
@@ -1301,11 +1295,11 @@ okd_t::relaunch (svccb *sbp)
 {
   tvars {
     RPC::okmgr_program_1::okmgr_relaunch_srv_t<svccb> srv (sbp);
-    const ok_progs_t *progs (srv.getarg ());
+    const oksvc_procs_t *procs (srv.getarg ());
     kill_applicator_t ka;
     ok_xstatus_t ret;
   }
-  twait { ka.run (&servtab, *progs, mkevent ()); }
+  twait { ka.run (&servtab, *procs, mkevent ()); }
   ka.fill_status (&ret);
   srv.reply (ret);
 }
@@ -1323,7 +1317,7 @@ okd_t::toggle_leak_checker (svccb *sbp)
     okch_t *ch;
   }
   
-  if ((ch = servtab[arg->prog])) {
+  if ((ch = servtab.get (arg->proc))) {
     twait { ch->toggle_leak_checker (arg->cmd, mkevent (status)); }
   } else {
     status = OK_STATUS_NOSUCHCHILD;
@@ -1345,7 +1339,7 @@ okd_t::toggle_profiler (svccb *sbp)
     okch_t *ch;
   }
   
-  if ((ch = servtab[arg->prog])) {
+  if ((ch = servtab.get (arg->proc))) {
     twait { ch->toggle_profiler (arg->cmd, mkevent (status)); }
   } else {
     status = OK_STATUS_NOSUCHCHILD;

@@ -50,6 +50,8 @@ typedef enum { OKD_JAILED_NEVER = 0,
 class okch_t;
 typedef callback<void, okch_t *>::ref cb_okch_t;
 
+//=======================================================================
+
 struct okd_stats_t {
   void to_strbuf (strbuf &b) const;
   time_t _uptime;
@@ -58,6 +60,8 @@ struct okd_stats_t {
   size_t _n_sent;
   size_t _n_tot;
 };
+
+//=======================================================================
 
 class ok_custom2_trig_t {
 public:
@@ -74,20 +78,25 @@ private:
   ptr<ok_custom_res_set_t> _custom_res;
 };
 
+//=======================================================================
+
 class okd_t;
+class okch_cluster_t;
 class okch_t : public ok_con_t {  // OK Child Handle
 public:
-  okch_t (okd_t *o, const str &e, okc_state_t st = OKC_STATE_NONE);
+  okch_t (okd_t *o, okch_cluster_t *clust, size_t id, okc_state_t st);
   ~okch_t ();
   void launch ();
   void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
-  void send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, CLOSURE);
+  void send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, 
+			    evv_t ev, CLOSURE);
   void shutdown (oksig_t sig, evv_t ev, CLOSURE);
 
   void got_new_ctlx_fd (int fd, int p);
   void dispatch (ptr<bool> destroyed, svccb *b);
   void fdcon_eof (ptr<bool> destroyed);
   void kill ();
+  void killed ();
   void custom1_out (const ok_custom_data_t &x, evs_t ev, CLOSURE);
   void custom2_out (const ok_custom_data_t &in, ok_custom_res_union_t *out, 
 		    evs_t ev, CLOSURE);
@@ -100,7 +109,7 @@ public:
   void reset_accounting ();
   inline int inc_n_sent () { return (_n_sent ++) ; }
   void awaken (evb_t ev, CLOSURE);
-  void set_state (okc_state_t s) { state = s; }
+  void set_state (okc_state_t s) { _state = s; }
 
   void stats_collect (okd_stats_t *s, evv_t ev, CLOSURE);
 
@@ -108,24 +117,34 @@ public:
 			    event<ok_xstatus_typ_t>::ref ev, CLOSURE);
   void toggle_profiler (ok_diagnostic_cmd_t cmd, 
 			event<ok_xstatus_typ_t>::ref ev, CLOSURE);
-  ptr<bool> get_destroyed_flag () { return destroyed; }
+  ptr<bool> get_destroyed_flag () { return _destroyed; }
+
+  void proc_to_xdr (oksvc_proc_t *x) const;
   
-  okd_t *myokd;
-  int pid;
-  const str servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
-  ihash_entry<okch_t> lnk;
+
+  typedef enum {
+    OK = 0,
+    MIGHT_WORK = 1,
+    BUSY_LOOP = 2,
+    CRASHED = 3
+  } status_t;
+
+  status_t get_status () const;
+  
+  okd_t *_myokd;
+  okch_cluster_t *_cluster;
+  const size_t _brother_id;
+  const str _servpath;
+  int _pid;
 protected:
   void handle_reenable_accept (svccb *sbp);
   void start_chld ();
 private:
-  void closed_fd (u_int64_t gen);
 
-  vec<ahttpcon_wrapper_t<ahttpcon_clone> > conqueue;
-
-  okc_state_t state;
-  ptr<bool> destroyed;
-  bool srv_disabled;
-  int per_svc_nfd_in_xit;   // per service number FD in transit
+  okc_state_t _state;
+  ptr<bool> _destroyed;
+  bool _srv_disabled;
+  int _per_svc_nfd_in_xit;   // per service number FD in transit
   int _n_sent;              // N sent since reboot
   time_t _last_restart;     // time when started;
   
@@ -135,6 +154,37 @@ private:
   // To be triggered when this service is ready to go.
   evv_t::ptr _ready_trigger; 
 };
+
+//=======================================================================
+
+class okch_cluster_t {
+public:
+  okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n);
+  ~okch_cluster_t ();
+  void insert_child (okch_t *ch);
+  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev, CLOSURE);
+  okch_t *child (size_t i) { return _children[i]; }
+  const okch_t *child (size_t i) const { return _children[i]; }
+  okch_t *find_best_fit_child (ref<ahttpcon_clone> xc, okch_t::status_t *sp);
+  void killed (size_t i, okch_t *ch);
+
+  void set_states (okc_state_t st);
+  size_t n_children () const { return _children.size (); }
+  void is_ready (CLOSURE);
+  size_t qlen () const { return _conqueue.size(); }
+  
+  okd_t *_myokd;
+  const str _servpath;           // GET <servpath> HTTP/1.1 (starts with '/')
+  const pid_t _pid;              // XXX hack just for CH_ERROR macro
+  vec<okch_t *> _children;
+  ihash_entry<okch_cluster_t> _lnk;
+  vec<ahttpcon_wrapper_t<ahttpcon_clone> > _conqueue;
+  ptr<bool> _destroyed;
+  bool _is_ready_looping;
+  size_t _n_killed;
+};
+
+//=======================================================================
 
 class okd_ssl_t {
 public:
@@ -153,6 +203,22 @@ private:
   ptr<aclnt> _cli;
   ptr<asrv> _srv;
 };
+
+//=======================================================================
+
+class servtab_t : public ihash<const str, okch_cluster_t, 
+			       &okch_cluster_t::_servpath, 
+			       &okch_cluster_t::_lnk> 
+{
+public:
+  servtab_t () {}
+  void dump (vec<okch_t *> *out);
+
+  okch_t *get (const oksvc_proc_t &p);
+  size_t mget (const oksvc_proc_t &p, vec<okch_t *> *out);
+};
+
+//=======================================================================
 
 class okd_t : public ok_httpsrv_t, public config_parser_t 
 {
@@ -187,8 +253,8 @@ public:
 
   void abort ();
 
-  void insert (okch_t *c) { servtab.insert (c); }
-  void remove (okch_t *c) { servtab.remove (c); }
+  void insert (okch_cluster_t *c) { servtab.insert (c); }
+  void remove (okch_cluster_t *c) { servtab.remove (c); }
 
   void got_alias (vec<str> s, str loc, bool *errp);
   void got_regex_alias (vec<str> s, str loc, bool *errp);
@@ -204,15 +270,15 @@ public:
 
   void launch_logd (evb_t ev, CLOSURE);
 
-  void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status);
+  void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
+	       evv_t ev, CLOSURE);
   void newserv (int fd);
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
-		 const ssl_ctx_t *ssl);
+		 const ssl_ctx_t *ssl, CLOSURE);
   void shutdown (int sig) { shutdown_T (sig); }
   void shutdown_T (int sig, CLOSURE);
-  void awaken (str nm, evb_t ev, CLOSURE);
+  void awaken (const oksvc_proc_t &p, evb_t ev, CLOSURE);
 
-  typedef ihash<const str, okch_t, &okch_t::servpath, &okch_t::lnk> servtab_t;
   servtab_t servtab;
   qhash<str, str> aliases;
 
@@ -247,8 +313,6 @@ public:
   void send_errdoc_set (svccb *sbp);
   void req_errdoc_set_2 (svccb *sbp);
 
-  void closed_fd ();
-
   typedef rendezvous_t<okch_t *,ptr<bool> > shutdown_rv_t;
 
 protected:
@@ -259,11 +323,11 @@ protected:
   bool post_config (const str &fn);
   bool lazy_startup () const { return _lazy_startup; }
   void render_stat_page (ptr<ahttpcon_clone> x, CLOSURE);
-  ok_xstatus_typ_t reserve_child (const str &nm, bool lzy);
+  ok_xstatus_typ_t reserve_child (const oksvc_proc_t &p, bool lzy);
 
   /* statistics */
   void stats_collect (okd_stats_t *s, evv_t ev, CLOSURE);
-  void render_stats_page (ptr<ahttpcon_clone> x, CLOSURE);
+  void render_stats_page (ptr<ahttpcon_clone> x, evv_t ev, CLOSURE);
   void send_stats_reply (ptr<ahttpcon> x, const okd_stats_t &stats, htpv_t v,
 			 evv_t ev, CLOSURE);
 
@@ -278,7 +342,7 @@ private:
   void shutdown_wait (shutdown_rv_t *rv, evb_t ev, CLOSURE);
   void stop_listening ();
 
-  void got_child_fd (int fd, const okws_svc_descriptor_t &d);
+  void got_child_fd (int fd, const oksvc_descriptor_t &d);
   bool listen_from_ssl (int fd);
 
   str configfile;

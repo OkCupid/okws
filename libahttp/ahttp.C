@@ -52,7 +52,9 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _delayed_close (false),
     _zombie_tcb (NULL),
     _state (AHTTPCON_STATE_NONE),
-    destroyed_p (New refcounted<bool> (false))
+    destroyed_p (New refcounted<bool> (false)),
+    _remote_port (0),
+    _source_hash (0)
 {
   //
   // bookkeeping for debugging purposes;
@@ -332,9 +334,8 @@ ahttpcon_clone::setccb (clonecb_t c)
   assert (!destroyed);
 
   _state = AHTTPCON_STATE_DEMUX;
-  if (enable_selread ()) {
-    ccb = c;
-  } else {
+  ccb = c;
+  if (!enable_selread ()) {
     read_fail (HTTP_BAD_REQUEST);
   }
 }
@@ -644,10 +645,24 @@ ahttpcon::set_remote_ip ()
     }
   }
 
-  if (sin) 
+  if (sin) {
     remote_ip = inet_ntoa (sin->sin_addr);
-  else
+    _remote_port = ntohs (sin->sin_port);
+  } else {
     remote_ip = "0.0.0.0";
+    _remote_port = 0;
+  }
+}
+
+hash_t
+ahttpcon::source_hash () const
+{
+  if (_source_hash == 0) {
+    strbuf b ("%s:%d", remote_ip.cstr (), _remote_port);
+    str s = b;
+    _source_hash = s;
+  }
+  return _source_hash;
 }
 
 void

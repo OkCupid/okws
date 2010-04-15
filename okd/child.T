@@ -30,105 +30,207 @@
 #include "okdbg.h"
 
 #define LDCH_ERROR(x) \
-  warn << servpath << ":" << pid << ": " << x << "\n";
+  warn << _servpath << ":" << _pid << ": " << x << "\n";
 
 //-----------------------------------------------------------------------
 
-
-okch_t::okch_t (okd_t *o, const str &s, okc_state_t st)
-  : myokd (o), pid (-1), servpath (s), state (st),
-    destroyed (New refcounted<bool> (false)),
-    per_svc_nfd_in_xit (0),
-    _n_sent (0), _last_restart (okwstime ()),
+okch_t::okch_t (okd_t *o, okch_cluster_t *c, size_t id, okc_state_t st)
+  : _myokd (o), 
+    _cluster (c),
+    _brother_id (id),
+    _servpath (c->_servpath),
+    _pid (-1), 
+    _state (st),
+    _destroyed (New refcounted<bool> (false)),
+    _per_svc_nfd_in_xit (0),
+    _n_sent (0), 
+    _last_restart (okwstime ()),
     _too_busy (false),
     _generation_id (0)
-	       
-{
-  myokd->insert (this);
-}
+{}
 
 //-----------------------------------------------------------------------
 
 okch_t::~okch_t ()
 {
-  while (conqueue.size ())  {
-    ahttpcon_wrapper_t<ahttpcon_clone> acw (conqueue.pop_front ());
-    ref<ahttpcon_clone> x (acw.con ());
-    x->declone ();
-    myokd->error (x, HTTP_SRV_ERROR);
-  }
-  myokd->remove (this);
-  *destroyed = true;
+  *_destroyed = true;
 }
 
 //-----------------------------------------------------------------------
 
-void
-okch_t::closed_fd (u_int64_t gen)
+okch_cluster_t::okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n)
+  : _myokd (o),
+    _servpath (p),
+    _pid (0),
+    _destroyed (New refcounted<bool> (false)),
+    _is_ready_looping (false),
+    _n_killed (0)
 {
-  // warn << "debug: dec:  " << per_svc_nfd_in_xit << "\n";
-  if (gen != _generation_id) {
-    CH_CHATTER ("stale service generation; was there just a restart?");
+  _children.setsize (n);
+  for (size_t i = 0; i < n; i++) {
+    _children[i] = New okch_t (o, this, i, st);
   }
-  per_svc_nfd_in_xit --;
-  myokd->closed_fd ();
+  _myokd->insert (this);
+}
+
+//-----------------------------------------------------------------------
+
+okch_cluster_t::~okch_cluster_t ()
+{
+  if (OKDBG2(OKD_SHUTDOWN)) {
+    CH_CHATTER ("deleting child_cluster");
+  }
+
+  _myokd->remove (this);
+
+  *_destroyed = true;
+  while (_conqueue.size ())  {
+    ahttpcon_wrapper_t<ahttpcon_clone> acw (_conqueue.pop_front ());
+    ref<ahttpcon_clone> x (acw.con ());
+    x->declone ();
+    _myokd->error (x, HTTP_SRV_ERROR);
+  }
+
+  for (size_t i = 0; i < _children.size (); i++) {
+    delete _children[i];
+  }
+}
+
+//-----------------------------------------------------------------------
+
+okch_t::status_t
+okch_t::get_status () const
+{
+  status_t ret = OK;
+
+  if (_state == OKC_STATE_STANDBY) {  
+    ret = OK;
+
+  } else if (_state == OKC_STATE_HOSED) {
+    ret = CRASHED;
+
+  } else if (!ctlx || ctlx->ateof () || _state != OKC_STATE_SERVE) {
+    ret = MIGHT_WORK;
+
+  } else if (_too_busy) {
+    CH_ERROR ("**OVERLOAD: Service too busy to accept new connections");
+    ret = BUSY_LOOP;
+
+  } else if (ok_svc_fd_quota && _per_svc_nfd_in_xit > int (ok_svc_fd_quota)) {
+    CH_ERROR ("**OVERLOAD: Service appears unresponsive");
+    ret = BUSY_LOOP;
+
+  } else {
+    ret = OK;
+  }
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+okch_t *
+okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc, 
+				     okch_t::status_t *statusp)
+{
+  okch_t *ret = NULL;
+  okch_t::status_t status = okch_t::CRASHED;
+  size_t id = 0;
+  size_t n = _children.size ();
+  bool ok = true;
+
+  if (n == 1) { id = 0; }
+  else if (n > 1) { id = xc->source_hash () % n; } 
+  else if (n == 1) { id = 0; }
+  else {
+    ok = false;
+    CH_ERROR ("Cannot map to service --- no such process exists");
+  }
+
+  for (size_t tries = 0; 
+       ok && tries < n && status != okch_t::OK; 
+       tries++, id++) {
+    okch_t *ch = _children[id % n];
+    if (ch && !ret && 
+	((status = ch->get_status ()) == okch_t::OK ||
+	 (status == okch_t::MIGHT_WORK))) {
+      ret = ch;
+    }
+  }
+
+  if (ret && status != okch_t::OK) { status = okch_t::MIGHT_WORK; }
+  *statusp = status;
+  return ret;
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okch_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw)
+okch_cluster_t::is_ready ()
+{
+  tvars {
+    ptr<bool> df;
+    okch_t *ch;
+    ahttpcon_wrapper_t<ahttpcon_clone> acw;
+    ptr<ahttpcon_clone> x;
+    okch_t::status_t status;
+  }
+  
+  if (_is_ready_looping) { return; }
+  _is_ready_looping = true;
+  df = _destroyed;
+
+  status = okch_t::OK;
+  while (!*df && _conqueue.size () && status == okch_t::OK) {
+    acw = _conqueue[0];
+    x = acw.con ();
+    if ((ch = find_best_fit_child (x, &status)) && status == okch_t::OK) {
+      _conqueue.pop_front ();
+      twait { ch->send_con_to_service (acw, mkevent ()); }
+    }
+  }
+  _is_ready_looping = false;
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
 {
   tvars {
     ref<ahttpcon_clone> xc (acw.con ());
-    bool ok (true);
+    okch_t *ch;
+    okch_t::status_t status;
+    int http_status (HTTP_OK);
+    bool handled (false);
   }
 
-  if (state == OKC_STATE_STANDBY) {
-    twait { awaken (mkevent (ok)); }
-  }
+  ch = find_best_fit_child (xc, &status);
 
-  if (!ok) {
-    warn << "**WARNING: Cannot awaken service " << servpath << "\n";
-    xc->declone ();
-    myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
+  if (status == okch_t::BUSY_LOOP) {         
+    http_status = HTTP_UNAVAILABLE; 
 
-  } else if (!ctlx || ctlx->ateof () || state != OKC_STATE_SERVE) {
+  } else if (status == okch_t::CRASHED) {
+    http_status = HTTP_SRV_ERROR;
 
-    if (state == OKC_STATE_CRASH || state == OKC_STATE_HOSED 
-	|| conqueue.size () >= ok_con_queue_max) {
+  } else if (status == okch_t::OK) {
+    assert (ch);
+    twait { ch->send_con_to_service (acw, mkevent ()); }
+    handled = true;
 
-      xc->declone ();
-      myokd->error (xc, HTTP_SRV_ERROR, make_generic_http_req (servpath));
-
-    } else {
-      //warn << "queued con\n"; // XX debug
-      conqueue.push_back (acw);
-    }
-
-  } else if ((ok_svc_fd_quota && per_svc_nfd_in_xit > int (ok_svc_fd_quota))
-	     || _too_busy) {
-    // warn << "debug: fail: " << per_svc_nfd_in_xit << "\n";
-
-    if (_too_busy)
-      warn << "**WARNING: Service " << servpath 
-	   << " too busy to accept new connections\n";
-    else
-      warn << "**WARNING: Service " << servpath << " appears unresponsive!\n";
-
-    xc->declone ();
-    myokd->error (xc, HTTP_UNAVAILABLE, make_generic_http_req (servpath));
+  } else if (_conqueue.size () >= ok_con_queue_max) {
+    http_status = HTTP_SRV_ERROR;
 
   } else {
-    if (ok_svc_fd_quota) {
-      // warn << "debug: inc:  " << per_svc_nfd_in_xit << "\n";
-      per_svc_nfd_in_xit ++;
-      xc->reset_close_fd_cb (wrap (this, &okch_t::closed_fd, _generation_id));
-    }
-    assert (ctlx);
-    assert (clnt);
-    send_con_to_service (acw);
+    _conqueue.push_back (acw);
+    handled = true;
   }
+
+  if (!handled) {
+    xc->declone ();
+    _myokd->error (xc, http_status, make_generic_http_req (_servpath));
+  }
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -139,7 +241,7 @@ okch_t::shutdown (oksig_t g, evv_t ev)
   tvars {
     ptr<bool> df;
   }
-  df = destroyed;
+  df = _destroyed;
 
   if (!*df && clnt) {
     // note that no authentication needed for this kill signal.
@@ -153,13 +255,13 @@ okch_t::shutdown (oksig_t g, evv_t ev)
 	
       RPC::okctl_program_1::okctl_kill (clnt, &g, aclnt_cb_null);
       // don't answer any more pub messages
-      state = OKC_STATE_KILLING;
+      _state = OKC_STATE_KILLING;
       twait { clnt->seteofcb (mkevent ()); }
     }
   }
 
   if (!*df && OKDBG2(OKD_SHUTDOWN)) {
-    CH_CHATTER ("clent shutdown completed");
+    CH_CHATTER ("client shutdown completed");
   }
 
   ev->trigger ();
@@ -170,17 +272,17 @@ okch_t::shutdown (oksig_t g, evv_t ev)
 void
 okch_t::got_new_ctlx_fd (int fd, int p)
 {
-  pid = p;
+  _pid = p;
   ctlx = axprt_unix::alloc (fd, ok_axprt_ps);
-  ctlcon (wrap (this, &okch_t::dispatch, destroyed));
-  state = OKC_STATE_LAUNCH_SEQ_1;
+  ctlcon (wrap (this, &okch_t::dispatch, _destroyed));
+  _state = OKC_STATE_LAUNCH_SEQ_1;
   start_chld ();
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
+okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
 {
   tvars {
     okctl_sendcon_arg2_t arg;
@@ -189,14 +291,26 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     ptr<bool> df;
     ref<ahttpcon_clone> xc (acw.con ());
     int fd (-1);
+    bool ok (true);
   }
 
-  df = destroyed;
+  df = _destroyed;
+  _per_svc_nfd_in_xit ++;
 
-  assert (ctlx);
-  assert (clnt);
+  if (_state == OKC_STATE_STANDBY) {
+    twait { awaken (mkevent (ok)); }
+    if (ok && (!ctlx || !clnt)) {
+      CH_ERROR ("connection to child died during lazy wakeup");
+      ok = false;
+    }
+  } else {
+    assert (clnt);
+    assert (ctlx);
+  }
 
-  if (xc->timed_out ()) {
+  if (!ok) {
+    CH_ERROR ("lazy wakeup failed");
+  } else if (xc->timed_out ()) {
     CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
 	     << "): not forwarding to child");
   } else if (xc->getfd () < 0) {
@@ -246,12 +360,14 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
     }
   }
 
+  if (*df) {
+    _per_svc_nfd_in_xit ++;
+  }
   // Only close the FD once it's been ACK'ed by the service (i.e., the RPC
-  // has returned).  Note that we can simplify ALOT here, by updating
-  // per_svc_nfd_in_xit here, and not as a result of the callback that fires
-  // when acw goes out of scope below as this method exits.  However, just
-  // leave it lie for now.
+  // has returned).
   if (fd >= 0) { close (fd); }
+
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
@@ -266,23 +382,22 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw)
 void
 okch_t::start_chld ()
 {
-  if (state == OKC_STATE_LAUNCH_SEQ_2 && ctlx) {
+  if (_state == OKC_STATE_LAUNCH_SEQ_2 && ctlx) {
 
     // debug messages
     if (OKDBG2 (OKD_STARTUP))
       CH_CHATTER ("child changed to serve status; conQsize=" 
-		  << conqueue.size ());
+		  << _cluster->qlen ());
     
-    state = OKC_STATE_SERVE;
+    _state = OKC_STATE_SERVE;
 
     reset_accounting ();
 
     // need to check that ctlx is still here every time through the 
     // loop; the service might have crashed as we were servicing
     // queued connections.
-    while (conqueue.size () && ctlx)
-      send_con_to_service (conqueue.pop_front ());
 
+    _cluster->is_ready ();
   }
 }
 
@@ -342,7 +457,7 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
 
   u_int p = sbp->proc ();
 
-  if (state == OKC_STATE_KILLING) {
+  if (_state == OKC_STATE_KILLING) {
     if (OKDBG2(OKD_SHUTDOWN))
       CH_CHATTER ("ignore RPC sent after child killed");
     sbp->ignore ();
@@ -351,25 +466,25 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
 
   switch (p) {
   case OKCTL_READY:
-    if (state == OKC_STATE_LAUNCH_SEQ_1) {
-      state = OKC_STATE_LAUNCH_SEQ_2;
+    if (_state == OKC_STATE_LAUNCH_SEQ_1) {
+      _state = OKC_STATE_LAUNCH_SEQ_2;
       start_chld ();
     } else {
-      CH_ERROR ("Cannot process READY message; in wrong state: " << state);
+      CH_ERROR ("Cannot process READY message; in wrong state: " << _state);
     }
     sbp->reply (NULL);
     break;
   case OKCTL_REQ_ERRDOCS_2:
-    myokd->req_errdoc_set_2 (sbp);
+    _myokd->req_errdoc_set_2 (sbp);
     break;
   case OKCTL_CUSTOM_1_IN: 
-    myokd->custom1_in (sbp);
+    _myokd->custom1_in (sbp);
     break;
   case OKCTL_CUSTOM_2_IN:
-    myokd->custom2_in (sbp);
+    _myokd->custom2_in (sbp);
     break;
   case OKCTL_GET_STATS:
-    myokd->okctl_get_stats (sbp);
+    _myokd->okctl_get_stats (sbp);
     break;
   case OKCTL_REENABLE_ACCEPT:
     handle_reenable_accept (sbp);
@@ -389,7 +504,7 @@ okch_t::kill ()
   ctlx = NULL;
   clnt = NULL;
   srv = NULL;
-  state = OKC_STATE_NONE;
+  _state = OKC_STATE_NONE;
 }
 
 //-----------------------------------------------------------------------
@@ -420,7 +535,7 @@ okch_t::custom2_out (const ok_custom_data_t &in, ok_custom_res_union_t *out,
     }
   } else {
     strbuf b ("child in state=");
-    b << state << "swallowing OKCTL_CUSTOM_1_OUT RPC.";
+    b << _state << "swallowing OKCTL_CUSTOM_1_OUT RPC.";
     ret = b;
   }
   ev->trigger (ret);
@@ -455,7 +570,7 @@ okch_t::custom1_out (const ok_custom_data_t &x, evs_t ev)
     }
   } else {
     strbuf b ("child in state=");
-    b << state << "swallowing OKCTL_CUSTOM_1_OUT RPC.";
+    b << _state << "swallowing OKCTL_CUSTOM_1_OUT RPC.";
     ret = b;
   }
   if (ret) CH_ERROR(ret);
@@ -467,23 +582,26 @@ okch_t::custom1_out (const ok_custom_data_t &x, evs_t ev)
 void
 okch_t::chld_eof ()
 {
-  warn << servpath << ": child process died (pid " << pid << ")\n";
+  warn << _servpath << ": child process died (pid " << _pid << ")\n";
   ctlx = NULL;
   srv = NULL;
   clnt = NULL;
 
-  if (myokd && !myokd->in_shutdown ()) {
-    state = OKC_STATE_CRASH;
-  } else 
-    state = OKC_STATE_NONE;
+  if (_myokd && !_myokd->in_shutdown ()) {
+    _state = OKC_STATE_CRASH;
+  } else {
+    _state = OKC_STATE_NONE;
+  }
 }
+
+//-----------------------------------------------------------------------
 
 void
 okch_t::to_status_xdr (oksvc_status_t *st)
 {
   memset ((void *)st, 0, sizeof (*st));
-  st->pid = pid;
-  st->servpath = servpath;
+  st->pid = _pid;
+  proc_to_xdr (&st->proc);
   st->n_served = _n_sent;
   st->uptime = okwstime () - _last_restart;
 }
@@ -495,8 +613,10 @@ okch_t::awaken (evb_t ev)
 {
   tvars {
     bool ok;
+    oksvc_proc_t p;
   }
-  twait { myokd->awaken (servpath, mkevent (ok));}
+  proc_to_xdr (&p);
+  twait { _myokd->awaken (p, mkevent (ok));}
   ev->trigger (ok);
 }
 
@@ -559,3 +679,90 @@ okch_t::toggle_profiler (ok_diagnostic_cmd_t cmd,
 }
 
 //-----------------------------------------------------------------------
+
+void
+okch_cluster_t::set_states (okc_state_t s)
+{
+  for (size_t i = 0; i < _children.size (); i++) {
+    _children[i]->set_state (s);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+servtab_t::dump (vec<okch_t *> *out)
+{
+  ihash_iterator_t<okch_cluster_t, servtab_t> it (*this);
+  okch_cluster_t *o;
+  while ((o = it.next ())) {
+    for (size_t i = 0; i < o->n_children (); i++) {
+      out->push_back (o->child (i));
+    }
+  }
+} 
+
+//-----------------------------------------------------------------------
+
+okch_t *
+servtab_t::get (const oksvc_proc_t &p)
+{
+  okch_cluster_t *cl = (*this)[p.name];
+  int id = p.brother_id;
+  okch_t *ret;
+  if (id >= 0 && cl && id < int (cl->n_children ())) { ret = cl->child (id); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+size_t
+servtab_t::mget (const oksvc_proc_t &p, vec<okch_t *> *out)
+{
+  okch_cluster_t *cl = (*this)[p.name];
+  size_t n = 0;
+  if (!cl) { /* noop */ }
+  else if (p.brother_id < 0){
+    for (size_t i = 0; i < cl->n_children (); i++) { 
+      out->push_back (cl->child (i)); 
+      n++;
+    }
+  } else if (p.brother_id < int (cl->n_children ())) {
+    out->push_back (cl->child (p.brother_id));
+    n++;
+  }
+  return n;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okch_t::proc_to_xdr (oksvc_proc_t *p) const
+{
+  p->name = _servpath;
+  p->brother_id = _brother_id;
+  p->num_brothers = 0;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okch_t::killed ()
+{
+  _state = OKC_STATE_KILLED;
+  _cluster->killed (_brother_id, this);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okch_cluster_t::killed (size_t i, okch_t *ch)
+{
+  assert (_children[i] == ch);
+  if ( ++ _n_killed == _children.size ()) {
+    delete this;
+  }
+}
+
+//-----------------------------------------------------------------------
+

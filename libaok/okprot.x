@@ -12,10 +12,16 @@ struct xpub_errdoc_set_t {
   xpub_errdoc_t docs<>;
 };
 
-/* BAD nomenclature; ok_prog_t should be ok_service_t; each
- * prog corresponds to a separate OK service
+/* A given service proc, which is indentifier by a service names
+ * and brother-ID.  In most cases the brother-ID will be 0 for the
+ * one and only service.  -1 means don't care about which, and
+ * >0 specifies a particular service id.
  */
-typedef string ok_prog_t <>;
+struct oksvc_proc_t {
+   string name<>;
+   int brother_id;   // OR -1 if no ID known/specified
+   int num_brothers; // OR -1 if unknown 
+};
 
 enum ok_set_typ_t {
   OK_SET_NONE = 0,
@@ -23,15 +29,15 @@ enum ok_set_typ_t {
   OK_SET_ALL = 2
 };
 
-union ok_progs_t switch (ok_set_typ_t typ) {
+union oksvc_procs_t switch (ok_set_typ_t typ) {
  case OK_SET_SOME:
-   ok_prog_t progs<>;
+   oksvc_proc_t procs<>;
  default:
    void;
 };
 
 struct oksvc_status_t {
-   ok_prog_t servpath;
+   oksvc_proc_t proc;
    int pid;
    unsigned n_served;
    unsigned uptime;
@@ -52,7 +58,7 @@ struct ok_custom_data_t {
 };
 
 struct ok_custom_arg_t {
-  ok_progs_t progs;
+  oksvc_procs_t procs;
   ok_custom_data_t data;
 };
 
@@ -64,7 +70,7 @@ union ok_custom_res_union_t switch (ok_xstatus_typ_t status) {
 };
 
 struct ok_custom_res_t {
-  ok_prog_t                prog;
+  oksvc_proc_t             proc;
   ok_custom_res_union_t    res;
 };
 
@@ -117,7 +123,7 @@ enum oklog_typ_t {
 };
 
 struct okmgr_diagnostic_arg_t {
-  ok_prog_t prog;
+  oksvc_proc_t        proc;
   ok_diagnostic_cmd_t cmd;
 };
 
@@ -165,13 +171,13 @@ struct oklog_fast_arg_t {
   string ssl<>;
 };
 
-struct okws_svc_descriptor_t {
-  string name<>;
+struct oksvc_descriptor_t {
+  oksvc_proc_t proc;
   int pid;
 };
 
-struct okws_svc_reserve_arg_t {
-  string name<>;
+struct oksvc_reserve_arg_t {
+  oksvc_proc_t proc;
   bool lazy;
 };
 
@@ -273,7 +279,7 @@ program OKMGR_PROGRAM {
 		OKMGR_NULL (void) = 0;
 
 		ok_xstatus_t
-		OKMGR_RELAUNCH (ok_progs_t) = 2;
+		OKMGR_RELAUNCH (oksvc_procs_t) = 2;
 
 		ok_xstatus_t
 		OKMGR_TURNLOG (void) = 3;
@@ -299,16 +305,16 @@ program OKLD_PROGRAM {
 		OKLD_NULL(void) = 0;
 
 		ok_xstatus_typ_t
-		OKLD_NEW_SERVICE(okws_svc_descriptor_t) = 1;
+		OKLD_NEW_SERVICE(oksvc_descriptor_t) = 1;
 
 		ok_xstatus_typ_t
 		OKLD_SEND_SSL_SOCKET(okws_send_ssl_arg_t) = 2;
 
 		ok_xstatus_typ_t
-		OKLD_POKE_LAZY_SERVICE(okws_svc_descriptor_t) = 3;
+		OKLD_POKE_LAZY_SERVICE(oksvc_descriptor_t) = 3;
 
 		ok_xstatus_typ_t
-		OKLD_RESERVE(okws_svc_reserve_arg_t) = 4;
+		OKLD_RESERVE(oksvc_reserve_arg_t) = 4;
 
 	} = 1;
 

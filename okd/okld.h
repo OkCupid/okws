@@ -37,12 +37,15 @@
 #include "okconst.h"
 #include "okclone.h"
 #include "tame.h"
+#include "tame_lock.h"
 
 #define OK_LQ_SIZE_D    100
 #define OK_LQ_SIZE_LL   5
 #define OK_LQ_SIZE_UL   1000
 
 class okld_t;
+
+//=======================================================================
 
 /*
  * A class to hold onto a process command/argv and its environment
@@ -96,12 +99,16 @@ protected:
   str _dumpdir;
 };
 
+//=======================================================================
+
 class okld_helper_okd_t : public okld_helper_t {
 public:
   okld_helper_okd_t (const str &u, const str &g)
     : okld_helper_t ("okd", u, g) {}
 private:
 };
+
+//=======================================================================
 
 class okld_helper_ssl_t : public okld_helper_t {
 public:
@@ -123,6 +130,8 @@ private:
   vec<okws1_port_t> _ports;
   str _certfile_resolved, _keyfile_resolved, _chainfile_resolved;
 };
+
+//=======================================================================
 
 /**
  * a class for things that will be jailed into OKWS's runtime directory,
@@ -189,6 +198,8 @@ protected:
 
 };
 
+//=======================================================================
+
 /**
  * wrapper class around an interpreter such as Python. Note that
  * for each interpreter, we should have a new group and user.
@@ -244,6 +255,8 @@ private:
   vec<str> _args;
 };
 
+//=======================================================================
+
 struct svc_options_t {
   svc_options_t () 
     : svc_reqs (-1), 
@@ -257,10 +270,12 @@ struct svc_options_t {
       gzip (-1),
       gzip_level (-1),
       ahttpcon_zombie_warn (-1),
-      ahttpcon_zombie_timeout (-1) {}
+      ahttpcon_zombie_timeout (-1),
+      _n_procs (1) {}
 
   bool apply_global_defaults (const str &svc);
   bool check_options (const str &loc) const;
+  size_t n_procs () const { return _n_procs; }
 
   // service-specific options
   //
@@ -291,7 +306,26 @@ struct svc_options_t {
   int ahttpcon_zombie_timeout;
 
   vec<int> ports;
+  size_t _n_procs;
 };
+
+// Each child process can have multiple instances. 
+class okld_ch_instance_t {
+public:
+  okld_ch_instance_t ();
+  
+  void launch (evv_t::ptr ev = NULL, CLOSURE);
+  void run_loop (evv_t ev);
+
+  int pid;
+  int xfd, ctlfd;
+  okc_state_t state;
+  timecb_t *rcb;
+  vec<struct timeval *> timevals;
+  time_t startup_time;
+};
+
+//=======================================================================
 
 class okld_t;
 class okld_ch_t : public okld_jailed_exec_t { // OK Launch Daemon Child Handle
@@ -303,15 +337,16 @@ public:
   void reserve (bool lazy, evb_t ev, CLOSURE);
   void sig_chld_cb (int status);
 
-  int pid;
+  int _pid;
 
   // no longer const -- can change after we get the listen port
-  str servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
+  str _servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
 
   // who we will setuid to after the spawn
   ok_usr_t *uid;           // UID of whoever will be running this thing
   int gid;                 // GID of whever will be running this thing
 
+  void set_brother_id (size_t id, size_t total);
   void set_svc_ids ();
   void set_run_dir (const str &d) { rundir = d; }
   void chldcb (int status);
@@ -319,6 +354,10 @@ public:
   void add_args (const vec<str> &a);
   void lazy_startup (evb_t ev, CLOSURE);
   bool has_direct_ports () const { return _svc_options.ports.size () > 0; }
+  str unique_proc_name () const;
+  static str unique_proc_name (str s, size_t i);
+  static str unique_proc_name (const oksvc_proc_t &x);
+  bool is_primary () const { return _brother_id == 0; }
 
   okws1_port_t get_port () const { return port; }
   void set_service_options (const svc_options_t &so)
@@ -359,7 +398,13 @@ private:
   // arguments given to the executable (such as 'python filename')
   vec<str> args;
   ok_direct_ports_t _direct_ports;
+
+  size_t _brother_id, _n_brothers;
+
+  tame::lock_t _lazy_lock;
 };
+
+//=======================================================================
 
 class okld_ch_script_t : public okld_ch_t {
 public:
@@ -377,6 +422,8 @@ private:
   okld_interpreter_t *_ipret;
   bool _free_ipret;
 };
+
+//=======================================================================
 
 class okld_t : public ok_base_t , public config_parser_t
 {
@@ -458,7 +505,7 @@ public:
 protected:
   bool parse_file (const str &fn);
   bool post_config (const str &fn);
-  void poke_lazy_service_2 (str name, okstat_ev_t ev, CLOSURE);
+  void poke_lazy_service_2 (const oksvc_proc_t &p, okstat_ev_t ev, CLOSURE);
   void poke_lazy_service (svccb *sbp, CLOSURE);
 
 private:
@@ -558,5 +605,7 @@ private:
   ok_grp_t _coredump_grp;
   int _coredump_mode;
 };
+
+//=======================================================================
 
 #endif /* _OKD_OKD_H */
