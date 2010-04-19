@@ -243,7 +243,7 @@ public:
       listenaddr (INADDR_ANY),
       topdir (ok_topdir),
       reported_name (ok_wsname),
-      logd (NULL), logfd (lfd), _pub_fd (pfd),
+      logd (NULL), _log_fd (lfd), _pub_fd (pfd),
       bind_addr_set (false),
       _ssl_primary_port (ok_ssl_port)
       //jaildir_run (ok_jaildir_run) 
@@ -281,7 +281,7 @@ protected:
 
   log_t *logd;
 
-  int logfd;
+  int _log_fd;
   int _pub_fd;
   //str jaildir_run;  // nested jaildir for okd and services
   bool bind_addr_set; // called after got_bindaddr;

@@ -142,8 +142,14 @@ private:
 class okld_jailed_exec_t {
 public:
   okld_jailed_exec_t (const str &e, okld_t *o, const str &l) :
-    _rexecpath (e), okld (o), cfgfile_loc (l), have_ustat (false),
-    exec_uid (-1), exec_gid (-1), mode (-1), _unsafe (false) {}
+    _rexecpath (e), 
+    _okld (o), 
+    _cfgfile_loc (l), 
+    _have_ustat (false),
+    _exec_uid (-1), 
+    _exec_gid (-1), 
+    _mode (-1), 
+    _unsafe (false) {}
   ~okld_jailed_exec_t () {}
 
   bool get_unix_stat ();
@@ -152,8 +158,8 @@ public:
   int get_exec_gid ();
   void assign_exec_ownership (int u, int g);
   bool chown ();
-  const str &loc () const { return cfgfile_loc; }
-  void assign_mode (int m) { mode = m; }
+  const str &loc () const { return _cfgfile_loc; }
+  void assign_mode (int m) { _mode = m; }
   bool chmod (int m);
   void set_unsafe (bool b = true) { _unsafe = b; }
 
@@ -178,6 +184,7 @@ public:
   const str & get_execpath_relative_to_chroot () { return _rexecpath; }
 
   okld_t *okld () { return _okld; }
+  const okld_t *okld () const { return _okld; }
 
 protected:
 
@@ -190,12 +197,12 @@ protected:
 
   const str _rexecpath;      // execpath relative to jaildir (starts with '/')
   okld_t *_okld;
-  str cfgfile_loc;
-  bool have_ustat;
-  struct stat ustat;
+  str _cfgfile_loc;
+  bool _have_ustat;
+  struct stat _ustat;
 
-  int exec_uid, exec_gid;  // UID/GID of the executable!
-  int mode;
+  int _exec_uid, _exec_gid;  // UID/GID of the executable!
+  int _mode;
   bool _unsafe;
 
 };
@@ -228,10 +235,11 @@ public:
    */
   okld_interpreter_t (const okld_interpreter_t &i, int uid, int gid)
     : okld_jailed_exec_t (strbuf ("%s-%d", i._rexecpath.cstr (), gid), 
-			  i.okld, i.cfgfile_loc),
+			  i._okld, i._cfgfile_loc),
       _name (i._name),
-      _user (uid), _group (gid), _args (i._args) {}
-
+      _user (uid), 
+      _group (gid), 
+      _args (i._args) {}
 
   /**
    * to be called while parsing the configuration line from within
@@ -317,21 +325,21 @@ class okld_ch_cluster_t;
 
 class okld_ch_t {
 public:
-  okld_ch_t (okld_ch_cluster_t *c, size_t i) : _cluster (c) , _id (i) {}
+  okld_ch_t (okld_ch_cluster_t *c, size_t i);
 
   void launch (evv_t ev, CLOSURE);
-  void reserve (bool lazy, evb_t ev, CLOSURE);
   void sig_chld_cb (int status);
   void chldcb (int status);
   void clean_dumps ();
-  okws1_port_t get_port () const { return port; }
   void lazy_startup (evb_t ev, CLOSURE);
   str v_id () const;
+  void set_svc_ids ();
 
   str unique_proc_name () const;
   static str unique_proc_name (const oksvc_proc_t &x);
-  okld_t *okld () { return _cluster->okld (); }
+  okld_t *okld ();
   void add_direct_port (int p);
+  void post_spawn (int fd, evb_t ev, CLOSURE);
 
 private:
   void resurrect ();
@@ -356,10 +364,11 @@ class okld_ch_cluster_t :
   public okld_jailed_exec_t { // OK Launch Daemon Child Handle
 public:
   okld_ch_cluster_t (const str &e, const str &s, okld_t *o, const str &cfl, 
-		     ok_usr_t *u, vec<str> env, okws1_port_t p, size_t n) ;
+		     ok_usr_t *u, vec<str> env, okws1_port_t p, size_t n = 1);
   virtual ~okld_ch_cluster_t ();
 
   str servpath () const { return _servpath; }
+  okws1_port_t get_port () const { return _port; }
 
   // no longer const -- can change after we get the listen port
   str _servpath;       // GET <servpath> HTTP/1.1 (starts with '/')
@@ -369,7 +378,6 @@ public:
   ok_usr_t *_uid;           // UID of whoever will be running this thing
   int _gid;                 // GID of whever will be running this thing
 
-  void set_svc_ids ();
   void set_run_dir (const str &d) { _rundir = d; }
   void add_args (const vec<str> &a);
   static str unique_proc_name (str s, size_t i);
@@ -382,15 +390,19 @@ public:
   //bool parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc);
 
   void gather_helper_fds (str s, int *log, int *pub, evb_t ev, CLOSURE);
+  ptr<axprt_unix> spawn_proc (str s, int lfd, int pfd);
   void launch (evv_t ev, CLOSURE);
   bool can_exec ();
   void assign_uid (int u);
   void assign_gid (int u) { _gid = u; }
+  void set_svc_ids ();
   ok_usr_t *usr () { return _uid; }
   virtual int get_desired_execfile_mode () const { return ok_svc_mode; }
   virtual str get_interpreter () const { return NULL; }
   virtual bool fixup_doall (int uo, int un, int go, int gn, int mo);
   size_t n_children () const { return _children.size (); }
+  ptr<okld_ch_t> get_child (size_t s);
+  void reserve (bool lazy, evb_t ev, CLOSURE);
 
 protected:
   svc_options_t _svc_options;
@@ -417,8 +429,9 @@ public:
   okld_ch_script_t (const str &e, const str &s, okld_t *o, const str &cfl, 
 		    okld_interpreter_t *ipret,
 		    ok_usr_t *u, vec<str> env,
-		    okws1_port_t p = 0)
-    : okld_ch_cluster_t (e, s, o, cfl, u, env, p), _ipret (ipret), 
+		    okws1_port_t p = 0, size_t n = 1)
+    : okld_ch_cluster_t (e, s, o, cfl, u, env, p, n),
+      _ipret (ipret), 
       _free_ipret (false) {}
   ~okld_ch_script_t () { if (_free_ipret && _ipret) delete _ipret; }
   int get_desired_execfile_mode () const { return ok_script_mode; }
@@ -490,12 +503,15 @@ public:
   bool in_shutdown () const { return sdflag; }
   str get_root_coredir () const { return root_coredir; }
   bool init_ssl ();
+  void gather_helper_fds (str ch, int *lfd, int *pfd, evb_t ev, CLOSURE);
 
   clone_only_client_t *get_pubd () const { return _pubd; }
 
   logd_parms_t logd_parms;
 
-  cgi_t env;    // execution environment
+  cgi_t *env () { return &_env; }
+
+  cgi_t _env;    // execution environment
 
   ok_grp_t svc_grp;
   bool safe_startup () const { return safe_startup_fl ;}
@@ -556,7 +572,7 @@ private:
   void launch_logd_cb2 (int logfd);
   void encode_env ();
   void launch2 (int fd);
-  void launchservices (CLOSURE);
+  void launch_services (evv_t ev, CLOSURE);
 
   vec<ptr<okld_ch_cluster_t> > _svcs;
   qhash<str, ptr<okld_ch_cluster_t> > _svc_lookup;

@@ -41,7 +41,7 @@ ok_direct_ports_t::init (const vec<int> &v)
 
 //-----------------------------------------------------------------------
 
-void ok_direct_ports_t::add_port (int p) { add_port_pair (ok_port_pair_t (p)); }
+void ok_direct_ports_t::add_port (int p) { add_port_pair (ok_portpair_t (p)); }
 
 //-----------------------------------------------------------------------
 

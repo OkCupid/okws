@@ -67,7 +67,7 @@ void
 okld_ch_cluster_t::add_args (const vec<str> &v)
 {
   for (u_int i = 0; i < v.size (); i++) 
-    args.push_back (v[i]);
+    _args.push_back (v[i]);
 }
 
 //-----------------------------------------------------------------------
@@ -588,13 +588,12 @@ okld_t::check_services_and_aliases ()
   bool ret = true;
 
   // first perform sanity check among services
-  u_int sz = svcs.size ();
-  for (u_int i = 0; i < sz; i++) {
-    okld_ch_cluster_t *svc = svcs[i];
+  size_t sz = _svcs.size ();
+  for (size_t i = 0; i < sz; i++) {
+    okld_ch_cluster_t *svc = _svcs[i];
     str s = fix_uri (svc->_servpath);
     str loc = svc->loc ();
-    if (!svc->is_primary ()) { /* noop */ }
-    else if (svctab[s]) {
+    if (svctab[s]) {
       warn << loc << ": service (" << s << ") specified more than once\n";
       ret = false;
     } else {
@@ -603,8 +602,7 @@ okld_t::check_services_and_aliases ()
     svc->_servpath = s;
 
     s = svc->get_execpath_relative_to_chroot ();
-    if (!svc->is_primary ()) { /* noop */ }
-    else if (exetab[s]) {
+    if (exetab[s]) {
       warn << loc << ": executable (" << s << ") specified more than once\n";
     } else {
       exetab.insert (s);
@@ -939,7 +937,6 @@ okld_t::launch_pubd (evi_t ev)
   assert (_pubd_exc);
   _pubd = New clone_only_client_t (_pubd_exc, PUB3_CLONE);
 
-
   twait { _pubd->connect (mkevent (b)); }
   if (b) {
     twait { _pubd->clone (mkevent (ret)); }
@@ -987,7 +984,7 @@ okld_t::launch_logd (evi_t cb)
 void
 okld_t::encode_env ()
 {
-  env.insert ("hostname", hostname)
+  _env.insert ("hostname", hostname)
     .insert ("jaildir", jaildir)
     .insert ("version", version)
     .insert ("listenport", listenport)
@@ -1024,11 +1021,12 @@ okld_t::encode_env ()
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();
-    env.insert ("loggers", l, false);
+    _env.insert ("loggers", l, false);
   }
 
-  if (mmc_file)
-    env.insert ("mmcf", mmc_file);
+  if (mmc_file) {
+    _env.insert ("mmcf", mmc_file);
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -1087,19 +1085,16 @@ okld_t::fix_uids ()
 
   bool ret = true;
   nxtuid = ok_svc_uid_low;
-  int lim = svcs.size ();
+  size_t lim = _svcs.size ();
   bhash<u_int> uids_in_use;
   bhash<u_int> owners;
-  if (lim > ok_svc_uid_high - ok_svc_uid_low && !unsafe_mode) {
+  if (int (lim) > ok_svc_uid_high - ok_svc_uid_low && !unsafe_mode) {
     warn << "too many services / ran out of UIDs\n";
     return false;
   }
 
-  // struct passwd *pw;
-  // struct group *gr;
-  okld_ch_cluster_t *svc;
-  for (int i = 0; i < lim; i++) {
-    svc = svcs[i];
+  for (size_t i = 0; i < lim; i++) {
+    okld_ch_cluster_t *svc = _svcs[i];
 
     int ueuid_orig = svc->get_exec_uid ();
     int ueuid_own = ueuid_orig;
@@ -1219,22 +1214,19 @@ tamed void
 okld_t::poke_lazy_service_2 (const oksvc_proc_t &p, okstat_ev_t ev)
 {
   tvars {
-    ptr<okld_ch_cluster_t> *ch;
+    ptr<okld_ch_cluster_t> *cl;
+    ptr<okld_ch_t> ch;
     ok_xstatus_typ_t ret;
     bool ok;
-    str un;
   }
 
-  un = okld_ch_cluster_t::unique_proc_name (p);
-
-  if ((ch = _svc_lookup[un])) {
-    if (sdflag) {
-      warn << "Cannot start service " << p.name << " due to okld shutdown\n";
-      ret = OK_STATUS_DEADCHILD;
-    } else {
-      twait { (*ch)->lazy_startup (mkevent (ok)); }
-      ret = ok ? OK_STATUS_OK : OK_STATUS_BADWAKEUP;
-    }
+  if (sdflag) {
+    warn << "Cannot start service " << p.name << " due to okld shutdown\n";
+    ret = OK_STATUS_DEADCHILD;
+  } else if ((cl = _svc_lookup[p.name]) && 
+	     (ch = (*cl)->get_child (p.brother_id))) {
+    twait { ch->lazy_startup (mkevent (ok)); }
+    ret = ok ? OK_STATUS_OK : OK_STATUS_BADWAKEUP;
   } else {
     ret = OK_STATUS_NOSUCHCHILD;
   }
@@ -1482,11 +1474,11 @@ bool
 okld_t::check_service_ports ()
 {
   bool ret = true;
-  u_int lim = svcs.size ();
-  for (u_int i = 0; i < lim; i++) {
-    okws1_port_t p = svcs[i]->get_port ();
+  size_t lim = _svcs.size ();
+  for (size_t i = 0; i < lim; i++) {
+    okws1_port_t p = _svcs[i]->get_port ();
     if (p && ! _all_ports_map[p]) {
-      warn << svcs[i]->loc () 
+      warn << _svcs[i]->loc () 
 	   << ": service uses a port (" << p << ") that OKD does not "
 	   << "listen on!!\n";
       ret = false;
@@ -1504,11 +1496,12 @@ okld_t::check_exes ()
     return true;
 
   bool ret = true;
-  u_int lim = svcs.size ();
-  for (u_int i = 0; i < lim; i++) {
+  size_t lim = _svcs.size ();
+  for (size_t i = 0; i < lim; i++) {
     // at this point in the boot process, we have not called chroot yet
-    if (!svcs[i]->can_exec ())
+    if (!_svcs[i]->can_exec ()) {
       ret = false;
+    }
   }
   return ret;
 }
@@ -1634,24 +1627,24 @@ okld_t::launch (str cf)
   if (jaildir)
     warn ("JailDirectory: %s\n", jaildir.cstr ());
 
-  pub3fd = -1;
+  _pub_fd = -1;
   twait {
-    launch_logd (mkevent (logfd));
-    launch_pubd (mkevent (pub3fd));
+    launch_logd (mkevent (_log_fd));
+    launch_pubd (mkevent (_pub_fd));
   }
 
-  if (logfd < 0) {
+  if (_log_fd < 0) {
     warn << "launch of log daemon (oklogd) failed\n";
     okld_exit (1);
   }
 
   // If specified, pubd2 must succeed in its initalization
-  if (pub3fd < 0) {
+  if (_pub_fd < 0) {
     warn << "launch of pub daemon (pubd) failed\n";
     okld_exit (1);
   }
 
-  if (!launch_okd (logfd, pub3fd))
+  if (!launch_okd (_log_fd, _pub_fd))
     okld_exit (1);
 
   twait { launch_okssl (mkevent (ok)); }
@@ -1659,29 +1652,27 @@ okld_t::launch (str cf)
     okld_exit (1);
   
   chroot ();
-  launchservices ();
+  twait { launch_services (mkevent ()); }
 }
   
 //-----------------------------------------------------------------------
 
-tamed
-void okld_t::launchservices ()
+tamed void 
+okld_t::launch_services (evv_t ev)
 {
   tvars {
-    u_int i, j (0);
+    size_t i, j (0);
     bool ok;
   }
 
   // First reserve a slot for all services.
-  for (i = 0; i < svcs.size (); i++) {
+  for (i = 0; !sdflag && i < _svcs.size (); i++) {
     if (sdflag) {
       warn << "Skipping service reservation due to shutdown flag.\n";
-      return;
-    } else if (svcs[i]->is_primary ()) {
-      twait { svcs[i]->reserve (lazy_startup (), mkevent (ok)); }
+    } else {
+      twait { _svcs[i]->reserve (lazy_startup (), mkevent (ok)); }
     }
   }
-
 
   // XXX - hack for now; there is a problem when we launch too many
   // services at once, in that we lose file descriptors around the
@@ -1691,7 +1682,7 @@ void okld_t::launchservices ()
   // retrieve the 128th file descriptor. Some small changes
   // to david's libraries might be able to fix this. For now,
   // we'll hack in a timeout to let okd catch up, if possible.
-  for (i = 0; i < svcs.size (); i++, j++) {
+  for (i = 0; !sdflag && i < _svcs.size (); i++, j++) {
     if (okld_startup_batch_size && j >= okld_startup_batch_size) {
       twait { delaycb (okld_startup_batch_wait, 0, mkevent ()); }
       j = 0;
@@ -1700,11 +1691,14 @@ void okld_t::launchservices ()
       warn << "not launching due to shutdown flag\n";
       return;
     }
-    if (!lazy_startup() || svcs[i]->has_direct_ports ()) {
-      svcs[i]->launch ();
+    if (!lazy_startup() || _svcs[i]->has_direct_ports ()) {
+      twait { _svcs[i]->launch (mkevent ()); }
     }
   }
+  ev->trigger ();
 }
+
+//-----------------------------------------------------------------------
 
 bool
 okld_t::init_jaildir ()
@@ -1739,7 +1733,7 @@ okld_t::init_jaildir ()
   // on FreeBSD, might want to do the right thing on linux too.
   jail_cp ("/etc/localtime", 0644, &root, &wheel);
 
-  u_int lim = svcs.size ();
+  size_t lim = _svcs.size ();
 
   if (!_okd.active ()) {
     warn << "No okd was specified; cannot run!\n";
@@ -1751,11 +1745,11 @@ okld_t::init_jaildir ()
     ret = false;
 
   // separate coredump directory for each service UID
-  for (u_int i = 0; i < lim; i++) {
+  for (size_t i = 0; i < lim; i++) {
     str d = apply_container_dir (coredumpdir, 
-				 strbuf () << svcs[i]->usr ()->getid ());
-    svcs[i]->set_run_dir (d);
-    if (!jail_mkdir (d, 0700, svcs[i]->usr (), &svc_grp))
+				 strbuf () << _svcs[i]->usr ()->getid ());
+    _svcs[i]->set_run_dir (d);
+    if (!jail_mkdir (d, 0700, _svcs[i]->usr (), &svc_grp))
       ret = false;
   }
 
@@ -1781,7 +1775,6 @@ okld_t::relaunch_clock_daemon (int sig)
   clock_daemon_died (sig);
   init_clock_daemon ();
 }
-
 
 //-----------------------------------------------------------------------
 
@@ -2101,3 +2094,47 @@ svc_options_t::check_options (const str &loc) const
 }
 
 //-----------------------------------------------------------------------
+
+tamed void
+okld_t::gather_helper_fds (str s, int *lp, int *pp, evb_t ev)
+{
+  tvars {
+    clone_only_client_t *p;
+    int logfd (-1), pubfd (-1);
+    bool ok (true);
+  }
+
+  p = get_pubd ();
+
+  twait { 
+    get_logd ()->clone (mkevent (logfd));
+    if (p) p->clone (mkevent (pubfd));
+  }
+  
+  if (logfd < 0) {
+    okdbg_warn (ERROR, "%s: cannot connect to oklogd\n", s.cstr ());
+    ok = false;
+  } 
+
+  if (p && pubfd < 0) {
+    okdbg_warn (ERROR, "%s: cannot connect to pubd\n", s.cstr ());
+    ok = false;
+  }
+  
+  if (in_shutdown ()) {
+    okdbg_warn (ERROR, "%s: shutdown received while relaunch service\n", 
+		s.cstr ());
+    ok = false;
+  }
+
+  *lp = logfd;
+  *pp = pubfd;
+  ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
+
+okld_t * okld_ch_t::okld () { return _cluster->okld (); }
+
+//-----------------------------------------------------------------------
+

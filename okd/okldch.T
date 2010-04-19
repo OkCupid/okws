@@ -55,12 +55,12 @@ okld_ch_cluster_t::okld_ch_cluster_t (const str &e, const str &s, okld_t *o,
     _port (p),
     _uid (u), 
     _gid (-1),
-    _env (env_in) ,
+    _env (env_in) 
 {
   // Set up all n children
   for (size_t i = 0; i < n; i++) {
     ptr<okld_ch_t> ch = New refcounted<okld_ch_t> (this, i);
-    _children.push_back (ch)
+    _children.push_back (ch);
   }
 }
 
@@ -77,16 +77,16 @@ okld_jailed_exec_t::get_execpath () const
 bool
 okld_jailed_exec_t::get_unix_stat ()
 {
-  if (have_ustat)
+  if (_have_ustat)
     return true;
-  if (stat (get_execpath ().cstr (), &ustat) != 0) {
+  if (stat (get_execpath ().cstr (), &_ustat) != 0) {
     strbuf b;
-    b << cfgfile_loc << ": cannot access service binary: "
+    b << _cfgfile_loc << ": cannot access service binary: "
       << get_execpath () << "\n";
     okdbg_warn (ERROR, b);
     return false;
   }
-  have_ustat = true;
+  _have_ustat = true;
   return true;
 }
 
@@ -97,11 +97,11 @@ okld_ch_cluster_t::can_exec ()
 {
   if (!get_unix_stat ())
     return false;
-  if (!uid)
+  if (!_uid)
     return true;
   str err = ::can_exec (get_execpath ());
   if (err) {
-    warn << cfgfile_loc << ": " << err << " (" << get_execpath () << ")\n";
+    warn << _cfgfile_loc << ": " << err << " (" << get_execpath () << ")\n";
     return false;
   }
   return true;
@@ -112,8 +112,8 @@ okld_ch_cluster_t::can_exec ()
 int
 okld_jailed_exec_t::get_exec_mode ()
 {
-  assert (have_ustat);
-  return ustat.st_mode;
+  assert (_have_ustat);
+  return _ustat.st_mode;
 }
 
 //-----------------------------------------------------------------------
@@ -121,8 +121,8 @@ okld_jailed_exec_t::get_exec_mode ()
 int
 okld_jailed_exec_t::get_exec_uid ()
 {
-  assert (have_ustat);
-  return ustat.st_uid;
+  assert (_have_ustat);
+  return _ustat.st_uid;
 }
 
 //-----------------------------------------------------------------------
@@ -130,8 +130,8 @@ okld_jailed_exec_t::get_exec_uid ()
 int 
 okld_jailed_exec_t::get_exec_gid ()
 {
-  assert (have_ustat);
-  return ustat.st_gid;
+  assert (_have_ustat);
+  return _ustat.st_gid;
 }
 
 //-----------------------------------------------------------------------
@@ -139,8 +139,8 @@ okld_jailed_exec_t::get_exec_gid ()
 void
 okld_jailed_exec_t::assign_exec_ownership (int u, int g)
 {
-  exec_uid = u;
-  exec_gid = g;
+  _exec_uid = u;
+  _exec_gid = g;
 }
 
 //-----------------------------------------------------------------------
@@ -148,18 +148,18 @@ okld_jailed_exec_t::assign_exec_ownership (int u, int g)
 bool
 okld_jailed_exec_t::chown ()
 {
-  assert (exec_uid >= 0 && exec_gid >= 0);
-  if (::chown (get_execpath ().cstr (), exec_uid, exec_gid) != 0) {
+  assert (_exec_uid >= 0 && _exec_gid >= 0);
+  if (::chown (get_execpath ().cstr (), _exec_uid, _exec_gid) != 0) {
     strbuf b;
-    b << cfgfile_loc << ": cannot chown binary: " 
+    b << _cfgfile_loc << ": cannot chown binary: " 
       << get_execpath () << "\n";
     okdbg_warn (FATAL_ERROR, b);
     return false;
   }
   strbuf b;
   b << "Changing owner of executable " 
-    << get_execpath () << "; UID/GID:" << ustat.st_uid << "/" 
-    << ustat.st_gid << " --> " << exec_uid << "/" << exec_gid <<  "\n";
+    << get_execpath () << "; UID/GID:" << _ustat.st_uid << "/" 
+    << _ustat.st_gid << " --> " << _exec_uid << "/" << _exec_gid <<  "\n";
   okdbg_warn (CHATTER, b);
   return true;
 }
@@ -169,10 +169,10 @@ okld_jailed_exec_t::chown ()
 void
 okld_ch_cluster_t::assign_uid (int new_uid)
 {
-  if (uid)
-    assert (uid->getid () == new_uid);
+  if (_uid)
+    assert (_uid->getid () == new_uid);
   else
-    uid = New ok_usr_t (new_uid);
+    _uid = New ok_usr_t (new_uid);
 }
 
 //-----------------------------------------------------------------------
@@ -181,18 +181,18 @@ okld_ch_cluster_t::assign_uid (int new_uid)
 bool
 okld_jailed_exec_t::chmod (int currmode)
 {
-  if ((currmode & 07777) == mode)
+  if ((currmode & 07777) == _mode)
     return true;
 
-  assert (mode >= 0);
-  if (::chmod (get_execpath ().cstr (), mode) != 0) {
+  assert (_mode >= 0);
+  if (::chmod (get_execpath ().cstr (), _mode) != 0) {
     strbuf b;
-    b << cfgfile_loc << ": cannot chmod binary: " << get_execpath () << "\n";
+    b << _cfgfile_loc << ": cannot chmod binary: " << get_execpath () << "\n";
     okdbg_warn (FATAL_ERROR, b);
     return false;
   }
   strbuf b ("Changing mode of executable %s; MODE: 0%o --> 0%o\n",
-	    get_execpath ().cstr (), ustat.st_mode & 07777, mode);
+	    get_execpath ().cstr (), _ustat.st_mode & 07777, _mode);
   str s = b;
   okdbg_warn (CHATTER, s);
   return true;
@@ -201,7 +201,7 @@ okld_jailed_exec_t::chmod (int currmode)
 //-----------------------------------------------------------------------
 
 tamed void
-okld_ch_t::launch (evv_t ev)
+okld_ch_cluster_t::launch (evv_t ev)
 {
   tvars { size_t i; }
   for (i = 0; i < _children.size (); i++) {
@@ -226,58 +226,18 @@ okld_ch_t::v_id () const
 
 //-----------------------------------------------------------------------
 
-tamed void
-okld_t::gather_helper_fds (str s, int *lp, int *pp, evb_t ev)
+ptr<axprt_unix>
+okld_ch_cluster_t::spawn_proc (str s_id, int logfd, int pubfd) 
 {
-  tvars {
-    clone_only_client_t *p;
-    int logfd (-1), pub_fd (-1);
-    bool ok (true);
-  }
-
-  p = okld ()->get_pubd ();
-
-  twait { 
-    get_logd ()->clone (mkevent (logfd));
-    if (p) p->clone (mkevent (pubfd));
-  }
-  
-  if (logfd < 0) {
-    okdbg_warn (ERROR, "%s: cannot connect to oklogd\n", s_id.cstr ());
-    ok = false;
-  } 
-
-  if (p && pubfd < 0) {
-    okdbg_warn (ERROR, "%s: cannot connect to pubd\n", s_id.cstr ());
-    ok = false;
-  }
-  
-  if (in_shutdown ()) {
-    okdbg_warn (ERROR, "%s: shutdown received while relaunch service\n", 
-		s_id.cstr ());
-    ok = false;
-  }
-  *lp = logfd;
-  *pp = pubfd;
-  ev->trigger (ok);
-}
-
-//-----------------------------------------------------------------------
-
-tamed void
-okld_ch_t::spawn_child (int logfd, int pubfd, 
-			event<ptr<axpr_unix>, bool>::ref ev)
-{
-  tvars {
-    str report_exe;
-    str exe;
-    str i;
-    vec<str> argv;
-    bool ok (true);
-    ptr<axprt_unix> x;
-    str s_id;
-    argv_t env_tmp;
-  }
+  str report_exe;
+  str exe;
+  str i;
+  vec<str> argv;
+  bool ok (true);
+  ptr<axprt_unix> x;
+  str s_id;
+  argv_t env_tmp;
+  cgi_t *e;
 
   s_id = v_id ();
   
@@ -286,7 +246,9 @@ okld_ch_t::spawn_child (int logfd, int pubfd,
   
   // only do something in the case of a script; true => we are now
   // chrooted
-  i = get_interpreter ();
+  i = get_execpath ();
+  
+  // only do something in the cget_interpreter ();
   if (i) {
     exe = i;
     _argv.push_back (i);
@@ -294,9 +256,11 @@ okld_ch_t::spawn_child (int logfd, int pubfd,
       
   // pass true signifying that we've been jailed (if we are to be jailed)
   argv.push_back (get_execpath ());
+
+  e = okld ()->env ();
       
-  genv ()->insert ("logfd", logfd, false);
-  genv ()->insert ("pubfd", pubfd, false);
+  e->insert ("logfd", logfd, false);
+  e->insert ("pubfd", pubfd, false);
   
   // for Service2-style command lands, we can have many arguments
   // here specified in okws_config.  make sure to add the encoded
@@ -311,36 +275,37 @@ okld_ch_t::spawn_child (int logfd, int pubfd,
     ok = false;
   } else {
     
-    genv ()->insert ("lifereqs", _svc_options.svc_reqs, false);
-    genv ()->insert ("lifetime", _svc_options.svc_time, false);
-    genv ()->insert ("wss", _svc_options.wss, false);
-    genv ()->insert ("caching", _svc_options.pub3_caching, false);
-    genv ()->insert ("wfs", _svc_options.wait_for_signal, false);
-    genv ()->insert ("dps", _direct_ports.encode_as_str (), false);
-    genv ()->insert ("fdlw", _svc_options.lowat, false);
-    genv ()->insert ("fdhw", _svc_options.hiwat, false);
-    genv ()->insert ("gzip", _svc_options.gzip, false);
-    genv ()->insert ("gziplev", _svc_options.gzip_level, false);
-    genv ()->insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
-    genv ()->insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
+    e->insert ("lifereqs", _svc_options.svc_reqs, false);
+    e->insert ("lifetime", _svc_options.svc_time, false);
+    e->insert ("wss", _svc_options.wss, false);
+    e->insert ("caching", _svc_options.pub3_caching, false);
+    e->insert ("wfs", _svc_options.wait_for_signal, false);
+    e->insert ("dps", _direct_ports.encode_as_str (), false);
+    e->insert ("fdlw", _svc_options.lowat, false);
+    e->insert ("fdhw", _svc_options.hiwat, false);
+    e->insert ("gzip", _svc_options.gzip, false);
+    e->insert ("gziplev", _svc_options.gzip_level, false);
+    e->insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
+    e->insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
+    e->insert ("bid", _id, false);
     
-    _argv.push_back (genv ()->encode ());
+    _argv.push_back (e->encode ());
     
     // undo all of the damage
-    genv ()->remove ("logfd");
-    genv ()->remove ("pubfd");
-    genv ()->remove ("lifetime");
-    genv ()->remove ("lifereqs");
-    genv ()->remove ("wss");
-    genv ()->remove ("caching");
-    genv ()->remove ("wfs");
-    genv ()->remove ("dps");
-    genv ()->remove ("fdlw");
-    genv ()->remove ("fdhw");
-    genv ()->remove ("gzip");
-    genv ()->remove ("gziplev");
-    genv ()->remove ("aczw");
-
+    e->remove ("logfd");
+    e->remove ("pubfd");
+    e->remove ("lifetime");
+    e->remove ("lifereqs");
+    e->remove ("wss");
+    e->remove ("caching");
+    e->remove ("wfs");
+    e->remove ("dps");
+    e->remove ("fdlw");
+    e->remove ("fdhw");
+    e->remove ("gzip");
+    e->remove ("gziplev");
+    e->remove ("aczw");
+    e->remove ("bid");
       
     OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
 	   report_exe.cstr ());
@@ -351,11 +316,15 @@ okld_ch_t::spawn_child (int logfd, int pubfd,
 			    env_tmp);
     _pid = axprt_unix_spawn_pid;
     if (!x) {
-      okdbg_warn (ERROR, "%s: cannot launch service (HOSED)\n", s_id.cstr ());
+      okdbg_warn (ERROR, "%s: cannot launch service\n", s_id.cstr ());
       ok = false;
+    } else {
+      OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
+	     report_exe.cstr (), int (_pid));
     }
   }
-  ev->trigger (x, ok);
+  *xp = x;
+  ev->trigger (ok);
 }
 
 //-----------------------------------------------------------------------
@@ -388,17 +357,13 @@ okld_ch_t::launch (evv_t ev)
     okdbg_warn (ERROR, "%s: cannot bind to all direct ports\n", s_id.cstr ());
   }
 
-
-  if (ok) {
-    twait { spawn_child (logfd, pubfd, mkevent (x, ok)); }
-    if (!ok) { _state = OKC_STATE_HOSED; }
+  if (ok && !(x = _cluster->spawn_proc (s_id, logfd, pubfd))) {
+    _state = OKC_STATE_HOSED; 
+    ok = false;
   }
 
   if (ok) {
-
-    OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
-	   report_exe.cstr (), int (_pid));
-    
+    assert (x);
     twait { post_spawn (x->reclaim (), mkevent (ok)); }
     if (!ok) {
       _state = OKC_STATE_HOSED;
@@ -424,33 +389,62 @@ okld_ch_t::post_spawn (int fd, evb_t ev)
     ok_xstatus_typ_t res;
     oksvc_descriptor_t arg;
     bool ok (false);
+    ptr<alcnt> cli;
+    ptr<axprt_unix> x;
+    str s_id;
   }
+  
+  s_id = v_id ();
 
   ::chldcb (_pid, wrap (this, &okld_ch_t::chldcb));
+
+  cli = okld ()->okd ().cli ();
+  x = okld ()->okd ().x ();
     
   // if we're shutting down, okld->_okd_cli will be NULL
-  if (okld->okd ().cli ()) {
+  if (!cli) {
+    okdbg_warn (ERROR, "%s: cannot send to okd due to EOF\n", s_id.cstr ());
+  } else {
+   
     arg.pid = _pid;
     arg.proc.brother_id = _id;
     arg.proc.num_brothers = _cluster->n_children ();
     arg.proc.name = _servpath;
+
+    x->sendfd (fd);
+
     twait {
-      okld->okd ().x ()->sendfd (ctlfd);
-      RPC::okld_program_1::okld_new_service (okld->okd ().cli (),
-					     arg, &res, mkevent (err));
+      RPC::okld_program_1::okld_new_service (cli, arg, &res, mkevent (err));
     }
     
     if (err) {
-      warn << "HOSED: Cannot send service to okd (" << s_id << "): "
-	   << err << "\n";
+      strbuf b;
+      b << s_id << ": cannot cannot send service to okd: " << err;
+      okdbg_warn (ERROR, b);
     } else if (res != OK_STATUS_OK) {
-      warn << "HOSED: Okd rejected service (" << s_id << ") with code="
-	   << int (res) << "\n";
+      okdbg_warn (ERROR, "%s: okd rejected service with code=%d\n",
+		  s_id.cstr (), int (res));
     } else {
       ok = true;
     }
   }
-  ev->trigger ();
+  ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_ch_t::set_svc_ids ()
+{
+  // after fork, we need to set our PID
+  _pid = getpid ();
+
+  // If the parent okld process is running with root privileges,
+  // strip privileges from the child proc, but do the same for each
+  // in the "cluster" of sibling processes.
+  if (okld ()->is_superuser ()) {
+    _cluster->set_svc_ids ();
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -458,32 +452,26 @@ okld_ch_t::post_spawn (int fd, evb_t ev)
 void
 okld_ch_cluster_t::set_svc_ids ()
 {
-  // after fork, we need to set our PID
-  _pid = getpid ();
-
-  if (!okld ()->is_superuser ())
-    return;
 
   // unsubscribe from all groups
   setgroups (0, NULL);
 
-  if (setgid (gid) != 0) {
-    CH_ERROR ("could not change gid to " << gid);
+  if (setgid (_gid) != 0) {
+    CH_ERROR ("could not change gid to " << _gid);
     exit (1);
   }
 
-  if (setuid (uid->getid ()) != 0) {
-    CH_ERROR ("could not change uid to " << uid->getname ());
+  if (setuid (_uid->getid ()) != 0) {
+    CH_ERROR ("could not change uid to " << _uid->getname ());
     exit (1);
   }
 
-  if (rundir) {
-    str d = okld->jail2real (rundir, true);
-    if (chdir (d) != 0)
+  if (!_rundir) {
+    str d = okld ()->jail2real (_rundir, true);
+    if (chdir (d) != 0) {
       CH_ERROR ("change dir failed: %m\n");
-    else {
-      if (OKDBG2(OKD_STARTUP))
-	CH_CHATTER ("changing directories to " << d  );
+    } else if (OKDBG2(OKD_STARTUP)) {
+      CH_CHATTER ("changing directories to " << d  );
     }
   }
 }
@@ -684,35 +672,36 @@ okld_ch_cluster_t::reserve (bool lazy, evb_t ev)
     clnt_stat err;
     oksvc_reserve_arg_t arg;
     ok_xstatus_typ_t res;
-    bool ret (true);
+    bool ret (false);
   }
-  cli = okld->okd ().cli ();
-  if (lazy) {
-    state = OKC_STATE_STANDBY;
-  }
+  cli = okld ()->okd ().cli ();
+
+  if (lazy) { _state = OKC_STATE_STANDBY; }
+
   if (cli) {
     arg.proc.name = _servpath;
-    arg.proc.num_brothers = _n_brothers;
-    arg.proc.brother_id = _brother_id;
-    assert (is_primary ());
+    arg.proc.num_brothers = _children.size ();
+    arg.proc.brother_id = 0;
     arg.lazy = lazy;
     twait { RPC::okld_program_1::okld_reserve (cli, arg, &res, mkevent (err)); }
     if (err) {
-      warn << "HOSED: Cannot reserve space for service (" << _servpath << "): "
-	   << err << "\n";
+      str e = err;
+      okdbg_warn ("%s: cannot reserve space for service: %s\n", 
+		  _servpath.cstr(), e.cstr ());
     } else if (res != OK_STATUS_OK) {
-      warn << "HOSED: Okd rejected resevation (" << _servpath << ") with code="
-	   << int (res) << "\n";
+      okdbg_warn ("%s: okd rejected reservation with code=%d\n", 
+		  _servpath.cstr (), int (res));
     } else {
-      state = OKC_STATE_STANDBY;
+      _state = OKC_STATE_STANDBY;
+      ret = true;
     }
   } else {
-    warn << "HOSED: Cannot launch service (" << _servpath << ") since "
-	 << "okd went away\n";
+    okdbg_warn ("%s: cannot launch service since okd went away",
+		_servpath.cstr ());
   }
-  if (!ret) {
-    state = OKC_STATE_HOSED;
-  }
+
+  if (!ret) { state = OKC_STATE_HOSED; }
+
   ev->trigger (ret);
 }
 
@@ -770,6 +759,16 @@ okld_ch_cluster_t::set_brother_id (size_t id, size_t total)
 //-----------------------------------------------------------------------
 
 void okld_ch_t::add_direct_port (int p) { _direct_ports.add_port (p); }
+
+//-----------------------------------------------------------------------
+
+ptr<okld_ch_t>
+okld_ch_cluster_t::get_child (size_t i)
+{
+  ptr<okld_ch_t> ret;
+  if (i < _children.size ()) { ret = _children[i]; }
+  return ret;
+}
 
 //-----------------------------------------------------------------------
 

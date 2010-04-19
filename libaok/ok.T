@@ -257,7 +257,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("listenport", &listenport);
     t->lookup ("okwsname", &reported_name);
     t->lookup ("server", &global_okws_server_label);
-    t->lookup ("logfd", &logfd);
+    t->lookup ("logfd", &_log_fd);
     t->lookup ("pubfd", &_pub_fd);
     t->lookup ("logfmt", &logfmt);
     t->lookup ("gzip", &gztmp);
@@ -576,8 +576,8 @@ oksrvc_t::launch_T ()
   safeguard_stdout();
 
   // initialization and connect to logging daemon
-  if (logfd >= 0) {
-    logd = New fast_log_t (logfd, logfmt);
+  if (_log_fd >= 0) {
+    logd = New fast_log_t (_log_fd, logfmt);
   } else {
     fatal << "No logging mechanism specified.\n";
   }
