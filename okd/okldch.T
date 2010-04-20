@@ -482,7 +482,7 @@ okld_ch_t::chldcb_T (int status)
     bool relaunch (false);
   }
 
-  if (status != 0) { clean_dumps (); }
+  if (status != 0) { _cluster->clean_dumps (); }
 
   if (!okld ()->in_shutdown ()) {
 
@@ -490,16 +490,16 @@ okld_ch_t::chldcb_T (int status)
 
     // child chrashing at boot-up is a bad thing; nothing to do here
     if (_state != OKC_STATE_SERVE) {
-      CH_ERROR ("Child found in wrong state (" << state << ")");
+      CH_ERROR ("Child found in wrong state (" << _state << ")");
       _state = OKC_STATE_HOSED;
 
     } else if (okld ()->safe_startup () && 
-	       (sfs_get_timenow() - startup_time < 
+	       (sfs_get_timenow() - _startup_time < 
 		int (ok_chld_startup_time))) {
       CH_ERROR ("Not restarting due to crash directly after startup");
       _state = OKC_STATE_HOSED;
 
-    } else if (status != 0 || timevals.size () > (ok_crashes_max/2 + 2) ) {
+    } else if (status != 0 || _timevals.size () > (ok_crashes_max/2 + 2) ) {
       _state = OKC_STATE_DELAY;
       relaunch = true;
       twait { 
@@ -519,10 +519,10 @@ okld_ch_t::chldcb_T (int status)
 //-----------------------------------------------------------------------
 
 static inline bool
-secdiff (struct timeval *tv0, struct timeval *tv1, int diff)
+secdiff (struct timespec &tv0, struct timespec &tv1, int diff)
 {
-  long sd = tv1->tv_sec - tv0->tv_sec;
-  return (sd > diff || (sd == diff && tv1->tv_usec > tv0->tv_usec));
+  int sd = tv1.tv_sec - tv0.tv_sec;
+  return (sd > diff || (sd == diff && tv1.tv_nsec > tv0.tv_nsec));
 }
 
 //-----------------------------------------------------------------------
@@ -531,12 +531,12 @@ bool
 okld_jailed_exec_t::fix_exec ()
 {
   // force a redo in the case of resurrecting a new service!
-  have_ustat = false;
+  _have_ustat = false;
   if (_unsafe) 
     return true;
   if (!get_unix_stat ())
     return false;
-  if ((get_exec_uid () != exec_uid || get_exec_gid () != exec_gid) && 
+  if ((get_exec_uid () != _exec_uid || get_exec_gid () != _exec_gid) && 
       !chown ())
     return false;
   if (!chmod (get_exec_mode ()))
@@ -547,22 +547,24 @@ okld_jailed_exec_t::fix_exec ()
 //-----------------------------------------------------------------------
 
 tamed void
-okld_ch_cluster_t::resurrect ()
+okld_ch_t::resurrect (evv_t ev)
 {
+  tvars {
+    struct timespec ts;
+  }
   if (_state != OKC_STATE_LAUNCH) {
 
-    struct timeval *tp = (struct timeval *) xmalloc (sizeof (struct timeval));
-    gettimeofday (tp, NULL);
-
-    while (timevals.size () && secdiff (timevals[0], tp, ok_csi)) {
-      xfree (timevals.pop_front ());
+    ts = sfs_get_tsnow ();
+    while (_timevals.size () && secdiff (_timevals[0], ts, ok_csi)) {
+      _timevals.pop_front ();
     }
-    timevals.push_back (tp);
+    _timevals.push_back (ts);
 
-    if (timevals.size () > ok_crashes_max) {
-      state = _OKC_STATE_HOSED;
+    if (_timevals.size () > ok_crashes_max) {
+      _state = OKC_STATE_HOSED;
       CH_ERROR ("Execeeded maximum number of crashes; will no longer restart!");
-    } else if (okld->will_jail () && !fix_exec ()) {
+
+    } else if (okld ()->will_jail () && !_cluster->fix_exec ()) {
       _state = OKC_STATE_HOSED;
       CH_ERROR ("Failed to fix permissions on executable during relaunch!");
     } else {
@@ -577,38 +579,37 @@ okld_ch_cluster_t::resurrect ()
 void
 okld_ch_cluster_t::clean_dumps ()
 {
-  if (!rundir)
-    return;
-  DIR *dirp = opendir (rundir.cstr ());
-  if (!dirp) {
-    warn << "Cannot clean out coredump directory: " << rundir << "\n";
-    return;
-  }
-  struct dirent *de;
-  while ((de = readdir (dirp))) {
-    if (de->d_type != DT_REG)
-      continue;
-    str corefile = de->d_name;
-    str from = apply_container_dir (rundir, corefile);
-    str to = apply_container_dir (okld->get_root_coredir (), 
-				  strbuf (corefile) << "." 
-				  << sfs_get_timenow());
-    if (link (from.cstr (), to.cstr ()) != 0) 
-      warn ("could not move file %s: %m\n", from.cstr ());
-    else if (unlink (from.cstr ()) != 0)
-      warn ("unlink failed for file %s: %m\n", from.cstr ());
-
-    if (::chown (to.cstr (), 
-		 okld->coredump_usr ().getid (), 
-		 okld->coredump_grp ().getid ()) != 0)
-      warn ("chown failed for file %s: %m\n", to.cstr ());
-
-    if (::chmod (to.cstr (), okld->coredump_mode ()) != 0)
-      warn ("chmod failed for file %s: %m\n", to.cstr ());
-
-  }
-  if (closedir (dirp) != 0) {
-    warn ("close directory failed for %s: %m\n", rundir.cstr ());
+  DIR *dirp;
+  if (!_rundir) { /* noop */
+  } else if (!(dirp = opendir (_rundir.cstr ()))) {
+    warn << "Cannot clean out coredump directory: " << _rundir << "\n";
+  } else { 
+    struct dirent *de;
+    while ((de = readdir (dirp))) {
+      if (de->d_type != DT_REG)
+	continue;
+      str corefile = de->d_name;
+      str from = apply_container_dir (_rundir, corefile);
+      str to = apply_container_dir (okld ()->get_root_coredir (), 
+				    strbuf (corefile) << "." 
+				    << sfs_get_timenow());
+      if (link (from.cstr (), to.cstr ()) != 0) 
+	warn ("could not move file %s: %m\n", from.cstr ());
+      else if (unlink (from.cstr ()) != 0)
+	warn ("unlink failed for file %s: %m\n", from.cstr ());
+      
+      if (::chown (to.cstr (), 
+		   okld ()->coredump_usr ().getid (), 
+		   okld ()->coredump_grp ().getid ()) != 0)
+	warn ("chown failed for file %s: %m\n", to.cstr ());
+      
+      if (::chmod (to.cstr (), okld ()->coredump_mode ()) != 0)
+	warn ("chmod failed for file %s: %m\n", to.cstr ());
+      
+    }
+    if (closedir (dirp) != 0) {
+      warn ("close directory failed for %s: %m\n", _rundir.cstr ());
+    }
   }
 }
 
@@ -645,18 +646,18 @@ okld_ch_cluster_t::fixup_doall (int uid_orig, int uid_new, int gid_orig,
 //-----------------------------------------------------------------------
 
 tamed void
-okld_ch_cluster_t::lazy_startup (evb_t ev)
+okld_ch_t::lazy_startup (evb_t ev)
 {
   tvars {
     bool ret (true);
   }
   twait { _lazy_lock.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
 
-  if (state == OKC_STATE_SERVE) {
+  if (_state == OKC_STATE_SERVE) {
     ret = true;
-  } else if (state == OKC_STATE_STANDBY) {
+  } else if (_state == OKC_STATE_STANDBY) {
     twait { launch (mkevent ());  }
-    ret = (state == OKC_STATE_SERVE);
+    ret = (_state == OKC_STATE_SERVE);
   } else {
     ret = false;
   }
@@ -680,7 +681,7 @@ okld_ch_cluster_t::reserve (bool lazy, evb_t ev)
   }
   cli = okld ()->okd ().cli ();
 
-  if (lazy) { _state = OKC_STATE_STANDBY; }
+  if (lazy) { set_states (OKC_STATE_STANDBY); }
 
   if (cli) {
     arg.proc.name = _servpath;
@@ -689,67 +690,40 @@ okld_ch_cluster_t::reserve (bool lazy, evb_t ev)
     arg.lazy = lazy;
     twait { RPC::okld_program_1::okld_reserve (cli, arg, &res, mkevent (err)); }
     if (err) {
-      str e = err;
-      okdbg_warn ("%s: cannot reserve space for service: %s\n", 
+      str e = strbuf () << err;
+      okdbg_warn (ERROR, "%s: cannot reserve space for service: %s\n", 
 		  _servpath.cstr(), e.cstr ());
     } else if (res != OK_STATUS_OK) {
-      okdbg_warn ("%s: okd rejected reservation with code=%d\n", 
+      okdbg_warn (ERROR, "%s: okd rejected reservation with code=%d\n", 
 		  _servpath.cstr (), int (res));
     } else {
-      _state = OKC_STATE_STANDBY;
+      set_states (OKC_STATE_STANDBY);
       ret = true;
     }
   } else {
-    okdbg_warn ("%s: cannot launch service since okd went away",
+    okdbg_warn (ERROR, "%s: cannot launch service since okd went away",
 		_servpath.cstr ());
   }
 
-  if (!ret) { state = OKC_STATE_HOSED; }
+  if (!ret) { set_states (OKC_STATE_HOSED); }
 
   ev->trigger (ret);
 }
 
 //-----------------------------------------------------------------------
 
-str
-okld_ch_cluster_t::unique_proc_name () const
-{
-  return unique_proc_name (_servpath, _brother_id);
-}
-
-//-----------------------------------------------------------------------
-
-str 
-okld_ch_cluster_t::unique_proc_name (const oksvc_proc_t &p)
-{
-  size_t i = p.brother_id >= 0 ? p.brother_id : 0;
-  return unique_proc_name (p.name, i);
-}
-
-//-----------------------------------------------------------------------
-
-str
-okld_ch_cluster_t::unique_proc_name (str p, size_t i)
-{
-  strbuf b;
-  b << p << "-" << i;
-  return b;
-}
-
-//-----------------------------------------------------------------------
-
 void
-okld_ch_cluster_t::set_brother_id (size_t id, size_t total)
+okld_ch_cluster_t::set_states (okc_state_t s)
 {
-  assert (id < total);
-  _brother_id = id;
-  _n_brothers = total;
+  for (size_t i = 0; i < _children.size (); i++) {
+    _children[i]->set_state (s);
+  }
 }
 
 //-----------------------------------------------------------------------
 
  void 
-   okld_ch_cluster_t::set_service_options (const svc_options_t &so)
+ okld_ch_cluster_t::set_service_options (const svc_options_t &so)
  { 
    _svc_options = so; 
 

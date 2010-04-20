@@ -186,8 +186,6 @@ public:
   okld_t *okld () { return _okld; }
   const okld_t *okld () const { return _okld; }
 
-protected:
-
   /**
    * Fix an executable to have the right ownership and permissions;
    * do this before every reboot of a service, in case it was replaced
@@ -195,6 +193,7 @@ protected:
    */
   bool fix_exec ();
 
+protected:
   const str _rexecpath;      // execpath relative to jaildir (starts with '/')
   okld_t *_okld;
   str _cfgfile_loc;
@@ -330,22 +329,19 @@ public:
   void launch (evv_t ev, CLOSURE);
   void sig_chld_cb (int status);
   void chldcb (int status) { chldcb_T (status); }
-  void clean_dumps ();
-  void lazy_startup (evb_t ev, CLOSURE);
   str str_id () const;
   void set_svc_ids ();
   void set_pid (int i) { _pid = i; }
 
-  str unique_proc_name () const;
-  static str unique_proc_name (const oksvc_proc_t &x);
   okld_t *okld ();
   void add_direct_port (int p);
   void post_spawn (int fd, evb_t ev, CLOSURE);
   size_t id () const { return _id; }
+  void lazy_startup (evb_t ev, CLOSURE);
+  void set_state (okc_state_t s) { _state = s; }
 
 private:
-  void resurrect ();
-  void relaunch ();
+  void resurrect (evv_t ev, CLOSURE);
   void chldcb_T (int status, CLOSURE);
 
   okld_ch_cluster_t *_cluster;
@@ -354,7 +350,7 @@ private:
   int _pid;
   okc_state_t _state;
   timecb_t *_rcb;
-  vec<struct timeval *> _timevals;
+  vec<struct timespec> _timevals;
   int _nsent;
   ok_direct_ports_t _direct_ports;
   tame::lock_t _lazy_lock;
@@ -384,11 +380,9 @@ public:
 
   void set_run_dir (const str &d) { _rundir = d; }
   void add_args (const vec<str> &a);
-  static str unique_proc_name (str s, size_t i);
   bool has_direct_ports () const { return _svc_options.ports.size () > 0; }
 
-  void set_service_options (const svc_options_t &so)
-  { _svc_options = so; }
+  void set_service_options (const svc_options_t &so);
 
   // add more arguments as we can parse for more options
   //bool parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc);
@@ -407,7 +401,8 @@ public:
   size_t n_children () const { return _children.size (); }
   ptr<okld_ch_t> get_child (size_t s);
   void reserve (bool lazy, evb_t ev, CLOSURE);
-
+  void clean_dumps ();
+  void set_states (okc_state_t s);
 protected:
   svc_options_t _svc_options;
 
