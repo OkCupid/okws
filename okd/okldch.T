@@ -42,7 +42,8 @@ okld_ch_t::okld_ch_t (okld_ch_cluster_t *c, size_t i)
     _state (OKC_STATE_NONE),
     _rcb (NULL),
     _nsent (0),
-    _lazy_lock (tame::lock_t::OPEN) {}
+    _lazy_lock (tame::lock_t::OPEN),
+    _startup_time (0) {}
 
 //-----------------------------------------------------------------------
 
@@ -213,7 +214,7 @@ okld_ch_cluster_t::launch (evv_t ev)
 //-----------------------------------------------------------------------
 
 str
-okld_ch_t::v_id () const
+okld_ch_t::str_id () const
 {
   str ret;
   if (_cluster->n_children () > 1) {
@@ -227,20 +228,20 @@ okld_ch_t::v_id () const
 //-----------------------------------------------------------------------
 
 ptr<axprt_unix>
-okld_ch_cluster_t::spawn_proc (str s_id, int logfd, int pubfd) 
+okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd) 
 {
   str report_exe;
   str exe;
   str i;
   vec<str> argv;
-  bool ok (true);
   ptr<axprt_unix> x;
-  str s_id;
   argv_t env_tmp;
   cgi_t *e;
+  int pid;
 
-  s_id = v_id ();
-  
+  str s_id = ch->str_id ();
+  size_t bid = ch->id ();
+
   // the first argument to aspawn ()...
   report_exe = exe = get_execpath ();
   
@@ -251,7 +252,7 @@ okld_ch_cluster_t::spawn_proc (str s_id, int logfd, int pubfd)
   // only do something in the cget_interpreter ();
   if (i) {
     exe = i;
-    _argv.push_back (i);
+    argv.push_back (i);
   }
       
   // pass true signifying that we've been jailed (if we are to be jailed)
@@ -272,7 +273,6 @@ okld_ch_cluster_t::spawn_proc (str s_id, int logfd, int pubfd)
   // per-service options might override global options here
   if (!_svc_options.apply_global_defaults (_servpath)) {
     okdbg_warn (ERROR, "%s: cannot apply conf params\n", s_id.cstr ());
-    ok = false;
   } else {
     
     e->insert ("lifereqs", _svc_options.svc_reqs, false);
@@ -287,9 +287,9 @@ okld_ch_cluster_t::spawn_proc (str s_id, int logfd, int pubfd)
     e->insert ("gziplev", _svc_options.gzip_level, false);
     e->insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
     e->insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
-    e->insert ("bid", _id, false);
+    e->insert ("bid", bid, false);
     
-    _argv.push_back (e->encode ());
+    argv.push_back (e->encode ());
     
     // undo all of the damage
     e->remove ("logfd");
@@ -310,21 +310,20 @@ okld_ch_cluster_t::spawn_proc (str s_id, int logfd, int pubfd)
     OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
 	   report_exe.cstr ());
     
-    env_tmp.init (env, environ);
+    env_tmp.init (_env, environ);
     x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
-			    wrap (this, &okld_ch_t::set_svc_ids), 
+			    wrap (ch, &okld_ch_t::set_svc_ids), 
 			    env_tmp);
-    _pid = axprt_unix_spawn_pid;
+    pid = axprt_unix_spawn_pid;
+    ch->set_pid (pid);
     if (!x) {
       okdbg_warn (ERROR, "%s: cannot launch service\n", s_id.cstr ());
-      ok = false;
     } else {
       OKDBG4(OKD_STARTUP, CHATTER, "launch succeeded on exe='%s'; pid=%d", 
-	     report_exe.cstr (), int (_pid));
+	     report_exe.cstr (), pid);
     }
   }
-  *xp = x;
-  ev->trigger (ok);
+  return x;
 }
 
 //-----------------------------------------------------------------------
@@ -334,14 +333,12 @@ okld_ch_t::launch (evv_t ev)
 {
   tvars {
     bool ok (true);
-    clnt_stat err;
-    int ctlfd;
-    str report_exe;
     str s_id;
-    ptr<axpr_unix> x;
+    ptr<axprt_unix> x;
+    int logfd (-1), pubfd (-1);
   }
 
-  s_id = v_id ();
+  s_id = str_id ();
 
   if (_startup_time == 0) _startup_time = sfs_get_timenow();
   _state = OKC_STATE_LAUNCH;
@@ -351,13 +348,13 @@ okld_ch_t::launch (evv_t ev)
     _state = OKC_STATE_HOSED;
   }
 
-  if (ok && !_direct_ports.bind (_servpath, okld->listenaddr)) {
+  if (ok && !_direct_ports.bind (_servpath, okld ()->listenaddr)) {
     ok = false;
     _state = OKC_STATE_BADPORTS; 
     okdbg_warn (ERROR, "%s: cannot bind to all direct ports\n", s_id.cstr ());
   }
 
-  if (ok && !(x = _cluster->spawn_proc (s_id, logfd, pubfd))) {
+  if (ok && !(x = _cluster->spawn_proc (this, logfd, pubfd))) {
     _state = OKC_STATE_HOSED; 
     ok = false;
   }
@@ -372,8 +369,8 @@ okld_ch_t::launch (evv_t ev)
 
   if (ok) { _state = OKC_STATE_SERVE; }
 
-  close (logfd);
-  if (pub_fd >= 0) close (pubfd);
+  if (logfd >= 0) close (logfd);
+  if (pubfd >= 0) close (pubfd);
   _direct_ports.close ();
 
   ev->trigger ();
@@ -389,12 +386,12 @@ okld_ch_t::post_spawn (int fd, evb_t ev)
     ok_xstatus_typ_t res;
     oksvc_descriptor_t arg;
     bool ok (false);
-    ptr<alcnt> cli;
+    ptr<aclnt> cli;
     ptr<axprt_unix> x;
     str s_id;
   }
   
-  s_id = v_id ();
+  s_id = str_id ();
 
   ::chldcb (_pid, wrap (this, &okld_ch_t::chldcb));
 
@@ -443,14 +440,14 @@ okld_ch_t::set_svc_ids ()
   // strip privileges from the child proc, but do the same for each
   // in the "cluster" of sibling processes.
   if (okld ()->is_superuser ()) {
-    _cluster->set_svc_ids ();
+    _cluster->set_svc_ids (_pid);
   }
 }
 
 //-----------------------------------------------------------------------
 
 void
-okld_ch_cluster_t::set_svc_ids ()
+okld_ch_cluster_t::set_svc_ids (int _pid)
 {
 
   // unsubscribe from all groups
@@ -478,35 +475,44 @@ okld_ch_cluster_t::set_svc_ids ()
 
 //-----------------------------------------------------------------------
 
-void
-okld_ch_cluster_t::chldcb (int status)
+tamed void
+okld_ch_t::chldcb_T (int status)
 {
-  if (status != 0)
-    clean_dumps ();
-  if (okld->in_shutdown ())
-    return;
-
-  CH_ERROR ("child process died with status=" << status);
-
-  // child chrashing at boot-up is a bad thing; nothing to do here
-  if (state != OKC_STATE_SERVE) {
-    CH_ERROR ("HOSED: child found in wrong state (" << state << ")");
-    state = OKC_STATE_HOSED;
-    return;
+  tvars {
+    bool relaunch (false);
   }
-  if (okld->safe_startup () && 
-      (sfs_get_timenow() - startup_time < int (ok_chld_startup_time))) {
-    CH_ERROR ("HOSED: not restarting due to crash directly after startup");
-    state = OKC_STATE_HOSED;
-    return;
-  }
-  state = OKC_STATE_DELAY;
 
-  if (status == 0 && timevals.size () <= (ok_crashes_max/2 + 2) )
-    resurrect ();
-  else {
-    rcb = delaycb (ok_resurrect_delay, ok_resurrect_delay_ms * 1000000,
-		   wrap (this, &okld_ch_cluster_t::resurrect));
+  if (status != 0) { clean_dumps (); }
+
+  if (!okld ()->in_shutdown ()) {
+
+    CH_ERROR ("child process died with status=" << status);
+
+    // child chrashing at boot-up is a bad thing; nothing to do here
+    if (_state != OKC_STATE_SERVE) {
+      CH_ERROR ("Child found in wrong state (" << state << ")");
+      _state = OKC_STATE_HOSED;
+
+    } else if (okld ()->safe_startup () && 
+	       (sfs_get_timenow() - startup_time < 
+		int (ok_chld_startup_time))) {
+      CH_ERROR ("Not restarting due to crash directly after startup");
+      _state = OKC_STATE_HOSED;
+
+    } else if (status != 0 || timevals.size () > (ok_crashes_max/2 + 2) ) {
+      _state = OKC_STATE_DELAY;
+      relaunch = true;
+      twait { 
+	delaycb (ok_resurrect_delay, ok_resurrect_delay_ms * 1000000, 
+		 mkevent ()); 
+      }
+    } else {
+      relaunch = true;
+    }
+  }
+
+  if (!okld ()->in_shutdown () && relaunch) {
+    twait { resurrect (mkevent ()); }
   }
 }
 
@@ -540,32 +546,30 @@ okld_jailed_exec_t::fix_exec ()
 
 //-----------------------------------------------------------------------
 
-void
+tamed void
 okld_ch_cluster_t::resurrect ()
 {
-  rcb = NULL;
-  if (state == OKC_STATE_LAUNCH)
-    return;
+  if (_state != OKC_STATE_LAUNCH) {
 
-  struct timeval *tp = (struct timeval *) xmalloc (sizeof (struct timeval));
-  gettimeofday (tp, NULL);
+    struct timeval *tp = (struct timeval *) xmalloc (sizeof (struct timeval));
+    gettimeofday (tp, NULL);
 
-  while (timevals.size () && secdiff (timevals[0], tp, ok_csi))
-    xfree (timevals.pop_front ());
-  timevals.push_back (tp);
-  if (timevals.size () > ok_crashes_max) {
-    state = OKC_STATE_HOSED;
-    CH_ERROR ("HOSED: execeeded maximum number of crashes; "
-	      "will no longer restart!");
-  } else {
-    if (okld->will_jail () && !fix_exec ()) {
-      CH_ERROR ("HOSED: failed to fix permissions on executable "
-		"during relaunch");
-      state = OKC_STATE_HOSED;
+    while (timevals.size () && secdiff (timevals[0], tp, ok_csi)) {
+      xfree (timevals.pop_front ());
+    }
+    timevals.push_back (tp);
+
+    if (timevals.size () > ok_crashes_max) {
+      state = _OKC_STATE_HOSED;
+      CH_ERROR ("Execeeded maximum number of crashes; will no longer restart!");
+    } else if (okld->will_jail () && !fix_exec ()) {
+      _state = OKC_STATE_HOSED;
+      CH_ERROR ("Failed to fix permissions on executable during relaunch!");
     } else {
-      launch ();
+      twait { launch (mkevent ()); }
     }
   }
+  ev->trigger ();
 }
 
 //-----------------------------------------------------------------------

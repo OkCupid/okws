@@ -329,21 +329,24 @@ public:
 
   void launch (evv_t ev, CLOSURE);
   void sig_chld_cb (int status);
-  void chldcb (int status);
+  void chldcb (int status) { chldcb_T (status); }
   void clean_dumps ();
   void lazy_startup (evb_t ev, CLOSURE);
-  str v_id () const;
+  str str_id () const;
   void set_svc_ids ();
+  void set_pid (int i) { _pid = i; }
 
   str unique_proc_name () const;
   static str unique_proc_name (const oksvc_proc_t &x);
   okld_t *okld ();
   void add_direct_port (int p);
   void post_spawn (int fd, evb_t ev, CLOSURE);
+  size_t id () const { return _id; }
 
 private:
   void resurrect ();
   void relaunch ();
+  void chldcb_T (int status, CLOSURE);
 
   okld_ch_cluster_t *_cluster;
   size_t _id;
@@ -355,6 +358,7 @@ private:
   int _nsent;
   ok_direct_ports_t _direct_ports;
   tame::lock_t _lazy_lock;
+  time_t _startup_time;
 };
 
 //=======================================================================
@@ -390,12 +394,12 @@ public:
   //bool parse_service_options (vec<str> *v, ok_usr_t **u, const str &loc);
 
   void gather_helper_fds (str s, int *log, int *pub, evb_t ev, CLOSURE);
-  ptr<axprt_unix> spawn_proc (str s, int lfd, int pfd);
+  ptr<axprt_unix> spawn_proc (okld_ch_t *ch, int lfd, int pfd);
   void launch (evv_t ev, CLOSURE);
   bool can_exec ();
   void assign_uid (int u);
   void assign_gid (int u) { _gid = u; }
-  void set_svc_ids ();
+  void set_svc_ids (int _pid);
   ok_usr_t *usr () { return _uid; }
   virtual int get_desired_execfile_mode () const { return ok_svc_mode; }
   virtual str get_interpreter () const { return NULL; }
@@ -410,7 +414,6 @@ protected:
 private:
   bool _have_ustat;
   struct stat _ustat;
-  time_t _startup_time;
   str _rundir;
 
   vec<str> _env;
