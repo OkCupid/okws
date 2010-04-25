@@ -105,8 +105,8 @@ tamed void
 okd_t::launch_logd (evb_t ev)
 {
   tvars { bool rc; }
-  assert (logfd > 0);
-  logd = New fast_log_t (logfd, logfmt);
+  assert (_log_fd > 0);
+  logd = New fast_log_t (_log_fd, logfmt);
   twait { logd->connect (mkevent (rc)); }
   ev->trigger (rc);
 }

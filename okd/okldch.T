@@ -67,6 +67,10 @@ okld_ch_cluster_t::okld_ch_cluster_t (const str &e, const str &s, okld_t *o,
 
 //-----------------------------------------------------------------------
 
+okld_ch_cluster_t::~okld_ch_cluster_t () {}
+
+//-----------------------------------------------------------------------
+
 str
 okld_jailed_exec_t::get_execpath () const
 {
