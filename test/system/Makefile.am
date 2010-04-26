@@ -34,16 +34,16 @@ endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
 	post.T upload.T purify.T purify_lib.T forloop.T reflect.T \
-	objtest.T timer.T objtest2.T errortest.T
+	objtest.T timer.T objtest2.T errortest.T slow.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
 	post.C upload.C purify.C purify_lib.C forloop.C reflect.C \
-	objtest.C timer.C objtest2.C errortest.C
+	objtest.C timer.C objtest2.C errortest.C slow.C
 
 SUBDIRS = $(XML_SUBDIRS) 3tier
 
 okwssvc_PROGRAMS = static configtest simple form cookie \
 	post upload $(XMLPROGS) posttest forloop reflect objtest \
-	timer objtest2 errortest
+	timer objtest2 errortest slow
 
 okwsconf_DATA = okws.crt.dist okws.key.dist
 
@@ -62,6 +62,7 @@ objtest_SOURCES = objtest.C
 objtest2_SOURCES = objtest2.C
 timer_SOURCES = timer.C
 errortest_SOURCES = errortest.C
+slow_SOURCES = slow.C
 
 SUFFIXES = .g .C .T
 .T.C:

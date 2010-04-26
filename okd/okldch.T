@@ -236,6 +236,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
 {
   str report_exe;
   str exe;
+  str service_exe;
   str i;
   vec<str> argv;
   ptr<axprt_unix> x;
@@ -247,20 +248,14 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
   size_t bid = ch->id ();
 
   // the first argument to aspawn ()...
-  report_exe = exe = get_execpath ();
+  report_exe = service_exe = exe = get_execpath ();
   
-  // only do something in the case of a script; true => we are now
-  // chrooted
-  i = get_execpath ();
-  
-  // only do something in the cget_interpreter ();
-  if (i) {
+  if ((i = get_interpreter ())) {
     exe = i;
     argv.push_back (i);
   }
       
-  // pass true signifying that we've been jailed (if we are to be jailed)
-  argv.push_back (get_execpath ());
+  argv.push_back (service_exe);
 
   e = okld ()->env ();
       

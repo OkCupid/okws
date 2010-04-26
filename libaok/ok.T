@@ -249,6 +249,13 @@ oksrvc_t::init (int argc, char *argv[])
   int seltmp = 0;
   int gztmp;
 
+  if (OKDBG2(OKD_STARTUP)) {
+    SVC_CHATTER("argc = " << argc);
+    for (int i = 0; i < argc; i++) {
+      SVC_CHATTER("argv[" << i << "] = " << argv[i]);
+    }
+  }
+
   if (argc == 2) {
     ptr<cgi_t> t (cgi_t::str_parse (argv[1]));
     t->lookup ("jaildir", &jaildir);

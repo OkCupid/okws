@@ -508,7 +508,6 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     ch = New refcounted<okld_ch_cluster_t> (exe, httppath, this, loc, u, 
 					    env, port, so.n_procs ());
   }
-  ch->add_args (s);
   ch->set_service_options (so);
   add_svc (ch);
 

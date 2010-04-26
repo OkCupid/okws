@@ -120,13 +120,13 @@ public:
   ptr<bool> get_destroyed_flag () { return _destroyed; }
 
   void proc_to_xdr (oksvc_proc_t *x) const;
-  
 
   typedef enum {
     OK = 0,
     MIGHT_WORK = 1,
     BUSY_LOOP = 2,
-    CRASHED = 3
+    CRASHED = 3,
+    STANDBY = 4
   } status_t;
 
   status_t get_status () const;

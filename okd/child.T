@@ -104,7 +104,7 @@ okch_t::get_status () const
   status_t ret = OK;
 
   if (_state == OKC_STATE_STANDBY) {  
-    ret = OK;
+    ret = STANDBY; // might work after startup!
 
   } else if (_state == OKC_STATE_HOSED) {
     ret = CRASHED;
@@ -135,6 +135,7 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
 {
   okch_t *ret = NULL;
   okch_t::status_t status = okch_t::CRASHED;
+  okch_t::status_t ret_status;
   size_t id = 0;
   size_t n = _children.size ();
   bool ok = true;
@@ -148,17 +149,22 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
   }
 
   for (size_t tries = 0; 
-       ok && tries < n && status != okch_t::OK; 
+       ok && tries < n && ret_status != okch_t::OK; 
        tries++, id++) {
+
     okch_t *ch = _children[id % n];
-    if (ch && !ret && 
-	((status = ch->get_status ()) == okch_t::OK ||
-	 (status == okch_t::MIGHT_WORK))) {
+
+    if (!ch) {  
+      /* noop */ 
+    } else if ((status = ch->get_status ()) == okch_t::CRASHED ||
+	       status == okch_t::BUSY_LOOP) { 
+      /* noop */ 
+    } else if (!ret || (ret_status != okch_t::OK && status == okch_t::OK)) {
+      ret_status = status;
       ret = ch;
     }
   }
 
-  if (ret && status != okch_t::OK) { status = okch_t::MIGHT_WORK; }
   *statusp = status;
   return ret;
 }
@@ -203,24 +209,39 @@ okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     okch_t::status_t status;
     int http_status (HTTP_OK);
     bool handled (false);
+    bool ok;
+    bool do_queue (false);
   }
 
   ch = find_best_fit_child (xc, &status);
 
-  if (status == okch_t::BUSY_LOOP) {         
-    http_status = HTTP_UNAVAILABLE; 
+  switch (status) {
+  case okch_t::BUSY_LOOP: http_status = HTTP_UNAVAILABLE; break;
+  case okch_t::CRASHED: http_status = HTTP_SRV_ERROR; break;
+  case okch_t::STANDBY:
+    {
+      assert (ch);
+      twait { ch->awaken (mkevent (ok)); }
+      if (!ok) { http_status = HTTP_SRV_ERROR; }
+      else { do_queue = true; }
+    }
+    break;
 
-  } else if (status == okch_t::CRASHED) {
-    http_status = HTTP_SRV_ERROR;
+  case okch_t::OK:
+    {
+      assert (ch);
+      twait { ch->send_con_to_service (acw, mkevent ()); }
+      handled = true;
+    }
+    break;
+  default:
+    do_queue = true;
+    break;
+  }
 
-  } else if (status == okch_t::OK) {
-    assert (ch);
-    twait { ch->send_con_to_service (acw, mkevent ()); }
-    handled = true;
-
-  } else if (_conqueue.size () >= ok_con_queue_max) {
-    http_status = HTTP_SRV_ERROR;
-
+  if (!do_queue) { /* noop */ }
+  else if (_conqueue.size () >= ok_con_queue_max) { 
+    http_status = HTTP_SRV_ERROR; 
   } else {
     _conqueue.push_back (acw);
     handled = true;
@@ -291,28 +312,17 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     ptr<bool> df;
     ref<ahttpcon_clone> xc (acw.con ());
     int fd (-1);
-    bool ok (true);
   }
 
   df = _destroyed;
   _per_svc_nfd_in_xit ++;
 
-  if (_state == OKC_STATE_STANDBY) {
-    twait { awaken (mkevent (ok)); }
-    if (ok && (!ctlx || !clnt)) {
-      CH_ERROR ("connection to child died during lazy wakeup");
-      ok = false;
-    }
-  } else {
-    assert (clnt);
-    assert (ctlx);
-  }
-
-  if (!ok) {
-    CH_ERROR ("lazy wakeup failed");
-  } else if (xc->timed_out ()) {
+  assert (clnt);
+  assert (ctlx);
+  
+  if (xc->timed_out ()) {
     CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
-	     << "): not forwarding to child");
+	      << "): not forwarding to child");
   } else if (xc->getfd () < 0) {
     CH_ERROR ("Dead file descriptor encountered");
   } else {
@@ -392,11 +402,6 @@ okch_t::start_chld ()
     _state = OKC_STATE_SERVE;
 
     reset_accounting ();
-
-    // need to check that ctlx is still here every time through the 
-    // loop; the service might have crashed as we were servicing
-    // queued connections.
-
     _cluster->is_ready ();
   }
 }
@@ -617,6 +622,10 @@ okch_t::awaken (evb_t ev)
   }
   proc_to_xdr (&p);
   twait { _myokd->awaken (p, mkevent (ok));}
+  if (ok && (!ctlx || !clnt)) {
+    CH_ERROR ("connection to child died during lazy wakeup");
+    ok = false;
+  }
   ev->trigger (ok);
 }
 
