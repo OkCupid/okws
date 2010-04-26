@@ -24,6 +24,7 @@ namespace pub3 {
     static ptr<fhash_t> alloc (const xpub3_hash_t &x) 
     { return New refcounted<fhash_t> (x); }
     str to_str () const { return armor64 (_b, PUBHASHSIZE); }
+    str to_str_16 () const;
     hash_t hash_hash () const;
     bool operator== (const fhash_t &ph) const;
     bool operator== (const xpub3_hash_t &ph) const;
@@ -64,6 +65,7 @@ namespace pub3 {
     inline str filename () const { return _jfn; }
     str input_filename () const { return _ifn; }
     ptr<expr_dict_t> to_dict () const;
+    ptr<expr_dict_t> to_binding () const;
 
     bool operator== (const fhash_t &ph) { return _hsh && *_hsh == ph; }
     bool operator!= (const fhash_t &ph) { return !_hsh || !(*_hsh == ph); }

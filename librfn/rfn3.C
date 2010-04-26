@@ -76,6 +76,7 @@ namespace rfn3 {
     F(cmp);
     F(format_float);
     F(format_int);
+    F(stat_file);
 
 #undef F
 
@@ -89,8 +90,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.3"; }
-  u_int64_t version_int () { return 3000003; }
+  const char *version_str () { return "3.0.4"; }
+  u_int64_t version_int () { return 3000004; }
 
   //-----------------------------------------------------------------------
 };

@@ -159,6 +159,17 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  class stat_file_t : public compiled_fn_t {
+  public:
+    // Signature "s" --- the filename to stat
+    stat_file_t () : compiled_fn_t (libname, "stat_file") {}
+    void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
+    ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
+    bool might_block () const { return true; }
+  };
+
+  //-----------------------------------------------------------------------
+
   const char *version_str ();
   u_int64_t version_int ();
 

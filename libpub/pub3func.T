@@ -99,7 +99,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str 
-  lambda_t::to_str () const
+  lambda_t::to_str (bool q) const
   {
     str ls = _loc.to_str ();
     return strbuf ("<%s @ %s>", _name.cstr (), ls.cstr ());

@@ -133,6 +133,7 @@ namespace pub3 {
 
     ptr<const expr_list_t> to_list () const;
     ptr<const expr_dict_t> to_dict () const;
+    ptr<const expr_list_t> list () const { return to_list (); }
 
   protected:
     ptr<const expr_t> _c_obj;
@@ -154,12 +155,12 @@ namespace pub3 {
     obj_t push_back ();
     void push_back (obj_t o);
     obj_t operator[] (size_t s);
+    const_obj_t operator[] (size_t s) const;
 
     // dict access features: mutable
     void insert (const str &n, obj_t o);
     obj_t operator() (const str &s);
     const_obj_t operator() (const str &s) const;
-    const_obj_t operator[] (size_t s) const;
 
     ALL_INT_TYPES (const_obj_t operator(), i, 
 		   const { return (*this)(i2s (i)); });
@@ -189,6 +190,7 @@ namespace pub3 {
 
     ptr<expr_dict_t> dict ();
     ptr<const expr_dict_t> dict () const;
+    ptr<expr_list_t> list () { return to_list (); }
 
     ptr<const expr_t> obj () const;
     ptr<const expr_t> expr () const;

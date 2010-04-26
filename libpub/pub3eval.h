@@ -192,6 +192,7 @@ namespace pub3 {
     void push_metadata (ptr<const metadata_t> md);
     void pop_metadata ();
     void set_lineno (lineno_t line);
+    ptr<ok_iface_t> pub_iface () { return _pub_iface; }
   protected:
 
     // A stack of all of the files being published, with their actual

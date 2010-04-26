@@ -259,7 +259,7 @@ namespace pub3 {
     } else {
       md = file->metadata ();
       push_metadata (md);
-      sz = env ()->push_locals (md->to_dict ());
+      sz = env ()->push_locals (md->to_binding ());
       twait { file->data ()->publish (this, mkevent (status)); }
       env ()->pop_to (sz);
       pop_metadata ();

@@ -1112,7 +1112,6 @@ namespace pub3 {
   status_t 
   if_t::v_publish_nonblock (eval_t *p) const
   {
-    assert (!might_block ());
     ptr<const zone_t> ne = find_clause (p);
     status_t s (XPUB_STATUS_OK);
     if (ne) { s = ne->publish_nonblock (p); }
@@ -1523,7 +1522,6 @@ namespace pub3 {
   switch_t::v_publish_nonblock (eval_t *pub) const
   {
     status_t ret (XPUB_STATUS_OK);
-    assert (!might_block ());
     ptr<const zone_t> zone = find_case (pub);
     if (zone) { zone->publish_nonblock (pub); }
     return ret;

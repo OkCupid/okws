@@ -225,7 +225,7 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
 {P3IDENT}	{ return p3_identifier (yytext); }
-r[#/!@%{<([]	{ p3_regex_begin (yytext[1]); }
+r[#/!@%{<]	{ p3_regex_begin (yytext[1]); }
 
 
 ([0-9]+|0x[0-9a-f]+) { yylval.str = yytext; return T_P3_UINT; }
@@ -486,8 +486,6 @@ p3_regex_begin (char ch)
     break;
   case '{': close = '}'; break;
   case '<': close = '>'; break;
-  case '(': close = ')'; break;
-  case '[': close = ']'; break;
   default:
     yyerror (strbuf ("unexpected P3 regex delimiter: '%c'\n", ch));
     break;

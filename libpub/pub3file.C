@@ -109,6 +109,14 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  str
+  fhash_t::to_str_16 () const 
+  {
+    return strbuf () << hexdump (_b, PUBHASHSIZE); 
+  }
+
+  //-----------------------------------------------------------------------
+
   bool
   fhash_t::operator== (const fhash_t &p2) const
   {
@@ -162,12 +170,22 @@ namespace pub3 {
   ptr<expr_dict_t>
   metadata_t::to_dict () const
   {
-    pub3::obj_dict_t d;
     pub3::obj_dict_t i;
     if (_ifn) { i ("input_filename") = _ifn; }
     if (_jfn) { i ("jailed_filename")  = _jfn; }
     if (_rfn) { i ("real_filename") = _rfn; }
-    d ("metadata") = i;
+    if (_hsh) { i ("hash") = _hsh->to_str_16 (); }
+    i ("ctime") = int64_t (_ctime);
+    return i.to_dict ();
+  }
+
+  //---------------------------------------------------------------------
+
+  ptr<expr_dict_t>
+  metadata_t::to_binding () const
+  {
+    pub3::obj_dict_t d;
+    d ("metadata") = obj_dict_t (to_dict ());
     return d.to_dict ();
   }
 

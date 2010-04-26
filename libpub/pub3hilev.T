@@ -156,7 +156,8 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   tamed void 
-  ap_t::publish (eval_t *pub, str fn, getfile_ev_t ev)
+  ap_t::publish_prepare (eval_t *pub, str fn, str *rfn, str *errp, 
+			 getfile_ev_t ev)
   {
     tvars {
       status_t status (XPUB_STATUS_NOENT);
@@ -164,7 +165,6 @@ namespace pub3 {
       str err;
       vec<str> files_to_check;
       size_t i;
-      str d, f, cwd_prev;
       ptr<const localizer_t> localizer;
     }
 
@@ -186,22 +186,10 @@ namespace pub3 {
 
     switch (status.status) {
     case XPUB_STATUS_OK:
-
       assert (file);
-      file->metadata ()->set_input_filename (fn);
       assert (i < files_to_check.size ());
-      basename_dirname (files_to_check[i], &d, &f);
-
-      cwd_prev = pub->set_cwd (d);
-
-      twait { pub->publish_file (file, mkevent (status)); }
-      if (status.status != XPUB_STATUS_OK) 
-	err = strbuf () << "error in publishing file: " << fn;
-
-      // Reset the working directory to whatever it was previously.
-      pub->set_cwd (cwd_prev);
+      *rfn = files_to_check[i];
       break;
-
     case XPUB_STATUS_RPC_ERR:
       err = strbuf () << fn << ": RPC error: " << *status.rpc_err;
       break;
@@ -216,10 +204,40 @@ namespace pub3 {
       err = *status.error;
       break;
     }
-    
-    if (err) {
-      pub->output_err (err, P_ERR_ERROR);
+    *errp = err;
+
+    ev->trigger (status, file);
+  }
+
+  //-----------------------------------------------------------------------
+
+  tamed void
+  ap_t::publish (eval_t *pub, str fn, getfile_ev_t ev)
+  {
+    tvars {
+      status_t status (XPUB_STATUS_NOENT);
+      ptr<file_t> file;
+      str err;
+      str d, f, cwd_prev, rfn;
     }
+
+    twait { publish_prepare (pub, fn, &rfn, &err, mkevent (status, file)); }
+    if (status.status == XPUB_STATUS_OK) {
+      assert (file);
+      file->metadata ()->set_input_filename (fn);
+      basename_dirname (rfn, &d, &f);
+
+      cwd_prev = pub->set_cwd (d);
+
+      twait { pub->publish_file (file, mkevent (status)); }
+      if (status.status != XPUB_STATUS_OK)  {
+	err = strbuf () << "error in publishing file: " << fn;
+      }
+
+      // Reset the working directory to whatever it was previously.
+      pub->set_cwd (cwd_prev);
+    }
+    if (err) { pub->output_err (err, P_ERR_ERROR); }
     ev->trigger (status, file);
   }
   

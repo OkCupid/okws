@@ -88,6 +88,12 @@ namespace pub3 {
      */
     virtual void publish (eval_t *p, str fn, getfile_ev_t ev, CLOSURE) = 0;
 
+    /**
+     * fetch the file and metadata from the disk
+     */
+    virtual void publish_prepare (eval_t *p, str fn, str *rfn, str *errp,
+				   getfile_ev_t ev, CLOSURE) = 0;
+
     // set/get global ops for this publishing interface.
     virtual opts_t opts () const = 0;
     virtual void set_opts (opts_t i) = 0;
@@ -127,6 +133,8 @@ namespace pub3 {
     void publish (eval_t *p, str fn, getfile_ev_t ev, CLOSURE);
     ptr<const localizer_t> get_localizer (eval_t *p);
     void set_localizer (ptr<const localizer_t> l) { _localizer = l; }
+    void publish_prepare (eval_t *p, str fn, str *rfn, str *errp,
+			  getfile_ev_t ev, CLOSURE);
 
   protected:
     // to be filled in by the sub classes
