@@ -259,9 +259,10 @@ OkMgrSocketAccessMode		0600
 ## For test, launch 2 services; one for static pages, and the other for
 ## serving dummy XML-RPC requests
 ##
-Service		static		/static
+Service		static -n3		/static
 Service		xmlex		/xmlrc
 Service     simple      /simple
+Service	    slow	/slow
 
 ##
 ## Gzip Compression Configuration
