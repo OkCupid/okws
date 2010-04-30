@@ -193,6 +193,10 @@ namespace pub3 {
     void pop_metadata ();
     void set_lineno (lineno_t line);
     ptr<ok_iface_t> pub_iface () { return _pub_iface; }
+
+    void clear_me (ptr<expr_t> x) { _to_clear.push_back (x); }
+
+
   protected:
 
     // A stack of all of the files being published, with their actual
@@ -210,6 +214,7 @@ namespace pub3 {
 
     str _cwd;
     ptr<ok_iface_t> _pub_iface;  // publisher interface
+    vec<ptr<expr_t> > _to_clear; // to clear on dealloc to clear cycles
 
   };
 

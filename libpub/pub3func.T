@@ -102,7 +102,9 @@ namespace pub3 {
   lambda_t::to_str (bool q) const
   {
     str ls = _loc.to_str ();
-    return strbuf ("<%s @ %s>", _name.cstr (), ls.cstr ());
+    str ret = strbuf ("<%s @ %s>", _name.cstr (), ls.cstr ());
+    if (q) ret = json::quote (ret);
+    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -245,7 +247,15 @@ namespace pub3 {
   { 
     _md = e->current_metadata (); 
     e->env ()->capture_closure (&_stack); 
+
+    // Lambda closures can cause cycles; so we ask to clear all
+    // lambda innards when the environment goes out of scope.
+    e->clear_me (mkref (this));
   }
+
+  //-----------------------------------------------------------------------
+
+  void closed_lambda_t::cycle_clear () { _stack.clear (); }
 
   //======================================== fndef_t ======================
 

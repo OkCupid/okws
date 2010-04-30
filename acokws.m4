@@ -143,7 +143,7 @@ if test "$with_mysql" != "no"; then
 	cdirs="${with_mysql}/include ${with_mysql}/include/mysql \
 	       ${prefix}/include ${prefix}/include/mysql"
 	dirs="$cdirs /usr/local/include/mysql /usr/local/mysql/include \
-               /usr/include/mysql "
+               /usr/include/mysql /opt/local/include/mysql5/mysql "
 	AC_CACHE_CHECK(for mysql.h, sfs_cv_mysql_h,
 	[for dir in " " $dirs; do
 		case $dir in
@@ -165,7 +165,7 @@ if test "$with_mysql" != "no"; then
 		cdirs="${with_mysql}/lib ${with_mysql}/lib/mysql \
 		       ${prefix}/lib ${prefix}/lib/mysql"
 		dirs="$cdirs /usr/local/lib/mysql /usr/local/mysql/lib \
-                      /usr/lib/mysql "
+                      /usr/lib/mysql /opt/local/lib/mysql5/mysql "
 		AC_CACHE_CHECK(for libmysqlclient, sfs_cv_libmysqlclient,
 		[for dir in "" " " $dirs; do
 			case $dir in
@@ -330,7 +330,6 @@ fi
 AC_SUBST(LDADD_THR)
 ])
 
-
 dnl
 dnl Find pthreads
 dnl
@@ -449,6 +448,19 @@ if test ${okws_cv_gmtoff+set} ; then
    AC_DEFINE_UNQUOTED(STRUCT_TM_GMTOFF, $okws_cv_gmtoff, struct tm has a tm_gmtoff field)
 fi
 ])
+dnl
+dnl Figure out if RPC_UNKNOWNADDR is defined or not
+dnl
+AC_DEFUN([OKWS_RPC_UNKNOWNADDR],
+[AC_CACHE_CHECK(for RPC_UNKNOWNADDR in rpc/rpc.h, okws_cv_rpc_unknownaddr,
+[AC_TRY_COMPILE([#include <rpc/rpc.h>
+], [ int i = RPC_UNKNOWNADDR; i++; ], okws_cv_rpc_unknownaddr="yes" )
+])
+if ! test ${okws_cv_rpc_unknownaddr+set} ; then
+    AC_DEFINE_UNQUOTED(RPC_UNKNOWNADDR, clnt_stat(19), hard-code this for Mac OS/X)
+fi
+])
+
 dnl
 dnl Find the SSL libraries
 dnl

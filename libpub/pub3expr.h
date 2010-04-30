@@ -89,6 +89,7 @@ namespace pub3 {
     virtual ptr<expr_t> copy () const ;
     virtual ptr<expr_t> deep_copy () const;
     virtual ptr<expr_t> mutate () { return mkref (this); }
+    virtual void cycle_clear () {} // clear for cycle-elimination
 
     virtual bool is_static () const { return false; }
     bool might_block () const;
@@ -935,6 +936,7 @@ namespace pub3 {
   public:
     virtual bool lookup (const str &nm, ptr<const expr_t> *x = NULL)
       const = 0;
+    virtual ~bind_interface_t () {}
     virtual ptr<bindtab_t> mutate () = 0;
     virtual ptr<qhash_const_iterator_t<str, ptr<expr_t> > > iter() const = 0;
     ptr<expr_dict_t> copy_to_dict () const;
@@ -962,6 +964,7 @@ namespace pub3 {
   class cow_bindtab_t : public bind_interface_t {
   public:
     cow_bindtab_t (ptr<const bindtab_t> t) : _orig (t) {}
+    virtual ~cow_bindtab_t () {}
     static ptr<cow_bindtab_t> alloc (ptr<const bindtab_t> t);
     bool lookup (const str &nm, ptr<const expr_t> *x = NULL) const;
     ptr<bindtab_t> mutate ();

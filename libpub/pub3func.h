@@ -77,6 +77,7 @@ namespace pub3 {
   class closed_lambda_t : public lambda_t {
   public:
     closed_lambda_t (const lambda_t &in, eval_t *e);
+    void cycle_clear ();
   protected:
     const env_t::stack_t *closure_stack () const { return &_stack; }
     env_t::stack_t _stack;

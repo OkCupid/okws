@@ -577,7 +577,7 @@ scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div) const
 
   } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {
     double d1 = to_double ();
-    double d2 = to_double ();
+    double d2 = o.to_double ();
 
     if (d2 && div) { out.set (d1 / d2); }
     else { ok = false; }

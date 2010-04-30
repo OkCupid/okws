@@ -111,6 +111,7 @@ namespace pub3 {
     size_t i = 0;
     bool pipe = false;
     str e;
+    int64_t tmp;
 
     size_t min_args = 0, max_args = 0;
 
@@ -152,8 +153,11 @@ namespace pub3 {
 	break;
 
       case 'f':
-	if (ib && !args[i]->to_double (&a._f)) {
-	  strbuf b ("argument %zd: expected a double", hi);
+	if (!ib) { /* noop */ }
+	else if (args[i]->to_double (&a._f)) { /* good */ }
+	else if (args[i]->to_int (&tmp)) { a._f = tmp; }
+	else {
+	  strbuf b ("argument %zd: expected a double (or int)", hi);
 	  err.push_back (b);
 	}
 	break;

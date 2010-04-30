@@ -6,4 +6,4 @@ filedata = """
    print (d);
 $}
 """
-outcome = '{"b" : [<anonymous-lambda @ /regtest-scratch/cases_91.html:1>]}'
+outcome = '{"b" : ["<anonymous-lambda @ /regtest-scratch/cases_91.html:1>"]}'

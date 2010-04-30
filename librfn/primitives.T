@@ -120,7 +120,11 @@ namespace rfn3 {
   {
     ptr<const pub3::expr_t> e = args[0]._O;
     int64_t i = 0;
-    if (e) i = e->to_int ();
+    double d;
+    if (!e) { /* nothing */ }
+    else if (e->to_int (&i)) { /* great! */ }
+    else if (e->to_double (&d)) { i = d; }
+    else { /* no dice! */ }
     return expr_int_t::alloc (i);
   }
 

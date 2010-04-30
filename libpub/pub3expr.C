@@ -792,18 +792,17 @@ namespace pub3 {
       report_error (e, "addition on lists only works with 2 lists");
 
       // Two dicts added or subtracted
-    } else if ((d1 = e1->to_dict ()) || (d2 = e2->to_dict ())) {
-      if (!d1 || !d2) {
-	report_error (e, "addition on dicts only work with 2 dicts");
+    } else if ((d1 = e1->to_dict ()) && (d2 = e2->to_dict ())) {
+      ptr<expr_dict_t> d = New refcounted<expr_dict_t> (*d1);
+      if (_pos) {
+	*d += *d2;
       } else {
-	ptr<expr_dict_t> d = New refcounted<expr_dict_t> (*d1);
-	if (_pos) {
-	  *d += *d2;
-	} else {
-	  *d -= *d2;
-	}
-	out = d;
+	*d -= *d2;
       }
+      out = d;
+
+    } else if (e1->to_dict () || e2->to_dict ()) {
+      report_error (e, "addition on dicts only work with 2 dicts");
 
     } else {
       scalar_obj_t s1 = e1->to_scalar ();

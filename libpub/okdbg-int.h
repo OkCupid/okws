@@ -80,6 +80,7 @@ void set_debug_flags ();
 class okdbg_t {
 public:
   okdbg_t () {}
+  virtual ~okdbg_t () {}
   virtual bool flag2bits (char c, int64_t *out) const;
   virtual const char *allflags () const;
   virtual const char *documentation () const;

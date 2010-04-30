@@ -71,6 +71,7 @@ $a\
 / HAVE_EXPAT/b pdefine
 / HAVE_SSL/b pdefine
 / HAVE_LINUX_PRCTL_DUMP/b pdefine
+/ RPC_MY_UNKNOWNADDR/b pdefine
 
 :skip
 d
