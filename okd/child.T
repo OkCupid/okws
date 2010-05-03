@@ -370,8 +370,8 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     }
   }
 
-  if (*df) {
-    _per_svc_nfd_in_xit ++;
+  if (!*df) {
+    _per_svc_nfd_in_xit --;
   }
   // Only close the FD once it's been ACK'ed by the service (i.e., the RPC
   // has returned).
