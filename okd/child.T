@@ -135,7 +135,7 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
 {
   okch_t *ret = NULL;
   okch_t::status_t status = okch_t::CRASHED;
-  okch_t::status_t ret_status;
+  okch_t::status_t ret_status = status;
   size_t id = 0;
   size_t n = _children.size ();
   bool ok = true;
