@@ -366,6 +366,22 @@ oksrvc_t::handle_profiler (svccb *sbp)
 //-----------------------------------------------------------------------
 
 void
+oksrvc_t::handle_send_msg (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_send_msg_srv_t<svccb> srv (sbp);
+  const okctl_send_msg_arg_t *arg = srv.getarg ();
+  okctl_send_msg_res_t res (TRUE);
+  str err = custom_handle_send_msg (arg->msg);
+  if (err) {
+    res.set_ok (FALSE);
+    *res.err = err;
+  }
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
+void
 oksrvc_t::ctldispatch (svccb *v)
 {
   if (!v) {
@@ -402,10 +418,21 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_PROFILER:
     handle_profiler (v);
     break;
+  case OKCTL_SEND_MSG:
+    handle_send_msg (v);
+    break;
   default:
     v->reject (PROC_UNAVAIL);
     break;
   }
+}
+
+//-----------------------------------------------------------------------
+
+str
+oksrvc_t::custom_handle_send_msg (str s)
+{
+  return "no messages handled";
 }
 
 //-----------------------------------------------------------------------

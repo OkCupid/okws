@@ -40,15 +40,18 @@ public:
   bool parse ();
   adb_status_t fetch2 (bool bnd = false);
   str get_last_qry () const { return last_qry; }
+  const MYSQL_FIELD *fetch_fields (size_t *n);
+  size_t n_rows () const;
+  size_t affected_rows () const;
+  u_int64_t insert_id ();
 protected:
   bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
   str dump (mybind_param_t **aarr, u_int n);
   str make_query (mybind_param_t **aarr, u_int n);
   
-
   void dealloc_bufs ();
   void alloc_bufs ();
-  void row_to_res (MYSQL_ROW *r);
+  void row_to_res (MYSQL_ROW *r, MYSQL_RES *res);
   void clearfetch ();
 
   MYSQL *mysql;
@@ -76,6 +79,9 @@ public:
   alloc (MYSQL_STMT *s, const str &q, u_int o, tz_corrector_t *tzc)
   { return New refcounted<sth_prepared_t> (s, q, o, tzc); }
   adb_status_t fetch2 (bool bnd = false);
+  const MYSQL_FIELD *fetch_fields (size_t *n) { return NULL; }
+  size_t affected_rows () const;
+  u_int64_t insert_id ();
 protected:
   bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
   str dump (mybind_param_t **aarr, u_int n);

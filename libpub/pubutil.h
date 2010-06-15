@@ -54,6 +54,7 @@ bool to_hostname_and_port (const str &in, str *out, int *port);
 str html_wss (str in);
 str dir_merge (str d, str f);
 str rxx_replace (str input, rxx pat, str repl);
+bool has_null_byte (const str &s);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL

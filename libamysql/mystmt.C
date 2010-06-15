@@ -25,13 +25,37 @@
 #include <sys/time.h>
 #include <time.h>
 
+//====================================== sth_prepared_t =================
+
 #if defined(HAVE_MYSQL_BINDFUNCS) && defined(HAVE_MYSQL_BIND)
+
+//-----------------------------------------------------------------------
+
+u_int64_t
+sth_prepared_t::insert_id () 
+{
+  u_int64_t r = mysql_stmt_insert_id (sth);
+  return r;
+}
+
+//-----------------------------------------------------------------------
 
 sth_prepared_t::~sth_prepared_t ()
 {
   if (bnds) delete [] bnds;
   if (sth) mysql_stmt_close (sth);
 }
+
+//-----------------------------------------------------------------------
+
+size_t
+sth_prepared_t::affected_rows () const
+{
+  size_t r = mysql_stmt_affected_rows (sth);
+  return r;
+}
+
+//-----------------------------------------------------------------------
 
 void
 sth_prepared_t::clearfetch ()
@@ -43,6 +67,8 @@ sth_prepared_t::clearfetch ()
       (state == AMYSQL_FETCH && (opts & AMYSQL_USERES))) 
     while (fetch2 (true) == ADB_OK) ;
 }
+
+//-----------------------------------------------------------------------
 
 str
 sth_prepared_t::dump (mybind_param_t **arr, u_int n) 
@@ -58,6 +84,7 @@ sth_prepared_t::dump (mybind_param_t **arr, u_int n)
   return b;
 }
 
+//-----------------------------------------------------------------------
 
 bool
 sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
@@ -85,6 +112,8 @@ sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 bool
 sth_prepared_t::bind_result ()
 {
@@ -101,12 +130,16 @@ sth_prepared_t::bind_result ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 void
 sth_prepared_t::bind (MYSQL_BIND *b, mybind_param_t **a, u_int n)
 {
   for (u_int i = 0; i < n; i++)
     a[i]->bind (&b[i]);
 }
+
+//-----------------------------------------------------------------------
 
 adb_status_t
 sth_prepared_t::fetch2 (bool bnd)
@@ -145,47 +178,16 @@ sth_prepared_t::fetch2 (bool bnd)
 
 #endif //  HAVE_MYSQL_BINDFUNCS && HAVE_MYSQL_BIND
 
-void
-mystmt_t::alloc_res_arr (u_int n)
-{
-  // reallocate if the old array is not big enough.
-  if (res_n < n && res_arr) {
-    delete [] res_arr;
-    res_arr = NULL;
-  }
+//==================================== sth_parsed_t =======================
 
-  res_n = n;
-  if (!res_arr)
-    res_arr = New mybind_res_t[n];
+u_int64_t
+sth_parsed_t::insert_id () 
+{
+  u_int64_t r = mysql_insert_id (mysql);
+  return r;
 }
 
-bool
-mystmt_t::execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
-{
-  struct timeval t1;
-
-  // Set the GMT offset in the global field if necessary, using this
-  // thread to do so
-  if (_tzc && !_tzc->fetching ()) {
-    (void)_tzc->gmt_offset ();
-  }
-
-  if (lqt) 
-    gettimeofday (&t1, NULL);
-  bool rc = execute2 (b, arr, n);
-  if (lqt) {
-    struct timeval t2;
-    gettimeofday (&t2, NULL);
-    long sd = (t2.tv_sec - t1.tv_sec) * 1000;
-    sd += (t2.tv_usec - t1.tv_usec) / 1000;
-    if (sd > long (lqt)) {
-      warn << "* Long Query: " << sd << "ms\n";
-      warn << "**  " << dump (arr, n) << "\n";
-    }
-  }
-  return rc;
-}
-
+//-----------------------------------------------------------------------
 
 void
 sth_parsed_t::clearfetch ()
@@ -209,6 +211,8 @@ sth_parsed_t::clearfetch ()
   if (state == AMYSQL_FETCH)
     state = AMYSQL_FETCH_DONE;
 }
+
+//-----------------------------------------------------------------------
 
 adb_status_t 
 sth_parsed_t::fetch2 (bool bnd)
@@ -234,31 +238,33 @@ sth_parsed_t::fetch2 (bool bnd)
   }
   length_arr = mysql_fetch_lengths (myres);
 
-  row_to_res (&row);
+  row_to_res (&row, myres);
   return ADB_OK;
 }
 
+//-----------------------------------------------------------------------
+
 void
-sth_parsed_t::row_to_res (MYSQL_ROW *row)
+sth_parsed_t::row_to_res (MYSQL_ROW *row, MYSQL_RES *res)
 {
+  MYSQL_FIELD *ff = NULL;
   u_int lim = min (my_res_n, res_n);
+
+  for (u_int i = 0; i < lim && !ff; i++) {
+    if (res_arr[i].is_xdr_union_type ()) { 
+      ff = mysql_fetch_fields (myres);
+    }
+  }
+
   for (u_int i = 0; i < lim; i++) {
-    res_arr[i].read_str ((*row)[i], length_arr ? length_arr[i] : 0);
+    res_arr[i].read_str ((*row)[i], 
+			 length_arr ? length_arr[i] : 0,
+			 ff ? ff[i].type : MYSQL_TYPE_NULL);
+			 
   }
 }
 
-void
-mystmt_t::assign ()
-{
-  for (u_int i = 0; i < res_n; i++) 
-    res_arr[i].assign ();
-}
-
-mystmt_t::~mystmt_t ()
-{
-  if (res_arr) delete [] res_arr;
-}
-
+//-----------------------------------------------------------------------
 
 sth_parsed_t::~sth_parsed_t ()
 {
@@ -268,6 +274,8 @@ sth_parsed_t::~sth_parsed_t ()
   }
   dealloc_bufs ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 sth_parsed_t::alloc_bufs ()
@@ -280,6 +288,8 @@ sth_parsed_t::alloc_bufs ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 sth_parsed_t::dealloc_bufs ()
 {
@@ -289,6 +299,8 @@ sth_parsed_t::dealloc_bufs ()
     delete [] bufs;
   }
 }
+
+//-----------------------------------------------------------------------
 
 bool
 sth_parsed_t::parse ()
@@ -314,6 +326,8 @@ sth_parsed_t::parse ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 str
 sth_parsed_t::make_query (mybind_param_t **aarr, u_int n)
 {
@@ -328,6 +342,8 @@ sth_parsed_t::make_query (mybind_param_t **aarr, u_int n)
 
   return b;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 sth_parsed_t::execute2 (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
@@ -360,8 +376,144 @@ sth_parsed_t::execute2 (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 str
 sth_parsed_t::dump (mybind_param_t **aarr, u_int n)
 {
   return make_query (aarr, n);
 }
+
+//-----------------------------------------------------------------------
+
+const MYSQL_FIELD *
+sth_parsed_t::fetch_fields (size_t *sz)
+{
+  const MYSQL_FIELD *ret = NULL;
+  if ((myres = mysql_store_result (mysql))) {
+    unsigned int nf = mysql_num_fields (myres);
+    my_res_n = nf; // whenver we set myres, also set my_res_n, and bump state
+    state = AMYSQL_FETCH;
+    *sz = nf;
+    ret = mysql_fetch_fields (myres);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+size_t 
+sth_parsed_t::n_rows () const 
+{
+  size_t res = 0;
+  if (myres) { res = mysql_num_rows (myres);  }
+  return res;
+}
+
+//-----------------------------------------------------------------------
+
+size_t
+sth_parsed_t::affected_rows () const
+{
+  size_t r = mysql_affected_rows (mysql);
+  return r;
+}
+
+//========================================= mystmt_t ====================
+
+void
+mystmt_t::assign ()
+{
+  for (u_int i = 0; i < res_n; i++) 
+    res_arr[i].assign ();
+}
+
+//-----------------------------------------------------------------------
+
+mystmt_t::~mystmt_t ()
+{
+  if (res_arr) delete [] res_arr;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+mystmt_t::execute_argvec (const amysql_scalars_t &args)
+{
+  size_t n = args.size ();
+  mybind_param_t **params = New mybind_param_t *[n];
+  MYSQL_BIND *binds = New MYSQL_BIND[n];
+  for (size_t i = 0; i < n; i++) {
+    params[i] = New mybind_param_t (args[i]);
+  }
+  bool ret = execute1 (binds, params, n);
+  for (size_t i = 0; i < n; i++) {
+    delete params[i];
+  }
+  delete [] params;
+  delete [] binds;
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+adb_status_t 
+mystmt_t::fetch_argvec (vec<amysql_scalars_t> *s, size_t n_fields)
+{
+  alloc_res_arr (n_fields);
+  amysql_scalars_t &row = s->push_back ();
+  row.setsize (n_fields);
+  for (size_t i = 0; i < n_fields; i++) {
+    res_arr[i] = &row[i];
+  }
+  adb_status_t res = fetch2 (true);
+  if (res != ADB_OK) { s->pop_back (); }
+  return res;
+}
+
+//-----------------------------------------------------------------------
+
+void
+mystmt_t::alloc_res_arr (u_int n)
+{
+  // reallocate if the old array is not big enough.
+  if (res_n < n && res_arr) {
+    delete [] res_arr;
+    res_arr = NULL;
+  }
+
+  res_n = n;
+  if (!res_arr)
+    res_arr = New mybind_res_t[n];
+}
+
+//-----------------------------------------------------------------------
+
+bool
+mystmt_t::execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
+{
+  struct timeval t1;
+
+  // Set the GMT offset in the global field if necessary, using this
+  // thread to do so
+  if (_tzc && !_tzc->fetching ()) {
+    (void)_tzc->gmt_offset ();
+  }
+
+  if (lqt) 
+    gettimeofday (&t1, NULL);
+  bool rc = execute2 (b, arr, n);
+  if (lqt) {
+    struct timeval t2;
+    gettimeofday (&t2, NULL);
+    long sd = (t2.tv_sec - t1.tv_sec) * 1000;
+    sd += (t2.tv_usec - t1.tv_usec) / 1000;
+    if (sd > long (lqt)) {
+      warn << "* Long Query: " << sd << "ms\n";
+      warn << "**  " << dump (arr, n) << "\n";
+    }
+  }
+  return rc;
+}
+
+//=======================================================================

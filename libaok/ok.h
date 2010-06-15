@@ -711,6 +711,11 @@ public:
   virtual void custom1_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
   virtual void custom2_rpc (svccb *v) { v->reject (PROC_UNAVAIL); }
 
+  // Your service can handle this RPC any which way it pleases.
+  // A NULL string means "OK", and everything else means
+  // an error (self-describing of course).
+  virtual str custom_handle_send_msg (str s);
+
   virtual ~oksrvc_t () ;
 
   virtual bool use_union_cgi () const { return false; }
@@ -757,6 +762,7 @@ protected:
   void handle_new_con2 (svccb *sbp);
   void handle_get_stats (svccb *v);
   void handle_leak_checker (svccb *v);
+  void handle_send_msg (svccb *sbp);
   void handle_profiler (svccb *sbp);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void kill (svccb *v);

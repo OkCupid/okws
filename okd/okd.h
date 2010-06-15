@@ -130,6 +130,7 @@ public:
   } status_t;
 
   status_t get_status () const;
+  void send_msg (str m, evs_t ev, CLOSURE);
   
   okd_t *_myokd;
   okch_cluster_t *_cluster;
@@ -306,6 +307,7 @@ public:
   void okctl_get_stats (svccb *sbp);
   void turnlog (svccb *sbp, CLOSURE);
   void strip_privileges ();
+  void send_msg (svccb *sbp, CLOSURE);
 
   bool in_shutdown () const { return sdflag; }
   void set_signals ();

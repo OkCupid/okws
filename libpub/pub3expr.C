@@ -146,11 +146,14 @@ namespace pub3 {
   }
 
   //--------------------------------------------------------------------
-
+  
   ptr<expr_t> expr_t::copy () const 
   { return expr_cow_t::alloc (mkref (this)); }
   ptr<expr_t> expr_t::deep_copy () const 
   { return expr_cow_t::alloc (mkref (this)); }
+  ptr<expr_t> expr_t::cow_copy () const { return NULL; }
+  ptr<expr_t> expr_t::cast_hack_copy () const 
+  { return mkref (const_cast<expr_t *> (this)); }
 
   //--------------------------------------------------------------------
 
@@ -340,10 +343,9 @@ namespace pub3 {
 
   ptr<expr_t> expr_cow_t::copy () const
   { return New refcounted<expr_cow_t> (*this); }
-
-  //-----------------------------------------------------------------------
-
   ptr<expr_t> expr_cow_t::deep_copy () const
+  { return New refcounted<expr_cow_t> (*this); }
+  ptr<expr_t> expr_cow_t::cow_copy () const
   { return New refcounted<expr_cow_t> (*this); }
 
   //-----------------------------------------------------------------------
@@ -362,7 +364,7 @@ namespace pub3 {
   {
     if (_orig) {
       assert (!_copy);
-      _copy = _orig->deep_copy ();
+      _copy = _orig->cow_copy ();
       _orig = NULL;
     }
     return _copy;
@@ -498,10 +500,9 @@ namespace pub3 {
   //====================================================================
 
   // For constants, we can't change them anyway, so copy's are no-ops
-  ptr<expr_t> expr_constant_t::copy () const 
-  { return mkref (const_cast<expr_constant_t *> (this)); }
-  ptr<expr_t> expr_constant_t::deep_copy () const 
-  { return mkref (const_cast<expr_constant_t *> (this)); }
+  ptr<expr_t> expr_constant_t::copy () const { return cast_hack_copy (); }
+  ptr<expr_t> expr_constant_t::deep_copy () const { return cast_hack_copy (); }
+  ptr<expr_t> expr_constant_t::cow_copy () const { return cast_hack_copy (); }
 
   //--------------------------------------------------------------------
 
@@ -1307,6 +1308,10 @@ namespace pub3 {
     }
     return out;
   }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_t> expr_list_t::cow_copy () const { return deep_copy (); }
   
   //--------------------------------------------------------------------
 
@@ -1987,6 +1992,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   ptr<expr_t> expr_dict_t::deep_copy () const { return copy_dict (); }
+  ptr<expr_t> expr_dict_t::cow_copy () const { return copy_dict (); }
 
   //--------------------------------------------------------------------
 

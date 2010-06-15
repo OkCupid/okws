@@ -36,6 +36,17 @@ union oksvc_procs_t switch (ok_set_typ_t typ) {
    void;
 };
 
+struct okctl_send_msg_arg_t {
+   string msg<>;
+};
+
+union okctl_send_msg_res_t switch (bool ok) {
+case TRUE:
+   void;
+case FALSE:
+   string err<>;
+};
+
 struct oksvc_status_t {
    oksvc_proc_t proc;
    int pid;
@@ -47,7 +58,6 @@ struct oksvc_stats_t {
   unsigned hyper n_sent;
   unsigned hyper n_recv;
 };
-
 
 struct okctl_stats_t {
     oksvc_status_t status<>;
@@ -185,6 +195,11 @@ struct okws_send_ssl_arg_t {
   int dummy;
 };
 
+struct okmgr_send_msg_arg_t {
+   oksvc_procs_t procs;
+   string msg<>;
+};
+
 %#define LOG_IP     (1 << 0)
 %#define LOG_UA     (1 << 1)
 %#define LOG_SZ     (1 << 2)
@@ -240,6 +255,9 @@ program OKCTL_PROGRAM {
 		okctl_sendcon_res_t
 		OKCTL_SEND_CON2(okctl_sendcon_arg2_t) = 18;
 
+		okctl_send_msg_res_t 
+		OKCTL_SEND_MSG (okctl_send_msg_arg_t) = 19;
+
 		void
 		OKCTL_KILL (oksig_t) = 99;
 
@@ -269,6 +287,7 @@ program OKLOG_PROGRAM {
 		
 		void
 		OKLOG_KILL (ok_killsig_t) = 99;
+
 	} = 1;
 } = 11281;
 
@@ -295,6 +314,9 @@ program OKMGR_PROGRAM {
 
 		ok_xstatus_t
 		OKMGR_PROFILER(okmgr_diagnostic_arg_t) = 8;
+
+		ok_xstatus_t
+		OKMGR_SEND_MSG(okmgr_send_msg_arg_t) = 9;
 	} = 1;
 } = 11278;
 

@@ -122,20 +122,17 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   tamed void
-  ap_t::run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d_in, opts_t o, 
+  ap_t::run_cfg (str fn, evb_t ev, ptr<expr_dict_t> d_in, opts_t o,
 		 status_t *sp)
   {
     tvars {
       holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
       ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
-      opts_t opts (o | P_CONFIG);
+      opts_t opts ((o < 0 ? _self->opts () : o) | P_CONFIG);
       eval_t pub (unis, d, opts);
       status_t status;
       ptr<file_t> file;
     }
-
-    if (opts < 0) opts = _opts;
-    pub.set_opts (opts);
     pub.set_pub_iface (mkref (this));
 
     twait { publish (&pub, fn, mkevent (status, file)); }

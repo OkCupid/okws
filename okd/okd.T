@@ -910,7 +910,7 @@ public:
   child_applicator_t () : _ok (true) {}
   virtual ~child_applicator_t () {}
   void run (servtab_t *t, const oksvc_procs_t &x, evv_t ev, CLOSURE);
-  virtual void apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev, CLOSURE) = 0;
+  virtual void apply (oksvc_proc_t p, okch_t *ch, evs_t ev, CLOSURE) = 0;
   void fill_status (ok_xstatus_t *out);
   void hit_error (const oksvc_proc_t &p, str e);
 private:
@@ -1005,13 +1005,48 @@ child_applicator_t::fill_status (ok_xstatus_t *out)
 class kill_applicator_t : public child_applicator_t {
 public:
   kill_applicator_t () {}
-  void apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev, CLOSURE);
+  void apply (oksvc_proc_t p, okch_t *ch, evs_t ev, CLOSURE);
 };
 
 //-----------------------------------------------------------------------
 
+class msg_applicator_t : public child_applicator_t {
+public:
+  msg_applicator_t (str m) : child_applicator_t (), _msg (m) {}
+  void apply (oksvc_proc_t p, okch_t *ch, evs_t ev, CLOSURE);
+private:
+  str _msg;
+};
+
+//-----------------------------------------------------------------------
+
+tamed void
+msg_applicator_t::apply (oksvc_proc_t p, okch_t *ch, evs_t ev)
+{
+  tvars {
+    str err;
+    str b;
+  }
+  b = strbuf () << p.name << "-" << p.brother_id;
+  
+
+  if (ch) {
+    twait { ch->send_msg (_msg, mkevent (err)); }
+    if (err) { 
+      strbuf b;
+      b << "in child " << b << ": " << err; 
+      err = b;
+    }
+  } else {
+    err = strbuf () << "NULL child (" << b << ")";
+  }
+  ev->trigger (err);
+}
+
+//-----------------------------------------------------------------------
+
 tamed void 
-kill_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev) 
+kill_applicator_t::apply (oksvc_proc_t p, okch_t *ch, evs_t ev) 
 { 
   ch->kill (); 
   ev->trigger (NULL);
@@ -1022,7 +1057,7 @@ kill_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev)
 class custom1_applicator_t : public child_applicator_t {
 public:
   custom1_applicator_t (const ok_custom_data_t *dat) : _data (dat) {}
-  void apply (const oksvc_proc_t &proc, okch_t *ch, evs_t ev, CLOSURE);
+  void apply (oksvc_proc_t proc, okch_t *ch, evs_t ev, CLOSURE);
 private:
   const ok_custom_data_t *_data;
 };
@@ -1046,7 +1081,7 @@ okd_t::custom1_in (svccb *sbp)
 //-----------------------------------------------------------------------
 
 tamed void
-custom1_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev)
+custom1_applicator_t::apply (oksvc_proc_t p, okch_t *ch, evs_t ev)
 {
   tvars {
     str s;
@@ -1060,7 +1095,7 @@ custom1_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev)
 class custom2_applicator_t : public child_applicator_t {
 public:
   custom2_applicator_t (const ok_custom_data_t *dat) : _data (dat) {}
-  void apply (const oksvc_proc_t &proc, okch_t *ch, evs_t ev, CLOSURE);
+  void apply (oksvc_proc_t proc, okch_t *ch, evs_t ev, CLOSURE);
   const ok_custom_res_set_t &res () const { return _res; }
 private:
   ok_custom_res_set_t _res;
@@ -1070,7 +1105,7 @@ private:
 //-----------------------------------------------------------------------
 
 tamed void 
-custom2_applicator_t::apply (const oksvc_proc_t &p, okch_t *ch, evs_t ev)
+custom2_applicator_t::apply (oksvc_proc_t p, okch_t *ch, evs_t ev)
 {
   tvars {
     str s;
@@ -1169,6 +1204,9 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
     break;
   case OKMGR_PROFILER:
     myokd->toggle_profiler (sbp);
+    break;
+  case OKMGR_SEND_MSG:
+    myokd->send_msg (sbp);
     break;
   default:
     sbp->reject (PROC_UNAVAIL);
@@ -1286,6 +1324,22 @@ okd_t::awaken (const oksvc_proc_t &p, evb_t ev)
     }
   }
   ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::send_msg(svccb *sbp)
+{
+  tvars {
+    RPC::okmgr_program_1::okmgr_send_msg_srv_t<svccb> srv (sbp);
+    const okmgr_send_msg_arg_t *arg (srv.getarg ());
+    msg_applicator_t ma (arg->msg);
+    ok_xstatus_t ret;
+  }
+  twait { ma.run (&servtab, arg->procs, mkevent ()); }
+  ma.fill_status (&ret);
+  srv.reply (ret);
 }
 
 //-----------------------------------------------------------------------

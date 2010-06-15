@@ -33,7 +33,8 @@ usage ()
   warnx << "usage: okmgr [ -l | -t ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
 	<< "       okmgr <-c|-p> [ enable | disable | print | clear ] "
-	<< "[-s <socket> | -f <conf>] <svc>\n";
+	<< "[-s <socket> | -f <conf>] <svc>\n"
+	<< "       okmgr [-s <socket> | -f <conf>] -m<msg> <svc1> <svc2>..\n";
 				     
   exit (1);
 }
@@ -45,21 +46,19 @@ okmgr_clnt_t::okmgr_clnt_t (const str &s)
 
 //-----------------------------------------------------------------------
 
-okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, 
-					    const oksvc_proc_t &p,
+okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, oksvc_proc_t p,
 					    ok_diagnostic_cmd_t cmd)
   : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
 
 //-----------------------------------------------------------------------
 
-okmgr_profiler_t::okmgr_profiler_t (const str &s, 
-				    const oksvc_proc_t &p,
+okmgr_profiler_t::okmgr_profiler_t (const str &s, oksvc_proc_t p,
 				    ok_diagnostic_cmd_t cmd)
   : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
 
 //-----------------------------------------------------------------------
 
-okmgr_launch_t::okmgr_launch_t (const str &s, const oksvc_procs_t &p,
+okmgr_launch_t::okmgr_launch_t (const str &s, oksvc_procs_t p,
 				ok_set_typ_t t) 
   : okmgr_clnt_t (s), _procs (p)
 {}
@@ -96,6 +95,14 @@ strs2procs (const vec<str> &files, int def)
 
 //-----------------------------------------------------------------------
 
+okmgr_msg_t::okmgr_msg_t (const str &s, oksvc_procs_t p, ok_set_typ_t t, str m)
+  : okmgr_clnt_t (s),
+    _procs (p),
+    _msg (m)
+{}
+
+//-----------------------------------------------------------------------
+
 okmgr_logturn_t::okmgr_logturn_t (const str &s)
   : okmgr_clnt_t (s) {}
 
@@ -113,6 +120,17 @@ void
 okmgr_launch_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
   h->call (OKMGR_RELAUNCH, &_procs, s, cb);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okmgr_msg_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
+{
+  okmgr_send_msg_arg_t arg;
+  arg.procs = _procs;
+  arg.msg = _msg;
+  h->call (OKMGR_SEND_MSG, &arg, s, cb);
 }
 
 //-----------------------------------------------------------------------
@@ -215,9 +233,14 @@ main (int argc, char *argv[])
   bool no_config = false;
   ok_diagnostic_cmd_t cmd = OK_DIAGNOSTIC_NONE;
   bool verbose = false;
+  str msg;
 
-  while ((ch = getopt (argc, argv, "c:p:lts:f:Fv")) != -1)
+  while ((ch = getopt (argc, argv, "m:c:p:lts:f:Fv")) != -1)
     switch (ch) {
+    case 'm':
+      m = CTL_MODE_SEND_MSG;
+      msg = optarg;
+      break;
     case 't':
       m = CTL_MODE_LOGTURN;
       break;
@@ -268,10 +291,12 @@ main (int argc, char *argv[])
     usage ();
   }
 
-  if (((set_typ == OK_SET_ALL) && (m != CTL_MODE_LAUNCH || files.size ()))
-      || (m != CTL_MODE_LOGTURN && 
-	  set_typ == OK_SET_SOME && 
-	  files.size () == 0))
+  // Can either set SET_ALL or some, but not both.
+  if (set_typ == OK_SET_ALL && files.size ())
+    usage ();
+
+  // Can only use SET_ALL in LAUNCH or SEND_MSG mode
+  if (set_typ == OK_SET_ALL && m != CTL_MODE_LAUNCH && m != CTL_MODE_SEND_MSG)
     usage ();
 
   if (sockname_arg && configfile) usage ();
@@ -293,6 +318,9 @@ main (int argc, char *argv[])
   switch (m) {
   case CTL_MODE_LEAK_CHECKER:
     t = New okmgr_leak_checker_t (sockname, str2proc (files[0], 0), cmd);
+    break;
+  case CTL_MODE_SEND_MSG:
+    t = New okmgr_msg_t (sockname, strs2procs (files, -1), set_typ, msg);
     break;
   case CTL_MODE_PROFILER:
     t = New okmgr_profiler_t (sockname, str2proc (files[0], 0), cmd);

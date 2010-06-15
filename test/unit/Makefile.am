@@ -17,8 +17,7 @@ XMLPROGS = \
 	xmltst4 \
 	xmltst5 \
 	xmltst6 \
-	xmlcli1 \
-	pub2xml
+	xmlcli1
 
 xmltst1_SOURCES = xmltst1.C
 xmltst3_SOURCES = xmltst3.C
@@ -27,7 +26,6 @@ xmltst5_SOURCES = xmltst5.C
 xmltst6_SOURCES = xmltst6.C
 xmlcli1_SOURCES = xmlcli1.C
 str2xmlobj_SOURCES = str2xmlobj.C
-pub2xml_SOURCES = pub2xml.C
 
 xmltst1.o:	xmltst1.C
 xmltst1.lo: 	xmltst1.C
@@ -41,8 +39,6 @@ xmltst5.lo:	xmltst5.C
 xmltst5.o:	xmltst5.C	
 xmltst6.o:	xmltst6.C
 xmltst6.lo:	xmltst6.C
-pub2xml.o:	pub2xml.C
-pub2xml.lo:	pub2xml.C
 srv.o:		srv.C
 srv.lo:		srv.T
 str2xmlobj.o:   str2xmlobj.C
@@ -67,7 +63,8 @@ TAMEIN = \
 	xmltst5.T \
 	xmltst6.T \
 	srv.T \
-	str2xmlobj.T
+	str2xmlobj.T \
+	eztst.T 
 
 TAMEOUT = \
 	xmlcli1.C \
@@ -79,7 +76,8 @@ TAMEOUT = \
 	xmltst5.C \
 	xmltst6.C \
 	srv.C \
-	str2xmlobj.C
+	str2xmlobj.C \
+	eztst.C
 
 noinst_PROGRAMS = \
 	kmptst \
@@ -93,7 +91,7 @@ noinst_PROGRAMS = \
 	newline \
 	gznaive \
 	json \
-	pub2xml
+	eztst
 
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
@@ -105,6 +103,7 @@ srv_SOURCES = srv.C
 newline_SOURCES = newline.C
 gznaive_SOURCES = gznaive.C
 json_SOURCES = json.C
+eztst_SOURCES = eztst.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)

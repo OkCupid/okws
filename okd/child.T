@@ -632,6 +632,39 @@ okch_t::awaken (evb_t ev)
 //-----------------------------------------------------------------------
 
 tamed void
+okch_t::send_msg (str m, evs_t ev)
+{
+  tvars {
+    clnt_stat err;
+    okctl_send_msg_arg_t arg;
+    okctl_send_msg_res_t res;
+    str status;
+  }
+    
+  if (!clnt) {
+    LDCH_ERROR("cannot connect to client for send_msg");
+    status = "dead child";
+  } else {
+    arg.msg = m;
+    twait {
+      RPC::okctl_program_1::okctl_send_msg (clnt, arg, &res, mkevent (err));
+    }
+    
+    if (err) {
+      strbuf b;
+      b << "RPC failure in send_msg: " << err << "\n";
+      LDCH_ERROR (b);
+      status = b;
+    } else if (!res.ok) {
+      status = *res.err;
+    }
+  }
+  ev->trigger (status);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
 okch_t::toggle_leak_checker (ok_diagnostic_cmd_t cmd, 
 			     event<ok_xstatus_typ_t>::ref ev)
 {

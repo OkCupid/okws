@@ -657,10 +657,23 @@ rxx_replace (str input, rxx pattern, str repl)
   str ret;
   if (input) {
     vec<str> v;
-    split (&v, pattern, input, -1, true);
+    split (&v, pattern, input, size_t (-1), true);
     ret = join (repl, v);
   }
   return ret;
 }
 
 //-----------------------------------------------------------------------
+
+bool
+has_null_byte (const str &s)
+{
+  bool ret = false;
+  for (size_t i = 0; !ret && i < s.len (); i++) {
+    if (!s[i]) { ret = true; }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+

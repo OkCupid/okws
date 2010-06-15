@@ -1,5 +1,5 @@
 
-SUBDIRS = system regtest unit
+SUBDIRS = libezdb server
 
 .PHONY: test tameclean
 

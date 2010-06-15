@@ -13,8 +13,8 @@ SUFFIXES = .g .C .T .x .h
 
 #-----------------------------------------------------------------------
 
-TAMEIN       = tst2.T
-TAMEOUT      = tst2.C
+TAMEIN       = tst2.T 
+TAMEOUT      = tst2.C 
 
 #-----------------------------------------------------------------------
 
@@ -24,7 +24,6 @@ tst2d_SOURCES = tst2_prot.C tst2d.C
 #-----------------------------------------------------------------------
 
 tst2_prot.C:	tst2_prot.h
-
 tst2_prot.o:	tst2_prot.C
 tst2_prot.lo:	tst2_prot.C
 tst2.o:	      	tst2.C
@@ -33,8 +32,8 @@ tst2d.o:        tst2_prot.h
 
 #-----------------------------------------------------------------------
 
-okwssvc_PROGRAMS = tst2
-okwsprx_PROGRAMS = tst2d
+okwssvc_PROGRAMS = tst2 
+okwsprx_PROGRAMS = tst2d 
 
 #-----------------------------------------------------------------------
 
@@ -43,7 +42,7 @@ tst2d_LDADD = $(LDADD_AMYSQL)
 #-----------------------------------------------------------------------
 
 CLEANFILES = core *.core *~ *_config *_log $(TAMEOUNT)
-EXTRA_DIST = $(TAMEIN) tst2_prot.x
+EXTRA_DIST = $(TAMEIN) tst2_prot.x 
 MAINTAINERCLEANFILES = Makefile.in
 
 #-----------------------------------------------------------------------

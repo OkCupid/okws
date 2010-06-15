@@ -434,6 +434,13 @@ format string //fmt//."
 	    output : "s",
 	    desc : "Format the int //val// accoring to the given sprintf-style
 format string //fmt//."
+	},
+
+	replace : {
+	    input : [ { body : "s" }, { pat : "r" }, { repl : "s" } ],
+	    output : "s",
+	    desc : "In the string //body//, find all occurrence of 
+the regular expression //pat// and replace with the string //repl//."
 	}
     
     };

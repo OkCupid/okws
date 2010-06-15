@@ -506,8 +506,8 @@ scalar_obj_t::operator* (const scalar_obj_t &o) const
   type_t me = natural_type ();
   type_t him = o.natural_type ();
 
-  int64_t i1, i2;
-  u_int64_t u1, u2;
+  int64_t i1 = 0, i2 = 0;
+  u_int64_t u1 = 0, u2 = 0;
   str s1;
   scalar_obj_t out;
 

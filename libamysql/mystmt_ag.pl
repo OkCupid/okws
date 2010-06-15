@@ -108,8 +108,14 @@ public:
   bool execute () { 
      return execute1 ((MYSQL_BIND *)NULL, (mybind_param_t **)NULL, 0);
   }
+  bool execute_argvec (const amysql_scalars_t &args);
+  adb_status_t fetch_argvec (vec<amysql_scalars_t> *row, size_t nf);
   virtual str get_last_qry () const { return NULL; }
   void set_long_query_timer (u_int m) { lqt = m ;}
+  virtual const MYSQL_FIELD *fetch_fields (size_t *n) = 0;
+  virtual size_t n_rows () const { return 0; }
+  virtual size_t affected_rows () const = 0;
+  virtual u_int64_t insert_id () = 0;
 protected:
   virtual bool execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n) = 0;
   bool execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n);

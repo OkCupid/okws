@@ -2,8 +2,8 @@
 $(PROGRAMS): $(LDEPS) 
 
 okwslib_LTLIBRARIES = libamysql.la
-libamysql_la_SOURCES = amysql.C mystmt_ag.C mystmt.C tz.C
-okwsinclude_HEADERS = amysql.h mystmt_ag.h mystmt.h
+libamysql_la_SOURCES = amysql.C mystmt_ag.C mystmt.C tz.C mybind.C gmtoff.C
+okwsinclude_HEADERS = amysql.h mystmt_ag.h mystmt.h mybind.h gmtoff.h
 
 libamysql_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
@@ -18,7 +18,6 @@ mystmt.lo: mystmt_ag.h
 mystmt_ag.h: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
 	-$(PERL) $< -h > $@~ && mv $@~ $@
-
 mystmt_ag.C: $(srcdir)/mystmt_ag.pl
 	@rm -f $@
 	-$(PERL) $< -c > $@~ && mv $@~ $@

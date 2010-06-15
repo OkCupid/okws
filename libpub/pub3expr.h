@@ -88,6 +88,8 @@ namespace pub3 {
 
     virtual ptr<expr_t> copy () const ;
     virtual ptr<expr_t> deep_copy () const;
+    virtual ptr<expr_t> cow_copy () const;
+    ptr<expr_t> cast_hack_copy () const;
     virtual ptr<expr_t> mutate () { return mkref (this); }
     virtual void cycle_clear () {} // clear for cycle-elimination
 
@@ -218,6 +220,7 @@ namespace pub3 {
     // Copy a copy, get a copy?
     ptr<expr_t> copy () const;
     ptr<expr_t> deep_copy () const;
+    ptr<expr_t> cow_copy () const;
     void propogate_metadata (ptr<const metadata_t> md);
     
   protected:
@@ -281,6 +284,7 @@ namespace pub3 {
     expr_constant_t (lineno_t l) : expr_t (l) {}
     ptr<expr_t> copy () const;
     ptr<expr_t> deep_copy () const;
+    ptr<expr_t> cow_copy () const;
     bool is_static () const { return true; }
     bool is_call_coercable () const { return false; }
     virtual void v_dump (dumper_t *d) const;
@@ -812,6 +816,7 @@ namespace pub3 {
     ptr<expr_t> &push_back () { return vec_base_t::push_back (); }
     ptr<expr_t> &push_back (ptr<expr_t> x);
     ptr<expr_t> deep_copy () const;
+    ptr<expr_t> cow_copy () const;
     
     size_t size () const { return vec_base_t::size (); }
     void setsize (size_t s) { vec_base_t::setsize (s); }
@@ -1043,6 +1048,7 @@ namespace pub3 {
     void pub_to_bindtab (eval_t *p, biev_t ev, CLOSURE) const;
 
     ptr<expr_t> deep_copy () const;
+    ptr<expr_t> cow_copy () const;
     ptr<expr_dict_t> copy_dict () const;
     bool is_static () const;
     bool might_block_uncached () const;

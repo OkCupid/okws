@@ -122,14 +122,14 @@ CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'
 dnl
 dnl for .x files, need header in build directory
 dnl
-for lib in libpub libaok libweb libamysql; do
+for lib in libpub libaok libweb libamysql ezdb/libezdb ; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_builddir)'"/$lib"
 done
 
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamysql libweb libokssl librfn; do
+for lib in libpub libahttp libokxml libaok libamt libamysql libweb libokssl librfn ezdb/libezdb ; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -143,10 +143,12 @@ LIBAOK='$(top_builddir)/libaok/libaok.la'
 LIBAMT='$(top_builddir)/libamt/libamt.la'
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
+LIBEZDB='$(top_builddir)/ezdb/libezdb/libezdb.la'
+LIBEZDBSRV='$(top_builddir)/ezdb/libezdb/libezdbsrv.la'
 LIBOKSSL='$(top_builddir)/libokssl/libokssl.la'
 LIBRFN='$(top_builddir)/librfn/librfn.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
-LDADD='$(LIBAOK) $(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
+LDADD='$(LIBEZDB) $(LIBAOK) $(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
 LDADD_AMT='$(LIBAMT) '"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
@@ -156,9 +158,9 @@ else
    LDEPS_PUB='$(LIBPUB) '"$LDEPS"
    LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDEPS"
    LDEPS_AMT='$(LIBAMT) '"$LDEPS"
-   LDEPS_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDEPS"
+   LDEPS_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMYSQL) '"$LDEPS"
 fi
-LDADD_AMYSQL='$(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
+LDADD_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
 
 
 dnl
@@ -200,6 +202,8 @@ AC_SUBST(LIBAMT)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBRFN)
+AC_SUBST(LIBEZDB)
+AC_SUBST(LIBEZDBSRV)
 AC_SUBST(LIBAMYSQL)
 AC_SUBST(LDADD_PUB)
 AC_SUBST(LDEPS_PUB)
@@ -222,4 +226,5 @@ AC_OUTPUT(libpub/Makefile pub/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
 	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
 	  librfn/Makefile test/regtest/Makefile test/regtest/cases/Makefile
-	  libamt_pthread/Makefile)
+	  libamt_pthread/Makefile ezdb/Makefile ezdb/libezdb/Makefile
+	  ezdb/server/Makefile)

@@ -42,7 +42,7 @@ namespace pub3 {
   ssize_t 
   file_t::xdr_len () const 
   { 
-    ssize_t ret = _xdr_opaque ? _xdr_opaque.len () : -1;
+    ssize_t ret = _xdr_opaque ? _xdr_opaque.len () : ssize_t (-1);
     return ret;
   }
 

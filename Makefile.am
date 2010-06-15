@@ -21,7 +21,7 @@ SBD1 = \
 	librfn
 
 if USE_MYSQL
-SBD2 = libamysql
+SBD2 = libamysql ezdb
 endif
 
 SUBDIRS = $(SBD1) \
