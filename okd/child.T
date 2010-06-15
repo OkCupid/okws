@@ -751,7 +751,7 @@ servtab_t::get (const oksvc_proc_t &p)
 {
   okch_cluster_t *cl = (*this)[p.name];
   int id = p.brother_id;
-  okch_t *ret;
+  okch_t *ret = NULL;
   if (id >= 0 && cl && id < int (cl->n_children ())) { ret = cl->child (id); }
   return ret;
 }
