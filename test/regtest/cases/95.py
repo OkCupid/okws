@@ -1,5 +1,7 @@
-desc = "test that lazy startup waits for ready"
+description = "testing that a function working like a dict doesn't crash us"
 
-script_path = "slow"
+filedata = """{$
+   locals { x : match.foo }
+$}"""
 
-outcome="ready=1"
+outcome_empty = True
