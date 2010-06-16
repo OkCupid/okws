@@ -1421,7 +1421,7 @@ bool
 ok_httpsrv_t::init_pub (u_int opts)
 {
   bool ret = false;
-  if (_pub_fd > 0) {
+  if (_pub_fd >= 0) {
     ptr<axprt_stream> x (axprt_stream::alloc (_pub_fd, ok_axprt_ps));
 
     if (ok_pub3_caching) {
@@ -1430,6 +1430,8 @@ ok_httpsrv_t::init_pub (u_int opts)
       _pub3 = New refcounted<pub3::remote_publisher_t> (x, opts);
     }
     ret = true;
+  } else {
+    okdbg_warn (ERROR, "Cannot init_pub with (got fd=%d)", _pub_fd);
   }
   return ret;
 }
