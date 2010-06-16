@@ -462,13 +462,15 @@ okld_ch_cluster_t::set_svc_ids (int _pid)
     exit (1);
   }
 
-  if (!_rundir) {
+  if (_rundir) {
     str d = okld ()->jail2real (_rundir, true);
     if (chdir (d) != 0) {
       CH_ERROR ("change dir failed: %m\n");
     } else if (OKDBG2(OKD_STARTUP)) {
       CH_CHATTER ("changing directories to " << d  );
     }
+  } else if (OKDBG2(OKD_STARTUP)) {
+    CH_CHATTER ("no rundir specified; not changing directories\n");
   }
 }
 
