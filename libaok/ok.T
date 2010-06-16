@@ -403,9 +403,6 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_CUSTOM_2_OUT:
     custom2_rpc (v);
     break;
-  case OKCTL_SEND_CON:
-    handle_new_con (v);
-    break;
   case OKCTL_SEND_CON2:
     handle_new_con2 (v);
     break;
@@ -808,23 +805,6 @@ oksrvc_t::handle_new_con_common (const okclnt_sin_t &sin_in,
   }
 
   return res;
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::handle_new_con (svccb *sbp)
-{
-  RPC::okctl_program_1::okctl_send_con_srv_t<svccb> srv (sbp);
-  const okctl_sendcon_arg_t *arg = srv.getarg ();
-  ptr<ahttpcon> x;
-  okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
-  if (res == OK_STATUS_OK) {
-    ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
-    if (!newclnt (acw))
-      res = OK_STATUS_NOMORE;
-  }
-  srv.reply (res);
 }
 
 //-----------------------------------------------------------------------
@@ -1657,16 +1637,6 @@ demux_data_t::alloc (const okctl_sendcon_arg2_t &arg)
   xdr_to_timespec (arg.time_sent, &sent);
   xdr_to_timespec (arg.time_recv, &recv);
   return New refcounted<demux_data_t> (arg.port, arg.ssl, ssl, recv, sent);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<demux_data_t>
-demux_data_t::alloc (const okctl_sendcon_arg_t &arg)
-{
-  str ssl;
-  if (arg.ssl) ssl = arg.ssl->cipher;
-  return New refcounted<demux_data_t> (arg.port, arg.ssl, ssl);
 }
 
 //-----------------------------------------------------------------------

@@ -96,12 +96,6 @@ struct ssl_ctx_t {
 
 typedef opaque okclnt_sin_t<>;
 
-struct okctl_sendcon_arg_t {
-        okclnt_sin_t sin;
-	unsigned port;
-	ssl_ctx_t *ssl;
-};
-
 struct okctl_timespec_t {
        unsigned ts_sec;
        unsigned ts_nsec;
@@ -236,9 +230,6 @@ program OKCTL_PROGRAM {
 
 		okctl_stats_t
 		OKCTL_GET_STATS(void) = 12;
-
-		okctl_sendcon_res_t
-		OKCTL_SEND_CON(okctl_sendcon_arg_t) = 13;
 
 		void
 		OKCTL_REENABLE_ACCEPT(void) = 14;

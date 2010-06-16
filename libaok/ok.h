@@ -131,7 +131,6 @@ public:
 
 
   static ptr<demux_data_t> alloc (const okctl_sendcon_arg2_t &x);
-  static ptr<demux_data_t> alloc (const okctl_sendcon_arg_t &x);
   void to_xdr (okctl_sendcon_arg2_t *x);
 
   okws1_port_t port () const { return _port; }
@@ -158,8 +157,6 @@ class ahttpcon_wrapper_t {
 public:
   ahttpcon_wrapper_t (ptr<A> c, ptr<demux_data_t> d = NULL) 
     : _con (c), _demux_data (d) {}
-  ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg_t &x)
-    : _con (c), _demux_data (demux_data_t::alloc (x)) {}
   ahttpcon_wrapper_t (ptr<A> c, const okctl_sendcon_arg2_t &x)
     : _con (c), _demux_data (demux_data_t::alloc (x)) {}
   ahttpcon_wrapper_t () {}
@@ -758,7 +755,6 @@ protected:
 
   void launch_dbs (evb_t ev, CLOSURE);
 
-  void handle_new_con (svccb *sbp);
   void handle_new_con2 (svccb *sbp);
   void handle_get_stats (svccb *v);
   void handle_leak_checker (svccb *v);
