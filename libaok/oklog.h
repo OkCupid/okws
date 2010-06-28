@@ -33,123 +33,15 @@
 #include "okclone.h"
 #include "okformat.h"
 
+//-----------------------------------------------------------------------
 
-#define LOG_TIMEBUF_SIZE   64
-#define LOG_BUF_MINSIZE    0x800     // must be at least 2wice maxwrite
-#define LOG_BUF_DEFSIZE    0x10000
-#define LOG_BUF_MAXWRITE   0x1000
-#define LOG_BUF_MAXLEN     0x800000
-#define LOG_BUF_TINYLEN    32
-#define LOG_BUF_HIGHWAT    0x7e00   // 2^15 - 512
-
-// Unlike regular mstr class, mstr2 can be assigned to a str and still
-// retain its data.  this allows us to reuse the malloc'ed memory, as
-// growing an mstr is a bit expensive.
-class mstr2 : public mstr {
+class logbuf_t : public strbuf {
 public:
-  mstr2 (size_t n) : mstr (n), b2 (b), alloc_sz (n) {}
-  void restore () { b = b2; }
-  bool resize (size_t ul);
-  void fullsize () { b->len = alloc_sz + 1; }
-private:
-  strobjptr b2;
-  size_t alloc_sz;
+  logbuf_t () : strbuf () {}
+  void log (str s);
 };
 
-class mstrs {
-public:
-  mstrs (u_int sz, u_int num = 2)
-  {
-    for (u_int i = 0; i < num; i++) {
-      bufs.push_back (New mstr2 (sz));
-      unlock (i);
-    }
-  }
-
-  ~mstrs () { while (bufs.size ()) delete bufs.pop_front (); }
-  void unlock (int i)
-  {
-    if (i >= 0) {
-      frlst.push_back (i); 
-      bufs[i]->fullsize (); 
-    }
-  }
-  mstr2 *get (int *i);
-
-private:
-  vec<mstr2 *> bufs;
-  vec<u_int> frlst;
-};
-
-class logbuf_t {
-public:
-  logbuf_t (u_int s = LOG_BUF_DEFSIZE, u_int h = LOG_BUF_HIGHWAT)
-    : sz (max (s, static_cast<u_int> (LOG_BUF_MINSIZE))),
-      bufs (sz, ok_log_nbufs), 
-      okfl (true), hwat (h) { assert (getbuf ()); }
-  ~logbuf_t () {}
-
-  inline logbuf_t &time (const char *c, u_int len) { return bcpy (c, len); }
-  inline logbuf_t &referer (const str &s) { return hcpy (s); }
-  inline logbuf_t &remote_ip (const str &i) { return copy (i); }
-  inline logbuf_t &cipher (const str &c) { return copy (c); }
-  inline logbuf_t &msg (const str &m) { return copy (m); }
-  inline logbuf_t &user_agent (const str &u) { return qcpy (u); }
-  inline logbuf_t &req (const str &r) { return qcpy (r); }
-  inline logbuf_t &svc (const str &v) { return copy (v); }
-  inline logbuf_t &nbytes (u_int n) { return put (n); }
-  inline logbuf_t &cchar (char c) { return put (c); }
-  inline logbuf_t &status (u_int st) { return put (st); }
-  inline logbuf_t &status_long (u_int st)
-  { return put (st).spc ().copy (http_status[st]); }
-  inline logbuf_t &uid (u_int64_t i) { return put (i); }
-  inline logbuf_t &inflated_len (size_t l) { return put ((unsigned int)l); }
-  inline logbuf_t &custom2 (const str &s) { return bcpy (s); }
-  inline logbuf_t &reqno (u_int n) { return put (n); }
-
-  inline logbuf_t &bcpy (const char *c, u_int len);
-  inline logbuf_t &qcpy (const char *c, u_int len);
-  inline logbuf_t &copy (const char *c, u_int len);
-
-  inline logbuf_t &copy (const str &s) 
-  { return copy (s ? s.cstr () : NULL, s ? s.len () : 0); }
-  inline logbuf_t &hcpy (const str &s) 
-  { return hcpy (s ? s.cstr () : NULL, s ? s.len () : 0); }
-  inline logbuf_t &qcpy (const str &s) 
-  { return qcpy (s ? s.cstr () : NULL, s ? s.len () : 0); }
-  inline logbuf_t &bcpy (const str &s) 
-  { return bcpy (s ? s.cstr () : NULL, s ? s.len () : 0); }
-
-  inline logbuf_t &hcpy (const char *c, u_int len);
-  inline logbuf_t &put (u_int64_t i);
-  inline logbuf_t &put (u_int i);
-  inline logbuf_t &put (int i);
-  inline logbuf_t &put (char c);
-  inline logbuf_t &spc () { return put (' '); }
-  inline logbuf_t &newline () { return put ('\n'); }
-  inline void clear () { cp = buf; okfl = true; }
-  bool output (int i);
-  bool ok () const { return okfl; }
-  int lock ();
-  void unlock (int i) { if (i >= 0) bufs.unlock (i); }
-  bool to_str (str *s, int *i);
-  inline bool past_high_water () const { return ((cp - buf) > int (hwat)); }
-private:
-  bool getbuf ();
-  void clearbuf ();
-  bool resize ();
-
-  u_int sz;
-  mstrs bufs;
-  mstr2 *cmbuf;
-  int cmbuf_i;
-  char *buf, *cp, *ep;
-
-  suio uio;
-  bool okfl;
-  char tiny[LOG_BUF_TINYLEN];
-  u_int hwat;
-};
+//-----------------------------------------------------------------------
 
 class logd_parms_t {
 public:
@@ -180,6 +72,8 @@ private:
   mutable str enc;
 };
 
+//-----------------------------------------------------------------------
+
 class log_t {
 public:
   log_t (helper_t *hh) : h (hh) {}
@@ -199,29 +93,13 @@ protected:
   helper_t *h;
 };
 
-class rpc_log_t : public log_t {
-public:
-  rpc_log_t (helper_t *h) : log_t (h), logset (~0) {}
-  rpc_log_t (const str &p) 
-    : log_t (New helper_unix_t (oklog_program_1, p, HLP_OPT_QUEUE)) {}
-  void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
-	    const str &s);
-  virtual void connect (evb_t ev) { rpc_log_t::connect_T (ev); }
- 
-protected:
-  void connect_T (evb_t ev, CLOSURE);
-  
-private:
-  void logged (ptr<bool> b, clnt_stat err);
-  u_int32_t logset;
-};
+//-----------------------------------------------------------------------
 
-class log_primary_t : public rpc_log_t, public clone_client_t
+class log_primary_t : public clone_client_t
 {
 public:
   log_primary_t (helper_exec_t *hh) 
-    : rpc_log_t (hh),
-      clone_client_t (hh, OKLOG_CLONE), 
+    : clone_client_t (hh, OKLOG_CLONE), 
       he (hh) {}
   void clone (evi_t ev) { clone_client_t::clone (ev); }
   void connect (evb_t ev) { connect_T (ev); }
@@ -229,6 +107,8 @@ private:
   void connect_T (evb_t ev, CLOSURE);
   helper_exec_t *he;
 };
+
+//-----------------------------------------------------------------------
 
 class log_timer_t {
 public:
@@ -260,10 +140,11 @@ private:
 
 class fast_log_t : public log_t {
 public:
-  fast_log_t (int fd, const str f = NULL)
-    : log_t (New helper_fd_t (oklog_program_1, fd, "oklogd", 
+  fast_log_t (int fd, str f = NULL, size_t hiwat = 256)
+    : log_t (New helper_fd_t (oklog_program_2, fd, "oklogd", 
 			      HLP_OPT_PING|HLP_OPT_NORETRY)),
       fmt (f), tmr (wrap (this, &fast_log_t::flush)) {}
+  ~fast_log_t ();
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   void log_ssl (const str &i, const str &c, const str &m);
@@ -278,11 +159,15 @@ protected:
   void add_ssl (const str &ip, const str &cipher, const str &msg);
   void add_notice (oklog_typ_t x, const str &ntc);
   void flush_T (CLOSURE);
+  void add_entry (str s, oklog_file_t f);
 private:
   void connect_T (evb_t ev, CLOSURE);
   str fmt;
   log_timer_t tmr;
-  logbuf_t access, error, ssl;
+
+  vec<oklog_fast2_arg_t *> _spares;
+  oklog_fast2_arg_t *_curr;
+  size_t _hi_wat;
 };
 
 logbuf_t &

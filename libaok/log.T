@@ -22,8 +22,9 @@
  *
  */
 
-
 #include "ok.h"
+
+//-----------------------------------------------------------------------
 
 tamed void
 log_t::connect_T (evb_t ev)
@@ -35,25 +36,7 @@ log_t::connect_T (evb_t ev)
   ev->trigger (ok);
 }
 
-tamed void
-rpc_log_t::connect_T (evb_t ev)
-{
-  tvars {
-    bool ok;
-    clnt_stat err;
-  }
-  twait { log_t::connect_T (mkevent (ok)); }
-  if (ok) {
-    twait { 
-      RPC::oklog_program_1::oklog_get_logset (h, &logset, mkevent (err)); 
-    }
-    if (err) {
-      warn << "when determining oklogd parameters: " << err << "\n";
-      ok = false;
-    }
-  }
-  ev->trigger (ok);
-}
+//-----------------------------------------------------------------------
 
 tamed void
 log_primary_t::connect_T (evb_t ev)
@@ -61,10 +44,20 @@ log_primary_t::connect_T (evb_t ev)
   tvars {
     bool ok;
   }
-  twait { rpc_log_t::connect_T (mkevent (ok)); }
+  twait { he->connect (mkevent (ok)); }
   ev->trigger (ok);
-} 
+}
 
+//-----------------------------------------------------------------------
+
+fast_log_t::fast_log_t (int fd, str f,  size_t hiwat)
+  : log_t (New helper_fd_t (oklog_program_2, fd, "oklogd", 
+			    HLP_OPT_PING|HLP_OPT_NORETRY)),
+    fmt (f), 
+    tmr (wrap (this, &fast_log_t::flush)),
+    _hi_wat (hiwat) {}
+
+//-----------------------------------------------------------------------
 
 tamed void
 fast_log_t::connect_T (evb_t ev)
@@ -77,6 +70,8 @@ fast_log_t::connect_T (evb_t ev)
     tmr.start ();
   ev->trigger (ok);
 }
+
+//-----------------------------------------------------------------------
 
 void
 fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
@@ -93,6 +88,8 @@ fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req,
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 fast_log_t::log_ssl (const str &ip, const str &cipher, const str &msg)
 {
@@ -104,12 +101,15 @@ fast_log_t::log_ssl (const str &ip, const str &cipher, const str &msg)
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 fast_log_t::past_high_water () const
 {
-  return (access.past_high_water () || error.past_high_water () ||
-	  ssl.past_high_water ());
+  return (_curr && _curr->entries >= _hi_wat);
 }
+
+//-----------------------------------------------------------------------
 
 void
 fast_log_t::add_notice (oklog_typ_t x, const str &ntc)
@@ -117,10 +117,14 @@ fast_log_t::add_notice (oklog_typ_t x, const str &ntc)
   error << tmr << ' ' << x << ' ' << ntc << '\n';
 }
 
+//-----------------------------------------------------------------------
+
 void
 fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req, 
 		       http_response_base_t *res, const str &aux)
 {
+  strbuf error;
+
   error << tmr << ' ' << OKLOG_ERR_ERROR << ' ';
   error.copy ("[client ", 8).remote_ip (x->get_remote_ip ())
     .copy ("] ", 2).status (res->get_status ());
@@ -131,8 +135,10 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
   if (auxstr) 
     error.copy (": ", 2).copy (auxstr);
 
-  error.newline ();
+  add_entry (error, OKLOG_ERROR);
 }
+
+//-----------------------------------------------------------------------
 
 void
 fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
@@ -146,19 +152,36 @@ fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
   ssl.newline ();
 }
 
+//-----------------------------------------------------------------------
+
+void 
+logbuf_t::log (str s)
+{
+  if (!s || !s.len ()) { s = "-"; }
+  (*this) << s;
+}
+
+//-----------------------------------------------------------------------
+
 void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
 			http_response_base_t *res)
 {
   const char *fmp = fmt ? fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *p;
+  logbuf_t access;
+  bool first = true;
   for (p = fmp; *p; p++) {
+    if (!first) { access.spc (); } 
+    else { first = false; }
+
     switch (*p) {
     case 't':
-      access << tmr;
+      tmr.add_timestamp_to (access);
+      access << tmr.timestamp ();
       break;
     case 'r':
-      access.referer (req ? (*req) ["referer"] : static_cast<str> (NULL));
+      access.log (req ? (*req) ["referer"] : static_cast<str> (NULL));
       break;
     case 'i':
       access.remote_ip (x->get_remote_ip ());
@@ -196,51 +219,10 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
     }
     access.spc ();
   }
-  access.newline ();
+  add_entry (access, OKLOG_ACCESS);
 }
 
-
-void
-rpc_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
-		http_response_base_t *res, const str &aux)
-{
-  oklog_arg_t la (OKLOG_OK);
-  oklog_ok_t *lo;
-  if (res->get_status () == HTTP_OK) {
-    lo = la.ok;
-  } else {
-    la.set_typ (OKLOG_ERR_ERROR);
-    lo = &(la.err->log);
-
-    if (req) la.err->aux = req->get_target ();
-    else if (aux) la.err->aux = aux;
-  }
-  
-  lo->status = res->get_status ();
-
-  if (logset & LOG_SZ)   lo->size = res->get_nbytes ();
-  if (logset & LOG_IP)   lo->ip = x->get_remote_ip ();
-  if (logset & LOG_SVC)  lo->service = progname;
-  if (logset & LOG_UID)  lo->uid = res->get_uid ();
-
-  if (req) {
-    if (logset & LOG_RFR)  lo->referer = (*req)["referer"];
-    if (logset & LOG_REQ)  lo->req = req->get_line1 ();
-    if (logset & LOG_UA)   lo->user_agent = (*req)["user-agent"];
-  }
-
-  ref<bool> b (New refcounted<bool> (true));
-  h->call (OKLOG_LOG, &la, b, wrap (this, &rpc_log_t::logged, b));
-}
-
-void
-rpc_log_t::logged (ptr<bool> b, clnt_stat err)
-{
-  if (err) 
-    warn << "RPC error in logging: " << err << "\n";
-  else if (!*b) 
-    warn << "log attempted failed\n";
-}
+//-----------------------------------------------------------------------
 
 void
 logd_parms_t::decode (const str &p)
@@ -255,6 +237,8 @@ logd_parms_t::decode (const str &p)
   t->lookup ("ssllog",    &ssllog);
   t->lookup ("pidfile",   &pidfile);
 }
+
+//-----------------------------------------------------------------------
 
 str
 logd_parms_t::encode () const
@@ -273,6 +257,8 @@ logd_parms_t::encode () const
   return ((enc = ct.encode ()));
 }
 
+//-----------------------------------------------------------------------
+
 void
 log_timer_t::set_timer ()
 {
@@ -280,6 +266,8 @@ log_timer_t::set_timer ()
   dcb = delaycb (0, tm_tick * 1000000, 
 		 wrap (this, &log_timer_t::timer_cb, destroyed));
 }
+
+//-----------------------------------------------------------------------
 
 void
 log_timer_t::stop_timer ()
@@ -290,11 +278,15 @@ log_timer_t::stop_timer ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 log_timer_t::disable ()
 {
   disable_pending = true;
 }
+
+//-----------------------------------------------------------------------
 
 void
 log_timer_t::enable ()
@@ -308,6 +300,8 @@ log_timer_t::enable ()
     }
   }
 }
+
+//-----------------------------------------------------------------------
 
 void
 log_timer_t::timer_cb (ptr<bool> dstry)
@@ -332,6 +326,8 @@ log_timer_t::timer_cb (ptr<bool> dstry)
     set_timer ();
 }
 
+//-----------------------------------------------------------------------
+
 void
 log_timer_t::timestamp ()
 {
@@ -339,6 +335,8 @@ log_timer_t::timestamp ()
   struct tm *stm = localtime (&tmp);
   timelen = strftime (buf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
 }
+
+//-----------------------------------------------------------------------
 
 tamed void
 fast_log_t::flush_T ()
@@ -370,6 +368,8 @@ fast_log_t::flush_T ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 tamed void
 log_t::turn_T (evs_t ev)
 {
@@ -388,3 +388,6 @@ log_t::turn_T (evs_t ev)
   }
   ev->trigger (ret);
 }
+
+//-----------------------------------------------------------------------
+
