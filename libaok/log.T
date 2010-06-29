@@ -177,44 +177,43 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
 
     switch (*p) {
     case 't':
-      tmr.add_timestamp_to (access);
-      access << tmr.timestamp ();
+      access.log (tmr.timestamp ());
       break;
     case 'r':
       access.log (req ? (*req) ["referer"] : static_cast<str> (NULL));
       break;
     case 'i':
-      access.remote_ip (x->get_remote_ip ());
+      access.log (x->get_remote_ip ());
       break;
     case 'u':
-      access.user_agent (req ? (*req)["user-agent"] : static_cast<str> (NULL));
+      access.log (req ? (*req)["user-agent"] : static_cast<str> (NULL));
       break;
     case '1':
-      access.req (req ? req->get_line1 () : static_cast<str> (NULL));
+      access.log (req ? req->get_line1 () : static_cast<str> (NULL));
       break;
     case 's':
-      access.status (res->get_status ());
+      access.log_dec (res->get_status ());
       break;
     case 'b':
-      access.nbytes (res->get_nbytes ());
+      access.log_dec (res->get_nbytes ());
       break;
     case 'v':
-      access.svc (progname);
+      access.log (progname);
       break;
     case 'U':
-      access.uid (res->get_uid ());
+      access.log_hex (res->get_uid ());
       break;
     case 'z':
-      access.inflated_len (res->get_inflated_len ());
+      access.log_dec (res->get_inflated_len ());
       break;
     case 'q':
-      access.reqno (req ? req->get_reqno () : 0);
+      access.log_dec (req ? req->get_reqno () : 0);
       break;
     case '2':
       access.custom2 (res->get_custom_log2 ());
       break;
     default:
-      access.cchar (*p);
+      access.log_char (*p);
       break;
     }
     access.spc ();
@@ -387,6 +386,13 @@ log_t::turn_T (evs_t ev)
     ret = "logger failed to turn over logs";
   }
   ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
+str make_generic_http_req (const str &in)
+{
+  return strbuf ("GET ") << in << " HTTP/1.x";
 }
 
 //-----------------------------------------------------------------------

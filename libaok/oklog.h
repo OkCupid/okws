@@ -138,6 +138,8 @@ private:
   bool in_timer_cb, disable_pending;
 };
 
+//-----------------------------------------------------------------------
+
 class fast_log_t : public log_t {
 public:
   fast_log_t (int fd, str f = NULL, size_t hiwat = 256)
@@ -170,104 +172,10 @@ private:
   size_t _hi_wat;
 };
 
-logbuf_t &
-logbuf_t::copy (const char *c, u_int len)
-{
-  if (len && c && cp) {
-    if (len > LOG_BUF_MAXWRITE) len = LOG_BUF_MAXWRITE;
-    if (cp + len <= ep || resize ()) {
-      memcpy (cp, c, len);
-      cp += len;
-      assert (cp <= ep);
-    } else {
-      okfl = false;
-    }
-  }
-  return (*this);
-}
+//-----------------------------------------------------------------------
 
-logbuf_t &
-logbuf_t::bcpy (const char *c, u_int len)
-{
-  return put ('[').copy (c, len).put (']');
-}
+str make_generic_http_req (const str &in);
 
-logbuf_t &
-logbuf_t::qcpy (const char *c, u_int len)
-{
-  return put ('\"').copy (c, len).put ('\"'); 
-}
-
-logbuf_t &
-logbuf_t::put (char ch)
-{
-  if (cp) {
-    if (cp < ep || resize ()) *cp++ = ch;
-    else okfl = false;
-  }
-  return (*this);
-}
-
-logbuf_t &
-logbuf_t::put (u_int i)
-{
-  u_int l = sprintf (tiny, "%u", i);
-  return copy (tiny, l);
-}
-
-logbuf_t &
-logbuf_t::put (u_int64_t i)
-{
-  u_int l = sprintf (tiny, "%" PRIx64 "", i);
-  return copy (tiny, l);
-}
-
-logbuf_t &
-logbuf_t::put (int i)
-{
-  u_int l = sprintf (tiny, "%d", i);
-  return copy (tiny, l);
-}
-
-logbuf_t &log (logbuf_t *b, oklog_typ_t typ);
-
-inline logbuf_t &operator<< (logbuf_t &lb, oklog_typ_t typ)
-{
-  return log (&lb, typ);
-}
-
-inline logbuf_t &operator<< (logbuf_t &lb, char c)
-{
-  return lb.put (c);
-}
-
-inline logbuf_t &operator<< (logbuf_t &lb, int32_t i)
-{
-  return lb.put (i);
-}
-
-inline logbuf_t &operator<< (logbuf_t &lb, const str &s)
-{
-  return lb.copy (s);
-}
-
-logbuf_t &
-logbuf_t::hcpy (const char *c, u_int len)
-{
-  return ((c && len) ? copy (c, len) : put ('-'));
-}
-
-inline logbuf_t &operator<< (logbuf_t &lb, const log_timer_t &t)
-{
-  u_int len;
-  const char *c = t.gettime (&len);
-  return lb.bcpy (c, len);
-}
-
-inline str 
-make_generic_http_req (const str &in)
-{
-  return strbuf ("GET ") << in << " HTTP/1.x";
-}
+//-----------------------------------------------------------------------
 
 #endif /* _LIBAOK_OKLOG_H */
