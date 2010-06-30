@@ -182,13 +182,13 @@ struct oklog_fast_arg_t {
   string ssl<>;
 };
 
-struct oklog_fast2_entry_t {
+struct oklog_entry_t {
    oklog_file_t file;
    string data<>;
 };
 
-struct oklog_fast2_arg_t {
-   oklog_fast2_entry_t entries<>;
+struct oklog_arg_t {
+   oklog_entry_t entries<>;
 };
 
 struct oksvc_descriptor_t {
@@ -286,15 +286,9 @@ program OKLOG_PROGRAM {
 		unsigned
 		OKLOG_GET_LOGSET (void) = 3;
 
-		bool
-		OKLOG_FAST (oklog_fast_arg_t) = 4;
-
 		int
 		OKLOG_CLONE (int) = 5;
 
-		bool
-		OKLOG_FAST2 (oklog_fast2_arg_t) = 6;
-		
 		void
 		OKLOG_KILL (ok_killsig_t) = 99;
 

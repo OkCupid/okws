@@ -39,6 +39,10 @@ class logbuf_t : public strbuf {
 public:
   logbuf_t () : strbuf () {}
   void log (str s);
+  template<class T> void log_dec (T i) { (*this) << i; }
+  void log_hex (u_int64_t x);
+  void log_char (char c);
+  void spc ();
 };
 
 //-----------------------------------------------------------------------
@@ -110,48 +114,16 @@ private:
 
 //-----------------------------------------------------------------------
 
-class log_timer_t {
-public:
-  log_timer_t (cbv f, u_int i = 0, u_int p = 0) 
-    : fcb (f), tm_tick (i ? i : ok_log_tick), 
-      tm_prd (p ? p : ok_log_period), dcb (NULL), 
-    destroyed (New refcounted<bool> (false)), counter (0),
-		 in_timer_cb (false), disable_pending (false) { timestamp (); }
-  ~log_timer_t () { stop_timer (); *destroyed = true; }
-  const char *gettime (u_int *len) const { *len = timelen; return buf; }
-  void start () { set_timer (); }
-  void reset () { counter = 0; }
-  void enable () ;
-  void disable () ;
-private:
-  void set_timer ();
-  void timer_cb (ptr<bool> d);
-  void stop_timer ();
-  void timestamp ();
-  cbv fcb;
-  u_int tm_tick, tm_prd;
-  timecb_t *dcb;
-  ptr<bool> destroyed;
-  u_int counter;
-  char buf[LOG_TIMEBUF_SIZE];
-  u_int timelen;
-  bool in_timer_cb, disable_pending;
-};
-
-//-----------------------------------------------------------------------
-
 class fast_log_t : public log_t {
 public:
-  fast_log_t (int fd, str f = NULL, size_t hiwat = 256)
-    : log_t (New helper_fd_t (oklog_program_2, fd, "oklogd", 
-			      HLP_OPT_PING|HLP_OPT_NORETRY)),
-      fmt (f), tmr (wrap (this, &fast_log_t::flush)) {}
+  fast_log_t (int fd, str f = NULL, size_t hiwat = 256);
   ~fast_log_t ();
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   void log_ssl (const str &i, const str &c, const str &m);
-  void flush() { flush_T (); }
+  void flush (evv::ptr ev, CLOSURE);
   void connect (evb_t ev) { connect_T (ev); }
+  void timer_loop (CLOSURE);
 protected:
   bool past_high_water () const;
   void add_access (ref<ahttpcon> x, http_inhdr_t *req, 
@@ -160,16 +132,19 @@ protected:
 		  http_response_base_t *res, const str &aux);
   void add_ssl (const str &ip, const str &cipher, const str &msg);
   void add_notice (oklog_typ_t x, const str &ntc);
-  void flush_T (CLOSURE);
-  void add_entry (str s, oklog_file_t f);
+  void add_entry (const strbuf &s, oklog_file_t f);
+  void maybe_flush ();
 private:
+  void stamp_time ();
   void connect_T (evb_t ev, CLOSURE);
-  str fmt;
-  log_timer_t tmr;
-
-  vec<oklog_fast2_arg_t *> _spares;
-  oklog_fast2_arg_t *_curr;
+  str _fmt;
+  vec<oklog_arg_t *> _spares;
+  oklog_arg_t *_curr;
   size_t _hi_wat;
+  char _timebuf[LOG_TIMEBUF_SIZE];
+  size_t _timelen;
+  ptr<bool> _destroyed;
+  bool _connected;
 };
 
 //-----------------------------------------------------------------------

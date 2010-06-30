@@ -50,12 +50,49 @@ log_primary_t::connect_T (evb_t ev)
 
 //-----------------------------------------------------------------------
 
-fast_log_t::fast_log_t (int fd, str f,  size_t hiwat)
+fast_log_t::fast_log_t (int fd, str f, size_t hiwat)
   : log_t (New helper_fd_t (oklog_program_2, fd, "oklogd", 
 			    HLP_OPT_PING|HLP_OPT_NORETRY)),
-    fmt (f), 
-    tmr (wrap (this, &fast_log_t::flush)),
-    _hi_wat (hiwat) {}
+    _fmt (f), 
+    _hi_wat (hiwat),
+    _destroyed (New refcounted<bool> (false)),
+    _connected (false)
+{
+  stamp_time ();
+  flush_loop ();
+}
+
+//-----------------------------------------------------------------------
+
+fast_log_t::~fast_log_t () { *_destroyed = true; }
+
+//-----------------------------------------------------------------------
+
+tamed void
+fast_log_t::flush_loop ()
+{
+  tvars {
+    ptr<bool> df;
+    bool go (true);
+    time_t nsec;
+    int count (0);
+    int period (2);
+    
+  }
+  df = _destroyed;
+
+  nsec = 250 * 1000 * 100;
+  while (go) {
+    twait { delaycb (0, nsec, mkevent ()); }
+    if ((go = !*df)) { 
+      stamp_time ();
+      count = (count + 1) % period;
+      if (count == 0 && _connected) {
+	twait { flush (mkevent ()); }
+      }
+    }
+  }
+}
 
 //-----------------------------------------------------------------------
 
@@ -65,9 +102,9 @@ fast_log_t::connect_T (evb_t ev)
   tvars {
     bool ok;
   }
+  _connected = false;
   twait { log_t::connect_T (mkevent (ok)); }
-  if (ok)
-    tmr.start ();
+  _connected = ok;
   ev->trigger (ok);
 }
 
@@ -77,15 +114,10 @@ void
 fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
 		 http_response_base_t *res, const str &aux)
 {
-  tmr.enable ();
   int s = res->get_status ();
   if (s != HTTP_OK && s != HTTP_REDIRECT)
     add_error (x, req, res, aux);
   add_access (x, req, res);
-  if (past_high_water ()) {
-    flush ();
-    tmr.reset ();
-  }
 }
 
 //-----------------------------------------------------------------------
@@ -93,12 +125,7 @@ fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req,
 void
 fast_log_t::log_ssl (const str &ip, const str &cipher, const str &msg)
 {
-  tmr.enable ();
   add_ssl (ip, cipher, msg);
-  if (past_high_water ()) {
-    flush ();
-    tmr.reset ();
-  }
 }
 
 //-----------------------------------------------------------------------
@@ -106,7 +133,7 @@ fast_log_t::log_ssl (const str &ip, const str &cipher, const str &msg)
 bool
 fast_log_t::past_high_water () const
 {
-  return (_curr && _curr->entries >= _hi_wat);
+  return (_curr && _curr->entries.size () >= _hi_wat);
 }
 
 //-----------------------------------------------------------------------
@@ -163,11 +190,74 @@ logbuf_t::log (str s)
 
 //-----------------------------------------------------------------------
 
+void logbuf_t::log_hex (u_int64_t x) { fmt ("%" PRIx64, x); }
+void logbuf_t::log_char (char c) { fmt ("%c", c); }
+void logbuf_t::log_spc () { log_char (' '); }
+
+//-----------------------------------------------------------------------
+
+oklog_arg_t *
+fast_log_t::get_arg ()
+{
+  oklog_arg_t *ret = NULL;
+  if (_curr) { ret = _curr; }
+  else if (_spares.size ()) { ret = _curr = _spares.pop_back (); }
+  else { ret = _curr = New oklog_fast_arg2 (); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+fast_log_t::flush (evv::ptr ev)
+{
+  tvars {
+    oklog_arg_t *arg;
+    bool res;
+    clnt_stat err;
+  }
+  if ((arg = _curr) && arg->entries.size ()) {
+    _curr = NULL;
+    twait { RPC::oklog_prog_1::oklog_log (h, arg, &res, mkevent (err)); }
+    if (err) {
+      strbuf b;
+      b << "oklog_log: " << err;
+      okdbg_warn (ERROR, b);
+    } else if (!res) {
+      okdbg_warn ("oklog_log failed");
+    }
+    arg->entries.setsize (0);
+    _spares.push_back (arg);
+  }
+  if (ev) ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+fast_log_t::maybe_flush ()
+{
+  if (past_high_water ()) { flush (); }
+}
+
+//-----------------------------------------------------------------------
+
+void
+fast_log_t::add_entry (const strbuf &b, oklog_file_t f)
+{
+  oklog_arg_t *a = get_arg ();
+  assert (a);
+  a->entries.push_back (oklog_entry_t (f, b));
+  maybe_flush ();
+}
+
+//-----------------------------------------------------------------------
+
 void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
 			http_response_base_t *res)
 {
-  const char *fmp = fmt ? fmt.cstr () : ok_access_log_fmt.cstr ();
+  const char *fmp = _fmt ? _fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *p;
   logbuf_t access;
   bool first = true;
@@ -210,7 +300,7 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.log_dec (req ? req->get_reqno () : 0);
       break;
     case '2':
-      access.custom2 (res->get_custom_log2 ());
+      access.log (res->get_custom_log2 ());
       break;
     default:
       access.log_char (*p);
@@ -259,112 +349,11 @@ logd_parms_t::encode () const
 //-----------------------------------------------------------------------
 
 void
-log_timer_t::set_timer ()
-{
-
-  dcb = delaycb (0, tm_tick * 1000000, 
-		 wrap (this, &log_timer_t::timer_cb, destroyed));
-}
-
-//-----------------------------------------------------------------------
-
-void
-log_timer_t::stop_timer ()
-{
-  if (dcb) {
-    timecb_remove (dcb);
-    dcb = NULL;
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-log_timer_t::disable ()
-{
-  disable_pending = true;
-}
-
-//-----------------------------------------------------------------------
-
-void
-log_timer_t::enable ()
-{
-  if (in_timer_cb) {
-    if (disable_pending) disable_pending = false;
-  } else {
-    if (!dcb) {
-      timestamp ();
-      set_timer ();
-    }
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
-log_timer_t::timer_cb (ptr<bool> dstry)
-{
-  if (*dstry)
-    return;
-
-  if (dcb) 
-    dcb = NULL;
-  
-  in_timer_cb = true;
-  if (++counter == tm_prd) {
-    (*fcb) ();
-    counter = 0;
-  }
-  in_timer_cb = false;
-
-  timestamp ();
-  if (disable_pending) {
-    disable_pending = false;
-  } else
-    set_timer ();
-}
-
-//-----------------------------------------------------------------------
-
-void
-log_timer_t::timestamp ()
+fast_log_t::stamp_time ()
 {
   time_t tmp = sfs_get_timenow ();
   struct tm *stm = localtime (&tmp);
-  timelen = strftime (buf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
-}
-
-//-----------------------------------------------------------------------
-
-tamed void
-fast_log_t::flush_T ()
-{
-  tvars {
-    oklog_fast_arg_t arg;
-    int ai, ei, si;
-    bool ok;
-    clnt_stat err;
-    bool c1, c2, c3;
-  }
-
-  c1 = access.to_str (&arg.access, &ai);
-  c2 = error.to_str (&arg.error, &ei);
-  c3 = ssl.to_str (&arg.ssl, &si);
-  
-  if (c1 || c2 || c3) {
-    twait { RPC::oklog_program_1::oklog_fast (h, arg, &ok, mkevent (err)); }
-    if (err) {
-      warn << "Error in log RPC: " << err << "\n";
-    } else if (!ok) {
-      warn << "Log RPC returned failure\n";
-    }
-    access.unlock (ai);
-    error.unlock (ei);
-    ssl.unlock (si);
-  } else {
-    tmr.disable ();
-  }
+  _timeline = strftime (_timebuf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
 }
 
 //-----------------------------------------------------------------------
