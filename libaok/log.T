@@ -51,7 +51,7 @@ log_primary_t::connect_T (evb_t ev)
 //-----------------------------------------------------------------------
 
 fast_log_t::fast_log_t (int fd, str f, size_t hiwat)
-  : log_t (New helper_fd_t (oklog_program_2, fd, "oklogd", 
+  : log_t (New helper_fd_t (oklog_program_1, fd, "oklogd", 
 			    HLP_OPT_PING|HLP_OPT_NORETRY)),
     _fmt (f), 
     _hi_wat (hiwat),
@@ -139,29 +139,17 @@ fast_log_t::past_high_water () const
 //-----------------------------------------------------------------------
 
 void
-fast_log_t::add_notice (oklog_typ_t x, const str &ntc)
-{
-  error << tmr << ' ' << x << ' ' << ntc << '\n';
-}
-
-//-----------------------------------------------------------------------
-
-void
 fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req, 
 		       http_response_base_t *res, const str &aux)
 {
-  strbuf error;
-
-  error << tmr << ' ' << OKLOG_ERR_ERROR << ' ';
-  error.copy ("[client ", 8).remote_ip (x->get_remote_ip ())
-    .copy ("] ", 2).status (res->get_status ());
-
+  logbuf_t error;
+  error.buf (_timebuf, _timelen);
+  error.spc ();
+  str ip = x->get_remote_ip ();
+  error << "[client " << ip << "] " << res->get_status ();
   str auxstr = aux;
   if (!auxstr && req) auxstr = req->get_target (); 
-
-  if (auxstr) 
-    error.copy (": ", 2).copy (auxstr);
-
+  error.log (auxstr);
   add_entry (error, OKLOG_ERROR);
 }
 
@@ -170,13 +158,15 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
 void
 fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
 {
-  ssl << tmr << ' ';
-  ssl.copy ("[client ", 8).remote_ip (ip).copy ("] ", 2)
-    .cipher (cipher);
+  logbuf_t ssl;
+  ssl.buf (_timebuf, _timelen);
+  ssl.spc ();
+  ssl << "[client " << ip << "] " << cipher;
   if (msg) {
-    ssl.copy (" ", 1).msg (msg);
+    ssl.spc ();
+    ssl << msg;
   }
-  ssl.newline ();
+  add_entry (ssl, OKLOG_SSL);
 }
 
 //-----------------------------------------------------------------------
@@ -192,7 +182,7 @@ logbuf_t::log (str s)
 
 void logbuf_t::log_hex (u_int64_t x) { fmt ("%" PRIx64, x); }
 void logbuf_t::log_char (char c) { fmt ("%c", c); }
-void logbuf_t::log_spc () { log_char (' '); }
+void logbuf_t::spc () { log_char (' '); }
 
 //-----------------------------------------------------------------------
 
@@ -267,7 +257,7 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
 
     switch (*p) {
     case 't':
-      access.log (tmr.timestamp ());
+      access.buf (_timebuf, _timelen);
       break;
     case 'r':
       access.log (req ? (*req) ["referer"] : static_cast<str> (NULL));

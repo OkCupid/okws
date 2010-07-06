@@ -121,7 +121,7 @@ public:
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   void log_ssl (const str &i, const str &c, const str &m);
-  void flush (evv::ptr ev, CLOSURE);
+  void flush (evv_t::ptr ev, CLOSURE);
   void connect (evb_t ev) { connect_T (ev); }
   void timer_loop (CLOSURE);
 protected:
@@ -131,16 +131,19 @@ protected:
   void add_error (ref<ahttpcon> x, http_inhdr_t *req, 
 		  http_response_base_t *res, const str &aux);
   void add_ssl (const str &ip, const str &cipher, const str &msg);
-  void add_notice (oklog_typ_t x, const str &ntc);
   void add_entry (const strbuf &s, oklog_file_t f);
   void maybe_flush ();
+
 private:
   void stamp_time ();
   void connect_T (evb_t ev, CLOSURE);
+  void flush_loop (CLOSURE);
+  oklog_arg_t *get_arg ();
   str _fmt;
   vec<oklog_arg_t *> _spares;
   oklog_arg_t *_curr;
   size_t _hi_wat;
+  enum { LOG_TIMEBUF_SIZE = 128 };
   char _timebuf[LOG_TIMEBUF_SIZE];
   size_t _timelen;
   ptr<bool> _destroyed;

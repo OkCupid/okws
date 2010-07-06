@@ -25,7 +25,97 @@
 #include "ok.h"
 #include "rxx.h"
 #include "svq.h"
-#include "logd.h"
+
+//-----------------------------------------------------------------------
+
+class logfile_t {
+public:
+  logfile_t (const str &n) : fn (n), fd (-1) {}
+  logfile_t () : fd (-1) {}
+  void setfile (const str &n) { fn = n; }
+  ~logfile_t () { close (); }
+  logbuf_t *getbuf () { return &buf; }
+  bool open (const str &n);
+  bool open_verbose (const str &n, const str &typ);
+  void flush () { if (fd >= 0) buf.output (fd); }
+  bool flush (const str &s);
+  void close ();
+private:
+  logbuf_t buf;
+  str fn;
+  int fd;
+};
+
+//-----------------------------------------------------------------------
+
+class logd_client_t {
+public:
+  logd_client_t (ptr<axprt_stream> x, logd_t *d, bool p);
+  ~logd_client_t ();
+  void dispatch (svccb *sbp);
+  tailq_entry<logd_client_t> lnk;
+private:
+  ptr<asrv> srv;
+  logd_t *logd;
+  bool primary;
+};
+
+//-----------------------------------------------------------------------
+
+class logd_t : public clone_server_t {
+public:
+  logd_t (ptr<axprt_unix> x, const str &in)
+    : clone_server_t (x),
+      tmr (wrap (this, &logd_t::flush)), 
+      parms (in), logset (0), error (NULL), access (NULL), ssl (NULL),
+      dcb (NULL), 
+      uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
+      injail (false) {}
+
+  void launch ();
+  void remove (logd_client_t *c) { lst.remove (c); }
+  void newclnt (bool p, ptr<axprt_stream> x);
+  void dispatch (svccb *sbp);
+  void shutdown ();
+  void handle_sighup ();
+
+  log_timer_t tmr;
+
+protected:
+
+  // need to implement this to be a clone server
+  void register_newclient (ptr<axprt_stream> x) { newclnt (false, x); }
+
+private:
+  void turn (svccb *sbp);
+  bool turn ();
+  void log (svccb *sbp);
+  void log (const oklog_entry_t &e);
+  void flush ();
+  void timer_setup () { tmr.start (); }
+  bool setup ();
+  bool slave_setup ();
+  bool pidfile_setup ();
+  bool logfile_setup () ;
+  bool logfile_setup (logfile_t **f, const str &l, const str &t);
+  bool perms_setup ();
+  void close_logfiles ();
+  void clean_pidfile ();
+  str fixup_file (const str &in) const;
+
+  tailq<logd_client_t, &logd_client_t::lnk> lst;
+  logd_parms_t parms;
+  u_int logset;
+  logfile_t *error, *access, *ssl;
+  timecb_t *dcb;
+  int uid;
+  ok_usr_t usr;
+  ok_grp_t grp;
+  bool running;
+
+  bool injail;
+  str _pidfile;
+};
 
 //-----------------------------------------------------------------------
 
@@ -233,53 +323,6 @@ logfile_t::open_verbose (const str &n, const str &typ)
 //-----------------------------------------------------------------------
 
 void
-logd_t::parse_fmt ()
-{
-  const char *fmt = parms.accesslog_fmt 
-    ? parms.accesslog_fmt.cstr () : ok_access_log_fmt.cstr ();
-  const char *fp;
-  for (fp = fmt; *fp; fp++) {
-    logd_fmt_el_t *el = NULL;
-    switch (*fp) {
-    case 't':
-      el = New logd_fmt_time_t (this);
-      break;
-    case 'r':
-      el = New logd_fmt_referer_t ();
-      break;
-    case 'i':
-      el = New logd_fmt_remote_ip_t ();
-      break;
-    case 'u':
-      el = New logd_fmt_ua_t ();
-      break;
-    case '1':
-      el = New logd_fmt_req_t ();
-      break;
-    case 's':
-      el = New logd_fmt_status_t ();
-      break;
-    case 'b':
-      el = New logd_fmt_bytes_t ();
-      break;
-    case 'v':
-      el = New logd_fmt_svc_t ();
-      break;
-    case 'U':
-      el = New logd_fmt_uid_t ();
-      break;
-    default:
-      el = New logd_fmt_const_t (*fp);
-      break;
-    }
-    logset |= el->get_switch ();
-    fmt_els.push_back (el);
-  }
-}
-
-//-----------------------------------------------------------------------
-
-void
 logd_t::launch ()
 {
   if (!setup ()) 
@@ -291,7 +334,6 @@ logd_t::launch ()
 bool
 logd_t::setup ()
 {
-  parse_fmt ();
   if (!(perms_setup () && 
 	logfile_setup () && 
 	pidfile_setup () && 
@@ -421,58 +463,6 @@ logfile_t::open (const str &f)
 //-----------------------------------------------------------------------
 
 bool
-logd_t::ssl_log (const oklog_ssl_msg_t &x)
-{
-  logbuf_t *lb = ssl->getbuf ();
-  lb->copy ("[client ", 8).remote_ip (x.ip).copy ("] ", 2).copy (x.cipher);
-  if (x.msg.len ()) lb->copy (" ", 1).copy (x.msg);
-  return true;
-}
-
-//-----------------------------------------------------------------------
-
-bool
-logd_t::access_log (const oklog_ok_t &x)
-{
-  u_int lim = fmt_els.size ();
-  assert (access);
-  logbuf_t *lb = access->getbuf ();
-  for (u_int i = 0; i < lim; i++) {
-    if (i != 0) lb->spc ();
-    fmt_els[i]->log (lb, x);
-  }
-  lb->newline ();
-  return lb->ok ();
-}
-
-//-----------------------------------------------------------------------
-
-bool
-logd_t::error_log (const oklog_arg_t &x)
-{
-  assert (error);
-  logbuf_t *lb = error->getbuf ();
-  (*lb) << tmr << ' ' << x.typ << ' ';
-  switch (x.typ) {
-  case OKLOG_ERR_NOTICE:
-  case OKLOG_ERR_CRITICAL:
-    (*lb) << x.notice->notice << '\n';
-    break;
-  default:
-    {
-      lb->copy ("[client ", 8).remote_ip (x.err->log.ip)
-	.copy ("] ", 2).status (x.err->log.status);
-      if (x.err->aux && x.err->aux.len ())
-	lb->copy (": ", 2).copy (x.err->aux);
-    }
-  }
-  lb->newline ();
-  return lb->ok ();
-}
-
-//-----------------------------------------------------------------------
-
-bool
 logd_t::turn ()
 {
   bool ret = false;
@@ -528,24 +518,17 @@ logd_t::handle_sighup ()
 //-----------------------------------------------------------------------
 
 void
-logd_t::log (svccb *sbp)
+logd_t::log (const oklog_entry_t &le)
 {
-  bool ret = true;
-  RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
-  const oklog_arg_t *a = srv.getarg ();
-
-  for (size_t i = 0; i < a->entries.size (); i++) {
-
+  logfile_t *log = NULL;
+  switch (le.file) {
+  case OKLOG_ACCESS: log = access; break;
+  case OKLOG_ERROR: log = error; break;
+  case OKLOG_SSL: log = ssl; break;
   }
-
-  assert (access);
-  assert (error);
-  assert (ssl);
-  access->flush (fa->access);
-  error->flush (fa->error);
-  ssl->flush (fa->ssl);
-
-  srv.reply (ret);
+  if (log) {
+    log->flush (le.data);
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -554,26 +537,16 @@ void
 logd_t::log (svccb *sbp)
 {
   bool ret = true;
-  RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
-  oklog_arg_t *la = srv.getarg ();
-  switch (la->typ) {
-  case OKLOG_OK:
-    ret = access_log (*la->ok);
-    break;
-  case OKLOG_ERR_NOTICE:
-  case OKLOG_ERR_CRITICAL:
-    ret = error_log (*la);
-    break;
-  case OKLOG_SSL:
-    ret = ssl_log (*la->ssl);
-    break;
-  default:
-    if (!error_log (*la)) ret = false;
-    if (!(la->err->log.req && la->err->log.req.len ())) 
-      la->err->log.req = la->err->aux;
-    if (!access_log (la->err->log)) ret = false;
-    break;
+  RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
+  const oklog_arg_t *a = srv.getarg ();
+
+  for (size_t i = 0; i < a->entries.size (); i++) {
+    log (a->entries[i]);
   }
+  access->flush (fa->access);
+  error->flush (fa->error);
+  ssl->flush (fa->ssl);
+
   srv.reply (ret);
 }
 

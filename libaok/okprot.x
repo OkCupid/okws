@@ -116,57 +116,10 @@ struct okssl_sendcon_arg_t {
 };
 
 typedef string ip_addr_t<16>;
-enum oklog_typ_t {
-  OKLOG_OK = 0,
-  OKLOG_ERR_WARNING = 1,
-  OKLOG_ERR_ERROR = 2,
-  OKLOG_ERR_NOTICE = 3,
-  OKLOG_ERR_CRITICAL = 4,
-  OKLOG_ERR_DEBUG = 5,
-  OKLOG_SSL = 6
-};
 
 struct okmgr_diagnostic_arg_t {
   oksvc_proc_t        proc;
   ok_diagnostic_cmd_t cmd;
-};
-
-struct oklog_notice_t {
-  string notice<>;
-};
-
-struct oklog_ok_t {
-  int status;
-  string req<>;
-  ip_addr_t ip;
-  int size;
-  string user_agent<>;
-  string service<>;
-  string referer<>;
-  hyper uid;
-};
-
-struct oklog_err_t {
-  oklog_ok_t log;
-  string aux<>;
-};
-
-struct oklog_ssl_msg_t {
-  string ip<>;
-  string cipher<>;
-  string msg<>;
-};
-
-union oklog_arg_t switch (oklog_typ_t typ) {
- case OKLOG_OK:
-   oklog_ok_t ok;
- case OKLOG_ERR_NOTICE:
- case OKLOG_ERR_CRITICAL:
-   oklog_notice_t notice;
- case OKLOG_SSL:
-   oklog_ssl_msg_t ssl;
- default:
-   oklog_err_t err;    
 };
 
 enum oklog_file_t {
