@@ -116,7 +116,7 @@ private:
 
 class fast_log_t : public log_t {
 public:
-  fast_log_t (int fd, str f = NULL, size_t hiwat = 256);
+  fast_log_t (int fd, str f = NULL, size_t hiwat = 0);
   ~fast_log_t ();
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);

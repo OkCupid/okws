@@ -55,7 +55,7 @@ fast_log_t::fast_log_t (int fd, str f, size_t hiwat)
 			    HLP_OPT_PING|HLP_OPT_NORETRY)),
     _fmt (f), 
     _curr (NULL),
-    _hi_wat (hiwat),
+    _hi_wat (hiwat ? hiwat : ok_log_hiwat),
     _destroyed (New refcounted<bool> (false)),
     _connected (false)
 {
@@ -76,19 +76,17 @@ fast_log_t::flush_loop ()
     ptr<bool> df;
     bool go (true);
     time_t nsec;
-    int count (0);
-    int period (2);
-    
+    size_t count (0);
   }
   df = _destroyed;
 
-  nsec = 250 * 1000 * 100;
+  nsec = ok_log_tick * 1000 * 100;
   while (go) {
     twait { delaycb (0, nsec, mkevent ()); }
     if ((go = !*df)) { 
       stamp_time ();
-      count = (count + 1) % period;
-      if (count == 0 && _connected) {
+      count = (count + 1) % ok_log_period;
+      if (_connected && count == 0) {
 	twait { flush (mkevent ()); }
       }
     }
