@@ -149,7 +149,7 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
   error.log (ip);
   error.spc ();
   error.log (progname);
-  error.spc ()
+  error.spc ();
   error.buf (_timebuf, _timelen);
   error.spc ();
   str auxstr = aux;
