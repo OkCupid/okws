@@ -964,11 +964,11 @@ okld_t::launch_logd (evi_t cb)
   argv = logexc->get_argv ();
   assert (argv);
   argv->push_back (logd_parms.encode ());
-  logd = New log_primary_t (logexc);
+  _log_primary = New log_primary_t (logexc);
 
-  twait { logd->connect (mkevent (b)); }
+  twait { _log_primary->connect (mkevent (b)); }
   if (b) {
-    twait { logd->clone(mkevent (ret)); }
+    twait { _log_primary->clone(mkevent (ret)); }
     if (ret < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
     }
@@ -2106,7 +2106,7 @@ okld_t::gather_helper_fds (str s, int *lp, int *pp, evb_t ev)
   p = get_pubd ();
 
   twait { 
-    get_logd ()->clone (mkevent (logfd));
+    get_log_primary ()->clone (mkevent (logfd));
     if (p) p->clone (mkevent (pubfd));
   }
   

@@ -34,20 +34,19 @@ public:
   logfile_t () : fd (-1) {}
   void setfile (const str &n) { fn = n; }
   ~logfile_t () { close (); }
-  logbuf_t *getbuf () { return &buf; }
   bool open (const str &n);
   bool open_verbose (const str &n, const str &typ);
-  void flush () { if (fd >= 0) buf.output (fd); }
   bool flush (const str &s);
+  void flush () {}
   void close ();
 private:
-  logbuf_t buf;
   str fn;
   int fd;
 };
 
 //-----------------------------------------------------------------------
 
+class logd_t;
 class logd_client_t {
 public:
   logd_client_t (ptr<axprt_stream> x, logd_t *d, bool p);
@@ -66,7 +65,6 @@ class logd_t : public clone_server_t {
 public:
   logd_t (ptr<axprt_unix> x, const str &in)
     : clone_server_t (x),
-      tmr (wrap (this, &logd_t::flush)), 
       parms (in), logset (0), error (NULL), access (NULL), ssl (NULL),
       dcb (NULL), 
       uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
@@ -78,9 +76,6 @@ public:
   void dispatch (svccb *sbp);
   void shutdown ();
   void handle_sighup ();
-
-  log_timer_t tmr;
-
 protected:
 
   // need to implement this to be a clone server
@@ -92,7 +87,6 @@ private:
   void log (svccb *sbp);
   void log (const oklog_entry_t &e);
   void flush ();
-  void timer_setup () { tmr.start (); }
   bool setup ();
   bool slave_setup ();
   bool pidfile_setup ();
@@ -283,7 +277,6 @@ void
 logfile_t::close ()
 {
   if (fd >= 0) {
-    flush ();
     ::close (fd);
     fd = -1;
   }
@@ -339,7 +332,6 @@ logd_t::setup ()
 	pidfile_setup () && 
 	slave_setup ()))
     return false;
-  timer_setup ();
   
   running = true;
   return true;
@@ -525,6 +517,8 @@ logd_t::log (const oklog_entry_t &le)
   case OKLOG_ACCESS: log = access; break;
   case OKLOG_ERROR: log = error; break;
   case OKLOG_SSL: log = ssl; break;
+  case OKLOG_NONE: break;
+  default: break;
   }
   if (log) {
     log->flush (le.data);
@@ -537,16 +531,12 @@ void
 logd_t::log (svccb *sbp)
 {
   bool ret = true;
-  RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
+  RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
   const oklog_arg_t *a = srv.getarg ();
 
   for (size_t i = 0; i < a->entries.size (); i++) {
     log (a->entries[i]);
   }
-  access->flush (fa->access);
-  error->flush (fa->error);
-  ssl->flush (fa->ssl);
-
   srv.reply (ret);
 }
 

@@ -447,6 +447,7 @@ class okld_t : public ok_base_t , public config_parser_t
 public:
   okld_t () 
     : config_parser_t (), 
+      _log_primary (NULL),
       svc_grp (ok_okd_gname),
       nxtuid (ok_svc_uid_low), logexc (NULL), _pubd_exc (NULL),
       coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), 
@@ -502,10 +503,12 @@ public:
   str get_root_coredir () const { return root_coredir; }
   bool init_ssl ();
   void gather_helper_fds (str ch, int *lfd, int *pfd, evb_t ev, CLOSURE);
+  log_primary_t *get_log_primary () { return _log_primary; }
 
   clone_only_client_t *get_pubd () const { return _pubd; }
 
   logd_parms_t logd_parms;
+  log_primary_t *_log_primary;
 
   cgi_t *env () { return &_env; }
 
