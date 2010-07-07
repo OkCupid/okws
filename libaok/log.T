@@ -192,7 +192,7 @@ fast_log_t::get_arg ()
   oklog_arg_t *ret = NULL;
   if (_curr) { ret = _curr; }
   else if (_spares.size ()) { ret = _curr = _spares.pop_back (); }
-  else { ret = _curr = New oklog_fast_arg2 (); }
+  else { ret = _curr = New oklog_arg_t (); }
   return ret;
 }
 
