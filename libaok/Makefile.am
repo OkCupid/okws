@@ -10,7 +10,6 @@ libaok_la_SOURCES = \
 	okprot.C \
 	ok.C \
 	log.C \
-	logbuf.C \
 	xmlrpcsrv.C \
 	locale.C \
 	direct.C \

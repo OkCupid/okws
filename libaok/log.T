@@ -199,7 +199,7 @@ fast_log_t::get_arg ()
 //-----------------------------------------------------------------------
 
 tamed void
-fast_log_t::flush (evv::ptr ev)
+fast_log_t::flush (evv_t::ptr ev)
 {
   tvars {
     oklog_arg_t *arg;
@@ -208,13 +208,13 @@ fast_log_t::flush (evv::ptr ev)
   }
   if ((arg = _curr) && arg->entries.size ()) {
     _curr = NULL;
-    twait { RPC::oklog_prog_1::oklog_log (h, arg, &res, mkevent (err)); }
+    twait { RPC::oklog_program_1::oklog_log (h, arg, &res, mkevent (err)); }
     if (err) {
       strbuf b;
       b << "oklog_log: " << err;
       okdbg_warn (ERROR, b);
     } else if (!res) {
-      okdbg_warn ("oklog_log failed");
+      okdbg_warn (ERROR, "oklog_log failed");
     }
     arg->entries.setsize (0);
     _spares.push_back (arg);
@@ -237,7 +237,10 @@ fast_log_t::add_entry (const strbuf &b, oklog_file_t f)
 {
   oklog_arg_t *a = get_arg ();
   assert (a);
-  a->entries.push_back (oklog_entry_t (f, b));
+  oklog_entry_t e;
+  e.file = f;
+  e.data = b;
+  a->entries.push_back (e);
   maybe_flush ();
 }
 
@@ -343,7 +346,7 @@ fast_log_t::stamp_time ()
 {
   time_t tmp = sfs_get_timenow ();
   struct tm *stm = localtime (&tmp);
-  _timeline = strftime (_timebuf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
+  _timelen = strftime (_timebuf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
 }
 
 //-----------------------------------------------------------------------

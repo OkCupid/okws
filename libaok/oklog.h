@@ -121,7 +121,7 @@ public:
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
 	    const str &s);
   void log_ssl (const str &i, const str &c, const str &m);
-  void flush (evv_t::ptr ev, CLOSURE);
+  void flush (evv_t::ptr ev = NULL, CLOSURE);
   void connect (evb_t ev) { connect_T (ev); }
   void timer_loop (CLOSURE);
 protected:
