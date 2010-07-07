@@ -36,7 +36,7 @@ public:
   ~logfile_t () { close (); }
   bool open (const str &n);
   bool open_verbose (const str &n, const str &typ);
-  bool flush (const str &s);
+  bool flush (const str &s, bool nl = true);
   void flush () {}
   void close ();
 private:
@@ -285,12 +285,13 @@ logfile_t::close ()
 //-----------------------------------------------------------------------
 
 bool
-logfile_t::flush (const str &x)
+logfile_t::flush (const str &x, bool nl)
 {
   if (!x || !x.len ())
     return false;
   suio uio;
   uio.print (x.cstr (), x.len ());
+  if (nl) { uio.print ("\n", 1); }
   int rc;
   while ((rc = uio.output (fd)) == -1 && errno == EAGAIN) ;
   return (rc >= 0);

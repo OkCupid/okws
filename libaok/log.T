@@ -54,6 +54,7 @@ fast_log_t::fast_log_t (int fd, str f, size_t hiwat)
   : log_t (New helper_fd_t (oklog_program_1, fd, "oklogd", 
 			    HLP_OPT_PING|HLP_OPT_NORETRY)),
     _fmt (f), 
+    _curr (NULL),
     _hi_wat (hiwat),
     _destroyed (New refcounted<bool> (false)),
     _connected (false)
@@ -115,8 +116,9 @@ fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req,
 		 http_response_base_t *res, const str &aux)
 {
   int s = res->get_status ();
-  if (s != HTTP_OK && s != HTTP_REDIRECT)
+  if (s >= 400) { // errors are 400 and above!
     add_error (x, req, res, aux);
+  }
   add_access (x, req, res);
 }
 
@@ -143,13 +145,16 @@ fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req,
 		       http_response_base_t *res, const str &aux)
 {
   logbuf_t error;
+  str ip = x->get_remote_ip ();
+  error.log (ip);
+  error.spc ();
   error.buf (_timebuf, _timelen);
   error.spc ();
-  str ip = x->get_remote_ip ();
-  error << "[client " << ip << "] " << res->get_status ();
   str auxstr = aux;
   if (!auxstr && req) auxstr = req->get_target (); 
   error.log (auxstr);
+  error.spc ();
+  error << res->get_status ();
   add_entry (error, OKLOG_ERROR);
 }
 
@@ -172,10 +177,14 @@ fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
 //-----------------------------------------------------------------------
 
 void 
-logbuf_t::log (str s)
+logbuf_t::log (str s, int open, int close)
 {
-  if (!s || !s.len ()) { s = "-"; }
-  (*this) << s;
+  if (!s || !s.len ()) { log_char ('-'); }
+  else {
+    if (open >= 0) { log_char (open); }
+    (*this) << s;
+    if (close >= 0) { log_char (close);}
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -202,7 +211,7 @@ tamed void
 fast_log_t::flush (evv_t::ptr ev)
 {
   tvars {
-    oklog_arg_t *arg;
+    oklog_arg_t *arg (NULL);
     bool res;
     clnt_stat err;
   }
@@ -254,6 +263,7 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
   const char *p;
   logbuf_t access;
   bool first = true;
+  str snull;
   for (p = fmp; *p; p++) {
     if (!first) { access.spc (); } 
     else { first = false; }
@@ -263,16 +273,16 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.buf (_timebuf, _timelen);
       break;
     case 'r':
-      access.log (req ? (*req) ["referer"] : static_cast<str> (NULL));
+      access.log (req ? (*req) ["referer"] : snull);
       break;
     case 'i':
       access.log (x->get_remote_ip ());
       break;
     case 'u':
-      access.log (req ? (*req)["user-agent"] : static_cast<str> (NULL));
+      access.log (req ? (*req)["user-agent"] : snull);
       break;
     case '1':
-      access.log (req ? req->get_line1 () : static_cast<str> (NULL));
+      access.log (req ? req->get_line1 () : snull, '"', '"');
       break;
     case 's':
       access.log_dec (res->get_status ());
@@ -299,7 +309,6 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.log_char (*p);
       break;
     }
-    access.spc ();
   }
   add_entry (access, OKLOG_ACCESS);
 }
@@ -346,7 +355,7 @@ fast_log_t::stamp_time ()
 {
   time_t tmp = sfs_get_timenow ();
   struct tm *stm = localtime (&tmp);
-  _timelen = strftime (_timebuf, LOG_TIMEBUF_SIZE, "%Y-%m-%d:%T %z", stm);
+  _timelen = strftime (_timebuf, LOG_TIMEBUF_SIZE, "[%Y-%m-%d:%T %z]", stm);
 }
 
 //-----------------------------------------------------------------------

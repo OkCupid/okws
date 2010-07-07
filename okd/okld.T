@@ -1355,7 +1355,7 @@ okld_t::launch_okssl (evb_t ev)
   if (!_okssl.active ()) {
     rc = true;
   } else {
-    twait { logd->clone (mkevent (logfd)); }
+    twait { get_log_primary ()->clone (mkevent (logfd)); }
     if (logfd < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
     } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {

@@ -38,7 +38,7 @@
 class logbuf_t : public strbuf {
 public:
   logbuf_t () : strbuf () {}
-  void log (str s);
+  void log (str s, int open = -1, int close = -1);
   template<class T> void log_dec (T i) { (*this) << i; }
   void log_hex (u_int64_t x);
   void log_char (char c);
