@@ -774,7 +774,6 @@ okld_t::parse_file (const str &cf)
 
     .add ("OkdUser", &_config_okd_un)
     .add ("OkdGroup", &_config_okd_gr)
-    .add ("LogBuffers", &ok_log_nbufs, 2, 100)
     
     .add ("ServerName", &reported_name)
     .add ("ServerVersion", &version)
@@ -826,6 +825,7 @@ okld_t::parse_file (const str &cf)
 	  time_t (0), time_t (INT_MAX))
     .add ("JsonIntBitMax", &ok_pub3_json_int_bitmax, -4, 128)
 
+    .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
     .ignore ("StatPageURL")
     .ignore ("OkMgrSocketGroup")
@@ -964,11 +964,11 @@ okld_t::launch_logd (evi_t cb)
   argv = logexc->get_argv ();
   assert (argv);
   argv->push_back (logd_parms.encode ());
-  logd = New log_primary_t (logexc);
+  _log_primary = New log_primary_t (logexc);
 
-  twait { logd->connect (mkevent (b)); }
+  twait { _log_primary->connect (mkevent (b)); }
   if (b) {
-    twait { logd->clone(mkevent (ret)); }
+    twait { _log_primary->clone(mkevent (ret)); }
     if (ret < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
     }
@@ -1013,7 +1013,6 @@ okld_t::encode_env ()
     .insert ("ncto", ok_pub3_svc_neg_cache_timeout)
     .insert ("pub3chnk", ok_pub3_max_datasz)
     .insert ("sel", int (ok_sys_sel_policy))
-    .insert ("nlb", ok_log_nbufs)
     .insert ("p3jse", ok_pub3_json_strict_escaping)
     .insert ("lqm", ok_listen_queue_max)
     .insert ("jsibm", ok_pub3_json_int_bitmax);
@@ -1355,7 +1354,7 @@ okld_t::launch_okssl (evb_t ev)
   if (!_okssl.active ()) {
     rc = true;
   } else {
-    twait { logd->clone (mkevent (logfd)); }
+    twait { get_log_primary ()->clone (mkevent (logfd)); }
     if (logfd < 0) {
       warn << "oklogd did not send a file descriptor; failing\n";
     } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
@@ -2106,7 +2105,7 @@ okld_t::gather_helper_fds (str s, int *lp, int *pp, evb_t ev)
   p = get_pubd ();
 
   twait { 
-    get_logd ()->clone (mkevent (logfd));
+    get_log_primary ()->clone (mkevent (logfd));
     if (p) p->clone (mkevent (pubfd));
   }
   

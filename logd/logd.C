@@ -25,9 +25,97 @@
 #include "ok.h"
 #include "rxx.h"
 #include "svq.h"
-#include "logd.h"
+
+//-----------------------------------------------------------------------
+
+class logfile_t {
+public:
+  logfile_t (const str &n) : fn (n), fd (-1) {}
+  logfile_t () : fd (-1) {}
+  void setfile (const str &n) { fn = n; }
+  ~logfile_t () { close (); }
+  bool open (const str &n);
+  bool open_verbose (const str &n, const str &typ);
+  bool flush (const str &s, bool nl = true);
+  void flush () {}
+  void close ();
+private:
+  str fn;
+  int fd;
+};
+
+//-----------------------------------------------------------------------
+
+class logd_t;
+class logd_client_t {
+public:
+  logd_client_t (ptr<axprt_stream> x, logd_t *d, bool p);
+  ~logd_client_t ();
+  void dispatch (svccb *sbp);
+  tailq_entry<logd_client_t> lnk;
+private:
+  ptr<asrv> srv;
+  logd_t *logd;
+  bool primary;
+};
+
+//-----------------------------------------------------------------------
+
+class logd_t : public clone_server_t {
+public:
+  logd_t (ptr<axprt_unix> x, const str &in)
+    : clone_server_t (x),
+      parms (in), logset (0), error (NULL), access (NULL), ssl (NULL),
+      dcb (NULL), 
+      uid (getuid ()), usr (parms.user), grp (parms.group), running (false),
+      injail (false) {}
+
+  void launch ();
+  void remove (logd_client_t *c) { lst.remove (c); }
+  void newclnt (bool p, ptr<axprt_stream> x);
+  void dispatch (svccb *sbp);
+  void shutdown ();
+  void handle_sighup ();
+protected:
+
+  // need to implement this to be a clone server
+  void register_newclient (ptr<axprt_stream> x) { newclnt (false, x); }
+
+private:
+  void turn (svccb *sbp);
+  bool turn ();
+  void log (svccb *sbp);
+  void log (const oklog_entry_t &e);
+  void flush ();
+  bool setup ();
+  bool slave_setup ();
+  bool pidfile_setup ();
+  bool logfile_setup () ;
+  bool logfile_setup (logfile_t **f, const str &l, const str &t);
+  bool perms_setup ();
+  void close_logfiles ();
+  void clean_pidfile ();
+  str fixup_file (const str &in) const;
+
+  tailq<logd_client_t, &logd_client_t::lnk> lst;
+  logd_parms_t parms;
+  u_int logset;
+  logfile_t *error, *access, *ssl;
+  timecb_t *dcb;
+  int uid;
+  ok_usr_t usr;
+  ok_grp_t grp;
+  bool running;
+
+  bool injail;
+  str _pidfile;
+};
+
+//-----------------------------------------------------------------------
 
 logd_t *glogd;
+
+//-----------------------------------------------------------------------
 
 static void
 usage ()
@@ -35,6 +123,8 @@ usage ()
   warnx << "usage: oklogd <cgi-encoded-parameters>\n";
   exit (1);
 }
+
+//-----------------------------------------------------------------------
 
 void
 logd_t::newclnt (bool p, ptr<axprt_stream> x)
@@ -44,12 +134,18 @@ logd_t::newclnt (bool p, ptr<axprt_stream> x)
   lst.insert_tail (New logd_client_t (x, this, p));
 }
 
+//-----------------------------------------------------------------------
+
 logd_client_t::logd_client_t (ptr<axprt_stream> x, logd_t *d, bool p)
   : srv (asrv::alloc (x, oklog_program_1, 
 		      wrap (this, &logd_client_t::dispatch))),
     logd (d), primary (p) {}
 
+//-----------------------------------------------------------------------
+
 logd_client_t::~logd_client_t () { logd->remove (this); }
+
+//-----------------------------------------------------------------------
 
 void
 logd_client_t::dispatch (svccb *sbp)
@@ -66,6 +162,8 @@ logd_client_t::dispatch (svccb *sbp)
   logd->dispatch (sbp);
 }
 
+//-----------------------------------------------------------------------
+
 void
 logd_t::shutdown ()
 {
@@ -73,6 +171,8 @@ logd_t::shutdown ()
   delete this;
   exit (0);
 }
+
+//-----------------------------------------------------------------------
 
 void
 logd_t::clean_pidfile ()
@@ -86,6 +186,8 @@ logd_t::clean_pidfile ()
   }
 }
 
+//-----------------------------------------------------------------------
+
 void
 logd_t::dispatch (svccb *sbp)
 {
@@ -93,9 +195,6 @@ logd_t::dispatch (svccb *sbp)
   switch (p) {
   case OKLOG_NULL:
     sbp->reply (NULL);
-    break;
-  case OKLOG_LOG:
-    log (sbp);
     break;
   case OKLOG_GET_LOGSET:
     sbp->replyref (logset);
@@ -110,8 +209,8 @@ logd_t::dispatch (svccb *sbp)
   case OKLOG_CLONE:
     clone_server_t::clonefd (sbp);
     break;
-  case OKLOG_FAST:
-    fastlog (sbp);
+  case OKLOG_LOG:
+    log (sbp);
     break;
   default:
     sbp->reject (PROC_UNAVAIL);
@@ -119,6 +218,8 @@ logd_t::dispatch (svccb *sbp)
   }
   return;
 }
+
+//-----------------------------------------------------------------------
 
 
 bool
@@ -130,6 +231,8 @@ logd_t::slave_setup ()
   }
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 logd_t::logfile_setup (logfile_t **f, const str &log, const str &typ)
@@ -145,6 +248,8 @@ logd_t::logfile_setup (logfile_t **f, const str &log, const str &typ)
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
 logd_t::logfile_setup ()
 {
@@ -153,6 +258,7 @@ logd_t::logfile_setup ()
 	  logfile_setup (&ssl, parms.ssllog, "ssl"));
 }
 
+//-----------------------------------------------------------------------
 
 void
 logd_t::close_logfiles ()
@@ -165,27 +271,33 @@ logd_t::close_logfiles ()
   ssl = NULL;
 }
 
+//-----------------------------------------------------------------------
+
 void
 logfile_t::close ()
 {
   if (fd >= 0) {
-    flush ();
     ::close (fd);
     fd = -1;
   }
 }
 
+//-----------------------------------------------------------------------
+
 bool
-logfile_t::flush (const str &x)
+logfile_t::flush (const str &x, bool nl)
 {
   if (!x || !x.len ())
     return false;
   suio uio;
   uio.print (x.cstr (), x.len ());
+  if (nl) { uio.print ("\n", 1); }
   int rc;
   while ((rc = uio.output (fd)) == -1 && errno == EAGAIN) ;
   return (rc >= 0);
 }
+
+//-----------------------------------------------------------------------
 
 bool
 logfile_t::open_verbose (const str &n, const str &typ)
@@ -202,50 +314,7 @@ logfile_t::open_verbose (const str &n, const str &typ)
   return true;
 }
 
-void
-logd_t::parse_fmt ()
-{
-  const char *fmt = parms.accesslog_fmt 
-    ? parms.accesslog_fmt.cstr () : ok_access_log_fmt.cstr ();
-  const char *fp;
-  for (fp = fmt; *fp; fp++) {
-    logd_fmt_el_t *el = NULL;
-    switch (*fp) {
-    case 't':
-      el = New logd_fmt_time_t (this);
-      break;
-    case 'r':
-      el = New logd_fmt_referer_t ();
-      break;
-    case 'i':
-      el = New logd_fmt_remote_ip_t ();
-      break;
-    case 'u':
-      el = New logd_fmt_ua_t ();
-      break;
-    case '1':
-      el = New logd_fmt_req_t ();
-      break;
-    case 's':
-      el = New logd_fmt_status_t ();
-      break;
-    case 'b':
-      el = New logd_fmt_bytes_t ();
-      break;
-    case 'v':
-      el = New logd_fmt_svc_t ();
-      break;
-    case 'U':
-      el = New logd_fmt_uid_t ();
-      break;
-    default:
-      el = New logd_fmt_const_t (*fp);
-      break;
-    }
-    logset |= el->get_switch ();
-    fmt_els.push_back (el);
-  }
-}
+//-----------------------------------------------------------------------
 
 void
 logd_t::launch ()
@@ -254,20 +323,22 @@ logd_t::launch ()
     fatal << "launch/setup failed\n";
 }
 
+//-----------------------------------------------------------------------
+
 bool
 logd_t::setup ()
 {
-  parse_fmt ();
   if (!(perms_setup () && 
 	logfile_setup () && 
 	pidfile_setup () && 
 	slave_setup ()))
     return false;
-  timer_setup ();
   
   running = true;
   return true;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 logd_t::pidfile_setup ()
@@ -285,6 +356,8 @@ logd_t::pidfile_setup ()
   }
   return ret;
 }
+
+//-----------------------------------------------------------------------
 
 bool
 logd_t::perms_setup ()
@@ -320,6 +393,8 @@ logd_t::perms_setup ()
   return true;
 }
 
+//-----------------------------------------------------------------------
+
 void
 logd_t::flush ()
 {
@@ -332,6 +407,8 @@ logd_t::flush ()
     ssl->flush ();
   }
 }
+
+//-----------------------------------------------------------------------
 
 int
 main (int argc, char *argv[])
@@ -366,6 +443,8 @@ main (int argc, char *argv[])
   amain ();
 }
 
+//-----------------------------------------------------------------------
+
 
 bool
 logfile_t::open (const str &f)
@@ -374,51 +453,7 @@ logfile_t::open (const str &f)
   return (fd >= 0);
 }
 
-bool
-logd_t::ssl_log (const oklog_ssl_msg_t &x)
-{
-  logbuf_t *lb = ssl->getbuf ();
-  lb->copy ("[client ", 8).remote_ip (x.ip).copy ("] ", 2).copy (x.cipher);
-  if (x.msg.len ()) lb->copy (" ", 1).copy (x.msg);
-  return true;
-}
-
-bool
-logd_t::access_log (const oklog_ok_t &x)
-{
-  u_int lim = fmt_els.size ();
-  assert (access);
-  logbuf_t *lb = access->getbuf ();
-  for (u_int i = 0; i < lim; i++) {
-    if (i != 0) lb->spc ();
-    fmt_els[i]->log (lb, x);
-  }
-  lb->newline ();
-  return lb->ok ();
-}
-
-bool
-logd_t::error_log (const oklog_arg_t &x)
-{
-  assert (error);
-  logbuf_t *lb = error->getbuf ();
-  (*lb) << tmr << ' ' << x.typ << ' ';
-  switch (x.typ) {
-  case OKLOG_ERR_NOTICE:
-  case OKLOG_ERR_CRITICAL:
-    (*lb) << x.notice->notice << '\n';
-    break;
-  default:
-    {
-      lb->copy ("[client ", 8).remote_ip (x.err->log.ip)
-	.copy ("] ", 2).status (x.err->log.status);
-      if (x.err->aux && x.err->aux.len ())
-	lb->copy (": ", 2).copy (x.err->aux);
-    }
-  }
-  lb->newline ();
-  return lb->ok ();
-}
+//-----------------------------------------------------------------------
 
 bool
 logd_t::turn ()
@@ -453,12 +488,16 @@ logd_t::turn ()
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 void
 logd_t::turn (svccb *sbp)
 {
   bool ret = turn ();
   sbp->replyref (ret);
 }
+
+//-----------------------------------------------------------------------
 
 void
 logd_t::handle_sighup ()
@@ -469,46 +508,35 @@ logd_t::handle_sighup ()
     warn << "XX log turn failed!\n";
 }
 
+//-----------------------------------------------------------------------
+
 void
-logd_t::fastlog (svccb *sbp)
+logd_t::log (const oklog_entry_t &le)
 {
-  bool ret = true;
-  RPC::oklog_program_1::oklog_fast_srv_t<svccb> srv (sbp);
-  const oklog_fast_arg_t *fa = srv.getarg ();
-
-  assert (access);
-  assert (error);
-  assert (ssl);
-  access->flush (fa->access);
-  error->flush (fa->error);
-  ssl->flush (fa->ssl);
-
-  srv.reply (ret);
+  logfile_t *log = NULL;
+  switch (le.file) {
+  case OKLOG_ACCESS: log = access; break;
+  case OKLOG_ERROR: log = error; break;
+  case OKLOG_SSL: log = ssl; break;
+  case OKLOG_NONE: break;
+  default: break;
+  }
+  if (log) {
+    log->flush (le.data);
+  }
 }
+
+//-----------------------------------------------------------------------
 
 void
 logd_t::log (svccb *sbp)
 {
   bool ret = true;
   RPC::oklog_program_1::oklog_log_srv_t<svccb> srv (sbp);
-  oklog_arg_t *la = srv.getarg ();
-  switch (la->typ) {
-  case OKLOG_OK:
-    ret = access_log (*la->ok);
-    break;
-  case OKLOG_ERR_NOTICE:
-  case OKLOG_ERR_CRITICAL:
-    ret = error_log (*la);
-    break;
-  case OKLOG_SSL:
-    ret = ssl_log (*la->ssl);
-    break;
-  default:
-    if (!error_log (*la)) ret = false;
-    if (!(la->err->log.req && la->err->log.req.len ())) 
-      la->err->log.req = la->err->aux;
-    if (!access_log (la->err->log)) ret = false;
-    break;
+  const oklog_arg_t *a = srv.getarg ();
+
+  for (size_t i = 0; i < a->entries.size (); i++) {
+    log (a->entries[i]);
   }
   srv.reply (ret);
 }

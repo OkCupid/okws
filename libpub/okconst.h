@@ -216,9 +216,9 @@ extern u_int hlpr_max_qlen;                    // maximum # to q
 //
 // log constants
 //
-extern u_int ok_log_tick;                       // how often log timer ticks
-extern u_int ok_log_period;                     // how many ticks to a flush
-extern u_int ok_log_nbufs;                      // how many buffers for the log
+extern time_t ok_log_tick;                      // how often log timer ticks
+extern size_t ok_log_period;                    // how often to flush (in ticks)
+extern size_t ok_log_hiwat;                     // max # of entries to buffer
 extern str ok_syslog_priority;                  // syslog section
 extern str ok_syslog_tag;                       // syslog tag (-t format)
 extern str ok_syslog_domain;                    // domain for syslog
