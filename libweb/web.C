@@ -108,15 +108,20 @@ static str strip_zero(const str& s)
 }
 
 void
+okdate_t::clear_c_times ()
+{
+  time_t_set = false;
+  stm_set = false;
+}
+
+void
 okdate_t::clear ()
 {
   sec = min = hour = mday = mon = year = 0;
   err = false;
   memset (&stm, 0, sizeof (stm));
   dt_tm = 0;
-  stm_set = false;
-  time_t_set = false;
-  time_t_val = false;
+  clear_c_times ();
 }
 
 void
@@ -156,6 +161,7 @@ okdate_t::set (const str &s)
       assert (ok);
     }
   }
+  clear_c_times ();
 
   if (new_rxx) delete new_rxx;
 }
@@ -208,6 +214,7 @@ okdate_t::set (const str &s, long gmt_off)
       dt_tm |= OK_DATE;
     }
   }
+  clear_c_times ();
 
   if (new_rxx) delete new_rxx;
   return !err;
@@ -263,6 +270,7 @@ okdate_t::set (const struct tm &s)
   sec = s.tm_sec;
   stm = s;
   stm_set = true;
+  time_t_set = false;
   dt_tm |= (OK_DATE | OK_TIME);
 }
 
@@ -273,7 +281,7 @@ okdate_t::set (const x_okdate_date_t &x, long gmt_off)
   mon = x.mon;
   year = x.year;
   dt_tm |= OK_DATE;
-  stm_set = false;
+  clear_c_times ();
   if (gmt_off)
     apply_gmt_off (gmt_off);
 }
@@ -293,18 +301,19 @@ okdate_t::set (const x_okdate_time_t &x, long gmt_off_dummy)
   sec = x.sec;
   min = x.min;
   hour = x.hour;
-  stm_set = false;
+  clear_c_times ();
   dt_tm |= OK_TIME;
 }
 
 void
 okdate_t::set (const x_okdate_t &x, long gmt_off)
 {
-  if (x.time.on)
+  clear_c_times ();
+  if (x.time.on) {
     set (*x.time.time);
-  else
+  } else {
     sec = min = hour = 0;
-
+  }
   if (x.date.on) 
     set (*x.date.date, gmt_off);
 }

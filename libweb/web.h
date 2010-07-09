@@ -104,6 +104,8 @@ public:
   void set (const x_okdate_date_t &x, long gmt_off = 0);
   void set (const x_okdate_time_t &x, long gmt_off = 0);
 
+  void clear_c_times ();
+
   operator time_t () const { return to_time_t (); }
 
   virtual str to_str (long gmt_off = 0) const;
