@@ -279,7 +279,7 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.log (x->get_remote_ip ());
       break;
     case 'u':
-      access.log (req ? (*req)["user-agent"] : snull);
+      access.log (req ? (*req)["user-agent"] : snull, '"', '"');
       break;
     case '1':
       access.log (req ? req->get_line1 () : snull, '"', '"');
@@ -303,7 +303,7 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.log_dec (req ? req->get_reqno () : 0);
       break;
     case '2':
-      access.log (res->get_custom_log2 ());
+      access.log (res->get_custom_log2 (), '[', ']');
       break;
     default:
       access.log_char (*p);
