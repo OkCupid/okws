@@ -91,15 +91,23 @@ namespace ezdb {
 
   //-----------------------------------------------------------------------
 
-  class cli_t : public helper_inet_t, public virtual refcount {
+  class cli_t : public virtual refcount {
   public:
     cli_t (const str &hn, int port = EZDBD_PORT, u_int opts = 0);
+    cli_t (helper_inet_t *c, bool del_con = false);
+    ~cli_t ();
     ptr<sth_t> prepare (str s, safe_t safe, str loc, int ln);
+    helper_inet_t *con () { return _con; }
+
+    void connect (evb_t ev, CLOSURE);
 
 #define EZ_PREPARE(s)				\
     prepare (s, ezdb::SAFE, __FILE__, __LINE__)
 #define UNSAFE_EZ_PREPARE(s)			\
     prepare (s, ezdb::UNSAFE, __FILE__, __LINE__)
+  private:
+    helper_inet_t *_con;
+    bool _del_con;
   };
 
   //-----------------------------------------------------------------------

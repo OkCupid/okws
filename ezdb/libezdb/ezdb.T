@@ -8,7 +8,16 @@ namespace ezdb {
   //-----------------------------------------------------------------------
 
   cli_t::cli_t (const str &hn, int port, u_int opts)
-    : helper_inet_t (ezdb_prog_1, hn, port, opts) {}
+    : _con (New helper_inet_t (ezdb_prog_1, hn, port, opts)),
+      _del_con (true) {}
+
+  //-----------------------------------------------------------------------
+
+  cli_t::cli_t (helper_inet_t *c, bool dc) : _con (c), _del_con (dc) {}
+
+  //-----------------------------------------------------------------------
+
+  cli_t::~cli_t () { if (_del_con && _con) delete _con; }
 
   //-----------------------------------------------------------------------
 
@@ -91,7 +100,10 @@ namespace ezdb {
     } else {
       arg.sth_id = _id;
       arg.row = _iter++;
-      twait { rpc::ezdb_prog_1::ezdb_fetch (_cli, arg, &res, mkevent (err)); }
+      twait { 
+	rpc::ezdb_prog_1::ezdb_fetch (_cli->con(), arg, &res, 
+				      mkevent (err)); 
+      }
       if (err) {
 	s = strbuf () << err;
 	c = ADB_RPC_ERROR;
@@ -132,7 +144,9 @@ namespace ezdb {
       arg.query = _query;
       arg.args = args;
       
-      twait { rpc::ezdb_prog_1::ezdb_execute (_cli, arg, &res, mkevent (err)); }
+      twait { 
+	rpc::ezdb_prog_1::ezdb_execute (_cli->con(), arg, &res, mkevent (err)); 
+      }
       
       if (err) {
 	s = strbuf () << err;
@@ -165,7 +179,7 @@ namespace ezdb {
       clnt_stat err;
     }
 
-    twait { rpc::ezdb_prog_1::ezdb_finish (cli, id, &c, mkevent (err)); }
+    twait { rpc::ezdb_prog_1::ezdb_finish (cli->con(), id, &c, mkevent (err)); }
     if (err) {
       s = strbuf () << err;
       c = ADB_RPC_ERROR;
@@ -205,5 +219,17 @@ namespace ezdb {
     return out;
   }
 
+  //-----------------------------------------------------------------------
+
+  tamed void
+  cli_t::connect (evb_t ev)
+  {
+    tvars {
+      bool ok;
+    }
+    twait { _con->connect (mkevent (ok)); }
+    ev->trigger (ok);
+  }
+  
   //-----------------------------------------------------------------------
 };
