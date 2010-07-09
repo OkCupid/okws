@@ -164,13 +164,13 @@ void
 fast_log_t::add_ssl (const str &ip, const str &cipher, const str &msg)
 {
   logbuf_t ssl;
+  ssl.log (ip);
+  ssl.spc ();
   ssl.buf (_timebuf, _timelen);
   ssl.spc ();
-  ssl << "[client " << ip << "] " << cipher;
-  if (msg) {
-    ssl.spc ();
-    ssl << msg;
-  }
+  ssl.log (cipher);
+  ssl.spc ();
+  ssl.log (msg);
   add_entry (ssl, OKLOG_SSL);
 }
 
