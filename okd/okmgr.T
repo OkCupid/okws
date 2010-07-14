@@ -32,7 +32,7 @@ usage ()
 {
   warnx << "usage: okmgr [ -l | -t ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
-	<< "       okmgr <-c|-p> [ enable | disable | print | clear ] "
+	<< "       okmgr <-c|-p> [ enable | disable | print | reset ] "
 	<< "[-s <socket> | -f <conf>] <svc>\n"
 	<< "       okmgr [-s <socket> | -f <conf>] -m<msg> <svc1> <svc2>..\n";
 				     
