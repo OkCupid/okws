@@ -137,7 +137,7 @@ struct oklog_fast_arg_t {
 
 struct oklog_entry_t {
    oklog_file_t file;
-   string data<>;
+   opaque data<>;
 };
 
 struct oklog_arg_t {

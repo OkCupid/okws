@@ -55,6 +55,7 @@ str html_wss (str in);
 str dir_merge (str d, str f);
 str rxx_replace (str input, rxx pat, str repl);
 bool has_null_byte (const str &s);
+str trunc_after_null_byte (str s);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL
@@ -168,5 +169,7 @@ str trunc_at_first_null (const str &s);
 void fix_trailing_newlines (str *s);
 
 const char * getenvval (const char *s);
+
+//-----------------------------------------------------------------------
 
 #endif /* _LIBPUB_PUBUTIL_H */

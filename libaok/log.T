@@ -248,7 +248,9 @@ fast_log_t::add_entry (const strbuf &b, oklog_file_t f)
   assert (a);
   oklog_entry_t e;
   e.file = f;
-  e.data = b;
+  str s = b;
+  e.data.setsize (s.len ());
+  memcpy (e.data.base (), s.cstr (), s.len ());
   a->entries.push_back (e);
   maybe_flush ();
 }

@@ -677,3 +677,16 @@ has_null_byte (const str &s)
 
 //-----------------------------------------------------------------------
 
+str
+trunc_after_null_byte (str s)
+{
+  str ret;
+  size_t l;
+  if (!s) { ret = s; }
+  else if ((l = strlen (s)) == s.len ()) { ret = s; }
+  else { ret = str (s.cstr (), l); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+

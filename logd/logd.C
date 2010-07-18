@@ -522,7 +522,11 @@ logd_t::log (const oklog_entry_t &le)
   default: break;
   }
   if (log) {
-    log->flush (le.data);
+    size_t l = le.data.size ();
+    mstr m (l);
+    memcpy (m.cstr (), le.data.base(), l);
+    m.setlen (l);
+    log->flush (m);
   }
 }
 
