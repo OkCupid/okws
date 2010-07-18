@@ -172,4 +172,30 @@ const char * getenvval (const char *s);
 
 //-----------------------------------------------------------------------
 
+template<size_t n> bool str2opaque (const str &s, rpc_bytes<n> &o)
+{
+  bool ret = false;
+  if (s) {
+    ret = true;
+    size_t l = s.len ();
+    o.setsize (l);
+    memcpy (o.base (), s.cstr (), l);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+template<size_t n> str opaque2str (const rpc_bytes<n> &o)
+{
+  size_t l = o.size ();
+  mstr m (l + 1);
+  memcpy (m.cstr (), o.base (), l);
+  m[l] = '\0';
+  m.setlen (l);
+  return m;
+}
+
+//-----------------------------------------------------------------------
+
 #endif /* _LIBPUB_PUBUTIL_H */
