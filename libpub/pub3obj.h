@@ -123,6 +123,7 @@ namespace pub3 {
     bool to_uint (u_int64_t *u) const;
     bool to_str (str *s) const;
     bool to_bool (bool *b) const;
+    bool to_double (double *d) const;
 
     ptr<vec<str> > keys () const;
 
@@ -130,6 +131,7 @@ namespace pub3 {
     bool to_bool () const;
     int64_t to_int () const;
     u_int64_t to_uint () const;
+    double to_double () const;
 
     ptr<const expr_list_t> to_list () const;
     ptr<const expr_dict_t> to_dict () const;

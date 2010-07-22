@@ -564,6 +564,14 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   bool
+  const_obj_t::to_double (double *d) const
+  {
+    return obj () && obj ()->to_double (d);
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
   const_obj_t::to_uint (u_int64_t *i) const
   {
     return obj () && obj ()->to_uint (i);
@@ -625,6 +633,16 @@ namespace pub3 {
     u_int64_t u = 0;
     to_uint (&u);
     return u;
+  }
+
+  //-----------------------------------------------------------------------
+
+  double
+  const_obj_t::to_double () const
+  {
+    double d = 0;
+    to_double (&d);
+    return d;
   }
 
   //-----------------------------------------------------------------------
