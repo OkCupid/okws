@@ -43,6 +43,29 @@ namespace pub3 {
 
   //=======================================================================
 
+  bool 
+  localizer_t::localize_many (const str &infn, vec<str> *out) const 
+  { return false; }
+
+  //-----------------------------------------------------------------------
+
+  str localizer_t::localize (const str &infn) const { return NULL; }
+
+  //-----------------------------------------------------------------------
+
+  void
+  localizer_t::compound_localize (const str &infn, vec<str> *out) const
+  {
+    str res;
+    
+    if (!localize_many(infn, out))
+      res = localize(infn);
+    if (res)
+      out->push_back(res);
+  }
+
+  //=======================================================================
+
   abstract_publisher_t::abstract_publisher_t (opts_t o, 
 					      ptr<const localizer_t> l) : 
     _opts (o), 
@@ -240,7 +263,7 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
   
-  static void use_file (vec<str> *out, str f) { if (f) out->push_back (f); }
+  static void use_file (str f, vec<str> *out) { if (f) out->push_back (f); }
   
   //-----------------------------------------------------------------------
   
@@ -254,8 +277,8 @@ namespace pub3 {
     bool use_defs = !(l && l->strict ()) ;
     
     if (abs) {
-      if (l)        use_file (out, l->localize (nm)); 
-      if (use_defs) use_file (out, nm);
+      if (l)        l->compound_localize (nm, out); 
+      if (use_defs) use_file (nm, out);
     } else {
       
       str n1, n2;
@@ -269,17 +292,17 @@ namespace pub3 {
       }
 
       if (l) {
-	if (n1) use_file (out, l->localize (n1));
-	if (n2) use_file (out, l->localize (n2));
+	if (n1) l->compound_localize (n1, out);
+	if (n2) l->compound_localize (n2, out);
       }
  
       if (use_defs) {
-	if (n1) use_file (out, n1);
-	if (n2) use_file (out, n2);
+	if (n1) use_file (n1, out);
+	if (n2) use_file (n2, out);
       }
     }
 
-    if (l) { use_file (out, l->get_default_fnf ()); }
+    if (l) { use_file (l->get_default_fnf (), out); }
   }
 
   //-----------------------------------------------------------------------

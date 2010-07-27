@@ -21,7 +21,9 @@ namespace pub3 {
   public:
     localizer_t () {}
     virtual ~localizer_t () {}
-    virtual str localize (const str &infn) const = 0;
+    virtual str localize (const str &infn) const;
+    virtual bool localize_many (const str &infn, vec<str> *out) const;
+    virtual void compound_localize (const str &infn, vec<str> *out) const;
     virtual bool strict () const { return false; }
     virtual str get_default_fnf () const { return NULL; }
   };
