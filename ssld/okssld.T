@@ -218,7 +218,9 @@ namespace okssl {
     arg.ssl.cipher = cipher;
     arg.port = p.port ();
 
-    _okd_x->sendfd (fd);
+    // don't have SFS libs close the FD (by passing false);
+    // we close the FD explicitly below....
+    _okd_x->sendfd (fd, false);
 
     twait {
       RPC::okssl_program_1::okssl_new_connection 
@@ -234,6 +236,8 @@ namespace okssl {
     } else {
       ok = true;
     }
+
+    close (fd);
 
     ev->trigger (ok);
   }
