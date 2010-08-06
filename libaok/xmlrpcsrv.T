@@ -205,6 +205,7 @@ okclnt_xmlrpc_t::handle_okws_pub_T (xml_req_t q, xml_resp_ev_t cb)
     if (load_args (q[i], _srvc, &fn, &opts, &lang, &conf, &o)) {
       iface = xml_pub3_local (lang);
       ok = true;
+      status.set_status (XPUB_STATUS_OK);
       if (conf) {
 	conf_out = pub3::dict_t::alloc ();
 	twait { iface->run_cfg (fn, mkevent (ok), conf_out, opts, &status); }
