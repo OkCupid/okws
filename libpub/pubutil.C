@@ -434,13 +434,22 @@ errcode2str (const xpub_status_t &x)
   switch (x.status) {
   case XPUB_STATUS_OK:
     break;
-  case XPUB_STATUS_NOENT:
-    r = "File not found";
-    break;
   case XPUB_STATUS_RPC_ERR:
     {
       strbuf b;
       b << "RPC Error " << *x.rpc_err;
+      r = b;
+    }
+    break;
+  case XPUB_STATUS_NOENT:
+  case XPUB_STATUS_EPARSE:
+  case XPUB_STATUS_EIO:
+    {
+      strbuf b;
+      for (size_t i = 0; i < x.errors->size (); i++) {
+	if (i != 0) { b << "\n"; }
+	b << (*x.errors)[i];
+      }
       r = b;
     }
     break;
