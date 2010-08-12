@@ -588,3 +588,9 @@ helper_exec_t::remove_pidfile ()
 
 //-----------------------------------------------------------------------
 
+bool 
+helper_inet_t::operator== (const helper_inet_t &i) const
+{ return i.hostname == hostname && i.port == port; }
+
+//-----------------------------------------------------------------------
+

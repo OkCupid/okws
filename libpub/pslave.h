@@ -240,6 +240,8 @@ public:
 	     time_t duration = 600) {
     helper_t::call(procno, in, out, cb, duration);
   }
+
+  bool operator== (const helper_inet_t &i) const;
         
 protected:
   void launch (cbb c);
