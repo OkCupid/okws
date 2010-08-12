@@ -594,3 +594,9 @@ helper_inet_t::operator== (const helper_inet_t &i) const
 
 //-----------------------------------------------------------------------
 
+bool 
+helper_inet_t::operator!= (const helper_inet_t &i) const 
+{ return !(*this == i); }
+
+//-----------------------------------------------------------------------
+

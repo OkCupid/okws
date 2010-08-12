@@ -242,6 +242,7 @@ public:
   }
 
   bool operator== (const helper_inet_t &i) const;
+  bool operator!= (const helper_inet_t &i) const;
         
 protected:
   void launch (cbb c);
