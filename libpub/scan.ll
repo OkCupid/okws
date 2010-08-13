@@ -333,7 +333,7 @@ null		     { return T_P3_NULL; }
 <C_COMMENT>{
 \n		{ inc_lineno (); }
 "*/"		{ yy_pop_state (); }
-[^*\n]+		{ /* ignore */ }
+[*]|[^*\n]+	{ /* ignore */ }
 }
 
 %%
