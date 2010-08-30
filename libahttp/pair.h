@@ -170,10 +170,12 @@ pairtab_t<C>::lookup (const str &key, str *r) const
 {
   assert (key && r);
   pair_t *p = tab[key];
-  if (!p) return false;
-  if (p->vals.size () >= 1) *r =  p->vals[0];
-  else *r = NULL;
-  return true;
+  bool ret = false;
+  if (p && p->vals.size () >= 1) {
+    *r =  p->vals[0];
+    ret = true;
+  }
+  return ret;
 }
 
 template<class C> bool
