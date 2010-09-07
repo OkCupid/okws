@@ -503,7 +503,20 @@ namespace pub3 {
   int
   chunkholder_t::hold_chunks (ptr<file_t> f)
   {
-    _chunk_cache.insert (srv_cached_getfile_t (f));
+    srv_cached_getfile_t cf (f);
+    _chunk_cache.insert (cf);
+
+    if (OKDBG2(PUB3_CACHE)) {
+      xpub3_hash_t hsh;
+      xpub3_file_t xf;
+      strbuf b ("hold_chunks(key = { hsh : ");
+      cf._key._filehash->to_xdr (&hsh);
+      rpc_print (b, hsh);
+      str fn = cf._file->metadata ()->jailed_filename ();
+      b.fmt (", opts : %du }) (%s)", cf._key._opts, fn.cstr ());
+      okdbg_warn (CHATTER,b);
+    }
+
     return _chunk_cache.timeout ();
   }
 

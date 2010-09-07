@@ -221,6 +221,14 @@ namespace pub3 {
       res.set_code (s.status);
       *res.error_status = s;
     } else {
+
+      // MK 2010/09/07 note -- there is a weird race condition here
+      // when using file_lookup() of the chunkstore type.  If two 
+      // processes request the same file at the same time, there will
+      // be two insertions into the hold chunk cache, with slightly
+      // different checksums (I believe in the metadata but I am not
+      // sure).  As a result, one of the guys will successfully pass
+      // a checksum on recovery, and the other giy won't.
       f->init_xdr_opaque ();
       sz = f->xdr_len ();
       assert (sz >= 0);

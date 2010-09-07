@@ -760,6 +760,25 @@ pub3::binding_t::binding_t (const xpub3_binding_t &x)
 
 //-----------------------------------------------------------------------
 
+static int
+bnd_cmp (const void *va, const void *vb)
+{
+  const xpub3_binding_t *a = static_cast<const xpub3_binding_t *> (va);
+  const xpub3_binding_t *b = static_cast<const xpub3_binding_t *> (vb);
+  int r = strcmp (a->key.cstr (), b->key.cstr ());
+  return r;
+}
+
+//-----------------------------------------------------------------------
+
+static void
+sort (xpub3_bindings_t &v)
+{
+  qsort (v.base (), v.size (), sizeof (xpub3_binding_t), bnd_cmp);
+}
+
+//-----------------------------------------------------------------------
+
 bool
 pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
 {
@@ -774,6 +793,11 @@ pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
     b3.key = *key;
     expr_to_rpc_ptr (val, &b3.val);
   }
+
+  if (0) {
+    sort (x->dict->entries);
+  }
+
   return true;
 }
 

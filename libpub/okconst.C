@@ -288,7 +288,7 @@ int ok_pub3_getfile_object_lifetime = 3600;
 int ok_pub3_chunk_lease_time = 120;
 
 // largest possible file/chunk size (should be less than ok_axprt_ps)
-size_t ok_pub3_max_datasz = 0x1000;
+size_t ok_pub3_max_datasz = 0x10000;
 
 // the number of oustanding chunk requests to pubd
 size_t ok_pub3_chunk_window_size = 5;

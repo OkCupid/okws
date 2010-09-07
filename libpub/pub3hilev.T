@@ -420,6 +420,16 @@ namespace pub3 {
     } else {
       ok = true;
       memcpy (buf + offset, res.chunk->data.base (), res.chunk->data.size ());
+
+      if (OKDBG2(PUB3_CHUNKS)) {
+	strbuf b ("get_chunk(");
+	rpc_print (b, arg);
+	char buf[PUBHASHSIZE];
+	sha1_hash (buf, res.chunk->data.base (), res.chunk->data.size ());
+	str fp = armor32 (buf, PUBHASHSIZE);
+	b.fmt (") -> %s", fp.cstr ());
+	okdbg_warn (CHATTER, b);
+      }
     }
     ev->trigger (ok);
   }
@@ -465,8 +475,8 @@ namespace pub3 {
 		  mkevent (rv, nok, *nok));
 	i += _maxsz;
       } else {
-	nrecv++;
 	twait (rv, nok);
+	nrecv++;
 	if (!*nok) ok = false;
       }
     }
@@ -483,6 +493,16 @@ namespace pub3 {
 	m = "Hash mismatch";
       } else if (!str2xdr (*file, buf)) {
 	m = "Demarshall of chunks failed";
+      }
+      if (OKDBG2(PUB3_CHUNKS)) {
+	  str s1 = armor32 (h, PUBHASHSIZE);
+	  str s2 = armor32 (hdr.xdrhash.base (), PUBHASHSIZE);
+	  if (m) {
+	    okdbg_warn (ERROR, "hash mismatch (%s v %s)\n", 
+			s1.cstr (), s2.cstr ());
+	  } else {
+	    okdbg_warn (CHATTER, "hash match on %s\n", s1.cstr ());
+	  }
       }
     }
 
