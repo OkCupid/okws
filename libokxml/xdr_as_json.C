@@ -196,3 +196,95 @@ JSON_creator_t::push_ptr (bool exists, bool *alloc)
 
 //-----------------------------------------------------------------------
 
+void
+JSON_creator_t::clear ()
+{
+  _ref_stack.clear ();
+  _obj_stack.clear ();
+  push_ref (plain_obj_ref_t::alloc ());
+}
+
+//=======================================================================
+
+JSON_reader_t::JSON_reader_t (ptr<const pub3::expr_t> x) { setroot (x); }
+
+//-----------------------------------------------------------------------
+
+JSON_reader_t::~JSON_reader_t () {}
+
+//-----------------------------------------------------------------------
+
+void
+JSON_reader_t::setroot (ptr<const pub3::expr_t> x)
+{
+  _stack.clear ();
+  _root = x;
+  _stack.push_back (x); 
+}
+
+//-----------------------------------------------------------------------
+
+bool
+JSON_reader_t::enter_field (const char *f)
+{
+  bool ret = true;
+  ptr<const pub3::expr_dict_t> d;
+  if (is_empty ()) { 
+    ret = error_empty ("struct"); 
+  } else if (!(d = top()->to_dict ())) { 
+    ret = error_wrong_type ("struct", top());
+  } else {
+    push (d->lookup (f));
+  }
+  debug_push (f);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+int
+JSON_reader_t::error_wrong_type (const char *f, ptr<const pub3::expr_t> x,
+				 int rc)
+{
+  str n;
+  if (!x) { n = "None"; }
+  else { n = x->type_to_str (); }
+  return XML_RPC_obj_t::error_wrong_type (f, n.cstr (), rc);
+}
+
+
+//-----------------------------------------------------------------------
+
+bool
+JSON_reader_t::exit_field ()
+{
+  _stack.pop_back ();
+  debug_pop ();
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool 
+JSON_reader_t::traverse (int64_t &i)
+{
+  bool ret = true;
+  if (is_empty ()) { ret = error_empty ("int"); }
+  else if (!top ()->to_int (&i)) { ret = error_wrong_type ("int", top ()); }
+  else { ret = true; }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+JSON_reader_t::traverse (bool &b)
+{
+  bool ret = true;
+  if (is_empty ()) { ret = error_empty ("bool"); }
+  else { b = top ()->to_bool (); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+

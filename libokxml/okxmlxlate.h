@@ -81,8 +81,7 @@ public:
 
   str error_msg (const str &prfx);
 
-  //int error_wrong_type (const char *f, int rc = 0);
-  int error_wrong_type (const char *f, const xml_obj_base_t &o, int rc = 0);
+  int error_wrong_type (const char *f, const char *s, int rc = 0);
   int error_empty (const char *f, int rc = 0);
   int error_generic(const char *f, int rc = 0);
 
@@ -163,6 +162,7 @@ public:
   int push_array (size_t s, size_t capac, bool fixed, ssize_t *rsz);
   int push_array_slot (int i);
   int push_ptr (bool dummy, bool *alloc);
+  int error_wrong_type (const char *f, const xml_obj_base_t &o, int rc = 0);
 
 private:
   template<class T> bool t_traverse (const char *prfx, T &i, bool sig);

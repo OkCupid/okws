@@ -368,23 +368,19 @@ XML_RPC_obj_t::error_empty (const char *f, int rc)
 }
 
 int
-XML_RPC_obj_t::error_wrong_type (const char *f, const xml_obj_base_t &o, 
-                                 int rc)
+XML_reader_t::error_wrong_type (const char *f, const xml_obj_base_t &o, int rc)
 {
   const char *e = o.xml_typename (true);
-  
+  return XML_RPC_obj_t::error_wrong_type (f, e, rc);
+}
+
+int
+XML_RPC_obj_t::error_wrong_type (const char *f, const char *e, int rc)
+{
   strbuf b ("Expected type '%s'; got '%s' instead", f, e);
   freeze_err_msg (b);
   return rc;
 }
-
-/*
-int
-XML_RPC_obj_t::error_wrong_type (const char *f, int rc)
-{
-  return error_wrong_type (f, NULL, rc);
-}
-*/
 
 #define PRIM(x) xml_typeinfo_t xml_typeinfo_ ## x =	\
     { #x, xml_typeinfo_t::PRIMITIVE, NULL }

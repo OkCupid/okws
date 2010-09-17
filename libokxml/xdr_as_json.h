@@ -24,7 +24,7 @@ private:
 // From an input XDR object, create a JSON representation of it.
 class JSON_creator_t : public XML_RPC_obj_t {
 public:
-  JSON_creator_t () { push_ref (plain_obj_ref_t::alloc ()); }
+  JSON_creator_t () { clear (); }
   ~JSON_creator_t () {}
 
   bool enter_field (const char *f);
@@ -53,6 +53,8 @@ public:
   ptr<pub3::expr_t> result () { return _obj_stack[0]; }
   ptr<const pub3::expr_t> result () const { return _obj_stack[0]; }
 
+  void clear ();
+
 private:
   void push_ref (ptr<pub3::obj_ref_t> r);
   void pop_ref ();
@@ -68,6 +70,26 @@ private:
 
 // From an input JSON object, create an XDR equivalent.
 class JSON_reader_t : public XML_RPC_obj_t {
+public:
+  JSON_reader_t (ptr<const pub3::expr_t> x);
+  ~JSON_reader_t ();
 
+  void setroot (ptr<const pub3::expr_t> x);
+
+  bool enter_field (const char *f);
+  bool exit_field () ;
+
+  bool traverse (int64_t &i);
+  bool traverse (bool &b);
+
+  XML_RPC_op_t mode () const { return XML_2_XDR; }
+  bool pop (int i) { _stack.popn_back (i); return true; }
+private:
+  int error_wrong_type (const char *f, ptr<const pub3::expr_t> x, int rc = 0);
+  ptr<const pub3::expr_t> top () const { return _stack.back (); }
+  bool is_empty () const { return _stack.size () == 0 || !_stack.back (); }
+  void push (ptr<const pub3::expr_t> x) { _stack.push_back (x); }
+  ptr<const pub3::expr_t> _root;
+  vec<ptr<const pub3::expr_t> > _stack;
 };
 
