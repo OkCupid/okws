@@ -243,11 +243,6 @@ struct xml_rpc_file {
       &typeid (res), &xml_typeinfo_##res, xml_##res		  \
       },							  \
     
-ptr<xml_element_t>
-xml_enter_field (XML_RPC_obj_t *obj, const char *field_name);
-
-void xml_exit_field (XML_RPC_obj_t *obj, ptr<xml_element_t> el);
-
 template<class T> bool
 xml_rpc_traverse (XML_RPC_obj_t *obj, T &t, const char *field_name)
 {

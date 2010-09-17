@@ -30,8 +30,9 @@ TAMEOUT = $(XMLTAMEOUT) tstsrv.C
 
 tstsrv.o: tstprot.h
 
+xdrjson_tst1_SOURCES = xdrjson_tst1.C tstprot.C
 okwssvc_PROGRAMS = $(XMLPROGS)
-noinst_PROGRAMS = tstsrv
+noinst_PROGRAMS = tstsrv xdrjson_tst1
 tstsrv_SOURCES = tstsrv.C tstprot.C
 
 SUFFIXES = .x .T
