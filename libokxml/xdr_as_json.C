@@ -363,3 +363,35 @@ JSON_reader_t::push_array_slot (int i)
 }
 
 //-----------------------------------------------------------------------
+
+int 
+JSON_reader_t::push_ptr (bool exists, bool *alloc)
+{
+  int ret = -1;
+  *alloc = false;
+  ptr<const pub3::expr_list_t> l;
+
+  if (is_empty ()) { 
+    ret = error_empty("array/ptr", -1); 
+  } else if (!(l = top()->to_list ())) { 
+    ret = error_wrong_type ("array/ptr", top(), -1);
+  } else {
+    switch (l->size ()) {
+    case 0:
+      ret = 0;
+      break;
+    case 1:
+      *alloc = true;
+      push ((*l)[0]);
+      ret = 1;
+      break;
+    default:
+      ret = -1;
+      break;
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
