@@ -79,11 +79,19 @@ public:
   bool enter_field (const char *f);
   bool exit_field () ;
 
-  bool traverse (int64_t &i);
   bool traverse (bool &b);
+  bool traverse (int64_t &i);
+  bool traverse (u_int64_t &i);
+  bool traverse (int32_t &i);
+  bool traverse (u_int32_t &i);
 
   XML_RPC_op_t mode () const { return XML_2_XDR; }
   bool pop (int i) { _stack.popn_back (i); return true; }
+
+  int push_array_slot (int i);
+  int push_array (size_t s, size_t capac, bool fixed, 
+		  ssize_t *rsz);
+  int push_ptr (bool exists, bool *alloc);
 private:
   int error_wrong_type (const char *f, ptr<const pub3::expr_t> x, int rc = 0);
   ptr<const pub3::expr_t> top () const { return _stack.back (); }
@@ -93,3 +101,4 @@ private:
   vec<ptr<const pub3::expr_t> > _stack;
 };
 
+//-----------------------------------------------------------------------

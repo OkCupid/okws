@@ -288,3 +288,78 @@ JSON_reader_t::traverse (bool &b)
 
 //-----------------------------------------------------------------------
 
+bool 
+JSON_reader_t::traverse (int32_t &i)
+{
+  int64_t tmp;
+  bool ret = traverse (tmp);
+  if (ret)  { i = tmp; }
+  return ret;
+}
+
+
+//-----------------------------------------------------------------------
+
+bool 
+JSON_reader_t::traverse (u_int32_t &i)
+{
+  int64_t tmp;
+  bool ret = traverse (tmp);
+  if (ret)  { i = tmp; }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool 
+JSON_reader_t::traverse (u_int64_t &i)
+{
+  bool ret = true;
+  if (is_empty ()) { ret = error_empty ("uint"); }
+  else if (!top ()->to_uint (&i)) { ret = error_wrong_type ("uint", top ()); }
+  else { ret = true; }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+int
+JSON_reader_t::push_array (size_t s, size_t capac, bool fixed, ssize_t *szp)
+{
+  *szp = -1;
+  ptr<const pub3::expr_list_t> l;
+  int rc = 0;
+  size_t sz;
+
+  if (is_empty ()) {
+    rc = error_empty ("list", -1);
+  } else if (!(l = top()->to_list ())) {
+    rc = error_wrong_type ("list", top(), -1);
+  } else if (((sz = l->size()) > capac) 
+	     || (fixed && (sz != capac || s != sz))) {
+    rc = error_generic ("list had bad size", -1);
+  }
+  *szp = sz;
+  return rc;
+}
+
+//-----------------------------------------------------------------------
+
+int 
+JSON_reader_t::push_array_slot (int i)
+{
+  int rc = 0;
+  ptr<const pub3::expr_list_t> l;
+  if (is_empty ()) {
+    rc = error_empty ("array slot", -1);
+  } else if (!(l = top()->to_list ())) {
+    rc = error_wrong_type ("list", top (), -1);
+  } else {
+    push ((*l)[i]);
+    debug_push (i);
+    rc = 1;
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------
