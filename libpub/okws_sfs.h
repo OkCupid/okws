@@ -38,10 +38,10 @@
 #include "str.h"
 
 #if !defined(SFSLITE_AT_VERSION) 
-# error "Need sfslite patchlevel of 1.2.8.6 or greater!"
+# error "Need sfslite patchlevel of 1.2.9pre1 or greater!"
 #else
-# if !SFSLITE_AT_VERSION(1,2,8,106)
-#  error "Need sfslite patchlevel of 1.2.8.6 or greater!"
+# if !SFSLITE_AT_VERSION(1,2,9,1)
+#  error "Need sfslite patchlevel of 1.2.9pre1 or greater!"
 # endif
 #endif
 
@@ -51,8 +51,8 @@
 // patch level 100 is release
 #define OKWS_VERSION_MAJOR 3
 #define OKWS_VERSION_MINOR 1
-#define OKWS_VERSION_PATCHLEVEL 2
-#define OKWS_VERSION_PRE 102
+#define OKWS_VERSION_PATCHLEVEL 3
+#define OKWS_VERSION_PRE 1
 
 
 #define OKWS_AT_VERSION(Maj,Min,Pat,Pre) \
