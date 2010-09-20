@@ -33,29 +33,20 @@ main (int argc, char *argv[])
   
 
   do {
-    JSON_creator_t creator;
-    XML_RPC_obj_t *obj = &creator;
-    rpc_traverse (obj, aa);
-    warn << "aa: " << creator.result()->to_str () << "\n";
+    ptr<pub3::expr_t> x = xdr2json (aa);
+    warn << "aa: " << x->to_str () << "\n";
   } while (0);
 
   do {
-    JSON_creator_t creator;
-    XML_RPC_obj_t *obj = &creator;
-    rpc_traverse (obj, ww);
-    warn << "ww: " << creator.result()->to_str () << "\n";
+    ptr<pub3::expr_t> x = xdr2json (ww);
+    warn << "ww: " << x->to_str () << "\n";
   } while (0);
 
   do {
-    JSON_creator_t creator;
-    XML_RPC_obj_t *c = &creator;
-    rpc_traverse (c, ww);
-    JSON_reader_t reader (creator.result ());
-    XML_RPC_obj_t *r = &reader;
+    ptr<pub3::expr_t> x = xdr2json (ww);
     ww_t ww_new;
-    rpc_traverse (r, ww_new);
-    creator.clear ();
-    rpc_traverse (c, ww_new);
-    warn << "ww'': " << creator.result()->to_str () << "\n";
+    json2xdr (ww_new, x);
+    ptr<pub3::expr_t> x2 = xdr2json (ww_new);
+    warn << "ww'': " << x2->to_str () << "\n";
   } while (0);
 }

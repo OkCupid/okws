@@ -104,3 +104,37 @@ private:
 };
 
 //-----------------------------------------------------------------------
+
+template<class T> bool
+json2xdr (T &out, str s)
+{
+  ptr<pub3::expr_t> x;
+  bool ret;
+  if (!(x = pub3::json_parser_t::parse (s))) { ret = false; }
+  else { ret = json2xdr (out, x); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+template<class T> bool
+json2xdr (T &out, ptr<const pub3::expr_t> x)
+{
+  JSON_reader_t reader (x);
+  return rpc_traverse (&reader, out);
+}
+
+//-----------------------------------------------------------------------
+
+template<class T> ptr<pub3::expr_t> 
+xdr2json (const T &in)
+{
+  JSON_creator_t creator;
+  ptr<pub3::expr_t> ret;
+  if (rpc_traverse (&creator, const_cast<T &> (in))) {
+    ret = creator.result ();
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
