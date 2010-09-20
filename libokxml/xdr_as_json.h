@@ -84,6 +84,8 @@ public:
   bool traverse (u_int64_t &i);
   bool traverse (int32_t &i);
   bool traverse (u_int32_t &i);
+  bool traverse_opaque (str &s);
+  bool traverse_string (str &s);
 
   XML_RPC_op_t mode () const { return XML_2_XDR; }
   bool pop (int i) { _stack.popn_back (i); return true; }

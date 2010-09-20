@@ -213,6 +213,8 @@ JSON_reader_t::JSON_reader_t (ptr<const pub3::expr_t> x) { setroot (x); }
 JSON_reader_t::~JSON_reader_t () {}
 
 //-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 
 void
 JSON_reader_t::setroot (ptr<const pub3::expr_t> x)
@@ -234,7 +236,8 @@ JSON_reader_t::enter_field (const char *f)
   } else if (!(d = top()->to_dict ())) { 
     ret = error_wrong_type ("struct", top());
   } else {
-    push (d->lookup (f));
+    ptr<const pub3::expr_t> slot = d->lookup (f);
+    push (slot);
   }
   debug_push (f);
   return ret;
@@ -395,3 +398,33 @@ JSON_reader_t::push_ptr (bool exists, bool *alloc)
 
 //-----------------------------------------------------------------------
 
+bool
+JSON_reader_t::traverse_opaque (str &s)
+{
+  bool ret = true;
+  if (is_empty ()) { 
+    error_empty ("string"); 
+    ret = false;
+  } else { 
+    s = top()->to_str (false);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+JSON_reader_t::traverse_string (str &s)
+{
+  bool ret = true;
+  if (is_empty () || !(s = top()->to_str (false))) { 
+    ret = error_empty ("string"); 
+  } else if (s.len () != strlen (s.cstr ())) {
+    error_generic ("string had a NULL byte");
+    ret = false;
+  }
+  else { ret = true; }
+  return ret;
+}
+
+//-----------------------------------------------------------------------

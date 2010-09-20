@@ -46,4 +46,16 @@ main (int argc, char *argv[])
     warn << "ww: " << creator.result()->to_str () << "\n";
   } while (0);
 
+  do {
+    JSON_creator_t creator;
+    XML_RPC_obj_t *c = &creator;
+    rpc_traverse (c, ww);
+    JSON_reader_t reader (creator.result ());
+    XML_RPC_obj_t *r = &reader;
+    ww_t ww_new;
+    rpc_traverse (r, ww_new);
+    creator.clear ();
+    rpc_traverse (c, ww_new);
+    warn << "ww'': " << creator.result()->to_str () << "\n";
+  } while (0);
 }
