@@ -457,6 +457,7 @@ class TestCase:
         self._custom_fetch = None
         self._nowss = False
         self._viserr = False
+        self._no_error_page = False
 
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
@@ -727,6 +728,8 @@ class TestCaseRemote (TestCase):
             opts["nowss"] = 1
         if self._viserr:
             opts["viserr"] = 1
+        if self._no_error_page:
+            opts["no_error_page"] = 1
         
         if n:
             u = self._config.scratch_url ()

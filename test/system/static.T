@@ -200,8 +200,9 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 	
 	twait { pub3_local ()->run (&out, ofn, mkevent (rc), _dict, opts); }
 
-	if (!rc) 
+	if (!cgi.blookup ("no_error_page") && !rc) {
 	  error (ofn);
+	}
 	
       } else {
 	
