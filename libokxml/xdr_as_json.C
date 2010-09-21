@@ -332,7 +332,7 @@ JSON_reader_t::push_array (size_t s, size_t capac, bool fixed, ssize_t *szp)
   *szp = -1;
   ptr<const pub3::expr_list_t> l;
   int rc = 0;
-  size_t sz;
+  size_t sz = 0;
 
   if (is_empty ()) {
     rc = error_empty ("list", -1);
