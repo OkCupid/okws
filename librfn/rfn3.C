@@ -50,6 +50,7 @@ namespace rfn3 {
     F(days_from_now);
     F(time_from_now);
     F(time_format);
+    F(localtime);
     F(strptime);
     F(decorate);
     F(isnull);
@@ -90,8 +91,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.5"; }
-  u_int64_t version_int () { return 3000005; }
+  const char *version_str () { return "3.0.6"; }
+  u_int64_t version_int () { return 3000006; }
 
   //-----------------------------------------------------------------------
 };

@@ -42,6 +42,37 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  localtime_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    time_t t = 0;
+    if (args.size () > 0) { t = args[0]._u; }
+    if (!t) { t = sfs_get_timenow (); }
+    ptr<expr_t> ret;
+
+    struct tm stm;
+    if (!localtime_r (&t, &stm)) {
+      report_error (p, strbuf ("cannot convert '") << t << "' to time");
+    } else {
+      ptr<expr_list_t> l = expr_list_t::alloc ();
+#define F(i) \
+      l->push_back (expr_int_t::alloc (i));
+      F(stm.tm_year + 1900);
+      F(stm.tm_mon + 1);
+      F(stm.tm_mday);
+      F(stm.tm_hour);
+      F(stm.tm_min);
+      F(stm.tm_sec);
+      F(stm.tm_wday);
+      F(stm.tm_yday);
+#undef F
+      ret = l;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   days_from_now_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     u_int64_t u = sfs_get_timenow () + 60 * 60 * 24 * args[0]._i;
