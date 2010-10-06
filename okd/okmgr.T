@@ -32,7 +32,7 @@ usage ()
 {
   warnx << "usage: okmgr [ -l | -t ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
-	<< "       okmgr <-c|-p> [ enable | disable | print | reset ] "
+	<< "       okmgr <-c|-p|-T> [ enable | disable | print | reset ] "
 	<< "[-s <socket> | -f <conf>] <svc>\n"
 	<< "       okmgr [-s <socket> | -f <conf>] -m<msg> <svc1> <svc2>..\n";
 				     
@@ -54,6 +54,12 @@ okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, oksvc_proc_t p,
 
 okmgr_profiler_t::okmgr_profiler_t (const str &s, oksvc_proc_t p,
 				    ok_diagnostic_cmd_t cmd)
+  : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
+
+//-----------------------------------------------------------------------
+
+okmgr_tame_profiler_t::okmgr_tame_profiler_t (const str &s, oksvc_proc_t p,
+					      ok_diagnostic_cmd_t cmd)
   : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
 
 //-----------------------------------------------------------------------
@@ -235,7 +241,7 @@ main (int argc, char *argv[])
   bool verbose = false;
   str msg;
 
-  while ((ch = getopt (argc, argv, "m:c:p:lts:f:Fv")) != -1)
+  while ((ch = getopt (argc, argv, "m:c:p:lts:f:FvT:")) != -1)
     switch (ch) {
     case 'm':
       m = CTL_MODE_SEND_MSG;
@@ -252,7 +258,6 @@ main (int argc, char *argv[])
       if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
 	warn << "Unknown subcommand for argument -c\n";
 	usage ();
-	break;
       }
       break;
     case 'p':
@@ -260,7 +265,13 @@ main (int argc, char *argv[])
       if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
 	warn << "Unknown subcommand for argument -c\n";
 	usage ();
-	break;
+      }
+      break;
+    case 'T':
+      m = CTL_MODE_TAME_PROFILER;
+      if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
+	warn << "Unknown subcommand for argument -c\n";
+	usage ();
       }
       break;
     case 's':
@@ -286,7 +297,9 @@ main (int argc, char *argv[])
   for (int i = optind; i < argc; i++) 
     files.push_back (argv[i]);
 
-  if (m == CTL_MODE_LEAK_CHECKER && files.size () != 1) {
+  if ((m == CTL_MODE_LEAK_CHECKER ||
+       m == CTL_MODE_TAME_PROFILER ||
+       m == CTL_MODE_PROFILER) && files.size () != 1) {
     warn << "Option -c only applies to one service at a time\n";
     usage ();
   }
@@ -324,6 +337,9 @@ main (int argc, char *argv[])
     break;
   case CTL_MODE_PROFILER:
     t = New okmgr_profiler_t (sockname, str2proc (files[0], 0), cmd);
+    break;
+  case CTL_MODE_TAME_PROFILER:
+    t = New okmgr_tame_profiler_t (sockname, str2proc (files[0], 0), cmd);
     break;
   case CTL_MODE_LAUNCH:
     t = New okmgr_launch_t (sockname, strs2procs (files, -1), set_typ);
@@ -363,6 +379,18 @@ okmgr_profiler_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
   arg.cmd = _cmd;
 
   RPC::okmgr_program_1::okmgr_profiler (h, arg, s, cb);
+}
+
+//-----------------------------------------------------------------------
+
+void
+okmgr_tame_profiler_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
+{
+  okmgr_diagnostic_arg_t arg;
+  arg.proc = _proc;
+  arg.cmd = _cmd;
+
+  RPC::okmgr_program_1::okmgr_tame_profiler (h, arg, s, cb);
 }
 
 //-----------------------------------------------------------------------

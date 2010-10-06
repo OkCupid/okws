@@ -760,6 +760,7 @@ protected:
   void handle_leak_checker (svccb *v);
   void handle_send_msg (svccb *sbp);
   void handle_profiler (svccb *sbp);
+  void handle_tame_profiler (svccb *sbp);
   bool newclnt (ahttpcon_wrapper_t<ahttpcon> acw);
   void kill (svccb *v);
   void ready_call (bool rc);

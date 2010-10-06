@@ -365,6 +365,16 @@ oksrvc_t::handle_profiler (svccb *sbp)
 //-----------------------------------------------------------------------
 
 void
+oksrvc_t::handle_tame_profiler (svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_tame_profiler_srv_t<svccb> srv (sbp);
+  ok_xstatus_typ_t status = ok_toggle_tame_profiler (*srv.getarg ());
+  srv.reply (status);
+}
+
+//-----------------------------------------------------------------------
+
+void
 oksrvc_t::handle_send_msg (svccb *sbp)
 {
   RPC::okctl_program_1::okctl_send_msg_srv_t<svccb> srv (sbp);
@@ -416,6 +426,9 @@ oksrvc_t::ctldispatch (svccb *v)
     break;
   case OKCTL_SEND_MSG:
     handle_send_msg (v);
+    break;
+  case OKCTL_TAME_PROFILER:
+    handle_tame_profiler (v);
     break;
   default:
     v->reject (PROC_UNAVAIL);

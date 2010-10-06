@@ -1205,6 +1205,9 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_PROFILER:
     myokd->toggle_profiler (sbp);
     break;
+  case OKMGR_TAME_PROFILER:
+    myokd->toggle_tame_profiler (sbp);
+    break;
   case OKMGR_SEND_MSG:
     myokd->send_msg (sbp);
     break;
@@ -1373,6 +1376,28 @@ okd_t::toggle_leak_checker (svccb *sbp)
   
   if ((ch = servtab.get (arg->proc))) {
     twait { ch->toggle_leak_checker (arg->cmd, mkevent (status)); }
+  } else {
+    status = OK_STATUS_NOSUCHCHILD;
+  }
+  ret.set_status (status);
+  srv.reply (ret);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::toggle_tame_profiler (svccb *sbp)
+{
+  tvars {
+    RPC::okmgr_program_1::okmgr_tame_profiler_srv_t<svccb> srv (sbp);
+    const okmgr_diagnostic_arg_t *arg (srv.getarg ());
+    ok_xstatus_typ_t status;
+    ok_xstatus_t ret;
+    okch_t *ch;
+  }
+  
+  if ((ch = servtab.get (arg->proc))) {
+    twait { ch->toggle_tame_profiler (arg->cmd, mkevent (status)); }
   } else {
     status = OK_STATUS_NOSUCHCHILD;
   }

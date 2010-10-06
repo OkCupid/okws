@@ -117,6 +117,8 @@ public:
 			    event<ok_xstatus_typ_t>::ref ev, CLOSURE);
   void toggle_profiler (ok_diagnostic_cmd_t cmd, 
 			event<ok_xstatus_typ_t>::ref ev, CLOSURE);
+  void toggle_tame_profiler (ok_diagnostic_cmd_t cmd, 
+			     event<ok_xstatus_typ_t>::ref ev, CLOSURE);
   ptr<bool> get_destroyed_flag () { return _destroyed; }
 
   void proc_to_xdr (oksvc_proc_t *x) const;
@@ -304,6 +306,7 @@ public:
   void custom2_in (svccb *sbp, CLOSURE);
   void toggle_leak_checker (svccb *sbp, CLOSURE);
   void toggle_profiler (svccb *sbp, CLOSURE);
+  void toggle_tame_profiler (svccb *sbp, CLOSURE);
   void okctl_get_stats (svccb *sbp);
   void turnlog (svccb *sbp, CLOSURE);
   void strip_privileges ();

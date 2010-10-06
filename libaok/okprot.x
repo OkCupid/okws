@@ -218,6 +218,9 @@ program OKCTL_PROGRAM {
 		okctl_send_msg_res_t 
 		OKCTL_SEND_MSG (okctl_send_msg_arg_t) = 19;
 
+		ok_xstatus_typ_t
+		OKCTL_TAME_PROFILER(ok_diagnostic_cmd_t) = 20;
+
 		void
 		OKCTL_KILL (oksig_t) = 99;
 
@@ -274,6 +277,9 @@ program OKMGR_PROGRAM {
 
 		ok_xstatus_t
 		OKMGR_SEND_MSG(okmgr_send_msg_arg_t) = 9;
+
+		ok_xstatus_t
+		OKMGR_TAME_PROFILER(okmgr_diagnostic_arg_t) = 10;
 	} = 1;
 } = 11278;
 

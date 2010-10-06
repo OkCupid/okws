@@ -7,3 +7,4 @@
 
 ok_xstatus_typ_t ok_toggle_leak_checker (ok_diagnostic_cmd_t cmd);
 ok_xstatus_typ_t ok_toggle_profiler (ok_diagnostic_cmd_t cmd);
+ok_xstatus_typ_t ok_toggle_tame_profiler (ok_diagnostic_cmd_t cmd);

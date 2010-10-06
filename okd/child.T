@@ -693,6 +693,35 @@ okch_t::toggle_leak_checker (ok_diagnostic_cmd_t cmd,
 //-----------------------------------------------------------------------
 
 tamed void
+okch_t::toggle_tame_profiler (ok_diagnostic_cmd_t cmd, 
+			 event<ok_xstatus_typ_t>::ref ev)
+{
+  tvars {
+    clnt_stat err;
+    ok_xstatus_typ_t status;
+  }
+  
+  if (!clnt) {
+    LDCH_ERROR("cannot connect to client for tame_profiler toggle");
+    status = OK_STATUS_DEADCHILD;
+  } else {
+   
+    twait {
+      RPC::okctl_program_1::
+	okctl_tame_profiler (clnt, cmd, &status, mkevent (err));
+    }
+
+    if (err) {
+      LDCH_ERROR ("RPC failure in tame profiler: " << err);
+      status = OK_STATUS_ERR;
+    }
+  }
+  ev->trigger (status);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
 okch_t::toggle_profiler (ok_diagnostic_cmd_t cmd, 
 			 event<ok_xstatus_typ_t>::ref ev)
 {

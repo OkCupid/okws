@@ -1,5 +1,6 @@
 
 #include "okprotutil.h"
+#include "tame_profiler.h"
 
 #ifdef SIMPLE_PROFILER
 # include "sfs_profiler.h"
@@ -70,6 +71,36 @@ ok_toggle_profiler (ok_diagnostic_cmd_t cmd)
 #else /* !SIMPLE_LEAK_CHECKER */
   status = OK_STATUS_UNAVAIL;
 #endif /* SIMPLE_LEAK_CHECKER */
+
+  return status;
+
+}
+
+//-----------------------------------------------------------------------
+
+ok_xstatus_typ_t
+ok_toggle_tame_profiler (ok_diagnostic_cmd_t cmd)
+{
+  ok_xstatus_typ_t status;
+  tame::profiler_t *p = tame::profiler_t::profiler();
+  status = OK_STATUS_OK;
+  switch (cmd) {
+  case OK_DIAGNOSTIC_ENABLE:
+    p->enable ();
+    break;
+  case OK_DIAGNOSTIC_DISABLE:
+    p->disable ();
+    break;
+  case OK_DIAGNOSTIC_REPORT:
+    p->report ();
+    break;
+  case OK_DIAGNOSTIC_RESET:
+    p->clear ();
+    break;
+  default:
+    status = OK_STATUS_UNKNOWN_OPTION;
+    break;
+  }
 
   return status;
 
