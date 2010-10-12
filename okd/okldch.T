@@ -279,7 +279,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
     e->insert ("wss", _svc_options.wss, false);
     e->insert ("caching", _svc_options.pub3_caching, false);
     e->insert ("wfs", _svc_options.wait_for_signal, false);
-    e->insert ("dps", _direct_ports.encode_as_str (), false);
+    e->insert ("dps", ch->direct_ports().encode_as_str (), false);
     e->insert ("fdlw", _svc_options.lowat, false);
     e->insert ("fdhw", _svc_options.hiwat, false);
     e->insert ("gzip", _svc_options.gzip, false);
@@ -287,6 +287,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
     e->insert ("aczw", _svc_options.ahttpcon_zombie_warn, false);
     e->insert ("aczt", _svc_options.ahttpcon_zombie_timeout, false);
     e->insert ("bid", bid, false);
+    e->insert ("nch", n_children (), false);
     
     argv.push_back (e->encode ());
     
@@ -305,6 +306,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
     e->remove ("gziplev");
     e->remove ("aczw");
     e->remove ("bid");
+    e->remove ("nch");
       
     OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
 	   report_exe.cstr ());

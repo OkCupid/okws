@@ -303,6 +303,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("aczw", &ok_ahttpcon_zombie_warn);
     t->lookup ("aczt", &ok_ahttpcon_zombie_timeout);
     t->lookup ("bid", &_brother_id);
+    t->lookup ("nch", &_n_children);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);

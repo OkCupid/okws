@@ -339,6 +339,7 @@ public:
   size_t id () const { return _id; }
   void lazy_startup (evb_t ev, CLOSURE);
   void set_state (okc_state_t s) { _state = s; }
+  const ok_direct_ports_t &direct_ports() const { return _direct_ports; }
 
 private:
   void resurrect (evv_t ev, CLOSURE);
