@@ -246,7 +246,6 @@ struct xml_rpc_file {
 template<class T> bool
 xml_rpc_traverse (XML_RPC_obj_t *obj, T &t, const char *field_name)
 {
-  ptr<xml_element_t> old;
   bool ret = true;
   
   if (field_name && !obj->enter_field (field_name))
