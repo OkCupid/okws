@@ -2,6 +2,7 @@
 
 #include "async.h"
 #include "arpc.h"
+#include "pub3.h"
 
 //-----------------------------------------------------------------------
 
@@ -22,7 +23,13 @@ public:
   bool rpc_traverse (bigint &b);
   void enter_field (const char *f);
   void exit_field (const char *f);
-  void enter_array (const char *f, size_t i);
-  void enter_slot (const char *f, size_t i);
+  void enter_array (size_t i);
+  void exit_array ();
+  void enter_slot (size_t i);
   void pointer (bool b);
+private:
+  void init_decode ();
+  vec<ptr<pub3::expr_t> > m_stack;
 };
+
+//-----------------------------------------------------------------------
