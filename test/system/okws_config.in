@@ -38,7 +38,7 @@ Service		post /post
 Service		upload /upload
 Service 	purify /purify
 Service		posttest /posttest
-Service		forloop /forloop
+Service		forloop -n2 /forloop
 Service		reflect /reflect
 Service		objtest /objtest
 Service		timer /timer
@@ -61,3 +61,4 @@ FilterCGI 0
 
 LazyStartup 1
 SafeStartup 0
+ClusterAddressing 1

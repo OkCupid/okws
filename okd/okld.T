@@ -841,6 +841,7 @@ okld_t::parse_file (const str &cf)
     .ignore ("DemuxTimeout")
     .ignore ("AcceptDelay")
     .ignore ("TcpNoDelay")
+    .ignore ("ClusterAddressing")
     ;
 
   bool ret = ct.run (cf);

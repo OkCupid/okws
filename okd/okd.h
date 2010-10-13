@@ -165,10 +165,12 @@ public:
   okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n);
   ~okch_cluster_t ();
   void insert_child (okch_t *ch);
-  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev, CLOSURE);
+  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev, int sib, 
+	      CLOSURE);
   okch_t *child (size_t i) { return _children[i]; }
   const okch_t *child (size_t i) const { return _children[i]; }
-  okch_t *find_best_fit_child (ref<ahttpcon_clone> xc, okch_t::status_t *sp);
+  okch_t *find_best_fit_child (ref<ahttpcon_clone> xc, okch_t::status_t *sp,
+			       int pref = -1);
   void killed (size_t i, okch_t *ch);
 
   void set_states (okc_state_t st);
@@ -246,7 +248,8 @@ public:
     _accept_ready (false),
     _ssl (this),
     _lazy_startup (false),
-    _okd_nodelay (okd_tcp_nodelay)
+    _okd_nodelay (okd_tcp_nodelay),
+    _cluster_addressing (false)
   {
     listenport = p;
   }
@@ -384,6 +387,7 @@ private:
   bool _lazy_startup;
   str _stat_page_url;
   bool _okd_nodelay;
+  bool _cluster_addressing;
 };
 
 class okd_mgrsrv_t 

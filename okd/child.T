@@ -129,9 +129,13 @@ okch_t::get_status () const
 
 //-----------------------------------------------------------------------
 
+// Try to find the child that fits best (among those available in the 
+// cluster.)  Use the passed in preference if possible.  Alternatively,
+// try source-IP mapping..
 okch_t *
 okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc, 
-				     okch_t::status_t *statusp)
+				     okch_t::status_t *statusp, 
+				     int pref)
 {
   okch_t *ret = NULL;
   okch_t::status_t status = okch_t::CRASHED;
@@ -140,7 +144,8 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
   size_t n = _children.size ();
   bool ok = true;
 
-  if (n == 1) { id = 0; }
+  if (pref >= 0 && size_t (pref) < n) { id = pref; }
+  else if (n == 1) { id = 0; }
   else if (n > 1) { id = xc->source_hash () % n; } 
   else {
     ok = false;
@@ -200,7 +205,8 @@ okch_cluster_t::is_ready ()
 //-----------------------------------------------------------------------
 
 tamed void
-okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
+okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev,
+		       int sib)
 {
   tvars {
     ref<ahttpcon_clone> xc (acw.con ());
@@ -212,7 +218,7 @@ okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     bool do_queue (false);
   }
 
-  ch = find_best_fit_child (xc, &status);
+  ch = find_best_fit_child (xc, &status, sib);
 
   switch (status) {
   case okch_t::BUSY_LOOP: http_status = HTTP_UNAVAILABLE; break;

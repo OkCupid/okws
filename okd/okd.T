@@ -270,6 +270,7 @@ okd_t::parse_file (const str &cf)
     .add ("LazyStartup", &_lazy_startup)
     .add ("StatPageURL", &_stat_page_url)
     .add ("TcpNoDelay", &_okd_nodelay)
+    .add ("ClusterAddressing", &_cluster_addressing)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")
@@ -398,6 +399,19 @@ okd_t::strip_privileges ()
 
 //-----------------------------------------------------------------------
 
+static str
+find_cluster_addressing (str in, int *out)
+{
+  str ret = in;
+  static rxx x ("(.*)-(\\d+)");
+  if (x.match (in) && convertint (x[2], out)) {
+    ret = x[1];
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status, 
 	       evv_t ev)
@@ -408,6 +422,7 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
     size_t i;
     okch_cluster_t *c;
     str *s2;
+    int prefered_sibling (-1);
   }
 
   if (!s && status == HTTP_OK)
@@ -426,6 +441,8 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
       strbuf b (":");
       b << port << s;
       s = b;
+    } else if (_cluster_addressing) {
+      s = find_cluster_addressing (s, &prefered_sibling);
     }
 
     // first check the aliases table
@@ -463,7 +480,7 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
     } else {
-      twait { c->clone (acw, mkevent ()); }
+      twait { c->clone (acw, mkevent (), prefered_sibling); }
     }
   }
   ev->trigger ();
