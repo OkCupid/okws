@@ -331,6 +331,14 @@ oksrvc_t::init (int argc, char *argv[])
 
   }
 
+  // For those processes in a cluster, change the progname to reflect
+  // the brother ID (and the pid)
+  if (_n_children > 1) {
+    strbuf b ("%s[%d:%zu]", progname.cstr (), int(getpid ()), _brother_id);
+    str s = b;
+    setprogname (strdup (s));
+  }
+
   // Give virtual classes an opportunity to init constants after we've
   // read in all important constants from argv.
   init_constants ();
