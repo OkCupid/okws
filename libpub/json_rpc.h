@@ -27,9 +27,13 @@ public:
   void exit_array ();
   void enter_slot (size_t i);
   void pointer (bool b);
+  bool init_decode (const char *msg, ssize_t sz);
+  bool init_decode (str s);
+  bool init_decode (ptr<pub3::expr_t> x);
 private:
-  void init_decode ();
   vec<ptr<pub3::expr_t> > m_stack;
+  ptr<pub3::expr_t> m_root;
+  str m_payload;
 };
 
 //-----------------------------------------------------------------------

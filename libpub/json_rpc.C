@@ -34,10 +34,31 @@ void json_XDR_t::exit_array () {}
 
 //-----------------------------------------------------------------------
 
-void
-json_XDR_t::init_decode ()
+bool
+json_XDR_t::init_decode (const char *msg, ssize_t sz)
 {
+  return (sz > 0 && init_decode (str (msg, sz)));
 }
 
+//-----------------------------------------------------------------------
+
+bool
+json_XDR_t::init_decode (str s)
+{
+  return ((m_payload = s) && 
+	  (m_root = pub3::json_parser_t::parse (s)));
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_XDR_t::init_decode (ptr<pub3::expr_t> x)
+{
+  if (x) { 
+    m_root = x;
+    m_stack.push_back (x);
+  }
+  return x;
+}
 
 //-----------------------------------------------------------------------
