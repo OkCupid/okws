@@ -403,7 +403,7 @@ static str
 find_cluster_addressing (str in, int *out)
 {
   str ret = in;
-  static rxx x ("(.*)-(\\d+)");
+  static rxx x ("(.*):(\\d+)");
   if (x.match (in) && convertint (x[2], out)) {
     ret = x[1];
   }
