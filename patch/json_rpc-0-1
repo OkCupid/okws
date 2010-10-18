@@ -1,0 +1,349 @@
+Index: libpub/json_rpc.C
+===================================================================
+--- libpub/json_rpc.C	(revision 5453)
++++ libpub/json_rpc.C	(working copy)
+@@ -1,4 +1,5 @@
+ 
++#include "bigint.h"
+ #include "json_rpc.h"
+ 
+ //-----------------------------------------------------------------------
+@@ -13,37 +14,199 @@
+ {
+   ptr<v_XDR_t> ret;
+   if (rpcvers == 3) {
+-    ret = New refcounted<json_XDR_t> (mkref (this), input);
++    switch (input->x_op) {
++    case XDR_DECODE:
++      ret = New refcounted<json_decoder_t> (mkref (this), input);
++      break;
++      /*
++       * not ready for this yet...
++       case XDR_ENCODE:
++       ret = New refcounted<json_encoder_t> (mkref (this), input);
++       break;
++      */
++    default:
++      break;
++    }
+   }
+   return ret;
+ }
+ 
+ //-----------------------------------------------------------------------
+ 
+-bool json_XDR_t::rpc_traverse (u_int32_t &obj) { return true; }
+-bool json_XDR_t::rpc_traverse (u_int64_t &obj) { return true; }
+-bool json_XDR_t::rpc_encode (str s) { return true; }
+-bool json_XDR_t::rpc_decode (str *s) { return true; }
+-bool json_XDR_t::rpc_traverse (bigint &b) { return true; }
+-void json_XDR_t::enter_field (const char *f) {}
+-void json_XDR_t::exit_field (const char *f) {}
+-void json_XDR_t::enter_array (size_t i) {}
+-void json_XDR_t::enter_slot (size_t i) {}
+-void json_XDR_t::pointer (bool b) {}
+-void json_XDR_t::exit_array () {}
++json_decoder_t::json_decoder_t (ptr<v_XDR_dispatch_t> d, XDR *x)
++  : json_XDR_t (d, x) {}
+ 
+ //-----------------------------------------------------------------------
+ 
++bool 
++json_decoder_t::rpc_traverse (u_int32_t &obj) 
++{ 
++  int64_t tmp;
++  bool ret = false;
++  if (is_empty ()) { error_empty ("int"); }
++  else if (!top ()->to_int (&tmp)) { error_wrong_type ("int", top ()); }
++  else if (tmp > int64_t (UINT32_MAX) || tmp < 0) { 
++    error_generic (strbuf ("u_int32_t is out of range (value was %" 
++			   PRId64 ")", tmp)); 
++  } else {
++    ret = true;
++    obj = tmp;
++  }
++  return ret;
++}
++
++//-----------------------------------------------------------------------
++
++bool 
++json_decoder_t::rpc_traverse (u_int64_t &obj) 
++{ 
++  u_int64_t tmp;
++  bool ret = false;
++  if (is_empty ()) { error_empty ("uint"); }
++  else if (!top ()->to_uint (&tmp)) { error_wrong_type ("uint", top ()); }
++  else {
++    ret = true;
++    obj = tmp;
++  }
++  return ret;
++}
++
++//-----------------------------------------------------------------------
++
+ bool
+-json_XDR_t::init_decode (const char *msg, ssize_t sz)
++json_decoder_t::rpc_decode (str *s)
+ {
++  bool ret = false;
++  if (is_empty ()) { error_empty ("string"); }
++  else if (!(*s = top()->to_str (false))) { 
++    error_wrong_type ("string", top()); 
++  } else {
++    ret = true;
++  }
++  return ret;
++}
++
++//-----------------------------------------------------------------------
++
++void 
++json_decoder_t::enter_field (const char *f) 
++{
++  debug_push (f);
++  ptr<pub3::expr_dict_t> d;
++  ptr<pub3::expr_t> x;
++  if (is_empty ()) { error_empty ("dictionary"); }
++  else if (!(d = top ()->to_dict ())) {
++    error_wrong_type ("dictionary", top ());
++  } else if (!(x = d->lookup (f))) {
++    error_generic (strbuf ("cannot find field '%s'", f));
++  }
++  push_back (x);
++}
++
++//-----------------------------------------------------------------------
++
++void
++json_decoder_t::exit_field (const char *f)
++{
++  pop_back ();
++  debug_pop ();
++}
++
++//-----------------------------------------------------------------------
++
++void
++json_decoder_t::enter_slot (size_t i)
++{
++  debug_push (strbuf ("[%zu]", i), false);
++  ptr<pub3::expr_list_t> l;
++  ptr<pub3::expr_t> x;
++  if (is_empty ()) { error_empty ("array"); }
++  else if (!(l = top ()->to_list ())) {
++    error_wrong_type ("array", top ());
++  } else if (i >= l->size ()) {
++    error_generic (strbuf ("array slot %zu is out of bound\n", i));
++  } else {
++    x = (*l)[i];
++  }
++  push_back (x);
++}
++
++//-----------------------------------------------------------------------
++
++void
++json_decoder_t::exit_slot (size_t i)
++{
++  pop_back ();
++  debug_pop ();
++}
++
++//-----------------------------------------------------------------------
++
++bool 
++json_decoder_t::rpc_traverse (bigint &b) 
++{ 
++  bool ret = false;
++  str tmp;
++  if (is_empty ()) { error_empty ("bigint"); }
++  else if (!(tmp = top()->to_str (false))) { 
++    error_wrong_type ("string", top()); 
++  } else {
++    b = tmp;
++    ret = true;
++  }
++  return ret;
++}
++
++//-----------------------------------------------------------------------
++
++void json_decoder_t::enter_array (size_t i) {}
++void json_decoder_t::exit_array () {}
++
++//-----------------------------------------------------------------------
++
++bool
++json_decoder_t::enter_pointer (bool &nonnil) 
++{
++  ptr<pub3::expr_list_t> l;
++  ptr<pub3::expr_t> x;
++
++  bool ret = false;
++  if (is_empty ()) { error_empty ("array/pointer"); }
++  else if (!(l = top()->to_list ())) {
++    error_wrong_type ("array/pointer", top());
++  } else if (l->size () > 0) {
++    nonnil = true;
++    x = (*l)[0];
++    ret = true;
++  } else {
++    ret = true;
++    nonnil = false;
++  }
++  push_back (x);
++  return ret;
++}
++
++//-----------------------------------------------------------------------
++
++bool
++json_decoder_t::exit_pointer (bool nonnil)
++{
++  pop_back ();
++  return true;
++}
++
++//-----------------------------------------------------------------------
++
++bool
++json_decoder_t::init_decode (const char *msg, ssize_t sz)
++{
+   return (sz > 0 && init_decode (str (msg, sz)));
+ }
+ 
+ //-----------------------------------------------------------------------
+ 
+ bool
+-json_XDR_t::init_decode (str s)
++json_decoder_t::init_decode (str s)
+ {
+   return ((m_payload = s) && 
+ 	  (m_root = pub3::json_parser_t::parse (s)));
+@@ -52,13 +215,36 @@
+ //-----------------------------------------------------------------------
+ 
+ bool
+-json_XDR_t::init_decode (ptr<pub3::expr_t> x)
++json_decoder_t::init_decode (ptr<pub3::expr_t> x)
+ {
+   if (x) { 
+     m_root = x;
+-    m_stack.push_back (x);
++    m_obj_stack.push_back (x);
+   }
+   return x;
+ }
+ 
+ //-----------------------------------------------------------------------
++
++bool
++json_XDR_t::is_empty () const
++{
++  return !m_obj_stack.size () || !m_obj_stack.back ();
++}
++
++//-----------------------------------------------------------------------
++
++ptr<pub3::expr_t>
++json_XDR_t::top ()
++{
++  ptr<pub3::expr_t> ret;
++  if (m_obj_stack.size ()) { ret = m_obj_stack.back (); }
++  return ret;
++}
++
++//-----------------------------------------------------------------------
++
++void json_XDR_t::pop_back () { m_obj_stack.pop_back (); }
++void json_XDR_t::push_back (ptr<pub3::expr_t> x) { m_obj_stack.push_back (x); }
++
++//-----------------------------------------------------------------------
+Index: libpub/json_rpc.h
+===================================================================
+--- libpub/json_rpc.h	(revision 5453)
++++ libpub/json_rpc.h	(working copy)
+@@ -16,9 +16,34 @@
+ class json_XDR_t : public v_XDR_t {
+ public:
+   json_XDR_t (ptr<v_XDR_dispatch_t> d, XDR *x);
++protected:
++  bool is_empty () const;
++  ptr<pub3::expr_t> top ();
++
++  void freeze_error_msg (str s);
++  void error_wrong_type (str s, ptr<const pub3::expr_t> x);
++  void error_empty (str s);
++  void error_generic (str s);
++
++  void debug_push (str s, bool add_dot = true);
++  void debug_pop ();
++  void push_back (ptr<pub3::expr_t> x);
++  void pop_back ();
++
++  vec<ptr<pub3::expr_t> > m_obj_stack;
++  ptr<pub3::expr_t> m_root;
++  vec<str> m_debug_stack;
++  str m_err_msg;
++};
++
++//-----------------------------------------------------------------------
++
++class json_decoder_t : public json_XDR_t {
++public:
++  json_decoder_t (ptr<v_XDR_dispatch_t> d, XDR *x);
+   bool rpc_traverse (u_int32_t &obj);
+   bool rpc_traverse (u_int64_t &obj);
+-  bool rpc_encode (str s);
++  bool rpc_encode (str s) { return false; }
+   bool rpc_decode (str *s);
+   bool rpc_traverse (bigint &b);
+   void enter_field (const char *f);
+@@ -26,14 +51,43 @@
+   void enter_array (size_t i);
+   void exit_array ();
+   void enter_slot (size_t i);
+-  void pointer (bool b);
++  void exit_slot (size_t i);
++  bool enter_pointer (bool &b);
++  bool exit_pointer (bool b);
++
+   bool init_decode (const char *msg, ssize_t sz);
+   bool init_decode (str s);
+   bool init_decode (ptr<pub3::expr_t> x);
+ private:
+-  vec<ptr<pub3::expr_t> > m_stack;
+   ptr<pub3::expr_t> m_root;
+   str m_payload;
+ };
+ 
+ //-----------------------------------------------------------------------
++
++#if 0
++class json_encoder_t : public json_XDR_t {
++public:
++  json_encoder_t (ptr<v_XDR_dispatch_t> d, XDR *x);
++  bool rpc_traverse (u_int32_t &obj);
++  bool rpc_traverse (u_int64_t &obj);
++  bool rpc_encode (str s);
++  bool rpc_decode (str *s) { return false; }
++  bool rpc_traverse (bigint &b);
++  void enter_field (const char *f);
++  void exit_field (const char *f);
++  void enter_array (size_t i);
++  void exit_array ();
++  void enter_slot (size_t i);
++  void pointer (bool b);
++  bool init_decode (const char *msg, ssize_t sz) { return false; }
++private:
++  vec<ptr<pub3::obj_ref_t> > m_ref_stack;
++  vec<ptr<pub3::expr_t> > m_obj_stack;
++  vec<ptr<pub3::obj_ref_t> > m_ref_stack;
++  ptr<pub3::expr_t> m_root;
++  str m_payload;
++};
++#endif
++
++//-----------------------------------------------------------------------
