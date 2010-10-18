@@ -118,8 +118,14 @@ struct okssl_sendcon_arg_t {
 typedef string ip_addr_t<16>;
 
 struct okmgr_diagnostic_arg_t {
-  oksvc_proc_t        proc;
-  ok_diagnostic_cmd_t cmd;
+  oksvc_proc_t           proc;
+  ok_diagnostic_domain_t domain;
+  ok_diagnostic_cmd_t    cmd;
+};
+
+struct okctl_diagnostic_arg_t {
+  ok_diagnostic_domain_t domain;
+  ok_diagnostic_cmd_t    cmd;
 };
 
 enum oklog_file_t {
@@ -207,19 +213,13 @@ program OKCTL_PROGRAM {
 		OKCTL_GET_STATS_FROM_SVC(void) = 15;
 
 		ok_xstatus_typ_t
-		OKCTL_LEAK_CHECKER(ok_diagnostic_cmd_t) = 16;
+		OKCTL_DIAGNOSTIC(okctl_diagnostic_arg_t) = 16;
 
-		ok_xstatus_typ_t
-		OKCTL_PROFILER(ok_diagnostic_cmd_t) = 17;
-		
 		okctl_sendcon_res_t
 		OKCTL_SEND_CON2(okctl_sendcon_arg2_t) = 18;
 
 		okctl_send_msg_res_t 
 		OKCTL_SEND_MSG (okctl_send_msg_arg_t) = 19;
-
-		ok_xstatus_typ_t
-		OKCTL_TAME_PROFILER(ok_diagnostic_cmd_t) = 20;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;
@@ -270,16 +270,10 @@ program OKMGR_PROGRAM {
 		OKMGR_CUSTOM_2 (ok_custom_arg_t) = 5;
 
 		ok_xstatus_t
-		OKMGR_LEAK_CHECKER(okmgr_diagnostic_arg_t) = 7;
-
-		ok_xstatus_t
-		OKMGR_PROFILER(okmgr_diagnostic_arg_t) = 8;
+		OKMGR_DIAGNOSTIC(okmgr_diagnostic_arg_t) = 7;
 
 		ok_xstatus_t
 		OKMGR_SEND_MSG(okmgr_send_msg_arg_t) = 9;
-
-		ok_xstatus_t
-		OKMGR_TAME_PROFILER(okmgr_diagnostic_arg_t) = 10;
 	} = 1;
 } = 11278;
 

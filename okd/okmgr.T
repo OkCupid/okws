@@ -46,21 +46,10 @@ okmgr_clnt_t::okmgr_clnt_t (const str &s)
 
 //-----------------------------------------------------------------------
 
-okmgr_leak_checker_t::okmgr_leak_checker_t (const str &s, oksvc_proc_t p,
-					    ok_diagnostic_cmd_t cmd)
-  : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
-
-//-----------------------------------------------------------------------
-
-okmgr_profiler_t::okmgr_profiler_t (const str &s, oksvc_proc_t p,
-				    ok_diagnostic_cmd_t cmd)
-  : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
-
-//-----------------------------------------------------------------------
-
-okmgr_tame_profiler_t::okmgr_tame_profiler_t (const str &s, oksvc_proc_t p,
-					      ok_diagnostic_cmd_t cmd)
-  : okmgr_clnt_t (s), _proc (p), _cmd (cmd) {}
+okmgr_diagnostic_t::okmgr_diagnostic_t (const str &s, oksvc_proc_t p,
+					ok_diagnostic_domain_t dd,
+					ok_diagnostic_cmd_t cmd)
+  : okmgr_clnt_t (s), _proc (p), _domain (dd), _cmd (cmd) {}
 
 //-----------------------------------------------------------------------
 
@@ -237,11 +226,13 @@ main (int argc, char *argv[])
   vec<str> files;
   ok_set_typ_t set_typ = OK_SET_SOME;
   bool no_config = false;
+  str diag_cmd_str;
   ok_diagnostic_cmd_t cmd = OK_DIAGNOSTIC_NONE;
   bool verbose = false;
   str msg;
+  ok_diagnostic_domain_t dd = OK_DIAGNOSTIC_DOMAIN_NONE;
 
-  while ((ch = getopt (argc, argv, "m:c:p:lts:f:FvT:")) != -1)
+  while ((ch = getopt (argc, argv, "m:c:p:lts:f:FvT:")) != -1) {
     switch (ch) {
     case 'm':
       m = CTL_MODE_SEND_MSG;
@@ -254,25 +245,16 @@ main (int argc, char *argv[])
       m = CTL_MODE_LAUNCH;
       break;
     case 'c':
-      m = CTL_MODE_LEAK_CHECKER;
-      if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
-	warn << "Unknown subcommand for argument -c\n";
-	usage ();
-      }
+      dd = OK_DIAGNOSTIC_DOMAIN_LEAK_CHECKER;
+      diag_cmd_str = optarg;
       break;
     case 'p':
-      m = CTL_MODE_PROFILER;
-      if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
-	warn << "Unknown subcommand for argument -c\n";
-	usage ();
-      }
+      dd = OK_DIAGNOSTIC_DOMAIN_PROFILER;
+      diag_cmd_str = optarg;
       break;
     case 'T':
-      m = CTL_MODE_TAME_PROFILER;
-      if ((cmd = optarg2cmd (optarg)) == OK_DIAGNOSTIC_NONE) {
-	warn << "Unknown subcommand for argument -c\n";
-	usage ();
-      }
+      dd = OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER;
+      diag_cmd_str = optarg;
       break;
     case 's':
       sockname_arg = optarg;
@@ -293,13 +275,16 @@ main (int argc, char *argv[])
       usage ();
       break;
     }
-
+  }
+  if (diag_cmd_str && (cmd = optarg2cmd (diag_cmd_str)) == OK_DIAGNOSTIC_NONE) {
+    warn << "Unknown subcommand for diagnostic argument -c|-p|-T\n";
+    usage ();
+  }
+  
   for (int i = optind; i < argc; i++) 
     files.push_back (argv[i]);
 
-  if ((m == CTL_MODE_LEAK_CHECKER ||
-       m == CTL_MODE_TAME_PROFILER ||
-       m == CTL_MODE_PROFILER) && files.size () != 1) {
+  if ((m == CTL_MODE_DIAGNOSTIC) && files.size () != 1) {
     warn << "Option -c only applies to one service at a time\n";
     usage ();
   }
@@ -329,17 +314,12 @@ main (int argc, char *argv[])
 
   okmgr_clnt_t *t = NULL;
   switch (m) {
-  case CTL_MODE_LEAK_CHECKER:
-    t = New okmgr_leak_checker_t (sockname, str2proc (files[0], 0), cmd);
+
+  case CTL_MODE_DIAGNOSTIC:
+    t = New okmgr_diagnostic_t (sockname, str2proc (files[0], 0), dd, cmd);
     break;
   case CTL_MODE_SEND_MSG:
     t = New okmgr_msg_t (sockname, strs2procs (files, -1), set_typ, msg);
-    break;
-  case CTL_MODE_PROFILER:
-    t = New okmgr_profiler_t (sockname, str2proc (files[0], 0), cmd);
-    break;
-  case CTL_MODE_TAME_PROFILER:
-    t = New okmgr_tame_profiler_t (sockname, str2proc (files[0], 0), cmd);
     break;
   case CTL_MODE_LAUNCH:
     t = New okmgr_launch_t (sockname, strs2procs (files, -1), set_typ);
@@ -360,37 +340,14 @@ main (int argc, char *argv[])
 //-----------------------------------------------------------------------
 
 void
-okmgr_leak_checker_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
+okmgr_diagnostic_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
 {
   okmgr_diagnostic_arg_t arg;
   arg.proc = _proc;
+  arg.domain = _domain;
   arg.cmd = _cmd;
 
-  RPC::okmgr_program_1::okmgr_leak_checker (h, arg, s, cb);
-}
-
-//-----------------------------------------------------------------------
-
-void
-okmgr_profiler_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
-{
-  okmgr_diagnostic_arg_t arg;
-  arg.proc = _proc;
-  arg.cmd = _cmd;
-
-  RPC::okmgr_program_1::okmgr_profiler (h, arg, s, cb);
-}
-
-//-----------------------------------------------------------------------
-
-void
-okmgr_tame_profiler_t::do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb)
-{
-  okmgr_diagnostic_arg_t arg;
-  arg.proc = _proc;
-  arg.cmd = _cmd;
-
-  RPC::okmgr_program_1::okmgr_tame_profiler (h, arg, s, cb);
+  RPC::okmgr_program_1::okmgr_diagnostic (h, arg, s, cb);
 }
 
 //-----------------------------------------------------------------------

@@ -354,30 +354,26 @@ oksrvc_t::init (int argc, char *argv[])
 //-----------------------------------------------------------------------
 
 void
-oksrvc_t::handle_leak_checker (svccb *sbp)
+oksrvc_t::handle_diagnostic (svccb *sbp)
 {
-  RPC::okctl_program_1::okctl_leak_checker_srv_t<svccb> srv (sbp);
-  ok_xstatus_typ_t status = ok_toggle_leak_checker (*srv.getarg ());
-  srv.reply (status);
-}
+  RPC::okctl_program_1::okctl_diagnostic_srv_t<svccb> srv (sbp);
+  const okctl_diagnostic_arg_t *arg = srv.getarg ();
+  ok_xstatus_typ_t status = OK_STATUS_UNKNOWN_OPTION;
 
-//-----------------------------------------------------------------------
+  switch (arg->domain) {
+  case OK_DIAGNOSTIC_DOMAIN_LEAK_CHECKER:
+    status = ok_toggle_leak_checker (arg->cmd);
+    break;
+  case OK_DIAGNOSTIC_DOMAIN_PROFILER:
+    status = ok_toggle_profiler (arg->cmd);
+    break;
+  case OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER:
+    status = ok_toggle_tame_profiler (arg->cmd);
+    break;
+  default:
+    break;
+  }
 
-void
-oksrvc_t::handle_profiler (svccb *sbp)
-{
-  RPC::okctl_program_1::okctl_profiler_srv_t<svccb> srv (sbp);
-  ok_xstatus_typ_t status = ok_toggle_profiler (*srv.getarg ());
-  srv.reply (status);
-}
-
-//-----------------------------------------------------------------------
-
-void
-oksrvc_t::handle_tame_profiler (svccb *sbp)
-{
-  RPC::okctl_program_1::okctl_tame_profiler_srv_t<svccb> srv (sbp);
-  ok_xstatus_typ_t status = ok_toggle_tame_profiler (*srv.getarg ());
   srv.reply (status);
 }
 
@@ -427,17 +423,11 @@ oksrvc_t::ctldispatch (svccb *v)
   case OKCTL_GET_STATS_FROM_SVC:
     handle_get_stats (v);
     break;
-  case OKCTL_LEAK_CHECKER:
-    handle_leak_checker (v);
-    break;
-  case OKCTL_PROFILER:
-    handle_profiler (v);
+  case OKCTL_DIAGNOSTIC:
+    handle_diagnostic(v);
     break;
   case OKCTL_SEND_MSG:
     handle_send_msg (v);
-    break;
-  case OKCTL_TAME_PROFILER:
-    handle_tame_profiler (v);
     break;
   default:
     v->reject (PROC_UNAVAIL);

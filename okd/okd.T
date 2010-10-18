@@ -1216,14 +1216,8 @@ okd_mgrsrv_t::dispatch (svccb *sbp)
   case OKMGR_CUSTOM_2:
     myokd->custom2_in (sbp);
     break;
-  case OKMGR_LEAK_CHECKER:
-    myokd->toggle_leak_checker (sbp);
-    break;
-  case OKMGR_PROFILER:
-    myokd->toggle_profiler (sbp);
-    break;
-  case OKMGR_TAME_PROFILER:
-    myokd->toggle_tame_profiler (sbp);
+  case OKMGR_DIAGNOSTIC:
+    myokd->diagnostic(sbp);
     break;
   case OKMGR_SEND_MSG:
     myokd->send_msg (sbp);
@@ -1381,10 +1375,10 @@ okd_t::relaunch (svccb *sbp)
 //-----------------------------------------------------------------------
 
 tamed void
-okd_t::toggle_leak_checker (svccb *sbp)
+okd_t::diagnostic (svccb *sbp)
 {
   tvars {
-    RPC::okmgr_program_1::okmgr_leak_checker_srv_t<svccb> srv (sbp);
+    RPC::okmgr_program_1::okmgr_diagnostic_srv_t<svccb> srv (sbp);
     const okmgr_diagnostic_arg_t *arg (srv.getarg ());
     ok_xstatus_typ_t status;
     ok_xstatus_t ret;
@@ -1392,51 +1386,7 @@ okd_t::toggle_leak_checker (svccb *sbp)
   }
   
   if ((ch = servtab.get (arg->proc))) {
-    twait { ch->toggle_leak_checker (arg->cmd, mkevent (status)); }
-  } else {
-    status = OK_STATUS_NOSUCHCHILD;
-  }
-  ret.set_status (status);
-  srv.reply (ret);
-}
-
-//-----------------------------------------------------------------------
-
-tamed void
-okd_t::toggle_tame_profiler (svccb *sbp)
-{
-  tvars {
-    RPC::okmgr_program_1::okmgr_tame_profiler_srv_t<svccb> srv (sbp);
-    const okmgr_diagnostic_arg_t *arg (srv.getarg ());
-    ok_xstatus_typ_t status;
-    ok_xstatus_t ret;
-    okch_t *ch;
-  }
-  
-  if ((ch = servtab.get (arg->proc))) {
-    twait { ch->toggle_tame_profiler (arg->cmd, mkevent (status)); }
-  } else {
-    status = OK_STATUS_NOSUCHCHILD;
-  }
-  ret.set_status (status);
-  srv.reply (ret);
-}
-
-//-----------------------------------------------------------------------
-
-tamed void
-okd_t::toggle_profiler (svccb *sbp)
-{
-  tvars {
-    RPC::okmgr_program_1::okmgr_profiler_srv_t<svccb> srv (sbp);
-    const okmgr_diagnostic_arg_t *arg (srv.getarg ());
-    ok_xstatus_typ_t status;
-    ok_xstatus_t ret;
-    okch_t *ch;
-  }
-  
-  if ((ch = servtab.get (arg->proc))) {
-    twait { ch->toggle_profiler (arg->cmd, mkevent (status)); }
+    twait { ch->diagnostic (arg->domain, arg->cmd, mkevent (status)); }
   } else {
     status = OK_STATUS_NOSUCHCHILD;
   }

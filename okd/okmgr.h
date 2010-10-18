@@ -36,10 +36,8 @@
 typedef enum { CTL_MODE_PUB = 0, 
 	       CTL_MODE_LAUNCH = 1,
 	       CTL_MODE_LOGTURN = 2,
-	       CTL_MODE_LEAK_CHECKER = 3,
-	       CTL_MODE_PROFILER = 4,
-	       CTL_MODE_TAME_PROFILER = 5,
-	       CTL_MODE_SEND_MSG } ctl_mode_t;
+	       CTL_MODE_DIAGNOSTIC = 3,
+	       CTL_MODE_SEND_MSG = 4 } ctl_mode_t;
 
 //-----------------------------------------------------------------------
 
@@ -85,34 +83,15 @@ private:
 
 //-----------------------------------------------------------------------
 
-class okmgr_leak_checker_t : public okmgr_clnt_t {
+class okmgr_diagnostic_t : public okmgr_clnt_t {
 public:
-  okmgr_leak_checker_t (const str &s, oksvc_proc_t p, ok_diagnostic_cmd_t cmd);
+  okmgr_diagnostic_t (const str &s, oksvc_proc_t p, 
+		      ok_diagnostic_domain_t dd,
+		      ok_diagnostic_cmd_t cmd);
   void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
 private:
   oksvc_proc_t _proc;
-  ok_diagnostic_cmd_t _cmd;
-};
-
-//-----------------------------------------------------------------------
-
-class okmgr_profiler_t : public okmgr_clnt_t {
-public:
-  okmgr_profiler_t (const str &s, oksvc_proc_t p, ok_diagnostic_cmd_t cmd);
-  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
-private:
-  oksvc_proc_t _proc;
-  ok_diagnostic_cmd_t _cmd;
-};
-
-//-----------------------------------------------------------------------
-
-class okmgr_tame_profiler_t : public okmgr_clnt_t {
-public:
-  okmgr_tame_profiler_t (const str &s, oksvc_proc_t p, ok_diagnostic_cmd_t cmd);
-  void do_host (helper_unix_t *h, ok_xstatus_t *s, aclnt_cb cb);
-private:
-  oksvc_proc_t _proc;
+  ok_diagnostic_domain_t _domain;
   ok_diagnostic_cmd_t _cmd;
 };
 
