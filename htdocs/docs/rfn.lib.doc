@@ -331,6 +331,14 @@ consider using a dictionary instead, which has faster lookup times."
 and to the log."
 	},
 
+	logwarn : {
+	    input : [ { s : "s" }, { prefix : "b", opt : true } ],
+	    output : "n",
+	    desc : "Output the string //s// as an error to the log (not to 
+the page); prefix with okws-pub3[logwarn] if the specified flag is true
+(and it is true by default)."
+	},
+
 	warn_trace : {
 	    input : [ { s : "s" } ],
 	    output : "n",

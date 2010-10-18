@@ -142,6 +142,31 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  logwarn_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const expr_t> ret = expr_null_t::alloc ();
+    str s = args[0]._s;
+    bool use_prfx = args.size () > 1 ? args[1]._b : true;
+    static rxx eolx ("\n");
+    static rxx charx ("\\S");
+    vec<str> v;
+    split (&v, eolx, s);
+
+    str prfx;
+    if (use_prfx) { prfx = "okws-pub3[logwarn]: "; } 
+    else { prfx = ""; }
+
+    for (size_t i = 0; i < v.size (); i++) {
+      if (charx.search (v[i])) {
+	warn << prfx << v[i] << "\n";
+      }
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   warn_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const expr_t> ret = expr_null_t::alloc ();

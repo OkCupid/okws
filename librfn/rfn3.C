@@ -63,6 +63,7 @@ namespace rfn3 {
     F(ceil);
     F(floor);
     F(str);
+    F(logwarn);
     F(warn);
     F(warn_trace);
     F(enable_wss);
@@ -91,8 +92,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.6"; }
-  u_int64_t version_int () { return 3000006; }
+  const char *version_str () { return "3.0.7"; }
+  u_int64_t version_int () { return 3000007; }
 
   //-----------------------------------------------------------------------
 };
