@@ -29,7 +29,9 @@ void json_XDR_t::enter_field (const char *f) {}
 void json_XDR_t::exit_field (const char *f) {}
 void json_XDR_t::enter_array (size_t i) {}
 void json_XDR_t::enter_slot (size_t i) {}
-void json_XDR_t::pointer (bool b) {}
+void json_XDR_t::exit_slot (size_t i) {}
+bool json_XDR_t::enter_pointer (bool &b) { return true; }
+bool json_XDR_t::exit_pointer (bool b) { return true; }
 void json_XDR_t::exit_array () {}
 
 //-----------------------------------------------------------------------

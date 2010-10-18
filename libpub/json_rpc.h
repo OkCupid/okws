@@ -26,7 +26,9 @@ public:
   void enter_array (size_t i);
   void exit_array ();
   void enter_slot (size_t i);
-  void pointer (bool b);
+  void exit_slot (size_t i);
+  bool enter_pointer (bool &nn);
+  bool exit_pointer (bool n);
   bool init_decode (const char *msg, ssize_t sz);
   bool init_decode (str s);
   bool init_decode (ptr<pub3::expr_t> x);
