@@ -185,9 +185,20 @@ okmgr_clnt_t::run ()
   if (ok) {
     twait { do_host (hlp, &s, mkevent (err)); }
     rc = -1;
-    if (err) warn << "RPC Error: " << err;
-    else if (s.status != OK_STATUS_OK) warn << *s.error << "\n";
-    else rc = 0;
+    if (err) {
+      warn << "RPC Error: " << err;
+    } else if (s.status != OK_STATUS_OK) {
+      strbuf b;
+      if (s.error->len ()) {
+	b << *s.error << "\n";
+      } else {
+	b << "failed with ";
+	rpc_print (b, s.status);
+      }
+      warn << b;
+    } else {
+      rc = 0;
+    }
   } else {
     warn << "Cannot connect to socket: " << _sockname << "\n";
     rc = -1;
@@ -245,14 +256,17 @@ main (int argc, char *argv[])
       m = CTL_MODE_LAUNCH;
       break;
     case 'c':
+      m = CTL_MODE_DIAGNOSTIC;
       dd = OK_DIAGNOSTIC_DOMAIN_LEAK_CHECKER;
       diag_cmd_str = optarg;
       break;
     case 'p':
+      m = CTL_MODE_DIAGNOSTIC;
       dd = OK_DIAGNOSTIC_DOMAIN_PROFILER;
       diag_cmd_str = optarg;
       break;
     case 'T':
+      m = CTL_MODE_DIAGNOSTIC;
       dd = OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER;
       diag_cmd_str = optarg;
       break;
