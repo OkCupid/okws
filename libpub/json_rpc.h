@@ -9,6 +9,7 @@
 class json_XDR_dispatch_t : public v_XDR_dispatch_t {
 public:
   ptr<v_XDR_t> alloc (u_int32_t rpcvers, XDR *input);
+  static void enable ();
 };
 
 //-----------------------------------------------------------------------
@@ -29,6 +30,7 @@ protected:
   void debug_pop ();
   void push_back (ptr<pub3::expr_t> x);
   void pop_back ();
+  void debug_push_slot (size_t i);
 
   vec<ptr<pub3::expr_t> > m_obj_stack;
   ptr<pub3::expr_t> m_root;
@@ -64,7 +66,6 @@ private:
 
 //-----------------------------------------------------------------------
 
-#if 0
 class json_encoder_t : public json_XDR_t {
 public:
   json_encoder_t (ptr<v_XDR_dispatch_t> d, XDR *x);
@@ -78,15 +79,18 @@ public:
   void enter_array (size_t i);
   void exit_array ();
   void enter_slot (size_t i);
-  void pointer (bool b);
+  void exit_slot (size_t i);
+  bool enter_pointer (bool &b);
+  bool exit_pointer (bool b);
   bool init_decode (const char *msg, ssize_t sz) { return false; }
+protected:
+  ptr<pub3::expr_list_t> top_list ();
+  ptr<pub3::expr_dict_t> top_dict ();
+  void push_ref (ptr<pub3::obj_ref_t> r);
+  void pop_ref ();
+  void set_top (ptr<pub3::expr_t> x);
 private:
   vec<ptr<pub3::obj_ref_t> > m_ref_stack;
-  vec<ptr<pub3::expr_t> > m_obj_stack;
-  vec<ptr<pub3::obj_ref_t> > m_ref_stack;
-  ptr<pub3::expr_t> m_root;
-  str m_payload;
 };
-#endif
 
 //-----------------------------------------------------------------------

@@ -18,17 +18,22 @@ json_XDR_dispatch_t::alloc (u_int32_t rpcvers, XDR *input)
     case XDR_DECODE:
       ret = New refcounted<json_decoder_t> (mkref (this), input);
       break;
-      /*
-       * not ready for this yet...
-       case XDR_ENCODE:
-       ret = New refcounted<json_encoder_t> (mkref (this), input);
-       break;
-      */
+    case XDR_ENCODE:
+      ret = New refcounted<json_encoder_t> (mkref (this), input);
+      break;
     default:
       break;
     }
   }
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_XDR_dispatch_t::enable ()
+{
+  v_XDR_dispatch = New refcounted<json_XDR_dispatch_t> ();
 }
 
 //-----------------------------------------------------------------------
@@ -117,7 +122,7 @@ json_decoder_t::exit_field (const char *f)
 void
 json_decoder_t::enter_slot (size_t i)
 {
-  debug_push (strbuf ("[%zu]", i));
+  debug_push_slot (i);
   ptr<pub3::expr_list_t> l;
   ptr<pub3::expr_t> x;
   if (is_empty ()) { error_empty ("array"); }
@@ -287,6 +292,186 @@ json_XDR_t::error_wrong_type (str s, ptr<const pub3::expr_t> x)
   str got = x->type_to_str ();
   strbuf msg ("got type %s; expected %s", got.cstr (), s.cstr ());
   error_generic (msg);
+}
+
+//-----------------------------------------------------------------------
+
+json_encoder_t::json_encoder_t (ptr<v_XDR_dispatch_t> d, XDR *x)
+  : json_XDR_t (d, x) {}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_traverse (u_int32_t &obj)
+{
+  set_top (pub3::expr_int_t::alloc (obj));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_traverse (u_int64_t &obj)
+{
+  set_top (pub3::expr_uint_t::alloc (obj));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_traverse (bigint &b)
+{
+  str s = b.getstr (10);
+  set_top (pub3::expr_str_t::alloc (s));
+  return true;
+}
+ 
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::enter_field (const char *field)
+{
+  debug_push (field);
+  push_ref (pub3::obj_ref_dict_t::alloc (top_dict (), field));
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::exit_field (const char *f)
+{
+  pop_ref ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::enter_slot (size_t i)
+{
+  debug_push_slot (i);
+  push_ref (pub3::obj_ref_list_t::alloc (top_list(), i));
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::exit_slot (size_t i)
+{
+  debug_pop ();
+  pop_ref ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_encode (str s)
+{
+  set_top (pub3::expr_str_t::alloc (s));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+void json_encoder_t::exit_array () {}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::enter_array (size_t i)
+{
+  ptr<pub3::expr_list_t> l = pub3::expr_list_t::alloc ();
+  set_top (l);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_list_t>
+json_encoder_t::top_list ()
+{
+  ptr<pub3::expr_list_t> ret;
+  assert (m_obj_stack.size ());
+  ret = m_obj_stack.back ()->to_list ();
+  assert (ret);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_dict_t>
+json_encoder_t::top_dict ()
+{
+  ptr<pub3::expr_dict_t> ret;
+  ptr<pub3::expr_t> &back = m_obj_stack.back ();
+  if (!back) {
+    ret = pub3::expr_dict_t::alloc ();
+    back = ret;
+    set_top (ret);
+  } else {
+    ret = back->to_dict ();
+    assert (ret);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_XDR_t::debug_push_slot (size_t i)
+{
+  debug_push (strbuf ("[%zu]", i));
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::set_top (ptr<pub3::expr_t> x)
+{
+  m_obj_stack.back () = x;
+  m_ref_stack.back ()->set (x);
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::push_ref (ptr<pub3::obj_ref_t> r)
+{
+  m_obj_stack.push_back (NULL);
+  m_ref_stack.push_back (r);
+}
+
+//-----------------------------------------------------------------------
+
+void
+json_encoder_t::pop_ref ()
+{
+  m_obj_stack.pop_back ();
+  m_ref_stack.pop_back ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::enter_pointer (bool &nonnil)
+{
+  bool ret = true;
+  ptr<pub3::expr_list_t> l = pub3::expr_list_t::alloc ();
+  set_top (l);
+  if (nonnil) {
+    enter_slot (0);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::exit_pointer (bool nonnil)
+{
+  if (nonnil) {
+    exit_slot (0);
+  }
+  return true;
 }
 
 //-----------------------------------------------------------------------
