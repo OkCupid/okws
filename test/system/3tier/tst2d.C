@@ -28,6 +28,7 @@
 #include "amysql.h"
 #include "mystmt.h"
 #include "web.h"
+#include "json_rpc.h"
 
 class tst2_srv_t : public amysql_thread_t {
 public:
@@ -167,6 +168,8 @@ start_server (int argc, char *argv[])
   
   ssrv_t *s = New ssrv_t (wrap (&tst2_srv_t::alloc, mysql_sth_method), 
 			  tst2_prog_1, MTD_PTH, tcnt, maxq);
+
+  json_XDR_dispatch_t::enable ();
   
   // turn off all warning messages
   s->mtd->set_quiet (true);
