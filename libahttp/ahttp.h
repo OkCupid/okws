@@ -127,6 +127,7 @@ public:
   inline const str & get_remote_ip () const { return remote_ip; }
   inline int get_remote_port () const { return _remote_port; }
   hash_t source_hash () const;
+  hash_t source_hash_ip_only () const;
   virtual ~ahttpcon ();
   void setrcb (cbi::ptr cb); // cb called when reading regular byte streams
   void seteofcb (cbv::ptr c) { eofcb = c; }
@@ -220,6 +221,7 @@ public:
 private:
   int _remote_port;
   mutable hash_t _source_hash;
+  mutable hash_t _source_hash_ip_only;
 };
 
 // for parent dispatcher, which will send fd's

@@ -146,7 +146,7 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
 
   if (pref >= 0 && size_t (pref) < n) { id = pref; }
   else if (n == 1) { id = 0; }
-  else if (n > 1) { id = xc->source_hash () % n; } 
+  else if (n > 1) { id = xc->source_hash_ip_only () % n; } 
   else {
     ok = false;
     CH_ERROR ("Cannot map to service --- no such process exists");

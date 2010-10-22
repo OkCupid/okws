@@ -54,7 +54,8 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _state (AHTTPCON_STATE_NONE),
     destroyed_p (New refcounted<bool> (false)),
     _remote_port (0),
-    _source_hash (0)
+    _source_hash (0),
+    _source_hash_ip_only (0)
 {
   //
   // bookkeeping for debugging purposes;
@@ -658,9 +659,20 @@ hash_t
 ahttpcon::source_hash () const
 {
   if (_source_hash == 0) {
-    _source_hash = remote_ip;
+    strbuf b ("%s:%d", remote_ip.cstr (), _remote_port);
+    str s = b;
+    _source_hash = s;
   }
   return _source_hash;
+}
+
+hash_t
+ahttpcon::source_hash_ip_only () const
+{
+  if (_source_hash_ip_only == 0) {
+    _source_hash_ip_only = remote_ip;
+  }
+  return _source_hash_ip_only;
 }
 
 void
