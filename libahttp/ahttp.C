@@ -658,9 +658,7 @@ hash_t
 ahttpcon::source_hash () const
 {
   if (_source_hash == 0) {
-    strbuf b ("%s:%d", remote_ip.cstr (), _remote_port);
-    str s = b;
-    _source_hash = s;
+    _source_hash = remote_ip;
   }
   return _source_hash;
 }
