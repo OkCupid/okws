@@ -13,6 +13,8 @@ prog = 10808
 vers = 1
 proc = 1
 hdr = struct.pack (">" + "L" * 6, xid, call, js, prog, vers, proc);
+
+# make an XDR "Auth" Field
 hdr += struct.pack ("x" * 4 * 8)
 
 date = { "date" : { "on" : True, 
