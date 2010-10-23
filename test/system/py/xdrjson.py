@@ -12,7 +12,8 @@ js = 2
 prog = 10808
 vers = 1
 proc = 1
-hdr = struct.pack (">" + "L" * 8, xid, call, js, prog, vers, proc, 0, 0)
+hdr = struct.pack (">" + "L" * 6, xid, call, js, prog, vers, proc);
+hdr += struct.pack ("x" * 4 * 8)
 
 date = { "date" : { "on" : True, 
                     "date" : { "mday" : 27, "mon" : 11, "year" : 1977 } },
