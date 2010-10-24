@@ -205,7 +205,11 @@ json_decoder_t::exit_pointer (bool nonnil)
 bool
 json_decoder_t::init_decode (const char *msg, ssize_t sz)
 {
-  return (sz > 0 && init_decode (str (msg, sz)));
+  // Remove any padding of NULL bytes at the end of the string
+  ssize_t len = 0;
+  while (msg[len] != 0 && len < sz) { len++; }
+
+  return (sz > 0 && init_decode (str (msg, len)));
 }
 
 //-----------------------------------------------------------------------

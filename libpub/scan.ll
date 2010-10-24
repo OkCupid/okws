@@ -294,7 +294,11 @@ false		     { return T_P3_FALSE; }
 null		     { return T_P3_NULL; }
 ["]		     { json_str_begin (JSON_STR); }
 [']		     { json_str_begin (JSON_SQ_STR); }
-.		     { return yyerror ("illegal token in JSON environment"); }
+.		     { 
+		       strbuf b("illegal token ('%c'=%d) in JSON environment", 
+                                yytext[0], yytext[0]);
+		       return yyerror (b);
+                     }
 }
 
 <JSON_STR>{
