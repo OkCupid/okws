@@ -201,7 +201,7 @@ JSON_creator_t::clear ()
 {
   _ref_stack.clear ();
   _obj_stack.clear ();
-  push_ref (plain_obj_ref_t::alloc ());
+  push_ref (pub3::plain_obj_ref_t::alloc ());
 }
 
 //=======================================================================

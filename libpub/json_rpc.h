@@ -17,6 +17,7 @@ public:
 class json_XDR_t : public v_XDR_t {
 public:
   json_XDR_t (ptr<v_XDR_dispatch_t> d, XDR *x);
+  virtual ~json_XDR_t ();
 protected:
   bool is_empty () const;
   ptr<pub3::expr_t> top ();
@@ -60,7 +61,6 @@ public:
   bool init_decode (str s);
   bool init_decode (ptr<pub3::expr_t> x);
 private:
-  ptr<pub3::expr_t> m_root;
   str m_payload;
 };
 
@@ -83,6 +83,8 @@ public:
   bool enter_pointer (bool &b);
   bool exit_pointer (bool b);
   bool init_decode (const char *msg, ssize_t sz) { return false; }
+  void init_encode ();
+  void flush ();
 protected:
   ptr<pub3::expr_list_t> top_list ();
   ptr<pub3::expr_dict_t> top_dict ();
@@ -90,6 +92,7 @@ protected:
   void pop_ref ();
   void set_top (ptr<pub3::expr_t> x);
 private:
+  ptr<pub3::obj_ref_t> m_root_ref;
   vec<ptr<pub3::obj_ref_t> > m_ref_stack;
 };
 

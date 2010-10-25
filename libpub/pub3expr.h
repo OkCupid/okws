@@ -326,6 +326,12 @@ namespace pub3 {
     friend class refcounted<expr_bool_t>;
     str type_to_str () const { return "bool"; }
 
+    // it's OK to implicitly convert bools to ints...
+    int64_t to_int () const;
+    u_int64_t to_uint () const;
+    bool to_uint (u_int64_t *u) const;
+    bool to_int (int64_t *u) const;
+
   private:
     static ptr<expr_bool_t> _false, _true;
     expr_bool_t (bool b) : expr_constant_t (), _b (b) {}

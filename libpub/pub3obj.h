@@ -70,7 +70,21 @@ namespace pub3 {
     const ptr<expr_list_t> _list;
     const size_t _index;
   };
-
+  
+  //-----------------------------------------------------------------------
+  
+  class plain_obj_ref_t : public pub3::obj_ref_t {
+  public:
+    plain_obj_ref_t () {}
+    ptr<pub3::expr_t> get () { return m_x; }
+    ptr<const pub3::expr_t> get () const { return m_x; }
+    void set (ptr<pub3::expr_t> x) { m_x = x; }
+    static ptr<plain_obj_ref_t> alloc () 
+    { return New refcounted<plain_obj_ref_t> (); }
+  private:
+    ptr<pub3::expr_t> m_x;
+  };
+  
   //-----------------------------------------------------------------------
 
 #define I2S(typ, prnt) \

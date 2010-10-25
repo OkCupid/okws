@@ -24,13 +24,14 @@ data = { "d" : date, "i" : 3000, "pk" : 4004, "d2" : date}
 put_arg = { "key" : "test-key-1",
             "data" : data }
 
-packet = hdr + json.dumps (data)
+packet = hdr + json.dumps (put_arg)
 plen = len(packet)
 rem = plen % 4
 if rem != 0:
-    packet += struct.pack ("x" * rem)
+    packet += struct.pack ("x" * (4 - rem))
 
 full_packet = struct.pack (">L", len (packet) + 0x80000000) + packet
 
 print full_packet
+print len(full_packet)
 s.send (full_packet)

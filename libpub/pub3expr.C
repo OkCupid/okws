@@ -568,6 +568,13 @@ namespace pub3 {
   ptr<expr_t> expr_bool_t::copy () const
   { return _b ? _true : _false; }
 
+  //---------------------------------------------------------------------
+
+  int64_t expr_bool_t::to_int () const { return _b; }
+  u_int64_t expr_bool_t::to_uint () const { return _b; }
+  bool expr_bool_t::to_uint (u_int64_t *u) const { *u = _b; return true; }
+  bool expr_bool_t::to_int (int64_t *u) const { *u = _b; return true; }
+
   //====================================================================
 
   ptr<const expr_t>

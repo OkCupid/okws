@@ -7,20 +7,6 @@
 
 //-----------------------------------------------------------------------
 
-class plain_obj_ref_t : public pub3::obj_ref_t {
-public:
-  plain_obj_ref_t () {}
-  ptr<pub3::expr_t> get () { return m_x; }
-  ptr<const pub3::expr_t> get () const { return m_x; }
-  void set (ptr<pub3::expr_t> x) { m_x = x; }
-  static ptr<plain_obj_ref_t> alloc () 
-  { return New refcounted<plain_obj_ref_t> (); }
-private:
-  ptr<pub3::expr_t> m_x;
-};
-
-//-----------------------------------------------------------------------
-
 // From an input XDR object, create a JSON representation of it.
 class JSON_creator_t : public XML_RPC_obj_t {
 public:

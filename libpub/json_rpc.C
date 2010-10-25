@@ -96,6 +96,9 @@ json_decoder_t::rpc_decode (str *s)
 void 
 json_decoder_t::enter_field (const char *f) 
 {
+  // top level!
+  if (!f) { return; }
+
   debug_push (f);
   ptr<pub3::expr_dict_t> d;
   ptr<pub3::expr_t> x;
@@ -113,6 +116,8 @@ json_decoder_t::enter_field (const char *f)
 void
 json_decoder_t::exit_field (const char *f)
 {
+  // top level!
+  if (!f) { return; }
   pop_back ();
   debug_pop ();
 }
@@ -217,8 +222,23 @@ json_decoder_t::init_decode (const char *msg, ssize_t sz)
 bool
 json_decoder_t::init_decode (str s)
 {
-  return ((m_payload = s) && 
-	  (m_root = pub3::json_parser_t::parse (s)));
+  ptr<pub3::expr_t> x;
+  bool ret = false;
+  m_payload = s;
+  ptr<pub3::json_parser_t> p = New refcounted<pub3::json_parser_t> ();
+  
+  if (!s) { 
+    warn << "json-rpc: decode of empty string failed\n";
+  } else if (!(x = p->mparse (s))) {
+    warn << "json-rpc: decode of packet failed: " << s << "\n";
+    const vec<str> &e = p->get_errors ();
+    for (size_t i = 0; i < e.size (); i++) {
+      warn << "json-rpc: error: " << e[i] << "\n";
+    } 
+  } else {
+    ret = init_decode (x); 
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -269,7 +289,7 @@ void
 json_XDR_t::error_generic (str s)
 {
   strbuf b;
-  b << "at field: ";
+  b << "at field ";
   size_t n = m_debug_stack.size ();
   for (size_t i = 0; i < n; i++) {
     str el = m_debug_stack[i];
@@ -301,7 +321,11 @@ json_XDR_t::error_wrong_type (str s, ptr<const pub3::expr_t> x)
 //-----------------------------------------------------------------------
 
 json_encoder_t::json_encoder_t (ptr<v_XDR_dispatch_t> d, XDR *x)
-  : json_XDR_t (d, x) {}
+  : json_XDR_t (d, x) 
+{
+  m_root_ref = pub3::plain_obj_ref_t::alloc ();
+  push_ref (m_root_ref);
+}
 
 //-----------------------------------------------------------------------
 
@@ -336,8 +360,10 @@ json_encoder_t::rpc_traverse (bigint &b)
 void
 json_encoder_t::enter_field (const char *field)
 {
-  debug_push (field);
-  push_ref (pub3::obj_ref_dict_t::alloc (top_dict (), field));
+  if (field) {
+    debug_push (field);
+    push_ref (pub3::obj_ref_dict_t::alloc (top_dict (), field));
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -345,7 +371,7 @@ json_encoder_t::enter_field (const char *field)
 void
 json_encoder_t::exit_field (const char *f)
 {
-  pop_ref ();
+  if (f) { pop_ref (); }
 }
 
 //-----------------------------------------------------------------------
@@ -447,6 +473,17 @@ json_encoder_t::push_ref (ptr<pub3::obj_ref_t> r)
 //-----------------------------------------------------------------------
 
 void
+json_encoder_t::flush ()
+{
+  // XXX error check and also pad!!!
+  ptr<pub3::expr_t> x = m_root_ref->get ();
+  str s = x->to_str (true);
+  xdr_putpadbytes (m_x, s.cstr (), s.len ());
+}
+
+//-----------------------------------------------------------------------
+
+void
 json_encoder_t::pop_ref ()
 {
   m_obj_stack.pop_back ();
@@ -476,6 +513,15 @@ json_encoder_t::exit_pointer (bool nonnil)
     exit_slot (0);
   }
   return true;
+}
+
+//-----------------------------------------------------------------------
+
+json_XDR_t::~json_XDR_t ()
+{
+  if (m_err_msg) {
+    warn << "json-rpc decoding error: " << m_err_msg << "\n";
+  }
 }
 
 //-----------------------------------------------------------------------
