@@ -33,5 +33,17 @@ if rem != 0:
 full_packet = struct.pack (">L", len (packet) + 0x80000000) + packet
 
 print full_packet
-print len(full_packet)
 s.send (full_packet)
+
+packlen_struct = s.recv (4)
+print (len (packlen_struct))
+print packlen_struct
+packlen = struct.unpack (">L", packlen_struct)
+packlen = packlen[0] & 0x7ffffff
+print packlen
+stuff = s.recv (packlen)
+(xid,reply) = struct.unpack(">LL", stuff[0:8])
+stuff = stuff[24:]
+print "XID: " + str (xid)
+print "Reply bit: " + str (reply)
+print stuff
