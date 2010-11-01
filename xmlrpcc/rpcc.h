@@ -234,3 +234,6 @@ extern bool guess_defines;
 str stripfname (str s, bool suffix = true);
   
 rpc_program *get_prog (bool creat);
+
+str make_csafe_filename (str fname);
+str make_constant_collect_hook (str fname);

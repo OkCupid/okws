@@ -262,6 +262,75 @@ dumpenum_xml (const rpc_sym *s)
   type_tab.push_back(rs->id);
 }
 
+//-----------------------------------------------------------------------
+// MK 2010/11/1 --- mimic, for now, the behavior of rpcc, which has
+// its own scheme for collecting RPC constants.  I'm hoping that eventually
+// we can rip out all of xmlrpcc in favor of the newer, better 
+// JSON rpc, so excuse the copy-paste from rpcc in sfslite for now...
+
+struct rpc_constant_t {
+  rpc_constant_t (str i, str t) : id (i), typ (t) {}
+  str id, typ;
+};
+
+vec<rpc_constant_t> rpc_constants;
+
+void collect_constant (str i, str t)
+{
+  rpc_constants.push_back (rpc_constant_t (i, t));
+}
+
+str
+make_csafe_filename (str fname)
+{
+  strbuf hdr;
+  const char *fnp, *cp;
+
+  if ((fnp = strrchr (fname, '/')))
+    fnp++;
+  else fnp = fname;
+
+  // strip off the suffix ".h" or ".C"
+  for (cp = fnp; *cp && *cp != '.' ; cp++ ) ;
+  size_t len = cp - fnp;
+
+  mstr out (len + 1);
+  for (size_t i = 0; i < len; i++) {
+    if (fnp[i] == '-') { out[i] = '_'; }
+    else { out[i] = fnp[i]; }
+  }
+  out[len] = 0;
+  out.setlen (len);
+
+  return out;
+}
+
+str 
+make_constant_collect_hook (str fname)
+{
+  strbuf b;
+  str csafe_fname = make_csafe_filename (fname);
+  b << csafe_fname << "_constant_collect";
+  return b;
+}
+
+static void
+dump_constant_collect_hook (str fname)
+{
+  str cch = make_constant_collect_hook (fname);
+  aout << "void\n"
+       << cch << " (rpc_constant_collector_t *rcc)\n"
+       << "{\n";
+  for (size_t i = 0; i < rpc_constants.size (); i++) {
+    const rpc_constant_t &rc = rpc_constants[i];
+    aout << "  rcc->collect (\"" << rc.id << "\", "
+	 << rc.id << ", " << rc.typ << ");\n";
+  }
+  aout << "}\n\n";
+}
+
+//-----------------------------------------------------------------------
+
 static void
 populate_const_table (const str &s)
 {
@@ -274,6 +343,7 @@ populate_const_table_enum (const rpc_sym *s)
   const rpc_enum *rs = s->senum.addr ();
   for (const rpc_const *rc = rs->tags.base (); rc < rs->tags.lim (); rc++) {
     populate_const_table (rc->id);
+    collect_constant (rc->id, "RPC_CONSTANT_ENUM");
   }
 }
 
@@ -281,10 +351,13 @@ static void
 populate_const_table_prog (const rpc_program *rs)
 {
   populate_const_table (rs->id);
+  collect_constant (rs->id, "RPC_CONSTANT_PROG");
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
     populate_const_table (rv->id);
+    collect_constant (rv->id, "RPC_CONSTANT_VERS");
     for (const rpc_proc *rp = rv->procs.base (); rp < rv->procs.lim (); rp++) {
       populate_const_table (rp->id);
+      collect_constant (rp->id, "RPC_CONSTANT_PROC");
     }
   }
 }
@@ -297,6 +370,7 @@ collect_pound_def (str s)
   static rxx x ("#\\s*define\\s*(\\S+)\\s+(.*)");
   if (guess_defines && x.match (s)) {
     pound_defs.push_back (x[1]);
+    collect_constant (x[1], "RPC_CONSTANT_POUND_DEF");
   }
 }
 
@@ -658,6 +732,8 @@ gencfile (str fname)
   dump_pound_defs (prfx);
 
   dump_file_struct (prfx);
+
+  dump_constant_collect_hook (fname);
 
   aout << "\n";
 }

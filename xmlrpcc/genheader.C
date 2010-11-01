@@ -696,6 +696,17 @@ makeguard (str fname)
   return guard;
 }
 
+static void
+dump_constant_collect_hook (str fname)
+{
+  str csafe_fname = make_csafe_filename (fname);
+  str cch = make_constant_collect_hook (fname);
+  aout << "extern void "
+       << cch << " (rpc_constant_collector_t *rcc);\n"
+       << "static rpc_add_cch_t " 
+       << csafe_fname << "_obj (" << cch << ");\n\n";
+}
+
 void
 genheader (str fname)
 {
@@ -728,6 +739,8 @@ genheader (str fname)
   aout << "extern xml_rpc_file " << stripfname (fname, false)
        << "_rpc_file;\n";
   end_xml_guard ();
+
+  dump_constant_collect_hook (fname);
 
   aout << "#endif /* !" << guard << " */\n";
 }
