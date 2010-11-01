@@ -69,7 +69,7 @@ public:
   bool rpc_traverse (bigint &b);
   void enter_field (const char *f);
   void exit_field (const char *f);
-  void enter_array (size_t i);
+  bool enter_array (u_int32_t &i, bool dyn_sized);
   void exit_array ();
   void enter_slot (size_t i);
   void exit_slot (size_t i);
@@ -94,7 +94,7 @@ public:
   bool rpc_traverse (bigint &b);
   void enter_field (const char *f);
   void exit_field (const char *f);
-  void enter_array (size_t i);
+  bool enter_array (u_int32_t &i, bool dyn_sized);
   void exit_array ();
   void enter_slot (size_t i);
   void exit_slot (size_t i);

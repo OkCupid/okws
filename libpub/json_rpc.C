@@ -169,7 +169,7 @@ json_decoder_t::rpc_traverse (bigint &b)
 
 //-----------------------------------------------------------------------
 
-void json_decoder_t::enter_array (size_t i) {}
+bool json_decoder_t::enter_array (u_int32_t &i, bool dyn_sized) { return true; }
 void json_decoder_t::exit_array () {}
 
 //-----------------------------------------------------------------------
@@ -407,11 +407,12 @@ void json_encoder_t::exit_array () {}
 
 //-----------------------------------------------------------------------
 
-void
-json_encoder_t::enter_array (size_t i)
+bool
+json_encoder_t::enter_array (u_int32_t &i, bool dyn_sized)
 {
   ptr<pub3::expr_list_t> l = pub3::expr_list_t::alloc ();
   set_top (l);
+  return true;
 }
 
 //-----------------------------------------------------------------------

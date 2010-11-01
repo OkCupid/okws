@@ -1,6 +1,7 @@
 
 import time
 import sys
+import json
 
 sys.path += [ "../../../py" ]
 
@@ -26,4 +27,4 @@ print cli.call (1, put_arg)
 
 print cli.call (2, key)
 
-print cli.call (92177, None)
+print json.dumps (eval (cli.call (92177, None)), indent = 4)
