@@ -14,10 +14,28 @@ public:
 
 //-----------------------------------------------------------------------
 
+class json_fetch_constants_t 
+  : public rpc_global_proc_t,
+    public rpc_constant_collector_t {
+public:
+  json_fetch_constants_t ();
+  static const u_int32_t procno; // == 92177
+  void process (svccb *sbp);
+  const rpcgen_table *get_rpcgen_table ();
+  void collect (const char *k, int i, rpc_constant_type_t t) ;
+  void collect (const char *k, str v, rpc_constant_type_t t) {}
+  void collect (const char *k, const char *c, rpc_constant_type_t t) {}
+private:
+  rpc_constant_set_t m_set;
+};
+
+//-----------------------------------------------------------------------
+
 class json_XDR_t : public v_XDR_t {
 public:
   json_XDR_t (ptr<v_XDR_dispatch_t> d, XDR *x);
   virtual ~json_XDR_t ();
+  ptr<rpc_global_proc_t> get_global_proc (u_int32_t num);
 protected:
   bool is_empty () const;
   ptr<pub3::expr_t> top ();

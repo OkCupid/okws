@@ -546,6 +546,25 @@ default:
 
 /* ----------------------------------------------------------------------- */
 
+/* XDR descriptions of constants -- poor man's reflection! */
+
+struct rpc_int_constant_t {
+   string name<>;
+   int value;
+};
+
+typedef rpc_int_constant_t rpc_int_constants_t<>;
+
+struct rpc_constant_set_t {
+   rpc_int_constants_t progs;
+   rpc_int_constants_t vers;
+   rpc_int_constants_t procs;
+   rpc_int_constants_t enums;
+   rpc_int_constants_t pound_defs;
+};
+
+/* ----------------------------------------------------------------------- */
+
 /* ======================================================================= */
 
 enum xpub_status_typ_t {

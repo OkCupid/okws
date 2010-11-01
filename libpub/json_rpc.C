@@ -525,3 +525,77 @@ json_XDR_t::~json_XDR_t ()
 }
 
 //-----------------------------------------------------------------------
+
+ptr<rpc_global_proc_t>
+json_XDR_t::get_global_proc (u_int32_t num)
+{
+  ptr<rpc_global_proc_t> ret;
+  if (num == json_fetch_constants_t::procno) {
+    ret = New refcounted<json_fetch_constants_t> ();
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+const u_int32_t json_fetch_constants_t::procno = 92177;
+
+//-----------------------------------------------------------------------
+
+void 
+json_fetch_constants_t::process (svccb *sbp) 
+{
+  sbp->replyref (m_set);
+}
+
+
+//-----------------------------------------------------------------------
+
+void 
+json_fetch_constants_t::collect (const char *key, int i, rpc_constant_type_t t)
+{
+  rpc_int_constant_t c;
+  c.name = key;
+  c.value = i;
+
+  rpc_int_constants_t *v = NULL;
+
+  switch (t) {
+  case RPC_CONSTANT_PROG: v = &m_set.progs; break;
+  case RPC_CONSTANT_VERS: v = &m_set.vers; break;
+  case RPC_CONSTANT_PROC: v = &m_set.procs; break;
+  case RPC_CONSTANT_ENUM: v = &m_set.enums; break;
+  case RPC_CONSTANT_POUND_DEF: v = &m_set.pound_defs; break;
+  default: break;
+  }
+
+  if (v) { v->push_back (c); }
+}
+
+//-----------------------------------------------------------------------
+
+json_fetch_constants_t::json_fetch_constants_t ()
+{
+  global_rpc_constant_collect (this);
+}
+
+//-----------------------------------------------------------------------
+
+const rpcgen_table *
+json_fetch_constants_t::get_rpcgen_table () 
+{ 
+  static rpcgen_table out =
+    { "JSON_FETCH_CONSTANTS", 
+      &typeid (void),
+      void_alloc, 
+      xdr_void, 
+      print_void, 
+      &typeid (rpc_constant_set_t),
+      rpc_constant_set_t_alloc, 
+      xdr_rpc_constant_set_t,
+      print_rpc_constant_set_t };
+
+  return &out;
+}
+
+//-----------------------------------------------------------------------
