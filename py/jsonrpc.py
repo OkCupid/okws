@@ -63,8 +63,12 @@ class Client:
         res = self.call (proc = 0, arg = None, vers = 1, 
                          prog = self.constant_prog)
         lst = []
-        for f in [ "enums", "progs", "vers", "procs", "pound_defs" ]:
-            lst += [ [ p["name"], p["value"] ] for p in res[f] ]
+
+        # there are 5 constant lists, but treat them each the same;
+        # eventually, we might do something smarter here
+        for const_list in res.values ():
+            lst += [ [ p["name"], p["value"] ] for p in const_list ]
+
         ret = RpcConst (lst)
         return ret
 
@@ -133,15 +137,13 @@ class Client:
         else:
             data = packet[start:]
 
-            # strip off any null bytes
+            # strip off any trailing null bytes
             end = data.find ("\x00")
             if end > 0:
                 data = data[:end]
 
-            # eval json to python
-            true = True
-            false = False
-            res = eval (data)
+            # eval json to python; might want to make this more robsuto
+            res = json.loads (data)
 
         return res
 
