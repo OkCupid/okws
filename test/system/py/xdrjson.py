@@ -7,10 +7,13 @@ sys.path += [ "../../../py" ]
 
 import jsonrpc
 
-cli = jsonrpc.Client (host = "127.0.0.1", port = 10808,
-                      prog = 10808, vers = 1)
+cli = jsonrpc.Client (host = "127.0.0.1", port = 10808)
 
 cli.connect ()
+
+C = cli.fetch_constants ()
+
+cli.set_prog (C.TST2_PROG, C.TST2_VERS)
 
 serial = str (int (time.time ()) % 10000)
 
@@ -23,8 +26,7 @@ data = { "d" : date, "i" : serial , "pk" : 4008, "d2" : date}
 put_arg = { "key" : key,
             "data" : data }
 
-print cli.call (1, put_arg)
+print cli.call (C.TST2_PUT, put_arg)
 
-print cli.call (2, key)
+print cli.call (C.TST2_GET, key)
 
-print json.dumps (eval (cli.call (92177, None)), indent = 4)

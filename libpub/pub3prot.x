@@ -563,6 +563,17 @@ struct rpc_constant_set_t {
    rpc_int_constants_t pound_defs;
 };
 
+namespace rpc {
+  program JSON_INTROSPECTION_PROG {
+    version JSON_INTROSPECTION_V1 {
+
+      rpc_constant_set_t 
+      JSON_INTROSPECTION_FETCH_CONSTANTS(void) = 0;
+
+    } = 1;
+  } = 79921;
+};
+
 /* ----------------------------------------------------------------------- */
 
 /* ======================================================================= */

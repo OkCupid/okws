@@ -527,31 +527,6 @@ json_XDR_t::~json_XDR_t ()
 
 //-----------------------------------------------------------------------
 
-ptr<rpc_global_proc_t>
-json_XDR_t::get_global_proc (u_int32_t num)
-{
-  ptr<rpc_global_proc_t> ret;
-  if (num == json_fetch_constants_t::procno) {
-    ret = New refcounted<json_fetch_constants_t> ();
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-const u_int32_t json_fetch_constants_t::procno = 92177;
-
-//-----------------------------------------------------------------------
-
-void 
-json_fetch_constants_t::process (svccb *sbp) 
-{
-  sbp->replyref (m_set);
-}
-
-
-//-----------------------------------------------------------------------
-
 void 
 json_fetch_constants_t::collect (const char *key, int i, rpc_constant_type_t t)
 {
@@ -580,23 +555,77 @@ json_fetch_constants_t::json_fetch_constants_t ()
   global_rpc_constant_collect (this);
 }
 
+//=======================================================================
+
+const rpc_program json_introspection_server_t::s_prog 
+   = json_introspection_prog_1;
+
 //-----------------------------------------------------------------------
 
-const rpcgen_table *
-json_fetch_constants_t::get_rpcgen_table () 
-{ 
-  static rpcgen_table out =
-    { "JSON_FETCH_CONSTANTS", 
-      &typeid (void),
-      void_alloc, 
-      xdr_void, 
-      print_void, 
-      &typeid (rpc_constant_set_t),
-      rpc_constant_set_t_alloc, 
-      xdr_rpc_constant_set_t,
-      print_rpc_constant_set_t };
-
-  return &out;
+bool
+json_introspection_server_t::is_associated (ptr<axprt> x)
+{
+  ptr<xhinfo> xi = xhinfo::lookup (x);
+  bool ret = false;
+  if (xi) {
+    ret = xi->stab[progvers (s_prog.progno, s_prog.versno)];
+  }
+  return ret;
 }
+
+//-----------------------------------------------------------------------
+
+void
+json_XDR_dispatch_t::v_asrv_alloc (ptr<axprt> x)
+{
+  if (!json_introspection_server_t::is_associated (x)) {
+    vNew json_introspection_server_t (x);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+json_introspection_server_t::json_introspection_server_t (ptr<axprt> x)
+  : m_x (x), 
+    m_srv (asrv::alloc (x, s_prog, 
+			wrap (this, &json_introspection_server_t::dispatch),
+			false))
+{}
+
+//-----------------------------------------------------------------------
+
+void
+json_introspection_server_t::dispatch (svccb *sbp)
+{
+  if (!sbp) { 
+    delete this;
+  } else {
+    switch (sbp->proc ()) {
+    case JSON_INTROSPECTION_FETCH_CONSTANTS:
+      {
+	rpc::json_introspection_prog_1::
+	  json_introspection_fetch_constants_srv_t<svccb> srv (sbp);
+	srv.reply (constant_set ());
+      }
+      break;
+    default:
+      sbp->reject (PROC_UNAVAIL);
+      break;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+const rpc_constant_set_t &
+json_introspection_server_t::constant_set ()
+{
+  static ptr<json_fetch_constants_t> jfc;
+  if (!jfc) {
+    jfc = New refcounted<json_fetch_constants_t> ();
+  }
+  return jfc->constant_set ();
+}
+
 
 //-----------------------------------------------------------------------

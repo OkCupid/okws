@@ -9,24 +9,36 @@
 class json_XDR_dispatch_t : public v_XDR_dispatch_t {
 public:
   ptr<v_XDR_t> alloc (u_int32_t rpcvers, XDR *input);
+  void v_asrv_alloc (ptr<axprt> x);
   static void enable ();
 };
 
 //-----------------------------------------------------------------------
 
 class json_fetch_constants_t 
-  : public rpc_global_proc_t,
-    public rpc_constant_collector_t {
+  : public rpc_constant_collector_t {
 public:
   json_fetch_constants_t ();
-  static const u_int32_t procno; // == 92177
-  void process (svccb *sbp);
-  const rpcgen_table *get_rpcgen_table ();
   void collect (const char *k, int i, rpc_constant_type_t t) ;
   void collect (const char *k, str v, rpc_constant_type_t t) {}
   void collect (const char *k, const char *c, rpc_constant_type_t t) {}
+  const rpc_constant_set_t &constant_set () { return m_set; }
 private:
   rpc_constant_set_t m_set;
+};
+
+//-----------------------------------------------------------------------
+
+class json_introspection_server_t {
+public:
+  json_introspection_server_t (ptr<axprt> x);
+  void dispatch (svccb *sbp);
+  static const rpc_program s_prog;
+  static bool is_associated (ptr<axprt> x);
+  static const rpc_constant_set_t &constant_set ();
+private:
+  ptr<axprt> m_x;
+  ptr<asrv> m_srv;
 };
 
 //-----------------------------------------------------------------------
@@ -35,7 +47,6 @@ class json_XDR_t : public v_XDR_t {
 public:
   json_XDR_t (ptr<v_XDR_dispatch_t> d, XDR *x);
   virtual ~json_XDR_t ();
-  ptr<rpc_global_proc_t> get_global_proc (u_int32_t num);
 protected:
   bool is_empty () const;
   ptr<pub3::expr_t> top ();

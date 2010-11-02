@@ -20,7 +20,24 @@ class Error (Exception):
 
 ##-----------------------------------------------------------------------
 
+class RpcConst :
+    """ Holds constants fetched through RPC calls """
+    def __init__ (self, lst = []):
+        if list:
+            self.setall (lst)
+    
+    def set (self, lst):
+        setattr (self, lst[0], lst[1])
+
+    def setall (self, lst):
+        for p in lst:
+            self.set (p)
+
+##-----------------------------------------------------------------------
+
 class Client:
+
+    constant_prog = 79921
 
     #-----------------------------------------
 
@@ -42,14 +59,35 @@ class Client:
 
     #-----------------------------------------
 
-    def make_packet (self, proc, arg):
+    def fetch_constants (self):
+        res = self.call (proc = 0, arg = None, vers = 1, 
+                         prog = self.constant_prog)
+        lst = []
+        for f in [ "enums", "progs", "vers", "procs", "pound_defs" ]:
+            lst += [ [ p["name"], p["value"] ] for p in res[f] ]
+        ret = RpcConst (lst)
+        return ret
+
+    #-----------------------------------------
+
+    def set_prog (self, prog, vers):
+        self._prog = prog
+        self._vers = vers
+
+    #-----------------------------------------
+
+    def make_packet (self, proc, arg, prog, vers):
 
         # add the HEADER longs as follows:
         xid = random.randint(0,0xffffffff)
         call = 0
         js = 3
+
+        if prog < 0: prog = self._prog
+        if vers < 0: vers = self._vers
+    
         hdr = struct.pack (">" + "L" * 6, xid, call, js, 
-                           self._prog, self._vers, proc)
+                           prog, vers, proc)
 
         # make an XDR "Auth" Field
         hdr += struct.pack ("x" * 4 * 4) 
@@ -91,16 +129,26 @@ class Client:
             raise Error, "packet too small, expected at least 24b, got %d" % l
 
         if l == start:
-            ret = None
+            res = None
         else:
-            res = str (packet[start:])
+            data = packet[start:]
+
+            # strip off any null bytes
+            end = data.find ("\x00")
+            if end > 0:
+                data = data[:end]
+
+            # eval json to python
+            true = True
+            false = False
+            res = eval (data)
 
         return res
 
     #-----------------------------------------
 
-    def call (self, proc, arg):
+    def call (self, proc, arg, prog = -1, vers = -1):
        
-        (packet, xid) = self.make_packet (proc, arg)
+        (packet, xid) = self.make_packet (proc, arg, prog, vers)
         self._socket.send (packet)
         return self.receive_packet (xid)
