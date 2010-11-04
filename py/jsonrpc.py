@@ -119,7 +119,15 @@ class Client:
         packlen_raw = self._socket.recv (4)
         (packlen,) = struct.unpack (">L", packlen_raw)
         packlen = packlen & 0x7fffffff
-        packet = self._socket.recv (packlen)
+
+        frags = []
+        recv_len = 0
+        while recv_len < packlen:
+            frag = self._socket.recv (packlen - recv_len)
+            if len (frag):
+                recv_len += len (frag)
+                frags += [ frag ]
+        packet = ''.join (frags)
 
         (xid_in, reply) = struct.unpack (">LL", packet[0:8])
         if xid_in != xid:
