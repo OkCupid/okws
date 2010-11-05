@@ -2,6 +2,7 @@
 import time
 import sys
 import json
+import base64
 
 sys.path += [ "../../../py" ]
 
@@ -29,4 +30,12 @@ put_arg = { "key" : key,
 print cli.call (C.TST2_PUT, put_arg)
 
 print cli.call (C.TST2_GET, key)
+
+foo = { "b" : True,
+        "bar" : { "datum1" : [],
+                  "datum2" : [ data ],
+                  "data" : [ data, data, data ],
+                  "odata" : base64.b64encode ("\x44\xe0\xa4") } }
+        
+print cli.call (C.TST2_FOO_REFLECT, foo)
 

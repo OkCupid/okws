@@ -76,7 +76,9 @@ public:
   bool rpc_traverse (u_int32_t &obj);
   bool rpc_traverse (u_int64_t &obj);
   bool rpc_encode (str s) { return false; }
+  bool rpc_encode_opaque (str s) { return false; }
   bool rpc_decode (str *s);
+  bool rpc_decode_opaque (str *s);
   bool rpc_traverse (bigint &b);
   void enter_field (const char *f);
   void exit_field (const char *f);
@@ -101,7 +103,9 @@ public:
   bool rpc_traverse (u_int32_t &obj);
   bool rpc_traverse (u_int64_t &obj);
   bool rpc_encode (str s);
+  bool rpc_encode_opaque (str s);
   bool rpc_decode (str *s) { return false; }
+  bool rpc_decode_opaque (str *s) { return false; }
   bool rpc_traverse (bigint &b);
   void enter_field (const char *f);
   void exit_field (const char *f);
@@ -113,7 +117,7 @@ public:
   bool exit_pointer (bool b);
   bool init_decode (const char *msg, ssize_t sz) { return false; }
   void init_encode ();
-  void flush ();
+  void flush (xdrsuio *x);
 protected:
   ptr<pub3::expr_list_t> top_list ();
   ptr<pub3::expr_dict_t> top_dict ();

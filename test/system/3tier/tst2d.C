@@ -41,6 +41,7 @@ public:
 protected:
   void get (svccb *sbp);
   void put (svccb *sbp);
+  void foo_reflect (svccb *sbp);
 private:
   sth_t _q_get, _q_put;
   bool err;
@@ -76,10 +77,20 @@ tst2_srv_t::dispatch (svccb *sbp)
   case TST2_GET:
     get (sbp);
     break;
+  case TST2_FOO_REFLECT:
+    foo_reflect (sbp);
+    break;
   default:
     reject ();
     break;
   }
+}
+
+void
+tst2_srv_t::foo_reflect (svccb *b)
+{
+  const foo_t *arg = b->Xtmpl getarg<foo_t> ();
+  b->reply (arg);
 }
 
 void

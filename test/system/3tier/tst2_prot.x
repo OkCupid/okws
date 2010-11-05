@@ -13,6 +13,20 @@ struct tst2_put_arg_t {
        tst2_data_t  data;
 };
 
+struct bar_t {
+       tst2_data_t *datum1;
+       tst2_data_t *datum2;
+       tst2_data_t data<>;
+       opaque odata<>;
+};
+
+union foo_t switch (bool b) {
+case TRUE:
+    bar_t bar;
+case FALSE:
+    void;
+};
+
 typedef string tst2_get_arg_t<>;
 
 union tst2_get_res_t switch (adb_status_t status) {
@@ -34,6 +48,9 @@ program TST2_PROG {
 
 		tst2_get_res_t
 		TST2_GET(tst2_get_arg_t) = 2;
+
+                foo_t
+ 		TST2_FOO_REFLECT(foo_t) = 3;
 
     	} = 1;
 } = 10808;

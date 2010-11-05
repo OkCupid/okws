@@ -79,6 +79,29 @@ json_decoder_t::rpc_traverse (u_int64_t &obj)
 //-----------------------------------------------------------------------
 
 bool
+json_decoder_t::rpc_decode_opaque (str *s)
+{
+  str tmp;
+  bool ret = rpc_decode (&tmp);
+  if (ret && !(*s = dearmor64 (tmp))) {
+    error_generic ("failed to base-64 decode input string");
+    ret = false; 
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_encode_opaque (str s)
+{
+  str tmp = armor64 (s);
+  return rpc_encode (tmp);
+}
+
+//-----------------------------------------------------------------------
+
+bool
 json_decoder_t::rpc_decode (str *s)
 {
   bool ret = false;
@@ -169,7 +192,22 @@ json_decoder_t::rpc_traverse (bigint &b)
 
 //-----------------------------------------------------------------------
 
-bool json_decoder_t::enter_array (u_int32_t &i, bool dyn_sized) { return true; }
+bool 
+json_decoder_t::enter_array (u_int32_t &i, bool dyn_sized) 
+{ 
+  bool ret = false;
+  ptr<pub3::expr_list_t> l;
+  if (is_empty ()) { error_empty ("array"); }
+  else if (!(l = top ()->to_list ())) {
+    error_wrong_type ("array", top ());
+  } else {
+    ret = true;
+    i = l->size ();
+  }
+  return ret; 
+}
+//-----------------------------------------------------------------------
+
 void json_decoder_t::exit_array () {}
 
 //-----------------------------------------------------------------------
@@ -474,12 +512,13 @@ json_encoder_t::push_ref (ptr<pub3::obj_ref_t> r)
 //-----------------------------------------------------------------------
 
 void
-json_encoder_t::flush ()
+json_encoder_t::flush (xdrsuio *xs)
 {
   // XXX error check and also pad!!!
   ptr<pub3::expr_t> x = m_root_ref->get ();
   str s = x->to_str (true);
   xdr_putpadbytes (m_x, s.cstr (), s.len ());
+  xs->hold_onto (s);
 }
 
 //-----------------------------------------------------------------------
