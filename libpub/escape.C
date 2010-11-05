@@ -1,14 +1,72 @@
 
 #include "pescape.h"
 #include "qhash.h"
+#include "wide_str.h"
 
 //-----------------------------------------------------------------------
 
-str
-json_escape (const str &s, bool addq)
+static bool
+find_non_std_char (const str &s)
 {
-  if (!s) return s;
+  const int8_t *p = reinterpret_cast<const int8_t *> (s.cstr ());
+  const int8_t *ep = p + s.len ();
+  for ( ; p < ep; p++) {
+    if (*p <= 0) return true;
+  }
+  return false;
+}
 
+//-----------------------------------------------------------------------
+
+static str
+json_escape_heavy (const str &s, bool addq)
+{
+  wide_str_t ws (s);
+  size_t len;
+  const wchar_t *buf = ws.buf (&len);
+
+  size_t room = 6 * len + 3;
+  mstr out (room);
+
+  char *outbase = out.cstr ();
+  char *outp = outbase;
+  const wchar_t *inp = buf;
+
+  if (addq) { *outp = '"'; outp++; room --; }
+
+  for (size_t i = 0; i < len; i++, inp++) {
+    size_t n;
+    if (*inp > 0xffff) { /* noop!! */ }
+    if (*inp > 0x7f || *inp <= 0x1f) {
+      n = snprintf (outp, room, "\\u%04x", *inp);
+    } else if (*inp == '\n') {
+      n = snprintf (outp, room, "\\n");
+    } else if (*inp == '\t') {
+      n = snprintf (outp, room, "\\t");
+    } else if (*inp == '\r') {
+      n = snprintf (outp, room, "\\r");
+    } else if (*inp == '\\') {
+      n = snprintf (outp, room, "\\\\");
+    } else if (*inp == '"') {
+      n = snprintf (outp, room, "\\\"");
+    } else {
+      *outp = *inp;
+      n = 1;
+    }
+    room -= n;
+    outp += n;
+  }
+
+  if (addq) { *outp = '"'; outp++; room --; }
+  out.setlen (outp - outbase);
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
+static str
+json_escape_std (str s, bool addq)
+{
   const char *p1 = s.cstr ();
   const char *p2 = NULL;
   char *buf = New char[2 * s.len () + 3];
@@ -44,6 +102,21 @@ json_escape (const str &s, bool addq)
   
   delete [] buf;
   return r;
+}
+
+//-----------------------------------------------------------------------
+
+str
+json_escape (const str &s, bool addq)
+{
+  str ret;
+  if (!s) { /* noop */ }
+  else if (find_non_std_char (s)) {
+    ret = json_escape_heavy (s, addq);  
+  } else { 
+   ret = json_escape_std (s, addq); 
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

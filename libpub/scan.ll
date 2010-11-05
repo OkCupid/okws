@@ -6,6 +6,8 @@
 #include "parse.h"
 #include "pub3parse.h"
 #include "qhash.h"
+#include <wchar.h>
+#include <locale.h>
 #define YY_STR_BUFLEN 20*1024
 
 static void begin_P3_STR (char ch);
@@ -55,6 +57,8 @@ static void json_str_begin (int mode);
 static void json_str_addch (int ch);
 static void json_str_add_unicode (const char *in);
 static void json_str_addstr (const char *in);
+static str unicode_to_utf8 (const char *in);
+static int hex_to_char (const char *x);
 static int  json_str_eof ();
 static int yy_json_mode = 0;
 static void inc_lineno (int c = 1);
@@ -194,6 +198,9 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 \\n		{ yylval.ch = '\n'; return T_P3_CHAR; }
 \\t		{ yylval.ch = '\t'; return T_P3_CHAR; }
 \\r		{ yylval.ch = '\r'; return T_P3_CHAR; }
+
+\\x[0-9a-fA-F]{2} { yylval.ch = hex_to_char (yytext+2); return T_P3_CHAR; }
+\\u[0-9a-fA-F]{4} { yylval.str = unicode_to_utf8 (yytext+2); return T_P3_STRING; }
 \n		{ inc_lineno (); yylval.ch = yytext[0]; return T_P3_CHAR; }
 \\.		{ yylval.ch = yytext[1]; return T_P3_CHAR; }
 [%]		{ yylval.ch = yytext[0]; return T_P3_CHAR; }
@@ -320,7 +327,7 @@ null		     { return T_P3_NULL; }
 \\n		     { json_str_addch ('\n'); }
 \\r		     { json_str_addch ('\r'); }
 \\t		     { json_str_addch ('\t'); }
-\\u[a-fA-F0-9]{4}    { json_str_add_unicode (yytext + 2); }
+\\u[0-9a-fA-F]{4}    { json_str_add_unicode (yytext + 2); }
 \\b		     { json_str_addch ('\b'); }
 \\[/]		     { json_str_addch ('/'); }
 \\.                  { 
@@ -619,13 +626,48 @@ json_str_addstr (const char *x)
   yy_json_strbuf.cat (x, true);
 }
 
+int
+hex_to_char (const char *in)
+{
+  char *ep;
+  long l = strtol (in, &ep, 16);
+  return l; 
+}
+
+str
+unicode_to_utf8 (const char *in)
+{
+  static bool init;
+  if (!init) {
+    setlocale (LC_CTYPE, "en_US.UTF-8");
+    init = true;
+  }
+  str ret;
+  char *ep;
+  mbstate_t state;
+  memset (&state, 0, sizeof (state));
+  long l = strtol (in, &ep, 16);
+  if (*ep == '\0') {
+    wchar_t buf[2];
+    buf[0] = l;
+    buf[1] = 0;
+    const wchar_t *inp = buf;
+    mstr m (6);
+    ssize_t n = wcsrtombs (m.cstr (), &inp, 2, &state);
+    if (n >= 0) {
+      m.setlen (n);
+      ret = m;
+    }
+  }
+  return ret;
+}
+
 void 
 json_str_add_unicode (const char *in)
 {
-   char *ep;
-   long l = strtol (in, &ep, 16);
-   if (*ep == '\0' && l > 0 && l <= 0xff) {
-      json_str_addch (l);
+   str s = unicode_to_utf8 (in);
+   if (s) {
+      json_str_addstr (s);
    }
 }
 
