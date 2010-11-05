@@ -8,10 +8,10 @@
 static bool
 find_non_std_char (const str &s)
 {
-  const int8_t *p = reinterpret_cast<const int8_t *> (s.cstr ());
-  const int8_t *ep = p + s.len ();
+  const u_int8_t *p = reinterpret_cast<const u_int8_t *> (s.cstr ());
+  const u_int8_t *ep = p + s.len ();
   for ( ; p < ep; p++) {
-    if (*p <= 0) return true;
+    if (*p <= 0x1f || *p > 0x7f) { return true; }
   }
   return false;
 }
@@ -37,18 +37,13 @@ json_escape_heavy (const str &s, bool addq)
   for (size_t i = 0; i < len; i++, inp++) {
     size_t n;
     if (*inp > 0xffff) { /* noop!! */ }
-    if (*inp > 0x7f || *inp <= 0x1f) {
+    else if (*inp == '\n') { n = snprintf (outp, room, "\\n"); } 
+    else if (*inp == '\t') { n = snprintf (outp, room, "\\t"); } 
+    else if (*inp == '\r') { n = snprintf (outp, room, "\\r"); }
+    else if (*inp == '\\') { n = snprintf (outp, room, "\\\\"); }
+    else if (*inp == '"') { n = snprintf (outp, room, "\\\""); }
+    else if (*inp > 0x7f || *inp <= 0x1f) {
       n = snprintf (outp, room, "\\u%04x", *inp);
-    } else if (*inp == '\n') {
-      n = snprintf (outp, room, "\\n");
-    } else if (*inp == '\t') {
-      n = snprintf (outp, room, "\\t");
-    } else if (*inp == '\r') {
-      n = snprintf (outp, room, "\\r");
-    } else if (*inp == '\\') {
-      n = snprintf (outp, room, "\\\\");
-    } else if (*inp == '"') {
-      n = snprintf (outp, room, "\\\"");
     } else {
       *outp = *inp;
       n = 1;
