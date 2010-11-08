@@ -35,7 +35,7 @@ json_escape_heavy (const str &s, bool addq)
   if (addq) { *outp = '"'; outp++; room --; }
 
   for (size_t i = 0; i < len; i++, inp++) {
-    size_t n;
+    size_t n = 0;
     if (*inp > 0xffff) { /* noop!! */ }
     else if (*inp == '\n') { n = snprintf (outp, room, "\\n"); } 
     else if (*inp == '\t') { n = snprintf (outp, room, "\\t"); } 
