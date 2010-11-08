@@ -1,0 +1,396 @@
+Index: libpub/pub3expr.C
+===================================================================
+--- libpub/pub3expr.C	(revision 5488)
++++ libpub/pub3expr.C	(working copy)
+@@ -56,13 +56,13 @@
+ //-----------------------------------------------------------------------
+ 
+ str
+-pub3::json::quote (const str &s)
++pub3::json::quote (const str &s, bool utf8)
+ {
+   str ret;
+   if (!s) {
+     ret = _null;
+   } else {
+-    ret = json_escape (s, true);
++    ret = json_escape (s, true, utf8);
+   }
+   return ret;
+ }
+@@ -115,11 +115,11 @@
+   //-------------------------------------------------------------------
+ 
+   str
+-  expr_t::safe_to_str (ptr<const expr_t> x, bool q)
++  expr_t::safe_to_str (ptr<const expr_t> x, to_str_opts_t o)
+   {
+     str ret;
+     if (!x) x = expr_null_t::alloc ();
+-    ret = x->to_str (q);
++    ret = x->to_str (o);
+     return ret;
+   }
+ 
+@@ -176,7 +176,8 @@
+     ptr<const expr_t> x = eval_to_val (e);
+     str ret;
+     if (x) {
+-      ret = x->to_str (false);
++      to_str_opts_t o (e->utf8_json (), false);
++      ret = x->to_str (o);
+     }
+     return ret;
+   }
+@@ -509,7 +510,8 @@
+   void
+   expr_constant_t::v_dump (dumper_t *d) const
+   {
+-    str s = to_str (true);
++    to_str_opts_t o (true, false);
++    str s = to_str (o);
+     d->dump (s, true);
+   }
+   
+@@ -546,7 +548,7 @@
+   //--------------------------------------------------------------------
+   
+   str expr_bool_t::static_to_str (bool b) { return b ? "true" : "false"; }
+-  str expr_bool_t::to_str (bool q) const { return static_to_str (_b); }
++  str expr_bool_t::to_str (to_str_opts_t o) const { return static_to_str (_b); }
+   
+   //--------------------------------------------------------------------
+   
+@@ -946,9 +948,9 @@
+   //--------------------------------------------------------------------
+ 
+   str
+-  expr_strbuf_t::to_str (bool q) const 
++  expr_strbuf_t::to_str (to_str_opts_t o) const 
+   { 
+-    str ret = q ? json::quote (_b) : str (_b);
++    str ret = o.m_quoted ? json::quote (_b, o.m_utf8) : str (_b);
+     return ret; 
+   }
+ 
+@@ -993,9 +995,9 @@
+   //--------------------------------------------------------------------
+ 
+   str
+-  expr_str_t::to_str (bool q) const 
++  expr_str_t::to_str (to_str_opts_t o) const 
+   { 
+-    str ret = q ? json::quote (_val) : _val;
++    str ret = o.m_quoted ? json::quote (_val, o.m_utf8) : _val;
+     return ret; 
+   }
+ 
+@@ -1127,9 +1129,10 @@
+   //-----------------------------------------------------------------------
+ 
+   str
+-  expr_int_t::to_str (bool js_safe) const
++  expr_int_t::to_str (to_str_opts_t o) const
+   {
+     str ret;
++    bool js_safe = o.m_quoted;
+     if (js_safe && ok_pub3_json_int_bitmax > 0) {
+       int64_t x = 1;
+       x = x << ok_pub3_json_int_bitmax;
+@@ -1180,9 +1183,10 @@
+   //-----------------------------------------------------------------------
+ 
+   str
+-  expr_uint_t::to_str (bool js_safe) const
++  expr_uint_t::to_str (to_str_opts_t o) const
+   {
+     str ret;
++    bool js_safe = o.m_quoted;
+     if (js_safe && ok_pub3_json_int_bitmax > 0) {
+       u_int64_t x = 1;
+       x = x << ok_pub3_json_int_bitmax;
+@@ -1209,7 +1213,7 @@
+   //-----------------------------------------------------------------------
+   
+   str
+-  pub3::expr_double_t::to_str (bool q) const
++  pub3::expr_double_t::to_str (to_str_opts_t o) const
+   {
+ #define BUFSZ 128
+     char buf[BUFSZ];
+@@ -1439,12 +1443,12 @@
+   //-----------------------------------------------------------------------
+   
+   str
+-  expr_list_t::to_str (bool q) const
++  expr_list_t::to_str (to_str_opts_t o) const
+   {
+     vec<str> v;
+     size_t sz = size ();
+     for (size_t i = 0; i < sz; i++) {
+-      v.push_back (expr_t::safe_to_str ((*this)[i], true));
++      v.push_back (expr_t::safe_to_str ((*this)[i], o));
+     }
+     str ret = vec2str (v, '[', ']');
+     return ret;
+@@ -1564,13 +1568,14 @@
+   //--------------------------------------------------------------------
+ 
+   str
+-  expr_shell_str_t::to_str (bool q) const
++  expr_shell_str_t::to_str (to_str_opts_t o) const
+   {
+     strbuf b;
+     for (size_t i = 0; _els && i < _els->size (); i++) {
+       ptr<const expr_t> x = (*_els)[i];
+       if (x) { 
+-	str s = x->to_str ();
++	o.m_quoted = false; // never quote!
++	str s = x->to_str (o);
+ 	b << s;
+       }
+     }
+@@ -1630,7 +1635,7 @@
+ 	ptr<const expr_t> x = (*_els)[i];
+ 	str s;
+ 	if (x) { x = x->eval_to_val (e); }
+-	if (x) { s = x->to_str (false); }
++	if (x) { s = x->to_str (); }
+ 	if (s) {
+ 	  hold.push_back (s);
+ 	  b << s;
+@@ -2032,7 +2037,7 @@
+   //--------------------------------------------------------------------
+   
+   str
+-  expr_dict_t::to_str (bool q) const
++  expr_dict_t::to_str (to_str_opts_t o) const
+   {
+     vec<str> v;
+     const_iterator_t it (*this);
+@@ -2041,8 +2046,8 @@
+     str ret;
+ 
+     while ((key = it.next (&val))) {
+-      str vs = expr_t::safe_to_str (val, true);
+-      str ks = json::quote (*key);
++      str vs = expr_t::safe_to_str (val, o);
++      str ks = json::quote (*key, o.m_utf8);
+       strbuf b ("%s : %s", ks.cstr (), vs.cstr ());
+       v.push_back (b);
+     }
+@@ -2055,7 +2060,8 @@
+   scalar_obj_t
+   expr_dict_t::to_scalar () const
+   {
+-    str s = to_str (true);
++    to_str_opts_t o (true, false);
++    str s = to_str (o);
+     return scalar_obj_t (s);
+   }
+ 
+@@ -2210,11 +2216,11 @@
+   //--------------------------------------------------------------------
+ 
+   str
+-  expr_cow_t::to_str (bool q) const 
++  expr_cow_t::to_str (to_str_opts_t o) const 
+   {
+     str s;
+     ptr<const expr_t> x = const_ptr ();
+-    if (x) { s = x->to_str (q); }
++    if (x) { s = x->to_str (o); }
+     return s;
+   }
+ 
+Index: libpub/pub3expr.h
+===================================================================
+--- libpub/pub3expr.h	(revision 5488)
++++ libpub/pub3expr.h	(working copy)
+@@ -45,13 +45,22 @@
+   class json {
+   public:
+     static str null() { return _null; }
+-    static str quote (const str &s);
++    static str quote (const str &s, bool utf8 = false);
+     static str safestr (const str &s);
+     static str _null;
+   };
+ 
+   //-----------------------------------------------------------------------
+ 
++  class to_str_opts_t {
++  public:
++    to_str_opts_t (bool q = false, bool utf8 = false) 
++      : m_quoted (q), m_utf8 (utf8) {}
++    bool m_quoted, m_utf8;
++  }; 
++
++  //-----------------------------------------------------------------------
++
+   class expr_t : public virtual refcount, public virtual dumpable_t {
+   public:
+     expr_t (lineno_t lineno = 0) : _lineno (lineno) {}
+@@ -73,7 +82,7 @@
+     static ptr<expr_t> safe_copy (ptr<const expr_t> in);
+     static ptr<const expr_t> safe_expr (ptr<const expr_t> in);
+     lineno_t lineno () const { return _lineno; }
+-    static str safe_to_str (ptr<const expr_t> x, bool q = false);
++    static str safe_to_str (ptr<const expr_t> x, to_str_opts_t o);
+     lineno_t dump_get_lineno () const { return lineno (); }
+     virtual void propogate_metadata (ptr<const metadata_t> md) {}
+ 
+@@ -133,7 +142,8 @@
+     virtual ptr<expr_list_t> to_list () { return NULL; }
+ 
+     virtual str to_identifier () const { return NULL; }
+-    virtual str to_str (bool q = false) const { return NULL; }
++    str to_str () const { return to_str (to_str_opts_t()); }
++    virtual str to_str (to_str_opts_t o) const { return NULL; }
+     virtual str to_switch_str () const { return to_str (); }
+     virtual bool to_bool () const { return false; }
+     virtual int64_t to_int () const { return 0; }
+@@ -199,7 +209,7 @@
+     bool to_xdr (xpub3_json_t *x) const;
+     bool is_static () const;
+     bool might_block_uncached () const;
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+     ptr<const callable_t> to_callable () const;
+     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
+     void v_dump (dumper_t *d) const;
+@@ -302,7 +312,7 @@
+     static ptr<expr_null_t> alloc ();
+     str type_to_str () const { return "null"; }
+     void v_dump (dumper_t *d) const;
+-    str to_str (bool q = false) const { return "null"; }
++    str to_str (to_str_opts_t o) const { return "null"; }
+     str arg_to_str () const { return ""; }
+   };
+ 
+@@ -316,7 +326,7 @@
+     bool to_xdr (xpub3_json_t *j) const;
+     static ptr<expr_bool_t> alloc (bool b);
+     static str static_to_str (bool b);
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+     str to_switch_str () const { return _b ? "1" : "0"; }
+     ptr<expr_t> copy () const;
+     bool to_bool () const { return _b; }
+@@ -658,7 +668,7 @@
+       : expr_constant_t (l) { if (s) add (s); }
+ 
+     bool is_str () const { return true; }
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+     bool to_bool () const;
+     scalar_obj_t to_scalar () const;
+     bool to_null () const;
+@@ -685,7 +695,7 @@
+     expr_str_t (const xpub3_str_t &x);
+ 
+     bool is_str () const { return true; }
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+     bool to_bool () const;
+     scalar_obj_t to_scalar () const;
+     bool to_null () const;
+@@ -731,7 +741,7 @@
+     bool to_uint (u_int64_t *u) const;
+     bool to_xdr (xpub3_expr_t *x) const;
+     const char *get_obj_name () const { return "pub3::expr_int_t"; }
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+ 
+     static ptr<expr_int_t> alloc (int64_t i);
+ 
+@@ -758,7 +768,7 @@
+     int64_t to_int () const;
+     bool to_int (int64_t *i) const;
+     bool to_uint (u_int64_t *u) const { *u = _val; return true; }
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+ 
+     scalar_obj_t to_scalar () const;
+ 
+@@ -784,7 +794,7 @@
+     double to_double () const { return _val; }
+     bool to_double (double *d) const;
+     scalar_obj_t to_scalar () const;
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+ 
+     bool to_xdr (xpub3_expr_t *x) const;
+     const char *get_obj_name () const { return "pub3::expr_double_t"; }
+@@ -830,7 +840,7 @@
+     bool to_bool () const { return size () > 0; }
+     ptr<rxx> to_regex (eval_t *e = NULL) const;
+     scalar_obj_t to_scalar () const;
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+     void v_dump (dumper_t *d) const;
+     void push_front (ptr<expr_t> e);
+ 
+@@ -884,7 +894,7 @@
+     bool to_xdr (xpub3_expr_t *x) const;
+     static ptr<expr_regex_t> alloc (ptr<rxx>, str b, str o); 
+ 
+-    str to_str (bool q = false) const { return _body; }
++    str to_str (to_str_opts_t o) const { return _body; }
+     ptr<rxx> to_regex (str *errp = NULL) const { return _rxx; }
+     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
+     
+@@ -908,7 +918,7 @@
+ 
+     ptr<const expr_t> eval_to_val (eval_t *e) const;
+     void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
+-    str to_str (bool q = false) const;
++    str to_str (to_str_opts_t o) const;
+ 
+     ptr<expr_t> compact () const;
+     void add (ptr<expr_t> e) { _els->push_back (e); }
+@@ -1018,7 +1028,7 @@
+ 
+     // To JSON-style string
+     scalar_obj_t to_scalar () const;
+-    str to_str (bool q) const;
++    str to_str (to_str_opts_t o) const;
+ 
+     ptr<expr_t> lookup (str k);
+     ptr<const expr_t> lookup (str k) const;
+Index: libpub/escape.C
+===================================================================
+--- libpub/escape.C	(revision 5494)
++++ libpub/escape.C	(working copy)
+@@ -106,7 +106,7 @@
+ {
+   str ret;
+   if (!s) { /* noop */ }
+-  else if (find_non_std_char (s)) {
++  else if (false || find_non_std_char (s)) {
+     ret = json_escape_heavy (s, addq);  
+   } else { 
+    ret = json_escape_std (s, addq); 
+Index: libpub/pub3eval.h
+===================================================================
+--- libpub/pub3eval.h	(revision 5488)
++++ libpub/pub3eval.h	(working copy)
+@@ -50,8 +50,9 @@
+     P_WARN_RELARG_NULL = 0x10000,           /* warn if a relat. arg is NULL */
+ 
+     P_STRICT_INCLUDE_SCOPING = 0x20000,      /* add scope barrier */
++    P_UTF8_JSON = 0x40000,                   /* weird UTF-8 in json */
+ 
+-    P_INFINITY = 0x40000,
++    P_INFINITY = 0x80000,
+ 
+     // All warnings I can think of....
+     P_WARN_STRICT = P_WARN_INLINE_NULL | P_WARN_NULL | P_WARN_RELARG_NULL
+@@ -159,6 +160,7 @@
+ 
+     void set_opts (opts_t o) { _opts = o; }
+     opts_t opts () const { return _opts; }
++    bool utf8_json () const { return _opts & P_UTF8_JSON; }
+ 
+     ptr<const expr_t> lookup_val (const str &nm) const;
+     ptr<mref_t> lookup_ref (const str &nm) const;
