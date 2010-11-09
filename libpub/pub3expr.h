@@ -9,6 +9,8 @@
 
 namespace pub3 {
 
+#define TO_STR_ARG str_opt_t sot = str_opt_t()
+
   //-----------------------------------------------------------------------
 
   // See pub3eval.h for a definition of eval_t; but don't included it
@@ -40,12 +42,23 @@ namespace pub3 {
   typedef event<ptr<expr_dict_t> >::ref xdev_t;
   typedef event<ptr<mref_t> >::ref mrev_t;
 
+
+  //-----------------------------------------------------------------------
+
+  class str_opt_t {
+  public:
+    str_opt_t (bool q = false, bool utf8 = false) 
+      : m_quoted (q), m_utf8 (utf8) {}
+    bool m_quoted, m_utf8;
+  }; 
+
   //-----------------------------------------------------------------------
 
   class json {
   public:
     static str null() { return _null; }
-    static str quote (const str &s);
+    static str quote (const str &s, bool utf8 = false);
+    static str quote (const str &s, str_opt_t so);
     static str safestr (const str &s);
     static str _null;
   };
@@ -73,7 +86,7 @@ namespace pub3 {
     static ptr<expr_t> safe_copy (ptr<const expr_t> in);
     static ptr<const expr_t> safe_expr (ptr<const expr_t> in);
     lineno_t lineno () const { return _lineno; }
-    static str safe_to_str (ptr<const expr_t> x, bool q = false);
+    static str safe_to_str (ptr<const expr_t> x, str_opt_t o);
     lineno_t dump_get_lineno () const { return lineno (); }
     virtual void propogate_metadata (ptr<const metadata_t> md) {}
 
@@ -133,7 +146,7 @@ namespace pub3 {
     virtual ptr<expr_list_t> to_list () { return NULL; }
 
     virtual str to_identifier () const { return NULL; }
-    virtual str to_str (bool q = false) const { return NULL; }
+    virtual str to_str (TO_STR_ARG) const { return NULL; }
     virtual str to_switch_str () const { return to_str (); }
     virtual bool to_bool () const { return false; }
     virtual int64_t to_int () const { return 0; }
@@ -152,7 +165,7 @@ namespace pub3 {
 
     // Evaluating an argument to string, internally to the 
     // evaluation mechanism. Only overidden in the case of null
-    virtual str arg_to_str () const { return to_str (false); }
+    virtual str arg_to_str () const { return to_str (); }
 
     // Used during parsing; coerces an arbitrary expression
     // into a function call.
@@ -199,7 +212,7 @@ namespace pub3 {
     bool to_xdr (xpub3_json_t *x) const;
     bool is_static () const;
     bool might_block_uncached () const;
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
     ptr<const callable_t> to_callable () const;
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
@@ -302,7 +315,7 @@ namespace pub3 {
     static ptr<expr_null_t> alloc ();
     str type_to_str () const { return "null"; }
     void v_dump (dumper_t *d) const;
-    str to_str (bool q = false) const { return "null"; }
+    str to_str (TO_STR_ARG) const { return "null"; }
     str arg_to_str () const { return ""; }
   };
 
@@ -316,7 +329,7 @@ namespace pub3 {
     bool to_xdr (xpub3_json_t *j) const;
     static ptr<expr_bool_t> alloc (bool b);
     static str static_to_str (bool b);
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
     str to_switch_str () const { return _b ? "1" : "0"; }
     ptr<expr_t> copy () const;
     bool to_bool () const { return _b; }
@@ -658,7 +671,7 @@ namespace pub3 {
       : expr_constant_t (l) { if (s) add (s); }
 
     bool is_str () const { return true; }
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
@@ -685,7 +698,7 @@ namespace pub3 {
     expr_str_t (const xpub3_str_t &x);
 
     bool is_str () const { return true; }
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
     bool to_bool () const;
     scalar_obj_t to_scalar () const;
     bool to_null () const;
@@ -731,7 +744,7 @@ namespace pub3 {
     bool to_uint (u_int64_t *u) const;
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
 
     static ptr<expr_int_t> alloc (int64_t i);
 
@@ -758,7 +771,7 @@ namespace pub3 {
     int64_t to_int () const;
     bool to_int (int64_t *i) const;
     bool to_uint (u_int64_t *u) const { *u = _val; return true; }
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
 
     scalar_obj_t to_scalar () const;
 
@@ -784,7 +797,7 @@ namespace pub3 {
     double to_double () const { return _val; }
     bool to_double (double *d) const;
     scalar_obj_t to_scalar () const;
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_double_t"; }
@@ -830,7 +843,7 @@ namespace pub3 {
     bool to_bool () const { return size () > 0; }
     ptr<rxx> to_regex (eval_t *e = NULL) const;
     scalar_obj_t to_scalar () const;
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
     void v_dump (dumper_t *d) const;
     void push_front (ptr<expr_t> e);
 
@@ -884,7 +897,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     static ptr<expr_regex_t> alloc (ptr<rxx>, str b, str o); 
 
-    str to_str (bool q = false) const { return _body; }
+    str to_str (TO_STR_ARG) const { return _body; }
     ptr<rxx> to_regex (str *errp = NULL) const { return _rxx; }
     ptr<expr_regex_t> to_regex_obj () { return mkref (this); }
     
@@ -908,7 +921,7 @@ namespace pub3 {
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
-    str to_str (bool q = false) const;
+    str to_str (TO_STR_ARG) const;
 
     ptr<expr_t> compact () const;
     void add (ptr<expr_t> e) { _els->push_back (e); }
@@ -1018,7 +1031,7 @@ namespace pub3 {
 
     // To JSON-style string
     scalar_obj_t to_scalar () const;
-    str to_str (bool q) const;
+    str to_str (TO_STR_ARG) const;
 
     ptr<expr_t> lookup (str k);
     ptr<const expr_t> lookup (str k) const;
@@ -1062,6 +1075,8 @@ namespace pub3 {
   private:
     mutable tri_bool_t _static;
   }; 
+
+#undef TO_STR_ARG
 
   //-----------------------------------------------------------------------
 

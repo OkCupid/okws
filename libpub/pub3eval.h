@@ -50,8 +50,9 @@ namespace pub3 {
     P_WARN_RELARG_NULL = 0x10000,           /* warn if a relat. arg is NULL */
 
     P_STRICT_INCLUDE_SCOPING = 0x20000,      /* add scope barrier */
+    P_UTF8_JSON = 0x40000,                   /* weird UTF-8 in json */
 
-    P_INFINITY = 0x40000,
+    P_INFINITY = 0x80000,
 
     // All warnings I can think of....
     P_WARN_STRICT = P_WARN_INLINE_NULL | P_WARN_NULL | P_WARN_RELARG_NULL
@@ -159,6 +160,7 @@ namespace pub3 {
 
     void set_opts (opts_t o) { _opts = o; }
     opts_t opts () const { return _opts; }
+    bool utf8_json () const { return _opts & P_UTF8_JSON; }
 
     ptr<const expr_t> lookup_val (const str &nm) const;
     ptr<mref_t> lookup_ref (const str &nm) const;

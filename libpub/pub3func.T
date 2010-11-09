@@ -99,11 +99,11 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str 
-  lambda_t::to_str (bool q) const
+  lambda_t::to_str (str_opt_t so) const
   {
     str ls = _loc.to_str ();
     str ret = strbuf ("<%s @ %s>", _name.cstr (), ls.cstr ());
-    if (q) ret = json::quote (ret);
+    ret = json::quote (ret, so);
     return ret;
   }
 

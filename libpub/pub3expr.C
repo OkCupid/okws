@@ -56,13 +56,24 @@ pub3::json::safestr (const str &s)
 //-----------------------------------------------------------------------
 
 str
-pub3::json::quote (const str &s)
+pub3::json::quote (const str &s, str_opt_t so)
+{
+  str ret; 
+  if (!so.m_quoted) { ret = s; }
+  else { ret = quote (s, so.m_utf8); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+str
+pub3::json::quote (const str &s, bool utf8)
 {
   str ret;
   if (!s) {
     ret = _null;
   } else {
-    ret = json_escape (s, true);
+    ret = json_escape (s, true, utf8);
   }
   return ret;
 }
@@ -115,11 +126,11 @@ namespace pub3 {
   //-------------------------------------------------------------------
 
   str
-  expr_t::safe_to_str (ptr<const expr_t> x, bool q)
+  expr_t::safe_to_str (ptr<const expr_t> x, str_opt_t o)
   {
     str ret;
     if (!x) x = expr_null_t::alloc ();
-    ret = x->to_str (q);
+    ret = x->to_str (o);
     return ret;
   }
 
@@ -176,7 +187,8 @@ namespace pub3 {
     ptr<const expr_t> x = eval_to_val (e);
     str ret;
     if (x) {
-      ret = x->to_str (false);
+      str_opt_t o (false, e->utf8_json ());
+      ret = x->to_str (o);
     }
     return ret;
   }
@@ -509,7 +521,8 @@ namespace pub3 {
   void
   expr_constant_t::v_dump (dumper_t *d) const
   {
-    str s = to_str (true);
+    str_opt_t o (true, false);
+    str s = to_str (o);
     d->dump (s, true);
   }
   
@@ -546,7 +559,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   str expr_bool_t::static_to_str (bool b) { return b ? "true" : "false"; }
-  str expr_bool_t::to_str (bool q) const { return static_to_str (_b); }
+  str expr_bool_t::to_str (str_opt_t o) const { return static_to_str (_b); }
   
   //--------------------------------------------------------------------
   
@@ -946,9 +959,9 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   str
-  expr_strbuf_t::to_str (bool q) const 
+  expr_strbuf_t::to_str (str_opt_t o) const 
   { 
-    str ret = q ? json::quote (_b) : str (_b);
+    str ret = json::quote (_b, o);
     return ret; 
   }
 
@@ -993,9 +1006,9 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   str
-  expr_str_t::to_str (bool q) const 
+  expr_str_t::to_str (str_opt_t o) const 
   { 
-    str ret = q ? json::quote (_val) : _val;
+    str ret = json::quote (_val, o);
     return ret; 
   }
 
@@ -1127,9 +1140,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str
-  expr_int_t::to_str (bool js_safe) const
+  expr_int_t::to_str (str_opt_t o) const
   {
     str ret;
+    bool js_safe = o.m_quoted;
     if (js_safe && ok_pub3_json_int_bitmax > 0) {
       int64_t x = 1;
       x = x << ok_pub3_json_int_bitmax;
@@ -1180,9 +1194,10 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str
-  expr_uint_t::to_str (bool js_safe) const
+  expr_uint_t::to_str (str_opt_t o) const
   {
     str ret;
+    bool js_safe = o.m_quoted;
     if (js_safe && ok_pub3_json_int_bitmax > 0) {
       u_int64_t x = 1;
       x = x << ok_pub3_json_int_bitmax;
@@ -1209,7 +1224,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   str
-  pub3::expr_double_t::to_str (bool q) const
+  pub3::expr_double_t::to_str (str_opt_t o) const
   {
 #define BUFSZ 128
     char buf[BUFSZ];
@@ -1439,12 +1454,13 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   str
-  expr_list_t::to_str (bool q) const
+  expr_list_t::to_str (str_opt_t o) const
   {
     vec<str> v;
     size_t sz = size ();
+    o.m_quoted = true;
     for (size_t i = 0; i < sz; i++) {
-      v.push_back (expr_t::safe_to_str ((*this)[i], true));
+      v.push_back (expr_t::safe_to_str ((*this)[i], o));
     }
     str ret = vec2str (v, '[', ']');
     return ret;
@@ -1564,13 +1580,14 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   str
-  expr_shell_str_t::to_str (bool q) const
+  expr_shell_str_t::to_str (str_opt_t o) const
   {
     strbuf b;
     for (size_t i = 0; _els && i < _els->size (); i++) {
       ptr<const expr_t> x = (*_els)[i];
       if (x) { 
-	str s = x->to_str ();
+	o.m_quoted = false; // never quote!
+	str s = x->to_str (o);
 	b << s;
       }
     }
@@ -1630,7 +1647,7 @@ namespace pub3 {
 	ptr<const expr_t> x = (*_els)[i];
 	str s;
 	if (x) { x = x->eval_to_val (e); }
-	if (x) { s = x->to_str (false); }
+	if (x) { s = x->to_str (); }
 	if (s) {
 	  hold.push_back (s);
 	  b << s;
@@ -2032,7 +2049,7 @@ namespace pub3 {
   //--------------------------------------------------------------------
   
   str
-  expr_dict_t::to_str (bool q) const
+  expr_dict_t::to_str (str_opt_t o) const
   {
     vec<str> v;
     const_iterator_t it (*this);
@@ -2040,9 +2057,11 @@ namespace pub3 {
     ptr<expr_t> val;
     str ret;
 
+    o.m_quoted = true;
+
     while ((key = it.next (&val))) {
-      str vs = expr_t::safe_to_str (val, true);
-      str ks = json::quote (*key);
+      str vs = expr_t::safe_to_str (val, o);
+      str ks = json::quote (*key, o);
       strbuf b ("%s : %s", ks.cstr (), vs.cstr ());
       v.push_back (b);
     }
@@ -2055,7 +2074,8 @@ namespace pub3 {
   scalar_obj_t
   expr_dict_t::to_scalar () const
   {
-    str s = to_str (true);
+    str_opt_t o (true, false);
+    str s = to_str (o);
     return scalar_obj_t (s);
   }
 
@@ -2210,11 +2230,11 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   str
-  expr_cow_t::to_str (bool q) const 
+  expr_cow_t::to_str (str_opt_t o) const 
   {
     str s;
     ptr<const expr_t> x = const_ptr ();
-    if (x) { s = x->to_str (q); }
+    if (x) { s = x->to_str (o); }
     return s;
   }
 

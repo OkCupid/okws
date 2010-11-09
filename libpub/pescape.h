@@ -30,7 +30,7 @@
 #include "qhash.h"
 #include "rxx.h"
 
-str json_escape (const str &s, bool qs);
+str json_escape (const str &s, bool qs, bool utf8 = false);
 str xss_escape (const char *s, size_t l);
 str xss_escape (const str &s);
 

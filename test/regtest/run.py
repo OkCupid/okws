@@ -456,6 +456,7 @@ class TestCase:
         self._script_path = None
         self._custom_fetch = None
         self._nowss = False
+        self._utf8json = False
         self._viserr = False
         self._no_error_page = False
 
@@ -724,12 +725,10 @@ class TestCaseRemote (TestCase):
             n = self._htdoc
 
         opts = {}
-        if self._nowss:
-            opts["nowss"] = 1
-        if self._viserr:
-            opts["viserr"] = 1
-        if self._no_error_page:
-            opts["no_error_page"] = 1
+        if self._nowss:         opts["nowss"] = 1
+        if self._utf8json:      opts["utf8json"] = 1
+        if self._viserr:        opts["viserr"] = 1
+        if self._no_error_page: opts["no_error_page"] = 1
         
         if n:
             u = self._config.scratch_url ()

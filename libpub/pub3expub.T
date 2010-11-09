@@ -90,7 +90,8 @@ namespace pub3 {
     twait { pub_to_val (pub, mkevent (x)); }
     if (x) {
       bool q = !x->is_str ();
-      ret = x->to_str (q);
+      str_opt_t o (q, pub->utf8_json ());
+      ret = x->to_str (o);
     }
     ev->trigger (ret);
   }
@@ -453,6 +454,7 @@ namespace pub3 {
       size_t i;
       ptr<const expr_t> x;
       str s;
+      str_opt_t sot (false, p->utf8_json ());
     }
 
     if (_els) {
@@ -461,7 +463,7 @@ namespace pub3 {
 	s = NULL;
 	x = (*_els)[i];
 	if (x) { twait { x->pub_to_val (p, mkevent (x)); } }
-	if (x) { s = x->to_str (false); }
+	if (x) { s = x->to_str (sot); }
 	if (s) { 
 	  hold.push_back (s);
 	  b << s; 

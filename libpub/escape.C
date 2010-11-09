@@ -102,14 +102,14 @@ json_escape_std (str s, bool addq)
 //-----------------------------------------------------------------------
 
 str
-json_escape (const str &s, bool addq)
+json_escape (const str &s, bool addq, bool utf8)
 {
   str ret;
   if (!s) { /* noop */ }
-  else if (find_non_std_char (s)) {
+  else if (!find_non_std_char (s) || utf8) {
+    ret = json_escape_std (s, addq); 
+  } else {
     ret = json_escape_heavy (s, addq);  
-  } else { 
-   ret = json_escape_std (s, addq); 
   }
   return ret;
 }

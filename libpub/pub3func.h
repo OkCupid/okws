@@ -40,7 +40,7 @@ namespace pub3 {
     static ptr<lambda_t> alloc (ptr<identifier_list_t> p, ptr<zone_t> z);
     static ptr<lambda_t> alloc (const xpub3_lambda_t &l);
     void set_name (str n) { _name = n; }
-    str to_str (bool q = false) const;
+    str to_str (str_opt_t o = str_opt_t()) const;
     bool might_block () const;
 
     ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;

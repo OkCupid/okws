@@ -1,4 +1,4 @@
-description = "check that two dictionaries can be added together"
+description = "check for a parse error: unclose environment"
 
 no_error_page = True
 
