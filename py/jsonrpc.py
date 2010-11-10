@@ -36,6 +36,7 @@ class RpcConst :
 ##-----------------------------------------------------------------------
 
 class rpc_msg:
+    """Rpc constants that can be found in /usr/include/rpc/rpc_msg.h"""
 
     ##----------------------------------------
 
@@ -75,6 +76,53 @@ class rpc_msg:
 ##-----------------------------------------------------------------------
 
 class Packet:
+    """Incoming packets are subjected to this class, that will go ahead
+    and decode them.  The result of a decoding is setting the member
+    fields: data, stat, mtype and xid. A jsonrpc.Error is thrown in the
+    case of a bad decoding.
+
+    We're following the decoding spec set forth in RFC-1057, which
+    you can find here:
+
+        http://www.ietf.org/rfc/rfc1057.txt
+
+    In particular, we have this Packet format:
+
+        union reply_body switch (reply_stat stat) {
+         case MSG_ACCEPTED:
+            accepted_reply areply;
+         case MSG_DENIED:
+            rejected_reply rreply;
+         } reply;
+
+        struct accepted_reply {
+            opaque_auth verf;
+            union switch (accept_stat stat) {
+            case SUCCESS:
+               opaque results[0];
+               /*
+                * procedure-specific results start here
+                */
+             case PROG_MISMATCH:
+                struct {
+                   unsigned int low;
+                   unsigned int high;
+                } mismatch_info;
+             default:
+                /*
+                 * Void.  Cases include PROG_UNAVAIL, PROC_UNAVAIL,
+                 * and GARBAGE_ARGS.
+                 */
+                void;
+             } reply_data;
+         }
+
+         struct opaque_auth {
+            auth_flavor flavor;
+            opaque body<400>;
+         };
+
+    """
 
     #----------------------------------------
 
@@ -82,9 +130,13 @@ class Packet:
         self._n = len (r)
         self._raw = r
         self._p = 0
+
+        # publically accessible fields that will be set in the case
+        # of a successful decoding (see comment above)
         self.stat = rpc_msg.SUCCESS
         self.dat = None
         self.mtype = rpc_msg.CALL
+        self.xid = 0
 
     #----------------------------------------
 
@@ -117,7 +169,7 @@ class Packet:
 
     #----------------------------------------
 
-    def decode_verf (self):
+    def decode_opaque_auth (self):
         flavor = self.getlong ()
         len = self.getlong ()
         self.getbytes (len)
@@ -125,7 +177,7 @@ class Packet:
     #----------------------------------------
 
     def decode_accepted_reply (self):
-        self.decode_verf ()
+        self.decode_opaque_auth ()
         tmp = self.getlong ()
         if tmp != rpc_msg.SUCCESS:
             self.stat = tmp
