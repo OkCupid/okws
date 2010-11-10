@@ -68,6 +68,7 @@ okclnt_reflect_t::process_T (okclnt2_t::proc_ev_t ev)
     vec<str> vars;
   }
 
+  opts = 0;
   file = cgi["file"];
   cgi.lookup ("vars", &vars);
   for (size_t i = 0; i < vars.size () ; i++) {

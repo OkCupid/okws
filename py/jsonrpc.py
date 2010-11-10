@@ -35,6 +35,125 @@ class RpcConst :
 
 ##-----------------------------------------------------------------------
 
+class rpc_msg:
+
+    ##----------------------------------------
+
+    CALL=0
+    REPLY=1
+    MSG_ACCEPTED=0
+    MSG_DENIED=1
+    SUCCESS=0
+    PROG_UNAVAIL=1
+    PROG_MISMATCH=2
+    PROC_UNAVAIL=3
+    GARBAGE_ARGS=4
+    SYSTEM_ERR=5
+    
+    stat_map = {}
+
+    ##----------------------------------------
+
+    @classmethod
+    def init (klass):
+        if klass.stat_map: return
+        for i in [ "SUCCESS", "PROG_UNAVAIL", "PROG_MISMATCH",
+                   "PROC_UNAVAIL", "GARBAGE_ARGS", "SYSTEM_ERR"] :
+            klass.stat_map[i] = getattr (klass, i)
+
+    ##----------------------------------------
+
+    @classmethod
+    def stat_to_str (klass, i):
+        klass.init ()
+        ret = klass.stat_map.get (i)
+        if not ret:
+            ret = "UNKNOWN_ERROR"
+        return ret
+
+
+##-----------------------------------------------------------------------
+
+class Packet:
+
+    #----------------------------------------
+
+    def __init__ (self, r):
+        self._n = len (r)
+        self._raw = r
+        self._p = 0
+        self.stat = rpc_msg.SUCCESS
+        self.dat = None
+        self.mtype = rpc_msg.CALL
+
+    #----------------------------------------
+
+    def getbytes (self, n):
+        need = n + self._p
+        if self._n < n:
+            raise Error, "packet too small; got %d bytes, needed %\n" % \
+                (self._n, n)
+        ret = self._raw[self._p : self._p+n]
+        self._p += n
+        return ret
+
+    #----------------------------------------
+
+    def getlongs (self, n = 1):
+        dat = self.getbytes (4 * n)
+        ret = struct.unpack (">" + "L" * n, dat)
+        return ret
+
+    #----------------------------------------
+
+    def getlong (self):
+        (ret,) = self.getlongs (1)
+        return ret
+
+    #----------------------------------------
+    
+    def decode_call (self):
+        raise Error, "got unexpected call; expected replies only"
+
+    #----------------------------------------
+
+    def decode_verf (self):
+        flavor = self.getlong ()
+        len = self.getlong ()
+        self.getbytes (len)
+
+    #----------------------------------------
+
+    def decode_accepted_reply (self):
+        self.decode_verf ()
+        tmp = self.getlong ()
+        if tmp != rpc_msg.SUCCESS:
+            self.stat = tmp
+        else:
+            dat = self._raw[self._p:]
+            end = dat.find ("\x00")
+            if end > 0:
+                dat = dat[:end]
+            self.data = dat
+
+    #----------------------------------------
+    
+    def decode_reply (self):
+        self.stat = self.getlong ()
+        if self.stat == rpc_msg.MSG_ACCEPTED:
+            self.decode_accepted_reply ()
+
+    #----------------------------------------
+
+    def decode (self):
+        (self.xid, self.mtype) = self.getlongs (2)
+        if self.mtype == rpc_msg.REPLY:
+            self.decode_reply ()
+        else:
+            self.decode_call ()
+
+##-----------------------------------------------------------------------
+
 class Client:
 
     constant_prog = 79921
@@ -84,7 +203,7 @@ class Client:
 
         # add the HEADER longs as follows:
         xid = random.randint(0,0xffffffff)
-        call = 0
+        call = rpc_msg.CALL
         js = 3
 
         if prog < 0: prog = self._prog
@@ -127,31 +246,26 @@ class Client:
             if len (frag):
                 recv_len += len (frag)
                 frags += [ frag ]
-        packet = ''.join (frags)
+        raw = ''.join (frags)
 
-        (xid_in, reply) = struct.unpack (">LL", packet[0:8])
-        if xid_in != xid:
+        packet = Packet (raw)
+        packet.decode ()
+
+        if packet.xid != xid:
             raise Error, "bad xid (%d != %d)" % (xid, xid_in)
-        if reply != 1:
+        if packet.mtype != rpc_msg.REPLY:
             raise Error, "expected reply bit, got %d" % reply
-        l = len (packet)
-        start = 24
+        if packet.stat != rpc_msg.SUCCESS:
+            raise Error, "non-success returned: %s" % \
+                rpc_msg.stat_to_str (packet.stat)
 
-        if l < start:
-            raise Error, "packet too small, expected at least 24b, got %d" % l
+        payload = packet.data
 
-        if l == start:
+        if len (payload) == 0:
             res = None
         else:
-            data = packet[start:]
-
-            # strip off any trailing null bytes
-            end = data.find ("\x00")
-            if end > 0:
-                data = data[:end]
-
             # eval json to python; might want to make this more robsuto
-            res = json.loads (data)
+            res = json.loads (payload)
 
         return res
 

@@ -39,3 +39,7 @@ foo = { "b" : True,
         
 print cli.call (C.TST2_FOO_REFLECT, foo)
 
+try:
+    print cli.call (4000, foo)
+except jsonrpc.Error, e:
+    print "Good! Got expected error: " + str (e)
