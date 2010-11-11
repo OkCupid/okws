@@ -72,10 +72,45 @@ class rpc_msg:
             ret = "UNKNOWN_ERROR"
         return ret
 
+##-----------------------------------------------------------------------
+
+class OutPacket:
+
+    def __init__ (self):
+        pass
+
+    def encode (self, prog, vers, proc, dat):
+
+        # add the HEADER longs as follows:
+        self.xid = random.randint(0,0xffffffff)
+        call = rpc_msg.CALL
+        js = 3
+
+        self.hdr = struct.pack (">" + "L" * 6, 
+                                self.xid, rpc_msg.CALL, js, 
+                                prog, vers, proc)
+
+        # make an XDR "Auth" Field
+        self.hdr += struct.pack ("x" * 4 * 4) 
+
+        # put in the arg payload
+        self.inner = self.hdr + dat 
+
+        # pad to a multiple of 4 bytes
+        plen = len (self.inner)
+        rem = plen % 4
+        if rem != 0:
+            self.inner += struct.pack ("x" * (4 - rem))
+
+        # prepend the packet length
+        encoded_len = len (self.inner) | 0x80000000;
+        self.raw = struct.pack (">L", encoded_len) + self.inner 
+
+        return (self.raw, self.xid)
 
 ##-----------------------------------------------------------------------
 
-class Packet:
+class InPacket:
     """Incoming packets are subjected to this class, that will go ahead
     and decode them.  The result of a decoding is setting the member
     fields: data, stat, mtype and xid. A jsonrpc.Error is thrown in the
@@ -253,34 +288,12 @@ class Client:
 
     def make_packet (self, proc, arg, prog, vers):
 
-        # add the HEADER longs as follows:
-        xid = random.randint(0,0xffffffff)
-        call = rpc_msg.CALL
-        js = 3
-
         if prog < 0: prog = self._prog
         if vers < 0: vers = self._vers
-    
-        hdr = struct.pack (">" + "L" * 6, xid, call, js, 
-                           prog, vers, proc)
-
-        # make an XDR "Auth" Field
-        hdr += struct.pack ("x" * 4 * 4) 
-
-        # put in the arg payload
-        packet_inner = hdr + json.dumps (arg)
-
-        # pad to a multiple of 4 bytes
-        plen = len (packet_inner)
-        rem = plen % 4
-        if rem != 0:
-            packet_inner += struct.pack ("x" * (4 - rem))
-
-        # prepend the packet length
-        encoded_len = len (packet_inner) | 0x80000000;
-        packet = struct.pack (">L", encoded_len) + packet_inner
-
-        return (packet, xid)
+        jsa = json.dumps (arg)
+        p = OutPacket ()
+        (dat, xid) = p.encode (prog, vers, proc, jsa)
+        return (dat, xid)
 
     #-----------------------------------------
 
@@ -300,7 +313,7 @@ class Client:
                 frags += [ frag ]
         raw = ''.join (frags)
 
-        packet = Packet (raw)
+        packet = InPacket (raw)
         packet.decode ()
 
         if packet.xid != xid:
