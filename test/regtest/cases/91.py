@@ -1,9 +1,11 @@
-test = "a crasher that rick found"
+test = "a crasher that rick found; another that eli found"
 
 filedata = """
 {$
-   locals { d : { b : [ lambda() { return 1; }  ] } }
+   locals { d : { b : [ lambda() { return 1; } , decorate ] } }
    print (d);
 $}
 """
-outcome = '{"b" : ["<anonymous-lambda @ /regtest-scratch/cases_91.html:1>"]}'
+
+outcome = '{"b" : ["<anonymous-lambda @ /regtest-scratch/cases_91.html:1>", ' \
+    + '"<compiled function> rfn3:decorate"]}' 

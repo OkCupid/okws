@@ -11,12 +11,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   str
-  compiled_fn_t::to_str (bool q) const
+  compiled_fn_t::to_str (str_opt_t o) const
   {
     str l = _lib;
     if (!l) l = "";
-    strbuf b ("<compiled function> %s:%s", _lib.cstr (), _name.cstr ());
-    return b;
+    strbuf b ("<compiled function> %s:%s", l.cstr (), _name.cstr ());
+    return json::quote (b, o);
   }
 
   //-----------------------------------------------------------------------
