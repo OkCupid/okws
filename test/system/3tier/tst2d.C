@@ -90,7 +90,8 @@ void
 tst2_srv_t::foo_reflect (svccb *b)
 {
   const foo_t *arg = b->Xtmpl getarg<foo_t> ();
-  b->reply (arg);
+  ptr<foo_t> res = New refcounted<foo_t> (*arg);
+  reply (res);
 }
 
 void
