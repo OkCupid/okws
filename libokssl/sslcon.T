@@ -242,7 +242,7 @@ namespace okssl {
   con_t::read (void *out, size_t len, evssz_t ev)
   {
     tvars {
-      bool go (true);
+      bool go (false);
       bool need_write (false);
       bool wait_for_read (false);
       ssize_t ret (-1);
@@ -336,7 +336,14 @@ namespace okssl {
       iovec *iov;
       ssize_t rc;
       ptr<bool> destroyed (_self->_destroyed);
+      ptr<con_t> con_hold;
     }
+
+    // Hold onto con ourselves, since this object might have deallocated
+    // out from underneath us. That's fine, we handle that case.  However,
+    // _con ought to be kept around too.  So holding onto it here in the closure
+    // does the trick!
+    con_hold = _con;
 
     if (_running)
       return;
