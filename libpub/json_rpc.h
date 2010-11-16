@@ -178,7 +178,9 @@ json2xdr (T &out, ptr<const pub3::expr_t> cin)
 
   // Please excuse this hack-y cast, but it's easier than rewriting the
   // whole hierarchy tree for json_XDR_t's...
-  ptr<pub3::expr_t> in = mkref (const_cast<pub3::expr_t *> (cin));
+  const pub3::expr_t *craw = cin;
+  pub3::expr_t *raw = const_cast<pub3::expr_t *> (craw);
+  ptr<pub3::expr_t> in = mkref (raw);
   d->init_decode (in);
 
   // run the standard str2xdr stuff

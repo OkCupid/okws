@@ -10,6 +10,8 @@ int main(int argc, char *argv[])
   json_fetch_constants_t jfc;
   ptr<pub3::expr_t> x = xdr2json (jfc.constant_set ());
   str s = x->to_str ();
+  rpc_constant_set_t set;
+  json2xdr (set, x);
   warn << s << "\n";
   return 0;
 }
