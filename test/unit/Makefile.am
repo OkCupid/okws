@@ -91,8 +91,10 @@ noinst_PROGRAMS = \
 	newline \
 	gznaive \
 	json \
-	eztst
+	eztst \
+	dump_rpc_const
 
+dump_rpc_const_SOURCES = dump_rpc_const.C
 cgitst1_SOURCES = cgitst1.C
 kmptst_SOURCES = kmptst.C
 xmltst2_SOURCES = xmltst2.C

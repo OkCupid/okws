@@ -9,17 +9,21 @@ json_XDR_t::json_XDR_t (ptr<v_XDR_dispatch_t> d, XDR *x)
 
 //-----------------------------------------------------------------------
 
+json_XDR_dispatch_t::json_XDR_dispatch_t () {}
+
+//-----------------------------------------------------------------------
+
 ptr<v_XDR_t> 
 json_XDR_dispatch_t::alloc (u_int32_t rpcvers, XDR *input)
 {
   ptr<v_XDR_t> ret;
-  if (rpcvers == 3) {
+  if (rpcvers == JSON_RPC_VERS) {
     switch (input->x_op) {
     case XDR_DECODE:
-      ret = New refcounted<json_decoder_t> (mkref (this), input);
+      ret = alloc_decoder (input);
       break;
     case XDR_ENCODE:
-      ret = New refcounted<json_encoder_t> (mkref (this), input);
+      ret = alloc_encoder (input);
       break;
     default:
       break;
@@ -30,10 +34,49 @@ json_XDR_dispatch_t::alloc (u_int32_t rpcvers, XDR *input)
 
 //-----------------------------------------------------------------------
 
+ptr<json_decoder_t> 
+json_XDR_dispatch_t::alloc_decoder (XDR *input)
+{
+  return New refcounted<json_decoder_t> (mkref (this), input);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<json_encoder_t> 
+json_XDR_dispatch_t::alloc_encoder (XDR *input)
+{
+  return New refcounted<json_encoder_t> (mkref (this), input);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<json_XDR_dispatch_t> json_XDR_dispatch_t::s_obj;
+
+//-----------------------------------------------------------------------
+
+ptr<json_XDR_dispatch_t> 
+json_XDR_dispatch_t::get_singleton_obj ()
+{
+  if (!s_obj) {
+    s_obj = New refcounted<json_XDR_dispatch_t> ();
+  }
+  return s_obj;
+}
+
+//-----------------------------------------------------------------------
+
 void
 json_XDR_dispatch_t::enable ()
 {
-  v_XDR_dispatch = New refcounted<json_XDR_dispatch_t> ();
+  v_XDR_dispatch = get_singleton_obj ();
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_XDR_dispatch_t::is_enabled ()
+{
+  return v_XDR_dispatch && (v_XDR_dispatch == s_obj);
 }
 
 //-----------------------------------------------------------------------
@@ -367,6 +410,15 @@ json_encoder_t::json_encoder_t (ptr<v_XDR_dispatch_t> d, XDR *x)
 
 //-----------------------------------------------------------------------
 
+ptr<pub3::expr_t>
+json_encoder_t::root_obj ()
+{
+  ptr<pub3::expr_t> x = m_root_ref->get ();
+  return x;
+}
+
+//-----------------------------------------------------------------------
+
 bool
 json_encoder_t::rpc_traverse (u_int32_t &obj)
 {
@@ -665,6 +717,5 @@ json_introspection_server_t::constant_set ()
   }
   return jfc->constant_set ();
 }
-
 
 //-----------------------------------------------------------------------

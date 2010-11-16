@@ -3,14 +3,31 @@
 #include "async.h"
 #include "arpc.h"
 #include "pub3.h"
+#include "xdrmisc.h"
 
 //-----------------------------------------------------------------------
+
+// hard-coded JSON_RPC version
+enum { JSON_RPC_VERS = 3 };
+
+//-----------------------------------------------------------------------
+
+class json_encoder_t;
+class json_decoder_t;
 
 class json_XDR_dispatch_t : public v_XDR_dispatch_t {
 public:
   ptr<v_XDR_t> alloc (u_int32_t rpcvers, XDR *input);
+  ptr<json_encoder_t> alloc_encoder (XDR *dummy);
+  ptr<json_decoder_t> alloc_decoder (XDR *dummy);
   void v_asrv_alloc (ptr<axprt> x);
   static void enable ();
+  static bool is_enabled ();
+  static ptr<json_XDR_dispatch_t> get_singleton_obj ();
+private:
+  friend class refcounted<json_XDR_dispatch_t>;
+  json_XDR_dispatch_t ();
+  static ptr<json_XDR_dispatch_t> s_obj;
 };
 
 //-----------------------------------------------------------------------
@@ -118,6 +135,7 @@ public:
   bool init_decode (const char *msg, ssize_t sz) { return false; }
   void init_encode ();
   void flush (xdrsuio *x);
+  ptr<pub3::expr_t> root_obj ();
 protected:
   ptr<pub3::expr_list_t> top_list ();
   ptr<pub3::expr_dict_t> top_dict ();
@@ -128,5 +146,65 @@ private:
   ptr<pub3::obj_ref_t> m_root_ref;
   vec<ptr<pub3::obj_ref_t> > m_ref_stack;
 };
+
+//-----------------------------------------------------------------------
+
+template<class T> bool
+json2xdr (T &out, str s)
+{
+  ptr<pub3::expr_t> x;
+  bool ret;
+  if (!(x = pub3::json_parser_t::parse (s))) { ret = false; }
+  else { ret = json2xdr (out, x); }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+template<class T> bool
+json2xdr (T &out, ptr<const pub3::expr_t> in)
+{
+  // feed in a dummy message -- see the comment below.
+#define BUFSZ 4
+  char buf[BUFSZ];
+  xdrmem x (buf, BUFSZ, XDR_DECODE);
+#undef BUFSZ
+
+  XDR *xp = &x;
+
+  ptr<json_decoder_t> d = 
+    json_XDR_dispatch_t::get_singleton_obj ()->alloc_decoder (xp);
+  ptr<v_XDR_t> vx = d;
+
+  d->init_decode (in);
+
+  // run the standard str2xdr stuff
+  bool ret = rpc_traverse (vx, out);
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+template<class T> ptr<pub3::expr_t> 
+xdr2json (const T &in)
+{
+  // We need this dummy just as a result of the extensible_rpc v_XDR_t
+  // base class.  It really shouldn't need to do anything...
+  xdrsuio x (XDR_ENCODE, false);
+  XDR *xp = &x;
+
+  ptr<json_encoder_t> e = 
+    json_XDR_dispatch_t::get_singleton_obj ()->alloc_encoder (xp);
+  ptr<v_XDR_t> vx = e;
+
+  ptr<pub3::expr_t> ret;
+
+  if (rpc_traverse (vx, const_cast<T &> (in))) {
+    ret = e->root_obj ();
+    assert (ret);
+  }
+  return ret;
+}
 
 //-----------------------------------------------------------------------
