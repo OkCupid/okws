@@ -162,7 +162,7 @@ json2xdr (T &out, str s)
 //-----------------------------------------------------------------------
 
 template<class T> bool
-json2xdr (T &out, ptr<const pub3::expr_t> in)
+json2xdr (T &out, ptr<const pub3::expr_t> cin)
 {
   // feed in a dummy message -- see the comment below.
 #define BUFSZ 4
@@ -176,6 +176,9 @@ json2xdr (T &out, ptr<const pub3::expr_t> in)
     json_XDR_dispatch_t::get_singleton_obj ()->alloc_decoder (xp);
   ptr<v_XDR_t> vx = d;
 
+  // Please excuse this hack-y cast, but it's easier than rewriting the
+  // whole hierarchy tree for json_XDR_t's...
+  ptr<pub3::expr_t> in = mkref (const_cast<pub3::expr_t *> (cin));
   d->init_decode (in);
 
   // run the standard str2xdr stuff
