@@ -336,14 +336,14 @@ namespace okssl {
       iovec *iov;
       ssize_t rc;
       ptr<bool> destroyed (_self->_destroyed);
-      ptr<con_t> con_hold;
+      ptr<con_t> c;
     }
 
     // Hold onto con ourselves, since this object might have deallocated
     // out from underneath us. That's fine, we handle that case.  However,
     // _con ought to be kept around too.  So holding onto it here in the closure
     // does the trick!
-    con_hold = _con;
+    c = _con;
 
     if (_running)
       return;
@@ -352,7 +352,7 @@ namespace okssl {
     while (_go) {
 
       iov = _uio.get_iov ();
-      twait { _con->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
+      twait { c->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
       
       if (*destroyed) 
 	return;

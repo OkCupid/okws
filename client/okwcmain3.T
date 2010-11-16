@@ -73,7 +73,7 @@ my_join (const vec<str> &v, str sep)
 //-----------------------------------------------------------------------
 
 tamed static void
-main2 (int argc, char **argv)
+main3 (int argc, char **argv, evi_t ev)
 {
   tvars {
     str post;
@@ -204,13 +204,19 @@ main2 (int argc, char **argv)
       }
     }
   }
-
-  // delay to find any bugz
-  twait { delaycb (2, 0, mkevent ()); }
-
-  exit (0);
+  ev->trigger (0);
 }
 
+tamed static void
+main2 (int argc, char **argv)
+{
+  tvars {
+    int rc; 
+  }
+  twait { main3 (argc, argv, mkevent (rc)); }
+  twait { delaycb (100, 0, mkevent ()); }
+  exit (rc);
+}
 
 int 
 main (int argc, char *argv [])
