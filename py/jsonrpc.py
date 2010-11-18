@@ -12,6 +12,14 @@ import json
 
 ##-----------------------------------------------------------------------
 
+class RetryableError (Exception):
+    def __init__ (self, value):
+        self._err = value
+    def __str__ (self):
+        return repr (self._err)
+
+##-----------------------------------------------------------------------
+
 class Error (Exception):
     def __init__ (self, value):
         self._err = value
@@ -248,13 +256,14 @@ class Client:
     #-----------------------------------------
 
     def __init__ (self, fd = -1, prog = None, vers = None, 
-                  host = None, port = -1):
+                  host = None, port = -1, retry = True):
         self._fd = fd
         self._prog = prog
         self._vers = vers
         self._host = host
         self._port = port
         self._socket = None
+        self._retry = retry
 
     #-----------------------------------------
     
@@ -276,6 +285,7 @@ class Client:
             lst += [ [ p["name"], p["value"] ] for p in const_list ]
 
         ret = RpcConst (lst)
+        self._const = ret
         return ret
 
     #-----------------------------------------
@@ -301,6 +311,10 @@ class Client:
 
         # get the packet len, and decode via bitwise AND
         packlen_raw = self._socket.recv (4)
+        
+        if len(packlen_raw) == 0:
+            raise RetryableError
+
         (packlen,) = struct.unpack (">L", packlen_raw)
         packlen = packlen & 0x7fffffff
 
@@ -336,8 +350,33 @@ class Client:
 
     #-----------------------------------------
 
-    def call (self, proc, arg, prog = -1, vers = -1):
+    def call_once (self, proc, arg, prog = -1, vers = -1):
        
         (packet, xid) = self.make_packet (proc, arg, prog, vers)
         self._socket.send (packet)
         return self.receive_packet (xid)
+
+    #-----------------------------------------
+
+    def call (self, proc, arg, prog = -1, vers = -1):
+
+        go = True
+        while go:
+            eof = False
+            try:
+                ret = self.call_once (proc, arg, prog, vers)
+            except RetryableError, e:
+                eof = True
+            except socket.error, e:
+                eof = True
+
+            if eof and self._retry:
+                print "ok.conn.Client: %s:%d: " + \
+                    "connection dropped; retrying in 1s" % \
+                    (self._host, self._port)
+                time.sleep (1)
+                self.connect ()
+            else:
+                go = False
+
+        return ret
