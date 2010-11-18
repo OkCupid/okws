@@ -360,7 +360,7 @@ class Client:
     #-----------------------------------------
 
     def err (self, msg):
-        prfx = "ok.conn.Client: %s:%d: " % (self._host, self._port)
+        prfx = "jsonrpc.Client: %s:%d: " % (self._host, self._port)
         print prfx + msg
 
     #-----------------------------------------
