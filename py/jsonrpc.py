@@ -359,24 +359,33 @@ class Client:
 
     #-----------------------------------------
 
+    def err (self, msg):
+        prfx = "ok.conn.Client: %s:%d: " % (self._host, self._port)
+        print prfx + msg
+
+    #-----------------------------------------
+
     def call (self, proc, arg, prog = -1, vers = -1):
 
         go = True
+        need_connect = False
         while go:
             eof = False
             try:
+                if need_connect:
+                    self.connect ()
                 ret = self.call_once (proc, arg, prog, vers)
             except RetryableError, e:
+                self.err (str (e))
                 eof = True
             except socket.error, e:
+                self.err (str (e))
                 eof = True
 
             if eof and self._retry:
-                msg = "ok.conn.Client: %s:%d: " + \
-                    "connection dropped; retrying in 1s" 
-                print msg % (self._host, self._port)
+                self.err ("connection dropped; retrying in 1s")
                 time.sleep (1)
-                self.connect ()
+                need_connect = True
             else:
                 go = False
 
