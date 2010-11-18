@@ -313,7 +313,7 @@ class Client:
         packlen_raw = self._socket.recv (4)
         
         if len(packlen_raw) == 0:
-            raise RetryableError
+            raise RetryableError, "EOF on socket"
 
         (packlen,) = struct.unpack (">L", packlen_raw)
         packlen = packlen & 0x7fffffff
@@ -371,9 +371,9 @@ class Client:
                 eof = True
 
             if eof and self._retry:
-                print "ok.conn.Client: %s:%d: " + \
-                    "connection dropped; retrying in 1s" % \
-                    (self._host, self._port)
+                msg = "ok.conn.Client: %s:%d: " + \
+                    "connection dropped; retrying in 1s" 
+                print msg % (self._host, self._port)
                 time.sleep (1)
                 self.connect ()
             else:
