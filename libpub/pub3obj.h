@@ -173,6 +173,12 @@ namespace pub3 {
     obj_t operator[] (size_t s);
     const_obj_t operator[] (size_t s) const;
 
+    template <class C> void push_back(C c) {
+      obj_t o;
+      o = c;
+      push_back(o);
+    }
+    
     // dict access features: mutable
     void insert (const str &n, obj_t o);
     obj_t operator() (const str &s);
