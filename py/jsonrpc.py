@@ -257,7 +257,7 @@ class Client:
     #-----------------------------------------
 
     def __init__ (self, fd = -1, prog = None, vers = None, 
-                  host = None, port = -1, retry = True):
+                  host = None, port = -1, retry = 2):
         self._fd = fd
         self._prog = prog
         self._vers = vers
@@ -383,8 +383,9 @@ class Client:
                 eof = True
 
             if eof and self._retry:
-                self.err ("connection dropped; retrying in 1s")
-                time.sleep (1)
+                w = self._retry
+                self.err ("connection dropped; retrying in %ds" % w)
+                time.sleep (w)
                 need_connect = True
             else:
                 go = False
