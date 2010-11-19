@@ -80,7 +80,7 @@ namespace rfn3 {
     if (start >= s.len ()) { start = s.len (); }
     if (start + len >= s.len ()) { len = s.len () - start; }
 
-    str r = str (s.cstr () + start, len);
+    str r = utf8_substr (s, start, len);
     return expr_str_t::safe_alloc (r);
   }
 
