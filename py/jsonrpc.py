@@ -85,10 +85,13 @@ class rpc_msg:
 
 class OutPacket:
 
-    def __init__ (self):
-        pass
+    def __init__ (self, prog, vers, proc, data):
+        self.prog = prog
+        self.vers = vers
+        self.proc = proc
+        self.data = data
 
-    def encode (self, prog, vers, proc, dat):
+    def encode (self):
 
         # add the HEADER longs as follows:
         self.xid = random.randint(0,0xffffffff)
@@ -97,13 +100,13 @@ class OutPacket:
 
         self.hdr = struct.pack (">" + "L" * 6, 
                                 self.xid, rpc_msg.CALL, js, 
-                                prog, vers, proc)
+                                self.prog, self.vers, self.proc)
 
         # make an XDR "Auth" Field
         self.hdr += struct.pack ("x" * 4 * 4) 
 
         # put in the arg payload
-        self.inner = self.hdr + dat 
+        self.inner = self.hdr + self.data
 
         # pad to a multiple of 4 bytes
         plen = len (self.inner)
@@ -302,8 +305,8 @@ class Client:
         if prog < 0: prog = self._prog
         if vers < 0: vers = self._vers
         jsa = json.dumps (arg)
-        p = OutPacket ()
-        (dat, xid) = p.encode (prog, vers, proc, jsa)
+        p = OutPacket (prog, vers, proc, jsa)
+        (dat, xid) = p.encode ()
         return (dat, xid)
 
     #-----------------------------------------

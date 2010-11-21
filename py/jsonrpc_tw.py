@@ -9,6 +9,10 @@ from twisted.protocols import basic
 from twisted.python import components
 from twisted.internet.defer import inlineCallbacks, Deferred
 import sys
+import struct
+import json
+from jsonrpc import Error, InPacket, OutPacket
+
 
 ##-----------------------------------------------------------------------
 
@@ -19,16 +23,116 @@ def sleep (secs):
 
 ##-----------------------------------------------------------------------
 
-class AxprtConn (protocol.Protocol):
+class Buffer:
+
+    ##-----------------------------------------
+
     def __init__ (self):
-        pass
+        self._dat = []
+        self._len = 0
+
+    ##-----------------------------------------
+
+    def buffer (self, x):
+        self._dat += [ x ]
+        self._nb += len (x)
+
+    ##-----------------------------------------
+
+    def getlong (self):
+        ret = None
+        raw = self.get (4)
+        if raw:
+            (ret,_) = struct.unpack (">L", raw)
+        return ret
+
+    ##-----------------------------------------
+
+    def get (self, n):
+        if self._nb < n:
+            return None
+        ov = []
+        templen = 0
+        while templen < n:
+            b = self._dat[0]
+            templen += len (b)
+            ov += [ b ]
+            self._dat = self._dat[1:]
+        out = ''.join ()
+        if len (out) > n:
+            self._dat = [ out[n:] ] + self._dat
+            out = out[:n]
+        self._nb -= n
+        return out
+
+##-----------------------------------------------------------------------
+
+class AxprtConn (protocol.Protocol):
+
+    ##-----------------------------------------
+
+    def __init__ (self):
+        self._buffer = Buffer ()
+        self._packlen = -1
+        self._dispatch = {}
+
+    ##-----------------------------------------
+
     def connectionMade (self):
-        self.factory.associate (self)
+        self.factory.associate_conn (self)
         self.transport.write ("yo pimp daddy!")
+
+    ##-----------------------------------------
+
     def dataReceived (self, data):
-        print "got data: " + data
+        self._buffer.buffer (data)
+        raw = self.packetize ()
+        if raw :
+            p = InPacket (raw)
+            try:
+                p.decode ()
+                cb = self._dispatch.get (p.xid)
+                if cb:
+                    cb.callback (p)
+            except Error, e:
+                self.factory.packet_drop (e)
+
+    ##-----------------------------------------
+
+    def packetize (self):
+        if self._packlen < 0:
+            elen = self._buffer.getlong ()
+            if elen is not None:
+                self._packlen = elen & 0x7fffffff
+
+        ret = None
+        if self._packlen >= 0:
+            ret = self._buffer.get (self._packlen)
+            if ret:
+                self._packlen = -1
+        return ret
+            
+    ##-----------------------------------------
+
     def connectionLost (self, reason):
-        pass
+        callbacks = self._dispatch.values ()
+        self._dispatch = {}
+        for c in callbacks:
+            c.callback (None)
+
+    ##-----------------------------------------
+
+    def send (self, packet):
+        (raw, xid) = packet.encode ()
+        self.transport.write (raw)
+        return xid
+
+    ##-----------------------------------------
+
+    def recv (self, xid):
+        d = Deferred ()
+        self._dispatch[xid] = d
+        return d
     
 ##-----------------------------------------------------------------------
 
@@ -61,6 +165,11 @@ class Axprt (protocol.ClientFactory):
 
     def warn (self, s):
         warn (str (self) + ": " + s)
+
+    ##------------------------------
+
+    def packet_drop (self, e):
+        self.warn ("packet drop: %s" % e)
 
     ##------------------------------
 
@@ -112,9 +221,27 @@ class Axprt (protocol.ClientFactory):
 
     ##------------------------------
 
-    def associate (self, x):
+    def associate_conn (self, x):
         self._conn = x
         self._first (True)
+
+    ##------------------------------
+
+    def got_packet (self, p):
+        """AxprtConn calls this whenever we get a fully formed packet.
+        We, in turn, should call whicher client it belongs to 
+        (assuming there are multiple!)"""
+        pass
+
+    ##------------------------------
+
+    def send (self, packet):
+        return self._conn.send (packet)
+
+    ##------------------------------
+
+    def recv (self, xid):
+        return self._conn.recv (xid)
 
     ##------------------------------
 
@@ -134,6 +261,45 @@ class Axprt (protocol.ClientFactory):
             cb.callback (True)
         self._launch ()
         return cb
+
+##-----------------------------------------------------------------------
+
+class Aclnt:
+    """Corresponds to an sfslite aclnt.  Takes an Axprt and a prog/vers
+    pair, and then you can make calls to it."""
+
+    def __init__ (self, xprt, prog, vers):
+        self._axprt = xprt
+        self._prog = prog
+        self._vers = vers
+
+    ##-----------------------------------------
+
+    def make_out_packet (self, proc, args):
+        jsa = json.dumps (args)
+        p = OutPacket (prog = self._prog, vers = self._vers, proc = proc, 
+                       args = dat)
+        return p
+
+    ##-----------------------------------------
+
+    def process_in_packet (self, packet):
+        if packet.stat != rpc_msg.SUCCESS:
+            raise Error, "non-success returned: %s" % \
+                rpc_msg.stat_to_str (packet.stat)
+        res = None
+        if len (packet.data) > 0:
+            res = json.loads (packet.data)
+        return res
+
+    ##-----------------------------------------
+
+    @inlineCallbacks
+    def call (self, proc, args):
+        outp = self.make_out_packet (prog, args)
+        xid = self._axprt.send (outp)
+        inp = yield self._axprt.recv (xid)
+        return self.process_in_packet (inp)
 
 ##-----------------------------------------------------------------------
 
