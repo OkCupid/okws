@@ -118,12 +118,17 @@ class Axprt (protocol.ClientFactory):
 
     ##------------------------------
 
-    def connect (self, first_retry = True):
-        """Connect an Axprt to the given host and port. Return a deferred
-        that's fired after the first connection happens.  If the first
-        connection fails, error out."""
+    def connect (self, first_retry = False):
+        """Connect an Axprt to the given host and port. Return a deferred.
+        Pass a flag to determine if the connections should be retried after 
+        the first fails.
+
+        If yes, then the deferred is triggered immediate with True.
+        If no, then the deferred is triggered when the first connection
+        fails or succeeds, with the verdict."""
+
         cb = Deferred ()
-        if first_retry:
+        if not first_retry:
             self._first_cb = cb
         else:
             cb.callback (True)
@@ -135,7 +140,7 @@ class Axprt (protocol.ClientFactory):
 @inlineCallbacks
 def do_test ():
     x = Axprt (host = "localhost", port = 8000, verbose = True)
-    ok = yield x.connect ()
+    ok = yield x.connect (True)
     if ok:
         print "connection happened!"
     else:
