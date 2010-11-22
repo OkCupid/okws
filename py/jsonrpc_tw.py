@@ -7,11 +7,11 @@ from twisted.application import internet, service
 from twisted.internet import defer, protocol, reactor
 from twisted.protocols import basic
 from twisted.python import components
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 import sys
 import struct
 import json
-from jsonrpc import Error, InPacket, OutPacket
+from jsonrpc import Error, InPacket, OutPacket, rpc_msg, RpcConst
 
 
 ##-----------------------------------------------------------------------
@@ -30,6 +30,7 @@ class Buffer:
     def __init__ (self):
         self._dat = []
         self._len = 0
+        self._nb = 0
 
     ##-----------------------------------------
 
@@ -43,7 +44,8 @@ class Buffer:
         ret = None
         raw = self.get (4)
         if raw:
-            (ret,_) = struct.unpack (">L", raw)
+            pair = struct.unpack (">L", raw)
+            ret = pair[0]
         return ret
 
     ##-----------------------------------------
@@ -58,7 +60,7 @@ class Buffer:
             templen += len (b)
             ov += [ b ]
             self._dat = self._dat[1:]
-        out = ''.join ()
+        out = ''.join (ov)
         if len (out) > n:
             self._dat = [ out[n:] ] + self._dat
             out = out[:n]
@@ -80,7 +82,6 @@ class AxprtConn (protocol.Protocol):
 
     def connectionMade (self):
         self.factory.associate_conn (self)
-        self.transport.write ("yo pimp daddy!")
 
     ##-----------------------------------------
 
@@ -93,6 +94,7 @@ class AxprtConn (protocol.Protocol):
                 p.decode ()
                 cb = self._dispatch.get (p.xid)
                 if cb:
+                    del self._dispatch[p.xid]
                     cb.callback (p)
             except Error, e:
                 self.factory.packet_drop (e)
@@ -179,6 +181,7 @@ class Axprt (protocol.ClientFactory):
         self._timeout = timeout
         self._verbose = verbose
         self._first_cb = None
+        self._conn_cb = None
         self._conn = None
 
     ##------------------------------
@@ -221,27 +224,46 @@ class Axprt (protocol.ClientFactory):
 
     ##------------------------------
 
+    @inlineCallbacks
+    def fetch_constants (self):
+        cli = Aclnt (axprt = self,  
+                     prog = jsonrpc.Client.constant_prog,
+                     vers = 1)
+        res = yield cli.call (proc = 0, arg = None)
+        returnValue (RpcConst (jsres = res))
+
+    ##------------------------------
+
     def associate_conn (self, x):
         self._conn = x
         self._first (True)
+        if self._conn_cb:
+            c = self._conn_cb
+            self._conn_cb = None
+            c.callback (x)
 
     ##------------------------------
 
-    def got_packet (self, p):
-        """AxprtConn calls this whenever we get a fully formed packet.
-        We, in turn, should call whicher client it belongs to 
-        (assuming there are multiple!)"""
-        pass
+    @inlineCallbacks
+    def get_conn (self):
+        x = self._conn
+        if not x:
+            cb = self._conn_cb = Deferred ()
+            x = yield cb
+        returnValue (x)
+
 
     ##------------------------------
 
+    @inlineCallbacks
     def send (self, packet):
-        return self._conn.send (packet)
+        x = yield self.get_conn ()
+        returnValue ((x, x.send (packet)))
 
     ##------------------------------
 
-    def recv (self, xid):
-        return self._conn.recv (xid)
+    def recv (self, conn, xid):
+        return conn.recv (xid)
 
     ##------------------------------
 
@@ -268,8 +290,8 @@ class Aclnt:
     """Corresponds to an sfslite aclnt.  Takes an Axprt and a prog/vers
     pair, and then you can make calls to it."""
 
-    def __init__ (self, xprt, prog, vers):
-        self._axprt = xprt
+    def __init__ (self, axprt, prog, vers):
+        self._axprt = axprt
         self._prog = prog
         self._vers = vers
 
@@ -278,7 +300,7 @@ class Aclnt:
     def make_out_packet (self, proc, args):
         jsa = json.dumps (args)
         p = OutPacket (prog = self._prog, vers = self._vers, proc = proc, 
-                       args = dat)
+                       data = jsa)
         return p
 
     ##-----------------------------------------
@@ -295,30 +317,12 @@ class Aclnt:
     ##-----------------------------------------
 
     @inlineCallbacks
-    def call (self, proc, args):
-        outp = self.make_out_packet (prog, args)
-        xid = self._axprt.send (outp)
-        inp = yield self._axprt.recv (xid)
-        return self.process_in_packet (inp)
+    def call (self, proc, arg):
+        outp = self.make_out_packet (proc, arg)
+        (conn, xid)  = yield self._axprt.send (outp)
+        inp = yield self._axprt.recv (conn, xid)
+        res = self.process_in_packet (inp)
+        returnValue (res)
 
 ##-----------------------------------------------------------------------
 
-@inlineCallbacks
-def do_test ():
-    x = Axprt (host = "localhost", port = 8000, verbose = True)
-    ok = yield x.connect (True)
-    if ok:
-        print "connection happened!"
-    else:
-        print "failure!"
-        reactor.stop ()
-
-##-----------------------------------------------------------------------
-
-def main ():
-    do_test()
-    reactor.run()
-
-# this only runs if the module was *not* imported
-if __name__ == '__main__':
-    main()

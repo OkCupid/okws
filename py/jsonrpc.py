@@ -31,8 +31,15 @@ class Error (Exception):
 
 class RpcConst :
     """ Holds constants fetched through RPC calls """
-    def __init__ (self, lst = []):
-        if list:
+
+    def __init__ (self, lst = [], jsres= {}):
+
+        if jsres:
+            # there are 5 constant lists, but treat them each the same;
+            # eventually, we might do something smarter here
+            for const_list in jsres.values ():
+                lst += [ [ p["name"], p["value"] ] for p in const_list ]
+        if lst:
             self.setall (lst)
     
     def set (self, lst):
@@ -281,14 +288,8 @@ class Client:
     def fetch_constants (self):
         res = self.call (proc = 0, arg = None, vers = 1, 
                          prog = self.constant_prog)
-        lst = []
 
-        # there are 5 constant lists, but treat them each the same;
-        # eventually, we might do something smarter here
-        for const_list in res.values ():
-            lst += [ [ p["name"], p["value"] ] for p in const_list ]
-
-        ret = RpcConst (lst)
+        ret = RpcConst (json = res)
         self._const = ret
         return ret
 
