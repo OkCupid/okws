@@ -428,14 +428,15 @@ helper_base_t::hwarn (const str &s) const
 }
 
 void
-helper_t::eofcb (ptr<bool> df)
+helper_t::kill_aclnt ()
 {
-  if (*df) {
-    if (OKDBG2 (HLP_STATUS))
-      warn ("helper object destroyed before eofcb\n");
-    return;
-  }
+  if (clnt) { clnt->seteofcb (NULL); }
+  kill_aclnt_priv();
+}
 
+void
+helper_t::kill_aclnt_priv()
+{
   x = NULL;
   clnt = NULL;
   fd = -1;
@@ -447,6 +448,17 @@ helper_t::eofcb (ptr<bool> df)
     status_change (HLP_STATUS_HOSED);
   else 
     retry (destroyed);
+}
+
+void
+helper_t::eofcb (ptr<bool> df)
+{
+  if (*df) {
+    if (OKDBG2 (HLP_STATUS))
+      warn ("helper object destroyed before eofcb\n");
+    return;
+  }
+  kill_aclnt_priv();
 }
 
 void

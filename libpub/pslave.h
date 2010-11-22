@@ -96,6 +96,7 @@ public:
   void set_max_qlen (u_int i) { max_qlen = i; }
   size_t get_n_calls_out () const { return calls; }
   void set_max_calls (u_int i) { max_calls = i; }
+  void kill_aclnt ();
 
   virtual int get_axprt (u_int i = 0) { return -1; }
 
@@ -122,6 +123,7 @@ protected:
   void ping_cb (cbb c, ptr<bool> df, clnt_stat err);
   bool mkclnt () { return (clnt = aclnt::alloc (x, rpcprog)); }
   void eofcb (ptr<bool> df);
+  void kill_aclnt_priv();
   void retried (ptr<bool> df, bool b);
   void connected (cbb::ptr cb, ptr<bool> df, bool b);
 
