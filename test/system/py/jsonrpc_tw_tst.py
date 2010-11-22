@@ -8,6 +8,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 sys.path += [ "../../../py" ]
 
+import jsonrpc
 from jsonrpc_tw import Axprt, Aclnt
 
 @inlineCallbacks
@@ -44,6 +45,11 @@ def run():
     res = yield cli.call (C.TST2_FOO_REFLECT, foo)
     print "reflect: " + str (res)
 
+    try:
+        x = yield cli.call (4000, foo)
+    except jsonrpc.Error, e:
+        print "Good! Got expected error: " + str (e)
+
     reactor.stop ()
 
 def main ():
@@ -54,7 +60,3 @@ main()
 
 
 
-#try:
-#    print cli.call (4000, foo)
-#except jsonrpc.Error, e:
-#    print "Good! Got expected error: " + str (e)
