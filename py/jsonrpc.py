@@ -289,7 +289,7 @@ class Client:
         res = self.call (proc = 0, arg = None, vers = 1, 
                          prog = self.constant_prog)
 
-        ret = RpcConst (json = res)
+        ret = RpcConst (jsres = res)
         self._const = ret
         return ret
 
