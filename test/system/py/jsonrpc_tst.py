@@ -16,6 +16,8 @@ C = cli.fetch_constants ()
 
 cli.set_prog (C.TST2_PROG, C.TST2_VERS)
 
+print cli.call (C.TST2_NEGATE, True)
+
 serial = str (int (time.time ()) % 10000)
 
 key = "test-key-" + str (int (time.time ()) % 10000)
@@ -38,6 +40,7 @@ foo = { "b" : True,
                   "odata" : base64.b64encode ("\x44\xe0\xa4") } }
         
 print cli.call (C.TST2_FOO_REFLECT, foo)
+
 
 try:
     print cli.call (4000, foo)

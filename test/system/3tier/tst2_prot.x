@@ -52,6 +52,9 @@ program TST2_PROG {
                 foo_t
  		TST2_FOO_REFLECT(foo_t) = 3;
 
+		bool
+		TST2_NEGATE(bool) = 4;
+
     	} = 1;
 } = 10808;
 

@@ -42,6 +42,7 @@ protected:
   void get (svccb *sbp);
   void put (svccb *sbp);
   void foo_reflect (svccb *sbp);
+  void negate (svccb *sbp);
 private:
   sth_t _q_get, _q_put;
   bool err;
@@ -80,6 +81,9 @@ tst2_srv_t::dispatch (svccb *sbp)
   case TST2_FOO_REFLECT:
     foo_reflect (sbp);
     break;
+  case TST2_NEGATE:
+    negate (sbp);
+    break;
   default:
     reject ();
     break;
@@ -92,6 +96,14 @@ tst2_srv_t::foo_reflect (svccb *b)
   const foo_t *arg = b->Xtmpl getarg<foo_t> ();
   ptr<foo_t> res = New refcounted<foo_t> (*arg);
   reply (res);
+}
+
+void 
+tst2_srv_t::negate (svccb *b)
+{
+  const bool *arg = b->Xtmpl getarg<bool> ();
+  ptr<bool> ret = New refcounted<bool> (!*arg);
+  reply (ret);
 }
 
 void
