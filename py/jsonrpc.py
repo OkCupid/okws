@@ -260,6 +260,40 @@ class InPacket:
 
 ##-----------------------------------------------------------------------
 
+class JsonWrap:
+
+    @classmethod
+    def alloc (klass, o):
+        if type (o) == dict:
+            return JsonWrapDict (o)
+        elif type (o) == list:
+            return JsonWrapList (o)
+        else:
+            return o
+
+##-----------------------------------------------------------------------
+
+class JsonWrapDict (dict):
+
+    def __init__ (self, d):
+        dict.__init__ (self, d)
+        for (k,v) in d.items ():
+            v = JsonWrap.alloc (v)
+            self[k] = v
+            setattr (self, k, v)
+
+##-----------------------------------------------------------------------
+
+class JsonWrapList (list):
+
+    def __init__ (self, o):
+        list.__init__ (self, o)
+        for (i,v) in enumerate (o):
+            v = JsonWrap.alloc (v)
+            self[i] = v
+
+##-----------------------------------------------------------------------
+
 class Client:
 
     constant_prog = 79921
@@ -350,6 +384,7 @@ class Client:
         else:
             # eval json to python; might want to make this more robsuto
             res = json.loads (payload)
+            res = JsonWrap.alloc (res)
 
         return res
 
