@@ -294,6 +294,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("lqm", &ok_listen_queue_max);
     t->lookup ("p3jse", &ok_pub3_json_strict_escaping);
     t->lookup ("jsibm", &ok_pub3_json_int_bitmax);
+    t->lookup ("asr", &_aggressive_svc_restart);
     ok_svc_accept_msgs = t->blookup ("acmsg");
     svclog = t->blookup ("svclog");
     jailed = t->blookup ("jailed");
@@ -504,7 +505,11 @@ oksrvc_t::shutdown ()
     SVC_CHATTER ("caught shutdown trigger");
 
   sdflag = true;
-  clnt = NULL; // don't ctlclose -- we might still need more messages.
+  if (!_aggressive_svc_restart) {
+    clnt = NULL; // don't ctlclose -- we might still need more messages.
+  } else {
+    ctlclose ();
+  }
   twait { pre_shutdown_hook (mkevent ()); }
   if (!nclients) 
     end_program ();

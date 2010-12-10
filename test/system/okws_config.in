@@ -62,3 +62,4 @@ FilterCGI 0
 LazyStartup 1
 SafeStartup 0
 ClusterAddressing 1
+AggressiveServiceRestart 1

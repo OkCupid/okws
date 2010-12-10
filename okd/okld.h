@@ -465,7 +465,8 @@ public:
       _lazy_startup (false),
       _coredump_usr (ok_coredump_user),
       _coredump_grp (ok_coredump_group),
-      _coredump_mode (ok_coredump_mode) {}
+      _coredump_mode (ok_coredump_mode),
+      _aggressive_svc_restart (false) {}
 
   ~okld_t () { if (logexc) delete logexc; }
 
@@ -628,6 +629,7 @@ private:
   ok_usr_t _coredump_usr;
   ok_grp_t _coredump_grp;
   int _coredump_mode;
+  bool _aggressive_svc_restart;
 };
 
 //=======================================================================

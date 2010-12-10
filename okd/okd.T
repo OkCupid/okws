@@ -348,6 +348,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("PubJsonStrictEscaping")
     .ignore ("AhttpconZombieWarn")
     .ignore ("AhttpconZombieTimeout")
+    .ignore ("AggressiveServiceRestart")
     ;
 
   bool ret = ct.run (cf);

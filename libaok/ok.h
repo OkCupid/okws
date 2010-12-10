@@ -679,7 +679,8 @@ public:
   oksrvc_t (int argc, char *argv[]) 
     : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
       wait_for_signal_in_startup (false),
-      _n_newcli (0), _brother_id (0), _n_children (1)
+      _n_newcli (0), _brother_id (0), _n_children (1),
+      _aggressive_svc_restart (false)
   { 
     init (argc, argv);
     accept_msgs = ok_svc_accept_msgs;
@@ -787,6 +788,7 @@ protected:
   int _n_newcli;
   size_t _brother_id;
   size_t _n_children;
+  bool _aggressive_svc_restart;
 
 private:
 };
