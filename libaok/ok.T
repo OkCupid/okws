@@ -480,7 +480,7 @@ oksrvc_t::kill (svccb *v)
     end_program ();
     break;
   default:
-    shutdown ();
+    shutdown (true);
     srv.reply ();
     break;
   }
@@ -493,23 +493,31 @@ oksrvc_t::internal_reliable_shutdown_T (str s, int t)
 {
   SVC_CHATTER ("Internal Shutdown Initiated: " << s);
   delaycb (t, 0, wrap (this, &oksrvc_t::end_program));
-  shutdown ();
+  shutdown (false);
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-oksrvc_t::shutdown ()
+oksrvc_t::shutdown (bool end_of_okws_run)
 {
   if (OKDBG2(OKD_SHUTDOWN))
     SVC_CHATTER ("caught shutdown trigger");
 
   sdflag = true;
-  if (!_aggressive_svc_restart) {
-    clnt = NULL; // don't ctlclose -- we might still need more messages.
-  } else {
+
+  // If we're doing a regular okmgr-cycle OR an internal shutdown
+  // via # of reqs exceeded OR time running exceded, then we
+  // should be eager in ctlclosing our connections to the web server.
+  if (_aggressive_svc_restart && !end_of_okws_run) {
     ctlclose ();
+  } else {
+    // In this case, we're being cautious.  In particular, pubd should
+    // stay alive until the last service quits.  Keeping our ctls
+    // open to okd will keep pubd alive, so we wait...
+    clnt = NULL;
   }
+
   twait { pre_shutdown_hook (mkevent ()); }
   if (!nclients) 
     end_program ();

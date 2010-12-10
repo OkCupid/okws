@@ -719,7 +719,7 @@ public:
   virtual bool use_union_cgi () const { return false; }
 
   void init (int argc, char *argv[]);
-  void shutdown (CLOSURE);
+  void shutdown (bool end_of_okws_run, CLOSURE);
   void connect ();
   void ctldispatch (svccb *c);
   void remove (okclnt_interface_t *c);
