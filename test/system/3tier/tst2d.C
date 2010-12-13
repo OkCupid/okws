@@ -72,6 +72,9 @@ tst2_srv_t::dispatch (svccb *sbp)
   u_int p = sbp->proc ();
   err = false;
   switch (p) {
+  case TST2_NULL:
+    sbp->reply (NULL);
+    break;
   case TST2_PUT:
     put (sbp);
     break;

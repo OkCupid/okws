@@ -96,6 +96,7 @@ public:
   bool rpc_encode_opaque (str s) { return false; }
   bool rpc_decode (str *s);
   bool rpc_decode_opaque (str *s);
+  bool rpc_traverse_null ();
   bool rpc_traverse (bigint &b);
   void enter_field (const char *f);
   void exit_field (const char *f);
@@ -120,6 +121,7 @@ public:
   bool rpc_traverse (u_int32_t &obj);
   bool rpc_traverse (u_int64_t &obj);
   bool rpc_encode (str s);
+  bool rpc_traverse_null ();
   bool rpc_encode_opaque (str s);
   bool rpc_decode (str *s) { return false; }
   bool rpc_decode_opaque (str *s) { return false; }

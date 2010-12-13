@@ -18,6 +18,10 @@ cli.set_prog (C.TST2_PROG, C.TST2_VERS)
 
 print cli.call (C.TST2_NEGATE, True)
 
+print "XX"
+
+print cli.call (C.TST2_NULL, None)
+
 serial = str (int (time.time ()) % 10000)
 
 key = "test-key-" + str (int (time.time ()) % 10000)

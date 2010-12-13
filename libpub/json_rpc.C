@@ -324,6 +324,10 @@ json_decoder_t::init_decode (str s)
 
 //-----------------------------------------------------------------------
 
+bool json_decoder_t::rpc_traverse_null () { return true; }
+
+//-----------------------------------------------------------------------
+
 bool
 json_decoder_t::init_decode (ptr<pub3::expr_t> x)
 {
@@ -432,6 +436,15 @@ bool
 json_encoder_t::rpc_traverse (u_int64_t &obj)
 {
   set_top (pub3::expr_uint_t::alloc (obj));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_traverse_null()
+{
+  set_top (pub3::expr_null_t::alloc ());
   return true;
 }
 
