@@ -255,12 +255,7 @@ void
 html_filter_rxx_t::handle_tag (buf_t *out, const char **cpp, const char *ep)
 {
   const char *cp = *cpp;
-  bool go;
-#if SFSLITE_AT_VERSION(1,2,8,5)
-  go = _rxx->search_cstr (cp, ep - cp, PCRE_ANCHORED);
-#else
-  go = _rxx->search (cp, PCRE_ANCHORED);
-#endif
+  bool go = _rxx->search_cstr (cp, ep - cp, PCRE_ANCHORED);
   if (go) {
     size_t len = _rxx->end (0);
     out->add_cc (cp, len, true);
