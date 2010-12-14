@@ -1567,10 +1567,7 @@ main (int argc, char *argv[])
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
 
-#if SFSLITE_AT_VERSION(1,2,8,4)
     syslog_tag = ok_syslog_tag;
-#endif
-
     daemonize (pidfile);
   }
 
