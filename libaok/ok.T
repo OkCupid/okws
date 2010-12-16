@@ -506,6 +506,9 @@ oksrvc_t::shutdown (bool end_of_okws_run)
 
   sdflag = true;
 
+  // Don't accept any more connections on direct ports....
+  _direct_ports.close ();
+
   // If we're doing a regular okmgr-cycle OR an internal shutdown
   // via # of reqs exceeded OR time running exceded, then we
   // should be eager in ctlclosing our connections to the web server.
