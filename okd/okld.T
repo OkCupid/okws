@@ -825,6 +825,7 @@ okld_t::parse_file (const str &cf)
 	  time_t (0), time_t (INT_MAX))
     .add ("JsonIntBitMax", &ok_pub3_json_int_bitmax, -4, 128)
     .add ("AggressiveServiceRestart", &_aggressive_svc_restart)
+    .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
@@ -857,6 +858,38 @@ okld_t::parse_file (const str &cf)
   if (tmp_dump_group) { _coredump_grp = ok_grp_t (tmp_dump_group); }
 
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+okld_t::parse_bind_reattempt_schedule ()
+{
+  bool ok = true;
+
+  if (!_bind_reattempt_schedule_str) {
+    // Defaut schedule
+    _bind_reattempt_schedule_str = "1,1,2,4,8";
+  }
+
+  if (_bind_reattempt_schedule_str == "none" ||
+      _bind_reattempt_schedule_str == "0") {
+    _bind_reattempt_schedule_str = NULL;
+  } else {
+    vec<str> s;
+    static rxx x ("\\s*,\\s*");
+    split (&s, x, _bind_reattempt_schedule_str);
+    for (size_t i = 0; i < s.size (); i++) {
+      time_t tmp;
+      if (!convertint (s[i], &tmp) && tmp > 1000) {
+	warn << "BindReattemptSchedule: bad interval: " << s[i] << "\n";
+	ok = false;
+      } else {
+	_bind_reattempt_schedule.push_back (tmp);
+      }
+    }
+  }
+  return ok;
 }
 
 //-----------------------------------------------------------------------
@@ -912,6 +945,10 @@ okld_t::post_config (const str &cf)
   if (_all_ports_map.size () == 0) {
     warn << "No listen ports given; assuming default port (80)\n";
     add_port (listenport, false);
+  }
+
+  if (!parse_bind_reattempt_schedule ()) {
+    errors = true;
   }
 
   if (!check_services_and_aliases () || 

@@ -209,8 +209,10 @@ tamed void
 okld_ch_cluster_t::launch (evv_t ev)
 {
   tvars { size_t i; }
-  for (i = 0; i < _children.size (); i++) {
-    twait { _children[i]->launch (mkevent ()); }
+  twait { 
+    for (i = 0; i < _children.size (); i++) {
+      _children[i]->launch (true, mkevent ()); 
+    }
   }
   ev->trigger ();
 }
@@ -329,8 +331,58 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
 
 //-----------------------------------------------------------------------
 
+tamed void
+okld_ch_t::bind_ports (bool retry, evb_t ev)
+{
+  tvars {
+    bool go (true);
+    vec<time_t> sched;
+    size_t i (0);
+    time_t delay (0);
+    bool ret (false);
+    str s_id;
+  }
+  sched = okld ()->bind_reattempt_schedule ();
+  s_id = str_id ();
+  
+  while (!ret && go) {
+    
+    if (!_direct_ports.bind (_servpath, okld ()->listenaddr)) {
+      okdbg_warn (ERROR, "%s: cannot bind to all direct ports\n", 
+		  s_id.cstr ());
+
+      if (!retry) { 
+	// We're not allowed to retry, so don't bother
+	go = false; 
+      } else if (i == sched.size () && i > 0 && delay) {
+	// We've gone off the end of the schedule; keep retrying 
+	// indefinitely...
+      } else if (i < sched.size ()) {
+	delay = sched[i++];
+      } else {
+	// We're out of options?  Ok, then kill it....
+	go = false;
+      }
+
+      if (go) {
+	okdbg_warn (ERROR, "%s: wait %ds for reattempt\n",
+		    s_id.cstr (), int (delay));
+	twait { delaycb (delay, 0, mkevent ()); }
+      }
+
+    } else {
+      ret = true;
+    }
+
+  }
+  ev->trigger (ret);
+}
+
+//-----------------------------------------------------------------------
+
+
 tamed void 
-okld_ch_t::launch (evv_t ev)
+okld_ch_t::launch (bool startup, evv_t ev)
 {
   tvars {
     bool ok (true);
@@ -348,11 +400,12 @@ okld_ch_t::launch (evv_t ev)
   if (!ok) {
     _state = OKC_STATE_HOSED;
   }
-
-  if (ok && !_direct_ports.bind (_servpath, okld ()->listenaddr)) {
-    ok = false;
-    _state = OKC_STATE_BADPORTS; 
-    okdbg_warn (ERROR, "%s: cannot bind to all direct ports\n", s_id.cstr ());
+  
+  if (ok) { 
+    twait { bind_ports (true, mkevent (ok)); } 
+    if (!ok) {
+      _state = OKC_STATE_BADPORTS; 
+    }
   }
 
   if (ok && !(x = _cluster->spawn_proc (this, logfd, pubfd))) {
@@ -571,7 +624,7 @@ okld_ch_t::resurrect (evv_t ev)
       _state = OKC_STATE_HOSED;
       CH_ERROR ("Failed to fix permissions on executable during relaunch!");
     } else {
-      twait { launch (mkevent ()); }
+      twait { launch (false, mkevent ()); }
     }
   }
   ev->trigger ();
@@ -659,7 +712,7 @@ okld_ch_t::lazy_startup (evb_t ev)
   if (_state == OKC_STATE_SERVE) {
     ret = true;
   } else if (_state == OKC_STATE_STANDBY) {
-    twait { launch (mkevent ());  }
+    twait { launch (true, mkevent ());  }
     ret = (_state == OKC_STATE_SERVE);
   } else {
     ret = false;

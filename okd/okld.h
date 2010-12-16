@@ -326,7 +326,8 @@ class okld_ch_t {
 public:
   okld_ch_t (okld_ch_cluster_t *c, size_t i);
 
-  void launch (evv_t ev, CLOSURE);
+  void launch (bool startup, evv_t ev, CLOSURE);
+  void bind_ports (bool retry, evb_t ev, CLOSURE);
   void sig_chld_cb (int status);
   void chldcb (int status) { chldcb_T (status); }
   str str_id () const;
@@ -527,6 +528,9 @@ public:
   const ok_usr_t &coredump_usr () const { return _coredump_usr; }
   int coredump_mode () const { return _coredump_mode; }
 
+  const vec<time_t> &bind_reattempt_schedule () const 
+  { return _bind_reattempt_schedule; }
+
 protected:
   bool parse_file (const str &fn);
   bool post_config (const str &fn);
@@ -536,6 +540,7 @@ protected:
 private:
 
   bool guess_pubd (const str &cf);
+  bool parse_bind_reattempt_schedule ();
 
   struct alias_t {
     alias_t (const str &t, const str &f, const str &l, okws1_port_t p)
@@ -630,6 +635,9 @@ private:
   ok_grp_t _coredump_grp;
   int _coredump_mode;
   bool _aggressive_svc_restart;
+
+  str _bind_reattempt_schedule_str;
+  vec<time_t> _bind_reattempt_schedule;
 };
 
 //=======================================================================
