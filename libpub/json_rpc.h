@@ -40,8 +40,12 @@ public:
   void collect (const char *k, str v, rpc_constant_type_t t) {}
   void collect (const char *k, const char *c, rpc_constant_type_t t) {}
   const rpc_constant_set_t &constant_set () { return m_set; }
+  void collect (const char *k, xdr_procpair_t p);
+  static ptr<json_fetch_constants_t> get_singleton_obj ();
+  bool lookup_procpair (str s, xdr_procpair_t *out);
 private:
   rpc_constant_set_t m_set;
+  qhash<str, xdr_procpair_t> m_procpairs;
 };
 
 //-----------------------------------------------------------------------
@@ -163,6 +167,11 @@ json2xdr (T &out, str s)
 
 //-----------------------------------------------------------------------
 
+bool json2xdropq (str typ, str *out, ptr<const pub3::expr_t> cin);
+ptr<pub3::expr_t> xdropq2json (str typ, const str &xdr_opq);
+
+//-----------------------------------------------------------------------
+
 template<class T> bool
 json2xdr (T &out, ptr<const pub3::expr_t> cin)
 {
@@ -180,10 +189,7 @@ json2xdr (T &out, ptr<const pub3::expr_t> cin)
 
   // Please excuse this hack-y cast, but it's easier than rewriting the
   // whole hierarchy tree for json_XDR_t's...
-  const pub3::expr_t *craw = cin;
-  pub3::expr_t *raw = const_cast<pub3::expr_t *> (craw);
-  ptr<pub3::expr_t> in = mkref (raw);
-  d->init_decode (in);
+  d->init_decode (cin->cast_hack_copy ());
 
   // run the standard str2xdr stuff
   bool ret = rpc_traverse (vx, out);

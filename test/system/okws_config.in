@@ -44,6 +44,7 @@ Service		objtest /objtest
 Service		timer /timer
 Service		errortest /errortest
 Service		slow /slow
+Service		encoder /encoder
 
 #Service	3tier/tst2 /tst2
 

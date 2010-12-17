@@ -631,6 +631,11 @@ json_XDR_t::~json_XDR_t ()
 
 //-----------------------------------------------------------------------
 
+void json_fetch_constants_t::collect (const char *k, xdr_procpair_t p)
+{ m_procpairs.insert (k, p); }
+
+//-----------------------------------------------------------------------
+
 void 
 json_fetch_constants_t::collect (const char *key, int i, rpc_constant_type_t t)
 {
@@ -721,14 +726,73 @@ json_introspection_server_t::dispatch (svccb *sbp)
 
 //-----------------------------------------------------------------------
 
+ptr<json_fetch_constants_t>
+json_fetch_constants_t::get_singleton_obj ()
+{
+  static ptr<json_fetch_constants_t> ret;
+  if (!ret) {
+    ret = New refcounted<json_fetch_constants_t> ();
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 const rpc_constant_set_t &
 json_introspection_server_t::constant_set ()
 {
-  static ptr<json_fetch_constants_t> jfc;
-  if (!jfc) {
-    jfc = New refcounted<json_fetch_constants_t> ();
-  }
-  return jfc->constant_set ();
+  return json_fetch_constants_t::get_singleton_obj ()->constant_set ();
 }
+
+//-----------------------------------------------------------------------
+
+bool
+json_fetch_constants_t::lookup_procpair (str s, xdr_procpair_t *out)
+{
+  xdr_procpair_t *xp;
+  if ((xp = m_procpairs[s])) { *out = *xp; }
+  return xp;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json2xdropq (str t, str *out, ptr<const pub3::expr_t> cin)
+{
+  xdr_procpair_t pp (NULL, NULL);
+  bool found = 
+    json_fetch_constants_t::get_singleton_obj()->lookup_procpair (t, &pp);
+  bool ret = false;
+  if (found) {
+#define BUFSZ 4
+    char buf[BUFSZ];
+    xdrmem x (buf, BUFSZ, XDR_DECODE);
+#undef BUFSZ
+    
+    XDR *xd = &x;
+    
+    ptr<json_decoder_t> jd = 
+      json_XDR_dispatch_t::get_singleton_obj ()->alloc_decoder (xd);
+    
+    jd->init_decode (cin->cast_hack_copy ());
+    
+    // run the standard str2xdr stuff
+    void *obj = (*pp.alloc)();
+    ret = (*pp.proc) (xd, obj);
+    if (ret) {
+      xdrsuio xs (XDR_ENCODE, false);
+      XDR *xe = &xs;
+      ret = (*pp.proc) (xe, obj);
+      if (ret) {
+	mstr m (xs.uio ()->resid ());
+	xs.uio ()->copyout (m);
+	*out = m;
+      }
+    }
+    xdr_delete (pp.proc, obj);
+  }
+  return ret;
+}
+
 
 //-----------------------------------------------------------------------
