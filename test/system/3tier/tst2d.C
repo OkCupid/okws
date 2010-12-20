@@ -43,6 +43,7 @@ protected:
   void put (svccb *sbp);
   void foo_reflect (svccb *sbp);
   void negate (svccb *sbp);
+  void sum (svccb *sbp);
 private:
   sth_t _q_get, _q_put;
   bool err;
@@ -87,6 +88,9 @@ tst2_srv_t::dispatch (svccb *sbp)
   case TST2_NEGATE:
     negate (sbp);
     break;
+  case TST2_SUM:
+    sum (sbp);
+    break;
   default:
     reject ();
     break;
@@ -99,6 +103,17 @@ tst2_srv_t::foo_reflect (svccb *b)
   const foo_t *arg = b->Xtmpl getarg<foo_t> ();
   ptr<foo_t> res = New refcounted<foo_t> (*arg);
   reply (res);
+}
+
+void
+tst2_srv_t::sum (svccb *b)
+{
+  const u32_vec_t *arg = b->Xtmpl getarg<u32_vec_t> ();
+  u_int32_t res = 0;
+  for (size_t i = 0; i < arg->size (); i++) {
+    res += (*arg)[i];
+  }
+  reply (New refcounted<u_int32_t> (res));
 }
 
 void 
