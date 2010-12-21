@@ -316,7 +316,7 @@ class Client:
     def decode_json (self, obj):
         if self._fast_decode:
             true = True
-            fals = False
+            false = False
             null = None
             res = eval (obj)
         else:
