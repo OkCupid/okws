@@ -36,7 +36,7 @@ default:
      void;
 };
 
-typedef unsigned u32_vec_t<>;
+typedef unsigned hyper u64_vec_t<>;
 
 program TST2_PROG {
 	version TST2_VERS {
@@ -56,8 +56,8 @@ program TST2_PROG {
 		bool
 		TST2_NEGATE(bool) = 4;
 
-		unsigned
-		TST2_SUM(u32_vec_t) = 5;
+		unsigned hyper
+		TST2_SUM(u64_vec_t) = 5;
 
     	} = 1;
 } = 10808;

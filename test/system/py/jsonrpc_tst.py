@@ -45,6 +45,8 @@ foo = { "b" : True,
         
 print cli.call (C.TST2_FOO_REFLECT, foo)
 
+print cli.call (C.TST2_SUM, [ i * 2**43 for i in range (0,20) ] )
+
 
 try:
     print cli.call (4000, foo)

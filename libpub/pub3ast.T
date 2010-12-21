@@ -1611,6 +1611,7 @@ namespace pub3 {
       str e = "include: cannot evalute parameters";
       p->report_error (e, _location);
     } else {
+      fn = trunc_after_null_byte (fn);
       mz = p->push_muzzle (muzzle_output ());
       ctrl = p->push_control ();
       twait { p->publish (fn, _location, bi, mkevent (rs)); }

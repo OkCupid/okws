@@ -108,12 +108,12 @@ tst2_srv_t::foo_reflect (svccb *b)
 void
 tst2_srv_t::sum (svccb *b)
 {
-  const u32_vec_t *arg = b->Xtmpl getarg<u32_vec_t> ();
-  u_int32_t res = 0;
+  const u64_vec_t *arg = b->Xtmpl getarg<u64_vec_t> ();
+  u_int64_t res = 0;
   for (size_t i = 0; i < arg->size (); i++) {
     res += (*arg)[i];
   }
-  reply (New refcounted<u_int32_t> (res));
+  reply (New refcounted<u_int64_t> (res));
 }
 
 void 
