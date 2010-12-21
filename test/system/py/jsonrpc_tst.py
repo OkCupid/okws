@@ -11,6 +11,7 @@ import jsonrpc
 cli = jsonrpc.Client (host = "127.0.0.1", port = 10808)
 
 cli.connect ()
+cli.set_fast_decode (True)
 
 C = cli.fetch_constants ()
 

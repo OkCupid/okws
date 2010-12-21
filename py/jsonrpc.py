@@ -310,10 +310,12 @@ class Client:
         self._socket = None
         self._retry = retry
         self._fast_decode = False
+        self._fancy_objs = True
 
     #-----------------------------------------
 
     def decode_json (self, obj):
+
         if self._fast_decode:
             true = True
             false = False
@@ -321,6 +323,10 @@ class Client:
             res = eval (obj)
         else:
             res = json.loads (obj)
+
+        if self._fancy_objs:
+            res = JsonWrap.alloc (res)
+
         return res
 
     #-----------------------------------------
@@ -329,6 +335,12 @@ class Client:
         self._fast_decode = b
 
     #-----------------------------------------
+
+    def set_fancy_objs (self, b):
+        self._fancy_objs = b
+
+    #-----------------------------------------
+    
     
     def connect (self, host = None, port = -1):
         if host: self._host = host
@@ -402,7 +414,6 @@ class Client:
         else:
             # eval json to python; might want to make this more robsuto
             res = self.decode_json (payload)
-            res = JsonWrap.alloc (res)
 
         return res
 
