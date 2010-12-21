@@ -309,6 +309,24 @@ class Client:
         self._port = port
         self._socket = None
         self._retry = retry
+        self._fast_decode = False
+
+    #-----------------------------------------
+
+    def decode_json (self, obj):
+        if self._fast_decode:
+            true = True
+            fals = False
+            null = None
+            res = eval (obj)
+        else:
+            res = json.loads (obj)
+        return res
+
+    #-----------------------------------------
+
+    def set_fast_decode (self, b):
+        self._fast_decode = b
 
     #-----------------------------------------
     
@@ -383,7 +401,7 @@ class Client:
             res = None
         else:
             # eval json to python; might want to make this more robsuto
-            res = json.loads (payload)
+            res = self.decode_json (payload)
             res = JsonWrap.alloc (res)
 
         return res
