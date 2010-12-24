@@ -440,7 +440,7 @@ class TestCase:
 
     ##-----------------------------------------
 
-    def __init__ (self, config, d):
+    def __init__ (self, config, d = {}, raw = False):
         self._filedata = None
         self._filedata_inc = []
         self._desc = ""
@@ -463,18 +463,24 @@ class TestCase:
         for k in d.keys ():
             setattr (self, "_" + k, d[k])
 
-        self._outcome_obj = Outcome.alloc (self)
+        if not raw:
+            self._outcome_obj = Outcome.alloc (self)
 
-        if not self._filedata \
-                and not self._htdoc \
-                and not self._service \
-                and not self._script_path \
-                and not self._custom_fetch:
-            raise RegTestError, "bad test case: no input file given"
+            if not self._filedata \
+                    and not self._htdoc \
+                    and not self._service \
+                    and not self._script_path \
+                    and not self._custom_fetch:
+                raise RegTestError, "bad test case: no input file given"
 
         if type (self._filedata) is list:
             self._filedata_inc = self._filedata[1:]
             self._filedata = self._filedata[0]
+
+    ##----------------------------------------
+
+    def is_local (self):
+        return self._config.command_line ()
 
     ##----------------------------------------
 
@@ -688,12 +694,38 @@ RESULT_SKIPPED = -1
 
 ##=======================================================================
 
+class StatusCodes:
+    OK = RESULT_OK
+    FAILED = 1
+    SKIPPED = -1
+
+##=======================================================================
+
 def query_str (d):
     s = ""
     if d:
         s = "?" + "=".join ([ "%s=%s" % p for p in d.items ()] )
     return s
 
+##=======================================================================
+
+class TestCaseGeneric (TestCase):
+    """Test case in which the case determines all of the run logic
+    (via run() function in the test case."""
+
+    ##----------------------------------------
+
+    def __init__ (self, config, d, fn):
+        TestCase.__init__ (self, config, d, True) 
+        self._run = fn
+
+    ##----------------------------------------
+
+    def run (self):
+        # run the given run function, but with the test case wrapper
+        # as a reference
+        return self._run (self, StatusCodes)
+        
 ##=======================================================================
 
 class TestCaseRemote (TestCase):
@@ -754,8 +786,7 @@ class TestCaseRemote (TestCase):
 ##=======================================================================
 
 class TestCaseLocal (TestCase):
-    """Test case that's fetched via HTTP, with the full end-to-end
-    tests enabled."""
+    """Test case that's run locally via the pub/pub3stage1 debugging tool."""
 
     def __init__ (self, config, d):
         TestCase.__init__ (self, config, d)
@@ -812,9 +843,13 @@ class TestCaseLoader:
             raise RegTestError, "failed to load test case: %s" % full
 
         try:
-            v = self.load_cases (name, full, mod)
-            if not v:
-                v = [ self.load_single_case (name, full, mod) ]
+            g = self.load_generic (name, full, mod)
+            if g:
+                v = [ g ]
+            else:
+                v = self.load_cases (name, full, mod)
+                if not v:
+                    v = [ self.load_single_case (name, full, mod) ]
         except RegTestError, e:
             myerr (full, e)
             raise RegTestError, "cannot load test case file: %s" % full
@@ -829,6 +864,29 @@ class TestCaseLoader:
             ret = TestCaseLocal (self._config, d)
         else:
             ret = TestCaseRemote (self._config, d)
+        return ret
+
+    ##----------------------------------------
+
+    def make_generic_case (self, d, fn):
+        ret = TestCaseGeneric (self._config, d, fn)
+        return ret
+
+    ##----------------------------------------
+
+    def load_generic (self, name, full, mod):
+        """Load a generic single test case, that implements its
+        own run() function."""
+
+        ret = None
+        fn = None
+        try:
+            fn = getattr (mod, "run")
+        except AttributeError, e:
+            pass
+        if fn:
+            d = { "name" : name, "fullpath" : full }
+            ret = self.make_generic_case (d, fn)
         return ret
 
     ##----------------------------------------

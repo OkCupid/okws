@@ -112,8 +112,12 @@ ok_httpsrv_t::servinfo () const
   if (si)
     return si;
 
+  // IF not on network, need to have something here....
+  str hn = hostname;
+  if (!hn) { hn = "-"; }
+
   strbuf b;
-  b << reported_name << "/" << version << " Server at " << hostname 
+  b << reported_name << "/" << version << " Server at " << hn 
     << " Port " << listenport;
   
   return (si = b);

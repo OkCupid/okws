@@ -32,6 +32,9 @@
 #include "test_const.h"
 #include "okprot.h"
 #include "pub3prot.h"
+#include "json_rpc.h"
+
+//-----------------------------------------------------------------------
 
 class oksrvc_encoder_t : public oksrvc_t {
 public:
@@ -39,6 +42,8 @@ public:
   newclnt_t *make_newclnt (ptr<ahttpcon> x);
 protected:
 };
+
+//-----------------------------------------------------------------------
 
 class okclnt_encoder_t : public okclnt2_t {
 public:
@@ -48,16 +53,89 @@ public:
 
   void process (proc_ev_t ev) { process_T (ev); }
   void process_T (proc_ev_t ev, CLOSURE); 
-
 protected:
+  void do_encode (str i, str typ);
+  void do_decode (str s, str typ);
+  void set_output (bool ok, str dat);
+  pub3::obj_dict_t m_obj;
   oksrvc_encoder_t *ok_encoder;
 };
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_encoder_t::set_output (bool b, str m)
+{
+  m_obj ("ok") = b;
+  m_obj ("data") = m;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_encoder_t::do_decode (str s, str typ)
+{
+  str out;
+  str raw;
+  ptr<pub3::expr_t> x;
+  
+  if (!(raw = dearmor64 (s))) {
+    set_output (false, "could not dearmor input");
+  } else if (!(x = xdropq2json (typ, raw))) {
+    set_output (false, "could xdropq2json failed");
+  } else {
+    m_obj("status") = true;
+    m_obj("data") = x;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+okclnt_encoder_t::do_encode (str s, str typ)
+{
+  str out;
+  ptr<pub3::expr_t> x;
+  str raw;
+
+  if (!(raw = dearmor64 (s))) {
+    set_output (false, "could not dearmor64 input");
+  } else if (!(x = pub3::json_parser_t::parse (raw))) {
+    set_output (false, "failed to parse input as JSON");
+  } else if (!json2xdropq (typ, &out, x)) {
+    set_output (false, "json2xdropq failed");
+  } else {
+    set_output (true, armor64 (out));
+  }
+}
+
+//-----------------------------------------------------------------------
 
 tamed void 
 okclnt_encoder_t::process_T (okclnt2_t::proc_ev_t ev)
 {
+  tvars {
+    str in;
+    str typ;
+    str tmp;
+  }
+
+  if (!cgi.lookup ("type", &typ)) {
+    set_output (false, "no type sepcified");
+  } else if (cgi.lookup ("encode", &in)) {
+    do_encode (in, typ);
+  } else if (cgi.lookup ("decode", &in)) {
+    do_decode (in, typ);
+  } else {
+    set_output (false, "usage: specify encode=X or decode=X");
+  }
+  tmp = m_obj.to_str ();
+  out << tmp;
+  twait { output (out, mkevent ()); }
   ev->trigger (true, HTTP_OK);
 }
+
+//-----------------------------------------------------------------------
 
 oksrvc_t::newclnt_t *
 oksrvc_encoder_t::make_newclnt (ptr<ahttpcon> x)
@@ -65,10 +143,16 @@ oksrvc_encoder_t::make_newclnt (ptr<ahttpcon> x)
   return New okclnt_encoder_t (x, this);
 }
 
+//-----------------------------------------------------------------------
+
 int
 main (int argc, char *argv[])
 {
   oksrvc_t *oksrvc = New oksrvc_encoder_t (argc, argv);
   oksrvc->launch ();
+  json_XDR_dispatch_t::enable ();
   amain ();
 }
+
+//-----------------------------------------------------------------------
+

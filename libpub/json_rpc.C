@@ -756,6 +756,45 @@ json_fetch_constants_t::lookup_procpair (str s, xdr_procpair_t *out)
 
 //-----------------------------------------------------------------------
 
+ptr<pub3::expr_t> 
+xdropq2json (str typ, const str &xdr_opq)
+{
+  ptr<pub3::expr_t> ret;
+  xdr_procpair_t pp (NULL, NULL);
+  bool found = 
+    json_fetch_constants_t::get_singleton_obj()->lookup_procpair (typ, &pp);
+
+  if (found) {
+#define BUFSZ 4
+    // We need this dummy just as a result of the extensible_rpc v_XDR_t
+    // base class.  It really shouldn't need to do anything...
+
+    xdrmem m (xdr_opq, xdr_opq.len ());
+    XDR *xm = &m;
+    void *obj = (*pp.alloc)();
+    bool ok = (*pp.proc) (xm, obj);
+    if (ok) {
+
+      xdrsuio xs (XDR_ENCODE, false);
+      XDR *xsp = &xs;
+      
+      ptr<json_encoder_t> e = 
+	json_XDR_dispatch_t::get_singleton_obj ()->alloc_encoder (xsp);
+      ptr<v_XDR_t> vx = e;
+
+      ok = (*pp.proc) (xsp, obj);
+      if (ok) {
+	ret = e->root_obj ();
+	assert (ret);
+      }
+    }
+    xdr_delete (pp.proc, obj);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 bool
 json2xdropq (str t, str *out, ptr<const pub3::expr_t> cin)
 {
