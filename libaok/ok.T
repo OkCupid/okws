@@ -327,6 +327,8 @@ oksrvc_t::init (int argc, char *argv[])
       }
     }
 
+    _direct_ports.prepare ();
+
     int tmp = 0;
     if (t->lookup ("clock", &tmp))
       clock_mode = static_cast<sfs_clock_t> (tmp);

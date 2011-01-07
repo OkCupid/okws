@@ -70,12 +70,34 @@ ok_portpair_t::encode_as_str () const
 //-----------------------------------------------------------------------
 
 void
+ok_portpair_t::prepare ()
+{
+  if (_fd >= 0) {
+    make_async (_fd);
+
+    // It's crucial to do this, so that guys like aiod won't inherit this.
+    // Some okws services might allocate an aiod to do disk I/O !
+    close_on_exec (_fd);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
 ok_portpair_t::close ()
 {
   if (_fd >= 0) {
     ::close (_fd);
     _fd = -1;
   }
+}
+
+//-----------------------------------------------------------------------
+
+void
+ok_direct_ports_t::prepare ()
+{
+  for (size_t i = 0; i < _ports.size (); i++) { _ports[i].prepare (); }
 }
 
 //-----------------------------------------------------------------------

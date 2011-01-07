@@ -202,6 +202,7 @@ struct ok_portpair_t {
   void report ();
   void enable_accept (ok_con_acceptor_t *s, int listenq);
   bool parse (const str &in);
+  void prepare ();
 
   int _port;
   int _fd;
@@ -224,6 +225,7 @@ public:
   void disable_accept ();
   bool operator[] (int p) const { return _map[p]; }
   void add_port_pair (const ok_portpair_t &p);
+  void prepare ();
 private:
   vec<ok_portpair_t> _ports;
   bhash<int> _map;

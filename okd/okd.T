@@ -758,6 +758,7 @@ okd_t::launch ()
       fatal ("could not bind TCP port %d: %m\n", _http_ports[i]);
     }
     close_on_exec (fd);
+    make_async (fd);
     listen (fd, ok_listen_queue_max);
     listenfds.push_back (fd);
     portmap.insert (fd, _http_ports[i]);
