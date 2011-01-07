@@ -880,7 +880,7 @@ okld_t::parse_bind_reattempt_schedule ()
     static rxx x ("\\s*,\\s*");
     split (&s, x, _bind_reattempt_schedule_str);
     for (size_t i = 0; i < s.size (); i++) {
-      time_t tmp;
+      time_t tmp = 0;
       if (!convertint (s[i], &tmp) && tmp > 1000) {
 	warn << "BindReattemptSchedule: bad interval: " << s[i] << "\n";
 	ok = false;
