@@ -271,6 +271,11 @@ okd_t::parse_file (const str &cf)
     .add ("StatPageURL", &_stat_page_url)
     .add ("TcpNoDelay", &_okd_nodelay)
     .add ("ClusterAddressing", &_cluster_addressing)
+    .add ("EmergencyKillEnabled", &_emerg_kill_enabled)
+    .add ("EmergencyKillWaitTime", &_emerg_kill_wait, time_t (1), time_t (1000))
+    .add ("EmergencyKillSignal", &_emerg_kill_signal, 0, 0xff)
+    .add ("SendConnectionTimeBudget", &okd_sendcon_time_budget, time_t (0),
+	  time_t (1000))
 
     // script and service options, just ignore 'em...
     .ignore ("Service")
@@ -1307,6 +1312,52 @@ okd_ssl_t::hangup ()
   _x = NULL;
   _cli = NULL;
   _srv = NULL;
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okd_t::emerg_kill (oksvc_descriptor_t d, evv_t::ptr ev)
+{
+  tvars {
+    emergency_kill_arg_t arg;
+    ok_xstatus_typ_t res;
+    clnt_stat err;
+  }
+  if (_okld_cli) {
+    arg.svc = d;
+    arg.signal = _emerg_kill_signal;
+    twait { 
+      RPC::okld_program_1::
+	okld_emergency_kill (_okld_cli, arg, &res, mkevent (err));
+    }
+    if (err) {
+      warn << "RPC failed in emergency_kill to okld: " << err << "\n";
+    } else if (res != OK_STATUS_OK) {
+      warn << "okld failed to kill process (";
+      rpc_print (warnx, res, NULL, 0, NULL);
+      warnx << ")\n";
+    }
+
+  }
+  if (ev) ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+bool 
+okd_t::handle_overload (time_t dur, okch_t *ch)
+{
+  bool ret = false;
+  if (_emerg_kill_enabled && dur > _emerg_kill_wait) {
+    ret = true;
+    oksvc_descriptor_t d;
+    ch->to_svc_descriptor (&d);
+
+    // fire and forget pub call
+    emerg_kill (d);
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

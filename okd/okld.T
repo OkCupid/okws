@@ -844,6 +844,10 @@ okld_t::parse_file (const str &cf)
     .ignore ("AcceptDelay")
     .ignore ("TcpNoDelay")
     .ignore ("ClusterAddressing")
+    .ignore ("EmergencyKillEnabled")
+    .ignore ("EmergencyKillWaitTime")
+    .ignore ("EmergencyKillSignal")
+    .ignore ("SendConnectionTimeBudget")
     ;
 
   bool ret = ct.run (cf);
@@ -1283,10 +1287,40 @@ okld_t::okd_dispatch (svccb *sbp)
     case OKLD_POKE_LAZY_SERVICE:
       poke_lazy_service (sbp);
       break;
+    case OKLD_EMERGENCY_KILL:
+      emergency_kill (sbp);
+      break;
     default:
       sbp->reject (PROC_UNAVAIL);
     }
   }
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okld_t::emergency_kill (svccb *sbp)
+{
+  tvars {
+    RPC::okld_program_1::okld_emergency_kill_srv_t<svccb> srv (sbp);
+    holdvar const emergency_kill_arg_t *arg (srv.getarg ());
+    ok_xstatus_typ_t ret (OK_STATUS_OK);
+    ptr<okld_ch_t> ch;
+    ptr<okld_ch_cluster_t> *cl;
+    oksvc_proc_t p (arg->svc.proc);
+    int sig (arg->signal);
+  }
+
+  if (sdflag) {
+    warn << "Cannot kill service " << p.name << " due to okld shutdown\n";
+    ret = OK_STATUS_DEADCHILD;
+  } else if ((cl = _svc_lookup[p.name]) && 
+	     (ch = (*cl)->get_child (p.brother_id))) {
+    ret = ch->kill (sig);
+  } else {
+    ret = OK_STATUS_NOSUCHCHILD;
+  }
+  srv.reply (ret);
 }
 
 //-----------------------------------------------------------------------

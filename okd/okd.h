@@ -103,6 +103,7 @@ public:
 
   void chld_eof ();
   void to_status_xdr (oksvc_status_t *out);
+  void to_svc_descriptor (oksvc_descriptor_t *d) const;
 
   inline int get_n_sent () const { return _n_sent; }
   void reset_n_sent () ;
@@ -118,6 +119,8 @@ public:
   ptr<bool> get_destroyed_flag () { return _destroyed; }
 
   void proc_to_xdr (oksvc_proc_t *x) const;
+  void handle_overload ();
+  bool sendcon_timeout () const;
 
   typedef enum {
     OK = 0,
@@ -149,9 +152,13 @@ private:
   
   bool _too_busy;           // the server is potentially too busy to get more
   u_int64_t _generation_id; // which generation of service this is.
-
+  time_t _emerg_start;      // if the service is unresponsive, when it happened
+  bool _emerg_killed;       // whether it's been emergency killed
+  
   // To be triggered when this service is ready to go.
   evv_t::ptr _ready_trigger; 
+
+  time_t _last_con_send, _last_con_recv, _first_con_send;
 };
 
 //=======================================================================
@@ -176,7 +183,6 @@ public:
   
   okd_t *_myokd;
   const str _servpath;           // GET <servpath> HTTP/1.1 (starts with '/')
-  const pid_t _pid;              // XXX hack just for CH_ERROR macro
   vec<okch_t *> _children;
   ihash_entry<okch_cluster_t> _lnk;
   vec<ahttpcon_wrapper_t<ahttpcon_clone> > _conqueue;
@@ -245,7 +251,10 @@ public:
     _ssl (this),
     _lazy_startup (false),
     _okd_nodelay (okd_tcp_nodelay),
-    _cluster_addressing (false)
+    _cluster_addressing (false),
+    _emerg_kill_enabled (false),
+    _emerg_kill_wait (okd_emergency_kill_wait_time),
+    _emerg_kill_signal (okd_emergency_kill_signal)
   {
     listenport = p;
   }
@@ -280,6 +289,8 @@ public:
   void shutdown (int sig) { shutdown_T (sig); }
   void shutdown_T (int sig, CLOSURE);
   void awaken (const oksvc_proc_t &p, evb_t ev, CLOSURE);
+  bool handle_overload (time_t dur, okch_t *ch);
+  void emerg_kill (oksvc_descriptor_t d, evv_t::ptr ev = NULL, CLOSURE);
 
   servtab_t servtab;
   qhash<str, str> aliases;
@@ -382,6 +393,9 @@ private:
   str _stat_page_url;
   bool _okd_nodelay;
   bool _cluster_addressing;
+  bool _emerg_kill_enabled;
+  time_t _emerg_kill_wait;
+  int _emerg_kill_signal;
 };
 
 class okd_mgrsrv_t 

@@ -191,6 +191,11 @@ extern size_t ok_max_brother_procs;            // max number of brother procs
 extern bool ok_ahttpcon_zombie_warn;           // zombie warn
 extern time_t ok_ahttpcon_zombie_timeout;      // how long to wait before warn 
 
+extern time_t okd_emergency_kill_wait_time;    // time to emergency kill
+extern int okd_emergency_kill_signal;          // signal to send
+extern time_t okd_sendcon_time_budget;         // sending a con should be fast
+ 
+
 //
 // okld constants
 //

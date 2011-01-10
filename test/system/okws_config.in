@@ -45,6 +45,7 @@ Service		timer /timer
 Service		errortest /errortest
 Service		slow /slow
 Service		encoder /encoder
+Service		cpubomb -n3 /cpubomb
 
 #Service	3tier/tst2 /tst2
 
@@ -64,3 +65,4 @@ LazyStartup 1
 SafeStartup 0
 ClusterAddressing 1
 AggressiveServiceRestart 1
+EmergencyKillEnabled 1

@@ -824,15 +824,31 @@ do {                                           \
 // that they have similar internal variables; the might be put into a 
 // class tree, but they share little functionality in common.
 //
-#define CH_MSG(M,x)                            \
-do {                                           \
-  strbuf b;                                    \
-  b << _servpath << ":" << _pid << ": " << x ; \
-  okdbg_warn (M, b);                           \
-} while (0)
+#define CH_MSG(M,x)							\
+  do {									\
+    strbuf b;								\
+    b << _servpath << ":" << _brother_id << ":" << _pid << ": " << x ;	\
+    okdbg_warn (M, b);							\
+  } while (0)
 
 #define CH_CHATTER(x) CH_MSG(CHATTER, x)
-#define CH_ERROR(x)    CH_MSG(ERROR, x)
+#define CH_ERROR(x)   CH_MSG(ERROR, x)
+
+
+//
+// XXX - hack - this is used by both okch_t and okld_ch_t - just happens
+// that they have similar internal variables; the might be put into a 
+// class tree, but they share little functionality in common.
+//
+#define CH_CL_MSG(M,x)							\
+  do {									\
+    strbuf b;								\
+    b << _servpath << ":" x ;						\
+    okdbg_warn (M, b);							\
+  } while (0)
+
+#define CH_CL_CHATTER(x) CH_CL_MSG(CHATTER, x)
+#define CH_CL_ERROR(x)   CH_CL_MSG(ERROR, x)
 
 #define NO_SOCKET_ALLOCATED 7
 

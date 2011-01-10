@@ -37,6 +37,7 @@ extern char ** environ;
 okld_ch_t::okld_ch_t (okld_ch_cluster_t *c, size_t i)
   : _cluster (c), 
     _id (i), 
+    _brother_id (i), // XXX need this too for CH_ERROR in ok.h
     _servpath (c->servpath ()),
     _pid (-1),
     _state (OKC_STATE_NONE),
@@ -219,12 +220,38 @@ okld_ch_cluster_t::launch (evv_t ev)
 
 //-----------------------------------------------------------------------
 
+ok_xstatus_typ_t
+okld_ch_t::kill (int sig)
+{
+  ok_xstatus_typ_t ret = OK_STATUS_OK;
+  int rc = ::kill (_pid, sig);
+  strbuf b;
+  b << "issuing kill with signal=" << sig << " => ";
+  if (rc == 0) {
+    b << "success";
+  } else {
+    b.fmt (" failed (%m)");
+    switch (errno) {
+    case EINVAL: ret = OK_STATUS_UNKNOWN_OPTION; break;
+    case ESRCH: ret = OK_STATUS_NOSUCHCHILD; break;
+    case EPERM: ret = OK_STATUS_BADFD; break;
+    default: ret = OK_STATUS_ERR;
+    }
+  }
+  str s = b;
+  CH_ERROR(s);
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+
 str
 okld_ch_t::str_id () const
 {
   str ret;
   if (_cluster->n_children () > 1) {
-    ret = strbuf ("%s-%zd", _servpath.cstr (), _id);
+    ret = strbuf ("%s:%zd", _servpath.cstr (), _id);
   } else {
     ret = _servpath;
   }
@@ -508,24 +535,24 @@ okld_ch_cluster_t::set_svc_ids (int _pid)
   setgroups (0, NULL);
 
   if (setgid (_gid) != 0) {
-    CH_ERROR ("could not change gid to " << _gid);
+    CH_CL_ERROR ("could not change gid to " << _gid);
     exit (1);
   }
 
   if (setuid (_uid->getid ()) != 0) {
-    CH_ERROR ("could not change uid to " << _uid->getname ());
+    CH_CL_ERROR ("could not change uid to " << _uid->getname ());
     exit (1);
   }
 
   if (_rundir) {
     str d = okld ()->jail2real (_rundir, true);
     if (chdir (d) != 0) {
-      CH_ERROR ("change dir failed: %m\n");
+      CH_CL_ERROR ("change dir failed: %m\n");
     } else if (OKDBG2(OKD_STARTUP)) {
-      CH_CHATTER ("changing directories to " << d  );
+      CH_CL_CHATTER ("changing directories to " << d  );
     }
   } else if (OKDBG2(OKD_STARTUP)) {
-    CH_CHATTER ("no rundir specified; not changing directories\n");
+    CH_CL_CHATTER ("no rundir specified; not changing directories\n");
   }
 }
 

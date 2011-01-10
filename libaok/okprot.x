@@ -169,6 +169,11 @@ struct okmgr_send_msg_arg_t {
    string msg<>;
 };
 
+struct emergency_kill_arg_t {
+     oksvc_descriptor_t svc;
+     int signal;
+};
+
 %#define LOG_IP     (1 << 0)
 %#define LOG_UA     (1 << 1)
 %#define LOG_SZ     (1 << 2)
@@ -294,6 +299,9 @@ program OKLD_PROGRAM {
 
 		ok_xstatus_typ_t
 		OKLD_RESERVE(oksvc_reserve_arg_t) = 4;
+
+		ok_xstatus_typ_t
+		OKLD_EMERGENCY_KILL(emergency_kill_arg_t) = 5;
 
 	} = 1;
 

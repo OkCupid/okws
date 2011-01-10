@@ -145,6 +145,10 @@ int ok_svc_life_reqs = 0;           // Upper limit on # of Reqs per Lifetime
 int ok_svc_life_time = 0;           // Upper limit on service lifetime
 u_int okd_accept_delay = 0;         // delay before enabling accept
 
+time_t okd_emergency_kill_wait_time = 5;    // 5s of inactivity -> kill
+int okd_emergency_kill_signal = SIGABRT;    // signal to send for kill
+time_t okd_sendcon_time_budget = 10;        // >10s, something is F'ed
+
 //
 // okld constants
 //

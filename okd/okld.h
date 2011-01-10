@@ -341,13 +341,14 @@ public:
   void lazy_startup (evb_t ev, CLOSURE);
   void set_state (okc_state_t s) { _state = s; }
   const ok_direct_ports_t &direct_ports() const { return _direct_ports; }
+  ok_xstatus_typ_t kill (int sig);
 
 private:
   void resurrect (evv_t ev, CLOSURE);
   void chldcb_T (int status, CLOSURE);
 
   okld_ch_cluster_t *_cluster;
-  size_t _id;
+  size_t _id, _brother_id;
   str _servpath;
   int _pid;
   okc_state_t _state;
@@ -521,6 +522,7 @@ public:
   bool safe_startup () const { return safe_startup_fl ;}
   void set_opt_daemon (bool b) { _opt_daemon = b; }
   bool opt_daemon () const { return _opt_daemon; }
+  void emergency_kill (svccb *sbp, CLOSURE);
 
   okld_helper_t &okd () { return _okd; }
   const okld_helper_t &okd () const { return _okd; }
