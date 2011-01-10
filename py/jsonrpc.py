@@ -13,31 +13,6 @@ import time
 
 ##-----------------------------------------------------------------------
 
-class TimeoutError (Exception):
-    def __init__ (self, value):
-        self._err = value
-    def __str__ (self):
-        return repr (self._err)
-
-##-----------------------------------------------------------------------
-
-def timed_runner (func, time):
-    import threading
-    class InterruptableThread(threading.Thread):
-        def __init__(self):
-            threading.Thread.__init__(self)
-        def run(self):
-            self.result = func()
-    it = InterruptableThread()
-    it.start()
-    it.join(time)
-    if it.isAlive():
-        raise TimeoutError, "time limit of %ds execeeded" % time
-    else:
-        return it.result
-
-##-----------------------------------------------------------------------
-
 class RetryableError (Exception):
     def __init__ (self, value):
         self._err = value
@@ -458,16 +433,7 @@ class Client:
 
     #-----------------------------------------
 
-    def call (self, proc, arg, prog = -1, vers = -1, timeout = 0):
-        if timeout == 0:
-            ret = self._call (proc, arg, prog, vers)
-        else:
-            timed_runner (lambda () : self._call (proc, arg, prog, vers), timeout)
-        return ret
-
-    #-----------------------------------------
-
-    def _call (self, proc, arg, prog = -1, vers = -1):
+    def call (self, proc, arg, prog = -1, vers = -1):
 
         go = True
         need_connect = False
