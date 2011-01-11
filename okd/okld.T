@@ -1311,6 +1311,7 @@ okld_t::emergency_kill (svccb *sbp)
     int sig (arg->signal);
   }
 
+
   if (sdflag) {
     warn << "Cannot kill service " << p.name << " due to okld shutdown\n";
     ret = OK_STATUS_DEADCHILD;
@@ -1320,6 +1321,10 @@ okld_t::emergency_kill (svccb *sbp)
   } else {
     ret = OK_STATUS_NOSUCHCHILD;
   }
+
+  warn << "emergency_kill(" << p.name << ":" << p.brother_id <<") called => ";
+  rpc_print (warnx, ret);
+
   srv.reply (ret);
 }
 
