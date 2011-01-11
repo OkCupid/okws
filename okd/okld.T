@@ -826,6 +826,7 @@ okld_t::parse_file (const str &cf)
     .add ("JsonIntBitMax", &ok_pub3_json_int_bitmax, -4, 128)
     .add ("AggressiveServiceRestart", &_aggressive_svc_restart)
     .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
+    .add ("EmergencyKillEnabled", &_emerg_kill)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
@@ -844,7 +845,6 @@ okld_t::parse_file (const str &cf)
     .ignore ("AcceptDelay")
     .ignore ("TcpNoDelay")
     .ignore ("ClusterAddressing")
-    .ignore ("EmergencyKillEnabled")
     .ignore ("EmergencyKillWaitTime")
     .ignore ("EmergencyKillSignal")
     .ignore ("SendConnectionTimeBudget")
@@ -1538,7 +1538,9 @@ okld_t::launch_okd (int logfd, int pub2fd)
   // okd.  Second, is okd's actual exit, which we'll wait on.
   _okd.set_chldcb (wrap (this, &okld_t::shutdown2));
   _okd.make_cli (okld_program_1, wrap (this, &okld_t::caught_okd_eof));
-  if (lazy_startup ()) {
+
+  // We only need an okd_dispatch 
+  if (lazy_startup () || _emerg_kill) {
     _okd.make_srv (okld_program_1, wrap (this, &okld_t::okd_dispatch));
   }
 
