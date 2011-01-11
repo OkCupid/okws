@@ -495,6 +495,9 @@ public:
   bool parseconfig (const str &cf);
   bool lazy_startup () const { return _lazy_startup; }
 
+  // XXX to fix --- don't duplicate this logic here and in okd
+  bool need_okd_rpc () const;
+
   void set_signals ();
   void caught_signal (int sig);
   void caught_okd_eof ();

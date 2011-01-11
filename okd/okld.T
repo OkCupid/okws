@@ -1539,8 +1539,8 @@ okld_t::launch_okd (int logfd, int pub2fd)
   _okd.set_chldcb (wrap (this, &okld_t::shutdown2));
   _okd.make_cli (okld_program_1, wrap (this, &okld_t::caught_okd_eof));
 
-  // We only need an okd_dispatch 
-  if (lazy_startup () || _emerg_kill) {
+  // We only need an okd_dispatch in some cases.
+  if (need_okd_rpc ()) {
     _okd.make_srv (okld_program_1, wrap (this, &okld_t::okd_dispatch));
   }
 
@@ -2211,6 +2211,11 @@ okld_t::gather_helper_fds (str s, int *lp, int *pp, evb_t ev)
 //-----------------------------------------------------------------------
 
 okld_t * okld_ch_t::okld () { return _cluster->okld (); }
+
+//-----------------------------------------------------------------------
+
+bool 
+okld_t::need_okd_rpc () const { return lazy_startup () || _emerg_kill; }
 
 //-----------------------------------------------------------------------
 

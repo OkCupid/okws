@@ -291,6 +291,7 @@ public:
   void awaken (const oksvc_proc_t &p, evb_t ev, CLOSURE);
   bool handle_overload (time_t dur, okch_t *ch);
   void emerg_kill (oksvc_descriptor_t d, evv_t::ptr ev = NULL, CLOSURE);
+  bool need_okld_rpc () const;
 
   servtab_t servtab;
   qhash<str, str> aliases;

@@ -748,7 +748,8 @@ okd_t::launch ()
   _okld_srv = asrv::alloc (_okld_x, okld_program_1,
 			   wrap (this, &okd_t::okld_dispatch));
 
-  if (lazy_startup()) {
+  
+  if (need_okld_rpc ()) {
     _okld_cli = aclnt::alloc (_okld_x, okld_program_1);
   }
 
@@ -1411,6 +1412,11 @@ okd_t::send_msg(svccb *sbp)
 
 //-----------------------------------------------------------------------
 
+bool okd_t::need_okld_rpc () const 
+{ return lazy_startup () || _emerg_kill_enabled; }
+
+//-----------------------------------------------------------------------
+
 tamed void
 okd_t::relaunch (svccb *sbp)
 {
@@ -1467,3 +1473,4 @@ main (int argc, char *argv[])
 }
 
 //-----------------------------------------------------------------------
+
