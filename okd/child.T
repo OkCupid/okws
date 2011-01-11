@@ -110,6 +110,8 @@ okch_t::handle_overload ()
     _emerg_start = sfs_get_timenow ();
   } else if (now > _emerg_start &&
 	     _myokd->handle_overload (now - _emerg_start, this)) {
+    CH_CHATTER ("killing child after " << now - _emerg_start
+		<< "s of unresponiveness");
     _emerg_start = 0;
     _emerg_killed = true;
   }
