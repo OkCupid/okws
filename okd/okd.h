@@ -80,6 +80,20 @@ private:
 
 //=======================================================================
 
+struct time_node_t {
+  time_node_t ();
+  time_t _time;
+  list_entry<time_node_t> _lnk;
+};
+
+struct time_list_t : public list<time_node_t, &time_node_t::_lnk> {
+  time_t oldest () const;
+  time_node_t *launch ();
+  void finished (time_node_t *tn);
+};
+
+//=======================================================================
+
 class okd_t;
 class okch_cluster_t;
 class okch_t : public ok_con_t {  // OK Child Handle
@@ -158,7 +172,7 @@ private:
   // To be triggered when this service is ready to go.
   evv_t::ptr _ready_trigger; 
 
-  time_t _last_con_send, _last_con_recv, _first_con_send;
+  time_list_t _dispatch_times;
 };
 
 //=======================================================================

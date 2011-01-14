@@ -48,11 +48,7 @@ okch_t::okch_t (okd_t *o, okch_cluster_t *c, size_t id, okc_state_t st)
     _too_busy (false),
     _generation_id (0),
     _emerg_start (0),
-    _emerg_killed (false),
-    _last_con_send (0),
-    _last_con_recv (0),
-    _first_con_send (0)
-{}
+    _emerg_killed (false) {}
 
 //-----------------------------------------------------------------------
 
@@ -123,11 +119,7 @@ bool
 okch_t::sendcon_timeout () const
 {
   return (okd_sendcon_time_budget &&
-	  ((_last_con_recv && _last_con_send && 
-	    _last_con_send > _last_con_recv &&
-	    _last_con_send - _last_con_recv > okd_sendcon_time_budget) ||
-	   (!_last_con_recv && _first_con_send &&
-	    sfs_get_timenow () - _last_con_send > okd_sendcon_time_budget)));
+	  _dispatch_times.oldest () > okd_sendcon_time_budget);
 }
 
 //-----------------------------------------------------------------------
@@ -347,6 +339,30 @@ okch_t::got_new_ctlx_fd (int fd, int p)
 
 //-----------------------------------------------------------------------
 
+time_node_t::time_node_t () : _time (sfs_get_timenow ()) {}
+
+//-----------------------------------------------------------------------
+
+time_t time_list_t::oldest () const 
+{
+  time_node_t *n = first;
+  time_t ret = 0;
+  time_t now = sfs_get_timenow ();
+  if (n && now > n->_time) { ret = now - n->_time; }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+time_node_t *time_list_t::launch () 
+{ insert_head (New time_node_t ()); return first; }
+
+//-----------------------------------------------------------------------
+
+void time_list_t::finished (time_node_t *n) { remove (n); delete (n); }
+
+//-----------------------------------------------------------------------
+
 tamed void
 okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
 {
@@ -357,7 +373,7 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     ptr<bool> df;
     ref<ahttpcon_clone> xc (acw.con ());
     int fd (-1);
-    time_t now;
+    time_node_t *tn;
   }
 
   df = _destroyed;
@@ -401,16 +417,11 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
 
       // Keep track of last send and last recv, that way, we know
       // if the server is F'ed!!
-      now = sfs_get_timenow ();
-      _last_con_send = now;
-      if (!_first_con_send) { _first_con_send = now; }
-     
+      tn = _dispatch_times.launch ();
       twait { 
 	RPC::okctl_program_1::okctl_send_con2 (clnt, &arg, &res, mkevent(err)); 
       }
-
-      now = sfs_get_timenow ();
-      _last_con_recv = now;
+      _dispatch_times.finished (tn);
 
       if (err) {
 	CH_ERROR ("Error in RPC for sending connection: " << err);
