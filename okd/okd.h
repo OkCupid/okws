@@ -37,6 +37,7 @@
 #include "arpc.h"
 #include "rxx.h"
 #include "tame.h"
+#include "list.h"
 
 #define OK_LQ_SIZE_D    100
 #define OK_LQ_SIZE_LL   5
@@ -83,10 +84,10 @@ private:
 struct time_node_t {
   time_node_t ();
   time_t _time;
-  list_entry<time_node_t> _lnk;
+  tailq_entry<time_node_t> _lnk;
 };
 
-struct time_list_t : public list<time_node_t, &time_node_t::_lnk> {
+struct time_list_t : public tailq<time_node_t, &time_node_t::_lnk> {
   time_t oldest () const;
   time_node_t *launch ();
   void finished (time_node_t *tn);

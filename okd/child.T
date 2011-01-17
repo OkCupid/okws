@@ -354,8 +354,13 @@ time_t time_list_t::oldest () const
 
 //-----------------------------------------------------------------------
 
-time_node_t *time_list_t::launch () 
-{ insert_head (New time_node_t ()); return first; }
+time_node_t *
+time_list_t::launch () 
+{ 
+  time_node_t *ret = New time_node_t ();
+  insert_tail (ret);
+  return ret;
+}
 
 //-----------------------------------------------------------------------
 
