@@ -3,22 +3,50 @@
 
 //-----------------------------------------------------------------------
 
+static qhash<int, int> openfds;
+
+//-----------------------------------------------------------------------
+
 bool
 ok_direct_ports_t::bind (const str &servpath, u_int32_t listenaddr)
 {
   bool rc = true;
 
   for (size_t i = 0; i < _ports.size (); i++) {
-    int port = _ports[i]._port;
-    int fd = inetsocket (SOCK_STREAM, port, listenaddr);
-    if (fd < 0) {
-      warn ("Service (%s) cannot bind to port %d: %m\n",
-	    servpath.cstr (), port);
-      rc = false;
-    } 
-    _ports[i]._fd = fd;
+    if (_ports[i]._fd < 0) {
+      int port = _ports[i]._port;
+      int fd = inetsocket (SOCK_STREAM, port, listenaddr);
+      if (fd < 0) {
+	warn ("Service (%s) cannot bind to port %d: %m\n",
+	      servpath.cstr (), port);
+	rc = false;
+      } else { 
+	openfds.insert (fd, port);
+	_ports[i]._fd = fd;
+	_fds.insert (fd);
+      }
+    }
   }
   return rc;
+}
+
+//-----------------------------------------------------------------------
+
+void
+ok_direct_ports_t::do_close_ports (str svc)
+{
+  qhash_const_iterator_t<int,int> it (openfds);
+  const int *fdp;
+  int port;
+
+  while ((fdp = it.next (&port))) {
+    int fd = *fdp;
+    if (!_fds[fd]) {
+      warn << "** " << svc << ": closed unused port in fork race condition: "
+	   << "fd=" << fd << ", port=" << port << "\n";
+      ::close (fd);
+    }
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -83,13 +111,16 @@ ok_portpair_t::prepare ()
 
 //-----------------------------------------------------------------------
 
-void
+int 
 ok_portpair_t::close ()
 {
+  int ret = _fd;
   if (_fd >= 0) {
+    openfds.remove (_fd);
     ::close (_fd);
     _fd = -1;
   }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -105,7 +136,9 @@ ok_direct_ports_t::prepare ()
 void
 ok_direct_ports_t::close ()
 {
-  for (size_t i = 0; i < _ports.size (); i++) { _ports[i].close (); }
+  for (size_t i = 0; i < _ports.size (); i++) { 
+    _ports[i].close (); 
+  }
 }
 
 //-----------------------------------------------------------------------

@@ -342,7 +342,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
     
     env_tmp.init (_env, environ);
     x = axprt_unix_aspawnv (exe, argv, ok_axprt_ps,
-			    wrap (ch, &okld_ch_t::set_svc_ids), 
+			    wrap (ch, &okld_ch_t::post_fork_cb),
 			    env_tmp);
     pid = axprt_unix_spawn_pid;
     ch->set_pid (pid);
@@ -418,6 +418,7 @@ okld_ch_t::launch (bool startup, evv_t ev)
     int logfd (-1), pubfd (-1);
   }
 
+
   s_id = str_id ();
 
   if (_startup_time == 0) _startup_time = sfs_get_timenow();
@@ -453,6 +454,7 @@ okld_ch_t::launch (bool startup, evv_t ev)
   if (logfd >= 0) close (logfd);
   if (pubfd >= 0) close (pubfd);
   _direct_ports.close ();
+
 
   ev->trigger ();
 }
@@ -512,8 +514,11 @@ okld_ch_t::post_spawn (int fd, evb_t ev)
 //-----------------------------------------------------------------------
 
 void
-okld_ch_t::set_svc_ids ()
+okld_ch_t::post_fork_cb ()
 {
+  // close any ports that we were instructed to close earlier
+  direct_ports ().do_close_ports (_servpath);
+
   // after fork, we need to set our PID
   _pid = getpid ();
 

@@ -197,7 +197,7 @@ struct ok_portpair_t {
   ok_portpair_t (int port = -1, int fd = -1) 
     : _port (port), _fd (fd), _listening (false) {}
   str encode_as_str () const;
-  void close () ;
+  int close () ;
   void disable_accept ();
   void report ();
   void enable_accept (ok_con_acceptor_t *s, int listenq);
@@ -226,9 +226,15 @@ public:
   bool operator[] (int p) const { return _map[p]; }
   void add_port_pair (const ok_portpair_t &p);
   void prepare ();
+
+  // If child A and B both launch at around the same time, B might
+  // inherit A's direct ports.  Work around that...
+  void do_close_ports (str s);
 private:
   vec<ok_portpair_t> _ports;
   bhash<int> _map;
+  vec<ok_portpair_t> _close_me;
+  bhash<int> _fds;
 };
 
 //-----------------------------------------------------------------------

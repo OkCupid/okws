@@ -331,7 +331,7 @@ public:
   void sig_chld_cb (int status);
   void chldcb (int status) { chldcb_T (status); }
   str str_id () const;
-  void set_svc_ids ();
+  void post_fork_cb ();
   void set_pid (int i) { _pid = i; }
 
   okld_t *okld ();
@@ -341,6 +341,7 @@ public:
   void lazy_startup (evb_t ev, CLOSURE);
   void set_state (okc_state_t s) { _state = s; }
   const ok_direct_ports_t &direct_ports() const { return _direct_ports; }
+  ok_direct_ports_t &direct_ports () { return _direct_ports; }
   ok_xstatus_typ_t kill (int sig);
 
 private:
@@ -406,6 +407,7 @@ public:
   void reserve (bool lazy, evb_t ev, CLOSURE);
   void clean_dumps ();
   void set_states (okc_state_t s);
+ 
 protected:
   svc_options_t _svc_options;
 
