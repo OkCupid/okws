@@ -804,6 +804,7 @@ bool has_non_ws (const char *buf, int len);
 class xml_attributes_t {
 public:
   xml_attributes_t (const char **atts);
+  xml_attributes_t (const vec<str>& atts);
   scalar_obj_t operator[] (const str &k) const { return lookup (k); }
   scalar_obj_t lookup (const str &k) const;
   bool lookup (const str &k, scalar_obj_t *so) const;
@@ -850,6 +851,9 @@ public:
 class xml_generic_t : public xml_element_t {
 public:
   xml_generic_t (const char *n = NULL, const char **atts = NULL) : 
+    xml_element_t (), _class (n), _atts (atts) {}
+
+  xml_generic_t (const char *n, const vec<str>& atts) : 
     xml_element_t (), _class (n), _atts (atts) {}
 
   bool add (ptr<xml_element_t> e);

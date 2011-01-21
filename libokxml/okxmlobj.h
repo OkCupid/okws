@@ -28,6 +28,7 @@
 #include "okxmldata.h"
 #include "pub3expr.h"
 #include "pub3obj.h"
+#include <stdarg.h>
 
 //
 // What's this?
@@ -270,7 +271,7 @@ public:
   xml_gobj_t () : _obj (xml_generic_t::alloc_null ()) {}
 
   xml_gobj_t operator[] (size_t s) ;
-  xml_gobj_t operator() (const str &k) ;
+  xml_gobj_t operator() (const str &k, int n_atts = 0, ...) ;
 
   template<class T>
   xml_gobj_t &operator=(T s) { set (s); return (*this); }

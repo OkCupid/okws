@@ -885,6 +885,13 @@ xml_attributes_t::xml_attributes_t (const char **atts)
   }
 }
 
+xml_attributes_t::xml_attributes_t (const vec<str>& atts)
+{
+  for (size_t i = 0; i < atts.size(); i += 2) {
+    _t.insert (atts[i], scalar_obj_t (atts[i + 1]));
+  }
+}
+
 scalar_obj_t _null_so;
 
 scalar_obj_t

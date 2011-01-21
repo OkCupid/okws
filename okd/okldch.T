@@ -517,7 +517,7 @@ void
 okld_ch_t::post_fork_cb ()
 {
   // close any ports that we were instructed to close earlier
-  direct_ports ().do_close_ports (_servpath);
+  direct_ports ().do_close_ports (str_id ());
 
   // after fork, we need to set our PID
   _pid = getpid ();

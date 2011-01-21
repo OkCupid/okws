@@ -221,13 +221,22 @@ xml_gobj_t::operator[] (size_t i)
 }
 
 xml_gobj_t
-xml_gobj_t::operator() (const str &k) 
+xml_gobj_t::operator() (const str &k, int n_atts, ...) 
 {
+  vec<str> attrs;
+  va_list al;
+  va_start(al, n_atts);
+  for (int i = 0; i < n_atts; ++i) {
+      const char* s = va_arg(al, char*);
+      attrs.push_back(s);
+  }
+  va_end(al);
+
   const ptr<vec<ptr<xml_generic_t> > > *v = obj ()->lookup (k);
   if (v) { 
     return xml_gobj_t (NULL, *v); 
   } else { 
-    ptr<xml_generic_t> g = New refcounted<xml_generic_t> (k);
+    ptr<xml_generic_t> g = New refcounted<xml_generic_t> (k, attrs);
     obj ()->add (g);
     return xml_gobj_t (g);
   }
