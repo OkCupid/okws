@@ -72,32 +72,13 @@ namespace okwc4 {
   {
     bool https = false;
     str hostname;
-    str port_s;
     okws1_port_t port;
     ptr<reqargs_t> ret;
-    bool ok = true;
     str filename;
-    
-    static rxx url_rxx ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
-    if (url_rxx.match (url)) {
-      if (url_rxx[1] && url_rxx[1] == "s") {
-	https = true;
-      }
-      hostname = url_rxx[2];
-      port = https ? DEF_HTTPS_PORT : DEF_HTTP_PORT;
-      port_s = url_rxx[4];
-      if (port_s && port_s.len ()) {
-	if (!convertint (port_s, &port)) {
-	  warn << "okwc4: cannot convert port: " << port_s << "\n";
-	  ok = false;
-	}
-      }
-      filename = okwc3::fix_url_filename (url_rxx[5]);
-      
-      if (ok) {
-	ptr<hostargs_t> ha = New refcounted<hostargs_t> (hostname, port, https);
-	ret = New refcounted<reqargs_t> (ha, filename);
-      }
+
+    if (okwc3::parse_http_url (url, &https, &hostname, &port, &filename)) {
+      ptr<hostargs_t> ha = New refcounted<hostargs_t> (hostname, port, https);
+      ret = New refcounted<reqargs_t> (ha, filename);
     }
     return ret;
   }

@@ -3,13 +3,11 @@
 /* $Id: okwcmain.C 1635 2006-03-16 17:28:10Z max $ */
 
 #include "async.h"
-#include "rxx.h"
 #include "parseopt.h"
 #include "vec.h"
 #include "okwc.h"
 #include "aios.h"
 #include "parseopt.h"
-#include "rxx.h"
 #include "tame.h"
 #include "okwc4.h"
 #include "tame_connectors.h"

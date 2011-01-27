@@ -131,7 +131,11 @@ public:
 protected:
 };
 
+//-----------------------------------------------------------------------
+
 str fix_url_filename (const str &s);
+bool parse_http_url (str in, bool *https, str *host, okws1_port_t *port, 
+		     str *file);
 
 //-----------------------------------------------------------------------
 

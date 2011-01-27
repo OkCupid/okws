@@ -176,30 +176,6 @@ dnscache_entry_t::do_resolution (evb_t cb)
 
 //-----------------------------------------------------------------------
 
-str 
-fix_url_filename (const str &in) 
-{
-  int len;
-  str ret = in;
-  if (!ret || (len = ret.len ()) == 0) {
-    // empty file names --> "/"
-    ret = "/";
-  } else if (ret[0] != '/') {
-    // insert leading slash if not there.
-    ret = strbuf ("/") << in;
-  } else {
-    // trunc all but the first leading slash
-    const char *fn = ret.cstr ();
-    const char *cp;
-    for (cp = fn; *cp == '/'; cp++)  ;
-    cp--;
-    ret = str (cp, len - (cp - fn)); 
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
 str
 reqinfo_direct_t::get_hdr_hostname () const
 {
@@ -665,6 +641,63 @@ agent_t::get_x (ptr<ok_xprt_base_t> x, evixb_t ev)
   }
   ev->trigger (status, x, newone);
 
+}
+
+//-----------------------------------------------------------------------
+
+str 
+fix_url_filename (const str &in) 
+{
+  int len;
+  str ret = in;
+  if (!ret || (len = ret.len ()) == 0) {
+    // empty file names --> "/"
+    ret = "/";
+  } else if (ret[0] != '/') {
+    // insert leading slash if not there.
+    ret = strbuf ("/") << in;
+  } else {
+    // trunc all but the first leading slash
+    const char *fn = ret.cstr ();
+    const char *cp;
+    for (cp = fn; *cp == '/'; cp++)  ;
+    cp--;
+    ret = str (cp, len - (cp - fn)); 
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+parse_http_url (str in, bool *https, str *host, okws1_port_t *port, 
+		str *filename)
+{
+  static rxx x ("http(s)?://([^:/]+)(:(\\d+))?(/(.*))?");
+  bool ret = true;
+  str ps;
+
+  if (!x.match (in)) { ret = false; }
+  else {
+    bool ssl;
+    if (x[1] && x[1] == "s") { ssl = *https = true; }
+   
+    if ((ps = x[4]) && ps.len ()) {
+      if (!convertint (ps, port)) {
+	warn << "parse_http_url: cannot convert port '" << ps
+	     << "' in URL '" << in << "'\n";
+	ret = false;
+      }
+    } else {
+      *port = std_port (ssl);
+    }
+
+    if (ret) {
+      *host = x[2];
+      *filename = fix_url_filename (x[5]);
+    }
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
