@@ -377,6 +377,9 @@ oksrvc_t::handle_diagnostic (svccb *sbp)
   case OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER:
     status = ok_toggle_tame_profiler (arg->cmd);
     break;
+  case OK_DIAGNOSTIC_DOMAIN_PUB_PROFILER:
+    status = ok_toggle_pub_profiler (arg->cmd);
+    break;
   default:
     break;
   }

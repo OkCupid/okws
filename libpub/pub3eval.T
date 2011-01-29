@@ -2,6 +2,7 @@
 #include "pub3eval.h"
 #include "pub3out.h"
 #include "pub3hilev.h"
+#include "pub3profiler.h"
 
 namespace pub3 {
 
@@ -111,6 +112,10 @@ namespace pub3 {
   {
     env ()->add_global_binding (n, out ()->err_obj ());
   }
+
+  //-----------------------------------------------------------------------
+
+  bool eval_t::set_active (bool b) { return _stack.set_active (b); }
 
   //-----------------------------------------------------------------------
   
@@ -345,7 +350,65 @@ namespace pub3 {
     return b;
   }
 
+  //--------------------------------------------------------------------
+
+  bool
+  runloc_t::set_active (bool b)
+  {
+    bool ret = _active;
+    _active = b;
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  runloc_t::profile_report (profiler_buf_t *b, int64_t s) const
+  {
+    b->add_i (s);
+    b->add_cc (": ");
+    b->add_s (filename ());
+    b->add_ch (':');
+    b->add_i (lineno ());
+    b->add_ch ('\n');
+    if (!_active) {
+      b->add_cc (" (inactive)");
+    }
+  }
+
   //====================================== loc_stack_t ==================
+
+  loc_stack_t::loc_stack_t ()
+  {
+    profiler_t::singleton()->register_stack (this);
+  }
+
+  //-----------------------------------------------------------------------
+
+  loc_stack_t::~loc_stack_t ()
+  {
+    profiler_t::singleton()->unregister_stack (this);
+  }
+
+  //-----------------------------------------------------------------------
+
+  void
+  loc_stack_t::profile_report (profiler_buf_t *b, int64_t i) const
+  {
+    if (size ()) { back ().profile_report (b, i); }
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
+  loc_stack_t::set_active (bool b)
+  {
+    bool ret = false;
+    if (size ()) { ret = back().set_active (b); }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
 
   obj_list_t 
   loc_stack_t::pub (ssize_t stop) const

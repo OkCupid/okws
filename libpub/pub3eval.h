@@ -25,6 +25,9 @@ namespace pub3 {
   // Forward-declared class available in pub3hilev.h
   class ok_iface_t;
 
+  // Forward-declared class, available in pub3profiler.h
+  class profiler_buf_t;
+
   //-----------------------------------------------------------------------
   
   // Opts can be be a bitmask of the following:
@@ -97,7 +100,7 @@ namespace pub3 {
   class runloc_t {
   public:
     runloc_t (ptr<const metadata_t> md, str fn = NULL) 
-      : _metadata (md), _func (fn), _lineno (0) {}
+      : _metadata (md), _func (fn), _lineno (0), _active (true) {}
     void set_lineno (lineno_t l) { _lineno = l; }
     str filename () const;
     str funcname () const { return _func; }
@@ -105,17 +108,25 @@ namespace pub3 {
     void pub (obj_t &out) const;
     str to_str () const;
     ptr<const metadata_t> metadata () const { return _metadata; }
+    bool set_active (bool b);
+    void profile_report (profiler_buf_t *buf, int64_t sid) const;
   private:
     ptr<const metadata_t> _metadata;
     str _func;
     lineno_t _lineno;
+    bool _active;
   };
 
   //-----------------------------------------------------------------------
 
   class loc_stack_t : public vec<runloc_t> {
   public:
+    loc_stack_t ();
+    ~loc_stack_t ();
     obj_list_t pub (ssize_t stop = -1) const;
+    bool set_active (bool b);
+    void profile_report (profiler_buf_t *buf, int64_t sid) const;
+    list_entry<loc_stack_t> _lnk;
   };
 
   //-----------------------------------------------------------------------
@@ -135,6 +146,7 @@ namespace pub3 {
     void publish (str nm, location_t loc,
 		  ptr<bind_interface_t> d, status_ev_t ev, CLOSURE);
     void set_pub_iface (ptr<ok_iface_t> i) { _pub_iface = i; }
+    bool set_active (bool b);
 
     void output (zstr s);
     void output (zstr orig, zstr wss);

@@ -32,7 +32,8 @@ enum ok_diagnostic_domain_t {
      OK_DIAGNOSTIC_DOMAIN_NONE = 0,
      OK_DIAGNOSTIC_DOMAIN_LEAK_CHECKER = 1,
      OK_DIAGNOSTIC_DOMAIN_PROFILER = 2,
-     OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER = 3
+     OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER = 3,
+     OK_DIAGNOSTIC_DOMAIN_PUB_PROFILER = 4
 };
 
 union ok_xstatus_t switch (ok_xstatus_typ_t status) 

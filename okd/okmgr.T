@@ -32,7 +32,7 @@ usage ()
 {
   warnx << "usage: okmgr [ -l | -t ] [-av] [-s <socket> | -f <conf> ]"
 	<< "<svc1> <svc2> ...\n"
-	<< "       okmgr <-c|-p|-T> [ enable | disable | print | reset ] "
+	<< "       okmgr <-c|-p|-T|-P> [ enable | disable | print | reset ] "
 	<< "[-s <socket> | -f <conf>] <svc>\n"
 	<< "       okmgr [-s <socket> | -f <conf>] -m<msg> <svc1> <svc2>..\n";
 				     
@@ -243,7 +243,7 @@ main (int argc, char *argv[])
   str msg;
   ok_diagnostic_domain_t dd = OK_DIAGNOSTIC_DOMAIN_NONE;
 
-  while ((ch = getopt (argc, argv, "m:c:p:lts:f:FvT:")) != -1) {
+  while ((ch = getopt (argc, argv, "m:c:p:lts:f:FvT:P:")) != -1) {
     switch (ch) {
     case 'm':
       m = CTL_MODE_SEND_MSG;
@@ -268,6 +268,11 @@ main (int argc, char *argv[])
     case 'T':
       m = CTL_MODE_DIAGNOSTIC;
       dd = OK_DIAGNOSTIC_DOMAIN_TAME_PROFILER;
+      diag_cmd_str = optarg;
+      break;
+    case 'P':
+      m = CTL_MODE_DIAGNOSTIC;
+      dd = OK_DIAGNOSTIC_DOMAIN_PUB_PROFILER;
       diag_cmd_str = optarg;
       break;
     case 's':
