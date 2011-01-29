@@ -18,6 +18,7 @@ namespace pub3 {
     void add_ch (char c);
     void add_i (int i);
     void add_cc (const char *c);
+    void flush ();
     void report ();
     void recharge ();
     void reset () ;
@@ -29,6 +30,7 @@ namespace pub3 {
     char *_bp;
     char *_end;
     bool _overflow;
+    bool _trunced;
   };
 
   //-----------------------------------------------------------------------

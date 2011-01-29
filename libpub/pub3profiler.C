@@ -15,7 +15,8 @@ namespace pub3 {
       _buf (New char[_sz]),
       _bp (_buf),
       _end (_buf + _sz),
-      _overflow (false)
+      _overflow (false),
+      _trunced (false)
   {
     memset (_buf, 0, _sz);
   }
@@ -52,7 +53,11 @@ namespace pub3 {
   {
     bool ret = true;
     if (_overflow) { ret = false; }
-    else if (s > room ()) { _overflow = true; ret = false; }
+    else if (s > room ()) { 
+      _overflow = true; 
+      ret = false; 
+      _trunced = true;
+    }
     return  ret;
   }
 
@@ -95,6 +100,7 @@ namespace pub3 {
   {
     _bp = _buf;
     _overflow = false;
+    _trunced = false;
   }
   
   //---------------------------------------------------------------------
@@ -117,19 +123,30 @@ namespace pub3 {
 
   //---------------------------------------------------------------------
 
+  void profiler_buf_t::flush () { add_ch ('\0'); }
+
+  //---------------------------------------------------------------------
+
   void
   profiler_buf_t::report ()
   {
+    const char *prefix = "(SSP) ";
+    warn << prefix << "++++++ start report +++++++++++++++++ \n";
     char *last = _buf;
     for (char *cp = _buf; cp < _bp; cp++) {
-      if (*cp == '\n' && cp > last) {
-	*cp = '\0';
-	warn << "(SPP) " << last << "\n";
+      if (*cp == '\0' && cp > last) {
+	warn << prefix << last << "\n";
 	last = cp + 1;
       }
     }
+
+    if (_trunced) {
+      warn << prefix << "report was truncated....\n";
+    }
+    warn << prefix << "----------- end report -----------------\n";
     _bp = _buf;
-    _overflow = NULL;
+    _overflow = false;
+    _trunced = false;
   }
 
   //======================================= profiler_t ==================

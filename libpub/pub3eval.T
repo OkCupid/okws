@@ -370,10 +370,10 @@ namespace pub3 {
     b->add_s (filename ());
     b->add_ch (':');
     b->add_i (lineno ());
-    b->add_ch ('\n');
     if (!_active) {
       b->add_cc (" (inactive)");
     }
+    b->flush ();
   }
 
   //====================================== loc_stack_t ==================
