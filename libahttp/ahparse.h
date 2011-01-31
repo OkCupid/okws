@@ -58,8 +58,6 @@ public:
 
   void parse (cbi cb);
   size_t inreq_header_len () const { return _header_sz; }
-  size_t inreq_body_len () const { return _body_sz; }
-  size_t inreq_total_len () const { return _total_sz; }
 
 protected:
   virtual void v_parse_cb1 (int status) { finish (status); }

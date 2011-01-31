@@ -75,10 +75,6 @@ http_parser_base_t::finish (int status)
     tocb = NULL;
   }
 
-  // Update stats...
-  _body_sz = hdr.contlen;
-  _total_sz = _header_sz + _body_sz;
-
   // If we don't stop the abuf, we might be fooled into parsing
   // again on an EOF.
   stop_abuf ();
@@ -272,9 +268,7 @@ http_parser_base_t::http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
     destroyed (New refcounted<bool> (false)),
     _parsing_header (false),
     _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)),
-    _header_sz (0),
-    _body_sz (0),
-    _total_sz (0)
+    _header_sz (0)
 {
   assert (_abuf);
 }
