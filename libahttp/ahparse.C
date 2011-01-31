@@ -75,10 +75,9 @@ http_parser_base_t::finish (int status)
     tocb = NULL;
   }
 
-  if (_abuf) {
-    _body_sz = _abuf->get_ccnt ();
-    _total_sz >= _header_sz + _body_sz;
-  }
+  // Update stats...
+  _body_sz = hdr.contlen;
+  _total_sz = _header_sz + _body_sz;
 
   // If we don't stop the abuf, we might be fooled into parsing
   // again on an EOF.
