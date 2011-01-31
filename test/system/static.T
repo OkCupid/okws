@@ -129,6 +129,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     str lang;
     bool skip_pub (false);
     pub3::opts_t oe;
+    bool dump_stats (false);
   }
 
   static bool first_time = true;
@@ -152,6 +153,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   if (cgi.blookup ("errobj")) { opts |= oe; }
   if (cgi.blookup ("warninline")) { opts |= pub3::P_WARN_INLINE_NULL; }
   if (cgi.blookup ("utf8json")) { opts |= pub3::P_UTF8_JSON; }
+  dump_stats = cgi.blookup ("stats");
 
   if (wss) { opts |= pub3::P_WSS; }
 
@@ -221,6 +223,11 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
       error ("&lt; <i>no file specified</i> &gt;");
     }
 
+  }
+  if (dump_stats) {
+    warn << "Headers len: " << inreq_header_len() << "\n";
+    warn << "Body len: " << inreq_body_len() << "\n";
+    warn << "Total len: " << inreq_total_len() << "\n";
   }
 
   if (!rc && !skip_pub) {

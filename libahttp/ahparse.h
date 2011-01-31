@@ -57,6 +57,10 @@ public:
   void short_circuit_output ();
 
   void parse (cbi cb);
+  size_t inreq_header_len () const { return _header_sz; }
+  size_t inreq_body_len () const { return _body_sz; }
+  size_t inreq_total_len () const { return _total_sz; }
+
 protected:
   virtual void v_parse_cb1 (int status) { finish (status); }
   virtual void v_cancel () {}
@@ -78,6 +82,10 @@ protected:
   ptr<bool> destroyed;
   bool _parsing_header;
   ptr<ok::scratch_handle_t> _scratch;
+
+  size_t _header_sz;
+  size_t _body_sz;
+  size_t _total_sz;
 };
 
 class http_parser_raw_t : public http_parser_base_t {

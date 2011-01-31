@@ -56,6 +56,7 @@ http_parser_base_t::parse (cbi c)
 void
 http_parser_base_t::parse_cb1 (int status)
 {
+  if (_abuf) { _header_sz = _abuf->get_ccnt (); }
   _parsing_header = false;
   if (status != HTTP_OK) {
     finish (status);
@@ -73,6 +74,13 @@ http_parser_base_t::finish (int status)
     timecb_remove (tocb);
     tocb = NULL;
   }
+
+  if (_abuf) {
+    _total_sz = _abuf->get_ccnt ();
+    assert (_total_sz >= _header_sz);
+    _body_sz = _total_sz - _header_sz;
+  }
+
   // If we don't stop the abuf, we might be fooled into parsing
   // again on an EOF.
   stop_abuf ();
@@ -265,7 +273,10 @@ http_parser_base_t::http_parser_base_t (ptr<ahttpcon> xx, u_int to, abuf_t *b)
     tocb (NULL),
     destroyed (New refcounted<bool> (false)),
     _parsing_header (false),
-    _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)) 
+    _scratch (ok::alloc_scratch (ok_http_inhdr_buflen_big)),
+    _header_sz (0),
+    _body_sz (0),
+    _total_sz (0)
 {
   assert (_abuf);
 }

@@ -132,8 +132,6 @@ public:
 
   int get_ccnt() const { return ccnt - (bc ? 1 : 0); }
 
-  
-
 private:
   void moredata ();
   ssize_t get_errchar () const;
