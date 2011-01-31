@@ -76,9 +76,8 @@ http_parser_base_t::finish (int status)
   }
 
   if (_abuf) {
-    _total_sz = _abuf->get_ccnt ();
-    assert (_total_sz >= _header_sz);
-    _body_sz = _total_sz - _header_sz;
+    _body_sz = _abuf->get_ccnt ();
+    _total_sz >= _header_sz + _body_sz;
   }
 
   // If we don't stop the abuf, we might be fooled into parsing
