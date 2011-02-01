@@ -1587,10 +1587,31 @@ okld_t::check_exes ()
 
 //-----------------------------------------------------------------------
 
+static bool
+check_logger (str s, vec<str> *out)
+{
+  bool ret = false;
+  static rxx x ("\\s+");
+  split (out, x, s);
+  if (!out->size ()) {
+    warn << "NULL logger speficified\n";
+  } else {
+    str cmd = (*out)[0];
+    if (access (cmd.cstr (), X_OK) != 0) {
+      warn ("Cannot access logger '%s': %m\n", cmd.cstr ());
+    } else {
+      ret = true;
+    }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 static void
 usage ()
 {
-  warnx << "usage: okld [-q?] [-D <dbg>] [-f <configfile>]\n";
+  warnx << "usage: okld [-q?] [-D <dbg>] [-f <configfile>] [-l <logger>]\n";
   exit (1);
 }
 
@@ -1604,12 +1625,16 @@ main (int argc, char *argv[])
   setprogname (argv[0]);
   str dbf;
   str pidfile;
-
+  str logger_cmd;
+  vec<str> logger_argv;
   set_debug_flags ();
 
   int ch;
-  while ((ch = getopt (argc, argv, "qf:D:?p:")) != -1)
+  while ((ch = getopt (argc, argv, "qf:D:?p:l:")) != -1)
     switch (ch) {
+    case 'l':
+      logger_cmd = optarg;
+      break;
     case 'p':
       pidfile = optarg;
       break;
@@ -1639,11 +1664,36 @@ main (int argc, char *argv[])
   if (!cf) 
     cf = get_okws_config ();
 
+
+  if (logger_cmd) {
+#if !SFSLITE_AT_VERSION(1,2,9,106)
+    warn << "You must upgrade to sfslite v1.2.9.6 or better to use "
+	 << "custom loggers\n";
+    usage ();
+#endif
+    if (!opt_daemon) { 
+      warn << "-l<logger> flag only can be used in daemon mode\n";
+      usage (); 
+    }
+    else if (!check_logger (logger_cmd, &logger_argv)) { 
+      warn ("logger '%s' is not available: %m\n", logger_cmd.cstr ());
+      usage (); 
+    }
+  }
+
   // Need to daemonize before parsing config file, since the output
   // of the config file parsing operation should go into the syslog.
-  // XXX: should fix this.
+  // XXX bug -- this means we can't set SyslogpPriority from in okws_config,
+  // and it means we must set the system logger (if non-standard)
+  // via command-line flag.
   if (opt_daemon) {
     syslog_priority = ok_syslog_priority;
+
+#if SFSLITE_AT_VERSION(1,2,9,106)
+    if (logger_argv.size ()) { set_syslog_logger (logger_argv); }
+#else
+    assert (!logger_argv.size ());
+#endif
 
     syslog_tag = ok_syslog_tag;
     daemonize (pidfile);
