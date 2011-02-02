@@ -300,7 +300,7 @@ public:
 	       evv_t ev, CLOSURE);
   void newserv (int fd);
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
-		 const ssl_ctx_t *ssl, u_int reqno = 0, CLOSURE);
+		 const ssl_ctx_t *ssl, const keepalive_data_t *kad, CLOSURE);
   void shutdown (int sig) { shutdown_T (sig); }
   void shutdown_T (int sig, CLOSURE);
   void awaken (const oksvc_proc_t &p, evb_t ev, CLOSURE);

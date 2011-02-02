@@ -101,7 +101,8 @@ public:
 
   suiolite (int l = SUIOLITE_DEF_BUFLEN, cbv::ptr s = NULL) 
     : len (min<int> (l, SUIOLITE_MAX_BUFLEN)), buf ((char *)xmalloc (len)),
-      bep (buf + len), rp (buf), scb (s), peek (false), bytes_read (0)
+      bep (buf + len), rp (buf), scb (s), peek (false), bytes_read (0),
+      dont_peek (false)
   {
     for (int i = 0; i < N_REGIONS; i++) dep[i] = buf;
   }
@@ -111,6 +112,7 @@ public:
   void recycle (cbv::ptr s = NULL) { setscb (s); }
 
   void setpeek (bool b = true) { peek = b; }
+  void set_dont_peek (bool b) { dont_peek = b; }
   void setscb (cbv::ptr c) { scb = c; }
   ssize_t input (int fd, int *nfd = NULL, syscall_stats_t *ss = NULL);
   ssize_t resid () const { return (dep[1] - rp) + (dep[0] - buf); }
@@ -155,6 +157,7 @@ private:
   cbv::ptr scb;  // space CB -- callback if space is available in the uio
   bool peek;
   u_int bytes_read;
+  bool dont_peek;
 };
 
 #endif /* _LIBAHTTP_SUIOLITE_H */

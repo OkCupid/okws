@@ -512,7 +512,7 @@ okd_t::newserv (int fd)
     } 
     xfree (sin);
   } else {
-    newserv2 (*portmap[fd], nfd, sin, false, NULL);
+    newserv2 (*portmap[fd], nfd, sin, false, NULL, NULL);
   }
 }
 
@@ -520,7 +520,7 @@ okd_t::newserv (int fd)
 
 tamed void
 okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
-		 const ssl_ctx_t *ssl, u_int reqno)
+		 const ssl_ctx_t *ssl, const keepalive_data_t *kad)
 {
   tvars {
     ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
@@ -531,7 +531,7 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
     int status;
   }
 
-  x->set_reqno (reqno);
+  if (kad) { x->set_keepalive_data (*kad); }
 
   reqid ++;
 
@@ -1100,7 +1100,10 @@ okd_t::handle_keepalive (int fd, svccb *sbp)
   if (fd >= 0) {
     sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
     memcpy (sin, arg->sin.base (), sizeof (sockaddr_in));
-    newserv2 (arg->port, fd, sin, false, arg->ssl, arg->reqno + 1);
+    keepalive_data_t kad;
+    populate_keepalive_data (&kad, *arg);
+    kad.inc_reqno ();
+    newserv2 (arg->port, fd, sin, false, arg->ssl, &kad);
   } else {
     res = OK_STATUS_ERR;
   }
@@ -1287,7 +1290,7 @@ okd_ssl_t::dispatch (svccb *sbp)
 	} else {
 	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
 	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
-	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl);
+	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl, NULL);
 	}
 	srv.reply (res);
       }

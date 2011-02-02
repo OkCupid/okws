@@ -889,6 +889,8 @@ void set_sfs_select_policy ();
 
 void timespec_to_xdr (const struct timespec &ts, okctl_timespec_t *x);
 void xdr_to_timespec (const okctl_timespec_t &x, struct timespec *ts);
+bool populate_keepalive_data (keepalive_data_t *d, 
+			      const okctl_sendcon_arg2_t &a);
 
 //-----------------------------------------------------------------------
 

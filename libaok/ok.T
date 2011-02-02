@@ -884,7 +884,10 @@ oksrvc_t::handle_new_con2 (svccb *sbp)
   ptr<ahttpcon> x;
   okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
   if (res == OK_STATUS_OK) {
-    x->set_reqno (arg->reqno);
+    keepalive_data_t kad;
+    if (populate_keepalive_data (&kad, *arg)) {
+      x->set_keepalive_data (kad);
+    }
     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
     if (!newclnt (acw))
       res = OK_STATUS_NOMORE;
@@ -1894,5 +1897,21 @@ demux_data_t::set_forward_time ()
 //-----------------------------------------------------------------------
 
 struct timespec demux_data_t::timespec_null = { 0, 0 } ;
+
+//-----------------------------------------------------------------------
+
+bool
+populate_keepalive_data (keepalive_data_t *out,
+			 const okctl_sendcon_arg2_t &in)
+{
+  size_t ss = in.scraps.size ();
+  bool ret = in.reqno || ss;
+  out->_reqno = in.reqno;
+  if (ss) {
+    out->_buf = in.scraps.base ();
+    out->_len = ss;
+  }
+  return ret;
+}
 
 //-----------------------------------------------------------------------

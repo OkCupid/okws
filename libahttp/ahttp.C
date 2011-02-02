@@ -970,3 +970,15 @@ ahttpcon_clone::read_fail (int s)
 
 //-----------------------------------------------------------------------
 
+void
+ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
+{
+  _reqno = kad._reqno;
+  if (kad._len && kad._buf) {
+    in->set_dont_peek (true);
+    in->load_from_buffer (kad._buf, kad._len);
+  }
+}
+
+//-----------------------------------------------------------------------
+

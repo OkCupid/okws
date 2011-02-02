@@ -30,6 +30,7 @@ suiolite::clear ()
   bep = buf + len;
   rp = buf;
   peek = false;
+  dont_peek = false;
   bytes_read = 0;
 
   for (int i = 0; i < N_REGIONS; i++) dep[i] = buf;
@@ -105,7 +106,7 @@ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
   if (nfd) {
     if (ss) ss->n_readvfd ++;
     n = readvfd (fd, iov, N_REGIONS, nfd);
-  } else if (peek) {
+  } else if (peek || !dont_peek) {
     struct msghdr mh;
     bzero (&mh, sizeof (mh));
     mh.msg_iov = (struct iovec *) iov;

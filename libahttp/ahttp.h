@@ -48,6 +48,8 @@ void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
 suio *suio_alloc ();
 
+//=======================================================================
+
 class cbv_countdown_t : public virtual refcount {
 public:
   cbv_countdown_t (cbv c) : cb (c) {}
@@ -59,6 +61,8 @@ private:
 
 class abuf_src_t;
 
+//=======================================================================
+
 class ok_xprt_base_t : public virtual refcount {
 public:
   ok_xprt_base_t () {}
@@ -68,6 +72,8 @@ public:
   virtual void drain_cancel () = 0;
   virtual bool ateof () const = 0;
 };
+
+//=======================================================================
 
 class byte_counter_t {
 public:
@@ -83,6 +89,19 @@ private:
 };
 
 extern byte_counter_t ahttpcon_byte_counter;
+
+//=======================================================================
+
+struct keepalive_data_t {
+  keepalive_data_t (int reqno = 0, const char *buf = NULL, size_t l = 0)
+    : _reqno (reqno), _buf (buf), _len (l) {}
+  void inc_reqno () { _reqno++; }
+  int _reqno;
+  const char *_buf;
+  size_t _len;
+};
+
+//=======================================================================
 
 class ahttpcon_clone;
 class ahttpcon : public ok_xprt_base_t
@@ -144,7 +163,7 @@ public:
   size_t get_bytes_sent () const { return bytes_sent; }
   size_t get_bytes_recv () const { return _bytes_recv; }
 
-  void set_reqno (u_int n) { _reqno = n; }
+  void set_keepalive_data (const keepalive_data_t &d);
   u_int get_reqno () const { return _reqno; }
 
   str select_set () const;
