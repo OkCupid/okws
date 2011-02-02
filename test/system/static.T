@@ -161,7 +161,6 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   rc = true;
   static rxx x ("^(:\\d+)?/static(/.+)$");
   in = hdr.get_target ();
-  warn << "static: " << hdr.get_line1 () << "\n";
 
   if (!(mtm = ok_static->mime_type_map ())) {
     error (MIME_TYPES_FILE);

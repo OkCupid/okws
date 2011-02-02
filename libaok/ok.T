@@ -850,7 +850,6 @@ oksrvc_t::handle_new_con_common (const okclnt_sin_t &sin_in,
   okctl_sendcon_res_t res = OK_STATUS_OK;
   sockaddr_in *sin = NULL;
   int fd = ctlx->recvfd ();
-  warn << "recv'd fd --> " << fd << "\n";
 
   if (fd < 0) {
     warn << "Got bad file descriptor instead of new connection\n";

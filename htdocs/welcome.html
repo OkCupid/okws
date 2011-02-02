@@ -9,24 +9,9 @@
 {% include("cipher.html") %}
 <hr>
 <h2>A Picture of a Boat</h2>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
-<img width=10 height=10 src=/static/img/boat.jpg?foo=%{rand(100000)}>
+{% for (i, range (0, 100)) {{
+<img height="10" width="10" src="/static/img/boat.jpg?foo=%{rand(10000)}">
+}} %}
 <br /><br />
 <hr/>
 <h2>Language</h2>

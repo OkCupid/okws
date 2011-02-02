@@ -387,8 +387,6 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
   assert (clnt);
   assert (ctlx);
 
-  warn ("xc in question: %p\n", xc.get());
-  
   if (xc->timed_out ()) {
     CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
 	      << "): not forwarding to child");
@@ -404,13 +402,10 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
 
     // Take the FD away from the ahttpcon; is OURS now.
     fd = xc->takefd ();
-    warn << "take fd --> " << fd << "\n";
 
     // Second argument false: DON'T close the FD inside of sfs libs,
     // do it explicitly below...
     ctlx->sendfd (fd, false);
-
-    warn << "get fd --> " << xc->getfd () << "\n";
 
     // Note! Calling sendfd above might have revealed an EOF condition,
     // which will callback immediately with ctlx = NULL and clnt = NULL
@@ -451,14 +446,15 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
   if (!*df) {
     _per_svc_nfd_in_xit --;
   }
+
   // Only close the FD once it's been ACK'ed by the service (i.e., the RPC
   // has returned).
   if (fd >= 0) { 
-    warn << "PPP closed fd --> " << fd << "\n";
     close (fd); 
   }
 
   ev->trigger ();
+
 }
 
 //-----------------------------------------------------------------------
