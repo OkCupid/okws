@@ -49,7 +49,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     sin_alloced (s != NULL),
     _timed_out (false), 
     _no_more_read (false),
-    _delayed_close (false),
+    _delayed_close (true),
     _zombie_tcb (NULL),
     _state (AHTTPCON_STATE_NONE),
     destroyed_p (New refcounted<bool> (false)),
@@ -58,6 +58,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _source_hash_ip_only (0),
     _reqno (0)
 {
+  warn ("ahttpcon(%d) -> %p\n", f, this);
   //
   // bookkeeping for debugging purposes;
   //
@@ -126,10 +127,12 @@ ahttpcon::sendv (const iovec *iov, int cnt, cbv::ptr drained,
     if (drained) (*drained) ();
     return;
   }
+  warn << "+sendv\n";
   bytes_sent += len;
   if (!out->resid () && cnt < min (16, UIO_MAXIOV)) {
     if (ss) ss->n_writev ++;
     ssize_t skip = writev (fd, iov, cnt);
+    warn << "** write(" << fd << ") -> " << skip << "\n";
     if (skip < 0 && errno != EAGAIN) {
       fail ();
       // still need to signal done sending....
@@ -175,6 +178,7 @@ ahttpcon::set_drained_cb (cbv::ptr cb)
 void
 ahttpcon::output (ptr<bool> destroyed_local)
 {
+  warn << "+output\n";
 
   if (*destroyed_local)
     return;
@@ -184,8 +188,11 @@ ahttpcon::output (ptr<bool> destroyed_local)
   ssize_t n = 0;
   int cnt = 0;
   do {
+    warn << "++ loop(" << n << "," << out->resid () << ")\n";
     cnt = -1 ;
   } while ((n = dowritev (cnt)) > 0);
+
+  warn << "-- loop(" << n << "," << out->resid () << ")\n";
 
   bool more_to_write = out->resid ();
   if (n < 0) {
@@ -200,8 +207,10 @@ ahttpcon::output (ptr<bool> destroyed_local)
   }
 
   if (!out->resid () && drained_cb) {
+    warn << "** drained\n";
     call_drained_cb ();
   }
+  warn << "-output\n";
   
 }
 
@@ -231,6 +240,7 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
     delimit_start (NULL), bytes_scanned (0), decloned (false),
     trickle_state (0), dcb (NULL), _demuxed (false)
 {
+  warn ("ahttpcon_clone(%d) -> %p\n", f, this);
   in->setpeek ();
 }
 
@@ -238,6 +248,7 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
 
 ahttpcon_clone::~ahttpcon_clone ()
 {
+  warn ("~ahttpcon_clone %p\n", this);
   if (dcb) {
     timecb_remove (dcb);
     dcb = NULL;
@@ -266,6 +277,7 @@ ahttpcon::zombie_warn (ptr<bool> df)
 
 ahttpcon::~ahttpcon ()
 { 
+  warn ("~ahttpcon %p\n", this);
   // 
   // bookeeping for debug purposes.
   //
@@ -300,6 +312,7 @@ ahttpcon::short_circuit_output ()
 static void
 void_close (int fd)
 {
+  warn << "qq closed fd --> " << fd << "\n";
   (void)close (fd);
 }
 
@@ -312,8 +325,9 @@ ahttpcon::fail ()
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
     if (_delayed_close) {
-      delaycb (1, 0, wrap (void_close, fd));
+      delaycb (0,100 *1000*1000 , wrap (void_close, fd));
     } else {
+      warn << "xx closed fd --> " << fd << "\n";
       close (fd);
     }
   }

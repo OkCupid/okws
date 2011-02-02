@@ -485,6 +485,7 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
     if (!c) {
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
+      warn << "404 bitches --- " << *s2 << "\n";
     } else {
       twait { c->clone (acw, mkevent (), prefered_sibling); }
     }

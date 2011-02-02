@@ -850,6 +850,7 @@ oksrvc_t::handle_new_con_common (const okclnt_sin_t &sin_in,
   okctl_sendcon_res_t res = OK_STATUS_OK;
   sockaddr_in *sin = NULL;
   int fd = ctlx->recvfd ();
+  warn << "recv'd fd --> " << fd << "\n";
 
   if (fd < 0) {
     warn << "Got bad file descriptor instead of new connection\n";
@@ -978,6 +979,7 @@ okclnt2_t::serve_T ()
   }
 
   if (do_keepalive () && hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE) {
+    warn << "did KA mofos!\n";
     ahttpcon_wrapper_t<ahttpcon> acw (client_con (), demux_data ());
     get_oksrvc ()->keepalive (acw);
   }
