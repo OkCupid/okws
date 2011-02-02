@@ -1,16 +1,283 @@
+Index: patch/keepalive-0-1
+===================================================================
+--- patch/keepalive-0-1	(revision 5592)
++++ patch/keepalive-0-1	(working copy)
+@@ -1,261 +0,0 @@
+-Index: libaok/okprot.x
+-===================================================================
+---- libaok/okprot.x	(revision 5589)
+-+++ libaok/okprot.x	(working copy)
+-@@ -107,6 +107,7 @@
+- 	ssl_ctx_t *ssl;
+-         okctl_timespec_t time_recv;
+-  	okctl_timespec_t time_sent;
+-+	unsigned reqno; // >1 for keepalive connections
+- };
+- 
+- struct okssl_sendcon_arg_t {
+-@@ -226,6 +227,9 @@
+- 		okctl_send_msg_res_t 
+- 		OKCTL_SEND_MSG (okctl_send_msg_arg_t) = 19;
+- 
+-+		okctl_sendcon_res_t
+-+		OKCTL_KEEPALIVE(okctl_sendcon_arg2_t) = 20;
+-+
+- 		void
+- 		OKCTL_KILL (oksig_t) = 99;
+- 
+-Index: libaok/ok.h
+-===================================================================
+---- libaok/ok.h	(revision 5589)
+-+++ libaok/ok.h	(working copy)
+-@@ -646,6 +646,7 @@
+- 
+-   void set_union_cgi_mode (bool b)
+-   { http_parser_cgi_t::set_union_mode (b); }
+-+
+- };
+- 
+- //-----------------------------------------------------------------------
+-@@ -665,6 +666,10 @@
+-   virtual void process (proc_ev_t ev) = 0;
+-   void send_complete () {}
+-   void serve_complete () { delete this; }
+-+
+-+  // okclnt2_t allows use of keepalive connections, but only
+-+  // if this flag is toggled to true...
+-+  virtual bool do_keepalive () { return false; }
+- private:
+-   void serve_T (CLOSURE);
+- };
+-@@ -740,6 +745,8 @@
+-   // for accept direct connections (not via okd)
+-   void accept_new_con (ok_portpair_t *p);
+- 
+-+  void keepalive (ahttpcon_wrapper_t<ahttpcon> x, CLOSURE);
+-+
+- private:
+-   void launch_T (CLOSURE);
+- 
+-Index: libaok/ok.T
+-===================================================================
+---- libaok/ok.T	(revision 5589)
+-+++ libaok/ok.T	(working copy)
+-@@ -234,6 +234,22 @@
+- 
+- //-----------------------------------------------------------------------
+- 
+-+tamed void
+-+oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
+-+{
+-+  tvars {
+-+    int fd (acw.con()->takefd ());
+-+    okctl_sendcon_arg2_t arg;
+-+  }
+-+  
+-+  ctlx->sendfd (fd);
+-+  acw.to_xdr (&arg);
+-+  
+-+
+-+}
+-+
+-+//-----------------------------------------------------------------------
+-+
+- void
+- oksrvc_t::init (int argc, char *argv[])
+- {
+-@@ -853,6 +869,7 @@
+-   ptr<ahttpcon> x;
+-   okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
+-   if (res == OK_STATUS_OK) {
+-+    x->set_reqno (arg->reqno);
+-     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
+-     if (!newclnt (acw))
+-       res = OK_STATUS_NOMORE;
+-@@ -942,6 +959,11 @@
+-     }
+-   }
+- 
+-+  if (do_keepalive ()) {
+-+    ahttpcon_wrapper_t<ahttpcon> acw (client_con (), demux_data ());
+-+    get_oksrvc ()->keepalive (acw);
+-+  }
+-+
+-   serve_complete ();
+- }
+- 
+-Index: libahttp/ahttp.C
+-===================================================================
+---- libahttp/ahttp.C	(revision 5589)
+-+++ libahttp/ahttp.C	(working copy)
+-@@ -55,7 +55,8 @@
+-     destroyed_p (New refcounted<bool> (false)),
+-     _remote_port (0),
+-     _source_hash (0),
+--    _source_hash_ip_only (0)
+-+    _source_hash_ip_only (0),
+-+    _reqno (0)
+- {
+-   //
+-   // bookkeeping for debugging purposes;
+-@@ -76,7 +77,7 @@
+- }
+- 
+- int
+--ahttpcon_clone::takefd ()
+-+ahttpcon::takefd ()
+- {
+-   int ret = fd;
+-   if (fd >= 0) {
+-@@ -84,8 +85,15 @@
+-     rcbset = false;
+-     fdcb (fd, selread, NULL);
+-     fdcb (fd, selwrite, NULL);
+-+    fd = -1;
+-   }
+--  fd = -1;
+-+  return ret;
+-+}
+-+
+-+int
+-+ahttpcon_clone::takefd ()
+-+{
+-+  int ret = ahttpcon::takefd ();
+-   ccb = NULL;
+-   _demuxed = true;
+-   return ret;
+-Index: libahttp/ahttp.h
+-===================================================================
+---- libahttp/ahttp.h	(revision 5589)
+-+++ libahttp/ahttp.h	(working copy)
+-@@ -123,6 +123,7 @@
+-   //--------------------------------------------------
+- 
+-   int getfd () const { return fd; }
+-+  virtual int takefd ();
+-   inline sockaddr_in *get_sin () const { return sin; }
+-   inline const str & get_remote_ip () const { return remote_ip; }
+-   inline int get_remote_port () const { return _remote_port; }
+-@@ -143,6 +144,9 @@
+-   size_t get_bytes_sent () const { return bytes_sent; }
+-   size_t get_bytes_recv () const { return _bytes_recv; }
+- 
+-+  void set_reqno (u_int n) { _reqno = n; }
+-+  u_int get_reqno () const { return _reqno; }
+-+
+-   str select_set () const;
+-   str all_info () const;
+-   virtual str get_debug_info () const { return NULL; }
+-@@ -222,6 +226,9 @@
+-   int _remote_port;
+-   mutable hash_t _source_hash;
+-   mutable hash_t _source_hash_ip_only;
+-+
+-+protected:
+-+  u_int _reqno; // for Keep-Alive, this is incremented once-per
+- };
+- 
+- // for parent dispatcher, which will send fd's
+-Index: okd/okd.T
+-===================================================================
+---- okd/okd.T	(revision 5589)
+-+++ okd/okd.T	(working copy)
+-@@ -520,7 +520,7 @@
+- 
+- tamed void
+- okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
+--		 const ssl_ctx_t *ssl)
+-+		 const ssl_ctx_t *ssl, u_int reqno)
+- {
+-   tvars {
+-     ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
+-@@ -531,6 +531,8 @@
+-     int status;
+-   }
+- 
+-+  x->set_reqno (reqno);
+-+
+-   reqid ++;
+- 
+-   // debug messaging
+-@@ -1089,6 +1091,24 @@
+-  
+- //-----------------------------------------------------------------------
+- 
+-+void
+-+okd_t::handle_keepalive (int fd, svccb *sbp)
+-+{
+-+  RPC::okctl_program_1::okctl_keepalive_srv_t<svccb> srv (sbp);
+-+  const okctl_sendcon_arg2_t *arg (srv.getarg ());
+-+  okctl_sendcon_res_t res (OK_STATUS_OK);
+-+  if (fd >= 0) {
+-+    sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
+-+    memcpy (sin, arg->sin.base (), sizeof (sockaddr_in));
+-+    newserv2 (arg->port, fd, sin, false, arg->ssl, arg->reqno + 1);
+-+  } else {
+-+    res = OK_STATUS_ERR;
+-+  }
+-+  srv.reply (res);
+-+}
+-+
+-+//-----------------------------------------------------------------------
+-+
+- tamed void
+- okd_t::custom1_in (svccb *sbp)
+- {
+-Index: okd/okd.h
+-===================================================================
+---- okd/okd.h	(revision 5589)
+-+++ okd/okd.h	(working copy)
+-@@ -300,7 +300,7 @@
+- 	       evv_t ev, CLOSURE);
+-   void newserv (int fd);
+-   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
+--		 const ssl_ctx_t *ssl, CLOSURE);
+-+		 const ssl_ctx_t *ssl, u_int reqno = 0, CLOSURE);
+-   void shutdown (int sig) { shutdown_T (sig); }
+-   void shutdown_T (int sig, CLOSURE);
+-   void awaken (const oksvc_proc_t &p, evb_t ev, CLOSURE);
+-@@ -335,6 +335,7 @@
+-   void turnlog (svccb *sbp, CLOSURE);
+-   void strip_privileges ();
+-   void send_msg (svccb *sbp, CLOSURE);
+-+  void handle_keepalive (int fd, svccb *sbp);
+- 
+-   bool in_shutdown () const { return sdflag; }
+-   void set_signals ();
+-Index: okd/child.T
+-===================================================================
+---- okd/child.T	(revision 5589)
+-+++ okd/child.T	(working copy)
+-@@ -564,6 +564,15 @@
+-   case OKCTL_GET_STATS:
+-     _myokd->okctl_get_stats (sbp);
+-     break;
+-+  case OKCTL_KEEPALIVE:
+-+    {
+-+      int fd = ctlx->recvfd();
+-+      if (fd < 0) {
+-+	CH_ERROR ("Got invalid FD in keepalive passback");
+-+      } 
+-+      _myokd->handle_keepalive (fd, sbp);
+-+    }
+-+    break;
+-   case OKCTL_REENABLE_ACCEPT:
+-     handle_reenable_accept (sbp);
+-     break;
 Index: libaok/okprot.x
 ===================================================================
 --- libaok/okprot.x	(revision 5589)
 +++ libaok/okprot.x	(working copy)
-@@ -107,6 +107,7 @@
+@@ -107,6 +107,8 @@
  	ssl_ctx_t *ssl;
          okctl_timespec_t time_recv;
   	okctl_timespec_t time_sent;
-+	unsigned reqno; // >1 for keepalive connections
++	unsigned reqno; // >0 for keepalive connections
++	opaque scraps<>; // leftover bytes passed back in keepalive
  };
  
  struct okssl_sendcon_arg_t {
-@@ -226,6 +227,9 @@
+@@ -226,6 +228,9 @@
  		okctl_send_msg_res_t 
  		OKCTL_SEND_MSG (okctl_send_msg_arg_t) = 19;
  
@@ -24,7 +291,22 @@ Index: libaok/ok.h
 ===================================================================
 --- libaok/ok.h	(revision 5589)
 +++ libaok/ok.h	(working copy)
-@@ -646,6 +646,7 @@
+@@ -166,12 +166,13 @@
+   ptr<const demux_data_t> demux_data () const { return _demux_data; }
+ 
+   void
+-  to_xdr (okctl_sendcon_arg2_t *x)
++  to_xdr (okctl_sendcon_arg2_t *x, bool transfer_scraps)
+   {
+     sockaddr_in *sin = _con->get_sin ();
+     x->sin.setsize (sizeof (*sin));
+     memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
+     _demux_data->to_xdr (x);
++    if (transfer_scraps) { _con->collect_scraps (x->scraps); }
+   }
+ 
+ private:
+@@ -646,6 +647,7 @@
  
    void set_union_cgi_mode (bool b)
    { http_parser_cgi_t::set_union_mode (b); }
@@ -32,7 +314,7 @@ Index: libaok/ok.h
  };
  
  //-----------------------------------------------------------------------
-@@ -665,6 +666,10 @@
+@@ -665,6 +667,10 @@
    virtual void process (proc_ev_t ev) = 0;
    void send_complete () {}
    void serve_complete () { delete this; }
@@ -43,7 +325,7 @@ Index: libaok/ok.h
  private:
    void serve_T (CLOSURE);
  };
-@@ -740,6 +745,8 @@
+@@ -740,6 +746,8 @@
    // for accept direct connections (not via okd)
    void accept_new_con (ok_portpair_t *p);
  
@@ -56,7 +338,7 @@ Index: libaok/ok.T
 ===================================================================
 --- libaok/ok.T	(revision 5589)
 +++ libaok/ok.T	(working copy)
-@@ -234,6 +234,22 @@
+@@ -234,6 +234,37 @@
  
  //-----------------------------------------------------------------------
  
@@ -66,12 +348,27 @@ Index: libaok/ok.T
 +  tvars {
 +    int fd (acw.con()->takefd ());
 +    okctl_sendcon_arg2_t arg;
++    okctl_sendcon_res_t res;
++    clnt_stat err;
 +  }
-+  
-+  ctlx->sendfd (fd);
-+  acw.to_xdr (&arg);
-+  
 +
++  if (ctlx) {
++    ctlx->sendfd (fd);
++    acw.to_xdr (&arg, true);
++    twait {
++      RPC::okctl_program_1::okctl_keepalive (clnt, arg, &res, mkevent (err));
++    }
++    if (err) {
++      strbuf b;
++      b << "RPC error in keepalive passback : " << err;
++      okdbg_warn (ERROR, b);
++    } else if (res == OK_STATUS_OK) {
++      strbuf b;
++      b << "Non-ok result from keepalive passback: ";
++      rpc_print (b, res);
++      okdbg_warn (ERROR, b);
++    }
++  }
 +}
 +
 +//-----------------------------------------------------------------------
@@ -79,7 +376,7 @@ Index: libaok/ok.T
  void
  oksrvc_t::init (int argc, char *argv[])
  {
-@@ -853,6 +869,7 @@
+@@ -853,6 +884,7 @@
    ptr<ahttpcon> x;
    okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
    if (res == OK_STATUS_OK) {
@@ -87,7 +384,7 @@ Index: libaok/ok.T
      ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
      if (!newclnt (acw))
        res = OK_STATUS_NOMORE;
-@@ -942,6 +959,11 @@
+@@ -942,6 +974,11 @@
      }
    }
  
@@ -99,6 +396,55 @@ Index: libaok/ok.T
    serve_complete ();
  }
  
+Index: libahttp/suiolite.h
+===================================================================
+--- libahttp/suiolite.h	(revision 5589)
++++ libahttp/suiolite.h	(working copy)
+@@ -32,6 +32,7 @@
+    vNew char[0x10]
+ 
+ #include "async.h"
++#include "arpc.h"
+ 
+ struct syscall_stats_t {
+   syscall_stats_t () : n_recvmsg (0), n_readvfd (0), n_readv (0),
+@@ -106,8 +107,6 @@
+   }
+   ~suiolite () { xfree (buf); }
+ 
+-
+-
+   void clear ();
+   void recycle (cbv::ptr s = NULL) { setscb (s); }
+ 
+@@ -125,6 +124,27 @@
+   void load_iov ();
+   void account_for_new_bytes (ssize_t n);
+ 
++  template<size_t n> void 
++  load_into_xdr (rpc_bytes<n> &o)
++  {
++    ssize_t nbytes = min<size_t> (n, resid ());
++    o.setsize (nbytes);
++    while (nbytes > 0) {
++      ssize_t rl;
++      char *ip = getdata (&rl);
++      rl = min<ssize_t> (nbytes, rl);
++      char *op = o.base ();
++      memcpy (op, ip, rl);
++      rembytes (rl);
++      nbytes -= rl;
++      op += rl;
++    }
++  }
++
++  // Load the data from the buffer into the suiolite.  The buffer
++  // has l bytes in it.  Return the number of bytes that actually fit.
++  size_t load_from_buffer (const char *buf, size_t l);
++
+ private:
+   const int len;
+   char *buf;
 Index: libahttp/ahttp.C
 ===================================================================
 --- libahttp/ahttp.C	(revision 5589)
@@ -139,6 +485,39 @@ Index: libahttp/ahttp.C
    ccb = NULL;
    _demuxed = true;
    return ret;
+Index: libahttp/suiolite.C
+===================================================================
+--- libahttp/suiolite.C	(revision 5589)
++++ libahttp/suiolite.C	(working copy)
+@@ -71,6 +71,28 @@
+   }
+ }
+ 
++size_t
++suiolite::load_from_buffer (const char *input, size_t len)
++{
++  size_t ret = 0;
++  size_t tmp = bep - dep[1];
++  size_t nb = min<size_t> (len, tmp);
++  if (nb > 0) {
++    memcpy (dep[1], input, nb);
++    ret += nb;
++  }
++  len -= nb;
++  input += nb;
++  tmp = rp - dep[0];
++  nb = min<size_t> (len, tmp);
++  if (nb > 0) {
++    memcpy (dep[0], input, nb);
++    ret += nb;
++  }
++  account_for_new_bytes (nb);
++  return ret;
++}
++
+ ssize_t
+ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
+ {
 Index: libahttp/ahttp.h
 ===================================================================
 --- libahttp/ahttp.h	(revision 5589)
@@ -161,7 +540,17 @@ Index: libahttp/ahttp.h
    str select_set () const;
    str all_info () const;
    virtual str get_debug_info () const { return NULL; }
-@@ -222,6 +226,9 @@
+@@ -171,6 +175,9 @@
+   void stop_read ();
+   void short_circuit_output ();
+   int bytes_recv () const { return _bytes_recv;}
++
++  template<size_t n> void
++  collect_scraps (rpc_bytes<n> &out) { in->load_into_xdr<n> (out); }
+   
+   const time_t start;
+ 
+@@ -222,6 +229,9 @@
    int _remote_port;
    mutable hash_t _source_hash;
    mutable hash_t _source_hash_ip_only;
@@ -243,6 +632,15 @@ Index: okd/child.T
 ===================================================================
 --- okd/child.T	(revision 5589)
 +++ okd/child.T	(working copy)
+@@ -398,7 +398,7 @@
+     // add in extra SSL and port information; also the remote address,
+     // and timestamps
+     acw.demux_data ()->set_forward_time ();
+-    acw.to_xdr (&arg);
++    acw.to_xdr (&arg, false);
+ 
+     // Take the FD away from the ahttpcon; is OURS now.
+     fd = xc->takefd ();
 @@ -564,6 +564,15 @@
    case OKCTL_GET_STATS:
      _myokd->okctl_get_stats (sbp);
