@@ -166,12 +166,13 @@ public:
   ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
   void
-  to_xdr (okctl_sendcon_arg2_t *x)
+  to_xdr (okctl_sendcon_arg2_t *x, bool transfer_scraps)
   {
     sockaddr_in *sin = _con->get_sin ();
     x->sin.setsize (sizeof (*sin));
     memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
     _demux_data->to_xdr (x);
+    if (transfer_scraps) { _con->collect_scraps (x->scraps); }
   }
 
 private:
@@ -646,6 +647,7 @@ public:
 
   void set_union_cgi_mode (bool b)
   { http_parser_cgi_t::set_union_mode (b); }
+
 };
 
 //-----------------------------------------------------------------------
@@ -665,6 +667,10 @@ public:
   virtual void process (proc_ev_t ev) = 0;
   void send_complete () {}
   void serve_complete () { delete this; }
+
+  // okclnt2_t allows use of keepalive connections, but only
+  // if this flag is toggled to true...
+  virtual bool do_keepalive () { return false; }
 private:
   void serve_T (CLOSURE);
 };
@@ -739,6 +745,8 @@ public:
 
   // for accept direct connections (not via okd)
   void accept_new_con (ok_portpair_t *p);
+
+  void keepalive (ahttpcon_wrapper_t<ahttpcon> x, CLOSURE);
 
 private:
   void launch_T (CLOSURE);

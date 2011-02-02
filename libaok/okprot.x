@@ -107,6 +107,8 @@ struct okctl_sendcon_arg2_t {
 	ssl_ctx_t *ssl;
         okctl_timespec_t time_recv;
  	okctl_timespec_t time_sent;
+	unsigned reqno; // >0 for keepalive connections
+	opaque scraps<>; // leftover bytes passed back in keepalive
 };
 
 struct okssl_sendcon_arg_t {
@@ -225,6 +227,9 @@ program OKCTL_PROGRAM {
 
 		okctl_send_msg_res_t 
 		OKCTL_SEND_MSG (okctl_send_msg_arg_t) = 19;
+
+		okctl_sendcon_res_t
+		OKCTL_KEEPALIVE(okctl_sendcon_arg2_t) = 20;
 
 		void
 		OKCTL_KILL (oksig_t) = 99;

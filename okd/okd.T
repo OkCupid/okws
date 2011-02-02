@@ -520,7 +520,7 @@ okd_t::newserv (int fd)
 
 tamed void
 okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
-		 const ssl_ctx_t *ssl)
+		 const ssl_ctx_t *ssl, u_int reqno)
 {
   tvars {
     ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
@@ -530,6 +530,8 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
     str s;
     int status;
   }
+
+  x->set_reqno (reqno);
 
   reqid ++;
 
@@ -1087,6 +1089,24 @@ private:
   const ok_custom_data_t *_data;
 };
  
+//-----------------------------------------------------------------------
+
+void
+okd_t::handle_keepalive (int fd, svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_keepalive_srv_t<svccb> srv (sbp);
+  const okctl_sendcon_arg2_t *arg (srv.getarg ());
+  okctl_sendcon_res_t res (OK_STATUS_OK);
+  if (fd >= 0) {
+    sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
+    memcpy (sin, arg->sin.base (), sizeof (sockaddr_in));
+    newserv2 (arg->port, fd, sin, false, arg->ssl, arg->reqno + 1);
+  } else {
+    res = OK_STATUS_ERR;
+  }
+  srv.reply (res);
+}
+
 //-----------------------------------------------------------------------
 
 tamed void

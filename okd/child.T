@@ -398,7 +398,7 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     // add in extra SSL and port information; also the remote address,
     // and timestamps
     acw.demux_data ()->set_forward_time ();
-    acw.to_xdr (&arg);
+    acw.to_xdr (&arg, false);
 
     // Take the FD away from the ahttpcon; is OURS now.
     fd = xc->takefd ();
@@ -563,6 +563,15 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     break;
   case OKCTL_GET_STATS:
     _myokd->okctl_get_stats (sbp);
+    break;
+  case OKCTL_KEEPALIVE:
+    {
+      int fd = ctlx->recvfd();
+      if (fd < 0) {
+	CH_ERROR ("Got invalid FD in keepalive passback");
+      } 
+      _myokd->handle_keepalive (fd, sbp);
+    }
     break;
   case OKCTL_REENABLE_ACCEPT:
     handle_reenable_accept (sbp);

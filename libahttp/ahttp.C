@@ -55,7 +55,8 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     destroyed_p (New refcounted<bool> (false)),
     _remote_port (0),
     _source_hash (0),
-    _source_hash_ip_only (0)
+    _source_hash_ip_only (0),
+    _reqno (0)
 {
   //
   // bookkeeping for debugging purposes;
@@ -76,7 +77,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
 }
 
 int
-ahttpcon_clone::takefd ()
+ahttpcon::takefd ()
 {
   int ret = fd;
   if (fd >= 0) {
@@ -84,8 +85,15 @@ ahttpcon_clone::takefd ()
     rcbset = false;
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
+    fd = -1;
   }
-  fd = -1;
+  return ret;
+}
+
+int
+ahttpcon_clone::takefd ()
+{
+  int ret = ahttpcon::takefd ();
   ccb = NULL;
   _demuxed = true;
   return ret;

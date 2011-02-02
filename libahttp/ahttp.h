@@ -123,6 +123,7 @@ public:
   //--------------------------------------------------
 
   int getfd () const { return fd; }
+  virtual int takefd ();
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
   inline int get_remote_port () const { return _remote_port; }
@@ -142,6 +143,9 @@ public:
   suiolite *uio () const { return in; }
   size_t get_bytes_sent () const { return bytes_sent; }
   size_t get_bytes_recv () const { return _bytes_recv; }
+
+  void set_reqno (u_int n) { _reqno = n; }
+  u_int get_reqno () const { return _reqno; }
 
   str select_set () const;
   str all_info () const;
@@ -171,6 +175,9 @@ public:
   void stop_read ();
   void short_circuit_output ();
   int bytes_recv () const { return _bytes_recv;}
+
+  template<size_t n> void
+  collect_scraps (rpc_bytes<n> &out) { in->load_into_xdr<n> (out); }
   
   const time_t start;
 
@@ -222,6 +229,9 @@ private:
   int _remote_port;
   mutable hash_t _source_hash;
   mutable hash_t _source_hash_ip_only;
+
+protected:
+  u_int _reqno; // for Keep-Alive, this is incremented once-per
 };
 
 // for parent dispatcher, which will send fd's

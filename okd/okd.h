@@ -300,7 +300,7 @@ public:
 	       evv_t ev, CLOSURE);
   void newserv (int fd);
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
-		 const ssl_ctx_t *ssl, CLOSURE);
+		 const ssl_ctx_t *ssl, u_int reqno = 0, CLOSURE);
   void shutdown (int sig) { shutdown_T (sig); }
   void shutdown_T (int sig, CLOSURE);
   void awaken (const oksvc_proc_t &p, evb_t ev, CLOSURE);
@@ -335,6 +335,7 @@ public:
   void turnlog (svccb *sbp, CLOSURE);
   void strip_privileges ();
   void send_msg (svccb *sbp, CLOSURE);
+  void handle_keepalive (int fd, svccb *sbp);
 
   bool in_shutdown () const { return sdflag; }
   void set_signals ();

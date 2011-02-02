@@ -234,6 +234,37 @@ oksrvc_t::~oksrvc_t ()
 
 //-----------------------------------------------------------------------
 
+tamed void
+oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
+{
+  tvars {
+    int fd (acw.con()->takefd ());
+    okctl_sendcon_arg2_t arg;
+    okctl_sendcon_res_t res;
+    clnt_stat err;
+  }
+
+  if (ctlx) {
+    ctlx->sendfd (fd);
+    acw.to_xdr (&arg, true);
+    twait {
+      RPC::okctl_program_1::okctl_keepalive (clnt, arg, &res, mkevent (err));
+    }
+    if (err) {
+      strbuf b;
+      b << "RPC error in keepalive passback : " << err;
+      okdbg_warn (ERROR, b);
+    } else if (res == OK_STATUS_OK) {
+      strbuf b;
+      b << "Non-ok result from keepalive passback: ";
+      rpc_print (b, res);
+      okdbg_warn (ERROR, b);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::init (int argc, char *argv[])
 {
@@ -853,6 +884,7 @@ oksrvc_t::handle_new_con2 (svccb *sbp)
   ptr<ahttpcon> x;
   okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
   if (res == OK_STATUS_OK) {
+    x->set_reqno (arg->reqno);
     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
     if (!newclnt (acw))
       res = OK_STATUS_NOMORE;
@@ -940,6 +972,11 @@ okclnt2_t::serve_T ()
     } else {
       twait { output (out, mkevent ()); }
     }
+  }
+
+  if (do_keepalive ()) {
+    ahttpcon_wrapper_t<ahttpcon> acw (client_con (), demux_data ());
+    get_oksrvc ()->keepalive (acw);
   }
 
   serve_complete ();

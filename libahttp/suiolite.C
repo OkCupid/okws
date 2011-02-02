@@ -71,6 +71,28 @@ suiolite::account_for_new_bytes (ssize_t n)
   }
 }
 
+size_t
+suiolite::load_from_buffer (const char *input, size_t len)
+{
+  size_t ret = 0;
+  size_t tmp = bep - dep[1];
+  size_t nb = min<size_t> (len, tmp);
+  if (nb > 0) {
+    memcpy (dep[1], input, nb);
+    ret += nb;
+  }
+  len -= nb;
+  input += nb;
+  tmp = rp - dep[0];
+  nb = min<size_t> (len, tmp);
+  if (nb > 0) {
+    memcpy (dep[0], input, nb);
+    ret += nb;
+  }
+  account_for_new_bytes (nb);
+  return ret;
+}
+
 ssize_t
 suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
 {
