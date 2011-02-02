@@ -346,5 +346,4 @@ http_inhdr_t::get_user_agent (bool null_ok) const
   return ret;
 }
 
-
 //-----------------------------------------------------------------------

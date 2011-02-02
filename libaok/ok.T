@@ -977,7 +977,7 @@ okclnt2_t::serve_T ()
     }
   }
 
-  if (do_keepalive ()) {
+  if (do_keepalive () && hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE) {
     ahttpcon_wrapper_t<ahttpcon> acw (client_con (), demux_data ());
     get_oksrvc ()->keepalive (acw);
   }
