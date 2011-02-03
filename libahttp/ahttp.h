@@ -163,7 +163,7 @@ public:
   size_t get_bytes_sent () const { return bytes_sent; }
   size_t get_bytes_recv () const { return _bytes_recv; }
 
-  void set_keepalive_data (const keepalive_data_t &d);
+  size_t set_keepalive_data (const keepalive_data_t &d);
   u_int get_reqno () const { return _reqno; }
 
   str select_set () const;
@@ -194,6 +194,7 @@ public:
   void stop_read ();
   void short_circuit_output ();
   int bytes_recv () const { return _bytes_recv;}
+  virtual bool do_peek () const { return _do_peek; }
 
   template<size_t n> void
   collect_scraps (rpc_bytes<n> &out) { in->load_into_xdr<n> (out); }
@@ -204,7 +205,8 @@ protected:
   void set_remote_ip ();
   virtual int dowritev (int cnt) { return out->output (fd, cnt); }
   virtual ssize_t doread (int fd);
-  virtual void recvd_bytes (int n);
+  void recvd_bytes (size_t n);
+  virtual void v_recvd_bytes (size_t n);
   virtual void fail ();
   virtual void read_fail (int s) { fail (); }
   virtual void too_many_fds () { fail (); }
@@ -251,6 +253,7 @@ private:
 
 protected:
   u_int _reqno; // for Keep-Alive, this is incremented once-per
+  bool _do_peek;
 };
 
 // for parent dispatcher, which will send fd's
@@ -270,7 +273,7 @@ class ahttpcon_clone : public ahttpcon
 public:
   ahttpcon_clone (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE);
   ~ahttpcon_clone () ;
-  void setccb (clonecb_t cb);
+  void setccb (clonecb_t cb, size_t nplb);
   int takefd ();
 
   static ptr<ahttpcon_clone> 
@@ -282,7 +285,7 @@ public:
   str get_debug_info () const;
 
 protected:
-  void recvd_bytes (int n);
+  void v_recvd_bytes (size_t n);
   void fail2 ();
   void read_fail (int s);
   void issue_ccb (int s);

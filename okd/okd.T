@@ -529,9 +529,10 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
     u_int freq (okd_debug_msg_freq);
     str s;
     int status;
+    size_t plb (0); // preloaded bytes!
   }
 
-  if (kad) { x->set_keepalive_data (*kad); }
+  if (kad) { plb = x->set_keepalive_data (*kad); }
 
   reqid ++;
 
@@ -566,7 +567,7 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   
   // Listen for enough data on x until we're ready to demux the 
   // incoming connection.
-  twait { x->setccb (mkevent (s, status)); }
+  twait { x->setccb (mkevent (s, status), plb); }
 
   // Handle the result of that demux in 'sclone', which might eventually
   // clone the connection and pass it on to a child OKWS service.

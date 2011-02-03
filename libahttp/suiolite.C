@@ -90,7 +90,7 @@ suiolite::load_from_buffer (const char *input, size_t len)
     memcpy (dep[0], input, nb);
     ret += nb;
   }
-  account_for_new_bytes (nb);
+  account_for_new_bytes (ret);
   return ret;
 }
 

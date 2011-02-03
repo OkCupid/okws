@@ -66,3 +66,6 @@ SafeStartup 0
 ClusterAddressing 1
 AggressiveServiceRestart 1
 EmergencyKillEnabled 1
+
+# juice this way up for testing....
+DemuxTimeout 359

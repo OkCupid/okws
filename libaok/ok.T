@@ -246,7 +246,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
 
   if (ctlx) {
     ctlx->sendfd (fd);
-    acw.to_xdr (&arg, true);
+    acw.to_xdr (&arg);
     twait {
       RPC::okctl_program_1::okctl_keepalive (clnt, arg, &res, mkevent (err));
     }

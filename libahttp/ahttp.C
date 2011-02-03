@@ -56,7 +56,8 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _remote_port (0),
     _source_hash (0),
     _source_hash_ip_only (0),
-    _reqno (0)
+    _reqno (0),
+    _do_peek (false)
 {
   //
   // bookkeeping for debugging purposes;
@@ -230,6 +231,7 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
     trickle_state (0), dcb (NULL), _demuxed (false)
 {
   in->setpeek ();
+  _do_peek = true;
 }
 
 //-----------------------------------------------------------------------
@@ -336,13 +338,16 @@ ahttpcon_clone::fail2 ()
 }
 
 void
-ahttpcon_clone::setccb (clonecb_t c)
+ahttpcon_clone::setccb (clonecb_t c, size_t num_preload_bytes)
 {
   assert (!destroyed);
 
   _state = AHTTPCON_STATE_DEMUX;
   ccb = c;
-  if (!enable_selread ()) {
+
+  if (num_preload_bytes) {
+    recvd_bytes (num_preload_bytes);
+  } else if (!enable_selread ()) {
     read_fail (HTTP_BAD_REQUEST);
   }
 }
@@ -447,6 +452,12 @@ ahttpcon::input (ptr<bool> destroyed_local)
     return;
   }
 
+  recvd_bytes (n);
+}
+
+void
+ahttpcon::recvd_bytes (size_t n)
+{
   _bytes_recv += n;
 
   // stop DOS attacks?
@@ -463,18 +474,18 @@ ahttpcon::input (ptr<bool> destroyed_local)
     n = 0;
   }
 
-  recvd_bytes (n);
+  v_recvd_bytes (n);
 }
 
 void 
-ahttpcon::recvd_bytes (int n)
+ahttpcon::v_recvd_bytes (size_t n)
 {
   if (rcb) 
     (*rcb) (n);
 }
 
 void
-ahttpcon_clone::recvd_bytes (int n)
+ahttpcon_clone::v_recvd_bytes (size_t n)
 {
   if (decloned) {
     ahttpcon::recvd_bytes (n);
@@ -971,14 +982,17 @@ ahttpcon_clone::read_fail (int s)
 
 //-----------------------------------------------------------------------
 
-void
+size_t
 ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
 {
   _reqno = kad._reqno;
-  if (kad._len && kad._buf) {
+  size_t ret = 0;
+  if ((ret = kad._len) && kad._buf) {
     in->set_dont_peek (true);
-    in->load_from_buffer (kad._buf, kad._len);
+    in->load_from_buffer (kad._buf, ret);
+    _do_peek = false;
   }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

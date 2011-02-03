@@ -398,7 +398,7 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     // add in extra SSL and port information; also the remote address,
     // and timestamps
     acw.demux_data ()->set_forward_time ();
-    acw.to_xdr (&arg, false);
+    acw.to_xdr (&arg);
 
     // Take the FD away from the ahttpcon; is OURS now.
     fd = xc->takefd ();

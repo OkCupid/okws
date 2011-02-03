@@ -166,13 +166,14 @@ public:
   ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
   void
-  to_xdr (okctl_sendcon_arg2_t *x, bool transfer_scraps)
+  to_xdr (okctl_sendcon_arg2_t *x)
   {
     sockaddr_in *sin = _con->get_sin ();
     x->sin.setsize (sizeof (*sin));
     memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
     _demux_data->to_xdr (x);
-    if (transfer_scraps) { _con->collect_scraps (x->scraps); }
+    x->reqno = _con->get_reqno ();
+    if (!_con->do_peek()) { _con->collect_scraps (x->scraps); }
   }
 
 private:
