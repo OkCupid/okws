@@ -434,7 +434,9 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
   if (!s && status == HTTP_OK)
     status = HTTP_TIMEOUT;
 
-  if (status != HTTP_OK) {
+  if (status == HTTP_PIPELINE_EOF) {
+    /* noop */
+  } else if (status != HTTP_OK) {
     x->declone ();
     error (x, status);
   } else if (_stat_page_url && s == _stat_page_url) {

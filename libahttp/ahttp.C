@@ -335,7 +335,7 @@ ahttpcon::fail ()
 void
 ahttpcon_clone::fail2 ()
 {
-  issue_ccb (HTTP_TIMEOUT);
+  issue_ccb (_reqno > 0 ? HTTP_PIPELINE_EOF : HTTP_TIMEOUT);
 }
 
 void
