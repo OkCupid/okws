@@ -572,6 +572,7 @@ public:
   void set_demux_data (ptr<demux_data_t> d) { _demux_data = d; }
   bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
   str ssl_cipher () const;
+  int get_reqno () const;
 
   virtual ptr<pub3::ok_iface_t> pub3 () ;
   virtual ptr<pub3::ok_iface_t> pub3_local ();

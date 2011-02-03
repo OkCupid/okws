@@ -122,9 +122,11 @@ public:
   int getlen () const { return len; }
   ssize_t bytesread () const { return bytes_read; }
   iovec *get_iov (size_t *len = NULL);
+  size_t capacity () const;
 
   void load_iov ();
   void account_for_new_bytes (ssize_t n);
+  void grow (size_t bytes);
 
   template<size_t n> void 
   load_into_xdr (rpc_bytes<n> &o)
@@ -148,7 +150,7 @@ public:
   size_t load_from_buffer (const char *buf, size_t l);
 
 private:
-  const int len;
+  int len;
   char *buf;
   char *bep;     // buffer end pointer
   char *rp;      // read pointer

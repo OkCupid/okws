@@ -888,12 +888,6 @@ oksrvc_t::handle_new_con2 (svccb *sbp)
   if (res == OK_STATUS_OK) {
     keepalive_data_t kad;
     if (populate_keepalive_data (&kad, *arg)) {
-      if (OKDBG2 (OKD_KEEPALIVE)) {
-	str data (kad._buf, kad._len);
-	okdbg_warn (CHATTER, 
-		    strbuf ("incoming keepalive request(%d): %s",
-			    kad._reqno, data.cstr ()));
-      }
       x->set_keepalive_data (kad);
     }
     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
@@ -1736,6 +1730,15 @@ demux_data_t::alloc (const okctl_sendcon_arg2_t &arg)
 
 //-----------------------------------------------------------------------
 
+int
+okclnt_base_t::get_reqno () const
+{
+  int ret = client_con() ? client_con()->get_reqno () : 0;
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 str 
 okclnt_base_t::ssl_cipher () const 
 {
@@ -1924,12 +1927,19 @@ populate_keepalive_data (keepalive_data_t *out,
 			 const okctl_sendcon_arg2_t &in)
 {
   size_t ss = in.scraps.size ();
-  bool ret = in.reqno || ss;
-  out->_reqno = in.reqno;
+  int rn = in.reqno;
+  bool ret = rn || ss;
+  out->_reqno = rn;
   if (ss) {
     out->_buf = in.scraps.base ();
     out->_len = ss;
   }
+  if (ret && OKDBG2 (OKD_KEEPALIVE)) {
+    str data = opaque2str (in.scraps);
+    okdbg_warn (CHATTER, strbuf ("incoming keepalive request(%d): %s", 
+				 rn, data.cstr ()));
+  }
+    
   return ret;
 }
 

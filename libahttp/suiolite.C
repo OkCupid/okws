@@ -75,6 +75,10 @@ suiolite::account_for_new_bytes (ssize_t n)
 size_t
 suiolite::load_from_buffer (const char *input, size_t len)
 {
+  if (len > capacity ()) {
+    grow (len + 10);
+  }
+
   size_t ret = 0;
   size_t tmp = bep - dep[1];
   size_t nb = min<size_t> (len, tmp);
@@ -93,7 +97,6 @@ suiolite::load_from_buffer (const char *input, size_t len)
     ret += nb;
   }
   bytes_read += ret;
-  warn << "XX loaded " << len << " bytes from buffer (ret=" << ret << ")...\n";
   return ret;
 }
 
@@ -165,3 +168,21 @@ suiolite::resid () const
   return (a+b);
 }
 
+size_t
+suiolite::capacity () const
+{
+  int inuse = resid ();
+  assert (inuse <= len);
+  return len - inuse;
+}
+
+void
+suiolite::grow (size_t ns)
+{
+  assert (resid () == 0);
+  assert (bytes_read == 0);
+  xfree (buf);
+  len = min<int> (ns, SUIOLITE_MAX_BUFLEN);
+  buf = static_cast<char *> (xmalloc (len));
+  clear ();
+}
