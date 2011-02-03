@@ -524,6 +524,12 @@ public:
 
   //-----------------------------------------------------------------------
 
+  // okclnt2_t and others might do something useful here to set
+  // keepalive headers.
+  virtual void set_keepalive_attributes (http_resp_attributes_t *hra) {}
+
+  //-----------------------------------------------------------------------
+
   ptr<demux_data_t> demux_data () { return _demux_data; }
   ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
@@ -671,6 +677,7 @@ public:
   // okclnt2_t allows use of keepalive connections, but only
   // if this flag is toggled to true...
   virtual bool do_keepalive () { return false; }
+  virtual void set_keepalive_attributes (http_resp_attributes_t *hra);
 private:
   void serve_T (CLOSURE);
 };

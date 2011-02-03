@@ -254,7 +254,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
       strbuf b;
       b << "RPC error in keepalive passback : " << err;
       okdbg_warn (ERROR, b);
-    } else if (res == OK_STATUS_OK) {
+    } else if (res != OK_STATUS_OK) {
       strbuf b;
       b << "Non-ok result from keepalive passback: ";
       rpc_print (b, res);
@@ -937,6 +937,17 @@ oksrvc_t::add (okclnt_interface_t *c)
 
 //-----------------------------------------------------------------------
 
+void
+okclnt2_t::set_keepalive_attributes (http_resp_attributes_t *hra)
+{
+  if (do_keepalive ()) {
+    str tmp = hdr_cr().get_connection ();
+    hra->set_connection (tmp);
+  }
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt2_t::serve_T ()
 {
@@ -966,7 +977,6 @@ okclnt2_t::serve_T ()
 	if (status <= 0) { status = get_status (); }
       }
     }
-
   }
     
   if (!did_output) {
@@ -977,8 +987,7 @@ okclnt2_t::serve_T ()
     }
   }
 
-  if (do_keepalive () && hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE) {
-    warn << "did KA mofos!\n";
+  if (do_keepalive () && hdr_cr().get_conn_mode () == HTTP_CONN_KEEPALIVE) {
     ahttpcon_wrapper_t<ahttpcon> acw (client_con (), demux_data ());
     get_oksrvc ()->keepalive (acw);
   }
@@ -1269,6 +1278,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
   } else {
 
+    set_keepalive_attributes (&hra);
     set_attributes (&hra);
 
     if (hdr_cr ().mthd == HTTP_MTHD_HEAD) {

@@ -63,6 +63,7 @@ public:
 
   void process (proc_ev_t ev) { process_T (ev); }
   void process_T (proc_ev_t ev, CLOSURE); 
+  bool do_keepalive () { return true; }
 
 protected:
   void error (const str &desc);

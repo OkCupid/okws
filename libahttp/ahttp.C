@@ -916,8 +916,11 @@ ahttp_tab_t::run ()
 	  int (ok_demux_timeout)) {
 
 	str ai = a->all_info ();
-	warn << "HTTP connection timed out in demux " << ai << "\n";
 
+	// Don't warn for HTTP keepalives timing out...
+	if (a->get_reqno () == 0) {
+	  warn << "HTTP connection timed out in demux " << ai << "\n";
+	}
 	a->hit_timeout ();
 	unreg (n);
       }  else {
