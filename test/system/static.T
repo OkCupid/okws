@@ -63,6 +63,7 @@ public:
 
   void process (proc_ev_t ev) { process_T (ev); }
   void process_T (proc_ev_t ev, CLOSURE); 
+  bool do_keepalive () { return true; }
 
 protected:
   void error (const str &desc);
@@ -130,6 +131,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     bool skip_pub (false);
     pub3::opts_t oe;
     bool dump_stats (false);
+    bool html (true);
   }
 
   static bool first_time = true;
@@ -194,6 +196,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
 
 	} else {
 	  opts |= (pub3::P_NOPARSE|pub3::P_NOLOCALE);
+	  html = false;
 	}
 	set_content_type (mime_type);
 
@@ -235,6 +238,9 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     }
   }
   twait { output (out, mkevent ()); }
+  if (!html) { 
+    twait { delaycb (0, 0, mkevent ()); }
+  }
   ev->trigger (true, 0);
 }
 
@@ -263,12 +269,5 @@ main (int argc, char *argv[])
   if (setrlimit (RLIMIT_AS, &rl) < 0) {
     warn ("setrlimit() failed: %m\n");
   }
-
-  void *x = malloc (lim / 8);
-  assert (x);
-  free (x);
-  x = malloc (lim);
-  assert (!x);
-
   amain ();
 }

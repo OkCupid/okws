@@ -76,6 +76,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
   case 'b': v = OKWS_DEBUG_PUB_BINDTAB_INSERT; break;
   case 'c': v = OKWS_DEBUG_OKD_NOISY_CONNECTIONS; break;
   case 'd': v = OKWS_DEBUG_SVC_DATABASES; break;
+  case 'k': v = OKWS_DEBUG_OKD_KEEPALIVE; break;
   case 'v': v = OKWS_DEBUG_SVC_STARTUP; break;
   case 'f': v = OKWS_DEBUG_OKLD_FD_PASSING; break;
   case 'h': v = OKWS_DEBUG_HLP_STATUS; break;
@@ -105,7 +106,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
 const char * 
 okdbg_t::allflags () const
 {
-  return "abcdfhimopsuvABCEHJPS";
+  return "abcdfhikmopsuvABCEHJPS";
 }
 
 //--------------------------------------------------------------------
@@ -123,9 +124,10 @@ okdbg_t::documentation () const
     "\t -P pub sussystem: bison/parse debug output\n"
     "\n"
     "\t -c okd subsystem: noisy output about new connections\n"
+    "\t -k okd subsystem: keepalive internals\n"
+    "\t -s okd subsystem: display startup status messages\n"
     "\t -J okd subsystem: debug jail2real() calls\n"
     "\t -S okd subsystem: display shutdown status messages\n"
-    "\t -s okd subsystem: display startup status messages\n"
     "\n"
     "\t -A svc subsystem: dump argument list on startup\n"
     "\t -d svc subsystem: debug database connections\n"

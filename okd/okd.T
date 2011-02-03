@@ -512,7 +512,7 @@ okd_t::newserv (int fd)
     } 
     xfree (sin);
   } else {
-    newserv2 (*portmap[fd], nfd, sin, false, NULL);
+    newserv2 (*portmap[fd], nfd, sin, false, NULL, NULL);
   }
 }
 
@@ -520,7 +520,7 @@ okd_t::newserv (int fd)
 
 tamed void
 okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
-		 const ssl_ctx_t *ssl)
+		 const ssl_ctx_t *ssl, const keepalive_data_t *kad)
 {
   tvars {
     ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
@@ -529,7 +529,10 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
     u_int freq (okd_debug_msg_freq);
     str s;
     int status;
+    size_t plb (0); // preloaded bytes!
   }
+
+  if (kad) { plb = x->set_keepalive_data (*kad); }
 
   reqid ++;
 
@@ -564,7 +567,7 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   
   // Listen for enough data on x until we're ready to demux the 
   // incoming connection.
-  twait { x->setccb (mkevent (s, status)); }
+  twait { x->setccb (mkevent (s, status), plb); }
 
   // Handle the result of that demux in 'sclone', which might eventually
   // clone the connection and pass it on to a child OKWS service.
@@ -1089,6 +1092,27 @@ private:
  
 //-----------------------------------------------------------------------
 
+void
+okd_t::handle_keepalive (int fd, svccb *sbp)
+{
+  RPC::okctl_program_1::okctl_keepalive_srv_t<svccb> srv (sbp);
+  const okctl_sendcon_arg2_t *arg (srv.getarg ());
+  okctl_sendcon_res_t res (OK_STATUS_OK);
+  if (fd >= 0) {
+    sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
+    memcpy (sin, arg->sin.base (), sizeof (sockaddr_in));
+    keepalive_data_t kad;
+    populate_keepalive_data (&kad, *arg);
+    kad.inc_reqno ();
+    newserv2 (arg->port, fd, sin, false, arg->ssl, &kad);
+  } else {
+    res = OK_STATUS_ERR;
+  }
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okd_t::custom1_in (svccb *sbp)
 {
@@ -1267,7 +1291,7 @@ okd_ssl_t::dispatch (svccb *sbp)
 	} else {
 	  sockaddr_in *sin = (sockaddr_in *)xmalloc (sizeof (sockaddr_in));
 	  memcpy (sin, arg.sin.base (), sizeof (sockaddr_in));
-	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl);
+	  _okd->newserv2 (arg.port, fd, sin, true, &arg.ssl, NULL);
 	}
 	srv.reply (res);
       }

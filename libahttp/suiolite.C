@@ -30,6 +30,7 @@ suiolite::clear ()
   bep = buf + len;
   rp = buf;
   peek = false;
+  dont_peek = false;
   bytes_read = 0;
 
   for (int i = 0; i < N_REGIONS; i++) dep[i] = buf;
@@ -71,6 +72,34 @@ suiolite::account_for_new_bytes (ssize_t n)
   }
 }
 
+size_t
+suiolite::load_from_buffer (const char *input, size_t len)
+{
+  if (len > capacity ()) {
+    grow (len + 10);
+  }
+
+  size_t ret = 0;
+  size_t tmp = bep - dep[1];
+  size_t nb = min<size_t> (len, tmp);
+  if (nb > 0) {
+    memcpy (dep[1], input, nb);
+    dep[1] += nb;
+    ret += nb;
+  }
+  len -= nb;
+  input += nb;
+  tmp = rp - dep[0];
+  nb = min<size_t> (len, tmp);
+  if (nb > 0) {
+    memcpy (dep[0], input, nb);
+    dep[0] += nb;
+    ret += nb;
+  }
+  bytes_read += ret;
+  return ret;
+}
+
 ssize_t
 suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
 {
@@ -83,7 +112,7 @@ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
   if (nfd) {
     if (ss) ss->n_readvfd ++;
     n = readvfd (fd, iov, N_REGIONS, nfd);
-  } else if (peek) {
+  } else if (peek && !dont_peek) {
     struct msghdr mh;
     bzero (&mh, sizeof (mh));
     mh.msg_iov = (struct iovec *) iov;
@@ -105,7 +134,8 @@ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
 void
 suiolite::rembytes (ssize_t nbytes)
 {
-  assert (resid () >= nbytes);
+  ssize_t rd = resid ();
+  assert (rd >= nbytes);
   bool docall = full () && nbytes > 0 && scb;
   int len2 = bep - rp;
   if (nbytes >= len2) {
@@ -126,4 +156,33 @@ suiolite::get_iov (size_t *len)
   load_iov ();
   if (len) *len = N_REGIONS;
   return iov;
+}
+
+ssize_t 
+suiolite::resid () const 
+{ 
+  size_t a = dep[1] - rp;
+  size_t b = dep[0] - buf;
+  assert (a >= 0);
+  assert (b >= 0);
+  return (a+b);
+}
+
+size_t
+suiolite::capacity () const
+{
+  int inuse = resid ();
+  assert (inuse <= len);
+  return len - inuse;
+}
+
+void
+suiolite::grow (size_t ns)
+{
+  assert (resid () == 0);
+  assert (bytes_read == 0);
+  xfree (buf);
+  len = min<int> (ns, SUIOLITE_MAX_BUFLEN);
+  buf = static_cast<char *> (xmalloc (len));
+  clear ();
 }

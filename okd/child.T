@@ -386,7 +386,7 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
 
   assert (clnt);
   assert (ctlx);
-  
+
   if (xc->timed_out ()) {
     CH_ERROR ("Connection timed out (fd=" << xc->getfd () 
 	      << "): not forwarding to child");
@@ -446,11 +446,15 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
   if (!*df) {
     _per_svc_nfd_in_xit --;
   }
+
   // Only close the FD once it's been ACK'ed by the service (i.e., the RPC
   // has returned).
-  if (fd >= 0) { close (fd); }
+  if (fd >= 0) { 
+    close (fd); 
+  }
 
   ev->trigger ();
+
 }
 
 //-----------------------------------------------------------------------
@@ -563,6 +567,15 @@ okch_t::dispatch (ptr<bool> dfp, svccb *sbp)
     break;
   case OKCTL_GET_STATS:
     _myokd->okctl_get_stats (sbp);
+    break;
+  case OKCTL_KEEPALIVE:
+    {
+      int fd = ctlx->recvfd();
+      if (fd < 0) {
+	CH_ERROR ("Got invalid FD in keepalive passback");
+      } 
+      _myokd->handle_keepalive (fd, sbp);
+    }
     break;
   case OKCTL_REENABLE_ACCEPT:
     handle_reenable_accept (sbp);

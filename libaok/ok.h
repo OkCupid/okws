@@ -172,6 +172,8 @@ public:
     x->sin.setsize (sizeof (*sin));
     memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
     _demux_data->to_xdr (x);
+    x->reqno = _con->get_reqno ();
+    if (!_con->do_peek()) { _con->collect_scraps (x->scraps); }
   }
 
 private:
@@ -523,6 +525,12 @@ public:
 
   //-----------------------------------------------------------------------
 
+  // okclnt2_t and others might do something useful here to set
+  // keepalive headers.
+  virtual void set_keepalive_attributes (http_resp_attributes_t *hra) {}
+
+  //-----------------------------------------------------------------------
+
   ptr<demux_data_t> demux_data () { return _demux_data; }
   ptr<const demux_data_t> demux_data () const { return _demux_data; }
 
@@ -564,6 +572,7 @@ public:
   void set_demux_data (ptr<demux_data_t> d) { _demux_data = d; }
   bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
   str ssl_cipher () const;
+  int get_reqno () const;
 
   virtual ptr<pub3::ok_iface_t> pub3 () ;
   virtual ptr<pub3::ok_iface_t> pub3_local ();
@@ -646,6 +655,7 @@ public:
 
   void set_union_cgi_mode (bool b)
   { http_parser_cgi_t::set_union_mode (b); }
+
 };
 
 //-----------------------------------------------------------------------
@@ -665,6 +675,11 @@ public:
   virtual void process (proc_ev_t ev) = 0;
   void send_complete () {}
   void serve_complete () { delete this; }
+
+  // okclnt2_t allows use of keepalive connections, but only
+  // if this flag is toggled to true...
+  virtual bool do_keepalive () { return false; }
+  virtual void set_keepalive_attributes (http_resp_attributes_t *hra);
 private:
   void serve_T (CLOSURE);
 };
@@ -739,6 +754,8 @@ public:
 
   // for accept direct connections (not via okd)
   void accept_new_con (ok_portpair_t *p);
+
+  void keepalive (ahttpcon_wrapper_t<ahttpcon> x, CLOSURE);
 
 private:
   void launch_T (CLOSURE);
@@ -881,6 +898,8 @@ void set_sfs_select_policy ();
 
 void timespec_to_xdr (const struct timespec &ts, okctl_timespec_t *x);
 void xdr_to_timespec (const okctl_timespec_t &x, struct timespec *ts);
+bool populate_keepalive_data (keepalive_data_t *d, 
+			      const okctl_sendcon_arg2_t &a);
 
 //-----------------------------------------------------------------------
 

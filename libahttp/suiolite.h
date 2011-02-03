@@ -32,6 +32,7 @@
    vNew char[0x10]
 
 #include "async.h"
+#include "arpc.h"
 
 struct syscall_stats_t {
   syscall_stats_t () : n_recvmsg (0), n_readvfd (0), n_readv (0),
@@ -100,33 +101,56 @@ public:
 
   suiolite (int l = SUIOLITE_DEF_BUFLEN, cbv::ptr s = NULL) 
     : len (min<int> (l, SUIOLITE_MAX_BUFLEN)), buf ((char *)xmalloc (len)),
-      bep (buf + len), rp (buf), scb (s), peek (false), bytes_read (0)
+      bep (buf + len), rp (buf), scb (s), peek (false), bytes_read (0),
+      dont_peek (false)
   {
     for (int i = 0; i < N_REGIONS; i++) dep[i] = buf;
   }
   ~suiolite () { xfree (buf); }
 
-
-
   void clear ();
   void recycle (cbv::ptr s = NULL) { setscb (s); }
 
   void setpeek (bool b = true) { peek = b; }
+  void set_dont_peek (bool b) { dont_peek = b; }
   void setscb (cbv::ptr c) { scb = c; }
   ssize_t input (int fd, int *nfd = NULL, syscall_stats_t *ss = NULL);
-  ssize_t resid () const { return (dep[1] - rp) + (dep[0] - buf); }
+  ssize_t resid () const;
   bool full () const { return (resid () == len); }
   char *getdata (ssize_t *nbytes) const { *nbytes = dep[1] - rp; return rp; }
   void rembytes (ssize_t nbytes);
   int getlen () const { return len; }
   ssize_t bytesread () const { return bytes_read; }
   iovec *get_iov (size_t *len = NULL);
+  size_t capacity () const;
 
   void load_iov ();
   void account_for_new_bytes (ssize_t n);
+  void grow (size_t bytes);
+
+  template<size_t n> void 
+  load_into_xdr (rpc_bytes<n> &o)
+  {
+    ssize_t nbytes = min<size_t> (n, resid ());
+    o.setsize (nbytes);
+    while (nbytes > 0) {
+      ssize_t rl;
+      char *ip = getdata (&rl);
+      rl = min<ssize_t> (nbytes, rl);
+      char *op = o.base ();
+      memcpy (op, ip, rl);
+      rembytes (rl);
+      nbytes -= rl;
+      op += rl;
+    }
+  }
+
+  // Load the data from the buffer into the suiolite.  The buffer
+  // has l bytes in it.  Return the number of bytes that actually fit.
+  size_t load_from_buffer (const char *buf, size_t l);
 
 private:
-  const int len;
+  int len;
   char *buf;
   char *bep;     // buffer end pointer
   char *rp;      // read pointer
@@ -135,6 +159,7 @@ private:
   cbv::ptr scb;  // space CB -- callback if space is available in the uio
   bool peek;
   u_int bytes_read;
+  bool dont_peek;
 };
 
 #endif /* _LIBAHTTP_SUIOLITE_H */

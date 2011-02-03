@@ -26,6 +26,7 @@
 #include "httpconst.h"
 #include <sys/types.h>
 #include <sys/socket.h>
+#include "okdbg.h"
 
 //
 // hacked in here for now...
@@ -55,7 +56,9 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     destroyed_p (New refcounted<bool> (false)),
     _remote_port (0),
     _source_hash (0),
-    _source_hash_ip_only (0)
+    _source_hash_ip_only (0),
+    _reqno (0),
+    _do_peek (false)
 {
   //
   // bookkeeping for debugging purposes;
@@ -76,7 +79,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
 }
 
 int
-ahttpcon_clone::takefd ()
+ahttpcon::takefd ()
 {
   int ret = fd;
   if (fd >= 0) {
@@ -84,8 +87,15 @@ ahttpcon_clone::takefd ()
     rcbset = false;
     fdcb (fd, selread, NULL);
     fdcb (fd, selwrite, NULL);
+    fd = -1;
   }
-  fd = -1;
+  return ret;
+}
+
+int
+ahttpcon_clone::takefd ()
+{
+  int ret = ahttpcon::takefd ();
   ccb = NULL;
   _demuxed = true;
   return ret;
@@ -167,7 +177,6 @@ ahttpcon::set_drained_cb (cbv::ptr cb)
 void
 ahttpcon::output (ptr<bool> destroyed_local)
 {
-
   if (*destroyed_local)
     return;
   if (fd < 0)
@@ -194,7 +203,6 @@ ahttpcon::output (ptr<bool> destroyed_local)
   if (!out->resid () && drained_cb) {
     call_drained_cb ();
   }
-  
 }
 
 void
@@ -224,6 +232,7 @@ ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
     trickle_state (0), dcb (NULL), _demuxed (false)
 {
   in->setpeek ();
+  _do_peek = true;
 }
 
 //-----------------------------------------------------------------------
@@ -330,13 +339,17 @@ ahttpcon_clone::fail2 ()
 }
 
 void
-ahttpcon_clone::setccb (clonecb_t c)
+ahttpcon_clone::setccb (clonecb_t c, size_t num_preload_bytes)
 {
   assert (!destroyed);
 
   _state = AHTTPCON_STATE_DEMUX;
   ccb = c;
-  if (!enable_selread ()) {
+
+  if (num_preload_bytes) {
+    _bytes_recv += num_preload_bytes;
+    recvd_bytes (num_preload_bytes);
+  } else if (!enable_selread ()) {
     read_fail (HTTP_BAD_REQUEST);
   }
 }
@@ -446,11 +459,10 @@ ahttpcon::input (ptr<bool> destroyed_local)
   // stop DOS attacks?
   if (recv_limit > 0 && _bytes_recv > recv_limit) {
 
-    warn << "Channel limit exceded ";
+    warn << "Channel limit exceeded ";
     if (remote_ip)
       warnx << "(" << remote_ip << ")";
     warnx << "\n";
-
     eof = true;
     disable_selread ();
     overflow_flag = true;
@@ -461,14 +473,14 @@ ahttpcon::input (ptr<bool> destroyed_local)
 }
 
 void 
-ahttpcon::recvd_bytes (int n)
+ahttpcon::recvd_bytes (size_t n)
 {
   if (rcb) 
     (*rcb) (n);
 }
 
 void
-ahttpcon_clone::recvd_bytes (int n)
+ahttpcon_clone::recvd_bytes (size_t n)
 {
   if (decloned) {
     ahttpcon::recvd_bytes (n);
@@ -910,8 +922,11 @@ ahttp_tab_t::run ()
 	  int (ok_demux_timeout)) {
 
 	str ai = a->all_info ();
-	warn << "HTTP connection timed out in demux " << ai << "\n";
 
+	// Don't warn for HTTP keepalives timing out...
+	if (a->get_reqno () == 0) {
+	  warn << "HTTP connection timed out in demux " << ai << "\n";
+	}
 	a->hit_timeout ();
 	unreg (n);
       }  else {
@@ -958,6 +973,26 @@ ahttpcon_clone::read_fail (int s)
     _no_more_read = true;
   }
   issue_ccb (s);
+}
+
+//-----------------------------------------------------------------------
+
+size_t
+ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
+{
+  _reqno = kad._reqno;
+  size_t ret = 0;
+
+
+  OKDBG4(OKD_KEEPALIVE, CHATTER, "set_keepalive_data(reqno=%d, len=%zu, fd=%d)",
+	 kad._reqno, kad._len, fd);
+  
+  if ((ret = kad._len) && kad._buf) {
+    in->set_dont_peek (true);
+    in->load_from_buffer (kad._buf, ret);
+    _do_peek = false;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------

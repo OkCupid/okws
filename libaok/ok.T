@@ -234,6 +234,37 @@ oksrvc_t::~oksrvc_t ()
 
 //-----------------------------------------------------------------------
 
+tamed void
+oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
+{
+  tvars {
+    int fd (acw.con()->takefd ());
+    okctl_sendcon_arg2_t arg;
+    okctl_sendcon_res_t res;
+    clnt_stat err;
+  }
+
+  if (ctlx) {
+    ctlx->sendfd (fd);
+    acw.to_xdr (&arg);
+    twait {
+      RPC::okctl_program_1::okctl_keepalive (clnt, arg, &res, mkevent (err));
+    }
+    if (err) {
+      strbuf b;
+      b << "RPC error in keepalive passback : " << err;
+      okdbg_warn (ERROR, b);
+    } else if (res != OK_STATUS_OK) {
+      strbuf b;
+      b << "Non-ok result from keepalive passback: ";
+      rpc_print (b, res);
+      okdbg_warn (ERROR, b);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
 void
 oksrvc_t::init (int argc, char *argv[])
 {
@@ -343,7 +374,9 @@ oksrvc_t::init (int argc, char *argv[])
   if (_n_children > 1) {
     strbuf b ("%s[%d:%zu]", progname.cstr (), int(getpid ()), _brother_id);
     str s = b;
-    setprogname (strdup (s));
+    char *new_progname = strdup (s);
+    b.clear (); // to stop suio-related checks in dmalloc
+    setprogname (new_progname);
   }
 
   // Give virtual classes an opportunity to init constants after we've
@@ -853,6 +886,10 @@ oksrvc_t::handle_new_con2 (svccb *sbp)
   ptr<ahttpcon> x;
   okctl_sendcon_res_t res = handle_new_con_common (arg->sin, &x);
   if (res == OK_STATUS_OK) {
+    keepalive_data_t kad;
+    if (populate_keepalive_data (&kad, *arg)) {
+      x->set_keepalive_data (kad);
+    }
     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);
     if (!newclnt (acw))
       res = OK_STATUS_NOMORE;
@@ -902,6 +939,19 @@ oksrvc_t::add (okclnt_interface_t *c)
 
 //-----------------------------------------------------------------------
 
+void
+okclnt2_t::set_keepalive_attributes (http_resp_attributes_t *hra)
+{
+  if (do_keepalive ()) {
+    str tmp = hdr_cr().get_connection ();
+    if (tmp) {
+      hra->set_connection (tmp);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 okclnt2_t::serve_T ()
 {
@@ -931,7 +981,6 @@ okclnt2_t::serve_T ()
 	if (status <= 0) { status = get_status (); }
       }
     }
-
   }
     
   if (!did_output) {
@@ -940,6 +989,11 @@ okclnt2_t::serve_T ()
     } else {
       twait { output (out, mkevent ()); }
     }
+  }
+
+  if (do_keepalive () && hdr_cr().get_conn_mode () == HTTP_CONN_KEEPALIVE) {
+    ahttpcon_wrapper_t<ahttpcon> acw (client_con (), demux_data ());
+    get_oksrvc ()->keepalive (acw);
   }
 
   serve_complete ();
@@ -1228,6 +1282,7 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
   } else {
 
+    set_keepalive_attributes (&hra);
     set_attributes (&hra);
 
     if (hdr_cr ().mthd == HTTP_MTHD_HEAD) {
@@ -1677,6 +1732,15 @@ demux_data_t::alloc (const okctl_sendcon_arg2_t &arg)
 
 //-----------------------------------------------------------------------
 
+int
+okclnt_base_t::get_reqno () const
+{
+  int ret = client_con() ? client_con()->get_reqno () : 0;
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 str 
 okclnt_base_t::ssl_cipher () const 
 {
@@ -1857,5 +1921,28 @@ demux_data_t::set_forward_time ()
 //-----------------------------------------------------------------------
 
 struct timespec demux_data_t::timespec_null = { 0, 0 } ;
+
+//-----------------------------------------------------------------------
+
+bool
+populate_keepalive_data (keepalive_data_t *out,
+			 const okctl_sendcon_arg2_t &in)
+{
+  size_t ss = in.scraps.size ();
+  int rn = in.reqno;
+  bool ret = rn || ss;
+  out->_reqno = rn;
+  if (ss) {
+    out->_buf = in.scraps.base ();
+    out->_len = ss;
+  }
+  if (ret && OKDBG2 (OKD_KEEPALIVE)) {
+    str data = opaque2str (in.scraps);
+    okdbg_warn (CHATTER, strbuf ("incoming keepalive request(%d): %s", 
+				 rn, data.cstr ()));
+  }
+    
+  return ret;
+}
 
 //-----------------------------------------------------------------------

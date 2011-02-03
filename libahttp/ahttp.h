@@ -48,6 +48,8 @@ void recycle (suiolite *s);
 suiolite *suiolite_alloc (int mb, cbv::ptr cb);
 suio *suio_alloc ();
 
+//=======================================================================
+
 class cbv_countdown_t : public virtual refcount {
 public:
   cbv_countdown_t (cbv c) : cb (c) {}
@@ -59,6 +61,8 @@ private:
 
 class abuf_src_t;
 
+//=======================================================================
+
 class ok_xprt_base_t : public virtual refcount {
 public:
   ok_xprt_base_t () {}
@@ -68,6 +72,8 @@ public:
   virtual void drain_cancel () = 0;
   virtual bool ateof () const = 0;
 };
+
+//=======================================================================
 
 class byte_counter_t {
 public:
@@ -83,6 +89,19 @@ private:
 };
 
 extern byte_counter_t ahttpcon_byte_counter;
+
+//=======================================================================
+
+struct keepalive_data_t {
+  keepalive_data_t (int reqno = 0, const char *buf = NULL, size_t l = 0)
+    : _reqno (reqno), _buf (buf), _len (l) {}
+  void inc_reqno () { _reqno++; }
+  int _reqno;
+  const char *_buf;
+  size_t _len;
+};
+
+//=======================================================================
 
 class ahttpcon_clone;
 class ahttpcon : public ok_xprt_base_t
@@ -123,6 +142,7 @@ public:
   //--------------------------------------------------
 
   int getfd () const { return fd; }
+  virtual int takefd ();
   inline sockaddr_in *get_sin () const { return sin; }
   inline const str & get_remote_ip () const { return remote_ip; }
   inline int get_remote_port () const { return _remote_port; }
@@ -142,6 +162,9 @@ public:
   suiolite *uio () const { return in; }
   size_t get_bytes_sent () const { return bytes_sent; }
   size_t get_bytes_recv () const { return _bytes_recv; }
+
+  size_t set_keepalive_data (const keepalive_data_t &d);
+  u_int get_reqno () const { return _reqno; }
 
   str select_set () const;
   str all_info () const;
@@ -171,6 +194,10 @@ public:
   void stop_read ();
   void short_circuit_output ();
   int bytes_recv () const { return _bytes_recv;}
+  virtual bool do_peek () const { return _do_peek; }
+
+  template<size_t n> void
+  collect_scraps (rpc_bytes<n> &out) { in->load_into_xdr<n> (out); }
   
   const time_t start;
 
@@ -178,7 +205,7 @@ protected:
   void set_remote_ip ();
   virtual int dowritev (int cnt) { return out->output (fd, cnt); }
   virtual ssize_t doread (int fd);
-  virtual void recvd_bytes (int n);
+  virtual void recvd_bytes (size_t n);
   virtual void fail ();
   virtual void read_fail (int s) { fail (); }
   virtual void too_many_fds () { fail (); }
@@ -222,6 +249,10 @@ private:
   int _remote_port;
   mutable hash_t _source_hash;
   mutable hash_t _source_hash_ip_only;
+
+protected:
+  u_int _reqno; // for Keep-Alive, this is incremented once-per
+  bool _do_peek;
 };
 
 // for parent dispatcher, which will send fd's
@@ -241,7 +272,7 @@ class ahttpcon_clone : public ahttpcon
 public:
   ahttpcon_clone (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE);
   ~ahttpcon_clone () ;
-  void setccb (clonecb_t cb);
+  void setccb (clonecb_t cb, size_t nplb);
   int takefd ();
 
   static ptr<ahttpcon_clone> 
@@ -253,7 +284,7 @@ public:
   str get_debug_info () const;
 
 protected:
-  void recvd_bytes (int n);
+  void recvd_bytes (size_t n);
   void fail2 ();
   void read_fail (int s);
   void issue_ccb (int s);

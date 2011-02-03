@@ -9,7 +9,9 @@
 {% include("cipher.html") %}
 <hr>
 <h2>A Picture of a Boat</h2>
-<img src=/static/img/boat.jpg>
+{% for (i, range (0, 25)) {{
+<img height=10 width=10 src="/static/img/boat.jpg?foo=%{rand(10000)}">
+}} %}
 <br /><br />
 <hr/>
 <h2>Language</h2>
