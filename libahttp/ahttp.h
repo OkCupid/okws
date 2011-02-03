@@ -205,8 +205,7 @@ protected:
   void set_remote_ip ();
   virtual int dowritev (int cnt) { return out->output (fd, cnt); }
   virtual ssize_t doread (int fd);
-  void recvd_bytes (size_t n);
-  virtual void v_recvd_bytes (size_t n);
+  virtual void recvd_bytes (size_t n);
   virtual void fail ();
   virtual void read_fail (int s) { fail (); }
   virtual void too_many_fds () { fail (); }
@@ -285,7 +284,7 @@ public:
   str get_debug_info () const;
 
 protected:
-  void v_recvd_bytes (size_t n);
+  void recvd_bytes (size_t n);
   void fail2 ();
   void read_fail (int s);
   void issue_ccb (int s);

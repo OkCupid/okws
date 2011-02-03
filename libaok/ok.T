@@ -944,7 +944,9 @@ okclnt2_t::set_keepalive_attributes (http_resp_attributes_t *hra)
 {
   if (do_keepalive ()) {
     str tmp = hdr_cr().get_connection ();
-    hra->set_connection (tmp);
+    if (tmp) {
+      hra->set_connection (tmp);
+    }
   }
 }
 

@@ -347,6 +347,7 @@ ahttpcon_clone::setccb (clonecb_t c, size_t num_preload_bytes)
   ccb = c;
 
   if (num_preload_bytes) {
+    _bytes_recv += num_preload_bytes;
     recvd_bytes (num_preload_bytes);
   } else if (!enable_selread ()) {
     read_fail (HTTP_BAD_REQUEST);
@@ -453,40 +454,33 @@ ahttpcon::input (ptr<bool> destroyed_local)
     return;
   }
 
-  recvd_bytes (n);
-}
-
-void
-ahttpcon::recvd_bytes (size_t n)
-{
   _bytes_recv += n;
 
   // stop DOS attacks?
   if (recv_limit > 0 && _bytes_recv > recv_limit) {
 
-    warn << "Channel limit exceded ";
+    warn << "Channel limit exceeded ";
     if (remote_ip)
       warnx << "(" << remote_ip << ")";
     warnx << "\n";
-
     eof = true;
     disable_selread ();
     overflow_flag = true;
     n = 0;
   }
 
-  v_recvd_bytes (n);
+  recvd_bytes (n);
 }
 
 void 
-ahttpcon::v_recvd_bytes (size_t n)
+ahttpcon::recvd_bytes (size_t n)
 {
   if (rcb) 
     (*rcb) (n);
 }
 
 void
-ahttpcon_clone::v_recvd_bytes (size_t n)
+ahttpcon_clone::recvd_bytes (size_t n)
 {
   if (decloned) {
     ahttpcon::recvd_bytes (n);
