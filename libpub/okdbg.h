@@ -51,5 +51,6 @@
 #define OKWS_DEBUG_SSL_OUTDATA                    (1 << 19)
 #define OKWS_DEBUG_PUB_PARSE                      (1 << 20)
 #define OKWS_DEBUG_PUB_RFN3                       (1 << 21)
+#define OKWS_DEBUG_OKD_KEEPALIVE                  (1 << 22)
 
 #endif /* _LIBPUB_OKDEBUG_H */

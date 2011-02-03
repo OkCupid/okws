@@ -80,6 +80,7 @@ suiolite::load_from_buffer (const char *input, size_t len)
   size_t nb = min<size_t> (len, tmp);
   if (nb > 0) {
     memcpy (dep[1], input, nb);
+    dep[1] += nb;
     ret += nb;
   }
   len -= nb;
@@ -88,9 +89,11 @@ suiolite::load_from_buffer (const char *input, size_t len)
   nb = min<size_t> (len, tmp);
   if (nb > 0) {
     memcpy (dep[0], input, nb);
+    dep[0] += nb;
     ret += nb;
   }
-  account_for_new_bytes (ret);
+  bytes_read += ret;
+  warn << "XX loaded " << len << " bytes from buffer (ret=" << ret << ")...\n";
   return ret;
 }
 
@@ -128,7 +131,8 @@ suiolite::input (int fd, int *nfd, syscall_stats_t *ss)
 void
 suiolite::rembytes (ssize_t nbytes)
 {
-  assert (resid () >= nbytes);
+  ssize_t rd = resid ();
+  assert (rd >= nbytes);
   bool docall = full () && nbytes > 0 && scb;
   int len2 = bep - rp;
   if (nbytes >= len2) {
@@ -150,3 +154,14 @@ suiolite::get_iov (size_t *len)
   if (len) *len = N_REGIONS;
   return iov;
 }
+
+ssize_t 
+suiolite::resid () const 
+{ 
+  size_t a = dep[1] - rp;
+  size_t b = dep[0] - buf;
+  assert (a >= 0);
+  assert (b >= 0);
+  return (a+b);
+}
+

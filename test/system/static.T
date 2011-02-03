@@ -269,12 +269,5 @@ main (int argc, char *argv[])
   if (setrlimit (RLIMIT_AS, &rl) < 0) {
     warn ("setrlimit() failed: %m\n");
   }
-
-  void *x = malloc (lim / 8);
-  assert (x);
-  free (x);
-  x = malloc (lim);
-  assert (!x);
-
   amain ();
 }

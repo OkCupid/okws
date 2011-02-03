@@ -26,6 +26,7 @@
 #include "httpconst.h"
 #include <sys/types.h>
 #include <sys/socket.h>
+#include "okdbg.h"
 
 //
 // hacked in here for now...
@@ -987,6 +988,11 @@ ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
 {
   _reqno = kad._reqno;
   size_t ret = 0;
+
+
+  OKDBG4(OKD_KEEPALIVE, CHATTER, "set_keepalive_data(reqno=%d, len=%zu, fd=%d)",
+	 kad._reqno, kad._len, fd);
+  
   if ((ret = kad._len) && kad._buf) {
     in->set_dont_peek (true);
     in->load_from_buffer (kad._buf, ret);

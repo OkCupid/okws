@@ -374,7 +374,9 @@ oksrvc_t::init (int argc, char *argv[])
   if (_n_children > 1) {
     strbuf b ("%s[%d:%zu]", progname.cstr (), int(getpid ()), _brother_id);
     str s = b;
-    setprogname (strdup (s));
+    char *new_progname = strdup (s);
+    b.clear (); // to stop suio-related checks in dmalloc
+    setprogname (new_progname);
   }
 
   // Give virtual classes an opportunity to init constants after we've
@@ -886,6 +888,12 @@ oksrvc_t::handle_new_con2 (svccb *sbp)
   if (res == OK_STATUS_OK) {
     keepalive_data_t kad;
     if (populate_keepalive_data (&kad, *arg)) {
+      if (OKDBG2 (OKD_KEEPALIVE)) {
+	str data (kad._buf, kad._len);
+	okdbg_warn (CHATTER, 
+		    strbuf ("incoming keepalive request(%d): %s",
+			    kad._reqno, data.cstr ()));
+      }
       x->set_keepalive_data (kad);
     }
     ahttpcon_wrapper_t<ahttpcon> acw (x, *arg);

@@ -115,7 +115,7 @@ public:
   void set_dont_peek (bool b) { dont_peek = b; }
   void setscb (cbv::ptr c) { scb = c; }
   ssize_t input (int fd, int *nfd = NULL, syscall_stats_t *ss = NULL);
-  ssize_t resid () const { return (dep[1] - rp) + (dep[0] - buf); }
+  ssize_t resid () const;
   bool full () const { return (resid () == len); }
   char *getdata (ssize_t *nbytes) const { *nbytes = dep[1] - rp; return rp; }
   void rembytes (ssize_t nbytes);
