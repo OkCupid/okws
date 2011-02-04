@@ -179,6 +179,7 @@ env.mk: Makefile
 	echo "CFLAGS = $(CFLAGS)" >> env.mk~
 	echo "CXXFLAGS = $(CXXFLAGS)" >> env.mk~
 	echo "LIBS = $(LIBS)" >> env.mk~
+	echo "OKWS_ABI_VERSION = $(ABI_VERSION)" >> env.mk~
 	mv -f env.mk~ env.mk
 
 

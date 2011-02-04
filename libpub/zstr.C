@@ -518,7 +518,7 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
   }
 
   if (rc == 0) {
-    assert (outlen >= size_t (z.avail_out));
+    assert (outlen >= size_t (z.total_out));
     out.setlen (z.total_out);
     str out_s = out;
     tmp << out_s;
