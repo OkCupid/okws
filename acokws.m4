@@ -792,7 +792,7 @@ elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
     LIBAMYSQL=${okwslibdir}/libamysql.la
     LIBOKSSL=${okwslibdir}/libokssl.la
     LIBRFN=${okwslibdir}/librfn.la
-    OKWS_ENV_LIB=${okwslibdir}/env.mk
+    OKWS_LIB_MK=${okwslibdir}/env.mk
 
     XMLRPCC_COLLECT=${okwsutildir}/xmlrpcc-x-collect.pl
 
@@ -831,7 +831,7 @@ AC_SUBST(LIBAMYSQL)
 AC_SUBST(PUB)
 AC_SUBST(XMLRPCC)
 AC_SUBST(XMLRPCC_COLLECT)
-AC_SUBST(OKWS_ENV_LIB)
+AC_SUBST(OKWS_LIB_MK)
 
 LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
