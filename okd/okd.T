@@ -312,6 +312,7 @@ okd_t::parse_file (const str &cf)
 
     .ignore ("Gzip")
     .ignore ("GzipLevel")
+    .ignore ("GzipNaiveLevel")
     .ignore ("GzipSmallStrLen")
     .ignore ("GzipCacheMin")
     .ignore ("GzipCacheMax")

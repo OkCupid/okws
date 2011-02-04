@@ -559,7 +559,7 @@ compressible_t::to_strbuf (strbuf *out, vec<str> *hold, gzip_mode_t mode)
     to_strbuf (out, mode != GZIP_NONE);
     break;
   case GZIP_NAIVE:
-    rc = naive_compress (out, hold, ok_gzip_compress_level);
+    rc = naive_compress (out, hold, ok_gzip_naive_compress_level);
     break;
   default:
     warn << "unknown gzip mode given\n";

@@ -62,6 +62,7 @@ typedef enum { GZIP_NONE = 0, GZIP_SMART = 1, GZIP_NAIVE = 2 } gzip_mode_t;
 //
 extern gzip_mode_t ok_gzip_mode;
 extern int     ok_gzip_compress_level;
+extern int     ok_gzip_naive_compress_level;
 extern u_int   ok_gzip_smallstr;
 extern u_int   ok_gzip_cache_minstr;
 extern u_int   ok_gzip_cache_maxstr;

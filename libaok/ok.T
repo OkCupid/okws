@@ -305,6 +305,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("gzip", &gztmp);
     t->lookup ("filtercgi", &ok_filter_cgi);
     t->lookup ("gziplev", &ok_gzip_compress_level);
+    t->lookup ("gzipnlev", &ok_gzip_naive_compress_level);
     t->lookup ("gzipcsl", &ok_gzip_cache_storelimit);
     t->lookup ("logtick", &ok_log_tick);
     t->lookup ("logprd", &ok_log_period);
