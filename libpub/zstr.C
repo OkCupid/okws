@@ -469,16 +469,20 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
      zinit (false);
   }
   assert (zinitted);
+  z_stream z;
+  z.zalloc = Z_NULL;
+  z.zfree = Z_NULL;
+  z.opaque = Z_NULL;
+  int rc = deflateInit (&z, lev);
+  if (rc != Z_OK)
+    return rc;
 
   strbuf2zstr ();
   size_t inlen = inflated_len ();
-  z_stream z;
   strbuf tmp;
-  int rc = 0;
 
   // with little extra room for headers and footers
   size_t outlen = max_compressed_len (inlen) + 64;
-  mstr out (outlen);
 
   tmp << zhdr;
 
@@ -487,39 +491,45 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
   // copy the globally allocated one!
   z = zm;
 
-  z.next_out = reinterpret_cast<Bytef *> (out.cstr ());
+  mstr out (outlen);
+  char *outp = out.cstr ();
+  char *endp = out.cstr () + outlen;
   z.avail_out = outlen;
   deflateParams (&z, lev, Z_DEFAULT_STRATEGY);
 
-  for (size_t i = 0; rc == 0 && i < zs.size (); i++) {
-    const char *src = zs[i].cstr ();
-    size_t srclen = zs[i].len ();
+  for (size_t i = 0; rc == 0 && i <= zs.size (); i++) {
 
-    if (src && srclen) {
+    bool end = (i == zs.size ());
+    const char *src;
+    size_t srclen;
+
+    if (end) {
+      src = NULL;
+      srclen = 0;
+    } else {
+      src = zs[i].cstr ();
+      srclen = zs[i].len ();
+    }
+
+    if ((src && srclen) || end) {
+      z.next_out = reinterpret_cast<Bytef *> (outp);
+      size_t avail_out_pre = endp - outp;
+      z.avail_out = avail_out_pre;
       z.next_in = const_cast<Bytef *> (reinterpret_cast<const Bytef *> (src));
       z.avail_in = srclen;
-      crc = zs[i].crc32(crc);
-      int drc = deflate (&z, Z_NO_FLUSH);
-      if (drc != Z_OK) {
+      if (!end) { crc = zs[i].crc32(crc); }
+      int drc = deflate (&z, end ? Z_FINISH : Z_NO_FLUSH);
+      if ((!end && drc != Z_OK) || (end && drc != Z_STREAM_END)) {
 	warn << "Compression error: " << drc << "\n";
 	rc = -1;
       }
+      outp += (avail_out_pre - z.avail_out);
     }
   }
   
   if (rc == 0) {
-    z.next_in = NULL;
-    z.avail_in = 0;
-    int drc = deflate (&z, Z_FINISH);
-    if (drc != Z_STREAM_END) {
-      warn << "Compression flush failure: " << drc << "\n";
-      rc = -1;
-    }
-  }
-
-  if (rc == 0) {
-    assert (outlen >= size_t (z.total_out));
-    out.setlen (z.total_out);
+    assert (outp <= endp);
+    out.setlen (outp - out.cstr ());
     str out_s = out;
     tmp << out_s;
     hold->push_back (out_s);
@@ -542,7 +552,7 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
     b->fmt ("\r\n0\r\n\r\n");
   }
 
-  deflateReset (&z);
+  deflateEnd (&z);
 
   return rc;
 }
