@@ -473,7 +473,8 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
   z.zalloc = Z_NULL;
   z.zfree = Z_NULL;
   z.opaque = Z_NULL;
-  int rc = deflateInit (&z, lev);
+  int rc = deflateInit2 (&z, lev, Z_DEFLATED, -MAX_WBITS, 
+			 ok_gzip_mem_level, Z_DEFAULT_STRATEGY);
   if (rc != Z_OK)
     return rc;
 
