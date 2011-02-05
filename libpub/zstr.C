@@ -488,9 +488,6 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
 
   uLong crc = ::crc32 (0L, Z_NULL, 0);
 
-  // copy the globally allocated one!
-  z = zm;
-
   mstr out (outlen);
   char *outp = out.cstr ();
   char *endp = out.cstr () + outlen;
