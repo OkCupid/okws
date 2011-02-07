@@ -214,7 +214,7 @@ main2 (int argc, char **argv)
     int rc; 
   }
   twait { main3 (argc, argv, mkevent (rc)); }
-  twait { delaycb (100, 0, mkevent ()); }
+  twait { delaycb (1, 0, mkevent ()); }
   exit (rc);
 }
 

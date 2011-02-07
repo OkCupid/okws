@@ -359,8 +359,11 @@ namespace okssl {
       
       if (rc > 0) {
 	_uio.account_for_new_bytes (rc);
-      }
-      if (rc == 0) {
+      } else if (rc == 0) {
+	_eof = true;
+	_go = false;
+      } else if (rc < 0 && errno != EAGAIN) {
+	warn ("okssl::asrc_t::read_loop failing: %m\n");
 	_eof = true;
 	_go = false;
       }
