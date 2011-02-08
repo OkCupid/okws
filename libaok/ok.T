@@ -242,13 +242,14 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
     okctl_sendcon_arg2_t arg;
     okctl_sendcon_res_t res;
     clnt_stat err;
+    ptr<aclnt> mycli;
   }
 
-  if (ctlx && clnt) {
+  if (ctlx && (mycli = clnt)) {
     ctlx->sendfd (fd);
     acw.to_xdr (&arg);
     twait {
-      RPC::okctl_program_1::okctl_keepalive (clnt, arg, &res, mkevent (err));
+      RPC::okctl_program_1::okctl_keepalive (mycli, arg, &res, mkevent (err));
     }
     if (err) {
       strbuf b;
