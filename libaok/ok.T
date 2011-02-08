@@ -244,7 +244,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
     clnt_stat err;
   }
 
-  if (ctlx) {
+  if (ctlx && clnt) {
     ctlx->sendfd (fd);
     acw.to_xdr (&arg);
     twait {
