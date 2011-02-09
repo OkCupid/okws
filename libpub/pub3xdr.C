@@ -1085,7 +1085,10 @@ pub3::metadata_t::to_xdr (xpub3_metadata_t *x) const
   if (_jfn) x->jailed_filename = _jfn;
   if (_rfn) x->real_filename = _rfn;
   if (_hsh) _hsh->to_xdr (&x->hash);
-  x->ctime = _ctime;
+
+  // MK 2011/2/9 --- Don't include ctime in the header XDR structure!
+  // We're not using iton the client side, and also 
+  x->ctime = 0;
 }
 
 //-----------------------------------------------------------------------
