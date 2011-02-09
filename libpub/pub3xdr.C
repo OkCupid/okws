@@ -1087,7 +1087,14 @@ pub3::metadata_t::to_xdr (xpub3_metadata_t *x) const
   if (_hsh) _hsh->to_xdr (&x->hash);
 
   // MK 2011/2/9 --- Don't include ctime in the header XDR structure!
-  // We're not using iton the client side, and also 
+  // We're not using it on the service-side.  And it leads to subtle
+  // race conditions with chunking.  The underlying file isn't
+  // changing, but the timestamp is (since we set ctime=now in pubd),
+  // so the end-to-end hash that includes the metadata sometimes 
+  // changes in the middle of a get-file-by-chunks operations.
+  // There are probably better fixes to this problem --- in particular,
+  // simplifying the hash/chunk interaction --- but this fix is
+  // good enough, until we actually need ctime on the service-side.
   x->ctime = 0;
 }
 
