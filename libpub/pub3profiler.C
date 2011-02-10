@@ -130,7 +130,7 @@ namespace pub3 {
   void
   profiler_buf_t::report ()
   {
-    const char *prefix = "(SSP) ";
+    const char *prefix = "(SPP) ";
     warn << prefix << "++++++ start report +++++++++++++++++ \n";
     char *last = _buf;
     for (char *cp = _buf; cp < _bp; cp++) {
