@@ -296,6 +296,26 @@ private:
 
 //-----------------------------------------------------------------------
 
+class mybind_json_t : public mybind_t {
+public:
+  mybind_json_t () : mybind_t (MYSQL_TYPE_NULL), _x (XPUB3_JSON_NULL),
+		     _pntr (NULL) {}
+  mybind_json_t (const xpub3_json_t &s) 
+    : mybind_t (MYSQL_TYPE_NULL), _x (s) , _pntr (&_x) {}
+  mybind_json_t (xpub3_json_t *x)
+    : mybind_t (MYSQL_TYPE_NULL), _pntr (x) {}
+  virtual ~mybind_json_t () {}
+  bool read_str (const char *c, unsigned long l, eft_t typ);
+  void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
+  bool is_xdr_union_type () const { return true; }
+  virtual str to_str () const;
+  virtual void bind (MYSQL_BIND *bind, bool param) {}
+  static ptr<mybind_t> alloc (const xpub3_json_t &x, bool lenient);
+  xpub3_json_t _x, *_pntr;
+};
+
+//-----------------------------------------------------------------------
+
 class mybind_xdr_union_t : public mybind_t {
 public:
   mybind_xdr_union_t () : mybind_t (MYSQL_TYPE_NULL), _x (AMYSQL_TYPE_NULL),

@@ -172,6 +172,19 @@ const char * getenvval (const char *s);
 
 //-----------------------------------------------------------------------
 
+template<size_t n> bool cstr2opaque (const char *cc, size_t l, rpc_bytes<n> &o)
+{
+  bool ret = false;
+  if (l) {
+    o.setsize (l);
+    memcpy (o.base (), cc, l);
+    ret = true;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 template<size_t n> bool str2opaque (const str &s, rpc_bytes<n> &o)
 {
   bool ret = false;

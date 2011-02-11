@@ -357,6 +357,138 @@ mybind_xdr_union_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 
 //-----------------------------------------------------------------------
 
+ptr<mybind_t>
+mybind_json_t::alloc (const xpub3_json_t &x, bool lenient)
+{
+  ptr<mybind_t> p;
+  switch (x.typ) {
+  case XPUB3_JSON_STRING:
+    {
+      str tmp (opaque2str (*x.json_string));
+      p = New refcounted<mybind_str_t> (tmp);
+    }
+    break;
+  case XPUB3_JSON_INT32:
+    p = New refcounted<mybind_int_t> (*x.json_int32);
+    break;
+  case XPUB3_JSON_UINT32:
+    p = New refcounted<mybind_int_t> (*x.json_uint32);
+    break;
+  case XPUB3_JSON_INT64:
+    p = New refcounted<mybind_int_t> (*x.json_int64);
+    break;
+  case XPUB3_JSON_UINT64:
+    p = New refcounted<mybind_u64_t> (*x.json_uint64);
+    break;
+  case XPUB3_JSON_BOOL:
+    p = New refcounted<mybind_int_t> (*x.json_bool);
+    break;
+  case XPUB3_JSON_DOUBLE:
+    {
+      double d = 0.0;
+      if (convertdouble (x.json_double->val, &d) || lenient) {
+	p = New refcounted<mybind_double_t> (d);
+      }
+    }
+    break;
+  default:
+    break;
+  }
+  return p;
+}
+
+//-----------------------------------------------------------------------
+
+str
+mybind_json_t::to_str () const
+{
+  ptr<mybind_t> b = mybind_json_t::alloc (_x, true);
+  str ret;
+  if (b) ret = b->to_str ();
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+mybind_json_t::read_str (const char *c, unsigned long l, eft_t typ)
+{
+  bool ret = false;
+  switch (typ) {
+
+  case MYSQL_TYPE_TINY:
+  case MYSQL_TYPE_SHORT:
+  case MYSQL_TYPE_LONG:
+  case MYSQL_TYPE_INT24:
+  case MYSQL_TYPE_TIMESTAMP:
+    {
+      int64_t tmp;
+      if ((ret = convertint (c, &tmp))) {
+	_pntr->set_typ (XPUB3_JSON_INT64);
+	*_pntr->json_int64 = tmp;
+	ret = true;
+      }
+    }
+    break;
+
+  case MYSQL_TYPE_LONGLONG:
+    {
+      u_int64_t tmp;
+      if ((ret = convertuint (c, &tmp))) {
+	_pntr->set_typ (XPUB3_JSON_UINT64);
+	*_pntr->json_uint64 = tmp;
+	ret = true;
+      }
+    }
+    break;
+
+  case MYSQL_TYPE_FLOAT:
+  case MYSQL_TYPE_DOUBLE:
+    {
+      double d;
+      if ((ret = convertdouble (c, &d))) {
+	_pntr->set_typ (XPUB3_JSON_DOUBLE);
+	_pntr->json_double->val = c;
+	ret = true;
+      }
+    }
+    break;
+
+  case MYSQL_TYPE_DATE:
+  case MYSQL_TYPE_TIME:
+  case MYSQL_TYPE_DATETIME:
+  case MYSQL_TYPE_STRING:
+  case MYSQL_TYPE_VAR_STRING:
+  case MYSQL_TYPE_BLOB:
+    _pntr->set_typ (XPUB3_JSON_STRING);
+    cstr2opaque (c, l, *_pntr->json_string);
+    ret = true;
+    break;
+
+  case MYSQL_TYPE_NULL:
+    _pntr->set_typ (XPUB3_JSON_NULL);
+    ret = true;
+    break;
+
+  default:
+    break;
+  }
+
+  if (!ret) { _pntr->set_typ (XPUB3_JSON_ERROR); }
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void 
+mybind_json_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
+{
+  assert (false);
+}
+
+//-----------------------------------------------------------------------
+
 #ifdef HAVE_MYSQL_BIND
 inline void
 mybind_double_t::bind (MYSQL_BIND *bnd, bool param)
