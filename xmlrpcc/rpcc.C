@@ -29,6 +29,7 @@ bhash<str> ids;
 const str shell ("/bin/sh");
 static str outfile;
 bool guess_defines;
+bool skip_xml;
 
 str
 stripfname (str fname, bool suffix)
@@ -177,11 +178,14 @@ main (int argc, char **argv)
   av.push_back ("-DRPCC");
   av.push_back (NULL);
 
-  while ((ch = getopt (argc, argv, "GDIhco:P:")) != -1) {
+  while ((ch = getopt (argc, argv, "GDIXhco:P:")) != -1) {
     switch (ch) {
     case 'D':
     case 'I':
       av.push_back (argv[optind]);
+      break;
+    case 'X':
+      skip_xml = true;
       break;
     case 'h':
     case 'c':
