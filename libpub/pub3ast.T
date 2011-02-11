@@ -830,13 +830,13 @@ namespace pub3 {
   for_t::add_params (ptr<expr_list_t> l)
   {
     bool ret = true;
-    if (!l || l->size () < 1 || l->size () > 2) {
+    if (!l || l->size () != 2) {
       parse_error ("for: takes 2 arguments (simple identifier and array)\n");
       ret = false;
     } else if (!(_iter = (*l)[0]->to_identifier ()) || !_iter.len ()) {
       parse_error ("for: argument 1 must be an identifier\n");
       ret = false;
-    } else if (l->size () > 1) {
+    } else {
       _arr = (*l)[1];
     }
     return ret;
