@@ -1,6 +1,7 @@
 // -*-c++-*-
 
 #include "okrfn.h"
+#include "pubutil.h"
 #include "pescape.h"
 #include "okcgi.h"
 #include "crypt.h"
@@ -32,6 +33,7 @@ namespace rfn3 {
   str url_escape_t::filter (str s) { return cgi_encode (s); }
   str url_unescape_t::filter (str s) { return cgi_decode (s);  }
   str utf8_fix_t::filter (str s) { return utf8_fix (s); }
+  str wss_filter_t::filter (str s) { return html_wss (s); }
 
   //------------------------------------------------------------
 

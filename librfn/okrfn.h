@@ -72,6 +72,7 @@ namespace rfn3 {
   PUB3_FILTER(toupper);
   PUB3_FILTER(html_escape);
   PUB3_FILTER(hidden_escape);
+  PUB3_FILTER(wss_filter);
   
   //-----------------------------------------------------------------------
 
