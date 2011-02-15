@@ -31,6 +31,9 @@ namespace pub3 {
     ptr<expr_t> err_obj ();
     bool wss_boundary (bool b, str tag);
     bool enable_wss (bool b);
+    bool get_wss_enabled () const;
+    opts_t get_opts () const;
+    void set_opts (opts_t o);
     
   protected:
     bool do_wss () const;

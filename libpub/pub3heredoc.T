@@ -35,6 +35,10 @@ namespace pub3 {
       new_output = New refcounted<output_std_t> (&z);
       old_output = p->set_output (new_output);
 
+      // Propogate the WSS state from the outer to the inner
+      // publishing environment
+      new_output->enable_wss (old_output->get_wss_enabled ());
+
       twait { _body->publish (p, mkevent (xs)); }
       if (xs.status == XPUB_STATUS_OK) {
 	z.to_strbuf (&b, false);

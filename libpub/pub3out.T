@@ -14,6 +14,23 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void
+  output_t::set_opts (opts_t o)
+  {
+    _opts = o;
+    _wss_enabled = (o & P_WSS);
+  }
+
+  //--------------------------------------------------------------------
+
+  opts_t output_t::get_opts () const { return _opts; }
+
+  //--------------------------------------------------------------------
+
+  bool output_t::get_wss_enabled () const { return _wss_enabled; }
+
+  //--------------------------------------------------------------------
+
   ptr<output_t>
   output_t::alloc (zbuf *z, opts_t o)
   {
