@@ -319,7 +319,7 @@ default:
 struct xpub3_metadata_t {
   xpub_fn_t jailed_filename;
   xpub_fn_t real_filename;
-  xpub3_hash_t hash;
+  xpub3_hash_t hash; // The hash of the **raw unparsed file** on the disk
   ok_xtime_t ctime;
 };
 

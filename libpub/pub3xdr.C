@@ -793,7 +793,7 @@ pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
     b3.key = *key;
     expr_to_rpc_ptr (val, &b3.val);
   }
-
+  
   if (0) {
     sort (x->dict->entries);
   }
@@ -1210,6 +1210,7 @@ pub3::fndef_t::to_xdr (xpub3_statement_t *x) const
 {
   x->set_typ (XPUB3_STATEMENT_FNDEF);
   x->fndef->name = _name;
+  x->fndef->lineno = lineno ();
   _lambda->to_xdr (&x->fndef->lambda);
   return true;
 }
