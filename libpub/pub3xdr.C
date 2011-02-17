@@ -794,9 +794,7 @@ pub3::expr_dict_t::to_xdr (xpub3_expr_t *x) const
     expr_to_rpc_ptr (val, &b3.val);
   }
   
-  if (0) {
-    sort (x->dict->entries);
-  }
+  sort (x->dict->entries);
 
   return true;
 }
