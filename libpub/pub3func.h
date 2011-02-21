@@ -52,6 +52,7 @@ namespace pub3 {
     const char *get_obj_name () const { return "pub3::lambda_t"; }
     void propogate_metadata (ptr<const metadata_t> md);
     ptr<expr_t> cow_copy () const;
+    bool to_bool () const ;
   protected:
     
     bool check_args (eval_t *p, args_t a) const;
