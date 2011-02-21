@@ -183,7 +183,7 @@ bool
 pub3::expr_null_t::to_xdr (xpub3_json_t *j) const
 {
   j->set_typ (XPUB3_JSON_NULL);
-  return false;
+  return true;
 }
 
 //-----------------------------------------------------------------------
