@@ -1590,8 +1590,9 @@ okld_t::check_exes ()
 
 //-----------------------------------------------------------------------
 
+#if !SFSLITE_AT_VERSION(1,2,6,107)
 static bool
-check_logger (str s, vec<str> *out)
+check_syslog_logger (str s, vec<str> *out)
 {
   bool ret = false;
   static rxx x ("\\s+");
@@ -1608,6 +1609,7 @@ check_logger (str s, vec<str> *out)
   }
   return ret;
 }
+#endif
 
 //-----------------------------------------------------------------------
 
@@ -1678,7 +1680,7 @@ main (int argc, char *argv[])
       warn << "-l<logger> flag only can be used in daemon mode\n";
       usage (); 
     }
-    else if (!check_logger (logger_cmd, &logger_argv)) { 
+    else if (!check_syslog_logger (logger_cmd, &logger_argv)) { 
       warn ("logger '%s' is not available: %m\n", logger_cmd.cstr ());
       usage (); 
     }
