@@ -170,36 +170,31 @@ namespace ezdb {
   
   //-----------------------------------------------------------------------
 
-  tamed static void 
-  static_finish (ptr<cli_t> cli, sth_id_t id, ev_t::ptr ev) 
+  tamed void
+  sth_base_t::finish (ev_t::ptr ev)
   {
     tvars {
+      sth_id_t tmp;
       adb_status_t c;
       str s;
       clnt_stat err;
     }
 
-    twait { rpc::ezdb_prog_1::ezdb_finish (cli->con(), id, &c, mkevent (err)); }
-    if (err) {
-      s = strbuf () << err;
-      c = ADB_RPC_ERROR;
-    }
-    if (ev) {
-      ev->trigger (c, s);
-    }
-  }
-
-  //-----------------------------------------------------------------------
-
-  void
-  sth_base_t::finish (ev_t::ptr ev)
-  {
     if (_alive && _id) {
       _alive = false;
-      sth_id_t tmp = _id;
+      tmp = _id;
       _id = 0;
-      static_finish (_cli, tmp, ev);
+
+      twait { 
+	rpc::ezdb_prog_1::ezdb_finish (_cli->con(), tmp, &c, mkevent (err)); 
+      }
+      if (err) {
+	s = strbuf () << err;
+	c = ADB_RPC_ERROR;
+      }
     }
+
+    if (ev) ev->trigger (c, s);
   }
 
   //-----------------------------------------------------------------------

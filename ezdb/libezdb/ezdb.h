@@ -57,7 +57,7 @@ namespace ezdb {
     void execute_bundle (ev_t ev, binder::to_xdr_bundle_t b, CLOSURE);
     void fetch_xdr_union (ev_t ev, amysql_scalars_t *row, CLOSURE);
     void fetch_bundle (ev_t ev, binder::from_xdr_bundle_t b, CLOSURE);
-    void finish (ev_t::ptr ev = NULL);
+    void finish (ev_t::ptr ev = NULL, CLOSURE);
     void finalize (); // have a chance to finish queries
     u_int64_t insert_id () const { return _insert_id; }
 
