@@ -67,8 +67,7 @@ ClusterAddressing 1
 AggressiveServiceRestart 1
 EmergencyKillEnabled 1
 
-# Use RC4 if possible
-SSLCipherList	     !ADH:MEDIUM:HARD:LOW
+#SSLCipherList	     !ADH:MEDIUM:LOW
 
 # juice this way up for testing....
 DemuxTimeout 359

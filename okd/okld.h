@@ -112,19 +112,16 @@ private:
 
 class okld_helper_ssl_t : public okld_helper_t {
 public:
-  okld_helper_ssl_t (const str &u, const str &g) 
-    : okld_helper_t ("okssld", u, g),
-      _certfile (ok_ssl_certfile),
-      _keyfile (ok_ssl_keyfile),
-      _timeout (ok_ssl_timeout)
-  {}
+  okld_helper_ssl_t (const str &u, const str &g);
 
-  str _certfile, _keyfile, _chainfile, _cipher_list;
+  str _certfile, _keyfile, _chainfile;
   u_int _timeout;
+  str _cipher_list;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
   str chainfile_resolved () const { return _chainfile_resolved; }
+  str cipher_list () const;
 private:
   str resolve (const str &in, const char *which) const;
   vec<okws1_port_t> _ports;

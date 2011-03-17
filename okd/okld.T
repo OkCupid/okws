@@ -1432,6 +1432,7 @@ okld_t::launch_okssl (evb_t ev)
     okws_send_ssl_arg_t arg;
     ok_xstatus_typ_t res;
     clnt_stat err;
+    str cl;
   }
 
   if (!_okssl.active ()) {
@@ -1475,9 +1476,9 @@ okld_t::launch_okssl (evb_t ev)
 	argv.push_back (strbuf () << _https_ports[i]);
       }
 
-      if (_okssl._cipher_list) {
+      if ((cl = _okssl.cipher_list ())) {
 	argv.push_back ("-L");
-	argv.push_back (_okssl._cipher_list);
+	argv.push_back (cl);
       }
 
       _okssl.argv () += argv;
@@ -2152,6 +2153,26 @@ okld_helper_ssl_t::configure_keys ()
   }
   return ret;
     
+}
+
+//-----------------------------------------------------------------------
+
+okld_helper_ssl_t::okld_helper_ssl_t (const str &u, const str &g)
+  : okld_helper_t ("okssld", u, g),
+    _certfile (ok_ssl_certfile),
+    _keyfile (ok_ssl_keyfile),
+    _timeout (ok_ssl_timeout) {}
+
+//-----------------------------------------------------------------------
+
+str
+okld_helper_ssl_t::cipher_list () const
+{
+  str ret;
+  if (_cipher_list && !cicmp (_cipher_list, "default")) {
+    ret = _cipher_list;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
