@@ -119,7 +119,7 @@ public:
       _timeout (ok_ssl_timeout)
   {}
 
-  str _certfile, _keyfile, _chainfile;
+  str _certfile, _keyfile, _chainfile, _cipher_list;
   u_int _timeout;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }

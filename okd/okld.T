@@ -829,6 +829,7 @@ okld_t::parse_file (const str &cf)
     .add ("AggressiveServiceRestart", &_aggressive_svc_restart)
     .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
     .add ("EmergencyKillEnabled", &_emerg_kill)
+    .add ("SSLCipherList", &_okssl._cipher_list)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
@@ -1472,6 +1473,11 @@ okld_t::launch_okssl (evb_t ev)
       for (size_t i = 0; i < _https_ports.size (); i++) {
 	argv.push_back ("-p");
 	argv.push_back (strbuf () << _https_ports[i]);
+      }
+
+      if (_okssl._cipher_list) {
+	argv.push_back ("-L");
+	argv.push_back (_okssl._cipher_list);
       }
 
       _okssl.argv () += argv;

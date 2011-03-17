@@ -83,6 +83,7 @@ namespace okssl {
     void init_okd (evb_t ev, CLOSURE);
     void init_logd (evb_t ev, CLOSURE);
     bool load_certificate ();
+    bool init_ciphers ();
     ok_xstatus_typ_t toggle_accept (bool b);
     void shutdown ();
     void sendcon (ptr<con_t> c, int fd, const port_t &p,
@@ -95,6 +96,7 @@ namespace okssl {
     str _dir, _jaildir;
     str _certfile, _keyfile, _chainfile;
     int _logfd, _okd_fd;
+    str _cipher_list;
 
     ptr<axprt_unix> _okd_x;
     ptr<aclnt> _okd_cli;
@@ -481,6 +483,19 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   bool
+  okssld_t::init_ciphers ()
+  {
+    bool ret = true;
+    if (_cipher_list && 
+	SSL_CTX_set_cipher_list (_ssl_ctx, _cipher_list.cstr ()) != 1) {
+      ret = false;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  bool
   okssld_t::init_ssl ()
   {
     SSL_METHOD *meth;
@@ -496,6 +511,8 @@ namespace okssl {
       warn << "Could not allocate SSL method\n";
     } else if (!(_ssl_ctx = SSL_CTX_new (meth))) {
       warn << "Cannot make new SSL context\n";
+    } else if (!init_ciphers ()) {
+      warn << "Cipher initialization failed\n";
     } else if (!load_certificate ()) {
       warn << "Failed to load certificate\n";
     } else {
@@ -608,7 +625,7 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:j:n:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:j:n:L:")) != -1) {
       switch (ch) {
       case 'j':
 	_jaildir = optarg;
@@ -657,6 +674,9 @@ namespace okssl {
 	  warn << "Cannot parse FD to okd " << optarg << "\n";
 	  rc = false;
 	}
+	break;
+      case 'L':
+	_cipher_list = optarg;
 	break;
       case 'p':
 	{

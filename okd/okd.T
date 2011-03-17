@@ -355,6 +355,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("AhttpconZombieWarn")
     .ignore ("AhttpconZombieTimeout")
     .ignore ("AggressiveServiceRestart")
+    .ignore ("SSLCipherList")
     ;
 
   bool ret = ct.run (cf);
