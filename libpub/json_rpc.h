@@ -1,9 +1,12 @@
 // -*-c++-*-
 
+#pragma once
+
 #include "async.h"
 #include "arpc.h"
 #include "pub3.h"
 #include "xdrmisc.h"
+
 
 //-----------------------------------------------------------------------
 
