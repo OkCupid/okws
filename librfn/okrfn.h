@@ -21,6 +21,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(join, "sl");
   PUB3_COMPILED_FN(range, "i|ii");
   PUB3_COMPILED_FN(split, "rs");
+  PUB3_COMPILED_FN(split2, "rs");
   PUB3_COMPILED_FN(substr, "si|i");
   PUB3_COMPILED_FN(import, "d");
   PUB3_COMPILED_FN(version_str, "");

@@ -57,6 +57,11 @@ str rxx_replace (str input, rxx pat, str repl);
 bool has_null_byte (const str &s);
 str trunc_after_null_byte (str s);
 
+// Like split from sfs, but also include the matched parameter in the
+// output list.
+int split2 (vec<str> *out, rxx pat, str expr, 
+	    size_t lim = (size_t) -1, bool emptylast = false);
+
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL
 // if no directory.  b set to NULL if no filename (i.e., ends in '/').

@@ -180,14 +180,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  split_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  static ptr<expr_list_t>
+  split_vec_to_list (const vec<str> &v)
   {
-    ptr<rxx> rx = args[0]._r;
-    str s = args[1]._s;
     ptr<expr_list_t> ret = New refcounted<expr_list_t> ();
-    vec<str> v;
-    split (&v, *rx, s);
     for (size_t i = 0; i < v.size (); i++) {
       ptr<expr_t> e;
       if (v[i]) e = New refcounted<expr_str_t> (v[i]);
@@ -195,6 +191,31 @@ namespace rfn3 {
       ret->push_back (e);
     }
     return ret;
+
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  split_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<rxx> rx = args[0]._r;
+    str s = args[1]._s;
+    vec<str> v;
+    split (&v, *rx, s);
+    return split_vec_to_list (v);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  split2_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<rxx> rx = args[0]._r;
+    str s = args[1]._s;
+    vec<str> v;
+    split2 (&v, *rx, s);
+    return split_vec_to_list (v);
   }
 
   //-----------------------------------------------------------------------

@@ -22,6 +22,7 @@ namespace rfn3 {
     F(append);
     F(range);
     F(split);
+    F(split2);
     F(map);
     F(search);
     F(match);
@@ -94,8 +95,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.8"; }
-  u_int64_t version_int () { return 3000008; }
+  const char *version_str () { return "3.0.9"; }
+  u_int64_t version_int () { return 3000009; }
 
   //-----------------------------------------------------------------------
 };
