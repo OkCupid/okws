@@ -445,11 +445,23 @@ format string //fmt//."
 	},
 
 	replace : {
-	    input : [ { body : "s" }, { pat : "r" }, { repl : "s" } ],
+	    input : [ { body : "s" }, { pat : "r" }, { repl : "O" } ,
+	              { "use_captures" : "b", opt : "true" } ],
 	    output : "s",
 	    desc : "In the string //body//, find all occurrence of 
-the regular expression //pat// and replace with the string //repl//."
-	}
+the regular expression //pat// and replace with the string //repl//,
+or the output of the lambda //repl//.  By default, a string //repl//
+can contain Perl-like capture groups (e.g., '<b>$0</b>'), but if you
+don't want that, pass a fourth optional parameter //use_captures//
+as //false//.",
+	    example : '{% locals { body : "the URL is foo.com." }
+print (replace (body, "[a-z.]+(com|edu)", "$1:$0"));
+print (" ");
+print (replace (body, "[a-z.]+(com|edu)", 
+                lambda (v) { return ("\%{toupper(v[1])}:\%{v[0]}"); }));
+%}
+will output: "the URL is com:foo.com. the URL is COM:foo.com."'
+         }
     
     };
     
