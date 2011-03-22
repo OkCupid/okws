@@ -29,7 +29,6 @@ namespace rfn3 {
     F(tolower);
     F(toupper);
     F(replace);
-    F(replace2);
     F(html_escape);
     F(tag_escape);
     F(json_escape);

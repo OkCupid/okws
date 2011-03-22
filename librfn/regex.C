@@ -29,14 +29,19 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  replace2_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  static str 
+  repl_wrapper (eval_t *p, ptr<const callable_t> fn, const vec<str> *matches)
   {
-    str input = args[0]._s;
-    ptr<rxx> pat = args[1]._r;
-    str repl = args[2]._s;
-
-    return expr_str_t::safe_alloc (rxx_replace_2 (input, *pat, repl));
+    ptr<expr_list_t> l = expr_list_t::alloc ();
+    for (size_t i = 0; i < matches->size (); i++) {
+      l->push_back (expr_str_t::safe_alloc ((*matches)[i]));
+    }
+    ptr<expr_list_t> args = expr_list_t::alloc ();
+    args->push_back (l);
+    ptr<const expr_t> res = fn->eval_to_val (p, args);
+    str out;
+    if (res) { out = res->to_str (); }
+    return out;
   }
 
   //-----------------------------------------------------------------------
@@ -46,9 +51,28 @@ namespace rfn3 {
   {
     str input = args[0]._s;
     ptr<rxx> pat = args[1]._r;
-    str repl = args[2]._s;
+    ptr<const pub3::expr_t> r = args[2]._O;
+    bool use_repl_2 = true;
+    if (args.size () == 4) {
+      use_repl_2 = args[3]._b;
+    }
 
-    return expr_str_t::safe_alloc (rxx_replace (input, *pat, repl));
+    ptr<expr_t> ret;
+    str str_repl;
+    ptr<const callable_t> fn_repl;
+    str s;
+
+    if (!r) { /* noop */ }
+    else if ((fn_repl = r->to_callable ())) {
+      s = rxx_replace (input, *pat, wrap (repl_wrapper, p, fn_repl));
+    } else if ((str_repl = r->to_str ())) {
+      if (use_repl_2) { s = rxx_replace_2 (input, *pat, str_repl); }
+      else            { s = rxx_replace   (input, *pat, str_repl); }
+    } else {
+      report_error (p, "replace argument is neither a string or a function");
+    }
+    ret = expr_str_t::safe_alloc (s);
+    return ret;
   }
 
   //-----------------------------------------------------------------------

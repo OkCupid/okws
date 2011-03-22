@@ -4,9 +4,14 @@ filedata = """
 {$ 
     locals { data, out }
     data = "cat dog foo.edu elephant bar.com eagle turtle x.jam.baz.net";
-    out = replace2 (data, "[a-z.]+\.(edu|net|com)", "$1:$0");
+    out = replace (data, "[a-z.]+\.(edu|net|com)", "$1:$0");
+    print (out);
+    print (" ");
+    out = replace (data, "[a-z.]+\.(edu|net|com)", 
+                   lambda (v) { return ("%{toupper(v[1])}:%{v[0]}"); });
     print (out);
 
 $}"""
 
-outcome = "cat dog edu:foo.edu elephant com:bar.com eagle turtle net:x.jam.baz.net"
+tmp = "cat dog EDU:foo.edu elephant COM:bar.com eagle turtle NET:x.jam.baz.net"
+outcome = tmp.lower () + " " + tmp
