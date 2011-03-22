@@ -53,14 +53,8 @@ str errcode2str (const xpub_status_t &e);
 bool to_hostname_and_port (const str &in, str *out, int *port);
 str html_wss (str in);
 str dir_merge (str d, str f);
-str rxx_replace (str input, rxx pat, str repl);
 bool has_null_byte (const str &s);
 str trunc_after_null_byte (str s);
-
-// Like split from sfs, but also include the matched parameter in the
-// output list.
-int split2 (vec<str> *out, rxx pat, str expr, 
-	    size_t lim = (size_t) -1, bool emptylast = false);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL

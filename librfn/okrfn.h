@@ -49,6 +49,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(str, "O");
   PUB3_COMPILED_FN(tag_escape, "s|r");
   PUB3_COMPILED_FN(replace, "srs");
+  PUB3_COMPILED_FN(replace2, "srs");
   PUB3_COMPILED_FN(warn, "s");
   PUB3_COMPILED_FN(logwarn, "s|b");
   PUB3_COMPILED_FN(warn_trace, "s");

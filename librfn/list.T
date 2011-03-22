@@ -1,6 +1,7 @@
 // -*-c++-*-
 
 #include "okrfn.h"
+#include "okws_rxx.h"
 
 namespace rfn3 {
 

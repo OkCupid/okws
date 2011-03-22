@@ -321,7 +321,7 @@ is_safe (const str &d)
 {
   if (!d || d[0] == '.' || d[d.len () - 1] == '.' || safe_rxx.search (d))
     return false;
-  return true;;
+  return true;
 }
 
 argv_t::argv_t ()
@@ -660,20 +660,6 @@ getenvval (const char *s)
 
 //-----------------------------------------------------------------------
 
-str
-rxx_replace (str input, rxx pattern, str repl)
-{
-  str ret;
-  if (input) {
-    vec<str> v;
-    split (&v, pattern, input, size_t (-1), true);
-    ret = join (repl, v);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
 bool
 has_null_byte (const str &s)
 {
@@ -699,36 +685,3 @@ trunc_after_null_byte (str s)
 
 //-----------------------------------------------------------------------
 
-int
-split2 (vec<str> *out, rxx pat, str expr, size_t lim, bool emptylast)
-{
-  const char *p = expr;
-  const char *const e = p + expr.len ();
-  size_t n;
-  if (out)
-    out->clear ();
-
-  // check p < e to see that we're not dealing with an empty
-  // string (especially since x? matches "").
-  for (n = 0; p < e && n + 1 < lim; n++) {
-    if (!pat._exec (p, e - p, 0)) {
-      return 0;
-    }
-    if (!pat.success ())
-      break;
-    if (out) {
-      out->push_back (str (p, pat.start (0)));
-      str sep (p + pat.start (0), pat.len (0));
-      out->push_back (sep);
-    }
-    p += max (pat.end (0), 1);
-  }
-
-  if (lim && (p < e || emptylast)) {
-    n++;
-    if (out) {
-      out->push_back (str (p, e - p));
-    }
-  }
-  return n;
-}
