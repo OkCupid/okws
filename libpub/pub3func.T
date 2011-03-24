@@ -93,7 +93,7 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   void lambda_t::propogate_metadata (ptr<const metadata_t> md)
-  { _loc.set_filename (md->jailed_filename ()); }
+  { _loc.set_filename (md->jailed_filename (), true); }
 
   //-----------------------------------------------------------------------
 

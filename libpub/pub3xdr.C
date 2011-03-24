@@ -1223,7 +1223,7 @@ pub3::lambda_t::lambda_t (const xpub3_lambda_t &l)
     _body (zone_t::alloc (l.body)) 
 {
   if (l.filename.val.len ()) {
-    _loc.set_filename (l.filename.val);
+    _loc.set_filename (l.filename.val, true);
   }
 }
     
@@ -1237,7 +1237,7 @@ ptr<pub3::lambda_t> pub3::lambda_t::alloc (const xpub3_lambda_t &l)
 bool
 pub3::lambda_t::to_xdr (xpub3_lambda_t *l) const
 {
-  l->lineno = _lineno;
+  l->lineno = _loc._lineno;
   if (_loc._filename) l->filename.val = _loc._filename;
   if (_name) l->name = _name;
   idlist_to_xdr (*_params, &l->params);
