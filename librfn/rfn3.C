@@ -80,6 +80,7 @@ namespace rfn3 {
     F(format_float);
     F(format_int);
     F(stat_file);
+    F(raw);
     F(utf8_fix);
     F(wss_filter);
 
@@ -95,8 +96,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.10"; }
-  u_int64_t version_int () { return 3000010; }
+  const char *version_str () { return "3.0.11"; }
+  u_int64_t version_int () { return 3000011; }
 
   //-----------------------------------------------------------------------
 };

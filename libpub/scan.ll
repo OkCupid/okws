@@ -569,6 +569,7 @@ public:
     _tab.insert ("break", T_P3_BREAK);
     _tab.insert ("return", T_P3_RETURN);
     _tab.insert ("continue", T_P3_CONTINUE);
+    _tab.insert ("exit", T_P3_EXIT);
     _tab.insert ("lambda", T_P3_LAMBDA);
 
     if (ok_pub2_compatibility_mode) {

@@ -7,5 +7,5 @@ filedata = """
 $}
 """
 
-outcome = '{"b" : ["<anonymous-lambda @ /regtest-scratch/cases_91.html:1>", ' \
+outcome = '{"b" : ["<anonymous-lambda @ /regtest-scratch/cases_91.html:3>", ' \
     + '"<compiled function> rfn3:decorate"]}' 

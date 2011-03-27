@@ -50,6 +50,7 @@
 %token T_P3_BREAK
 %token T_P3_RETURN
 %token T_P3_CONTINUE
+%token T_P3_EXIT
 %token T_P3_HTML_HEREDOC
 %token T_P3_PUB_HEREDOC
 %token T_P3_BCALL_OPEN
@@ -90,7 +91,7 @@
 %type <p3include> p3_include_or_load;
 %type <p3statement> p3_control p3_for p3_if p3_include p3_locals p3_while;
 %type <p3statement> p3_universals p3_print p3_fndef p3_switch p3_globals;
-%type <p3statement> p3_break p3_return p3_continue;
+%type <p3statement> p3_break p3_return p3_continue p3_exit;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
 %type <p3cl> p3_switch_cases;
@@ -242,6 +243,7 @@ p3_control:     p3_for { $$ = $1; }
 	      | p3_return { $$ = $1; }
 	      | p3_continue { $$ = $1; }
 	      | p3_while { $$ = $1; }
+	      | p3_exit { $$ = $1; }
               | ';' { $$ = NULL; }
 	      ;
 
@@ -267,6 +269,10 @@ p3_break : T_P3_BREAK
 
 p3_continue : T_P3_CONTINUE
        { $$ = pub3::continue_t::alloc (); }
+       ;
+
+p3_exit : T_P3_EXIT
+       { $$ = pub3::exit_t::alloc (); }
        ;
 
 p3_return: T_P3_RETURN p3_return_value ';'

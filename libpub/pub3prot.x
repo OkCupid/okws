@@ -397,6 +397,10 @@ struct xpub3_continue_t {
   int lineno;
 };
 
+struct xpub3_exit_t {
+  int lineno;
+};
+
 struct xpub3_decls_t {
   int lineno;
   xpub3_dict_t decls;
@@ -434,7 +438,8 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_RETURN = 13,
    XPUB3_STATEMENT_CONTINUE = 14,
    XPUB3_STATEMENT_GLOBALS = 15,
-   XPUB3_STATEMENT_WHILE = 16
+   XPUB3_STATEMENT_WHILE = 16,
+   XPUB3_STATEMENT_EXIT = 17
 };
 
 %struct xpub3_zone_t;
@@ -485,6 +490,8 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_STATEMENT_FNDEF:
    xpub3_fndef_t fndef;
 
+ case XPUB3_STATEMENT_EXIT:
+   xpub3_exit_t exit_statement;
 };
 
 /* ====================================================================== */

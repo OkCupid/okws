@@ -6,6 +6,11 @@
 
 namespace pub3 {
 
+  //====================================================== zone_t =========
+
+  bool zone_t::handle_control (eval_t *p) const
+  { return p->control ()->handle_zone (); }
+
   //================================================== ast_node_t =========
 
   static const location_t &location () 
@@ -135,7 +140,7 @@ namespace pub3 {
   zone_html_t::v_publish_nonblock (eval_t *p) const
   {
     status_t ret (XPUB_STATUS_OK);
-    for (size_t i = 0; i < _children.size (); i++) {
+    for (size_t i = 0; handle_control (p) && i < _children.size (); i++) {
       status_t tmp = _children[i]->publish_nonblock (p);
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
@@ -154,7 +159,7 @@ namespace pub3 {
       status_t tmp;
       size_t i;
     }
-    for (i = 0; i < _children.size (); i++) {
+    for (i = 0; handle_control (p) && i < _children.size (); i++) {
       twait { _children[i]->publish (p, mkevent (tmp)); }
       if (tmp.status != XPUB_STATUS_OK) {
 	ret = tmp;
@@ -586,11 +591,6 @@ namespace pub3 {
     }
     ev->trigger (ret);
   }
-
-  //-----------------------------------------------------------------------
-
-  bool zone_pub_t::handle_control (eval_t *p) const
-  { return p->control ()->handle_zone (); }
 
   //-----------------------------------------------------------------------
 
@@ -1802,6 +1802,26 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   void break_t::v_publish (eval_t *p, status_ev_t ev, ptr<closure_t> d) const
+  { ev->trigger (v_publish_nonblock (p)); }
+
+  //======================================== exit_t ==================
+
+  ptr<exit_t> exit_t::alloc ()
+  { return New refcounted<exit_t> (plineno ()); }
+
+  //----------------------------------------------------------------------
+  
+  status_t
+  exit_t::v_publish_nonblock (eval_t *p) const
+  {
+    status_t ret (XPUB_STATUS_OK);
+    p->control ()->set_exit (true);
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+
+  void exit_t::v_publish (eval_t *p, status_ev_t ev, ptr<closure_t> d) const
   { ev->trigger (v_publish_nonblock (p)); }
 
   //======================================== continue_t ==================

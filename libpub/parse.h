@@ -73,20 +73,21 @@
      T_P3_BREAK = 289,
      T_P3_RETURN = 290,
      T_P3_CONTINUE = 291,
-     T_P3_HTML_HEREDOC = 292,
-     T_P3_PUB_HEREDOC = 293,
-     T_P3_BCALL_OPEN = 294,
-     T_P3_BCALL_CLOSE = 295,
-     T_P3_IDENTIFIER = 296,
-     T_P3_INT = 297,
-     T_P3_UINT = 298,
-     T_P3_CHAR = 299,
-     T_P3_FLOAT = 300,
-     T_P3_STRING = 301,
-     T_P3_REGEX = 302,
-     T_P3_HTML = 303,
-     T_P3_HTML_CH = 304,
-     T_P3_WSS_BOUNDARY = 305
+     T_P3_EXIT = 292,
+     T_P3_HTML_HEREDOC = 293,
+     T_P3_PUB_HEREDOC = 294,
+     T_P3_BCALL_OPEN = 295,
+     T_P3_BCALL_CLOSE = 296,
+     T_P3_IDENTIFIER = 297,
+     T_P3_INT = 298,
+     T_P3_UINT = 299,
+     T_P3_CHAR = 300,
+     T_P3_FLOAT = 301,
+     T_P3_STRING = 302,
+     T_P3_REGEX = 303,
+     T_P3_HTML = 304,
+     T_P3_HTML_CH = 305,
+     T_P3_WSS_BOUNDARY = 306
    };
 #endif
 /* Tokens.  */
@@ -124,20 +125,21 @@
 #define T_P3_BREAK 289
 #define T_P3_RETURN 290
 #define T_P3_CONTINUE 291
-#define T_P3_HTML_HEREDOC 292
-#define T_P3_PUB_HEREDOC 293
-#define T_P3_BCALL_OPEN 294
-#define T_P3_BCALL_CLOSE 295
-#define T_P3_IDENTIFIER 296
-#define T_P3_INT 297
-#define T_P3_UINT 298
-#define T_P3_CHAR 299
-#define T_P3_FLOAT 300
-#define T_P3_STRING 301
-#define T_P3_REGEX 302
-#define T_P3_HTML 303
-#define T_P3_HTML_CH 304
-#define T_P3_WSS_BOUNDARY 305
+#define T_P3_EXIT 292
+#define T_P3_HTML_HEREDOC 293
+#define T_P3_PUB_HEREDOC 294
+#define T_P3_BCALL_OPEN 295
+#define T_P3_BCALL_CLOSE 296
+#define T_P3_IDENTIFIER 297
+#define T_P3_INT 298
+#define T_P3_UINT 299
+#define T_P3_CHAR 300
+#define T_P3_FLOAT 301
+#define T_P3_STRING 302
+#define T_P3_REGEX 303
+#define T_P3_HTML 304
+#define T_P3_HTML_CH 305
+#define T_P3_WSS_BOUNDARY 306
 
 
 

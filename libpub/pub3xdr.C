@@ -241,6 +241,9 @@ pub3::statement_t::alloc (const xpub3_statement_t &x)
   case XPUB3_STATEMENT_RETURN:
     r = New refcounted<return_t> (*x.return_statement);
     break;
+  case XPUB3_STATEMENT_EXIT:
+    r = New refcounted<exit_t> (*x.exit_statement);
+    break;
   default: 
     break;
   }
@@ -1161,6 +1164,20 @@ pub3::return_t::to_xdr (xpub3_statement_t *x) const
   return true;
 }
 
+//-----------------------------------------------------------------------
+
+pub3::exit_t::exit_t (const xpub3_exit_t &x)
+  : statement_t (x.lineno) {}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::exit_t::to_xdr (xpub3_statement_t *x) const
+{
+  x->set_typ (XPUB3_STATEMENT_EXIT);
+  x->exit_statement->lineno = lineno ();
+  return true;
+}
 //-----------------------------------------------------------------------
 
 pub3::continue_t::continue_t (const xpub3_continue_t &x)

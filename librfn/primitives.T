@@ -382,51 +382,5 @@ namespace rfn3 {
   }
 
   //-----------------------------------------------------------------------
-  
-  ptr<const expr_t> 
-  stat_file_t::eval_to_val (eval_t *p, args_t args) const { return NULL; }
-
-  //-----------------------------------------------------------------------
-
-  tamed void
-  stat_file_t::pub_to_val (eval_t *p, callable_t::args_t args, cxev_t ev) const
-  {
-    tvars {
-      ptr<const expr_t> ret;
-      str f;
-      status_t status;
-      ptr<file_t> file;
-      str rfn, err;
-    }
-    if (args->size () != 1) {
-      report_error (p, "stat_file() takes 1 argument: a file name");
-    } else {
-      twait { (*args)[0]->pub_as_str (p, mkevent (f)); } 
-      if (!f) {
-	report_error (p, "cannot call stat_file() on null");
-      }
-    }
-    if (f) {
-      twait {
-	p->pub_iface ()->
-	  publish_prepare (p, f, &rfn, &err, mkevent (status, file));
-      }
-      if (file) {
-	ptr<expr_dict_t> d = file->metadata ()->to_dict ();
-	if (d) { ret = d->copy (); }
-      } else if (status.status == XPUB_STATUS_NOENT) {
-	/* noop */
-      } else if (err) {
-	report_error (p, strbuf ("error in stat_file(): %s\n", err.cstr ()));
-      } else {
-	report_error (p, strbuf ("error in stat_file(): code=%d\n", 
-				 int (status.status)));
-      }
-    }
-    if (!ret) ret = expr_null_t::alloc ();
-    ev->trigger (ret);
-  }
-
-  //-----------------------------------------------------------------------
 
 };

@@ -65,17 +65,20 @@ namespace pub3 {
 
   class control_t {
   public:
-    control_t () : _break (false), _continue (false) {}
+    control_t () : _break (false), _continue (false), _exit (false) {}
     static ptr<control_t> alloc ();
     bool handle_forloop ();
     void reset_forloop ();
+    void reset_file ();
     bool handle_zone ();
     bool _break;
     bool _continue;
+    bool _exit;
     void set_rtrn (ptr<const expr_t> x) { _return = x; }
     ptr<const expr_t> rtrn () const { return _return; }
     void set_continue (bool b) { _continue = b;  }
     void set_break (bool b) { _break = b; }
+    void set_exit (bool b) { _exit = b; }
     ptr<const expr_t> _return;
   };
 

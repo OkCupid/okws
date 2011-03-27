@@ -59,6 +59,7 @@ namespace pub3 {
     static ptr<zone_t> alloc (const xpub3_zone_t &z);
     static ptr<zone_t> alloc (const xpub3_zone_t *z);
   protected:
+    bool handle_control (eval_t *p) const;
   };
 
   //-----------------------------------------------------------------------
@@ -178,7 +179,6 @@ namespace pub3 {
     bool might_block_uncached () const;
     status_t v_publish_nonblock (eval_t *p) const;
     void v_publish (eval_t *p, status_ev_t ev, CLOSURE) const;
-
     ptr<zone_text_t> push_zone_text ();
   };
 
@@ -228,7 +228,6 @@ namespace pub3 {
     zone_pub_t *zone_pub () { return this; }
     bool to_xdr (xpub3_zone_t *z) const;
     bool might_block_uncached () const;
-    bool handle_control (eval_t *p) const;
     void v_dump (dumper_t *d) const;
     const char *get_obj_name () const { return "zone_pub_t"; }
     virtual void propogate_metadata (ptr<const metadata_t> md);
@@ -636,6 +635,21 @@ namespace pub3 {
     virtual void propogate_metadata (ptr<const metadata_t> md);
   private:
     ptr<expr_t> _val;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class exit_t : public statement_t {
+  public:
+    exit_t (location_t l) : statement_t (l) {}
+    exit_t (const xpub3_exit_t &x);
+    static ptr<exit_t> alloc ();
+    bool to_xdr (xpub3_statement_t *x) const;
+
+    status_t v_publish_nonblock (eval_t *p) const;
+    void v_publish (eval_t *p, status_ev_t ev, CLOSURE) const;
+    bool might_block_uncached () const { return false; }
+    const char *get_obj_name () const { return "exit_t"; }
   };
 
   //-----------------------------------------------------------------------

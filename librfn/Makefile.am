@@ -16,7 +16,8 @@ librfn_la_SOURCES = \
 	import.C \
 	list.C \
 	dict.C \
-	time.C
+	time.C \
+	file.C
 
 librfn_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 

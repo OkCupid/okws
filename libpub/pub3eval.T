@@ -21,12 +21,16 @@ namespace pub3 {
   bool
   control_t::handle_zone () 
   {
-    return !_break && !_return && !_continue;
+    return !_break && !_return && !_continue && !_exit;
   }
 
   //-------------------------------------------------------------------
 
   void control_t::reset_forloop () { _break = _continue = false; }
+
+  //-------------------------------------------------------------------
+
+  void control_t::reset_file () { _exit = false; }
 
   //-------------------------------------------------------------------
 
@@ -274,6 +278,10 @@ namespace pub3 {
       twait { file->data ()->publish (this, mkevent (status)); }
       env ()->pop_to (sz);
       pop_metadata ();
+
+      // If there was an exit() call inside the file, reset that
+      // flag here.
+      control ()->reset_file ();
     }
     ev->trigger (status);
   }

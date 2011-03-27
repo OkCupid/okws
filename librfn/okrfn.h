@@ -174,6 +174,17 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  class raw_t : public compiled_fn_t {
+  public:
+    // Signature "s" --- the file to read as raw
+    raw_t () : compiled_fn_t (libname, "raw") {}
+    void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
+    ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
+    bool might_block () const { return true; }
+  };
+
+  //-----------------------------------------------------------------------
+
   const char *version_str ();
   u_int64_t version_int ();
 
