@@ -486,7 +486,6 @@ namespace okssl {
   okssld_t::init_ciphers ()
   {
     bool ret = true;
-    warn << "foo: " << _cipher_list << "\n";
     if (_cipher_list && _cipher_list.len () &&
 	SSL_CTX_set_cipher_list (_ssl_ctx, _cipher_list.cstr ()) != 1) {
       ret = false;
