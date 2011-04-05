@@ -65,4 +65,45 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  bitwise_or_t::v_eval_1 (eval_t *p, const margs_t &args) const
+  {
+    vec<u_int64_t> v;
+    ptr<const expr_t> ret;
+    u_int64_t y = 0;
+    bool ok = true;
+    ptr<expr_t> x;
+
+    if (args.size () < 2) {
+      report_error (p, "bitwise_xor() takes 2 or more arguments");
+      ok = false;
+    } else {
+      for (size_t i = 0; i < args.size (); i++) {
+	size_t hi = i + 1;
+	u_int64_t u;
+	if (!(x = args[i])) {
+	  report_error (p, strbuf ("argument %zu to bitwise_or() is null", hi));
+	  ok = false;
+	} else if (!x->to_uint (&u)) {
+	  report_error (p, strbuf ("argument %zu to bitwise_or() is not a "
+				   "positive int", hi));
+	  ok = false;
+	} else {
+	  y = y | u;
+	}
+      }
+    }
+
+    if (ok) {
+      ret = expr_uint_t::alloc (y);
+    } else {
+      ret = expr_null_t::alloc ();
+    }
+
+    return ret;
+  }
+
+
+  //-----------------------------------------------------------------------
+
 };

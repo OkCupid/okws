@@ -80,6 +80,7 @@ namespace rfn3 {
   PUB3_COMPILED_HANDROLLED_FN(isnull);
   PUB3_COMPILED_UNPATTERNED_FN(append);
   PUB3_COMPILED_HANDROLLED_FN(default);
+  PUB3_COMPILED_UNPATTERNED_FN(bitwise_or);
   
   //-----------------------------------------------------------------------
 
