@@ -1440,11 +1440,12 @@ namespace pub3 {
   //-----------------------------------------------------------------------
   
   static str
-  vec2str (const vec<str> &v, char o, char c)
+  vec2str (const vec<str> &v, char o, char c, bool compact)
   {
     strbuf b ("%c", o);
+    const char *sep = compact ? "," : ", ";
     for (size_t i = 0; i < v.size (); i++) {
-      if (i != 0) b << ", ";
+      if (i != 0) b << sep;
       b << v[i];
     }
     b.fmt ("%c", c);
@@ -1462,7 +1463,7 @@ namespace pub3 {
     for (size_t i = 0; i < sz; i++) {
       v.push_back (expr_t::safe_to_str ((*this)[i], o));
     }
-    str ret = vec2str (v, '[', ']');
+    str ret = vec2str (v, '[', ']', o.compact ());
     return ret;
   }
   
@@ -2058,14 +2059,15 @@ namespace pub3 {
     str ret;
 
     o.m_quoted = true;
+    const char *fmt = o.compact () ? "%s:%s" : "%s : %s";
 
     while ((key = it.next (&val))) {
       str vs = expr_t::safe_to_str (val, o);
       str ks = json::quote (*key, o);
-      strbuf b ("%s : %s", ks.cstr (), vs.cstr ());
+      strbuf b (fmt, ks.cstr (), vs.cstr ());
       v.push_back (b);
     }
-    ret = vec2str (v, '{', '}');
+    ret = vec2str (v, '{', '}', o.compact ());
     return ret;
   }
 

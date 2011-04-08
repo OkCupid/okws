@@ -47,9 +47,10 @@ namespace pub3 {
 
   class str_opt_t {
   public:
-    str_opt_t (bool q = false, bool utf8 = false) 
-      : m_quoted (q), m_utf8 (utf8) {}
-    bool m_quoted, m_utf8;
+    str_opt_t (bool q = false, bool utf8 = false, bool compact = false) 
+      : m_quoted (q), m_utf8 (utf8), m_compact (compact) {}
+    bool compact () const { return m_compact; }
+    bool m_quoted, m_utf8, m_compact;
   }; 
 
   //-----------------------------------------------------------------------
