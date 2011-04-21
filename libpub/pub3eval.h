@@ -134,7 +134,7 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class eval_t {
+  class eval_t : public virtual refcount {
   public:
 
     enum { EVAL_INIT = -2, EVAL_DONE = -1 };

@@ -84,6 +84,7 @@ namespace rfn3 {
     F(raw);
     F(utf8_fix);
     F(wss_filter);
+    F(fork);
 
 #undef F
 
@@ -97,8 +98,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.12"; }
-  u_int64_t version_int () { return 3000012; }
+  const char *version_str () { return "3.0.13"; }
+  u_int64_t version_int () { return 3000013; }
 
   //-----------------------------------------------------------------------
 };

@@ -125,19 +125,19 @@ namespace pub3 {
   {
     tvars {
       holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
-      eval_t pub (unis, b, opts);
+      ptr<eval_t> pub (New refcounted<eval_t> (unis, b, opts));
       status_t status;
       ptr<file_t> file;
     }
 
-    init_for_run (&pub, opts, d);
+    init_for_run (pub, opts, d);
     
-    twait { publish (&pub, fn, mkevent (status, file)); }
+    twait { publish (pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;
     if (fp) *fp = file;
 
-    uninit_for_run (&pub);
+    uninit_for_run (pub);
 
     ev->trigger (status.status == XPUB_STATUS_OK);
   }
@@ -152,24 +152,24 @@ namespace pub3 {
       holdvar ptr<bindtab_t> unis (singleton_t::get ()->universals ());
       ptr<expr_dict_t> d (d_in ? d_in : expr_dict_t::alloc ());
       opts_t opts ((o < 0 ? _self->opts () : o) | P_CONFIG);
-      eval_t pub (unis, d, opts);
+      ptr<eval_t> pub (New refcounted<eval_t> (unis, d, opts));
       status_t status;
       ptr<file_t> file;
     }
-    pub.set_pub_iface (mkref (this));
+    pub->set_pub_iface (mkref (this));
 
-    twait { publish (&pub, fn, mkevent (status, file)); }
+    twait { publish (pub, fn, mkevent (status, file)); }
 
     if (sp) *sp = status;
     
-    pub.set_pub_iface (NULL);
+    pub->set_pub_iface (NULL);
 
     // Finally, if requested, copy the universal pub information
     // back into the universals slot...
     if (!d_in || (opts & P_COPY_CONF)) {
       *(singleton_t::get ()->universals ()) += *d;
     }
-
+    
     ev->trigger (status.status == XPUB_STATUS_OK);
   }
   
