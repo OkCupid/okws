@@ -544,10 +544,7 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
 
     tmp << trailer_s;
     hold->push_back (trailer_s);
-    
-    b->fmt ("%x\r\n", int (tmp.tosuio ()->resid ()));
     b->take (tmp);
-    b->fmt ("\r\n0\r\n\r\n");
   }
 
   deflateEnd (&z);
