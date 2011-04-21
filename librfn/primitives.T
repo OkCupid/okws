@@ -384,11 +384,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
   
   tamed static void
-  fork_hlp (publish_t *pub, ptr<const callable_t> fn, ptr<expr_list_t> args)
+  fork_hlp (ptr<publish_t> pub, ptr<const callable_t> fn, ptr<expr_list_t> args)
   {
     tvars {
       ptr<const expr_t> x;
-      holdvar ptr<publish_t> hold (mkref (pub);
     }
     twait { fn->pub_to_val (pub, args, mkevent (x)); }
   }
@@ -398,7 +397,7 @@ namespace rfn3 {
   ptr<const expr_t>
   fork_t::v_eval_2 (publish_t *pub, const vec<arg_t> &args) const
   {
-    fork_hlp (pub, args[0]._F, args[1]._l);
+    fork_hlp (mkref (pub), args[0]._F, args[1]._l);
     return expr_null_t::alloc ();
   }
   
