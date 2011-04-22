@@ -134,8 +134,7 @@ class compressible_t {
 public:
 
   struct opts_t {
-    opts_t (gzip_mode_t m = GZIP_NONE, bool c = false, int l= -1)
-      : mode (m), chunked (c), lev (l) {}
+    opts_t (gzip_mode_t m = GZIP_NONE, bool c = false, int l= -1);
     gzip_mode_t mode;
     bool chunked;
     int lev;

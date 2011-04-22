@@ -151,7 +151,6 @@ public:
   void set_connection (str s) { _connection = s; }
   void set_content_delivery (compressible_t::opts_t o) {_content_delivery = o;}
 
-
   u_int _status;
   htpv_t _version;
   str _content_type;
