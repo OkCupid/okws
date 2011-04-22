@@ -149,7 +149,7 @@ public:
   // For backwards-compatibility
   int to_strbuf (strbuf *out, bool gz)
   { return to_strbuf (out, opts_t (gz ? GZIP_SMART : GZIP_NONE, gz)); }
-  const strubf &to_strbuf (bool gz)
+  const strbuf &to_strbuf (bool gz)
   { return to_strbuf (opts_t (gz ? GZIP_SMART : GZIP_NONE, gz)); }
 
 };
