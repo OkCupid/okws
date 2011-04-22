@@ -174,6 +174,8 @@ public:
   int to_strbuf (strbuf *b, compressible_t::opts_t o);
   int to_strbuf (strbuf *b, bool gz)
   { return compressible_t::to_strbuf (b, gz); }
+  const strbuf &to_strbuf (bool gz)
+  { return compressible_t::to_strbuf (gz); }
 
   size_t inflated_len () const;
 
