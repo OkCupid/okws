@@ -598,7 +598,7 @@ zbuf::to_strbuf (strbuf *out, compressible_t::opts_t o)
 // a regular body.
 compressible_t::opts_t::opts_t (gzip_mode_t m, bool chk, int lev)
   : mode (m),
-    chunked (m == GZIP_SMART && chk),
+    chunked (m == GZIP_SMART && chk && ok_gzip_chunking),
     lev (lev) {}
 
 //-----------------------------------------------------------------------

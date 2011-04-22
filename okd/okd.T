@@ -276,6 +276,8 @@ okd_t::parse_file (const str &cf)
     .add ("EmergencyKillSignal", &_emerg_kill_signal, 0, 0xff)
     .add ("SendConnectionTimeBudget", &okd_sendcon_time_budget, time_t (0),
 	  time_t (1000))
+    .add ("GzipChunking", &ok_gzip_chunking)
+    .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")

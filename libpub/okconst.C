@@ -150,6 +150,12 @@ int okd_emergency_kill_signal = SIGABRT;    // signal to send for kill
 time_t okd_sendcon_time_budget = 10;        // >10s, something is F'ed
 
 //
+// chunking tuning
+//
+bool ok_gzip_chunking = true;              // prefer chunked w/ gzip
+bool ok_gzip_chunking_old_safaris = false; // some safaris are broken
+
+//
 // okld constants
 //
 u_int okld_startup_batch_size = 25;        // number in each batch

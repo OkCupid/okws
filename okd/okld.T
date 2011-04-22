@@ -830,6 +830,8 @@ okld_t::parse_file (const str &cf)
     .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
     .add ("EmergencyKillEnabled", &_emerg_kill)
     .add ("SSLCipherList", &_okssl._cipher_list)
+    .add ("GzipChunking", &ok_gzip_chunking)
+    .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
@@ -1063,7 +1065,9 @@ okld_t::encode_env ()
     .insert ("p3jse", ok_pub3_json_strict_escaping)
     .insert ("lqm", ok_listen_queue_max)
     .insert ("jsibm", ok_pub3_json_int_bitmax)
-    .insert ("asr", _aggressive_svc_restart);
+    .insert ("asr", _aggressive_svc_restart)
+    .insert ("gzch", ok_gzip_chunking)
+    .insert ("gzchos", ok_gzip_chunking_old_safaris);
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();

@@ -239,6 +239,7 @@ http_inhdr_t::has_broken_chunking () const
   // So for versions of Safari less than 525, disable it.  Make sure it's
   // not Chrome though, since Chrome pretends to be Safari.
   if (ua && 
+      !ok_gzip_chunking_old_safaris &&
       !chrome_rxx.search (ua) && 
       safari_rxx.search (ua) &&
       convertint (safari_rxx[1], &v) && 
