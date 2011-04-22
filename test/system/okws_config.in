@@ -25,7 +25,7 @@ AccessLogFmt	ivt1sbU
 OkMgrSocket             okd.sock
 OkMgrSocketAccessMode	0777
 
-Service		static -n2 -p 8818 -p 8819 -z naive /static
+Service		static  /static
 RegexAlias	/static		^(:\d+)?/static/.*$
 Alias		/static		/
 
@@ -71,3 +71,4 @@ EmergencyKillEnabled 1
 
 # juice this way up for testing....
 DemuxTimeout 359
+GzipChunking 1

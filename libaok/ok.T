@@ -132,8 +132,10 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
   tvars {
     ptr<http_response_base_t> ret;
     http_resp_attributes_t hra (n, v);
+    compressible_t::opts_t co (gz ? GZIP_SMART : GZIP_NONE);
   }
-  hra.set_gzip (gz ? GZIP_SMART : GZIP_NONE);
+
+  hra.set_content_delivery (co);
   
   twait { geterr (s, hra, mkevent (ret)); }
   ev->trigger (ret);
@@ -342,6 +344,8 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("aczt", &ok_ahttpcon_zombie_timeout);
     t->lookup ("bid", &_brother_id);
     t->lookup ("nch", &_n_children);
+    t->lookup ("gzch", &ok_gzip_chunking);
+    t->lookup ("gzchos", &ok_gzip_chunking_old_safaris);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);
@@ -1092,8 +1096,8 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
 void
 browser_specific_fixups (const http_inhdr_t &in, http_resp_attributes_t *out)
 {
-  if (in.requires_content_len_with_chunking ()) {
-    out->set_requires_content_len (true);
+  if (in.has_broken_chunking ()) {
+    out->set_bad_chunking (true);
   }
 }
 
@@ -1120,7 +1124,9 @@ okclnt_base_t::output_hdr (ssize_t len)
 
   http_resp_attributes_t hra (get_status (), hdr_cr ().get_vers ());
   set_attributes (&hra);
-  hra.set_gzip (GZIP_NONE);
+
+  // use the default compressible options!
+
   rsp = New refcounted<http_response_ok_t> (len, hra);
   fixup_log (rsp);
 
@@ -1177,7 +1183,9 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
   if (!output_frag_prepare ())
     ret = false;
 
-  const strbuf &sb = b.to_strbuf(false);
+  // Use the default options, without compression
+  const strbuf &sb = b.to_strbuf (compressible_t::opts_t ());
+
   _client_con->send (sb, NULL, done);
   b.clear();
   return true;
@@ -1265,13 +1273,13 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
   tvars {
     gzip_mode_t gz (_self->do_gzip (b));
     ssize_t prelen (gz != GZIP_NONE ? b->inflated_len () : ssize_t (-1));
-    vec<str> holdv;
     strbuf sb;
     holdvar int status (_self->get_status ());
-    http_resp_attributes_t hra (status, _self->hdr_cr ().get_vers ());
+    holdvar http_method_t meth (_self->hdr_cr ().mthd);
+    http_resp_attributes_t hra (status, _self->hdr_cr ().get_vers (), meth);
+    compressible_t::opts_t opts;
   }
 
-  b->to_strbuf (&sb, &holdv, gz);
 
   assert (output_state == ALL_AT_ONCE);
   output_state = DONE;
@@ -1287,13 +1295,11 @@ okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
     set_keepalive_attributes (&hra);
     set_attributes (&hra);
 
-    if (hdr_cr ().mthd == HTTP_MTHD_HEAD) {
-      hra.set_gzip (false);
-      rsp = New refcounted<http_response_head_t> (sb.tosuio ()->resid (), hra);
-    } else {
-      hra.set_gzip (gz != GZIP_NONE);
-      rsp = New refcounted<http_response_ok_t> (sb, hra);
-    }
+    // We can only do this after the attributes are set!
+    opts = compressible_t::opts_t (gz, hra.get_chunking_support());
+    b->to_strbuf (&sb, opts);
+    hra.set_content_delivery (opts);
+    rsp = New refcounted<http_response_ok_t> (sb, hra);
     fixup_log (rsp);
 
     if (uid_set) rsp->set_uid (uid);
@@ -1834,12 +1840,12 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
     gzip_mode_t gz (_self->do_gzip (b));
     ssize_t prelen (gz != GZIP_NONE && b ? b->inflated_len () : ssize_t (-1));
     holdvar int status (_self->get_status ());
-    http_resp_attributes_t hra (status, _self->hdr_cr ().get_vers ());
+    holdvar http_method_t meth (_self->hdr_cr ().mthd);
+    http_resp_attributes_t hra (status, _self->hdr_cr ().get_vers (), meth);
     ptr<ahttpcon> x (_self->client_con ());
     ptr<http_response_base_t> rsp;
-    size_t contlen;
-    bool head (false);
     ssize_t rc;
+    compressible_t::opts_t opts;
   }
 
   assert (output_state == ALL_AT_ONCE);
@@ -1852,24 +1858,12 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
     // error(), since we only want to call send_complete() once.
     twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
   } else {
-
    
-    head = (hdr_cr ().mthd == HTTP_MTHD_HEAD);
-    if (head) {
-      gz = GZIP_NONE;
-      contlen = b ? b->inflated_len () : 0;
-      b = NULL;
-    }
-
     set_attributes (&hra);
+    opts = compressible_t::opts_t (gz, hra.get_chunking_support ());
+    hra.set_content_delivery (opts);
 
-    if (head) {
-      hra.set_gzip (false);
-      rsp = New refcounted<http_response_head_t> (contlen, hra);
-    } else {
-      hra.set_gzip (gz);
-      rsp = New refcounted<http_response_ok2_t> (hra, b);
-    }
+    rsp = New refcounted<http_response_ok2_t> (hra, b);
     fixup_log (rsp);
 
     if (uid_set) rsp->set_uid (uid);

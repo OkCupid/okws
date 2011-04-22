@@ -195,6 +195,9 @@ extern time_t ok_ahttpcon_zombie_timeout;      // how long to wait before warn
 extern time_t okd_emergency_kill_wait_time;    // time to emergency kill
 extern int okd_emergency_kill_signal;          // signal to send
 extern time_t okd_sendcon_time_budget;         // sending a con should be fast
+
+extern bool ok_gzip_chunking;                  // prefer chunked w/ gzip
+extern bool ok_gzip_chunking_old_safaris;      // some safaris are broken
  
 
 //

@@ -8,9 +8,8 @@ http_response_ok2_t::http_response_ok2_t (const http_resp_attributes_t &a,
 					  ptr<compressible_t> x)
     : _header (a),
       _body (x),
-      _compressed (a.get_gzip ()),
       _uid (0),
-      _n_bytes (0) 
+      _n_bytes (0)
 {
   fill ();
 }
@@ -20,21 +19,19 @@ http_response_ok2_t::http_response_ok2_t (const http_resp_attributes_t &a,
 void
 http_response_ok2_t::fill ()
 {
-  strbuf b2;
   if (_body) {
-    gzip_mode_t gzm = ok_gzip_get_mode (*_body, _header.get_version (), 
-					_compressed);
-    _body->to_strbuf (&b2, &_hold, gzm);
-    _n_bytes = b2.tosuio ()->resid ();
+    make_body ();
+    _n_bytes = _body_compressed.len ();
     set_inflated_len (_body->inflated_len ());
   } else {
     _n_bytes = 0;
-    _compressed = false;
   }
 
-  _header.fill_outer (_compressed, _n_bytes);
+  _header.fill_outer (_n_bytes);
   _header.fill_strbuf (_out);
-  _out.take (b2);
+  if (!_header.is_head_request ()) {
+    _out.take (_body_compressed);
+  }
 }
 
 
@@ -53,17 +50,24 @@ http_response_ok2_t::send2_T (ptr<ahttpcon> x, ev_ssize_t ev)
 
 //-----------------------------------------------------------------------
 
+void
+http_response_ok2_t::make_body ()
+{
+    compressible_t::opts_t o 
+      = _header.get_attributes ().get_content_delivery ();
+    _body->to_strbuf (&_body_compressed, o);
+}
+
+//-----------------------------------------------------------------------
+
 u_int 
 http_response_ok2_t::send (ptr<ahttpcon> x, cbv::ptr cb)
 {
-  strbuf b;
   if (_body) {
-    gzip_mode_t gzm = ok_gzip_get_mode (*_body, _header.get_version (), 
-					_compressed);
-    _body->to_strbuf (&b, &_hold, gzm);
+    make_body ();
   }
-  u_int ret = b.tosuio ()->resid ();
-  x->send (b, cb); 
+  u_int ret = _body_compressed.len ();
+  x->send (_body_compressed, cb); 
   return ret;
 }
 

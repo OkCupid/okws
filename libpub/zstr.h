@@ -129,15 +129,27 @@ private:
   intptr_t _scc_p;
 };
 
+
 class compressible_t {
 public:
+
+  struct opts_t {
+    opts_t (gzip_mode_t m = GZIP_NONE, bool c = false, int l= -1);
+    gzip_mode_t mode;
+    bool chunked;
+    int lev;
+  };
+
   virtual ~compressible_t () {}
-  virtual const strbuf &to_strbuf (bool gz) = 0;
-  virtual void to_strbuf (strbuf *b, bool gz) = 0;
+  virtual const strbuf &to_strbuf (opts_t o) = 0;
   virtual size_t inflated_len () const = 0;
-  virtual int naive_compress (strbuf *b, vec<str> *hold, int lev) = 0;
   virtual void clear () = 0;
-  virtual int to_strbuf (strbuf *out, vec<str> *hold, gzip_mode_t mode);
+  virtual int to_strbuf (strbuf *out, opts_t o) = 0;
+
+  // For backwards-compatibility
+  int to_strbuf (strbuf *out, bool gz)
+  { return to_strbuf (out, opts_t (gz ? GZIP_SMART : GZIP_NONE, gz)); }
+
 };
 
 class zbuf : public compressible_t {
@@ -154,21 +166,27 @@ public:
   template<typename T> inline zbuf &cat (T i) { f << i; return (*this); }
 
   // implement the compressible contract
-  inline const strbuf &to_strbuf (bool gz) {to_strbuf (&out, gz); return out;} 
-  inline void to_strbuf (strbuf *b, bool gz) 
-  { if (gz) compress (b); else output (b); }
+  inline const strbuf &to_strbuf (compressible_t::opts_t o) 
+  { to_strbuf (&out, o); return out;} 
+
+  int to_strbuf (strbuf *b, compressible_t::opts_t o);
+  int to_strbuf (strbuf *b, bool gz)
+  { return compressible_t::to_strbuf (b, gz); }
+
   size_t inflated_len () const;
-  int naive_compress (strbuf *b, vec<str> *hold, int lev) ;
+
+  int naive_compress (strbuf *b, int lev) ;
 
   void clear ();
   const strbuf &output () { output (&out); return out; }
-  const strbuf &compress (int l = -1) { compress (&out); return out; }
+  const strbuf &compress (compressible_t::opts_t o) 
+  { compress (&out, o); return out; }
 
 
   void output (strbuf *b, bool doclear = true);
-  void compress (strbuf *b, int l = -1);
+  void compress (strbuf *b, compressible_t::opts_t o);
 
-  int output (int fd, bool gz = false);
+  int output (int fd, compressible_t::opts_t o = opts_t ());
   void to_zstr_vec (vec<zstr> *zs);
 private:
 

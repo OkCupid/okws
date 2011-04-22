@@ -17,8 +17,7 @@ try2 (str d)
   zbuf z;
   z.cat (d);
   strbuf b;
-  vec<str> v;
-  z.naive_compress (&b, &v, 6);
+  z.naive_compress (&b, 6);
   warn << b << "\n";
 }
 

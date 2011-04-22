@@ -90,7 +90,7 @@ http_status_set_t::http_status_set_t ()
 //-----------------------------------------------------------------------
 
 void
-http_resp_header_t::fill (bool gz)
+http_resp_header_t::fill ()
 {
   add_date ();
   add ("Content-Type", attributes.get_content_type ());
@@ -102,7 +102,7 @@ http_resp_header_t::fill (bool gz)
   if ((tmp = attributes.get_content_disposition ()))  
     add ("Content-Disposition", tmp);
   add_server ();
-  if (gz) gzip ();
+  add_content_delivery_headers ();
 
   // anything else the user might have added; takes precedence
   // over anything put above
@@ -135,10 +135,10 @@ http_resp_header_redirect_t::fill (const str &s)
 //-----------------------------------------------------------------------
 
 void
-http_resp_header_t::fill_outer (bool gz, ssize_t len)
+http_resp_header_t::fill_outer (ssize_t len)
 {
-  fill (gz);
-  if (len >= 0 && (!gz || attributes.get_requires_content_len ())) {
+  fill ();
+  if (!attributes.get_content_delivery().chunked && len >= 0) {
     add (http_hdr_size_t (len));
   }
 }
@@ -146,10 +146,14 @@ http_resp_header_t::fill_outer (bool gz, ssize_t len)
 //-----------------------------------------------------------------------
 
 void
-http_resp_header_t::gzip ()
+http_resp_header_t::add_content_delivery_headers ()
 {
-  add ("Content-Encoding", "gzip");
-  add ("Transfer-Encoding", "chunked");
+  if (attributes.get_content_delivery ().mode != GZIP_NONE) {
+    add ("Content-Encoding", "gzip");
+  }
+  if (attributes.get_content_delivery ().chunked) {
+    add ("Transfer-Encoding", "chunked");
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -277,8 +281,8 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
 
 tamed void
 http_pub_t::publish (ptr<pub3::remote_publisher_t> p, str fn,
-		      cbb cb, ptr<pub3::dict_t> env, htpv_t v,
-		      bool gz)
+		     cbb cb, ptr<pub3::dict_t> env, htpv_t v,
+		     compressible_t::opts_t o)
 {
   tvars {
     zbuf b;
@@ -286,29 +290,15 @@ http_pub_t::publish (ptr<pub3::remote_publisher_t> p, str fn,
   }
   twait { p->run (&b, fn, mkevent (rc), env); }
   if (rc) {
-    gzip_mode_t gzm = ok_gzip_get_mode (b, v);
-    b.compressible_t::to_strbuf (&body, &_hold, gzm);
+    b.to_strbuf (&body, o);
   }
-  if (gz) gzip ();
+  header.add_content_delivery_headers ();
   TRIGGER (cb, rc);
 }
 
 //-----------------------------------------------------------------------
 
 typedef event<ptr<http_pub_t> >::ref  http_pub2_ev_t;
-
-tamed static void
-http_pub_t::alloc (ptr<pub3::remote_publisher_t> p, int n, str fn,
-		    http_pub2_ev_t ev, ptr<pub3::dict_t> env, htpv_t v, 
-		    bool gz)
-{
-  tvars {
-    ptr<http_pub_t> ret (New refcounted<http_pub_t> (n, v)); 
-    bool rc;
-  }
-  twait { ret->publish (p, fn, mkevent (rc), env, v, gz); }
-  ev->trigger (rc ? ret : NULL);
-}
 
 //-----------------------------------------------------------------------
 
@@ -323,7 +313,7 @@ http_pub_t::alloc2 (ptr<pub3::remote_publisher_t> p,
   }
   twait { 
     ret->publish (p, fn, mkevent (rc), env, hra.get_version (), 
-		  hra.get_gzip ());
+		  hra.get_content_delivery ());
   }
   ev->trigger (rc ? ret : NULL);
 }
@@ -333,7 +323,7 @@ http_pub_t::alloc2 (ptr<pub3::remote_publisher_t> p,
 http_error_t::http_error_t (int n, const str &si, const str &aux, htpv_t v)
   : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
 { 
-  header.fill_outer (false, nbytes);
+  header.fill_outer (nbytes);
 }
 
 //-----------------------------------------------------------------------
@@ -343,7 +333,7 @@ http_error_t::http_error_t (const http_resp_attributes_t &hra,
   : http_response_t (http_resp_header_t (hra), 
 		     make_body (hra.get_status (), si, aux)) 
 {
-  header.fill_outer (false, nbytes);
+  header.fill_outer (nbytes);
 }
 
 //-----------------------------------------------------------------------
@@ -361,7 +351,19 @@ http_resp_header_ok_t::http_resp_header_ok_t (ssize_t s,
 					      const http_resp_attributes_t &a)
   : http_resp_header_t (a) 
 { 
-  fill_outer (a.get_gzip (), s);
+  fill_outer (s);
+}
+
+//-----------------------------------------------------------------------
+
+strbuf 
+http_response_t::to_strbuf () const 
+{
+  strbuf b = header.to_strbuf ();
+  if (!is_head_request ()) {
+    b << body;
+  }
+  return b;
 }
 
 //-----------------------------------------------------------------------
