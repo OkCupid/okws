@@ -1092,8 +1092,8 @@ okclnt_base_t::set_attributes (http_resp_attributes_t *hra)
 void
 browser_specific_fixups (const http_inhdr_t &in, http_resp_attributes_t *out)
 {
-  if (in.requires_content_len_with_chunking ()) {
-    out->set_requires_content_len (true);
+  if (in.has_broken_chunking () && ok_workaround_broken_chunking) {
+    out->set_broken_chunking (true);
   }
 }
 
@@ -1255,6 +1255,66 @@ void
 okclnt_base_t::output (compressible_t *b, evv_t::ptr ev)
 {
   output_T (b, ev);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_base_t::output_inner (compressible_t *b, evv ev)
+{
+  tvars {
+    holdvar int status (_self->get_status ());
+    holdvar htpv_t vers (_self->hdr_cr ().get_vers ());
+    http_resp_attributes_t hra (status, vers);
+    vec<str> holdv;
+    strbuf sb;
+    gzip_mode_t mode;
+    ssize_t prelen (-1);
+  }
+
+  set_keepalive_attributes (&hra);
+  set_attributes (&hra);
+  mode = hra.set_desired_gzip_mode (do_gzip (b));
+  b->to_strbuf (&sb, &holdv, mode);
+  if (mode != GZIP_NONE) { prelen = b->inflated_len (); }
+  
+  if (hdr_cr ().mthd == HTTP_MTHD_HEAD) {
+    rsp = New refcounted<http_response_head_t> (sb.tosuio ()->resid (), hra);
+  } else {
+    rsp = New refcounted<http_response_ok_t> (sb, hra);
+  }
+  fixup_log (rsp);
+  
+  if (uid_set) rsp->set_uid (uid);
+  if (prelen > 0) rsp->set_inflated_len (prelen);
+  twait { send (rsp, mkevent ()); }
+
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+okclnt_base_t::output_T (compressible_t *b, evv_t::ptr ev)
+{
+  assert (output_state == ALL_AT_ONCE);
+  output_state = DONE;
+
+  // client might have cancelled as we were waiting for DB
+  if (_client_con->closed ()) {
+    // 3rd argument false --- don't issue send_complete() within
+    // error(), since we only want to call send_complete() once.
+    twait { error (HTTP_CLIENT_EOF, NULL, false, mkevent ()); }
+  } else {
+    output_inner_T (b, mkevent (ev));
+  }
+
+  // in okclnt_t versions 1s, will call delete this..
+  send_complete ();
+
+  // make sure this trigger is the last thing done in this function
+  // and that we don't access this afterwards...
+  if (ev) ev->trigger ();
 }
 
 //-----------------------------------------------------------------------
