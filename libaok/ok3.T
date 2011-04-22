@@ -316,15 +316,20 @@ okclnt3_t::output_loop (int time_budget, evv_t ev)
 
 //-----------------------------------------------------------------------
 
-bool
+gzip_mode_t
 okclnt3_t::resp_t::do_gzip () const
 {
-  return (_req && 
-	  _req->hdr_cr ().takes_gzip () && 
-	  ok_gzip_mode != GZIP_NONE &&
-	  _body &&
-	  _body->inflated_len () &&
-	  _rsp_gzip);
+  gzip_mode_t ret = GZIP_NONE;
+  if (_req && 
+      _req->hdr_cr ().takes_gzip () && 
+      ok_gzip_mode != GZIP_NONE &&
+      _body &&
+      _body->inflated_len () &&
+      _rsp_gzip) {
+
+    ret = ok_gzip_mode;
+  }
+  return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -382,18 +387,19 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
 {
   tvars {
     ptr<http_response_base_t> rsp;
-    ptr<okclnt3_t::req_t> req (_self->req ());
+    holdvar ptr<okclnt3_t::req_t> req (_self->req ());
     http_inhdr_t *inhdrs (req ? req->hdr_p () : NULL);
     holdvar int vers (req ? req->hdr_cr ().get_vers () : 0);
-    http_resp_attributes_t hra (_self->status (), vers);
-    bool gz (_self->do_gzip ());
+    holdvar http_method_t meth (req->hdr_cr ().mthd);
+    http_resp_attributes_t hra (_self->status (), vers, meth);
+    gzip_mode_t gz (_self->do_gzip ());
     bool ok (true);
     oksrvc_t *svc (_self->svc ());
     ptr<ahttpcon> x (_self->con ());
     outcome_t outc (OUTCOME_SUCC);
     int nxt_status;
     ssize_t rc;
-    size_t contlen;
+    compressible_t::opts_t opts;
   }
 
   hra.set_others (_hdr_fields);
@@ -428,27 +434,10 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     // Handle the case in which the response is OK to send out,
     // but the response must be generated...
 
-    bool head (false);
-
-    head = (req && req->hdr_cr ().mthd == HTTP_MTHD_HEAD);
-
-    if (head) { 
-      gz = false;
-      contlen = _body ? _body->inflated_len () : 0;
-
-      // We're not going to need the body any more; let's force the
-      // deallocation now
-      _body = NULL; 
-    }
-
-    hra.set_gzip (gz);
     set_attributes (&hra);
-
-    if (head) {
-      rsp = New refcounted<http_response_head_t> (contlen, hra);
-    } else {
-      rsp = New refcounted<http_response_ok2_t> (hra, _body);
-    }
+    opts = compressible_t::opts_t (gz, hra.get_chunking_support());
+    hra.set_content_delivery (opts);
+    rsp = New refcounted<http_response_ok2_t> (hra, _body);
   }
 
   // now make a final pass

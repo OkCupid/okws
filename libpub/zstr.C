@@ -305,8 +305,10 @@ ztab_cache_t::alloc (const char *p, size_t l, bool lkp)
   return zstr (); // XXX should never get here
 }
 
+//-----------------------------------------------------------------------
+
 void
-zbuf::compress (strbuf *p, int level)
+zbuf::compress (strbuf *p, compressible_t::opts_t o)
 {
   strbuf2zstr ();
   size_t lim = zs.size ();
@@ -325,7 +327,7 @@ zbuf::compress (strbuf *p, int level)
     warn << "zbuf::compress: ";
 
   for (size_t i = 0; i < lim; i++) {
-    str z = zs[i].compress (level);
+    str z = zs[i].compress (o.lev);
     
     if (zdebug)
       warnx << zs[i].len () << "," ;
@@ -336,10 +338,11 @@ zbuf::compress (strbuf *p, int level)
     // first time through the loop add the gzip header; see zinit ()
     // for what that header actually looks like
     len = (i == 0) ? zhdr.len () + z.len () : z.len ();
-    p->fmt ("%x\r\n", len);
+    if (o.chunked) p->fmt ("%x\r\n", len);
     if (i == 0)  
       (*p) << zhdr;
-    (*p) << z << "\r\n";
+    (*p) << z;
+    if (o.chunked) { (*p) << "\r\n"; }
     crc = zs[i].crc32 (crc);
     ilen += zs[i].len ();
   }
@@ -362,17 +365,19 @@ zbuf::compress (strbuf *p, int level)
   dlen += uLong_to_buf (crc, ebcp + dlen);
   dlen += uLong_to_buf (ilen, ebcp + dlen);
   dlui = u_int (dlen);
-  p->fmt ("%x\r\n", dlui);
+  if (o.chunked) { p->fmt ("%x\r\n", dlui); }
   endbuf.setlen (dlui);
   s = endbuf;
-  (*p) << s << "\r\n0\r\n\r\n";
-
+  (*p) << s;
+  if (o.chunked) { (*p) << "\r\n0\r\n\r\n"; }
 	  
   return;
 
  compress_err:
   p->tosuio ()->clear ();
 }
+
+//-----------------------------------------------------------------------
 
 void
 zbuf::output (strbuf *p, bool doclear)
@@ -386,6 +391,8 @@ zbuf::output (strbuf *p, bool doclear)
   }
 }
 
+//-----------------------------------------------------------------------
+
 size_t
 zbuf::inflated_len () const
 {
@@ -398,6 +405,8 @@ zbuf::inflated_len () const
   len += f.tosuio ()->resid ();
   return len;
 }
+
+//-----------------------------------------------------------------------
 
 void zinit (bool cache, int lev)
 {
@@ -427,6 +436,8 @@ void zinit (bool cache, int lev)
   zlev = lev == -1 ? ok_gzip_compress_level : lev;
 }
 
+//-----------------------------------------------------------------------
+
 void
 zbuf::clear ()
 {
@@ -434,10 +445,12 @@ zbuf::clear ()
   zs.clear ();
 }
 
+//-----------------------------------------------------------------------
+
 int
-zbuf::output (int fd, bool gz)
+zbuf::output (int fd, compressible_t::opts_t o)
 {
-  to_strbuf (gz);
+  to_strbuf (o);
   int rc = 0;
   suio *uio = out.tosuio ();
   while (uio->resid () && (rc >= 0 || errno == EAGAIN)) {
@@ -448,6 +461,8 @@ zbuf::output (int fd, bool gz)
 
   return rc;
 }
+
+//-----------------------------------------------------------------------
 
 void
 zbuf::to_zstr_vec (vec<zstr> *zs2)
@@ -462,7 +477,7 @@ zbuf::to_zstr_vec (vec<zstr> *zs2)
 //-----------------------------------------------------------------------
 
 int
-zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
+zbuf::naive_compress (strbuf *b, int lev)
 {
   if (!zinitted) {
      warn << "OKWS says: you forgot to call zinit()! i'm doing it for you\n";
@@ -530,7 +545,7 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
     out.setlen (outp - out.cstr ());
     str out_s = out;
     tmp << out_s;
-    hold->push_back (out_s);
+    b->hold_onto (out_s);
 
     size_t trailer_size = 16;
     mstr trailer (trailer_size);
@@ -543,11 +558,8 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
     str trailer_s = trailer;
 
     tmp << trailer_s;
-    hold->push_back (trailer_s);
-    
-    b->fmt ("%x\r\n", int (tmp.tosuio ()->resid ()));
+    b->hold_onto (trailer_s);
     b->take (tmp);
-    b->fmt ("\r\n0\r\n\r\n");
   }
 
   deflateEnd (&z);
@@ -558,16 +570,18 @@ zbuf::naive_compress (strbuf *b, vec<str> *hold, int lev)
 //-----------------------------------------------------------------------
 
 int 
-compressible_t::to_strbuf (strbuf *out, vec<str> *hold, gzip_mode_t mode)
+zbuf::to_strbuf (strbuf *out, compressible_t::opts_t o)
 {
   int rc = 0;
-  switch (mode) {
+  switch (o.mode) {
   case GZIP_NONE:
+    output (out);
+    break;
   case GZIP_SMART:
-    to_strbuf (out, mode != GZIP_NONE);
+    compress (out, o);
     break;
   case GZIP_NAIVE:
-    rc = naive_compress (out, hold, ok_gzip_naive_compress_level);
+    rc = naive_compress (out, o.lev);
     break;
   default:
     warn << "unknown gzip mode given\n";

@@ -45,17 +45,17 @@ public:
 protected:
   void send2_T (ptr<ahttpcon> x, ev_ssize_t ev, CLOSURE);
   void fill ();
+  void make_body ();
 
   http_resp_header_t _header;
   ptr<compressible_t> _body;
 
-  bool _compressed;
   u_int64_t _uid;
   str _custom_log2;
   size_t _n_bytes;
 
   strbuf _out;
-  vec<str> _hold;
+  strbuf _body_compressed;
 };
 
 //------------------------------------------------------------------------

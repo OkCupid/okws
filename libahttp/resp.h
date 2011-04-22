@@ -31,6 +31,7 @@
 #include "ihash.h"
 #include "pub.h"
 #include "pub3.h"
+#include "inhdr.h"
 
 //
 // this global variable can be set to whatever the user wants.
@@ -116,12 +117,12 @@ public:
 
 class http_resp_attributes_t {
 public:
-  http_resp_attributes_t (u_int s, htpv_t v) : 
+  http_resp_attributes_t (u_int s, htpv_t v, http_method_t m = HTTP_MTHD_GET) : 
     _status (s), _version (v), _content_type ("text/html"), 
     _cache_control ("private"), 
-    _gzip (false),
     _connection ("close"),
-    _requires_contlen (false) {}
+    _bad_chunking (false),
+    _method (m) {}
 
   u_int get_status () const { return _status; }
   htpv_t get_version () const { return _version; }
@@ -129,23 +130,27 @@ public:
   str get_cache_control () const { return _cache_control; }
   str get_expires () const { return _expires; }
   str get_content_disposition () const { return _contdisp; }
-  bool get_gzip () const { return _gzip; }
   bool get_others (vec<http_hdr_field_t> *output);
   str get_connection () const { return _connection;  }
-  bool get_requires_content_len () const { return _requires_contlen; }
+  bool get_chunking_support () const { return !_bad_chunking; }
+  http_method_t get_method () const { return _method; }
+
+  compressible_t::opts_t get_content_delivery () const 
+  { return _content_delivery; }
 
   void get_others (cbs cb);
 
+  void set_bad_chunking (bool b) { _bad_chunking = b; }
   void set_version (htpv_t v) { _version = v; }
   void set_status (int i) { _status = i; }
   void set_content_type (const str &s) { _content_type = s; }
   void set_cache_control (const str &s) { _cache_control = s; }
   void set_expires (const str &s) { _expires = s; }
-  void set_gzip (bool b) { _gzip = b; }
   void set_content_disposition (const str s) { _contdisp = s; }
   void set_others (ptr<vec<http_hdr_field_t> > p ) { _others = p; }
   void set_connection (str s) { _connection = s; }
-  void set_requires_content_len (bool b) { _requires_contlen = b; }
+  void set_content_delivery (compressible_t::opts_t o) {_content_delivery = o;}
+
 
   u_int _status;
   htpv_t _version;
@@ -153,9 +158,10 @@ public:
   str _cache_control;
   str _expires;
   str _contdisp;
-  bool _gzip;
   str _connection;
-  bool _requires_contlen;
+  bool _bad_chunking;
+  http_method_t _method;
+  compressible_t::opts_t _content_delivery;
 
   ptr<vec<http_hdr_field_t> > _others;
 
@@ -176,16 +182,20 @@ public:
   { fields.push_back (http_hdr_field_t (n, v)); return *this; }
   const http_resp_header_t & add (const str &n, int64_t i) 
   { fields.push_back (http_hdr_field_t (n, i)); return *this; }
-  virtual void fill (bool gz = false);
-  void fill_outer (bool gz, ssize_t len);
+  virtual void fill ();
+  void fill_outer (ssize_t len);
   strbuf to_strbuf () const;
   void fill_strbuf (strbuf &b) const;
   inline int get_status () const { return attributes.get_status (); }
-  void gzip ();
+  void add_content_delivery_headers ();
   void add_date () { add (http_hdr_date_t ()); }
   void add_server () { add ("Server", global_okws_server_label); }
   void add_connection ();
   htpv_t get_version () const { return attributes.get_version (); }
+  const http_resp_attributes_t &get_attributes () const { return attributes; }
+  http_resp_attributes_t &get_attributes () { return attributes; }
+  bool is_head_request () const 
+  { return attributes.get_method () == HTTP_MTHD_HEAD; }
 
 protected:
   http_resp_attributes_t attributes;
@@ -264,14 +274,14 @@ public:
   http_response_t (const http_resp_header_t &h, const strbuf &b)
     : header (h), body (b), nbytes (b.tosuio ()->resid ()), uid (0),
       inflated_len (0) {}
-  strbuf to_strbuf () const { return (header.to_strbuf () << body); }
+  strbuf to_strbuf () const;
   u_int send (ptr<ahttpcon> x, cbv::ptr cb) ;
   size_t get_nbytes () const { return nbytes; }
-  inline void gzip () { header.gzip (); }
   void send2 (ptr<ahttpcon> x, ev_ssize_t ev) { send2_T (x, ev); }
 
   const http_resp_header_t *get_header () const { return &header; }
   http_resp_header_t *get_header () { return &header; }
+  bool is_head_request () const { return header.is_head_request (); }
 
   http_resp_header_t header;
 protected:
@@ -283,14 +293,6 @@ protected:
   u_int64_t uid;
   size_t inflated_len;
   str _custom_log2;
-};
-
-//-----------------------------------------------------------------------
-
-class http_response_head_t : public http_response_t {
-public:
-  http_response_head_t (size_t sz, const http_resp_attributes_t &a) :
-    http_response_t (http_resp_header_ok_t (sz, a)) {}
 };
 
 //-----------------------------------------------------------------------
@@ -337,13 +339,11 @@ public:
     : http_response_t (http_resp_header_t (ha)) {}
 
   void publish (ptr<pub3::remote_publisher_t> p, str fn,
-		cbb cb, ptr<pub3::dict_t> env = NULL,
-		htpv_t v = 0, bool gz = false, CLOSURE);
-
-  static void
-  alloc (ptr<pub3::remote_publisher_t> p, int n, str fn,
-	 event<ptr<http_pub_t> >::ref cb,
-	 ptr<pub3::dict_t> env = NULL, htpv_t v = 0, bool gz = false, CLOSURE);
+		cbb cb, 
+		ptr<pub3::dict_t> env = NULL,
+		htpv_t v = 0, 
+		compressible_t::opts_t o = compressible_t::opts_t (), 
+		CLOSURE);
 
   static void
   alloc2 (ptr<pub3::remote_publisher_t> p, 

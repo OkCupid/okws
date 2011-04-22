@@ -100,7 +100,7 @@ public:
 
     ptr<req_t> req () { return _req; }
     int status () const { return _status; }
-    bool do_gzip () const;
+    gzip_mode_t do_gzip () const;
     ptr<ahttpcon> con ();
     oksrvc_t *svc ();
 

@@ -25,6 +25,7 @@
 #include "httpconst.h"
 #include <ctype.h>
 #include "rxx.h"
+#include "parseopt.h"
 
 methodmap_t methodmap;
 
@@ -207,7 +208,10 @@ methodmap_t::lookup (const str &s) const
 
 static rxx gzip_rxx ("gzip(,|\\s*$)");
 static rxx netscape4_rxx ("Mozilla/4.0[678]");
-static rxx safari_rxx (".*Safari.*");
+static rxx safari_rxx ("\\bSafari/(\\d+)(\\.[0-9.]+)?\\b");
+static rxx chrome_rxx ("\\bChrome\\b");
+
+//-----------------------------------------------------------------------
 
 bool
 http_inhdr_t::takes_gzip () const
@@ -224,10 +228,25 @@ http_inhdr_t::takes_gzip () const
 //-----------------------------------------------------------------------
 
 bool
-http_inhdr_t::requires_content_len_with_chunking () const
+http_inhdr_t::has_broken_chunking () const
 {
   str ua = get_user_agent ();
-  bool ret =  ua && safari_rxx.match (ua);
+  int v;
+  bool ret = false;
+
+  // MK 2011/4/22 -- Jase's version of Safari, some unknown version
+  // of Safari that predates May 2009, couldn't handle chunking support.
+  // So for versions of Safari less than 525, disable it.  Make sure it's
+  // not Chrome though, since Chrome pretends to be Safari.
+  if (ua && 
+      !chrome_rxx.search (ua) && 
+      safari_rxx.search (ua) &&
+      convertint (safari_rxx[1], &v) && 
+      v <= 525) {
+
+    ret = true;
+  }
+
   return ret;
 }
 

@@ -94,7 +94,7 @@ public:
   inline str get_line1 () const { return line1; }
   inline str get_target () const { return target; }
   bool takes_gzip () const;
-  bool requires_content_len_with_chunking () const;
+  bool has_broken_chunking () const;
   inline str get_mthd_str () const { return tmthd; }
   inline str get_vers_str () const { return vers; }
   http_conn_mode_t get_conn_mode () const;
