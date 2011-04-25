@@ -281,7 +281,7 @@ http_resp_attributes_t::get_others (vec<http_hdr_field_t> *out)
 
 tamed void
 http_pub_t::publish (ptr<pub3::remote_publisher_t> p, str fn,
-		     cbb cb, ptr<pub3::dict_t> env, htpv_t v,
+		     evb_t ev, ptr<pub3::dict_t> env, htpv_t v,
 		     compressible_t::opts_t o)
 {
   tvars {
@@ -292,8 +292,10 @@ http_pub_t::publish (ptr<pub3::remote_publisher_t> p, str fn,
   if (rc) {
     b.to_strbuf (&body, o);
   }
-  header.add_content_delivery_headers ();
-  TRIGGER (cb, rc);
+
+  // Fill in the headers once we've published the body...
+  header.fill_outer (body.len ());
+  ev->trigger (rc);
 }
 
 //-----------------------------------------------------------------------
@@ -322,7 +324,10 @@ http_pub_t::alloc2 (ptr<pub3::remote_publisher_t> p,
 
 http_error_t::http_error_t (int n, const str &si, const str &aux, htpv_t v)
   : http_response_t (http_resp_header_t (n, v), make_body (n, si, aux)) 
-{ 
+{
+  // If we're making a default body (via make_body), then disable
+  // gzip in the reply.
+  header.disable_gzip ();
   header.fill_outer (nbytes);
 }
 
@@ -333,6 +338,9 @@ http_error_t::http_error_t (const http_resp_attributes_t &hra,
   : http_response_t (http_resp_header_t (hra), 
 		     make_body (hra.get_status (), si, aux)) 
 {
+  // If we're making a default body (via make_body), then disable
+  // gzip in the reply.
+  header.disable_gzip ();
   header.fill_outer (nbytes);
 }
 
@@ -364,6 +372,14 @@ http_response_t::to_strbuf () const
     b << body;
   }
   return b;
+}
+
+//-----------------------------------------------------------------------
+
+void
+http_resp_header_t::disable_gzip ()
+{
+  attributes.get_content_delivery ().mode = GZIP_NONE;
 }
 
 //-----------------------------------------------------------------------

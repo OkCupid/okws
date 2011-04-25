@@ -135,7 +135,9 @@ public:
   bool get_chunking_support () const { return !_bad_chunking; }
   http_method_t get_method () const { return _method; }
 
-  compressible_t::opts_t get_content_delivery () const 
+  const compressible_t::opts_t get_content_delivery () const 
+  { return _content_delivery; }
+  compressible_t::opts_t &get_content_delivery () 
   { return _content_delivery; }
 
   void get_others (cbs cb);
@@ -195,6 +197,7 @@ public:
   http_resp_attributes_t &get_attributes () { return attributes; }
   bool is_head_request () const 
   { return attributes.get_method () == HTTP_MTHD_HEAD; }
+  void disable_gzip ();
 
 protected:
   http_resp_attributes_t attributes;
@@ -338,7 +341,7 @@ public:
     : http_response_t (http_resp_header_t (ha)) {}
 
   void publish (ptr<pub3::remote_publisher_t> p, str fn,
-		cbb cb, 
+		evb_t ev, 
 		ptr<pub3::dict_t> env = NULL,
 		htpv_t v = 0, 
 		compressible_t::opts_t o = compressible_t::opts_t (), 
