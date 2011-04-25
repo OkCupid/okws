@@ -132,7 +132,8 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
   tvars {
     ptr<http_response_base_t> ret;
     http_resp_attributes_t hra (n, v);
-    compressible_t::opts_t co (gz ? GZIP_SMART : GZIP_NONE);
+    compressible_t::opts_t co ((gz && ok_gzip_error_pages) ? 
+			       GZIP_SMART : GZIP_NONE);
   }
 
   hra.set_content_delivery (co);
@@ -346,6 +347,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("nch", &_n_children);
     t->lookup ("gzch", &ok_gzip_chunking);
     t->lookup ("gzchos", &ok_gzip_chunking_old_safaris);
+    t->lookup ("gzep", &ok_gzip_error_pages);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);

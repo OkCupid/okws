@@ -832,6 +832,7 @@ okld_t::parse_file (const str &cf)
     .add ("SSLCipherList", &_okssl._cipher_list)
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
+    .add ("GzipErrorPages", &ok_gzip_error_pages)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
@@ -1067,7 +1068,10 @@ okld_t::encode_env ()
     .insert ("jsibm", ok_pub3_json_int_bitmax)
     .insert ("asr", _aggressive_svc_restart)
     .insert ("gzch", ok_gzip_chunking)
-    .insert ("gzchos", ok_gzip_chunking_old_safaris);
+    .insert ("gzchos", ok_gzip_chunking_old_safaris)
+    .insert ("gzep", ok_gzip_error_pages)
+    ;
+  
 
   if (_opt_daemon) {
     str l = ok::syslog_ctl.to_str ();

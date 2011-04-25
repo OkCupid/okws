@@ -39,6 +39,14 @@ u_int ok_gzip_cache_storelimit = 0x1000000;  // 16 M
 u_int ok_gzip_mem_level = 9;                 // zlib max
 int   ok_gzip_naive_compress_level = 7;      // naive gzip compress level
 
+
+//
+// chunking tuning
+//
+bool ok_gzip_chunking = true;              // prefer chunked w/ gzip
+bool ok_gzip_chunking_old_safaris = false; // some safaris are broken
+bool ok_gzip_error_pages = false;          // save space on 404s?
+
 //
 // user/group constants
 //
@@ -148,12 +156,6 @@ u_int okd_accept_delay = 0;         // delay before enabling accept
 time_t okd_emergency_kill_wait_time = 5;    // 5s of inactivity -> kill
 int okd_emergency_kill_signal = SIGABRT;    // signal to send for kill
 time_t okd_sendcon_time_budget = 10;        // >10s, something is F'ed
-
-//
-// chunking tuning
-//
-bool ok_gzip_chunking = true;              // prefer chunked w/ gzip
-bool ok_gzip_chunking_old_safaris = false; // some safaris are broken
 
 //
 // okld constants

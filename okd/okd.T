@@ -278,6 +278,7 @@ okd_t::parse_file (const str &cf)
 	  time_t (1000))
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
+    .add ("GzipErrorPages", &ok_gzip_error_pages)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")

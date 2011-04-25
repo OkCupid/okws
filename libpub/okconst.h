@@ -71,6 +71,11 @@ extern u_int   ok_gzip_mem_level;
 
 gzip_mode_t ok_gzip_str_to_mode (const str &s, bool *okp = NULL);
 
+// Higher level gzip stuff
+extern bool ok_gzip_chunking;                  // prefer chunked w/ gzip
+extern bool ok_gzip_chunking_old_safaris;      // some safaris are broken
+extern bool ok_gzip_error_pages;               // whether to gzip error pages
+
 //
 // user/group constants
 //
@@ -196,8 +201,6 @@ extern time_t okd_emergency_kill_wait_time;    // time to emergency kill
 extern int okd_emergency_kill_signal;          // signal to send
 extern time_t okd_sendcon_time_budget;         // sending a con should be fast
 
-extern bool ok_gzip_chunking;                  // prefer chunked w/ gzip
-extern bool ok_gzip_chunking_old_safaris;      // some safaris are broken
  
 
 //
