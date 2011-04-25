@@ -132,7 +132,7 @@ ok_httpsrv_t::geterr_T (int n, str s, htpv_t v, bool gz,
   tvars {
     ptr<http_response_base_t> ret;
     http_resp_attributes_t hra (n, v);
-    compressible_t::opts_t co (gz ? GZIP_SMART : GZIP_NONE);
+    compressible_t::opts_t co (GZIP_NONE);
   }
 
   hra.set_content_delivery (co);
