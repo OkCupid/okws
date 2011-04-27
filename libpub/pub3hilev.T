@@ -731,7 +731,7 @@ namespace pub3 {
       status->set_status (XPUB_STATUS_NOENT);
       strbuf b;
       b << s << ": file not found (failure cached)";
-      *status->errors->push_back (b);
+      status->errors->push_back (b);
       *f = NULL;
       return true;
     } else {
