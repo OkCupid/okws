@@ -1190,7 +1190,7 @@ okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
 
   _client_con->send (sb, NULL, done);
   b.clear();
-  return true;
+  return ret;
 }
 
 //-----------------------------------------------------------------------
