@@ -1181,7 +1181,7 @@ okclnt_base_t::output_fragment_T (str s)
 bool
 okclnt_base_t::output_fragment (compressible_t &b, cbv::ptr done)
 {
-  bool ret;
+  bool ret = true;
   if (!output_frag_prepare ())
     ret = false;
 
