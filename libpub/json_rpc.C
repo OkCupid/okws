@@ -87,6 +87,25 @@ json_decoder_t::json_decoder_t (ptr<v_XDR_dispatch_t> d, XDR *x)
 //-----------------------------------------------------------------------
 
 bool 
+json_decoder_t::rpc_traverse (int32_t &obj) 
+{ 
+  int64_t tmp;
+  bool ret = false;
+  if (is_empty ()) { error_empty ("int"); }
+  else if (!top ()->to_int (&tmp)) { error_wrong_type ("int", top ()); }
+  else if (tmp > int64_t (INT32_MAX) || tmp < int64_t(INT32_MIN)) { 
+    error_generic (strbuf ("int32_t is out of range (value was %" 
+			   PRId64 ")", tmp)); 
+  } else {
+    ret = true;
+    obj = tmp;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool 
 json_decoder_t::rpc_traverse (u_int32_t &obj) 
 { 
   int64_t tmp;
@@ -97,6 +116,22 @@ json_decoder_t::rpc_traverse (u_int32_t &obj)
     error_generic (strbuf ("u_int32_t is out of range (value was %" 
 			   PRId64 ")", tmp)); 
   } else {
+    ret = true;
+    obj = tmp;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool 
+json_decoder_t::rpc_traverse (int64_t &obj) 
+{ 
+  int64_t tmp;
+  bool ret = false;
+  if (is_empty ()) { error_empty ("int"); }
+  else if (!top ()->to_int (&tmp)) { error_wrong_type ("int", top ()); }
+  else {
     ret = true;
     obj = tmp;
   }
@@ -424,7 +459,25 @@ json_encoder_t::root_obj ()
 //-----------------------------------------------------------------------
 
 bool
+json_encoder_t::rpc_traverse (int32_t &obj)
+{
+  set_top (pub3::expr_int_t::alloc (obj));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
 json_encoder_t::rpc_traverse (u_int32_t &obj)
+{
+  set_top (pub3::expr_int_t::alloc (obj));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_traverse (int64_t &obj)
 {
   set_top (pub3::expr_int_t::alloc (obj));
   return true;

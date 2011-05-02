@@ -30,7 +30,7 @@ key = "test-key-" + str (int (time.time ()) % 10000)
 date = { "date" : { "on" : True, 
                     "date" : { "mday" : 27, "mon" : 11, "year" : 1977 } },
          "time" : { "on" : False} }
-data = { "d" : date, "i" : serial , "pk" : 4008, "d2" : date}
+data = { "d" : date, "i" :  - serial , "pk" : 4008, "d2" : date}
 put_arg = { "key" : key,
             "data" : data }
 

@@ -99,6 +99,8 @@ public:
   json_decoder_t (ptr<v_XDR_dispatch_t> d, XDR *x);
   bool rpc_traverse (u_int32_t &obj);
   bool rpc_traverse (u_int64_t &obj);
+  bool rpc_traverse (int32_t &obj);
+  bool rpc_traverse (int64_t &obj);
   bool rpc_encode (str s) { return false; }
   bool rpc_encode_opaque (str s) { return false; }
   bool rpc_decode (str *s);
@@ -127,6 +129,8 @@ public:
   json_encoder_t (ptr<v_XDR_dispatch_t> d, XDR *x);
   bool rpc_traverse (u_int32_t &obj);
   bool rpc_traverse (u_int64_t &obj);
+  bool rpc_traverse (int32_t &obj);
+  bool rpc_traverse (int64_t &obj);
   bool rpc_encode (str s);
   bool rpc_traverse_null ();
   bool rpc_encode_opaque (str s);
