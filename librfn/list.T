@@ -68,6 +68,7 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+
   ptr<const expr_t>
   join_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -90,6 +91,28 @@ namespace rfn3 {
       hold.push_back (s);
     }
     return expr_str_t::safe_alloc (b);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  reverse_t::v_eval_1 (eval_t *p, const margs_t &args) const
+  {
+    ptr<expr_t> x;
+    ptr<expr_list_t> l;
+    ptr<const expr_t> cel;
+    ptr<expr_t> el;
+
+    if (args.size () != 1) {
+      report_error (p, "reverse() takes 1 argument");
+    } else if (!(x = args[0])) {
+      report_error (p, "argument to reverse() must be non-null");
+    } else if (!(l = x->to_list ())) {
+      report_error (p, "argument to reverse() must be a list");
+    } else {
+      l->reverse ();
+    }
+    return l;
   }
 
   //-----------------------------------------------------------------------

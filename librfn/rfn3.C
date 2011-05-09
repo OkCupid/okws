@@ -77,6 +77,7 @@ namespace rfn3 {
     F(pop_front);
     F(list);
     F(sort);
+    F(reverse);
     F(cmp);
     F(format_float);
     F(format_int);
@@ -98,8 +99,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.13"; }
-  u_int64_t version_int () { return 3000013; }
+  const char *version_str () { return "3.0.14"; }
+  u_int64_t version_int () { return 3000014; }
 
   //-----------------------------------------------------------------------
 };
