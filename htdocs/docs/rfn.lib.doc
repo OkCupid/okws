@@ -461,7 +461,13 @@ print (replace (body, "[a-z.]+(com|edu)",
                 lambda (v) { return ("\%{toupper(v[1])}:\%{v[0]}"); }));
 %}
 will output: "the URL is com:foo.com. the URL is COM:foo.com."'
-         }
+         },
+
+         reverse : {
+	     input : [ { "v" : "l" } ],
+             output : "l",
+             desc : "Reverse the input list //in place//.  Return the reversed
+list."
     
     };
     
