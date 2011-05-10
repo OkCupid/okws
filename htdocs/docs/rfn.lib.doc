@@ -468,6 +468,21 @@ will output: "the URL is com:foo.com. the URL is COM:foo.com."'
              output : "l",
              desc : "Reverse the input list //in place//.  Return the reversed
 list."
+         },
+
+         bitwise_or : { 
+	     input : [ { "a1" : "u" }, {"a2" : "u" } ],
+	     output : "u",
+	     desc : "Compute the bitwise OR of the two arguments. Can take 
+arbitrarily many arguments, but only two are shown here."
+	 },
+
+	 bitwise_and : {
+	     input : [ { "a1" : "u" }, {"a2" : "u" } ],
+	     output : "u",
+	     desc : "Compute the bitwise AND of the two arguments. Can take 
+arbitrarily many arguments, but only two are shown here."
+	 }
     
     };
     
