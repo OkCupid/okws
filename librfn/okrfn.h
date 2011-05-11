@@ -46,6 +46,10 @@ namespace rfn3 {
   PUB3_COMPILED_FN(round, "f");
   PUB3_COMPILED_FN(ceil, "f");
   PUB3_COMPILED_FN(floor, "f");
+  PUB3_COMPILED_FN(pow, "ff");
+  PUB3_COMPILED_FN(sqrt, "f");
+  PUB3_COMPILED_FN(exp, "f");
+  PUB3_COMPILED_FN(log, "f");
   PUB3_COMPILED_FN(str, "O");
   PUB3_COMPILED_FN(tag_escape, "s|r");
   PUB3_COMPILED_FN(replace, "srO|b");

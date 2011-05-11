@@ -48,6 +48,43 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  exp_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double e = args[0]._f;
+    return expr_double_t::alloc (exp (e));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  log_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double b = args[0]._f;
+    return expr_double_t::alloc (log (b));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  sqrt_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (sqrt (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  pow_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double b = args[0]._f;
+    double e = args[1]._f;
+    return expr_double_t::alloc (pow (b, e));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   ceil_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     double d = args[0]._f;
