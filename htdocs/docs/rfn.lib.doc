@@ -482,8 +482,46 @@ arbitrarily many arguments, but only two are shown here."
 	     output : "u",
 	     desc : "Compute the bitwise AND of the two arguments. Can take 
 arbitrarily many arguments, but only two are shown here."
+	 },
+	 
+	 shuffle : {
+	    input : [ {"v" : "l" } ],
+	    output : "l",
+	    desc : "Shuffle the input list //in place//.  Return the
+shuffled list."
+	 },
+
+	 randsel : {
+	    input : [ { "v" : "l" } ],
+	    output : "l",
+	    desc : "Select a random element from the list //l//.  Return
+a tuple, with the element in the 0th slot, and the index of the element
+in the 1st slot.  Don't modify the list."
+         },
+	 
+	 exp : {
+	    input : [ { "x" : "f" } ],
+	    output : "f",
+	    desc  : "The C-library exp() function."
+	 },
+
+	 log : {
+	    input : [ { "x" : "f" } ],
+	    output : "f",
+	    desc  : "The C-library log() function."
+	 },
+
+	 sqrt : {
+	    input : [ { "x" : "f" } ],
+	    output : "f",
+	    desc  : "The C-library sqrt() function."
+	 },
+
+	 pow : {
+	    input : [ { "base" : "f" }, { "exp" : "f" } ],
+	    output : "f",
+	    desc  : "The C-library pow() function."
 	 }
-    
     };
     
     docs.rfn3 = rfn3_lib_doc;

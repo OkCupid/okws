@@ -79,6 +79,8 @@ namespace rfn3 {
     F(list);
     F(sort);
     F(reverse);
+    F(shuffle);
+    F(randsel);
     F(cmp);
     F(format_float);
     F(format_int);

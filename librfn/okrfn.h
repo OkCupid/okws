@@ -68,6 +68,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(format_int, "si");
   PUB3_COMPILED_FN(json_escape, "s");
   PUB3_COMPILED_FN(fork, "Fl");
+  PUB3_COMPILED_FN(randsel, "l");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);
@@ -84,6 +85,7 @@ namespace rfn3 {
 
   PUB3_COMPILED_HANDROLLED_FN(isnull);
   PUB3_COMPILED_UNPATTERNED_FN(append);
+  PUB3_COMPILED_UNPATTERNED_FN(shuffle);
   PUB3_COMPILED_UNPATTERNED_FN(reverse);
   PUB3_COMPILED_HANDROLLED_FN(default);
   PUB3_COMPILED_UNPATTERNED_FN(bitwise_or);

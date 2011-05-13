@@ -2,6 +2,7 @@
 
 #include "okrfn.h"
 #include "okws_rxx.h"
+#include "crypt.h"
 
 namespace rfn3 {
 
@@ -19,6 +20,19 @@ namespace rfn3 {
       tuple->push_back (safe_copy ((*in)[i]));
       out->push_back (tuple);
     }
+    return out;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  randsel_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<expr_list_t> out = expr_list_t::alloc ();
+    ptr<const expr_list_t> in = args[0]._l;
+    size_t i = rnd.getword () % in->size ();
+    out->push_back ((*in)[i]->copy ());
+    out->push_back (expr_int_t::alloc (i));
     return out;
   }
 
@@ -111,6 +125,43 @@ namespace rfn3 {
       report_error (p, "argument to reverse() must be a list");
     } else {
       l->reverse ();
+    }
+    return l;
+  }
+
+  //-----------------------------------------------------------------------
+
+  static void
+  shuffle (expr_list_t &v)
+  {
+    for (ssize_t i = v.size () - 1; i >= 0; i--) {
+      ssize_t j = rnd.getword () % (i + 1);
+      if (j != i) {
+	ptr<pub3::expr_t> x = v[i];
+	v[i] = v[j];
+	v[j] = x;
+      }
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  shuffle_t::v_eval_1 (eval_t *p, const margs_t &args) const
+  {
+    ptr<expr_t> x;
+    ptr<expr_list_t> l;
+    ptr<const expr_t> cel;
+    ptr<expr_t> el;
+
+    if (args.size () != 1) {
+      report_error (p, "shuffle() takes 1 argument");
+    } else if (!(x = args[0])) {
+      report_error (p, "argument to shuffle() must be non-null");
+    } else if (!(l = x->to_list ())) {
+      report_error (p, "argument to shuffle() must be a list");
+    } else {
+      shuffle (*l);
     }
     return l;
   }
