@@ -525,7 +525,7 @@ in the 1st slot.  Don't modify the list."
 
 	 splice : {
 	    input : [ { "v" : "l" }, { "index" : "i" }, { "remove" : "r" },
-	    	      { "o_1" : "O" }, { "o_2" : "O" }, { "o_3" : "O" } ]
+	    	      { "o_1" : "O" }, { "o_2" : "O" }, { "o_3" : "O" } ] ,
             output : "l",
 	    desc : "Like JS's splice() function. Remove //remove// objects
 from the list //v// starting at index //index//.  Replace with optional
