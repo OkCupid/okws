@@ -93,6 +93,7 @@ namespace rfn3 {
     F(exp);
     F(pow);
     F(sqrt);
+    F(splice);
 
 #undef F
 

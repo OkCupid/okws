@@ -521,6 +521,15 @@ in the 1st slot.  Don't modify the list."
 	    input : [ { "base" : "f" }, { "exp" : "f" } ],
 	    output : "f",
 	    desc  : "The C-library pow() function."
+	 },
+
+	 splice : {
+	    input : [ { "v" : "l" }, { "index" : i }, { "remove" : "r" },
+	    	      { "o_1" : "O" } ],
+            output : "l",
+	    desc : "Like JS's splice() function. Remove //remove// objects
+from the list //v// starting at index //index//.  Replace with optional
+objects //o_1//, through //o_n//, as many as specified."
 	 }
     };
     

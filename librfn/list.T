@@ -168,6 +168,49 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  static void
+  safe_push (ptr<expr_list_t> out, ptr<const expr_t> cel)
+  {
+    ptr<expr_t> el;
+    if (cel) el = cel->copy ();
+    if (!el) el = expr_null_t::alloc ();
+    out->push_back (el);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  splice_t::v_eval_1 (eval_t *p, const margs_t &args) const
+  {
+    ptr<expr_t> x;
+    ptr<expr_list_t> l;
+    ptr<const expr_t> cel;
+    ptr<expr_t> el;
+    ptr<expr_list_t> out;
+    int64_t i, r;
+
+    if (args.size () < 3) {
+      report_error (p, "splice() takes 3 or more arguments");
+    } else if (!(x = args[0])) {
+      report_error (p, "first argument to splice() must be non-null");
+    } else if (!(l = x->to_list ())) {
+      report_error (p, "first argument to splice() must be a list");
+    } else if (!args[1]->to_int (&i)) {
+      report_error (p, "second argument to splice() must be an int");
+    } else if (!args[2]->to_int (&r)) {
+      report_error (p, "third argument to splice() must be an int");
+    } else {
+      out = expr_list_t::alloc ();
+      size_t lim = min<size_t> (l->size(), i);
+      for (size_t j = 0; j < lim; j++)           { safe_push (out, (*l)[j]); }
+      for (size_t j = 3; j < args.size (); j++)  { safe_push (out, args[j]); }
+      for (size_t j = i + r; j < l->size(); j++) { safe_push (out, (*l)[j]); }
+    }
+    return out;
+  }
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   append_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
@@ -175,7 +218,6 @@ namespace rfn3 {
     ptr<expr_list_t> l;
     ptr<const expr_t> cel;
     ptr<expr_t> el;
-    size_t i;
 
     if (args.size () < 2) {
       report_error (p, "append() takes 2 or more arguments");
@@ -184,12 +226,7 @@ namespace rfn3 {
     } else if (!(l = x->to_list ())) {
       report_error (p, "first argument to append() must be a list");
     } else {
-      for (i = 1; i < args.size (); i++) {
-	  cel = args[i];
-	  if (cel) el = cel->copy ();
-	  if (!el) el = expr_null_t::alloc ();
-	  l->push_back (el);
-	}
+      for (size_t i = 1; i < args.size (); i++) { safe_push (l, args[i]); }
     }
     return l;
   }
