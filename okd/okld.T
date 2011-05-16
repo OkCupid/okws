@@ -827,6 +827,7 @@ okld_t::parse_file (const str &cf)
 	  time_t (0), time_t (INT_MAX))
     .add ("JsonIntBitMax", &ok_pub3_json_int_bitmax, -4, 128)
     .add ("AggressiveServiceRestart", &_aggressive_svc_restart)
+    .add ("DieOnLogdCrash", &_die_on_logd_crash)
     .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
     .add ("EmergencyKillEnabled", &_emerg_kill)
     .add ("SSLCipherList", &_okssl._cipher_list)
@@ -999,6 +1000,19 @@ okld_t::launch_pubd (evi_t ev)
 
 //-----------------------------------------------------------------------
 
+void
+okld_t::logd_crashed ()
+{
+  if (_die_on_logd_crash) {
+    warn << "Shutting down on logd crash\n";
+    shutdown1 ();
+  } else {
+    warn << "logd crashed, but taking no action\n";
+  }
+}
+
+//-----------------------------------------------------------------------
+
 tamed void 
 okld_t::launch_logd (evi_t cb)
 {
@@ -1013,7 +1027,9 @@ okld_t::launch_logd (evi_t cb)
   argv = logexc->get_argv ();
   assert (argv);
   argv->push_back (logd_parms.encode ());
+
   _log_primary = New log_primary_t (logexc);
+  _log_primary->set_fail_cb (wrap (this, &okld_t::logd_crashed));
 
   twait { _log_primary->connect (mkevent (b)); }
   if (b) {
@@ -1024,6 +1040,7 @@ okld_t::launch_logd (evi_t cb)
   } else {
     warn << "cannot connect to launched log daemon (oklogd)\n";
   }
+  
   cb->trigger (ret);
 }
 
@@ -1070,6 +1087,7 @@ okld_t::encode_env ()
     .insert ("gzch", ok_gzip_chunking)
     .insert ("gzchos", ok_gzip_chunking_old_safaris)
     .insert ("gzep", ok_gzip_error_pages)
+    .insert ("dolc", _die_on_logd_crash)
     ;
   
 
@@ -2306,6 +2324,39 @@ okld_t * okld_ch_t::okld () { return _cluster->okld (); }
 
 bool 
 okld_t::need_okd_rpc () const { return lazy_startup () || _emerg_kill; }
+
+//-----------------------------------------------------------------------
+
+okld_t::okld_t () 
+  : config_parser_t (), 
+    _log_primary (NULL),
+    svc_grp (ok_okd_gname),
+    nxtuid (ok_svc_uid_low), 
+    logexc (NULL), 
+    _pubd_exc (NULL),
+    coredumpdir (ok_coredumpdir), 
+    sockdir (ok_sockdir), 
+    sdflag (false), 
+    service_bin (ok_service_bin),
+    unsafe_mode (false), 
+    safe_startup_fl (true),
+    _okd ("okd", ok_okd_uname, ok_okd_gname),
+    _okssl (ok_ssl_uname, ok_ssl_gname),
+    clock_mode (SFS_CLOCK_GETTIME),
+    mmcd (ok_mmcd), 
+    mmcd_pid (-1), 
+    launchp (0),
+    used_primary_port (false),
+    _pubd (NULL),
+    _okd_mgr_socket (okd_mgr_socket),
+    _opt_daemon (false),
+    _lazy_startup (false),
+    _coredump_usr (ok_coredump_user),
+    _coredump_grp (ok_coredump_group),
+    _coredump_mode (ok_coredump_mode),
+    _aggressive_svc_restart (false),
+    _die_on_logd_crash (false),
+    _emerg_kill (false) {}
 
 //-----------------------------------------------------------------------
 

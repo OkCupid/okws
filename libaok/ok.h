@@ -699,16 +699,7 @@ public:
 
 class oksrvc_t : public ok_httpsrv_t, public ok_con_acceptor_t  { // OK Service
 public:
-  oksrvc_t (int argc, char *argv[]) 
-    : nclients (0), sdflag (false), pid (getpid ()), n_fd_out (0), n_reqs (0),
-      wait_for_signal_in_startup (false),
-      _n_newcli (0), _brother_id (0), _n_children (1),
-      _aggressive_svc_restart (false)
-  { 
-    init (argc, argv);
-    accept_msgs = ok_svc_accept_msgs;
-    accept_enabled = true;
-  }
+  oksrvc_t (int argc, char *argv[]);
 
   typedef okclnt_interface_t newclnt_t;
 
@@ -725,6 +716,7 @@ public:
   virtual void custom_init (cbv cb) { (*cb) (); }
   virtual void custom_init0 (cbv cb) { (*cb) (); }
   virtual void init_constants () {}
+  virtual void log_connection_crashed ();
 
   virtual void post_launch_pub (evb_t ev) { post_launch_pub_T (ev); }
   void post_launch_pub_T (evb_t ev, CLOSURE);
@@ -814,6 +806,7 @@ protected:
   size_t _brother_id;
   size_t _n_children;
   bool _aggressive_svc_restart;
+  bool _die_on_logd_crash;
 
 private:
 };

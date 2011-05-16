@@ -447,29 +447,7 @@ private:
 class okld_t : public ok_base_t , public config_parser_t
 {
 public:
-  okld_t () 
-    : config_parser_t (), 
-      _log_primary (NULL),
-      svc_grp (ok_okd_gname),
-      nxtuid (ok_svc_uid_low), logexc (NULL), _pubd_exc (NULL),
-      coredumpdir (ok_coredumpdir), sockdir (ok_sockdir), 
-      sdflag (false), service_bin (ok_service_bin),
-      unsafe_mode (false), safe_startup_fl (true),
-      _okd ("okd", ok_okd_uname, ok_okd_gname),
-      _okssl (ok_ssl_uname, ok_ssl_gname),
-      clock_mode (SFS_CLOCK_GETTIME),
-      mmcd (ok_mmcd), mmcd_pid (-1), launchp (0),
-      used_primary_port (false),
-      _pubd (NULL),
-      _okd_mgr_socket (okd_mgr_socket),
-      _opt_daemon (false),
-      _lazy_startup (false),
-      _coredump_usr (ok_coredump_user),
-      _coredump_grp (ok_coredump_group),
-      _coredump_mode (ok_coredump_mode),
-      _aggressive_svc_restart (false),
-      _emerg_kill (false) {}
-
+  okld_t () ;
   ~okld_t () { if (logexc) delete logexc; }
 
   void got_service (bool script, vec<str> s, str loc, bool *errp);
@@ -546,6 +524,7 @@ private:
 
   bool guess_pubd (const str &cf);
   bool parse_bind_reattempt_schedule ();
+  void logd_crashed ();
 
   struct alias_t {
     alias_t (const str &t, const str &f, const str &l, okws1_port_t p)
@@ -640,6 +619,7 @@ private:
   ok_grp_t _coredump_grp;
   int _coredump_mode;
   bool _aggressive_svc_restart;
+  bool _die_on_logd_crash;
 
   str _bind_reattempt_schedule_str;
   vec<time_t> _bind_reattempt_schedule;

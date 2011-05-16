@@ -66,6 +66,7 @@ SafeStartup 0
 ClusterAddressing 1
 AggressiveServiceRestart 1
 EmergencyKillEnabled 1
+DieOnLogdCrash 1
 
 #SSLCipherList	     !ADH:MEDIUM:LOW
 

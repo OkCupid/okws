@@ -314,7 +314,10 @@ okch_t::shutdown (oksig_t g, evv_t ev)
       RPC::okctl_program_1::okctl_kill (clnt, &g, aclnt_cb_null);
       // don't answer any more pub messages
       _state = OKC_STATE_KILLING;
-      twait { clnt->seteofcb (mkevent ()); }
+
+      if (clnt) {
+	twait { clnt->seteofcb (mkevent ()); }
+      }
     }
   }
 

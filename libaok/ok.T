@@ -348,6 +348,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("gzch", &ok_gzip_chunking);
     t->lookup ("gzchos", &ok_gzip_chunking_old_safaris);
     t->lookup ("gzep", &ok_gzip_error_pages);
+    t->lookup ("dolc", &_die_on_logd_crash);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);
@@ -538,6 +539,17 @@ oksrvc_t::kill (svccb *v)
 
 //-----------------------------------------------------------------------
 
+void
+oksrvc_t::log_connection_crashed ()
+{
+  SVC_ERROR ("connection to logd crashed");
+  if (_die_on_logd_crash) {
+    internal_reliable_shutdown ("logd crash", 0);
+  }
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 oksrvc_t::internal_reliable_shutdown_T (str s, int t)
 {
@@ -686,6 +698,7 @@ oksrvc_t::launch_T ()
   // initialization and connect to logging daemon
   if (_log_fd >= 0) {
     logd = New fast_log_t (_log_fd, logfmt);
+    logd->set_fail_cb (wrap (this, &oksrvc_t::log_connection_crashed));
   } else {
     fatal << "No logging mechanism specified.\n";
   }
@@ -707,6 +720,7 @@ oksrvc_t::launch_T ()
     SVC_FATAL_ERROR ("Could not establish connection to logd\n");
     exit (1);
   }
+
 
   // Allow work after pub init, but before we connect to DBs.
   if (OKDBG2(SVC_STARTUP)) SVC_CHATTER("+ custom_init0\n");
@@ -1941,6 +1955,27 @@ populate_keepalive_data (keepalive_data_t *out,
   }
     
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+
+oksrvc_t::oksrvc_t (int argc, char *argv[]) 
+  : nclients (0), 
+    sdflag (false), 
+    pid (getpid ()), 
+    n_fd_out (0), 
+    n_reqs (0),
+    wait_for_signal_in_startup (false),
+    _n_newcli (0), 
+    _brother_id (0), 
+    _n_children (1),
+    _aggressive_svc_restart (false),
+    _die_on_logd_crash (false)
+{ 
+  init (argc, argv);
+  accept_msgs = ok_svc_accept_msgs;
+  accept_enabled = true;
 }
 
 //-----------------------------------------------------------------------

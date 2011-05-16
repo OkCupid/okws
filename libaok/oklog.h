@@ -91,10 +91,12 @@ public:
   virtual void turn (evs_t ev) { turn_T (ev); }
   void kill (evv_t c, ptr<okauthtok_t> tok, 
 	     oksig_t s = OK_SIG_KILL) { h->kill (c, tok, s); }
+  void set_fail_cb (cbv::ptr c) { fail_cb = c; }
 protected:
   void turn_T (evs_t cb, CLOSURE);
   void connect_T (evb_t ev, CLOSURE);
   helper_t *h;
+  cbv::ptr fail_cb;
 };
 
 //-----------------------------------------------------------------------
@@ -107,9 +109,11 @@ public:
       he (hh) {}
   void clone (evi_t ev) { clone_client_t::clone (ev); }
   void connect (evb_t ev) { connect_T (ev); }
+  void set_fail_cb (cbv::ptr c) { fail_cb = c; }
 private:
   void connect_T (evb_t ev, CLOSURE);
   helper_exec_t *he;
+  cbv::ptr fail_cb;
 };
 
 //-----------------------------------------------------------------------

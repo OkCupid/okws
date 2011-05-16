@@ -26,6 +26,20 @@
 
 //-----------------------------------------------------------------------
 
+static void
+status_cb (cbv::ptr fail_cb, hlp_status_t st)
+{
+  if (st != HLP_STATUS_OK) {
+    warn << "oklogd unexpected status change to code=" << int (st) << "\n";
+  }
+
+  if (st == HLP_STATUS_HOSED && fail_cb) {
+    (*fail_cb) ();
+  }
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 log_t::connect_T (evb_t ev)
 {
@@ -33,6 +47,9 @@ log_t::connect_T (evb_t ev)
     bool ok;
   }
   twait { h->connect (mkevent (ok)); }
+  if (ok) {
+    h->set_status_cb (wrap (status_cb, fail_cb));
+  }
   ev->trigger (ok);
 }
 
@@ -45,6 +62,9 @@ log_primary_t::connect_T (evb_t ev)
     bool ok;
   }
   twait { he->connect (mkevent (ok)); }
+  if (ok) {
+    he->set_status_cb (wrap (status_cb, fail_cb));
+  }
   ev->trigger (ok);
 }
 
