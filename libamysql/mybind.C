@@ -17,8 +17,9 @@ mybind_str_t::bind (MYSQL_BIND *bnd, bool param)
 
 //-----------------------------------------------------------------------
 
-void
-mybind_str_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
+static void
+static_to_qry (const char *buf, u_int size, MYSQL *m, strbuf *b, char **s,
+	       u_int *l, char q)
 {
   u_int len2 = (size << 1) + 1;
   if (*l < len2 || !*s) {
@@ -28,8 +29,24 @@ mybind_str_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
     *s = New char[*l];
   }
   u_int rlen = mysql_real_escape_string (m, *s + 1, buf, size);
-  (*s)[0] = (*s)[rlen + 1] = '\'';
+  (*s)[0] = (*s)[rlen + 1] = q;
   b->buf (*s, rlen + 2);
+}
+
+//-----------------------------------------------------------------------
+
+void
+mybind_str_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
+{
+  static_to_qry (buf, size, m, b, s, l, '\'');
+}
+
+//-----------------------------------------------------------------------
+
+void
+mybind_var_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
+{
+  static_to_qry (_val.cstr (), _val.len (), m, b, s, l, '`');
 }
 
 //-----------------------------------------------------------------------

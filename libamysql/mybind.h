@@ -244,6 +244,34 @@ protected:
 
 //-----------------------------------------------------------------------
 
+class mysql_var_t {
+public:
+  mysql_var_t (str s) : _val (s) {}
+  str val () const { return _val; }
+  str _val;
+};
+
+//-----------------------------------------------------------------------
+
+class mybind_var_t :  public mybind_t {
+public:
+  mybind_var_t (str s) 
+    : mybind_t (MYSQL_TYPE_STRING), _val (s) { assert (s); }
+  mybind_var_t (const mysql_var_t &v) 
+    : mybind_t (MYSQL_TYPE_STRING), _val (v.val ()) { assert (_val); }
+#ifdef HAVE_MYSQL_BIND
+  void bind (MYSQL_BIND *bind, bool param) {}
+#endif
+  void to_qry (MYSQL *m, strbuf *b, char **ss, u_int *l);
+  str to_str () const { return _val; }
+  void assign () {}
+  bool read_str (const char *c, unsigned long l, eft_t typ) { return false; }
+protected:
+  str _val;
+};
+
+//-----------------------------------------------------------------------
+
 template<size_t n>
 class mybind_rpcstr_t :  public mybind_t {
 public:
@@ -650,6 +678,7 @@ public:
   mybind_param_t (const okdate_t &d) { p = New refcounted<mybind_date_t> (d); }
   mybind_param_t (sex_t s) { p = New refcounted<mybind_sex_t> (s); }
   mybind_param_t (const amysql_scalar_t &x);
+  mybind_param_t (mysql_var_t v) { p = New refcounted<mybind_var_t> (v); }
 
   template<size_t n>
   mybind_param_t (const rpc_bytes<n> &b)
@@ -692,6 +721,8 @@ public:
   { p = New refcounted<mybind_date_t> (x); return (*this); }
   mybind_param_t &operator= (const x_okdate_date_t &x)
   { p = New refcounted<mybind_date_t> (x); return (*this); }
+  mybind_param_t &operator= (const mysql_var_t &v)
+  { p = New refcounted<mybind_var_t> (v); return (*this); }
   
   template<size_t n> 
   mybind_param_t &operator= (const rpc_bytes<n> &b)
