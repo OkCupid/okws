@@ -46,7 +46,10 @@ mybind_str_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 void
 mybind_var_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
 {
-  static_to_qry (_val.cstr (), _val.len (), m, b, s, l, '`');
+  static const char *quote = "`";
+  if (_val && !strchr (_val.cstr (), quote[0])) {
+    *b << quote << _val << quote;
+  }
 }
 
 //-----------------------------------------------------------------------
