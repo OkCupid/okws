@@ -1,6 +1,25 @@
 #include "okrfn.h"
 #include "okws_rxx.h"
 
+//-----------------------------------------------------------------------
+
+// Strip all occurrences of the character 'c' from the input string in
+static str
+stripchar (str in, char c)
+{
+  mstr out (in.len ()+1);
+  const char *inp = in;
+  char *outp = out;
+  for ( ; *inp; inp++) {
+    if (*inp != c) { *(outp++) = *inp; }
+  }
+  *outp = '\0';
+  out.setlen (outp - out.cstr ());
+  return out;
+}
+
+//-----------------------------------------------------------------------
+
 namespace rfn3 {
 
   //-----------------------------------------------------------------------
@@ -10,19 +29,45 @@ namespace rfn3 {
   {
     str target, opts, body;
     ptr<const expr_t> ret;
+    bool tuple_out = false;
     body = args[0]._s;
+
     if (args.size () == 2) {
       target = args[1]._s;
     } else {
       target = args[2]._s;
       opts = args[1]._s;
     }
+
+    if ((tuple_out = (opts && strchr (opts.cstr (), 'T')))) {
+      opts = stripchar (opts, 'T');
+    }
+
     ptr<rxx> x = str2rxx (p, body, opts);
     if (!x) {
       report_error (p, "cannot parse regular expression");
     } else {
+
       bool b = match() ? x->match (target) : x->search (target);
-      ret = expr_bool_t::alloc (b);
+
+      // In the case of a 'T' argument, passed then we return as tuples
+      // the match groups.
+      if (tuple_out) {
+
+	ptr<expr_list_t> l = expr_list_t::alloc ();
+	if (b) {
+	  str s;
+	  size_t i (0);
+	  while ((s = x->at(i++))) { l->push_back (expr_str_t::alloc (s)); }
+	}
+	ret = l;
+
+      } else {
+	// Otherwise, let's return a bool, true for a match, and false
+	// for a lack of match.
+	ret = expr_bool_t::alloc (b);
+      }
+
     }
     return ret;
   }

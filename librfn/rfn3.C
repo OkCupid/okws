@@ -110,8 +110,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.17"; }
-  u_int64_t version_int () { return 3000017; }
+  const char *version_str () { return "3.0.18"; }
+  u_int64_t version_int () { return 3000018; }
 
   //-----------------------------------------------------------------------
 };
