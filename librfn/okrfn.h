@@ -72,6 +72,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(bitwise_leftshift, "uu");
   PUB3_COMPILED_FN(bitwise_rightshift, "uu");
   PUB3_COMPILED_FN(bitwise_xor, "uu");
+  PUB3_COMPILED_FN(index_of, "ss|i");
   
 
   PUB3_FILTER(utf8_fix);

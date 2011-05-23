@@ -231,4 +231,23 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  ptr<const expr_t>
+  index_of_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    str big_s = args[0]._s;
+    str small_s = args[1]._s;
+    size_t start = 0;
+    if (args.size () == 3) { start = args[2]._i; }
+    int ret = -1;
+    if (start < big_s.len ()) {
+      const char *big = big_s + start;
+      const char *small = small_s;
+      const char *pos = strstr (big, small);
+      if (pos) { ret = (pos - big) + start; }
+    }
+    return expr_int_t::alloc (ret);
+  }
+
+  //------------------------------------------------------------
+
 };

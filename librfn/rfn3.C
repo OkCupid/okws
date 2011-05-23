@@ -97,6 +97,7 @@ namespace rfn3 {
     F(pow);
     F(sqrt);
     F(splice);
+    F(index_of);
 
 #undef F
 
