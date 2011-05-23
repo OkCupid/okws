@@ -65,6 +65,9 @@ namespace rfn3 {
     F(floor);
     F(bitwise_or);
     F(bitwise_and);
+    F(bitwise_xor);
+    F(bitwise_leftshift);
+    F(bitwise_rightshift);
     F(str);
     F(logwarn);
     F(warn);
@@ -107,8 +110,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.16"; }
-  u_int64_t version_int () { return 3000016; }
+  const char *version_str () { return "3.0.17"; }
+  u_int64_t version_int () { return 3000017; }
 
   //-----------------------------------------------------------------------
 };

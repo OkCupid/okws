@@ -103,6 +103,37 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  bitwise_xor_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    u_int64_t l = args[0]._u;
+    u_int64_t r = args[1]._u;
+    return expr_uint_t::alloc (l ^ r);
+  }
+
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  bitwise_leftshift_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    u_int64_t base = args[0]._u;
+    u_int64_t shift = args[1]._u;
+    return expr_uint_t::alloc (base << shift);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  bitwise_rightshift_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    u_int64_t base = args[0]._u;
+    u_int64_t shift = args[1]._u;
+    return expr_uint_t::alloc (base >> shift);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   bitwise_or_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
     vec<u_int64_t> v;
@@ -119,7 +150,8 @@ namespace rfn3 {
 	size_t hi = i + 1;
 	u_int64_t u;
 	if (!(x = args[i])) {
-	  report_error (p, strbuf ("argument %zu to bitwise_or() is null", hi));
+	  report_error (p, strbuf ("argument %zu to bitwise_or() is null", 
+				   hi));
 	  ok = false;
 	} else if (!x->to_uint (&u)) {
 	  report_error (p, strbuf ("argument %zu to bitwise_or() is not a "

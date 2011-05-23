@@ -69,6 +69,10 @@ namespace rfn3 {
   PUB3_COMPILED_FN(json_escape, "s");
   PUB3_COMPILED_FN(fork, "Fl");
   PUB3_COMPILED_FN(randsel, "l");
+  PUB3_COMPILED_FN(bitwise_leftshift, "uu");
+  PUB3_COMPILED_FN(bitwise_rightshift, "uu");
+  PUB3_COMPILED_FN(bitwise_xor, "uu");
+  
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);
