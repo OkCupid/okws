@@ -86,24 +86,11 @@ namespace pub3 {
     ev->trigger (ret);
   }
 
-  //===================================== patterned_fn_t ==================
-
-  ptr<const expr_t>
-  patterned_fn_t::v_eval_1 (eval_t *e, const margs_t &args) const
-  {
-    ptr<const expr_t> ret;
-    vec<arg_t> checked;
-    if (check_args (e, args, &checked)) {
-      ret = v_eval_2 (e, checked);
-    }
-    return ret;
-  }
-
-  //----------------------------------------------------------------------
+  //================================ patterned_fn_base_t ===================
 
   bool
-  patterned_fn_t::check_args (eval_t *p, const margs_t &args, 
-			      vec<arg_t> *_checked) const
+  patterned_fn_base_t::check_args (eval_t *p, const margs_t &args, 
+				   vec<arg_t> *_checked) const
   {
     vec<str> err;
     
@@ -249,6 +236,43 @@ namespace pub3 {
     }
 
     return (err.size () == 0);
+  }
+
+  //===================================== patterned_fn_t ==================
+
+  ptr<const expr_t>
+  patterned_fn_t::v_eval_1 (eval_t *e, const margs_t &args) const
+  {
+    ptr<const expr_t> ret;
+    vec<arg_t> checked;
+    if (check_args (e, args, &checked)) {
+      ret = v_eval_2 (e, checked);
+    }
+    return ret;
+  }
+
+  //===================================== patterned_fn_t ==================
+
+  tamed void
+  patterned_fn_blocking_t::pub_to_val (eval_t *e, callable_t::args_t ai, 
+				       cxev_t ev) const
+  {
+    tvars {
+      ptr<const expr_t> ret;
+      vec<patterned_fn_base_t::arg_t> ac;
+      callable_t::margs_t ao;
+    }
+
+    // Three steps:
+    //  args_in (ai) to args_out (ao) via pub_args
+    //  args_out (ao) to args_checked (ac) via check_args
+    //  args_checks (ac) to result via virtual pub hook.
+
+    twait { pub_args (e, ai, &ao, mkevent ()); }
+    if (check_args (e, ao, &ac)) {
+      twait { v_pub_to_val_2 (e, ac, mkevent (ret)); }
+    }
+    ev->trigger (ret);
   }
 
   //========================================== library_t ==================

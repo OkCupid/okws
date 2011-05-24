@@ -1,5 +1,5 @@
 
-#include "okrfn.h"
+#include "okrfn-int.h"
 
 namespace rfn3 {
 
@@ -107,12 +107,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<lib_t> lib_t::alloc () {  return New refcounted<lib_t> (); }
+  ptr<lib_t> lib_t::alloc () { return New refcounted<lib_t> (); }
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.18"; }
-  u_int64_t version_int () { return 3000018; }
+  const char *version_str () { return "3.0.19"; }
+  u_int64_t version_int () { return 3000019; }
 
   //-----------------------------------------------------------------------
 };

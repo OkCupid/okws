@@ -1,6 +1,6 @@
 // -*-c++-*-
 
-#include "okrfn.h"
+#include "okrfn-int.h"
 #include "okws_rxx.h"
 #include "crypt.h"
 

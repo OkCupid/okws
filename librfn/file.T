@@ -1,6 +1,6 @@
 // -*-c++-*-
 
-#include "okrfn.h"
+#include "okrfn-int.h"
 #include "okformat.h"
 #include "pub3out.h"
 

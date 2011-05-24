@@ -1,6 +1,6 @@
 // -*-c++-*-
 
-#include "okrfn.h"
+#include "okrfn-int.h"
 #include "pubutil.h"
 #include "pescape.h"
 #include "okcgi.h"

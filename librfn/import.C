@@ -1,4 +1,4 @@
-#include "okrfn.h"
+#include "okrfn-int.h"
 
 namespace rfn3 {
 

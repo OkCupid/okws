@@ -1,5 +1,5 @@
 
-#include "okrfn.h"
+#include "okrfn-int.h"
 #include "okformat.h"
 #include <math.h>
 

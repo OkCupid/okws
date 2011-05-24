@@ -45,12 +45,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  class patterned_fn_t : public compiled_fn_t {
+  class patterned_fn_base_t : public compiled_fn_t {
   public:
-    patterned_fn_t (str l, str n, str p) : compiled_fn_t (l, n), _arg_pat (p) {}
-    virtual bool might_block () const { return false; }
-    
-  protected:
+    patterned_fn_base_t (str l, str n, str p) 
+      : compiled_fn_t (l, n), _arg_pat (p) {}
 
     struct arg_t {
       arg_t () : _i (0), _u (0), _b (false), _n (-1), _f (0) {}
@@ -67,17 +65,45 @@ namespace pub3 {
       ptr<const callable_t> _F;
     };
 
-    // evaluate, given that the arguments have been prevaluted...
-    ptr<const expr_t> v_eval_1 (eval_t *e, const margs_t &args) const;
-
-    // evaluate, given that the args have been preevaluated and type-checked
-    virtual ptr<const expr_t> 
-    v_eval_2 (eval_t *e, const vec<arg_t> &args) const = 0;
+  protected:
 
     virtual bool check_args (eval_t *p, const margs_t &args, 
 			     vec<arg_t> *a) const;
 
     str _arg_pat;
+  };
+
+  //-----------------------------------------------------------------------
+
+  // Only works for non-blocking function bodies
+  class patterned_fn_t : public patterned_fn_base_t {
+  public:
+    patterned_fn_t (str l, str n, str p) 
+      : patterned_fn_base_t (l, n, p) {}
+    
+    virtual bool might_block () const { return false; }
+    // evaluate, given that the arguments have been prevaluted...
+    ptr<const expr_t> v_eval_1 (eval_t *e, const margs_t &args) const;
+    
+    // evaluate, given that the args have been preevaluated and type-checked
+    virtual ptr<const expr_t> 
+    v_eval_2 (eval_t *e, const vec<arg_t> &args) const = 0;
+  };
+
+  //-----------------------------------------------------------------------
+
+  class patterned_fn_blocking_t : public patterned_fn_base_t {
+  public:
+    patterned_fn_blocking_t (str l, str n, str p) 
+      : patterned_fn_base_t (l, n, p) {}
+    
+    bool might_block () const { return true; }
+    
+    // pub, given that the args have been preevaluated and type-checked
+    virtual void
+    v_pub_to_val_2 (eval_t *, const vec<arg_t> &, cxev_t, CLOSURE) const = 0;
+
+    void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const;
   };
 
   //-----------------------------------------------------------------------
@@ -148,6 +174,14 @@ namespace pub3 {
   x##_t () : compiled_fn_t (libname, #x) {}				\
   ptr<const expr_t>							\
   v_eval_1 (eval_t *p, const margs_t &args) const;			\
+  }
+  
+#define PUB3_COMPILED_FN_BLOCKING(x,pat)			        \
+  class x##_t : public pub3::patterned_fn_blocking_t {			\
+  public:								\
+  x##_t () : patterned_fn_blocking_t (libname, #x, pat) {}		\
+  void									\
+  v_pub_to_val_2 (eval_t *, const vec<arg_t> &, cxev_t, CLOSURE) const; \
   }
   
   //-----------------------------------------------------------------------
