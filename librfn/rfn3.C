@@ -92,6 +92,8 @@ namespace rfn3 {
     F(utf8_fix);
     F(wss_filter);
     F(fork);
+    F(sleep);
+    F(shotgun);
     F(log);
     F(exp);
     F(pow);

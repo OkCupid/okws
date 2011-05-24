@@ -75,6 +75,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  typedef vec<patterned_fn_base_t::arg_t> checked_args_t;
+
+  //-----------------------------------------------------------------------
+
   // Only works for non-blocking function bodies
   class patterned_fn_t : public patterned_fn_base_t {
   public:
