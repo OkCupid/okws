@@ -14,11 +14,6 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  using namespace pub3;
-  extern const char *libname;
-
-  //-----------------------------------------------------------------------
-
   PUB3_COMPILED_FN(rand, "|uu");
   PUB3_COMPILED_FN(len, "O");
   PUB3_COMPILED_FN(join, "sl");
@@ -55,8 +50,6 @@ namespace rfn3 {
   PUB3_COMPILED_FN(log, "f");
   PUB3_COMPILED_FN(str, "O");
   PUB3_COMPILED_FN(tag_escape, "s|r");
-  PUB3_COMPILED_FN(replace, "srO|b");
-  PUB3_COMPILED_FN(warn, "s");
   PUB3_COMPILED_FN(logwarn, "s|b");
   PUB3_COMPILED_FN(warn_trace, "s");
   PUB3_COMPILED_FN(enable_wss, "b");
