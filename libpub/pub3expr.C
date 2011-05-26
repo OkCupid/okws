@@ -681,6 +681,33 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  static bool
+  list_mania (ptr<const expr_t> x1, ptr<const expr_t> x2,
+	      ptr<const expr_list_t> *l1p, ptr<const expr_list_t> *l2p) 
+  {
+    ptr<const expr_list_t> l1, l2;
+    if (x1) { l1 = x1->to_list (); }
+    if (x2) { l2 = x2->to_list (); }
+
+    if (!l1 && !l2) { /* noop */ }
+    else if (!l1) {
+      assert (l2);
+      ptr<expr_list_t> tmp = expr_list_t::alloc ();
+      if (x1) { tmp->push_back (x1->copy ()); }
+      l1 = tmp;
+    } else if (!l2) {
+      ptr<expr_list_t> tmp = expr_list_t::alloc ();
+      if (x2) { tmp->push_back (x2->copy ()); }
+      l2 = tmp;
+    }
+
+    *l1p = l1; *l2p = l2;
+    bool ret = (l1 && l2);
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
   bool
   expr_EQ_t::eval_static (ptr<const expr_t> x1, ptr<const expr_t> x2, bool pos) 
   {
@@ -689,9 +716,16 @@ namespace pub3 {
     
     bool n1 = !x1 || x1->is_null ();
     bool n2 = !x2 || x2->is_null ();
+    ptr<const expr_list_t> l1, l2;
 
     if (n1 && n2) { tmp = 1; }
-    else if (!n1 && !n2) {
+    else if (n1 || n2) { tmp = 0; }
+    else if (list_mania (x1, x2, &l1, &l2)) {
+      tmp = (l1->size () == l2->size ());
+      for (size_t i = 0; tmp && i < l1->size (); i++) {
+	if (!eval_static ((*l1)[i], (*l2)[i], true)) { tmp = 0; }
+      }
+    } else {
       scalar_obj_t o1 = x1->to_scalar ();
       scalar_obj_t o2 = x2->to_scalar ();
       tmp = (o1 == o2) ? 1 : 0;
@@ -729,21 +763,37 @@ namespace pub3 {
     bool ret = false;
     ptr<const expr_list_t> ll, rl;
 
-    if (l && r && (ll = l->to_list ()) && (rl = r->to_list ())) {
+    if (list_mania (l, r, &ll, &rl)) {
      
-      size_t ls = ll->size ();
-      size_t rs = rl->size ();
+      size_t ls, rs;
+      ret = false;
+      ls = ll->size ();
+      rs = rl->size ();
 
-      ret = true;
-      for (size_t i = 0; ret && i < ls && i < rs; i++) {
-	bool b = eval_final (e, (*ll)[i], (*rl)[i], op, self);
-	if (!b) { ret = false; }
-      }
-
-      if (ret && ls != rs) {
+      // Use python rules for lists of unequal size
+      if (ls != rs) {
 	switch (op) {
 	case XPUB3_REL_LTE: case XPUB3_REL_LT: ret = (ls < rs); break;
 	case XPUB3_REL_GTE: case XPUB3_REL_GT: ret = (ls > rs); break;
+	default: break;
+	}
+      } else {
+	
+	// In the case of equality , we need to recurse...
+	bool go = true;
+	for (size_t i = 0; go && i < ls; i++) {
+	  l = (*ll)[i]; 
+	  r = (*rl)[i];
+	  bool eq = expr_EQ_t::eval_static (l, r, true);
+	  if (!eq) {
+	    go = false;
+	    ret = eval_final (e, l, r, op, self);
+	  }
+	}
+	// If we made it to the end with equality, then we can return
+	// return in the case of <= or >=, and false otherwise.
+	if (go) {
+	  ret = (op == XPUB3_REL_LTE || op == XPUB3_REL_GTE);
 	}
       }
 
