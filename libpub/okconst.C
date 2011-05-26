@@ -337,6 +337,9 @@ size_t ok_dflt_cgibuf_sz = 0x10000;
 bool ok_http_parse_query_string = true;
 bool ok_http_parse_cookies = true;
 
+const char *ok_double_fmt_int_default = "%.16g";
+const char *ok_double_fmt_ext_default = "%.10g";
+
 static void
 vec2vec (vec<const char *> *out, const vec<str> &in)
 {

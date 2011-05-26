@@ -61,6 +61,7 @@ namespace rfn3 {
     F(contains);
     F(int);
     F(round);
+    F(cmp_float);
     F(ceil);
     F(floor);
     F(bitwise_or);
@@ -81,6 +82,7 @@ namespace rfn3 {
     F(pop_front);
     F(list);
     F(sort);
+    F(sort2);
     F(reverse);
     F(shuffle);
     F(randsel);

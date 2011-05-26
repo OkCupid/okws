@@ -39,6 +39,18 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  cmp_float_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double d = args[0]._f;
+    int ret = 0;
+    if (d > 0) { ret = 1; }
+    else if (d < 0) { ret = -1; }
+    return expr_int_t::alloc (ret);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   round_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     double d = args[0]._f;

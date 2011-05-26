@@ -356,6 +356,9 @@ str okws_etcfile (const char *f, const char *e = NULL,
 str okws_etcfile_required (const char *f, const char *e = NULL, bool d = true,
 			   const char **p = NULL);
 
+// A default double format for printing and interchange of data.
+extern const char *ok_double_fmt_int_default;  // for intnernal use
+extern const char *ok_double_fmt_ext_default;  // for external use (display)
 
 
 #endif /* _LIBPUB_OKCONST_H */

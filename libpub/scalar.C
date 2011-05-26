@@ -262,7 +262,7 @@ scalar_obj_t::_p_t::set (double d)
 {
 #define BUFSZ 1024
   char buf[BUFSZ];
-  size_t n = snprintf (buf, BUFSZ-1, "%g" , d);
+  size_t n = snprintf (buf, BUFSZ-1, ok_double_fmt_ext_default, d);
   _s = buf;
   size_t lim = min<size_t> (BUFSZ -1, n);
   buf[lim] = '\0';

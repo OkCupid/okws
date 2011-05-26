@@ -59,6 +59,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(bind, "sO|s");
   PUB3_COMPILED_FN(list, "O");
   PUB3_COMPILED_FN(sort, "l|F");
+  PUB3_COMPILED_FN(sort2, "l|F");
   PUB3_COMPILED_FN(cmp, "OO");
   PUB3_COMPILED_FN(format_float, "sf");
   PUB3_COMPILED_FN(format_int, "si");
@@ -68,6 +69,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(bitwise_rightshift, "uu");
   PUB3_COMPILED_FN(bitwise_xor, "uu");
   PUB3_COMPILED_FN(index_of, "ss|i");
+  PUB3_COMPILED_FN(cmp_float, "f");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);

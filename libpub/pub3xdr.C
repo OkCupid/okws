@@ -518,7 +518,7 @@ pub3::expr_double_t::to_xdr (xpub3_double_t *x) const
 {
 #define BUFSZ 128
   char buf[BUFSZ];
-  snprintf (buf, BUFSZ, "%g", _val);
+  snprintf (buf, BUFSZ, ok_double_fmt_int_default, _val);
   x->val = buf;
 #undef BUFSZ
   return true;
@@ -684,7 +684,7 @@ pub3::expr_double_t::to_xdr (xpub3_expr_t *x) const
 #define BUFSZ 64
   x->set_typ (XPUB3_EXPR_DOUBLE);
   char buf[BUFSZ];
-  snprintf (buf, BUFSZ, "%g", _val);
+  snprintf (buf, BUFSZ, ok_double_fmt_int_default, _val);
   x->xdouble->val = buf;
   return true;
 #undef BUFSZ

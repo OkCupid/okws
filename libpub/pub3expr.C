@@ -727,7 +727,28 @@ namespace pub3 {
 			       const expr_t *self)
   {
     bool ret = false;
-    if (l && !l->is_null () && r && !r->is_null ()) {
+    ptr<const expr_list_t> ll, rl;
+
+    if (l && r && (ll = l->to_list ()) && (rl = r->to_list ())) {
+     
+      size_t ls = ll->size ();
+      size_t rs = rl->size ();
+
+      ret = true;
+      for (size_t i = 0; ret && i < ls && i < rs; i++) {
+	bool b = eval_final (e, (*ll)[i], (*rl)[i], op, self);
+	if (!b) { ret = false; }
+      }
+
+      if (ret && ls != rs) {
+	switch (op) {
+	case XPUB3_REL_LTE: case XPUB3_REL_LT: ret = (ls < rs); break;
+	case XPUB3_REL_GTE: case XPUB3_REL_GT: ret = (ls > rs); break;
+	}
+      }
+
+    } else if (l && r && !l->is_null () && !r->is_null ()) {
+
       scalar_obj_t sl = l->to_scalar ();
       scalar_obj_t sr = r->to_scalar ();
 
@@ -1222,13 +1243,22 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+
+  int64_t expr_double_t::to_int () const { return int64_t (_val); }
+
+  //-----------------------------------------------------------------------
+
+  bool expr_double_t::to_int (int64_t *out) const 
+  { *out = int64_t (_val); return true; }
+
+  //-----------------------------------------------------------------------
   
   str
   pub3::expr_double_t::to_str (str_opt_t o) const
   {
 #define BUFSZ 128
     char buf[BUFSZ];
-    snprintf (buf, BUFSZ, "%g", _val);
+    snprintf (buf, BUFSZ, ok_double_fmt_ext_default, _val);
 #undef BUFSZ
     return buf;
   }

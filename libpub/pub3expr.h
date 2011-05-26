@@ -799,6 +799,8 @@ namespace pub3 {
     bool to_double (double *d) const;
     scalar_obj_t to_scalar () const;
     str to_str (PUB3_TO_STR_ARG) const;
+    int64_t to_int () const;
+    bool to_int (int64_t *out) const;
 
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_double_t"; }

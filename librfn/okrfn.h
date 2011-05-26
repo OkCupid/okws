@@ -16,6 +16,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  // Most of the functions have been moved into okrfn-int.h, so that
+  // we can add new functions without having to recompile and relink lib
   PUB3_COMPILED_FN(warn, "s");
   PUB3_COMPILED_FN(replace, "srO|b");
   

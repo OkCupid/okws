@@ -122,8 +122,8 @@ namespace rfn3 {
     int64_t i = 0;
     double d;
     if (!e) { /* nothing */ }
-    else if (e->to_int (&i)) { /* great! */ }
     else if (e->to_double (&d)) { i = int (d); }
+    else if (e->to_int (&i)) { /* great! */ }
     else { /* no dice! */ }
     return expr_int_t::alloc (i);
   }

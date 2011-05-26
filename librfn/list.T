@@ -503,6 +503,8 @@ namespace rfn3 {
   static ptr<expr_list_t> g_tmp_args;
   static eval_t *g_eval;
 
+  //-----------------------------------------------------------------------
+
   static int cmp_fn (const void *a, const void *b)
   {
     size_t *sa = const_cast<size_t *> (static_cast<const size_t *> (a));
@@ -513,6 +515,52 @@ namespace rfn3 {
     ptr<const expr_t> x = g_cmp->eval_to_val (g_eval, g_tmp_args);
     int r = x ? x->to_int () : -1;
     return r;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  sort2_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<expr_list_t> in = args[0]._l;
+    g_tmp_args = expr_list_t::alloc ();
+    g_tmp_args->setsize (2);
+    g_cmp = New refcounted<cmp_t> ();
+    g_eval = p;
+
+    ptr<const callable_t> keyfn;
+    if (args.size () > 1) { keyfn = args[1]._F; } 
+
+    size_t n = in->size ();
+
+    vec<size_t> v;
+    v.setsize (n);
+    for (size_t i = 0; i < n; i++) { v[i] = i; }
+
+    if (keyfn) {
+      g_target = expr_list_t::alloc ();
+      g_target->setsize (n);
+      ptr<expr_list_t> key_args = expr_list_t::alloc ();
+      key_args->setsize (1);
+      for (size_t i = 0; i < n; i++) { 
+	(*key_args)[0] = (*in)[i];
+	ptr<const expr_t> cx = keyfn->eval_to_val (p, key_args);
+	ptr<expr_t> x;
+	if (!cx) { x = expr_null_t::alloc (); }
+	else { x = cx->copy (); }
+	(*g_target)[i] = x;
+      }
+    } else {
+      g_target = in;
+    }
+    qsort (v.base (), n, sizeof (size_t), cmp_fn);
+    
+    ptr<expr_list_t> ret = expr_list_t::alloc ();
+    ret->setsize (n);
+    for (size_t i = 0; i < n; i++) {
+      (*ret)[i] = (*in)[v[i]];
+    }
+    return ret;
   }
 
   //-----------------------------------------------------------------------
