@@ -433,6 +433,11 @@ class Client:
 
     #-----------------------------------------
 
+    def __str__ (self):
+        return "%s:%d" % (self._host, self._port)
+
+    #-----------------------------------------
+
     def call (self, proc, arg, prog = -1, vers = -1):
 
         go = True
