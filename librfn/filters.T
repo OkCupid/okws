@@ -75,12 +75,13 @@ namespace rfn3 {
     str s = args[0]._s;
     size_t start = 0, len = 0;
     start = args[1]._i;
+    size_t slen = utf8_len (s);
 
     if (args.size () >= 3) { len = args[2]._i; }
-    else { len = s.len (); }
+    else { len = slen; }
 
-    if (start >= s.len ()) { start = s.len (); }
-    if (start + len >= s.len ()) { len = s.len () - start; }
+    if (start >= slen) { start = slen; }
+    if (start + len >= slen) { len = slen - start; }
 
     str r = utf8_substr (s, start, len);
     return expr_str_t::safe_alloc (r);

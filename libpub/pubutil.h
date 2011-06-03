@@ -55,6 +55,7 @@ str html_wss (str in);
 str dir_merge (str d, str f);
 bool has_null_byte (const str &s);
 str trunc_after_null_byte (str s);
+size_t utf8_len (str s);
 
 // Given in, put the directory component in d, and the basename component
 // in b.  Return TRUE if absolute and FALSE if otherwise. d set to NULL

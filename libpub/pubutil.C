@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include "rxx.h"
 #include "parseopt.h"
+#include "wide_str.h"
 
 bool
 mystrcmp (const char *a, const char *b)
@@ -682,6 +683,42 @@ trunc_after_null_byte (str s)
   else { ret = str (s.cstr (), l); }
   return ret;
 }
+
+//-----------------------------------------------------------------------
+
+bool
+ascii_strlen (str s, size_t *out)
+{
+  bool ret = true;
+  if (!s) {
+    ret = false;
+  } else {
+    const char *bp = s.cstr ();
+    const char *ep = bp + s.len ();
+    const char *p = bp;
+    while (ret && p < ep && *p) {
+      if (*p < 0) { ret = false; }
+      p++;
+    }
+    if (ret) { *out = p - bp; }
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+size_t
+utf8_len (str s)
+{
+  size_t ret = 0;
+  if (!s) { /* noop */ }
+  else if (!ascii_strlen (s, &ret)) {
+    wide_str_t w (s);
+    ret = w.len ();
+  }
+  return ret;
+}
+
 
 //-----------------------------------------------------------------------
 

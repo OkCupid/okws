@@ -1088,7 +1088,7 @@ namespace pub3 {
   bool
   expr_str_t::to_len (size_t *s) const
   {
-    *s = _val ? _val.len () : 0;
+    *s = _val ? utf8_len (_val) : 0;
     return true;
   }
   
