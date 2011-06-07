@@ -158,6 +158,8 @@ namespace pub3 {
     void output_err_stacktrace (str s, err_type_t t);
     void output_err (str s, err_type_t t);
 
+    ptr<eval_t> clone () const;
+
     str set_cwd (str s) ;
     str cwd () const { return _cwd; }
     void publish_file (ptr<const file_t> file, status_ev_t ev, CLOSURE);
@@ -215,6 +217,7 @@ namespace pub3 {
 
 
   protected:
+    void clone_env ();
 
     // A stack of all of the files being published, with their actual
     // metadata.

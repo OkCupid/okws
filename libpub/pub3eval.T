@@ -70,6 +70,20 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void eval_t::clone_env () { _env = _env->clone (); }
+
+  //--------------------------------------------------------------------
+
+  ptr<eval_t>
+  eval_t::clone () const
+  {
+    ptr<eval_t> ret = New refcounted<eval_t> (*this);
+    ret->clone_env ();
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
   eval_t::~eval_t () 
   {
     for (size_t i = 0; i < _to_clear.size (); i++) {

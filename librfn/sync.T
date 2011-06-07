@@ -23,6 +23,7 @@ fork_hlp (ptr<publish_t> pub, ptr<const callable_t> fn)
   // The function passed should be a lambda that doesn't take an arguments,
   // so pass in an empty list here.
   args = expr_list_t::alloc ();
+  pub = pub->clone ();
   
   twait { fn->pub_to_val (pub, args, mkevent (x)); }
 }
@@ -32,7 +33,18 @@ fork_hlp (ptr<publish_t> pub, ptr<const callable_t> fn)
 ptr<const expr_t>
 fork_t::v_eval_2 (publish_t *pub, const vec<arg_t> &args) const
 {
-  fork_hlp (mkref (pub), args[0]._F);
+  
+  //
+  // MK 2011/6/7
+  //
+  // We need to make a wholesale copy of the publishing environment, so that we
+  // and the other thread of computation can independently change it.  I think
+  // this should cover us, but I'm thruthfully a little unsure about it.
+  // Note, this change supercedes the early change of making publish_t's 
+  // inherit from refcounted, since it's no longer needed...
+  //
+  fork_hlp (pub->clone (), args[0]._F);
+
   return expr_null_t::alloc ();
 }
 

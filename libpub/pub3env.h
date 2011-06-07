@@ -44,6 +44,7 @@ namespace pub3 {
     void add_global_binding (const str &nm, ptr<expr_t> v);
     ptr<bindtab_t> library () { return _library; }
     size_t bind_globals (ptr<bindtab_t> t);
+    ptr<env_t> clone () const;
 
     //
     // LAYER_LOCALS_BARRIER -- stops resolution from descending past
