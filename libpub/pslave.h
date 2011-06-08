@@ -205,6 +205,7 @@ public:
   pid_t pid () const { return _pid; }
   bool make_pidfile (const str &s);
   bool remove_pidfile ();
+  ptr<axprt_unix> x_unix () { return _x_unix; }
   int recvfd () { return _x_unix->recvfd (); }
   rpc_ptr<int> uid;
   rpc_ptr<int> gid;

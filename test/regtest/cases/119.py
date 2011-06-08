@@ -7,6 +7,7 @@ filedata = """
     def delayed_print (s) {
        sleep(* 1 *);
        print (s);
+       logwarn (s);
     }
     locals { s : "%(test_s)s" }
     fork (lambda () { delayed_print(* s *); });
@@ -18,4 +19,4 @@ XYZ""" % { "test_s" : test_s }
 
 
 
-outcome = test_s + " XYZ"
+outcome = " XYZ"
