@@ -74,11 +74,20 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  void 
+  eval_t::silence_output () 
+  {
+    _output = New refcounted<output_silent_t> (_output->get_opts ());
+  }
+
+  //--------------------------------------------------------------------
+
   ptr<eval_t>
   eval_t::clone () const
   {
     ptr<eval_t> ret = New refcounted<eval_t> (*this);
     ret->clone_env ();
+    ret->silence_output ();
     return ret;
   }
 

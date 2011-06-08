@@ -219,6 +219,7 @@ namespace pub3 {
 
   protected:
     void clone_env ();
+    void silence_output ();
 
     // A stack of all of the files being published, with their actual
     // metadata.
