@@ -125,6 +125,7 @@ namespace pub3 {
   class loc_stack_t : public vec<runloc_t> {
   public:
     loc_stack_t ();
+    loc_stack_t (const lock_stack_t &l);
     ~loc_stack_t ();
     obj_list_t pub (ssize_t stop = -1) const;
     bool set_active (bool b);

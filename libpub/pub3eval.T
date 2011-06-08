@@ -407,6 +407,16 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  // Make sure that we account for copies independently of the
+  // original sources. Especially useful in cloning 
+  loc_stack_t::lock_stack_t (const lock_stack_t &l)
+    : vec<runloc_t> (l)
+  {
+    profiler_t::singleton()->register_stack (this);
+  }
+
+  //-----------------------------------------------------------------------
+
   loc_stack_t::~loc_stack_t ()
   {
     profiler_t::singleton()->unregister_stack (this);
