@@ -152,7 +152,7 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   tamed void
-  con_t::drain_to_network_T (strbuf *bp, evb_t ev)
+  con_t::drain_to_network_T (ptr<strbuf> bp, evb_t ev)
   {
     tvars {
       suio *uio (bp->tosuio ());

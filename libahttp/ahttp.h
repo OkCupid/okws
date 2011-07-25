@@ -68,7 +68,7 @@ public:
   ok_xprt_base_t () {}
   virtual ~ok_xprt_base_t () {}
   virtual abuf_src_t *alloc_abuf_src () = 0;
-  virtual void drain_to_network (strbuf *b, evb_t ev) = 0;
+  virtual void drain_to_network (ptr<strbuf> b, evb_t ev) = 0;
   virtual void drain_cancel () = 0;
   virtual bool ateof () const = 0;
 };
@@ -135,7 +135,7 @@ public:
   //--------------------------------------------------
   // ok_xprt_base_t interface
   abuf_src_t *alloc_abuf_src () ;
-  void drain_to_network (strbuf *b, evb_t ev);
+  void drain_to_network (ptr<strbuf> b, evb_t ev);
   void drain_cancel ();
   bool ateof () const { return eof; }
   

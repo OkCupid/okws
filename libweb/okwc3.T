@@ -247,17 +247,18 @@ tamed void
 req_t::make_T (ptr<ok_xprt_base_t> x, bool ka, evi_t ev)
 {
   tvars {
-    strbuf req;
+    ptr<strbuf> req;
     int status (HTTP_OK);
     outcome_t outc;
     ptr<req_t> hold;
     bool r;
   }
   hold = mkref (this);
+  req = New refcounted<strbuf> ();
 
-  format_req (req, ka);
+  format_req (*req, ka);
 
-  twait { x->drain_to_network (&req, connector::cnc (mkevent (r), ev, &outc)); }
+  twait { x->drain_to_network (req, connector::cnc (mkevent (r), ev, &outc)); }
   if (outc == OUTCOME_CANCELLED) {
     status = CANCELLED_STATUS;
     x->drain_cancel ();

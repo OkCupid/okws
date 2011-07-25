@@ -797,7 +797,7 @@ ahttpcon::alloc_abuf_src ()
 static void true_cb (evb_t ev) { ev->trigger (true); }
 
 void
-ahttpcon::drain_to_network (strbuf *b, evb_t ev)
+ahttpcon::drain_to_network (ptr<strbuf> b, evb_t ev)
 {
   send (*b, wrap (true_cb, ev));
 }

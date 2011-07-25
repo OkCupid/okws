@@ -31,7 +31,8 @@ namespace okssl {
     con_t (int fd, SSL *ssl);
     ~con_t ();
     bool ok () const { return _ok; }
-    void drain_to_network (strbuf *b, evb_t ev) { drain_to_network_T (b, ev); }
+    void drain_to_network (ptr<strbuf> b, evb_t ev) 
+    { drain_to_network_T (b, ev); }
     void read (void *out, size_t len, evssz_t ev, CLOSURE);
     void drain_cancel (void);
     abuf_src_t *alloc_abuf_src ();
@@ -40,7 +41,7 @@ namespace okssl {
   protected:
     void ssl_connect (evb_t ev, CLOSURE);
     void ssl_connect_2 (evb_t ev, CLOSURE);
-    void drain_to_network_T (strbuf *b, evb_t ev, CLOSURE);
+    void drain_to_network_T (ptr<strbuf> b, evb_t ev, CLOSURE);
   private:
     SSL *_ssl;
     BIO *_rbio, *_wbio;
