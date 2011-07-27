@@ -101,7 +101,17 @@ public:
 
   inline int get ();
   inline int peek ();
-  inline void unget () { bc = true; }
+
+  //
+  // MK 2011/7/27
+  //
+  // NOTE! It's not a good idea to "put back" the WAIT characters
+  // since we want to probe for more data the next time through...
+  // We've decided to fix this by just not setting the bc (= "buffered char")
+  // flag in this situation.
+  //
+  inline void unget () { if (lch != ABUF_WAIT) { bc = true; } }
+
   inline abuf_stat_t skip_ws ();
   abuf_stat_t skip_hws (int mn = 0);
   inline abuf_stat_t expectchar (char c);

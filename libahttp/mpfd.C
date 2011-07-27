@@ -110,8 +110,10 @@ cgi_mpfd_t::parse_guts ()
 
     case MPFD_VALUE:
       if (kt == MPFD_DISPOSITION) {
+	OKDBG3(SVC_MPFD, CHATTER, "cgi_mpfd_t::parse_guts branch to nested "
+	       "content disposition parser");
 	cdp.parse (wrap (this, &cgi_mpfd_t::ext_parse_cb));
-	OKDBG3(SVC_MPFD, CHATTER, "cgi_mpfd_t::parse_guts exit to nested "
+	OKDBG3(SVC_MPFD, CHATTER, "cgi_mpfd_t::parse_guts return due to "
 	       "content disposition parser");
 	return;
       }	else if (kt == MPFD_TYPE) {
