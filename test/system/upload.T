@@ -86,6 +86,6 @@ main (int argc, char *argv[])
 {
   oksrvc_t *oksrvc = New oksrvc_upload_t (argc, argv);
   oksrvc->launch ();
-  ok_reqsize_limit = 0x100000; // 1MB
+  ok_reqsize_limit = 0x1000000; // 16MB
   amain ();
 }

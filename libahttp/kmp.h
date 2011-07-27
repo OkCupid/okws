@@ -60,6 +60,7 @@ public:
   }
 
   inline u_int len () const { return _len; }
+  str pattern () const { return _pattern; }
 
 private:
   void preproc ();

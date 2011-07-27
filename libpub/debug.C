@@ -94,6 +94,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
   case 'P': v = OKWS_DEBUG_PUB_PARSE; break;
   case 'J': v = OKWS_DEBUG_OKD_JAIL; break;
   case 'S': v = OKWS_DEBUG_OKD_SHUTDOWN; break;
+  case 'M': v = OKWS_DEBUG_SVC_MPFD; break;
   default: ret =  false; break;
   }
   
@@ -106,7 +107,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
 const char * 
 okdbg_t::allflags () const
 {
-  return "abcdfhikmopsuvABCEHJPS";
+  return "abcdfhikmopsuvABCEHJMPS";
 }
 
 //--------------------------------------------------------------------
@@ -132,6 +133,7 @@ okdbg_t::documentation () const
     "\t -A svc subsystem: dump argument list on startup\n"
     "\t -d svc subsystem: debug database connections\n"
     "\t -v svc subsystem: startup debug messages\n"
+    "\t -M svc subsystem: debug multipart data internals\n"
     "\n"
     "\t -m ssl subsystem: debug memory allocations\n"
     "\t -p ssl subsystem: debug proxy operations\n"

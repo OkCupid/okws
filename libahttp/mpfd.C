@@ -25,6 +25,7 @@
 #include "rxx.h"
 #include "httpconst.h"
 #include "pubutil.h"
+#include "okdbg.h"
 
 static rxx multipart_rxx ("multipart/form-data[;,]\\s+boundary=(.*)");
 mpfd_ktmap_t mpfd_ktmap;
@@ -53,6 +54,7 @@ cgi_mpfd_t::alloc (abuf_t *a, size_t len, const str &b)
 void
 cgi_mpfd_t::ext_parse_cb (int status)
 {
+  OKDBG4(SVC_MPFD, CHATTER, "cfgi_mpfd_t::ext_parse_cb(%d)", status);
   if (status == HTTP_OK) {
     MPFD_INC_STATE;
     resume ();
@@ -70,6 +72,8 @@ cgi_mpfd_t::parse_guts ()
   bool inc;
 
   while (r == ABUF_OK) {
+    OKDBG4(SVC_MPFD, CHATTER, "cgi_mpfd_t::parse_guts loop "
+	   "r=%d, state=%d", int (r), int (state));
 
     inc = true;
 
@@ -107,6 +111,8 @@ cgi_mpfd_t::parse_guts ()
     case MPFD_VALUE:
       if (kt == MPFD_DISPOSITION) {
 	cdp.parse (wrap (this, &cgi_mpfd_t::ext_parse_cb));
+	OKDBG3(SVC_MPFD, CHATTER, "cgi_mpfd_t::parse_guts exit to nested "
+	       "content disposition parser");
 	return;
       }	else if (kt == MPFD_TYPE) {
 	r = delimit_val (&content_typ);
@@ -190,6 +196,9 @@ cgi_mpfd_t::parse_guts ()
     if (r == ABUF_OK && inc)
       MPFD_INC_STATE;
   }
+
+  OKDBG4(SVC_MPFD, CHATTER, "cgi_mpfd_t::parse_guts exit loop "
+	 "r=%d, state=%d", int (r), int (state));
 
   switch (r) {
   case ABUF_EOF:
@@ -280,7 +289,9 @@ cgi_mpfd_pair_t::add (const cgi_file_t &f)
 void
 cgi_mpfd_t::add_boundary (const str &b)
 {
-  boundaries.push_back (New kmp_matcher_t (strbuf ("--") << b));
+  str fullb = strbuf ("--") << b;
+  OKDBG4(SVC_MPFD, CHATTER, "new boundary added: %s", fullb.cstr ());
+  boundaries.push_back (New kmp_matcher_t (fullb));
 }
 
 abuf_stat_t
@@ -305,8 +316,10 @@ cgi_mpfd_t::match_boundary (str *dat)
       flag = false;
     } else {
       if (cbm->match (ch)) {
-	if (dat)
+	OKDBG4(SVC_MPFD, CHATTER, "pattern matched: %s", cbm->pattern ().cstr ());
+	if (dat) {
 	  *dat = abuf->end_mirror2 (cbm->len ());
+	}
 	match_ended = true;
 	return ABUF_OK;
       }
@@ -357,6 +370,10 @@ contdisp_parser_t::parse_guts ()
   bool flag = true;
 
   while (r == ABUF_OK && flag) {
+
+    OKDBG4(SVC_MPFD, CHATTER, "contdisp_parser_t::parse_guts loop "
+	   "r=%d, state=%d", int (r), int (state));
+
     inc = true;
     switch (state) {
     case CONTDISP_START:
@@ -407,6 +424,9 @@ contdisp_parser_t::parse_guts ()
     if (r == ABUF_OK && inc)
       state = static_cast<contdisp_state_t> (state + 1);
   }
+
+  OKDBG4(SVC_MPFD, CHATTER, "contdisp_parser_t::parse_guts exit loop "
+	 "r=%d, state=%d", int (r), int (state));
 
   switch (r) {
   case ABUF_OK:
