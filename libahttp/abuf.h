@@ -110,7 +110,7 @@ public:
   // We've decided to fix this by just not setting the bc (= "buffered char")
   // flag in this situation.
   //
-  inline void unget () { if (lch != ABUF_WAIT) { bc = true; } }
+  inline void unget () { if (lch != ABUF_WAITCHAR) { bc = true; } }
 
   inline abuf_stat_t skip_ws ();
   abuf_stat_t skip_hws (int mn = 0);
