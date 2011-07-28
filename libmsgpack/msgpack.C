@@ -49,6 +49,7 @@ private:
 
   ptr<pub3::expr_t> unpack_dict (size_t n);
 
+  void consume_byte ();
   bool get_byte (u_int8_t *b);
   bool peek_byte (u_int8_t *b);
   bool get_bytes (u_int8_t *buf, size_t n);
@@ -143,6 +144,127 @@ buffer_t::unpack_fix_raw ()
 
 //-----------------------------------------------------------------------
 
+template<class T> void
+big_endian (T &out, u_int8_t *in, size_t n)
+{
+  out = 0;
+  for (size_t i = 0; i < n; i++) {
+    if (i != 0) { out <<= 8; }
+    out |= (T )in[i];
+  }
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_uint64 ()
+{
+  ptr<pub3::expr_t> ret;
+  consume_byte ();
+  u_int8_t b[8];
+  bool ok = unpack_bytes (&b, 8);
+  if (ok) {
+    u_int64_t v;
+    big_endian (v, b, 8);
+    ret = pub3::expr_uint_t::alloc (v);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_int16 ()
+{
+  ptr<pub3::expr_t> ret;
+  consume_byte ();
+  u_int8_t b[2];
+  bool ok = unpack_bytes (&b, 2);
+  if (ok) {
+    int16_t v;
+    big_endian (v, b, 2);
+    ret = pub3::expr_int_t::alloc (v);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_uint16 ()
+{
+  ptr<pub3::expr_t> ret;
+  consume_byte ();
+  u_int8_t b[2];
+  bool ok = unpack_bytes (&b, 2);
+  if (ok) {
+    u_int16_t v;
+    big_endian (v, b, 2);
+    ret = pub3::expr_int_t::alloc (v);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_int8 ()
+{
+  ptr<pub3::expr_t> ret;
+  consume_byte ();
+  u_int8_t ub;
+  bool ok = unpack_byte (&ub);
+  if (ok) {
+    int8_t b = ub;
+    ret = pub3::expr_int_t::alloc (b);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_uint8 ()
+{
+  ptr<pub3::expr_t> ret;
+  consume_byte ();
+  u_int8_t b;
+  bool ok = unpack_byte (&b);
+  if (ok) {
+    ret = pub3::expr_int_t::alloc (b);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_false ()
+{
+  consume_byte ();
+  return pub3::expr_bool_t::alloc (false);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_true ()
+{
+  consume_byte ();
+  return pub3::expr_bool_t::alloc (true);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+buffer_t::unpack_nil ()
+{
+  consume_byte ();
+  return pub3::expr_null_t::alloc ();
+}
+
+//-----------------------------------------------------------------------
+
 static buffer_t::unpack_tab_t &
 buffer_t::unpack_tab () 
 {
@@ -153,10 +275,10 @@ buffer_t::unpack_tab ()
 #define P(code, obj) \
     tab[code] = &buffer_t::unpack_##obj;
 
-    for (u_int8_t i = 0x00; i <= 0x7f; i++) P(i, unpack_positive_fixnum);
-    for (u_int8_t i = 0x80; i <= 0x8f; i++) P(i, unpack_fix_map);
-    for (u_int8_t i = 0x90; i <= 0x9f; i++) P(i, unpack_fix_array);
-    for (u_int8_t i = 0xa0; i <= 0xbf; i++) P(i, unpack_fix_raw);
+    for (u_int8_t i = 0x00; i <= 0x7f; i++) P(i, positive_fixnum);
+    for (u_int8_t i = 0x80; i <= 0x8f; i++) P(i, fix_map);
+    for (u_int8_t i = 0x90; i <= 0x9f; i++) P(i, fix_array);
+    for (u_int8_t i = 0xa0; i <= 0xbf; i++) P(i, fix_raw);
     
     P(0xc0, nil);
     P(0xc2, false);
@@ -200,6 +322,16 @@ buffer_t::get_bytes (const char **buf, size_t n)
     _cp += n;
   }
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+buffer_t::consume_byte ()
+{
+  u_int8_t dummy;
+  bool ok = get_byte (&dummy);
+  assert (ok);
 }
 
 //-----------------------------------------------------------------------
