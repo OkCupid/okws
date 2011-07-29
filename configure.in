@@ -227,4 +227,4 @@ AC_OUTPUT(libpub/Makefile pub/Makefile
 	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
 	  librfn/Makefile test/regtest/Makefile test/regtest/cases/Makefile
 	  libamt_pthread/Makefile ezdb/Makefile ezdb/libezdb/Makefile
-	  ezdb/server/Makefile)
+	  ezdb/server/Makefile libmsgpack/Makefile )

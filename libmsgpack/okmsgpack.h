@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "async.h"
 #include "pub3.h"
 
 namespace msgpack {

@@ -5,10 +5,10 @@ $(PROGRAMS): $(LDEPS)
 
 okwslib_LTLIBRARIES = libmsgpack.la
 
-libpub_la_SOURCES = \
+libmsgpack_la_SOURCES = \
 	msgpack.C
 
-libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
+libmsgpack_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = \
 	okmsgpack.h
@@ -16,28 +16,15 @@ okwsinclude_HEADERS = \
 YDEBUG = @YDEBUG@
 LDEBUG = @LDEBUG@
 
-SUFFIXES = .T .C .h .x
+SUFFIXES = .T .C .h
 
 .T.C:
 	$(TAME) -o $@ $< || (rm -f $@ && false)
-.x.h:
-	-$(RPCC) -h $< || rm -f $@
-.x.C:
-	-$(RPCC) -c $< || rm -f $@
 
 TAMEIN = 
 TAMEOUT = 
-RPCCIN = 
-RPCCOUT =
 
-.PHONY: parseclean
-parseclean:
-	rm -f $(srcdir)/parse.cc $(srcdir)/parse.h $(srcdir)/scan.cc
-
-.PHONY: xdrclean tameclean
-xdrclean:
-	rm -f $(RPCCOUT)
-
+.PHONY: tameclean
 tameclean:
 	rm -f $(TAMEOUT)
 

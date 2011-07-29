@@ -1,33 +1,43 @@
+
 #include "okmsgpack.h"
+#include "pub3.h"
 #include "qhash.h"
 
-namespace msgpack {
+//-----------------------------------------------------------------------
 
-#if 0
+template<class T> void
+big_endian (T &out, u_int8_t *in, size_t n)
+{
+  out = 0;
+  for (size_t i = 0; i < n; i++) {
+    if (i != 0) { out <<= 8; }
+    out |= (T )in[i];
+  }
 }
-#endif
 
 //=======================================================================
 
-class buffer_t {
+class msgpack_t {
 public:
-  buffer_t (str m) : _buf (m), _cp (m.cstr ()), _ep (_cp + m.len ()) {}
+  msgpack_t (str m) : _buf (m), _cp (m.cstr ()), _ep (_cp + m.len ()) {}
 
   ptr<pub3::expr_t> unpack ();
 
-  typedef (ptr<pub3::expr_t>) (buffer_t::*unpack_hook) (void);
-  typedef buffer_t::unpack_hook_t unpack_tab_t[256];
+  typedef ptr<pub3::expr_t> (msgpack_t::*unpack_hook_t) (void);
+  typedef msgpack_t::unpack_hook_t unpack_tab_t[256];
 
 private:
 
   static unpack_tab_t &unpack_tab ();
 
   ptr<pub3::expr_t> unpack_positive_fixnum ();
+  ptr<pub3::expr_t> unpack_negative_fixnum ();
   ptr<pub3::expr_t> unpack_fix_map ();
   ptr<pub3::expr_t> unpack_fix_array ();
   ptr<pub3::expr_t> unpack_fix_raw ();
   ptr<pub3::expr_t> unpack_float ();
   ptr<pub3::expr_t> unpack_double ();
+
   ptr<pub3::expr_t> unpack_uint8 ();
   ptr<pub3::expr_t> unpack_uint16 ();
   ptr<pub3::expr_t> unpack_uint32 ();
@@ -36,6 +46,7 @@ private:
   ptr<pub3::expr_t> unpack_int16 ();
   ptr<pub3::expr_t> unpack_int32 ();
   ptr<pub3::expr_t> unpack_int64 ();
+
   ptr<pub3::expr_t> unpack_raw16 ();
   ptr<pub3::expr_t> unpack_raw32 ();
   ptr<pub3::expr_t> unpack_array16 ();
@@ -47,12 +58,37 @@ private:
   ptr<pub3::expr_t> unpack_true ();
   ptr<pub3::expr_t> unpack_false ();
 
-  ptr<pub3::expr_t> unpack_dict (size_t n);
+  ptr<pub3::expr_t> unpack_array (size_t n);
+  ptr<pub3::expr_t> unpack_map (size_t n);
+  ptr<pub3::expr_t> unpack_raw (size_t n);
+
+  template<class T> bool 
+  unpack_int (T *v)
+  {
+    u_int8_t buf[sizeof (T)];
+    bool ok = get_bytes (buf, sizeof (T));
+    if (ok) {
+      big_endian (*v, buf, sizeof (T));
+    } 
+    return ok;
+  }
 
   void consume_byte ();
   bool get_byte (u_int8_t *b);
   bool peek_byte (u_int8_t *b);
-  bool get_bytes (u_int8_t *buf, size_t n);
+
+
+  template<class T>
+  bool get_bytes (T *buf, size_t n)
+  {
+    bool ret = false;
+    if (_cp + n <= _ep) {
+      memcpy (buf, _cp, n);
+      _cp += n;
+    }
+    return ret;
+  }
+
   void put_back (size_t n = 1) { _cp -= n; }
 
   str _buf;
@@ -69,7 +105,9 @@ class floater_t {
     T v;
   } u;
 
-  u_int_t *buf { return u.b; }
+public:
+
+  u_int8_t *buf () { return u.b; }
   size_t size () const { return N; }
 
   void swap () {
@@ -87,7 +125,7 @@ class floater_t {
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_positive_fixnum ()
+msgpack_t::unpack_negative_fixnum ()
 {
   u_int8_t b;
   bool ok = get_byte (&b);
@@ -98,16 +136,27 @@ buffer_t::unpack_positive_fixnum ()
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_double ()
+msgpack_t::unpack_positive_fixnum ()
+{
+  u_int8_t b;
+  bool ok = get_byte (&b);
+  assert (ok);
+  return pub3::expr_int_t::alloc (b);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+msgpack_t::unpack_double ()
 {
   consume_byte();
   ptr<pub3::expr_double_t> ret;
-  floater_t f<double>;
+  floater_t<double> f;
   bool ok = get_bytes (f.buf (), f.size ());
   if (ok) {
     // Endian-swap ?
-    buf.swap ();
-    ret = pub3::expr_double_t::alloc (buf.val());
+    f.swap ();
+    ret = pub3::expr_double_t::alloc (f.val());
   }
 
   return ret;
@@ -116,16 +165,16 @@ buffer_t::unpack_double ()
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_float ()
+msgpack_t::unpack_float ()
 {
   consume_byte();
   ptr<pub3::expr_double_t> ret;
-  floater_t f<float>;
+  floater_t<float> f;
   bool ok = get_bytes (f.buf (), f.size ());
   if (ok) {
     // Endian-swap ?
-    buf.swap ();
-    ret = pub3::expr_double_t::alloc (buf.val());
+    f.swap ();
+    ret = pub3::expr_double_t::alloc (f.val());
   }
   return ret;
 }
@@ -133,7 +182,7 @@ buffer_t::unpack_float ()
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_dict (size_t n)
+msgpack_t::unpack_map (size_t n)
 {
   ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::alloc ();
   bool ok = true;
@@ -145,11 +194,11 @@ buffer_t::unpack_dict (size_t n)
     if (ks) {
       ptr<pub3::expr_t> v = unpack ();
       if (!v) { ok = false; }
-      else { v->insert (ks, v); }
+      else { d->insert (ks, v); }
     }
   }
   if (!ok) { 
-    warn << "msgpack::unpack failed in unpack_dict\n";
+    warn << "msgpack::unpack failed in unpack_map\n";
     d = NULL;
   }
   return d;
@@ -158,30 +207,14 @@ buffer_t::unpack_dict (size_t n)
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_fix_map ()
+msgpack_t::unpack_map32 ()
 {
-  u_int8_t b;
-  bool ok = get_byte (&b);
-  assert (ok);
-
-  // Strip off the top bit
-  u_int8_t n = b ^ (0x80);
-  return unpack_dict (n);
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-buffer_t::unpack_raw (size_t n)
-{
-  mstr m[n+1];
-  m[n] = 0;
-  bool ok;
+  consume_byte ();
+  u_int32_t n;
+  bool ok = unpack_int (&n);
   ptr<pub3::expr_t> ret;
-  ok = get_bytes (m.cstr (), n);
   if (ok) {
-    m.setlen (n);
-    ret = expr_str_t::alloc (m);
+    ret = unpack_map (n);
   }
   return ret;
 }
@@ -189,11 +222,57 @@ buffer_t::unpack_raw (size_t n)
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_raw16 ()
+msgpack_t::unpack_map16 ()
 {
-  consume_bytes ();
-  u_int16_t s;
-  bool ok = get_uint16 (&s);
+  consume_byte ();
+  u_int16_t n;
+  bool ok = unpack_int (&n);
+  ptr<pub3::expr_t> ret;
+  if (ok) {
+    ret = unpack_map (n);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+msgpack_t::unpack_fix_map ()
+{
+  u_int8_t b;
+  bool ok = get_byte (&b);
+  assert (ok);
+
+  // Strip off the top bit
+  u_int8_t n = b ^ (0x80);
+  return unpack_map (n);
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+msgpack_t::unpack_raw (size_t n)
+{
+  mstr m (n+1);
+  m[n] = 0;
+  bool ok;
+  ptr<pub3::expr_t> ret;
+  ok = get_bytes (m.cstr (), n);
+  if (ok) {
+    m.setlen (n);
+    ret = pub3::expr_str_t::alloc (m);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+msgpack_t::unpack_raw32 ()
+{
+  consume_byte ();
+  u_int32_t s;
+  bool ok = unpack_int (&s);
   ptr<pub3::expr_t> ret;
   if (ok) {
     ret = unpack_raw (s);
@@ -204,7 +283,22 @@ buffer_t::unpack_raw16 ()
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_fix_raw ()
+msgpack_t::unpack_raw16 ()
+{
+  consume_byte ();
+  u_int16_t s;
+  bool ok = unpack_int (&s);
+  ptr<pub3::expr_t> ret;
+  if (ok) {
+    ret = unpack_raw (s);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+msgpack_t::unpack_fix_raw ()
 {
   u_int8_t b;
   bool ok = get_byte (&b);
@@ -217,113 +311,35 @@ buffer_t::unpack_fix_raw ()
 
 //-----------------------------------------------------------------------
 
-template<class T> void
-big_endian (T &out, u_int8_t *in, size_t n)
-{
-  out = 0;
-  for (size_t i = 0; i < n; i++) {
-    if (i != 0) { out <<= 8; }
-    out |= (T )in[i];
+#define UPI(nm, ctyp, oktyp)				\
+  ptr<pub3::expr_t>					\
+  msgpack_t::unpack_##nm ()				\
+  {							\
+    ptr<pub3::expr_t> ret;				\
+    consume_byte ();					\
+    ctyp b;						\
+    bool ok = unpack_int (&b);				\
+    if (ok) {						\
+      ret = pub3::expr_##oktyp##_t::alloc (b);		\
+    }							\
+    return ret;						\
   }
-}
+
+UPI(int8, int8_t, int)
+UPI(uint8, u_int8_t, int)
+UPI(int16, int16_t, int)
+UPI(uint16, u_int16_t, int)
+UPI(int32, int32_t, int)
+UPI(uint32, u_int32_t, int)
+UPI(int64, int64_t, int)
+UPI(uint64, u_int64_t, uint)
+
+#undef UPI
 
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_uint64 ()
-{
-  ptr<pub3::expr_t> ret;
-  consume_byte ();
-  u_int8_t b[8];
-  bool ok = unpack_bytes (&b, 8);
-  if (ok) {
-    u_int64_t v;
-    big_endian (v, b, 8);
-    ret = pub3::expr_uint_t::alloc (v);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-bool 
-buffer_t::unpack_uint16 (u_int16_t *v)
-{
-  u_int8_t b[2];
-  bool ok = unpack_bytes (&b, 2);
-  if (ok) {
-    big_endian (&v, b, 2);
-  }
-  return ok;
-}
-
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-buffer_t::unpack_int16 ()
-{
-  ptr<pub3::expr_t> ret;
-  consume_byte ();
-  u_int8_t b[2];
-  bool ok = unpack_bytes (&b, 2);
-  if (ok) {
-    int16_t v;
-    big_endian (v, b, 2);
-    ret = pub3::expr_int_t::alloc (v);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-buffer_t::unpack_uint16 ()
-{
-  ptr<pub3::expr_t> ret;
-  consume_byte ();
-  u_int16_t s;
-  if (unpack_uint16 (&s)) {
-    ret = pub3::expr_int_t::alloc (s);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-buffer_t::unpack_int8 ()
-{
-  ptr<pub3::expr_t> ret;
-  consume_byte ();
-  u_int8_t ub;
-  bool ok = unpack_byte (&ub);
-  if (ok) {
-    int8_t b = ub;
-    ret = pub3::expr_int_t::alloc (b);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-buffer_t::unpack_uint8 ()
-{
-  ptr<pub3::expr_t> ret;
-  consume_byte ();
-  u_int8_t b;
-  bool ok = unpack_byte (&b);
-  if (ok) {
-    ret = pub3::expr_int_t::alloc (b);
-  }
-  return ret;
-}
-
-//-----------------------------------------------------------------------
-
-ptr<pub3::expr_t>
-buffer_t::unpack_false ()
+msgpack_t::unpack_false ()
 {
   consume_byte ();
   return pub3::expr_bool_t::alloc (false);
@@ -332,7 +348,7 @@ buffer_t::unpack_false ()
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_true ()
+msgpack_t::unpack_true ()
 {
   consume_byte ();
   return pub3::expr_bool_t::alloc (true);
@@ -341,7 +357,7 @@ buffer_t::unpack_true ()
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_t>
-buffer_t::unpack_nil ()
+msgpack_t::unpack_nil ()
 {
   consume_byte ();
   return pub3::expr_null_t::alloc ();
@@ -349,15 +365,78 @@ buffer_t::unpack_nil ()
 
 //-----------------------------------------------------------------------
 
-static buffer_t::unpack_tab_t &
-buffer_t::unpack_tab () 
+ptr<pub3::expr_t>
+msgpack_t::unpack_array (size_t n)
+{
+  ptr<pub3::expr_list_t> ret;
+  bool ok = true;
+  ret = pub3::expr_list_t::alloc ();
+  ret->reserve (n);
+  for (size_t i = 0; ok && i < n; i++) {
+    ptr<pub3::expr_t> x = unpack ();
+    if (!x) { 
+      ok = false;
+    } else {
+      ret->push_back (x);
+    }
+  }
+  if (!ok) { ret = NULL; }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t> 
+msgpack_t::unpack_array32 ()
+{
+  consume_byte ();
+  u_int32_t n;
+  bool ok = unpack_int (&n);
+  ptr<pub3::expr_t> ret;
+  if (ok) {
+    ret = unpack_array (n);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t> 
+msgpack_t::unpack_array16 ()
+{
+  consume_byte ();
+  u_int16_t n;
+  bool ok = unpack_int (&n);
+  ptr<pub3::expr_t> ret;
+  if (ok) {
+    ret = unpack_array (n);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<pub3::expr_t>
+msgpack_t::unpack_fix_array ()
+{
+  u_int8_t b;
+  bool ok = get_byte (&b);
+  assert (ok);
+  b ^= 0x90;
+  return unpack_array (b);
+}
+
+//-----------------------------------------------------------------------
+
+msgpack_t::unpack_tab_t &
+msgpack_t::unpack_tab () 
 {
   static unpack_tab_t tab;
   static bool init;
   if (!init) {
 
 #define P(code, obj) \
-    tab[code] = &buffer_t::unpack_##obj;
+    tab[code] = &msgpack_t::unpack_##obj;
 
     for (u_int8_t i = 0x00; i <= 0x7f; i++) P(i, positive_fixnum);
     for (u_int8_t i = 0x80; i <= 0x8f; i++) P(i, fix_map);
@@ -384,7 +463,7 @@ buffer_t::unpack_tab ()
     P(0xde, map16); 
     P(0xdf, map32); 
 
-    for (u_int8_t i = 0xe0; i <= 0xff; i++) P(i, unpack_negative_fixnum);
+    for (u_int8_t i = 0xe0; i <= 0xff; i++) P(i, negative_fixnum);
 
 #undef P
     init = true;
@@ -393,25 +472,10 @@ buffer_t::unpack_tab ()
   return tab;
 }
 
-
-//-----------------------------------------------------------------------
-
-bool
-buffer_t::get_bytes (const char **buf, size_t n)
-{
-  bool ret = false;
-  if (_cp + n <= _ep) {
-    ret = true;
-    *buf = _cp;
-    _cp += n;
-  }
-  return ret;
-}
-
 //-----------------------------------------------------------------------
 
 void
-buffer_t::consume_byte ()
+msgpack_t::consume_byte ()
 {
   u_int8_t dummy;
   bool ok = get_byte (&dummy);
@@ -421,7 +485,7 @@ buffer_t::consume_byte ()
 //-----------------------------------------------------------------------
 
 bool
-buffer_t::get_byte (u_int8_t *b)
+msgpack_t::get_byte (u_int8_t *b)
 {
   bool ret = peek_byte (b);
   if (ret) _cp++;
@@ -431,7 +495,7 @@ buffer_t::get_byte (u_int8_t *b)
 //-----------------------------------------------------------------------
 
 bool 
-buffer_t::peek_byte (u_int8_t *b)
+msgpack_t::peek_byte (u_int8_t *b)
 {
   bool ret = false;
   if (_cp < _ep) { *b = *_cp; ret = true; }
@@ -441,7 +505,7 @@ buffer_t::peek_byte (u_int8_t *b)
 //=======================================================================
 
 ptr<pub3::expr_t>
-buffer_t::unpack ()
+msgpack_t::unpack ()
 {
   ptr<pub3::expr_t> ret;
   u_int8_t b;
@@ -454,19 +518,16 @@ buffer_t::unpack ()
 
 //=======================================================================
 
-ptr<pub3::expr_t>
-buffer_t::
 
-//=======================================================================
+namespace msgpack {
 
-ptr<pub3::expr_t>
-unpack (str msg) 
-{
-  buffer_t b (msg);
-  return unpack (&b);
-};
-
-
-//=======================================================================
+  ptr<pub3::expr_t>
+  unpack (str msg) 
+  {
+    msgpack_t b (msg);
+    return b.unpack ();
+  };
 
 };
+
+//=======================================================================
