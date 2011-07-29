@@ -18,8 +18,7 @@ SBD1 = \
 	$(PTHR) \
 	libokssl \
 	libweb \
-	librfn \
-	libmsgpack 
+	librfn 
 
 if USE_MYSQL
 SBD2 = libamysql ezdb

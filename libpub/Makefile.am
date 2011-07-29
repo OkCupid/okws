@@ -43,7 +43,8 @@ libpub_la_SOURCES = \
 	sync.C \
 	escape.C \
 	json_rpc.C \
-	rxx.C
+	rxx.C \
+	msgpack.C
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
