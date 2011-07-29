@@ -18,12 +18,35 @@ namespace pub3 {
     
     class outbuf_t {
     public:
-      outbuf_t () {}
-      void put_str (str s);
+      outbuf_t ();
       str to_str () const { return _b; }
+      void put_byte (u_int8_t b);
+      void put_str (str s);
+
+      template<class T> void
+      put_int (T i) 
+      {
+	size_t n = sizeof (T);
+	size_t bits_per_byte = 8;
+	size_t shift = (n - 1) * bits_per_byte;
+
+	for (size_t j = 0; j < n; j++) {
+	  u_int8_t b = ((i >> shift) & 0xff);
+	  put_byte (b);
+	  shift -= bits_per_byte;
+	}
+      }
+
+      void encode_negative_int (int64_t i);
+      void encode_positive_int (u_int64_t i);
+
     private:
+      void flush ();
+
       strbuf _b;
-      vec<str> _hold;
+      size_t _tlen;
+      mstr _tmp;
+      char *_tp, *_ep;
     };
 
     //========================================

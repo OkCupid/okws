@@ -539,9 +539,206 @@ namespace pub3 {
       }
       return ret;
     }
-    
-  };
+  }
 };
 
 //=======================================================================
+
+pub3::msgpack::outbuf_t::outbuf_t ()
+  : _tlen (0x1000),
+    _tmp (_tlen), 
+    _tp (_tmp.cstr ()), 
+    _ep (_tp + _tlen) {}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::flush () 
+{
+  if (_tp > _tmp.cstr ()) {
+    _tmp.setlen (_tp - _tmp.cstr ());
+    str s = _tmp;
+    _b << s;
+    _b.hold_onto (s);
+    _tp = _tmp.cstr ();
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::put_str (str s)
+{
+  flush ();
+  _b << s;
+  _b.hold_onto (s);
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::put_byte (u_int8_t b)
+{
+  assert (_tp < _ep);
+  *(_tp++) = b;
+  if (_tp == _ep) { flush (); }
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::encode_negative_int (int64_t i)
+{
+  assert (i < 0);
+
+  if (i >= -32) {
+    put_byte (i);
+  } else if (i >= -128){ 
+    put_byte (0xd0);
+    put_byte (i);
+  } else if (i >= -32768) { 
+    put_byte (0xd1);
+    int16_t s = i;
+    put_int (s);
+  } else if (i >= -2147483648) {
+    put_byte (0xd2);
+    int32_t w = i;
+    put_int (w);
+  } else {
+    put_byte (0xd3);
+    int64_t q = i;
+    put_int (q);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::encode_positive_int (u_int64_t i)
+{
+
+  if (i <= 0x7f) { 
+    put_byte (i); 
+  } else if (i <= 0xff) { 
+    put_byte (0xcc);
+    put_byte (i);
+  } else if (i <= 0xffff) { 
+    put_byte (0xcd);
+    u_int16_t s = i;
+    put_int (s);
+  } else if (i <= 0xffffffff) {
+    put_byte (0xce);
+    u_int32_t w = i;
+    put_int (w);
+  } else {
+    put_byte (0xcf);
+    put_int (i);
+  }
+}
+
+//=======================================================================
+
+bool
+pub3::expr_cow_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  bool ret;
+  ptr<const expr_t> x = const_ptr ();
+  if (x) {
+    ret = x->to_msgpack (j);
+  } else {
+    ret = false;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_null_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  j->put_byte (0xc0);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_bool_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  j->put_byte (_b ? 0xc3 : 0xc2);
+  return false;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_str_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  bool ret = true;
+  if (!_val) {
+    ret = false;
+  } else {
+    size_t l = _val.len ();
+    if (l <= 0x1f) {
+      u_int8_t b = 0xa | l;
+      j->put_byte (b);
+    } else if (l <= 0xffff) {
+      j->put_byte (0xda);
+      j->put_int (l);
+    } else {
+      j->put_byte (0xdb);
+      j->put_int (l);
+    }
+    j->put_str (_val);
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_int_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  if (_val < 0) {
+    j->encode_negative_int (_val);
+  } else {
+    j->encode_positive_int (_val);
+  }
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_uint_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  j->encode_positive_int (_val);
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_double_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_list_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+pub3::expr_dict_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------
 

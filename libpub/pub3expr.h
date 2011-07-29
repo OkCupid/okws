@@ -215,6 +215,7 @@ namespace pub3 {
     ptr<const expr_list_t> to_list () const;
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_xdr (xpub3_json_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *b) const;
     bool is_static () const;
     bool might_block_uncached () const;
     str to_str (PUB3_TO_STR_ARG) const;
@@ -316,6 +317,7 @@ namespace pub3 {
     bool is_null () const { return true; }
     bool to_xdr (xpub3_expr_t *x) const ;
     bool to_xdr (xpub3_json_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_null_t"; }
     static ptr<expr_null_t> alloc ();
     str type_to_str () const { return "null"; }
@@ -332,6 +334,7 @@ namespace pub3 {
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_bool_t"; }
     bool to_xdr (xpub3_json_t *j) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     static ptr<expr_bool_t> alloc (bool b);
     static str static_to_str (bool b);
     str to_str (PUB3_TO_STR_ARG) const;
@@ -716,6 +719,7 @@ namespace pub3 {
     str type_to_str () const { return "str"; }
     bool to_len (size_t *s) const;
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     bool to_xdr (xpub3_json_t *j) const;
 
     int64_t to_int () const;
@@ -748,6 +752,7 @@ namespace pub3 {
     u_int64_t to_uint () const;
     bool to_uint (u_int64_t *u) const;
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
     str to_str (PUB3_TO_STR_ARG) const;
 
@@ -781,6 +786,7 @@ namespace pub3 {
     scalar_obj_t to_scalar () const;
 
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_uint_t"; }
 
     static ptr<expr_uint_t> alloc (u_int64_t i) 
@@ -807,6 +813,7 @@ namespace pub3 {
     bool to_int (int64_t *out) const;
 
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_double_t"; }
 
     static ptr<expr_double_t> alloc (double i) 
@@ -833,6 +840,7 @@ namespace pub3 {
     expr_list_t (const xpub3_expr_list_t &x);
 
     bool to_xdr (xpub3_expr_t *) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     bool to_xdr (xpub3_expr_list_t *) const;
     bool to_xdr (xpub3_json_t *j) const;
 
@@ -1054,6 +1062,7 @@ namespace pub3 {
 
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
+    bool to_msgpack (msgpack::outbuf_t *x) const;
     bool to_xdr (xpub3_json_t *x) const;
 
     ptr<expr_dict_t> to_dict () { return mkref (this); }
