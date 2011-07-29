@@ -113,6 +113,7 @@ private:
     if (_cp + n <= _ep) {
       memcpy (buf, _cp, n);
       _cp += n;
+      ret = true;
     }
     return ret;
   }
@@ -129,8 +130,8 @@ private:
 ptr<pub3::expr_t>
 msgpack_t::unpack_negative_fixnum ()
 {
-  u_int8_t b;
-  bool ok = get_byte (&b);
+  int8_t b;
+  bool ok = unpack_int (&b);
   assert (ok);
   return pub3::expr_int_t::alloc (b);
 }
@@ -307,7 +308,7 @@ msgpack_t::unpack_fix_raw ()
   assert (ok);
 
   // Strip off the top bit
-  u_int8_t n = b ^ (0xa);
+  u_int8_t n = b ^ (0xa0);
   return unpack_raw (n);
 }
 
@@ -465,7 +466,7 @@ msgpack_t::unpack_tab ()
     P(0xde, map16); 
     P(0xdf, map32); 
 
-    for (u_int8_t i = 0xe0; i <= 0xff; i++) P(i, negative_fixnum);
+    for (u_int16_t i = 0xe0; i <= 0xff; i++) P(i, negative_fixnum);
 
 #undef P
     init = true;
@@ -547,22 +548,40 @@ namespace pub3 {
 //=======================================================================
 
 pub3::msgpack::outbuf_t::outbuf_t ()
-  : _tlen (0x1000),
-    _tmp (_tlen), 
-    _tp (_tmp.cstr ()), 
+  : _tlen (0x100),
+    _tmp (New mstr (_tlen)), 
+    _tp (_tmp->cstr ()), 
     _ep (_tp + _tlen) {}
 
 //-----------------------------------------------------------------------
 
+pub3::msgpack::outbuf_t::~outbuf_t () { delete _tmp; }
+
+//-----------------------------------------------------------------------
+
 void
-pub3::msgpack::outbuf_t::flush () 
+pub3::msgpack::outbuf_t::flush (bool r) 
 {
-  if (_tp > _tmp.cstr ()) {
-    _tmp.setlen (_tp - _tmp.cstr ());
-    str s = _tmp;
+  if (_tmp && _tp > _tmp->cstr ()) {
+    _tmp->setlen (_tp - _tmp->cstr ());
+    str s = *_tmp;
     _b << s;
     _b.hold_onto (s);
-    _tp = _tmp.cstr ();
+    delete _tmp;
+    _tmp = NULL;
+    if (r) { ready (); }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::ready ()
+{
+  if (!_tmp) {
+    _tmp = New mstr (_tlen);
+    _tp = _tmp->cstr ();
+    _ep = _tp + _tlen;
   }
 }
 
@@ -591,9 +610,19 @@ pub3::msgpack::outbuf_t::put_bytes (u_int8_t *b, size_t n)
 void
 pub3::msgpack::outbuf_t::put_byte (u_int8_t b)
 {
+  ready ();
   assert (_tp < _ep);
   *(_tp++) = b;
   if (_tp == _ep) { flush (); }
+}
+
+//-----------------------------------------------------------------------
+
+str
+pub3::msgpack::outbuf_t::to_str ()
+{
+  flush (false);
+  return _b;
 }
 
 //-----------------------------------------------------------------------
@@ -650,21 +679,32 @@ pub3::msgpack::outbuf_t::encode_positive_int (u_int64_t i)
 
 //-----------------------------------------------------------------------
 
+void 
+pub3::msgpack::outbuf_t::encode_len (size_t len, u_int8_t b, u_int8_t s, 
+				     u_int8_t l)
+{
+  if (len <= 0x1f) {
+    b |= len;
+    put_byte (b);
+  } else if (len <= 0xffff) {
+    put_byte (s);
+    u_int16_t i = l;
+    put_int (i);
+  } else {
+    put_byte (l);
+    u_int32_t i = l;
+    put_int (i);
+  }
+}
+
+//-----------------------------------------------------------------------
+
 void
 pub3::msgpack::outbuf_t::encode_str (str s)
 {
   assert (s);
   size_t l = s.len ();
-  if (l <= 0x1f) {
-    u_int8_t b = 0xa | l;
-    put_byte (b);
-  } else if (l <= 0xffff) {
-    put_byte (0xda);
-    put_int (l);
-  } else {
-    put_byte (0xdb);
-    put_int (l);
-  }
+  encode_len (l, 0xa0, 0xda, 0xdb);
   put_str (s);
 }
 
@@ -754,17 +794,8 @@ bool
 pub3::expr_list_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 {
   size_t l = size ();
+  j->encode_len (l, 0x90, 0xdc, 0xdd);
 
-  u_int8_t b;
-  if (l <= 0xf) {
-    b = l | 0x90;
-  } else if (l <= 0xffff) {
-    b = 0xdc;
-  } else { 
-    b = 0xdd;
-  }
-
-  j->put_byte (b);
   for (size_t i = 0; i < l; i++) {
     (*this)[i]->to_msgpack (j);
   }
@@ -778,16 +809,7 @@ bool
 pub3::expr_dict_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 { 
   size_t l = size ();
-  u_int8_t b;
-  if (l <= 0xf) {
-    b = l | 0x80;
-  } else if (l <= 0xffff) {
-    b = 0xde;
-  } else { 
-    b = 0xdf;
-  }
-
-  j->put_byte (b);
+  j->encode_len (l, 0x80, 0xde, 0xdf);
 
   ptr<const_iterator_t> it = iter ();
   ptr<expr_t> x;

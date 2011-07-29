@@ -2,7 +2,7 @@
 $(PROGRAMS): $(LDEPS)
 
 noinst_PROGRAMS = hcli degz mygz pt1cli okwc tmr bench mygz2 enctst okwc3 okwc4
-okwsbin_PROGRAMS = okdbg pub
+okwsbin_PROGRAMS = okdbg pub msgpack
 
 noinst_HEADERS = normdist.h
 
@@ -19,6 +19,7 @@ okwc3_SOURCES = okwcmain3.C
 okwc4_SOURCES = okwcmain4.C
 mygz2_SOURCES = mygz2.C
 pub_SOURCES = pub3.C
+msgpack_SOURCES = msgpack.C
 
 TAMEOUT = okwcmain3.C okwcmain4.C pub3.C
 
@@ -33,6 +34,8 @@ okwcmain4.o: 	okwcmain4.C
 okwcmain4.o:	okwcmain4.C
 pub3.o: 	pub3.C
 pub3.lo: 	pub3.C
+msgpack.o:	msgpack.C
+msgpack.lo:	msgpack.C
 
 
 CLEANFILES = core *.core *~ $(TAMEOUT)
