@@ -15,6 +15,34 @@ big_endian (T &out, u_int8_t *in, size_t n)
   }
 }
 
+//-----------------------------------------------------------------------
+
+template<class T, size_t N = sizeof (T) > 
+class floater_t {
+  union {
+    u_int8_t b[sizeof (N)];
+    T v;
+  } u;
+
+public:
+
+  floater_t () { u.v = 0; }
+  floater_t (T v) { u.v = v; }
+  u_int8_t *buf () { return u.b; }
+  size_t size () const { return N; }
+
+  void swap () {
+    for (size_t i = 0; i < N/2; i++) {
+      size_t j = N - 1 - j;
+      u_int8_t tmp = u.b[j];
+      u.b[j] = u.b[i];
+      u.b[i] = tmp;
+    }
+  }
+
+  T val () const { return u.v; }
+};
+
 //=======================================================================
 
 class msgpack_t {
@@ -94,32 +122,6 @@ private:
   str _buf;
   const char *_cp;
   const char *_ep;
-};
-
-//-----------------------------------------------------------------------
-
-template<class T, size_t N = sizeof (T) > 
-class floater_t {
-  union {
-    u_int8_t b[sizeof (N)];
-    T v;
-  } u;
-
-public:
-
-  u_int8_t *buf () { return u.b; }
-  size_t size () const { return N; }
-
-  void swap () {
-    for (size_t i = 0; i < N/2; i++) {
-      size_t j = N - 1 - j;
-      u_int8_t tmp = u.b[j];
-      u.b[j] = u.b[i];
-      u.b[i] = tmp;
-    }
-  }
-
-  T val () const { return u.v; }
 };
 
 //-----------------------------------------------------------------------
@@ -577,6 +579,16 @@ pub3::msgpack::outbuf_t::put_str (str s)
 //-----------------------------------------------------------------------
 
 void
+pub3::msgpack::outbuf_t::put_bytes (u_int8_t *b, size_t n)
+{
+  for (size_t i = 0; i < n; i++) {
+    put_byte (b[i]);
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
 pub3::msgpack::outbuf_t::put_byte (u_int8_t b)
 {
   assert (_tp < _ep);
@@ -636,6 +648,26 @@ pub3::msgpack::outbuf_t::encode_positive_int (u_int64_t i)
   }
 }
 
+//-----------------------------------------------------------------------
+
+void
+pub3::msgpack::outbuf_t::encode_str (str s)
+{
+  assert (s);
+  size_t l = s.len ();
+  if (l <= 0x1f) {
+    u_int8_t b = 0xa | l;
+    put_byte (b);
+  } else if (l <= 0xffff) {
+    put_byte (0xda);
+    put_int (l);
+  } else {
+    put_byte (0xdb);
+    put_int (l);
+  }
+  put_str (s);
+}
+
 //=======================================================================
 
 bool
@@ -678,18 +710,7 @@ pub3::expr_str_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
   if (!_val) {
     ret = false;
   } else {
-    size_t l = _val.len ();
-    if (l <= 0x1f) {
-      u_int8_t b = 0xa | l;
-      j->put_byte (b);
-    } else if (l <= 0xffff) {
-      j->put_byte (0xda);
-      j->put_int (l);
-    } else {
-      j->put_byte (0xdb);
-      j->put_int (l);
-    }
-    j->put_str (_val);
+    j->encode_str (_val);
   }
   return ret;
 }
@@ -721,7 +742,10 @@ pub3::expr_uint_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 bool
 pub3::expr_double_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 {
-  return false;
+  floater_t<double> f (_val);;
+  f.swap ();
+  j->put_bytes (f.buf (), f.size ());
+  return true;
 }
 
 //-----------------------------------------------------------------------
@@ -729,15 +753,61 @@ pub3::expr_double_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 bool
 pub3::expr_list_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 {
-  return false;
+  size_t l = size ();
+
+  u_int8_t b;
+  if (l <= 0xf) {
+    b = l | 0x90;
+  } else if (l <= 0xffff) {
+    b = 0xdc;
+  } else { 
+    b = 0xdd;
+  }
+
+  j->put_byte (b);
+  for (size_t i = 0; i < l; i++) {
+    (*this)[i]->to_msgpack (j);
+  }
+
+  return true;
 }
 
 //-----------------------------------------------------------------------
 
 bool
 pub3::expr_dict_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
-{
-  return false;
+{ 
+  size_t l = size ();
+  u_int8_t b;
+  if (l <= 0xf) {
+    b = l | 0x80;
+  } else if (l <= 0xffff) {
+    b = 0xde;
+  } else { 
+    b = 0xdf;
+  }
+
+  j->put_byte (b);
+
+  ptr<const_iterator_t> it = iter ();
+  ptr<expr_t> x;
+  const str *keyp;
+  
+  while ((keyp = it->next (&x))) {
+    scalar_obj_t so (*keyp);
+    u_int64_t ku;
+    int64_t ki;
+    if (so.to_uint64 (&ku)) {
+      j->encode_positive_int (ku);
+    } else if (so.to_int64 (&ki)) {
+      assert (ki < 0);
+      j->encode_negative_int (ki);
+    } else {
+      j->encode_str (*keyp);
+    }
+    x->to_msgpack (j);
+  }
+  return true;
 }
 
 //-----------------------------------------------------------------------
