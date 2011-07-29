@@ -31,6 +31,9 @@ namespace pub3 {
   class call_t;      // declared in pub3func.h
   class callable_t;  // declared in pub3func.h -- a custom-defined function
   class metadata_t;  // declared in pub3file.h
+  namespace msgpack {
+    class outbuf_t;   // declared in pub3msgpack.h
+  };
 
   //-----------------------------------------------------------------------
 
@@ -76,6 +79,7 @@ namespace pub3 {
 
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
     virtual bool to_xdr (xpub3_json_t *x) const;
+    virtual bool to_msgpack (msgpack::outbuf_t *b) const { return false; }
 
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);

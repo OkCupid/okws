@@ -1,5 +1,5 @@
 
-#include "okmsgpack.h"
+#include "pub3msgpack.h"
 #include "pub3.h"
 #include "qhash.h"
 
@@ -519,15 +519,29 @@ msgpack_t::unpack ()
 //=======================================================================
 
 
-namespace msgpack {
-
-  ptr<pub3::expr_t>
-  unpack (str msg) 
-  {
-    msgpack_t b (msg);
-    return b.unpack ();
+namespace pub3 { 
+  namespace msgpack {
+    
+    ptr<expr_t>
+    decode (str msg) 
+    {
+      msgpack_t b (msg);
+      return b.unpack ();
+    };
+    
+    str
+    encode (ptr<const expr_t> x)
+    {
+      outbuf_t b;
+      str ret;
+      if (x->to_msgpack (&b)) {
+	ret = b.to_str ();
+      }
+      return ret;
+    }
+    
   };
-
 };
 
 //=======================================================================
+

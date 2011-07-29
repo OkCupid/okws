@@ -44,7 +44,7 @@ libpub_la_SOURCES = \
 	escape.C \
 	json_rpc.C \
 	rxx.C \
-	msgpack.C
+	pub3msgpack.C
 
 libpub_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
@@ -93,7 +93,8 @@ okwsinclude_HEADERS = \
 	pub3heredoc.h \
 	pub3profiler.h \
 	json_rpc.h \
-	okws_rxx.h
+	okws_rxx.h \
+	pub3msgpack.h
 
 noinst_HEADERS =  env.mk
 
