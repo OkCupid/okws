@@ -47,19 +47,29 @@ client_t::make_req (evi_t ev)
   tvars {
     strbuf b;
     suio *uio;
-    int psz;
     int rc (0);
     int trc;
+    char *buf (NULL);
+    size_t bytes;
   }
 
   b << req;
   uio = b.tosuio ();
-  psz = packet_sz;
-  if (psz == 0) { psz = -1; }
+  if (packet_sz) {
+    buf = New char[packet_sz + 1];
+  }
 
   while (uio->resid ()) {
     twait { tame::waitwrite (fd, mkevent ()); }
-    trc = uio->output (fd, psz);
+    if (packet_sz) {
+      bytes = uio->copyout (buf, packet_sz);
+      trc = write (fd, buf, bytes);
+      if (trc > 0) {
+	uio->rembytes (trc);
+      }
+    } else {
+      trc = uio->output (fd);
+    }
     if (trc < 0 && errno != EAGAIN) {
       warn ("write failure: %m\n");
       rc = trc;
@@ -67,6 +77,7 @@ client_t::make_req (evi_t ev)
       twait { delaycb (0, delay_msec, mkevent ());}
     }
   }
+  if (!buf) { delete [] buf; }
   ev->trigger (rc);
 }
 
