@@ -6,143 +6,139 @@
 #include "rxx.h"
 #include "parseopt.h"
 #include "vec.h"
-
+#include "tame_io.h"
 
 static rxx hostport ("([^:]+)(:(\\d+))?");
-int nreq;
-int nconcur;
-int nrunning;
-bool sdflag;
-bool trickle;
 
-class hclient_t {
+//-----------------------------------------------------------------------
+
+class client_t {
 public:
-  hclient_t (str h, int p, str r, int i) 
-    : host (h), port (p), req (r), id (i) {}
-  ~hclient_t () 
-  {
-    fdcb (fd, selread, NULL);
-    tcp_abort (fd);
-  }
-  void run ();
+
+  client_t (str host, int port, str r , size_t packet_sz, time_t d)
+    : host (h), 
+      port (p), 
+      req (r), 
+      packet_sz (psz), 
+      delay_msec (d), 
+      fd (-1) {}
+
+  ~client_t () {}
+  void run (CLOSURE);
 
 private:
-  void connected (int f);
-  void canread ();
-  void writewait ();
-  void cexit (int rc);
+  void make_req (evi_t ev, CLOSURE);
+  void read_resp (evi_t ev, CLOSURE);
 
   str host;
   int port;
   str req;
+  size_t packet_sz;
+  time_t delay_msec;
   int fd;
-  int id;
 };
 
-vec<hclient_t *> q;
+//-----------------------------------------------------------------------
 
-void
-hclient_t::writewait ()
+tamed void 
+hclient_t::make_req (evi_t ev)
 {
-  fd_set fds;
-  FD_ZERO (&fds);
-  FD_SET (fd, &fds);
-  select (fd + 1, NULL, &fds, NULL, NULL);
-}
-
-void
-hclient_t::cexit (int c)
-{
-  warn << "at cexit: " << id << "\n";
-  --nrunning;
-  while (nrunning < nconcur && q.size ()) {
-    warn << "launched queued req: " << id << "\n";
-    q.pop_front ()->run ();
+  tvars {
+    fd = f;
+    strbuf b;
+    suio *uio;
+    struct timeval tv;
+    char *buf;
+    int psz;
+    int rc = 0;
+    int trc;
   }
-  if (!--nreq && sdflag)
-    exit (c);
-  warn << "done: " << id << " (nreq: " << nreq << ")\n";
-  delete this;
-  return;
-}
 
-void
-hclient_t::canread ()
-{
-  suio uio;
-  int rc = uio.input (fd);
-  if (rc == 0) {
-    cexit (0);
-    return;
-  }
-  if (rc == -1 && errno != EAGAIN) {
-    warn ("read error: %m\n");
-    cexit (-1);
-  }
-  while (uio.resid ()) 
-    uio.output (1);
-}
-
-void 
-hclient_t::connected (int f)
-{
-  fd = f;
-  strbuf b (req);
-  req << "\r\n\r\n";
-  if (fd < 0)
-    fatal << "cannot connect to host\n";
-  suio *uio = b.tosuio ();
-  char c;
-  struct timeval tv;
-  tv.tv_sec = 0;
-  tv.tv_usec = 500000;
+  b << req;
+  uio = b.tosuio ();
+  psz = packet_sz;
+  if (psz == 0) { psz = -1; }
 
   while (uio->resid ()) {
-    writewait ();
-
-    if (trickle) {
-
-      // 1 byte at a time
-      uio->copyout (&c, 1);
-      if (write (fd, &c, 1)  == 1)
-	uio->rembytes (1);
-      select (0, NULL, NULL, NULL, &tv);
-      warn ("trickle: %c\n", c);
-
-    } else {
-      if (uio->output (fd) < 0)
-	fatal << "write error\n";
+    twait { tame::writewait (_fd, mkevent ()); }
+    trc = uio->output (_fd, psz);
+    if (trc < 0 && errno != EAGAIN) {
+      warn ("write failure: %m\n");
+      rc = trc;
+    } else if (delay_msec) {
+      twait { delaycb (0, delay_msec, mkevent ());}
     }
   }
-  fdcb (fd, selread, wrap (this, &hclient_t::canread));
+  ev->trigger (rc);
 }
 
-void
-hclient_t::run ()
+//-----------------------------------------------------------------------
+
+tamed void 
+client_t::read_resp (evi_t ev)
 {
-  warn << "run: " << id << "\n";
-  if (nrunning >= nconcur) {
-    warn << "queuing: " << id << "\n";
-    q.push_back (this);
-    return;
+#define BUFSZ 4196
+  tvars {
+    char buf[BUFSZ];
+    int rc (0);
+    int outfd (1);
   }
-  nrunning++;
-  warn << "running: " << id << " (nrunning: " << nrunning << ")\n";
-  tcpconnect (host, port, wrap (this, &hclient_t::connected));
+  make_sync (outfd);
+
+  while (_fd >= 0 && rc == 0) {
+    twait { tame::writeread (_fd, mkevent ()); }
+    rc = read (_fd, buf, BUFSZ - 1);
+    if (rc == 0) {
+      close (_fd);
+      _fd = -1;
+    } else if (rc > 0) {
+      buf[rc] = 0;
+      write (outfd, buf, rc);
+    } else if (errno != EAGAIN) {
+      warn ("read error: %m\n");
+      rc = -1;
+    }
+  }
+  ev->trigger (rc);
+#undef BUFSZ
 }
+
+//-----------------------------------------------------------------------
+
+tamed void
+client_t::run ()
+{
+  tvars {
+    int rc (0);
+  }
+  twait { tcpconnect (host, port, mkevent (fd)); }
+  if (fd < 0) {
+    warn << "Cannot connect to " << host << ":" << port << "\n";
+    rc = -1;
+  } else {
+    make_async (_fd);
+    twait { make_req (mkevent (rc)); }
+  }
+  if (rc == 0) { twait { read_resp (mkevent (rc)); } }
+  exit (rc);
+}
+
+//-----------------------------------------------------------------------
 
 static void
 usage ()
 {
-  fatal << "usage: hcli host[:port] infile <nreq>\n";
+  fatal << "usage: hcli [-p<packet-sz>] [-d<delay>] host[:port] infile\n";
 }
+
+//-----------------------------------------------------------------------
 
 int 
 main (int argc, char *argv[])
 {
   setprogname (argv[0]);
-  size_t packet_sz;
-  time_t delay;
+  size_t packet_sz = 0;
+  time_t delay = 0;
 
   int ch;
   while ((ch = getopt (argc, argv, "p:d:")) != -1) {
@@ -167,16 +163,13 @@ main (int argc, char *argv[])
   argv += optind;
 
 
-  if (argc != 2 && argc != 3)
+  if (argc != 2) 
     usage ();
-
   int n = 1;
-  if (argc == 3 && !convertint (argv[2], &n)) 
-    usage ();
-    
   str in = file2str (argv[1]);
   if (!in)
     fatal << "Cannot open file: " << argv[1] << "\n";
+
   if (!hostport.match (argv[0])) 
     usage ();
   str host = hostport[1];
@@ -185,13 +178,11 @@ main (int argc, char *argv[])
   if (port_s) {
     if (!convertint (port_s, &port)) usage ();
   }
-  nrunning = 0;
-  nconcur = 20;
-  nreq = n;
-  sdflag = true;
-  for (int i = 0; i < n; i++) {
-    hclient_t *h = New hclient_t (host, port, in, i);
-    h->run ();
-  }
+
+  ptr<client_t> c = New refcounted<cilent_t> (host, port, in, packet_sz, delay);
+  c->run ();
   amain ();
 }
+
+//-----------------------------------------------------------------------
+
