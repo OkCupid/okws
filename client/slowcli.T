@@ -5,6 +5,7 @@
 #include "async.h"
 #include "rxx.h"
 #include "parseopt.h"
+#include "tame.h"
 #include "vec.h"
 #include "tame_io.h"
 
@@ -15,11 +16,11 @@ static rxx hostport ("([^:]+)(:(\\d+))?");
 class client_t {
 public:
 
-  client_t (str host, int port, str r , size_t packet_sz, time_t d)
+  client_t (str h, int p, str r, size_t ps, time_t d)
     : host (h), 
       port (p), 
       req (r), 
-      packet_sz (psz), 
+      packet_sz (ps), 
       delay_msec (d), 
       fd (-1) {}
 
@@ -41,16 +42,13 @@ private:
 //-----------------------------------------------------------------------
 
 tamed void 
-hclient_t::make_req (evi_t ev)
+client_t::make_req (evi_t ev)
 {
   tvars {
-    fd = f;
     strbuf b;
     suio *uio;
-    struct timeval tv;
-    char *buf;
     int psz;
-    int rc = 0;
+    int rc (0);
     int trc;
   }
 
@@ -60,8 +58,8 @@ hclient_t::make_req (evi_t ev)
   if (psz == 0) { psz = -1; }
 
   while (uio->resid ()) {
-    twait { tame::writewait (_fd, mkevent ()); }
-    trc = uio->output (_fd, psz);
+    twait { tame::waitwrite (fd, mkevent ()); }
+    trc = uio->output (fd, psz);
     if (trc < 0 && errno != EAGAIN) {
       warn ("write failure: %m\n");
       rc = trc;
@@ -74,10 +72,11 @@ hclient_t::make_req (evi_t ev)
 
 //-----------------------------------------------------------------------
 
+#define BUFSZ 4196
+
 tamed void 
 client_t::read_resp (evi_t ev)
 {
-#define BUFSZ 4196
   tvars {
     char buf[BUFSZ];
     int rc (0);
@@ -85,12 +84,12 @@ client_t::read_resp (evi_t ev)
   }
   make_sync (outfd);
 
-  while (_fd >= 0 && rc == 0) {
-    twait { tame::writeread (_fd, mkevent ()); }
-    rc = read (_fd, buf, BUFSZ - 1);
+  while (fd >= 0 && rc == 0) {
+    twait { tame::waitread (fd, mkevent ()); }
+    rc = read (fd, buf, BUFSZ - 1);
     if (rc == 0) {
-      close (_fd);
-      _fd = -1;
+      close (fd);
+      fd = -1;
     } else if (rc > 0) {
       buf[rc] = 0;
       write (outfd, buf, rc);
@@ -100,8 +99,8 @@ client_t::read_resp (evi_t ev)
     }
   }
   ev->trigger (rc);
-#undef BUFSZ
 }
+#undef BUFSZ
 
 //-----------------------------------------------------------------------
 
@@ -116,7 +115,7 @@ client_t::run ()
     warn << "Cannot connect to " << host << ":" << port << "\n";
     rc = -1;
   } else {
-    make_async (_fd);
+    make_async (fd);
     twait { make_req (mkevent (rc)); }
   }
   if (rc == 0) { twait { read_resp (mkevent (rc)); } }
@@ -144,13 +143,13 @@ main (int argc, char *argv[])
   while ((ch = getopt (argc, argv, "p:d:")) != -1) {
     switch (ch) {
     case 'd':
-      if (!parseint (optarg, &delay)) {
+      if (!convertint (optarg, &delay)) {
 	warn << "Cannot parse desired delay: " << optarg <<"\n";
 	usage ();
       }
       break;
     case 'p':
-      if (!parseint (optarg, &packet_size)) {
+      if (!convertint (optarg, &packet_sz)) {
 	warn << "Cannot parse desired packet size: " << optarg <<"\n";
 	usage ();
       }
@@ -165,7 +164,6 @@ main (int argc, char *argv[])
 
   if (argc != 2) 
     usage ();
-  int n = 1;
   str in = file2str (argv[1]);
   if (!in)
     fatal << "Cannot open file: " << argv[1] << "\n";
@@ -179,7 +177,7 @@ main (int argc, char *argv[])
     if (!convertint (port_s, &port)) usage ();
   }
 
-  ptr<client_t> c = New refcounted<cilent_t> (host, port, in, packet_sz, delay);
+  ptr<client_t> c = New refcounted<client_t> (host, port, in, packet_sz, delay);
   c->run ();
   amain ();
 }

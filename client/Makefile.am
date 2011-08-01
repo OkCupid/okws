@@ -2,7 +2,7 @@
 $(PROGRAMS): $(LDEPS)
 
 noinst_PROGRAMS = hcli degz mygz pt1cli okwc tmr bench mygz2 enctst okwc3 okwc4
-okwsbin_PROGRAMS = okdbg pub msgpack
+okwsbin_PROGRAMS = okdbg pub msgpack slowcli
 
 noinst_HEADERS = normdist.h
 
@@ -20,6 +20,7 @@ okwc4_SOURCES = okwcmain4.C
 mygz2_SOURCES = mygz2.C
 pub_SOURCES = pub3.C
 msgpack_SOURCES = msgpack.C
+slowcli_SOURCES = slowcli.C
 
 TAMEOUT = okwcmain3.C okwcmain4.C pub3.C
 
@@ -36,10 +37,12 @@ pub3.o: 	pub3.C
 pub3.lo: 	pub3.C
 msgpack.o:	msgpack.C
 msgpack.lo:	msgpack.C
+slowcli.o:	slowcli.C
+slowcli.lo:	slowcli.C
 
 
 CLEANFILES = core *.core *~ $(TAMEOUT)
-EXTRA_DIST = .cvsignore okwcmain3.T okwcmain4.T pub3.T
+EXTRA_DIST = .cvsignore okwcmain3.T okwcmain4.T pub3.T slowcli.T
 MAINTAINERCLEANFILES = Makefile.in
 
 .PHONY: tameclean
