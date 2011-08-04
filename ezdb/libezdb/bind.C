@@ -12,8 +12,18 @@ namespace ezdb {
     { *_x.amysql_uint64 = i; }
     to_xdr_t::to_xdr_t (int64_t i) : _x (AMYSQL_TYPE_INT) 
     { *_x.amysql_int = i; }
-    to_xdr_t::to_xdr_t (u_int32_t i) : _x (AMYSQL_TYPE_INT) 
-    { *_x.amysql_int = i; }
+
+    to_xdr_t::to_xdr_t (u_int32_t i) 
+    {
+      if (i > u_int32_t (INT32_MAX)) {
+	_x.set_typ (AMYSQL_TYPE_UINT64);
+	*_x.amysql_uint64 = i;
+      } else {
+	_x.set_typ (AMYSQL_TYPE_INT);
+	*_x.amysql_int = i;
+      }
+    }
+
     to_xdr_t::to_xdr_t (int32_t i) : _x (AMYSQL_TYPE_INT) 
     { *_x.amysql_int = i; }
     to_xdr_t::to_xdr_t (u_int16_t i) : _x (AMYSQL_TYPE_INT) 
