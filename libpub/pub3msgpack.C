@@ -33,7 +33,7 @@ public:
 
   void swap () {
     for (size_t i = 0; i < N/2; i++) {
-      size_t j = N - 1 - j;
+      size_t j = N - 1 - i;
       u_int8_t tmp = u.b[j];
       u.b[j] = u.b[i];
       u.b[i] = tmp;
