@@ -68,6 +68,7 @@ axprt::send (ptr<const expr_t> x, evi_t ev)
 //-----------------------------------------------------------------------
 
 void axprt::close (int en) { 
+
   if (_fd >= 0) {
     close (_fd);
     _fd = -1; 
@@ -92,6 +93,61 @@ axprt::get_str (size_t s) const
   }
   return ret;
 }
+
+//-----------------------------------------------------------------------
+
+tamed void
+axprt::dispatch ()
+{
+  tvars {
+    int rc;
+    ptr<expr_t> x;
+    ptr<expr_list_t> l;
+    holdvar ptr<axprt> hold (mkref (_self));
+    bool ok (true);
+    int64_t typ, seqid;
+  }
+
+  // XXX todo -- fill out the error cases!
+
+  while (ok) {
+    twait { recv (mkevent (rc, x)); }
+    if (rc <= 0) {
+      ok = false;
+    } else if (!x) { 
+      
+    } else if (!(l = x->to_list ())) {
+      
+
+    } else if (l->size () < 3 || l->size () > 4) {
+
+    } else if (!(*l)[0]->to_int (&typ)) {
+
+    } else if (!(*l)[1]->to_int (&seqid)) {
+
+    } else if (typ == REQUEST || typ == NOTIFY) {
+
+    } else if (typ == RESPONSE) {
+
+      callev_t::ptr *evp = _calls[seqid];
+ 
+      if (!evp) {
+
+      } else {
+	callev_t::ptr ev = *evp;
+	_calls.remove (seqid);
+	ptr<expr_t> arg;
+	if (l->size () == 4) { arg = (*l)[3]; }
+	ev->trigger (0, (*l)[2], arg);
+      }
+      
+    } else {
+
+    }
+
+  }
+}
+
 
 //-----------------------------------------------------------------------
 
@@ -150,6 +206,40 @@ axprt::recv_json (size_t needed, size_t ps, ev_t ev)
 
 //-----------------------------------------------------------------------
 
+u_int32_t axprt::seqid () { return _seqid++; }
+
+//-----------------------------------------------------------------------
+
+tamed void
+axprt::call (str mthd, ptr<const expr_t> arg, callev_t ev)
+{
+  tvars {
+    pub3::obj_list_t l;
+    int rc;
+    u_int32_t s;
+  }
+
+  // XXX todo -- make much more robust!
+  // XXX todo -- handle notifies
+  // XXX todo -- think about errors
+
+  s = seqid ();
+  l[0] = REQUEST;
+  l[1] = s;
+  l[2] = mthd;
+  l[3] = arg->cast_hack_copy ();
+
+  twait { send (l.obj (), mkevent (rc)); }
+  if (rc == 1) {
+    _calls.insert (s, ev);
+  } else {
+    ev->trigger (-1, NULL, NULL);
+  }
+
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 axprt::recv (ev_t ev)
 {
@@ -182,6 +272,18 @@ axprt::recv (ev_t ev)
 ptr<axprt> axprt::alloc (int fd) { return New refcounted<axprt> (fd); };
 
 //=======================================================================
+
+aclnt::~aclnt () {}
+
+//-----------------------------------------------------------------------
+
+tamed void
+aclnt::call (str method, ptr<const expr_t> arg, ptr<expr_t> *res,
+	     aclnt_cb cb)
+{
+
+
+}
 
 //=======================================================================
 //=======================================================================
