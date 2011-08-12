@@ -47,9 +47,12 @@ public:
 
 class msgpack_t {
 public:
-  msgpack_t (str m) : _buf (m), _cp (m.cstr ()), _ep (_cp + m.len ()) {}
+  msgpack_t (str m) : 
+    _buf (m), _cp (m.cstr ()), _ep (_cp + m.len ()), _my_errno (0) {}
 
   ptr<pub3::expr_t> unpack ();
+  size_t len () const { return _cp - _buf; }
+  int my_errno () const { return _my_errno; }
 
   typedef ptr<pub3::expr_t> (msgpack_t::*unpack_hook_t) (void);
   typedef msgpack_t::unpack_hook_t unpack_tab_t[256];
@@ -114,6 +117,8 @@ private:
       memcpy (buf, _cp, n);
       _cp += n;
       ret = true;
+    } else {
+      _my_errno = EAGAIN;
     }
     return ret;
   }
@@ -123,6 +128,7 @@ private:
   str _buf;
   const char *_cp;
   const char *_ep;
+  int _my_errno;
 };
 
 //-----------------------------------------------------------------------
@@ -441,6 +447,8 @@ msgpack_t::unpack_tab ()
 #define P(code, obj) \
     tab[code] = &msgpack_t::unpack_##obj;
 
+    for (u_int8_t i = 0; i < 0xff; i++) { tab[i] = NULL; }
+
     for (u_int8_t i = 0x00; i <= 0x7f; i++) P(i, positive_fixnum);
     for (u_int8_t i = 0x80; i <= 0x8f; i++) P(i, fix_map);
     for (u_int8_t i = 0x90; i <= 0x9f; i++) P(i, fix_array);
@@ -514,7 +522,12 @@ msgpack_t::unpack ()
   u_int8_t b;
   bool ok = peek_byte (&b);
   if (ok) { 
-    ret = (this->*(unpack_tab()[b])) ();
+    unpack_hook_t h = unpack_tab()[b];
+    if (h) {
+      ret = (this->*h) ();
+    } else {
+      _my_errno = EINVAL;
+    }
   }
   return ret;
 }
@@ -524,12 +537,15 @@ msgpack_t::unpack ()
 
 namespace pub3 { 
   namespace msgpack {
-    
+
     ptr<expr_t>
-    decode (str msg) 
+    decode (str msg, int *errno_p, size_t *len_p) 
     {
       msgpack_t b (msg);
-      return b.unpack ();
+      ptr<expr_t> ret = b.unpack ();
+      if (errno_p) { *errno_p = b.my_errno (); }
+      if (len_p) { *len_p = b.len (); }
+      return ret;
     };
     
     str

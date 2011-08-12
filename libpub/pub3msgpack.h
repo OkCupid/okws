@@ -11,7 +11,10 @@ namespace pub3 {
 
     //========================================
 
-    ptr<pub3::expr_t> decode (str m);
+    // Pass back the decoded object, and also, by poiner, the
+    // errno on failure and the len of the read
+    ptr<pub3::expr_t> decode (str m, int *err = NULL, size_t *len = NULL);
+
     str encode (ptr<const pub3::expr_t> x);
 
     //========================================
