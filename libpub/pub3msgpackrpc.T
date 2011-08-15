@@ -18,20 +18,34 @@ namespace msgpack {
 
 //=======================================================================
 
-axprt::axprt (int f) : 
+axprt_inner::axprt_inner (int f) : 
   _errno (0),
   _fd (f) , 
+  _read_lock (tame::lock_t::OPEN),
   _write_lock (tame::lock_t::OPEN), 
-  _read_lock (tame::lock_t::OPEN) {}
+  _read_rv (__FILE__, __LINE__),
+  _write_rv (__FILE__, __LINE__)
+{
+  // A stop trigger to wrap all lowest-level reads
+  // A trigger of false means that it stopped, a trigger of true
+  // means that it waited successfully on i/o
+  _read_stop = mkevent (_read_rv);
+  _write_stop = mkevent (_write_rv);
+}
 
 //-----------------------------------------------------------------------
 
-axprt::~axprt () { close (0); }
+axprt_inner::~axprt_inner () 
+{ 
+  close (0);
+  _read_rv.cancel ();
+  _write_rv.cancel ();
+}
 
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::send (ptr<const expr_t> x, evb_t ev)
+axprt_inner::send (ptr<const expr_t> x, evb_t ev)
 {
   tvars {
     str dat;
@@ -42,6 +56,7 @@ axprt::send (ptr<const expr_t> x, evb_t ev)
     int rc (0);
     bool first (true);
     bool err (false);
+    holdvar ptr<axprt_inner> hold (mkref (_self));
   }
 
   twait { _write_lock.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
@@ -52,11 +67,16 @@ axprt::send (ptr<const expr_t> x, evb_t ev)
   b << len << dat;
   uio = b.tosuio ();
   
-  while (uio->resid () && !err) {
+  while (is_open () && uio->resid () && !err) {
     if (first) { first = false; }
-    else { twait { tame::waitwrite (_fd, mkevent ()); } }
-    rc = uio->output (_fd);
-    if (rc < 0 && errno != EAGAIN) { err = true; }
+    else { 
+      tame::waitwrite (_fd, mkevent (_write_rv));
+      twait (_write_rv);
+    }
+    if (is_open ()) {
+      rc = uio->output (_fd);
+      if (rc < 0 && errno != EAGAIN) { err = true; }
+    }
   }
 
   _write_lock.release ();
@@ -65,8 +85,8 @@ axprt::send (ptr<const expr_t> x, evb_t ev)
 
 //-----------------------------------------------------------------------
 
-void axprt::close (int en) { 
-
+void axprt_inner::close (int en) 
+{ 
   if (_fd >= 0) {
     close (_fd);
     _fd = -1; 
@@ -77,7 +97,7 @@ void axprt::close (int en) {
 //-----------------------------------------------------------------------
 
 str
-axprt::get_str (size_t s) const
+axprt_inner::get_str (size_t s) const
 {
   str ret;
   if (!s) ret = _inbuf;
@@ -95,7 +115,7 @@ axprt::get_str (size_t s) const
 //-----------------------------------------------------------------------
 
 str 
-axprt::get_remote ()
+axprt_inner::get_remote ()
 {
   if (!_remote && _fd >= 0) {
       socklen_t sinlen;
@@ -119,22 +139,22 @@ axprt::get_remote ()
 //-----------------------------------------------------------------------
 
 void
-axprt::error (str s)
+axprt_inner::error (str s)
 {
   str r = get_remote ();
-  warn << "axprt(" << r << "): " << s << "\n";
+  warn << "axprt_inner(" << r << "): " << s << "\n";
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::dispatch ()
+axprt_inner::dispatch ()
 {
   tvars {
     int rc;
     ptr<expr_t> x;
     ptr<expr_list_t> l;
-    holdvar ptr<axprt> hold (mkref (_self));
+    holdvar ptr<axprt_inner> hold (mkref (_self));
     bool ok (true);
     int64_t typ, seqid;
   }
@@ -191,11 +211,10 @@ axprt::dispatch ()
   }
 }
 
-
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::recv_json (size_t needed, size_t ps, ev_t ev)
+axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 {
   tvars {
     int ret (0);
@@ -212,12 +231,15 @@ axprt::recv_json (size_t needed, size_t ps, ev_t ev)
   while (is_open () && !x) {
 
     if (first) { first = false; }
-    else { twait { tame::waitread (_fd, mkevent ()); } }
-
-    rc = uio->input (_fd, ps);
+    else { 
+      tame::waitread (_fd, mkevent (_read_rv)); 
+      twait (_read_rv);
+    }
+    
+    if (!is_open ()) { /* noop */ }
 
     // EOF situation.
-    if (rc == 0) {
+    else if ((rc = uio->input (_fd, ps)) == 0) {
       close (0);
       ret = 0;
 
@@ -249,12 +271,12 @@ axprt::recv_json (size_t needed, size_t ps, ev_t ev)
 
 //-----------------------------------------------------------------------
 
-u_int32_t axprt::seqid () { return _seqid++; }
+u_int32_t axprt_inner::seqid () { return _seqid++; }
 
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev)
+axprt_inner::call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev)
 {
   tvars {
     pub3::obj_list_t l;
@@ -288,7 +310,7 @@ axprt::call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev)
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::recv (ev_t ev)
+axprt_inner::recv (ev_t ev)
 {
   tvars {
     int ret (0);
@@ -316,7 +338,44 @@ axprt::recv (ev_t ev)
 
 //-----------------------------------------------------------------------
 
-ptr<axprt> axprt::alloc (int fd) { return New refcounted<axprt> (fd); };
+ptr<axprt_inner> axprt_inner::alloc (int fd) 
+{ return New refcounted<axprt_inner> (fd); };
+
+//-----------------------------------------------------------------------
+
+void
+axprt_inner::stop ()
+{
+  close (0);
+  evv_t::ptr e;
+  if ((e = _read_stop)) {
+    _read_stop = NULL;
+    e->trigger ();
+  }
+  if ((e = _write_stop)) {
+    _write_stop = NULL;
+    e->trigger ();
+  }
+}
+
+//=======================================================================
+
+void axprt::call (str methd, ptr<const expr_t> arg, callev_t::ptr ev)
+{ _xi->call (methd, arg, ev); }
+
+//-----------------------------------------------------------------------
+
+ptr<axprt>
+axprt::alloc (int fd)
+{
+  ptr<axprt> ret = New refcounted<axprt> (fd);
+  ret->run ();
+  return ret;
+}
+
+axprt::axprt (int fd) : _xi (axprt_inner::alloc (fd)) {} 
+void axprt::run () { _xi->dispatch (); }
+axprt::~axprt () { _xi->stop (); }
 
 //=======================================================================
 
