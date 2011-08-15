@@ -64,6 +64,8 @@ namespace pub3 {
       u_int32_t seqid () ;
       void error (str msg);
       str get_remote ();
+      void waitread (evv_t ev, CLOSURE);
+      void waitwrite (evv_t ev, CLOSURE);
 
     public:
       void stop ();

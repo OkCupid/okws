@@ -45,6 +45,30 @@ axprt_inner::~axprt_inner ()
 //-----------------------------------------------------------------------
 
 tamed void
+axprt_inner::waitwrite (evv_t ev)
+{
+  if (is_open ()) {
+    tame::waitwrite (_fd, mkevent (_write_rv));
+    twait (_write_rv);
+  }
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+axprt_inner::waitread (evv_t ev)
+{
+  if (is_open ()) {
+    tame::waitread (_fd, mkevent (_read_rv));
+    twait (_read_rv);
+  }
+  ev->trigger ();
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
 axprt_inner::send (ptr<const expr_t> x, evb_t ev)
 {
   tvars {
@@ -69,10 +93,7 @@ axprt_inner::send (ptr<const expr_t> x, evb_t ev)
   
   while (is_open () && uio->resid () && !err) {
     if (first) { first = false; }
-    else { 
-      tame::waitwrite (_fd, mkevent (_write_rv));
-      twait (_write_rv);
-    }
+    else { twait { waitwrite (mkevent ()); } }
     if (is_open ()) {
       rc = uio->output (_fd);
       if (rc < 0 && errno != EAGAIN) { err = true; }
@@ -231,10 +252,7 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
   while (is_open () && !x) {
 
     if (first) { first = false; }
-    else { 
-      tame::waitread (_fd, mkevent (_read_rv)); 
-      twait (_read_rv);
-    }
+    else { twait { waitread (mkevent ()); } }
     
     if (!is_open ()) { /* noop */ }
 
