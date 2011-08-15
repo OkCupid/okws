@@ -31,10 +31,9 @@ axprt::~axprt () { close (0); }
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::send (ptr<const expr_t> x, evi_t ev)
+axprt::send (ptr<const expr_t> x, evb_t ev)
 {
   tvars {
-    int ret (0);
     str dat;
     str len;
     size_t len_i;
@@ -59,10 +58,9 @@ axprt::send (ptr<const expr_t> x, evi_t ev)
     rc = uio->output (_fd);
     if (rc < 0 && errno != EAGAIN) { err = true; }
   }
-  if (err) { rc = -1; }
 
   _write_lock.release ();
-  ev->trigger (ret);
+  ev->trigger (!err);
 }
 
 //-----------------------------------------------------------------------
@@ -96,6 +94,39 @@ axprt::get_str (size_t s) const
 
 //-----------------------------------------------------------------------
 
+str 
+axprt::get_remote ()
+{
+  if (!_remote && _fd >= 0) {
+      socklen_t sinlen;
+      struct sockaddr_in sin;
+      if (getpeername (_fd, (struct sockaddr *)&sin, &sinlen) != 0) {
+	warn ("getpeername failed on socket %d: %m\n", _fd);
+      } else if (sinlen != sizeof (sockaddr_in)) {
+	warn ("getpeername returned strange sockaddr, sized: %d\n", sinlen);
+      } else {
+	str ip = inet_ntoa (sin.sin_addr);
+	int port = ntohs (sin.sin_port);
+	_remote = strbuf ("%s:%d", ip.cstr (), port);
+      }
+  }
+
+  if (!_remote) { _remote = "<no-ip>"; }
+
+  return _remote;
+}
+
+//-----------------------------------------------------------------------
+
+void
+axprt::error (str s)
+{
+  str r = get_remote ();
+  warn << "axprt(" << r << "): " << s << "\n";
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 axprt::dispatch ()
 {
@@ -108,22 +139,32 @@ axprt::dispatch ()
     int64_t typ, seqid;
   }
 
-  // XXX todo -- fill out the error cases!
-
   while (ok) {
     twait { recv (mkevent (rc, x)); }
-    if (rc <= 0) {
+
+    if (rc == 0) {
       ok = false;
+
+    } else if (rc < 0) {
+      error (strbuf ("dispatch: recv error: %m"));
+      ok = false;
+
     } else if (!x) { 
+      error ("dispatch: no incoming message");
       
     } else if (!(l = x->to_list ())) {
+      error ("dispatch: incoming message wasn't a list");
       
 
     } else if (l->size () < 3 || l->size () > 4) {
+      error (strbuf ("dispatch: incoming message unexpected size (%zu)",
+		     l->size ()));
 
     } else if (!(*l)[0]->to_int (&typ)) {
+      error ("dispatch: slot 0 wasn't an integer");
 
     } else if (!(*l)[1]->to_int (&seqid)) {
+      error ("dispatch: slot 1 wasn't an integer");
 
     } else if (typ == REQUEST || typ == NOTIFY) {
 
@@ -136,15 +177,17 @@ axprt::dispatch ()
       } else {
 	callev_t::ptr ev = *evp;
 	_calls.remove (seqid);
-	ptr<expr_t> arg;
-	if (l->size () == 4) { arg = (*l)[3]; }
-	ev->trigger (0, (*l)[2], arg);
+	callres_t res;
+	if ((res.err_msg = (*l)[2])) {
+	  res.set_err_code (RPC_CANTDECODERES);
+	}
+	if (l->size () == 4) { res.res = (*l)[3]; }
+	ev->trigger (res);
       }
       
     } else {
-
+      error (strbuf ("dispatch: msg type=%" PRId64 " is unknown", typ));
     }
-
   }
 }
 
@@ -211,12 +254,13 @@ u_int32_t axprt::seqid () { return _seqid++; }
 //-----------------------------------------------------------------------
 
 tamed void
-axprt::call (str mthd, ptr<const expr_t> arg, callev_t ev)
+axprt::call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev)
 {
   tvars {
     pub3::obj_list_t l;
-    int rc;
+    bool ok;
     u_int32_t s;
+    callres_t res;
   }
 
   // XXX todo -- make much more robust!
@@ -224,18 +268,21 @@ axprt::call (str mthd, ptr<const expr_t> arg, callev_t ev)
   // XXX todo -- think about errors
 
   s = seqid ();
-  l[0] = REQUEST;
+  l[0] = ev ? REQUEST : NOTIFY;
   l[1] = s;
   l[2] = mthd;
   l[3] = arg->cast_hack_copy ();
 
-  twait { send (l.obj (), mkevent (rc)); }
-  if (rc == 1) {
-    _calls.insert (s, ev);
-  } else {
-    ev->trigger (-1, NULL, NULL);
-  }
+  twait { send (l.obj (), mkevent (ok)); }
 
+  if (!ev) { /* noop */ }
+  else if (ok) {
+    _calls.insert (s, ev);
+  } else if (ev) {
+    res.set_err_code (RPC_CANTSEND);
+    res.err_msg = expr_str_t::alloc (strbuf ("write error: %m"));
+    ev->trigger (res);
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -278,14 +325,17 @@ aclnt::~aclnt () {}
 //-----------------------------------------------------------------------
 
 tamed void
-aclnt::call (str method, ptr<const expr_t> arg, ptr<expr_t> *res,
-	     aclnt_cb cb)
+aclnt::call (str method, ptr<const expr_t> arg, callev_t::ptr ev)
 {
-
-
+  if (_x) {
+    _x->call (method, arg, ev);
+  } else if (ev) {
+    callres_t res;
+    res.set_err_code (RPC_CANTSEND);
+    ev->trigger (res);
+  }
 }
 
-//=======================================================================
 //=======================================================================
 
 }

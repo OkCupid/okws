@@ -17,8 +17,18 @@ namespace pub3 {
 
     //========================================
 
+    struct callres_t {
+      callres_t () : err_code (RPC_SUCCESS) {}
+      void set_err_code (clnt_stat e) { err_code = e; }
+      clnt_stat err_code;
+      ptr<expr_t> res;
+      ptr<expr_t> err_msg;
+    };
+
+    //========================================
+
     typedef event<int, ptr<expr_t> >::ref ev_t;
-    typedef event<int, ptr<expr_t>, ptr<expr_t> >::ref callev_t;
+    typedef event<callres_t>::ref callev_t;
 
     //========================================
 
@@ -36,6 +46,7 @@ namespace pub3 {
       int _fd;
       strbuf _inbuf;
       u_int32_t _seqid;
+      str _remote;
 
       qhash<u_int32_t, callev_t::ptr> _calls;
 
@@ -48,13 +59,15 @@ namespace pub3 {
       friend class refcounted<axprt>;
 
       u_int32_t seqid () ;
+      void error (str msg);
+      str get_remote ();
 
     public:
       static ptr<axprt> alloc (int fd);
-      void send (ptr<const expr_t> x, evi_t ev, CLOSURE);
+      void send (ptr<const expr_t> x, evb_t ev, CLOSURE);
       void recv (ev_t ev, CLOSURE);
       void dispatch (CLOSURE);
-      void call (str mthd, ptr<const expr_t> arg, callev_t ev, CLOSURE);
+      void call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev, CLOSURE);
       
       ~axprt ();
     };
@@ -70,8 +83,9 @@ namespace pub3 {
       friend class refcounted<aclnt>;
 
     public:
-      void call (str method, ptr<const expr_t> arg, ptr<expr_t> *res,
-		 aclnt_cb cb, CLOSURE);
+      void call (str method, ptr<const expr_t> arg,
+		 callev_t::ptr ev, CLOSURE);
+
       static ptr<aclnt> alloc (ptr<axprt> x, str prog);
     };
 
