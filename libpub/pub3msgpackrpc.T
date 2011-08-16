@@ -18,6 +18,12 @@ namespace msgpack {
 
 //=======================================================================
 
+callres_t::callres_t (clnt_stat s, str m)
+  : err_code (s),
+    err_msg (expr_str_t::alloc (m)) {}
+
+//=======================================================================
+
 axprt_inner::axprt_inner (int f) : 
   _errno (0),
   _fd (f) , 
@@ -68,8 +74,20 @@ axprt_inner::waitread (evv_t ev)
 
 //-----------------------------------------------------------------------
 
+void
+axprt_inner::register_asrv (str prot, ptr<asrv> v)
+{
+  if (prot) { 
+    _dispatch.insert (prot, v);
+  } else {
+    _dispatch_def = v;
+  }
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
-axprt_inner::send (ptr<const expr_t> x, evb_t ev)
+axprt_inner::send (ptr<const expr_t> x, evb_t::ptr ev)
 {
   tvars {
     str dat;
@@ -101,18 +119,48 @@ axprt_inner::send (ptr<const expr_t> x, evb_t ev)
   }
 
   _write_lock.release ();
-  ev->trigger (!err);
+  if (ev) ev->trigger (!err);
 }
 
 //-----------------------------------------------------------------------
 
-void axprt_inner::close (int en) 
+void
+axprt_inner::kill_servers ()
+{
+  qhash_iterator_t<str, ptr<asrv> > it (_dispatch);
+  ptr<asrv> s;
+  while (it.next (&s)) s->eof ();
+  _dispatch.clear ();
+  if (_dispatch_def) {
+    _dispatch_def->eof ();
+    _dispatch_def = NULL;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+void
+axprt_inner::kill_clients ()
+{
+  qhash_iterator_t<u_int32_t, callev_t::ptr> it (_calls);
+  callev_t::ptr ev;
+  callres_t res (RPC_CANTRECV, "EOF while waiting for reply");
+  while (it.next (&ev)) ev->trigger (res);
+  _calls.clear ();
+}
+
+//-----------------------------------------------------------------------
+
+void 
+axprt_inner::close (int en) 
 { 
   if (_fd >= 0) {
     close (_fd);
     _fd = -1; 
     _errno = en;
   }
+  kill_clients ();
+  kill_servers ();
 }
 
 //-----------------------------------------------------------------------
@@ -208,27 +256,78 @@ axprt_inner::dispatch ()
       error ("dispatch: slot 1 wasn't an integer");
 
     } else if (typ == REQUEST || typ == NOTIFY) {
+      dispatch_call (l, typ, seqid);
 
     } else if (typ == RESPONSE) {
-
-      callev_t::ptr *evp = _calls[seqid];
- 
-      if (!evp) {
-
-      } else {
-	callev_t::ptr ev = *evp;
-	_calls.remove (seqid);
-	callres_t res;
-	if ((res.err_msg = (*l)[2])) {
-	  res.set_err_code (RPC_CANTDECODERES);
-	}
-	if (l->size () == 4) { res.res = (*l)[3]; }
-	ev->trigger (res);
-      }
-      
+      dispatch_reply (l, seqid);
     } else {
       error (strbuf ("dispatch: msg type=%" PRId64 " is unknown", typ));
     }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+static str 
+split_prog (str in, str *mthd)
+{
+  static rxx x ("(.*)\\.([^.]+)");
+  str ret;
+  if (x.match (in)) {
+    ret = x[1];
+    *mthd = x[2];
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
+{
+  str mthd, split_mthd;
+  str prog;
+  ptr<asrv> v, *vp;
+  bool ok = false;
+
+  if (!(mthd = (*l)[2]->to_str ()) || !mthd.len ()) {
+    error ("dispatch_call: method not found");
+  } else {
+    if ((prog = split_prog (mthd, &split_mthd)) && 
+	(vp = _dispatch[split_mthd])) {
+      v = *vp;
+      mthd = split_mthd;
+    }
+    if (!v && !(v = _dispatch_def)) {
+      error (strbuf ("dispatch_call: unknown method: %s", mthd.cstr ()));
+    } else {
+      ok = true;
+      v->dispatch (seqid, mthd, (*l)[3]);
+    }
+  }
+
+  if (!ok) {
+    // send back that the prog was unavailable
+  }
+
+}
+
+//-----------------------------------------------------------------------
+
+void
+axprt_inner::dispatch_reply (ptr<expr_list_t> l, int64_t seqid)
+{
+  callev_t::ptr *evp = _calls[seqid];
+  
+  if (evp) {
+    callev_t::ptr ev = *evp;
+    _calls.remove (seqid);
+    callres_t res;
+    if ((res.err_msg = (*l)[2])) {
+      res.set_err_code (RPC_CANTDECODERES);
+    }
+    if (l->size () == 4) { res.res = (*l)[3]; }
+    ev->trigger (res);
   }
 }
 
@@ -302,10 +401,6 @@ axprt_inner::call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev)
     u_int32_t s;
     callres_t res;
   }
-
-  // XXX todo -- make much more robust!
-  // XXX todo -- handle notifies
-  // XXX todo -- think about errors
 
   s = seqid ();
   l[0] = ev ? REQUEST : NOTIFY;
@@ -383,6 +478,16 @@ void axprt::call (str methd, ptr<const expr_t> arg, callev_t::ptr ev)
 
 //-----------------------------------------------------------------------
 
+void axprt::send (ptr<const expr_t> x, evb_t::ptr ev)
+{ _xi->send (x, ev); }
+
+//-----------------------------------------------------------------------
+
+void axprt::register_asrv (str prog, ptr<asrv> v) 
+{ _xi->register_asrv (prog, v);  }
+
+//-----------------------------------------------------------------------
+
 ptr<axprt>
 axprt::alloc (int fd)
 {
@@ -401,16 +506,109 @@ aclnt::~aclnt () {}
 
 //-----------------------------------------------------------------------
 
+str
+aclnt::mkmthd (str s) const
+{
+  str ret;
+  if (!_prog) { ret = s; }
+  else { 
+    strbuf b;
+    b << _prog << "." << s;
+    ret = b;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 tamed void
 aclnt::call (str method, ptr<const expr_t> arg, callev_t::ptr ev)
 {
   if (_x) {
-    _x->call (method, arg, ev);
+    _x->call (mkmthd (method), arg, ev);
   } else if (ev) {
     callres_t res;
     res.set_err_code (RPC_CANTSEND);
     ev->trigger (res);
   }
+}
+
+//=======================================================================
+
+asrv::asrv (ptr<axprt> x, str prog, asrvcb_t cb)
+  : _x (x),
+    _prog (prog),
+    _cb (cb)
+{ _x->register_asrv (prog, mkref (this)); }
+
+//-----------------------------------------------------------------------
+
+void asrv::eof () { _cb (svccb ()); _x = NULL; }
+
+//-----------------------------------------------------------------------
+
+void
+asrv::reply (const svccb &v)
+{
+  ptr<expr_t> x = v.to_json ();
+  _x->send (x);
+}
+
+//-----------------------------------------------------------------------
+
+void
+asrv::dispatch (seqid_t sid, str mthd, ptr<expr_t> arg)
+{
+  svccb v (sid, mthd, arg, mkref (this));
+  _cb (v);
+}
+
+//=======================================================================
+
+svccb::svccb (seqid_t s, str m, ptr<expr_t> a, ptr<asrv> v)
+  : _sid (s),
+    _mthd (m),
+    _arg (a),
+    _asrv (v),
+    _eof (false) {}
+
+//-----------------------------------------------------------------------
+
+svccb::svccb () : _sid (0), _eof (true) {}
+
+//-----------------------------------------------------------------------
+
+void
+svccb::reject (accept_stat s)
+{
+  pub3::obj_dict_t d;
+  d("RPC_ERROR") = int (s);
+  _err = d.obj ();
+}
+
+//-----------------------------------------------------------------------
+
+void svccb::reply (ptr<expr_t> x) 
+{ 
+  _res = x;
+  _asrv->reply (*this); 
+  _asrv = NULL;
+}
+
+//-----------------------------------------------------------------------
+
+ptr<expr_t>
+svccb::to_json () const
+{
+  pub3::obj_list_t o;
+  o[0] = RESPONSE;
+  o[1] = _sid;
+  if (_err) { 
+    o[2] = _err;
+  } else if (_res) {
+    o[3] = _res;
+  }
+  return o.obj ();
 }
 
 //=======================================================================

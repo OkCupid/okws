@@ -18,8 +18,13 @@ namespace pub3 {
 
     //========================================
 
+    typedef int64_t seqid_t;
+
+    //========================================
+
     struct callres_t {
       callres_t () : err_code (RPC_SUCCESS) {}
+      callres_t (clnt_stat s, str m);
       void set_err_code (clnt_stat e) { err_code = e; }
       clnt_stat err_code;
       ptr<expr_t> res;
@@ -41,6 +46,8 @@ namespace pub3 {
 
     //========================================
 
+    class asrv;
+
     class axprt_inner : public virtual refcount {
     private:
       int _errno;
@@ -53,6 +60,8 @@ namespace pub3 {
       rendezvous_t<> _read_rv, _write_rv;
 
       qhash<u_int32_t, callev_t::ptr> _calls;
+      qhash<str, ptr<asrv> > _dispatch;
+      ptr<asrv> _dispatch_def;
 
       axprt_inner (int fd);
       void close (int en);
@@ -66,14 +75,19 @@ namespace pub3 {
       str get_remote ();
       void waitread (evv_t ev, CLOSURE);
       void waitwrite (evv_t ev, CLOSURE);
+      void kill_clients ();
+      void kill_servers ();
+      void dispatch_reply (ptr<expr_list_t> l, int64_t seqid);
+      void dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid);
 
     public:
       void stop ();
       static ptr<axprt_inner> alloc (int fd);
-      void send (ptr<const expr_t> x, evb_t ev, CLOSURE);
+      void send (ptr<const expr_t> x, evb_t::ptr ev = NULL, CLOSURE);
       void recv (ev_t ev, CLOSURE);
       void dispatch (CLOSURE);
       void call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev, CLOSURE);
+      void register_asrv (str prot, ptr<asrv> v);
       
       ~axprt_inner ();
     };
@@ -88,6 +102,8 @@ namespace pub3 {
       
     public:
       void call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev);
+      void send (ptr<const expr_t> x, evb_t::ptr ev = NULL);
+      void register_asrv (str prot, ptr<asrv> v);
       static ptr<axprt> alloc (int fd);
       ~axprt ();
     };
@@ -101,12 +117,49 @@ namespace pub3 {
       aclnt (ptr<axprt> x, str prog);
       ~aclnt ();
       friend class refcounted<aclnt>;
+      str mkmthd (str s) const;
 
     public:
       void call (str method, ptr<const expr_t> arg,
 		 callev_t::ptr ev, CLOSURE);
 
       static ptr<aclnt> alloc (ptr<axprt> x, str prog);
+    };
+
+    //========================================
+
+    class svccb {
+      seqid_t _sid;
+      str _mthd;
+      ptr<expr_t> _arg;
+      ptr<asrv> _asrv;
+      ptr<expr_t> _err, _res;
+      bool _eof;
+    public:
+      svccb (seqid_t sid, str m, ptr<expr_t> arg, ptr<asrv> v);
+      svccb ();
+      str method () const { return _mthd; }
+      ptr<expr_t> arg () { return _arg; }
+      void reply (ptr<expr_t> x = NULL);
+      void reject (accept_stat stat);
+      ptr<expr_t> to_json () const;
+    };
+
+    typedef callback<void, svccb >::ref asrvcb_t ;
+
+    //========================================
+
+    class asrv : public virtual refcount {
+      ptr<axprt> _x;
+      str _prog;
+      asrvcb_t _cb;
+      asrv (ptr<axprt> x, str prog, asrvcb_t cb);
+      friend class refcounted<asrv>;
+    public:
+      void eof ();
+      void reply (const svccb &b);
+      static ptr<asrv> alloc (ptr<axprt> x, str prog, asrvcb_t cb);
+      void dispatch (seqid_t sid, str mthd, ptr<expr_t> arg);
     };
 
     //========================================
