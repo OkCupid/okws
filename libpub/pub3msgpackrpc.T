@@ -307,6 +307,7 @@ axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
   }
 
   if (!ok) {
+    // XXX make an svccb and send back something resonable.
     // send back that the prog was unavailable
   }
 
@@ -478,11 +479,6 @@ void axprt::call (str methd, ptr<const expr_t> arg, callev_t::ptr ev)
 
 //-----------------------------------------------------------------------
 
-void axprt::send (ptr<const expr_t> x, evb_t::ptr ev)
-{ _xi->send (x, ev); }
-
-//-----------------------------------------------------------------------
-
 void axprt::register_asrv (str prog, ptr<asrv> v) 
 { _xi->register_asrv (prog, v);  }
 
@@ -496,9 +492,12 @@ axprt::alloc (int fd)
   return ret;
 }
 
+//-----------------------------------------------------------------------
+
 axprt::axprt (int fd) : _xi (axprt_inner::alloc (fd)) {} 
 void axprt::run () { _xi->dispatch (); }
 axprt::~axprt () { _xi->stop (); }
+void axprt::send (ptr<const expr_t> x, evb_t::ptr ev) { _xi->send (x, ev); }
 
 //=======================================================================
 
@@ -582,8 +581,19 @@ void
 svccb::reject (accept_stat s)
 {
   pub3::obj_dict_t d;
+  // XXX fix me...
   d("RPC_ERROR") = int (s);
   _err = d.obj ();
+  send ();
+}
+
+//-----------------------------------------------------------------------
+
+void
+svccb::send ()
+{
+  _asrv->getx ()->send (to_json ());
+  _asrv = NULL;
 }
 
 //-----------------------------------------------------------------------
@@ -591,8 +601,7 @@ svccb::reject (accept_stat s)
 void svccb::reply (ptr<expr_t> x) 
 { 
   _res = x;
-  _asrv->reply (*this); 
-  _asrv = NULL;
+  send ();
 }
 
 //-----------------------------------------------------------------------

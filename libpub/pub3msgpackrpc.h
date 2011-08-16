@@ -135,6 +135,7 @@ namespace pub3 {
       ptr<asrv> _asrv;
       ptr<expr_t> _err, _res;
       bool _eof;
+      void send ();
     public:
       svccb (seqid_t sid, str m, ptr<expr_t> arg, ptr<asrv> v);
       svccb ();
@@ -160,6 +161,7 @@ namespace pub3 {
       void reply (const svccb &b);
       static ptr<asrv> alloc (ptr<axprt> x, str prog, asrvcb_t cb);
       void dispatch (seqid_t sid, str mthd, ptr<expr_t> arg);
+      ptr<axprt> getx () { return _x; }
     };
 
     //========================================
