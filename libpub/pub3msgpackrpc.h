@@ -158,6 +158,7 @@ namespace pub3 {
       asrv (ptr<axprt> x, str prog, asrvcb_t cb);
       friend class refcounted<asrv>;
     public:
+      void error (str s);
       void eof ();
       void reply (const svccb &b);
       static ptr<asrv> alloc (ptr<axprt> x, str prog, asrvcb_t cb);

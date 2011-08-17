@@ -190,9 +190,10 @@ axprt_inner::get_remote ()
       socklen_t sinlen;
       struct sockaddr_in sin;
       if (getpeername (_fd, (struct sockaddr *)&sin, &sinlen) != 0) {
-	warn ("getpeername failed on socket %d: %m\n", _fd);
+	error (strbuf ("getpeername failed on socket %d: %m", _fd));
       } else if (sinlen != sizeof (sockaddr_in)) {
-	warn ("getpeername returned strange sockaddr, sized: %d\n", sinlen);
+	error (strbuf ("getpeername returned strange sockaddr, sized: %d", 
+		       sinlen));
       } else {
 	str ip = inet_ntoa (sin.sin_addr);
 	int port = ntohs (sin.sin_port);
@@ -211,7 +212,7 @@ void
 axprt_inner::error (str s)
 {
   str r = get_remote ();
-  warn << "axprt_inner(" << r << "): " << s << "\n";
+  warn << "msgpack::axprt_inner(" << r << "): " << s << "\n";
 }
 
 //-----------------------------------------------------------------------
@@ -560,6 +561,18 @@ asrv::reply (const svccb &v)
 //-----------------------------------------------------------------------
 
 void
+asrv::error (str s)
+{
+  warn << "msgpack::asrv";
+  if (_prog) {
+    warnx << " (" << _prog << ")";
+  }
+  warnx << s << "\n";
+}
+
+//-----------------------------------------------------------------------
+
+void
 asrv::dispatch (seqid_t sid, str mthd, ptr<expr_t> arg)
 {
   svccb v (sid, mthd, arg, mkref (this));
@@ -603,7 +616,12 @@ svccb::reject (accept_stat s)
 void
 svccb::send ()
 {
-  _asrv->getx ()->send (to_json ());
+  ptr<axprt> x = _asrv->getx ();
+  if (x) {
+    x->send (to_json ());
+  } else {
+    _asrv->error ("svccb: cannot send");
+  }
   _asrv = NULL;
 }
 
