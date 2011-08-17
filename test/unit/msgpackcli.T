@@ -45,7 +45,34 @@ private:
 //-----------------------------------------------------------------------
 
 client_t::client_t () : _port (40001), _host ("localhost") {}
-bool client_t::config (int argc, char **argv) { return false; }
+
+//-----------------------------------------------------------------------
+
+bool 
+client_t::config (int argc, char **argv) 
+{
+  int ch;
+  bool ret = true;
+  while ((ch = getopt (argc, argv, "d:h:")) != -1) {
+    switch (ch) {
+    case 'h':
+      _host = optarg;
+      break;
+    case 'p':
+      if (!convertint (optarg, &_port)) {
+	warn << "cannot convert port to int: " << optarg << "\n";
+	ret = false;
+      }
+      break;
+    default:
+      break;
+    }
+  }
+  return ret; 
+}
+
+//-----------------------------------------------------------------------
+
 tamed void client_t::connect (evb_t ev) { ev->trigger (false); }
 tamed void client_t::run (evb_t ev) { ev->trigger (false); }
 
