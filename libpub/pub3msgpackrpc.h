@@ -144,6 +144,7 @@ namespace pub3 {
       void reply (ptr<expr_t> x = NULL);
       void reject (accept_stat stat);
       ptr<expr_t> to_json () const;
+      pub3::obj_dict_t rpc_err_obj ();
     };
 
     typedef callback<void, svccb >::ref asrvcb_t ;

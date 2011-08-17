@@ -289,9 +289,11 @@ axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
   str prog;
   ptr<asrv> v, *vp;
   bool ok = false;
+  clnt_stat stat;
 
   if (!(mthd = (*l)[2]->to_str ()) || !mthd.len ()) {
     error ("dispatch_call: method not found");
+    stat = RPC_CANTDECODEARGS;
   } else {
     if ((prog = split_prog (mthd, &split_mthd)) && 
 	(vp = _dispatch[split_mthd])) {
@@ -300,6 +302,7 @@ axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
     }
     if (!v && !(v = _dispatch_def)) {
       error (strbuf ("dispatch_call: unknown method: %s", mthd.cstr ()));
+      stat = RPC_PROCUNAVAIL;
     } else {
       ok = true;
       v->dispatch (seqid, mthd, (*l)[3]);
@@ -307,8 +310,9 @@ axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
   }
 
   if (!ok) {
-    // XXX make an svccb and send back something resonable.
-    // send back that the prog was unavailable
+    svccb b;
+    b.rpc_err_obj ()("clnt_stat") = int (stat);
+    send (b.to_json ());
   }
 
 }
@@ -577,13 +581,20 @@ svccb::svccb () : _sid (0), _eof (true) {}
 
 //-----------------------------------------------------------------------
 
+pub3::obj_dict_t
+svccb::rpc_err_obj ()
+{
+  pub3::obj_dict_t d;
+  _err = d.obj ();
+  return d;
+}
+
+//-----------------------------------------------------------------------
+
 void
 svccb::reject (accept_stat s)
 {
-  pub3::obj_dict_t d;
-  // XXX fix me...
-  d("RPC_ERROR") = int (s);
-  _err = d.obj ();
+  rpc_err_obj()("accept_stat") = s;
   send ();
 }
 
