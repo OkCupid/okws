@@ -64,7 +64,8 @@ TAMEIN = \
 	xmltst6.T \
 	srv.T \
 	str2xmlobj.T \
-	eztst.T 
+	eztst.T \
+	msgpackcli.T
 
 TAMEOUT = \
 	xmlcli1.C \
@@ -77,7 +78,8 @@ TAMEOUT = \
 	xmltst6.C \
 	srv.C \
 	str2xmlobj.C \
-	eztst.C
+	eztst.C \
+	msgpackcli.C
 
 noinst_PROGRAMS = \
 	kmptst \
@@ -92,7 +94,8 @@ noinst_PROGRAMS = \
 	gznaive \
 	json \
 	eztst \
-	dump_rpc_const
+	dump_rpc_const \
+	msgpackcli
 
 dump_rpc_const_SOURCES = dump_rpc_const.C
 cgitst1_SOURCES = cgitst1.C
@@ -106,6 +109,7 @@ newline_SOURCES = newline.C
 gznaive_SOURCES = gznaive.C
 json_SOURCES = json.C
 eztst_SOURCES = eztst.C
+msgpackcli_SOURCES = msgpackcli.C
 
 CLEANFILES = core *.core *~  $(TAMEOUT)
 EXTRA_DIST = .cvsignore $(TAMEIN)
