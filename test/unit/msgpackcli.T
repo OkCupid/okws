@@ -38,13 +38,22 @@ public:
   void connect (evb_t ev, CLOSURE);
   void run (evb_t ev, CLOSURE);
 private:
+  int _fd;
   int _port;
   str _host;
 };
 
 //-----------------------------------------------------------------------
 
-client_t::client_t () : _port (40001), _host ("localhost") {}
+client_t::client_t () : _fd (-1), _port (40001), _host ("localhost") {}
+
+//-----------------------------------------------------------------------
+
+static void
+usage ()
+{
+  warnx << "usage: " << progname << " [-p <port>] [-h <host>]\n";
+}
 
 //-----------------------------------------------------------------------
 
@@ -65,6 +74,8 @@ client_t::config (int argc, char **argv)
       }
       break;
     default:
+      usage ();
+      ret = false;
       break;
     }
   }
@@ -73,7 +84,13 @@ client_t::config (int argc, char **argv)
 
 //-----------------------------------------------------------------------
 
-tamed void client_t::connect (evb_t ev) { ev->trigger (false); }
+tamed void client_t::connect (evb_t ev) 
+{ 
+  ev->trigger (false); 
+}
+
+//-----------------------------------------------------------------------
+
 tamed void client_t::run (evb_t ev) { ev->trigger (false); }
 
 //-----------------------------------------------------------------------
