@@ -26,6 +26,11 @@
 #include "okcgi.h"
 #include "pub.h"
 #include <unistd.h>
+#include "aios.h"
+#include "pub3.h"
+#include "pub3parse.h"
+#include "pub3msgpack.h"
+#include "pub3msgpackrpc.h"
 
 #include "amysql.h"
 
@@ -38,21 +43,27 @@ public:
   void connect (evb_t ev, CLOSURE);
   void run (evb_t ev, CLOSURE);
 private:
+  void run1 (evi_t ev, CLOSURE);
+  void do_call (str cmd, evi_t ev, CLOSURE);
+  
   int _fd;
   int _port;
   str _host;
+  str _prog;
+  ptr<pub3::msgpack::axprt> _x;
+  ptr<pub3::msgpack::aclnt> _cli;
 };
 
 //-----------------------------------------------------------------------
 
-client_t::client_t () : _fd (-1), _port (40001), _host ("localhost") {}
+client_t::client_t () : _fd (-1), _port (40001) {}
 
 //-----------------------------------------------------------------------
 
 static void
 usage ()
 {
-  warnx << "usage: " << progname << " [-p <port>] [-h <host>]\n";
+  warnx << "usage: " << progname << " [-p <port>] [-h <host>] [-g <prog>]\n";
 }
 
 //-----------------------------------------------------------------------
@@ -73,25 +84,100 @@ client_t::config (int argc, char **argv)
 	ret = false;
       }
       break;
+    case 'g':
+      _prog = optarg;
+      break;
     default:
       usage ();
       ret = false;
       break;
     }
   }
+  if (!_host || _host.len () == 0 || _host == "-" || _host == "localhost") {
+    _host = "127.0.0.1";
+  }
   return ret; 
 }
 
 //-----------------------------------------------------------------------
 
-tamed void client_t::connect (evb_t ev) 
+tamed void 
+client_t::connect (evb_t ev) 
 { 
-  ev->trigger (false); 
+  tvars {
+    bool ret (true);
+  }
+  twait { tcpconnect (_host, _port, mkevent (_fd)); }
+  if (_fd < 0) {
+    ret = false;
+    warn << "cannot connect to host " << _port << ":" << _port << "\n";
+  } else {
+    _x = pub3::msgpack::axprt::alloc (_fd);
+    _cli = pub3::msgpack::aclnt::alloc (_x, _prog);
+  }
+  ev->trigger (ret); 
 }
 
 //-----------------------------------------------------------------------
 
-tamed void client_t::run (evb_t ev) { ev->trigger (false); }
+tamed void
+client_t::do_call (str cmd, evi_t ev)
+{
+  tvars {
+    ptr<pub3::expr_t> x;
+    ptr<pub3::expr_list_t> l;
+    pub3::msgpack::callres_t res;
+    int rc (1);
+    str mthd;
+  }
+  if (!(x = pub3::json_parser_t::parse (cmd))) {
+    warn << "parse of JSON failed on string: " << cmd << "\n";
+  } else if (!(l = x->to_list ()) || l->size () != 2 ||
+	     !(*l)[0]->to_str (&mthd)) {
+    warn << "parse of JSON didn't yield a list with 2 elements: [mthd,arg]\n";
+  } else {
+    twait { _cli->call (mthd, (*l)[1], mkevent (res)); }
+  }
+  ev->trigger (rc);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void
+client_t::run (evb_t ev)
+{
+  tvars {
+    bool ok (true);
+    bool go (true);
+    int rc;
+  }
+
+  while (go) {
+    twait { run1 (mkevent (rc)); }
+    if (rc == 0) { go = false; }
+    else if (rc < 0) { go = ok = false; }
+  }
+
+  ev->trigger (ok);
+}
+
+//-----------------------------------------------------------------------
+
+tamed void 
+client_t::run1 (evi_t ev) 
+{
+  tvars {
+    str line;
+    int rc, trc;
+  }
+  twait { ain->readline (mkevent (line, trc)); }
+  if (!line) { rc = 0; }
+  else if (trc) { warn ("error condition hit %m"); rc = -1; }
+  else {
+    twait { do_call (line, mkevent (rc)); }
+  }
+  ev->trigger (rc); 
+}
 
 //-----------------------------------------------------------------------
 

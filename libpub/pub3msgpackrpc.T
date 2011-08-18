@@ -510,6 +510,17 @@ aclnt::~aclnt () {}
 
 //-----------------------------------------------------------------------
 
+aclnt::aclnt (ptr<axprt> x, str prog)
+  : _x (x), _prog (prog) {}
+
+//-----------------------------------------------------------------------
+
+ptr<aclnt>
+aclnt::alloc (ptr<axprt> x, str prog) 
+{ return New refcounted<aclnt> (x, prog);  }
+
+//-----------------------------------------------------------------------
+
 str
 aclnt::mkmthd (str s) const
 {

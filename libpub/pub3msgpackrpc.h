@@ -26,6 +26,7 @@ namespace pub3 {
       callres_t () : err_code (RPC_SUCCESS) {}
       callres_t (clnt_stat s, str m);
       void set_err_code (clnt_stat e) { err_code = e; }
+      operator bool () const { return err_code; }
       clnt_stat err_code;
       ptr<expr_t> res;
       ptr<expr_t> err_msg;
