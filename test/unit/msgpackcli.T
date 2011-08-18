@@ -130,6 +130,7 @@ client_t::do_call (str cmd, evi_t ev)
     int rc (1);
     str mthd;
   }
+  warn << "RPC(" << cmd << ") ->\n";
   if (!(x = pub3::json_parser_t::parse (cmd))) {
     warn << "parse of JSON failed on string: " << cmd << "\n";
   } else if (!(l = x->to_list ()) || l->size () != 2 ||
@@ -137,6 +138,17 @@ client_t::do_call (str cmd, evi_t ev)
     warn << "parse of JSON didn't yield a list with 2 elements: [mthd,arg]\n";
   } else {
     twait { _cli->call (mthd, (*l)[1], mkevent (res)); }
+    if (res.err_code) {
+      warn << "  ERROR CODE: " << res.err_code << "\n";
+    }
+    if (res.err_msg) {
+      str m = res.err_msg->to_str ();
+      warn << "  ERROR OBJ: " << m << "\n";
+    }
+    if (res.res) {
+      str o = res.res->to_str ();
+      warn << "  " << o << "\n";
+    }
   }
   ev->trigger (rc);
 }
