@@ -73,7 +73,7 @@ client_t::config (int argc, char **argv)
 {
   int ch;
   bool ret = true;
-  while ((ch = getopt (argc, argv, "d:h:")) != -1) {
+  while ((ch = getopt (argc, argv, "g:p:h:")) != -1) {
     switch (ch) {
     case 'h':
       _host = optarg;
@@ -134,7 +134,7 @@ client_t::do_call (str cmd, evi_t ev)
   if (!(x = pub3::json_parser_t::parse (cmd))) {
     warn << "parse of JSON failed on string: " << cmd << "\n";
   } else if (!(l = x->to_list ()) || l->size () != 2 ||
-	     !(*l)[0]->to_str (&mthd)) {
+	     !(mthd = (*l)[0]->to_str ()) || !mthd.len ()) {
     warn << "parse of JSON didn't yield a list with 2 elements: [mthd,arg]\n";
   } else {
     twait { _cli->call (mthd, (*l)[1], mkevent (res)); }
@@ -204,7 +204,7 @@ main2 (int argc, char **argv)
   if (!cli.config (argc, argv)) { ok = false; }
   else {
     twait { cli.connect (mkevent (ok)); }
-    if (!ok) { twait { cli.run (mkevent (ok)); } }
+    if (ok) { twait { cli.run (mkevent (ok)); } }
   }
   exit (ok ? 0 : -2);
 }

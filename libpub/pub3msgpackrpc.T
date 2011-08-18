@@ -329,8 +329,8 @@ axprt_inner::dispatch_reply (ptr<expr_list_t> l, int64_t seqid)
     callev_t::ptr ev = *evp;
     _calls.remove (seqid);
     callres_t res;
-    if ((res.err_msg = (*l)[2])) {
-      res.set_err_code (RPC_CANTDECODERES);
+    if ((*l)[2] && !(*l)[2]->is_null ()) {
+      res.set_err_code (RPC_SYSTEMERROR);
     }
     if (l->size () == 4) { res.res = (*l)[3]; }
     ev->trigger (res);
