@@ -689,6 +689,24 @@ server_con_t::server_con_t (ptr<server_t> parent, ptr<axprt> x, str prog)
 
 void server_con_t::release () { _hold = NULL; }
 
+//-----------------------------------------------------------------------
+
+void server_con_t::add_handler (str s, asrvcb_t cb)
+{ _dispatch_tab.insert (s, cb); }
+
+//-----------------------------------------------------------------------
+
+void
+server_con_t::handle_call (svccb b)
+{
+  asrvcb_t c = _dispatch_tab[b.method ()];
+  if (!c) {
+    b.reject (PROC_UNAVAIL);
+  } else {
+    (*c) (b);
+  }
+}
+
 //=======================================================================
 
 server_t::server_t (u_int32_t port, str addr)

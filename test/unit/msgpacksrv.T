@@ -40,10 +40,13 @@ class my_server_t;
 
 class my_server_con_t : public pub3::msgpack::server_con_t {
 public:
+  void handle_null (pub3::msgpack::svccb b);
   my_server_con_t (ptr<my_server_t> parent, 
 		   ptr<pub3::msgpack::axprt> x, str prog)
-    : pub3::msgpack::server_con_t (parent, x, prog) {}
-  void handle_call (pub3::msgpack::svccb b);
+    : pub3::msgpack::server_con_t (parent, x, prog) 
+  {
+    add_handler ("null", wrap (this, &my_server_con_t::handle_null));
+  }
 };
 
 //-----------------------------------------------------------------------
@@ -106,9 +109,9 @@ my_server_t::make_new_con (ptr<pub3::msgpack::axprt> x)
 //-----------------------------------------------------------------------
 
 void
-my_server_con_t::handle_call (pub3::msgpack::svccb b)
+my_server_con_t::handle_null (pub3::msgpack::svccb b)
 {
-  
+  b.reply (b.arg ());
 }
 
 //-----------------------------------------------------------------------

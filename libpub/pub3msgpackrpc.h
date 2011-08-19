@@ -184,8 +184,11 @@ namespace pub3 {
       ptr<server_con_t> _hold;
     public:
       server_con_t (ptr<server_t> parent, ptr<axprt> x, str prog);
-      virtual void handle_call (svccb b) = 0;
+      virtual void handle_call (svccb b);
+      void add_handler (str, asrvcb_t cb);
       void release ();
+    protected:
+      qhash<str, asrvcb_t> _dispatch_tab;
     };
 
     //-----------------------------------------
