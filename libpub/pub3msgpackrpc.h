@@ -73,7 +73,6 @@ namespace pub3 {
 
       u_int32_t seqid () ;
       void error (str msg);
-      str get_remote ();
       void waitread (evv_t ev, CLOSURE);
       void waitwrite (evv_t ev, CLOSURE);
       void kill_clients ();
@@ -89,6 +88,9 @@ namespace pub3 {
       void dispatch (CLOSURE);
       void call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev, CLOSURE);
       void register_asrv (str prot, ptr<asrv> v);
+      int fd () const { return _fd; }
+      str get_remote ();
+      void set_remote (const sockaddr_in &sin);
       
       ~axprt_inner ();
     };
@@ -100,11 +102,14 @@ namespace pub3 {
       axprt (int fd);
       friend class refcounted<axprt>;
       void run ();
+      str _remote;
       
     public:
       void call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev);
       void send (ptr<const expr_t> x, evb_t::ptr ev = NULL);
       void register_asrv (str prot, ptr<asrv> v);
+      void set_remote (const sockaddr_in &sin);
+      str get_remote () const;
       static ptr<axprt> alloc (int fd);
       ~axprt ();
     };
@@ -167,6 +172,42 @@ namespace pub3 {
       ptr<axprt> getx () { return _x; }
     };
 
+    //========================================
+
+    class server_t;
+
+    class server_con_t : public virtual refcount {
+    protected:
+      ptr<server_t> _parent;
+      ptr<axprt> _x;  // connection to remote
+      ptr<asrv> _asrv;
+      ptr<server_con_t> _hold;
+    public:
+      server_con_t (ptr<server_t> parent, ptr<axprt> x, str prog);
+      virtual void handle_call (svccb b) = 0;
+      void release ();
+    };
+
+    //-----------------------------------------
+
+    // listens on a port, and allocates new asrv/per-connection objects;
+    // not necessary but useful.
+    class server_t : public virtual refcount {
+    protected:
+      u_int32_t _port;
+      str _addr;
+      rendezvous_t<> _rv;
+      int _fd;
+      evv_t::ptr _kill_ev;
+      void accept_loop (CLOSURE);
+    public:
+      ~server_t ();
+      server_t (u_int32_t port, str addr = NULL);
+      void kill ();
+      bool bind ();
+      virtual ptr<server_con_t> make_new_con (ptr<axprt>) = 0;
+    };
+    
     //========================================
     
   }

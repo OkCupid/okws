@@ -35,6 +35,7 @@ axprt_inner::axprt_inner (int f) :
   // A stop trigger to wrap all lowest-level reads
   // A trigger of false means that it stopped, a trigger of true
   // means that it waited successfully on i/o
+  make_async (f);
   _read_stop = mkevent (_read_rv);
   _write_stop = mkevent (_write_rv);
 }
@@ -183,6 +184,16 @@ axprt_inner::get_str (size_t s) const
 
 //-----------------------------------------------------------------------
 
+void
+axprt_inner::set_remote (const sockaddr_in &sin)
+{
+  str ip = inet_ntoa (sin.sin_addr);
+  int port = ntohs (sin.sin_port);
+  _remote = strbuf ("%s:%d", ip.cstr (), port);
+}
+
+//-----------------------------------------------------------------------
+
 str 
 axprt_inner::get_remote ()
 {
@@ -195,9 +206,7 @@ axprt_inner::get_remote ()
 	error (strbuf ("getpeername returned strange sockaddr, sized: %d", 
 		       sinlen));
       } else {
-	str ip = inet_ntoa (sin.sin_addr);
-	int port = ntohs (sin.sin_port);
-	_remote = strbuf ("%s:%d", ip.cstr (), port);
+	set_remote (sin);
       }
   }
 
@@ -503,6 +512,8 @@ axprt::axprt (int fd) : _xi (axprt_inner::alloc (fd)) {}
 void axprt::run () { _xi->dispatch (); }
 axprt::~axprt () { _xi->stop (); }
 void axprt::send (ptr<const expr_t> x, evb_t::ptr ev) { _xi->send (x, ev); }
+str axprt::get_remote () const { return _xi->get_remote (); }
+void axprt::set_remote (const sockaddr_in &s) { _xi->set_remote (s); } 
 
 //=======================================================================
 
@@ -555,6 +566,11 @@ asrv::asrv (ptr<axprt> x, str prog, asrvcb_t cb)
     _prog (prog),
     _cb (cb)
 { _x->register_asrv (prog, mkref (this)); }
+
+//-----------------------------------------------------------------------
+
+ptr<asrv> asrv::alloc (ptr<axprt> x, str prog, asrvcb_t cb)
+{ return New refcounted<asrv> (x, prog, cb); }
 
 //-----------------------------------------------------------------------
 
@@ -658,6 +674,110 @@ svccb::to_json () const
     o[3] = _res;
   }
   return o.obj ();
+}
+
+//=======================================================================
+
+server_con_t::server_con_t (ptr<server_t> parent, ptr<axprt> x, str prog)
+  : _parent (parent), 
+    _x (x),
+    _asrv (asrv::alloc (_x, prog, wrap (this, &server_con_t::handle_call))),
+    _hold (mkref (this))
+{}
+
+//-----------------------------------------------------------------------
+
+void server_con_t::release () { _hold = NULL; }
+
+//=======================================================================
+
+server_t::server_t (u_int32_t port, str addr)
+  : _port (port),
+    _addr (addr),
+    _rv (__FILE__, __LINE__),
+    _fd (-1)
+{
+  _kill_ev = mkevent (_rv);
+}
+
+//-----------------------------------------------------------------------
+
+void
+server_t::kill ()
+{
+  if (_fd >= 0) {
+    close (_fd);
+    _fd = -1;
+  }
+
+  if (_kill_ev) {
+    evv_t::ptr e = _kill_ev;
+    _kill_ev = NULL;
+    e->trigger ();
+  }
+  _rv.cancel ();
+}
+
+//-----------------------------------------------------------------------
+
+server_t::~server_t () { kill (); }
+
+//-----------------------------------------------------------------------
+
+tamed void
+server_t::accept_loop ()
+{
+  tvars {
+    bool go (true);
+  }
+  while (go) {
+    tame::waitread (_fd, mkevent (_rv));
+    twait (_rv);
+    if (_fd >= 0) {
+      sockaddr_in sin;
+      socklen_t sl = sizeof (sin);
+      int fd = accept (_fd, reinterpret_cast<sockaddr *> (&sin), &sl);
+      if (fd >= 0) {
+	ref<axprt> x = axprt::alloc (fd);
+	x->set_remote (sin);
+	make_new_con (x);
+      }
+    } else {
+      go = false;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+bool
+server_t::bind ()
+{
+  bool ret = true;
+  u_int32_t addr = INADDR_ANY;
+  if (_addr) {
+    struct in_addr ia;
+    if (inet_aton (_addr.cstr (), &ia) <= 0) {
+      warn ("Could not decode bind address %s: %m", _addr.cstr ());
+      ret = false;
+    } else {
+      addr = ia.s_addr;
+    }
+  }
+
+  if (ret && (_fd = inetsocket (SOCK_STREAM, _port, addr)) < 0) {
+    str extra = "";
+    if (_addr) { extra = strbuf ("%s:", _addr.cstr ()); }
+    warn ("could not bind to port %s%d: %m", extra.cstr (), _port);
+    ret = false;
+  }
+
+  if (ret) {
+    close_on_exec (_fd);
+    listen (_fd, 200);
+    accept_loop ();
+  }
+  return ret;
 }
 
 //=======================================================================
