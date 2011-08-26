@@ -19,8 +19,19 @@ namespace msgpack {
 //=======================================================================
 
 callres_t::callres_t (clnt_stat s, str m)
-  : err_code (s),
-    err_msg (expr_str_t::alloc (m)) {}
+  : err_code (s)
+{
+  set_err_msg (m);
+}
+
+//-----------------------------------------------------------------------
+
+void
+callres_t::set_err_msg (str m)
+{
+  if (!err_obj) { err_obj = expr_dict_t::alloc (); }
+  err_obj->insert ("msg", m);
+}
 
 //=======================================================================
 
@@ -153,7 +164,7 @@ axprt_inner::kill_clients ()
 //-----------------------------------------------------------------------
 
 void 
-axprt_inner::close (int en) 
+axprt_inner::axprt_close (int en) 
 { 
   if (_fd >= 0) {
     close (_fd);
@@ -306,7 +317,7 @@ axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
     stat = RPC_CANTDECODEARGS;
   } else {
     if ((prog = split_prog (mthd, &split_mthd)) && 
-	(vp = _dispatch[split_mthd])) {
+	(vp = _dispatch[prog])) {
       v = *vp;
       mthd = split_mthd;
     }
@@ -338,8 +349,28 @@ axprt_inner::dispatch_reply (ptr<expr_list_t> l, int64_t seqid)
     callev_t::ptr ev = *evp;
     _calls.remove (seqid);
     callres_t res;
-    if ((*l)[2] && !(*l)[2]->is_null ()) {
-      res.set_err_code (RPC_SYSTEMERROR);
+    ptr<expr_t> err = (*l)[2];
+    ptr<expr_dict_t> d;
+    if (err && !err->is_null ()) {
+      int code = RPC_SYSTEMERROR;
+      if ((d = err->to_dict ())) {
+	pub3::obj_dict_t dobj (d);
+	int64_t i;
+	if (dobj("clnt_stat").to_int (&i)) {
+	  code = i;
+	} else if (dobj("accept_stat").to_int (&i)) {
+	  switch (i) {
+	  case PROC_UNAVAIL:
+	    code = RPC_PROCUNAVAIL;
+	    break;
+	  default: break;
+	  }
+	} 
+      }
+      res.set_err_code (clnt_stat (code));
+      if (d) {
+	res.set_err_obj (d);
+      }
     }
     if (l->size () == 4) { res.res = (*l)[3]; }
     ev->trigger (res);
@@ -372,7 +403,7 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 
     // EOF situation.
     else if ((rc = uio->input (_fd, ps)) == 0) {
-      close (0);
+      axprt_close (0);
       ret = 0;
 
     } else if (rc < 0 && errno == EAGAIN) {
@@ -380,7 +411,7 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 
     } else if (rc < 0) {
       ret = -1;
-      close (errno);
+      axprt_close (errno);
       
     } else if (needed && uio->resid () < needed) {
       /* try again! */
@@ -394,7 +425,7 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 
       ret = -1;
       errno = mperrno;
-      close (errno);
+      axprt_close (errno);
     }
   }
 
@@ -430,7 +461,7 @@ axprt_inner::call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev)
     _calls.insert (s, ev);
   } else if (ev) {
     res.set_err_code (RPC_CANTSEND);
-    res.err_msg = expr_str_t::alloc (strbuf ("write error: %m"));
+    res.set_err_msg (strbuf ("write error: %m"));
     ev->trigger (res);
   }
 }
@@ -454,7 +485,7 @@ axprt_inner::recv (ev_t ev)
     assert (is_open ());
     if (!lx->to_int (&len)) {
       errno = ENOENT;
-      close (errno);
+      axprt_close (errno);
     } else {
       twait { recv_json (len, 0x2000, mkevent (ret, x)); }
     }
@@ -474,7 +505,7 @@ ptr<axprt_inner> axprt_inner::alloc (int fd)
 void
 axprt_inner::stop ()
 {
-  close (0);
+  axprt_close (0);
   evv_t::ptr e;
   if ((e = _read_stop)) {
     _read_stop = NULL;
@@ -670,7 +701,9 @@ svccb::to_json () const
   o[1] = _sid;
   if (_err) { 
     o[2] = _err;
+    o[3] = expr_null_t::alloc ();
   } else if (_res) {
+    o[2] = expr_null_t::alloc ();
     o[3] = _res;
   }
   return o.obj ();
@@ -699,11 +732,15 @@ void server_con_t::add_handler (str s, asrvcb_t cb)
 void
 server_con_t::handle_call (svccb b)
 {
-  asrvcb_t c = _dispatch_tab[b.method ()];
-  if (!c) {
-    b.reject (PROC_UNAVAIL);
+  if (b.eof ()) {
+    handle_eof ();
   } else {
-    (*c) (b);
+    asrvcb_t::ptr c = _dispatch_tab[b.method ()];
+    if (!c) {
+      b.reject (PROC_UNAVAIL);
+    } else {
+      (*c) (b);
+    }
   }
 }
 
@@ -791,11 +828,27 @@ server_t::bind ()
   }
 
   if (ret) {
+    msg (strbuf ("binding to port %d (fd=%d)", _port, _fd));
+    make_async (_fd);
     close_on_exec (_fd);
-    listen (_fd, 200);
+    if (listen (_fd, 200) < 0) {
+      warn ("could not call list on port: %m");
+      ret = false;
+    }
+  }
+
+  if (ret) {
     accept_loop ();
   }
   return ret;
+}
+
+//-----------------------------------------------------------------------
+
+void
+server_t::msg (str s) const
+{
+  if (_verbose) { warn << s << "\n"; }
 }
 
 //=======================================================================

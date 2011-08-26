@@ -26,10 +26,13 @@ namespace pub3 {
       callres_t () : err_code (RPC_SUCCESS) {}
       callres_t (clnt_stat s, str m);
       void set_err_code (clnt_stat e) { err_code = e; }
+      void set_err_obj (ptr<expr_dict_t> x) { err_obj = x; }
+      void set_err_msg (str m);
       operator bool () const { return err_code; }
       clnt_stat err_code;
+
       ptr<expr_t> res;
-      ptr<expr_t> err_msg;
+      ptr<expr_dict_t> err_obj;
     };
 
     //========================================
@@ -65,7 +68,7 @@ namespace pub3 {
       ptr<asrv> _dispatch_def;
 
       axprt_inner (int fd);
-      void close (int en);
+      void axprt_close (int en);
       void recv_json (size_t lim, size_t ps, ev_t ev, CLOSURE);
       bool is_open () const { return _fd >= 0; }
       str get_str (size_t bytes) const;
@@ -150,6 +153,7 @@ namespace pub3 {
       void reply (ptr<expr_t> x = NULL);
       void reject (accept_stat stat);
       ptr<expr_t> to_json () const;
+      bool eof () const { return _eof; }
       pub3::obj_dict_t rpc_err_obj ();
     };
 
@@ -185,6 +189,7 @@ namespace pub3 {
     public:
       server_con_t (ptr<server_t> parent, ptr<axprt> x, str prog);
       virtual void handle_call (svccb b);
+      virtual void handle_eof () {}
       void add_handler (str, asrvcb_t cb);
       void release ();
     protected:
@@ -201,8 +206,10 @@ namespace pub3 {
       str _addr;
       rendezvous_t<> _rv;
       int _fd;
+      bool _verbose;
       evv_t::ptr _kill_ev;
       void accept_loop (CLOSURE);
+      void msg (str s) const;
     public:
       ~server_t ();
       server_t (u_int32_t port, str addr = NULL);

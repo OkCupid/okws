@@ -75,7 +75,7 @@ my_server_t::config (int argc, char **argv)
 {
   int ch;
   bool ret = true;
-  while ((ch = getopt (argc, argv, "g:p:")) != -1) {
+  while ((ch = getopt (argc, argv, "g:p:v")) != -1) {
     switch (ch) {
     case 'p':
       if (!convertint (optarg, &_port)) {
@@ -85,6 +85,9 @@ my_server_t::config (int argc, char **argv)
       break;
     case 'g':
       _prog = optarg;
+      break;
+    case 'v':
+      _verbose = true;
       break;
     default:
       usage ();
@@ -116,14 +119,19 @@ my_server_con_t::handle_null (pub3::msgpack::svccb b)
 
 //-----------------------------------------------------------------------
 
+// Globally scoped server, shouldn't go out of scope!
+ptr<my_server_t> g_srv;
+
+//-----------------------------------------------------------------------
+
 static void
 main2 (int argc, char **argv)
 {
-  ptr<my_server_t> srv = New refcounted<my_server_t> ();
+  g_srv = New refcounted<my_server_t> ();
   bool ok = true;
 
-  if (!srv->config (argc, argv)) { ok = false; }
-  else if (!srv->bind ()) { ok = false; }
+  if (!g_srv->config (argc, argv)) { ok = false; }
+  else if (!g_srv->bind ()) { ok = false; }
   if (!ok) { exit (-2); }
 }
 

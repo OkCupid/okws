@@ -110,7 +110,7 @@ client_t::connect (evb_t ev)
   twait { tcpconnect (_host, _port, mkevent (_fd)); }
   if (_fd < 0) {
     ret = false;
-    warn << "cannot connect to host " << _port << ":" << _port << "\n";
+    warn << "cannot connect to host " << _host << ":" << _port << "\n";
   } else {
     _x = pub3::msgpack::axprt::alloc (_fd);
     _cli = pub3::msgpack::aclnt::alloc (_x, _prog);
@@ -140,12 +140,11 @@ client_t::do_call (str cmd, evi_t ev)
     twait { _cli->call (mthd, (*l)[1], mkevent (res)); }
     if (res.err_code) {
       warn << "  ERROR CODE: " << res.err_code << "\n";
-    }
-    if (res.err_msg) {
-      str m = res.err_msg->to_str ();
-      warn << "  ERROR OBJ: " << m << "\n";
-    }
-    if (res.res) {
+      if (res.err_obj) {
+	str m = res.err_obj->to_str ();
+	warn << "  ERROR OBJ: " << m << "\n";
+      }
+    } else if (res.res) {
       str o = res.res->to_str ();
       warn << "  " << o << "\n";
     }
