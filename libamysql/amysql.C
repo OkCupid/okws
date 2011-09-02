@@ -102,17 +102,18 @@ mysql_t::prepare (const str &q, u_int l_opts, tz_corrector_t *tzc)
 //-----------------------------------------------------------------------
 
 sth_t
-amysql_thread_guts_t::prepare (const str &q, u_int o)
+amysql_thread_guts_t::prepare (const str &q, u_int o, mysql_t *m)
 {
   sth_t r;
+  if (!m) { m = &mysql; }
   if (is_readied () && is_safe ()) {
     _err = "security precaution: cannot prepare queries "
       "after servicing requests\n";
     TWARN(_err);
     _errcode = ADB_SECURITY_FAILURE;
-  } else if (!(r = mysql.prepare (q, o, _tzc))) {
-    _err = mysql.error ();
-    _errcode = mysql.error_code ();
+  } else if (!(r = m->prepare (q, o, _tzc))) {
+    _err = m->error ();
+    _errcode = m->error_code ();
     TWARN ("prepare query failed: " << q);
   }
   return r;

@@ -84,7 +84,8 @@ class amysql_thread_guts_t {
 public:
   amysql_thread_guts_t (u_int o);
   virtual ~amysql_thread_guts_t () {}
-  ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT);
+  ptr<mystmt_t> prepare (const str &q, u_int opts = AMYSQL_DEFAULT,
+			 mysql_t *m = NULL);
   bool init_phase0 ();
   virtual bool is_readied () const = 0;
   virtual int getid () const = 0;
