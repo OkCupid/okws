@@ -48,7 +48,8 @@
 #define HTTP_UNEXPECTED_EOF      417
 
 #define HTTP_SRV_ERROR           500
-#define HTTP_NOT_IMPLEMENTED     502
+#define HTTP_NOT_IMPLEMENTED     501
+#define HTTP_BAD_GATEWAY         502
 #define HTTP_UNAVAILABLE         503
 
 

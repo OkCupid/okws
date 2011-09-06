@@ -80,7 +80,7 @@ http_status_set_t::http_status_set_t ()
   // 500 series
   add (HTTP_SRV_ERROR, "Internal Server Error");
   add (HTTP_NOT_IMPLEMENTED, "Not Implemented");
-  add (502, "Bad Gateway");
+  add (HTTP_BAD_GATEWAY, "Bad Gateway");
   add (HTTP_UNAVAILABLE, "Service Unavailable");
   add (504, "Gateway Time-out");
   add (505, "HTTP Version not supported");
