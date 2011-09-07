@@ -308,9 +308,9 @@ axprt_inner::dispatch_call (ptr<expr_list_t> l, int64_t typ, int64_t seqid)
 {
   str mthd, split_mthd;
   str prog;
-  ptr<asrv> v, *vp;
+  ptr<asrv> v, *vp (NULL);
   bool ok = false;
-  clnt_stat stat;
+  clnt_stat stat (RPC_SUCCESS);
 
   if (!(mthd = (*l)[2]->to_str ()) || !mthd.len ()) {
     error ("dispatch_call: method not found");
