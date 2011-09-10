@@ -31,7 +31,9 @@ AC_PATH_PROGS(M4, gm4 gnum4 m4, '$(top_srcdir)/missing')
 AC_PATH_PROGS(UPTIME, uptime, '$(top_srcdir)/missing')
 
 dnl
-dnl By default, look for PTH, but you can turn PTH off and pthreads on...
+dnl On FreeBSD, look for PTH by default.  However, PTH stopped working
+dnl on Linux with hard system calls, so use pthreads by default on
+dnl Linux, and don't give the option for PTH.
 dnl
 OKWS_DO_THREADS
 
