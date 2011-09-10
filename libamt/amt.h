@@ -72,7 +72,7 @@
     fprintf (stderr, "%s", s.cstr ());				\
   } while (0)
 
-typedef enum { MTD_NONE = 0, MTD_PTH = 1 } mtd_thread_typ_t;
+typedef enum { MTD_NONE = 0, MTD_PTH = 1, MTD_PTHREAD } mtd_thread_typ_t;
 
 // MTD = Mutli-Thread Dispatcher
 
@@ -379,6 +379,23 @@ private:
   str _hostname;
   int _port;
 };
+
+extern mtdispatch_t *g_mtdispatch;
+
+#define GIANT_LOCK()				\
+  do {						\
+    if (g_mtdispatch) {				\
+      g_mtdispatch->giant_lock ();		\
+    }						\
+  } while (0)
+
+#define GIANT_UNLOCK()				\
+  do {						\
+    if (g_mtdispatch) {				\
+      g_mtdispatch->giant_unlock ();		\
+    }						\
+  } while (0)
+
 
 class ssrv_t { // Synchronous Server (I.e. its threads can block)
 public:

@@ -31,20 +31,10 @@ AC_PATH_PROGS(M4, gm4 gnum4 m4, '$(top_srcdir)/missing')
 AC_PATH_PROGS(UPTIME, uptime, '$(top_srcdir)/missing')
 
 dnl
-dnl make sure that some type of threading is available.
+dnl By default, look for PTH, but you can turn PTH off and pthreads on...
 dnl
-dnl SFS_REQUIRE_THREADS
+OKWS_DO_THREADS
 
-dnl
-dnl Pthreads now work on all platforms; but don't interoperate
-dnl well with pth.
-dnl
-OKWS_FIND_PTHREADS
-
-dnl
-dnl PTH is still on by default but can be disabled.
-dnl
-OKWS_FIND_PTH
 
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
 test "$XMLRPCC" || XMLRPCC='$(top_builddir)/xmlrpcc/xmlrpcc'

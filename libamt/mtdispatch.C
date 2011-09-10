@@ -25,6 +25,9 @@
 #include "rxx.h"
 #include "parseopt.h"
 #include "rpc_stats.h"
+#ifdef USE_PTHREADS
+#include "amt_pthread.h"
+#endif
 
 #define LONG_REPLY_TIME   2
 
@@ -643,20 +646,43 @@ ssrv_t::init (mtdispatch_t *m)
   mtd->init ();
 }
 
+mtdispatch_t *g_mtdispatch;
+
 ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p, 
 		mtd_thread_typ_t typ, int n, int m)
   : mtd (NULL), prog (&p), load_avg (0)
 {
 
-#ifdef HAVE_PTH
-  assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
-  mtd = New mgt_dispatch_t (c, n, m, this);
-  mtd->init (); 
-#else
-  panic ("pth is not available with this build; "
-	 "cannot continue without threads\n");
-#endif /* HAVE_PTH */
+  bool ok = false;
 
+  if (typ == MTD_PTH) { 
+#ifdef HAVE_PTH
+    assert (PTH_SYSCALL_HARD && ! PTH_SYSCALL_SOFT);
+    mtd = New mgt_dispatch_t (c, n, m, this);
+    mtd->init (); 
+    ok = true;
+#else /* HAVE_PTH */
+    panic ("pth is not available with this build; "
+	   "cannot continue without threads\n");
+#endif
+  }
+  
+  if (typ == MTD_PTHREAD) {
+#ifdef USE_PTHREADS
+    mtd = New mpt_dispatch_t (c, n, m, this);
+    mtd->init (); 
+    ok = true;
+#else
+    panic ("pthreads is not available; try --enable-pthreads");
+#endif
+  }
+
+  if (!ok) {
+    panic ("no threading package available!");
+  }
+
+  // Keep a global pointer to it, so that we can 
+  g_mtdispatch = mtd;
 }
 
 bool

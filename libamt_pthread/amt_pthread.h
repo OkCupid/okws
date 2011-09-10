@@ -1,8 +1,7 @@
 // -*-c++-*-
 /* $Id: amt_pthread.h 4522 2009-06-08 19:31:51Z max $ */
 
-#ifndef _LIBAMT_PTHREAD__AMT_PTHREAD_H_
-#define _LIBAMT_PTHREAD__AMT_PTHREAD_H_
+#pragma once
 
 #include "amt.h"
 #include <pthread.h>
@@ -20,4 +19,3 @@ protected:
   pthread_mutex_t _giant_lock;
 };
 
-#endif /* _LIBAMT_PTHREAD__AMT_PTHREAD_H_ */
