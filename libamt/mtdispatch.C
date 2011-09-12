@@ -389,7 +389,11 @@ mtd_thread_t::run ()
 { 
   mtd_status_t rc;
 
-  if (!init_phase0 () || !init()) {
+  GIANT_LOCK();
+  bool ok = init_phase0() && init();
+  GIANT_UNLOCK();
+
+  if (!ok) {
     TWARN ("thread could not initialize");
     msg_send (MTD_SHUTDOWN);
     delete this;
@@ -398,7 +402,9 @@ mtd_thread_t::run ()
 
   become_ready ();
   do {
+    GIANT_LOCK();
     take_svccb ();
+    GIANT_UNLOCK();
     rc = msg_recv ();
   } while (rc == MTD_CONTINUE);
   
