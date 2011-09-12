@@ -63,7 +63,8 @@ tst2_srv_t::init ()
 	     !(_q_put = PREP("INSERT INTO tst2(s,d,i,d2) VALUES(?,?,?,?)")) ||
 	     !(_q_mget = PREP("SLEEP(?); "
 			      "SELECT id,d,i,d2 FROM tst2 LIMIT ? "
-			      "ORDER BY RAND()"))) {
+			      "ORDER BY RAND(); "
+			      "SLEEP(?)"))) {
     rc = false;
   }
   return rc;
