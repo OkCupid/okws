@@ -37,7 +37,6 @@ dnl Linux, and don't give the option for PTH.
 dnl
 OKWS_DO_THREADS
 
-
 test "$PUB" || PUB='$(top_builddir)/pub/pub'
 test "$XMLRPCC" || XMLRPCC='$(top_builddir)/xmlrpcc/xmlrpcc'
 test "$RPCC" || RPCC='/usr/local/bin/rpcc'
@@ -121,7 +120,7 @@ done
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamysql libweb libokssl librfn ezdb/libezdb ; do
+for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql libweb libokssl librfn ezdb/libezdb ; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -133,6 +132,9 @@ LIBAHTTP='$(top_builddir)/libahttp/libahttp.la'
 LIBOKXML='$(top_builddir)/libokxml/libokxml.la'
 LIBAOK='$(top_builddir)/libaok/libaok.la'
 LIBAMT='$(top_builddir)/libamt/libamt.la'
+if test "$ac_do_pthreads" = "1"; then
+   LIBAMT_PTHREAD='$(top_builddir)/libamt_pthread/libamt_pthread.la'
+fi
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
 LIBEZDB='$(top_builddir)/ezdb/libezdb/libezdb.la'
@@ -141,7 +143,7 @@ LIBOKSSL='$(top_builddir)/libokssl/libokssl.la'
 LIBRFN='$(top_builddir)/librfn/librfn.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
 LDADD='$(LIBEZDB) $(LIBAOK) $(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
-LDADD_AMT='$(LIBAMT) '"$LDADD"
+LDADD_AMT='$(LIBAMT) $(LIBAMT_PTHREAD)'"$LDADD"
 if test "$enable_shared" = yes; then
    LDEPS=
    LDEPS_PUB=
@@ -149,10 +151,10 @@ if test "$enable_shared" = yes; then
 else
    LDEPS_PUB='$(LIBPUB) '"$LDEPS"
    LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDEPS"
-   LDEPS_AMT='$(LIBAMT) '"$LDEPS"
-   LDEPS_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMYSQL) '"$LDEPS"
+   LDEPS_AMT='$(LIBAMT) $(LIBAMT_PTHREAD)'"$LDEPS"
+   LDEPS_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMT_PTHREAD) $(LIBAMYSQL) '"$LDEPS"
 fi
-LDADD_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
+LDADD_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMT_PTHREAD) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
 
 
 dnl
@@ -191,6 +193,7 @@ AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAOK)
 AC_SUBST(LIBAMT)
+AC_SUBST(LIBAMT_PTHREAD)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBRFN)

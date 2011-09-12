@@ -207,9 +207,18 @@ start_server (int argc, char *argv[])
 
   if (argc != 0)
     usage ();
+
+  mtd_thread_typ_t method = MTD_NONE;
+#if HAVE_PTHREADS
+  method = MTD_PTHREAD;
+#else
+# if HAVE_PTH
+  method = MTD_PTH;
+# endif
+#endif
   
   ssrv_t *s = New ssrv_t (wrap (&tst2_srv_t::alloc, mysql_sth_method), 
-			  tst2_prog_1, MTD_PTH, tcnt, maxq);
+			  tst2_prog_1, method, tcnt, maxq);
 
   json_XDR_dispatch_t::enable ();
   

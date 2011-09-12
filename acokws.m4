@@ -739,6 +739,9 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBOKXML=${with_okws}/libokxml/libokxml.la
     LIBWEB=${with_okws}/libweb/libweb.la
     LIBAMT=${with_okws}/libamt/libamt.la
+    if test "${ac_do_pthreads}" = "1"; then
+       LIBAMT_PTHREAD=${with_okws}/libamt_pthread/libamt_pthread.la
+    fi
     LIBAHTTP=${with_okws}/libahttp/libahttp.la
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
     LIBOKSSL=${with_okws}/libokssl/libokssl.la
@@ -762,6 +765,9 @@ elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
     LIBOKXML=${okwslibdir}/libokxml.la
     LIBWEB=${okwslibdir}/libweb.la
     LIBAMT=${okwslibdir}/libamt.la
+    if test "${ac_do_pthreads}" = "1"; then
+       LIBAMT_PTHREAD=${okwslibdir}/libamt_pthread.la
+    fi
     LIBAHTTP=${okwslibdir}/libahttp.la
     LIBAMYSQL=${okwslibdir}/libamysql.la
     LIBOKSSL=${okwslibdir}/libokssl.la
@@ -799,6 +805,7 @@ AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBRFN)
 AC_SUBST(LIBAMT)
+AC_SUBST(LIBAMT_PTHREAD)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBAMYSQL)
@@ -810,9 +817,9 @@ AC_SUBST(OKWS_LIB_MK)
 LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
 LDEPS='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
-LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
+LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) $(LIBAMT_PTHREAD) '" $LDEPS"
 LDADD='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
-LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
+LDADD_DB='$(LIBAMYSQL) $(LIBAMT) $(LIBAMT_PTHREAD)'"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)
 AC_SUBST(LDADD)

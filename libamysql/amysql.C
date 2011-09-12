@@ -42,6 +42,10 @@ mysql_t::connect (const str &db, const str &u, const str &h,
 		  const str &pw, u_int prt, u_long fl)
 {
   bool ret = true;
+
+  // Use the default mysql port if none was provided.
+  if (prt == 0) { prt = 3306; }
+
 #if defined(MYSQL_VERSION_ID) && (MYSQL_VERSION_ID >= 50000)
    my_bool b = 1;
    if (mysql_options (&mysql, MYSQL_OPT_RECONNECT, (const char *)&b) != 0) {

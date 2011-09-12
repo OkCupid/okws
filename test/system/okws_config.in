@@ -47,7 +47,7 @@ Service		slow /slow
 Service		encoder /encoder
 Service		cpubomb -n3 /cpubomb
 
-#Service	3tier/tst2 /tst2
+Service	3tier/tst2 /tst2
 
 StatPageURL		/stats
 

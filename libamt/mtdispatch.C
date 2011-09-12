@@ -25,7 +25,7 @@
 #include "rxx.h"
 #include "parseopt.h"
 #include "rpc_stats.h"
-#ifdef USE_PTHREADS
+#ifdef HAVE_PTHREADS
 #include "amt_pthread.h"
 #endif
 
@@ -674,7 +674,7 @@ ssrv_t::ssrv_t (newthrcb_t c, const rpc_program &p,
   }
   
   if (typ == MTD_PTHREAD) {
-#ifdef USE_PTHREADS
+#ifdef HAVE_PTHREADS
     mtd = New mpt_dispatch_t (c, n, m, this);
     mtd->init (); 
     ok = true;
