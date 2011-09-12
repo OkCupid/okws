@@ -46,9 +46,8 @@ default:
 };
 
 struct tst2_mget_arg_t {
-     unsigned sleep_pre_msec;
+     unsigned sleep_msec;
      unsigned lim;       
-     unsigned sleep_post_msec;
 };
 
 typedef unsigned hyper u64_vec_t<>;

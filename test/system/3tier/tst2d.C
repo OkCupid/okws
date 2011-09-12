@@ -61,10 +61,9 @@ tst2_srv_t::init ()
     rc = false;
   } else if (!(_q_get = PREP("SELECT id,d,i,d2 FROM tst2 WHERE s = ?")) ||
 	     !(_q_put = PREP("INSERT INTO tst2(s,d,i,d2) VALUES(?,?,?,?)")) ||
-	     !(_q_mget = PREP("SLEEP(?); "
-			      "SELECT id,d,i,d2 FROM tst2 LIMIT ? "
-			      "ORDER BY RAND(); "
-			      "SLEEP(?)"))) {
+	     !(_q_mget = PREP("SELECT SLEEP(?/1000),id,d,i,d2 "
+			      "FROM tst2 ORDER BY RAND() "
+			      "LIMIT ?"))) {
     rc = false;
   }
   return rc;
@@ -152,9 +151,7 @@ tst2_srv_t::mget (ptr<amt::req_t> b)
   const tst2_mget_arg_t *arg = srv.getarg ();
   ptr<tst2_mget_res_t> res = srv.alloc_res (ADB_OK);
 
-  if (!_q_mget->execute (arg->sleep_pre_msec,
-			 arg->lim,
-			 arg->sleep_post_msec)) {
+  if (!_q_mget->execute (arg->sleep_msec, arg->lim)) {
     res->set_status (ADB_EXECUTE_ERROR);
     TWARN("mget error: " << _q_mget->error ());
   } else {
