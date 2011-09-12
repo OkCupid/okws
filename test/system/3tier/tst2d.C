@@ -148,8 +148,27 @@ tst2_srv_t::negate (ptr<amt::req_t> b)
 void
 tst2_srv_t::mget (ptr<amt::req_t> b)
 {
+  rpc::tst2_prog_1::tst2_mget_srv_t<amt::req_t> srv (b);
+  const tst2_mget_arg_t *arg = srv.getarg ();
+  ptr<tst2_mget_res_t> res = srv.alloc_res (ADB_OK);
 
-
+  if (!_q_mget->execute (arg->sleep_pre_msec,
+			 arg->lim,
+			 arg->sleep_post_msec)) {
+    res->set_status (ADB_EXECUTE_ERROR);
+    TWARN("mget error: " << _q_mget->error ());
+  } else {
+    adb_status_t s;
+    tst2_data_t dat;
+    while ((s = _q_mget->fetch (&dat.d, &dat.i, &dat.pk, &dat.d2)) == ADB_OK) {
+      res->rows->push_back (dat);
+    }
+    if (s != ADB_NOT_FOUND) {
+      TWARN("mget error: " << _q_mget->error ());
+      res->set_status (s);
+    }
+  }
+  srv.reply (res);
 }
 
 //-----------------------------------------------------------------------
