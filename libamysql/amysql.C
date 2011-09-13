@@ -42,6 +42,10 @@ mysql_t::connect (const str &db, const str &u, const str &h,
 		  const str &pw, u_int prt, u_long fl)
 {
   bool ret = true;
+
+  // Use the default mysql port if none was provided.
+  if (prt == 0) { prt = 3306; }
+
 #if defined(MYSQL_VERSION_ID) && (MYSQL_VERSION_ID >= 50000)
    my_bool b = 1;
    if (mysql_options (&mysql, MYSQL_OPT_RECONNECT, (const char *)&b) != 0) {
@@ -49,7 +53,11 @@ mysql_t::connect (const str &db, const str &u, const str &h,
    }
 #endif /* MYSQL_VERSION_ID */
 
-  if (!mysql_real_connect (&mysql, h, u, pw, db, prt, NULL, fl)) {
+   GIANT_UNLOCK();
+   MYSQL *rc = mysql_real_connect (&mysql, h, u, pw, db, prt, NULL, fl);
+   GIANT_LOCK();
+
+   if (!rc) {
     err = strbuf ("connection error: ") << mysql_error (&mysql);
     ret = false;
   }
@@ -69,7 +77,9 @@ mysql_t::prepare (const str &q, u_int l_opts, tz_corrector_t *tzc)
   sth_t r = NULL;
   if (l_opts & AMYSQL_PREPARED) {
 #if defined(HAVE_MYSQL_BINDFUNCS) && defined(HAVE_MYSQL_BIND)
+    GIANT_UNLOCK();
     MYSQL_STMT *s = mysql_stmt_init (&mysql);
+    GIANT_LOCK();
     if (!s) {
       err = strbuf ("MySQL ran out of memory on statment init: ")
 	<< mysql_error (&mysql);
@@ -77,7 +87,11 @@ mysql_t::prepare (const str &q, u_int l_opts, tz_corrector_t *tzc)
       return NULL;
     }
 
-    if (mysql_stmt_prepare (s, q, q.len ())) {
+    GIANT_UNLOCK();
+    int rc = mysql_stmt_prepare (s, q, q.len ());
+    GIANT_LOCK();
+
+    if (rc) {
       err = strbuf ("could not prepare query (") 
 	<< q << "): " << mysql_error (&mysql);
       errcode = ADB_BAD_QUERY;

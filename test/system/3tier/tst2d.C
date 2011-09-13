@@ -30,22 +30,23 @@
 #include "web.h"
 #include "json_rpc.h"
 
-class tst2_srv_t : public amysql_thread_t {
+class tst2_srv_t : public amysql_thread2_t {
 public:
   tst2_srv_t (mtd_thread_arg_t *a, int meth) 
-   : amysql_thread_t (a, meth), err (false) {}
+   : amysql_thread2_t (a, meth), err (false) {}
   bool init ();
-  void dispatch (svccb *sbp);
+  void dispatch (ptr<amt::req_t> b);
   static mtd_thread_t *alloc (int meth, mtd_thread_arg_t *arg)
   { return New tst2_srv_t (arg, meth); }
 protected:
-  void get (svccb *sbp);
-  void put (svccb *sbp);
-  void foo_reflect (svccb *sbp);
-  void negate (svccb *sbp);
-  void sum (svccb *sbp);
+  void get (ptr<amt::req_t> b);
+  void mget (ptr<amt::req_t> b);
+  void put (ptr<amt::req_t> b);
+  void foo_reflect (ptr<amt::req_t> b);
+  void negate (ptr<amt::req_t> b);
+  void sum (ptr<amt::req_t> b);
 private:
-  sth_t _q_get, _q_put;
+  sth_t _q_get, _q_put, _q_mget;
   bool err;
 };
 
@@ -59,7 +60,10 @@ tst2_srv_t::init ()
     TWARN (mysql.error ());
     rc = false;
   } else if (!(_q_get = PREP("SELECT id,d,i,d2 FROM tst2 WHERE s = ?")) ||
-	     !(_q_put = PREP("INSERT INTO tst2(s,d,i,d2) VALUES(?,?,?,?)"))) {
+	     !(_q_put = PREP("INSERT INTO tst2(s,d,i,d2) VALUES(?,?,?,?)")) ||
+	     !(_q_mget = PREP("SELECT SLEEP(?/1000),id,d,i,d2 "
+			      "FROM tst2 ORDER BY RAND() "
+			      "LIMIT ?"))) {
     rc = false;
   }
   return rc;
@@ -67,14 +71,14 @@ tst2_srv_t::init ()
 }
 
 void
-tst2_srv_t::dispatch (svccb *sbp)
+tst2_srv_t::dispatch (ptr<amt::req_t> sbp)
 {
   //int id = getid ();
   u_int p = sbp->proc ();
   err = false;
   switch (p) {
   case TST2_NULL:
-    sbp->reply (NULL);
+    sbp->replynull ();
     break;
   case TST2_PUT:
     put (sbp);
@@ -91,47 +95,89 @@ tst2_srv_t::dispatch (svccb *sbp)
   case TST2_SUM:
     sum (sbp);
     break;
+  case TST2_MGET:
+    mget (sbp);
+    break;
   default:
-    reject ();
+    sbp->reject ();
     break;
   }
 }
 
-void
-tst2_srv_t::foo_reflect (svccb *b)
-{
-  const foo_t *arg = b->Xtmpl getarg<foo_t> ();
-  ptr<foo_t> res = New refcounted<foo_t> (*arg);
-  reply (res);
-}
+//-----------------------------------------------------------------------
 
 void
-tst2_srv_t::sum (svccb *b)
+tst2_srv_t::foo_reflect (ptr<amt::req_t> b)
 {
-  const u64_vec_t *arg = b->Xtmpl getarg<u64_vec_t> ();
+  rpc::tst2_prog_1::tst2_foo_reflect_srv_t<amt::req_t> srv (b);
+  const foo_t *arg = srv.getarg ();
+  ptr<foo_t> res = srv.alloc_res (*arg);
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
+void
+tst2_srv_t::sum (ptr<amt::req_t> b)
+{
+  rpc::tst2_prog_1::tst2_sum_srv_t<amt::req_t> srv (b);
+  const u64_vec_t *arg = srv.getarg ();
+  
   u_int64_t res = 0;
   for (size_t i = 0; i < arg->size (); i++) {
     res += (*arg)[i];
   }
-  reply (New refcounted<u_int64_t> (res));
+  srv.reply (srv.alloc_res (res));
 }
+
+//-----------------------------------------------------------------------
 
 void 
-tst2_srv_t::negate (svccb *b)
+tst2_srv_t::negate (ptr<amt::req_t> b)
 {
-  const bool *arg = b->Xtmpl getarg<bool> ();
-  ptr<bool> ret = New refcounted<bool> (!*arg);
-  reply (ret);
+  rpc::tst2_prog_1::tst2_negate_srv_t<amt::req_t> srv (b);
+  const bool *arg = srv.getarg ();
+  ptr<bool> res = srv.alloc_res ();
+  *res = !*arg;
+  srv.reply (res);
 }
 
+//-----------------------------------------------------------------------
+
 void
-tst2_srv_t::get (svccb *b)
+tst2_srv_t::mget (ptr<amt::req_t> b)
 {
-  const tst2_get_arg_t *arg  = b->Xtmpl getarg<tst2_get_arg_t> ();
+  rpc::tst2_prog_1::tst2_mget_srv_t<amt::req_t> srv (b);
+  const tst2_mget_arg_t *arg = srv.getarg ();
+  ptr<tst2_mget_res_t> res = srv.alloc_res (ADB_OK);
+
+  if (!_q_mget->execute (arg->sleep_msec, arg->lim)) {
+    res->set_status (ADB_EXECUTE_ERROR);
+    TWARN("mget error: " << _q_mget->error ());
+  } else {
+    adb_status_t s;
+    tst2_data_t dat;
+    while ((s = _q_mget->fetch (&dat.d, &dat.i, &dat.pk, &dat.d2)) == ADB_OK) {
+      res->rows->push_back (dat);
+    }
+    if (s != ADB_NOT_FOUND) {
+      TWARN("mget error: " << _q_mget->error ());
+      res->set_status (s);
+    }
+  }
+  srv.reply (res);
+}
+
+//-----------------------------------------------------------------------
+
+void
+tst2_srv_t::get (ptr<amt::req_t> b)
+{
+  rpc::tst2_prog_1::tst2_get_srv_t<amt::req_t> srv (b);
+  const tst2_get_arg_t *arg  = srv.getarg ();
   adb_status_t rc;
 
-  passptr<tst2_get_res_t> res;
-  res = New refcounted<tst2_get_res_t> (ADB_OK);
+  ptr<tst2_get_res_t> res = srv.alloc_res (ADB_OK);
   
   if (!_q_get->execute (*arg)) {
     rc = ADB_EXECUTE_ERROR;
@@ -147,16 +193,17 @@ tst2_srv_t::get (svccb *b)
       TWARN(es);
   }
 
-  reply_pass (res);
+  srv.reply (res);
 }
 
-void
-tst2_srv_t::put (svccb *b)
-{
-  const tst2_put_arg_t *arg = b->Xtmpl getarg<tst2_put_arg_t> ();
-  passptr<adb_status_t> res (New refcounted<adb_status_t> (ADB_OK));
+//-----------------------------------------------------------------------
 
-  passptr<adb_status_t> tmp = res;
+void
+tst2_srv_t::put (ptr<amt::req_t> b)
+{
+  rpc::tst2_prog_1::tst2_put_srv_t<amt::req_t> srv (b);
+  const tst2_put_arg_t *arg = srv.getarg ();
+  ptr<adb_status_t> res = srv.alloc_res (ADB_OK);
 
   if (!_q_put->execute (arg->key, arg->data.d, arg->data.i, arg->data.d2)) {
     *res = ADB_EXECUTE_ERROR;
@@ -164,12 +211,11 @@ tst2_srv_t::put (svccb *b)
     if ((es = _q_put->error ())) 
       TWARN("put error: " << es);
   }
-  reply_pass (res);
 
-  // see comments in libamt/passptr.h
-  assert (!res);
-  assert (!tmp);
+  b->reply (res);
 }
+
+//-----------------------------------------------------------------------
 
 static void
 usage ()
@@ -207,9 +253,18 @@ start_server (int argc, char *argv[])
 
   if (argc != 0)
     usage ();
+
+  mtd_thread_typ_t method = MTD_NONE;
+#if HAVE_PTHREADS
+  method = MTD_PTHREAD;
+#else
+# if HAVE_PTH
+  method = MTD_PTH;
+# endif
+#endif
   
   ssrv_t *s = New ssrv_t (wrap (&tst2_srv_t::alloc, mysql_sth_method), 
-			  tst2_prog_1, MTD_PTH, tcnt, maxq);
+			  tst2_prog_1, method, tcnt, maxq);
 
   json_XDR_dispatch_t::enable ();
   

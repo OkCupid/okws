@@ -138,6 +138,14 @@ AC_DEFUN([OKWS_MYSQL],
 [AC_ARG_WITH(mysql,
 --with-mysql=DIR          Specific location of mysqlclient library)
 if test "$with_mysql" != "no"; then
+   	libname="mysqlclient"
+
+	dnl For true pthread multithreading, we need the threaded
+	dnl reentrant version of mysqlclient
+	if test "${ac_do_pthreads}" = "1"; then
+	   libname="mysqlclient_r"
+	fi
+
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
 	cdirs="${with_mysql}/include ${with_mysql}/include/mysql \
@@ -170,8 +178,8 @@ if test "$with_mysql" != "no"; then
 		[for dir in "" " " $dirs; do
 			case $dir in
 				"") lflags=" " ;;
-				" ") lflags="-lmysqlclient -lm" ;;
-				*) lflags="-L${dir} -lmysqlclient -lm" ;;
+				" ") lflags="-l$libname -lm" ;;
+				*) lflags="-L${dir} -l$libname -lm" ;;
 			esac
 			LIBS="$ac_save_LIBS $lflags"
 			AC_TRY_LINK([#include "mysql.h"],
@@ -333,57 +341,27 @@ AC_SUBST(LDADD_THR)
 dnl
 dnl Find pthreads
 dnl
-AC_DEFUN([OKWS_FIND_PTHREADS],
-[AC_ARG_WITH(pthreads,
---with-pthreads=DIR       Specify location of pthreads)
-ac_save_CFLAGS=$CFLAGS
-ac_save_LIBS=$LIBS
-dirs="$with_pthreads ${prefix} ${prefix}/pthreads"
-dirs="$dirs /usr/local /usr/local/pthreads"
-AC_CACHE_CHECK(for pthread.h, sfs_cv_pthread_h,
-[for dir in " " $dirs; do
-	case $dir in
-		" ") iflags=" " ;;
-		*)   iflags="-I${dir}/include" ;;
-	esac
-	CFLAGS="${ac_save_CFLAGS} $iflags"
-	AC_TRY_COMPILE([#include <pthread.h>], 0,
-	  sfs_cv_pthread_h="${iflags}"; break)
-done
-if test "$sfs_cv_pthread_h" = " "; then
- 	sfs_cv_pthread_h="yes"
+AC_DEFUN([OKWS_DO_PTHREADS],
+[AC_ARG_ENABLE(pthreads,
+--enable-pthreads     Allow OKWS to use standard pthreads)
+if test `uname` = "Linux"; then 
+   	ac_do_pthreads=1
+	if test "${enable_pthreads}" = "no";  then
+	   ac_do_pthreads=0
+	fi	
+else
+	ac_do_pthreads=0
+	if test "${enable_pthreads}" = "yes" ; then
+	   ac_do_pthreads=1
+ 	fi
 fi
-])
-if test "$sfs_cv_pthread_h" = "yes"; then
-	sfs_cv_pthread_h=" "
+
+if test $ac_do_pthreads -eq 1 ; then
+   AC_DEFINE(HAVE_PTHREADS, 1, Use pthread support)
 fi
-if test "${sfs_cv_pthread_h+set}"; then
-	AC_CACHE_CHECK(for libpthread, sfs_cv_libpthread,
-	[for dir in "" " " $dirs; do
-		case $dir in
-			"") lflags=" " ;;
-			" ") lflags="-lpthread" ;;
-			*) lflags="-L${dir}/lib -lpthread" ;;
-		esac
-		LIBS="$ac_save_LIBS $lflags"
-		AC_TRY_LINK([#include <pthread.h>],
-			pthread_create (0, 0, 0, 0);,
-			sfs_cv_libpthread=$lflags; break)
-	done
-	if test -z ${sfs_cv_libpthread+set}; then
-		sfs_cv_libpthread="no"
-	fi])
-fi
-if test "$sfs_cv_libpthread" != "no" && test "${sfs_cv_libpthread+set}" ; then
-	CFLAGS=$ac_save_CFLAGS
-	CPPFLAGS="$CPPFLAGS $sfs_cv_pthread_h"
-	LIBS="$ac_save_LIBS $sfs_cv_libpthread"
-	LDADD_PTHREAD="$sfs_cv_libpthread"
-	use_pthreads=yes
-fi
-AM_CONDITIONAL(USE_PTHREADS, test "${use_pthreads}" != "no")
-LIBS=$ac_save_LIBS 
-CFLAGS=$ac_save_CFLAGS
+
+AM_CONDITIONAL(USE_PTHREADS, test ${ac_do_pthreads} -eq 1)
+
 ])
 
 dnl
@@ -400,19 +378,15 @@ fi])
 dnl
 dnl Check that some threading exists
 dnl
-AC_DEFUN([OKWS_REQUIRE_THREADS],
+AC_DEFUN([OKWS_DO_THREADS],
 [
-dnl AC_ARG_ENABLE(pthreads,
-dnl --disable-pthreads	  Disable POSIX pthreads library, [])
-
-dnl
-dnl Either PTH, or nothing, since the other threading doesn't currently
-dnl work.
-dnl
-OKWS_FIND_PTH	
-
-AC_SUBST(LDADD_THR)
+if test `uname` != "Linux"
+then
+	OKWS_FIND_PTH	
+fi
+OKWS_DO_PTHREADS
 ])
+
 #include <unistd.h>
 #include <grp.h>
 int getgrouplist ([$*]);
@@ -765,6 +739,9 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBOKXML=${with_okws}/libokxml/libokxml.la
     LIBWEB=${with_okws}/libweb/libweb.la
     LIBAMT=${with_okws}/libamt/libamt.la
+    if test "${ac_do_pthreads}" = "1"; then
+       LIBAMT_PTHREAD=${with_okws}/libamt_pthread/libamt_pthread.la
+    fi
     LIBAHTTP=${with_okws}/libahttp/libahttp.la
     LIBAMYSQL=${with_okws}/libamysql/libamysql.la
     LIBOKSSL=${with_okws}/libokssl/libokssl.la
@@ -788,6 +765,9 @@ elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
     LIBOKXML=${okwslibdir}/libokxml.la
     LIBWEB=${okwslibdir}/libweb.la
     LIBAMT=${okwslibdir}/libamt.la
+    if test "${ac_do_pthreads}" = "1"; then
+       LIBAMT_PTHREAD=${okwslibdir}/libamt_pthread.la
+    fi
     LIBAHTTP=${okwslibdir}/libahttp.la
     LIBAMYSQL=${okwslibdir}/libamysql.la
     LIBOKSSL=${okwslibdir}/libokssl.la
@@ -825,6 +805,7 @@ AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBRFN)
 AC_SUBST(LIBAMT)
+AC_SUBST(LIBAMT_PTHREAD)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBAMYSQL)
@@ -836,9 +817,9 @@ AC_SUBST(OKWS_LIB_MK)
 LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
 LDEPS='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
-LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) '" $LDEPS"
+LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) $(LIBAMT_PTHREAD) '" $LDEPS"
 LDADD='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
-LDADD_DB='$(LIBAMYSQL) $(LIBAMT) '"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
+LDADD_DB='$(LIBAMYSQL) $(LIBAMT) $(LIBAMT_PTHREAD)'"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)
 AC_SUBST(LDADD)

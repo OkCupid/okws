@@ -34,7 +34,9 @@
 u_int64_t
 sth_prepared_t::insert_id () 
 {
+  GIANT_UNLOCK();
   u_int64_t r = mysql_stmt_insert_id (sth);
+  GIANT_LOCK();
   return r;
 }
 
@@ -43,7 +45,9 @@ sth_prepared_t::insert_id ()
 sth_prepared_t::~sth_prepared_t ()
 {
   if (bnds) delete [] bnds;
+  GIANT_UNLOCK();
   if (sth) mysql_stmt_close (sth);
+  GIANT_LOCK();
 }
 
 //-----------------------------------------------------------------------
@@ -51,7 +55,9 @@ sth_prepared_t::~sth_prepared_t ()
 size_t
 sth_prepared_t::affected_rows () const
 {
+  GIANT_UNLOCK();
   size_t r = mysql_stmt_affected_rows (sth);
+  GIANT_LOCK();
   return r;
 }
 
@@ -96,13 +102,21 @@ sth_prepared_t::execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n)
 
   if (b && arr && n) {
     bind (b, arr, n);
-    if (mysql_stmt_bind_param (sth, b) != 0) {
+    GIANT_UNLOCK();
+    int rc = mysql_stmt_bind_param (sth, b);
+    GIANT_LOCK();
+    if (rc != 0) {
       err = strbuf ("bind error: ") << mysql_stmt_error (sth);
 	  errno_n = mysql_stmt_errno (sth);
       return false;
     }
   }
-  if (mysql_stmt_execute (sth) != 0) {
+
+  GIANT_UNLOCK();
+  int rc = mysql_stmt_execute (sth);
+  GIANT_LOCK();
+
+  if (rc != 0) {
     err = strbuf ("execute error: ") << mysql_stmt_error (sth);
     errno_n = mysql_stmt_errno (sth);
     state = AMYSQL_NONE;
@@ -148,7 +162,9 @@ sth_prepared_t::fetch2 (bool bnd)
   if (state == AMYSQL_EXEC) {
     state = AMYSQL_FETCH;
     if (!(opts & AMYSQL_USERES)) {
+      GIANT_UNLOCK();
       int rc = mysql_stmt_store_result (sth);
+      GIANT_LOCK();
       if (rc != 0) {
 	err = strbuf ("stmt_store error (") << rc << "): " 
 					    << mysql_stmt_error (sth);
@@ -162,7 +178,9 @@ sth_prepared_t::fetch2 (bool bnd)
   if (bnd && !bind_result ())
     return ADB_BIND_ERROR;
 
+  GIANT_UNLOCK();
   int rc = mysql_stmt_fetch (sth);
+  GIANT_LOCK();
   if (rc == MYSQL_NO_DATA) {
     state = AMYSQL_FETCH_DONE;
     return ADB_NOT_FOUND;
@@ -183,7 +201,9 @@ sth_prepared_t::fetch2 (bool bnd)
 u_int64_t
 sth_parsed_t::insert_id () 
 {
+  GIANT_UNLOCK();
   u_int64_t r = mysql_insert_id (mysql);
+  GIANT_LOCK();
   return r;
 }
 
@@ -194,14 +214,24 @@ sth_parsed_t::clearfetch ()
 {
   if (state == AMYSQL_EXEC) {
     assert (!myres);
+
+    GIANT_UNLOCK();
     myres = (opts & AMYSQL_USERES) ? mysql_use_result (mysql)
       : mysql_store_result (mysql);
+    GIANT_LOCK();
+
     if (myres) 
       warn << "exec() called without fetch() on query: " << last_qry << "\n";
     state = AMYSQL_FETCH;
   }
-  if (state == AMYSQL_FETCH && (opts & AMYSQL_USERES)) 
-    while (mysql_fetch_row (myres)) ;
+  if (state == AMYSQL_FETCH && (opts & AMYSQL_USERES)) {
+    int rc = 1;
+    while (rc) {
+      GIANT_UNLOCK();
+      mysql_fetch_row (myres);
+      GIANT_LOCK();
+    }
+  }
 
   if (myres) {
     mysql_free_result (myres);
@@ -219,24 +249,36 @@ sth_parsed_t::fetch2 (bool bnd)
 {
   if (!myres) {
     state = AMYSQL_FETCH;
+
+    GIANT_UNLOCK();
     myres = (opts & AMYSQL_USERES) ? mysql_use_result (mysql) :
       mysql_store_result (mysql);
+    GIANT_LOCK();
 
-    if (myres) 
+    if (myres) {
+      GIANT_UNLOCK();
       my_res_n = mysql_num_fields (myres);
-    else {
+      GIANT_LOCK();
+    } else {
       err = strbuf ("MySQL result error: ") << mysql_error (mysql);
       errno_n = mysql_errno (mysql);
       state = AMYSQL_NONE;
       return ADB_ERROR;
     }
   }
+
+  GIANT_UNLOCK();
   MYSQL_ROW row = mysql_fetch_row (myres);
+  GIANT_LOCK();
+
   if (!row) {
     state = AMYSQL_FETCH_DONE;
     return ADB_NOT_FOUND;
   }
+
+  GIANT_UNLOCK();
   length_arr = mysql_fetch_lengths (myres);
+  GIANT_LOCK();
 
   row_to_res (&row, myres);
   return ADB_OK;
@@ -252,7 +294,9 @@ sth_parsed_t::row_to_res (MYSQL_ROW *row, MYSQL_RES *res)
 
   for (u_int i = 0; i < lim && !ff; i++) {
     if (res_arr[i].is_xdr_union_type ()) { 
+      GIANT_UNLOCK();
       ff = mysql_fetch_fields (myres);
+      GIANT_LOCK();
     }
   }
 
@@ -366,7 +410,12 @@ sth_parsed_t::execute2 (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
   str q = make_query (aarr, n);
 
   last_qry = q;
-  if (mysql_real_query (mysql, q.cstr (), q.len ()) != 0) {
+
+  GIANT_UNLOCK();
+  int rc = mysql_real_query (mysql, q.cstr (), q.len ());
+  GIANT_LOCK();
+
+  if (rc != 0) {
     err = strbuf ("Query execution error: ") << mysql_error (mysql) << "\n";
     errno_n = mysql_errno (mysql);
     state = AMYSQL_NONE;
@@ -390,12 +439,20 @@ const MYSQL_FIELD *
 sth_parsed_t::fetch_fields (size_t *sz)
 {
   const MYSQL_FIELD *ret = NULL;
-  if ((myres = mysql_store_result (mysql))) {
+
+  GIANT_UNLOCK();
+  myres = mysql_store_result (mysql);
+  GIANT_LOCK();
+
+  if (myres) {
     unsigned int nf = mysql_num_fields (myres);
     my_res_n = nf; // whenver we set myres, also set my_res_n, and bump state
     state = AMYSQL_FETCH;
     *sz = nf;
+
+    GIANT_UNLOCK();
     ret = mysql_fetch_fields (myres);
+    GIANT_LOCK();
   }
   return ret;
 }

@@ -13,13 +13,14 @@ SUFFIXES = .g .C .T .x .h
 
 #-----------------------------------------------------------------------
 
-TAMEIN       = tst2.T 
-TAMEOUT      = tst2.C 
+TAMEIN       = tst2.T stress.T
+TAMEOUT      = tst2.C stress.C
 
 #-----------------------------------------------------------------------
 
 tst2_SOURCES =  tst2_prot.C tst2.C
 tst2d_SOURCES = tst2_prot.C tst2d.C
+stress_SOURCES = stress.T tst2_prot.C
 
 #-----------------------------------------------------------------------
 
@@ -29,11 +30,14 @@ tst2_prot.lo:	tst2_prot.C
 tst2.o:	      	tst2.C
 tst2.lo:	tst2.C
 tst2d.o:        tst2_prot.h
+stress.o:	stress.C
+stress.lo:	stress.C
 
 #-----------------------------------------------------------------------
 
 okwssvc_PROGRAMS = tst2 
 okwsprx_PROGRAMS = tst2d 
+noinst_PROGRAMS = stress
 
 #-----------------------------------------------------------------------
 
