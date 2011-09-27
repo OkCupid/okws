@@ -118,6 +118,11 @@ namespace pub3 {
       _sz = ns;
       _buf = newb;
       _end = _buf + _sz;
+      _bp = _buf + datsz;
+
+      // make sure that the new buffer pointer is in bounds!
+      assert (_bp <= _end);
+
       _overflow = false;
     }
   }
