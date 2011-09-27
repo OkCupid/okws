@@ -117,6 +117,7 @@ namespace pub3 {
       delete [] _buf;
       _sz = ns;
       _buf = newb;
+      _end = _buf + _sz;
       _overflow = false;
     }
   }
