@@ -32,6 +32,7 @@ namespace pub3 {
       memcpy (_bp, s.cstr(), l);
       _bp += l;
     }
+    assert (_bp <= _end);
   }
 
   //---------------------------------------------------------------------
@@ -44,6 +45,7 @@ namespace pub3 {
       memcpy (_bp, c, l);
       _bp += l;
     }
+    assert (_bp <= _end);
   }
 
   //---------------------------------------------------------------------
@@ -73,6 +75,7 @@ namespace pub3 {
       memcpy (_bp, tmp, nc);
       _bp += nc;
     }
+    assert (_bp <= _end);
 #undef BUFSZ
   }
 
@@ -84,6 +87,7 @@ namespace pub3 {
     if (check_room (1)) {
       *(_bp++) = ch;
     }
+    assert (_bp <= _end);
   }
 
   //---------------------------------------------------------------------
@@ -110,6 +114,10 @@ namespace pub3 {
   {
     if (_overflow && _sz * 2 <  ok_pub3_profiler_buf_maxsize) {
       size_t ns = _sz * 2;
+
+      // Make sure we didn't fuck up in the past
+      assert (_bp <= _end);
+
       char *newb = New char[ns];
       size_t datsz = _bp - _buf;
       memcpy (newb, _buf, datsz);
