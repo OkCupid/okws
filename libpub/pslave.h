@@ -56,8 +56,10 @@ typedef enum { HLP_STATUS_NONE = 0,
 
 typedef callback<void, ptr<axprt_stream> >::ref pubserv_cb;
 typedef callback<void, hlp_status_t>::ref status_cb_t;
-bool pub_server (pubserv_cb cb, u_int port, u_int32_t addr = INADDR_ANY);
-int pub_server (pubserv_cb cb, const str &path);
+bool pub_server (pubserv_cb cb, u_int port, u_int32_t addr = INADDR_ANY,
+		 int *out_fd = NULL);
+int pub_server (pubserv_cb cb, const str &path,
+		int *out_fd = NULL);
 pslave_status_t pub_slave  (pubserv_cb cb, u_int port = 0, 
 			    pslave_status_t *s = NULL);
 

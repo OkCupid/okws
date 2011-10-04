@@ -92,7 +92,7 @@ pub_slave (pubserv_cb cb, u_int port, pslave_status_t *s)
 }
 
 bool
-pub_server (pubserv_cb cb, u_int port, u_int32_t addr)
+pub_server (pubserv_cb cb, u_int port, u_int32_t addr, int *outfd)
 {
 
   if (addr == INADDR_ANY) {
@@ -104,6 +104,7 @@ pub_server (pubserv_cb cb, u_int port, u_int32_t addr)
     }
   }
   int pubfd = inetsocket (SOCK_STREAM, port, addr);
+  if (outfd) { *outfd = pubfd; }
   if (pubfd < 0)
     return false;
   pub_server_fd (wrap (pub_accept, cb, pubfd), pubfd);
@@ -111,9 +112,10 @@ pub_server (pubserv_cb cb, u_int port, u_int32_t addr)
 }
 
 int
-pub_server (pubserv_cb cb, const str &s)
+pub_server (pubserv_cb cb, const str &s, int *outfd)
 {
   int pubfd = unixsocket (s.cstr ());
+  if (outfd) { *outfd = pubfd; }
   if (pubfd >= 0) {
     fchmod (pubfd, 0666);
     pub_server_fd (wrap (pub_accept_unix, cb, pubfd), pubfd);
