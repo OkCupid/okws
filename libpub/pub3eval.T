@@ -396,11 +396,13 @@ namespace pub3 {
   void
   runloc_t::profile_report (profiler_buf_t *b, int64_t s) const
   {
+    str fn = filename ();
+    int i = lineno ();
     b->add_i (s);
     b->add_cc (": ");
-    b->add_s (filename ());
+    b->add_s (fn);
     b->add_ch (':');
-    b->add_i (lineno ());
+    b->add_i (i);
     if (!_active) {
       b->add_cc (" (inactive)");
     }
