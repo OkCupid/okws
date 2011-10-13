@@ -93,17 +93,13 @@ if //r// is found in //s// and //false// otherwise."
 	html_escape : {
 	    input : [ { s : "s"} ],
 	    output : "s",
-	    desc : "Take the input //s// and escape it so that it's
-safe to output in HTML without it being interpreted as markup. For 
-instance, when outputting forum posts or personal essays. Mainly, 
-escape '<', '>' and '&' tags. Output the escaped string."
+	    desc : "HTML escapes these chars: & < >"
 	},
 
 	json_escape : {
 	    input : [ { s : "s"} ],
 	    output : "s",
-	    desc : "Take the input text s and escape all double-quotes, 
-backslashes, newlines and tabs. Output the escaped string."
+	    desc : "Escapes all double-quotes, backslashes, newlines and tabs."
 	},
 
 	"default" : {
@@ -530,7 +526,41 @@ in the 1st slot.  Don't modify the list."
 	    desc : "Like JS's splice() function. Remove //remove// objects
 from the list //v// starting at index //index//.  Replace with optional
 objects //o_1//, through //o_n//, as many as specified."
-	 }
+	 },
+
+     hidden_escape : {
+        input: [ { "s" : "s" } ],
+        output : "s",
+        desc : "HTML escapes these chars: \' \" & < >"
+     },
+
+     wss_filter : {
+        input: [ { "s" : "s" } ],
+        output : "s",
+        desc : "compacts multiple adjacent whitespace characters into one"
+     },
+
+     sleep : {
+        blocking : true,
+        input: [ { "s" : "i" }, { "ms" : "i" } ],
+        output : "0",
+        desc : "sleeps for s seconds and ms milliseconds"
+     },
+
+     fork : {
+        input: [ { "func" : "F" } ],
+        output : "0",
+        desc : "returns immediately and executes a blocking function in the background"
+     },
+
+     shotgun : {
+        blocking : true,
+        input: [ { "funcs" : "l" } ],
+        output : "0",
+        desc : "executes a list of blocking functions in parallel, returns when they've all completed"
+     }
+    
+
     };
     
     docs.rfn3 = rfn3_lib_doc;
