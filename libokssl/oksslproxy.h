@@ -1,8 +1,7 @@
 
 // -*-c++-*-
 
-#ifndef __SSL_OKSSLPROXY_H__
-#define __SSL_OKSSLPROXY_H__
+#pragma once
 
 #include "okwsconf.h"
 #ifdef HAVE_SSL
@@ -109,4 +108,3 @@ namespace okssl {
 
 
 # endif /* HAVE_SSL */
-#endif /* __SSL_OKSSL_PROXY_H_ */

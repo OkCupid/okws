@@ -7,6 +7,7 @@
 #include "oksslutil.h"
 #include "tame_io.h"
 #include "okdbg.h"
+#include "okssl.h"
 
 namespace okssl {
 
@@ -56,7 +57,7 @@ namespace okssl {
   factory_t::factory_t ()
   {
     SSLeay_add_ssl_algorithms ();
-    const  SSL_METHOD *meth = SSLv23_client_method ();
+    OPENSSL_CONST SSL_METHOD *meth = SSLv23_client_method ();
     SSL_load_error_strings ();
     _ctx = SSL_CTX_new (meth);
     SSL_CTX_set_default_verify_paths (_ctx);

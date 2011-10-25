@@ -498,7 +498,7 @@ namespace okssl {
   bool
   okssld_t::init_ssl ()
   {
-    const SSL_METHOD *meth;
+    OPENSSL_CONST SSL_METHOD *meth;
     bool ret = false;
 
     if (!init_ssl_internals ()) {
