@@ -536,6 +536,8 @@ print_enum (const rpc_enum *s)
 static void
 print_struct (const rpc_struct *s)
 {
+  const rpc_decl *dp = s->decls.base (), *ep = s->decls.lim ();
+  size_t num = ep - dp;
   aout <<
     "const strbuf &\n"
     "rpc_print (const strbuf &sb, const " << s->id << " &obj, "
@@ -547,18 +549,25 @@ print_struct (const rpc_struct *s)
     "      sb << prefix;\n"
     "    sb << \"" << s->id << " \" << name << \" = \";\n"
     "  };\n"
-    "  const char *sep;\n"
     "  str npref;\n"
     "  if (prefix) {\n"
     "    npref = strbuf (\"%s  \", prefix);\n"
-    "    sep = \"\";\n"
     "    sb << \"{\\n\";\n"
     "  }\n"
     "  else {\n"
-    "    sep = \", \";\n"
     "    sb << \"{ \";\n"
     "  }\n";
-  const rpc_decl *dp = s->decls.base (), *ep = s->decls.lim ();
+
+  if (num > 1) {
+    aout <<
+      "  const char *sep = NULL;\n"
+      "  if (prefix) {\n"
+      "    sep = \"\";\n"
+      "  } else {\n"
+      "    sep = \", \";\n"
+      "  }\n" ;
+  }
+
   if (dp < ep)
     aout <<
       "  rpc_print (sb, obj." << dp->id << ", recdepth, "

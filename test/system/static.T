@@ -132,6 +132,7 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
     pub3::opts_t oe;
     bool dump_stats (false);
     bool html (true);
+    time_t delay (0);
   }
 
   static bool first_time = true;
@@ -155,7 +156,10 @@ okclnt_static_t::process_T (okclnt2_t::proc_ev_t ev)
   if (cgi.blookup ("errobj")) { opts |= oe; }
   if (cgi.blookup ("warninline")) { opts |= pub3::P_WARN_INLINE_NULL; }
   if (cgi.blookup ("utf8json")) { opts |= pub3::P_UTF8_JSON; }
+  cgi.lookup ("delay", &delay);
   dump_stats = cgi.blookup ("stats");
+
+  if (delay) { twait { delaycb (delay, 0, mkevent ()); } }
 
   if (wss) { opts |= pub3::P_WSS; }
 

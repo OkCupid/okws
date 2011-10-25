@@ -13,6 +13,6 @@ PROGS="okd/okd
 for p in $PROGS
 do
   if [ -e $p ] ; then
-      $p > /dev/null 2>&1
+      $p -? > /dev/null 2>&1
   fi
 done

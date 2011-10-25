@@ -21,7 +21,7 @@ void
 usage ()
 {
   warn << "usage: okwc [-c] [-t <timeout>] [-o <status>] [-p <proxy>] "
-       << "<url> [<post-file>]\n";
+       << "[-n <n-attempts>] <url> [<post-file>]\n";
   exit (1);
 }
 
@@ -95,12 +95,13 @@ main3 (int argc, char **argv, evi_t ev)
     int tmp;
     ptr<my_factory_t> factory;
     bool show_cookies (false);
+    size_t i (0), n (1);
   }
 
   okssl::init_ssl_internals ();
   okwc_def_contlen *= 10;
 
-  while ((ch = getopt (argc, argv, "ct:p:h:o:")) != -1) {
+  while ((ch = getopt (argc, argv, "ct:p:h:o:n:")) != -1) {
     switch (ch) {
     case 'c':
       show_cookies = true;
@@ -114,6 +115,12 @@ main3 (int argc, char **argv, evi_t ev)
       break;
     case 'h':
       extra_headers.push_back (optarg);
+      break;
+    case 'n':
+      if (!convertint (optarg, &n)) {
+	warn << "bad number of attempts: " << n << "\n";
+	usage ();
+      }
       break;
     case 'o':
       if (!convertint (optarg, &tmp)) {
@@ -179,28 +186,31 @@ main3 (int argc, char **argv, evi_t ev)
     cli = New refcounted<okwc3::agent_get_direct_t> (hostname, port, https,
 						     factory);
   }
+  
+  for (i = 0; i < n; i++) {
 
-  twait { 
-    cli->get (filename, 
-	      connector::timeout (mkevent (status, resp), timeout),
-	      1, NULL, 
-	      post, &extra_headers);
-  }
-
-  aout << "status: " << status << "\n";
-  if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {
-    aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
-  } else if (resp) { 
-    if (resp->body ()) {
-      aout << "\nbody: " << resp->body () << "\n";
-    } 
-    const okwc_cookie_set_t &cs = resp->incookies ();
-    for (size_t i = 0; show_cookies && i < cs.size (); i++) {
-      const cgi_t *c = cs[i];
-      aout << "\nInCookie[" << i << "]:\n";
-      for (const pair_t *p = c->lfirst (); p; p = c->lnext (p)) {
-	str s = my_join (p->vals, ":");
-	aout << "   " << p->key << " -> " << s << "\n";
+    twait { 
+      cli->get (filename, 
+		connector::timeout (mkevent (status, resp), timeout),
+		1, NULL, 
+		post, &extra_headers);
+    }
+    
+    aout << "status: " << status << "\n";
+    if (status == HTTP_MOVEDTEMP || status == HTTP_MOVEDPERM) {
+      aout << "Redirect to: " << (* resp->hdr () )["location"] << "\n";
+    } else if (resp) { 
+      if (resp->body ()) {
+	aout << "\nbody: " << resp->body () << "\n";
+      } 
+      const okwc_cookie_set_t &cs = resp->incookies ();
+      for (size_t i = 0; show_cookies && i < cs.size (); i++) {
+	const cgi_t *c = cs[i];
+	aout << "\nInCookie[" << i << "]:\n";
+	for (const pair_t *p = c->lfirst (); p; p = c->lnext (p)) {
+	  str s = my_join (p->vals, ":");
+	  aout << "   " << p->key << " -> " << s << "\n";
+	}
       }
     }
   }

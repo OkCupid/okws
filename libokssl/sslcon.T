@@ -47,6 +47,7 @@ namespace okssl {
   con_t::~con_t ()
   {
     SSL_free (_ssl);
+    _ssl = NULL;
   }
 
 
@@ -55,7 +56,7 @@ namespace okssl {
   factory_t::factory_t ()
   {
     SSLeay_add_ssl_algorithms ();
-    SSL_METHOD *meth = SSLv23_client_method ();
+    const  SSL_METHOD *meth = SSLv23_client_method ();
     SSL_load_error_strings ();
     _ctx = SSL_CTX_new (meth);
     SSL_CTX_set_default_verify_paths (_ctx);
@@ -157,15 +158,22 @@ namespace okssl {
     tvars {
       suio *uio (bp->tosuio ());
       bool ret (true);
-      bool go (true);
+      bool go (false);
       int rc;
       bool need_read (false);
       bool wait_for_write (true);
       char buf[BUFSZ];
       int err;
       outcome_t oc;
+
+      // This is overkill, but in case there's a bug, we won't scribble
+      // over memory this way.
+      holdvar ptr<con_t> hold (mkref (_self));
     }
 
+    // Key to set go=false, in case we're canceled while trying
+    // to establish an SSL connection.  In that case, we want
+    // to early-out of this function!
     twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
     if (!go) { ret = false; }
 
@@ -249,55 +257,99 @@ namespace okssl {
       char buf[BUFSZ];
       int err;
       size_t tot (0);
+      outcome_t oc (OUTCOME_SUCC);
     }
 
-    twait { ssl_connect (connector::cnc (mkevent (go), ev)); }
+    twait { ssl_connect (connector::cnc (mkevent (go), ev, &oc)); }
 
-    while (go) {
+    // Just for sanity checking, don't go if we were cancelled.
+    if (oc != OUTCOME_SUCC) { assert (!go); }
+
+    // We loop for a read, not because we're going to do multiple reads,
+    // but because we might need to write before we can read.  Also,
+    // only bother to enter this loop if there is data to read and room
+    // in the buffer.  I'm not sure why we'd be called with a len=0, but
+    // guard against it here.
+    while (go && len > 0) {
+
+      go = false;
+
       if (need_write) {
-	twait { _wfd->on (mkevent ()); }
-	SSL_write (_ssl, buf, 0);
-      } else if (len > 0) {
+	twait { _wfd->on (connector::cnc (mkevent (), ev, &oc)); }
+
+	// We always need to check that the outcome is not a cancel.
+	// In the case of cancel we shouldn't touch the buffer we're
+	// reading to ("out");
+	if (oc == OUTCOME_SUCC) {
+	  SSL_write (_ssl, buf, 0);
+	  go = true; // it's worth another trip through the loop!
+	}
+
+      } else {
+
+	// This should always stay so!
+	// Anyways, now we need to read something from the network.
+	assert (len > 0);
+
+	// In certain error cases, the SSL socket told us to wait 
+	// so in this case, we do just that.
 	if (wait_for_read) {
-	  twait { _rfd->on (mkevent ()); }
-	}
-	ret = SSL_read (_ssl, out, len);
-
-	if (ret == 0) { _eof = true; }
-	if (ret > 0) { tot += ret; }
-
-	if (OKDBG2 (SSL_INDATA)) {
-	  if (ret > 0) {
-	    strbuf b;
-	    str s (reinterpret_cast<const char *> (out), ret);
-	    b << "++ SSL read: " << s << "\n";
-	    b.tosuio ()->output (2);
-	  }
+	  twait { _rfd->on (connector::cnc (mkevent (), ev, &oc)); }
 	}
 
-	if (ret < 0) {
-	  err = SSL_get_error (_ssl, ret);
-	  switch (err) {
-	  case SSL_ERROR_WANT_READ:
-	    wait_for_read = true;
-	    break;
-	  case SSL_ERROR_WANT_WRITE:
-	    need_write = true;
-	    break;
-	  default:
-	    ssl_complain ("SSL_write encountered an error: ");
-	    errno = EIO;
-	    go = false;
-	    break;
+	// Again, protect all forward progress by worrying about 
+	// cancelation by our caller.  If we were canceled, then
+	// don't do anything further.
+	if (oc == OUTCOME_SUCC) {
+
+	  // This is the actual read.
+	  ret = SSL_read (_ssl, out, len);
+
+	  if (ret == 0) { 
+	    // On EOF, we're done reading, and nothing doin' here
+	    _eof = true; 
+
+	  } else if (ret > 0) { 
+	    tot += ret;  // keep this just for debugging.
+	  
+	    // Debug output... say what data is actually read.
+	    if (OKDBG2 (SSL_INDATA)) {
+	      strbuf b;
+	      str s (reinterpret_cast<const char *> (out), ret);
+	      b << "++ SSL read: " << s << "\n";
+	      b.tosuio ()->output (2);
+	    }
+	    
+	  } else {
+
+	    // Handle various errors -- a lot of them are retryable
+	    // and allow us to keep going in our network I/O.
+	    err = SSL_get_error (_ssl, ret);
+	    switch (err) {
+	    case SSL_ERROR_WANT_READ:
+	      wait_for_read = true;
+	      go = true;
+	      break;
+	    case SSL_ERROR_WANT_WRITE:
+	      need_write = true;
+	      go = true;
+	      break;
+	    default:
+	      ssl_complain ("SSL_write encountered an error: ");
+	      errno = EIO;
+	      break;
+	    }
 	  }
-	} else {
-	  go = false;
 	}
       }
     }
 
     OKDBG4 (SSL_INDATA, CHATTER, 
 	    "leaving sslcon::read; rc=%zd; bytes=%zu\n", ret, tot);
+
+    if (oc != OUTCOME_SUCC) {
+      OKDBG3 (SSL_INDATA, CHATTER, "sslcon::read cancelled by caller");
+    }
 
     ev->trigger (ret);
   }
