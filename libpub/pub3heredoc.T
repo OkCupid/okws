@@ -31,7 +31,6 @@ namespace pub3 {
     }
 
     if (_body) {
-
       new_output = New refcounted<output_std_t> (&z);
       old_output = p->set_output (new_output);
 

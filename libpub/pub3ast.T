@@ -1284,7 +1284,7 @@ namespace pub3 {
   decl_block_t::add (ptr<bindlist_t> l) 
   {
     _bindings = l;
-    _tab = New refcounted<expr_dict_t> ();
+    _tab = expr_dict_t::alloc();
     for (size_t i = 0; l && i < l->size (); i++) {
       binding_t &b = (*l)[i];
       _tab->insert (b.name (), b.expr ());
@@ -1309,6 +1309,7 @@ namespace pub3 {
     }
 
     if (is_static () && locals) {
+
       p->env ()->push_locals (cow_bindtab_t::alloc (_tab));
     } else {
       frame = p->push_bindings (lt);
@@ -1319,7 +1320,7 @@ namespace pub3 {
       for (i = 0; _bindings && i < _bindings->size (); i++) {
 	nv = NULL;
 
-	b = (*_bindings)[i];
+        b = (*_bindings)[i];
 	nm = b.name ();
 
 	if ((cx = b.expr ())) {
@@ -1346,6 +1347,7 @@ namespace pub3 {
     bool locals (lt == env_t::LAYER_LOCALS);
 
     if (is_static () && locals) {
+        
       p->env ()->push_locals (cow_bindtab_t::alloc (_tab));
     } else {
       ptr<bindtab_t> frame = p->push_bindings (lt);
@@ -1357,6 +1359,7 @@ namespace pub3 {
 	const binding_t &b = (*_bindings)[i];
 	ptr<expr_t> nv;
 	ptr<const expr_t> cx;
+
 	if ((cx = b.expr ())) { nv = cx->eval_to_mval (p); }
 	if (cx || locals) {
 	  if (!nv) nv = expr_null_t::alloc ();

@@ -263,7 +263,7 @@ pub3::expr_list_t::alloc (const xpub3_json_list_t &x)
 ptr<pub3::expr_dict_t>
 pub3::expr_dict_t::alloc (const xpub3_json_dict_t &x)
 {
-  ptr<pub3::expr_dict_t> d = New refcounted<expr_dict_t> ();
+  ptr<pub3::expr_dict_t> d = pub3::expr_dict_t::alloc();
   for (size_t i = 0; i < x.entries.size (); i++) {
     const xpub3_json_pair_t &jp = x.entries[i];
     ptr<expr_t> v = expr_t::alloc (jp.value);

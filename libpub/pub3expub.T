@@ -392,7 +392,7 @@ namespace pub3 {
       expr_dict_t::const_iterator_t it (*_self);
       const str *key;
     }
-    d = New refcounted<expr_dict_t> ();
+    d = expr_dict_t::alloc();
     while ((key = it.next (&value))) {
       x = NULL;
       if (value) { twait { value->pub_to_mval (p, mkevent (x)); } }

@@ -314,7 +314,7 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     r = New refcounted<pub3::expr_relation_t> (*x.relation);
     break;
   case XPUB3_EXPR_DICT:
-    r = New refcounted<pub3::expr_dict_t> (*x.dict);
+    r = expr_dict_t::alloc (*x.dict);
     break;
   case XPUB3_EXPR_LIST:
     r = New refcounted<pub3::expr_list_t> (*x.list);
@@ -338,7 +338,7 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     r = New refcounted<pub3::expr_shell_str_t> (*x.shell_str);
     break;
   case XPUB3_EXPR_INT:
-    r = New refcounted<pub3::expr_int_t> (*x.xint);
+    r = pub3::expr_int_t::alloc (*x.xint);
     break;
   case XPUB3_EXPR_UINT:
     r = New refcounted<pub3::expr_uint_t> (*x.xuint);
@@ -500,6 +500,12 @@ pub3::expr_str_t::expr_str_t (const xpub3_str_t &x)
 
 pub3::expr_int_t::expr_int_t (const xpub3_int_t &x)
   : _val (x.val) {}
+
+ptr<pub3::expr_int_t>
+pub3::expr_int_t::alloc (const xpub3_int_t &x) {
+    return pub3::expr_int_t::alloc(x.val);
+}
+
 
 //-----------------------------------------------------------------------
 
@@ -752,8 +758,18 @@ pub3::expr_dict_t::expr_dict_t (const xpub3_dict_t &x)
 //-----------------------------------------------------------------------
 
 ptr<pub3::expr_dict_t>
-pub3::expr_dict_t::alloc (const xpub3_dict_t &d)
-{ return New refcounted<expr_dict_t> (d); }
+pub3::expr_dict_t::alloc (const xpub3_dict_t &x)
+{ 
+  ptr<expr_dict_t> ret = pub3::expr_dict_t::alloc();
+  ret->_lineno = x.lineno;
+
+  size_t lim = x.entries.size ();
+  for (size_t i = 0; i < lim; i++) {
+    ret->insert (binding_t(x.entries[i]));
+  }
+
+  return ret;
+}
 
 //-----------------------------------------------------------------------
 

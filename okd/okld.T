@@ -834,6 +834,9 @@ okld_t::parse_file (const str &cf)
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
     .add ("GzipErrorPages", &ok_gzip_error_pages)
+    .add ("Pub3RecycleLimitInt", &ok_pub3_recycle_limit_int, 0, INT_MAX)
+    .add ("Pub3RecycleLimitBindtab", &ok_pub3_recycle_limit_bindtab, 0, INT_MAX)
+    .add ("Pub3RecycleLimitDict", &ok_pub3_recycle_limit_dict, 0, INT_MAX)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")

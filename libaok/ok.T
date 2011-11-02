@@ -36,6 +36,7 @@
 #include "resp2.h"
 #include "okprotutil.h"
 #include "okrfn.h"
+#include "pub3expr.h"
 
 #ifdef HAVE_LINUX_PRCTL_DUMP
 # include <sys/prctl.h>
@@ -349,6 +350,9 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("gzchos", &ok_gzip_chunking_old_safaris);
     t->lookup ("gzep", &ok_gzip_error_pages);
     t->lookup ("dolc", &_die_on_logd_crash);
+    t->lookup ("rcyclimitint", &ok_pub3_recycle_limit_int);
+    t->lookup ("rcyclimitbt", &ok_pub3_recycle_limit_bindtab);
+    t->lookup ("rcyclimitdict", &ok_pub3_recycle_limit_dict);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);
@@ -368,6 +372,11 @@ oksrvc_t::init (int argc, char *argv[])
     }
 
     _direct_ports.prepare ();
+
+    // DK: These are statically initialized so set the new limits here
+    pub3::get_int_recycler()->set_limit(ok_pub3_recycle_limit_int);
+    pub3::get_bindtab_recycler()->set_limit(ok_pub3_recycle_limit_bindtab);
+    pub3::get_dict_recycler()->set_limit(ok_pub3_recycle_limit_dict);
 
     int tmp = 0;
     if (t->lookup ("clock", &tmp))

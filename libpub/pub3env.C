@@ -8,7 +8,7 @@ namespace pub3 {
   //===================================== singleton_t =====================
 
   singleton_t::singleton_t () :
-    _universals (New refcounted<expr_dict_t> ()) {}
+    _universals (expr_dict_t::alloc ()) {}
   
   //-----------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ namespace pub3 {
 
   env_t::env_t  (ptr<bindtab_t> u, ptr<bindtab_t> g) 
     : _universals (u), 
-      _globals (g ? g : New refcounted<bindtab_t> ())
+      _globals (g ? g : bindtab_t::alloc ())
   {
     const vec<ptr<bindtab_t> > *lib = singleton_t::get ()->libraries ();
     for (size_t i = 0; i < lib->size (); i++) {
@@ -171,7 +171,7 @@ namespace pub3 {
     case LAYER_UNIVERSALS: ret = is_cfg ? _globals : _universals; break;
     case LAYER_GLOBALS: ret = _globals; break;
     case LAYER_LOCALS:
-      ret = New refcounted<bindtab_t> ();
+      ret = bindtab_t::alloc ();
       _stack.push_back (stack_layer_t (ret, typ));
       break;
     default:

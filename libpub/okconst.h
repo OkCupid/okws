@@ -331,7 +331,11 @@ extern size_t ok_pub3_profiler_buf_maxsize;
 //
 extern bool ok_pub3_json_strict_escaping;
 extern size_t ok_pub3_yy_buffer_size;
-extern int  ok_pub3_json_int_bitmax;
+extern int ok_pub3_json_int_bitmax;
+extern size_t ok_pub3_recycle_limit_int;
+extern size_t ok_pub3_recycle_limit_bindtab;
+extern size_t ok_pub3_recycle_limit_dict;
+
 
 
 /**

@@ -154,7 +154,7 @@ namespace pub3 {
 		       event<ptr<bindtab_t> >::ref ev) const
   {
     tvars {
-      ptr<bindtab_t> ret (New refcounted<bindtab_t> ());
+      ptr<bindtab_t> ret (bindtab_t::alloc ());
       size_t i;
       ptr<mref_t> r;
     }
@@ -173,7 +173,7 @@ namespace pub3 {
   ptr<bindtab_t>
   lambda_t::bind_args_nonblock (eval_t *e, args_t args) const
   {
-    ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
+    ptr<bindtab_t> ret = bindtab_t::alloc ();
     for (size_t i = 0; i < args->size (); i++) {
       // XXX -- some warning?
       ptr<mref_t> r = (*args)[i]->eval_to_ref (e);

@@ -57,6 +57,7 @@ namespace pub3 {
     bool is_set () const { return _v >= 0; }
     bool value () const { return _v > 0; }
     void set (bool b) { _v = b; }
+    void reset () { _v = -1; }
   private:
     int _v;
   };

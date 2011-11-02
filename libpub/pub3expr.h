@@ -6,6 +6,7 @@
 #include "pub3prot.h"
 #include "pscalar.h"
 #include "pub3debug.h"
+#include "precycle.h"
 
 namespace pub3 {
 
@@ -177,6 +178,9 @@ namespace pub3 {
     virtual ptr<call_t> coerce_to_call () ;
     virtual ptr<const callable_t> to_callable () const { return NULL; }
     virtual bool is_call_coercable () const { return true; }
+
+    // Only used for recycling
+    virtual void init() { _lineno = 0; _might_block.reset(); }
 
     //
     //-----------------------------------------------------------
@@ -757,9 +761,10 @@ namespace pub3 {
     str to_str (PUB3_TO_STR_ARG) const;
 
     static ptr<expr_int_t> alloc (int64_t i);
+    static ptr<expr_int_t> alloc (const xpub3_int_t &x);
 
     // need this only to implement recycling
-    void init (int64_t i) { _val = i; }
+    void init (int64_t i) { expr_t::init(); _val = i; }
     void finalize ();
 
     str type_to_str () const { return "int"; }
@@ -996,6 +1001,11 @@ namespace pub3 {
     typedef qhash_const_iterator_t<str, ptr<expr_t> > const_iterator_t;
     typedef qhash_iterator_t<str, ptr<expr_t> > iterator_t;
     ptr<const_iterator_t> iter () const;
+    void init() { clear(); }
+
+  protected:
+    void finalize();
+
   };
 
   //-----------------------------------------------------------------------
@@ -1035,7 +1045,6 @@ namespace pub3 {
   public:
     expr_dict_t (lineno_t lineno = -1) : expr_t (lineno) {}
     expr_dict_t (const xpub3_dict_t &x);
-
     static ptr<expr_dict_t> parse_alloc ();
     static ptr<expr_dict_t> alloc (const xpub3_json_dict_t &x);
     static ptr<expr_dict_t> alloc ();
@@ -1088,6 +1097,18 @@ namespace pub3 {
     bool is_static () const;
     bool might_block_uncached () const;
     void propogate_metadata (ptr<const metadata_t> md);
+
+    // Used only for recycling
+    
+    // DK: Be sure to call all the parent init for any recycled class, because
+    // leaving state around in the parent classes can cause bugs which are
+    // really hard to track down!
+    void init() { expr_t::init(); bindtab_t::init(); _static.reset(); }
+    void init(lineno_t lineno) { init(); _lineno = lineno; }
+
+  protected:
+    void finalize();
+
   private:
     mutable tri_bool_t _static;
   }; 
@@ -1118,5 +1139,11 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  recycler_t<bindtab_t> * get_bindtab_recycler();
+  recycler_t<expr_int_t> * get_int_recycler();
+  recycler_t<expr_dict_t> * get_dict_recycler();
+  void toggle_recycler_stats(bool enabled);
+
+  //-----------------------------------------------------------------------
 };
 

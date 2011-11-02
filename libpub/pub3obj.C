@@ -211,7 +211,7 @@ namespace pub3 {
   void
   obj_dict_t::clear () 
   {
-    _dict = New refcounted<expr_dict_t> ();
+    _dict = expr_dict_t::alloc ();
     _c_obj = _obj = _dict;
   }
 
@@ -240,7 +240,7 @@ namespace pub3 {
     if (!_dict && cajole) {
       _scalar = NULL;
       _list = NULL;
-      _dict = New refcounted<expr_dict_t> ();
+      _dict = expr_dict_t::alloc ();
       update_value (_dict);
     }
     return _dict;

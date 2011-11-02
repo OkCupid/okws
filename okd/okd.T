@@ -360,6 +360,9 @@ okd_t::parse_file (const str &cf)
     .ignore ("AggressiveServiceRestart")
     .ignore ("SSLCipherList")
     .ignore ("DieOnLogdCrash")
+    .ignore ("Pub3RecycleLimitInt")
+    .ignore ("Pub3RecycleLimitBindtab")
+    .ignore ("Pub3RecycleLimitDict")
     ;
 
   bool ret = ct.run (cf);

@@ -8,6 +8,8 @@
 #include "pub3eval.h"
 #include "pub3parse.h"
 #include "pub3file.h"
+#include "okdbg.h"
+#include "okconst.h"
 
 //-----------------------------------------------------------------------
 
@@ -885,7 +887,7 @@ namespace pub3 {
 
       // Two dicts added or subtracted
     } else if ((d1 = e1->to_dict ()) && (d2 = e2->to_dict ())) {
-      ptr<expr_dict_t> d = New refcounted<expr_dict_t> (*d1);
+      ptr<expr_dict_t> d = d1->copy_dict();
       if (_pos) {
 	*d += *d2;
       } else {
@@ -1156,8 +1158,9 @@ namespace pub3 {
   
   //====================================================================
   
-  static recycler_t<expr_int_t> _int_recycler (1000);
-  
+  static recycler_t<expr_int_t> _int_recycler(ok_pub3_recycle_limit_int, 
+                                              "expr_int_t");
+
   //-----------------------------------------------------------------------
   
   ptr<expr_int_t>
@@ -1814,7 +1817,7 @@ namespace pub3 {
   cow_bindtab_t::mutate ()
   {
     if (!_copy) {
-      _copy = New refcounted<bindtab_t> ();
+      _copy = bindtab_t::alloc ();
       bindtab_t::const_iterator_t it (*_orig);
       ptr<expr_t> x;
       const str *keyp;
@@ -1904,7 +1907,7 @@ namespace pub3 {
   }
 
   //--------------------------------------------------------------------
-
+  
   bool
   bindtab_t::lookup (const str &nm, ptr<const expr_t> *outp) const
   {
@@ -1916,8 +1919,21 @@ namespace pub3 {
   }
 
   //--------------------------------------------------------------------
+  
+  static recycler_t<bindtab_t> _bindtab_recycler(
+                  ok_pub3_recycle_limit_bindtab, "bindtab_t");
 
-  ptr<bindtab_t> bindtab_t::alloc () { return New refcounted<bindtab_t> (); }
+  void 
+  bindtab_t::finalize() {  
+    _bindtab_recycler.recycle(this);
+  }
+
+  //--------------------------------------------------------------------
+  
+  ptr<bindtab_t> 
+  bindtab_t::alloc () { 
+    return _bindtab_recycler.alloc();
+  }
 
   //============================================= binding_t ============
 
@@ -1937,7 +1953,7 @@ namespace pub3 {
   ptr<bindtab_t> 
   bindlist_t::keys_only () const
   {
-    ptr<bindtab_t> ret = New refcounted<bindtab_t> ();
+    ptr<bindtab_t> ret = bindtab_t::alloc ();
     for (size_t i = 0; i < size (); i++) {
       ret->insert ((*this)[i].name (), NULL);
     }
@@ -1947,7 +1963,9 @@ namespace pub3 {
   //============================================= bindtab_t ============
   
   ptr<bindtab_t::const_iterator_t> bindtab_t::iter () const 
-  { return New refcounted<bindtab_t::const_iterator_t> (*this); }
+  { 
+    return New refcounted<bindtab_t::const_iterator_t> (*this); 
+  }
   
   //====================================================================
 
@@ -2063,7 +2081,7 @@ namespace pub3 {
   ptr<expr_dict_t>
   expr_dict_t::eval_to_val_final (eval_t *e) const
   {
-    ptr<expr_dict_t> d = New refcounted<expr_dict_t> ();
+    ptr<expr_dict_t> d = expr_dict_t::alloc ();
     const_iterator_t it (*this);
     const str *key;
     ptr<expr_t> value;
@@ -2084,7 +2102,7 @@ namespace pub3 {
     const_iterator_t it (*this);
     const str *key;
     ptr<expr_t> value;
-    ptr<expr_dict_t> ret = New refcounted<expr_dict_t> ();
+    ptr<expr_dict_t> ret = expr_dict_t::alloc ();
 
     while ((key = it.next (&value))) {
       ptr<expr_t> nv;
@@ -2100,14 +2118,28 @@ namespace pub3 {
   ptr<expr_t> expr_dict_t::cow_copy () const { return copy_dict (); }
 
   //--------------------------------------------------------------------
+  
+  static recycler_t<expr_dict_t> _dict_recycler(
+            ok_pub3_recycle_limit_dict, "expr_dict_t");
 
-  ptr<expr_dict_t> expr_dict_t::parse_alloc ()
-  { return New refcounted<expr_dict_t> (plineno ()); }
+  void 
+  expr_dict_t::finalize() {  
+    _dict_recycler.recycle(this);
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<expr_dict_t> 
+  expr_dict_t::alloc () { 
+    return _dict_recycler.alloc();
+  }
   
   //--------------------------------------------------------------------
 
-  ptr<expr_dict_t> expr_dict_t::alloc ()
-  { return New refcounted<expr_dict_t> (); }
+  ptr<expr_dict_t> expr_dict_t::parse_alloc ()
+  {
+    return _dict_recycler.alloc(plineno());
+  }
 
   //--------------------------------------------------------------------
 
@@ -2233,6 +2265,7 @@ namespace pub3 {
     ptr<expr_t> rhs = _rhs->eval_to_mval (e);
     ptr<mref_t> lhs = _lhs->eval_to_ref (e);
     ptr<mref_t> ret = eval_to_ref_final (e, lhs, rhs);
+
     return ret;
   }
 
@@ -2362,6 +2395,25 @@ namespace pub3 {
   }
   //=====================================================================
   
+  // Recycler access functions
+  
+  recycler_t<bindtab_t> * get_bindtab_recycler() {
+    return &_bindtab_recycler;
+  }
+
+  recycler_t<expr_int_t> * get_int_recycler() {
+    return &_int_recycler;
+  }
+
+  recycler_t<expr_dict_t> * get_dict_recycler() {
+    return &_dict_recycler;
+  }
+
+  void toggle_recycler_stats(bool enabled) {
+    get_int_recycler()->toggle_stats(enabled);
+    get_bindtab_recycler()->toggle_stats(enabled);
+    get_dict_recycler()->toggle_stats(enabled);
+  }
 
 };
 
