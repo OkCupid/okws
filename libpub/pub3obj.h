@@ -164,7 +164,7 @@ namespace pub3 {
   class obj_t : public const_obj_t {
   public:
     obj_t (ptr<obj_ref_t> r) : const_obj_t (r), _ref (r) {}
-    obj_t (ptr<expr_t> v) : const_obj_t (v), _obj (v) {}
+    obj_t (ptr<expr_t> v) : const_obj_t (v), _obj (v) { set_value(v); }
     obj_t () {}
 
     // array access features: mutable
