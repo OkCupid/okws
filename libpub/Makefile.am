@@ -30,6 +30,7 @@ libpub_la_SOURCES = \
 	pub3eng.C \
 	pub3heredoc.C \
 	pub3profiler.C \
+	precycle.C \
 	slave.C \
 	zstr.C \
 	okconst.C \

@@ -320,6 +320,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
     e->insert ("rcyclimitint", ok_pub3_recycle_limit_int, false);
     e->insert ("rcyclimitbt", ok_pub3_recycle_limit_bindtab, false);
     e->insert ("rcyclimitdict", ok_pub3_recycle_limit_dict, false);
+    e->insert ("rcyclimitslot", ok_pub3_recycle_limit_slot, false);
     
     argv.push_back (e->encode ());
     
@@ -342,6 +343,7 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
     e->remove ("rcyclimitint");
     e->remove ("rcyclimitbt");
     e->remove ("rcyclimitdict");
+    e->remove ("rcyclimitslot");
       
     OKDBG4(OKD_STARTUP, CHATTER, "calling launch on exe='%s'", 
 	   report_exe.cstr ());

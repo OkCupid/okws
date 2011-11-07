@@ -987,6 +987,34 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
+  
+  nonref_recycler_t<qhash_slot<str, ptr<expr_t> > > * get_slot_recycler();
+};
+
+// Specialized version of qhash_slot with recycling for performance 
+// NOTE: Must be declared outside of pub3 namespace
+using pub3::expr_t;
+using pub3::get_slot_recycler;
+
+template <>
+struct qhash_slot<str, ptr<expr_t> > {
+    ihash_entry<qhash_slot> link;
+    str key;
+    ptr<expr_t> value;
+    qhash_slot<str, ptr<expr_t> > (const str &k, const ptr<expr_t> &v) 
+      : key (k), value (v) {}
+    qhash_slot<str, ptr<expr_t> > (const str &k, ptr<expr_t> &v) 
+      : key (k), value (v) {}
+
+    static qhash_slot<str, ptr<expr_t> > *
+    alloc(const str &k, const ptr<expr_t> &v) { 
+      return get_slot_recycler()->alloc(k, v); 
+    }
+
+    void init(const str &k, const ptr<expr_t> &v) { key = k; value = v; }
+};
+
+namespace pub3 {
 
   class bindtab_t : public qhash<str, ptr<expr_t> >,
 		    public bind_interface_t,
@@ -1006,6 +1034,24 @@ namespace pub3 {
   protected:
     void finalize();
 
+  // Use recycler rather than malloc/free for recycled objects
+  public:
+    void insert (const str &k, CREF(ptr<expr_t>) v) {
+      if (slot *s = getslot(k))
+        s->value = v;
+      else
+        core::insert_val (slot::alloc(k, v), hash(k));
+    }
+    void insert (const str &k, NCREF(ptr<expr_t>) v) {
+      if (slot *s = getslot(k))
+        s->value = v;
+      else
+        core::insert_val (slot::alloc(k, v), hash(k));
+    }
+    void delslot(slot *s) { 
+        core::remove (s); 
+        get_slot_recycler()->recycle(s); 
+    }
   };
 
   //-----------------------------------------------------------------------
@@ -1142,6 +1188,9 @@ namespace pub3 {
   recycler_t<bindtab_t> * get_bindtab_recycler();
   recycler_t<expr_int_t> * get_int_recycler();
   recycler_t<expr_dict_t> * get_dict_recycler();
+  // Defined above
+  //nonref_recycler_t<qhash_slot<str, ptr<expr_t> > > * get_slot_recycler();
+  
   void toggle_recycler_stats(bool enabled);
 
   //-----------------------------------------------------------------------

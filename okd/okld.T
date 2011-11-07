@@ -837,6 +837,7 @@ okld_t::parse_file (const str &cf)
     .add ("Pub3RecycleLimitInt", &ok_pub3_recycle_limit_int, 0, INT_MAX)
     .add ("Pub3RecycleLimitBindtab", &ok_pub3_recycle_limit_bindtab, 0, INT_MAX)
     .add ("Pub3RecycleLimitDict", &ok_pub3_recycle_limit_dict, 0, INT_MAX)
+    .add ("Pub3RecycleLimitSlot", &ok_pub3_recycle_limit_slot, 0, INT_MAX)
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")

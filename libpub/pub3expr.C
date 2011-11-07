@@ -1,7 +1,7 @@
 #include "okformat.h"
-#include "pub3expr.h"
 #include "parseopt.h"
 #include "okformat.h"
+#include "pub3expr.h"
 #include "pub3func.h"
 #include "pescape.h"
 #include "precycle.h"
@@ -10,6 +10,7 @@
 #include "pub3file.h"
 #include "okdbg.h"
 #include "okconst.h"
+
 
 //-----------------------------------------------------------------------
 
@@ -1920,8 +1921,11 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
   
+  static nonref_recycler_t<qhash_slot<str, ptr<expr_t> > > _slot_recycler(
+                  ok_pub3_recycle_limit_slot, "bindtab_slot");
+
   static recycler_t<bindtab_t> _bindtab_recycler(
-                  ok_pub3_recycle_limit_bindtab, "bindtab_t");
+                ok_pub3_recycle_limit_bindtab, "bindtab_t");
 
   void 
   bindtab_t::finalize() {  
@@ -2409,10 +2413,15 @@ namespace pub3 {
     return &_dict_recycler;
   }
 
+  nonref_recycler_t<qhash_slot<str, ptr<expr_t> > > * get_slot_recycler() {
+    return &_slot_recycler;
+  }
+
   void toggle_recycler_stats(bool enabled) {
     get_int_recycler()->toggle_stats(enabled);
     get_bindtab_recycler()->toggle_stats(enabled);
     get_dict_recycler()->toggle_stats(enabled);
+    get_slot_recycler()->toggle_stats(enabled);
   }
 
 };

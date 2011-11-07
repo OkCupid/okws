@@ -335,6 +335,7 @@ extern int ok_pub3_json_int_bitmax;
 extern size_t ok_pub3_recycle_limit_int;
 extern size_t ok_pub3_recycle_limit_bindtab;
 extern size_t ok_pub3_recycle_limit_dict;
+extern size_t ok_pub3_recycle_limit_slot;
 
 
 

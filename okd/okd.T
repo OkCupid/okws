@@ -363,6 +363,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("Pub3RecycleLimitInt")
     .ignore ("Pub3RecycleLimitBindtab")
     .ignore ("Pub3RecycleLimitDict")
+    .ignore ("Pub3RecycleLimitSlot")
     ;
 
   bool ret = ct.run (cf);

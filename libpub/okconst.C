@@ -326,6 +326,7 @@ int  ok_pub3_json_int_bitmax = 52;
 size_t ok_pub3_recycle_limit_int = 1000;
 size_t ok_pub3_recycle_limit_bindtab = 1000;
 size_t ok_pub3_recycle_limit_dict = 1000;
+size_t ok_pub3_recycle_limit_slot = 1000;
 
 //
 // Turn off SUIO recyling by default.  This is a trick to save time in

@@ -353,6 +353,7 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("rcyclimitint", &ok_pub3_recycle_limit_int);
     t->lookup ("rcyclimitbt", &ok_pub3_recycle_limit_bindtab);
     t->lookup ("rcyclimitdict", &ok_pub3_recycle_limit_dict);
+    t->lookup ("rcyclimitslot", &ok_pub3_recycle_limit_slot);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);
@@ -377,6 +378,7 @@ oksrvc_t::init (int argc, char *argv[])
     pub3::get_int_recycler()->set_limit(ok_pub3_recycle_limit_int);
     pub3::get_bindtab_recycler()->set_limit(ok_pub3_recycle_limit_bindtab);
     pub3::get_dict_recycler()->set_limit(ok_pub3_recycle_limit_dict);
+    pub3::get_slot_recycler()->set_limit(ok_pub3_recycle_limit_slot);
 
     int tmp = 0;
     if (t->lookup ("clock", &tmp))
