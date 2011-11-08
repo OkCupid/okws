@@ -38,10 +38,10 @@
 #include "str.h"
 
 #if !defined(SFSLITE_AT_VERSION) 
-# error "Need sfslite patchlevel of 1.2.9.8 greater!"
+# error "Need sfslite patchlevel of 1.2.9.13 greater!"
 #else
-# if !SFSLITE_AT_VERSION(1,2,9,108)
-#  error "Need sfslite patchlevel of 1.2.9.8 greater!"
+# if !SFSLITE_AT_VERSION(1,2,9,113)
+#  error "Need sfslite patchlevel of 1.2.9.13 greater!"
 # endif
 #endif
 
