@@ -383,4 +383,26 @@ namespace rfn3 {
   
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  eval_location_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    pub3::obj_t o;
+    p->get_loc_stack ()->back ().pub (o);
+    return o.obj ();
+  }
+  
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  breadcrumb_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    const runloc_t &rl = p->get_loc_stack ()->back ();
+    str fn = rl.filename ();
+    int l = rl.lineno ();
+    strbuf b ("%s:%d", fn ? fn.cstr () : "<unknown>" , l);
+    return expr_str_t::alloc (b);
+  }
+
+  //-----------------------------------------------------------------------
+
 };

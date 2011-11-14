@@ -102,6 +102,8 @@ namespace rfn3 {
     F(sqrt);
     F(splice);
     F(index_of);
+    F(eval_location);
+    F(breadcrumb);
 
 #undef F
 
@@ -115,8 +117,8 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const char *version_str () { return "3.0.19"; }
-  u_int64_t version_int () { return 3000019; }
+  const char *version_str () { return "3.0.20"; }
+  u_int64_t version_int () { return 3000020; }
 
   //-----------------------------------------------------------------------
 };

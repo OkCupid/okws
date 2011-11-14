@@ -70,6 +70,8 @@ namespace rfn3 {
   PUB3_COMPILED_FN(bitwise_xor, "uu");
   PUB3_COMPILED_FN(index_of, "ss|i");
   PUB3_COMPILED_FN(cmp_float, "f");
+  PUB3_COMPILED_FN(eval_location, "");
+  PUB3_COMPILED_FN(breadcrumb, "");
 
   PUB3_FILTER(utf8_fix);
   PUB3_FILTER(strip);

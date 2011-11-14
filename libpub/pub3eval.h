@@ -215,7 +215,7 @@ namespace pub3 {
     ptr<ok_iface_t> pub_iface () { return _pub_iface; }
 
     void clear_me (ptr<expr_t> x) { _to_clear.push_back (x); }
-
+    const loc_stack_t *get_loc_stack () const { return &_stack; }
 
   protected:
     void clone_env ();
