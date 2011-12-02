@@ -87,7 +87,6 @@ okwsinclude_HEADERS = \
 	pub3cache.h \
 	pub3out.h \
 	pub3debug.h \
-	pub3debug.h \
 	pub3lib.h \
 	pub3eng.h \
 	pub3env.h \
