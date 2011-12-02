@@ -11,7 +11,7 @@ libahttp_la_SOURCES = cgi.C ahttp.C err.C resp.C suiolite.C ahutil.C abuf.C \
 
 libahttp_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
-okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h pair.h hdr.h inhdr.h \
+okwsinclude_HEADERS = okcgi.h ahttp.h httpconst.h abuf.h hdr.h \
 	aparse.h ahutil.h inhdr.h kmp.h mpfd.h pair.h resp.h recycle.h \
 	suiolite.h ahparse.h abuf_pipe.h mimetypes.h resp2.h okscratch.h
 
