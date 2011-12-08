@@ -238,15 +238,22 @@ bool
 cgi_t::extend_scratch ()
 {
   bool ret = false;
-  if (_maxlen > 0 && 
-      _maxlen > ssize_t (_scratch->len ()) && 
-      _maxlen <= ssize_t (ok_cgibuf_limit)) {
-    ptr<ok::scratch_handle_t> n = _scratch->grow (_maxlen);
-    if (n) {
-      ret = true;
-      _scratch = n;
-      endp = _scratch->end ();
-    }
+  ssize_t limit = _maxlen;
+  if (limit < 0 || limit > (ssize_t) ok_cgibuf_limit) { 
+    limit = ok_cgibuf_limit; 
+  }
+  if ((ssize_t) _scratch->len() >= limit) {
+    return ret;
+  }
+  ssize_t newlen = _scratch->len() * 2;
+  if (newlen > limit) { 
+    newlen = limit; 
+  }
+  ptr<ok::scratch_handle_t> n = _scratch->grow (newlen);
+  if (n) {
+    ret = true;
+    _scratch = n;
+    endp = _scratch->end ();
   }
   return ret;
 }
