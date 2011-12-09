@@ -149,9 +149,7 @@ OKWS is freely available under a GPL v2 license.
 
 
 ## Read More
-
-  * [[okws:Requirements]] for running OKWS
-  * OKWS's publishing language: [[okws::pub]].
+  * [Pub: OKWS's Publishing Language](https://github.com/maxtaco/okws/wiki/okws:pub)
   * [[okws::OldInstall|Instructions]] for //manually// installing OKWS.
   * How to [[okws:configure]] OKWS
   * Presentation on [[okws:NewFeatures3|new features in v3.0]].
