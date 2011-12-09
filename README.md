@@ -128,9 +128,9 @@ OKWS is freely available under a GPL v2 license.
 
 ## Academic Publications
 
-* /Building Secure High-Performance Web Services With OKWS/,
+* _Building Secure High-Performance Web Services With OKWS_,
   Maxwell Krohn, 
-  /Proceedings of the 2004 USENIX Annual Technical Conference/ 
+  _Proceedings of the 2004 USENIX Annual Technical Conference_ 
   [USENIX 2004](http://www.usenix.org/events/usenix04/),
   Boston, MA, June 2004. 
   [ [ps](http://pdos.lcs.mit.edu/~max/docs/okws.ps), 
