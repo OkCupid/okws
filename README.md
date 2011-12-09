@@ -142,9 +142,9 @@ OKWS is freely available under a GPL v2 license.
   in _Proceedings of the 2007 USENIX Annual Technical Conference_
   [USENIX 2004](http://www.usenix.org/events/usenix07/),
   San Jose, CA, June 2007. 
-  [ (ps)[http://pdos.lcs.mit.edu/~max/docs/tame.ps] | 
-    (ps.gz)[http://pdos.lcs.mit.edu/~max/docs/tame.ps.gz] | 
-    (pdf)[http://pdos.lcs.mit.edu/~max/docs/tame.pdf] ].
+  [ [ps](http://pdos.lcs.mit.edu/~max/docs/tame.ps) | 
+    [ps.gz](http://pdos.lcs.mit.edu/~max/docs/tame.ps.gz) | 
+    [pdf](http://pdos.lcs.mit.edu/~max/docs/tame.pdf) ].
 
 
 
