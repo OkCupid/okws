@@ -162,4 +162,5 @@ OKWS is freely available under a GPL v2 license.
   * Ian Rickard (Apple Darwin Patches)
   * Michael Walfish (various patches and fixes for API problems).
   * Benjie Chen
+  * OkCupid team, including Mike Nahas, Tom Quisel, Mike Maxim, Tom Jacques, and Eli Gwynn.
 
