@@ -146,21 +146,10 @@ OKWS is freely available under a GPL v2 license.
     [ps.gz](http://pdos.lcs.mit.edu/~max/docs/tame.ps.gz) | 
     [pdf](http://pdos.lcs.mit.edu/~max/docs/tame.pdf) ].
 
+## Our GitHub Wiki Documentation Center
 
-
-## Read More
-  * [Pub: OKWS's Publishing Language](https://github.com/maxtaco/okws/wiki/okws:pub)
-  * [[okws::OldInstall|Instructions]] for //manually// installing OKWS.
-  * How to [[okws:configure]] OKWS
-  * Presentation on [[okws:NewFeatures3|new features in v3.0]].
-  * [[okws:tutorial|Tutorial]] on building Web Services with OKWS.
-  * [[okws:features|Feature]] list: Why OKWS.
-  * [[okws:users|Web sites running OKWS]]
-  * [[okws:sponsorship|Sponsorship information]].
-  * [[okws:interal|Internal design documents]] and other ongoing development projects.
-  * [[okws:international|International Support]]
-  * Some info on [[okws:extending]] via runtime pub libraries.
-  * On [[sfslite:]] or the [[sfslite:overview|sfslite overview]].
+  * [Pub: OKWS's Publishing Language](https://github.com/maxtaco/okws/wiki/pub)
+  * [Install Instructions](https://github.com/maxtaco/okws/wiki/install)
 
 ## Active People
 
