@@ -137,7 +137,7 @@ OKWS is freely available under a GPL v2 license.
     [ps.gz](http://pdos.lcs.mit.edu/~max/docs/okws.ps.gz) |
     [pdf](http://pdos.lcs.mit.edu/~max/docs/okws.pdf) ].
 
-* _Events Can Make Sense_.  
+* _Events Can Make Sense_.
   Max Krohn, Eddie Kohler and M. Frans Kaashoek, 
   in _Proceedings of the 2007 USENIX Annual Technical Conference_
   [USENIX 2004](http://www.usenix.org/events/usenix07/),
