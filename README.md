@@ -1,5 +1,4 @@
-OKWS  -- The OK Web Server
-================================
+# OKWS  -- The OK Web Server
 
 OKWS is a Web server, specialized for building fast and secure Web
 services. It provides Web developers with a small set of tools that
@@ -15,8 +14,7 @@ As of 8 Dec 2011, OKWS is still being maintained and worked on, with
 feature-development plans on the horizon, but we're regularly
 committing bugfixes and extensions.
 
-News
-====
+## News
 
 **1 Dec 2011**
 
@@ -87,8 +85,7 @@ News
 
 **Summer 2010:** OKWS v3.1 released!
 
-A Better Architecture
-=====================
+## A Better Architecture
 
 The basic idea behind OKWS is that each Web service you write (such as
 ''search'' or ''newsletter-subscribe'') should run as a single
@@ -104,8 +101,7 @@ Programming in OKWS follows the single-threaded, event-driven
 model. No need to worry about the synchronization snafus that creep up
 when using multi-threaded or multi-process Web servers.
 
-Who Runs OKWS?
-============
+## Who Runs OKWS?
 
 Some example sites include:
 
@@ -113,12 +109,11 @@ Some example sites include:
 * [MovieMadness](http://www.movie-madness.org)
 * [Addgene Plasmid Repository](http://www.addgene.com)
 
-Platform Support
-================
+## Platform Support
+
 OKWS runs on most Unixes, and has been tested extensively on [[http://www.freebsd.org|FreeBSD]] and [[http://www.google.com/search?q=linux|Linux]].
 
-Software Tools
-==============
+## Software Tools
 
 Programming Web servers with SFS's [[sfslite:overview]] might seem at
 first seem onerous, mainly because it is.  As a result, the OKWS team
@@ -135,13 +130,13 @@ It's a simple C++-level rewriter that makes your event code look more
 like threaded coded.  I.e., you can make a sequence of serial blocking
 functions within one function body.
 
-Download
-=========
+## Download
+
 OKWS is freely available under a 
 [[http://www.gnu.org/copyleft/gpl.html|GPL v2]] license. 
 
-Read More
-=========
+## Read More
+
   * [[okws:Requirements]] for running OKWS
   * OKWS's publishing language: [[okws::pub]].
   * [[okws::OldInstall|Instructions]] for //manually// installing OKWS.
@@ -157,13 +152,13 @@ Read More
   * Some info on [[okws:extending]] via runtime pub libraries.
   * On [[sfslite:]] or the [[sfslite:overview|sfslite overview]].
 
-Active People
-=============
+## Active People
+
   * Max Krohn
   * David Koh
 
-Patch Contributors
-=================
+## Patch Contributors
+
   * Ben Hollenstein
   * Ian Rickard (Apple Darwin Patches)
   * Michael Walfish (various patches and fixes for API problems).
