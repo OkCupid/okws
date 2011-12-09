@@ -140,8 +140,8 @@ OKWS is freely available under a GPL v2 license.
 * _Events Can Make Sense_.
   Max Krohn, Eddie Kohler and M. Frans Kaashoek, 
   in _Proceedings of the 2007 USENIX Annual Technical Conference_
-  [USENIX 2004](http://www.usenix.org/events/usenix07/),
-  San Jose, CA, June 2007. 
+  [USENIX 2007](http://www.usenix.org/events/usenix07/),
+  Santa Clara, CA, June 2007. 
   [ [ps](http://pdos.lcs.mit.edu/~max/docs/tame.ps) | 
     [ps.gz](http://pdos.lcs.mit.edu/~max/docs/tame.ps.gz) | 
     [pdf](http://pdos.lcs.mit.edu/~max/docs/tame.pdf) ].
