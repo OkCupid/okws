@@ -111,29 +111,20 @@ Some example sites include:
 
 ## Platform Support
 
-OKWS runs on most Unixes, and has been tested extensively on [[http://www.freebsd.org|FreeBSD]] and [[http://www.google.com/search?q=linux|Linux]].
+OKWS runs on most Unixes, and has been tested extensively on FreeBSD and Linux.
 
 ## Software Tools
 
-Programming Web servers with SFS's [[sfslite:overview]] might seem at
-first seem onerous, mainly because it is.  As a result, the OKWS team
-has been developing several generic libasync tools to help
-programmers.  The first is a [[http://www.python.org|Python]]
-interface to the SFS core and RPC libraries, and a similar integration
-into OKWS.  For more information on how to install Python support,
-please see our directions for [[okws:installing]] OKWS along with
-Python tools.
-
-A new tool, that is entirely compatible with existing libasync-based
-code, is [[sfslite::tame2]], which we urge you to read more about.
-It's a simple C++-level rewriter that makes your event code look more
-like threaded coded.  I.e., you can make a sequence of serial blocking
-functions within one function body.
+Though OKWS is event-based at its core, A new tool, that is entirely
+compatible with existing libasync-based code, is [[sfslite::tame2]],
+which we urge you to read more about.  It's a simple C++-level
+rewriter that makes your event code look more like threaded coded.
+I.e., you can make a sequence of serial blocking functions within one
+function body.
 
 ## Download
 
-OKWS is freely available under a 
-[[http://www.gnu.org/copyleft/gpl.html|GPL v2]] license. 
+OKWS is freely available under a GPL v2 license.
 
 ## Read More
 
