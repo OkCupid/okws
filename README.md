@@ -126,6 +126,18 @@ function body.
 
 OKWS is freely available under a GPL v2 license.
 
+## Academic Publications
+
+* /Building Secure High-Performance Web Services With OKWS/,
+  Maxwell Krohn, 
+  /Proceedings of the 2004 USENIX Annual Technical Conference/ 
+  [USENIX 2004](http://www.usenix.org/events/usenix04/),
+  Boston, MA, June 2004. 
+  [ [ps](http://pdos.lcs.mit.edu/~max/docs/okws.ps), 
+    [ps.gz](http://pdos.lcs.mit.edu/~max/docs/okws.ps.gz),
+    [pdf](http://pdos.lcs.mit.edu/~max/docs/okws.pdf) ].
+
+
 ## Read More
 
   * [[okws:Requirements]] for running OKWS
@@ -139,7 +151,6 @@ OKWS is freely available under a GPL v2 license.
   * [[okws:sponsorship|Sponsorship information]].
   * [[okws:interal|Internal design documents]] and other ongoing development projects.
   * [[okws:international|International Support]]
-  * OKWS [[okws:publications]].
   * Some info on [[okws:extending]] via runtime pub libraries.
   * On [[sfslite:]] or the [[sfslite:overview|sfslite overview]].
 
