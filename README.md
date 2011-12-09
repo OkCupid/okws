@@ -109,9 +109,9 @@ Who Runs OKWS?
 
 Some example sites include:
 
-    * [OkCupid: Free Online Dating](http://www.okcupid.com)
-    * [MovieMadness](http://www.movie-madness.org)
-    * [Addgene Plasmid Repository](http://www.addgene.com)
+* [OkCupid: Free Online Dating](http://www.okcupid.com)
+* [MovieMadness](http://www.movie-madness.org)
+* [Addgene Plasmid Repository](http://www.addgene.com)
 
 Platform Support
 ================
