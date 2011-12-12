@@ -93,6 +93,7 @@ OKWS is freely available under a GPL v2 license.
 
   * Max Krohn
   * David Koh
+  * Eli Gwynn
 
 ## Patch Contributors
 
