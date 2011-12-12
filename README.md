@@ -20,7 +20,7 @@ committing bugfixes and extensions.
 
   * Move everything over to GitHub for primary project hosting!
 
-See our [News](NEWS.md) file for a fuller list of updates.
+See our [News](/okws/okws/blob/master/NEWS.md) file for a fuller list of updates.
 
 ## A Better Architecture
 
