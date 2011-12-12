@@ -148,8 +148,9 @@ OKWS is freely available under a GPL v2 license.
 
 ## Our GitHub Wiki Documentation Center
 
-  * [Pub: OKWS's Publishing Language](https://github.com/maxtaco/okws/wiki/pub)
-  * [Install Instructions](https://github.com/maxtaco/okws/wiki/install)
+  * [Pub: OKWS's Publishing Language](https://github.com/okws/okws/wiki/pub)
+  * [Install Instructions](https://github.com/okws/okws/wiki/install)
+  * [Wiki Table of Contents](https://github.com/okws/okws/wiki)
 
 ## Active People
 
