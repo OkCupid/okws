@@ -46,6 +46,7 @@ namespace rfn3 {
     F(values);
     F(keys);
     F(items);
+    F(remove);
     F(json2pub);
     F(now);
     F(days_from_now);
