@@ -1,7 +1,0 @@
-Makefile.in
-Makefile
-parse.cc
-parse.h
-scan.cc
-clone.C
-pub2.C

@@ -1,6 +1,0 @@
-
-OKWS 1.0
- - (See Wiki for new features: www.okws.org)
-* pre2 
- - Bug fix for templated method that should have been in ok.h, not
-   ok.T.  Was breaking compile of OkCupid cupid module. 

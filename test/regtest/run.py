@@ -77,7 +77,7 @@ def usage (rc):
       -v, --verbose
           Output debug information and so on
 
-      -e, --exaplain 
+      -e, --explain 
           don't run test case, just explain what it is
 
       -c <casedir>, --casedir=<dir>
