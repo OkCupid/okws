@@ -156,6 +156,22 @@ json_decoder_t::rpc_traverse (u_int64_t &obj)
 
 //-----------------------------------------------------------------------
 
+bool 
+json_decoder_t::rpc_traverse (double &obj) 
+{ 
+  double tmp;
+  bool ret = false;
+  if (is_empty ()) { error_empty ("double"); }
+  else if (!top ()->to_double (&tmp)) { error_wrong_type ("double", top ()); }
+  else {
+    ret = true;
+    obj = tmp;
+  }
+  return ret;
+}
+
+//-----------------------------------------------------------------------
+
 bool
 json_decoder_t::rpc_decode_opaque (str *s)
 {
@@ -489,6 +505,15 @@ bool
 json_encoder_t::rpc_traverse (u_int64_t &obj)
 {
   set_top (pub3::expr_uint_t::alloc (obj));
+  return true;
+}
+
+//-----------------------------------------------------------------------
+
+bool
+json_encoder_t::rpc_traverse (double &obj)
+{
+  set_top (pub3::expr_double_t::alloc (obj));
   return true;
 }
 
