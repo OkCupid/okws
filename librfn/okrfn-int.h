@@ -29,6 +29,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(values, "d");
   PUB3_COMPILED_FN(keys, "d");
   PUB3_COMPILED_FN(items, "d");
+  PUB3_COMPILED_FN(remove, "ds");
   PUB3_COMPILED_FN(json2pub, "s");
   PUB3_COMPILED_FN(now, "");
   PUB3_COMPILED_FN(time_format, "us");

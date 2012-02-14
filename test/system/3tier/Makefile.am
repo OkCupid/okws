@@ -30,8 +30,8 @@ tst2_prot.lo:	tst2_prot.C
 tst2.o:	      	tst2.C
 tst2.lo:	tst2.C
 tst2d.o:        tst2_prot.h
-stress.o:	stress.C
-stress.lo:	stress.C
+stress.o:	stress.C tst2_prot.h
+stress.lo:	stress.C tst2_prot.h
 
 #-----------------------------------------------------------------------
 

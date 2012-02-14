@@ -1115,6 +1115,8 @@ namespace pub3 {
     void insert (str k, int64_t i);
     void insert (str k, u_int64_t i);
 
+    void remove (str k) { bindtab_t::remove (k); };
+
     const char *get_obj_name () const { return "pub3::expr_dict_t"; }
     bool to_xdr (xpub3_expr_t *x) const;
     bool to_msgpack (msgpack::outbuf_t *x) const;

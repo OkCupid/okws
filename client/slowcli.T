@@ -90,7 +90,7 @@ client_t::read_resp (evi_t ev)
 {
   tvars {
     char buf[BUFSZ];
-    int rc (0);
+    int rc (0), wrc (0);
     int outfd (1);
   }
   make_sync (outfd);
@@ -103,7 +103,13 @@ client_t::read_resp (evi_t ev)
       fd = -1;
     } else if (rc > 0) {
       buf[rc] = 0;
-      write (outfd, buf, rc);
+      wrc = write (outfd, buf, rc);
+      if (wrc < 0) {
+          warn ("read_resp: write error: %m\n");
+      }
+      if (wrc < rc) {
+          warn ("read_resp: wrote only %d of %d bytes\n", wrc, rc);
+      }
     } else if (errno != EAGAIN) {
       warn ("read error: %m\n");
       rc = -1;

@@ -62,6 +62,18 @@ namespace rfn3 {
     return l;
   }
 
+ //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  remove_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<expr_dict_t> d = args[0]._d;
+    const str key = args[1]._s;
+    bool found = d->lookup(key);
+    d->remove(key);
+    return expr_bool_t::alloc(found);
+  }
+
   //-----------------------------------------------------------------------
   
   ptr<const expr_t>
