@@ -34,12 +34,10 @@ endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
 	post.T upload.T purify.T purify_lib.T forloop.T reflect.T \
-	objtest.T timer.T objtest2.T errortest.T slow.T encoder.T \
-	cpubomb.T
+	objtest.T timer.T objtest2.T errortest.T slow.T cpubomb.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
 	post.C upload.C purify.C purify_lib.C forloop.C reflect.C \
-	objtest.C timer.C objtest2.C errortest.C slow.C encoder.T \
-	cpubomb.C
+	objtest.C timer.C objtest2.C errortest.C slow.C cpubomb.C
 
 SUBDIRS = $(XML_SUBDIRS) 3tier
 

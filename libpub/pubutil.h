@@ -49,6 +49,20 @@ void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
 int nfs_safe_stat (const char *f, struct stat *sb);
 inline time_t okwstime () { return sfs_get_timenow(); }
+inline double okwstsnow ()
+{
+    timespec ts = sfs_get_tsnow();
+    double d = 1000000000;
+    return ts.tv_sec + ts.tv_nsec / d;
+}
+inline time_t okwsmstime ()
+{
+    timespec ts        = sfs_get_tsnow();
+    double   ms_to_us  = 1000000;
+    int      sec_to_ms = 1000;
+    time_t   t         = time_t(ts.tv_sec * sec_to_ms + ts.tv_nsec / ms_to_us);
+    return t;
+}
 str errcode2str (const xpub_status_t &e);
 bool to_hostname_and_port (const str &in, str *out, int *port);
 str html_wss (str in);

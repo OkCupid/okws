@@ -5,6 +5,20 @@
 #
 #	 -f -i -s
 
+
+if [ ! -d m4 ]
+then
+   mkdir m4
+fi
+
+for f in README NEWS
+do
+  if [ ! -f $f ]
+  then
+    touch $f
+  fi
+done
+
 ACSFS=acsfs.m4
 if test ! -f $ACSFS
 then

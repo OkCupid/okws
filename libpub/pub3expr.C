@@ -356,12 +356,27 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<expr_t> expr_cow_t::copy () const
-  { return New refcounted<expr_cow_t> (*this); }
-  ptr<expr_t> expr_cow_t::deep_copy () const
-  { return New refcounted<expr_cow_t> (*this); }
-  ptr<expr_t> expr_cow_t::cow_copy () const
-  { return New refcounted<expr_cow_t> (*this); }
+  ptr<expr_t> expr_cow_t::copy () const { 
+    ptr<expr_cow_t> new_cow = New refcounted<expr_cow_t> (*this); 
+
+    // DK: The new copy should consider itself to be in the 'orig' state so
+    // that expr_cow_t objects which are copied more than once do not
+    // incorrectly point to the same object.
+    //
+    // Example: COW object A is copied to object B, then modified, setting the
+    // _copy field in B.  COW object B is then copied to object C.  If object C
+    // is now modified, object B would also see the changes without this fix.
+    // With the fix, object C instead correctly copies itself again before
+    // being modified.
+    if (new_cow->_orig == NULL) {
+      assert (_copy);
+      new_cow->_orig = new_cow->_copy;
+      new_cow->_copy = NULL;
+    }
+    return new_cow;
+  }
+  ptr<expr_t> expr_cow_t::deep_copy () const { return copy(); }
+  ptr<expr_t> expr_cow_t::cow_copy () const { return copy(); }
 
   //-----------------------------------------------------------------------
   
