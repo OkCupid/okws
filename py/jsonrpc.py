@@ -400,7 +400,7 @@ class Client:
         packet.decode ()
 
         if packet.xid != xid:
-            raise Error, "bad xid (%d != %d)" % (xid, xid_in)
+            raise Error, "bad xid (%d != %d)" % (xid, packet.xid)
         if packet.mtype != rpc_msg.REPLY:
             raise Error, "expected reply bit, got %d" % reply
         if packet.stat != rpc_msg.SUCCESS:
