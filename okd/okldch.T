@@ -30,6 +30,9 @@
 #include "ok_adebug.h"
 #include "okprot.h"
 
+#include <limits.h>
+#include <stdlib.h>
+
 extern char ** environ;
 
 //-----------------------------------------------------------------------
@@ -278,6 +281,21 @@ okld_ch_cluster_t::spawn_proc (okld_ch_t *ch, int logfd, int pubfd)
 
   // the first argument to aspawn ()...
   report_exe = service_exe = exe = get_execpath ();
+
+  if (okld()->get_config_resolve_bins()) {
+      char real_exe[PATH_MAX];
+      if (realpath(exe, real_exe)) {
+          if (exe != real_exe) {
+               OKDBG4(OKD_STARTUP, CHATTER, "Resolved executable [%s] to [%s]\n",
+                       exe.cstr(), real_exe);
+          }
+
+          exe = real_exe;
+      }
+      else {
+          okdbg_warn (ERROR, "Can't get real path for binary [%s]: %m\n", exe.cstr());
+      }
+  }
   
   if ((i = get_interpreter ())) {
     exe = i;

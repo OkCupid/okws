@@ -514,6 +514,8 @@ public:
   const vec<time_t> &bind_reattempt_schedule () const 
   { return _bind_reattempt_schedule; }
 
+  bool get_config_resolve_bins () { return _config_resolve_bins; }
+
 protected:
   bool parse_file (const str &fn);
   bool post_config (const str &fn);
@@ -624,6 +626,8 @@ private:
   str _bind_reattempt_schedule_str;
   vec<time_t> _bind_reattempt_schedule;
   bool _emerg_kill;
+
+  bool _config_resolve_bins;
 };
 
 //=======================================================================

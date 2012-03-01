@@ -839,6 +839,8 @@ okld_t::parse_file (const str &cf)
     .add ("Pub3RecycleLimitDict", &ok_pub3_recycle_limit_dict, 0, INT_MAX)
     .add ("Pub3RecycleLimitSlot", &ok_pub3_recycle_limit_slot, 0, INT_MAX)
 
+    .add ("ResolveBinaryPaths", &_config_resolve_bins)
+
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
     .ignore ("StatPageURL")
@@ -2360,7 +2362,8 @@ okld_t::okld_t ()
     _coredump_mode (ok_coredump_mode),
     _aggressive_svc_restart (false),
     _die_on_logd_crash (false),
-    _emerg_kill (false) {}
+    _emerg_kill (false),
+    _config_resolve_bins (false) {}
 
 //-----------------------------------------------------------------------
 
