@@ -405,6 +405,7 @@ sth_parsed_t::execute2 (MYSQL_BIND *dummy, mybind_param_t **aarr, u_int n)
     err = strbuf("cannot prepare query: wrong number of "
 		 "input parameters (n = ") 
 		   << n << ", n_iparam = " << n_iparam << ")";
+    last_qry = qry;
     return false;
   }
   str q = make_query (aarr, n);
