@@ -208,6 +208,20 @@ namespace amt {
     void reply_b (bool b);
     void reply_i32 (int32_t i);
     void reply_u32 (u_int32_t u);
+
+    template<class T> void replyref (const T &res)
+    {
+      ptr<T> arg = New refcounted<T>(res);
+      reply (arg);
+    }
+    void replyref (const bool res)
+    { reply_b (res); }
+    void replyref (const int32_t res)
+    { reply_i32 (res); }
+    void replyref (const u_int32_t res)
+    { reply_u32 (res); }
+
+
     const void *getvoidarg () const;
     void *getvoidarg ();
 
