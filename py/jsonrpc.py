@@ -8,7 +8,8 @@
 import random
 import socket
 import struct
-import json
+try: import simplejson as json
+except ImportError: import json
 import time
 
 ##-----------------------------------------------------------------------
