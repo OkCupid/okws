@@ -61,7 +61,8 @@ namespace okssl {
 	_accept_enabled (false),
 	_timeout (ok_ssl_timeout),
 	_debug_startup (false),
-	_logd (NULL) {}
+	_logd (NULL),
+    _cipher_order(false) {}
 
     bool parseopt (int argc, char *argv[]);
 
@@ -108,6 +109,7 @@ namespace okssl {
     u_int _timeout;
     bool _debug_startup;
     fast_log_t *_logd;
+    bool _cipher_order;
   };
 
   //-----------------------------------------------------------------------
@@ -518,6 +520,8 @@ namespace okssl {
     } else {
       SSL_CTX_set_quiet_shutdown (_ssl_ctx, 1);
       SSL_CTX_sess_set_cache_size(_ssl_ctx, 0x1000);
+      if (_cipher_order)
+          SSL_CTX_set_options(_ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
       ret = true;
     }
     if (!ret) 
@@ -625,7 +629,7 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "Dm:c:k:u:g:d:l:t:p:j:n:L:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "ODm:c:k:u:g:d:l:t:p:j:n:L:")) != -1) {
       switch (ch) {
       case 'j':
 	_jaildir = optarg;
@@ -677,6 +681,9 @@ namespace okssl {
 	break;
       case 'L':
 	_cipher_list = optarg;
+    break;
+      case 'O':
+    _cipher_order = true;
 	break;
       case 'p':
 	{

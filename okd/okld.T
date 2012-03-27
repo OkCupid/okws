@@ -831,6 +831,7 @@ okld_t::parse_file (const str &cf)
     .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
     .add ("EmergencyKillEnabled", &_emerg_kill)
     .add ("SSLCipherList", &_okssl._cipher_list)
+    .add ("SSLHonorCipherOrder", &_okssl._cipher_order)
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
     .add ("GzipErrorPages", &ok_gzip_error_pages)
@@ -1513,6 +1514,9 @@ okld_t::launch_okssl (evb_t ev)
 	argv.push_back (cl);
       }
 
+      if (_okssl.cipher_order ()) {
+        argv.push_back("-O");
+      }
       _okssl.argv () += argv;
 
       if (_okssl.launch ()) {
@@ -2205,6 +2209,13 @@ okld_helper_ssl_t::cipher_list () const
     ret = _cipher_list;
   }
   return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+bool
+okld_helper_ssl_t::cipher_order () const {
+    return _cipher_order;
 }
 
 //-----------------------------------------------------------------------

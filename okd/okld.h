@@ -117,15 +117,18 @@ public:
   str _certfile, _keyfile, _chainfile;
   u_int _timeout;
   str _cipher_list;
+  bool _cipher_order;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
   str chainfile_resolved () const { return _chainfile_resolved; }
   str cipher_list () const;
+  bool cipher_order() const;
 private:
   str resolve (const str &in, const char *which) const;
   vec<okws1_port_t> _ports;
   str _certfile_resolved, _keyfile_resolved, _chainfile_resolved;
+
 };
 
 //=======================================================================
