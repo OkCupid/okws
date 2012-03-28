@@ -505,11 +505,11 @@ namespace okssl {
     if (0 != (where & SSL_CB_HANDSHAKE_START)) {
       ssl_to_std_proxy_t* prx = static_cast<ssl_to_std_proxy_t*> 
 	SSL_get_app_data(ssl);
-      prx->renegotiate();
+      if (prx) prx->renegotiate();
     } else if (0 != (where & SSL_CB_HANDSHAKE_DONE)) {
       ssl_to_std_proxy_t* prx = static_cast<ssl_to_std_proxy_t*> 
 	SSL_get_app_data(ssl);
-      if (!prx->allow_cli_renog())
+      if (prx && !prx->allow_cli_renog())
 	ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
     }
   }
