@@ -196,7 +196,8 @@ namespace okssl {
 	_prx[1] = New refcounted<std_to_ssl_proxy_t> (_ssl);
 
 	// MM: Set app data so we can track this thing
-	SSL_set_app_data(_ssl, _handshaker.p);
+	ssl_to_std_proxy_t* phs = _handshaker;
+	SSL_set_app_data(_ssl, phs);
 
 	for (size_t i = 0; i < 2; i++) {
 	  if (OKDBG2(SSL_PROXY)) {
