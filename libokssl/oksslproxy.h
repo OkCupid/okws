@@ -59,19 +59,25 @@ namespace okssl {
   
   class ssl_to_std_proxy_t : public base_proxy_t {
   public:
-    ssl_to_std_proxy_t (SSL *ssl, ssize_t sz = -1)
+    ssl_to_std_proxy_t (SSL *ssl, bool cli_renog, ssize_t sz = -1)
       : base_proxy_t (ssl, "ssl->std", sz),
-	_force_read (false) {}
+	_force_read (false), _renegotiations(0), 
+	_cli_renog(cli_renog) {}
     
     ~ssl_to_std_proxy_t () {}
     void force_read () { _force_read = true; poke (); }
     void set_handshake_ev (evv_t::ptr ev) { _handshake_ev = ev; }
+
+    void renegotiate() { _renegotiations++; }
+    bool allow_cli_renog() const { return _cli_renog; }
     
   protected:
     bool is_readable () const;
     int v_read (int fd);
     bool _force_read;
     evv_t::ptr _handshake_ev;
+    int _renegotiations;
+    bool _cli_renog;
   };
   
   //=======================================================================
@@ -86,11 +92,12 @@ namespace okssl {
   public:
     proxy_t (u_int debug_level = 0) ;
     ~proxy_t () ;
-    bool init (SSL_CTX *ctx, int encfd, int plainfd);
+    bool init (SSL_CTX *ctx, int encfd, int plainfd, bool cli_renog);
     void start (evb_t ev, CLOSURE);
     void finish (evv_t ev, CLOSURE);
     str cipher_info () const;
     void cancel ();
+
   private:
     bool init_ssl_connection (int , SSL *);
     SSL *_ssl;

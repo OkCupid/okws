@@ -46,7 +46,7 @@ namespace okssl {
       rc = SSL_accept (_ssl);
       doing_accept = true;
     } else {
-     
+
       if (_handshake_ev) {
 	evv_t::ptr ev = _handshake_ev;
 	_handshake_ev = NULL;
@@ -56,6 +56,14 @@ namespace okssl {
       ssize_t sz = room_left ();
       assert (sz > 0 || _force_read);
       rc = SSL_read (_ssl, buf, min<ssize_t> (sz, BUFSZ));
+
+      // MM: Don't let clients renegotiate if the option is set to 
+      // prevent a DoS threat
+      if (!_cli_renog && _renegotiations > 1) {
+	ssl_complain ("SSL_read: error: SSL client renegotiation\n");
+	return 0;
+      }
+
       if (_force_read)
 	_force_read = false;
       doing_accept = false;
@@ -164,7 +172,7 @@ namespace okssl {
   //-----------------------------------------------------------------------
 
   bool
-  proxy_t::init (SSL_CTX *ctx, int encfd, int plainfd)
+  proxy_t::init (SSL_CTX *ctx, int encfd, int plainfd, bool cli_renog)
   {
     bool ret = false;
     if (!ctx) {
@@ -183,10 +191,13 @@ namespace okssl {
 	warn << "Failed to initalized SSL on given FD\n";
       } else {
 
-	_handshaker = New refcounted<ssl_to_std_proxy_t> (_ssl);
+	_handshaker = New refcounted<ssl_to_std_proxy_t>(_ssl, cli_renog);
 	_prx[0] = _handshaker;
 	_prx[1] = New refcounted<std_to_ssl_proxy_t> (_ssl);
-	
+
+	// MM: Set app data so we can track this thing
+	SSL_set_app_data(_ssl, _handshaker.p);
+
 	for (size_t i = 0; i < 2; i++) {
 	  if (OKDBG2(SSL_PROXY)) {
 	    _prx[i]->set_debug_level (2);
@@ -289,6 +300,7 @@ namespace okssl {
     if (_encfd >= 0) close (_encfd);
     if (_encfd >= 0) close (_plainfd);
     if (_ssl) SSL_free (_ssl);
+    if (_handshaker) { _handshaker = NULL; }
   }
 
   //-----------------------------------------------------------------------

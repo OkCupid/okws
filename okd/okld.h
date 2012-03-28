@@ -118,6 +118,7 @@ public:
   u_int _timeout;
   str _cipher_list;
   bool _cipher_order;
+  bool _cli_renog;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
