@@ -137,7 +137,13 @@ public:
   cgiw_t &operator= (cgi_t *cc) { c = cc; return *this; }
   operator cgi_t *() const { return c; }
   inline str operator[] (const str &k) const { return (*c)[k]; }
+
+  // It's there and it's not the empty string: p=0 is true, p= is not
   inline bool exists (const str &k) const { return c->exists (k); }
+  
+  // It's there, and it's possibly the empty string: p=0 is true, p= is true
+  inline bool strict_exists(const str &k) const { return c->strict_exists(k); }
+
   inline bool lookup (const str &k, str *r) const { return c->lookup (k,r); }
   inline bool blookup (const str &k) const { return c->blookup (k); }
   inline vec<int64_t> *ivlookup (const str &k) const { return c->ivlookup (k);}
@@ -147,6 +153,8 @@ public:
   { return c->lookup (k, v); }
   template<typename T> bool lookup (const str &k, T *v) const
   { return c->lookup (k, v); }
+  template<> bool lookup (const str &k, double *d) const 
+  { return c->lookup (k, d); }
   template<typename T> cgiw_t & insert (const str &k, T v, bool ap = true) 
   { c->insert (k, v, ap); return (*this); }
   cgi_t *cgi () const { return c; }
