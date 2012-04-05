@@ -153,8 +153,8 @@ public:
   { return c->lookup (k, v); }
   template<typename T> bool lookup (const str &k, T *v) const
   { return c->lookup (k, v); }
-  template<> bool lookup (const str &k, double *d) const 
-  { return c->lookup (k, d); }
+  bool lookup (const str &k, double *d) const { return c->lookup (k, d); }
+  bool lookup (const str &k, float *f) const { return c->lookup (k, f); }
   template<typename T> cgiw_t & insert (const str &k, T v, bool ap = true) 
   { c->insert (k, v, ap); return (*this); }
   cgi_t *cgi () const { return c; }

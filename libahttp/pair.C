@@ -149,14 +149,13 @@ bool
 pair_t::to_double (double *dp) const 
 {
   bool ret = false;
-  if (!p || p->vals.size() == 0) { /* noop */ }
-  else {
-    const char *start = p->vals[0].cstr ();
+  if (vals.size() > 0) {
+    const char *start = vals[0].cstr ();
     char *ep = NULL;
     double d = strtod(start, &ep);
     if (ep && *ep == '\0') {
       ret = true;
-      *dbp = d;
+      *dp = d;
     }
   }
   return ret;
