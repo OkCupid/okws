@@ -34,22 +34,25 @@ endif
 
 TAMEIN = configtest.T simple.T xmlex.T static.T form.T cookie.T \
 	post.T upload.T purify.T purify_lib.T forloop.T reflect.T \
-	objtest.T timer.T objtest2.T errortest.T slow.T cpubomb.T
+	objtest.T timer.T objtest2.T errortest.T slow.T cpubomb.T \
+	double.T
 TAMEOUT = configtest.C simple.C xmlex.C static.C form.C cookie.C \
 	post.C upload.C purify.C purify_lib.C forloop.C reflect.C \
-	objtest.C timer.C objtest2.C errortest.C slow.C cpubomb.C
+	objtest.C timer.C objtest2.C errortest.C slow.C cpubomb.C \
+	double.C
 
 SUBDIRS = $(XML_SUBDIRS) 3tier
 
 okwssvc_PROGRAMS = static configtest simple form cookie \
 	post upload $(XMLPROGS) posttest forloop reflect objtest \
-	timer objtest2 errortest slow encoder cpubomb
+	timer objtest2 errortest slow encoder cpubomb double
 
 okwsconf_DATA = okws.crt.dist okws.key.dist
 
 static_SOURCES = static.C okclib.C
 configtest_SOURCES = configtest.C
 simple_SOURCES = simple.C
+double_SOURCES = double.C
 form_SOURCES = form.C
 post_SOURCES = post.C
 cookie_SOURCES = cookie.C

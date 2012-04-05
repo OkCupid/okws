@@ -31,6 +31,7 @@ Alias		/static		/
 
 Service		configtest 	/configtest
 Service		simple	/simple
+Service		double /double
 Service		pub1tst /pub1tst
 Service		form	/form
 Service 	cookie -n3 /cookie
