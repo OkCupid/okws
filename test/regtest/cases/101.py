@@ -12,10 +12,8 @@ def fetch (tc, args):
     """A shortcut for fetching from the encoder service running on OKWS."""
     url = tc._config.url ("encoder")
     query = urllib.urlencode ( args )
-    print "XXX %s" % (url + "?" + query)
     resp = ''.join (urllib.urlopen (url + "?" + query))
     obj = json.loads (resp)
-    print "YYYY %s" % obj
     return obj["data"]
 
 def run (tc, codes):
