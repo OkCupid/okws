@@ -155,7 +155,7 @@ if test "$with_mysql" != "no"; then
 	AC_CACHE_CHECK(for mysql.h, sfs_cv_mysql_h,
 	[for dir in " " $dirs; do
 		case $dir in
-			" ") iflags="-I" ;;
+			" ") iflags=" " ;;
 			*) iflags="-I${dir}" ;;
 		esac
 		CFLAGS="${ac_save_CFLAGS} $iflags"
