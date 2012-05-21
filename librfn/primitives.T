@@ -131,6 +131,21 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  uint_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const pub3::expr_t> e = args[0]._O;
+    uint64_t i = 0;
+    double d;
+    if (!e) { /* nothing */ }
+    else if (e->to_double (&d)) { i = uint64_t (d); }
+    else if (e->to_uint (&i)) { /* great! */ }
+    else { /* no dice! */ }
+    return expr_uint_t::alloc (i);
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   str_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const pub3::expr_t> e = args[0]._O;

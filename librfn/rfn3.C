@@ -61,6 +61,7 @@ namespace rfn3 {
     F(dump_env);
     F(contains);
     F(int);
+    F(uint);
     F(round);
     F(cmp_float);
     F(ceil);
