@@ -37,6 +37,33 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  const str toupper_t::DOCUMENTATION =
+    "Convert all alpha characters in //s// to uppercase";
+
+  const str tolower_t::DOCUMENTATION =
+    "Convert all alpha characters in //s// to lowercase";
+
+  const str html_escape_t::DOCUMENTATION =
+    "HTML escapes these chars: & < >";
+
+  const str url_escape_t::DOCUMENTATION =
+    "Produce a URL-encoded version of the string //s//";
+
+  const str url_unescape_t::DOCUMENTATION =
+    "Take a URL-escaped string //s// and return the unescaping of it.";
+
+  const str utf8_fix_t::DOCUMENTATION =
+    "Strips out any malformed UTF-8 characters from //s// "
+    "and returns the fixed string.";
+
+  const str hidden_escape_t::DOCUMENTATION =
+    "HTML escapes these chars: \' \" & < >";
+
+  const str wss_filter_t::DOCUMENTATION =
+    "compacts multiple adjacent whitespace characters into one";
+
+  //------------------------------------------------------------
+
   ptr<const expr_t>
   tag_escape_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -69,6 +96,11 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  const str tag_escape_t::DOCUMENTATION =
+    "Escape all tags except for <b>, <i>, <br> and <p>.";
+
+  //------------------------------------------------------------
+
   ptr<const expr_t>
   substr_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -86,6 +118,12 @@ namespace rfn3 {
     str r = utf8_substr (s, start, len);
     return expr_str_t::safe_alloc (r);
   }
+
+  //------------------------------------------------------------
+
+  const str substr_t::DOCUMENTATION =
+    "Output a substring of //s//, starting at "
+    "character //start// and //len// bytes long.";
 
   //------------------------------------------------------------
 
@@ -154,6 +192,14 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  const str default_t::DOCUMENTATION =
+    "Given the input value //in//, check to see if it's "
+    "//null.//  If //null//, then output //val//, outherwise, output //in//. "
+    "If //val// wasn't specified and //in// is null, then output the empty "
+    "string ''";
+
+  //------------------------------------------------------------
+
   static bool
   is_empty (const char *s)
   {
@@ -184,6 +230,12 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  const str strip_t::DOCUMENTATION =
+    "Strips leading, trailing spaces and reduce in-between "
+    "spaces to just one space";
+
+  //------------------------------------------------------------
+
   str sha1_t::filter (str s) 
   {
     char buf[sha1::hashsize];
@@ -192,6 +244,12 @@ namespace rfn3 {
     b << hexdump (buf, sha1::hashsize);
     return b;
   }
+
+  //------------------------------------------------------------
+
+  const str sha1_t::DOCUMENTATION =
+     "Produce the SHA-1 hash of //s//, outputting a "
+      "hexidecimal-encoded digest.";
 
   //------------------------------------------------------------
 
@@ -205,6 +263,12 @@ namespace rfn3 {
     snprintf (buf, BUFSZ, fmt.cstr (), d);
     return expr_str_t::alloc (buf);
   }
+
+  //------------------------------------------------------------
+
+  const str format_float_t::DOCUMENTATION =
+    "Format the float //val// accoring to the given sprintf-style "
+    "format string //fmt//.";
 
   //------------------------------------------------------------
 
@@ -222,6 +286,12 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
+  const str format_int_t::DOCUMENTATION =
+    "Format the int //val// accoring to the given sprintf-style "
+    "format string //fmt//.";
+
+  //------------------------------------------------------------
+
   ptr<const expr_t>
   json_escape_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -229,6 +299,11 @@ namespace rfn3 {
     str ret = json_escape (s, true, p->utf8_json ());
     return expr_str_t::alloc (ret);
   }
+
+  //------------------------------------------------------------
+
+  const str json_escape_t::DOCUMENTATION =
+    "Escapes all double-quotes, backslashes, newlines and tabs.";
 
   //------------------------------------------------------------
 

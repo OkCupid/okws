@@ -27,6 +27,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str values_t::DOCUMENTATION = "Returns a list of keys in a dictionary";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   keys_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -39,6 +43,10 @@ namespace rfn3 {
     }
     return l;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str keys_t::DOCUMENTATION = "Returns a list of keys in a dictionary";
 
   //-----------------------------------------------------------------------
 
@@ -64,6 +72,13 @@ namespace rfn3 {
 
  //-----------------------------------------------------------------------
 
+ const str items_t::DOCUMENTATION =
+    "Return the list of items in the dictionary. Each "
+    "item is represented as a list of 2 elemenents, the first being the "
+    "key and the second being the value.";
+
+ //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   remove_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -84,6 +99,11 @@ namespace rfn3 {
     ret = json_parser_t::parse (s);
     return ret;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str json2pub_t::DOCUMENTATION =
+    "Converts a string into a JSON-encoded object";
 
   //-----------------------------------------------------------------------
 

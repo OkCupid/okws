@@ -48,6 +48,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str isnull_t::DOCUMENTATION =
+    "Output //True// if //o// is //null// and false otherwise.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   len_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -63,6 +68,14 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str len_t::DOCUMENTATION =
+    "Given an input object //o//, returns its length. "
+    "If //o// is a string, return the length of //s//.  If it is a list, "
+    "return the number of elements in the list.  If it is a dictionary, "
+    "return the number of bound pairs in the dictionary.";
+  
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   type_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -75,6 +88,11 @@ namespace rfn3 {
     }
     return expr_str_t::alloc (ret);
   }
+  //-----------------------------------------------------------------------
+
+  const str type_t::DOCUMENTATION =
+    "Given object //o//, output its type. Possible values are undef, list, "
+    "str, dict.";
 
   //-----------------------------------------------------------------------
 
@@ -83,6 +101,11 @@ namespace rfn3 {
   {
     return expr_str_t::alloc (version_str ());
   }
+
+  //------------------------------------------------------------------------
+
+  const str version_str_t::DOCUMENTATION =
+    "Output the version of this rfn3 library in dotted string notation.";
 
   //-----------------------------------------------------------------------
 
@@ -94,9 +117,19 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str version_int_t::DOCUMENTATION =
+    "Output the version of this rfn3 library in integer representation.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   okws_version_str_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   { return expr_str_t::alloc (okws_version_str ()); }
+
+  //-----------------------------------------------------------------------
+
+  const str okws_version_str_t::DOCUMENTATION =
+    "Output the version of this OKWS instance in dotted string notation.";
 
   //-----------------------------------------------------------------------
 
@@ -106,12 +139,22 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str okws_version_int_t::DOCUMENTATION =
+    "Output the version of this OKWS instance in integer representation.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   dump_env_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<expr_list_t> l = p->env ()->to_list ();
     return l;
   }
+
+  //-------------------------------------------------------------------
+
+  const str dump_env_t::DOCUMENTATION =
+    "Return a dump of the environment; useful for debugging purposes.";
 
   //-----------------------------------------------------------------------
 
@@ -127,6 +170,12 @@ namespace rfn3 {
     else { /* no dice! */ }
     return expr_int_t::alloc (i);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str int_t::DOCUMENTATION =
+    "Coerces the object //o// into an integer, if at all possible.  Returns 0 "
+    "on failure and the conversion otherwise.";
 
   //-----------------------------------------------------------------------
 
@@ -146,6 +195,23 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  documentation_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    ptr<const pub3::expr_t> e = args[0]._O;
+    // Not really sure why this can be null but
+    // str_t::v_eval_2 below handles that case. Might as well stray on the safe
+    // side.
+    const str *s = e? e->documentation() : NULL;
+    if (s) {
+      return expr_str_t::safe_alloc (*s);
+    } else {
+      return expr_null_t::alloc ();
+    }
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   str_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     ptr<const pub3::expr_t> e = args[0]._O;
@@ -153,6 +219,11 @@ namespace rfn3 {
     if (e) s = e->to_str (false);
     return expr_str_t::safe_alloc (s);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str str_t::DOCUMENTATION =
+    "Return the stringified version of the object //o//.";
 
   //-----------------------------------------------------------------------
 
@@ -179,6 +250,13 @@ namespace rfn3 {
     return ret;
   }
 
+   //-----------------------------------------------------------------------
+
+  const str logwarn_t::DOCUMENTATION =
+    "Output the string //s// as an error to the log (not to "
+    "the page); prefix with okws-pub3[logwarn] if the specified flag is true "
+    "(and it is true by default).";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -190,6 +268,12 @@ namespace rfn3 {
     report_error (p, s);
     return ret;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str warn_t::DOCUMENTATION =
+     "Output the string //s// as an error, both to the page "
+     "and to the log.";
 
   //-----------------------------------------------------------------------
 
@@ -205,6 +289,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str warn_trace_t::DOCUMENTATION =
+       "Output the string //s// and the current include "
+       "stacktrace as an error, both to the page and to the log.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   internal_dump_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -217,12 +307,23 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str internal_dump_t::DOCUMENTATION =
+            "Return the okws-pub3 internals of the object //o//";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   enable_wss_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     bool ret = p->out ()->enable_wss (args[0]._b);
     return expr_bool_t::alloc (ret);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str enable_wss_t::DOCUMENTATION =
+    "Set white-space-stripping mode to //b//, either "
+    "enabling it or disabled it.  WSS is off by default.";
 
   //-----------------------------------------------------------------------
 
@@ -270,6 +371,14 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str bind_t::DOCUMENTATION =
+    "Bind the object //obj// to the key //key// in the "
+    "environment. If //scope// is not specified, make it a local binding. "
+    "Otherwise, can specify the scope explicitly: 'l' for 'local', 'g' for "
+    "'global', or 'u' for 'universals.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   unbind_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -291,11 +400,24 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str unbind_t::DOCUMENTATION =
+    "Unbind the variable //var// from the environment. "
+    "If //scope// is not specified, then assume first found binding.  Can "
+    "explicitly specify 'l' for 'local', 'g' for 'global', or 'u' "
+    "for 'universals'.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   copy_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     return args[0]._O->copy ();
   }
+
+  //-----------------------------------------------------------------------
+
+  const str copy_t::DOCUMENTATION =
+    "Return a copy of the input object //o//.";
 
   //-----------------------------------------------------------------------
 
@@ -395,7 +517,15 @@ namespace rfn3 {
     if (r) { out = r->get_value (); }
     return out;
   }
-  
+
+  //-----------------------------------------------------------------------
+
+  const str lookup_t::DOCUMENTATION =
+    "Lookup the key //k// in the environment. "
+    "If no //scope// is specified, find the first natural result. "
+    "Otherwise, limit the search to the scope given by //scope//. "
+    "See //unbind// or //bind// for how to specify scope.";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -419,5 +549,26 @@ namespace rfn3 {
   }
 
   //-----------------------------------------------------------------------
+
+  const str match_t::DOCUMENTATION =
+    "Given a regex //r// and a string //s//, return //true// "
+    "if //r// matches the **whole** string //s// and //false// otherwise.";
+
+  //-----------------------------------------------------------------------
+
+  const str search_t::DOCUMENTATION =
+    "Given a regex //r// and a string //s//, split //s// into "
+    "a list of strings, akin to the Python function 'split'.  Return a list "
+    "of strings.";
+
+  //-----------------------------------------------------------------------
+
+  const str replace_t::DOCUMENTATION =
+    "In the string //body//, find all occurrence of "
+    "the regular expression //pat// and replace with the string //repl//, "
+    "or the output of the lambda //repl//.  By default, a string //repl// "
+    "can contain Perl-like capture groups (e.g., '<b>$0</b>'), but if you "
+    "don't want that, pass a fourth optional parameter //use_captures// "
+    "as //false//.";
 
 };

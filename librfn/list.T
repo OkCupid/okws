@@ -25,6 +25,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str enumerate_t::DOCUMENTATION =
+    "Given a list //l//, output a list of lists, "
+    "in which the //i//th element is the pair [//i//, //l//[//i//] ]";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   randsel_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -35,6 +41,13 @@ namespace rfn3 {
     out->push_back (expr_int_t::alloc (i));
     return out;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str randsel_t::DOCUMENTATION =
+    "Select a random element from the list //l//.  Return "
+    "a tuple, with the element in the 0th slot, and the index of the element "
+    "in the 1st slot.  Don't modify the list.";
 
   //-----------------------------------------------------------------------
 
@@ -66,6 +79,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str decorate_t::DOCUMENTATION =
+    "Given a list of dictionaries //l//, annotate each "
+    "row in the dictionary with a //first//, //last//, //iter//, //even// "
+    "and //odd// field.  This is mainly a holdover from a previous OKWS.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   range_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -79,6 +99,14 @@ namespace rfn3 {
     }
     return el;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str range_t::DOCUMENTATION =
+    "If called with one argument (//a1//), output a integers "
+    "in [0,//a1//). If called with two arguments (//a1// and //a2//), output "
+    "a list of integers in [//a1//, //a2//). If called with three arguments, "
+    "//a3// is the step between elements.";
 
   //-----------------------------------------------------------------------
 
@@ -109,6 +137,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str join_t::DOCUMENTATION =
+    "Take the list of strings //l// and join them together"
+    "with the delimiter //delim//.  Output a string.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   reverse_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
@@ -128,6 +162,11 @@ namespace rfn3 {
     }
     return l;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str reverse_t::DOCUMENTATION =
+    "Reverse the input list //in place//.  Return the reversed list.";
 
   //-----------------------------------------------------------------------
 
@@ -165,6 +204,11 @@ namespace rfn3 {
     }
     return l;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str shuffle_t::DOCUMENTATION =
+    "Shuffle the input list //in place//.  Return the shuffled list.";
 
   //-----------------------------------------------------------------------
 
@@ -211,6 +255,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str splice_t::DOCUMENTATION =
+    "Like JS's splice() function. Remove //remove// objects "
+    "from the list //v// starting at index //index//.  Replace with optional "
+    "objects //o_1//, through //o_n//, as many as specified.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   append_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
@@ -230,6 +281,11 @@ namespace rfn3 {
     }
     return l;
   }
+  //-----------------------------------------------------------------------
+
+  const str append_t::DOCUMENTATION =
+    "Given the list //v//, append onto it the "
+    "object //o//.  There is no output; changes are made to //v// directly. ";
 
   //-----------------------------------------------------------------------
   
@@ -241,6 +297,14 @@ namespace rfn3 {
 
     return eval_internal (p, d, x);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str map_t::DOCUMENTATION =
+    "Map every element in //o// to the value in the "
+    "dictionary //d//, more or less. If //o// is a list, then map each "
+    "element of the list via //d//.  If //o// is a dictionary, map the "
+    "values of //o// through //d//.";
 
   //-----------------------------------------------------------------------
 
@@ -320,6 +384,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str split_t::DOCUMENTATION =
+    "Given a regex //r// and a string //s//, split //s// into "
+    "a list of strings, akin to the Python function 'split'.  Return a list "
+    "of strings.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   split2_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -344,6 +415,13 @@ namespace rfn3 {
     }
     return expr_bool_t::alloc (ret);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str contains_t::DOCUMENTATION =
+    "Return //true// if the list //l// contains the object "
+    "//o// and //false// otherwise.  If you find yourself using this a lot, "
+    "consider using a dictionary instead, which has faster lookup times.";
 
   //-----------------------------------------------------------------------
 
@@ -498,6 +576,14 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str list_t::DOCUMENTATION =
+    "Output object //o// as a list.  If //o// is "
+    "a list to begin with, just output //o//.  If //o// is a string, "
+    "output the list of characters that compose //o//. If //o// "
+    "is a dictionary, act like the //items// call.";
+
+  //-----------------------------------------------------------------------
+
   static ptr<const callable_t> g_cmp;
   static ptr<expr_list_t> g_target;
   static ptr<expr_list_t> g_tmp_args;
@@ -594,6 +680,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str sort_t::DOCUMENTATION =
+    "Sort the given list //l//, given the comparison "
+    "function //cmp//.  If //cmp// isn't specified, then use the "
+    "default comparison operatore.  If it is, use it!";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   cmp_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -609,6 +702,13 @@ namespace rfn3 {
 
     return expr_int_t::alloc (res);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str cmp_t::DOCUMENTATION =
+    "The standard comparison function. Will return "
+    "-1 for a < b, 1 for a > b and 0 for a == b.  Will compare strings "
+    "or integers, nothing else.";
 
   //-----------------------------------------------------------------------
 

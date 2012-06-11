@@ -50,6 +50,11 @@ fork_t::v_eval_2 (publish_t *pub, const vec<arg_t> &args) const
 
 //-----------------------------------------------------------------------
 
+const str fork_t::DOCUMENTATION =
+  "returns immediately and executes a blocking function in the background";
+
+//-----------------------------------------------------------------------
+
 tamed void
 sleep_t::v_pub_to_val_2 (eval_t *e, const checked_args_t &args, cxev_t ev) const
 {
@@ -65,6 +70,10 @@ sleep_t::v_pub_to_val_2 (eval_t *e, const checked_args_t &args, cxev_t ev) const
   twait { delaycb (s, ns, mkevent ()); }
   ev->trigger (expr_null_t::alloc ());
 }
+
+//-----------------------------------------------------------------------
+
+const str sleep_t::DOCUMENTATION = "sleeps for s seconds and ms milliseconds";
 
 //-----------------------------------------------------------------------
 
@@ -127,5 +136,9 @@ shotgun_t::v_pub_to_val_2 (eval_t *e, const checked_args_t &args, cxev_t ev)
 }
 
 //-----------------------------------------------------------------------
+
+const str shotgun_t::DOCUMENTATION =
+  "executes a list of blocking functions in parallel, returns when they've all "
+  "completed";
 
 };

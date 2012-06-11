@@ -36,6 +36,10 @@ namespace rfn3 {
     return expr_uint_t::alloc (v);
   }
 
+  const str rand_t::DOCUMENTATION =
+    "Given one argument (//a1//), outputs an integer randomly "
+    "between 0 and //a1//.  Given two (a1 and a1), outputs an integer randomly "
+    "between //a1// and //a2//";
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -59,12 +63,22 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str round_t::DOCUMENTATION =
+    "Round the input float //f// to the nearest integer.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   exp_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     double e = args[0]._f;
     return expr_double_t::alloc (exp (e));
   }
+
+  //-----------------------------------------------------------------------
+
+  const str exp_t::DOCUMENTATION =
+    "The C-library exp() function.";
 
   //-----------------------------------------------------------------------
 
@@ -77,12 +91,22 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str log_t::DOCUMENTATION =
+    "The C-library log() function.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   sqrt_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     double n = args[0]._f;
     return expr_double_t::alloc (sqrt (n));
   }
+
+  //-----------------------------------------------------------------------
+
+  const str sqrt_t::DOCUMENTATION =
+    "The C-library sqrt() function.";
 
   //-----------------------------------------------------------------------
 
@@ -96,6 +120,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str pow_t::DOCUMENTATION =
+    "The C-library pow() function.";
+
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   ceil_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -105,12 +135,22 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str ceil_t::DOCUMENTATION =
+    "Return the smallest integer //i// such that //i >= f//.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   floor_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     double d = args[0]._f;
     return expr_double_t::alloc (floor (d));
   }
+
+  //-----------------------------------------------------------------------
+
+  const str floor_t::DOCUMENTATION =
+    "Return the largest integer //i// such that //i <= f//.";
 
   //-----------------------------------------------------------------------
 
@@ -186,6 +226,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str bitwise_or_t::DOCUMENTATION =
+    "Compute the bitwise OR of the two arguments. Can take "
+    "arbitrarily many arguments, but only two are shown here.";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   bitwise_and_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
@@ -224,6 +270,12 @@ namespace rfn3 {
     return ret;
   }
   
+  //-----------------------------------------------------------------------
+
+  const str bitwise_and_t::DOCUMENTATION =
+    "Compute the bitwise AND of the two arguments. Can take "
+    "arbitrarily many arguments, but only two are shown here.";
+
   //-----------------------------------------------------------------------
 
 };

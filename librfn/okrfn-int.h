@@ -5,6 +5,7 @@
 
 #include "pub3.h"
 #include "qhash.h"
+#include "str.h"
 #include "pub3lib.h"
 #include "okrfn.h"
 
@@ -14,59 +15,60 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  PUB3_COMPILED_FN(rand, "|uu");
-  PUB3_COMPILED_FN(len, "O");
-  PUB3_COMPILED_FN(join, "sl");
-  PUB3_COMPILED_FN(range, "i|ii");
-  PUB3_COMPILED_FN(split, "rs");
+  PUB3_COMPILED_FN_DOC(rand, "|uu");
+  PUB3_COMPILED_FN_DOC(len, "O");
+  PUB3_COMPILED_FN_DOC(join, "sl");
+  PUB3_COMPILED_FN_DOC(range, "i|ii");
+  PUB3_COMPILED_FN_DOC(split, "rs");
   PUB3_COMPILED_FN(split2, "rs");
-  PUB3_COMPILED_FN(substr, "si|i");
-  PUB3_COMPILED_FN(import, "d");
-  PUB3_COMPILED_FN(version_str, "");
-  PUB3_COMPILED_FN(version_int, "");
-  PUB3_COMPILED_FN(okws_version_str, "");
-  PUB3_COMPILED_FN(okws_version_int, "");
-  PUB3_COMPILED_FN(values, "d");
-  PUB3_COMPILED_FN(keys, "d");
-  PUB3_COMPILED_FN(items, "d");
+  PUB3_COMPILED_FN_DOC(substr, "si|i");
+  PUB3_COMPILED_FN_DOC(import, "d");
+  PUB3_COMPILED_FN_DOC(version_str, "");
+  PUB3_COMPILED_FN_DOC(version_int, "");
+  PUB3_COMPILED_FN_DOC(okws_version_str, "");
+  PUB3_COMPILED_FN_DOC(okws_version_int, "");
+  PUB3_COMPILED_FN_DOC(values, "d");
+  PUB3_COMPILED_FN_DOC(keys, "d");
+  PUB3_COMPILED_FN_DOC(items, "d");
   PUB3_COMPILED_FN(remove, "ds");
-  PUB3_COMPILED_FN(json2pub, "s");
-  PUB3_COMPILED_FN(now, "");
-  PUB3_COMPILED_FN(time_format, "us");
+  PUB3_COMPILED_FN_DOC(json2pub, "s");
+  PUB3_COMPILED_FN_DOC(now, "");
+  PUB3_COMPILED_FN_DOC(time_format, "us");
   PUB3_COMPILED_FN(localtime, "|u");
-  PUB3_COMPILED_FN(days_from_now, "i");
-  PUB3_COMPILED_FN(time_from_now, "|iiii"); // D,H,M,S args
-  PUB3_COMPILED_FN(strptime, "s|s"); 
-  PUB3_COMPILED_FN(decorate, "l");
-  PUB3_COMPILED_FN(enumerate, "l");
-  PUB3_COMPILED_FN(dump_env, "");
-  PUB3_COMPILED_FN(contains, "lO");
-  PUB3_COMPILED_FN(int, "O");
+  PUB3_COMPILED_FN_DOC(days_from_now, "i");
+  PUB3_COMPILED_FN_DOC(time_from_now, "|iiii"); // D,H,M,S args
+  PUB3_COMPILED_FN_DOC(strptime, "s|s"); 
+  PUB3_COMPILED_FN_DOC(decorate, "l");
+  PUB3_COMPILED_FN_DOC(enumerate, "l");
+  PUB3_COMPILED_FN_DOC(dump_env, "");
+  PUB3_COMPILED_FN_DOC(contains, "lO");
+  PUB3_COMPILED_FN_DOC(int, "O");
   PUB3_COMPILED_FN(uint, "O");
-  PUB3_COMPILED_FN(round, "f");
-  PUB3_COMPILED_FN(ceil, "f");
-  PUB3_COMPILED_FN(floor, "f");
-  PUB3_COMPILED_FN(pow, "ff");
-  PUB3_COMPILED_FN(sqrt, "f");
-  PUB3_COMPILED_FN(exp, "f");
-  PUB3_COMPILED_FN(log, "f");
-  PUB3_COMPILED_FN(str, "O");
-  PUB3_COMPILED_FN(tag_escape, "s|r");
-  PUB3_COMPILED_FN(logwarn, "s|b");
-  PUB3_COMPILED_FN(warn_trace, "s");
-  PUB3_COMPILED_FN(enable_wss, "b");
-  PUB3_COMPILED_FN(internal_dump, "O");
-  PUB3_COMPILED_FN(unbind, "s|s");
-  PUB3_COMPILED_FN(copy, "O");
-  PUB3_COMPILED_FN(bind, "sO|s");
-  PUB3_COMPILED_FN(list, "O");
-  PUB3_COMPILED_FN(sort, "l|F");
+  PUB3_COMPILED_FN_DOC(round, "f");
+  PUB3_COMPILED_FN_DOC(ceil, "f");
+  PUB3_COMPILED_FN_DOC(floor, "f");
+  PUB3_COMPILED_FN_DOC(pow, "ff");
+  PUB3_COMPILED_FN_DOC(sqrt, "f");
+  PUB3_COMPILED_FN_DOC(exp, "f");
+  PUB3_COMPILED_FN_DOC(log, "f");
+  PUB3_COMPILED_FN_DOC(str, "O");
+  PUB3_COMPILED_FN(documentation, "O");
+  PUB3_COMPILED_FN_DOC(tag_escape, "s|r");
+  PUB3_COMPILED_FN_DOC(logwarn, "s|b");
+  PUB3_COMPILED_FN_DOC(warn_trace, "s");
+  PUB3_COMPILED_FN_DOC(enable_wss, "b");
+  PUB3_COMPILED_FN_DOC(internal_dump, "O");
+  PUB3_COMPILED_FN_DOC(unbind, "s|s");
+  PUB3_COMPILED_FN_DOC(copy, "O");
+  PUB3_COMPILED_FN_DOC(bind, "sO|s");
+  PUB3_COMPILED_FN_DOC(list, "O");
+  PUB3_COMPILED_FN_DOC(sort, "l|F");
   PUB3_COMPILED_FN(sort2, "l|F");
-  PUB3_COMPILED_FN(cmp, "OO");
-  PUB3_COMPILED_FN(format_float, "sf");
-  PUB3_COMPILED_FN(format_int, "si");
-  PUB3_COMPILED_FN(json_escape, "s");
-  PUB3_COMPILED_FN(randsel, "l");
+  PUB3_COMPILED_FN_DOC(cmp, "OO");
+  PUB3_COMPILED_FN_DOC(format_float, "sf");
+  PUB3_COMPILED_FN_DOC(format_int, "si");
+  PUB3_COMPILED_FN_DOC(json_escape, "s");
+  PUB3_COMPILED_FN_DOC(randsel, "l");
   PUB3_COMPILED_FN(bitwise_leftshift, "uu");
   PUB3_COMPILED_FN(bitwise_rightshift, "uu");
   PUB3_COMPILED_FN(bitwise_xor, "uu");
@@ -75,33 +77,33 @@ namespace rfn3 {
   PUB3_COMPILED_FN(eval_location, "");
   PUB3_COMPILED_FN(breadcrumb, "");
 
-  PUB3_FILTER(utf8_fix);
-  PUB3_FILTER(strip);
-  PUB3_FILTER(url_escape);
-  PUB3_FILTER(url_unescape);
-  PUB3_FILTER(sha1);
-  PUB3_FILTER(tolower);
-  PUB3_FILTER(toupper);
-  PUB3_FILTER(html_escape);
-  PUB3_FILTER(hidden_escape);
-  PUB3_FILTER(wss_filter);
+  PUB3_FILTER_DOC(utf8_fix);
+  PUB3_FILTER_DOC(strip);
+  PUB3_FILTER_DOC(url_escape);
+  PUB3_FILTER_DOC(url_unescape);
+  PUB3_FILTER_DOC(sha1);
+  PUB3_FILTER_DOC(tolower);
+  PUB3_FILTER_DOC(toupper);
+  PUB3_FILTER_DOC(html_escape);
+  PUB3_FILTER_DOC(hidden_escape);
+  PUB3_FILTER_DOC(wss_filter);
   
   //-----------------------------------------------------------------------
 
-  PUB3_COMPILED_FN_BLOCKING(sleep, "i|i");
-  PUB3_COMPILED_FN(fork, "F");
-  PUB3_COMPILED_FN_BLOCKING(shotgun, "l");
+  PUB3_COMPILED_FN_BLOCKING_DOC(sleep, "i|i");
+  PUB3_COMPILED_FN_DOC(fork, "F");
+  PUB3_COMPILED_FN_BLOCKING_DOC(shotgun, "l");
 
   //-----------------------------------------------------------------------
 
-  PUB3_COMPILED_HANDROLLED_FN(isnull);
-  PUB3_COMPILED_UNPATTERNED_FN(append);
-  PUB3_COMPILED_UNPATTERNED_FN(splice);
-  PUB3_COMPILED_UNPATTERNED_FN(shuffle);
-  PUB3_COMPILED_UNPATTERNED_FN(reverse);
-  PUB3_COMPILED_HANDROLLED_FN(default);
-  PUB3_COMPILED_UNPATTERNED_FN(bitwise_or);
-  PUB3_COMPILED_UNPATTERNED_FN(bitwise_and);
+  PUB3_COMPILED_HANDROLLED_FN_DOC(isnull);
+  PUB3_COMPILED_UNPATTERNED_FN_DOC(append);
+  PUB3_COMPILED_UNPATTERNED_FN_DOC(splice);
+  PUB3_COMPILED_UNPATTERNED_FN_DOC(shuffle);
+  PUB3_COMPILED_UNPATTERNED_FN_DOC(reverse);
+  PUB3_COMPILED_HANDROLLED_FN_DOC(default);
+  PUB3_COMPILED_UNPATTERNED_FN_DOC(bitwise_or);
+  PUB3_COMPILED_UNPATTERNED_FN_DOC(bitwise_and);
   
   //-----------------------------------------------------------------------
 
@@ -112,6 +114,7 @@ namespace rfn3 {
   protected:
     ptr<expr_t> eval_internal (eval_t *p, ptr<const expr_dict_t> m, 
 			       ptr<const expr_t> x) const;
+    PUB3_DOC_MEMBERS
   };
 
   //-----------------------------------------------------------------------
@@ -129,6 +132,7 @@ namespace rfn3 {
   public:
     match_t () : regex_fn_t ("match") {}
     bool match () const { return true; }
+    PUB3_DOC_MEMBERS
   };
     
   //-----------------------------------------------------------------------
@@ -137,6 +141,7 @@ namespace rfn3 {
   public:
     search_t () : regex_fn_t ("search") {}
     bool match () const { return false; }
+    PUB3_DOC_MEMBERS
   };
 
   //-----------------------------------------------------------------------
@@ -146,6 +151,7 @@ namespace rfn3 {
     type_t () : patterned_fn_t (libname, "type", "O") {}
     ptr<const expr_t> v_eval_2 (eval_t *e, const vec<arg_t> &args) const;
     bool safe_args () const { return false; }
+    PUB3_DOC_MEMBERS
   };
 
   //-----------------------------------------------------------------------
@@ -160,6 +166,7 @@ namespace rfn3 {
     void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
     ptr<mref_t> eval_to_ref (eval_t *p, args_t args) const;
     ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
+    PUB3_DOC_MEMBERS
   protected:
     bool count_args (eval_t *p, size_t s) const;
     ptr<mref_t> eval_final (eval_t *p, str k, str s) const;

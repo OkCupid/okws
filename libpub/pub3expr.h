@@ -73,6 +73,7 @@ namespace pub3 {
   class expr_t : public virtual refcount, public virtual dumpable_t {
   public:
     expr_t (lineno_t lineno = 0) : _lineno (lineno) {}
+
     virtual ~expr_t () {}
 
     enum { max_stack_depth = 128,
@@ -81,6 +82,9 @@ namespace pub3 {
     virtual bool to_xdr (xpub3_expr_t *x) const = 0;
     virtual bool to_xdr (xpub3_json_t *x) const;
     virtual bool to_msgpack (msgpack::outbuf_t *b) const { return false; }
+
+    //returns the docstring associated with a value.
+    virtual const str* documentation () const { return NULL; };
 
     static ptr<expr_t> alloc (const xpub3_expr_t &x);
     static ptr<expr_t> alloc (const xpub3_expr_t *x);
@@ -223,6 +227,7 @@ namespace pub3 {
     bool is_static () const;
     bool might_block_uncached () const;
     str to_str (PUB3_TO_STR_ARG) const;
+    virtual const str* documentation () const;
     ptr<const callable_t> to_callable () const;
     const char *get_obj_name () const { return "pub3::expr_cow_t"; }
     void v_dump (dumper_t *d) const;
@@ -614,6 +619,10 @@ namespace pub3 {
     static ptr<expr_dictref_t> alloc (ptr<expr_t> d, const str &k);
     bool to_xdr (xpub3_expr_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_dictref_t"; }
+    virtual const str* documentation () const {
+      return _dict->documentation ();
+    }
+
 
     ptr<const expr_t> eval_to_val (eval_t *e) const;
     ptr<mref_t> eval_to_ref (eval_t *e) const;
@@ -664,6 +673,10 @@ namespace pub3 {
     ptr<mref_t> eval_to_ref (eval_t *e) const;
     void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
     void pub_to_ref (eval_t *p, mrev_t ev, CLOSURE) const;
+    virtual const str* documentation () const {
+      return _vec->documentation ();
+    }
+
   protected:
     bool might_block_uncached () const;
     ptr<const expr_t> eval_to_val_final (eval_t *e, ptr<const expr_t> container,

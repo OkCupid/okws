@@ -2363,6 +2363,17 @@ namespace pub3 {
 
   //--------------------------------------------------------------------
 
+  const str* expr_cow_t::documentation () const
+  {
+    ptr<const expr_t> x = const_ptr ();
+    if (x) { return x->documentation ();
+    } else {
+      return NULL;
+    }
+  }
+
+  //--------------------------------------------------------------------
+
   str
   expr_cow_t::to_str (str_opt_t o) const 
   {

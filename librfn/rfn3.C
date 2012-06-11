@@ -72,6 +72,7 @@ namespace rfn3 {
     F(bitwise_leftshift);
     F(bitwise_rightshift);
     F(str);
+    F(documentation);
     F(logwarn);
     F(warn);
     F(warn_trace);

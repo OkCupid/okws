@@ -13,6 +13,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str now_t::DOCUMENTATION =
+    "Output the time now in Unix-timestamp";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   time_format_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -38,6 +43,12 @@ namespace rfn3 {
     }
     return expr_str_t::alloc (ret);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str time_format_t::DOCUMENTATION =
+    "Like strftime, format the Unix timestamp //time// according to the format "
+    "//fmt//";
 
   //-----------------------------------------------------------------------
 
@@ -81,6 +92,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  const str days_from_now_t::DOCUMENTATION =
+    "Return the Unix timestamp of //days// days from now";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   time_from_now_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
@@ -98,6 +114,12 @@ namespace rfn3 {
     u_int64_t ret = delta + t;
     return expr_uint_t::alloc (ret);
   }
+
+  //-----------------------------------------------------------------------
+
+  const str time_from_now_t::DOCUMENTATION =
+    "Output the Unix timestamp at //d// days, //h// hours, "
+    "//m// minutes and //s// seconds from now";
 
   //-----------------------------------------------------------------------
 
@@ -122,6 +144,13 @@ namespace rfn3 {
     }
     return ret;
   }
+
+  //-----------------------------------------------------------------------
+
+  const str strptime_t::DOCUMENTATION =
+    "Read from the string //time//, formatted "
+    "according to the format string //fmt//, into a UNIX timestamp. "
+    "If no //fmt// is given, assume '%F', which means 'YYYY-MM-DD'";
 
   //-----------------------------------------------------------------------
 
