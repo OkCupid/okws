@@ -36,10 +36,12 @@ a3.sort ()
 a4 = copy.copy (arr3)
 a4.sort (lambda x,y: cmp (y["key"], x["key"]) )
 
-a4s = str (a4).replace ("'", '"').replace ('": ', '" : ')
+a3s = str([ "%.12g" % x for x in a3 ]).replace("'","")
+a4s = str ([ { "key" : "%.12g" % x["key"] } for x in a4 ]).replace("'","")
+a4s = a4s.replace ("key", '"key"').replace ('": ', '" : ')
 
 
-outcome = " ".join ([str (s) for s in [ a1, a2, a3, a4s, a4s ] ])
+outcome = " ".join ([str (s) for s in [ a1, a2, a3s, a4s, a4s ] ])
 
 
 
