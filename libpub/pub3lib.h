@@ -41,6 +41,7 @@ namespace pub3 {
     void eval_args (eval_t *e, args_t in, margs_t *out) const;
 
     str _lib, _name;
+
   };
 
   //-----------------------------------------------------------------------
@@ -120,16 +121,19 @@ namespace pub3 {
   //
   class library_t {
   public:
-    library_t () {}
+    library_t () : _only_in_libname(false) {}
     ~library_t () {}
     void bind (ptr<bindtab_t> b);
     ptr<bindtab_t> bind ();
     static void import (ptr<library_t> l);
     static void clear_all ();
-    void bind_all (str s);
+    void bind_all (str s,bool only_in_libname = false);
   protected:
     vec<ptr<compiled_fn_t> > _functions;
     str _all_libname;
+    //Use in conjunction with _all_libname to make sure that the functions
+    //are only bound in the libname object and not in the top namespace.
+    bool _only_in_libname;
   };
 
   //-----------------------------------------------------------------------

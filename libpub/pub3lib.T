@@ -286,7 +286,7 @@ namespace pub3 {
       ptr<compiled_fn_t> f = _functions[i];
       str n = f->name ();
       OKDBG3(PUB_RFN3, CHATTER, strbuf ("binding library function: ") << n);
-      t->insert (n, f);
+      if (!_only_in_libname) { t->insert (n, f); }
       if (all) { all->insert (n, f); }
     }
     if (all) { t->insert (_all_libname, all); }
@@ -294,7 +294,10 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-  void library_t::bind_all (str s) { _all_libname = s; }
+  void library_t::bind_all (str s, bool only_in_libname) {
+    _all_libname = s;
+    _only_in_libname = only_in_libname;
+  }
 
   //-----------------------------------------------------------------------
 
