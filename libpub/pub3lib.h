@@ -131,6 +131,10 @@ namespace pub3 {
   protected:
     vec<ptr<compiled_fn_t> > _functions;
     str _all_libname;
+
+    //The dictionary in which the functions are allocated.
+    ptr<expr_dict_t> _all_dict;
+
     //Use in conjunction with _all_libname to make sure that the functions
     //are only bound in the libname object and not in the top namespace.
     bool _only_in_libname;
