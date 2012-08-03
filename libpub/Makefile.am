@@ -136,7 +136,7 @@ pub3prot.lo: pub3prot.h
 AM_YFLAGS = -d $(YDEBUG)
 AM_LFLAGS = $(LDEBUG)
 
-$(srcdir)/scan.cc: $(srcdir)/scan.ll $(srcdir)/parse.h
+$(srcdir)/scan.cc: $(srcdir)/scan.ll 
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 if MAKE_OLD_FLEX 
 	@echo "XXX"
