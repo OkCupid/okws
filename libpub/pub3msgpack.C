@@ -15,6 +15,18 @@ big_endian (T &out, u_int8_t *in, size_t n)
   }
 }
 
+template<> void
+big_endian(signed char& out, u_int8_t* in, size_t n) {
+    out = 0;
+    out |= (signed char) in[0];
+}
+
+template<> void
+big_endian(unsigned char& out, u_int8_t* in, size_t n) {
+    out = 0;
+    out |= (unsigned char) in[0];
+}
+
 //-----------------------------------------------------------------------
 
 template<class T, size_t N = sizeof (T) > 

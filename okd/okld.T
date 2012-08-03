@@ -383,7 +383,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
   }
   exe = apply_container_dir (service_bin, bin);
 
-  if (!parse_service_options (&s, &u, loc, &so));
+  if (!parse_service_options (&s, &u, loc, &so))
     goto err;
   
   //

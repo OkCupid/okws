@@ -166,7 +166,7 @@ main (int argc, char *argv[])
   //
   u_int i = 0;
   do {
-    u_int rc = write (1, outbuf->cstr () + i, min<u_int> (2048, osz - i));
+    int rc = write (1, outbuf->cstr () + i, min<u_int> (2048, osz - i));
     if (rc < 0)
       panic ("write error!\n");
     i += rc;

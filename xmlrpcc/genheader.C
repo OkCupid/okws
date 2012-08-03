@@ -154,13 +154,15 @@ pswitch (str prefix, const rpc_union *rs, str swarg,
   bool hasdefault = false;
   str subprefix = strbuf () << prefix << "  ";
 
-  aout << prefix << "switch (" << swarg << ") {" << suffix;
+  bool btype = (rs->tagtype == "bool");
+  aout << prefix << "switch (" << ((btype) ? "(int)" : "") << swarg << ") {" 
+       << suffix;
   for (const rpc_utag *rt = rs->cases.base (); rt < rs->cases.lim (); rt++) {
     if (rt->swval) {
       if (rt->swval == "TRUE")
-	aout << prefix << "case true:" << suffix;
+	aout << prefix << "case 1:" << suffix;
       else if (rt->swval == "FALSE")
-	aout << prefix << "case false:" << suffix;
+	aout << prefix << "case 0:" << suffix;
       else
 	aout << prefix << "case " << rt->swval << ":" << suffix;
     }

@@ -123,7 +123,7 @@ namespace pub3 {
   {
     dumper_t d;
     e->dump (&d);
-    warnobj w (int (::warnobj::xflag));
+    warnobj w ( (int) ::warnobj::xflag);
     d.dump_to (w);
   }
 

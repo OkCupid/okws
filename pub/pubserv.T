@@ -295,8 +295,8 @@ namespace pub3 {
 	gname = ok_pubd_gname;
 	warn << "No pub groupname given; defaulting to '" << gname << "'\n";
       }
-      uid_t uid = 0;
-      gid_t gid = 0;
+      int uid = 0;
+      int gid = 0;
 
       // need to call this before chroot'ing! otherwise, 
       // we can't open /etc/passwd

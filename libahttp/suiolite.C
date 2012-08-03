@@ -163,8 +163,6 @@ suiolite::resid () const
 { 
   size_t a = dep[1] - rp;
   size_t b = dep[0] - buf;
-  assert (a >= 0);
-  assert (b >= 0);
   return (a+b);
 }
 

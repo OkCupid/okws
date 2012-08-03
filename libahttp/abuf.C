@@ -157,8 +157,6 @@ abuf_t::end_mirror2 (int sublen)
 size_t
 abuf_t::flush (char *buf, size_t len)
 {
-  assert (len >= 0);
-
   if (len == 0 || _cp == _endp)
     return 0;
   

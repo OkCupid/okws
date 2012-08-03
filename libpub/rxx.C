@@ -61,6 +61,7 @@ static void strbuf_output (strbuf &b, str s) { b << s; b.hold_onto (s); }
 //-----------------------------------------------------------------------
 
 struct repl_el_t {
+  virtual ~repl_el_t() { }
   virtual void output (strbuf &out, const char *s, rxx &x) = 0;
 };
 

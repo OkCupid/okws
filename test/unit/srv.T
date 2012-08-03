@@ -136,7 +136,7 @@ main_T (int port)
 int
 main (int argc, char *argv[])
 {
-  int port;
+  int port=0;
   setprogname (argv[0]);
   if (argc != 2 || !convertint (argv[1], &port))
     usage ();

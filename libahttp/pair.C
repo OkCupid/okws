@@ -23,6 +23,12 @@
 
 #include "pair.h"
 
+void pair_dump1 (const pair_t &p) { p.dump1 (); }
+void pair_encode (encode_t *e, str sep, const pair_t &p)
+{ p.encode (e, sep); }
+void pair_trav (callback<void, const pair_t &>::ref cb, pair_t *p)
+{ (*cb) (*p); }
+
 void
 pair_t::dump1 () const
 {

@@ -84,11 +84,9 @@ struct pair_t {
   bool encflag;
 };
 
-static void pair_dump1 (const pair_t &p) { p.dump1 (); }
-static void pair_encode (encode_t *e, str sep, const pair_t &p)
-{ p.encode (e, sep); }
-static void pair_trav (callback<void, const pair_t &>::ref cb, pair_t *p)
-{ (*cb) (*p); }
+extern void pair_dump1 (const pair_t &p);
+extern void pair_encode (encode_t *e, str sep, const pair_t &p);
+extern void pair_trav (callback<void, const pair_t &>::ref cb, pair_t *p);
 
 template<class C = pair_t>
 class pairtab_t {
