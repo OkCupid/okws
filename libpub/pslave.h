@@ -60,6 +60,8 @@ bool pub_server (pubserv_cb cb, u_int port, u_int32_t addr = INADDR_ANY,
 		 int *out_fd = NULL);
 int pub_server (pubserv_cb cb, const str &path,
 		int *out_fd = NULL);
+int pub_server (pubserv_cb cb, int pubfd);
+
 pslave_status_t pub_slave  (pubserv_cb cb, u_int port = 0, 
 			    pslave_status_t *s = NULL);
 
