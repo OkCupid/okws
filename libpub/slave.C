@@ -124,7 +124,7 @@ pub_server (pubserv_cb cb, const str &s, int *outfd)
 }
 
 int
-pub_server (pubserv_cb cb, int pubfd) {
+pub_server_clientfd (pubserv_cb cb, int pubfd) {
     pub_server_fd(wrap (pub_accept, cb, pubfd), pubfd);
     return true;
 }
