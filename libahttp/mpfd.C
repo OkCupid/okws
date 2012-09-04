@@ -251,7 +251,7 @@ cgi_mpfd_t::parse_2dash ()
 }
 
 bool
-cgi_mpfd_t::flookup (const str &k, cgi_files_t **v)
+cgi_mpfd_t::flookup (const str &k, cgi_files_t **v) const
 {
   pair_t *p = tab[k];
   if (!p)
