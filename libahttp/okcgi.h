@@ -100,7 +100,7 @@ public:
   virtual abuf_stat_t parse_guts_driver ();
   abuf_stat_t parse_key_or_val (str *r, bool use_internal_state = true);
 
-  virtual bool flookup (const str &k, cgi_files_t **v) { return false; }
+  virtual bool flookup (const str &k, cgi_files_t **v) const { return false; }
 
   void set_max_scratchlen (ssize_t i) { _maxlen = i; }
 
@@ -158,7 +158,7 @@ public:
   template<typename T> cgiw_t & insert (const str &k, T v, bool ap = true) 
   { c->insert (k, v, ap); return (*this); }
   cgi_t *cgi () const { return c; }
-  bool flookup (const str &k, cgi_files_t **v) { return c->flookup (k,v); }
+  bool flookup (const str &k, cgi_files_t **v) const { return c->flookup (k,v); }
   void load_dict (pub3::dict_t *d) const { return c->load_dict (d); }
   
 private:

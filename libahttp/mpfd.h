@@ -118,7 +118,7 @@ public:
 
   ~cgi_mpfd_t (); 
 	      
-  bool flookup (const str &k, cgi_files_t **v);
+  bool flookup (const str &k, cgi_files_t **v) const;
   void finsert (const str &k, const cgi_file_t &f);
   pair_t *alloc_pair (const str &k, const str &v, bool e = true) const
   { return New cgi_mpfd_pair_t (k,v,e); }
