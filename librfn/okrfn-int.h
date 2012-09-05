@@ -51,6 +51,13 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(sqrt, "f");
   PUB3_COMPILED_FN_DOC(exp, "f");
   PUB3_COMPILED_FN_DOC(log, "f");
+  PUB3_COMPILED_FN_DOC(sin, "f");
+  PUB3_COMPILED_FN_DOC(cos, "f");
+  PUB3_COMPILED_FN_DOC(tan, "f");
+  PUB3_COMPILED_FN_DOC(asin, "f");
+  PUB3_COMPILED_FN_DOC(acos, "f");
+  PUB3_COMPILED_FN_DOC(atan, "f");
+  PUB3_COMPILED_FN_DOC(atan2, "f");
   PUB3_COMPILED_FN_DOC(str, "O");
   PUB3_COMPILED_FN(documentation, "O");
   PUB3_COMPILED_FN_DOC(tag_escape, "s|r");

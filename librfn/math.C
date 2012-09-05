@@ -111,6 +111,106 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  cos_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (cos (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str cos_t::DOCUMENTATION =
+    "The C-library cos() function, input in radians.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  tan_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (tan (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str tan_t::DOCUMENTATION =
+    "The C-library tan() function, input in radians.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  asin_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (asin (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str asin_t::DOCUMENTATION =
+    "The C-library asin() function, input in radians.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  acos_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (acos (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str acos_t::DOCUMENTATION =
+    "The C-library acos() function, input in radians.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  sin_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (sin (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str sin_t::DOCUMENTATION =
+    "The C-library sin() function, input in radians.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  atan_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double n = args[0]._f;
+    return expr_double_t::alloc (atan (n));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str atan_t::DOCUMENTATION =
+    "The C-library atan() function, input in radians.";
+
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  atan2_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    double y = args[0]._f;
+    double x = args[1]._f;
+    return expr_double_t::alloc (atan2 (y,x));
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str atan2_t::DOCUMENTATION =
+    "The C-library atan2() function, input in radians.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   pow_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     double b = args[0]._f;

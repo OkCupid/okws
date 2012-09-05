@@ -107,6 +107,13 @@ namespace rfn3 {
     F(index_of);
     F(eval_location);
     F(breadcrumb);
+    F(cos);
+    F(sin);
+    F(tan);
+    F(asin);
+    F(acos);
+    F(atan);
+    F(atan2);
 
 #undef F
 
