@@ -92,6 +92,7 @@ OKWS is freely available under a GPL v2 license.
 ## Active People
 
   * Max Krohn
+  * Mike Maxim
   * David Koh
   * Eli Gwynn
 
