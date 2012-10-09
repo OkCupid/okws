@@ -235,12 +235,20 @@ namespace pub3 {
     } else {
       out ()->output_err (msg, typ);
     }
+    if (_opts & P_EXIT_ON_ERROR) {
+      control()->set_exit(true);
+    }
   }
 
   //--------------------------------------------------------------------
 
   void eval_t::output_err_stacktrace (str s, err_type_t t)
-  { out ()->output_err (_stack, s, t); }
+  {
+    out ()->output_err (_stack, s, t);
+    if (_opts & P_EXIT_ON_ERROR) {
+      control()->set_exit(true);
+    }
+  }
 
   //--------------------------------------------------------------------
 

@@ -55,7 +55,10 @@ namespace pub3 {
     P_STRICT_INCLUDE_SCOPING = 0x20000,      /* add scope barrier */
     P_UTF8_JSON = 0x40000,                   /* weird UTF-8 in json */
 
-    P_INFINITY = 0x80000,
+    P_EXIT_ON_ERROR = 0x80000,               // abort execution as soon as we
+                                             // see an error.
+
+    P_INFINITY = 0x100000,
 
     // All warnings I can think of....
     P_WARN_STRICT = P_WARN_INLINE_NULL | P_WARN_NULL | P_WARN_RELARG_NULL
