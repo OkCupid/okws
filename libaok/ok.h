@@ -690,6 +690,8 @@ class dbcon_t : public helper_inet_t {
 public:
   dbcon_t (const rpc_program &g, const str &h, u_int p)
     : helper_inet_t (g, h, p, 0) {}
+  dbcon_t (const rpc_program &g, const str &h, u_int p, u_int o)
+    : helper_inet_t (g, h, p, o) {}
 
   str getname () const 
   { return strbuf ("database: ") << helper_inet_t::getname (); }

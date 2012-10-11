@@ -47,6 +47,7 @@ typedef enum { HLP_STATUS_NONE = 0,
 #define HLP_OPT_PING    (1 << 1)        // ping helper on startup
 #define HLP_OPT_NORETRY (1 << 2)        // do not try to reconnect
 #define HLP_OPT_CNCT1   (1 << 3)        // connect only once on startup
+#define HLP_OPT_CTONDMD (1 << 4)        // connect on first call()
 
 #define HLP_MAX_RETRIES 100
 #define HLP_RETRY_DELAY 4
@@ -83,6 +84,7 @@ public:
 protected:
 };
 
+
 class helper_t : public helper_base_t {
 public:
   helper_t (const rpc_program &rp, u_int o = 0) 
@@ -91,6 +93,17 @@ public:
       max_qlen (hlpr_max_qlen), max_calls (hlpr_max_calls),
       retries (0), calls (0), status (HLP_STATUS_NONE), 
       opts (o), destroyed (New refcounted<bool> (false)) {}
+
+  struct connect_params_t {
+    connect_params_t(u_int32_t p, const void* i, void* o, aclnt_cb c,
+                     time_t d) : procno(p), in(i), out(o), cb(c), 
+                                 duration(d) { }
+    u_int32_t procno;
+    const void* in;
+    void* out;
+    aclnt_cb cb;
+    time_t duration;
+  };
 
   virtual ~helper_t ();
   virtual vec<str> *get_argv () { return NULL; }
@@ -130,7 +143,7 @@ protected:
   void kill_aclnt_priv();
   void retried (ptr<bool> df, bool b);
   void connected (cbb::ptr cb, ptr<bool> df, bool b);
-
+  void call_connect_cb(connect_params_t cp, bool success);
 
   void process_queue ();
   void docall (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
