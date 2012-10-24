@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
+set -e -u -o pipefail
 
 #
 # CFG ORIGINAL FILE -- do not delete this line
@@ -7,42 +8,39 @@
 
 CFG=cfg
 
-if [ -f $CFG -a ! -w $CFG ]
-then
+if [[ -f "${CFG}" && ! -w "${CFG}" ]]; then
     echo "Not writing over cfg because it's read only."
     exit 1
 fi
 
-if [ -f $CFG ]
-then
-    grep "CFG ORIGINAL FILE" $CFG > /dev/null 2>&1
-    if [ $? -eq 0 ]
-    then
-	echo "Please run ./cfg in your build (and not your source!) directory."
-	exit 1
+if [[ -f "${CFG}" ]]; then
+    if grep "CFG ORIGINAL FILE" "${CFG}" &> /dev/null; then
+        echo "Please run ./cfg in your build (and not your source!) directory."
+        exit 1
     fi
+    rm "${CFG}"
 fi
 
-if [ -f $CFG ]
-then
-    rm $CFG
+touch "${CFG}"
+if [[ -n "${DEBUG:-}" ]]; then
+    printf "export DEBUG=%q\n" "${DEBUG}" >> "${CFG}"
 fi
 
-touch $CFG
-if [ $DEBUG ]
-then
-    echo "export DEBUG=$DEBUG" >> $CFG
-fi
-if [ "$CXX" ]
-then
-    echo "export CXX='$CXX'" >> $CFG
-fi
-if [ "$CC" ] 
-then
-    echo "export CC='$CC'" >> $CFG
+if [[ -n "${CXX:-}" ]]; then
+    printf "export CXX=%q\n" "${CXX}" >> "${CFG}"
 fi
 
-CONFIGURE=`echo $0 | sed 's/cfg/configure/' `
-echo "$CONFIGURE $*" >> $CFG
-chmod u+x $CFG
-sh -x $CFG
+if [[ -n "${CC:-}" ]]; then
+    printf "export CC=%q\n" "${CC}" >> "${CFG}"
+fi
+
+# Now reprint the CLI we were called with but referencing configure instead
+CONFIGURE="$(echo "$0" | sed 's/cfg/configure/')"
+printf '%q' "$CONFIGURE" >> "${CFG}"
+if [[ "$#" -gt 0 ]]; then
+    printf ' %q' "$@" >> "${CFG}"
+fi
+echo "" >> "${CFG}"
+
+chmod u+x "${CFG}"
+bash -x "${CFG}"
