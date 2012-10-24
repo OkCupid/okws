@@ -80,6 +80,7 @@ mkmshl (str id)
        << "    return true;\n"
        << "  default:\n"
        << "    panic (\"invalid xdr operation %d\\n\", xdrs->x_op);\n"
+       << "    return false;\n"
        << "  }\n"
        << "}\n"
        << "\n";
@@ -604,9 +605,18 @@ print_break (str prefix, const rpc_union *rs)
   aout << prefix << "break;\n";
 }
 
+static bool will_need_sep(const rpc_union* rs) {
+  for (const rpc_utag *rt = rs->cases.base (); rt < rs->cases.lim (); rt++) {
+    if (rt->tag.type != "void")
+        return true;
+  }
+  return false;
+}
+
 static void
 print_union (const rpc_union *s)
 {
+  bool ns = will_need_sep(s);
   aout <<
     "const strbuf &\n"
     "rpc_print (const strbuf &sb, const " << s->id << " &obj, "
@@ -618,15 +628,15 @@ print_union (const rpc_union *s)
     "      sb << prefix;\n"
     "    sb << \"" << s->id << " \" << name << \" = \";\n"
     "  };\n"
-    "  const char *sep;\n"
+    << ((ns) ? "  const char *sep;\n" : "") <<
     "  str npref;\n"
     "  if (prefix) {\n"
-    "    npref = strbuf (\"%s  \", prefix);\n"
-    "    sep = \"\";\n"
+    "    npref = strbuf (\"%s  \", prefix);\n" 
+    << ((ns) ? "    sep = \"\";\n" : "") <<
     "    sb << \"{\\n\";\n"
     "  }\n"
     "  else {\n"
-    "    sep = \", \";\n"
+    << ((ns) ? "    sep = \", \";\n" : "") <<
     "    sb << \"{ \";\n"
     "  }\n"
     "  rpc_print (sb, obj." << s->tagid << ", recdepth, "

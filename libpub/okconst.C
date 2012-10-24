@@ -178,7 +178,7 @@ const char *ok_mmcd = "/usr/local/lib/sfslite/mmcd";
 const char *ok_mmc_file = "/var/run/mmcd.mmf";
 
 // what OKWS reports it is in HTTP responses
-const char *okws_server_label = "OKWS/"VERSION;
+const char *okws_server_label = "OKWS/" VERSION;
 
 
 //
