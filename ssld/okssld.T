@@ -12,6 +12,10 @@
 #include "tame_connectors.h"
 #include "tame_io.h"
 
+#ifdef HAVE_LINUX_PRCTL_DUMP
+# include <sys/prctl.h>
+#endif /* HAVE_LINUX_PRCTL_DUMP */
+
 //-----------------------------------------------------------------------
 
 namespace okssl {
@@ -396,6 +400,13 @@ namespace okssl {
 	ret = true;
       }
     }
+
+#ifdef HAVE_LINUX_PRCTL_DUMP
+    if (prctl (PR_SET_DUMPABLE, 1) != 0) {
+        warn ("prctl(PR_SET_DUMPABLE, 1) failed: %m\n");
+    }
+#endif /* HAVE_LINUX_PRCTL_DUMP */
+
     return ret;
   }
 
