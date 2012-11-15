@@ -711,7 +711,6 @@ okld_t::parse_file (const str &cf)
   conftab ct;
   _config_no_pub_v2_support = false;
   str sys_sel_tmp;
-  u_int UIZ = 0;
   str gzip_tmp;
   str tmp_dump_user, tmp_dump_group;
 
