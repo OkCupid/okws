@@ -263,7 +263,6 @@ public:
     _socket_filename (okd_mgr_socket),
     _socket_mode (okd_mgr_socket_mode),
     _accept_ready (false),
-    _ssl (this),
     _lazy_startup (false),
     _okd_nodelay (okd_tcp_nodelay),
     _cluster_addressing (false),
@@ -288,6 +287,7 @@ public:
   void got_service (vec<str> s, str loc, bool *errp);
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_script (vec<str> s, str loc, bool *errp);
+  void got_ssl_port(vec<str> v, str loc, bool* errp);
 
   void okld_dispatch (svccb *sbp);
 
@@ -374,6 +374,7 @@ private:
 
   void got_child_fd (int fd, const oksvc_descriptor_t &d);
   bool listen_from_ssl (int fd);
+  bool is_ssl_port(okws1_port_t port);
 
   str configfile;
   int okldfd;
@@ -405,7 +406,7 @@ private:
 
   str _config_grp, _config_user;
   bool _accept_ready;
-  okd_ssl_t _ssl;
+  vec<ptr<okd_ssl_t> > _ssls;
   bool _lazy_startup;
   str _stat_page_url;
   bool _okd_nodelay;
@@ -413,6 +414,8 @@ private:
   bool _emerg_kill_enabled;
   time_t _emerg_kill_wait;
   int _emerg_kill_signal;
+
+  vec<okws1_port_t> _ssl_ports;
 };
 
 class okd_mgrsrv_t 

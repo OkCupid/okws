@@ -115,20 +115,36 @@ public:
   okld_helper_ssl_t (const str &u, const str &g);
 
   str _certfile, _keyfile, _chainfile;
-  u_int _timeout;
+  u_int _ssl_timeout;
   str _cipher_list;
   bool _cipher_order;
   bool _cli_renog;
-  bool _debug_startup;
+  bool _ssl_debug_startup;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
   str chainfile_resolved () const { return _chainfile_resolved; }
   str cipher_list () const;
   bool cipher_order() const;
+
+  void parse_certfile(str s) { _certfile = s; }
+  void parse_keyfile(str s) { _keyfile = s; }
+  void parse_chainfile(str s) { _chainfile = s; }
+  void parse_ssl_timeout(str s) { _ssl_timeout = atoi(s.cstr()); }
+  void parse_cipher_list(str s) { _cipher_list = s; }
+  void parse_cipher_order(str s) { _cipher_order = (bool)(atoi(s.cstr())); }
+  void parse_cli_renog(str s) { _cli_renog = (bool)(atoi(s.cstr())); }
+  void parse_ssl_debug_startup(str s) { 
+      _ssl_debug_startup = (bool)(atoi(s.cstr())); }
+
+  void add_port(okws1_port_t p) { _ports.insert(p); _port_list.push_back(p); }
+  bool listening_on(okws1_port_t p) { return _ports[p]; }
+  vec<okws1_port_t>& ports() { return _port_list; }
+
 private:
   str resolve (const str &in, const char *which) const;
-  vec<okws1_port_t> _ports;
+  bhash<okws1_port_t> _ports;
+  vec<okws1_port_t> _port_list;
   str _certfile_resolved, _keyfile_resolved, _chainfile_resolved;
 
 };
@@ -465,6 +481,18 @@ public:
   void got_pubd_exec (vec<str> s, str log, bool *errp);
   void got_interpreter (vec<str> s, str log, bool *errp);
 
+  // SSL config processors
+  void got_ssl_create_channel(vec<str> s, str log, bool* errp);
+  void got_certfile(vec<str> s, str log, bool* errp);
+  void got_keyfile(vec<str> s, str log, bool* errp);
+  void got_chainfile(vec<str> s, str log, bool* errp);
+  void got_ssl_listen_port(vec<str> s, str log, bool* errp);
+  void got_ssl_timeout(vec<str> s, str log, bool* errp);
+  void got_cipher_list(vec<str> s, str log, bool* errp);
+  void got_cipher_order(vec<str> s, str log, bool* errp);
+  void got_cli_renog(vec<str> s, str log, bool* errp);
+  void got_ssl_debug_startup(vec<str> s, str log, bool* errp);
+
   void okld_exit (int rc);
 
   void launch (str s, CLOSURE);
@@ -488,6 +516,7 @@ public:
   void shutdown2 (int status);
   void shutdown_ssl (int status);
   bool init_jaildir ();
+  bool init_okssl_jaildirs();
   bool init_interpreters ();
   bool in_shutdown () const { return sdflag; }
   str get_root_coredir () const { return root_coredir; }
@@ -515,6 +544,7 @@ public:
   const ok_grp_t &coredump_grp () const { return _coredump_grp; }
   const ok_usr_t &coredump_usr () const { return _coredump_usr; }
   int coredump_mode () const { return _coredump_mode; }
+  qhash<str, ptr<okld_helper_ssl_t> >& okssls() { return _okssls; } 
 
   const vec<time_t> &bind_reattempt_schedule () const 
   { return _bind_reattempt_schedule; }
@@ -552,6 +582,7 @@ private:
   bool check_services_and_aliases ();
   bool check_service_ports ();
   bool check_ports ();
+  bool is_ssl_port_active(okws1_port_t port);
   void got_alias (vec<str> s, str loc, bool *errp);
   void got_regex_alias (vec<str> s, str loc, bool *errp);
   bool fixup_ssl_ports ();
@@ -565,6 +596,8 @@ private:
   void clock_daemon_died (int sig);
   bool check_uri (const str &loc, const str &uri, okws1_port_t *port = NULL) 
     const;
+  ptr<okld_helper_ssl_t> okssl_by_name(str s = "default");
+  void add_ssl_port(okws1_port_t port, str channel = "default");
 
   void launch_logd ();
   void launch_logd_cb (bool err);
@@ -594,7 +627,9 @@ private:
 
 
   okld_helper_t _okd;
-  okld_helper_ssl_t _okssl;
+  qhash<str, ptr<okld_helper_ssl_t> > _okssls;
+  bool _auto_activate;
+  vec<str> _ssl_exec_params;
 
   sfs_clock_t clock_mode;
   str mmc_file;

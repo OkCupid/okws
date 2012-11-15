@@ -125,6 +125,27 @@ okd_t::got_alias (vec<str> s, str loc, bool *errp)
   aliases.insert (fix_uri (s[2]), fix_uri (s[1]));
 }
 
+//-----------------------------------------------------------------------------
+
+void 
+okd_t::got_ssl_port(vec<str> v, str loc, bool* errp) {
+    bool err = true;
+    u_int port;
+    if (v.size () < 2 || !convertint (v[v.size()-1], &port)) {
+        warn << loc << ": usage: " << v[0] << " <port>\n";
+    } else if (port > OK_PORT_MAX || port < OK_PORT_MIN) {
+        warn << loc << ": port out of range (" << port << ")\n";
+    } else if (_all_ports_map[port]) {
+        warn << loc << ": report port #: " << port << "\n";
+    } else {
+        if (v.size() < 3)
+            ok_ssl_port = port;
+        _ssl_ports.push_back(port);
+        err = false;
+    }
+    if (err) *errp = true;
+}
+
 //-----------------------------------------------------------------------
 
 void
@@ -266,7 +287,7 @@ okd_t::parse_file (const str &cf)
     .add ("PubChunkSize", &ok_pub3_max_datasz, 0, INT_MAX)
     .add ("SelectPolicy", &sys_sel_tmp)
     .add ("AcceptDelay", &okd_accept_delay, u_int (0), UINT_MAX)
-    .add ("SslPrimaryPort", &ok_ssl_port, u_int (0), UINT_MAX)
+    .add ("SslPrimaryPort", wrap(this, &okd_t::got_ssl_port))
     .add ("LazyStartup", &_lazy_startup)
     .add ("StatPageURL", &_stat_page_url)
     .add ("TcpNoDelay", &_okd_nodelay)
@@ -337,6 +358,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("ServiceLifeTime")
 
     .ignore ("OkssldExecPath")
+    .ignore ("SslCreateChannel")
     .ignore ("SslCertFile")
     .ignore ("SslKeyFile")
     .ignore ("SslCertChainFile")
@@ -430,6 +452,17 @@ find_cluster_addressing (str in, int *out)
   return ret;
 }
 
+//-----------------------------------------------------------------------------
+
+bool
+okd_t::is_ssl_port(okws1_port_t port) {
+    for (size_t i = 0; i < _ssl_ports.size(); i++) {
+        if (_ssl_ports[i] == port)
+            return true;
+    }
+    return false;
+}
+
 //-----------------------------------------------------------------------
 
 tamed void
@@ -459,7 +492,7 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
     
     // for services not on the default port, rewrite the request
     // URL with the port explictly mentioned
-    if (port != listenport && port != ok_ssl_port) {
+    if (port != listenport && !is_ssl_port(port)) {
       strbuf b (":");
       b << port << s;
       s = b;
@@ -602,7 +635,9 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
 void
 okd_t::disable_accept_guts ()
 {
-  _ssl.disable_accept ();
+  for (size_t i = 0; i < _ssls.size(); i++) {
+      _ssls[i]->disable_accept ();
+  }
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, NULL);
@@ -617,7 +652,9 @@ okd_t::enable_accept_guts ()
     warn << "refusing to reenable accept when in shutdown\n";
     return;
   }
-  _ssl.enable_accept ();
+  for (size_t i = 0; i < _ssls.size(); i++) {
+      _ssls[i]->enable_accept ();
+  }
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) 
     fdcb (listenfds[i], selread, wrap (this, &okd_t::newserv, listenfds[i]));
@@ -629,7 +666,9 @@ void
 okd_t::stop_listening ()
 {
   accept_enabled = false;
-  _ssl.disable_accept ();
+  for (size_t i = 0; i < _ssls.size(); i++) {
+      _ssls[i]->disable_accept ();
+  }
   u_int sz = listenfds.size ();
   for (u_int i = 0; i < sz; i++) {
     fdcb (listenfds[i], selread, NULL);
@@ -811,61 +850,61 @@ okd_t::launch ()
 void
 okd_t::okld_dispatch (svccb *sbp)
 {
-  if (!sbp) {
-    warn << "initiate shutdown; EOF from okld\n";
-    shutdown (0);
-  } else {
-    switch (sbp->proc ()) {
-    case OKLD_NEW_SERVICE:
-      {
-	RPC::okld_program_1::okld_new_service_srv_t<svccb> srv (sbp);
-	const oksvc_descriptor_t *arg = srv.getarg ();
-	int fd = _okld_x->recvfd ();
-	ok_xstatus_typ_t st;
-	if (fd >= 0)  {
-	  got_child_fd (fd, *arg);
-	  st = OK_STATUS_OK;
-	} else {
-	  st = OK_STATUS_BADFD;
-	}
-	srv.reply (st);
-      }
-      break;
-    case OKLD_RESERVE:
-      {
-	RPC::okld_program_1::okld_reserve_srv_t<svccb> srv (sbp);
-	const oksvc_reserve_arg_t *arg = srv.getarg ();
-	ok_xstatus_typ_t st = reserve_child (arg->proc, arg->lazy);
-	srv.reply (st);
-      }
-      break;
-    case OKLD_SEND_SSL_SOCKET:
-      {
-	RPC::okld_program_1::okld_send_ssl_socket_srv_t<svccb> srv (sbp);
+    if (!sbp) {
+        warn << "initiate shutdown; EOF from okld\n";
+        shutdown (0);
+    } else {
+        switch (sbp->proc ()) {
+        case OKLD_NEW_SERVICE:
+            {
+                RPC::okld_program_1::okld_new_service_srv_t<svccb> srv (sbp);
+                const oksvc_descriptor_t *arg = srv.getarg ();
+                int fd = _okld_x->recvfd ();
+                ok_xstatus_typ_t st;
+                if (fd >= 0)  {
+                    got_child_fd (fd, *arg);
+                    st = OK_STATUS_OK;
+                } else {
+                    st = OK_STATUS_BADFD;
+                }
+                srv.reply (st);
+            }
+            break;
+        case OKLD_RESERVE:
+            {
+                RPC::okld_program_1::okld_reserve_srv_t<svccb> srv (sbp);
+                const oksvc_reserve_arg_t *arg = srv.getarg ();
+                ok_xstatus_typ_t st = reserve_child (arg->proc, arg->lazy);
+                srv.reply (st);
+            }
+            break;
+        case OKLD_SEND_SSL_SOCKET:
+            {
+                RPC::okld_program_1::okld_send_ssl_socket_srv_t<svccb> srv (sbp);
 
-	// ignore arg!
-	//const okws_send_ssl_arg_t *arg = srv.getarg ();
+                // ignore arg!
+                //const okws_send_ssl_arg_t *arg = srv.getarg ();
 
-	int fd = _okld_x->recvfd ();
-	ok_xstatus_typ_t st;
-	if (fd >= 0) {
-	  make_async (fd);
-	  if (listen_from_ssl (fd)) {
-	    st = OK_STATUS_OK;
-	  } else {
-	    st = OK_STATUS_NOMORE;
-	  }
-	} else {
-	  st = OK_STATUS_BADFD;
-	}
-	srv.reply (st);
-      }
-      break;
-    default:
-      sbp->reject (PROC_UNAVAIL);
-      break;
+                int fd = _okld_x->recvfd ();
+                ok_xstatus_typ_t st;
+                if (fd >= 0) {
+                    make_async (fd);
+                    if (listen_from_ssl (fd)) {
+                        st = OK_STATUS_OK;
+                    } else {
+                        st = OK_STATUS_NOMORE;
+                    }
+                } else {
+                    st = OK_STATUS_BADFD;
+                }
+                srv.reply (st);
+            }
+            break;
+        default:
+            sbp->reject (PROC_UNAVAIL);
+            break;
+        }
     }
-  }
 }
 
 //-----------------------------------------------------------------------
@@ -874,8 +913,10 @@ bool
 okd_t::listen_from_ssl (int fd)
 {
   bool ret = true;
-  if (!_ssl.init (fd)) {
-    warn << "Multiple SSLs given; using only the first!\n";
+  ptr<okd_ssl_t> ssl = New refcounted<okd_ssl_t>(this);
+  _ssls.push_back(ssl);
+  if (!ssl->init (fd)) {
+    warn << "Error initializing SSL!\n";
     close (fd);
     ret = false;
   }

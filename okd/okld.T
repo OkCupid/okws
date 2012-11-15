@@ -127,10 +127,16 @@ okld_t::got_generic_exec (okld_helper_t *out, vec<str> s, str loc, bool *errp)
 //-----------------------------------------------------------------------
 
 void
-okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp)
-{
-  okld_t::got_generic_exec (&_okssl, s, loc, errp);
-  _okssl.activate ();
+okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp) {
+    qhash_const_iterator_t<str, ptr<okld_helper_ssl_t> > it(_okssls);
+    const str* k;
+    while ((k = it.next())) {
+        ptr<okld_helper_ssl_t> okssl = *_okssls[*k];
+        okld_t::got_generic_exec (okssl, s, loc, errp);
+        okssl->activate ();
+    }
+    _auto_activate = true;
+    _ssl_exec_params = s;
 }
 
 //-----------------------------------------------------------------------
@@ -648,27 +654,40 @@ okld_t::check_services_and_aliases ()
   return ret;
 }
 
+//-----------------------------------------------------------------------------
+
+bool okld_t::is_ssl_port_active(okws1_port_t port) {
+    qhash_const_iterator_t<str, ptr<okld_helper_ssl_t> > it(_okssls);
+    const str* k;
+    bool ret = false;
+    while ((k = it.next())) {
+        ptr<okld_helper_ssl_t> okssl = *_okssls[*k];
+        ret |= (okssl->active() && okssl->listening_on(port));
+    }   
+    return ret;
+}
+
 //-----------------------------------------------------------------------
 
 bool
 okld_t::check_ports ()
 {
-  bool ret = true;
-  qhash_const_iterator_t<okws1_port_t, bool> it (_all_ports_map);
-  const okws1_port_t *pp;
-  while ((pp = it.next ())) {
-    okws1_port_t p = *pp;
-    if (!(used_ports[p] ||
-	  (used_primary_port &&
-	   (p == listenport || 
-	    (_okssl.active () && p == ok_ssl_port))))) {
-      warn << "OKD will listen on port " << p << ", but no "
-	   << "services will be using it!\n";
-      ret = false;
+    bool ret = true;
+    qhash_const_iterator_t<okws1_port_t, bool> it (_all_ports_map);
+    const okws1_port_t *pp;
+    while ((pp = it.next ())) {
+        okws1_port_t p = *pp;
+        if (!(used_ports[p] ||
+              (used_primary_port &&
+               (p == listenport || 
+                (is_ssl_port_active(p)))))) {
+            warn << "OKD will listen on port " << p << ", but no "
+                << "services will be using it!\n";
+            ret = false;
+        }
     }
-  }
 
-  return ret;
+    return ret;
 }
 
 //-----------------------------------------------------------------------
@@ -724,13 +743,13 @@ okld_t::parse_file (const str &cf)
 			       &ok_base_t::got_ports, false))
 
     .add ("OkssldExecPath", wrap (this, &okld_t::got_okssl_exec))
-    .add ("SslCertFile", &_okssl._certfile)
-    .add ("SslKeyFile", &_okssl._keyfile)
-    .add ("SslCertChainFile", &_okssl._chainfile)
+    .add ("SslCreateChannel", wrap(this, &okld_t::got_ssl_create_channel))
+    .add ("SslCertFile", wrap(this, &okld_t::got_certfile))
+    .add ("SslKeyFile", wrap(this, &okld_t::got_keyfile))
+    .add ("SslCertChainFile", wrap(this, &okld_t::got_chainfile))
     .add ("SslPrimaryPort", wrap (this, (&okld_t::got_ssl_primary_port)))
-    .add ("SslListenPorts", wrap (static_cast<ok_base_t *> (this),
-				  &ok_base_t::got_ports, true))
-    .add ("SslTimeout", &_okssl._timeout, UIZ, u_int (100000))
+    .add ("SslListenPorts", wrap(this, &okld_t::got_ssl_listen_port))
+    .add ("SslTimeout", wrap(this, &okld_t::got_ssl_timeout))
     .add ("SslUser", &_config_ssl_un)
     .add ("SslGroup", &_config_ssl_gr)
 
@@ -830,10 +849,10 @@ okld_t::parse_file (const str &cf)
     .add ("DieOnLogdCrash", &_die_on_logd_crash)
     .add ("BindReattemptSchedule", &_bind_reattempt_schedule_str)
     .add ("EmergencyKillEnabled", &_emerg_kill)
-    .add ("SSLCipherList", &_okssl._cipher_list)
-    .add ("SSLHonorCipherOrder", &_okssl._cipher_order)
-    .add ("SSLAllowClientRenog", &_okssl._cli_renog)
-    .add ("SSLDebugStartup", &_okssl._debug_startup)
+    .add ("SSLCipherList", wrap(this, &okld_t::got_cipher_list))
+    .add ("SSLHonorCipherOrder", wrap(this, &okld_t::got_cipher_order))
+    .add ("SSLAllowClientRenog", wrap(this, &okld_t::got_cli_renog))
+    .add ("SSLDebugStartup", wrap(this, &okld_t::got_ssl_debug_startup))
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
     .add ("GzipErrorPages", &ok_gzip_error_pages)
@@ -931,8 +950,14 @@ okld_t::post_config (const str &cf)
   }
   if (_config_okd_un) _okd.set_user (_config_okd_un);
   if (_config_okd_gr) _okd.set_group (_config_okd_gr);
-  if (_config_ssl_un) _okssl.set_user (_config_ssl_un);
-  if (_config_ssl_gr) _okssl.set_group (_config_ssl_gr);
+
+  const str* k;
+  qhash_const_iterator_t<str, ptr<okld_helper_ssl_t> > it(_okssls);
+  while ((k = it.next())) {
+      ptr<okld_helper_ssl_t> okssl = *_okssls[*k];
+      if (_config_ssl_un) okssl->set_user (_config_ssl_un);
+      if (_config_ssl_gr) okssl->set_group (_config_ssl_gr);
+  }
 
   nxtuid = ok_svc_uid_low;
 
@@ -1441,10 +1466,11 @@ bool
 okld_t::fixup_ssl_ports ()
 {
   bool ret = true;
-  if (_okssl.active ()) {
+  ptr<okld_helper_ssl_t> okssl = okssl_by_name();
+  if (okssl && okssl->active ()) {
     bool *sslp = _all_ports_map[ok_ssl_port];
     if (!sslp) { 
-      add_port (ok_ssl_port, true); 
+      add_ssl_port(ok_ssl_port); 
     } else if (!*sslp && _https_ports.size () == 0) {
       warn << "Cannot add default SSL port (" << ok_ssl_port 
 	   << ") since it's already listening for HTTPS\n";
@@ -1457,104 +1483,116 @@ okld_t::fixup_ssl_ports ()
 //-----------------------------------------------------------------------
 
 tamed void 
-okld_t::launch_okssl (evb_t ev)
-{
-  tvars {
-    vec<str> argv;
-    int logfd;
-    bool rc (false);
-    int fds[2];
-    okws_send_ssl_arg_t arg;
-    ok_xstatus_typ_t res;
-    clnt_stat err;
-    str cl;
-  }
+okld_t::launch_okssl (evb_t ev) {
 
-  if (!_okssl.active ()) {
-    rc = true;
-  } else {
-    twait { get_log_primary ()->clone (mkevent (logfd)); }
-    if (logfd < 0) {
-      warn << "oklogd did not send a file descriptor; failing\n";
-    } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
-      warn ("socketpair failed when start okssld: %m\n");
-    } else {
-      argv.push_back ("-m");
-      argv.push_back (strbuf () << _okssl._timeout);
-      if (will_jail ()) {
-	argv.push_back ("-u");
-	argv.push_back (strbuf () << _okssl.user ().getid ());
-	argv.push_back ("-g");
-	argv.push_back (strbuf () << _okssl.group ().getid ());
-      }
-      argv.push_back ("-j");
-      argv.push_back (jaildir);
-      argv.push_back ("-d");
-      argv.push_back (_okssl.dumpdir ());
-      argv.push_back ("-l");
-      argv.push_back (strbuf () << logfd);
-      argv.push_back ("-t");
-      argv.push_back (strbuf () << fds[0]);
-      if (_okssl.certfile_resolved ()) {
-	argv.push_back ("-c");
-	argv.push_back (_okssl.certfile_resolved ());
-      }
-      argv.push_back ("-k");
-      argv.push_back (_okssl.keyfile_resolved ());
-      if (_okssl.chainfile_resolved ()) {
-	argv.push_back ("-n");
-	argv.push_back (_okssl.chainfile_resolved ()); 
-      }
-
-      for (size_t i = 0; i < _https_ports.size (); i++) {
-	argv.push_back ("-p");
-	argv.push_back (strbuf () << _https_ports[i]);
-      }
-
-      if ((cl = _okssl.cipher_list ())) {
-	argv.push_back ("-L");
-	argv.push_back (cl);
-      }
-
-      if (_okssl.cipher_order ()) {
-        argv.push_back("-O");
-      }
-      
-      if (_okssl._cli_renog) {
-	argv.push_back("-R");
-      }
-
-      if (_okssl._debug_startup) {
-          argv.push_back("-D");
-      }
-
-      _okssl.argv () += argv;
-
-      if (_okssl.launch ()) {
-	_okssl.set_chldcb (wrap (this, &okld_t::shutdown_ssl));
-	_okssl.make_cli (okld_program_1, wrap (this, &okld_t::shutdown_ssl, 0));
-	twait {
-	  _okd.x ()->sendfd (fds[1]);
-	  arg.dummy = 0;
-	  RPC::okld_program_1::okld_send_ssl_socket 
-	    (_okd.cli (), arg, &res, mkevent (err));
-	}
-	if (err) {
-	  warn << "Error sending SSL socket to okd: " << err << "\n";
-	} else if (res != OK_STATUS_OK) {
-	  warn << "okd rejected SSL socket (";
-	  rpc_print (warnx, res, 0, NULL, NULL);
-	  warnx << ")\n";
-	} else {
-	  rc = true;
-	}
-      } else {
-	close (fds[1]);
-      }
-      close (fds[0]);
+    tvars {
+        vec<str> argv;
+        int logfd;
+        bool rc (false);
+        int fds[2];
+        okws_send_ssl_arg_t arg;
+        ok_xstatus_typ_t res;
+        clnt_stat err;
+        str cl;
+        qhash_const_iterator_t<str, ptr<okld_helper_ssl_t> > 
+            it(_self->okssls());
+        const str* k;
+        ptr<okld_helper_ssl_t> okssl;
+        vec<okws1_port_t> ports;
     }
-  }
-  ev->trigger (rc);
+
+    while ((k = it.next())) {
+        okssl = *_okssls[*k];
+        warn << "starting okssld channel: " << *k << "\n";
+        argv.clear();
+        if (!okssl->active ()) {
+            rc = true;
+        } else {
+            twait { get_log_primary ()->clone (mkevent (logfd)); }
+            if (logfd < 0) {
+                warn << "oklogd did not send a file descriptor; failing\n";
+            } else if (socketpair (AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
+                warn ("socketpair failed when start okssld: %m\n");
+            } else {
+                argv.push_back ("-m");
+                argv.push_back (strbuf () << okssl->_ssl_timeout);
+                if (will_jail ()) {
+                    argv.push_back ("-u");
+                    argv.push_back (strbuf () << okssl->user ().getid ());
+                    argv.push_back ("-g");
+                    argv.push_back (strbuf () << okssl->group ().getid ());
+                }
+                argv.push_back ("-j");
+                argv.push_back (jaildir);
+                argv.push_back ("-d");
+                argv.push_back (okssl->dumpdir ());
+                argv.push_back ("-l");
+                argv.push_back (strbuf () << logfd);
+                argv.push_back ("-t");
+                argv.push_back (strbuf () << fds[0]);
+                if (okssl->certfile_resolved ()) {
+                    argv.push_back ("-c");
+                    argv.push_back (okssl->certfile_resolved ());
+                }
+                argv.push_back ("-k");
+                argv.push_back (okssl->keyfile_resolved ());
+                if (okssl->chainfile_resolved ()) {
+                    argv.push_back ("-n");
+                    argv.push_back (okssl->chainfile_resolved ()); 
+                }
+
+                ports = okssl->ports();
+                for (size_t i = 0; i < ports.size (); i++) {
+                    argv.push_back ("-p");
+                    argv.push_back (strbuf () << ports[i]);
+                }
+
+                if ((cl = okssl->cipher_list ())) {
+                    argv.push_back ("-L");
+                    argv.push_back (cl);
+                }
+
+                if (okssl->cipher_order ()) {
+                    argv.push_back("-O");
+                }
+
+                if (okssl->_cli_renog) {
+                    argv.push_back("-R");
+                }
+
+                if (okssl->_ssl_debug_startup) {
+                    argv.push_back("-D");
+                }
+
+                okssl->argv () += argv;
+
+                if (okssl->launch ()) {
+                    okssl->set_chldcb (wrap (this, &okld_t::shutdown_ssl));
+                    okssl->make_cli (okld_program_1, 
+                                     wrap (this, &okld_t::shutdown_ssl, 0));
+                    twait {
+                        _okd.x ()->sendfd (fds[1]);
+                        arg.dummy = 0;
+                        RPC::okld_program_1::okld_send_ssl_socket 
+                            (_okd.cli (), arg, &res, mkevent (err));
+                    }
+                    if (err) {
+                        warn << "Error sending SSL socket to okd: " << err << "\n";
+                    } else if (res != OK_STATUS_OK) {
+                        warn << "okd rejected SSL socket (";
+                        rpc_print (warnx, res, 0, NULL, NULL);
+                        warnx << ")\n";
+                    } else {
+                        rc = true;
+                    }
+                } else {
+                    close (fds[1]);
+                }
+                close (fds[0]);
+            }
+        }
+    }
+    ev->trigger (rc);
 }
 
 //-----------------------------------------------------------------------
@@ -1772,9 +1810,15 @@ main (int argc, char *argv[])
 //-----------------------------------------------------------------------
 
 bool
-okld_t::init_ssl ()
-{
-  return _okssl.configure_keys ();
+okld_t::init_ssl () {
+    qhash_const_iterator_t<str, ptr<okld_helper_ssl_t> > it(_okssls);
+    const str* k;
+    while ((k = it.next())) {
+        ptr<okld_helper_ssl_t> okssl = *_okssls[*k];
+        if (!okssl->configure_keys())
+            return false;
+    }
+    return true;
 }
 
 //-----------------------------------------------------------------------
@@ -1886,6 +1930,20 @@ okld_t::launch_services (evv_t ev)
 //-----------------------------------------------------------------------
 
 bool
+okld_t::init_okssl_jaildirs() {
+    qhash_const_iterator_t<str, ptr<okld_helper_ssl_t> > it(_okssls);
+    const str* k;
+    while ((k = it.next())) {
+        ptr<okld_helper_ssl_t> okssl = *_okssls[*k];
+        if (!okssl->configure(this, coredumpdir))
+            return false;
+    }
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool
 okld_t::init_jaildir ()
 {
   if (!will_jail ())
@@ -1925,8 +1983,7 @@ okld_t::init_jaildir ()
     ret = false;
   }
 
-  if (!_okd.configure (this, coredumpdir) || 
-      !_okssl.configure (this, coredumpdir))
+  if (!_okd.configure (this, coredumpdir) || !init_okssl_jaildirs())
     ret = false;
 
   // separate coredump directory for each service UID
@@ -2208,10 +2265,10 @@ okld_helper_ssl_t::okld_helper_ssl_t (const str &u, const str &g)
   : okld_helper_t ("okssld", u, g),
     _certfile (ok_ssl_certfile),
     _keyfile (ok_ssl_keyfile),
-    _timeout (ok_ssl_timeout),
+    _ssl_timeout (ok_ssl_timeout),
     _cipher_order (false),
     _cli_renog (false),
-    _debug_startup (false) {}
+    _ssl_debug_startup (false) {}
 
 //-----------------------------------------------------------------------
 
@@ -2262,25 +2319,134 @@ okld_t::shutdown_ssl (int i)
 
 }
 
+//-----------------------------------------------------------------------------
+
+ptr<okld_helper_ssl_t> okld_t::okssl_by_name(str s) {
+    ptr<okld_helper_ssl_t>* t;
+    return (NULL != (t = _okssls[s])) ? *t : NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void
+okld_t::add_ssl_port(okws1_port_t port, str channel) {
+    add_port(port, true);
+    ptr<okld_helper_ssl_t> okssl = okssl_by_name(channel);
+    if (!okssl) {
+        warn << "trying to add port to invalid SSL channel: " << channel
+             << "\n";
+    } else
+        okssl->add_port(port);
+}
+
+//-----------------------------------------------------------------------------
+
+static str
+get_ssl_channel(vec<str> v) {
+    if (v.size() < 3)
+        return "default";
+    else 
+        return v[1];
+}
+
 //-----------------------------------------------------------------------
 
 void
 okld_t::got_ssl_primary_port (vec<str> v, str loc, bool *errp)
 {
-  bool err = true;
-  u_int port;
-  if (v.size () != 2 || !convertint (v[1], &port)) {
-    warn << loc << ": usage: " << v[0] << " <port>\n";
-  } else if (port > OK_PORT_MAX || port < OK_PORT_MIN) {
-    warn << loc << ": port out of range (" << port << ")\n";
-  } else if (_all_ports_map[port]) {
-    warn << loc << ": report port #: " << port << "\n";
-  } else {
-    ok_ssl_port = port;
-    add_port (port, true);
-    err = false;
-  }
-  if (err) *errp = true;
+    bool err = true;
+    u_int port;
+    if (v.size () < 2 || !convertint (v[v.size()-1], &port)) {
+        warn << loc << ": usage: " << v[0] << " <port>\n";
+    } else if (port > OK_PORT_MAX || port < OK_PORT_MIN) {
+        warn << loc << ": port out of range (" << port << ")\n";
+    } else if (_all_ports_map[port]) {
+        warn << loc << ": report port #: " << port << "\n";
+    } else {
+        if (v.size() < 3)
+            ok_ssl_port = port;
+        add_ssl_port(port, get_ssl_channel(v));
+        err = false;
+    }
+    if (err) *errp = true;
+}
+
+//-----------------------------------------------------------------------
+
+void
+okld_t::got_ssl_listen_port (vec<str> v, str loc, bool *errp)
+{
+    bool err = true;
+    u_int port;
+    if (v.size () < 2 || !convertint (v[v.size()-1], &port)) {
+        warn << loc << ": usage: " << v[0] << " <port>\n";
+    } else if (port > OK_PORT_MAX || port < OK_PORT_MIN) {
+        warn << loc << ": port out of range (" << port << ")\n";
+    } else if (_all_ports_map[port]) {
+        warn << loc << ": report port #: " << port << "\n";
+    } else {
+        add_ssl_port(port, get_ssl_channel(v));
+        err = false;
+    }
+    if (err) *errp = true;
+}
+
+//-----------------------------------------------------------------------------
+
+// macro for creating a channel based SSL handler
+#define HANDLE_SSL_CHANNEL_OPT(name) \
+    void okld_t::got_##name(vec<str> s, str loc, bool *errp) {    \
+        str key;                                                  \
+        str data;                                                 \
+        switch (s.size()) {                                       \
+        case 2:                                                   \
+            okssl_by_name("default")->parse_##name(s[1]);             \
+            *errp = false;                                        \
+            return;                                               \
+        case 0:                                                   \
+        case 1:                                                   \
+            warn << loc << ": missing parameter for: "<< s[0] << "\n"; \
+            *errp = true;                                         \
+            return;                                               \
+        case 3:                                                   \
+            key = s[1];                                           \
+            data = s[2];                                          \
+            okssl_by_name(key)->parse_##name(data);                   \
+            *errp = false;                                        \
+            return;                                               \
+        default:                                                  \
+            warn << loc << ": too many parameters for: " << s[0] << "\n"; \
+            return;                                               \
+        };                                                        \
+    } 
+
+HANDLE_SSL_CHANNEL_OPT(certfile)
+HANDLE_SSL_CHANNEL_OPT(keyfile)
+HANDLE_SSL_CHANNEL_OPT(chainfile)
+HANDLE_SSL_CHANNEL_OPT(ssl_timeout)
+HANDLE_SSL_CHANNEL_OPT(cipher_list)
+HANDLE_SSL_CHANNEL_OPT(cipher_order)
+HANDLE_SSL_CHANNEL_OPT(cli_renog)
+HANDLE_SSL_CHANNEL_OPT(ssl_debug_startup)
+
+//-----------------------------------------------------------------------------
+
+void
+okld_t::got_ssl_create_channel(vec<str> s, str loc, bool* errp) {
+    
+    if (s.size() < 2) {
+        warn << loc << ": no channel name specified for: "
+             << s[0] << "\n";
+    } else {
+        warn << "creating SSL channel: " << s[1] << "\n";
+        ptr<okld_helper_ssl_t> okssl = 
+            New refcounted<okld_helper_ssl_t>(ok_ssl_uname, ok_ssl_gname);
+        _okssls.insert(s[1], okssl);
+        if (_auto_activate) {
+            okld_t::got_generic_exec (okssl, _ssl_exec_params, loc, errp);
+            okssl->activate ();
+        }
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -2372,7 +2538,7 @@ okld_t::okld_t ()
     unsafe_mode (false), 
     safe_startup_fl (true),
     _okd ("okd", ok_okd_uname, ok_okd_gname),
-    _okssl (ok_ssl_uname, ok_ssl_gname),
+    _auto_activate(false),
     clock_mode (SFS_CLOCK_GETTIME),
     mmcd (ok_mmcd), 
     mmcd_pid (-1), 
@@ -2388,7 +2554,10 @@ okld_t::okld_t ()
     _aggressive_svc_restart (false),
     _die_on_logd_crash (false),
     _emerg_kill (false),
-    _config_resolve_bins (false) {}
+    _config_resolve_bins (false) {
+        _okssls.insert("default", (New refcounted<okld_helper_ssl_t>
+                                   (ok_ssl_uname, ok_ssl_gname)));
+    }
 
 //-----------------------------------------------------------------------
 
