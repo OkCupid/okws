@@ -174,9 +174,9 @@ class cookie_t : protected cgi_t
 {
 public:
   cookie_t (const str &d = NULL, const str &p = "/", const str &e = NULL,
-	    bool s = false) 
-    : cgi_t (), domain ("domain", d, false), path ("path", p, false), 
-      expires ("expires", e, false), secure (s) {}
+	    bool s = false, bool ho = false) 
+    : cgi_t (), domain ("Domain", d, false), path ("Path", p, false), 
+      expires ("Expires", e, false), secure (s), httponly(ho) {}
 							       
   cookie_t &add (const str &k, const str &v) 
   { insert (k, v, false); return (*this); }
@@ -194,6 +194,7 @@ public:
   cookie_t &set_expires (const str &s) { expires.addval (s); return (*this); }
   
   cookie_t &set_secure (bool fl = true) { secure = fl; return (*this); }
+  cookie_t &set_httponly (bool fl = true) { httponly = fl; return (*this); }
   
   str to_str () const { return cgi_t::encode (); }
   str get_sep () const { return "; "; }
@@ -203,6 +204,7 @@ public:
   cgi_pair_t path;
   cgi_pair_t expires;
   bool secure;
+  bool httponly;
 };
 
 

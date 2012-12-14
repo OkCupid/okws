@@ -71,7 +71,9 @@ cookie_t::encode (strbuf *b) const
   path.encode (e, sep);
   domain.encode (e, sep);
   if (secure)
-    *e->out << sep << "secure";
+    *e->out << sep << "Secure";
+  if (httponly)
+    *e->out << sep << "HttpOnly";
   delete e;
 }
 
