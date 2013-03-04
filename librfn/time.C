@@ -84,6 +84,61 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  localtime_raw_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    time_t t = 0;
+    if (args.size () > 0) { t = args[0]._u; }
+    if (!t) { t = sfs_get_timenow (); }
+    ptr<expr_t> ret;
+
+    struct tm stm;
+    if (!localtime_r (&t, &stm)) {
+      report_error (p, strbuf ("cannot convert '") << t << "' to time");
+    } else {
+      ptr<expr_dict_t> d = expr_dict_t::alloc ();
+#define F(i) \
+      d->insert(#i, (int64_t)stm.tm_##i)
+      F(sec);
+      F(min);
+      F(hour);
+      F(mday);
+      F(mon);
+      F(year);
+      F(wday);
+      F(yday);
+      F(isdst);
+#undef F
+      ret = d;
+    }
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  mktime_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    struct tm t = {0};
+
+    const expr_dict_t& d = *args[0]._d;
+    ptr <const expr_t> e;
+
+    if ((e = d.lookup("sec")))   e->to_str().to_int32(&t.tm_sec);
+    if ((e = d.lookup("min")))   e->to_str().to_int32(&t.tm_min);
+    if ((e = d.lookup("hour")))  e->to_str().to_int32(&t.tm_hour);
+    if ((e = d.lookup("mday")))  e->to_str().to_int32(&t.tm_mday);
+    if ((e = d.lookup("mon")))   e->to_str().to_int32(&t.tm_mon);
+    if ((e = d.lookup("year")))  e->to_str().to_int32(&t.tm_year);
+    if ((e = d.lookup("wday")))  e->to_str().to_int32(&t.tm_wday);
+    if ((e = d.lookup("yday")))  e->to_str().to_int32(&t.tm_yday);
+    if ((e = d.lookup("isdst"))) e->to_str().to_int32(&t.tm_isdst);
+
+    return expr_int_t::alloc(mktime(&t));
+  }
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   days_from_now_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
     u_int64_t u = sfs_get_timenow () + 60 * 60 * 24 * args[0]._i;

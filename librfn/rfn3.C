@@ -53,6 +53,8 @@ namespace rfn3 {
     F(time_from_now);
     F(time_format);
     F(localtime);
+    F(localtime_raw);
+    F(mktime);
     F(strptime);
     F(decorate);
     F(isnull);

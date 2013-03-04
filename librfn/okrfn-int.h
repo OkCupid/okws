@@ -35,6 +35,8 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(now, "");
   PUB3_COMPILED_FN_DOC(time_format, "us");
   PUB3_COMPILED_FN(localtime, "|u");
+  PUB3_COMPILED_FN(localtime_raw, "|u");
+  PUB3_COMPILED_FN(mktime, "d");
   PUB3_COMPILED_FN_DOC(days_from_now, "i");
   PUB3_COMPILED_FN_DOC(time_from_now, "|iiii"); // D,H,M,S args
   PUB3_COMPILED_FN_DOC(strptime, "s|s"); 
