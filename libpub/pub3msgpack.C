@@ -716,11 +716,11 @@ pub3::msgpack::outbuf_t::encode_len (size_t len, u_int8_t b, u_int8_t s,
     put_byte (b);
   } else if (len <= 0xffff) {
     put_byte (s);
-    u_int16_t i = l;
+    u_int16_t i = len;
     put_int (i);
   } else {
     put_byte (l);
-    u_int32_t i = l;
+    u_int32_t i = len;
     put_int (i);
   }
 }
