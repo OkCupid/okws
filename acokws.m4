@@ -448,7 +448,7 @@ if test "$with_ssl" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
 	dirs=""
-	if test ${with_ssl+set} && "${with_ssl}"; then
+	if test ${with_ssl+set} -a "${with_ssl}"; then
 		dirs="$dirs ${with_ssl} ${with_ssl}/include"
 	fi
 	if test "${prefix}" != "NONE"; then
