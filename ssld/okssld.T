@@ -550,6 +550,9 @@ namespace okssl {
     } else {
       SSL_CTX_set_quiet_shutdown (_ssl_ctx, 1);
       SSL_CTX_sess_set_cache_size(_ssl_ctx, 0x1000);
+#ifdef HAVE_SSL_NOCOMP 
+      SSL_CTX_set_options(_ssl_ctx, SSL_OP_NO_COMPRESSION);
+#endif
       if (_cipher_order)
           SSL_CTX_set_options(_ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 

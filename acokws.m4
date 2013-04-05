@@ -448,7 +448,7 @@ if test "$with_ssl" != "no"; then
 	ac_save_CFLAGS=$CFLAGS
 	ac_save_LIBS=$LIBS
 	dirs=""
-	if test ${with_ssl+set} && "${with_ssl}"; then
+	if test ${with_ssl+set} -a "${with_ssl}"; then
 		dirs="$dirs ${with_ssl} ${with_ssl}/include"
 	fi
 	if test "${prefix}" != "NONE"; then
@@ -470,9 +470,36 @@ if test "$with_ssl" != "no"; then
 		okws_cv_ssl_h="yes"
 	fi
 	])
+
+dnl Check for no compression support from SSL
+    AC_CACHE_CHECK(for ssl with compression disable, okws_cv_sslnc,
+    [for dir in " " $dirs ; do
+		case $dir in
+			" ") iflags=" " ;;
+			*)   iflags="-I${dir}" ;; 
+		esac
+		CFLAGS="${ac_save_CFLAGS} $iflags"
+		AC_TRY_COMPILE([#include <openssl/ssl.h>], 
+                               [ (void)SSL_new((SSL_CTX *)NULL);
+                                 SSL_CTX_set_options(NULL, SSL_OP_NO_COMPRESSION);],
+				okws_cv_sslnc="${iflags}"; break)
+	done
+	if test "$okws_cv_sslnc" = " " ; then
+		okws_cv_sslnc="yes"
+	fi
+    if test -z $okws_cv_sslnc; then
+        okws_cv_sslnc="no"
+    fi
+	])
+
 	if test "$okws_cv_ssl_h" = "yes"; then
 		okws_cv_ssl_h=" "
 	fi
+
+    if test "$okws_cv_sslnc" != "yes" && test "$okws_cv_sslnc" != "no"; then
+        okws_cv_ssl_h=$okws_cv_sslnc
+    fi
+
 	if test "${okws_cv_ssl_h+set}"; then
 		dirs=`echo $okws_cv_ssl_h | sed 's/include/lib/' `
 		dirs=`echo $dirs | sed 's/^-I//' `
@@ -490,13 +517,21 @@ if test "$with_ssl" != "no"; then
 		done
 		if test -z ${okws_cv_libssl+set}; then
 			okws_cv_libssl="no"
-		fi
+        elif test "$okws_cv_sslnc" != "yes" -a "$okws_cv_sslnc" != "no"; then
+            ldir=`echo $okws_cv_ssl_h | sed 's/include/lib/' `
+            ldir=`echo $ldir | sed 's/^-I//' `
+            okws_cv_libssl="-L${ldir} -Wl,-rpath ${ldir} $okws_cv_libssl"
+        fi
 		])
 	fi
+
 	if test "${okws_cv_ssl_h+set}" && test "$okws_cv_libssl" != "no"
 	then
 		CPPFLAGS="$CPPFLAGS $okws_cv_ssl_h"
 		AC_DEFINE(HAVE_SSL, 1, Enable OpenSSL support)
+        if test "$okws_cv_sslnc" != "no"; then
+            AC_DEFINE(HAVE_SSL_NOCOMP, 1, Enable OpenSSL compression disable support)
+        fi
 		LIBSSL="$okws_cv_libssl"
 		use_ssl=yes
 	else
