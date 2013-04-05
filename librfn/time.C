@@ -192,9 +192,10 @@ namespace rfn3 {
 
     ptr<expr_t> ret;
     if (!strptime (t, f, &stm)) {
-      report_error (p, strbuf ("strptime(%s,%s) failed", t,f));
+      report_error (p, strbuf ("strptime(\"%s\", \"%s\") failed", t, f));
       ret = expr_null_t::alloc ();
     } else {
+      stm.tm_isdst = -1;
       ret = expr_int_t::alloc (mktime (&stm));
     }
     return ret;
