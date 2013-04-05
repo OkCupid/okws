@@ -1,5 +1,4 @@
-
-// -*-c++-*-
+// -*- mode: c++; tab-width: 8; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 /* $Id: ok.T 3066 2007-09-19 00:36:58Z max $ */
 
 #include "okwsconf.h"
@@ -40,58 +39,62 @@ namespace okssl {
 #define BUFSZ 0x1000
     char buf[BUFSZ];
     int rc;
+    int bytes_read = 0;
     bool doing_accept;
-    
-    if (!SSL_is_init_finished (_ssl)) {
-      rc = SSL_accept (_ssl);
-      doing_accept = true;
-    } else {
+    do {
+        if (!SSL_is_init_finished (_ssl)) {
+            rc = SSL_accept (_ssl);
+            doing_accept = true;
+        } else {
 
-      if (_handshake_ev) {
-	evv_t::ptr ev = _handshake_ev;
-	_handshake_ev = NULL;
-	ev->trigger ();
-      }
+            if (_handshake_ev) {
+                evv_t::ptr ev = _handshake_ev;
+                _handshake_ev = NULL;
+                ev->trigger ();
+            }
 
-      ssize_t sz = room_left ();
-      assert (sz > 0 || _force_read);
-      rc = SSL_read (_ssl, buf, min<ssize_t> (sz, BUFSZ));
+            ssize_t sz = room_left ();
+            assert (sz > 0 || _force_read);
+            rc = SSL_read (_ssl, buf, min<ssize_t> (sz, BUFSZ));
 
-      // MM: Don't let clients renegotiate if the option is set to 
-      // prevent a DoS threat
-      if (!_cli_renog && _renegotiations > 1) {
-	ssl_complain ("SSL_read: error: SSL client renegotiation\n");
-	return 0;
-      }
+            // MM: Don't let clients renegotiate if the option is set to 
+            // prevent a DoS threat
+            if (!_cli_renog && _renegotiations > 1) {
+                ssl_complain ("SSL_read: error: SSL client renegotiation\n");
+                return 0;
+            }
 
-      if (_force_read)
-	_force_read = false;
-      doing_accept = false;
-    }
-    
-    if (rc > 0) {
-      if (!doing_accept)
-	_buf.copy (buf, rc);
-    } else if (rc < 0) {
-      int err = SSL_get_error (_ssl, rc);
-      switch (err) {
-      case SSL_ERROR_WANT_READ:
-	_force_read = true;
-	errno = EAGAIN;
-	break;
-      case SSL_ERROR_WANT_WRITE:
-	_other_way->force_write ();
-	errno = EAGAIN;
-	break;
-      default:
-	ssl_complain ("SSL_read encountered an error: ");
-	errno = EIO;
-	break;
-      }
-    }
+            if (_force_read)
+                _force_read = false;
+            doing_accept = false;
+        }
+
+        if (rc > 0) {
+            bytes_read += rc;
+            if (!doing_accept)
+                _buf.copy (buf, rc);
+        } else if (rc < 0) {
+            int err = SSL_get_error (_ssl, rc);
+            switch (err) {
+            case SSL_ERROR_WANT_READ:
+                _force_read = true;
+                errno = EAGAIN;
+                break;
+            case SSL_ERROR_WANT_WRITE:
+                _other_way->force_write ();
+                errno = EAGAIN;
+                break;
+            default:
+                ssl_complain ("SSL_read encountered an error: ");
+                errno = EIO;
+                break;
+            }
+            return rc;
+        }
+    } while (rc > 0);
 
 #undef BUFSZ
-    return rc;
+    return bytes_read;
   }
 
   //-----------------------------------------------------------------------
