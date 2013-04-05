@@ -19,7 +19,13 @@ namespace okssl {
   {
     return (room_left () > 0 || _force_read);
   }
-  
+
+  bool
+  ssl_to_std_proxy_t::is_sync_readable () const
+  {
+      return (is_readable() && SSL_pending(_ssl) > 0);
+  }
+
   //-----------------------------------------------------------------------
   
   void 
@@ -54,7 +60,9 @@ namespace okssl {
             }
 
             ssize_t sz = room_left ();
-            assert (sz > 0 || _force_read);
+            if (sz == 0 && !_force_read) {
+                return bytes_read;
+            }
             rc = SSL_read (_ssl, buf, min<ssize_t> (sz, BUFSZ));
 
             // MM: Don't let clients renegotiate if the option is set to 
