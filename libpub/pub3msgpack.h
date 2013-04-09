@@ -44,6 +44,7 @@ namespace pub3 {
 
       void encode_negative_int (int64_t i);
       void encode_positive_int (u_int64_t i);
+      void encode_raw_len (size_t len, u_int8_t b, u_int8_t s, u_int8_t l);
       void encode_len (size_t len, u_int8_t b, u_int8_t s, u_int8_t l);
       void encode_str (str s);
 

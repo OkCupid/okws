@@ -97,6 +97,7 @@ noinst_PROGRAMS = \
 	json \
 	eztst \
 	dump_rpc_const \
+	msgpack \
 	msgpackcli \
 	msgpacksrv
 
@@ -112,6 +113,7 @@ newline_SOURCES = newline.C
 gznaive_SOURCES = gznaive.C
 json_SOURCES = json.C
 eztst_SOURCES = eztst.C
+msgpack_SOURCES = msgpack.C
 msgpackcli_SOURCES = msgpackcli.C
 msgpacksrv_SOURCES = msgpacksrv.C
 

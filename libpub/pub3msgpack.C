@@ -708,8 +708,8 @@ pub3::msgpack::outbuf_t::encode_positive_int (u_int64_t i)
 //-----------------------------------------------------------------------
 
 void 
-pub3::msgpack::outbuf_t::encode_len (size_t len, u_int8_t b, u_int8_t s, 
-				     u_int8_t l)
+pub3::msgpack::outbuf_t::encode_raw_len (size_t len, u_int8_t b, 
+                     u_int8_t s, u_int8_t l)
 {
   if (len <= 0x1f) {
     b |= len;
@@ -727,12 +727,31 @@ pub3::msgpack::outbuf_t::encode_len (size_t len, u_int8_t b, u_int8_t s,
 
 //-----------------------------------------------------------------------
 
+void 
+pub3::msgpack::outbuf_t::encode_len (size_t len, u_int8_t b, u_int8_t s, 
+				     u_int8_t l)
+{
+  if (len <= 0xf) {
+    b |= len;
+    put_byte (b);
+  } else if (len <= 0xffff) {
+    put_byte (s);
+    u_int16_t i = len;
+    put_int (i);
+  } else {
+    put_byte (l);
+    u_int32_t i = len;
+    put_int (i);
+  }
+}
+//-----------------------------------------------------------------------
+
 void
 pub3::msgpack::outbuf_t::encode_str (str s)
 {
   assert (s);
   size_t l = s.len ();
-  encode_len (l, 0xa0, 0xda, 0xdb);
+  encode_raw_len (l, 0xa0, 0xda, 0xdb);
   put_str (s);
 }
 
@@ -766,7 +785,7 @@ bool
 pub3::expr_bool_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 {
   j->put_byte (_b ? 0xc3 : 0xc2);
-  return false;
+  return true;
 }
 
 //-----------------------------------------------------------------------
@@ -812,6 +831,7 @@ pub3::expr_double_t::to_msgpack (pub3::msgpack::outbuf_t *j) const
 {
   floater_t<double> f (_val);;
   f.swap ();
+  j->put_byte(0xcb);
   j->put_bytes (f.buf (), f.size ());
   return true;
 }
