@@ -73,7 +73,6 @@ namespace okssl {
     
   protected:
     bool is_readable () const;
-    bool is_sync_readable () const;
     int v_read (int fd);
     bool _force_read;
     evv_t::ptr _handshake_ev;
