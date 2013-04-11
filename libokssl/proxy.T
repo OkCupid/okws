@@ -23,7 +23,11 @@ namespace okssl {
   bool
   ssl_to_std_proxy_t::is_sync_readable () const
   {
-      return (is_readable() && SSL_pending(_ssl) > 0);
+      //  http://www.opensubscriber.com/message/openssl-users@openssl.org/8645223.html
+      return (is_readable()
+              && SSL_is_init_finished(_ssl)
+              // Don't call ssl_pending during the handshake...
+              && SSL_pending(_ssl) > 0);
   }
 
   //-----------------------------------------------------------------------
