@@ -243,7 +243,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
 {
   tvars {
     int fd(acw.con()->takefd ());
-    int fd2, close_res;
+    int close_res;
     okctl_sendcon_arg2_t arg;
     okctl_sendcon_res_t res;
     clnt_stat err;
@@ -253,13 +253,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
   if (ctlx && (mycli = clnt) && fd >= 0) {
     // We dup fd to avoid any race conditions if it's closed from under us
     // before we send it out.
-    fd2 = dup(fd);
-    if (fd2 == -1) {
-      perror("TV_ERROR: in oksrvc_t::keepalive while duping fd");
-      return;
-    }
-
-    ctlx->sendfd (fd2, false);
+    ctlx->sendfd (fd);
     acw.to_xdr (&arg);
     twait {
       RPC::okctl_program_1::okctl_keepalive (mycli, arg, &res, mkevent (err));
@@ -275,10 +269,10 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
       okdbg_warn (ERROR, b);
     }
     do {
-      close_res = close(fd2);
+      close_res = close(fd);
     }  while (close_res == -1 && errno == EINTR);
     if (res == -1) {
-      perror("TV_ERROR: in oksrvc_t::keepalive while closing fd2");
+      perror("TV_ERROR: in oksrvc_t::keepalive while closing fd.");
     }
   }
 }
