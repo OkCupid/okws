@@ -251,9 +251,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
   }
 
   if (ctlx && (mycli = clnt) && fd >= 0) {
-    // We dup fd to avoid any race conditions if it's closed from under us
-    // before we send it out.
-    ctlx->sendfd (fd);
+    ctlx->sendfd (fd, false);
     acw.to_xdr (&arg);
     twait {
       RPC::okctl_program_1::okctl_keepalive (mycli, arg, &res, mkevent (err));
