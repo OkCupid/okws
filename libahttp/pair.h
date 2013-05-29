@@ -33,6 +33,7 @@
 #include "okscratch.h"
 #include "pescape.h"
 #include "pub3expr.h"
+#include "rpctypes.h"
 
 struct encode_t {
   encode_t (strbuf *o, ptr<ok::scratch_handle_t> s = NULL)
@@ -95,6 +96,7 @@ public:
   virtual ~pairtab_t () { tab.deleteall (); }
   inline str lookup (const str &key) const;
   inline bool lookup (const str &key, str *r) const;
+  template<size_t _N> inline bool lookup (const str &key, rpc_str<_N> *r) const;
   inline bool lookup (const str &key, vec<str> *v) const;
   inline bool blookup (const str &key) const;
   inline vec<int64_t> *ivlookup (const str &key) const;
@@ -177,6 +179,12 @@ pairtab_t<C>::lookup (const str &key, str *r) const
     ret = true;
   }
   return ret;
+}
+
+template<class C> template<size_t _N> bool
+pairtab_t<C>::lookup (const str &key, rpc_str<_N> *r) const
+{
+    return lookup(key, (str*)r);
 }
 
 template<class C> bool

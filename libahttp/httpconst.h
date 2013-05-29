@@ -27,6 +27,8 @@
 #define _LIBAHTTP_HTTPCONST
 
 #define HTTP_OK                  200
+#define HTTP_CREATED             201
+#define HTTP_ACCEPTED            202
 #define HTTP_PARTIAL_CONTENT     206
 
 #define HTTP_MOVEDPERM           301
@@ -45,6 +47,7 @@
 #define HTTP_GONE                410
 #define HTTP_REQ_TOO_BIG         413
 #define HTTP_URI_TOO_BIG         414
+#define HTTP_UNSUPPORTED_MEDIA   415
 #define HTTP_UNEXPECTED_EOF      417
 
 #define HTTP_SRV_ERROR           500
