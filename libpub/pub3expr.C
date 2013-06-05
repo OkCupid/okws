@@ -1247,7 +1247,16 @@ namespace pub3 {
     }
     return ret;
   }
-  
+
+  double expr_int_t::to_double () const { return double (_val); }
+
+  bool
+  expr_int_t::to_double (double *out) const
+  {
+      *out = double(_val);
+      return true;
+  }
+ 
   //====================================================================
   
   scalar_obj_t
@@ -1301,6 +1310,15 @@ namespace pub3 {
     return ret;
   }
 
+  double expr_uint_t::to_double () const { return double (_val); }
+
+  bool
+  expr_uint_t::to_double (double *out) const
+  {
+      *out = double(_val);
+      return true;
+  }
+ 
   //====================================================================
   
   scalar_obj_t

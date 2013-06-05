@@ -772,6 +772,8 @@ namespace pub3 {
     bool to_msgpack (msgpack::outbuf_t *x) const;
     const char *get_obj_name () const { return "pub3::expr_int_t"; }
     str to_str (PUB3_TO_STR_ARG) const;
+    double to_double () const;
+    bool to_double (double *out) const;
 
     static ptr<expr_int_t> alloc (int64_t i);
     static ptr<expr_int_t> alloc (const xpub3_int_t &x);
@@ -800,6 +802,8 @@ namespace pub3 {
     bool to_int (int64_t *i) const;
     bool to_uint (u_int64_t *u) const { *u = _val; return true; }
     str to_str (PUB3_TO_STR_ARG) const;
+    double to_double () const;
+    bool to_double (double *out) const;
 
     scalar_obj_t to_scalar () const;
 
