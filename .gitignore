@@ -8,6 +8,9 @@
 # Emacs files
 *~
 
+# Compiled python files
+*.pyc
+
 # NFS files that were deleted but are still open
 .nfs*
 

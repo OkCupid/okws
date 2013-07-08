@@ -165,8 +165,8 @@ namespace rfn3 {
     int64_t i = 0;
     double d;
     if (!e) { /* nothing */ }
-    else if (e->to_double (&d)) { i = int (d); }
     else if (e->to_int (&i)) { /* great! */ }
+    else if (e->to_double (&d)) { i = int (d); }
     else { /* no dice! */ }
     return expr_int_t::alloc (i);
   }
@@ -186,8 +186,8 @@ namespace rfn3 {
     uint64_t i = 0;
     double d;
     if (!e) { /* nothing */ }
-    else if (e->to_double (&d)) { i = uint64_t (d); }
     else if (e->to_uint (&i)) { /* great! */ }
+    else if (e->to_double (&d)) { i = uint64_t (d); }
     else { /* no dice! */ }
     return expr_uint_t::alloc (i);
   }
