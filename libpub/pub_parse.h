@@ -45,6 +45,7 @@ extern int yyparse ();
 extern int yylex ();
 void scanner_reset (void);
 void yy_parse_json (str s);
+void yy_parse_pub (str s);
 void scanner_terminate (void);
 void yy_push_html_state ();
 

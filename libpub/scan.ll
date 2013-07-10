@@ -696,6 +696,13 @@ yy_parse_json (str s)
   yy_scan_bytes (s.cstr (), s.len());
 }
 
+void
+yy_parse_pub (str s)
+{
+  yy_push_state (H);
+  yy_scan_bytes (s.cstr (), s.len());
+}
+
 //-----------------------------------------------------------------------
 
 /*
