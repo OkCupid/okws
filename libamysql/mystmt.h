@@ -22,10 +22,81 @@
  *
  */
 
-#include "mystmt_ag.h"
-
 #ifndef _LIBAMYSQL_STMTS_H
 #define _LIBAMYSQL_STMTS_H
+
+#include "amysql.h"
+#include <vector>
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <functional>
+#endif
+
+typedef enum { 
+    AMYSQL_NONE = 0, AMYSQL_EXEC = 1, AMYSQL_FETCH = 2,
+    AMYSQL_FETCH_DONE = 3
+} amysql_state_t;
+
+class mystmt_t {
+public:
+  mystmt_t (tz_corrector_t *t) : 
+      errno_n (0), state (AMYSQL_NONE), lqt (0), _tzc (t),
+      _tz_run (false) {}
+  virtual ~mystmt_t () {};
+  virtual adb_status_t fetch2 (vec<mybind_res_t> &arr, bool bnd = false) = 0;
+  str error () const { return err; }
+  unsigned int errnum () const { return errno_n; }
+  bool execute () { 
+     vec<mybind_param_t> args;
+     return execute1 ((MYSQL_BIND *)NULL, args);
+  }
+  bool execute_argvec (const amysql_scalars_t &args);
+  bool execute_argvec (vec<mybind_param_t> &args);
+  adb_status_t fetch_argvec (vec<amysql_scalars_t> *row, size_t nf);
+  adb_status_t fetch_argvec (vec<mybind_res_t> &);
+  virtual str get_last_qry () const { return NULL; }
+  void set_long_query_timer (u_int m) { lqt = m ;}
+  virtual const MYSQL_FIELD *fetch_fields (size_t *n) = 0;
+  virtual size_t n_rows () const { return 0; }
+  virtual size_t affected_rows () const = 0;
+  virtual u_int64_t insert_id () = 0;
+protected:
+  virtual bool execute2 (MYSQL_BIND *b, vec<mybind_param_t> &arr) = 0;
+  bool execute1 (MYSQL_BIND *b, vec<mybind_param_t> &arr);
+  virtual str dump (vec<mybind_param_t> &arr) = 0;
+
+  str err;
+  unsigned int errno_n;
+  amysql_state_t state;
+  u_int lqt;  // long query timer (in milliseconds)
+  tz_corrector_t *_tzc;
+  bool _tz_run;
+
+public:
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+
+  template <typename... Args>
+  adb_status_t fetch (Args &&...args) {
+    vec<mybind_res_t> arr{ std::forward<Args>(args)... };
+    return fetch2 (arr, true);
+  }
+
+  template <typename... Args>
+  bool execute (Args &&...args) {
+    MYSQL_BIND bnd[sizeof...(Args)];
+    vec<mybind_param_t> arr{ std::forward<Args>(args)... };
+    return execute1 (bnd, arr);
+  }
+
+#else
+// The C++11-ity with which you build okws must match that of your project.
+// Right now mystmt_ag.pl has #ifdef guards around the old functions.
+#include "mystmt_ag.h"
+#endif
+};
+
+typedef ptr<mystmt_t> sth_t;
 
 class sth_parsed_t : public mystmt_t 
 {
@@ -38,20 +109,19 @@ public:
   alloc (MYSQL *m, const str &q, u_int o, tz_corrector_t *tzc)
   { return New refcounted<sth_parsed_t> (m, q, o, tzc); }
   bool parse ();
-  adb_status_t fetch2 (bool bnd = false);
+  adb_status_t fetch2 (vec<mybind_res_t> &arr, bool bnd = false);
   str get_last_qry () const { return last_qry; }
   const MYSQL_FIELD *fetch_fields (size_t *n);
   size_t n_rows () const;
   size_t affected_rows () const;
   u_int64_t insert_id ();
 protected:
-  bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
-  str dump (mybind_param_t **aarr, u_int n);
-  str make_query (mybind_param_t **aarr, u_int n);
+  bool execute2 (MYSQL_BIND *b, vec<mybind_param_t> &arr);
+  str dump (vec<mybind_param_t> &arr);
+  str make_query (vec<mybind_param_t> &arr);
   
   void dealloc_bufs ();
   void alloc_bufs ();
-  void row_to_res (MYSQL_ROW *r, MYSQL_RES *res);
   void clearfetch ();
 
   MYSQL *mysql;
@@ -63,7 +133,7 @@ protected:
   u_int opts;
   MYSQL_RES *myres;
   unsigned long *length_arr;
-  u_int my_res_n;
+  size_t my_res_n;
   str last_qry;
 };
 
@@ -78,15 +148,15 @@ public:
   static ptr<sth_prepared_t> 
   alloc (MYSQL_STMT *s, const str &q, u_int o, tz_corrector_t *tzc)
   { return New refcounted<sth_prepared_t> (s, q, o, tzc); }
-  adb_status_t fetch2 (bool bnd = false);
+  adb_status_t fetch2 (vec<mybind_res_t> &arr, bool bnd = false);
   const MYSQL_FIELD *fetch_fields (size_t *n) { return NULL; }
   size_t affected_rows () const;
   u_int64_t insert_id ();
 protected:
-  bool execute2 (MYSQL_BIND *b, mybind_param_t **aarr, u_int n);
-  str dump (mybind_param_t **aarr, u_int n);
-  void bind (MYSQL_BIND *b, mybind_param_t **arr, u_int n);
-  bool bind_result ();
+  bool execute2 (MYSQL_BIND *b, vec<mybind_param_t> &arr);
+  str dump (vec<mybind_param_t> &arr);
+  void bind (MYSQL_BIND *b, vec<mybind_param_t> &arr);
+  bool bind_result (vec<mybind_res_t> &arr);
   void clearfetch ();
   MYSQL_STMT *sth;
   MYSQL_BIND *bnds;

@@ -32,13 +32,13 @@ sub arglist {
 }
 
 sub make_arr {
-    my ($n, $typ, $name, $pfx) = @_;
+    my ($n, $typ, $lpfx, $name, $pfx) = @_;
     $name = "arr" unless $name;
     $pfx = "p" unless $pfx;
-    my $r = "$typ *" .  $name . "[$n] = {" . 
-	join (", ", map { "&" . $pfx . $_ } (0..$n-1)) .
-	"};";
-    return $r;
+    $lpfx = "" unless $lpfx;
+    return "${lpfx}vec<$typ> $name;\n" .
+            "${lpfx}$name.reserve($n);\n${lpfx}" .
+            join (" ", map { "$name.push_back($pfx$_);" } (0..$n-1)) ."\n";
 }
 
 sub execute {
@@ -48,8 +48,8 @@ sub execute {
     return ($s . ";") if $hdr;
     $s .= ("\n{\n" .
            "  MYSQL_BIND bnd[" . "$n];\n" .
-	   "  " . make_arr ($n, "mybind_param_t") .  "\n" .
-	   "  return execute1 (bnd, arr, $n);\n" .
+	   make_arr ($n, "mybind_param_t", "  ") .  "\n" .
+	   "  return execute1 (bnd, arr);\n" .
 	   "}\n");
     return $s;
 }
@@ -60,9 +60,8 @@ sub fetch {
     $s .= "fetch " . arglist ($n, "mybind_res_t");
     return ($s . ";") if $hdr;
     $s .= ("\n{\n" .
-           "  alloc_res_arr ($n);\n" .
-	   join ("\n", map { "  res_arr[". "$_] = p$_;" } (0..$n-1)) ."\n" .
-	   "  return fetch2 (true);\n" .
+       make_arr($n, "mybind_res_t", "  ") .
+	   "  return fetch2 (arr, true);\n" .
 	   "}\n");
     return $s;
 }
@@ -82,72 +81,15 @@ sub codes {
 
 sub header_file {
     my ($i) = @_;
-    my $stuff = headers ($i);
-
-print <<EOF;
-
-#ifndef _LIBAMYSQL_MYSTMT_H
-#define _LIBAMYSQL_MYSTMT_H
-
-#include "amysql.h"
-
-typedef enum { 
-    AMYSQL_NONE = 0, AMYSQL_EXEC = 1, AMYSQL_FETCH = 2,
-    AMYSQL_FETCH_DONE = 3
-} amysql_state_t;
-
-class mystmt_t {
-public:
-  mystmt_t (tz_corrector_t *t) : 
-      res_arr (NULL), errno_n (0), state (AMYSQL_NONE), lqt (0), _tzc (t),
-      _tz_run (false) {}
-  virtual ~mystmt_t () ;
-  virtual adb_status_t fetch2 (bool bnd = false) = 0;
-  str error () const { return err; }
-  unsigned int errnum () const { return errno_n; }
-  bool execute () { 
-     return execute1 ((MYSQL_BIND *)NULL, (mybind_param_t **)NULL, 0);
-  }
-  bool execute_argvec (const amysql_scalars_t &args);
-  adb_status_t fetch_argvec (vec<amysql_scalars_t> *row, size_t nf);
-  virtual str get_last_qry () const { return NULL; }
-  void set_long_query_timer (u_int m) { lqt = m ;}
-  virtual const MYSQL_FIELD *fetch_fields (size_t *n) = 0;
-  virtual size_t n_rows () const { return 0; }
-  virtual size_t affected_rows () const = 0;
-  virtual u_int64_t insert_id () = 0;
-protected:
-  virtual bool execute2 (MYSQL_BIND *b, mybind_param_t **arr, u_int n) = 0;
-  bool execute1 (MYSQL_BIND *b, mybind_param_t **arr, u_int n);
-  virtual str dump (mybind_param_t **aarr, u_int n) = 0;
-  void alloc_res_arr (u_int n);
-  void assign ();
-
-  mybind_res_t *res_arr;
-  u_int res_n;
-  str err;
-  unsigned int errno_n;
-  amysql_state_t state;
-  u_int lqt;  // long query timer (in milliseconds)
-  tz_corrector_t *_tzc;
-  bool _tz_run;
-
-public:
-$stuff
-};
-
-typedef ptr<mystmt_t> sth_t;
-
-#endif /* _LIBMYSQL_MYSTMT_H */
-
-EOF
-
+    print headers ($i);
 }
 
 sub c_file {
     my ($i) = @_;
     print qq!#include "mystmt.h"\n\n! . 
-	codes ($i) . "\n\n";
+    qq!#ifndef __GXX_EXPERIMENTAL_CXX0X__\n\n! .
+	codes ($i) .
+    qq!\n#endif\n!;
 }
 
 my $N = 120;
