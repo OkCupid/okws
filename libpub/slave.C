@@ -160,7 +160,7 @@ helper_exec_t::launch (cbb c)
 {
   str p = argv[0];
   int sps[MAX_SOCKPAIRS][2];
-  str prog = find_program (p);
+  str prog = find_program (p.cstr());
   if (!prog) {
     warn << "Cannot find executable: " << p << "\n";
     (*c) (false);
@@ -216,7 +216,7 @@ helper_exec_t::launch (cbb c)
 void
 helper_unix_t::launch (cbb c)
 {
-  fd = unixsocket_connect (sockpath);
+  fd = unixsocket_connect (sockpath.cstr());
   if (fd < 0) {
     hwarn (strerror (errno));
     (*c) (false);

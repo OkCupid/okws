@@ -117,7 +117,7 @@ public:
   inline str safe_lookup (const str &key) const;
   inline str operator[] (const str &k) const { return safe_lookup (k); }
   inline bool exists (const str &k) const { return safe_lookup (k).len () > 0; }
-  inline bool strict_exists (const str &k) const { return lookup(k); }
+  inline bool strict_exists (const str &k) const { return bool(lookup(k)); }
   inline bool remove (const str &k);
   inline void traverse (callback<void, const pair_t &>::ref cb)
   { lst.traverse (wrap (pair_trav, cb)); }

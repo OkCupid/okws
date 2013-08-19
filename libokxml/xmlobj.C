@@ -236,7 +236,7 @@ xml_gobj_t::operator() (const str &k, int n_atts, ...)
   if (v) { 
     return xml_gobj_t (NULL, *v); 
   } else { 
-    ptr<xml_generic_t> g = New refcounted<xml_generic_t> (k, attrs);
+    ptr<xml_generic_t> g = New refcounted<xml_generic_t> (k.cstr(), attrs);
     obj ()->add (g);
     return xml_gobj_t (g);
   }

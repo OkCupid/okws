@@ -178,7 +178,7 @@ void
 logd_t::clean_pidfile ()
 {
   if (_pidfile) {
-    const char *f = _pidfile;
+    const char *f = _pidfile.cstr();
     int rc = unlink (f);
     if (rc != 0) {
       warn ("failed to clean pidfile ('%s'): %m\n", f);
@@ -347,7 +347,7 @@ logd_t::pidfile_setup ()
 
   strbuf b;
   bool ret = true;
-  const char *f = _pidfile;
+  const char *f = _pidfile.cstr();
   strbuf b2;
   b << getpid ();
   if (!str2file (f, b, 0644)) {
@@ -373,7 +373,7 @@ logd_t::perms_setup ()
       return false;
     }
     if (parms.logdir) {
-      if (chroot (parms.logdir) < 0) {
+      if (chroot (parms.logdir.cstr()) < 0) {
 	warn << "chroot to directory failed: " << parms.logdir << "\n";
 	return false;
       } else {

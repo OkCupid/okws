@@ -219,7 +219,7 @@ namespace rfn3 {
     strbuf b;
     bool output = false;
     for (size_t i = 0; i < v.size (); i++) {
-      if (!is_empty (v[i])) {
+      if (!is_empty (v[i].cstr())) {
 	if (output) { b << " "; }
 	b << v[i];
 	output = true;
@@ -317,7 +317,7 @@ namespace rfn3 {
     int ret = -1;
     if (start < big_s.len ()) {
       const char *big = big_s + start;
-      const char *small = small_s;
+      const char *small = small_s.cstr();
       const char *pos = strstr (big, small);
       if (pos) { ret = (pos - big) + start; }
     }

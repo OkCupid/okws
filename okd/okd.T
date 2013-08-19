@@ -178,7 +178,7 @@ okd_t::open_mgr_socket ()
   // authenticate or to have the manager reachable only via a local
   // unix socket
   str s = jail2real (_socket_filename);
-  if (stat (s, &sb) == 0) {
+  if (stat (s.cstr(), &sb) == 0) {
     warn << "Management socket (" << s << ") already exists or is in use!\n";
     exit (NO_SOCKET_ALLOCATED);
   }
