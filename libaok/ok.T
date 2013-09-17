@@ -269,7 +269,7 @@ oksrvc_t::keepalive (ahttpcon_wrapper_t<ahttpcon> acw)
     do {
       close_res = close(fd);
     }  while (close_res == -1 && errno == EINTR);
-    if (res == -1) {
+    if (close_res == -1) {
       perror("TV_ERROR: in oksrvc_t::keepalive while closing fd.");
     }
   }
