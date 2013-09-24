@@ -103,7 +103,7 @@ namespace ok {
     clock_gettime (CLOCK_REALTIME, &ts);
     static str buf;
     buf = strbuf ("%d.%06d", int (ts.tv_sec), int (ts.tv_nsec/1000));
-    return buf;
+    return buf.cstr();
   }
 
   debug_obj_t::debug_obj_t (int fl, int fd, const char *l)

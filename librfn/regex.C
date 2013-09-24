@@ -12,7 +12,7 @@ static str
 stripchar (str in, char c)
 {
   mstr out (in.len ()+1);
-  const char *inp = in;
+  const char *inp = in.cstr();
   char *outp = out;
   for ( ; *inp; inp++) {
     if (*inp != c) { *(outp++) = *inp; }

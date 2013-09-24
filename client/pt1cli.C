@@ -114,7 +114,7 @@ public:
 
     // the second part tells how to cycle IDs.  note that it is optional
     if (parts.size () == 2) {
-      const char *cp = parts[1];
+      const char *cp = parts[1].cstr();
       switch (*cp) {
       case 'c':
 	_rand = false;

@@ -383,9 +383,9 @@ contdisp_parser_t::parse_guts ()
       break;
     case CONTDISP_SEP1:
       r = abuf->skip_hws (1);
-      if (mystrcmp (typ_scr, "form-data")) {
+      if (mystrcmp (typ_scr.cstr(), "form-data")) {
 	typ = CONTDISP_FORMDAT;
-      } else if (mystrcmp (typ_scr, "attachment")) {
+      } else if (mystrcmp (typ_scr.cstr(), "attachment")) {
 	state = CONTDISP_FILENAME_KEY;
 	inc = true;
 	typ = CONTDISP_ATTACH;

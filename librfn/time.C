@@ -36,7 +36,7 @@ namespace rfn3 {
       report_error (p, strbuf ("cannot convert '") << t << "' to time");
     } else if (!fmt || fmt.len () == 0) {
       report_error (p, "bad time format given");
-    } else if (!strftime (buf, BUFSZ, fmt, &stm)) {
+    } else if (!strftime (buf, BUFSZ, fmt.cstr(), &stm)) {
       report_error (p, strbuf ("format '%s' failed", fmt.cstr ()));
     } else {
       ret = buf;

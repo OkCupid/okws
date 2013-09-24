@@ -116,7 +116,7 @@ XML_reader_t::t_traverse (const char *prfx, T &i, bool sig)
 
   if (!xml_decode_int_repr (top (), prfx, i, sig)) {
     strbuf b ("%s decoding error", prfx);
-    return error_generic (str (b));
+    return error_generic (str (b).cstr());
   }
   return true;
 }
@@ -179,19 +179,19 @@ XML_reader_t::traverse (bool &b)
 bool
 XML_reader_t::traverse (u_int32_t &i)
 {
-  return t_traverse (UI4_STR, i, false);
+  return bool(t_traverse (UI4_STR, i, false));
 }
 
 bool
 XML_reader_t::traverse (int64_t &i)
 {
-  return t_traverse (I8_STR, i, true);
+  return bool(t_traverse (I8_STR, i, true));
 }
 
 bool
 XML_reader_t::traverse (u_int64_t &i)
 {
-  return t_traverse (UI8_STR, i, false);
+  return bool(t_traverse (UI8_STR, i, false));
 }
 
 int
@@ -370,7 +370,7 @@ XML_RPC_obj_t::error_empty (const char *f, int rc)
 int
 XML_reader_t::error_wrong_type (const char *f, const xml_obj_base_t &o, int rc)
 {
-  const char *e = o.xml_typename (true);
+  const char *e = o.xml_typename (true).cstr();
   return XML_RPC_obj_t::error_wrong_type (f, e, rc);
 }
 

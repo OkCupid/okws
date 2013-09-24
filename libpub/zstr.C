@@ -183,7 +183,7 @@ uLong_to_buf (uLong l, char b[])
 bool
 zstrobj::compress (int l) const
 {
-  return ((zs = zcompress (s, l)));
+  return (bool(zs = zcompress (s, l)));
 }
 
 const str &

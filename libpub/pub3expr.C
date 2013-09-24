@@ -1646,7 +1646,7 @@ namespace pub3 {
   ptr<rxx>
   rxx_factory_t::_compile (str body, str opts, str *errp)
   {
-    const char *b = body;
+    const char *b = body.cstr();
     const char *o = "";
     if (opts) o = opts;
     

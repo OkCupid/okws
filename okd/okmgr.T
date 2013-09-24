@@ -295,7 +295,7 @@ main (int argc, char *argv[])
       break;
     }
   }
-  if (diag_cmd_str && (cmd = optarg2cmd (diag_cmd_str)) == OK_DIAGNOSTIC_NONE) {
+  if (diag_cmd_str && (cmd = optarg2cmd (diag_cmd_str.cstr())) == OK_DIAGNOSTIC_NONE) {
     warn << "Unknown subcommand for diagnostic argument -c|-p|-T\n";
     usage ();
   }

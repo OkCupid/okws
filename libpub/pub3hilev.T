@@ -9,7 +9,7 @@
 static str
 trim_null_bytes (str s)
 {
-  const char *c = s;
+  const char *c = s.cstr();
   if (s.len () != strlen (c)) s = c;
   return s;
 }

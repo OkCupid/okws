@@ -23,7 +23,7 @@ rxx_replace (str input, rxx pattern, str repl)
 int
 split2 (vec<str> *out, rxx pat, str expr, size_t lim, bool emptylast)
 {
-  const char *p = expr;
+  const char *p = expr.cstr();
   const char *const e = p + expr.len ();
   size_t n;
   if (out)
@@ -199,7 +199,7 @@ rxx_replace_2 (str input, rxx pat, str repl_str)
   if (!repl.parse (repl_str)) {
     warn << "XX cannot parse replacement string: " << repl_str << "\n";
   } else {
-    const char *p = input;
+    const char *p = input.cstr();
     const char *const e = p + input.len ();
     strbuf b;
     bool go = true;
@@ -258,7 +258,7 @@ extract_matches (vec<str> *out, const char *base, rxx &x)
 str 
 rxx_replace (str input, rxx pat, rxx_replace_cb_t cb)
 {
-  const char *p = input;
+  const char *p = input.cstr();
   const char *const e = p + input.len ();
   strbuf b;
   bool go = true;

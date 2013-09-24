@@ -54,7 +54,8 @@ mysql_t::connect (const str &db, const str &u, const str &h,
 #endif /* MYSQL_VERSION_ID */
 
    GIANT_UNLOCK();
-   MYSQL *rc = mysql_real_connect (&mysql, h, u, pw, db, prt, NULL, fl);
+   MYSQL *rc = mysql_real_connect (&mysql, h.cstr(), u.cstr(), pw.cstr(),
+                                   db.cstr(), prt, NULL, fl);
    GIANT_LOCK();
 
    if (!rc) {
@@ -88,7 +89,7 @@ mysql_t::prepare (const str &q, u_int l_opts, tz_corrector_t *tzc)
     }
 
     GIANT_UNLOCK();
-    int rc = mysql_stmt_prepare (s, q, q.len ());
+    int rc = mysql_stmt_prepare (s, q.cstr(), q.len ());
     GIANT_LOCK();
 
     if (rc) {
