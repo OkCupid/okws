@@ -132,6 +132,12 @@ public:
   // changes status
   void set_status_cb (status_cb_t c) { stcb = c; }
 
+  str getname () const
+  {
+      str nm = rpcprog.name ?: "null_program_name";
+      return helper_t::getname () << ":" << nm;
+  }
+
 protected:
   void status_change (hlp_status_t ns);
   void call_status_cb () { if (stcb) (*stcb) (status); }
