@@ -11,6 +11,11 @@
 #include "pub3parse.h"
 #include "okformat.h"
 
+#ifdef __clang__
+// bison issues statements with extra parenthesies
+#pragma clang diagnostic ignored "-Wparentheses-equality"
+#endif  // __clang__
+
 %}
 
 %token T_2L_BRACE
