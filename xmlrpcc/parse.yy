@@ -29,6 +29,11 @@ static int proc_compare (const void *, const void *);
 static int vers_compare (const void *, const void *);
 static str getnewid (str);
 static str getid (str);
+
+#ifdef __clang__
+// bison issues statements with extra parenthesies
+#pragma clang diagnostic ignored "-Wparentheses-equality"
+#endif  // __clang__
 %}
 
 %token <str> T_ID
