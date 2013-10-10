@@ -1204,6 +1204,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  template<class T>
+  class documented : public T {
+    str m_doc;
+  public:
+    template<typename ...Args>
+    documented(Args... args, const str &doc):
+      T(std::forward<Args>(args)...), m_doc(doc) {}
+
+    const str* documentation () const override { return &m_doc; }
+  };
+
+  //-----------------------------------------------------------------------
+
   recycler_t<bindtab_t> * get_bindtab_recycler();
   recycler_t<expr_int_t> * get_int_recycler();
   recycler_t<expr_dict_t> * get_dict_recycler();

@@ -121,6 +121,7 @@ namespace pub3 {
   //
   class library_t {
   public:
+    library_t (const str &doc) : _only_in_libname(false), _doc(doc) {}
     library_t () : _only_in_libname(false) {}
     ~library_t () {}
     void bind (ptr<bindtab_t> b);
@@ -138,6 +139,8 @@ namespace pub3 {
     //Use in conjunction with _all_libname to make sure that the functions
     //are only bound in the libname object and not in the top namespace.
     bool _only_in_libname;
+
+    str _doc;
   };
 
   //-----------------------------------------------------------------------

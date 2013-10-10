@@ -294,7 +294,12 @@ namespace pub3 {
 
   void library_t::bind_all (str s, bool only_in_libname) {
     _all_libname = s;
-    _all_dict = expr_dict_t::alloc ();
+    if (_doc) {
+      // TODO: do we want to use the recycler here?
+      _all_dict = New refcounted<documented<expr_dict_t>>(_doc);
+    } else {
+      _all_dict = expr_dict_t::alloc ();
+    }
     _only_in_libname = only_in_libname;
   }
 
