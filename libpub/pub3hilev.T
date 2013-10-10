@@ -177,7 +177,7 @@ namespace pub3 {
   
   tamed void 
   ap_t::publish_prepare (eval_t *pub, str fn, str *rfn, str *errp, 
-			 getfile_ev_t ev)
+                         getfile_ev_t ev)
   {
     tvars {
       status_t status (XPUB_STATUS_NOENT);
@@ -194,15 +194,16 @@ namespace pub3 {
     localizer = get_localizer (pub);
     list_files_to_check (pub->cwd (), fn, &files_to_check, localizer);
 
+    pub->set_active(false);
     for (i = 0; i < files_to_check.size (); i++) {
-
-      twait { 
-	getfile (files_to_check[i], mkevent (status, file), pub->opts ()); 
+      twait {
+          getfile (files_to_check[i], mkevent (status, file), pub->opts ());
       }
       if (status.status != XPUB_STATUS_NOENT) {
-	break;
+          break;
       }
     }
+    pub->set_active(true);
 
     switch (status.status) {
     case XPUB_STATUS_OK:
