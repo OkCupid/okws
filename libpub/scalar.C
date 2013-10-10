@@ -13,7 +13,7 @@ my_convertint (const str &s, int64_t *out)
   if (!s || !s.len ()) {
     /* no-op -- empty string is not valid */
   } else {
-    int64_t v = strtoll (s, &ep, 0);
+    int64_t v = strtoll (s.cstr(), &ep, 0);
     if (errno == ERANGE || errno == EINVAL) {
       /* no-op */
     } else if (ep && *ep == '\0') {
@@ -373,7 +373,7 @@ convertuint (const str &s, u_int64_t *out)
     /* negative numbers are not welcome here (thought strtoull will
        strangely accept them */
   } else {
-    u_int64_t v = strtoull (s, &ep, 0);
+    u_int64_t v = strtoull (s.cstr(), &ep, 0);
     if (errno == ERANGE || errno == EINVAL) {
       /* no-op */
     } else if (ep && *ep == '\0') {

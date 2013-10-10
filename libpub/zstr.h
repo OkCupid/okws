@@ -199,7 +199,7 @@ private:
   inline void push_str2zstr (const str &s, bool lkp = true, bool clr = true);
   inline void strbuf2zstr ();
 
-  inline void copy_small_str (const str &z) { copy_small_str (z, z.len ()); }
+  inline void copy_small_str (const str &z) { copy_small_str (z.cstr(), z.len ()); }
   inline void copy_small_str (const char *p, size_t len);
   inline void strbuf_clear () { f.tosuio ()->clear (); }
   inline void strbuf_add (const str &s, bool cp);

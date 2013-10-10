@@ -162,7 +162,7 @@ uname2uid (const str &n)
 {
   struct passwd *pw;
   int ret = -1;
-  if ((pw = getpwnam (n))) {
+  if ((pw = getpwnam (n.cstr()))) {
     ret = pw->pw_uid;
   }
   endpwent ();
@@ -185,7 +185,7 @@ gname2gid (const str &g)
 {
   struct group *gr;
   int ret = -1;
-  if ((gr = getgrnam (g))) {
+  if ((gr = getgrnam (g.cstr()))) {
     ret = gr->gr_gid;
   }
   endgrent ();
@@ -196,7 +196,9 @@ bool
 isdir (const str &d)
 {
   struct stat sb;
-  return (!stat (d, &sb) && (sb.st_mode & S_IFDIR) && !access (d, X_OK|R_OK));
+  return (!stat (d.cstr(), &sb)
+          && (sb.st_mode & S_IFDIR)
+          && !access (d.cstr(), X_OK|R_OK));
 }
 
 int my_log_10 (int64_t in)
@@ -366,7 +368,7 @@ void
 ls (const str &d)
 {
 
-  DIR *dir = opendir (d);
+  DIR *dir = opendir (d.cstr());
   if (!d) {
     warn << "ls (" << d << "): failed\n";
     return;
@@ -598,8 +600,8 @@ env_argv_t::prune ()
       const char *cp = strchr (el, '=');
       if (cp) {
 	str name = str (el, cp - el);
-	if (!hits[name]) {
-	  hits.insert (name);
+	if (!hits[name.cstr()]) {
+	  hits.insert (name.cstr());
 	} else {
 	  ins = false;
 	}
@@ -679,7 +681,7 @@ trunc_after_null_byte (str s)
   str ret;
   size_t l;
   if (!s) { ret = s; }
-  else if ((l = strlen (s)) == s.len ()) { ret = s; }
+  else if ((l = strlen (s.cstr())) == s.len ()) { ret = s; }
   else { ret = str (s.cstr (), l); }
   return ret;
 }

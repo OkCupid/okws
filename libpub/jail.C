@@ -207,7 +207,7 @@ jailable_t::fix_stat (const str &d, mode_t mode, ok_usr_t *u,
   }
 
   if (chownit) {
-    if (chown (d, newuid, newgid) != 0) {
+    if (chown (d.cstr(), newuid, newgid) != 0) {
       warn ("%s: cannot chown: %m\n", d.cstr ());
       return false;
     }

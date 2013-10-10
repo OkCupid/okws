@@ -400,7 +400,7 @@ okld_t::got_service2 (vec<str> s, str loc, bool *errp)
     httppath = uri;
     used_ports.insert (port);
   } else {
-    httppath = re_fslash (uri);
+    httppath = re_fslash (uri.cstr());
     used_primary_port = true;
   }
   
@@ -501,7 +501,7 @@ okld_t::got_service (bool script, vec<str> s, str loc, bool *errp)
     httppath = uri;
     used_ports.insert (port);
   } else {
-    httppath = re_fslash (uri);
+    httppath = re_fslash (uri.cstr());
     used_primary_port = true;
   }
 
@@ -1438,7 +1438,7 @@ okld_t::shutdown2 (int status)
   if (stat (s.cstr (), &sb) == 0) {
     if (status != (NO_SOCKET_ALLOCATED * 256)) {
       warn << "Deleting management socket: " << s << "\n";
-      unlink (s);
+      unlink (s.cstr());
     } else {
       warn << "Leaving management socket (" << s 
 	   << ") since it's likely not ours.\n";
@@ -2304,7 +2304,7 @@ okld_helper_ssl_t::resolve (const str &in, const char *which) const
       out = in;
     }
   } else {
-    out = okws_etcfile_required (in, NULL, true);
+    out = okws_etcfile_required (in.cstr(), NULL, true);
   }
   return out;
 }

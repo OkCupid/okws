@@ -278,7 +278,7 @@ json_decoder_t::rpc_traverse (bigint &b)
   else if (!(tmp = top()->to_str (false))) { 
     error_wrong_type ("string", top()); 
   } else {
-    b = tmp;
+    b = bool(tmp);
     ret = true;
   }
   return ret;
@@ -847,7 +847,7 @@ xdropq2json (str typ, const str &xdr_opq)
     // We need this dummy just as a result of the extensible_rpc v_XDR_t
     // base class.  It really shouldn't need to do anything...
 
-    xdrmem m (xdr_opq, xdr_opq.len ());
+    xdrmem m (xdr_opq.cstr(), xdr_opq.len ());
     XDR *xm = &m;
     void *obj = (*pp.alloc)();
     bool ok = (*pp.proc) (xm, obj);

@@ -18,9 +18,9 @@ AC_SUBST(OKRPCC)
 AC_CANONICAL_HOST
 
 dnl Checks for programs.
-AC_PROG_CC
+AC_PROG_CC([clang gcc cc])
 AC_PROG_CPP
-AC_PROG_CXX
+AC_PROG_CXX([clang++ g++ c++])
 OKWS_BISON
 SFS_WFLAGS
 SFS_PATH_CPP
@@ -171,6 +171,11 @@ dnl module for out-of-the-box testing. In other cases, we might
 dnl be using this macro to build something useful.
 dnl
 OKWS_MODULE
+
+dnl
+dnl prefer c++11
+dnl
+SFS_CPP11_IF_POSSIBLE
 
 dnl
 dnl The OKWS prefix macro sets the module name to $PACKAGE, but

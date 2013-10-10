@@ -29,6 +29,11 @@ static int proc_compare (const void *, const void *);
 static int vers_compare (const void *, const void *);
 static str getnewid (str);
 static str getid (str);
+
+#ifdef __clang__
+// bison issues statements with extra parenthesies
+#pragma clang diagnostic ignored "-Wparentheses-equality"
+#endif  // __clang__
 %}
 
 %token <str> T_ID
@@ -306,7 +311,7 @@ base_type: T_UNSIGNED { $$ = "u_int32_t"; }
 value: id | T_NUM
 	;
 
-number: T_NUM { $$ = strtoul ($1, NULL, 0); }
+number: T_NUM { $$ = strtoul ($1.cstr(), NULL, 0); }
 	;
 
 newid: T_ID { $$ = getnewid ($1); }

@@ -301,7 +301,7 @@ make_csafe_filename (str fname)
   strbuf hdr;
   const char *fnp, *cp;
 
-  if ((fnp = strrchr (fname, '/')))
+  if ((fnp = strrchr (fname.cstr(), '/')))
     fnp++;
   else fnp = fname;
 
@@ -572,12 +572,12 @@ print_struct (const rpc_struct *s)
   if (dp < ep)
     aout <<
       "  rpc_print (sb, obj." << dp->id << ", recdepth, "
-      "\"" << dp->id << "\", npref);\n";
+      "\"" << dp->id << "\", npref.cstr());\n";
   while (++dp < ep)
     aout <<
       "  sb << sep;\n"
       "  rpc_print (sb, obj." << dp->id << ", recdepth, "
-      "\"" << dp->id << "\", npref);\n";
+      "\"" << dp->id << "\", npref.cstr());\n";
   aout <<
     "  if (prefix)\n"
     "    sb << prefix << \"};\\n\";\n"
@@ -595,7 +595,7 @@ print_case (str prefix, const rpc_union *rs, const rpc_utag *rt)
     aout
       << prefix << "sb << sep;\n"
       << prefix << "rpc_print (sb, *obj." << rt->tag.id << ", "
-      " recdepth, \"" << rt->tag.id << "\", npref);\n";
+      " recdepth, \"" << rt->tag.id << "\", npref.cstr());\n";
   aout << prefix << "break;\n";
 }
 
@@ -640,7 +640,7 @@ print_union (const rpc_union *s)
     "    sb << \"{ \";\n"
     "  }\n"
     "  rpc_print (sb, obj." << s->tagid << ", recdepth, "
-    "\"" << s->tagid << "\", npref);\n";
+    "\"" << s->tagid << "\", npref.cstr());\n";
   pswitch ("  ", s, "obj." << s->tagid, print_case, "\n", print_break);
   aout <<
     "  if (prefix)\n"
@@ -678,7 +678,7 @@ makehdrname (str fname)
   strbuf hdr;
   const char *p;
 
-  if ((p = strrchr (fname, '/')))
+  if ((p = strrchr (fname.cstr(), '/')))
     p++;
   else p = fname;
 

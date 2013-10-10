@@ -401,7 +401,7 @@ oksrvc_t::init (int argc, char *argv[])
   if (_n_children > 1) {
     strbuf b ("%s[%d:%zu]", progname.cstr (), int(getpid ()), _brother_id);
     str s = b;
-    char *new_progname = strdup (s);
+    char *new_progname = strdup (s.cstr());
     b.clear (); // to stop suio-related checks in dmalloc
     setprogname (new_progname);
   }
@@ -1380,7 +1380,7 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
 
   in_addr addr;
   if (s.size () == 3) {
-    if (!inet_aton (s[1], &addr) || !convertint (s[2], &listenport) ||
+    if (!inet_aton (s[1].cstr(), &addr) || !convertint (s[2], &listenport) ||
 	listenport > OK_PORT_MAX) {
       warn << loc << ": usage: BindAddr addr [port]\n";
       *errp = true;
@@ -1392,7 +1392,7 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
     if (!addr_rxx.match (s[1]) || 
 	(addr_rxx[3] && (!convertint (addr_rxx[3], &listenport) || 
 			 listenport > OK_PORT_MAX)) ||
-	(addr_rxx[1] != "*" && !inet_aton (addr_rxx[1], &addr))) {
+    (addr_rxx[1] != "*" && !inet_aton (addr_rxx[1].cstr(), &addr))) {
       warn << loc << ": usage: BindAddr (<addr>|*)(:<port>)?\n";
       *errp = true;
     } else {
@@ -1472,7 +1472,7 @@ static okws1_port_t
 split_uri (str in, str *out)
 {
   okws1_port_t port = 0;
-  const char *p = in;
+  const char *p = in.cstr();
   if (p[0] == ':') {
     const char *e = strchr (p, '/');
     assert (e && e > p);
@@ -1638,7 +1638,7 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   cmd = s.pop_front ();
 
   while (s.size () && (cp = strchr (s[0].cstr (), '=')))  {
-    if (strncmp (OKWS_DEBUG_OPTIONS, s[0], cp - s[0]) == 0)
+    if (strncmp (OKWS_DEBUG_OPTIONS, s[0].cstr(), cp - s[0]) == 0)
       fnd_dbg = true;
     env.push_back (s.pop_front ());
   }

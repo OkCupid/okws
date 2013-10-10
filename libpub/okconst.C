@@ -348,7 +348,7 @@ static void
 vec2vec (vec<const char *> *out, const vec<str> &in)
 {
   for (size_t i = 0; i < in.size (); i++) {
-    out->push_back (in[i]);
+    out->push_back (in[i].cstr());
   }
   out->push_back (NULL);
 }

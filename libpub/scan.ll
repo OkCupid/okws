@@ -668,7 +668,7 @@ json_str_add_unicode (const char *in)
 {
    str s = unicode_to_utf8 (in);
    if (s) {
-      json_str_addstr (s);
+      json_str_addstr (s.cstr());
    }
 }
 
