@@ -115,7 +115,8 @@ namespace pub3 {
     str to_str () const;
     ptr<const metadata_t> metadata () const { return _metadata; }
     bool set_active (bool b);
-    void profile_report (profiler_buf_t *buf, int64_t sid) const;
+    bool active () const { return _active; }
+    void profile_report (profiler_buf_t *buf) const;
   private:
     ptr<const metadata_t> _metadata;
     str _func;

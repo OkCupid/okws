@@ -402,19 +402,14 @@ namespace pub3 {
   //--------------------------------------------------------------------
 
   void
-  runloc_t::profile_report (profiler_buf_t *b, int64_t s) const
+  runloc_t::profile_report (profiler_buf_t *b) const
   {
     str fn = filename ();
     int i = lineno ();
-    b->add_i (s);
-    b->add_cc (": ");
+    b->add_ch (' ');
     b->add_s (fn);
     b->add_ch (':');
     b->add_i (i);
-    if (!_active) {
-      b->add_cc (" (inactive)");
-    }
-    b->flush ();
   }
 
   //====================================== loc_stack_t ==================
@@ -446,7 +441,24 @@ namespace pub3 {
   void
   loc_stack_t::profile_report (profiler_buf_t *b, int64_t i) const
   {
-    if (size ()) { back ().profile_report (b, i); }
+    if (!size ()) { return; }
+
+    b->add_i (i);
+    b->add_ch (':');
+
+    // print the top two stack frames, if available
+    for (int i=0; i<2; i++) {
+        int pos = int(size()) - i - 1;
+        if (pos < 0) {
+            b->add_cc(" empty");
+        } else {
+            (*this)[pos].profile_report(b);
+        }
+    }
+    if (!back().active()) {
+        b->add_cc (" (inactive)");
+    }
+    b->flush ();
   }
 
   //-----------------------------------------------------------------------
