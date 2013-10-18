@@ -189,6 +189,7 @@ methodmap_t::methodmap_t ()
   map.insert ("PUT", HTTP_MTHD_PUT);
   map.insert ("DELETE", HTTP_MTHD_DELETE);
   map.insert ("HEAD", HTTP_MTHD_HEAD);
+  map.insert ("OPTIONS", HTTP_MTHD_OPTIONS);
 }
 
 post_methodmap_t::post_methodmap_t ()

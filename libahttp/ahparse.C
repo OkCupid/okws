@@ -187,6 +187,7 @@ http_parser_cgi_t::v_parse_cb1 (int status)
 
     break;
 
+  case HTTP_MTHD_OPTIONS:
   case HTTP_MTHD_GET:
   case HTTP_MTHD_HEAD:
     {

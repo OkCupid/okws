@@ -46,8 +46,9 @@ typedef enum { HTTP_MTHD_NONE = 0,
 	       HTTP_MTHD_POST = 1,
 	       HTTP_MTHD_PUT = 2,
 	       HTTP_MTHD_DELETE = 3,
-               HTTP_MTHD_GET = 4,
-	       HTTP_MTHD_HEAD = 5 } http_method_t;
+           HTTP_MTHD_GET = 4,
+	       HTTP_MTHD_HEAD = 5,
+           HTTP_MTHD_OPTIONS = 6 } http_method_t;
 
 typedef enum { POST_MTHD_NONE = 0,
 	       POST_MTHD_URLENCODED = 1,
