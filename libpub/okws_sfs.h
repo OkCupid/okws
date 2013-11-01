@@ -51,8 +51,8 @@
 // patch level 100 is release
 #define OKWS_VERSION_MAJOR 3
 #define OKWS_VERSION_MINOR 1
-#define OKWS_VERSION_PATCHLEVEL 15
-#define OKWS_VERSION_PRE 109
+#define OKWS_VERSION_PATCHLEVEL 16
+#define OKWS_VERSION_PRE 100
 
 #define OKWS_AT_VERSION(Maj,Min,Pat,Pre) \
   (VERSION_FLATTEN(Maj,Min,Pat,Pre) <= \
