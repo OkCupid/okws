@@ -91,10 +91,14 @@ public:
     bool is_ready () const { return _replied; }
     void send (evb_t ev, time_t time_budget = 0, int *nsp = NULL, CLOSURE);
     void cancel (int status, evv_t ev, CLOSURE);
+    bool keep_serving() { return _serving; }
 
     //-----------------------------------------------------------------------
 
     void set_log_fixup_cb (cbv::ptr cb) { _log_fixup_cb = cb; }
+    void set_error_ok(bool ok) { _error_ok = ok; }
+    void set_add_connection(bool add) { _add_connection = add; }
+    void set_keep_serving(bool ks) { _serving = ks; }
 
     //-----------------------------------------------------------------------
 
@@ -135,6 +139,10 @@ public:
     ptr<req_t> _req;
     evv_t::ptr _release_ev;
     cbv::ptr _log_fixup_cb;
+
+    bool _error_ok;
+    bool _serving;
+    bool _add_connection;
   };
 
   //------------------------------------------------------------------------

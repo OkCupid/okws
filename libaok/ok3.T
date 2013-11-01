@@ -33,7 +33,10 @@ okclnt3_t::resp_t::resp_t (okclnt3_t *o, ptr<req_t> q)
     _rsp_gzip (false),
     _sent (false),
     _replied (false),
-    _req (q) {}
+    _req (q),
+    _error_ok (false),
+    _serving (true),
+    _add_connection (true) {}
 
 //-----------------------------------------------------------------------
 
@@ -183,6 +186,7 @@ okclnt3_t::serve_T ()
 {
   tvars {
     ptr<okclnt3_t::req_t> req;
+    ptr<okclnt3_t::resp_t> resp;
     int status;
     rendezvous_t<> rv (__FILE__, __LINE__);
     u_int reqno (1);
@@ -203,9 +207,14 @@ okclnt3_t::serve_T ()
 
     if (status == HTTP_OK) {
       prev = req->http_vers ();
-      process (req, alloc_resp (req), mkevent (rv));
+      resp = alloc_resp(req);
+      process (req, resp, mkevent (rv));
     } else if (!is_clean_eof (status)) {
       error (status, req);
+    }
+
+    if (resp && !resp->keep_serving()) {
+        _serving = false;
     }
 
     if (okclnt3::n_keepalives >= 0 && int (reqno) > okclnt3::n_keepalives) {
@@ -337,10 +346,13 @@ okclnt3_t::resp_t::do_gzip () const
 void
 okclnt3_t::resp_t::set_connection_attributes (http_resp_attributes_t *hra)
 {
-  str tmp;
-  if (_req) {
-    tmp = _req->hdr_cr ().get_connection ();
-    if (tmp) hra->set_connection (tmp);
+  if (_add_connection) {
+      str tmp;
+      if (_req) {
+          tmp = _req->hdr_cr ().get_connection ();
+      }
+
+      if (tmp) hra->set_connection (tmp);
   }
 }
 
@@ -420,7 +432,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
   }
 
   // Handle Errors
-  if (httpconst::is_error (_status)) {
+  if (!_error_ok && httpconst::is_error (_status)) {
     set_error_attributes (&hra);
     if (svc) {
       twait { svc->geterr (_error_str, hra, mkevent (rsp)); }
@@ -443,7 +455,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
   // now make a final pass
   if (_uid_set) rsp->set_uid (_uid);
 
-  if (!httpconst::is_error (_status)) { 
+  if (_error_ok || !httpconst::is_error (_status)) { 
     fixup_cookies (rsp); 
   }
 
