@@ -560,7 +560,7 @@ void
 okclnt3_t::rrpair_t::okreply (ptr<compressible_t> c, evv_t::ptr ev)
 { 
   _resp->set_release_ev (ev);
-  _resp->reply (HTTP_OK, c); 
+  _resp->reply (_status, c); 
 } 
 
 //-----------------------------------------------------------------------

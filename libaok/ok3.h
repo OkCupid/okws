@@ -139,14 +139,18 @@ public:
 
   //------------------------------------------------------------------------
 
-  class rrpair_t : public virtual okrrp_interface_t  {
+  class rrpair_t : public virtual okrrp_interface_t,
+                   public virtual okrrp_status_interface_t {
   public:
     rrpair_t (ptr<req_t> rq, ptr<resp_t> resp)
-      : _req (rq), _resp (resp) {}
+      : _req (rq), _resp (resp), _status(HTTP_OK) {}
     
     void set_custom_log2 (const str &log) { _resp->set_custom_log2 (log); }
     void disable_gzip () { _resp->disable_gzip (); }
     void set_expires (const str &s)  { _resp->set_expires (s); }
+
+    virtual void set_status(int status) override { _status = status; }
+    virtual int get_status() override { return _status; }
 
     void set_hdr_field (const str &k, const str &v) 
     { _resp->set_hdr_field (k, v); }
@@ -176,6 +180,7 @@ public:
 
     ptr<req_t> _req;
     ptr<resp_t> _resp;
+    int _status;
   };
 
   //------------------------------------------------------------------------
