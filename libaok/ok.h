@@ -423,7 +423,6 @@ public:
   virtual void set_cache_control (const str &s) = 0;
   virtual void set_content_type (const str &s) = 0;
 
-
   virtual void set_log_fixup_cb (cbv::ptr ev) {}
 
   // access input parameters
@@ -437,14 +436,6 @@ public:
 
   virtual ptr<demux_data_t> demux_data () = 0;
   virtual ptr<const demux_data_t> demux_data () const = 0;
-
-};
-
-class okrrp_status_interface_t {
-public:
-
-  virtual void set_status (int status) = 0;
-  virtual int get_status() = 0;
 
 };
 
