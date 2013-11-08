@@ -55,9 +55,9 @@ inline double okwstsnow ()
     double d = 1000000000;
     return ts.tv_sec + ts.tv_nsec / d;
 }
-inline time_t okwsmstime ()
+inline time_t okwsmstime (bool refresh = false)
 {
-    timespec ts        = sfs_get_tsnow();
+    timespec ts        = sfs_get_tsnow(refresh);
     double   ms_to_us  = 1000000;
     int      sec_to_ms = 1000;
     time_t   t         = time_t(ts.tv_sec * sec_to_ms + ts.tv_nsec / ms_to_us);
