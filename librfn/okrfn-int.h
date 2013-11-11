@@ -86,6 +86,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(eval_location, "");
   PUB3_COMPILED_FN(breadcrumb, "");
   PUB3_COMPILED_FN_DOC(slice, "l|ii");
+  PUB3_COMPILED_FN_DOC(reserve, "lu");
 
   PUB3_FILTER_DOC(utf8_fix);
   PUB3_FILTER_DOC(strip);

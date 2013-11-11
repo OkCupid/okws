@@ -323,6 +323,20 @@ namespace rfn3 {
     "object //o//.  There is no output; changes are made to //v// directly. ";
 
   //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  reserve_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    args[0]._l->reserve(args[1]._u);
+    return nullptr;
+  }
+  //-----------------------------------------------------------------------
+
+  const str reserve_t::DOCUMENTATION =
+    "Internally reserve space in a list to hold at least //n// items. Just a "
+    "performance optimization for when you know how big it will be.";
+
+  //-----------------------------------------------------------------------
   
   ptr<const expr_t>
   map_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
