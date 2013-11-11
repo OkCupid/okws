@@ -292,7 +292,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str slice_t::DOCUMENTATION =
-    "Like JS's slice() function. Make a shallow copy of an array, "
+    "Like JS's slice() function. Make a shallow copy of a list, "
     "optionally just part of it.";
 
   //-----------------------------------------------------------------------
