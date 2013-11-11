@@ -263,6 +263,41 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
+  slice_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    auto in = args[0]._l;
+    auto out = expr_list_t::alloc();
+    int start = 0, end = in->size();
+
+    switch (args.size()) {
+        // Yep, fallthrough
+        case 3: end = ((args[2]._i < 0) ? in->size() : 0) + args[2]._i;
+        case 2: start = ((args[1]._i < 0) ? in->size() : 0) + args[1]._i;
+    }
+
+    if (start < 0) { start = 0; }
+    // If end < 0, it'll be promoted to unsigned
+    if (end > 0 && end > in->size()) { end = in->size(); }
+
+    if (start < end) { out->reserve(end - start); }
+
+    while (start < end) {
+        out->push_back((*in)[start]);
+        start++;
+    }
+
+    return out;
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str slice_t::DOCUMENTATION =
+    "Like JS's slice() function. Make a shallow copy of an array, "
+    "optionally just part of it.";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
   append_t::v_eval_1 (eval_t *p, const margs_t &args) const
   {
     ptr<expr_t> x;

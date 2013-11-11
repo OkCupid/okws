@@ -106,6 +106,7 @@ namespace rfn3 {
     F(pow);
     F(sqrt);
     F(splice);
+    F(slice);
     F(index_of);
     F(eval_location);
     F(breadcrumb);
