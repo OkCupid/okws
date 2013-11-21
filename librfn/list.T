@@ -292,7 +292,7 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str slice_t::DOCUMENTATION =
-    "Like JS's slice() function. Make a shallow copy of an array, "
+    "Like JS's slice() function. Make a shallow copy of a list, "
     "optionally just part of it.";
 
   //-----------------------------------------------------------------------
@@ -321,6 +321,20 @@ namespace rfn3 {
   const str append_t::DOCUMENTATION =
     "Given the list //v//, append onto it the "
     "object //o//.  There is no output; changes are made to //v// directly. ";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  reserve_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    args[0]._l->reserve(args[1]._u);
+    return nullptr;
+  }
+  //-----------------------------------------------------------------------
+
+  const str reserve_t::DOCUMENTATION =
+    "Internally reserve space in a list to hold at least //n// items. Just a "
+    "performance optimization for when you know how big it will be.";
 
   //-----------------------------------------------------------------------
   
