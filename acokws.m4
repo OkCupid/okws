@@ -178,8 +178,8 @@ if test "$with_mysql" != "no"; then
 		[for dir in "" " " $dirs; do
 			case $dir in
 				"") lflags=" " ;;
-				" ") lflags="-l$libname -lm" ;;
-				*) lflags="-L${dir} -l$libname -lm" ;;
+				" ") lflags="-l$libname -lm -lssl -lpthread -lrt" ;;
+				*) lflags="-L${dir} -l$libname -lm -lssl -lpthread -lrt" ;;
 			esac
 			LIBS="$ac_save_LIBS $lflags"
 			AC_TRY_LINK([#include "mysql.h"],
