@@ -495,9 +495,8 @@ namespace {
         }
     };
 
-    wrap_res_t wrap(ptr<pub3::expr_t> e,
-                    ref<pub3::pub_tracer_t> tracer,
-                    const bhash<str> &pure_funs) {
+    wrap_res_t my_wrap(ptr<pub3::expr_t> e, ref<pub3::pub_tracer_t> tracer,
+                       const bhash<str> &pure_funs) {
         wrap_res_t res;
         res.desc.alloc();
         ptr<const pub3::callable_t> c = e->to_callable();
@@ -560,7 +559,7 @@ namespace {
             auto fld_desc = pub3::expr_dict_t::alloc();
             auto res_val = pub3::expr_dict_t::alloc();
             for (str fld : *d) {
-                wrap_res_t v = wrap(d->lookup(fld), tracer, pure_funs);
+                wrap_res_t v = my_wrap(d->lookup(fld), tracer, pure_funs);
                 if (!v.val || !v.desc) {
                     res.clear();
                     return res;
@@ -595,7 +594,7 @@ namespace {
                     res.clear();
                     return res;
                 }
-                auto wrapped = wrap(val, tracer, pure_funs);
+                auto wrapped = my_wrap(val, tracer, pure_funs);
                 if (!wrapped.val || !wrapped.desc) {
                     res.clear();
                     return res;

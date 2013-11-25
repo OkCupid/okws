@@ -770,8 +770,8 @@ oksrvc_t::launch_T ()
   if (ok_svc_life_time > 0) {
     delaycb (ok_svc_life_time, 0,
 	     wrap (this, &oksrvc_t::internal_reliable_shutdown,
-		   "service lifetime expired", 
-		   ok_shutdown_timeout_fast));
+               str("service lifetime expired"),
+               static_cast<int>(ok_shutdown_timeout_fast)));
   }
 }
 
