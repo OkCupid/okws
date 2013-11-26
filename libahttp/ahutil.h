@@ -66,7 +66,7 @@ public:
 
   cbv::ptr bwrap ()
   {
-    return wrap (this, &cbbun_t::dec, ptr<cbbun_t>(mkref (this)));
+    return wrap (this, &cbbun_t::dec, mkref (this)); 
   }
 
   static ptr<cbbun_t> alloc (u_int i, cbv c) 

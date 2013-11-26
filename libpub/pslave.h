@@ -260,17 +260,10 @@ private:
 class helper_inet_t : public helper_t {
 public:
   helper_inet_t (const rpc_program &rp, const str &hn, u_int p, u_int o = 0) 
-    : helper_t (rp, o), hostname (hn), port (p) {
-        if (!hostname.len()) {
-            fatal << "ERROR: Empty hostname for connecting to "
-                  << rpcprog.name << "\n";
-        }
-    }
-  virtual str getname () const {
-      return (strbuf (hostname) << ":" << port << ":" << rpcprog.name);
-  }
+    : helper_t (rp, o), hostname (hn), port (p) {}
+  virtual str getname () const { return (strbuf (hostname) << ":" << port); }
   void call (u_int32_t procno, const void *in, void *out, aclnt_cb cb,
-          time_t duration = 600) {
+	     time_t duration = 600) {
     helper_t::call(procno, in, out, cb, duration);
   }
 
