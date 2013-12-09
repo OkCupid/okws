@@ -35,7 +35,7 @@
 class okdate_t {
 public:
   okdate_t (const x_okdate_t &x) : err (false), dt_tm (0), stm_set (false),
-				   time_t_set (false)
+    time_t_set (false)
   { set (x); }
   virtual ~okdate_t () {}
 
