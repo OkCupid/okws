@@ -556,6 +556,12 @@ namespace okssl {
       if (_cipher_order)
           SSL_CTX_set_options(_ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 
+      SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_DH_USE);
+      SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
+
+      SSL_CTX_set_tmp_ecdh(_ssl_ctx, 
+                           EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
+
       SSL_CTX_set_info_callback(_ssl_ctx, ssl_info_callback);
       ret = true;
     }
