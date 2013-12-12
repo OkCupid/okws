@@ -82,16 +82,14 @@ protected:
   ptr<ok::scratch_handle_t> _scratch;
 
   size_t _header_sz;
-  size_t _body_sz;
-  size_t _total_sz;
 };
 
 class http_parser_raw_t : public http_parser_base_t {
 public:
   http_parser_raw_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL);
 
-  http_inhdr_t *hdr_p () { return &hdr; }
-  const http_inhdr_t &hdr_cr () const { return hdr; }
+  virtual http_inhdr_t *hdr_p () override { return &hdr; }
+  virtual const http_inhdr_t &hdr_cr () const override { return hdr; }
   void v_cancel () { hdr.cancel (); }
 
   static ptr<http_parser_raw_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
@@ -110,8 +108,8 @@ public:
   http_parser_full_t (ptr<ahttpcon> xx, u_int to = 0, abuf_t *b = NULL);
   virtual ~http_parser_full_t () {}
 
-  http_inhdr_t * hdr_p () { return &hdr; }
-  const http_inhdr_t &hdr_cr () const { return hdr; }
+  virtual http_inhdr_t * hdr_p () override { return &hdr; }
+  const http_inhdr_t &hdr_cr () const override { return hdr; }
   void finish2 (int s1, int s2);
 
   cgi_t & get_cookie () { return *hdr.get_cookie (); }
@@ -120,13 +118,20 @@ public:
   ptr<cgi_t> get_url_p () { return hdr.get_url (); }
   http_inhdr_t & get_hdr () { return hdr; }
 
-protected:
+  virtual bool want_raw_body() { return false; }
+  const str get_raw_body() { return m_raw_body; }
 
+protected:
   // called to prepare a parsing of a post body.
   cbi::ptr prepare_post_parse (int status);
+  void parse_raw_body(int status, CLOSURE);
 
 public:
   http_inhdr_t hdr;
+
+private:
+  str m_raw_body;
+
 };
 
 class http_parser_cgi_t : public http_parser_full_t {
@@ -135,7 +140,7 @@ public:
   ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
 
   void v_cancel () { hdr.cancel (); post.cancel (); }
-  void v_parse_cb1 (int status);
+  virtual void v_parse_cb1 (int status) override;
   void enable_file_upload () { mpfd_flag = true; }
 
   static ptr<http_parser_cgi_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
