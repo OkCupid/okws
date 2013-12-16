@@ -127,8 +127,8 @@ http_parser_full_t::prepare_post_parse (int status)
 {
   if (hdr.contlen > int (ok_reqsize_limit)) {
     warn << "Header warns of upload too big (" 
-	 << hdr.contlen << "b vs. " << ok_reqsize_limit << "b); "
-	 << "aborting!\n";
+         << hdr.contlen << "b vs. " << ok_reqsize_limit << "b); "
+         << "aborting!\n";
     short_circuit_output ();
     finish (HTTP_NOT_ALLOWED);
     return NULL;
@@ -141,72 +141,101 @@ http_parser_full_t::prepare_post_parse (int status)
 
 //-----------------------------------------------------------------------
 
+tamed void
+http_parser_full_t::parse_raw_body(int status)
+{
+    tvars {
+        cbi::ptr pcb;
+        ptr<async_raw_post_parser_t> post_parser;
+        int ret;
+    }
+    pcb = prepare_post_parse(status);
+    if (!pcb) return;
+
+    post_parser = New refcounted<async_raw_post_parser_t>
+        (get_abuf_p(), hdr.contlen);
+
+    twait { post_parser->parse(mkevent(ret)); }
+    m_raw_body = post_parser->contents();
+    pcb(ret);
+}
+
+//-----------------------------------------------------------------------
+
 void
 http_parser_cgi_t::v_parse_cb1 (int status)
 {
-  switch (hdr.mthd) {
-
-  case HTTP_MTHD_POST:
-
+    if ((hdr.mthd == HTTP_MTHD_POST || hdr.mthd == HTTP_MTHD_PUT) &&
+        want_raw_body())
     {
-      cgi_t *post_cgi;
-      ptr<cgi_t> ucg;
-      
-      if (_union_mode) {
-	ucg = get_union_cgi ();
-	cgi = ucg;
-	post_cgi = ucg;
-	
-	// need to reset interior state for new parsing.
-	ucg->reset_state ();
-	
-      } else {
-	cgi = &post;
-	post_cgi = &post;
-      }
-      
-      cbi::ptr pcb;
-      if ((pcb = prepare_post_parse (status))) {
-      
-	str boundary;
-	if (cgi_mpfd_t::match (hdr, &boundary)) {
-	  if (mpfd_flag) {
-	    mpfd = cgi_mpfd_t::alloc (_abuf, hdr.contlen, boundary);
-	    cgi = mpfd;
-	    mpfd->parse (pcb);
-	  } else {
-	    warn << "file upload attempted when not permitted\n";
-	    finish (HTTP_NOT_ALLOWED);
-	  }
-	} else {
-	  post_cgi->set_max_scratchlen (hdr.contlen);
-	  post_cgi->parse (pcb);
-	}
-      }
+        cgi = get_url_p ();
+        parse_raw_body(status);
+        return;
     }
 
-    break;
+    switch (hdr.mthd) {
 
-  case HTTP_MTHD_OPTIONS:
-  case HTTP_MTHD_GET:
-  case HTTP_MTHD_HEAD:
-    {
-      if (_union_mode) {
-	cgi = get_union_cgi ();
-      } else {
-	cgi = get_url_p ();
-      }
-      finish (status);
+        case HTTP_MTHD_PUT:
+        case HTTP_MTHD_POST:
+            {
+                cgi_t *post_cgi;
+                ptr<cgi_t> ucg;
+
+                if (_union_mode) {
+                    ucg = get_union_cgi ();
+                    cgi = ucg;
+                    post_cgi = ucg;
+
+                    // need to reset interior state for new parsing.
+                    ucg->reset_state ();
+
+                } else {
+                    cgi = &post;
+                    post_cgi = &post;
+                }
+
+                cbi::ptr pcb;
+                if ((pcb = prepare_post_parse (status))) {
+
+                    str boundary;
+                    if (cgi_mpfd_t::match (hdr, &boundary)) {
+                        if (mpfd_flag) {
+                            mpfd = cgi_mpfd_t::alloc (_abuf, hdr.contlen, boundary);
+                            cgi = mpfd;
+                            mpfd->parse (pcb);
+                        } else {
+                            warn << "file upload attempted when not permitted\n";
+                            finish (HTTP_NOT_ALLOWED);
+                        }
+                    } else {
+                        post_cgi->set_max_scratchlen (hdr.contlen);
+                        post_cgi->parse (pcb);
+                    }
+                }
+            }
+            break;
+
+        case HTTP_MTHD_DELETE:
+        case HTTP_MTHD_OPTIONS:
+        case HTTP_MTHD_GET:
+        case HTTP_MTHD_HEAD:
+            {
+                if (_union_mode) {
+                    cgi = get_union_cgi ();
+                } else {
+                    cgi = get_url_p ();
+                }
+                finish (status);
+            }
+            break;
+
+        default:
+            {
+                short_circuit_output ();
+                finish (HTTP_NOT_ALLOWED);
+            }
+            break;
     }
-    break;
-    
-  default:
-    {
-      short_circuit_output ();
-      finish (HTTP_NOT_ALLOWED);
-    }
-    break;
-  }
 }
 
 //-----------------------------------------------------------------------
