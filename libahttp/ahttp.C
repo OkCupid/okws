@@ -40,8 +40,8 @@ time_t global_ssd_last = 0;
 int n_ahttpcon = 0;
 
 
-ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
-		    bool ma)
+ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe, 
+                    bool ma)
   : start (sfs_get_timenow ()), fd (f), rcbset (false), 
     wcbset (false), _bytes_recv (0), bytes_sent (0),
     eof (false), destroyed (false), out (suio_alloc ()), sin (s),
@@ -486,6 +486,7 @@ ahttpcon_clone::recvd_bytes (size_t n)
     ahttpcon::recvd_bytes (n);
     return;
   }
+
   str s = delimit (n);
   if (s || delimit_status != HTTP_OK) {
 
@@ -907,34 +908,41 @@ ahttpcon::all_info () const
 void
 ahttp_tab_t::run ()
 {
-  dcb = NULL;
-  ahttp_tab_node_t *n;
+    dcb = NULL;
+    ahttp_tab_node_t *n;
 
-  assert (!_shutdown);
+    assert (!_shutdown);
 
-  bool flag = true;
-  while ((n = q.first) && flag) {
-    if (* n->_destroyed_p ) {
-      unreg (n);
-    } else {
-      ptr<ahttpcon> a = mkref (n->_a); // hold onto this
-      if (int (sfs_get_timenow() - n->_a->start) > 
-	  int (ok_demux_timeout)) {
+    bool flag = true;
+    while ((n = q.first) && flag) {
+        if (* n->_destroyed_p ) {
+            unreg (n);
+        } else {
+            ptr<ahttpcon> a = mkref (n->_a); // hold onto this
 
-	str ai = a->all_info ();
+            // MM: If a keep-alive conn has timed out, just kill it here hard
+            if (a->get_reqno() > 0 && !a->bytes_recv() &&
+                sfs_get_timenow() - n->_a->start > ok_ka_timeout) {
+                a->cancel();
+                unreg(n);
+                continue;
+            }
 
-	// Don't warn for HTTP keepalives timing out...
-	if (a->get_reqno () == 0) {
-	  warn << "HTTP connection timed out in demux " << ai << "\n";
-	}
-	a->hit_timeout ();
-	unreg (n);
-      }  else {
-	flag = false;
-      }
+            // MM: handle non-keep alive and normal connections with the
+            // demux timeout procedure
+            if ((a->get_reqno() == 0 || a->bytes_recv() > 0) && 
+                int (sfs_get_timenow() - n->_a->start) > 
+                int (ok_demux_timeout)) {
+                str ai = a->all_info ();
+                warn << "HTTP connection timed out in demux " << ai << "\n";
+                a->hit_timeout ();
+                unreg (n);
+            }  else {
+                flag = false;
+            }
+        }
     }
-  }
-  sched ();
+    sched ();
 }
 
 //-----------------------------------------------------------------------
