@@ -68,6 +68,48 @@ protected:
   bool dataready;
 };
 
+class async_raw_post_parser_t : public async_parser_t {
+public:
+    explicit async_raw_post_parser_t(abuf_t *a, size_t len) :
+        async_parser_t(a), m_body(len), m_bp(m_body.cstr()),
+        m_endp(m_bp + len),
+        m_ok(false)
+    {}
+
+    str contents() {
+        if (!m_ok) {
+            return str(NULL);
+        } else {
+            m_body.setlen((m_bp - m_body.cstr()));
+            // This destroys the underlying m_str and is effectively a move
+            // constructor.
+            return str(m_body);
+        }
+    }
+protected:
+    void parse_guts(){
+        // Grab the post body ourselves!
+        ssize_t rc = 0;
+        while (m_bp < m_endp) {
+            rc = abuf->dump(m_bp, m_endp - m_bp);
+            if (rc < 0) {
+                assert(rc == ABUF_EOFCHAR || rc == ABUF_WAITCHAR);
+                break;
+            }
+            m_bp += rc;
+        }
+        if (m_bp == m_endp || rc == ABUF_EOFCHAR) {
+            m_ok = true;
+            finish_parse(HTTP_OK);
+        }
+        // otherwise, we're waiting
+    }
+
+    mstr m_body;
+    char *m_bp, *m_endp;
+    bool m_ok;
+};
+
 class async_dumper_t : public async_parser_t {
 public:
   async_dumper_t (abuf_t *a) : async_parser_t (a), buf (NULL) {}
