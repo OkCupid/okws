@@ -1,6 +1,7 @@
 
 #include "pscalar.h"
 #include "parseopt.h"
+#include <math.h>
 
 //-----------------------------------------------------------------------
 
@@ -579,8 +580,9 @@ scalar_obj_t::div_or_mod (const scalar_obj_t &o, bool div) const
     double d1 = to_double ();
     double d2 = o.to_double ();
 
-    if (d2 && div) { out.set (d1 / d2); }
-    else { ok = false; }
+    if (!d2) { ok = false; }
+    else if (div) { out.set (d1 / d2); }
+    else { out.set (fmod(d1, d2)); }
 
   } else if (to_int64 (&i1) && o.to_int64 (&i2) && (ok = (i2 != 0))) {
     out.set_i (OP (i1, i2));
