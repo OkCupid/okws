@@ -206,6 +206,10 @@ namespace pub3 {
     obj_t &operator= (obj_t o) { return set_obj (o); }
     obj_t &operator= (obj_dict_t o);
     obj_t &operator= (obj_list_t o);
+
+    template <typename T>
+    obj_t &operator= (vec<T> v);
+
     void remove_key (str k);
 
     obj_t &refer_to (obj_t o);
@@ -315,6 +319,13 @@ namespace pub3 {
   };
 
   //-----------------------------------------------------------------------
+
+  template <typename T>
+  obj_t &obj_t::operator= (vec<T> v) {
+    obj_list_t list;
+    for (const auto &val : v) { list.push_back(val); }
+    return set_obj(list);
+  }
 
 };
 
