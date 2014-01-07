@@ -58,6 +58,18 @@ init_syscall_stats ()
 
 //-----------------------------------------------------------------------
 
+bool is_internal(const ptr<const ahttpcon> &con) {
+  static const in_addr_t localhost_ip = inet_addr("127.0.0.1");
+  if (!con)
+    return false;
+  const sockaddr_in *in_addr = con->get_sin();
+  if (!in_addr)
+    return false;
+  return con->get_sin()->sin_addr.s_addr == localhost_ip;
+}
+
+//-----------------------------------------------------------------------
+
 void
 ok_httpsrv_t::malloc_init () {}
 
@@ -988,6 +1000,48 @@ okclnt2_t::set_keepalive_attributes (http_resp_attributes_t *hra)
       hra->set_connection (tmp);
     }
   }
+}
+
+
+//-----------------------------------------------------------------------
+
+bool okclnt_base_t::is_ssl() const {
+  return _demux_data && _demux_data->ssl();
+}
+
+//-----------------------------------------------------------------------
+
+bool okclnt2_t::is_ssl() const {
+  str proxy_info;
+  if (is_internal(client_con()) && (proxy_info = (*this)["x-forwarded-proto"])) {
+    return proxy_info == "https";
+  }
+  return _demux_data && _demux_data->ssl();
+}
+
+//-----------------------------------------------------------------------
+
+uint32_t okclnt2_t::get_ip() const {
+  str proxy_info;
+  if (is_internal(client_con()) && (proxy_info = (*this)["x-real-ip"])) {
+    struct sockaddr_in addr;
+    if (inet_aton(proxy_info.cstr(), &addr.sin_addr)) {
+      return addr.sin_addr.s_addr;
+    }
+    warn <<  __FILE__ "[" << __LINE__ <<  "] in " << __func__ << ": "
+      "Could not read proxy info properly." << proxy_info << "\n";
+  }
+  return client_con()->get_sin()->sin_addr.s_addr;
+}
+
+//-----------------------------------------------------------------------
+
+str okclnt2_t::get_ip_str() const {
+  str proxy_info;
+  if (is_internal(client_con()) && (proxy_info = (*this)["x-real-ip"])) {
+    return proxy_info;
+  }
+  return inet_ntoa(client_con()->get_sin()->sin_addr);
 }
 
 //-----------------------------------------------------------------------

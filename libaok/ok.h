@@ -97,6 +97,10 @@ private:
 
 //-----------------------------------------------------------------------
 
+bool is_internal(const ptr<const ahttpcon>&);
+
+//-----------------------------------------------------------------------
+
 class demux_data_t {
 private:
   static struct timespec timespec_null;
@@ -569,10 +573,12 @@ public:
 
   void set_hdr_field (const str &k, const str &v);
 
-  void set_demux_data (ptr<demux_data_t> d) { _demux_data = d; }
-  bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
-  str ssl_cipher () const;
-  int get_reqno () const;
+  void set_demux_data(ptr<demux_data_t> d) { _demux_data = d; }
+
+  virtual bool is_ssl() const;
+
+  str ssl_cipher() const;
+  int get_reqno() const;
 
   virtual ptr<pub3::ok_iface_t> pub3 () ;
   virtual ptr<pub3::ok_iface_t> pub3_local ();
@@ -670,11 +676,15 @@ public:
   okclnt2_t (ptr<ahttpcon> x, oksrvc_t *c, u_int to = 0) :
     okclnt_t (x, c, to) {}
 
-  void serve () { serve_T (); }
-  void process () {}
-  virtual void process (proc_ev_t ev) = 0;
-  void send_complete () {}
-  void serve_complete () { delete this; }
+  bool is_ssl() const override;
+  uint32_t get_ip() const;
+  str get_ip_str() const;
+
+  void serve() { serve_T(); }
+  void process() {}
+  virtual void process(proc_ev_t ev) = 0;
+  void send_complete() {}
+  void serve_complete() { delete this; }
 
   // okclnt2_t allows use of keepalive connections, but only
   // if this flag is toggled to true...
