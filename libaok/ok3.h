@@ -36,6 +36,8 @@ public:
     htpv_t http_vers () const { return hdr.get_vers (); }
     okclnt3_t *ok_clnt () { return _ok_clnt; }
     const okclnt3_t *ok_clnt () const { return _ok_clnt; }
+
+    virtual bool want_raw_body() override { return _ok_clnt->want_raw_body(); }
   private:
     okclnt3_t *_ok_clnt;
   };
@@ -199,6 +201,10 @@ public:
   ptr<rrpair_t> convert (ptr<req_t> req, ptr<resp_t> resp);
 
   //------------------------------------------------------------------------
+
+  // Override and return true if you want to handle parsing the HTTP body
+  // yourself (e.g. as JSON).
+  virtual bool want_raw_body() { return false; }
 
   virtual bool ssl_only () const { return false; } 
   virtual str  ssl_redirect_str () const { return NULL; }
