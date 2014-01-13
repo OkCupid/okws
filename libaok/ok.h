@@ -641,7 +641,7 @@ protected:
 // with x-URL-encoded GET, POST of multipart form data.
 //
 class okclnt_t : public okclnt_base_t, 
-		 public http_parser_cgi_t 
+                 public http_parser_cgi_t
 { 
 public:
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
