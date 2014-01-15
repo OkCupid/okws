@@ -8,6 +8,9 @@
 # Emacs files
 *~
 
+# Vim files
+*.sw*
+
 # Compiled python files
 *.pyc
 

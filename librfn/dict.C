@@ -3,6 +3,7 @@
 #include "okrfn-int.h"
 #include "okformat.h"
 #include "pub3parse.h"
+#include "okcgi.h"
 
 namespace rfn3 {
 
@@ -104,6 +105,25 @@ namespace rfn3 {
 
   const str json2pub_t::DOCUMENTATION =
     "Converts a string into a JSON-encoded object";
+
+  //-----------------------------------------------------------------------
+
+  ptr<const expr_t>
+  cgi2pub_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+      using namespace pub3;
+      str s = args[0]._s;
+      ptr<cgi_t> cgi = cgi_t::str_parse(s);
+      pub3::obj_t ret;
+      for (auto p = cgi->first(); p; p = cgi->next(p))
+          ret(p->key) = p->vals;
+      return ret.dict();
+  }
+
+  //-----------------------------------------------------------------------
+
+  const str cgi2pub_t::DOCUMENTATION =
+    "Converts a string into a CGI dictionary";
 
   //-----------------------------------------------------------------------
 
