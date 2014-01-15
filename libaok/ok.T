@@ -1011,7 +1011,7 @@ bool okclnt_base_t::is_ssl() const {
 
 //-----------------------------------------------------------------------
 
-bool okclnt2_t::is_ssl() const {
+bool okclnt_t::is_ssl() const {
   str proxy_info;
   if (is_internal(client_con()) && (proxy_info = (*this)["x-forwarded-proto"])) {
     return proxy_info == "https";
@@ -1021,7 +1021,7 @@ bool okclnt2_t::is_ssl() const {
 
 //-----------------------------------------------------------------------
 
-uint32_t okclnt2_t::get_ip() const {
+uint32_t okclnt_t::get_ip() const {
   str proxy_info;
   if (is_internal(client_con()) && (proxy_info = (*this)["x-real-ip"])) {
     struct sockaddr_in addr;
@@ -1036,7 +1036,7 @@ uint32_t okclnt2_t::get_ip() const {
 
 //-----------------------------------------------------------------------
 
-str okclnt2_t::get_ip_str() const {
+str okclnt_t::get_ip_str() const {
   str proxy_info;
   if (is_internal(client_con()) && (proxy_info = (*this)["x-real-ip"])) {
     return proxy_info;
