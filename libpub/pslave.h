@@ -138,6 +138,8 @@ public:
       return helper_t::getname () << ":" << nm;
   }
 
+  const rpc_program& get_rpcprog() { return rpcprog; }
+
 protected:
   void status_change (hlp_status_t ns);
   void call_status_cb () { if (stcb) (*stcb) (status); }
