@@ -22,6 +22,12 @@ bool_t snappy_xdr_arg(XDR *xdrs, void *objp) {
         return 1;
 
     } else if (xdrs->x_op == XDR_DECODE) {
+
+        // SS: For debugging
+        static int reqs_since_logged{0};
+        static int total_compressed{0};
+        static int total_uncompressed{0};
+
         uint32_t compressed_length;
 
         if (!xdr_getint(xdrs, compressed_length)) { return 0; }
@@ -34,6 +40,19 @@ bool_t snappy_xdr_arg(XDR *xdrs, void *objp) {
         if (!snappy::GetUncompressedLength(
             compressed, compressed_length, &uncompressed_length
         )) { return 0; }
+
+        total_compressed += compressed_length;
+        total_uncompressed += uncompressed_length;
+        if (reqs_since_logged >= 10000) {
+            warn << "SS_DEBUG: Snappy: compressed: "
+                 << total_compressed << "b, uncompressed: "
+                 << total_uncompressed << "b\n";
+            total_compressed = 0;
+            total_uncompressed = 0;
+            reqs_since_logged = 0;
+        } else {
+            reqs_since_logged++;
+        }
 
         char uncompressed[uncompressed_length];
 
