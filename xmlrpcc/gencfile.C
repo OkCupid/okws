@@ -123,13 +123,40 @@ mktbl_xml (const rpc_program *rs)
 }
 
 static void
+mktblentry (u_int procno, const rpc_arg &arg, const rpc_arg &res) {
+    aout << "  {\n"
+         << "    \"" << procno << "\",\n"
+         << "    &typeid (" << arg.type << "), " << arg.type << "_alloc, "
+         << (arg.compressed
+                 ? strbuf() << "snappy_xdr_arg<xdr_" << arg.type << ">"
+                 : "xdr_" << arg.type
+            )
+         << ", print_" << arg.type << ",\n"
+         << "    &typeid (" << res.type << "), " << res.type << "_alloc, "
+         << (res.compressed
+                 ? strbuf() << "snappy_xdr_arg<xdr_" << res.type << ">"
+                 : "xdr_" << res.type
+            )
+         << ", print_" << res.type << ",\n"
+         << "  }";
+}
+
+static void
 mktbl (const rpc_program *rs)
 {
   for (const rpc_vers *rv = rs->vers.base (); rv < rs->vers.lim (); rv++) {
     str name = rpcprog (rs, rv);
-    aout << "static const rpcgen_table " << name << "_tbl[] = {\n"
-	 << "  " << rs->id << "_" << rv->val << "_APPLY (XDRTBL_DECL)\n"
-	 << "};\n"
+    aout << "static const rpcgen_table " << name << "_tbl[] = {\n";
+    u_int n{0};
+    for (const rpc_proc &rp : rv->procs) {
+        while (n++ < rp.val) {
+            if (n != 1) { aout << ",\n"; }
+            mktblentry (n-1, {"false"}, {"false"});
+        }
+        if (n != 1) { aout << ",\n"; }
+        mktblentry (n-1, rp.arg, rp.res);
+    }
+    aout << "\n};\n"
 	 << "const rpc_program " << name << " = {\n"
 	 << "  " << rs->id << ", " << rv->id << ", " << name << "_tbl,\n"
 	 << "  sizeof (" << name << "_tbl" << ") / sizeof ("
@@ -741,7 +768,8 @@ gencfile (str fname)
   if  (!skip_xml) {
     aout << "#define ENABLE_XML_XDR 1\n";
   }
-  aout << "#include \"" << makehdrname (fname) << "\"\n\n";
+  aout << "#include \"" << makehdrname (fname) << "\"\n"
+       << "#include \"xdrsnappy.h\"\n\n";
 
 #if 0
   for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)

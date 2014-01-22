@@ -73,6 +73,8 @@ switch		return T_SWITCH;
 case		return T_CASE;
 default		return T_DEFAULT;
 
+compressed	return T_COMPRESSED;
+
 opaque		{ yylval.str = yytext; return T_OPAQUE; }
 string		{ yylval.str = yytext; return T_STRING; }
 

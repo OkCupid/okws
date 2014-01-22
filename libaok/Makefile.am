@@ -15,13 +15,15 @@ libaok_la_SOURCES = \
 	direct.C \
 	ok3.C \
 	ok3adapter.C \
-	okprotutil.C
+	okprotutil.C \
+	xdrsnappy.C
 
 libaok_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 
 okwsinclude_HEADERS = ok.h okprotext.h \
 	okprot.h oklog.h svq.h xmlrpcsrv.h \
-	oklocale.h ok3.h ok3adapter.h okprotutil.h 
+	oklocale.h ok3.h ok3adapter.h okprotutil.h \
+	xdrsnappy.h
 
 okprot.h: $(srcdir)/okprot.x
 	@rm -f $@
