@@ -615,6 +615,48 @@ AM_CONDITIONAL(USE_XML, test "${use_xml}" != "no")
 ])
 
 dnl
+dnl Find Snappy
+dnl
+AC_DEFUN([OKWS_SNAPPY],
+[AC_ARG_WITH(snappy,
+--with-snappy=DIR       Specify location of Snappy)
+ac_save_CFLAGS=$CFLAGS
+ac_save_LIBS=$LIBS
+CC_REAL=$CC
+CC=$CXX
+dirs="$with_snappy ${prefix} ${prefix}/snappy"
+dirs="$dirs /usr/local /usr/local/snappy"
+AC_CACHE_CHECK(for snappy.h, okws_cv_snappy_h,
+[for dir in " " $dirs; do
+    iflags="-I${dir}/include"
+    CFLAGS="${ac_save_CFLAGS} $iflags"
+    AC_TRY_COMPILE([#include <snappy.h>], 0,
+	okws_cv_snappy_h="${iflags}"; break)
+done])
+if test -z "${okws_cv_snappy_h+set}"; then
+    AC_MSG_ERROR("Can\'t find snappy.h anywhere")
+fi
+AC_CACHE_CHECK(for libsnappy, okws_cv_libsnappy,
+[for dir in "" " " $dirs; do
+    case $dir in
+	"") lflags=" " ;;
+	" ") lflags="-lsnappy" ;;
+	*) lflags="-L${dir}/lib -lsnappy" ;;
+    esac
+    LIBS="$ac_save_LIBS $lflags"
+    AC_TRY_LINK([#include <snappy.h>],
+	snappy::Compress (NULL, NULL);,
+	okws_cv_libsnappy=$lflags; break)
+done])
+if test -z ${okws_cv_libsnappy+set}; then
+    AC_MSG_ERROR("Can\'t find libsnappy anywhere")
+fi
+CC=$CC_REAL
+CFLAGS=$ac_save_CFLAGS
+CPPFLAGS="$CPPFLAGS $okws_cv_snappy_h"
+LIBS="$ac_save_LIBS $okws_cv_libsnappy"])
+
+dnl
 dnl OKWS_PREFIX
 dnl
 dnl Make a prefix for OKWS to put all of its crap, like config files,

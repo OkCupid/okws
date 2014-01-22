@@ -124,11 +124,16 @@ struct rpc_union {
   vec<rpc_utag> cases;
 };
 
+struct rpc_arg {
+    str type;
+    bool compressed;
+};
+
 struct rpc_proc {
   str id;
   u_int32_t val;
-  str arg;
-  str res;
+  rpc_arg arg;
+  rpc_arg res;
 };
 
 struct rpc_vers {
@@ -206,6 +211,7 @@ public:
 
 struct YYSTYPE {
   u_int32_t num;
+  struct rpc_arg arg;
   struct rpc_decl decl;
   struct rpc_const cnst;
   ::str str;

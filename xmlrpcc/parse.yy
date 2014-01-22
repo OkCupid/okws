@@ -59,10 +59,13 @@ static str getid (str);
 %token T_CASE
 %token T_DEFAULT
 
+%token T_COMPRESSED
+
 %token <str> T_OPAQUE
 %token <str> T_STRING
 
-%type <str> id newid type_or_void type base_type value
+%type <arg> type_or_void maybe_compressed_type
+%type <str> id newid type base_type value
 %type <decl> declaration
 %type <cnst> enum_cnstag
 %type <num> number
@@ -293,7 +296,14 @@ declaration: type T_ID ';'
 	   $$.bound = "RPC_INFINITY"; }
 	;
 
-type_or_void: type | T_VOID { $$ = "void"; }
+type_or_void:
+      maybe_compressed_type
+    | T_VOID { $$ = {"void"}; }
+	;
+
+maybe_compressed_type:
+    T_COMPRESSED type { $$ = {$2, true}; }
+    | type { $$ = {$1}; }
 	;
 
 type: base_type | id

@@ -432,8 +432,8 @@ dumpprog (const rpc_program *rs)
     for (const rpc_proc *rp = rv->procs.base (); rp < rv->procs.lim (); rp++) {
       while (n++ < rp->val)
 	aout << " \\\n  macro (" << n-1 << ", false, false)";
-      aout << " \\\n  macro (" << rp->id << ", " << rp->arg
-	   << ", " << rp->res << ")";
+      aout << " \\\n  macro (" << rp->id << ", " << rp->arg.type
+	   << ", " << rp->res.type << ")";
     }
     aout << "\n";
     aout << "#define " << rs->id << "_" << rv->val << "_APPLY(macro) \\\n  "
@@ -621,8 +621,8 @@ dump_tmpl_proc (const rpc_proc *rc)
 {
   str arg, res;
   str fn = tolower (rc->id);
-  if (rc->arg != "void") arg = rc->arg;
-  if (rc->res != "void") res = rc->res;
+  if (rc->arg.type != "void") arg = rc->arg.type;
+  if (rc->res.type != "void") res = rc->res.type;
   str spc = "    ";
 
   aout << "\n";
