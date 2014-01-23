@@ -42,6 +42,8 @@
 #include "pub3.h"
 #include "oklocale.h"
 
+bool is_internal(const ptr<const ahttpcon> &con);
+
 //-----------------------------------------------------------------------
 
 typedef enum { OKC_STATE_NONE = 0,

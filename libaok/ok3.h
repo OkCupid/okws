@@ -208,7 +208,8 @@ public:
 
   virtual bool ssl_only () const { return false; } 
   virtual str  ssl_redirect_str () const { return NULL; }
-  bool is_ssl () const { return _demux_data && _demux_data->ssl (); }
+  bool is_ssl () const;
+  str get_ip_str () const;
   str ssl_cipher () const;
 
   //------------------------------------------------------------------------
@@ -256,6 +257,15 @@ protected:
 
   //-----------------------------------------------------------------------
 
+  void parse_proxy_headers(const http_parser_cgi_t&);
+
+  //-----------------------------------------------------------------------
+
+  str _ip_str;
+  enum class ssl {
+    DONT_KNOW = 0, YES, NO
+  } _is_ssl = ssl::DONT_KNOW;
+  bool _proxy_header_parsed = false;
   ptr<ahttpcon> _x;
   abuf_t *_abuf;
   u_int _timeout;
