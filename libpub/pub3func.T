@@ -418,7 +418,8 @@ namespace pub3 {
     ptr<const expr_t> f = _fn->eval_to_val (e);
     ptr<const callable_t> fnd;
     if (!f) { 
-      report_error (e, "cannot resolve function"); 
+      str ident = _fn->to_identifier() ?: "unknown";
+      report_error (e, str("cannot resolve function \"") << ident << "\"");
     } else if (!(fnd = f->to_callable ())) {
       report_error (e, "expected a function; got something else");
     }
@@ -428,8 +429,7 @@ namespace pub3 {
   //----------------------------------------------------------------------
 
   tamed void
-  call_t::pub_prepare (eval_t *p, 
-		       event<ptr<const callable_t> >::ref ev) const
+  call_t::pub_prepare (eval_t *p, event<ptr<const callable_t> >::ref ev) const
   {
     tvars {
       ptr<const expr_t> f;
@@ -442,7 +442,8 @@ namespace pub3 {
     else { f = _fn->eval_to_val (p); }
 
     if (!f) { 
-      report_error (p, "cannot resolve function"); 
+      str ident = _fn->to_identifier() ?: "unknown";
+      report_error (p, str("cannot resolve function \"") << ident << "\"");
     } else if (!(fnd = f->to_callable ())) {
       report_error (p, "expected a function; got something else");
     }
