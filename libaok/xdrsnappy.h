@@ -27,7 +27,7 @@ bool_t snappy_xdr_arg(XDR *xdrs, void *objp) {
         if (!xdr_getint(xdrs, compressed_length)) { return 0; }
 
         // This is the only way to get bytes out of an XDR stream, right?
-        char compressed[compressed_length];
+        mstr compressed(compressed_length);
         xdr_getpadbytes(xdrs, compressed, compressed_length);
 
         size_t uncompressed_length;
@@ -35,7 +35,7 @@ bool_t snappy_xdr_arg(XDR *xdrs, void *objp) {
             compressed, compressed_length, &uncompressed_length
         )) { return 0; }
 
-        char uncompressed[uncompressed_length];
+        mstr uncompressed(uncompressed_length);
 
         if (!snappy::RawUncompress(
             compressed, compressed_length, uncompressed
