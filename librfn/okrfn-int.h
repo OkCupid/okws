@@ -86,6 +86,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN(cmp_float, "f");
   PUB3_COMPILED_FN(eval_location, "");
   PUB3_COMPILED_FN(breadcrumb, "");
+  PUB3_COMPILED_FN(stacktrace, "");
   PUB3_COMPILED_FN_DOC(slice, "l|ii");
   PUB3_COMPILED_FN_DOC(reserve, "lu");
 

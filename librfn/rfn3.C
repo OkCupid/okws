@@ -112,6 +112,7 @@ namespace rfn3 {
     F(index_of);
     F(eval_location);
     F(breadcrumb);
+    F(stacktrace);
     F(cos);
     F(sin);
     F(tan);
