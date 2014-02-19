@@ -1587,7 +1587,15 @@ namespace pub3 {
   status_t
   include_t::v_publish_nonblock (eval_t *p) const
   {
-    p->report_error ("include skipped in nonblock context", _location);
+      str fn;
+
+      if (_file) {
+          fn = _file->eval_as_str(p);
+      } else
+          fn = "unknown";
+
+    p->report_error (str("include skipped in nonblock context: ") << fn, 
+                     _location);
     return status_t ();
   }
 
