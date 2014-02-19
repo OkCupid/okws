@@ -550,6 +550,22 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const expr_t>
+  stacktrace_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+      pub3::obj_list_t stack;
+      for (const runloc_t& frame: *p->get_loc_stack()) {
+          pub3::obj_t o;
+          o("filename") = frame.filename();
+          o("line") = frame.lineno();
+          o("function") = frame.funcname();
+          stack.push_back(o);
+      }
+    return stack.obj();
+  }
+
+  //-----------------------------------------------------------------------
+
   const str match_t::DOCUMENTATION =
     "Given a regex //r// and a string //s//, return //true// "
     "if //r// matches the **whole** string //s// and //false// otherwise.";
