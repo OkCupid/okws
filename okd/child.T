@@ -403,6 +403,8 @@ okch_t::send_con_to_service (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev)
     acw.demux_data ()->set_forward_time ();
     acw.to_xdr (&arg);
 
+    arg.scraps = acw.con()->request_bytes;
+
     // Take the FD away from the ahttpcon; is OURS now.
     fd = xc->takefd ();
 
