@@ -229,7 +229,8 @@ namespace ezdb {
     time_t n = sfs_get_timenow ();
     while ((r = _q.first) && (n - r->_accessed > _timeout)) {
       str q = r->dump ();
-      warn << "Timing out stale query " << q << "\n";
+      warn << "Timing out stale query after " << (n - r->_accessed) << "s: " 
+           << " (timeout = " << _timeout << "s): " << q << "\n";
       remove (r);
     }
   }
