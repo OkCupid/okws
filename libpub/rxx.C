@@ -195,45 +195,38 @@ str
 rxx_replace_2 (str input, rxx pat, str repl_str)
 {
   repl_t repl;
-  str ret;
   if (!repl.parse (repl_str)) {
     warn << "XX cannot parse replacement string: " << repl_str << "\n";
-  } else {
-    const char *p = input.cstr();
-    const char *const e = p + input.len ();
-    strbuf b;
-    bool go = true;
-    bool err = false;
+    return nullptr;
+  }
+  strbuf b;
+  int offset = 0;
 
-    // check p < e to see that we're not dealing with an empty
-    // string (especially since x? matches "").
-    while (go && !err && p < e) {
+  while (pat._exec(input.cstr(), input.len(), 0, offset) && pat.success()) { 
 
-      if (!pat._exec (p, e - p, 0)) { 
-	warn << "XX regex execution failed\n";
-	err = true; 
-      }
-      
-      else if (!pat.success ()) { go = false; }
-
-      else {
-	str pre = str (p, pat.start (0));
-	strbuf_output (b, pre);
-	repl.output (b, p, pat);
-	p += max (pat.end (0), 1);
-      }
-
+    if (pat.start(0) == pat.end(0)) {
+        if (offset < input.len()) {
+            repl.output (b, input.cstr(), pat);
+            b.copy(input.cstr() + offset, pat.start(0) - offset + 1);
+            offset++;
+            continue;
+        } else {
+            repl.output (b, input.cstr(), pat);
+            break;
+        }
     }
 
-    if (p < e && !err) {
-      str post = str (p, e - p);
-      strbuf_output (b, post);
-    }
-
-    if (!err) { ret = b; }
+    b.copy(input.cstr() + offset, pat.start(0) - offset);
+    repl.output (b, input.cstr(), pat);
+    offset = pat.end(0);
 
   }
-  return ret;
+
+  if (offset < input.len()) {
+      b.copy(input.cstr() + offset, input.len() - offset);
+  }
+
+  return b;
 }
 
 //-----------------------------------------------------------------------
