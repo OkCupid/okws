@@ -103,7 +103,6 @@ struct keepalive_data_t {
 
 //=======================================================================
 
-class ahttpcon_clone;
 class ahttpcon : public ok_xprt_base_t
 {
 protected:
@@ -194,7 +193,6 @@ public:
   void stop_read ();
   void short_circuit_output ();
   int bytes_recv () const { return _bytes_recv;}
-  virtual bool do_peek () const { return _do_peek; }
 
   template<size_t n> void
   collect_scraps (rpc_bytes<n> &out) { in->load_into_xdr<n> (out); }
@@ -241,6 +239,7 @@ protected:
   state_t _state;
 
 public:
+  rpc_bytes<> request_bytes;
   ptr<bool> destroyed_p;
   void kill ();
   void hit_timeout ();
@@ -252,7 +251,6 @@ private:
 
 protected:
   u_int _reqno; // for Keep-Alive, this is incremented once-per
-  bool _do_peek;
 };
 
 // for parent dispatcher, which will send fd's
@@ -265,13 +263,12 @@ public:
   { return New refcounted<ahttpcon_dispatch> (f, mb); }
 };
 
-// for server process to peek () and then pass of the fd
+// Keeps a copy of data received before the fd is passed
 typedef callback<void, str, int>::ref clonecb_t;
 class ahttpcon_clone : public ahttpcon
 {
 public:
   ahttpcon_clone (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE);
-  ~ahttpcon_clone () ;
   void setccb (clonecb_t cb, size_t nplb);
   int takefd ();
 
@@ -280,8 +277,6 @@ public:
   { return New refcounted<ahttpcon_clone> (f, s, ml); }
 
   void declone ();
-  static u_int maxscan () { return 10 + OK_MAX_URI_LEN; }
-  str get_debug_info () const;
 
 protected:
   void recvd_bytes (size_t n);
@@ -291,23 +286,12 @@ protected:
 
 private:
   void end_read ();
-  str delimit (int n);
-  void reset_delimit_state ();
-  void trickle_cb (ptr<bool> destroyed_local);
+  str delimit (int *delimit_status);
 
   const size_t maxline;
   clonecb_t::ptr ccb;
 
-  bool found;
-  int delimit_state;
-  int delimit_status;
-  char *delimit_start;
-
-  u_int bytes_scanned;
   bool decloned;
-  int trickle_state;
-  timecb_t *dcb;
-  bool _demuxed;
 };
 
 struct ahttp_tab_node_t {

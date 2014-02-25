@@ -57,8 +57,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _remote_port (0),
     _source_hash (0),
     _source_hash_ip_only (0),
-    _reqno (0),
-    _do_peek (false)
+    _reqno (0)
 {
   //
   // bookkeeping for debugging purposes;
@@ -97,7 +96,6 @@ ahttpcon_clone::takefd ()
 {
   int ret = ahttpcon::takefd ();
   ccb = NULL;
-  _demuxed = true;
   return ret;
 }
 
@@ -226,25 +224,8 @@ ahttpcon::setrcb (cbi::ptr cb)
 }
 
 ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
-  : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), 
-    found (false), delimit_state (0), delimit_status (HTTP_OK),
-    delimit_start (NULL), bytes_scanned (0), decloned (false),
-    trickle_state (0), dcb (NULL), _demuxed (false)
-{
-  in->setpeek ();
-  _do_peek = true;
-}
-
-//-----------------------------------------------------------------------
-
-ahttpcon_clone::~ahttpcon_clone ()
-{
-  if (dcb) {
-    timecb_remove (dcb);
-    dcb = NULL;
-  }
-  *destroyed_p = true;
-}
+  : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), decloned (false)
+{ }
 
 //-----------------------------------------------------------------------
 
@@ -487,7 +468,16 @@ ahttpcon_clone::recvd_bytes (size_t n)
     return;
   }
 
-  str s = delimit (n);
+  while (in->resid()) {
+      ssize_t nbytes;
+      char *p = in->getdata(&nbytes);
+      request_bytes.setsize(request_bytes.size() + nbytes);
+      memcpy(&request_bytes[request_bytes.size() - nbytes], p, nbytes);
+      in->rembytes(nbytes);
+  }
+
+  int delimit_status = HTTP_OK;
+  str s = delimit (&delimit_status);
   if (s || delimit_status != HTTP_OK) {
 
     if (ccb) {
@@ -520,7 +510,6 @@ ahttpcon_clone::end_read ()
   if (fd >= 0) {
     rcbset = false;
     fdcb (fd, selread, NULL);
-    found = true;
   }
 }
 
@@ -528,29 +517,26 @@ void
 ahttpcon_clone::declone ()
 {
   decloned = true;
-  in->setpeek (false);
 }
 
 str
-ahttpcon_clone::delimit (int dummy)
+ahttpcon_clone::delimit (int *delimit_status)
 {
-  ssize_t nbytes;
-  int i;
-  while (in->resid ()) {
-    i = 0;
-    for (char *p = in->getdata (&nbytes); i < nbytes; i++, p++) {
-      if (++bytes_scanned > maxline) {
-	delimit_status = HTTP_URI_TOO_BIG;
-	in->rembytes (i);
-	return NULL;
-      }
+  if (request_bytes.size() > maxline) {
+      *delimit_status = HTTP_URI_TOO_BIG;
+      return NULL;
+  }
+
+  int delimit_state = 0;
+  const char *delimit_start = nullptr;
+
+  for (const char &p : request_bytes) {
       switch (delimit_state) {
       case 0:
-	if (*p == ' ') 
+	if (p == ' ') 
 	  delimit_state = 1;
-	else if (*p < 'A' || *p > 'Z') {
-	  delimit_status = HTTP_BAD_REQUEST;
-	  in->rembytes (i);
+	else if (p < 'A' || p > 'Z') {
+	  *delimit_status = HTTP_BAD_REQUEST;
 	  return NULL;
 	}
 	break;
@@ -559,90 +545,29 @@ ahttpcon_clone::delimit (int dummy)
 	// browsers will separate the request method (e.g. "GET" or "HEAD")
 	// from the Request-URI with 1 space, although broken browsers
 	// might not.
-	if (*p == ' ')
+	if (p == ' ')
 	  break;
 	delimit_state = 2;
       case 2:
 	if (!delimit_start) 
-	  delimit_start = p;
-	if (*p == ' ' || *p == '?' || *p == '\r' || *p == '\n') {
-	  return str (delimit_start, p - delimit_start);
+	  delimit_start = &p;
+	if (p == ' ' || p == '?' || p == '\r' || p == '\n') {
+	  return str (delimit_start, &p - delimit_start);
 	}
 	break;
       default:
-	delimit_status = HTTP_BAD_REQUEST;
-	in->rembytes (i);
+	*delimit_status = HTTP_BAD_REQUEST;
 	return NULL;
       }
-    }
-    in->rembytes (i);
   }
 
-  if (bytes_scanned > maxscan ()) {
-    delimit_status = HTTP_NOT_FOUND;
-    return NULL;
-  }
-
-  // at this point, the client is "trickling" out data --
-  // 
-
-  u_int to;
-  switch (trickle_state) {
-  case 0: 
-
-    warn << "slow trickle client";
-    if (remote_ip)
-      warnx << ": " << remote_ip;
-    warnx << "\n";
-
-    to = ok_demux_timeout / 2;
-    if (to) {
-      dcb = delaycb (to, 0,
-		     wrap (this, &ahttpcon_clone::trickle_cb, destroyed_p));
-      disable_selread ();
-      reset_delimit_state ();
-      break;
-    } else {
-      trickle_state = 1;
-      //fall through to next case in switch statement
-    }
-  case 1:
-
-    warnx << "abandoning slow trickle client";
-    if (remote_ip)
-      warnx << ": " << remote_ip;
-    warnx << "\n";
-
-    delimit_status = HTTP_TIMEOUT;
-    break;
-  default:
-    assert (false);
-    break;
-  }
-  trickle_state ++;
   return (NULL);
-}
-
-void
-ahttpcon_clone::trickle_cb (ptr<bool> destroyed_local)
-{
-  if (*destroyed_local) 
-    return;
-  dcb = NULL;
-  enable_selread ();
 }
 
 int
 ahttpcon::set_lowwat (int lev)
 {
   return setsockopt (fd, SOL_SOCKET, SO_RCVLOWAT, (char *)&lev, sizeof (lev));
-}
-
-void
-ahttpcon_clone::reset_delimit_state ()
-{
-  delimit_state = 0;
-  bytes_scanned = 0;
 }
 
 void
@@ -773,15 +698,6 @@ ahttpcon::select_set () const
   strbuf b;
   if (rcbset) b << "r";
   if (wcbset) b << "w";
-  return b;
-}
-
-str
-ahttpcon_clone::get_debug_info () const
-{
-  strbuf b;
-  b << "; demuxed=" << int (_demuxed) << "; decloned=" << int (decloned)
-    << "; status=" << int (delimit_status) ;
   return b;
 }
 
@@ -996,9 +912,7 @@ ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
 	 kad._reqno, kad._len, fd);
   
   if ((ret = kad._len) && kad._buf) {
-    in->set_dont_peek (true);
     in->load_from_buffer (kad._buf, ret);
-    _do_peek = false;
   }
   return ret;
 }

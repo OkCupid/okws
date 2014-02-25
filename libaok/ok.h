@@ -177,7 +177,7 @@ public:
     memcpy (x->sin.base (), (void *)sin, sizeof (*sin));
     _demux_data->to_xdr (x);
     x->reqno = _con->get_reqno ();
-    if (!_con->do_peek()) { _con->collect_scraps (x->scraps); }
+    _con->collect_scraps (x->scraps);
   }
 
 private:
