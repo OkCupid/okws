@@ -279,6 +279,7 @@ class JsonWrapDict (dict):
     def __init__ (self, d):
         dict.__init__ (self, d)
         for (k,v) in d.items ():
+            k = k.encode("utf8")
             v = JsonWrap.alloc (v)
             self[k] = v
             setattr (self, k, v)
