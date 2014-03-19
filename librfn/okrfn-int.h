@@ -78,6 +78,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(format_float, "sf");
   PUB3_COMPILED_FN_DOC(format_int, "si");
   PUB3_COMPILED_FN_DOC(json_escape, "s");
+  PUB3_COMPILED_FN_DOC(js_escape, "s");
   PUB3_COMPILED_FN_DOC(randsel, "l");
   PUB3_COMPILED_FN(bitwise_leftshift, "uu");
   PUB3_COMPILED_FN(bitwise_rightshift, "uu");

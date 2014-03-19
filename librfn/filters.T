@@ -6,6 +6,7 @@
 #include "okcgi.h"
 #include "crypt.h"
 #include "wide_str.h"
+#include "okws_rxx.h"
 
 namespace rfn3 {
   
@@ -304,6 +305,21 @@ namespace rfn3 {
 
   const str json_escape_t::DOCUMENTATION =
     "Escapes all double-quotes, backslashes, newlines and tabs.";
+
+  ptr<const expr_t>
+  js_escape_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    str s = args[0]._s;
+    str ret = json_escape (s, true, p->utf8_json ());
+    rxx r("</");
+    ret = rxx_replace_2(ret, r, "<\\/");
+    return expr_str_t::alloc (ret);
+  }
+
+  //------------------------------------------------------------
+
+  const str js_escape_t::DOCUMENTATION =
+    "First runs json_escape, then replaces \"</\" with \"<\\/\".";
 
   //------------------------------------------------------------
 
