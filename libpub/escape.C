@@ -161,6 +161,9 @@ xss_escape (const char *in, size_t inlen)
     case '&':
       inc = sprintf (op, "&#38;");
       break;
+    case '"':
+      inc = sprintf (op, "&quot;");
+      break;
     default:
       *op = *cp;
       inc = 1;
