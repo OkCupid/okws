@@ -32,6 +32,7 @@ namespace rfn3 {
     F(html_escape);
     F(tag_escape);
     F(json_escape);
+    F(js_escape);
     F(hidden_escape);
     F(substr);
     F(strip);
