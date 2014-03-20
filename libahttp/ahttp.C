@@ -522,11 +522,6 @@ ahttpcon_clone::declone ()
 str
 ahttpcon_clone::delimit (int *delimit_status)
 {
-  if (request_bytes.size() > maxline) {
-      *delimit_status = HTTP_URI_TOO_BIG;
-      return NULL;
-  }
-
   int delimit_state = 0;
   const char *delimit_start = nullptr;
 
@@ -559,6 +554,11 @@ ahttpcon_clone::delimit (int *delimit_status)
 	*delimit_status = HTTP_BAD_REQUEST;
 	return NULL;
       }
+  }
+
+  if (request_bytes.size() > maxline) {
+      *delimit_status = HTTP_URI_TOO_BIG;
+      return NULL;
   }
 
   return (NULL);
