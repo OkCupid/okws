@@ -311,8 +311,8 @@ namespace rfn3 {
   {
     str s = args[0]._s;
     str ret = json_escape (s, true, p->utf8_json ());
-    rxx r("</");
-    ret = rxx_replace_2(ret, r, "<\\/");
+    ret = rxx_replace_2(ret, "</", "<\\/");
+    ret = rxx_replace_2(ret, "'", "\\'");
     return expr_str_t::alloc (ret);
   }
 
