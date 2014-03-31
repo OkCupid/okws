@@ -95,10 +95,26 @@ namespace rfn3 {
   ptr<const expr_t>
   json2pub_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
-    str s = args[0]._s;
-    ptr<expr_t> ret;
-    ret = json_parser_t::parse (s);
-    return ret;
+      str s = args[0]._s;
+      bool verbose = false;
+      if (args.size() > 1) verbose = args[1]._b;
+
+      if (verbose) {
+          ptr<json_parser_t> parser = New refcounted<json_parser_t> ();
+          ptr<expr_t> ret = parser->mparse (s);
+          if (!ret || ret->is_null()) {
+              str err = str("Invalid JSON: ") << s << "\n";
+              for (auto& e: parser->get_errors())
+                  err = err << e << "\n";
+              report_error (p, err);
+          }
+          return ret;
+      }
+      else {
+          ptr<expr_t> ret;
+          ret = json_parser_t::parse (s);
+          return ret;
+      }
   }
 
   //-----------------------------------------------------------------------
