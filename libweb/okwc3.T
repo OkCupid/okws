@@ -680,7 +680,7 @@ parse_http_url (str in, bool *https, str *host, okws1_port_t *port,
 
   if (!x.match (in)) { ret = false; }
   else {
-    bool ssl;
+    bool ssl = false;
     if (x[1] && x[1] == "s") { ssl = *https = true; }
    
     if ((ps = x[4]) && ps.len ()) {
