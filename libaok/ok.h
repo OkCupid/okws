@@ -707,6 +707,22 @@ public:
   { return strbuf ("database: ") << helper_inet_t::getname (); }
 };
 
+template<> struct hashfn<dbcon_t*> {
+    hashfn () {}
+    hash_t operator() (dbcon_t *const c) const {
+        size_t i = (size_t)c;
+        return (i >> 32) ^ (i & 0xFFFFFFFF);
+    }
+};
+
+template<> struct equals<dbcon_t*> {
+    equals() {}
+    bool operator() (dbcon_t *const a, dbcon_t *const b) const
+    {
+        return a == b;
+    }
+};
+
 //-----------------------------------------------------------------------
 
 class oksrvc_t : public ok_httpsrv_t, public ok_con_acceptor_t  { // OK Service
