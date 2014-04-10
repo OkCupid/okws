@@ -77,7 +77,7 @@ class rpc_msg:
         if klass.stat_map: return
         for i in [ "SUCCESS", "PROG_UNAVAIL", "PROG_MISMATCH",
                    "PROC_UNAVAIL", "GARBAGE_ARGS", "SYSTEM_ERR"] :
-            klass.stat_map[i] = getattr (klass, i)
+            klass.stat_map[getattr (klass, i)] = i
 
     ##----------------------------------------
 
@@ -86,7 +86,7 @@ class rpc_msg:
         klass.init ()
         ret = klass.stat_map.get (i)
         if not ret:
-            ret = "UNKNOWN_ERROR"
+            ret = "UNKNOWN_ERROR: %s" % i
         return ret
 
 ##-----------------------------------------------------------------------
