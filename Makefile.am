@@ -9,7 +9,6 @@ endif
 
 SBD1 = \
 	libpub \
-	pub \
 	xmlrpcc \
 	libahttp \
 	libokxml \
@@ -18,7 +17,8 @@ SBD1 = \
 	$(PTHR) \
 	libokssl \
 	libweb \
-	librfn 
+	librfn \
+	pub
 
 if USE_MYSQL
 SBD2 = libamysql ezdb
