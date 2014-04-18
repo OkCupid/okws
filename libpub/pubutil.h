@@ -49,9 +49,9 @@ void got_clock_mode (sfs_clock_t *out, vec<str> s, str lock, bool *errp);
 bool is_safe (const str &s);
 int nfs_safe_stat (const char *f, struct stat *sb);
 inline time_t okwstime () { return sfs_get_timenow(); }
-inline double okwstsnow ()
+inline double okwstsnow (bool refresh = false)
 {
-    timespec ts = sfs_get_tsnow();
+    timespec ts = sfs_get_tsnow(refresh);
     double d = 1000000000;
     return ts.tv_sec + ts.tv_nsec / d;
 }
