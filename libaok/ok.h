@@ -551,8 +551,8 @@ public:
   virtual void set_union_cgi_mode (bool b) {}
 
   // stuff for piecemeal output
-  bool output_hdr (ssize_t sz = -1);
-  bool output_fragment (str s);
+  bool output_hdr (ssize_t sz = -1, cbv::ptr cb = nullptr);
+  bool output_fragment (str s, event<>::ptr = nullptr);
   bool output_fragment (compressible_t &b, cbv::ptr done = NULL);
   void output_file (const char *fn, evb_t::ptr cb = NULL, 
 		    ptr<pub3::dict_t> a = NULL,
@@ -601,7 +601,7 @@ public:
 
 private:
   void serve_T (CLOSURE);
-  void output_fragment_T (str s, CLOSURE);
+  void output_fragment_T (str s, event<>::ptr ev, CLOSURE);
   void error_T (int n, const str &s, bool complete, evv_t::ptr ev, CLOSURE);
   void output_T (compressible_t *b, evv_t::ptr ev, CLOSURE);
   void redirect_T (const str &s, int status, evv_t::ptr ev, CLOSURE);

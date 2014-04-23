@@ -1200,7 +1200,7 @@ okclnt_base_t::fixup_log (ptr<http_response_base_t> rsp)
 //-----------------------------------------------------------------------
 
 bool
-okclnt_base_t::output_hdr (ssize_t len)
+okclnt_base_t::output_hdr (ssize_t len, cbv::ptr cb)
 {
   assert (output_state == ALL_AT_ONCE);
   output_state = STREAMING_HDRS;
@@ -1218,7 +1218,7 @@ okclnt_base_t::output_hdr (ssize_t len)
   rsp = New refcounted<http_response_ok_t> (len, hra);
   fixup_log (rsp);
 
-  send (rsp, NULL);
+  send (rsp, cb);
   return true;
 }
 
@@ -1243,23 +1243,25 @@ okclnt_base_t::output_frag_prepare ()
 //-----------------------------------------------------------------------
 
 bool
-okclnt_base_t::output_fragment (str s)
+okclnt_base_t::output_fragment (str s, event<>::ptr ev)
 {
   if (!output_frag_prepare ())
     return false;
-  output_fragment_T (s);
+  output_fragment_T (s, ev);
   return true;
 }
 
 //-----------------------------------------------------------------------
 
 tamed void
-okclnt_base_t::output_fragment_T (str s)
+okclnt_base_t::output_fragment_T (str s, event<>::ptr ev)
 {
   tvars {
     strbuf b (s);
   }
   twait { _client_con->send (b, NULL, mkevent ()); }
+
+  if (ev) ev->trigger();
 }
 
 //-----------------------------------------------------------------------
