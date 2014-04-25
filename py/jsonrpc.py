@@ -347,7 +347,8 @@ class Client:
     def connect (self, host = None, port = -1):
         if host: self._host = host
         if port >= 0: self._port = port
-        self._socket = socket.create_connection ((self._host, self._port))
+        self._socket = socket.create_connection ((self._host, self._port),
+                                                 timeout=10)
 
     #-----------------------------------------
 
