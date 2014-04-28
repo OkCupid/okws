@@ -1,6 +1,7 @@
 // -*-c++-*-
 
 #include "pub3out.h"
+#include "pescape.h"
 
 
 namespace pub3 {
@@ -92,7 +93,7 @@ namespace pub3 {
   html_err (str s)
   {
     strbuf b;
-    b << "<font color=\"red\">[" << s << "]</font>";
+    b << "<font color=\"red\">[" << xss_escape(s) << "]</font>";
     return b;
   }
 
