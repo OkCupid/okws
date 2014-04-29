@@ -42,6 +42,8 @@
 #include "pub3.h"
 #include "oklocale.h"
 
+bool is_internal(const ptr<const ahttpcon> &con);
+
 //-----------------------------------------------------------------------
 
 typedef enum { OKC_STATE_NONE = 0,
@@ -647,11 +649,17 @@ public:
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
     okclnt_base_t (xx, o),
     http_parser_cgi_t (xx, to) 
-  {}
+  {
+    xx->set_remote_ip(get_ip_str());
+  }
 
   void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
   http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
   const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
+
+  bool is_ssl() const override;
+  uint32_t get_ip() const;
+  str get_ip_str() const;
 
   // for clients that are stuck with okclnt_t, but would like to
   // try the reduced-copy output path, try output2. output2 obligates
@@ -675,10 +683,6 @@ public:
 
   okclnt2_t (ptr<ahttpcon> x, oksrvc_t *c, u_int to = 0) :
     okclnt_t (x, c, to) {}
-
-  bool is_ssl() const override;
-  uint32_t get_ip() const;
-  str get_ip_str() const;
 
   void serve() { serve_T(); }
   void process() {}

@@ -1,3 +1,4 @@
+
 // -*-c++-*-
 
 #include "ok3.h"
@@ -12,6 +13,7 @@ okclnt3_t::req_t::req_t (okclnt3_t *o, ptr<ahttpcon> x, abuf_t *b, u_int reqno,
     _ok_clnt (o)
 {
   hdr.set_reqno (reqno, true, prev_vers);
+  o->parse_proxy_headers(*this);
 }
 
 //-----------------------------------------------------------------------
@@ -149,6 +151,46 @@ okclnt3_t::check_ssl ()
     ok = false;
   }
   return ok;
+}
+
+//-----------------------------------------------------------------------
+
+bool okclnt3_t::is_ssl() const {
+  switch(_is_ssl) {
+  case ssl::DONT_KNOW:
+    return _demux_data && _demux_data->ssl ();
+  case ssl::YES:
+    return true;
+  case ssl::NO:
+    return false;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+str okclnt3_t::get_ip_str() const {
+  if (_ip_str)
+    return _ip_str;
+  return inet_ntoa(_x->get_sin()->sin_addr);
+}
+
+//-----------------------------------------------------------------------
+
+void okclnt3_t::parse_proxy_headers(const http_parser_cgi_t& hdr) {
+  if (_proxy_header_parsed) {
+    return;
+  }
+  str proxy_info;
+  if (is_internal(_x)) {
+    if ((proxy_info = hdr["x-real-ip"])) {
+      _ip_str = proxy_info;
+      _x->set_remote_ip(proxy_info);
+    }
+    if ((proxy_info = hdr["x-forwarded-proto"])) {
+      _is_ssl = (proxy_info == "https")? ssl::YES : ssl::NO;
+    }
+  }
+  _proxy_header_parsed = true;
 }
 
 //-----------------------------------------------------------------------

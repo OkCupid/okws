@@ -1,20 +1,22 @@
 
 -include $(SFS_LIB_MK)
 
-$(PROGRAMS): $(LDEPS_PUB)
+$(PROGRAMS): $(LDEPS_PUB) $(LDEPS_RFN)
 
 noinst_HEADERS = pubd.h
 
-okwsbin_PROGRAMS = pub3stage1
+okwsbin_PROGRAMS = pub3stage1 pub3trace_replayer
 okwsexec_PROGRAMS = pubd
+pub3trace_replayer_SOURCES = pub3trace_replayer.C
 pub3stage1_SOURCES = pub3stage1.C
 pubd_SOURCES = pubd.C pubserv.C cache.C
 SUFFIXES = .T .C .h
+pub3trace_replayer_LDADD = $(LDADD_RFN)
 pub3stage1_LDADD = $(LDADD_PUB)
 pubd_LDADD = $(LDADD_PUB)
 
-tamed_in = pubd.T pubserv.T cache.T pub3stage1.T
-tamed_out = pubd.C pubserv.C cache.C pub3stage1.C
+tamed_in = pubd.T pubserv.T cache.T pub3stage1.T pub3trace_replayer.T
+tamed_out = pubd.C pubserv.C cache.C pub3stage1.C pub3trace_replayer.C
 
 .T.C:
 	-$(TAME) -o $@ $< || rm -f $@

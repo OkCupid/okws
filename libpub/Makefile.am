@@ -30,6 +30,7 @@ libpub_la_SOURCES = \
 	pub3eng.C \
 	pub3heredoc.C \
 	pub3profiler.C \
+	pub3tracer.C \
 	precycle.C \
 	slave.C \
 	zstr.C \
@@ -96,7 +97,8 @@ okwsinclude_HEADERS = \
 	json_rpc.h \
 	okws_rxx.h \
 	pub3msgpack.h \
-	pub3msgpackrpc.h
+	pub3msgpackrpc.h \
+	pub3tracer.h
 
 noinst_HEADERS =  env.mk
 
