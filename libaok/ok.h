@@ -71,7 +71,7 @@ str get_proxied_ip(const T& hdr) {
 
 //-----------------------------------------------------------------------
 
-bool is_internal(const ptr<const ahttpcon> &con);
+bool is_internal(ptr<const ahttpcon> con);
 
 //-----------------------------------------------------------------------
 

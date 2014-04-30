@@ -93,7 +93,7 @@ bool cidr_mask_t::match(uint32_t ip) const
     return ((ip & mask) == net);
 }
 
-bool is_internal(const ptr<const ahttpcon> &con) {
+bool is_internal(ptr<const ahttpcon> con) {
   static const in_addr_t localhost_ip = inet_addr("127.0.0.1");
 
   static const vec<cidr_mask_t> masks {
