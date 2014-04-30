@@ -126,6 +126,7 @@ bool is_internal(const ptr<const ahttpcon> &con) {
       return true;
   }
 
+  ip = ntohl(ip);
   for (const auto mask : masks) {
       if (mask.match(ip)) {
           return true;
