@@ -199,7 +199,6 @@ public:
   
   const time_t start;
 
-  void set_remote_ip (const str &s);
 protected:
   void set_remote_ip ();
   virtual int dowritev (int cnt) { return out->output (fd, cnt); }

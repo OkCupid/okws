@@ -1077,6 +1077,12 @@ bool okclnt_base_t::is_ssl() const {
   return _demux_data && _demux_data->ssl();
 }
 
+//-----------------------------------------------------------------------------
+
+str okclnt_base_t::get_ip_str() const {
+  return inet_ntoa(client_con()->get_sin()->sin_addr);
+}
+
 //-----------------------------------------------------------------------
 
 bool okclnt_t::is_ssl() const {
@@ -1480,7 +1486,8 @@ okclnt_base_t::send (ptr<http_response_t> rsp, cbv::ptr cb)
 {
   fixup_cookies (rsp);
 
-  oksrvc->log (_client_con, hdr_p (), rsp);
+  str ip_str = get_ip_str();
+  oksrvc->log (_client_con, hdr_p (), rsp, nullptr, ip_str);
   rsp->send (_client_con, cb);
 }
 
@@ -2027,7 +2034,7 @@ okclnt_t::output2 (ptr<compressible_t> b, evv_t ev)
     if (uid_set) rsp->set_uid (uid);
     if (prelen > 0) rsp->set_inflated_len (prelen);
     fixup_cookies (rsp);
-    oksrvc->log (x, hdr_p (), rsp);
+    oksrvc->log (x, hdr_p (), rsp, nullptr, get_ip_str());
     twait { rsp->send2 (x, mkevent (rc)); }
   }
 

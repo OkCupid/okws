@@ -13,7 +13,6 @@ okclnt3_t::req_t::req_t (okclnt3_t *o, ptr<ahttpcon> x, abuf_t *b, u_int reqno,
     _ok_clnt (o)
 {
   hdr.set_reqno (reqno, true, prev_vers);
-  o->parse_proxy_headers(*this);
 }
 
 //-----------------------------------------------------------------------
@@ -184,7 +183,6 @@ void okclnt3_t::parse_proxy_headers(const http_parser_cgi_t& hdr) {
   if (is_internal(_x)) {
     if ((proxy_info = get_proxied_ip(hdr))) {
       _ip_str = proxy_info;
-      _x->set_remote_ip(proxy_info);
     }
     if ((proxy_info = hdr["x-forwarded-proto"])) {
       _is_ssl = (proxy_info == "https")? ssl::YES : ssl::NO;
@@ -286,6 +284,9 @@ okclnt3_t::req_t::parse (okclnt3_t::req_t::parse_ev_t ev)
   }
 
   twait { http_parser_cgi_t::parse (mkevent (status)); }
+
+  if (_ok_clnt) _ok_clnt->parse_proxy_headers(*this);
+
   go = (status == HTTP_OK && 
 	hdr.get_conn_mode () == HTTP_CONN_KEEPALIVE &&
 	(hdr.mthd == HTTP_MTHD_GET || hdr.mthd == HTTP_MTHD_HEAD) &&
@@ -454,6 +455,7 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     int nxt_status;
     ssize_t rc;
     compressible_t::opts_t opts;
+    str ip_str(nullptr);
   }
 
   hra.set_others (_hdr_fields);
@@ -520,7 +522,10 @@ okclnt3_t::resp_t::send (evb_t ev, time_t time_budget, int *nxt_status_p)
     (*_log_fixup_cb) ();
   }
   fixup_log (rsp);
-  svc->log (x, inhdrs, rsp);
+  if (_ok_clnt) { 
+      ip_str = _ok_clnt->_ip_str;
+  }
+  svc->log (x, inhdrs, rsp, nullptr, ip_str);
   
   if (nxt_status_p)
     *nxt_status_p = nxt_status;

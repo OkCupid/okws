@@ -573,8 +573,6 @@ ahttpcon::set_lowwat (int lev)
 void
 ahttpcon::set_remote_ip ()
 {
-  if (remote_ip)
-    return;
   if (!sin && !ok_send_sin) {
     socklen_t sinlen;
     if (getpeername (fd, (struct sockaddr *)&sin3, &sinlen) != 0) {
@@ -593,11 +591,6 @@ ahttpcon::set_remote_ip ()
     remote_ip = "0.0.0.0";
     _remote_port = 0;
   }
-}
-
-void
-ahttpcon::set_remote_ip (const str &v) {
-  remote_ip = v;
 }
 
 hash_t

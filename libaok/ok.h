@@ -128,10 +128,6 @@ private:
 
 //-----------------------------------------------------------------------
 
-bool is_internal(const ptr<const ahttpcon>&);
-
-//-----------------------------------------------------------------------
-
 class demux_data_t {
 private:
   static struct timespec timespec_null;
@@ -364,8 +360,8 @@ public:
 
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
 		    http_response_base_t *res,
-		    const str &s = NULL)
-    const { if (svclog && logd) logd->log (x, req, res, s); }
+		    const str &s = NULL, str real_ip = nullptr)
+    const { if (svclog && logd) logd->log (x, req, res, s, real_ip); }
 
   void enable_accept ();
   void disable_accept ();
@@ -607,6 +603,7 @@ public:
   void set_demux_data(ptr<demux_data_t> d) { _demux_data = d; }
 
   virtual bool is_ssl() const;
+  virtual str get_ip_str() const;
 
   str ssl_cipher() const;
   int get_reqno() const;
@@ -678,9 +675,7 @@ public:
   okclnt_t (ptr<ahttpcon> xx, oksrvc_t *o, u_int to = 0) : 
     okclnt_base_t (xx, o),
     http_parser_cgi_t (xx, to) 
-  {
-    xx->set_remote_ip(get_ip_str());
-  }
+  { }
 
   void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
   http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
@@ -688,7 +683,7 @@ public:
 
   bool is_ssl() const override;
   uint32_t get_ip() const;
-  str get_ip_str() const;
+  str get_ip_str() const override;
 
   // for clients that are stuck with okclnt_t, but would like to
   // try the reduced-copy output path, try output2. output2 obligates

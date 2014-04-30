@@ -131,13 +131,13 @@ fast_log_t::connect_T (evb_t ev)
 
 void
 fast_log_t::log (ref<ahttpcon> x, http_inhdr_t *req, 
-		 http_response_base_t *res, const str &aux)
+		 http_response_base_t *res, const str &aux, str real_ip)
 {
   int s = res->get_status ();
   if (s >= 400) { // errors are 400 and above!
-    add_error (x, req, res, aux);
+    add_error (x, req, res, aux, real_ip);
   }
-  add_access (x, req, res);
+  add_access (x, req, res, real_ip);
 }
 
 //-----------------------------------------------------------------------
@@ -160,10 +160,11 @@ fast_log_t::past_high_water () const
 
 void
 fast_log_t::add_error (ref<ahttpcon> x, http_inhdr_t *req, 
-		       http_response_base_t *res, const str &aux)
+		       http_response_base_t *res, const str &aux, str real_ip)
 {
   logbuf_t error;
-  str ip = x->get_remote_ip ();
+  str ip;
+  ip = (real_ip) ? real_ip : x->get_remote_ip ();
   error.log (ip);
   error.spc ();
   error.log (progname);
@@ -277,7 +278,7 @@ fast_log_t::add_entry (const strbuf &b, oklog_file_t f)
 
 void
 fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req, 
-			http_response_base_t *res)
+			http_response_base_t *res, str real_ip)
 {
   const char *fmp = _fmt ? _fmt.cstr () : ok_access_log_fmt.cstr ();
   const char *p;
@@ -296,7 +297,11 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
       access.log (req ? (*req) ["referer"] : snull);
       break;
     case 'i':
-      access.log (x->get_remote_ip ());
+      if (real_ip) {    
+        access.log (real_ip);
+      } else {
+        access.log (x->get_remote_ip ());
+      }
       break;
     case 'u':
       access.log (req ? (*req)["user-agent"] : snull, '"', '"');

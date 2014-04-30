@@ -85,7 +85,7 @@ public:
   virtual void connect (evb_t ev) { connect_T (ev); }
   virtual void log (ref<ahttpcon> x, http_inhdr_t *req, 
 		    http_response_base_t *res,
-		    const str &s) = 0;
+		    const str &s, str real_ip = nullptr) = 0;
   int getfd () const { return h->getfd (); }
   virtual void clone (evi_t ev) { ev->trigger (-1); }
   virtual void turn (evs_t ev) { turn_T (ev); }
@@ -123,7 +123,7 @@ public:
   fast_log_t (int fd, str f = NULL, size_t hiwat = 0);
   ~fast_log_t ();
   void log (ref<ahttpcon> x, http_inhdr_t *req, http_response_base_t *res,
-	    const str &s);
+	    const str &s, str real_ip = nullptr);
   void log_ssl (const str &i, const str &c, const str &m);
   void flush (evv_t::ptr ev = NULL, CLOSURE);
   void connect (evb_t ev) { connect_T (ev); }
@@ -131,9 +131,9 @@ public:
 protected:
   bool past_high_water () const;
   void add_access (ref<ahttpcon> x, http_inhdr_t *req, 
-		   http_response_base_t *res);
+		   http_response_base_t *res, str real_ip);
   void add_error (ref<ahttpcon> x, http_inhdr_t *req, 
-		  http_response_base_t *res, const str &aux);
+		  http_response_base_t *res, const str &aux, str real_ip);
   void add_ssl (const str &ip, const str &cipher, const str &msg);
   void add_entry (const strbuf &s, oklog_file_t f);
   void maybe_flush ();
