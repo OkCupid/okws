@@ -42,6 +42,35 @@
 #include "pub3.h"
 #include "oklocale.h"
 
+/*
+** Use this to check CIDR ranges
+*/
+class cidr_mask_t {
+public:
+    cidr_mask_t(const char* range);
+    bool match(uint32_t ip) const;
+
+private:
+    uint32_t net, mask;
+};
+
+//-----------------------------------------------------------------------
+
+template<typename T>
+str get_proxied_ip(const T& hdr) {
+    static const auto keys {
+        "cf-connecting-ip",
+        "x-real-ip",
+        "x-forwarded-for",
+    };
+    for (const auto k : keys) {
+        if (hdr[k]) return hdr[k];
+    }
+    return nullptr;
+}
+
+//-----------------------------------------------------------------------
+
 bool is_internal(const ptr<const ahttpcon> &con);
 
 //-----------------------------------------------------------------------

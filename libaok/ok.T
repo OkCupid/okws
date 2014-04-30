@@ -58,14 +58,81 @@ init_syscall_stats ()
 
 //-----------------------------------------------------------------------
 
+cidr_mask_t::cidr_mask_t(const char* range)
+{
+
+    rxx pat("([^/]+)(/([0-9]+))?");
+    net = 0xFFFFFFFF;
+    mask = 0xFFFFFFFF;
+
+    if (pat.match(range)) {
+        str saddr = pat[1];
+        struct in_addr addr;
+        if (inet_aton(saddr.cstr(), &addr)) {
+            net = ntohl(addr.s_addr);
+            if (pat[3]) {
+                uint32_t shift = 0;
+                pat[3].to_uint32(&shift);
+                mask = mask << (32 - shift);
+                net &= mask;
+            }
+        }
+        else {
+            warn << "OK_ERROR: Invalid address: " << saddr << "\n";
+        }
+    }
+    else {
+        warn << "OK_ERROR: Invalid CIDR block: " << range << "\n";
+    }
+}
+
+//-----------------------------------------------------------------------
+
+bool cidr_mask_t::match(uint32_t ip) const
+{
+    return ((ip & mask) == net);
+}
+
 bool is_internal(const ptr<const ahttpcon> &con) {
   static const in_addr_t localhost_ip = inet_addr("127.0.0.1");
+
+  static const vec<cidr_mask_t> masks {
+      // CloudFlare IP Ranges:
+      // https://www.cloudflare.com/ips-v4
+      "199.27.128.0/21",
+      "173.245.48.0/20",
+      "103.21.244.0/22",
+      "103.22.200.0/22",
+      "103.31.4.0/22",
+      "141.101.64.0/18",
+      "108.162.192.0/18",
+      "190.93.240.0/20",
+      "188.114.96.0/20",
+      "197.234.240.0/22",
+      "198.41.128.0/17",
+      "162.158.0.0/15",
+      "104.16.0.0/12",
+  };
+
   if (!con)
     return false;
+
   const sockaddr_in *in_addr = con->get_sin();
   if (!in_addr)
     return false;
-  return con->get_sin()->sin_addr.s_addr == localhost_ip;
+
+  uint32_t ip = in_addr->sin_addr.s_addr;
+  if (ip == localhost_ip) {
+      return true;
+  }
+
+  for (const auto mask : masks) {
+      if (mask.match(ip)) {
+          return true;
+      }
+  }
+
+  return false;
 }
 
 //-----------------------------------------------------------------------
@@ -1023,7 +1090,7 @@ bool okclnt_t::is_ssl() const {
 
 uint32_t okclnt_t::get_ip() const {
   str proxy_info;
-  if (is_internal(client_con()) && (proxy_info = (*this)["x-real-ip"])) {
+  if (is_internal(client_con()) && (proxy_info = get_proxied_ip(*this))) {
     struct sockaddr_in addr;
     if (inet_aton(proxy_info.cstr(), &addr.sin_addr)) {
       return addr.sin_addr.s_addr;
@@ -1038,7 +1105,7 @@ uint32_t okclnt_t::get_ip() const {
 
 str okclnt_t::get_ip_str() const {
   str proxy_info;
-  if (is_internal(client_con()) && (proxy_info = (*this)["x-real-ip"])) {
+  if (is_internal(client_con()) && (proxy_info = get_proxied_ip(*this))) {
     return proxy_info;
   }
   return inet_ntoa(client_con()->get_sin()->sin_addr);
