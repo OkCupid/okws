@@ -229,6 +229,7 @@ okd_t::parse_file (const str &cf)
 {
   conftab ct;
   str sys_sel_tmp;
+  uint32_t child_mode;
 
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
@@ -300,6 +301,8 @@ okd_t::parse_file (const str &cf)
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
     .add ("GzipErrorPages", &ok_gzip_error_pages)
+    .add ("ChildMode", &child_mode, (uint32_t)OKD_CHLDMODE_SOURCE_HASH, 
+                                    (uint32_t)OKD_CHLDMODE_LAST)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")
@@ -395,6 +398,8 @@ okd_t::parse_file (const str &cf)
   bool ret = ct.run (cf);
   if (ret) {
     ok_sys_sel_policy = sfs_core::select_policy_from_str (sys_sel_tmp);
+
+    _child_mode = (okd_chldmode_t) child_mode;
   }
   return ret;
 }
@@ -932,7 +937,8 @@ okd_t::got_child_fd (int fd, const oksvc_descriptor_t &d)
   okch_cluster_t *ch;
   if (!(ch = servtab[uri])) {
     // calling New will insert the object into the table
-    ch = New okch_cluster_t (this, uri, OKC_STATE_NONE, d.proc.num_brothers);
+    ch = New okch_cluster_t (this, uri, OKC_STATE_NONE, d.proc.num_brothers,
+                             _child_mode);
   }
   assert (d.proc.brother_id < d.proc.num_brothers);
   ch->child (d.proc.brother_id)->got_new_ctlx_fd (fd, d.pid);
@@ -947,7 +953,7 @@ okd_t::reserve_child (const oksvc_proc_t &p, bool lazy)
   ok_xstatus_typ_t ret = OK_STATUS_OK;
   okc_state_t st = lazy ? OKC_STATE_STANDBY : OKC_STATE_NONE;
   if (!(ch = servtab[p.name])) {
-    ch = New okch_cluster_t (this, p.name, st, p.num_brothers);
+    ch = New okch_cluster_t (this, p.name, st, p.num_brothers, _child_mode);
   } else {
     ch->set_states (st);
     ret = OK_STATUS_DUP;

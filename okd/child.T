@@ -59,12 +59,14 @@ okch_t::~okch_t ()
 
 //-----------------------------------------------------------------------
 
-okch_cluster_t::okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n)
+okch_cluster_t::okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n,
+                                okd_chldmode_t child_mode)
   : _myokd (o),
     _servpath (p),
     _destroyed (New refcounted<bool> (false)),
     _is_ready_looping (false),
-    _n_killed (0)
+    _n_killed (0),
+    _child_mode (child_mode)
 {
   _children.setsize (n);
   for (size_t i = 0; i < n; i++) {
@@ -176,8 +178,19 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
 
   if (pref >= 0 && size_t (pref) < n) { id = pref; }
   else if (n == 1) { id = 0; }
-  else if (n > 1) { id = xc->source_hash_ip_only () % n; } 
-  else {
+  else if (n > 1) { 
+      switch (_child_mode) {
+      case OKD_CHLDMODE_RR:
+          id = random() % n;
+          break;
+      case OKD_CHLDMODE_SOURCE_HASH:
+          id = xc->source_hash_ip_only () % n; 
+          break;
+      default:
+          ok = false;
+          CH_CL_ERROR("Unknown child mode");
+      };
+  } else {
     ok = false;
     CH_CL_ERROR ("Cannot map to service --- no such process exists");
   }

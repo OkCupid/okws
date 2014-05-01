@@ -48,6 +48,10 @@ typedef enum { OKD_JAILED_NEVER = 0,
 	       OKD_JAILED_DEPENDS = 1,
 	       OKD_JAILED_ALWAYS = 2 } okd_jailtyp_t;
 
+typedef enum { OKD_CHLDMODE_SOURCE_HASH = 0,
+               OKD_CHLDMODE_RR = 1,
+               OKD_CHLDMODE_LAST = 2 } okd_chldmode_t;
+
 class okch_t;
 typedef callback<void, okch_t *>::ref cb_okch_t;
 
@@ -180,7 +184,8 @@ private:
 
 class okch_cluster_t {
 public:
-  okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n);
+  okch_cluster_t (okd_t *o, str p, okc_state_t st, size_t n,
+                  okd_chldmode_t child_mode);
   ~okch_cluster_t ();
   void insert_child (okch_t *ch);
   void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev, int sib, 
@@ -204,6 +209,7 @@ public:
   ptr<bool> _destroyed;
   bool _is_ready_looping;
   size_t _n_killed;
+  okd_chldmode_t _child_mode;
 };
 
 //=======================================================================
@@ -268,7 +274,8 @@ public:
     _cluster_addressing (false),
     _emerg_kill_enabled (false),
     _emerg_kill_wait (okd_emergency_kill_wait_time),
-    _emerg_kill_signal (okd_emergency_kill_signal)
+    _emerg_kill_signal (okd_emergency_kill_signal),
+    _child_mode(OKD_CHLDMODE_SOURCE_HASH)
   {
     listenport = p;
   }
@@ -414,6 +421,7 @@ private:
   bool _emerg_kill_enabled;
   time_t _emerg_kill_wait;
   int _emerg_kill_signal;
+  okd_chldmode_t _child_mode;
 
   vec<okws1_port_t> _ssl_ports;
 };
