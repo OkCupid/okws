@@ -190,7 +190,7 @@ public:
   inline int get_status () const { return attributes.get_status (); }
   void add_content_delivery_headers ();
   void add_date () { add (http_hdr_date_t ()); }
-  void add_server () { add ("Server", global_okws_server_label); }
+  void add_server ();
   void add_connection ();
   htpv_t get_version () const { return attributes.get_version (); }
   const http_resp_attributes_t &get_attributes () const { return attributes; }

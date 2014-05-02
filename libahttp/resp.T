@@ -158,6 +158,14 @@ http_resp_header_t::add_content_delivery_headers ()
 
 //-----------------------------------------------------------------------
 
+void
+http_resp_header_t::add_server() {
+    add ("Server", global_okws_server_label);
+    add ("X-OKWS-Version", global_okws_server_label);
+}
+
+//-----------------------------------------------------------------------
+
 strbuf
 http_resp_header_t::to_strbuf () const
 {
