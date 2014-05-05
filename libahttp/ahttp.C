@@ -799,7 +799,8 @@ ahttpcon::hit_timeout ()
 void
 ahttpcon::kill ()
 {
-  read_fail (HTTP_GONE);
+  // Just close the connection, don't send an HTTP response
+  read_fail (HTTP_PIPELINE_EOF);
 }
 
 //-----------------------------------------------------------------------
