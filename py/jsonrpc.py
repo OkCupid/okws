@@ -342,18 +342,19 @@ class Client:
         self._fancy_objs = b
 
     #-----------------------------------------
-    
-    
+
     def connect (self, host = None, port = -1):
         if host: self._host = host
         if port >= 0: self._port = port
-        self._socket = socket.create_connection ((self._host, self._port),
-                                                 timeout=10)
+        # 4/5/14 TQ: Do not add a timeout to this call. For whatever reason, it
+        # makes the connection unreliable when RPC packets that are too large
+        # (>8k) are sent over it
+        self._socket = socket.create_connection ((self._host, self._port))
 
     #-----------------------------------------
 
     def fetch_constants (self):
-        res = self.call (proc = 0, arg = None, vers = 1, 
+        res = self.call (proc = 0, arg = None, vers = 1,
                          prog = self.constant_prog)
 
         ret = RpcConst (jsres = res)
