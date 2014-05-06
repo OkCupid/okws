@@ -464,6 +464,10 @@ class Client:
                 self.err ("connection dropped; retrying in %ds" % w)
                 time.sleep (w)
                 need_connect = True
+            elif eof and not self._retry:
+                self.connect ()
+                self.err ("rpc call failed; not retrying")
+                raise Error, "rpc call failed; not retrying"
             else:
                 go = False
 
