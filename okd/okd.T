@@ -400,6 +400,7 @@ okd_t::parse_file (const str &cf)
     ok_sys_sel_policy = sfs_core::select_policy_from_str (sys_sel_tmp);
 
     _child_mode = (okd_chldmode_t) child_mode;
+    warn << "Using childmode: " << _child_mode << "\n";
   }
   return ret;
 }
