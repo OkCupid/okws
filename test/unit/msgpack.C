@@ -70,7 +70,7 @@ vec<test_case_t> test_cases() {
 }
 
 void show(str s) { 
-    for (int i = 0; i < s.len(); i++) {
+    for (size_t i = 0; i < s.len(); i++) {
         printf("%02x ", uint8_t(s[i]));
     }
     printf("\n");

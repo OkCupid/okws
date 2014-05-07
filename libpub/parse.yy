@@ -2,6 +2,8 @@
 /* $Id$ */
 
 %{
+#ifndef __clang_analyzer__
+
 #include "okformat.h"
 
 #include "pub.h"
@@ -1049,3 +1051,5 @@ json_int  : p3_integer_constant { $$ = $1; } ;
 //
 //
 
+%%
+#endif // __clang_analyzer__

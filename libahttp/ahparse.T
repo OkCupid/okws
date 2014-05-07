@@ -104,6 +104,7 @@ http_parser_base_t::finish (int status)
 void
 http_parser_base_t::stop_abuf ()
 {
+  assert(_abuf);
   _abuf->finish ();
 }
 
@@ -134,7 +135,8 @@ http_parser_full_t::prepare_post_parse (int status)
     return NULL;
   } else if (hdr.contlen < 0)
     hdr.contlen = ok_reqsize_limit -1;
-  
+
+  assert(_abuf);
   _abuf->setlim (hdr.contlen);
   return wrap (this, &http_parser_full_t::finish2, status);
 }

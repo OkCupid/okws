@@ -17,7 +17,7 @@ extern "C" {
 
 #define FATAL(e)                                                        \
     do {                                                                \
-        warn << "ERROR: at line __LINE__" <<  " in " << __func__        \
+        warn << "ERROR: at line " << __LINE__ <<  " in " << __func__    \
              << ": " << e << "\n";                                      \
         exit(1);                                                        \
     } while (false);
@@ -57,7 +57,7 @@ namespace {
 
     str args_to_str(const pub3::callable_t::args_t &args, bool async = false) {
         strbuf res((async)? "(*" : "(");
-        bool first;
+        bool first = true;
         for (auto &a : *args) {
             if (first) {
                 res << ", ";
@@ -532,13 +532,13 @@ namespace {
 
             ptr<pub3::metadata_t> meta =
                 New refcounted<pub3::metadata_t>(jfn, rfn, hsh);
-            if (_parser->parse (meta, &pr, o)) {
+            if (_parser->parse(meta, &pr, o)) {
                 f = pr.file();
                 assert(f);
                 _cache.insert(jfn, f);;
             }
-            if (!pr.ok ()) {
-                assert (!f);
+            if (!pr.ok()) {
+                assert(!f);
                 pr.to_xdr (&res);
                 warn << jfn << ": Parse failed!\n";
             }

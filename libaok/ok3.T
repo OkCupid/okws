@@ -163,6 +163,8 @@ bool okclnt3_t::is_ssl() const {
   case ssl::NO:
     return false;
   }
+  // Unreachable code
+  return false;
 }
 
 //-----------------------------------------------------------------------

@@ -1769,6 +1769,11 @@ main (int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
+#ifdef __clang_analyzer__
+  // Silences a value never read warning
+  [[clang::unused]] auto const _unused = argv;
+#endif
+
   if (argc > 1)
     usage ();
 

@@ -1456,7 +1456,7 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
       if (addr_rxx[1] != "*") {
 	listenaddr_str = addr_rxx[1];
 	warn << "addr: " << listenaddr_str << "\n";
-	listenaddr = ntohl (addr.s_addr);
+	listenaddr = 0ul;
       }
     }
   } else {

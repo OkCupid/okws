@@ -100,10 +100,7 @@ main_T (int n)
 	warn << "iter " << i << "\n";
       twait { parse_doc (s, &o, mkevent (ok)); }
       if (ok) {
-	size_t l = o ("OkTest")("Var").len ();
 	str s = o("OkTest")("Var")[0]("Name").data ().trim ();
-	if (s)
-	  l += s.len ();
 	if (memtest)
 	  v.push_back (o); 
       }
