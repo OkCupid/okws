@@ -55,6 +55,9 @@ AM_PROG_LEX
 
 AM_CONDITIONAL(STATIC, test "$enable_shared" != yes)
 
+AM_PATH_PYTHON(,, [:])
+AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
+
 SFS_SFS
 SFS_SET_CLOCK
 SFS_FIND_RESOLV
@@ -233,4 +236,4 @@ AC_OUTPUT(libpub/Makefile pub/Makefile
 	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
 	  librfn/Makefile test/regtest/Makefile test/regtest/cases/Makefile
 	  libamt_pthread/Makefile ezdb/Makefile ezdb/libezdb/Makefile
-	  ezdb/server/Makefile )
+	  ezdb/server/Makefile py/Makefile py/gen_okws_config.sh)

@@ -24,6 +24,10 @@ if USE_MYSQL
 SBD2 = libamysql ezdb
 endif
 
+if HAVE_PYTHON
+SBD3 = py
+endif
+
 SUBDIRS = $(SBD1) \
 	$(SBD2) \
 	okd \
@@ -33,6 +37,7 @@ SUBDIRS = $(SBD1) \
 	test \
 	conf \
 	htdocs \
+	$(SBD3) \
 	contrib
 
 ##
