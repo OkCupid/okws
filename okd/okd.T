@@ -303,6 +303,7 @@ okd_t::parse_file (const str &cf)
     .add ("GzipErrorPages", &ok_gzip_error_pages)
     .add ("ChildMode", &child_mode, (uint32_t)OKD_CHLDMODE_SOURCE_HASH, 
                                     (uint32_t)OKD_CHLDMODE_LAST)
+    .add ("OkdAllHeaders", &_okd_all_headers)
 
     // script and service options, just ignore 'em...
     .ignore ("Service")
@@ -472,8 +473,8 @@ okd_t::is_ssl_port(okws1_port_t port) {
 //-----------------------------------------------------------------------
 
 tamed void
-okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status, 
-	       evv_t ev)
+okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, 
+               ptr<ahttp_delimit_res> dres, int status, evv_t ev)
 {
   tvars {
     ref<ahttpcon_clone> x (acw.con ());
@@ -481,9 +482,12 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
     size_t i;
     okch_cluster_t *c;
     str *s2;
+    str s;
     int prefered_sibling (-1);
   }
 
+  if (dres)
+    s = dres->get_reqline();
   if (!s && status == HTTP_OK)
     status = HTTP_TIMEOUT;
 
@@ -541,7 +545,7 @@ okd_t::sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
       x->declone ();
       error (x, HTTP_NOT_FOUND, *s2);
     } else {
-      twait { c->clone (acw, mkevent (), prefered_sibling); }
+      twait { c->clone (acw, dres, mkevent (), prefered_sibling); }
     }
   }
   ev->trigger ();
@@ -578,11 +582,12 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
 		 const ssl_ctx_t *ssl, const keepalive_data_t *kad)
 {
   tvars {
-    ref<ahttpcon_clone> x (ahttpcon_clone::alloc (nfd, sin));
+    ref<ahttpcon_clone> x(ahttpcon_clone::alloc (nfd, _self->use_all_headers(), 
+                                                 sin));
     holdvar ref<demux_data_t> dd (New refcounted<demux_data_t> (port, ssl));
     ahttpcon_wrapper_t<ahttpcon_clone> acw (x, dd);
     u_int freq (okd_debug_msg_freq);
-    str s;
+    ptr<ahttp_delimit_res> dres;
     int status;
     size_t plb (0); // preloaded bytes!
   }
@@ -622,11 +627,11 @@ okd_t::newserv2 (int port, int nfd, sockaddr_in *sin, bool proxied,
   
   // Listen for enough data on x until we're ready to demux the 
   // incoming connection.
-  twait { x->setccb (mkevent (s, status), plb); }
+  twait { x->setccb (mkevent (dres, status), plb); }
 
   // Handle the result of that demux in 'sclone', which might eventually
   // clone the connection and pass it on to a child OKWS service.
-  twait { sclone (acw, s, status, mkevent ()); }
+  twait { sclone (acw, dres, status, mkevent ()); }
 
   nfd_in_xit--;
   if (_accept_ready && nfd_in_xit < int (okd_fds_low_wat) && 

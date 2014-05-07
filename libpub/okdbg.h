@@ -53,5 +53,6 @@
 #define OKWS_DEBUG_PUB_RFN3                       (1 << 21)
 #define OKWS_DEBUG_OKD_KEEPALIVE                  (1 << 22)
 #define OKWS_DEBUG_SVC_MPFD                       (1 << 23)
+#define OKWS_DEBUG_OKD_CHILDREN                   (1 << 24)
 
 #endif /* _LIBPUB_OKDEBUG_H */

@@ -95,6 +95,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
   case 'J': v = OKWS_DEBUG_OKD_JAIL; break;
   case 'S': v = OKWS_DEBUG_OKD_SHUTDOWN; break;
   case 'M': v = OKWS_DEBUG_SVC_MPFD; break;
+  case 'N': v = OKWS_DEBUG_OKD_CHILDREN; break;
   default: ret =  false; break;
   }
   
@@ -107,7 +108,7 @@ okdbg_t::flag2bits (char c, int64_t *out) const
 const char * 
 okdbg_t::allflags () const
 {
-  return "abcdfhikmopsuvABCEHJMPS";
+  return "abcdfhikmopsuvABCEHJMPSN";
 }
 
 //--------------------------------------------------------------------

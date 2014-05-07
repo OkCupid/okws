@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include "okdbg.h"
+#include "ahutil.h"
 
 //
 // hacked in here for now...
@@ -223,8 +224,10 @@ ahttpcon::setrcb (cbi::ptr cb)
   }
 }
 
-ahttpcon_clone::ahttpcon_clone (int f, sockaddr_in *s, size_t ml)
-  : ahttpcon (f, s, ml), maxline (ml), ccb (NULL), decloned (false)
+ahttpcon_clone::ahttpcon_clone (int f, bool all_headers, sockaddr_in *s, 
+                                size_t ml)
+  : ahttpcon (f, s, ml), _all_headers(all_headers), maxline (ml), ccb (NULL), 
+    decloned (false)
 { }
 
 //-----------------------------------------------------------------------
@@ -477,11 +480,19 @@ ahttpcon_clone::recvd_bytes (size_t n)
   }
 
   int delimit_status = HTTP_OK;
-  str s = delimit (&delimit_status);
-  if (s || delimit_status != HTTP_OK) {
+  ptr<ahttp_delimit_res> dres;
+  
+  if (_all_headers) {
+      recv_limit = ok_hdrsize_limit;
+      dres = delimit_headers(&delimit_status);
+  } else {
+      dres = delimit(&delimit_status);
+  }
+
+  if (dres || delimit_status != HTTP_OK) {
 
     if (ccb) {
-      (*ccb) (s, delimit_status);
+      (*ccb) (dres, delimit_status);
       ccb = NULL;
     }
 
@@ -489,7 +500,7 @@ ahttpcon_clone::recvd_bytes (size_t n)
     // have been set from within (*ccb). If the header is more than
     // one packet, then we should not be turning off reads, since the
     // header needs to be parsed for logging purposes
-    if (s && !decloned)
+    if (dres && !decloned)
       end_read ();
     else {
       //
@@ -519,49 +530,114 @@ ahttpcon_clone::declone ()
   decloned = true;
 }
 
-str
-ahttpcon_clone::delimit (int *delimit_status)
-{
-  int delimit_state = 0;
-  const char *delimit_start = nullptr;
+str 
+ahttp_delimit_res::get_forwarded_ip_str() const {
+    str proxip = get_proxied_ip(m_headers);
+    return proxip;
+}
 
-  for (const char &p : request_bytes) {
-      switch (delimit_state) {
-      case 0:
-	if (p == ' ') 
-	  delimit_state = 1;
-	else if (p < 'A' || p > 'Z') {
-	  *delimit_status = HTTP_BAD_REQUEST;
-	  return NULL;
-	}
-	break;
-      case 1:
-	// note we're falling through to case 2 if non-space; RFC2616-compliant
-	// browsers will separate the request method (e.g. "GET" or "HEAD")
-	// from the Request-URI with 1 space, although broken browsers
-	// might not.
-	if (p == ' ')
-	  break;
-	delimit_state = 2;
-      case 2:
-	if (!delimit_start) 
-	  delimit_start = &p;
-	if (p == ' ' || p == '?' || p == '\r' || p == '\n') {
-	  return str (delimit_start, &p - delimit_start);
-	}
-	break;
-      default:
-	*delimit_status = HTTP_BAD_REQUEST;
-	return NULL;
-      }
-  }
+uint32_t
+ahttp_delimit_res::get_forwarded_ip() const {
+    str ipstr = get_forwarded_ip_str();
+    if (ipstr) {
+        return inet_addr(ipstr.cstr());
+    }
+    return 0;
+}
 
-  if (request_bytes.size() > maxline) {
-      *delimit_status = HTTP_URI_TOO_BIG;
-      return NULL;
-  }
+ptr<ahttp_delimit_res>
+ahttpcon_clone::delimit_headers(int* delimit_status) {
 
-  return (NULL);
+    int delimit_state = 0;
+
+    str reqline;
+    const char* nextline = nullptr;
+    bool done = false;
+    vec<str> headers;
+
+    for (const char& p: request_bytes) {
+        switch (delimit_state) {
+        case 0:
+            // Getting a newline char here means this is a blank line, kick out
+            if (p == '\r' || p == '\n') {
+                done = true;
+                break;
+            }
+            nextline = &p;
+            delimit_state = 1;
+        case 1:
+            // May be an end of a line
+            if (p == '\r' || p == '\n')
+                delimit_state = 2;
+        case 2:
+            if (p == '\n') {
+                str header = str(nextline, &p - nextline);
+                // tack on crlf to make sure parse_reqline() works
+                header = header << "\r\n"; 
+
+                // This is the reqline if we haven't gotten one yet
+                if (!reqline) {
+                    reqline = header;
+                }
+
+                // If this is a blank line, bail
+                if (header == "\r\n") {
+                    done = true;
+                } else {
+                    headers.push_back(tolower_s(header));
+                }
+
+                delimit_state = 0;
+            } else {
+                delimit_state = 1;
+            }
+            break;
+        };
+
+        if (done) break;
+    }
+
+    // If we don't have a reqline yet, but we have more bytes than maxline
+    // it's an error
+    if (!reqline && request_bytes.size() > maxline) {
+        *delimit_status = HTTP_URI_TOO_BIG;
+        return nullptr;
+    }
+
+    // If we don't have a reqline yet, no point in continuing
+    if (!reqline) return nullptr;
+
+    // Try to parse the reqline, if it comes back with an error then bail out
+    str reqtarget = parse_reqline(reqline.cstr(), reqline.len(), delimit_status);
+    if (!reqtarget || *delimit_status != HTTP_OK)
+        return nullptr;
+
+    // Don't fully proceed unless we get all the headers
+    if (!done) return nullptr;
+
+    ptr<ahttp_delimit_res> res = 
+        New refcounted<ahttp_delimit_res>(reqtarget);
+
+    // Parse the headers
+    for (str header: headers) {
+        const char* chead = header.cstr();
+        char* caddr = strchr(chead, ':');
+        if (!caddr) continue;
+        size_t cpos = (size_t)(caddr-chead+1);
+
+        str key = str(chead, cpos-1);
+        str value = strip_newlines(str(chead+cpos+1, header.len()-cpos));
+
+        res->add_header(key, value);
+    }
+
+    return res;
+}
+
+ptr<ahttp_delimit_res>
+ahttpcon_clone::delimit (int *delimit_status) {
+    str reqline = parse_reqline(request_bytes, request_bytes.size(), delimit_status);
+    return New refcounted<ahttp_delimit_res>(reqline);
 }
 
 int
@@ -918,5 +994,101 @@ ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
   return ret;
 }
 
+//-----------------------------------------------------------------------------
+
+/*
+** Use this to check CIDR ranges
+*/
+class cidr_mask_t {
+public:
+    cidr_mask_t(const char* range);
+    bool match(uint32_t ip) const;
+
+private:
+    uint32_t net, mask;
+};
+
 //-----------------------------------------------------------------------
+
+cidr_mask_t::cidr_mask_t(const char* range)
+{
+
+    rxx pat("([^/]+)(/([0-9]+))?");
+    net = 0xFFFFFFFF;
+    mask = 0xFFFFFFFF;
+
+    if (pat.match(range)) {
+        str saddr = pat[1];
+        struct in_addr addr;
+        if (inet_aton(saddr.cstr(), &addr)) {
+            net = ntohl(addr.s_addr);
+            if (pat[3]) {
+                uint32_t shift = 0;
+                pat[3].to_uint32(&shift);
+                mask = mask << (32 - shift);
+                net &= mask;
+            }
+        }
+        else {
+            warn << "OK_ERROR: Invalid address: " << saddr << "\n";
+        }
+    }
+    else {
+        warn << "OK_ERROR: Invalid CIDR block: " << range << "\n";
+    }
+}
+
+//-----------------------------------------------------------------------
+
+bool cidr_mask_t::match(uint32_t ip) const
+{
+    return ((ip & mask) == net);
+}
+
+//-----------------------------------------------------------------------
+
+bool is_internal(ptr<const ahttpcon> con) {
+  static const in_addr_t localhost_ip = inet_addr("127.0.0.1");
+
+  static const vec<cidr_mask_t> masks {
+      // CloudFlare IP Ranges:
+      // https://www.cloudflare.com/ips-v4
+      "199.27.128.0/21",
+      "173.245.48.0/20",
+      "103.21.244.0/22",
+      "103.22.200.0/22",
+      "103.31.4.0/22",
+      "141.101.64.0/18",
+      "108.162.192.0/18",
+      "190.93.240.0/20",
+      "188.114.96.0/20",
+      "197.234.240.0/22",
+      "198.41.128.0/17",
+      "162.158.0.0/15",
+      "104.16.0.0/12",
+  };
+
+  if (!con)
+    return false;
+
+  const sockaddr_in *in_addr = con->get_sin();
+  if (!in_addr)
+    return false;
+
+  uint32_t ip = in_addr->sin_addr.s_addr;
+  if (ip == localhost_ip) {
+      return true;
+  }
+
+  ip = ntohl(ip);
+  for (const auto mask : masks) {
+      if (mask.match(ip)) {
+          return true;
+      }
+  }
+
+  return false;
+}
+
+//-----------------------------------------------------------------------------
 

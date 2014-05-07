@@ -30,6 +30,7 @@
 #include "okconst.h"
 #include "httpconst.h"
 #include "tame.h"
+#include "pair.h"
 
 #define AHTTP_MAXLINE 1024
 
@@ -263,18 +264,42 @@ public:
   { return New refcounted<ahttpcon_dispatch> (f, mb); }
 };
 
+class ahttp_delimit_res {
+public:
+
+    ahttp_delimit_res() { }
+    ahttp_delimit_res(str reqline) : m_reqline(reqline) { }
+
+    void add_header(str key, str value) { 
+        m_headers.insert(key, value);
+    }
+
+    str get_reqline() const { return m_reqline; }
+    str get_header(str k) const { return m_headers[k]; }
+
+    str get_forwarded_ip_str() const;
+    uint32_t get_forwarded_ip() const;
+
+protected:
+
+    str m_reqline;
+    pairtab_t<> m_headers;
+};
+
 // Keeps a copy of data received before the fd is passed
-typedef callback<void, str, int>::ref clonecb_t;
+typedef callback<void, ptr<ahttp_delimit_res>, int>::ref clonecb_t;
 class ahttpcon_clone : public ahttpcon
 {
 public:
-  ahttpcon_clone (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE);
+  ahttpcon_clone (int f, bool all_headers, sockaddr_in *s = NULL, 
+                  size_t ml = AHTTP_MAXLINE);
   void setccb (clonecb_t cb, size_t nplb);
   int takefd ();
 
   static ptr<ahttpcon_clone> 
-  alloc (int f, sockaddr_in *s = NULL, size_t ml = AHTTP_MAXLINE) 
-  { return New refcounted<ahttpcon_clone> (f, s, ml); }
+  alloc (int f, bool all_headers, sockaddr_in *s = NULL, 
+         size_t ml = AHTTP_MAXLINE) 
+  { return New refcounted<ahttpcon_clone> (f, all_headers, s, ml); }
 
   void declone ();
 
@@ -286,8 +311,57 @@ protected:
 
 private:
   void end_read ();
-  str delimit (int *delimit_status);
+  ptr<ahttp_delimit_res> delimit (int *delimit_status);
+  ptr<ahttp_delimit_res> delimit_headers (int *delimit_status);
+  
+  template<class B>
+  str parse_reqline(const B& bytes, size_t size, int* delimit_status) {
+      int delimit_state = 0;
+      const char *delimit_start = nullptr;
 
+      for (size_t i = 0; i < size; i++) {
+          const char& p = bytes[i];
+          switch (delimit_state) {
+          case 0:
+              if (p == ' ') 
+                  delimit_state = 1;
+              else if (p < 'A' || p > 'Z') {
+                  *delimit_status = HTTP_BAD_REQUEST;
+                  return NULL;
+              }
+              break;
+          case 1:
+              // note we're falling through to case 2 if non-space; RFC2616-compliant
+              // browsers will separate the request method (e.g. "GET" or "HEAD")
+              // from the Request-URI with 1 space, although broken browsers
+              // might not.
+              if (p == ' ')
+                  break;
+              delimit_state = 2;
+          case 2:
+              if (!delimit_start) 
+                  delimit_start = &p;
+              if (p == ' ' || p == '?' || p == '\r' || p == '\n') {
+                  str reqline = str (delimit_start, &p - delimit_start);
+                  return reqline;
+              }
+              break;
+          default:
+              *delimit_status = HTTP_BAD_REQUEST;
+              return NULL;
+          }
+      }
+
+      if (size > maxline) {
+          *delimit_status = HTTP_URI_TOO_BIG;
+          return NULL;
+      }
+
+      return NULL;
+  }
+
+
+  bool _all_headers;
   const size_t maxline;
   clonecb_t::ptr ccb;
 
@@ -329,5 +403,25 @@ private:
   bool _shutdown;
 };
 
+//-----------------------------------------------------------------------------
+
+bool is_internal(ptr<const ahttpcon> con);
+
+//-----------------------------------------------------------------------------
+
+template<typename T>
+str get_proxied_ip(const T& hdr) {
+    static const auto keys {
+        "cf-connecting-ip",
+        "x-real-ip",
+        "x-forwarded-for",
+    };
+    for (const auto k : keys) {
+        if (hdr.exists(k)) return hdr[k];
+    }
+    return nullptr;
+}
+
+//-----------------------------------------------------------------------------
 
 #endif /* _LIBAHTTP_AHTTP */

@@ -181,7 +181,7 @@ void okclnt3_t::parse_proxy_headers(const http_parser_cgi_t& hdr) {
   }
   str proxy_info;
   if (is_internal(_x)) {
-    if ((proxy_info = get_proxied_ip(hdr))) {
+    if ((proxy_info = get_proxied_ip(hdr.hdr_cr()))) {
       _ip_str = proxy_info;
     }
     if ((proxy_info = hdr["x-forwarded-proto"])) {

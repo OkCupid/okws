@@ -50,7 +50,8 @@ typedef enum { OKD_JAILED_NEVER = 0,
 
 typedef enum { OKD_CHLDMODE_SOURCE_HASH = 0,
                OKD_CHLDMODE_RR = 1,
-               OKD_CHLDMODE_LAST = 2 } okd_chldmode_t;
+               OKD_CHLDMODE_SOURCE_HASH_HEADER = 2,
+               OKD_CHLDMODE_LAST = 3 } okd_chldmode_t;
 
 class okch_t;
 typedef callback<void, okch_t *>::ref cb_okch_t;
@@ -188,12 +189,13 @@ public:
                   okd_chldmode_t child_mode);
   ~okch_cluster_t ();
   void insert_child (okch_t *ch);
-  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev, int sib, 
-	      CLOSURE);
+  void clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, 
+              ptr<ahttp_delimit_res> dres, evv_t ev, int sib, 
+              CLOSURE);
   okch_t *child (size_t i) { return _children[i]; }
   const okch_t *child (size_t i) const { return _children[i]; }
   okch_t *find_best_fit_child (ref<ahttpcon_clone> xc, okch_t::status_t *sp,
-			       int pref = -1);
+			       int pref = -1, ptr<ahttp_delimit_res> dres = nullptr);
   void killed (size_t i, okch_t *ch);
 
   void set_states (okc_state_t st);
@@ -275,7 +277,8 @@ public:
     _emerg_kill_enabled (false),
     _emerg_kill_wait (okd_emergency_kill_wait_time),
     _emerg_kill_signal (okd_emergency_kill_signal),
-    _child_mode(OKD_CHLDMODE_SOURCE_HASH)
+    _child_mode(OKD_CHLDMODE_SOURCE_HASH),
+    _okd_all_headers(false)
   {
     listenport = p;
   }
@@ -303,8 +306,9 @@ public:
 
   void launch_logd (evb_t ev, CLOSURE);
 
-  void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, str s, int status,
-	       evv_t ev, CLOSURE);
+  void sclone (ahttpcon_wrapper_t<ahttpcon_clone> acw, 
+               ptr<ahttp_delimit_res> dres, int status,
+               evv_t ev, CLOSURE);
   void newserv (int fd);
   void newserv2 (int port, int nfd, sockaddr_in *sin, bool prx, 
 		 const ssl_ctx_t *ssl, const keepalive_data_t *kad, CLOSURE);
@@ -351,6 +355,8 @@ public:
   void req_errdoc_set_2 (svccb *sbp);
 
   typedef rendezvous_t<okch_t *,ptr<bool> > shutdown_rv_t;
+
+  bool use_all_headers() const { return _okd_all_headers; }
 
 protected:
   // queueing stuff
@@ -422,6 +428,7 @@ private:
   time_t _emerg_kill_wait;
   int _emerg_kill_signal;
   okd_chldmode_t _child_mode;
+  bool _okd_all_headers;
 
   vec<okws1_port_t> _ssl_ports;
 };

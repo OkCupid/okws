@@ -111,3 +111,18 @@ stall (const str &fn, cbv c)
   stallcb2 (fn, c);
 }
 
+str
+strip_newlines(str in) {
+
+    mstr m(in.len());
+    for (size_t i = 0; i < in.len(); i++) {
+        if (in[i] == '\r' || in[i] == '\n') {
+            m[i] = '\0';
+            break;
+        } else {
+            m[i] = in[i];
+        }
+    }
+
+    return m;
+}

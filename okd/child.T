@@ -167,7 +167,7 @@ okch_t::get_status () const
 okch_t *
 okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc, 
 				     okch_t::status_t *statusp, 
-				     int pref)
+				     int pref, ptr<ahttp_delimit_res> dres)
 {
   okch_t *ret = NULL;
   okch_t::status_t status = okch_t::CRASHED;
@@ -186,6 +186,24 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
       case OKD_CHLDMODE_SOURCE_HASH:
           id = xc->source_hash_ip_only () % n; 
           break;
+      case OKD_CHLDMODE_SOURCE_HASH_HEADER:
+            if (dres && is_internal(xc)) {
+                uint32_t fip = dres->get_forwarded_ip();
+                OKDBG4(OKD_CHILDREN, CHATTER, 
+                       "forwarding IP: val: %d str: %s", fip, 
+                       dres->get_forwarded_ip_str().cstr());
+                if (fip) {
+                    id = fip % n; 
+                    OKDBG4(OKD_CHILDREN, CHATTER,
+                           "yields fip: %d id: %lu origid: %lu",
+                           fip, id, xc->source_hash_ip_only () % n);
+                } else {
+                    id = xc->source_hash_ip_only () % n; 
+                }
+            } else {
+                id = xc->source_hash_ip_only () % n; 
+            }
+            break;
       default:
           ok = false;
           CH_CL_ERROR("Unknown child mode");
@@ -250,8 +268,9 @@ okch_cluster_t::is_ready ()
 //-----------------------------------------------------------------------
 
 tamed void
-okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev,
-		       int sib)
+okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, 
+                       ptr<ahttp_delimit_res> dres,
+                       evv_t ev, int sib)
 {
   tvars {
     ref<ahttpcon_clone> xc (acw.con ());
@@ -263,7 +282,7 @@ okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw, evv_t ev,
     bool do_queue (false);
   }
 
-  ch = find_best_fit_child (xc, &status, sib);
+  ch = find_best_fit_child (xc, &status, sib, dres);
 
   switch (status) {
   case okch_t::BUSY_LOOP: http_status = HTTP_UNAVAILABLE; break;

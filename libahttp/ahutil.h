@@ -34,6 +34,7 @@ typedef u_int16_t okws1_port_t;
 str getdate (rfc_number_t rfc = RFC_1123, time_t tm = 0);
 bool mystrlcmp (const str &s, const char *b);
 str tolower_s (const str &in);
+str strip_newlines(str in);
 
 inline 
 int char_at (const str &s, int i)
