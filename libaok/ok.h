@@ -394,6 +394,8 @@ public:
   virtual void fixup_log (ptr<http_response_base_t> rsp) {}
   list_entry<okclnt_interface_t> lnk;
 
+  virtual str get_ip_str() const = 0;
+
   virtual oksrvc_t *get_oksrvc () { return oksrvc; }
   virtual const oksrvc_t *get_oksrvc () const { return oksrvc; }
 
@@ -571,7 +573,7 @@ public:
   void set_demux_data(ptr<demux_data_t> d) { _demux_data = d; }
 
   virtual bool is_ssl() const;
-  virtual str get_ip_str() const;
+  virtual str get_ip_str() const override;
 
   str ssl_cipher() const;
   int get_reqno() const;

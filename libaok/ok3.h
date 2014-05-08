@@ -209,7 +209,7 @@ public:
   virtual bool ssl_only () const { return false; } 
   virtual str  ssl_redirect_str () const { return NULL; }
   bool is_ssl () const;
-  str get_ip_str () const;
+  virtual str get_ip_str () const override;
   str ssl_cipher () const;
 
   //------------------------------------------------------------------------

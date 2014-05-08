@@ -197,7 +197,7 @@ ok_httpsrv_t::error_T (ref<ahttpcon> x, int n, str s,
 
   assert (e);
   if (svclog)
-    log (x, h, e, s);
+    log (x, h, e, s, (!b) ? nullptr : b->get_ip_str());
   if (!x->closed ()) {
     twait { e->send (x, mkevent ()); }
   }

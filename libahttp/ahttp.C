@@ -626,8 +626,7 @@ ahttpcon_clone::delimit_headers(int* delimit_status) {
         size_t cpos = (size_t)(caddr-chead+1);
 
         str key = str(chead, cpos-1);
-        str value = strip_newlines(str(chead+cpos+1, header.len()-cpos));
-
+        str value = strip_newlines(str(chead+cpos+1, header.len()-cpos-1));
         res->add_header(key, value);
     }
 
