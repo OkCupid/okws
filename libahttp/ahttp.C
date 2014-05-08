@@ -597,13 +597,6 @@ ahttpcon_clone::delimit_headers(int* delimit_status) {
         if (done) break;
     }
 
-    // If we don't have a reqline yet, but we have more bytes than maxline
-    // it's an error
-    if (!reqline && request_bytes.size() > maxline) {
-        *delimit_status = HTTP_URI_TOO_BIG;
-        return nullptr;
-    }
-
     // If we don't have a reqline yet, no point in continuing
     if (!reqline) return nullptr;
 
