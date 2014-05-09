@@ -338,7 +338,40 @@ extern size_t ok_pub3_recycle_limit_bindtab;
 extern size_t ok_pub3_recycle_limit_dict;
 extern size_t ok_pub3_recycle_limit_slot;
 
+//-----------------------------------------------------------------------------
 
+// allowed proxy cidrs
+
+class cidr_mask_t {
+public:
+    cidr_mask_t(const char* range);
+    bool match(uint32_t ip) const;
+
+    str desc() const { return m_desc; }
+
+private:
+    uint32_t net, mask;
+    str m_desc;
+};
+
+class cidr_filter_t {
+public:
+    cidr_filter_t() { }
+    
+    void add_mask(const cidr_mask_t& mask);
+    bool match(uint32_t ip) const;
+
+    str encode() const;
+    void decode(str s);
+
+private:
+    
+    vec<cidr_mask_t> m_masks;
+};
+
+extern cidr_filter_t ok_allowed_proxy;
+
+//-----------------------------------------------------------------------------
 
 /**
  * Find an OKWS configuration file in the standard config file search path

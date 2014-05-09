@@ -290,6 +290,7 @@ oksrvc_t::init (int argc, char *argv[])
   str mmc_file = ok_mmc_file;
   str loggers;
   str dp_str;
+  str proxy_str;
 
   int seltmp = 0;
   int gztmp;
@@ -359,6 +360,10 @@ oksrvc_t::init (int argc, char *argv[])
     t->lookup ("rcyclimitbt", &ok_pub3_recycle_limit_bindtab);
     t->lookup ("rcyclimitdict", &ok_pub3_recycle_limit_dict);
     t->lookup ("rcyclimitslot", &ok_pub3_recycle_limit_slot);
+    t->lookup ("allowedproxy", &proxy_str);
+
+    if (proxy_str)
+        ok_allowed_proxy.decode(proxy_str);
 
     ok_sys_sel_policy = sfs_core::select_policy_t (seltmp);
     ok_gzip_mode = gzip_mode_t (gztmp);

@@ -298,6 +298,7 @@ public:
   void got_service2 (vec<str> s, str loc, bool *errp);
   void got_script (vec<str> s, str loc, bool *errp);
   void got_ssl_port(vec<str> v, str loc, bool* errp);
+  void got_allow_proxy(vec<str> v, str loc, bool* errp);
 
   void okld_dispatch (svccb *sbp);
 

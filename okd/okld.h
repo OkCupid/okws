@@ -492,6 +492,7 @@ public:
   void got_cipher_order(vec<str> s, str log, bool* errp);
   void got_cli_renog(vec<str> s, str log, bool* errp);
   void got_ssl_debug_startup(vec<str> s, str log, bool* errp);
+  void got_allow_proxy(vec<str> s, str log, bool* errp);
 
   void okld_exit (int rc);
 

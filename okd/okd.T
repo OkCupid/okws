@@ -167,6 +167,20 @@ okd_t::got_regex_alias (vec<str> s, str loc, bool *errp)
   regex_aliases.push_back (regex_alias_t (fix_uri (s[1]), x));
 }
 
+//-----------------------------------------------------------------------------
+
+void
+okd_t::got_allow_proxy(vec<str> s, str loc, bool* errp) {
+    strip_comments(&s);
+    if (s.size() != 2) {
+        warn << loc << ": need to specify an address\n";
+        *errp = true;
+    } else {
+        warn << "adding allowed proxy range: " << s[1] << "\n";
+        ok_allowed_proxy.add_mask(cidr_mask_t(s[1].cstr()));
+    }
+}
+
 //-----------------------------------------------------------------------
 
 void
@@ -304,6 +318,7 @@ okd_t::parse_file (const str &cf)
     .add ("ChildMode", &child_mode, (uint32_t)OKD_CHLDMODE_SOURCE_HASH, 
                                     (uint32_t)OKD_CHLDMODE_LAST)
     .add ("OkdAllHeaders", &_okd_all_headers)
+    .add ("AllowProxyFrom", wrap(this, &okd_t::got_allow_proxy))
 
     // script and service options, just ignore 'em...
     .ignore ("Service")

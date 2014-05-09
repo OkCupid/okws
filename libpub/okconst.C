@@ -345,6 +345,8 @@ bool ok_http_parse_cookies = true;
 const char *ok_double_fmt_int_default = "%.16g";
 const char *ok_double_fmt_ext_default = "%.10g";
 
+cidr_filter_t ok_allowed_proxy;
+
 static void
 vec2vec (vec<const char *> *out, const vec<str> &in)
 {

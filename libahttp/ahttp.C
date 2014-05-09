@@ -986,24 +986,12 @@ ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
   return ret;
 }
 
-//-----------------------------------------------------------------------------
-
-/*
-** Use this to check CIDR ranges
-*/
-class cidr_mask_t {
-public:
-    cidr_mask_t(const char* range);
-    bool match(uint32_t ip) const;
-
-private:
-    uint32_t net, mask;
-};
-
 //-----------------------------------------------------------------------
 
 cidr_mask_t::cidr_mask_t(const char* range)
 {
+    
+    m_desc = str(range);
 
     rxx pat("([^/]+)(/([0-9]+))?");
     net = 0xFFFFFFFF;
@@ -1037,30 +1025,52 @@ bool cidr_mask_t::match(uint32_t ip) const
     return ((ip & mask) == net);
 }
 
+//-----------------------------------------------------------------------------
+
+void
+cidr_filter_t::add_mask(const cidr_mask_t& mask) {
+    m_masks.push_back(mask);
+}
+
+//-----------------------------------------------------------------------------
+
+bool
+cidr_filter_t::match(uint32_t ip) const {
+    for (const auto& m : m_masks) {
+        if (m.match(ip)) return true;
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+
+str
+cidr_filter_t::encode() const {
+    strbuf encstr;
+    for (size_t i = 0; i < m_masks.size(); i++) {
+        if (i != 0) encstr << ",";
+        encstr << m_masks[i].desc();
+    }
+    return encstr;
+}
+
+//-----------------------------------------------------------------------------
+
+void
+cidr_filter_t::decode(str s) {
+    vec<str> toks;
+    static rxx x(",");
+    split(&toks, x, s);
+
+    m_masks.clear();
+    for (auto t : toks) {
+        m_masks.emplace_back(t.cstr());
+    }
+}
+
 //-----------------------------------------------------------------------
 
 bool is_internal(ptr<const ahttpcon> con) {
-  static const in_addr_t localhost_ip = inet_addr("127.0.0.1");
-
-  static const vec<cidr_mask_t> masks {
-      // CloudFlare IP Ranges:
-      // https://www.cloudflare.com/ips-v4
-      "199.27.128.0/21",
-      "173.245.48.0/20",
-      "103.21.244.0/22",
-      "103.22.200.0/22",
-      "103.31.4.0/22",
-      "141.101.64.0/18",
-      "108.162.192.0/18",
-      "190.93.240.0/20",
-      "188.114.96.0/20",
-      "197.234.240.0/22",
-      "198.41.128.0/17",
-      "162.158.0.0/15",
-      "104.16.0.0/12",
-      "207.97.144.238/32",
-      "10.224.62.145/32"
-  };
 
   if (!con)
     return false;
@@ -1069,19 +1079,10 @@ bool is_internal(ptr<const ahttpcon> con) {
   if (!in_addr)
     return false;
 
-  uint32_t ip = in_addr->sin_addr.s_addr;
-  if (ip == localhost_ip) {
-      return true;
-  }
+  uint32_t ip = ntohl(in_addr->sin_addr.s_addr);
 
-  ip = ntohl(ip);
-  for (const auto mask : masks) {
-      if (mask.match(ip)) {
-          return true;
-      }
-  }
+  return ok_allowed_proxy.match(ip);
 
-  return false;
 }
 
 //-----------------------------------------------------------------------------

@@ -139,6 +139,19 @@ okld_t::got_okssl_exec (vec<str> s, str loc, bool *errp) {
     _ssl_exec_params = s;
 }
 
+//-----------------------------------------------------------------------------
+
+void
+okld_t::got_allow_proxy(vec<str> s, str loc, bool* errp) {
+    strip_comments(&s);
+    if (s.size() != 2) {
+        warn << loc << ": need to specify an address\n";
+        *errp = true;
+    } else {
+        ok_allowed_proxy.add_mask(cidr_mask_t(s[1].cstr()));
+    }
+}
+
 //-----------------------------------------------------------------------
 
 static bool
@@ -861,6 +874,7 @@ okld_t::parse_file (const str &cf)
     .add ("Pub3RecycleLimitSlot", &ok_pub3_recycle_limit_slot, 0, INT_MAX)
 
     .add ("ResolveBinaryPaths", &_config_resolve_bins)
+    .add ("AllowProxyFrom", wrap(this, &okld_t::got_allow_proxy))
 
     .ignore ("LogBuffers") // Transitional....
     .ignore ("OkMgrSocketOwner")
