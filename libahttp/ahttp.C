@@ -1070,20 +1070,3 @@ cidr_filter_t::decode(str s) {
 
 //-----------------------------------------------------------------------
 
-bool is_internal(ptr<const ahttpcon> con) {
-
-  if (!con)
-    return false;
-
-  const sockaddr_in *in_addr = con->get_sin();
-  if (!in_addr)
-    return false;
-
-  uint32_t ip = ntohl(in_addr->sin_addr.s_addr);
-
-  return ok_allowed_proxy.match(ip);
-
-}
-
-//-----------------------------------------------------------------------------
-

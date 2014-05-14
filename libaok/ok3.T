@@ -180,7 +180,7 @@ void okclnt3_t::parse_proxy_headers(const http_parser_cgi_t& hdr) {
     return;
   }
   str proxy_info;
-  if (is_internal(_x)) {
+  if (is_internal(_x, hdr.hdr_cr())) {
     if ((proxy_info = get_proxied_ip(hdr.hdr_cr()))) {
       _ip_str = proxy_info;
     }

@@ -280,6 +280,8 @@ public:
     str get_forwarded_ip_str() const;
     uint32_t get_forwarded_ip() const;
 
+    const pairtab_t<>& headers() const { return m_headers; }
+
 protected:
 
     str m_reqline;
@@ -405,21 +407,42 @@ private:
 
 //-----------------------------------------------------------------------------
 
-bool is_internal(ptr<const ahttpcon> con);
+static const auto ok_forward_headers {
+    "cf-connecting-ip",
+    "x-real-ip",
+    "x-forwarded-for",
+};
+
+template<typename T>
+str get_proxied_ip(const T& hdr) {
+    for (const auto k : ok_forward_headers) {
+        if (hdr.exists(k)) return hdr[k];
+    }
+    return nullptr;
+}
 
 //-----------------------------------------------------------------------------
 
 template<typename T>
-str get_proxied_ip(const T& hdr) {
-    static const auto keys {
-        "cf-connecting-ip",
-        "x-real-ip",
-        "x-forwarded-for",
-    };
-    for (const auto k : keys) {
-        if (hdr.exists(k)) return hdr[k];
+bool is_internal(ptr<const ahttpcon> con, const T& headers) {
+    static str okrs = "x-okws-real-source";
+
+    if (!con)
+        return false;
+
+    const sockaddr_in *in_addr = con->get_sin();
+    if (!in_addr)
+        return false;
+
+    uint32_t ip = ntohl(in_addr->sin_addr.s_addr);
+
+    bool sourceok = ok_allowed_proxy.match(ip);
+    if (sourceok && headers.exists(okrs)) {
+        ip = ntohl(inet_addr(headers[okrs].cstr()));
+        sourceok = ok_allowed_proxy.match(ip);
     }
-    return nullptr;
+
+    return sourceok;
 }
 
 //-----------------------------------------------------------------------------

@@ -187,7 +187,7 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
           id = xc->source_hash_ip_only () % n; 
           break;
       case OKD_CHLDMODE_SOURCE_HASH_HEADER:
-            if (dres && is_internal(xc)) {
+            if (dres && is_internal(xc, dres->headers())) {
                 uint32_t fip = dres->get_forwarded_ip();
                 OKDBG4(OKD_CHILDREN, CHATTER, 
                        "forwarding IP: val: %d str: %s", fip, 
