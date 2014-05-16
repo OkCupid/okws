@@ -424,7 +424,8 @@ str get_proxied_ip(const T& hdr) {
 //-----------------------------------------------------------------------------
 
 template<typename T>
-bool is_internal(ptr<const ahttpcon> con, const T& headers) {
+bool is_internal(ptr<const ahttpcon> con, const T& headers, 
+                 bool use_rs = true) {
     static str okrs = "x-okws-real-source";
 
     if (!con)
@@ -437,7 +438,7 @@ bool is_internal(ptr<const ahttpcon> con, const T& headers) {
     uint32_t ip = ntohl(in_addr->sin_addr.s_addr);
 
     bool sourceok = ok_allowed_proxy.match(ip);
-    if (sourceok && headers.exists(okrs)) {
+    if (use_rs && sourceok && headers.exists(okrs)) {
         ip = ntohl(inet_addr(headers[okrs].cstr()));
         sourceok = ok_allowed_proxy.match(ip);
     }

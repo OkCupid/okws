@@ -1010,7 +1010,8 @@ str okclnt_base_t::get_ip_str() const {
 
 bool okclnt_t::is_ssl() const {
   str proxy_info;
-  if (is_internal(client_con(), hdr_cr()) && (proxy_info = (*this)["x-forwarded-proto"])) {
+  if (is_internal(client_con(), hdr_cr(), false) && 
+      (proxy_info = (*this)["x-forwarded-proto"])) {
     return proxy_info == "https";
   }
   return _demux_data && _demux_data->ssl();
