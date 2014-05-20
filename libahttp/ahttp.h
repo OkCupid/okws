@@ -408,6 +408,7 @@ private:
 //-----------------------------------------------------------------------------
 
 static const auto ok_forward_headers {
+    "x-okws-real-ip",
     "cf-connecting-ip",
     "x-real-ip",
     "x-forwarded-for",
