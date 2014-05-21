@@ -188,6 +188,9 @@ namespace pub3 {
 		   const { return (*this)(i2s (i)); });
     ALL_INT_TYPES (obj_t operator(), i, { return (*this)(i2s (i)); });
 
+    const_obj_t operator() (u_int64_t i) const { return (*this)(i2s (i)); }
+    obj_t operator() (u_int64_t i) { return (*this)(i2s (i)); }
+
     // scalar access features: mutable
     obj_t &operator= (u_int64_t i) { return set_uint (i); }
     obj_t &operator= (const str &s) { return set_str (s); }
