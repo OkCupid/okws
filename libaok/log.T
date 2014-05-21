@@ -330,6 +330,15 @@ fast_log_t::add_access (ref<ahttpcon> x, http_inhdr_t *req,
     case '2':
       access.log (res->get_custom_log2 (), '[', ']');
       break;
+    case 'R':
+      access.log(req ? (*req)["x-okws-real-ip"] : snull, '"', '"');
+      break;
+    case 'S':
+      access.log(req ? (*req)["x-okws-real-source"] : snull, '"', '"');
+      break;
+    case 'I':
+      access.log(x->get_remote_ip());
+      break;
     default:
       access.log_char (*p);
       break;
