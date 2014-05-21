@@ -428,6 +428,7 @@ template<typename T>
 bool is_internal(ptr<const ahttpcon> con, const T& headers, 
                  bool use_rs = true) {
     static str okrs = "x-okws-real-source";
+    static str okri = "x-okws-real-ip";
 
     if (!con)
         return false;
@@ -439,7 +440,8 @@ bool is_internal(ptr<const ahttpcon> con, const T& headers,
     uint32_t ip = ntohl(in_addr->sin_addr.s_addr);
 
     bool sourceok = ok_allowed_proxy.match(ip);
-    if (use_rs && sourceok && headers.exists(okrs)) {
+    // This check only applies to non-OKWS specific headers
+    if (use_rs && sourceok && headers.exists(okrs) && !headers.exists(okri)) {
         ip = ntohl(inet_addr(headers[okrs].cstr()));
         sourceok = ok_allowed_proxy.match(ip);
     }
