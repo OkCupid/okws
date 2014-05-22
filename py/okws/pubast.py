@@ -13,6 +13,7 @@
 
 from okws._config import PKGLIBDIR
 from okws._pubast import mk_file, Node, Metadata
+from enum import Enum
 import subprocess
 import base64
 import pprint
@@ -24,6 +25,19 @@ _PARSER = PKGLIBDIR + "/pub3astdumper"
 def parse(file):
     """Parse the given file as a pub file and returns the ast."""
     res = json.loads(subprocess.check_output([_PARSER, "--", file]))
+    return mk_file(res)
+
+
+def parse_string(s):
+    """Parse the given string as a pub file and returns the ast."""
+    ps = subprocess.Popen([_PARSER],
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE)
+    raw_ast, stderr = ps.communicate(s)
+    if ps.returncode:
+        raise subprocess.CalledProcessError(ps.returncode, _PARSER, stderr)
+    res = json.loads(raw_ast)
     return mk_file(res)
 
 
@@ -216,33 +230,43 @@ class NodeTransformer(NodeVisitor):
                     setattr(node, field, new_node)
         return node
 
+
 class _Dumper:
     """Internal class used to help dumping AST nodes"""
     HIDE_ATTR = ["lineno"]
 
-    def dump(self, node):
+    def up(self, maxdepth):
+        return maxdepth - 1 if maxdepth is not None else None
+
+    def dump(self, node, maxdepth):
+        if maxdepth is not None and maxdepth <= 0:
+            return "..."
+        subdepth = self.up(maxdepth)
         if isinstance(node, list):
-            return map(self.dump, node)
+            return [self.dump(x, subdepth) for x in node]
         if not isinstance(node, Node):
             return node
         method = 'dump_' + node.__class__.__name__
         f = getattr(self, method, self.generic_dump)
-        return f(node)
+        return f(node, subdepth)
 
-    def dump_Zstr(self, node):
+    def dump_Zstr(self, node, maxdepth):
         return base64.b64decode(node.s)
 
-    def dump_ZoneText(self, node):
-        return ("ZoneText", self.dump(node.original_text))
+    def dump_ZoneText(self, node, maxdepth):
+        return ("ZoneText", self.dump(node.original_text, self.up(maxdepth)))
 
-    def dump_File(self, node):
-        return self.dump(node.root.zones)
+    def dump_File(self, node, maxdepth):
+        return self.dump(node.root.zones, maxdepth)
 
-    def generic_dump(self, node):
+    def generic_dump(self, node, maxdepth):
+        if isinstance(node, Enum):
+            return node.name
         fields = {}
+        subdepth = self.up(maxdepth)
         for k, v in iter_fields(node):
             if v is not None and k not in self.HIDE_ATTR:
-                fields[k] = self.dump(v)
+                fields[k] = self.dump(v, subdepth)
         name = node.__class__.__name__
         if len(fields) == 1:
             return (name, fields.values()[0])
@@ -252,9 +276,10 @@ class _Dumper:
             return (name, fields)
 
 
-def dump(node):
+def dump(node, maxdepth=None):
     """Prints out a node to stdout"""
-    return pprint.pprint(_Dumper().dump(node))
+    return pprint.pprint(_Dumper().dump(node, maxdepth))
+
 
 ## Simple example:
 

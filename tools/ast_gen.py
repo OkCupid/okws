@@ -534,14 +534,27 @@ class StubEmitter:
             return "body"
         return v
 
-    def mk_enum_name(self, v, parent_name=None):
-        v = v.upper()
-        elts = v.split("_")
-        if elts[0] == "XPUB3":
-            elts = elts[1:]
-        if parent_name is not None and elts[0] == parent_name.upper():
-            elts = elts[1:]
-        return "_".join(elts)
+    def mk_enum_name(self, v, prefix):
+        if prefix is not None:
+            v = v[len(prefix):]
+        return v.upper()
+
+    def find_enum_prefix(self, v):
+        """ Takes all the cases of an enum and finds the prefix that is common
+        to all of them and should be stripped out."""
+        if len(v.cases) < 2:
+            return None
+        elts = [x.split("_") for x, _ in v.cases]
+        minlen = min(len(e) for e in elts)
+        res = []
+        for i in range(0, minlen - 1):
+            common = elts[0][i]
+            all_same = all(x[i] == common for x in elts[1:])
+            if all_same:
+                res.append(common)
+            else:
+                break
+        return None if res == [] else "_".join(res)+"_"
 
     def cleanup_ty_name(self, v):
         v = v.lower()
@@ -599,7 +612,6 @@ from enum import Enum  #enum34
 class Node:
     _fields = []
     pass
-
 ''' % (os.path.basename(self._filename), name)
         self.emit_ty(tgt)
 
@@ -655,8 +667,9 @@ class Node:
         assert isinstance(ty.binding.target, Enum)
         assert ty.default is None
         print "    __slots__ = []"
+        enum_prefix = self.find_enum_prefix(ty.binding.target)
         for k, v in ty.binding.target.cases:
-            print "    %s = %i" % (self.mk_enum_name(k, classname), v)
+            print "    %s = %i" % (self.mk_enum_name(k, enum_prefix), v)
         print
 
         print "def %s(json_val):" % self.class_name_to_fnname(classname)
@@ -668,7 +681,7 @@ class Node:
             for v in k:
                 cond = "if" if first else "elif"
                 first = False
-                enum_name = self.mk_enum_name(v, classname)
+                enum_name = self.mk_enum_name(v, enum_prefix)
                 print "    %s tag == %s.%s:" % (cond, classname, enum_name)
                 subclass_name = self.mk_class_name(v)
                 if bdg is Void:
@@ -689,8 +702,9 @@ class Node:
 
     def emit_enum(self, tgt, classname, parentname):
         print "class %s(%s, Enum):" % (classname, parentname)
+        prefix = self.find_enum_prefix(tgt)
         for k, v in tgt.cases:
-            print "    %s = %i" % (self.mk_enum_name(k, classname), v)
+            print "    %s = %i" % (self.mk_enum_name(k, prefix), v)
         print
         print "def %s(json_val):" % self.class_name_to_fnname(classname)
         print "    return %s(json_val)" % classname

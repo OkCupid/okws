@@ -107,6 +107,9 @@ namespace pub3 {
     ptr<bindtab_t> _globals;
     stack_t _stack;
     size_t _global_frames;
+
+  public:
+    const stack_t &stack() const { return _stack; }
   };
 
   //=======================================================================
