@@ -214,6 +214,7 @@ namespace pub3 {
     obj_t &operator= (vec<T> v);
 
     void remove_key (str k);
+    void remove_key (u_int64_t i) { remove_key (i2s (i)); }
 
     obj_t &refer_to (obj_t o);
 
