@@ -223,7 +223,7 @@ pub3::statement_t::alloc (const xpub3_statement_t &x)
   case XPUB3_STATEMENT_PRINT:
     r = New refcounted<print_t> (*x.print);
     break;
-  case XPUB3_EXPR_STATEMENT:
+  case XPUB3_STATEMENT_EXPR:
     r = New refcounted<expr_statement_t> (*x.expr_statement);
     break;
   case XPUB3_STATEMENT_FNDEF:
@@ -996,7 +996,7 @@ pub3::expr_statement_t::expr_statement_t (const xpub3_expr_statement_t &x)
 bool
 pub3::expr_statement_t::to_xdr (xpub3_statement_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_STATEMENT);
+  x->set_typ (XPUB3_STATEMENT_EXPR);
   x->expr_statement->lineno = lineno ();
   if (_expr) {
     x->expr_statement->expr.alloc ();

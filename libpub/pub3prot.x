@@ -445,7 +445,7 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_UNIVERSALS = 6,
    XPUB3_STATEMENT_IF = 7,
    XPUB3_STATEMENT_PRINT = 8,
-   XPUB3_EXPR_STATEMENT = 9,
+   XPUB3_STATEMENT_EXPR = 9,
    XPUB3_STATEMENT_FNDEF = 10,
    XPUB3_STATEMENT_SWITCH = 11,
    XPUB3_STATEMENT_BREAK = 12,
@@ -486,7 +486,7 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_STATEMENT_PRINT:
    xpub3_print_t print;
 
- case XPUB3_EXPR_STATEMENT:
+ case XPUB3_STATEMENT_EXPR:
    xpub3_expr_statement_t expr_statement;
 
  case XPUB3_STATEMENT_SWITCH:
