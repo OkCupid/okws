@@ -1,0 +1,15 @@
+{%
+ // `print`, `str` and string interpolation do not treat `null` and `undefined`
+ // values the same way. Everything else does. In particular binding a variable
+ // to an undefined value fills it with `null`.
+ locals {
+     null_val: null,
+     undef_assign: undefined
+ }
+
+ {{%{undefined}
+}} // -> ""
+ {{%{undef_assign}
+}} // -> "null"
+ {{%{null_val}}}  // -> "null"
+ %}

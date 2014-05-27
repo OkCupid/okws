@@ -231,7 +231,7 @@ AC_OUTPUT(libpub/Makefile pub/Makefile
 	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 
 	  libweb/Makefile logd/Makefile Makefile conf/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
-	  test/system/Makefile htdocs/Makefile contrib/Makefile
+	  test/system/Makefile test/pub/Makefile htdocs/Makefile contrib/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
 	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
 	  librfn/Makefile test/regtest/Makefile test/regtest/cases/Makefile

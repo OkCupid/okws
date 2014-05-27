@@ -1,0 +1,6 @@
+{%
+ // Variables are always looked in the local scope before the global scope.
+ locals {x : "local\n"}
+ globals {x : "global\n"}
+ print (x); // <---- local
+ %}
