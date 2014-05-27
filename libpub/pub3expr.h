@@ -659,6 +659,35 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  class expr_scoped_varref_t : public expr_ref_t {
+  public:
+    enum class scope_t : uint32_t {
+      // We don't support LOCALS and LIBRARY for now...
+      GLOBALS = 1,
+      UNIVERSALS = 2
+    };
+    expr_scoped_varref_t (const str &s, const scope_t sc, lineno_t l) :
+      expr_ref_t (l), _name (s), _scope(sc) {}
+    expr_scoped_varref_t (const xpub3_scoped_ref_t &x);
+    virtual bool to_xdr (xpub3_expr_t *x) const;
+    virtual const char *get_obj_name () const {
+      return "pub3::expr_scoped_varref_t";
+    }
+    static ptr<expr_scoped_varref_t> alloc (const str &n, const scope_t scope);
+
+    ptr<const expr_t> eval_to_val (eval_t *e) const;
+    ptr<mref_t> eval_to_ref (eval_t *e) const;
+    void pub_to_ref (eval_t *p, mrev_t ev, CLOSURE) const;
+    void pub_to_val (eval_t *p, cxev_t ev, CLOSURE) const;
+    void v_dump (dumper_t *d) const;
+    void report (eval_t *e, bool is_defined) const;
+  protected:
+    str _name;
+    scope_t _scope;
+  };
+
+  //-----------------------------------------------------------------------
+
   class expr_vecref_t : public expr_ref_t {
   public:
     expr_vecref_t (ptr<expr_t> v, ptr<expr_t> i, lineno_t l) 

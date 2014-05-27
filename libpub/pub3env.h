@@ -42,7 +42,11 @@ namespace pub3 {
     size_t stack_size () const;
     ptr<mref_t> lookup_ref (const str &nm) const;
     void add_global_binding (const str &nm, ptr<expr_t> v);
+
     ptr<bindtab_t> library () { return _library; }
+    ptr<bindtab_t> globals () { return _globals; }
+    ptr<bindtab_t> universals () { return _universals; }
+
     size_t bind_globals (ptr<bindtab_t> t);
     ptr<env_t> clone () const;
 
