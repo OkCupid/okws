@@ -145,10 +145,10 @@ private:
 
 class ssrv_t;
 class mtd_thread_t { // Abstract class for Child threads
+  friend class mtdispatch_t;
 public:
   mtd_thread_t (mtd_thread_arg_t *a);
   virtual ~mtd_thread_t () {}
-  void run ();
   virtual void dispatch (svccb *sbp) = 0;
   virtual bool init () { return true; }
   virtual bool init_phase0 () { return true; }
@@ -177,6 +177,7 @@ private:
   int msg_send (mtd_status_t s);
   mtd_status_t msg_recv ();
 protected:
+  bool run ();
   virtual void did_reply () ;
   int tid;
   bool readied;

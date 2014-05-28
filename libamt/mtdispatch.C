@@ -358,33 +358,22 @@ amt_vnew_threadv (void *av)
   return (NULL);
 }
 
-static int
-inew_threadv (void *av)
-{
-  // warn << "inew_threadv called.\n";  // debug
-  amt_new_threadv (av);
-  return 0;
-}
-
-//
-// blah blah blah XXXX blah blah
-void foo ()
-{
-  inew_threadv (NULL);
-}
-
 mtd_thread_t *
 mtdispatch_t::new_thread (mtd_thread_arg_t *a) const
 {
   //  warn << "New thread called: " << a->tid << "\n"; // debug
   mtd_thread_t *t = (*ntcb) (a);
   a->cell->thr = t;
-  t->run (); 
+  const bool ok = t->run ();
   delete a;
+  if (!ok) {
+    delete t;
+    return nullptr;
+  }
   return t;
 }
 
-void
+bool
 mtd_thread_t::run ()
 { 
   mtd_status_t rc;
@@ -396,8 +385,7 @@ mtd_thread_t::run ()
   if (!ok) {
     TWARN ("thread could not initialize");
     msg_send (MTD_SHUTDOWN);
-    delete this;
-    return;
+    return false;
   }
 
   become_ready ();
@@ -410,7 +398,7 @@ mtd_thread_t::run ()
   
   cell->status = MTD_SHUTDOWN;
   msg_send (MTD_SHUTDOWN);
-  return;
+  return true;
 }
 
 mtd_status_t 

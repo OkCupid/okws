@@ -975,7 +975,7 @@ okd_t::reserve_child (const oksvc_proc_t &p, bool lazy)
   ok_xstatus_typ_t ret = OK_STATUS_OK;
   okc_state_t st = lazy ? OKC_STATE_STANDBY : OKC_STATE_NONE;
   if (!(ch = servtab[p.name])) {
-    ch = New okch_cluster_t (this, p.name, st, p.num_brothers, _child_mode);
+    New okch_cluster_t (this, p.name, st, p.num_brothers, _child_mode);
   } else {
     ch->set_states (st);
     ret = OK_STATUS_DUP;

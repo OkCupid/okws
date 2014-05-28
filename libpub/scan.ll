@@ -2,6 +2,7 @@
 /* $Id$ */
 
 %{
+#ifndef __clang_analyzer__
 #include "pub_parse.h"
 #include "parse.h"
 #include "pub3parse.h"
@@ -704,7 +705,7 @@ yy_parse_pub (str s)
 }
 
 //-----------------------------------------------------------------------
-
+#endif // __clang_analyzer__
 /*
 // States:
 //   H - HTML w/ includes and variables and switches and such

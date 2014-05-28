@@ -277,7 +277,7 @@ namespace rfn3 {
 
     if (start < 0) { start = 0; }
     // If end < 0, it'll be promoted to unsigned
-    if (end > 0 && end > in->size()) { end = in->size(); }
+    if (end > 0 && static_cast<size_t>(end) > in->size()) { end = in->size(); }
 
     if (start < end) { out->reserve(end - start); }
 
