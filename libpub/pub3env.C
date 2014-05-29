@@ -66,7 +66,6 @@ namespace pub3 {
   {
     str ret;
     switch (lt) {
-    case LAYER_NONE: ret = "none"; break;
     case LAYER_UNIVERSALS: ret = "universals"; break;
     case LAYER_GLOBALS: ret = "globals"; break;
     case LAYER_LOCALS: ret = "locals"; break;
@@ -74,7 +73,9 @@ namespace pub3 {
     case LAYER_LOCALS_BARRIER_WEAK: ret = "locals_barrier_weak"; break;
     case LAYER_UNIREFS: ret = "unirefs"; break;
     case LAYER_LIBRARY: ret = "library"; break;
-    default: ret = "none"; break;
+    }
+    if (!ret) {
+      ret = "unknown";
     }
     return ret;
   }
@@ -193,7 +194,23 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  void env_t::pop_to (size_t i) { _stack.setsize (i); }
+  void env_t::pop_to (size_t i) {
+    size_t s = _stack.size ();
+    if (i < s) {
+      _stack.popn_back (s - i);
+    } else {
+      static bool coredumped = false;
+      if (i > s && !coredumped) {
+        coredumped = true;
+        warn << "Trying to pop the stack in the wrong direction!\n";
+        // Fork and dump... get a coredump but keep on running.
+        if (fork() == 0) {
+          abort();
+        }
+      }
+    }
+  }
+
   size_t env_t::stack_size () const { return _stack.size (); }
 
   //-----------------------------------------------------------------------
@@ -327,7 +344,6 @@ namespace pub3 {
       case LAYER_LOCALS:
 	bottom_frame--;
 	break;
-      case LAYER_NONE:
       case LAYER_UNIVERSALS:
       case LAYER_GLOBALS:
       case LAYER_LIBRARY:

@@ -60,8 +60,7 @@ namespace pub3 {
     //   Is used when P_STRICT_INCLUDE_SCOPING is turned off to 
     //   mark include file boundaries in the stack
     //
-    typedef enum { LAYER_NONE = -1,
-		   LAYER_UNIVERSALS = 0,
+    typedef enum { LAYER_UNIVERSALS = 0,
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
 		   LAYER_LOCALS_BARRIER = 3,
@@ -84,7 +83,6 @@ namespace pub3 {
     struct stack_layer_t {
       stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
-      stack_layer_t () : _typ (LAYER_NONE) {}
       ptr<bind_interface_t> _bindings;
       layer_type_t _typ;
       bool is_local () const;
