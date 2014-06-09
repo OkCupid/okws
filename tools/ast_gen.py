@@ -404,7 +404,7 @@ class UnionCase(Dispatcher):
     def case(self, scanner):
         name = ident(scanner)
         consume(scanner, [Token.COLON])
-        if scanner.peek()[0] in {Token.CASE, Token.DEFAULT}:
+        if scanner.peek()[0] in [Token.CASE, Token.DEFAULT]:
             return name, None
         # TODO: peek to make sure there's a binding
         binding = VoidableTypeBinding.f(scanner)
