@@ -226,6 +226,7 @@ PUB_PDEBUG
 PUBFLAGS='-rF'
 AC_SUBST(PUBFLAGS)
 
+AC_CONFIG_COMMANDS([mkdir], [$MKDIR_P py/okws])
 AC_OUTPUT(libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 

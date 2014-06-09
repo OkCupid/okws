@@ -8,10 +8,10 @@ pythonlibdir=$(pkglibdir)/python/$(PACKAGE)
 
 ASTGEN=$(top_srcdir)/tools/ast_gen.py
 
-$(builddir)/okws/_config.py: $(srcdir)/gen_okws_config.sh
+okws/_config.py: gen_okws_config.sh
 	-$(SHELL) $< > $@ || rm -f $@
 
-$(builddir)/okws/_pubast.py: $(ASTGEN) $(top_srcdir)/libpub/pub3prot.x
+okws/_pubast.py: $(ASTGEN) $(top_srcdir)/libpub/pub3prot.x
 	-$(PYTHON) $(ASTGEN) $(top_srcdir)/libpub/pub3prot.x "xpub3_file_t" > $@  \
 	 || rm -f $@
 
