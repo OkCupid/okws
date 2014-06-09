@@ -142,6 +142,87 @@ namespace pub3 {
     d->dump (_name, true);
   }
 
+  //===================================================================
+
+  namespace {
+    typedef expr_scoped_varref_t::scope_t vscope_t;
+    const char * vscope_to_string(const vscope_t v) {
+      switch (v) {
+      case vscope_t::GLOBALS:    return "globals";
+      case vscope_t::UNIVERSALS: return "universals";
+      }
+    }
+
+    ptr<bindtab_t> get_layer(const vscope_t v, eval_t *e) {
+      switch (v) {
+      case vscope_t::GLOBALS:    return e->env()->globals();
+      case vscope_t::UNIVERSALS: return e->env()->universals();
+      }
+    }
+  }  // namespace
+
+  ptr<expr_scoped_varref_t> expr_scoped_varref_t::alloc (const str &n,
+                                                         const scope_t sc)
+  { return New refcounted<expr_scoped_varref_t> (n, sc, plineno ()); }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_scoped_varref_t::report (eval_t *e, bool out) const
+  {
+    if (!out && !e->silent() && (e->opts () & P_WARN_NULL)) {
+      strbuf b ("cannot resolve variable: '%s::%s'",
+                vscope_to_string(_scope),
+                _name.cstr ());
+      report_error (e, b);
+    }
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<const expr_t>
+  expr_scoped_varref_t::eval_to_val (eval_t *e) const
+  {
+    ptr<const expr_t> ret;
+    ptr<const bindtab_t> bt = get_layer(_scope, e);
+    bt->lookup(_name, &ret);
+    if (!ret) { ret = expr_null_t::alloc (); }
+    report (e, ret);
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  ptr<mref_t>
+  expr_scoped_varref_t::eval_to_ref (eval_t *e) const
+  {
+    ptr<bindtab_t> bt = get_layer(_scope, e);
+    ptr<bindtab_t> layer = bt->mutate();
+    ptr<mref_t> ret = New refcounted<mref_dict_t>(layer, _name);;
+    report (e, ret);
+    return ret;
+  }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_scoped_varref_t::pub_to_ref (eval_t *p, mrev_t ev, ptr<closure_t> d) const
+  { ev->trigger (eval_to_ref (p)); }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_scoped_varref_t::pub_to_val (eval_t *p, cxev_t ev, ptr<closure_t> d) const
+  { ev->trigger (eval_to_val (p)); }
+
+  //--------------------------------------------------------------------
+
+  void
+  expr_scoped_varref_t::v_dump (dumper_t *d) const
+  {
+    d->dump (strbuf ("%s::%s", vscope_to_string(_scope), _name.cstr()), false);
+  }
+
   //====================================================================
 
   ptr<expr_vecref_t>

@@ -9,6 +9,6 @@ tameclean:
 	done
 
 test:
-	for dir in system; do \
+	for dir in system pub; do \
 		(cd $$dir && $(MAKE) test ) ; \
 	done

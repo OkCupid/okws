@@ -1,0 +1,46 @@
+{%
+ // A local block consists of a list of binding. A variable is added to the
+ // environement directly after the binding that declared it (even within a
+ // local block)
+def f() {
+    locals {a : "before_block\n" };
+    locals {
+        a : "in_block\n",
+        b : a
+    }
+    print(b) // <--- in_block
+}
+
+def g() {
+    locals {a : "before_block\n" };
+    locals {
+        b : a,
+        a : "in_block\n"
+    }
+    print(b) // <--- before_block
+}
+
+ f();
+ g();
+
+
+ // Functions see all the variable in the local block they are in as soon as
+ // their bindings have been evaluated.
+
+ def h() {
+     locals {x: "top\n"}
+     locals {
+         f : lambda() {print(x)},
+         _whatever1 : f(), // <------------ top
+         x : "block\n",
+         _whatever2 : f() // <------------ block
+     }
+     f(); //<--------------- block
+     locals {
+         x: "block2\n"
+     }
+     f(); //<------------------ block
+ }
+
+ h();
+%}

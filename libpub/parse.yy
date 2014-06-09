@@ -39,6 +39,8 @@
 %token T_P3_LOCALS
 %token T_P3_UNIVERSALS
 %token T_P3_GLOBALS
+%token T_P3_UNIVERSAL_SCOPE
+%token T_P3_GLOBAL_SCOPE
 %token T_P3_PIPE
 %token T_P3_OPEN
 %token T_P3_CLOSE
@@ -100,6 +102,7 @@
 %type <p3statement> p3_universals p3_print p3_fndef p3_switch p3_globals;
 %type <p3statement> p3_break p3_return p3_continue p3_exit;
 %type <p3expr> p3_dictref p3_vecref p3_fncall p3_varref p3_recursion;
+%type <p3expr> p3_scoped_ref;
 %type <p3statement> p3_expr_statement p3_statement_opt p3_statement;
 %type <p3cl> p3_switch_cases;
 %type <p3case> p3_switch_case ;
@@ -467,6 +470,17 @@ p3_unary_expr:
            }
 	   ;
 
+p3_scoped_ref:
+    T_P3_UNIVERSAL_SCOPE p3_identifier {
+      auto scope = pub3::expr_scoped_varref_t::scope_t::UNIVERSALS;
+      $$=pub3::expr_scoped_varref_t::alloc($2, scope);
+    }
+    | T_P3_GLOBAL_SCOPE  p3_identifier {
+      auto scope = pub3::expr_scoped_varref_t::scope_t::GLOBALS;
+      $$=pub3::expr_scoped_varref_t::alloc($2, scope);
+    }
+    ;
+
 p3_dictref:  p3_postfix_expr '.' p3_identifier
 	   {
 	      $$ = pub3::expr_dictref_t::alloc ($1, $3);
@@ -507,7 +521,8 @@ p3_varref: p3_identifier
 p3_recursion: '(' p3_expr ')' { $$ = $2; };
 
 p3_postfix_expr:
-             p3_primary_expr { $$ = $1; } 
+             p3_primary_expr { $$ = $1; }
+	   | p3_scoped_ref   { $$ = $1; }
 	   | p3_dictref      { $$ = $1; }
 	   | p3_vecref       { $$ = $1; }
 	   | p3_fncall       { $$ = $1; }

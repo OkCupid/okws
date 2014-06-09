@@ -1,0 +1,8 @@
+{%
+ universals {x:"universal\n"}
+ globals {x:"global\n"}
+ locals {x:"local\n"}
+ print(universals::x); //<----- universal
+ print(globals::x); //<----- global
+ print(x); //<----- local
+%}
