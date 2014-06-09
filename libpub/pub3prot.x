@@ -69,7 +69,8 @@ enum xpub3_expr_typ_t {
    XPUB3_EXPR_BOOL,
    XPUB3_EXPR_PUBNULL,
    XPUB3_EXPR_LAMBDA,
-   XPUB3_EXPR_HEREDOC
+   XPUB3_EXPR_HEREDOC,
+   XPUB3_EXPR_SCOPED_REF
 };
 
 enum xpub3_relop_t { XPUB3_REL_LT, XPUB3_REL_GT, XPUB3_REL_LTE, XPUB3_REL_GTE };
@@ -138,6 +139,17 @@ struct xpub3_vecref_t {
 struct xpub3_ref_t {
    int lineno;
    string key<>;
+};
+
+enum xpub3_ref_scope_t {
+   XPUB3_REF_SCOPE_GLOBALS = 1,
+   XPUB3_REF_SCOPE_UNIVERSALS = 2
+};
+
+struct xpub3_scoped_ref_t {
+   int lineno;
+   string key<>;
+   xpub3_ref_scope_t scope;
 };
 
 struct xpub3_shell_str_t {
@@ -227,6 +239,8 @@ case XPUB3_EXPR_VECREF:
      xpub3_vecref_t vecref;
 case XPUB3_EXPR_REF:
      xpub3_ref_t xref;
+case XPUB3_EXPR_SCOPED_REF:
+     xpub3_scoped_ref_t scoped_xref;
 case XPUB3_EXPR_SHELL_STR:
      xpub3_shell_str_t shell_str;
 case XPUB3_EXPR_STR:
@@ -431,7 +445,7 @@ enum xpub3_statement_typ_t {
    XPUB3_STATEMENT_UNIVERSALS = 6,
    XPUB3_STATEMENT_IF = 7,
    XPUB3_STATEMENT_PRINT = 8,
-   XPUB3_EXPR_STATEMENT = 9,
+   XPUB3_STATEMENT_EXPR = 9,
    XPUB3_STATEMENT_FNDEF = 10,
    XPUB3_STATEMENT_SWITCH = 11,
    XPUB3_STATEMENT_BREAK = 12,
@@ -472,7 +486,7 @@ union xpub3_statement_t switch (xpub3_statement_typ_t typ) {
  case XPUB3_STATEMENT_PRINT:
    xpub3_print_t print;
 
- case XPUB3_EXPR_STATEMENT:
+ case XPUB3_STATEMENT_EXPR:
    xpub3_expr_statement_t expr_statement;
 
  case XPUB3_STATEMENT_SWITCH:

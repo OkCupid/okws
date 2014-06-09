@@ -1,0 +1,18 @@
+{%
+// The body of for loops have their scope.
+ locals {x = "top_of_file\n"};
+ for (whatever, [null]) {
+     locals { x: "in_for_loop\n"};
+     print(x); // <-------------------- in_for_loop
+ }
+
+ print(x); // <---------------- top_of_file
+
+ // The empty clause of for loops does not push its own scope.
+ for (whatever, []) {
+ } empty {
+     locals { x: "empty_clause\n"};
+     print (x); // <--------------------- empty_clause
+ }
+ print(x); // <------------------- empty_clause
+%}

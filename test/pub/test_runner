@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e -u -o pipefail
+IN_FILE="$1"
+PREFIX="${IN_FILE%.pub}"
+EXPECTED="${PREFIX}.expected"
+OUTPUT="$(mktemp "${PREFIX}-output.XXX")"
+function clean_up() {
+    rm -f "${OUTPUT}"
+}
+trap clean_up EXIT
+
+"${PUB}" "${IN_FILE}" > "$OUTPUT"
+if ! diff --brief "$EXPECTED" "$OUTPUT" &> /dev/null; then
+    exit 1
+fi
+exit 0

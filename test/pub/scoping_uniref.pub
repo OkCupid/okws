@@ -1,0 +1,12 @@
+{%
+ // Variables are always looked up in the global before the universal scope but
+ // universals blocks create "alias" bindings with the same name in the local
+ // scope
+
+ for (x, [null]){ // push a local scope
+     globals {x:"global\n"};
+     universals {x:"universal\n"};
+     print(x); // <--------------- universal
+ } // local scope goes away, so does the alias...
+ print(x); // <--------------- global
+ %}

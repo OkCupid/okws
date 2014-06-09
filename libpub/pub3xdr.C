@@ -223,7 +223,7 @@ pub3::statement_t::alloc (const xpub3_statement_t &x)
   case XPUB3_STATEMENT_PRINT:
     r = New refcounted<print_t> (*x.print);
     break;
-  case XPUB3_EXPR_STATEMENT:
+  case XPUB3_STATEMENT_EXPR:
     r = New refcounted<expr_statement_t> (*x.expr_statement);
     break;
   case XPUB3_STATEMENT_FNDEF:
@@ -330,6 +330,9 @@ pub3::expr_t::alloc (const xpub3_expr_t &x)
     break;
   case XPUB3_EXPR_REF:
     r = New refcounted<pub3::expr_varref_t> (*x.xref);
+    break;
+  case XPUB3_EXPR_SCOPED_REF:
+    r = New refcounted<pub3::expr_scoped_varref_t> (*x.scoped_xref);
     break;
   case XPUB3_EXPR_STR:
     r = New refcounted<pub3::expr_str_t> (*x.xstr);
@@ -474,6 +477,29 @@ pub3::expr_vecref_t::expr_vecref_t (const xpub3_vecref_t &x)
 
 pub3::expr_varref_t::expr_varref_t (const xpub3_ref_t &x)
   : expr_ref_t (x.lineno), _name (x.key) {}
+
+//-----------------------------------------------------------------------
+
+namespace {
+  typedef pub3::expr_scoped_varref_t::scope_t vscope_t;
+  xpub3_ref_scope_t vscope_to_xdr(const vscope_t v) {
+    switch (v) {
+    case vscope_t::GLOBALS:    return XPUB3_REF_SCOPE_GLOBALS;
+    case vscope_t::UNIVERSALS: return XPUB3_REF_SCOPE_UNIVERSALS;
+    }
+  }
+
+  vscope_t xdr_to_vscope(const xpub3_ref_scope_t r) {
+    switch (r) {
+    case XPUB3_REF_SCOPE_GLOBALS:    return vscope_t::GLOBALS;
+    case XPUB3_REF_SCOPE_UNIVERSALS: return vscope_t::UNIVERSALS;
+    }
+  }
+
+} // namespace
+
+pub3::expr_scoped_varref_t::expr_scoped_varref_t (const xpub3_scoped_ref_t &x)
+  : expr_ref_t (x.lineno), _name (x.key), _scope(xdr_to_vscope(x.scope))  {}
 
 //-----------------------------------------------------------------------
 
@@ -652,6 +678,14 @@ pub3::expr_varref_t::to_xdr (xpub3_expr_t *x) const
   return true;
 }
 
+bool
+pub3::expr_scoped_varref_t::to_xdr(xpub3_expr_t *x) const {
+  x->set_typ(XPUB3_EXPR_SCOPED_REF);
+  x->scoped_xref->lineno = _lineno;
+  x->scoped_xref->key    = _name;
+  x->scoped_xref->scope  = vscope_to_xdr(_scope);
+  return true;
+}
 //-----------------------------------------------------------------------
 
 bool
@@ -962,7 +996,7 @@ pub3::expr_statement_t::expr_statement_t (const xpub3_expr_statement_t &x)
 bool
 pub3::expr_statement_t::to_xdr (xpub3_statement_t *x) const
 {
-  x->set_typ (XPUB3_EXPR_STATEMENT);
+  x->set_typ (XPUB3_STATEMENT_EXPR);
   x->expr_statement->lineno = lineno ();
   if (_expr) {
     x->expr_statement->expr.alloc ();

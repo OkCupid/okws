@@ -1,0 +1,11 @@
+{%
+ // Included files always see the local variables of the files including them
+ // excepted in the closure when there was a array of arguments passed...
+ locals {x : "local\n"};
+ globals {x:"global\n"};
+
+ include("__scoping_include_included.pub"); // <--- local/local
+
+ include("__scoping_include_included.pub", {}); // <--- global/local
+
+ %}

@@ -1,0 +1,7 @@
+{%
+ def f() {
+     print(x); // <- global or local depending on how it was included...
+ }
+ f();
+ print(x); // <- local
+%}
