@@ -692,7 +692,7 @@ okld_t::check_ports ()
         okws1_port_t p = *pp;
         if (!(used_ports[p] ||
               (used_primary_port &&
-               (p == listenport || 
+               ( (p == listenport || p == listenport6) || 
                 (is_ssl_port_active(p)))))) {
             warn << "OKD will listen on port " << p << ", but no "
                 << "services will be using it!\n";
@@ -751,6 +751,8 @@ okld_t::parse_file (const str &cf)
     .add ("SocketDir", wrap (got_dir, &sockdir))
     .add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
+    .add ("BindAddr6", wrap (static_cast<ok_base_t *> (this), 
+			    &ok_base_t::got_bindaddr6))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
 			       &ok_base_t::got_ports, false))
 
@@ -1004,7 +1006,7 @@ okld_t::post_config (const str &cf)
 
   if (_all_ports_map.size () == 0) {
     warn << "No listen ports given; assuming default port (80)\n";
-    add_port (listenport, false);
+    add_port (_http_ports, _https_ports, listenport, false);
   }
 
   if (!parse_bind_reattempt_schedule ()) {
@@ -2350,7 +2352,7 @@ ptr<okld_helper_ssl_t> okld_t::okssl_by_name(str s) {
 
 void
 okld_t::add_ssl_port(okws1_port_t port, str channel) {
-    add_port(port, true);
+    add_port(_http_ports, _https_ports, port, true);
     ptr<okld_helper_ssl_t> okssl = okssl_by_name(channel);
     if (!okssl) {
         warn << "trying to add port to invalid SSL channel: " << channel

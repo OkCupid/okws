@@ -247,6 +247,8 @@ okd_t::parse_file (const str &cf)
 
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
+    .add ("BindAddr6", wrap (static_cast<ok_base_t *> (this), 
+			    &ok_base_t::got_bindaddr6))
     .add ("ListenPorts", wrap (static_cast<ok_base_t *> (this),
 			       &ok_base_t::got_ports, false))
     .add ("ListenPortsSSL", wrap (static_cast<ok_base_t *> (this),
@@ -797,79 +799,77 @@ void start_okd (int argc, char **argv)
 tamed void 
 okd_t::launch ()
 {
-  tvars {
-    bool pub_rc, logd_rc;
-    bool do_exit (false);
-  }
-
-  if (!run_configs (configfile))
-    exit (NO_SOCKET_ALLOCATED);
-
-  set_sfs_select_policy ();
-  
-  check_runas ();
-  open_mgr_socket ();
-  init_pub ();
-
-  twait {
-    launch_logd (mkevent (logd_rc));
-    launch_pub (mkevent (pub_rc));
-  }
-
-  if (!logd_rc) {
-    warn << "failed to connect to oklogd; aborting\n";
-    do_exit = true;
-  }
-  if (!pub_rc) {
-    warn << "failed to launch pubd; aborting\n";
-    do_exit = true;
-  }
-
-  if (do_exit) {
-    exit (1);
-  }
-
-  _okld_x = axprt_unix::alloc (okldfd);
-  _okld_srv = asrv::alloc (_okld_x, okld_program_1,
-			   wrap (this, &okd_t::okld_dispatch));
-
-  
-  if (need_okld_rpc ()) {
-    _okld_cli = aclnt::alloc (_okld_x, okld_program_1);
-  }
-
-  if (_http_ports.size () == 0) {
-    warn << "No listen addr/ports specified; assuming *:80\n";
-    _http_ports.push_back (listenport);
-  }
-
-  for (u_int i = 0; i < _http_ports.size () ; i++) {
-    int fd = inetsocket (SOCK_STREAM, _http_ports[i], listenaddr);
-    if (fd < 0) {
-      fatal ("could not bind TCP port %d: %m\n", _http_ports[i]);
+    tvars {
+        bool pub_rc, logd_rc;
+        bool do_exit (false);
     }
-    close_on_exec (fd);
-    make_async (fd);
-    listen (fd, ok_listen_queue_max);
-    listenfds.push_back (fd);
-    portmap.insert (fd, _http_ports[i]);
-    warn << "listening on " << listenaddr_str << ":" << _http_ports[i] << "\n";
-  }
 
-  strip_privileges ();
+    if (!run_configs (configfile))
+        exit (NO_SOCKET_ALLOCATED);
 
-  // once jailed, we can access the mmap'ed clock file (if necessary)
-  init_sfs_clock (mmc_file);
+    set_sfs_select_policy ();
 
-  if (okd_accept_delay) {
-    warn << "delaying " << okd_accept_delay << "s before enabling accept\n";
-    twait { delaycb (okd_accept_delay, 0, mkevent ()); }
-    warn << "accept delay complete\n";
-  }
+    check_runas ();
+    open_mgr_socket ();
+    init_pub ();
 
-  _accept_ready = true;
+    twait {
+        launch_logd (mkevent (logd_rc));
+        launch_pub (mkevent (pub_rc));
+    }
 
-  enable_accept ();
+    if (!logd_rc) {
+        warn << "failed to connect to oklogd; aborting\n";
+        do_exit = true;
+    }
+    if (!pub_rc) {
+        warn << "failed to launch pubd; aborting\n";
+        do_exit = true;
+    }
+
+    if (do_exit) {
+        exit (1);
+    }
+
+    _okld_x = axprt_unix::alloc (okldfd);
+    _okld_srv = asrv::alloc (_okld_x, okld_program_1,
+                             wrap (this, &okd_t::okld_dispatch));
+
+    // Bind ports for IPv4 and IPv6
+    bind_ports([](int type, u_int16_t port, uint32_t addr) {
+        return inetsocket(type, port, addr);
+    }, _http_ports, listenaddr, listenaddr_str);
+
+    bind_ports([](int type, u_int16_t port, const in6_addr& addr) {
+        return inetsocket6(type, port, addr);
+    }, _http_ports6, listenaddr6, listenaddr6_str);
+
+
+    if (need_okld_rpc ()) {
+        _okld_cli = aclnt::alloc (_okld_x, okld_program_1);
+    }
+
+    if (_http_ports.size () == 0) {
+        warn << "No listen addr/ports specified; assuming *:80\n";
+        _http_ports.push_back (listenport);
+    }
+
+
+
+    strip_privileges ();
+
+    // once jailed, we can access the mmap'ed clock file (if necessary)
+    init_sfs_clock (mmc_file);
+
+    if (okd_accept_delay) {
+        warn << "delaying " << okd_accept_delay << "s before enabling accept\n";
+        twait { delaycb (okd_accept_delay, 0, mkevent ()); }
+        warn << "accept delay complete\n";
+    }
+
+    _accept_ready = true;
+
+    enable_accept ();
 }
 
 //-----------------------------------------------------------------------

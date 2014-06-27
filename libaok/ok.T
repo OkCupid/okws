@@ -1469,10 +1469,44 @@ ok_base_t::got_bindaddr (vec<str> s, str loc, bool *errp)
       *errp = true;
       return;
     }
-    add_port (listenport, false);
+    add_port (_http_ports, _https_ports, listenport, false);
     
     bind_addr_set = true;
   }
+}
+
+//-----------------------------------------------------------------------------
+
+void
+ok_base_t::got_bindaddr6 (vec<str> s, str loc, bool *errp) {
+
+    in6_addr addr;
+    if (s.size() == 3) {
+        if (!inet_pton(AF_INET6, s[1].cstr(), &addr) ||
+            !convertint(s[2], &listenport6) || listenport > OK_PORT_MAX) {
+            warn << loc << ": userage: BindAddr6 <addr> <port>\n";
+            *errp = true;
+        } else {
+            listenaddr6 = addr;
+            listenaddr6_str = s[1];
+        }
+    } else {
+        warn << loc << ": usage: BindAddr6 <addr> <port>\n";
+        *errp = true;
+        return;
+    }
+
+    if (!*errp) {
+        if (_all_ports_map[listenport6]) {
+            warn << loc << ": repeated port #: " << listenport6 << "\n";
+            *errp = true;
+            return;
+        }
+        add_port(_http_ports6, _https_ports6, listenport6, false);
+
+        bind_addr_set = true;
+    }
+
 }
 
 //-----------------------------------------------------------------------
@@ -1496,7 +1530,7 @@ ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
       warn << loc << ": repeated port #: " << t << "\n";
       *errp = true;
     } else {
-      add_port (port, ssl);
+      add_port (_http_ports, _https_ports, port, ssl);
     }
   }
 }
@@ -1504,18 +1538,17 @@ ok_base_t::got_ports (bool ssl, vec<str> s, str loc, bool *errp)
 //-----------------------------------------------------------------------
 
 void
-ok_base_t::add_port (okws1_port_t port, bool ssl)
-{
-  assert (!_all_ports_map[port]);
-  _all_ports_map.insert (port, ssl);
-  if (ssl) 
-    _https_ports.push_back (port);
-  else
-    _http_ports.push_back (port);
+ok_base_t::add_port(vec<okws1_port_t>& ports, vec<okws1_port_t>& sports, 
+                    okws1_port_t port, bool ssl) {
+    assert (!_all_ports_map[port]);
+    _all_ports_map.insert (port, ssl);
+    if (ssl) 
+        sports.push_back (port);
+    else
+        ports.push_back (port);
 }
 
-//-----------------------------------------------------------------------
-
+//-----------------------------------------------------------------------------
 
 //
 // splits a URI of the form

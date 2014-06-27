@@ -376,6 +376,24 @@ protected:
 			 evv_t ev, CLOSURE);
 
 private:
+
+  template<class SF, class A>
+  void bind_ports(const SF& sf, const vec<okws1_port_t>& ports, const A& addr, 
+                  str addr_str) {
+      for (u_int i = 0; i < ports.size () ; i++) {
+          int fd = sf(SOCK_STREAM, ports[i], addr);
+          if (fd < 0) {
+              fatal ("could not bind TCP port %d: %m\n", ports[i]);
+          }
+          close_on_exec (fd);
+          make_async (fd);
+          listen (fd, ok_listen_queue_max);
+          listenfds.push_back (fd);
+          portmap.insert (fd, ports[i]);
+          warn << "listening on " << addr_str << ":" << ports[i] << "\n";
+      }
+  }
+
   void custom1_in (const ok_custom_arg_t &x, evs_t cb);
 
   void newmgrsrv (ptr<axprt_stream> x);

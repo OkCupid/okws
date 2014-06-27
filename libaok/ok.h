@@ -260,8 +260,10 @@ public:
   bool is_direct_port (int i) const { return _direct_ports[i]; }
   log_t *get_logd () { return logd; }
   void got_bindaddr (vec<str> s, str loc, bool *errp);
+  void got_bindaddr6 (vec<str> s, str loc, bool *errp);
   void got_ports (bool ssl, vec<str> s, str loc, bool *errp);
-  void add_port (okws1_port_t p, bool ssl);
+  void add_port (vec<okws1_port_t>& ports,
+                 vec<okws1_port_t>& sport, okws1_port_t p, bool ssl);
   str okws_exec (const str &path) const;
   //str doubly_jail_rundir () const { return nest_jails (jaildir_run); }
 
@@ -269,20 +271,28 @@ public:
   // necessary now, but mabye down the road......
   str version;
   str hostname;
+
   okws1_port_t listenport;
+  okws1_port_t listenport6;
+  
   str listenaddr_str;
   u_int32_t listenaddr;
+  str listenaddr6_str;
+  in6_addr listenaddr6;
+
   str topdir;
   str reported_name; // name reported in HTTP headers and ERR docs
   str debug_stallfile;
   str server_id;
 
   vec<okws1_port_t> _https_ports, _http_ports;
+  vec<okws1_port_t> _https_ports6, _http_ports6;
   qhash<okws1_port_t, bool> _all_ports_map;
 
   ok_direct_ports_t _direct_ports;
 
 protected:
+
   str fix_uri (const str &in) const;
 
   log_t *logd;
