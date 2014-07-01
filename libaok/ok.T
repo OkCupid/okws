@@ -1010,9 +1010,12 @@ str okclnt_base_t::get_ip_str() const {
 
 bool okclnt_t::is_ssl() const {
   str proxy_info;
+  static rxx x(",");
+  vec<str> v;
   if (is_internal(client_con(), hdr_cr(), false) && 
       (proxy_info = (*this)["x-forwarded-proto"])) {
-    return proxy_info == "https";
+    split(&v, x, proxy_info);
+    return (v[0] == "https");
   }
   return _demux_data && _demux_data->ssl();
 }
