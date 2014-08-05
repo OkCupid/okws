@@ -528,6 +528,52 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
+  ptr<const pub3::expr_t>
+  contains_t::v_eval_2(publish_t *pub, const vec<arg_t> &args) const {
+    ptr<const expr_t> haystack = args[0]._O;
+    ptr<const expr_t> needle = args[1]._O;
+
+    ptr<const expr_list_t> l = haystack->to_list();
+    if (l) {
+      for (size_t i = 0; i < l->size (); i++) {
+        ptr<const expr_t> val = (*l)[i];
+        if (val && expr_EQ_t::eval_static (val, needle)) {
+          return expr_bool_t::alloc(true);
+        }
+      }
+      return expr_bool_t::alloc (false);
+    }
+
+    if (needle->is_null()) {
+      return expr_bool_t::alloc(false);
+    }
+
+    ptr<const expr_dict_t> d = haystack->to_dict();
+    if (d) {
+      return expr_bool_t::alloc((*d)[needle->to_str()] != nullptr);
+    }
+    return expr_bool_t::alloc (false);
+  }
+
+// For most `v` dict[v] behaves exactly like dict[v]. `null` is a very weird
+// case because it behaves differently whether we are in an lvalue or an rvalue.
+// dict[null] = 5; => {...., null = 5}
+// v = dict[null]; => v = null
+    const str contains_t::DOCUMENTATION =
+R"(Looks for `needle` in `haystack`.
+
+If `haystack` is a dictionary return true if `needle != null` and
+`str(needle)` is a key in `haystack`.
+If `haystack` is a `list` return true if any element of `haystack` is equal to
+`needle`. Otherwise return `false`.
+List lookups are slow, if you do a lot of those consider using a dictionary
+instead.
+:param haystack:
+:param needle:
+)";
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   eval_location_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
