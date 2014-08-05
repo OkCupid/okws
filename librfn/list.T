@@ -452,28 +452,6 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  ptr<const expr_t>
-  contains_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
-  {
-    ptr<const expr_list_t> l = args[0]._l;
-    ptr<const expr_t> o = args[1]._O;
-    bool ret = false;
-    for (size_t i = 0; !ret && i < l->size (); i++) {
-      ptr<const expr_t> val = (*l)[i];
-      if (val) { ret = expr_EQ_t::eval_static (val, o); }
-    }
-    return expr_bool_t::alloc (ret);
-  }
-
-  //-----------------------------------------------------------------------
-
-  const str contains_t::DOCUMENTATION =
-    "Return //true// if the list //l// contains the object "
-    "//o// and //false// otherwise.  If you find yourself using this a lot, "
-    "consider using a dictionary instead, which has faster lookup times.";
-
-  //-----------------------------------------------------------------------
-
   tamed void
   pop_front_t::pub_to_mval (eval_t *p, callable_t::args_t args, 
 			    xev_t ev) const
