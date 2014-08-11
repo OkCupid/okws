@@ -614,7 +614,7 @@ ahttpcon_clone::delimit_headers(int* delimit_status) {
     // Parse the headers
     for (str header: headers) {
         const char* chead = header.cstr();
-        char* caddr = strchr(chead, ':');
+        const char* caddr = strchr(chead, ':');
         if (!caddr) continue;
         size_t cpos = (size_t)(caddr-chead+1);
 

@@ -417,8 +417,11 @@ namespace pub3 {
     e->set_lineno (_lineno);
     ptr<const expr_t> f = _fn->eval_to_val (e);
     ptr<const callable_t> fnd;
-    if (!f) { 
-      str ident = _fn->to_identifier() ?: "unknown";
+    if (!f) {
+      str ident = _fn->to_identifier();
+      if (!ident) {
+        ident = "unknown";
+      }
       report_error (e, str("cannot resolve function \"") << ident << "\"");
     } else if (!(fnd = f->to_callable ())) {
       report_error (e, "expected a function; got something else");
@@ -441,8 +444,11 @@ namespace pub3 {
     if (_fn->might_block ()) { twait { _fn->pub_to_val (p, mkevent (f)); } }
     else { f = _fn->eval_to_val (p); }
 
-    if (!f) { 
-      str ident = _fn->to_identifier() ?: "unknown";
+    if (!f) {
+      str ident = _fn->to_identifier();
+      if (!ident) {
+        ident = "unknown";
+      }
       report_error (p, str("cannot resolve function \"") << ident << "\"");
     } else if (!(fnd = f->to_callable ())) {
       report_error (p, "expected a function; got something else");

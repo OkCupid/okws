@@ -219,8 +219,15 @@ http_resp_header_t::fill_strbuf (strbuf &b) const
   }
 
   for (int i = 0; i < lim; i++) {
-    if (!cleanme || output_me[i])
-      b << fields[i].name << ": " << fields[i].val << HTTP_CRLF;
+    if (!cleanme || output_me[i]) {
+      const str &name = fields[i].name;
+      const str &val = fields[i].val;
+      // If the header's name or value contains a newline, drop it on the floor
+      if (
+        !strchr(name.cstr(), '\r') && !strchr(name.cstr(), '\n') &&
+        !strchr(val.cstr(), '\r') && !strchr(val.cstr(), '\n')
+      ) { b << name << ": " << val << HTTP_CRLF; }
+    }
   }
   b << HTTP_CRLF;
 

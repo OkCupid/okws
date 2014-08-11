@@ -2,6 +2,7 @@
 /* $Id$ */
 
 %{
+#ifndef __clang_analyzer__
 #include "pub_parse.h"
 #include "parse.h"
 #include "pub3parse.h"
@@ -228,7 +229,13 @@ TEXTAREATAG [Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]
 <P3>{
 
 \n		{ inc_lineno (); }
-
+universals:: {
+	/* Normaly we'd just introduce a token for '::' but it caused shift/reduce
+	 conflicts between 'globals::...' and 'globals {..}' at the statement
+	 level. */
+	return T_P3_UNIVERSAL_SCOPE;
+}
+globals::    { return T_P3_GLOBAL_SCOPE; }
 [Tt]rue		{ return T_P3_TRUE; }
 [Ff]alse	{ return T_P3_FALSE; }
 {P3IDENT}	{ return p3_identifier (yytext); }
@@ -704,7 +711,7 @@ yy_parse_pub (str s)
 }
 
 //-----------------------------------------------------------------------
-
+#endif // __clang_analyzer__
 /*
 // States:
 //   H - HTML w/ includes and variables and switches and such

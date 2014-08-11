@@ -1,0 +1,22 @@
+{%
+//--------------------------------------
+// Function have their own scopes....
+//-------------------------------------
+locals { x : "file\n"};
+
+def f() {
+   locals { x };
+   x = "fun:f\n";
+}
+
+def g() {
+   x = "fun:g\n";
+}
+
+print(x); //<----------- file
+f();
+print(x); //<----------- file
+g();
+print(x); //<----------- fun:g
+
+%}

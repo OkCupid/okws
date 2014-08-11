@@ -189,6 +189,7 @@ namespace pub3 {
     // must do this before trying to open the file (or anything else
     // for that matter).
     _location.set_filename (jfn);
+    _ret = r;
 
     // Sanity check and call fopen()
     FILE *fp = open_file (rfn);
@@ -203,9 +204,7 @@ namespace pub3 {
       yy_buffer_state *yb = yy_create_buffer (fp, ok_pub3_yy_buffer_size);
       yy_push_html_state ();
       yy_switch_to_buffer (yb);
-      _ret = r;
       yyparse ();
-      _ret = NULL;
       flex_cleanup ();
       fclose (fp);
 
@@ -214,6 +213,7 @@ namespace pub3 {
       _out = NULL;
     }
 
+    _ret = nullptr;
     set_current (old);
 
     return r->ok ();
@@ -249,7 +249,7 @@ namespace pub3 {
       case PARSE_ENOENT: x = XPUB_STATUS_NOENT; break;
       case PARSE_EIO:    x = XPUB_STATUS_EIO;   break;
       case PARSE_EPARSE: x = XPUB_STATUS_EPARSE; break;
-      default:  panic ("unexepcted parse_status type\n"); break;
+      default:  panic ("unexpected parse_status type\n"); abort();
       }
       status->set_status (x);
       for (size_t i = 0; i < _errors.size (); i++) {

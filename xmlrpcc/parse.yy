@@ -22,6 +22,8 @@
  */
 
 %{
+#ifndef __clang_analyzer__
+
 #include "rpcc.h"
 #define YYSTYPE YYSTYPE
 
@@ -379,3 +381,5 @@ getid (str id)
     id = idprefix << id;
   return id;
 }
+
+#endif //__clang_analyzer__

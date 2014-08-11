@@ -106,7 +106,7 @@ abuf_str_t::abuf_str_t (const char *ss, bool cp, int l) : len (l)
 {
   if (!len && ss)
     len = strlen (ss);
-  if (cp) {
+  if (cp && ss) {
     alloc = true;
     char *t = New char[len];
     memcpy (t, ss, len);

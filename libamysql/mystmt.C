@@ -537,15 +537,16 @@ mystmt_t::execute1 (MYSQL_BIND *b, vec<mybind_param_t> &arr)
     (void)_tzc->gmt_offset ();
   }
 
-  if (lqt) 
+  const auto timer = lqt;
+  if (timer)
     gettimeofday (&t1, NULL);
   bool rc = execute2 (b, arr);
-  if (lqt) {
+  if (timer) {
     struct timeval t2;
     gettimeofday (&t2, NULL);
     long sd = (t2.tv_sec - t1.tv_sec) * 1000;
     sd += (t2.tv_usec - t1.tv_usec) / 1000;
-    if (sd > long (lqt)) {
+    if (sd > long (timer)) {
       warn << "* Long Query: " << sd << "ms\n";
       warn << "**  " << dump (arr) << "\n";
     }

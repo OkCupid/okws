@@ -21,6 +21,9 @@ getsize (const char **cp)
   int sz;
   int rc = sscanf (*cp, "%x\r\n", &sz);
   if (rc != 1) return -1;
+#ifdef __clang_analyzer__
+  assert(*cp)
+#endif
   const char *cp2 = strstr (*cp, "\r\n");
   if (!cp2) return -1;
   *cp = cp2 + 2;
