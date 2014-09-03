@@ -1024,3 +1024,26 @@ fi
 BISON="$YACC"
 AC_SUBST(BISON)
 ])
+
+
+dnl
+dnl Check whether we have the DASSERT macro turned on
+dnl
+AC_DEFUN([OKWS_CHECK_SFS_DEBUG],
+[
+AC_LANG_PUSH([C++])
+AC_MSG_CHECKING([wether we have SFS_DEBUG turned on])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+        [[#include "sfs_assert.h"
+#ifndef SFS_DEBUG
+#error "no SFS_DEBUG"
+#endif
+    ]], [[]])],
+    [sfs_debug=yes],
+    [sfs_debug=no])
+AC_MSG_RESULT($sfs_debug)
+AM_CONDITIONAL([SFS_DEBUG],[test "x$sfs_debug" = "xyes"])
+AC_LANG_POP([C++])
+])
+    

@@ -11,5 +11,8 @@ TESTS = \
 	syntax_error.pub \
 	undef_vs_null.pub
 
+if SFS_DEBUG
+    TESTS+=blocking_call_warn.pub
+endif
 AUTOMAKE_OPTIONS = parallel-tests
 LOG_COMPILER = $(builddir)/test_runner
