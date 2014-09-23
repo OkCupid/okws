@@ -180,6 +180,7 @@ void ls (const str &s);
 void strip_comments (vec<str> *in);
 
 str trunc_at_first_null (const str &s);
+vec<str> trunc_at_first_null (const vec<str> &v);
 void fix_trailing_newlines (str *s);
 
 const char * getenvval (const char *s);
