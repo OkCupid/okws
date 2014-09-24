@@ -144,18 +144,18 @@ public:
   // It's there, and it's possibly the empty string: p=0 is true, p= is true
   inline bool strict_exists(const str &k) const { return c->strict_exists(k); }
 
-  inline bool lookup (const str &k, str *r, bool safe=true) const {
+  inline bool lookup (const str &k, str *r, bool truncnull=true) const {
       bool res = c->lookup (k,r);
-      if (safe && res) { *r = trunc_at_first_null(*r); }
+      if (truncnull && res) { *r = trunc_at_first_null(*r); }
       return res;
   }
   inline bool blookup (const str &k) const { return c->blookup (k); }
   inline vec<int64_t> *ivlookup (const str &k) const { return c->ivlookup (k);}
   inline vec<u_int64_t> *uivlookup (const str &k) const 
   { return c->uivlookup (k); }
-  inline bool lookup (const str &k, vec<str> *v, bool safe=true) const {
+  inline bool lookup (const str &k, vec<str> *v, bool truncnull=true) const {
       bool res = c->lookup (k, v);
-      if (safe && res) { *v = trunc_at_first_null(*v); }
+      if (truncnull && res) { *v = trunc_at_first_null(*v); }
       return res;
   }
   template<typename T> bool lookup (const str &k, T *v) const
