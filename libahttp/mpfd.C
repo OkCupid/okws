@@ -413,8 +413,6 @@ contdisp_parser_t::parse_guts ()
       break;
     case CONTDISP_FILENAME_VAL:
       r = delimit (&filename_scr, '\r', false, false);
-      if (r == ABUF_PARSE_ERR)
-	r = ABUF_OK; // found '\n' before '\r' -- that's OK
       if (r == ABUF_OK) {
 	filename = str (filename_scr.cstr (), filename_scr.len () - 1);
 	flag = false;

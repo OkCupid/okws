@@ -533,6 +533,16 @@ trunc_at_first_null (const str &s)
   return ret;
 }
 
+vec<str> trunc_at_first_null (const vec<str> &v)
+{
+    vec<str> res;
+    res.reserve(v.size());
+    for (const str s : v) {
+        res.push_back(trunc_at_first_null(s));
+    }
+    return res;
+}
+
 void
 fix_trailing_newlines (str *sp)
 {
