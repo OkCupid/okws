@@ -10,10 +10,5 @@ TESTS = \
 	scoping_specifiers.pub \
 	undef_vs_null.pub
 
-
-AM_TESTS_ENVIRONMENT=PUB=$(top_builddir)/pub/pub3; export PUB;
-LOG_COMPILER = $(SH) $(srcdir)/test_runner
-
-.phony: test
-
-test: check
+AUTOMAKE_OPTIONS = parallel-tests
+LOG_COMPILER = $(builddir)/test_runner

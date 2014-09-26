@@ -6,11 +6,11 @@ crud = "z332aawerr"
 filedata = """
 {$
     locals { x : r/foo([ab]*)(c(d+))?zab/, res : null }
-    print (match (x, "T", "%(target)s"));
+    print (match (x, "%(target)s", "T"));
     print (" ");
-    print (search (x, "T", "%(crud)s%(target)s%(crud)s"));
+    print (search (x, "%(crud)s%(target)s%(crud)s", "T"));
     print (" ");
-    res = match (x, "T", "%(crud)s%(target)s%(crud)s");
+    res = match (x, "%(crud)s%(target)s%(crud)s", "T");
     print (res);
     if (!res) { print " boo!" }
 $}""" % { "target" : target, "crud" : crud } 
