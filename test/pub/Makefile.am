@@ -1,6 +1,7 @@
 PACKAGE_STRING=pub
 TESTS = \
 	dict_equal.pub \
+	empty_key.pub \
 	scoping_for.pub \
 	scoping_globals-locals.pub \
 	scoping_order_of_decl.pub \

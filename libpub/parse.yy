@@ -720,7 +720,11 @@ p3_bindings: p3_binding
 
 p3_binding: p3_bind_key p3_bind_value_opt
 	{
-	   $$ = pub3::binding_t ($1, $2);
+       auto v = $2;
+       if (!v) {
+          v = pub3::expr_null_t::alloc();
+       }
+	   $$ = pub3::binding_t ($1, v);
 	}
 	;
 
