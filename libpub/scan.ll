@@ -401,7 +401,7 @@ bool
 end_P3_STR (char ch)
 {
   bool ret = false;
-  if (ch = yy_p3_str_char.back()) {
+  if ((ch = yy_p3_str_char.back())) {
     yy_p3_str_char.pop_back();
     yy_pop_state (); 
     ret = true;
