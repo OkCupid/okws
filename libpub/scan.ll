@@ -9,7 +9,6 @@
 #include "qhash.h"
 #include <wchar.h>
 #include <locale.h>
-#include <vec.h>
 #define YY_STR_BUFLEN 20*1024
 
 static void begin_P3_STR (char ch);
@@ -49,7 +48,7 @@ static char yy_p3_regex_close_char;
 static char yy_p3_regex_open_char;
 static int yy_p3_regex_start_line;
 strbuf yy_p3_regex_buf;
-static vec<char> yy_p3_str_char;
+static char yy_p3_str_char;
 
 static strbuf yy_json_strbuf;
 static int    yy_json_str_line;
@@ -392,7 +391,7 @@ nlcount (int m)
 void
 begin_P3_STR (char ch)
 {
-  yy_p3_str_char.push_back(ch);
+  yy_p3_str_char = ch;
   yy_push_state (P3_STR);
   yy_ssln = pub3::plineno ();
 }
@@ -401,8 +400,7 @@ bool
 end_P3_STR (char ch)
 {
   bool ret = false;
-  if ((ch = yy_p3_str_char.back())) {
-    yy_p3_str_char.pop_back();
+  if (yy_p3_str_char == ch) {
     yy_pop_state (); 
     ret = true;
   }
