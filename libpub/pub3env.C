@@ -56,7 +56,7 @@ namespace pub3 {
   env_t::stack_layer_t::is_local () const
   {
     return _typ == LAYER_LOCALS || _typ == LAYER_LOCALS_BARRIER ||
-      _typ == LAYER_LOCALS_BARRIER_WEAK;
+      _typ == LAYER_LOCALS_BARRIER_WEAK || _typ == LAYER_LOCALS_FILE_MARKER;
   }
 
   //-----------------------------------------------------------------------
@@ -64,9 +64,8 @@ namespace pub3 {
   str
   env_t::layer_type_to_str (layer_type_t lt)
   {
-    str ret;
+    str ret = "unknown";
     switch (lt) {
-    case LAYER_NONE: ret = "none"; break;
     case LAYER_UNIVERSALS: ret = "universals"; break;
     case LAYER_GLOBALS: ret = "globals"; break;
     case LAYER_LOCALS: ret = "locals"; break;
@@ -74,7 +73,10 @@ namespace pub3 {
     case LAYER_LOCALS_BARRIER_WEAK: ret = "locals_barrier_weak"; break;
     case LAYER_UNIREFS: ret = "unirefs"; break;
     case LAYER_LIBRARY: ret = "library"; break;
-    default: ret = "none"; break;
+    case LAYER_LOCALS_FILE_MARKER: ret = "locals_file_marker"; break;
+    }
+    if (!ret) {
+      ret = "unknown";
     }
     return ret;
   }
@@ -145,6 +147,16 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   size_t
+  env_t::push_file_marker ()
+  {
+    size_t ret = _stack.size ();
+    _stack.push_back (stack_layer_t (NULL, LAYER_LOCALS_FILE_MARKER));
+    return ret;
+  }
+
+  //-----------------------------------------------------------------------
+
+  size_t
   env_t::push_lambda (ptr<bind_interface_t> bi, const env_t::stack_t *cls_stk)
   {
     size_t ret = _stack.size ();
@@ -193,19 +205,24 @@ namespace pub3 {
   
   //-----------------------------------------------------------------------
 
-  void env_t::pop_to (size_t i) { _stack.setsize (i); }
-  size_t env_t::stack_size () const { return _stack.size (); }
-
-  //-----------------------------------------------------------------------
-
-  size_t
-  env_t::dec_stack_pointer (stack_layer_t l, size_t i) const
-  {
-    size_t ret;
-    if (l.is_barrier ()) { ret = _global_frames; }
-    else                 { ret = i - 1; }
-    return ret;
+  void env_t::pop_to (size_t i) {
+    size_t s = _stack.size ();
+    if (i < s) {
+      _stack.popn_back (s - i);
+    } else {
+      static bool coredumped = false;
+      if (i > s && !coredumped) {
+        coredumped = true;
+        warn << "Trying to pop the stack in the wrong direction!\n";
+        // Fork and dump... get a coredump but keep on running.
+        if (fork() == 0) {
+          abort();
+        }
+      }
+    }
   }
+
+  size_t env_t::stack_size () const { return _stack.size (); }
 
   //-----------------------------------------------------------------------
 
@@ -255,15 +272,43 @@ namespace pub3 {
   }
 
   //-----------------------------------------------------------------------
+  namespace {
+    bool is_file_boundary(env_t::layer_type_t lt) {
+      switch (lt) {
+      case env_t::LAYER_LOCALS_BARRIER:
+      case env_t::LAYER_LOCALS_BARRIER_WEAK:
+      case env_t::LAYER_LOCALS_FILE_MARKER:
+        return true;
+      default:
+        return false;
+      }
+    }
+
+    bool is_top_layer(env_t::layer_type_t lt) {
+      switch (lt) {
+      case env_t::LAYER_GLOBALS:
+      case env_t::LAYER_UNIVERSALS:
+      case env_t::LAYER_LIBRARY:
+        return true;
+      default:
+        return false;
+      }
+    }
+
+  }  // namespace
+  //-----------------------------------------------------------------------
 
   ptr<mref_t>
-  env_t::lookup_ref (const str &nm) const
+  env_t::lookup_ref (const str &nm, bool *crossed_file_scope) const
   {
     ptr<bindtab_t> found;
     ssize_t i = _stack.size () - 1;
 
     while (!found && i >= 0) {
       stack_layer_t l = _stack[i];
+      if (is_top_layer(l._typ)) {
+        *crossed_file_scope = false;
+      }
       if (l._bindings && l._bindings->lookup (nm)) {
 	if (l._typ == LAYER_UNIREFS) { found = _universals; }
 	else { found = l._bindings->mutate (); }
@@ -272,7 +317,14 @@ namespace pub3 {
       // When we hit a scope barrier -- like a file inclusion or
       // a lambda call -- then jump over stack frames until we get
       // to the base layers (with the globals and universals).
-      i = dec_stack_pointer (l, i);
+      if (l.is_barrier ()) {
+        i = _global_frames;
+      } else {
+        if (is_file_boundary(l._typ)) {
+          *crossed_file_scope = true;
+        }
+        i --;
+      }
     }
 
     if (!found) { found = _globals; }
@@ -324,10 +376,10 @@ namespace pub3 {
     while (go && bottom_frame >= 0) {
       switch (_stack[bottom_frame]._typ) {
       case LAYER_UNIREFS:
+      case LAYER_LOCALS_FILE_MARKER:
       case LAYER_LOCALS:
 	bottom_frame--;
 	break;
-      case LAYER_NONE:
       case LAYER_UNIVERSALS:
       case LAYER_GLOBALS:
       case LAYER_LIBRARY:
@@ -346,17 +398,27 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
-  env_t::lookup_val (const str &nm) const
+  env_t::lookup_val (const str &nm, bool *crossed_file_scope) const
   {
     ptr<const expr_t> x;
     ssize_t i = _stack.size () - 1;
     while (!x && i >= 0) {
       stack_layer_t l = _stack[i];
+      if (is_top_layer(l._typ)) {
+        *crossed_file_scope = false;
+      }
       if (l._bindings && l._bindings->lookup (nm, &x)) {
 	if (l._typ == LAYER_UNIREFS) { _universals->lookup (nm, &x); }
 	if (!x) { x = expr_null_t::alloc (); }
       }
-      i = dec_stack_pointer (l, i);
+      if (l.is_barrier ()) {
+        i = _global_frames;
+      } else {
+        if (is_file_boundary(l._typ)) {
+          *crossed_file_scope = true;
+        }
+        i --;
+      }
     }
     return x;
   }

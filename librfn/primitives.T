@@ -458,7 +458,7 @@ namespace rfn3 {
 	ret = New refcounted<mref_dict_t> (layer, key);
       }
     } else {
-      ret = p->env ()->lookup_ref (key);
+      ret = p->lookup_ref (key);
     }
     return ret;
   }

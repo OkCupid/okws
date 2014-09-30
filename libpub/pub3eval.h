@@ -225,6 +225,8 @@ namespace pub3 {
     void clone_env ();
     void silence_output ();
 
+    void report_file_scope_boundary_violation(str name) const;
+
     // A stack of all of the files being published, with their actual
     // metadata.
     location_t _location;        // current location 

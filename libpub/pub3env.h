@@ -38,9 +38,9 @@ namespace pub3 {
 
     env_t (ptr<bindtab_t> u, ptr<bindtab_t> g = NULL);
     void pop_to (size_t s);
-    ptr<const expr_t> lookup_val (const str &nm) const;
+    ptr<const expr_t> lookup_val (const str &nm, bool *crossed_file_scope) const;
     size_t stack_size () const;
-    ptr<mref_t> lookup_ref (const str &nm) const;
+    ptr<mref_t> lookup_ref (const str &nm, bool *crossed_file_scope) const;
     void add_global_binding (const str &nm, ptr<expr_t> v);
 
     ptr<bindtab_t> library () { return _library; }
@@ -60,14 +60,19 @@ namespace pub3 {
     //   Is used when P_STRICT_INCLUDE_SCOPING is turned off to 
     //   mark include file boundaries in the stack
     //
-    typedef enum { LAYER_NONE = -1,
-		   LAYER_UNIVERSALS = 0,
+    // LAYER_LOCALS_FILE_MARKER -- Behaves exactly like a locals layer
+    //   except that it marks the boundaries of an include. Locals
+    //   variables accessed below the file marker will be reported.
+    //
+
+    typedef enum { LAYER_UNIVERSALS = 0,
 		   LAYER_GLOBALS = 1,
 		   LAYER_LOCALS = 2,
 		   LAYER_LOCALS_BARRIER = 3,
 		   LAYER_LOCALS_BARRIER_WEAK = 4,
 		   LAYER_UNIREFS = 5, 
-		   LAYER_LIBRARY = 6 } layer_type_t;
+		   LAYER_LIBRARY = 6,
+		   LAYER_LOCALS_FILE_MARKER = 7} layer_type_t;
 
     size_t push_locals (ptr<bind_interface_t> t, 
 			layer_type_t typ = LAYER_LOCALS);
@@ -84,7 +89,6 @@ namespace pub3 {
     struct stack_layer_t {
       stack_layer_t (ptr<bind_interface_t> b, layer_type_t t) 
 	: _bindings (b), _typ (t) {}
-      stack_layer_t () : _typ (LAYER_NONE) {}
       ptr<bind_interface_t> _bindings;
       layer_type_t _typ;
       bool is_local () const;
@@ -99,11 +103,11 @@ namespace pub3 {
 
     size_t push_lambda (ptr<bind_interface_t>, const stack_t *stk);
     size_t push_barrier ();
+    size_t push_file_marker ();
     void capture_closure (stack_t *out) const;
     ptr<expr_list_t> to_list () const;
     
   protected:
-    size_t dec_stack_pointer (stack_layer_t l, size_t i) const;
     ssize_t descend_to_barrier () const;
 
     ptr<bindtab_t> _library;

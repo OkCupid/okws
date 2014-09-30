@@ -118,10 +118,51 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
+  void eval_t::report_file_scope_boundary_violation(str name) const {
+
+    static uint cnt = 50;
+    if (cnt == 0) {
+      return;
+    }
+    cnt--;
+    strbuf locbuf;
+    str prev_file;
+    bool first = true;
+    for (ssize_t i = _stack.size() - 1; i >= 0; --i) {
+      const runloc_t& frame = _stack[i];
+      const str filename = frame.filename();
+      if (!filename) {
+        continue;
+      }
+      if (!prev_file || filename != prev_file) {
+        prev_file = filename;
+        if (first) {
+          first = false;
+        } else {
+          locbuf << " <- ";
+        }
+        locbuf << frame.filename() << ":" << frame.lineno();
+      }
+    }
+
+    const str loc = locbuf;
+
+    warn << "okws-pub3[ scoping_error ]: "
+         << name << " at: " << loc << "\n";
+
+  }
+
+  //-----------------------------------------------------------------------
+
   ptr<const expr_t>
   eval_t::lookup_val (const str &nm) const
   {
-    return _env->lookup_val (nm);
+    bool crossed_file_scope = false;
+    auto res = _env->lookup_val (nm, &crossed_file_scope);
+    if (crossed_file_scope) {
+      report_file_scope_boundary_violation(nm);
+    }
+    return res;
   }
 
   //-----------------------------------------------------------------------
@@ -129,7 +170,12 @@ namespace pub3 {
   ptr<mref_t>
   eval_t::lookup_ref (const str &nm) const
   {
-    return _env->lookup_ref (nm);
+    bool crossed_file_scope = false;
+    auto res = _env->lookup_ref (nm, &crossed_file_scope);
+    if (crossed_file_scope) {
+      report_file_scope_boundary_violation(nm);
+    }
+    return res;
   }
 
   //-----------------------------------------------------------------------
@@ -277,7 +323,14 @@ namespace pub3 {
       env_t::LAYER_LOCALS_BARRIER : 
       env_t::LAYER_LOCALS_BARRIER_WEAK ;
 
-    sz = env ()->push_locals (d, lt);
+    if (d) {
+      sz = env ()->push_locals (d, lt); // If there is no binding no barrier
+      // will pushed on the stack; so, even when we asked for
+      // P_STRICT_INCLUDE_SCOPING local variables from the including file
+      // will be visible to the included file.
+    } else {
+      sz = env()->push_file_marker();
+    }
     twait { _pub_iface->publish (this, nm, mkevent (status, dummy)); }
     env ()->pop_to (sz);
     ev->trigger (status);
