@@ -419,7 +419,6 @@ resp_t::run_chunker_T (evi_t ev)
   do { 
     twait { c->parse (connector::cnc (mkevent (status), ev, &outc)); }
     if (outc == OUTCOME_CANCELLED) {
-      c->cancel ();
       status = CANCELLED_STATUS;
 
     } else if (status == HTTP_OK && (sz = c->get_sz ())) {
