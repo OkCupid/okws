@@ -190,6 +190,35 @@ reqinfo_direct_t::get_hdr_hostname () const
   return ret;
 }
 
+//-----------------------------------------------------------------------------
+
+std::pair<str,str>
+req_t::get_header_parts(str header) {
+    vec<str> toks;
+    split(&toks, "\\:", header);
+    if (toks.size() == 2) {
+        return std::make_pair(tolower_s(toks[0]),
+                              tolower_s(toks[1]));
+    } else {
+        return std::make_pair(nullptr, nullptr);
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+str
+req_t::get_custom_host_header() {
+    const vec<str>* eh = get_extra_headers();
+    for (size_t i = 0; i < eh->size(); i++) {
+        str header = (*eh)[i];
+        std::pair<str,str> parts = get_header_parts(header);
+        if (parts.first && parts.first == "host") {
+            return parts.second;
+        }
+    }       
+    return nullptr;
+}   
+
 //-----------------------------------------------------------------------
 
 void
@@ -199,6 +228,7 @@ req_t::format_req (strbuf &b, bool ka)
   str fn = get_filename ();
   str mth = get_post () ? "POST" : "GET";
   htpv_t vers = get_version ();
+  bool has_custom_host = false;
 
   b << mth << " " << fn << " HTTP/1." << vers << HTTP_CRLF;
   if (vers == 1) {
@@ -209,7 +239,12 @@ req_t::format_req (strbuf &b, bool ka)
   /*
    * Be polite like wget and always send the following two headers
    */
-  str hn = get_hdr_hostname ();
+  str hn;
+  if (!(hn = get_custom_host_header())) {
+    hn = get_hdr_hostname ();
+  } else {
+    has_custom_host = true;
+  }
   b << "Host: " << hn << HTTP_CRLF
     << "User-agent: okwc/" << VERSION << HTTP_CRLF;
 
@@ -233,8 +268,15 @@ req_t::format_req (strbuf &b, bool ka)
   b << "Content-Length: " << len << HTTP_CRLF;
 
   const vec<str> *v = get_extra_headers ();
-  for (size_t i = 0; v && i < v->size (); i++) {
-    b << (*v)[i] << HTTP_CRLF;
+  for (size_t i = 0; v && i< v->size (); i++) {
+    str header = (*v)[i];
+    if (has_custom_host) {
+        std::pair<str,str> hparts = get_header_parts(header);
+        if (hparts.first && hparts.first == "host") {
+            continue;
+        }
+    }
+    b << header << HTTP_CRLF;
   }
   b << HTTP_CRLF;
 

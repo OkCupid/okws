@@ -199,6 +199,8 @@ public:
 protected:
   void make_T (ptr<ok_xprt_base_t> x, bool keepalive, evi_t cb, CLOSURE);
   void format_req (strbuf &b, bool ka);
+  str get_custom_host_header();
+  std::pair<str,str> get_header_parts(str header);
   mutable ptr<post_t> _post_obj;
 
 };
