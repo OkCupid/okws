@@ -209,7 +209,7 @@ req_t::get_header_parts(str header) {
 str
 req_t::get_custom_host_header() {
     const vec<str>* eh = get_extra_headers();
-    for (size_t i = 0; i < eh->size(); i++) {
+    for (size_t i = 0; eh && i < eh->size(); i++) {
         str header = (*eh)[i];
         std::pair<str,str> parts = get_header_parts(header);
         if (parts.first && parts.first == "host") {
