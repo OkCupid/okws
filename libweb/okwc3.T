@@ -213,7 +213,7 @@ req_t::get_custom_host_header() {
         str header = (*eh)[i];
         std::pair<str,str> parts = get_header_parts(header);
         if (parts.first && parts.first == "host") {
-            return parts.second;
+            return header;
         }
     }       
     return nullptr;
@@ -242,11 +242,12 @@ req_t::format_req (strbuf &b, bool ka)
   str hn;
   if (!(hn = get_custom_host_header())) {
     hn = get_hdr_hostname ();
+    b << "Host: " << hn << HTTP_CRLF;
   } else {
     has_custom_host = true;
+    b << hn << HTTP_CRLF;
   }
-  b << "Host: " << hn << HTTP_CRLF
-    << "User-agent: okwc/" << VERSION << HTTP_CRLF;
+  b << "User-agent: okwc/" << VERSION << HTTP_CRLF;
 
   const cgi_t *oc = get_outcookie ();
   
