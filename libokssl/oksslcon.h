@@ -38,6 +38,7 @@ namespace okssl {
     abuf_src_t *alloc_abuf_src ();
     bool ateof () const { return _eof; }
     ptr<tame::rcfd_t> _fd;
+    void cancel() { _cancelled = true; }
   protected:
     void ssl_connect (evb_t ev, CLOSURE);
     void ssl_connect_2 (evb_t ev, CLOSURE);
@@ -49,6 +50,7 @@ namespace okssl {
     bool _connected;
     ptr<tame::iofd_t> _rfd, _wfd;
     bool _eof;
+    bool _cancelled;
   };
 
   //-----------------------------------------------------------------------
