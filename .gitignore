@@ -45,6 +45,7 @@ libamt_pthread/Makefile.in
 libokssl/Makefile.in
 libokxml/Makefile.in
 librfn/Makefile.in
+libredis/Makefile.in
 ltmain.sh
 m4/libtool.m4
 m4/ltoptions.m4

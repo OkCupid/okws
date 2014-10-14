@@ -67,6 +67,7 @@ OKWS_EXPAT
 OKWS_GMTOFF
 OKWS_SSL
 OKWS_SNAPPY
+OKWS_HIREDIS
 OKWS_LINUX_PRCTL_DUMP
 
 dnl
@@ -80,6 +81,7 @@ fi
 
 
 AM_CONDITIONAL(USE_MYSQL, test "${sfs_cv_libmysqlclient+set}")
+AM_CONDITIONAL(USE_REDIS, test "${okws_cv_libhiredis+set}")
 
 SFS_LAYOUT_VERSION
 SFS_MAKE_SYMLINK
@@ -124,7 +126,7 @@ done
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql libweb libokssl librfn ezdb/libezdb ; do
+for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql libweb libokssl librfn ezdb/libezdb libredis; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -136,6 +138,7 @@ LIBAHTTP='$(top_builddir)/libahttp/libahttp.la'
 LIBOKXML='$(top_builddir)/libokxml/libokxml.la'
 LIBAOK='$(top_builddir)/libaok/libaok.la'
 LIBAMT='$(top_builddir)/libamt/libamt.la'
+LIBREDIS='$(top_builddir)/libredis/libredis.la'
 if test "$ac_do_pthreads" = "1"; then
    LIBAMT_PTHREAD='$(top_builddir)/libamt_pthread/libamt_pthread.la'
 fi
@@ -149,6 +152,7 @@ LDADD_PUB='$(LIBPUB) '"$LDADD"
 LDADD_RFN='$(LIBRFN) $(LIBAHTTP) $(LIBPUB) '"$LDADD"
 LDADD='$(LIBEZDB) $(LIBAOK) $(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
 LDADD_AMT='$(LIBAMT) $(LIBAMT_PTHREAD)'"$LDADD"
+LDADD_REDIS='$(LIBREDIS) $(LIBHIREDIS)'
 if test "$enable_shared" = yes; then
    LDEPS=
    LDEPS_PUB=
@@ -160,6 +164,7 @@ else
    LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDEPS"
    LDEPS_AMT='$(LIBAMT) $(LIBAMT_PTHREAD)'"$LDEPS"
    LDEPS_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMT_PTHREAD) $(LIBAMYSQL) '"$LDEPS"
+   LDEPS_REDIS='$(LIBREDIS) '"$LDEPS"
 fi
 LDADD_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMT_PTHREAD) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
 
@@ -212,11 +217,13 @@ AC_SUBST(LIBRFN)
 AC_SUBST(LIBEZDB)
 AC_SUBST(LIBEZDBSRV)
 AC_SUBST(LIBAMYSQL)
+AC_SUBST(LIBREDIS)
 AC_SUBST(LDADD_PUB)
 AC_SUBST(LDEPS_PUB)
 AC_SUBST(LDADD_RFN)
 AC_SUBST(LDEPS_RFN)
 AC_SUBST(LDADD_AMT)
+AC_SUBST(LDADD_REDIS)
 AC_SUBST(LDADD_AMYSQL)
 AC_SUBST(LDEPS_AMT)
 AC_SUBST(LDEPS_AMYSQL)
@@ -230,7 +237,7 @@ AC_CONFIG_COMMANDS([mkdir], [$MKDIR_P py/okws])
 AC_OUTPUT(libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 
-	  libweb/Makefile logd/Makefile Makefile conf/Makefile
+	  libweb/Makefile libredis/Makefile logd/Makefile Makefile conf/Makefile
 	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile test/pub/Makefile htdocs/Makefile contrib/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 

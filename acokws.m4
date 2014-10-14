@@ -657,6 +657,53 @@ CPPFLAGS="$CPPFLAGS $okws_cv_snappy_h"
 LIBS="$ac_save_LIBS $okws_cv_libsnappy"])
 
 dnl
+dnl Find Hiredis
+dnl
+AC_DEFUN([OKWS_HIREDIS],
+[AC_ARG_WITH(hiredis,
+--with-hiredis=DIR       Specify location of Hiredis)
+ac_save_CFLAGS=$CFLAGS
+ac_save_LIBS=$LIBS
+CC_REAL=$CC
+CC=$CXX
+LIBHIREDIS=""
+dirs="$with_hiredis ${prefix} ${prefix}/hiredis"
+dirs="$dirs /usr/local /usr/local/hiredis"
+AC_CACHE_CHECK(for hiredis.h, okws_cv_hiredis_h,
+[for dir in " " $dirs; do
+    iflags="-I${dir}/include"
+    CFLAGS="${ac_save_CFLAGS} $iflags"
+    AC_TRY_COMPILE([#include <hiredis/hiredis.h>], 0,
+	okws_cv_hiredis_h="${iflags}"; break)
+done])
+if test -z "${okws_cv_hiredis_h+set}"; then
+    AC_MSG_ERROR("Can\'t find hiredis.h anywhere")
+fi
+AC_CACHE_CHECK(for libhiredis, okws_cv_libhiredis,
+[for dir in "" " " $dirs; do
+    case $dir in
+	"") lflags=" " ;;
+	" ") lflags="-lhiredis" ;;
+	*) lflags="-L${dir}/lib  -lhiredis" ;;
+    esac
+    LIBS="$ac_save_LIBS $lflags"
+    AC_TRY_LINK([#include <hiredis/hiredis.h>
+                 #include <hiredis/async.h>],
+	redisAsyncConnectBindWithReuse(NULL, 0, "0.0.0.0");,
+	okws_cv_libhiredis=$lflags; break)
+done])
+if test -z ${okws_cv_libhiredis+set}; then
+    AC_MSG_ERROR("Can\'t find libhiredis anywhere")
+fi
+LIBHIREDIS="$okws_cv_libhiredis"
+AC_SUBST(LIBHIREDIS)
+CC=$CC_REAL
+CFLAGS=$ac_save_CFLAGS
+CPPFLAGS="$CPPFLAGS $okws_cv_hiredis_h"
+LIBS="$ac_save_LIBS $okws_cv_libhiredis"])
+
+
+dnl
 dnl OKWS_PREFIX
 dnl
 dnl Make a prefix for OKWS to put all of its crap, like config files,
@@ -816,6 +863,7 @@ if test -f ${with_okws}/Makefile -a -f ${with_okws}/okwsconf.h; then
     LIBOKXML=${with_okws}/libokxml/libokxml.la
     LIBWEB=${with_okws}/libweb/libweb.la
     LIBAMT=${with_okws}/libamt/libamt.la
+    LIBREDIS=${with_okws}/libamt/libredis.la
     if test "${ac_do_pthreads}" = "1"; then
        LIBAMT_PTHREAD=${with_okws}/libamt_pthread/libamt_pthread.la
     fi
@@ -842,6 +890,7 @@ elif test -f ${with_okws}/include/${okwsstem}/okwsconf.h \
     LIBOKXML=${okwslibdir}/libokxml.la
     LIBWEB=${okwslibdir}/libweb.la
     LIBAMT=${okwslibdir}/libamt.la
+    LIBREDIS=${okwslibdir}/libredis.la
     if test "${ac_do_pthreads}" = "1"; then
        LIBAMT_PTHREAD=${okwslibdir}/libamt_pthread.la
     fi
@@ -883,6 +932,7 @@ AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBRFN)
 AC_SUBST(LIBAMT)
 AC_SUBST(LIBAMT_PTHREAD)
+AC_SUBST(LIBREDIS)
 AC_SUBST(LIBWEB)
 AC_SUBST(LIBOKSSL)
 AC_SUBST(LIBAMYSQL)
@@ -893,9 +943,9 @@ AC_SUBST(OKWS_LIB_MK)
 
 LIBS='$(LIBEXPAT) $(LIBSSL)'"$LIBS"
 
-LDEPS='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
+LDEPS='$(LIBRFN) $(LIBWEB) $(LIBREDIS) $(LIBOKSSL) $(LIBAOK) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB)'" $LDEPS"
 LDEPS_DB='$(LIBAMYSQL) $(LIBAMT) $(LIBAMT_PTHREAD) '" $LDEPS"
-LDADD='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
+LDADD='$(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBREDIS) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB)'" $LDADD"
 LDADD_DB='$(LIBAMYSQL) $(LIBAMT) $(LIBAMT_PTHREAD)'"$LDADD "'$(LDADD_THR) $(LDADD_MYSQL)'
 
 AC_SUBST(LDEPS)

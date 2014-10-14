@@ -28,6 +28,10 @@ if HAVE_PYTHON
 SBD3 = py
 endif
 
+if USE_REDIS
+SBD4 = libredis
+endif
+
 SUBDIRS = $(SBD1) \
 	$(SBD2) \
 	okd \
@@ -38,6 +42,7 @@ SUBDIRS = $(SBD1) \
 	conf \
 	htdocs \
 	$(SBD3) \
+	$(SBD4) \
 	contrib
 
 ##
