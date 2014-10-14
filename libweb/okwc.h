@@ -206,6 +206,7 @@ private:
 public: 
   okwc_chunker_t (abuf_t *a, ptr<ok::scratch_handle_t> s)
     : async_parser_t (a), http_hdr_t (a, s), sz (0), state (START) {}
+  ~okwc_chunker_t() { cancel(); }
   size_t get_sz () const { return sz; }
   void next_chunk () { sz = 0; state = FINISH_PREV; }
 protected:
