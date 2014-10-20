@@ -40,6 +40,11 @@ class RedisCli {
         void runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev=nullptr);
         void runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev=nullptr,
                     CLOSURE);
+        void runCmd(std::initializer_list<std::pair<const char*,size_t>> l,
+                    ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+        void runCmd(const vec<std::pair<const char*,size_t>>& cmds,
+                    ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+
         void disconnect();
 
         // I wish this could be private: don't use!

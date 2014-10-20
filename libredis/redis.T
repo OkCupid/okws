@@ -106,6 +106,29 @@ void RedisCli::runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev) {
 tamed
 void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
 {
+    vec<std::pair<const char*,size_t>> rcmds;
+    rcmds.setsize(cmds.size());
+    for (size_t i = 0; i < cmds.size(); i++) {
+        rcmds[i] = std::make_pair(cmds[i].cstr(), cmds[i].len());
+    }
+    runCmd(cmds, ev);
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+RedisCli::runCmd(std::initializer_list<std::pair<const char*,size_t>> l,
+                 ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*,size_t>> cmds(l);
+    runCmd(cmds, ev);
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
+                 ev_redis_res_t::ptr ev) {
+
     tvars {
         redisCallbackFn *fn(nullptr);
         uint64_t data(0);
@@ -124,9 +147,9 @@ void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
     n = cmds.size();
     ccharcmds.reserve(n);
     lens.reserve(n);
-    for (str s : cmds) {
-        ccharcmds.push_back(s.cstr());
-        lens.push_back(s.len());
+    for (auto s : cmds) {
+        ccharcmds.push_back(s.first);
+        lens.push_back(s.second);
     }
 
     twait {
@@ -135,7 +158,8 @@ void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
             data = rnd.gethyper();
             g_dispatcher.addReplyEv(data, mkevent(r));
         }
-        redisAsyncCommandArgv(m_c, fn, (void *)data, n, ccharcmds.begin(), lens.begin());
+        redisAsyncCommandArgv(m_c, fn, (void *)data, n, ccharcmds.begin(), 
+                              lens.begin());
     }
     if (ev == nullptr) {
         return;
@@ -153,6 +177,7 @@ void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
     res_obj = parseReply(r);
     res.set(false, nullptr, res_obj);
     ev->trigger(res);
+
     // r is freed by hiredis when this function returns
 }
 
