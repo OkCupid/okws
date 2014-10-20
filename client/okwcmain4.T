@@ -156,11 +156,11 @@ main2 (int argc, char **argv)
   for (s = 0; s < rav.size (); s++) {
     ra = rav[s];
     if (!cli || !pra || *(pra->host ()) != *(ra->host ()) ) {
-      cli = New refcounted<okwc4::agent_get_t> (ra->host (), factory);
+      cli = New refcounted<okwc4::agent_get_t> (ra->host ());
     }
     cli->set_keepalive (ka);
     statusv[s] = HTTP_TIMEOUT;
-    cli->get (ra, mkevent (rv, statusv[s], respv[s])); 
+    cli->get (ra, connector::timeout (mkevent (rv, statusv[s], respv[s]), timeout));
     pra = ra;
 
     if (!parallel) {

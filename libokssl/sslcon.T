@@ -30,7 +30,8 @@ namespace okssl {
       _connected (false),
       _rfd (tame::iofd_t::alloc (_fd, selread)),
       _wfd (tame::iofd_t::alloc (_fd, selwrite)),
-      _eof (false)
+      _eof (false),
+      _cancelled (false)
   {
     unsigned long sl = 1;
     if (BIO_socket_ioctl (fd, FIONBIO, &sl) < 0) {
@@ -271,7 +272,7 @@ namespace okssl {
     // only bother to enter this loop if there is data to read and room
     // in the buffer.  I'm not sure why we'd be called with a len=0, but
     // guard against it here.
-    while (go && len > 0) {
+    while (go && len > 0 && !_cancelled) {
 
       go = false;
 
@@ -301,7 +302,7 @@ namespace okssl {
 	// Again, protect all forward progress by worrying about 
 	// cancelation by our caller.  If we were canceled, then
 	// don't do anything further.
-	if (oc == OUTCOME_SUCC) {
+	if (oc == OUTCOME_SUCC && !_cancelled) {
 
 	  // This is the actual read.
 	  ret = SSL_read (_ssl, out, len);
@@ -481,7 +482,8 @@ namespace okssl {
 
   asrc_t::~asrc_t ()
   {
-    *_destroyed = true;
+      _con->cancel();
+      *_destroyed = true;
   }
 
   //-----------------------------------------------------------------------

@@ -25,7 +25,7 @@ json_escape_heavy (const str &s, bool addq)
   size_t len;
   const wchar_t *buf = ws.buf (&len);
 
-  size_t room = 6 * len + 3;
+  size_t room = 12 * len + 3;
   mstr out (room);
 
   char *outbase = out.cstr ();
@@ -36,7 +36,21 @@ json_escape_heavy (const str &s, bool addq)
 
   for (size_t i = 0; i < len; i++, inp++) {
     size_t n = 0;
-    if (*inp > 0xffff) { /* noop!! */ }
+    if (*inp > 0x10ffff) {
+        // ws contained an invalid UTF-32 character, which doesn't
+        // make sense since we just converted from UTF-8.
+        assert(false);
+    }
+    else if (*inp > 0xffff) {
+        // Convert the UTF-32 wchar to a UTF-16 surrogate pair. From
+        // https://en.wikipedia.org/wiki/UTF-16#Code_points_U.2B010000_to_U.2B10FFFF
+        uint32_t ch = *inp;
+        ch -= 0x010000;
+        n = snprintf (
+            outp, room, "\\u%04x\\u%04x",
+            (ch >> 10) + 0xd800, (ch & 0x3ff) + 0xdc00
+        );
+    }
     else if (*inp == '\n') { n = snprintf (outp, room, "\\n"); } 
     else if (*inp == '\t') { n = snprintf (outp, room, "\\t"); } 
     else if (*inp == '\r') { n = snprintf (outp, room, "\\r"); }
