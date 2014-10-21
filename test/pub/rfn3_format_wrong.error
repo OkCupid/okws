@@ -1,0 +1,2 @@
+okws-pub3[eval]: rfn3_format_wrong.pub:1: Not an int format "%s" 3
+okws-pub3[eval]: rfn3_format_wrong.pub:2: Not a float format "%3$i" 8

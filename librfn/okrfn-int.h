@@ -76,6 +76,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(cmp, "OO");
   PUB3_COMPILED_FN_DOC(format_float, "sf");
   PUB3_COMPILED_FN_DOC(format_int, "si");
+  PUB3_COMPILED_FN_DOC(format_uint, "su");
   PUB3_COMPILED_FN_DOC(json_escape, "s");
   PUB3_COMPILED_FN_DOC(js_escape, "s");
   PUB3_COMPILED_FN_DOC(randsel, "l");

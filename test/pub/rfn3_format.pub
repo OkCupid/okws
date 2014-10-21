@@ -1,0 +1,4 @@
+%{len(format_uint("%.2048x", 5))}
+%{format_uint("%hhx", 512)}
+%{format_uint("%llu", 5123445645)}
+%{format_float("%1$.3f", 5.1234456)}

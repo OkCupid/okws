@@ -100,6 +100,7 @@ numbers, JSON and time.)*";
     F(cmp);
     F(format_float);
     F(format_int);
+    F(format_uint);
     F(stat_file);
     F(raw);
     F(utf8_fix);

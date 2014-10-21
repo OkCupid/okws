@@ -31,6 +31,8 @@ AC_PATH_PROG(PERL, perl, perl)
 AC_PATH_PROGS(M4, gm4 gnum4 m4, '$(top_srcdir)/missing')
 AC_PATH_PROGS(UPTIME, uptime, '$(top_srcdir)/missing')
 
+OKWS_PARSE_PRINTF_FORMAT
+
 dnl
 dnl On FreeBSD, look for PTH by default.  However, PTH stopped working
 dnl on Linux with hard system calls, so use pthreads by default on
