@@ -277,6 +277,16 @@ namespace pub3 {
 
   //========================================== library_t ==================
 
+  ptr<const expr_t>
+  patterned_fn_blocking_t::v_eval_1 (eval_t *e, const margs_t &) const {
+    strbuf b ("\"%s()\" cannot be called in a non-blocking context.",
+              _name.cstr());
+    report_error (e, b);
+    return pub3::expr_null_t::alloc();
+  }
+
+  //========================================== library_t ==================
+
   void
   library_t::bind (ptr<bindtab_t> t)
   {
