@@ -1,6 +1,5 @@
 
-SUBDIRS = system regtest unit
-
+SUBDIRS = system regtest unit pub
 .PHONY: test tameclean
 
 tameclean: 
@@ -12,6 +11,3 @@ test:
 	for dir in system; do \
 		(cd $$dir && $(MAKE) test ) ; \
 	done
-
-pub_test:
-	cd pub && $(MAKE) test;
