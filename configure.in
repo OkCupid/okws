@@ -234,6 +234,7 @@ PUBFLAGS='-rF'
 AC_SUBST(PUBFLAGS)
 
 AC_CONFIG_COMMANDS([mkdir], [$MKDIR_P py/okws])
+AC_CONFIG_FILES(test/pub/test_runner, [chmod +x test/pub/test_runner])
 AC_OUTPUT(libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
 	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 

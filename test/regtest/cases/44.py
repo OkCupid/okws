@@ -19,7 +19,7 @@ filedata = """
    print (i.iter + ": ")
 
    if   (match (rxx, i.val))       { print 1 }
-   elif (match (rxx, "i", i.val))  { print 2 }
+   elif (match (rxx, i.val, "i"))  { print 2 }
    else                            { print 0 }
 
    print "\\n"
