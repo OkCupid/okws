@@ -35,6 +35,8 @@ class RedisCli {
         {}
         virtual ~RedisCli() { disconnect(); }
 
+        void setTimeout(time_t to) { m_timeout = to; }
+
         void connect(str host, uint port, evb_t::ptr ev=nullptr, CLOSURE);
         bool isConnected() const { return m_connected && !m_reconnecting; }
         void runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev=nullptr);
@@ -57,6 +59,7 @@ class RedisCli {
         redisAsyncContext *m_c;
         bool m_connected, m_reconnecting;
         str m_name;
+        time_t m_timeout = 86400;
 };
 
 //-----------------------------------------------------------------------------

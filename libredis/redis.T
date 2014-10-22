@@ -3,6 +3,7 @@
 #include "redis.h"
 #include "hiredis/hiredis.h"
 #include "hiredis/async.h"
+#include "tame_connectors.h"
 
 typedef event<int, redisAsyncContext*>::ref redis_conn_res_ev;
 typedef event<redisReply*>::ref ev_redis_reply_t;
@@ -111,7 +112,7 @@ void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
     for (size_t i = 0; i < cmds.size(); i++) {
         rcmds[i] = std::make_pair(cmds[i].cstr(), cmds[i].len());
     }
-    runCmd(cmds, ev);
+    runCmd(rcmds, ev);
 }
 
 //-----------------------------------------------------------------------------
@@ -138,6 +139,7 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
         redisReply* r(nullptr);
         redis_res_t res;
         pub3::obj_t res_obj;
+        outcome_t outcome;
     }
     if (!isConnected() && !m_reconnecting) {
         res.set(true, "not connected");
@@ -156,7 +158,8 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
         if (ev) {
             fn = gReplyHandler;
             data = rnd.gethyper();
-            g_dispatcher.addReplyEv(data, mkevent(r));
+            g_dispatcher.addReplyEv(data, connector::timeout(mkevent(r), 
+                                    m_timeout, 0, &outcome));
         }
         redisAsyncCommandArgv(m_c, fn, (void *)data, n, ccharcmds.begin(), 
                               lens.begin());
@@ -164,6 +167,13 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
     if (ev == nullptr) {
         return;
     }
+
+    if (outcome == OUTCOME_TIMEDOUT) {
+        res.set(true, "timed out");
+        ev->trigger(res);
+        return;
+    }
+
     if (r == nullptr) {
         res.set(true, "null reply");
         ev->trigger(res);
@@ -290,8 +300,7 @@ void gConnectHandler(const redisAsyncContext *c, int status) {
 void gReplyHandler(redisAsyncContext *c, void *r, void *privdata) {
     uint64_t key = (uint64_t)privdata;
     ev_redis_reply_t::ptr ev = g_dispatcher.useReplyEv(key);
-    assert(ev);
-    ev->trigger((redisReply*)r);
+    if (ev) { ev->trigger((redisReply*)r); }
     // r is freed by the redis library when this function returns.
     // the code executed by ev->trigger MUST copy r before calling twait
 }
