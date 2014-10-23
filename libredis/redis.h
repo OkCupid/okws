@@ -35,6 +35,7 @@ class RedisCli {
         {}
         virtual ~RedisCli() { disconnect(); }
 
+        void setReconnect(bool recon) { m_recon = recon; }
         void setTimeout(time_t to) { m_timeout = to; }
 
         void connect(str host, uint port, evb_t::ptr ev=nullptr, CLOSURE);
@@ -47,6 +48,23 @@ class RedisCli {
         void runCmd(const vec<std::pair<const char*,size_t>>& cmds,
                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
 
+        void evalLua(const char* script, str ssha1,
+                     std::initializer_list<str> keys,
+                     std::initializer_list<str> args, 
+                     ev_redis_res_t::ptr ev=nullptr , CLOSURE);
+        void evalLua(const char* script, str ssha1, 
+                     const vec<str>& keys,
+                     const vec<str>& args, 
+                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+        void evalLua(const char* script, str ssha1,
+                     std::initializer_list<std::pair<const char*,size_t>> keys,
+                     std::initializer_list<std::pair<const char*,size_t>> args, 
+                     ev_redis_res_t::ptr ev=nullptr , CLOSURE);
+        void evalLua(const char* script, str ssha1, 
+                     const vec<std::pair<const char*,size_t>>& keys,
+                     const vec<std::pair<const char*,size_t>>& args, 
+                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+
         void disconnect();
 
         // I wish this could be private: don't use!
@@ -54,12 +72,16 @@ class RedisCli {
     private:
         void reconnect();
         pub3::obj_t parseReply(redisReply *r);
+
         str m_host;
         uint m_port;
         redisAsyncContext *m_c;
         bool m_connected, m_reconnecting;
         str m_name;
         time_t m_timeout = 86400;
+        bool m_recon = true;
+
+        bhash<str> m_evalshas;
 };
 
 //-----------------------------------------------------------------------------

@@ -191,11 +191,87 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
     // r is freed by hiredis when this function returns
 }
 
+//-----------------------------------------------------------------------------
+
+tamed void
+RedisCli::evalLua(const char* script, str ssha1,
+                  std::initializer_list<str> keys,
+                  std::initializer_list<str> args,
+                  ev_redis_res_t::ptr ev) {
+    vec<str> vkeys(keys);
+    vec<str> vargs(args);
+    evalLua(script, ssha1, vkeys, vargs, ev);
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+RedisCli::evalLua(const char* script, str ssha1, const vec<str>& keys,
+                  const vec<str>& args, ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*,size_t>> vkeys;
+    vec<std::pair<const char*,size_t>> vargs;
+    vkeys.setsize(keys.size());
+    for (size_t i = 0; i < keys.size(); i++) {
+        vkeys[i] = std::make_pair(keys[i].cstr(), keys[i].len());
+    }
+    vargs.setsize(args.size());
+    for (size_t i = 0; i < args.size(); i++) {
+        vargs[i] = std::make_pair(args[i].cstr(), args[i].len());
+    }
+    evalLua(script, ssha1, vkeys, vargs, ev);
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+RedisCli::evalLua(const char* script, str ssha1,
+                  std::initializer_list<std::pair<const char*,size_t>> keys,
+                  std::initializer_list<std::pair<const char*,size_t>> args, 
+                  ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*,size_t>> vkeys(keys);
+    vec<std::pair<const char*,size_t>> vargs(args);
+    evalLua(script, ssha1, vkeys, vargs, ev);
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+RedisCli::evalLua(const char* script, str ssha1, 
+                  const vec<std::pair<const char*,size_t>>& keys,
+                  const vec<std::pair<const char*,size_t>>& args, 
+                  ev_redis_res_t::ptr ev) {
+
+    vec<std::pair<const char*,size_t>> cmds;
+    if (m_evalshas[ssha1]) {
+        cmds.push_back(std::make_pair("EVALSHA", 7));
+        cmds.push_back(std::make_pair(ssha1.cstr(), ssha1.len()));
+    } else {
+        m_evalshas.insert(ssha1);
+        cmds.push_back(std::make_pair("EVAL", 4));
+        cmds.push_back(std::make_pair(script, strlen(script)));
+    }
+
+    strbuf nkbuf;
+    str nkstr;
+    nkbuf << keys.size();
+    nkstr = str(nkbuf);
+
+    cmds.push_back(std::make_pair(nkstr.cstr(), nkstr.len()));
+    for (auto k : keys)
+        cmds.push_back(k);
+    for (auto a : args)
+        cmds.push_back(a);
+
+    runCmd(cmds, ev);
+}
+
 //------------------------------------------------------------------------
 
 void RedisCli::disconnect() {
-    m_connected = false;
-    redisAsyncDisconnect(m_c);
+    if (m_connected && m_c->err == 0) {
+        m_connected = false;
+        redisAsyncDisconnect(m_c);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -203,7 +279,7 @@ void RedisCli::disconnect() {
 void RedisCli::disconnectHandler(int status) {
     if (status != REDIS_OK) {
         rcwarn << "error: " << m_c->errstr << "\n";
-        reconnect();
+        if (m_recon) { reconnect(); }
         return;
     }
     // no need to free m_c on successful disconnect, it will already have
