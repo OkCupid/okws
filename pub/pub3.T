@@ -10,6 +10,7 @@
 
 extern "C" {
 #include <argp.h>
+#include <libgen.h>
 }
 
 namespace dbg {
@@ -78,13 +79,15 @@ namespace dbg {
 
 namespace {
 
-    void main2(const str fname, CLOSURE);
+    void main2(str fname, bool jail, CLOSURE);
 
-    tamed void main2(const str fname) {
+    tamed void main2(str fname, bool jailed) {
         tvars {
             zbuf out;
             bool ok;
+            str root;
             ptr<pub3::local_publisher_t> pub;
+            char* buf;
         }
         zinit(false);
 
@@ -92,6 +95,21 @@ namespace {
 
         pub3::library_t::import(rfn3::lib_t::alloc());
         pub3::library_t::import(dbg::lib_t::alloc());
+
+        if (jailed) {
+            buf = strndup(fname.cstr(), fname.len());
+            root = dirname(buf);
+            free(buf);
+            if (root != ".") {
+                buf = strndup(fname.cstr(), fname.len());
+                fname = basename(buf);
+                free(buf);
+                auto jailer = pub3::jailer_t::alloc();
+                jailer->setjail(pub3::JAIL_NONE, root);
+                pub->set_jailer(jailer);
+            }
+        }
+
         twait {
             pub->run(&out, fname, mkevent(ok));
         }
@@ -119,6 +137,11 @@ extern "C" {
 }
 
 namespace {
+    struct cli_arguments_t {
+        str file;
+        bool jailed = false;
+    };
+
     const char doc[] =
         "Naive pub interpreter.";
 
@@ -126,7 +149,9 @@ namespace {
         "FILE";
 
     const struct argp_option options[] = {
-        { }
+        { "jailed", 'j', nullptr, 0,
+          "evaluate the file with a jailer rooted at the file's dirname", 0 },
+        {}
     };
 
 
@@ -135,17 +160,20 @@ namespace {
     {
         /* Get the input argument from argp_parse, which we
            know is a pointer to our arguments structure. */
-        str &fname = *reinterpret_cast<str*>(state->input);
+        cli_arguments_t *cli = reinterpret_cast<cli_arguments_t*>(state->input);
 
         switch (key) {
+        case 'j':
+            cli->jailed = true;
+            break;
         case ARGP_KEY_ARG:
-            if (fname) {
+            if (cli->file) {
                 argp_usage(state);
             }
-            fname = arg;
+            cli->file = arg;
             break;
         case ARGP_KEY_END:
-            if (!fname) {
+            if (!cli->file) {
                 /* Not enough arguments. */
                 argp_usage (state);
             }
@@ -161,9 +189,9 @@ namespace {
 }  // namespace
 
 int main(int argc, char** argv)  {
-    str fname;
-    argp_parse (&argspecs, argc, argv, 0, 0, &fname);
-    main2(fname);
+    cli_arguments_t cli;
+    argp_parse (&argspecs, argc, argv, 0, 0, &cli);
+    main2(cli.file, cli.jailed);
     amain();
     return 0;
 }

@@ -8,6 +8,7 @@ TESTS = \
 	scoping_include.pub \
 	scoping_uniref.pub \
 	scoping_specifiers.pub \
+	syntax_error.pub \
 	undef_vs_null.pub
 
 AUTOMAKE_OPTIONS = parallel-tests
