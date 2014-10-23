@@ -13,8 +13,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str now_t::DOCUMENTATION =
-    "Output the time now in Unix-timestamp";
+  const str now_t::DOCUMENTATION = R"*(Output the time now in Unix-timestamp
+
+@return {uint}
+@example now())*";
 
   //-----------------------------------------------------------------------
 
@@ -47,8 +49,13 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str time_format_t::DOCUMENTATION =
-    "Like strftime, format the Unix timestamp //time// according to the format "
-    "//fmt//";
+    R"*(Like `strftime`, format the Unix timestamp `time` according to the format
+`fmt`
+
+@param {uint} time
+@param {string} fmt
+@return {string}
+@example time_format (now(), '%a, %d %b %Y %H:%M:%S GMT'))*";
 
   //-----------------------------------------------------------------------
 
@@ -80,6 +87,19 @@ namespace rfn3 {
     }
     return ret;
   }
+
+  const str localtime_t::DOCUMENTATION = R"*(Convert timestamp to list of time
+component values.
+
+Returned list has the order:
+`[year, month, day, hour, min, sec, weekday, yearday]`
+
+Weekday is the number of days since Sunday.
+Yearday is the number of days since January 1.
+
+@param {int} timestamp
+@return {list}
+@example localtime(now()))*";
 
   //-----------------------------------------------------------------------
 
@@ -113,6 +133,15 @@ namespace rfn3 {
     return ret;
   }
 
+  const str localtime_raw_t::DOCUMENTATION = R"*(Convert timestamp to dict
+of component values.
+
+Uses the value of `timestamp` to fill a tm dict with the values that represent
+the corresponding time, expressed for the local timezone
+@param {int} timestamp
+@return {dict}
+@example localtime_raw(now()))*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -136,6 +165,19 @@ namespace rfn3 {
     return expr_int_t::alloc(mktime(&t));
   }
 
+  const str mktime_t::DOCUMENTATION = R"*(Returns a timestamp that represents the
+local time described by the `tm` dict (which may be modified).
+
+This function performs the reverse translation that `localtime_raw` does.
+
+@param {dict} tm
+@return {int}
+@example
+out_tm = localtime_raw(now());
+out_tm.mon = out_tm.mon + 3;
+expiration = mktime(out_tm);
+@response)*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -147,8 +189,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str days_from_now_t::DOCUMENTATION =
-    "Return the Unix timestamp of //days// days from now";
+  const str days_from_now_t::DOCUMENTATION = R"*(Return the Unix timestamp of
+`days` days from now
+
+@param {int} days
+@return {uint})*";
 
   //-----------------------------------------------------------------------
 
@@ -172,9 +217,15 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str time_from_now_t::DOCUMENTATION =
-    "Output the Unix timestamp at //d// days, //h// hours, "
-    "//m// minutes and //s// seconds from now";
+  const str time_from_now_t::DOCUMENTATION = R"*(Output the Unix timestamp at `d`
+days, `h` hours, `m` minutes and `s` seconds from now
+
+@optional
+@param {int} d
+@param {int} h
+@param {int} m
+@param {int} s
+@return {uint})*";
 
   //-----------------------------------------------------------------------
 
@@ -203,10 +254,15 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str strptime_t::DOCUMENTATION =
-    "Read from the string //time//, formatted "
-    "according to the format string //fmt//, into a UNIX timestamp. "
-    "If no //fmt// is given, assume '%F', which means 'YYYY-MM-DD'";
+  const str strptime_t::DOCUMENTATION = R"*(Read from the string `time`, formatted
+according to the format string `fmt`, into a UNIX timestamp.
+
+If no `fmt` is given, assume `'%F'`, which means `'YYYY-MM-DD'`
+
+@param {string} s
+@optional
+@param {string} fmt
+@return {string})*";
 
   //-----------------------------------------------------------------------
 

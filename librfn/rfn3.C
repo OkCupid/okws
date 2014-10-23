@@ -7,9 +7,14 @@ namespace rfn3 {
 
   const char *libname = "rfn3";
 
+  const str DOCUMENTATION = R"*(Pub general package.
+
+Contains methods for converting types, manipulating dicts, lists, strings,
+numbers, JSON and time.)*";
+
   //-----------------------------------------------------------------------
 
-  lib_t::lib_t () : library_t ()
+  lib_t::lib_t () : library_t (DOCUMENTATION)
   {
 
 #define F(f) \
@@ -89,7 +94,6 @@ namespace rfn3 {
     F(pop_front);
     F(list);
     F(sort);
-    F(sort2);
     F(reverse);
     F(shuffle);
     F(randsel);

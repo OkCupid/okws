@@ -38,30 +38,53 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str toupper_t::DOCUMENTATION =
-    "Convert all alpha characters in //s// to uppercase";
+  const str toupper_t::DOCUMENTATION = R"*(Convert all alpha characters in `s` to
+uppercase
 
-  const str tolower_t::DOCUMENTATION =
-    "Convert all alpha characters in //s// to lowercase";
+@param {string} s
+@return {string})*";
 
-  const str html_escape_t::DOCUMENTATION =
-    "HTML escapes these chars: & < >";
+  const str tolower_t::DOCUMENTATION = R"*(Convert all alpha characters in `s` to
+lowercase
 
-  const str url_escape_t::DOCUMENTATION =
-    "Produce a URL-encoded version of the string //s//";
+@param {string} s
+@return {string})*";
 
-  const str url_unescape_t::DOCUMENTATION =
-    "Take a URL-escaped string //s// and return the unescaping of it.";
+  const str html_escape_t::DOCUMENTATION = R"*(HTML escapes these chars: `&` `<`
+`>`
 
-  const str utf8_fix_t::DOCUMENTATION =
-    "Strips out any malformed UTF-8 characters from //s// "
-    "and returns the fixed string.";
+@param {string} s
+@return {string})*";
+
+  const str url_escape_t::DOCUMENTATION = R"*(Produce a URL-encoded version of
+the string `s`
+
+@param {string} s
+@return {string})*";
+
+  const str url_unescape_t::DOCUMENTATION = R"*(Take a URL-escaped string `s` and
+return the unescaping of it.
+
+@param {string} s
+@return {string})*";
+
+  const str utf8_fix_t::DOCUMENTATION = R"*(Strips out any malformed UTF-8
+characters from `s`.
+
+@param {string} s
+@return {string})*";
 
   const str hidden_escape_t::DOCUMENTATION =
-    "HTML escapes these chars: \' \" & < >";
+    "HTML escapes these chars: `'` `\"` `&` `<` `>`\n"
+    "\n"
+    "@param {string} s\n"
+    "@return {string}";
 
-  const str wss_filter_t::DOCUMENTATION =
-    "compacts multiple adjacent whitespace characters into one";
+  const str wss_filter_t::DOCUMENTATION = R"*(compacts multiple adjacent
+whitespace characters into one
+
+@param {string} s
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -97,8 +120,11 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str tag_escape_t::DOCUMENTATION =
-    "Escape all tags except for <b>, <i>, <br> and <p>.";
+  const str tag_escape_t::DOCUMENTATION = R"*(Escape all tags except for `<b>`,
+`<i>`, `<br>` and `<p>`.
+
+@param {string} s
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -122,9 +148,14 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str substr_t::DOCUMENTATION =
-    "Output a substring of //s//, starting at "
-    "character //start// and //len// bytes long.";
+  const str substr_t::DOCUMENTATION = R"*(Output a substring of `s`, starting at
+character `start` and `len` bytes long.
+
+@param {string} s
+@param {int} start
+@optional
+@param {int} len
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -193,11 +224,19 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str default_t::DOCUMENTATION =
-    "Given the input value //in//, check to see if it's "
-    "//null.//  If //null//, then output //val//, outherwise, output //in//. "
-    "If //val// wasn't specified and //in// is null, then output the empty "
-    "string ''";
+  const str default_t::DOCUMENTATION = R"*(Given the input value `in`, check to
+see if it's `null`.  If `null`, then output `val`, outherwise, output `in`.
+If `val` wasn't specified and `in` is null, then output the empty string
+@brief output a default fallback value when `in` is `null`
+@param {object} in
+@optional
+@param {object} val
+@return {object}
+@example
+{% locals { d : { x : "hi" } } %}
+%{d.y|default("bye")} // will output "bye"
+%{d.z|default} // will output "" and will not produce any warnings.
+@response)*";
 
   //------------------------------------------------------------
 
@@ -231,9 +270,11 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str strip_t::DOCUMENTATION =
-    "Strips leading, trailing spaces and reduce in-between "
-    "spaces to just one space";
+  const str strip_t::DOCUMENTATION = R"*(Strips leading, trailing spaces and
+reduce in-between spaces to just one space
+
+@param {string} s
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -248,9 +289,11 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str sha1_t::DOCUMENTATION =
-     "Produce the SHA-1 hash of //s//, outputting a "
-      "hexidecimal-encoded digest.";
+  const str sha1_t::DOCUMENTATION = R"*(Produce the SHA-1 hash of `s`, outputting
+a hexidecimal-encoded digest.
+
+@param {string} s
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -267,9 +310,12 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str format_float_t::DOCUMENTATION =
-    "Format the float //val// accoring to the given sprintf-style "
-    "format string //fmt//.";
+  const str format_float_t::DOCUMENTATION = R"*(Format the float `val` according
+to the given sprintf-style format string `fmt`.
+
+@param {string} fmt
+@param {float} val
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -287,9 +333,12 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str format_int_t::DOCUMENTATION =
-    "Format the int //val// accoring to the given sprintf-style "
-    "format string //fmt//.";
+  const str format_int_t::DOCUMENTATION = R"*(Format the int `val` according to
+the given sprintf-style format string `fmt`.
+
+@param {string} fmt
+@param {int} val
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -303,8 +352,11 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str json_escape_t::DOCUMENTATION =
-    "Escapes all double-quotes, backslashes, newlines and tabs.";
+  const str json_escape_t::DOCUMENTATION = R"*(Escapes all double-quotes,
+backslashes, newlines and tabs.
+
+@param {string} s
+@return {string})*";
 
   ptr<const expr_t>
   js_escape_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
@@ -318,8 +370,11 @@ namespace rfn3 {
 
   //------------------------------------------------------------
 
-  const str js_escape_t::DOCUMENTATION =
-    "First runs json_escape, then replaces \"</\" with \"<\\/\".";
+  const str js_escape_t::DOCUMENTATION = R"*(First runs `json_escape`, then
+replaces `<` with `<\/`.
+
+@param {string} s
+@return {string})*";
 
   //------------------------------------------------------------
 
@@ -340,6 +395,17 @@ namespace rfn3 {
     return expr_int_t::alloc (ret);
   }
 
+  const str index_of_t::DOCUMENTATION = R"*(Finds the index of the first
+occurrence of `pat` in `body`.
+
+Optionally, provide an index to `start` the search from
+@param {string} body
+@param {string} pat
+@optional
+@param {int} start
+@return {int}
+@example index_of('ABCABC', 'B')
+@example index_of('ABCABC', 'B', 2))*";
   //------------------------------------------------------------
 
 };

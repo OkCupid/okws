@@ -20,7 +20,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(join, "sl");
   PUB3_COMPILED_FN_DOC(range, "i|ii");
   PUB3_COMPILED_FN_DOC(split, "rs");
-  PUB3_COMPILED_FN(split2, "rs");
+  PUB3_COMPILED_FN_DOC(split2, "rs");
   PUB3_COMPILED_FN_DOC(substr, "si|i");
   PUB3_COMPILED_FN_DOC(import, "d");
   PUB3_COMPILED_FN_DOC(version_str, "");
@@ -30,14 +30,14 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(values, "d");
   PUB3_COMPILED_FN_DOC(keys, "d");
   PUB3_COMPILED_FN_DOC(items, "d");
-  PUB3_COMPILED_FN(remove, "ds");
+  PUB3_COMPILED_FN_DOC(remove, "ds");
   PUB3_COMPILED_FN_DOC(json2pub, "s|b");
   PUB3_COMPILED_FN_DOC(cgi2pub, "s");
   PUB3_COMPILED_FN_DOC(now, "");
   PUB3_COMPILED_FN_DOC(time_format, "us");
-  PUB3_COMPILED_FN(localtime, "|u");
-  PUB3_COMPILED_FN(localtime_raw, "|u");
-  PUB3_COMPILED_FN(mktime, "d");
+  PUB3_COMPILED_FN_DOC(localtime, "|u");
+  PUB3_COMPILED_FN_DOC(localtime_raw, "|u");
+  PUB3_COMPILED_FN_DOC(mktime, "d");
   PUB3_COMPILED_FN_DOC(days_from_now, "i");
   PUB3_COMPILED_FN_DOC(time_from_now, "|iiii"); // D,H,M,S args
   PUB3_COMPILED_FN_DOC(strptime, "s|s"); 
@@ -46,7 +46,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(dump_env, "");
   PUB3_COMPILED_FN_DOC(contains, "OO");
   PUB3_COMPILED_FN_DOC(int, "O");
-  PUB3_COMPILED_FN(uint, "O");
+  PUB3_COMPILED_FN_DOC(uint, "O");
   PUB3_COMPILED_FN_DOC(round, "f");
   PUB3_COMPILED_FN_DOC(ceil, "f");
   PUB3_COMPILED_FN_DOC(floor, "f");
@@ -62,7 +62,7 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(atan, "f");
   PUB3_COMPILED_FN_DOC(atan2, "f");
   PUB3_COMPILED_FN_DOC(str, "O");
-  PUB3_COMPILED_FN(documentation, "O");
+  PUB3_COMPILED_FN_DOC(documentation, "O");
   PUB3_COMPILED_FN_DOC(tag_escape, "s|r");
   PUB3_COMPILED_FN_DOC(logwarn, "s|b");
   PUB3_COMPILED_FN_DOC(warn_trace, "s");
@@ -73,21 +73,20 @@ namespace rfn3 {
   PUB3_COMPILED_FN_DOC(bind, "sO|s");
   PUB3_COMPILED_FN_DOC(list, "O");
   PUB3_COMPILED_FN_DOC(sort, "l|F");
-  PUB3_COMPILED_FN(sort2, "l|F");
   PUB3_COMPILED_FN_DOC(cmp, "OO");
   PUB3_COMPILED_FN_DOC(format_float, "sf");
   PUB3_COMPILED_FN_DOC(format_int, "si");
   PUB3_COMPILED_FN_DOC(json_escape, "s");
   PUB3_COMPILED_FN_DOC(js_escape, "s");
   PUB3_COMPILED_FN_DOC(randsel, "l");
-  PUB3_COMPILED_FN(bitwise_leftshift, "uu");
-  PUB3_COMPILED_FN(bitwise_rightshift, "uu");
-  PUB3_COMPILED_FN(bitwise_xor, "uu");
-  PUB3_COMPILED_FN(index_of, "ss|i");
-  PUB3_COMPILED_FN(cmp_float, "f");
-  PUB3_COMPILED_FN(eval_location, "");
-  PUB3_COMPILED_FN(breadcrumb, "");
-  PUB3_COMPILED_FN(stacktrace, "");
+  PUB3_COMPILED_FN_DOC(bitwise_leftshift, "uu");
+  PUB3_COMPILED_FN_DOC(bitwise_rightshift, "uu");
+  PUB3_COMPILED_FN_DOC(bitwise_xor, "uu");
+  PUB3_COMPILED_FN_DOC(index_of, "ss|i");
+  PUB3_COMPILED_FN_DOC(cmp_float, "f");
+  PUB3_COMPILED_FN_DOC(eval_location, "");
+  PUB3_COMPILED_FN_DOC(breadcrumb, "");
+  PUB3_COMPILED_FN_DOC(stacktrace, "");
   PUB3_COMPILED_FN_DOC(slice, "l|ii");
   PUB3_COMPILED_FN_DOC(reserve, "lu");
 
@@ -199,6 +198,7 @@ namespace rfn3 {
     ptr<mref_t> eval_to_ref (eval_t *p, args_t args) const;
     ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
     ptr<expr_t> eval_to_mval (eval_t *p, args_t args) const;
+    PUB3_DOC_MEMBERS
   protected:
     bool count_args (eval_t *p, size_t s) const;
     ptr<expr_t> eval_final (eval_t *p, ptr<expr_t> x) const;
@@ -213,6 +213,7 @@ namespace rfn3 {
     void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
     ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
     bool might_block () const { return true; }
+    PUB3_DOC_MEMBERS
   };
 
   //-----------------------------------------------------------------------
@@ -224,6 +225,7 @@ namespace rfn3 {
     void pub_to_val (eval_t *p, args_t args, cxev_t ev, CLOSURE) const;
     ptr<const expr_t> eval_to_val (eval_t *p, args_t args) const;
     bool might_block () const { return true; }
+    PUB3_DOC_MEMBERS
   };
 
   //-----------------------------------------------------------------------
