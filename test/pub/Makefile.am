@@ -8,7 +8,11 @@ TESTS = \
 	scoping_include.pub \
 	scoping_uniref.pub \
 	scoping_specifiers.pub \
+	syntax_error.pub \
 	undef_vs_null.pub
 
+if SFS_DEBUG
+    TESTS+=blocking_call_warn.pub
+endif
 AUTOMAKE_OPTIONS = parallel-tests
 LOG_COMPILER = $(builddir)/test_runner
