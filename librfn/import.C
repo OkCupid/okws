@@ -21,9 +21,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str import_t::DOCUMENTATION =
-    "Take the given dictionary and import it into the environment "
-    "as local bindings.";
+  const str import_t::DOCUMENTATION = R"*(Take the given dictionary and import it
+into the environment as local bindings
+
+@param {dict} d)*";
 
   //-----------------------------------------------------------------------
 };

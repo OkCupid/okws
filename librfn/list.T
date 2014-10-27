@@ -26,8 +26,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str enumerate_t::DOCUMENTATION =
-    "Given a list //l//, output a list of lists, "
-    "in which the //i//th element is the pair [//i//, //l//[//i//] ]";
+    R"*(Output a list of lists,in which the `i`th element is the pair `[i, l[i]]`
+
+@param {list} l
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -44,10 +46,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str randsel_t::DOCUMENTATION =
-    "Select a random element from the list //l//.  Return "
-    "a tuple, with the element in the 0th slot, and the index of the element "
-    "in the 1st slot.  Don't modify the list.";
+  const str randsel_t::DOCUMENTATION = R"*(Select a random element from the list
+`l`.
+
+Doesn't modify the list.
+@param {list} l
+@return {list} a tuple, with the element in the 0th slot, and the index of the
+element in the 1st slot.)*";
 
   //-----------------------------------------------------------------------
 
@@ -79,10 +84,12 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str decorate_t::DOCUMENTATION =
-    "Given a list of dictionaries //l//, annotate each "
-    "row in the dictionary with a //first//, //last//, //iter//, //even// "
-    "and //odd// field.  This is mainly a holdover from a previous OKWS.";
+  const str decorate_t::DOCUMENTATION = R"*(Given a list of dictionaries `l`,
+annotate each row in the dictionary with a `first`, `last`, `iter`, `even`
+and `odd` field.  This is mainly a holdover from a previous OKWS.
+
+@param {list} l
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -102,11 +109,14 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str range_t::DOCUMENTATION =
-    "If called with one argument (//a1//), output a integers "
-    "in [0,//a1//). If called with two arguments (//a1// and //a2//), output "
-    "a list of integers in [//a1//, //a2//). If called with three arguments, "
-    "//a3// is the step between elements.";
+  const str range_t::DOCUMENTATION = R"*(If called with one argument (`a1`),
+output a integers in `[0, a1)`. If called with two arguments (`a1` and `a2`),
+output a list of integers in `[a1, a2)`. If called with three arguments, `a3` is
+the step between elements.
+
+@param {int} a1
+@param {int} a2
+@param {int} a3)*";
 
   //-----------------------------------------------------------------------
 
@@ -137,9 +147,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str join_t::DOCUMENTATION =
-    "Take the list of strings //l// and join them together"
-    "with the delimiter //delim//.  Output a string.";
+  const str join_t::DOCUMENTATION = R"*(Take the list of strings `l` and join
+them together with the delimiter `delim`.  Output a string.
+
+@param {list<string>} l
+@param {string} delim
+@return {string}
+@example join(["1", "2", "3", "4"], ","))*";
 
   //-----------------------------------------------------------------------
 
@@ -166,7 +180,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str reverse_t::DOCUMENTATION =
-    "Reverse the input list //in place//.  Return the reversed list.";
+    R"*(Reverse the input list *in place*.
+
+@param {list} v
+@return {list} the reversed list)*";
 
   //-----------------------------------------------------------------------
 
@@ -207,8 +224,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str shuffle_t::DOCUMENTATION =
-    "Shuffle the input list //in place//.  Return the shuffled list.";
+  const str shuffle_t::DOCUMENTATION = R"*(Shuffle the input list *in place*.
+
+@param {uint} l
+@return {list} the shuffled list.)*";
 
   //-----------------------------------------------------------------------
 
@@ -255,10 +274,20 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str splice_t::DOCUMENTATION =
-    "Like JS's splice() function. Remove //remove// objects "
-    "from the list //v// starting at index //index//.  Replace with optional "
-    "objects //o_1//, through //o_n//, as many as specified.";
+  const str splice_t::DOCUMENTATION = R"*(Remove `remove` objects from the
+list `v` starting at index `index`.
+
+Replace with optional objects `objs[0]`, through `objs[n]`, as many as
+specified. Returns new list.
+
+Like JS's `splice()` function, but does not mutate list.
+
+@param {list} l
+@param {int} index
+@param {int} remove
+@optional
+@param {object...} objs
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -291,9 +320,15 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str slice_t::DOCUMENTATION =
-    "Like JS's slice() function. Make a shallow copy of a list, "
-    "optionally just part of it.";
+  const str slice_t::DOCUMENTATION = R"*(Make a shallow copy of a list,
+optionally just part of it.
+
+Like JS's slice() function.
+@param {list} l
+@optional
+@param {uint} start
+@param {uint} end
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -318,9 +353,13 @@ namespace rfn3 {
   }
   //-----------------------------------------------------------------------
 
-  const str append_t::DOCUMENTATION =
-    "Given the list //v//, append onto it the "
-    "object //o//.  There is no output; changes are made to //v// directly. ";
+  const str append_t::DOCUMENTATION = R"*(append `o` to `v`.
+
+Changes are made to `v` directly and `v` is returned.
+@param {list} v
+@param {object} o
+@response {list} `v` (it returns the modified list)
+@example [0,1,2]|append(3))*";
 
   //-----------------------------------------------------------------------
 
@@ -332,9 +371,12 @@ namespace rfn3 {
   }
   //-----------------------------------------------------------------------
 
-  const str reserve_t::DOCUMENTATION =
-    "Internally reserve space in a list to hold at least //n// items. Just a "
-    "performance optimization for when you know how big it will be.";
+  const str reserve_t::DOCUMENTATION = R"*(Internally reserve space in a list to
+hold at least `n` items. Just a performance optimization for when you know how
+big it will be.
+
+@param {list} l
+@param {uint} u)*";
 
   //-----------------------------------------------------------------------
   
@@ -349,11 +391,20 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str map_t::DOCUMENTATION =
-    "Map every element in //o// to the value in the "
-    "dictionary //d//, more or less. If //o// is a list, then map each "
-    "element of the list via //d//.  If //o// is a dictionary, map the "
-    "values of //o// through //d//.";
+  const str map_t::DOCUMENTATION = R"*(Map every element in `o` to the value in
+the dictionary `d`.
+
+If `o` is a list, then map each element of the list via `d`.  If `o` is a
+dictionary, map the values of `o` through `d`.
+
+@param {dict} d
+@param {object} o
+@return {object}
+@example
+{% locals { x : { "a" : "A", "b" : "B" }, v : [ "a", "b", "c" ], d : { "xx" : "a" } } %}
+%{map(x,v)} // will output ["A", "B", null]
+%{map(x,d)} // will output { "xx" : "A" }
+@response)*";
 
   //-----------------------------------------------------------------------
 
@@ -433,10 +484,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str split_t::DOCUMENTATION =
-    "Given a regex //r// and a string //s//, split //s// into "
-    "a list of strings, akin to the Python function 'split'.  Return a list "
-    "of strings.";
+  const str split_t::DOCUMENTATION = R"*(Split `s` into a list of strings, akin
+to the Python function `split`.
+
+@param {regex} r
+@param {string} s
+@return {list<string>}
+@example split(r{\.}, "services.okcupid.com"))*";
 
   //-----------------------------------------------------------------------
 
@@ -449,6 +503,15 @@ namespace rfn3 {
     split2 (&v, *rx, s);
     return split_vec_to_list (v);
   }
+
+  const str split2_t::DOCUMENTATION = R"*(split `s` into a list of strings.
+
+Unlike `split`, also include the matched portions of the string.  Return a list
+of strings.
+@param {regex} r
+@param {string} s
+@return {list<string>}
+@example split2(r{\.}, "services.okcupid.com"))*";
 
   //-----------------------------------------------------------------------
 
@@ -559,6 +622,13 @@ namespace rfn3 {
     return ret;
   }
 
+
+  const str pop_front_t::DOCUMENTATION = R"*(Pop the first object off the list
+`l` and return it.
+
+@param {list} l
+@return {object})*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -603,11 +673,14 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str list_t::DOCUMENTATION =
-    "Output object //o// as a list.  If //o// is "
-    "a list to begin with, just output //o//.  If //o// is a string, "
-    "output the list of characters that compose //o//. If //o// "
-    "is a dictionary, act like the //items// call.";
+  const str list_t::DOCUMENTATION = R"*(Output object `o` as a list.
+
+If `o` is a list to begin with, just output `o`.  If `o` is a string, output the
+list of characters that compose `o`. If `o` is a dictionary, act like the
+`items` call.
+
+@param {object} o
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -628,52 +701,6 @@ namespace rfn3 {
     ptr<const expr_t> x = g_cmp->eval_to_val (g_eval, g_tmp_args);
     int r = x ? x->to_int () : -1;
     return r;
-  }
-
-  //-----------------------------------------------------------------------
-
-  ptr<const expr_t>
-  sort2_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
-  {
-    ptr<expr_list_t> in = args[0]._l;
-    g_tmp_args = expr_list_t::alloc ();
-    g_tmp_args->setsize (2);
-    g_cmp = New refcounted<cmp_t> ();
-    g_eval = p;
-
-    ptr<const callable_t> keyfn;
-    if (args.size () > 1) { keyfn = args[1]._F; } 
-
-    size_t n = in->size ();
-
-    vec<size_t> v;
-    v.setsize (n);
-    for (size_t i = 0; i < n; i++) { v[i] = i; }
-
-    if (keyfn) {
-      g_target = expr_list_t::alloc ();
-      g_target->setsize (n);
-      ptr<expr_list_t> key_args = expr_list_t::alloc ();
-      key_args->setsize (1);
-      for (size_t i = 0; i < n; i++) { 
-	(*key_args)[0] = (*in)[i];
-	ptr<const expr_t> cx = keyfn->eval_to_val (p, key_args);
-	ptr<expr_t> x;
-	if (!cx) { x = expr_null_t::alloc (); }
-	else { x = cx->copy (); }
-	(*g_target)[i] = x;
-      }
-    } else {
-      g_target = in;
-    }
-    qsort (v.base (), n, sizeof (size_t), cmp_fn);
-    
-    ptr<expr_list_t> ret = expr_list_t::alloc ();
-    ret->setsize (n);
-    for (size_t i = 0; i < n; i++) {
-      (*ret)[i] = (*in)[v[i]];
-    }
-    return ret;
   }
 
   //-----------------------------------------------------------------------
@@ -707,10 +734,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str sort_t::DOCUMENTATION =
-    "Sort the given list //l//, given the comparison "
-    "function //cmp//.  If //cmp// isn't specified, then use the "
-    "default comparison operatore.  If it is, use it!";
+  const str sort_t::DOCUMENTATION = R"*(Sort the given list `l`, given the
+comparison function `cmp`.
+
+If `cmp` isn't specified, then use the default comparison operatore.
+
+@param {list} l
+@optional
+@param {function} cmp
+@return {list}
+@example [{prop:5}, {prop:4}]|sort(lambda(a, b) { return a.prop - b.prop; }))*";
 
   //-----------------------------------------------------------------------
 
@@ -732,10 +765,13 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str cmp_t::DOCUMENTATION =
-    "The standard comparison function. Will return "
-    "-1 for a < b, 1 for a > b and 0 for a == b.  Will compare strings "
-    "or integers, nothing else.";
+  const str cmp_t::DOCUMENTATION = R"*(The standard comparison function.
+
+Will return `-1` for `a < b`, `1` for `a > b` and `0` for `a == b`.  Will
+compare strings or integers, nothing else.
+@param {object} a
+@param {object} b
+@return {int})*";
 
   //-----------------------------------------------------------------------
 

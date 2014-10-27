@@ -93,6 +93,10 @@ namespace rfn3 {
     ev->trigger (ret);
   };
 
+  const str raw_t::DOCUMENTATION = R"*(Pubs out a file...
+
+@param {string} filename
+@return {string})*";
   //-----------------------------------------------------------------------
 
 };
