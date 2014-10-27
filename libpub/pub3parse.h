@@ -115,5 +115,19 @@ namespace pub3 {
 
   //-----------------------------------------------------------------------
 
-};
+  class pub_str_parser_t : public parser_t {
+
+    ptr<pub3::zone_t> _out;
+    vec<str> _errors;
+
+  public:
+    bool set_zone_output (ptr<pub3::zone_t> z) { _out = z; return true; }
+    const vec<str> &get_errors () const { return _errors; }
+    vec<str> &get_errors () { return _errors; }
+
+    ptr<pub3::zone_t> parse(const str &in, pub3::opts_t opts = 0);
+  };
+
+  //-----------------------------------------------------------------------
+} // namespace pub3
 
