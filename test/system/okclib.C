@@ -57,6 +57,8 @@ namespace okclib {
     return expr_str_t::alloc (s);
   }
 
+  const str money_t::DOCUMENTATION = R"(internal function)";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -75,6 +77,7 @@ namespace okclib {
     return expr_str_t::alloc (b);
   }
 
+  const str commafy_t::DOCUMENTATION = R"(internal function)";
   //-------------------------------------------------------------------
   
   ptr<const expr_t>
@@ -91,7 +94,9 @@ namespace okclib {
     }
     return out;
   }
-  
+
+  const str bit_set_t::DOCUMENTATION = R"(internal function)";
+
   //-----------------------------------------------------------------------
   
   const char *libname = "okclib";
