@@ -56,6 +56,11 @@ namespace pub3 {
         ev->trigger();
     }
 
+    const str* serial_shotgun_t::documentation() const {
+        static str doc = "internal function";
+        return &doc;
+    }
+
     tamed void
     serial_shotgun_t::v_pub_to_val_2(eval_t *e, const checked_args_t &args,
                                      cxev_t ev)
@@ -137,6 +142,11 @@ namespace {
 
         ptr<const pub3::expr_t>
         v_eval_2(pub3::eval_t *p, const vec<arg_t> &args) const;
+
+        const str* documentation () const final {
+            static str doc = "internal function";
+            return &doc;
+        };
     };
 
 

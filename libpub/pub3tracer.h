@@ -43,6 +43,7 @@ namespace pub3 {
         serial_shotgun_t() : patterned_fn_blocking_t("rfn3", "shotgun", "l") {}
         void v_pub_to_val_2(eval_t *, const vec<arg_t> &, cxev_t,
                             CLOSURE) const;
+        const str* documentation () const final;
     };
 
     //--------------------------------------------------------------------------
