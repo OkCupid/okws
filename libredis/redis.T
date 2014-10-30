@@ -32,6 +32,10 @@ class RedisDispatcher {
         void addReplyEv(uint64_t key, ev_redis_reply_t ev)
             { m_replyEvMap.insert(key, ev); }
 
+        void removeCli(const redisAsyncContext* c) {
+            m_cliMap.remove((uint64_t)c);
+        }
+
         RedisCli *useCli(const redisAsyncContext *c);
         evi_t::ptr useConnEv(const redisAsyncContext *c);
         ev_redis_reply_t::ptr useReplyEv(uint64_t key);
@@ -271,6 +275,10 @@ void RedisCli::disconnect() {
     if (m_connected && m_c->err == 0) {
         m_connected = false;
         redisAsyncDisconnect(m_c);
+    } else {
+        g_dispatcher.removeCli(m_c);
+        m_c = nullptr;
+        m_connected = false;
     }
 }
 
@@ -279,11 +287,12 @@ void RedisCli::disconnect() {
 void RedisCli::disconnectHandler(int status) {
     if (status != REDIS_OK) {
         rcwarn << "error: " << m_c->errstr << "\n";
-        if (m_recon) { reconnect(); }
-        return;
+        if (m_recon) { reconnect(); return; }
     }
     // no need to free m_c on successful disconnect, it will already have
     // been freed
+    g_dispatcher.removeCli(m_c);
+
     m_connected = false;
     m_c = nullptr;
     rcwarn << "disconnected from " << m_host << ":" << m_port << "\n";
