@@ -48,8 +48,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str isnull_t::DOCUMENTATION =
-    "Output //True// if //o// is //null// and false otherwise.";
+  const str isnull_t::DOCUMENTATION = R"*(Output whether if `o` is `null`.
+
+@param {object} o
+@return `true` if `o` is `null` and `false` otherwise)*";
 
   //-----------------------------------------------------------------------
 
@@ -68,12 +70,19 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str len_t::DOCUMENTATION =
-    "Given an input object //o//, returns its length. "
-    "If //o// is a string, return the length of //s//.  If it is a list, "
-    "return the number of elements in the list.  If it is a dictionary, "
-    "return the number of bound pairs in the dictionary.";
-  
+  const str len_t::DOCUMENTATION = R"*(Given an input object `o`, returns its
+length.
+
+If `o` is a string, return its length.  If it is a list, return the number of
+elements in the list.  If it is a dictionary, return the number of bound pairs
+in the dictionary.
+
+@param {object} o
+@return {uint}
+@example len("abcd")
+@example len(["ab", "cd"])
+@example len({a:4, b:4}))*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -90,9 +99,12 @@ namespace rfn3 {
   }
   //-----------------------------------------------------------------------
 
-  const str type_t::DOCUMENTATION =
-    "Given object //o//, output its type. Possible values are undef, list, "
-    "str, dict.";
+  const str type_t::DOCUMENTATION = R"*(Given object `o`, output its type.
+
+Possible values are `undef`, `list`, `str`, `dict`.
+
+@param {object} o
+@return {string})*";
 
   //-----------------------------------------------------------------------
 
@@ -104,8 +116,10 @@ namespace rfn3 {
 
   //------------------------------------------------------------------------
 
-  const str version_str_t::DOCUMENTATION =
-    "Output the version of this rfn3 library in dotted string notation.";
+  const str version_str_t::DOCUMENTATION =R"*(Output the version of this rfn3
+library in dotted string notation.
+
+@return {string})*";
 
   //-----------------------------------------------------------------------
 
@@ -117,8 +131,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str version_int_t::DOCUMENTATION =
-    "Output the version of this rfn3 library in integer representation.";
+  const str version_int_t::DOCUMENTATION = R"*(Output the version of this rfn3
+library in integer representation
+
+@return {uint})*";
 
   //-----------------------------------------------------------------------
 
@@ -128,8 +144,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str okws_version_str_t::DOCUMENTATION =
-    "Output the version of this OKWS instance in dotted string notation.";
+  const str okws_version_str_t::DOCUMENTATION = R"*(Output the version of this
+OKWS instance in dotted string notation.
+
+@return {string})*";
 
   //-----------------------------------------------------------------------
 
@@ -140,7 +158,9 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str okws_version_int_t::DOCUMENTATION =
-    "Output the version of this OKWS instance in integer representation.";
+    R"*(Output the version of this OKWS instance in integer representation.
+
+@return {string})*";
 
   //-----------------------------------------------------------------------
 
@@ -154,7 +174,11 @@ namespace rfn3 {
   //-------------------------------------------------------------------
 
   const str dump_env_t::DOCUMENTATION =
-    "Return a dump of the environment; useful for debugging purposes.";
+    R"*(Return a dump of the environment
+
+useful for debugging purposes
+
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -173,9 +197,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str int_t::DOCUMENTATION =
-    "Coerces the object //o// into an integer, if at all possible.  Returns 0 "
-    "on failure and the conversion otherwise.";
+  const str int_t::DOCUMENTATION = R"*(Coerces the object `o` into an integer.
+
+@param {object} o
+@return {int} 0 on failure and the conversion otherwise)*";
 
   //-----------------------------------------------------------------------
 
@@ -191,6 +216,12 @@ namespace rfn3 {
     else { /* no dice! */ }
     return expr_uint_t::alloc (i);
   }
+
+  const str uint_t::DOCUMENTATION = R"*(Coerces the object `o` into an unsigned
+integer.
+
+@param {object} o
+@return {uint})*";
 
   //-----------------------------------------------------------------------
 
@@ -209,6 +240,15 @@ namespace rfn3 {
     }
   }
 
+  const str documentation_t::DOCUMENTATION = R"*(Returns the pub3 (back-end)
+documentation for the given object.
+
+Defined by setting  `pubfunction_t::DOCUMENTATION` for functions and by passing
+a docstring to the constructor for libraries.
+
+@param {object} o
+@return {string})*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -223,7 +263,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str str_t::DOCUMENTATION =
-    "Return the stringified version of the object //o//.";
+    R"*(Return the stringified version of `o`
+
+@param {object} o
+@return {string})*";
 
   //-----------------------------------------------------------------------
 
@@ -252,10 +295,15 @@ namespace rfn3 {
 
    //-----------------------------------------------------------------------
 
-  const str logwarn_t::DOCUMENTATION =
-    "Output the string //s// as an error to the log (not to "
-    "the page); prefix with okws-pub3[logwarn] if the specified flag is true "
-    "(and it is true by default).";
+  const str logwarn_t::DOCUMENTATION = R"*(Output the string `s` as an error to
+the log (not to the page);
+
+prefix with `okws-pub3[logwarn]` if the specified flag is true (and it is true
+by default).
+
+@param {string} s
+@optional
+@param {bool} b)*";
 
   //-----------------------------------------------------------------------
 
@@ -272,8 +320,8 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str warn_t::DOCUMENTATION =
-     "Output the string //s// as an error, both to the page "
-     "and to the log.";
+     R"*(Output the string `s` as an error, both to the page and to the log.
+@param {string} s)*";
 
   //-----------------------------------------------------------------------
 
@@ -289,9 +337,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str warn_trace_t::DOCUMENTATION =
-       "Output the string //s// and the current include "
-       "stacktrace as an error, both to the page and to the log.";
+  const str warn_trace_t::DOCUMENTATION = R"*(Output the string `s` and the
+current include stacktrace as an error, both to the page and to the log.
+
+@param {string} s)*";
 
   //-----------------------------------------------------------------------
 
@@ -307,8 +356,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str internal_dump_t::DOCUMENTATION =
-            "Return the okws-pub3 internals of the object //o//";
+  const str internal_dump_t::DOCUMENTATION = R"*(Return the okws-pub3 internals
+of the object `o`
+
+@param {object} o)*";
 
   //-----------------------------------------------------------------------
 
@@ -321,9 +372,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str enable_wss_t::DOCUMENTATION =
-    "Set white-space-stripping mode to //b//, either "
-    "enabling it or disabled it.  WSS is off by default.";
+  const str enable_wss_t::DOCUMENTATION = R"*(Set white-space-stripping mode to
+`b`, either enabling it or disabled it.  WSS is off by default.
+
+@param {bool} b)*";
 
   //-----------------------------------------------------------------------
 
@@ -371,11 +423,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str bind_t::DOCUMENTATION =
-    "Bind the object //obj// to the key //key// in the "
-    "environment. If //scope// is not specified, make it a local binding. "
-    "Otherwise, can specify the scope explicitly: 'l' for 'local', 'g' for "
-    "'global', or 'u' for 'universals.";
+  const str bind_t::DOCUMENTATION = R"*(Bind the object `obj` to the key `key` in
+the scope `scope`.
+
+If `scope` is not specified, make it a local binding. Otherwise, can specify the
+scope explicitly: `l` for `local`, `g for `global`, or `u` for `universals`
+
+@param {string} key
+@param {object} o
+@optional
+@param {string} scope)*";
 
   //-----------------------------------------------------------------------
 
@@ -400,11 +457,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str unbind_t::DOCUMENTATION =
-    "Unbind the variable //var// from the environment. "
-    "If //scope// is not specified, then assume first found binding.  Can "
-    "explicitly specify 'l' for 'local', 'g' for 'global', or 'u' "
-    "for 'universals'.";
+  const str unbind_t::DOCUMENTATION = R"*(Unbind the variable `var` from the
+environment.
+
+If `scope` is not specified, then assume first found binding.  Can explicitly
+specify `l` for `local`, `g` for `global`, or `u`
+for 'universals'.
+
+@param {string} var
+@optional
+@param {string} scope)*";
 
   //-----------------------------------------------------------------------
 
@@ -416,8 +478,9 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str copy_t::DOCUMENTATION =
-    "Return a copy of the input object //o//.";
+  const str copy_t::DOCUMENTATION = R"*(Return a copy of the input object `o`
+
+@param {object} o)*";
 
   //-----------------------------------------------------------------------
 
@@ -520,11 +583,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str lookup_t::DOCUMENTATION =
-    "Lookup the key //k// in the environment. "
-    "If no //scope// is specified, find the first natural result. "
-    "Otherwise, limit the search to the scope given by //scope//. "
-    "See //unbind// or //bind// for how to specify scope.";
+  const str lookup_t::DOCUMENTATION = R"*(Lookup the key `k` in the environment.
+
+If no `scope` is specified, find the first natural result. Otherwise, limit the
+search to the scope given by `scope`. See `unbind` or `bind` for how to specify
+scope.
+
+@param {string} k
+@optional
+@param {string} scope
+@return {object})*";
 
   //-----------------------------------------------------------------------
 
@@ -560,17 +628,19 @@ namespace rfn3 {
 // dict[null] = 5; => {...., null = 5}
 // v = dict[null]; => v = null
     const str contains_t::DOCUMENTATION =
-R"(Looks for `needle` in `haystack`.
+R"*(Looks for `needle` in `haystack`.
 
 If `haystack` is a dictionary return true if `needle != null` and
 `str(needle)` is a key in `haystack`.
+
 If `haystack` is a `list` return true if any element of `haystack` is equal to
 `needle`. Otherwise return `false`.
+
 List lookups are slow, if you do a lot of those consider using a dictionary
 instead.
-:param haystack:
-:param needle:
-)";
+
+@param haystack
+@param needle)*";
 
   //-----------------------------------------------------------------------
 
@@ -581,7 +651,11 @@ instead.
     p->get_loc_stack ()->back ().pub (o);
     return o.obj ();
   }
-  
+
+  const str eval_location_t::DOCUMENTATION = R"*(Get the current location
+
+@return {dict})*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -593,6 +667,12 @@ instead.
     strbuf b ("%s:%d", fn ? fn.cstr () : "<unknown>" , l);
     return expr_str_t::alloc (b);
   }
+
+  const str breadcrumb_t::DOCUMENTATION = R"*(
+Returns the pub stack, ie the file name and line number.
+
+@return {string}
+@example breadcrumb())*";
 
   //-----------------------------------------------------------------------
 
@@ -610,27 +690,62 @@ instead.
     return stack.obj();
   }
 
+  const str stacktrace_t::DOCUMENTATION = R"*(Shows the callstack
+
+@return {list}
+@example stacktrace())*";
+
   //-----------------------------------------------------------------------
 
   const str match_t::DOCUMENTATION =
-    "Given a regex //r// and a string //s//, return //true// "
-    "if //r// matches the **whole** string //s// and //false// otherwise.";
+    R"*(Return `true` if `r` matches the *whole* string `s`.
+
+@param {regex} r
+@param {string} s
+@return {bool})*";
 
   //-----------------------------------------------------------------------
 
-  const str search_t::DOCUMENTATION =
-    "Given a regex //r// and a string //s//, split //s// into "
-    "a list of strings, akin to the Python function 'split'.  Return a list "
-    "of strings.";
+  const str search_t::DOCUMENTATION = R"*(Return `true` if `r` is found in `s`.
+
+@param {regex} r
+@param {string} s
+@return {bool})*";
 
   //-----------------------------------------------------------------------
 
-  const str replace_t::DOCUMENTATION =
-    "In the string //body//, find all occurrence of "
-    "the regular expression //pat// and replace with the string //repl//, "
-    "or the output of the lambda //repl//.  By default, a string //repl// "
-    "can contain Perl-like capture groups (e.g., '<b>$0</b>'), but if you "
-    "don't want that, pass a fourth optional parameter //use_captures// "
-    "as //false//.";
+  const str replace_t::DOCUMENTATION = R"*(In the string `body`, find all
+occurrence of the regular expression `pat` and replace with the string `repl`,
+or the output of the lambda `repl`.
+
+By default, a string `repl` can contain Perl-like capture groups (e.g.,
+`<b>$0</b>`), but if you don't want that, pass a fourth optional parameter
+`use_captures` as `false`.
+
+@param {string} s
+@param {regex} pat
+@param {object} repl
+@optional
+@param {bool} use_captures
+@return {string}
+
+@example {%
+ locals { body : "the URL is foo.com." }
+ print (replace (body, "[a-z.]+(com|edu)", "$1:$0"));
+ print (replace (body, "[a-z.]+(com|edu)",
+ lambda (v) { return ("%{toupper(v[1])}:%{v[0]}"); }));
+%}
+@response 'the URL is com:foo.com. the URL is COM:foo.com.')*";
+
+  //-----------------------------------------------------------------------
+
+  const str stat_file_t::DOCUMENTATION = R"*(Get metadata about a file,
+including its hash
+
+@param {string} file
+@return {dict}
+@example stat_file('/okcontent/lib/util.pub')
+@response
+)*";
 
 };

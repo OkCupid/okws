@@ -3,17 +3,64 @@ set -e -u -o pipefail
 IN_FILE="$1"
 PREFIX="${IN_FILE%.pub}"
 EXPECTED="${PREFIX}.expected"
-OUTPUT="$(mktemp "${PREFIX}-output.XXX")"
+ERROR="${PREFIX}.error"
 TOP_BUILDDIR="@top_builddir@"
 PUB="${TOP_BUILDDIR}/pub/pub3"
+OUTPUT="$(mktemp "${PREFIX}-output.XXX")"
+ERROUT="$(mktemp "${PREFIX}-error.XXX")"
 
 function clean_up() {
-    rm -f "${OUTPUT}"
+    rm -f "${OUTPUT}" "${ERROUT}"
 }
 trap clean_up EXIT
 
-"${PUB}" "${IN_FILE}" > "$OUTPUT"
-if ! diff --brief "$EXPECTED" "$OUTPUT" &> /dev/null; then
+set +e
+"${PUB}" -j "${IN_FILE}" > "$OUTPUT" 2> "$ERROUT"
+EXIT_CODE=$?
+set -e
+
+if [[ -e "$EXPECTED" ]] && ! diff --brief "$EXPECTED" "$OUTPUT" &> /dev/null; then
+        cat >&2 <<EOF
+Wrong stdout:
+=================
+$(cat ${OUTPUT})
+=================
+expected:
+=================
+$(cat ${EXPECTED})
+=================
+EOF
     exit 1
+fi
+
+if [[ -e "$ERROR" ]]; then
+    if [[ "${EXIT_CODE}" -ne 1 && "${EXIT_CODE}" -ne 0 ]]; then
+        echo "Wrong exit code: ${EXIT_CODE} expect 0 or 1" >&2;
+        exit 1;
+    fi
+    if ! diff --brief "$ERROR" "$ERROUT" &> /dev/null; then
+        cat >&2 <<EOF
+Wrong errout:
+=================
+$(cat ${ERROUT})
+=================
+Expected:
+=================
+$(cat ${ERROR})
+=================
+EOF
+        exit 1
+    fi
+elif [[ -s "$ERROUT" ]]; then
+    cat >&2 <<EOF
+Unexpected errout:
+=================
+$(cat ${ERROUT})
+=================
+EOF
+    exit 1;
+elif [[ "${EXIT_CODE}" -ne 0 ]]; then
+    echo "Unexpected exit code: ${EXIT_CODE} expected 0" >&2;
+    exit 1;
 fi
 exit 0

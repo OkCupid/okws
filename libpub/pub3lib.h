@@ -108,6 +108,8 @@ namespace pub3 {
     virtual void
     v_pub_to_val_2 (eval_t *, const vec<arg_t> &, cxev_t, CLOSURE) const = 0;
 
+    ptr<const expr_t> v_eval_1 (eval_t *e, const margs_t &args) const final;
+
     void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const;
   };
 

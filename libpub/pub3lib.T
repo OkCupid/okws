@@ -1,6 +1,7 @@
 // -*-c++-*-
 
 #include "pub3lib.h"
+#include "sfs_assert.h"
 
 namespace pub3 {
 
@@ -273,6 +274,18 @@ namespace pub3 {
       twait { v_pub_to_val_2 (e, ac, mkevent (ret)); }
     }
     ev->trigger (ret);
+  }
+
+  //========================================== library_t ==================
+
+  ptr<const expr_t>
+  patterned_fn_blocking_t::v_eval_1 (eval_t *e, const margs_t &) const {
+#ifdef SFS_DEBUG
+    strbuf b ("\"%s\" cannot be called in a non-blocking context.",
+              _name.cstr());
+    report_error (e, b);
+#endif
+    return pub3::expr_null_t::alloc();
   }
 
   //========================================== library_t ==================

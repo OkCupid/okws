@@ -37,9 +37,15 @@ namespace rfn3 {
   }
 
   const str rand_t::DOCUMENTATION =
-    "Given one argument (//a1//), outputs an integer randomly "
-    "between 0 and //a1//.  Given two (a1 and a1), outputs an integer randomly "
-    "between //a1// and //a2//";
+    R"*(Outputs a random number.
+
+Given one argument (`a1`), outputs an integer randomly between 0 and `a1`.
+
+Given two (a1 and a1), outputs an integer randomly between `a1` and `a2`
+@param {uint} a1
+@optional
+@param {uint} a2
+@example rand(100))*";
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -52,6 +58,12 @@ namespace rfn3 {
     return expr_int_t::alloc (ret);
   }
 
+  const str cmp_float_t::DOCUMENTATION =
+    R"*(Compare `a` to `0`
+
+@param {float} a
+@return {int} `1` if `a > 0`; `-1` if `a < 0`; `0` otherwise)*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -63,8 +75,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str round_t::DOCUMENTATION =
-    "Round the input float //f// to the nearest integer.";
+  const str round_t::DOCUMENTATION = R"*(Round `f` to the nearest integer.
+
+@param {float} f
+@return {int})*";
 
   //-----------------------------------------------------------------------
 
@@ -77,8 +91,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str exp_t::DOCUMENTATION =
-    "The C-library exp() function.";
+  const str exp_t::DOCUMENTATION = R"*(The C-library exp() function
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -91,8 +107,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str log_t::DOCUMENTATION =
-    "The C-library log() function.";
+  const str log_t::DOCUMENTATION = R"*(The C-library log() function.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -105,8 +123,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str sqrt_t::DOCUMENTATION =
-    "The C-library sqrt() function.";
+  const str sqrt_t::DOCUMENTATION = R"*(The C-library sqrt() function.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -119,8 +139,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str cos_t::DOCUMENTATION =
-    "The C-library cos() function, input in radians.";
+  const str cos_t::DOCUMENTATION = R"*(The C-library cos() function, input in
+radians.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -133,8 +156,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str tan_t::DOCUMENTATION =
-    "The C-library tan() function, input in radians.";
+  const str tan_t::DOCUMENTATION = R"*(The C-library tan() function, input in
+radians.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -147,8 +173,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str asin_t::DOCUMENTATION =
-    "The C-library asin() function, input in radians.";
+  const str asin_t::DOCUMENTATION = R"*(The C-library asin() function, input in
+radians.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -161,8 +190,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str acos_t::DOCUMENTATION =
-    "The C-library acos() function, input in radians.";
+  const str acos_t::DOCUMENTATION = R"*(The C-library acos() function, input in
+radians.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -175,8 +207,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str sin_t::DOCUMENTATION =
-    "The C-library sin() function, input in radians.";
+  const str sin_t::DOCUMENTATION = R"*(The C-library sin() function, input in
+radians.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -189,8 +224,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str atan_t::DOCUMENTATION =
-    "The C-library atan() function, input in radians.";
+  const str atan_t::DOCUMENTATION = R"*(The C-library atan() function, input in
+radians.
+
+@param {float} f
+@return {float})*";
 
 
   //-----------------------------------------------------------------------
@@ -205,8 +243,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str atan2_t::DOCUMENTATION =
-    "The C-library atan2() function, input in radians.";
+  const str atan2_t::DOCUMENTATION = R"*(The C-library atan2() function, input
+in radians.
+
+@param {float} f
+@return {float})*";
 
   //-----------------------------------------------------------------------
 
@@ -220,8 +261,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str pow_t::DOCUMENTATION =
-    "The C-library pow() function.";
+  const str pow_t::DOCUMENTATION = R"*(The C-library pow() function.
+
+@param {float} f
+@return {float})*";
 
 
   //-----------------------------------------------------------------------
@@ -236,7 +279,10 @@ namespace rfn3 {
   //-----------------------------------------------------------------------
 
   const str ceil_t::DOCUMENTATION =
-    "Return the smallest integer //i// such that //i >= f//.";
+    R"*(Return the smallest integer `i` such that `i >= f`
+
+@param {float} f
+@return {int})*";
 
   //-----------------------------------------------------------------------
 
@@ -249,8 +295,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str floor_t::DOCUMENTATION =
-    "Return the largest integer //i// such that //i <= f//.";
+  const str floor_t::DOCUMENTATION = R"*(Return the largest integer `i` such
+that `i <= f`.
+
+@param {float} f
+@return {int})*";
 
   //-----------------------------------------------------------------------
 
@@ -262,6 +311,12 @@ namespace rfn3 {
     return expr_uint_t::alloc (l ^ r);
   }
 
+  const str bitwise_xor_t::DOCUMENTATION = R"*(Compute the bitwise OR of `a1`
+and `a2`.
+
+@param {uint} a1
+@param {uint} a2
+@return {uint})*";
 
   //-----------------------------------------------------------------------
 
@@ -273,6 +328,14 @@ namespace rfn3 {
     return expr_uint_t::alloc (base << shift);
   }
 
+  const str bitwise_leftshift_t::DOCUMENTATION = R"*(Shift the `base` value
+`shift` bits to the left
+
+@param {uint} base
+@param {uint} shift
+@return {uint}
+@example bitwise_leftshift(1, 4))*";
+
   //-----------------------------------------------------------------------
 
   ptr<const expr_t>
@@ -282,6 +345,14 @@ namespace rfn3 {
     u_int64_t shift = args[1]._u;
     return expr_uint_t::alloc (base >> shift);
   }
+
+  const str bitwise_rightshift_t::DOCUMENTATION = R"*(Shift the `base` value
+`shift` bits to the right
+
+@param {uint} base
+@param {uint} shift
+@return {uint}
+@example bitwise_rightshift(16, 4))*";
 
   //-----------------------------------------------------------------------
 
@@ -326,9 +397,16 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str bitwise_or_t::DOCUMENTATION =
-    "Compute the bitwise OR of the two arguments. Can take "
-    "arbitrarily many arguments, but only two are shown here.";
+  const str bitwise_or_t::DOCUMENTATION = R"*(Compute the bitwise OR of the
+arguments.
+
+Can take arbitrarily many arguments.
+@param {uint} arg1
+@param {uint} arg2
+@optional
+@param {uint...} args
+@return {uint}
+@example bitwise_or(1, 4, 256))*";
 
   //-----------------------------------------------------------------------
 
@@ -372,9 +450,16 @@ namespace rfn3 {
   
   //-----------------------------------------------------------------------
 
-  const str bitwise_and_t::DOCUMENTATION =
-    "Compute the bitwise AND of the two arguments. Can take "
-    "arbitrarily many arguments, but only two are shown here.";
+  const str bitwise_and_t::DOCUMENTATION = R"*(Compute the bitwise AND of the
+arguments.
+
+Can take arbitrarily many arguments.
+@param {uint} arg1
+@param {uint} arg2
+@optional
+@param {uint...} args
+@return {uint}
+@example bitwise_and(5, 347))*";
 
   //-----------------------------------------------------------------------
 

@@ -28,7 +28,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str values_t::DOCUMENTATION = "Returns a list of keys in a dictionary";
+  const str values_t::DOCUMENTATION =
+    R"*(Returns a list of keys in a dictionary
+
+@param {dict} d
+@return {list})*";
 
   //-----------------------------------------------------------------------
 
@@ -47,7 +51,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str keys_t::DOCUMENTATION = "Returns a list of keys in a dictionary";
+  const str keys_t::DOCUMENTATION = R"*(Returns a list of keys in a dictionary
+
+@param {dict} d
+@return {list<string>})*";
 
   //-----------------------------------------------------------------------
 
@@ -73,10 +80,14 @@ namespace rfn3 {
 
  //-----------------------------------------------------------------------
 
- const str items_t::DOCUMENTATION =
-    "Return the list of items in the dictionary. Each "
-    "item is represented as a list of 2 elemenents, the first being the "
-    "key and the second being the value.";
+ const str items_t::DOCUMENTATION = R"*(Return the list of items in the
+dictionary.
+
+Each item is represented as a list of 2 elemenents, the first being the key and
+the second being the value.
+
+@param {dict} d
+@return {list} A list of `key, value` pairs)*";
 
  //-----------------------------------------------------------------------
 
@@ -89,6 +100,15 @@ namespace rfn3 {
     d->remove(key);
     return expr_bool_t::alloc(found);
   }
+
+  const str remove_t::DOCUMENTATION = R"*(Remove the property `needle` from
+`needle`. Works like JavaScript's `delete` operator. Returns `true` if the
+property was extant on the dict.
+
+@param {dict} haystack
+@param {string} needle
+@return {bool} `true` if the property was extant on the dict.
+@example remove({a:1, b:2}, 'a'))*";
 
   //-----------------------------------------------------------------------
   
@@ -119,8 +139,11 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str json2pub_t::DOCUMENTATION =
-    "Converts a string into a JSON-encoded object";
+  const str json2pub_t::DOCUMENTATION = R"*(Converts a string into a
+JSON-encoded object
+
+@param {string} s
+@return {object} The json object represented by `s`)*";
 
   //-----------------------------------------------------------------------
 
@@ -138,8 +161,10 @@ namespace rfn3 {
 
   //-----------------------------------------------------------------------
 
-  const str cgi2pub_t::DOCUMENTATION =
-    "Converts a string into a CGI dictionary";
+  const str cgi2pub_t::DOCUMENTATION = R"*(Converts a string into a CGI
+dictionary
+
+@param {string} s)*";
 
   //-----------------------------------------------------------------------
 

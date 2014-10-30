@@ -261,5 +261,25 @@ namespace pub3 {
 
   //====================================================================
 
-};
+    ptr<zone_t> pub_str_parser_t::parse(const str &in, opts_t opts) {
+        ptr<pub3::parser_t> old = current ();
+        set_current (mkref (this));
+        _location.set_filename ("<pub>");
+
+        yy_parse_pub(in);
+        yyparse ();
+        yy_pop_all ();
+        flex_cleanup ();
+
+        ptr<zone_t> ret = _out;
+        _out = nullptr;
+        if (error_condition ()) {
+          ret = nullptr;
+        }
+
+        set_current (old);
+        return ret;
+    }
+
+} // namespace pub3
 
