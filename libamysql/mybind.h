@@ -634,6 +634,12 @@ public:
   mybind_res_t (x_okdate_date_t *x) { p = New refcounted<mybind_date_t> (x); }
   mybind_res_t (bool *b) { p = New refcounted<mybind_bool_t> (b); }
   mybind_res_t (double *d) { p = New refcounted<mybind_double_t> (d); }
+  template <
+    typename T,
+    typename dummy = typename std::enable_if<std::is_enum<T>::value, T>::type
+  > mybind_res_t (T *x) :
+      mybind_res_t(reinterpret_cast<typename std::underlying_type<T>::type *>(x))
+  {}
 
   mybind_res_t (amysql_scalar_t *s) 
   { p = New refcounted<mybind_xdr_union_t> (s); }
