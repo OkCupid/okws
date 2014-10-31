@@ -68,7 +68,8 @@ namespace okssl {
 	_debug_startup (false),
 	_logd (NULL),
 	_cipher_order(false),
-	_cli_renog(false)
+	_cli_renog(false),
+    _disable_sslv3(false)
     {}
 
     bool parseopt (int argc, char *argv[]);
@@ -118,6 +119,7 @@ namespace okssl {
     fast_log_t *_logd;
     bool _cipher_order;
     bool _cli_renog;
+    bool _disable_sslv3;
   };
 
   //-----------------------------------------------------------------------
@@ -556,6 +558,11 @@ namespace okssl {
       if (_cipher_order)
           SSL_CTX_set_options(_ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 
+      if (_disable_sslv3) {
+          warn << "Disabling SSLv3\n";
+          SSL_CTX_set_options(_ssl_ctx, SSL_OP_NO_SSLv3);
+      }
+
       SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_DH_USE);
       SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
 
@@ -670,7 +677,7 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "RODm:c:k:u:g:d:l:t:p:j:n:L:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "ROD3m:c:k:u:g:d:l:t:p:j:n:L:")) != -1) {
       switch (ch) {
       case 'j':
 	_jaildir = optarg;
@@ -738,8 +745,11 @@ namespace okssl {
 	  } else {
 	    _ports.push_back (port_t (port, this));
 	  }
-	  break;
+      break;
 	}
+      case '3':
+    _disable_sslv3 = true;
+    break;
       default:
 	warn << "Unrecognized option passed\n";
 	break;

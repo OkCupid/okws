@@ -119,6 +119,7 @@ public:
   str _cipher_list;
   bool _cipher_order;
   bool _cli_renog;
+  bool _disable_sslv3;
   bool _ssl_debug_startup;
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
@@ -126,6 +127,7 @@ public:
   str chainfile_resolved () const { return _chainfile_resolved; }
   str cipher_list () const;
   bool cipher_order() const;
+  bool disable_sslv3() const;
 
   void parse_certfile(str s) { _certfile = s; }
   void parse_keyfile(str s) { _keyfile = s; }
@@ -134,6 +136,7 @@ public:
   void parse_cipher_list(str s) { _cipher_list = s; }
   void parse_cipher_order(str s) { _cipher_order = (bool)(atoi(s.cstr())); }
   void parse_cli_renog(str s) { _cli_renog = (bool)(atoi(s.cstr())); }
+  void parse_disable_sslv3(str s) { _disable_sslv3 = (bool)(atoi(s.cstr())); }
   void parse_ssl_debug_startup(str s) { 
       _ssl_debug_startup = (bool)(atoi(s.cstr())); }
 
@@ -491,6 +494,7 @@ public:
   void got_cipher_list(vec<str> s, str log, bool* errp);
   void got_cipher_order(vec<str> s, str log, bool* errp);
   void got_cli_renog(vec<str> s, str log, bool* errp);
+  void got_disable_sslv3(vec<str> s, str log, bool* errp);
   void got_ssl_debug_startup(vec<str> s, str log, bool* errp);
   void got_allow_proxy(vec<str> s, str log, bool* errp);
 
