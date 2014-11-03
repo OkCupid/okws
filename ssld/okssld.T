@@ -559,7 +559,6 @@ namespace okssl {
           SSL_CTX_set_options(_ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 
       if (_disable_sslv3) {
-          warn << "Disabling SSLv3\n";
           SSL_CTX_set_options(_ssl_ctx, SSL_OP_NO_SSLv3);
       }
 
