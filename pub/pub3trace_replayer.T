@@ -305,6 +305,11 @@ namespace {
         v_eval_2(pub3::eval_t *, const vec<arg_t> &) const {
             FATAL("Someone called fork...");
         }
+
+        const str* documentation () const final {
+            static str doc = "internal function";
+            return &doc;
+        };
     };
 
     //--------------------------------------------------------------------------
