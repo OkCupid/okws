@@ -493,13 +493,13 @@ public:
 		 CLIENT_EOF = 4 } output_state_t;
 
   virtual ~okclnt_base_t ();
-  virtual void serve () { serve_T (); }
+  virtual void serve () override { serve_T (); }
 
   //-----------------------------------------------------------------------
 
   void error (int n, const str &s, bool do_send_complete, evv_t::ptr ev)
   { error_T (n, s, do_send_complete, ev); }
-  void error (int n, const str &s, evv_t::ptr ev = NULL);
+  void error (int n, const str &s, evv_t::ptr ev = NULL) override;
   void error (int n);
 
   //-----------------------------------------------------------------------
@@ -510,13 +510,13 @@ public:
   //-----------------------------------------------------------------------
 
   virtual void output (compressible_t *b, evv_t::ptr ev = NULL);
-  void okreply (ptr<compressible_t> p, evv_t::ptr ev);
+  void okreply (ptr<compressible_t> p, evv_t::ptr ev) override;
   virtual void output (compressible_t &b, evv_t::ptr ev = NULL);
 
   //-----------------------------------------------------------------------
 
   void redirect (const str &s);
-  virtual void redirect (const str &s, int status, evv_t::ptr ev)
+  virtual void redirect (const str &s, int status, evv_t::ptr ev) override
   { redirect_T (s, status, ev); }
 
   //-----------------------------------------------------------------------
@@ -532,8 +532,8 @@ public:
 
   //-----------------------------------------------------------------------
 
-  ptr<demux_data_t> demux_data () { return _demux_data; }
-  ptr<const demux_data_t> demux_data () const { return _demux_data; }
+  ptr<demux_data_t> demux_data () override { return _demux_data; }
+  ptr<const demux_data_t> demux_data () const override { return _demux_data; }
 
   //-----------------------------------------------------------------------
 
@@ -545,7 +545,7 @@ public:
 
   // Kludge; this won't do anything except for subclasses that actually
   // use CGI.
-  virtual void set_union_cgi_mode (bool b) {}
+  virtual void set_union_cgi_mode (bool b) override {}
 
   // stuff for piecemeal output
   bool output_hdr (ssize_t sz = -1, cbv::ptr cb = nullptr);
@@ -561,16 +561,16 @@ public:
   // set these for different HTTP response configurations;
   // should of course have more of them.
   //
-  void set_content_type (const str &s) { contenttype = s; }
-  void set_cache_control (const str &s) { cachecontrol = s; }
-  void set_expires (const str &s) { expires = s; }
+  void set_content_type (const str &s) override { contenttype = s; }
+  void set_cache_control (const str &s) override { cachecontrol = s; }
+  void set_expires (const str &s) override { expires = s; }
   void set_content_disposition (const str &s) { contdisp = s; }
-  void disable_gzip () { rsp_gzip = false; }
-  void set_custom_log2 (const str &s) { _custom_log2 = s; }
+  void disable_gzip () override { rsp_gzip = false; }
+  void set_custom_log2 (const str &s) override { _custom_log2 = s; }
 
-  void set_hdr_field (const str &k, const str &v);
+  void set_hdr_field(const str &k, const str &v) override;
 
-  void set_demux_data(ptr<demux_data_t> d) { _demux_data = d; }
+  void set_demux_data(ptr<demux_data_t> d) override { _demux_data = d; }
 
   virtual bool is_ssl() const;
   virtual str get_ip_str() const override;
@@ -589,7 +589,7 @@ public:
   // tame warts.
   virtual gzip_mode_t do_gzip (const compressible_t *b) const;
 
-  void fixup_log (ptr<http_response_base_t> rsp);
+  void fixup_log (ptr<http_response_base_t> rsp) override;
 
   //-----------------------------------------------------------------------
 
@@ -647,9 +647,11 @@ public:
     http_parser_cgi_t (xx, to) 
   { }
 
-  void parse (cbi cb) { http_parser_cgi_t::parse (cb); }
-  http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
-  const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
+  void parse (cbi cb) override { http_parser_cgi_t::parse (cb); }
+  http_inhdr_t *hdr_p () override { return http_parser_cgi_t::hdr_p (); }
+  const http_inhdr_t &hdr_cr () const override { 
+      return http_parser_cgi_t::hdr_cr (); 
+  }
 
   bool is_ssl() const override;
   uint32_t get_ip() const;
@@ -661,7 +663,7 @@ public:
   // compressible reply object.
   void output2 (ptr<compressible_t> c, evv_t ev, CLOSURE);
 
-  void set_union_cgi_mode (bool b)
+  void set_union_cgi_mode (bool b) override
   { http_parser_cgi_t::set_union_mode (b); }
 
 };

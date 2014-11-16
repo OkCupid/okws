@@ -19,10 +19,12 @@ namespace pub3 {
     compiled_fn_t (str lib, str n);
     virtual ~compiled_fn_t () {}
 
-    virtual ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;
-    virtual void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const;
-    str to_str (PUB3_TO_STR_ARG) const;
-    bool to_xdr (xpub3_expr_t *x) const { return false; }
+    virtual ptr<const expr_t> eval_to_val (eval_t *e, args_t args) 
+        const override;
+    virtual void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) 
+        const override;
+    str to_str (PUB3_TO_STR_ARG) const override;
+    bool to_xdr (xpub3_expr_t *x) const override { return false; }
     virtual str name () const { return _name; }
     void set_name (str lib, str n);
 
@@ -33,8 +35,8 @@ namespace pub3 {
     virtual ptr<const expr_t> 
     v_eval_1 (eval_t *e, const margs_t &args) const { return NULL; }
 
-    ptr<const callable_t> to_callable () const { return mkref (this); }
-    const char *get_obj_name () const { return "rfn1::runtime_fn_t"; }
+    ptr<const callable_t> to_callable () const override { return mkref (this); }
+    const char *get_obj_name () const override { return "rfn1::runtime_fn_t"; }
 
     void pub_args (eval_t *p, args_t in, margs_t *out, evv_t ev, CLOSURE) 
       const;
@@ -159,7 +161,7 @@ namespace pub3 {
   //
 #define PUB3_DOC_MEMBERS\
   static const str DOCUMENTATION;                                       \
-  virtual const str* documentation () const { return &DOCUMENTATION; };
+  virtual const str* documentation () const override { return &DOCUMENTATION; };
 #define NO_PUB3_DOC_MEMBERS
 
 #define PUB3_COMPILED_FN_FULL(x,pat,__doc)                        \
@@ -167,7 +169,7 @@ namespace pub3 {
    public:                                                         \
    x##_t () : patterned_fn_t (libname, #x, pat) {};               \
    ptr<const expr_t>                                           \
-    v_eval_2 (eval_t *p, const vec<arg_t> &args) const;			\
+    v_eval_2 (eval_t *p, const vec<arg_t> &args) const override;			\
     __doc                                                         \
   }
 #define PUB3_COMPILED_FN(__x,__pat)	PUB3_COMPILED_FN_FULL(__x,__pat,NO_PUB3_DOC_MEMBERS)
@@ -179,7 +181,7 @@ namespace pub3 {
   x##_t () : patterned_fn_t (libname, #x, "s") {}	     \
   static str filter (str s);				     \
   ptr<const expr_t>					     \
-  v_eval_2 (eval_t *e, const vec<arg_t> &args) const	     \
+  v_eval_2 (eval_t *e, const vec<arg_t> &args) const override	     \
     { return expr_str_t::safe_alloc (filter (args[0]._s)); } \
   __doc                                                        \
   }
@@ -190,8 +192,8 @@ namespace pub3 {
   class x##_t : public pub3::compiled_fn_t {				\
   public:								\
   x##_t () : compiled_fn_t (libname, #x) {}				\
-  ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const;		\
-  void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const;	\
+  ptr<const expr_t> eval_to_val (eval_t *e, args_t args) const override;	\
+  void pub_to_val (eval_t *p, args_t args, cxev_t, CLOSURE) const override;	\
   bool count_args (eval_t *p, size_t s) const;			\
   __doc                                                   \
   }
@@ -205,7 +207,7 @@ namespace pub3 {
   public:								\
   x##_t () : compiled_fn_t (libname, #x) {}				\
   ptr<const expr_t>							\
-  v_eval_1 (eval_t *p, const margs_t &args) const;			\
+  v_eval_1 (eval_t *p, const margs_t &args) const override;			\
   __doc                                                       \
   }
 #define PUB3_COMPILED_UNPATTERNED_FN(__x)	\
@@ -219,7 +221,7 @@ namespace pub3 {
   public:								\
   x##_t () : patterned_fn_blocking_t (libname, #x, pat) {}		\
   void									\
-  v_pub_to_val_2 (eval_t *, const vec<arg_t> &, cxev_t, CLOSURE) const; \
+  v_pub_to_val_2 (eval_t *, const vec<arg_t> &, cxev_t, CLOSURE) const override; \
   __doc                                                                   \
   }
 #define PUB3_COMPILED_FN_BLOCKING(__x,__pat) \

@@ -265,7 +265,7 @@ namespace {
         bool m_pure;
 
      protected:
-        ptr<const pub3::callable_t> to_callable() const {
+        ptr<const pub3::callable_t> to_callable() const override {
             return mkref (this);
         }
 

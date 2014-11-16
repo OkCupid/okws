@@ -27,10 +27,12 @@ public:
     typedef event<int, bool>::ref parse_ev_t;
 
     void parse (parse_ev_t, CLOSURE); 
-    http_inhdr_t *hdr_p () { return http_parser_cgi_t::hdr_p (); }
-    const http_inhdr_t &hdr_cr () const { return http_parser_cgi_t::hdr_cr (); }
+    http_inhdr_t *hdr_p () override { return http_parser_cgi_t::hdr_p (); }
+    const http_inhdr_t &hdr_cr () const override { 
+        return http_parser_cgi_t::hdr_cr (); 
+    }
 
-    void set_union_cgi_mode (bool b)
+    void set_union_cgi_mode (bool b) 
     { http_parser_cgi_t::set_union_mode (b); }
 
     htpv_t http_vers () const { return hdr.get_vers (); }
@@ -226,9 +228,9 @@ public:
 
   //------------------------------------------------------------------------
 
-  void set_union_cgi_mode (bool b) { _union_cgi_mode = b; }
-  void set_demux_data (ptr<demux_data_t> d)  { _demux_data = d; }
-  virtual void serve () { serve_T (); }
+  void set_union_cgi_mode (bool b) override { _union_cgi_mode = b; }
+  void set_demux_data (ptr<demux_data_t> d) override { _demux_data = d; }
+  virtual void serve () override { serve_T (); }
 
   //------------------------------------------------------------------------
 

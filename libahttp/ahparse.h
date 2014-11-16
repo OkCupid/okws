@@ -90,7 +90,7 @@ public:
 
   virtual http_inhdr_t *hdr_p () override { return &hdr; }
   virtual const http_inhdr_t &hdr_cr () const override { return hdr; }
-  void v_cancel () { hdr.cancel (); }
+  void v_cancel () override { hdr.cancel (); }
 
   static ptr<http_parser_raw_t> alloc (ptr<ahttpcon> xx, u_int t = 0)
   { return New refcounted<http_parser_raw_t> (xx, t); }
@@ -139,7 +139,7 @@ public:
   http_parser_cgi_t (ptr<ahttpcon> xx, int to = 0, abuf_t *b = NULL) ;
   ~http_parser_cgi_t () { if (mpfd) delete mpfd; }
 
-  void v_cancel () { hdr.cancel (); post.cancel (); }
+  void v_cancel () override { hdr.cancel (); post.cancel (); }
   virtual void v_parse_cb1 (int status) override;
   void enable_file_upload () { mpfd_flag = true; }
 
@@ -151,7 +151,7 @@ public:
   cgiw_t & get_cgi () { return cgi; }
 
   void set_union_mode (bool b);
-  int v_timeout_status () const;
+  int v_timeout_status () const override;
 
   cgi_t &cookie () { return get_cookie (); }
   const cgi_t &cookie () const { return get_cookie (); }
