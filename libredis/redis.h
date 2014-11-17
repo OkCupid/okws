@@ -47,6 +47,14 @@ class RedisCli {
                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
         void runCmd(const vec<std::pair<const char*,size_t>>& cmds,
                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+        void runTransaction(
+            std::initializer_list<std::initializer_list<str>> cmds,
+            ev_redis_res_t::ptr ev = nullptr
+        ) {
+            runCmd({ "MULTI" });
+            for (const auto &cmd : cmds) { runCmd(cmd); }
+            runCmd({ "EXEC" }, ev);
+        }
 
         void evalLua(const char* script, str ssha1,
                      std::initializer_list<str> keys,
