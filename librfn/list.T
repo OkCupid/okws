@@ -150,10 +150,10 @@ the step between elements.
   const str join_t::DOCUMENTATION = R"*(Take the list of strings `l` and join
 them together with the delimiter `delim`.  Output a string.
 
-@param {list<string>} l
 @param {string} delim
+@param {list<string>} l
 @return {string}
-@example join(["1", "2", "3", "4"], ","))*";
+@example join(",", ["1", "2", "3", "4"]))*";
 
   //-----------------------------------------------------------------------
 
