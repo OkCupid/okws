@@ -94,6 +94,8 @@ OKWS is freely available under a GPL v2 license.
   * Mike Maxim
   * David Koh
   * Eli Gwynn
+  * Sidney San Martin
+  * Till Varoquaux
 
 ## Patch Contributors
 
