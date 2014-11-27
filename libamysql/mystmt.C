@@ -339,6 +339,7 @@ sth_parsed_t::dealloc_bufs ()
     for (u_int i = 0; i < n_iparam; i++) 
       if (bufs[i]) delete [] bufs[i];
     delete [] bufs;
+    delete [] lens;
   }
 }
 
