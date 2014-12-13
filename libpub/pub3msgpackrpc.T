@@ -55,9 +55,15 @@ axprt_inner::axprt_inner (int f) :
 
 axprt_inner::~axprt_inner () 
 { 
-  close (0);
   _read_rv.cancel ();
   _write_rv.cancel ();
+}
+
+//-----------------------------------------------------------------------------
+
+void
+axprt_inner::seteofcb(cbv::ptr cb) {
+    _eofcb = cb;
 }
 
 //-----------------------------------------------------------------------
@@ -170,7 +176,12 @@ axprt_inner::axprt_close (int en)
     close (_fd);
     _fd = -1; 
     _errno = en;
+
+    if (_eofcb) {
+        (*_eofcb) (); 
+    }
   }
+
   kill_clients ();
   kill_servers ();
 }
@@ -377,6 +388,8 @@ axprt_inner::dispatch_reply (ptr<expr_list_t> l, int64_t seqid)
   }
 }
 
+
+
 //-----------------------------------------------------------------------
 
 tamed void
@@ -394,6 +407,13 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 
   uio = _inbuf.tosuio ();
 
+  if ( (needed && uio->resid() > needed) &&
+       (x = msgpack::decode (get_str (needed), &mperrno, &len))) {
+      uio->rembytes (len);
+      ev->trigger(1, x);
+      return;
+  } 
+
   while (is_open () && !x) {
 
     if (first) { first = false; }
@@ -408,25 +428,20 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 
     } else if (rc < 0 && errno == EAGAIN) {
       /* try again! */
-
     } else if (rc < 0) {
       ret = -1;
       axprt_close (errno);
       
     } else if (needed && uio->resid () < needed) {
       /* try again! */
-      
     } else if ((x = msgpack::decode (get_str (needed), &mperrno, &len))) {
-
       uio->rembytes (len);
       ret = 1;
-
     } else if (mperrno != EAGAIN) {
-
       ret = -1;
       errno = mperrno;
       axprt_close (errno);
-    }
+    } 
   }
 
   ev->trigger (ret, x);
@@ -481,14 +496,14 @@ axprt_inner::recv (ev_t ev)
 
   twait { recv_json (0, 0x10, mkevent (ret, lx)); }
   if (ret > 0) {
-    assert (lx);
-    assert (is_open ());
-    if (!lx->to_int (&len)) {
-      errno = ENOENT;
-      axprt_close (errno);
-    } else {
-      twait { recv_json (len, 0x2000, mkevent (ret, x)); }
-    }
+      assert (lx);
+      assert (is_open ());
+      if (!lx->to_int (&len)) {
+          errno = ENOENT;
+          axprt_close (errno);
+      } else {
+          twait { recv_json (len, 0x2000, mkevent (ret, x)); }
+      }
   }
 
   ev->trigger (ret, x);
@@ -535,6 +550,13 @@ axprt::alloc (int fd)
   ptr<axprt> ret = New refcounted<axprt> (fd);
   ret->run ();
   return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+void
+axprt::seteofcb(cbv::ptr cb) {
+    _xi->seteofcb(cb);
 }
 
 //-----------------------------------------------------------------------
@@ -850,6 +872,97 @@ server_t::msg (str s) const
 {
   if (_verbose) { warn << s << "\n"; }
 }
+
+//-----------------------------------------------------------------------------
+
+tamed void
+client_t::connect(evb_t ev) {
+    
+    tvars {
+        bool ret (true);
+        int fd;
+    }
+
+    twait { tcpconnect (_host, _port, mkevent (fd)); }
+    if (fd < 0) {
+        ret = false;
+        if (!_retrying) {
+            warn << "msgpack-rpc: cannot connect to host " << _host << ":" 
+                << _port << "\n";
+            conn_died();
+        }
+    } else {
+        _x = pub3::msgpack::axprt::alloc (fd);
+        _cli = pub3::msgpack::aclnt::alloc (_x, _prog);
+        _x->seteofcb(wrap(this, &client_t::conn_died));
+        _dead = false;
+        warn << "msgpack-rpc: connection succeeded: host: " << _host
+             << " port: " << _port << "\n";
+    }
+
+    ev->trigger (ret); 
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+client_t::call(str method, ptr<pub3::expr_t> arg, callev_t::ptr ev) {
+
+    tvars {
+        pub3::msgpack::callres_t res;
+    }
+
+    if (_dead) {
+        warn << "msgpack-rpc: call(): no connection available, failing...\n";
+        res.err_code = RPC_CANTSEND;
+    } else {
+        twait { _cli->call(method, arg, mkevent(res)); }
+    }
+
+    if (ev) ev->trigger(res); 
+}
+
+//-----------------------------------------------------------------------------
+
+void
+client_t::conn_died() {
+    warn << "msgpack-rpc: connection died: host: " << _host << " port: "
+         << _port << "\n";
+    _dead = true;
+    if (_reconnect) {
+        warn << "msgpack-rpc: attempting to reconnect...\n";
+        retry_loop();
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+tamed void
+client_t::retry_loop() {
+    
+    tvars {
+        bool ok(false);
+        size_t attempts(0);
+    }
+
+    if (_retrying) return;
+
+    _retrying = true;
+    while (!ok) {
+        twait { connect(mkevent(ok)); }
+        if (ok) {
+            warn << "msgpack-rpc: reconnected: host: " << _host 
+                 << " port: " << _port << "\n";
+        } else {
+            warn << "msgpack-rpc: connection failed (attempts=" << attempts++
+                 << "): host: " << _host 
+                 << " port: " << _port << "\n";
+            twait { delaycb(1, 0, mkevent()); }
+        }
+    }
+    _retrying = false;
+}
+
 
 //=======================================================================
 

@@ -132,23 +132,22 @@ client_t::do_call (str cmd, evi_t ev)
   }
   warn << "RPC(" << cmd << ") ->\n";
   if (!(x = pub3::json_parser_t::parse (cmd))) {
-    warn << "parse of JSON failed on string: " << cmd << "\n";
+      warn << "parse of JSON failed on string: " << cmd << "\n";
   } else if (!(l = x->to_list ()) || l->size () != 2 ||
-	     !(mthd = (*l)[0]->to_str ()) || !mthd.len ()) {
-    warn << "parse of JSON didn't yield a list with 2 elements: [mthd,arg]\n";
+             !(mthd = (*l)[0]->to_str ()) || !mthd.len ()) {
+      warn << "parse of JSON didn't yield a list with 2 elements: [mthd,arg]\n";
   } else {
-    twait { _cli->call (mthd, (*l)[1], mkevent (res)); }
-    if (res.err_code) {
-      warn << "  ERROR CODE: " << res.err_code << "\n";
-      if (res.err_obj) {
-	str m = res.err_obj->to_str ();
-	warn << "  ERROR OBJ: " << m << "\n";
+      twait { _cli->call (mthd, (*l)[1], mkevent (res)); }
+      if (res.err_code) {
+          if (res.err_obj) {
+              str m = res.err_obj->to_str ();
+          }
+      } else if (res.res) {
+          str o = res.res->to_str ();
+          warn << "  " << o << "\n";
       }
-    } else if (res.res) {
-      str o = res.res->to_str ();
-      warn << "  " << o << "\n";
-    }
   }
+
   ev->trigger (rc);
 }
 

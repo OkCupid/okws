@@ -62,6 +62,7 @@ namespace pub3 {
       tame::lock_t _read_lock, _write_lock;
       evv_t::ptr _read_stop, _write_stop;
       rendezvous_t<> _read_rv, _write_rv;
+      cbv::ptr _eofcb;
 
       qhash<u_int32_t, callev_t::ptr> _calls;
       qhash<str, ptr<asrv> > _dispatch;
@@ -91,6 +92,7 @@ namespace pub3 {
       void dispatch (CLOSURE);
       void call (str mthd, ptr<const expr_t> arg, callev_t::ptr ev, CLOSURE);
       void register_asrv (str prot, ptr<asrv> v);
+      void seteofcb(cbv::ptr cb);
       int fd () const { return _fd; }
       str get_remote ();
       void set_remote (const sockaddr_in &sin);
@@ -112,6 +114,8 @@ namespace pub3 {
       void send (ptr<const expr_t> x, evb_t::ptr ev = NULL);
       void register_asrv (str prot, ptr<asrv> v);
       void set_remote (const sockaddr_in &sin);
+      void seteofcb(cbv::ptr ev);
+
       str get_remote () const;
       static ptr<axprt> alloc (int fd);
       ~axprt ();
@@ -220,6 +224,33 @@ namespace pub3 {
     
     //========================================
     
+    class client_t : public virtual refcount {
+    public:
+
+        client_t(str prog, str host, int port) : 
+            _prog(prog), _host(host), _port(port) { }
+
+        void connect(evb_t ev, CLOSURE); 
+        void call(str method, ptr<pub3::expr_t> arg, callev_t::ptr ev, 
+                  CLOSURE);
+        
+        bool is_dead() const { return _dead; }
+        void set_reconnect(bool recon) { _reconnect = recon; }
+
+    protected:
+
+        void conn_died();
+        void retry_loop(CLOSURE);
+
+        str _prog;
+        str _host;
+        int _port;
+        ptr<pub3::msgpack::axprt> _x;
+        ptr<pub3::msgpack::aclnt> _cli;
+        bool _reconnect = true;
+        bool _dead = true;
+        bool _retrying = false;
+    };
   }
 
 };
