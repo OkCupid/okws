@@ -71,6 +71,7 @@ OKWS_SSL
 OKWS_SNAPPY
 OKWS_HIREDIS
 OKWS_LINUX_PRCTL_DUMP
+OKWS_OKMONGO
 
 dnl
 dnl Need to use the xmlrpcc if possible when publishing OKWS .x files
@@ -121,14 +122,14 @@ CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'
 dnl
 dnl for .x files, need header in build directory
 dnl
-for lib in libpub libaok libweb libamysql ezdb/libezdb ; do
+for lib in libpub libaok libweb libamysql ezdb/libezdb libamongo; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_builddir)'"/$lib"
 done
 
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql libweb libokssl librfn ezdb/libezdb libredis; do
+for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql libweb libokssl librfn ezdb/libezdb libredis libamongo; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 
@@ -145,12 +146,14 @@ if test "$ac_do_pthreads" = "1"; then
    LIBAMT_PTHREAD='$(top_builddir)/libamt_pthread/libamt_pthread.la'
 fi
 LIBAMYSQL='$(top_builddir)/libamysql/libamysql.la'
+LIBAMONGO='$(top_builddir)/libamongo/libamongo.la'
 LIBWEB='$(top_builddir)/libweb/libweb.la'
 LIBEZDB='$(top_builddir)/ezdb/libezdb/libezdb.la'
 LIBEZDBSRV='$(top_builddir)/ezdb/libezdb/libezdbsrv.la'
 LIBOKSSL='$(top_builddir)/libokssl/libokssl.la'
 LIBRFN='$(top_builddir)/librfn/librfn.la'
 LDADD_PUB='$(LIBPUB) '"$LDADD"
+LDADD_AMONGO='$(LIBPUB) $(LIBAMONGO) $(LIBOKXML) $(LIBAHTTP) $(LIBAOK) $(LIBRFN) '"$LDADD"' $(LIBEXPAT)'
 LDADD_RFN='$(LIBRFN) $(LIBAHTTP) $(LIBPUB) '"$LDADD"
 LDADD='$(LIBEZDB) $(LIBAOK) $(LIBRFN) $(LIBWEB) $(LIBOKSSL) $(LIBOKXML) $(LIBAHTTP) $(LIBPUB) '"$LDADD"' $(LIBEXPAT) $(LIBSSL)'
 LDADD_AMT='$(LIBAMT) $(LIBAMT_PTHREAD)'"$LDADD"
@@ -166,6 +169,7 @@ else
    LDEPS='$(LIBWEB) $(LIBAOK) $(LIBAHTTP) $(LIBOKXML) $(LIBPUB) '"$LDEPS"
    LDEPS_AMT='$(LIBAMT) $(LIBAMT_PTHREAD)'"$LDEPS"
    LDEPS_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMT_PTHREAD) $(LIBAMYSQL) '"$LDEPS"
+   LDEPS_AMONGO='$(LIBPUB) $(LIBAMONGO) '"$LDEPS"    
    LDEPS_REDIS='$(LIBREDIS) '"$LDEPS"
 fi
 LDADD_AMYSQL='$(LIBEZDBSRV) $(LIBAMT) $(LIBAMT_PTHREAD) $(LIBAMYSQL) '"$LDADD"' $(LDADD_THR) $(LDADD_MYSQL) '
@@ -208,6 +212,7 @@ ETAGS_ARGS='-C /dev/null'
 OKWS_SET_VERSION
 
 AC_SUBST(LIBPUB)
+AC_SUBST(LIBAMONGO)
 AC_SUBST(LIBAHTTP)
 AC_SUBST(LIBOKXML)
 AC_SUBST(LIBAOK)
@@ -221,6 +226,7 @@ AC_SUBST(LIBEZDBSRV)
 AC_SUBST(LIBAMYSQL)
 AC_SUBST(LIBREDIS)
 AC_SUBST(LDADD_PUB)
+AC_SUBST(LDADD_AMONGO)
 AC_SUBST(LDEPS_PUB)
 AC_SUBST(LDADD_RFN)
 AC_SUBST(LDEPS_RFN)
@@ -229,6 +235,7 @@ AC_SUBST(LDADD_REDIS)
 AC_SUBST(LDADD_AMYSQL)
 AC_SUBST(LDEPS_AMT)
 AC_SUBST(LDEPS_AMYSQL)
+AC_SUBST(LDEPS_AMONGO)
 AC_SUBST(ETAGS_ARGS)
 
 PUB_PDEBUG
@@ -239,12 +246,12 @@ AC_CONFIG_COMMANDS([mkdir], [$MKDIR_P py/okws])
 AC_CONFIG_FILES(test/pub/test_runner, [chmod +x test/pub/test_runner])
 AC_OUTPUT(libpub/Makefile pub/Makefile 
 	  okd/Makefile libahttp/Makefile libaok/Makefile  
-	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile 
-	  libweb/Makefile libredis/Makefile logd/Makefile Makefile conf/Makefile
-	  conf/freebsd/Makefile test/Makefile test/unit/Makefile
+	  libokxml/Makefile client/Makefile libamt/Makefile libamysql/Makefile
+      libamongo/Makefile libweb/Makefile libredis/Makefile logd/Makefile Makefile
+      conf/Makefile conf/freebsd/Makefile test/Makefile test/unit/Makefile
 	  test/system/Makefile test/pub/Makefile htdocs/Makefile contrib/Makefile
 	  xmlrpcc/Makefile test/system/xmlxlate/Makefile 
 	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
 	  librfn/Makefile test/regtest/Makefile test/regtest/cases/Makefile
 	  libamt_pthread/Makefile ezdb/Makefile ezdb/libezdb/Makefile
-	  ezdb/server/Makefile py/Makefile py/gen_okws_config.sh)
+	  ezdb/server/Makefile py/Makefile py/gen_okws_config.sh test/bson/Makefile)
