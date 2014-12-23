@@ -100,6 +100,7 @@ namespace pub3 {
     bool pipe = false;
     str e;
     int64_t tmp;
+    str stmp;
 
     size_t min_args = 0, max_args = 0;
 
@@ -127,14 +128,16 @@ namespace pub3 {
 	break;
 	
       case 'i':
-	if (ib && !args[i]->to_int (&a._i)) {
+	if (ib && !args[i]->to_int (&a._i) &&
+        !((stmp = args[i]->to_str()) && convertint(stmp, &a._i)) ) {
 	  strbuf b ("argument %zd: expected an integer", hi);
 	  err.push_back (b);
 	}
 	break;
 	
       case 'u': 
-	if (ib && !args[i]->to_uint (&a._u)) {
+	if (ib && !args[i]->to_uint (&a._u) &&
+        !((stmp = args[i]->to_str()) && convertint(stmp, &a._u)) )  {
 	  strbuf b ("argument %zd: expected an unsigned int", hi);
 	  err.push_back (b);
 	}

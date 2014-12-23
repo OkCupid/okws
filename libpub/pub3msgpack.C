@@ -550,6 +550,8 @@ msgpack_t::unpack ()
 namespace pub3 { 
   namespace msgpack {
 
+    static bool g_js_mode = false;
+
     ptr<expr_t>
     decode (str msg, int *errno_p, size_t *len_p) 
     {
@@ -563,12 +565,19 @@ namespace pub3 {
     str
     encode (ptr<const expr_t> x)
     {
-      outbuf_t b;
-      str ret;
-      if (x->to_msgpack (&b)) {
-	ret = b.to_str ();
-      }
-      return ret;
+        outbuf_t b;
+        str ret;
+
+        if (g_js_mode) { b.set_js_mode(); }
+
+        if (x->to_msgpack (&b)) {
+            ret = b.to_str ();
+        }
+        return ret;
+    }
+
+    void set_js_mode() {
+        g_js_mode = true;
     }
   }
 };
@@ -675,8 +684,14 @@ pub3::msgpack::outbuf_t::encode_negative_int (int64_t i)
     put_int (w);
   } else {
     put_byte (0xd3);
-    int64_t q = i;
-    put_int (q);
+    if (_jsmode) {
+        strbuf b;
+        b << i;
+        encode_str(b);
+    } else {
+        int64_t q = i;
+        put_int (q);
+    }
   }
 }
 
@@ -700,8 +715,14 @@ pub3::msgpack::outbuf_t::encode_positive_int (u_int64_t i)
     u_int32_t w = i;
     put_int (w);
   } else {
-    put_byte (0xcf);
-    put_int (i);
+    if (_jsmode) {
+        strbuf b;
+        b << i;
+        encode_str(b);
+    } else {
+        put_byte (0xcf);
+        put_int (i);
+    }
   }
 }
 

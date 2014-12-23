@@ -17,6 +17,8 @@ namespace pub3 {
 
     str encode (ptr<const pub3::expr_t> x);
 
+    void set_js_mode();
+
     //========================================
     
     class outbuf_t {
@@ -48,7 +50,10 @@ namespace pub3 {
       void encode_len (size_t len, u_int8_t b, u_int8_t s, u_int8_t l);
       void encode_str (str s);
 
+      void set_js_mode() { _jsmode = true; }
+
     private:
+
       void flush (bool r = true);
       void ready ();
 
@@ -56,6 +61,7 @@ namespace pub3 {
       size_t _tlen;
       mstr *_tmp;
       char *_tp, *_ep;
+      bool _jsmode = false;
     };
 
     //========================================
