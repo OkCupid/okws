@@ -407,7 +407,7 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
 
   uio = _inbuf.tosuio ();
 
-  if ( (needed && uio->resid() > needed) &&
+  if ( (uio->resid() >= needed) &&
        (x = msgpack::decode (get_str (needed), &mperrno, &len))) {
       uio->rembytes (len);
       ev->trigger(1, x);
@@ -425,13 +425,15 @@ axprt_inner::recv_json (size_t needed, size_t ps, ev_t ev)
     else if ((rc = uio->input (_fd, ps)) == 0) {
       axprt_close (0);
       ret = 0;
-
     } else if (rc < 0 && errno == EAGAIN) {
-      /* try again! */
+        if (uio->resid()) {
+            error(str("recv_json: EAGAIN with resid(): ") << uio->resid());
+            axprt_close (0);
+            ret = 0;
+        }
     } else if (rc < 0) {
       ret = -1;
       axprt_close (errno);
-      
     } else if (needed && uio->resid () < needed) {
       /* try again! */
     } else if ((x = msgpack::decode (get_str (needed), &mperrno, &len))) {
