@@ -37,9 +37,8 @@ json_escape_heavy (const str &s, bool addq)
   for (size_t i = 0; i < len; i++, inp++) {
     size_t n = 0;
     if (*inp > 0x10ffff) {
-        // ws contained an invalid UTF-32 character, which doesn't
-        // make sense since we just converted from UTF-8.
-        assert(false);
+        // Invalid Unicode character, skip it
+        continue;
     }
     else if (*inp > 0xffff) {
         // Convert the UTF-32 wchar to a UTF-16 surrogate pair. From
