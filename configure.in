@@ -3,10 +3,10 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_INIT(config.h.in)
+AC_INIT([okws], [3.1.31.1])
+AM_CONFIG_HEADER([config.h])
 AC_CONFIG_AUX_DIR([.])
-AM_INIT_AUTOMAKE(okws, 3.1.31.1)
-AM_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE([subdir-objects])
 
 SFS_INIT_LDVERSION(3500, SFSLITE_ABI_VERSION)
 
@@ -71,7 +71,6 @@ OKWS_SSL
 OKWS_SNAPPY
 OKWS_HIREDIS
 OKWS_LINUX_PRCTL_DUMP
-OKWS_OKMONGO
 
 dnl
 dnl Need to use the xmlrpcc if possible when publishing OKWS .x files
@@ -129,7 +128,9 @@ done
 dnl
 dnl library directories
 dnl
-for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql libweb libokssl librfn ezdb/libezdb libredis libamongo; do
+for lib in libpub libahttp libokxml libaok libamt libamt_pthread libamysql \
+           libweb libokssl librfn ezdb/libezdb libredis libamongo/okmongo/src \
+           libamongo; do
     CPPFLAGS="$CPPFLAGS -I"'$(top_srcdir)'"/$lib"
 done
 

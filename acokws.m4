@@ -133,68 +133,6 @@ AC_SUBST(okwstag)
 ])
 
 dnl
-dnl Find okmongo
-dnl
-
-AC_DEFUN(
-    [OKWS_OKMONGO],
-    [AC_ARG_WITH(okmongo,
-        AS_HELP_STRING(
-            [--with-okmongo=DIR],
-            [Specify a directory in which libokmongo is installed]))
-    ac_save_CXXFLAGS=$CXXFLAGS
-    ac_save_LIBS=$LIBS
-    LIBOKMONGO=""
-    dirs="$with_okmongo ${prefix} ${prefix}/okmongo"
-    dirs="$dirs /usr/local /usr/local/okmongo"
-    AC_CACHE_CHECK(
-        [for okmongo],
-        [okws_cv_libokmongo_dir],
-        [
-            AC_LANG_PUSH([C++])
-            for dir in "" $dirs; do
-                case $dir in
-            	"") lflags="-lokmongo"; iflags="" ;;
-            	*) lflags="-L${dir}/lib  -lokmongo"; iflags="-I${dir}/include";;
-                esac
-                CXXFLAGS="${ac_save_CXXFLAGS} $iflags --std=c++11"
-                LIBS="$ac_save_LIBS $lflags"
-                AC_TRY_LINK(
-                    [#include <okmongo/bson.h>],
-                    [okmongo::BsonWriter w; w.Document(); w.Pop();],
-                    [okws_cv_libokmongo_dir=$dir],
-                    [])
-                if test -n "${okws_cv_libokmongo_dir+set}"; then
-                    break;
-                fi
-             done
-             if test -z "${okws_cv_libokmongo_dir+set}"; then
-                 okws_cv_libokmongo_dir="none";
-             fi
-             AC_LANG_POP([C++])
-        ]
-        )
-    case "${okws_cv_libokmongo_dir}" in
-    "none")
-       AC_MSG_ERROR([Can't find libokmongo anywhere]);;
-    "")
-       okws_cv_okmongo_h="";
-       okws_cv_libokmongo="-lokmongo";;
-    *)
-       okws_cv_okmongo_h="-I${okws_cv_libokmongo_dir}/include";
-       okws_cv_libokmongo="-L${okws_cv_libokmongo_dir}/lib  -lokmongo";;
-    esac
-
-    LIBOKMONGO="$okws_cv_libokmongo"
-    AC_SUBST(LIBOKMONGO)
-    CXXFLAGS=$ac_save_CXXFLAGS
-    CPPFLAGS="$CPPFLAGS $okws_cv_okmongo_h"
-    LIBS="$ac_save_LIBS $okws_cv_libokmongo"
-    ]
-)
-
-
-dnl
 dnl Find Mysql
 dnl
 AC_DEFUN([OKWS_MYSQL],

@@ -4,8 +4,8 @@
 #include "async.h"   // tcpconnect
 #include "amisc.h"   // arandom
 #include "abson.h"
+#include "mongo.h"
 
-#include <okmongo/mongo.h>
 #include <cstring>
 
 extern "C" {

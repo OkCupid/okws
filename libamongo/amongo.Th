@@ -1,12 +1,12 @@
 // -*- mode:c++ -*-
 #pragma once
 
-#include <pub3expr.h>
+#include "pub3expr.h"
 #include "abson.h"
 #include "tame_io.h" // tame::wait{read, write}
 #include "async.h" // tcpconnect
 #include "tame_lock.h"
-#include <okmongo/mongo.h>
+#include "mongo.h"
 // okmongo::ResponseReader
 
 // To avoid multiple inheritance nightmares we use a different set of names for
@@ -24,7 +24,7 @@ public:
     using Parent::Parent;
 
     void AVRReportError(str s) final {
-        Parent::template Error<str>(s);
+        Parent::Error(s.cstr());
     }
 
     bool AVRIsDone() const final { return Parent::Done(); }
@@ -144,10 +144,6 @@ public:
 
     amongo_rpc_bson_reader(T *out) : out_(out){}
 
-    void EmitError(const char *msg) {
-        EmitError(str(msg));
-    }
-
     void EmitError(str msg) {
         if (!error_) {
             error_ = msg;
@@ -198,10 +194,6 @@ public:
     static const bool multi = true;
 
     amongo_rpc_bson_reader(vec<T> *out) : out_(out){}
-
-    void EmitError(const char *msg) {
-        EmitError(str(msg));
-    }
 
     void EmitError(str msg) {
         if (!error_) {

@@ -1,5 +1,8 @@
 -include $(SFS_LIB_MK)
 
+OKMONGO_SRC=$(srcdir)/okmongo/src
+VPATH=$(srcdir):$(OKMONGO_SRC)
+
 $(PROGRAMS): $(LDEPS)
 
 SUFFIXES = .T .C
@@ -11,8 +14,19 @@ SUFFIXES = .T .C
 
 
 okwslib_LTLIBRARIES = libamongo.la
-libamongo_la_SOURCES = abson.C amongo.C
-okwsinclude_HEADERS = abson.h amongo.h
+libamongo_la_SOURCES =\
+	abson.C\
+	amongo.C\
+	bson.cc\
+	mongo.cc
+
+okwsinclude_HEADERS = \
+	abson.h\
+	amongo.h\
+	$(OKMONGO_SRC)/bson.h\
+	$(OKMONGO_SRC)/mongo.h\
+	$(OKMONGO_SRC)/string_matcher.h\
+	$(OKMONGO_SRC)/bson_dumper.h
 
 libamongo_la_LDFLAGS = $(LIBTOOL_VERSION_INFO)
 

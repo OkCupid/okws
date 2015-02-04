@@ -7,7 +7,7 @@
 
 #pragma once
 #include "pub3expr.h"
-#include <okmongo/bson.h>
+#include "bson.h"
 
 
 bool pub_to_bson(okmongo::BsonWriter *w, ptr<pub3::expr_t> pub);
