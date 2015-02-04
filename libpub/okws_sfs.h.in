@@ -49,9 +49,9 @@
 // Patch Level <major>.<minor>.<pre> (out to 2 places)
 // patch levels 0-99 are preleases.
 // patch level 100 is release
-#define OKWS_VERSION_MAJOR 3
-#define OKWS_VERSION_MINOR 1
-#define OKWS_VERSION_PATCHLEVEL 31
+#define OKWS_VERSION_MAJOR @okws_version_major@
+#define OKWS_VERSION_MINOR @okws_version_minor@
+#define OKWS_VERSION_PATCHLEVEL @okws_version_patchlevel@
 #define OKWS_VERSION_PRE 101
 
 #define OKWS_AT_VERSION(Maj,Min,Pat,Pre) \

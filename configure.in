@@ -73,6 +73,18 @@ OKWS_HIREDIS
 OKWS_LINUX_PRCTL_DUMP
 
 dnl
+dnl Extracting major/minor/patch level from the package version
+dnl
+
+okws_version_major="$(echo "${PACKAGE_VERSION}" | cut -f 1 -d ".")"
+okws_version_minor="$(echo "${PACKAGE_VERSION}" | cut -f 2 -d ".")"
+okws_version_patchlevel="$(echo "${PACKAGE_VERSION}" | cut -f 3 -d ".")"
+
+AC_SUBST(okws_version_major)
+AC_SUBST(okws_version_minor)
+AC_SUBST(okws_version_patchlevel)
+
+dnl
 dnl Need to use the xmlrpcc if possible when publishing OKWS .x files
 dnl
 OKRPCC="$RPCC"
@@ -255,4 +267,5 @@ AC_OUTPUT(libpub/Makefile pub/Makefile
 	  test/system/3tier/Makefile libokssl/Makefile ssld/Makefile
 	  librfn/Makefile test/regtest/Makefile test/regtest/cases/Makefile
 	  libamt_pthread/Makefile ezdb/Makefile ezdb/libezdb/Makefile
-	  ezdb/server/Makefile py/Makefile py/gen_okws_config.sh test/bson/Makefile)
+      ezdb/server/Makefile py/Makefile py/gen_okws_config.sh test/bson/Makefile
+      libpub/okws_sfs.h)
