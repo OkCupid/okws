@@ -1,0 +1,3 @@
+[submodule "libamongo/okmongo"]
+	path = libamongo/okmongo
+	url = https://github.com/okws/okmongo.git
