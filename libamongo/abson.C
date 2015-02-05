@@ -7,8 +7,19 @@ namespace {
 void dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict);
 void dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &dict);
 
+template <typename Key>
+inline void write_uint32(okmongo::BsonWriter *w, Key k, uint32_t i) {
+    return w->Element(k, static_cast<int64_t>(i));
+}
+
+
+template <typename Key>
+inline void write_uint64(okmongo::BsonWriter *w, Key k, uint64_t src) {
+    return w->Element(k, add_sign(src));
+}
+
 template <typename K>
-void dump_key_value(okmongo::BsonWriter *w, K k, xpub3_json_t &json) {
+bool dump_key_value(okmongo::BsonWriter *w, K k, xpub3_json_t &json) {
     switch (json.typ) {
         case XPUB3_JSON_BOOL:
             return w->Element(k, *json.json_bool);
@@ -42,13 +53,14 @@ void dump_key_value(okmongo::BsonWriter *w, K k, xpub3_json_t &json) {
     }
 }
 
-void dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict) {
+bool dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict) {
     for (auto &x : dict.entries) {
-        dump_key_value(w, x.key, *x.value);
+        const char *key = x.key.base();
+        dump_key_value(w, key, *x.value);
     }
 }
 
-void dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &lst) {
+bool dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &lst) {
     int32_t i = 0;
     for (auto &x : lst.entries) {
         dump_key_value(w, i++, x);
@@ -201,6 +213,84 @@ okmongo::BsonValue rpc_bson_reader::get(const char *k) {
     return b.val.GetField(k);
 }
 
+static const char* to_str(okmongo::BsonTag tg) {
+    switch(tg) {
+        case okmongo::BsonTag::kDouble:
+            return "Double";
+        case okmongo::BsonTag::kUtf8:
+            return "Utf8";
+        case okmongo::BsonTag::kDocument:
+            return "Document";
+        case okmongo::BsonTag::kArray:
+            return "Array";
+        case okmongo::BsonTag::kBinData:
+            return "BinData";
+        case okmongo::BsonTag::kObjectId:
+            return "ObjectId";
+        case okmongo::BsonTag::kBool:
+            return "Bool";
+        case okmongo::BsonTag::kUtcDatetime:
+            return "UtcDatetime";
+        case okmongo::BsonTag::kNull:
+            return "Null";
+        case okmongo::BsonTag::kRegexp:
+            return "Regexp";
+        case okmongo::BsonTag::kJs:
+            return "Js";
+        case okmongo::BsonTag::kScopedJs:
+            return "ScopedJs";
+        case okmongo::BsonTag::kInt32:
+            return "Int32";
+        case okmongo::BsonTag::kTimestamp:
+            return "Timestamp";
+        case okmongo::BsonTag::kInt64:
+            return "Int64";
+        case okmongo::BsonTag::kMinKey:
+            return "MinKey";
+        case okmongo::BsonTag::kMaxKey:
+            return "MaxKey";
+        default:
+            return "Unknown";
+    }
+}
+
+static str a_or_an(const char* in) {
+    switch (*in) {
+    case 'a':
+    case 'e':
+    case 'i':
+    case 'o':
+    case 'u':
+    case 'A':
+    case 'E':
+    case 'I':
+    case 'O':
+    case 'U':
+        return str(strbuf("an %s", in));
+    default:
+        return str(strbuf("a %s", in));
+    }
+}
+
+void rpc_bson_reader::error(const char *fld, okmongo::BsonTag tg,
+                            const char *extra) {
+    if (error_) {
+        return;
+    }
+    okmongo::BsonValue v = get(fld);
+    if (v.Empty()) {
+        return error(fld, "missing field");
+    }
+    assert(tg != v.tag());
+    strbuf res("expected %s got %s",
+               a_or_an(to_str(tg)).cstr(),
+               a_or_an(to_str(v.tag())).cstr());
+    if (extra != nullptr) {
+        res << "\nnote: " << extra;
+    }
+    return error(fld, str(res));
+}
+
 void rpc_bson_reader::error(const char *fld, str s) {
     if (error_) {
         return;
@@ -255,7 +345,8 @@ void rpc_exit_field(rpc_bson_reader &r, const char *k) {
 bool rpc_traverse(rpc_bson_reader &r, uint32_t &u, const char *k) {
     const char *data = r.get(k, okmongo::BsonTag::kInt64);
     if (!data) {
-        r.error(k, "not a uint32 (bson type: int64)");
+        r.error(k, okmongo::BsonTag::kInt64,
+                "(uint32 are represented in bson as int64)");
         return false;
     }
     int64_t i;
@@ -272,7 +363,8 @@ bool rpc_traverse(rpc_bson_reader &r, uint32_t &u, const char *k) {
 bool rpc_traverse(rpc_bson_reader &r, uint64_t &v, const char *k) {
     const char *data = r.get(k, okmongo::BsonTag::kInt64);
     if (!data) {
-        r.error(k, "not a uint64 (bson type: int64)");
+        r.error(k, okmongo::BsonTag::kInt64,
+                "uint64 are represented in bson as int64");
         return false;
     }
     int64_t i;
@@ -285,7 +377,7 @@ bool rpc_traverse(rpc_bson_reader &r, uint64_t &v, const char *k) {
     bool rpc_traverse(rpc_bson_reader &r, T &v, const char *k) { \
         const char *data = r.get(k, okmongo::BsonTag::TAG);      \
         if (!data) {                                             \
-            r.error(k, "not a " #T);                             \
+            r.error(k, okmongo::BsonTag::TAG);                   \
             return false;                                        \
         }                                                        \
         std::memcpy(&v, data, sizeof(T));                        \

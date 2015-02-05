@@ -161,8 +161,17 @@ public:
         }
         rpc_bson_reader rdr(bv);
         bool ok = rpc_traverse(rdr, *out_);
-        if (!ok) {
-            this->Error("Failed to parse value");
+        if (ok) {
+            cnt_++;
+        } else {
+            str error = rdr.get_error();
+            if (error) {
+                strbuf ebuff("Parse error: ");
+                ebuff << error;
+                this->Error(str(ebuff));
+            } else {
+                this->Error("Failed to parse value");
+            }
         }
     }
 
@@ -209,8 +218,9 @@ public:
         rpc_bson_reader rdr(bv);
         T& val = out_->push_back();
         bool ok = rpc_traverse(rdr, val);
-        cnt_++;
-        if (!ok) {
+        if (ok) {
+            cnt_++;
+        } else {
             str error = rdr.get_error();
             strbuf errbuf("Failed to parse value from BsonValue: ");
             if (!error) {
