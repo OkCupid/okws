@@ -18,6 +18,7 @@ enum blob_vers_t {
 };
 
 struct blob_1_t {
+    string name<>;
     userid_t userid;
 
     ok_time_t last_login;
@@ -45,6 +46,7 @@ struct blob_1_t {
 };
 
 struct blob_2_t {
+    string name<>;
 
     // profile data
     userid_t userid;

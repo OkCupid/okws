@@ -8,7 +8,6 @@
 
 #include "fakeblob_prot.h"
 
-#include <iostream>
 #include <fstream>
 #include <limits>
 
@@ -112,7 +111,6 @@ bool rpc_traverse(rpc_bson_reader &t, blob_t &obj, const char *field = nullptr);
 FLAT_UNION_TRAVERSE(rpc_bson_writer, blob_t, ver);
 FLAT_UNION_TRAVERSE(rpc_bson_reader, blob_t, ver);
 
-
 // A range (bounds included...)
 struct uid_range_t {
     uint64_t low;
@@ -120,7 +118,7 @@ struct uid_range_t {
 };
 
 static void WriteRangeQueryFields(okmongo::BsonWriter *w, const char *fld,
-                           uint64_t low, uint64_t high) {
+                                  uint64_t low, uint64_t high) {
     assert (low <= high);
     constexpr uint64_t cutoff =
             static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
@@ -152,9 +150,10 @@ static void WriteRangeQueryFields(okmongo::BsonWriter *w, const char *fld,
 namespace okmongo {
 
     template <>
-    void BsonWriteFields<uid_range_t>(BsonWriter *w,
+    bool BsonWriteFields<uid_range_t>(BsonWriter *w,
                                       const uid_range_t &range) {
         WriteRangeQueryFields(w, "userid", range.low, range.high);
+        return true;
     }
 } // okmongo.
 
@@ -162,7 +161,9 @@ struct query_all_t {};
 
 namespace okmongo {
 template <>
-void BsonWriteFields<query_all_t>(BsonWriter *, const query_all_t &) {}
+bool BsonWriteFields<query_all_t>(BsonWriter *, const query_all_t &) {
+    return true;
+}
 }
 
 void native_mongo_test(mongo_connection_t *, evv_t, CLOSURE);
@@ -187,6 +188,11 @@ tamed void native_mongo_test(mongo_connection_t *conn, evv_t ev) {
     // Clear it...
     twait {
         conn->remove(col, qry, mkevent(ok));
+    }
+
+    if(!ok) {
+        WERR << ": delete failed\n";
+        exit(1);
     }
 
     blobs.setsize(5000);

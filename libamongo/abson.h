@@ -15,17 +15,6 @@ bool pub_fields(okmongo::BsonWriter *w, const pub3::expr_dict_t &pub);
 
 ptr<pub3::expr_t> bson_to_pub(const str& s);
 
-// namespace okmongo {
-//     template<>
-//     struct KeyHelper<str> {
-//         static int32_t len(const str &s) {
-//             return static_cast<int32_t>(s.len());
-//         }
-//         static const char *data(const str &s) { return s.cstr(); }
-//     };
-
-// }  // namespace okmongo
-
 // This class factors in the callbacks used to read bson values in. It is used
 // both by `bson_expr_reader` and the query reader in ...
 
@@ -203,14 +192,17 @@ struct bsw_stack_frame {
 };
 
 class rpc_bson_writer {
+    str error_ = nullptr;
 public:
     okmongo::BsonWriter *writer;
     vec<bsw_stack_frame> stack;
 
     explicit rpc_bson_writer(okmongo::BsonWriter *w): writer(w){};
     void descend();
-    void close(const char* k);
-    const char* get_key(const char* s);
+    void close(const char *k);
+    const char *get_key(const char *s);
+    void error(const char *field, str msg);
+    str get_error() const { return error_; };
 };
 
 void rpc_enter_field(rpc_bson_writer &w, const char *k);
@@ -245,6 +237,9 @@ inline bool rpc_traverse(rpc_bson_writer &w, rpc_ptr<R> &obj,
     return rpc_traverse (w, *obj, field);
 }
 
+bool utf8_check(const char *in, size_t len);
+bool modified_utf8_check(const char *in, size_t len);
+
 bool rpc_traverse(rpc_bson_writer &w, bool &v, const char *k = nullptr);
 bool rpc_traverse(rpc_bson_writer &w, double &v, const char *k = nullptr);
 bool rpc_traverse(rpc_bson_writer &w, int64_t &v, const char *k = nullptr);
@@ -255,6 +250,14 @@ bool rpc_traverse(rpc_bson_writer &w, uint32_t &u, const char *k = nullptr);
 template <size_t n>
 bool rpc_traverse(rpc_bson_writer &w, rpc_str<n> &s, const char *k = nullptr) {
     k = w.get_key(k);
+    if (!s) {
+        w.writer->Element(k, nullptr);
+        return true;
+    }
+    if (!(utf8_check(s.cstr(), s.len()))) {
+        w.error(k, "Invalid utf8");
+        return false;
+    }
     w.writer->Element(k, s.cstr(), s.len());
     return true;
 }
@@ -263,7 +266,8 @@ template <size_t n>
 bool rpc_traverse(rpc_bson_writer &w, rpc_bytes<n> &b,
                   const char *k = nullptr) {
     k = w.get_key(k);
-    w.writer->Element(k, b.base(), b.size());
+    w.writer->ElementBindata(k, okmongo::BindataSubtype::kGeneric,
+                             b.base(), b.size());
     return true;
 }
 
@@ -294,8 +298,8 @@ public:
     str get_error() const { return error_; }
 
     rpc_bson_reader(const okmongo::BsonValue &v);
-    okmongo::BsonValue get(const char *k);
-    const char* get(const char *k, okmongo::BsonTag t);
+    const okmongo::BsonValue get(const char *k);
+    const okmongo::BsonValue get(const char *k, okmongo::BsonTag t);
 };
 
 void rpc_enter_field(rpc_bson_reader &r, const char *k);
@@ -306,10 +310,9 @@ bool rpc_traverse(rpc_bson_reader &r, rpc_ptr<R> &obj,
                   const char *field = nullptr) {
     auto v = r.get(field);
     if (v.Empty()) {
-        r.error(field, "missing field");
         return false;
     }
-    if (v.tag() == okmongo::BsonTag::kNull) {
+    if (v.Tag() == okmongo::BsonTag::kNull) {
         obj.clear();
         return true;
     }
@@ -319,18 +322,23 @@ bool rpc_traverse(rpc_bson_reader &r, rpc_ptr<R> &obj,
 template <class R, size_t n>
 bool rpc_traverse(rpc_bson_reader &r, rpc_vec<R, n> &obj,
                   const char *field = nullptr) {
-    auto v = r.get(field);
-    bool ok = true;
-    if (v.tag() != okmongo::BsonTag::kArray) {
-        r.error(field, okmongo::BsonTag::kArray);
+    auto v = r.get(field, okmongo::BsonTag::kArray);
+    if (v.Empty()) {
         return false;
     }
+    bool ok = true;
     okmongo::BsonValueIt it(v);
-    while (!it.Empty() && ok) {
+    while (!it.Done() && ok) {
+        const char *k = it.key();
         r.enter_field(it, field);
         ok = rpc_traverse(r, obj.push_back());
         r.exit_field();
-        it.next();
+        if (ok) {
+            ok = it.next();
+            if (!ok) {
+                r.error(field, str(strbuf("Invalid field after %s", k)));
+            }
+        }
     }
     return ok;
 }
@@ -338,38 +346,33 @@ bool rpc_traverse(rpc_bson_reader &r, rpc_vec<R, n> &obj,
 
 template <size_t n>
 bool rpc_traverse(rpc_bson_reader &r, rpc_str<n> &s, const char *k = nullptr) {
-    const char* data = r.get(k, okmongo::BsonTag::kUtf8);
-    if (!data) {
-        r.error(k,okmongo::BsonTag::kUtf8);
+    auto v = r.get(k);
+    if (v.Tag() == okmongo::BsonTag::kNull) {
+        s = nullptr;
+        return true;
+    }
+    if (v.Tag() != okmongo::BsonTag::kUtf8) {
+        r.error(k, okmongo::BsonTag::kUtf8);
         return false;
     }
-    int32_t len;
-    std::memcpy(&len, data, sizeof(int32_t));
-    if (len < 1) {
-        r.error(k, "invalid value");
-        return false;
-    }
-    s = rpc_str<n>(data + sizeof(int32_t), len - 1);
+    s = rpc_str<n>(v.GetData(), v.GetDataSize());
     return true;
 }
 
 template <size_t n>
 bool rpc_traverse(rpc_bson_reader &r, rpc_bytes<n> &s,
                   const char *k = nullptr) {
-    const char* data = r.get(k, okmongo::BsonTag::kUtf8);
-    if (!data) {
-        r.error(k, okmongo::BsonTag::kUtf8);
+    auto v = r.get(k,  okmongo::BsonTag::kBindata);
+    if(v.Empty()) {
         return false;
     }
-    int32_t len;
-    std::memcpy(&len, data, sizeof(int32_t));
-    if (len < 1) {
-        r.error(k, "invalid value");
+    if (v.GetBinSubstype() != okmongo::BindataSubtype::kGeneric) {
+        r.error(k, "Wrong bin-data subtype");
         return false;
     }
-    s.setsize(len - 1);
-    std::memcpy(s.base(), data + sizeof(int32_t), len - 1);
-    //s = rpc_bytes<n>(data + sizeof(int32_t), len - 1);
+    int32_t len = v.GetDataSize();
+    s.setsize(len);
+    std::memcpy(s.base(), v.GetData(), len);
     return true;
 }
 

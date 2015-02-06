@@ -208,12 +208,12 @@ tamed void timed_tcpconnect(const mongo_connection_fields_base_t& mc,
 
 namespace okmongo {
 template <>
-void BsonWriteFields<ptr<pub3::expr_dict_t>>(
+bool BsonWriteFields<ptr<pub3::expr_dict_t>>(
         BsonWriter *w, ptr<pub3::expr_dict_t> const &dict) {
     if (!dict) {
-        return;
+        return false;
     }
-    pub_fields(w, *dict);
+    return pub_fields(w, *dict);
 }
 }
 
@@ -259,7 +259,7 @@ tamed void mongo_connection_base_t::run(const okmongo::BsonWriter &w,
             abort();
             break;
         }
-        ssize_t res = write(socket_, data, len);
+        ssize_t res = ::write(socket_, data, len);
         switch (res) {
         case -1:
             if (errno == EINTR) {

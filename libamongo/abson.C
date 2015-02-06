@@ -2,10 +2,103 @@
 #include "pub3expr.h"
 #include <limits>
 
+namespace okmongo {
+    template <size_t Sz>
+    struct KeyHelper<rpc_bytes<Sz>> {
+        static int32_t len(const rpc_bytes<Sz> &s) {
+            return static_cast<int32_t>(s.size());
+        }
+        static const char *data(const rpc_bytes<Sz> &s) { return s.base(); }
+    };
+}  // namespace okmongo
+
+// Those macros are only used to hint the compiler's optimiser
+// It is safe to define those as:
+// #define LIKELY(x) x
+// #define UNLIKELY(x) x
+
+#define LIKELY(x) __builtin_expect(x, 1)
+#define UNLIKELY(x) __builtin_expect(x, 0)
+
+namespace {
+// Adapted from markus kuhn (http://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c)
+// if modified is true then we are checking that the input string is valid.
+// `modified utf8` string. We are a bit overly strict since we don't accept
+// surrogates
+
+// If we ever find ourselves yearning for more speed we can use:
+// https://floodyberry.wordpress.com/2007/04/14/utf-8-conversion-tricks
+// For long strings we could also load (aligned) chunks in int64 and use a
+// bitmask to check that all the bytes are ascii
+// We pass `modified` as a template argument to make sure that the function
+// gets specialised properly for the `false` case.
+template<bool modified=false>
+bool utf8_check_core(const char *in, size_t len) {
+    assert(in != nullptr || len == 0);
+    const unsigned char *s = reinterpret_cast<const unsigned char *>(in);
+    const unsigned char *end = s + len;
+    while (s < end) {
+        if (UNLIKELY(*s == 0x00 && modified)) {
+            return false;
+        } else if (LIKELY(*s < 0x80)) { /* 0xxxxxxx */
+            s++;
+        } else if ((s[0] & 0xe0) == 0xc0) {
+
+            /* 110XXXXx 10xxxxxx */
+            if (UNLIKELY(s + 2 > end)) {
+                return false;
+            }
+            if (UNLIKELY((s[1] & 0xc0) != 0x80 ||
+                         (s[0] & 0xfe) == 0xc0)) { /* overlong */
+                if (!(modified && s[0] == 0xc0 && s[1] == 0x80)) {
+                    return false;
+                }
+            }
+            s += 2;
+        } else if ((s[0] & 0xf0) == 0xe0) {
+
+            /* 1110XXXX 10Xxxxxx 10xxxxxx */
+            if ((s + 3 > end) || (s[1] & 0xc0) != 0x80 ||
+                (s[2] & 0xc0) != 0x80 ||
+                (s[0] == 0xe0 && (s[1] & 0xe0) == 0x80) || /* overlong? */
+                (s[0] == 0xed && (s[1] & 0xe0) == 0xa0) || /* surrogate? */
+                (s[0] == 0xef && s[1] == 0xbf &&
+                 (s[2] & 0xfe) == 0xbe)) { /* U+FFFE or U+FFFF? */
+                return false;
+            }
+            s += 3;
+        } else if ((s[0] & 0xf8) == 0xf0) {
+
+            /* 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx */
+            if ((s + 4) > end || (s[1] & 0xc0) != 0x80 ||
+                (s[2] & 0xc0) != 0x80 || (s[3] & 0xc0) != 0x80 ||
+                (s[0] == 0xf0 && (s[1] & 0xf0) == 0x80) || /* overlong? */
+                (s[0] == 0xf4 && s[1] > 0x8f) ||
+                s[0] > 0xf4) { /* > U+10FFFF? */
+                return false;
+            }
+            s += 4;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+} // namespace
+
+
+bool utf8_check(const char *in, size_t len) {
+    return utf8_check_core<false>(in, len);
+}
+
+bool modified_utf8_check(const char *in, size_t len) {
+    return utf8_check_core<true>(in, len);
+}
+
 namespace {
 
-void dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict);
-void dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &dict);
+bool dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict);
+bool dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &dict);
 
 template <typename Key>
 inline void write_uint32(okmongo::BsonWriter *w, Key k, uint32_t i) {
@@ -18,53 +111,82 @@ inline void write_uint64(okmongo::BsonWriter *w, Key k, uint64_t src) {
     return w->Element(k, add_sign(src));
 }
 
+
+
 template <typename K>
 bool dump_key_value(okmongo::BsonWriter *w, K k, xpub3_json_t &json) {
+    // TODO: check that the key is valid modified utf-8
     switch (json.typ) {
         case XPUB3_JSON_BOOL:
-            return w->Element(k, *json.json_bool);
+            w->Element(k, *json.json_bool);
+            return true;
         case XPUB3_JSON_INT32:
-            return w->Element(k, *json.json_int32);
+            w->Element(k, *json.json_int32);
+            return true;
         case XPUB3_JSON_UINT32:
-            return write_uint32(w, k, *json.json_uint32);
+            write_uint32(w, k, *json.json_uint32);
+            return true;
         case XPUB3_JSON_UINT64:
-            return write_uint64(w, k, *json.json_uint64);
+            write_uint64(w, k, *json.json_uint64);
+            return true;
         case XPUB3_JSON_INT64:
-            return w->Element(k, *json.json_int64);
+            w->Element(k, *json.json_int64);
+            return true;
         case XPUB3_JSON_DOUBLE:
-            return w->Element(k, strtod(json.json_double->val.cstr(), nullptr));
+            w->Element(k, strtod(json.json_double->val.cstr(), nullptr));
+            return true;
         case XPUB3_JSON_NULL:
-            return w->Element(k, nullptr);
+            w->Element(k, nullptr);
+            return true;
         case XPUB3_JSON_DICT:
             w->PushDocument(k);
-            dump_dict_cnt(w, *json.json_dict);
+            if (!dump_dict_cnt(w, *json.json_dict)) {
+                return false;
+            }
             w->Pop();
-            return;
+            return true;
         case XPUB3_JSON_LIST:
             w->PushArray(k);
-            dump_list_cnt(w, *json.json_list);
+            if (!dump_list_cnt(w, *json.json_list)) {
+                return false;
+            }
             w->Pop();
-            return;
+            return true;
+        // TODO: check that the data is valid utf8
         case XPUB3_JSON_STRING:
-            return w->Element(k, json.json_string->base(),
-                              json.json_string->size());
+            if (!utf8_check(json.json_string->base(),
+                            json.json_string->size())) {
+                warn << __func__ << "json string wasn't valid utf8\n";
+                return false;
+            }
+            w->Element(k, json.json_string->base(), json.json_string->size());
+            return true;
         case XPUB3_JSON_ERROR:
-            return;
+            return false;
     }
 }
 
 bool dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict) {
     for (auto &x : dict.entries) {
-        const char *key = x.key.base();
-        dump_key_value(w, key, *x.value);
+        if (!modified_utf8_check(x.key.base(), x.key.size())) {
+            warn << __func__ << " json_dict key wasn't valid modified utf8\n";
+            return false;
+        }
+        if (!dump_key_value(w, x.key, *x.value)) {
+            return false;
+        }
     }
+    return true;
 }
 
 bool dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &lst) {
     int32_t i = 0;
     for (auto &x : lst.entries) {
-        dump_key_value(w, i++, x);
+        if (!dump_key_value(w, i++, x)) {
+            return false;
+        }
     }
+    return true;
 }
 } // namespace
 
@@ -76,8 +198,7 @@ bool pub_fields(okmongo::BsonWriter *w, const pub3::expr_dict_t &pub) {
         // Not a dict
         return false;
     }
-    dump_dict_cnt(w, *json.json_dict);
-    return true;
+    return dump_dict_cnt(w, *json.json_dict);
 }
 
 bool pub_to_bson(okmongo::BsonWriter *w, ptr<pub3::expr_t> pub) {
@@ -91,9 +212,9 @@ bool pub_to_bson(okmongo::BsonWriter *w, ptr<pub3::expr_t> pub) {
         return false;
     }
     w->Document();
-    dump_dict_cnt(w, *json.json_dict);
+    bool ok = dump_dict_cnt(w, *json.json_dict);
     w->Pop();
-    return true;
+    return ok;
 }
 
 ptr<pub3::expr_t> bson_to_pub(const str &s) {
@@ -107,6 +228,30 @@ ptr<pub3::expr_t> bson_to_pub(const str &s) {
 }
 
 //------------------------------------------------------------------------------
+
+void rpc_bson_writer::error(const char *fld, str s) {
+    if (error_) {
+        return;
+    }
+    strbuf buff ("[");
+    bool empty = true;
+    for (const auto& e: stack) {
+        if (!empty) {
+            buff << "::";
+        }
+        empty = false;
+        buff << e.key;
+    }
+    if (fld) {
+        if (!empty) {
+            buff << "::";
+        }
+        empty = false;
+        buff << fld;
+    }
+    buff << "] " << s;
+    error_ = str(buff);
+}
 
 void rpc_bson_writer::descend() {
     if (!stack.empty()) {
@@ -204,15 +349,6 @@ void rpc_bson_reader::exit_field() {
     stack_.pop_back();
 }
 
-okmongo::BsonValue rpc_bson_reader::get(const char *k) {
-    assert(!empty());
-    const auto &b = stack_.back();
-    if (!k) {
-        return b.val;
-    }
-    return b.val.GetField(k);
-}
-
 static const char* to_str(okmongo::BsonTag tg) {
     switch(tg) {
         case okmongo::BsonTag::kDouble:
@@ -223,8 +359,8 @@ static const char* to_str(okmongo::BsonTag tg) {
             return "Document";
         case okmongo::BsonTag::kArray:
             return "Array";
-        case okmongo::BsonTag::kBinData:
-            return "BinData";
+        case okmongo::BsonTag::kBindata:
+            return "Bindata";
         case okmongo::BsonTag::kObjectId:
             return "ObjectId";
         case okmongo::BsonTag::kBool:
@@ -278,13 +414,10 @@ void rpc_bson_reader::error(const char *fld, okmongo::BsonTag tg,
         return;
     }
     okmongo::BsonValue v = get(fld);
-    if (v.Empty()) {
-        return error(fld, "missing field");
-    }
-    assert(tg != v.tag());
+    assert(tg != v.Tag());
     strbuf res("expected %s got %s",
                a_or_an(to_str(tg)).cstr(),
-               a_or_an(to_str(v.tag())).cstr());
+               a_or_an(to_str(v.Tag())).cstr());
     if (extra != nullptr) {
         res << "\nnote: " << extra;
     }
@@ -321,13 +454,28 @@ bool rpc_bson_reader::empty() const {
     return stack_.empty();
 }
 
-const char* rpc_bson_reader::get(const char *k, okmongo::BsonTag t) {
+const okmongo::BsonValue rpc_bson_reader::get(const char *k) {
     assert(!empty());
-    const auto fld = get(k);
-    if (fld.tag() != t) {
-        return nullptr;
+    const auto &b = stack_.back();
+    if (k)
+        warn << "<" << k << ">\n";
+    auto res = (k)? b.val.GetField(k) : b.val;
+    if (res.Empty()) {
+        error(k, "missing field");
     }
-    return fld.data();
+    return res;
+}
+
+const okmongo::BsonValue rpc_bson_reader::get(const char *k,
+                                              okmongo::BsonTag tag) {
+    auto res = get(k);
+    if (res.Empty()) {
+        return res;
+    }
+    if (res.Tag() != tag) {
+        error(k, tag);
+    }
+    return res;
 }
 
 void rpc_enter_field(rpc_bson_reader &r, const char *k) {
@@ -343,14 +491,11 @@ void rpc_exit_field(rpc_bson_reader &r, const char *k) {
 }
 
 bool rpc_traverse(rpc_bson_reader &r, uint32_t &u, const char *k) {
-    const char *data = r.get(k, okmongo::BsonTag::kInt64);
-    if (!data) {
-        r.error(k, okmongo::BsonTag::kInt64,
-                "(uint32 are represented in bson as int64)");
+    auto v = r.get(k, okmongo::BsonTag::kInt64);
+    if (v.Empty()) {
         return false;
     }
-    int64_t i;
-    std::memcpy(&i, data, sizeof(int64_t));
+    int64_t i = v.GetInt64();
     if (i < 0 ||
         i > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
         r.error(k, "uint32 out of bounds");
@@ -360,33 +505,29 @@ bool rpc_traverse(rpc_bson_reader &r, uint32_t &u, const char *k) {
     return true;
 }
 
-bool rpc_traverse(rpc_bson_reader &r, uint64_t &v, const char *k) {
-    const char *data = r.get(k, okmongo::BsonTag::kInt64);
-    if (!data) {
-        r.error(k, okmongo::BsonTag::kInt64,
-                "uint64 are represented in bson as int64");
+bool rpc_traverse(rpc_bson_reader &r, uint64_t &u, const char *k) {
+    auto v = r.get(k, okmongo::BsonTag::kInt64);
+    if (v.Empty()) {
         return false;
     }
-    int64_t i;
-    std::memcpy(&i, data, sizeof(int64_t));
-    v = remove_sign(i);
+    int64_t i = v.GetInt64();
+    u = remove_sign(i);
     return true;
 }
 
-#define SIMPLE_TRAV(T, TAG)                                      \
-    bool rpc_traverse(rpc_bson_reader &r, T &v, const char *k) { \
-        const char *data = r.get(k, okmongo::BsonTag::TAG);      \
-        if (!data) {                                             \
-            r.error(k, okmongo::BsonTag::TAG);                   \
+#define SIMPLE_TRAV(T, BSON_NAME)                                \
+    bool rpc_traverse(rpc_bson_reader &r, T &t, const char *k) { \
+        auto v = r.get(k, okmongo::BsonTag::k##BSON_NAME);       \
+        if (v.Empty()) {                                         \
             return false;                                        \
         }                                                        \
-        std::memcpy(&v, data, sizeof(T));                        \
+        t = v.Get##BSON_NAME();                                  \
         return true;                                             \
     }
 
-SIMPLE_TRAV(bool, kBool)
-SIMPLE_TRAV(double, kDouble)
-SIMPLE_TRAV(int64_t, kInt64)
-SIMPLE_TRAV(int32_t, kInt32)
+SIMPLE_TRAV(bool, Bool)
+SIMPLE_TRAV(double, Double)
+SIMPLE_TRAV(int64_t, Int64)
+SIMPLE_TRAV(int32_t, Int32)
 
 #undef SIMPLE_TRAV
