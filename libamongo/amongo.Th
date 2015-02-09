@@ -119,13 +119,17 @@ public:
 namespace okmongo {
 
 template <>
-void BsonWriteFields<ptr<pub3::expr_dict_t>>(
+bool BsonWriteFields<ptr<pub3::expr_dict_t>>(
         BsonWriter *w, ptr<pub3::expr_dict_t> const &dict);
 
 template <typename T>
-void BsonWriteFields(BsonWriter *w, const T &t) {
+bool BsonWriteFields(BsonWriter *w, const T &t) {
     rpc_bson_writer bw(w);
-    rpc_traverse(bw, const_cast<T &>(t));
+    bool ok = rpc_traverse(bw, const_cast<T &>(t));
+    if (!ok && bw.get_error()) {
+        warn << __func__  << ": " << bw.get_error() << "\n";
+    }
+    return ok;
 }
 
 }  // namespace okmongo
@@ -161,8 +165,17 @@ public:
         }
         rpc_bson_reader rdr(bv);
         bool ok = rpc_traverse(rdr, *out_);
-        if (!ok) {
-            this->Error("Failed to parse value");
+        if (ok) {
+            cnt_++;
+        } else {
+            str error = rdr.get_error();
+            if (error) {
+                strbuf ebuff("Parse error: ");
+                ebuff << error;
+                this->Error(str(ebuff));
+            } else {
+                this->Error("Failed to parse value");
+            }
         }
     }
 
@@ -209,8 +222,9 @@ public:
         rpc_bson_reader rdr(bv);
         T& val = out_->push_back();
         bool ok = rpc_traverse(rdr, val);
-        cnt_++;
-        if (!ok) {
+        if (ok) {
+            cnt_++;
+        } else {
             str error = rdr.get_error();
             strbuf errbuf("Failed to parse value from BsonValue: ");
             if (!error) {
@@ -276,11 +290,13 @@ static void amongo_insert_op_t<T>::run(mongo_connection_base_t *conn,
     }
     while (ok && curs != vals.end()) {
         cmd.Clear();
-        curs = okmongo::FillInsertRangeOp(&cmd, ++conn->requestid_,
-                                          conn->db_.cstr(), collection.cstr(),
-                                          curs, vals.end());
-        twait {
-            conn->run_cmd(cmd, mkevent(ok));
+        ok = okmongo::FillInsertRangeOp(&cmd, ++conn->requestid_,
+                                        conn->db_.cstr(), collection.cstr(),
+                                        &curs, vals.end());
+        if (ok) {
+            twait {
+                conn->run_cmd(cmd, mkevent(ok));
+            }
         }
     }
     ev->trigger(ok);
@@ -301,22 +317,29 @@ void amongo_query_runner_t<Res>::run(mongo_connection_base_t *conn,
         // we might need to either close a cursor or parse more.
         out.Clear();
         if (!reader.ok()) {
-            okmongo::FillKillCursorsOp(&out, ++conn->requestid_,
-                                       reader.Header().cursor_id);
-            twait {
-                conn->run_cmd(out, mkevent(ok));
-            }
-            // We def don't want to leave a cursor hanging out here...
+            ok = okmongo::FillKillCursorsOp(&out, ++conn->requestid_,
+                                            reader.Header().cursor_id);
             if (!ok) {
-                conn->abort();
+                warn << __func__ << ": Failed to fill kill cursor.\n";
+            } else {
+                twait {
+                    conn->run_cmd(out, mkevent(ok));
+                }
+                // We def don't want to leave a cursor hanging out here...
+                if (!ok) {
+                    conn->abort();
+                }
             }
             break;
         } else {
-            okmongo::FillGetMoreOp(&out, ++conn->requestid_, conn->db_.cstr(),
-                                   collection.cstr(), reader.Header().cursor_id);
-            reader.Clear();
-            twait {
-                conn->run(out, &reader, mkevent());
+            ok = okmongo::FillGetMoreOp(&out, ++conn->requestid_,
+                                        conn->db_.cstr(), collection.cstr(),
+                                        reader.Header().cursor_id);
+            if (!ok) {
+                warn << __func__ << ": Failed to fill get_more cursor.\n";
+            } else {
+                reader.Clear();
+                twait { conn->run(out, &reader, mkevent()); }
             }
         }
     }
@@ -330,11 +353,12 @@ static void amongo_query_op_t<Res, T>::run(mongo_connection_base_t *conn,
     tvars {
         amongo_query_runner_t<Res> runner(out);
     }
-    okmongo::FillQueryOp(&runner.out, ++conn->requestid_, conn->db_.cstr(),
-                         collection.cstr(), qry, runner.reader.multi ? 0 : 1);
-
-    twait {
-        runner.run(conn, collection, mkevent());
+    if (!okmongo::FillQueryOp(&runner.out, ++conn->requestid_, conn->db_.cstr(),
+                              collection.cstr(), qry,
+                              runner.reader.multi ? 0 : 1)) {
+        runner.reader.Error("Failed to fill query op.");
+    } else {
+        twait { runner.run(conn, collection, mkevent()); }
     }
     ev->trigger(runner.reader.get_res());
 }
@@ -347,12 +371,12 @@ static void amongo_query2_op_t<Res, T, Sel>::run(mongo_connection_base_t *conn,
     tvars {
         amongo_query_runner_t<Res> runner(out);
     }
-    okmongo::FillQueryOp(&runner.out, ++conn->requestid_, conn->db_.cstr(),
-                         collection.cstr(), qry, sel,
-                         runner.reader.multi ? 0 : 1);
-
-    twait {
-        runner.run(conn, collection, mkevent());
+    if (!okmongo::FillQueryOp(&runner.out, ++conn->requestid_, conn->db_.cstr(),
+                              collection.cstr(), qry, sel,
+                              runner.reader.multi ? 0 : 1)) {
+        runner.reader.Error("Failed to fill query op.");
+    } else {
+        twait { runner.run(conn, collection, mkevent()); }
     }
     ev->trigger(runner.reader.get_res());
 }
@@ -362,8 +386,11 @@ static void amongo_query2_op_t<Res, T, Sel>::run(mongo_connection_base_t *conn,
 template <typename T>
 void mongo_connection_t::insert(str collection, const T &val, evb_t ev) {
     ref<okmongo::BsonWriter> cmd(New refcounted<okmongo::BsonWriter>);
+    if (!
     okmongo::FillInsertOp(cmd, ++requestid_, db_.cstr(), collection.cstr(),
-                          val);
+                          val)) {
+        ev->trigger(false);
+    }
     run_cmd(cmd, ev);
 }
 
@@ -375,8 +402,10 @@ void mongo_connection_t::insert(str collection, const vec<T> &vals, evb_t ev) {
 template <typename T>
 void mongo_connection_t::remove(str collection, const T &val, evb_t ev) {
     ref<okmongo::BsonWriter> cmd(New refcounted<okmongo::BsonWriter>);
-    okmongo::FillDeleteOp(cmd, ++requestid_, db_.cstr(), collection.cstr(),
-                          val);
+    if (!okmongo::FillDeleteOp(cmd, ++requestid_, db_.cstr(), collection.cstr(),
+                               val)) {
+        ev->trigger(false);
+    }
     run_cmd(cmd, ev);
 }
 
