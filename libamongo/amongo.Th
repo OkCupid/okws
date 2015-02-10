@@ -82,8 +82,8 @@ public:
 
     mongo_connection_t(str hostname, str db, uint16_t port = 27017);
 
-    mongo_connection_t(const vec<mongo_host_t>& hosts, str db);
-
+    mongo_connection_t(const vec<mongo_host_t> &hosts, str db,
+                       int timeout_ = 2000, int connect_timeout_ = 100);
 
     //--------------------------------------------------------------------------
     // Pub functions

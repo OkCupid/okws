@@ -75,8 +75,11 @@ struct timespec get_monotonic_time() {
 }
 
  struct timespec get_future_time(int ms) {
-     if (ms < 0) {
-         ms = 0;
+     if (ms <= 0) {
+         struct timespec res;
+         res.tv_sec = std::numeric_limits<time_t>::max();
+         res.tv_nsec = 999999999;
+         return res;
      }
      time_t tv_sec = ms / 1000;
      long tv_nsec = (ms % 1000) * 1000000;
@@ -224,11 +227,14 @@ mongo_connection_t::mongo_connection_t(str hostname, str db, uint16_t port) {
     requestid_ = 0;
 }
 
-mongo_connection_t::mongo_connection_t(const vec<mongo_host_t>& hosts, str db) {
+mongo_connection_t::mongo_connection_t(const vec<mongo_host_t> &hosts, str db,
+                                       int timeout, int connect_timeout) {
     hosts_ = hosts;
     db_ = db;
     socket_ = 0;
     requestid_ = 0;
+    timeout_ = timeout;
+    connect_timeout_ = connect_timeout_;
 }
 
 tamed void mongo_connection_base_t::run(const okmongo::BsonWriter &w,
