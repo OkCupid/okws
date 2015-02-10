@@ -457,8 +457,6 @@ bool rpc_bson_reader::empty() const {
 const okmongo::BsonValue rpc_bson_reader::get(const char *k) {
     assert(!empty());
     const auto &b = stack_.back();
-    if (k)
-        warn << "<" << k << ">\n";
     auto res = (k)? b.val.GetField(k) : b.val;
     if (res.Empty()) {
         error(k, "missing field");
