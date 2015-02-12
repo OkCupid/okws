@@ -124,10 +124,14 @@ bool dump_key_value(okmongo::BsonWriter *w, K k, xpub3_json_t &json) {
             w->Element(k, *json.json_int32);
             return true;
         case XPUB3_JSON_UINT32:
-            write_uint32(w, k, *json.json_uint32);
+            w->PushDocument(k);
+            write_uint32(w, "%unsigned", *json.json_uint32);
+            w->Pop();
             return true;
         case XPUB3_JSON_UINT64:
-            write_uint64(w, k, *json.json_uint64);
+            w->PushDocument(k);
+            write_uint64(w, "%unsigned", *json.json_uint64);
+            w->Pop();
             return true;
         case XPUB3_JSON_INT64:
             w->Element(k, *json.json_int64);
@@ -172,6 +176,10 @@ bool dump_dict_cnt(okmongo::BsonWriter *w, xpub3_json_dict_t &dict) {
             warn << __func__ << " json_dict key wasn't valid modified utf8\n";
             return false;
         }
+        if (*x.key.base() == '%') {
+            warn << __func__ << " json_dict key cannot start with a '%'\n";
+            return false;
+        }
         if (!dump_key_value(w, x.key, *x.value)) {
             return false;
         }
@@ -190,11 +198,47 @@ bool dump_list_cnt(okmongo::BsonWriter *w, xpub3_json_list_t &lst) {
 }
 } // namespace
 
+bool rpc_traverse(rpc_bson_writer &w, xpub3_json_t &obj, const char *field) {
+    field = w.get_key(field);
+    if (!field) {
+        w.error(nullptr, "null field");
+        return false;
+    }
+    return dump_key_value(w.writer, field, obj);
+}
+
+bool rpc_traverse(rpc_bson_reader &r, xpub3_json_t &obj, const char *field) {
+    auto v = r.get(field, okmongo::BsonTag::kDocument);
+    if (v.Empty()) {
+        return false;
+    }
+    bson_expr_reader er;
+    const ssize_t consumed = er.Consume(v.GetRawData(), v.GetRawDataSize());
+    if (er.get_error()) {
+        r.error(er.get_error_pos(), r.get_error());
+        return false;
+    }
+    if (consumed != static_cast<ssize_t>(v.GetRawDataSize())) {
+        r.error(field, "Internal error: underconsumed");
+        return false;
+    }
+    ptr<pub3::expr_t> expr = er.get_res();
+    if (!expr) {
+        r.error(field, "Internal error: did not produce a value");
+        return false;
+    }
+    bool ok = expr->to_xdr(&obj);
+    if (!ok) {
+        r.error(field,
+                "Internal error: failed to convert pub expression to xdr.");
+    }
+    return ok;
+}
 
 bool pub_fields(okmongo::BsonWriter *w, const pub3::expr_dict_t &pub) {
     xpub3_json_t json;
-    pub.to_xdr(&json);
-    if (json.typ != XPUB3_JSON_DICT) {
+    bool ok = pub.to_xdr(&json);
+    if (!ok || json.typ != XPUB3_JSON_DICT) {
         // Not a dict
         return false;
     }
@@ -224,7 +268,6 @@ ptr<pub3::expr_t> bson_to_pub(const str &s) {
         return nullptr;
     }
     return r.get_res();
-
 }
 
 //------------------------------------------------------------------------------
@@ -448,6 +491,16 @@ void rpc_bson_reader::error(const char *fld, str s) {
     }
     buff << "] " << s;
     error_ = str(buff);
+}
+
+ void rpc_bson_reader::error(const vec<str> &sub_pos, str s) {
+     if (error_) {
+         return;
+     }
+     for (auto e : sub_pos) {
+         stack_.push_back(stack_frame_t{okmongo::BsonValue(), e.cstr()});
+     }
+     error(nullptr, s);
 }
 
 bool rpc_bson_reader::empty() const {
