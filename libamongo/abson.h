@@ -19,14 +19,14 @@ ptr<pub3::expr_t> bson_to_pub(const str& s);
 // both by `bson_expr_reader` and the query reader in ...
 
 template<class Parent>
-class bson_expr_reader_engine : public Parent {
+class bson_expr_reader_engine  : public Parent {
 protected:
     // We could use an mstr but this is more convenient
     std::string buff_;
     str key;
     struct stack_elt_t {
-        ptr<pub3::expr_list_t> lst;
-        ptr<pub3::expr_dict_t> dict;
+        str key;
+        ptr<pub3::expr_t> expr;
     };
     vec<stack_elt_t> stack_;
 
@@ -36,8 +36,12 @@ protected:
     ptr<pub3::expr_dict_t> res_;
 
     str error_;
+    vec<str> err_stack_;
 
+    using Parent::Error;
 public:
+    str get_error() const { return error_; }
+    const vec<str>& get_error_pos() const { return err_stack_; }
     void EmitFieldName(const char *data, const size_t len);
     void EmitError(str);
     void EmitOpenDoc();
@@ -46,6 +50,7 @@ public:
 
     void EmitInt32(int32_t i);
     void EmitInt64(int64_t i);
+    void EmitUtcDatetime(int64_t i);
     void EmitBool(bool b);
 
     void EmitDouble(double d);
@@ -58,6 +63,31 @@ public:
 
     ptr<pub3::expr_t> get_res() { return res_; }
 };
+
+//------------------------------------------------------------------------------
+
+inline uint64_t remove_sign(int64_t i) {
+    return static_cast<uint64_t>(i);
+}
+
+// casting from unsigned to signed is unspecified (c++ 4.7), this is the inverse
+// operation from the cast.
+// Adapted from:
+//  http://stackoverflow.com/questions/13150449/efficient-unsigned-to-signed-cast-avoiding-implementation-defined-behavior
+inline int64_t add_sign(uint64_t u) {
+    uint64_t umax_int64 =
+        static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    int64_t min_int64 = std::numeric_limits<int64_t>::min();
+    uint64_t umin_int64 = static_cast<uint64_t>(min_int64);
+
+    if (u <= static_cast<uint64_t>(umax_int64))
+        return static_cast<int64_t>(u);
+
+    return static_cast<int64_t>(u - umin_int64) + min_int64;
+}
+
+
+//------------------------------------------------------------------------------
 
 // This is a custom reader that parses pub_exprs in...
 class bson_expr_reader : public bson_expr_reader_engine<
@@ -73,11 +103,19 @@ str bson_expr_reader_engine<Parent>::get_buff_cnt() {
 template<class Parent>
 void bson_expr_reader_engine<Parent>::field(ptr<pub3::expr_t> e) {
     auto &v = stack_.back();
-    if (v.lst) {
-        v.lst->push_back(e);
+    ptr<pub3::expr_dict_t> d= v.expr->to_dict();
+    if (d) {
+        d->insert(key, e);
     } else {
-        v.dict->insert(key, e);
+        ptr<pub3::expr_list_t> l = v.expr->to_list();
+        if (l) {
+            l->push_back(e);
+        } else {
+            Error("Found another field in a document representing a value that "
+                  "is neither an array or a document");
+        }
     }
+    key = nullptr;
 }
 
 template <class Parent>
@@ -92,28 +130,42 @@ void bson_expr_reader_engine<Parent>::EmitFieldName(const char *data,
 
 template<class Parent>
 void bson_expr_reader_engine<Parent>::EmitError(str s) {
+    for (const auto& e : stack_) {
+        if (e.key == nullptr) {
+            continue;
+        }
+        err_stack_.push_back(e.key);
+    }
+    if (key) {
+        err_stack_.push_back(key);
+    }
     error_ = s;
 }
 
 template<class Parent>
 void bson_expr_reader_engine<Parent>::EmitOpenDoc() {
-    auto d = pub3::expr_dict_t::alloc();
-    if (res_) {
-        field(d);
-    } else {
-        res_ = d;
-    }
-    stack_.push_back(stack_elt_t{nullptr, d});
+    stack_.push_back(stack_elt_t{key, pub3::expr_dict_t::alloc()});
+    key = nullptr;
 }
 
 template<class Parent>
-void bson_expr_reader_engine<Parent>::EmitClose() { stack_.pop_back(); }
+void bson_expr_reader_engine<Parent>::EmitClose() {
+    if (stack_.size() == 1) {
+        res_ = stack_.back().expr->to_dict();
+        stack_.pop_back();
+        return;
+    }
+    const auto back = stack_.back();
+    key = back.key;
+    ptr<pub3::expr_t> e = back.expr;
+    stack_.pop_back();
+    field(e);
+}
 
 template<class Parent>
 void bson_expr_reader_engine<Parent>::EmitOpenArray() {
     auto l = pub3::expr_list_t::alloc();
-    field(l);
-    stack_.push_back(stack_elt_t{l, nullptr});
+    stack_.push_back(stack_elt_t{key, pub3::expr_list_t::alloc()});
 }
 
 template<class Parent>
@@ -123,6 +175,21 @@ void bson_expr_reader_engine<Parent>::EmitInt32(int32_t i) {
 
 template<class Parent>
 void bson_expr_reader_engine<Parent>::EmitInt64(int64_t i) {
+    if (key == "%unsigned") {
+        ptr<pub3::expr_dict_t> d = stack_.back().expr->to_dict();
+        if (!d || d->size() != 0) {
+            Error("Field error: %unsigned should be the only key in an empty "
+                  "dictionary.");
+        } else {
+            stack_.back().expr = pub3::expr_uint_t::alloc(remove_sign(i));
+        }
+    } else {
+        field(pub3::expr_int_t::alloc(i));
+    }
+}
+
+template<class Parent>
+void bson_expr_reader_engine<Parent>::EmitUtcDatetime(int64_t i) {
     field(pub3::expr_int_t::alloc(i));
 }
 
@@ -154,29 +221,6 @@ void bson_expr_reader_engine<Parent>::EmitUtf8(const char *s, size_t len) {
         buff_.append(s, len);
     }
 }
-
-//------------------------------------------------------------------------------
-
-inline uint64_t remove_sign(int64_t i) {
-    return static_cast<uint64_t>(i);
-}
-
-// casting from unsigned to signed is unspecified (c++ 4.7), this is the inverse
-// operation from the cast.
-// Adapted from:
-//  http://stackoverflow.com/questions/13150449/efficient-unsigned-to-signed-cast-avoiding-implementation-defined-behavior
-inline int64_t add_sign(uint64_t u) {
-    uint64_t umax_int64 =
-        static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
-    int64_t min_int64 = std::numeric_limits<int64_t>::min();
-    uint64_t umin_int64 = static_cast<uint64_t>(min_int64);
-
-    if (u <= static_cast<uint64_t>(umax_int64))
-        return static_cast<int64_t>(u);
-
-    return static_cast<int64_t>(u - umin_int64) + min_int64;
-}
-
 
 //-----------------------------------------------------------------------------
 
@@ -271,6 +315,9 @@ bool rpc_traverse(rpc_bson_writer &w, rpc_bytes<n> &b,
     return true;
 }
 
+bool rpc_traverse(rpc_bson_writer &w, xpub3_json_t &obj,
+                  const char *field = nullptr);
+
 //------------------------------------------------------------------------------
 // XDR reader
 //------------------------------------------------------------------------------
@@ -294,6 +341,7 @@ public:
     bool empty() const;
 
     void error(const char * fld, str);
+    void error(const vec<str> &subpos, str);
     void error(const char *fld, okmongo::BsonTag, const char *extra = nullptr);
     str get_error() const { return error_; }
 

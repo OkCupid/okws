@@ -26,7 +26,7 @@ tamed void insert_usr(mongo_connection_t *db, str name, uint64_t id,
     usr->insert("username", name);
     usr->insert("tab", pub3::expr_uint_t::alloc(id));
     twait {
-        db->insert("users", usr, mkevent(ok));
+        db->insert("pub_test_users", usr, mkevent(ok));
     }
     if (!ok) {
         WERR << "Failed to insert: " << name << "\n";
@@ -55,7 +55,7 @@ tamed void pub_mongo_test(ptr<mongo_connection_t> conn, evv_t ev) {
     usr1_qry->insert("username", "usr1");
 
     twait {
-        conn->remove("users", all, mkevent(ok));
+        conn->remove("pub_test_users", all, mkevent(ok));
     }
 
     if (!ok) {
@@ -71,7 +71,7 @@ tamed void pub_mongo_test(ptr<mongo_connection_t> conn, evv_t ev) {
     }
 
     twait {
-        conn->query("users", all, mkevent(res));
+        conn->query("pub_test_users", all, mkevent(res));
     }
 
     if (res) {
@@ -86,7 +86,7 @@ tamed void pub_mongo_test(ptr<mongo_connection_t> conn, evv_t ev) {
     }
 
     twait {
-        conn->query("users", usr1_qry, mkevent(res));
+        conn->query("pub_test_users", usr1_qry, mkevent(res));
     }
 
     if (res) {
@@ -175,7 +175,7 @@ constexpr uint64_t uidsToInsert = 102400;
 
 tamed void native_mongo_test(mongo_connection_t *conn, evv_t ev) {
     tvars {
-        const str col("blobs");
+        const str col("native_test_blobs");
         bool ok;
         vec<blob_t> blobs;
         query_all_t qry;
@@ -253,7 +253,7 @@ tamed void main2() {
     }
     hosts.push_back(mongo_host_t("bogus"));
     hosts.push_back(mongo_host_t("127.0.0.1"));
-    conn = New refcounted<mongo_connection_t>(hosts, "mydb");
+    conn = New refcounted<mongo_connection_t>(hosts, "okws_test");
     twait { pub_mongo_test(conn, mkevent()); }
     twait { native_mongo_test(conn, mkevent()); }
     exit(0);
