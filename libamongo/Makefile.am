@@ -18,6 +18,7 @@ libamongo_la_SOURCES =\
 	abson.C\
 	amongo.C\
 	bson.cc\
+	bson_dumper.cc\
 	mongo.cc
 
 okwsinclude_HEADERS = \
