@@ -313,6 +313,7 @@ class Client:
         self._retry = retry
         self._fast_decode = False
         self._fancy_objs = True
+        self._const = None
 
     #-----------------------------------------
 
@@ -354,6 +355,9 @@ class Client:
     #-----------------------------------------
 
     def fetch_constants (self):
+        if self._const is not None:
+            return self._const
+
         res = self.call (proc = 0, arg = None, vers = 1,
                          prog = self.constant_prog)
 
@@ -464,6 +468,7 @@ class Client:
                 self.err ("connection dropped; retrying in %ds" % w)
                 time.sleep (w)
                 need_connect = True
+                self._const = None # Fetch fresh constants when we reconnect
             elif eof and not self._retry:
                 self.connect ()
                 self.err ("rpc call failed; not retrying")
