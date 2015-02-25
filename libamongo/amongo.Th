@@ -79,6 +79,7 @@ public:
     str get_db() const { return db_; }
 
     using mongo_connection_base_t::run_cmd;
+    using mongo_connection_base_t::run;
 
     mongo_connection_t(str hostname, str db, uint16_t port = 27017);
 
