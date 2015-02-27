@@ -177,6 +177,9 @@ xss_escape (const char *in, size_t inlen)
     case '"':
       inc = sprintf (op, "&quot;");
       break;
+    case '\'':
+      inc = sprintf (op, "&#39;");
+      break;
     default:
       *op = *cp;
       inc = 1;
