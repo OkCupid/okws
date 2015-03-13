@@ -110,7 +110,7 @@ public:
     template <typename T>
     void insert(str collection, const vec<T> &vals, evb_t ev);
 
-    void close();
+    void close(evv_t::ptr, CLOSURE);
 };
 
 //------------------------------------------------------------------------------

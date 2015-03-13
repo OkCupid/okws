@@ -336,10 +336,13 @@ void mongo_connection_base_t::abort() {
     close();
 }
 
-void mongo_connection_t::close() {
+tamed void mongo_connection_t::close(evv_t::ptr ev) {
     twait { lock_.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
-    mongo_connection_t::close();
+    mongo_connection_base_t::close();
     lock_.release();
+    if (ev) {
+        ev->trigger();
+    }
 }
 
 tamed void mongo_connection_t::query(str collection,
