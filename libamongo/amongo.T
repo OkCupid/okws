@@ -207,6 +207,96 @@ tamed void timed_tcpconnect(const mongo_connection_fields_base_t& mc,
     }
     ev->trigger(res);
 }
+
+void run(mongo_connection_base_t *, const okmongo::BsonWriter &w,
+         AbstractValueReader *r, evv_t ev, CLOSURE);
+
+tamed void run(mongo_connection_base_t *mc, const okmongo::BsonWriter &w,
+               AbstractValueReader *r, evv_t ev) {
+    tvars {
+        const char *data(w.data());
+        size_t len(w.len());
+        struct timespec exp;
+        bool ok;
+    }
+    exp = get_future_time(mc->timeout_);
+
+    if (mc->socket_ == -1) {
+        r->AVRReportError("Connection closed");
+        return ev->trigger();
+    } else if (mc->socket_ == 0) {
+        twait {
+            timed_tcpconnect(*mc, exp, mkevent(mc->socket_));
+        }
+        if (mc->socket_ <= 0) {
+            mc->socket_ = 0;
+            r->AVRReportError("Failed to connect");
+            return ev->trigger();
+        }
+    }
+
+    while (len > 0 && !r->AVRIsDone()) {
+        twait { timed_waitwrite(mc->socket_, exp, mkevent(ok)); }
+        if (!ok) {
+            r->AVRReportError("Timeout while sending");
+            mc->abort();
+            return ev->trigger();
+        }
+        ssize_t res = ::write(mc->socket_, data, len);
+        switch (res) {
+        case -1:
+            if (errno == EINTR) {
+                continue;
+            }
+            r->AVRReportError(strbuf("Unix error while sending: %s",
+                                     strerror(errno)));
+            mc->abort();
+            return ev->trigger();
+        case 0:
+            r->AVRReportError("Connection closed while sending");
+            mc->abort();
+            return ev->trigger();
+        default:
+            len -= static_cast<size_t>(res);
+            data += res;
+        }
+    }
+
+    while (!r->AVRIsDone()) {
+        twait { timed_waitread(mc->socket_, exp, mkevent(ok)); }
+        if (!ok) {
+            r->AVRReportError("Timeout while reading");
+            mc->abort();
+            return ev->trigger();
+        }
+        ssize_t res = read(mc->socket_, mc->scratch_,
+                           mongo_connection_base_t::kScratchLen);
+        switch (res) {
+            case -1:
+                if (errno == EINTR) {
+                    continue;
+                }
+                r->AVRReportError(strbuf("Unix error while reading: %s",
+                                         strerror(errno)));
+                mc->abort();
+                return ev->trigger();
+            case 0:
+                r->AVRReportError("Connection closed while reading");
+                mc->abort();
+                return ev->trigger();
+            default:
+                int32_t consumed = r->AVRConsume(mc->scratch_, res);
+                if (consumed != res) {
+                    r->AVRReportError("Number of bytes read did not match the "
+                                      "number we got on the wire");
+                    mc->abort();
+                    return ev->trigger();
+                }
+        }
+    }
+    ev->trigger();
+}
+
 }
 
 namespace okmongo {
@@ -218,6 +308,14 @@ bool BsonWriteFields<ptr<pub3::expr_dict_t>>(
     }
     return pub_fields(w, *dict);
 }
+}
+
+tamed void mongo_connection_base_t::run(const okmongo::BsonWriter &qry,
+                                        AbstractValueReader *r, evv_t ev) {
+    twait { lock_.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
+    twait { ::run(this, qry, r, mkevent()); }
+    lock_.release();
+    ev->trigger();
 }
 
 mongo_connection_t::mongo_connection_t(str hostname, str db, uint16_t port) {
@@ -237,94 +335,13 @@ mongo_connection_t::mongo_connection_t(const vec<mongo_host_t> &hosts, str db,
     connect_timeout_ = connect_timeout_;
 }
 
-tamed void mongo_connection_base_t::run(const okmongo::BsonWriter &w,
-                                        AbstractValueReader *r, evv_t ev) {
-    tvars {
-        const char *data(w.data());
-        size_t len(w.len());
-        struct timespec exp;
-        bool ok;
-    }
-    exp = get_future_time(timeout_);
-    twait { lock_.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
 
-    if (!socket_) {
-        twait {
-            timed_tcpconnect(*this, exp, mkevent(socket_));
-        }
-        if (socket_ <= 0) {
-            socket_ = 0;
-            r->AVRReportError("Failed to connect");
-        }
-    }
-
-    while (len > 0 && !r->AVRIsDone()) {
-        twait { timed_waitwrite(socket_, exp, mkevent(ok)); }
-        if (!ok) {
-            r->AVRReportError("Timeout while sending");
-            abort();
-            break;
-        }
-        ssize_t res = ::write(socket_, data, len);
-        switch (res) {
-        case -1:
-            if (errno == EINTR) {
-                continue;
-            }
-            r->AVRReportError(strbuf("Unix error while sending: %s",
-                                     strerror(errno)));
-            abort();
-            break;
-        case 0:
-            r->AVRReportError("Connection closed while sending");
-            abort();
-            break;
-        default:
-            len -= static_cast<size_t>(res);
-            data += res;
-        }
-    }
-
-    while (!r->AVRIsDone()) {
-        twait { timed_waitread(socket_, exp, mkevent(ok)); }
-        if (!ok) {
-            r->AVRReportError("Timeout while reading");
-            abort();
-            break;
-        }
-        ssize_t res = ::read(socket_, scratch_, kScratchLen);
-        switch (res) {
-            case -1:
-                if (errno == EINTR) {
-                    continue;
-                }
-                r->AVRReportError(strbuf("Unix error while reading: %s",
-                                         strerror(errno)));
-                abort();
-                break;
-            case 0:
-                r->AVRReportError("Connection closed while reading");
-                abort();
-                break;
-            default:
-                int32_t consumed = r->AVRConsume(scratch_, res);
-                if (consumed != res) {
-                    r->AVRReportError("Number of bytes read did not match the "
-                                      "number we got on the wire");
-                    abort();
-                }
-        }
-    }
-    lock_.release();
-    ev->trigger();
-}
-
-void mongo_connection_base_t::close() {
+void mongo_connection_base_t::abort() {
     if (socket_ == 0) {
         return;
     }
     int res = ::close(socket_);
-    // Do not retry after a close!
+    // Do not retry on EINTR after a close!
     if (res == -1 && errno != EINTR) {
         PUNIX_ERROR;
     }
@@ -332,13 +349,14 @@ void mongo_connection_base_t::close() {
     requestid_ = 0;
 }
 
-void mongo_connection_base_t::abort() {
-    close();
-}
-
 tamed void mongo_connection_t::close(evv_t::ptr ev) {
     twait { lock_.acquire (tame::lock_t::EXCLUSIVE, mkevent ()); }
-    mongo_connection_base_t::close();
+    int res = ::close(socket_);
+    // Do not retry on EINTR after a close!
+    if (res == -1 && errno != EINTR) {
+        PUNIX_ERROR;
+    }
+    socket_ = -1;
     lock_.release();
     if (ev) {
         ev->trigger();
