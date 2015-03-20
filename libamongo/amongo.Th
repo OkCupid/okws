@@ -62,7 +62,6 @@ struct mongo_connection_base_t : public mongo_connection_fields_base_t {
              CLOSURE);
 
     void abort();
-    void close();
 };
 
 struct mongo_result_t {
@@ -77,6 +76,8 @@ class mongo_connection_t : protected mongo_connection_base_t {
 public:
     int32_t get_requestid() { return requestid_++; }
     str get_db() const { return db_; }
+
+    bool is_busy() const { return lock_.mode() != tame::lock_t::OPEN; }
 
     using mongo_connection_base_t::run_cmd;
     using mongo_connection_base_t::run;
