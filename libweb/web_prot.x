@@ -1,12 +1,6 @@
 
 /* $Id */
 
-enum sex_t {
-  NOSEX = 0,
-  MALE = 1,
-  FEMALE = 2
-};
-
 enum adb_status_t {
   ADB_OK = 0,
   ADB_NOT_FOUND = 1,

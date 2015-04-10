@@ -25,67 +25,6 @@
 #include "rxx.h"
 #include "parseopt.h"
 
-sex_t
-str_to_sex (const str &s)
-{
-  if (!s)
-    return NOSEX; // ; i don't need it as long as i have my computer
-  return str_to_sex (s.cstr (), s.len ());
-}
-
-sex_t
-str_to_sex (const char *s, u_int len)
-{
-  if (len < 1) 
-    return NOSEX;
-  if (*s == 'M' || *s == 'm')
-    return MALE;
-  if (*s == 'F' || *s == 'f')
-    return FEMALE;
-  return NOSEX;
-}
-
-str
-sex_to_str (sex_t t) 
-{
-  switch (t) {
-  case MALE:
-    return "m";
-  case FEMALE:
-    return "f";
-  default:
-    return "";
-  }
-}
-
-char
-sex_to_char (sex_t t)
-{
-  switch (t) {
-  case MALE:
-    return 'm';
-  case FEMALE:
-    return 'f';
-  default:
-    return 'n';
-  }
-}
-
-sex_t
-char_to_sex (char c)
-{
-  switch (c) {
-  case 'm':
-  case 'M':
-    return MALE;
-  case 'f':
-  case 'F':
-    return FEMALE;
-  default:
-    return NOSEX;
-  }
-}
-
 const char *date_rxx_str = "(([0-9]{4})-([0-9]{2})-([0-9]{2}))?" 
   "( ([0-9]{2}):([0-9]{2}):([0-9]{2}))?";
 
