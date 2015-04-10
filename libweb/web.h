@@ -141,11 +141,6 @@ private:
 
 typedef ptr<okdate_t> okdatep_t;
 
-sex_t str_to_sex (const str &s);
-sex_t str_to_sex (const char *c, u_int len);
-str sex_to_str (sex_t t);
-char sex_to_char (sex_t t);
-sex_t char_to_sex (char c);
 str check_email (const str &in);
 str check_zipcode (const str &in);
 

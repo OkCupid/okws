@@ -208,11 +208,6 @@ public:
     buf (const_cast<char *> (s.cstr ())), balloced (false),
     pntr (NULL) {}
 
-  mybind_str_t (sex_t s) 
-    : mybind_t (MYSQL_TYPE_STRING), hold (sex_to_str (s)), size (hold.len ()),
-      buf (const_cast<char *> (hold.cstr ())), balloced (false),
-      pntr (NULL) {}
-  
   mybind_str_t (u_int s = 1024, eft_t t = MYSQL_TYPE_STRING) : 
     mybind_t (t), hold (NULL), size (s), buf (New char[s]), balloced (true),
     pntr (NULL) {}
@@ -297,29 +292,6 @@ protected:
   rpc_bytes<n> *pntr;
   str s;
   mybind_str_t mys;
-};
-
-//-----------------------------------------------------------------------
-
-class mybind_sex_t : public mybind_str_t {
-public:
-  mybind_sex_t (sex_t *p) : mybind_str_t (), pntr (p), sx (NOSEX) {}
-  mybind_sex_t (sex_t s) : mybind_str_t (s), sx (s) 
-  { sprintf (buf, "\'%c\'", sex_to_char (sx)); }
-  virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
-  virtual str to_str () const;
-  virtual void assign ()
-  {
-    *pntr = size ? str_to_sex (str (buf, size)) : NOSEX;
-  }
-  virtual bool read_str (const char *c, unsigned long l, eft_t typ)
-  {
-    return ((*pntr = c ? char_to_sex (*c) : NOSEX) != NOSEX);
-  }
-private:
-  char buf[4];
-  sex_t *pntr;
-  sex_t sx;
 };
 
 //-----------------------------------------------------------------------
@@ -619,7 +591,6 @@ public:
   mybind_res_t (int *i) { p = New refcounted<mybind_int_t> (i); }
   mybind_res_t (u_int32_t *i) { p = New refcounted<mybind_u32_t> (i); }
   mybind_res_t (ptr<u_int32_t> *i) { p = New refcounted<mybind_u32_t> (i); }
-  mybind_res_t (sex_t *s) { p = New refcounted<mybind_sex_t> (s); }
   mybind_res_t (int16_t *i) { p = New refcounted<mybind_short_t> (i); }
   mybind_res_t (ptr<int16_t> *i) { p = New refcounted<mybind_short_t> (i); }
   mybind_res_t (u_int16_t *i) { p = New refcounted<mybind_u16_t> (i); }
@@ -682,7 +653,6 @@ public:
   mybind_param_t (u_char i) { p = New refcounted<mybind_u8_t> (i); }
   mybind_param_t (okdatep_t d) { p = New refcounted<mybind_date_t> (d); }
   mybind_param_t (const okdate_t &d) { p = New refcounted<mybind_date_t> (d); }
-  mybind_param_t (sex_t s) { p = New refcounted<mybind_sex_t> (s); }
   mybind_param_t (const amysql_scalar_t &x);
   mybind_param_t (mysql_var_t v) { p = New refcounted<mybind_var_t> (v); }
 
@@ -719,8 +689,6 @@ public:
   { p = New refcounted<mybind_date_t> (d); return (*this); }
   mybind_param_t &operator= (const okdate_t &d)
   { p = New refcounted<mybind_date_t> (d); return (*this); }
-  mybind_param_t &operator= (sex_t s)
-  { p = New refcounted<mybind_sex_t> (s); return (*this); }
   mybind_param_t &operator= (const x_okdate_t &x)
   { p = New refcounted<mybind_date_t> (x); return (*this); }
   mybind_param_t &operator= (const x_okdate_time_t &x)

@@ -58,26 +58,6 @@ str mybind_str_t::to_str () const { return str (buf, size); }
 
 //-----------------------------------------------------------------------
 
-void
-mybind_sex_t::to_qry (MYSQL *m, strbuf *b, char **s, u_int *l)
-{
-  buf[1] = sex_to_char (sx);
-  b->buf (buf, 3);
-}
-
-//-----------------------------------------------------------------------
-
-str 
-mybind_sex_t::to_str () const 
-{
-  char b[2];
-  b[1] = 0;
-  b[0] = sex_to_char (sx);
-  return str (b, 2);
-}
-
-//-----------------------------------------------------------------------
-
 u_int
 next2pow (u_int i)
 {
