@@ -203,28 +203,24 @@ private:
 
 class mybind_str_t : public mybind_t {
 public:
-  mybind_str_t (const str &s, eft_t t = MYSQL_TYPE_STRING, bool hld = false) :
-    mybind_t (t), hold (hld ? s : sNULL), size (s.len ()), 
+  mybind_str_t (const str &s) :
+    mybind_t (MYSQL_TYPE_STRING), hold (s), size (s.len ()),
     buf (const_cast<char *> (s.cstr ())), balloced (false),
-    pntr (NULL) {}
+    pntr (nullptr) {}
 
-  mybind_str_t (u_int s = 1024, eft_t t = MYSQL_TYPE_STRING) : 
-    mybind_t (t), hold (NULL), size (s), buf (New char[s]), balloced (true),
-    pntr (NULL) {}
-  
-  mybind_str_t (str *p, u_int s = 1024, eft_t t = MYSQL_TYPE_STRING) :
-    mybind_t (t), hold (NULL), size (s), buf (New char[s]), balloced (true),
-    pntr (p) {}
-  
+  mybind_str_t (str *p) :
+    mybind_t ( MYSQL_TYPE_STRING), hold (nullptr), size (1024),
+    buf (New char[size]), balloced (true), pntr (p) {}
+
   ~mybind_str_t () { if (balloced) delete [] buf; }
 #ifdef HAVE_MYSQL_BIND
-  void bind (MYSQL_BIND *bnd, bool param);
+  void bind (MYSQL_BIND *bnd, bool param) override;
 #endif
-  virtual void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l);
-  virtual str to_str  () const;
-  virtual void assign () { *pntr = str (buf, len); }
+  void to_qry (MYSQL *m, strbuf *b, char **s, u_int *l) override;
+  str to_str  () const override;
+  void assign () override { *pntr = str (buf, len); }
   operator str () const { return isnull () ? sNULL : str (buf, len); }
-  bool read_str (const char *c, unsigned long l, eft_t typ)
+  bool read_str (const char *c, unsigned long l, eft_t typ) override
   { *pntr = str (c, l); return true; }
 
 protected:
@@ -270,11 +266,11 @@ protected:
 template<size_t n>
 class mybind_rpcstr_t :  public mybind_t {
 public:
-  mybind_rpcstr_t (rpc_bytes<n> *rr) 
+  mybind_rpcstr_t (rpc_bytes<n> *rr)
     : mybind_t (MYSQL_TYPE_STRING), pntr (rr), mys (&s) {}
   mybind_rpcstr_t (const rpc_bytes<n> &in)
-    : mybind_t (MYSQL_TYPE_STRING), 
-      mys (str (in.base (), in.size ()), MYSQL_TYPE_STRING, true) {}
+    : mybind_t (MYSQL_TYPE_STRING),
+      mys (str (in.base (), in.size ())) {}
 #ifdef HAVE_MYSQL_BIND
   void bind (MYSQL_BIND *bind, bool param) { mys.bind (bind, param); }
 #endif
