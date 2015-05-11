@@ -33,14 +33,14 @@ int zlev;               // deflation level
 bool zinitted = false;  // protect against stupid bugs
 bool zdebug = false;    // debug messages
 
-static int
-zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
+str zcompress (const str &in, int lev)
 {
-  uLong dlen = *dlenp;
+  const char *src = in.cstr();
+  uLong sLen = in.len();
   zm.next_in = const_cast<Bytef *> (reinterpret_cast<const Bytef *> (src));
-  zm.avail_in = slen;
-  zm.next_out = reinterpret_cast<Bytef *> (dest);
-  zm.avail_out = dlen;
+  zm.avail_in = sLen;
+  zm.next_out = nullptr;
+  zm.avail_out = 0;
 
   if (!zinitted) {
      warn << "OKWS says: you forgot to call zinit()! i'm doing it for you\n";
@@ -58,34 +58,25 @@ zcompress (char *dest, uLong *dlenp, const char *src, uLong slen, int lev)
     sfs_profiler::exit_vomit_lib ();
     zlev = lev;
   }
+  //mstr res();
+
+  const uLong dLen = deflateBound(&zm, sLen);
+
+  mstr res(dLen);
+  zm.next_out = reinterpret_cast<Bytef *>(res.cstr());
+  zm.avail_out = dLen;
 
   sfs_profiler::enter_vomit_lib ();
-  int err = deflate (&zm, Z_FULL_FLUSH);
+  const int rc = deflate (&zm, Z_FULL_FLUSH);
   sfs_profiler::exit_vomit_lib ();
-  *dlenp = dlen - zm.avail_out;
-  
-  return err;
-}
 
-size_t
-max_compressed_len (size_t in)
-{
-  return ((in * 1001) / 1000) + 16;
-}
-
-str
-zcompress (const str &in, int lev)
-{
-  uLong slen = in.len ();
-  uLong dlen = max_compressed_len (slen);
-  mstr m (dlen);
-  int rc = zcompress (m.cstr (), &dlen, in.cstr (), slen, lev);
   if (rc != Z_OK) {
     warn << "deflate returned error: " << rc << "\n";
-    return NULL;
+    return nullptr;
   }
-  m.setlen (dlen);
-  return m;
+
+  res.setlen(dLen - zm.avail_out);
+  return res;
 }
 
 static bool 
