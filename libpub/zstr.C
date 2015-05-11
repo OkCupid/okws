@@ -476,99 +476,6 @@ zbuf::to_zstr_vec (vec<zstr> *zs2)
 
 //-----------------------------------------------------------------------
 
-int
-zbuf::naive_compress (strbuf *b, int lev)
-{
-  if (!zinitted) {
-     warn << "OKWS says: you forgot to call zinit()! i'm doing it for you\n";
-     zinit (false);
-  }
-  assert (zinitted);
-  z_stream z;
-  z.zalloc = Z_NULL;
-  z.zfree = Z_NULL;
-  z.opaque = Z_NULL;
-  int rc = deflateInit2 (&z, lev, Z_DEFLATED, -MAX_WBITS, 
-			 ok_gzip_mem_level, Z_DEFAULT_STRATEGY);
-  if (rc != Z_OK)
-    return rc;
-
-  strbuf2zstr ();
-  size_t inlen = inflated_len ();
-  strbuf tmp;
-
-  // with little extra room for headers and footers
-  size_t outlen = max_compressed_len (inlen) + 64;
-
-  tmp << zhdr;
-
-  uLong crc = ::crc32 (0L, Z_NULL, 0);
-
-  mstr out (outlen);
-  char *outp = out.cstr ();
-  char *endp = out.cstr () + outlen;
-  z.avail_out = outlen;
-  deflateParams (&z, lev, Z_DEFAULT_STRATEGY);
-
-  for (size_t i = 0; rc == 0 && i <= zs.size (); i++) {
-
-    bool end = (i == zs.size ());
-    const char *src;
-    size_t srclen;
-
-    if (end) {
-      src = NULL;
-      srclen = 0;
-    } else {
-      src = zs[i].cstr ();
-      srclen = zs[i].len ();
-    }
-
-    if ((src && srclen) || end) {
-      z.next_out = reinterpret_cast<Bytef *> (outp);
-      size_t avail_out_pre = endp - outp;
-      z.avail_out = avail_out_pre;
-      z.next_in = const_cast<Bytef *> (reinterpret_cast<const Bytef *> (src));
-      z.avail_in = srclen;
-      if (!end) { crc = zs[i].crc32(crc); }
-      int drc = deflate (&z, end ? Z_FINISH : Z_NO_FLUSH);
-      if ((!end && drc != Z_OK) || (end && drc != Z_STREAM_END)) {
-	warn << "Compression error: " << drc << "\n";
-	rc = -1;
-      }
-      outp += (avail_out_pre - z.avail_out);
-    }
-  }
-  
-  if (rc == 0) {
-    assert (outp <= endp);
-    out.setlen (outp - out.cstr ());
-    str out_s = out;
-    tmp << out_s;
-    b->hold_onto (out_s);
-
-    size_t trailer_size = 16;
-    mstr trailer (trailer_size);
-    char *p = trailer.cstr ();
-    p += uLong_to_buf (crc, p);
-    p += uLong_to_buf (inlen, p);
-    size_t bytes = p - trailer.cstr ();
-    assert (bytes < trailer_size);
-    trailer.setlen (bytes);
-    str trailer_s = trailer;
-
-    tmp << trailer_s;
-    b->hold_onto (trailer_s);
-    b->take (tmp);
-  }
-
-  deflateEnd (&z);
-
-  return rc;
-}
-
-//-----------------------------------------------------------------------
-
 int 
 zbuf::to_strbuf (strbuf *out, compressible_t::opts_t o)
 {
@@ -579,9 +486,6 @@ zbuf::to_strbuf (strbuf *out, compressible_t::opts_t o)
     break;
   case GZIP_SMART:
     compress (out, o);
-    break;
-  case GZIP_NAIVE:
-    rc = naive_compress (out, o.lev);
     break;
   default:
     warn << "unknown gzip mode given\n";

@@ -37,8 +37,6 @@ u_int ok_gzip_cache_minstr = 0x0;            // smallest to cache
 u_int ok_gzip_cache_maxstr = 0x10000;        // largest to cache
 u_int ok_gzip_cache_storelimit = 0x1000000;  // 16 M
 u_int ok_gzip_mem_level = 9;                 // zlib max
-int   ok_gzip_naive_compress_level = 7;      // naive gzip compress level
-
 
 //
 // chunking tuning
@@ -416,12 +414,11 @@ ok_gzip_str_to_mode (const str &s, bool *okp)
   bool ok = true;
   if (!s) {
     /* nothing */
-  } else if (s == "1" || s == "on" || s == "smart") {
+  } else if (s == "1" || s == "on" || s == "smart" || s == "naive") {
+    // Naive is deprecated
     m = GZIP_SMART;
   } else if (s == "0" || s == "off") {
     m = GZIP_NONE;
-  } else if (s == "naive") {
-    m = GZIP_NAIVE;
   } else {
     ok = false;
   }
