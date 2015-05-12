@@ -93,7 +93,6 @@ noinst_PROGRAMS = \
 	gz \
 	srv \
 	newline \
-	gznaive \
 	json \
 	eztst \
 	dump_rpc_const \
@@ -110,7 +109,6 @@ pubmemtst_SOURCES = pubmemtst.C
 gz_SOURCES = gz.C
 srv_SOURCES = srv.C
 newline_SOURCES = newline.C
-gznaive_SOURCES = gznaive.C
 json_SOURCES = json.C
 eztst_SOURCES = eztst.C
 msgpack_SOURCES = msgpack.C

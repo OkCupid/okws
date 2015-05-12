@@ -55,6 +55,7 @@ enum { XSSFILT_NONE = 0, XSSFILT_SOME = 1, XSSFILT_ALL = 2 };
 #define OK_SVC_FD_HIGH_WAT_UL 102400
 #define OK_SVC_FD_LOW_WAT_UL  100000
 
+// Naive is deprecated....
 typedef enum { GZIP_NONE = 0, GZIP_SMART = 1, GZIP_NAIVE = 2 } gzip_mode_t;
 
 //
@@ -62,7 +63,6 @@ typedef enum { GZIP_NONE = 0, GZIP_SMART = 1, GZIP_NAIVE = 2 } gzip_mode_t;
 //
 extern gzip_mode_t ok_gzip_mode;
 extern int     ok_gzip_compress_level;
-extern int     ok_gzip_naive_compress_level;
 extern u_int   ok_gzip_smallstr;
 extern u_int   ok_gzip_cache_minstr;
 extern u_int   ok_gzip_cache_maxstr;

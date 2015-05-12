@@ -11,7 +11,12 @@ void
 zstr_to_xdr (const zstr &z, xpub3_zstr_t *x, int l)
 {
   x->s = z.to_str ();
-  if (l != Z_DISABLE) x->zs = z.compress (l);
+  if (l != Z_DISABLE && z.len() > 0) {
+      str compressed = z.compress (l);
+      if (compressed) {
+          x->zs = compressed;
+      }
+  }
   x->clev = l;
 }
 

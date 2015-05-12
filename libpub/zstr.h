@@ -179,8 +179,6 @@ public:
 
   size_t inflated_len () const;
 
-  int naive_compress (strbuf *b, int lev) ;
-
   void clear ();
   const strbuf &output () { output (&out); return out; }
   const strbuf &compress (compressible_t::opts_t o) 
