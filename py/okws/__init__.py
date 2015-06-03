@@ -9,4 +9,4 @@
 """
 from okws._config import VERSION as __version__
 
-__all__ = ["pubast"]
+__all__ = ["pubast", "rpcast"]

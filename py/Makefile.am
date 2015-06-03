@@ -18,5 +18,7 @@ okws/_pubast.py: $(ASTGEN) $(top_srcdir)/libpub/pub3prot.x
 pythonlib_DATA= \
 	okws/_config.py \
 	okws/__init__.py \
+	okws/_common.py \
 	okws/pubast.py \
-	okws/_pubast.py
+	okws/_pubast.py \
+	okws/rpcast.py
