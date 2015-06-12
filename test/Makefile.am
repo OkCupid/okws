@@ -1,9 +1,9 @@
 
-SUBDIRS = system regtest unit pub bson
+SUBDIRS = system regtest unit pub
 .PHONY: test tameclean
 
 tameclean:
-	for dir in system unit bson; do \
+	for dir in system unit; do \
 		(cd $$dir && $(MAKE) tameclean ) ; \
 	done
 

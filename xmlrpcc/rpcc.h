@@ -223,10 +223,15 @@ extern symlist_t symlist;
 
 typedef vec<str> strlist_t;
 extern strlist_t litq;
+extern vec<str> template_specialisations;
 
 str rpcprog (const rpc_program *, const rpc_vers *);
 void genheader (str);
 void gencfile (str);
+str gen_rpc_trav(const rpc_sym *s, bool inl);
+str getid(const rpc_sym *s);
+
+#define rpc_field "const char *field = nullptr"
 
 void pswitch (str prefix, const rpc_union *rs, str swarg,
 	      void (*pt) (str, const rpc_union *rs, const rpc_utag *),
