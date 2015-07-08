@@ -227,13 +227,22 @@ got_dir (str *out, vec<str> s, str loc, bool *errp)
     *errp = true;
     return;
   }
-  if (!is_safe (s[1])) {
-    warn << loc << ": directory (" << s[1] 
-	 << ") contains unsafe substrings\n";
+  str res = s[1];
+  if (res.len() > 1 && res[0] == '$') {
+    str env_val = getenv(res.cstr() + 1);
+    if (!env_val) {
+      warn << loc << ": directory env variable not set (" << res << ")\n";
+      *errp = true;
+      return;
+    }
+    res = env_val;
+  }
+  if (!is_safe(res)) {
+    warn << loc << ": directory (" << res << ") contains unsafe substrings\n";
     *errp = true;
     return;
   }
-  *out = dir_standardize (s[1]);
+  *out = dir_standardize(res);
 }
 
 sfs_clock_t

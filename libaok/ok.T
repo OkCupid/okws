@@ -1727,6 +1727,16 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
     goto usage;
 
   prog = s[0];
+  if (prog.len() > 1 && prog[0] == '$') {
+      str env_val = getenv(prog.cstr() + 1);
+      if (!env_val) {
+          warn << loc << ": executable env variable not set (" << prog
+               << ")\n";
+          goto fail;
+      }
+      prog = env_val;
+  }
+
   if (!is_safe (prog)) {
     warn << loc << ": specified program " << prog
 	 << ") contains unsafe substrings\n";
