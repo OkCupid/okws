@@ -56,7 +56,7 @@
 #define HTTP_UNAVAILABLE         503
 
 
-#define HTTP_REDIRECT    HTTP_MOVEDPERM
+#define HTTP_REDIRECT    HTTP_MOVEDTEMP
 
 //
 // these are not in the standard, but are here for convenience.
