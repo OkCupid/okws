@@ -50,8 +50,8 @@ http_status_set_t::http_status_set_t ()
 
   // 300 series
   add (300, "Multiple  Choices");
-  add (HTTP_REDIRECT, "Moved Permanently");
-  add (HTTP_MOVEDTEMP, "Found"); 
+  add (HTTP_MOVEDPERM, "Moved Permanently");
+  add (HTTP_REDIRECT, "Found"); 
   add (HTTP_SEEOTHER, "See Other");
   add (HTTP_NOT_MODIFIED, "Not Modified");
   add (HTTP_USEPROXY, "Use Proxy");
