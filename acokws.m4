@@ -814,16 +814,16 @@ dnl contrib, etc.
 dnl
 OKWS_PREFIX
 
+if test "$with_okws_version"
+then
+    okwsvers="-${with_okws_version}"
+else
+    okwsvers=""
+fi
+
+okwsstem="okws${okwsvers}${okwstagdir}"
+
 if test "$with_okws" = yes -o "$with_okws" = ""; then
-
-    if test "$with_okws_version"
-    then
-	okwsvers="-${with_okws_version}"
-    else
-	okwsvers=""
-    fi
-
-    okwsstem="okws${okwsvers}${okwstagdir}"
 
     for dir in "$prefix" /usr/local /usr; do
 	if test -f $dir/lib/${okwsstem}/libpub.la; then

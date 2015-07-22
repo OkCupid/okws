@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Recommended args:
@@ -20,9 +20,15 @@ do
 done
 
 ACSFS=acsfs.m4
-if test ! -f $ACSFS
-then
-    for d in /usr/local/lib/sfslite-1.2  \
+
+if [[ "${SFS_ACLOCAL_PATH:+set}" == "set" ]]; then
+    IFS=':' read -ra M4_PATH <<< "${SFS_ACLOCAL_PATH}"
+else
+    declare -a M4_PATH
+fi
+
+for d in "${M4_PATH[@]}" \
+	/usr/local/lib/sfslite-1.2  \
 	/usr/local/lib/sfslite-1.1 \
 	/usr/local/lib/sfslite \
 	/usr/local/share/aclocal \
@@ -30,10 +36,9 @@ then
 	/usr/local/gnu-autotools/shared/aclocal-1.10
     do
       if test -f $d/$ACSFS; then
-	  ln -s $d/$ACSFS $ACSFS
+	  ln -sf $d/$ACSFS $ACSFS
 	  break
       fi
-    done
-fi
+done
 
 autoreconf -f -i -s
