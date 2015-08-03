@@ -38,6 +38,11 @@ namespace rfn3 {
   {
     ptr<expr_list_t> out = expr_list_t::alloc ();
     ptr<const expr_list_t> in = args[0]._l;
+
+    if (in->size() == 0) {
+        return expr_null_t::alloc();
+    }
+
     size_t i = rnd.getword () % in->size ();
     out->push_back ((*in)[i]->copy ());
     out->push_back (expr_int_t::alloc (i));
