@@ -58,8 +58,10 @@ class methodmap_t {
 public:
   methodmap_t ();
   http_method_t lookup (const str &s) const;
+  str lookup (http_method_t mthd) const;
 private:
   qhash<str,http_method_t> map;
+  qhash<http_method_t, str> rev_map;
 };
 
 class post_methodmap_t {

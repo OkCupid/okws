@@ -190,6 +190,13 @@ methodmap_t::methodmap_t ()
   map.insert ("DELETE", HTTP_MTHD_DELETE);
   map.insert ("HEAD", HTTP_MTHD_HEAD);
   map.insert ("OPTIONS", HTTP_MTHD_OPTIONS);
+
+  rev_map.insert (HTTP_MTHD_GET, "GET");
+  rev_map.insert (HTTP_MTHD_POST, "POST");
+  rev_map.insert (HTTP_MTHD_PUT, "PUT");
+  rev_map.insert (HTTP_MTHD_DELETE, "DELETE");
+  rev_map.insert (HTTP_MTHD_HEAD, "HEAD");
+  rev_map.insert (HTTP_MTHD_OPTIONS, "OPTIONS");
 }
 
 post_methodmap_t::post_methodmap_t ()
@@ -205,6 +212,15 @@ methodmap_t::lookup (const str &s) const
   if (!v)
     return HTTP_MTHD_NONE;
   return *v;
+}
+
+str
+methodmap_t::lookup (http_method_t mthd) const
+{
+  const str *s = rev_map[mthd];
+  if (!s)
+    return nullptr;
+  return *s;
 }
 
 static rxx gzip_rxx ("gzip(,|\\s*$)");
