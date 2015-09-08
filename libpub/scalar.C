@@ -400,6 +400,7 @@ scalar_obj_t::operator+ (const scalar_obj_t &s) const
     str s1 = to_str ();
     str s2 = s.to_str ();
     b << s1 << s2;
+
     ret.set (b);
 
   } else if (me == TYPE_DOUBLE || him == TYPE_DOUBLE) {

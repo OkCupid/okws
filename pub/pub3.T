@@ -77,47 +77,54 @@ namespace dbg {
   //-----------------------------------------------------------------------
 }
 
-tamed static void main2(str fname, bool jailed) {
-  tvars {
-    zbuf out;
-    bool ok;
-    str root;
-    ptr<pub3::local_publisher_t> pub;
-    char *buf;
-  }
-  zinit(false);
+namespace {
 
-  pub = New refcounted<pub3::local_publisher_t>();
+    void main2(str fname, bool jail, CLOSURE);
 
-  pub3::library_t::import(rfn3::lib_t::alloc());
-  pub3::library_t::import(dbg::lib_t::alloc());
+    tamed void main2(str fname, bool jailed) {
+        tvars {
+            zbuf out;
+            bool ok;
+            str root;
+            ptr<pub3::local_publisher_t> pub;
+            char* buf;
+        }
+        zinit(false);
 
-  if (jailed) {
-    buf = strndup(fname.cstr(), fname.len());
-    root = dirname(buf);
-    free(buf);
-    if (root != ".") {
-      buf = strndup(fname.cstr(), fname.len());
-      fname = basename(buf);
-      free(buf);
-      auto jailer = pub3::jailer_t::alloc();
-      jailer->setjail(pub3::JAIL_NONE, root);
-      pub->set_jailer(jailer);
+        pub = New refcounted<pub3::local_publisher_t>();
+
+        pub3::library_t::import(rfn3::lib_t::alloc());
+        pub3::library_t::import(dbg::lib_t::alloc());
+
+        if (jailed) {
+            buf = strndup(fname.cstr(), fname.len());
+            root = dirname(buf);
+            free(buf);
+            if (root != ".") {
+                buf = strndup(fname.cstr(), fname.len());
+                fname = basename(buf);
+                free(buf);
+                auto jailer = pub3::jailer_t::alloc();
+                jailer->setjail(pub3::JAIL_NONE, root);
+                pub->set_jailer(jailer);
+            }
+        }
+
+        twait {
+            pub->run(&out, fname, mkevent(ok));
+        }
+
+        strbuf b;
+        out.output(&b);
+        str res(b);
+        if (res.len() == 0 || res[res.len()-1] != '\n') {
+            std::cout << res.cstr() << std::endl;
+        } else {
+            std::cout << res.cstr();
+        }
+        exit(ok?0:1);
     }
-  }
-
-  twait { pub->run(&out, fname, mkevent(ok)); }
-
-  strbuf b;
-  out.output(&b);
-  make_sync(0);
-  make_sync(1);
-  if (b.len() == 0) {
-    b << "\n";
-  }
-  b.tosuio ()->output (1);
-  exit(ok ? 0 : 1);
-}
+}  // namespace
 
 //------------------------------------------------------------------------------
 // ! CLI

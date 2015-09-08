@@ -237,10 +237,7 @@ namespace pub3 {
 
   //---------------------------------------------------------------------
 
-  scalar_obj_t expr_t::to_scalar () const {
-      str_opt_t o(false, false, false, true);
-      return to_str (o);
-  }
+  scalar_obj_t expr_t::to_scalar () const { return to_str (); }
   
   //---------------------------------------------------------------------
 
@@ -1469,8 +1466,7 @@ namespace pub3 {
   scalar_obj_t 
   expr_list_t::to_scalar () const
   {
-    str_opt_t o(false, false, false, true);
-    scalar_obj_t so = scalar_obj_t(to_str (o));
+    scalar_obj_t so = scalar_obj_t (to_str ());
     return so;
   }
   
@@ -2201,36 +2197,22 @@ namespace pub3 {
   { insert (k, expr_uint_t::alloc (u)); }
 
   //--------------------------------------------------------------------
-
+  
   str
   expr_dict_t::to_str (str_opt_t o) const
   {
     vec<str> v;
+    const_iterator_t it (*this);
+    const str *key;
+    ptr<expr_t> val;
     str ret;
 
     o.m_quoted = true;
     const char *fmt = o.compact () ? "%s:%s" : "%s : %s";
 
-    //  sort the keys to make comparaison function work...
-    vec<str> keys;
-    keys.reserve(size());
-    for (auto k : *this) {
-        keys.push_back(k);
-    }
-
-    if (o.sort_fields()) {
-      qsort(keys.begin(), keys.size(), sizeof(str),
-            [](const void *p1, const void *p2) {
-              const str &k1 = reinterpret_cast<const str &>(*p1);
-              const str &k2 = reinterpret_cast<const str &>(*p2);
-              return strcmp(k1.cstr(), k2.cstr());
-            });
-    }
-
-    for (str key : keys) {
-      ptr<const expr_t> val = lookup(key);
+    while ((key = it.next (&val))) {
       str vs = expr_t::safe_to_str (val, o);
-      str ks = json::quote (key, o);
+      str ks = json::quote (*key, o);
       strbuf b (fmt, ks.cstr (), vs.cstr ());
       v.push_back (b);
     }
@@ -2243,7 +2225,7 @@ namespace pub3 {
   scalar_obj_t
   expr_dict_t::to_scalar () const
   {
-    str_opt_t o (true, false, false, true);
+    str_opt_t o (true, false);
     str s = to_str (o);
     return scalar_obj_t (s);
   }
