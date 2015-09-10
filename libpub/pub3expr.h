@@ -51,10 +51,13 @@ namespace pub3 {
 
   class str_opt_t {
   public:
-    str_opt_t (bool q = false, bool utf8 = false, bool compact = false) 
-      : m_quoted (q), m_utf8 (utf8), m_compact (compact) {}
+    str_opt_t(bool q = false, bool utf8 = false, bool compact = false,
+              bool sort_fields = false)
+        : m_quoted(q), m_utf8(utf8), m_compact(compact),
+          m_sort_fields(sort_fields) {}
     bool compact () const { return m_compact; }
-    bool m_quoted, m_utf8, m_compact;
+    bool sort_fields() const { return m_sort_fields; }
+    bool m_quoted, m_utf8, m_compact, m_sort_fields;
   }; 
 
   //-----------------------------------------------------------------------

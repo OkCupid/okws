@@ -441,9 +441,7 @@ zbuf::clear ()
 int
 zbuf::output (int fd, compressible_t::opts_t o)
 {
-
   to_strbuf (o);
-
   int rc = 0;
   suio *uio = out.tosuio ();
   while (uio->resid () && (rc >= 0 || errno == EAGAIN)) {
