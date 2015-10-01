@@ -1694,6 +1694,15 @@ namespace pub3 {
   expr_regex_t::expr_regex_t (ptr<rxx> x, str b, str o, int l)
     : expr_t (l), _rxx (x), _body (b), _opts (o) {}
 
+  //--------------------------------------------------------------------
+
+  str
+  expr_regex_t::to_str (str_opt_t o) const 
+  { 
+    str ret = json::quote (_body, o);
+    return ret; 
+  }
+
   //====================================================================
 
   ptr<expr_shell_str_t> expr_shell_str_t::alloc ()
