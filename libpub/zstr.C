@@ -229,9 +229,7 @@ ztab_cache_t::insert (zstr *z)
 {
   tot += z->len ();
   assert (tot <= maxtot);
-  if (!tab[*z]) {
-      return;
-  }
+  assert (!tab[*z]);
   tab.insert (z);
   q.insert_tail (z);
 }
