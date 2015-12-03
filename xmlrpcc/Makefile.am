@@ -18,6 +18,7 @@ YYFLAGS = -d
 parse.h:
 	@:
 
+unexport POSIXLY_CORRECT
 $(srcdir)/scan.cc: $(srcdir)/scan.ll
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 

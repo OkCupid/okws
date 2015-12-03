@@ -19,8 +19,7 @@ filedata = """{$
        return cmp_float (diff);
     } ;
     v5 = sort (u, l);
-    v6 = sort2 (u, lambda (x) {  return (0 - x.key); } ) ;
-    print (v2, " ", v3, " ", v4, " ", v5, " ", v6);
+    print (v2, " ", v3, " ", v4, " ", v5);
 $}""" % { "arr" : arr, "arr2" : arr2, "arr3" : arr3 }
 
 a1 = copy.copy (arr)
@@ -41,7 +40,7 @@ a4s = str ([ { "key" : "%.12g" % x["key"] } for x in a4 ]).replace("'","")
 a4s = a4s.replace ("key", '"key"').replace ('": ', '" : ')
 
 
-outcome = " ".join ([str (s) for s in [ a1, a2, a3s, a4s, a4s ] ])
+outcome = " ".join ([str (s) for s in [ a1, a2, a3s, a4s ] ])
 
 
 
