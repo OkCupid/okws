@@ -145,7 +145,7 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
         pub3::obj_t res_obj;
         outcome_t outcome;
     }
-    if (!isConnected() && !m_reconnecting) {
+    if (!isConnected()) {
         res.set(true, "not connected");
         if (ev) { ev->trigger(res); }
         return;
