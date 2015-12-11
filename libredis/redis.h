@@ -2,6 +2,7 @@
 
 #include "async.h"
 #include "pub3obj.h"
+#include "json_rpc.h"
 
 // This is returned as the result of running a redis command
 class redis_res_t {
@@ -9,6 +10,19 @@ class redis_res_t {
         bool is_err() { return m_error; }
         str status() { return m_status; }
         pub3::obj_t obj() { return m_obj; }
+        ptr<pub3::expr_t> to_json() {
+            if (!m_parsed) {
+                m_parsed = pub3::json_parser_t::parse(obj().to_str());
+            }
+
+            return m_parsed;
+        }
+        template<typename T> bool try_parse_xdr(T* out_xdr) {
+            return json2xdr(*out_xdr, to_json());
+        }
+        template<typename T> bool try_parse_xdr(ptr<T> out_xdr) {
+            return json2xdr(*out_xdr, to_json());
+        }
 
         void set(bool error, str status, pub3::obj_t obj = pub3::obj_t()) {
             m_error = error; m_status = status; m_obj = obj;
@@ -17,6 +31,7 @@ class redis_res_t {
         bool m_error;
         str m_status;
         pub3::obj_t m_obj;
+        ptr<pub3::expr_t> m_parsed;
 };
 
 class redisReply;
