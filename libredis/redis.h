@@ -17,17 +17,27 @@ class redis_res_t {
 
             return m_parsed;
         }
+
+        // TJ: API should take a pointer/ptr to be clear at callsite it's
+        // an out parameter. Internal try_parse_xdr takes a ref to avoid
+        // code duplication
         template<typename T> bool try_parse_xdr(T* out_xdr) {
-            return json2xdr(*out_xdr, to_json());
+            return try_parse_xdr(*out_xdr);
         }
         template<typename T> bool try_parse_xdr(ptr<T> out_xdr) {
-            return json2xdr(*out_xdr, to_json());
+            return try_parse_xdr(*out_xdr);
         }
 
         void set(bool error, str status, pub3::obj_t obj = pub3::obj_t()) {
             m_error = error; m_status = status; m_obj = obj;
         }
     private:
+        template<typename T> bool try_parse_xdr(T& out_xdr) {
+            if (m_error || m_obj.is_null()) {
+                return false;
+            }
+            return json2xdr(out_xdr, to_json());
+        }
         bool m_error;
         str m_status;
         pub3::obj_t m_obj;
