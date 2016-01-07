@@ -953,8 +953,8 @@ okld_t::post_config (const str &cf)
   bool errors = false;
 
   // allow these to be set
-  if (_config_root) ok_root = _config_root;
-  if (_config_wheel) ok_wheel = _config_wheel;
+  if (_config_root) ok_root = _config_root.cstr();
+  if (_config_wheel) ok_wheel = _config_wheel.cstr();
 
   if (_config_grp) {
     svc_grp = ok_grp_t (_config_grp);

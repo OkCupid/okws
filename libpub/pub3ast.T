@@ -226,7 +226,7 @@ namespace pub3 {
       offset ++;                  // skip past '/'
     }
 
-    str tag = s + offset;
+    str tag = s.cstr() + offset;
 
     _children.push_back (zone_wss_boundary_t::alloc (on, tag));
 

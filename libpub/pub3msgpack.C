@@ -63,7 +63,7 @@ public:
     _buf (m), _cp (m.cstr ()), _ep (_cp + m.len ()), _my_errno (0) {}
 
   ptr<pub3::expr_t> unpack ();
-  size_t len () const { return _cp - _buf; }
+  size_t len () const { return _cp - _buf.cstr(); }
   int my_errno () const { return _my_errno; }
 
   typedef ptr<pub3::expr_t> (msgpack_t::*unpack_hook_t) (void);

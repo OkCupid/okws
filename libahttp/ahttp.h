@@ -407,15 +407,15 @@ private:
 
 //-----------------------------------------------------------------------------
 
-static const auto ok_forward_headers {
-    "x-okws-real-ip",
-    "cf-connecting-ip",
-    "x-real-ip",
-    "x-forwarded-for",
-};
-
 template<typename T>
 str get_proxied_ip(const T& hdr) {
+    const char* const ok_forward_headers[] = {
+        "x-okws-real-ip",
+        "cf-connecting-ip",
+        "x-real-ip",
+        "x-forwarded-for",
+    };
+
     for (const auto k : ok_forward_headers) {
         if (hdr.exists(k)) return hdr[k];
     }

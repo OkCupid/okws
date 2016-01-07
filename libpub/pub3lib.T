@@ -104,7 +104,7 @@ namespace pub3 {
 
     size_t min_args = 0, max_args = 0;
 
-    for (cp = _arg_pat; *cp ; cp++) {
+    for (cp = _arg_pat.cstr(); *cp ; cp++) {
       arg_t a;
       bool ib = i < args.size (); 
 
