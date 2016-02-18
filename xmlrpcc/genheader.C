@@ -701,7 +701,7 @@ makeguard (str fname)
 
   if ((p = strrchr (fname.cstr(), '/')))
     p++;
-  else p = fname;
+  else p = fname.cstr();
 
   guard << "__RPCC_";
   while (char c = *p++) {

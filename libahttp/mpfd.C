@@ -138,7 +138,7 @@ cgi_mpfd_t::parse_guts ()
 	if (cdp.typ == CONTDISP_FORMDAT) {
 	  cgi_key = cdp.name;
 	  filename = cdp.filename;
-	  attach = filename;
+	  attach = filename.cstr();
 	} else if (cdp.typ == CONTDISP_ATTACH) {
 	  filename = cdp.filename;
 	  attach = true;
