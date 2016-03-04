@@ -523,7 +523,7 @@ namespace okssl {
       ssl_to_std_proxy_t* prx = static_cast<ssl_to_std_proxy_t*> 
 	SSL_get_app_data(ssl);
       if (prx && !prx->allow_cli_renog())
-	ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
+	if (ssl->s3) ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
     }
   }
 
