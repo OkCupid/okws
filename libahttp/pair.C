@@ -61,7 +61,7 @@ pair_t::to_uint64 () const
     uivals.setsize (s);
     for (u_int i = 0; i < s; i++) {
 
-      nptr = vals[i];
+      nptr = vals[i].cstr();
       endptr = NULL;
 
       errno = 0;
@@ -102,7 +102,7 @@ pair_t::to_int () const
       ivals.setsize (s);
       for (u_int i = 0; i < s; i++) {
 
-	nptr = vals[i];
+	nptr = vals[i].cstr();
 	endptr = NULL;
 
 	errno = 0;

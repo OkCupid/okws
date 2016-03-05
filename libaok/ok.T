@@ -1703,7 +1703,7 @@ ok_base_t::got_generic_exec (vec<str> &s, str loc, bool *errp,
   cmd = s.pop_front ();
 
   while (s.size () && (cp = strchr (s[0].cstr (), '=')))  {
-    if (strncmp (OKWS_DEBUG_OPTIONS, s[0].cstr(), cp - s[0]) == 0)
+    if (strncmp (OKWS_DEBUG_OPTIONS, s[0].cstr(), cp - s[0].cstr()) == 0)
       fnd_dbg = true;
     env.push_back (s.pop_front ());
   }

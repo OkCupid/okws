@@ -1652,7 +1652,7 @@ namespace pub3 {
   {
     const char *b = body.cstr();
     const char *o = "";
-    if (opts) o = opts;
+    if (opts) o = opts.cstr();
     
     ptr<rxx> *rp;
     ptr<rxx> ret;
@@ -2230,8 +2230,8 @@ namespace pub3 {
     if (o.sort_fields()) {
       qsort(keys.begin(), keys.size(), sizeof(str),
             [](const void *p1, const void *p2) {
-              const str &k1 = reinterpret_cast<const str &>(*p1);
-              const str &k2 = reinterpret_cast<const str &>(*p2);
+              const str &k1 = *reinterpret_cast<const str *>(p1);
+              const str &k2 = *reinterpret_cast<const str *>(p2);
               return strcmp(k1.cstr(), k2.cstr());
             });
     }

@@ -23,7 +23,7 @@ ahttpcon::send2 (const strbuf &b, event<ssize_t>::ref ev)
   _state = AHTTPCON_STATE_SEND2;
 
   ip = get_remote_ip ();
-  if (ip) { ipc = ip; }
+  if (ip) { ipc = ip.cstr(); }
   else { ipc = "<none>"; }
 
   seteofcb (mkevent (rv, true));

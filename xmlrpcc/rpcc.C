@@ -38,7 +38,7 @@ stripfname (str fname, bool suffix)
 
   if ((p = strrchr (fname.cstr(), '/')))
     p++;
-  else p = fname;
+  else p = fname.cstr();
 
   if (suffix)
     return p;

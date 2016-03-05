@@ -387,7 +387,7 @@ replaces `<` with `<\/`.
     if (args.size () == 3) { start = args[2]._i; }
     int ret = -1;
     if (start < big_s.len ()) {
-      const char *big = big_s + start;
+      const char *big = big_s.cstr() + start;
       const char *small = small_s.cstr();
       const char *pos = strstr (big, small);
       if (pos) { ret = (pos - big) + start; }

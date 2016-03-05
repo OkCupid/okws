@@ -332,7 +332,7 @@ XML_RPC_obj_t::error_msg (const str &arg)
   }
   const char *x = "";
   if (arg)
-    x = arg;
+    x = arg.cstr();
   return strbuf (_err_msg.cstr (), x);
 }
 

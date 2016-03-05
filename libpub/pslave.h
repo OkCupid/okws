@@ -135,7 +135,7 @@ public:
   str getname () const
   {
       str nm = rpcprog.name ?: "null_program_name";
-      return helper_t::getname () << ":" << nm;
+      return nm;
   }
 
 protected:
