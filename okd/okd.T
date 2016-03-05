@@ -243,7 +243,7 @@ okd_t::parse_file (const str &cf)
 {
   conftab ct;
   str sys_sel_tmp;
-  uint32_t child_mode;
+  uint32_t child_mode = (uint32_t) OKD_CHLDMODE_SOURCE_HASH;
 
   ct.add ("BindAddr", wrap (static_cast<ok_base_t *> (this), 
 			    &ok_base_t::got_bindaddr))
