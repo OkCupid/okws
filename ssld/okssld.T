@@ -69,7 +69,7 @@ namespace okssl {
 	_logd (NULL),
 	_cipher_order(false),
 	_cli_renog(false),
-    _disable_sslv3(false)
+    _disable_sslv3(true)
     {}
 
     bool parseopt (int argc, char *argv[]);
@@ -522,7 +522,7 @@ namespace okssl {
     } else if (0 != (where & SSL_CB_HANDSHAKE_DONE)) {
       ssl_to_std_proxy_t* prx = static_cast<ssl_to_std_proxy_t*> 
 	SSL_get_app_data(ssl);
-      if (prx && !prx->allow_cli_renog())
+      if (prx && !prx->allow_cli_renog() && ssl->s3)
 	ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
     }
   }
@@ -559,7 +559,7 @@ namespace okssl {
           SSL_CTX_set_options(_ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 
       if (_disable_sslv3) {
-          SSL_CTX_set_options(_ssl_ctx, SSL_OP_NO_SSLv3);
+          SSL_CTX_set_options(_ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_SSLv2);
       }
 
       SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_DH_USE);
