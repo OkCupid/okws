@@ -243,7 +243,6 @@ days, `h` hours, `m` minutes and `s` seconds from now
 
     ptr<expr_t> ret;
     if (!strptime (t, f, &stm)) {
-      report_error (p, strbuf ("strptime(\"%s\", \"%s\") failed", t, f));
       ret = expr_null_t::alloc ();
     } else {
       stm.tm_isdst = -1;
@@ -255,7 +254,8 @@ days, `h` hours, `m` minutes and `s` seconds from now
   //-----------------------------------------------------------------------
 
   const str strptime_t::DOCUMENTATION = R"*(Read from the string `time`, formatted
-according to the format string `fmt`, into a UNIX timestamp.
+according to the format string `fmt`, into a UNIX timestamp. 
+Returns null for an invalid `time`.
 
 If no `fmt` is given, assume `'%F'`, which means `'YYYY-MM-DD'`
 
