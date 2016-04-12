@@ -207,7 +207,9 @@ okch_cluster_t::find_best_fit_child(
             }
             break;
       case OKD_CHLDMODE_SSL_ORDINAL:
-            id = acw.demux_data()->ssl_ordinal();
+            if (acw.demux_data()) {
+                id = acw.demux_data()->ssl_ordinal();
+            }
             if (!id) {
                 id = xc->source_hash_ip_only () % n; 
             } else {
