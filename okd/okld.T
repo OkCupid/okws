@@ -863,6 +863,7 @@ okld_t::parse_file (const str &cf)
     .add ("SSLHonorCipherOrder", wrap(this, &okld_t::got_cipher_order))
     .add ("SSLAllowClientRenog", wrap(this, &okld_t::got_cli_renog))
     .add ("SSLDisableSSLv3", wrap(this, &okld_t::got_disable_sslv3))
+    .add ("SSLOkdOrdinal", wrap(this, &okld_t::got_okd_ordinal))
     .add ("SSLDebugStartup", wrap(this, &okld_t::got_ssl_debug_startup))
     .add ("GzipChunking", &ok_gzip_chunking)
     .add ("GzipChunkingForOldSafaris", &ok_gzip_chunking_old_safaris)
@@ -1581,6 +1582,9 @@ okld_t::launch_okssl (evb_t ev) {
                     argv.push_back("-D");
                 }
 
+                argv.push_back("-o");
+                argv.push_back(strbuf() << okssl->okd_ordinal());
+
                 okssl->argv () += argv;
 
                 if (okssl->launch ()) {
@@ -2291,7 +2295,8 @@ okld_helper_ssl_t::okld_helper_ssl_t (const str &u, const str &g)
     _cipher_order (false),
     _cli_renog (false),
     _disable_sslv3 (false),
-    _ssl_debug_startup (false) {}
+    _ssl_debug_startup (false),
+    _okd_ordinal(0) {}
 
 //-----------------------------------------------------------------------
 
@@ -2318,6 +2323,14 @@ bool
 okld_helper_ssl_t::disable_sslv3 () const {
     return _disable_sslv3;
 }
+
+//-----------------------------------------------------------------------------
+
+int
+okld_helper_ssl_t::okd_ordinal() const {
+    return _okd_ordinal;
+}
+
 //-----------------------------------------------------------------------
 
 str
@@ -2458,6 +2471,7 @@ HANDLE_SSL_CHANNEL_OPT(cipher_order)
 HANDLE_SSL_CHANNEL_OPT(cli_renog)
 HANDLE_SSL_CHANNEL_OPT(disable_sslv3)
 HANDLE_SSL_CHANNEL_OPT(ssl_debug_startup)
+HANDLE_SSL_CHANNEL_OPT(okd_ordinal)
 
 //-----------------------------------------------------------------------------
 

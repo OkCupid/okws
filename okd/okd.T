@@ -411,6 +411,7 @@ okd_t::parse_file (const str &cf)
     .ignore ("Pub3RecycleLimitDict")
     .ignore ("Pub3RecycleLimitSlot")
     .ignore ("ResolveBinaryPaths")
+    .ignore ("SSLOkdOrdinal")
     ;
 
   bool ret = ct.run (cf);

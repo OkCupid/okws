@@ -121,6 +121,8 @@ public:
   bool _cli_renog;
   bool _disable_sslv3;
   bool _ssl_debug_startup;
+  int _okd_ordinal;
+
   bool configure_keys ();
   str certfile_resolved () const { return _certfile_resolved; }
   str keyfile_resolved () const { return _keyfile_resolved; }
@@ -128,6 +130,7 @@ public:
   str cipher_list () const;
   bool cipher_order() const;
   bool disable_sslv3() const;
+  int okd_ordinal() const;
 
   void parse_certfile(str s) { _certfile = s; }
   void parse_keyfile(str s) { _keyfile = s; }
@@ -139,6 +142,9 @@ public:
   void parse_disable_sslv3(str s) { _disable_sslv3 = (bool)(atoi(s.cstr())); }
   void parse_ssl_debug_startup(str s) { 
       _ssl_debug_startup = (bool)(atoi(s.cstr())); }
+  void parse_okd_ordinal(str s) {
+        _okd_ordinal = atoi(s.cstr())+1;
+  }
 
   void add_port(okws1_port_t p) { _ports.insert(p); _port_list.push_back(p); }
   bool listening_on(okws1_port_t p) { return _ports[p]; }
@@ -497,6 +503,7 @@ public:
   void got_disable_sslv3(vec<str> s, str log, bool* errp);
   void got_ssl_debug_startup(vec<str> s, str log, bool* errp);
   void got_allow_proxy(vec<str> s, str log, bool* errp);
+  void got_okd_ordinal(vec<str> s, str log, bool* errp);
 
   void okld_exit (int rc);
 

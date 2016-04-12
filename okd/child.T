@@ -165,10 +165,12 @@ okch_t::get_status () const
 // cluster.)  Use the passed in preference if possible.  Alternatively,
 // try source-IP mapping..
 okch_t *
-okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc, 
+okch_cluster_t::find_best_fit_child(
+                     ahttpcon_wrapper_t<ahttpcon_clone> acw, 
 				     okch_t::status_t *statusp, 
 				     int pref, ptr<ahttp_delimit_res> dres)
 {
+  ref<ahttpcon_clone> xc = acw.con();
   okch_t *ret = NULL;
   okch_t::status_t status = okch_t::CRASHED;
   okch_t::status_t ret_status = status;
@@ -203,6 +205,19 @@ okch_cluster_t::find_best_fit_child (ref<ahttpcon_clone> xc,
             } else {
                 id = xc->source_hash_ip_only () % n; 
             }
+            break;
+      case OKD_CHLDMODE_SSL_ORDINAL:
+            id = acw.demux_data()->ssl_ordinal();
+            if (!id) {
+                id = random() % n;
+            } else {
+                id = id - 1;
+            }
+
+            OKDBG4(OKD_CHILDREN, CHATTER,
+                   "SSL_ORDINAL: yields id: %lu host: %s", id,
+                   dres->get_header("Host").cstr());
+
             break;
       default:
           ok = false;
@@ -282,7 +297,7 @@ okch_cluster_t::clone (ahttpcon_wrapper_t<ahttpcon_clone> acw,
     bool do_queue (false);
   }
 
-  ch = find_best_fit_child (xc, &status, sib, dres);
+  ch = find_best_fit_child (acw, &status, sib, dres);
 
   switch (status) {
   case okch_t::BUSY_LOOP: http_status = HTTP_UNAVAILABLE; break;

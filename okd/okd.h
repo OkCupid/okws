@@ -51,7 +51,8 @@ typedef enum { OKD_JAILED_NEVER = 0,
 typedef enum { OKD_CHLDMODE_SOURCE_HASH = 0,
                OKD_CHLDMODE_RR = 1,
                OKD_CHLDMODE_SOURCE_HASH_HEADER = 2,
-               OKD_CHLDMODE_LAST = 3 } okd_chldmode_t;
+               OKD_CHLDMODE_SSL_ORDINAL = 3,
+               OKD_CHLDMODE_LAST = 4 } okd_chldmode_t;
 
 class okch_t;
 typedef callback<void, okch_t *>::ref cb_okch_t;
@@ -194,8 +195,10 @@ public:
               CLOSURE);
   okch_t *child (size_t i) { return _children[i]; }
   const okch_t *child (size_t i) const { return _children[i]; }
-  okch_t *find_best_fit_child (ref<ahttpcon_clone> xc, okch_t::status_t *sp,
-			       int pref = -1, ptr<ahttp_delimit_res> dres = nullptr);
+  okch_t *find_best_fit_child (ahttpcon_wrapper_t<ahttpcon_clone> acw, 
+                               okch_t::status_t *sp,
+                               int pref = -1, 
+                               ptr<ahttp_delimit_res> dres = nullptr);
   void killed (size_t i, okch_t *ch);
 
   void set_states (okc_state_t st);

@@ -69,7 +69,8 @@ namespace okssl {
 	_logd (NULL),
 	_cipher_order(false),
 	_cli_renog(false),
-    _disable_sslv3(true)
+    _disable_sslv3(true),
+    _okd_ordinal(0)
     {}
 
     bool parseopt (int argc, char *argv[]);
@@ -120,6 +121,7 @@ namespace okssl {
     bool _cipher_order;
     bool _cli_renog;
     bool _disable_sslv3;
+    int _okd_ordinal;
   };
 
   //-----------------------------------------------------------------------
@@ -230,6 +232,7 @@ namespace okssl {
     
     c->to_xdr (&arg);
     arg.ssl.cipher = cipher;
+    arg.ssl.okd_ordinal = _okd_ordinal;
     arg.port = p.port ();
 
     // don't have SFS libs close the FD (by passing false);
@@ -676,7 +679,7 @@ namespace okssl {
   {
     int ch;
     bool rc = true;
-    while (rc && (ch = getopt (argc, argv, "ROD3m:c:k:u:g:d:l:t:p:j:n:L:")) != -1) {
+    while (rc && (ch = getopt (argc, argv, "ROD3m:c:k:u:g:d:l:t:p:j:n:L:o:")) != -1) {
       switch (ch) {
       case 'j':
 	_jaildir = optarg;
@@ -746,12 +749,18 @@ namespace okssl {
 	  }
       break;
 	}
-      case '3':
-    _disable_sslv3 = true;
-    break;
-      default:
-	warn << "Unrecognized option passed\n";
-	break;
+    case '3':
+        _disable_sslv3 = true;
+        break;
+    case 'o':
+        if (!convertint(optarg, &_okd_ordinal)) {
+            warn << "Cannot parse OKD process ordinal: " << optarg << "\n";
+            rc = false;
+        }
+        break;
+    default:
+	    warn << "Unrecognized option passed\n";
+	    break;
       }
     }
     return rc;

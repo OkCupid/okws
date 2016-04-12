@@ -125,8 +125,10 @@ public:
       _born_on (sfs_get_tsnow ()),
       _forwarded_on (timespec_null) 
   {
-    if (ssl) 
+    if (ssl) {
       _ssl_info = ssl->cipher;
+      _ssl_ordinal = ssl->okd_ordinal;
+    }
   }
 
 
@@ -136,6 +138,7 @@ public:
   okws1_port_t port () const { return _port; }
   bool ssl () const { return _ssl; }
   str ssl_info () const { return _ssl_info; }
+  int ssl_ordinal () const { return _ssl_ordinal; }
   const struct timespec &born_on () const { return _born_on; }
   const struct timespec &forwarded_on () const { return _forwarded_on; }
 
@@ -148,6 +151,7 @@ private:
   str _ssl_info;
   const struct timespec _born_on;
   struct timespec _forwarded_on;
+  int _ssl_ordinal;
 };
 
 //-----------------------------------------------------------------------

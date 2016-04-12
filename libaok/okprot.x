@@ -92,6 +92,7 @@ typedef ok_xstatus_typ_t okctl_sendcon_res_t;
 
 struct ssl_ctx_t {
        string cipher<>;
+       unsigned okd_ordinal;
 };
 
 typedef opaque okclnt_sin_t<>;
