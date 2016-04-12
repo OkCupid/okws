@@ -216,7 +216,7 @@ okch_cluster_t::find_best_fit_child(
 
             OKDBG4(OKD_CHILDREN, CHATTER,
                    "SSL_ORDINAL: yields id: %lu host: %s", id,
-                   dres->get_header("Host").cstr());
+                   (dres) ? dres->get_header("Host").cstr() : "unknown");
 
             break;
       default:
