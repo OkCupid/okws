@@ -56,8 +56,11 @@ static ptr<pub3::identifier_list_t>
 xdr_to_idlist (const xpub3_identifier_list_t &x)
 {
   ptr<pub3::identifier_list_t> ret = New refcounted<pub3::identifier_list_t> ();
-  for (size_t i = 0; i < x.size (); i++) {
-    ret->push_back (x[i]);
+  for (size_t i = 0; i < x.params.size (); i++) {
+    ret->push_back (x.params[i]);
+  }
+  for (size_t i = 0; i < x.opt_params.size (); i++) {
+    ret->push_back (x.opt_params[i], true);
   }
   return ret;
 }
@@ -68,7 +71,10 @@ static void
 idlist_to_xdr (const pub3::identifier_list_t &in, xpub3_identifier_list_t *out)
 {
   for (size_t i = 0; i < in.size (); i++){
-    out->push_back (in[i]);
+    out->params.push_back (in[i]);
+  }
+  for (size_t i = 0; i < in.opt_size (); i++){
+    out->opt_params.push_back (in[i+in.size()]);
   }
 }
 

@@ -390,7 +390,28 @@ namespace pub3 {
   //-----------------------------------------------------------------------
 
   typedef vec<ptr<if_clause_t> > if_clause_list_t;
-  typedef vec<str> identifier_list_t;
+
+//-----------------------------------------------------------------------------
+
+    class identifier_list_t {
+    public:
+    
+        identifier_list_t() { }
+
+        void push_back(str s, bool opt = false);
+        bool check_args(ptr<const expr_list_t> a);
+        size_t size() const;
+        size_t opt_size() const;
+        size_t max_size() const;
+
+        identifier_list_t& operator+= (const identifier_list_t& l);
+        str operator[] (size_t index) const;
+
+    private:
+
+        vec<str> _params;
+        vec<str> _opt_params;
+    };
 
   //-----------------------------------------------------------------------
   

@@ -30,7 +30,11 @@ typedef string xpub_str_t <>;
 typedef string xpub_key_t <>;
 typedef string xpub_fn_t  <>;
 typedef unsigned hyper ok_xtime_t;
-typedef xpub_str_t xpub3_identifier_list_t<>;
+
+struct xpub3_identifier_list_t {
+    xpub_str_t params<>;
+    xpub_str_t opt_params<>;
+};
 
 struct xpub3_fstat_t {
   xpub_fn_t  fn;
