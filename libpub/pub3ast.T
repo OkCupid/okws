@@ -6,65 +6,6 @@
 
 namespace pub3 {
 
-  //============================================ identifier_list_t =========
-
-    void identifier_list_t::push_back(str s, bool opt) {
-        if (opt) {
-            _params.push_back(s);
-        } else {
-            _opt_params.push_back(s);
-        }
-    }
-
-//-----------------------------------------------------------------------------
-
-    identifier_list_t& 
-    identifier_list_t::operator+=(const identifier_list_t& l) {
-        for (const auto& p : l._params) {
-            _params.push_back(p);
-        }
-        for (const auto& p : l._opt_params) {
-            _opt_params.push_back(p);
-        }
-        return *this;
-    }   
-
-//-----------------------------------------------------------------------------
-
-    str
-    identifier_list_t::operator[] (size_t index) const {
-        if (index < _params.size()) {
-            return _params[index];
-        } else if (index-_params.size() < _opt_params.size()) {
-            return _opt_params[index-_params.size()];
-        } else {
-            return nullptr;
-        }
-    }
-
-//-----------------------------------------------------------------------------
-
-    bool identifier_list_t::check_args(ptr<const expr_list_t> a) {
-        size_t as = a->size();
-        if (size() == as) return true;
-        else if (as > size() && as <= max_size()) return true;
-        else return false;
-    }
-
-//-----------------------------------------------------------------------------
-
-    size_t identifier_list_t::size() const {
-        return _params.size();
-    }
-
-    size_t identifier_list_t::opt_size() const {
-        return _opt_params.size();
-    }
-
-    size_t identifier_list_t::max_size() const {
-        return _params.size() + _opt_params.size();
-    }
-
   //====================================================== zone_t =========
 
   bool zone_t::handle_control (eval_t *p) const

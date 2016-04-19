@@ -116,7 +116,7 @@
 %type <p3exprlist> p3_tuple p3_list;
 %type <p3exprlist> p3_flexi_tuple p3_implicit_tuple;
 %type <str> p3_identifier p3_bind_key;
-%type <p3identl> p3_identifier_list p3_opt_identifier_list p3_identifier_list_opt;
+%type <p3strv> p3_identifier_list p3_identifier_list_opt;
 %type <num> p3_boolean_constant;
 %type <dbl> p3_floating_constant;
 %type <p3expr> p3_constant_or_string p3_case_key_opt;
@@ -571,13 +571,6 @@ p3_identifier_list_opt: /*empty */
           { $$ = New refcounted<pub3::identifier_list_t> (); }
           | p3_identifier_list 
           { $$ = $1; }
-          | T_P3_PIPE p3_opt_identifier_list
-          { $$ = $2; }
-          | p3_identifier_list T_P3_PIPE p3_opt_identifier_list
-          { 
-            (*$1) += *$3;
-            $$ = $1; 
-          }
 	  ;
 
 p3_identifier_list: p3_identifier
@@ -588,18 +581,6 @@ p3_identifier_list: p3_identifier
 	  | p3_identifier_list ',' p3_identifier
 	  {
 	     $1->push_back ($3);
-	     $$ = $1;
-	  }
-	  ;
-
-p3_opt_identifier_list: p3_identifier
-          { 
-	      $$ = New refcounted<pub3::identifier_list_t> (); 
-	      $$->push_back ($1, true);
-          }
-	  | p3_opt_identifier_list ',' p3_identifier
-	  {
-	     $1->push_back ($3, true);
 	     $$ = $1;
 	  }
 	  ;

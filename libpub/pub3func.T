@@ -127,10 +127,9 @@ namespace pub3 {
     str s = to_str ();
     bool ret = true;
 
-    if (!_params->check_args(a)) {
+    if (gs != es) {
       strbuf b ("Wrong number of parameters to call %s "
-		"(expected %zd, got %zd (max %zd))", s.cstr (), es, gs, 
-        _params->max_size());
+		"(expected %zd, got %zd)", s.cstr (), es, gs);
       report_error (p, b);
       ret = false;
     } 

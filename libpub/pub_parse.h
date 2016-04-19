@@ -80,7 +80,7 @@ struct yystype {
   ptr<pub3::case_t> p3case;
   ptr<pub3::case_list_t> p3cl;
   pub3::binding_t p3bind;
-  ptr<pub3::identifier_list_t> p3identl;
+  ptr<pub3::identifier_list_t> p3strv;
   ptr<pub3::bindlist_t> p3bl;
   ptr<pub3::include_t> p3include;
   ptr<pub3::lambda_t> p3lambda;
