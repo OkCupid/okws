@@ -8,10 +8,10 @@
 typedef event<int, redisAsyncContext*>::ref redis_conn_res_ev;
 typedef event<redisReply*>::ref ev_redis_reply_t;
 
-int redisLibasyncAttach(redisAsyncContext *ac);
-void gDisconnectHandler(const redisAsyncContext *c, int status);
-void gConnectHandler(const redisAsyncContext *c, int status);
-void gReplyHandler(redisAsyncContext *c, void *r, void *privdata);
+int redisLibasyncAttach(redisAsyncContext* ac);
+void gDisconnectHandler(const redisAsyncContext* c, int status);
+void gConnectHandler(const redisAsyncContext* c, int status);
+void gReplyHandler(redisAsyncContext* c, void* r, void* privdata);
 
 //------------------------------------------------------------------------
 // RedisDispatcher
@@ -20,65 +20,328 @@ void gReplyHandler(redisAsyncContext *c, void *r, void *privdata);
 // objects that tame uses
 //------------------------------------------------------------------------
 
-
 class RedisDispatcher {
-    public:
-        RedisDispatcher() {}
+  public:
+    RedisDispatcher() {}
 
-        void addCli(const redisAsyncContext *c, RedisCli *cli)
-            { m_cliMap.insert((uint64_t)c, cli); }
-        void addConnEv(const redisAsyncContext *c, evi_t ev)
-            { m_connEvMap.insert((uint64_t)c, ev); }
-        void addReplyEv(uint64_t key, ev_redis_reply_t ev)
-            { m_replyEvMap.insert(key, ev); }
+    void
+    addCli(const redisAsyncContext* c, RedisCli* cli) {
+        m_cliMap.insert((uint64_t)c, cli);
+    }
+    void
+    addConnEv(const redisAsyncContext* c, evi_t ev) {
+        m_connEvMap.insert((uint64_t)c, ev);
+    }
+    void
+    addReplyEv(uint64_t key, ev_redis_reply_t ev) {
+        m_replyEvMap.insert(key, ev);
+    }
 
-        void removeCli(const redisAsyncContext* c) {
-            m_cliMap.remove((uint64_t)c);
-        }
+    void
+    removeCli(const redisAsyncContext* c) {
+        m_cliMap.remove((uint64_t)c);
+    }
 
-        RedisCli *useCli(const redisAsyncContext *c);
-        evi_t::ptr useConnEv(const redisAsyncContext *c);
-        ev_redis_reply_t::ptr useReplyEv(uint64_t key);
+    RedisCli* useCli(const redisAsyncContext* c);
+    evi_t::ptr useConnEv(const redisAsyncContext* c);
+    ev_redis_reply_t::ptr useReplyEv(uint64_t key);
 
-    private:
-        qhash<uint64_t, RedisCli *> m_cliMap;
-        qhash<uint64_t, evi_t> m_connEvMap;
-        qhash<uint64_t, ev_redis_reply_t> m_replyEvMap;
+  private:
+    qhash<uint64_t, RedisCli*> m_cliMap;
+    qhash<uint64_t, evi_t> m_connEvMap;
+    qhash<uint64_t, ev_redis_reply_t> m_replyEvMap;
 };
 
 RedisDispatcher g_dispatcher;
+
+#define rcwarn warn << m_name << "::" << __func__ << " "
+
+//------------------------------------------------------------------------
+// implementation of the RedisClusterCli class
+//------------------------------------------------------------------------
+
+uint32_t
+crc16(const char* buf, int len) {
+    int counter;
+    uint32_t crc = 0;
+    for (counter = 0; counter < len; counter++) {
+        crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    }
+    return crc;
+}
+
+tamed void
+RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
+    tvars {
+        node_t* p_node;
+        bool conn_ok(true);
+        redis_res_t res;
+        ptr<RedisCli> rcli;
+        size_t i;
+    }
+
+    for (i = 0; i < m_startup_nodes.size(); i++) {
+        p_node = m_startup_nodes[i];
+        if (m_connection_cache[*p_node] == nullptr) {
+            rcli = new refcounted<RedisCli>(RedisCli());
+            twait {
+                rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
+            }
+        } else {
+            rcli = *m_connection_cache[*p_node];
+        }
+        if (conn_ok) {
+            twait {
+                rcli->runCmd({"PING"}, mkevent(res));
+            }
+            if (!res.is_err()) {
+                rcli->disconnect();
+            } else if (res.obj().to_str() != "PONG") {
+                rcli->disconnect();
+            } else {
+                ev->trigger(rcli);
+            }
+        }
+    }
+    ev->trigger(nullptr);
+}
+
+tamed void
+RedisClusterCli::getConnFromSlot(uint16_t slot_id, redis_ev_t::ptr ev) {
+    tvars {
+        ptr<node_t> p_node;
+        bool conn_ok;
+        ptr<RedisCli> rcli;
+    }
+
+    p_node = *m_slots[slot_id];
+
+    if (p_node == nullptr) {
+        warn << "BWB_WARN: NO KNOWN NODE FOR " << slot_id << "\n";
+        twait {
+            getRandomConn(ev);
+        }
+    } else {
+        if (m_connection_cache[*p_node] != nullptr) {
+            rcli = *m_connection_cache[*p_node];
+        } else {
+            rcli = new refcounted<RedisCli>(RedisCli());
+            twait {
+                rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
+            }
+            if (conn_ok) {
+                m_connection_cache.insert(*p_node, rcli);
+            }
+        }
+        ev->trigger(rcli);
+    }
+    return;
+}
+
+void
+RedisClusterCli::disconnect() {
+    for (node_t n : m_connection_cache) {
+        if (m_connection_cache.size() <= m_max_cached_connections) {
+            break;
+        }
+        (*m_connection_cache[n])->disconnect();
+        m_connection_cache.remove(n);
+    }
+}
+
+tamed void
+RedisClusterCli::getSlotsCache(evb_t ev) {
+    tvars {
+        RedisCli cli;
+        bool ok;
+        size_t i;
+        redis_res_t res;
+    }
+
+    for (i = 0; i < m_startup_nodes.size(); i++) {
+        twait {
+            cli.connect(
+                m_startup_nodes[i]->first,
+                m_startup_nodes[i]->second,
+                mkevent(ok));
+        }
+        twait {
+            cli.runCmd({"CLUSTER", "SLOTS"}, mkevent(res));
+        }
+        if (res.is_err()) {
+            warn << "BWB_WARN. status: " << res.status() << "\n";
+            continue; // only freak out if no nodes are a success.
+        } else {
+            for (pub3::obj_t slot : *res.obj().to_list()) {
+                for (int slot_id = slot[0].to_int();
+                     slot_id <= slot[1].to_int();
+                     slot_id++) {
+                    node_t node(slot[2][0].to_str(), slot[2][1].to_int());
+                    m_slots.insert(slot_id, New refcounted<node_t>(node));
+                }
+            }
+            m_dirty_tables = false;
+            ev->trigger(true);
+            return;
+        }
+    }
+    // No nodes can get the slots cache. Have the startup clusters all moved?
+    warn << "BWB_ERROR: RedisClusterCli could not find a single active node \n";
+    ev->trigger(false);
+    return;
+}
+
+tamed void
+RedisClusterCli::connect(vec<node_t> startup_nodes, evb_t::ptr ev) {
+    tvars {
+        bool ok;
+        size_t i;
+    }
+    for (i = 0; i < startup_nodes.size(); i++) {
+        node_t node(startup_nodes[i].first, startup_nodes[i].second);
+        m_startup_nodes.push_back(&node);
+    }
+    twait {
+        getSlotsCache(mkevent(ok));
+    }
+    ev->trigger(ok);
+}
+
+void
+RedisClusterCli::runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev) {
+    vec<str> cmds(l);
+    runCmd(cmds, ev);
+}
+
+//------------------------------------------------------------------------
+
+tamed void
+RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
+    tvars {
+        uint16_t keyslot;
+        ptr<RedisCli> cli;
+        redis_res_t res;
+        vec<str> ncmds;
+        bool random_node(false);
+        bool asking(false);
+        uint16_t ttl(10);
+        int32_t slot;
+        int32_t port;
+        bool noop;
+        vec<str> status_parts;
+    }
+
+    for (size_t i = 0; i < cmds.size(); i++) {
+        ncmds.push_back(cmds[i]);
+    }
+
+    while (ttl > 0) {
+        ttl--;
+        if (m_dirty_tables) {
+            twait {
+                getSlotsCache(mkevent(noop));
+            }
+        }
+        keyslot = assignKeyslot(cmds[1].cstr(), cmds[1].len());
+        if (!random_node) {
+            twait {
+                getConnFromSlot(keyslot, mkevent(cli));
+            }
+        } else {
+            twait {
+                getRandomConn(mkevent(cli));
+            }
+        }
+
+        if (asking) {
+            asking = false;
+            twait {
+                cli->runCmd({"ASKING"}, mkevent(res));
+            }
+        }
+        twait {
+            cli->runCmd(ncmds, mkevent(res));
+        }
+        if (res.is_err()) {
+            warn << "BWB_WARN: Error with redis cluster connection\n";
+            split(&status_parts, rxx("[ :]"), res.status());
+            if (status_parts[0] == "ASK") {
+                // http://redis.io/commands/cluster-setslot
+                asking = true;
+            } else {
+                if (status_parts[0] == "MOVED") {
+                    m_dirty_tables = true;
+                } else {
+                    random_node = true;
+                }
+                status_parts[1].to_int32(&slot);
+                status_parts[3].to_int32(&port);
+                node_t n(status_parts[2], port);
+                m_slots.insert(slot, New refcounted<node_t>(n));
+            }
+        } else {
+            ev->trigger(res);
+            return;
+        }
+    }
+    ev->trigger(res);
+}
+
+// keyslot description at http://redis.io/topics/cluster-spec
+uint16_t
+RedisClusterCli::assignKeyslot(const char* key, size_t keylen) {
+    size_t s, e;
+    for (s = 0; s < keylen; s++) {
+        if (key[s] == '{') {
+            break;
+        }
+    }
+    if (s == keylen) {
+        return crc16(key, keylen) & 16383;
+    }
+    for (e = s + 1; e < keylen; e++) {
+        if (key[e] == '}') {
+            break;
+        }
+    }
+    if (e == keylen || e == s + 1) {
+        return crc16(key, keylen) & 16383;
+    }
+    return crc16(key + s + 1, e - s - 1) & 16383;
+}
 
 //------------------------------------------------------------------------
 // implementation of the RedisCli class
 //------------------------------------------------------------------------
 
-#define rcwarn warn << m_name << "::" << __func__ << " "
-
-tamed
-void RedisCli::connect(str host, uint port, evb_t::ptr ev)
-{
+tamed void
+RedisCli::connect(str host, uint port, evb_t::ptr ev) {
     tvars {
         int status;
     }
     if (isConnected()) {
-        if(ev) ev->trigger(false);
+        if (ev)
+            ev->trigger(false);
         return;
     }
-    rcwarn << "connecting to " << host << ":" << port << "\n";
     m_host = host;
     m_port = port;
     m_c = redisAsyncConnectBindWithReuse(host.cstr(), port, "0.0.0.0");
     if (m_c->err) {
         rcwarn << "connect error: " << m_c->errstr << "\n";
         delaycb(5, 0, wrap(this, &RedisCli::reconnect));
-        if(ev) ev->trigger(false);
+        if (ev) {
+            ev->trigger(false);
+        }
         return;
     }
     status = redisLibasyncAttach(m_c);
     if (status != REDIS_OK) {
         rcwarn << "async attach error: " << status << "\n";
         delaycb(5, 0, wrap(this, &RedisCli::reconnect));
-        if(ev) ev->trigger(false);
+        if (ev) {
+            ev->trigger(false);
+        }
         return;
     }
     g_dispatcher.addCli(m_c, this);
@@ -90,28 +353,31 @@ void RedisCli::connect(str host, uint port, evb_t::ptr ev)
     if (status != REDIS_OK) {
         rcwarn << "callback error: " << m_c->errstr << "\n";
         delaycb(5, 0, wrap(this, &RedisCli::reconnect));
-        if(ev) ev->trigger(false);
+        if (ev) {
+            ev->trigger(false);
+        }
         return;
     }
     m_connected = true;
     m_reconnecting = false;
-    rcwarn << "connected to " << host << ":" << port << "\n";
-    if(ev) ev->trigger(true);
+    if (ev) {
+        ev->trigger(true);
+    }
 }
 
 //------------------------------------------------------------------------
 
-void RedisCli::runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev) {
+void
+RedisCli::runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev) {
     vec<str> cmds(l);
     runCmd(cmds, ev);
 }
 
 //------------------------------------------------------------------------
 
-tamed
-void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
-{
-    vec<std::pair<const char*,size_t>> rcmds;
+tamed void
+RedisCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*, size_t>> rcmds;
     rcmds.setsize(cmds.size());
     for (size_t i = 0; i < cmds.size(); i++) {
         rcmds[i] = std::make_pair(cmds[i].cstr(), cmds[i].len());
@@ -122,23 +388,24 @@ void RedisCli::runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev)
 //-----------------------------------------------------------------------------
 
 tamed void
-RedisCli::runCmd(std::initializer_list<std::pair<const char*,size_t>> l,
-                 ev_redis_res_t::ptr ev) {
-    vec<std::pair<const char*,size_t>> cmds(l);
+RedisCli::runCmd(
+    std::initializer_list<std::pair<const char*, size_t>> l,
+    ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*, size_t>> cmds(l);
     runCmd(cmds, ev);
 }
 
 //-----------------------------------------------------------------------------
 
 tamed void
-RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
-                 ev_redis_res_t::ptr ev) {
+RedisCli::runCmd(
+    const vec<std::pair<const char*, size_t>>& cmds, ev_redis_res_t::ptr ev) {
 
     tvars {
-        redisCallbackFn *fn(nullptr);
+        redisCallbackFn* fn(nullptr);
         uint64_t data(0);
         size_t n;
-        vec<const char *> ccharcmds;
+        vec<const char*> ccharcmds;
         vec<size_t> lens;
         redisReply* r(nullptr);
         redis_res_t res;
@@ -147,7 +414,9 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
     }
     if (!isConnected()) {
         res.set(true, "not connected");
-        if (ev) { ev->trigger(res); }
+        if (ev) {
+            ev->trigger(res);
+        }
         return;
     }
     n = cmds.size();
@@ -162,11 +431,11 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
         if (ev) {
             fn = gReplyHandler;
             data = rnd.gethyper();
-            g_dispatcher.addReplyEv(data, connector::timeout(mkevent(r), 
-                                    m_timeout, 0, &outcome));
+            g_dispatcher.addReplyEv(
+                data, connector::timeout(mkevent(r), m_timeout, 0, &outcome));
         }
-        redisAsyncCommandArgv(m_c, fn, (void *)data, n, ccharcmds.begin(), 
-                              lens.begin());
+        redisAsyncCommandArgv(
+            m_c, fn, (void*)data, n, ccharcmds.begin(), lens.begin());
     }
     if (ev == nullptr) {
         return;
@@ -198,10 +467,12 @@ RedisCli::runCmd(const vec<std::pair<const char*,size_t>>& cmds,
 //-----------------------------------------------------------------------------
 
 tamed void
-RedisCli::evalLua(const char* script, str ssha1,
-                  std::initializer_list<str> keys,
-                  std::initializer_list<str> args,
-                  ev_redis_res_t::ptr ev) {
+RedisCli::evalLua(
+    const char* script,
+    str ssha1,
+    std::initializer_list<str> keys,
+    std::initializer_list<str> args,
+    ev_redis_res_t::ptr ev) {
     vec<str> vkeys(keys);
     vec<str> vargs(args);
     evalLua(script, ssha1, vkeys, vargs, ev);
@@ -210,10 +481,14 @@ RedisCli::evalLua(const char* script, str ssha1,
 //-----------------------------------------------------------------------------
 
 tamed void
-RedisCli::evalLua(const char* script, str ssha1, const vec<str>& keys,
-                  const vec<str>& args, ev_redis_res_t::ptr ev) {
-    vec<std::pair<const char*,size_t>> vkeys;
-    vec<std::pair<const char*,size_t>> vargs;
+RedisCli::evalLua(
+    const char* script,
+    str ssha1,
+    const vec<str>& keys,
+    const vec<str>& args,
+    ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*, size_t>> vkeys;
+    vec<std::pair<const char*, size_t>> vargs;
     vkeys.setsize(keys.size());
     for (size_t i = 0; i < keys.size(); i++) {
         vkeys[i] = std::make_pair(keys[i].cstr(), keys[i].len());
@@ -228,24 +503,28 @@ RedisCli::evalLua(const char* script, str ssha1, const vec<str>& keys,
 //-----------------------------------------------------------------------------
 
 tamed void
-RedisCli::evalLua(const char* script, str ssha1,
-                  std::initializer_list<std::pair<const char*,size_t>> keys,
-                  std::initializer_list<std::pair<const char*,size_t>> args, 
-                  ev_redis_res_t::ptr ev) {
-    vec<std::pair<const char*,size_t>> vkeys(keys);
-    vec<std::pair<const char*,size_t>> vargs(args);
+RedisCli::evalLua(
+    const char* script,
+    str ssha1,
+    std::initializer_list<std::pair<const char*, size_t>> keys,
+    std::initializer_list<std::pair<const char*, size_t>> args,
+    ev_redis_res_t::ptr ev) {
+    vec<std::pair<const char*, size_t>> vkeys(keys);
+    vec<std::pair<const char*, size_t>> vargs(args);
     evalLua(script, ssha1, vkeys, vargs, ev);
 }
 
 //-----------------------------------------------------------------------------
 
 tamed void
-RedisCli::evalLua(const char* script, str ssha1, 
-                  const vec<std::pair<const char*,size_t>>& keys,
-                  const vec<std::pair<const char*,size_t>>& args, 
-                  ev_redis_res_t::ptr ev) {
+RedisCli::evalLua(
+    const char* script,
+    str ssha1,
+    const vec<std::pair<const char*, size_t>>& keys,
+    const vec<std::pair<const char*, size_t>>& args,
+    ev_redis_res_t::ptr ev) {
 
-    vec<std::pair<const char*,size_t>> cmds;
+    vec<std::pair<const char*, size_t>> cmds;
     if (m_evalshas[ssha1]) {
         cmds.push_back(std::make_pair("EVALSHA", 7));
         cmds.push_back(std::make_pair(ssha1.cstr(), ssha1.len()));
@@ -261,17 +540,16 @@ RedisCli::evalLua(const char* script, str ssha1,
     nkstr = str(nkbuf);
 
     cmds.push_back(std::make_pair(nkstr.cstr(), nkstr.len()));
-    for (auto k : keys)
-        cmds.push_back(k);
-    for (auto a : args)
-        cmds.push_back(a);
+    for (auto k : keys) cmds.push_back(k);
+    for (auto a : args) cmds.push_back(a);
 
     runCmd(cmds, ev);
 }
 
 //------------------------------------------------------------------------
 
-void RedisCli::disconnect() {
+void
+RedisCli::disconnect() {
     if (m_connected && m_c->err == 0) {
         m_connected = false;
         redisAsyncDisconnect(m_c);
@@ -284,10 +562,14 @@ void RedisCli::disconnect() {
 
 //------------------------------------------------------------------------
 
-void RedisCli::disconnectHandler(int status) {
+void
+RedisCli::disconnectHandler(int status) {
     if (status != REDIS_OK) {
         rcwarn << "error: " << m_c->errstr << "\n";
-        if (m_recon) { reconnect(); return; }
+        if (m_recon) {
+            reconnect();
+            return;
+        }
     }
     // no need to free m_c on successful disconnect, it will already have
     // been freed
@@ -300,42 +582,42 @@ void RedisCli::disconnectHandler(int status) {
 
 //------------------------------------------------------------------------
 
-void RedisCli::reconnect() {
+void
+RedisCli::reconnect() {
     m_reconnecting = true;
     connect(m_host, m_port);
 }
 
 //------------------------------------------------------------------------
 
-pub3::obj_t RedisCli::parseReply(redisReply *r) {
+pub3::obj_t
+RedisCli::parseReply(redisReply* r) {
     assert(r);
     pub3::obj_t res;
-    switch(r->type) {
-        case REDIS_REPLY_NIL:
-            break;
-        case REDIS_REPLY_INTEGER:
-            res = (int64_t)r->integer;
-            break;
-        case REDIS_REPLY_STRING:
-            res = str(r->str, r->len);
-            break;
-        case REDIS_REPLY_ARRAY:
-            {
-                for (size_t i=0; i<r->elements; i++) {
-                    res.push_back(parseReply(r->element[i]));
-                }
-            }
-            break;
-        case REDIS_REPLY_STATUS:
-            res = str(r->str, r->len);
-            break; 
-        case REDIS_REPLY_ERROR:
-            res = str(r->str, r->len);
-            break; 
-        default:
-            warn << "MM_ERROR: unknown Redis reply, dying!: reply: " 
-                 << r->type << "\n";
-            assert(false);
+    switch (r->type) {
+    case REDIS_REPLY_NIL:
+        break;
+    case REDIS_REPLY_INTEGER:
+        res = (int64_t)r->integer;
+        break;
+    case REDIS_REPLY_STRING:
+        res = str(r->str, r->len);
+        break;
+    case REDIS_REPLY_ARRAY: {
+        for (size_t i = 0; i < r->elements; i++) {
+            res.push_back(parseReply(r->element[i]));
+        }
+    } break;
+    case REDIS_REPLY_STATUS:
+        res = str(r->str, r->len);
+        break;
+    case REDIS_REPLY_ERROR:
+        res = str(r->str, r->len);
+        break;
+    default:
+        warn << "MM_ERROR: unknown Redis reply, dying!: reply: " << r->type
+             << "\n";
+        assert(false);
     }
     return res;
 }
@@ -344,10 +626,10 @@ pub3::obj_t RedisCli::parseReply(redisReply *r) {
 // Implementation of the RedisDispatcher
 //------------------------------------------------------------------------
 
-RedisCli *
-RedisDispatcher::useCli(const redisAsyncContext *c) {
+RedisCli*
+RedisDispatcher::useCli(const redisAsyncContext* c) {
     uint64_t key = (uint64_t)c;
-    RedisCli **cli = m_cliMap[key];
+    RedisCli** cli = m_cliMap[key];
     if (!cli) {
         return nullptr;
     }
@@ -356,7 +638,7 @@ RedisDispatcher::useCli(const redisAsyncContext *c) {
 }
 
 evi_t::ptr
-RedisDispatcher::useConnEv(const redisAsyncContext *c) {
+RedisDispatcher::useConnEv(const redisAsyncContext* c) {
     uint64_t key = (uint64_t)c;
     evi_t::ptr ev = m_connEvMap[(uint64_t)c];
     m_connEvMap.remove(key);
@@ -370,22 +652,27 @@ RedisDispatcher::useReplyEv(uint64_t key) {
     return ev;
 }
 
-void gDisconnectHandler(const redisAsyncContext *c, int status) {
-    RedisCli *cli = g_dispatcher.useCli(c);
+void
+gDisconnectHandler(const redisAsyncContext* c, int status) {
+    RedisCli* cli = g_dispatcher.useCli(c);
     assert(cli);
     cli->disconnectHandler(status);
 }
 
-void gConnectHandler(const redisAsyncContext *c, int status) {
+void
+gConnectHandler(const redisAsyncContext* c, int status) {
     evi_t::ptr ev = g_dispatcher.useConnEv(c);
     assert(ev);
     ev->trigger(status);
 }
 
-void gReplyHandler(redisAsyncContext *c, void *r, void *privdata) {
+void
+gReplyHandler(redisAsyncContext* c, void* r, void* privdata) {
     uint64_t key = (uint64_t)privdata;
     ev_redis_reply_t::ptr ev = g_dispatcher.useReplyEv(key);
-    if (ev) { ev->trigger((redisReply*)r); }
+    if (ev) {
+        ev->trigger((redisReply*)r);
+    }
     // r is freed by the redis library when this function returns.
     // the code executed by ev->trigger MUST copy r before calling twait
 }
@@ -394,48 +681,55 @@ void gReplyHandler(redisAsyncContext *c, void *r, void *privdata) {
 // hiredis / libasync adapter logic
 //------------------------------------------------------------------------
 
-
 struct redisLibasyncEvents {
-    redisAsyncContext *context;
+    redisAsyncContext* context;
 };
 
-void redisLibasyncReadEvent(redisLibasyncEvents *e) {
+void
+redisLibasyncReadEvent(redisLibasyncEvents* e) {
     redisAsyncHandleRead(e->context);
 }
 
-void redisLibasyncWriteEvent(redisLibasyncEvents *e) {
+void
+redisLibasyncWriteEvent(redisLibasyncEvents* e) {
     redisAsyncHandleWrite(e->context);
 }
 
-void redisLibasyncAddRead(void *privdata) {
-    redisLibasyncEvents *e = (redisLibasyncEvents*)privdata;
+void
+redisLibasyncAddRead(void* privdata) {
+    redisLibasyncEvents* e = (redisLibasyncEvents*)privdata;
     fdcb(e->context->c.fd, selread, wrap(redisLibasyncReadEvent, e));
 }
 
-void redisLibasyncDelRead(void *privdata) {
-    redisLibasyncEvents *e = (redisLibasyncEvents*)privdata;
+void
+redisLibasyncDelRead(void* privdata) {
+    redisLibasyncEvents* e = (redisLibasyncEvents*)privdata;
     fdcb(e->context->c.fd, selread, nullptr);
 }
 
-void redisLibasyncAddWrite(void *privdata) {
-    redisLibasyncEvents *e = (redisLibasyncEvents*)privdata;
+void
+redisLibasyncAddWrite(void* privdata) {
+    redisLibasyncEvents* e = (redisLibasyncEvents*)privdata;
     fdcb(e->context->c.fd, selwrite, wrap(redisLibasyncWriteEvent, e));
 }
 
-void redisLibasyncDelWrite(void *privdata) {
-    redisLibasyncEvents *e = (redisLibasyncEvents*)privdata;
+void
+redisLibasyncDelWrite(void* privdata) {
+    redisLibasyncEvents* e = (redisLibasyncEvents*)privdata;
     fdcb(e->context->c.fd, selwrite, nullptr);
 }
 
-void redisLibasyncCleanup(void *privdata) {
-    redisLibasyncEvents *e = (redisLibasyncEvents*)privdata;
+void
+redisLibasyncCleanup(void* privdata) {
+    redisLibasyncEvents* e = (redisLibasyncEvents*)privdata;
     redisLibasyncDelRead(privdata);
     redisLibasyncDelWrite(privdata);
     delete e;
 }
 
-int redisLibasyncAttach(redisAsyncContext *ac) {
-    redisLibasyncEvents *e;
+int
+redisLibasyncAttach(redisAsyncContext* ac) {
+    redisLibasyncEvents* e;
 
     /* Nothing should be attached when something is already attached */
     if (ac->ev.data != NULL)
@@ -455,4 +749,3 @@ int redisLibasyncAttach(redisAsyncContext *ac) {
 
     return REDIS_OK;
 }
-
