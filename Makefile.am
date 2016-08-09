@@ -18,7 +18,6 @@ SBD1 = \
 	libokssl \
 	libweb \
 	librfn \
-	libamongo \
 	pub
 
 if USE_MYSQL
