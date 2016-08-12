@@ -9,7 +9,7 @@ namespace pub3 {
   //============================================ identifier_list_t =========
 
     void identifier_list_t::push_back(str s, bool opt) {
-        if (opt) {
+        if (!opt) {
             _params.push_back(s);
         } else {
             _opt_params.push_back(s);
