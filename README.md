@@ -101,5 +101,5 @@ OKWS is freely available under a GPL v2 license.
   * Ian Rickard (Apple Darwin Patches)
   * Michael Walfish (various patches and fixes for API problems).
   * Benjie Chen
-  * OkCupid team, including Tom Quisel, Mike Maxim, Tom Jacques, Eli Gwynn, David Koh, Till Varoquaux, and Ben Brittain.
+  * OkCupid team, including Tom Quisel, Mike Maxim, Tom Jacques, Eli Gwynn, David Koh, Till Varoquaux, Sidney San Martin, Matt Miller, and Ben Brittain.
 
