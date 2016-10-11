@@ -574,10 +574,8 @@ RedisCli::disconnectHandler(int status) {
     // no need to free m_c on successful disconnect, it will already have
     // been freed
     g_dispatcher.removeCli(m_c);
-
     m_connected = false;
     m_c = nullptr;
-    rcwarn << "disconnected from " << m_host << ":" << m_port << "\n";
 }
 
 //------------------------------------------------------------------------
