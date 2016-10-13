@@ -303,7 +303,7 @@ class Client:
     #-----------------------------------------
 
     def __init__ (self, fd = -1, prog = None, vers = None, 
-                  host = None, port = -1, retry = 2):
+                  host = None, port = -1, retry = 2, max_retry = -1):
         self._fd = fd
         self._prog = prog
         self._vers = vers
@@ -311,6 +311,7 @@ class Client:
         self._port = port
         self._socket = None
         self._retry = retry
+        self._max_retry = max_retry
         self._fast_decode = False
         self._fancy_objs = True
         self._const = None
@@ -450,6 +451,12 @@ class Client:
 
         go = True
         need_connect = False
+
+        retry_infinite = False
+        if self._max_retry < 0:
+            retry_infinite = True
+        max_retry_count = self._max_retry
+
         while go:
             eof = False
             try:
@@ -469,6 +476,12 @@ class Client:
                 time.sleep (w)
                 need_connect = True
                 self._const = None # Fetch fresh constants when we reconnect
+
+                if not retry_infinite:
+                    max_retry_count -= 1
+                    if max_retry_count < 0:
+                        self.err("max retry reached; ending call attempts")
+                        go = False
             elif eof and not self._retry:
                 self.connect ()
                 self.err ("rpc call failed; not retrying")
