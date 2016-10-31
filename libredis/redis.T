@@ -253,6 +253,15 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
             }
         }
 
+        if (!cli) {
+            warn << "BWB_ERROR: Connection failed to Redis Cluster. Unrecoverable. Redis might be out of space\n";
+            res.set(true, "not connected"); //  true sets it to being an error.
+            if (ev) {
+                ev->trigger(res);
+            }
+            return;
+        }
+
         if (asking) {
             asking = false;
             twait {
