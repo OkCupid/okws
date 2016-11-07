@@ -457,6 +457,8 @@ class Client:
             retry_infinite = True
         max_retry_count = self._max_retry
 
+        ret = None
+
         while go:
             eof = False
             try:
