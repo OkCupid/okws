@@ -22,14 +22,13 @@
  *
  */
 
+%option prefix="rpcc"
 %{
-#define YYSTYPE YYSTYPE
 #include "rpcc.h"
+using namespace xmlrpcc;
 #include "parse.h"
 
-#define YY_NO_UNPUT
-#define YY_SKIP_YYWRAP
-#define yywrap() 1
+extern "C" int rpccwrap() { return 1; }
 
 str filename = "(stdin)";
 int lineno;
@@ -44,11 +43,11 @@ WSPACE	[ \t]
 %%
 \n		++lineno;
 {WSPACE}+	/* discard */;
-^%.*		litq.push_back (yytext + 1);
+^%.*		litq.push_back (rpcctext + 1);
 
 ^#pragma\ 	{ BEGIN (GNL); }
-^#\ *[0-9]+\ *	{ lineno = atoi (yytext + 1); BEGIN (GFILE); }
-<GFILE>.*	{ filename = str (yytext+1, yyleng-2); BEGIN (GNL); }
+^#\ *[0-9]+\ *	{ lineno = atoi (rpcctext + 1); BEGIN (GFILE); }
+<GFILE>.*	{ filename = str (rpcctext+1, rpccleng-2); BEGIN (GNL); }
 <GFILE>\n	{ filename = "(stdin)"; BEGIN (GNL); }
 <GNL>.		/* discard */;
 <GNL>\n		BEGIN (0);
@@ -66,7 +65,7 @@ int		return T_INT;
 hyper		return T_HYPER;
 double		return T_DOUBLE;
 quadruple	return T_QUADRUPLE;
-void		{ yylval.str = yytext; return T_VOID; }
+void		{ rpcclval.str = rpcctext; return T_VOID; }
 
 version		return T_VERSION;
 switch		return T_SWITCH;
@@ -75,8 +74,8 @@ default		return T_DEFAULT;
 
 compressed	return T_COMPRESSED;
 
-opaque		{ yylval.str = yytext; return T_OPAQUE; }
-string		{ yylval.str = yytext; return T_STRING; }
+opaque		{ rpcclval.str = rpcctext; return T_OPAQUE; }
+string		{ rpcclval.str = rpcctext; return T_STRING; }
 
 array		|
 bytes		|
@@ -88,21 +87,21 @@ pointer		|
 reference	|
 setpos		|
 sizeof		|
-vector		{ yyerror (strbuf ("illegal use of reserved word '%s'",
-					yytext));
+vector		{ rpccerror (strbuf ("illegal use of reserved word '%s'",
+					rpcctext));
 		}
 
-{ID}		{ yylval.str = yytext; return T_ID; }
+{ID}		{ rpcclval.str = rpcctext; return T_ID; }
 [+-]?[0-9]+	|
-[+-]?0x[0-9a-fA-F]+	{ yylval.str = yytext; return T_NUM; }
+[+-]?0x[0-9a-fA-F]+	{ rpcclval.str = rpcctext; return T_NUM; }
 
-[=;{}<>\[\]*,:()] return yytext[0];
+[=;{}<>\[\]*,:()] return rpcctext[0];
 
 [^ \t\n0-9a-zA-Z_=;{}<>\[\]*,:()][^ \t\n0-9a-zA-Z_]*	|
-[0-9]*		{ yyerror (strbuf ("syntax error at '%s'", yytext)); }
+[0-9]*		{ rpccerror (strbuf ("syntax error at '%s'", rpcctext)); }
 %%
 
-/* .		yyerror (strbuf ("syntax error at '%s'", yytext)); */
+/* .		rpccerror (strbuf ("syntax error at '%s'", rpcctext)); */
 /* <<EOF>>		{ checkliterals (); return 0; } */
 
 static void
@@ -112,7 +111,7 @@ xxx_gcc_bug_exit (int code)	/* XXX - work around bug in gcc on alpha */
 }
 
 int
-yyerror (str msg)
+rpccerror (str msg)
 {
   warnx << filename << ":" << lineno << ": " << msg << "\n";
   xxx_gcc_bug_exit (1);
@@ -120,7 +119,7 @@ yyerror (str msg)
 }
 
 int
-yywarn (str msg)
+rpccwarn (str msg)
 {
   warnx << filename << ":" << lineno << ": Warning: " << msg << "\n";
   return 0;

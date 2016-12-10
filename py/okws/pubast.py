@@ -13,35 +13,18 @@
 
 from okws._config import BINDIR
 from okws._pubast import mk_file, Node, Metadata
+from okws._common import okws_checkoutput
 from enum import Enum
-import subprocess
 import base64
 import pprint
 import json
+import subprocess
 
 _PARSER = BINDIR + "/pub3astdumper"
 
-# check_output is not available in 2.6...
-if "check_output" not in dir( subprocess ):
-    def __pubast_checkoutput(*popenargs, **kwargs):
-        if 'stdout' in kwargs:
-            raise ValueError('stdout argument not allowed, it will be overridden.')
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            raise subprocess.CalledProcessError(retcode, cmd)
-        return output
-else:
-    __pubast_checkoutput = subprocess.check_output
-
-
 def parse(file):
     """Parse the given file as a pub file and returns the ast."""
-    res = json.loads(__pubast_checkoutput([_PARSER, "--", file]))
+    res = json.loads(okws_checkoutput([_PARSER, "--", file]))
     return mk_file(res)
 
 

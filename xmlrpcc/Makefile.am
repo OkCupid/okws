@@ -9,12 +9,13 @@ okwsbin_PROGRAMS = xmlrpcc
 
 noinst_HEADERS = rpcc.h parse.h
 
-xmlrpcc_SOURCES = genheader.C gencfile.C parse.yy scan.ll rpcc.C 
-xmlrpcc_LDADD = $(LDADD)
+xmlrpcc_SOURCES = genheader.C gencfile.C genjsonast.C parse.yy scan.ll rpcc.C
+xmlrpcc_LDADD = $(LDADD) $(LDADD_PUB)
 xmlrpcc_DEPENDENCIES = $(LIBASYNC)
 
 YYFLAGS = -d
 
+LEX_OUTPUT_ROOT = lex.rpcc
 parse.h:
 	@:
 

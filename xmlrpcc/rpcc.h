@@ -80,14 +80,14 @@ extern bhash<str> ids;
 
 extern int lineno;
 extern int printlit;
-#undef yyerror
-extern int yyerror (str);
-#define yyerror yyerror		// For some versions of yacc
-int yywarn (str);
+extern int rpccerror (str);
+int rpccwarn (str);
 
-extern int yylex ();
-extern int yyparse ();
+extern int rpcclex ();
+extern int rpccparse ();
 extern void checkliterals ();
+
+namespace xmlrpcc {
 
 struct rpc_decl {
   str id;
@@ -208,30 +208,34 @@ public:
     }
   }
 };
+}  // namespace xmlrpcc
 
-struct YYSTYPE {
+struct RPCCSTYPE {
   u_int32_t num;
-  struct rpc_arg arg;
-  struct rpc_decl decl;
-  struct rpc_const cnst;
+  struct xmlrpcc::rpc_arg arg;
+  struct xmlrpcc::rpc_decl decl;
+  struct xmlrpcc::rpc_const cnst;
   ::str str;
 };
-extern YYSTYPE yylval;
 
-typedef vec<rpc_sym> symlist_t;
+extern RPCCSTYPE rpcclval;
+
+typedef vec<xmlrpcc::rpc_sym> symlist_t;
 extern symlist_t symlist;
 
 typedef vec<str> strlist_t;
 extern strlist_t litq;
 
-str rpcprog (const rpc_program *, const rpc_vers *);
+str rpcprog (const xmlrpcc::rpc_program *, const xmlrpcc::rpc_vers *);
 void genheader (str);
 void gencfile (str);
+void genjsonast(str);
 
-void pswitch (str prefix, const rpc_union *rs, str swarg,
-	      void (*pt) (str, const rpc_union *rs, const rpc_utag *),
-	      str suffix = "\n",
-	      void (*defac) (str, const rpc_union *rs) = NULL);
+void pswitch(str prefix, const xmlrpcc::rpc_union *rs, str swarg,
+             void (*pt)(str, const xmlrpcc::rpc_union *rs,
+                        const xmlrpcc::rpc_utag *),
+             str suffix = "\n",
+             void (*defac)(str, const xmlrpcc::rpc_union *rs) = nullptr);
 
 #define XML_OBJ "XML_RPC_obj_t"
 
@@ -239,8 +243,8 @@ extern bool guess_defines;
 extern bool skip_xml;
 
 str stripfname (str s, bool suffix = true);
-  
-rpc_program *get_prog (bool creat);
+
+xmlrpcc::rpc_program *get_prog (bool creat);
 
 str make_csafe_filename (str fname);
 str make_constant_collect_hook (str fname);

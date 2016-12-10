@@ -22,6 +22,7 @@
  */
 
 #include "rpcc.h"
+using namespace xmlrpcc;
 
 str idprefix;
 bhash<str> ids;
@@ -144,7 +145,7 @@ cleanup ()
 static void
 usage ()
 {
-  warn << "usage: rpcc {-c | -h }\n"
+  warn << "usage: rpcc {-c | -h | -a}\n"
     "            [-Ppref] [-Ddef] [-Idir]\n\t[-o outfile] file.x\n";
   exit (1);
 }
@@ -163,7 +164,7 @@ reapcpp (int status)
 int
 main (int argc, char **argv)
 {
-  enum { BAD, HEADER, CFILE } mode = BAD;
+  enum { BAD, HEADER, CFILE, AST } mode = BAD;
   pid_t child;
   vec<const char *> av;
   char *fname = NULL;
@@ -178,7 +179,7 @@ main (int argc, char **argv)
   av.push_back ("-DRPCC");
   av.push_back (NULL);
 
-  while ((ch = getopt (argc, argv, "GDIXhco:P:")) != -1) {
+  while ((ch = getopt (argc, argv, "GDIXhcao:P:")) != -1) {
     switch (ch) {
     case 'D':
     case 'I':
@@ -189,10 +190,22 @@ main (int argc, char **argv)
       break;
     case 'h':
     case 'c':
-      if (mode != BAD)
-	usage ();
-      else 
-	mode = (ch == 'c') ? CFILE : HEADER;
+    case 'a':
+      if (mode != BAD) {
+        usage();
+      } else {
+        switch (ch) {
+        case 'c':
+          mode = CFILE;
+          break;
+        case 'h':
+          mode = HEADER;
+          break;
+        case 'a':
+          mode = AST;
+          break;
+        }
+      }
       break;
     case 'G':
       guess_defines = false;
@@ -244,7 +257,14 @@ main (int argc, char **argv)
     if (!outfile)
       outfile = strbuf ("%.*s.C", len - 2, basename);
     break;
-  default:
+  case AST:
+    av[2] = "-DRPCC_A";
+    fn = genjsonast;
+    if (!outfile) {
+      outfile = strbuf("%.*s.json", len - 2, basename);
+    }
+    break;
+  case BAD:
     usage ();
     break;
   }
@@ -258,7 +278,7 @@ main (int argc, char **argv)
   }
 
   make_sync (0);
-  yyparse ();
+  rpccparse ();
   checkliterals ();
   if (outfile != "-" && outfile[0] != '|')
     fn (outfile);

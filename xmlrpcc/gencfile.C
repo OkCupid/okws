@@ -24,6 +24,8 @@
 #include "rpcc.h"
 #include "rxx.h"
 
+using namespace xmlrpcc;
+
 static void collect_rpctype (str i);
 
 static void

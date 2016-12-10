@@ -21,11 +21,13 @@
  *
  */
 
+%define api.prefix {rpcc}
+
 %{
 #ifndef __clang_analyzer__
 
 #include "rpcc.h"
-#define YYSTYPE YYSTYPE
+using namespace xmlrpcc;
 
 static int proc_compare (const void *, const void *);
 static int vers_compare (const void *, const void *);
@@ -122,7 +124,7 @@ def_enum: T_ENUM newid '{'
 	;
 
 comma_warn: /* empty */
-	| ',' { yywarn ("comma not allowed at end of enum"); }
+	| ',' { rpccwarn ("comma not allowed at end of enum"); }
 	;
 
 def_struct: T_STRUCT newid '{'
@@ -271,7 +273,7 @@ declaration: type T_ID ';'
 	| T_STRING T_ID ';'
 	 { $$.id = $2; $$.type = $1; $$.qual = rpc_decl::VEC;
 	   $$.bound = "RPC_INFINITY";
-	   yywarn ("strings require variable-length array declarations");
+	   rpccwarn ("strings require variable-length array declarations");
 	 }
 	| type '*' T_ID ';'
 	 { $$.id = $3; $$.type = $1; $$.qual = rpc_decl::PTR; }
@@ -366,7 +368,7 @@ static str
 getnewid (str id)
 {
   if (ids[id])
-    yywarn ("redefinition of symbol " << id);
+    rpccwarn ("redefinition of symbol " << id);
   else
     ids.insert (id);
   if (idprefix)
