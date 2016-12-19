@@ -131,6 +131,9 @@ RedisClusterCli::getConnFromSlot(uint16_t slot_id, redis_ev_t::ptr ev) {
             }
             if (conn_ok) {
                 m_connection_cache.insert(*p_node, rcli);
+            } else {
+                ev->trigger(nullptr);
+                return;
             }
         }
         ev->trigger(rcli);
