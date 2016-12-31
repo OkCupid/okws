@@ -33,8 +33,8 @@ mkmshl_xml (str id)
   aout << "bool\n"
        << "xml_" << id << " (" << XML_OBJ << " *xml, void *objp)\n"
        << "{\n"
-       << "  return xml_rpc_traverse (xml, *static_cast<" 
-       << id << " *> (objp), NULL);\n"
+       << "  return xml_rpc_traverse (xml, *static_cast<" << id
+       << " *> (objp), nullptr);\n"
        << "}\n"
        << "\n";
 }
@@ -174,15 +174,15 @@ dumpstructmember_xml(str swval, const rpc_decl *rd)
   if (swval)
     aout << "  { \"" << swval << "\", ";
   else
-    aout << "  { NULL, ";
+    aout << "  { nullptr, ";
   if (rd->id)
     aout << "\"" << rd->id << "\", ";
   else
-    aout << "NULL, ";
+    aout << "nullptr, ";
   if (rd->type)
     aout << "&xml_typeinfo_" << rd->type << ", ";
   else
-    aout << "NULL, ";
+    aout << "nullptr, ";
   aout << (int)rd->qual << ", "
        << (rd->bound ? rd->bound : "0") << " }";
 }
@@ -205,10 +205,10 @@ dumpstruct_xml (const rpc_sym *s)
 
  aout << "static xml_struct_entry_t _xml_contents_" << rs->id << "[] = {\n";
   for (rd = rs->decls.base (); rd < rs->decls.lim (); rd++) {
-    dumpstructmember_xml(NULL, rd);
+    dumpstructmember_xml(nullptr, rd);
     aout << ",\n";
   }
-  aout << "  { NULL, NULL, NULL, 0, 0 }\n";
+  aout << "  { nullptr, nullptr, nullptr, 0, 0 }\n";
   aout << "};\n\n";
 
   aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
@@ -258,13 +258,13 @@ dumpunion_xml (const rpc_sym *s)
        << "}\n\n";
 
   aout << "xml_struct_entry_t _xml_contents_" << rs->id << "[] = {\n"
-       << "  { NULL, \"" << rs->tagid << "\", &xml_typeinfo_" 
-       << rs->tagtype << ", 0, 0},\n";
+       << "  { nullptr, \"" << rs->tagid << "\", &xml_typeinfo_" << rs->tagtype
+       << ", 0, 0},\n";
   for (const rpc_utag *rc = rs->cases.base(); rc < rs->cases.lim(); rc++) {
     dumpstructmember_xml(rc->swval, &rc->tag);
     aout << ",\n";
   }
-  aout << "  { NULL, NULL, NULL, 0, 0 }," 
+  aout << "  { nullptr, nullptr, nullptr, 0, 0 },"
        << "};\n\n";
 
   aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
@@ -292,7 +292,7 @@ dumpenum_xml (const rpc_sym *s)
   aout << "xml_typeinfo_t xml_typeinfo_" << rs->id << " = {\n"
        << "  \"" << rs->id << "\",\n"
        << "  xml_typeinfo_t::ENUM,\n"
-       << "  NULL\n"
+       << "  nullptr\n"
        << "};\n\n";
 
   type_tab.push_back(rs->id);
@@ -450,7 +450,7 @@ dumptypedef_xml (const rpc_sym *s)
   if (skip_xml) return;
   const rpc_decl *rd = s->stypedef.addr ();
   aout << "static xml_struct_entry_t _xml_typedef_" << rd->id << " = \n";
-  dumpstructmember_xml(NULL, rd);
+  dumpstructmember_xml(nullptr, rd);
   aout << ";\n\n";
   aout << "xml_typeinfo_t xml_typeinfo_" << rd->id << " = {\n"
        << "  \"" << rd->id << "\",\n"
@@ -540,24 +540,23 @@ print_enum (const rpc_enum *s)
       "  case " << cp->id << ":\n"
       "    p = \"" << cp->id << "\";\n"
       "    break;\n";
-  aout <<
-    "  default:\n"
-    "    p = NULL;\n"
-    "    break;\n"
-    "  }\n"
-    "  if (name) {\n"
-    "    if (prefix)\n"
-    "      sb << prefix;\n"
-    "    sb << \"" << s->id << " \" << name << \" = \";\n"
-    "  };\n"
-    "  if (p)\n"
-    "    sb << p;\n"
-    "  else\n"
-    "    sb << int (obj);\n"
-    "  if (prefix)\n"
-    "    sb << \";\\n\";\n"
-    "  return sb;\n"
-    "};\n";
+  aout << "  default:\n"
+          "    p = nullptr;\n"
+          "    break;\n"
+          "  }\n"
+          "  if (name) {\n"
+          "    if (prefix)\n"
+          "      sb << prefix;\n"
+          "    sb << \"" << s->id << " \" << name << \" = \";\n"
+                                     "  };\n"
+                                     "  if (p)\n"
+                                     "    sb << p;\n"
+                                     "  else\n"
+                                     "    sb << int (obj);\n"
+                                     "  if (prefix)\n"
+                                     "    sb << \";\\n\";\n"
+                                     "  return sb;\n"
+                                     "};\n";
   print_print (s->id);
 }
 
@@ -587,13 +586,12 @@ print_struct (const rpc_struct *s)
     "  }\n";
 
   if (num > 1) {
-    aout <<
-      "  const char *sep = NULL;\n"
-      "  if (prefix) {\n"
-      "    sep = \"\";\n"
-      "  } else {\n"
-      "    sep = \", \";\n"
-      "  }\n" ;
+    aout << "  const char *sep = nullptr;\n"
+            "  if (prefix) {\n"
+            "    sep = \"\";\n"
+            "  } else {\n"
+            "    sep = \", \";\n"
+            "  }\n";
   }
 
   if (dp < ep)
@@ -722,7 +720,7 @@ dump_const_table (str fname)
   for (size_t i = 0; i < const_tab.size (); i++) {
     aout << "  { \"" << const_tab[i] << "\", " << const_tab[i]  << " },\n";
   }
-  aout << "  { NULL, 0 }\n";
+  aout << "  { nullptr, 0 }\n";
   aout << "};\n\n";
 }
 
@@ -733,7 +731,7 @@ dump_prog_table (str fname)
   for (size_t i = 0; i < prog_tab.size (); i++) {
     aout << "  &" << prog_tab[i] << ",\n";
   }
-  aout << "  NULL\n"
+  aout << "  nullptr\n"
        << "};\n\n";
 }
 
@@ -744,7 +742,7 @@ dump_type_table (str fname)
   for (size_t i = 0; i < type_tab.size (); i++) {
     aout << "  &xml_typeinfo_" << type_tab[i] << ",\n";
   }
-  aout << "  NULL\n"
+  aout << "  nullptr\n"
        << "};\n\n";
 }
 
@@ -771,25 +769,24 @@ gencfile (str fname)
   aout << "#include \"" << makehdrname (fname) << "\"\n"
        << "#include \"xdrsnappy.h\"\n\n";
 
-#if 0
-  for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)
-    if (s->type == rpc_sym::PROGRAM)
-      for (const rpc_vers *rv = s->sprogram->vers.base ();
-	   rv < s->sprogram->vers.lim (); rv++)
-	for (const rpc_proc *rp = rv->procs.base ();
-	     rp < rv->procs.lim (); rp++) {
-	  needtype.insert (rp->arg);
-	  needtype.insert (rp->res);
-	}
-#endif
-
   aout << "#ifdef MAINTAINER\n\n";
   for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)
     dumpprint (s);
   aout << "#endif /* MAINTAINER*/\n";
 
-  for (const rpc_sym *s = symlist.base (); s < symlist.lim (); s++)
+  for (const rpc_sym *s = symlist.base(); s < symlist.lim(); s++) {
     dumpsym (s);
+    if (template_specialisations.size() != 0) {
+      const str fn_name = gen_rpc_trav(s, false);
+      if (fn_name)
+        for (str tp : template_specialisations) {
+          aout << "bool rpc_traverse(" << tp << " t, " << getid(s) << "& v, "
+               << "const char* fld){\n"
+               << "    return " << fn_name << "<" << tp << ">(t, v, fld);\n"
+               << "}\n\n";
+        }
+    }
+  }
 
   aout << "\n";
 

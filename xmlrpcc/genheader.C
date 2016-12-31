@@ -53,8 +53,6 @@ pmshl (str id)
   pmshl_xml (id);
 }
 
-static const char *rpc_field = "const char *field = NULL";
-
 static str
 rpc_decltype (const rpc_decl *d)
 {
@@ -98,15 +96,13 @@ pdecl (str prefix, const rpc_decl *d)
   aout << prefix << rpc_decltype (d) << " " << name << ";\n";
 }
 
-static void
-dumpstruct_xml (const rpc_sym *s)
-{
-  start_xml_guard ();
-  const rpc_struct *rs = s->sstruct.addr ();
-  aout << "bool rpc_traverse (" XML_OBJ "*t, " << rs->id << " &obj);\n" ;
+static void dumpstruct_xml(const rpc_sym *s) {
+  start_xml_guard();
+  const rpc_struct *rs = s->sstruct.addr();
+  aout << "bool rpc_traverse (" XML_OBJ "*t, " << rs->id << " &obj);\n";
 
   aout << "extern xml_typeinfo_t xml_typeinfo_" << rs->id << ";\n";
-  end_xml_guard ();
+  end_xml_guard();
 }
 
 static void
@@ -118,30 +114,8 @@ dumpstruct (const rpc_sym *s)
     pdecl ("  ", rd);
   aout << "};\n";
   pmshl (rs->id);
-  aout << "RPC_STRUCT_DECL (" << rs->id << ")\n";
+  aout << "RPC_STRUCT_DECL (" << rs->id << ")\n\n";
   // aout << "RPC_TYPE_DECL (" << rs->id << ")\n";
-
-  aout << "\ntemplate<class T> "
-       << (rs->decls.size () > 1 ? "" : "inline ") << "bool\n"
-       << "rpc_traverse (T &t, " << rs->id << " &obj, " << rpc_field << ")\n"
-       << "{\n"
-       << "  bool ret = true;\n"
-       << "  rpc_enter_field (t, field);\n" ;
-
-  const rpc_decl *rd = rs->decls.base ();
-  if (rd < rs->decls.lim ()) {
-    aout << "  ret = rpc_traverse (t, obj." << rd->id 
-	 << ", \"" << rd->id << "\")";
-    rd++;
-    for ( ; rd < rs->decls.lim (); rd++ ) {
-      aout << "\n    && rpc_traverse (t, obj." << rd->id 
-	   << ", \"" << rd->id << "\")";
-    }
-    aout << ";\n";
-  }
-  aout << "  rpc_exit_field (t, field);\n"
-       << "  return ret;\n"
-       << "}\n\n";
 
   dumpstruct_xml (s);
 }
@@ -180,52 +154,6 @@ pswitch (str prefix, const rpc_union *rs, str swarg,
   aout << prefix << "}\n";
 }
 
-#if 0
-static void
-puniontraverse (str prefix, const rpc_union *rs, const rpc_utag *rt)
-{
-#if 0
-  aout << prefix << "if (obj." << rs->tagid << " != tag)\n";
-  if (rt->tag.type == "void")
-    aout << prefix << "  obj._base.destroy ();\n";
-  else
-    aout << prefix << "  obj." << rt->tag.id << ".select ();\n";
-#endif
-  if (rt->tag.type == "void")
-    aout << prefix << "return true;\n";
-  else
-    aout << prefix << "return rpc_traverse (t, *obj." << rt->tag.id 
-	 << ", \"" << rt->tag.id << "\");\n";
-}
-
-static void
-pselect (str prefix, const rpc_union *rs, const rpc_utag *rt)
-{
-  if (rt->tag.type == "void")
-    aout << prefix << "_base.destroy ();\n";
-  else
-    aout << prefix << rt->tag.id << ".select ();\n";
-  aout << prefix << "break;\n";
-}
-#endif
-
-static void
-punionmacro (str prefix, const rpc_union *rs, const rpc_utag *rt)
-{
-  if (rt->tag.type == "void")
-    aout << prefix << "voidaction; \\\n";
-  else
-    aout << prefix << "action (" << rt->tag.type << ", "
-	 << rt->tag.id << "); \\\n";
-  aout << prefix << "break; \\\n";
-}
-
-static void
-punionmacrodefault (str prefix, const rpc_union *rs)
-{
-  aout << prefix << "defaction; \\\n";
-  aout << prefix << "break; \\\n";
-}
 
 static void
 dumpunion_xml (const rpc_sym *s)
@@ -256,73 +184,26 @@ dumpunion (const rpc_sym *s)
   }
   aout << "  };\n\n";
 
-  aout << "#define rpcunion_tag_" << rs->id << " " << rs->tagid << "\n";
-  aout << "#define rpcunion_switch_" << rs->id
-       << "(swarg, action, voidaction, defaction) \\\n";
-  pswitch ("  ", rs, "swarg", punionmacro, " \\\n", punionmacrodefault);
-
-  aout << "\n"
-       << "  " << rs->id << " (" << rs->tagtype << " _tag = ("
-       << rs->tagtype << ") 0) : " << rs->tagid << " (_tag)\n"
+  aout << "  " << rs->id << " (" << rs->tagtype << " _tag = (" << rs->tagtype
+       << ") 0) : " << rs->tagid << " (_tag)\n"
        << "    { _base.init (); set_" << rs->tagid << " (_tag); }\n"
 
-       << "  " << rs->id << " (" << "const " << rs->id << " &_s)\n"
+       << "  " << rs->id << " ("
+       << "const " << rs->id << " &_s)\n"
        << "    : " << rs->tagid << " (_s." << rs->tagid << ")\n"
        << "    { _base.init (_s._base); }\n"
        << "  ~" << rs->id << " () { _base.destroy (); }\n"
        << "  " << rs->id << " &operator= (const " << rs->id << " &_s) {\n"
-       << "    const_cast<" << rs->tagtype << " &> ("
-       << rs->tagid << ") = _s." << rs->tagid << ";\n"
+       << "    const_cast<" << rs->tagtype << " &> (" << rs->tagid << ") = _s."
+       << rs->tagid << ";\n"
        << "    _base.assign (_s._base);\n"
        << "    return *this;\n"
-       << "  }\n\n";
-
-  aout << "  void set_" << rs->tagid << " (" << rs->tagtype << " _tag) {\n"
-       << "    const_cast<" << rs->tagtype << " &> (" << rs->tagid
-       << ") = _tag;\n"
-       << "    rpcunion_switch_" << rs->id << "\n"
-       << "      (_tag, RPCUNION_SET, _base.destroy (), _base.destroy ());\n"
        << "  }\n";
 
-#if 0
-  aout << "  void Xstompcast () {\n"
-       << "    rpcunion_switch_" << rs->id << "\n"
-       << "      (" << rs->tagid << ", RPCUNION_STOMPCAST,\n"
-       << "       _base.destroy (), _base.destroy ());\n"
-       << "  }\n";
-#endif
-  aout << "};\n";
+  aout << "  void set_" << rs->tagid << " (" << rs->tagtype << " _tag);\n";
 
-  aout << "\ntemplate<class T> bool\n"
-       << "rpc_traverse (T &t, " << rs->id << " &obj, " << rpc_field << ")\n"
-       << "{\n"
-       << "  bool ret = true;\n"
-       << "  rpc_enter_field (t, field);\n"
-       << "  " << rs->tagtype << " tag = obj." << rs->tagid << ";\n"
-       << "  if (!rpc_traverse (t, tag, \"" << rs->tagid << "\")) { \n"
-       << "    ret = false;\n"
-       << "  } else {\n"
-       << "    if (tag != obj." << rs->tagid << ")\n"
-       << "      obj.set_" << rs->tagid << " (tag);\n\n"
-       << "    rpcunion_switch_" << rs->id << "\n"
-       << "      (obj." << rs->tagid << ", ret = RPCUNION_TRAVERSE_2, "
-       << "ret = true, ret = false);\n"
-       << "    /* gcc 4.0.3 makes buggy warnings without the following.. */\n"
-       << "  }\n"
-       << "  rpc_exit_field (t, field);\n"
-       << "  return ret;\n"
-       << "}\n"
-       << "inline bool\n"
-       << "rpc_traverse (const stompcast_t &s, " << rs->id << " &obj, "
-       << rpc_field << ")\n"
-       << "{\n"
-       << "  rpcunion_switch_" << rs->id << "\n"
-       << "    (obj." << rs->tagid << ", RPCUNION_REC_STOMPCAST,\n"
-       << "     obj._base.destroy (); return true, "
-       << "obj._base.destroy (); return true;);\n"
-       << "  /* gcc 4.0.3 makes buggy warnings without the following line */\n"
-       << "  return false;\n"
-       << "}\n";
+  aout << "};\n\n";
+
 
   pmshl (rs->id);
   // aout << "RPC_TYPE_DECL (" << rs->id << ")\n";
@@ -369,22 +250,7 @@ dumpenum (const rpc_sym *s)
   aout << "};\n";
   pmshl (rs->id);
   aout << "RPC_ENUM_DECL (" << rs->id << ")\n"
-       << "TYPE2STRUCT( , " << rs->id << ");\n";
-
-  aout << "\ntemplate<class T> inline bool\n"
-       << "rpc_traverse (T &t, " << rs->id << " &obj, " << rpc_field << ")\n"
-       << "{\n"
-       << "  u_int32_t val = obj;\n"
-       << "  bool ret = true;\n"
-       << "  rpc_enter_field (t, field);\n"
-       << "  if (!rpc_traverse (t, val)) {\n"
-       << "    ret = false;\n"
-       << "  } else {\n"
-       << "    obj = " << rs->id << " (val);\n"
-       << "  }\n"
-       << "  rpc_exit_field (t, field);\n"
-       << "  return ret;\n"
-       << "}\n";
+       << "TYPE2STRUCT( , " << rs->id << ");\n\n";
 
   dumpenum_xml (s);
 }
@@ -753,6 +619,17 @@ genheader (str fname)
       aout << "\n";
     last = s->type;
     dumpsym (s);
+    if (template_specialisations.size() == 0) {
+      gen_rpc_trav(s, true);
+    } else {
+      if (s->type == rpc_sym::STRUCT || s->type == rpc_sym::UNION ||
+          s->type == rpc_sym::ENUM) {
+        for (str tp : template_specialisations) {
+          aout << "bool rpc_traverse(" << tp << ", " << getid(s) << "&, "
+               << rpc_field << ");\n";
+        }
+      }
+    }
   }
 
   start_xml_guard ();
