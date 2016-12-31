@@ -321,7 +321,7 @@ zbuf::cat (const str &s, bool cp)
     if (z) {
       push_zstr (*z);
     } else {
-      push_str2zstr (s, false);
+      push_str2zstr (s, true);
     }
   }
   return (*this);
