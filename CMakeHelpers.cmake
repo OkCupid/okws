@@ -22,7 +22,7 @@ FUNCTION(PreprocessTamedFiles RET RET_HEADERS SOURCES)
             OUTPUT ${cxx_file}
             COMMAND ${OKWS_TAME}
             ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/${t_file} > ${cxx_file}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${t_file})
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${t_file} ${OKWS_TAME})
         if ("${t_file}" MATCHES ".Th$")
             list(APPEND _result_headers ${cxx_file})
         else()
@@ -49,12 +49,12 @@ FUNCTION(OkwsPreprocessProtFiles CFILES HFILES SOURCES)
             OUTPUT ${h_file}
             COMMAND ${OKWS_RPCC}
             ARGS    -X -o ${h_file} -h ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file})
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file} ${OKWS_RPCC})
         add_custom_command(
             OUTPUT ${c_file}
             COMMAND ${OKWS_RPCC}
             ARGS    -X -o ${c_file} -c ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
-            DEPENDS ${h_file})
+            DEPENDS ${h_file} ${OKWS_RPCC})
         list(APPEND _c_result ${c_file})
         list(APPEND _h_result ${h_file})
     endforeach(p_file ${SOURCES})
@@ -78,12 +78,12 @@ FUNCTION(OkwsPreprocessXmlProtFiles CFILES HFILES SOURCES)
             OUTPUT ${h_file}
             COMMAND ${OKWS_RPCC}
             ARGS    -o ${h_file} -h ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file})
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file} ${OKWS_RPCC})
         add_custom_command(
             OUTPUT ${c_file}
             COMMAND ${OKWS_RPCC}
             ARGS    -o ${c_file} -c ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
-            DEPENDS ${h_file})
+            DEPENDS ${h_file} ${OKWS_RPCC})
         list(APPEND _c_result ${c_file})
         list(APPEND _h_result ${h_file})
     endforeach(p_file ${SOURCES})
@@ -107,12 +107,12 @@ FUNCTION(PreprocessXmlProtFiles CFILES HFILES SOURCES)
             OUTPUT ${h_file}
             COMMAND ${OKWS_XMLRPCC}
             ARGS    -o ${h_file} -h ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file})
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file} ${OKWS_XMLRPCC})
         add_custom_command(
             OUTPUT ${c_file}
             COMMAND ${OKWS_XMLRPCC}
             ARGS    -o ${c_file} -c ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
-            DEPENDS ${h_file})
+            DEPENDS ${h_file} ${OKWS_XMLRPCC})
         list(APPEND _c_result ${c_file})
         list(APPEND _h_result ${h_file})
     endforeach(p_file ${SOURCES})

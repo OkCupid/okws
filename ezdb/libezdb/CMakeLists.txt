@@ -3,8 +3,7 @@
 include(${OKWS_SOURCE_DIR}/CMakeHelpers.cmake)
 
 set(SRC bind.C
-	field.C
-	serve.C)
+	field.C)
 
 set(XML_PROT_FILES ezdb_prot.x)
 
@@ -46,3 +45,6 @@ include_directories(${GLOBAL_INCLUDES}
 
 add_library(libezdb SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/ezdb_ag.C)
 add_dependencies(libezdb libezdb_headers)
+
+add_library(libezdbsrv SHARED serve.C)
+add_dependencies(libezdbsrv libezdb_headers)
