@@ -12,7 +12,7 @@ set(HEADERS "")
 
 PreprocessTamedFiles(SRC HEADERS "${TAMED_SRC}")
 
-flex_target(scanner scan.ll ${CMAKE_CURRENT_BINARY_DIR}/scan.cc)
+bison_target(parser parse.yy ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/parse.h
@@ -20,8 +20,7 @@ add_custom_command(
     ARGS    ${BISON_parser_OUTPUT_HEADER} ${CMAKE_CURRENT_BINARY_DIR}/parse.h
     DEPENDS ${BISON_parser_OUTPUT_HEADER})
 add_custom_target(xmlrpcc_headers DEPENDS ${HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/parse.h)
-
-bison_target(parser parse.yy ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
+flex_target(scanner scan.ll ${CMAKE_CURRENT_BINARY_DIR}/scan.cc)
 
 include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
