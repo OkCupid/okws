@@ -62,7 +62,6 @@ include_directories(${GLOBAL_INCLUDES}
                     ${OKWS_BINARY_DIR}/libokxml/
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
-message(${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
 
 add_library(libpub SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
 add_dependencies(libpub libpub_headers)

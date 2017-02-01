@@ -26,7 +26,7 @@ OkwsPreprocessXmlProtFiles(LIBPROT_C_SRC LIBPROT_H_SRC "${PROT_FILES}")
 add_custom_target(libaok_headers DEPENDS ${HEADERS} ${LIBPROT_H_SRC} ${LIBPROT_XML_H_SRC})
 
 include_directories(${GLOBAL_INCLUDES}
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/librfn/
                     ${OKWS_BINARY_DIR}/libpub/
                     ${OKWS_SOURCE_DIR}/pub/

@@ -30,7 +30,7 @@ add_custom_target(libmystmt_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/mystmt_a
 
 include_directories(${GLOBAL_INCLUDES}
                     /usr/include/mysql/
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/libpub/
                     ${OKWS_BINARY_DIR}/libpub/
                     ${OKWS_SOURCE_DIR}/libweb/

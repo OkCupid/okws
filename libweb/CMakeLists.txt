@@ -19,9 +19,8 @@ PreprocessTamedFiles(SRC HEADERS "${TAMED_SRC}")
 PreprocessXmlProtFiles(LIBPROT_XML_C_SRC LIBPROT_XML_H_SRC "${XML_PROT_FILES}")
 add_custom_target(libweb_headers DEPENDS ${HEADERS} ${LIBPROT_XML_H_SRC})
 
-message(${OKWS_BINARY_DIR})
 include_directories(${GLOBAL_INCLUDES}
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/libpub/
                     ${OKWS_BINARY_DIR}/libpub/
                     ${OKWS_SOURCE_DIR}/libahttp/

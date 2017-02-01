@@ -23,7 +23,7 @@ include_directories(${GLOBAL_INCLUDES}
                     ${OKWS_BINARY_DIR}/libaok/
                     ${OKWS_SOURCE_DIR}/libpub/
                     ${OKWS_BINARY_DIR}/libpub/
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/libahttp/
                     ${OKWS_BINARY_DIR}/libahttp/
                     ${OKWS_SOURCE_DIR}/libokxml/

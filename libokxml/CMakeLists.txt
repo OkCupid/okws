@@ -29,7 +29,7 @@ include_directories(${GLOBAL_INCLUDES}
                     ${OKWS_BINARY_DIR}/libpub/
                     ${OKWS_SOURCE_DIR}/libpub/
                     ${OKWS_SOURCE_DIR}/libahttp/
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 

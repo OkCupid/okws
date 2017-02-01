@@ -24,14 +24,7 @@ set(OKWS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 ## Optimized build
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -fno-omit-frame-pointer")
 #
-set(GLOBAL_INCLUDES #todo fix this
-#    ${CMAKE_BINARY_DIR}/libprot/ # here for convienence
-#    ${CMAKE_BINARY_DIR}/money/libprot/ # here for convienence
-#    ${CMAKE_BINARY_DIR}/shared/libprot/ # here for convienence
-#    /usr/include/mysql/ # ${MYSQL_INCLUDES}
-#    /usr/local/dsdc/0.26/shdbg/include/
-    /usr/local/include/sfslite-1.2/shdbg/)
-#    /usr/local/include/okws-3.1/shdbg/)
+set(GLOBAL_INCLUDES /usr/local/include/sfslite-1.2/shdbg/)
 
 set(GLOBAL_LINKS /usr/lib/ # ld.gold doesn't look here by default
                  /usr/local/lib/) # ld.gold doesn't look here by default
@@ -44,85 +37,34 @@ set(okws_version_major 3)
 set(okws_version_minor 2)
 set(okws_version_patchlevel 0)
 
-
 # TODO don't do this
 add_definitions(-DPATH_CPP="/usr/bin/cpp")
 
+INCLUDE(CheckSymbolExists)
+INCLUDE(CheckIncludeFiles)
+INCLUDE(CheckFunctionExists)
+include(CheckLibraryExists)
+CHECK_LIBRARY_EXISTS(mysqlclient mysql_real_connect mysql.h HAVE_MYSQL)
+CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BIND)
+CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BINDFUNCS)
+CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)
+CHECK_INCLUDE_FILES (memory.h HAVE_MEMORY_H)
+CHECK_INCLUDE_FILES (sys/types.h HAVE_SYS_TYPES_H)
+CHECK_INCLUDE_FILES (sys/stat.h HAVE_SYS_TYPES_H)
+CHECK_INCLUDE_FILES (stdlib.h STDC_HEADERS)
+CHECK_INCLUDE_FILES (strings.h HAVE_STRING_H)
+CHECK_INCLUDE_FILES (inttypes.h HAVE_INTTYPES_H)
+CHECK_INCLUDE_FILES (stdint.h HAVE_STDINT_H)
+CHECK_INCLUDE_FILES (unistd.h HAVE_UNISTD_H)
+CHECK_INCLUDE_FILES (expat.h HAVE_EXPAT)
+CHECK_INCLUDE_FILES (pthread.h HAVE_PTHREADS)
+CHECK_INCLUDE_FILES ("sys/param.h;sys/mount.h" HAVE_SYS_MOUNT_H)
+CHECK_SYMBOL_EXISTS (mpz_xor gmp.h HAVE_GMP_CXX_OPS)
+CHECK_INCLUDE_FILES (openssl/ssl.h HAVE_SSL)
+CHECK_INCLUDE_FILES (/usr/include/mysql/mysql.h HAVE_MYSQL)
+CHECK_SYMBOL_EXISTS (mysql_stmt_bind_param /usr/include/mysql/mysql.h HAVE_MYSQL_BINDFUNCS)
 
-# Generate a compile_comands.json
-# set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
-
-
-#option(ENABLE_CCACHE "enable caching compiler output" ON)
-# TODO flags to turn off DISTCC/CCACHE
-#option(ENABLE_DISTCC "Use distcc to speed up compilation." OFF)
-
-#find_package(PkgConfig REQUIRED)
-#pkg_search_module(OPENSSL REQUIRED openssl)
-#if( OPENSSL_FOUND )
-#    include_directories(${OPENSSL_INCLUDE_DIRS})
-#    message(STATUS "Using OpenSSL ${OPENSSL_VERSION}")
-#else()
-#    # Error
-#endif()
-#
-## TODO make work
-##find_program(GOLD_LINKER gold)
-##if(GOLD_LINKER)
-##    message(STATUS "using the gold linker ${GOLD_LINKER}")
-##    set(CMAKE_LINKER "${GOLD_LINKER}")
-##    set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}") # -B${CMAKE_SOURCE_DIR}/tools/build_system")
-##endif()
-#
-#find_library(SASS NAMES sass HINTS "/usr/local/lib")
-##set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} /usr/local/lib/)
-#
-#
-## enable ccache usage
-#find_program(CCACHE_FOUND ccache)
-#if(CCACHE_FOUND)
-#    message(STATUS "Using ccache for building")
-#    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-#    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-#endif(CCACHE_FOUND)
-#
-## todo switch to icecream
-## enable distcc/ccache usage
-## if(DISTCC_FOUND)
-##     if(CCACHE_FOUND)
-##         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "CCACHE_PREFIX=distcc ccache")
-##         message(STATUS "Enabling distcc builds in ccache")
-##     else()
-##         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE distcc)
-##         message(STATUS "Using distcc for building")
-##     endif()
-## endif()
-#
-## All the things to build
-#
-#add_subdirectory(libokdb)
-#add_subdirectory(libokutil)
-#add_subdirectory(libmembership)
-#add_subdirectory(libcache)
-#add_subdirectory(libokgrid)
-#add_subdirectory(libpbr)
-#add_subdirectory(libpubsub)
-#add_subdirectory(libgmock)
-#add_subdirectory(libbase)
-#add_subdirectory(liboktidy)
-#add_subdirectory(money)
-#add_subdirectory(libcupid)
-#add_subdirectory(libmodule)
-#add_subdirectory(libtest)
-#add_subdirectory(liboksoap)
-#add_subdirectory(libprot)
-#add_subdirectory(libconn)
-#add_subdirectory(rpcsrv)
-#add_subdirectory(dbprox)
-#add_subdirectory(websrv)
-#add_subdirectory(offline)
-#
-#add_subdirectory(dependencies)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/okwsconf.h.in ${CMAKE_CURRENT_BINARY_DIR}/okwsconf.h)
 
 add_subdirectory(xmlrpcc)
 add_subdirectory(pub)

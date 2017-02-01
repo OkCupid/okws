@@ -12,7 +12,7 @@ PreprocessTamedFiles(SRC HEADERS "${TAMED_SRC}")
 add_custom_target(libamt_pthread_headers DEPENDS ${HEADERS})
 
 include_directories(${GLOBAL_INCLUDES}
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/libamt/
                     ${OKWS_BINARY_DIR}/libamt/
                     ${OKWS_SOURCE_DIR}/libpub/

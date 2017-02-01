@@ -13,7 +13,7 @@ PreprocessTamedFiles(SRC HEADERS "${TAMED_SRC}")
 add_custom_target(libokssl_headers DEPENDS ${HEADERS})
 
 include_directories(${GLOBAL_INCLUDES}
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/libpub/
                     ${OKWS_BINARY_DIR}/libpub/
                     ${OKWS_SOURCE_DIR}/libahttp/
