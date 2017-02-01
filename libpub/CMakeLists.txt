@@ -51,11 +51,21 @@ PreprocessTamedFiles(SRC HEADERS "${TAMED_SRC}")
 OkwsPreprocessXmlProtFiles(LIBPROT_XML_C_SRC LIBPROT_XML_H_SRC "${XML_PROT_FILES}")
 
 bison_target(Parser parse.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cc)
-flex_target(Scanner scan.ll  ${CMAKE_CURRENT_BINARY_DIR}/scan.cc)
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/parse.h
+    COMMAND cp
+    ARGS    ${BISON_Parser_OUTPUT_HEADER} ${CMAKE_CURRENT_BINARY_DIR}/parse.h
+    DEPENDS ${BISON_Parser_OUTPUT_HEADER})
+
+flex_target(Scanner scan.ll ${CMAKE_CURRENT_BINARY_DIR}/scan.cc)
 add_flex_bison_dependency(Scanner Parser)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/okws_sfs.h.in ${CMAKE_CURRENT_BINARY_DIR}/okws_sfs.h)
 
-add_custom_target(libpub_headers DEPENDS ${HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/okws_sfs.h ${LIBPROT_XML_H_SRC})
+add_custom_target(libpub_headers DEPENDS
+    ${HEADERS}
+    ${CMAKE_CURRENT_BINARY_DIR}/okws_sfs.h
+    ${LIBPROT_XML_H_SRC} ${CMAKE_CURRENT_BINARY_DIR}/parse.h)
 
 include_directories(${GLOBAL_INCLUDES}
                     ${OKWS_SOURCE_DIR}/libokxml/
