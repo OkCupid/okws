@@ -31,7 +31,7 @@ add_custom_target(libezdb_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ezdb_ag.h 
 
 include_directories(${GLOBAL_INCLUDES}
                     /usr/include/mysql/
-                    ${OKWS_SOURCE_DIR}/
+                    ${OKWS_BINARY_DIR}/
                     ${OKWS_SOURCE_DIR}/libokxml/
                     ${OKWS_SOURCE_DIR}/libamt/
                     ${OKWS_SOURCE_DIR}/libaok/

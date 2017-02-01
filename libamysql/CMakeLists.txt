@@ -42,4 +42,5 @@ include_directories(${GLOBAL_INCLUDES}
 
 add_custom_target(libamysql_headers DEPENDS ${HEADERS})
 add_library(libamysql SHARED ${SRC} ${CMAKE_CURRENT_BINARY_DIR}/mystmt_ag.C)
+add_dependencies(libamysql libweb_headers)
 target_link_libraries(libamysql mysqlclient)
