@@ -17,17 +17,15 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-link_directories(${GLOBAL_LINKS}
-    /usr/local/lib/sfslite-1.2/shdbg)
+link_directories(${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/shdbg)
 
-flex_target(scanner scan.ll scan.cc)
-bison_target(parser parse.yy parse.cc)
-
+flex_target(scanner scan.ll ${CMAKE_CURRENT_BINARY_DIR}/scan.cc)
+bison_target(parser parse.yy ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
 
 add_executable(xmlrpcc ${CMAKE_CURRENT_SOURCE_DIR}/rpcc.C
     ${CMAKE_CURRENT_SOURCE_DIR}/genheader.C
     ${CMAKE_CURRENT_SOURCE_DIR}/gencfile.C
-    ${CMAKE_CURRENT_SOURCE_DIR}/scan.cc #TODO make these gen properly, not from old build
-    ${CMAKE_CURRENT_SOURCE_DIR}/parse.cc)
+    ${CMAKE_CURRENT_BINARY_DIR}/scan.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
 
 target_link_libraries(xmlrpcc PUBLIC async)
