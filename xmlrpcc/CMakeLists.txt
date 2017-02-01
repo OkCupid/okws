@@ -34,6 +34,6 @@ add_executable(xmlrpcc ${CMAKE_CURRENT_SOURCE_DIR}/rpcc.C
     ${CMAKE_CURRENT_BINARY_DIR}/scan.cc
     ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
 
-target_link_libraries(xmlrpcc PUBLIC async)
+target_link_libraries(xmlrpcc PUBLIC async dl)
 add_dependencies(xmlrpcc xmlrpcc_headers)
 
