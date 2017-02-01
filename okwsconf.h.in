@@ -1,0 +1,13 @@
+#cmakedefine HAVE_MALLOC_H 1
+#cmakedefine HAVE_SYS_MOUNT_H 1
+#cmakedefine HAVE_EXPAT 1
+#cmakedefine HAVE_GMP_CXX_OPS 1
+#cmakedefine HAVE_MEMORY_H 1
+#cmakedefine HAVE_MYSQL_BIND 1
+#cmakedefine HAVE_MYSQL 1
+#cmakedefine HAVE_MYSQL_BINDFUNCS 1
+#cmakedefine HAVE_PTHREADS 1
+#cmakedefine HAVE_SSL 1
+#cmakedefine HAVE_SSL_NOCOMP 1
+#cmakedefine OKWS_VERSION "3.1.38.1"
+#cmakedefine STDC_HEADERS 1
