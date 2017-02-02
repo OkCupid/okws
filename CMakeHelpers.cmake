@@ -2,11 +2,9 @@
 # Copyright OkCupid 2016
 # Moving the Build System into 2012
 
-set(OKWS_TAME /disk/build/ben/obj/opt/dependencies/sfslite-1.2/tame/tame)
-set(OKWS_RPCC /disk/build/ben/obj/opt/dependencies/sfslite-1.2/rpcc/rpcc)
+set(OKWS_TAME /disk/build/$ENV{USER}/obj/opt/dependencies/sfslite-1.2/tame/tame)
+set(OKWS_RPCC /disk/build/$ENV{USER}/obj/opt/dependencies/sfslite-1.2/rpcc/rpcc)
 set(OKWS_XMLRPCC ${OKWS_BINARY_DIR}/xmlrpcc/xmlrpcc)
-
-#set(XMLRPCC-COLLECT /usr/local/okws/bin/xmlrpcc-x-collect.pl)
 
 FUNCTION(PreprocessTamedFiles RET RET_HEADERS SOURCES)
     set(_result ${${RET}})
