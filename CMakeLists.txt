@@ -8,22 +8,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 set(OKWS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(OKWS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX=1") # one of ours
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wextra -Wall -Werror -Wno-unused-parameter")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers -Wno-missing-field-initializers")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments -Wno-error=deprecated-declarations ")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-function -Wno-mismatched-tags")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-overloaded-virtual -Wno-predefined-identifier-outside-function")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field -Wno-deprecated")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-#
-#
-## Debug build (Default)
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fcolor-diagnostics")
-#
-## Optimized build
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -fno-omit-frame-pointer")
-#
 set(GLOBAL_INCLUDES /usr/local/include/sfslite-1.2/shdbg/)
 
 set(GLOBAL_LINKS /usr/lib/ # ld.gold doesn't look here by default
@@ -81,3 +65,5 @@ add_subdirectory(libpub)
 add_subdirectory(libweb)
 add_subdirectory(ezdb)
 add_subdirectory(libredis)
+add_subdirectory(ssld)
+add_subdirectory(logd)

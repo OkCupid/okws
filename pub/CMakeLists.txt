@@ -10,7 +10,6 @@ set(TAMED_SRC cache.T
               pub3trace_replayer.T
               pubd.T
 	      pubserv.T)
-          #	      treestat.T)
 
 set(HEADERS "")
 
@@ -33,14 +32,15 @@ set(LINK_LIBS libpub aapp tame sfsmisc sfscrypt arpc safeptr async gmp dl z reso
 
 add_executable(pub3trace_replayer ${CMAKE_CURRENT_BINARY_DIR}/pub3trace_replayer.cxx)
 target_link_libraries(pub3trace_replayer PUBLIC ${LINK_LIBS})
+
 add_executable(pub3stage1 ${CMAKE_CURRENT_BINARY_DIR}/pub3stage1.cxx)
 target_link_libraries(pub3stage1 PUBLIC ${LINK_LIBS})
+
 add_executable(pub3astdumper ${CMAKE_CURRENT_SOURCE_DIR}/pub3astdumper.C)
 target_link_libraries(pub3astdumper PUBLIC ${LINK_LIBS})
+
 add_executable(pubd ${CMAKE_CURRENT_BINARY_DIR}/pubd.cxx
                     ${CMAKE_CURRENT_BINARY_DIR}/pubserv.cxx
                     ${CMAKE_CURRENT_BINARY_DIR}/cache.cxx)
 target_link_libraries(pubd PUBLIC ${LINK_LIBS})
-
-
-#add_library(pub SHARED ${SRC})
+add_dependencies(pubd librfn)
