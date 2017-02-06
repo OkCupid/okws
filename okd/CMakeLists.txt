@@ -32,8 +32,8 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
 link_directories(${GLOBAL_LINKS}
-    /usr/local/lib/sfslite-1.2/shdbg
-    /usr/local/dsdc/current/shdbg/lib/
+    /usr/local/lib/sfslite-1.2/shopt
+    /usr/local/dsdc/current/shopt/lib/
     /usr/include/mysql/
     /opt/stmd/lib/)
 

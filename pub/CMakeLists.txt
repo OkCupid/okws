@@ -24,7 +24,7 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
 link_directories(${GLOBAL_LINKS}
-    /usr/local/lib/sfslite-1.2/shdbg
+    /usr/local/lib/sfslite-1.2/shopt
     /opt/stmd/lib/)
 
 set(LINK_LIBS libpub aapp tame sfsmisc sfscrypt arpc safeptr async gmp dl z resolv snappy hiredis

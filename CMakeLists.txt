@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 set(OKWS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(OKWS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(GLOBAL_INCLUDES /usr/local/include/sfslite-1.2/shdbg/)
+set(GLOBAL_INCLUDES /usr/local/include/sfslite-1.2/shopt/)
 
 set(GLOBAL_LINKS /usr/lib/ # ld.gold doesn't look here by default
                  /usr/local/lib/) # ld.gold doesn't look here by default

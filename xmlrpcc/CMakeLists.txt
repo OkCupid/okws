@@ -26,7 +26,7 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-link_directories(${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/shdbg)
+link_directories(${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/shopt)
 
 add_executable(xmlrpcc ${CMAKE_CURRENT_SOURCE_DIR}/rpcc.C
     ${CMAKE_CURRENT_SOURCE_DIR}/genheader.C
