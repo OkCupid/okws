@@ -3,7 +3,7 @@
 # Moving the Build System into 2012
 
 set(OKWS_TAME /usr/local/lib/sfslite-1.2/shopt/tame)
-set(OKWS_RPCC /usr/local/lib/sfslite-1.2/rpcc)
+set(OKWS_RPCC /usr/local/lib/sfslite-1.2/shopt/rpcc)
 set(OKWS_XMLRPCC ${OKWS_BINARY_DIR}/xmlrpcc/xmlrpcc)
 
 FUNCTION(PreprocessTamedFiles RET RET_HEADERS SOURCES)
