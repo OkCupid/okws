@@ -27,13 +27,11 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
 link_directories(${GLOBAL_LINKS}
-                 /usr/local/lib/sfslite-1.2/shopt
-                 /usr/local/dsdc/current/shopt/lib/
+                 /usr/local/lib/sfslite-1.2/shopt/
                  /usr/include/mysql/
                  /opt/stmd/lib/)
 
-set(LINK_LIBS
-        libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
+set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
         tame sfsmisc sfscrypt arpc safeptr async gmp dl
         expat ssl crypto z resolv snappy hiredis c mysqlclient
         m gcc_s c nsl pcre pthread libamysql libamt_pthread libamt)
