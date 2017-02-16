@@ -103,12 +103,12 @@ FUNCTION(PreprocessXmlProtFiles CFILES HFILES SOURCES)
         endif()
         add_custom_command(
             OUTPUT ${h_file}
-            COMMAND ${OKWS_XMLRPCC}
+            COMMAND LD_LIBRARY_PATH=/usr/local/lib/sfslite-1.2/shopt/ ${OKWS_XMLRPCC}
             ARGS    -o ${h_file} -h ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file} ${OKWS_XMLRPCC})
         add_custom_command(
             OUTPUT ${c_file}
-            COMMAND ${OKWS_XMLRPCC}
+            COMMAND LD_LIBRARY_PATH=/usr/local/lib/sfslite-1.2/shopt/ ${OKWS_XMLRPCC}
             ARGS    -o ${c_file} -c ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
             DEPENDS ${h_file} ${OKWS_XMLRPCC})
         list(APPEND _c_result ${c_file})
