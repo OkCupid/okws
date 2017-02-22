@@ -81,7 +81,7 @@ RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
     }
 
     for (i = 0; i < m_startup_nodes.size(); i++) {
-        p_node = m_startup_nodes[i];
+        p_node = &m_startup_nodes[i];
         if (m_connection_cache[*p_node] == nullptr) {
             rcli = new refcounted<RedisCli>(RedisCli());
             twait {
@@ -161,8 +161,8 @@ RedisClusterCli::getSlotsCache(evb_t ev) {
     for (i = 0; i < m_startup_nodes.size(); i++) {
         twait {
             cli.connect(
-                m_startup_nodes[i]->first,
-                m_startup_nodes[i]->second,
+                m_startup_nodes[i].first,
+                m_startup_nodes[i].second,
                 mkevent(ok));
         }
         twait {
@@ -199,7 +199,7 @@ RedisClusterCli::connect(vec<node_t> startup_nodes, evb_t::ptr ev) {
     }
     for (i = 0; i < startup_nodes.size(); i++) {
         node_t node(startup_nodes[i].first, startup_nodes[i].second);
-        m_startup_nodes.push_back(&node);
+        m_startup_nodes.push_back(node);
     }
     twait {
         getSlotsCache(mkevent(ok));
