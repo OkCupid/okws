@@ -21,3 +21,4 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
 add_library(libamt SHARED ${SRC})
+add_dependencies(libamt libpub_headers)
