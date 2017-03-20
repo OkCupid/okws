@@ -22,18 +22,14 @@ add_custom_command(
 add_custom_target(xmlrpcc_headers DEPENDS ${HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/parse.h)
 flex_target(scanner scan.ll ${CMAKE_CURRENT_BINARY_DIR}/scan.cc)
 
-include_directories(${GLOBAL_INCLUDES}
-		    ${CMAKE_CURRENT_SOURCE_DIR}/
-		    ${CMAKE_CURRENT_BINARY_DIR}/)
-
-link_directories(${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/shopt)
+link_directories(${GLOBAL_LINKS})
+include_directories(${GLOBAL_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/)
 
 add_executable(xmlrpcc ${CMAKE_CURRENT_SOURCE_DIR}/rpcc.C
-    ${CMAKE_CURRENT_SOURCE_DIR}/genheader.C
-    ${CMAKE_CURRENT_SOURCE_DIR}/gencfile.C
-    ${CMAKE_CURRENT_BINARY_DIR}/scan.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
+                       ${CMAKE_CURRENT_SOURCE_DIR}/genheader.C
+                       ${CMAKE_CURRENT_SOURCE_DIR}/gencfile.C
+                       ${CMAKE_CURRENT_BINARY_DIR}/scan.cc
+                       ${CMAKE_CURRENT_BINARY_DIR}/parse.cc)
 
-target_link_libraries(xmlrpcc PUBLIC async dl)
+target_link_libraries(xmlrpcc PUBLIC async dl pcre Threads::Threads resolv)
 add_dependencies(xmlrpcc xmlrpcc_headers)
-

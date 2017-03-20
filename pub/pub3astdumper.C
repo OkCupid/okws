@@ -78,6 +78,7 @@ namespace {
         pub3::parse_ret_t pr;
         ptr<parser_t> parser = New refcounted<parser_t>();
         if (rfn) {
+            std::cout << "here!" << std::endl;
             parser->parse(rfn, &pr, jfn);
         } else {
             parser->parse(&pr, jfn);

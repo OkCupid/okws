@@ -2168,6 +2168,7 @@ okld_helper_t::set_user (const str &u)
 bool
 okld_helper_t::launch ()
 {
+    warn << _argv[0] << "\n";
   _x = axprt_unix_spawnv (_argv[0], _argv, 0, NULL, env ());
   _pid = axprt_unix_spawn_pid;
   return _x;

@@ -20,4 +20,6 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libokssl SHARED ${SRC})
+add_library(libokssl STATIC ${SRC})
+add_dependencies(libokssl libpub_headers)
+target_link_libraries(libokssl libpub ssl tame crypt crypto)

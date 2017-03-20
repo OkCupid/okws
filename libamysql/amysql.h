@@ -25,6 +25,7 @@
 #ifndef _LIBAMYSQL_AMYSQL_H
 #define _LIBAMYSQL_AMYSQL_H
 
+#include "web.h"
 #include "okwsconf.h"
 #include "okws_sfs.h"
 #include "mybind.h"

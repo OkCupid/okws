@@ -29,5 +29,6 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(librfn SHARED ${SRC})
-add_dependencies(librfn pub_headers)
+add_library(librfn STATIC ${SRC})
+add_dependencies(librfn libpub_headers pub_headers)
+target_link_libraries(librfn PUBLIC libahttp libamt_pthread libamysql libaok libokssl libokxml libpub libredis libweb)

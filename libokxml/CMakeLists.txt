@@ -33,5 +33,6 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libokxml SHARED ${SRC})
+add_library(libokxml STATIC ${SRC})
 add_dependencies(libokxml libokxml_headers libpub_headers)
+target_link_libraries(libokxml xml2 expat libpub)

@@ -20,4 +20,6 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libamt_pthread SHARED ${SRC})
+add_library(libamt_pthread STATIC ${SRC})
+add_dependencies(libamt_pthread libpub_headers)
+target_link_libraries(libamt_pthread PUBLIC libahttp libamt libamysql libaok libokssl libokxml libpub libredis librfn libweb)

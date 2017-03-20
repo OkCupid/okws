@@ -35,4 +35,6 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libahttp SHARED ${SRC})
+add_library(libahttp STATIC ${SRC})
+target_link_libraries(libahttp PUBLIC libamt libamt_pthread libamysql libaok libokssl libokxml
+    libpub libredis librfn libweb)

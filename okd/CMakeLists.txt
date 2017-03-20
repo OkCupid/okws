@@ -19,6 +19,7 @@ PreprocessTamedFiles(SRC HEADERS "${TAMED_SRC}")
 add_custom_target(okd_headers DEPENDS ${HEADERS})
 
 include_directories(${GLOBAL_INCLUDES}
+                    /usr/include/mysql/
                     ${OKWS_SOURCE_DIR}/libaok/
                     ${OKWS_BINARY_DIR}/libaok/
                     ${OKWS_SOURCE_DIR}/libpub/
@@ -31,17 +32,12 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-link_directories(${GLOBAL_LINKS}
-    /usr/local/lib/sfslite-1.2/shopt
-    /usr/local/dsdc/current/shopt/lib/
-    /usr/include/mysql/
-    /opt/stmd/lib/)
+link_directories(${GLOBAL_LINKS} /usr/include/mysql/ /opt/stmd/lib/)
 
-set(LINK_LIBS
-        libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
+set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
         tame sfsmisc sfscrypt arpc safeptr async gmp dl
-        expat ssl crypto z resolv snappy hiredis c mysqlclient
-        m gcc_s c nsl pcre pthread libamysql libamt_pthread libamt)
+        expat ssl crypto z resolv snappy hiredis mysqlclient
+        m nsl pcre pthread libamysql libamt_pthread libamt)
 
 
 add_executable(okd ${CMAKE_CURRENT_BINARY_DIR}/okd.cxx

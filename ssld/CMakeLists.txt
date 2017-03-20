@@ -26,16 +26,12 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-link_directories(${GLOBAL_LINKS}
-                 /usr/local/lib/sfslite-1.2/shopt/
-                 /usr/include/mysql/
-                 /opt/stmd/lib/)
+link_directories(${GLOBAL_LINKS} /usr/include/mysql/)
 
 set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
         tame sfsmisc sfscrypt arpc safeptr async gmp dl
-        expat ssl crypto z resolv snappy hiredis c mysqlclient
-        m gcc_s c nsl pcre pthread libamysql libamt_pthread libamt)
-
+        expat ssl okcrypt z resolv snappy hiredis mysqlclient
+        m nsl pcre pthread libamysql libamt_pthread libamt)
 
 add_executable(okssld ${CMAKE_CURRENT_BINARY_DIR}/okssld.cxx)
-target_link_libraries(okssld PUBLIC ${LINK_LIBS})
+target_link_libraries(okssld PUBLIC ${LINK_LIBS} openssl)

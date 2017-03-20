@@ -65,7 +65,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/okws_sfs.h.in ${CMAKE_CURRENT_BINARY_
 add_custom_target(libpub_headers DEPENDS
     ${HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/okws_sfs.h
-    ${LIBPROT_XML_H_SRC} ${CMAKE_CURRENT_BINARY_DIR}/parse.h)
+    ${LIBPROT_XML_H_SRC}
+    ${CMAKE_CURRENT_BINARY_DIR}/parse.h)
 
 include_directories(${GLOBAL_INCLUDES}
                     ${OKWS_SOURCE_DIR}/libokxml/
@@ -73,5 +74,8 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libpub SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
+add_library(libpub STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
 add_dependencies(libpub libpub_headers)
+target_link_libraries(libpub PUBLIC libweb crypt sfsmisc async dl crypt dl crypto dl arpc z sfsmisc libahttp
+                                    libamt_pthread libamysql libaok libokssl libokxml libredis librfn
+                                    libweb pcre pcrecpp dl)

@@ -23,21 +23,19 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-link_directories(${GLOBAL_LINKS}
-    /usr/local/lib/sfslite-1.2/shopt
-    /opt/stmd/lib/)
+link_directories(${GLOBAL_LINKS} /opt/stmd/lib/)
 
 set(LINK_LIBS libpub aapp tame sfsmisc sfscrypt arpc safeptr async gmp dl z resolv snappy hiredis
-    stdc++ m c nsl pcre pthread librfn libahttp)
+    stdc++ m nsl pcre pthread librfn libahttp)
 
-add_executable(pub3trace_replayer ${CMAKE_CURRENT_BINARY_DIR}/pub3trace_replayer.cxx)
-target_link_libraries(pub3trace_replayer PUBLIC ${LINK_LIBS})
+#add_executable(pub3trace_replayer ${CMAKE_CURRENT_BINARY_DIR}/pub3trace_replayer.cxx)
+#target_link_libraries(pub3trace_replayer PUBLIC ${LINK_LIBS})
+#
+#add_executable(pub3stage1 ${CMAKE_CURRENT_BINARY_DIR}/pub3stage1.cxx)
+#target_link_libraries(pub3stage1 PUBLIC ${LINK_LIBS})
 
-add_executable(pub3stage1 ${CMAKE_CURRENT_BINARY_DIR}/pub3stage1.cxx)
-target_link_libraries(pub3stage1 PUBLIC ${LINK_LIBS})
-
-add_executable(pub3astdumper ${CMAKE_CURRENT_SOURCE_DIR}/pub3astdumper.C)
-target_link_libraries(pub3astdumper PUBLIC ${LINK_LIBS})
+#add_executable(pub3astdumper ${CMAKE_CURRENT_SOURCE_DIR}/pub3astdumper.C)
+#target_link_libraries(pub3astdumper PUBLIC ${LINK_LIBS})
 
 add_executable(pubd ${CMAKE_CURRENT_BINARY_DIR}/pubd.cxx
                     ${CMAKE_CURRENT_BINARY_DIR}/pubserv.cxx

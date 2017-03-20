@@ -8,11 +8,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 set(OKWS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(OKWS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(GLOBAL_INCLUDES /usr/local/include/sfslite-1.2/shopt/)
-
-set(GLOBAL_LINKS /usr/lib/ # ld.gold doesn't look here by default
-                 /usr/local/lib/) # ld.gold doesn't look here by default
-
 # in source code replacements
 add_definitions(-DOKWS_CONFIG_DIR="\\"/usr/local/etc/okws\\"")
 add_definitions(-DOKWS_VERSION="\\"3.2.0\\"")
@@ -28,9 +23,30 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckFunctionExists)
 include(CheckLibraryExists)
-CHECK_LIBRARY_EXISTS(mysqlclient mysql_real_connect mysql.h HAVE_MYSQL)
-CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BIND)
-CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BINDFUNCS)
+
+set(GLOBAL_INCLUDES /home/u0/ben/okcrypt/.libs/ #TODO FIX THIS
+                    /usr/local/include/sfslite-1.2/hiperf/
+                    /usr/include/mysql/)
+
+set(GLOBAL_LINKS /usr/include/
+                 /usr/local/lib/sfslite-1.2/hiperf/
+                 /usr/lib/ # ld.gold doesn't look here by default
+                 /usr/local/lib/) # ld.gold doesn't look here by default
+
+set(CMAKE_REQUIRED_INCLUDES /usr/include/mysql)
+check_include_files(mysql.h HAVE_MYSQL_H)
+#set(CMAKE_REQUIRED_INCLUDES)
+if(HAVE_MYSQL_H)
+    # TODO fix these checks
+    set(HAVE_MYSQL True)
+    set(HAVE_MYSQL_BIND True)
+    set(HAVE_MYSQL_BINDFUNCS True)
+    #CHECK_LIBRARY_EXISTS(mysqlclient mysql_real_connect mysql.h HAVE_MYSQL)
+    #CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BIND)
+    #CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BINDFUNCS)
+    #CHECK_SYMBOL_EXISTS (mysql_stmt_bind_param /usr/include/mysql/mysql.h HAVE_MYSQL_BINDFUNCS)
+endif()
+
 CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILES (memory.h HAVE_MEMORY_H)
 CHECK_INCLUDE_FILES (sys/types.h HAVE_SYS_TYPES_H)
@@ -46,7 +62,6 @@ CHECK_INCLUDE_FILES ("sys/param.h;sys/mount.h" HAVE_SYS_MOUNT_H)
 CHECK_SYMBOL_EXISTS (mpz_xor gmp.h HAVE_GMP_CXX_OPS)
 CHECK_INCLUDE_FILES (openssl/ssl.h HAVE_SSL)
 CHECK_INCLUDE_FILES (/usr/include/mysql/mysql.h HAVE_MYSQL)
-CHECK_SYMBOL_EXISTS (mysql_stmt_bind_param /usr/include/mysql/mysql.h HAVE_MYSQL_BINDFUNCS)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/okwsconf.h.in ${CMAKE_CURRENT_BINARY_DIR}/okwsconf.h)
 
