@@ -20,6 +20,11 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libamt STATIC ${SRC})
-add_dependencies(libamt libpub_headers)
-target_link_libraries(libamt PUBLIC libahttp libamt_pthread libamysql libaok libokssl libokxml libpub libredis librfn libweb)
+if(STATIC)
+    add_library(libamt STATIC ${SRC})
+    add_dependencies(libamt libpub_headers)
+    target_link_libraries(libamt PUBLIC libahttp libamt_pthread libamysql libaok libokssl libokxml libpub libredis librfn libweb)
+else()
+    add_library(libamt SHARED ${SRC})
+    add_dependencies(libamt libpub_headers)
+endif()

@@ -34,4 +34,4 @@ set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub aap
         m nsl pcre pthread libamysql libamt_pthread libamt)
 
 add_executable(okssld ${CMAKE_CURRENT_BINARY_DIR}/okssld.cxx)
-target_link_libraries(okssld PUBLIC ${LINK_LIBS} openssl)
+target_link_libraries(okssld PUBLIC ${LINK_LIBS} OpenSSL::SSL)

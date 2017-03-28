@@ -74,8 +74,13 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libpub STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
-add_dependencies(libpub libpub_headers)
-target_link_libraries(libpub PUBLIC libweb crypt sfsmisc async dl crypt dl crypto dl arpc z sfsmisc libahttp
-                                    libamt_pthread libamysql libaok libokssl libokxml libredis librfn
-                                    libweb pcre pcrecpp dl)
+if(STATIC)
+    add_library(libpub STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
+    add_dependencies(libpub libpub_headers)
+    target_link_libraries(libpub PUBLIC libweb crypt sfsmisc async dl crypt dl crypto dl arpc z sfsmisc libahttp
+                                        libamt_pthread libamysql libaok libokssl libokxml libredis librfn
+                                        libweb pcre pcrecpp dl)
+else()
+    add_library(libpub SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
+    add_dependencies(libpub libpub_headers)
+endif()

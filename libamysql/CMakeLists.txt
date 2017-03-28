@@ -41,7 +41,13 @@ include_directories(${GLOBAL_INCLUDES}
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
 add_custom_target(libamysql_headers DEPENDS ${HEADERS})
-add_library(libamysql STATIC ${SRC} ${CMAKE_CURRENT_BINARY_DIR}/mystmt_ag.C)
-add_dependencies(libamysql libweb_headers)
-#target_link_libraries(libamysql mysqlclient mysql)
-target_link_libraries(libamysql PUBLIC libahttp libamt_pthread libamt libaok libokssl libokxml libpub libredis librfn libweb mysqlclient)
+
+if(STATIC)
+    add_library(libamysql STATIC ${SRC} ${CMAKE_CURRENT_BINARY_DIR}/mystmt_ag.C)
+    add_dependencies(libamysql libweb_headers)
+    target_link_libraries(libamysql PUBLIC libahttp libamt_pthread libamt libaok libokssl libokxml libpub libredis librfn libweb mysqlclient)
+else()
+    add_library(libamysql SHARED ${SRC} ${CMAKE_CURRENT_BINARY_DIR}/mystmt_ag.C)
+    add_dependencies(libamysql libweb_headers)
+    target_link_libraries(libamysql mysqlclient)
+endif()

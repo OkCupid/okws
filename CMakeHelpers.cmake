@@ -2,11 +2,13 @@
 # Copyright OkCupid 2016
 # Moving the Build System into 2012
 
-set(OKWS_TAME /usr/local/lib/sfslite-1.2/hiperf/tame)
-set(OKWS_RPCC /usr/local/lib/sfslite-1.2/hiperf/rpcc)
 set(OKWS_XMLRPCC ${OKWS_BINARY_DIR}/xmlrpcc/xmlrpcc)
 
 FUNCTION(PreprocessTamedFiles RET RET_HEADERS SOURCES)
+    set(OKWS_TAME /usr/local/lib/sfslite-1.2/shopt/tame)
+    if(STATIC)
+        set(OKWS_TAME /usr/local/lib/sfslite-1.2/hiperf/tame)
+    endif()
     set(_result ${${RET}})
     set(_result_headers ${${RET_HEADERS}})
     foreach(t_file ${SOURCES})
@@ -32,6 +34,10 @@ FUNCTION(PreprocessTamedFiles RET RET_HEADERS SOURCES)
 ENDFUNCTION()
 
 FUNCTION(OkwsPreprocessProtFiles CFILES HFILES SOURCES)
+    set(OKWS_RPCC /usr/local/lib/sfslite-1.2/shopt/rpcc)
+    if(STATIC)
+        set(OKWS_RPCC /usr/local/lib/sfslite-1.2/hiperf/rpcc)
+    endif()
     set(_c_result)
     set(_h_result)
     foreach(p_file ${SOURCES})
@@ -61,6 +67,10 @@ FUNCTION(OkwsPreprocessProtFiles CFILES HFILES SOURCES)
 ENDFUNCTION()
 
 FUNCTION(OkwsPreprocessXmlProtFiles CFILES HFILES SOURCES)
+    set(OKWS_RPCC /usr/local/lib/sfslite-1.2/shopt/rpcc)
+    if(STATIC)
+        set(OKWS_RPCC /usr/local/lib/sfslite-1.2/hiperf/rpcc)
+    endif()
     set(_c_result)
     set(_h_result)
     foreach(p_file ${SOURCES})
@@ -103,12 +113,12 @@ FUNCTION(PreprocessXmlProtFiles CFILES HFILES SOURCES)
         endif()
         add_custom_command(
             OUTPUT ${h_file}
-            COMMAND LD_LIBRARY_PATH=/usr/local/lib/sfslite-1.2/hiperf/ ${OKWS_XMLRPCC}
+            COMMAND LD_LIBRARY_PATH=/usr/local/lib/sfslite-1.2/shopt/ ${OKWS_XMLRPCC}
             ARGS    -o ${h_file} -h ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${p_file} ${OKWS_XMLRPCC})
         add_custom_command(
             OUTPUT ${c_file}
-            COMMAND LD_LIBRARY_PATH=/usr/local/lib/sfslite-1.2/hiperf/ ${OKWS_XMLRPCC}
+            COMMAND LD_LIBRARY_PATH=/usr/local/lib/sfslite-1.2/shopt/ ${OKWS_XMLRPCC}
             ARGS    -o ${c_file} -c ${CMAKE_CURRENT_SOURCE_DIR}/${p_file}
             DEPENDS ${h_file} ${OKWS_XMLRPCC})
         list(APPEND _c_result ${c_file})

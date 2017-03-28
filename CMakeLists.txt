@@ -19,28 +19,36 @@ set(okws_version_patchlevel 0)
 # TODO don't do this
 add_definitions(-DPATH_CPP="/usr/bin/cpp")
 
-INCLUDE(CheckSymbolExists)
-INCLUDE(CheckIncludeFiles)
-INCLUDE(CheckFunctionExists)
+include(CheckSymbolExists)
+include(CheckIncludeFiles)
+include(CheckFunctionExists)
 include(CheckLibraryExists)
 
 set(GLOBAL_INCLUDES /home/u0/ben/okcrypt/.libs/ #TODO FIX THIS
-                    /usr/local/include/sfslite-1.2/hiperf/
                     /usr/include/mysql/)
 
 set(GLOBAL_LINKS /usr/include/
-                 /usr/local/lib/sfslite-1.2/hiperf/
                  /usr/lib/ # ld.gold doesn't look here by default
                  /usr/local/lib/) # ld.gold doesn't look here by default
 
+find_package(OpenSSL)
+
+if(Static)
+    set(GLOBAL_LINKS ${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/hiperf/)
+    set(GLOBAL_INCLUDES ${GLOBAL_INCLUDES} /usr/local/include/sfslite-1.2/hiperf/)
+else()
+    set(GLOBAL_LINKS ${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/shopt/)
+    set(GLOBAL_INCLUDES ${GLOBAL_INCLUDES} /usr/local/include/sfslite-1.2/shopt/)
+endif()
+
+
 set(CMAKE_REQUIRED_INCLUDES /usr/include/mysql)
 check_include_files(mysql.h HAVE_MYSQL_H)
-#set(CMAKE_REQUIRED_INCLUDES)
 if(HAVE_MYSQL_H)
-    # TODO fix these checks
     set(HAVE_MYSQL True)
     set(HAVE_MYSQL_BIND True)
     set(HAVE_MYSQL_BINDFUNCS True)
+    # TODO fix these checks
     #CHECK_LIBRARY_EXISTS(mysqlclient mysql_real_connect mysql.h HAVE_MYSQL)
     #CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BIND)
     #CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BINDFUNCS)

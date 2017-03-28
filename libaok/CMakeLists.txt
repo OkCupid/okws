@@ -37,6 +37,11 @@ include_directories(${GLOBAL_INCLUDES}
                     ${CMAKE_CURRENT_SOURCE_DIR}/
 		    ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libaok STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${LIBPROT_C_SRC})
-add_dependencies(libaok libpub_headers libaok_headers)
-target_link_libraries(libaok PUBLIC snappy libahttp libamt_pthread libamt libokssl libokxml libpub libredis librfn libweb)
+if(STATIC)
+    add_library(libaok STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${LIBPROT_C_SRC})
+    add_dependencies(libaok libpub_headers libaok_headers)
+    target_link_libraries(libaok PUBLIC snappy libahttp libamt_pthread libamt libokssl libokxml libpub libredis librfn libweb)
+else()
+    add_library(libaok SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${LIBPROT_C_SRC})
+    add_dependencies(libaok libaok_headers)
+endif()
