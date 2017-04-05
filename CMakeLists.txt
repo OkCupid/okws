@@ -24,11 +24,11 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckLibraryExists)
 
-set(GLOBAL_INCLUDES /home/u0/ben/okcrypt/.libs/ #TODO FIX THIS
-                    /usr/include/mysql/)
+set(GLOBAL_INCLUDES
+    /usr/include/
+    /usr/include/mysql/)
 
-set(GLOBAL_LINKS /usr/include/
-                 /usr/lib/ # ld.gold doesn't look here by default
+set(GLOBAL_LINKS /usr/lib/ # ld.gold doesn't look here by default
                  /usr/local/lib/) # ld.gold doesn't look here by default
 
 find_package(OpenSSL)
