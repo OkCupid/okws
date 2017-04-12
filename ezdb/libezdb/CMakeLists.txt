@@ -43,10 +43,18 @@ include_directories(${GLOBAL_INCLUDES}
                     ${CMAKE_CURRENT_SOURCE_DIR}/
                     ${CMAKE_CURRENT_BINARY_DIR}/)
 
-add_library(libezdb STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/ezdb_ag.C)
-add_dependencies(libezdb libezdb_headers)
-target_link_libraries(libezdb mysqlclient)
+if(STATIC)
+    add_library(libezdb STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/ezdb_ag.C)
+    add_dependencies(libezdb libezdb_headers)
+    target_link_libraries(libezdb mysqlclient)
 
-add_library(libezdbsrv STATIC serve.C)
-add_dependencies(libezdbsrv libezdb_headers)
-target_link_libraries(libezdbsrv mysqlclient)
+    add_library(libezdbsrv STATIC serve.C)
+    add_dependencies(libezdbsrv libezdb_headers)
+    target_link_libraries(libezdbsrv mysqlclient)
+else()
+    add_library(libezdb SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/ezdb_ag.C)
+    add_dependencies(libezdb libezdb_headers)
+
+    add_library(libezdbsrv SHARED serve.C)
+    add_dependencies(libezdbsrv libezdb_headers)
+endif()
