@@ -47,10 +47,9 @@ namespace okssl {
     _ssl = NULL;
   }
 
-
-
   factory_t::factory_t ()
   {
+    // gets overwritten in okssld
     SSLeay_add_ssl_algorithms ();
     OPENSSL_CONST SSL_METHOD *meth = SSLv23_client_method ();
     SSL_load_error_strings ();
