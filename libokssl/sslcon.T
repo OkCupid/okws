@@ -11,18 +11,14 @@
 
 namespace okssl {
 
-  //-----------------------------------------------------------------------
-
   ptr<con_t>
   factory_t::alloc_con (int fd)
-  { 
+  {
     return New refcounted<con_t> (fd, SSL_new (_ctx));
-  } 
-
-  //-----------------------------------------------------------------------
+  }
 
   con_t::con_t (int fd, SSL *ssl)
-    : _fd (tame::rcfd_t::alloc (fd)), 
+    : _fd (tame::rcfd_t::alloc (fd)),
       _ssl (ssl),
       _rbio (BIO_new_socket (fd, BIO_NOCLOSE)),
       _wbio (BIO_new_socket (fd, BIO_NOCLOSE)),
@@ -44,7 +40,6 @@ namespace okssl {
     }
   }
 
-  //-----------------------------------------------------------------------
 
   con_t::~con_t ()
   {
@@ -53,7 +48,6 @@ namespace okssl {
   }
 
 
-  //-----------------------------------------------------------------------
 
   factory_t::factory_t ()
   {
@@ -62,10 +56,10 @@ namespace okssl {
     SSL_load_error_strings ();
     _ctx = SSL_CTX_new (meth);
     SSL_CTX_set_default_verify_paths (_ctx);
+    SSL_CTX_set_options(_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
     SSL_CTX_set_verify (_ctx, SSL_VERIFY_NONE, NULL);
   }
 
-  //-----------------------------------------------------------------------
 
   static ptr<factory_t> g_factory;
 
@@ -77,15 +71,12 @@ namespace okssl {
     return g_factory;
   }
 
-  //-----------------------------------------------------------------------
 
   factory_t::~factory_t () {} 
 
-  //-----------------------------------------------------------------------
 
   void con_t::drain_cancel () {}
 
-  //-----------------------------------------------------------------------
   
   tamed void
   con_t::ssl_connect (evb_t ev)
@@ -106,7 +97,6 @@ namespace okssl {
 
   }
 
-  //-----------------------------------------------------------------------
   
 #define BUFSZ 1024
 
@@ -152,7 +142,6 @@ namespace okssl {
     ev->trigger (ret);
   }
 
-  //-----------------------------------------------------------------------
 
   tamed void
   con_t::drain_to_network_T (ptr<strbuf> bp, evb_t ev)
@@ -246,7 +235,6 @@ namespace okssl {
   }
 
 
-  //-----------------------------------------------------------------------
 
   tamed void
   con_t::read (void *out, size_t len, evssz_t ev)
@@ -357,7 +345,6 @@ namespace okssl {
   }
 #undef BUFSZ
 
-  //-----------------------------------------------------------------------
 
   abuf_src_t *
   con_t::alloc_abuf_src ()
@@ -365,7 +352,6 @@ namespace okssl {
     return New asrc_t (mkref (this));
   }
   
-  //-----------------------------------------------------------------------
 
   void
   asrc_t::init (cbv abuf_cb)
@@ -381,7 +367,6 @@ namespace okssl {
     read_loop ();
   }
 
-  //-----------------------------------------------------------------------
 
   tamed void
   asrc_t::read_loop ()
@@ -407,10 +392,10 @@ namespace okssl {
 
       iov = _uio.get_iov ();
       twait { c->read (iov[0].iov_base, iov[0].iov_len, mkevent (rc)); }
-      
-      if (*destroyed) 
+
+      if (*destroyed)
 	return;
-      
+
       if (rc > 0) {
 	_uio.account_for_new_bytes (rc);
       } else if (rc == 0) {
@@ -427,13 +412,12 @@ namespace okssl {
       // the above callback might have freed memory out from underneath
       // us (if everything got deallocated).  In that case, we gotta
       // jet out of here.
-      if (*destroyed) 
+      if (*destroyed)
 	return;
     }
     _running = false;
   }
-  
-  //-----------------------------------------------------------------------
+
 
   abuf_indata_t
   asrc_t::getdata ()
@@ -442,7 +426,6 @@ namespace okssl {
     else return abuf_indata_t (&_uio);
   }
 
-  //-----------------------------------------------------------------------
 
   asrc_t::asrc_t (ptr<con_t> c)
     : _con (c),
@@ -452,9 +435,8 @@ namespace okssl {
       _running (false),
       _destroyed (New refcounted<bool> (false)),
       _current (0) {}
-      
 
-  //-----------------------------------------------------------------------
+
 
   void
   asrc_t::finish ()
@@ -462,7 +444,6 @@ namespace okssl {
     _go = false;
   }
 
-  //-----------------------------------------------------------------------
 
   void
   asrc_t::cancel ()
@@ -470,7 +451,6 @@ namespace okssl {
     _go = false;
   }
 
-  //-----------------------------------------------------------------------
 
   void
   asrc_t::rembytes (int n)
@@ -478,7 +458,6 @@ namespace okssl {
     _uio.rembytes (n);
   }
 
-  //-----------------------------------------------------------------------
 
   asrc_t::~asrc_t ()
   {
@@ -486,7 +465,6 @@ namespace okssl {
       *_destroyed = true;
   }
 
-  //-----------------------------------------------------------------------
 
 };
 
