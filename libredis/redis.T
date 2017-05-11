@@ -165,26 +165,29 @@ RedisClusterCli::getSlotsCache(evb_t ev) {
                 m_startup_nodes[i].second,
                 mkevent(ok));
         }
-        twait {
-            cli.runCmd({"CLUSTER", "SLOTS"}, mkevent(res));
-        }
-        if (res.is_err()) {
-            warn << "BWB_WARN. status: " << res.status() << "\n";
-            continue; // only freak out if no nodes are a success.
-        } else {
-            for (pub3::obj_t slot : *res.obj().to_list()) {
-                for (int slot_id = slot[0].to_int();
-                     slot_id <= slot[1].to_int();
-                     slot_id++) {
-                    node_t node(slot[2][0].to_str(), slot[2][1].to_int());
-                    m_slots.insert(slot_id, New refcounted<node_t>(node));
-                }
+        if (ok) {
+            twait {
+                cli.runCmd({"CLUSTER", "SLOTS"}, mkevent(res));
             }
-            m_dirty_tables = false;
-            ev->trigger(true);
-            return;
+            if (res.is_err()) {
+                warn << "BWB_WARN. status: " << res.status() << "\n";
+                continue; // only freak out if no nodes are a success.
+            } else {
+                for (pub3::obj_t slot : *res.obj().to_list()) {
+                    for (int slot_id = slot[0].to_int();
+                         slot_id <= slot[1].to_int();
+                         slot_id++) {
+                        node_t node(slot[2][0].to_str(), slot[2][1].to_int());
+                        m_slots.insert(slot_id, New refcounted<node_t>(node));
+                    }
+                }
+                m_dirty_tables = false;
+                ev->trigger(true);
+                return;
+            }
         }
     }
+
     // No nodes can get the slots cache. Have the startup clusters all moved?
     warn << "BWB_ERROR: RedisClusterCli could not find a single active node \n";
     ev->trigger(false);
