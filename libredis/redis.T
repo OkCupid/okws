@@ -73,37 +73,35 @@ crc16(const char* buf, int len) {
 tamed void
 RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
     tvars {
-        node_t* p_node;
+        ptr<node_t> p_node;
         bool conn_ok(true);
         redis_res_t res;
         ptr<RedisCli> rcli;
         size_t i;
     }
-
     for (i = 0; i < m_startup_nodes.size(); i++) {
-        p_node = &m_startup_nodes[i];
-        if (m_connection_cache[*p_node] == nullptr) {
-            rcli = new refcounted<RedisCli>(RedisCli());
-            twait {
-                rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
-            }
-        } else {
-            rcli = *m_connection_cache[*p_node];
+        p_node = New refcounted<node_t>(m_startup_nodes[i]);
+        rcli = new refcounted<RedisCli>(RedisCli());
+        rcli->setReconnect(false);
+        twait {
+            rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
         }
         if (conn_ok) {
             twait {
                 rcli->runCmd({"PING"}, mkevent(res));
             }
             if (!res.is_err()) {
-                rcli->disconnect();
-            } else if (res.obj().to_str() != "PONG") {
-                rcli->disconnect();
-            } else {
                 ev->trigger(rcli);
+                return;
+            } else {
+                rcli->disconnect();
             }
+        } else {
+            rcli->disconnect();
         }
     }
     ev->trigger(nullptr);
+    return;
 }
 
 tamed void
@@ -124,16 +122,30 @@ RedisClusterCli::getConnFromSlot(uint16_t slot_id, redis_ev_t::ptr ev) {
     } else {
         if (m_connection_cache[*p_node] != nullptr) {
             rcli = *m_connection_cache[*p_node];
-        } else {
-            rcli = new refcounted<RedisCli>(RedisCli());
-            twait {
-                rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
-            }
-            if (conn_ok) {
-                m_connection_cache.insert(*p_node, rcli);
+            if(rcli) {
+                if (rcli->isConnected()) {
+                    ev->trigger(rcli);
+                    return;
+                }
             }
         }
-        ev->trigger(rcli);
+
+        rcli = new refcounted<RedisCli>(RedisCli());
+        rcli->setReconnect(false);
+        twait {
+            rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
+        }
+
+        if (conn_ok) {
+            if (rcli->isConnected()) {
+                m_connection_cache.insert(*p_node, rcli);
+                ev->trigger(rcli);
+                return;
+            }
+        }
+    }
+    twait {
+        getRandomConn(ev);
     }
     return;
 }
@@ -170,15 +182,13 @@ RedisClusterCli::getSlotsCache(evb_t ev) {
                 cli.runCmd({"CLUSTER", "SLOTS"}, mkevent(res));
             }
             if (res.is_err()) {
-                warn << "BWB_WARN. status: " << res.status() << "\n";
                 continue; // only freak out if no nodes are a success.
             } else {
+                m_slots.clear();
                 for (pub3::obj_t slot : *res.obj().to_list()) {
-                    for (int slot_id = slot[0].to_int();
-                         slot_id <= slot[1].to_int();
-                         slot_id++) {
+                    for (int slot_id = slot[0].to_int(); slot_id <= slot[1].to_int(); slot_id++) {
                         node_t node(slot[2][0].to_str(), slot[2][1].to_int());
-                        m_slots.insert(slot_id, New refcounted<node_t>(node));
+                        m_slots.insert((uint16_t)slot_id, New refcounted<node_t>(node));
                     }
                 }
                 m_dirty_tables = false;
@@ -216,8 +226,6 @@ RedisClusterCli::runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev) {
     runCmd(cmds, ev);
 }
 
-//------------------------------------------------------------------------
-
 tamed void
 RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
     tvars {
@@ -227,26 +235,35 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
         vec<str> ncmds;
         bool random_node(false);
         bool asking(false);
-        uint16_t ttl(10);
+        uint16_t ttl(32);
         int32_t slot;
         int32_t port;
-        bool noop;
+        bool ok;
         vec<str> status_parts;
+        strbuf cmdbuf;
     }
 
     for (size_t i = 0; i < cmds.size(); i++) {
+        cmdbuf << cmds[i] << " ";
         ncmds.push_back(cmds[i]);
     }
-
+    if (m_dirty_tables) {
+         twait {
+            getSlotsCache(mkevent(ok));
+        }
+        if(!ok) {
+            warn << "BWB_ERROR: Failed to refresh Redis Cluster slot cache. Unrecoverable. Redis might be out of space\n";
+            res.set(true, "not connected"); //  true sets it to being an error.
+            if (ev) {
+                ev->trigger(res);
+            }
+            return;
+        }
+    }
     while (ttl > 0) {
         ttl--;
-        if (m_dirty_tables) {
-            twait {
-                getSlotsCache(mkevent(noop));
-            }
-        }
-        keyslot = assignKeyslot(cmds[1].cstr(), cmds[1].len());
         if (!random_node) {
+            keyslot = assignKeyslot(ncmds[1].cstr(), ncmds[1].len());
             twait {
                 getConnFromSlot(keyslot, mkevent(cli));
             }
@@ -254,46 +271,46 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
             twait {
                 getRandomConn(mkevent(cli));
             }
-        }
-
-        if (!cli) {
-            warn << "BWB_ERROR: Connection failed to Redis Cluster. Unrecoverable. Redis might be out of space\n";
-            res.set(true, "not connected"); //  true sets it to being an error.
-            if (ev) {
-                ev->trigger(res);
+            if (cli) {
+                random_node = false;
             }
-            return;
         }
-
-        if (asking) {
-            asking = false;
+        if (cli) {
+            if (asking) {
+                asking = false;
+                twait {
+                    cli->runCmd({"ASKING"}, mkevent(res));
+                }
+            }
             twait {
-                cli->runCmd({"ASKING"}, mkevent(res));
+                cli->runCmd(ncmds, mkevent(res));
             }
-        }
-        twait {
-            cli->runCmd(ncmds, mkevent(res));
-        }
-        if (res.is_err()) {
-            warn << "BWB_WARN: Error with redis cluster connection\n";
-            split(&status_parts, rxx("[ :]"), res.status());
-            if (status_parts[0] == "ASK") {
-                // http://redis.io/commands/cluster-setslot
-                asking = true;
-            } else {
-                if (status_parts[0] == "MOVED") {
+
+            if (res.is_err()) {
+                split(&status_parts, rxx("[ :]"), res.status());
+                res.set(false, "connected");
+                if (status_parts[0] == "CLUSTERDOWN") {
+                    res.set(true, "Cluster is Down"); //  true sets it to being an error.
+                } else if (status_parts[0] == "ASK") {
+                    // http://redis.io/commands/cluster-setslot
+                    asking = true;
+                } else if (status_parts[0] == "MOVED") {
                     m_dirty_tables = true;
+                    status_parts[1].to_int32(&slot);
+                    status_parts[3].to_int32(&port);
+                    node_t n(status_parts[2], port);
+                    m_slots.remove((uint16_t)slot);
+                    m_slots.insert((uint16_t)slot, New refcounted<node_t>(n));
                 } else {
                     random_node = true;
                 }
-                status_parts[1].to_int32(&slot);
-                status_parts[3].to_int32(&port);
-                node_t n(status_parts[2], port);
-                m_slots.insert(slot, New refcounted<node_t>(n));
+            } else {
+                ev->trigger(res);
+                return;
             }
-        } else {
-            ev->trigger(res);
-            return;
+            twait {
+                delaycb(1, 0, mkevent());
+            }
         }
     }
     ev->trigger(res);
@@ -341,7 +358,9 @@ RedisCli::connect(str host, uint port, evb_t::ptr ev) {
     m_c = redisAsyncConnectBindWithReuse(host.cstr(), port, "0.0.0.0");
     if (m_c->err) {
         rcwarn << "connect error: " << m_c->errstr << "\n";
-        delaycb(5, 0, wrap(this, &RedisCli::reconnect));
+        if(m_recon) {
+            delaycb(5, 0, wrap(this, &RedisCli::reconnect));
+        }
         if (ev) {
             ev->trigger(false);
         }
@@ -350,7 +369,9 @@ RedisCli::connect(str host, uint port, evb_t::ptr ev) {
     status = redisLibasyncAttach(m_c);
     if (status != REDIS_OK) {
         rcwarn << "async attach error: " << status << "\n";
-        delaycb(5, 0, wrap(this, &RedisCli::reconnect));
+        if(m_recon) {
+            delaycb(5, 0, wrap(this, &RedisCli::reconnect));
+        }
         if (ev) {
             ev->trigger(false);
         }
@@ -364,7 +385,9 @@ RedisCli::connect(str host, uint port, evb_t::ptr ev) {
     }
     if (status != REDIS_OK) {
         rcwarn << "callback error: " << m_c->errstr << "\n";
-        delaycb(5, 0, wrap(this, &RedisCli::reconnect));
+        if(m_recon) {
+            delaycb(5, 0, wrap(this, &RedisCli::reconnect));
+        }
         if (ev) {
             ev->trigger(false);
         }
@@ -438,6 +461,7 @@ RedisCli::runCmd(
         ccharcmds.push_back(s.first);
         lens.push_back(s.second);
     }
+    warn << "\n";
 
     twait {
         if (ev) {
@@ -585,17 +609,21 @@ RedisCli::disconnectHandler(int status) {
     }
     // no need to free m_c on successful disconnect, it will already have
     // been freed
-    g_dispatcher.removeCli(m_c);
-    m_connected = false;
-    m_c = nullptr;
+    if (m_c) {
+        g_dispatcher.removeCli(m_c);
+        m_connected = false;
+        m_c = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------
 
 void
 RedisCli::reconnect() {
-    m_reconnecting = true;
-    connect(m_host, m_port);
+    if (m_recon) {
+        m_reconnecting = true;
+        connect(m_host, m_port);
+    }
 }
 
 //------------------------------------------------------------------------
