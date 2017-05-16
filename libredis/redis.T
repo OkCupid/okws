@@ -461,7 +461,6 @@ RedisCli::runCmd(
         ccharcmds.push_back(s.first);
         lens.push_back(s.second);
     }
-    warn << "\n";
 
     twait {
         if (ev) {
