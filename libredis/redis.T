@@ -183,6 +183,8 @@ RedisClusterCli::getSlotsCache(evb_t ev) {
             }
             if (res.is_err()) {
                 continue; // only freak out if no nodes are a success.
+            } else if (res.obj().to_list()->size() == 0) {
+                continue; // Not a member of the cluster yet
             } else {
                 m_slots.clear();
                 for (pub3::obj_t slot : *res.obj().to_list()) {
@@ -692,8 +694,9 @@ RedisDispatcher::useReplyEv(uint64_t key) {
 void
 gDisconnectHandler(const redisAsyncContext* c, int status) {
     RedisCli* cli = g_dispatcher.useCli(c);
-    assert(cli);
-    cli->disconnectHandler(status);
+    if (cli) {
+        cli->disconnectHandler(status);
+    }
 }
 
 void
