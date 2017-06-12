@@ -79,7 +79,7 @@ if(STATIC)
     add_dependencies(libpub libpub_headers)
     target_link_libraries(libpub PUBLIC libweb crypt sfsmisc async dl crypt dl crypto dl arpc z sfsmisc libahttp
                                         libamt_pthread libamysql libaok libokssl libokxml libredis librfn
-                                        libweb pcre pcrecpp dl)
+                                        libweb ${PCRE_LIBRARIES} dl)
 else()
     add_library(libpub SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
     add_dependencies(libpub libpub_headers)

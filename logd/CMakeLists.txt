@@ -30,7 +30,7 @@ link_directories(${GLOBAL_LINKS}
 set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub
         aapp tame sfsmisc sfscrypt arpc safeptr async gmp dl
         expat ssl crypto z resolv snappy hiredis mysqlclient
-        m nsl pcre pthread libamysql libamt_pthread libamt)
+        m nsl ${PCRE_LIBRARIES} pthread libamysql libamt_pthread libamt)
 
 add_executable(logd ${SRC})
 target_link_libraries(logd PUBLIC ${LINK_LIBS})

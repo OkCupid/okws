@@ -31,7 +31,7 @@ link_directories(${GLOBAL_LINKS} /usr/include/mysql/)
 set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
         tame sfsmisc sfscrypt arpc safeptr async gmp dl
         expat ssl okcrypt z resolv snappy hiredis mysqlclient
-        m nsl pcre pthread libamysql libamt_pthread libamt)
+        m nsl ${PCRE_LIBRARIES} pthread libamysql libamt_pthread libamt)
 
 add_executable(okssld ${CMAKE_CURRENT_BINARY_DIR}/okssld.cxx)
 target_link_libraries(okssld PUBLIC ${LINK_LIBS} OpenSSL::SSL)
