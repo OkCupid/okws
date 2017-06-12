@@ -203,7 +203,7 @@ class RedisClusterCli {
         uint16_t m_max_cached_connections;
         uint16_t m_ttl;
         qhash<node_t, ptr<RedisCli>> m_connection_cache;
-        vec<node_t*> m_startup_nodes;
+        vec<node_t> m_startup_nodes;
         qhash<uint16_t, ptr<node_t>> m_slots;
         bool m_dirty_tables;
 };

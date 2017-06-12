@@ -568,6 +568,8 @@ namespace okssl {
       SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_DH_USE);
       SSL_CTX_set_options(_ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
 
+      SSL_CTX_set_options(_ssl_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+
       SSL_CTX_set_tmp_ecdh(_ssl_ctx, 
                            EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
 
