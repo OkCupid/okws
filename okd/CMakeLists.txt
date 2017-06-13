@@ -37,7 +37,7 @@ link_directories(${GLOBAL_LINKS} /usr/include/mysql/ /opt/stmd/lib/)
 set(LINK_LIBS libezdb libaok librfn libweb libokssl libokxml libahttp libpub aapp
   tame sfsmisc sfscrypt arpc safeptr async ${GMP_LIBRARIES} dl
   ${EXPAT_LIBRARIES} ${SSL_LIBRARIES} ${CRYPT_LIBRARIES} ${ZLIB_LIBRARIES} ${RESOLV_LIBRARIES} ${SNAPPY_LIBRARIES} ${HIREDIS_LIBRARIES} ${MYSQLCLIENT_LIBRARIES}
-        m nsl ${PCRE_LIBRARIES} pthread libamysql libamt_pthread libamt)
+        m ${PCRE_LIBRARIES} pthread libamysql libamt_pthread libamt)
 
 
 add_executable(okd ${CMAKE_CURRENT_BINARY_DIR}/okd.cxx

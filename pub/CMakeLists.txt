@@ -26,7 +26,7 @@ include_directories(${GLOBAL_INCLUDES}
 link_directories(${GLOBAL_LINKS} /opt/stmd/lib/)
 
 set(LINK_LIBS libpub aapp tame sfsmisc sfscrypt arpc safeptr async ${GMP_LIBRARIES} dl ${ZLIB_LIBRARIES} ${RESOLV_LIBRARIES} ${SNAPPY_LIBRARIES} ${HIREDIS_LIBRARIES}
-  stdc++ m nsl ${PCRE_LIBRARIES} pthread librfn libahttp)
+  stdc++ m ${SSL_LIBRARIES} ${PCRE_LIBRARIES} pthread librfn libahttp)
 
 #add_executable(pub3trace_replayer ${CMAKE_CURRENT_BINARY_DIR}/pub3trace_replayer.cxx)
 #target_link_libraries(pub3trace_replayer PUBLIC ${LINK_LIBS})
