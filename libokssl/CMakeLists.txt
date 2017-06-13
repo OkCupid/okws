@@ -23,7 +23,7 @@ include_directories(${GLOBAL_INCLUDES}
 if(STATIC)
     add_library(libokssl STATIC ${SRC})
     add_dependencies(libokssl libpub_headers)
-    target_link_libraries(libokssl libpub ssl tame crypt crypto)
+    target_link_libraries(libokssl libpub ${SSL_LIBRARIES} tame ${CRYPT_LIBRARIES})
 else()
     add_library(libokssl SHARED ${SRC})
     add_dependencies(libokssl libpub_headers)

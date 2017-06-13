@@ -77,9 +77,9 @@ include_directories(${GLOBAL_INCLUDES}
 if(STATIC)
     add_library(libpub STATIC ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
     add_dependencies(libpub libpub_headers)
-    target_link_libraries(libpub PUBLIC libweb crypt sfsmisc async dl crypt dl crypto dl arpc z sfsmisc libahttp
+    target_link_libraries(libpub PUBLIC libweb ${CRYPT_LIBRARIES} sfsmisc async dl ${CRYPT_LIBRARIES} dl ${CRYPT_LIBRARIES} dl arpc ${ZLIB_LIBRARIES} sfsmisc libahttp
                                         libamt_pthread libamysql libaok libokssl libokxml libredis librfn
-                                        libweb ${PCRE_LIBRARIES} dl)
+                                        libweb ${PCRE_LIBRARIES} dl ${GMP_LIBRARIES})
 else()
     add_library(libpub SHARED ${SRC} ${LIBPROT_XML_C_SRC} ${BISON_Parser_OUTPUTS} ${FLEX_Scanner_OUTPUTS})
     add_dependencies(libpub libpub_headers)

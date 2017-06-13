@@ -31,8 +31,6 @@ set(GLOBAL_INCLUDES
 set(GLOBAL_LINKS /usr/lib/ # ld.gold doesn't look here by default
                  /usr/local/lib/) # ld.gold doesn't look here by default
 
-find_package(OpenSSL)
-
 if(Static)
     set(GLOBAL_LINKS ${GLOBAL_LINKS} /usr/local/lib/sfslite-1.2/hiperf/)
     set(GLOBAL_INCLUDES ${GLOBAL_INCLUDES} /usr/local/include/sfslite-1.2/hiperf/)
@@ -48,11 +46,6 @@ if(HAVE_MYSQL_H)
     set(HAVE_MYSQL True)
     set(HAVE_MYSQL_BIND True)
     set(HAVE_MYSQL_BINDFUNCS True)
-    # TODO fix these checks
-    #CHECK_LIBRARY_EXISTS(mysqlclient mysql_real_connect mysql.h HAVE_MYSQL)
-    #CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BIND)
-    #CHECK_LIBRARY_EXISTS(mysqlclient mysql_stmt_bind_param mysql.h HAVE_MYSQL_BINDFUNCS)
-    #CHECK_SYMBOL_EXISTS (mysql_stmt_bind_param /usr/include/mysql/mysql.h HAVE_MYSQL_BINDFUNCS)
 endif()
 
 CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)

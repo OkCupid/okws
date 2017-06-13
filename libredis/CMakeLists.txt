@@ -19,7 +19,7 @@ include_directories(${GLOBAL_INCLUDES}
 
 if(STATIC)
     add_library(libredis STATIC ${SRC})
-    target_link_libraries(libredis hiredis)
+    target_link_libraries(libredis ${HIREDIS_LIBRARIES})
     add_dependencies(libredis libpub_headers)
 else()
     add_library(libredis SHARED ${SRC})

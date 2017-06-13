@@ -33,7 +33,7 @@ include_directories(${GLOBAL_INCLUDES}
 if(STATIC)
     add_library(libweb STATIC ${SRC} ${LIBPROT_XML_C_SRC})
     add_dependencies(libweb libweb_headers)
-    target_link_libraries(libweb PUBLIC snappy libahttp libamt_pthread libamysql libaok libokssl libokxml libpub libredis librfn)
+    target_link_libraries(libweb PUBLIC ${SNAPPY_LIBRARIES} libahttp libamt_pthread libamysql libaok libokssl libokxml libpub libredis librfn)
 else()
     add_library(libweb SHARED ${SRC} ${LIBPROT_XML_C_SRC})
     add_dependencies(libweb libweb_headers)

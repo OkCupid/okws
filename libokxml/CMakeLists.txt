@@ -36,7 +36,7 @@ include_directories(${GLOBAL_INCLUDES}
 if(STATIC)
     add_library(libokxml STATIC ${SRC})
     add_dependencies(libokxml libokxml_headers libpub_headers)
-    target_link_libraries(libokxml xml2 expat libpub)
+    target_link_libraries(libokxml ${XML2_LIBRARIES} ${EXPAT_LIBRARIES} libpub)
 else()
     add_library(libokxml SHARED ${SRC})
     add_dependencies(libokxml libokxml_headers libpub_headers)
