@@ -77,8 +77,8 @@ program EZDB_PROG {
 		EZDB_FINISH(sth_id_t) = 3;
 
     	} = 1;
-} = 38777;
+} = 30077;
 
 };
 
-%#define EZDBD_PORT 38777
+%#define EZDBD_PORT 30077
