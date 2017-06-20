@@ -55,12 +55,13 @@ typedef event<redis_res_t>::ref ev_redis_res_t;
 class RedisCli {
     public:
         RedisCli()
-            : m_host(""), m_port(0), m_c(nullptr) , m_connected(false),
-            m_reconnecting(false), m_name("RedisCli")
+            : m_host(""), m_port(0), m_c(nullptr), m_bufsize(1024*16),
+            m_connected(false), m_reconnecting(false), m_name("RedisCli")
         {}
         virtual ~RedisCli() { disconnect(); }
 
         void setReconnect(bool recon) { m_recon = recon; }
+        void setBufSize(uint32_t size) { m_bufsize = size; }
         void setTimeout(time_t to) { m_timeout = to; }
 
         void connect(str host, uint port, evb_t::ptr ev=nullptr, CLOSURE);
@@ -109,6 +110,7 @@ class RedisCli {
         str m_host;
         uint m_port;
         redisAsyncContext *m_c;
+        uint32_t m_bufsize;
         bool m_connected, m_reconnecting;
         str m_name;
         time_t m_timeout = 86400;
@@ -176,7 +178,7 @@ template<> struct equals<node_t> {
 // This is the tamed redis cluster client implementation.
 class RedisClusterCli {
     public:
-        RedisClusterCli() : m_max_cached_connections(50), m_ttl(10) {}
+        RedisClusterCli() : m_max_cached_connections(50), m_ttl(10), m_bufsize(1024*16) {}
         virtual ~RedisClusterCli() {
             m_max_cached_connections = 0;
             disconnect();
@@ -191,6 +193,7 @@ class RedisClusterCli {
                     CLOSURE);
         void runCmd(std::initializer_list<std::pair<const char*,size_t>> l,
                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+        void setBufSize(uint32_t size) { m_bufsize = size; }
 
     private:
         // Functions
@@ -202,6 +205,7 @@ class RedisClusterCli {
         // Member variables
         uint16_t m_max_cached_connections;
         uint16_t m_ttl;
+        uint32_t m_bufsize;
         qhash<node_t, ptr<RedisCli>> m_connection_cache;
         vec<node_t> m_startup_nodes;
         qhash<uint16_t, ptr<node_t>> m_slots;

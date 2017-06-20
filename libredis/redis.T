@@ -83,6 +83,7 @@ RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
         p_node = New refcounted<node_t>(m_startup_nodes[i]);
         rcli = new refcounted<RedisCli>(RedisCli());
         rcli->setReconnect(false);
+        rcli->setBufSize(m_bufsize);
         twait {
             rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
         }
@@ -132,6 +133,7 @@ RedisClusterCli::getConnFromSlot(uint16_t slot_id, redis_ev_t::ptr ev) {
 
         rcli = new refcounted<RedisCli>(RedisCli());
         rcli->setReconnect(false);
+        rcli->setBufSize(m_bufsize);
         twait {
             rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
         }
@@ -358,6 +360,7 @@ RedisCli::connect(str host, uint port, evb_t::ptr ev) {
     m_host = host;
     m_port = port;
     m_c = redisAsyncConnectBindWithReuse(host.cstr(), port, "0.0.0.0");
+    m_c->c.reader->maxbuf = m_bufsize;
     if (m_c->err) {
         rcwarn << "connect error: " << m_c->errstr << "\n";
         if(m_recon) {
