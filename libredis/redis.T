@@ -71,6 +71,48 @@ crc16(const char* buf, int len) {
 }
 
 tamed void
+RedisClusterCli::evalLua(
+    const char* script,
+    str ssha1,
+    std::initializer_list<str> keys,
+    std::initializer_list<str> args,
+    ev_redis_res_t::ptr ev) {
+    vec<str> vkeys(keys);
+    vec<str> vargs(args);
+    evalLua(script, ssha1, vkeys, vargs, ev);
+}
+
+tamed void
+RedisClusterCli::evalLua(
+    const char* script,
+    str ssha1,
+    const vec<str>& keys,
+    const vec<str>& args,
+    ev_redis_res_t::ptr ev) {
+
+    vec<str> cmds;
+    if (m_evalshas[ssha1]) {
+        cmds.push_back("EVALSHA");
+        cmds.push_back(ssha1);
+    } else {
+        m_evalshas.insert(ssha1);
+        cmds.push_back("EVAL");
+        cmds.push_back(script);
+    }
+
+    strbuf nkbuf;
+    str nkstr;
+    nkbuf << keys.size();
+    nkstr = str(nkbuf);
+
+    cmds.push_back(nkstr);
+    for (auto k : keys) cmds.push_back(k);
+    for (auto a : args) cmds.push_back(a);
+
+    runCmd(cmds, ev);
+}
+
+tamed void
 RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
     tvars {
         ptr<node_t> p_node;
