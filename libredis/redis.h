@@ -72,7 +72,7 @@ class RedisCli {
         void runCmd(std::initializer_list<std::pair<const char*,size_t>> l,
                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
         void runCmd(const vec<std::pair<const char*,size_t>>& cmds,
-                    ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+                ev_redis_res_t::ptr ev=nullptr, CLOSURE);
         void runTransaction(
             std::initializer_list<std::initializer_list<str>> cmds,
             ev_redis_res_t::ptr ev = nullptr
@@ -185,16 +185,28 @@ class RedisClusterCli {
         }
         void disconnect();
         void connect(vec<node_t> startup_nodes, evb_t::ptr ev=nullptr, CLOSURE);
-        void runCmd(const vec<std::pair<const char*, size_t>>& cmds,
-                    ev_redis_res_t::ptr ev=nullptr, CLOSURE);
-
         void runCmd(std::initializer_list<str> l, ev_redis_res_t::ptr ev=nullptr);
         void runCmd(const vec<str> &cmds, ev_redis_res_t::ptr ev=nullptr,
                     CLOSURE);
         void runCmd(std::initializer_list<std::pair<const char*,size_t>> l,
                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
         void setBufSize(uint32_t size) { m_bufsize = size; }
-
+        void evalLua(const char* script, str ssha1,
+                     std::initializer_list<str> keys,
+                     std::initializer_list<str> args,
+                     ev_redis_res_t::ptr ev=nullptr , CLOSURE);
+        void evalLua(const char* script, str ssha1,
+                     const vec<str>& keys,
+                     const vec<str>& args,
+                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
+        void evalLua(const char* script, str ssha1,
+                     std::initializer_list<std::pair<const char*,size_t>> keys,
+                     std::initializer_list<std::pair<const char*,size_t>> args,
+                     ev_redis_res_t::ptr ev=nullptr , CLOSURE);
+        void evalLua(const char* script, str ssha1,
+                     const vec<std::pair<const char*,size_t>>& keys,
+                     const vec<std::pair<const char*,size_t>>& args,
+                     ev_redis_res_t::ptr ev=nullptr, CLOSURE);
     private:
         // Functions
         uint16_t assignKeyslot(const char* key, size_t key_len);
@@ -210,6 +222,6 @@ class RedisClusterCli {
         vec<node_t> m_startup_nodes;
         qhash<uint16_t, ptr<node_t>> m_slots;
         bool m_dirty_tables;
+        bhash<str> m_evalshas;
 };
 
-//------------------------------------------------------------------------
