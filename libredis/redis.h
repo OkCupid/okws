@@ -222,6 +222,6 @@ class RedisClusterCli {
         vec<node_t> m_startup_nodes;
         qhash<uint16_t, ptr<node_t>> m_slots;
         bool m_dirty_tables;
-        bhash<str> m_evalshas;
+        qhash<node_t, bhash<str>> m_evalshas;
 };
 

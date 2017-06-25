@@ -91,11 +91,23 @@ RedisClusterCli::evalLua(
     ev_redis_res_t::ptr ev) {
 
     vec<str> cmds;
-    if (m_evalshas[ssha1]) {
+    ptr<node_t> p_node;
+    uint16_t slot_id = assignKeyslot(keys[0].cstr(), keys[0].len());
+    p_node = *m_slots[slot_id];
+    bhash<str>* evalshas = nullptr;
+
+    if (p_node && !m_evalshas[*p_node]) {
+        m_evalshas.insert(*p_node, {});
+        evalshas = m_evalshas[*p_node];
+    }
+
+    if (evalshas && (*evalshas)[ssha1]) {
         cmds.push_back("EVALSHA");
         cmds.push_back(ssha1);
     } else {
-        m_evalshas.insert(ssha1);
+        if (evalshas) {
+            evalshas->insert(ssha1);
+        }
         cmds.push_back("EVAL");
         cmds.push_back(script);
     }
@@ -287,6 +299,7 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
         bool ok;
         vec<str> status_parts;
         strbuf cmdbuf;
+        size_t key_index;
     }
 
     for (size_t i = 0; i < cmds.size(); i++) {
@@ -309,7 +322,10 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
     while (ttl > 0) {
         ttl--;
         if (!random_node) {
-            keyslot = assignKeyslot(ncmds[1].cstr(), ncmds[1].len());
+            // TJ: This is a gross hack. EVAL and EVALSHA have the first key as the
+            // fourth arg instead of the second arg
+            key_index = (ncmds[0] == "EVAL" || ncmds[0] == "EVALSHA") ? 3 : 1;
+            keyslot = assignKeyslot(ncmds[key_index].cstr(), ncmds[key_index].len());
             twait {
                 getConnFromSlot(keyslot, mkevent(cli));
             }
