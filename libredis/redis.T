@@ -71,6 +71,60 @@ crc16(const char* buf, int len) {
 }
 
 tamed void
+RedisClusterCli::evalLua(
+    const char* script,
+    str ssha1,
+    std::initializer_list<str> keys,
+    std::initializer_list<str> args,
+    ev_redis_res_t::ptr ev) {
+    vec<str> vkeys(keys);
+    vec<str> vargs(args);
+    evalLua(script, ssha1, vkeys, vargs, ev);
+}
+
+tamed void
+RedisClusterCli::evalLua(
+    const char* script,
+    str ssha1,
+    const vec<str>& keys,
+    const vec<str>& args,
+    ev_redis_res_t::ptr ev) {
+
+    vec<str> cmds;
+    ptr<node_t> p_node;
+    uint16_t slot_id = assignKeyslot(keys[0].cstr(), keys[0].len());
+    p_node = *m_slots[slot_id];
+    bhash<str>* evalshas = nullptr;
+
+    if (p_node && !m_evalshas[*p_node]) {
+        m_evalshas.insert(*p_node, {});
+        evalshas = m_evalshas[*p_node];
+    }
+
+    if (evalshas && (*evalshas)[ssha1]) {
+        cmds.push_back("EVALSHA");
+        cmds.push_back(ssha1);
+    } else {
+        if (evalshas) {
+            evalshas->insert(ssha1);
+        }
+        cmds.push_back("EVAL");
+        cmds.push_back(script);
+    }
+
+    strbuf nkbuf;
+    str nkstr;
+    nkbuf << keys.size();
+    nkstr = str(nkbuf);
+
+    cmds.push_back(nkstr);
+    for (auto k : keys) cmds.push_back(k);
+    for (auto a : args) cmds.push_back(a);
+
+    runCmd(cmds, ev);
+}
+
+tamed void
 RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
     tvars {
         ptr<node_t> p_node;
@@ -83,6 +137,7 @@ RedisClusterCli::getRandomConn(redis_ev_t::ptr ev) {
         p_node = New refcounted<node_t>(m_startup_nodes[i]);
         rcli = new refcounted<RedisCli>(RedisCli());
         rcli->setReconnect(false);
+        rcli->setBufSize(m_bufsize);
         twait {
             rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
         }
@@ -132,6 +187,7 @@ RedisClusterCli::getConnFromSlot(uint16_t slot_id, redis_ev_t::ptr ev) {
 
         rcli = new refcounted<RedisCli>(RedisCli());
         rcli->setReconnect(false);
+        rcli->setBufSize(m_bufsize);
         twait {
             rcli->connect(p_node->first, p_node->second, mkevent(conn_ok));
         }
@@ -243,6 +299,7 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
         bool ok;
         vec<str> status_parts;
         strbuf cmdbuf;
+        size_t key_index;
     }
 
     for (size_t i = 0; i < cmds.size(); i++) {
@@ -265,7 +322,10 @@ RedisClusterCli::runCmd(const vec<str>& cmds, ev_redis_res_t::ptr ev) {
     while (ttl > 0) {
         ttl--;
         if (!random_node) {
-            keyslot = assignKeyslot(ncmds[1].cstr(), ncmds[1].len());
+            // TJ: This is a gross hack. EVAL and EVALSHA have the first key as the
+            // fourth arg instead of the second arg
+            key_index = (ncmds[0] == "EVAL" || ncmds[0] == "EVALSHA") ? 3 : 1;
+            keyslot = assignKeyslot(ncmds[key_index].cstr(), ncmds[key_index].len());
             twait {
                 getConnFromSlot(keyslot, mkevent(cli));
             }
@@ -358,6 +418,7 @@ RedisCli::connect(str host, uint port, evb_t::ptr ev) {
     m_host = host;
     m_port = port;
     m_c = redisAsyncConnectBindWithReuse(host.cstr(), port, "0.0.0.0");
+    m_c->c.reader->maxbuf = m_bufsize;
     if (m_c->err) {
         rcwarn << "connect error: " << m_c->errstr << "\n";
         if(m_recon) {
