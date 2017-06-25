@@ -91,13 +91,20 @@ RedisClusterCli::evalLua(
     ev_redis_res_t::ptr ev) {
 
     vec<str> cmds;
-    ptr<node_t> p_node;
+    ptr<node_t> p_node = nullptr;
     uint16_t slot_id = assignKeyslot(keys[0].cstr(), keys[0].len());
-    p_node = *m_slots[slot_id];
+
+    if (m_slots[slot_id]) {
+        p_node = *m_slots[slot_id];
+    }
+
     bhash<str>* evalshas = nullptr;
 
     if (p_node && !m_evalshas[*p_node]) {
         m_evalshas.insert(*p_node, {});
+    }
+
+    if (p_node) {
         evalshas = m_evalshas[*p_node];
     }
 
