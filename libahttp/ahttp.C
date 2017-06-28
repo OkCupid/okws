@@ -41,15 +41,15 @@ time_t global_ssd_last = 0;
 int n_ahttpcon = 0;
 
 
-ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe, 
+ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
                     bool ma)
-  : start (sfs_get_timenow ()), fd (f), rcbset (false), 
+  : start (sfs_get_timenow ()), fd (f), rcbset (false),
     wcbset (false), _bytes_recv (0), bytes_sent (0),
     eof (false), destroyed (false), out (suio_alloc ()), sin (s),
     recv_limit (rcvlmt < 0 ? int (ok_reqsize_limit) : rcvlmt),
     overflow_flag (false), ss (global_syscall_stats),
     sin_alloced (s != NULL),
-    _timed_out (false), 
+    _timed_out (false),
     _no_more_read (false),
     _delayed_close (false),
     _zombie_tcb (NULL),
@@ -64,7 +64,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
   // bookkeeping for debugging purposes;
   //
   n_ahttpcon++;
-  
+
   if (ma) make_async (fd);
   if (coe) close_on_exec (fd);
   if (mb < 0) mb = SUIOLITE_DEF_BUFLEN;
@@ -75,7 +75,7 @@ ahttpcon::ahttpcon (int f, sockaddr_in *s, int mb, int rcvlmt, bool coe,
     _zombie_tcb = delaycb (ok_ahttpcon_zombie_timeout, 0,
 			   wrap (this, &ahttpcon::zombie_warn, destroyed_p));
   }
-    
+
 }
 
 int
@@ -213,7 +213,7 @@ ahttpcon::setrcb (cbi::ptr cb)
   }
 
   _state = AHTTPCON_STATE_RECV;
-    
+
   if (enable_selread ()) {
     rcb = cb;
     int i = in->resid ();
@@ -224,9 +224,9 @@ ahttpcon::setrcb (cbi::ptr cb)
   }
 }
 
-ahttpcon_clone::ahttpcon_clone (int f, bool all_headers, sockaddr_in *s, 
+ahttpcon_clone::ahttpcon_clone (int f, bool all_headers, sockaddr_in *s,
                                 size_t ml)
-  : ahttpcon (f, s, ml), _all_headers(all_headers), maxline (ml), ccb (NULL), 
+  : ahttpcon (f, s, ml), _all_headers(all_headers), maxline (ml), ccb (NULL),
     decloned (false)
 { }
 
@@ -241,7 +241,7 @@ ahttpcon::zombie_warn (ptr<bool> df)
   } else {
     str ip = get_remote_ip ();
     if (!ip) ip = "<none>";
-    warn ("%sfd=%d, state=%d, timeout=%d, ip=%s\n", 
+    warn ("%sfd=%d, state=%d, timeout=%d, ip=%s\n",
 	  prfx, fd, int (_state), int (ok_ahttpcon_zombie_timeout), ip.cstr ());
     _zombie_tcb = NULL;
   }
@@ -250,8 +250,8 @@ ahttpcon::zombie_warn (ptr<bool> df)
 //-----------------------------------------------------------------------
 
 ahttpcon::~ahttpcon ()
-{ 
-  // 
+{
+  //
   // bookeeping for debug purposes.
   //
   --n_ahttpcon;
@@ -264,7 +264,7 @@ ahttpcon::~ahttpcon ()
   recycle (in);
   recycle (out);
   if (_zombie_tcb) {
-    timecb_remove (_zombie_tcb); 
+    timecb_remove (_zombie_tcb);
     _zombie_tcb = NULL;
   }
 }
@@ -305,7 +305,7 @@ ahttpcon::fail ()
   fd = -1;
   if (!destroyed) {
     ref<ahttpcon> hold (mkref (this));
-    if (rcb) 
+    if (rcb)
       (*rcb) (0);
     else if (eofcb)
       (*eofcb) ();
@@ -418,7 +418,7 @@ ahttpcon::input (ptr<bool> destroyed_local)
       eof = true;
       fail ();
     } else if (errno != EAGAIN) {
-      warn ("nfds=%d; Error in ahttpcon::input (%s): %m (%d)\n", 
+      warn ("nfds=%d; Error in ahttpcon::input (%s): %m (%d)\n",
 	    n_ahttpcon, get_remote_ip ().cstr (), errno);
       fail ();
     }
@@ -439,14 +439,13 @@ ahttpcon::input (ptr<bool> destroyed_local)
   }
 
   _bytes_recv += n;
-
   // stop DOS attacks?
   if (recv_limit > 0 && _bytes_recv > recv_limit) {
-
     warn << "Channel limit exceeded ";
     if (remote_ip)
       warnx << "(" << remote_ip << ")";
-    warnx << "\n";
+    warnx << " recv limit: " << recv_limit << ", bytes received: "
+          << _bytes_recv << "\n";
     eof = true;
     disable_selread ();
     overflow_flag = true;
@@ -456,10 +455,10 @@ ahttpcon::input (ptr<bool> destroyed_local)
   recvd_bytes (n);
 }
 
-void 
+void
 ahttpcon::recvd_bytes (size_t n)
 {
-  if (rcb) 
+  if (rcb)
     (*rcb) (n);
 }
 
@@ -481,9 +480,8 @@ ahttpcon_clone::recvd_bytes (size_t n)
 
   int delimit_status = HTTP_OK;
   ptr<ahttp_delimit_res> dres;
-  
+
   if (_all_headers) {
-      recv_limit = ok_hdrsize_limit;
       dres = delimit_headers(&delimit_status);
   } else {
       dres = delimit(&delimit_status);
@@ -530,7 +528,7 @@ ahttpcon_clone::declone ()
   decloned = true;
 }
 
-str 
+str
 ahttp_delimit_res::get_forwarded_ip_str() const {
     str proxip = get_proxied_ip(m_headers);
     return proxip;
@@ -573,7 +571,7 @@ ahttpcon_clone::delimit_headers(int* delimit_status) {
             if (p == '\n') {
                 str header = str(nextline, &p - nextline);
                 // tack on crlf to make sure parse_reqline() works
-                header = header << "\r\n"; 
+                header = header << "\r\n";
 
                 // This is the reqline if we haven't gotten one yet
                 if (!reqline) {
@@ -608,7 +606,7 @@ ahttpcon_clone::delimit_headers(int* delimit_status) {
     // Don't fully proceed unless we get all the headers
     if (!done) return nullptr;
 
-    ptr<ahttp_delimit_res> res = 
+    ptr<ahttp_delimit_res> res =
         New refcounted<ahttp_delimit_res>(reqtarget);
 
     // Parse the headers
@@ -789,7 +787,7 @@ ahttpcon::drain_to_network (ptr<strbuf> b, evb_t ev)
 
 //-----------------------------------------------------------------------
 
-void 
+void
 ahttpcon::drain_cancel ()
 {
   set_drained_cb (NULL);
@@ -874,7 +872,7 @@ ahttpcon::kill ()
 //-----------------------------------------------------------------------
 
 str
-ahttpcon::all_info () const 
+ahttpcon::all_info () const
 {
   str ss = select_set();
   str dbi = get_debug_info ();
@@ -882,7 +880,7 @@ ahttpcon::all_info () const
   if (!dbi) dbi = "";
   if (!ss) ss = "";
   strbuf b ("(ip=%s; fd=%d; bytes=%d; select=%s%s)",
-	      ip.cstr (), getfd (), bytes_recv (), 
+	      ip.cstr (), getfd (), bytes_recv (),
 	      ss.cstr (), dbi.cstr ());
   return b;
 
@@ -915,8 +913,8 @@ ahttp_tab_t::run ()
 
             // MM: handle non-keep alive and normal connections with the
             // demux timeout procedure
-            if ((a->get_reqno() == 0 || a->bytes_recv() > 0) && 
-                int (sfs_get_timenow() - n->_a->start) > 
+            if ((a->get_reqno() == 0 || a->bytes_recv() > 0) &&
+                int (sfs_get_timenow() - n->_a->start) >
                 int (ok_demux_timeout)) {
                 str ai = a->all_info ();
                 warn << "HTTP connection timed out in demux " << ai << "\n";
@@ -979,7 +977,7 @@ ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
 
   OKDBG4(OKD_KEEPALIVE, CHATTER, "set_keepalive_data(reqno=%d, len=%zu, fd=%d)",
 	 kad._reqno, kad._len, fd);
-  
+
   if ((ret = kad._len) && kad._buf) {
     in->load_from_buffer (kad._buf, ret);
   }
@@ -990,7 +988,7 @@ ahttpcon::set_keepalive_data (const keepalive_data_t &kad)
 
 cidr_mask_t::cidr_mask_t(const char* range)
 {
-    
+
     m_desc = str(range);
 
     rxx pat("([^/]+)(/([0-9]+))?");
