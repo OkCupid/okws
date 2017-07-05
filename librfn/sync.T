@@ -50,8 +50,8 @@ fork_t::v_eval_2 (publish_t *pub, const vec<arg_t> &args) const
 
 //-----------------------------------------------------------------------
 
-const str fork_t::DOCUMENTATION = R"*(returns immediately and executes a
-blocking function in the background
+const str fork_t::DOCUMENTATION = R"*(returns immediately and executes an
+async function in the background
 
 @param {function} f)*";
 
@@ -144,7 +144,7 @@ shotgun_t::v_pub_to_val_2 (eval_t *e, const checked_args_t &args, cxev_t ev)
 
 //-----------------------------------------------------------------------
 
-const str shotgun_t::DOCUMENTATION = R"*(executes a list of blocking functions
+const str shotgun_t::DOCUMENTATION = R"*(executes a list of async functions
 in parallel, returns when they've all completed
 
 @param {list} funcs
