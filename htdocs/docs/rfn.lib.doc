@@ -550,14 +550,14 @@ objects //o_1//, through //o_n//, as many as specified."
      fork : {
         input: [ { "func" : "F" } ],
         output : "0",
-        desc : "returns immediately and executes a blocking function in the background"
+        desc : "returns immediately and executes an async function in the background"
      },
 
      shotgun : {
         blocking : true,
         input: [ { "funcs" : "l" } ],
         output : "0",
-        desc : "executes a list of blocking functions in parallel, returns when they've all completed"
+        desc : "executes a list of async functions in parallel, returns when they've all completed"
      }
     
 
