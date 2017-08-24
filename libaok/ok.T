@@ -1574,7 +1574,8 @@ okclnt_base_t::set_hdr_field (const str &k, const str &v)
 {
   if (!hdr_fields)
     hdr_fields = New refcounted<vec<http_hdr_field_t> > ();
-  hdr_fields->push_back (http_hdr_field_t (k,v));
+
+  hdr_fields->push_back (http_hdr_field_t (k,v, k == "Set-Cookie"));
 }
 
 //-----------------------------------------------------------------------
