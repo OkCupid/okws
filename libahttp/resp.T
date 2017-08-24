@@ -205,15 +205,15 @@ http_resp_header_t::fill_strbuf (strbuf &b) const
     bhash<str> winner_hsh;
     for (int i = lim - 1; i >= 0; i--) {
       if (fields[i].can_duplicate ()) {
-	output_me[i] = true; 
+        output_me[i] = true;
       } else {
-	str n = mytolower (fields[i].name);
-	if (winner_hsh[n]) {
-	  output_me[i] = false;
-	} else {
-	  winner_hsh.insert (n);
-	  output_me[i] = true;
-	}
+        str n = mytolower (fields[i].name);
+        if (winner_hsh[n]) {
+          output_me[i] = false;
+        } else {
+          winner_hsh.insert (n);
+          output_me[i] = true;
+        }
       }
     }
   }
