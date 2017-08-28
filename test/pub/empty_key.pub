@@ -1,0 +1,5 @@
+{%
+x = 5;
+v = {x:x, y}
+print(sort(keys(v)));
+%}
