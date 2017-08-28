@@ -1,5 +1,6 @@
 // -*-c++-*-
 
+#include "config.h"
 #include "okrfn-int.h"
 #include "pubutil.h"
 #include "pescape.h"
@@ -7,9 +8,67 @@
 #include "crypt.h"
 #include "wide_str.h"
 #include "okws_rxx.h"
+#include "sfs_assert.h"
+
+#ifdef HAVE_PARSE_PRINTF_FORMAT
+extern "C" {
+#include <printf.h>
+}
+
+namespace {
+  // Check that a given string can be used as a format specifier for a printf
+  // like function.
+  int get_fmt1(const str fmt) {
+    int res;
+    if (!fmt) {
+      return PA_LAST;
+    }
+    const size_t len = parse_printf_format(fmt.cstr(), 1, &res);
+    if (len != 1)
+      return PA_LAST;
+    return res;
+  }
+} // namespace
+#endif //  HAVE_PARSE_PRINTF_FORMAT
 
 namespace rfn3 {
-  
+
+  // Allocates an `str` with the return value from `sprintf`. We are not using
+  // vuio_printf because we have no way to properly validate its input.
+  static str stprintf(const char *fmt, ...) {
+    int n;
+    constexpr size_t BUFFSIZ = 10;
+    char buff[BUFFSIZ];
+    va_list ap;
+
+    // First try with a stack allocated buffer.
+    va_start(ap, fmt);
+    n = vsnprintf(buff, BUFFSIZ, fmt, ap);
+    va_end(ap);
+
+    // Failure
+    if (n < 0) {
+      DASSERT(false);
+      return nullptr;
+    }
+
+    // The stack allocated buff was small enough...
+    if (n < BUFFSIZ) {
+      return str(buff, n);
+    }
+
+    // Now we know the exact size....
+    mstr res(n);
+
+    va_start(ap, fmt);
+    n = vsnprintf(res.cstr(), res.len() + 1, fmt, ap);
+    va_end(ap);
+
+    DASSERT(res.len() == n);
+
+    return str(res);
+  }
+
   //------------------------------------------------------------
 
   static str
@@ -300,12 +359,26 @@ a hexidecimal-encoded digest.
   ptr<const expr_t>
   format_float_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
-#define BUFSZ 1024
-    char buf[BUFSZ];
     str fmt = args[0]._s;
-    double d = args[1]._f;
-    snprintf (buf, BUFSZ, fmt.cstr (), d);
-    return expr_str_t::alloc (buf);
+    int spec = PA_FLOAT;
+    str res;
+#ifdef HAVE_PARSE_PRINTF_FORMAT
+    spec = get_fmt1(fmt);
+#endif
+    if (spec == PA_FLOAT) {
+      float f = args[1]._f;
+      res = stprintf(fmt.cstr (), f);
+    } else if (spec == (PA_DOUBLE)) {
+      double d = args[1]._f;
+      res = stprintf(fmt.cstr (), d);
+    } else if (spec == (PA_DOUBLE | PA_FLAG_LONG_DOUBLE)) {
+      long double ld = args[1]._f;
+      res = stprintf (fmt.cstr (), ld);
+    }  else {
+      report_error(p, strbuf("Not a float format \"%s\" %i", fmt.cstr(), spec));
+      return expr_null_t::alloc();
+    }
+    return expr_str_t::alloc(res);
   }
 
   //------------------------------------------------------------
@@ -322,14 +395,33 @@ to the given sprintf-style format string `fmt`.
   ptr<const expr_t>
   format_int_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
   {
-    char buf[BUFSZ];
     str fmt = args[0]._s;
-    int i = args[1]._i;
-    snprintf (buf, BUFSZ, fmt.cstr (), i);
-    return expr_str_t::alloc (buf);
-#undef BUFSZ
+    str res;
+    int spec = PA_INT;
+    #ifdef HAVE_PARSE_PRINTF_FORMAT
+    spec = get_fmt1(fmt);
+    #endif
+    if (spec == PA_INT) {
+      int i = args[1]._i;
+      res = stprintf (fmt.cstr (), i);
+    } else if (spec == PA_CHAR) {
+      char c = args[1]._i;
+      res = stprintf (fmt.cstr (), c);
+    } else if (spec == (PA_INT | PA_FLAG_SHORT)) {
+      short s = args[1]._i;
+      res = stprintf (fmt.cstr (), s);
+    } else if (spec == (PA_INT | PA_FLAG_LONG)) {
+      long l = args[1]._i;
+      res = stprintf (fmt.cstr (), l);
+    } else if (spec == (PA_INT | PA_FLAG_LONG_LONG)) {
+      long long ll = args[1]._i;
+      res = stprintf (fmt.cstr (), ll);
+    }  else {
+      report_error(p, strbuf("Not an int format \"%s\" %i", fmt.cstr(), spec));
+      return expr_null_t::alloc();
+    }
+    return expr_str_t::alloc (res);
   }
-
 
   //------------------------------------------------------------
 
@@ -338,6 +430,48 @@ the given sprintf-style format string `fmt`.
 
 @param {string} fmt
 @param {int} val
+@return {string})*";
+
+  //------------------------------------------------------------
+
+  ptr<const expr_t>
+  format_uint_t::v_eval_2 (eval_t *p, const vec<arg_t> &args) const
+  {
+    str res;
+    str fmt = args[0]._s;
+    int spec = PA_INT;
+    #ifdef HAVE_PARSE_PRINTF_FORMAT
+    spec = get_fmt1(fmt);
+    #endif
+    if (spec == PA_INT) {
+      unsigned int i = args[1]._u;
+      res = stprintf (fmt.cstr (), i);
+    } else if (spec == PA_CHAR) {
+      unsigned char c = args[1]._u;
+      res = stprintf (fmt.cstr (), c);
+    } else if (spec == (PA_INT | PA_FLAG_SHORT)) {
+      unsigned short s = args[1]._u;
+      res = stprintf (fmt.cstr (), s);
+    } else if (spec == (PA_INT | PA_FLAG_LONG)) {
+      unsigned long l = args[1]._u;
+      res = stprintf (fmt.cstr (), l);
+    } else if (spec == (PA_INT | PA_FLAG_LONG_LONG)) {
+      unsigned long long ll = args[1]._u;
+      res = stprintf (fmt.cstr (), ll);
+    }  else {
+      report_error(p, strbuf("Not an int format \"%s\" %i", fmt.cstr(), spec));
+      return expr_null_t::alloc();
+    }
+    return expr_str_t::alloc (res);
+  }
+
+  //------------------------------------------------------------
+
+  const str format_uint_t::DOCUMENTATION = R"*(Format the uint `val` according
+to the given sprintf-style format string `fmt`.
+
+@param {string} fmt
+@param {uint} val
 @return {string})*";
 
   //------------------------------------------------------------

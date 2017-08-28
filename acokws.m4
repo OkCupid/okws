@@ -992,7 +992,29 @@ fi
 AM_CONDITIONAL(MAKE_OLD_FLEX, test ${current_flex} -eq 0)
 ])
 
- 
+
+dnl
+dnl checking for printf format parsing functions
+dnl
+AC_DEFUN([OKWS_PARSE_PRINTF_FORMAT],
+[
+
+AC_LANG_PUSH([C])
+AC_MSG_CHECKING(whether we have parse_printf_format)
+AC_LINK_IFELSE(
+   [AC_LANG_PROGRAM(
+      [[#include <printf.h>]],
+      [[parse_printf_format("%i abcd", 0, 0);]])],
+   [AC_MSG_RESULT(yes);
+    have_parse_printf_format=yes;
+    AC_DEFINE([HAVE_PARSE_PRINTF_FORMAT],
+              [1],
+              [Defined if we have the gnu parse_printf_format function])],
+   [AC_MSG_RESULT(no); have_parse_printf_format=no;])
+AC_LANG_POP([C])
+AM_CONDITIONAL([HAVE_PARSE_PRINTF_FORMAT], [test x$have_parse_printf_format = xyes])
+])
+
 dnl
 dnl Check for Linux prctl() to get coredumps after setuid/setgid
 dnl

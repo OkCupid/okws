@@ -1,6 +1,7 @@
 PACKAGE_STRING=pub
 TESTS = \
 	dict_equal.pub \
+	rfn3_format.pub \
 	scoping_for.pub \
 	scoping_globals-locals.pub \
 	scoping_order_of_decl.pub \
@@ -12,8 +13,15 @@ TESTS = \
 	syntax_error.pub \
 	undef_vs_null.pub
 
+
 if SFS_DEBUG
     TESTS+=blocking_call_warn.pub
 endif
+
+if HAVE_PARSE_PRINTF_FORMAT
+    TESTS+=rfn3_format_wrong.pub
+endif
+
+
 AUTOMAKE_OPTIONS = parallel-tests
 LOG_COMPILER = $(builddir)/test_runner

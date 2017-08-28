@@ -1,0 +1,2 @@
+%{rfn3.format_uint("%s", 5)}
+%{rfn3.format_float("%3$i", 5.0)}

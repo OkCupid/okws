@@ -183,6 +183,9 @@ namespace {
 
 int main(int argc, char** argv)  {
     cli_arguments_t cli;
+    make_sync(0);
+    make_sync(1);
+    make_sync(2);
     argp_parse (&argspecs, argc, argv, 0, 0, &cli);
     main2(cli.file, cli.jailed);
     amain();
