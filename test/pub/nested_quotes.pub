@@ -1,0 +1,9 @@
+{%
+locals {
+  v1 : 'Test "A balanced nested par"',
+  v2 : 'Test "A non balanced nested par',
+  v3 : "An escaped quote\"",
+  v4 : "%{"o" + 'k' }"
+}
+print(v4);
+%}
