@@ -44,9 +44,17 @@ class redis_res_t {
         ptr<pub3::expr_t> m_parsed;
 };
 
+struct redis_del_res_t {
+    int64_t keys_removed;
+    str error_msg;
+    bool is_err() { return keys_removed == -1; }
+};
+
 class redisReply;
 class redisAsyncContext;
 typedef event<redis_res_t>::ref ev_redis_res_t;
+typedef callback<void, redis_del_res_t>::ref cb_rdr;
+typedef event<redis_del_res_t>::ref ev_redis_del_res_t;
 
 //------------------------------------------------------------------------
 
