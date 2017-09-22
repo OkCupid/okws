@@ -23,6 +23,8 @@
  */
 #include "pubd.h"
 
+#include <grp.h>
+
 #ifdef HAVE_LINUX_PRCTL_DUMP
 # include <sys/prctl.h>
 #endif /* HAVE_LINUX_PRCTL_DUMP */

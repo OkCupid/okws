@@ -26,6 +26,8 @@
 #include "rxx.h"
 #include "svq.h"
 
+#include <grp.h>
+
 //-----------------------------------------------------------------------
 
 class logfile_t {

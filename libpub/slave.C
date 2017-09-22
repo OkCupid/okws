@@ -25,6 +25,8 @@
 #include "stllike.h"
 #include "okdbg.h"
 
+#include <grp.h>
+
 static int
 _pub_accept (int pubfd, sockaddr_in *sin)
 {
@@ -160,7 +162,8 @@ helper_exec_t::launch (cbb c)
 {
   str p = argv[0];
   int sps[MAX_SOCKPAIRS][2];
-  str prog = find_program (p.cstr());
+  assert(strchr(p.cstr(), '/') != nullptr);
+  str prog = p.cstr();
   if (!prog) {
     warn << "Cannot find executable: " << p << "\n";
     (*c) (false);

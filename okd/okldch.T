@@ -32,6 +32,7 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <grp.h>
 
 extern char ** environ;
 
