@@ -1,3 +1,7 @@
+# DEPRECATED
+
+OKWS is deprecated. No more development will be taking place. Thank you for contributing! 
+
 # OKWS  -- The OK Web Server
 
 OKWS is a Web server, specialized for building fast and secure Web
