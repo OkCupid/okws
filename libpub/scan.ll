@@ -645,11 +645,7 @@ hex_to_char (const char *in)
 str
 unicode_to_utf8 (const char *in)
 {
-  static bool init;
-  if (!init) {
-    setlocale (LC_CTYPE, "en_US.UTF-8");
-    init = true;
-  }
+  setlocale (LC_CTYPE, "en_US.UTF-8");
   str ret;
   char *ep;
   mbstate_t state;
@@ -666,6 +662,9 @@ unicode_to_utf8 (const char *in)
       m.setlen (n);
       ret = m;
     }
+  }
+  if (!ret) {
+      ret = "";
   }
   return ret;
 }
